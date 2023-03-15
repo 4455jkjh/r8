@@ -226,7 +226,7 @@ public class SyntheticFinalization {
   }
 
   Result computeFinalSynthetics(AppView<?> appView, Timing timing) {
-    assert verifyNoNestedSynthetics(appView.dexItemFactory());
+    assert verifyNoNestedSynthetics(appView);
     assert verifyOneSyntheticPerSyntheticClass();
     DexApplication application;
     Builder lensBuilder = new Builder();
@@ -342,7 +342,7 @@ public class SyntheticFinalization {
     return !committed.containsType(type);
   }
 
-  private boolean verifyNoNestedSynthetics(DexItemFactory dexItemFactory) {
+  private boolean verifyNoNestedSynthetics(AppView<?> appView) {
     // Check that the prefix of each synthetic is never itself synthetic.
     committed.forEachItem(
         item -> {
@@ -353,8 +353,12 @@ public class SyntheticFinalization {
               SyntheticNaming.getPrefixForExternalSyntheticType(item.getKind(), item.getHolder());
           assert !prefix.contains(SyntheticNaming.getPhaseSeparator(Phase.INTERNAL));
           DexType context =
-              dexItemFactory.createType(DescriptorUtils.getDescriptorFromClassBinaryName(prefix));
-          assert isNotSyntheticType(context);
+              appView
+                  .dexItemFactory()
+                  .createType(DescriptorUtils.getDescriptorFromClassBinaryName(prefix));
+          assert isNotSyntheticType(context)
+              || item.getContext().isSyntheticInputClass()
+              || synthetics.isGlobalSyntheticClass(context);
         });
     return true;
   }
@@ -607,7 +611,7 @@ public class SyntheticFinalization {
             } else {
               groupsPerPrefix
                   .computeIfAbsent(
-                      group.getRepresentative().getPrefixForExternalSyntheticType(),
+                      group.getRepresentative().getPrefixForExternalSyntheticType(appView),
                       k -> new ArrayList<>())
                   .add(group);
             }
@@ -623,7 +627,7 @@ public class SyntheticFinalization {
             EquivalenceGroup<T> group = groups.get(i);
             assert group
                 .getRepresentative()
-                .getPrefixForExternalSyntheticType()
+                .getPrefixForExternalSyntheticType(appView)
                 .equals(externalSyntheticTypePrefix);
             // Two equivalence groups in same context type must be distinct otherwise the assignment
             // of the synthetic name will be non-deterministic between the two.
