@@ -23,6 +23,7 @@ import com.android.tools.r8.compilerapi.mockdata.MockClassWithAssertion;
 import com.android.tools.r8.compilerapi.mockdata.PostStartupMockClass;
 import com.android.tools.r8.compilerapi.sourcefile.CustomSourceFileTest;
 import com.android.tools.r8.compilerapi.startupprofile.StartupProfileApiTest;
+import com.android.tools.r8.compilerapi.syntheticscontexts.SyntheticContextsConsumerTest;
 import com.android.tools.r8.compilerapi.testsetup.ApiTestingSetUpTest;
 import com.android.tools.r8.compilerapi.wrappers.CommandLineParserTest;
 import com.android.tools.r8.compilerapi.wrappers.EnableMissingLibraryApiModelingTest;
@@ -58,7 +59,8 @@ public class CompilerApiTestCollection extends BinaryCompatibilityTestCollection
           ArtProfilesForRewritingApiTest.ApiTest.class,
           StartupProfileApiTest.ApiTest.class,
           ClassConflictResolverTest.ApiTest.class,
-          ProguardKeepRuleDiagnosticsApiTest.ApiTest.class);
+          ProguardKeepRuleDiagnosticsApiTest.ApiTest.class,
+          SyntheticContextsConsumerTest.ApiTest.class);
 
   private final TemporaryFolder temp;
 
