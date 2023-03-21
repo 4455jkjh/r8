@@ -470,7 +470,7 @@ public class LazyCfCode extends Code {
             builder.push(frameType);
           }
         }
-        instructions.add(builder.build());
+        instructions.set(instructionIndex, builder.build());
       }
     }
 
