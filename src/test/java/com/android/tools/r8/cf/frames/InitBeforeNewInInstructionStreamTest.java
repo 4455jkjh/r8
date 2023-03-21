@@ -4,10 +4,12 @@
 package com.android.tools.r8.cf.frames;
 
 import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeTrue;
 
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
+import com.android.tools.r8.utils.AndroidApiLevel;
 import com.android.tools.r8.utils.StringUtils;
 import javassist.ByteArrayClassPath;
 import javassist.ClassPool;
@@ -39,8 +41,8 @@ public class InitBeforeNewInInstructionStreamTest extends TestBase implements Op
 
   @Test
   public void testJvm() throws Exception {
-    parameters.assumeJvmTestParameters();
-    testForJvm(parameters)
+    assumeTrue(parameters.isCfRuntime() && parameters.getApiLevel().equals(AndroidApiLevel.B));
+    testForJvm()
         .addProgramClassFileData(patchedDump())
         .run(parameters.getRuntime(), MAIN_CLASS)
         .assertSuccessWithOutput(EXPECTED_OUTPUT);
@@ -48,21 +50,20 @@ public class InitBeforeNewInInstructionStreamTest extends TestBase implements Op
 
   @Test
   public void testD8() throws Exception {
-    parameters.assumeDexRuntime();
+    assumeTrue(parameters.isDexRuntime());
     testForD8(parameters.getBackend())
         .addProgramClassFileData(patchedDump())
-        .setMinApi(parameters)
+        .setMinApi(parameters.getApiLevel())
         .run(parameters.getRuntime(), MAIN_CLASS)
         .assertSuccessWithOutput(EXPECTED_OUTPUT);
   }
 
   @Test
   public void testR8() throws Exception {
-    parameters.assumeR8TestParameters();
     testForR8(parameters.getBackend())
         .addProgramClassFileData(patchedDump())
         .addKeepMainRule(MAIN_CLASS)
-        .setMinApi(parameters)
+        .setMinApi(parameters.getApiLevel())
         .run(parameters.getRuntime(), MAIN_CLASS)
         .assertSuccessWithOutput(EXPECTED_OUTPUT);
   }
