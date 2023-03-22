@@ -225,6 +225,10 @@ public class TestBase {
     return testForDX(temp);
   }
 
+  public JvmTestBuilder testForJvm(TestParameters parameters) {
+    return testForJvm();
+  }
+
   public JvmTestBuilder testForJvm() {
     return testForJvm(temp);
   }
