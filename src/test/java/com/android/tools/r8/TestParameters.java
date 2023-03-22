@@ -5,6 +5,7 @@ package com.android.tools.r8;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assume.assumeTrue;
 
 import com.android.tools.r8.TestBase.Backend;
 import com.android.tools.r8.TestRuntime.CfRuntime;
@@ -162,6 +163,34 @@ public class TestParameters {
 
   public void assertNoneRuntime() {
     assertEquals(NoneRuntime.getInstance(), runtime);
+  }
+
+  public TestParameters assumeCfRuntime() {
+    assumeTrue(isCfRuntime());
+    return this;
+  }
+
+  public TestParameters assumeDexRuntime() {
+    assumeTrue(isDexRuntime());
+    return this;
+  }
+
+  public TestParameters assumeJvmTestParameters() {
+    assumeCfRuntime();
+    return this;
+  }
+
+  public TestParameters assumeProguardTestParameters() {
+    assumeCfRuntime();
+    return this;
+  }
+
+  public TestParameters assumeR8TestParameters() {
+    return this;
+  }
+
+  public TestParameters assumeRuntimeTestParameters() {
+    return this;
   }
 
   public DexVm.Version getDexRuntimeVersion() {
