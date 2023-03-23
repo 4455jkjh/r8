@@ -75,7 +75,11 @@ public class ApiModelManualOutlineWithUnknownReturnTypeTest extends TestBase {
         .addDefaultRuntimeLibrary(parameters)
         .addLibraryClasses(LibraryClass.class, LibrarySub.class)
         .setMinApi(parameters.getApiLevel())
-        .addOptionsModification(options -> options.apiModelingOptions().disableMissingApiModeling())
+        .addOptionsModification(
+            options -> {
+              options.apiModelingOptions().disableMissingApiModeling();
+              options.apiModelingOptions().enableApiCallerIdentification = true;
+            })
         .apply(setMockApiLevelForClass(LibraryClass.class, AndroidApiLevel.B))
         .apply(setMockApiLevelForClass(LibrarySub.class, getMockApiLevel()))
         .compile()
