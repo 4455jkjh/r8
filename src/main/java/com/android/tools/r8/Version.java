@@ -9,7 +9,7 @@ import com.android.tools.r8.utils.VersionProperties;
 /** Version of the D8/R8 library. */
 public final class Version {
 
-  private static final String MAIN_LABEL = "8.2.0-dev";
+  private static final String MAIN_LABEL = "main";
 
   // This field is accessed from release scripts using simple pattern matching.
   // Therefore, changing this field could break our release scripts.
