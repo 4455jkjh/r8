@@ -19,6 +19,7 @@ import com.android.tools.r8.graph.proto.RewrittenTypeInfo;
 import com.android.tools.r8.ir.analysis.type.ArrayTypeElement;
 import com.android.tools.r8.ir.analysis.type.TypeElement;
 import com.android.tools.r8.ir.code.ArrayAccess;
+import com.android.tools.r8.ir.code.ArrayPut;
 import com.android.tools.r8.ir.code.BasicBlock;
 import com.android.tools.r8.ir.code.BasicBlockIterator;
 import com.android.tools.r8.ir.code.ConstNumber;
@@ -78,7 +79,7 @@ public class EnumUnboxingRewriter {
   }
 
   private LocalEnumUnboxingUtilityClass getLocalUtilityClass(DexType enumType) {
-    return utilityClasses.getLocalUtilityClass(enumType);
+    return utilityClasses.getLocalUtilityClass(unboxedEnumsData.representativeType(enumType));
   }
 
   private SharedEnumUnboxingUtilityClass getSharedUtilityClass() {
@@ -208,14 +209,31 @@ public class EnumUnboxingRewriter {
               rewriteNameMethod(iterator, invoke, enumType, context, eventConsumer);
               continue;
             } else if (invokedMethod.match(factory.enumMembers.toString)) {
-              DexMethod lookupMethod = enumUnboxingLens.lookupMethod(invokedMethod);
-              // If the lookupMethod is different, then a toString method was on the enumType
-              // class, which was moved, and the lens code rewriter will rewrite the invoke to
-              // that method.
-              if (invoke.isInvokeSuper() || lookupMethod == invokedMethod) {
+              DexMethod reboundMethod =
+                  invokedMethod.withHolder(unboxedEnumsData.representativeType(enumType), factory);
+              DexMethod lookupMethod =
+                  enumUnboxingLens
+                      .lookupMethod(
+                          reboundMethod,
+                          context.getReference(),
+                          invoke.getType(),
+                          enumUnboxingLens.getPrevious())
+                      .getReference();
+              // If the SuperEnum had declared a toString() override, then the unboxer moves it to
+              // the local utility class method corresponding to that override.
+              // If a SubEnum had declared a toString() override, then the unboxer records a
+              // synthetic move from SuperEnum.toString() to the dispatch method on the local
+              // utility class.
+              // When they are the same, then there are no overrides of toString().
+              if (lookupMethod == reboundMethod) {
                 rewriteNameMethod(iterator, invoke, enumType, context, eventConsumer);
-                continue;
+              } else {
+                DexClassAndMethod dexClassAndMethod = appView.definitionFor(lookupMethod);
+                assert dexClassAndMethod != null;
+                assert dexClassAndMethod.isProgramMethod();
+                replaceEnumInvoke(iterator, invoke, dexClassAndMethod.asProgramMethod());
               }
+              continue;
             } else if (invokedMethod == factory.objectMembers.getClass) {
               rewriteNullCheck(iterator, invoke, context, eventConsumer);
               continue;
@@ -347,6 +365,14 @@ public class EnumUnboxingRewriter {
             arrayAccess = arrayAccess.withMemberType(MemberType.INT);
             iterator.replaceCurrentInstruction(arrayAccess);
             convertedEnums.put(arrayAccess, enumType);
+            if (arrayAccess.isArrayPut()) {
+              ArrayPut arrayPut = arrayAccess.asArrayPut();
+              if (arrayPut.value().getType().isNullType()) {
+                iterator.previous();
+                arrayPut.replacePutValue(iterator.insertConstIntInstruction(code, options, 0));
+                iterator.next();
+              }
+            }
           }
           assert validateArrayAccess(arrayAccess);
         }

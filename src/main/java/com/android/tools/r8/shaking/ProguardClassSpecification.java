@@ -28,7 +28,7 @@ public abstract class ProguardClassSpecification {
     protected ProguardAccessFlags classAccessFlags = new ProguardAccessFlags();
     protected ProguardAccessFlags negatedClassAccessFlags = new ProguardAccessFlags();
     protected boolean classTypeNegated = false;
-    protected ProguardClassType classType = ProguardClassType.UNSPECIFIED;
+    protected ProguardClassType classType;
     protected ProguardClassNameList classNames;
     private final ImmutableList.Builder<ProguardTypeMatcher> inheritanceAnnotations =
         ImmutableList.builder();
@@ -131,6 +131,10 @@ public abstract class ProguardClassSpecification {
       return self();
     }
 
+    public boolean hasClassType() {
+      return classType != null;
+    }
+
     public ProguardClassType getClassType() {
       return classType;
     }
@@ -216,6 +220,7 @@ public abstract class ProguardClassSpecification {
       ProguardTypeMatcher inheritanceClassName,
       boolean inheritanceIsExtends,
       List<ProguardMemberRule> memberRules) {
+    assert classType != null;
     assert origin != null;
     assert position != null;
     assert source != null || origin != Origin.unknown();
@@ -227,7 +232,6 @@ public abstract class ProguardClassSpecification {
     this.negatedClassAccessFlags = negatedClassAccessFlags;
     this.classTypeNegated = classTypeNegated;
     this.classType = classType;
-    assert classType != null;
     this.classNames = classNames;
     this.inheritanceAnnotations = inheritanceAnnotations;
     this.inheritanceClassName = inheritanceClassName;

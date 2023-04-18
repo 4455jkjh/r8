@@ -488,8 +488,9 @@ public class ToolHelper {
         result.add("/bin/bash");
       }
       result.add(getExecutable());
-      result.addAll(getExecutableArguments());
-      result.addAll(options);
+      for (String option : options) {
+        result.add(option);
+      }
       for (Map.Entry<String, String> entry : systemProperties.entrySet()) {
         StringBuilder builder = new StringBuilder("-D");
         builder.append(entry.getKey());
@@ -507,7 +508,9 @@ public class ToolHelper {
       if (mainClass != null) {
         result.add(mainClass);
       }
-      result.addAll(programArguments);
+      for (String argument : programArguments) {
+        result.add(argument);
+      }
       return result;
     }
 
@@ -526,8 +529,6 @@ public class ToolHelper {
     protected abstract boolean shouldUseDocker();
 
     protected abstract String getExecutable();
-
-    protected abstract List<String> getExecutableArguments();
   }
 
   public static class ArtCommandBuilder extends CommandBuilder {
@@ -560,11 +561,6 @@ public class ToolHelper {
         return getRawArtBinary(version);
       }
       return version != null ? getArtBinary(version) : getArtBinary();
-    }
-
-    @Override
-    protected List<String> getExecutableArguments() {
-      return force32BitArt() ? ImmutableList.of("--32") : ImmutableList.of();
     }
 
     public boolean isForDevice() {
@@ -1850,10 +1846,6 @@ public class ToolHelper {
       passed = false;
     }
     return new ProcessResult(passed ? 0 : -1, "", stdErr);
-  }
-
-  public static boolean force32BitArt() {
-    return System.getProperty("force_32_bit_art") != null;
   }
 
   public static boolean dealsWithGoldenFiles() {

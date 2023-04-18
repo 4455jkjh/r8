@@ -17,6 +17,7 @@ import com.android.tools.r8.profile.AbstractProfile;
 import com.android.tools.r8.profile.AbstractProfileClassRule;
 import com.android.tools.r8.profile.AbstractProfileMethodRule;
 import com.android.tools.r8.profile.AbstractProfileRule;
+import com.android.tools.r8.utils.SetUtils;
 import com.android.tools.r8.utils.WorkList;
 import com.google.common.collect.Sets;
 import java.util.ArrayList;
@@ -90,9 +91,29 @@ public abstract class ProfileAdditions<
     this.profile = profile;
   }
 
-  public void applyIfContextIsInProfile(DexType context, Consumer<? super Additions> fn) {
+  public void applyIfContextIsInProfile(
+      DexType context, Consumer<ProfileAdditionsBuilder> builderConsumer) {
     if (profile.containsClassRule(context) || classRuleAdditions.containsKey(context)) {
-      fn.accept(self());
+      builderConsumer.accept(
+          new ProfileAdditionsBuilder() {
+            @Override
+            public ProfileAdditionsBuilder addClassRule(DexType type) {
+              ProfileAdditions.this.addClassRule(type);
+              return this;
+            }
+
+            @Override
+            public ProfileAdditionsBuilder addMethodRule(DexMethod method) {
+              ProfileAdditions.this.addMethodRule(
+                  method, AbstractProfileMethodRule.Builder::setIsStartup);
+              return this;
+            }
+
+            @Override
+            public void removeMovedMethodRule(DexMethod oldMethod, ProgramMethod newMethod) {
+              ProfileAdditions.this.removeMovedMethodRule(oldMethod, newMethod);
+            }
+          });
     }
   }
 
@@ -167,7 +188,7 @@ public abstract class ProfileAdditions<
     return addMethodRule(method.getReference(), methodRuleBuilderConsumer);
   }
 
-  public Additions addMethodRule(
+  private Additions addMethodRule(
       DexMethod method, Consumer<? super MethodRuleBuilder> methodRuleBuilderConsumer) {
     // Create profile rule for method.
     MethodRuleBuilder methodRuleBuilder =
@@ -296,7 +317,8 @@ public abstract class ProfileAdditions<
           // If this assertion fails, that means we have synthetics with multiple
           // synthesizing contexts, which are not guaranteed to be processed before the
           // synthetic itself. In that case this assertion should simply be removed.
-          assert successorMethodRuleBuilder.isGreaterThanOrEqualTo(methodRuleBuilder);
+          assert successorMethodRuleBuilder.isGreaterThanOrEqualTo(methodRuleBuilder)
+              : getGraphString(methodRuleAdditions, method, successor);
           successorMethodRuleBuilder.join(methodRuleBuilder);
           // Note: no need to addIgnoringSeenSet() since the graph will not have cycles. Indeed, it
           // should never be the case that a method m2(), which is synthesized from method context
@@ -304,6 +326,36 @@ public abstract class ProfileAdditions<
           worklist.addIfNotSeen(successor);
         }
       }
+    }
+
+    // Return a string representation of the graph for diagnosing b/278524993.
+    private String getGraphString(
+        Map<DexMethod, MethodRuleBuilder> methodRuleAdditions,
+        DexMethod context,
+        DexMethod method) {
+      StringBuilder builder =
+          new StringBuilder("Error at edge: ")
+              .append(context.toSourceString())
+              .append(" -> ")
+              .append(method.toSourceString());
+      Set<DexMethod> nodes =
+          SetUtils.unionIdentityHashSet(predecessors.keySet(), successors.keySet());
+      for (DexMethod node : nodes) {
+        builder
+            .append(System.lineSeparator())
+            .append(System.lineSeparator())
+            .append(node.toSourceString());
+        for (DexMethod predecessor : predecessors.getOrDefault(node, Collections.emptySet())) {
+          builder
+              .append(System.lineSeparator())
+              .append("  <- ")
+              .append(predecessor.toSourceString());
+        }
+        for (DexMethod successor : successors.getOrDefault(node, Collections.emptySet())) {
+          builder.append(System.lineSeparator()).append("  -> ").append(successor.toSourceString());
+        }
+      }
+      return builder.toString();
     }
   }
 }

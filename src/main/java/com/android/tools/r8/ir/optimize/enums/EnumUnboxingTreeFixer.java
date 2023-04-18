@@ -5,16 +5,19 @@
 package com.android.tools.r8.ir.optimize.enums;
 
 import static com.android.tools.r8.ir.analysis.type.Nullability.definitelyNotNull;
+import static com.android.tools.r8.ir.optimize.enums.EnumUnboxerImpl.ordinalToUnboxedInt;
 
 import com.android.tools.r8.contexts.CompilationContext.ProcessorContext;
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.DexClass;
+import com.android.tools.r8.graph.DexClassAndMethod;
 import com.android.tools.r8.graph.DexEncodedField;
 import com.android.tools.r8.graph.DexEncodedField.Builder;
 import com.android.tools.r8.graph.DexEncodedMethod;
 import com.android.tools.r8.graph.DexField;
 import com.android.tools.r8.graph.DexItemFactory;
 import com.android.tools.r8.graph.DexMethod;
+import com.android.tools.r8.graph.DexMethodSignature;
 import com.android.tools.r8.graph.DexProgramClass;
 import com.android.tools.r8.graph.DexProto;
 import com.android.tools.r8.graph.DexType;
@@ -49,15 +52,22 @@ import com.android.tools.r8.ir.optimize.info.DefaultMethodOptimizationInfo;
 import com.android.tools.r8.ir.optimize.info.OptimizationFeedback;
 import com.android.tools.r8.ir.optimize.info.OptimizationFeedbackIgnore;
 import com.android.tools.r8.ir.optimize.info.field.InstanceFieldInitializationInfo;
+import com.android.tools.r8.ir.synthetic.EnumUnboxingCfCodeProvider.EnumUnboxingMethodDispatchCfCodeProvider;
+import com.android.tools.r8.ir.synthetic.EnumUnboxingCfCodeProvider.EnumUnboxingMethodDispatchCfCodeProvider.CfCodeWithLens;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
 import com.android.tools.r8.utils.ImmutableArrayUtils;
 import com.android.tools.r8.utils.OptionalBool;
 import com.android.tools.r8.utils.SetUtils;
 import com.android.tools.r8.utils.ThreadUtils;
 import com.android.tools.r8.utils.Timing;
+import com.android.tools.r8.utils.collections.DexMethodSignatureSet;
 import com.android.tools.r8.utils.collections.ProgramMethodMap;
+import com.android.tools.r8.utils.collections.ProgramMethodSet;
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
+import com.google.common.collect.Sets;
+import it.unimi.dsi.fastutil.ints.Int2ObjectArrayMap;
+import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.IdentityHashMap;
@@ -77,25 +87,43 @@ class EnumUnboxingTreeFixer {
   private final AppView<AppInfoWithLiveness> appView;
   private final ProgramMethodMap<Set<DexProgramClass>> checkNotNullMethods;
   private final DexItemFactory factory;
+  // Provides information for each unboxed enum regarding the instance field values of each enum
+  // instance, the original instance class, and the ordinal value.
   private final EnumDataMap enumDataMap;
-  private final Set<DexProgramClass> unboxedEnums;
+  // Maps the superEnum to the enumSubtypes. This is already present in the enumDataMap as DexTypes,
+  // we duplicate that here as DexProgramClasses.
+  private final Map<DexProgramClass, Set<DexProgramClass>> unboxedEnumHierarchy;
   private final EnumUnboxingUtilityClasses utilityClasses;
+  private final ProgramMethodMap<CfCodeWithLens> dispatchMethods = ProgramMethodMap.create();
 
   EnumUnboxingTreeFixer(
       AppView<AppInfoWithLiveness> appView,
       ProgramMethodMap<Set<DexProgramClass>> checkNotNullMethods,
       EnumDataMap enumDataMap,
-      Set<DexProgramClass> unboxedEnums,
+      Map<DexProgramClass, Set<DexProgramClass>> unboxedEnums,
       EnumUnboxingUtilityClasses utilityClasses) {
     this.appView = appView;
     this.checkNotNullMethods = checkNotNullMethods;
     this.enumDataMap = enumDataMap;
     this.factory = appView.dexItemFactory();
+    this.unboxedEnumHierarchy = unboxedEnums;
     this.lensBuilder =
-        EnumUnboxingLens.enumUnboxingLensBuilder(appView)
-            .mapUnboxedEnums(enumDataMap.getUnboxedEnums());
-    this.unboxedEnums = unboxedEnums;
+        EnumUnboxingLens.enumUnboxingLensBuilder(appView).mapUnboxedEnums(getUnboxedEnums());
     this.utilityClasses = utilityClasses;
+  }
+
+  private Set<DexProgramClass> computeUnboxedEnumClasses() {
+    Set<DexProgramClass> unboxedEnumClasses = Sets.newIdentityHashSet();
+    unboxedEnumHierarchy.forEach(
+        (superEnum, subEnums) -> {
+          unboxedEnumClasses.add(superEnum);
+          unboxedEnumClasses.addAll(subEnums);
+        });
+    return unboxedEnumClasses;
+  }
+
+  private Set<DexType> getUnboxedEnums() {
+    return enumDataMap.computeAllUnboxedEnums();
   }
 
   Result fixupTypeReferences(IRConverter converter, ExecutorService executorService)
@@ -103,30 +131,32 @@ class EnumUnboxingTreeFixer {
     PrunedItems.Builder prunedItemsBuilder = PrunedItems.builder();
 
     // We do this before so that we can still perform lookup of definitions.
-    fixupEnumClassInitializers(converter, executorService);
+    fixupSuperEnumClassInitializers(converter, executorService);
 
     // Fix all methods and fields using enums to unbox.
     // TODO(b/191617665): Parallelize this fixup.
     for (DexProgramClass clazz : appView.appInfo().classes()) {
-      if (enumDataMap.isUnboxedEnum(clazz)) {
+      if (enumDataMap.isSuperUnboxedEnum(clazz.getType())) {
+
         // Clear the initializers and move the other methods to the new location.
         LocalEnumUnboxingUtilityClass localUtilityClass =
             utilityClasses.getLocalUtilityClass(clazz);
         Collection<DexEncodedField> localUtilityFields =
             createLocalUtilityFields(clazz, localUtilityClass, prunedItemsBuilder);
         Collection<DexEncodedMethod> localUtilityMethods =
-            createLocalUtilityMethods(clazz, localUtilityClass, prunedItemsBuilder);
+            createLocalUtilityMethods(
+                clazz, unboxedEnumHierarchy.get(clazz), localUtilityClass, prunedItemsBuilder);
 
-        // Cleanup old class.
-        clazz.clearInstanceFields();
-        clazz.clearStaticFields();
-        clazz.getMethodCollection().clearDirectMethods();
-        clazz.getMethodCollection().clearVirtualMethods();
+        // Cleanup old classes.
+        cleanUpOldClass(clazz);
+        for (DexProgramClass subEnum : unboxedEnumHierarchy.get(clazz)) {
+          cleanUpOldClass(subEnum);
+        }
 
         // Update members on the local utility class.
         localUtilityClass.getDefinition().setDirectMethods(localUtilityMethods);
         localUtilityClass.getDefinition().setStaticFields(localUtilityFields);
-      } else {
+      } else if (!enumDataMap.isUnboxedEnum(clazz.getType())) {
         clazz.getMethodCollection().replaceMethods(this::fixupEncodedMethod);
         clazz.getFieldCollection().replaceFields(this::fixupEncodedField);
       }
@@ -143,7 +173,22 @@ class EnumUnboxingTreeFixer {
     BiMap<DexMethod, DexMethod> checkNotNullToCheckNotZeroMapping =
         duplicateCheckNotNullMethods(converter, executorService);
 
-    return new Result(checkNotNullToCheckNotZeroMapping, lens, prunedItemsBuilder.build());
+    ProgramMethodSet dispatchMethodSet = ProgramMethodSet.create();
+    dispatchMethods.forEach(
+        (method, code) -> {
+          dispatchMethodSet.add(method);
+          code.setCodeLens(lens);
+        });
+
+    return new Result(
+        checkNotNullToCheckNotZeroMapping, dispatchMethodSet, lens, prunedItemsBuilder.build());
+  }
+
+  private void cleanUpOldClass(DexProgramClass clazz) {
+    clazz.clearInstanceFields();
+    clazz.clearStaticFields();
+    clazz.getMethodCollection().clearDirectMethods();
+    clazz.getMethodCollection().clearVirtualMethods();
   }
 
   private BiMap<DexMethod, DexMethod> duplicateCheckNotNullMethods(
@@ -154,10 +199,12 @@ class EnumUnboxingTreeFixer {
     OneTimeMethodProcessor.Builder methodProcessorBuilder =
         OneTimeMethodProcessor.builder(eventConsumer, processorContext);
 
+    Set<DexProgramClass> unboxedEnumClasses = computeUnboxedEnumClasses();
+
     // Only duplicate checkNotNull() methods that are required for enum unboxing.
     checkNotNullMethods.removeIf(
         (checkNotNullMethod, dependentEnums) ->
-            !SetUtils.containsAnyOf(unboxedEnums, dependentEnums));
+            !SetUtils.containsAnyOf(unboxedEnumClasses, dependentEnums));
 
     // For each checkNotNull() method, synthesize a free flowing static checkNotZero() method that
     // takes an int instead of an Object with the same implementation.
@@ -221,21 +268,20 @@ class EnumUnboxingTreeFixer {
     return checkNotNullToCheckNotZeroMapping;
   }
 
-
-  private void fixupEnumClassInitializers(IRConverter converter, ExecutorService executorService)
-      throws ExecutionException {
+  private void fixupSuperEnumClassInitializers(
+      IRConverter converter, ExecutorService executorService) throws ExecutionException {
     DexEncodedField ordinalField =
         appView
             .appInfo()
             .resolveField(appView.dexItemFactory().enumMembers.ordinalField)
             .getResolvedField();
     ThreadUtils.processItems(
-        unboxedEnums,
-        unboxedEnum -> fixupEnumClassInitializer(converter, unboxedEnum, ordinalField),
+        unboxedEnumHierarchy.keySet(),
+        unboxedEnum -> fixupSuperEnumClassInitializer(converter, unboxedEnum, ordinalField),
         executorService);
   }
 
-  private void fixupEnumClassInitializer(
+  private void fixupSuperEnumClassInitializer(
       IRConverter converter, DexProgramClass unboxedEnum, DexEncodedField ordinalField) {
     if (!unboxedEnum.hasClassInitializer()) {
       assert unboxedEnum.staticFields().isEmpty();
@@ -275,7 +321,7 @@ class EnumUnboxingTreeFixer {
           // LocalEnumUtility.class.desiredAssertionStatus() instead of
           // int.class.desiredAssertionStatus().
           ConstClass constClass = instruction.asConstClass();
-          if (constClass.getType() != unboxedEnum.getType()) {
+          if (!enumDataMap.isAssignableTo(constClass.getType(), unboxedEnum.getType())) {
             continue;
           }
 
@@ -307,7 +353,7 @@ class EnumUnboxingTreeFixer {
         } else if (instruction.isNewInstance()) {
           NewInstance newInstance = instruction.asNewInstance();
           DexType rewrittenType = appView.graphLens().lookupType(newInstance.getType());
-          if (rewrittenType == unboxedEnum.getType()) {
+          if (enumDataMap.isAssignableTo(rewrittenType, unboxedEnum.getType())) {
             InvokeDirect constructorInvoke =
                 newInstance.getUniqueConstructorInvoke(appView.dexItemFactory());
             assert constructorInvoke != null;
@@ -386,16 +432,15 @@ class EnumUnboxingTreeFixer {
             // the enum unboxing rewriter.
             instructionIterator.replaceCurrentInstruction(
                 new NewUnboxedEnumInstance(
-                    unboxedEnum.getType(),
+                    rewrittenType,
                     ordinal,
                     code.createValue(
-                        ClassTypeElement.create(
-                            unboxedEnum.getType(), definitelyNotNull(), appView))));
+                        ClassTypeElement.create(rewrittenType, definitelyNotNull(), appView))));
           }
         } else if (instruction.isStaticPut()) {
           StaticPut staticPut = instruction.asStaticPut();
           DexField rewrittenField = appView.graphLens().lookupField(staticPut.getField());
-          if (rewrittenField.getHolderType() != unboxedEnum.getType()) {
+          if (!enumDataMap.isAssignableTo(rewrittenField.getHolderType(), unboxedEnum.getType())) {
             continue;
           }
 
@@ -485,8 +530,28 @@ class EnumUnboxingTreeFixer {
                         }));
   }
 
+  private void processMethod(
+      ProgramMethod method,
+      PrunedItems.Builder prunedItemsBuilder,
+      DexMethodSignatureSet nonPrivateVirtualMethods,
+      LocalEnumUnboxingUtilityClass localUtilityClass,
+      Map<DexMethod, DexEncodedMethod> localUtilityMethods) {
+    if (method.getDefinition().isClassInitializer()
+        && enumDataMap.representativeType(method.getHolderType()) != method.getHolderType()) {
+      assert method.getDefinition().getCode().isEmptyVoidMethod();
+      prunedItemsBuilder.addRemovedMethod(method.getReference());
+    } else if (method.getDefinition().isInstanceInitializer()) {
+      prunedItemsBuilder.addRemovedMethod(method.getReference());
+    } else if (method.getDefinition().isNonPrivateVirtualMethod()) {
+      nonPrivateVirtualMethods.add(method.getReference());
+    } else {
+      directMoveAndMap(localUtilityClass, localUtilityMethods, method);
+    }
+  }
+
   private Collection<DexEncodedMethod> createLocalUtilityMethods(
       DexProgramClass unboxedEnum,
+      Set<DexProgramClass> subEnums,
       LocalEnumUnboxingUtilityClass localUtilityClass,
       PrunedItems.Builder prunedItemsBuilder) {
     Map<DexMethod, DexEncodedMethod> localUtilityMethods =
@@ -497,21 +562,200 @@ class EnumUnboxingTreeFixer {
         .getDefinition()
         .forEachMethod(method -> localUtilityMethods.put(method.getReference(), method));
 
+    // First generate all methods but the ones requiring emulated dispatch.
+    DexMethodSignatureSet nonPrivateVirtualMethods = DexMethodSignatureSet.create();
     unboxedEnum.forEachProgramMethod(
-        method -> {
-          if (method.getDefinition().isInstanceInitializer()) {
-            prunedItemsBuilder.addRemovedMethod(method.getReference());
-          } else {
-            DexEncodedMethod newLocalUtilityMethod =
-                createLocalUtilityMethod(
-                    method,
-                    localUtilityClass,
-                    newMethodSignature -> !localUtilityMethods.containsKey(newMethodSignature));
-            assert !localUtilityMethods.containsKey(newLocalUtilityMethod.getReference());
-            localUtilityMethods.put(newLocalUtilityMethod.getReference(), newLocalUtilityMethod);
-          }
-        });
+        method ->
+            processMethod(
+                method,
+                prunedItemsBuilder,
+                nonPrivateVirtualMethods,
+                localUtilityClass,
+                localUtilityMethods));
+    // Second for each subEnum generate the remaining methods if not already generated.
+    for (DexProgramClass subEnum : subEnums) {
+      subEnum.forEachProgramMethod(
+          method ->
+              processMethod(
+                  method,
+                  prunedItemsBuilder,
+                  nonPrivateVirtualMethods,
+                  localUtilityClass,
+                  localUtilityMethods));
+    }
+
+    // Then analyze each method that may require emulated dispatch.
+    for (DexMethodSignature nonPrivateVirtualMethod : nonPrivateVirtualMethods) {
+      processVirtualMethod(
+          nonPrivateVirtualMethod, unboxedEnum, subEnums, localUtilityClass, localUtilityMethods);
+    }
+
     return localUtilityMethods.values();
+  }
+
+  private void processVirtualMethod(
+      DexMethodSignature nonPrivateVirtualMethod,
+      DexProgramClass unboxedEnum,
+      Set<DexProgramClass> subEnums,
+      LocalEnumUnboxingUtilityClass localUtilityClass,
+      Map<DexMethod, DexEncodedMethod> localUtilityMethods) {
+    // Emulated dispatch is required if there is a "super method" in the superEnum or above,
+    // and at least one override.
+    DexMethod reference = nonPrivateVirtualMethod.withHolder(unboxedEnum.getType(), factory);
+    ProgramMethodSet subimplementations = ProgramMethodSet.create();
+    for (DexProgramClass subEnum : subEnums) {
+      ProgramMethod subMethod = subEnum.lookupProgramMethod(reference);
+      if (subMethod != null) {
+        subimplementations.add(subMethod);
+      }
+    }
+    DexClassAndMethod superMethod = unboxedEnum.lookupProgramMethod(reference);
+    if (superMethod == null) {
+      assert !subimplementations.isEmpty();
+      superMethod = appView.appInfo().lookupSuperTarget(reference, unboxedEnum, appView);
+      assert superMethod == null || superMethod.getReference() == factory.enumMembers.toString;
+    }
+    if (superMethod == null || subimplementations.isEmpty()) {
+      // No emulated dispatch is required, just move everything.
+      if (superMethod != null) {
+        assert superMethod.isProgramMethod();
+        directMoveAndMap(localUtilityClass, localUtilityMethods, superMethod.asProgramMethod());
+      }
+      for (ProgramMethod override : subimplementations) {
+        directMoveAndMap(localUtilityClass, localUtilityMethods, override);
+      }
+      return;
+    }
+    // These methods require emulated dispatch.
+    emulatedDispatchMoveAndMap(
+        localUtilityClass, localUtilityMethods, superMethod, subimplementations);
+  }
+
+  private void emulatedDispatchMoveAndMap(
+      LocalEnumUnboxingUtilityClass localUtilityClass,
+      Map<DexMethod, DexEncodedMethod> localUtilityMethods,
+      DexClassAndMethod superMethod,
+      ProgramMethodSet subimplementations) {
+    assert !subimplementations.isEmpty();
+    DexMethod superUtilityMethod;
+    if (superMethod.isProgramMethod()) {
+      superUtilityMethod =
+          installLocalUtilityMethod(
+                  localUtilityClass, localUtilityMethods, superMethod.asProgramMethod())
+              .getReference();
+    } else {
+      // All methods but toString() are final or non-virtual.
+      // We could support other cases by setting correctly the superUtilityMethod here.
+      assert superMethod.getReference() == factory.enumMembers.toString;
+      superUtilityMethod = localUtilityClass.computeToStringUtilityMethod(factory);
+    }
+    Map<DexMethod, DexMethod> overrideToUtilityMethods = new IdentityHashMap<>();
+    for (ProgramMethod subMethod : subimplementations) {
+      DexEncodedMethod subEnumLocalUtilityMethod =
+          installLocalUtilityMethod(localUtilityClass, localUtilityMethods, subMethod);
+      overrideToUtilityMethods.put(
+          subMethod.getReference(), subEnumLocalUtilityMethod.getReference());
+    }
+    DexMethod dispatch =
+        installDispatchMethod(
+                localUtilityClass,
+                localUtilityMethods,
+                subimplementations.iterator().next(),
+                superUtilityMethod,
+                overrideToUtilityMethods)
+            .getReference();
+    if (superMethod.isProgramMethod()) {
+      recordEmulatedDispatch(superMethod.getReference(), superUtilityMethod, dispatch);
+    } else {
+      lensBuilder.mapToDispatch(
+          superMethod
+              .getReference()
+              .withHolder(localUtilityClass.getSynthesizingContext().getType(), factory),
+          dispatch);
+    }
+    for (DexMethod override : overrideToUtilityMethods.keySet()) {
+      recordEmulatedDispatch(override, overrideToUtilityMethods.get(override), dispatch);
+    }
+  }
+
+  private void directMoveAndMap(
+      LocalEnumUnboxingUtilityClass localUtilityClass,
+      Map<DexMethod, DexEncodedMethod> localUtilityMethods,
+      ProgramMethod method) {
+    DexEncodedMethod utilityMethod =
+        installLocalUtilityMethod(localUtilityClass, localUtilityMethods, method);
+    lensBuilder.moveAndMap(
+        method.getReference(), utilityMethod.getReference(), method.getDefinition().isStatic());
+  }
+
+  public void recordEmulatedDispatch(DexMethod from, DexMethod move, DexMethod dispatch) {
+    // Move is used for getRenamedSignature and to remap invoke-super.
+    // Map is used to remap all the other invokes.
+    lensBuilder.moveVirtual(from, move);
+    lensBuilder.mapToDispatch(from, dispatch);
+  }
+
+  private DexEncodedMethod installDispatchMethod(
+      LocalEnumUnboxingUtilityClass localUtilityClass,
+      Map<DexMethod, DexEncodedMethod> localUtilityMethods,
+      ProgramMethod representative,
+      DexMethod superUtilityMethod,
+      Map<DexMethod, DexMethod> map) {
+    assert !map.isEmpty();
+    DexMethod newLocalUtilityMethodReference =
+        factory.createFreshMethodNameWithoutHolder(
+            "_dispatch_" + representative.getName().toString(),
+            fixupProto(factory.prependHolderToProto(representative.getReference())),
+            localUtilityClass.getType(),
+            newMethodSignature -> !localUtilityMethods.containsKey(newMethodSignature));
+    Int2ObjectMap<DexMethod> methodMap = new Int2ObjectArrayMap<>();
+    IdentityHashMap<DexType, DexMethod> typeToMethod = new IdentityHashMap<>();
+    map.forEach(
+        (methodReference, newMethodReference) ->
+            typeToMethod.put(methodReference.getHolderType(), newMethodReference));
+    DexProgramClass unboxedEnum = localUtilityClass.getSynthesizingContext();
+    assert enumDataMap.get(unboxedEnum).valuesTypes != null;
+    enumDataMap
+        .get(unboxedEnum)
+        .valuesTypes
+        .forEach(
+            (i, type) -> {
+              if (typeToMethod.containsKey(type)) {
+                methodMap.put(ordinalToUnboxedInt(i), typeToMethod.get(type));
+              }
+            });
+    CfCodeWithLens codeWithLens =
+        new EnumUnboxingMethodDispatchCfCodeProvider(
+                appView, localUtilityClass.getType(), superUtilityMethod, methodMap)
+            .generateCfCode();
+    DexEncodedMethod newLocalUtilityMethod =
+        DexEncodedMethod.builder()
+            .setMethod(newLocalUtilityMethodReference)
+            .setAccessFlags(MethodAccessFlags.createPublicStaticSynthetic())
+            .setCode(codeWithLens)
+            .setClassFileVersion(unboxedEnum.getInitialClassFileVersion())
+            .setApiLevelForDefinition(representative.getDefinition().getApiLevelForDefinition())
+            .setApiLevelForCode(representative.getDefinition().getApiLevelForCode())
+            .build();
+    dispatchMethods.put(
+        newLocalUtilityMethod.asProgramMethod(localUtilityClass.getDefinition()), codeWithLens);
+    assert !localUtilityMethods.containsKey(newLocalUtilityMethodReference);
+    localUtilityMethods.put(newLocalUtilityMethodReference, newLocalUtilityMethod);
+    return newLocalUtilityMethod;
+  }
+
+  private DexEncodedMethod installLocalUtilityMethod(
+      LocalEnumUnboxingUtilityClass localUtilityClass,
+      Map<DexMethod, DexEncodedMethod> localUtilityMethods,
+      ProgramMethod method) {
+    DexEncodedMethod newLocalUtilityMethod =
+        createLocalUtilityMethod(
+            method,
+            localUtilityClass,
+            newMethodSignature -> !localUtilityMethods.containsKey(newMethodSignature));
+    assert !localUtilityMethods.containsKey(newLocalUtilityMethod.getReference());
+    localUtilityMethods.put(newLocalUtilityMethod.getReference(), newLocalUtilityMethod);
+    return newLocalUtilityMethod;
   }
 
   private DexEncodedMethod createLocalUtilityMethod(
@@ -533,9 +777,6 @@ class EnumUnboxingTreeFixer {
                         : factory.prependHolderToProto(methodReference)),
                 localUtilityClass.getType(),
                 availableMethodSignatures);
-
-    // Record the move.
-    lensBuilder.move(methodReference, newMethod, method.getDefinition().isStatic(), true);
 
     return method
         .getDefinition()
@@ -581,7 +822,7 @@ class EnumUnboxingTreeFixer {
         ExtraUnusedNullParameter.computeExtraUnusedNullParameters(method.getReference(), newMethod);
     boolean isStatic = method.isStatic();
     RewrittenPrototypeDescription prototypeChanges =
-        lensBuilder.move(
+        lensBuilder.moveAndMap(
             method.getReference(), newMethod, isStatic, isStatic, extraUnusedNullParameters);
     return method.toTypeSubstitutedMethod(
         newMethod,
@@ -662,20 +903,27 @@ class EnumUnboxingTreeFixer {
   public static class Result {
 
     private final BiMap<DexMethod, DexMethod> checkNotNullToCheckNotZeroMapping;
+    private final ProgramMethodSet dispatchMethods;
     private final EnumUnboxingLens lens;
     private final PrunedItems prunedItems;
 
     Result(
         BiMap<DexMethod, DexMethod> checkNotNullToCheckNotZeroMapping,
+        ProgramMethodSet dispatchMethods,
         EnumUnboxingLens lens,
         PrunedItems prunedItems) {
       this.checkNotNullToCheckNotZeroMapping = checkNotNullToCheckNotZeroMapping;
+      this.dispatchMethods = dispatchMethods;
       this.lens = lens;
       this.prunedItems = prunedItems;
     }
 
     BiMap<DexMethod, DexMethod> getCheckNotNullToCheckNotZeroMapping() {
       return checkNotNullToCheckNotZeroMapping;
+    }
+
+    public ProgramMethodSet getDispatchMethods() {
+      return dispatchMethods;
     }
 
     EnumUnboxingLens getLens() {

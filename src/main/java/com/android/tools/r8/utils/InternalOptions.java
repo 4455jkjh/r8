@@ -64,7 +64,7 @@ import com.android.tools.r8.ir.analysis.proto.ProtoReferences;
 import com.android.tools.r8.ir.analysis.type.TypeElement;
 import com.android.tools.r8.ir.code.IRCode;
 import com.android.tools.r8.ir.desugar.TypeRewriter;
-import com.android.tools.r8.ir.desugar.TypeRewriter.MachineDesugarPrefixRewritingMapper;
+import com.android.tools.r8.ir.desugar.TypeRewriter.MachineTypeRewriter;
 import com.android.tools.r8.ir.desugar.desugaredlibrary.DesugaredLibrarySpecification;
 import com.android.tools.r8.ir.desugar.desugaredlibrary.machinespecification.MachineDesugaredLibrarySpecification;
 import com.android.tools.r8.ir.desugar.nest.Nest;
@@ -104,7 +104,6 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import java.io.IOException;
-import java.io.PrintStream;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -1075,14 +1074,39 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
     machineDesugaredLibrarySpecification = MachineDesugaredLibrarySpecification.empty();
   }
 
+  public void configureDesugaredLibrary(
+      DesugaredLibrarySpecification desugaredLibrarySpecification, String synthesizedClassPrefix) {
+    assert synthesizedClassPrefix != null;
+    assert desugaredLibrarySpecification != null;
+    String prefix =
+        synthesizedClassPrefix.isEmpty()
+            ? System.getProperty("com.android.tools.r8.synthesizedClassPrefix", "")
+            : synthesizedClassPrefix;
+    String postPrefix = System.getProperty("com.android.tools.r8.desugaredLibraryPostPrefix", null);
+    setDesugaredLibrarySpecification(desugaredLibrarySpecification, postPrefix);
+    String post =
+        postPrefix == null ? "" : DescriptorUtils.getPackageBinaryNameFromJavaType(postPrefix);
+    this.synthesizedClassPrefix = prefix.isEmpty() ? "" : prefix + post;
+  }
+
   public void setDesugaredLibrarySpecification(DesugaredLibrarySpecification specification) {
+    setDesugaredLibrarySpecification(specification, null);
+  }
+
+  private void setDesugaredLibrarySpecification(
+      DesugaredLibrarySpecification specification, String postPrefix) {
     if (specification.isEmpty()) {
       return;
     }
     loadMachineDesugaredLibrarySpecification =
-        (timing, app) ->
-            machineDesugaredLibrarySpecification =
-                specification.toMachineSpecification(app, timing);
+        (timing, app) -> {
+          MachineDesugaredLibrarySpecification machineSpec =
+              specification.toMachineSpecification(app, timing);
+          machineDesugaredLibrarySpecification =
+              postPrefix != null
+                  ? machineSpec.withPostPrefix(dexItemFactory(), postPrefix)
+                  : machineSpec;
+        };
   }
 
   private ThrowingBiConsumer<Timing, DexApplication, IOException>
@@ -1104,7 +1128,7 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
 
   public TypeRewriter getTypeRewriter() {
     return machineDesugaredLibrarySpecification.requiresTypeRewriting()
-        ? new MachineDesugarPrefixRewritingMapper(machineDesugaredLibrarySpecification)
+        ? new MachineTypeRewriter(machineDesugaredLibrarySpecification)
         : TypeRewriter.empty();
   }
 
@@ -2172,7 +2196,6 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
     public int basicBlockMuncherIterationLimit = NO_LIMIT;
     public boolean dontReportFailingCheckDiscarded = false;
     public boolean disableRecordApplicationReaderMap = false;
-    public PrintStream whyAreYouNotInliningConsumer = System.out;
     public boolean trackDesugaredAPIConversions =
         System.getProperty("com.android.tools.r8.trackDesugaredAPIConversions") != null;
     public boolean enumUnboxingRewriteJavaCGeneratedMethod = false;
