@@ -74,13 +74,12 @@ public abstract class R8TestBuilder<T extends R8TestBuilder<T>>
   private boolean allowUnusedProguardConfigurationRules = false;
   private boolean enableMissingLibraryApiModeling = true;
   private CollectingGraphConsumer graphConsumer = null;
-  private List<ExternalArtProfile> residualArtProfiles = new ArrayList<>();
-  private List<String> keepRules = new ArrayList<>();
-  private List<Path> mainDexRulesFiles = new ArrayList<>();
-  private List<String> applyMappingMaps = new ArrayList<>();
+  private final List<ExternalArtProfile> residualArtProfiles = new ArrayList<>();
+  private final List<String> keepRules = new ArrayList<>();
+  private final List<Path> mainDexRulesFiles = new ArrayList<>();
+  private final List<String> applyMappingMaps = new ArrayList<>();
   private final List<Path> features = new ArrayList<>();
-
-  private boolean createDefaultProguardMapConsumer = true;
+  private PartitionMapConsumer partitionMapConsumer = null;
 
   @Override
   public boolean isR8TestBuilder() {
@@ -110,20 +109,19 @@ public abstract class R8TestBuilder<T extends R8TestBuilder<T>>
       builder.setDisableMinification(true);
     }
     StringBuilder proguardMapBuilder = new StringBuilder();
-    if (createDefaultProguardMapConsumer) {
-      builder.setProguardMapConsumer(
-          new StringConsumer() {
-            @Override
-            public void accept(String string, DiagnosticsHandler handler) {
-              proguardMapBuilder.append(string);
-            }
+    builder.setProguardMapConsumer(
+        new StringConsumer() {
+          @Override
+          public void accept(String string, DiagnosticsHandler handler) {
+            proguardMapBuilder.append(string);
+          }
 
-            @Override
-            public void finished(DiagnosticsHandler handler) {
-              // Nothing to do.
-            }
-          });
-    }
+          @Override
+          public void finished(DiagnosticsHandler handler) {
+            // Nothing to do.
+          }
+        });
+    builder.setPartitionMapConsumer(partitionMapConsumer);
 
     if (!applyMappingMaps.isEmpty()) {
       try {
@@ -162,7 +160,7 @@ public abstract class R8TestBuilder<T extends R8TestBuilder<T>>
             app.get(),
             box.proguardConfiguration,
             box.syntheticProguardRules,
-            createDefaultProguardMapConsumer ? proguardMapBuilder.toString() : null,
+            proguardMapBuilder.toString(),
             graphConsumer,
             getMinApiLevel(),
             features,
@@ -803,11 +801,6 @@ public abstract class R8TestBuilder<T extends R8TestBuilder<T>>
     return self();
   }
 
-  public T noDefaultProguardMapConsumer() {
-    createDefaultProguardMapConsumer = false;
-    return self();
-  }
-
   public T addArtProfileForRewriting(ArtProfileProvider artProfileProvider) {
     return addArtProfileForRewriting(
         artProfileProvider,
@@ -836,6 +829,11 @@ public abstract class R8TestBuilder<T extends R8TestBuilder<T>>
 
   public T setFakeCompilerVersion(SemanticVersion version) {
     getBuilder().setFakeCompilerVersion(version);
+    return self();
+  }
+
+  public T setPartitionMapConsumer(PartitionMapConsumer partitionMapConsumer) {
+    this.partitionMapConsumer = partitionMapConsumer;
     return self();
   }
 }
