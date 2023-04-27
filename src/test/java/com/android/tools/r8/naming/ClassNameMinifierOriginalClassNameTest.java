@@ -55,6 +55,8 @@ public class ClassNameMinifierOriginalClassNameTest extends TestBase {
     FileUtils.writeTextFile(dictionary, "A");
     return testForR8(getStaticTemp(), parameters.getBackend())
         .addProgramClasses(A.class, B.class)
+        // Including the source file forces an map entry for the pruned class A. See b/279702361.
+        .addKeepAttributeSourceFile()
         .addKeepClassAndMembersRulesWithAllowObfuscation(B.class)
         .addKeepRules("-classobfuscationdictionary " + dictionary.toString(), "-keeppackagenames")
         .setMinApi(parameters)
@@ -67,7 +69,7 @@ public class ClassNameMinifierOriginalClassNameTest extends TestBase {
             });
   }
 
-  @Test
+  @Test()
   public void testR8() throws ExecutionException, CompilationFailedException, IOException {
     R8TestCompileResult libraryCompileResult = compilationResults.apply(parameters);
     testForR8(parameters.getBackend())
@@ -83,7 +85,7 @@ public class ClassNameMinifierOriginalClassNameTest extends TestBase {
         .assertSuccessWithOutputLines("B.foo");
   }
 
-  @Test
+  @Test()
   public void testR8WithReferenceToNotMapped() {
     assumeTrue(parameters.isDexRuntime());
     R8TestCompileResult libraryCompileResult = compilationResults.apply(parameters);

@@ -139,7 +139,10 @@ public class MaximallySpecificMultiplePathsSuccessTest extends TestBase {
   @Test
   public void testR8() throws Exception {
     // TODO(b/230289235): Extend resolution to support multiple definition results.
-    runTest(testForR8(parameters.getBackend()).addKeepMainRule(Main.class))
+    runTest(
+            testForR8(parameters.getBackend())
+                .addKeepAttributeSourceFile()
+                .addKeepMainRule(Main.class))
         .assertFailureWithErrorThatThrowsIf(
             parameters.canUseDefaultAndStaticInterfaceMethods(), NoSuchMethodError.class)
         .assertSuccessWithOutputLinesIf(
