@@ -41,7 +41,7 @@ public class ToStringOverrideEnumUnboxingTest extends EnumUnboxingTestBase {
         .addKeepRules(enumKeepRules.getKeepRules())
         .addOptionsModification(opt -> enableEnumOptions(opt, enumValueOptimization))
         .addEnumUnboxingInspector(
-            inspector -> inspector.assertNotUnboxed(EnumNameToString.MyEnum.class))
+            inspector -> inspector.assertUnboxed(EnumNameToString.MyEnum.class))
         .setMinApi(parameters)
         .compile()
         .run(parameters.getRuntime(), success)

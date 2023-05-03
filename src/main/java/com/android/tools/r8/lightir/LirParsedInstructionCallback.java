@@ -15,6 +15,7 @@ import com.android.tools.r8.ir.code.IfType;
 import com.android.tools.r8.ir.code.MemberType;
 import com.android.tools.r8.ir.code.NumericType;
 import com.android.tools.r8.lightir.LirBuilder.FillArrayPayload;
+import com.android.tools.r8.lightir.LirBuilder.IntSwitchPayload;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -288,6 +289,10 @@ public abstract class LirParsedInstructionCallback<EV> implements LirInstruction
     onInstruction();
   }
 
+  public void onIntSwitch(EV value, IntSwitchPayload payload) {
+    onInstruction();
+  }
+
   public void onFallthrough() {
     onInstruction();
   }
@@ -369,6 +374,10 @@ public abstract class LirParsedInstructionCallback<EV> implements LirInstruction
   }
 
   public void onCheckCast(DexType type, EV value) {
+    onInstruction();
+  }
+
+  public void onInstanceOf(DexType type, EV value) {
     onInstruction();
   }
 
@@ -827,6 +836,14 @@ public abstract class LirParsedInstructionCallback<EV> implements LirInstruction
           onGoto(blockIndex);
           return;
         }
+      case LirOpcodes.TABLESWITCH:
+        {
+          IntSwitchPayload payload =
+              (IntSwitchPayload) getConstantItem(view.getNextConstantOperand());
+          EV value = getNextValueOperand(view);
+          onIntSwitch(value, payload);
+          return;
+        }
       case LirOpcodes.INVOKEDIRECT:
       case LirOpcodes.INVOKEDIRECT_ITF:
         {
@@ -936,6 +953,13 @@ public abstract class LirParsedInstructionCallback<EV> implements LirInstruction
           DexType type = getNextDexTypeOperand(view);
           EV value = getNextValueOperand(view);
           onCheckCast(type, value);
+          return;
+        }
+      case LirOpcodes.INSTANCEOF:
+        {
+          DexType type = getNextDexTypeOperand(view);
+          EV value = getNextValueOperand(view);
+          onInstanceOf(type, value);
           return;
         }
       case LirOpcodes.DEBUGPOS:
