@@ -7,16 +7,15 @@
 import desugaredlibrary.CustomConversionAsmRewriterTask
 import net.ltgt.gradle.errorprone.CheckSeverity
 import org.gradle.internal.os.OperatingSystem
-import tasks.DownloadDependency
 import smali.SmaliTask
+import tasks.DownloadDependency
 import tasks.GetJarsFromConfiguration
-import utils.Utils
 
 buildscript {
     repositories {
+        google()
         mavenCentral()
         gradlePluginPortal()
-        jcenter()
     }
 }
 
@@ -32,8 +31,8 @@ ext {
     asmVersion = '9.5'  // When updating update tools/asmifier.py, build.src and Toolhelper as well.
     javassistVersion = '3.29.2-GA'
     espressoVersion = '3.0.0'
-    fastutilVersion = '7.2.0'
-    guavaVersion = '30.1.1-jre'
+    fastutilVersion = '7.2.1'
+    guavaVersion = '31.1-jre'
     joptSimpleVersion = '4.6'
     gsonVersion = '2.7'
     junitVersion = '4.13-beta-2'
@@ -42,7 +41,7 @@ ext {
     // all kotlin compilations are done in tests.
     kotlinVersion = '1.8.0'
     kotlinExtMetadataJVMVersion = '0.6.0'
-    smaliVersion = '2.2b4'
+    smaliVersion = '3.0.3'
     errorproneVersion = '2.18.0'
     testngVersion = '6.10'
 }
@@ -260,7 +259,7 @@ dependencies {
     testCompile "com.google.guava:guava:$guavaVersion"
     testCompile "org.jetbrains.kotlin:kotlin-stdlib:$kotlinVersion"
     testCompile "org.jetbrains.kotlin:kotlin-reflect:$kotlinVersion"
-    testCompile group: 'org.smali', name: 'smali', version: smaliVersion
+    testCompile group: 'com.android.tools.smali', name: 'smali', version: smaliVersion
     testCompile files('third_party/jasmin/jasmin-2.4.jar')
     testCompile files('third_party/jdwp-tests/apache-harmony-jdwp-tests-host.jar')
     testCompile files('third_party/ddmlib/ddmlib.jar')
@@ -1140,7 +1139,7 @@ task R8Lib {
             "Main",
             ["src/main/keep.txt", generateR8LibKeepRules.outputs.files[0]],
             r8NoManifestWithRelocatedDeps,
-            r8LibPath,
+            r8LibPath
     ).dependsOn(generateR8LibKeepRules)
     inputs.files r8NoManifestWithRelocatedDeps.outputs.files
     outputs.file r8LibPath
