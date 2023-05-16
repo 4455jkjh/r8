@@ -24,10 +24,12 @@ import com.android.tools.r8.graph.ProgramDefinition;
 import com.android.tools.r8.graph.ThrowExceptionCode;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
 import com.android.tools.r8.synthesis.CommittedItems;
+import com.android.tools.r8.utils.ListUtils;
 import com.android.tools.r8.utils.ThreadUtils;
 import com.android.tools.r8.utils.WorkList;
 import com.google.common.collect.Sets;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -54,11 +56,19 @@ public class ApiReferenceStubber {
   }
 
   public void run(ExecutorService executorService) throws ExecutionException {
-    if (appView.options().isGeneratingClassFiles()
-        || !appView.options().apiModelingOptions().enableStubbingOfClasses) {
-      return;
+    if (appView.options().isGeneratingDex()
+        && appView.options().apiModelingOptions().enableStubbingOfClasses) {
+      Collection<DexProgramClass> classes =
+          ListUtils.filter(
+              appView.appInfo().classes(), DexProgramClass::originatesFromClassResource);
+      // Finding super types is really fast so no need to pay the overhead of threading if the
+      // number of classes is low.
+      if (classes.size() > 2) {
+        ThreadUtils.processItems(classes, this::processClass, executorService);
+      } else {
+        classes.forEach(this::processClass);
+      }
     }
-    ThreadUtils.processItems(appView.appInfo().classes(), this::processClass, executorService);
     if (libraryClassesToMock.isEmpty()) {
       return;
     }
@@ -89,6 +99,7 @@ public class ApiReferenceStubber {
   }
 
   public void processClass(DexProgramClass clazz) {
+    assert clazz.originatesFromClassResource();
     if (appView
         .getSyntheticItems()
         .isSyntheticOfKind(clazz.getType(), kinds -> kinds.API_MODEL_OUTLINE)) {
@@ -117,7 +128,7 @@ public class ApiReferenceStubber {
   }
 
   private void findReferencedLibraryClasses(DexType type, DexProgramClass context) {
-    if (!type.isClassType()) {
+    if (!type.isClassType() || isJavaType(type)) {
       return;
     }
     WorkList<DexType> workList = WorkList.newIdentityWorkList(type, seenTypes);
@@ -140,16 +151,17 @@ public class ApiReferenceStubber {
     }
   }
 
+  private boolean isJavaType(DexType type) {
+    return type == appView.dexItemFactory().objectType
+        || type.getDescriptor().startsWith(appView.dexItemFactory().javaDescriptorPrefix);
+  }
+
   private void mockMissingLibraryClass(
       DexLibraryClass libraryClass,
       ThrowExceptionCode throwExceptionCode) {
     DexItemFactory factory = appView.dexItemFactory();
     // Do not stub the anything starting with java (including the object type).
-    if (libraryClass.getType() == appView.dexItemFactory().objectType
-        || libraryClass
-            .getType()
-            .getDescriptor()
-            .startsWith(appView.dexItemFactory().javaDescriptorPrefix)) {
+    if (isJavaType(libraryClass.getType())) {
       return;
     }
     // Check if desugared library will bridge the type.
