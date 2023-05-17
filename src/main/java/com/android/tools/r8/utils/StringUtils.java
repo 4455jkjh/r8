@@ -12,6 +12,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
+import java.util.Locale;
 import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -394,5 +395,9 @@ public class StringUtils {
       return stringToCapitalize;
     }
     return stringToCapitalize.substring(0, 1).toUpperCase() + stringToCapitalize.substring(1);
+  }
+
+  public static String toLowerCase(String s) {
+    return s.toLowerCase(Locale.ROOT);
   }
 }

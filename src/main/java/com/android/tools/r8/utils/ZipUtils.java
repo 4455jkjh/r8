@@ -230,7 +230,7 @@ public class ZipUtils {
   }
 
   public static boolean isClassFile(String entry) {
-    String name = entry.toLowerCase();
+    String name = StringUtils.toLowerCase(entry);
     if (name.endsWith(MODULE_INFO_CLASS)) {
       return false;
     }
