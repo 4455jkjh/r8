@@ -47,7 +47,7 @@ public class ApiModelMockInheritedClassTest extends TestBase {
         .addDefaultRuntimeLibrary(parameters)
         .setMinApi(parameters)
         .addAndroidBuildVersion()
-        .apply(ApiModelingTestHelper::enableStubbingOfClasses)
+        .apply(ApiModelingTestHelper::enableStubbingOfClassesAndDisableGlobalSyntheticCheck)
         .apply(setMockApiLevelForClass(LibraryClass.class, mockLevel))
         .apply(setMockApiLevelForDefaultInstanceInitializer(LibraryClass.class, mockLevel));
   }
@@ -97,7 +97,8 @@ public class ApiModelMockInheritedClassTest extends TestBase {
   }
 
   private void inspect(CodeInspector inspector) {
-    verifyThat(inspector, parameters, LibraryClass.class).stubbedUntil(mockLevel);
+    verifyThat(inspector, parameters, LibraryClass.class)
+        .stubbedBetween(AndroidApiLevel.L_MR1, mockLevel);
   }
 
   private void checkOutput(SingleTestRunResult<?> runResult) {

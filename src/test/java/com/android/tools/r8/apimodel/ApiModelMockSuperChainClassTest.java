@@ -49,7 +49,7 @@ public class ApiModelMockSuperChainClassTest extends TestBase {
         .addDefaultRuntimeLibrary(parameters)
         .setMinApi(parameters)
         .addAndroidBuildVersion()
-        .apply(ApiModelingTestHelper::enableStubbingOfClasses)
+        .apply(ApiModelingTestHelper::enableStubbingOfClassesAndDisableGlobalSyntheticCheck)
         .apply(setMockApiLevelForClass(LibraryClass.class, lowerMockApiLevel))
         .apply(setMockApiLevelForDefaultInstanceInitializer(LibraryClass.class, lowerMockApiLevel))
         .apply(setMockApiLevelForClass(OtherLibraryClass.class, mockApiLevel))
@@ -121,9 +121,12 @@ public class ApiModelMockSuperChainClassTest extends TestBase {
   }
 
   private void inspect(CodeInspector inspector) {
-    verifyThat(inspector, parameters, LibraryClass.class).stubbedUntil(lowerMockApiLevel);
-    verifyThat(inspector, parameters, LibraryInterface.class).stubbedUntil(lowerMockApiLevel);
-    verifyThat(inspector, parameters, OtherLibraryClass.class).stubbedUntil(mockApiLevel);
+    verifyThat(inspector, parameters, LibraryClass.class)
+        .stubbedBetween(AndroidApiLevel.L_MR1, lowerMockApiLevel);
+    verifyThat(inspector, parameters, LibraryInterface.class)
+        .stubbedBetween(AndroidApiLevel.L_MR1, lowerMockApiLevel);
+    verifyThat(inspector, parameters, OtherLibraryClass.class)
+        .stubbedBetween(AndroidApiLevel.L_MR1, mockApiLevel);
   }
 
   private void checkOutput(SingleTestRunResult<?> runResult) {

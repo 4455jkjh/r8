@@ -22,6 +22,7 @@ import com.android.tools.r8.graph.DexProto;
 import com.android.tools.r8.graph.DexType;
 import com.android.tools.r8.graph.DexValue;
 import com.android.tools.r8.graph.MethodAccessFlags;
+import com.android.tools.r8.graph.MethodResolutionResult;
 import com.android.tools.r8.graph.ProgramField;
 import com.android.tools.r8.graph.ProgramMethod;
 import com.android.tools.r8.graph.PrunedItems;
@@ -32,6 +33,7 @@ import com.android.tools.r8.graph.lens.MethodLookupResult;
 import com.android.tools.r8.graph.proto.RewrittenPrototypeDescription;
 import com.android.tools.r8.ir.analysis.type.ClassTypeElement;
 import com.android.tools.r8.ir.analysis.type.TypeElement;
+import com.android.tools.r8.ir.analysis.value.SingleNumberValue;
 import com.android.tools.r8.ir.code.BasicBlock;
 import com.android.tools.r8.ir.code.ConstClass;
 import com.android.tools.r8.ir.code.IRCode;
@@ -41,8 +43,11 @@ import com.android.tools.r8.ir.code.InvokeDirect;
 import com.android.tools.r8.ir.code.InvokeVirtual;
 import com.android.tools.r8.ir.code.NewInstance;
 import com.android.tools.r8.ir.code.NewUnboxedEnumInstance;
+import com.android.tools.r8.ir.code.Position;
 import com.android.tools.r8.ir.code.StaticPut;
+import com.android.tools.r8.ir.code.TypeAndLocalInfoSupplier;
 import com.android.tools.r8.ir.code.Value;
+import com.android.tools.r8.ir.conversion.ExtraParameter;
 import com.android.tools.r8.ir.conversion.ExtraUnusedNullParameter;
 import com.android.tools.r8.ir.conversion.IRConverter;
 import com.android.tools.r8.ir.conversion.MethodProcessorEventConsumer;
@@ -288,10 +293,7 @@ class EnumUnboxingTreeFixer implements ProgramClassFixer {
   private void fixupSuperEnumClassInitializers(
       IRConverter converter, ExecutorService executorService) throws ExecutionException {
     DexEncodedField ordinalField =
-        appView
-            .appInfo()
-            .resolveField(appView.dexItemFactory().enumMembers.ordinalField)
-            .getResolvedField();
+        appView.appInfo().resolveField(factory.enumMembers.ordinalField).getResolvedField();
     ThreadUtils.processItems(
         unboxedEnumHierarchy.keySet(),
         unboxedEnum -> fixupSuperEnumClassInitializer(converter, unboxedEnum, ordinalField),
@@ -346,8 +348,7 @@ class EnumUnboxingTreeFixer implements ProgramClassFixer {
           for (Instruction user : constClass.outValue().aliasedUsers()) {
             if (user.isInvokeVirtual()) {
               InvokeVirtual invoke = user.asInvokeVirtual();
-              if (invoke.getInvokedMethod()
-                  == appView.dexItemFactory().classMethods.desiredAssertionStatus) {
+              if (invoke.getInvokedMethod() == factory.classMethods.desiredAssertionStatus) {
                 desiredAssertionStatusUsers.add(invoke);
               }
             }
@@ -371,8 +372,7 @@ class EnumUnboxingTreeFixer implements ProgramClassFixer {
           NewInstance newInstance = instruction.asNewInstance();
           DexType rewrittenType = appView.graphLens().lookupType(newInstance.getType());
           if (enumDataMap.isAssignableTo(rewrittenType, unboxedEnum.getType())) {
-            InvokeDirect constructorInvoke =
-                newInstance.getUniqueConstructorInvoke(appView.dexItemFactory());
+            InvokeDirect constructorInvoke = newInstance.getUniqueConstructorInvoke(factory);
             assert constructorInvoke != null;
 
             DexMethod invokedMethod = constructorInvoke.getInvokedMethod();
@@ -382,7 +382,8 @@ class EnumUnboxingTreeFixer implements ProgramClassFixer {
             // find the ordinal of the current enum instance.
             MethodLookupResult lookupResult =
                 appView.graphLens().lookupInvokeDirect(invokedMethod, classInitializer);
-            if (lookupResult.getReference() != invokedMethod) {
+            if (lookupResult.getReference() != invokedMethod
+                || !lookupResult.getPrototypeChanges().isEmpty()) {
               List<Value> rewrittenArguments =
                   new ArrayList<>(constructorInvoke.arguments().size());
               for (int i = 0; i < constructorInvoke.arguments().size(); i++) {
@@ -393,6 +394,23 @@ class EnumUnboxingTreeFixer implements ProgramClassFixer {
                     .isArgumentRemoved(i)) {
                   rewrittenArguments.add(argument);
                 }
+              }
+              for (ExtraParameter extraParameter :
+                  lookupResult.getPrototypeChanges().getExtraParameters()) {
+                SingleNumberValue singleNumberValue = extraParameter.getValue(appView);
+                Instruction materializingInstruction =
+                    singleNumberValue.createMaterializingInstruction(
+                        appView,
+                        code,
+                        TypeAndLocalInfoSupplier.create(
+                            extraParameter.getType(appView.dexItemFactory()).toTypeElement(appView),
+                            null));
+                materializingInstruction.setPosition(Position.none());
+                instructionIterator.previous();
+                instructionIterator.add(materializingInstruction);
+                rewrittenArguments.add(materializingInstruction.outValue());
+                Instruction next = instructionIterator.next();
+                assert next == newInstance;
               }
               InvokeDirect originalConstructorInvoke = constructorInvoke;
               constructorInvoke =
@@ -409,7 +427,6 @@ class EnumUnboxingTreeFixer implements ProgramClassFixer {
               // then remove the rewritten constructor invoke from the IR.
               instructionsToRemove.put(originalConstructorInvoke, Optional.of(constructorInvoke));
             } else {
-              assert lookupResult.getPrototypeChanges().isEmpty();
               // Record that the constructor invoke needs to be removed.
               instructionsToRemove.put(constructorInvoke, Optional.empty());
             }
@@ -418,7 +435,17 @@ class EnumUnboxingTreeFixer implements ProgramClassFixer {
                 newInstance.getType() == unboxedEnum.getType()
                     ? unboxedEnum
                     : appView.programDefinitionFor(newInstance.getType(), classInitializer);
-            ProgramMethod constructor = holder.lookupProgramMethod(lookupResult.getReference());
+            DexClassAndMethod constructor;
+            if (appView.options().canInitNewInstanceUsingSuperclassConstructor()) {
+              MethodResolutionResult resolutionResult =
+                  appView
+                      .appInfo()
+                      .resolveMethod(
+                          lookupResult.getReference(), constructorInvoke.getInterfaceBit());
+              constructor = resolutionResult.getResolutionPair();
+            } else {
+              constructor = holder.lookupProgramMethod(lookupResult.getReference());
+            }
             assert constructor != null;
 
             InstanceFieldInitializationInfo ordinalInitializationInfo =

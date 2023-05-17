@@ -4,14 +4,18 @@
 package com.android.tools.r8.lightir;
 
 import com.android.tools.r8.errors.Unimplemented;
+import com.android.tools.r8.graph.DexCallSite;
 import com.android.tools.r8.graph.DexField;
 import com.android.tools.r8.graph.DexMethod;
+import com.android.tools.r8.graph.DexProto;
+import com.android.tools.r8.graph.DexReference;
 import com.android.tools.r8.graph.DexString;
 import com.android.tools.r8.graph.DexType;
 import com.android.tools.r8.ir.code.IfType;
 import com.android.tools.r8.ir.code.MemberType;
 import com.android.tools.r8.ir.code.NumericType;
 import com.android.tools.r8.lightir.LirBuilder.IntSwitchPayload;
+import com.android.tools.r8.naming.dexitembasedstring.NameComputationInfo;
 import com.android.tools.r8.utils.StringUtils;
 import java.util.Arrays;
 import java.util.List;
@@ -151,32 +155,32 @@ public class LirPrinter<EV> extends LirParsedInstructionCallback<EV> {
   }
 
   @Override
+  public void onDexItemBasedConstString(
+      DexReference item, NameComputationInfo<?> nameComputationInfo) {
+    appendOutValue().append("item(").append(item).append(")");
+  }
+
+  @Override
   public void onConstClass(DexType type) {
     appendOutValue().append("class(").append(type).append(")");
   }
 
   @Override
-  public void onAdd(NumericType type, EV leftValueIndex, EV rightValueIndex) {
+  public void onBinop(NumericType type, EV left, EV right) {
     appendOutValue();
-    appendValueArguments(leftValueIndex, rightValueIndex);
+    appendValueArguments(left, right);
   }
 
   @Override
-  public void onSub(NumericType type, EV leftValueIndex, EV rightValueIndex) {
+  public void onNeg(NumericType type, EV value) {
     appendOutValue();
-    appendValueArguments(leftValueIndex, rightValueIndex);
+    appendValueArguments(value);
   }
 
   @Override
-  public void onDiv(NumericType type, EV leftValueIndex, EV rightValueIndex) {
+  public void onNot(NumericType type, EV value) {
     appendOutValue();
-    appendValueArguments(leftValueIndex, rightValueIndex);
-  }
-
-  @Override
-  public void onXor(NumericType type, EV leftValueIndex, EV rightValueIndex) {
-    appendOutValue();
-    appendValueArguments(leftValueIndex, rightValueIndex);
+    appendValueArguments(value);
   }
 
   @Override
@@ -224,6 +228,18 @@ public class LirPrinter<EV> extends LirParsedInstructionCallback<EV> {
   }
 
   @Override
+  public void onDebugLocalRead() {
+    // Nothing to add.
+  }
+
+  @Override
+  public void onInvokeMultiNewArray(DexType type, List<EV> arguments) {
+    appendOutValue();
+    appendValueArguments(arguments);
+    builder.append(type);
+  }
+
+  @Override
   public void onInvokeNewArray(DexType type, List<EV> arguments) {
     appendOutValue();
     appendValueArguments(arguments);
@@ -249,6 +265,18 @@ public class LirPrinter<EV> extends LirParsedInstructionCallback<EV> {
     }
     appendValueArguments(arguments);
     builder.append(method);
+  }
+
+  @Override
+  public void onInvokeCustom(DexCallSite callSite, List<EV> arguments) {
+    appendValueArguments(arguments);
+    builder.append(callSite);
+  }
+
+  @Override
+  public void onInvokePolymorphic(DexMethod target, DexProto proto, List<EV> arguments) {
+    appendValueArguments(arguments);
+    builder.append(target).append(' ').append(proto);
   }
 
   @Override
@@ -363,5 +391,15 @@ public class LirPrinter<EV> extends LirParsedInstructionCallback<EV> {
   @Override
   public void onMonitorExit(EV value) {
     appendValueArguments(value);
+  }
+
+  @Override
+  public void onNewUnboxedEnumInstance(DexType type, int ordinal) {
+    appendOutValue().append("type(").append(type).append(") ordinal(").append(ordinal).append(")");
+  }
+
+  @Override
+  public void onInitClass(DexType clazz) {
+    builder.append(clazz);
   }
 }

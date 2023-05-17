@@ -134,6 +134,18 @@ public abstract class ApiModelingTestHelper {
         });
   }
 
+  public static void enableStubbingOfClassesAndDisableGlobalSyntheticCheck(
+      TestCompilerBuilder<?, ?, ?, ?, ?> compilerBuilder) {
+    compilerBuilder.addOptionsModification(
+        options -> {
+          options.apiModelingOptions().enableLibraryApiModeling = true;
+          options.apiModelingOptions().enableStubbingOfClasses = true;
+          // Our tests rely on us amending the library path with additional classes that are not
+          // in the library.
+          options.testing.globalSyntheticCreatedCallback = null;
+        });
+  }
+
   public static void enableStubbingOfClasses(TestCompilerBuilder<?, ?, ?, ?, ?> compilerBuilder) {
     compilerBuilder.addOptionsModification(
         options -> {
@@ -275,6 +287,16 @@ public abstract class ApiModelingTestHelper {
               isPresent(),
               parameters.isCfRuntime()
                   || parameters.getApiLevel().isGreaterThanOrEqualTo(finalApiLevel)));
+    }
+
+    public void stubbedBetween(AndroidApiLevel startingApilevel, AndroidApiLevel endingApiLevel) {
+      assertThat(
+          inspector.clazz(classOfInterest),
+          notIf(
+              isPresent(),
+              parameters.isCfRuntime()
+                  || parameters.getApiLevel().isLessThan(startingApilevel)
+                  || parameters.getApiLevel().isGreaterThanOrEqualTo(endingApiLevel)));
     }
 
     void hasCheckCastOutlinedFromUntil(Method method, AndroidApiLevel apiLevel) {

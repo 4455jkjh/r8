@@ -6,8 +6,11 @@ package com.android.tools.r8.lightir;
 import com.android.tools.r8.errors.Unimplemented;
 import com.android.tools.r8.errors.Unreachable;
 import com.android.tools.r8.graph.AppView;
+import com.android.tools.r8.graph.DexCallSite;
 import com.android.tools.r8.graph.DexField;
 import com.android.tools.r8.graph.DexMethod;
+import com.android.tools.r8.graph.DexProto;
+import com.android.tools.r8.graph.DexReference;
 import com.android.tools.r8.graph.DexString;
 import com.android.tools.r8.graph.DexType;
 import com.android.tools.r8.graph.ProgramMethod;
@@ -15,6 +18,7 @@ import com.android.tools.r8.ir.analysis.type.Nullability;
 import com.android.tools.r8.ir.analysis.type.PrimitiveTypeElement;
 import com.android.tools.r8.ir.analysis.type.TypeElement;
 import com.android.tools.r8.ir.code.Add;
+import com.android.tools.r8.ir.code.And;
 import com.android.tools.r8.ir.code.Argument;
 import com.android.tools.r8.ir.code.ArrayGet;
 import com.android.tools.r8.ir.code.ArrayLength;
@@ -27,21 +31,27 @@ import com.android.tools.r8.ir.code.Cmp.Bias;
 import com.android.tools.r8.ir.code.ConstClass;
 import com.android.tools.r8.ir.code.ConstNumber;
 import com.android.tools.r8.ir.code.ConstString;
+import com.android.tools.r8.ir.code.DebugLocalRead;
 import com.android.tools.r8.ir.code.DebugLocalWrite;
 import com.android.tools.r8.ir.code.DebugPosition;
+import com.android.tools.r8.ir.code.DexItemBasedConstString;
 import com.android.tools.r8.ir.code.Div;
 import com.android.tools.r8.ir.code.Goto;
 import com.android.tools.r8.ir.code.IRCode;
 import com.android.tools.r8.ir.code.If;
 import com.android.tools.r8.ir.code.IfType;
+import com.android.tools.r8.ir.code.InitClass;
 import com.android.tools.r8.ir.code.InstanceGet;
 import com.android.tools.r8.ir.code.InstanceOf;
 import com.android.tools.r8.ir.code.InstancePut;
 import com.android.tools.r8.ir.code.Instruction;
 import com.android.tools.r8.ir.code.IntSwitch;
+import com.android.tools.r8.ir.code.InvokeCustom;
 import com.android.tools.r8.ir.code.InvokeDirect;
 import com.android.tools.r8.ir.code.InvokeInterface;
+import com.android.tools.r8.ir.code.InvokeMultiNewArray;
 import com.android.tools.r8.ir.code.InvokeNewArray;
+import com.android.tools.r8.ir.code.InvokePolymorphic;
 import com.android.tools.r8.ir.code.InvokeStatic;
 import com.android.tools.r8.ir.code.InvokeSuper;
 import com.android.tools.r8.ir.code.InvokeVirtual;
@@ -50,27 +60,35 @@ import com.android.tools.r8.ir.code.Monitor;
 import com.android.tools.r8.ir.code.MonitorType;
 import com.android.tools.r8.ir.code.MoveException;
 import com.android.tools.r8.ir.code.Mul;
+import com.android.tools.r8.ir.code.Neg;
 import com.android.tools.r8.ir.code.NewArrayEmpty;
 import com.android.tools.r8.ir.code.NewArrayFilledData;
 import com.android.tools.r8.ir.code.NewInstance;
+import com.android.tools.r8.ir.code.NewUnboxedEnumInstance;
+import com.android.tools.r8.ir.code.Not;
 import com.android.tools.r8.ir.code.NumberConversion;
 import com.android.tools.r8.ir.code.NumberGenerator;
 import com.android.tools.r8.ir.code.NumericType;
+import com.android.tools.r8.ir.code.Or;
 import com.android.tools.r8.ir.code.Phi;
 import com.android.tools.r8.ir.code.Position;
 import com.android.tools.r8.ir.code.Position.SyntheticPosition;
 import com.android.tools.r8.ir.code.Rem;
 import com.android.tools.r8.ir.code.Return;
+import com.android.tools.r8.ir.code.Shl;
+import com.android.tools.r8.ir.code.Shr;
 import com.android.tools.r8.ir.code.StaticGet;
 import com.android.tools.r8.ir.code.StaticPut;
 import com.android.tools.r8.ir.code.Sub;
 import com.android.tools.r8.ir.code.Throw;
+import com.android.tools.r8.ir.code.Ushr;
 import com.android.tools.r8.ir.code.Value;
 import com.android.tools.r8.ir.code.ValueType;
 import com.android.tools.r8.ir.code.Xor;
 import com.android.tools.r8.ir.conversion.MethodConversionOptions.MutableMethodConversionOptions;
 import com.android.tools.r8.lightir.LirBuilder.IntSwitchPayload;
 import com.android.tools.r8.lightir.LirCode.PositionEntry;
+import com.android.tools.r8.naming.dexitembasedstring.NameComputationInfo;
 import com.android.tools.r8.utils.ListUtils;
 import com.google.common.collect.ImmutableList;
 import it.unimi.dsi.fastutil.ints.Int2IntMap;
@@ -148,7 +166,7 @@ public class Lir2IRConverter {
       // Control instructions must close the block, thus the current block is null iff the
       // instruction denotes a new block.
       if (currentBlock == null) {
-        currentBlock = blocks.computeIfAbsent(nextInstructionIndex, k -> new BasicBlock());
+        currentBlock = getBasicBlock(nextInstructionIndex);
         CatchHandlers<Integer> handlers =
             code.getTryCatchTable().getHandlersForBlock(nextInstructionIndex);
         if (handlers != null) {
@@ -418,6 +436,48 @@ public class Lir2IRConverter {
     }
 
     @Override
+    public void onNeg(NumericType type, EV value) {
+      Value dest = getOutValueForNextInstruction(valueTypeElement(type));
+      addInstruction(new Neg(type, dest, getValue(value)));
+    }
+
+    @Override
+    public void onNot(NumericType type, EV value) {
+      Value dest = getOutValueForNextInstruction(valueTypeElement(type));
+      addInstruction(new Not(type, dest, getValue(value)));
+    }
+
+    @Override
+    public void onShl(NumericType type, EV left, EV right) {
+      Value dest = getOutValueForNextInstruction(valueTypeElement(type));
+      addInstruction(new Shl(type, dest, getValue(left), getValue(right)));
+    }
+
+    @Override
+    public void onShr(NumericType type, EV left, EV right) {
+      Value dest = getOutValueForNextInstruction(valueTypeElement(type));
+      addInstruction(new Shr(type, dest, getValue(left), getValue(right)));
+    }
+
+    @Override
+    public void onUshr(NumericType type, EV left, EV right) {
+      Value dest = getOutValueForNextInstruction(valueTypeElement(type));
+      addInstruction(new Ushr(type, dest, getValue(left), getValue(right)));
+    }
+
+    @Override
+    public void onAnd(NumericType type, EV left, EV right) {
+      Value dest = getOutValueForNextInstruction(valueTypeElement(type));
+      addInstruction(And.createNonNormalized(type, dest, getValue(left), getValue(right)));
+    }
+
+    @Override
+    public void onOr(NumericType type, EV left, EV right) {
+      Value dest = getOutValueForNextInstruction(valueTypeElement(type));
+      addInstruction(Or.createNonNormalized(type, dest, getValue(left), getValue(right)));
+    }
+
+    @Override
     public void onXor(NumericType type, EV left, EV right) {
       Value dest = getOutValueForNextInstruction(valueTypeElement(type));
       addInstruction(Xor.createNonNormalized(type, dest, getValue(left), getValue(right)));
@@ -425,8 +485,19 @@ public class Lir2IRConverter {
 
     @Override
     public void onConstString(DexString string) {
-      Value dest = getOutValueForNextInstruction(TypeElement.stringClassType(appView));
+      Value dest =
+          getOutValueForNextInstruction(
+              TypeElement.stringClassType(appView, Nullability.definitelyNotNull()));
       addInstruction(new ConstString(dest, string));
+    }
+
+    @Override
+    public void onDexItemBasedConstString(
+        DexReference item, NameComputationInfo<?> nameComputationInfo) {
+      Value dest =
+          getOutValueForNextInstruction(
+              TypeElement.stringClassType(appView, Nullability.definitelyNotNull()));
+      addInstruction(new DexItemBasedConstString(dest, item, nameComputationInfo));
     }
 
     @Override
@@ -553,10 +624,31 @@ public class Lir2IRConverter {
       addInstruction(instruction);
     }
 
+    @Override
+    public void onInvokeCustom(DexCallSite callSite, List<EV> arguments) {
+      Value dest = getInvokeInstructionOutputValue(callSite.methodProto);
+      List<Value> ssaArgumentValues = getValues(arguments);
+      InvokeCustom instruction = new InvokeCustom(callSite, dest, ssaArgumentValues);
+      addInstruction(instruction);
+    }
+
+    @Override
+    public void onInvokePolymorphic(DexMethod target, DexProto proto, List<EV> arguments) {
+      Value dest = getInvokeInstructionOutputValue(target);
+      List<Value> ssaArgumentValues = getValues(arguments);
+      InvokePolymorphic instruction = new InvokePolymorphic(target, proto, dest, ssaArgumentValues);
+      addInstruction(instruction);
+    }
+
     private Value getInvokeInstructionOutputValue(DexMethod target) {
-      return target.getReturnType().isVoidType()
+      return getInvokeInstructionOutputValue(target.getProto());
+    }
+
+    private Value getInvokeInstructionOutputValue(DexProto target) {
+      DexType returnType = target.getReturnType();
+      return returnType.isVoidType()
           ? null
-          : getOutValueForNextInstruction(target.getReturnType().toTypeElement(appView));
+          : getOutValueForNextInstruction(returnType.toTypeElement(appView));
     }
 
     @Override
@@ -585,7 +677,8 @@ public class Lir2IRConverter {
 
     @Override
     public void onInstancePut(DexField field, EV object, EV value) {
-      addInstruction(new InstancePut(field, getValue(object), getValue(value)));
+      addInstruction(
+          InstancePut.createPotentiallyInvalid(field, getValue(object), getValue(value)));
     }
 
     @Override
@@ -660,6 +753,19 @@ public class Lir2IRConverter {
       TypeElement type = dest.getLocalInfo().type.toTypeElement(appView);
       dest.setType(type);
       addInstruction(new DebugLocalWrite(dest, src));
+    }
+
+    @Override
+    public void onDebugLocalRead() {
+      addInstruction(new DebugLocalRead());
+    }
+
+    @Override
+    public void onInvokeMultiNewArray(DexType type, List<EV> arguments) {
+      Value dest =
+          getOutValueForNextInstruction(
+              type.toTypeElement(appView, Nullability.definitelyNotNull()));
+      addInstruction(new InvokeMultiNewArray(type, dest, getValues(arguments)));
     }
 
     @Override
@@ -739,6 +845,19 @@ public class Lir2IRConverter {
       addInstruction(
           ArrayPut.createWithoutVerification(
               type, getValue(array), getValue(index), getValue(value)));
+    }
+
+    @Override
+    public void onNewUnboxedEnumInstance(DexType clazz, int ordinal) {
+      TypeElement type = TypeElement.fromDexType(clazz, Nullability.definitelyNotNull(), appView);
+      Value dest = getOutValueForNextInstruction(type);
+      addInstruction(new NewUnboxedEnumInstance(clazz, ordinal, dest));
+    }
+
+    @Override
+    public void onInitClass(DexType clazz) {
+      Value dest = getOutValueForNextInstruction(TypeElement.getInt());
+      addInstruction(new InitClass(dest, clazz));
     }
   }
 }

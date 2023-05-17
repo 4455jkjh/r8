@@ -27,7 +27,6 @@ import com.android.tools.r8.utils.structural.Ordered;
 import com.android.tools.r8.utils.structural.StructuralItem;
 import com.android.tools.r8.utils.structural.StructuralMapping;
 import com.android.tools.r8.utils.structural.StructuralSpecification;
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -35,6 +34,7 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
+import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -406,7 +406,13 @@ public class DexProgramClass extends DexClass
 
   public TraversalContinuation<?, ?> traverseProgramFields(
       Function<? super ProgramField, TraversalContinuation<?, ?>> fn) {
-    return traverseFields(field -> fn.apply(new ProgramField(this, field)));
+    return getFieldCollection().traverse(field -> fn.apply(field.asProgramField()));
+  }
+
+  public <BT, CT> TraversalContinuation<BT, CT> traverseProgramFields(
+      BiFunction<? super ProgramField, CT, TraversalContinuation<BT, CT>> fn, CT initialValue) {
+    return getFieldCollection()
+        .traverse((field, value) -> fn.apply(field.asProgramField(), value), initialValue);
   }
 
   public TraversalContinuation<?, ?> traverseProgramMethods(
@@ -489,7 +495,7 @@ public class DexProgramClass extends DexClass
     if (hasMethodsOrFields()) {
       collector.add(this);
       methodCollection.forEachMethod(m -> m.collectMixedSectionItems(collector));
-      fieldCollection.forEachField(f -> f.collectMixedSectionItems(collector));
+      fieldCollection.forEachField(f -> f.getDefinition().collectMixedSectionItems(collector));
     }
     annotations().collectMixedSectionItems(collector);
     if (interfaces != null) {
@@ -732,12 +738,12 @@ public class DexProgramClass extends DexClass
     methodCollection.replaceVirtualMethod(virtualMethod, replacement);
   }
 
-  public void addExtraInterfaces(List<ClassTypeSignature> extraInterfaces) {
+  public void addExtraInterfaces(List<ClassTypeSignature> extraInterfaces, DexItemFactory factory) {
     if (extraInterfaces.isEmpty()) {
       return;
     }
     addExtraInterfacesToInterfacesArray(extraInterfaces);
-    addExtraInterfacesToSignatureIfPresent(extraInterfaces);
+    addExtraInterfacesToSignatureIfPresent(extraInterfaces, factory);
   }
 
   private void addExtraInterfacesToInterfacesArray(List<ClassTypeSignature> extraInterfaces) {
@@ -749,21 +755,20 @@ public class DexProgramClass extends DexClass
     interfaces = new DexTypeList(newInterfaces);
   }
 
-  private void addExtraInterfacesToSignatureIfPresent(List<ClassTypeSignature> extraInterfaces) {
+  private void addExtraInterfacesToSignatureIfPresent(
+      List<ClassTypeSignature> extraInterfaces, DexItemFactory factory) {
+    assert !extraInterfaces.isEmpty();
     // We introduce the extra interfaces to the generic signature.
-    if (classSignature.hasNoSignature() || extraInterfaces.isEmpty()) {
+    if (classSignature.hasNoSignature()) {
       return;
     }
-    ImmutableList.Builder<ClassTypeSignature> interfacesBuilder =
-        ImmutableList.<ClassTypeSignature>builder().addAll(classSignature.superInterfaceSignatures);
-    for (ClassTypeSignature extraInterface : extraInterfaces) {
-      interfacesBuilder.add(extraInterface);
-    }
     classSignature =
-        new ClassSignature(
-            classSignature.formalTypeParameters,
-            classSignature.superClassSignature,
-            interfacesBuilder.build());
+        ClassSignature.builder()
+            .addSuperInterfaceSignatures(classSignature.getSuperInterfaceSignatures())
+            .addSuperInterfaceSignatures(extraInterfaces)
+            .setSuperClassSignature(classSignature.getSuperClassSignatureOrNull())
+            .addFormalTypeParameters(classSignature.getFormalTypeParameters())
+            .build(factory);
   }
 
   @Override

@@ -33,7 +33,6 @@ ext {
     espressoVersion = '3.0.0'
     fastutilVersion = '7.2.1'
     guavaVersion = '31.1-jre'
-    joptSimpleVersion = '4.6'
     gsonVersion = '2.7'
     junitVersion = '4.13-beta-2'
     mockitoVersion = '2.10.0'
@@ -141,9 +140,9 @@ sourceSets {
             srcDirs = ['src/test/examplesJava17']
         }
     }
-    examplesJava18 {
+    examplesJava20 {
         java {
-            srcDirs = ['src/test/examplesJava18']
+            srcDirs = ['src/test/examplesJava20']
         }
     }
     examplesTestNGRunner {
@@ -214,7 +213,6 @@ configurations {
 }
 
 dependencies {
-    implementation "net.sf.jopt-simple:jopt-simple:$joptSimpleVersion"
     implementation "com.google.code.gson:gson:$gsonVersion"
     // Include all of guava when compiling the code, but exclude annotations that we don't
     // need from the packaging.
@@ -233,7 +231,6 @@ dependencies {
     implementation group: 'org.ow2.asm', name: 'asm-analysis', version: asmVersion
     implementation group: 'org.ow2.asm', name: 'asm-util', version: asmVersion
 
-    main17Implementation "net.sf.jopt-simple:jopt-simple:$joptSimpleVersion"
     main17Implementation "com.google.code.gson:gson:$gsonVersion"
     // Include all of guava when compiling the code, but exclude annotations that we don't
     // need from the packaging.
@@ -405,20 +402,20 @@ def cloudSystemDependencies = [
                                 "openjdk/jdk8/linux-x86",
                                 "openjdk/jdk-11/linux",
                                 "openjdk/jdk-17/linux",
-                                "openjdk/jdk-18/linux"],
+                                "openjdk/jdk-20/linux"],
         ],
         osx: [
                 "third_party": ["openjdk/openjdk-9.0.4/osx",
                                 "openjdk/jdk8/darwin-x86",
                                 "openjdk/jdk-11/osx",
                                 "openjdk/jdk-17/osx",
-                                "openjdk/jdk-18/osx"],
+                                "openjdk/jdk-20/osx"],
         ],
         windows: [
                 "third_party": ["openjdk/openjdk-9.0.4/windows",
                                 "openjdk/jdk-11/windows",
                                 "openjdk/jdk-17/windows",
-                                "openjdk/jdk-18/windows"],
+                                "openjdk/jdk-20/windows"],
         ],
 ]
 
@@ -483,16 +480,6 @@ x20Dependencies.each { entry ->
         task "${getDownloadDepsTaskName(entry.key, entryFile)}"(type: DownloadDependency) {
             type DownloadDependency.Type.X20
             dependency "${entry.key}/${entryFile}"
-        }
-    }
-}
-
-task downloadProguard {
-    cloudDependencies.each { entry ->
-        entry.value.each { entryFile ->
-            if (entryFile.contains("proguard")) {
-                dependsOn "${getDownloadDepsTaskName(entry.key, entryFile)}"
-            }
         }
     }
 }
@@ -652,8 +639,8 @@ setJdkCompilationWithCompatibility(
         JavaVersion.VERSION_17,
         false)
 setJdkCompilationWithCompatibility(
-        sourceSets.examplesJava18.compileJavaTaskName,
-        'jdk-18',
+        sourceSets.examplesJava20.compileJavaTaskName,
+        'jdk-20',
         // TODO(b/218293990): Update Gradle to get JavaVersion.VERSION_18.
         JavaVersion.VERSION_17,
         false)
@@ -875,8 +862,6 @@ def r8RelocateTask(r8Task, output) {
                 "com.google.gson->com.android.tools.r8.com.google.gson",
                 "--map",
                 "com.google.thirdparty->com.android.tools.r8.com.google.thirdparty",
-                "--map",
-                "joptsimple->com.android.tools.r8.joptsimple",
                 "--map",
                 "org.objectweb.asm->com.android.tools.r8.org.objectweb.asm",
                 "--map",
@@ -1342,14 +1327,7 @@ compileExamplesJava.options.compilerArgs = ["-Xlint:none"]
 
 
 task buildExampleJars {
-    dependsOn downloadProguard
     def examplesDir = file("src/test/examples")
-    def proguardScript
-    if (OperatingSystem.current().isWindows()) {
-        proguardScript = "third_party/proguard/proguard5.2.1/bin/proguard.bat"
-    } else {
-        proguardScript = "third_party/proguard/proguard5.2.1/bin/proguard.sh"
-    }
     task extractExamplesRuntime(type: Sync) {
         dependsOn configurations.examplesRuntime
         from { configurations.examplesRuntime.collect { zipTree(it) } }
@@ -1402,76 +1380,29 @@ task buildExampleJars {
         dependsOn "jar_example_${name}_debuginfo_none"
         dependsOn "extractExamplesRuntime"
         def runtimeDependencies = copySpec { }
-        // The "throwing" test verifies debugging/stack info on the post-proguarded output.
-        def proguardConfigPath = "${dir}/proguard.cfg"
-        if (new File(proguardConfigPath).exists()) {
-            task "pre_proguard_example_${name}"(type: Jar, dependsOn: "compile_examples") {
-                archiveName = "${name}_pre_proguard.jar"
-                destinationDir = exampleOutputDir
-                from "build/test/examples/classes"
-                include name + "/**/*.class"
-                with runtimeDependencies
-                includeEmptyDirs false
-            }
-            def jarPath = files(tasks.getByPath("pre_proguard_example_${name}")).files.first();
-            def proguardJarPath = "${exampleOutputDir}/${jarName}"
-            def proguardMapPath = "${exampleOutputDir}/${name}/${name}.map"
-            task "jar_example_${name}"(type: Exec, dependsOn: "pre_proguard_example_${name}") {
-                inputs.files files(
-                        tasks.getByPath("pre_proguard_example_${name}"),
-                        proguardConfigPath)
-                // Enable these to get stdout and stderr redirected to files...
-                // standardOutput = new FileOutputStream('proguard.stdout')
-                // errorOutput = new FileOutputStream('proguard.stderr')
-                def proguardArguments = "-verbose -dontwarn java.** -injars ${jarPath}" +
-                        " -outjars ${proguardJarPath}" +
-                        " -include ${proguardConfigPath}" +
-                        " -printmapping ${proguardMapPath}"
-                if (OperatingSystem.current().isWindows()) {
-                    executable "${proguardScript}"
-                    args "${proguardArguments}"
-                } else {
-                    executable "bash"
-                    args "-c", "${proguardScript} '${proguardArguments}'"
-                }
-                outputs.file proguardJarPath
-            }
-            // TODO: Consider performing distinct proguard compilations.
-            task "jar_example_${name}_debuginfo_all"(type: Copy, dependsOn: "jar_example_${name}") {
-                from "${exampleOutputDir}/${name}.jar"
-                into "${exampleOutputDir}"
-                rename(".*", "${name}_debuginfo_all.jar")
-            }
-            task "jar_example_${name}_debuginfo_none"(type: Copy, dependsOn: "jar_example_${name}") {
-                from "${exampleOutputDir}/${name}.jar"
-                into "${exampleOutputDir}"
-                rename(".*", "${name}_debuginfo_none.jar")
-            }
-        } else {
-            task "jar_example_${name}"(type: Jar, dependsOn: "compile_examples") {
-                archiveName = "${name}.jar"
-                destinationDir = exampleOutputDir
-                from "build/test/examples/classes"
-                include name + "/**/*"
-                with runtimeDependencies
-                includeEmptyDirs true
-            }
-            task "jar_example_${name}_debuginfo_all"(type: Jar, dependsOn: "compile_examples_debuginfo_all") {
-                archiveName = "${name}_debuginfo_all.jar"
-                destinationDir = exampleOutputDir
-                from "build/test/examples/classes_debuginfo_all"
-                include name + "/**/*.class"
-                with runtimeDependencies
-                includeEmptyDirs false
-            }
-            task "jar_example_${name}_debuginfo_none"(type: Jar, dependsOn: "compile_examples_debuginfo_none") {
-                archiveName = "${name}_debuginfo_none.jar"
-                destinationDir = exampleOutputDir
-                from "build/test/examples/classes_debuginfo_none"
-                include name + "/**/*.class"
-                with runtimeDependencies
-                includeEmptyDirs false
-            }
+        task "jar_example_${name}"(type: Jar, dependsOn: "compile_examples") {
+            archiveName = "${name}.jar"
+            destinationDir = exampleOutputDir
+            from "build/test/examples/classes"
+            include name + "/**/*"
+            with runtimeDependencies
+            includeEmptyDirs true
+        }
+        task "jar_example_${name}_debuginfo_all"(type: Jar, dependsOn: "compile_examples_debuginfo_all") {
+            archiveName = "${name}_debuginfo_all.jar"
+            destinationDir = exampleOutputDir
+            from "build/test/examples/classes_debuginfo_all"
+            include name + "/**/*.class"
+            with runtimeDependencies
+            includeEmptyDirs false
+        }
+        task "jar_example_${name}_debuginfo_none"(type: Jar, dependsOn: "compile_examples_debuginfo_none") {
+            archiveName = "${name}_debuginfo_none.jar"
+            destinationDir = exampleOutputDir
+            from "build/test/examples/classes_debuginfo_none"
+            include name + "/**/*.class"
+            with runtimeDependencies
+            includeEmptyDirs false
         }
     }
 }
@@ -1631,7 +1562,7 @@ buildExampleJarsCreateTask("Java9", sourceSets.examplesJava9)
 buildExampleJarsCreateTask("Java10", sourceSets.examplesJava10)
 buildExampleJarsCreateTask("Java11", sourceSets.examplesJava11)
 buildExampleJarsCreateTask("Java17", sourceSets.examplesJava17)
-buildExampleJarsCreateTask("Java18", sourceSets.examplesJava18)
+buildExampleJarsCreateTask("Java20", sourceSets.examplesJava20)
 
 task provideArtFrameworksDependencies {
     cloudDependencies.tools.forEach({ art ->
@@ -1693,7 +1624,7 @@ task buildExamples {
     dependsOn buildExampleJava10Jars
     dependsOn buildExampleJava11Jars
     dependsOn buildExampleJava17Jars
-    dependsOn buildExampleJava18Jars
+    dependsOn buildExampleJava20Jars
     dependsOn buildExampleAndroidApi
     def examplesDir = file("src/test/examples")
     examplesDir.eachDir { dir ->

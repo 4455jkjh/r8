@@ -18,12 +18,15 @@ import com.android.tools.r8.graph.DexEncodedMethod;
 import com.android.tools.r8.graph.DexItemFactory;
 import com.android.tools.r8.graph.DexLibraryClass;
 import com.android.tools.r8.graph.DexProgramClass;
+import com.android.tools.r8.graph.DexString;
 import com.android.tools.r8.graph.DexType;
+import com.android.tools.r8.graph.LibraryClass;
 import com.android.tools.r8.graph.MethodAccessFlags;
 import com.android.tools.r8.graph.ThrowExceptionCode;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
 import com.android.tools.r8.synthesis.CommittedItems;
 import com.android.tools.r8.synthesis.SyntheticItems;
+import com.android.tools.r8.utils.AndroidApiLevel;
 import com.android.tools.r8.utils.ListUtils;
 import com.android.tools.r8.utils.ThreadUtils;
 import com.android.tools.r8.utils.WorkList;
@@ -35,6 +38,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
+import java.util.function.Function;
 
 /**
  * The only instructions we do not outline is constant classes, instance-of/checkcast and exception
@@ -75,16 +79,19 @@ public class ApiReferenceStubber {
       libraryClassesToMock.forEach(
           clazz ->
               mockMissingLibraryClass(
+                  appView,
+                  referencingContexts::get,
                   clazz,
                   ThrowExceptionCode.create(appView.dexItemFactory().noClassDefFoundErrorType),
                   eventConsumer));
       // Commit the synthetic items.
-      CommittedItems committedItems = appView.getSyntheticItems().commit(appView.appInfo().app());
       if (appView.hasLiveness()) {
+        CommittedItems committedItems = appView.getSyntheticItems().commit(appView.appInfo().app());
         AppView<AppInfoWithLiveness> appInfoWithLivenessAppView = appView.withLiveness();
         appInfoWithLivenessAppView.setAppInfo(
             appInfoWithLivenessAppView.appInfo().rebuildWithLiveness(committedItems));
       } else if (appView.hasClassHierarchy()) {
+        CommittedItems committedItems = appView.getSyntheticItems().commit(appView.appInfo().app());
         appView
             .withClassHierarchy()
             .setAppInfo(
@@ -116,9 +123,13 @@ public class ApiReferenceStubber {
     // We cannot reliably create a stub that will have the same throwing behavior for all VMs.
     // Only create stubs for exceptions to allow them being present in catch handlers and super
     // types of existing program classes. See b/258270051 and b/259076765 for more information.
-    clazz
-        .allImmediateSupertypes()
-        .forEach(superType -> findReferencedLibraryClasses(superType, clazz));
+    // Also, for L devices we can have verification issues if there are super invokes to missing
+    // members on stubbed classes. See b/279780940 for more information.
+    if (appView.options().getMinApiLevel().isGreaterThan(AndroidApiLevel.L)) {
+      clazz
+          .allImmediateSupertypes()
+          .forEach(superType -> findReferencedLibraryClasses(superType, clazz));
+    }
     clazz.forEachProgramMethodMatching(
         DexEncodedMethod::hasCode,
         method -> {
@@ -136,7 +147,7 @@ public class ApiReferenceStubber {
   }
 
   private void findReferencedLibraryClasses(DexType type, DexProgramClass context) {
-    if (!type.isClassType() || isJavaType(type)) {
+    if (!type.isClassType() || isJavaType(type, appView.dexItemFactory())) {
       return;
     }
     WorkList.newIdentityWorkList(type, seenTypes)
@@ -160,18 +171,25 @@ public class ApiReferenceStubber {
             });
   }
 
-  private boolean isJavaType(DexType type) {
-    return type == appView.dexItemFactory().objectType
-        || type.getDescriptor().startsWith(appView.dexItemFactory().javaDescriptorPrefix);
+  public static boolean isJavaType(DexType type, DexItemFactory factory) {
+    DexString typeDescriptor = type.getDescriptor();
+    return type == factory.objectType
+        || typeDescriptor.startsWith(factory.comSunDescriptorPrefix)
+        || typeDescriptor.startsWith(factory.javaDescriptorPrefix)
+        || typeDescriptor.startsWith(factory.javaxDescriptorPrefix)
+        || typeDescriptor.startsWith(factory.jdkDescriptorPrefix)
+        || typeDescriptor.startsWith(factory.sunDescriptorPrefix);
   }
 
-  private void mockMissingLibraryClass(
+  public static void mockMissingLibraryClass(
+      AppView<?> appView,
+      Function<LibraryClass, Set<DexProgramClass>> referencingContextSupplier,
       DexLibraryClass libraryClass,
       ThrowExceptionCode throwExceptionCode,
       ApiReferenceStubberEventConsumer eventConsumer) {
     DexItemFactory factory = appView.dexItemFactory();
     // Do not stub the anything starting with java (including the object type).
-    if (isJavaType(libraryClass.getType())) {
+    if (isJavaType(libraryClass.getType(), factory)) {
       return;
     }
     // Check if desugared library will bridge the type.
@@ -181,7 +199,7 @@ public class ApiReferenceStubber {
         .isSupported(libraryClass.getType())) {
       return;
     }
-    Set<DexProgramClass> contexts = referencingContexts.get(libraryClass);
+    Set<DexProgramClass> contexts = referencingContextSupplier.apply(libraryClass);
     if (contexts == null) {
       throw new Unreachable("Attempt to create a global synthetic with no contexts");
     }

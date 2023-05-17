@@ -10,6 +10,8 @@ import com.android.tools.r8.graph.DexEncodedMethod;
 import com.android.tools.r8.graph.DexMethod;
 import com.android.tools.r8.graph.DexProgramClass;
 import com.android.tools.r8.graph.DexType;
+import com.android.tools.r8.graph.ImmediateProgramSubtypingInfo;
+import com.android.tools.r8.graph.MethodAccessFlags;
 import com.android.tools.r8.graph.MethodResolutionResult;
 import com.android.tools.r8.graph.MethodResolutionResult.FailedResolutionResult;
 import com.android.tools.r8.graph.MethodResolutionResult.SingleResolutionResult;
@@ -19,32 +21,31 @@ import com.android.tools.r8.ir.optimize.info.bridge.BridgeInfo;
 import com.android.tools.r8.optimize.InvokeSingleTargetExtractor;
 import com.android.tools.r8.optimize.InvokeSingleTargetExtractor.InvokeKind;
 import com.android.tools.r8.optimize.MemberRebindingIdentityLens;
+import com.android.tools.r8.optimize.argumentpropagation.utils.DepthFirstTopDownClassHierarchyTraversal;
+import com.android.tools.r8.optimize.argumentpropagation.utils.ProgramClassesBidirectedGraph;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
 import com.android.tools.r8.shaking.KeepMethodInfo;
-import com.android.tools.r8.utils.IterableUtils;
 import com.android.tools.r8.utils.ThreadUtils;
-import com.android.tools.r8.utils.WorkList;
 import com.android.tools.r8.utils.collections.ProgramMethodSet;
-import com.google.common.collect.Iterables;
-import java.util.Collections;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.Collection;
+import java.util.List;
+import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
-import java.util.function.Consumer;
 
 public class RedundantBridgeRemover {
 
   private final AppView<AppInfoWithLiveness> appView;
+  private final ImmediateProgramSubtypingInfo immediateSubtypingInfo;
   private final RedundantBridgeRemovalOptions redundantBridgeRemovalOptions;
 
-  private final InvokedReflectivelyFromPlatformAnalysis invokedReflectivelyFromPlatformAnalysis =
-      new InvokedReflectivelyFromPlatformAnalysis();
+  private final RedundantBridgeRemovalLens.Builder lensBuilder =
+      new RedundantBridgeRemovalLens.Builder();
 
   public RedundantBridgeRemover(AppView<AppInfoWithLiveness> appView) {
     this.appView = appView;
-    this.redundantBridgeRemovalOptions =
-        appView.options().getRedundantBridgeRemovalOptions().ensureInitialized();
+    this.immediateSubtypingInfo = ImmediateProgramSubtypingInfo.create(appView);
+    this.redundantBridgeRemovalOptions = appView.options().getRedundantBridgeRemovalOptions();
   }
 
   private DexClassAndMethod getTargetForRedundantBridge(ProgramMethod method) {
@@ -63,9 +64,6 @@ public class RedundantBridgeRemover {
       return null;
     }
     if (!isTargetingSuperMethod(method, targetExtractor.getKind(), target)) {
-      return null;
-    }
-    if (invokedReflectivelyFromPlatformAnalysis.isMaybeInvokedReflectivelyFromPlatform(method)) {
       return null;
     }
     // This is a visibility forward, so check for the direct target.
@@ -106,6 +104,9 @@ public class RedundantBridgeRemover {
     if (kind == InvokeKind.STATIC) {
       return appView.appInfo().isStrictSubtypeOf(method.getHolderType(), target.holder);
     }
+    if (kind == InvokeKind.VIRTUAL) {
+      return false;
+    }
     assert false : "Unexpected invoke-kind for visibility bridge: " + kind;
     return false;
   }
@@ -117,9 +118,7 @@ public class RedundantBridgeRemover {
         || memberRebindingIdentityLens == appView.graphLens();
 
     // Collect all redundant bridges to remove.
-    RedundantBridgeRemovalLens.Builder lensBuilder = new RedundantBridgeRemovalLens.Builder();
-    Map<DexProgramClass, ProgramMethodSet> bridgesToRemove =
-        computeBridgesToRemove(lensBuilder, executorService);
+    ProgramMethodSet bridgesToRemove = removeRedundantBridgesConcurrently(executorService);
     if (bridgesToRemove.isEmpty()) {
       return;
     }
@@ -131,65 +130,50 @@ public class RedundantBridgeRemover {
     }
 
     if (memberRebindingIdentityLens != null) {
-      for (ProgramMethodSet bridgesToRemoveFromClass : bridgesToRemove.values()) {
-        for (ProgramMethod bridgeToRemove : bridgesToRemoveFromClass) {
-          DexClassAndMethod resolvedMethod =
-              appView
-                  .appInfo()
-                  .resolveMethodOn(bridgeToRemove.getHolder(), bridgeToRemove.getReference())
-                  .getResolutionPair();
-          memberRebindingIdentityLens.addNonReboundMethodReference(
-              bridgeToRemove.getReference(), resolvedMethod.getReference());
-        }
+      for (ProgramMethod bridgeToRemove : bridgesToRemove) {
+        DexClassAndMethod resolvedMethod =
+            appView
+                .appInfo()
+                .resolveMethodOn(bridgeToRemove.getHolder(), bridgeToRemove.getReference())
+                .getResolutionPair();
+        memberRebindingIdentityLens.addNonReboundMethodReference(
+            bridgeToRemove.getReference(), resolvedMethod.getReference());
       }
     }
   }
 
-  private Map<DexProgramClass, ProgramMethodSet> computeBridgesToRemove(
-      RedundantBridgeRemovalLens.Builder lensBuilder, ExecutorService executorService)
+  private ProgramMethodSet removeRedundantBridgesConcurrently(ExecutorService executorService)
       throws ExecutionException {
-    Map<DexProgramClass, ProgramMethodSet> bridgesToRemove = new ConcurrentHashMap<>();
-    ThreadUtils.processItems(
-        appView.appInfo().classes(),
-        clazz -> {
-          ProgramMethodSet bridgesToRemoveForClass = ProgramMethodSet.create();
-          clazz.forEachProgramMethod(
-              method -> {
-                KeepMethodInfo keepInfo = appView.getKeepInfo(method);
-                if (!keepInfo.isShrinkingAllowed(appView.options())
-                    || !keepInfo.isOptimizationAllowed(appView.options())) {
-                  return;
-                }
-                if (isRedundantAbstractBridge(method)) {
-                  // Record that the redundant bridge should be removed.
-                  bridgesToRemoveForClass.add(method);
-                  return;
-                }
-                DexClassAndMethod target = getTargetForRedundantBridge(method);
-                if (target != null) {
-                  // Record that the redundant bridge should be removed.
-                  bridgesToRemoveForClass.add(method);
+    // Compute the strongly connected program components for parallelization.
+    List<Set<DexProgramClass>> stronglyConnectedProgramComponents =
+        new ProgramClassesBidirectedGraph(appView, immediateSubtypingInfo)
+            .computeStronglyConnectedComponents();
 
-                  // Rewrite invokes to the bridge to the target if it is accessible.
-                  // TODO(b/173751869): Consider enabling this for constructors as well.
-                  // TODO(b/245882297): Refine these visibility checks so that we also rewrite when
-                  //  the target is not public, but still accessible to call sites.
-                  boolean isEligibleForRetargeting =
-                      redundantBridgeRemovalOptions.isRetargetingOfConstructorBridgeCallsEnabled()
-                          || !method.getDefinition().isInstanceInitializer();
-                  if (isEligibleForRetargeting
-                      && target.getAccessFlags().isPublic()
-                      && target.getHolder().isPublic()) {
-                    lensBuilder.map(method, target);
-                  }
-                }
-              });
-          if (!bridgesToRemoveForClass.isEmpty()) {
-            bridgesToRemove.put(clazz, bridgesToRemoveForClass);
-          }
-        },
-        executorService);
-    return bridgesToRemove;
+    // Process the components concurrently.
+    Collection<ProgramMethodSet> results =
+        ThreadUtils.processItemsWithResultsThatMatches(
+            stronglyConnectedProgramComponents,
+            this::removeRedundantBridgesInComponent,
+            removedBridges -> !removedBridges.isEmpty(),
+            executorService);
+    ProgramMethodSet removedBridges = ProgramMethodSet.create();
+    results.forEach(
+        result -> {
+          removedBridges.addAll(result);
+          result.clear();
+        });
+    return removedBridges;
+  }
+
+  private ProgramMethodSet removeRedundantBridgesInComponent(
+      Set<DexProgramClass> stronglyConnectedProgramComponent) {
+    // Remove bridges in a top-down traversal of the class hierarchy. This ensures that we don't map
+    // an invoke to a removed bridge method to a method in the superclass hierarchy, which is then
+    // also removed by bridge removal.
+    RedundantBridgeRemoverClassHierarchyTraversal traversal =
+        new RedundantBridgeRemoverClassHierarchyTraversal();
+    traversal.run(stronglyConnectedProgramComponent);
+    return traversal.getRemovedBridges();
   }
 
   private boolean isRedundantAbstractBridge(ProgramMethod method) {
@@ -241,99 +225,95 @@ public class RedundantBridgeRemover {
     return true;
   }
 
-  private void pruneApp(
-      Map<DexProgramClass, ProgramMethodSet> bridgesToRemove, ExecutorService executorService)
+  private void pruneApp(ProgramMethodSet bridgesToRemove, ExecutorService executorService)
       throws ExecutionException {
     PrunedItems.Builder prunedItemsBuilder = PrunedItems.builder().setPrunedApp(appView.app());
-    bridgesToRemove.forEach(
-        (clazz, methods) -> {
-          clazz.getMethodCollection().removeMethods(methods.toDefinitionSet());
-          methods.forEach(method -> prunedItemsBuilder.addRemovedMethod(method.getReference()));
-        });
+    bridgesToRemove.forEach(method -> prunedItemsBuilder.addRemovedMethod(method.getReference()));
     appView.pruneItems(prunedItemsBuilder.build(), executorService);
   }
 
-  class InvokedReflectivelyFromPlatformAnalysis {
+  class RedundantBridgeRemoverClassHierarchyTraversal
+      extends DepthFirstTopDownClassHierarchyTraversal {
 
-    // Maps each class to a boolean indicating if the class inherits from android.app.Fragment or
-    // android.app.ZygotePreload.
-    private final Map<DexClass, Boolean> cache = new ConcurrentHashMap<>();
+    private final ProgramMethodSet removedBridges = ProgramMethodSet.create();
 
-    boolean isMaybeInvokedReflectivelyFromPlatform(ProgramMethod method) {
-      return method.getDefinition().isDefaultInstanceInitializer()
-          && !method.getHolder().isAbstract()
-          && computeIsPlatformReflectingOnDefaultConstructor(method.getHolder());
+    RedundantBridgeRemoverClassHierarchyTraversal() {
+      super(
+          RedundantBridgeRemover.this.appView, RedundantBridgeRemover.this.immediateSubtypingInfo);
     }
 
-    private boolean computeIsPlatformReflectingOnDefaultConstructor(DexProgramClass clazz) {
-      Boolean cacheResult = cache.get(clazz);
-      if (cacheResult != null) {
-        return cacheResult;
-      }
-      WorkList.<WorklistItem>newIdentityWorkList(new NotProcessedWorklistItem(clazz))
-          .process(WorklistItem::accept);
-      assert cache.containsKey(clazz);
-      return cache.get(clazz);
+    public ProgramMethodSet getRemovedBridges() {
+      return removedBridges;
     }
 
-    abstract class WorklistItem implements Consumer<WorkList<WorklistItem>> {
+    @Override
+    public void visit(DexProgramClass clazz) {
+      ProgramMethodSet bridgesToRemoveForClass = ProgramMethodSet.create();
+      clazz.forEachProgramMethod(
+          method -> {
+            KeepMethodInfo keepInfo = appView.getKeepInfo(method);
+            if (!keepInfo.isShrinkingAllowed(appView.options())
+                || !keepInfo.isOptimizationAllowed(appView.options())) {
+              return;
+            }
+            if (isRedundantAbstractBridge(method)) {
+              // Record that the redundant bridge should be removed.
+              bridgesToRemoveForClass.add(method);
+              return;
+            }
+            DexClassAndMethod target = getTargetForRedundantBridge(method);
+            if (target != null) {
+              // Record that the redundant bridge should be removed.
+              bridgesToRemoveForClass.add(method);
 
-      protected final DexClass clazz;
-
-      WorklistItem(DexClass clazz) {
-        this.clazz = clazz;
-      }
-
-      Iterable<DexClass> getImmediateSupertypes() {
-        return IterableUtils.flatMap(
-            clazz.allImmediateSupertypes(),
-            supertype -> {
-              DexClass definition = appView.definitionFor(supertype);
-              return definition != null
-                  ? Collections.singletonList(definition)
-                  : Collections.emptyList();
-            });
+              // Rewrite invokes to the bridge to the target if it is accessible.
+              if (canRetargetInvokesToTargetMethod(method, target)) {
+                lensBuilder.map(method, target);
+              }
+            }
+          });
+      if (!bridgesToRemoveForClass.isEmpty()) {
+        clazz.getMethodCollection().removeMethods(bridgesToRemoveForClass.toDefinitionSet());
+        removedBridges.addAll(bridgesToRemoveForClass);
       }
     }
 
-    class NotProcessedWorklistItem extends WorklistItem {
-
-      NotProcessedWorklistItem(DexClass clazz) {
-        super(clazz);
+    private boolean canRetargetInvokesToTargetMethod(
+        ProgramMethod method, DexClassAndMethod target) {
+      // Check if constructor retargeting is enabled.
+      if (method.getDefinition().isInstanceInitializer()
+          && !redundantBridgeRemovalOptions.isRetargetingOfConstructorBridgeCallsEnabled()) {
+        return false;
       }
-
-      @Override
-      public void accept(WorkList<WorklistItem> worklist) {
-        // Enqueue a worklist item to process the current class after processing its super classes.
-        worklist.addFirstIgnoringSeenSet(new ProcessedWorklistItem(clazz));
-        // Enqueue all superclasses for processing.
-        for (DexClass supertype : getImmediateSupertypes()) {
-          if (!cache.containsKey(supertype)) {
-            worklist.addFirstIgnoringSeenSet(new NotProcessedWorklistItem(supertype));
-          }
+      // Check if all possible contexts that have access to the holder of the redundant bridge
+      // method also have access to the holder of the target method.
+      DexProgramClass methodHolder = method.getHolder();
+      DexClass targetHolder = target.getHolder();
+      if (!targetHolder.getAccessFlags().isPublic()) {
+        if (methodHolder.getAccessFlags().isPublic() || !method.isSamePackage(target)) {
+          return false;
         }
       }
+      // Check if all possible contexts that have access to the redundant bridge method also have
+      // access to the target method.
+      if (target.getAccessFlags().isPublic()) {
+        return true;
+      }
+      MethodAccessFlags methodAccessFlags = method.getAccessFlags();
+      MethodAccessFlags targetAccessFlags = target.getAccessFlags();
+      if (methodAccessFlags.isPackagePrivate()
+          && !targetAccessFlags.isPrivate()
+          && method.isSamePackage(target)) {
+        return true;
+      }
+      return methodAccessFlags.isProtected()
+          && targetAccessFlags.isProtected()
+          && method.isSamePackage(target);
     }
 
-    class ProcessedWorklistItem extends WorklistItem {
-
-      ProcessedWorklistItem(DexClass clazz) {
-        super(clazz);
-      }
-
-      @Override
-      public void accept(WorkList<WorklistItem> worklist) {
-        cache.put(
-            clazz,
-            Iterables.any(
-                getImmediateSupertypes(),
-                supertype ->
-                    cache.get(supertype)
-                        || (supertype.isLibraryClass()
-                            && redundantBridgeRemovalOptions
-                                .isPlatformReflectingOnDefaultConstructorInSubclasses(
-                                    supertype.asLibraryClass()))));
-      }
+    @Override
+    public void prune(DexProgramClass clazz) {
+      // Empty.
     }
   }
 }
