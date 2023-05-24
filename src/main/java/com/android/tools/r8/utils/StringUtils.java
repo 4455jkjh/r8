@@ -13,6 +13,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
@@ -393,11 +394,11 @@ public class StringUtils {
   }
 
   public static boolean isFalsy(String string) {
-    return string.equals("0") || string.toLowerCase().equals("false");
+    return string.equals("0") || StringUtils.toLowerCase(string).equals("false");
   }
 
   public static boolean isTruthy(String string) {
-    return string.equals("1") || string.toLowerCase().equals("true");
+    return string.equals("1") || StringUtils.toLowerCase(string).equals("true");
   }
 
   public static boolean isWhitespace(int codePoint) {
@@ -482,7 +483,7 @@ public class StringUtils {
     if (stringToCapitalize == null || stringToCapitalize.isEmpty()) {
       return stringToCapitalize;
     }
-    return stringToCapitalize.substring(0, 1).toUpperCase() + stringToCapitalize.substring(1);
+    return toUpperCase(stringToCapitalize.substring(0, 1)) + stringToCapitalize.substring(1);
   }
 
   public static int indexOf(String s, char ch1, char ch2) {
@@ -491,5 +492,13 @@ public class StringUtils {
     if (i1 == -1) return i2;
     if (i2 == -1) return i1;
     return Math.min(i1, i2);
+  }
+
+  public static String toLowerCase(String s) {
+    return s.toLowerCase(Locale.ROOT);
+  }
+
+  public static String toUpperCase(String s) {
+    return s.toUpperCase(Locale.ROOT);
   }
 }

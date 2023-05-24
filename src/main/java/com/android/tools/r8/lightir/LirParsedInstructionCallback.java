@@ -10,6 +10,7 @@ import com.android.tools.r8.graph.DexCallSite;
 import com.android.tools.r8.graph.DexField;
 import com.android.tools.r8.graph.DexItem;
 import com.android.tools.r8.graph.DexMethod;
+import com.android.tools.r8.graph.DexMethodHandle;
 import com.android.tools.r8.graph.DexProto;
 import com.android.tools.r8.graph.DexReference;
 import com.android.tools.r8.graph.DexString;
@@ -20,6 +21,7 @@ import com.android.tools.r8.ir.code.NumericType;
 import com.android.tools.r8.lightir.LirBuilder.FillArrayPayload;
 import com.android.tools.r8.lightir.LirBuilder.IntSwitchPayload;
 import com.android.tools.r8.lightir.LirBuilder.NameComputationPayload;
+import com.android.tools.r8.lightir.LirBuilder.RecordFieldValuesPayload;
 import com.android.tools.r8.naming.dexitembasedstring.NameComputationInfo;
 import java.util.ArrayList;
 import java.util.List;
@@ -98,6 +100,14 @@ public abstract class LirParsedInstructionCallback<EV> implements LirInstruction
   }
 
   public void onConstClass(DexType type) {
+    onInstruction();
+  }
+
+  public void onConstMethodHandle(DexMethodHandle methodHandle) {
+    onInstruction();
+  }
+
+  public void onConstMethodType(DexProto methodType) {
     onInstruction();
   }
 
@@ -462,6 +472,10 @@ public abstract class LirParsedInstructionCallback<EV> implements LirInstruction
     onInstruction();
   }
 
+  public void onSafeCheckCast(DexType type, EV value) {
+    onInstruction();
+  }
+
   public void onInstanceOf(DexType type, EV value) {
     onInstruction();
   }
@@ -491,6 +505,10 @@ public abstract class LirParsedInstructionCallback<EV> implements LirInstruction
     onInstruction();
   }
 
+  public void onRecordFieldValues(DexField[] fields, List<EV> values) {
+    onInstruction();
+  }
+
   private DexItem getConstantItem(int index) {
     return code.getConstantItem(index);
   }
@@ -513,6 +531,14 @@ public abstract class LirParsedInstructionCallback<EV> implements LirInstruction
           }
           if (item instanceof DexType) {
             onConstClass((DexType) item);
+            return;
+          }
+          if (item instanceof DexMethodHandle) {
+            onConstMethodHandle((DexMethodHandle) item);
+            return;
+          }
+          if (item instanceof DexProto) {
+            onConstMethodType((DexProto) item);
             return;
           }
           throw new Unimplemented();
@@ -1087,6 +1113,13 @@ public abstract class LirParsedInstructionCallback<EV> implements LirInstruction
           onCheckCast(type, value);
           return;
         }
+      case LirOpcodes.CHECKCAST_SAFE:
+        {
+          DexType type = getNextDexTypeOperand(view);
+          EV value = getNextValueOperand(view);
+          onSafeCheckCast(type, value);
+          return;
+        }
       case LirOpcodes.INSTANCEOF:
         {
           DexType type = getNextDexTypeOperand(view);
@@ -1202,6 +1235,14 @@ public abstract class LirParsedInstructionCallback<EV> implements LirInstruction
         {
           DexType clazz = getNextDexTypeOperand(view);
           onInitClass(clazz);
+          return;
+        }
+      case LirOpcodes.RECORDFIELDVALUES:
+        {
+          RecordFieldValuesPayload payload =
+              (RecordFieldValuesPayload) getConstantItem(view.getNextConstantOperand());
+          List<EV> values = getInvokeInstructionArguments(view);
+          onRecordFieldValues(payload.fields, values);
           return;
         }
       default:

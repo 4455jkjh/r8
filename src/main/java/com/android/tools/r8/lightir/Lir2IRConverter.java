@@ -9,6 +9,7 @@ import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.DexCallSite;
 import com.android.tools.r8.graph.DexField;
 import com.android.tools.r8.graph.DexMethod;
+import com.android.tools.r8.graph.DexMethodHandle;
 import com.android.tools.r8.graph.DexProto;
 import com.android.tools.r8.graph.DexReference;
 import com.android.tools.r8.graph.DexString;
@@ -29,6 +30,8 @@ import com.android.tools.r8.ir.code.CheckCast;
 import com.android.tools.r8.ir.code.Cmp;
 import com.android.tools.r8.ir.code.Cmp.Bias;
 import com.android.tools.r8.ir.code.ConstClass;
+import com.android.tools.r8.ir.code.ConstMethodHandle;
+import com.android.tools.r8.ir.code.ConstMethodType;
 import com.android.tools.r8.ir.code.ConstNumber;
 import com.android.tools.r8.ir.code.ConstString;
 import com.android.tools.r8.ir.code.DebugLocalRead;
@@ -73,8 +76,10 @@ import com.android.tools.r8.ir.code.Or;
 import com.android.tools.r8.ir.code.Phi;
 import com.android.tools.r8.ir.code.Position;
 import com.android.tools.r8.ir.code.Position.SyntheticPosition;
+import com.android.tools.r8.ir.code.RecordFieldValues;
 import com.android.tools.r8.ir.code.Rem;
 import com.android.tools.r8.ir.code.Return;
+import com.android.tools.r8.ir.code.SafeCheckCast;
 import com.android.tools.r8.ir.code.Shl;
 import com.android.tools.r8.ir.code.Shr;
 import com.android.tools.r8.ir.code.StaticGet;
@@ -88,6 +93,7 @@ import com.android.tools.r8.ir.code.Xor;
 import com.android.tools.r8.ir.conversion.MethodConversionOptions.MutableMethodConversionOptions;
 import com.android.tools.r8.lightir.LirBuilder.IntSwitchPayload;
 import com.android.tools.r8.lightir.LirCode.PositionEntry;
+import com.android.tools.r8.lightir.LirCode.TryCatchTable;
 import com.android.tools.r8.naming.dexitembasedstring.NameComputationInfo;
 import com.android.tools.r8.utils.ListUtils;
 import com.google.common.collect.ImmutableList;
@@ -167,12 +173,14 @@ public class Lir2IRConverter {
       // instruction denotes a new block.
       if (currentBlock == null) {
         currentBlock = getBasicBlock(nextInstructionIndex);
-        CatchHandlers<Integer> handlers =
-            code.getTryCatchTable().getHandlersForBlock(nextInstructionIndex);
-        if (handlers != null) {
-          List<BasicBlock> targets = ListUtils.map(handlers.getAllTargets(), this::getBasicBlock);
-          targets.forEach(currentBlock::link);
-          currentBlock.linkCatchSuccessors(handlers.getGuards(), targets);
+        TryCatchTable tryCatchTable = code.getTryCatchTable();
+        if (tryCatchTable != null) {
+          CatchHandlers<Integer> handlers = tryCatchTable.getHandlersForBlock(nextInstructionIndex);
+          if (handlers != null) {
+            List<BasicBlock> targets = ListUtils.map(handlers.getAllTargets(), this::getBasicBlock);
+            targets.forEach(currentBlock::link);
+            currentBlock.linkCatchSuccessors(handlers.getGuards(), targets);
+          }
         }
       } else {
         assert !blocks.containsKey(nextInstructionIndex);
@@ -509,6 +517,24 @@ public class Lir2IRConverter {
     }
 
     @Override
+    public void onConstMethodHandle(DexMethodHandle methodHandle) {
+      TypeElement handleType =
+          TypeElement.fromDexType(
+              appView.dexItemFactory().methodHandleType, Nullability.definitelyNotNull(), appView);
+      Value dest = getOutValueForNextInstruction(handleType);
+      addInstruction(new ConstMethodHandle(dest, methodHandle));
+    }
+
+    @Override
+    public void onConstMethodType(DexProto methodType) {
+      TypeElement typeElement =
+          TypeElement.fromDexType(
+              appView.dexItemFactory().methodTypeType, Nullability.definitelyNotNull(), appView);
+      Value dest = getOutValueForNextInstruction(typeElement);
+      addInstruction(new ConstMethodType(dest, methodType));
+    }
+
+    @Override
     public void onNumberConversion(NumericType from, NumericType to, EV value) {
       Value dest =
           getOutValueForNextInstruction(
@@ -634,7 +660,7 @@ public class Lir2IRConverter {
 
     @Override
     public void onInvokePolymorphic(DexMethod target, DexProto proto, List<EV> arguments) {
-      Value dest = getInvokeInstructionOutputValue(target);
+      Value dest = getInvokeInstructionOutputValue(proto);
       List<Value> ssaArgumentValues = getValues(arguments);
       InvokePolymorphic instruction = new InvokePolymorphic(target, proto, dest, ssaArgumentValues);
       addInstruction(instruction);
@@ -716,6 +742,12 @@ public class Lir2IRConverter {
     public void onCheckCast(DexType type, EV value) {
       Value dest = getOutValueForNextInstruction(type.toTypeElement(appView));
       addInstruction(new CheckCast(dest, getValue(value), type));
+    }
+
+    @Override
+    public void onSafeCheckCast(DexType type, EV value) {
+      Value dest = getOutValueForNextInstruction(type.toTypeElement(appView));
+      addInstruction(new SafeCheckCast(dest, getValue(value), type));
     }
 
     @Override
@@ -858,6 +890,15 @@ public class Lir2IRConverter {
     public void onInitClass(DexType clazz) {
       Value dest = getOutValueForNextInstruction(TypeElement.getInt());
       addInstruction(new InitClass(dest, clazz));
+    }
+
+    @Override
+    public void onRecordFieldValues(DexField[] fields, List<EV> values) {
+      TypeElement typeElement =
+          TypeElement.fromDexType(
+              appView.dexItemFactory().objectArrayType, Nullability.definitelyNotNull(), appView);
+      Value dest = getOutValueForNextInstruction(typeElement);
+      addInstruction(new RecordFieldValues(fields, dest, getValues(values)));
     }
   }
 }

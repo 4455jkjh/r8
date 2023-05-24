@@ -8,7 +8,6 @@ import com.android.tools.r8.cf.code.CfArithmeticBinop.Opcode;
 import com.android.tools.r8.cf.code.CfLogicalBinop;
 import com.android.tools.r8.cf.code.CfNumberConversion;
 import com.android.tools.r8.dex.MixedSectionCollection;
-import com.android.tools.r8.errors.Unimplemented;
 import com.android.tools.r8.errors.Unreachable;
 import com.android.tools.r8.graph.DebugLocalInfo;
 import com.android.tools.r8.graph.DexCallSite;
@@ -16,6 +15,7 @@ import com.android.tools.r8.graph.DexField;
 import com.android.tools.r8.graph.DexItem;
 import com.android.tools.r8.graph.DexItemFactory;
 import com.android.tools.r8.graph.DexMethod;
+import com.android.tools.r8.graph.DexMethodHandle;
 import com.android.tools.r8.graph.DexProto;
 import com.android.tools.r8.graph.DexReference;
 import com.android.tools.r8.graph.DexString;
@@ -82,11 +82,6 @@ public class LirBuilder<V, EV> {
   // Mapping from instruction to the end usage of SSA values with debug local info.
   private final Int2ReferenceMap<int[]> debugLocalEnds = new Int2ReferenceOpenHashMap<>();
 
-  // TODO(b/225838009): Reconsider this fixed space as the operand count for phis is much larger.
-  // Pre-allocated space for caching value indexes when writing instructions.
-  private static final int MAX_VALUE_COUNT = 256;
-  private int[] valueIndexBuffer = new int[MAX_VALUE_COUNT];
-
   /**
    * Internal "DexItem" for the instruction payloads such that they can be put in the pool.
    *
@@ -137,6 +132,14 @@ public class LirBuilder<V, EV> {
     }
   }
 
+  public static class RecordFieldValuesPayload extends InstructionPayload {
+    public final DexField[] fields;
+
+    public RecordFieldValuesPayload(DexField[] fields) {
+      this.fields = fields;
+    }
+  }
+
   public LirBuilder(DexMethod method, LirEncodingStrategy<V, EV> strategy, DexItemFactory factory) {
     this.factory = factory;
     constants = new Reference2IntOpenHashMap<>();
@@ -178,6 +181,7 @@ public class LirBuilder<V, EV> {
   private void setPositionIndex(int instructionIndex, Position position) {
     assert positionTable.isEmpty()
         || ListUtils.last(positionTable).fromInstructionIndex < instructionIndex;
+    assert positionTable.isEmpty() || !ListUtils.last(positionTable).position.equals(position);
     positionTable.add(new PositionEntry(instructionIndex, position));
   }
 
@@ -287,7 +291,6 @@ public class LirBuilder<V, EV> {
 
   private LirBuilder<V, EV> addInstructionTemplate(
       int opcode, List<DexItem> items, List<V> values) {
-    assert values.size() < MAX_VALUE_COUNT;
     int instructionIndex = advanceInstructionState();
     int operandSize = 0;
     for (DexItem item : items) {
@@ -297,14 +300,16 @@ public class LirBuilder<V, EV> {
       EV value = getEncodedValue(values.get(i));
       int encodedValueIndex = getEncodedValueIndex(value, instructionIndex);
       operandSize += encodedValueIndexSize(encodedValueIndex);
-      valueIndexBuffer[i] = encodedValueIndex;
     }
     writer.writeInstruction(opcode, operandSize);
     for (DexItem item : items) {
       writeConstantIndex(item);
     }
     for (int i = 0; i < values.size(); i++) {
-      writeEncodedValueIndex(valueIndexBuffer[i]);
+      // TODO(b/225838009): Consider backpatching operand size to avoid recomputing value indexes.
+      EV value = getEncodedValue(values.get(i));
+      int encodedValueIndex = getEncodedValueIndex(value, instructionIndex);
+      writeEncodedValueIndex(encodedValueIndex);
     }
     return this;
   }
@@ -379,7 +384,7 @@ public class LirBuilder<V, EV> {
       case DOUBLE:
         return addConstDouble(value);
       default:
-        throw new Unimplemented();
+        throw new Unreachable();
     }
   }
 
@@ -389,6 +394,14 @@ public class LirBuilder<V, EV> {
 
   public LirBuilder<V, EV> addConstClass(DexType type) {
     return addOneItemInstruction(LirOpcodes.LDC, type);
+  }
+
+  public LirBuilder<V, EV> addConstMethodHandle(DexMethodHandle methodHandle) {
+    return addOneItemInstruction(LirOpcodes.LDC, methodHandle);
+  }
+
+  public LirBuilder<V, EV> addConstMethodType(DexProto methodType) {
+    return addOneItemInstruction(LirOpcodes.LDC, methodType);
   }
 
   public LirBuilder<V, EV> addNeg(NumericType type, V value) {
@@ -473,6 +486,13 @@ public class LirBuilder<V, EV> {
   public LirBuilder<V, EV> addCheckCast(DexType type, V value) {
     return addInstructionTemplate(
         LirOpcodes.CHECKCAST, Collections.singletonList(type), Collections.singletonList(value));
+  }
+
+  public LirBuilder<V, EV> addSafeCheckCast(DexType type, V value) {
+    return addInstructionTemplate(
+        LirOpcodes.CHECKCAST_SAFE,
+        Collections.singletonList(type),
+        Collections.singletonList(value));
   }
 
   public LirBuilder<V, EV> addInstanceOf(DexType type, V value) {
@@ -688,6 +708,8 @@ public class LirBuilder<V, EV> {
     constants.forEach((item, index) -> constantTable[index] = item);
     DebugLocalInfoTable<EV> debugTable =
         debugLocals.isEmpty() ? null : new DebugLocalInfoTable<>(debugLocals, debugLocalEnds);
+    TryCatchTable tryCatchTable =
+        tryCatchRanges.isEmpty() ? null : new TryCatchTable(tryCatchRanges);
     return new LirCode<>(
         metadata,
         constantTable,
@@ -695,7 +717,7 @@ public class LirBuilder<V, EV> {
         argumentCount,
         byteWriter.toByteArray(),
         instructionCount,
-        new TryCatchTable(tryCatchRanges),
+        tryCatchTable,
         debugTable,
         strategy.getStrategyInfo());
   }
@@ -859,5 +881,11 @@ public class LirBuilder<V, EV> {
 
   public LirBuilder<V, EV> addInitClass(DexType clazz) {
     return addOneItemInstruction(LirOpcodes.INITCLASS, clazz);
+  }
+
+  public LirBuilder<V, EV> addRecordFieldValues(DexField[] fields, List<V> values) {
+    RecordFieldValuesPayload payload = new RecordFieldValuesPayload(fields);
+    return addInstructionTemplate(
+        LirOpcodes.RECORDFIELDVALUES, Collections.singletonList(payload), values);
   }
 }
