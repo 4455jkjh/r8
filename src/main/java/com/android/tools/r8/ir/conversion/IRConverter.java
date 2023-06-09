@@ -27,10 +27,14 @@ import com.android.tools.r8.ir.code.BasicBlock;
 import com.android.tools.r8.ir.code.IRCode;
 import com.android.tools.r8.ir.code.InstructionIterator;
 import com.android.tools.r8.ir.code.Value;
+import com.android.tools.r8.ir.conversion.passes.ArrayConstructionSimplifier;
 import com.android.tools.r8.ir.conversion.passes.BinopRewriter;
+import com.android.tools.r8.ir.conversion.passes.BranchSimplifier;
 import com.android.tools.r8.ir.conversion.passes.CommonSubexpressionElimination;
 import com.android.tools.r8.ir.conversion.passes.ParentConstructorHoistingCodeRewriter;
 import com.android.tools.r8.ir.conversion.passes.SplitBranch;
+import com.android.tools.r8.ir.conversion.passes.TrivialCheckCastAndInstanceOfRemover;
+import com.android.tools.r8.ir.conversion.passes.TrivialPhiSimplifier;
 import com.android.tools.r8.ir.desugar.CfInstructionDesugaringCollection;
 import com.android.tools.r8.ir.desugar.CovariantReturnTypeAnnotationTransformer;
 import com.android.tools.r8.ir.optimize.AssertionErrorTwoArgsConstructorRewriter;
@@ -538,7 +542,7 @@ public class IRConverter {
 
     if (options.canHaveArtStringNewInitBug()) {
       timing.begin("Check for new-init issue");
-      CodeRewriter.ensureDirectStringNewToInit(code, appView.dexItemFactory());
+      TrivialPhiSimplifier.ensureDirectStringNewToInit(code, appView.dexItemFactory());
       timing.end();
     }
 
@@ -726,8 +730,8 @@ public class IRConverter {
     assert code.verifyTypes(appView);
 
     timing.begin("Remove trivial type checks/casts");
-    codeRewriter.removeTrivialCheckCastAndInstanceOfInstructions(
-        code, context, methodProcessor, methodProcessingContext);
+    new TrivialCheckCastAndInstanceOfRemover(appView)
+        .run(code, context, methodProcessor, methodProcessingContext);
     timing.end();
 
     if (enumValueOptimizer != null) {
@@ -750,9 +754,7 @@ public class IRConverter {
       timing.end();
     }
     commonSubexpressionElimination.run(context, code, timing);
-    timing.begin("Simplify arrays");
-    codeRewriter.simplifyArrayConstruction(code);
-    timing.end();
+    new ArrayConstructionSimplifier(appView).run(context, code, timing);
     timing.begin("Rewrite move result");
     codeRewriter.rewriteMoveResult(code);
     timing.end();
@@ -771,10 +773,10 @@ public class IRConverter {
     codeRewriter.optimizeAlwaysThrowingInstructions(code);
     timing.end();
     timing.begin("Simplify control flow");
-    if (codeRewriter.simplifyControlFlow(code)) {
+    if (new BranchSimplifier(appView).simplifyBranches(code)) {
       timing.begin("Remove trivial type checks/casts");
-      codeRewriter.removeTrivialCheckCastAndInstanceOfInstructions(
-          code, context, methodProcessor, methodProcessingContext);
+      new TrivialCheckCastAndInstanceOfRemover(appView)
+          .run(code, context, methodProcessor, methodProcessingContext);
       timing.end();
     }
     timing.end();
@@ -829,7 +831,6 @@ public class IRConverter {
       assert options.inlinerOptions().enableInlining && inliner != null;
       classInliner.processMethodCode(
           appView.withLiveness(),
-          codeRewriter,
           stringOptimizer,
           enumValueOptimizer,
           code.context(),
@@ -877,7 +878,7 @@ public class IRConverter {
     if (!options.isGeneratingClassFiles()) {
       timing.begin("Canonicalize constants");
       ConstantCanonicalizer constantCanonicalizer =
-          new ConstantCanonicalizer(appView, codeRewriter, context, code);
+          new ConstantCanonicalizer(appView, context, code);
       constantCanonicalizer.canonicalize();
       timing.end();
       previous = printMethod(code, "IR after constant canonicalization (SSA)", previous);

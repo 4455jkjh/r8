@@ -9,6 +9,7 @@ import com.android.tools.r8.graph.DexCode;
 import com.android.tools.r8.graph.DexEncodedMethod;
 import com.android.tools.r8.graph.bytecodemetadata.BytecodeMetadataProvider;
 import com.android.tools.r8.ir.code.IRCode;
+import com.android.tools.r8.ir.conversion.passes.TrivialGotosCollapser;
 import com.android.tools.r8.ir.desugar.nest.D8NestBasedAccessDesugaring;
 import com.android.tools.r8.ir.optimize.CodeRewriter;
 import com.android.tools.r8.ir.optimize.DeadCodeRemover;
@@ -22,13 +23,10 @@ import com.android.tools.r8.utils.Timing;
 public class IRToDexFinalizer extends IRFinalizer<DexCode> {
 
   private static final int PEEPHOLE_OPTIMIZATION_PASSES = 2;
-
-  private final CodeRewriter codeRewriter;
   private final InternalOptions options;
 
   public IRToDexFinalizer(AppView<?> appView, DeadCodeRemover deadCodeRemover) {
     super(appView, deadCodeRemover);
-    this.codeRewriter = deadCodeRemover.getCodeRewriter();
     this.options = appView.options();
   }
 
@@ -44,7 +42,7 @@ public class IRToDexFinalizer extends IRFinalizer<DexCode> {
     // Workaround massive dex2oat memory use for self-recursive methods.
     RuntimeWorkaroundCodeRewriter.workaroundDex2OatInliningIssue(appView, code);
     // Workaround MAX_INT switch issue.
-    RuntimeWorkaroundCodeRewriter.workaroundSwitchMaxIntBug(code, codeRewriter, options);
+    RuntimeWorkaroundCodeRewriter.workaroundSwitchMaxIntBug(code, appView);
     RuntimeWorkaroundCodeRewriter.workaroundDex2OatLinkedListBug(code, options);
     RuntimeWorkaroundCodeRewriter.workaroundForwardingInitializerBug(code, options);
     RuntimeWorkaroundCodeRewriter.workaroundExceptionTargetingLoopHeaderBug(code, options);
@@ -62,17 +60,18 @@ public class IRToDexFinalizer extends IRFinalizer<DexCode> {
     LinearScanRegisterAllocator registerAllocator = new LinearScanRegisterAllocator(appView, code);
     registerAllocator.allocateRegisters();
     timing.end();
+    TrivialGotosCollapser trivialGotosCollapser = new TrivialGotosCollapser(appView);
     if (code.getConversionOptions().isPeepholeOptimizationsEnabled()) {
       timing.begin("Peephole optimize");
       for (int i = 0; i < PEEPHOLE_OPTIMIZATION_PASSES; i++) {
-        CodeRewriter.collapseTrivialGotos(appView, code);
+        trivialGotosCollapser.run(code.context(), code, timing);
         PeepholeOptimizer.optimize(appView, code, registerAllocator);
       }
       timing.end();
     }
     timing.begin("Clean up");
     CodeRewriter.removeUnneededMovesOnExitingPaths(code, registerAllocator);
-    CodeRewriter.collapseTrivialGotos(appView, code);
+    trivialGotosCollapser.run(code.context(), code, timing);
     timing.end();
     return registerAllocator;
   }
