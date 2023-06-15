@@ -137,6 +137,38 @@ public class ClassNamingForNameMapper implements ClassNaming {
         originalSourceFileConsumer.accept(originalName, info.asFileNameInformation().getFileName());
       }
     }
+
+    @Override
+    public boolean hasNoOverlappingRangesForSignature(MethodSignature residualSignature) {
+      List<MappedRange> mappedRanges = mappedRangesByName.get(residualSignature.getName());
+      if (mappedRanges == null) {
+        return true;
+      }
+      List<MappedRange> nonEmptyMinifiedRanges =
+          ListUtils.filter(mappedRanges, range -> range.minifiedRange != null);
+      if (nonEmptyMinifiedRanges.isEmpty()) {
+        return true;
+      }
+      MappedRangesOfName mappedRangesOfName = new MappedRangesOfName(nonEmptyMinifiedRanges);
+      for (MappedRangesOfName partition : mappedRangesOfName.partitionOnMethodSignature()) {
+        List<MappedRange> mappedRangesForSignature =
+            ListUtils.sort(
+                partition.getMappedRanges(),
+                Comparator.comparing(range -> range.minifiedRange.from));
+        Range lastRange = new Range(-1, -1);
+        for (MappedRange range : mappedRangesForSignature) {
+          if (range.minifiedRange.equals(lastRange)) {
+            continue;
+          }
+          if (range.minifiedRange.from <= lastRange.to) {
+            assert false;
+            return false;
+          }
+          lastRange = range.minifiedRange;
+        }
+      }
+      return true;
+    }
   }
 
   /** List of MappedRanges that belong to the same renamed name. */
@@ -674,7 +706,7 @@ public class ClassNamingForNameMapper implements ClassNaming {
     }
 
     @Override
-    public Signature getOriginalSignature() {
+    public MethodSignature getOriginalSignature() {
       return signature;
     }
 
@@ -787,9 +819,13 @@ public class ClassNamingForNameMapper implements ClassNaming {
       Range splitOriginalRange =
           new Range(
               getOriginalLineNumber(minifiedRange.from), getOriginalLineNumber(minifiedRange.to));
+      return copyWithNewRanges(minifiedRange, splitOriginalRange);
+    }
+
+    public MappedRange copyWithNewRanges(Range minifiedRange, Range originalRange) {
       MappedRange splitMappedRange =
-          new MappedRange(minifiedRange, signature, splitOriginalRange, renamedName);
-      if (minifiedRange.to >= this.minifiedRange.to) {
+          new MappedRange(minifiedRange, signature, originalRange, renamedName);
+      if (minifiedRange.from <= this.minifiedRange.from) {
         splitMappedRange.additionalMappingInformation =
             new ArrayList<>(this.additionalMappingInformation);
       }

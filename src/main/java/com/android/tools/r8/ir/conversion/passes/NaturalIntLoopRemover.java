@@ -1,10 +1,11 @@
-// Copyright (c) 2021, the R8 project authors. Please see the AUTHORS file
+// Copyright (c) 2023, the R8 project authors. Please see the AUTHORS file
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-package com.android.tools.r8.ir.optimize;
+package com.android.tools.r8.ir.conversion.passes;
 
 import com.android.tools.r8.errors.Unreachable;
+import com.android.tools.r8.graph.AppInfo;
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.ir.code.BasicBlock;
 import com.android.tools.r8.ir.code.Goto;
@@ -27,12 +28,19 @@ import java.util.Set;
  * pattern match fori and for loops with any initial value and increment, but this should be
  * extended for while loop support.
  */
-public class NaturalIntLoopRemover {
+public class NaturalIntLoopRemover extends CodeRewriterPass<AppInfo> {
 
-  public void run(AppView<?> appView, IRCode code) {
-    if (!appView.options().enableLoopUnrolling) {
-      return;
-    }
+  public NaturalIntLoopRemover(AppView<?> appView) {
+    super(appView);
+  }
+
+  @Override
+  protected String getTimingId() {
+    return "NaturalIntLoopRemover";
+  }
+
+  @Override
+  protected void rewriteCode(IRCode code) {
     boolean loopRemoved = false;
     for (BasicBlock comparisonBlockCandidate : code.blocks) {
       if (isComparisonBlock(comparisonBlockCandidate)) {
@@ -41,8 +49,14 @@ public class NaturalIntLoopRemover {
     }
     if (loopRemoved) {
       code.removeAllDeadAndTrivialPhis();
+      code.removeRedundantBlocks();
       assert code.isConsistentSSA(appView);
     }
+  }
+
+  @Override
+  protected boolean shouldRewriteCode(IRCode code) {
+    return appView.options().enableLoopUnrolling;
   }
 
   private boolean isComparisonBlock(BasicBlock comparisonBlockCandidate) {

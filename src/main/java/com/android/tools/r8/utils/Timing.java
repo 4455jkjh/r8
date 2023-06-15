@@ -23,7 +23,9 @@ import java.util.concurrent.ExecutorService;
 
 public class Timing {
 
-  private static final int MINIMUM_REPORT_PERCENTAGE = 2;
+  private static final int MINIMUM_REPORT_PERCENTAGE =
+      SystemPropertyUtils.parseSystemPropertyOrDefault(
+          "com.android.tools.r8.printtimes.minvalue", 2);
 
   private static final Timing EMPTY =
       new Timing("<empty>", false) {
@@ -38,6 +40,11 @@ public class Timing {
             @Override
             public void end() {
               // Ignore.
+            }
+
+            @Override
+            public boolean isEmpty() {
+              return true;
             }
           };
         }
@@ -313,7 +320,7 @@ public class Timing {
               // merge.
               children.forEach((title, node) -> node.report(depth + 1, this));
               // Print the slowest entry if one was found.
-              if (slowest.duration > 0) {
+              if (slowest != null && slowest.duration > 0) {
                 printPrefix(depth);
                 System.out.println("SLOWEST " + slowest.toString(this));
                 slowest.children.forEach((title, node) -> node.report(depth + 1, this));
@@ -325,6 +332,15 @@ public class Timing {
               return "MERGE " + super.toString();
             }
           };
+    }
+
+    public TimingMerger disableSlowestReporting() {
+      slowest = null;
+      return this;
+    }
+
+    public boolean isEmpty() {
+      return false;
     }
 
     private static class Item {
@@ -347,7 +363,7 @@ public class Timing {
         assert timing.stack.isEmpty() : "Expected sub-timing to have completed prior to merge";
         ++taskCount;
         merged.duration += timing.top.duration;
-        if (timing.top.duration > slowest.duration) {
+        if (slowest != null && timing.top.duration > slowest.duration) {
           slowest = timing.top;
         }
         worklist.addLast(new Item(merged, timing.top));

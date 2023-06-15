@@ -3,12 +3,14 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8.graph.lens;
 
-import static com.android.tools.r8.graph.DexProgramClass.asProgramClassOrNull;
+import static com.android.tools.r8.graph.DexClassAndMethod.asProgramMethodOrNull;
+import static com.android.tools.r8.utils.collections.ThrowingSet.isThrowingSet;
 
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.DexApplication;
 import com.android.tools.r8.graph.DexCallSite;
 import com.android.tools.r8.graph.DexClass;
+import com.android.tools.r8.graph.DexClassAndMethod;
 import com.android.tools.r8.graph.DexDefinitionSupplier;
 import com.android.tools.r8.graph.DexEncodedField;
 import com.android.tools.r8.graph.DexEncodedMethod;
@@ -27,9 +29,11 @@ import com.android.tools.r8.ir.optimize.enums.EnumUnboxingLens;
 import com.android.tools.r8.optimize.MemberRebindingIdentityLens;
 import com.android.tools.r8.optimize.MemberRebindingLens;
 import com.android.tools.r8.shaking.KeepInfoCollection;
+import com.android.tools.r8.utils.CollectionUtils;
 import com.android.tools.r8.utils.InternalOptions;
 import com.android.tools.r8.utils.ListUtils;
 import com.android.tools.r8.utils.SetUtils;
+import com.android.tools.r8.utils.Timing;
 import com.android.tools.r8.utils.collections.BidirectionalManyToOneRepresentativeHashMap;
 import com.android.tools.r8.utils.collections.MutableBidirectionalManyToOneRepresentativeMap;
 import com.android.tools.r8.utils.collections.ProgramMethodSet;
@@ -39,6 +43,7 @@ import com.google.common.collect.Sets;
 import it.unimi.dsi.fastutil.objects.Object2BooleanArrayMap;
 import it.unimi.dsi.fastutil.objects.Object2BooleanMap;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
@@ -198,8 +203,18 @@ public abstract class GraphLens {
   public ProgramMethod mapProgramMethod(
       ProgramMethod oldMethod, DexDefinitionSupplier definitions) {
     DexMethod newMethod = getRenamedMethodSignature(oldMethod.getReference());
-    DexProgramClass holder = asProgramClassOrNull(definitions.definitionForHolder(newMethod));
-    return newMethod.lookupOnProgramClass(holder);
+    if (newMethod == oldMethod.getReference() && !oldMethod.getDefinition().isObsolete()) {
+      assert verifyIsConsistentWithLookup(oldMethod, definitions);
+      return oldMethod;
+    }
+    return asProgramMethodOrNull(definitions.definitionFor(newMethod));
+  }
+
+  private static boolean verifyIsConsistentWithLookup(
+      ProgramMethod method, DexDefinitionSupplier definitions) {
+    DexClassAndMethod lookupMethod = definitions.definitionFor(method.getReference());
+    assert method.getDefinition() == lookupMethod.getDefinition();
+    return true;
   }
 
   // Predicate indicating if a rewritten reference is a simple renaming, meaning the move from one
@@ -419,6 +434,8 @@ public abstract class GraphLens {
 
   public abstract boolean isIdentityLens();
 
+  public abstract boolean isIdentityLensForFields(GraphLens codeLens);
+
   public boolean isMemberRebindingLens() {
     return false;
   }
@@ -439,6 +456,10 @@ public abstract class GraphLens {
 
   public NonIdentityGraphLens asNonIdentityLens() {
     return null;
+  }
+
+  public boolean isPublicizerLens() {
+    return false;
   }
 
   public boolean isVerticalClassMergerLens() {
@@ -487,7 +508,10 @@ public abstract class GraphLens {
   }
 
   public Map<DexCallSite, ProgramMethodSet> rewriteCallSites(
-      Map<DexCallSite, ProgramMethodSet> callSites, DexDefinitionSupplier definitions) {
+      Map<DexCallSite, ProgramMethodSet> callSites,
+      DexDefinitionSupplier definitions,
+      Timing timing) {
+    timing.begin("Rewrite call sites");
     Map<DexCallSite, ProgramMethodSet> result = new IdentityHashMap<>();
     LensCodeRewriterUtils rewriter = new LensCodeRewriterUtils(definitions, this, null);
     callSites.forEach(
@@ -499,7 +523,53 @@ public abstract class GraphLens {
                 .add(context);
           }
         });
+    timing.end();
     return result;
+  }
+
+  public Set<DexField> rewriteFields(Set<DexField> fields, Timing timing) {
+    timing.begin("Rewrite fields");
+    GraphLens appliedLens = getIdentityLens();
+    Set<DexField> rewrittenFields;
+    if (isIdentityLensForFields(appliedLens)) {
+      assert verifyIsIdentityLensForFields(fields, appliedLens);
+      rewrittenFields = fields;
+    } else {
+      rewrittenFields = null;
+      for (DexField field : fields) {
+        DexField rewrittenField = getRenamedFieldSignature(field, appliedLens);
+        // If rewrittenFields is non-null we have previously seen a change and need to record the
+        // field no matter what.
+        if (rewrittenFields != null) {
+          rewrittenFields.add(rewrittenField);
+          continue;
+        }
+        // If the field has not been rewritten then we can reuse the input set.
+        if (rewrittenField == field) {
+          continue;
+        }
+        // Otherwise add the rewritten field and all previous fields to a new set.
+        rewrittenFields = SetUtils.newIdentityHashSet(fields.size());
+        CollectionUtils.forEachUntilExclusive(fields, rewrittenFields::add, field);
+        rewrittenFields.add(rewrittenField);
+      }
+      if (rewrittenFields == null) {
+        rewrittenFields = fields;
+      } else {
+        rewrittenFields =
+            SetUtils.trimCapacityOfIdentityHashSetIfSizeLessThan(rewrittenFields, fields.size());
+      }
+    }
+    timing.end();
+    return rewrittenFields;
+  }
+
+  private boolean verifyIsIdentityLensForFields(
+      Collection<DexField> fields, GraphLens appliedLens) {
+    for (DexField field : fields) {
+      assert lookupField(field, appliedLens) == field;
+    }
+    return true;
   }
 
   @SuppressWarnings("unchecked")
@@ -517,6 +587,9 @@ public abstract class GraphLens {
   }
 
   public <T extends DexReference> Set<T> rewriteReferences(Set<T> references) {
+    if (isThrowingSet(references)) {
+      return references;
+    }
     Set<T> result = SetUtils.newIdentityHashSet(references.size());
     for (T reference : references) {
       result.add(rewriteReference(reference));

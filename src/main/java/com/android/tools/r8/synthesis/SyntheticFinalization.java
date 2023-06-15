@@ -179,10 +179,10 @@ public class SyntheticFinalization {
                   appView
                       .appInfo()
                       .getMainDexInfo()
-                      .rewrittenWithLens(appView.getSyntheticItems(), result.lens)));
-      appView.rewriteWithD8Lens(result.lens);
+                      .rewrittenWithLens(appView.getSyntheticItems(), result.lens, timing)));
+      appView.rewriteWithD8Lens(result.lens, timing);
     }
-    appView.pruneItems(result.prunedItems, executorService);
+    appView.pruneItems(result.prunedItems, executorService, timing);
   }
 
   public static void finalizeWithClassHierarchy(
@@ -194,9 +194,10 @@ public class SyntheticFinalization {
     appView.setAppInfo(appView.appInfo().rebuildWithClassHierarchy(result.commit));
     appView.setAppInfo(appView.appInfo().rebuildWithMainDexInfo(result.mainDexInfo));
     if (result.lens != null) {
-      appView.rewriteWithLens(result.lens);
+      appView.rewriteWithLens(result.lens, executorService, timing);
     }
-    appView.pruneItems(result.prunedItems, executorService);
+    appView.pruneItems(result.prunedItems, executorService, timing);
+    appView.notifyOptimizationFinishedForTesting();
   }
 
   public static void finalizeWithLiveness(
@@ -206,12 +207,14 @@ public class SyntheticFinalization {
     Result result = appView.getSyntheticItems().computeFinalSynthetics(appView, timing);
     appView.setAppInfo(appView.appInfo().rebuildWithMainDexInfo(result.mainDexInfo));
     if (result.lens != null) {
-      appView.rewriteWithLensAndApplication(result.lens, result.commit.getApplication().asDirect());
+      appView.rewriteWithLensAndApplication(
+          result.lens, result.commit.getApplication().asDirect(), executorService, timing);
     } else {
       assert result.commit.getApplication() == appView.appInfo().app();
     }
     appView.setAppInfo(appView.appInfo().rebuildWithLiveness(result.commit));
-    appView.pruneItems(result.prunedItems, executorService);
+    appView.pruneItems(result.prunedItems, executorService, timing);
+    appView.notifyOptimizationFinishedForTesting();
   }
 
   Result computeFinalSynthetics(AppView<?> appView, Timing timing) {

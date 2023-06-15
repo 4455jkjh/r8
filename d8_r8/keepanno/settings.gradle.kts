@@ -3,23 +3,23 @@
 // BSD-style license that can be found in the LICENSE file.
 
 pluginManagement {
-    repositories {
-        maven {
-            url = uri("file:../../third_party/dependencies")
-        }
-        maven {
-            url = uri("file:../../third_party/dependencies_new")
-        }
+  repositories {
+    maven {
+      url = uri("file:../../third_party/dependencies")
     }
+    maven {
+      url = uri("file:../../third_party/dependencies_new")
+    }
+  }
 }
 
 dependencyResolutionManagement {
   repositories {
     maven {
-        url= uri("file:../../third_party/dependencies")
+      url = uri("file:../../third_party/dependencies")
     }
     maven {
-        url= uri("file:../../third_party/dependencies_new")
+      url = uri("file:../../third_party/dependencies_new")
     }
   }
 }

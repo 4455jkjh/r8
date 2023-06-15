@@ -6,7 +6,6 @@ package com.android.tools.r8.ir.conversion.passes;
 
 import com.android.tools.r8.graph.AppInfo;
 import com.android.tools.r8.graph.AppView;
-import com.android.tools.r8.graph.ProgramMethod;
 import com.android.tools.r8.ir.analysis.type.TypeAnalysis;
 import com.android.tools.r8.ir.code.BasicBlock;
 import com.android.tools.r8.ir.code.ConstNumber;
@@ -34,12 +33,12 @@ public class SplitBranch extends CodeRewriterPass<AppInfo> {
   }
 
   @Override
-  String getTimingId() {
+  protected String getTimingId() {
     return "SplitBranch";
   }
 
   @Override
-  boolean shouldRewriteCode(ProgramMethod method, IRCode code) {
+  protected boolean shouldRewriteCode(IRCode code) {
     return true;
   }
 
@@ -54,7 +53,7 @@ public class SplitBranch extends CodeRewriterPass<AppInfo> {
    * known boolean values.
    */
   @Override
-  void rewriteCode(ProgramMethod method, IRCode code) {
+  protected void rewriteCode(IRCode code) {
     List<BasicBlock> candidates = computeCandidates(code);
     if (candidates.isEmpty()) {
       return;
@@ -73,6 +72,7 @@ public class SplitBranch extends CodeRewriterPass<AppInfo> {
     if (ALLOW_PARTIAL_REWRITE) {
       code.splitCriticalEdges();
     }
+    code.removeRedundantBlocks();
     assert code.isConsistentSSA(appView);
   }
 

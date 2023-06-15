@@ -7,6 +7,7 @@ import static com.android.tools.r8.graph.DexEncodedMethod.asProgramMethodOrNull;
 import static com.android.tools.r8.graph.DexEncodedMethod.toMethodDefinitionOrNull;
 import static com.android.tools.r8.graph.DexProgramClass.asProgramClassOrNull;
 import static com.android.tools.r8.graph.MethodResolutionResult.SingleResolutionResult.isOverriding;
+import static com.android.tools.r8.utils.collections.ThrowingSet.isThrowingSet;
 
 import com.android.tools.r8.cf.CfVersion;
 import com.android.tools.r8.features.ClassToFeatureSplitMap;
@@ -48,6 +49,7 @@ import com.android.tools.r8.graph.PrunedItems;
 import com.android.tools.r8.graph.SubtypingInfo;
 import com.android.tools.r8.graph.lens.GraphLens;
 import com.android.tools.r8.graph.lens.NonIdentityGraphLens;
+import com.android.tools.r8.horizontalclassmerging.HorizontalClassMerger;
 import com.android.tools.r8.ir.analysis.type.ClassTypeElement;
 import com.android.tools.r8.ir.analysis.type.DynamicType;
 import com.android.tools.r8.ir.analysis.type.TypeAnalysis;
@@ -65,9 +67,11 @@ import com.android.tools.r8.utils.InternalOptions;
 import com.android.tools.r8.utils.ListUtils;
 import com.android.tools.r8.utils.PredicateSet;
 import com.android.tools.r8.utils.ThreadUtils;
+import com.android.tools.r8.utils.Timing;
 import com.android.tools.r8.utils.Visibility;
 import com.android.tools.r8.utils.WorkList;
 import com.android.tools.r8.utils.collections.ProgramMethodSet;
+import com.android.tools.r8.utils.collections.ThrowingSet;
 import com.android.tools.r8.utils.structural.Ordered;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Sets;
@@ -103,7 +107,7 @@ public class AppInfoWithLiveness extends AppInfoWithClassHierarchy
    * contained in {@link #liveMethods}, it may be marked as abstract and its implementation may be
    * removed.
    */
-  private final Set<DexMethod> targetedMethods;
+  private Set<DexMethod> targetedMethods;
 
   /** Method targets that lead to resolution errors such as non-existing or invalid targets. */
   private final Set<DexMethod> failedMethodResolutionTargets;
@@ -122,7 +126,7 @@ public class AppInfoWithLiveness extends AppInfoWithClassHierarchy
    * Set of methods that belong to live classes and can be reached by invokes. These need to be
    * kept.
    */
-  private final Set<DexMethod> liveMethods;
+  private Set<DexMethod> liveMethods;
   /**
    * Information about all fields that are accessed by the program. The information includes whether
    * a given field is read/written by the program, and it also includes all indirect accesses to
@@ -327,9 +331,9 @@ public class AppInfoWithLiveness extends AppInfoWithClassHierarchy
             previous.virtualMethodsTargetedByInvokeDirect, prunedItems, executorService, futures),
         pruneMethods(previous.liveMethods, prunedItems, executorService, futures),
         previous.fieldAccessInfoCollection,
-        previous.methodAccessInfoCollection,
+        previous.methodAccessInfoCollection.withoutPrunedItems(prunedItems),
         previous.objectAllocationInfoCollection.withoutPrunedItems(prunedItems),
-        previous.callSites,
+        pruneCallSites(previous.callSites, prunedItems),
         extendPinnedItems(previous, prunedItems.getAdditionalPinnedItems()),
         previous.mayHaveSideEffects,
         pruneMethods(previous.alwaysInline, prunedItems, executorService, futures),
@@ -351,6 +355,23 @@ public class AppInfoWithLiveness extends AppInfoWithClassHierarchy
         pruneClasses(previous.lockCandidates, prunedItems, executorService, futures),
         pruneMapFromClasses(previous.initClassReferences, prunedItems, executorService, futures),
         previous.recordFieldValuesReferences);
+  }
+
+  private static Map<DexCallSite, ProgramMethodSet> pruneCallSites(
+      Map<DexCallSite, ProgramMethodSet> callSites, PrunedItems prunedItems) {
+    callSites
+        .entrySet()
+        .removeIf(
+            entry -> {
+              ProgramMethodSet contexts = entry.getValue();
+              ProgramMethodSet prunedContexts = contexts.withoutPrunedItems(prunedItems);
+              if (prunedContexts.isEmpty()) {
+                return true;
+              }
+              entry.setValue(prunedContexts);
+              return false;
+            });
+    return callSites;
   }
 
   private static Set<DexType> pruneClasses(
@@ -406,8 +427,7 @@ public class AppInfoWithLiveness extends AppInfoWithClassHierarchy
 
   private static <T> Set<T> pruneItems(
       Set<T> items, Set<T> removedItems, ExecutorService executorService, List<Future<?>> futures) {
-    if (!removedItems.isEmpty()) {
-
+    if (!isThrowingSet(items) && !removedItems.isEmpty()) {
       futures.add(
           ThreadUtils.processAsynchronously(
               () -> {
@@ -465,6 +485,32 @@ public class AppInfoWithLiveness extends AppInfoWithClassHierarchy
               executorService));
     }
     return map;
+  }
+
+  @Override
+  public void notifyHorizontalClassMergerFinished(
+      HorizontalClassMerger.Mode horizontalClassMergerMode) {
+    if (horizontalClassMergerMode.isInitial()) {
+      methodAccessInfoCollection.destroy();
+    }
+  }
+
+  public void notifyMemberRebindingFinished(AppView<AppInfoWithLiveness> appView) {
+    getFieldAccessInfoCollection().restrictToProgram(appView);
+    getMethodAccessInfoCollection().destroyNonDirectInvokes();
+  }
+
+  @Override
+  public void notifyMinifierFinished() {
+    liveMethods = ThrowingSet.get();
+    methodAccessInfoCollection.destroy();
+  }
+
+  public void notifyTreePrunerFinished(Enqueuer.Mode mode) {
+    if (mode.isInitialTreeShaking()) {
+      liveMethods = ThrowingSet.get();
+    }
+    targetedMethods = ThrowingSet.get();
   }
 
   private boolean verify() {
@@ -1086,13 +1132,15 @@ public class AppInfoWithLiveness extends AppInfoWithClassHierarchy
    */
   @Override
   public AppInfoWithLiveness prunedCopyFrom(
-      PrunedItems prunedItems, ExecutorService executorService) throws ExecutionException {
+      PrunedItems prunedItems, ExecutorService executorService, Timing timing)
+      throws ExecutionException {
     assert getClass() == AppInfoWithLiveness.class;
     assert checkIfObsolete();
     if (prunedItems.isEmpty()) {
       assert app() == prunedItems.getPrunedApp();
       return this;
     }
+    timing.begin("Pruning AppInfoWithLiveness");
     if (prunedItems.hasRemovedClasses()) {
       // Rebuild the hierarchy.
       objectAllocationInfoCollection.mutate(
@@ -1105,6 +1153,7 @@ public class AppInfoWithLiveness extends AppInfoWithClassHierarchy
     AppInfoWithLiveness appInfoWithLiveness =
         new AppInfoWithLiveness(this, prunedItems, executorService, futures);
     ThreadUtils.awaitFutures(futures);
+    timing.end();
     return appInfoWithLiveness;
   }
 
@@ -1113,7 +1162,7 @@ public class AppInfoWithLiveness extends AppInfoWithClassHierarchy
   }
 
   public AppInfoWithLiveness rewrittenWithLens(
-      DirectMappedDexApplication application, NonIdentityGraphLens lens) {
+      DirectMappedDexApplication application, NonIdentityGraphLens lens, Timing timing) {
     assert checkIfObsolete();
 
     // Switchmap classes should never be affected by renaming.
@@ -1124,27 +1173,28 @@ public class AppInfoWithLiveness extends AppInfoWithClassHierarchy
             .map(FieldResolutionResult::getResolvedField)
             .collect(Collectors.toList()));
 
-    CommittedItems committedItems = getSyntheticItems().commitRewrittenWithLens(application, lens);
+    CommittedItems committedItems =
+        getSyntheticItems().commitRewrittenWithLens(application, lens, timing);
     DexDefinitionSupplier definitionSupplier =
         committedItems.getApplication().getDefinitionsSupplier(committedItems);
     return new AppInfoWithLiveness(
         committedItems,
-        getClassToFeatureSplitMap().rewrittenWithLens(lens),
-        getMainDexInfo().rewrittenWithLens(getSyntheticItems(), lens),
+        getClassToFeatureSplitMap().rewrittenWithLens(lens, timing),
+        getMainDexInfo().rewrittenWithLens(getSyntheticItems(), lens, timing),
         getMissingClasses(),
         deadProtoTypes,
         lens.rewriteReferences(liveTypes),
         lens.rewriteReferences(targetedMethods),
         lens.rewriteReferences(failedMethodResolutionTargets),
-        lens.rewriteReferences(failedFieldResolutionTargets),
+        lens.rewriteFields(failedFieldResolutionTargets, timing),
         lens.rewriteReferences(bootstrapMethods),
         lens.rewriteReferences(virtualMethodsTargetedByInvokeDirect),
         lens.rewriteReferences(liveMethods),
-        fieldAccessInfoCollection.rewrittenWithLens(definitionSupplier, lens),
-        methodAccessInfoCollection.rewrittenWithLens(definitionSupplier, lens),
-        objectAllocationInfoCollection.rewrittenWithLens(definitionSupplier, lens),
-        lens.rewriteCallSites(callSites, definitionSupplier),
-        keepInfo.rewrite(definitionSupplier, lens, application.options),
+        fieldAccessInfoCollection.rewrittenWithLens(definitionSupplier, lens, timing),
+        methodAccessInfoCollection.rewrittenWithLens(definitionSupplier, lens, timing),
+        objectAllocationInfoCollection.rewrittenWithLens(definitionSupplier, lens, timing),
+        lens.rewriteCallSites(callSites, definitionSupplier, timing),
+        keepInfo.rewrite(definitionSupplier, lens, application.options, timing),
         // Take any rule in case of collisions.
         lens.rewriteReferenceKeys(mayHaveSideEffects, (reference, rules) -> ListUtils.first(rules)),
         lens.rewriteReferences(alwaysInline),

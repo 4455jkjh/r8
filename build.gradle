@@ -33,7 +33,7 @@ ext {
     // The kotlin version is only here to specify the kotlin language level,
     // all kotlin compilations are done in tests.
     kotlinVersion = '1.8.0'
-    kotlinExtMetadataJVMVersion = '0.6.0'
+    kotlinExtMetadataJVMVersion = '0.6.2'
     smaliVersion = '3.0.3'
     errorproneVersion = '2.18.0'
     testngVersion = '6.10'
@@ -2253,6 +2253,9 @@ test { task ->
     }
     if (project.hasProperty('test_dir')) {
         systemProperty 'test_dir', project.property('test_dir')
+    }
+    if (project.hasProperty('command_cache_dir')) {
+        systemProperty 'command_cache_dir', project.property('command_cache_dir')
     }
     if (project.hasProperty('r8lib')) {
         dependsOn configureTestForR8Lib

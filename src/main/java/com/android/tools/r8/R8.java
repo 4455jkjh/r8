@@ -35,7 +35,6 @@ import com.android.tools.r8.graph.analysis.ClassInitializerAssertionEnablingAnal
 import com.android.tools.r8.graph.analysis.InitializedClassesInInstanceMethodsAnalysis;
 import com.android.tools.r8.graph.classmerging.VerticallyMergedClasses;
 import com.android.tools.r8.graph.lens.AppliedGraphLens;
-import com.android.tools.r8.graph.lens.GraphLens;
 import com.android.tools.r8.horizontalclassmerging.HorizontalClassMerger;
 import com.android.tools.r8.inspector.internal.InspectorImpl;
 import com.android.tools.r8.ir.conversion.IRConverter;
@@ -76,7 +75,6 @@ import com.android.tools.r8.origin.CommandLineOrigin;
 import com.android.tools.r8.profile.art.ArtProfileCompletenessChecker;
 import com.android.tools.r8.profile.rewriting.ProfileCollectionAdditions;
 import com.android.tools.r8.repackaging.Repackaging;
-import com.android.tools.r8.repackaging.RepackagingLens;
 import com.android.tools.r8.shaking.AbstractMethodRemover;
 import com.android.tools.r8.shaking.AnnotationRemover;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
@@ -403,15 +401,18 @@ public class R8 {
               .run(appView.appInfo().classes());
 
           // TODO(b/226539525): Implement enum lite proto shrinking as deferred tracing.
+          PrunedItems.Builder prunedItemsBuilder = PrunedItems.builder();
           if (appView.options().protoShrinking().isEnumLiteProtoShrinkingEnabled()) {
-            appView.protoShrinker().enumLiteProtoShrinker.clearDeadEnumLiteMaps();
+            appView.protoShrinker().enumLiteProtoShrinker.clearDeadEnumLiteMaps(prunedItemsBuilder);
           }
 
           TreePruner pruner = new TreePruner(appViewWithLiveness);
-          PrunedItems prunedItems = pruner.run(executorService, timing);
+          PrunedItems prunedItems = pruner.run(executorService, timing, prunedItemsBuilder);
+          appViewWithLiveness
+              .appInfo()
+              .notifyTreePrunerFinished(Enqueuer.Mode.INITIAL_TREE_SHAKING);
 
           // Recompute the subtyping information.
-          appView.pruneItems(prunedItems, executorService);
           new AbstractMethodRemover(
                   appViewWithLiveness, appViewWithLiveness.appInfo().computeSubtypingInfo())
               .run();
@@ -447,22 +448,12 @@ public class R8 {
       // to clear the cache, so that we will recompute the type lattice elements.
       appView.dexItemFactory().clearTypeElementsCache();
 
-      if (options.getProguardConfiguration().isAccessModificationAllowed()) {
-        SubtypingInfo subtypingInfo = appViewWithLiveness.appInfo().computeSubtypingInfo();
-        GraphLens publicizedLens =
-            AccessModifier.run(
-                executorService,
-                timing,
-                appViewWithLiveness.appInfo().app(),
-                appViewWithLiveness,
-                subtypingInfo);
-        boolean changed = appView.setGraphLens(publicizedLens);
-        if (changed) {
-          // We can now remove redundant bridges. Note that we do not need to update the
-          // invoke-targets here, as the existing invokes will simply dispatch to the now
-          // visible super-method. MemberRebinding, if run, will then dispatch it correctly.
-          new RedundantBridgeRemover(appView.withLiveness()).run(null, executorService);
-        }
+      AccessModifier.run(appViewWithLiveness, executorService, timing);
+      if (appView.graphLens().isPublicizerLens()) {
+        // We can now remove redundant bridges. Note that we do not need to update the
+        // invoke-targets here, as the existing invokes will simply dispatch to the now
+        // visible super-method. MemberRebinding, if run, will then dispatch it correctly.
+        new RedundantBridgeRemover(appView.withLiveness()).run(null, executorService, timing);
       }
 
       // This pass attempts to reduce the number of nests and nest size to allow further passes, and
@@ -470,7 +461,7 @@ public class R8 {
       new NestReducer(appViewWithLiveness).run(executorService, timing);
 
       new MemberRebindingAnalysis(appViewWithLiveness).run(executorService);
-      appView.appInfo().withLiveness().getFieldAccessInfoCollection().restrictToProgram(appView);
+      appViewWithLiveness.appInfo().notifyMemberRebindingFinished(appViewWithLiveness);
 
       boolean isKotlinLibraryCompilationWithInlinePassThrough =
           options.enableCfByteCodePassThrough && appView.hasCfByteCodePassThroughMethods();
@@ -506,6 +497,9 @@ public class R8 {
         HorizontalClassMerger.createForInitialClassMerging(appViewWithLiveness)
             .runIfNecessary(executorService, timing, runtimeTypeCheckInfo);
       }
+      appViewWithLiveness
+          .appInfo()
+          .notifyHorizontalClassMergerFinished(HorizontalClassMerger.Mode.INITIAL);
 
       new ProtoNormalizer(appViewWithLiveness).run(executorService, timing);
 
@@ -588,16 +582,19 @@ public class R8 {
                 GenericSignatureContextBuilder.create(appView);
 
             TreePruner pruner = new TreePruner(appViewWithLiveness, treePrunerConfiguration);
-            PrunedItems prunedItems = pruner.run(executorService, timing, prunedTypes);
+            PrunedItems prunedItems =
+                pruner.run(
+                    executorService, timing, PrunedItems.builder().addRemovedClasses(prunedTypes));
+            appViewWithLiveness
+                .appInfo()
+                .notifyTreePrunerFinished(Enqueuer.Mode.FINAL_TREE_SHAKING);
 
             if (options.usageInformationConsumer != null) {
               ExceptionUtils.withFinishedResourceHandler(
                   options.reporter, options.usageInformationConsumer);
             }
 
-            appView.pruneItems(prunedItems, executorService);
-
-            new BridgeHoisting(appViewWithLiveness).run();
+            new BridgeHoisting(appViewWithLiveness).run(executorService, timing);
 
             assert Inliner.verifyAllSingleCallerMethodsHaveBeenPruned(appViewWithLiveness);
             assert Inliner.verifyAllMultiCallerInlinedMethodsHaveBeenPruned(appView);
@@ -684,7 +681,7 @@ public class R8 {
       // This can only be done if we have AppInfoWithLiveness.
       if (appView.appInfo().hasLiveness()) {
         new RedundantBridgeRemover(appView.withLiveness())
-            .run(memberRebindingIdentityLens, executorService);
+            .run(memberRebindingIdentityLens, executorService, timing);
       } else {
         // If we don't have AppInfoWithLiveness here, it must be because we are not shrinking. When
         // we are not shrinking, we can't move visibility bridges. In principle, though, it would be
@@ -710,18 +707,11 @@ public class R8 {
 
       // Perform repackaging.
       if (options.isRepackagingEnabled()) {
-        DirectMappedDexApplication.Builder appBuilder =
-            appView.appInfo().app().asDirect().builder();
-        RepackagingLens lens =
-            new Repackaging(appView.withLiveness()).run(appBuilder, executorService, timing);
-        if (lens != null) {
-          appView.rewriteWithLensAndApplication(lens, appBuilder.build());
-        }
+        new Repackaging(appView.withLiveness()).run(executorService, timing);
       }
-      if (appView.appInfo().hasLiveness()) {
-        assert Repackaging.verifyIdentityRepackaging(appView.withLiveness());
+      if (appView.hasLiveness()) {
+        assert Repackaging.verifyIdentityRepackaging(appView.withLiveness(), executorService);
       }
-
 
       // Clear the reference type lattice element cache. This is required since class merging may
       // need to build IR.
@@ -739,6 +729,7 @@ public class R8 {
               classMergingEnqueuerExtensionBuilder != null
                   ? classMergingEnqueuerExtensionBuilder.build(appView.graphLens())
                   : null);
+      appView.appInfo().notifyHorizontalClassMergerFinished(HorizontalClassMerger.Mode.FINAL);
 
       // Perform minification.
       if (options.getProguardConfiguration().hasApplyMappingFile()) {
@@ -753,6 +744,7 @@ public class R8 {
         appView.setNamingLens(new Minifier(appView.withLiveness()).run(executorService, timing));
         timing.end();
       }
+      appView.appInfo().notifyMinifierFinished();
 
       if (!options.isMinifying()
           && appView.options().testing.enableRecordModeling
