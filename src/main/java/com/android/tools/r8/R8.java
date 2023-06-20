@@ -62,16 +62,17 @@ import com.android.tools.r8.naming.PrefixRewritingNamingLens;
 import com.android.tools.r8.naming.ProguardMapMinifier;
 import com.android.tools.r8.naming.RecordRewritingNamingLens;
 import com.android.tools.r8.naming.signature.GenericSignatureRewriter;
-import com.android.tools.r8.optimize.AccessModifier;
 import com.android.tools.r8.optimize.MemberRebindingAnalysis;
 import com.android.tools.r8.optimize.MemberRebindingIdentityLens;
 import com.android.tools.r8.optimize.MemberRebindingIdentityLensFactory;
+import com.android.tools.r8.optimize.accessmodification.AccessModifier;
 import com.android.tools.r8.optimize.bridgehoisting.BridgeHoisting;
 import com.android.tools.r8.optimize.fields.FieldFinalizer;
 import com.android.tools.r8.optimize.interfaces.analysis.CfOpenClosedInterfacesAnalysis;
 import com.android.tools.r8.optimize.proto.ProtoNormalizer;
 import com.android.tools.r8.optimize.redundantbridgeremoval.RedundantBridgeRemover;
 import com.android.tools.r8.origin.CommandLineOrigin;
+import com.android.tools.r8.origin.Origin;
 import com.android.tools.r8.profile.art.ArtProfileCompletenessChecker;
 import com.android.tools.r8.profile.rewriting.ProfileCollectionAdditions;
 import com.android.tools.r8.repackaging.Repackaging;
@@ -102,6 +103,7 @@ import com.android.tools.r8.shaking.WhyAreYouKeepingConsumer;
 import com.android.tools.r8.synthesis.SyntheticFinalization;
 import com.android.tools.r8.synthesis.SyntheticItems;
 import com.android.tools.r8.utils.AndroidApp;
+import com.android.tools.r8.utils.ExceptionDiagnostic;
 import com.android.tools.r8.utils.ExceptionUtils;
 import com.android.tools.r8.utils.InternalOptions;
 import com.android.tools.r8.utils.SelfRetraceTest;
@@ -448,20 +450,16 @@ public class R8 {
       // to clear the cache, so that we will recompute the type lattice elements.
       appView.dexItemFactory().clearTypeElementsCache();
 
-      AccessModifier.run(appViewWithLiveness, executorService, timing);
-      if (appView.graphLens().isPublicizerLens()) {
-        // We can now remove redundant bridges. Note that we do not need to update the
-        // invoke-targets here, as the existing invokes will simply dispatch to the now
-        // visible super-method. MemberRebinding, if run, will then dispatch it correctly.
-        new RedundantBridgeRemover(appView.withLiveness()).run(null, executorService, timing);
-      }
-
       // This pass attempts to reduce the number of nests and nest size to allow further passes, and
       // should therefore be run after the publicizer.
       new NestReducer(appViewWithLiveness).run(executorService, timing);
 
       new MemberRebindingAnalysis(appViewWithLiveness).run(executorService);
       appViewWithLiveness.appInfo().notifyMemberRebindingFinished(appViewWithLiveness);
+
+      assert ArtProfileCompletenessChecker.verify(appView);
+
+      AccessModifier.run(appViewWithLiveness, executorService, timing);
 
       boolean isKotlinLibraryCompilationWithInlinePassThrough =
           options.enableCfByteCodePassThrough && appView.hasCfByteCodePassThroughMethods();
@@ -808,6 +806,12 @@ public class R8 {
 
       new DesugaredLibraryKeepRuleGenerator(appView).runIfNecessary(timing);
 
+      if (options.androidResourceProvider != null && options.androidResourceConsumer != null) {
+        // Currently this is simply a pass through of all resources.
+        writeAndroidResources(
+            options.androidResourceProvider, options.androidResourceConsumer, appView.reporter());
+      }
+
       // Generate the resulting application resources.
       writeApplication(appView, inputApp, executorService);
 
@@ -823,6 +827,44 @@ public class R8 {
       if (options.printTimes) {
         timing.report();
       }
+    }
+  }
+
+  private void writeAndroidResources(
+      AndroidResourceProvider androidResourceProvider,
+      AndroidResourceConsumer androidResourceConsumer,
+      DiagnosticsHandler diagnosticsHandler) {
+    try {
+      for (AndroidResourceInput androidResource : androidResourceProvider.getAndroidResources()) {
+        androidResourceConsumer.accept(
+            new AndroidResourceOutput() {
+              @Override
+              public ResourcePath getPath() {
+                return androidResource.getPath();
+              }
+
+              @Override
+              public ByteDataView getByteDataView() {
+                try {
+                  return ByteDataView.of(ByteStreams.toByteArray(androidResource.getByteStream()));
+                } catch (IOException | ResourceException e) {
+                  diagnosticsHandler.error(new ExceptionDiagnostic(e, androidResource.getOrigin()));
+                }
+                return null;
+              }
+
+              @Override
+              public Origin getOrigin() {
+                return androidResource.getOrigin();
+              }
+            },
+            diagnosticsHandler);
+      }
+    } catch (ResourceException e) {
+      throw new RuntimeException("Cannot write android resources", e);
+    } finally {
+      androidResourceConsumer.finished(diagnosticsHandler);
+      androidResourceProvider.finished(diagnosticsHandler);
     }
   }
 

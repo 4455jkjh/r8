@@ -66,6 +66,7 @@ public class RuntimeWorkaroundCodeRewriter {
       code.blocks.add(rethrowBlock);
       // Add catch handler to the block containing the last recursive call.
       newBlock.appendCatchHandler(rethrowBlock, guard);
+      code.removeRedundantBlocks();
     }
   }
 
@@ -77,7 +78,7 @@ public class RuntimeWorkaroundCodeRewriter {
   }
 
   private static void rewriteSwitchForMaxIntOnly(IRCode code, AppView<?> appView) {
-    boolean needToSplitCriticalEdges = false;
+    boolean hasChanged = false;
     BranchSimplifier branchSimplifier = new BranchSimplifier(appView);
     ListIterator<BasicBlock> blocksIterator = code.listIterator();
     while (blocksIterator.hasNext()) {
@@ -107,7 +108,7 @@ public class RuntimeWorkaroundCodeRewriter {
                   ImmutableList.of(newSwitchSequences),
                   outliers);
             }
-            needToSplitCriticalEdges = true;
+            hasChanged = true;
           }
         }
       }
@@ -116,8 +117,9 @@ public class RuntimeWorkaroundCodeRewriter {
     // Rewriting of switches introduces new branching structure. It relies on critical edges
     // being split on the way in but does not maintain this property. We therefore split
     // critical edges at exit.
-    if (needToSplitCriticalEdges) {
+    if (hasChanged) {
       code.splitCriticalEdges();
+      code.removeRedundantBlocks();
     }
   }
 
