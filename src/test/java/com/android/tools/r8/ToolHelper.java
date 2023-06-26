@@ -101,16 +101,19 @@ public class ToolHelper {
   }
 
   public static String getProjectRoot() {
-    String userDirProperty = System.getProperty("user.dir");
-    if (userDirProperty.endsWith("d8_r8/test")) {
-      return Paths.get(userDirProperty).getParent().getParent().toString() + "/";
+    String current = System.getProperty("user.dir");
+    if (!current.contains("test_modules")) {
+      return "";
     }
-    return "";
+    while (current.contains("test_modules")) {
+      current = Paths.get(current).getParent().toString();
+    }
+    return Paths.get(current).getParent().toString() + "/";
   }
 
   public static final String SOURCE_DIR = "src/main/java/";
   public static final String RESOURCES_DIR = "src/main/resources/";
-  public static final String BUILD_DIR = "build/";
+  public static final String BUILD_DIR = getProjectRoot() + "build/";
   public static final String TEST_MODULE_DIR = getProjectRoot() + "d8_r8/test_modules/";
   public static final String GENERATED_TEST_BUILD_DIR = BUILD_DIR + "generated/test/";
   public static final String LIBS_DIR = BUILD_DIR + "libs/";
@@ -135,8 +138,7 @@ public class ToolHelper {
   public static final String EXAMPLES_JAVA11_BUILD_DIR = BUILD_DIR + "classes/java/examplesJava11/";
   public static final String EXAMPLES_PROTO_BUILD_DIR = TESTS_BUILD_DIR + "examplesProto/";
   public static final String GENERATED_PROTO_BUILD_DIR = GENERATED_TEST_BUILD_DIR + "proto/";
-  public static final String SMALI_DIR = TESTS_DIR + "smali/";
-  public static final String SMALI_BUILD_DIR = TESTS_BUILD_DIR + "smali/";
+  public static final String SMALI_BUILD_DIR = THIRD_PARTY_DIR + "smali/";
   public static final String JAVA_CLASSES_DIR = BUILD_DIR + "classes/java/";
   public static final String JDK_11_TESTS_CLASSES_DIR = JAVA_CLASSES_DIR + "jdk11Tests/";
 
@@ -972,7 +974,7 @@ public class ToolHelper {
     }
     if (isLinux() || isMac()) {
       // The Linux version is used on Mac, where it is run in a Docker container.
-      return TOOLS_DIR + "/linux/" + dir;
+      return TOOLS_DIR + "linux/" + dir;
     }
     fail("Unsupported platform, we currently only support mac and linux: " + getPlatform());
     return ""; //never here
@@ -1305,7 +1307,7 @@ public class ToolHelper {
 
   public static Path getClassPathForTests() {
     if (isNewGradleSetup()) {
-      return Paths.get(TEST_MODULE_DIR, "tests_java_8", "build", "classes", "java", "main");
+      return Paths.get(TEST_MODULE_DIR, "tests_java_8", "build", "classes", "java", "test");
     } else {
       return Paths.get(BUILD_DIR, "classes", "java", "test");
     }

@@ -385,6 +385,8 @@ public class RootSetUtils {
       }
       appView.withGeneratedMessageLiteShrinker(
           shrinker -> shrinker.extendRootSet(dependentMinimumKeepInfo));
+      appView.withGeneratedMessageLiteBuilderShrinker(
+          shrinker -> shrinker.extendRootSet(dependentMinimumKeepInfo));
       if (appView.options().protoShrinking().enableGeneratedMessageLiteBuilderShrinking) {
         GeneratedMessageLiteBuilderShrinker.addInliningHeuristicsForBuilderInlining(
             appView,
@@ -1236,7 +1238,7 @@ public class RootSetUtils {
         assert item.isProgramDefinition();
         dependentMinimumKeepInfo
             .getOrCreateUnconditionalMinimumKeepInfoFor(item.getReference())
-            .disallowAccessModification();
+            .disallowAccessModificationForTesting();
         context.markAsUsed();
       } else if (context instanceof NoFieldTypeStrengtheningRule) {
         assert item.isProgramField();

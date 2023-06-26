@@ -828,6 +828,12 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
     return proguardConfiguration.getKeepAttributes().runtimeInvisibleTypeAnnotations;
   }
 
+  @Override
+  public boolean isKeepPermittedSubclassesEnabled() {
+    return proguardConfiguration == null
+        || proguardConfiguration.getKeepAttributes().permittedSubclasses;
+  }
+
   /**
    * If any non-static class merging is enabled, information about types referred to by instanceOf
    * and check cast instructions needs to be collected.
@@ -1693,9 +1699,11 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
       if (simpleInliningInstructionLimit >= 0) {
         return simpleInliningInstructionLimit;
       }
-      // Allow 2 instructions when using LIR regardless of backend.
+      // Allow 4 instructions when using LIR regardless of backend.
       if (options.testing.useLir) {
-        return 2;
+        // TODO(b/288226522): We should reevaluate this for size and other inputs as it regresses
+        //  compared to DEX code with limit 5. This is set to 4 to avoid discard errors in chrome.
+        return 4;
       }
       // Allow 3 instructions when generating to class files.
       if (options.isGeneratingClassFiles()) {
@@ -2097,9 +2105,39 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
     }
 
     public boolean canUseLir(AppView<?> appView) {
-      return useLir
-          && appView.enableWholeProgramOptimizations()
-          && !appView.options().protoShrinking().isProtoShrinkingEnabled();
+      return useLir && appView.enableWholeProgramOptimizations();
+    }
+
+    // As part of integrating LIR the compiler is split in three phases: pre, supported, and post.
+    // Any attempt at building IR must have conversion options consistent with the active phase.
+    private enum LirPhase {
+      PRE,
+      SUPPORTED,
+      POST
+    }
+
+    private LirPhase currentPhase = LirPhase.PRE;
+
+    public void enterLirSupportedPhase() {
+      assert isPreLirPhase();
+      currentPhase = LirPhase.SUPPORTED;
+    }
+
+    public void exitLirSupportedPhase() {
+      assert isSupportedLirPhase();
+      currentPhase = LirPhase.POST;
+    }
+
+    public boolean isPreLirPhase() {
+      return currentPhase == LirPhase.PRE;
+    }
+
+    public boolean isSupportedLirPhase() {
+      return currentPhase == LirPhase.SUPPORTED;
+    }
+
+    public boolean isPostLirPhase() {
+      return currentPhase == LirPhase.POST;
     }
 
     // If false, use the desugared library implementation when desugared library is enabled.
@@ -2218,7 +2256,6 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
      */
     public boolean addCallEdgesForLibraryInvokes = false;
 
-    public boolean allowCheckDiscardedErrors = false;
     public boolean allowClassInliningOfSynthetics = true;
     public boolean allowInjectedAnnotationMethods = false;
     public boolean allowInliningOfSynthetics = true;
@@ -2256,7 +2293,8 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
     public BiConsumer<IRCode, AppView<?>> irModifier = null;
     public Consumer<IRCode> inlineeIrModifier = null;
     public int basicBlockMuncherIterationLimit = NO_LIMIT;
-    public boolean dontReportFailingCheckDiscarded = false;
+    public boolean dontReportFailingCheckDiscarded =
+        System.getProperty("com.android.tools.r8.testing.dontReportFailingCheckDiscarded") != null;
     public boolean disableRecordApplicationReaderMap = false;
     public boolean trackDesugaredAPIConversions =
         System.getProperty("com.android.tools.r8.trackDesugaredAPIConversions") != null;
