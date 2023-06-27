@@ -36,8 +36,8 @@ public class IRToDexFinalizer extends IRFinalizer<DexCode> {
   public DexCode finalizeCode(
       IRCode code, BytecodeMetadataProvider bytecodeMetadataProvider, Timing timing) {
     DexEncodedMethod method = code.method();
-    code.traceBlocks();
     workaroundBugs(code, timing);
+    code.traceBlocks();
     // Perform register allocation.
     RegisterAllocator registerAllocator = performRegisterAllocation(code, method, timing);
     return new DexBuilder(code, bytecodeMetadataProvider, registerAllocator, options).build();
