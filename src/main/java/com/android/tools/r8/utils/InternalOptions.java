@@ -141,7 +141,15 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
 
   public enum LineNumberOptimization {
     OFF,
-    ON
+    ON;
+
+    public boolean isOff() {
+      return this == OFF;
+    }
+
+    public boolean isOn() {
+      return this == ON;
+    }
   }
 
   public enum DesugarState {
@@ -876,6 +884,7 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
   public boolean ignoreMissingClasses = false;
   public boolean reportMissingClassesInEnclosingMethodAttribute = false;
   public boolean reportMissingClassesInInnerClassAttributes = false;
+  public boolean reportMissingClassesInPermittedSubclassesAttributes = false;
   public boolean disableGenericSignatureValidation = false;
   public boolean disableInnerClassSeparatorValidationWhenRepackaging = false;
 
@@ -2585,7 +2594,7 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
   }
 
   public boolean canUseDexPc2PcAsDebugInformation() {
-    return isGeneratingDex() && lineNumberOptimization == LineNumberOptimization.ON;
+    return isGeneratingDex() && lineNumberOptimization.isOn();
   }
 
   // Debug entries may be dropped only if the source file content allows being omitted from

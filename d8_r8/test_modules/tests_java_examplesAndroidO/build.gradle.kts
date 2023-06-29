@@ -27,11 +27,13 @@ dependencies {
 }
 
 // We just need to register the examples jars for it to be referenced by other modules.
-val buildExampleJars = buildJavaExamplesJars("AndroidO")
+val buildExampleJars = buildExampleJars("examplesAndroidO")
 
 tasks {
   withType<JavaCompile> {
     options.setFork(true)
+    options.compilerArgs.add("-Xlint:-options")
+    options.compilerArgs.add("-parameters")
     options.forkOptions.memoryMaximumSize = "3g"
     options.forkOptions.jvmArgs = listOf(
       "-Xss256m",

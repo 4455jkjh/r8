@@ -16,6 +16,7 @@ import com.android.tools.r8.graph.bytecodemetadata.BytecodeMetadataProvider;
 import com.android.tools.r8.graph.lens.GraphLens;
 import com.android.tools.r8.ir.analysis.fieldaccess.TrivialFieldAccessReprocessor;
 import com.android.tools.r8.ir.code.IRCode;
+import com.android.tools.r8.ir.optimize.DeadCodeRemover;
 import com.android.tools.r8.ir.optimize.info.OptimizationFeedbackDelayed;
 import com.android.tools.r8.lightir.LirCode;
 import com.android.tools.r8.optimize.argumentpropagation.ArgumentPropagator;
@@ -55,7 +56,6 @@ public class PrimaryR8IRConverter extends IRConverter {
   private DexApplication internalOptimize(
       AppView<AppInfoWithLiveness> appView, ExecutorService executorService)
       throws ExecutionException {
-    appView.testing().enterLirSupportedPhase();
     // Desugaring happens in the enqueuer.
     assert instructionDesugaring.isEmpty();
 
@@ -217,30 +217,37 @@ public class PrimaryR8IRConverter extends IRConverter {
 
     // Assure that no more optimization feedback left after post processing.
     assert feedback.noUpdatesLeft();
-    finalizeLirToOutputFormat(timing, executorService);
     return appView.appInfo().app();
   }
 
-  private void finalizeLirToOutputFormat(Timing timing, ExecutorService executorService)
+  public static void finalizeLirToOutputFormat(
+      AppView<?> appView, Timing timing, ExecutorService executorService)
       throws ExecutionException {
     appView.testing().exitLirSupportedPhase();
-    if (!options.testing.canUseLir(appView)) {
+    if (!appView.testing().canUseLir(appView)) {
       return;
     }
-    String output = options.isGeneratingClassFiles() ? "CF" : "DEX";
+    DeadCodeRemover deadCodeRemover = new DeadCodeRemover(appView);
+    String output = appView.options().isGeneratingClassFiles() ? "CF" : "DEX";
     timing.begin("LIR->IR->" + output);
     ThreadUtils.processItems(
         appView.appInfo().classes(),
-        clazz -> clazz.forEachProgramMethod(this::finalizeLirMethodToOutputFormat),
+        clazz ->
+            clazz.forEachProgramMethod(
+                m -> finalizeLirMethodToOutputFormat(m, deadCodeRemover, appView)),
         executorService);
     appView
         .getSyntheticItems()
         .getPendingSyntheticClasses()
-        .forEach(clazz -> clazz.forEachProgramMethod(this::finalizeLirMethodToOutputFormat));
+        .forEach(
+            clazz ->
+                clazz.forEachProgramMethod(
+                    m -> finalizeLirMethodToOutputFormat(m, deadCodeRemover, appView)));
     timing.end();
   }
 
-  void finalizeLirMethodToOutputFormat(ProgramMethod method) {
+  private static void finalizeLirMethodToOutputFormat(
+      ProgramMethod method, DeadCodeRemover deadCodeRemover, AppView<?> appView) {
     Code code = method.getDefinition().getCode();
     if (!(code instanceof LirCode)) {
       return;

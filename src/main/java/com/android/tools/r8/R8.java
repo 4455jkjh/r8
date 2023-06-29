@@ -505,6 +505,9 @@ public class R8 {
           .appInfo()
           .notifyHorizontalClassMergerFinished(HorizontalClassMerger.Mode.INITIAL);
 
+      // TODO(b/225838009): Horizontal merging currently assumes pre-phase CF conversion.
+      appView.testing().enterLirSupportedPhase();
+
       new ProtoNormalizer(appViewWithLiveness).run(executorService, timing);
 
       // Clear traced methods roots to not hold on to the main dex live method set.
@@ -540,6 +543,9 @@ public class R8 {
       timing.begin("AppliedGraphLens construction");
       appView.setGraphLens(new AppliedGraphLens(appView));
       timing.end();
+
+      // TODO(b/225838009): Support tracing and building LIR in Enqueuer.
+      PrimaryR8IRConverter.finalizeLirToOutputFormat(appView, timing, executorService);
 
       if (options.shouldRerunEnqueuer()) {
         timing.begin("Post optimization code stripping");

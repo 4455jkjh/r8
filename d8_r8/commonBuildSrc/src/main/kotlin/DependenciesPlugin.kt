@@ -11,6 +11,7 @@ import org.gradle.api.Project
 import org.gradle.api.Task
 import org.gradle.api.file.ConfigurableFileCollection
 import org.gradle.api.plugins.JavaPluginExtension
+import org.gradle.api.tasks.JavaExec
 import org.gradle.api.tasks.SourceSet
 import org.gradle.jvm.tasks.Jar
 import org.gradle.kotlin.dsl.register
@@ -96,7 +97,7 @@ fun Project.ensureThirdPartyDependencies(name : String, deps : List<ThirdPartyDe
 }
 
 /**
- * Builds a jar for each subfolder in an examples test source set.
+ * Builds a jar for each subfolder in an test source set.
  *
  * <p> As an example, src/test/examplesJava9 contains subfolders: backport, collectionof, ..., .
  * These are compiled to individual jars and placed in <repo-root>/build/test/examplesJava9/ as:
@@ -105,37 +106,58 @@ fun Project.ensureThirdPartyDependencies(name : String, deps : List<ThirdPartyDe
  * Calling this from a project will amend the task graph with the task named
  * getExamplesJarsTaskName(examplesName) such that it can be referenced from the test runners.
  */
-fun Project.buildJavaExamplesJars(examplesName : String) : Task {
+fun Project.buildExampleJars(name : String) : Task {
   val outputFiles : MutableList<File> = mutableListOf()
   val jarTasks : MutableList<Task> = mutableListOf()
-  var testSourceSet = extensions
+  val testSourceSet = extensions
     .getByType(JavaPluginExtension::class.java)
     .sourceSets
     // The TEST_SOURCE_SET_NAME is the source set defined by writing java { sourcesets.test { ... }}
     .getByName(SourceSet.TEST_SOURCE_SET_NAME)
+  val destinationDir = getRoot().resolveAll("build", "test", name)
+  val classesOutput = destinationDir.resolve("classes")
+  testSourceSet.java.destinationDirectory.set(classesOutput)
+  testSourceSet.resources.destinationDirectory.set(destinationDir)
   testSourceSet
     .java
     .sourceDirectories
     .files
     .forEach { srcDir ->
       srcDir.listFiles(File::isDirectory)?.forEach { exampleDir ->
-        jarTasks.add(tasks.register<Jar>("jar-examples$examplesName-${exampleDir.name}") {
+        var generationTask : Task? = null
+        if (exampleDir.resolve("TestGenerator.java").isFile) {
+          generationTask = tasks.register<JavaExec>(
+            "generate-$name-${exampleDir.name}") {
+            dependsOn("compileTestJava")
+            mainClass.set("${exampleDir.name}.TestGenerator")
+            classpath = files(
+              classesOutput,
+              testSourceSet.compileClasspath)
+            args(classesOutput.toString())
+          }.get()
+        }
+        jarTasks.add(tasks.register<Jar>(
+          "jar-$name-${exampleDir.name}") {
           dependsOn("compileTestJava")
+          if (generationTask != null) {
+            dependsOn(generationTask)
+          }
           archiveFileName.set("${exampleDir.name}.jar")
-          destinationDirectory.set(getRoot().resolveAll("build", "test", "examples$examplesName"))
-          from(testSourceSet.output.classesDirs.files.map{ it.resolve(exampleDir.name) }) {
-            include("**/*.class")
+          destinationDirectory.set(destinationDir)
+          from(classesOutput) {
+            include("${exampleDir.name}/**/*.class")
+            exclude("**/TestGenerator*")
           }
         }.get())
       }
     }
-  return tasks.register(getExamplesJarsTaskName(examplesName)) {
-    dependsOn(jarTasks)
+  return tasks.register(getExampleJarsTaskName(name)) {
+    dependsOn(jarTasks.toTypedArray())
     outputs.files(outputFiles)
   }.get()
 }
 
-fun Project.getExamplesJarsTaskName(name: String) : String {
+fun Project.getExampleJarsTaskName(name: String) : String {
   return "build-example-jars-$name"
 }
 
@@ -275,6 +297,8 @@ object Deps {
 }
 
 object ThirdPartyDeps {
+  val androidJars = getThirdPartyAndroidJars()
+  val androidVMs = getThirdPartyAndroidVms()
   val apiDatabase = ThirdPartyDependency(
     "apiDatabase",
     Paths.get(
@@ -284,26 +308,42 @@ object ThirdPartyDeps {
       "resources",
       "new_api_database.ser").toFile(),
     Paths.get("third_party", "api_database", "api_database.tar.gz.sha1").toFile())
+  val compilerApi = ThirdPartyDependency(
+    "compiler-api",
+    Paths.get(
+      "third_party",
+      "binary_compatibility_tests",
+      "compiler_api_tests",
+      "tests.jar").toFile(),
+    Paths.get(
+      "third_party",
+      "binary_compatibility_tests",
+      "compiler_api_tests.tar.gz.sha1").toFile())
   val ddmLib = ThirdPartyDependency(
     "ddmlib",
     Paths.get("third_party", "ddmlib", "ddmlib.jar").toFile(),
     Paths.get("third_party", "ddmlib.tar.gz.sha1").toFile())
+  val jacoco = ThirdPartyDependency(
+    "jacoco",
+    Paths.get("third_party", "jacoco", "0.8.6", "lib", "jacocoagent.jar").toFile(),
+    Paths.get("third_party", "jacoco", "0.8.6.tar.gz.sha1").toFile()
+  )
   val jasmin = ThirdPartyDependency(
     "jasmin",
     Paths.get("third_party", "jasmin", "jasmin-2.4.jar").toFile(),
     Paths.get("third_party", "jasmin.tar.gz.sha1").toFile())
-  val jdwpTests = ThirdPartyDependency(
-    "jdwp-tests",
-    Paths.get("third_party", "jdwp-tests", "apache-harmony-jdwp-tests-host.jar").toFile(),
-    Paths.get("third_party", "jdwp-tests.tar.gz.sha1").toFile())
-  val androidJars : List<ThirdPartyDependency> = getThirdPartyAndroidJars()
   val java8Runtime = ThirdPartyDependency(
     "openjdk-rt-1.8",
     Paths.get("third_party", "openjdk", "openjdk-rt-1.8", "rt.jar").toFile(),
     Paths.get("third_party", "openjdk", "openjdk-rt-1.8.tar.gz.sha1").toFile()
   )
-  val androidVMs : List<ThirdPartyDependency> = getThirdPartyAndroidVms()
-  val jdks : List<ThirdPartyDependency> = getJdks()
+  val jdks = getJdks()
+  val jdwpTests = ThirdPartyDependency(
+    "jdwp-tests",
+    Paths.get("third_party", "jdwp-tests", "apache-harmony-jdwp-tests-host.jar").toFile(),
+    Paths.get("third_party", "jdwp-tests.tar.gz.sha1").toFile())
+  val kotlinCompilers = getThirdPartyKotlinCompilers()
+  val proguards = getThirdPartyProguards()
 }
 
 fun getThirdPartyAndroidJars() : List<ThirdPartyDependency> {
@@ -373,4 +413,39 @@ fun getJdks() : List<ThirdPartyDependency> {
   } else {
     return Jdk.values().filter{ !it.isJdk8() }.map{ it.getThirdPartyDependency()}
   }
+}
+
+fun getThirdPartyProguards() : List<ThirdPartyDependency> {
+  val os: OperatingSystem = DefaultNativePlatform.getCurrentOperatingSystem()
+  return listOf("proguard5.2.1", "proguard6.0.1", "proguard-7.0.0")
+    .map { ThirdPartyDependency(
+        it,
+        Paths.get(
+          "third_party",
+          "proguard",
+          it,
+          "bin",
+          if (os.isWindows) "proguard.bat" else "proguard.sh").toFile(),
+        Paths.get("third_party", "proguard", "${it}.tar.gz.sha1").toFile())}
+}
+
+fun getThirdPartyKotlinCompilers() : List<ThirdPartyDependency> {
+  return listOf(
+    "kotlin-compiler-1.3.72",
+    "kotlin-compiler-1.4.20",
+    "kotlin-compiler-1.5.0",
+    "kotlin-compiler-1.6.0",
+    "kotlin-compiler-1.7.0",
+    "kotlin-compiler-1.8.0",
+    "kotlin-compiler-dev")
+    .map { ThirdPartyDependency(
+      it,
+      Paths.get(
+        "third_party",
+        "kotlin",
+        it,
+        "kotlinc",
+        "lib",
+        "kotlin-stdlib.jar").toFile(),
+      Paths.get("third_party", "kotlin", "${it}.tar.gz.sha1").toFile())}
 }

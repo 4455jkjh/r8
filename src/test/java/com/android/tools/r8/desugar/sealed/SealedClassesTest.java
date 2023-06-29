@@ -4,7 +4,9 @@
 
 package com.android.tools.r8.desugar.sealed;
 
+import static com.android.tools.r8.utils.codeinspector.Matchers.isPresentAndRenamed;
 import static junit.framework.Assert.assertEquals;
+import static junit.framework.Assert.assertTrue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assume.assumeTrue;
 
@@ -18,7 +20,7 @@ import com.android.tools.r8.utils.BooleanUtils;
 import com.android.tools.r8.utils.StringUtils;
 import com.android.tools.r8.utils.codeinspector.ClassSubject;
 import com.android.tools.r8.utils.codeinspector.CodeInspector;
-import com.android.tools.r8.utils.codeinspector.Matchers;
+import com.google.common.collect.ImmutableList;
 import java.util.List;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -35,12 +37,16 @@ public class SealedClassesTest extends TestBase {
   @Parameter(1)
   public boolean keepPermittedSubclassesAttribute;
 
+  @Parameter(2)
+  public boolean repackage;
+
   static final String EXPECTED = StringUtils.lines("Success!");
 
-  @Parameters(name = "{0}, keepPermittedSubclasses = {1}")
+  @Parameters(name = "{0}, keepPermittedSubclasses = {1}, repackage = {2}")
   public static List<Object[]> data() {
     return buildParameters(
         getTestParameters().withAllRuntimes().withAllApiLevelsAlsoForCf().build(),
+        BooleanUtils.values(),
         BooleanUtils.values());
   }
 
@@ -76,14 +82,22 @@ public class SealedClassesTest extends TestBase {
   }
 
   private void inspect(CodeInspector inspector) {
-    ClassSubject clazz = inspector.clazz(C.class);
-    assertThat(clazz, Matchers.isPresentAndRenamed());
-    if (!parameters.isCfRuntime()) {
-      return;
+    ClassSubject clazz = inspector.clazz(Super.class);
+    assertThat(clazz, isPresentAndRenamed());
+    ClassSubject sub1 = inspector.clazz(Sub1.class);
+    ClassSubject sub2 = inspector.clazz(Sub2.class);
+    assertThat(sub1, isPresentAndRenamed());
+    assertThat(sub2, isPresentAndRenamed());
+    if (repackage) {
+      assertEquals(-1, sub1.getFinalName().indexOf('.'));
+    } else {
+      assertTrue(sub1.getFinalName().startsWith(getClass().getPackage().getName()));
     }
     assertEquals(
-        keepPermittedSubclassesAttribute ? 2 : 0,
-        clazz.getFinalPermittedSubclassAttributes().size());
+        parameters.isCfRuntime() && keepPermittedSubclassesAttribute
+            ? ImmutableList.of(sub1.asTypeSubject(), sub2.asTypeSubject())
+            : ImmutableList.of(),
+        clazz.getFinalPermittedSubclassAttributes());
   }
 
   @Test
@@ -96,8 +110,9 @@ public class SealedClassesTest extends TestBase {
             keepPermittedSubclassesAttribute,
             TestShrinkerBuilder::addKeepAttributePermittedSubclasses)
         // Keep the sealed class to ensure the PermittedSubclasses attribute stays live.
-        .addKeepPermittedSubclasses(C.class)
+        .addKeepPermittedSubclasses(Super.class, Sub1.class, Sub2.class)
         .addKeepMainRule(TestClass.class)
+        .applyIf(repackage, b -> b.addKeepRules("-repackageclasses"))
         .compile()
         .inspect(this::inspect)
         .run(parameters.getRuntime(), TestClass.class)
@@ -108,7 +123,9 @@ public class SealedClassesTest extends TestBase {
   }
 
   public byte[] getTransformedClasses() throws Exception {
-    return transformer(C.class).setPermittedSubclasses(C.class, Sub1.class, Sub2.class).transform();
+    return transformer(Super.class)
+        .setPermittedSubclasses(Super.class, Sub1.class, Sub2.class)
+        .transform();
   }
 
   static class TestClass {
@@ -120,9 +137,9 @@ public class SealedClassesTest extends TestBase {
     }
   }
 
-  abstract static class C /* permits Sub1, Sub2 */ {}
+  public abstract static class Super /* permits Sub1, Sub2 */ {}
 
-  static class Sub1 extends C {}
+  public static class Sub1 extends Super {}
 
-  static class Sub2 extends C {}
+  public static class Sub2 extends Super {}
 }
