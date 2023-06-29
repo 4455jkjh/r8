@@ -171,7 +171,7 @@ public abstract class RecordCfCodeProvider {
       ValueType recordType = ValueType.fromDexType(getHolder());
       ValueType objectType = ValueType.fromDexType(factory.objectType);
       instructions.add(new CfLoad(objectType, 1));
-      instructions.add(new CfIf(IfType.NE, ValueType.OBJECT, notNullLabel));
+      instructions.add(new CfIf(If.Type.NE, ValueType.OBJECT, notNullLabel));
       instructions.add(new CfConstNumber(0, ValueType.INT));
       instructions.add(new CfReturn(ValueType.INT));
       instructions.add(notNullLabel);
