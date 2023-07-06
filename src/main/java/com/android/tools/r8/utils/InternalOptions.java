@@ -524,8 +524,10 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
     return !canUseNestBasedAccess();
   }
 
+  public boolean enableRecordDesugaring = false;
+
   public boolean shouldDesugarRecords() {
-    return desugarState.isOn() && !canUseRecords();
+    return enableRecordDesugaring && desugarState.isOn() && !canUseRecords();
   }
 
   public Set<String> extensiveLoggingFilter = getExtensiveLoggingFilter();
@@ -1683,6 +1685,7 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
 
     public static void allowExperimentClassFileVersion(InternalOptions options) {
       options.reportedExperimentClassFileVersion.set(true);
+      options.enableRecordDesugaring = true;
     }
 
     public static int NO_LIMIT = -1;
