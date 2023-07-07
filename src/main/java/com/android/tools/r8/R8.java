@@ -64,6 +64,7 @@ import com.android.tools.r8.naming.PrefixRewritingNamingLens;
 import com.android.tools.r8.naming.ProguardMapMinifier;
 import com.android.tools.r8.naming.RecordRewritingNamingLens;
 import com.android.tools.r8.naming.signature.GenericSignatureRewriter;
+import com.android.tools.r8.optimize.LegacyAccessModifier;
 import com.android.tools.r8.optimize.MemberRebindingAnalysis;
 import com.android.tools.r8.optimize.MemberRebindingIdentityLens;
 import com.android.tools.r8.optimize.MemberRebindingIdentityLensFactory;
@@ -452,6 +453,9 @@ public class R8 {
       // to clear the cache, so that we will recompute the type lattice elements.
       appView.dexItemFactory().clearTypeElementsCache();
 
+      // TODO(b/132677331): Remove legacy access modifier.
+      LegacyAccessModifier.run(appViewWithLiveness, executorService, timing);
+
       // This pass attempts to reduce the number of nests and nest size to allow further passes, and
       // should therefore be run after the publicizer.
       new NestReducer(appViewWithLiveness).run(executorService, timing);
@@ -506,7 +510,7 @@ public class R8 {
           .notifyHorizontalClassMergerFinished(HorizontalClassMerger.Mode.INITIAL);
 
       // TODO(b/225838009): Horizontal merging currently assumes pre-phase CF conversion.
-      appView.testing().enterLirSupportedPhase();
+      appView.testing().enterLirSupportedPhase(appView, executorService);
 
       new ProtoNormalizer(appViewWithLiveness).run(executorService, timing);
 
@@ -544,10 +548,10 @@ public class R8 {
       appView.setGraphLens(new AppliedGraphLens(appView));
       timing.end();
 
-      // TODO(b/225838009): Support tracing and building LIR in Enqueuer.
-      PrimaryR8IRConverter.finalizeLirToOutputFormat(appView, timing, executorService);
-
-      if (options.shouldRerunEnqueuer()) {
+      if (!options.shouldRerunEnqueuer()) {
+        // TODO(b/225838009): Support tracing and building LIR in Enqueuer.
+        PrimaryR8IRConverter.finalizeLirToOutputFormat(appView, timing, executorService);
+      } else {
         timing.begin("Post optimization code stripping");
         try {
           GraphConsumer keptGraphConsumer = null;
@@ -574,9 +578,11 @@ public class R8 {
           EnqueuerResult enqueuerResult =
               enqueuer.traceApplication(appView.rootSet(), executorService, timing);
           appView.setAppInfo(enqueuerResult.getAppInfo());
+          appView.dissallowFurtherInitClassUses();
+
           // Rerunning the enqueuer should not give rise to any method rewritings.
           MutableMethodConversionOptions conversionOptions =
-              MethodConversionOptions.forPostLirPhase(appView);
+              MethodConversionOptions.forLirPhase(appView);
           appView.withGeneratedMessageLiteBuilderShrinker(
               shrinker ->
                   shrinker.rewriteDeadBuilderReferencesFromDynamicMethods(
@@ -649,6 +655,9 @@ public class R8 {
         } finally {
           timing.end();
         }
+
+        // TODO(b/225838009): Support LIR in proto shrinking.
+        PrimaryR8IRConverter.finalizeLirToOutputFormat(appView, timing, executorService);
 
         if (appView.options().protoShrinking().isProtoShrinkingEnabled()) {
           if (appView.options().protoShrinking().isEnumLiteProtoShrinkingEnabled()) {

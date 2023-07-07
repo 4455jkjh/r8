@@ -386,7 +386,6 @@ public class IRConverter {
    */
   public void replaceCodeForTesting(IRCode code) {
     ProgramMethod method = code.context();
-    DexEncodedMethod definition = method.getDefinition();
     assert code.isConsistentSSA(appView);
     Timing timing = Timing.empty();
     deadCodeRemover.run(code, timing);
@@ -548,24 +547,6 @@ public class IRConverter {
       options.testing.irModifier.accept(code, appView);
     }
 
-    if (options.canHaveArtStringNewInitBug()) {
-      timing.begin("Check for new-init issue");
-      TrivialPhiSimplifier.ensureDirectStringNewToInit(code, appView.dexItemFactory());
-      timing.end();
-    }
-
-    if (options.canHaveInvokeInterfaceToObjectMethodBug()) {
-      timing.begin("JDK-8272564 fix rewrite");
-      CodeRewriter.rewriteJdk8272564Fix(code, context, appView);
-      timing.end();
-    }
-
-    boolean isDebugMode = options.debug || context.getOrComputeReachabilitySensitive(appView);
-
-    if (isDebugMode) {
-      codeRewriter.simplifyDebugLocals(code);
-    }
-
     if (lensCodeRewriter != null) {
       timing.begin("Lens rewrite");
       lensCodeRewriter.rewrite(code, context, methodProcessor);
@@ -573,6 +554,7 @@ public class IRConverter {
       previous = printMethod(code, "IR after disable assertions (SSA)", previous);
     }
 
+    boolean isDebugMode = options.debug || context.getOrComputeReachabilitySensitive(appView);
     assert !method.isProcessed() || !isDebugMode
         : "Method already processed: "
             + context.toSourceString()
@@ -600,7 +582,6 @@ public class IRConverter {
     // assert fails, then the types that we have inferred are unsound, or the method does not type
     // check. In the latter case, the type checker should be extended to detect the issue such that
     // we will return with a throw-null method above.
-    assert code.verifyTypes(appView);
     assert code.isConsistentSSA(appView);
 
     if (shouldPassThrough(context)) {
@@ -620,6 +601,22 @@ public class IRConverter {
       return timing;
     }
 
+    if (options.canHaveArtStringNewInitBug()) {
+      timing.begin("Check for new-init issue");
+      TrivialPhiSimplifier.ensureDirectStringNewToInit(appView, code);
+      timing.end();
+    }
+
+    if (options.canHaveInvokeInterfaceToObjectMethodBug()) {
+      timing.begin("JDK-8272564 fix rewrite");
+      CodeRewriter.rewriteJdk8272564Fix(code, context, appView);
+      timing.end();
+    }
+
+    if (isDebugMode) {
+      codeRewriter.simplifyDebugLocals(code);
+    }
+
     assertionsRewriter.run(method, code, deadCodeRemover, timing);
     CheckNotNullConverter.runIfNecessary(appView, code);
     previous = printMethod(code, "IR after disable assertions (SSA)", previous);
@@ -636,7 +633,6 @@ public class IRConverter {
       timing.begin("Decouple identifier-name strings");
       identifierNameStringMarker.decoupleIdentifierNameStringsInMethod(code);
       timing.end();
-      assert code.isConsistentSSA(appView);
       previous = printMethod(code, "IR after identifier-name strings (SSA)", previous);
     }
 
@@ -868,7 +864,6 @@ public class IRConverter {
     // Insert code to log arguments if requested.
     if (options.methodMatchesLogArgumentsFilter(method) && !method.isProcessed()) {
       codeRewriter.logArgumentTypes(method, code);
-      assert code.isConsistentSSA(appView);
     }
 
     previous = printMethod(code, "IR after argument type logging (SSA)", previous);
@@ -1040,29 +1035,17 @@ public class IRConverter {
       BytecodeMetadataProvider bytecodeMetadataProvider,
       Timing timing) {
     if (options.testing.roundtripThroughLir) {
-      code = roundtripThroughLir(code, feedback, bytecodeMetadataProvider, timing);
+      code = roundtripThroughLir(code, bytecodeMetadataProvider, timing);
     }
-    MethodConversionOptions conversionOptions = code.getConversionOptions();
-    if (conversionOptions.isGeneratingLir()) {
-      timing.begin("IR->LIR");
-      finalizeToLir(code, feedback, bytecodeMetadataProvider, timing);
-      timing.end();
-    } else if (conversionOptions.isGeneratingClassFiles()) {
-      timing.begin("IR->CF");
-      finalizeToCf(code, feedback, bytecodeMetadataProvider, timing);
-      timing.end();
-    } else {
-      assert conversionOptions.isGeneratingDex();
-      timing.begin("IR->DEX");
-      finalizeToDex(code, feedback, bytecodeMetadataProvider, timing);
-      timing.end();
-    }
+    ProgramMethod method = code.context();
+    IRFinalizer<?> finalizer = code.getConversionOptions().getFinalizer(deadCodeRemover, appView);
+    method.setCode(finalizer.finalizeCode(code, bytecodeMetadataProvider, timing), appView);
+    markProcessed(code, feedback);
     printMethod(code.context(), "After finalization");
   }
 
   private IRCode roundtripThroughLir(
       IRCode code,
-      OptimizationFeedback feedback,
       BytecodeMetadataProvider bytecodeMetadataProvider,
       Timing timing) {
     IRCode round1 =
@@ -1109,50 +1092,6 @@ public class IRConverter {
             (MutableMethodConversionOptions) code.getConversionOptions());
     timing.end();
     return irCode;
-  }
-
-  private void finalizeToLir(
-      IRCode code,
-      OptimizationFeedback feedback,
-      BytecodeMetadataProvider bytecodeMetadataProvider,
-      Timing timing) {
-    assert deadCodeRemover.verifyNoDeadCode(code);
-    LirCode<Integer> lirCode =
-        IR2LirConverter.translate(
-            code,
-            bytecodeMetadataProvider,
-            LirStrategy.getDefaultStrategy().getEncodingStrategy(),
-            appView.options());
-    ProgramMethod method = code.context();
-    method.setCode(lirCode, appView);
-    markProcessed(code, feedback);
-  }
-
-  private void finalizeToCf(
-      IRCode code,
-      OptimizationFeedback feedback,
-      BytecodeMetadataProvider bytecodeMetadataProvider,
-      Timing timing) {
-    ProgramMethod method = code.context();
-    method.setCode(
-        new IRToCfFinalizer(appView, deadCodeRemover)
-            .finalizeCode(code, bytecodeMetadataProvider, timing),
-        appView);
-    markProcessed(code, feedback);
-  }
-
-  private void finalizeToDex(
-      IRCode code,
-      OptimizationFeedback feedback,
-      BytecodeMetadataProvider bytecodeMetadataProvider,
-      Timing timing) {
-    ProgramMethod method = code.context();
-    DexEncodedMethod definition = method.getDefinition();
-    method.setCode(
-        new IRToDexFinalizer(appView, deadCodeRemover)
-            .finalizeCode(code, bytecodeMetadataProvider, timing),
-        appView);
-    markProcessed(code, feedback);
   }
 
   public void markProcessed(IRCode code, OptimizationFeedback feedback) {
