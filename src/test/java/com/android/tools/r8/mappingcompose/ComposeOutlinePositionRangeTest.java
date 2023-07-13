@@ -1,4 +1,4 @@
-// Copyright (c) 2022, the R8 project authors. Please see the AUTHORS file
+// Copyright (c) 2023, the R8 project authors. Please see the AUTHORS file
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
@@ -19,8 +19,9 @@ import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameter;
 import org.junit.runners.Parameterized.Parameters;
 
+/** This is a regression test for b/280564959. */
 @RunWith(Parameterized.class)
-public class ComposeOutlineTest extends TestBase {
+public class ComposeOutlinePositionRangeTest extends TestBase {
 
   @Parameter() public TestParameters parameters;
 
@@ -33,26 +34,22 @@ public class ComposeOutlineTest extends TestBase {
       StringUtils.unixLines(
           "# { id: 'com.android.tools.r8.mapping', version: '2.2' }",
           "outline.Class -> a:",
-          "    1:2:int some.inlinee():75:76 -> a",
-          "    1:2:int outline():0 -> a",
+          "    1:2:int outline():11:12 -> a",
           "    # { 'id':'com.android.tools.r8.outline' }",
           "outline.Callsite -> x:",
-          "    4:4:int outlineCaller(int):23:23 -> s",
-          "    5:5:int foo.bar.baz.outlineCaller(int):98:98 -> s",
-          "    5:5:int outlineCaller(int):24 -> s",
-          "    27:27:int outlineCaller(int):0:0 -> s",
+          "    1:1:int outlineCaller(int):0:0 -> s",
           "    # { 'id':'com.android.tools.r8.outlineCallsite',"
-              + "'positions': { '1': 4, '2': 5 },"
-              + "'outline':'La;a()I' }");
+              + "'positions': { '1': 10, '2': 11 },"
+              + "'outline':'La;a()I' }",
+          "    10:11:int some.inlinee(int):23:24 -> s",
+          "    10:11:int outlineCaller(int):1337 -> s");
   private static final String mappingBar =
-      StringUtils.unixLines("# {'id':'com.android.tools.r8.mapping','version':'2.2'}", "a -> b:");
-  private static final String mappingBaz =
       StringUtils.unixLines(
           "# {'id':'com.android.tools.r8.mapping','version':'2.2'}",
-          "b -> c:",
+          "a -> b:",
           "    4:5:int a():1:2 -> m",
           "x -> y:",
-          "    42:42:int s(int):27:27 -> o");
+          "    42:42:int s(int):1:1 -> o");
   private static final String mappingResult =
       StringUtils.unixLines(
           "# {'id':'com.android.tools.r8.mapping','version':'2.2'}",
@@ -60,21 +57,20 @@ public class ComposeOutlineTest extends TestBase {
           "    42:42:int outlineCaller(int):0:0 -> o",
           "    # {'id':'com.android.tools.r8.outlineCallsite',"
               + "'positions':{'4':43,'5':44},"
-              + "'outline':'Lc;m()I'}",
-          "    43:43:int outlineCaller(int):23:23 -> o",
-          "    44:44:int foo.bar.baz.outlineCaller(int):98:98 -> o",
-          "    44:44:int outlineCaller(int):24 -> o",
-          "outline.Class -> c:",
-          "    4:5:int some.inlinee():75:76 -> m",
-          "    4:5:int outline():0 -> m",
+              + "'outline':'Lb;m()I'}",
+          "    43:43:int some.inlinee(int):23:23 -> o",
+          "    43:43:int outlineCaller(int):1337 -> o",
+          "    44:44:int some.inlinee(int):24:24 -> o",
+          "    44:44:int outlineCaller(int):1337 -> o",
+          "outline.Class -> b:",
+          "    4:5:int outline():11:12 -> m",
           "    # {'id':'com.android.tools.r8.outline'}");
 
   @Test
   public void testCompose() throws Exception {
     ClassNameMapper mappingForFoo = ClassNameMapper.mapperFromStringWithPreamble(mappingFoo);
     ClassNameMapper mappingForBar = ClassNameMapper.mapperFromStringWithPreamble(mappingBar);
-    ClassNameMapper mappingForBaz = ClassNameMapper.mapperFromStringWithPreamble(mappingBaz);
-    String composed = MappingComposer.compose(mappingForFoo, mappingForBar, mappingForBaz);
+    String composed = MappingComposer.compose(mappingForFoo, mappingForBar);
     assertEquals(mappingResult, doubleToSingleQuote(composed));
   }
 }
