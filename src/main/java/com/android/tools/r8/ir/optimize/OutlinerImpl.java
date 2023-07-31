@@ -1080,6 +1080,7 @@ public class OutlinerImpl extends Outliner {
             }
           } else {
             arguments.add(value);
+            argumentRegisters += value.requiredRegisters();
             if (instruction.isInvokeMethod()) {
               argumentTypes.add(argumentTypeFromValue(value, instruction.asInvokeMethod(), i));
             } else {
@@ -1544,6 +1545,7 @@ public class OutlinerImpl extends Outliner {
                           representative.getDefinition().getClassFileVersion());
                     }
                   });
+      assert outlineMethod.getReference().getArity() <= Constants.U8BIT_MAX;
       generatedOutlines.put(outline, outlineMethod.getReference());
       outlineMethods.add(outlineMethod);
     }
