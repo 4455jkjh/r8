@@ -75,7 +75,6 @@ import com.android.tools.r8.optimize.interfaces.analysis.CfOpenClosedInterfacesA
 import com.android.tools.r8.optimize.proto.ProtoNormalizer;
 import com.android.tools.r8.optimize.redundantbridgeremoval.RedundantBridgeRemover;
 import com.android.tools.r8.origin.CommandLineOrigin;
-import com.android.tools.r8.origin.Origin;
 import com.android.tools.r8.profile.art.ArtProfileCompletenessChecker;
 import com.android.tools.r8.profile.rewriting.ProfileCollectionAdditions;
 import com.android.tools.r8.repackaging.Repackaging;
@@ -106,9 +105,9 @@ import com.android.tools.r8.shaking.WhyAreYouKeepingConsumer;
 import com.android.tools.r8.synthesis.SyntheticFinalization;
 import com.android.tools.r8.synthesis.SyntheticItems;
 import com.android.tools.r8.utils.AndroidApp;
-import com.android.tools.r8.utils.ExceptionDiagnostic;
 import com.android.tools.r8.utils.ExceptionUtils;
 import com.android.tools.r8.utils.InternalOptions;
+import com.android.tools.r8.utils.ResourceTracing;
 import com.android.tools.r8.utils.SelfRetraceTest;
 import com.android.tools.r8.utils.StringDiagnostic;
 import com.android.tools.r8.utils.StringUtils;
@@ -686,9 +685,6 @@ public class R8 {
         }
       }
 
-      // TODO(b/225838009): Check support LIR in bridge remover.
-      PrimaryR8IRConverter.finalizeLirToOutputFormat(appView, timing, executorService);
-
       // Insert a member rebinding oracle in the graph to ensure that all subsequent rewritings of
       // the application has an applied oracle for looking up non-rebound references.
       MemberRebindingIdentityLens memberRebindingIdentityLens =
@@ -698,8 +694,10 @@ public class R8 {
       // Remove redundant bridges that have been inserted for member rebinding.
       // This can only be done if we have AppInfoWithLiveness.
       if (appView.appInfo().hasLiveness()) {
+        timing.begin("Bridge remover");
         new RedundantBridgeRemover(appView.withLiveness())
             .run(executorService, timing, memberRebindingIdentityLens);
+        timing.end();
       } else {
         // If we don't have AppInfoWithLiveness here, it must be because we are not shrinking. When
         // we are not shrinking, we can't move visibility bridges. In principle, though, it would be
@@ -711,6 +709,9 @@ public class R8 {
       appView.setArtProfileCollection(
           appView.getArtProfileCollection().withoutMissingItems(appView));
       appView.setStartupProfile(appView.getStartupProfile().withoutMissingItems(appView));
+
+      // TODO(b/225838009): Support LIR in synthetic finalization (needs hashing and compareTo).
+      PrimaryR8IRConverter.finalizeLirToOutputFormat(appView, timing, executorService);
 
       if (appView.appInfo().hasLiveness()) {
         SyntheticFinalization.finalizeWithLiveness(appView.withLiveness(), executorService, timing);
@@ -854,38 +855,10 @@ public class R8 {
       AndroidResourceProvider androidResourceProvider,
       AndroidResourceConsumer androidResourceConsumer,
       DiagnosticsHandler diagnosticsHandler) {
-    try {
-      for (AndroidResourceInput androidResource : androidResourceProvider.getAndroidResources()) {
-        androidResourceConsumer.accept(
-            new AndroidResourceOutput() {
-              @Override
-              public ResourcePath getPath() {
-                return androidResource.getPath();
-              }
-
-              @Override
-              public ByteDataView getByteDataView() {
-                try {
-                  return ByteDataView.of(ByteStreams.toByteArray(androidResource.getByteStream()));
-                } catch (IOException | ResourceException e) {
-                  diagnosticsHandler.error(new ExceptionDiagnostic(e, androidResource.getOrigin()));
-                }
-                return null;
-              }
-
-              @Override
-              public Origin getOrigin() {
-                return androidResource.getOrigin();
-              }
-            },
-            diagnosticsHandler);
-      }
-    } catch (ResourceException e) {
-      throw new RuntimeException("Cannot write android resources", e);
-    } finally {
-      androidResourceConsumer.finished(diagnosticsHandler);
-      androidResourceProvider.finished(diagnosticsHandler);
-    }
+    ResourceTracing resourceTracing = ResourceTracing.getImpl();
+    resourceTracing.setConsumer(androidResourceConsumer);
+    resourceTracing.setProvider(androidResourceProvider);
+    resourceTracing.done(diagnosticsHandler);
   }
 
   private static boolean allReferencesAssignedApiLevel(

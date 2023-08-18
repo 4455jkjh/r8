@@ -33,6 +33,10 @@ dependencies {
   errorprone(Deps.errorprone)
 }
 
+val thirdPartyCompileDependenciesTask = ensureThirdPartyDependencies(
+  "compileDeps",
+  listOf(Jdk.JDK_11.getThirdPartyDependency()))
+
 val thirdPartyResourceDependenciesTask = ensureThirdPartyDependencies(
   "resourceDeps",
   listOf(ThirdPartyDeps.apiDatabase))
@@ -95,7 +99,7 @@ tasks {
     val swissArmy = swissArmyKnife.get().outputs.getFiles().getSingleFile()
     val deps = depsJar.get().outputs.files.getSingleFile()
     inputs.files(listOf(swissArmy, deps))
-    val output = file(Paths.get("build", "libs", "r8-deps-relocated.jar"))
+    val output = getRoot().resolveAll("build", "libs", "r8-deps-relocated.jar")
     outputs.file(output)
     commandLine = baseCompilerCommandLine(
       swissArmy,
@@ -108,7 +112,11 @@ tasks {
              "--output",
              "$output",
              "--map",
+             "com.android.resources->com.android.tools.r8.com.android.resources",
+             "--map",
              "com.google.common->com.android.tools.r8.com.google.common",
+             "--map",
+             "com.android.build.shrinker->com.android.tools.r8.resourceshrinker",
              "--map",
              "com.google.gson->com.android.tools.r8.com.google.gson",
              "--map",
@@ -134,6 +142,7 @@ tasks {
 }
 
 tasks.withType<JavaCompile> {
+  dependsOn(thirdPartyCompileDependenciesTask)
   println("NOTE: Running with JDK: " + org.gradle.internal.jvm.Jvm.current().javaHome)
 
   // Enable error prone for D8/R8 main sources and make all warnings errors.

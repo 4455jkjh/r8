@@ -138,31 +138,40 @@ public class ArrayPut extends ArrayAccess {
   }
 
   @Override
-  public boolean instructionInstanceCanThrow(AppView<?> appView, ProgramMethod context) {
+  public boolean instructionInstanceCanThrow(
+      AppView<?> appView,
+      ProgramMethod context,
+      AbstractValueSupplier abstractValueSupplier,
+      SideEffectAssumption assumption) {
     // Check that the array is guaranteed to be non-null and that the index is within bounds.
     Value array = array().getAliasedValue();
-    if (!array.isDefinedByInstructionSatisfying(Instruction::isNewArrayEmpty)) {
+    if (!array.isDefinedByInstructionSatisfying(Instruction::isNewArrayEmptyOrNewArrayFilled)
+        || array.hasLocalInfo()) {
       return true;
     }
 
-    NewArrayEmpty definition = array.definition.asNewArrayEmpty();
-    Value sizeValue = definition.size().getAliasedValue();
-    if (sizeValue.isPhi() || !sizeValue.definition.isConstNumber()) {
-      return true;
+    Instruction arrayDefinition = array.getDefinition();
+    int size;
+    if (arrayDefinition.isNewArrayEmpty()) {
+      Value sizeValue = arrayDefinition.asNewArrayEmpty().size();
+      if (sizeValue.isConstant()) {
+        size = sizeValue.getConstInstruction().asConstNumber().getIntValue();
+      } else {
+        return true;
+      }
+    } else {
+      size = arrayDefinition.asNewArrayFilled().size();
     }
 
+    int index;
     Value indexValue = index().getAliasedValue();
-    if (indexValue.isPhi() || !indexValue.definition.isConstNumber()) {
+    if (indexValue.isConstant()) {
+      index = indexValue.getConstInstruction().asConstNumber().getIntValue();
+    } else {
       return true;
     }
 
-    long index = indexValue.definition.asConstNumber().getRawValue();
-    long size = sizeValue.definition.asConstNumber().getRawValue();
     if (index < 0 || index >= size) {
-      return true;
-    }
-
-    if (array.hasLocalInfo() || indexValue.hasLocalInfo() || sizeValue.hasLocalInfo()) {
       return true;
     }
 
@@ -178,7 +187,10 @@ public class ArrayPut extends ArrayAccess {
 
   @Override
   public boolean instructionMayHaveSideEffects(
-      AppView<?> appView, ProgramMethod context, SideEffectAssumption assumption) {
+      AppView<?> appView,
+      ProgramMethod context,
+      AbstractValueSupplier abstractValueSupplier,
+      SideEffectAssumption assumption) {
     // This modifies the array (or throws).
     return true;
   }
