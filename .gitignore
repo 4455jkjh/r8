@@ -112,8 +112,6 @@ third_party/gradle/gradle.tar.gz
 third_party/gradle/gradle-8.0
 third_party/gradle/gradle-8.0.tar.gz
 third_party/internal/*
-third_party/iosched_2019
-third_party/iosched_2019.tar.gz
 third_party/jacoco/0.8.2/*
 third_party/jacoco/0.8.2.tar.gz
 third_party/jacoco/0.8.6/*
@@ -275,8 +273,6 @@ third_party/sample_libraries
 third_party/sample_libraries.tar.gz
 third_party/smali
 third_party/smali.tar.gz
-third_party/tachiyomi
-third_party/tachiyomi.tar.gz
 third_party/youtube/*
 tmp/
 tools/*.pyc
