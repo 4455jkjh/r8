@@ -32,8 +32,13 @@ public class SingleNumberValue extends SingleConstValue
   }
 
   @Override
-  public boolean containsInt(int value) {
+  public boolean maybeContainsInt(int value) {
     return value == getIntValue();
+  }
+
+  @Override
+  public long getMinInclusive() {
+    return value;
   }
 
   @Override
@@ -86,10 +91,12 @@ public class SingleNumberValue extends SingleConstValue
     return value != 0;
   }
 
+  @Override
   public int getDefinitelySetIntBits() {
     return getIntValue();
   }
 
+  @Override
   public int getDefinitelyUnsetIntBits() {
     return ~getDefinitelySetIntBits();
   }
@@ -116,11 +123,14 @@ public class SingleNumberValue extends SingleConstValue
 
   @Override
   public boolean mayOverlapWith(ConstantOrNonConstantNumberValue other) {
+    if (other.isDefiniteBitsNumberValue()) {
+      return true;
+    }
     if (other.isSingleNumberValue()) {
       return equals(other.asSingleNumberValue());
     }
-    assert other.isNonConstantNumberValue();
-    return other.asNonConstantNumberValue().containsInt(getIntValue());
+    assert other.isNumberFromIntervalValue() || other.isNumberFromSetValue();
+    return other.asNonConstantNumberValue().maybeContainsInt(getIntValue());
   }
 
   @Override

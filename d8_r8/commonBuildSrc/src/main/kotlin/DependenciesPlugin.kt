@@ -379,10 +379,10 @@ object ThirdPartyDeps {
     Paths.get("third_party", "framework").toFile(),
     Paths.get("third_party", "framework.tar.gz.sha1").toFile(),
     DependencyType.X20)
-  val iosched2019 = ThirdPartyDependency(
-    "iosched-2019",
-    Paths.get("third_party", "iosched_2019").toFile(),
-    Paths.get("third_party", "iosched_2019.tar.gz.sha1").toFile())
+  val gson = ThirdPartyDependency(
+    "gson",
+    Paths.get("third_party", "gson", "gson-2.10.1").toFile(),
+    Paths.get("third_party", "gson", "gson-2.10.1.tar.gz.sha1").toFile())
   val desugarJdkLibs11 = ThirdPartyDependency(
     "desugar-jdk-libs-11",
     Paths.get("third_party", "openjdk", "desugar_jdk_libs_11").toFile(),

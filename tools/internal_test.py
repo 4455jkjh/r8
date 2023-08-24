@@ -39,8 +39,6 @@ import utils
 import run_on_app
 
 import chrome_data
-import iosched_data
-import r8_data
 import youtube_data
 
 # How often the bot/tester should check state
@@ -60,7 +58,7 @@ STDOUT = 'stdout'
 EXITCODE = 'exitcode'
 TIMED_OUT = 'timed_out'
 
-BENCHMARK_APPS = [chrome_data, iosched_data, r8_data, youtube_data]
+BENCHMARK_APPS = [chrome_data, youtube_data]
 
 DEPENDENT_PYTHON_FILES = [gradle, utils, run_on_app]
 
@@ -119,13 +117,11 @@ TEST_COMMANDS = [
     ['tools/test.py', '--only_internal', '--slow_tests',
      '--java_max_memory_size=8G'],
     # Ensure that all internal apps compile.
-    ['tools/run_on_app.py', '--run-all', '--out=out'],
-    # Find min xmx for selected benchmark apps
-    ['tools/gradle.py', 'r8lib'],
+    ['tools/run_on_app.py', '--run-all', '--out=out', '--workers', '4'],
 ]
 
 # Command timeout, in seconds.
-RUN_TIMEOUT = 3600 * 6
+RUN_TIMEOUT = 3600 * 7
 BOT_RUN_TIMEOUT = RUN_TIMEOUT * len(TEST_COMMANDS)
 
 def log(str):
@@ -153,8 +149,9 @@ def get_file_contents():
   with open(sys.argv[0], 'r') as us:
     contents.append(us.read())
   for deps in BENCHMARK_APPS + DEPENDENT_PYTHON_FILES:
-    with open(deps.__file__, 'r') as us:
-      contents.append(us.read())
+    if os.path.exists(deps.__file__):
+      with open(deps.__file__, 'r') as us:
+        contents.append(us.read())
   return contents
 
 def restart_if_new_version(original_contents):
@@ -387,7 +384,7 @@ def run_once(archive):
   log('Running once with hash %s' % git_hash)
   env = os.environ.copy()
   # Bot does not have a lot of memory.
-  env['R8_GRADLE_CORES_PER_FORK'] = '8'
+  env['R8_GRADLE_CORES_PER_FORK'] = '5'
   failed = any([execute(cmd, archive, env) for cmd in TEST_COMMANDS])
   # Gradle daemon occasionally leaks memory, stop it.
   gradle.RunGradle(['--stop'])

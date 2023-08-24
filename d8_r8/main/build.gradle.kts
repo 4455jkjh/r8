@@ -81,14 +81,31 @@ tasks {
     dependsOn(keepAnnoJarTask)
     doFirst {
       println(header("R8 full dependencies"))
+      mainJarDependencies().forEach({ println(it) })
     }
     dependsOn(resourceShrinkerJarTask)
     dependsOn(resourceShrinkerDepsTask)
-    mainJarDependencies().forEach({ println(it) })
     from(mainJarDependencies().map(::zipTree))
     from(keepAnnoJarTask.outputs.files.map(::zipTree))
     from(resourceShrinkerJarTask.outputs.files.map(::zipTree))
     from(resourceShrinkerDepsTask.outputs.files.map(::zipTree))
+    exclude("**/module-info.class")
+    exclude("**/*.kotlin_metadata")
+    exclude("META-INF/*.kotlin_module")
+    exclude("META-INF/com.android.tools/**")
+    exclude("META-INF/LICENSE*")
+    exclude("META-INF/MANIFEST.MF")
+    exclude("META-INF/maven/**")
+    exclude("META-INF/proguard/**")
+    exclude("META-INF/services/**")
+    exclude("META-INF/versions/**")
+    exclude("**/*.xml")
+    exclude("com/android/version.properties")
+    exclude("NOTICE")
+    exclude("README.md")
+    exclude("javax/annotation/**")
+    exclude("wireless/**")
+    manifest {}
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
     archiveFileName.set("deps.jar")
   }
@@ -99,7 +116,7 @@ tasks {
     val swissArmy = swissArmyKnife.get().outputs.getFiles().getSingleFile()
     val deps = depsJar.get().outputs.files.getSingleFile()
     inputs.files(listOf(swissArmy, deps))
-    val output = getRoot().resolveAll("build", "libs", "r8-deps-relocated.jar")
+    val output = getRoot().resolveAll("build", "libs", "r8-with-relocated-deps.jar")
     outputs.file(output)
     commandLine = baseCompilerCommandLine(
       swissArmy,
@@ -113,6 +130,8 @@ tasks {
              "$output",
              "--map",
              "com.android.resources->com.android.tools.r8.com.android.resources",
+             "--map",
+             "com.android.support->com.android.tools.r8.com.android.support",
              "--map",
              "com.google.common->com.android.tools.r8.com.google.common",
              "--map",
@@ -136,7 +155,11 @@ tasks {
              "--map",
              "org.checkerframework->com.android.tools.r8.org.checkerframework",
              "--map",
-             "com.google.j2objc->com.android.tools.r8.com.google.j2objc"
+             "com.google.j2objc->com.android.tools.r8.com.google.j2objc",
+             "--map",
+             "com.google.protobuf->com.android.tools.r8.com.google.protobuf",
+             "--map",
+             "android.aapt->com.android.tools.r8.android.aaapt"
       ))
   }
 }
@@ -164,7 +187,6 @@ tasks.withType<JavaCompile> {
   options.errorprone.disable("ImmutableEnumChecker")
   options.errorprone.disable("BadImport")
   options.errorprone.disable("ComplexBooleanConstant")
-  options.errorprone.disable("StreamToIterable")
   options.errorprone.disable("HidingField")
   options.errorprone.disable("StreamResourceLeak")
   options.errorprone.disable("CatchAndPrintStackTrace")
