@@ -325,6 +325,7 @@ def cloudDependencies = [
                 "gradle/gradle",
                 "google/google-java-format/1.14.0",
                 "google-java-format",
+                "iosched_2019",
                 "jacoco/0.8.2",
                 "jacoco/0.8.6",
                 "jasmin",
