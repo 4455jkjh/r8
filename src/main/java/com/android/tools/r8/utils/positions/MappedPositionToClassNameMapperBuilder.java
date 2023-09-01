@@ -18,6 +18,7 @@ import com.android.tools.r8.graph.DexString;
 import com.android.tools.r8.graph.DexType;
 import com.android.tools.r8.graph.ProgramMethod;
 import com.android.tools.r8.ir.code.Position;
+import com.android.tools.r8.ir.code.Position.OutlineCallerPosition;
 import com.android.tools.r8.naming.ClassNameMapper;
 import com.android.tools.r8.naming.ClassNaming;
 import com.android.tools.r8.naming.ClassNamingForNameMapper.MappedRange;
@@ -56,7 +57,9 @@ import it.unimi.dsi.fastutil.ints.Int2IntMap;
 import it.unimi.dsi.fastutil.ints.Int2IntSortedMap;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.IdentityHashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -288,7 +291,8 @@ public class MappedPositionToClassNameMapperBuilder {
             .setMappedPositionsOutline(mappedPositions);
         methodSpecificMappingInformation.add(OutlineMappingInformation.builder().build());
       }
-
+      mappedPositions.sort(Comparator.comparing(MappedPosition::getObfuscatedLine));
+      Map<OutlineCallerPosition, MappedRange> outlineCallerPositions = new LinkedHashMap<>();
       // Update memberNaming with the collected positions, merging multiple positions into a
       // single region whenever possible.
       for (int i = 0; i < mappedPositions.size(); /* updated in body */ ) {
@@ -346,43 +350,50 @@ public class MappedPositionToClassNameMapperBuilder {
                 originalRange,
                 prunedInlinedClasses,
                 cardinalRangeCache);
+        // firstPosition will contain a potential outline caller.
+        if (firstPosition.isOutlineCaller()) {
+          outlineCallerPositions.putIfAbsent(firstPosition.asOutlineCaller(), lastMappedRange);
+        }
         methodSpecificMappingInformation.consume(
             info -> lastMappedRange.addMappingInformation(info, Unreachable::raise));
-        // firstPosition will contain a potential outline caller.
-        if (firstPosition.getOutlineCallee() != null) {
-          Int2IntMap positionMap = new Int2IntArrayMap();
-          int maxPc = ListUtils.last(mappedPositions).getObfuscatedLine();
-          firstPosition
-              .getOutlinePositions()
-              .forEach(
-                  (line, position) -> {
-                    int placeHolderLineToBeFixed;
-                    if (canUseDexPc) {
-                      placeHolderLineToBeFixed = maxPc + line + 1;
-                    } else {
-                      placeHolderLineToBeFixed =
-                          positionRemapper.createRemappedPosition(position).getSecond().getLine();
-                    }
-                    positionMap.put((int) line, placeHolderLineToBeFixed);
-                    getMappedRangesForPosition(
-                        appView,
-                        getOriginalMethodSignature,
-                        getBuilder(),
-                        position,
-                        residualSignature,
-                        nonCardinalRangeCache.get(
-                            placeHolderLineToBeFixed, placeHolderLineToBeFixed),
-                        nonCardinalRangeCache.get(position.getLine(), position.getLine()),
-                        prunedInlinedClasses,
-                        cardinalRangeCache);
-                  });
-          outlinesToFix
-              .computeIfAbsent(
-                  firstPosition.getOutlineCallee(),
-                  outline -> new OutlineFixupBuilder(computeMappedMethod(outline, appView)))
-              .addMappedRangeForOutlineCallee(lastMappedRange, positionMap);
-        }
         i = j;
+      }
+      IntBox maxPc = new IntBox(ListUtils.last(mappedPositions).getObfuscatedLine());
+      for (Map.Entry<OutlineCallerPosition, MappedRange> outlinePositionEntry :
+          outlineCallerPositions.entrySet()) {
+        Int2IntMap positionMap = new Int2IntArrayMap();
+        outlinePositionEntry
+            .getKey()
+            .getOutlinePositions()
+            .forEach(
+                (line, position) -> {
+                  int placeHolderLineToBeFixed;
+                  if (canUseDexPc) {
+                    placeHolderLineToBeFixed = maxPc.get() + line + 1;
+                  } else {
+                    placeHolderLineToBeFixed =
+                        positionRemapper.createRemappedPosition(position).getSecond().getLine();
+                  }
+                  positionMap.put((int) line, placeHolderLineToBeFixed);
+                  MappedRange lastRange =
+                      getMappedRangesForPosition(
+                          appView,
+                          getOriginalMethodSignature,
+                          getBuilder(),
+                          position,
+                          residualSignature,
+                          nonCardinalRangeCache.get(
+                              placeHolderLineToBeFixed, placeHolderLineToBeFixed),
+                          nonCardinalRangeCache.get(position.getLine(), position.getLine()),
+                          prunedInlinedClasses,
+                          cardinalRangeCache);
+                  maxPc.set(lastRange.minifiedRange.to);
+                });
+        outlinesToFix
+            .computeIfAbsent(
+                outlinePositionEntry.getKey().getOutlineCallee(),
+                outline -> new OutlineFixupBuilder(computeMappedMethod(outline, appView)))
+            .addMappedRangeForOutlineCallee(outlinePositionEntry.getValue(), positionMap);
       }
       return this;
     }
