@@ -8,6 +8,9 @@ import it.unimi.dsi.fastutil.bytes.ByteIterator;
 /** Simple utilities for byte encodings. */
 public class ByteUtils {
 
+  public static final int MAX_U1 = 0xFF;
+  public static final int MAX_U2 = 0xFFFF;
+
   public static boolean isU1(int value) {
     return (0 <= value) && (value <= 0xFF);
   }
