@@ -28,6 +28,7 @@ import com.android.tools.r8.ir.conversion.IRBuilder;
 import com.android.tools.r8.ir.conversion.LensCodeRewriterUtils;
 import com.android.tools.r8.ir.conversion.MethodConversionOptions.MutableMethodConversionOptions;
 import com.android.tools.r8.ir.conversion.MethodConversionOptions.ThrowingMethodConversionOptions;
+import com.android.tools.r8.lightir.ByteUtils;
 import com.android.tools.r8.origin.Origin;
 import com.android.tools.r8.utils.ArrayUtils;
 import com.android.tools.r8.utils.RetracerForCodePrinting;
@@ -785,6 +786,7 @@ public class DexCode extends Code implements DexWritableCode, StructuralItem<Dex
       this.instructionCount = instructionCount;
       this.handlerOffset = handlerOffset;
       this.handlerIndex = NO_INDEX;
+      assert ByteUtils.isU2(instructionCount);
     }
 
     @Override
