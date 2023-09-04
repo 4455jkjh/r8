@@ -19,6 +19,7 @@ java {
       srcDir(root.resolveAll("src", "test", "java"))
     }
   }
+
   // We are using a new JDK to compile to an older language version, which is not directly
   // compatible with java toolchains.
   sourceCompatibility = JavaVersion.VERSION_1_8
@@ -74,6 +75,7 @@ val thirdPartyRuntimeDependenciesTask = ensureThirdPartyDependencies(
     ThirdPartyDeps.desugarJdkLibs,
     ThirdPartyDeps.desugarJdkLibsLegacy,
     ThirdPartyDeps.desugarJdkLibs11,
+    ThirdPartyDeps.examplesAndroidOLegacy,
     ThirdPartyDeps.gson,
     ThirdPartyDeps.jacoco,
     ThirdPartyDeps.java8Runtime,
@@ -147,15 +149,7 @@ tasks {
   }
 
   withType<KotlinCompile> {
-    dependsOn(gradle.includedBuild("keepanno").task(":jar"))
-    dependsOn(gradle.includedBuild("resourceshrinker").task(":jar"))
-    dependsOn(gradle.includedBuild("main").task(":jar"))
-    dependsOn(thirdPartyCompileDependenciesTask)
-    kotlinOptions {
-      // We are using a new JDK to compile to an older language version, which is not directly
-      // compatible with java toolchains.
-      jvmTarget = "1.8"
-    }
+    enabled = false
   }
 
   withType<Test> {
@@ -196,6 +190,7 @@ tasks {
     exclude("com/android/tools/r8/classmerging/vertical/ForceInlineConstructorWithRetargetedLibMemberTest**")
     exclude("com/android/tools/r8/ir/optimize/inliner/InlineMethodWithRetargetedLibMemberTest**")
     exclude("com/android/tools/r8/profile/art/DesugaredLibraryArtProfileRewritingTest**")
+    exclude("com/android/tools/r8/profile/art/dump/DumpArtProfileProvidersTest**")
   }
 
   val testJar by registering(Jar::class) {
@@ -210,10 +205,6 @@ tasks {
     dependsOn(gradle.includedBuild("keepanno").task(":jar"))
     dependsOn(gradle.includedBuild("resourceshrinker").task(":jar"))
     dependsOn(thirdPartyCompileDependenciesTask)
-    doFirst {
-      println(header("Test Java 8 dependencies"))
-    }
-    testDependencies().forEach({ println(it) })
     from(testDependencies().map(::zipTree))
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
     archiveFileName.set("deps.jar")
