@@ -353,6 +353,10 @@ public class ToolHelper {
         return isNewerThanOrEqual(start) && isOlderThanOrEqual(end);
       }
 
+      public boolean hasRecordsSupport() {
+        return isNewerThanOrEqual(V14_0_0);
+      }
+
       public String toString() {
         return shortName;
       }

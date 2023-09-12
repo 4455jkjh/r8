@@ -100,6 +100,16 @@ public class ZipUtils {
     }
   }
 
+  public static boolean containsEntry(Path zipfile, String name) throws IOException {
+    BooleanBox result = new BooleanBox();
+    ZipUtils.iter(
+        zipfile,
+        (entry, stream) -> {
+          result.computeIfNotSet(() -> entry.getName().equals(name));
+        });
+    return result.get();
+  }
+
   public static Path map(
       Path zipFilePath, Path mappedFilePath, BiFunction<ZipEntry, byte[], byte[]> map)
       throws IOException {

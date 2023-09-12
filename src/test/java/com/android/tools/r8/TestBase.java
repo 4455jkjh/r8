@@ -1697,6 +1697,11 @@ public class TestBase {
             .isGreaterThanOrEqualTo(apiLevelWithDefaultInterfaceMethodsSupport());
   }
 
+  public static boolean runtimeWithRecordsSupport(TestRuntime runtime) {
+    return (runtime.isCf() && runtime.asCf().hasRecordsSupport())
+        || (runtime.isDex() && runtime.asDex().hasRecordsSupport());
+  }
+
   public static AndroidApiLevel apiLevelWithStaticInterfaceMethodsSupport() {
     return AndroidApiLevel.N;
   }
@@ -1731,6 +1736,10 @@ public class TestBase {
 
   public static AndroidApiLevel apiLevelWithMethodParametersSupport() {
     return AndroidApiLevel.O;
+  }
+
+  public static boolean canUseNativeRecords(TestParameters parameters) {
+    return parameters.getApiLevel().isGreaterThanOrEqualTo(AndroidApiLevel.U);
   }
 
   public static boolean canUseJavaUtilObjects(TestParameters parameters) {
