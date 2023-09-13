@@ -99,6 +99,7 @@ public class LineNumberOptimizer {
         || newMapVersion.isUnknown();
   }
 
+  @SuppressWarnings("ReferenceEquality")
   public static ClassNameMapper run(
       AppView<?> appView,
       AndroidApp inputApp,
@@ -181,6 +182,7 @@ public class LineNumberOptimizer {
     return builder.build();
   }
 
+  @SuppressWarnings("ComplexBooleanConstant")
   private static boolean verifyMethodsAreKeptDirectlyOrIndirectly(
       AppView<?> appView, List<ProgramMethod> methods) {
     if (appView.options().isGeneratingClassFiles() || !appView.appInfo().hasClassHierarchy()) {
@@ -256,6 +258,7 @@ public class LineNumberOptimizer {
         });
   }
 
+  @SuppressWarnings("UnusedVariable")
   public static IdentityHashMap<DexString, List<ProgramMethod>> groupMethodsByRenamedName(
       AppView<?> appView, DexProgramClass clazz) {
     IdentityHashMap<DexString, List<ProgramMethod>> methodsByRenamedName =

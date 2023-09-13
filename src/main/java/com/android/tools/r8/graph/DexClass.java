@@ -52,7 +52,9 @@ public abstract class DexClass extends DexDefinition
   public final Origin origin;
   public final DexType type;
   public final ClassAccessFlags accessFlags;
+
   public DexType superType;
+
   public DexTypeList interfaces;
   public DexString sourceFile;
 
@@ -85,6 +87,7 @@ public abstract class DexClass extends DexDefinition
   /** Generic signature information if the attribute is present in the input */
   protected ClassSignature classSignature;
 
+  @SuppressWarnings("ReferenceEquality")
   public DexClass(
       DexString sourceFile,
       DexTypeList interfaces,
@@ -468,10 +471,12 @@ public abstract class DexClass extends DexDefinition
     return fieldCollection.lookupInstanceField(field);
   }
 
+  @SuppressWarnings("ReferenceEquality")
   public DexEncodedField lookupUniqueInstanceFieldWithName(DexString name) {
     return internalLookupUniqueFieldThatMatches(field -> field.getName() == name, instanceFields());
   }
 
+  @SuppressWarnings("ReferenceEquality")
   public DexEncodedField lookupUniqueStaticFieldWithName(DexString name) {
     return internalLookupUniqueFieldThatMatches(field -> field.getName() == name, staticFields());
   }
@@ -546,6 +551,7 @@ public abstract class DexClass extends DexDefinition
     return methodCollection.getMethod(predicate);
   }
 
+  @SuppressWarnings("ReferenceEquality")
   public DexEncodedMethod lookupSignaturePolymorphicMethod(
       DexString methodName, DexItemFactory factory) {
     if (type != factory.methodHandleType && type != factory.varHandleType) {
@@ -569,6 +575,7 @@ public abstract class DexClass extends DexDefinition
     return signaturePolymorphicMethod;
   }
 
+  @SuppressWarnings("ReferenceEquality")
   public static boolean isSignaturePolymorphicMethod(
       DexEncodedMethod method, DexItemFactory factory) {
     assert method.getHolderType() == factory.methodHandleType
@@ -679,6 +686,7 @@ public abstract class DexClass extends DexDefinition
     return false;
   }
 
+  @SuppressWarnings("ReferenceEquality")
   public DexEncodedMethod getClassInitializer() {
     DexEncodedMethod classInitializer = methodCollection.getClassInitializer();
     assert classInitializer != DexEncodedMethod.SENTINEL;
@@ -815,10 +823,10 @@ public abstract class DexClass extends DexDefinition
       BiPredicate<? super DexType, ? super DexClass> predicate,
       BiConsumer<? super DexType, ? super DexClass> consumer) {
     forEachImmediateSupertype(
-        supertype -> {
-          DexClass superclass = definitions.definitionFor(supertype);
-          if (predicate.test(supertype, superclass)) {
-            consumer.accept(supertype, superclass);
+        superType -> {
+          DexClass superclass = definitions.definitionFor(superType);
+          if (predicate.test(superType, superclass)) {
+            consumer.accept(superType, superclass);
           }
         });
   }
@@ -1010,6 +1018,7 @@ public abstract class DexClass extends DexDefinition
     innerClasses.removeIf(predicate);
   }
 
+  @SuppressWarnings("ReferenceEquality")
   public InnerClassAttribute getInnerClassAttributeForThisClass() {
     for (InnerClassAttribute innerClassAttribute : getInnerClasses()) {
       if (type == innerClassAttribute.getInner()) {
@@ -1019,6 +1028,7 @@ public abstract class DexClass extends DexDefinition
     return null;
   }
 
+  @SuppressWarnings("ReferenceEquality")
   public void replaceInnerClassAttributeForThisClass(InnerClassAttribute newInnerClassAttribute) {
     ListIterator<InnerClassAttribute> iterator = getInnerClasses().listIterator();
     while (iterator.hasNext()) {
@@ -1047,6 +1057,7 @@ public abstract class DexClass extends DexDefinition
     permittedSubclasses.removeIf(predicate);
   }
 
+  @SuppressWarnings("ReferenceEquality")
   public void replacePermittedSubclass(
       DexType currentPermittedSubclass, DexType newPermittedSubclass) {
     for (int i = 0; i < permittedSubclasses.size(); i++) {
@@ -1116,6 +1127,7 @@ public abstract class DexClass extends DexDefinition
     return null;
   }
 
+  @SuppressWarnings("ReferenceEquality")
   public boolean isInSameNest(DexClass other) {
     return isInANest() && other.isInANest() && getNestHost() == other.getNestHost();
   }
@@ -1186,10 +1198,12 @@ public abstract class DexClass extends DexDefinition
     return fieldCollection.hasStaticFields();
   }
 
+  @SuppressWarnings("ReferenceEquality")
   public boolean hasInstanceFields() {
     return fieldCollection.hasInstanceFields();
   }
 
+  @SuppressWarnings("ReferenceEquality")
   public List<DexClassAndField> getDirectAndIndirectInstanceFields(AppView<?> appView) {
     List<DexClassAndField> result = new ArrayList<>();
     DexClass current = this;

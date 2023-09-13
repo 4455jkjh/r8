@@ -368,6 +368,7 @@ public class LirBuilder<V, EV> {
     return oldIndex != null ? oldIndex : nextIndex;
   }
 
+  @SuppressWarnings("UnusedVariable")
   private int constantIndexSize(LirConstant item) {
     return 4;
   }
@@ -764,6 +765,7 @@ public class LirBuilder<V, EV> {
     return addNoOperandInstruction(LirOpcodes.RETURN);
   }
 
+  @SuppressWarnings("ReferenceEquality")
   public LirBuilder<V, EV> addDebugPosition(Position position) {
     assert currentPosition == position;
     return addNoOperandInstruction(LirOpcodes.DEBUGPOS);

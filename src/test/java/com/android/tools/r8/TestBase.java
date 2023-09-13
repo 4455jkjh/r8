@@ -1701,6 +1701,11 @@ public class TestBase {
             .isGreaterThanOrEqualTo(apiLevelWithDefaultInterfaceMethodsSupport());
   }
 
+  public static boolean runtimeWithRecordsSupport(TestRuntime runtime) {
+    return (runtime.isCf() && runtime.asCf().hasRecordsSupport())
+        || (runtime.isDex() && runtime.asDex().hasRecordsSupport());
+  }
+
   public static AndroidApiLevel apiLevelWithStaticInterfaceMethodsSupport() {
     return AndroidApiLevel.N;
   }
@@ -1737,6 +1742,10 @@ public class TestBase {
     return AndroidApiLevel.O;
   }
 
+  public static boolean canUseNativeRecords(TestParameters parameters) {
+    return parameters.getApiLevel().isGreaterThanOrEqualTo(AndroidApiLevel.U);
+  }
+
   public static boolean canUseJavaUtilObjects(TestParameters parameters) {
     return parameters.isCfRuntime()
         || parameters.getApiLevel().isGreaterThanOrEqualTo(AndroidApiLevel.K);
@@ -1745,6 +1754,20 @@ public class TestBase {
   public static boolean canUseJavaUtilObjectsIsNull(TestParameters parameters) {
     return parameters.isDexRuntime()
         && parameters.getApiLevel().isGreaterThanOrEqualTo(AndroidApiLevel.N);
+  }
+
+  public static AndroidApiLevel apiLevelWithJavaTime() {
+    return AndroidApiLevel.O;
+  }
+
+  public static boolean apiLevelWithJavaTime(TestParameters parameters) {
+    return parameters.getApiLevel().isGreaterThanOrEqualTo(apiLevelWithJavaTime());
+  }
+
+  public static boolean runtimeWithJavaTime(TestParameters parameters) {
+    return parameters.isCfRuntime()
+        || parameters.isDexRuntimeVersionNewerThanOrEqual(
+            ToolHelper.getDexVersionForApiLevel(apiLevelWithJavaTime()));
   }
 
   // TODO(b/131130038): Do not allow accessmodification when kept.

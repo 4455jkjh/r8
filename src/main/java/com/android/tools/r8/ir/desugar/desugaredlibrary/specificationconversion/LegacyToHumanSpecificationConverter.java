@@ -250,6 +250,7 @@ public class LegacyToHumanSpecificationConverter {
     }
   }
 
+  @SuppressWarnings("MixedMutabilityReturnType")
   private void convertRetargetCoreLibMember(
       HumanRewritingFlags.Builder builder,
       DexApplication app,
@@ -279,6 +280,7 @@ public class LegacyToHumanSpecificationConverter {
         });
   }
 
+  @SuppressWarnings({"MixedMutabilityReturnType", "ReferenceEquality"})
   private List<DexClassAndMethod> findMethodsWithName(
       DexString methodName,
       DexClass clazz,

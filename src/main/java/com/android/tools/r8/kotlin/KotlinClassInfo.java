@@ -48,7 +48,9 @@ public class KotlinClassInfo implements KotlinClassLevelInfo {
   private final KotlinDeclarationContainerInfo declarationContainerInfo;
   private final List<KotlinTypeParameterInfo> typeParameters;
   private final List<KotlinTypeInfo> superTypes;
+
   private final List<KotlinTypeReference> sealedSubClasses;
+
   private final List<KotlinTypeReference> nestedClasses;
   private final List<String> enumEntries;
   private final KotlinVersionRequirementInfo versionRequirements;
@@ -223,9 +225,9 @@ public class KotlinClassInfo implements KotlinClassLevelInfo {
   }
 
   private static List<KotlinTypeReference> getSealedSubClasses(
-      List<String> sealedSubclasses, DexItemFactory factory) {
+      List<String> sealedSubClasses, DexItemFactory factory) {
     ImmutableList.Builder<KotlinTypeReference> sealedTypes = ImmutableList.builder();
-    for (String sealedSubClass : sealedSubclasses) {
+    for (String sealedSubClass : sealedSubClasses) {
       String binaryName =
           sealedSubClass.replace(
               DescriptorUtils.JAVA_PACKAGE_SEPARATOR, DescriptorUtils.INNER_CLASS_SEPARATOR);
@@ -284,11 +286,13 @@ public class KotlinClassInfo implements KotlinClassLevelInfo {
   }
 
   @Override
+  @SuppressWarnings("ReferenceEquality")
   public KotlinClassInfo asClass() {
     return this;
   }
 
   @Override
+  @SuppressWarnings("ReferenceEquality")
   public Pair<Metadata, Boolean> rewrite(DexClass clazz, AppView<?> appView) {
     KmClass kmClass = new KmClass();
     // TODO(b/154348683): Set flags.

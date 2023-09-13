@@ -158,6 +158,7 @@ public class ArgumentPropagatorProgramOptimizer {
     }
 
     @Override
+    @SuppressWarnings({"EqualsGetClass", "ReferenceEquality"})
     public boolean equals(Object obj) {
       if (obj == null || getClass() != obj.getClass()) {
         return false;
@@ -186,6 +187,7 @@ public class ArgumentPropagatorProgramOptimizer {
         ConcurrentNonProgramMethodsCollection.createVirtualMethodsCollection(appView);
   }
 
+  @SuppressWarnings("BadImport")
   public ArgumentPropagatorGraphLens run(
       List<Set<DexProgramClass>> stronglyConnectedProgramComponents,
       Consumer<DexProgramClass> affectedClassConsumer,
@@ -347,6 +349,7 @@ public class ArgumentPropagatorProgramOptimizer {
           newMethodSignature, new Pair<>(allowedPrototypeChanges, originalMethodSignature));
     }
 
+    @SuppressWarnings("ReferenceEquality")
     private void computePrototypeChangesForVirtualMethods(
         Set<DexProgramClass> stronglyConnectedProgramClasses,
         DexMethodSignatureSet interfaceDispatchOutsideProgram) {
@@ -524,6 +527,7 @@ public class ArgumentPropagatorProgramOptimizer {
       return true;
     }
 
+    @SuppressWarnings("ReferenceEquality")
     private DexType getNewReturnTypeForVirtualMethods(
         ProgramMethodSet methods, SingleValue returnValue) {
       if (returnValue != null || isReturnValueUnusedForVirtualMethods(methods)) {
@@ -557,6 +561,7 @@ public class ArgumentPropagatorProgramOptimizer {
                       && method.getOptimizationInfo().isReturnValueUsed().isFalse());
     }
 
+    @SuppressWarnings("ReferenceEquality")
     private DexType getNewParameterTypeForVirtualMethods(
         ProgramMethodSet methods, int parameterIndex) {
       DexType newParameterType = null;
@@ -578,6 +583,7 @@ public class ArgumentPropagatorProgramOptimizer {
     }
 
     // Returns true if the class was changed as a result of argument propagation.
+    @SuppressWarnings("ReferenceEquality")
     private boolean visitClass(
         DexProgramClass clazz,
         DexMethodSignatureSet interfaceDispatchOutsideProgram,
@@ -653,6 +659,7 @@ public class ArgumentPropagatorProgramOptimizer {
       return affected.get();
     }
 
+    @SuppressWarnings("ReferenceEquality")
     private DexType getNewFieldType(ProgramField field) {
       DynamicType dynamicType = field.getOptimizationInfo().getDynamicType();
       DexType staticType = field.getType();
@@ -728,6 +735,7 @@ public class ArgumentPropagatorProgramOptimizer {
       return newStaticFieldType;
     }
 
+    @SuppressWarnings("ReferenceEquality")
     private DexField getNewFieldSignature(
         ProgramField field,
         Set<DexField> newFieldSignatures,
@@ -964,6 +972,7 @@ public class ArgumentPropagatorProgramOptimizer {
           method, method.getOptimizationInfo().isReturnValueUsed(), getReturnValue(method));
     }
 
+    @SuppressWarnings("ReferenceEquality")
     private DexType getNewReturnType(
         ProgramMethod method, OptionalBool isReturnValueUsed, SingleValue returnValue) {
       DexType staticType = method.getReturnType();
@@ -1026,6 +1035,7 @@ public class ArgumentPropagatorProgramOptimizer {
           : null;
     }
 
+    @SuppressWarnings("ReferenceEquality")
     private DexType getNewParameterType(ProgramMethod method, int parameterIndex) {
       if (!appView.getKeepInfo(method).isParameterTypeStrengtheningAllowed(options)) {
         return null;
@@ -1081,6 +1091,7 @@ public class ArgumentPropagatorProgramOptimizer {
               method, canBeConvertedToStaticMethod, newParameterTypes, removableParameterIndices));
     }
 
+    @SuppressWarnings("ReferenceEquality")
     private ArgumentInfoCollection computeParameterChangesForMethod(
         ProgramMethod method,
         boolean canBeConvertedToStaticMethod,
@@ -1147,6 +1158,7 @@ public class ArgumentPropagatorProgramOptimizer {
       return parameterChangesBuilder.build();
     }
 
+    @SuppressWarnings("ReferenceEquality")
     private RewrittenTypeInfo computeReturnChangesForMethod(
         ProgramMethod method, DexType newReturnType) {
       if (newReturnType == null) {

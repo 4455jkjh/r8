@@ -22,8 +22,6 @@ import com.android.tools.r8.graph.DexValue;
 import com.android.tools.r8.graph.DexValue.DexItemBasedValueString;
 import com.android.tools.r8.graph.DexValue.DexValueString;
 import com.android.tools.r8.graph.ProgramMethod;
-import com.android.tools.r8.ir.desugar.records.RecordCfToCfRewriter;
-import com.android.tools.r8.shaking.AppInfoWithLiveness;
 import com.android.tools.r8.shaking.ProguardClassFilter;
 import com.android.tools.r8.utils.ArrayUtils;
 import com.android.tools.r8.utils.DescriptorUtils;
@@ -37,21 +35,19 @@ import java.util.concurrent.ExecutorService;
  * Replaces all instances of DexItemBasedConstString by ConstString, and all instances of
  * DexItemBasedValueString by DexValueString.
  */
-class IdentifierMinifier {
+public class IdentifierMinifier {
 
-  private final AppView<AppInfoWithLiveness> appView;
+  private final AppView<?> appView;
   private final ProguardClassFilter adaptClassStrings;
-  private final RecordCfToCfRewriter recordCfToCfRewriter;
   private final NamingLens lens;
 
-  IdentifierMinifier(AppView<AppInfoWithLiveness> appView, NamingLens lens) {
+  public IdentifierMinifier(AppView<?> appView, NamingLens lens) {
     this.appView = appView;
     this.adaptClassStrings = appView.options().getProguardConfiguration().getAdaptClassStrings();
-    this.recordCfToCfRewriter = RecordCfToCfRewriter.create(appView);
     this.lens = lens;
   }
 
-  void run(ExecutorService executorService) throws ExecutionException {
+  public void run(ExecutorService executorService) throws ExecutionException {
     if (!adaptClassStrings.isEmpty()) {
       adaptClassStrings(executorService);
     }
@@ -127,6 +123,7 @@ class IdentifierMinifier {
     }
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private DexString getRenamedStringLiteral(DexString originalLiteral) {
     String descriptor =
         DescriptorUtils.javaTypeToDescriptorIfValidJavaType(originalLiteral.toString());
@@ -211,9 +208,6 @@ class IdentifierMinifier {
                   return new CfConstString(
                       cnst.getNameComputationInfo()
                           .computeNameFor(cnst.getItem(), appView, appView.graphLens(), lens));
-                } else if (recordCfToCfRewriter != null && instruction.isInvokeDynamic()) {
-                  return recordCfToCfRewriter.rewriteRecordInvokeDynamic(
-                      instruction.asInvokeDynamic(), programMethod, lens);
                 }
                 return instruction;
               },

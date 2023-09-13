@@ -5,6 +5,7 @@
 # Different utility functions used accross scripts
 
 import hashlib
+import jdk
 import json
 import os
 import re
@@ -16,7 +17,6 @@ import tempfile
 import zipfile
 
 import defines
-import jdk
 from thread_utils import print_thread
 
 ANDROID_JAR_DIR = 'third_party/android_jar/lib-v{api}'
@@ -35,6 +35,8 @@ BUILD_MAIN_DIR = os.path.join(BUILD, 'classes', 'main')
 BUILD_JAVA_MAIN_DIR = os.path.join(BUILD, 'classes', 'java', 'main')
 BUILD_TEST_DIR = os.path.join(BUILD, 'classes', 'test')
 LIBS = os.path.join(BUILD, 'libs')
+CUSTOM_CONVERSION_DIR = os.path.join(
+    THIRD_PARTY, 'openjdk', 'custom_conversion')
 GENERATED_LICENSE_DIR = os.path.join(BUILD, 'generatedLicense')
 SRC_ROOT = os.path.join(REPO_ROOT, 'src', 'main', 'java')
 TEST_ROOT = os.path.join(REPO_ROOT, 'src', 'test', 'java')
@@ -47,7 +49,8 @@ R8LIB_NO_DEPS = 'r8LibNoDeps'
 R8RETRACE = 'R8Retrace'
 R8RETRACE_NO_DEPS = 'R8RetraceNoDeps'
 R8_SRC = 'sourceJar'
-LIBRARY_DESUGAR_CONVERSIONS = 'buildLibraryDesugarConversions'
+LIBRARY_DESUGAR_CONVERSIONS =\
+  'download_deps_third_party_openjdk_custom_conversion'
 R8_TESTS_TARGET = 'TestJar'
 R8_TESTS_DEPS_TARGET = 'RepackageTestDeps'
 R8LIB_TESTS_TARGET = 'configureTestForR8Lib'
@@ -70,8 +73,10 @@ R8_TESTS_DEPS_JAR = os.path.join(LIBS, 'test_deps_all.jar')
 R8LIB_TESTS_DEPS_JAR = R8_TESTS_DEPS_JAR
 MAVEN_ZIP = os.path.join(LIBS, 'r8.zip')
 MAVEN_ZIP_LIB = os.path.join(LIBS, 'r8lib.zip')
-LIBRARY_DESUGAR_CONVERSIONS_LEGACY_ZIP = os.path.join(LIBS, 'library_desugar_conversions_legacy.jar')
-LIBRARY_DESUGAR_CONVERSIONS_ZIP = os.path.join(LIBS, 'library_desugar_conversions.jar')
+LIBRARY_DESUGAR_CONVERSIONS_LEGACY_ZIP = os.path.join(
+    CUSTOM_CONVERSION_DIR, 'library_desugar_conversions_legacy.jar')
+LIBRARY_DESUGAR_CONVERSIONS_ZIP = os.path.join(
+    CUSTOM_CONVERSION_DIR, 'library_desugar_conversions.jar')
 KEEPANNO_ANNOTATIONS_JAR = os.path.join(LIBS, 'keepanno-annotations.jar')
 
 DESUGAR_CONFIGURATION = os.path.join(
@@ -350,8 +355,15 @@ def is_main():
                                      'HEAD']).decode('utf-8')
   return 'origin/main' in remotes
 
+def get_HEAD_branch():
+  result = subprocess.check_output(['git', 'rev-parse', '--abbrev-ref', 'HEAD']).decode('utf-8')
+  return result.strip()
+
 def get_HEAD_sha1():
   return get_HEAD_sha1_for_checkout(REPO_ROOT)
+
+def get_HEAD_diff_stat():
+  return subprocess.check_output(['git', 'diff', '--stat']).decode('utf-8')
 
 def get_HEAD_sha1_for_checkout(checkout):
   cmd = ['git', 'rev-parse', 'HEAD']

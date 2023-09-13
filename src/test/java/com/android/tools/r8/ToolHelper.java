@@ -100,13 +100,13 @@ public class ToolHelper {
 
   public static String getProjectRoot() {
     String current = System.getProperty("user.dir");
-    if (!current.contains("test_modules")) {
+    if (!current.contains("d8_r8")) {
       return "";
     }
-    while (current.contains("test_modules")) {
+    while (current.contains("d8_r8")) {
       current = Paths.get(current).getParent().toString();
     }
-    return Paths.get(current).getParent().toString() + "/";
+    return current + "/";
   }
 
   public static final String SOURCE_DIR = getProjectRoot() + "src/";
@@ -141,7 +141,8 @@ public class ToolHelper {
   public static String getExamplesJava11BuildDir() {
     // TODO(b/270105162): This changes when new gradle setup is default.
     if (ToolHelper.isNewGradleSetup()) {
-      return System.getenv("EXAMPLES_JAVA_11_JAVAC_BUILD_DIR");
+      assert System.getProperty("EXAMPLES_JAVA_11_JAVAC_BUILD_DIR") != null;
+      return System.getProperty("EXAMPLES_JAVA_11_JAVAC_BUILD_DIR");
     } else {
       return BUILD_DIR + "classes/java/examplesJava11/";
     }
@@ -150,7 +151,8 @@ public class ToolHelper {
   public static Path getR8MainPath() {
     // TODO(b/270105162): This changes when new gradle setup is default.
     if (ToolHelper.isNewGradleSetup()) {
-      return Paths.get(System.getenv("R8_RUNTIME_PATH"));
+      assert System.getProperty("R8_RUNTIME_PATH") != null;
+      return Paths.get(System.getProperty("R8_RUNTIME_PATH"));
     } else {
       return isTestingR8Lib() ? R8LIB_JAR : R8_JAR_OLD;
     }
@@ -159,7 +161,8 @@ public class ToolHelper {
   public static Path getRetracePath() {
     // TODO(b/270105162): This changes when new gradle setup is default.
     if (ToolHelper.isNewGradleSetup()) {
-      return Paths.get(System.getenv("RETRACE_RUNTIME_PATH"));
+      assert System.getProperty("RETRACE_RUNTIME_PATH") != null;
+      return Paths.get(System.getProperty("RETRACE_RUNTIME_PATH"));
     } else {
       return isTestingR8Lib() ? ToolHelper.R8_RETRACE_JAR : ToolHelper.R8_JAR_OLD;
     }
@@ -196,6 +199,7 @@ public class ToolHelper {
   private static final AndroidApiLevel DEFAULT_MIN_SDK = AndroidApiLevel.I;
 
   public static final String OPEN_JDK_DIR = THIRD_PARTY_DIR + "openjdk/";
+  public static final String CUSTOM_CONVERSION_DIR = OPEN_JDK_DIR + "custom_conversion/";
   public static final String JAVA_8_RUNTIME = OPEN_JDK_DIR + "openjdk-rt-1.8/rt.jar";
   public static final String JDK_11_TESTS_DIR = OPEN_JDK_DIR + "jdk-11-test/";
   public static final String JDK_11_TIME_TESTS_DIR = JDK_11_TESTS_DIR + "java/time/";
@@ -233,7 +237,7 @@ public class ToolHelper {
 
   public static Path getDeps() {
     if (isNewGradleSetup()) {
-      return Paths.get(System.getenv("R8_DEPS"));
+      return Paths.get(System.getProperty("R8_DEPS"));
     } else {
       return Paths.get(LIBS_DIR, "deps_all.jar");
     }
@@ -241,7 +245,7 @@ public class ToolHelper {
 
   public static Path getR8WithRelocatedDeps() {
     if (isNewGradleSetup()) {
-      return Paths.get(System.getenv("R8_WITH_RELOCATED_DEPS"));
+      return Paths.get(System.getProperty("R8_WITH_RELOCATED_DEPS"));
     } else {
       return Paths.get(LIBS_DIR, "r8_with_relocated_deps.jar");
     }
@@ -257,9 +261,7 @@ public class ToolHelper {
   public static final Path AAPT2 = Paths.get(THIRD_PARTY_DIR, "aapt2", "aapt2");
 
   public static Path getDesugarLibConversions(CustomConversionVersion legacy) {
-    return legacy == CustomConversionVersion.LEGACY
-        ? Paths.get(LIBS_DIR, "library_desugar_conversions_legacy.jar")
-        : Paths.get(LIBS_DIR, "library_desugar_conversions.jar");
+    return Paths.get(CUSTOM_CONVERSION_DIR, legacy.getFileName());
   }
 
   public static boolean isLocalDevelopment() {
@@ -395,6 +397,10 @@ public class ToolHelper {
       public boolean isInRangeInclusive(Version start, Version end) {
         assert start.isOlderThanOrEqual(end);
         return isNewerThanOrEqual(start) && isOlderThanOrEqual(end);
+      }
+
+      public boolean hasRecordsSupport() {
+        return isNewerThanOrEqual(V14_0_0);
       }
 
       public String toString() {
@@ -1153,7 +1159,7 @@ public class ToolHelper {
   public static Path getAndroidJar(AndroidApiLevel apiLevel) {
     Path path = getAndroidJarPath(apiLevel);
     assert Files.exists(path)
-        : "Expected android jar to exist for API level " + apiLevel;
+        : "Expected android jar to exist for API level " + apiLevel + " at " + path;
     return path;
   }
 
@@ -1176,6 +1182,15 @@ public class ToolHelper {
     } else {
       return Paths.get(ToolHelper.BUILD_DIR, "libs", "jdwp-tests-preN.jar");
     }
+  }
+
+  public static Path getJunitFromDeps() {
+    return Paths.get(DEPENDENCIES, "junit", "junit", "4.13-beta-2", "junit-4.13-beta-2.jar");
+  }
+
+  public static Path getHamcrestFromDeps() {
+    return Paths.get(
+        DEPENDENCIES, "org", "hamcrest", "hamcrest-core", "1.3", "hamcrest-core-1.3.jar");
   }
 
   /**
@@ -1305,6 +1320,42 @@ public class ToolHelper {
     }
   }
 
+  public static DexVm.Version getDexVersionForApiLevel(AndroidApiLevel apiLevel) {
+    switch (apiLevel) {
+      case MASTER:
+        return DexVm.Version.MASTER;
+      case U:
+        return DexVm.Version.V14_0_0;
+      case T:
+        return DexVm.Version.V13_0_0;
+      case Sv2:
+      case S:
+        return DexVm.Version.V12_0_0;
+      case R:
+        throw new Unreachable("No Android 11 VM");
+      case Q:
+        return DexVm.Version.V10_0_0;
+      case P:
+        return DexVm.Version.V9_0_0;
+      case O_MR1:
+      case O:
+        // Currently no Android 8 VM, so return 8.1 for both O and O_MR1.
+        return DexVm.Version.V8_1_0;
+      case N:
+        return DexVm.Version.V7_0_0;
+      case M:
+        return DexVm.Version.V6_0_1;
+      case L_MR1:
+        return DexVm.Version.V5_1_1;
+      case K:
+        return DexVm.Version.V4_4_4;
+      case I_MR1:
+        return DexVm.Version.V4_0_4;
+      default:
+        throw new Unreachable("No Android VM for API level " + apiLevel.getLevel());
+    }
+  }
+
   public static DexVersion getDexFileVersionForVm(DexVm vm) {
     return DexVersion.getDexVersion(getMinApiLevelForDexVm(vm));
   }
@@ -1356,7 +1407,8 @@ public class ToolHelper {
 
   public static Path getClassPathForTests() {
     if (isNewGradleSetup()) {
-      return Paths.get(TEST_MODULE_DIR, "tests_java_8", "build", "classes", "java", "test");
+      assert System.getenv("TEST_CLASSES_LOCATIONS") != null;
+      return Paths.get(System.getenv("TEST_CLASSES_LOCATIONS"));
     } else {
       return Paths.get(BUILD_DIR, "classes", "java", "test");
     }
@@ -1405,7 +1457,12 @@ public class ToolHelper {
 
   public static Path getClassFileForTestClass(Class<?> clazz) {
     List<String> parts = getNamePartsForTestClass(clazz);
-    return getClassPathForTests().resolve(Paths.get("", parts.toArray(StringUtils.EMPTY_ARRAY)));
+    Path resolve =
+        getClassPathForTests().resolve(Paths.get("", parts.toArray(StringUtils.EMPTY_ARRAY)));
+    if (!Files.exists(resolve)) {
+      throw new RuntimeException("Could not find: " + resolve.toString());
+    }
+    return resolve;
   }
 
   public static Collection<Path> getClassFilesForInnerClasses(Path path) throws IOException {

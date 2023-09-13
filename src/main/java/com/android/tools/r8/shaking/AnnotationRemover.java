@@ -261,6 +261,7 @@ public class AnnotationRemover {
     return rewrite;
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private DexAnnotationElement rewriteAnnotationElement(
       DexType annotationType, DexAnnotationElement original) {
     // The dalvik.annotation.AnnotationDefault is typically not on bootclasspath. However, if it
@@ -317,6 +318,7 @@ public class AnnotationRemover {
     return annotationsToRetain.contains(annotation);
   }
 
+  @SuppressWarnings("UnusedVariable")
   private boolean shouldRetainAnnotationDefaultAnnotationOnAnnotationClass(
       DexAnnotation annotation) {
     // We currently always retain the @AnnotationDefault annotations for annotation classes. In full
@@ -325,6 +327,7 @@ public class AnnotationRemover {
     return true;
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private boolean shouldRetainRetentionAnnotationOnAnnotationClass(DexAnnotation annotation) {
     // Retain @Retention annotations that are different from @Retention(RetentionPolicy.CLASS).
     if (annotation.annotation.getNumberOfElements() != 1) {

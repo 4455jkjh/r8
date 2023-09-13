@@ -53,6 +53,7 @@ public class KotlinMetadataEnqueuerExtension extends EnqueuerAnalysis {
   }
 
   @Override
+  @SuppressWarnings("ReferenceEquality")
   public void done(Enqueuer enqueuer) {
     // In the first round of tree shaking build up all metadata such that it can be traced later.
     boolean keepKotlinMetadata =
@@ -130,7 +131,10 @@ public class KotlinMetadataEnqueuerExtension extends EnqueuerAnalysis {
               // Use the concrete getNoKotlinInfo() instead of isNoKotlinInformation() to handle
               // invalid kotlin info as well.
               assert hasKotlinClassMetadataAnnotation(clazz, definitionsForContext(clazz))
-                  == (clazz.getKotlinInfo() != getNoKotlinInfo());
+                      == (clazz.getKotlinInfo() != getNoKotlinInfo())
+                  : clazz.toSourceString()
+                      + " "
+                      + (clazz.getKotlinInfo() == getNoKotlinInfo() ? "no info" : "has info");
             }
           });
     }

@@ -19,11 +19,9 @@ import java.util.Set;
 
 public class ByteMethodOptimizer extends StatelessLibraryMethodModelCollection {
 
-  private final AppView<?> appView;
   private final DexItemFactory dexItemFactory;
 
   ByteMethodOptimizer(AppView<?> appView) {
-    this.appView = appView;
     this.dexItemFactory = appView.dexItemFactory();
   }
 
@@ -33,6 +31,7 @@ public class ByteMethodOptimizer extends StatelessLibraryMethodModelCollection {
   }
 
   @Override
+  @SuppressWarnings("ReferenceEquality")
   public void optimize(
       IRCode code,
       BasicBlockIterator blockIterator,
@@ -46,6 +45,7 @@ public class ByteMethodOptimizer extends StatelessLibraryMethodModelCollection {
     }
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private void optimizeByteValue(
       InstructionListIterator instructionIterator, InvokeMethod byteValueInvoke) {
     // Optimize Byte.valueOf(b).byteValue() into b.

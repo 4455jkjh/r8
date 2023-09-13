@@ -334,6 +334,7 @@ public class BasicBlock {
     return false;
   }
 
+  @SuppressWarnings("MixedMutabilityReturnType")
   public List<BasicBlock> getNormalSuccessors() {
     if (!hasCatchHandlers()) {
       return successors;
@@ -1105,6 +1106,7 @@ public class BasicBlock {
    *
    * @return true if any guards were renamed.
    */
+  @SuppressWarnings("ReferenceEquality")
   public boolean renameGuardsInCatchHandlers(NonIdentityGraphLens graphLens, GraphLens codeLens) {
     assert hasCatchHandlers();
     boolean anyGuardsRenamed = false;
@@ -2040,6 +2042,7 @@ public class BasicBlock {
     }
   }
 
+  @SuppressWarnings("ReferenceEquality")
   public void deduplicatePhis() {
     PhiEquivalence equivalence = new PhiEquivalence();
     HashMap<Wrapper<Phi>, Phi> wrapper2phi = new HashMap<>();

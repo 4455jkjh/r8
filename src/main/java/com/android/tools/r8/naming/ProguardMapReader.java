@@ -340,6 +340,7 @@ public class ProguardMapReader implements AutoCloseable {
     return false;
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private void parseMemberMappings(
       ProguardMap.Builder mapBuilder, ClassNaming.Builder classNamingBuilder) throws IOException {
     MemberNaming lastAddedNaming = null;
@@ -824,6 +825,7 @@ public class ProguardMapReader implements AutoCloseable {
     return nonCardinalRangeCache.get(from, to);
   }
 
+  @SuppressWarnings("CharacterGetNumericValue")
   private int parseNumber() {
     int result = 0;
     if (!isSimpleDigit(peekChar(0))) {

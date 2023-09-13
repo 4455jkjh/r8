@@ -59,9 +59,12 @@ import com.android.tools.r8.ir.optimize.templates.CfUtilityMethodsForCodeOptimiz
 import com.android.tools.r8.jar.CfApplicationWriter;
 import com.android.tools.r8.kotlin.KotlinMetadataRewriter;
 import com.android.tools.r8.kotlin.KotlinMetadataUtils;
+import com.android.tools.r8.naming.IdentifierMinifier;
 import com.android.tools.r8.naming.Minifier;
+import com.android.tools.r8.naming.NamingLens;
 import com.android.tools.r8.naming.PrefixRewritingNamingLens;
 import com.android.tools.r8.naming.ProguardMapMinifier;
+import com.android.tools.r8.naming.RecordInvokeDynamicInvokeCustomRewriter;
 import com.android.tools.r8.naming.RecordRewritingNamingLens;
 import com.android.tools.r8.naming.signature.GenericSignatureRewriter;
 import com.android.tools.r8.optimize.LegacyAccessModifier;
@@ -244,6 +247,7 @@ public class R8 {
     return appView.appInfo().app().asDirect();
   }
 
+  @SuppressWarnings("DefaultCharset")
   private void run(AndroidApp inputApp, ExecutorService executorService) throws IOException {
     assert options.programConsumer != null;
     if (options.quiet) {
@@ -765,15 +769,16 @@ public class R8 {
         timing.begin("Minification");
         appView.setNamingLens(new Minifier(appView.withLiveness()).run(executorService, timing));
         timing.end();
+      } else {
+        timing.begin("MinifyIdentifiers");
+        new IdentifierMinifier(appView, NamingLens.getIdentityLens()).run(executorService);
+        timing.end();
+        timing.begin("RecordInvokeDynamicRewrite");
+        new RecordInvokeDynamicInvokeCustomRewriter(appView, NamingLens.getIdentityLens())
+            .run(executorService);
+        timing.end();
       }
       appView.appInfo().notifyMinifierFinished();
-
-      if (!options.isMinifying()
-          && appView.options().testing.enableRecordModeling
-          && appView.appInfo().app().getFlags().hasReadRecordReferenceFromProgramClass()) {
-        new Minifier(appView.withLiveness())
-            .replaceDexItemBasedConstString(executorService, timing);
-      }
 
       assert verifyMovedMethodsHaveOriginalMethodPosition(appView, getDirectApp(appView));
 
@@ -866,8 +871,7 @@ public class R8 {
 
   private static boolean allReferencesAssignedApiLevel(
       AppView<? extends AppInfoWithClassHierarchy> appView) {
-    if (!appView.options().apiModelingOptions().isCheckAllApiReferencesAreSet()
-        || appView.options().configurationDebugging) {
+    if (!appView.options().apiModelingOptions().isCheckAllApiReferencesAreSet()) {
       return true;
     }
     // This will assert false if we find anything in the library which is not modeled.
@@ -942,6 +946,7 @@ public class R8 {
         executorService);
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private static boolean verifyMovedMethodsHaveOriginalMethodPosition(
       AppView<?> appView, DirectMappedDexApplication application) {
     application
@@ -968,6 +973,7 @@ public class R8 {
     return true;
   }
 
+  @SuppressWarnings({"ComplexBooleanConstant", "ReferenceEquality"})
   private static boolean verifyOriginalMethodInPosition(
       Code code, DexMethod originalMethod, ProgramMethod context) {
     code.forEachPosition(

@@ -633,6 +633,7 @@ public class ApplicationWriter {
     byteBufferProvider.releaseByteBuffer(result.buffer.asByteBuffer());
   }
 
+  @SuppressWarnings("DefaultCharset")
   public static void supplyAdditionalConsumers(AppView<?> appView) {
     InternalOptions options = appView.options();
     Reporter reporter = options.reporter;
@@ -765,6 +766,7 @@ public class ApplicationWriter {
     }
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private void insertAttributeAnnotationsForClass(DexProgramClass clazz) {
     EnclosingMethodAttribute enclosingMethod = clazz.getEnclosingMethodAttribute();
     List<InnerClassAttribute> innerClasses = clazz.getInnerClasses();

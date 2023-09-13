@@ -265,6 +265,7 @@ public abstract class Instruction
     oldValue.removeUser(this);
   }
 
+  @SuppressWarnings("ReferenceEquality")
   public void replaceDebugValue(Value oldValue, Value newValue) {
     assert oldValue.hasLocalInfo();
     assert newValue.hasLocalInfo();
@@ -304,6 +305,7 @@ public abstract class Instruction
     assert false;
   }
 
+  @SuppressWarnings("ReferenceEquality")
   public Value removeDebugValue(DebugLocalInfo localInfo) {
     if (debugValues != null) {
       Iterator<Value> it = debugValues.iterator();
@@ -516,6 +518,7 @@ public abstract class Instruction
     return true;
   }
 
+  @SuppressWarnings("UnusedVariable")
   public boolean identicalAfterRegisterAllocation(
       Instruction other, RegisterAllocator allocator, MethodConversionOptions conversionOptions) {
     if (other.getClass() != getClass()) {

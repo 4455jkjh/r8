@@ -31,6 +31,7 @@ public class InvokeSpecialToSelfDesugaring implements CfInstructionDesugaring {
   }
 
   @Override
+  @SuppressWarnings("ReferenceEquality")
   public DesugarDescription compute(CfInstruction instruction, ProgramMethod context) {
     if (!instruction.isInvokeSpecial()) {
       return DesugarDescription.nothing();
@@ -69,6 +70,7 @@ public class InvokeSpecialToSelfDesugaring implements CfInstructionDesugaring {
         .setDesugarRewrite(
             (freshLocalProvider,
                 localStackAllocator,
+                desugaringInfo,
                 eventConsumer,
                 context,
                 methodProcessingContext,
@@ -84,6 +86,7 @@ public class InvokeSpecialToSelfDesugaring implements CfInstructionDesugaring {
         .setDesugarRewrite(
             (freshLocalProvider,
                 localStackAllocator,
+                desugaringInfo,
                 eventConsumer,
                 context,
                 methodProcessingContext,

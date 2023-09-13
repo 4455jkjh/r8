@@ -327,6 +327,8 @@ public class DexItemFactory {
       createString("Ljava/lang/IllegalAccessError;");
   public final DexString illegalArgumentExceptionDescriptor =
       createString("Ljava/lang/IllegalArgumentException;");
+  public final DexString abstractMethodErrorDescriptor =
+      createString("Ljava/lang/AbstractMethodError;");
   public final DexString icceDescriptor = createString("Ljava/lang/IncompatibleClassChangeError;");
   public final DexString exceptionInInitializerErrorDescriptor =
       createString("Ljava/lang/ExceptionInInitializerError;");
@@ -573,6 +575,8 @@ public class DexItemFactory {
       createStaticallyKnownType(illegalAccessErrorDescriptor);
   public final DexType illegalArgumentExceptionType =
       createStaticallyKnownType(illegalArgumentExceptionDescriptor);
+  public final DexType abstractMethodErrorType =
+      createStaticallyKnownType(abstractMethodErrorDescriptor);
   public final DexType icceType = createStaticallyKnownType(icceDescriptor);
   public final DexType exceptionInInitializerErrorType =
       createStaticallyKnownType(exceptionInInitializerErrorDescriptor);
@@ -1045,6 +1049,7 @@ public class DexItemFactory {
     return skipNameValidationForTesting;
   }
 
+  @SuppressWarnings("ReferenceEquality")
   public boolean isLambdaMetafactoryMethod(DexMethod dexMethod) {
     return dexMethod == metafactoryMethod || dexMethod == metafactoryAltMethod;
   }
@@ -1770,6 +1775,7 @@ public class DexItemFactory {
               requireNonNullMethodName);
     }
 
+    @SuppressWarnings("ReferenceEquality")
     public boolean isRequireNonNullMethod(DexMethod method) {
       return method == requireNonNull
           || method == requireNonNullWithMessage
@@ -1778,6 +1784,7 @@ public class DexItemFactory {
           || method == requireNonNullElseGet;
     }
 
+    @SuppressWarnings("ReferenceEquality")
     public boolean isToStringMethod(DexMethod method) {
       return method == toStringWithObject || method == toStringWithObjectAndNullDefault;
     }
@@ -1855,6 +1862,7 @@ public class DexItemFactory {
       getNames = ImmutableSet.of(getName, getCanonicalName, getSimpleName, getTypeName);
     }
 
+    @SuppressWarnings("ReferenceEquality")
     public boolean isReflectiveClassLookup(DexMethod method) {
       return method == forName || method == forName3;
     }
@@ -1988,6 +1996,7 @@ public class DexItemFactory {
       fn.accept(ordinalField);
     }
 
+    @SuppressWarnings("ReferenceEquality")
     public boolean isNameOrOrdinalField(DexField field) {
       return field == nameField || field == ordinalField;
     }
@@ -1998,6 +2007,7 @@ public class DexItemFactory {
       return accessFlags.isEnum() && accessFlags.isFinal();
     }
 
+    @SuppressWarnings("ReferenceEquality")
     // In some case, the enum field may be respecialized to an enum subtype. In this case, one
     // can pass the encoded field as well as the field with the super enum type for the checks.
     public boolean isEnumField(
@@ -2007,6 +2017,7 @@ public class DexItemFactory {
           && isEnumFieldCandidate(staticField);
     }
 
+    @SuppressWarnings("ReferenceEquality")
     public boolean isValuesFieldCandidate(DexClassAndField staticField, DexType enumType) {
       FieldAccessFlags accessFlags = staticField.getAccessFlags();
       assert accessFlags.isStatic();
@@ -2296,10 +2307,12 @@ public class DexItemFactory {
       return appendMethods.contains(method);
     }
 
+    @SuppressWarnings("ReferenceEquality")
     public boolean isAppendObjectMethod(DexMethod method) {
       return method == appendObject;
     }
 
+    @SuppressWarnings("ReferenceEquality")
     public boolean isAppendCharSequenceMethod(DexMethod method) {
       return method == appendCharSequence || method == appendSubCharSequence;
     }
@@ -2312,10 +2325,12 @@ public class DexItemFactory {
       return appendPrimitiveMethods.contains(method);
     }
 
+    @SuppressWarnings("ReferenceEquality")
     public boolean isAppendSubArrayMethod(DexMethod method) {
       return appendSubCharArray == method || appendSubCharSequence == method;
     }
 
+    @SuppressWarnings("ReferenceEquality")
     public boolean isAppendStringMethod(DexMethod method) {
       return method == appendString;
     }
@@ -2324,6 +2339,7 @@ public class DexItemFactory {
       return constructorMethods.contains(method);
     }
 
+    @SuppressWarnings("ReferenceEquality")
     public boolean constructorInvokeIsSideEffectFree(
         DexMethod invokedMethod, List<Value> arguments) {
       if (invokedMethod == defaultConstructor) {
@@ -2356,6 +2372,7 @@ public class DexItemFactory {
       return false;
     }
 
+    @SuppressWarnings("ReferenceEquality")
     public boolean isAppendCharArrayMethod(DexMethod method) {
       return method == appendCharArray || method == appendSubCharArray;
     }
@@ -2410,6 +2427,7 @@ public class DexItemFactory {
             "weakCompareAndSetPlain",
             "weakCompareAndSetRelease");
 
+    @SuppressWarnings("ReferenceEquality")
     public DexMethod canonicalize(DexMethod invokeProto) {
       DexMethod result = null;
       if (invokeProto.holder == methodHandleType) {
@@ -2439,6 +2457,7 @@ public class DexItemFactory {
       return map.keySet();
     }
 
+    @SuppressWarnings("ReferenceEquality")
     public boolean isPolymorphicInvoke(DexMethod invokeProto) {
       if (invokeProto.holder == methodHandleType) {
         return invokeProto.name == invokeMethodName || invokeProto.name == invokeExactMethodName;
@@ -2489,6 +2508,7 @@ public class DexItemFactory {
           createMethod(serviceLoaderType, createProto(iteratorType), createString("iterator"));
     }
 
+    @SuppressWarnings("ReferenceEquality")
     public boolean isLoadMethod(DexMethod method) {
       return method == load || method == loadWithClassLoader || method == loadInstalled;
     }
@@ -2992,6 +3012,7 @@ public class DexItemFactory {
     return createMethod(initialMethod.holder, newProto, initialMethod.name);
   }
 
+  @SuppressWarnings("ReferenceEquality")
   public DexProto applyClassMappingToProto(
       DexProto proto, Function<DexType, DexType> mapping, Map<DexProto, DexProto> cache) {
     assert cache != null;
@@ -3013,6 +3034,7 @@ public class DexItemFactory {
     return result;
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private static DexType[] applyClassMappingToDexTypes(
       DexType[] types, Function<DexType, DexType> mapping) {
     Map<Integer, DexType> changed = new Int2ReferenceArrayMap<>();
@@ -3157,10 +3179,12 @@ public class DexItemFactory {
     }
   }
 
+  @SuppressWarnings("ReferenceEquality")
   public boolean isConstructor(DexMethod method) {
     return method.name == constructorMethodName;
   }
 
+  @SuppressWarnings("ReferenceEquality")
   public boolean isClassConstructor(DexMethod method) {
     return method.name == classConstructorMethodName;
   }

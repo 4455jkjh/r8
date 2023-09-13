@@ -74,6 +74,10 @@ enum class Jdk(val folder : String) {
   }
 }
 
+fun Test.configure(isR8Lib: Boolean = false, r8Jar: File? = null) {
+  TestConfigurationHelper.setupTestTask(this, isR8Lib, r8Jar)
+}
+
 fun Project.getRoot() : File {
   return computeRoot(this.projectDir)
 }
@@ -84,11 +88,12 @@ fun Project.header(title : String) : String {
 
 fun Project.ensureThirdPartyDependencies(name : String, deps : List<ThirdPartyDependency>) : Task {
   val outputFiles : MutableList<File> = mutableListOf()
+  val root = getRoot()
   val depsTasks = deps.map { tpd ->
     val projectAndTaskName = "${project.name}-$name"
     val downloadTaskName = "download-third-party-$projectAndTaskName-${tpd.packageName}"
     val downloadTask = tasks.register<DownloadDependencyTask>(downloadTaskName) {
-      setDependency(getRoot().resolve(tpd.sha1File), getRoot().resolve(tpd.path), tpd.type)
+      setDependency(root.resolve(tpd.sha1File), root.resolve(tpd.path), tpd.type, root)
     }.get()
     outputFiles.add(tpd.path)
     downloadTask
@@ -323,6 +328,7 @@ object Deps {
   val kotlinReflect by lazy { "org.jetbrains.kotlin:kotlin-reflect:${Versions.kotlinVersion}" }
   val mockito by lazy { "org.mockito:mockito-core:${Versions.mockito}" }
   val smali by lazy { "com.android.tools.smali:smali:${Versions.smaliVersion}" }
+  val smaliUtil by lazy { "com.android.tools.smali:smali-util:${Versions.smaliVersion}" }
 }
 
 object ThirdPartyDeps {
@@ -361,6 +367,10 @@ object ThirdPartyDeps {
     "coreLambdaStubs",
     Paths.get("third_party", "core-lambda-stubs").toFile(),
     Paths.get("third_party", "core-lambda-stubs.tar.gz.sha1").toFile())
+  val customConversion = ThirdPartyDependency(
+    "customConversion",
+    Paths.get("third_party", "openjdk", "custom_conversion").toFile(),
+    Paths.get("third_party", "openjdk", "custom_conversion.tar.gz.sha1").toFile())
   val dagger = ThirdPartyDependency(
     "dagger",
     Paths.get("third_party", "dagger", "2.41").toFile(),
@@ -618,3 +628,48 @@ fun getGmsCoreVersions() : List<ThirdPartyDependency> {
       Paths.get("third_party", "gmscore", "${it}.tar.gz.sha1").toFile(),
       DependencyType.X20)}
 }
+
+val testRuntimeDependencies = (listOf(
+  ThirdPartyDeps.aapt2,
+  ThirdPartyDeps.artTests,
+  ThirdPartyDeps.artTestsLegacy,
+  ThirdPartyDeps.compilerApi,
+  ThirdPartyDeps.coreLambdaStubs,
+  ThirdPartyDeps.customConversion,
+  ThirdPartyDeps.dagger,
+  ThirdPartyDeps.desugarJdkLibs,
+  ThirdPartyDeps.desugarJdkLibsLegacy,
+  ThirdPartyDeps.desugarJdkLibs11,
+  ThirdPartyDeps.examplesAndroidOLegacy,
+  ThirdPartyDeps.gson,
+  ThirdPartyDeps.jacoco,
+  ThirdPartyDeps.java8Runtime,
+  ThirdPartyDeps.jdk11Test,
+  ThirdPartyDeps.jsr223,
+  ThirdPartyDeps.multidex,
+  ThirdPartyDeps.r8,
+  ThirdPartyDeps.r8Mappings,
+  ThirdPartyDeps.r8v2_0_74,
+  ThirdPartyDeps.r8v3_2_54,
+  ThirdPartyDeps.retraceBenchmark,
+  ThirdPartyDeps.retraceBinaryCompatibility,
+  ThirdPartyDeps.rhino,
+  ThirdPartyDeps.rhinoAndroid,
+  ThirdPartyDeps.smali,
+  ThirdPartyDeps.tivi)
+    + ThirdPartyDeps.androidJars
+    + ThirdPartyDeps.androidVMs
+    + ThirdPartyDeps.desugarLibraryReleases
+    + ThirdPartyDeps.jdks
+    + ThirdPartyDeps.kotlinCompilers
+    + ThirdPartyDeps.proguards)
+
+val testRuntimeInternalDependencies = (listOf(
+  ThirdPartyDeps.clank,
+  ThirdPartyDeps.framework,
+  ThirdPartyDeps.nest,
+  ThirdPartyDeps.proto,
+  ThirdPartyDeps.protobufLite,
+  ThirdPartyDeps.retraceInternal)
+  + ThirdPartyDeps.internalIssues
+  + ThirdPartyDeps.gmscoreVersions)

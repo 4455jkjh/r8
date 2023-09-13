@@ -287,6 +287,7 @@ public class DexEncodedMethod extends DexEncodedMember<DexEncodedMethod, DexMeth
             DexEncodedMethod::hashCodeObject);
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private static int compareCodeObject(Code code1, Code code2, CompareToVisitor visitor) {
     if (code1 == code2) {
       return 0;
@@ -399,6 +400,7 @@ public class DexEncodedMethod extends DexEncodedMember<DexEncodedMethod, DexMeth
     return null;
   }
 
+  @SuppressWarnings("ReferenceEquality")
   public ProgramMethod asProgramMethod(DexProgramClass holder) {
     assert getHolderType() == holder.getType();
     return new ProgramMethod(holder, this);
@@ -569,11 +571,13 @@ public class DexEncodedMethod extends DexEncodedMember<DexEncodedMethod, DexMeth
   }
 
   @Override
+  @SuppressWarnings("ReferenceEquality")
   public boolean isStaticMember() {
     checkIfObsolete();
     return isStatic();
   }
 
+  @SuppressWarnings("ReferenceEquality")
   public boolean isAtLeastAsVisibleAsOtherInSameHierarchy(
       DexEncodedMethod other, AppView<? extends AppInfoWithClassHierarchy> appView) {
     assert getReference().getProto() == other.getReference().getProto();
@@ -593,6 +597,7 @@ public class DexEncodedMethod extends DexEncodedMember<DexEncodedMethod, DexMeth
     }
   }
 
+  @SuppressWarnings("ReferenceEquality")
   public boolean isSameVisibility(DexEncodedMethod other) {
     AccessFlags<MethodAccessFlags> accessFlags = getAccessFlags();
     if (accessFlags.getVisibilityOrdinal() != other.getAccessFlags().getVisibilityOrdinal()) {
@@ -670,6 +675,7 @@ public class DexEncodedMethod extends DexEncodedMember<DexEncodedMethod, DexMeth
         container.getHolderType(), inliningReason, appInfo, whyAreYouNotInliningReporter);
   }
 
+  @SuppressWarnings("ReferenceEquality")
   public boolean isInliningCandidate(
       DexType containerType,
       Reason inliningReason,
@@ -998,7 +1004,9 @@ public class DexEncodedMethod extends DexEncodedMember<DexEncodedMethod, DexMeth
                     : toDexCodeThatLogsError(appView.dexItemFactory()))
             .setIsLibraryMethodOverrideIf(
                 belongsToVirtualPool() && !isLibraryMethodOverride().isUnknown(),
-                isLibraryMethodOverride());
+                isLibraryMethodOverride())
+            .setApiLevelForCode(appView.computedMinApiLevel())
+            .setApiLevelForDefinition(ComputedApiLevel.unknown());
     setObsolete();
     return builder.build();
   }
@@ -1141,6 +1149,7 @@ public class DexEncodedMethod extends DexEncodedMember<DexEncodedMethod, DexMeth
         });
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private DexEncodedMethod toTypeSubstitutedMethodHelper(
       DexMethod method, boolean isD8R8Synthesized, Consumer<Builder> consumer) {
     checkIfObsolete();
@@ -1166,6 +1175,7 @@ public class DexEncodedMethod extends DexEncodedMember<DexEncodedMethod, DexMeth
     return builder.build();
   }
 
+  @SuppressWarnings("ReferenceEquality")
   public ProgramMethod toPrivateSyntheticMethod(DexProgramClass holder, DexMethod method) {
     assert !isStatic();
     assert !isPrivate();
@@ -1358,6 +1368,7 @@ public class DexEncodedMethod extends DexEncodedMember<DexEncodedMethod, DexMeth
     return code == null ? null : code.asDexWritableCode();
   }
 
+  @SuppressWarnings("ReferenceEquality")
   public DexEncodedMethod rewrittenWithLens(
       GraphLens lens, GraphLens appliedLens, DexDefinitionSupplier definitions) {
     assert this != SENTINEL;

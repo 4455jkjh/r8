@@ -68,6 +68,7 @@ public class VarHandleDesugaring implements CfInstructionDesugaring, CfClassSynt
   }
 
   @Override
+  @SuppressWarnings("ReferenceEquality")
   public void scan(
       ProgramMethod programMethod, CfInstructionDesugaringEventConsumer eventConsumer) {
     if (programMethod.getHolderType() == factory.varHandleType) {
@@ -103,6 +104,7 @@ public class VarHandleDesugaring implements CfInstructionDesugaring, CfClassSynt
     return synthesizedClasses;
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private static boolean refersToVarHandle(DexType type, DexItemFactory factory) {
     if (type == factory.desugarVarHandleType) {
       // All references to java.lang.invoke.VarHandle is rewritten during application writing.
@@ -143,6 +145,7 @@ public class VarHandleDesugaring implements CfInstructionDesugaring, CfClassSynt
     return refersToVarHandle(field.type, factory);
   }
 
+  @SuppressWarnings("ReferenceEquality")
   public static boolean refersToMethodHandlesLookup(DexType type, DexItemFactory factory) {
     if (type == factory.desugarMethodHandlesLookupType) {
       // All references to java.lang.invoke.MethodHandles$Lookup is rewritten during application
@@ -183,7 +186,7 @@ public class VarHandleDesugaring implements CfInstructionDesugaring, CfClassSynt
     return refersToMethodHandlesLookup(field.type, factory);
   }
 
-  @SuppressWarnings("InconsistentOverloads")
+  @SuppressWarnings({"InconsistentOverloads", "ReferenceEquality"})
   public static void ensureMethodHandlesLookupClass(
       AppView<?> appView,
       VarHandleDesugaringEventConsumer eventConsumer,
@@ -214,31 +217,33 @@ public class VarHandleDesugaring implements CfInstructionDesugaring, CfClassSynt
     ensureMethodHandlesLookupClass(appView, eventConsumer, ImmutableList.of(context));
   }
 
-  @SuppressWarnings("InconsistentOverloads")
+  @SuppressWarnings({"InconsistentOverloads", "ReferenceEquality"})
   public static void ensureVarHandleClass(
       AppView<?> appView,
       VarHandleDesugaringEventConsumer eventConsumer,
       Collection<? extends ProgramDefinition> contexts) {
     assert contexts.stream()
         .allMatch(context -> context.getContextType() != appView.dexItemFactory().varHandleType);
-    DexProgramClass clazz =
-        appView
-            .getSyntheticItems()
-            .ensureGlobalClass(
-                () -> new MissingGlobalSyntheticsConsumerDiagnostic("VarHandle desugaring"),
-                kinds -> kinds.VAR_HANDLE,
-                appView.dexItemFactory().varHandleType,
-                contexts,
-                appView,
-                builder ->
-                    VarHandleDesugaringMethods.generateDesugarVarHandleClass(
-                        builder, appView.dexItemFactory()),
-                eventConsumer::acceptVarHandleDesugaringClass);
-    for (ProgramDefinition context : contexts) {
-      eventConsumer.acceptVarHandleDesugaringClassContext(clazz, context);
-    }
+    appView
+        .getSyntheticItems()
+        .ensureGlobalClass(
+            () -> new MissingGlobalSyntheticsConsumerDiagnostic("VarHandle desugaring"),
+            kinds -> kinds.VAR_HANDLE,
+            appView.dexItemFactory().varHandleType,
+            contexts,
+            appView,
+            builder ->
+                VarHandleDesugaringMethods.generateDesugarVarHandleClass(
+                    builder, appView.dexItemFactory()),
+            eventConsumer::acceptVarHandleDesugaringClass,
+            clazz -> {
+              for (ProgramDefinition context : contexts) {
+                eventConsumer.acceptVarHandleDesugaringClassContext(clazz, context);
+              }
+            });
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private void ensureVarHandleClass(
       VarHandleDesugaringEventConsumer eventConsumer, ProgramDefinition context) {
     if (context.getContextType() != factory.varHandleType) {
@@ -247,6 +252,7 @@ public class VarHandleDesugaring implements CfInstructionDesugaring, CfClassSynt
   }
 
   @Override
+  @SuppressWarnings("ReferenceEquality")
   public DesugarDescription compute(CfInstruction instruction, ProgramMethod context) {
     if (!instruction.isInvoke()) {
       return DesugarDescription.nothing();
@@ -320,6 +326,7 @@ public class VarHandleDesugaring implements CfInstructionDesugaring, CfClassSynt
         .setDesugarRewrite(
             (freshLocalProvider,
                 localStackAllocator,
+                desugaringInfo,
                 eventConsumer,
                 context,
                 methodProcessingContext,
@@ -346,6 +353,7 @@ public class VarHandleDesugaring implements CfInstructionDesugaring, CfClassSynt
         .setDesugarRewrite(
             (freshLocalProvider,
                 localStackAllocator,
+                desugaringInfo,
                 eventConsumer,
                 context,
                 methodProcessingContext,
@@ -372,6 +380,7 @@ public class VarHandleDesugaring implements CfInstructionDesugaring, CfClassSynt
         .setDesugarRewrite(
             (freshLocalProvider,
                 localStackAllocator,
+                desugaringInfo,
                 eventConsumer,
                 context,
                 methodProcessingContext,
@@ -399,6 +408,7 @@ public class VarHandleDesugaring implements CfInstructionDesugaring, CfClassSynt
         .setDesugarRewrite(
             (freshLocalProvider,
                 localStackAllocator,
+                desugaringInfo,
                 eventConsumer,
                 context,
                 methodProcessingContext,
@@ -423,6 +433,7 @@ public class VarHandleDesugaring implements CfInstructionDesugaring, CfClassSynt
     return isPrimitiveThatIsNotBoxed(type) || type.isVoidType() ? type : factory.objectType;
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private Collection<CfInstruction> desugarSignaturePolymorphicMethod(
       CfInvoke invoke,
       int coordinates,

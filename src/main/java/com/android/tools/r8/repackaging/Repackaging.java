@@ -129,6 +129,7 @@ public class Repackaging {
     return true;
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private RepackagingLens repackageClasses(
       DirectMappedDexApplication.Builder appBuilder, ExecutorService executorService)
       throws ExecutionException {
@@ -163,8 +164,11 @@ public class Repackaging {
   private static class RepackagingTreeFixer extends TreeFixerBase {
 
     private final BiMap<DexType, DexType> mappings;
+
+    @SuppressWarnings("BadImport")
     private final Builder lensBuilder;
 
+    @SuppressWarnings("BadImport")
     public RepackagingTreeFixer(
         AppView<AppInfoWithLiveness> appView,
         BiMap<DexType, DexType> mappings,

@@ -32,6 +32,7 @@ import java.util.concurrent.ExecutorService;
 
 public class KotlinMetadataRewriter {
 
+  @SuppressWarnings("UnusedVariable")
   // Due to a bug with nested classes and the lookup of RequirementVersion, we bump all metadata
   // versions to 1.4 if compiled with kotlin 1.3 (1.1.16). For more information, see b/161885097.
   private static final int[] METADATA_VERSION_1_4 = new int[] {1, 4, 0};
@@ -39,7 +40,10 @@ public class KotlinMetadataRewriter {
   private static final class WriteMetadataFieldInfo {
     final boolean writeKind;
     final boolean writeMetadataVersion;
+
+    @SuppressWarnings("UnusedVariable")
     final boolean writeByteCodeVersion;
+
     final boolean writeData1;
     final boolean writeData2;
     final boolean writeExtraString;
@@ -80,6 +84,7 @@ public class KotlinMetadataRewriter {
     this.kotlin = factory.kotlin;
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private static boolean isNotKotlinMetadata(DexAnnotation annotation, DexType kotlinMetadataType) {
     return annotation.annotation.type != kotlinMetadataType;
   }
@@ -163,6 +168,7 @@ public class KotlinMetadataRewriter {
         executorService);
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private void writeKotlinInfoToAnnotation(
       DexClass clazz,
       KotlinClassLevelInfo kotlinInfo,
@@ -206,6 +212,7 @@ public class KotlinMetadataRewriter {
     }
   }
 
+  @SuppressWarnings("EmptyCatch")
   private boolean verifyRewrittenMetadataIsEquivalent(
       DexAnnotation original, DexAnnotation rewritten) {
     try {
@@ -220,6 +227,7 @@ public class KotlinMetadataRewriter {
     return true;
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private boolean kotlinMetadataFieldExists(
       DexClass kotlinMetadata, AppView<?> appView, DexString fieldName) {
     if (!appView.appInfo().hasLiveness()) {

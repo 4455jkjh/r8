@@ -204,6 +204,7 @@ public class OutlinerImpl extends Outliner {
       return type.ordinal();
     }
 
+    @SuppressWarnings("MissingImplementsComparable")
     public int compareTo(OutlineInstruction other) {
       return type.compareTo(other.type);
     }
@@ -340,6 +341,7 @@ public class OutlinerImpl extends Outliner {
     }
 
     @Override
+    @SuppressWarnings("ReferenceEquality")
     public boolean equals(Object other) {
       if (!(other instanceof NewInstanceOutlineInstruction)) {
         return false;
@@ -395,6 +397,7 @@ public class OutlinerImpl extends Outliner {
     }
 
     @Override
+    @SuppressWarnings("ReferenceEquality")
     public boolean needsLensRewriting(GraphLens currentGraphLens) {
       return currentGraphLens.lookupType(clazz) != clazz;
     }
@@ -446,6 +449,7 @@ public class OutlinerImpl extends Outliner {
     }
 
     @Override
+    @SuppressWarnings("ReferenceEquality")
     public boolean equals(Object other) {
       if (!(other instanceof InvokeOutlineInstruction)) {
         return false;
@@ -538,6 +542,7 @@ public class OutlinerImpl extends Outliner {
     }
 
     @Override
+    @SuppressWarnings("ReferenceEquality")
     public boolean needsLensRewriting(GraphLens currentGraphLens) {
       return currentGraphLens.getRenamedMethodSignature(method) != method;
     }
@@ -621,6 +626,7 @@ public class OutlinerImpl extends Outliner {
       return this;
     }
 
+    @SuppressWarnings("ReferenceEquality")
     private boolean needsLensRewriting(GraphLens currentGraphLens) {
       for (DexType argumentType : argumentTypes) {
         if (currentGraphLens.lookupType(argumentType) != argumentType) {
@@ -636,6 +642,7 @@ public class OutlinerImpl extends Outliner {
     }
 
     @Override
+    @SuppressWarnings("ReferenceEquality")
     public boolean equals(Object other) {
       if (!(other instanceof Outline)) {
         return false;
@@ -721,6 +728,7 @@ public class OutlinerImpl extends Outliner {
     }
 
     @Override
+    @SuppressWarnings({"ReferenceEquality", "UnnecessaryParentheses"})
     public String toString() {
       // The printing of the code for an outline maps the value numbers to the arguments numbers.
       int outRegisterNumber = argumentTypes.size();
@@ -763,6 +771,7 @@ public class OutlinerImpl extends Outliner {
     }
   }
 
+  @SuppressWarnings("UnusedVariable")
   // Spot the outline opportunities in a basic block.
   // This is the superclass for both collection candidates and actually replacing code.
   // TODO(sgjesse): Collect more information in the candidate collection and reuse that for
@@ -861,6 +870,7 @@ public class OutlinerImpl extends Outliner {
       }
     }
 
+    @SuppressWarnings("ReferenceEquality")
     // Check if the current instruction can be included in the outline.
     private boolean canIncludeInstruction(Instruction instruction) {
       // Find the users of the active out-value (potential return value).
@@ -994,6 +1004,7 @@ public class OutlinerImpl extends Outliner {
       return false;
     }
 
+    @SuppressWarnings("ReferenceEquality")
     private DexType argumentTypeFromValue(Value value, InvokeMethod invoke, int argumentIndex) {
       assert supportedArgumentType(value);
       DexItemFactory itemFactory = appView.options().itemFactory;
@@ -1320,6 +1331,7 @@ public class OutlinerImpl extends Outliner {
     }
 
     /** When assertions are enabled, remove method from the outline's list. */
+    @SuppressWarnings("ReferenceEquality")
     private boolean removeMethodFromOutlineList(Outline outline) {
       synchronized (outlineSites) {
         assert ListUtils.removeFirstMatch(
@@ -1727,6 +1739,7 @@ public class OutlinerImpl extends Outliner {
     }
 
     @Override
+    @SuppressWarnings("ReferenceEquality")
     public void buildInstruction(
         IRBuilder builder, int instructionIndex, boolean firstBlockInstruction) {
       if (instructionIndex == outline.templateInstructions.size()) {

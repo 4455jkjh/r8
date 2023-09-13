@@ -66,7 +66,6 @@ import com.android.tools.r8.graph.EnclosingMethodAttribute;
 import com.android.tools.r8.graph.FieldAccessInfoCollectionImpl;
 import com.android.tools.r8.graph.FieldAccessInfoImpl;
 import com.android.tools.r8.graph.FieldResolutionResult;
-import com.android.tools.r8.graph.FieldResolutionResult.FailedOrUnknownFieldResolutionResult;
 import com.android.tools.r8.graph.GenericSignatureEnqueuerAnalysis;
 import com.android.tools.r8.graph.InnerClassAttribute;
 import com.android.tools.r8.graph.InvalidCode;
@@ -386,7 +385,7 @@ public class Enqueuer {
   private final LiveFieldsSet liveFields;
 
   /** A queue of items that need processing. Different items trigger different actions. */
-  private EnqueuerWorklist workList;
+  private EnqueuerWorklist worklist;
 
   private final ProguardCompatibilityActions.Builder proguardCompatibilityActionsBuilder;
 
@@ -493,7 +492,7 @@ public class Enqueuer {
     this.mode = mode;
     this.options = options;
     this.useRegistryFactory = createUseRegistryFactory();
-    this.workList = EnqueuerWorklist.createWorklist(this);
+    this.worklist = EnqueuerWorklist.createWorklist(this);
     this.proguardCompatibilityActionsBuilder =
         mode.isInitialTreeShaking() && options.forceProguardCompatibility
             ? ProguardCompatibilityActions.builder()
@@ -690,17 +689,6 @@ public class Enqueuer {
     return definitionFor(type, context, this::recordNonProgramClass, this::reportMissingClass);
   }
 
-  public DexLibraryClass definitionForLibraryClassOrIgnore(DexType type) {
-    assert type.isClassType();
-    ClassResolutionResult classResolutionResult =
-        appInfo().contextIndependentDefinitionForWithResolutionResult(type);
-    return classResolutionResult.hasClassResolutionResult()
-            && !classResolutionResult.isMultipleClassResolutionResult()
-        ? DexLibraryClass.asLibraryClassOrNull(
-            classResolutionResult.toSingleClassWithProgramOverLibrary())
-        : null;
-  }
-
   public boolean hasAlternativeLibraryDefinition(DexProgramClass programClass) {
     ClassResolutionResult classResolutionResult =
         internalDefinitionFor(
@@ -768,7 +756,7 @@ public class Enqueuer {
   }
 
   public EnqueuerWorklist getWorklist() {
-    return workList;
+    return worklist;
   }
 
   private void addLiveNonProgramType(
@@ -949,11 +937,11 @@ public class Enqueuer {
       DexProgramClass clazz, Set<ProguardKeepRuleBase> rules, DexDefinition precondition) {
     KeepReasonWitness witness = graphReporter.reportKeepClass(precondition, rules, clazz);
     if (clazz.isAnnotation()) {
-      workList.enqueueMarkAnnotationInstantiatedAction(clazz, witness);
+      worklist.enqueueMarkAnnotationInstantiatedAction(clazz, witness);
     } else if (clazz.isInterface()) {
-      workList.enqueueMarkInterfaceInstantiatedAction(clazz, witness);
+      worklist.enqueueMarkInterfaceInstantiatedAction(clazz, witness);
     } else {
-      workList.enqueueMarkInstantiatedAction(clazz, null, InstantiationReason.KEEP_RULE, witness);
+      worklist.enqueueMarkInstantiatedAction(clazz, null, InstantiationReason.KEEP_RULE, witness);
       if (clazz.hasDefaultInitializer()) {
         ProgramMethod defaultInitializer = clazz.getProgramDefaultInitializer();
         if (forceProguardCompatibility) {
@@ -964,7 +952,7 @@ public class Enqueuer {
             }
           }
           if (!joiner.getRules().isEmpty()) {
-            workList.enqueueMarkMethodKeptAction(
+            worklist.enqueueMarkMethodKeptAction(
                 defaultInitializer,
                 graphReporter.reportCompatKeepDefaultInitializer(defaultInitializer));
             applyMinimumKeepInfoWhenLiveOrTargeted(
@@ -972,7 +960,7 @@ public class Enqueuer {
           }
         }
         if (clazz.isExternalizable(appView)) {
-          workList.enqueueMarkMethodLiveAction(defaultInitializer, defaultInitializer, witness);
+          worklist.enqueueMarkMethodLiveAction(defaultInitializer, defaultInitializer, witness);
           applyMinimumKeepInfoWhenLiveOrTargeted(
               defaultInitializer, KeepMethodInfo.newEmptyJoiner().disallowOptimization());
         }
@@ -984,7 +972,7 @@ public class Enqueuer {
       ProgramField field, KeepFieldInfo.Joiner minimumKeepInfo, EnqueuerEvent preconditionEvent) {
     assert minimumKeepInfo.verifyShrinkingDisallowedWithRule(options);
     DexDefinition precondition = preconditionEvent.getDefinition(appInfo());
-    workList.enqueueMarkFieldKeptAction(
+    worklist.enqueueMarkFieldKeptAction(
         field,
         graphReporter.reportKeepField(
             precondition,
@@ -999,7 +987,7 @@ public class Enqueuer {
       EnqueuerEvent preconditionEvent) {
     assert minimumKeepInfo.verifyShrinkingDisallowedWithRule(options);
     DexDefinition precondition = preconditionEvent.getDefinition(appInfo());
-    workList.enqueueMarkMethodKeptAction(
+    worklist.enqueueMarkMethodKeptAction(
         method,
         graphReporter.reportKeepMethod(
             precondition, minimumKeepInfo.getRules(), method.getDefinition()));
@@ -1018,7 +1006,7 @@ public class Enqueuer {
       clazz = superClass;
     }
     if (clazz.hasDefaultInitializer()) {
-      workList.enqueueMarkMethodLiveAction(clazz.getProgramDefaultInitializer(), clazz, reason);
+      worklist.enqueueMarkMethodLiveAction(clazz.getProgramDefaultInitializer(), clazz, reason);
       applyMinimumKeepInfoWhenLiveOrTargeted(
           clazz.getProgramDefaultInitializer(),
           KeepMethodInfo.newEmptyJoiner().disallowOptimization());
@@ -1101,6 +1089,7 @@ public class Enqueuer {
     return info;
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private boolean registerFieldAccess(
       DexField field, ProgramMethod context, boolean isRead, boolean isReflective) {
     FieldAccessInfoImpl info = fieldAccessInfoCollection.get(field);
@@ -1234,6 +1223,7 @@ public class Enqueuer {
     internalTraceConstClassOrCheckCast(type, currentMethod, true);
   }
 
+  @SuppressWarnings("ReferenceEquality")
   void traceConstClass(
       DexType type,
       ProgramMethod currentMethod,
@@ -1263,6 +1253,7 @@ public class Enqueuer {
    *
    * <p>Some common usages of const-class values are handled, such as calls to Class.get*Name().
    */
+  @SuppressWarnings("ReferenceEquality")
   private boolean isConstClassMaybeUsedAsLock(
       ProgramMethod currentMethod, ListIterator<? extends CfOrDexInstruction> iterator) {
     if (iterator == null) {
@@ -1412,7 +1403,7 @@ public class Enqueuer {
         registerDeferredActionForDeadProtoBuilder(
             invokedMethod.holder,
             context,
-            () -> workList.enqueueTraceInvokeDirectAction(invokedMethod, context));
+            () -> worklist.enqueueTraceInvokeDirectAction(invokedMethod, context));
     if (skipTracing) {
       addDeadProtoTypeCandidate(invokedMethod.holder);
       return;
@@ -1475,6 +1466,7 @@ public class Enqueuer {
     traceInvokeStatic(invokedMethod, context, KeepReason.invokedFromLambdaCreatedIn(context));
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private void traceInvokeStatic(
       DexMethod invokedMethod, ProgramMethod context, KeepReason reason) {
     DexItemFactory dexItemFactory = appView.dexItemFactory();
@@ -1504,6 +1496,7 @@ public class Enqueuer {
     invokeAnalyses.forEach(analysis -> analysis.traceInvokeStatic(invokedMethod, context));
   }
 
+  @SuppressWarnings("UnusedVariable")
   void traceInvokeSuper(DexMethod invokedMethod, ProgramMethod context) {
     // We have to revisit super invokes based on the context they are found in. The same
     // method descriptor will hit different targets, depending on the context it is used in.
@@ -1512,7 +1505,7 @@ public class Enqueuer {
         methodAccessInfoCollection::registerInvokeSuperInContext, invokedMethod, context)) {
       return;
     }
-    workList.enqueueMarkReachableSuperAction(invokedMethod, context);
+    worklist.enqueueMarkReachableSuperAction(invokedMethod, context);
     invokeAnalyses.forEach(analysis -> analysis.traceInvokeSuper(invokedMethod, context));
   }
 
@@ -1524,6 +1517,7 @@ public class Enqueuer {
     traceInvokeVirtual(invokedMethod, context, KeepReason.invokedFromLambdaCreatedIn(context));
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private void traceInvokeVirtual(
       DexMethod invokedMethod, ProgramMethod context, KeepReason reason) {
     if (invokedMethod == appView.dexItemFactory().classMethods.newInstance
@@ -1546,7 +1540,7 @@ public class Enqueuer {
   void traceNewInstance(DexType type, ProgramMethod context) {
     boolean skipTracing =
         registerDeferredActionForDeadProtoBuilder(
-            type, context, () -> workList.enqueueTraceNewInstanceAction(type, context));
+            type, context, () -> worklist.enqueueTraceNewInstanceAction(type, context));
     if (skipTracing) {
       addDeadProtoTypeCandidate(type);
       return;
@@ -1574,7 +1568,7 @@ public class Enqueuer {
       if (clazz.isAnnotation() || clazz.isInterface()) {
         markTypeAsLive(clazz, graphReporter.registerClass(clazz, keepReason));
       } else {
-        workList.enqueueMarkInstantiatedAction(clazz, context, instantiationReason, keepReason);
+        worklist.enqueueMarkInstantiatedAction(clazz, context, instantiationReason, keepReason);
       }
     }
   }
@@ -1663,6 +1657,7 @@ public class Enqueuer {
     }
 
     @Override
+    @SuppressWarnings("EqualsGetClass")
     public boolean equals(Object obj) {
       if (this == obj) {
         return true;
@@ -1680,6 +1675,7 @@ public class Enqueuer {
     }
   }
 
+  @SuppressWarnings("ReferenceEquality")
   void traceInstanceFieldRead(
       DexField fieldReference, ProgramMethod currentMethod, FieldAccessMetadata metadata) {
     if (!metadata.isDeferred() && !registerFieldRead(fieldReference, currentMethod)) {
@@ -1698,7 +1694,7 @@ public class Enqueuer {
           fieldAccessAnalyses.forEach(
               analysis ->
                   analysis.traceInstanceFieldRead(
-                      fieldReference, singleResolutionResult, currentMethod, workList));
+                      fieldReference, singleResolutionResult, currentMethod, worklist));
 
           ProgramField field = singleResolutionResult.getProgramField();
           if (field == null) {
@@ -1723,12 +1719,12 @@ public class Enqueuer {
             markTypeAsLive(singleResolutionResult.getInitialResolutionHolder(), currentMethod);
           }
 
-          workList.enqueueMarkFieldAsReachableAction(
+          worklist.enqueueMarkFieldAsReachableAction(
               field, currentMethod, KeepReason.fieldReferencedIn(currentMethod));
         },
         failedResolution -> {
           // Must trace the types from the field reference even if it does not exist.
-          traceFieldReference(fieldReference, failedResolution, currentMethod);
+          traceFieldReference(fieldReference, currentMethod);
           noClassMerging.add(fieldReference.getHolderType());
         });
   }
@@ -1741,6 +1737,7 @@ public class Enqueuer {
     traceInstanceFieldWrite(field, currentMethod, FieldAccessMetadata.FROM_METHOD_HANDLE);
   }
 
+  @SuppressWarnings("ReferenceEquality")
   void traceInstanceFieldWrite(
       DexField fieldReference, ProgramMethod currentMethod, FieldAccessMetadata metadata) {
     if (!metadata.isDeferred() && !registerFieldWrite(fieldReference, currentMethod)) {
@@ -1763,7 +1760,7 @@ public class Enqueuer {
           fieldAccessAnalyses.forEach(
               analysis ->
                   analysis.traceInstanceFieldWrite(
-                      fieldReference, singleResolutionResult, currentMethod, workList));
+                      fieldReference, singleResolutionResult, currentMethod, worklist));
 
           ProgramField field = singleResolutionResult.getProgramField();
           if (field == null) {
@@ -1787,11 +1784,11 @@ public class Enqueuer {
           }
 
           KeepReason reason = KeepReason.fieldReferencedIn(currentMethod);
-          workList.enqueueMarkFieldAsReachableAction(field, currentMethod, reason);
+          worklist.enqueueMarkFieldAsReachableAction(field, currentMethod, reason);
         },
         failedResolution -> {
           // Must trace the types from the field reference even if it does not exist.
-          traceFieldReference(fieldReference, failedResolution, currentMethod);
+          traceFieldReference(fieldReference, currentMethod);
           noClassMerging.add(fieldReference.getHolderType());
         });
   }
@@ -1804,6 +1801,7 @@ public class Enqueuer {
     traceStaticFieldRead(field, currentMethod, FieldAccessMetadata.FROM_METHOD_HANDLE);
   }
 
+  @SuppressWarnings("ReferenceEquality")
   void traceStaticFieldRead(
       DexField fieldReference, ProgramMethod currentMethod, FieldAccessMetadata metadata) {
     if (!metadata.isDeferred() && !registerFieldRead(fieldReference, currentMethod)) {
@@ -1837,7 +1835,7 @@ public class Enqueuer {
           fieldAccessAnalyses.forEach(
               analysis ->
                   analysis.traceStaticFieldRead(
-                      fieldReference, singleResolutionResult, currentMethod, workList));
+                      fieldReference, singleResolutionResult, currentMethod, worklist));
 
           ProgramField field = singleResolutionResult.getProgramField();
           if (field == null) {
@@ -1866,7 +1864,7 @@ public class Enqueuer {
         },
         failedResolution -> {
           // Must trace the types from the field reference even if it does not exist.
-          traceFieldReference(fieldReference, failedResolution, currentMethod);
+          traceFieldReference(fieldReference, currentMethod);
           noClassMerging.add(fieldReference.getHolderType());
           // Record field reference for generated extension registry shrinking.
           appView.withGeneratedExtensionRegistryShrinker(
@@ -1884,6 +1882,7 @@ public class Enqueuer {
     traceStaticFieldWrite(field, currentMethod, FieldAccessMetadata.FROM_METHOD_HANDLE);
   }
 
+  @SuppressWarnings("ReferenceEquality")
   void traceStaticFieldWrite(
       DexField fieldReference, ProgramMethod currentMethod, FieldAccessMetadata metadata) {
     if (!metadata.isDeferred() && !registerFieldWrite(fieldReference, currentMethod)) {
@@ -1917,7 +1916,7 @@ public class Enqueuer {
           fieldAccessAnalyses.forEach(
               analysis ->
                   analysis.traceStaticFieldWrite(
-                      fieldReference, singleResolutionResult, currentMethod, workList));
+                      fieldReference, singleResolutionResult, currentMethod, worklist));
 
           ProgramField field = singleResolutionResult.getProgramField();
           if (field == null) {
@@ -1946,7 +1945,7 @@ public class Enqueuer {
         },
         failedResolution -> {
           // Must trace the types from the field reference even if it does not exist.
-          traceFieldReference(fieldReference, failedResolution, currentMethod);
+          traceFieldReference(fieldReference, currentMethod);
           noClassMerging.add(fieldReference.getHolderType());
         });
   }
@@ -2177,9 +2176,10 @@ public class Enqueuer {
     compatEnqueueHolderIfDependentNonStaticMember(
         clazz, rootSet.getDependentKeepClassCompatRule(clazz.getType()));
 
-    analyses.forEach(analysis -> analysis.processNewlyLiveClass(clazz, workList));
+    analyses.forEach(analysis -> analysis.processNewlyLiveClass(clazz, worklist));
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private void processDeferredAnnotations(
       DexProgramClass clazz,
       Map<DexType, Map<DexAnnotation, List<ProgramDefinition>>> deferredAnnotations,
@@ -2580,7 +2580,7 @@ public class Enqueuer {
               // to a verification error. See also testInvokeSpecialToDefaultMethod.
               if (resolvedMethod.getDefinition().isNonPrivateVirtualMethod()
                   && virtualMethodsTargetedByInvokeDirect.add(resolvedMethod.getReference())) {
-                workList.enqueueMarkMethodLiveAction(resolvedMethod, context, reason);
+                worklist.enqueueMarkMethodLiveAction(resolvedMethod, context, reason);
               }
             });
   }
@@ -2754,7 +2754,7 @@ public class Enqueuer {
     // could lead to nondeterminism.
     analyses.forEach(
         analysis ->
-            analysis.processNewlyInstantiatedClass(clazz.asProgramClass(), context, workList));
+            analysis.processNewlyInstantiatedClass(clazz.asProgramClass(), context, worklist));
 
     if (!markInstantiatedClass(clazz, context, instantiationReason, keepReason)) {
       return;
@@ -2945,6 +2945,7 @@ public class Enqueuer {
             });
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private void markLibraryAndClasspathMethodOverridesAsLive(
       InstantiatedObject instantiation, DexClass libraryClass) {
     assert libraryClass.isNotProgramClass();
@@ -3150,7 +3151,7 @@ public class Enqueuer {
     }
 
     // Notify analyses.
-    analyses.forEach(analysis -> analysis.processNewlyLiveField(field, context, workList));
+    analyses.forEach(analysis -> analysis.processNewlyLiveField(field, context, worklist));
   }
 
   // Package protected due to entry point from worklist.
@@ -3176,9 +3177,10 @@ public class Enqueuer {
 
     traceFieldDefinition(field);
 
-    analyses.forEach(analysis -> analysis.notifyMarkFieldAsReachable(field, workList));
+    analyses.forEach(analysis -> analysis.notifyMarkFieldAsReachable(field, worklist));
   }
 
+  @SuppressWarnings("UnusedVariable")
   private void traceFieldDefinition(ProgramField field) {
     markTypeAsLive(field.getHolder(), field);
     markTypeAsLive(field.getType(), field);
@@ -3187,7 +3189,6 @@ public class Enqueuer {
 
   private void traceFieldReference(
       DexField field,
-      FailedOrUnknownFieldResolutionResult resolutionResult,
       ProgramMethod context) {
     markTypeAsLive(field.getHolderType(), context);
     markTypeAsLive(field.getType(), context);
@@ -3199,8 +3200,8 @@ public class Enqueuer {
         && method.getAccessFlags().isPrivate()) {
       return;
     }
-    if (workList.enqueueMarkMethodLiveAction(method, method, reason)) {
-      assert workList.enqueueAssertAction(
+    if (worklist.enqueueMarkMethodLiveAction(method, method, reason)) {
+      assert worklist.enqueueAssertAction(
           () -> {
             // Should have marked the holder type live.
             assert method.getDefinition().isClassInitializer() || verifyMethodIsTargeted(method);
@@ -3208,7 +3209,7 @@ public class Enqueuer {
           });
     } else {
       assert method.getDefinition().isClassInitializer() || verifyMethodIsTargeted(method);
-      assert workList.enqueueAssertAction(() -> verifyTypeIsLive(method.getHolder()));
+      assert worklist.enqueueAssertAction(() -> verifyTypeIsLive(method.getHolder()));
     }
   }
 
@@ -3217,7 +3218,7 @@ public class Enqueuer {
     assert !method.getDefinition().isAbstract()
         || reason.isDueToKeepRule()
         || reason.isDueToReflectiveUse();
-    workList.enqueueMarkMethodLiveAction(method, method, reason);
+    worklist.enqueueMarkMethodLiveAction(method, method, reason);
   }
 
   public boolean isFieldReferenced(DexEncodedField field) {
@@ -3435,7 +3436,7 @@ public class Enqueuer {
     target.accept(
         method -> markVirtualDispatchMethodTargetAsLive(method, reason),
         lambda -> markVirtualDispatchLambdaTargetAsLive(lambda, reason));
-    analyses.forEach(analysis -> analysis.notifyMarkVirtualDispatchTargetAsLive(target, workList));
+    analyses.forEach(analysis -> analysis.notifyMarkVirtualDispatchTargetAsLive(target, worklist));
   }
 
   private void markVirtualDispatchMethodTargetAsLive(
@@ -3455,7 +3456,7 @@ public class Enqueuer {
       LookupLambdaTarget target, Function<ProgramMethod, KeepReasonWitness> reason) {
     ProgramMethod implementationMethod = target.getImplementationMethod().asProgramMethod();
     if (implementationMethod != null) {
-      workList.enqueueMarkMethodLiveAction(
+      worklist.enqueueMarkMethodLiveAction(
           implementationMethod, implementationMethod, reason.apply(implementationMethod));
     }
   }
@@ -3535,7 +3536,7 @@ public class Enqueuer {
     if (valuesMethod != null) {
       // TODO(sgjesse): Does this have to be enqueued as a root item? Right now it is done as the
       // marking for not renaming it is in the root set.
-      workList.enqueueMarkMethodKeptAction(valuesMethod, reason);
+      worklist.enqueueMarkMethodKeptAction(valuesMethod, reason);
       keepInfo.joinMethod(
           valuesMethod,
           joiner -> joiner.disallowMinification().disallowOptimization().disallowShrinking());
@@ -3570,7 +3571,7 @@ public class Enqueuer {
                 analyses.forEach(
                     analyses ->
                         analyses.notifyFailedMethodResolutionTarget(
-                            resolution.getResolvedMethod(), workList));
+                            resolution.getResolvedMethod(), worklist));
                 return;
               }
 
@@ -3972,7 +3973,7 @@ public class Enqueuer {
       KeepReasonWitness fakeReason = enqueuer.graphReporter.fakeReportShouldNotBeUsed();
 
       for (ProgramMethod desugaredMethod : desugaredMethods) {
-        enqueuer.workList.enqueueTraceCodeAction(desugaredMethod);
+        enqueuer.worklist.enqueueTraceCodeAction(desugaredMethod);
       }
 
       liveMethodsWithKeepActions.forEach(
@@ -3980,7 +3981,7 @@ public class Enqueuer {
       for (ProgramMethod liveMethod : liveMethods.values()) {
         assert !enqueuer.targetedMethods.contains(liveMethod.getDefinition());
         enqueuer.markMethodAsTargeted(liveMethod, fakeReason);
-        enqueuer.workList.enqueueMarkMethodLiveAction(liveMethod, liveMethod, fakeReason);
+        enqueuer.worklist.enqueueMarkMethodLiveAction(liveMethod, liveMethod, fakeReason);
       }
       enqueuer.liveNonProgramTypes.addAll(syntheticClasspathClasses.values());
       injectedInterfaces.forEach(
@@ -4188,6 +4189,7 @@ public class Enqueuer {
     return true;
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private EnqueuerResult createEnqueuerResult(AppInfoWithClassHierarchy appInfo, Timing timing)
       throws ExecutionException {
     timing.begin("Remove dead protos");
@@ -4450,8 +4452,8 @@ public class Enqueuer {
     try {
       while (true) {
         long numberOfLiveItems = getNumberOfLiveItems();
-        while (!workList.isEmpty()) {
-          EnqueuerAction action = workList.poll();
+        while (!worklist.isEmpty()) {
+          EnqueuerAction action = worklist.poll();
           action.run(this);
         }
 
@@ -4480,7 +4482,7 @@ public class Enqueuer {
                   consequentSetBuilder);
           addConsequentRootSet(ifRuleEvaluator.run());
           assert getNumberOfLiveItems() == numberOfLiveItemsAfterProcessing;
-          if (!workList.isEmpty()) {
+          if (!worklist.isEmpty()) {
             continue;
           }
         }
@@ -4491,20 +4493,20 @@ public class Enqueuer {
           pendingReflectiveUses.forEach(this::handleReflectiveBehavior);
           pendingReflectiveUses.clear();
         }
-        if (!workList.isEmpty()) {
+        if (!worklist.isEmpty()) {
           continue;
         }
 
         // Allow deferred tracing to enqueue worklist items.
-        if (deferredTracing.enqueueWorklistActions(workList)) {
-          assert !workList.isEmpty();
+        if (deferredTracing.enqueueWorklistActions(worklist)) {
+          assert !worklist.isEmpty();
           continue;
         }
 
         // Notify each analysis that a fixpoint has been reached, and give each analysis an
         // opportunity to add items to the worklist.
-        analyses.forEach(analysis -> analysis.notifyFixpoint(this, workList, timing));
-        if (!workList.isEmpty()) {
+        analyses.forEach(analysis -> analysis.notifyFixpoint(this, worklist, timing));
+        if (!worklist.isEmpty()) {
           continue;
         }
 
@@ -4525,7 +4527,7 @@ public class Enqueuer {
             .merge(consequentRootSet.getDependentMinimumKeepInfo());
         rootSet.delayedRootSetActionItems.clear();
 
-        if (!workList.isEmpty()) {
+        if (!worklist.isEmpty()) {
           continue;
         }
 
@@ -4548,7 +4550,7 @@ public class Enqueuer {
     SyntheticAdditions syntheticAdditions =
         new SyntheticAdditions(appView.createProcessorContext());
 
-    assert workList.isEmpty();
+    assert worklist.isEmpty();
 
     CfPostProcessingDesugaringEventConsumer eventConsumer =
         CfPostProcessingDesugaringEventConsumer.createForR8(
@@ -4583,10 +4585,10 @@ public class Enqueuer {
 
     syntheticAdditions.enqueueWorkItems(this);
 
-    workList = workList.nonPushable();
+    worklist = worklist.nonPushable();
 
-    while (!workList.isEmpty()) {
-      EnqueuerAction action = workList.poll();
+    while (!worklist.isEmpty()) {
+      EnqueuerAction action = worklist.poll();
       action.run(this);
     }
   }
@@ -4632,6 +4634,7 @@ public class Enqueuer {
   private final Map<DexMethod, InterfaceMethodSyntheticBridgeAction>
       syntheticInterfaceMethodBridges = new LinkedHashMap<>();
 
+  @SuppressWarnings("ReferenceEquality")
   private void identifySyntheticInterfaceMethodBridges(
       InterfaceMethodSyntheticBridgeAction action) {
     ProgramMethod methodToKeep = action.getMethodToKeep();
@@ -4665,7 +4668,7 @@ public class Enqueuer {
     if (annotationRemoverBuilder != null) {
       for (MatchedAnnotation matchedAnnotation : matchedAnnotations) {
         annotationRemoverBuilder.retainAnnotation(matchedAnnotation.getAnnotation());
-        workList.enqueueTraceAnnotationAction(
+        worklist.enqueueTraceAnnotationAction(
             matchedAnnotation.getAnnotatedItem(),
             matchedAnnotation.getAnnotation(),
             matchedAnnotation.getAnnotatedKind());
@@ -4707,7 +4710,7 @@ public class Enqueuer {
     if (field.getDefinition().isStatic()) {
       markFieldAsLive(field, field, reason);
     } else {
-      workList.enqueueMarkFieldAsReachableAction(field, field, reason);
+      worklist.enqueueMarkFieldAsReachableAction(field, field, reason);
     }
   }
 
@@ -4799,7 +4802,7 @@ public class Enqueuer {
     }
 
     // Notify analyses.
-    analyses.forEach(analysis -> analysis.processNewlyLiveMethod(method, context, this, workList));
+    analyses.forEach(analysis -> analysis.processNewlyLiveMethod(method, context, this, worklist));
   }
 
   private void markMethodAsTargeted(ProgramMethod method, KeepReason reason) {
@@ -4819,7 +4822,7 @@ public class Enqueuer {
         markMethodAsLiveWithCompatRule(method);
       }
     }
-    analyses.forEach(analysis -> analysis.notifyMarkMethodAsTargeted(method, workList));
+    analyses.forEach(analysis -> analysis.notifyMarkMethodAsTargeted(method, worklist));
   }
 
   void traceMethodDefinitionExcludingCode(ProgramMethod method) {
@@ -4854,7 +4857,7 @@ public class Enqueuer {
         useRegistryFactory.create(appView, method, this, appView.apiLevelCompute());
     method.registerCodeReferences(registry);
     // Notify analyses.
-    analyses.forEach(analysis -> analysis.processTracedCode(method, registry, workList));
+    analyses.forEach(analysis -> analysis.processTracedCode(method, registry, worklist));
   }
 
   private void markReferencedTypesAsLive(ProgramMethod method) {
@@ -4870,10 +4873,10 @@ public class Enqueuer {
   }
 
   private void markClassAsInstantiatedWithReason(DexProgramClass clazz, KeepReason reason) {
-    workList.enqueueMarkInstantiatedAction(clazz, null, InstantiationReason.REFLECTION, reason);
+    worklist.enqueueMarkInstantiatedAction(clazz, null, InstantiationReason.REFLECTION, reason);
     if (clazz.hasDefaultInitializer()) {
       ProgramMethod defaultInitializer = clazz.getProgramDefaultInitializer();
-      workList.enqueueMarkReachableDirectAction(
+      worklist.enqueueMarkReachableDirectAction(
           defaultInitializer.getReference(), defaultInitializer, reason);
     }
   }
@@ -4892,10 +4895,10 @@ public class Enqueuer {
     } else if (clazz.isInterface()) {
       markInterfaceAsInstantiated(clazz, witness);
     } else {
-      workList.enqueueMarkInstantiatedAction(clazz, null, InstantiationReason.KEEP_RULE, witness);
+      worklist.enqueueMarkInstantiatedAction(clazz, null, InstantiationReason.KEEP_RULE, witness);
       if (clazz.hasDefaultInitializer()) {
         ProgramMethod defaultInitializer = clazz.getProgramDefaultInitializer();
-        workList.enqueueMarkReachableDirectAction(
+        worklist.enqueueMarkReachableDirectAction(
             defaultInitializer.getReference(),
             defaultInitializer,
             graphReporter.reportCompatKeepDefaultInitializer(defaultInitializer));
@@ -4925,7 +4928,7 @@ public class Enqueuer {
   }
 
   private void markMethodAsLiveWithCompatRule(ProgramMethod method) {
-    workList.enqueueMarkMethodLiveAction(
+    worklist.enqueueMarkMethodLiveAction(
         method, method, graphReporter.reportCompatKeepMethod(method));
   }
 
@@ -4938,6 +4941,7 @@ public class Enqueuer {
     }
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private void handleReflectiveBehavior(ProgramMethod method, Instruction instruction) {
     if (!instruction.isInvokeMethod()) {
       return;
@@ -5014,7 +5018,7 @@ public class Enqueuer {
           !encodedField.isStatic()
               && dexItemFactory.atomicFieldUpdaterMethods.isFieldUpdater(invokedMethod);
       if (keepClass) {
-        workList.enqueueMarkInstantiatedAction(
+        worklist.enqueueMarkInstantiatedAction(
             clazz, null, InstantiationReason.REFLECTION, KeepReason.reflectiveUseIn(method));
       }
       if (keepInfo.getFieldInfo(encodedField, clazz).isShrinkingAllowed(options)) {
@@ -5082,6 +5086,7 @@ public class Enqueuer {
   }
 
   /** Handles reflective uses of {@link java.lang.reflect.Constructor#newInstance(Object...)}. */
+  @SuppressWarnings("ReferenceEquality")
   private void handleJavaLangReflectConstructorNewInstance(
       ProgramMethod method, InvokeMethod invoke) {
     if (!invoke.isInvokeVirtual()) {
@@ -5476,6 +5481,7 @@ public class Enqueuer {
     }
 
     @Override
+    @SuppressWarnings("ReferenceEquality")
     public boolean addField(DexField fieldReference) {
       recordFieldReference(fieldReference, context);
       DexProgramClass holder = getProgramHolderOrNull(fieldReference, context);
@@ -5511,12 +5517,13 @@ public class Enqueuer {
         }
       } else {
         // There is no dispatch on annotations, so only keep what is directly referenced.
-        workList.enqueueMarkFieldAsReachableAction(field, context, reason);
+        worklist.enqueueMarkFieldAsReachableAction(field, context, reason);
       }
       return false;
     }
 
     @Override
+    @SuppressWarnings("ReferenceEquality")
     public boolean addMethod(DexMethod method) {
       // Record the references in case they are not program types.
       recordMethodReference(method, context);
@@ -5592,6 +5599,7 @@ public class Enqueuer {
     }
 
     @Override
+    @SuppressWarnings({"EqualsGetClass", "ReferenceEquality"})
     public boolean equals(Object o) {
       if (o == null || getClass() != o.getClass()) {
         return false;

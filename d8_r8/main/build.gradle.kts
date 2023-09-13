@@ -2,8 +2,9 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-import java.nio.file.Paths
+import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 import net.ltgt.gradle.errorprone.errorprone
+import org.gradle.api.artifacts.component.ModuleComponentIdentifier
 
 plugins {
   `kotlin-dsl`
@@ -67,8 +68,63 @@ tasks {
     dependsOn(thirdPartyResourceDependenciesTask)
   }
 
+  val consolidatedLicense by registering {
+    val root = getRoot()
+    val r8License = root.resolve("LICENSE")
+    val libraryLicense = root.resolve("LIBRARY-LICENSE")
+    val libraryLicenseFiles = fileTree(root.resolve("library-licensing"))
+    inputs.files(
+      listOf(r8License, libraryLicense),
+      libraryLicenseFiles,
+      mainJarDependencies().map(::zipTree))
+
+    val license = rootProject.layout.buildDirectory.file("generatedLicense/LICENSE").get().asFile
+    outputs.files(license)
+
+    doLast {
+      val dependencies = mutableListOf<String>()
+      configurations
+        .findByName("runtimeClasspath")!!
+        .resolvedConfiguration
+        .resolvedArtifacts
+        .forEach {
+          val identifier = it.id.componentIdentifier
+          if (identifier is ModuleComponentIdentifier) {
+            dependencies.add("${identifier.group}:${identifier.module}")
+          }
+      }
+      val libraryLicenses = libraryLicense.readText()
+      dependencies.forEach {
+        if (!libraryLicenses.contains("- artifact: $it")) {
+          throw GradleException("No license for $it in LIBRARY_LICENSE")
+        }
+      }
+      license.getParentFile().mkdirs()
+      license.createNewFile()
+      license.writeText(buildString {
+        append("This file lists all licenses for code distributed.\n")
+        .append("All non-library code has the following 3-Clause BSD license.\n")
+        .append("\n")
+        .append("\n")
+        .append(r8License.readText())
+        .append("\n")
+        .append("\n")
+        .append("Summary of distributed libraries:\n")
+        .append("\n")
+        .append(libraryLicenses)
+        .append("\n")
+        .append("\n")
+        .append("Licenses details:\n")
+        libraryLicenseFiles.sorted().forEach { file ->
+          append("\n").append("\n").append(file.readText())
+        }
+      })
+    }
+  }
+
   val swissArmyKnife by registering(Jar::class) {
     from(sourceSets.main.get().output)
+    from(consolidatedLicense)
     manifest {
       attributes["Main-Class"] = "com.android.tools.r8.SwissArmyKnife"
     }
@@ -93,8 +149,8 @@ tasks {
     exclude("META-INF/MANIFEST.MF")
     exclude("META-INF/maven/**")
     exclude("META-INF/proguard/**")
-    exclude("META-INF/services/**")
     exclude("META-INF/versions/**")
+    exclude("META-INF/services/kotlin.reflect.**")
     exclude("**/*.xml")
     exclude("com/android/version.properties")
     exclude("NOTICE")
@@ -162,14 +218,24 @@ tasks {
   }
 }
 
+tasks.withType<KotlinCompile> {
+  enabled = false
+}
+
 tasks.withType<JavaCompile> {
   dependsOn(thirdPartyCompileDependenciesTask)
   println("NOTE: Running with JDK: " + org.gradle.internal.jvm.Jvm.current().javaHome)
 
-  // Enable error prone for D8/R8 main sources and make all warnings errors.
-  // Warnings that we have chosen not to fix (or suppress) are disabled outright below.
-  options.compilerArgs.add("-Werror")
+  // Enable error prone for D8/R8 main sources.
   options.errorprone.isEnabled.set(true)
+
+  // Make all warnings errors. Warnings that we have chosen not to fix (or suppress) are disabled
+  // outright below.
+  options.compilerArgs.add("-Werror")
+
+  // Increase number of reported errors to 1000 (default is 100).
+  options.compilerArgs.add("-Xmaxerrs")
+  options.compilerArgs.add("1000")
 
   // Non-default / Experimental checks - explicitly enforced.
   options.errorprone.error("RemoveUnusedImports")
@@ -177,44 +243,6 @@ tasks.withType<JavaCompile> {
   options.errorprone.error("MissingDefault")
   options.errorprone.error("MultipleTopLevelClasses")
   options.errorprone.error("NarrowingCompoundAssignment")
-
-  // TODO(b/270510095): These should likely be fixed/suppressed and become hard failures.
-  options.errorprone.disable("UnusedVariable")
-  options.errorprone.disable("EqualsUnsafeCast")
-  options.errorprone.disable("TypeParameterUnusedInFormals")
-  options.errorprone.disable("ImmutableEnumChecker")
-  options.errorprone.disable("BadImport")
-  options.errorprone.disable("ComplexBooleanConstant")
-  options.errorprone.disable("HidingField")
-  options.errorprone.disable("StreamResourceLeak")
-  options.errorprone.disable("CatchAndPrintStackTrace")
-  options.errorprone.disable("NonCanonicalType")
-  options.errorprone.disable("UnusedNestedClass")
-  options.errorprone.disable("AmbiguousMethodReference")
-  options.errorprone.disable("InvalidParam")
-  options.errorprone.disable("CharacterGetNumericValue")
-  options.errorprone.disable("ModifyCollectionInEnhancedForLoop")
-  options.errorprone.disable("EmptyCatch")
-  options.errorprone.disable("ArgumentSelectionDefectChecker")
-  options.errorprone.disable("ImmutableAnnotationChecker")
-  options.errorprone.disable("ObjectToString")
-  options.errorprone.disable("DoNotClaimAnnotations")
-  options.errorprone.disable("AnnotateFormatMethod")
-
-  // TODO(b/270537614): Remove finalize uses.
-  options.errorprone.disable("Finalize")
-
-  // The following warnings could/should be active but are hit by R8 now so silence them.
-  options.errorprone.disable("EqualsGetClass")
-  options.errorprone.disable("MixedMutabilityReturnType")
-  options.errorprone.disable("UnnecessaryParentheses")
-  options.errorprone.disable("DoNotCallSuggester")
-  options.errorprone.disable("InlineMeSuggester")
-  options.errorprone.disable("MutablePublicArray")
-  options.errorprone.disable("DefaultCharset")
-  options.errorprone.disable("InconsistentCapitalization")
-  options.errorprone.disable("InlineFormatString")
-  options.errorprone.disable("MissingImplementsComparable")
 
   // Warnings that cause unwanted edits (e.g., inability to write informative asserts).
   options.errorprone.disable("AlreadyChecked")
@@ -229,6 +257,5 @@ tasks.withType<JavaCompile> {
   options.errorprone.disable("AlmostJavadoc")
 
   // Moving away from identity and canonical items is not planned.
-  options.errorprone.disable("ReferenceEquality")
   options.errorprone.disable("IdentityHashMapUsage")
 }

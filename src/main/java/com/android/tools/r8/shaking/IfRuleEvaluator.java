@@ -224,6 +224,7 @@ public class IfRuleEvaluator {
     return true;
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private boolean evaluateIfRuleMembersAndMaterialize(
       ProguardIfRule rule, DexClass sourceClass, DexClass targetClass) {
     Collection<ProguardMemberRule> memberKeepRules = rule.getMemberRules();
@@ -325,6 +326,7 @@ public class IfRuleEvaluator {
     return field.getOrComputeIsInlinableByJavaC(appView.dexItemFactory());
   }
 
+  @SuppressWarnings("BadImport")
   private void materializeIfRule(ProguardIfRule rule, Set<DexReference> preconditions) {
     DexItemFactory dexItemFactory = appView.dexItemFactory();
     ProguardIfRule materializedRule = rule.materialize(dexItemFactory, preconditions);

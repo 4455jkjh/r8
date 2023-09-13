@@ -292,7 +292,6 @@ public class RetraceTests extends TestBase {
 
   @Test
   public void testBootLoaderAndNamedModulesStackTrace() throws Exception {
-    assumeTrue("b/170293908", false);
     runRetraceTest(new NamedModuleStackTrace());
   }
 
@@ -538,7 +537,7 @@ public class RetraceTests extends TestBase {
       command.add(parameters.getRuntime().asCf().getJavaExecutable().toString());
       command.add("-ea");
       command.add("-cp");
-      command.add(ToolHelper.R8_RETRACE_JAR.toString());
+      command.add(ToolHelper.getRetracePath().toString());
       if (allowExperimentalMapping) {
         command.add("-Dcom.android.tools.r8.experimentalmapping");
       }

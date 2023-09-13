@@ -77,7 +77,7 @@ public class RedundantFieldLoadAndStoreElimination extends CodeRewriterPass<AppI
   }
 
   @Override
-  protected String getTimingId() {
+  protected String getRewriterId() {
     return "RedundantFieldLoadAndStoreElimination";
   }
 
@@ -154,6 +154,7 @@ public class RedundantFieldLoadAndStoreElimination extends CodeRewriterPass<AppI
     }
 
     @Override
+    @SuppressWarnings("EqualsGetClass")
     public boolean equals(Object other) {
       if (this == other) {
         return true;
@@ -186,6 +187,7 @@ public class RedundantFieldLoadAndStoreElimination extends CodeRewriterPass<AppI
     }
 
     @Override
+    @SuppressWarnings("EqualsGetClass")
     public boolean equals(Object other) {
       if (this == other) {
         return true;
@@ -215,6 +217,7 @@ public class RedundantFieldLoadAndStoreElimination extends CodeRewriterPass<AppI
     }
 
     @Override
+    @SuppressWarnings("ReferenceEquality")
     public boolean equals(Object other) {
       if (!(other instanceof FieldAndObject)) {
         return false;
@@ -337,6 +340,7 @@ public class RedundantFieldLoadAndStoreElimination extends CodeRewriterPass<AppI
       return appView.libraryMethodOptimizer().isFinalLibraryField(field.getDefinition());
     }
 
+    @SuppressWarnings("ReferenceEquality")
     private DexClassAndField resolveField(DexField field) {
       if (appView.enableWholeProgramOptimizations()) {
         SingleFieldResolutionResult resolutionResult =
@@ -614,6 +618,7 @@ public class RedundantFieldLoadAndStoreElimination extends CodeRewriterPass<AppI
       return activeState.markClassAsInitialized(type);
     }
 
+    @SuppressWarnings("ReferenceEquality")
     private void markMostRecentInitClassForRemoval(DexType initializedType) {
       InitClass mostRecentInitClass = activeState.getMostRecentInitClass();
       if (mostRecentInitClass != null && mostRecentInitClass.getClassValue() == initializedType) {
@@ -1093,6 +1098,7 @@ public class RedundantFieldLoadAndStoreElimination extends CodeRewriterPass<AppI
       clearMostRecentStaticFieldWrites();
     }
 
+    @SuppressWarnings("ReferenceEquality")
     public void clearMostRecentInstanceFieldWrite(DexField field) {
       if (mostRecentInstanceFieldWrites != null) {
         mostRecentInstanceFieldWrites.keySet().removeIf(key -> key.field == field);
@@ -1308,6 +1314,7 @@ public class RedundantFieldLoadAndStoreElimination extends CodeRewriterPass<AppI
       }
     }
 
+    @SuppressWarnings("ReferenceEquality")
     public void removeNonFinalInstanceFields(DexField field) {
       if (nonFinalInstanceFieldValues != null) {
         nonFinalInstanceFieldValues.keySet().removeIf(key -> key.field == field);

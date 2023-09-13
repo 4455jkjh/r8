@@ -19,6 +19,7 @@ import archive_desugar_jdk_libs
 import download_kotlin_dev
 import gradle
 import notify
+import testing_state
 import utils
 
 if utils.is_python3():
@@ -182,17 +183,13 @@ def ParseOptions():
       help='Print the execution time of the slowest tests..',
       default=False, action='store_true')
   result.add_option(
-      '--testing-state-name',
-      help='Set an explict name for the testing state '
-          '(used in conjunction with --with/reset-testing-state).')
+      '--testing-state-dir',
+      help='Explicitly set the testing state directory '
+           '(defaults to build/test-state/<git-branch>).')
   result.add_option(
-      '--with-testing-state',
-      help='Run/resume tests using testing state.',
-      default=False, action='store_true')
-  result.add_option(
-      '--reset-testing-state',
-      help='Clean the testing state and rerun tests (implies --with-testing-state).',
-      default=False, action='store_true')
+      '--rerun',
+      help='Rerun tests (implicitly enables testing state).',
+      choices=testing_state.CHOICES)
   result.add_option(
       '--stacktrace',
       help='Pass --stacktrace to the gradle run',
@@ -362,13 +359,10 @@ def Main():
     gradle_args.append('-Pdesugar_jdk_libs=' + desugar_jdk_libs)
   if options.no_arttests:
     gradle_args.append('-Pno_arttests=true')
-  if options.reset_testing_state:
-    gradle_args.append('-Ptesting-state')
-    gradle_args.append('-Preset-testing-state')
-  elif options.with_testing_state:
-    gradle_args.append('-Ptesting-state')
-  if options.testing_state_name:
-    gradle_args.append('-Ptesting-state-name=' + options.testing_state_name)
+
+  # Testing state is only supported in new-gradle going forward
+  if options.new_gradle and options.rerun:
+    testing_state.set_up_test_state(gradle_args, options.rerun, options.testing_state_dir)
 
   # Enable completeness testing of ART profile rewriting.
   gradle_args.append('-Part_profile_rewriting_completeness_check=true')
@@ -488,7 +482,6 @@ def Main():
       return archive_and_return(return_code, options)
 
   return 0
-
 
 def archive_and_return(return_code, options):
   if return_code != 0:

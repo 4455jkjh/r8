@@ -34,7 +34,6 @@ import com.android.tools.r8.naming.Minifier.MinificationClassNamingStrategy;
 import com.android.tools.r8.naming.Minifier.MinifierMemberNamingStrategy;
 import com.android.tools.r8.position.Position;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
-import com.android.tools.r8.utils.Reporter;
 import com.android.tools.r8.utils.Timing;
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
@@ -156,6 +155,10 @@ public class ProguardMapMinifier {
     timing.begin("MinifyIdentifiers");
     new IdentifierMinifier(appView, lens).run(executorService);
     timing.end();
+
+    timing.begin("RecordInvokeDynamicRewrite");
+    new RecordInvokeDynamicInvokeCustomRewriter(appView, lens).run(executorService);
+    timing.begin("MinifyIdentifiers");
 
     appView.notifyOptimizationFinishedForTesting();
     return lens;
@@ -299,6 +302,7 @@ public class ProguardMapMinifier {
     }
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private void checkAndAddMappedNames(DexType type, DexString mappedName, Position position) {
     if (mappedNames.inverse().containsKey(mappedName)
         && mappedNames.inverse().get(mappedName) != type) {
@@ -333,6 +337,7 @@ public class ProguardMapMinifier {
     }
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private void computeDefaultInterfaceMethodMappingsForType(
       DexType type,
       ClassNamingForMapApplier classNaming,
@@ -428,17 +433,16 @@ public class ProguardMapMinifier {
 
     private final Map<DexReference, MemberNaming> mappedNames;
     private final DexItemFactory factory;
-    private final Reporter reporter;
 
     public ApplyMappingMemberNamingStrategy(
         AppView<AppInfoWithLiveness> appView, Map<DexReference, MemberNaming> mappedNames) {
       super(appView);
       this.mappedNames = mappedNames;
       this.factory = appView.dexItemFactory();
-      this.reporter = appView.options().reporter;
     }
 
     @Override
+    @SuppressWarnings("ReferenceEquality")
     public DexString next(
         DexEncodedMethod method,
         InternalNamingState internalState,
@@ -521,6 +525,7 @@ public class ProguardMapMinifier {
       return true;
     }
 
+    @SuppressWarnings("UnusedVariable")
     void reportReservationError(DexReference source, DexString name) {
       MemberNaming memberNaming = mappedNames.get(source);
       assert source.isDexMethod() || source.isDexField();
@@ -539,6 +544,7 @@ public class ProguardMapMinifier {
     private final Set<DexReference> unmappedReferences;
     private final Map<DexString, DexType> classRenamingsMappingToDifferentName;
 
+    @SuppressWarnings("ReferenceEquality")
     ProguardMapMinifiedRenaming(
         AppView<? extends AppInfoWithClassHierarchy> appView,
         ClassRenaming classRenaming,

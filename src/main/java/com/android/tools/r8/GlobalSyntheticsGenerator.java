@@ -71,6 +71,7 @@ import java.util.concurrent.ExecutorService;
 @Keep
 public class GlobalSyntheticsGenerator {
 
+  @SuppressWarnings("ReferenceEquality")
   private static boolean ensureAllGlobalSyntheticsModeled(SyntheticNaming naming) {
     for (SyntheticKind kind : naming.kinds()) {
       assert !kind.isGlobal()
@@ -175,7 +176,9 @@ public class GlobalSyntheticsGenerator {
     RecordDesugaring.ensureRecordClassHelper(
         appView,
         synthesizingContext,
-        recordTagClass -> recordTagClass.programMethods().forEach(methodsToProcess::add));
+        recordTagClass -> recordTagClass.programMethods().forEach(methodsToProcess::add),
+        null,
+        null);
 
     VarHandleDesugaringEventConsumer varHandleEventConsumer =
         new VarHandleDesugaringEventConsumer() {
@@ -299,6 +302,7 @@ public class GlobalSyntheticsGenerator {
         executorService);
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private static boolean isExceptionType(AppView<?> appView, DexLibraryClass libraryClass) {
     DexType throwableType = appView.dexItemFactory().throwableType;
     DexType currentType = libraryClass.getType();
