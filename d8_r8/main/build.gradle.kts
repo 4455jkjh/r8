@@ -19,6 +19,7 @@ java {
   }
   sourceCompatibility = JvmCompatibility.sourceCompatibility
   targetCompatibility = JvmCompatibility.targetCompatibility
+  withSourcesJar()
 }
 
 dependencies {
@@ -33,14 +34,6 @@ dependencies {
   compileOnly(Deps.kotlinMetadata)
   errorprone(Deps.errorprone)
 }
-
-val thirdPartyCompileDependenciesTask = ensureThirdPartyDependencies(
-  "compileDeps",
-  listOf(Jdk.JDK_11.getThirdPartyDependency()))
-
-val thirdPartyResourceDependenciesTask = ensureThirdPartyDependencies(
-  "resourceDeps",
-  listOf(ThirdPartyDeps.apiDatabase))
 
 val keepAnnoJarTask = projectTask("keepanno", "jar")
 val resourceShrinkerJarTask = projectTask("resourceshrinker", "jar")
@@ -65,10 +58,11 @@ tasks {
   }
 
   withType<ProcessResources> {
-    dependsOn(thirdPartyResourceDependenciesTask)
+    dependsOn(gradle.includedBuild("shared").task(":downloadDeps"))
   }
 
   val consolidatedLicense by registering {
+    dependsOn(gradle.includedBuild("shared").task(":downloadDeps"))
     val root = getRoot()
     val r8License = root.resolve("LICENSE")
     val libraryLicense = root.resolve("LIBRARY-LICENSE")
@@ -78,7 +72,7 @@ tasks {
       libraryLicenseFiles,
       mainJarDependencies().map(::zipTree))
 
-    val license = rootProject.layout.buildDirectory.file("generatedLicense/LICENSE").get().asFile
+    val license = getRoot().resolveAll("build", "generatedLicense", "LICENSE")
     outputs.files(license)
 
     doLast {
@@ -123,23 +117,26 @@ tasks {
   }
 
   val swissArmyKnife by registering(Jar::class) {
+    dependsOn(keepAnnoJarTask)
+    dependsOn(resourceShrinkerJarTask)
+    dependsOn(gradle.includedBuild("shared").task(":downloadDeps"))
     from(sourceSets.main.get().output)
+    from(keepAnnoJarTask.outputs.files.map(::zipTree))
+    from(resourceShrinkerJarTask.outputs.files.map(::zipTree))
     from(consolidatedLicense)
     manifest {
       attributes["Main-Class"] = "com.android.tools.r8.SwissArmyKnife"
     }
     exclude("META-INF/*.kotlin_module")
     exclude("**/*.kotlin_metadata")
-    archiveFileName.set("r8-swissarmyknife.jar")
+    destinationDirectory.set(getRoot().resolveAll("build", "libs"))
+    archiveFileName.set("r8-full-exclude-deps.jar")
   }
 
   val depsJar by registering(Jar::class) {
-    dependsOn(keepAnnoJarTask)
-    dependsOn(resourceShrinkerJarTask)
+    dependsOn(gradle.includedBuild("shared").task(":downloadDeps"))
     dependsOn(resourceShrinkerDepsTask)
     from(mainJarDependencies().map(::zipTree))
-    from(keepAnnoJarTask.outputs.files.map(::zipTree))
-    from(resourceShrinkerJarTask.outputs.files.map(::zipTree))
     from(resourceShrinkerDepsTask.outputs.files.map(::zipTree))
     exclude("**/module-info.class")
     exclude("**/*.kotlin_metadata")
@@ -168,7 +165,7 @@ tasks {
     val swissArmy = swissArmyKnife.get().outputs.getFiles().getSingleFile()
     val deps = depsJar.get().outputs.files.getSingleFile()
     inputs.files(listOf(swissArmy, deps))
-    val output = getRoot().resolveAll("build", "libs", "r8-with-relocated-deps.jar")
+    val output = getRoot().resolveAll("build", "libs", "r8.jar")
     outputs.file(output)
     commandLine = baseCompilerCommandLine(
       swissArmy,
@@ -223,7 +220,7 @@ tasks.withType<KotlinCompile> {
 }
 
 tasks.withType<JavaCompile> {
-  dependsOn(thirdPartyCompileDependenciesTask)
+  dependsOn(gradle.includedBuild("shared").task(":downloadDeps"))
   println("NOTE: Running with JDK: " + org.gradle.internal.jvm.Jvm.current().javaHome)
 
   // Enable error prone for D8/R8 main sources.

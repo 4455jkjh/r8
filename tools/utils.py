@@ -71,7 +71,6 @@ R8_TESTS_JAR = os.path.join(LIBS, 'r8tests.jar')
 R8LIB_TESTS_JAR = os.path.join(LIBS, 'r8libtestdeps-cf.jar')
 R8_TESTS_DEPS_JAR = os.path.join(LIBS, 'test_deps_all.jar')
 R8LIB_TESTS_DEPS_JAR = R8_TESTS_DEPS_JAR
-MAVEN_ZIP = os.path.join(LIBS, 'r8.zip')
 MAVEN_ZIP_LIB = os.path.join(LIBS, 'r8lib.zip')
 LIBRARY_DESUGAR_CONVERSIONS_LEGACY_ZIP = os.path.join(
     CUSTOM_CONVERSION_DIR, 'library_desugar_conversions_legacy.jar')
@@ -312,7 +311,9 @@ def IsOsX():
   return defines.IsOsX()
 
 def EnsureDepFromGoogleCloudStorage(dep, tgz, sha1, msg):
-  if not os.path.exists(dep) or os.path.getmtime(tgz) < os.path.getmtime(sha1):
+  if (not os.path.exists(dep)
+     or not os.path.exists(tgz)
+     or os.path.getmtime(tgz) < os.path.getmtime(sha1)):
     DownloadFromGoogleCloudStorage(sha1)
     # Update the mtime of the tar file to make sure we do not run again unless
     # there is an update.

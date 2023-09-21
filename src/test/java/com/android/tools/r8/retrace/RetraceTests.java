@@ -35,6 +35,7 @@ import com.android.tools.r8.retrace.stacktraces.CircularReferenceStackTrace;
 import com.android.tools.r8.retrace.stacktraces.ClassWithDashStackTrace;
 import com.android.tools.r8.retrace.stacktraces.ColonInFileNameStackTrace;
 import com.android.tools.r8.retrace.stacktraces.DifferentLineNumberSpanStackTrace;
+import com.android.tools.r8.retrace.stacktraces.ExceptionMessageWithClassNameInMessage;
 import com.android.tools.r8.retrace.stacktraces.FileNameExtensionStackTrace;
 import com.android.tools.r8.retrace.stacktraces.FoundMethodVerboseStackTrace;
 import com.android.tools.r8.retrace.stacktraces.IdentityMappingStackTrace;
@@ -46,6 +47,7 @@ import com.android.tools.r8.retrace.stacktraces.InlineNoLineNumberAssumeNoInline
 import com.android.tools.r8.retrace.stacktraces.InlineNoLineNumberStackTrace;
 import com.android.tools.r8.retrace.stacktraces.InlineNoLineWithBaseEntryNumberAssumeNoInlineStackTrace;
 import com.android.tools.r8.retrace.stacktraces.InlinePreambleNoOriginalStackTrace;
+import com.android.tools.r8.retrace.stacktraces.InlineRemoveFrameJava17StackTrace;
 import com.android.tools.r8.retrace.stacktraces.InlineSourceFileContextStackTrace;
 import com.android.tools.r8.retrace.stacktraces.InlineSourceFileStackTrace;
 import com.android.tools.r8.retrace.stacktraces.InlineWithLineNumbersStackTrace;
@@ -296,6 +298,11 @@ public class RetraceTests extends TestBase {
   }
 
   @Test
+  public void testExceptionMessageWithClassNameInMessage() throws Exception {
+    runRetraceTest(new ExceptionMessageWithClassNameInMessage());
+  }
+
+  @Test
   public void testUnknownSourceStackTrace() throws Exception {
     runRetraceTest(new UnknownSourceStackTrace());
   }
@@ -308,6 +315,11 @@ public class RetraceTests extends TestBase {
   @Test
   public void testInlineSourceFileStackTrace() throws Exception {
     runRetraceTest(new InlineSourceFileStackTrace());
+  }
+
+  @Test
+  public void testInlineRemoveFrameJava17StackTrace() throws Exception {
+    runRetraceTest(new InlineRemoveFrameJava17StackTrace());
   }
 
   @Test

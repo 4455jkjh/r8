@@ -296,7 +296,7 @@ def Main():
     gradle_args.append('-Pslow_tests=1')
   if options.tool:
     gradle_args.append('-Ptool=%s' % options.tool)
-  if options.one_line_per_test:
+  if options.one_line_per_test and not options.new_gradle:
     gradle_args.append('-Pone_line_per_test')
   if options.test_namespace:
     gradle_args.append('-Ptest_namespace=%s' % options.test_namespace)
@@ -342,10 +342,14 @@ def Main():
     exit(1)
   if not options.no_r8lib:
     gradle_args.append('-Pr8lib')
-    # Force gradle to build a version of r8lib without dependencies for
-    # BootstrapCurrentEqualityTest.
-    gradle_args.append('R8LibNoDeps')
-    gradle_args.append('R8Retrace')
+    if options.new_gradle:
+      gradle_args.append(':test:r8LibNoDeps')
+      gradle_args.append(':test:retraceWithRelocatedDeps')
+    else:
+      # Force gradle to build a version of r8lib without dependencies for
+      # BootstrapCurrentEqualityTest.
+      gradle_args.append('R8LibNoDeps')
+      gradle_args.append('R8Retrace')
   if options.r8lib_no_deps:
     gradle_args.append('-Pr8lib_no_deps')
   if options.worktree:
@@ -372,6 +376,8 @@ def Main():
     gradle_args.append(':main:r8WithRelocatedDeps')
     gradle_args.append(':test:cleanTest')
     gradle_args.append('test:test')
+    gradle_args.append('--stacktrace')
+    gradle_args.append('-Pprint_full_stacktraces')
   else:
     gradle_args.append('r8WithRelocatedDeps')
     gradle_args.append('r8WithRelocatedDeps17')
@@ -391,9 +397,14 @@ def Main():
       print("No failing tests")
       return 0
   # Test filtering. Must always follow the 'test' task.
+  testFilterProperty = []
   for testFilter in args:
     gradle_args.append('--tests')
     gradle_args.append(testFilter)
+    testFilterProperty.append(testFilter)
+    assert not ("|" in testFilter), "| is used as separating character"
+  if len(testFilterProperty) > 0:
+    gradle_args.append("-Ptestfilter=" + "|".join(testFilterProperty))
   if options.with_code_coverage:
     # Create Jacoco report after tests.
     gradle_args.append('jacocoTestReport')

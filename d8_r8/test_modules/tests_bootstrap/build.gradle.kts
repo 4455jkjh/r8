@@ -67,15 +67,11 @@ tasks {
 
   withType<Test> {
     TestingState.setUpTestingState(this)
-
-    environment.put("USE_NEW_GRADLE_SETUP", "true")
-    environment.put("TEST_CLASSES_LOCATIONS", "$buildDir/classes/java/test")
     dependsOn(mainR8RelocatedTask)
-    systemProperty("R8_WITH_RELOCATED_DEPS", mainR8RelocatedTask.outputs.files.getSingleFile())
-    systemProperty("R8_RUNTIME_PATH", mainR8RelocatedTask.outputs.files.getSingleFile())
-
-    // TODO(b/291198792): Remove this exclusion when desugared library runs correctly.
-    exclude("com/android/tools/r8/bootstrap/HelloWorldCompiledOnArtTest**")
+    systemProperty("TEST_DATA_LOCATION",
+                   layout.buildDirectory.dir("classes/java/test").get().toString())
+    systemProperty("R8_WITH_RELOCATED_DEPS", mainR8RelocatedTask.outputs.files.singleFile)
+    systemProperty("R8_RUNTIME_PATH", mainR8RelocatedTask.outputs.files.singleFile)
   }
 
   val testJar by registering(Jar::class) {
@@ -85,6 +81,10 @@ tasks {
   }
 
   val depsJar by registering(Jar::class) {
+    dependsOn(gradle.includedBuild("shared").task(":downloadDeps"))
+    if (!project.hasProperty("no_internal")) {
+      dependsOn(gradle.includedBuild("shared").task(":downloadDepsInternal"))
+    }
     from(testDependencies().map(::zipTree))
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
     archiveFileName.set("deps.jar")

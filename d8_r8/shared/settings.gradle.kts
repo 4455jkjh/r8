@@ -5,10 +5,10 @@
 pluginManagement {
   repositories {
     maven {
-      url = uri("file:../../../third_party/dependencies")
+      url = uri("file:../../third_party/dependencies")
     }
     maven {
-      url = uri("file:../../../third_party/dependencies_new")
+      url = uri("file:../../third_party/dependencies_new")
     }
   }
 }
@@ -16,12 +16,12 @@ pluginManagement {
 dependencyResolutionManagement {
   repositories {
     maven {
-      url = uri("file:../../../third_party/dependencies")
+      url = uri("file:../../third_party/dependencies")
     }
     maven {
-      url = uri("file:../../../third_party/dependencies_new")
+      url = uri("file:../../third_party/dependencies_new")
     }
   }
 }
 
-rootProject.name = "tests_java_examplesAndroidN"
+rootProject.name = "shared"

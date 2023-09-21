@@ -58,33 +58,12 @@ dependencies {
   implementation(Deps.smaliUtil)
 }
 
-val thirdPartyCompileDependenciesTask = ensureThirdPartyDependencies(
-  "compileDeps",
-  listOf(
-    ThirdPartyDeps.apiDatabase,
-    ThirdPartyDeps.ddmLib,
-    ThirdPartyDeps.jasmin,
-    ThirdPartyDeps.jdwpTests))
-
-val thirdPartyRuntimeDependenciesTask = ensureThirdPartyDependencies(
-  "runtimeDeps",
-  testRuntimeDependencies)
-
-val thirdPartyRuntimeInternalDependenciesTask = ensureThirdPartyDependencies(
-  "runtimeInternalDeps",
-  testRuntimeInternalDependencies)
-
 val sourceSetDependenciesTasks = arrayOf(
-  projectTask("tests_java_examples", getExampleJarsTaskName("examples")),
   projectTask("tests_java_9", getExampleJarsTaskName("examplesJava9")),
   projectTask("tests_java_10", getExampleJarsTaskName("examplesJava10")),
   projectTask("tests_java_11", getExampleJarsTaskName("examplesJava11")),
   projectTask("tests_java_17", getExampleJarsTaskName("examplesJava17")),
   projectTask("tests_java_20", getExampleJarsTaskName("examplesJava20")),
-  projectTask("tests_java_examplesAndroidN", getExampleJarsTaskName("examplesAndroidN")),
-  projectTask("tests_java_examplesAndroidO", getExampleJarsTaskName("examplesAndroidO")),
-  projectTask("tests_java_examplesAndroidP", getExampleJarsTaskName("examplesAndroidP")),
-  projectTask("tests_java_kotlinR8TestResources", getExampleJarsTaskName("kotlinR8TestResources")),
 )
 
 fun testDependencies() : FileCollection {
@@ -101,14 +80,14 @@ fun testDependencies() : FileCollection {
 
 tasks {
   "compileTestJava" {
-    dependsOn(thirdPartyCompileDependenciesTask)
+    dependsOn(gradle.includedBuild("shared").task(":downloadDeps"))
   }
   withType<JavaCompile> {
     dependsOn(gradle.includedBuild("keepanno").task(":jar"))
     dependsOn(gradle.includedBuild("resourceshrinker").task(":jar"))
     dependsOn(gradle.includedBuild("main").task(":compileJava"))
     dependsOn(gradle.includedBuild("main").task(":processResources"))
-    dependsOn(thirdPartyCompileDependenciesTask)
+    dependsOn(gradle.includedBuild("shared").task(":downloadDeps"))
   }
 
   withType<KotlinCompile> {
@@ -117,14 +96,14 @@ tasks {
 
   withType<Test> {
     TestingState.setUpTestingState(this)
-    environment.put("USE_NEW_GRADLE_SETUP", "true")
-    environment.put("TEST_CLASSES_LOCATIONS", "$buildDir/classes/java/test")
     dependsOn(mainDepsJarTask)
-    dependsOn(thirdPartyRuntimeDependenciesTask)
+    dependsOn(gradle.includedBuild("shared").task(":downloadDeps"))
     if (!project.hasProperty("no_internal")) {
-      dependsOn(thirdPartyRuntimeInternalDependenciesTask)
+      dependsOn(gradle.includedBuild("shared").task(":downloadDepsInternal"))
     }
     dependsOn(*sourceSetDependenciesTasks)
+    systemProperty("TEST_DATA_LOCATION",
+                   layout.buildDirectory.dir("classes/java/test").get().toString())
     systemProperty("KEEP_ANNO_JAVAC_BUILD_DIR", keepAnnoCompileTask.outputs.files.getAsPath())
     // This path is set when compiling examples jar task in DependenciesPlugin.
     systemProperty("EXAMPLES_JAVA_11_JAVAC_BUILD_DIR",
@@ -138,6 +117,7 @@ tasks {
       mainCompileTask.outputs.files.getAsPath().split(File.pathSeparator)[0] +
         File.pathSeparator + mainDepsJarTask.outputs.files.singleFile)
     systemProperty("R8_DEPS", mainDepsJarTask.outputs.files.singleFile)
+    systemProperty("com.android.tools.r8.artprofilerewritingcompletenesscheck", "true")
   }
 
   val testJar by registering(Jar::class) {
@@ -149,9 +129,9 @@ tasks {
   }
 
   val depsJar by registering(Jar::class) {
+    dependsOn(gradle.includedBuild("shared").task(":downloadDeps"))
     dependsOn(gradle.includedBuild("keepanno").task(":jar"))
     dependsOn(gradle.includedBuild("resourceshrinker").task(":jar"))
-    dependsOn(thirdPartyCompileDependenciesTask)
     from(testDependencies().map(::zipTree))
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
     archiveFileName.set("deps.jar")

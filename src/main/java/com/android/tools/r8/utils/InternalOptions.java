@@ -27,6 +27,7 @@ import com.android.tools.r8.androidapi.ComputedApiLevel;
 import com.android.tools.r8.cf.CfVersion;
 import com.android.tools.r8.debuginfo.DebugRepresentation;
 import com.android.tools.r8.dex.ApplicationReader.ProgramClassConflictResolver;
+import com.android.tools.r8.dex.Constants;
 import com.android.tools.r8.dex.Marker;
 import com.android.tools.r8.dex.Marker.Backend;
 import com.android.tools.r8.dex.Marker.Tool;
@@ -173,7 +174,7 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
     }
   }
 
-  public static final CfVersion SUPPORTED_CF_VERSION = CfVersion.V21;
+  public static final CfVersion SUPPORTED_CF_VERSION = CfVersion.V22;
 
   public static final int SUPPORTED_DEX_VERSION =
       AndroidApiLevel.LATEST.getDexVersion().getIntValue();
@@ -1551,6 +1552,8 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
     public int maxSizeForFilledNewArrayOfInts = 200;
     public int maxSizeForFilledNewArrayOfIntsWhenNewArrayFilledDataApplicable = 5;
     public int maxSizeForFilledNewArrayOfReferences = 200;
+    // All DEX aput instructions takes an 8-bit wide register value for the source.
+    public int maxMaterializingConstants = Constants.U8BIT_MAX - 16;
 
     // Arbitrary limits of number of inputs to fill-array-data.
     public int minSizeForFilledArrayData = 2;
@@ -1747,18 +1750,9 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
         return simpleInliningInstructionLimit;
       }
       // Allow 4 instructions when using LIR regardless of backend.
-      if (options.testing.useLir) {
-        // TODO(b/288226522): We should reevaluate this for size and other inputs as it regresses
-        //  compared to DEX code with limit 5 for tivi. This is set to 5 to avoid discard errors
-        //  in chrome. Using 5 also improves size for chrome compared to a lower value.
-        return 5;
-      }
-      // Allow 3 instructions when generating to class files.
-      if (options.isGeneratingClassFiles()) {
-        return 3;
-      }
-      // Allow the size of the dex code to be up to 5 bytes.
-      assert options.isGeneratingDex();
+      // TODO(b/288226522): We should reevaluate this for size and other inputs as it regresses
+      //  compared to DEX code with limit 5 for tivi. This is set to 5 to avoid discard errors
+      //  in chrome. Using 5 also improves size for chrome compared to a lower value.
       return 5;
     }
 
@@ -2144,19 +2138,9 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
   public static class TestingOptions {
 
     public boolean roundtripThroughLir = false;
-    private boolean useLir = System.getProperty("com.android.tools.r8.nolir") == null;
-    private boolean convertLir = System.getProperty("com.android.tools.r8.convertlir") == null;
-
-    public void enableLir() {
-      useLir = true;
-    }
-
-    public void disableLir() {
-      useLir = false;
-    }
 
     public boolean canUseLir(AppView<?> appView) {
-      return useLir && appView.enableWholeProgramOptimizations();
+      return appView.enableWholeProgramOptimizations();
     }
 
     // As part of integrating LIR the compiler is split in three phases: pre, supported, and post.
@@ -2173,7 +2157,7 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
         throws ExecutionException {
       assert isPreLirPhase();
       currentPhase = LirPhase.SUPPORTED;
-      if (!canUseLir(appView) || !convertLir) {
+      if (!canUseLir(appView)) {
         return;
       }
       // Convert code objects to LIR.

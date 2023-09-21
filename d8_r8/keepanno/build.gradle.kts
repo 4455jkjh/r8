@@ -13,6 +13,7 @@ java {
   }
   sourceCompatibility = JvmCompatibility.sourceCompatibility
   targetCompatibility = JvmCompatibility.targetCompatibility
+  withSourcesJar()
 }
 
 dependencies {
@@ -20,12 +21,11 @@ dependencies {
   compileOnly(Deps.guava)
 }
 
-val thirdPartyCompileDependenciesTask = ensureThirdPartyDependencies(
-  "compileDeps",
-  listOf(Jdk.JDK_11.getThirdPartyDependency()))
-
 tasks {
-  withType<JavaCompile> {
-    dependsOn(thirdPartyCompileDependenciesTask)
+  val keepAnnoJar by registering(Jar::class) {
+    dependsOn(gradle.includedBuild("shared").task(":downloadDeps"))
+    from(sourceSets.main.get().output)
+    destinationDirectory.set(getRoot().resolveAll("build", "libs"))
+    archiveFileName.set("keepanno-annotations.jar")
   }
 }

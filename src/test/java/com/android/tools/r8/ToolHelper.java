@@ -3,6 +3,7 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8;
 
+import static com.android.tools.r8.ToolHelper.TestDataSourceSet.computeLegacyOrGradleSpecifiedLocation;
 import static com.android.tools.r8.utils.FileUtils.CLASS_EXTENSION;
 import static com.android.tools.r8.utils.FileUtils.JAVA_EXTENSION;
 import static com.android.tools.r8.utils.FileUtils.isDexFile;
@@ -39,6 +40,7 @@ import com.android.tools.r8.utils.ExceptionUtils;
 import com.android.tools.r8.utils.FileUtils;
 import com.android.tools.r8.utils.InternalOptions;
 import com.android.tools.r8.utils.ListUtils;
+import com.android.tools.r8.utils.Pair;
 import com.android.tools.r8.utils.Reporter;
 import com.android.tools.r8.utils.StringUtils;
 import com.android.tools.r8.utils.Timing;
@@ -95,7 +97,7 @@ import org.junit.rules.TemporaryFolder;
 public class ToolHelper {
 
   public static boolean isNewGradleSetup() {
-    return "true".equals(System.getenv("USE_NEW_GRADLE_SETUP"));
+    return "true".equals(System.getProperty("USE_NEW_GRADLE_SETUP"));
   }
 
   public static String getProjectRoot() {
@@ -109,12 +111,48 @@ public class ToolHelper {
     return current + "/";
   }
 
+  public enum TestDataSourceSet {
+    LEGACY(null),
+    TESTS_JAVA_8("tests_java_8/build/classes/java/test"),
+    TESTS_BOOTSTRAP("tests_bootstrap/build/classes/java/test"),
+    SPECIFIED_BY_GRADLE_PROPERTY(null);
+
+    private final String destination;
+
+    TestDataSourceSet(String destination) {
+      this.destination = destination;
+    }
+
+    public boolean isLegacy() {
+      return this == LEGACY;
+    }
+
+    public boolean isSpecifiedByGradleProperty() {
+      return this == SPECIFIED_BY_GRADLE_PROPERTY;
+    }
+
+    public Path getBuildDir() {
+      if (isLegacy()) {
+        return Paths.get(BUILD_DIR, "classes", "java", "test");
+      } else if (isSpecifiedByGradleProperty()) {
+        assert System.getProperty("TEST_DATA_LOCATION") != null;
+        return Paths.get(System.getProperty("TEST_DATA_LOCATION"));
+      } else {
+        return Paths.get(getProjectRoot(), "d8_r8", "test_modules", destination);
+      }
+    }
+
+    public static TestDataSourceSet computeLegacyOrGradleSpecifiedLocation() {
+      return isNewGradleSetup()
+          ? TestDataSourceSet.SPECIFIED_BY_GRADLE_PROPERTY
+          : TestDataSourceSet.LEGACY;
+    }
+  }
+
   public static final String SOURCE_DIR = getProjectRoot() + "src/";
   public static final String MAIN_SOURCE_DIR = getProjectRoot() + "src/main/java/";
   public static final String LIBRARY_DESUGAR_SOURCE_DIR = getProjectRoot() + "src/library_desugar/";
   public static final String BUILD_DIR = getProjectRoot() + "build/";
-  public static final String TEST_MODULE_DIR = getProjectRoot() + "d8_r8/test_modules/";
-  public static final String GENERATED_TEST_BUILD_DIR = BUILD_DIR + "generated/test/";
   public static final String LIBS_DIR = BUILD_DIR + "libs/";
   public static final String THIRD_PARTY_DIR = getProjectRoot() + "third_party/";
   public static final String DEPENDENCIES = THIRD_PARTY_DIR + "dependencies/";
@@ -125,17 +163,15 @@ public class ToolHelper {
   public static final String EXAMPLES_DIR = TESTS_DIR + "examples/";
   public static final String EXAMPLES_ANDROID_O_DIR = TESTS_DIR + "examplesAndroidO/";
   public static final String EXAMPLES_ANDROID_P_DIR = TESTS_DIR + "examplesAndroidP/";
-  public static final String TESTS_BUILD_DIR = BUILD_DIR + "test/";
-  public static final String EXAMPLES_BUILD_DIR = TESTS_BUILD_DIR + "examples/";
+  public static final String EXAMPLES_BUILD_DIR = THIRD_PARTY_DIR + "examples/";
   public static final String EXAMPLES_CF_DIR = EXAMPLES_BUILD_DIR + "classes/";
-  public static final String EXAMPLES_ANDROID_N_BUILD_DIR = TESTS_BUILD_DIR + "examplesAndroidN/";
-  public static final String EXAMPLES_ANDROID_O_BUILD_DIR = TESTS_BUILD_DIR + "examplesAndroidO/";
-  public static final String EXAMPLES_ANDROID_P_BUILD_DIR = TESTS_BUILD_DIR + "examplesAndroidP/";
+  public static final String EXAMPLES_ANDROID_N_BUILD_DIR = THIRD_PARTY_DIR + "examplesAndroidN/";
+  public static final String EXAMPLES_ANDROID_O_BUILD_DIR = THIRD_PARTY_DIR + "examplesAndroidO/";
+  public static final String EXAMPLES_ANDROID_P_BUILD_DIR = THIRD_PARTY_DIR + "examplesAndroidP/";
+  public static final String TESTS_BUILD_DIR = BUILD_DIR + "test/";
   public static final String EXAMPLES_JAVA9_BUILD_DIR = TESTS_BUILD_DIR + "examplesJava9/";
   public static final String EXAMPLES_JAVA10_BUILD_DIR = TESTS_BUILD_DIR + "examplesJava10/";
   public static final String EXAMPLES_JAVA11_JAR_DIR = TESTS_BUILD_DIR + "examplesJava11/";
-  public static final String EXAMPLES_PROTO_BUILD_DIR = TESTS_BUILD_DIR + "examplesProto/";
-  public static final String GENERATED_PROTO_BUILD_DIR = GENERATED_TEST_BUILD_DIR + "proto/";
   public static final String SMALI_BUILD_DIR = THIRD_PARTY_DIR + "smali/";
 
   public static String getExamplesJava11BuildDir() {
@@ -453,7 +489,7 @@ public class ToolHelper {
     }
 
     public static DexVm fromVersion(Version version) {
-      return SHORT_NAME_MAP.get(version.shortName + "_" + Kind.HOST.toString());
+      return SHORT_NAME_MAP.get(version.shortName + "_" + Kind.HOST);
     }
 
     public boolean isEqualTo(DexVm other) {
@@ -591,7 +627,7 @@ public class ToolHelper {
 
     private DexVm version;
     private boolean withArtFrameworks;
-    private ArtResultCacheLookupKey artResultCacheLookupKey;
+    private CacheLookupKey artResultCacheLookupKey;
     private boolean noCaching = false;
 
     public ArtCommandBuilder() {
@@ -646,7 +682,7 @@ public class ToolHelper {
     }
 
     private boolean useCache() {
-      return !noCaching && CommandResultCache.getInstance() != null;
+      return !noCaching && CommandResultCache.isEnabled();
     }
 
     public void cacheResult(ProcessResult result) {
@@ -654,18 +690,20 @@ public class ToolHelper {
       // put invalid entries into the cache.
       if (useCache() && result.exitCode == 0) {
         assert artResultCacheLookupKey != null;
-        CommandResultCache.getInstance().putResult(result, artResultCacheLookupKey);
+        CommandResultCache.getInstance().putResult(result, artResultCacheLookupKey, null);
       }
     }
 
-    public ProcessResult getCachedResults() {
+    public ProcessResult getCachedResults() throws IOException {
       if (!useCache()) {
         return null;
       }
       assert artResultCacheLookupKey == null;
       // Reuse the key when storing results if this is not already cached.
-      artResultCacheLookupKey = new ArtResultCacheLookupKey(this::hashParts);
-      return CommandResultCache.getInstance().lookup(artResultCacheLookupKey);
+      artResultCacheLookupKey = new CacheLookupKey(this::hashParts);
+      Pair<ProcessResult, Path> lookup =
+          CommandResultCache.getInstance().lookup(artResultCacheLookupKey);
+      return lookup == null ? null : lookup.getFirst();
     }
 
     private void hashParts(Hasher hasher) {
@@ -696,11 +734,11 @@ public class ToolHelper {
     }
   }
 
-  private static class ArtResultCacheLookupKey {
+  public static class CacheLookupKey {
     private final Consumer<Hasher> hasherConsumer;
     private String hash;
 
-    public ArtResultCacheLookupKey(Consumer<Hasher> hasherConsumer) {
+    public CacheLookupKey(Consumer<Hasher> hasherConsumer) {
       this.hasherConsumer = hasherConsumer;
     }
 
@@ -714,7 +752,7 @@ public class ToolHelper {
     }
   }
 
-  private static class CommandResultCache {
+  public static class CommandResultCache {
     private static CommandResultCache INSTANCE =
         System.getProperty("command_cache_dir") != null
             ? new CommandResultCache(Paths.get(System.getProperty("command_cache_dir")))
@@ -730,16 +768,24 @@ public class ToolHelper {
       return INSTANCE;
     }
 
-    private Path getStdoutFile(ArtResultCacheLookupKey artResultCacheLookupKey) {
-      return path.resolve(artResultCacheLookupKey.getHash() + ".stdout");
+    public static boolean isEnabled() {
+      return getInstance() != null;
     }
 
-    private Path getStderrFile(ArtResultCacheLookupKey artResultCacheLookupKey) {
-      return path.resolve(artResultCacheLookupKey.getHash() + ".stderr");
+    private Path getStdoutFile(CacheLookupKey cacheLookupKey) {
+      return path.resolve(cacheLookupKey.getHash() + ".stdout");
     }
 
-    private Path getExitCodeFile(ArtResultCacheLookupKey artResultCacheLookupKey) {
-      return path.resolve(artResultCacheLookupKey.getHash());
+    private Path getStderrFile(CacheLookupKey cacheLookupKey) {
+      return path.resolve(cacheLookupKey.getHash() + ".stderr");
+    }
+
+    private Path getOutputFile(CacheLookupKey cacheLookupKey) {
+      return path.resolve(cacheLookupKey.getHash() + ".output");
+    }
+
+    private Path getExitCodeFile(CacheLookupKey cacheLookupKey) {
+      return path.resolve(cacheLookupKey.getHash());
     }
 
     private Path getTempFile(Path path) {
@@ -758,38 +804,47 @@ public class ToolHelper {
       return "";
     }
 
-    public ProcessResult lookup(ArtResultCacheLookupKey artResultCacheLookupKey) {
+    public Pair<ProcessResult, Path> lookup(CacheLookupKey cacheLookupKey) {
       // TODO Add concurrency handling!
-      Path exitCodeFile = getExitCodeFile(artResultCacheLookupKey);
+      Path exitCodeFile = getExitCodeFile(cacheLookupKey);
       if (exitCodeFile.toFile().exists()) {
         int exitCode = Integer.parseInt(getStringContent(exitCodeFile));
         // Because of the temp files and order of writing we should never get here with an
         // inconsistent state. It is possible, although unlikely, that the stdout/stderr
         // (and even exitcode if art is non deterministic) are from different, process ids etc,
         // but this should have no impact.
-        return new ProcessResult(
-            exitCode,
-            getStringContent(getStdoutFile(artResultCacheLookupKey)),
-            getStringContent(getStderrFile(artResultCacheLookupKey)));
+
+        Path outputFile = getOutputFile(cacheLookupKey);
+        return new Pair(
+            new ProcessResult(
+                exitCode,
+                getStringContent(getStdoutFile(cacheLookupKey)),
+                getStringContent(getStderrFile(cacheLookupKey))),
+            outputFile.toFile().exists() ? outputFile : null);
       }
       return null;
     }
 
-    public void putResult(ProcessResult result, ArtResultCacheLookupKey artResultCacheLookupKey) {
+    public void putResult(ProcessResult result, CacheLookupKey cacheLookupKey, Path output) {
       try {
         String exitCode = "" + result.exitCode;
         // We avoid race conditions of writing vs reading by first writing all 3 files to temp
         // files, then moving these to the result files, moving last the exitcode file (which is
         // what we use as cache present check)
-        Path exitCodeFile = getExitCodeFile(artResultCacheLookupKey);
+        Path exitCodeFile = getExitCodeFile(cacheLookupKey);
         Path exitCodeTempFile = getTempFile(exitCodeFile);
-        Path stdoutFile = getStdoutFile(artResultCacheLookupKey);
+        Path stdoutFile = getStdoutFile(cacheLookupKey);
         Path stdoutTempFile = getTempFile(stdoutFile);
-        Path stderrFile = getStderrFile(artResultCacheLookupKey);
+        Path stderrFile = getStderrFile(cacheLookupKey);
         Path stderrTempFile = getTempFile(stderrFile);
+        Path outputfile = getOutputFile(cacheLookupKey);
+        Path outputTempFile = getTempFile(outputfile);
         Files.write(exitCodeTempFile, exitCode.getBytes(StandardCharsets.UTF_8));
         Files.write(stdoutTempFile, result.stdout.getBytes(StandardCharsets.UTF_8));
         Files.write(stderrTempFile, result.stderr.getBytes(StandardCharsets.UTF_8));
+        if (output != null) {
+          Files.copy(output, outputTempFile);
+        }
         // Order is important, move exitcode file last!
         Files.move(
             stdoutTempFile,
@@ -801,6 +856,13 @@ public class ToolHelper {
             stderrFile,
             StandardCopyOption.ATOMIC_MOVE,
             StandardCopyOption.REPLACE_EXISTING);
+        if (output != null) {
+          Files.move(
+              outputTempFile,
+              outputfile,
+              StandardCopyOption.ATOMIC_MOVE,
+              StandardCopyOption.REPLACE_EXISTING);
+        }
         Files.move(
             exitCodeTempFile,
             exitCodeFile,
@@ -1006,11 +1068,16 @@ public class ToolHelper {
     }
   }
 
-  public static byte[] getClassAsBytes(Class clazz) throws IOException {
+  public static byte[] getClassAsBytes(Class<?> clazz) throws IOException {
     return Files.readAllBytes(getClassFileForTestClass(clazz));
   }
 
-  public static long getClassByteCrc(Class clazz) {
+  public static byte[] getClassAsBytes(Class<?> clazz, TestDataSourceSet dataSourceSet)
+      throws IOException {
+    return Files.readAllBytes(getClassFileForTestClass(clazz, dataSourceSet));
+  }
+
+  public static long getClassByteCrc(Class<?> clazz) {
     byte[] bytes = null;
     try {
       bytes = getClassAsBytes(clazz);
@@ -1406,12 +1473,11 @@ public class ToolHelper {
   }
 
   public static Path getClassPathForTests() {
-    if (isNewGradleSetup()) {
-      assert System.getenv("TEST_CLASSES_LOCATIONS") != null;
-      return Paths.get(System.getenv("TEST_CLASSES_LOCATIONS"));
-    } else {
-      return Paths.get(BUILD_DIR, "classes", "java", "test");
-    }
+    return getClassPathForTestDataSourceSet(computeLegacyOrGradleSpecifiedLocation());
+  }
+
+  public static Path getClassPathForTestDataSourceSet(TestDataSourceSet sourceSet) {
+    return sourceSet.getBuildDir();
   }
 
   private static List<String> getNamePartsForTestPackage(Package pkg) {
@@ -1456,29 +1522,41 @@ public class ToolHelper {
   }
 
   public static Path getClassFileForTestClass(Class<?> clazz) {
+    return getClassFileForTestClass(clazz, computeLegacyOrGradleSpecifiedLocation());
+  }
+
+  public static Path getClassFileForTestClass(Class<?> clazz, TestDataSourceSet sourceSet) {
     List<String> parts = getNamePartsForTestClass(clazz);
     Path resolve =
-        getClassPathForTests().resolve(Paths.get("", parts.toArray(StringUtils.EMPTY_ARRAY)));
+        getClassPathForTestDataSourceSet(sourceSet)
+            .resolve(Paths.get("", parts.toArray(StringUtils.EMPTY_ARRAY)));
     if (!Files.exists(resolve)) {
       throw new RuntimeException("Could not find: " + resolve.toString());
     }
     return resolve;
   }
 
-  public static Collection<Path> getClassFilesForInnerClasses(Path path) throws IOException {
-    Set<Path> paths = new HashSet<>();
-    String prefix = path.toString().replace(CLASS_EXTENSION, "$");
-    paths.addAll(
-        ToolHelper.getClassFilesForTestDirectory(
-            path.getParent(), p -> p.toString().startsWith(prefix)));
-    return paths;
-  }
-
   public static Collection<Path> getClassFilesForInnerClasses(Collection<Class<?>> classes)
       throws IOException {
+    return getClassFilesForInnerClasses(computeLegacyOrGradleSpecifiedLocation(), classes);
+  }
+
+  public static Collection<Path> getClassFilesForInnerClasses(Class<?>... classes)
+      throws IOException {
+    return getClassFilesForInnerClasses(
+        computeLegacyOrGradleSpecifiedLocation(), Arrays.asList(classes));
+  }
+
+  public static Collection<Path> getClassFilesForInnerClasses(
+      TestDataSourceSet sourceSet, Class<?>... classes) throws IOException {
+    return getClassFilesForInnerClasses(sourceSet, Arrays.asList(classes));
+  }
+
+  public static Collection<Path> getClassFilesForInnerClasses(
+      TestDataSourceSet sourceSet, Collection<Class<?>> classes) throws IOException {
     Set<Path> paths = new HashSet<>();
     for (Class<?> clazz : classes) {
-      Path path = ToolHelper.getClassFileForTestClass(clazz);
+      Path path = ToolHelper.getClassFileForTestClass(clazz, sourceSet);
       String prefix = path.toString().replace(CLASS_EXTENSION, "$");
       paths.addAll(
           ToolHelper.getClassFilesForTestDirectory(
@@ -1487,17 +1565,12 @@ public class ToolHelper {
     return paths;
   }
 
-  public static Collection<Path> getClassFilesForInnerClasses(Class<?>... classes)
-      throws IOException {
-    return getClassFilesForInnerClasses(Arrays.asList(classes));
-  }
-
-  public static Path getFileNameForTestClass(Class clazz) {
+  public static Path getFileNameForTestClass(Class<?> clazz) {
     List<String> parts = getNamePartsForTestClass(clazz);
     return Paths.get("", parts.toArray(StringUtils.EMPTY_ARRAY));
   }
 
-  public static String getJarEntryForTestClass(Class clazz) {
+  public static String getJarEntryForTestClass(Class<?> clazz) {
     List<String> parts = getNamePartsForTestClass(clazz);
     return String.join("/", parts);
   }
