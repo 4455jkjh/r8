@@ -85,13 +85,15 @@ class TestConfigurationHelper {
 
       // Forward project properties into system properties.
       listOf(
+        "local_development",
         "slow_tests",
         "desugar_jdk_json_dir",
         "desugar_jdk_libs",
         "test_dir",
         "command_cache_dir").forEach {
-        if (project.hasProperty(it)) {
-          project.property(it)?.let { v -> test.systemProperty("slow_tests", v) }
+        val propertyName = it
+        if (project.hasProperty(propertyName)) {
+          project.property(propertyName)?.let { v -> test.systemProperty(propertyName, v) }
         }
       }
 
@@ -147,7 +149,7 @@ class TestConfigurationHelper {
         test.maxParallelForks = processors.div(userDefinedCoresPerFork.toInt())
       } else {
         // On work machines this seems to give the best test execution time (without freezing).
-        test.maxParallelForks = processors.div(3)
+        test.maxParallelForks = maxOf(processors.div(3), 1)
         // On low cpu count machines (bots) we under subscribe, so increase the count.
         if (processors == 32) {
           test.maxParallelForks = 15

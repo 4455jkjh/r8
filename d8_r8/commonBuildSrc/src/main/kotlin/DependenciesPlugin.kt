@@ -416,6 +416,10 @@ object ThirdPartyDeps {
     Paths.get("third_party", "framework").toFile(),
     Paths.get("third_party", "framework.tar.gz.sha1").toFile(),
     DependencyType.X20)
+  val googleJavaFormat = ThirdPartyDependency(
+    "google-java-format",
+    Paths.get("third_party", "google-java-format").toFile(),
+    Paths.get("third_party", "google-java-format.tar.gz.sha1").toFile())
   val gson = ThirdPartyDependency(
     "gson",
     Paths.get("third_party", "gson", "gson-2.10.1").toFile(),
@@ -451,6 +455,10 @@ object ThirdPartyDeps {
     "jdk-11-test",
     Paths.get("third_party", "openjdk", "jdk-11-test").toFile(),
     Paths.get("third_party", "openjdk", "jdk-11-test.tar.gz.sha1").toFile())
+  val junit = ThirdPartyDependency(
+    "junit",
+    Paths.get("third_party", "junit").toFile(),
+    Paths.get("third_party", "junit.tar.gz.sha1").toFile())
   val jdwpTests = ThirdPartyDependency(
     "jdwp-tests",
     Paths.get("third_party", "jdwp-tests").toFile(),
@@ -628,7 +636,8 @@ fun getThirdPartyDesugarLibraryReleases() : List<ThirdPartyDependency> {
     "1.0.10",
     "1.1.0",
     "1.1.1",
-    "1.1.5")
+    "1.1.5",
+    "2.0.3")
     .map { ThirdPartyDependency(
       "desugar-library-release-$it",
       Paths.get("third_party", "openjdk", "desugar_jdk_libs_releases", it).toFile(),
