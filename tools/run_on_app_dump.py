@@ -23,7 +23,9 @@ from thread_utils import print_thread
 import update_prebuilds_in_android
 import utils
 
-GOLEM_BUILD_TARGETS = ['R8Lib', 'R8Retrace']
+# TODO(b/300387869): Cleanup targets
+GOLEM_BUILD_TARGETS = [':test:r8LibWithRelocatedDeps',
+                       ':test:retraceWithRelocatedDeps']
 SHRINKERS = ['r8', 'r8-full', 'r8-nolib', 'r8-nolib-full']
 
 class AttrDict(dict):
@@ -689,7 +691,7 @@ def build_app_with_shrinker(app, options, temp_dir, app_dir, shrinker,
     'dump': dump_for_app(app_dir, app),
     'r8_jar': get_r8_jar(options, temp_dir, shrinker),
     'r8_flags': options.r8_flags,
-    'ea': not options.disable_assertions,
+    'disable_assertions': options.disable_assertions,
     'version': options.version,
     'compiler': 'r8full' if is_full_r8(shrinker) else 'r8',
     'debug_agent': options.debug_agent,
@@ -755,7 +757,7 @@ def build_test_with_shrinker(app, options, temp_dir, app_dir, shrinker,
   args = AttrDict({
     'dump': dump_test_for_app(app_dir, app),
     'r8_jar': get_r8_jar(options, temp_dir, shrinker),
-    'ea': not options.disable_assertions,
+    'disable_assertions': options.disable_assertions,
     'version': options.version,
     'compiler': 'r8full' if is_full_r8(shrinker) else 'r8',
     'debug_agent': options.debug_agent,
@@ -1136,7 +1138,7 @@ def print_golem_config_target(
   print_indented('%s.fromRevision = 9700;' % options, indentation);
   print_indented('%s.mainFile = "tools/run_on_app_dump.py "' % options,
                  indentation)
-  print_indented('"--golem --quiet --shrinker %s --app %s "'
+  print_indented('"--golem --disable-assertions --quiet --shrinker %s --app %s "'
                    % (shrinker, app.name),
                  indentation + 4)
   print_indented('"--minify %s --optimize %s --shrink %s";'

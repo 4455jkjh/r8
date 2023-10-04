@@ -6,6 +6,8 @@ package com.android.tools.r8.ir.desugar.desugaredlibrary.lint;
 
 import static com.android.tools.r8.ir.desugar.desugaredlibrary.lint.AbstractGenerateFiles.MAX_TESTED_ANDROID_API_LEVEL;
 
+import com.android.tools.r8.ClassFileResourceProvider;
+import com.android.tools.r8.ProgramResourceProvider;
 import com.android.tools.r8.StringResource;
 import com.android.tools.r8.androidapi.ComputedApiLevel;
 import com.android.tools.r8.dex.ApplicationReader;
@@ -44,7 +46,6 @@ import com.android.tools.r8.utils.Timing;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import java.io.IOException;
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
@@ -60,15 +61,17 @@ public class SupportedClassesGenerator {
   private final SupportedClasses.Builder builder = SupportedClasses.builder();
   private final boolean addBackports;
 
-  public SupportedClassesGenerator(InternalOptions options, Path androidJar) throws IOException {
-    this.options = options;
-    this.appForMax = createAppForMax(androidJar);
-    this.minApi = AndroidApiLevel.B;
-    this.addBackports = false;
+  public SupportedClassesGenerator(
+      InternalOptions options, Collection<ClassFileResourceProvider> androidJar)
+      throws IOException {
+    this(options, androidJar, AndroidApiLevel.B, false);
   }
 
   public SupportedClassesGenerator(
-      InternalOptions options, Path androidJar, AndroidApiLevel minApi, boolean addBackports)
+      InternalOptions options,
+      Collection<ClassFileResourceProvider> androidJar,
+      AndroidApiLevel minApi,
+      boolean addBackports)
       throws IOException {
     this.options = options;
     this.appForMax = createAppForMax(androidJar);
@@ -76,7 +79,9 @@ public class SupportedClassesGenerator {
     this.addBackports = addBackports;
   }
 
-  public SupportedClasses run(Collection<Path> desugaredLibraryImplementation, Path specification)
+  public SupportedClasses run(
+      Collection<ProgramResourceProvider> desugaredLibraryImplementation,
+      StringResource specification)
       throws IOException {
     // First analyze everything which is supported when desugaring for api 1.
     collectSupportedMembersInMinApi(desugaredLibraryImplementation, specification);
@@ -128,7 +133,10 @@ public class SupportedClassesGenerator {
     return fullySupported;
   }
 
-  private void annotatePartialDesugaringMembers(Path specification) throws IOException {
+  private void annotatePartialDesugaringMembers(StringResource specification) throws IOException {
+    if (builder.hasOnlyExtraMethods()) {
+      return;
+    }
     // The first difference should be at 18 so we're safe starting at J and not B.
     for (int api = AndroidApiLevel.J.getLevel();
         api <= MAX_TESTED_ANDROID_API_LEVEL.getLevel();
@@ -252,7 +260,9 @@ public class SupportedClassesGenerator {
   }
 
   private void collectSupportedMembersInMinApi(
-      Collection<Path> desugaredLibraryImplementation, Path specification) throws IOException {
+      Collection<ProgramResourceProvider> desugaredLibraryImplementation,
+      StringResource specification)
+      throws IOException {
 
     MachineDesugaredLibrarySpecification machineSpecification =
         getMachineSpecification(minApi, specification);
@@ -261,8 +271,11 @@ public class SupportedClassesGenerator {
     options.resetDesugaredLibrarySpecificationForTesting();
     options.setDesugaredLibrarySpecification(machineSpecification);
 
-    AndroidApp implementation =
-        AndroidApp.builder().addProgramFiles(desugaredLibraryImplementation).build();
+    AndroidApp.Builder appBuilder = AndroidApp.builder();
+    for (ProgramResourceProvider programResource : desugaredLibraryImplementation) {
+      appBuilder.addProgramResourceProvider(programResource);
+    }
+    AndroidApp implementation = appBuilder.build();
     DirectMappedDexApplication implementationApplication =
         new ApplicationReader(implementation, options, Timing.empty()).read().toDirect();
 
@@ -305,7 +318,6 @@ public class SupportedClassesGenerator {
             }
             builder.addSupportedMethod(clazz, method);
           }
-          addBackports(clazz, backports);
           for (DexEncodedField field : clazz.fields()) {
             if (!field.isPublic() && !field.isProtected()) {
               continue;
@@ -313,12 +325,13 @@ public class SupportedClassesGenerator {
             builder.addSupportedField(clazz, field);
           }
         }
+        addBackports(clazz, backports);
       }
     }
 
     // All retargeted methods are supported.
     machineSpecification.forEachRetargetMethod(
-        method -> registerMethod(method, implementationApplication));
+        method -> registerMethod(method, implementationApplication, backports));
 
     machineSpecification
         .getStaticFieldRetarget()
@@ -353,7 +366,8 @@ public class SupportedClassesGenerator {
     }
   }
 
-  private void registerMethod(DexMethod method, DexApplication implementationApplication) {
+  private void registerMethod(
+      DexMethod method, DexApplication implementationApplication, List<DexMethod> backports) {
     DexClass dexClass = implementationApplication.definitionFor(method.getHolderType());
     if (dexClass != null) {
       DexEncodedMethod dexEncodedMethod = dexClass.lookupMethod(method);
@@ -368,6 +382,7 @@ public class SupportedClassesGenerator {
     if (dexEncodedMethod != null) {
       builder.addSupportedMethod(dexClass, dexEncodedMethod);
       builder.annotateClass(dexClass.getType(), ClassAnnotation.getAdditionnalMembersOnClass());
+      backports.remove(method);
     }
   }
 
@@ -425,20 +440,23 @@ public class SupportedClassesGenerator {
   }
 
   private MachineDesugaredLibrarySpecification getMachineSpecification(
-      AndroidApiLevel api, Path specification) throws IOException {
+      AndroidApiLevel api, StringResource specification) throws IOException {
+    if (specification == null) {
+      return MachineDesugaredLibrarySpecification.empty();
+    }
     DesugaredLibrarySpecification librarySpecification =
         DesugaredLibrarySpecificationParser.parseDesugaredLibrarySpecification(
-            StringResource.fromFile(specification),
-            options.itemFactory,
-            options.reporter,
-            false,
-            api.getLevel());
+            specification, options.itemFactory, options.reporter, false, api.getLevel());
     return librarySpecification.toMachineSpecification(appForMax, Timing.empty());
   }
 
-  private DirectMappedDexApplication createAppForMax(Path androidJar) throws IOException {
+  private DirectMappedDexApplication createAppForMax(
+      Collection<ClassFileResourceProvider> androidJar) throws IOException {
     AndroidApp.Builder builder = AndroidApp.builder();
-    AndroidApp inputApp = builder.addLibraryFiles(androidJar).build();
+    for (ClassFileResourceProvider libraryResource : androidJar) {
+      builder.addLibraryResourceProvider(libraryResource);
+    }
+    AndroidApp inputApp = builder.build();
     ApplicationReader applicationReader = new ApplicationReader(inputApp, options, Timing.empty());
     ExecutorService executorService = ThreadUtils.getExecutorService(options);
     assert !options.ignoreJavaLibraryOverride;

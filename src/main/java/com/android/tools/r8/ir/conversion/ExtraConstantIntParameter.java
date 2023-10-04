@@ -32,7 +32,12 @@ public class ExtraConstantIntParameter extends ExtraParameter {
 
   @Override
   public SingleNumberValue getValue(AppView<?> appView) {
-    return appView.abstractValueFactory().createSingleNumberValue(value);
+    return appView.abstractValueFactory().createSingleNumberValue(value, TypeElement.getInt());
+  }
+
+  @Override
+  public boolean isUnused() {
+    return false;
   }
 
   @Override

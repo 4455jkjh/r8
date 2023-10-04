@@ -207,18 +207,35 @@ fun File.resolveAll(vararg xs: String) : File {
 }
 
 fun Project.getJavaHome(jdk : Jdk) : File {
-  // TODO(b/270105162): Make sure this works on other platforms.
-  return getRoot().resolveAll("third_party", "openjdk", jdk.folder, "linux")
+  val os: OperatingSystem = DefaultNativePlatform.getCurrentOperatingSystem()
+  var osFolder = "linux"
+  if (os.isWindows()) {
+    osFolder = "windows"
+  }
+  if (os.isMacOsX) {
+    osFolder = "osx"
+  }
+  return getRoot().resolveAll("third_party", "openjdk", jdk.folder, osFolder)
 }
 
 fun Project.getCompilerPath(jdk : Jdk) : String {
-  // TODO(b/270105162): Make sure this works on other platforms.
-  return getJavaHome(jdk).resolveAll("bin", "javac").toString()
+  val os: OperatingSystem = DefaultNativePlatform.getCurrentOperatingSystem()
+  val binary = if (os.isWindows()) "javac.exe" else "javac"
+  return getJavaHome(jdk).resolveAll("bin", binary).toString()
 }
 
 fun Project.getJavaPath(jdk : Jdk) : String {
-  // TODO(b/270105162): Make sure this works on other platforms.
-  return getJavaHome(jdk).resolveAll("bin", "java").toString()
+  val os: OperatingSystem = DefaultNativePlatform.getCurrentOperatingSystem()
+  val binary = if (os.isWindows()) "java.exe" else "java"
+  return getJavaHome(jdk).resolveAll("bin", binary).toString()
+}
+
+fun Project.getClasspath(vararg paths: File) : String {
+  val os: OperatingSystem = DefaultNativePlatform.getCurrentOperatingSystem()
+  assert (!paths.isEmpty())
+  val separator = if (os.isWindows()) ";"  else ":"
+  var classpath = paths.joinToString(separator = separator) { it -> it.toString() }
+  return classpath
 }
 
 fun Project.baseCompilerCommandLine(
@@ -231,7 +248,7 @@ fun Project.baseCompilerCommandLine(
     "-Xmx8g",
     "-ea",
     "-cp",
-    "$jar:$deps",
+    getClasspath(jar, deps),
     "com.android.tools.r8.SwissArmyKnife",
     compiler) + args
 }
@@ -349,6 +366,11 @@ object ThirdPartyDeps {
     Paths.get("third_party", "chrome", "clank_google3_prebuilt").toFile(),
     Paths.get("third_party", "chrome", "clank_google3_prebuilt.tar.gz.sha1").toFile(),
     DependencyType.X20)
+  val chrome = ThirdPartyDependency(
+    "chrome",
+    Paths.get("third_party", "chrome", "chrome_200430").toFile(),
+    Paths.get("third_party", "chrome", "chrome_200430.tar.gz.sha1").toFile(),
+    DependencyType.X20)
   val compilerApi = ThirdPartyDependency(
     "compiler-api",
     Paths.get(
@@ -420,6 +442,10 @@ object ThirdPartyDeps {
     "google-java-format",
     Paths.get("third_party", "google-java-format").toFile(),
     Paths.get("third_party", "google-java-format.tar.gz.sha1").toFile())
+  val googleJavaFormat_1_14 = ThirdPartyDependency(
+    "google-java-format-1.14",
+    Paths.get("third_party", "google", "google-java-format", "1.14.0").toFile(),
+    Paths.get("third_party", "google", "google-java-format", "1.14.0.tar.gz.sha1").toFile())
   val gson = ThirdPartyDependency(
     "gson",
     Paths.get("third_party", "gson", "gson-2.10.1").toFile(),
@@ -468,6 +494,10 @@ object ThirdPartyDeps {
     "kotlinR8TestResources",
     Paths.get("third_party", "kotlinR8TestResources").toFile(),
     Paths.get("third_party", "kotlinR8TestResources.tar.gz.sha1").toFile())
+  val kotlinxCoroutines = ThirdPartyDependency(
+    "kotlinx-coroutines-1.3.6",
+    Paths.get("third_party", "kotlinx-coroutines-1.3.6").toFile(),
+    Paths.get("third_party", "kotlinx-coroutines-1.3.6.tar.gz.sha1").toFile())
   val multidex = ThirdPartyDependency(
     "multidex",
     Paths.get("third_party", "multidex").toFile(),

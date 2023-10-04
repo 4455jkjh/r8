@@ -144,11 +144,12 @@ public abstract class SingleFieldValue extends SingleValue {
   @Override
   @SuppressWarnings("ReferenceEquality")
   public SingleValue rewrittenWithLens(
-      AppView<AppInfoWithLiveness> appView, GraphLens lens, GraphLens codeLens) {
+      AppView<AppInfoWithLiveness> appView, DexType newType, GraphLens lens, GraphLens codeLens) {
     AbstractValueFactory factory = appView.abstractValueFactory();
     EnumDataMap enumDataMap = appView.unboxedEnums();
     if (enumDataMap.hasUnboxedValueFor(field)) {
-      return factory.createSingleNumberValue(enumDataMap.getUnboxedValue(field));
+      return factory.createSingleNumberValue(
+          enumDataMap.getUnboxedValue(field), TypeElement.getInt());
     }
     DexField rewrittenField = lens.lookupField(field, codeLens);
     ObjectState rewrittenObjectState = getObjectState().rewrittenWithLens(appView, lens, codeLens);

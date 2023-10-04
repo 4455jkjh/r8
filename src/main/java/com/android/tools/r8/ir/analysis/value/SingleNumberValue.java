@@ -7,6 +7,7 @@ package com.android.tools.r8.ir.analysis.value;
 import com.android.tools.r8.graph.AppInfoWithClassHierarchy;
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.DebugLocalInfo;
+import com.android.tools.r8.graph.DexType;
 import com.android.tools.r8.graph.ProgramMethod;
 import com.android.tools.r8.graph.lens.GraphLens;
 import com.android.tools.r8.graph.proto.ArgumentInfoCollection;
@@ -154,14 +155,10 @@ public class SingleNumberValue extends SingleConstValue
       ProgramMethod context,
       NumberGenerator valueNumberGenerator,
       TypeAndLocalInfoSupplier info) {
-    TypeElement typeLattice = info.getOutType();
-    DebugLocalInfo debugLocalInfo = info.getLocalInfo();
-    assert !typeLattice.isReferenceType() || value == 0;
-    Value returnedValue =
-        new Value(
-            valueNumberGenerator.next(),
-            typeLattice.isReferenceType() ? TypeElement.getNull() : typeLattice,
-            debugLocalInfo);
+    TypeElement type = info.getOutType();
+    assert type.isPrimitiveType() : type;
+    DebugLocalInfo localInfo = info.getLocalInfo();
+    Value returnedValue = new Value(valueNumberGenerator.next(), type, localInfo);
     return new ConstNumber(returnedValue, value);
   }
 
@@ -184,7 +181,7 @@ public class SingleNumberValue extends SingleConstValue
 
   @Override
   public SingleValue rewrittenWithLens(
-      AppView<AppInfoWithLiveness> appView, GraphLens lens, GraphLens codeLens) {
+      AppView<AppInfoWithLiveness> appView, DexType newType, GraphLens lens, GraphLens codeLens) {
     return this;
   }
 }

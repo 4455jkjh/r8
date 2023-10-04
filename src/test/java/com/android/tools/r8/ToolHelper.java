@@ -70,6 +70,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.StandardCopyOption;
+import java.nio.file.StandardOpenOption;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -82,6 +83,7 @@ import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
 import java.util.function.Consumer;
@@ -752,6 +754,61 @@ public class ToolHelper {
     }
   }
 
+  public static class CommandCacheStatistics {
+
+    public static CommandCacheStatistics INSTANCE = new CommandCacheStatistics();
+    private final Path cachePutCounter;
+    private final Path cacheMissCounter;
+    private final Path cacheHitCounter;
+
+    private CommandCacheStatistics() {
+      String commandCacheStatsDir = System.getProperty("command_cache_stats_dir");
+      if (commandCacheStatsDir != null) {
+        String processSpecificUUID = UUID.randomUUID().toString();
+        cachePutCounter = Paths.get(commandCacheStatsDir, processSpecificUUID + "CACHEPUT");
+        cacheMissCounter = Paths.get(commandCacheStatsDir, processSpecificUUID + "CACHEFAIL");
+        cacheHitCounter = Paths.get(commandCacheStatsDir, processSpecificUUID + "CACHEHIT");
+        try {
+          Files.createFile(cachePutCounter);
+          Files.createFile(cacheMissCounter);
+          Files.createFile(cacheHitCounter);
+        } catch (IOException e) {
+          throw new RuntimeException(e);
+        }
+      } else {
+        cachePutCounter = null;
+        cacheMissCounter = null;
+        cacheHitCounter = null;
+      }
+    }
+
+    private static void increaseCount(Path path) {
+      // Not enabled
+      if (path == null) {
+        return;
+      }
+      synchronized (path) {
+        try {
+          Files.write(path, "X".getBytes(StandardCharsets.UTF_8), StandardOpenOption.APPEND);
+        } catch (IOException e) {
+          throw new RuntimeException(e);
+        }
+      }
+    }
+
+    public void addCachePut() {
+      increaseCount(cachePutCounter);
+    }
+
+    public void addCacheHit() {
+      increaseCount(cacheHitCounter);
+    }
+
+    public void addCacheMiss() {
+      increaseCount(cacheMissCounter);
+    }
+  }
+
   public static class CommandResultCache {
     private static CommandResultCache INSTANCE =
         System.getProperty("command_cache_dir") != null
@@ -789,7 +846,7 @@ public class ToolHelper {
     }
 
     private Path getTempFile(Path path) {
-      return Paths.get(path.toString() + ".temp" + Thread.currentThread().getId());
+      return Paths.get(path.toString() + ".temp" + UUID.randomUUID());
     }
 
     private String getStringContent(Path path) {
@@ -815,6 +872,7 @@ public class ToolHelper {
         // but this should have no impact.
 
         Path outputFile = getOutputFile(cacheLookupKey);
+        CommandCacheStatistics.INSTANCE.addCacheHit();
         return new Pair(
             new ProcessResult(
                 exitCode,
@@ -822,23 +880,25 @@ public class ToolHelper {
                 getStringContent(getStderrFile(cacheLookupKey))),
             outputFile.toFile().exists() ? outputFile : null);
       }
+      CommandCacheStatistics.INSTANCE.addCacheMiss();
       return null;
     }
 
     public void putResult(ProcessResult result, CacheLookupKey cacheLookupKey, Path output) {
+      Path exitCodeFile = getExitCodeFile(cacheLookupKey);
+      Path exitCodeTempFile = getTempFile(exitCodeFile);
+      Path stdoutFile = getStdoutFile(cacheLookupKey);
+      Path stdoutTempFile = getTempFile(stdoutFile);
+      Path stderrFile = getStderrFile(cacheLookupKey);
+      Path stderrTempFile = getTempFile(stderrFile);
+      Path outputFile = getOutputFile(cacheLookupKey);
+      Path outputTempFile = getTempFile(outputFile);
+
       try {
         String exitCode = "" + result.exitCode;
         // We avoid race conditions of writing vs reading by first writing all 3 files to temp
         // files, then moving these to the result files, moving last the exitcode file (which is
         // what we use as cache present check)
-        Path exitCodeFile = getExitCodeFile(cacheLookupKey);
-        Path exitCodeTempFile = getTempFile(exitCodeFile);
-        Path stdoutFile = getStdoutFile(cacheLookupKey);
-        Path stdoutTempFile = getTempFile(stdoutFile);
-        Path stderrFile = getStderrFile(cacheLookupKey);
-        Path stderrTempFile = getTempFile(stderrFile);
-        Path outputfile = getOutputFile(cacheLookupKey);
-        Path outputTempFile = getTempFile(outputfile);
         Files.write(exitCodeTempFile, exitCode.getBytes(StandardCharsets.UTF_8));
         Files.write(stdoutTempFile, result.stdout.getBytes(StandardCharsets.UTF_8));
         Files.write(stderrTempFile, result.stderr.getBytes(StandardCharsets.UTF_8));
@@ -859,7 +919,7 @@ public class ToolHelper {
         if (output != null) {
           Files.move(
               outputTempFile,
-              outputfile,
+              outputFile,
               StandardCopyOption.ATOMIC_MOVE,
               StandardCopyOption.REPLACE_EXISTING);
         }
@@ -868,8 +928,15 @@ public class ToolHelper {
             exitCodeFile,
             StandardCopyOption.ATOMIC_MOVE,
             StandardCopyOption.REPLACE_EXISTING);
+        CommandCacheStatistics.INSTANCE.addCachePut();
       } catch (IOException e) {
-        throw new RuntimeException(e);
+        StringBuilder exceptionMessage = new StringBuilder();
+        exceptionMessage.append(
+            "Files.exists(exitCodeTempFile) = " + Files.exists(exitCodeTempFile));
+        exceptionMessage.append("Files.exists(stdoutTempFile) = " + Files.exists(stdoutTempFile));
+        exceptionMessage.append("Files.exists(stderrTempFile) = " + Files.exists(stderrTempFile));
+        exceptionMessage.append("Files.exists(outputTempFile) = " + Files.exists(outputTempFile));
+        throw new RuntimeException(exceptionMessage.toString(), e);
       }
     }
   }
@@ -1281,7 +1348,7 @@ public class ToolHelper {
   public static TemporaryFolder getTemporaryFolderForTest() {
     String tmpDir = System.getProperty("test_dir");
     if (tmpDir == null) {
-      return new TemporaryFolder(ToolHelper.isLinux() ? null : Paths.get("build", "tmp").toFile());
+      return new TemporaryFolder();
     } else {
       return new RetainedTemporaryFolder(new java.io.File(tmpDir));
     }

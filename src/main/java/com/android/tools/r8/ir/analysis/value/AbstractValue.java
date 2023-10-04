@@ -6,6 +6,7 @@ package com.android.tools.r8.ir.analysis.value;
 
 import com.android.tools.r8.errors.Unreachable;
 import com.android.tools.r8.graph.AppView;
+import com.android.tools.r8.graph.DexType;
 import com.android.tools.r8.graph.lens.GraphLens;
 import com.android.tools.r8.ir.analysis.value.objectstate.ObjectState;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
@@ -38,8 +39,8 @@ public abstract class AbstractValue {
     return false;
   }
 
-  public final boolean isNull() {
-    return isFalse();
+  public boolean isNull() {
+    return false;
   }
 
   public final boolean isZero() {
@@ -197,7 +198,7 @@ public abstract class AbstractValue {
   }
 
   public abstract AbstractValue rewrittenWithLens(
-      AppView<AppInfoWithLiveness> appView, GraphLens lens, GraphLens codeLens);
+      AppView<AppInfoWithLiveness> appView, DexType newType, GraphLens lens, GraphLens codeLens);
 
   @Override
   public abstract boolean equals(Object o);
