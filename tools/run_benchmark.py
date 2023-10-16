@@ -13,15 +13,11 @@ import gradle
 import jdk
 import utils
 
-NONLIB_BUILD_TARGET = 'R8WithRelocatedDeps'
-NONLIB_TEST_BUILD_TARGETS = [utils.R8_TESTS_TARGET, utils.R8_TESTS_DEPS_TARGET]
-
-R8LIB_BUILD_TARGET = utils.GRADLE_TASK_R8LIB
-R8LIB_TEST_BUILD_TARGETS = [utils.R8LIB_TESTS_TARGET, utils.R8LIB_TESTS_DEPS_TARGET]
-
-# The r8lib target is always the golem target.
-GOLEM_BUILD_TARGETS_OLD = R8LIB_TEST_BUILD_TARGETS
-GOLEM_BUILD_TARGETS_NEW = [R8LIB_BUILD_TARGET]
+GOLEM_BUILD_TARGETS_TESTS = [
+    utils.GRADLE_TASK_ALL_TESTS_WITH_APPLY_MAPPING_JAR,
+    utils.GRADLE_TASK_TEST_DEPS_JAR
+]
+GOLEM_BUILD_TARGETS = [utils.GRADLE_TASK_R8LIB] + GOLEM_BUILD_TARGETS_TESTS
 
 def get_golem_resource_path(benchmark):
   return os.path.join('benchmarks', benchmark)
@@ -82,15 +78,18 @@ def main(argv, temp):
       return 1
 
   if options.nolib:
-    testBuildTargets = NONLIB_TEST_BUILD_TARGETS
-    buildTargets = [NONLIB_BUILD_TARGET] + NONLIB_TEST_BUILD_TARGETS
-    r8jar = utils.R8_WITH_RELOCATED_DEPS_JAR
-    testjars = [utils.R8_TESTS_DEPS_JAR, utils.R8_TESTS_JAR]
+    testBuildTargets = [utils.GRADLE_TASK_TEST_JAR, utils.GRADLE_TASK_TEST_DEPS_JAR]
+    buildTargets = [utils.GRADLE_TASK_R8] + testBuildTargets
+    r8jar = utils.R8_JAR
+    testjars = [utils.R8_TESTS_JAR, utils.R8_TESTS_DEPS_JAR]
   else:
-    testBuildTargets = R8LIB_TEST_BUILD_TARGETS
-    buildTargets = GOLEM_BUILD_TARGETS_OLD + GOLEM_BUILD_TARGETS_NEW
+    testBuildTargets = GOLEM_BUILD_TARGETS_TESTS
+    buildTargets = GOLEM_BUILD_TARGETS
     r8jar = utils.R8LIB_JAR
-    testjars = [utils.R8LIB_TESTS_DEPS_JAR, utils.R8LIB_TESTS_JAR]
+    testjars = [
+        os.path.join(utils.R8LIB_TESTS_JAR),
+        os.path.join(utils.R8LIB_TESTS_DEPS_JAR)
+    ]
 
   if options.version:
     # r8 is downloaded so only test jar needs to be built.
@@ -115,6 +114,11 @@ def run(options, r8jar, testjars):
     cmd.append('-ea')
   if options.print_times:
     cmd.append('-Dcom.android.tools.r8.printtimes=1')
+  if not options.golem:
+    cmd.extend([
+      '-DUSE_NEW_GRADLE_SETUP=true',
+      f'-DTEST_DATA_LOCATION={utils.REPO_ROOT}/d8_r8/test_modules/tests_java_8/build/classes/java/test'
+  ])
   cmd.extend(['-cp', ':'.join([r8jar] + testjars)])
   cmd.extend([
     'com.android.tools.r8.benchmarks.BenchmarkMainEntryRunner',

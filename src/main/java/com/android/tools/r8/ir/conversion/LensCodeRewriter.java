@@ -91,6 +91,7 @@ import com.android.tools.r8.ir.code.InvokeMethod;
 import com.android.tools.r8.ir.code.InvokeMultiNewArray;
 import com.android.tools.r8.ir.code.InvokePolymorphic;
 import com.android.tools.r8.ir.code.InvokeType;
+import com.android.tools.r8.ir.code.MaterializingInstructionsInfo;
 import com.android.tools.r8.ir.code.MoveException;
 import com.android.tools.r8.ir.code.NewArrayEmpty;
 import com.android.tools.r8.ir.code.NewArrayFilled;
@@ -102,7 +103,6 @@ import com.android.tools.r8.ir.code.Return;
 import com.android.tools.r8.ir.code.SafeCheckCast;
 import com.android.tools.r8.ir.code.StaticGet;
 import com.android.tools.r8.ir.code.StaticPut;
-import com.android.tools.r8.ir.code.TypeAndLocalInfoSupplier;
 import com.android.tools.r8.ir.code.UnusedArgument;
 import com.android.tools.r8.ir.code.Value;
 import com.android.tools.r8.ir.code.ValueType;
@@ -111,6 +111,7 @@ import com.android.tools.r8.ir.optimize.AffectedValues;
 import com.android.tools.r8.ir.optimize.enums.EnumUnboxer;
 import com.android.tools.r8.optimize.MemberRebindingAnalysis;
 import com.android.tools.r8.optimize.argumentpropagation.lenscoderewriter.NullCheckInserter;
+import com.android.tools.r8.utils.ArrayUtils;
 import com.android.tools.r8.utils.InternalOptions;
 import com.android.tools.r8.utils.LazyBox;
 import com.android.tools.r8.verticalclassmerging.InterfaceTypeToClassTypeLensCodeRewriterHelper;
@@ -118,6 +119,7 @@ import com.google.common.collect.Sets;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Deque;
 import java.util.HashSet;
 import java.util.IdentityHashMap;
@@ -442,13 +444,13 @@ public class LensCodeRewriter {
                   }
                 }
 
-                Instruction constantReturnMaterializingInstruction = null;
+                Instruction[] constantReturnMaterializingInstructions = null;
                 if (invoke.hasOutValue()) {
                   if (invoke.hasUnusedOutValue()) {
                     invoke.clearOutValue();
                   } else if (prototypeChanges.hasBeenChangedToReturnVoid()) {
-                    TypeAndLocalInfoSupplier typeAndLocalInfo =
-                        new TypeAndLocalInfoSupplier() {
+                    MaterializingInstructionsInfo materializingInstructionsInfo =
+                        new MaterializingInstructionsInfo() {
                           @Override
                           public DebugLocalInfo getLocalInfo() {
                             return invoke.getLocalInfo();
@@ -460,12 +462,19 @@ public class LensCodeRewriter {
                                 .lookupType(invokedMethod.getReturnType(), codeLens)
                                 .toTypeElement(appView);
                           }
+
+                          @Override
+                          public Position getPosition() {
+                            return invoke.getPosition();
+                          }
                         };
                     assert prototypeChanges.verifyConstantReturnAccessibleInContext(
                         appView.withLiveness(), method, graphLens);
-                    constantReturnMaterializingInstruction =
+                    constantReturnMaterializingInstructions =
                         prototypeChanges.getConstantReturn(
-                            appView.withLiveness(), code, invoke.getPosition(), typeAndLocalInfo);
+                            appView.withLiveness(), code, materializingInstructionsInfo);
+                    Instruction constantReturnMaterializingInstruction =
+                        ArrayUtils.last(constantReturnMaterializingInstructions);
                     if (invoke.outValue().hasLocalInfo()) {
                       constantReturnMaterializingInstruction
                           .outValue()
@@ -523,16 +532,17 @@ public class LensCodeRewriter {
                               extraArgumentType,
                               ignore -> {
                                 finalIterator.previous();
-                                Instruction instruction =
-                                    singleConstValue.createMaterializingInstruction(
+                                Instruction[] instructions =
+                                    singleConstValue.createMaterializingInstructions(
                                         appView,
                                         code,
-                                        TypeAndLocalInfoSupplier.create(
+                                        MaterializingInstructionsInfo.create(
                                             parameter.getTypeElement(appView, extraArgumentType),
-                                            null));
+                                            null,
+                                            invoke.getPosition()));
+                                assert instructions.length == 1;
+                                Instruction instruction = instructions[0];
                                 assert !instruction.instructionTypeCanThrow();
-                                instruction.setPosition(
-                                    options.debug ? invoke.getPosition() : Position.none());
                                 finalIterator.add(instruction);
                                 finalIterator.next();
                                 return instruction.outValue();
@@ -572,15 +582,21 @@ public class LensCodeRewriter {
                   affectedPhis.addAll(newOutValue.uniquePhiUsers());
                 }
 
-                if (constantReturnMaterializingInstruction != null) {
+                if (constantReturnMaterializingInstructions != null) {
                   if (block.hasCatchHandlers()) {
                     // Split the block to ensure no instructions after throwing instructions.
-                    iterator
-                        .split(code, blocks)
-                        .listIterator(code)
-                        .add(constantReturnMaterializingInstruction);
+                    for (Instruction instruction : constantReturnMaterializingInstructions) {
+                      // Split the block and reset the block iterator.
+                      BasicBlock splitBlock =
+                          iterator.splitCopyCatchHandlers(code, blocks, appView.options());
+                      BasicBlock previousBlock = blocks.previousUntil(splitBlock);
+                      assert previousBlock == splitBlock;
+                      blocks.next();
+                      iterator = splitBlock.listIterator(code);
+                      iterator.add(instruction);
+                    }
                   } else {
-                    iterator.add(constantReturnMaterializingInstruction);
+                    iterator.addAll(constantReturnMaterializingInstructions);
                   }
                 }
               }
@@ -1011,27 +1027,34 @@ public class LensCodeRewriter {
       AffectedValues affectedValues,
       List<Instruction> argumentPostlude,
       Set<UnusedArgument> unusedArguments) {
-    Instruction replacement;
+    Instruction[] replacement;
     if (removedArgumentInfo.hasSingleValue()) {
       SingleValue singleValue = removedArgumentInfo.getSingleValue();
       TypeElement type =
           removedArgumentInfo.getType().isReferenceType() && singleValue.isNull()
               ? TypeElement.getNull()
               : removedArgumentInfo.getType().toTypeElement(appView);
+      Position position =
+          SourcePosition.builder().setLine(0).setMethod(originalMethodReference).build();
       replacement =
-          singleValue.createMaterializingInstruction(
-              appView, code, TypeAndLocalInfoSupplier.create(type, argument.getLocalInfo()));
-      replacement.setPosition(
-          SourcePosition.builder().setLine(0).setMethod(originalMethodReference).build());
+          singleValue.createMaterializingInstructions(
+              appView,
+              code,
+              MaterializingInstructionsInfo.create(type, argument.getLocalInfo(), position));
     } else {
       TypeElement unusedArgumentType = removedArgumentInfo.getType().toTypeElement(appView);
-      replacement = new UnusedArgument(code.createValue(unusedArgumentType));
-      replacement.setPosition(Position.none());
-      unusedArguments.add(replacement.asUnusedArgument());
+      UnusedArgument unusedArgument =
+          UnusedArgument.builder()
+              .setFreshOutValue(code, unusedArgumentType)
+              .setPosition(Position.none())
+              .build();
+      unusedArguments.add(unusedArgument);
+      replacement = new Instruction[] {unusedArgument};
     }
-    argument.outValue().replaceUsers(replacement.outValue(), affectedValues);
-    affectedPhis.addAll(replacement.outValue().uniquePhiUsers());
-    argumentPostlude.add(replacement);
+    Value replacementValue = ArrayUtils.last(replacement).outValue();
+    argument.outValue().replaceUsers(replacementValue, affectedValues);
+    affectedPhis.addAll(replacementValue.uniquePhiUsers());
+    Collections.addAll(argumentPostlude, replacement);
     instructionIterator.removeOrReplaceByDebugLocalRead();
   }
 

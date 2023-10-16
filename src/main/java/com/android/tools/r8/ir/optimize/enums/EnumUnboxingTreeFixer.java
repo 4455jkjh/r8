@@ -42,11 +42,11 @@ import com.android.tools.r8.ir.code.Instruction;
 import com.android.tools.r8.ir.code.InstructionListIterator;
 import com.android.tools.r8.ir.code.InvokeDirect;
 import com.android.tools.r8.ir.code.InvokeVirtual;
+import com.android.tools.r8.ir.code.MaterializingInstructionsInfo;
 import com.android.tools.r8.ir.code.NewInstance;
 import com.android.tools.r8.ir.code.NewUnboxedEnumInstance;
 import com.android.tools.r8.ir.code.Position;
 import com.android.tools.r8.ir.code.StaticPut;
-import com.android.tools.r8.ir.code.TypeAndLocalInfoSupplier;
 import com.android.tools.r8.ir.code.Value;
 import com.android.tools.r8.ir.conversion.ExtraParameter;
 import com.android.tools.r8.ir.conversion.ExtraUnusedNullParameter;
@@ -406,14 +406,30 @@ class EnumUnboxingTreeFixer implements ProgramClassFixer {
               for (ExtraParameter extraParameter :
                   lookupResult.getPrototypeChanges().getExtraParameters()) {
                 SingleConstValue singleConstValue = extraParameter.getValue(appView);
-                Instruction materializingInstruction =
-                    singleConstValue.createMaterializingInstruction(
-                        appView,
-                        code,
-                        TypeAndLocalInfoSupplier.create(
-                            extraParameter.getType(appView.dexItemFactory()).toTypeElement(appView),
-                            null));
-                materializingInstruction.setPosition(Position.none());
+                assert singleConstValue.isNull() || singleConstValue.isSingleNumberValue();
+                Instruction materializingInstruction;
+                if (singleConstValue.isNull()) {
+                  assert extraParameter.getType(appView.dexItemFactory()).isNullValueType();
+                  materializingInstruction =
+                      singleConstValue
+                          .asSingleNullValue()
+                          .createMaterializingInstruction(
+                              appView,
+                              code,
+                              MaterializingInstructionsInfo.create(
+                                  TypeElement.getNull(), null, Position.none()));
+                } else {
+                  assert extraParameter.getType(appView.dexItemFactory()).isIntType();
+                  assert singleConstValue.isSingleNumberValue();
+                  materializingInstruction =
+                      singleConstValue
+                          .asSingleNumberValue()
+                          .createMaterializingInstruction(
+                              appView,
+                              code,
+                              MaterializingInstructionsInfo.create(
+                                  TypeElement.getInt(), null, Position.none()));
+                }
                 instructionIterator.previous();
                 instructionIterator.add(materializingInstruction);
                 rewrittenArguments.add(materializingInstruction.outValue());

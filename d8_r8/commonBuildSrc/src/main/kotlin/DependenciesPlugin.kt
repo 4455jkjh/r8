@@ -26,10 +26,8 @@ class DependenciesPlugin: Plugin<Project> {
 
   override fun apply(target: Project) {
     // Setup all test tasks to listen after system properties passed in by test.py.
-    val testTask = target.tasks.findByName("test")
-    if (testTask != null) {
-      TestConfigurationHelper.setupTestTask(testTask as Test)
-    }
+    val testTask = target.tasks.findByName("test") as Test?
+    testTask?.configure(isR8Lib = false, r8Jar = null, r8LibMappingFile = null)
   }
 
   companion object {
@@ -75,8 +73,8 @@ enum class Jdk(val folder : String) {
   }
 }
 
-fun Test.configure(isR8Lib: Boolean = false, r8Jar: File? = null) {
-  TestConfigurationHelper.setupTestTask(this, isR8Lib, r8Jar)
+fun Test.configure(isR8Lib: Boolean, r8Jar: File?, r8LibMappingFile: File? = null) {
+  TestConfigurationHelper.setupTestTask(this, isR8Lib, r8Jar, r8LibMappingFile)
 }
 
 fun Project.getRoot() : File {
@@ -542,6 +540,10 @@ object ThirdPartyDeps {
     "retrace-binary-compatibility",
     Paths.get("third_party", "retrace", "binary_compatibility").toFile(),
     Paths.get("third_party", "retrace", "binary_compatibility.tar.gz.sha1").toFile())
+  val retracePartitionFormats = ThirdPartyDependency(
+    "retrace-partition-formats",
+    Paths.get("third_party", "retrace", "partition_formats").toFile(),
+    Paths.get("third_party", "retrace", "partition_formats.tar.gz.sha1").toFile())
   val retraceInternal = ThirdPartyDependency(
     "retrace-internal",
     Paths.get("third_party", "retrace_internal").toFile(),

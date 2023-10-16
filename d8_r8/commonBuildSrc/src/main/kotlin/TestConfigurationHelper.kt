@@ -16,17 +16,19 @@ class TestConfigurationHelper {
 
   companion object {
 
-    fun retrace(project: Project, r8jar: File?, exception: Throwable): String {
+    fun retrace(project: Project, r8jar: File, mappingFile: File, exception: Throwable): String {
       val out = StringBuilder()
       val header = "RETRACED STACKTRACE";
       out.append("\n--------------------------------------\n")
       out.append("${header}\n")
       out.append("--------------------------------------\n")
       val retracePath = project.getRoot().resolveAll("tools", "retrace.py")
-      val command = mutableListOf("python3", retracePath.toString(), "--quiet")
-      if (r8jar != null) {
-        command.addAll(arrayOf("--r8jar", r8jar.toString()))
-      }
+      val command =
+              mutableListOf(
+                      "python3", retracePath.toString(),
+                      "--quiet",
+                      "--map", mappingFile.toString(),
+                      "--r8jar", r8jar.toString())
       val process = ProcessBuilder(command).start()
       process.outputStream.use { exception.printStackTrace(PrintStream(it)) }
       process.outputStream.close()
@@ -46,11 +48,12 @@ class TestConfigurationHelper {
       return out.toString()
     }
 
-    fun setupTestTask(test: Test, isR8Lib: Boolean = false, r8Jar: File? = null) {
+    fun setupTestTask(test: Test, isR8Lib: Boolean, r8Jar: File?, r8LibMappingFile: File?) {
       val project = test.project
       test.systemProperty("USE_NEW_GRADLE_SETUP", "true")
       if (project.hasProperty("testfilter")) {
         val testFilter = project.property("testfilter").toString()
+        test.filter.setFailOnNoMatchingTests(false)
         test.filter.setIncludePatterns(*(testFilter.split("|").toTypedArray()))
       }
       if (project.hasProperty("kotlin_compiler_dev")) {
@@ -137,7 +140,7 @@ class TestConfigurationHelper {
             if (isR8Lib
               && result?.resultType == TestResult.ResultType.FAILURE
               && result.exception != null) {
-              println(retrace(project, r8Jar, result.exception as Throwable))
+              println(retrace(project, r8Jar!!, r8LibMappingFile!!, result.exception as Throwable))
             }
           }
         })

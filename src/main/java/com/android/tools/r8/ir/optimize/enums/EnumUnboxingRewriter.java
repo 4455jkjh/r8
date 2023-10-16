@@ -34,18 +34,19 @@ import com.android.tools.r8.ir.code.InvokeMethod;
 import com.android.tools.r8.ir.code.InvokeMethodWithReceiver;
 import com.android.tools.r8.ir.code.InvokeStatic;
 import com.android.tools.r8.ir.code.InvokeVirtual;
+import com.android.tools.r8.ir.code.MaterializingInstructionsInfo;
 import com.android.tools.r8.ir.code.MemberType;
 import com.android.tools.r8.ir.code.NewArrayFilled;
 import com.android.tools.r8.ir.code.NewUnboxedEnumInstance;
 import com.android.tools.r8.ir.code.Phi;
 import com.android.tools.r8.ir.code.StaticGet;
-import com.android.tools.r8.ir.code.TypeAndLocalInfoSupplier;
 import com.android.tools.r8.ir.code.Value;
 import com.android.tools.r8.ir.conversion.MethodProcessor;
 import com.android.tools.r8.ir.optimize.enums.EnumInstanceFieldData.EnumInstanceFieldKnownData;
 import com.android.tools.r8.ir.optimize.enums.classification.CheckNotNullEnumUnboxerMethodClassification;
 import com.android.tools.r8.ir.optimize.enums.classification.EnumUnboxerMethodClassification;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
+import com.android.tools.r8.utils.ArrayUtils;
 import com.android.tools.r8.utils.InternalOptions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
@@ -115,16 +116,18 @@ public class EnumUnboxingRewriter {
           assert rewrittenTypeInfo
               .getSingleValue()
               .isMaterializableInContext(appView, code.context());
-          Instruction materializingInstruction =
+          Instruction[] materializingInstructions =
               rewrittenTypeInfo
                   .getSingleValue()
-                  .createMaterializingInstruction(
+                  .createMaterializingInstructions(
                       appView,
                       code,
-                      TypeAndLocalInfoSupplier.create(
+                      MaterializingInstructionsInfo.create(
                           rewrittenTypeInfo.getNewType().toTypeElement(appView),
-                          next.getLocalInfo()));
-          materializingInstruction.setPosition(next.getPosition());
+                          next.getLocalInfo(),
+                          next.getPosition()));
+          assert materializingInstructions.length == 1;
+          Instruction materializingInstruction = ArrayUtils.first(materializingInstructions);
           extraConstants.add(materializingInstruction);
           affectedPhis.addAll(next.outValue().uniquePhiUsers());
           next.outValue().replaceUsers(materializingInstruction.outValue());

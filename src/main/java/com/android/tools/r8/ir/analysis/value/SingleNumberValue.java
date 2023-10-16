@@ -14,9 +14,9 @@ import com.android.tools.r8.graph.proto.ArgumentInfoCollection;
 import com.android.tools.r8.ir.analysis.type.TypeElement;
 import com.android.tools.r8.ir.code.ConstNumber;
 import com.android.tools.r8.ir.code.Instruction;
-import com.android.tools.r8.ir.code.NumberGenerator;
-import com.android.tools.r8.ir.code.TypeAndLocalInfoSupplier;
-import com.android.tools.r8.ir.code.Value;
+import com.android.tools.r8.ir.code.MaterializingInstructionsInfo;
+import com.android.tools.r8.ir.code.Position;
+import com.android.tools.r8.ir.code.ValueFactory;
 import com.android.tools.r8.ir.optimize.info.field.InstanceFieldInitializationInfo;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
 import com.android.tools.r8.utils.ArrayUtils;
@@ -30,6 +30,11 @@ public class SingleNumberValue extends SingleConstValue
   /** Intentionally package private, use {@link AbstractValueFactory} instead. */
   SingleNumberValue(long value) {
     this.value = value;
+  }
+
+  @Override
+  public boolean hasSingleMaterializingInstruction() {
+    return true;
   }
 
   @Override
@@ -150,16 +155,34 @@ public class SingleNumberValue extends SingleConstValue
   }
 
   @Override
-  public Instruction createMaterializingInstruction(
+  public Instruction[] createMaterializingInstructions(
       AppView<?> appView,
       ProgramMethod context,
-      NumberGenerator valueNumberGenerator,
-      TypeAndLocalInfoSupplier info) {
-    TypeElement type = info.getOutType();
-    assert type.isPrimitiveType() : type;
-    DebugLocalInfo localInfo = info.getLocalInfo();
-    Value returnedValue = new Value(valueNumberGenerator.next(), type, localInfo);
-    return new ConstNumber(returnedValue, value);
+      ValueFactory valueFactory,
+      MaterializingInstructionsInfo info) {
+    ConstNumber materializingInstruction =
+        createMaterializingInstruction(appView, valueFactory, info);
+    return new Instruction[] {materializingInstruction};
+  }
+
+  public ConstNumber createMaterializingInstruction(
+      AppView<?> appView, ValueFactory valueFactory, MaterializingInstructionsInfo info) {
+    return createMaterializingInstruction(
+        appView, valueFactory, info.getOutType(), info.getLocalInfo(), info.getPosition());
+  }
+
+  public ConstNumber createMaterializingInstruction(
+      AppView<?> appView,
+      ValueFactory valueFactory,
+      TypeElement type,
+      DebugLocalInfo localInfo,
+      Position position) {
+    assert type.isPrimitiveType();
+    return ConstNumber.builder()
+        .setFreshOutValue(valueFactory, type, localInfo)
+        .setPositionForNonThrowingInstruction(position, appView.options())
+        .setValue(value)
+        .build();
   }
 
   @Override

@@ -117,7 +117,8 @@ def main_download(hash, maps, targets, target_root, version, keepanno=False):
 
 def main_build(maps, max_memory_size, targets, target_root):
   jar_targets = JAR_TARGETS_MAP[targets]
-  gradle_args = map(lambda t: t[0], jar_targets)
+  gradle_args = [utils.GRADLE_TASK_R8LIB if targets == 'lib'
+                 else utils.GRADLE_TASK_R8]
   if max_memory_size:
     gradle_args.append('-Dorg.gradle.jvmargs=-Xmx' + max_memory_size)
   gradle.RunGradle(gradle_args)

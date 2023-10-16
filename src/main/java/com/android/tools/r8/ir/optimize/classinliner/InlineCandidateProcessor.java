@@ -34,6 +34,7 @@ import com.android.tools.r8.ir.analysis.value.objectstate.ObjectState;
 import com.android.tools.r8.ir.code.AliasedValueConfiguration;
 import com.android.tools.r8.ir.code.AssumeAndCheckCastAliasedValueConfiguration;
 import com.android.tools.r8.ir.code.BasicBlock;
+import com.android.tools.r8.ir.code.BasicBlockIterator;
 import com.android.tools.r8.ir.code.CheckCast;
 import com.android.tools.r8.ir.code.IRCode;
 import com.android.tools.r8.ir.code.If;
@@ -67,6 +68,7 @@ import com.android.tools.r8.ir.optimize.inliner.InliningIRProvider;
 import com.android.tools.r8.ir.optimize.inliner.NopWhyAreYouNotInliningReporter;
 import com.android.tools.r8.kotlin.KotlinClassLevelInfo;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
+import com.android.tools.r8.utils.ArrayUtils;
 import com.android.tools.r8.utils.LazyBox;
 import com.android.tools.r8.utils.OptionalBool;
 import com.android.tools.r8.utils.SetUtils;
@@ -752,6 +754,7 @@ final class InlineCandidateProcessor {
   private void removeFieldReadsFromStaticGet(IRCode code, AffectedValues affectedValues) {
     Set<BasicBlock> seen = Sets.newIdentityHashSet();
     Set<Instruction> users = eligibleInstance.uniqueUsers();
+    Map<InstanceGet, Instruction[]> pendingReplacements = new IdentityHashMap<>();
     for (Instruction user : users) {
       if (!user.hasBlock()) {
         continue;
@@ -772,7 +775,11 @@ final class InlineCandidateProcessor {
         if (instruction.isInstanceGet()) {
           if (instruction.hasUsedOutValue()) {
             replaceFieldReadFromStaticGet(
-                code, instructionIterator, user.asInstanceGet(), affectedValues);
+                code,
+                instructionIterator,
+                user.asInstanceGet(),
+                affectedValues,
+                pendingReplacements);
           } else {
             instructionIterator.removeOrReplaceByDebugLocalRead();
           }
@@ -791,13 +798,36 @@ final class InlineCandidateProcessor {
                 + user);
       }
     }
+
+    if (!pendingReplacements.isEmpty()) {
+      BasicBlockIterator blocks = code.listIterator();
+      while (blocks.hasNext()) {
+        BasicBlock block = blocks.next();
+        InstructionListIterator instructionIterator = block.listIterator(code);
+        while (instructionIterator.hasNext()) {
+          Instruction instruction = instructionIterator.next();
+          Instruction[] replacementInstructions = pendingReplacements.get(instruction);
+          if (replacementInstructions == null) {
+            continue;
+          }
+          assert replacementInstructions.length > 1;
+          Instruction replacement = ArrayUtils.last(replacementInstructions);
+          instruction.outValue().replaceUsers(replacement.outValue(), affectedValues);
+          instructionIterator.removeOrReplaceByDebugLocalRead();
+          instructionIterator =
+              instructionIterator.addPossiblyThrowingInstructionsToPossiblyThrowingBlock(
+                  code, blocks, replacementInstructions, appView.options());
+        }
+      }
+    }
   }
 
   private void replaceFieldReadFromStaticGet(
       IRCode code,
       InstructionListIterator instructionIterator,
       InstanceGet fieldRead,
-      AffectedValues affectedValues) {
+      AffectedValues affectedValues,
+      Map<InstanceGet, Instruction[]> pendingReplacements) {
     DexField fieldReference = fieldRead.getField();
     DexClass holder = appView.definitionFor(fieldReference.getHolderType(), method);
     DexEncodedField field = fieldReference.lookupOnClass(holder);
@@ -815,9 +845,14 @@ final class InlineCandidateProcessor {
       throw reportUnknownFieldReadFromSingleton(fieldRead);
     }
 
-    Instruction replacement =
-        singleConstValue.createMaterializingInstruction(appView, code, fieldRead);
-    instructionIterator.replaceCurrentInstruction(replacement, affectedValues);
+    Instruction[] materializingInstructions =
+        singleConstValue.createMaterializingInstructions(appView, code, fieldRead);
+    Instruction replacement = ArrayUtils.last(materializingInstructions);
+    if (materializingInstructions.length == 1) {
+      instructionIterator.replaceCurrentInstruction(replacement, affectedValues);
+    } else {
+      pendingReplacements.put(fieldRead, materializingInstructions);
+    }
   }
 
   private RuntimeException reportUnknownFieldReadFromSingleton(InstanceGet fieldRead) {

@@ -22,10 +22,9 @@ import com.android.tools.r8.ir.analysis.type.ClassTypeElement;
 import com.android.tools.r8.ir.analysis.type.TypeElement;
 import com.android.tools.r8.ir.analysis.value.objectstate.ObjectState;
 import com.android.tools.r8.ir.code.Instruction;
-import com.android.tools.r8.ir.code.NumberGenerator;
+import com.android.tools.r8.ir.code.MaterializingInstructionsInfo;
 import com.android.tools.r8.ir.code.StaticGet;
-import com.android.tools.r8.ir.code.TypeAndLocalInfoSupplier;
-import com.android.tools.r8.ir.code.Value;
+import com.android.tools.r8.ir.code.ValueFactory;
 import com.android.tools.r8.ir.optimize.enums.EnumDataMap;
 import com.android.tools.r8.ir.optimize.info.field.InstanceFieldInitializationInfo;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
@@ -37,6 +36,11 @@ public abstract class SingleFieldValue extends SingleValue {
 
   SingleFieldValue(DexField field) {
     this.field = field;
+  }
+
+  @Override
+  public boolean hasSingleMaterializingInstruction() {
+    return true;
   }
 
   public DexField getField() {
@@ -83,17 +87,22 @@ public abstract class SingleFieldValue extends SingleValue {
   public abstract int hashCode();
 
   @Override
-  public Instruction createMaterializingInstruction(
+  public Instruction[] createMaterializingInstructions(
       AppView<?> appView,
       ProgramMethod context,
-      NumberGenerator valueNumberGenerator,
-      TypeAndLocalInfoSupplier info) {
-    TypeElement type = TypeElement.fromDexType(field.type, maybeNull(), appView);
+      ValueFactory valueFactory,
+      MaterializingInstructionsInfo info) {
+    TypeElement type = TypeElement.fromDexType(field.getType(), maybeNull(), appView);
     assert type.lessThanOrEqual(info.getOutType(), appView)
         || !appView.enableWholeProgramOptimizations()
         || type.isBasedOnMissingClass(appView.withClassHierarchy());
-    Value outValue = new Value(valueNumberGenerator.next(), type, info.getLocalInfo());
-    return new StaticGet(outValue, field);
+    StaticGet staticGet =
+        StaticGet.builder()
+            .setField(field)
+            .setFreshOutValue(valueFactory, type, info.getLocalInfo())
+            .setPosition(info.getPosition())
+            .build();
+    return new Instruction[] {staticGet};
   }
 
   @Override

@@ -241,7 +241,7 @@ def archive_failures(options):
 def Main():
   (options, args) = ParseOptions()
   if utils.is_bot():
-    gradle.RunGradle(['--no-daemon', 'clean'], new_gradle=True)
+    gradle.RunGradle(['--no-daemon', 'clean'])
     print('Running with python ' + str(sys.version_info))
     # Always print stats on bots if command cache is enabled
     options.command_cache_stats = options.command_cache_dir is not None
@@ -349,13 +349,13 @@ def Main():
     if not os.path.exists(options.use_golden_files_in):
       os.makedirs(options.use_golden_files_in)
     gradle_args.append('-PHEAD_sha1=' + utils.get_HEAD_sha1())
-  if (not options.no_r8lib) and options.r8lib_no_deps:
-    print('Cannot run tests on r8lib with and without deps. R8lib is now default target.')
+  if options.r8lib_no_deps and options.no_r8lib:
+    print('Inconsistent arguments: both --no-r8lib and --r8lib-no-deps specified.')
     exit(1)
-  if not options.no_r8lib:
-    gradle_args.append('-Pr8lib')
   if options.r8lib_no_deps:
     gradle_args.append('-Pr8lib_no_deps')
+  elif not options.no_r8lib:
+    gradle_args.append('-Pr8lib')
   if options.worktree:
     gradle_args.append('-g=' + os.path.join(utils.REPO_ROOT, ".gradle_user_home"))
     gradle_args.append('--no-daemon')
@@ -456,8 +456,7 @@ def Main():
         runtimes.extend(matches)
       gradle_args.append('-Pruntimes=%s' % ':'.join(runtimes))
 
-    return_code = gradle.RunGradle(
-        gradle_args, throw_on_failure=False, new_gradle=True)
+    return_code = gradle.RunGradle(gradle_args, throw_on_failure=False)
     return archive_and_return(return_code, options)
 
   # Legacy testing populates the runtimes based on dex_vm.
@@ -476,8 +475,7 @@ def Main():
           '-Pdex_vm=%s' % art_vm + vm_suffix,
           '-Pruntimes=%s' % ':'.join(runtimes),
         ],
-        throw_on_failure=False,
-        new_gradle=True)
+        throw_on_failure=False)
     if options.generate_golden_files_to:
       sha1 = '%s' % utils.get_HEAD_sha1()
       with utils.ChangedWorkingDirectory(options.generate_golden_files_to):
