@@ -3,8 +3,6 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8.shaking;
 
-import static com.android.tools.r8.graph.DexEncodedMethod.asProgramMethodOrNull;
-import static com.android.tools.r8.graph.DexEncodedMethod.toMethodDefinitionOrNull;
 import static com.android.tools.r8.graph.DexProgramClass.asProgramClassOrNull;
 import static com.android.tools.r8.graph.MethodResolutionResult.SingleResolutionResult.isOverriding;
 import static com.android.tools.r8.utils.collections.ThrowingSet.isThrowingSet;
@@ -18,6 +16,7 @@ import com.android.tools.r8.graph.DexCallSite;
 import com.android.tools.r8.graph.DexClass;
 import com.android.tools.r8.graph.DexClassAndField;
 import com.android.tools.r8.graph.DexClassAndMember;
+import com.android.tools.r8.graph.DexClassAndMethod;
 import com.android.tools.r8.graph.DexClasspathClass;
 import com.android.tools.r8.graph.DexDefinition;
 import com.android.tools.r8.graph.DexDefinitionSupplier;
@@ -30,6 +29,7 @@ import com.android.tools.r8.graph.DexProgramClass;
 import com.android.tools.r8.graph.DexReference;
 import com.android.tools.r8.graph.DexType;
 import com.android.tools.r8.graph.DirectMappedDexApplication;
+import com.android.tools.r8.graph.DispatchTargetLookupResult;
 import com.android.tools.r8.graph.FieldAccessInfo;
 import com.android.tools.r8.graph.FieldAccessInfoCollection;
 import com.android.tools.r8.graph.FieldAccessInfoCollectionImpl;
@@ -46,7 +46,9 @@ import com.android.tools.r8.graph.ProgramDefinition;
 import com.android.tools.r8.graph.ProgramField;
 import com.android.tools.r8.graph.ProgramMethod;
 import com.android.tools.r8.graph.PrunedItems;
+import com.android.tools.r8.graph.SingleDispatchTargetLookupResult;
 import com.android.tools.r8.graph.SubtypingInfo;
+import com.android.tools.r8.graph.UnknownDispatchTargetLookupResult;
 import com.android.tools.r8.graph.lens.GraphLens;
 import com.android.tools.r8.graph.lens.NonIdentityGraphLens;
 import com.android.tools.r8.horizontalclassmerging.HorizontalClassMerger;
@@ -130,12 +132,14 @@ public class AppInfoWithLiveness extends AppInfoWithClassHierarchy
    * kept.
    */
   private Set<DexMethod> liveMethods;
+
   /**
    * Information about all fields that are accessed by the program. The information includes whether
    * a given field is read/written by the program, and it also includes all indirect accesses to
    * each field. The latter is used, for example, during member rebinding.
    */
-  private FieldAccessInfoCollectionImpl fieldAccessInfoCollection;
+  private final FieldAccessInfoCollectionImpl fieldAccessInfoCollection;
+
   /** Set of all methods referenced in invokes along with their calling contexts. */
   private final MethodAccessInfoCollection methodAccessInfoCollection;
   /** Information about instantiated classes and their allocation sites. */
@@ -1281,69 +1285,67 @@ public class AppInfoWithLiveness extends AppInfoWithClassHierarchy
     return prunedTypes;
   }
 
-  public DexEncodedMethod lookupSingleTarget(
+  public DexClassAndMethod lookupSingleTarget(
       AppView<AppInfoWithLiveness> appView,
       InvokeType type,
       DexMethod target,
+      SingleResolutionResult<?> resolutionResult,
       ProgramMethod context,
       LibraryModeledPredicate modeledPredicate) {
     assert checkIfObsolete();
-    DexType holder = target.holder;
-    if (!holder.isClassType()) {
+    if (!target.getHolderType().isClassType()) {
       return null;
     }
     switch (type) {
-      case VIRTUAL:
-        return lookupSingleVirtualTarget(appView, target, context, false, modeledPredicate);
       case INTERFACE:
-        return lookupSingleVirtualTarget(appView, target, context, true, modeledPredicate);
+      case VIRTUAL:
+        return lookupSingleVirtualTarget(
+            appView,
+            target,
+            resolutionResult,
+            context,
+            type.isInterface(),
+            modeledPredicate,
+            DynamicType.unknown());
       case DIRECT:
         return lookupDirectTarget(target, context, appView);
       case STATIC:
         return lookupStaticTarget(target, context, appView);
       case SUPER:
-        return toMethodDefinitionOrNull(lookupSuperTarget(target, context, appView));
+        return lookupSuperTarget(target, context, appView);
       default:
         return null;
     }
   }
 
-  public ProgramMethod lookupSingleProgramTarget(
-      AppView<AppInfoWithLiveness> appView,
-      InvokeType type,
-      DexMethod target,
-      ProgramMethod context,
-      LibraryModeledPredicate modeledPredicate) {
-    return asProgramMethodOrNull(
-        lookupSingleTarget(appView, type, target, context, modeledPredicate), this);
-  }
-
   /** For mapping invoke virtual instruction to single target method. */
-  public DexEncodedMethod lookupSingleVirtualTarget(
-      AppView<AppInfoWithLiveness> appView,
-      DexMethod method,
-      ProgramMethod context,
-      boolean isInterface) {
-    assert checkIfObsolete();
-    return lookupSingleVirtualTarget(appView, method, context, isInterface, type -> false);
-  }
-
-  /** For mapping invoke virtual instruction to single target method. */
-  public DexEncodedMethod lookupSingleVirtualTarget(
+  public DexClassAndMethod lookupSingleVirtualTargetForTesting(
       AppView<AppInfoWithLiveness> appView,
       DexMethod method,
       ProgramMethod context,
       boolean isInterface,
-      LibraryModeledPredicate modeledPredicate) {
+      LibraryModeledPredicate modeledPredicate,
+      DynamicType dynamicReceiverType) {
     assert checkIfObsolete();
-    return lookupSingleVirtualTarget(
-        appView, method, context, isInterface, modeledPredicate, DynamicType.unknown());
+    SingleResolutionResult<?> resolutionResult =
+        appView.appInfo().resolveMethodLegacy(method, isInterface).asSingleResolution();
+    if (resolutionResult != null) {
+      return lookupSingleVirtualTarget(
+          appView,
+          method,
+          resolutionResult,
+          context,
+          isInterface,
+          modeledPredicate,
+          dynamicReceiverType);
+    }
+    return null;
   }
 
-  @SuppressWarnings("ReferenceEquality")
-  public DexEncodedMethod lookupSingleVirtualTarget(
+  public DexClassAndMethod lookupSingleVirtualTarget(
       AppView<AppInfoWithLiveness> appView,
       DexMethod method,
+      SingleResolutionResult<?> resolutionResult,
       ProgramMethod context,
       boolean isInterface,
       LibraryModeledPredicate modeledPredicate,
@@ -1370,53 +1372,57 @@ public class AppInfoWithLiveness extends AppInfoWithClassHierarchy
       // The refined receiver is not defined in the program and we cannot determine the target.
       return null;
     }
-    if (!dynamicReceiverType.hasDynamicLowerBoundType()
-        && singleTargetLookupCache.hasCachedItem(refinedReceiverType, method)) {
-      DexEncodedMethod cachedItem =
-          singleTargetLookupCache.getCachedItem(refinedReceiverType, method);
-      return cachedItem;
+    if (!dynamicReceiverType.hasDynamicLowerBoundType()) {
+      if (singleTargetLookupCache.hasPositiveCacheHit(refinedReceiverType, method)) {
+        return singleTargetLookupCache.getPositiveCacheHit(refinedReceiverType, method);
+      }
+      if (singleTargetLookupCache.hasNegativeCacheHit(refinedReceiverType, method)) {
+        return null;
+      }
     }
-    SingleResolutionResult<?> resolution =
-        resolveMethodOnLegacy(initialResolutionHolder, method).asSingleResolution();
-    if (resolution == null
-        || resolution.isAccessibleForVirtualDispatchFrom(context.getHolder(), appView).isFalse()) {
+    if (resolutionResult
+        .isAccessibleForVirtualDispatchFrom(context.getHolder(), appView)
+        .isFalse()) {
       return null;
     }
     // If the method is modeled, return the resolution.
-    DexEncodedMethod resolvedMethod = resolution.getResolvedMethod();
-    if (modeledPredicate.isModeled(resolution.getResolvedHolder().type)) {
-      if (resolution.getResolvedHolder().isFinal()
-          || (resolvedMethod.isFinal() && resolvedMethod.accessFlags.isPublic())) {
+    DexClassAndMethod resolvedMethod = resolutionResult.getResolutionPair();
+    if (modeledPredicate.isModeled(resolutionResult.getResolvedHolder().getType())) {
+      if (resolutionResult.getResolvedHolder().isFinal()
+          || (resolvedMethod.getAccessFlags().isFinal()
+              && resolvedMethod.getAccessFlags().isPublic())) {
         singleTargetLookupCache.addToCache(refinedReceiverType, method, resolvedMethod);
         return resolvedMethod;
       }
     }
-    DexEncodedMethod exactTarget =
+    DispatchTargetLookupResult exactTarget =
         getMethodTargetFromExactRuntimeInformation(
             refinedReceiverType,
             dynamicReceiverType.getDynamicLowerBoundType(),
-            resolution,
+            resolutionResult,
             refinedReceiverClass);
     if (exactTarget != null) {
       // We are not caching single targets here because the cache does not include the
       // lower bound dimension.
-      return exactTarget == DexEncodedMethod.SENTINEL ? null : exactTarget;
+      return exactTarget.isSingleResult()
+          ? exactTarget.asSingleResult().getSingleDispatchTarget()
+          : null;
     }
     if (refinedReceiverClass.isNotProgramClass()) {
       // The refined receiver is not defined in the program and we cannot determine the target.
-      singleTargetLookupCache.addToCache(refinedReceiverType, method, null);
+      singleTargetLookupCache.addNoSingleTargetToCache(refinedReceiverType, method);
       return null;
     }
-    DexClass resolvedHolder = resolution.getResolvedHolder();
+    DexClass resolvedHolder = resolutionResult.getResolvedHolder();
     // TODO(b/148769279): Disable lookup single target on lambda's for now.
     if (resolvedHolder.isInterface()
         && resolvedHolder.isProgramClass()
         && objectAllocationInfoCollection.isImmediateInterfaceOfInstantiatedLambda(
             resolvedHolder.asProgramClass())) {
-      singleTargetLookupCache.addToCache(refinedReceiverType, method, null);
+      singleTargetLookupCache.addNoSingleTargetToCache(refinedReceiverType, method);
       return null;
     }
-    DexEncodedMethod singleMethodTarget = null;
+    DexClassAndMethod singleMethodTarget = null;
     DexProgramClass refinedLowerBound = null;
     if (dynamicReceiverType.hasDynamicLowerBoundType()) {
       DexClass refinedLowerBoundClass =
@@ -1430,7 +1436,7 @@ public class AppInfoWithLiveness extends AppInfoWithClassHierarchy
       }
     }
     LookupResultSuccess lookupResult =
-        resolution
+        resolutionResult
             .lookupVirtualDispatchTargets(
                 context.getHolder(),
                 appView,
@@ -1440,7 +1446,7 @@ public class AppInfoWithLiveness extends AppInfoWithClassHierarchy
     if (lookupResult != null && !lookupResult.isIncomplete()) {
       LookupTarget singleTarget = lookupResult.getSingleLookupTarget();
       if (singleTarget != null && singleTarget.isMethodTarget()) {
-        singleMethodTarget = singleTarget.asMethodTarget().getDefinition();
+        singleMethodTarget = singleTarget.asMethodTarget().getTarget();
       }
     }
     if (!dynamicReceiverType.hasDynamicLowerBoundType()) {
@@ -1450,7 +1456,7 @@ public class AppInfoWithLiveness extends AppInfoWithClassHierarchy
   }
 
   @SuppressWarnings("ReferenceEquality")
-  private DexEncodedMethod getMethodTargetFromExactRuntimeInformation(
+  private DispatchTargetLookupResult getMethodTargetFromExactRuntimeInformation(
       DexType refinedReceiverType,
       ClassTypeElement receiverLowerBoundType,
       SingleResolutionResult<?> resolution,
@@ -1469,21 +1475,21 @@ public class AppInfoWithLiveness extends AppInfoWithClassHierarchy
                     .getMethodInfo(methodTarget.getTarget().asProgramMethod())
                     .isOptimizationAllowed(options()))) {
           // TODO(b/150640456): We should maybe only consider program methods.
-          return DexEncodedMethod.SENTINEL;
+          return new UnknownDispatchTargetLookupResult(resolution);
         }
-        return methodTarget.getDefinition();
+        return new SingleDispatchTargetLookupResult(methodTarget.getTarget(), resolution);
       } else {
         // TODO(b/150640456): We should maybe only consider program methods.
         // If we resolved to a method on the refined receiver in the library, then we report the
         // method as a single target as well. This is a bit iffy since the library could change
         // implementation, but we use this for library modelling.
-        DexEncodedMethod resolvedMethod = resolution.getResolvedMethod();
-        DexEncodedMethod targetOnReceiver =
-            refinedReceiverClass.lookupVirtualMethod(resolvedMethod.getReference());
+        DexClassAndMethod resolvedMethod = resolution.getResolutionPair();
+        DexClassAndMethod targetOnReceiver =
+            refinedReceiverClass.lookupVirtualClassMethod(resolvedMethod.getReference());
         if (targetOnReceiver != null && isOverriding(resolvedMethod, targetOnReceiver)) {
-          return targetOnReceiver;
+          return new SingleDispatchTargetLookupResult(targetOnReceiver, resolution);
         }
-        return DexEncodedMethod.SENTINEL;
+        return new UnknownDispatchTargetLookupResult(resolution);
       }
     }
     return null;
