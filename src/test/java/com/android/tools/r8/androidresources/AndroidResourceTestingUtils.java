@@ -6,6 +6,10 @@ package com.android.tools.r8.androidresources;
 import static com.android.tools.r8.TestBase.javac;
 import static com.android.tools.r8.TestBase.transformer;
 
+import com.android.aapt.Resources;
+import com.android.aapt.Resources.ConfigValue;
+import com.android.aapt.Resources.Item;
+import com.android.aapt.Resources.ResourceTable;
 import com.android.tools.r8.TestRuntime.CfRuntime;
 import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.ToolHelper.ProcessResult;
@@ -16,23 +20,28 @@ import com.android.tools.r8.utils.FileUtils;
 import com.android.tools.r8.utils.StreamUtils;
 import com.android.tools.r8.utils.ZipUtils;
 import com.google.common.collect.MoreCollectors;
+import com.google.protobuf.InvalidProtocolBufferException;
+import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.TreeMap;
 import java.util.stream.Collectors;
+import org.junit.Assert;
 import org.junit.rules.TemporaryFolder;
 
 public class AndroidResourceTestingUtils {
 
   enum RClassType {
     STRING,
-    DRAWABLE;
+    DRAWABLE,
+    XML;
 
     public static RClassType fromClass(Class clazz) {
       String type = rClassWithoutNamespaceAndOuter(clazz).substring(2);
@@ -64,6 +73,14 @@ public class AndroidResourceTestingUtils {
           + "    </application>\n"
           + "</manifest>\n"
           + "\n";
+
+  public static String XML_FILE_WITH_STRING_REFERENCE =
+      "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n"
+          + "<paths>\n"
+          + "    <files-path\n"
+          + "        name=\"@string/%s\"\n"
+          + "        path=\"let/it/be\" />\n"
+          + "</paths>";
 
   public static class AndroidTestRClass {
     // The original aapt2 generated R.java class
@@ -103,10 +120,97 @@ public class AndroidResourceTestingUtils {
     }
   }
 
+  // Easy traversable resource table.
+  public static class TestResourceTable {
+    private Map<String, ResourceNameToValueMapping> mapping = new HashMap<>();
+
+    private TestResourceTable(ResourceTable resourceTable) {
+      // For now, we don't have any test that use multiple packages.
+      assert resourceTable.getPackageCount() == 1;
+      for (Resources.Type type : resourceTable.getPackage(0).getTypeList()) {
+        String typeName = type.getName();
+        mapping.put(typeName, new ResourceNameToValueMapping(type));
+      }
+    }
+
+    public static TestResourceTable parseFrom(byte[] bytes) throws InvalidProtocolBufferException {
+      return new TestResourceTable(ResourceTable.parseFrom(bytes));
+    }
+
+    public boolean containsValueFor(String type, String name) {
+      return mapping.containsKey(type) && mapping.get(type).containsValueFor(name);
+    }
+
+    public static class ResourceNameToValueMapping {
+      private final Map<String, List<ResourceValue>> mapping = new HashMap<>();
+
+      public ResourceNameToValueMapping(Resources.Type type) {
+        for (Resources.Entry entry : type.getEntryList()) {
+          String name = entry.getName();
+          List<ResourceValue> entries = new ArrayList<>();
+          for (ConfigValue configValue : entry.getConfigValueList()) {
+            Item item = configValue.getValue().getItem();
+            // Currently supporting files and strings, we just flatten this to strings for easy
+            // testing.
+            if (item.hasFile()) {
+              entries.add(
+                  new ResourceValue(item.getFile().getPath(), configValue.getConfig().toString()));
+            } else if (item.hasStr()) {
+              entries.add(
+                  new ResourceValue(item.getStr().getValue(), configValue.getConfig().toString()));
+            }
+            mapping.put(name, entries);
+          }
+        }
+      }
+
+      public boolean containsValueFor(String name) {
+        return mapping.containsKey(name);
+      }
+
+      public static class ResourceValue {
+
+        private final String value;
+        private final String config;
+
+        public ResourceValue(String value, String config) {
+          this.value = value;
+          this.config = config;
+        }
+
+        public String getValue() {
+          return value;
+        }
+
+        public String getConfig() {
+          return config;
+        }
+      }
+    }
+  }
+
+  public static class ResourceTableInspector {
+
+    private final TestResourceTable testResourceTable;
+
+    public ResourceTableInspector(byte[] bytes) throws InvalidProtocolBufferException {
+      testResourceTable = TestResourceTable.parseFrom(bytes);
+    }
+
+    public void assertContainsResourceWithName(String type, String name) {
+      Assert.assertTrue(testResourceTable.containsValueFor(type, name));
+    }
+
+    public void assertDoesNotContainResourceWithName(String type, String name) {
+      Assert.assertFalse(testResourceTable.containsValueFor(type, name));
+    }
+  }
+
   public static class AndroidTestResourceBuilder {
     private String manifest;
     private final Map<String, String> stringValues = new TreeMap<>();
     private final Map<String, byte[]> drawables = new TreeMap<>();
+    private final Map<String, String> xmlFiles = new TreeMap<>();
     private final List<Class<?>> classesToRemap = new ArrayList<>();
 
     // Create the android resources from the passed in R classes
@@ -136,6 +240,12 @@ public class AndroidResourceTestingUtils {
       return this;
     }
 
+    AndroidTestResourceBuilder addXmlWithStringReference(
+        String xmlName, String nameOfReferencedString) {
+      xmlFiles.put(xmlName, String.format(XML_FILE_WITH_STRING_REFERENCE, nameOfReferencedString));
+      return this;
+    }
+
     AndroidTestResourceBuilder withSimpleManifestAndAppNameString() {
       this.manifest = SIMPLE_MANIFEST_WITH_APP_NAME;
       addStringValue("app_name", "Most important app ever.");
@@ -160,13 +270,19 @@ public class AndroidResourceTestingUtils {
         FileUtils.writeTextFile(
             temp.newFolder("res", "values").toPath().resolve("strings.xml"),
             createStringResourceXml());
+
       }
       if (drawables.size() > 0) {
+        File drawableFolder = temp.newFolder("res", "drawable");
         for (Entry<String, byte[]> entry : drawables.entrySet()) {
           FileUtils.writeToFile(
-              temp.newFolder("res", "drawable").toPath().resolve(entry.getKey()),
-              null,
-              entry.getValue());
+              drawableFolder.toPath().resolve(entry.getKey()), null, entry.getValue());
+        }
+      }
+      if (xmlFiles.size() > 0) {
+        File xmlFolder = temp.newFolder("res", "xml");
+        for (Entry<String, String> entry : xmlFiles.entrySet()) {
+          FileUtils.writeTextFile(xmlFolder.toPath().resolve(entry.getKey()), entry.getValue());
         }
       }
 
@@ -189,7 +305,7 @@ public class AndroidResourceTestingUtils {
       ZipUtils.iter(
           rClassClassFileOutput,
           (entry, input) -> {
-            if (ZipUtils.isClassFile(entry.getName())) {
+            if (ZipUtils.isClassFile(entry.getName()) && !entry.getName().endsWith("R.class")) {
               rewrittenRClassFiles.add(
                   transformer(StreamUtils.streamToByteArrayClose(input), null)
                       .addClassTransformer(
@@ -214,6 +330,23 @@ public class AndroidResourceTestingUtils {
                                   signature,
                                   superName,
                                   interfaces);
+                            }
+
+                            @Override
+                            public void visitNestHost(String nestHost) {
+                              // Don't make nest host relationsships
+                            }
+
+                            @Override
+                            public void visitOuterClass(
+                                String owner, String name, String descriptor) {
+                              // Don't make the inner<>outer class connection
+                            }
+
+                            @Override
+                            public void visitInnerClass(
+                                String name, String outerName, String innerName, int access) {
+                              // Don't make the inner<>outer class connection
                             }
                           })
                       .transform());
