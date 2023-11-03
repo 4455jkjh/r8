@@ -769,7 +769,7 @@ final class InlineCandidateProcessor {
         if (instruction.isInstanceGet()) {
           if (instruction.hasUsedOutValue()) {
             replaceFieldReadFromStaticGet(
-                code, instructionIterator, user.asInstanceGet(), affectedValues);
+                code, instructionIterator, instruction.asInstanceGet(), affectedValues);
           } else {
             instructionIterator.removeOrReplaceByDebugLocalRead();
           }
