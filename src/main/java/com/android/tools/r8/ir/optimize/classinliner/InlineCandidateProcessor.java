@@ -778,7 +778,7 @@ final class InlineCandidateProcessor {
           assumeRemover.markAssumeDynamicTypeUsersForRemoval(instruction.outValue());
           if (instruction.hasUsedOutValue()) {
             replaceFieldReadFromStaticGet(
-                code, instructionIterator, user.asInstanceGet(), affectedValues);
+                code, instructionIterator, instruction.asInstanceGet(), affectedValues);
           } else {
             instructionIterator.removeOrReplaceByDebugLocalRead();
           }
