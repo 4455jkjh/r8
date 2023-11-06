@@ -15,12 +15,13 @@ import org.spdx.sbom.gradle.SpdxSbomTask
 import org.spdx.sbom.gradle.extensions.DefaultSpdxSbomTaskExtension
 
 import com.google.gson.Gson
+import java.util.UUID
 
 plugins {
   `kotlin-dsl`
   id("dependencies-plugin")
   id("net.ltgt.errorprone") version "3.0.1"
-  id("org.spdx.sbom") version "0.2.0-r8-patch01"
+  id("org.spdx.sbom") version "0.4.0-r8-patch01"
 }
 
 java {
@@ -47,7 +48,7 @@ dependencies {
 }
 
 if (project.hasProperty("spdxVersion")) {
-  project.version = project.property("spdxVersion")
+  project.version = project.property("spdxVersion")!!
 }
 
 spdxSbom {
@@ -65,7 +66,17 @@ spdxSbom {
       }
       document {
         name.set("R8 Compiler Suite")
-        namespace.set("https://r8.googlesource.com/r8/-" + project.version + ".jar")
+        // Generate version 5 UUID from fixed namespace UUID and name generated from revision
+        // (git hash) and artifact name.
+        if (project.hasProperty("spdxRevision")) {
+          namespace.set(
+            "https://spdx.google/"
+              + uuid5(
+              UUID.fromString("df17ea25-709b-4edc-8dc1-d3ca82c74e8e"),
+              project.property("spdxRevision").toString() + "-r8"
+            )
+          )
+        }
         creator.set("Organization: Google LLC")
         packageSupplier.set("Organization: Google LLC")
       }
