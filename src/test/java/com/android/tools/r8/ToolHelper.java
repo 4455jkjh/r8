@@ -99,10 +99,6 @@ import org.junit.rules.TemporaryFolder;
 
 public class ToolHelper {
 
-  public static boolean isNewGradleSetup() {
-    return "true".equals(System.getProperty("USE_NEW_GRADLE_SETUP"));
-  }
-
   public static String getProjectRoot() {
     String current = System.getProperty("user.dir");
     if (!current.contains("d8_r8")) {
@@ -146,9 +142,7 @@ public class ToolHelper {
     }
 
     public static TestDataSourceSet computeLegacyOrGradleSpecifiedLocation() {
-      return isNewGradleSetup()
-          ? TestDataSourceSet.SPECIFIED_BY_GRADLE_PROPERTY
-          : TestDataSourceSet.LEGACY;
+      return TestDataSourceSet.SPECIFIED_BY_GRADLE_PROPERTY;
     }
   }
 
@@ -178,33 +172,23 @@ public class ToolHelper {
   public static final String SMALI_BUILD_DIR = THIRD_PARTY_DIR + "smali/";
 
   public static String getExamplesJava11BuildDir() {
-    // TODO(b/270105162): This changes when new gradle setup is default.
-    if (ToolHelper.isNewGradleSetup()) {
-      assert System.getProperty("EXAMPLES_JAVA_11_JAVAC_BUILD_DIR") != null;
-      return System.getProperty("EXAMPLES_JAVA_11_JAVAC_BUILD_DIR");
-    } else {
-      return BUILD_DIR + "classes/java/examplesJava11/";
-    }
+    assert System.getProperty("EXAMPLES_JAVA_11_JAVAC_BUILD_DIR") != null;
+    return System.getProperty("EXAMPLES_JAVA_11_JAVAC_BUILD_DIR");
   }
 
   public static Path getR8MainPath() {
-    // TODO(b/270105162): This changes when new gradle setup is default.
-    if (ToolHelper.isNewGradleSetup()) {
-      assert System.getProperty("R8_RUNTIME_PATH") != null;
-      return Paths.get(System.getProperty("R8_RUNTIME_PATH"));
-    } else {
-      return isTestingR8Lib() ? R8LIB_JAR : R8_JAR_OLD;
-    }
+    assert System.getProperty("R8_RUNTIME_PATH") != null;
+    return Paths.get(System.getProperty("R8_RUNTIME_PATH"));
   }
 
   public static Path getRetracePath() {
-    // TODO(b/270105162): This changes when new gradle setup is default.
-    if (ToolHelper.isNewGradleSetup()) {
-      assert System.getProperty("RETRACE_RUNTIME_PATH") != null;
-      return Paths.get(System.getProperty("RETRACE_RUNTIME_PATH"));
-    } else {
-      return isTestingR8Lib() ? ToolHelper.R8_RETRACE_JAR : ToolHelper.R8_JAR_OLD;
-    }
+    assert System.getProperty("RETRACE_RUNTIME_PATH") != null;
+    return Paths.get(System.getProperty("RETRACE_RUNTIME_PATH"));
+  }
+
+  public static Path getKeepAnnoPath() {
+    assert System.getProperty("KEEP_ANNO_JAVAC_BUILD_DIR") != null;
+    return Paths.get(System.getProperty("KEEP_ANNO_JAVAC_BUILD_DIR").split(File.pathSeparator)[0]);
   }
 
   public static final Path CHECKED_IN_R8_17_WITH_DEPS =
@@ -264,7 +248,6 @@ public class ToolHelper {
   public static final Path RETRACE_MAPS_DIR = Paths.get(THIRD_PARTY_DIR, "r8mappings");
 
   // TODO(b/270105162): These should be removed when finished transitioning.
-  public static final Path R8_JAR_OLD = Paths.get(LIBS_DIR, "r8.jar");
   public static final Path R8_WITH_RELOCATED_DEPS_17_JAR =
       Paths.get(LIBS_DIR, "r8_with_relocated_deps_17.jar");
   public static final Path R8LIB_JAR = Paths.get(LIBS_DIR, "r8lib.jar");
@@ -273,22 +256,15 @@ public class ToolHelper {
   public static final Path R8LIB_EXCLUDE_DEPS_JAR = Paths.get(LIBS_DIR, "r8lib-exclude-deps.jar");
   public static final Path R8LIB_EXCLUDE_DEPS_MAP =
       Paths.get(LIBS_DIR, "r8lib-exclude-deps.jar.map");
-  public static final Path R8_RETRACE_JAR = Paths.get(LIBS_DIR, "r8retrace.jar");
 
   public static Path getDeps() {
-    if (isNewGradleSetup()) {
-      return Paths.get(System.getProperty("R8_DEPS"));
-    } else {
-      return Paths.get(LIBS_DIR, "deps_all.jar");
-    }
+    assert System.getProperty("R8_DEPS") != null;
+    return Paths.get(System.getProperty("R8_DEPS"));
   }
 
   public static Path getR8WithRelocatedDeps() {
-    if (isNewGradleSetup()) {
-      return Paths.get(System.getProperty("R8_WITH_RELOCATED_DEPS"));
-    } else {
-      return Paths.get(LIBS_DIR, "r8_with_relocated_deps.jar");
-    }
+    assert System.getProperty("R8_WITH_RELOCATED_DEPS") != null;
+    return Paths.get(System.getProperty("R8_WITH_RELOCATED_DEPS"));
   }
 
   public static final String DESUGARED_LIB_RELEASES_DIR =
@@ -481,7 +457,7 @@ public class ToolHelper {
         return shortName;
       }
 
-      private String shortName;
+      private final String shortName;
     }
 
     public String toString() {
@@ -584,9 +560,7 @@ public class ToolHelper {
         result.add("/bin/bash");
       }
       result.add(getExecutable());
-      for (String option : options) {
-        result.add(option);
-      }
+      result.addAll(options);
       for (Map.Entry<String, String> entry : systemProperties.entrySet()) {
         StringBuilder builder = new StringBuilder("-D");
         builder.append(entry.getKey());
@@ -698,7 +672,7 @@ public class ToolHelper {
       }
     }
 
-    public ProcessResult getCachedResults() throws IOException {
+    public ProcessResult getCachedResults() {
       if (!useCache()) {
         return null;
       }
@@ -1169,17 +1143,6 @@ public class ToolHelper {
     }
     fail("Unsupported platform, we currently only support mac and linux: " + getPlatform());
     return ""; //never here
-  }
-
-  public static String toolsDir() {
-    String osName = System.getProperty("os.name");
-    if (osName.equals("Mac OS X")) {
-      return "mac";
-    } else if (osName.contains("Windows")) {
-      return "windows";
-    } else {
-      return "linux";
-    }
   }
 
   public static String getProguard5Script() {
@@ -1775,10 +1738,6 @@ public class ToolHelper {
     return compatSink.build();
   }
 
-  public static void runL8(L8Command command) throws CompilationFailedException {
-    runL8(command, options -> {});
-  }
-
   public static void runL8(L8Command command, Consumer<InternalOptions> optionsModifier)
       throws CompilationFailedException {
     InternalOptions internalOptions = command.getInternalOptions();
@@ -1791,7 +1750,8 @@ public class ToolHelper {
         command.getR8Command());
   }
 
-  public static void addFilteredAndroidJar(BaseCommand.Builder builder, AndroidApiLevel apiLevel) {
+  public static void addFilteredAndroidJar(
+      BaseCommand.Builder<?, ?> builder, AndroidApiLevel apiLevel) {
     addFilteredAndroidJar(getAppBuilder(builder), apiLevel);
   }
 
@@ -2351,13 +2311,6 @@ public class ToolHelper {
     return result.stdout;
   }
 
-  public static String checkArtOutputIdentical(String file1, String file2, String mainClass,
-      DexVm version)
-      throws IOException {
-    return checkArtOutputIdentical(Collections.singletonList(file1),
-        Collections.singletonList(file2), mainClass, null, version);
-  }
-
   public static String checkArtOutputIdentical(List<String> files1, List<String> files2,
       String mainClass,
       Consumer<ArtCommandBuilder> extras,
@@ -2410,7 +2363,7 @@ public class ToolHelper {
   }
 
   // Checked in VMs for which dex2oat should work specified in decreasing order.
-  private static List<DexVm> SUPPORTED_DEX2OAT_VMS =
+  private static final List<DexVm> SUPPORTED_DEX2OAT_VMS =
       ImmutableList.of(DexVm.ART_12_0_0_HOST, DexVm.ART_6_0_1_HOST);
 
   public static ProcessResult runDex2OatRaw(Path file, Path outFile, DexVm targetVm)
@@ -2457,8 +2410,7 @@ public class ToolHelper {
     ProcessBuilder builder = new ProcessBuilder(command);
     builder.directory(getDexVmPath(vm).toFile());
     builder.environment().put("LD_LIBRARY_PATH", getDexVmLibPath(vm).toString());
-    ProcessResult processResult = runProcess(builder);
-    return processResult;
+    return runProcess(builder);
   }
 
   public static ProcessResult runProguardRaw(
@@ -2509,11 +2461,6 @@ public class ToolHelper {
     return runProguardRaw(getProguard5Script(), inJar, outJar, config, map);
   }
 
-  public static ProcessResult runProguardRaw(Path inJar, Path outJar, Path config, Path map)
-      throws IOException {
-    return runProguardRaw(getProguard5Script(), inJar, outJar, ImmutableList.of(config), map);
-  }
-
   public static String runProguard(Path inJar, Path outJar, Path config, Path map)
       throws IOException {
     return runProguard(inJar, outJar, ImmutableList.of(config), map);
@@ -2537,16 +2484,6 @@ public class ToolHelper {
   public static ProcessResult runProguard6Raw(
       Path inJar, Path outJar, Path lib, Path config, Path map) throws IOException {
     return runProguardRaw(getProguard6Script(), inJar, outJar, lib, ImmutableList.of(config), map);
-  }
-
-  public static String runProguard6(Path inJar, Path outJar, Path config, Path map)
-      throws IOException {
-    return runProguard6(inJar, outJar, ImmutableList.of(config), map);
-  }
-
-  public static String runProguard6(Path inJar, Path outJar, List<Path> configs, Path map)
-      throws IOException {
-    return runProguard(getProguard6Script(), inJar, outJar, configs, map);
   }
 
   public static ProcessResult runRetraceRaw(Path retracePath, Path map, Path stackTrace)

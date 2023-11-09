@@ -114,8 +114,9 @@ public class BootstrapCurrentEqualityTest extends TestBase {
           .addProgramFiles(ToolHelper.getR8WithRelocatedDeps())
           .addLibraryProvider(JdkClassFileProvider.fromSystemJdk())
           .addKeepRuleFiles(MAIN_KEEP)
+          .enableExperimentalKeepAnnotations()
           // TODO(b/176783536, b/270105162): Get a hold of dependencies in new gradle setup.
-          .applyIf(ToolHelper.isNewGradleSetup(), R8TestBuilder::allowUnusedDontWarnPatterns)
+          .apply(R8TestBuilder::allowUnusedDontWarnPatterns)
           .compile()
           .apply(c -> FileUtils.writeTextFile(map, c.getProguardMap()))
           .writeToZip(jar);

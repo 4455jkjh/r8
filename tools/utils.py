@@ -48,8 +48,6 @@ GRADLE_TASK_R8LIB = ':test:assembleR8LibWithRelocatedDeps'
 GRADLE_TASK_R8LIB_NO_DEPS = ':test:assembleR8LibNoDeps'
 GRADLE_TASK_THREADING_MODULE_BLOCKING = ':main:threadingModuleBlockingJar'
 GRADLE_TASK_THREADING_MODULE_SINGLE_THREADED = ':main:threadingModuleSingleThreadedJar'
-GRADLE_TASK_RETRACE = ':test:assembleRetraceLibWithRelocatedDeps'
-GRADLE_TASK_RETRACE_NO_DEPS = ':test:assembleRetraceLibNoDeps'
 GRADLE_TASK_SOURCE_JAR = ':test:packageSources'
 GRADLE_TASK_SWISS_ARMY_KNIFE = ':main:swissArmyKnife'
 GRADLE_TASK_TEST = ':test:test'
@@ -69,8 +67,6 @@ R8LIB_EXCLUDE_DEPS_JAR = os.path.join(LIBS, 'r8lib-exclude-deps.jar')
 R8_FULL_EXCLUDE_DEPS_JAR = os.path.join(LIBS, 'r8-full-exclude-deps.jar')
 THREADING_MODULE_BLOCKING_JAR = os.path.join(LIBS, 'threading-module-blocking.jar')
 THREADING_MODULE_SINGLE_THREADED_JAR = os.path.join(LIBS, 'threading-module-single-threaded.jar')
-R8RETRACE_JAR = os.path.join(LIBS, 'r8retrace.jar')
-R8RETRACE_EXCLUDE_DEPS_JAR = os.path.join(LIBS, 'r8retrace-exclude-deps.jar')
 R8_TESTS_JAR = os.path.join(LIBS, 'r8tests.jar')
 R8LIB_TESTS_JAR = os.path.join(LIBS, 'r8libtestdeps-cf.jar')
 R8_TESTS_DEPS_JAR = os.path.join(LIBS, 'test_deps_all.jar')
@@ -678,13 +674,13 @@ def desugar_configuration_name_and_version(configuration, is_for_maven):
                             configuration)
         if (configuration_format_version != 3 and
                 configuration_format_version != 5 and
-                configuration_format_version != (200 if is_for_maven else 100)):
+                configuration_format_version != (200 if is_for_maven else 101)):
             raise Exception(
                 'Unsupported "configuration_format_version" "%s" found in %s' %
                 (configuration_format_version, configuration))
         version = configuration_json.get('version')
         if not version:
-            if configuration_format_version == (200 if is_for_maven else 100):
+            if configuration_format_version == (200 if is_for_maven else 101):
                 identifier = configuration_json.get('identifier')
                 if not identifier:
                     raise Exception('No "identifier" found in ' + configuration)
@@ -704,7 +700,7 @@ def desugar_configuration_name_and_version(configuration, is_for_maven):
             else:
                 raise Exception('No "version" found in ' + configuration)
         else:
-            if configuration_format_version == (200 if is_for_maven else 100):
+            if configuration_format_version == (200 if is_for_maven else 101):
                 raise Exception('No "version" expected in ' + configuration)
         # Disallow prerelease, as older R8 versions cannot parse it causing hard to
         # understand errors.

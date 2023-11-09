@@ -16,6 +16,7 @@ import com.android.tools.r8.graph.DexItemFactory;
 import com.android.tools.r8.inspector.Inspector;
 import com.android.tools.r8.inspector.internal.InspectorImpl;
 import com.android.tools.r8.ir.desugar.desugaredlibrary.DesugaredLibrarySpecification;
+import com.android.tools.r8.keepanno.annotations.KeepForApi;
 import com.android.tools.r8.keepanno.asm.KeepEdgeReader;
 import com.android.tools.r8.keepanno.ast.KeepDeclaration;
 import com.android.tools.r8.keepanno.keeprules.KeepRuleExtractor;
@@ -86,7 +87,7 @@ import java.util.function.Supplier;
  *     .build();
  * </pre>
  */
-@Keep
+@KeepForApi
 public final class R8Command extends BaseCompilerCommand {
 
   /**
@@ -94,7 +95,7 @@ public final class R8Command extends BaseCompilerCommand {
    *
    * <p>A builder is obtained by calling {@link R8Command#builder}.
    */
-  @Keep
+  @KeepForApi
   public static class Builder extends BaseCompilerCommand.Builder<R8Command, Builder> {
 
     private static class DefaultR8DiagnosticsHandler implements DiagnosticsHandler {
@@ -134,7 +135,8 @@ public final class R8Command extends BaseCompilerCommand {
     private final List<FeatureSplit> featureSplits = new ArrayList<>();
     private String synthesizedClassPrefix = "";
     private boolean enableMissingLibraryApiModeling = false;
-    private boolean enableExperimentalKeepAnnotations = false;
+    private boolean enableExperimentalKeepAnnotations =
+        System.getProperty("com.android.tools.r8.enableKeepAnnotations") != null;
     private SemanticVersion fakeCompilerVersion = null;
     private AndroidResourceProvider androidResourceProvider = null;
     private AndroidResourceConsumer androidResourceConsumer = null;

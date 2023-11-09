@@ -99,10 +99,6 @@ def prepare_release(args):
                       'is the same as exiting release (%s).' % old_version)
                     sys.exit(1)
 
-                subprocess.check_call(
-                    ['git', 'cl', 'new-branch',
-                     'release-%s' % version])
-
                 if args.dev_pre_cherry_pick:
                     for pre_commit in args.dev_pre_cherry_pick:
                         subprocess.check_call(
@@ -316,6 +312,13 @@ def prepare_studio(args):
     assert args.version
     assert os.path.exists(args.studio), ("Could not find STUDIO path %s" %
                                          args.studio)
+    if (not args.studio.endswith('-dev')
+        and not args.studio.endswith('-dev/')
+        and not args.studio_legacy_release):
+        print("Please use the new release process, see go/r8-release-prebuilts. "
+            + "If for some reason the legacy release process is needed "
+            + "pass --studio-legacy-release")
+        sys.exit(1)
 
     def release_studio(options):
         print("Releasing for STUDIO")
@@ -421,18 +424,12 @@ def prepare_google3(args):
             g4_open('src.jar')
             g4_open('lib.jar')
             g4_open('lib.jar.map')
-            g4_open('retrace_full.jar')
-            g4_open('retrace_lib.jar')
-            g4_open('retrace_lib.jar.map')
             g4_open('desugar_jdk_libs_configuration.jar')
             g4_open('threading-module-blocking.jar')
             g4_open('threading-module-single-threaded.jar')
             download_file(options.version,
                           'r8-full-exclude-deps.jar',
                           'full.jar')
-            download_file(options.version,
-                          'r8-full-exclude-deps.jar',
-                          'retrace_full.jar')
             download_file(options.version,
                           'r8-src.jar',
                           'src.jar')
@@ -446,12 +443,6 @@ def prepare_google3(args):
                           'desugar_jdk_libs_configuration.jar',
                           'desugar_jdk_libs_configuration.jar')
             download_file(options.version,
-                          'r8retrace-exclude-deps.jar',
-                          'retrace_lib.jar')
-            download_file(options.version,
-                          'r8retrace-exclude-deps.jar.map',
-                          'retrace_lib.jar.map')
-            download_file(options.version,
                           'threading-module-blocking.jar',
                           'threading-module-blocking.jar')
             download_file(options.version,
@@ -461,7 +452,7 @@ def prepare_google3(args):
                 g4_open('METADATA')
                 metadata_path = os.path.join(third_party_r8, 'METADATA')
                 match_count = 0
-                match_count_expected = 12
+                match_count_expected = 11
                 version_match_regexp = r'[1-9]\.[0-9]{1,2}\.[0-9]{1,3}-dev'
                 for line in open(metadata_path, 'r'):
                     result = re.search(version_match_regexp, line)
@@ -500,74 +491,6 @@ def prepare_google3(args):
                 return change_result
 
     return release_google3
-
-
-def prepare_google3_retrace(args):
-    assert args.version
-    # Check if an existing client exists.
-    if not args.use_existing_work_branch:
-        check_no_google3_client(args, args.p4_client)
-
-    def release_google3_retrace(options):
-        print("Releasing Retrace for Google 3")
-        if options.dry_run:
-            return 'DryRun: omitting g3 release for %s' % options.version
-
-        google3_base = subprocess.check_output(
-            ['p4', 'g4d', '-f', args.p4_client]).decode('utf-8').rstrip()
-        third_party_r8 = os.path.join(google3_base, 'third_party', 'java', 'r8')
-        with utils.ChangedWorkingDirectory(third_party_r8):
-            # download files
-            g4_open('retrace_full.jar')
-            g4_open('retrace_lib.jar')
-            g4_open('retrace_lib.jar.map')
-            download_file(options.version, 'r8-full-exclude-deps.jar',
-                          'retrace_full.jar')
-            download_file(options.version, 'r8retrace-exclude-deps.jar',
-                          'retrace_lib.jar')
-            download_file(options.version, 'r8lib-exclude-deps.jar.map',
-                          'retrace_lib.jar.map')
-            g4_open('METADATA')
-            metadata_path = os.path.join(third_party_r8, 'METADATA')
-            match_count = 0
-            version_match_regexp = r'[1-9]\.[0-9]{1,2}\.[0-9]{1,3}-dev/r8retrace-exclude-deps.jar'
-            for line in open(metadata_path, 'r'):
-                result = re.search(version_match_regexp, line)
-                if result:
-                    match_count = match_count + 1
-            if match_count != 1:
-                print((
-                    "Could not find the previous retrace release string to replace in "
-                    +
-                    "METADATA. Expected to find is mentioned 1 times. Please update %s "
-                    + "manually and run again with options --google3retrace " +
-                    "--use-existing-work-branch.") % metadata_path)
-                sys.exit(1)
-            sed(version_match_regexp,
-                options.version + "/r8retrace-exclude-deps.jar", metadata_path)
-            subprocess.check_output('chmod u+w *', shell=True)
-
-        with utils.ChangedWorkingDirectory(google3_base):
-            blaze_result = blaze_run(
-                '//third_party/java/r8:retrace -- --version')
-
-            print(blaze_result)
-            assert options.version in blaze_result
-
-            if not options.no_upload:
-                change_result = g4_change(options.version)
-                change_result += 'Run \'(g4d ' + args.p4_client \
-                                 + ' && tap_presubmit -p all --train -c ' \
-                                 + get_cl_id(change_result) + ')\' for running TAP global' \
-                                 + ' presubmit using the train.\n' \
-                                 + 'Run \'(g4d ' + args.p4_client \
-                                 + ' && tap_presubmit -p all --notrain --detach --email' \
-                                 + ' --skip_flaky_targets --skip_already_failing -c ' \
-                                 + get_cl_id(change_result) + ')\' for running an isolated' \
-                                 + ' TAP global presubmit.'
-                return change_result
-
-    return release_google3_retrace
 
 
 def update_desugar_library_in_studio(args):
@@ -1040,6 +963,10 @@ def parse_options():
         metavar=('<path>'),
         help='Release for studio by setting the path to a studio '
         'checkout')
+    result.add_argument('--studio-legacy-release',
+                        default=False,
+                        action='store_true',
+                        help='Allow Studio release using the legacy process')
     result.add_argument('--aosp',
                         metavar=('<path>'),
                         help='Release for aosp by setting the path to the '
@@ -1052,10 +979,6 @@ def parse_options():
                         default=False,
                         action='store_true',
                         help='Release for google 3')
-    result.add_argument('--google3retrace',
-                        default=False,
-                        action='store_true',
-                        help='Release retrace for google 3')
     result.add_argument('--p4-client',
                         default='update-r8',
                         metavar=('<client name>'),
@@ -1130,8 +1053,6 @@ def main():
 
     if args.google3:
         targets_to_run.append(prepare_google3(args))
-    if args.google3retrace:
-        targets_to_run.append(prepare_google3_retrace(args))
     if args.studio and not args.update_desugar_library_in_studio:
         targets_to_run.append(prepare_studio(args))
     if args.aosp:
