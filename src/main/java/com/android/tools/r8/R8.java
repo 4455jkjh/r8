@@ -713,16 +713,16 @@ public class R8 {
       timing.end();
 
       // Perform repackaging.
-      if (options.isRepackagingEnabled()) {
-        DirectMappedDexApplication.Builder appBuilder =
-            appView.appInfo().app().asDirect().builder();
-        RepackagingLens lens =
-            new Repackaging(appView.withLiveness()).run(appBuilder, executorService, timing);
-        if (lens != null) {
-          appView.rewriteWithLensAndApplication(lens, appBuilder.build());
-        }
-      }
       if (appView.appInfo().hasLiveness()) {
+        if (options.isRepackagingEnabled()) {
+          DirectMappedDexApplication.Builder appBuilder =
+              appView.appInfo().app().asDirect().builder();
+          RepackagingLens lens =
+              new Repackaging(appView.withLiveness()).run(appBuilder, executorService, timing);
+          if (lens != null) {
+            appView.rewriteWithLensAndApplication(lens, appBuilder.build());
+          }
+        }
         assert Repackaging.verifyIdentityRepackaging(appView.withLiveness());
       }
 
