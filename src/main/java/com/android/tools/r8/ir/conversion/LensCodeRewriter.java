@@ -50,7 +50,6 @@ import com.android.tools.r8.graph.DexMethodHandle;
 import com.android.tools.r8.graph.DexProto;
 import com.android.tools.r8.graph.DexType;
 import com.android.tools.r8.graph.ProgramMethod;
-import com.android.tools.r8.graph.classmerging.VerticallyMergedClasses;
 import com.android.tools.r8.graph.lens.FieldLookupResult;
 import com.android.tools.r8.graph.lens.GraphLens;
 import com.android.tools.r8.graph.lens.MethodLookupResult;
@@ -115,6 +114,7 @@ import com.android.tools.r8.utils.ArrayUtils;
 import com.android.tools.r8.utils.InternalOptions;
 import com.android.tools.r8.utils.LazyBox;
 import com.android.tools.r8.verticalclassmerging.InterfaceTypeToClassTypeLensCodeRewriterHelper;
+import com.android.tools.r8.verticalclassmerging.VerticallyMergedClasses;
 import com.google.common.collect.Sets;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -272,7 +272,7 @@ public class LensCodeRewriter {
     boolean mayHaveUnreachableBlocks = false;
     while (blocks.hasNext()) {
       BasicBlock block = blocks.next();
-      if (block.hasCatchHandlers() && options.enableVerticalClassMerging) {
+      if (block.hasCatchHandlers() && !appView.getVerticallyMergedClasses().isEmpty()) {
         boolean anyGuardsRenamed = block.renameGuardsInCatchHandlers(graphLens, codeLens);
         if (anyGuardsRenamed) {
           mayHaveUnreachableBlocks |= unlinkDeadCatchHandlers(block, graphLens, codeLens);
@@ -1309,7 +1309,7 @@ public class LensCodeRewriter {
   // A and B although this will lead to invalid code, because this code pattern does generally
   // not occur in practice (it leads to a verification error on the JVM, but not on Art).
   private void checkInvokeDirect(DexMethod method, InvokeDirect invoke) {
-    VerticallyMergedClasses verticallyMergedClasses = appView.verticallyMergedClasses();
+    VerticallyMergedClasses verticallyMergedClasses = appView.getVerticallyMergedClasses();
     if (verticallyMergedClasses == null) {
       // No need to check the invocation.
       return;

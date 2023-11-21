@@ -98,7 +98,6 @@ public class PrimaryMethodProcessor extends MethodProcessorWithWave {
     InternalOptions options = appView.options();
     Deque<ProgramMethodSet> waves = new ArrayDeque<>();
     Collection<Node> nodes = callGraph.getNodes();
-    int waveCount = 1;
     while (!nodes.isEmpty()) {
       ProgramMethodSet wave = callGraph.extractLeaves();
       waves.addLast(wave);
@@ -127,11 +126,11 @@ public class PrimaryMethodProcessor extends MethodProcessorWithWave {
       throws ExecutionException {
     TimingMerger merger = timing.beginMerger("primary-processor", executorService);
     while (!waves.isEmpty()) {
-      processorContext = appView.createProcessorContext();
       wave = waves.removeFirst();
       assert !wave.isEmpty();
       assert waveExtension.isEmpty();
       do {
+        processorContext = appView.createProcessorContext();
         waveStartAction.notifyWaveStart(wave);
         Collection<Timing> timings =
             ThreadUtils.processItemsWithResults(

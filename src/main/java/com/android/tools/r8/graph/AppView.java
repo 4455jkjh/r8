@@ -4,6 +4,7 @@
 
 package com.android.tools.r8.graph;
 
+import com.android.build.shrinker.r8integration.R8ResourceShrinkerState;
 import com.android.tools.r8.androidapi.AndroidApiLevelCompute;
 import com.android.tools.r8.androidapi.ComputedApiLevel;
 import com.android.tools.r8.contexts.CompilationContext;
@@ -13,7 +14,6 @@ import com.android.tools.r8.features.ClassToFeatureSplitMap;
 import com.android.tools.r8.graph.DexValue.DexValueString;
 import com.android.tools.r8.graph.analysis.InitializedClassesInInstanceMethodsAnalysis.InitializedClassesInInstanceMethods;
 import com.android.tools.r8.graph.classmerging.MergedClassesCollection;
-import com.android.tools.r8.graph.classmerging.VerticallyMergedClasses;
 import com.android.tools.r8.graph.lens.GraphLens;
 import com.android.tools.r8.graph.lens.InitClassLens;
 import com.android.tools.r8.graph.lens.NonIdentityGraphLens;
@@ -64,6 +64,7 @@ import com.android.tools.r8.utils.ThrowingConsumer;
 import com.android.tools.r8.utils.Timing;
 import com.android.tools.r8.utils.threads.ThreadTask;
 import com.android.tools.r8.utils.threads.ThreadTaskUtils;
+import com.android.tools.r8.verticalclassmerging.VerticallyMergedClasses;
 import com.google.common.base.Predicates;
 import com.google.common.collect.ImmutableSet;
 import java.io.IOException;
@@ -78,9 +79,13 @@ import java.util.function.Supplier;
 
 public class AppView<T extends AppInfo> implements DexDefinitionSupplier, LibraryModeledPredicate {
 
-  private enum WholeProgramOptimizations {
+  public enum WholeProgramOptimizations {
     ON,
-    OFF
+    OFF;
+
+    public boolean isOn() {
+      return this == ON;
+    }
   }
 
   private T appInfo;
@@ -143,6 +148,8 @@ public class AppView<T extends AppInfo> implements DexDefinitionSupplier, Librar
   private final Map<DexType, String> sourceFileForPrunedTypes = new IdentityHashMap<>();
 
   private SeedMapper applyMappingSeedMapper;
+
+  R8ResourceShrinkerState resourceShrinkerState = null;
 
   // When input has been (partially) desugared these are the classes which has been library
   // desugared. This information is populated in the IR converter.
@@ -526,6 +533,10 @@ public class AppView<T extends AppInfo> implements DexDefinitionSupplier, Librar
     return wholeProgramOptimizations == WholeProgramOptimizations.ON;
   }
 
+  public WholeProgramOptimizations getWholeProgramOptimizations() {
+    return wholeProgramOptimizations;
+  }
+
   /**
    * Create a new processor context.
    *
@@ -691,6 +702,7 @@ public class AppView<T extends AppInfo> implements DexDefinitionSupplier, Librar
   }
 
   public void setCfByteCodePassThrough(Set<DexMethod> cfByteCodePassThrough) {
+    assert options().enableCfByteCodePassThrough;
     this.cfByteCodePassThrough = cfByteCodePassThrough;
   }
 
@@ -813,11 +825,9 @@ public class AppView<T extends AppInfo> implements DexDefinitionSupplier, Librar
       HorizontallyMergedClasses horizontallyMergedClasses, HorizontalClassMerger.Mode mode) {
     assert !hasHorizontallyMergedClasses() || mode.isFinal();
     this.horizontallyMergedClasses = horizontallyMergedClasses().extend(horizontallyMergedClasses);
-    if (mode.isFinal()) {
-      testing()
-          .horizontallyMergedClassesConsumer
-          .accept(dexItemFactory(), horizontallyMergedClasses());
-    }
+    testing()
+        .horizontallyMergedClassesConsumer
+        .accept(dexItemFactory(), horizontallyMergedClasses(), mode);
   }
 
   public boolean hasVerticallyMergedClasses() {
@@ -828,7 +838,7 @@ public class AppView<T extends AppInfo> implements DexDefinitionSupplier, Librar
    * Get the result of vertical class merging. Returns null if vertical class merging has not been
    * run.
    */
-  public VerticallyMergedClasses verticallyMergedClasses() {
+  public VerticallyMergedClasses getVerticallyMergedClasses() {
     return verticallyMergedClasses;
   }
 
@@ -859,6 +869,14 @@ public class AppView<T extends AppInfo> implements DexDefinitionSupplier, Librar
     assert !hasUnboxedEnums();
     this.unboxedEnums = unboxedEnums;
     testing().unboxedEnumsConsumer.accept(dexItemFactory(), unboxedEnums);
+  }
+
+  public R8ResourceShrinkerState getResourceShrinkerState() {
+    return resourceShrinkerState;
+  }
+
+  public void setResourceShrinkerState(R8ResourceShrinkerState resourceShrinkerState) {
+    this.resourceShrinkerState = resourceShrinkerState;
   }
 
   public boolean validateUnboxedEnumsHaveBeenPruned() {
@@ -913,9 +931,10 @@ public class AppView<T extends AppInfo> implements DexDefinitionSupplier, Librar
   }
 
   public boolean isCfByteCodePassThrough(DexEncodedMethod method) {
-    if (!options().isGeneratingClassFiles()) {
+    if (!options().enableCfByteCodePassThrough) {
       return false;
     }
+    assert options().isGeneratingClassFiles();
     if (cfByteCodePassThrough.contains(method.getReference())) {
       return true;
     }

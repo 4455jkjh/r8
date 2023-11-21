@@ -19,6 +19,7 @@ import com.android.tools.r8.FeatureSplit;
 import com.android.tools.r8.GlobalSyntheticsConsumer;
 import com.android.tools.r8.MapIdProvider;
 import com.android.tools.r8.ProgramConsumer;
+import com.android.tools.r8.ResourceShrinkerConfiguration;
 import com.android.tools.r8.SourceFileProvider;
 import com.android.tools.r8.StringConsumer;
 import com.android.tools.r8.SyntheticInfoConsumer;
@@ -46,6 +47,7 @@ import com.android.tools.r8.experimental.graphinfo.GraphConsumer;
 import com.android.tools.r8.features.FeatureSplitConfiguration;
 import com.android.tools.r8.graph.AppInfoWithClassHierarchy;
 import com.android.tools.r8.graph.AppView;
+import com.android.tools.r8.graph.AppView.WholeProgramOptimizations;
 import com.android.tools.r8.graph.DexApplication;
 import com.android.tools.r8.graph.DexClass;
 import com.android.tools.r8.graph.DexClasspathClass;
@@ -59,8 +61,8 @@ import com.android.tools.r8.graph.DexReference;
 import com.android.tools.r8.graph.DexString;
 import com.android.tools.r8.graph.DexType;
 import com.android.tools.r8.graph.ProgramMethod;
+import com.android.tools.r8.graph.analysis.ResourceAccessAnalysis;
 import com.android.tools.r8.graph.bytecodemetadata.BytecodeMetadataProvider;
-import com.android.tools.r8.graph.classmerging.VerticallyMergedClasses;
 import com.android.tools.r8.horizontalclassmerging.HorizontalClassMerger;
 import com.android.tools.r8.horizontalclassmerging.HorizontallyMergedClasses;
 import com.android.tools.r8.horizontalclassmerging.Policy;
@@ -75,7 +77,6 @@ import com.android.tools.r8.ir.desugar.desugaredlibrary.DesugaredLibrarySpecific
 import com.android.tools.r8.ir.desugar.desugaredlibrary.machinespecification.MachineDesugaredLibrarySpecification;
 import com.android.tools.r8.ir.desugar.nest.Nest;
 import com.android.tools.r8.ir.optimize.Inliner;
-import com.android.tools.r8.ir.optimize.Inliner.Reason;
 import com.android.tools.r8.ir.optimize.enums.EnumDataMap;
 import com.android.tools.r8.lightir.IR2LirConverter;
 import com.android.tools.r8.lightir.LirCode;
@@ -83,6 +84,7 @@ import com.android.tools.r8.lightir.LirStrategy;
 import com.android.tools.r8.naming.ClassNameMapper;
 import com.android.tools.r8.naming.MapConsumer;
 import com.android.tools.r8.naming.MapVersion;
+import com.android.tools.r8.naming.NamingLens;
 import com.android.tools.r8.optimize.accessmodification.AccessModifierOptions;
 import com.android.tools.r8.optimize.argumentpropagation.ArgumentPropagatorEventConsumer;
 import com.android.tools.r8.optimize.redundantbridgeremoval.RedundantBridgeRemovalOptions;
@@ -97,6 +99,7 @@ import com.android.tools.r8.references.MethodReference;
 import com.android.tools.r8.references.Reference;
 import com.android.tools.r8.repackaging.Repackaging.DefaultRepackagingConfiguration;
 import com.android.tools.r8.repackaging.Repackaging.RepackagingConfiguration;
+import com.android.tools.r8.repackaging.RepackagingLens;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
 import com.android.tools.r8.shaking.Enqueuer;
 import com.android.tools.r8.shaking.GlobalKeepInfoConfiguration;
@@ -107,6 +110,8 @@ import com.android.tools.r8.utils.IROrdering.IdentityIROrdering;
 import com.android.tools.r8.utils.IROrdering.NondeterministicIROrdering;
 import com.android.tools.r8.utils.collections.ProgramMethodSet;
 import com.android.tools.r8.utils.structural.Ordered;
+import com.android.tools.r8.verticalclassmerging.VerticalClassMergerOptions;
+import com.android.tools.r8.verticalclassmerging.VerticallyMergedClasses;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Equivalence.Wrapper;
 import com.google.common.base.Predicates;
@@ -195,6 +200,9 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
   public CancelCompilationChecker cancelCompilationChecker = null;
   public AndroidResourceProvider androidResourceProvider = null;
   public AndroidResourceConsumer androidResourceConsumer = null;
+  public ResourceShrinkerConfiguration resourceShrinkerConfiguration =
+      ResourceShrinkerConfiguration.DEFAULT_CONFIGURATION;
+  public ResourceAccessAnalysis resourceAccessAnalysis = null;
 
   public boolean checkIfCancelled() {
     if (cancelCompilationChecker == null) {
@@ -272,6 +280,10 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
     itemFactory = proguardConfiguration.getDexItemFactory();
     enableTreeShaking = proguardConfiguration.isShrinking();
     enableMinification = proguardConfiguration.isObfuscating();
+    // TODO(b/244238384): Enable.
+    enableStringFormatOptimization =
+        System.getProperty("com.android.tools.r8.optimizeStringFormat") != null;
+
     if (!proguardConfiguration.isOptimizing()) {
       // TODO(b/171457102): Avoid the need for this.
       // -dontoptimize disables optimizations by flipping related flags.
@@ -316,13 +328,13 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
     disableGlobalOptimizations();
     enableNameReflectionOptimization = false;
     enableStringConcatenationOptimization = false;
+    enableStringFormatOptimization = false;
   }
 
   public void disableGlobalOptimizations() {
     inlinerOptions.enableInlining = false;
     enableClassInlining = false;
     enableDevirtualization = false;
-    enableVerticalClassMerging = false;
     enableEnumUnboxing = false;
     outline.enabled = false;
     enableEnumValueOptimization = false;
@@ -331,6 +343,7 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
     enableInitializedClassesAnalysis = false;
     callSiteOptimizationOptions.disableOptimization();
     horizontalClassMergerOptions.setRestrictToSynthetics();
+    verticalClassMergerOptions.disable();
   }
 
   // Configure options according to platform build assumptions.
@@ -386,7 +399,6 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
   // Optimization-related flags. These should conform to -dontoptimize and disableAllOptimizations.
   public boolean enableFieldBitAccessAnalysis =
       System.getProperty("com.android.tools.r8.fieldBitAccessAnalysis") != null;
-  public boolean enableVerticalClassMerging = true;
   public boolean enableUnusedInterfaceRemoval = true;
   public boolean enableDevirtualization = true;
   public boolean enableEnumUnboxing = true;
@@ -400,6 +412,8 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
   public boolean enableServiceLoaderRewriting = true;
   public boolean enableNameReflectionOptimization = true;
   public boolean enableStringConcatenationOptimization = true;
+  // Enabled only for R8 (not D8).
+  public boolean enableStringFormatOptimization;
   public boolean enableTreeShakingOfLibraryMethodOverrides = false;
   public boolean encodeChecksums = false;
   public BiPredicate<String, Long> dexClassChecksumFilter = (name, checksum) -> true;
@@ -474,7 +488,7 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
   public boolean createSingletonsForStatelessLambdas =
       System.getProperty("com.android.tools.r8.createSingletonsForStatelessLambdas") != null;
 
-  // TODO(b/293591931): Remove this flag.
+  // TODO(b/293591931): Remove this flag when records are stable in Platform
   //  Flag to allow record annotations in DEX. See b/231930852 for context.
   private final boolean emitRecordAnnotationsInDex =
       System.getProperty("com.android.tools.r8.emitRecordAnnotationsInDex") != null;
@@ -482,6 +496,9 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
   // Flag to allow nest annotations in DEX. See b/231930852 for context.
   public boolean emitNestAnnotationsInDex =
       System.getProperty("com.android.tools.r8.emitNestAnnotationsInDex") != null;
+  // Flag to allow force nest desugaring, even if natively supported on the chosen API level.
+  public boolean forceNestDesugaring =
+      System.getProperty("com.android.tools.r8.forceNestDesugaring") != null;
 
   // TODO(b/293591931): Remove this flag.
   // Flag to allow permitted subclasses annotations in DEX. See b/231930852 for context.
@@ -644,10 +661,12 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
     if (featureSplitConfiguration != null) {
       for (FeatureSplit featureSplit : featureSplitConfiguration.getFeatureSplits()) {
         ProgramConsumer programConsumer = featureSplit.getProgramConsumer();
-        programConsumer.finished(reporter);
-        DataResourceConsumer dataResourceConsumer = programConsumer.getDataResourceConsumer();
-        if (dataResourceConsumer != null) {
-          dataResourceConsumer.finished(reporter);
+        if (programConsumer != null) {
+          programConsumer.finished(reporter);
+          DataResourceConsumer dataResourceConsumer = programConsumer.getDataResourceConsumer();
+          if (dataResourceConsumer != null) {
+            dataResourceConsumer.finished(reporter);
+          }
         }
       }
     }
@@ -852,13 +871,15 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
    * and check cast instructions needs to be collected.
    */
   public boolean isClassMergingExtensionRequired(Enqueuer.Mode mode) {
+    WholeProgramOptimizations wholeProgramOptimizations = WholeProgramOptimizations.ON;
     if (mode.isInitialTreeShaking()) {
-      return (horizontalClassMergerOptions.isEnabled(HorizontalClassMerger.Mode.INITIAL)
-              && !horizontalClassMergerOptions.isRestrictedToSynthetics())
-          || enableVerticalClassMerging;
+      return horizontalClassMergerOptions.isEnabled(
+              HorizontalClassMerger.Mode.INITIAL, wholeProgramOptimizations)
+          && !horizontalClassMergerOptions.isRestrictedToSynthetics();
     }
     if (mode.isFinalTreeShaking()) {
-      return horizontalClassMergerOptions.isEnabled(HorizontalClassMerger.Mode.FINAL)
+      return horizontalClassMergerOptions.isEnabled(
+              HorizontalClassMerger.Mode.FINAL, wholeProgramOptimizations)
           && !horizontalClassMergerOptions.isRestrictedToSynthetics();
     }
     assert false;
@@ -910,6 +931,8 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
   private final InlinerOptions inlinerOptions = new InlinerOptions(this);
   private final HorizontalClassMergerOptions horizontalClassMergerOptions =
       new HorizontalClassMergerOptions();
+  private final VerticalClassMergerOptions verticalClassMergerOptions =
+      new VerticalClassMergerOptions(this);
   private final OpenClosedInterfacesOptions openClosedInterfacesOptions =
       new OpenClosedInterfacesOptions();
   private final ProtoShrinkingOptions protoShrinking = new ProtoShrinkingOptions();
@@ -957,6 +980,10 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
 
   public HorizontalClassMergerOptions horizontalClassMergerOptions() {
     return horizontalClassMergerOptions;
+  }
+
+  public VerticalClassMergerOptions getVerticalClassMergerOptions() {
+    return verticalClassMergerOptions;
   }
 
   public ProtoShrinkingOptions protoShrinking() {
@@ -1714,6 +1741,8 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
         parseSystemPropertyForDevelopmentOrDefault(
             "com.android.tools.r8.inliningInstructionLimit", -1);
 
+    public boolean enableSimpleInliningInstructionLimitIncrement = true;
+
     public int[] multiCallerInliningInstructionLimits =
         new int[] {Integer.MAX_VALUE, 28, 16, 12, 10};
 
@@ -1746,7 +1775,7 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
     }
 
     public static void setOnlyForceInlining(InternalOptions options) {
-      options.testing.validInliningReasons = ImmutableSet.of(Reason.FORCE);
+      options.testing.validInliningReasons = ImmutableSet.of();
     }
 
     public int getSimpleInliningInstructionLimit() {
@@ -1839,12 +1868,18 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
       return enableClassInitializerDeadlockDetection;
     }
 
-    public boolean isEnabled(HorizontalClassMerger.Mode mode) {
+    public boolean isEnabled(
+        HorizontalClassMerger.Mode mode, WholeProgramOptimizations wholeProgramOptimizations) {
       if (!enable || debug || intermediate) {
         return false;
       }
+      if (wholeProgramOptimizations.isOn()) {
+        if (!isOptimizing() || !isShrinking()) {
+          return false;
+        }
+      }
       if (mode.isInitial()) {
-        return enableInitial && inlinerOptions.enableInlining && isShrinking();
+        return enableInitial && inlinerOptions.enableInlining;
       }
       assert mode.isFinal();
       return true;
@@ -2142,6 +2177,7 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
 
   public static class TestingOptions {
 
+    public boolean enableNumberUnboxer = false;
     public boolean roundtripThroughLir = false;
 
     public boolean canUseLir(AppView<?> appView) {
@@ -2306,12 +2342,18 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
     public Function<AppView<AppInfoWithLiveness>, RepackagingConfiguration>
         repackagingConfigurationFactory = DefaultRepackagingConfiguration::new;
 
-    public BiConsumer<DexItemFactory, HorizontallyMergedClasses> horizontallyMergedClassesConsumer =
-        ConsumerUtils.emptyBiConsumer();
+    public TriConsumer<DexItemFactory, HorizontallyMergedClasses, HorizontalClassMerger.Mode>
+        horizontallyMergedClassesConsumer = ConsumerUtils.emptyTriConsumer();
     public Function<List<Policy>, List<Policy>> horizontalClassMergingPolicyRewriter =
         Function.identity();
     public TriFunction<AppView<?>, Iterable<DexProgramClass>, DexProgramClass, DexProgramClass>
         horizontalClassMergingTarget = (appView, candidates, target) -> target;
+
+    public BiConsumer<DexItemFactory, NamingLens> namingLensConsumer =
+        ConsumerUtils.emptyBiConsumer();
+
+    public BiConsumer<DexItemFactory, RepackagingLens> repackagingLensConsumer =
+        ConsumerUtils.emptyBiConsumer();
 
     public BiConsumer<DexItemFactory, EnumDataMap> unboxedEnumsConsumer =
         ConsumerUtils.emptyBiConsumer();
@@ -2351,6 +2393,7 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
     public boolean allowUnusedDontWarnRules = true;
     public boolean alwaysUseExistingAccessInfoCollectionsInMemberRebinding = true;
     public boolean alwaysUsePessimisticRegisterAllocation = false;
+    public boolean enableBridgeHoistingToSharedSyntheticSuperclass = false;
     public boolean enableCheckCastAndInstanceOfRemoval = true;
     public boolean enableDeadSwitchCaseElimination = true;
     public boolean enableInvokeSuperToInvokeVirtualRewriting = true;
@@ -2360,6 +2403,7 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
     public boolean enableEnumUnboxingDebugLogs =
         System.getProperty("com.android.tools.r8.enableEnumUnboxingDebugLogs") != null;
     public boolean enableEnumWithSubtypesUnboxing = true;
+    public boolean enableVerticalClassMergerLensAssertion = false;
     public boolean forceRedundantConstNumberRemoval = false;
     public boolean enableExperimentalDesugaredLibraryKeepRuleGenerator = false;
     public boolean invertConditionals = false;
@@ -2404,6 +2448,9 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
         System.getProperty("com.android.tools.r8.disableMarkingClassesFinal") != null;
     public boolean testEnableTestAssertions = false;
     public boolean keepMetadataInR8IfNotRewritten = true;
+    public boolean enableComposableOptimizationPass =
+        SystemPropertyUtils.parseSystemPropertyForDevelopmentOrDefault(
+            "com.android.tools.r8.enableComposableOptimizationPass", false);
     public boolean modelUnknownChangedAndDefaultArgumentsToComposableFunctions =
         SystemPropertyUtils.parseSystemPropertyForDevelopmentOrDefault(
             "com.android.tools.r8.modelUnknownChangedAndDefaultArgumentsToComposableFunctions",
@@ -2640,11 +2687,11 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
   }
 
   public boolean canUseNestBasedAccess() {
-    return hasFeaturePresentFrom(null) || emitNestAnnotationsInDex;
+    return (hasFeaturePresentFrom(null) || emitNestAnnotationsInDex) && !forceNestDesugaring;
   }
 
   public boolean canUseRecords() {
-    return hasFeaturePresentFrom(AndroidApiLevel.U) || emitRecordAnnotationsInDex;
+    return hasFeaturePresentFrom(null) || emitRecordAnnotationsInDex;
   }
 
   public boolean canUseSealedClasses() {

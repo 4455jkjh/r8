@@ -473,21 +473,17 @@ public class AppInfoWithLiveness extends AppInfoWithClassHierarchy
   @Override
   public void notifyHorizontalClassMergerFinished(
       HorizontalClassMerger.Mode horizontalClassMergerMode) {
-    if (horizontalClassMergerMode.isInitial()
-        && !options().getAccessModifierOptions().isLegacyAccessModifierEnabled()) {
+    if (horizontalClassMergerMode.isInitial()) {
       getMethodAccessInfoCollection().destroy();
     }
   }
 
   public void notifyMemberRebindingFinished(AppView<AppInfoWithLiveness> appView) {
     getFieldAccessInfoCollection().restrictToProgram(appView);
-    if (!options().getAccessModifierOptions().isLegacyAccessModifierEnabled()) {
-      getMethodAccessInfoCollection().destroyNonDirectNonSuperInvokes();
-    }
   }
 
   public void notifyRedundantBridgeRemoverFinished(boolean initial) {
-    if (initial && !options().getAccessModifierOptions().isLegacyAccessModifierEnabled()) {
+    if (initial) {
       getMethodAccessInfoCollection().destroySuperInvokes();
     }
   }
@@ -495,9 +491,7 @@ public class AppInfoWithLiveness extends AppInfoWithClassHierarchy
   @Override
   public void notifyMinifierFinished() {
     liveMethods = ThrowingSet.get();
-    if (!options().getAccessModifierOptions().isLegacyAccessModifierEnabled()) {
-      getMethodAccessInfoCollection().destroy();
-    }
+    getMethodAccessInfoCollection().destroy();
   }
 
   public void notifyTreePrunerFinished(Enqueuer.Mode mode) {
@@ -743,10 +737,6 @@ public class AppInfoWithLiveness extends AppInfoWithClassHierarchy
     return alwaysInline.contains(method);
   }
 
-  public boolean hasNoAlwaysInlineMethods() {
-    return alwaysInline.isEmpty();
-  }
-
   public boolean isNeverInlineDueToSingleCallerMethod(ProgramMethod method) {
     return neverInlineDueToSingleCaller.contains(method.getReference());
   }
@@ -854,8 +844,8 @@ public class AppInfoWithLiveness extends AppInfoWithClassHierarchy
    * can potentially cause incorrect behavior when merging classes. A conservative choice is to not
    * merge any const-class classes. More info at b/142438687.
    */
-  public boolean isLockCandidate(DexType type) {
-    return lockCandidates.contains(type);
+  public boolean isLockCandidate(DexProgramClass clazz) {
+    return lockCandidates.contains(clazz.getType());
   }
 
   public Set<DexType> getDeadProtoTypes() {
@@ -1332,8 +1322,8 @@ public class AppInfoWithLiveness extends AppInfoWithClassHierarchy
         .isDefinitelyInstanceOfStaticType(appView, () -> dynamicReceiverType, staticReceiverType)) {
       return null;
     }
-    DexClass initialResolutionHolder = definitionFor(method.holder);
-    if (initialResolutionHolder == null || initialResolutionHolder.isInterface() != isInterface) {
+    DexClass initialResolutionHolder = resolutionResult.getInitialResolutionHolder();
+    if (initialResolutionHolder.isInterface() != isInterface) {
       return null;
     }
     DexType refinedReceiverType =
@@ -1343,27 +1333,24 @@ public class AppInfoWithLiveness extends AppInfoWithClassHierarchy
       // The refined receiver is not defined in the program and we cannot determine the target.
       return null;
     }
-    if (!dynamicReceiverType.hasDynamicLowerBoundType()) {
-      if (singleTargetLookupCache.hasPositiveCacheHit(refinedReceiverType, method)) {
-        return singleTargetLookupCache.getPositiveCacheHit(refinedReceiverType, method);
-      }
-      if (singleTargetLookupCache.hasNegativeCacheHit(refinedReceiverType, method)) {
-        return null;
-      }
+    if (singleTargetLookupCache.hasPositiveCacheHit(refinedReceiverType, method)) {
+      return singleTargetLookupCache.getPositiveCacheHit(refinedReceiverType, method);
+    }
+    if (!dynamicReceiverType.hasDynamicLowerBoundType()
+        && singleTargetLookupCache.hasNegativeCacheHit(refinedReceiverType, method)) {
+      return null;
     }
     if (resolutionResult
         .isAccessibleForVirtualDispatchFrom(context.getHolder(), appView)
         .isFalse()) {
       return null;
     }
-    // If the method is modeled, return the resolution.
+    // If the resolved method is final, return the resolution.
     DexClassAndMethod resolvedMethod = resolutionResult.getResolutionPair();
-    if (modeledPredicate.isModeled(resolutionResult.getResolvedHolder().getType())) {
-      if (resolutionResult.getResolvedHolder().isFinal()
-          || (resolvedMethod.getAccessFlags().isFinal()
-              && resolvedMethod.getAccessFlags().isPublic())) {
-        singleTargetLookupCache.addToCache(refinedReceiverType, method, resolvedMethod);
-        return resolvedMethod;
+    if (resolvedMethod.getHolder().isFinal() || resolvedMethod.getAccessFlags().isFinal()) {
+      if (!resolvedMethod.isLibraryMethod()
+          || modeledPredicate.isModeled(resolvedMethod.getHolderType())) {
+        return singleTargetLookupCache.addToCache(refinedReceiverType, method, resolvedMethod);
       }
     }
     DispatchTargetLookupResult exactTarget =
@@ -1527,13 +1514,15 @@ public class AppInfoWithLiveness extends AppInfoWithClassHierarchy
   }
 
   /** Predicate on types that *must* never be merged horizontally. */
-  public boolean isNoHorizontalClassMergingOfType(DexType type) {
-    return noClassMerging.contains(type) || noHorizontalClassMerging.contains(type);
+  public boolean isNoHorizontalClassMergingOfType(DexProgramClass clazz) {
+    return noClassMerging.contains(clazz.getType())
+        || noHorizontalClassMerging.contains(clazz.getType());
   }
 
   /** Predicate on types that *must* never be merged vertically. */
-  public boolean isNoVerticalClassMergingOfType(DexType type) {
-    return noClassMerging.contains(type) || noVerticalClassMerging.contains(type);
+  public boolean isNoVerticalClassMergingOfType(DexProgramClass clazz) {
+    return noClassMerging.contains(clazz.getType())
+        || noVerticalClassMerging.contains(clazz.getType());
   }
 
   public boolean verifyNoIteratingOverPrunedClasses() {

@@ -390,8 +390,12 @@ public class MemberRebindingAnalysis {
                                       appView.computedMinApiLevel()));
                         }
                         builder.setIsLibraryMethodOverrideIf(
-                            target.isLibraryMethod(), OptionalBool.TRUE);
+                            // Treat classpath override as library override.
+                            target.isLibraryMethod() || target.isClasspathMethod(),
+                            OptionalBool.TRUE);
                       });
+              assert !bridgeMethodDefinition.belongsToVirtualPool()
+                  || !bridgeMethodDefinition.isLibraryMethodOverride().isUnknown();
               bridgeHolder.addMethod(bridgeMethodDefinition);
               eventConsumer.acceptMemberRebindingBridgeMethod(
                   bridgeMethodDefinition.asProgramMethod(bridgeHolder), target);

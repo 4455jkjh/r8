@@ -734,6 +734,10 @@ public abstract class DexClass extends DexDefinition
     return superType;
   }
 
+  public void setSuperType(DexType superType) {
+    this.superType = superType;
+  }
+
   public boolean hasClassInitializer() {
     return getClassInitializer() != null;
   }
@@ -1193,6 +1197,8 @@ public abstract class DexClass extends DexDefinition
 
   /** Returns kotlin class info if the class is synthesized by kotlin compiler. */
   public abstract KotlinClassLevelInfo getKotlinInfo();
+
+  public abstract ClassKind<?> getKind();
 
   public final String getSimpleName() {
     return getType().getSimpleName();

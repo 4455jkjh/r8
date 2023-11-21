@@ -14,7 +14,9 @@ import com.android.tools.r8.ir.code.Value;
 import com.android.tools.r8.ir.conversion.MethodProcessor;
 import com.android.tools.r8.ir.optimize.DefaultInliningOracle;
 import com.android.tools.r8.ir.optimize.Inliner.Reason;
+import com.android.tools.r8.ir.optimize.inliner.InliningIRProvider;
 import com.android.tools.r8.ir.optimize.inliner.InliningReasonStrategy;
+import com.android.tools.r8.ir.optimize.inliner.WhyAreYouNotInliningReporter;
 
 /**
  * Equivalent to the {@link InliningReasonStrategy} in {@link #parent} except for invocations
@@ -38,7 +40,9 @@ public class ProtoInliningReasonStrategy implements InliningReasonStrategy {
       ProgramMethod target,
       ProgramMethod context,
       DefaultInliningOracle oracle,
-      MethodProcessor methodProcessor) {
+      InliningIRProvider inliningIRProvider,
+      MethodProcessor methodProcessor,
+      WhyAreYouNotInliningReporter whyAreYouNotInliningReporter) {
     if (references.isAbstractGeneratedMessageLiteBuilder(context.getHolder())
         && invoke.isInvokeSuper()) {
       // Aggressively inline invoke-super calls inside the GeneratedMessageLite builders. Such
@@ -48,7 +52,14 @@ public class ProtoInliningReasonStrategy implements InliningReasonStrategy {
     }
     return references.isDynamicMethod(target) || references.isDynamicMethodBridge(target)
         ? computeInliningReasonForDynamicMethod(invoke, target, context)
-        : parent.computeInliningReason(invoke, target, context, oracle, methodProcessor);
+        : parent.computeInliningReason(
+            invoke,
+            target,
+            context,
+            oracle,
+            inliningIRProvider,
+            methodProcessor,
+            whyAreYouNotInliningReporter);
   }
 
   @SuppressWarnings("ReferenceEquality")

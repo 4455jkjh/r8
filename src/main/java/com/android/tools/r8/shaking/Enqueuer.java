@@ -95,6 +95,7 @@ import com.android.tools.r8.graph.analysis.EnqueuerInstanceOfAnalysis;
 import com.android.tools.r8.graph.analysis.EnqueuerInvokeAnalysis;
 import com.android.tools.r8.graph.analysis.GetArrayOfMissingTypeVerifyErrorWorkaround;
 import com.android.tools.r8.graph.analysis.InvokeVirtualToInterfaceVerifyErrorWorkaround;
+import com.android.tools.r8.graph.analysis.ResourceAccessAnalysis;
 import com.android.tools.r8.ir.analysis.proto.ProtoEnqueuerUseRegistry;
 import com.android.tools.r8.ir.analysis.proto.schema.ProtoEnqueuerExtension;
 import com.android.tools.r8.ir.code.ArrayPut;
@@ -506,6 +507,7 @@ public class Enqueuer {
       }
       appView.withGeneratedMessageLiteBuilderShrinker(
           shrinker -> registerAnalysis(shrinker.createEnqueuerAnalysis()));
+      ResourceAccessAnalysis.register(appView, this);
     }
 
     targetedMethods = new LiveMethodsSet(graphReporter::registerMethod);
@@ -3677,6 +3679,7 @@ public class Enqueuer {
     timing.end();
     timing.begin("Finish analysis");
     analyses.forEach(analyses -> analyses.done(this));
+    fieldAccessAnalyses.forEach(fieldAccessAnalyses -> fieldAccessAnalyses.done(this));
     timing.end();
     assert verifyKeptGraph();
     timing.begin("Finish compat building");
@@ -5144,7 +5147,7 @@ public class Enqueuer {
       initializer = clazz.getProgramDefaultInitializer();
     } else {
       DexType[] parameterTypes = new DexType[parametersSize];
-      int missingIndices = parametersSize;
+      int missingIndices;
 
       if (newArrayEmpty != null) {
         missingIndices = parametersSize;
@@ -5168,12 +5171,8 @@ public class Enqueuer {
             return;
           }
 
-          Value indexValue = arrayPutInstruction.index();
-          if (indexValue.isPhi() || !indexValue.definition.isConstNumber()) {
-            return;
-          }
-          int index = indexValue.definition.asConstNumber().getIntValue();
-          if (index >= parametersSize) {
+          int index = arrayPutInstruction.indexIfConstAndInBounds(parametersSize);
+          if (index < 0) {
             return;
           }
 
@@ -5407,7 +5406,7 @@ public class Enqueuer {
     }
 
     Set<T> getItems() {
-      return Collections.unmodifiableSet(items);
+      return SetUtils.unmodifiableForTesting(items);
     }
   }
 
@@ -5463,7 +5462,7 @@ public class Enqueuer {
     }
 
     Set<DexEncodedMethod> getItems() {
-      return Collections.unmodifiableSet(items);
+      return SetUtils.unmodifiableForTesting(items);
     }
   }
 
