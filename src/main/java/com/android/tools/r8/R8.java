@@ -856,15 +856,15 @@ public class R8 {
       assert appView.getDontWarnConfiguration().validate(options);
 
       options.printWarnings();
+
+      if (options.printTimes) {
+        timing.report();
+      }
     } catch (ExecutionException e) {
       throw unwrapExecutionException(e);
     } finally {
       inputApp.signalFinishedToProviders(options.reporter);
       options.signalFinishedToConsumers();
-      // Dump timings.
-      if (options.printTimes) {
-        timing.report();
-      }
     }
   }
 
@@ -906,8 +906,7 @@ public class R8 {
       LegacyResourceShrinker shrinker = resourceShrinkerBuilder.build();
       ShrinkerResult shrinkerResult;
       if (options.resourceShrinkerConfiguration.isOptimizedShrinking()) {
-        shrinkerResult =
-            shrinker.shrinkModel(appView.getResourceShrinkerState().getR8ResourceShrinkerModel());
+        shrinkerResult = shrinker.shrinkModel(appView.getResourceAnalysisResult().getModel());
       } else {
         shrinkerResult = shrinker.run();
       }

@@ -72,6 +72,9 @@ public class KeepItemAnnotationGenerator {
 
     void generate(Generator generator) {
       printDoc(generator::println);
+      if (isDeprecated()) {
+        generator.println("@Deprecated");
+      }
       if (valueDefault == null) {
         generator.println(valueType + " " + name + "();");
       } else {
@@ -203,7 +206,7 @@ public class KeepItemAnnotationGenerator {
     }
   }
 
-  private static class Generator {
+  public static class Generator {
 
     private static final List<Class<?>> ANNOTATION_IMPORTS =
         ImmutableList.of(ElementType.class, Retention.class, RetentionPolicy.class, Target.class);
@@ -222,13 +225,14 @@ public class KeepItemAnnotationGenerator {
     }
 
     private void println() {
-      // Don't indent empty lines.
-      writer.println();
+      println("");
     }
 
-    private void println(String line) {
-      assert line.length() > 0;
-      writer.print(Strings.repeat(" ", indent));
+    public void println(String line) {
+      // Don't indent empty lines.
+      if (line.length() > 0) {
+        writer.print(Strings.repeat(" ", indent));
+      }
       writer.println(line);
     }
 
@@ -265,6 +269,7 @@ public class KeepItemAnnotationGenerator {
           .addMember(
               new GroupMember("description")
                   .setDocTitle("Optional description to document the reason for this annotation.")
+                  .setDocReturn("The descriptive message. Defaults to no description.")
                   .defaultEmptyString());
     }
 
@@ -279,8 +284,9 @@ public class KeepItemAnnotationGenerator {
               new GroupMember("preconditions")
                   .setDocTitle(
                       "Conditions that should be satisfied for the annotation to be in effect.")
-                  .addParagraph(
-                      "Defaults to no conditions, thus trivially/unconditionally satisfied.")
+                  .setDocReturn(
+                      "The list of preconditions. "
+                          + "Defaults to no conditions, thus trivially/unconditionally satisfied.")
                   .defaultEmptyArray(KeepCondition.class));
     }
 
@@ -289,6 +295,7 @@ public class KeepItemAnnotationGenerator {
           .addMember(
               new GroupMember("consequences")
                   .setDocTitle("Consequences that must be kept if the annotation is in effect.")
+                  .setDocReturn("The list of target consequences.")
                   .requiredValueOfArrayType(KeepTarget.class));
     }
 
@@ -297,6 +304,7 @@ public class KeepItemAnnotationGenerator {
           .addMember(
               new GroupMember("value")
                   .setDocTitle("Consequences that must be kept if the annotation is in effect.")
+                  .setDocReturn("The list of target consequences.")
                   .requiredValueOfArrayType(KeepTarget.class));
     }
 
@@ -305,7 +313,9 @@ public class KeepItemAnnotationGenerator {
           .addMember(
               new GroupMember("additionalPreconditions")
                   .setDocTitle("Additional preconditions for the annotation to be in effect.")
-                  .addParagraph("Defaults to no additional preconditions.")
+                  .setDocReturn(
+                      "The list of additional preconditions. "
+                          + "Defaults to no additional preconditions.")
                   .defaultEmptyArray("KeepCondition"));
     }
 
@@ -314,7 +324,9 @@ public class KeepItemAnnotationGenerator {
           .addMember(
               new GroupMember("additionalTargets")
                   .setDocTitle(docTitle)
-                  .addParagraph("Defaults to no additional targets.")
+                  .setDocReturn(
+                      "List of additional target consequences. "
+                          + "Defaults to no additional target consequences.")
                   .defaultEmptyArray("KeepTarget"));
     }
 
@@ -327,6 +339,7 @@ public class KeepItemAnnotationGenerator {
           .defaultType("KeepItemKind")
           .defaultValue("KeepItemKind.DEFAULT")
           .setDocTitle("Specify the kind of this item pattern.")
+          .setDocReturn("The kind for this pattern.")
           .addParagraph("Possible values are:")
           .addUnorderedList(
               KeepItemKind.ONLY_CLASS.name(),
@@ -343,15 +356,16 @@ public class KeepItemAnnotationGenerator {
       return new Group(OPTIONS_GROUP)
           .addMember(
               new GroupMember("allow")
-                  .setDocTitle(
-                      "Define the "
-                          + OPTIONS_GROUP
-                          + " that do not need to be preserved for the target.")
+                  .setDocTitle("Define the " + OPTIONS_GROUP + " that are allowed to be modified.")
+                  .addParagraph("The specified options do not need to be preserved for the target.")
+                  .setDocReturn("Options allowed to be modified for the target.")
                   .defaultEmptyArray("KeepOption"))
           .addMember(
               new GroupMember("disallow")
                   .setDocTitle(
-                      "Define the " + OPTIONS_GROUP + " that *must* be preserved for the target.")
+                      "Define the " + OPTIONS_GROUP + " that are not allowed to be modified.")
+                  .addParagraph("The specified options *must* be preserved for the target.")
+                  .setDocReturn("Options not allowed to be modified for the target.")
                   .defaultEmptyArray("KeepOption"))
           .addDocFooterParagraph(
               "If nothing is specified for "
@@ -368,12 +382,14 @@ public class KeepItemAnnotationGenerator {
           .setDocTitle(
               "Name with which other bindings, conditions or targets "
                   + "can reference the bound item pattern.")
+          .setDocReturn("Name of the binding.")
           .requiredStringValue();
     }
 
     private GroupMember classFromBinding() {
       return new GroupMember("classFromBinding")
           .setDocTitle("Define the " + CLASS_GROUP + " pattern by reference to a binding.")
+          .setDocReturn("The name of the binding that defines the class.")
           .defaultEmptyString();
     }
 
@@ -386,6 +402,7 @@ public class KeepItemAnnotationGenerator {
     private GroupMember className() {
       return new GroupMember("className")
           .setDocTitle("Define the " + CLASS_NAME_GROUP + " pattern by fully qualified class name.")
+          .setDocReturn("The qualified class name that defines the class.")
           .defaultEmptyString();
     }
 
@@ -393,6 +410,7 @@ public class KeepItemAnnotationGenerator {
       return new GroupMember("classConstant")
           .setDocTitle(
               "Define the " + CLASS_NAME_GROUP + " pattern by reference to a Class constant.")
+          .setDocReturn("The class-constant that defines the class.")
           .defaultObjectClass();
     }
 
@@ -409,6 +427,7 @@ public class KeepItemAnnotationGenerator {
               "Define the "
                   + INSTANCE_OF_GROUP
                   + " pattern as classes that are instances of the fully qualified class name.")
+          .setDocReturn("The qualified class name that defines what instance-of the class must be.")
           .defaultEmptyString();
     }
 
@@ -418,6 +437,7 @@ public class KeepItemAnnotationGenerator {
               "Define the "
                   + INSTANCE_OF_GROUP
                   + " pattern as classes that are instances the referenced Class constant.")
+          .setDocReturn("The class constant that defines what instance-of the class must be.")
           .defaultObjectClass();
     }
 
@@ -433,6 +453,7 @@ public class KeepItemAnnotationGenerator {
               "Define the "
                   + INSTANCE_OF_GROUP
                   + " pattern as classes that are instances of the fully qualified class name.")
+          .setDocReturn("The qualified class name that defines what instance-of the class must be.")
           .addParagraph(getInstanceOfExclusiveDoc())
           .defaultEmptyString();
     }
@@ -444,6 +465,7 @@ public class KeepItemAnnotationGenerator {
                   + INSTANCE_OF_GROUP
                   + " pattern as classes that are instances the referenced Class constant.")
           .addParagraph(getInstanceOfExclusiveDoc())
+          .setDocReturn("The class constant that defines what instance-of the class must be.")
           .defaultObjectClass();
     }
 
@@ -454,7 +476,9 @@ public class KeepItemAnnotationGenerator {
                   + INSTANCE_OF_GROUP
                   + " pattern as classes extending the fully qualified class name.")
           .addParagraph(getInstanceOfExclusiveDoc())
-          .addParagraph("This property is deprecated, use instanceOfClassName instead.")
+          .setDeprecated(
+              "This property is deprecated, use " + docLink(instanceOfClassName()) + " instead.")
+          .setDocReturn("The class name that defines what the class must extend.")
           .defaultEmptyString();
     }
 
@@ -465,7 +489,11 @@ public class KeepItemAnnotationGenerator {
                   + INSTANCE_OF_GROUP
                   + " pattern as classes extending the referenced Class constant.")
           .addParagraph(getInstanceOfExclusiveDoc())
-          .addParagraph("This property is deprecated, use instanceOfClassConstant instead.")
+          .setDeprecated(
+              "This property is deprecated, use "
+                  + docLink(instanceOfClassConstant())
+                  + " instead.")
+          .setDocReturn("The class constant that defines what the class must extend.")
           .defaultObjectClass();
     }
 
@@ -490,6 +518,7 @@ public class KeepItemAnnotationGenerator {
                       "Mutually exclusive with all other class and member pattern properties.",
                       "When a member binding is referenced this item is defined to be that item,",
                       "including its class and member patterns.")
+                  .setDocReturn("The binding name that defines the member.")
                   .defaultEmptyString());
     }
 
@@ -501,6 +530,7 @@ public class KeepItemAnnotationGenerator {
                   .addParagraph(
                       "Mutually exclusive with all field and method properties",
                       "as use restricts the match to both types of members.")
+                  .setDocReturn("The member access-flag constraints that must be met.")
                   .defaultEmptyArray("MemberAccessFlags"));
     }
 
@@ -531,6 +561,7 @@ public class KeepItemAnnotationGenerator {
                   .setDocTitle("Define the method-access pattern by matching on access flags.")
                   .addParagraph(getMutuallyExclusiveForMethodProperties())
                   .addParagraph(getMethodDefaultDoc("any method-access flags"))
+                  .setDocReturn("The method access-flag constraints that must be met.")
                   .defaultEmptyArray("MethodAccessFlags"));
     }
 
@@ -541,6 +572,7 @@ public class KeepItemAnnotationGenerator {
                   .setDocTitle("Define the method-name pattern by an exact method name.")
                   .addParagraph(getMutuallyExclusiveForMethodProperties())
                   .addParagraph(getMethodDefaultDoc("any method name"))
+                  .setDocReturn("The exact method name of the method.")
                   .defaultEmptyString());
     }
 
@@ -552,6 +584,7 @@ public class KeepItemAnnotationGenerator {
                       "Define the method return-type pattern by a fully qualified type or 'void'.")
                   .addParagraph(getMutuallyExclusiveForMethodProperties())
                   .addParagraph(getMethodDefaultDoc("any return type"))
+                  .setDocReturn("The qualified type name of the method return type.")
                   .defaultEmptyString());
     }
 
@@ -563,6 +596,7 @@ public class KeepItemAnnotationGenerator {
                       "Define the method parameters pattern by a list of fully qualified types.")
                   .addParagraph(getMutuallyExclusiveForMethodProperties())
                   .addParagraph(getMethodDefaultDoc("any parameters"))
+                  .setDocReturn("The list of qualified type names of the method parameters.")
                   .defaultType("String[]")
                   .defaultValue("{\"<default>\"}"));
     }
@@ -574,6 +608,7 @@ public class KeepItemAnnotationGenerator {
                   .setDocTitle("Define the field-access pattern by matching on access flags.")
                   .addParagraph(getMutuallyExclusiveForFieldProperties())
                   .addParagraph(getFieldDefaultDoc("any field-access flags"))
+                  .setDocReturn("The field access-flag constraints that must be met.")
                   .defaultEmptyArray("FieldAccessFlags"));
     }
 
@@ -584,6 +619,7 @@ public class KeepItemAnnotationGenerator {
                   .setDocTitle("Define the field-name pattern by an exact field name.")
                   .addParagraph(getMutuallyExclusiveForFieldProperties())
                   .addParagraph(getFieldDefaultDoc("any field name"))
+                  .setDocReturn("The exact field name of the field.")
                   .defaultEmptyString());
     }
 
@@ -594,6 +630,7 @@ public class KeepItemAnnotationGenerator {
                   .setDocTitle("Define the field-type pattern by a fully qualified type.")
                   .addParagraph(getMutuallyExclusiveForFieldProperties())
                   .addParagraph(getFieldDefaultDoc("any type"))
+                  .setDocReturn("The qualified type name of the field type.")
                   .defaultEmptyString());
     }
 
@@ -674,12 +711,7 @@ public class KeepItemAnnotationGenerator {
       println();
       withIndent(
           () -> {
-            new GroupMember("bindingName")
-                .setDocTitle(
-                    "Name with which other bindings, conditions or targets can reference the bound"
-                        + " item pattern.")
-                .requiredValueOfType("String")
-                .generate(this);
+            bindingName().generate(this);
             println();
             getKindGroup().generate(this);
             println();
@@ -937,6 +969,10 @@ public class KeepItemAnnotationGenerator {
 
     private String docLink(Class<?> clazz) {
       return "{@link " + simpleName(clazz) + "}";
+    }
+
+    private String docLink(GroupMember member) {
+      return "{@link #" + member.name + "}";
     }
 
     private String docLink(KeepItemKind kind) {
@@ -1236,11 +1272,16 @@ public class KeepItemAnnotationGenerator {
       PrintStream printStream = new PrintStream(byteStream);
       Generator generator = new Generator(printStream);
       fn.accept(generator);
-      String formatted = CodeGenerationBase.formatRawOutput(byteStream.toString());
+      String formatted = byteStream.toString();
+      if (file.toString().endsWith(".java")) {
+        formatted = CodeGenerationBase.formatRawOutput(formatted);
+      }
       Files.write(Paths.get(ToolHelper.getProjectRoot()).resolve(file), formatted.getBytes());
     }
 
     public static void run() throws IOException {
+      writeFile(Paths.get("doc/keepanno-guide.md"), KeepAnnoMarkdownGenerator::generateMarkdownDoc);
+
       Path keepAnnoRoot = Paths.get("src/keepanno/java/com/android/tools/r8/keepanno");
 
       Path astPkg = keepAnnoRoot.resolve("ast");
@@ -1260,4 +1301,5 @@ public class KeepItemAnnotationGenerator {
           g -> g.generateUsedByX("UsedByNative", "accessed from native code via JNI"));
     }
   }
+
 }

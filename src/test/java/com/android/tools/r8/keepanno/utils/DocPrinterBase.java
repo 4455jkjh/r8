@@ -13,9 +13,15 @@ import java.util.List;
 public abstract class DocPrinterBase<T> {
 
   private String title = null;
+  private String returnDesc = null;
+  private String deprecatedDesc = null;
   private final List<String> additionalLines = new ArrayList<>();
 
   public abstract T self();
+
+  private boolean isEmptyOrJustTitle() {
+    return returnDesc == null && deprecatedDesc == null && additionalLines.isEmpty();
+  }
 
   public T clearDocLines() {
     additionalLines.clear();
@@ -26,6 +32,20 @@ public abstract class DocPrinterBase<T> {
     assert this.title == null;
     assert title.endsWith(".");
     this.title = title;
+    return self();
+  }
+
+  public T setDocReturn(String desc) {
+    returnDesc = desc;
+    return self();
+  }
+
+  public boolean isDeprecated() {
+    return deprecatedDesc != null;
+  }
+
+  public T setDeprecated(String desc) {
+    deprecatedDesc = desc;
     return self();
   }
 
@@ -67,11 +87,11 @@ public abstract class DocPrinterBase<T> {
   }
 
   public void printDoc(Consumer<String> println) {
-    assert additionalLines.isEmpty() || title != null;
     if (title == null) {
+      assert isEmptyOrJustTitle();
       return;
     }
-    if (additionalLines.isEmpty()) {
+    if (isEmptyOrJustTitle()) {
       println.accept("/** " + title + " */");
       return;
     }
@@ -82,6 +102,12 @@ public abstract class DocPrinterBase<T> {
         println.accept(" *");
       }
       println.accept(" * " + line);
+    }
+    if (returnDesc != null) {
+      println.accept(" * @return " + returnDesc);
+    }
+    if (deprecatedDesc != null) {
+      println.accept(" * @deprecated " + deprecatedDesc);
     }
     println.accept(" */");
   }

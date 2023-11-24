@@ -122,6 +122,21 @@ def PrintResourceInfo():
     print('INFO: Open files hard limit: %s' % hard)
 
 
+def UploadDir(src_dir, version_or_path, dst_dir, is_main, options):
+    destination = GetUploadDestination(version_or_path, dst_dir, is_main)
+    print(f'Uploading {src_dir} to {destination}')
+    if options.dry_run:
+        if options.dry_run_output:
+            dry_run_destination = os.path.join(options.dry_run_output, version_or_path, dst_dir)
+            print(f'Dry run, not actually uploading. Copying to {dry_run_destination}')
+            shutil.copytree(src_dir, dry_run_destination)
+        else:
+            print('Dry run, not actually uploading')
+    else:
+        utils.upload_directory_to_cloud_storage(src_dir, destination)
+        print(f'Directory available at: {GetUrl(version_or_path, dst_dir, is_main)}')
+
+
 def Main():
     (options, args) = ParseOptions()
     Run(options)
@@ -171,7 +186,9 @@ def Run(options):
         if (not options.skip_gradle_build):
             gradle.RunGradle([
                 utils.GRADLE_TASK_CONSOLIDATED_LICENSE,
-                utils.GRADLE_TASK_KEEP_ANNO_JAR, utils.GRADLE_TASK_R8,
+                utils.GRADLE_TASK_KEEP_ANNO_JAR,
+                utils.GRADLE_TASK_KEEP_ANNO_DOC,
+                utils.GRADLE_TASK_R8,
                 utils.GRADLE_TASK_R8LIB, utils.GRADLE_TASK_R8LIB_NO_DEPS,
                 utils.GRADLE_TASK_THREADING_MODULE_BLOCKING,
                 utils.GRADLE_TASK_THREADING_MODULE_SINGLE_THREADED,
@@ -229,6 +246,20 @@ def Run(options):
             '-PspdxRevision=' + GetGitHash()
         ])
 
+        # Upload keep-anno javadoc to a fixed "docs" location.
+        if is_main:
+            version_or_path = 'docs'
+            dst_dir = 'keepanno/javadoc'
+            UploadDir(utils.KEEPANNO_ANNOTATIONS_DOC, version_or_path, dst_dir, is_main, options)
+
+        # Upload directories.
+        dirs_for_archiving = [
+            (utils.KEEPANNO_ANNOTATIONS_DOC, 'keepanno/javadoc'),
+        ]
+        for (src_dir, dst_dir) in dirs_for_archiving:
+            UploadDir(src_dir, version, dst_dir, is_main, options)
+
+        # Upload files.
         for_archiving = [
             utils.R8_JAR, utils.R8LIB_JAR, utils.R8LIB_JAR + '.map',
             utils.R8LIB_JAR + '_map.zip', utils.R8_FULL_EXCLUDE_DEPS_JAR,
@@ -258,8 +289,8 @@ def Run(options):
             print('Uploading %s to %s' % (tagged_jar, destination))
             if options.dry_run:
                 if options.dry_run_output:
-                    dry_run_destination = os.path.join(options.dry_run_output,
-                                                       file_name)
+                    dry_run_destination = os.path.join(
+                        options.dry_run_output, version, file_name)
                     print('Dry run, not actually uploading. Copying to ' +
                           dry_run_destination)
                     shutil.copyfile(tagged_jar, dry_run_destination)
