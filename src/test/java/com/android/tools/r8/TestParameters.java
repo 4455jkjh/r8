@@ -61,6 +61,10 @@ public class TestParameters {
     return isDexRuntime() && getApiLevel().isGreaterThanOrEqualTo(AndroidApiLevel.L);
   }
 
+  public boolean canInitNewInstanceUsingSuperclassConstructor() {
+    return canHaveNonReboundConstructorInvoke();
+  }
+
   public boolean canUseDefaultAndStaticInterfaceMethods() {
     assert isCfRuntime() || isDexRuntime();
     assert !isCfRuntime() || apiLevel == null
