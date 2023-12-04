@@ -43,13 +43,13 @@ import java.util.concurrent.ExecutorService;
 
 public class NumberUnboxerImpl extends NumberUnboxer {
 
-  private AppView<AppInfoWithLiveness> appView;
-  private DexItemFactory factory;
-  private Set<DexType> boxedTypes;
+  private final AppView<AppInfoWithLiveness> appView;
+  private final DexItemFactory factory;
+  private final Set<DexType> boxedTypes;
 
   // Temporarily keep the information here, and not in the MethodOptimizationInfo as the
   // optimization is developed and unfinished.
-  private Map<DexMethod, MethodBoxingStatus> methodBoxingStatus = new ConcurrentHashMap<>();
+  private final Map<DexMethod, MethodBoxingStatus> methodBoxingStatus = new ConcurrentHashMap<>();
   private Map<DexMethod, DexMethod> virtualMethodsRepresentative;
 
   public NumberUnboxerImpl(AppView<AppInfoWithLiveness> appView) {
@@ -301,17 +301,28 @@ public class NumberUnboxerImpl extends NumberUnboxer {
   public void unboxNumbers(
       PostMethodProcessor.Builder postMethodProcessorBuilder,
       Timing timing,
-      ExecutorService executorService) {
-
-    Map<DexMethod, MethodBoxingStatusResult> result =
+      ExecutorService executorService)
+      throws ExecutionException {
+    Map<DexMethod, MethodBoxingStatusResult> unboxingResult =
         new NumberUnboxerBoxingStatusResolution().resolve(methodBoxingStatus);
+    if (unboxingResult.isEmpty()) {
+      return;
+    }
 
-    // TODO(b/307872552): The result encodes for each method which return value and parameter of
-    //  each method should be unboxed. We need here to implement the treefixer using it, and set up
-    //  correctly the reprocessing with a code rewriter similar to the enum unboxing code rewriter.
-    //  We should implement the optimization, so far, we just print out the result.
+    NumberUnboxerLens numberUnboxerLens =
+        new NumberUnboxerTreeFixer(appView, unboxingResult).fixupTree(executorService, timing);
+    appView.rewriteWithLens(numberUnboxerLens, executorService, timing);
+    new NumberUnboxerMethodReprocessingEnqueuer(appView, numberUnboxerLens)
+        .enqueueMethodsForReprocessing(postMethodProcessorBuilder, executorService, timing);
+
+    if (appView.testing().printNumberUnboxed) {
+      printNumberUnboxed(unboxingResult);
+    }
+  }
+
+  private void printNumberUnboxed(Map<DexMethod, MethodBoxingStatusResult> unboxingResult) {
     StringBuilder stringBuilder = new StringBuilder();
-    result.forEach(
+    unboxingResult.forEach(
         (k, v) -> {
           if (v.getRet() == UNBOX) {
             stringBuilder
