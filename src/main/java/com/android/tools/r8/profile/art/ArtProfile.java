@@ -44,7 +44,12 @@ public class ArtProfile {
 
   public ArtProfile rewrittenWithLens(GraphLens lens) {
     return transform(
-        (classRule, builderFactory) -> builderFactory.accept(lens.lookupType(classRule.getType())),
+        (classRule, builderFactory) -> {
+          DexType rewrittenType = lens.lookupType(classRule.getType());
+          if (rewrittenType.isReferenceType()) {
+            builderFactory.accept(rewrittenType);
+          }
+        },
         (methodRule, builderFactory) ->
             builderFactory
                 .apply(lens.getRenamedMethodSignature(methodRule.getMethod()))
