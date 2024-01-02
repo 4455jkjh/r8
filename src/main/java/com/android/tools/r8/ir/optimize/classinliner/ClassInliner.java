@@ -212,7 +212,8 @@ public final class ClassInliner {
         AssumeRemover assumeRemover = new AssumeRemover(appView, code, affectedValues);
         try {
           anyInlinedMethods |=
-              processor.processInlining(code, affectedValues, assumeRemover, inliningIRProvider);
+              processor.processInlining(
+                  code, affectedValues, assumeRemover, feedback, inliningIRProvider);
         } catch (IllegalClassInlinerStateException e) {
           // We introduced a user that we cannot handle in the class inliner as a result of force
           // inlining. Abort gracefully from class inlining without removing the instance.

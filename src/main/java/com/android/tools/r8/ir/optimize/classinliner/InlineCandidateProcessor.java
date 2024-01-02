@@ -62,6 +62,7 @@ import com.android.tools.r8.ir.optimize.classinliner.analysis.ParameterUsage;
 import com.android.tools.r8.ir.optimize.classinliner.constraint.ClassInlinerMethodConstraint;
 import com.android.tools.r8.ir.optimize.info.FieldOptimizationInfo;
 import com.android.tools.r8.ir.optimize.info.MethodOptimizationInfo;
+import com.android.tools.r8.ir.optimize.info.OptimizationFeedback;
 import com.android.tools.r8.ir.optimize.info.initializer.InstanceInitializerInfo;
 import com.android.tools.r8.ir.optimize.inliner.InliningIRProvider;
 import com.android.tools.r8.ir.optimize.inliner.NopWhyAreYouNotInliningReporter;
@@ -380,13 +381,15 @@ final class InlineCandidateProcessor {
       IRCode code,
       Set<Value> affectedValues,
       AssumeRemover assumeRemover,
+      OptimizationFeedback feedback,
       InliningIRProvider inliningIRProvider)
       throws IllegalClassInlinerStateException {
     // Verify that `eligibleInstance` is not aliased.
     assert eligibleInstance == eligibleInstance.getAliasedValue();
 
-    boolean anyInlinedMethods = forceInlineDirectMethodInvocations(code, inliningIRProvider);
-    anyInlinedMethods |= forceInlineIndirectMethodInvocations(code, inliningIRProvider);
+    boolean anyInlinedMethods =
+        forceInlineDirectMethodInvocations(code, feedback, inliningIRProvider);
+    anyInlinedMethods |= forceInlineIndirectMethodInvocations(code, feedback, inliningIRProvider);
 
     rebindIndirectEligibleInstanceUsersFromPhis();
     removeMiscUsages(code, affectedValues);
@@ -397,13 +400,20 @@ final class InlineCandidateProcessor {
   }
 
   private boolean forceInlineDirectMethodInvocations(
-      IRCode code, InliningIRProvider inliningIRProvider) throws IllegalClassInlinerStateException {
+      IRCode code, OptimizationFeedback feedback, InliningIRProvider inliningIRProvider)
+      throws IllegalClassInlinerStateException {
     if (directMethodCalls.isEmpty()) {
       return false;
     }
 
     inliner.performForcedInlining(
-        method, code, directMethodCalls, inliningIRProvider, methodProcessor, Timing.empty());
+        method,
+        code,
+        directMethodCalls,
+        feedback,
+        inliningIRProvider,
+        methodProcessor,
+        Timing.empty());
 
     // In case we are class inlining an object allocation that does not inherit directly from
     // java.lang.Object, we need keep force inlining the constructor until we reach
@@ -452,7 +462,13 @@ final class InlineCandidateProcessor {
         }
         if (!directMethodCalls.isEmpty()) {
           inliner.performForcedInlining(
-              method, code, directMethodCalls, inliningIRProvider, methodProcessor, Timing.empty());
+              method,
+              code,
+              directMethodCalls,
+              feedback,
+              inliningIRProvider,
+              methodProcessor,
+              Timing.empty());
         }
       } while (!directMethodCalls.isEmpty());
     }
@@ -461,7 +477,8 @@ final class InlineCandidateProcessor {
   }
 
   private boolean forceInlineIndirectMethodInvocations(
-      IRCode code, InliningIRProvider inliningIRProvider) throws IllegalClassInlinerStateException {
+      IRCode code, OptimizationFeedback feedback, InliningIRProvider inliningIRProvider)
+      throws IllegalClassInlinerStateException {
     if (indirectMethodCallsOnInstance.isEmpty()) {
       return false;
     }
@@ -507,7 +524,13 @@ final class InlineCandidateProcessor {
 
     if (!methodCallsOnInstance.isEmpty()) {
       inliner.performForcedInlining(
-          method, code, methodCallsOnInstance, inliningIRProvider, methodProcessor, Timing.empty());
+          method,
+          code,
+          methodCallsOnInstance,
+          feedback,
+          inliningIRProvider,
+          methodProcessor,
+          Timing.empty());
     } else {
       assert indirectMethodCallsOnInstance.stream()
           .filter(method -> method.getDefinition().getOptimizationInfo().mayHaveSideEffects())
