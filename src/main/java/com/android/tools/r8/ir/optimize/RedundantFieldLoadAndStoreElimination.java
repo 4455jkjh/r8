@@ -94,7 +94,8 @@ public class RedundantFieldLoadAndStoreElimination {
   }
 
   public static boolean shouldRun(AppView<?> appView, IRCode code) {
-    return appView.options().enableRedundantFieldLoadElimination
+    return !appView.options().debug
+        && appView.options().enableRedundantFieldLoadElimination
         && (code.metadata().mayHaveArrayGet()
             || code.metadata().mayHaveFieldInstruction()
             || code.metadata().mayHaveInitClass());
