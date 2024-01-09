@@ -84,7 +84,8 @@ public class RedundantFieldLoadAndStoreElimination extends CodeRewriterPass<AppI
 
   @Override
   protected boolean shouldRewriteCode(IRCode code) {
-    return appView.options().enableRedundantFieldLoadElimination
+    return !appView.options().debug
+        && appView.options().enableRedundantFieldLoadElimination
         && (code.metadata().mayHaveArrayGet()
             || code.metadata().mayHaveFieldInstruction()
             || code.metadata().mayHaveInitClass());
