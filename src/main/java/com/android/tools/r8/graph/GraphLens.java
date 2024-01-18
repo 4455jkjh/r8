@@ -31,7 +31,6 @@ import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -825,8 +824,6 @@ public abstract class GraphLens {
     private final DexItemFactory dexItemFactory;
     private GraphLens previousLens;
 
-    private final Map<DexType, DexType> arrayTypeCache = new ConcurrentHashMap<>();
-
     public NonIdentityGraphLens(AppView<?> appView) {
       this(appView.dexItemFactory(), appView.graphLens());
     }
@@ -909,14 +906,9 @@ public abstract class GraphLens {
         return type;
       }
       if (type.isArrayType()) {
-        DexType result = arrayTypeCache.get(type);
-        if (result == null) {
-          DexType baseType = type.toBaseType(dexItemFactory);
-          DexType newType = lookupType(baseType);
-          result = baseType == newType ? type : type.replaceBaseType(newType, dexItemFactory);
-          arrayTypeCache.put(type, result);
-        }
-        return result;
+        DexType baseType = type.toBaseType(dexItemFactory);
+        DexType newType = lookupType(baseType);
+        return baseType == newType ? type : type.replaceBaseType(newType, dexItemFactory);
       }
       return lookupClassType(type);
     }
