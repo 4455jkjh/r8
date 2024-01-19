@@ -46,6 +46,10 @@ public class VerticallyMergedClasses implements MergedClasses {
     return mergedClasses.getForwardMap();
   }
 
+  public Set<DexType> getSources() {
+    return mergedClasses.keySet();
+  }
+
   public Collection<DexType> getSourcesFor(DexType type) {
     return mergedClasses.getKeys(type);
   }

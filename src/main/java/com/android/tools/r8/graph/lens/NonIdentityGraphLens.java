@@ -101,7 +101,7 @@ public abstract class NonIdentityGraphLens extends GraphLens {
     if (type.isArrayType()) {
       DexType baseType = type.toBaseType(dexItemFactory);
       DexType newType = lookupType(baseType, appliedLens);
-      return baseType.isIdenticalTo(newType) ? type : type.replaceBaseType(newType, dexItemFactory);
+      return baseType == newType ? type : type.replaceBaseType(newType, dexItemFactory);
     }
     assert type.isNullValueType() || type.isPrimitiveType() || type.isVoidType();
     return type;
