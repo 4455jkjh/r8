@@ -227,7 +227,7 @@ public class EnumDataMap {
         }
       } else if (unboxedValues.size() == 1) {
         Integer next = unboxedValues.values().iterator().next();
-        return factory.createSingleNumberValue(ordinalToUnboxedInt(next));
+        return factory.createSingleNumberValue(next);
       }
       return null;
     }
