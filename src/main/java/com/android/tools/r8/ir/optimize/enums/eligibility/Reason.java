@@ -15,6 +15,7 @@ public abstract class Reason {
   public static final Reason ANNOTATION = new StringReason("ANNOTATION");
   public static final Reason PINNED = new StringReason("PINNED");
   public static final Reason DOWN_CAST = new StringReason("DOWN_CAST");
+  public static final Reason INSTANCE_OF = new StringReason("INSTANCE_OF");
   public static final Reason SUBTYPES = new StringReason("SUBTYPES");
   public static final Reason MANY_INSTANCE_FIELDS = new StringReason("MANY_INSTANCE_FIELDS");
   public static final Reason DEFAULT_METHOD_INVOKE = new StringReason("DEFAULT_METHOD_INVOKE");
