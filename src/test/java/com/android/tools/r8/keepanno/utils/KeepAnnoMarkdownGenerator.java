@@ -36,7 +36,6 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -49,9 +48,9 @@ import java.util.Set;
 
 public class KeepAnnoMarkdownGenerator {
 
-  public static void generateMarkdownDoc(Generator generator) {
+  public static void generateMarkdownDoc(Generator generator, Path projectRoot) {
     try {
-      new KeepAnnoMarkdownGenerator(generator).internalGenerateMarkdownDoc();
+      new KeepAnnoMarkdownGenerator(generator).internalGenerateMarkdownDoc(projectRoot);
     } catch (IOException e) {
       throw new RuntimeException(e);
     }
@@ -202,10 +201,11 @@ public class KeepAnnoMarkdownGenerator {
     generator.println(line);
   }
 
-  private void internalGenerateMarkdownDoc() throws IOException {
-    Path template = Paths.get("doc/keepanno-guide.template.md");
+  private void internalGenerateMarkdownDoc(Path projectRoot) throws IOException {
+    String relativeUnixPath = "doc/keepanno-guide.template.md";
+    Path template = projectRoot.resolve(relativeUnixPath);
     println("[comment]: <> (DO NOT EDIT - GENERATED FILE)");
-    println("[comment]: <> (Changes should be made in " + template + ")");
+    println("[comment]: <> (Changes should be made in " + relativeUnixPath + ")");
     println();
     List<String> readAllLines = FileUtils.readAllLines(template);
     TableEntry root = new TableEntry(0, "root", "root", null);

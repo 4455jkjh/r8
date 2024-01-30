@@ -11,6 +11,7 @@ import com.android.tools.r8.errors.Unreachable;
 import com.android.tools.r8.graph.AppInfoWithClassHierarchy;
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.DebugLocalInfo;
+import com.android.tools.r8.graph.DexClass;
 import com.android.tools.r8.graph.DexEncodedMethod;
 import com.android.tools.r8.graph.DexString;
 import com.android.tools.r8.graph.DexType;
@@ -29,7 +30,6 @@ import com.android.tools.r8.ir.conversion.IRBuilder;
 import com.android.tools.r8.ir.conversion.MethodConversionOptions;
 import com.android.tools.r8.ir.conversion.MethodConversionOptions.MutableMethodConversionOptions;
 import com.android.tools.r8.ir.optimize.AffectedValues;
-import com.android.tools.r8.origin.Origin;
 import com.android.tools.r8.utils.BooleanUtils;
 import com.android.tools.r8.utils.DequeUtils;
 import com.android.tools.r8.utils.InternalOptions;
@@ -137,8 +137,6 @@ public class IRCode implements IRControlFlowGraph, ValueFactory {
   private final IRMetadata metadata;
   private final InternalOptions options;
 
-  public final Origin origin;
-
   public IRCode(
       InternalOptions options,
       ProgramMethod method,
@@ -147,7 +145,6 @@ public class IRCode implements IRControlFlowGraph, ValueFactory {
       NumberGenerator valueNumberGenerator,
       NumberGenerator basicBlockNumberGenerator,
       IRMetadata metadata,
-      Origin origin,
       MutableMethodConversionOptions conversionOptions) {
     assert metadata != null;
     assert options != null;
@@ -161,7 +158,6 @@ public class IRCode implements IRControlFlowGraph, ValueFactory {
     this.valueNumberGenerator = valueNumberGenerator;
     this.basicBlockNumberGenerator = basicBlockNumberGenerator;
     this.metadata = metadata;
-    this.origin = origin;
   }
 
   public IRMetadata metadata() {
@@ -619,6 +615,21 @@ public class IRCode implements IRControlFlowGraph, ValueFactory {
     assert validThrowingInstructions();
     assert noCriticalEdges();
     assert verifyNoValueWithOnlyAssumeInstructionAsUsers();
+    return true;
+  }
+
+  public boolean verifyInvokeInterface(AppView<? extends AppInfoWithClassHierarchy> appView) {
+    if (appView.testing().allowInvokeErrors) {
+      return true;
+    }
+    for (InvokeMethod invoke : this.<InvokeMethod>instructions(Instruction::isInvokeMethod)) {
+      DexType holderType = invoke.getInvokedMethod().getHolderType();
+      if (holderType.isArrayType()) {
+        continue;
+      }
+      DexClass holder = appView.definitionFor(holderType, context());
+      assert holder == null || invoke.getInterfaceBit() == holder.isInterface();
+    }
     return true;
   }
 

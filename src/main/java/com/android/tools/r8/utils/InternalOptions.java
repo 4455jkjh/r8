@@ -229,6 +229,10 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
     return proguardConfiguration != null;
   }
 
+  public boolean isOptimizedResourceShrinking() {
+    return androidResourceProvider != null && resourceShrinkerConfiguration.isOptimizedShrinking();
+  }
+
   public ProguardConfiguration getProguardConfiguration() {
     return proguardConfiguration;
   }
@@ -1399,14 +1403,14 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
     }
   }
 
-  public void warningInvalidDebugInfo(
-      ProgramMethod method, Origin origin, InvalidDebugInfoException e) {
+  public void warningInvalidDebugInfo(ProgramMethod method, InvalidDebugInfoException e) {
     if (invalidDebugInfoFatal) {
       throw new CompilationError("Fatal warning: Invalid debug info", e);
     }
     synchronized (warningInvalidDebugInfo) {
-      warningInvalidDebugInfo.computeIfAbsent(
-          origin, k -> new ArrayList<>()).add(new Pair<>(method, e.getMessage()));
+      warningInvalidDebugInfo
+          .computeIfAbsent(method.getOrigin(), k -> new ArrayList<>())
+          .add(new Pair<>(method, e.getMessage()));
     }
   }
 
@@ -1877,7 +1881,7 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
         }
       }
       if (mode.isInitial()) {
-        return enableInitial && inlinerOptions.enableInlining;
+        return enableInitial;
       }
       assert mode.isFinal();
       return true;

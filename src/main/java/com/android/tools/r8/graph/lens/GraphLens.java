@@ -401,6 +401,10 @@ public abstract class GraphLens {
     return false;
   }
 
+  public final boolean isClassMergerLens() {
+    return isHorizontalClassMergerGraphLens() || isVerticalClassMergerLens();
+  }
+
   public boolean isClearCodeRewritingLens() {
     return false;
   }
@@ -445,10 +449,6 @@ public abstract class GraphLens {
 
   public NonIdentityGraphLens asNonIdentityLens() {
     return null;
-  }
-
-  public boolean isPublicizerLens() {
-    return false;
   }
 
   public boolean isVerticalClassMergerLens() {

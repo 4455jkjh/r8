@@ -6,6 +6,7 @@ package com.android.tools.r8.lightir;
 import com.android.tools.r8.dex.code.CfOrDexInstruction;
 import com.android.tools.r8.errors.Unimplemented;
 import com.android.tools.r8.errors.Unreachable;
+import com.android.tools.r8.graph.AppInfoWithClassHierarchy;
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.ArgumentUse;
 import com.android.tools.r8.graph.ClasspathMethod;
@@ -33,11 +34,11 @@ import com.android.tools.r8.ir.conversion.LensCodeRewriterUtils;
 import com.android.tools.r8.ir.conversion.MethodConversionOptions;
 import com.android.tools.r8.ir.conversion.MethodConversionOptions.MutableMethodConversionOptions;
 import com.android.tools.r8.lightir.LirConstant.LirConstantStructuralAcceptor;
-import com.android.tools.r8.origin.Origin;
 import com.android.tools.r8.utils.ArrayUtils;
 import com.android.tools.r8.utils.ComparatorUtils;
 import com.android.tools.r8.utils.FastMapUtils;
 import com.android.tools.r8.utils.IntBox;
+import com.android.tools.r8.utils.IntObjPredicate;
 import com.android.tools.r8.utils.InternalOptions;
 import com.android.tools.r8.utils.RetracerForCodePrinting;
 import com.android.tools.r8.utils.structural.CompareToVisitor;
@@ -47,6 +48,7 @@ import com.android.tools.r8.utils.structural.StructuralItem;
 import com.android.tools.r8.utils.structural.StructuralMapping;
 import com.android.tools.r8.utils.structural.StructuralSpecification;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Iterables;
 import it.unimi.dsi.fastutil.ints.Int2ReferenceMap;
 import it.unimi.dsi.fastutil.ints.Int2ReferenceOpenHashMap;
 import java.util.ArrayList;
@@ -181,6 +183,12 @@ public class LirCode<EV> extends Code
       assert !tryCatchHandlers.isEmpty();
       // Copy the map to ensure it has not over-allocated the backing store.
       this.tryCatchHandlers = new Int2ReferenceOpenHashMap<>(tryCatchHandlers);
+    }
+
+    public boolean hasHandlerThatMatches(IntObjPredicate<CatchHandlers<Integer>> predicate) {
+      return Iterables.any(
+          tryCatchHandlers.int2ReferenceEntrySet(),
+          entry -> predicate.test(entry.getIntKey(), entry.getValue()));
     }
 
     public CatchHandlers<Integer> getHandlersForBlock(int blockIndex) {
@@ -490,6 +498,10 @@ public class LirCode<EV> extends Code
     return positionTable;
   }
 
+  public boolean hasTryCatchTable() {
+    return tryCatchTable != null;
+  }
+
   public TryCatchTable getTryCatchTable() {
     return tryCatchTable;
   }
@@ -532,7 +544,6 @@ public class LirCode<EV> extends Code
   public IRCode buildIR(
       ProgramMethod method,
       AppView<?> appView,
-      Origin origin,
       MutableMethodConversionOptions conversionOptions) {
     RewrittenPrototypeDescription protoChanges =
         appView.graphLens().lookupPrototypeChangesForMethodDefinition(method.getReference());
@@ -548,7 +559,6 @@ public class LirCode<EV> extends Code
       GraphLens codeLens,
       NumberGenerator valueNumberGenerator,
       Position callerPosition,
-      Origin origin,
       RewrittenPrototypeDescription protoChanges) {
     assert valueNumberGenerator != null;
     assert callerPosition != null;
@@ -802,17 +812,18 @@ public class LirCode<EV> extends Code
         metadataMap);
   }
 
-  public LirCode<EV> rewriteWithSimpleLens(
-      ProgramMethod context, AppView<?> appView, LensCodeRewriterUtils rewriterUtils) {
+  public LirCode<EV> rewriteWithLens(
+      ProgramMethod context,
+      AppView<? extends AppInfoWithClassHierarchy> appView,
+      LensCodeRewriterUtils rewriterUtils) {
     GraphLens graphLens = appView.graphLens();
     assert graphLens.isNonIdentityLens();
     if (graphLens.isMemberRebindingIdentityLens()) {
       return this;
     }
 
-    GraphLens codeLens = context.getDefinition().getCode().getCodeLens(appView);
-    SimpleLensLirRewriter<EV> rewriter =
-        new SimpleLensLirRewriter<>(this, context, graphLens, codeLens, rewriterUtils);
+    LirLensCodeRewriter<EV> rewriter =
+        new LirLensCodeRewriter<>(appView, this, context, rewriterUtils);
     return rewriter.rewrite();
   }
 

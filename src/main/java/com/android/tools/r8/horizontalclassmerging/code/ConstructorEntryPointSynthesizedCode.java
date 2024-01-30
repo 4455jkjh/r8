@@ -5,18 +5,20 @@
 package com.android.tools.r8.horizontalclassmerging.code;
 
 import com.android.tools.r8.errors.Unreachable;
+import com.android.tools.r8.graph.AppInfoWithClassHierarchy;
 import com.android.tools.r8.graph.AppView;
+import com.android.tools.r8.graph.CfCode;
 import com.android.tools.r8.graph.ClasspathMethod;
-import com.android.tools.r8.graph.Code;
 import com.android.tools.r8.graph.DexEncodedMethod;
 import com.android.tools.r8.graph.DexField;
-import com.android.tools.r8.graph.DexItemFactory;
 import com.android.tools.r8.graph.DexMethod;
 import com.android.tools.r8.graph.ProgramMethod;
 import com.android.tools.r8.graph.UseRegistry;
 import com.android.tools.r8.graph.lens.GraphLens;
 import com.android.tools.r8.graph.proto.RewrittenPrototypeDescription;
 import com.android.tools.r8.horizontalclassmerging.ConstructorEntryPoint;
+import com.android.tools.r8.horizontalclassmerging.HorizontalClassMergerGraphLens;
+import com.android.tools.r8.horizontalclassmerging.IncompleteHorizontalClassMergerCode;
 import com.android.tools.r8.ir.code.IRCode;
 import com.android.tools.r8.ir.code.NumberGenerator;
 import com.android.tools.r8.ir.code.Position;
@@ -25,23 +27,26 @@ import com.android.tools.r8.ir.conversion.IRBuilder;
 import com.android.tools.r8.ir.conversion.MethodConversionOptions;
 import com.android.tools.r8.ir.conversion.MethodConversionOptions.MutableMethodConversionOptions;
 import com.android.tools.r8.ir.conversion.SourceCode;
-import com.android.tools.r8.origin.Origin;
 import com.android.tools.r8.utils.RetracerForCodePrinting;
+import it.unimi.dsi.fastutil.ints.Int2ReferenceMap;
 import it.unimi.dsi.fastutil.ints.Int2ReferenceSortedMap;
 
-public class ConstructorEntryPointSynthesizedCode extends Code {
+public class ConstructorEntryPointSynthesizedCode extends IncompleteHorizontalClassMergerCode {
 
   private final DexMethod newConstructor;
   private final DexField classIdField;
+  private final int extraNulls;
   private final Int2ReferenceSortedMap<DexMethod> typeConstructors;
 
   public ConstructorEntryPointSynthesizedCode(
       Int2ReferenceSortedMap<DexMethod> typeConstructors,
       DexMethod newConstructor,
-      DexField classIdField) {
+      DexField classIdField,
+      int extraNulls) {
     this.typeConstructors = typeConstructors;
     this.newConstructor = newConstructor;
     this.classIdField = classIdField;
+    this.extraNulls = extraNulls;
   }
 
   private void registerReachableDefinitions(UseRegistry<?> registry) {
@@ -55,8 +60,27 @@ public class ConstructorEntryPointSynthesizedCode extends Code {
   }
 
   @Override
+  public GraphLens getCodeLens(AppView<?> appView) {
+    return appView
+        .graphLens()
+        .asNonIdentityLens()
+        .find(GraphLens::isHorizontalClassMergerGraphLens);
+  }
+
+  @Override
   public boolean isHorizontalClassMergerCode() {
     return true;
+  }
+
+  @Override
+  public CfCode toCfCode(
+      AppView<? extends AppInfoWithClassHierarchy> appView,
+      ProgramMethod method,
+      HorizontalClassMergerGraphLens lens) {
+    for (Int2ReferenceMap.Entry<DexMethod> entry : typeConstructors.int2ReferenceEntrySet()) {
+      entry.setValue(lens.getNextMethodSignature(entry.getValue()));
+    }
+    return null;
   }
 
   @Override
@@ -68,7 +92,6 @@ public class ConstructorEntryPointSynthesizedCode extends Code {
   public final IRCode buildIR(
       ProgramMethod method,
       AppView<?> appView,
-      Origin origin,
       MutableMethodConversionOptions conversionOptions) {
     SyntheticPosition position =
         SyntheticPosition.builder()
@@ -77,8 +100,9 @@ public class ConstructorEntryPointSynthesizedCode extends Code {
             .setIsD8R8Synthesized(true)
             .build();
     SourceCode sourceCode =
-        new ConstructorEntryPoint(typeConstructors, newConstructor, classIdField, position);
-    return IRBuilder.create(method, appView, sourceCode, origin).build(method, conversionOptions);
+        new ConstructorEntryPoint(
+            typeConstructors, newConstructor, classIdField, extraNulls, position);
+    return IRBuilder.create(method, appView, sourceCode).build(method, conversionOptions);
   }
 
   @Override
@@ -89,25 +113,13 @@ public class ConstructorEntryPointSynthesizedCode extends Code {
       GraphLens codeLens,
       NumberGenerator valueNumberGenerator,
       Position callerPosition,
-      Origin origin,
       RewrittenPrototypeDescription protoChanges) {
     SourceCode sourceCode =
-        new ConstructorEntryPoint(typeConstructors, newConstructor, classIdField, callerPosition);
+        new ConstructorEntryPoint(
+            typeConstructors, newConstructor, classIdField, extraNulls, callerPosition);
     return IRBuilder.createForInlining(
-            method, appView, codeLens, sourceCode, origin, valueNumberGenerator, protoChanges)
+            method, appView, codeLens, sourceCode, valueNumberGenerator, protoChanges)
         .build(context, MethodConversionOptions.nonConverting());
-  }
-
-  @Override
-  public final Code getCodeAsInlining(
-      DexMethod caller,
-      boolean isCallerD8R8Synthesized,
-      DexMethod callee,
-      boolean isCalleeD8R8Synthesized,
-      DexItemFactory factory) {
-    // This code object is synthesized so "inlining" just "strips" the callee position.
-    assert isCalleeD8R8Synthesized;
-    return this;
   }
 
   @Override

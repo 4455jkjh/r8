@@ -38,11 +38,7 @@ import com.android.tools.r8.ir.conversion.IRBuilder;
 import com.android.tools.r8.ir.conversion.LensCodeRewriterUtils;
 import com.android.tools.r8.ir.conversion.MethodConversionOptions;
 import com.android.tools.r8.ir.conversion.MethodConversionOptions.MutableMethodConversionOptions;
-import com.android.tools.r8.ir.optimize.Inliner.ConstraintWithTarget;
-import com.android.tools.r8.ir.optimize.InliningConstraints;
 import com.android.tools.r8.naming.NamingLens;
-import com.android.tools.r8.origin.Origin;
-import com.android.tools.r8.shaking.AppInfoWithLiveness;
 import com.android.tools.r8.utils.InternalOptions;
 import com.android.tools.r8.utils.RetracerForCodePrinting;
 import com.android.tools.r8.utils.structural.CompareToVisitor;
@@ -587,11 +583,10 @@ public class CfCode extends Code implements CfWritableCode, StructuralItem<CfCod
   public IRCode buildIR(
       ProgramMethod method,
       AppView<?> appView,
-      Origin origin,
       MutableMethodConversionOptions conversionOptions) {
     verifyFramesOrRemove(method, appView, getCodeLens(appView));
     return internalBuildPossiblyWithLocals(
-        method, method, appView, appView.codeLens(), null, null, origin, null, conversionOptions);
+        method, method, appView, appView.codeLens(), null, null, null, conversionOptions);
   }
 
   @Override
@@ -602,7 +597,6 @@ public class CfCode extends Code implements CfWritableCode, StructuralItem<CfCod
       GraphLens codeLens,
       NumberGenerator valueNumberGenerator,
       Position callerPosition,
-      Origin origin,
       RewrittenPrototypeDescription protoChanges) {
     assert valueNumberGenerator != null;
     assert callerPosition != null;
@@ -615,7 +609,6 @@ public class CfCode extends Code implements CfWritableCode, StructuralItem<CfCod
         codeLens,
         valueNumberGenerator,
         callerPosition,
-        origin,
         protoChanges,
         MethodConversionOptions.nonConverting());
   }
@@ -637,7 +630,6 @@ public class CfCode extends Code implements CfWritableCode, StructuralItem<CfCod
       GraphLens codeLens,
       NumberGenerator valueNumberGenerator,
       Position callerPosition,
-      Origin origin,
       RewrittenPrototypeDescription protoChanges,
       MutableMethodConversionOptions conversionOptions) {
     if (!method.keepLocals(appView)) {
@@ -649,7 +641,6 @@ public class CfCode extends Code implements CfWritableCode, StructuralItem<CfCod
           codeLens,
           valueNumberGenerator,
           callerPosition,
-          origin,
           protoChanges,
           conversionOptions);
     } else {
@@ -660,7 +651,6 @@ public class CfCode extends Code implements CfWritableCode, StructuralItem<CfCod
           codeLens,
           valueNumberGenerator,
           callerPosition,
-          origin,
           protoChanges,
           conversionOptions);
     }
@@ -674,7 +664,6 @@ public class CfCode extends Code implements CfWritableCode, StructuralItem<CfCod
       GraphLens codeLens,
       NumberGenerator valueNumberGenerator,
       Position callerPosition,
-      Origin origin,
       RewrittenPrototypeDescription protoChanges,
       MutableMethodConversionOptions conversionOptions) {
     try {
@@ -686,11 +675,10 @@ public class CfCode extends Code implements CfWritableCode, StructuralItem<CfCod
           codeLens,
           valueNumberGenerator,
           callerPosition,
-          origin,
           protoChanges,
           conversionOptions);
     } catch (InvalidDebugInfoException e) {
-      appView.options().warningInvalidDebugInfo(method, origin, e);
+      appView.options().warningInvalidDebugInfo(method, e);
       return internalBuild(
           Collections.emptyList(),
           context,
@@ -699,7 +687,6 @@ public class CfCode extends Code implements CfWritableCode, StructuralItem<CfCod
           codeLens,
           valueNumberGenerator,
           callerPosition,
-          origin,
           protoChanges,
           conversionOptions);
     }
@@ -714,7 +701,6 @@ public class CfCode extends Code implements CfWritableCode, StructuralItem<CfCod
       GraphLens codeLens,
       NumberGenerator valueNumberGenerator,
       Position callerPosition,
-      Origin origin,
       RewrittenPrototypeDescription protoChanges,
       MutableMethodConversionOptions conversionOptions) {
     CfSourceCode source =
@@ -723,16 +709,15 @@ public class CfCode extends Code implements CfWritableCode, StructuralItem<CfCod
             localVariables,
             method,
             callerPosition,
-            origin,
             appView);
     IRBuilder builder;
     if (valueNumberGenerator == null) {
       assert protoChanges == null;
-      builder = IRBuilder.create(method, appView, source, origin);
+      builder = IRBuilder.create(method, appView, source);
     } else {
       builder =
           IRBuilder.createForInlining(
-              method, appView, codeLens, source, origin, valueNumberGenerator, protoChanges);
+              method, appView, codeLens, source, valueNumberGenerator, protoChanges);
     }
     return builder.build(context, conversionOptions);
   }
@@ -859,25 +844,6 @@ public class CfCode extends Code implements CfWritableCode, StructuralItem<CfCod
   @Override
   public String toString(DexEncodedMethod method, RetracerForCodePrinting retracer) {
     return new CfPrinter(this, method, retracer).toString();
-  }
-
-  @SuppressWarnings("ReferenceEquality")
-  public ConstraintWithTarget computeInliningConstraint(
-      AppView<AppInfoWithLiveness> appView,
-      GraphLens graphLens,
-      ProgramMethod context) {
-    InliningConstraints inliningConstraints = new InliningConstraints(appView, graphLens);
-    ConstraintWithTarget constraint = ConstraintWithTarget.ALWAYS;
-    assert inliningConstraints.forMonitor().isAlways();
-    for (CfInstruction insn : instructions) {
-      constraint =
-          ConstraintWithTarget.meet(
-              constraint, insn.inliningConstraint(inliningConstraints, this, context), appView);
-      if (constraint.isNever()) {
-        return constraint;
-      }
-    }
-    return constraint;
   }
 
   void addFakeThisParameter(DexItemFactory factory) {

@@ -584,6 +584,10 @@ object ThirdPartyDeps {
     "r8-v3-2-54",
     Paths.get("third_party", "r8-releases","3.2.54").toFile(),
     Paths.get("third_party", "r8-releases", "3.2.54.tar.gz.sha1").toFile())
+  val r8v8_0_46 = ThirdPartyDependency(
+    "r8-v8-0-46",
+    Paths.get("third_party", "r8-releases","8.0.46").toFile(),
+    Paths.get("third_party", "r8-releases", "8.0.46.tar.gz.sha1").toFile())
   val retraceBenchmark = ThirdPartyDependency(
     "retrace-benchmark",
     Paths.get("third_party", "retrace_benchmark").toFile(),
@@ -692,7 +696,12 @@ fun getJdks() : List<ThirdPartyDependency> {
 }
 
 fun getThirdPartyProguards() : List<ThirdPartyDependency> {
-  return listOf("proguard5.2.1", "proguard6.0.1", "proguard-7.0.0", "proguard-7.3.2")
+  return listOf(
+    "proguard5.2.1",
+    "proguard6.0.1",
+    "proguard-7.0.0",
+    "proguard-7.3.2",
+    "proguard-7.4.1")
     .map { ThirdPartyDependency(
       it,
       Paths.get("third_party", "proguard", it).toFile(),
