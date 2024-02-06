@@ -21,7 +21,6 @@ import com.android.tools.r8.graph.DexTypeUtils;
 import com.android.tools.r8.graph.MethodAccessFlags;
 import com.android.tools.r8.graph.ProgramMethod;
 import com.android.tools.r8.horizontalclassmerging.code.ConstructorEntryPointSynthesizedCode;
-import com.android.tools.r8.horizontalclassmerging.code.SyntheticInitializerConverter;
 import com.android.tools.r8.ir.conversion.ExtraConstantIntParameter;
 import com.android.tools.r8.ir.conversion.ExtraParameter;
 import com.android.tools.r8.ir.conversion.ExtraUnusedParameter;
@@ -299,25 +298,25 @@ public class InstanceInitializerMerger {
   void merge(
       ClassMergerSharedData classMergerSharedData,
       ProfileCollectionAdditions profileCollectionAdditions,
-      ClassMethodsBuilder classMethodsBuilder,
-      SyntheticInitializerConverter.Builder syntheticInitializerConverterBuilder) {
+      ClassMethodsBuilder classMethodsBuilder) {
     ProgramMethod representative = ListUtils.first(instanceInitializers);
 
     // Create merged instance initializer reference.
     boolean needsClassId =
         instanceInitializers.size() > 1
             && (!hasInstanceInitializerDescription() || group.hasClassIdField());
-    assert mode.isInitial() || !needsClassId;
+    assert !mode.isRestrictedToAlphaRenamingInR8() || !needsClassId;
 
     DexMethod newMethodReferenceTemplate = getNewMethodReference(representative, needsClassId);
-    assert mode.isInitial() || classMethodsBuilder.isFresh(newMethodReferenceTemplate);
+    assert !mode.isRestrictedToAlphaRenamingInR8()
+        || classMethodsBuilder.isFresh(newMethodReferenceTemplate);
 
     DexMethod newMethodReference =
         dexItemFactory.createInstanceInitializerWithFreshProto(
             newMethodReferenceTemplate,
-            mode.isInitial()
-                ? classMergerSharedData.getExtraUnusedArgumentTypes()
-                : ImmutableList.of(),
+            mode.isRestrictedToAlphaRenamingInR8()
+                ? ImmutableList.of()
+                : classMergerSharedData.getExtraUnusedArgumentTypes(),
             classMethodsBuilder::isFresh);
 
     // Compute the extra unused null parameters.
@@ -325,7 +324,8 @@ public class InstanceInitializerMerger {
         computeExtraUnusedParameters(newMethodReferenceTemplate, newMethodReference);
 
     // Verify that the merge is a simple renaming in the final round of merging.
-    assert mode.isInitial() || newMethodReference == newMethodReferenceTemplate;
+    assert !mode.isRestrictedToAlphaRenamingInR8()
+        || newMethodReference == newMethodReferenceTemplate;
 
     // Move instance initializers to target class.
     if (hasInstanceInitializerDescription()) {
@@ -390,16 +390,10 @@ public class InstanceInitializerMerger {
     }
     classMethodsBuilder.addDirectMethod(newInstanceInitializer);
 
-    if (mode.isFinal()) {
-      if (appView.options().isGeneratingDex() && !newInstanceInitializer.getCode().isDexCode()) {
-        syntheticInitializerConverterBuilder.addInstanceInitializer(
-            new ProgramMethod(group.getTarget(), newInstanceInitializer));
-      } else {
-        assert appView.options().isGeneratingDex()
-            || newInstanceInitializer.getCode().isCfWritableCode()
-            || newInstanceInitializer.getCode().isIncompleteHorizontalClassMergerCode();
-      }
-    }
+    assert mode.isInitial()
+        || newInstanceInitializer.getCode().isDefaultInstanceInitializerCode()
+        || newInstanceInitializer.getCode().isLirCode()
+        || newInstanceInitializer.getCode().isIncompleteHorizontalClassMergerCode();
   }
 
   void setObsolete() {

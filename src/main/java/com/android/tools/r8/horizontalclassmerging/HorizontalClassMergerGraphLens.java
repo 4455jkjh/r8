@@ -70,6 +70,11 @@ public class HorizontalClassMergerGraphLens extends ClassMergerGraphLens {
   }
 
   @Override
+  public HorizontalClassMergerGraphLens asHorizontalClassMergerGraphLens() {
+    return this;
+  }
+
+  @Override
   protected Iterable<DexType> internalGetOriginalTypes(DexType previous) {
     return IterableUtils.prependSingleton(previous, mergedClasses.getSourcesFor(previous));
   }
@@ -131,14 +136,14 @@ public class HorizontalClassMergerGraphLens extends ClassMergerGraphLens {
     if (lookup.getReference().isIdenticalTo(previous.getReference())) {
       return lookup;
     }
+    DexType newFieldType = lookup.getReference().getType();
+    DexType preciseNewFieldType = getNextType(previous.getReference().getType());
     return FieldLookupResult.builder(this)
         .setReference(lookup.getReference())
         .setReboundReference(lookup.getReboundReference())
         .setReadCastType(
-            lookup.getReference().getType().isNotIdenticalTo(previous.getReference().getType())
-                ? lookupType(previous.getReference().getType())
-                : null)
-        .setWriteCastType(previous.getRewrittenWriteCastType(this::getNextClassType))
+            preciseNewFieldType.isNotIdenticalTo(newFieldType) ? preciseNewFieldType : null)
+        .setWriteCastType(previous.getRewrittenWriteCastType(this::getNextType))
         .build();
   }
 

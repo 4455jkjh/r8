@@ -8,6 +8,7 @@ import os
 import shutil
 import subprocess
 import sys
+import time
 import zipfile
 
 import archive
@@ -165,6 +166,11 @@ def make_parser():
                         help="Don't build when using --version main",
                         default=False,
                         action='store_true')
+    parser.add_argument('--print-runtimeraw',
+                        metavar='BENCHMARKNAME',
+                        help='Print the line \'<BENCHMARKNAME>(RunTimeRaw):' +
+                        ' <elapsed> ms\' at the end where <elapsed> is' +
+                        ' the elapsed time in milliseconds.')
     return parser
 
 
@@ -582,8 +588,6 @@ def run1(out, args, otherargs, jdkhome=None, worker_id=None):
         if args.enable_test_assertions:
             cmd.append('-Dcom.android.tools.r8.enableTestAssertions=1')
         feature_jars = dump.feature_jars()
-        if determine_isolated_splits(build_properties, feature_jars):
-            cmd.append('-Dcom.android.tools.r8.isolatedSplits=1')
         if args.print_times:
             cmd.append('-Dcom.android.tools.r8.printtimes=1')
         if args.r8_flags:
@@ -625,6 +629,8 @@ def run1(out, args, otherargs, jdkhome=None, worker_id=None):
                 ])
             else:
                 cmd.append(feature_jar)
+        if determine_isolated_splits(build_properties, feature_jars):
+            cmd.append('--isolated-splits')
         if dump.library_jar():
             cmd.extend(['--lib', dump.library_jar()])
         if dump.classpath_jar() and not is_l8_compiler(compiler):
@@ -676,9 +682,15 @@ def run1(out, args, otherargs, jdkhome=None, worker_id=None):
         cmd.extend(compilerargs)
         utils.PrintCmd(cmd, worker_id=worker_id)
         try:
-            print(
-                subprocess.check_output(
-                    cmd, stderr=subprocess.STDOUT).decode('utf-8'))
+            start = time.time()
+            output = subprocess.check_output(cmd, stderr=subprocess.STDOUT)
+            end = time.time()
+            print(output.decode('utf-8'))
+            if args.print_runtimeraw:
+                benchmark_name = args.print_runtimeraw
+                duration = int((end - start) * 1000)
+                print('')
+                print('%s(RunTimeRaw): %s ms' % (benchmark_name, duration))
             return 0
         except subprocess.CalledProcessError as e:
             if args.nolib \

@@ -63,10 +63,8 @@ import com.android.tools.r8.kotlin.KotlinMetadataRewriter;
 import com.android.tools.r8.kotlin.KotlinMetadataUtils;
 import com.android.tools.r8.naming.IdentifierMinifier;
 import com.android.tools.r8.naming.Minifier;
-import com.android.tools.r8.naming.NamingLens;
 import com.android.tools.r8.naming.PrefixRewritingNamingLens;
 import com.android.tools.r8.naming.ProguardMapMinifier;
-import com.android.tools.r8.naming.RecordInvokeDynamicInvokeCustomRewriter;
 import com.android.tools.r8.naming.RecordRewritingNamingLens;
 import com.android.tools.r8.naming.signature.GenericSignatureRewriter;
 import com.android.tools.r8.optimize.BridgeHoistingToSharedSyntheticSuperClass;
@@ -730,7 +728,7 @@ public class R8 {
 
       GenericSignatureContextBuilder genericContextBuilderBeforeFinalMerging = null;
       if (appView.hasCfByteCodePassThroughMethods()) {
-        LirConverter.finalizeLirToOutputFormat(appView, timing, executorService);
+        LirConverter.rewriteLirWithLens(appView, timing, executorService);
       } else {
         // Perform repackaging.
         if (appView.hasLiveness()) {
@@ -743,15 +741,13 @@ public class R8 {
         // Rewrite LIR with lens to allow building IR from LIR in class mergers.
         LirConverter.rewriteLirWithLens(appView, timing, executorService);
         appView.clearCodeRewritings(executorService, timing);
+        assert appView.dexItemFactory().verifyNoCachedTypeElements();
 
         if (appView.hasLiveness()) {
           VerticalClassMerger.createForFinalClassMerging(appView.withLiveness())
               .runIfNecessary(executorService, timing);
+          assert appView.dexItemFactory().verifyNoCachedTypeElements();
         }
-
-        // TODO(b/225838009): Move further down.
-        LirConverter.finalizeLirToOutputFormat(appView, timing, executorService);
-        assert appView.dexItemFactory().verifyNoCachedTypeElements();
 
         genericContextBuilderBeforeFinalMerging = GenericSignatureContextBuilder.create(appView);
 
@@ -764,6 +760,7 @@ public class R8 {
                 finalRuntimeTypeCheckInfoBuilder != null
                     ? finalRuntimeTypeCheckInfoBuilder.build(appView.graphLens())
                     : null);
+        assert appView.dexItemFactory().verifyNoCachedTypeElements();
       }
 
       // Perform minification.
@@ -778,16 +775,12 @@ public class R8 {
         timing.begin("Minification");
         new Minifier(appView.withLiveness()).run(executorService, timing);
         timing.end();
-      } else {
-        timing.begin("MinifyIdentifiers");
-        new IdentifierMinifier(appView, NamingLens.getIdentityLens()).run(executorService);
-        timing.end();
-        timing.begin("RecordInvokeDynamicRewrite");
-        new RecordInvokeDynamicInvokeCustomRewriter(appView, NamingLens.getIdentityLens())
-            .run(executorService);
-        timing.end();
       }
       appView.appInfo().notifyMinifierFinished();
+
+      timing.begin("MinifyIdentifiers");
+      new IdentifierMinifier(appView).run(executorService);
+      timing.end();
 
       // If a method filter is present don't produce output since the application is likely partial.
       if (options.hasMethodsFilter()) {
@@ -866,6 +859,9 @@ public class R8 {
 
       assert appView.verifyMovedMethodsHaveOriginalMethodPosition();
       timing.end();
+
+      LirConverter.finalizeLirToOutputFormat(appView, timing, executorService);
+      assert appView.dexItemFactory().verifyNoCachedTypeElements();
 
       // Generate the resulting application resources.
       writeApplication(appView, inputApp, executorService);
