@@ -15,6 +15,7 @@ import shutil
 import subprocess
 import sys
 
+import jdk
 import utils
 
 ARCHIVE_BUCKET = 'r8-releases'
@@ -62,6 +63,7 @@ def Main():
     if utils.is_bot() and not utils.IsWindows():
         set_rlimit_to_max()
 
+    utils.DownloadFromGoogleCloudStorage(utils.JAVA11_SHA_FILE)
     with utils.TempDir() as temp:
         # Resolve dry run location to support relative directories.
         dry_run_output = None
@@ -99,14 +101,16 @@ def Main():
 
             print('Building version: %s' % version)
 
-            # Build release to local Maven repository.
+            # Build release to local Maven repository compiling with JDK-11.
             m2 = os.path.join(temp, 'm2')
             os.mkdir(m2)
+            env = os.environ.copy()
+            env["JAVA_HOME"] = jdk.GetJdk11Home()
             subprocess.check_call([
                 './gradlew',
                 '-Dmaven.repo.local=%s' % m2, 'release', 'test',
-                'publishToMavenLocal'
-            ])
+                'publishToMavenLocal',
+            ], env=env)
             base = os.path.join('com', 'android', 'tools', 'smali')
 
             # Check that the local maven repository only has the single version directory in
