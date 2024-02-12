@@ -15,12 +15,21 @@ package com.android.tools.r8.keepanno.ast;
  * annotations which overlap in name with the actual semantic AST types.
  */
 public final class AnnotationConstants {
-  public static final class Extracted {
+  public static final class ExtractedAnnotations {
     public static final String DESCRIPTOR =
         "Lcom/android/tools/r8/keepanno/annotations/ExtractedKeepAnnotations;";
+    public static final String value = "value";
+  }
+
+  public static final class ExtractedAnnotation {
+    public static final String DESCRIPTOR =
+        "Lcom/android/tools/r8/keepanno/annotations/ExtractedKeepAnnotation;";
     public static final String version = "version";
     public static final String context = "context";
-    public static final String edges = "edges";
+    public static final String keepAnnotationGroup = "keep-annotation";
+    public static final String edge = "edge";
+    public static final String checkRemoved = "checkRemoved";
+    public static final String checkOptimizedOut = "checkOptimizedOut";
   }
 
   public static final class Edge {
@@ -87,6 +96,7 @@ public final class AnnotationConstants {
     public static final String instanceOfClassConstant = "instanceOfClassConstant";
     public static final String instanceOfClassConstantExclusive =
         "instanceOfClassConstantExclusive";
+    public static final String instanceOfPattern = "instanceOfPattern";
     public static final String classAnnotatedByGroup = "class-annotated-by";
     public static final String classAnnotatedByClassName = "classAnnotatedByClassName";
     public static final String classAnnotatedByClassConstant = "classAnnotatedByClassConstant";
@@ -231,8 +241,18 @@ public final class AnnotationConstants {
   public static final class ClassNamePattern {
     public static final String DESCRIPTOR =
         "Lcom/android/tools/r8/keepanno/annotations/ClassNamePattern;";
+    public static final String classNameGroup = "class-name";
+    public static final String name = "name";
+    public static final String constant = "constant";
     public static final String simpleName = "simpleName";
     public static final String packageName = "packageName";
+  }
+
+  public static final class InstanceOfPattern {
+    public static final String DESCRIPTOR =
+        "Lcom/android/tools/r8/keepanno/annotations/InstanceOfPattern;";
+    public static final String inclusive = "inclusive";
+    public static final String classNamePattern = "classNamePattern";
   }
 
   public static final class AnnotationPattern {
