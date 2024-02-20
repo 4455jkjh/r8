@@ -19,6 +19,7 @@ import com.android.tools.r8.graph.ProgramMethod;
 import com.android.tools.r8.graph.PrunedItems;
 import com.android.tools.r8.graph.lens.GraphLens;
 import com.android.tools.r8.ir.conversion.LirConverter;
+import com.android.tools.r8.naming.IdentifierMinifier;
 import com.android.tools.r8.optimize.argumentpropagation.utils.ProgramClassesBidirectedGraph;
 import com.android.tools.r8.profile.art.ArtProfileCompletenessChecker;
 import com.android.tools.r8.profile.rewriting.ProfileCollectionAdditions;
@@ -59,18 +60,25 @@ public class VerticalClassMerger {
   }
 
   public static VerticalClassMerger createForInitialClassMerging(
-      AppView<AppInfoWithLiveness> appView) {
+      AppView<AppInfoWithLiveness> appView, Timing timing) {
+    timing.begin("VerticalClassMerger (1/3)");
     return new VerticalClassMerger(appView, ClassMergerMode.INITIAL);
   }
 
+  public static VerticalClassMerger createForIntermediateClassMerging(
+      AppView<AppInfoWithLiveness> appView, Timing timing) {
+    timing.begin("VerticalClassMerger (2/3)");
+    return new VerticalClassMerger(appView, ClassMergerMode.FINAL);
+  }
+
   public static VerticalClassMerger createForFinalClassMerging(
-      AppView<AppInfoWithLiveness> appView) {
+      AppView<AppInfoWithLiveness> appView, Timing timing) {
+    timing.begin("VerticalClassMerger (3/3)");
     return new VerticalClassMerger(appView, ClassMergerMode.FINAL);
   }
 
   public void runIfNecessary(ExecutorService executorService, Timing timing)
       throws ExecutionException {
-    timing.begin("VerticalClassMerger (" + mode.toString() + ")");
     if (shouldRun()) {
       run(executorService, timing);
     } else {
@@ -89,7 +97,7 @@ public class VerticalClassMerger {
   private void run(ExecutorService executorService, Timing timing) throws ExecutionException {
     timing.begin("Setup");
     ImmediateProgramSubtypingInfo immediateSubtypingInfo =
-        ImmediateProgramSubtypingInfo.create(appView);
+        ImmediateProgramSubtypingInfo.createWithDeterministicOrder(appView);
 
     // Compute the disjoint class hierarchies for parallel processing.
     List<Set<DexProgramClass>> connectedComponents =
@@ -115,7 +123,12 @@ public class VerticalClassMerger {
       return;
     }
     VerticalClassMergerGraphLens lens =
-        runFixup(classMergerSharedData, verticalClassMergerResult, executorService, timing);
+        runFixup(
+            classMergerSharedData,
+            immediateSubtypingInfo,
+            verticalClassMergerResult,
+            executorService,
+            timing);
     assert verifyGraphLens(lens, verticalClassMergerResult);
 
     // Update keep info and art profiles.
@@ -222,12 +235,13 @@ public class VerticalClassMerger {
 
   private VerticalClassMergerGraphLens runFixup(
       ClassMergerSharedData classMergerSharedData,
+      ImmediateProgramSubtypingInfo immediateSubtypingInfo,
       VerticalClassMergerResult verticalClassMergerResult,
       ExecutorService executorService,
       Timing timing)
       throws ExecutionException {
     return new VerticalClassMergerTreeFixer(
-            appView, classMergerSharedData, verticalClassMergerResult)
+            appView, classMergerSharedData, immediateSubtypingInfo, verticalClassMergerResult)
         .run(executorService, timing);
   }
 
@@ -237,6 +251,7 @@ public class VerticalClassMerger {
       return;
     }
     LirConverter.rewriteLirWithLens(appView, timing, executorService);
+    new IdentifierMinifier(appView).rewriteDexItemBasedConstStringInStaticFields(executorService);
   }
 
   private void updateArtProfiles(

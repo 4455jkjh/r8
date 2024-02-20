@@ -25,7 +25,6 @@ import com.android.tools.r8.graph.proto.RewrittenPrototypeDescription;
 import com.android.tools.r8.ir.code.CanonicalPositions;
 import com.android.tools.r8.ir.code.CatchHandlers;
 import com.android.tools.r8.ir.code.IRCode;
-import com.android.tools.r8.ir.code.IRMetadata;
 import com.android.tools.r8.ir.code.NumberGenerator;
 import com.android.tools.r8.ir.code.Position;
 import com.android.tools.r8.ir.code.Position.SourcePosition;
@@ -344,8 +343,6 @@ public class LirCode<EV> extends Code
 
   private final boolean useDexEstimationStrategy;
 
-  private final IRMetadata irMetadata;
-
   /** Constant pool of items. */
   private final LirConstant[] constants;
 
@@ -380,8 +377,7 @@ public class LirCode<EV> extends Code
   private static <EV> void specify(StructuralSpecification<LirCode<EV>, ?> spec) {
     // strategyInfo is compiler meta-data (constant for a given compilation unit).
     // useDexEstimationStrategy is compiler meta-data (constant for a given compilation unit).
-    spec.withItem(c -> c.irMetadata)
-        .withCustomItemArray(c -> c.constants, LirConstantStructuralAcceptor.getInstance())
+    spec.withCustomItemArray(c -> c.constants, LirConstantStructuralAcceptor.getInstance())
         .withItemArray(c -> c.positionTable)
         .withInt(c -> c.argumentCount)
         .withByteArray(c -> c.instructions)
@@ -393,7 +389,6 @@ public class LirCode<EV> extends Code
 
   protected LirCode(LirCode<EV> code) {
     this(
-        code.irMetadata,
         code.constants,
         code.positionTable,
         code.argumentCount,
@@ -408,7 +403,6 @@ public class LirCode<EV> extends Code
 
   /** Should be constructed using {@link LirBuilder}. */
   LirCode(
-      IRMetadata irMetadata,
       LirConstant[] constants,
       PositionEntry[] positionTable,
       int argumentCount,
@@ -420,7 +414,6 @@ public class LirCode<EV> extends Code
       boolean useDexEstimationStrategy,
       Int2ReferenceMap<BytecodeInstructionMetadata> metadataMap) {
     assert positionTable != null;
-    this.irMetadata = irMetadata;
     this.constants = constants;
     this.positionTable = positionTable;
     this.argumentCount = argumentCount;
@@ -482,10 +475,6 @@ public class LirCode<EV> extends Code
     return instructionCount;
   }
 
-  public IRMetadata getMetadataForIR() {
-    return irMetadata;
-  }
-
   public LirConstant getConstantItem(int index) {
     return constants[index];
   }
@@ -545,8 +534,11 @@ public class LirCode<EV> extends Code
       ProgramMethod method,
       AppView<?> appView,
       MutableMethodConversionOptions conversionOptions) {
+    GraphLens codeLens = method.getDefinition().getCode().getCodeLens(appView);
     RewrittenPrototypeDescription protoChanges =
-        appView.graphLens().lookupPrototypeChangesForMethodDefinition(method.getReference());
+        appView
+            .graphLens()
+            .lookupPrototypeChangesForMethodDefinition(method.getReference(), codeLens);
     return internalBuildIR(
         method, appView, new NumberGenerator(), null, protoChanges, conversionOptions);
   }
@@ -740,7 +732,6 @@ public class LirCode<EV> extends Code
       return this;
     }
     return new LirCode<>(
-        irMetadata,
         constants,
         newPositionTable,
         argumentCount,
@@ -789,7 +780,6 @@ public class LirCode<EV> extends Code
       return this;
     }
     return new LirCode<>(
-        irMetadata,
         rewrittenConstants,
         positionTable,
         argumentCount,
@@ -807,7 +797,6 @@ public class LirCode<EV> extends Code
       return this;
     }
     return new LirCode<>(
-        irMetadata,
         constants,
         positionTable,
         argumentCount,
@@ -836,9 +825,8 @@ public class LirCode<EV> extends Code
   }
 
   public LirCode<EV> copyWithNewConstantsAndInstructions(
-      IRMetadata irMetadata, LirConstant[] constants, byte[] instructions) {
+      LirConstant[] constants, byte[] instructions) {
     return new LirCode<>(
-        irMetadata,
         constants,
         positionTable,
         argumentCount,

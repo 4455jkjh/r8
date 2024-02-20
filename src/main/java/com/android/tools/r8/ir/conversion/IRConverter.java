@@ -35,6 +35,7 @@ import com.android.tools.r8.ir.conversion.passes.DexConstantOptimizer;
 import com.android.tools.r8.ir.conversion.passes.FilledNewArrayRewriter;
 import com.android.tools.r8.ir.conversion.passes.MoveResultRewriter;
 import com.android.tools.r8.ir.conversion.passes.ParentConstructorHoistingCodeRewriter;
+import com.android.tools.r8.ir.conversion.passes.StringSwitchRemover;
 import com.android.tools.r8.ir.conversion.passes.ThrowCatchOptimizer;
 import com.android.tools.r8.ir.conversion.passes.TrivialPhiSimplifier;
 import com.android.tools.r8.ir.desugar.CfInstructionDesugaringCollection;
@@ -83,7 +84,6 @@ import com.android.tools.r8.naming.IdentifierNameStringMarker;
 import com.android.tools.r8.optimize.argumentpropagation.ArgumentPropagatorIROptimizer;
 import com.android.tools.r8.position.MethodPosition;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
-import com.android.tools.r8.shaking.KeepMethodInfo;
 import com.android.tools.r8.shaking.LibraryMethodOverrideAnalysis;
 import com.android.tools.r8.utils.Action;
 import com.android.tools.r8.utils.DescriptorUtils;
@@ -709,7 +709,7 @@ public class IRConverter {
     }
 
     if (!isDebugMode) {
-      new StringOptimizer(appView).run(code, timing);
+      new StringOptimizer(appView).run(code, methodProcessor, methodProcessingContext, timing);
       timing.begin("Optimize library methods");
       appView
           .libraryMethodOptimizer()
@@ -810,9 +810,7 @@ public class IRConverter {
     if (code.getConversionOptions().isStringSwitchConversionEnabled()) {
       // Remove string switches prior to canonicalization to ensure that the constants that are
       // being introduced will be canonicalized if possible.
-      timing.begin("Remove string switch");
-      stringSwitchRemover.run(code);
-      timing.end();
+      stringSwitchRemover.run(code, methodProcessor, methodProcessingContext, timing);
     }
 
     // TODO(mkroghj) Test if shorten live ranges is worth it.
@@ -823,7 +821,8 @@ public class IRConverter {
       constantCanonicalizer.canonicalize();
       timing.end();
       previous = printMethod(code, "IR after constant canonicalization (SSA)", previous);
-      new DexConstantOptimizer(appView, constantCanonicalizer).run(code, timing);
+      new DexConstantOptimizer(appView, constantCanonicalizer)
+          .run(code, methodProcessor, methodProcessingContext, timing);
       previous = printMethod(code, "IR after dex constant optimization (SSA)", previous);
     }
 
@@ -849,7 +848,8 @@ public class IRConverter {
 
     deadCodeRemover.run(code, timing);
 
-    new ParentConstructorHoistingCodeRewriter(appView).run(code, timing);
+    new ParentConstructorHoistingCodeRewriter(appView)
+        .run(code, methodProcessor, methodProcessingContext, timing);
 
     BytecodeMetadataProvider.Builder bytecodeMetadataProviderBuilder =
         BytecodeMetadataProvider.builder();
@@ -879,7 +879,7 @@ public class IRConverter {
       assert code.isConsistentSSA(appView);
 
       // TODO(b/214496607): Remove when dynamic types are safe w.r.t. interface assignment rules.
-      new MoveResultRewriter(appView).run(code, timing);
+      new MoveResultRewriter(appView).run(code, methodProcessor, methodProcessingContext, timing);
     }
 
     // Assert that we do not have unremoved non-sense code in the output, e.g., v <- non-null NULL.
@@ -1003,7 +1003,7 @@ public class IRConverter {
       new FilledNewArrayRewriter(appView).run(code, timing);
     }
     if (stringSwitchRemover != null) {
-      stringSwitchRemover.run(code);
+      stringSwitchRemover.run(code, timing);
     }
     code.removeRedundantBlocks();
     deadCodeRemover.run(code, timing);
@@ -1080,27 +1080,9 @@ public class IRConverter {
 
   public void markProcessed(IRCode code, OptimizationFeedback feedback) {
     // After all the optimizations have take place, we compute whether method should be inlined.
-    ProgramMethod method = code.context();
     ConstraintWithTarget state =
-        shouldComputeInliningConstraint(method)
-            ? inliner.computeInliningConstraint(code)
-            : ConstraintWithTarget.NEVER;
-    feedback.markProcessed(method.getDefinition(), state);
-  }
-
-  private boolean shouldComputeInliningConstraint(ProgramMethod method) {
-    if (!options.inlinerOptions().enableInlining || inliner == null) {
-      return false;
-    }
-    DexEncodedMethod definition = method.getDefinition();
-    if (definition.isClassInitializer() || method.getOrComputeReachabilitySensitive(appView)) {
-      return false;
-    }
-    KeepMethodInfo keepInfo = appView.getKeepInfo(method);
-    if (!keepInfo.isInliningAllowed(options) && !keepInfo.isClassInliningAllowed(options)) {
-      return false;
-    }
-    return true;
+        inliner != null ? inliner.computeInliningConstraint(code) : ConstraintWithTarget.NEVER;
+    feedback.markProcessed(code.context().getDefinition(), state);
   }
 
   public void printPhase(String phase) {

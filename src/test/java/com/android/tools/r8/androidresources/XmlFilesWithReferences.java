@@ -23,14 +23,14 @@ public class XmlFilesWithReferences extends TestBase {
 
   @Parameters(name = "{0}")
   public static TestParametersCollection parameters() {
-    return getTestParameters().withDexRuntimes().withAllApiLevels().build();
+    return getTestParameters().withDefaultDexRuntime().withAllApiLevels().build();
   }
 
   public static AndroidTestResource getTestResources(TemporaryFolder temp) throws Exception {
     return new AndroidTestResourceBuilder()
         .withSimpleManifestAndAppNameString()
         .addRClassInitializeWithDefaultValues(R.string.class, R.xml.class)
-        .addXmlWithStringReference("foo_with_reference", "referenced_from_xml")
+        .addXmlWithStringReference("foo_with_reference.xml", "referenced_from_xml")
         .build(temp);
   }
 

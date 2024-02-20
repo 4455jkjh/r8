@@ -17,11 +17,7 @@ import static com.android.tools.r8.utils.FunctionUtils.ignoreArgument;
 import static com.android.tools.r8.utils.MapUtils.ignoreKey;
 import static java.util.Collections.emptySet;
 
-import com.android.build.shrinker.r8integration.R8ResourceShrinkerState;
-import com.android.tools.r8.AndroidResourceInput;
-import com.android.tools.r8.AndroidResourceInput.Kind;
 import com.android.tools.r8.Diagnostic;
-import com.android.tools.r8.ResourceException;
 import com.android.tools.r8.cf.code.CfInstruction;
 import com.android.tools.r8.cf.code.CfInvoke;
 import com.android.tools.r8.contexts.CompilationContext.MethodProcessingContext;
@@ -29,6 +25,7 @@ import com.android.tools.r8.contexts.CompilationContext.ProcessorContext;
 import com.android.tools.r8.dex.IndexedItemCollection;
 import com.android.tools.r8.dex.code.CfOrDexInstruction;
 import com.android.tools.r8.errors.InterfaceDesugarMissingTypeDiagnostic;
+import com.android.tools.r8.errors.Unimplemented;
 import com.android.tools.r8.errors.Unreachable;
 import com.android.tools.r8.experimental.graphinfo.GraphConsumer;
 import com.android.tools.r8.features.IsolatedFeatureSplitsChecker;
@@ -129,9 +126,11 @@ import com.android.tools.r8.ir.desugar.constantdynamic.ConstantDynamicClass;
 import com.android.tools.r8.ir.desugar.desugaredlibrary.apiconversion.DesugaredLibraryAPIConverter;
 import com.android.tools.r8.ir.desugar.itf.InterfaceMethodProcessorFacade;
 import com.android.tools.r8.ir.desugar.itf.InterfaceProcessor;
+import com.android.tools.r8.keepanno.ast.KeepDeclaration;
 import com.android.tools.r8.kotlin.KotlinMetadataEnqueuerExtension;
 import com.android.tools.r8.naming.identifiernamestring.IdentifierNameStringLookupResult;
 import com.android.tools.r8.naming.identifiernamestring.IdentifierNameStringTypeLookupResult;
+import com.android.tools.r8.origin.Origin;
 import com.android.tools.r8.position.Position;
 import com.android.tools.r8.profile.rewriting.ProfileCollectionAdditions;
 import com.android.tools.r8.shaking.AnnotationMatchResult.MatchedAnnotation;
@@ -148,6 +147,7 @@ import com.android.tools.r8.shaking.EnqueuerWorklist.TraceStaticFieldWriteAction
 import com.android.tools.r8.shaking.GraphReporter.KeepReasonWitness;
 import com.android.tools.r8.shaking.KeepInfoCollection.MutableKeepInfoCollection;
 import com.android.tools.r8.shaking.KeepMethodInfo.Joiner;
+import com.android.tools.r8.shaking.KeepReason.ReflectiveUseFromXml;
 import com.android.tools.r8.shaking.RootSetUtils.ConsequentRootSet;
 import com.android.tools.r8.shaking.RootSetUtils.ConsequentRootSetBuilder;
 import com.android.tools.r8.shaking.RootSetUtils.RootSet;
@@ -157,6 +157,7 @@ import com.android.tools.r8.shaking.ScopedDexMethodSet.AddMethodIfMoreVisibleRes
 import com.android.tools.r8.synthesis.SyntheticItems.SynthesizingContextOracle;
 import com.android.tools.r8.utils.Action;
 import com.android.tools.r8.utils.Box;
+import com.android.tools.r8.utils.DescriptorUtils;
 import com.android.tools.r8.utils.InternalOptions;
 import com.android.tools.r8.utils.IteratorUtils;
 import com.android.tools.r8.utils.OptionalBool;
@@ -288,6 +289,8 @@ public class Enqueuer {
   private final Map<DexCallSite, ProgramMethodSet> callSites = new IdentityHashMap<>();
 
   private final Set<DexMember<?, ?>> identifierNameStrings = Sets.newIdentityHashSet();
+
+  private List<KeepDeclaration> keepDeclarations = Collections.emptyList();
 
   /**
    * Tracks the dependency between a method and the super-method it calls, if any. Used to make
@@ -483,8 +486,6 @@ public class Enqueuer {
 
   private final ProfileCollectionAdditions profileCollectionAdditions;
 
-  private final R8ResourceShrinkerState r8ResourceShrinkerState;
-
   Enqueuer(
       AppView<? extends AppInfoWithClassHierarchy> appView,
       ProfileCollectionAdditions profileCollectionAdditions,
@@ -512,6 +513,9 @@ public class Enqueuer {
             ? ProguardCompatibilityActions.builder()
             : null;
 
+    if (options.isOptimizedResourceShrinking()) {
+      appView.getResourceShrinkerState().setEnqueuerCallback(this::recordReferenceFromResources);
+    }
     if (mode.isTreeShaking()) {
       GetArrayOfMissingTypeVerifyErrorWorkaround.register(appView, this);
       InvokeVirtualToInterfaceVerifyErrorWorkaround.register(appView, this);
@@ -543,27 +547,6 @@ public class Enqueuer {
 
     objectAllocationInfoCollection =
         ObjectAllocationInfoCollectionImpl.builder(mode.isInitialTreeShaking(), graphReporter);
-    r8ResourceShrinkerState = setupResourceShrinkerState(appView);
-  }
-
-  private R8ResourceShrinkerState setupResourceShrinkerState(
-      AppView<? extends AppInfoWithClassHierarchy> appView) {
-    R8ResourceShrinkerState r8ResourceShrinkerState = new R8ResourceShrinkerState();
-    if (options.resourceShrinkerConfiguration.isOptimizedShrinking()
-        && options.androidResourceProvider != null) {
-      try {
-        for (AndroidResourceInput androidResource :
-            options.androidResourceProvider.getAndroidResources()) {
-          if (androidResource.getKind() == Kind.RESOURCE_TABLE) {
-            r8ResourceShrinkerState.setResourceTableInput(androidResource.getByteStream());
-            break;
-          }
-        }
-      } catch (ResourceException e) {
-        throw appView.reporter().fatalError("Failed initializing resource table");
-      }
-    }
-    return r8ResourceShrinkerState;
   }
 
   private AppInfoWithClassHierarchy appInfo() {
@@ -642,6 +625,13 @@ public class Enqueuer {
         .registerNewInstanceAnalysis(analysis);
   }
 
+  public void setKeepDeclarations(List<KeepDeclaration> keepDeclarations) {
+    // Keep declarations are used during initial tree shaking. Re-runs use the rule instance sets.
+    assert mode.isInitialTreeShaking();
+    assert keepDeclarations != null;
+    this.keepDeclarations = keepDeclarations;
+  }
+
   public void setAnnotationRemoverBuilder(AnnotationRemover.Builder annotationRemoverBuilder) {
     this.annotationRemoverBuilder = annotationRemoverBuilder;
   }
@@ -691,6 +681,33 @@ public class Enqueuer {
 
   private void recordTypeReference(DexType type, ProgramDerivedContext context) {
     recordTypeReference(type, context, this::recordNonProgramClass, this::reportMissingClass);
+  }
+
+  private boolean recordReferenceFromResources(String possibleClass, Origin origin) {
+    if (!DescriptorUtils.isValidJavaType(possibleClass)) {
+      return false;
+    }
+    DexType dexType =
+        appView.dexItemFactory().createType(DescriptorUtils.javaTypeToDescriptor(possibleClass));
+    DexProgramClass clazz = appView.definitionForProgramType(dexType);
+    if (clazz != null) {
+      ReflectiveUseFromXml reason = KeepReason.reflectiveUseFromXml(origin);
+      applyMinimumKeepInfoWhenLive(
+          clazz,
+          KeepClassInfo.newEmptyJoiner()
+              .disallowMinification()
+              .disallowRepackaging()
+              .disallowOptimization());
+      markClassAsInstantiatedWithReason(clazz, reason);
+      for (ProgramMethod programInstanceInitializer : clazz.programInstanceInitializers()) {
+        // TODO(b/325884671): Only keep the actually framework targeted constructors.
+        applyMinimumKeepInfoWhenLiveOrTargeted(
+            programInstanceInitializer, KeepMethodInfo.newEmptyJoiner().disallowOptimization());
+        markMethodAsTargeted(programInstanceInitializer, reason);
+        markDirectStaticOrConstructorMethodAsLive(programInstanceInitializer, reason);
+      }
+    }
+    return clazz != null;
   }
 
   private void recordTypeReference(
@@ -1135,7 +1152,7 @@ public class Enqueuer {
   }
 
   public void traceResourceValue(int value) {
-    r8ResourceShrinkerState.trace(value);
+    appView.getResourceShrinkerState().trace(value);
   }
 
   public void traceReflectiveFieldWrite(ProgramField field, ProgramMethod context) {
@@ -3700,6 +3717,9 @@ public class Enqueuer {
     rootSet.pendingMethodMoveInverse.forEach(pendingMethodMoveInverse::put);
     // Translate the result of root-set computation into enqueuer actions.
     timing.begin("Register analysis");
+    // TODO(b/323816623): This check does not include presence of keep declarations.
+    //  The non-presense of PG config seems like a exeedingly rare corner case so maybe just
+    //  make this conditional on tree shaking and the specific option flag.
     if (mode.isTreeShaking()
         && appView.options().hasProguardConfiguration()
         && !options.kotlinOptimizationOptions().disableKotlinSpecificOptimizations) {
@@ -3707,6 +3727,9 @@ public class Enqueuer {
           new KotlinMetadataEnqueuerExtension(
               appView, enqueuerDefinitionSupplier, initialPrunedTypes));
     }
+    // TODO(b/323816623): This check does not include presence of keep declarations.
+    //  We should consider if we should always run the signature analysis and just not emit them
+    //  in the end?
     if (appView.options().getProguardConfiguration() != null
         && appView.options().getProguardConfiguration().getKeepAttributes().signature) {
       registerAnalysis(new GenericSignatureEnqueuerAnalysis(enqueuerDefinitionSupplier));
@@ -3722,6 +3745,10 @@ public class Enqueuer {
     timing.end();
 
     if (mode.isInitialTreeShaking()) {
+      // TODO(b/323816623): Start native interpretation here...
+      if (!keepDeclarations.isEmpty()) {
+        throw new Unimplemented("Native support for keep annotaitons pending");
+      }
       // Amend library methods with covariant return types.
       timing.begin("Model library");
       modelLibraryMethodsWithCovariantReturnTypes(appView);
@@ -3753,6 +3780,9 @@ public class Enqueuer {
     timing.begin("Finish analysis");
     analyses.forEach(analyses -> analyses.done(this));
     fieldAccessAnalyses.forEach(fieldAccessAnalyses -> fieldAccessAnalyses.done(this));
+    if (appView.options().isOptimizedResourceShrinking()) {
+      appView.getResourceShrinkerState().enqueuerDone(this.mode.isFinalTreeShaking());
+    }
     timing.end();
     assert verifyKeptGraph();
     timing.begin("Finish compat building");
@@ -3771,7 +3801,6 @@ public class Enqueuer {
     EnqueuerResult result = createEnqueuerResult(appInfo, timing);
     profileCollectionAdditions.commit(appView);
     timing.end();
-    appView.setResourceShrinkerState(r8ResourceShrinkerState);
     return result;
   }
 

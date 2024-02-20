@@ -22,7 +22,6 @@ import com.android.tools.r8.graph.proto.RewrittenPrototypeDescription;
 import com.android.tools.r8.ir.analysis.type.Nullability;
 import com.android.tools.r8.ir.analysis.type.TypeElement;
 import com.android.tools.r8.ir.code.IRCode;
-import com.android.tools.r8.ir.code.IRMetadata;
 import com.android.tools.r8.ir.code.InvokeDirect;
 import com.android.tools.r8.ir.code.NumberGenerator;
 import com.android.tools.r8.ir.code.Position;
@@ -92,7 +91,7 @@ public class DefaultInstanceInitializerCode extends Code
     DexEncodedMethod definition = method.getDefinition();
     assert definition.getCode().isDefaultInstanceInitializerCode();
     if (appView.testing().isSupportedLirPhase()) {
-      method.setCode(get().toLirCode(appView, method), appView);
+      method.setCode(get().toLirCode(appView, method, superType), appView);
     } else {
       assert appView.testing().isPreLirPhase();
       method.setCode(get().toCfCode(method, appView.dexItemFactory(), superType), appView);
@@ -379,12 +378,11 @@ public class DefaultInstanceInitializerCode extends Code
     return new CfCode(method.getHolderType(), getMaxStack(), getMaxLocals(method), instructions);
   }
 
-  public LirCode<?> toLirCode(AppView<?> appView, ProgramMethod method) {
+  public LirCode<?> toLirCode(AppView<?> appView, ProgramMethod method, DexType supertype) {
     TypeElement receiverType =
         method.getHolder().getType().toTypeElement(appView, Nullability.definitelyNotNull());
     Value receiver = new Value(0, receiverType, null);
-    DexMethod invokedMethod =
-        appView.dexItemFactory().createInstanceInitializer(method.getHolder().getSuperType());
+    DexMethod invokedMethod = appView.dexItemFactory().createInstanceInitializer(supertype);
     LirEncodingStrategy<Value, Integer> strategy =
         LirStrategy.getDefaultStrategy().getEncodingStrategy();
     strategy.defineValue(receiver, 0);
@@ -393,7 +391,6 @@ public class DefaultInstanceInitializerCode extends Code
             method.getDefinition().isD8R8Synthesized(),
             strategy,
             appView.options())
-        .setMetadata(IRMetadata.unknown())
         .addArgument(0, false)
         .addInvokeDirect(invokedMethod, ImmutableList.of(receiver), false)
         .addReturnVoid()

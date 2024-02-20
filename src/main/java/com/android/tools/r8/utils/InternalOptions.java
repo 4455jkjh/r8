@@ -924,6 +924,14 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
 
   public boolean debug = false;
 
+  public boolean shouldCompileMethodInDebugMode(AppView<?> appView, ProgramMethod method) {
+    return debug || method.getOrComputeReachabilitySensitive(appView);
+  }
+
+  public boolean shouldCompileMethodInReleaseMode(AppView<?> appView, ProgramMethod method) {
+    return !shouldCompileMethodInDebugMode(appView, method);
+  }
+
   private final AccessModifierOptions accessModifierOptions = new AccessModifierOptions(this);
   private final RewriteArrayOptions rewriteArrayOptions = new RewriteArrayOptions();
   private final CallSiteOptimizationOptions callSiteOptimizationOptions =
@@ -1814,12 +1822,9 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
 
   public class HorizontalClassMergerOptions {
 
-    // TODO(b/138781768): Set enable to true when this bug is resolved.
     private boolean enable =
-        !Version.isDevelopmentVersion()
-            || System.getProperty("com.android.tools.r8.disableHorizontalClassMerging") == null;
+        System.getProperty("com.android.tools.r8.disableHorizontalClassMerging") == null;
     private boolean enableInitial = true;
-    // TODO(b/205611444): Enable by default.
     private boolean enableClassInitializerDeadlockDetection = true;
     private boolean enableInterfaceMerging =
         System.getProperty("com.android.tools.r8.enableHorizontalInterfaceMerging") != null;
@@ -2174,6 +2179,8 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
   }
 
   public static class TestingOptions {
+
+    public boolean enableExtractedKeepAnnotations = false;
 
     public boolean enableNumberUnboxer = false;
     public boolean printNumberUnboxed = false;
@@ -3169,7 +3176,10 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
   }
 
   public boolean canHaveNonReboundConstructorInvoke() {
-    return isGeneratingDex() && minApiLevel.isGreaterThanOrEqualTo(AndroidApiLevel.L);
+    // TODO(b/324527514): Supported on API level L and higher, but we currently do not allow
+    //  non-rebound constructors since we need to account for non-rebound method references when
+    //  looking for fresh constructor signatures.
+    return false;
   }
 
   // b/238399429 Some art 6 vms have issues with multiple monitors in the same method
@@ -3185,6 +3195,6 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
   }
 
   public boolean canInitNewInstanceUsingSuperclassConstructor() {
-    return canHaveNonReboundConstructorInvoke();
+    return isGeneratingDex() && minApiLevel.isGreaterThanOrEqualTo(AndroidApiLevel.L);
   }
 }

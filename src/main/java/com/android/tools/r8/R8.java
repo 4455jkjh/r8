@@ -59,6 +59,7 @@ import com.android.tools.r8.ir.optimize.info.OptimizationInfoRemover;
 import com.android.tools.r8.ir.optimize.templates.CfUtilityMethodsForCodeOptimizations;
 import com.android.tools.r8.jar.CfApplicationWriter;
 import com.android.tools.r8.keepanno.annotations.KeepForApi;
+import com.android.tools.r8.keepanno.ast.KeepDeclaration;
 import com.android.tools.r8.kotlin.KotlinMetadataRewriter;
 import com.android.tools.r8.kotlin.KotlinMetadataUtils;
 import com.android.tools.r8.naming.IdentifierMinifier;
@@ -77,6 +78,7 @@ import com.android.tools.r8.optimize.fields.FieldFinalizer;
 import com.android.tools.r8.optimize.interfaces.analysis.CfOpenClosedInterfacesAnalysis;
 import com.android.tools.r8.optimize.proto.ProtoNormalizer;
 import com.android.tools.r8.optimize.redundantbridgeremoval.RedundantBridgeRemover;
+import com.android.tools.r8.optimize.singlecaller.SingleCallerInliner;
 import com.android.tools.r8.origin.CommandLineOrigin;
 import com.android.tools.r8.origin.Origin;
 import com.android.tools.r8.profile.art.ArtProfileCompletenessChecker;
@@ -281,10 +283,12 @@ public class R8 {
     timing.end();
     try {
       AppView<AppInfoWithClassHierarchy> appView;
+      List<KeepDeclaration> keepDeclarations;
       {
         timing.begin("Read app");
         ApplicationReader applicationReader = new ApplicationReader(inputApp, options, timing);
         LazyLoadedDexApplication lazyLoaded = applicationReader.read(executorService);
+        keepDeclarations = lazyLoaded.getKeepDeclarations();
         timing.begin("To direct app");
         DirectMappedDexApplication application = lazyLoaded.toDirect();
         timing.end();
@@ -389,7 +393,8 @@ public class R8 {
                 appView,
                 profileCollectionAdditions,
                 subtypingInfo,
-                initialRuntimeTypeCheckInfoBuilder);
+                initialRuntimeTypeCheckInfoBuilder,
+                keepDeclarations);
         timing.end();
         timing.begin("After enqueuer");
         assert appView.rootSet().verifyKeptFieldsAreAccessedAndLive(appViewWithLiveness);
@@ -499,7 +504,7 @@ public class R8 {
 
       assert ArtProfileCompletenessChecker.verify(appView);
 
-      VerticalClassMerger.createForInitialClassMerging(appViewWithLiveness)
+      VerticalClassMerger.createForInitialClassMerging(appViewWithLiveness, timing)
           .runIfNecessary(executorService, timing);
       HorizontalClassMerger.createForInitialClassMerging(appViewWithLiveness)
           .runIfNecessary(
@@ -742,7 +747,7 @@ public class R8 {
         assert appView.dexItemFactory().verifyNoCachedTypeElements();
 
         if (appView.hasLiveness()) {
-          VerticalClassMerger.createForFinalClassMerging(appView.withLiveness())
+          VerticalClassMerger.createForIntermediateClassMerging(appView.withLiveness(), timing)
               .runIfNecessary(executorService, timing);
           assert appView.dexItemFactory().verifyNoCachedTypeElements();
         }
@@ -761,6 +766,11 @@ public class R8 {
         assert appView.dexItemFactory().verifyNoCachedTypeElements();
 
         if (appView.hasLiveness()) {
+          VerticalClassMerger.createForFinalClassMerging(appView.withLiveness(), timing)
+              .runIfNecessary(executorService, timing);
+          assert appView.dexItemFactory().verifyNoCachedTypeElements();
+
+          new SingleCallerInliner(appViewWithLiveness).runIfNecessary(executorService, timing);
           new ProtoNormalizer(appViewWithLiveness).run(executorService, timing);
         }
       }
@@ -908,7 +918,7 @@ public class R8 {
     dexFileContent.forEach(resourceShrinkerBuilder::addDexInput);
     try {
       addResourcesToBuilder(
-          resourceShrinkerBuilder, reporter, options.androidResourceProvider, null);
+          resourceShrinkerBuilder, reporter, options.androidResourceProvider, FeatureSplit.BASE);
       if (options.featureSplitConfiguration != null) {
         for (FeatureSplit featureSplit : options.featureSplitConfiguration.getFeatureSplits()) {
           if (featureSplit.getAndroidResourceProvider() != null) {
@@ -926,9 +936,7 @@ public class R8 {
       LegacyResourceShrinker shrinker = resourceShrinkerBuilder.build();
       ShrinkerResult shrinkerResult;
       if (options.resourceShrinkerConfiguration.isOptimizedShrinking()) {
-        shrinkerResult =
-            shrinker.shrinkModel(
-                appView.getResourceShrinkerState().getR8ResourceShrinkerModel(), true);
+        shrinkerResult = appView.getResourceShrinkerState().shrinkModel();
       } else {
         shrinkerResult = shrinker.run();
       }
@@ -939,7 +947,7 @@ public class R8 {
           toKeep,
           options.androidResourceProvider,
           options.androidResourceConsumer,
-          null);
+          FeatureSplit.BASE);
       if (options.featureSplitConfiguration != null) {
         for (FeatureSplit featureSplit : options.featureSplitConfiguration.getFeatureSplits()) {
           if (featureSplit.getAndroidResourceProvider() != null) {
@@ -1108,12 +1116,14 @@ public class R8 {
       AppView<AppInfoWithClassHierarchy> appView,
       ProfileCollectionAdditions profileCollectionAdditions,
       SubtypingInfo subtypingInfo,
-      RuntimeTypeCheckInfo.Builder classMergingEnqueuerExtensionBuilder)
+      RuntimeTypeCheckInfo.Builder classMergingEnqueuerExtensionBuilder,
+      List<KeepDeclaration> keepDeclarations)
       throws ExecutionException {
     timing.begin("Set up enqueuer");
     Enqueuer enqueuer =
         EnqueuerFactory.createForInitialTreeShaking(
             appView, profileCollectionAdditions, executorService, subtypingInfo);
+    enqueuer.setKeepDeclarations(keepDeclarations);
     enqueuer.setAnnotationRemoverBuilder(annotationRemoverBuilder);
     if (appView.options().enableInitializedClassesInInstanceMethodsAnalysis) {
       enqueuer.registerAnalysis(new InitializedClassesInInstanceMethodsAnalysis(appView));

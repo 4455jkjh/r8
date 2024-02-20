@@ -19,12 +19,12 @@ import com.android.tools.r8.graph.DexReference;
 import com.android.tools.r8.graph.DexString;
 import com.android.tools.r8.graph.DexType;
 import com.android.tools.r8.graph.bytecodemetadata.BytecodeInstructionMetadata;
+import com.android.tools.r8.graph.lens.GraphLens;
 import com.android.tools.r8.ir.analysis.type.TypeElement;
 import com.android.tools.r8.ir.code.BasicBlock;
 import com.android.tools.r8.ir.code.CatchHandlers;
 import com.android.tools.r8.ir.code.Cmp;
 import com.android.tools.r8.ir.code.Cmp.Bias;
-import com.android.tools.r8.ir.code.IRMetadata;
 import com.android.tools.r8.ir.code.IfType;
 import com.android.tools.r8.ir.code.MemberType;
 import com.android.tools.r8.ir.code.MonitorType;
@@ -75,7 +75,6 @@ public class LirBuilder<V, EV> {
   private final List<PositionEntry> positionTable;
   private int argumentCount = 0;
   private int instructionCount = 0;
-  private IRMetadata metadata = null;
 
   private final LirEncodingStrategy<V, EV> strategy;
 
@@ -250,6 +249,14 @@ public class LirBuilder<V, EV> {
 
     @Override
     public void internalLirConstantAcceptHashing(HashingVisitor visitor) {}
+
+    public NameComputationPayload rewrittenWithLens(GraphLens graphLens, GraphLens codeLens) {
+      NameComputationInfo<?> rewrittenNameComputationInfo =
+          nameComputationInfo.rewrittenWithLens(graphLens, codeLens);
+      return rewrittenNameComputationInfo != nameComputationInfo
+          ? new NameComputationPayload(rewrittenNameComputationInfo)
+          : this;
+    }
   }
 
   public static class RecordFieldValuesPayload extends InstructionPayload {
@@ -414,11 +421,6 @@ public class LirBuilder<V, EV> {
 
   private void writeBlockIndex(int index) {
     ByteUtils.writeEncodedInt(index, writer::writeOperand);
-  }
-
-  public LirBuilder<V, EV> setMetadata(IRMetadata metadata) {
-    this.metadata = metadata;
-    return this;
   }
 
   public LirBuilder<V, EV> setDebugValue(DebugLocalInfo debugInfo, EV valueIndex) {
@@ -808,6 +810,10 @@ public class LirBuilder<V, EV> {
     for (int i = 0; i < keys.length; i++) {
       targets[i] = getBlockIndex(keyToTargetMap.get(keys[i]));
     }
+    return addIntSwitch(value, keys, targets);
+  }
+
+  public LirBuilder<V, EV> addIntSwitch(V value, int[] keys, int[] targets) {
     IntSwitchPayload payload = new IntSwitchPayload(keys, targets);
     return addInstructionTemplate(
         LirOpcodes.TABLESWITCH,
@@ -924,7 +930,6 @@ public class LirBuilder<V, EV> {
   }
 
   public LirCode<EV> build() {
-    assert metadata != null;
     int constantsCount = constants.size();
     LirConstant[] constantTable = new LirConstant[constantsCount];
     constants.forEach((item, index) -> constantTable[index] = item);
@@ -933,7 +938,6 @@ public class LirBuilder<V, EV> {
     TryCatchTable tryCatchTable =
         tryCatchRanges.isEmpty() ? null : new TryCatchTable(tryCatchRanges);
     return new LirCode<>(
-        metadata,
         constantTable,
         positionTable.toArray(new PositionEntry[positionTable.size()]),
         argumentCount,

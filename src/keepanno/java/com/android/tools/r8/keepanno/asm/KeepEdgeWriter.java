@@ -154,7 +154,6 @@ public class KeepEdgeWriter implements Opcodes {
           withNewVisitor(
               visitor.visitAnnotation(ExtractedAnnotation.edge, Edge.DESCRIPTOR),
               v -> new KeepEdgeWriter().writeEdge(edge, v));
-          return null;
         },
         check -> {
           switch (check.getKind()) {
@@ -167,7 +166,6 @@ public class KeepEdgeWriter implements Opcodes {
             default:
               throw new KeepEdgeException("Unexpected keep check kind: " + check.getKind());
           }
-          return null;
         });
   }
 
@@ -476,22 +474,18 @@ public class KeepEdgeWriter implements Opcodes {
             typePattern.match(
                 () -> {
                   // The empty type pattern matches any type.
-                  return null;
                 },
                 primitive -> {
                   if (primitive.isAny()) {
                     throw new Unimplemented("No support for any-primitive.");
                   }
                   v.visit(TypePattern.name, Type.getType(primitive.getDescriptor()).getClassName());
-                  return null;
                 },
                 array -> {
                   v.visit(TypePattern.name, Type.getType(array.getDescriptor()).getClassName());
-                  return null;
                 },
                 clazz -> {
                   writeClassNamePattern(clazz, TypePattern.classNamePattern, v);
-                  return null;
                 }));
   }
 
