@@ -25,7 +25,6 @@ import com.android.tools.r8.contexts.CompilationContext.ProcessorContext;
 import com.android.tools.r8.dex.IndexedItemCollection;
 import com.android.tools.r8.dex.code.CfOrDexInstruction;
 import com.android.tools.r8.errors.InterfaceDesugarMissingTypeDiagnostic;
-import com.android.tools.r8.errors.Unimplemented;
 import com.android.tools.r8.errors.Unreachable;
 import com.android.tools.r8.experimental.graphinfo.GraphConsumer;
 import com.android.tools.r8.features.IsolatedFeatureSplitsChecker;
@@ -131,7 +130,6 @@ import com.android.tools.r8.kotlin.KotlinMetadataEnqueuerExtension;
 import com.android.tools.r8.naming.identifiernamestring.IdentifierNameStringLookupResult;
 import com.android.tools.r8.naming.identifiernamestring.IdentifierNameStringTypeLookupResult;
 import com.android.tools.r8.origin.Origin;
-import com.android.tools.r8.position.Position;
 import com.android.tools.r8.profile.rewriting.ProfileCollectionAdditions;
 import com.android.tools.r8.shaking.AnnotationMatchResult.MatchedAnnotation;
 import com.android.tools.r8.shaking.DelayedRootSetActionItem.InterfaceMethodSyntheticBridgeAction;
@@ -154,6 +152,8 @@ import com.android.tools.r8.shaking.RootSetUtils.RootSet;
 import com.android.tools.r8.shaking.RootSetUtils.RootSetBase;
 import com.android.tools.r8.shaking.RootSetUtils.RootSetBuilder;
 import com.android.tools.r8.shaking.ScopedDexMethodSet.AddMethodIfMoreVisibleResult;
+import com.android.tools.r8.shaking.rules.ApplicableRulesEvaluator;
+import com.android.tools.r8.shaking.rules.KeepAnnotationMatcher;
 import com.android.tools.r8.synthesis.SyntheticItems.SynthesizingContextOracle;
 import com.android.tools.r8.utils.Action;
 import com.android.tools.r8.utils.Box;
@@ -291,6 +291,7 @@ public class Enqueuer {
   private final Set<DexMember<?, ?>> identifierNameStrings = Sets.newIdentityHashSet();
 
   private List<KeepDeclaration> keepDeclarations = Collections.emptyList();
+  private ApplicableRulesEvaluator applicableRules = ApplicableRulesEvaluator.empty();
 
   /**
    * Tracks the dependency between a method and the super-method it calls, if any. Used to make
@@ -314,6 +315,10 @@ public class Enqueuer {
    * for these.
    */
   private final SetWithReportedReason<DexProgramClass> liveTypes = new SetWithReportedReason<>();
+
+  /** Set of effectively live items from the original program. */
+  // TODO(b/323816623): Add reason tracking.
+  private final Set<DexReference> effectivelyLiveOriginalReferences = SetUtils.newIdentityHashSet();
 
   /** Set of interfaces that have been transitioned to being instantiated indirectly. */
   private final Set<DexProgramClass> interfacesTransitionedToInstantiated =
@@ -1629,6 +1634,27 @@ public class Enqueuer {
         markVirtualMethodAsReachable(invokedMethod, false, context, reason);
     invokeAnalyses.forEach(
         analysis -> analysis.traceInvokeVirtual(invokedMethod, resolutionResult, context));
+  }
+
+  void traceMethodPosition(com.android.tools.r8.ir.code.Position position, ProgramMethod context) {
+    if (!options.testing.isKeepAnnotationsEnabled()) {
+      // Currently inlining is only intended for the evaluation of keep annotation edges.
+      return;
+    }
+    while (position.hasCallerPosition()) {
+      // Any inner position should not be non-synthetic user methods.
+      assert !position.isD8R8Synthesized();
+      DexMethod method = position.getMethod();
+      // TODO(b/325014359): It might be reasonable to reduce this map size by tracking which methods
+      //  actually are used in preconditions.
+      if (effectivelyLiveOriginalReferences.add(method)) {
+        effectivelyLiveOriginalReferences.add(method.getHolderType());
+      }
+      position = position.getCallerPosition();
+    }
+    // The outer-most position should be equal to the context.
+    // No need to trace this as the method is already traced since it is invoked.
+    assert context.getReference().isIdenticalTo(position.getMethod());
   }
 
   void traceNewInstance(DexType type, ProgramMethod context) {
@@ -3402,6 +3428,36 @@ public class Enqueuer {
     return liveTypes.contains(clazz);
   }
 
+  public boolean isEffectivelyLive(DexProgramClass clazz) {
+    if (isTypeLive(clazz)) {
+      return true;
+    }
+    if (mode.isInitialTreeShaking()) {
+      return false;
+    }
+    // TODO(b/325014359): Replace this by value tracking in instructions (akin to resource values).
+    for (DexEncodedField field : clazz.fields()) {
+      if (field.getOptimizationInfo().valueHasBeenPropagated()) {
+        return true;
+      }
+    }
+    // TODO(b/325014359): Replace this by value or position tracking.
+    //  We need to be careful not to throw away such values/positions.
+    for (DexEncodedMethod method : clazz.methods()) {
+      if (method.getOptimizationInfo().returnValueHasBeenPropagated()) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  public boolean isOriginalReferenceEffectivelyLive(DexReference reference) {
+    assert options.testing.isKeepAnnotationsEnabled();
+    // The effectively-live original set contains types, fields and methods witnessed by
+    // instructions, such as method inlining positions.
+    return effectivelyLiveOriginalReferences.contains(reference);
+  }
+
   public boolean isNonProgramTypeLive(DexClass clazz) {
     assert !clazz.isProgramClass();
     return liveNonProgramTypes.contains(clazz);
@@ -3744,17 +3800,18 @@ public class Enqueuer {
     includeMinimumKeepInfo(rootSet);
     timing.end();
 
+    assert applicableRules == ApplicableRulesEvaluator.empty();
     if (mode.isInitialTreeShaking()) {
-      // TODO(b/323816623): Start native interpretation here...
-      if (!keepDeclarations.isEmpty()) {
-        throw new Unimplemented("Native support for keep annotaitons pending");
-      }
+      applicableRules =
+          KeepAnnotationMatcher.computeInitialRules(
+              appInfo, keepDeclarations, options.getThreadingModule(), executorService);
       // Amend library methods with covariant return types.
       timing.begin("Model library");
       modelLibraryMethodsWithCovariantReturnTypes(appView);
       timing.end();
     } else if (appView.getKeepInfo() != null) {
       timing.begin("Retain keep info");
+      applicableRules = appView.getKeepInfo().getApplicableRules();
       EnqueuerEvent preconditionEvent = UnconditionalKeepInfoEvent.get();
       appView
           .getKeepInfo()
@@ -3767,10 +3824,12 @@ public class Enqueuer {
               this::applyMinimumKeepInfoWhenLiveOrTargeted);
       timing.end();
     }
+    timing.time("Unconditional rules", () -> applicableRules.evaluateUnconditionalRules(this));
     timing.begin("Enqueue all");
     enqueueAllIfNotShrinking();
     timing.end();
     timing.begin("Trace");
+    traceManifests(timing);
     trace(executorService, timing);
     timing.end();
     options.reporter.failIfPendingErrors();
@@ -3804,6 +3863,14 @@ public class Enqueuer {
     return result;
   }
 
+  private void traceManifests(Timing timing) {
+    if (options.isOptimizedResourceShrinking()) {
+      timing.begin("Trace AndroidManifest.xml files");
+      appView.getResourceShrinkerState().traceManifests();
+      timing.end();
+    }
+  }
+
   private void includeMinimumKeepInfo(RootSetBase rootSet) {
     rootSet
         .getDependentMinimumKeepInfo()
@@ -3812,6 +3879,14 @@ public class Enqueuer {
             this::recordDependentMinimumKeepInfo,
             this::recordDependentMinimumKeepInfo,
             this::recordDependentMinimumKeepInfo);
+  }
+
+  public void includeMinimumKeepInfo(MinimumKeepInfoCollection minimumKeepInfo) {
+    minimumKeepInfo.forEach(
+        appView,
+        (i, j) -> recordDependentMinimumKeepInfo(EnqueuerEvent.unconditional(), i, j),
+        (i, j) -> recordDependentMinimumKeepInfo(EnqueuerEvent.unconditional(), i, j),
+        (i, j) -> recordDependentMinimumKeepInfo(EnqueuerEvent.unconditional(), i, j));
   }
 
   private void applyMinimumKeepInfo(DexProgramClass clazz) {
@@ -4380,6 +4455,8 @@ public class Enqueuer {
               : ImmutableSet.of(syntheticClass.getType());
         };
     amendKeepInfoWithCompanionMethods();
+    keepInfo.setMaterializedRules(applicableRules.getMaterializedRules());
+
     timing.begin("Rewrite with deferred results");
     deferredTracing.rewriteApplication(executorService);
     timing.end();
@@ -4567,6 +4644,8 @@ public class Enqueuer {
         // Continue fix-point processing if -if rules are enabled by items that newly became live.
         long numberOfLiveItemsAfterProcessing = getNumberOfLiveItems();
         if (numberOfLiveItemsAfterProcessing > numberOfLiveItems) {
+          timing.time("Conditional rules", () -> applicableRules.evaluateConditionalRules(this));
+
           // Build the mapping of active if rules. We use a single collection of if-rules to allow
           // removing if rules that have a constant sequent keep rule when they materialize.
           if (activeIfRules == null) {
@@ -4671,7 +4750,7 @@ public class Enqueuer {
                     context,
                     new InterfaceDesugarMissingTypeDiagnostic(
                         context.getOrigin(),
-                        Position.UNKNOWN,
+                        com.android.tools.r8.position.Position.UNKNOWN,
                         missing.asClassReference(),
                         context.getType().asClassReference(),
                         null)));

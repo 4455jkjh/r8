@@ -17,6 +17,7 @@ import com.android.tools.r8.TestShrinkerBuilder;
 import com.android.tools.r8.ThrowableConsumer;
 import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.graph.ClassAccessFlags;
+import com.android.tools.r8.keepanno.KeepAnnoParameters.KeepAnnoConfig;
 import com.android.tools.r8.keepanno.asm.KeepEdgeReader;
 import com.android.tools.r8.keepanno.asm.KeepEdgeWriter;
 import com.android.tools.r8.keepanno.ast.KeepDeclaration;
@@ -41,9 +42,9 @@ public abstract class KeepAnnoTestBuilder {
       case REFERENCE:
         return new ReferenceBuilder(params, temp);
       case R8_DIRECT:
-        return new R8NativeBuilder(false, params, temp);
-      case R8_EXTRACT:
-        return new R8NativeBuilder(true, params, temp);
+      case R8_NORMALIZED:
+      case R8_RULES:
+        return new R8NativeBuilder(params, temp);
       case R8_LEGACY:
         return new R8LegacyBuilder(params, temp);
       case PG:
@@ -96,11 +97,15 @@ public abstract class KeepAnnoTestBuilder {
     return this;
   }
 
-  public KeepAnnoTestBuilder applyIfR8Native(ThrowableConsumer<R8TestBuilder<?>> builderConsumer) {
+  public KeepAnnoTestBuilder applyIfR8Current(ThrowableConsumer<R8TestBuilder<?>> builderConsumer) {
     return this;
   }
 
   public KeepAnnoTestBuilder applyIfPG(ThrowableConsumer<ProguardTestBuilder> builderConsumer) {
+    return this;
+  }
+
+  public KeepAnnoTestBuilder enableNativeInterpretation() {
     return this;
   }
 
@@ -109,7 +114,7 @@ public abstract class KeepAnnoTestBuilder {
   }
 
   public final KeepAnnoTestBuilder allowUnusedProguardConfigurationRules() {
-    return applyIfR8Native(R8TestBuilder::allowUnusedProguardConfigurationRules);
+    return applyIfR8Current(R8TestBuilder::allowUnusedProguardConfigurationRules);
   }
 
   public final KeepAnnoTestBuilder allowAccessModification() {
@@ -163,23 +168,41 @@ public abstract class KeepAnnoTestBuilder {
 
     private final R8FullTestBuilder builder;
     private List<Consumer<R8TestCompileResult>> compileResultConsumers = new ArrayList<>();
-    private final boolean useEdgeExtraction;
+    private final boolean normalizeEdges;
+    private final boolean extractRules;
 
-    private R8NativeBuilder(
-        boolean useEdgeExtraction, KeepAnnoParameters params, TemporaryFolder temp) {
+    private R8NativeBuilder(KeepAnnoParameters params, TemporaryFolder temp) {
       super(params, temp);
       builder =
           TestBase.testForR8(temp, parameters().getBackend())
               .enableExperimentalKeepAnnotations()
               .setMinApi(parameters());
-      this.useEdgeExtraction = useEdgeExtraction;
-      if (useEdgeExtraction) {
+      extractRules = params.config() == KeepAnnoConfig.R8_RULES;
+      normalizeEdges = params.config() == KeepAnnoConfig.R8_NORMALIZED;
+      if (normalizeEdges) {
         builder.getBuilder().setEnableExperimentalKeepAnnotations(false);
-        builder.getBuilder().setEnableExperimentalVersionedKeepEdgeAnnotations(true);
+        builder.getBuilder().setEnableExperimentalExtractedKeepAnnotations(true);
       } else {
         builder.getBuilder().setEnableExperimentalKeepAnnotations(true);
-        builder.getBuilder().setEnableExperimentalVersionedKeepEdgeAnnotations(false);
+        builder.getBuilder().setEnableExperimentalExtractedKeepAnnotations(false);
       }
+    }
+
+    @Override
+    public KeepAnnoTestBuilder enableNativeInterpretation() {
+      if (extractRules) {
+        return this;
+      }
+      // This enables native interpretation of all keep annotations.
+      builder.addOptionsModification(
+          o -> {
+            o.testing.enableExtractedKeepAnnotations = true;
+            o.testing.enableEmbeddedKeepAnnotations = true;
+          });
+      // This disables all reading of annotations in the command reader.
+      builder.getBuilder().setEnableExperimentalKeepAnnotations(false);
+      builder.getBuilder().setEnableExperimentalExtractedKeepAnnotations(false);
+      return this;
     }
 
     @Override
@@ -190,7 +213,7 @@ public abstract class KeepAnnoTestBuilder {
     }
 
     @Override
-    public KeepAnnoTestBuilder applyIfR8Native(
+    public KeepAnnoTestBuilder applyIfR8Current(
         ThrowableConsumer<R8TestBuilder<?>> builderConsumer) {
       builderConsumer.acceptWithRuntimeException(builder);
       return this;
@@ -222,7 +245,7 @@ public abstract class KeepAnnoTestBuilder {
 
     private void extractAndAdd(byte[] classFileData) {
       builder.addProgramClassFileData(classFileData);
-      if (useEdgeExtraction) {
+      if (normalizeEdges) {
         List<KeepDeclaration> declarations = KeepEdgeReader.readKeepEdges(classFileData);
         if (!declarations.isEmpty()) {
           String binaryName =
