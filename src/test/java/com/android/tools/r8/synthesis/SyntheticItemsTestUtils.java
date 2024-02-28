@@ -35,6 +35,10 @@ public class SyntheticItemsTestUtils {
   // id/descriptor content is safe.
   private static final SyntheticNaming naming = new SyntheticNaming();
 
+  public static String syntheticFileNameD8() {
+    return "D8$$SyntheticClass";
+  }
+
   public static String syntheticMethodName() {
     return SyntheticNaming.INTERNAL_SYNTHETIC_METHOD_NAME;
   }
@@ -101,6 +105,10 @@ public class SyntheticItemsTestUtils {
   }
 
   public static ClassReference syntheticLambdaClass(Class<?> clazz, int id) {
+    return syntheticClass(clazz, naming.LAMBDA, id);
+  }
+
+  public static ClassReference syntheticLambdaClass(ClassReference clazz, int id) {
     return syntheticClass(clazz, naming.LAMBDA, id);
   }
 

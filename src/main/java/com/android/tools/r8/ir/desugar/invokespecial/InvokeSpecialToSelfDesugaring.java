@@ -68,7 +68,8 @@ public class InvokeSpecialToSelfDesugaring implements CfInstructionDesugaring {
   private DesugarDescription desugarToInvokeVirtual(CfInvoke invoke) {
     return DesugarDescription.builder()
         .setDesugarRewrite(
-            (freshLocalProvider,
+            (position,
+                freshLocalProvider,
                 localStackAllocator,
                 desugaringInfo,
                 eventConsumer,
@@ -84,7 +85,8 @@ public class InvokeSpecialToSelfDesugaring implements CfInstructionDesugaring {
   private DesugarDescription desugarWithBridge(CfInvoke invoke, ProgramMethod method) {
     return DesugarDescription.builder()
         .setDesugarRewrite(
-            (freshLocalProvider,
+            (position,
+                freshLocalProvider,
                 localStackAllocator,
                 desugaringInfo,
                 eventConsumer,
@@ -115,7 +117,7 @@ public class InvokeSpecialToSelfDesugaring implements CfInstructionDesugaring {
             ForwardMethodBuilder.builder(dexItemFactory)
                 .setDirectTarget(bridgeReference, clazz.isInterface())
                 .setNonStaticSource(method.getReference())
-                .build();
+                .buildCf();
 
         // Add the newly created direct method to its holder.
         clazz.addDirectMethod(newDirectMethod.getDefinition());

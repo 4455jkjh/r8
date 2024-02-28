@@ -54,10 +54,10 @@ public class MetadataRewriteInNestedClassTest extends KotlinMetadataTestBase {
 
   @Test
   public void smokeTest() throws Exception {
-    Path libJar = nestedLibJarMap.getForConfiguration(kotlinc, targetVersion);
+    Path libJar = nestedLibJarMap.getForConfiguration(kotlinParameters);
 
     Path output =
-        kotlinc(parameters.getRuntime().asCf(), kotlinc, targetVersion)
+        kotlinc(parameters.getRuntime().asCf(), kotlinParameters)
             .addClasspathFiles(libJar)
             .addSourceFiles(getKotlinFileInTest(PKG_PREFIX + "/nested_app", "main"))
             .setOutputPath(temp.newFolder().toPath())
@@ -75,7 +75,7 @@ public class MetadataRewriteInNestedClassTest extends KotlinMetadataTestBase {
     Path libJar =
         testForR8(parameters.getBackend())
             .addClasspathFiles(kotlinc.getKotlinStdlibJar())
-            .addProgramFiles(nestedLibJarMap.getForConfiguration(kotlinc, targetVersion))
+            .addProgramFiles(nestedLibJarMap.getForConfiguration(kotlinParameters))
             // Keep the Outer class and delegations.
             .addKeepRules("-keep class **.Outer { <init>(...); *** delegate*(...); }")
             // Keep Inner to check the hierarchy.
@@ -90,7 +90,7 @@ public class MetadataRewriteInNestedClassTest extends KotlinMetadataTestBase {
             .writeToZip();
 
     Path output =
-        kotlinc(parameters.getRuntime().asCf(), kotlinc, targetVersion)
+        kotlinc(parameters.getRuntime().asCf(), kotlinParameters)
             .addClasspathFiles(libJar)
             .addSourceFiles(getKotlinFileInTest(PKG_PREFIX + "/nested_app", "main"))
             .setOutputPath(temp.newFolder().toPath())
@@ -130,7 +130,7 @@ public class MetadataRewriteInNestedClassTest extends KotlinMetadataTestBase {
             nestedClassDescriptor -> {
               ClassSubject nestedClass =
                   inspector.clazz(descriptorToJavaType(nestedClassDescriptor));
-              if (nestedClass.getOriginalName().contains("Inner")) {
+              if (nestedClass.getOriginalTypeName().contains("Inner")) {
                 assertThat(nestedClass, isPresentAndNotRenamed());
               } else {
                 assertThat(nestedClass, isPresentAndRenamed());

@@ -21,6 +21,7 @@ import com.android.tools.r8.graph.DexMethodHandle;
 import com.android.tools.r8.graph.DexProgramClass;
 import com.android.tools.r8.graph.DexTypeList;
 import com.android.tools.r8.graph.ProgramMethod;
+import com.android.tools.r8.ir.code.Position;
 import com.android.tools.r8.ir.code.ValueType;
 import com.android.tools.r8.ir.desugar.CfDesugaringInfo;
 import com.android.tools.r8.ir.desugar.CfInstructionDesugaring;
@@ -78,7 +79,8 @@ public class LambdaInstructionDesugaring implements CfInstructionDesugaring {
   private DesugarDescription desugarInstruction(CfInstruction instruction) {
     return DesugarDescription.builder()
         .setDesugarRewrite(
-            (freshLocalProvider,
+            (invokeDynamicPosition,
+                freshLocalProvider,
                 localStackAllocator,
                 desugaringInfo,
                 eventConsumer,
@@ -94,9 +96,10 @@ public class LambdaInstructionDesugaring implements CfInstructionDesugaring {
                     eventConsumer,
                     context,
                     methodProcessingContext,
-                    (invoke, localProvider, stackAllocator) ->
+                    (synthesizedCodePosition, invoke, localProvider, stackAllocator) ->
                         desugaringCollection.desugarInstruction(
                             invoke,
+                            synthesizedCodePosition,
                             localProvider,
                             stackAllocator,
                             desugaringInfo,
@@ -108,6 +111,7 @@ public class LambdaInstructionDesugaring implements CfInstructionDesugaring {
 
   public interface DesugarInvoke {
     Collection<CfInstruction> desugarInvoke(
+        Position position,
         CfInvoke invoke,
         FreshLocalProvider freshLocalProvider,
         LocalStackAllocator localStackAllocator);

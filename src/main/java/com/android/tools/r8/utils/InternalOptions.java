@@ -26,7 +26,6 @@ import com.android.tools.r8.SyntheticInfoConsumer;
 import com.android.tools.r8.Version;
 import com.android.tools.r8.androidapi.ComputedApiLevel;
 import com.android.tools.r8.cf.CfVersion;
-import com.android.tools.r8.classmerging.ClassMergerMode;
 import com.android.tools.r8.classmerging.Policy;
 import com.android.tools.r8.debuginfo.DebugRepresentation;
 import com.android.tools.r8.dex.ApplicationReader.ProgramClassConflictResolver;
@@ -873,19 +872,10 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
    * and check cast instructions needs to be collected.
    */
   public boolean isClassMergingExtensionRequired(Enqueuer.Mode mode) {
+    assert mode.isFinalTreeShaking();
     WholeProgramOptimizations wholeProgramOptimizations = WholeProgramOptimizations.ON;
-    if (mode.isInitialTreeShaking()) {
-      return horizontalClassMergerOptions.isEnabled(
-              ClassMergerMode.INITIAL, wholeProgramOptimizations)
-          && !horizontalClassMergerOptions.isRestrictedToSynthetics();
-    }
-    if (mode.isFinalTreeShaking()) {
-      return horizontalClassMergerOptions.isEnabled(
-              ClassMergerMode.FINAL, wholeProgramOptimizations)
-          && !horizontalClassMergerOptions.isRestrictedToSynthetics();
-    }
-    assert false;
-    return false;
+    return horizontalClassMergerOptions.isEnabled(wholeProgramOptimizations)
+        && !horizontalClassMergerOptions.isRestrictedToSynthetics();
   }
 
   @Override
@@ -1157,6 +1147,10 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
   // If null, no proguard map needs to be computed.
   // If non null it must be and passed to the consumer.
   public MapConsumer mapConsumer = null;
+
+  public boolean hasMappingFileSupport() {
+    return mapConsumer != null;
+  }
 
   // If null, no usage information needs to be computed.
   // If non-null, it must be and is passed to the consumer.
@@ -1824,23 +1818,16 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
 
     private boolean enable =
         System.getProperty("com.android.tools.r8.disableHorizontalClassMerging") == null;
-    private boolean enableInitial = true;
     private boolean enableClassInitializerDeadlockDetection = true;
     private boolean enableInterfaceMerging =
         System.getProperty("com.android.tools.r8.enableHorizontalInterfaceMerging") != null;
-    private boolean enableInterfaceMergingInInitial = false;
     private boolean enableSameFilePolicy =
         System.getProperty("com.android.tools.r8.enableSameFilePolicy") != null;
     private boolean enableSyntheticMerging = true;
-    private boolean ignoreRuntimeTypeChecksForTesting = false;
     private boolean restrictToSynthetics = false;
 
     public void disable() {
       enable = false;
-    }
-
-    public void disableInitialRoundOfClassMerging() {
-      enableInitial = false;
     }
 
     public void disableSyntheticMerging() {
@@ -1871,8 +1858,7 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
       return enableClassInitializerDeadlockDetection;
     }
 
-    public boolean isEnabled(
-        ClassMergerMode mode, WholeProgramOptimizations wholeProgramOptimizations) {
+    public boolean isEnabled(WholeProgramOptimizations wholeProgramOptimizations) {
       if (!enable || debug || intermediate) {
         return false;
       }
@@ -1881,15 +1867,7 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
           return false;
         }
       }
-      if (mode.isInitial()) {
-        return enableInitial;
-      }
-      assert mode.isFinal();
       return true;
-    }
-
-    public boolean isIgnoreRuntimeTypeChecksForTestingEnabled() {
-      return ignoreRuntimeTypeChecksForTesting;
     }
 
     public boolean isSameFilePolicyEnabled() {
@@ -1900,15 +1878,8 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
       return enableSyntheticMerging;
     }
 
-    public boolean isInterfaceMergingEnabled(ClassMergerMode mode) {
-      if (!enableInterfaceMerging) {
-        return false;
-      }
-      if (mode.isInitial()) {
-        return enableInterfaceMergingInInitial;
-      }
-      assert mode.isFinal();
-      return true;
+    public boolean isInterfaceMergingEnabled() {
+      return enableInterfaceMerging;
     }
 
     public boolean isRestrictedToSynthetics() {
@@ -1927,16 +1898,8 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
       this.enableInterfaceMerging = enableInterfaceMerging;
     }
 
-    public void setEnableInterfaceMergingInInitial() {
-      enableInterfaceMergingInInitial = true;
-    }
-
     public void setEnableSameFilePolicy(boolean enableSameFilePolicy) {
       this.enableSameFilePolicy = enableSameFilePolicy;
-    }
-
-    public void setIgnoreRuntimeTypeChecksForTesting() {
-      ignoreRuntimeTypeChecksForTesting = true;
     }
 
     public void setRestrictToSynthetics() {
@@ -2318,8 +2281,8 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
     public Function<AppView<AppInfoWithLiveness>, RepackagingConfiguration>
         repackagingConfigurationFactory = DefaultRepackagingConfiguration::new;
 
-    public TriConsumer<DexItemFactory, HorizontallyMergedClasses, ClassMergerMode>
-        horizontallyMergedClassesConsumer = ConsumerUtils.emptyTriConsumer();
+    public BiConsumer<AppView<?>, HorizontallyMergedClasses> horizontallyMergedClassesConsumer =
+        ConsumerUtils.emptyBiConsumer();
     public Function<List<Policy>, List<Policy>> horizontalClassMergingPolicyRewriter =
         Function.identity();
     public TriFunction<AppView<?>, Iterable<DexProgramClass>, DexProgramClass, DexProgramClass>

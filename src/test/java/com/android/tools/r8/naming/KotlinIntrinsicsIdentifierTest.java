@@ -92,7 +92,7 @@ public class KotlinIntrinsicsIdentifierTest extends AbstractR8KotlinNamingTestBa
     TestCompileResult<?, ?> result =
         testForR8(Backend.DEX)
             .addProgramFiles(
-                compiledJars.getForConfiguration(kotlinc, targetVersion),
+                compiledJars.getForConfiguration(kotlinParameters),
                 kotlinc.getKotlinAnnotationJar())
             .addProgramFiles(getJavaJarFile(FOLDER))
             .addKeepMainRule(mainClassName)
@@ -133,9 +133,10 @@ public class KotlinIntrinsicsIdentifierTest extends AbstractR8KotlinNamingTestBa
               .collect(Collectors.toList()));
       assertThat(invokedMethodSubject, isPresent());
       assertEquals(minification, invokedMethodSubject.isRenamed());
-      if (invokedMethodSubject.getOriginalName().startsWith("check")
-          && invokedMethodSubject.getOriginalName().endsWith("Null")
-          && invokedMethodHolderSubject.getOriginalDescriptor()
+      if (invokedMethodSubject.getOriginalMethodName().startsWith("check")
+          && invokedMethodSubject.getOriginalMethodName().endsWith("Null")
+          && invokedMethodHolderSubject
+              .getOriginalDescriptor()
               .contains("kotlin/jvm/internal/Intrinsics")) {
         metKotlinIntrinsicsNullChecks = true;
       }
@@ -152,7 +153,7 @@ public class KotlinIntrinsicsIdentifierTest extends AbstractR8KotlinNamingTestBa
     SingleTestRunResult<?> result =
         testForR8(Backend.DEX)
             .addProgramFiles(
-                compiledJars.getForConfiguration(kotlinc, targetVersion),
+                compiledJars.getForConfiguration(kotlinParameters),
                 kotlinc.getKotlinAnnotationJar())
             .addProgramFiles(getJavaJarFile(FOLDER))
             .enableProguardTestOptions()

@@ -35,7 +35,6 @@ import com.android.tools.r8.references.FieldReference;
 import com.android.tools.r8.references.MethodReference;
 import com.android.tools.r8.synthesis.SyntheticNaming;
 import com.android.tools.r8.utils.ArrayUtils;
-import com.android.tools.r8.utils.DequeUtils;
 import com.android.tools.r8.utils.DescriptorUtils;
 import com.android.tools.r8.utils.LRUCacheTable;
 import com.android.tools.r8.utils.ListUtils;
@@ -49,6 +48,7 @@ import com.google.common.collect.Sets;
 import it.unimi.dsi.fastutil.ints.Int2ReferenceArrayMap;
 import it.unimi.dsi.fastutil.ints.Int2ReferenceMap;
 import it.unimi.dsi.fastutil.ints.Int2ReferenceOpenHashMap;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -438,6 +438,7 @@ public class DexItemFactory {
   public final DexType classArrayType = createStaticallyKnownType(classArrayDescriptor);
   public final DexType enumType = createStaticallyKnownType(enumDescriptor);
   public final DexType annotationType = createStaticallyKnownType(annotationDescriptor);
+  public final DexType arraysType = createStaticallyKnownType(arraysDescriptor);
   public final DexType objectsType = createStaticallyKnownType(objectsDescriptor);
   public final DexType collectionsType = createStaticallyKnownType(collectionsDescriptor);
   public final DexType iterableType = createStaticallyKnownType(iterableDescriptor);
@@ -1407,6 +1408,8 @@ public class DexItemFactory {
   public class JavaUtilArraysMethods {
 
     public final DexMethod asList;
+    public final DexMethod hashCode =
+        createMethod(arraysType, createProto(intType, objectArrayType), "hashCode");
     public final DexMethod equalsObjectArray;
 
     private JavaUtilArraysMethods() {
@@ -1794,6 +1797,8 @@ public class DexItemFactory {
 
     public final DexMethod equals =
         createMethod(objectsType, createProto(booleanType, objectType, objectType), "equals");
+    public final DexMethod hash =
+        createMethod(objectsType, createProto(intType, objectArrayType), "hash");
     public final DexMethod hashCode =
         createMethod(objectsType, createProto(intType, objectType), "hashCode");
     public final DexMethod isNull =
@@ -2910,10 +2915,11 @@ public class DexItemFactory {
       return resultWithNoExtraTypes.get();
     }
     assert !extraTypes.isEmpty();
-    Deque<FreshInstanceInitializerCandidate> worklist =
-        DequeUtils.newArrayDeque(
-            new FreshInstanceInitializerCandidate(
-                proto, extraTypes.iterator().next(), Collections.emptySet()));
+    Deque<FreshInstanceInitializerCandidate> worklist = new ArrayDeque<>(extraTypes.size());
+    for (Supplier<DexType> extraTypeSupplier : extraTypes) {
+      worklist.addLast(
+          new FreshInstanceInitializerCandidate(proto, extraTypeSupplier, Collections.emptySet()));
+    }
     int count = 0;
     while (true) {
       assert count++ < 100;
