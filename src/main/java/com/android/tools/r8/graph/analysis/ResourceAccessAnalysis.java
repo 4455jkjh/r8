@@ -35,19 +35,16 @@ public class ResourceAccessAnalysis implements EnqueuerFieldAccessAnalysis {
   private final R8ResourceShrinkerState resourceShrinkerState;
   private final Map<DexType, RClassFieldToValueStore> fieldToValueMapping = new IdentityHashMap<>();
   private final AppView<? extends AppInfoWithClassHierarchy> appView;
-  private final Enqueuer enqueuer;
 
-  private ResourceAccessAnalysis(
-      AppView<? extends AppInfoWithClassHierarchy> appView, Enqueuer enqueuer) {
+  private ResourceAccessAnalysis(AppView<? extends AppInfoWithClassHierarchy> appView) {
     this.appView = appView;
-    this.enqueuer = enqueuer;
     this.resourceShrinkerState = appView.getResourceShrinkerState();
   }
 
   public static void register(
       AppView<? extends AppInfoWithClassHierarchy> appView, Enqueuer enqueuer) {
     if (enabled(appView, enqueuer)) {
-      enqueuer.registerFieldAccessAnalysis(new ResourceAccessAnalysis(appView, enqueuer));
+      enqueuer.registerFieldAccessAnalysis(new ResourceAccessAnalysis(appView));
     }
   }
 
@@ -163,7 +160,6 @@ public class ResourceAccessAnalysis implements EnqueuerFieldAccessAnalysis {
         field.getHolder().staticFields(DexEncodedField::hasExplicitStaticValue)) {
       DexValue staticValue = staticField.getStaticValue();
       if (staticValue.isDexValueInt()) {
-        assert !enqueuer.getMode().isInitialTreeShaking();
         IntList values = new IntArrayList(1);
         values.add(staticValue.asDexValueInt().getValue());
         rClassValueBuilder.addMapping(staticField.getReference(), values);

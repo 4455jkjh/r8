@@ -444,7 +444,6 @@ public class MutableMethodOptimizationInfo extends MethodOptimizationInfo
 
   @Override
   public int getReturnedArgument() {
-    assert returnsArgument();
     return returnedArgument;
   }
 

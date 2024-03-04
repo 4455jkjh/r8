@@ -703,7 +703,11 @@ public class Enqueuer {
               .disallowMinification()
               .disallowRepackaging()
               .disallowOptimization());
-      markClassAsInstantiatedWithReason(clazz, reason);
+      if (clazz.isAnnotation() || clazz.isInterface()) {
+        markTypeAsLive(clazz, reason);
+      } else {
+        markClassAsInstantiatedWithReason(clazz, reason);
+      }
       for (ProgramMethod programInstanceInitializer : clazz.programInstanceInitializers()) {
         // TODO(b/325884671): Only keep the actually framework targeted constructors.
         applyMinimumKeepInfoWhenLiveOrTargeted(
@@ -4481,7 +4485,7 @@ public class Enqueuer {
             toDescriptorSet(liveMethods.getItems()),
             // Filter out library fields and pinned fields, because these are read by default.
             fieldAccessInfoCollection,
-            methodAccessInfoCollection.build(),
+            methodAccessInfoCollection.build(mode),
             objectAllocationInfoCollection.build(appInfo),
             callSites,
             keepInfo,
