@@ -218,13 +218,12 @@ public class CfBuilder {
     CfCode code = buildCfCode();
     timing.end();
     assert verifyInvokeInterface(code, appView);
-    assert code.getOrComputeStackMapStatus(method, appView, appView.graphLens())
-        .isValidOrNotPresent();
+    assert code.getOrComputeStackMapStatus(method, appView).isValidOrNotPresent();
     return code;
   }
 
   private Set<UninitializedThisLocalRead> insertUninitializedThisLocalReads() {
-    if (!method.getReference().isInstanceInitializerInlineIntoOrMerged(appView)) {
+    if (!method.getReference().isInstanceInitializer(appView.dexItemFactory())) {
       return Collections.emptySet();
     }
     // Find all non-normal exit blocks.
@@ -272,7 +271,7 @@ public class CfBuilder {
     assert thisInitializers == null;
     initializers = new HashMap<>();
     boolean isInstanceInitializer =
-        method.getReference().isInstanceInitializerInlineIntoOrMerged(appView);
+        method.getReference().isInstanceInitializer(appView.dexItemFactory());
     for (BasicBlock block : code.blocks) {
       for (Instruction insn : block.getInstructions()) {
         if (insn.isNewInstance()) {

@@ -21,25 +21,24 @@ public class ConcretePrimitiveTypeParameterState extends ConcreteParameterState 
     this(abstractValue, Collections.emptySet());
   }
 
-  public ConcretePrimitiveTypeParameterState(
-      AbstractValue abstractValue, Set<MethodParameter> inParameters) {
-    super(inParameters);
+  public ConcretePrimitiveTypeParameterState(AbstractValue abstractValue, Set<InFlow> inFlow) {
+    super(inFlow);
     this.abstractValue = abstractValue;
     assert !isEffectivelyBottom() : "Must use BottomPrimitiveTypeParameterState instead";
     assert !isEffectivelyUnknown() : "Must use UnknownParameterState instead";
   }
 
-  public ConcretePrimitiveTypeParameterState(MethodParameter inParameter) {
-    this(AbstractValue.bottom(), SetUtils.newHashSet(inParameter));
+  public ConcretePrimitiveTypeParameterState(InFlow inFlow) {
+    this(AbstractValue.bottom(), SetUtils.newHashSet(inFlow));
   }
 
   @Override
-  public ParameterState clearInParameters() {
-    if (hasInParameters()) {
+  public ParameterState clearInFlow() {
+    if (hasInFlow()) {
       if (abstractValue.isBottom()) {
         return bottomPrimitiveTypeParameter();
       }
-      internalClearInParameters();
+      internalClearInFlow();
     }
     assert !isEffectivelyBottom();
     return this;
@@ -47,7 +46,7 @@ public class ConcretePrimitiveTypeParameterState extends ConcreteParameterState 
 
   @Override
   public ParameterState mutableCopy() {
-    return new ConcretePrimitiveTypeParameterState(abstractValue, copyInParameters());
+    return new ConcretePrimitiveTypeParameterState(abstractValue, copyInFlow());
   }
 
   @SuppressWarnings("ReferenceEquality")
@@ -65,11 +64,11 @@ public class ConcretePrimitiveTypeParameterState extends ConcreteParameterState 
     if (abstractValue.isUnknown()) {
       return unknown();
     }
-    boolean inParametersChanged = mutableJoinInParameters(parameterState);
-    if (widenInParameters(appView)) {
+    boolean inFlowChanged = mutableJoinInFlow(parameterState);
+    if (widenInFlow(appView)) {
       return unknown();
     }
-    if (abstractValue != oldAbstractValue || inParametersChanged) {
+    if (abstractValue != oldAbstractValue || inFlowChanged) {
       onChangedAction.execute();
     }
     return this;
@@ -86,7 +85,7 @@ public class ConcretePrimitiveTypeParameterState extends ConcreteParameterState 
   }
 
   public boolean isEffectivelyBottom() {
-    return abstractValue.isBottom() && !hasInParameters();
+    return abstractValue.isBottom() && !hasInFlow();
   }
 
   public boolean isEffectivelyUnknown() {
