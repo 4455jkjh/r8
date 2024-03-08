@@ -12,8 +12,6 @@ import static org.junit.Assume.assumeTrue;
 import com.android.tools.r8.KotlinTestBase;
 import com.android.tools.r8.KotlinTestParameters;
 import com.android.tools.r8.TestParameters;
-import com.android.tools.r8.TestRuntime.CfVm;
-import com.android.tools.r8.ToolHelper.DexVm.Version;
 import com.android.tools.r8.references.ClassReference;
 import com.android.tools.r8.utils.BooleanUtils;
 import com.android.tools.r8.utils.StringUtils;
@@ -38,12 +36,8 @@ public class KotlinLambdaMergingSingletonTest extends KotlinTestBase {
   @Parameters(name = "{0}, {1}, allow access modification: {2}")
   public static Collection<Object[]> data() {
     return buildParameters(
-        getTestParameters()
-            .withCfRuntime(CfVm.last())
-            .withDexRuntime(Version.last())
-            .withAllApiLevels()
-            .build(),
-        getKotlinTestParameters().withAllCompilersAndTargetVersions().build(),
+        getTestParameters().withAllRuntimesAndApiLevels().build(),
+        getKotlinTestParameters().withAllCompilersLambdaGenerationsAndTargetVersions().build(),
         BooleanUtils.values());
   }
 
@@ -73,7 +67,9 @@ public class KotlinLambdaMergingSingletonTest extends KotlinTestBase {
     KotlinLambdasInInput lambdasInInput =
         KotlinLambdasInInput.create(getProgramFiles(), getTestName());
     assertEquals(2, lambdasInInput.getNumberOfJStyleLambdas());
-    assertEquals(7, lambdasInInput.getNumberOfKStyleLambdas());
+    assertEquals(
+        kotlinParameters.getLambdaGeneration().isInvokeDynamic() ? 6 : 7,
+        lambdasInInput.getNumberOfKStyleLambdas());
 
     testForR8(parameters.getBackend())
         .addProgramFiles(getProgramFiles())

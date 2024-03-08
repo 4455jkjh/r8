@@ -63,11 +63,15 @@ public class KotlinTestParameters {
   }
 
   public boolean isNewerThanOrEqualTo(KotlinCompilerVersion otherVersion) {
-    return kotlinc.getCompilerVersion().isGreaterThanOrEqualTo(otherVersion);
+    return getCompilerVersion().isGreaterThanOrEqualTo(otherVersion);
   }
 
   public boolean isNewerThan(KotlinCompilerVersion otherVersion) {
-    return kotlinc.getCompilerVersion().isGreaterThan(otherVersion);
+    return getCompilerVersion().isGreaterThan(otherVersion);
+  }
+
+  public boolean isOlderThanOrEqualTo(KotlinCompilerVersion otherVersion) {
+    return getCompilerVersion().isLessThanOrEqualTo(otherVersion);
   }
 
   public boolean isOlderThan(KotlinCompilerVersion otherVersion) {
@@ -116,25 +120,27 @@ public class KotlinTestParameters {
     }
 
     public Builder withAllCompilers() {
-      withCompilerFilter(compiler -> true)
-          .withLambdaGenerationFilter(KotlinLambdaGeneration::isClass);
+      withCompilerFilter(compiler -> true);
       return this;
     }
 
-    public Builder withAllLambdaGeneration() {
+    public Builder withAllLambdaGenerations() {
       withLambdaGenerationFilter(lambdaGeneration -> true);
       return this;
     }
 
-    public Builder withAllCompilersAndTargetVersions() {
-      // Default to what used to be the default until Kotlin 2.0.
-      return withAllCompilers().withAllTargetVersions();
+    public Builder withLambdaGenerationClass() {
+      withLambdaGenerationFilter(KotlinLambdaGeneration::isClass);
+      return this;
     }
 
-    public Builder withCompiler(KotlinCompilerVersion compilerVersion) {
-      withCompilerFilter(c -> c.isEqualTo(compilerVersion))
-          .withLambdaGenerationFilter(KotlinLambdaGeneration::isClass);
+    public Builder withLambdaGenerationInvokeDynamic() {
+      withLambdaGenerationFilter(KotlinLambdaGeneration::isInvokeDynamic);
       return this;
+    }
+
+    public Builder withAllCompilersLambdaGenerationsAndTargetVersions() {
+      return withAllCompilers().withAllLambdaGenerations().withAllTargetVersions();
     }
 
     public Builder withDevCompiler() {
@@ -177,8 +183,7 @@ public class KotlinTestParameters {
     }
 
     public Builder withCompilersStartingFromIncluding(KotlinCompilerVersion version) {
-      withCompilerFilter(c -> c.isGreaterThanOrEqualTo(version))
-          .withLambdaGenerationFilter(KotlinLambdaGeneration::isClass);
+      withCompilerFilter(c -> c.isGreaterThanOrEqualTo(version));
       return this;
     }
 

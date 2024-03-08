@@ -34,7 +34,11 @@ public class KotlinStdLibCompilationTest extends TestBase {
   public static List<Object[]> setup() {
     return buildParameters(
         TestParameters.builder().withAllRuntimesAndApiLevels().build(),
-        getKotlinTestParameters().withAllCompilers().withNoTargetVersion().build());
+        getKotlinTestParameters()
+            .withAllCompilers()
+            .withAllLambdaGenerations()
+            .withNoTargetVersion()
+            .build());
   }
 
   public KotlinStdLibCompilationTest(
@@ -54,7 +58,11 @@ public class KotlinStdLibCompilationTest extends TestBase {
               if (kotlinTestParameters.isNewerThanOrEqualTo(KotlinCompilerVersion.KOTLINC_1_8_0)
                   && parameters.isDexRuntime()
                   && parameters.getApiLevel().isLessThan(AndroidApiLevel.N)) {
-                diagnostics.assertWarningsCount(2);
+                // Kotlin stdlib has references to classes introduced at API level 24.
+                diagnostics.assertWarningsCount(
+                    kotlinTestParameters.isOlderThanOrEqualTo(KotlinCompilerVersion.KOTLINC_1_9_21)
+                        ? 2
+                        : 3);
                 diagnostics.assertAllWarningsMatch(
                     DiagnosticsMatcher.diagnosticType(InterfaceDesugarMissingTypeDiagnostic.class));
               } else {

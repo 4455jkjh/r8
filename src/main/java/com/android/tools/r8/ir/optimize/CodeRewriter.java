@@ -10,14 +10,12 @@ import static com.android.tools.r8.ir.analysis.type.Nullability.maybeNull;
 import com.android.tools.r8.errors.Unreachable;
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.DebugLocalInfo;
-import com.android.tools.r8.graph.DexClass;
 import com.android.tools.r8.graph.DexEncodedMethod;
 import com.android.tools.r8.graph.DexItemFactory;
 import com.android.tools.r8.graph.DexMethod;
 import com.android.tools.r8.graph.DexProto;
 import com.android.tools.r8.graph.DexString;
 import com.android.tools.r8.graph.DexType;
-import com.android.tools.r8.graph.ProgramMethod;
 import com.android.tools.r8.ir.analysis.type.TypeElement;
 import com.android.tools.r8.ir.code.Assume;
 import com.android.tools.r8.ir.code.BasicBlock;
@@ -30,7 +28,6 @@ import com.android.tools.r8.ir.code.IfType;
 import com.android.tools.r8.ir.code.Instruction;
 import com.android.tools.r8.ir.code.InstructionIterator;
 import com.android.tools.r8.ir.code.InstructionListIterator;
-import com.android.tools.r8.ir.code.InvokeInterface;
 import com.android.tools.r8.ir.code.InvokeVirtual;
 import com.android.tools.r8.ir.code.Move;
 import com.android.tools.r8.ir.code.Position;
@@ -452,32 +449,6 @@ public class CodeRewriter {
     }
     // When we fall out of the loop the iterator is in the last eol block.
     iterator.add(new InvokeVirtual(printLn, null, ImmutableList.of(out, empty)));
-    assert code.isConsistentSSA(appView);
-  }
-
-  // The javac fix for JDK-8272564 has to be rewritten back to invoke-virtual on Object if the
-  // method with an Object signature is not defined on the interface. See
-  // https://bugs.openjdk.java.net/browse/JDK-8272564
-  public static void rewriteJdk8272564Fix(IRCode code, ProgramMethod context, AppView<?> appView) {
-    DexItemFactory dexItemFactory = appView.dexItemFactory();
-    InstructionListIterator it = code.instructionListIterator();
-    while (it.hasNext()) {
-      Instruction instruction = it.next();
-      if (instruction.isInvokeInterface()) {
-        InvokeInterface invoke = instruction.asInvokeInterface();
-        DexMethod method = invoke.getInvokedMethod();
-        DexClass clazz = appView.definitionFor(method.getHolderType(), context);
-        if (clazz == null || clazz.isInterface()) {
-          DexMethod objectMember = dexItemFactory.objectMembers.matchingPublicObjectMember(method);
-          // javac before JDK-8272564 would still use invoke interface if the method is defined
-          // directly on the interface reference, so mimic that by not rewriting.
-          if (objectMember != null && appView.definitionFor(method) == null) {
-            it.replaceCurrentInstruction(
-                new InvokeVirtual(objectMember, invoke.outValue(), invoke.arguments()));
-          }
-        }
-      }
-    }
     assert code.isConsistentSSA(appView);
   }
 }
