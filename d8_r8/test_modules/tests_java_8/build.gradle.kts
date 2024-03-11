@@ -28,6 +28,10 @@ java {
   targetCompatibility = JavaVersion.VERSION_1_8
 }
 
+
+val testbaseJavaCompileTask = projectTask("testbase", "compileJava")
+val testbaseDepsJarTask = projectTask("testbase", "depsJar")
+
 // If we depend on keepanno by referencing the project source outputs we get an error regarding
 // incompatible java class file version. By depending on the jar we circumvent that.
 val keepAnnoJarTask = projectTask("keepanno", "jar")
@@ -45,22 +49,8 @@ dependencies {
   implementation(resourceShrinkerJavaCompileTask.outputs.files)
   implementation(resourceShrinkerKotlinCompileTask.outputs.files)
   implementation(resourceShrinkerDepsJarTask.outputs.files)
-  implementation(Deps.asm)
-  implementation(Deps.asmCommons)
-  implementation(Deps.asmUtil)
-  implementation(Deps.gson)
-  implementation(Deps.guava)
-  implementation(Deps.javassist)
-  implementation(Deps.junit)
-  implementation(Deps.kotlinStdLib)
-  implementation(Deps.kotlinReflect)
-  implementation(Deps.kotlinMetadata)
-  implementation(resolve(ThirdPartyDeps.ddmLib,"ddmlib.jar"))
-  implementation(resolve(ThirdPartyDeps.jasmin,"jasmin-2.4.jar"))
-  implementation(resolve(ThirdPartyDeps.jdwpTests,"apache-harmony-jdwp-tests-host.jar"))
-  implementation(Deps.fastUtil)
-  implementation(Deps.smali)
-  implementation(Deps.smaliUtil)
+  implementation(testbaseDepsJarTask.outputs.files)
+  implementation(testbaseJavaCompileTask.outputs.files)
 }
 
 val sourceSetDependenciesTasks = arrayOf(
@@ -102,9 +92,11 @@ tasks {
     commandLine("python3", createArtTestsScript)
   }
   "compileTestJava" {
+    dependsOn(testbaseJavaCompileTask)
     dependsOn(gradle.includedBuild("shared").task(":downloadDeps"))
   }
   withType<JavaCompile> {
+    dependsOn(testbaseJavaCompileTask)
     dependsOn(createArtTests)
     dependsOn(gradle.includedBuild("keepanno").task(":jar"))
     dependsOn(gradle.includedBuild("resourceshrinker").task(":jar"))
@@ -139,6 +131,9 @@ tasks {
     dependsOn(sourceSetDependencyTask)
     systemProperty("TEST_DATA_LOCATION",
                    layout.buildDirectory.dir("classes/java/test").get().toString())
+    systemProperty("TESTBASE_DATA_LOCATION",
+                   testbaseJavaCompileTask.outputs.files.getAsPath().split(File.pathSeparator)[0])
+
     systemProperty(
       "BUILD_PROP_KEEPANNO_RUNTIME_PATH",
       keepAnnoCompileTask.outputs.files.getAsPath().split(File.pathSeparator)[0])
@@ -163,17 +158,5 @@ tasks {
     //  this from the default name (tests_java_8.jar) will allow IntelliJ to find the resources in
     //  the jar and not show red underlines. However, navigation to base classes will not work.
     archiveFileName.set("not_named_tests_java_8.jar")
-  }
-
-  val depsJar by registering(Jar::class) {
-    dependsOn(gradle.includedBuild("shared").task(":downloadDeps"))
-    dependsOn(gradle.includedBuild("keepanno").task(":jar"))
-    dependsOn(gradle.includedBuild("resourceshrinker").task(":jar"))
-    from(testDependencies().map(::zipTree))
-    from(resourceShrinkerDepsJarTask.outputs.getFiles().map(::zipTree))
-    from(keepAnnoJarTask.outputs.getFiles().map(::zipTree))
-    exclude("com/android/tools/r8/keepanno/annotations/**")
-    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
-    archiveFileName.set("deps.jar")
   }
 }
