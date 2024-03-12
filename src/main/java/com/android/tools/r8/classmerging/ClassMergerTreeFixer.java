@@ -50,7 +50,7 @@ public abstract class ClassMergerTreeFixer<
     extends TreeFixerBase {
 
   private final ClassMergerSharedData classMergerSharedData;
-  private final ImmediateProgramSubtypingInfo immediateSubtypingInfo;
+  protected final ImmediateProgramSubtypingInfo immediateSubtypingInfo;
   protected final LB lensBuilder;
   protected final MC mergedClasses;
 
@@ -81,14 +81,17 @@ public abstract class ClassMergerTreeFixer<
     AppView<AppInfoWithLiveness> appViewWithLiveness = appView.withLiveness();
     preprocess();
     Collection<DexProgramClass> classes = appView.appInfo().classesWithDeterministicOrder();
-    Iterables.filter(classes, DexProgramClass::isInterface).forEach(this::fixupInterfaceClass);
+    Set<DexProgramClass> seen = Sets.newIdentityHashSet();
+    Iterables.filter(classes, DexProgramClass::isInterface)
+        .forEach(itf -> fixupInterfaceClass(itf, seen));
     classes.forEach(this::fixupAttributes);
     classes.forEach(this::fixupProgramClassSuperTypes);
 
     // TODO(b/170078037): parallelize this code segment.
     for (DexProgramClass root : getRoots()) {
-      traverseProgramClassesDepthFirst(root, new DexMethodSignatureBiMap<>());
+      traverseProgramClassesDepthFirst(root, seen, new DexMethodSignatureBiMap<>());
     }
+    assert seen.containsAll(appView.appInfo().classes());
     postprocess();
     GL lens = lensBuilder.build(appViewWithLiveness, mergedClasses);
     new AnnotationFixer(appView, lens).run(appView.appInfo().classes(), executorService);
@@ -99,34 +102,26 @@ public abstract class ClassMergerTreeFixer<
   private List<DexProgramClass> getRoots() {
     List<DexProgramClass> roots = new ArrayList<>();
     for (DexProgramClass clazz : appView.appInfo().classes()) {
-      if (!clazz.isInterface() && !mergedClasses.isMergeSource(clazz.getType())) {
-        DexProgramClass superClass =
-            asProgramClassOrNull(appView.definitionFor(clazz.getSuperType(), clazz));
-        if (superClass == null) {
-          roots.add(clazz);
-        }
+      if (isRoot(clazz)) {
+        roots.add(clazz);
       }
     }
     return roots;
   }
 
-  private void traverseProgramClassesDepthFirst(
-      DexProgramClass clazz, DexMethodSignatureBiMap<DexMethodSignature> state) {
-    DexMethodSignatureBiMap<DexMethodSignature> newState = fixupProgramClass(clazz, state);
-    for (DexProgramClass subclass : immediateSubtypingInfo.getSubclasses(clazz)) {
-      traverseProgramClassesDepthFirst(subclass, newState);
+  protected boolean isRoot(DexProgramClass clazz) {
+    if (clazz.isInterface()) {
+      return false;
     }
-    if (mergedClasses.isMergeTarget(clazz.getType())) {
-      for (DexType sourceType : mergedClasses.getSourcesFor(clazz.getType())) {
-        DexProgramClass sourceClass = appView.definitionFor(sourceType).asProgramClass();
-        for (DexProgramClass subclass : immediateSubtypingInfo.getSubclasses(sourceClass)) {
-          if (subclass != clazz) {
-            traverseProgramClassesDepthFirst(subclass, newState);
-          }
-        }
-      }
-    }
+    DexProgramClass superClass =
+        asProgramClassOrNull(appView.definitionFor(clazz.getSuperType(), clazz));
+    return superClass == null;
   }
+
+  protected abstract void traverseProgramClassesDepthFirst(
+      DexProgramClass clazz,
+      Set<DexProgramClass> seen,
+      DexMethodSignatureBiMap<DexMethodSignature> state);
 
   public void preprocess() {
     // Intentionally empty.
@@ -161,7 +156,7 @@ public abstract class ClassMergerTreeFixer<
     clazz.setInterfaces(fixupInterfaces(clazz, clazz.getInterfaces()));
   }
 
-  private DexMethodSignatureBiMap<DexMethodSignature> fixupProgramClass(
+  protected DexMethodSignatureBiMap<DexMethodSignature> fixupProgramClass(
       DexProgramClass clazz, DexMethodSignatureBiMap<DexMethodSignature> remappedVirtualMethods) {
     assert !clazz.isInterface();
 
@@ -235,7 +230,8 @@ public abstract class ClassMergerTreeFixer<
         : method;
   }
 
-  private void fixupInterfaceClass(DexProgramClass iface) {
+  private void fixupInterfaceClass(DexProgramClass iface, Set<DexProgramClass> seen) {
+    assert seen.add(iface);
     DexMethodSignatureBiMap<DexMethodSignature> remappedVirtualMethods =
         DexMethodSignatureBiMap.empty();
     MutableBidirectionalOneToOneMap<DexEncodedMethod, DexMethodSignature> newMethodSignatures =
