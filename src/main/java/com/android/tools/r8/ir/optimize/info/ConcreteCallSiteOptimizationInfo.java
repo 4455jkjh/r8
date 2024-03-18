@@ -18,8 +18,8 @@ import com.android.tools.r8.ir.analysis.type.Nullability;
 import com.android.tools.r8.ir.analysis.value.AbstractValue;
 import com.android.tools.r8.ir.analysis.value.UnknownValue;
 import com.android.tools.r8.optimize.argumentpropagation.codescanner.ConcreteMonomorphicMethodState;
-import com.android.tools.r8.optimize.argumentpropagation.codescanner.ConcreteParameterState;
-import com.android.tools.r8.optimize.argumentpropagation.codescanner.ParameterState;
+import com.android.tools.r8.optimize.argumentpropagation.codescanner.ConcreteValueState;
+import com.android.tools.r8.optimize.argumentpropagation.codescanner.ValueState;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
 import it.unimi.dsi.fastutil.ints.Int2ReferenceArrayMap;
 import it.unimi.dsi.fastutil.ints.Int2ReferenceMap;
@@ -141,12 +141,12 @@ public class ConcreteCallSiteOptimizationInfo extends CallSiteOptimizationInfo {
         new ConcreteCallSiteOptimizationInfo(methodState.size());
     boolean isTop = true;
     for (int argumentIndex = 0; argumentIndex < methodState.size(); argumentIndex++) {
-      ParameterState parameterState = methodState.getParameterState(argumentIndex);
+      ValueState parameterState = methodState.getParameterState(argumentIndex);
       if (parameterState.isUnknown()) {
         continue;
       }
 
-      ConcreteParameterState concreteParameterState = parameterState.asConcrete();
+      ConcreteValueState concreteParameterState = parameterState.asConcrete();
 
       // Constant propagation.
         AbstractValue abstractValue = concreteParameterState.getAbstractValue(appView);
@@ -160,7 +160,7 @@ public class ConcreteCallSiteOptimizationInfo extends CallSiteOptimizationInfo {
       if (staticType.isReferenceType()) {
         DynamicTypeWithUpperBound staticTypeElement = staticType.toDynamicType(appView);
         if (staticType.isArrayType()) {
-          Nullability nullability = concreteParameterState.asArrayParameter().getNullability();
+          Nullability nullability = concreteParameterState.asArrayState().getNullability();
           if (nullability.isDefinitelyNull()) {
             newCallSiteInfo.constants.put(
                 argumentIndex, appView.abstractValueFactory().createNullValue(staticType));
@@ -176,7 +176,7 @@ public class ConcreteCallSiteOptimizationInfo extends CallSiteOptimizationInfo {
             assert false;
           }
         } else if (staticType.isClassType()) {
-          DynamicType dynamicType = concreteParameterState.asReferenceParameter().getDynamicType();
+          DynamicType dynamicType = concreteParameterState.asReferenceState().getDynamicType();
           if (!dynamicType.isUnknown()) {
             newCallSiteInfo.dynamicTypes.put(argumentIndex, dynamicType);
             isTop = false;

@@ -17,29 +17,29 @@ public class ConcreteMonomorphicMethodState extends ConcreteMethodState
     implements ConcreteMonomorphicMethodStateOrBottom, ConcreteMonomorphicMethodStateOrUnknown {
 
   boolean isReturnValueUsed;
-  List<ParameterState> parameterStates;
+  List<ValueState> parameterStates;
 
   public ConcreteMonomorphicMethodState(
-      boolean isReturnValueUsed, List<ParameterState> parameterStates) {
+      boolean isReturnValueUsed, List<ValueState> parameterStates) {
     assert Streams.stream(Iterables.skip(parameterStates, 1))
-        .noneMatch(x -> x.isConcrete() && x.asConcrete().isReceiverParameter());
+        .noneMatch(x -> x.isConcrete() && x.asConcrete().isReceiverState());
     this.isReturnValueUsed = isReturnValueUsed;
     this.parameterStates = parameterStates;
     assert !isEffectivelyUnknown() : "Must use UnknownMethodState instead";
   }
 
   public static ConcreteMonomorphicMethodStateOrUnknown create(
-      boolean isReturnValueUsed, List<ParameterState> parameterStates) {
+      boolean isReturnValueUsed, List<ValueState> parameterStates) {
     return isEffectivelyUnknown(isReturnValueUsed, parameterStates)
         ? unknown()
         : new ConcreteMonomorphicMethodState(isReturnValueUsed, parameterStates);
   }
 
-  public ParameterState getParameterState(int index) {
+  public ValueState getParameterState(int index) {
     return parameterStates.get(index);
   }
 
-  public List<ParameterState> getParameterStates() {
+  public List<ValueState> getParameterStates() {
     return parameterStates;
   }
 
@@ -48,7 +48,7 @@ public class ConcreteMonomorphicMethodState extends ConcreteMethodState
   }
 
   public boolean isEffectivelyBottom() {
-    return Iterables.any(parameterStates, ParameterState::isBottom);
+    return Iterables.any(parameterStates, ValueState::isBottom);
   }
 
   public boolean isEffectivelyUnknown() {
@@ -56,14 +56,14 @@ public class ConcreteMonomorphicMethodState extends ConcreteMethodState
   }
 
   private static boolean isEffectivelyUnknown(
-      boolean isReturnValueUsed, List<ParameterState> parameterStates) {
-    return isReturnValueUsed && Iterables.all(parameterStates, ParameterState::isUnknown);
+      boolean isReturnValueUsed, List<ValueState> parameterStates) {
+    return isReturnValueUsed && Iterables.all(parameterStates, ValueState::isUnknown);
   }
 
   @Override
   public ConcreteMonomorphicMethodState mutableCopy() {
-    List<ParameterState> copiedParametersStates = new ArrayList<>(size());
-    for (ParameterState parameterState : getParameterStates()) {
+    List<ValueState> copiedParametersStates = new ArrayList<>(size());
+    for (ValueState parameterState : getParameterStates()) {
       copiedParametersStates.add(parameterState.mutableCopy());
     }
     return new ConcreteMonomorphicMethodState(isReturnValueUsed, copiedParametersStates);
@@ -86,8 +86,8 @@ public class ConcreteMonomorphicMethodState extends ConcreteMethodState
     int argumentIndex = 0;
     if (size() > methodSignature.getArity()) {
       assert size() == methodSignature.getArity() + 1;
-      ParameterState parameterState = parameterStates.get(0);
-      ParameterState otherParameterState = methodState.parameterStates.get(0);
+      ValueState parameterState = parameterStates.get(0);
+      ValueState otherParameterState = methodState.parameterStates.get(0);
       DexType parameterType = null;
       parameterStates.set(
           0, parameterState.mutableJoin(appView, otherParameterState, parameterType, cloner));
@@ -95,14 +95,14 @@ public class ConcreteMonomorphicMethodState extends ConcreteMethodState
     }
 
     for (int parameterIndex = 0; argumentIndex < size(); argumentIndex++, parameterIndex++) {
-      ParameterState parameterState = parameterStates.get(argumentIndex);
-      ParameterState otherParameterState = methodState.parameterStates.get(argumentIndex);
+      ValueState parameterState = parameterStates.get(argumentIndex);
+      ValueState otherParameterState = methodState.parameterStates.get(argumentIndex);
       DexType parameterType = methodSignature.getParameter(parameterIndex);
       parameterStates.set(
           argumentIndex,
           parameterState.mutableJoin(appView, otherParameterState, parameterType, cloner));
       assert !parameterStates.get(argumentIndex).isConcrete()
-          || !parameterStates.get(argumentIndex).asConcrete().isReceiverParameter();
+          || !parameterStates.get(argumentIndex).asConcrete().isReceiverState();
     }
 
     return isEffectivelyUnknown() ? unknown() : this;
@@ -123,10 +123,10 @@ public class ConcreteMonomorphicMethodState extends ConcreteMethodState
     return this;
   }
 
-  public void setParameterState(int index, ParameterState parameterState) {
+  public void setParameterState(int index, ValueState parameterState) {
     assert index == 0
         || !parameterState.isConcrete()
-        || !parameterState.asConcrete().isReceiverParameter();
+        || !parameterState.asConcrete().isReceiverState();
     parameterStates.set(index, parameterState);
   }
 

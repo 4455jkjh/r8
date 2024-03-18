@@ -1,0 +1,130 @@
+// Copyright (c) 2021, the R8 project authors. Please see the AUTHORS file
+// for details. All rights reserved. Use of this source code is governed by a
+// BSD-style license that can be found in the LICENSE file.
+
+package com.android.tools.r8.optimize.argumentpropagation.codescanner;
+
+import com.android.tools.r8.graph.AppView;
+import com.android.tools.r8.graph.DexType;
+import com.android.tools.r8.graph.ProgramField;
+import com.android.tools.r8.ir.analysis.value.AbstractValue;
+import com.android.tools.r8.shaking.AppInfoWithLiveness;
+import com.android.tools.r8.utils.Action;
+
+public abstract class ValueState {
+
+  public static BottomValueState bottom(ProgramField field) {
+    DexType fieldType = field.getType();
+    if (fieldType.isArrayType()) {
+      return bottomArrayTypeParameter();
+    } else if (fieldType.isClassType()) {
+      return bottomClassTypeParameter();
+    } else {
+      assert fieldType.isPrimitiveType();
+      return bottomPrimitiveTypeParameter();
+    }
+  }
+
+  public static BottomValueState bottomArrayTypeParameter() {
+    return BottomArrayTypeValueState.get();
+  }
+
+  public static BottomValueState bottomClassTypeParameter() {
+    return BottomClassTypeValueState.get();
+  }
+
+  public static BottomValueState bottomPrimitiveTypeParameter() {
+    return BottomPrimitiveTypeValueState.get();
+  }
+
+  public static BottomValueState bottomReceiverParameter() {
+    return BottomReceiverValueState.get();
+  }
+
+  public static UnknownValueState unknown() {
+    return UnknownValueState.get();
+  }
+
+  public abstract AbstractValue getAbstractValue(AppView<AppInfoWithLiveness> appView);
+
+  public boolean isArrayState() {
+    return false;
+  }
+
+  public ConcreteArrayTypeValueState asArrayState() {
+    return null;
+  }
+
+  public boolean isBottom() {
+    return false;
+  }
+
+  public boolean isClassState() {
+    return false;
+  }
+
+  public ConcreteClassTypeValueState asClassState() {
+    return null;
+  }
+
+  public boolean isConcrete() {
+    return false;
+  }
+
+  public ConcreteValueState asConcrete() {
+    return null;
+  }
+
+  public boolean isNonEmpty() {
+    return false;
+  }
+
+  public NonEmptyValueState asNonEmpty() {
+    return null;
+  }
+
+  public boolean isPrimitiveState() {
+    return false;
+  }
+
+  public ConcretePrimitiveTypeValueState asPrimitiveState() {
+    return null;
+  }
+
+  public boolean isReceiverState() {
+    return false;
+  }
+
+  public ConcreteReceiverValueState asReceiverState() {
+    return null;
+  }
+
+  public boolean isReferenceState() {
+    return false;
+  }
+
+  public ConcreteReferenceTypeValueState asReferenceState() {
+    return null;
+  }
+
+  public boolean isUnknown() {
+    return false;
+  }
+
+  public abstract ValueState mutableCopy();
+
+  public final ValueState mutableJoin(
+      AppView<AppInfoWithLiveness> appView,
+      ValueState state,
+      DexType parameterType,
+      StateCloner cloner) {
+    return mutableJoin(appView, state, parameterType, cloner, Action.empty());
+  }
+
+  public abstract ValueState mutableJoin(
+      AppView<AppInfoWithLiveness> appView,
+      ValueState state,
+      DexType staticType,
+      StateCloner cloner,
+      Action onChangedAction);
+}
