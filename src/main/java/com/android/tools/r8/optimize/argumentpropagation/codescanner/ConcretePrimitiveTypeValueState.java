@@ -29,30 +29,22 @@ public class ConcretePrimitiveTypeValueState extends ConcreteValueState {
     assert !isEffectivelyUnknown() : "Must use UnknownParameterState instead";
   }
 
-  public static NonEmptyValueState create(AbstractValue abstractValue) {
-    return abstractValue.isUnknown()
-        ? ValueState.unknown()
-        : new ConcretePrimitiveTypeValueState(abstractValue);
-  }
-
   public ConcretePrimitiveTypeValueState(InFlow inFlow) {
     this(AbstractValue.bottom(), SetUtils.newHashSet(inFlow));
   }
 
-  @Override
-  public ValueState clearInFlow() {
-    if (hasInFlow()) {
-      if (abstractValue.isBottom()) {
-        return bottomPrimitiveTypeParameter();
-      }
-      internalClearInFlow();
-    }
-    assert !isEffectivelyBottom();
-    return this;
+  public static NonEmptyValueState create(AbstractValue abstractValue) {
+    return create(abstractValue, Collections.emptySet());
+  }
+
+  public static NonEmptyValueState create(AbstractValue abstractValue, Set<InFlow> inFlow) {
+    return abstractValue.isUnknown()
+        ? ValueState.unknown()
+        : new ConcretePrimitiveTypeValueState(abstractValue, inFlow);
   }
 
   @Override
-  public ValueState mutableCopy() {
+  public ConcretePrimitiveTypeValueState mutableCopy() {
     return new ConcretePrimitiveTypeValueState(abstractValue, copyInFlow());
   }
 
@@ -103,6 +95,11 @@ public class ConcretePrimitiveTypeValueState extends ConcreteValueState {
   @Override
   public AbstractValue getAbstractValue(AppView<AppInfoWithLiveness> appView) {
     return abstractValue;
+  }
+
+  @Override
+  public BottomValueState getCorrespondingBottom() {
+    return bottomPrimitiveTypeState();
   }
 
   @Override

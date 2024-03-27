@@ -6,12 +6,13 @@ package com.android.tools.r8.optimize.argumentpropagation.codescanner;
 
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.DexType;
+import com.android.tools.r8.ir.analysis.type.DynamicType;
+import com.android.tools.r8.ir.analysis.value.AbstractValue;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
 import com.android.tools.r8.utils.Action;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
-import java.util.function.Function;
 
 public abstract class ConcreteValueState extends NonEmptyValueState {
 
@@ -28,7 +29,38 @@ public abstract class ConcreteValueState extends NonEmptyValueState {
     this.inFlow = inFlow;
   }
 
-  public abstract ValueState clearInFlow();
+  public static NonEmptyValueState create(DexType staticType, AbstractValue abstractValue) {
+    if (staticType.isArrayType()) {
+      return unknown();
+    } else if (staticType.isClassType()) {
+      return ConcreteClassTypeValueState.create(abstractValue, DynamicType.unknown());
+    } else {
+      assert staticType.isPrimitiveType();
+      return ConcretePrimitiveTypeValueState.create(abstractValue);
+    }
+  }
+
+  public static ConcreteValueState create(DexType staticType, InFlow inFlow) {
+    if (staticType.isArrayType()) {
+      return new ConcreteArrayTypeValueState(inFlow);
+    } else if (staticType.isClassType()) {
+      return new ConcreteClassTypeValueState(inFlow);
+    } else {
+      assert staticType.isPrimitiveType();
+      return new ConcretePrimitiveTypeValueState(inFlow);
+    }
+  }
+
+  public ValueState clearInFlow() {
+    if (hasInFlow()) {
+      internalClearInFlow();
+      if (isEffectivelyBottom()) {
+        return getCorrespondingBottom();
+      }
+    }
+    assert !isEffectivelyBottom();
+    return this;
+  }
 
   void internalClearInFlow() {
     inFlow = Collections.emptySet();
@@ -51,6 +83,8 @@ public abstract class ConcreteValueState extends NonEmptyValueState {
     return inFlow;
   }
 
+  public abstract BottomValueState getCorrespondingBottom();
+
   public abstract ConcreteParameterStateKind getKind();
 
   public abstract boolean isEffectivelyBottom();
@@ -65,16 +99,6 @@ public abstract class ConcreteValueState extends NonEmptyValueState {
   @Override
   public ConcreteValueState asConcrete() {
     return this;
-  }
-
-  @Override
-  public NonEmptyValueState mutableJoin(
-      AppView<AppInfoWithLiveness> appView,
-      Function<ValueState, NonEmptyValueState> stateSupplier,
-      DexType staticType,
-      StateCloner cloner,
-      Action onChangedAction) {
-    return mutableJoin(appView, stateSupplier.apply(this), staticType, cloner, onChangedAction);
   }
 
   @Override

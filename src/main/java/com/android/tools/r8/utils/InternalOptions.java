@@ -82,6 +82,7 @@ import com.android.tools.r8.naming.MapVersion;
 import com.android.tools.r8.naming.NamingLens;
 import com.android.tools.r8.optimize.accessmodification.AccessModifierOptions;
 import com.android.tools.r8.optimize.argumentpropagation.ArgumentPropagatorEventConsumer;
+import com.android.tools.r8.optimize.compose.JetpackComposeOptions;
 import com.android.tools.r8.optimize.redundantbridgeremoval.RedundantBridgeRemovalOptions;
 import com.android.tools.r8.origin.Origin;
 import com.android.tools.r8.position.Position;
@@ -401,6 +402,8 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
   // Optimization-related flags. These should conform to -dontoptimize and disableAllOptimizations.
   public boolean enableFieldBitAccessAnalysis =
       System.getProperty("com.android.tools.r8.fieldBitAccessAnalysis") != null;
+  public boolean enableFieldAssignmentTracker = true;
+  public boolean enableFieldValueAnalysis = true;
   public boolean enableUnusedInterfaceRemoval = true;
   public boolean enableDevirtualization = true;
   public boolean enableEnumUnboxing = true;
@@ -929,6 +932,7 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
   private final CfCodeAnalysisOptions cfCodeAnalysisOptions = new CfCodeAnalysisOptions();
   private final ClassInlinerOptions classInlinerOptions = new ClassInlinerOptions();
   private final InlinerOptions inlinerOptions = new InlinerOptions(this);
+  private final JetpackComposeOptions jetpackComposeOptions = new JetpackComposeOptions(this);
   private final HorizontalClassMergerOptions horizontalClassMergerOptions =
       new HorizontalClassMergerOptions();
   private final VerticalClassMergerOptions verticalClassMergerOptions =
@@ -980,6 +984,10 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
 
   public HorizontalClassMergerOptions horizontalClassMergerOptions() {
     return horizontalClassMergerOptions;
+  }
+
+  public JetpackComposeOptions getJetpackComposeOptions() {
+    return jetpackComposeOptions;
   }
 
   public VerticalClassMergerOptions getVerticalClassMergerOptions() {
@@ -2387,13 +2395,6 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
         System.getProperty("com.android.tools.r8.disableMarkingClassesFinal") != null;
     public boolean testEnableTestAssertions = false;
     public boolean keepMetadataInR8IfNotRewritten = true;
-    public boolean enableComposableOptimizationPass =
-        SystemPropertyUtils.parseSystemPropertyForDevelopmentOrDefault(
-            "com.android.tools.r8.enableComposableOptimizationPass", false);
-    public boolean modelUnknownChangedAndDefaultArgumentsToComposableFunctions =
-        SystemPropertyUtils.parseSystemPropertyForDevelopmentOrDefault(
-            "com.android.tools.r8.modelUnknownChangedAndDefaultArgumentsToComposableFunctions",
-            false);
 
     // Flag to allow processing of resources in D8. A data resource consumer still needs to be
     // specified.

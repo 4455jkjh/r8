@@ -155,10 +155,13 @@ luci.recipe(
 
 common_test_options = [
     "--tool=r8",
+    "--print-times",
     "--no_internal",
     "--one_line_per_test",
     "--archive_failures"
 ]
+
+default_timeout = time.hour * 6
 
 def get_dimensions(windows=False, internal=False, archive=False):
   # We use the following setup:
@@ -218,7 +221,7 @@ def r8_builder(name, priority=26, trigger=True, category=None,
 def r8_tester(name,
     test_options,
     dimensions = None,
-    execution_timeout = time.hour * 6,
+    execution_timeout = default_timeout,
     expiration_timeout = time.hour * 35,
     max_concurrent_invocations = 1,
     category=None,
@@ -244,10 +247,12 @@ def r8_tester_with_default(name,
     dimensions=None,
     category=None,
     release_trigger=None,
-    max_concurrent_invocations = 1):
+    max_concurrent_invocations = 1,
+    execution_timeout = default_timeout):
   r8_tester(name, test_options + common_test_options,
             dimensions = dimensions, category = category, release_trigger=release_trigger,
-            max_concurrent_invocations = max_concurrent_invocations)
+            max_concurrent_invocations = max_concurrent_invocations,
+            execution_timeout = execution_timeout)
 
 def archivers():
   for name in [
@@ -350,6 +355,7 @@ r8_tester_with_default("linux-android-14.0.0",
 
 r8_tester_with_default("windows", ["--all_tests"],
     dimensions=get_dimensions(windows=True),
+    execution_timeout = time.hour * 8,
     max_concurrent_invocations = 2)
 
 def internal():

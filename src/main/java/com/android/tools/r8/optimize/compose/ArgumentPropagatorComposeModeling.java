@@ -4,12 +4,17 @@
 package com.android.tools.r8.optimize.compose;
 
 import com.android.tools.r8.graph.AppView;
+import com.android.tools.r8.graph.DexClassAndMethod;
+import com.android.tools.r8.graph.DexField;
 import com.android.tools.r8.graph.DexItemFactory;
 import com.android.tools.r8.graph.DexMethod;
 import com.android.tools.r8.graph.DexString;
 import com.android.tools.r8.graph.DexType;
+import com.android.tools.r8.graph.MethodResolutionResult.SingleResolutionResult;
 import com.android.tools.r8.graph.ProgramMethod;
 import com.android.tools.r8.graph.lens.GraphLens;
+import com.android.tools.r8.ir.analysis.type.TypeElement;
+import com.android.tools.r8.ir.analysis.value.SingleNumberValue;
 import com.android.tools.r8.ir.code.InstanceGet;
 import com.android.tools.r8.ir.code.Instruction;
 import com.android.tools.r8.ir.code.InvokeMethod;
@@ -17,9 +22,10 @@ import com.android.tools.r8.ir.code.InvokeStatic;
 import com.android.tools.r8.ir.code.Or;
 import com.android.tools.r8.ir.code.Value;
 import com.android.tools.r8.optimize.argumentpropagation.codescanner.ConcretePrimitiveTypeValueState;
+import com.android.tools.r8.optimize.argumentpropagation.codescanner.FieldValue;
+import com.android.tools.r8.optimize.argumentpropagation.codescanner.OrAbstractFunction;
 import com.android.tools.r8.optimize.argumentpropagation.codescanner.ValueState;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
-import com.android.tools.r8.utils.BitUtils;
 import com.android.tools.r8.utils.BooleanUtils;
 import com.google.common.collect.Iterables;
 
@@ -32,7 +38,10 @@ public class ArgumentPropagatorComposeModeling {
   private final DexString invokeName;
 
   public ArgumentPropagatorComposeModeling(AppView<AppInfoWithLiveness> appView) {
-    assert appView.testing().modelUnknownChangedAndDefaultArgumentsToComposableFunctions;
+    assert appView
+        .options()
+        .getJetpackComposeOptions()
+        .isModelingChangedArgumentsToComposableFunctions();
     this.appView = appView;
     this.rewrittenComposeReferences =
         appView
@@ -139,69 +148,83 @@ public class ArgumentPropagatorComposeModeling {
       return null;
     }
 
-    // We only model the two last arguments ($$changed and $$default) to the @Composable function.
-    // If this argument is not on of these two int arguments, then don't apply any modeling.
-    if (argumentIndex <= composerParameterIndex) {
+    // We only model the $$changed argument to the @Composable function.
+    if (argumentIndex != composerParameterIndex + 1) {
       return null;
     }
 
     assert argument.getType().isInt();
 
-    DexString expectedFieldName;
-    ValueState state = ValueState.bottomPrimitiveTypeParameter();
-    if (!hasDefaultParameter || argumentIndex == invokedMethod.getArity() - 2) {
-      // We are looking at an argument to the $$changed parameter of the @Composable function.
-      // We generally expect this argument to be defined by a call to updateChangedFlags().
-      if (argument.isDefinedByInstructionSatisfying(Instruction::isInvokeStatic)) {
-        InvokeStatic invokeStatic = argument.getDefinition().asInvokeStatic();
-        DexMethod maybeUpdateChangedFlagsMethod = invokeStatic.getInvokedMethod();
-        if (!maybeUpdateChangedFlagsMethod.isIdenticalTo(
-            rewrittenComposeReferences.updatedChangedFlagsMethod)) {
-          return null;
-        }
-        // Assume the call does not impact the $$changed capture and strip the call.
-        argument = invokeStatic.getFirstArgument();
+    DexField changedField =
+        appView
+            .dexItemFactory()
+            .createField(
+                context.getHolderType(),
+                appView.dexItemFactory().intType,
+                rewrittenComposeReferences.changedFieldName);
+
+    UpdateChangedFlagsAbstractFunction inFlow = null;
+    // We are looking at an argument to the $$changed parameter of the @Composable function.
+    // We generally expect this argument to be defined by a call to updateChangedFlags().
+    if (argument.isDefinedByInstructionSatisfying(Instruction::isInvokeStatic)) {
+      InvokeStatic invokeStatic = argument.getDefinition().asInvokeStatic();
+      SingleResolutionResult<?> resolutionResult =
+          invokeStatic.resolveMethod(appView, context).asSingleResolution();
+      if (resolutionResult == null) {
+        return null;
       }
-      // Allow the argument to be defined by `this.$$changed | 1`.
-      if (argument.isDefinedByInstructionSatisfying(Instruction::isOr)) {
-        Or or = argument.getDefinition().asOr();
-        Value maybeNumberOperand =
-            or.leftValue().isConstNumber() ? or.leftValue() : or.rightValue();
-        Value otherOperand = or.getOperand(1 - or.inValues().indexOf(maybeNumberOperand));
-        if (!maybeNumberOperand.isConstNumber(1)) {
-          return null;
-        }
-        // Strip the OR instruction.
-        argument = otherOperand;
-        // Update the model from bottom to a special value that effectively throws away any known
-        // information about the lowermost bit of $$changed.
-        state =
-            new ConcretePrimitiveTypeValueState(
-                appView
-                    .abstractValueFactory()
-                    .createDefiniteBitsNumberValue(
-                        BitUtils.ALL_BITS_SET_MASK, BitUtils.ALL_BITS_SET_MASK << 1));
+      DexClassAndMethod invokeSingleTarget =
+          resolutionResult
+              .lookupDispatchTarget(appView, invokeStatic, context)
+              .getSingleDispatchTarget();
+      if (invokeSingleTarget == null) {
+        return null;
       }
-      expectedFieldName = rewrittenComposeReferences.changedFieldName;
+      inFlow =
+          invokeSingleTarget
+              .getOptimizationInfo()
+              .getAbstractFunction()
+              .asUpdateChangedFlagsAbstractFunction();
+      if (inFlow == null) {
+        return null;
+      }
+      // By accounting for the abstract function we can safely strip the call.
+      argument = invokeStatic.getFirstArgument();
+    }
+    // Allow the argument to be defined by `this.$$changed | 1`.
+    if (argument.isDefinedByInstructionSatisfying(Instruction::isOr)) {
+      Or or = argument.getDefinition().asOr();
+      Value maybeNumberOperand = or.leftValue().isConstNumber() ? or.leftValue() : or.rightValue();
+      Value otherOperand = or.getOperand(1 - or.inValues().indexOf(maybeNumberOperand));
+      if (!maybeNumberOperand.isConstNumber(1)) {
+        return null;
+      }
+      // Strip the OR instruction.
+      argument = otherOperand;
+      // Update the model from bottom to a special value that effectively throws away any known
+      // information about the lowermost bit of $$changed.
+      SingleNumberValue one =
+          appView.abstractValueFactory().createSingleNumberValue(1, TypeElement.getInt());
+      inFlow =
+          new UpdateChangedFlagsAbstractFunction(
+              new OrAbstractFunction(new FieldValue(changedField), one));
     } else {
-      // We are looking at an argument to the $$default parameter of the @Composable function.
-      expectedFieldName = rewrittenComposeReferences.defaultFieldName;
+      inFlow = new UpdateChangedFlagsAbstractFunction(new FieldValue(changedField));
     }
 
-    // At this point we expect that the restart lambda is reading either this.$$changed or
-    // this.$$default using an instance-get.
+    // At this point we expect that the restart lambda is reading this.$$changed using an
+    // instance-get.
     if (!argument.isDefinedByInstructionSatisfying(Instruction::isInstanceGet)) {
       return null;
     }
 
     // Check that the instance-get is reading the capture field that we expect it to.
     InstanceGet instanceGet = argument.getDefinition().asInstanceGet();
-    if (!instanceGet.getField().getName().isIdenticalTo(expectedFieldName)) {
+    if (!instanceGet.getField().isIdenticalTo(changedField)) {
       return null;
     }
 
-    // Return the argument model. Note that, for the $$default field, this is always bottom, which
-    // is equivalent to modeling that this call does not contribute any new argument information.
-    return state;
+    // Return the argument model.
+    return new ConcretePrimitiveTypeValueState(inFlow);
   }
 }

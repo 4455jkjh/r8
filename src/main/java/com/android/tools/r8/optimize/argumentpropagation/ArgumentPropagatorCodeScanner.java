@@ -4,29 +4,37 @@
 
 package com.android.tools.r8.optimize.argumentpropagation;
 
+import static com.android.tools.r8.optimize.argumentpropagation.codescanner.BaseInFlow.asBaseInFlowOrNull;
+
 import com.android.tools.r8.errors.Unreachable;
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.DexClassAndMethod;
+import com.android.tools.r8.graph.DexField;
 import com.android.tools.r8.graph.DexMethod;
 import com.android.tools.r8.graph.DexMethodHandle;
 import com.android.tools.r8.graph.DexType;
 import com.android.tools.r8.graph.MethodResolutionResult.SingleResolutionResult;
+import com.android.tools.r8.graph.ProgramField;
 import com.android.tools.r8.graph.ProgramMethod;
 import com.android.tools.r8.ir.analysis.type.DynamicType;
 import com.android.tools.r8.ir.analysis.type.DynamicTypeWithUpperBound;
 import com.android.tools.r8.ir.analysis.type.Nullability;
-import com.android.tools.r8.ir.analysis.type.TypeElement;
 import com.android.tools.r8.ir.analysis.value.AbstractValue;
+import com.android.tools.r8.ir.analysis.value.objectstate.ObjectState;
+import com.android.tools.r8.ir.analysis.value.objectstate.ObjectStateAnalysis;
 import com.android.tools.r8.ir.code.AbstractValueSupplier;
 import com.android.tools.r8.ir.code.AliasedValueConfiguration;
 import com.android.tools.r8.ir.code.AssumeAndCheckCastAliasedValueConfiguration;
+import com.android.tools.r8.ir.code.FieldGet;
+import com.android.tools.r8.ir.code.FieldPut;
 import com.android.tools.r8.ir.code.IRCode;
 import com.android.tools.r8.ir.code.Instruction;
-import com.android.tools.r8.ir.code.Invoke;
 import com.android.tools.r8.ir.code.InvokeCustom;
 import com.android.tools.r8.ir.code.InvokeMethod;
 import com.android.tools.r8.ir.code.InvokeMethodWithReceiver;
 import com.android.tools.r8.ir.code.Value;
+import com.android.tools.r8.optimize.argumentpropagation.codescanner.AbstractFunction;
+import com.android.tools.r8.optimize.argumentpropagation.codescanner.BaseInFlow;
 import com.android.tools.r8.optimize.argumentpropagation.codescanner.ConcreteArrayTypeValueState;
 import com.android.tools.r8.optimize.argumentpropagation.codescanner.ConcreteClassTypeValueState;
 import com.android.tools.r8.optimize.argumentpropagation.codescanner.ConcreteMonomorphicMethodState;
@@ -36,10 +44,17 @@ import com.android.tools.r8.optimize.argumentpropagation.codescanner.ConcretePol
 import com.android.tools.r8.optimize.argumentpropagation.codescanner.ConcretePolymorphicMethodStateOrBottom;
 import com.android.tools.r8.optimize.argumentpropagation.codescanner.ConcretePrimitiveTypeValueState;
 import com.android.tools.r8.optimize.argumentpropagation.codescanner.ConcreteReceiverValueState;
+import com.android.tools.r8.optimize.argumentpropagation.codescanner.ConcreteValueState;
+import com.android.tools.r8.optimize.argumentpropagation.codescanner.FieldStateCollection;
+import com.android.tools.r8.optimize.argumentpropagation.codescanner.FieldValueFactory;
+import com.android.tools.r8.optimize.argumentpropagation.codescanner.InFlow;
+import com.android.tools.r8.optimize.argumentpropagation.codescanner.InstanceFieldReadAbstractFunction;
 import com.android.tools.r8.optimize.argumentpropagation.codescanner.MethodParameter;
 import com.android.tools.r8.optimize.argumentpropagation.codescanner.MethodParameterFactory;
 import com.android.tools.r8.optimize.argumentpropagation.codescanner.MethodState;
 import com.android.tools.r8.optimize.argumentpropagation.codescanner.MethodStateCollectionByReference;
+import com.android.tools.r8.optimize.argumentpropagation.codescanner.NonEmptyValueState;
+import com.android.tools.r8.optimize.argumentpropagation.codescanner.StateCloner;
 import com.android.tools.r8.optimize.argumentpropagation.codescanner.UnknownMethodState;
 import com.android.tools.r8.optimize.argumentpropagation.codescanner.ValueState;
 import com.android.tools.r8.optimize.argumentpropagation.reprocessingcriteria.ArgumentPropagatorReprocessingCriteriaCollection;
@@ -47,6 +62,7 @@ import com.android.tools.r8.optimize.argumentpropagation.reprocessingcriteria.Me
 import com.android.tools.r8.optimize.argumentpropagation.reprocessingcriteria.ParameterReprocessingCriteria;
 import com.android.tools.r8.optimize.argumentpropagation.utils.WideningUtils;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
+import com.android.tools.r8.utils.Action;
 import com.android.tools.r8.utils.Timing;
 import com.google.common.collect.Sets;
 import java.util.ArrayList;
@@ -54,6 +70,7 @@ import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Supplier;
 
 /**
  * Analyzes each {@link IRCode} during the primary optimization to collect information about the
@@ -61,6 +78,7 @@ import java.util.Set;
  *
  * <p>State pruning is applied on-the-fly to avoid storing redundant information.
  */
+// TODO(b/330130322): Consider extending the flow graph with method-return nodes.
 public class ArgumentPropagatorCodeScanner {
 
   private static AliasedValueConfiguration aliasedValueConfiguration =
@@ -69,6 +87,8 @@ public class ArgumentPropagatorCodeScanner {
   private final AppView<AppInfoWithLiveness> appView;
 
   private final ArgumentPropagatorCodeScannerModeling modeling;
+
+  private final FieldValueFactory fieldValueFactory = new FieldValueFactory();
 
   private final MethodParameterFactory methodParameterFactory = new MethodParameterFactory();
 
@@ -82,6 +102,12 @@ public class ArgumentPropagatorCodeScanner {
    * themselves.
    */
   private final Map<DexMethod, DexMethod> virtualRootMethods = new IdentityHashMap<>();
+
+  /**
+   * The abstract program state for this optimization. Intuitively maps each field to its abstract
+   * value and dynamic type.
+   */
+  private final FieldStateCollection fieldStates = FieldStateCollection.createConcurrent();
 
   /**
    * The abstract program state for this optimization. Intuitively maps each parameter to its
@@ -110,6 +136,10 @@ public class ArgumentPropagatorCodeScanner {
     virtualRootMethods.putAll(extension);
   }
 
+  public FieldStateCollection getFieldStates() {
+    return fieldStates;
+  }
+
   public MethodStateCollectionByReference getMethodStates() {
     return methodStates;
   }
@@ -118,8 +148,19 @@ public class ArgumentPropagatorCodeScanner {
     return virtualRootMethods.get(method.getReference());
   }
 
+  // TODO(b/296030319): Allow lookups in the FieldStateCollection using DexField keys to avoid the
+  //  need for definitionFor here.
+  private boolean isFieldValueAlreadyUnknown(DexField field) {
+    return isFieldValueAlreadyUnknown(appView.definitionFor(field).asProgramField());
+  }
+
+  private boolean isFieldValueAlreadyUnknown(ProgramField field) {
+    return fieldStates.get(field).isUnknown();
+  }
+
   protected boolean isMethodParameterAlreadyUnknown(
       MethodParameter methodParameter, ProgramMethod method) {
+    assert methodParameter.getMethod().isIdenticalTo(method.getReference());
     MethodState methodState =
         methodStates.get(
             method.getDefinition().belongsToDirectPool() || isMonomorphicVirtualMethod(method)
@@ -153,14 +194,195 @@ public class ArgumentPropagatorCodeScanner {
       AbstractValueSupplier abstractValueSupplier,
       Timing timing) {
     timing.begin("Argument propagation scanner");
-    for (Invoke invoke : code.<Invoke>instructions(Instruction::isInvoke)) {
-      if (invoke.isInvokeMethod()) {
-        scan(invoke.asInvokeMethod(), abstractValueSupplier, method, timing);
-      } else if (invoke.isInvokeCustom()) {
-        scan(invoke.asInvokeCustom());
+    for (Instruction instruction : code.instructions()) {
+      if (instruction.isFieldPut()) {
+        scan(instruction.asFieldPut(), abstractValueSupplier, method, timing);
+      } else if (instruction.isInvokeMethod()) {
+        scan(instruction.asInvokeMethod(), abstractValueSupplier, method, timing);
+      } else if (instruction.isInvokeCustom()) {
+        scan(instruction.asInvokeCustom());
       }
     }
     timing.end();
+  }
+
+  private void scan(
+      FieldPut fieldPut,
+      AbstractValueSupplier abstractValueSupplier,
+      ProgramMethod context,
+      Timing timing) {
+    ProgramField field = fieldPut.resolveField(appView, context).getProgramField();
+    if (field == null) {
+      // Nothing to propagate.
+      return;
+    }
+    addTemporaryFieldState(fieldPut, field, abstractValueSupplier, context, timing);
+  }
+
+  private void addTemporaryFieldState(
+      FieldPut fieldPut,
+      ProgramField field,
+      AbstractValueSupplier abstractValueSupplier,
+      ProgramMethod context,
+      Timing timing) {
+    timing.begin("Add field state");
+    fieldStates.addTemporaryFieldState(
+        field,
+        () -> computeFieldState(fieldPut, field, abstractValueSupplier, context, timing),
+        timing,
+        (existingFieldState, fieldStateToAdd) -> {
+          NonEmptyValueState newFieldState =
+              existingFieldState.mutableJoin(
+                  appView,
+                  fieldStateToAdd,
+                  field.getType(),
+                  StateCloner.getCloner(),
+                  Action.empty());
+          return narrowFieldState(field, newFieldState);
+        });
+    timing.end();
+  }
+
+  private NonEmptyValueState computeFieldState(
+      FieldPut fieldPut,
+      ProgramField resolvedField,
+      AbstractValueSupplier abstractValueSupplier,
+      ProgramMethod context,
+      Timing timing) {
+    timing.begin("Compute field state for field-put");
+    NonEmptyValueState result =
+        computeFieldState(fieldPut, resolvedField, abstractValueSupplier, context);
+    timing.end();
+    return result;
+  }
+
+  private NonEmptyValueState computeFieldState(
+      FieldPut fieldPut,
+      ProgramField field,
+      AbstractValueSupplier abstractValueSupplier,
+      ProgramMethod context) {
+    NonEmptyValueState inFlowState = computeInFlowState(field.getType(), fieldPut.value(), context);
+    if (inFlowState != null) {
+      return inFlowState;
+    }
+
+    if (field.getType().isArrayType()) {
+      Nullability nullability = fieldPut.value().getType().nullability();
+      return ConcreteArrayTypeValueState.create(nullability);
+    }
+
+    AbstractValue abstractValue = abstractValueSupplier.getAbstractValue(fieldPut.value());
+    if (abstractValue.isUnknown()) {
+      abstractValue =
+          getFallbackAbstractValueForField(
+              field,
+              () -> ObjectStateAnalysis.computeObjectState(fieldPut.value(), appView, context));
+    }
+    if (field.getType().isClassType()) {
+      DynamicType dynamicType =
+          WideningUtils.widenDynamicNonReceiverType(
+              appView, fieldPut.value().getDynamicType(appView), field.getType());
+      return ConcreteClassTypeValueState.create(abstractValue, dynamicType);
+    } else {
+      assert field.getType().isPrimitiveType();
+      return ConcretePrimitiveTypeValueState.create(abstractValue);
+    }
+  }
+
+  // If the value is an argument of the enclosing method or defined by a field-get, then clearly we
+  // have no information about its abstract value (yet). Instead of treating this as having an
+  // unknown runtime value, we instead record a flow constraint.
+  private InFlow computeInFlow(Value value, ProgramMethod context) {
+    Value valueRoot = value.getAliasedValue(aliasedValueConfiguration);
+    if (valueRoot.isArgument()) {
+      MethodParameter inParameter =
+          methodParameterFactory.create(context, valueRoot.getDefinition().asArgument().getIndex());
+      return widenBaseInFlow(inParameter, context);
+    } else if (valueRoot.isDefinedByInstructionSatisfying(Instruction::isFieldGet)) {
+      FieldGet fieldGet = valueRoot.getDefinition().asFieldGet();
+      ProgramField field = fieldGet.resolveField(appView, context).getProgramField();
+      if (field == null) {
+        return null;
+      }
+      if (fieldGet.isInstanceGet()) {
+        Value receiverValue = fieldGet.asInstanceGet().object();
+        BaseInFlow receiverInFlow = asBaseInFlowOrNull(computeInFlow(receiverValue, context));
+        if (receiverInFlow != null
+            && receiverInFlow.equals(widenBaseInFlow(receiverInFlow, context))) {
+          return new InstanceFieldReadAbstractFunction(receiverInFlow, field.getReference());
+        }
+      }
+      return widenBaseInFlow(fieldValueFactory.create(field), context);
+    }
+    return null;
+  }
+
+  private InFlow widenBaseInFlow(BaseInFlow inFlow, ProgramMethod context) {
+    if (inFlow.isFieldValue()) {
+      if (isFieldValueAlreadyUnknown(inFlow.asFieldValue().getField())) {
+        return AbstractFunction.unknown();
+      }
+    } else {
+      assert inFlow.isMethodParameter();
+      if (isMethodParameterAlreadyUnknown(inFlow.asMethodParameter(), context)) {
+        return AbstractFunction.unknown();
+      }
+    }
+    return inFlow;
+  }
+
+  private NonEmptyValueState computeInFlowState(
+      DexType staticType, Value value, ProgramMethod context) {
+    InFlow inFlow = computeInFlow(value, context);
+    if (inFlow == null) {
+      return null;
+    }
+    if (inFlow.isUnknownAbstractFunction()) {
+      return ValueState.unknown();
+    }
+    assert inFlow.isBaseInFlow() || inFlow.isInstanceFieldReadAbstractFunction();
+    return ConcreteValueState.create(staticType, inFlow);
+  }
+
+  // Strengthens the abstract value of static final fields to a (self-)SingleFieldValue when the
+  // abstract value is unknown. The soundness of this is based on the fact that static final fields
+  // will never have their value changed after the <clinit> finishes, so value in a static final
+  // field can always be rematerialized by reading the field.
+  private NonEmptyValueState narrowFieldState(ProgramField field, NonEmptyValueState fieldState) {
+    AbstractValue fallbackAbstractValue =
+        getFallbackAbstractValueForField(field, ObjectState::empty);
+    if (!fallbackAbstractValue.isUnknown()) {
+      AbstractValue abstractValue = fieldState.getAbstractValue(appView);
+      if (!abstractValue.isUnknown()) {
+        return fieldState;
+      }
+      if (field.getType().isArrayType()) {
+        // We do not track an abstract value for array types.
+        return fieldState;
+      }
+      if (field.getType().isClassType()) {
+        DynamicType dynamicType =
+            fieldState.isReferenceState()
+                ? fieldState.asReferenceState().getDynamicType()
+                : DynamicType.unknown();
+        return new ConcreteClassTypeValueState(fallbackAbstractValue, dynamicType);
+      } else {
+        assert field.getType().isPrimitiveType();
+        return new ConcretePrimitiveTypeValueState(fallbackAbstractValue);
+      }
+    }
+    return fieldState;
+  }
+
+  // TODO(b/296030319): Also handle effectively final fields.
+  private AbstractValue getFallbackAbstractValueForField(
+      ProgramField field, Supplier<ObjectState> objectStateSupplier) {
+    if (field.getAccessFlags().isFinal() && field.getAccessFlags().isStatic()) {
+      return appView
+          .abstractValueFactory()
+          .createSingleFieldValue(field.getReference(), objectStateSupplier.get());
+    }
+    return AbstractValue.unknown();
   }
 
   private void scan(
@@ -182,10 +404,7 @@ public class ArgumentPropagatorCodeScanner {
     }
 
     SingleResolutionResult<?> resolutionResult =
-        appView
-            .appInfo()
-            .unsafeResolveMethodDueToDexFormatLegacy(invokedMethod)
-            .asSingleResolution();
+        invoke.resolveMethod(appView, context).asSingleResolution();
     if (resolutionResult == null) {
       // Nothing to propagate; the invoke instruction fails.
       return;
@@ -309,7 +528,6 @@ public class ArgumentPropagatorCodeScanner {
     return result;
   }
 
-  @SuppressWarnings("UnusedVariable")
   // TODO(b/190154391): Add a strategy that widens the dynamic receiver type to allow easily
   //  experimenting with the performance/size trade-off between precise/imprecise handling of
   //  dynamic dispatch.
@@ -507,60 +725,41 @@ public class ArgumentPropagatorCodeScanner {
       return ValueState.unknown();
     }
 
-    Value argumentRoot = argument.getAliasedValue(aliasedValueConfiguration);
     DexType parameterType =
         invoke.getInvokedMethod().getArgumentType(argumentIndex, invoke.isInvokeStatic());
-    TypeElement parameterTypeElement = parameterType.toTypeElement(appView);
 
     // If the value is an argument of the enclosing method, then clearly we have no information
     // about its abstract value. Instead of treating this as having an unknown runtime value, we
     // instead record a flow constraint that specifies that all values that flow into the parameter
     // of this enclosing method also flows into the corresponding parameter of the methods
     // potentially called from this invoke instruction.
-    if (argumentRoot.isArgument()) {
-      MethodParameter forwardedParameter =
-          methodParameterFactory.create(
-              context, argumentRoot.getDefinition().asArgument().getIndex());
-      if (isMethodParameterAlreadyUnknown(forwardedParameter, context)) {
-        return ValueState.unknown();
-      }
-      if (parameterTypeElement.isClassType()) {
-        return new ConcreteClassTypeValueState(forwardedParameter);
-      } else if (parameterTypeElement.isArrayType()) {
-        return new ConcreteArrayTypeValueState(forwardedParameter);
-      } else {
-        assert parameterTypeElement.isPrimitiveType();
-        return new ConcretePrimitiveTypeValueState(forwardedParameter);
-      }
+    NonEmptyValueState inFlowState = computeInFlowState(parameterType, argument, context);
+    if (inFlowState != null) {
+      return inFlowState;
     }
 
     // Only track the nullability for array types.
-    if (parameterTypeElement.isArrayType()) {
+    if (parameterType.isArrayType()) {
       Nullability nullability = argument.getType().nullability();
-      return nullability.isMaybeNull()
-          ? ValueState.unknown()
-          : new ConcreteArrayTypeValueState(nullability);
+      return ConcreteArrayTypeValueState.create(nullability);
     }
 
     AbstractValue abstractValue = abstractValueSupplier.getAbstractValue(argument);
 
     // For class types, we track both the abstract value and the dynamic type. If both are unknown,
     // then use UnknownParameterState.
-    if (parameterTypeElement.isClassType()) {
+    if (parameterType.isClassType()) {
       DynamicType dynamicType = argument.getDynamicType(appView);
       DynamicType widenedDynamicType =
           WideningUtils.widenDynamicNonReceiverType(appView, dynamicType, parameterType);
-      return abstractValue.isUnknown() && widenedDynamicType.isUnknown()
-          ? ValueState.unknown()
-          : new ConcreteClassTypeValueState(abstractValue, widenedDynamicType);
+      return ConcreteClassTypeValueState.create(abstractValue, widenedDynamicType);
+    } else {
+      // For primitive types, we only track the abstract value, thus if the abstract value is
+      // unknown,
+      // we use UnknownParameterState.
+      assert parameterType.isPrimitiveType();
+      return ConcretePrimitiveTypeValueState.create(abstractValue);
     }
-
-    // For primitive types, we only track the abstract value, thus if the abstract value is unknown,
-    // we use UnknownParameterState.
-    assert parameterTypeElement.isPrimitiveType();
-    return abstractValue.isUnknown()
-        ? ValueState.unknown()
-        : new ConcretePrimitiveTypeValueState(abstractValue);
   }
 
   @SuppressWarnings("ReferenceEquality")
