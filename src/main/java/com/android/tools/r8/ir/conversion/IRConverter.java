@@ -35,6 +35,7 @@ import com.android.tools.r8.ir.conversion.passes.DexConstantOptimizer;
 import com.android.tools.r8.ir.conversion.passes.FilledNewArrayRewriter;
 import com.android.tools.r8.ir.conversion.passes.MoveResultRewriter;
 import com.android.tools.r8.ir.conversion.passes.ParentConstructorHoistingCodeRewriter;
+import com.android.tools.r8.ir.conversion.passes.StringSwitchConverter;
 import com.android.tools.r8.ir.conversion.passes.StringSwitchRemover;
 import com.android.tools.r8.ir.conversion.passes.ThrowCatchOptimizer;
 import com.android.tools.r8.ir.conversion.passes.TrivialPhiSimplifier;
@@ -120,7 +121,6 @@ public class IRConverter {
   protected final IdentifierNameStringMarker identifierNameStringMarker;
   private final Devirtualizer devirtualizer;
   protected final CovariantReturnTypeAnnotationTransformer covariantReturnTypeAnnotationTransformer;
-  private final StringSwitchRemover stringSwitchRemover;
   private final TypeChecker typeChecker;
   protected EnumUnboxer enumUnboxer;
   protected final NumberUnboxer numberUnboxer;
@@ -202,7 +202,6 @@ public class IRConverter {
       this.identifierNameStringMarker = null;
       this.devirtualizer = null;
       this.typeChecker = null;
-      this.stringSwitchRemover = null;
       this.methodOptimizationInfoCollector = null;
       this.enumUnboxer = EnumUnboxer.empty();
       this.numberUnboxer = NumberUnboxer.empty();
@@ -275,10 +274,6 @@ public class IRConverter {
       this.enumUnboxer = EnumUnboxer.empty();
       this.numberUnboxer = NumberUnboxer.empty();
     }
-    this.stringSwitchRemover =
-        options.isStringSwitchConversionEnabled()
-            ? new StringSwitchRemover(appView, identifierNameStringMarker)
-            : null;
   }
 
   public IRConverter(AppInfo appInfo) {
@@ -590,6 +585,13 @@ public class IRConverter {
       return timing;
     }
 
+    // In R8, StringSwitch instructions are introduced when entering the LIR phase. In D8, we don't
+    // use LIR, so we explicitly introduce StringSwitch instructions here.
+    if (!options.getTestingOptions().isSupportedLirPhase()) {
+      new StringSwitchConverter(appView)
+          .run(code, methodProcessor, methodProcessingContext, timing);
+    }
+
     if (options.canHaveArtStringNewInitBug()) {
       timing.begin("Check for new-init issue");
       TrivialPhiSimplifier.ensureDirectStringNewToInit(appView, code);
@@ -773,11 +775,10 @@ public class IRConverter {
           .run(code, methodProcessor, methodProcessingContext, timing);
     }
 
-    if (code.getConversionOptions().isStringSwitchConversionEnabled()) {
-      // Remove string switches prior to canonicalization to ensure that the constants that are
-      // being introduced will be canonicalized if possible.
-      stringSwitchRemover.run(code, methodProcessor, methodProcessingContext, timing);
-    }
+    // Remove string switches prior to canonicalization to ensure that the constants that are
+    // being introduced will be canonicalized if possible.
+    new StringSwitchRemover(appView, identifierNameStringMarker)
+        .run(code, methodProcessor, methodProcessingContext, timing);
 
     // TODO(mkroghj) Test if shorten live ranges is worth it.
     if (options.isGeneratingDex()) {
@@ -967,9 +968,7 @@ public class IRConverter {
       IRCode code, OptimizationFeedback feedback, Timing timing) {
     if (!code.getConversionOptions().isGeneratingLir()) {
       new FilledNewArrayRewriter(appView).run(code, timing);
-    }
-    if (stringSwitchRemover != null) {
-      stringSwitchRemover.run(code, timing);
+      new StringSwitchRemover(appView, identifierNameStringMarker).run(code, timing);
     }
     code.removeRedundantBlocks();
     deadCodeRemover.run(code, timing);
