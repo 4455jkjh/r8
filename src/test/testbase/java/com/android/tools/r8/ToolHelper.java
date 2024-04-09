@@ -211,9 +211,6 @@ public class ToolHelper {
   public static final String ASM_JAR = BUILD_DIR + "deps/asm-9.6.jar";
   public static final String ASM_UTIL_JAR = BUILD_DIR + "deps/asm-util-9.6.jar";
 
-  public static final Path API_SAMPLE_JAR =
-      Paths.get(getProjectRoot(), "tests", "r8_api_usage_sample.jar");
-
   public static final String LINE_SEPARATOR = StringUtils.LINE_SEPARATOR;
   public static final String CLASSPATH_SEPARATOR = File.pathSeparator;
 
@@ -1230,8 +1227,8 @@ public class ToolHelper {
   }
 
   private static Path getAndroidJarPath(AndroidApiLevel apiLevel) {
-    if (apiLevel == AndroidApiLevel.MASTER) {
-      return Paths.get(THIRD_PARTY_DIR + "android_jar/lib-master/android.jar");
+    if (apiLevel == AndroidApiLevel.MAIN) {
+      return Paths.get(THIRD_PARTY_DIR + "android_jar/lib-main/android.jar");
     }
     String jar = String.format(
         ANDROID_JAR_PATTERN,
@@ -1401,7 +1398,7 @@ public class ToolHelper {
   public static AndroidApiLevel getMinApiLevelForDexVm(DexVm dexVm) {
     switch (dexVm.version) {
       case MASTER:
-        return AndroidApiLevel.MASTER;
+        return AndroidApiLevel.MAIN;
       case V14_0_0:
         return AndroidApiLevel.U;
       case V13_0_0:
@@ -1433,7 +1430,7 @@ public class ToolHelper {
 
   public static DexVm.Version getDexVersionForApiLevel(AndroidApiLevel apiLevel) {
     switch (apiLevel) {
-      case MASTER:
+      case MAIN:
         return DexVm.Version.MASTER;
       case U:
         return DexVm.Version.V14_0_0;
