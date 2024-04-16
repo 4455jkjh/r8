@@ -33,7 +33,6 @@ import com.android.tools.r8.graph.ProgramDefinition;
 import com.android.tools.r8.graph.PrunedItems;
 import com.android.tools.r8.graph.SubtypingInfo;
 import com.android.tools.r8.graph.analysis.ClassInitializerAssertionEnablingAnalysis;
-import com.android.tools.r8.graph.analysis.InitializedClassesInInstanceMethodsAnalysis;
 import com.android.tools.r8.horizontalclassmerging.HorizontalClassMerger;
 import com.android.tools.r8.inspector.internal.InspectorImpl;
 import com.android.tools.r8.ir.conversion.IRConverter;
@@ -503,6 +502,9 @@ public class R8 {
 
       assert ArtProfileCompletenessChecker.verify(appView);
 
+      LirConverter.rewriteLirWithLens(appView, timing, executorService);
+      appView.clearCodeRewritings(executorService, timing);
+
       VerticalClassMerger.createForInitialClassMerging(appViewWithLiveness, timing)
           .runIfNecessary(executorService, timing);
 
@@ -868,6 +870,7 @@ public class R8 {
       assert appView.dexItemFactory().verifyNoCachedTypeElements();
 
       // Generate the resulting application resources.
+      writeKeepDeclarationsToConfigurationConsumer(keepDeclarations);
       writeApplication(appView, inputApp, executorService);
 
       if (options.androidResourceProvider != null && options.androidResourceConsumer != null) {
@@ -885,6 +888,27 @@ public class R8 {
     } finally {
       inputApp.signalFinishedToProviders(options.reporter);
       options.signalFinishedToConsumers();
+    }
+  }
+
+  private void writeKeepDeclarationsToConfigurationConsumer(
+      List<KeepDeclaration> keepDeclarations) {
+    if (options.configurationConsumer == null) {
+      return;
+    }
+    if (keepDeclarations.isEmpty()) {
+      return;
+    }
+    for (KeepDeclaration declaration : keepDeclarations) {
+      List<String> lines = StringUtils.splitLines(declaration.toString());
+      StringBuilder builder = new StringBuilder();
+      builder.append("# Start of content from keep annotations\n");
+      for (String line : lines) {
+        builder.append("# ").append(line).append("\n");
+      }
+      builder.append("# End of content from keep annotations\n");
+      ExceptionUtils.withConsumeResourceHandler(
+          options.reporter, options.configurationConsumer, builder.toString());
     }
   }
 
@@ -1116,9 +1140,6 @@ public class R8 {
             appView, profileCollectionAdditions, executorService, subtypingInfo);
     enqueuer.setKeepDeclarations(keepDeclarations);
     enqueuer.setAnnotationRemoverBuilder(annotationRemoverBuilder);
-    if (appView.options().enableInitializedClassesInInstanceMethodsAnalysis) {
-      enqueuer.registerAnalysis(new InitializedClassesInInstanceMethodsAnalysis(appView));
-    }
     if (AssertionsRewriter.isEnabled(appView.options())) {
       ClassInitializerAssertionEnablingAnalysis analysis =
           new ClassInitializerAssertionEnablingAnalysis(

@@ -6,15 +6,15 @@ package com.android.tools.r8.shaking.ifrule.verticalclassmerging;
 
 import static com.android.tools.r8.utils.codeinspector.Matchers.isPresent;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.core.IsNot.not;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotEquals;
 
 import com.android.tools.r8.AssumeMayHaveSideEffects;
+import com.android.tools.r8.NeverInline;
 import com.android.tools.r8.NoAccessModification;
 import com.android.tools.r8.NoHorizontalClassMerging;
 import com.android.tools.r8.R8FullTestBuilder;
 import com.android.tools.r8.TestParameters;
+import com.android.tools.r8.shaking.ifrule.verticalclassmerging.MergedParameterTypeTest.MergedParameterTypeWithCollisionTest.SuperTestClass;
 import com.android.tools.r8.utils.codeinspector.ClassSubject;
 import com.android.tools.r8.utils.codeinspector.CodeInspector;
 import com.android.tools.r8.utils.codeinspector.FoundMethodSubject;
@@ -68,6 +68,7 @@ public class MergedReturnTypeTest extends MergedTypeBaseTest {
     static class SuperTestClass {
 
       @AssumeMayHaveSideEffects
+      @NeverInline
       public static A method() {
         return new B();
       }
@@ -96,7 +97,15 @@ public class MergedReturnTypeTest extends MergedTypeBaseTest {
     @Override
     public void configure(R8FullTestBuilder builder) {
       super.configure(builder);
-      builder.enableNoHorizontalClassMergingAnnotations().enableSideEffectAnnotations();
+      builder
+          .addVerticallyMergedClassesInspector(
+              inspector ->
+                  inspector
+                      .applyIf(enableVerticalClassMerging, i -> i.assertMergedIntoSubtype(A.class))
+                      .assertNoOtherClassesMerged())
+          .enableInliningAnnotations()
+          .enableNoHorizontalClassMergingAnnotations()
+          .enableSideEffectAnnotations();
     }
 
     @Override
@@ -122,11 +131,6 @@ public class MergedReturnTypeTest extends MergedTypeBaseTest {
       assertThat(testClassSubject, isPresent());
 
       if (enableVerticalClassMerging) {
-        // Verify that SuperTestClass has been merged into TestClass.
-        assertThat(inspector.clazz(SuperTestClass.class), not(isPresent()));
-        assertEquals(
-            "java.lang.Object", testClassSubject.getDexProgramClass().superType.toSourceString());
-
         // Verify that TestClass.method has been removed.
         List<FoundMethodSubject> methods =
             testClassSubject.allMethods().stream()
@@ -134,8 +138,10 @@ public class MergedReturnTypeTest extends MergedTypeBaseTest {
                 .collect(Collectors.toList());
         assertEquals(1, methods.size());
 
-        // Verify that there was a naming conflict such that SuperTestClass.method was renamed.
-        assertNotEquals("method", methods.get(0).getFinalName());
+        // Due to the -if rule, the SuperTestClass is only merged into TestClass after the final
+        // round of tree shaking, at which point TestClass.method has already been removed.
+        // Therefore, we expect no collision to have happened.
+        assertEquals("method", methods.get(0).getFinalName());
       }
     }
   }

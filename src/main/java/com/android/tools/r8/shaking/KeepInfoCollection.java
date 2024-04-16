@@ -91,6 +91,8 @@ public abstract class KeepInfoCollection {
    */
   public abstract KeepMethodInfo getMethodInfo(DexEncodedMethod method, DexProgramClass holder);
 
+  public abstract void registerCompilerSynthesizedMethod(ProgramMethod method);
+
   /**
    * Base accessor for keep info on a field.
    *
@@ -523,6 +525,25 @@ public abstract class KeepInfoCollection {
             .computeIfAbsent(method.getReference(), ignoreKey(KeepMethodInfo::newEmptyJoiner))
             .merge(minimumKeepInfo);
       }
+    }
+
+    @Override
+    public void registerCompilerSynthesizedMethod(ProgramMethod method) {
+      assert !keepMethodInfo.containsKey(method.getReference());
+      keepMethodInfo.put(method.getReference(), SyntheticKeepMethodInfo.bottom());
+    }
+
+    public void registerCompilerSynthesizedMethods(KeepInfoCollection keepInfoCollection) {
+      keepInfoCollection.mutate(
+          mutableKeepInfoCollection -> {
+            mutableKeepInfoCollection.keepMethodInfo.forEach(
+                (m, info) -> {
+                  if (info instanceof SyntheticKeepMethodInfo) {
+                    assert !keepMethodInfo.containsKey(m);
+                    keepMethodInfo.put(m, info);
+                  }
+                });
+          });
     }
 
     @Override

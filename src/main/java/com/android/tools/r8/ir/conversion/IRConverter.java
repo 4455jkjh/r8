@@ -521,7 +521,7 @@ public class IRConverter {
             + ExceptionUtils.getMainStackTrace();
     assert !method.isProcessed()
             || !appView.enableWholeProgramOptimizations()
-            || !appView.appInfo().withLiveness().isNeverReprocessMethod(context)
+            || appView.getKeepInfo(context).isReprocessingAllowed(options, context)
         : "Unexpected reprocessing of method: " + context.toSourceString();
 
     if (typeChecker != null && !typeChecker.check(code)) {
@@ -786,11 +786,6 @@ public class IRConverter {
 
     previous =
         printMethod(code, "IR after idempotent function call canonicalization (SSA)", previous);
-
-    // Insert code to log arguments if requested.
-    if (options.methodMatchesLogArgumentsFilter(method) && !method.isProcessed()) {
-      codeRewriter.logArgumentTypes(method, code);
-    }
 
     previous = printMethod(code, "IR after argument type logging (SSA)", previous);
 

@@ -52,6 +52,7 @@ import com.android.tools.r8.shaking.KeepClassInfo;
 import com.android.tools.r8.shaking.KeepFieldInfo;
 import com.android.tools.r8.shaking.KeepInfo;
 import com.android.tools.r8.shaking.KeepInfoCollection;
+import com.android.tools.r8.shaking.KeepMemberInfo;
 import com.android.tools.r8.shaking.KeepMethodInfo;
 import com.android.tools.r8.shaking.LibraryModeledPredicate;
 import com.android.tools.r8.shaking.MainDexInfo;
@@ -715,6 +716,14 @@ public class AppView<T extends AppInfo> implements DexDefinitionSupplier, Librar
     this.kotlinMetadataLens = kotlinMetadataLens;
   }
 
+  public boolean hasInitializedClassesInInstanceMethods() {
+    return initializedClassesInInstanceMethods != null;
+  }
+
+  public InitializedClassesInInstanceMethods getInitializedClassesInInstanceMethods() {
+    return initializedClassesInInstanceMethods;
+  }
+
   public void setInitializedClassesInInstanceMethods(
       InitializedClassesInInstanceMethods initializedClassesInInstanceMethods) {
     this.initializedClassesInInstanceMethods = initializedClassesInInstanceMethods;
@@ -798,6 +807,12 @@ public class AppView<T extends AppInfo> implements DexDefinitionSupplier, Librar
 
   public KeepFieldInfo getKeepInfo(ProgramField field) {
     return getKeepInfo().getFieldInfo(field);
+  }
+
+  public KeepMemberInfo<?, ?> getKeepInfo(ProgramMember<?, ?> member) {
+    return member.isField()
+        ? getKeepInfo(member.asProgramField())
+        : getKeepInfo(member.asProgramMethod());
   }
 
   public KeepMethodInfo getKeepInfo(ProgramMethod method) {
@@ -1238,6 +1253,20 @@ public class AppView<T extends AppInfo> implements DexDefinitionSupplier, Librar
                 @Override
                 public boolean shouldRun() {
                   return !appView.cfByteCodePassThrough.isEmpty();
+                }
+              },
+              new ThreadTask() {
+                @Override
+                public void run(Timing timing) {
+                  appView.setInitializedClassesInInstanceMethods(
+                      appView
+                          .getInitializedClassesInInstanceMethods()
+                          .rewrittenWithLens(lens, appliedLens));
+                }
+
+                @Override
+                public boolean shouldRun() {
+                  return appView.hasInitializedClassesInInstanceMethods();
                 }
               });
         });

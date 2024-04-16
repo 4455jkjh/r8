@@ -35,6 +35,7 @@ public class KeepUsesReflectionAnnotationWithAdditionalPreconditionTest extends 
   @Test
   public void test() throws Exception {
     testForKeepAnno(parameters)
+        .enableNativeInterpretation()
         .addProgramClasses(getInputClasses())
         .addKeepMainRule(TestClass.class)
         .setExcludedOuterClass(getClass())
@@ -68,7 +69,6 @@ public class KeepUsesReflectionAnnotationWithAdditionalPreconditionTest extends 
           // way to express the conjunction with multiple distinct precondition classes in the
           // rule language. With direct annotation interpretation this limitation is avoided and
           // a more precise shrinking is possible.
-          // TODO(b/248408342): Check this once direct interpretation is supported.
           @KeepCondition(classConstant = B.class)
         })
     public void foo(Class<B> clazz) throws Exception {

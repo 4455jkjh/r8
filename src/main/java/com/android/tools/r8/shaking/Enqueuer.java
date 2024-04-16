@@ -98,6 +98,7 @@ import com.android.tools.r8.graph.analysis.EnqueuerInvokeAnalysis;
 import com.android.tools.r8.graph.analysis.EnqueuerNewInstanceAnalysis;
 import com.android.tools.r8.graph.analysis.EnqueuerTypeAccessAnalysis;
 import com.android.tools.r8.graph.analysis.GetArrayOfMissingTypeVerifyErrorWorkaround;
+import com.android.tools.r8.graph.analysis.InitializedClassesInInstanceMethodsAnalysis;
 import com.android.tools.r8.graph.analysis.InvokeVirtualToInterfaceVerifyErrorWorkaround;
 import com.android.tools.r8.graph.analysis.ResourceAccessAnalysis;
 import com.android.tools.r8.ir.analysis.proto.ProtoEnqueuerUseRegistry;
@@ -518,7 +519,9 @@ public class Enqueuer {
       appView.getResourceShrinkerState().setEnqueuerCallback(this::recordReferenceFromResources);
     }
     if (mode.isTreeShaking()) {
+      InitializedClassesInInstanceMethodsAnalysis.register(appView, this);
       GetArrayOfMissingTypeVerifyErrorWorkaround.register(appView, this);
+      InitializedClassesInInstanceMethodsAnalysis.register(appView, this);
       InvokeVirtualToInterfaceVerifyErrorWorkaround.register(appView, this);
       if (options.protoShrinking().enableGeneratedMessageLiteShrinking) {
         registerAnalysis(new ProtoEnqueuerExtension(appView));
@@ -659,11 +662,24 @@ public class Enqueuer {
   }
 
   public boolean addLiveMethod(ProgramMethod method, KeepReason reason) {
+    addEffectivelyLiveOriginalMethod(method);
     return liveMethods.add(method, reason);
   }
 
   public boolean addTargetedMethod(ProgramMethod method, KeepReason reason) {
+    addEffectivelyLiveOriginalMethod(method);
     return targetedMethods.add(method, reason);
+  }
+
+  private void addEffectivelyLiveOriginalMethod(ProgramMethod method) {
+    if (!options.testing.isKeepAnnotationsEnabled()) {
+      return;
+    }
+    if (method.getDefinition().hasPendingInlineFrame()) {
+      traceMethodPosition(method.getDefinition().getPendingInlineFrameAsPosition(), method);
+    } else if (!method.getDefinition().isD8R8Synthesized()) {
+      markEffectivelyLiveOriginalReference(method.getReference());
+    }
   }
 
   private void recordCompilerSynthesizedTypeReference(DexType type) {
@@ -1662,17 +1678,23 @@ public class Enqueuer {
     while (position.hasCallerPosition()) {
       // Any inner position should not be non-synthetic user methods.
       assert !position.isD8R8Synthesized();
-      DexMethod method = position.getMethod();
-      // TODO(b/325014359): It might be reasonable to reduce this map size by tracking which methods
-      //  actually are used in preconditions.
-      if (effectivelyLiveOriginalReferences.add(method)) {
-        effectivelyLiveOriginalReferences.add(method.getHolderType());
-      }
+      markEffectivelyLiveOriginalReference(position.getMethod());
       position = position.getCallerPosition();
     }
     // The outer-most position should be equal to the context.
-    // No need to trace this as the method is already traced since it is invoked.
+    // Mark it if it is not synthetic.
     assert context.getReference().isIdenticalTo(position.getMethod());
+    if (!context.getDefinition().isD8R8Synthesized()) {
+      markEffectivelyLiveOriginalReference(context.getReference());
+    }
+  }
+
+  void markEffectivelyLiveOriginalReference(DexReference reference) {
+    // TODO(b/325014359): It might be reasonable to reduce this map size by tracking which items
+    //  actually are used in preconditions.
+    if (effectivelyLiveOriginalReferences.add(reference) && reference.isDexMember()) {
+      effectivelyLiveOriginalReferences.add(reference.getContextType());
+    }
   }
 
   void traceNewInstance(DexType type, ProgramMethod context) {
@@ -2171,6 +2193,7 @@ public class Enqueuer {
     if (!liveTypes.add(clazz, witness)) {
       return;
     }
+    markEffectivelyLiveOriginalReference(clazz.getType());
 
     assert !mode.isFinalMainDexTracing()
             || !options.testing.checkForNotExpandingMainDexTracingResult
@@ -2308,7 +2331,6 @@ public class Enqueuer {
     analyses.forEach(analysis -> analysis.processNewlyLiveClass(clazz, worklist));
   }
 
-  @SuppressWarnings("ReferenceEquality")
   private void processDeferredAnnotations(
       DexProgramClass clazz,
       Map<DexType, Map<DexAnnotation, List<ProgramDefinition>>> deferredAnnotations,
@@ -2317,7 +2339,7 @@ public class Enqueuer {
         deferredAnnotations.remove(clazz.getType());
     if (annotations != null) {
       assert annotations.keySet().stream()
-          .allMatch(annotation -> annotation.getAnnotationType() == clazz.getType());
+          .allMatch(annotation -> clazz.getType().isIdenticalTo(annotation.getAnnotationType()));
       annotations.forEach(
           (annotation, annotatedItems) ->
               annotatedItems.forEach(
@@ -3253,6 +3275,13 @@ public class Enqueuer {
     }
   }
 
+  private void addEffectivelyLiveOriginalField(ProgramField field) {
+    if (!options.testing.isKeepAnnotationsEnabled()) {
+      return;
+    }
+    markEffectivelyLiveOriginalReference(field.getReference());
+  }
+
   private void markFieldAsLive(ProgramField field, ProgramMethod context) {
     markFieldAsLive(field, context, KeepReason.fieldReferencedIn(context));
   }
@@ -3265,6 +3294,7 @@ public class Enqueuer {
       // Already live.
       return;
     }
+    addEffectivelyLiveOriginalField(field);
 
     // Mark the field as targeted.
     if (field.getAccessFlags().isStatic()) {
@@ -3306,13 +3336,12 @@ public class Enqueuer {
       graphReporter.registerField(field.getDefinition(), reason);
       return;
     }
-
+    addEffectivelyLiveOriginalField(field);
     traceFieldDefinition(field);
 
     analyses.forEach(analysis -> analysis.notifyMarkFieldAsReachable(field, worklist));
   }
 
-  @SuppressWarnings("UnusedVariable")
   private void traceFieldDefinition(ProgramField field) {
     markTypeAsLive(field.getHolder(), field);
     markTypeAsLive(field.getType(), field);
@@ -3827,20 +3856,22 @@ public class Enqueuer {
       timing.begin("Model library");
       modelLibraryMethodsWithCovariantReturnTypes(appView);
       timing.end();
-    } else if (appView.getKeepInfo() != null) {
-      timing.begin("Retain keep info");
-      applicableRules = appView.getKeepInfo().getApplicableRules();
-      EnqueuerEvent preconditionEvent = UnconditionalKeepInfoEvent.get();
-      appView
-          .getKeepInfo()
-          .forEachRuleInstance(
-              appView,
-              (clazz, minimumKeepInfo) ->
-                  applyMinimumKeepInfoWhenLive(clazz, minimumKeepInfo, preconditionEvent),
-              (field, minimumKeepInfo) ->
-                  applyMinimumKeepInfoWhenLive(field, minimumKeepInfo, preconditionEvent),
-              this::applyMinimumKeepInfoWhenLiveOrTargeted);
-      timing.end();
+    } else {
+      KeepInfoCollection keepInfoCollection = appView.getKeepInfo();
+      if (keepInfoCollection != null) {
+        timing.begin("Retain keep info");
+        applicableRules = keepInfoCollection.getApplicableRules();
+        EnqueuerEvent preconditionEvent = UnconditionalKeepInfoEvent.get();
+        keepInfo.registerCompilerSynthesizedMethods(keepInfoCollection);
+        keepInfoCollection.forEachRuleInstance(
+            appView,
+            (clazz, minimumKeepInfo) ->
+                applyMinimumKeepInfoWhenLive(clazz, minimumKeepInfo, preconditionEvent),
+            (field, minimumKeepInfo) ->
+                applyMinimumKeepInfoWhenLive(field, minimumKeepInfo, preconditionEvent),
+            this::applyMinimumKeepInfoWhenLiveOrTargeted);
+        timing.end();
+      }
     }
     timing.time("Unconditional rules", () -> applicableRules.evaluateUnconditionalRules(this));
     timing.begin("Enqueue all");
@@ -4103,7 +4134,7 @@ public class Enqueuer {
 
     private final Map<DexMethod, ProgramMethod> liveMethods = new ConcurrentHashMap<>();
 
-    private final ProgramMethodMap<KeepMethodInfo.Joiner> minimumKeepInfo =
+    private final ProgramMethodMap<KeepMethodInfo.Joiner> minimumSyntheticKeepInfo =
         ProgramMethodMap.createConcurrent();
 
     private final Map<DexType, DexClasspathClass> syntheticClasspathClasses =
@@ -4160,9 +4191,11 @@ public class Enqueuer {
       newInterfaces.add(newInterface);
     }
 
-    public void addMinimumKeepInfo(ProgramMethod method, Consumer<KeepMethodInfo.Joiner> consumer) {
+    public void addMinimumSyntheticKeepInfo(
+        ProgramMethod method, Consumer<KeepMethodInfo.Joiner> consumer) {
       consumer.accept(
-          minimumKeepInfo.computeIfAbsent(method, ignoreKey(KeepMethodInfo::newEmptyJoiner)));
+          minimumSyntheticKeepInfo.computeIfAbsent(
+              method, ignoreKey(KeepMethodInfo::newEmptyJoiner)));
     }
 
     void enqueueWorkItems(Enqueuer enqueuer) {
@@ -4189,9 +4222,11 @@ public class Enqueuer {
                 enqueuer.appInfo(), clazz, itfs);
           });
 
-      minimumKeepInfo.forEach(
-          (method, minimumKeepInfoForMethod) ->
-              enqueuer.applyMinimumKeepInfoWhenLiveOrTargeted(method, minimumKeepInfoForMethod));
+      minimumSyntheticKeepInfo.forEach(
+          (method, minimumKeepInfoForMethod) -> {
+            enqueuer.getKeepInfo().registerCompilerSynthesizedMethod(method);
+            enqueuer.applyMinimumKeepInfoWhenLiveOrTargeted(method, minimumKeepInfoForMethod);
+          });
     }
   }
 
@@ -4501,12 +4536,9 @@ public class Enqueuer {
             keepInfo,
             rootSet.mayHaveSideEffects,
             amendWithCompanionMethods(rootSet.alwaysInline),
-            amendWithCompanionMethods(rootSet.neverInlineDueToSingleCaller),
             amendWithCompanionMethods(rootSet.whyAreYouNotInlining),
             amendWithCompanionMethods(rootSet.reprocess),
-            amendWithCompanionMethods(rootSet.neverReprocess),
             rootSet.alwaysClassInline,
-            rootSet.neverPropagateValue,
             joinIdentifierNameStrings(rootSet.identifierNameStrings, identifierNameStrings),
             emptySet(),
             Collections.emptyMap(),
@@ -4797,6 +4829,7 @@ public class Enqueuer {
     long result = liveTypes.getItems().size();
     result += liveMethods.items.size();
     result += liveFields.fields.size();
+    result += effectivelyLiveOriginalReferences.size();
     return result;
   }
 

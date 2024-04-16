@@ -84,6 +84,7 @@ import com.android.tools.r8.optimize.accessmodification.AccessModifierOptions;
 import com.android.tools.r8.optimize.argumentpropagation.ArgumentPropagatorEventConsumer;
 import com.android.tools.r8.optimize.compose.JetpackComposeOptions;
 import com.android.tools.r8.optimize.redundantbridgeremoval.RedundantBridgeRemovalOptions;
+import com.android.tools.r8.optimize.singlecaller.SingleCallerInlinerOptions;
 import com.android.tools.r8.origin.Origin;
 import com.android.tools.r8.position.Position;
 import com.android.tools.r8.profile.art.ArtProfileOptions;
@@ -714,7 +715,6 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
       System.getProperty("com.android.tools.r8.ignoreBootClasspathEnumsForMaindexTracing") != null;
   public boolean pruneNonVissibleAnnotationClasses =
       System.getProperty("com.android.tools.r8.pruneNonVissibleAnnotationClasses") != null;
-  public List<String> logArgumentsFilter = ImmutableList.of();
 
   // Flag to turn on/offLoad/store optimization in the Cf back-end.
   public boolean enableLoadStoreOptimization = true;
@@ -932,6 +932,8 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
   private final CfCodeAnalysisOptions cfCodeAnalysisOptions = new CfCodeAnalysisOptions();
   private final ClassInlinerOptions classInlinerOptions = new ClassInlinerOptions();
   private final InlinerOptions inlinerOptions = new InlinerOptions(this);
+  private final SingleCallerInlinerOptions singleCallerInlinerOptions =
+      new SingleCallerInlinerOptions(this);
   private final JetpackComposeOptions jetpackComposeOptions = new JetpackComposeOptions(this);
   private final HorizontalClassMergerOptions horizontalClassMergerOptions =
       new HorizontalClassMergerOptions();
@@ -988,6 +990,10 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
 
   public JetpackComposeOptions getJetpackComposeOptions() {
     return jetpackComposeOptions;
+  }
+
+  public SingleCallerInlinerOptions getSingleCallerInlinerOptions() {
+    return singleCallerInlinerOptions;
   }
 
   public VerticalClassMergerOptions getVerticalClassMergerOptions() {
@@ -1513,16 +1519,6 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
     // Currently the filter is simple string equality on the qualified name.
     String qualifiedName = method.qualifiedName();
     return methodsFilter.contains(qualifiedName);
-  }
-
-  public boolean methodMatchesLogArgumentsFilter(DexEncodedMethod method) {
-    // Not specifying a filter matches no methods.
-    if (logArgumentsFilter.size() == 0) {
-      return false;
-    }
-    // Currently the filter is simple string equality on the qualified name.
-    String qualifiedName = method.qualifiedName();
-    return logArgumentsFilter.contains(qualifiedName);
   }
 
   public enum PackageObfuscationMode {
@@ -2216,6 +2212,8 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
         System.getProperty("com.android.tools.r8.dexVersion40ForApiLevel30") != null;
     public boolean dexContainerExperiment =
         System.getProperty("com.android.tools.r8.dexContainerExperiment") != null;
+    public boolean nullOutDebugInfo =
+        System.getProperty("com.android.tools.r8.nullOutDebugInfo") != null;
 
     // Testing options to analyse locality of items in DEX files when they are generated.
     public boolean calculateItemUseCountInDex = false;
@@ -2332,6 +2330,7 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
 
     public boolean allowClassInliningOfSynthetics = true;
     public boolean allowInjectedAnnotationMethods = false;
+    public boolean allowInliningOfOutlines = true;
     public boolean allowInliningOfSynthetics = true;
     public boolean allowNullDynamicTypeInCodeScanner = true;
     public boolean allowTypeErrors =
