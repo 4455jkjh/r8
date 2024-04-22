@@ -27,7 +27,6 @@ import com.android.tools.r8.synthesis.SyntheticItems;
 import com.android.tools.r8.utils.AndroidApiLevel;
 import com.android.tools.r8.utils.ListUtils;
 import com.android.tools.r8.utils.ThreadUtils;
-import com.android.tools.r8.utils.WorkList;
 import com.google.common.collect.Sets;
 import java.util.Arrays;
 import java.util.Collection;
@@ -48,7 +47,6 @@ public class ApiReferenceStubber {
   private final Map<DexLibraryClass, Set<DexProgramClass>> referencingContexts =
       new ConcurrentHashMap<>();
   private final Set<DexLibraryClass> libraryClassesToMock = Sets.newConcurrentHashSet();
-  private final Set<DexType> seenTypes = Sets.newConcurrentHashSet();
   private final AndroidApiLevelCompute apiLevelCompute;
   private final ApiReferenceStubberEventConsumer eventConsumer;
 
@@ -144,25 +142,24 @@ public class ApiReferenceStubber {
     if (!type.isClassType() || isJavaType(type)) {
       return;
     }
-    WorkList.newIdentityWorkList(type, seenTypes)
-        .process(
-            (classType, workList) -> {
-              DexClass clazz = appView.definitionFor(classType);
-              if (clazz == null || !clazz.isLibraryClass()) {
-                return;
-              }
-              ComputedApiLevel androidApiLevel =
-                  apiLevelCompute.computeApiLevelForLibraryReference(
-                      clazz.type, ComputedApiLevel.unknown());
-              if (androidApiLevel.isGreaterThan(appView.computedMinApiLevel())
-                  && androidApiLevel.isKnownApiLevel()) {
-                workList.addIfNotSeen(clazz.allImmediateSupertypes());
-                libraryClassesToMock.add(clazz.asLibraryClass());
-                referencingContexts
-                    .computeIfAbsent(clazz.asLibraryClass(), ignoreKey(Sets::newConcurrentHashSet))
-                    .add(context);
-              }
-            });
+    DexClass clazz = appView.definitionFor(type);
+    if (clazz == null || !clazz.isLibraryClass()) {
+      return;
+    }
+    DexLibraryClass libraryClass = clazz.asLibraryClass();
+    ComputedApiLevel androidApiLevel =
+        apiLevelCompute.computeApiLevelForLibraryReference(
+            libraryClass.type, ComputedApiLevel.unknown());
+    if (androidApiLevel.isGreaterThan(appView.computedMinApiLevel())
+        && androidApiLevel.isKnownApiLevel()) {
+      libraryClassesToMock.add(libraryClass);
+      referencingContexts
+          .computeIfAbsent(libraryClass, ignoreKey(Sets::newConcurrentHashSet))
+          .add(context);
+    }
+    for (DexType supertype : libraryClass.allImmediateSupertypes()) {
+      findReferencedLibraryClasses(supertype, context);
+    }
   }
 
   private boolean isJavaType(DexType type) {
