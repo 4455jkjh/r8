@@ -54,7 +54,8 @@ enum class Jdk(val folder : String, val version: Int) {
   JDK_9("openjdk-9.0.4", 9),
   JDK_11("jdk-11", 11),
   JDK_17("jdk-17", 17),
-  JDK_21("jdk-21", 21);
+  JDK_21("jdk-21", 21),
+  JDK_22("jdk-22", 22);
 
   fun isJdk8() : Boolean {
     return this == JDK_8
@@ -390,7 +391,7 @@ object JvmCompatibility {
 }
 
 object Versions {
-  const val asmVersion = "9.6"
+  const val asmVersion = "9.7"
   const val errorproneVersion = "2.18.0"
   const val fastUtilVersion = "7.2.1"
   const val gsonVersion = "2.10.1"

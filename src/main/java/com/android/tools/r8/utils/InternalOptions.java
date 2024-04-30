@@ -174,7 +174,7 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
     }
   }
 
-  public static final CfVersion SUPPORTED_CF_VERSION = CfVersion.V23;
+  public static final CfVersion SUPPORTED_CF_VERSION = CfVersion.V24;
 
   public static final int SUPPORTED_DEX_VERSION =
       AndroidApiLevel.LATEST.getDexVersion().getIntValue();
@@ -2341,6 +2341,7 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
     public boolean enableDeadSwitchCaseElimination = true;
     public boolean enableInvokeSuperToInvokeVirtualRewriting = true;
     public boolean enableMultiANewArrayDesugaringForClassFiles = false;
+    public boolean enableStrictFrameVerification = false;
     public boolean enableSyntheticSharing = true;
     public boolean enableSwitchToIfRewriting = true;
     public boolean enableEnumUnboxingDebugLogs =
