@@ -23,7 +23,7 @@ import com.android.tools.r8.profile.art.ArtProfileBuilder;
 import com.android.tools.r8.profile.art.ArtProfileBuilderUtils;
 import com.android.tools.r8.profile.art.HumanReadableArtProfileParser;
 import com.android.tools.r8.profile.art.HumanReadableArtProfileParserBuilder;
-import com.android.tools.r8.profile.startup.instrumentation.StartupInstrumentationOptions;
+import com.android.tools.r8.profile.startup.instrumentation.InstrumentationOptions;
 import com.android.tools.r8.startup.StartupClassBuilder;
 import com.android.tools.r8.startup.StartupMethodBuilder;
 import com.android.tools.r8.startup.StartupProfileBuilder;
@@ -100,11 +100,12 @@ public class StartupTestingUtils {
     testBuilder
         .addOptionsModification(
             options -> {
-              StartupInstrumentationOptions startupInstrumentationOptions =
-                  options.getStartupInstrumentationOptions().setEnableStartupInstrumentation();
+              InstrumentationOptions startupInstrumentationOptions =
+                  options
+                      .getInstrumentationOptions()
+                      .setEnableExecutedClassesAndMethodsInstrumentation();
               if (logcat) {
-                startupInstrumentationOptions.setStartupInstrumentationTag(
-                    startupInstrumentationTag);
+                startupInstrumentationOptions.setTag(startupInstrumentationTag);
               }
             })
         .addLibraryFiles(parameters.getDefaultRuntimeLibrary())

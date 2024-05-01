@@ -63,7 +63,6 @@ import com.android.tools.r8.graph.DexReference;
 import com.android.tools.r8.graph.DexString;
 import com.android.tools.r8.graph.DexType;
 import com.android.tools.r8.graph.ProgramMethod;
-import com.android.tools.r8.graph.analysis.ResourceAccessAnalysis;
 import com.android.tools.r8.horizontalclassmerging.HorizontallyMergedClasses;
 import com.android.tools.r8.inspector.internal.InspectorImpl;
 import com.android.tools.r8.ir.analysis.proto.ProtoReferences;
@@ -89,7 +88,7 @@ import com.android.tools.r8.origin.Origin;
 import com.android.tools.r8.position.Position;
 import com.android.tools.r8.profile.art.ArtProfileOptions;
 import com.android.tools.r8.profile.startup.StartupOptions;
-import com.android.tools.r8.profile.startup.instrumentation.StartupInstrumentationOptions;
+import com.android.tools.r8.profile.startup.instrumentation.InstrumentationOptions;
 import com.android.tools.r8.references.ClassReference;
 import com.android.tools.r8.references.FieldReference;
 import com.android.tools.r8.references.MethodReference;
@@ -198,7 +197,6 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
 
   public ResourceShrinkerConfiguration resourceShrinkerConfiguration =
       ResourceShrinkerConfiguration.DEFAULT_CONFIGURATION;
-  public ResourceAccessAnalysis resourceAccessAnalysis = null;
 
   public boolean checkIfCancelled() {
     if (cancelCompilationChecker == null) {
@@ -263,6 +261,7 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
     proguardConfiguration = null;
     enableTreeShaking = false;
     enableMinification = false;
+    instrumentationOptions = new InstrumentationOptions(this);
   }
 
   // Constructor for D8, L8, Lint and other non-shrinkers.
@@ -275,6 +274,7 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
     enableTreeShaking = false;
     enableMinification = false;
     disableGlobalOptimizations();
+    instrumentationOptions = new InstrumentationOptions(this);
   }
 
   // Constructor for R8.
@@ -288,6 +288,7 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
     itemFactory = proguardConfiguration.getDexItemFactory();
     enableTreeShaking = proguardConfiguration.isShrinking();
     enableMinification = proguardConfiguration.isObfuscating();
+    instrumentationOptions = new InstrumentationOptions(this);
 
     if (!proguardConfiguration.isOptimizing()) {
       // TODO(b/171457102): Avoid the need for this.
@@ -946,8 +947,7 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
   private final MappingComposeOptions mappingComposeOptions = new MappingComposeOptions();
   private final ArtProfileOptions artProfileOptions = new ArtProfileOptions(this);
   private final StartupOptions startupOptions = new StartupOptions();
-  private final StartupInstrumentationOptions startupInstrumentationOptions =
-      new StartupInstrumentationOptions();
+  private final InstrumentationOptions instrumentationOptions;
   public final TestingOptions testing = new TestingOptions();
 
   public List<ProguardConfigurationRule> mainDexKeepRules = ImmutableList.of();
@@ -1043,8 +1043,8 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
     return startupOptions;
   }
 
-  public StartupInstrumentationOptions getStartupInstrumentationOptions() {
-    return startupInstrumentationOptions;
+  public InstrumentationOptions getInstrumentationOptions() {
+    return instrumentationOptions;
   }
 
   public TestingOptions getTestingOptions() {
