@@ -404,7 +404,6 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
   // Optimization-related flags. These should conform to -dontoptimize and disableAllOptimizations.
   public boolean enableFieldBitAccessAnalysis =
       System.getProperty("com.android.tools.r8.fieldBitAccessAnalysis") != null;
-  public boolean enableFieldAssignmentTracker = true;
   public boolean enableFieldValueAnalysis = true;
   public boolean enableUnusedInterfaceRemoval = true;
   public boolean enableDevirtualization = true;
@@ -718,6 +717,8 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
   public DesugarState desugarState = DesugarState.ON;
   // Flag to turn on/off partial VarHandle desugaring.
   public boolean enableVarHandleDesugaring = false;
+  // Flag to turn on/off partial Type switch desugaring.
+  public boolean enableTypeSwitchDesugaring = true;
   // Flag to turn off backport methods (and report errors if triggered).
   public boolean disableBackportsAndReportIfTriggered = false;
   // Flag to turn on/off reduction of nest to improve class merging optimizations.
@@ -779,11 +780,6 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
   }
 
   @Override
-  public boolean isAnnotationRemovalEnabled() {
-    return !isForceProguardCompatibilityEnabled();
-  }
-
-  @Override
   public boolean isTreeShakingEnabled() {
     return isShrinking();
   }
@@ -812,12 +808,14 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
   }
 
   public boolean parseSignatureAttribute() {
-    return isKeepAttributesSignatureEnabled();
+    return true;
   }
 
   @Override
-  public boolean isKeepAttributesSignatureEnabled() {
-    return proguardConfiguration == null || proguardConfiguration.getKeepAttributes().signature;
+  public boolean isForceKeepSignatureAttributeEnabled() {
+    return proguardConfiguration == null
+        || (isForceProguardCompatibilityEnabled()
+            && proguardConfiguration.getKeepAttributes().signature);
   }
 
   @Override

@@ -29,6 +29,7 @@ val javaTestBaseJarTask = projectTask("testbase", "testJar")
 val javaTestBaseDepsJar = projectTask("testbase", "depsJar")
 val java8TestJarTask = projectTask("tests_java_8", "testJar")
 val bootstrapTestsDepsJarTask = projectTask("tests_bootstrap", "depsJar")
+val bootstrapTestJarTask = projectTask("tests_bootstrap", "testJar")
 val testsJava8SourceSetDependenciesTask = projectTask("tests_java_8", "sourceSetDependencyTask")
 
 tasks {
@@ -55,9 +56,27 @@ tasks {
     dependsOn(gradle.includedBuild("tests_java_22").task(":clean"))
   }
 
+  // TODO(b/337801526): Enable for all runtimes
+  fun runBootstrapTests() : Boolean {
+    val enabled = listOf("dex-default", "dex-8.1.0", "dex-13.0.0", "dex-12.0.0",
+                         "dex-10.0.0", "dex-9.0.0", "dex-7.0.0")
+    if (project.hasProperty("runtimes")) {
+      for (doRun : String in enabled) {
+        if (project.property("runtimes").toString().contains(doRun)) {
+          return true
+        }
+      }
+    }
+    return false
+  }
+
   val packageTests by registering(Jar::class) {
     dependsOn(java8TestJarTask)
+    dependsOn(bootstrapTestJarTask)
     from(java8TestJarTask.outputs.files.map(::zipTree))
+    if (runBootstrapTests()) {
+      from(bootstrapTestJarTask.outputs.files.map(::zipTree))
+    }
     exclude("META-INF/*.kotlin_module", "**/*.kotlin_metadata")
     destinationDirectory.set(getRoot().resolveAll("build", "libs"))
     archiveFileName.set("r8tests.jar")
@@ -395,6 +414,7 @@ tasks {
             packageTestDeps,
             r8Lib,
             r8WithRelocatedDepsTask,
+            assembleR8LibNoDeps,
             testsJava8SourceSetDependenciesTask,
             rewriteTestBaseForR8LibWithRelocatedDeps,
             unzipRewrittenTests,
@@ -428,6 +448,7 @@ tasks {
     systemProperty("BUILD_PROP_R8_RUNTIME_PATH", r8LibJar)
     systemProperty("R8_DEPS", mainDepsJarTask.getSingleOutputFile())
     systemProperty("com.android.tools.r8.artprofilerewritingcompletenesscheck", "true")
+    systemProperty("R8_WITH_RELOCATED_DEPS", r8WithRelocatedDepsTask.outputs.files.singleFile)
 
     reports.junitXml.outputLocation.set(getRoot().resolveAll("build", "test-results", "test"))
     reports.html.outputLocation.set(getRoot().resolveAll("build", "reports", "tests", "test"))

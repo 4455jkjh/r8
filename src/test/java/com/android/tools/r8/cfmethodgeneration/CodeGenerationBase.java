@@ -40,6 +40,12 @@ public abstract class CodeGenerationBase extends TestBase {
         new ProcessBuilder(
             ImmutableList.of(
                 getJavaExecutable(),
+                "--add-opens=jdk.compiler/com.sun.tools.javac.code=ALL-UNNAMED",
+                "--add-opens=jdk.compiler/com.sun.tools.javac.parser=ALL-UNNAMED",
+                "--add-opens=jdk.compiler/com.sun.tools.javac.util=ALL-UNNAMED",
+                "--add-opens=jdk.compiler/com.sun.tools.javac.file=ALL-UNNAMED",
+                "--add-opens=jdk.compiler/com.sun.tools.javac.tree=ALL-UNNAMED",
+                "--add-opens=jdk.compiler/com.sun.tools.javac.api=ALL-UNNAMED",
                 "-jar",
                 GOOGLE_FORMAT_JAR.toString(),
                 tempFile.toAbsolutePath().toString()));
@@ -47,7 +53,7 @@ public abstract class CodeGenerationBase extends TestBase {
     System.out.println(commandString);
     Process process = builder.start();
     ProcessResult result = ToolHelper.drainProcessOutputStreams(process, commandString);
-    if (result.exitCode != 0) {
+    if (result.exitCode != 0 || !result.stderr.isEmpty()) {
       throw new IllegalStateException(result.toString());
     }
     // Fix line separators.

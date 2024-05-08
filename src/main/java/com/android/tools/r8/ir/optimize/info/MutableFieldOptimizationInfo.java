@@ -20,6 +20,7 @@ import com.android.tools.r8.ir.analysis.value.AbstractValueWithWitness;
 import com.android.tools.r8.ir.analysis.value.UnknownValue;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
 import java.util.Set;
+import java.util.function.Consumer;
 
 /**
  * Optimization info for fields.
@@ -39,6 +40,18 @@ public class MutableFieldOptimizationInfo extends FieldOptimizationInfo
   private int flags;
   private int readBits = 0;
   private DynamicType dynamicType = DynamicType.unknown();
+
+  public MutableFieldOptimizationInfo applyIf(
+      boolean condition,
+      Consumer<MutableFieldOptimizationInfo> thenConsumer,
+      Consumer<MutableFieldOptimizationInfo> elseConsumer) {
+    if (condition) {
+      thenConsumer.accept(this);
+    } else {
+      elseConsumer.accept(this);
+    }
+    return this;
+  }
 
   public MutableFieldOptimizationInfo fixupClassTypeReferences(
       AppView<AppInfoWithLiveness> appView, GraphLens lens) {
@@ -84,10 +97,11 @@ public class MutableFieldOptimizationInfo extends FieldOptimizationInfo
   }
 
   private MutableFieldOptimizationInfo setAbstractValue(AbstractValue abstractValue) {
-    assert getAbstractValue().isUnknown()
-        || abstractValue.isNonTrivial()
-        || (getAbstractValue().isNullOrAbstractValue()
-            && getAbstractValue().asNullOrAbstractValue().getNonNullValue().isSingleFieldValue());
+    // TODO(b/330674939): Reenable assert after removing legacy field optimizations.
+    /*assert getAbstractValue().isUnknown()
+    || abstractValue.isNonTrivial()
+    || (getAbstractValue().isNullOrAbstractValue()
+        && getAbstractValue().asNullOrAbstractValue().getNonNullValue().isSingleFieldValue());*/
     this.abstractValue = abstractValue;
     return this;
   }

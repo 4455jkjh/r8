@@ -805,7 +805,10 @@ public class EnumUnboxerImpl extends EnumUnboxer {
           public void fixup(DexEncodedField field, MutableFieldOptimizationInfo optimizationInfo) {
             optimizationInfo
                 .fixupAbstractValue(appView, field, graphLens, codeLens)
-                .fixupClassTypeReferences(appView, graphLens);
+                .applyIf(
+                    field.getType().isIntType(),
+                    MutableFieldOptimizationInfo::unsetDynamicType,
+                    o -> o.fixupClassTypeReferences(appView, graphLens));
           }
 
           @Override
@@ -825,10 +828,13 @@ public class EnumUnboxerImpl extends EnumUnboxer {
                             prototypeChanges);
                       }
                     })
-                .fixupClassTypeReferences(appView, graphLens)
                 .fixupAbstractReturnValue(appView, method, graphLens, codeLens)
                 .fixupInstanceInitializerInfo(
-                    appView, graphLens, codeLens, treeFixerResult.getPrunedItems());
+                    appView, graphLens, codeLens, treeFixerResult.getPrunedItems())
+                .applyIf(
+                    method.getReturnType().isIntType(),
+                    MutableMethodOptimizationInfo::unsetDynamicType,
+                    o -> o.fixupClassTypeReferences(appView, graphLens));
 
             // Clear the enum unboxer method classification for check-not-null methods (these
             // classifications are transferred to the synthesized check-not-zero methods by now).
@@ -893,7 +899,10 @@ public class EnumUnboxerImpl extends EnumUnboxer {
 
   private EnumData buildData(DexProgramClass enumClass, Set<DexField> instanceFields) {
     if (!enumClass.hasStaticFields()) {
-      return new EnumData(ImmutableMap.of(), null, ImmutableMap.of(), ImmutableSet.of(), -1);
+      if (instanceFields.isEmpty()) {
+        return new EnumData(ImmutableMap.of(), null, ImmutableMap.of(), ImmutableSet.of(), -1);
+      }
+      return null;
     }
 
     // This map holds all the accessible fields to their unboxed value, so we can remap the field
@@ -958,7 +967,14 @@ public class EnumUnboxerImpl extends EnumUnboxer {
                 unboxedValues.put(field.getReference(), ordinalToUnboxedInt(ordinal));
                 ordinalToObjectState.put(ordinal, enumState);
                 if (isEnumWithSubtypes) {
-                  DynamicType dynamicType = field.getOptimizationInfo().getDynamicType();
+                  // If the dynamic type is a NotNull dynamic type, then uncanonicalize the dynamic
+                  // type. If the static type is an effectively final class then this yields an
+                  // exact dynamic type.
+                  DynamicType dynamicType =
+                      field
+                          .getOptimizationInfo()
+                          .getDynamicType()
+                          .uncanonicalizeNotNullType(appView, field.getType());
                   if (dynamicType.isExactClassType()) {
                     valueTypes.put(ordinal, dynamicType.getExactClassType().getClassType());
                   } else {

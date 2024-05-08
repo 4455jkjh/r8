@@ -6,8 +6,6 @@ package com.android.tools.r8.shaking;
 /** Globally controlled settings that affect the default values for kept items. */
 public interface GlobalKeepInfoConfiguration {
 
-  boolean isAnnotationRemovalEnabled();
-
   boolean isTreeShakingEnabled();
 
   boolean isMinificationEnabled();
@@ -22,7 +20,7 @@ public interface GlobalKeepInfoConfiguration {
 
   boolean isForceProguardCompatibilityEnabled();
 
-  boolean isKeepAttributesSignatureEnabled();
+  boolean isForceKeepSignatureAttributeEnabled();
 
   boolean isKeepEnclosingMethodAttributeEnabled();
 

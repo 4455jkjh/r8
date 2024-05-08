@@ -3,7 +3,9 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8.shaking;
 
+import com.android.tools.r8.graph.DexAnnotation;
 import com.android.tools.r8.graph.ProgramMethod;
+import com.android.tools.r8.shaking.KeepAnnotationCollectionInfo.RetentionInfo;
 
 /** Immutable keep requirements for a method. */
 public class KeepMethodInfo extends KeepMemberInfo<KeepMethodInfo.Builder, KeepMethodInfo> {
@@ -39,6 +41,7 @@ public class KeepMethodInfo extends KeepMemberInfo<KeepMethodInfo.Builder, KeepM
   private final boolean allowSingleCallerInlining;
   private final boolean allowUnusedArgumentOptimization;
   private final boolean allowUnusedReturnValueOptimization;
+  private final KeepAnnotationCollectionInfo parameterAnnotationsInfo;
 
   protected KeepMethodInfo(Builder builder) {
     super(builder);
@@ -55,6 +58,7 @@ public class KeepMethodInfo extends KeepMemberInfo<KeepMethodInfo.Builder, KeepM
     this.allowSingleCallerInlining = builder.isSingleCallerInliningAllowed();
     this.allowUnusedArgumentOptimization = builder.isUnusedArgumentOptimizationAllowed();
     this.allowUnusedReturnValueOptimization = builder.isUnusedReturnValueOptimizationAllowed();
+    this.parameterAnnotationsInfo = builder.getParameterAnnotationsInfo().build();
   }
 
   // This builder is not private as there are known instances where it is safe to modify keep info
@@ -62,6 +66,28 @@ public class KeepMethodInfo extends KeepMemberInfo<KeepMethodInfo.Builder, KeepM
   @Override
   Builder builder() {
     return new Builder(this);
+  }
+
+  @Override
+  public KeepMethodInfo asMethodInfo() {
+    return this;
+  }
+
+  public boolean isParameterAnnotationRemovalAllowed(
+      GlobalKeepInfoConfiguration configuration,
+      DexAnnotation annotation,
+      boolean isAnnotationTypeLive) {
+    return internalIsAnnotationRemovalAllowed(
+        configuration,
+        annotation,
+        isAnnotationTypeLive,
+        internalParameterAnnotationsInfo(),
+        configuration.isKeepRuntimeVisibleParameterAnnotationsEnabled(),
+        configuration.isKeepRuntimeInvisibleParameterAnnotationsEnabled());
+  }
+
+  KeepAnnotationCollectionInfo internalParameterAnnotationsInfo() {
+    return parameterAnnotationsInfo;
   }
 
   public boolean isArgumentPropagationAllowed(GlobalKeepInfoConfiguration configuration) {
@@ -229,6 +255,7 @@ public class KeepMethodInfo extends KeepMemberInfo<KeepMethodInfo.Builder, KeepM
     private boolean allowSingleCallerInlining;
     private boolean allowUnusedArgumentOptimization;
     private boolean allowUnusedReturnValueOptimization;
+    private KeepAnnotationCollectionInfo.Builder parameterAnnotationsInfo;
 
     public Builder() {
       super();
@@ -250,6 +277,7 @@ public class KeepMethodInfo extends KeepMemberInfo<KeepMethodInfo.Builder, KeepM
       allowUnusedArgumentOptimization = original.internalIsUnusedArgumentOptimizationAllowed();
       allowUnusedReturnValueOptimization =
           original.internalIsUnusedReturnValueOptimizationAllowed();
+      parameterAnnotationsInfo = original.internalParameterAnnotationsInfo().toBuilder();
     }
 
     // Class inlining.
@@ -500,6 +528,27 @@ public class KeepMethodInfo extends KeepMemberInfo<KeepMethodInfo.Builder, KeepM
       return setAllowUnusedReturnValueOptimization(false);
     }
 
+    // Parameter annotations
+
+    KeepAnnotationCollectionInfo.Builder getParameterAnnotationsInfo() {
+      return parameterAnnotationsInfo;
+    }
+
+    public Builder allowParameterAnnotationsRemoval() {
+      parameterAnnotationsInfo = KeepAnnotationCollectionInfo.Builder.makeBottom();
+      return self();
+    }
+
+    public Builder disallowParameterAnnotationsRemoval() {
+      parameterAnnotationsInfo = KeepAnnotationCollectionInfo.Builder.makeTop();
+      return self();
+    }
+
+    public Builder disallowParameterAnnotationsRemoval(RetentionInfo retention) {
+      parameterAnnotationsInfo.joinAnyTypeInfo(retention);
+      return self();
+    }
+
     @Override
     public Builder self() {
       return this;
@@ -539,7 +588,8 @@ public class KeepMethodInfo extends KeepMemberInfo<KeepMethodInfo.Builder, KeepM
           && isUnusedArgumentOptimizationAllowed()
               == other.internalIsUnusedArgumentOptimizationAllowed()
           && isUnusedReturnValueOptimizationAllowed()
-              == other.internalIsUnusedReturnValueOptimizationAllowed();
+              == other.internalIsUnusedReturnValueOptimizationAllowed()
+          && parameterAnnotationsInfo.isEqualTo(other.parameterAnnotationsInfo);
     }
 
     @Override
@@ -562,7 +612,8 @@ public class KeepMethodInfo extends KeepMemberInfo<KeepMethodInfo.Builder, KeepM
           .disallowReturnTypeStrengthening()
           .disallowSingleCallerInlining()
           .disallowUnusedArgumentOptimization()
-          .disallowUnusedReturnValueOptimization();
+          .disallowUnusedReturnValueOptimization()
+          .disallowParameterAnnotationsRemoval();
     }
 
     @Override
@@ -580,7 +631,8 @@ public class KeepMethodInfo extends KeepMemberInfo<KeepMethodInfo.Builder, KeepM
           .allowReturnTypeStrengthening()
           .allowSingleCallerInlining()
           .allowUnusedArgumentOptimization()
-          .allowUnusedReturnValueOptimization();
+          .allowUnusedReturnValueOptimization()
+          .allowParameterAnnotationsRemoval();
     }
   }
 
@@ -659,6 +711,16 @@ public class KeepMethodInfo extends KeepMemberInfo<KeepMethodInfo.Builder, KeepM
       return self();
     }
 
+    public Joiner disallowParameterAnnotationsRemoval() {
+      builder.disallowParameterAnnotationsRemoval();
+      return self();
+    }
+
+    public Joiner disallowParameterAnnotationsRemoval(RetentionInfo retention) {
+      builder.disallowParameterAnnotationsRemoval(retention);
+      return self();
+    }
+
     @Override
     public Joiner asMethodJoiner() {
       return this;
@@ -667,8 +729,9 @@ public class KeepMethodInfo extends KeepMemberInfo<KeepMethodInfo.Builder, KeepM
     @Override
     public Joiner merge(Joiner joiner) {
       // Should be extended to merge the fields of this class in case any are added.
-      return super.merge(joiner)
-          .applyIf(!joiner.builder.isClassInliningAllowed(), Joiner::disallowClassInlining)
+      super.merge(joiner);
+      builder.getParameterAnnotationsInfo().join(joiner.builder.getParameterAnnotationsInfo());
+      return applyIf(!joiner.builder.isClassInliningAllowed(), Joiner::disallowClassInlining)
           .applyIf(
               !joiner.builder.isClosedWorldReasoningAllowed(), Joiner::disallowClosedWorldReasoning)
           .applyIf(

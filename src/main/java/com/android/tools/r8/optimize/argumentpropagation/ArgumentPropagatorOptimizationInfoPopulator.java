@@ -11,16 +11,21 @@ import com.android.tools.r8.graph.DexProgramClass;
 import com.android.tools.r8.graph.DexType;
 import com.android.tools.r8.graph.ProgramField;
 import com.android.tools.r8.graph.ProgramMethod;
+import com.android.tools.r8.graph.PrunedItems;
 import com.android.tools.r8.ir.analysis.type.DynamicType;
+import com.android.tools.r8.ir.analysis.type.DynamicTypeWithUpperBound;
+import com.android.tools.r8.ir.analysis.type.Nullability;
 import com.android.tools.r8.ir.analysis.type.TypeElement;
 import com.android.tools.r8.ir.analysis.value.AbstractValue;
 import com.android.tools.r8.ir.conversion.PostMethodProcessor;
 import com.android.tools.r8.ir.conversion.PrimaryR8IRConverter;
 import com.android.tools.r8.ir.optimize.info.ConcreteCallSiteOptimizationInfo;
 import com.android.tools.r8.ir.optimize.info.MethodOptimizationInfo;
+import com.android.tools.r8.optimize.argumentpropagation.codescanner.ConcreteArrayTypeValueState;
 import com.android.tools.r8.optimize.argumentpropagation.codescanner.ConcreteClassTypeValueState;
 import com.android.tools.r8.optimize.argumentpropagation.codescanner.ConcreteMethodState;
 import com.android.tools.r8.optimize.argumentpropagation.codescanner.ConcreteMonomorphicMethodState;
+import com.android.tools.r8.optimize.argumentpropagation.codescanner.ConcretePrimitiveTypeValueState;
 import com.android.tools.r8.optimize.argumentpropagation.codescanner.ConcreteValueState;
 import com.android.tools.r8.optimize.argumentpropagation.codescanner.FieldStateCollection;
 import com.android.tools.r8.optimize.argumentpropagation.codescanner.MethodState;
@@ -32,6 +37,7 @@ import com.android.tools.r8.shaking.AppInfoWithLiveness;
 import com.android.tools.r8.utils.InternalOptions;
 import com.android.tools.r8.utils.ListUtils;
 import com.android.tools.r8.utils.OptionalBool;
+import com.android.tools.r8.utils.SetUtils;
 import com.android.tools.r8.utils.ThreadUtils;
 import com.android.tools.r8.utils.Timing;
 import com.android.tools.r8.utils.collections.ProgramMethodSet;
@@ -71,17 +77,19 @@ public class ArgumentPropagatorOptimizationInfoPopulator {
    * Computes an over-approximation of each parameter's value and type and stores the result in
    * {@link com.android.tools.r8.ir.optimize.info.MethodOptimizationInfo}.
    */
-  void populateOptimizationInfo(ExecutorService executorService, Timing timing)
+  PrunedItems populateOptimizationInfo(ExecutorService executorService, Timing timing)
       throws ExecutionException {
     // The information stored on each method is now sound, and can be used as optimization info.
     timing.begin("Set optimization info");
-    setOptimizationInfo(executorService);
+    PrunedItems prunedItems = setOptimizationInfo(executorService);
     timing.end();
 
     assert methodStates.isEmpty();
+    return prunedItems;
   }
 
-  private void setOptimizationInfo(ExecutorService executorService) throws ExecutionException {
+  private PrunedItems setOptimizationInfo(ExecutorService executorService)
+      throws ExecutionException {
     ProgramMethodSet prunedMethods = ProgramMethodSet.createConcurrent();
     ThreadUtils.processItems(
         appView.appInfo().classes(),
@@ -94,6 +102,10 @@ public class ArgumentPropagatorOptimizationInfoPopulator {
     }
     converter.pruneItems(executorService);
     converter.waveDone(ProgramMethodSet.empty(), executorService);
+    return PrunedItems.builder()
+        .setPrunedApp(appView.app())
+        .setRemovedMethods(prunedMethods.toReferenceSet(SetUtils::newIdentityHashSet))
+        .build();
   }
 
   private ProgramMethodSet setOptimizationInfo(DexProgramClass clazz) {
@@ -106,10 +118,54 @@ public class ArgumentPropagatorOptimizationInfoPopulator {
 
   public void setOptimizationInfo(ProgramField field) {
     ValueState state = fieldStates.remove(field);
-    // TODO(b/296030319): Also publish non-bottom field states.
-    if (state.isBottom()) {
-      getSimpleFeedback().recordFieldHasAbstractValue(field, appView, AbstractValue.bottom());
+    if (state.isUnknown()) {
+      return;
     }
+    if (state.isBottom()) {
+      getSimpleFeedback()
+          .recordFieldHasAbstractValue(field.getDefinition(), appView, AbstractValue.bottom());
+      return;
+    }
+
+    assert appView.getKeepInfo(field).isValuePropagationAllowed(appView, field);
+
+    DexType fieldType = field.getType();
+    if (fieldType.isArrayType()) {
+      ConcreteArrayTypeValueState arrayState = state.asArrayState();
+      Nullability nullability = arrayState.getNullability();
+      if (nullability.isDefinitelyNull()) {
+        setAbstractValue(field, appView.abstractValueFactory().createNullValue(fieldType));
+        setDynamicType(field, DynamicType.definitelyNull());
+      } else if (nullability.isDefinitelyNotNull()) {
+        setDynamicType(field, DynamicType.definitelyNotNull());
+      }
+    } else if (fieldType.isClassType()) {
+      ConcreteClassTypeValueState classState = state.asClassState();
+      setAbstractValue(field, classState.getAbstractValue(appView));
+      setDynamicType(field, classState.getDynamicType());
+    } else {
+      assert fieldType.isPrimitiveType();
+      ConcretePrimitiveTypeValueState primitiveState = state.asPrimitiveState();
+      setAbstractValue(field, primitiveState.getAbstractValue());
+    }
+  }
+
+  private void setAbstractValue(ProgramField field, AbstractValue abstractValue) {
+    getSimpleFeedback().recordFieldHasAbstractValue(field.getDefinition(), appView, abstractValue);
+  }
+
+  private void setDynamicType(ProgramField field, DynamicType dynamicType) {
+    if (dynamicType.hasDynamicUpperBoundType()) {
+      DynamicTypeWithUpperBound dynamicTypeWithUpperBound =
+          dynamicType.asDynamicTypeWithUpperBound();
+      if (!dynamicTypeWithUpperBound.strictlyLessThan(
+          field.getType().toTypeElement(appView), appView)) {
+        // TODO(b/296030319): Try to guarantee that the computed dynamic type is strictly more
+        //  precise than the static type.
+        return;
+      }
+    }
+    getSimpleFeedback().markFieldHasDynamicType(field, dynamicType);
   }
 
   public void setOptimizationInfo(ProgramMethod method, ProgramMethodSet prunedMethods) {
@@ -253,14 +309,16 @@ public class ArgumentPropagatorOptimizationInfoPopulator {
         continue;
       }
       DynamicType dynamicType = parameterState.asClassState().getDynamicType();
-      DexType staticType = method.getArgumentType(argumentIndex);
-      if (shouldWidenDynamicTypeToUnknown(dynamicType, staticType)) {
+      DexType outStaticType = method.getArgumentType(argumentIndex);
+      if (shouldWidenDynamicTypeToUnknown(dynamicType, outStaticType)) {
+        DexType inStaticType = null;
         methodState.setParameterState(
             argumentIndex,
             parameterState.mutableJoin(
                 appView,
                 new ConcreteClassTypeValueState(AbstractValue.bottom(), DynamicType.unknown()),
-                staticType,
+                inStaticType,
+                outStaticType,
                 StateCloner.getIdentity()));
       }
     }

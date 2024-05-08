@@ -40,6 +40,11 @@ public class ConcreteArrayTypeValueState extends ConcreteReferenceTypeValueState
   }
 
   @Override
+  public ValueState cast(AppView<AppInfoWithLiveness> appView, DexType type) {
+    return this;
+  }
+
+  @Override
   public AbstractValue getAbstractValue(AppView<AppInfoWithLiveness> appView) {
     if (getNullability().isDefinitelyNull()) {
       return appView.abstractValueFactory().createUncheckedNullValue();
@@ -104,15 +109,16 @@ public class ConcreteArrayTypeValueState extends ConcreteReferenceTypeValueState
   @Override
   public NonEmptyValueState mutableJoin(
       AppView<AppInfoWithLiveness> appView,
-      ConcreteReferenceTypeValueState state,
-      DexType staticType,
+      ConcreteReferenceTypeValueState inState,
+      DexType inStaticType,
+      DexType outStaticType,
       Action onChangedAction) {
-    assert staticType.isArrayType();
-    boolean nullabilityChanged = mutableJoinNullability(state.getNullability());
+    assert outStaticType.isArrayType();
+    boolean nullabilityChanged = mutableJoinNullability(inState.getNullability());
     if (isEffectivelyUnknown()) {
       return unknown();
     }
-    boolean inFlowChanged = mutableJoinInFlow(state);
+    boolean inFlowChanged = mutableJoinInFlow(inState);
     if (widenInFlow(appView)) {
       return unknown();
     }

@@ -85,6 +85,10 @@ public class DexType extends DexReference implements NamingLensComparable<DexTyp
     return DynamicType.create(appView, toTypeElement(appView, nullability));
   }
 
+  public TypeElement toNonNullTypeElement(AppView<?> appView) {
+    return toTypeElement(appView, Nullability.definitelyNotNull());
+  }
+
   public TypeElement toTypeElement(AppView<?> appView) {
     return toTypeElement(appView, Nullability.maybeNull());
   }
@@ -449,7 +453,7 @@ public class DexType extends DexReference implements NamingLensComparable<DexTyp
     }
     DexString newDesc =
         dexItemFactory.createString(
-            descriptor.size - leadingSquareBrackets,
+            descriptor.length() - leadingSquareBrackets,
             Arrays.copyOfRange(
                 descriptor.content, leadingSquareBrackets, descriptor.content.length));
     return dexItemFactory.createType(newDesc);
@@ -464,7 +468,7 @@ public class DexType extends DexReference implements NamingLensComparable<DexTyp
     }
     DexString newDesc =
         dexItemFactory.lookupString(
-            descriptor.size - leadingSquareBrackets,
+            descriptor.length() - leadingSquareBrackets,
             Arrays.copyOfRange(
                 descriptor.content, leadingSquareBrackets, descriptor.content.length));
     return dexItemFactory.lookupType(newDesc);
@@ -524,7 +528,7 @@ public class DexType extends DexReference implements NamingLensComparable<DexTyp
     assert getArrayTypeDimensions() >= dimension;
     DexString newDesc =
         dexItemFactory.createString(
-            descriptor.size - dimension,
+            descriptor.length() - dimension,
             Arrays.copyOfRange(descriptor.content, dimension, descriptor.content.length));
     return dexItemFactory.createType(newDesc);
   }

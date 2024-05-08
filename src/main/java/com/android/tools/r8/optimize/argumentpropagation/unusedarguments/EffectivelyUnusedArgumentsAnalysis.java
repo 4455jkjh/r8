@@ -10,6 +10,7 @@ import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.DexMethodSignature;
 import com.android.tools.r8.graph.DexProgramClass;
 import com.android.tools.r8.graph.ProgramMethod;
+import com.android.tools.r8.graph.PrunedItems;
 import com.android.tools.r8.ir.code.Argument;
 import com.android.tools.r8.ir.code.IRCode;
 import com.android.tools.r8.ir.code.Instruction;
@@ -119,8 +120,7 @@ public class EffectivelyUnusedArgumentsAnalysis {
       Set<MethodParameter> effectivelyUnusedConstraints =
           computeEffectivelyUnusedConstraints(method, argument, argumentValue);
       if (effectivelyUnusedConstraints != null && !effectivelyUnusedConstraints.isEmpty()) {
-        MethodParameter methodParameter =
-            new MethodParameter(method.getReference(), argument.getIndex());
+        MethodParameter methodParameter = new MethodParameter(method, argument.getIndex());
         assert !constraints.containsKey(methodParameter);
         constraints.put(methodParameter, effectivelyUnusedConstraints);
       }
@@ -160,7 +160,7 @@ public class EffectivelyUnusedArgumentsAnalysis {
           return null;
         }
         effectivelyUnusedConstraints.add(
-            new MethodParameter(resolvedMethod.getReference(), dependentArgumentIndex));
+            new MethodParameter(resolvedMethod, dependentArgumentIndex));
       } else {
         return null;
       }
@@ -168,11 +168,11 @@ public class EffectivelyUnusedArgumentsAnalysis {
     return effectivelyUnusedConstraints;
   }
 
-  public void computeEffectivelyUnusedArguments() {
+  public void computeEffectivelyUnusedArguments(PrunedItems prunedItems) {
     // Build a graph where nodes are method parameters and there is an edge from method parameter p0
     // to method parameter p1 if the removal of p0 depends on the removal of p1.
     EffectivelyUnusedArgumentsGraph dependenceGraph =
-        EffectivelyUnusedArgumentsGraph.create(appView, constraints);
+        EffectivelyUnusedArgumentsGraph.create(appView, constraints, prunedItems);
 
     // Remove all unoptimizable method parameters from the graph, as well as all nodes that depend
     // on a node that is unoptimable.
@@ -221,7 +221,7 @@ public class EffectivelyUnusedArgumentsAnalysis {
     for (int argumentIndex = 0;
         argumentIndex < method.getDefinition().getNumberOfArguments();
         argumentIndex++) {
-      constraints.remove(new MethodParameter(method.getReference(), argumentIndex));
+      constraints.remove(new MethodParameter(method, argumentIndex));
     }
   }
 }

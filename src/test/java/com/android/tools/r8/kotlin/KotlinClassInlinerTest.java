@@ -7,6 +7,7 @@ package com.android.tools.r8.kotlin;
 import static com.android.tools.r8.KotlinCompilerTool.KotlinCompilerVersion.KOTLINC_1_3_72;
 import static com.android.tools.r8.KotlinCompilerTool.KotlinCompilerVersion.KOTLINC_1_5_0;
 import static com.android.tools.r8.KotlinCompilerTool.KotlinCompilerVersion.KOTLINC_1_6_0;
+import static com.android.tools.r8.KotlinCompilerTool.KotlinCompilerVersion.KOTLINC_1_9_21;
 import static com.android.tools.r8.utils.codeinspector.Matchers.isAbsent;
 import static com.android.tools.r8.utils.codeinspector.Matchers.isAbsentIf;
 import static com.android.tools.r8.utils.codeinspector.Matchers.isPresent;
@@ -150,7 +151,9 @@ public class KotlinClassInlinerTest extends AbstractR8KotlinTestBase {
 
               if (hasKotlinCGeneratedLambdaClasses) {
                 assertThat(
-                    inspector.clazz("class_inliner_lambda_j_style.MainKt$testStateful$2"),
+                    testParameters.isCfRuntime()
+                        ? inspector.clazz("class_inliner_lambda_j_style.MainKt$testStateful2$1")
+                        : inspector.clazz("class_inliner_lambda_j_style.MainKt$testStateful$2"),
                     isPresent());
               } else {
                 assertThat(
@@ -205,6 +208,16 @@ public class KotlinClassInlinerTest extends AbstractR8KotlinTestBase {
                                         "kotlin.sequences.TransformingSequence"),
                                     Reference.classFromTypeName(
                                         "kotlin.sequences.GeneratorSequence"))
+                                .applyIf(
+                                    kotlinParameters
+                                        .getCompiler()
+                                        .getCompilerVersion()
+                                        .isGreaterThanOrEqualTo(KOTLINC_1_9_21),
+                                    i ->
+                                        i.assertIsCompleteMergeGroup(
+                                            SyntheticItemsTestUtils.syntheticLambdaClass(mainKt, 0),
+                                            SyntheticItemsTestUtils.syntheticLambdaClass(
+                                                mainKt, 1)))
                                 .assertNoOtherClassesMerged();
                           } else {
                             assert kotlinParameters.getLambdaGeneration().isInvokeDynamic()
@@ -228,7 +241,7 @@ public class KotlinClassInlinerTest extends AbstractR8KotlinTestBase {
                 assertThat(
                     inspector.clazz(
                         "class_inliner_lambda_k_style.MainKt$testKotlinSequencesStateful$1"),
-                    isPresent());
+                    isAbsent());
                 assertThat(
                     inspector.clazz("class_inliner_lambda_k_style.MainKt$testBigExtraMethod$1"),
                     isPresent());
@@ -258,7 +271,7 @@ public class KotlinClassInlinerTest extends AbstractR8KotlinTestBase {
                     isAbsent());
                 assertThat(
                     inspector.clazz("class_inliner_lambda_k_style.MainKt$testBigExtraMethod$1"),
-                    isAbsentIf(testParameters.isDexRuntime()));
+                    isPresent());
               }
             });
   }

@@ -66,7 +66,8 @@ public class GenerateEnumUnboxingMethods extends MethodGenerationBase {
   }
 
   public static void main(String[] args) throws Exception {
-    setUpSystemPropertiesForMain(TestDataSourceSet.TESTS_JAVA_8);
+    setUpSystemPropertiesForMain(
+        TestDataSourceSet.TESTS_JAVA_8, TestDataSourceSet.TESTBASE_DATA_LOCATION);
     new GenerateEnumUnboxingMethods(null).generateMethodsAndWriteThemToFile();
   }
 }

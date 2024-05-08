@@ -671,8 +671,10 @@ public class ArgumentPropagatorProgramOptimizer {
 
       KeepFieldInfo keepInfo = appView.getKeepInfo(field);
 
-      // We don't have dynamic type information for fields that are kept.
-      assert !keepInfo.isPinned(options);
+      // We don't have dynamic type information for fields that are kept, unless the static type of
+      // the field is guaranteed to be null.
+      assert !keepInfo.isPinned(options)
+          || (field.getType().isAlwaysNull(appView) && dynamicType.isNullType());
 
       if (!keepInfo.isFieldTypeStrengtheningAllowed(options)) {
         return staticType;
@@ -704,23 +706,8 @@ public class ArgumentPropagatorProgramOptimizer {
         return staticType;
       }
 
-      DexType newStaticFieldType;
-      if (dynamicUpperBoundType.isClassType()) {
-        ClassTypeElement dynamicUpperBoundClassType = dynamicUpperBoundType.asClassType();
-        if (dynamicUpperBoundClassType.getClassType() == dexItemFactory.objectType) {
-          if (dynamicUpperBoundClassType.getInterfaces().hasSingleKnownInterface()) {
-            newStaticFieldType =
-                dynamicUpperBoundClassType.getInterfaces().getSingleKnownInterface();
-          } else {
-            return staticType;
-          }
-        } else {
-          newStaticFieldType = dynamicUpperBoundClassType.getClassType();
-        }
-      } else {
-        newStaticFieldType = dynamicUpperBoundType.asArrayType().toDexType(dexItemFactory);
-      }
-
+      DexType newStaticFieldType =
+          dynamicUpperBoundType.asReferenceType().toDexType(dexItemFactory);
       if (newStaticFieldType == staticType) {
         return staticType;
       }

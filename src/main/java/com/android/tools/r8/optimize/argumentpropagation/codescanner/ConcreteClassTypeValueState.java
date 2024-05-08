@@ -40,15 +40,35 @@ public class ConcreteClassTypeValueState extends ConcreteReferenceTypeValueState
   }
 
   public static NonEmptyValueState create(AbstractValue abstractValue, DynamicType dynamicType) {
+    return create(abstractValue, dynamicType, Collections.emptySet());
+  }
+
+  public static NonEmptyValueState create(
+      AbstractValue abstractValue, DynamicType dynamicType, Set<InFlow> inFlow) {
     return abstractValue.isUnknown() && dynamicType.isUnknown()
         ? ValueState.unknown()
-        : new ConcreteClassTypeValueState(abstractValue, dynamicType);
+        : new ConcreteClassTypeValueState(abstractValue, dynamicType, inFlow);
+  }
+
+  @Override
+  public ValueState cast(AppView<AppInfoWithLiveness> appView, DexType type) {
+    DynamicType castDynamicType = cast(appView, type, dynamicType);
+    if (castDynamicType.equals(dynamicType)) {
+      return this;
+    }
+    if (castDynamicType.isBottom()) {
+      return bottomClassTypeState();
+    }
+    assert castDynamicType.isDynamicTypeWithUpperBound();
+    return new ConcreteClassTypeValueState(abstractValue, castDynamicType, copyInFlow());
   }
 
   @Override
   public AbstractValue getAbstractValue(AppView<AppInfoWithLiveness> appView) {
     if (getNullability().isDefinitelyNull()) {
-      assert abstractValue.isNull() || abstractValue.isUnknown();
+      assert abstractValue.isNull()
+          || abstractValue.isNullOrAbstractValue()
+          || abstractValue.isUnknown();
       return appView.abstractValueFactory().createUncheckedNullValue();
     }
     return abstractValue;
@@ -102,11 +122,12 @@ public class ConcreteClassTypeValueState extends ConcreteReferenceTypeValueState
   public NonEmptyValueState mutableJoin(
       AppView<AppInfoWithLiveness> appView,
       AbstractValue abstractValue,
-      DynamicType dynamicType,
+      DynamicType inDynamicType,
+      DexType inStaticType,
       ProgramField field) {
     assert field.getType().isClassType();
     mutableJoinAbstractValue(appView, abstractValue, field.getType());
-    mutableJoinDynamicType(appView, dynamicType, field.getType());
+    mutableJoinDynamicType(appView, inDynamicType, inStaticType, field.getType());
     if (isEffectivelyUnknown()) {
       return unknown();
     }
@@ -116,18 +137,19 @@ public class ConcreteClassTypeValueState extends ConcreteReferenceTypeValueState
   @Override
   public NonEmptyValueState mutableJoin(
       AppView<AppInfoWithLiveness> appView,
-      ConcreteReferenceTypeValueState state,
-      DexType staticType,
+      ConcreteReferenceTypeValueState inState,
+      DexType inStaticType,
+      DexType outStaticType,
       Action onChangedAction) {
-    assert staticType.isClassType();
+    assert outStaticType.isClassType();
     boolean abstractValueChanged =
-        mutableJoinAbstractValue(appView, state.getAbstractValue(appView), staticType);
+        mutableJoinAbstractValue(appView, inState.getAbstractValue(appView), outStaticType);
     boolean dynamicTypeChanged =
-        mutableJoinDynamicType(appView, state.getDynamicType(), staticType);
+        mutableJoinDynamicType(appView, inState.getDynamicType(), inStaticType, outStaticType);
     if (isEffectivelyUnknown()) {
       return unknown();
     }
-    boolean inFlowChanged = mutableJoinInFlow(state);
+    boolean inFlowChanged = mutableJoinInFlow(inState);
     if (widenInFlow(appView)) {
       return unknown();
     }
@@ -148,12 +170,20 @@ public class ConcreteClassTypeValueState extends ConcreteReferenceTypeValueState
   }
 
   private boolean mutableJoinDynamicType(
-      AppView<AppInfoWithLiveness> appView, DynamicType otherDynamicType, DexType staticType) {
+      AppView<AppInfoWithLiveness> appView,
+      DynamicType inDynamicType,
+      DexType inStaticType,
+      DexType outStaticType) {
     DynamicType oldDynamicType = dynamicType;
-    DynamicType joinedDynamicType = dynamicType.join(appView, otherDynamicType);
+    DynamicType joinedDynamicType =
+        dynamicType.join(appView, inDynamicType, inStaticType, outStaticType);
     DynamicType widenedDynamicType =
-        WideningUtils.widenDynamicNonReceiverType(appView, joinedDynamicType, staticType);
+        WideningUtils.widenDynamicNonReceiverType(appView, joinedDynamicType, outStaticType);
     dynamicType = widenedDynamicType;
     return !dynamicType.equals(oldDynamicType);
+  }
+
+  public ConcreteClassTypeValueState withDynamicType(DynamicType dynamicType) {
+    return new ConcreteClassTypeValueState(abstractValue, dynamicType, copyInFlow());
   }
 }

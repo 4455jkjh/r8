@@ -29,8 +29,8 @@ import com.android.tools.r8.optimize.argumentpropagation.codescanner.ValueState;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
 import com.android.tools.r8.utils.TraversalContinuation;
 import it.unimi.dsi.fastutil.ints.Int2ReferenceMap;
+import it.unimi.dsi.fastutil.ints.Int2ReferenceMaps;
 import it.unimi.dsi.fastutil.ints.Int2ReferenceOpenHashMap;
-import java.util.Collection;
 import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
@@ -57,10 +57,13 @@ public class FlowGraphBuilder {
     this.methodStates = methodStates;
   }
 
-  public FlowGraphBuilder addClasses(Collection<DexProgramClass> classes) {
-    for (DexProgramClass clazz : classes) {
-      add(clazz);
-    }
+  public FlowGraphBuilder addClasses() {
+    appView.appInfo().classes().forEach(this::add);
+    return this;
+  }
+
+  public FlowGraphBuilder clearInFlow() {
+    appView.appInfo().classes().forEach(this::clearInFlow);
     return this;
   }
 
@@ -95,15 +98,6 @@ public class FlowGraphBuilder {
       if (addInFlow(inFlow, node).shouldBreak()) {
         assert node.isUnknown();
         break;
-      }
-    }
-
-    ValueState concreteFieldStateOrBottom = concreteFieldState.clearInFlow();
-    if (concreteFieldStateOrBottom.isBottom()) {
-      fieldStates.remove(field);
-      if (!node.getState().isUnknown()) {
-        assert node.getState() == concreteFieldState;
-        node.setState(concreteFieldStateOrBottom);
       }
     }
   }
@@ -152,11 +146,6 @@ public class FlowGraphBuilder {
         break;
       }
     }
-
-    if (!node.getState().isUnknown()) {
-      assert node.getState() == concreteParameterState;
-      node.setState(concreteParameterState.clearInFlow());
-    }
   }
 
   // Returns BREAK if the current node has been set to unknown.
@@ -203,7 +192,7 @@ public class FlowGraphBuilder {
     }
 
     ValueState fieldState = getFieldState(field, fieldStates);
-    if (fieldState.isUnknown()) {
+    if (fieldState.isUnknown() && field.getType().isIdenticalTo(node.getStaticType())) {
       // The current node depends on a field for which we don't know anything.
       node.clearPredecessors();
       node.setStateToUnknown();
@@ -237,21 +226,62 @@ public class FlowGraphBuilder {
       return TraversalContinuation.doContinue();
     }
 
-    if (enclosingMethodState.isUnknown()) {
+    assert enclosingMethodState.isMonomorphic() || enclosingMethodState.isUnknown();
+
+    if (enclosingMethodState.isUnknown() && inFlow.getType().isIdenticalTo(node.getStaticType())) {
       // The current node depends on a parameter for which we don't know anything.
       node.clearPredecessors();
       node.setStateToUnknown();
       return TraversalContinuation.doBreak();
     }
 
-    assert enclosingMethodState.isConcrete();
-    assert enclosingMethodState.asConcrete().isMonomorphic();
-
     FlowGraphParameterNode predecessor =
-        getOrCreateParameterNode(
-            enclosingMethod, inFlow.getIndex(), enclosingMethodState.asConcrete().asMonomorphic());
+        getOrCreateParameterNode(enclosingMethod, inFlow.getIndex(), enclosingMethodState);
     node.addPredecessor(predecessor, transferFunction);
     return TraversalContinuation.doContinue();
+  }
+
+  private void clearInFlow(DexProgramClass clazz) {
+    clazz.forEachProgramField(this::clearInFlow);
+    clazz.forEachProgramMethod(this::clearInFlow);
+  }
+
+  private void clearInFlow(ProgramField field) {
+    ConcreteValueState concreteFieldState = fieldStates.get(field).asConcrete();
+    if (concreteFieldState == null) {
+      return;
+    }
+    ValueState concreteFieldStateOrBottom = concreteFieldState.clearInFlow();
+    if (concreteFieldStateOrBottom.isBottom()) {
+      fieldStates.remove(field);
+      FlowGraphFieldNode node = getFieldNode(field);
+      if (node != null && !node.getState().isUnknown()) {
+        assert node.getState() == concreteFieldState;
+        node.setState(concreteFieldStateOrBottom);
+      }
+    }
+  }
+
+  private void clearInFlow(ProgramMethod method) {
+    ConcreteMonomorphicMethodState methodState = methodStates.get(method).asMonomorphic();
+    if (methodState != null) {
+      for (int i = 0; i < methodState.getParameterStates().size(); i++) {
+        ValueState parameterState = methodState.getParameterState(i);
+        ConcreteValueState concreteParameterState = parameterState.asConcrete();
+        if (concreteParameterState != null) {
+          ValueState concreteParameterStateOrBottom = concreteParameterState.clearInFlow();
+          FlowGraphParameterNode node = getParameterNode(method, i);
+          if (node != null && !node.getState().isUnknown()) {
+            assert node.getState() == concreteParameterState;
+            node.setState(concreteParameterStateOrBottom);
+          }
+        }
+      }
+    }
+  }
+
+  private FlowGraphFieldNode getFieldNode(ProgramField field) {
+    return fieldNodes.get(field.getReference());
   }
 
   private FlowGraphFieldNode getOrCreateFieldNode(ProgramField field, ValueState fieldState) {
@@ -259,8 +289,14 @@ public class FlowGraphBuilder {
         field.getReference(), ignoreKey(() -> new FlowGraphFieldNode(field, fieldState)));
   }
 
+  private FlowGraphParameterNode getParameterNode(ProgramMethod method, int parameterIndex) {
+    return parameterNodes
+        .getOrDefault(method.getReference(), Int2ReferenceMaps.emptyMap())
+        .get(parameterIndex);
+  }
+
   private FlowGraphParameterNode getOrCreateParameterNode(
-      ProgramMethod method, int parameterIndex, ConcreteMonomorphicMethodState methodState) {
+      ProgramMethod method, int parameterIndex, MethodState methodState) {
     Int2ReferenceMap<FlowGraphParameterNode> parameterNodesForMethod =
         parameterNodes.computeIfAbsent(
             method.getReference(), ignoreKey(Int2ReferenceOpenHashMap::new));

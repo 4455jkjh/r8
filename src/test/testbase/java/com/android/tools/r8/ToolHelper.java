@@ -137,6 +137,7 @@ public class ToolHelper {
   public enum TestDataSourceSet {
     LEGACY(null),
     TESTS_JAVA_8("tests_java_8/build/classes/java/test"),
+    TESTBASE_DATA_LOCATION("testbase/build/classes/java/main"),
     TESTS_BOOTSTRAP("tests_bootstrap/build/classes/java/test"),
     SPECIFIED_BY_GRADLE_PROPERTY(null);
 
@@ -2702,13 +2703,16 @@ public class ToolHelper {
 
   /** This code only works if run with depot_tools on the path */
   public static String uploadFileToGoogleCloudStorage(String bucket, Path file) throws IOException {
-    ImmutableList.Builder<String> command =
-        new ImmutableList.Builder<String>()
-            .add("upload_to_google_storage.py")
-            .add("-f")
-            .add("--bucket")
-            .add(bucket)
-            .add(file.toAbsolutePath().toString());
+    ImmutableList.Builder<String> command = new ImmutableList.Builder<>();
+    if (isWindows()) {
+      command.add("python3");
+    }
+    command
+        .add("upload_to_google_storage.py")
+        .add("-f")
+        .add("--bucket")
+        .add(bucket)
+        .add(file.toAbsolutePath().toString());
     ProcessResult result = ToolHelper.runProcess(new ProcessBuilder(command.build()));
     if (result.exitCode != 0) {
       throw new RuntimeException(
