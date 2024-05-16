@@ -11,12 +11,11 @@ import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.startsWith;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
 
 import com.android.tools.r8.R8TestCompileResult;
 import com.android.tools.r8.TestBase;
-import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.graph.DexItemFactory;
 import com.android.tools.r8.ir.analysis.proto.GeneratedMessageLiteShrinker;
 import com.android.tools.r8.ir.analysis.proto.ProtoReferences;
@@ -29,41 +28,17 @@ import com.android.tools.r8.utils.codeinspector.FoundClassSubject;
 import com.android.tools.r8.utils.codeinspector.FoundMethodSubject;
 import it.unimi.dsi.fastutil.ints.IntArrayList;
 import it.unimi.dsi.fastutil.ints.IntList;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Map;
 
 public abstract class ProtoShrinkingTestBase extends TestBase {
-
-  public static final Path PROTOBUF_LITE_JAR =
-      Paths.get(ToolHelper.THIRD_PARTY_DIR, "protobuf-lite/libprotobuf_lite.jar");
-
-  public static final Path PROTOBUF_LITE_PROGUARD_RULES =
-      Paths.get(ToolHelper.THIRD_PARTY_DIR, "protobuf-lite/lite_proguard.pgcfg");
-
-  // Test classes for proto2. Use a checked in version of the built examples.
-  public static final Path PROTO2_EXAMPLES_JAR =
-      Paths.get(ToolHelper.THIRD_PARTY_DIR, "proto", "examplesProto2.jar");
-
-  // Proto definitions used by test classes for proto2.
-  public static final Path PROTO2_PROTO_JAR =
-      Paths.get(ToolHelper.THIRD_PARTY_DIR, "proto", "examplesGeneratedProto2.jar");
-
-  // Test classes for proto3.
-  public static final Path PROTO3_EXAMPLES_JAR =
-      Paths.get(ToolHelper.THIRD_PARTY_DIR, "proto", "examplesProto3.jar");
-
-  // Proto definitions used by test classes for proto3.
-  public static final Path PROTO3_PROTO_JAR =
-      Paths.get(ToolHelper.THIRD_PARTY_DIR, "proto", "examplesGeneratedProto3.jar");
 
   public static void assertRewrittenProtoSchemasMatch(
       CodeInspector expectedInspector, CodeInspector actualInspector) throws Exception {
     Map<String, IntList> actualInfos = getInfoValues(actualInspector);
 
     // Ensure that this cannot fail silently.
-    assertTrue(actualInfos.size() > 0);
+    assertFalse(actualInfos.isEmpty());
 
     Map<String, IntList> expectedInfos = getInfoValues(expectedInspector);
     for (Map.Entry<String, IntList> entry : actualInfos.entrySet()) {

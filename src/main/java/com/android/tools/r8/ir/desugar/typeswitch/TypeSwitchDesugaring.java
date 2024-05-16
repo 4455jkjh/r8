@@ -4,8 +4,14 @@
 
 package com.android.tools.r8.ir.desugar.typeswitch;
 
+import static com.android.tools.r8.ir.desugar.typeswitch.TypeSwitchDesugaringHelper.extractEnumField;
+import static com.android.tools.r8.ir.desugar.typeswitch.TypeSwitchDesugaringHelper.getEnumField;
+import static com.android.tools.r8.ir.desugar.typeswitch.TypeSwitchDesugaringHelper.isEnumSwitchCallSite;
+import static com.android.tools.r8.ir.desugar.typeswitch.TypeSwitchDesugaringHelper.isTypeSwitchCallSite;
+
 import com.android.tools.r8.cf.code.CfArrayStore;
 import com.android.tools.r8.cf.code.CfConstClass;
+import com.android.tools.r8.cf.code.CfConstNull;
 import com.android.tools.r8.cf.code.CfConstNumber;
 import com.android.tools.r8.cf.code.CfConstString;
 import com.android.tools.r8.cf.code.CfInstruction;
@@ -20,17 +26,14 @@ import com.android.tools.r8.errors.CompilationError;
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.CfCode;
 import com.android.tools.r8.graph.DexCallSite;
-import com.android.tools.r8.graph.DexClass;
-import com.android.tools.r8.graph.DexEncodedField;
+import com.android.tools.r8.graph.DexEncodedMethod;
 import com.android.tools.r8.graph.DexField;
 import com.android.tools.r8.graph.DexItemFactory;
 import com.android.tools.r8.graph.DexMethod;
-import com.android.tools.r8.graph.DexMethodHandle;
+import com.android.tools.r8.graph.DexProgramClass;
 import com.android.tools.r8.graph.DexProto;
-import com.android.tools.r8.graph.DexString;
 import com.android.tools.r8.graph.DexType;
 import com.android.tools.r8.graph.DexValue;
-import com.android.tools.r8.graph.DexValue.DexValueConstDynamic;
 import com.android.tools.r8.graph.MethodAccessFlags;
 import com.android.tools.r8.graph.ProgramMethod;
 import com.android.tools.r8.ir.code.MemberType;
@@ -38,22 +41,19 @@ import com.android.tools.r8.ir.code.ValueType;
 import com.android.tools.r8.ir.desugar.CfInstructionDesugaring;
 import com.android.tools.r8.ir.desugar.CfInstructionDesugaringEventConsumer;
 import com.android.tools.r8.ir.desugar.DesugarDescription;
-import com.android.tools.r8.ir.desugar.constantdynamic.ConstantDynamicReference;
-import com.android.tools.r8.utils.DescriptorUtils;
+import com.android.tools.r8.ir.desugar.LocalStackAllocator;
 import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
+import java.util.function.Consumer;
 import org.objectweb.asm.Opcodes;
 
 public class TypeSwitchDesugaring implements CfInstructionDesugaring {
 
   private final AppView<?> appView;
 
-  private final DexMethod typeSwitchMethod;
-  private final DexProto typeSwitchProto;
-  private final DexProto typeSwitchHelperProto;
-  private final DexMethod enumDescMethod;
-  private final DexMethod classDescMethod;
+  private final DexProto switchHelperProto;
   private final DexType matchException;
   private final DexMethod matchExceptionInit;
   private final DexItemFactory factory;
@@ -61,52 +61,21 @@ public class TypeSwitchDesugaring implements CfInstructionDesugaring {
   public TypeSwitchDesugaring(AppView<?> appView) {
     this.appView = appView;
     this.factory = appView.dexItemFactory();
-    DexType switchBootstrap = factory.createType("Ljava/lang/runtime/SwitchBootstraps;");
-    typeSwitchMethod =
-        factory.createMethod(
-            switchBootstrap,
-            factory.createProto(
-                factory.callSiteType,
-                factory.methodHandlesLookupType,
-                factory.stringType,
-                factory.methodTypeType,
-                factory.objectArrayType),
-            factory.createString("typeSwitch"));
-    typeSwitchProto = factory.createProto(factory.intType, factory.objectType, factory.intType);
-    typeSwitchHelperProto =
+    switchHelperProto =
         factory.createProto(
             factory.intType, factory.objectType, factory.intType, factory.objectArrayType);
-    enumDescMethod =
-        factory.createMethod(
-            factory.enumDescType,
-            factory.createProto(factory.enumDescType, factory.classDescType, factory.stringType),
-            "of");
-    classDescMethod =
-        factory.createMethod(
-            factory.classDescType,
-            factory.createProto(factory.classDescType, factory.stringType),
-            "of");
     matchException = factory.createType("Ljava/lang/MatchException;");
     matchExceptionInit =
         factory.createInstanceInitializer(
             matchException, factory.stringType, factory.throwableType);
   }
 
-  private boolean methodHandleIsInvokeStaticTo(DexValue dexValue, DexMethod method) {
-    if (!dexValue.isDexValueMethodHandle()) {
-      return false;
-    }
-    return methodHandleIsInvokeStaticTo(dexValue.asDexValueMethodHandle().getValue(), method);
-  }
-
-  private boolean methodHandleIsInvokeStaticTo(DexMethodHandle methodHandle, DexMethod method) {
-    return methodHandle.type.isInvokeStatic() && methodHandle.asMethod().isIdenticalTo(method);
-  }
-
   @Override
   public DesugarDescription compute(CfInstruction instruction, ProgramMethod context) {
     if (!instruction.isInvokeDynamic()) {
       // We need to replace the new MatchException with RuntimeException.
+      // TODO(b/340800750): Consider using a more specific exception than RuntimeException, such
+      //  as com.android.tools.r8.DesugarMatchException.
       if (instruction.isNew() && instruction.asNew().getType().isIdenticalTo(matchException)) {
         return DesugarDescription.builder()
             .setDesugarRewrite(
@@ -147,36 +116,81 @@ public class TypeSwitchDesugaring implements CfInstructionDesugaring {
       return DesugarDescription.nothing();
     }
     DexCallSite callSite = instruction.asInvokeDynamic().getCallSite();
-    if (!(callSite.methodName.isIdenticalTo(typeSwitchMethod.getName())
-        && callSite.methodProto.isIdenticalTo(typeSwitchProto)
-        && methodHandleIsInvokeStaticTo(callSite.bootstrapMethod, typeSwitchMethod))) {
-      return DesugarDescription.nothing();
+    if (isTypeSwitchCallSite(callSite, factory)) {
+      return DesugarDescription.builder()
+          .setDesugarRewrite(
+              (position,
+                  freshLocalProvider,
+                  localStackAllocator,
+                  desugaringInfo,
+                  eventConsumer,
+                  theContext,
+                  methodProcessingContext,
+                  desugaringCollection,
+                  dexItemFactory) ->
+                  genSwitchMethod(
+                      localStackAllocator,
+                      eventConsumer,
+                      theContext,
+                      methodProcessingContext,
+                      cfInstructions ->
+                          generateTypeSwitchLoadArguments(cfInstructions, callSite, context)))
+          .build();
     }
-    // Call the desugared method.
-    return DesugarDescription.builder()
-        .setDesugarRewrite(
-            (position,
-                freshLocalProvider,
-                localStackAllocator,
-                desugaringInfo,
-                eventConsumer,
-                theContext,
-                methodProcessingContext,
-                desugaringCollection,
-                dexItemFactory) -> {
-              // We add on stack (2) array, (3) dupped array, (4) index, (5) value.
-              localStackAllocator.allocateLocalStack(4);
-              List<CfInstruction> cfInstructions = generateLoadArguments(callSite, context);
-              generateInvokeToDesugaredMethod(
-                  methodProcessingContext, cfInstructions, theContext, eventConsumer);
-              return cfInstructions;
-            })
-        .build();
+    if (isEnumSwitchCallSite(callSite, factory)) {
+      DexType enumType = callSite.methodProto.getParameter(0);
+      return DesugarDescription.builder()
+          .setDesugarRewrite(
+              (position,
+                  freshLocalProvider,
+                  localStackAllocator,
+                  desugaringInfo,
+                  eventConsumer,
+                  theContext,
+                  methodProcessingContext,
+                  desugaringCollection,
+                  dexItemFactory) ->
+                  genSwitchMethod(
+                      localStackAllocator,
+                      eventConsumer,
+                      theContext,
+                      methodProcessingContext,
+                      cfInstructions ->
+                          generateEnumSwitchLoadArguments(
+                              cfInstructions, callSite, context, enumType)))
+          .build();
+    }
+    return DesugarDescription.nothing();
+  }
+
+  private List<CfInstruction> genSwitchMethod(
+      LocalStackAllocator localStackAllocator,
+      CfInstructionDesugaringEventConsumer eventConsumer,
+      ProgramMethod theContext,
+      MethodProcessingContext methodProcessingContext,
+      Consumer<List<CfInstruction>> generator) {
+    localStackAllocator.allocateLocalStack(3);
+    DexProgramClass clazz =
+        appView
+            .getSyntheticItems()
+            .createClass(
+                kinds -> kinds.TYPE_SWITCH_CLASS,
+                methodProcessingContext.createUniqueContext(),
+                appView,
+                builder -> new SwitchHelperGenerator(builder, appView, generator));
+    eventConsumer.acceptTypeSwitchClass(clazz, theContext);
+    List<CfInstruction> cfInstructions = new ArrayList<>();
+    Iterator<DexEncodedMethod> iter = clazz.methods().iterator();
+    cfInstructions.add(new CfInvoke(Opcodes.INVOKESTATIC, iter.next().getReference(), false));
+    assert !iter.hasNext();
+    generateInvokeToDesugaredMethod(
+        cfInstructions, methodProcessingContext, theContext, eventConsumer);
+    return cfInstructions;
   }
 
   private void generateInvokeToDesugaredMethod(
-      MethodProcessingContext methodProcessingContext,
       List<CfInstruction> cfInstructions,
+      MethodProcessingContext methodProcessingContext,
       ProgramMethod context,
       CfInstructionDesugaringEventConsumer eventConsumer) {
     ProgramMethod method =
@@ -189,7 +203,7 @@ public class TypeSwitchDesugaring implements CfInstructionDesugaring {
                 builder ->
                     builder
                         .disableAndroidApiLevelCheck()
-                        .setProto(typeSwitchHelperProto)
+                        .setProto(switchHelperProto)
                         .setAccessFlags(MethodAccessFlags.createPublicStaticSynthetic())
                         .setCode(
                             methodSig -> {
@@ -206,89 +220,76 @@ public class TypeSwitchDesugaring implements CfInstructionDesugaring {
     cfInstructions.add(new CfInvoke(Opcodes.INVOKESTATIC, method.getReference(), false));
   }
 
-  private List<CfInstruction> generateLoadArguments(DexCallSite callSite, ProgramMethod context) {
+  private void generateEnumSwitchLoadArguments(
+      List<CfInstruction> cfInstructions,
+      DexCallSite callSite,
+      ProgramMethod context,
+      DexType enumType) {
+    generateSwitchLoadArguments(
+        cfInstructions,
+        callSite,
+        bootstrapArg -> {
+          if (bootstrapArg.isDexValueType()) {
+            cfInstructions.add(new CfConstClass(bootstrapArg.asDexValueType().getValue()));
+          } else if (bootstrapArg.isDexValueString()) {
+            DexField enumField =
+                getEnumField(bootstrapArg.asDexValueString().getValue(), enumType, appView);
+            pushEnumField(cfInstructions, enumField);
+          } else {
+            throw new CompilationError(
+                "Invalid bootstrap arg for enum switch " + bootstrapArg, context.getOrigin());
+          }
+        });
+  }
+
+  private void generateTypeSwitchLoadArguments(
+      List<CfInstruction> cfInstructions, DexCallSite callSite, ProgramMethod context) {
+    generateSwitchLoadArguments(
+        cfInstructions,
+        callSite,
+        bootstrapArg -> {
+          if (bootstrapArg.isDexValueType()) {
+            cfInstructions.add(new CfConstClass(bootstrapArg.asDexValueType().getValue()));
+          } else if (bootstrapArg.isDexValueInt()) {
+            cfInstructions.add(
+                new CfConstNumber(bootstrapArg.asDexValueInt().getValue(), ValueType.INT));
+            cfInstructions.add(
+                new CfInvoke(Opcodes.INVOKESTATIC, factory.integerMembers.valueOf, false));
+          } else if (bootstrapArg.isDexValueString()) {
+            cfInstructions.add(new CfConstString(bootstrapArg.asDexValueString().getValue()));
+          } else if (bootstrapArg.isDexValueConstDynamic()) {
+            DexField enumField =
+                extractEnumField(bootstrapArg.asDexValueConstDynamic(), context, appView);
+            pushEnumField(cfInstructions, enumField);
+          } else {
+            throw new CompilationError(
+                "Invalid bootstrap arg for type switch " + bootstrapArg, context.getOrigin());
+          }
+        });
+  }
+
+  private void pushEnumField(List<CfInstruction> cfInstructions, DexField enumField) {
+    if (enumField == null) {
+      // Extremely rare case where the compilation is invalid, the case is unreachable.
+      cfInstructions.add(new CfConstNull());
+    } else {
+      cfInstructions.add(new CfStaticFieldRead(enumField));
+    }
+  }
+
+  private void generateSwitchLoadArguments(
+      List<CfInstruction> cfInstructions, DexCallSite callSite, Consumer<DexValue> adder) {
     // We need to call the method with the bootstrap args as parameters.
     // We need to convert the bootstrap args into a list of cf instructions.
     // The object and the int are already pushed on stack, we simply need to push the extra array.
-    List<CfInstruction> cfInstructions = new ArrayList<>();
     cfInstructions.add(new CfConstNumber(callSite.bootstrapArgs.size(), ValueType.INT));
     cfInstructions.add(new CfNewArray(factory.objectArrayType));
     for (int i = 0; i < callSite.bootstrapArgs.size(); i++) {
       DexValue bootstrapArg = callSite.bootstrapArgs.get(i);
       cfInstructions.add(new CfStackInstruction(Opcode.Dup));
       cfInstructions.add(new CfConstNumber(i, ValueType.INT));
-      if (bootstrapArg.isDexValueType()) {
-        cfInstructions.add(new CfConstClass(bootstrapArg.asDexValueType().getValue()));
-      } else if (bootstrapArg.isDexValueInt()) {
-        cfInstructions.add(
-            new CfConstNumber(bootstrapArg.asDexValueInt().getValue(), ValueType.INT));
-        cfInstructions.add(
-            new CfInvoke(Opcodes.INVOKESTATIC, factory.integerMembers.valueOf, false));
-      } else if (bootstrapArg.isDexValueString()) {
-        cfInstructions.add(new CfConstString(bootstrapArg.asDexValueString().getValue()));
-      } else {
-        assert bootstrapArg.isDexValueConstDynamic();
-        DexField enumField = extractEnumField(bootstrapArg.asDexValueConstDynamic(), context);
-        cfInstructions.add(new CfStaticFieldRead(enumField));
-      }
+      adder.accept(bootstrapArg);
       cfInstructions.add(new CfArrayStore(MemberType.OBJECT));
     }
-    return cfInstructions;
-  }
-
-  private CompilationError throwEnumFieldConstantDynamic(String msg, ProgramMethod context) {
-    throw new CompilationError(
-        "Unexpected ConstantDynamic in TypeSwitch: " + msg, context.getOrigin());
-  }
-
-  private DexField extractEnumField(
-      DexValueConstDynamic dexValueConstDynamic, ProgramMethod context) {
-    ConstantDynamicReference enumCstDynamic = dexValueConstDynamic.getValue();
-    DexMethod bootstrapMethod = factory.constantDynamicBootstrapMethod;
-    if (!(enumCstDynamic.getType().isIdenticalTo(factory.enumDescType)
-        && enumCstDynamic.getName().isIdenticalTo(bootstrapMethod.getName())
-        && enumCstDynamic.getBootstrapMethod().asMethod().isIdenticalTo(bootstrapMethod)
-        && enumCstDynamic.getBootstrapMethodArguments().size() == 3
-        && methodHandleIsInvokeStaticTo(
-            enumCstDynamic.getBootstrapMethodArguments().get(0), enumDescMethod))) {
-      throw throwEnumFieldConstantDynamic("Invalid EnumDesc", context);
-    }
-    DexValue dexValueFieldName = enumCstDynamic.getBootstrapMethodArguments().get(2);
-    if (!dexValueFieldName.isDexValueString()) {
-      throw throwEnumFieldConstantDynamic("Field name " + dexValueFieldName, context);
-    }
-    DexString fieldName = dexValueFieldName.asDexValueString().getValue();
-
-    DexValue dexValueClassCstDynamic = enumCstDynamic.getBootstrapMethodArguments().get(1);
-    if (!dexValueClassCstDynamic.isDexValueConstDynamic()) {
-      throw throwEnumFieldConstantDynamic("Enum class " + dexValueClassCstDynamic, context);
-    }
-    ConstantDynamicReference classCstDynamic =
-        dexValueClassCstDynamic.asDexValueConstDynamic().getValue();
-    if (!(classCstDynamic.getType().isIdenticalTo(factory.classDescType)
-        && classCstDynamic.getName().isIdenticalTo(bootstrapMethod.getName())
-        && classCstDynamic.getBootstrapMethod().asMethod().isIdenticalTo(bootstrapMethod)
-        && classCstDynamic.getBootstrapMethodArguments().size() == 2
-        && methodHandleIsInvokeStaticTo(
-            classCstDynamic.getBootstrapMethodArguments().get(0), classDescMethod))) {
-      throw throwEnumFieldConstantDynamic("Class descriptor " + classCstDynamic, context);
-    }
-    DexValue dexValueClassName = classCstDynamic.getBootstrapMethodArguments().get(1);
-    if (!dexValueClassName.isDexValueString()) {
-      throw throwEnumFieldConstantDynamic("Class name " + dexValueClassName, context);
-    }
-    DexString className = dexValueClassName.asDexValueString().getValue();
-    DexType enumType =
-        factory.createType(DescriptorUtils.javaTypeToDescriptor(className.toString()));
-    DexClass enumClass = appView.definitionFor(enumType);
-    if (enumClass == null) {
-      throw throwEnumFieldConstantDynamic("Missing enum class " + enumType, context);
-    }
-    DexEncodedField dexEncodedField = enumClass.lookupUniqueStaticFieldWithName(fieldName);
-    if (dexEncodedField == null) {
-      throw throwEnumFieldConstantDynamic(
-          "Missing enum field " + fieldName + " in " + enumType, context);
-    }
-    return dexEncodedField.getReference();
   }
 }

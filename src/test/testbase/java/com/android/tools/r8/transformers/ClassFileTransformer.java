@@ -415,6 +415,23 @@ public class ClassFileTransformer {
         });
   }
 
+  public ClassFileTransformer clearNest() {
+    return setMinVersion(CfVm.JDK11)
+        .addClassTransformer(
+            new ClassTransformer() {
+
+              @Override
+              public void visitNestHost(String nestHost) {
+                // Ignore/remove existing nest information.
+              }
+
+              @Override
+              public void visitNestMember(String nestMember) {
+                // Ignore/remove existing nest information.
+              }
+            });
+  }
+
   public ClassFileTransformer setNest(Class<?> host, Class<?>... members) {
     assert !Arrays.asList(members).contains(host);
     return setMinVersion(CfVm.JDK11)
@@ -1316,7 +1333,7 @@ public class ClassFileTransformer {
                   descriptor,
                   redirectVisitFieldInsn(this, super::visitFieldInsn));
             } else {
-              super.visitMethodInsn(opcode, owner, name, descriptor);
+              super.visitFieldInsn(opcode, owner, name, descriptor);
             }
           }
         });

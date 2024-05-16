@@ -34,6 +34,7 @@ import com.android.tools.r8.utils.ThreadUtils;
 import java.util.ArrayDeque;
 import java.util.Collection;
 import java.util.Deque;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -62,6 +63,7 @@ public class InFlowPropagator {
     // Compute strongly connected components so that we can compute the fixpoint of multiple flow
     // graphs in parallel.
     List<FlowGraph> flowGraphs = computeStronglyConnectedFlowGraphs();
+    assert InFlowPropagatorDebugUtils.setEnableLoggingBits(flowGraphs);
     processFlowGraphs(flowGraphs, executorService);
 
     // Account for the fact that fields that are read before they are written also needs to include
@@ -97,7 +99,12 @@ public class InFlowPropagator {
             .build();
     List<Set<FlowGraphNode>> stronglyConnectedComponents =
         flowGraph.computeStronglyConnectedComponents();
-    return ListUtils.map(stronglyConnectedComponents, FlowGraph::new);
+    List<LinkedHashSet<FlowGraphNode>> stronglyConnectedComponentsWithDeterministicOrder =
+        ListUtils.map(
+            stronglyConnectedComponents,
+            stronglyConnectedComponent ->
+                (LinkedHashSet<FlowGraphNode>) stronglyConnectedComponent);
+    return ListUtils.map(stronglyConnectedComponentsWithDeterministicOrder, FlowGraph::new);
   }
 
   private Map<FlowGraph, Deque<FlowGraphNode>> includeDefaultValuesInFieldStates(
@@ -172,6 +179,7 @@ public class InFlowPropagator {
     assert !successorNode.isUnknown();
     NonEmptyValueState stateToPropagate = narrowUnknownState(node, successorNode);
     if (stateToPropagate.isUnknown()) {
+      assert InFlowPropagatorDebugUtils.logPropagateUnknown(node, successorNode);
       successorNode.clearPredecessors(node);
       successorNode.setStateToUnknown();
       successorNode.addToWorkList(worklist);
@@ -234,6 +242,8 @@ public class InFlowPropagator {
           FlowGraphStateProvider.create(flowGraph, transferFunction);
       ValueState transferState =
           transferFunction.apply(appView, flowGraphStateProvider, stateToPropagate);
+      ValueState oldSuccessorStateForDebugging =
+          successorNode.getDebug() ? successorNode.getState().mutableCopy() : null;
       if (transferState.isBottom()) {
         // Nothing to propagate.
       } else if (transferState.isUnknown()) {
@@ -245,6 +255,16 @@ public class InFlowPropagator {
         successorNode.addState(
             appView, inState, inStaticType, () -> successorNode.addToWorkList(worklist));
       }
+
+      assert InFlowPropagatorDebugUtils.logPropagateConcrete(
+          node,
+          successorNode,
+          state,
+          transferFunction,
+          transferState,
+          oldSuccessorStateForDebugging,
+          flowGraphStateProvider);
+
       // If this successor has become unknown, there is no point in continuing to propagate
       // flow to it from any of its predecessors. We therefore clear the predecessors to
       // improve performance of the fixpoint computation.

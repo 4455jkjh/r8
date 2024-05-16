@@ -3,9 +3,11 @@
 // BSD-style license that can be found in the LICENSE file.
 package switchpatternmatching;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
+import static switchpatternmatching.SwitchTestHelper.hasJdk21TypeSwitch;
 
+import com.android.tools.r8.JdkClassFileProvider;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
@@ -13,13 +15,13 @@ import com.android.tools.r8.TestRuntime.CfVm;
 import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.utils.StringUtils;
 import com.android.tools.r8.utils.codeinspector.CodeInspector;
-import com.android.tools.r8.utils.codeinspector.InstructionSubject;
 import org.junit.Assume;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameter;
 import org.junit.runners.Parameterized.Parameters;
+import switchpatternmatching.StringSwitchTest.Main;
 
 @RunWith(Parameterized.class)
 public class TypeSwitchTest extends TestBase {
@@ -28,7 +30,7 @@ public class TypeSwitchTest extends TestBase {
 
   @Parameters(name = "{0}")
   public static TestParametersCollection data() {
-    return getTestParameters().withAllRuntimesAndApiLevels().build();
+    return getTestParameters().withAllRuntimes().withAllApiLevelsAlsoForCf().build();
   }
 
   public static String EXPECTED_OUTPUT =
@@ -39,41 +41,8 @@ public class TypeSwitchTest extends TestBase {
   public void testJvm() throws Exception {
     assumeTrue(parameters.isCfRuntime());
     CodeInspector inspector = new CodeInspector(ToolHelper.getClassFileForTestClass(Main.class));
-    // javac generated an invokedynamic using bootstrap method argument of an arrya type (sort 9
-    // is org.objectweb.asm.Type.ARRAY).
-    inspector
-        .clazz(Main.class)
-        .uniqueMethodWithOriginalName("typeSwitch")
-        .streamInstructions()
-        .filter(InstructionSubject::isInvokeDynamic)
-        .count();
-    // javac generated an invokedynamic using bootstrap method
-    // java.lang.runtime.SwitchBootstraps.typeSwitch.
-    assertEquals(
-        1,
-        inspector
-            .clazz(Main.class)
-            .uniqueMethodWithOriginalName("typeSwitch")
-            .streamInstructions()
-            .filter(InstructionSubject::isInvokeDynamic)
-            .map(
-                instruction ->
-                    instruction
-                        .asCfInstruction()
-                        .getInstruction()
-                        .asInvokeDynamic()
-                        .getCallSite()
-                        .getBootstrapMethod()
-                        .member
-                        .asDexMethod())
-            .filter(
-                method ->
-                    method
-                        .getHolderType()
-                        .toString()
-                        .contains("java.lang.runtime.SwitchBootstraps"))
-            .filter(method -> method.toString().contains("typeSwitch"))
-            .count());
+    assertTrue(
+        hasJdk21TypeSwitch(inspector.clazz(Main.class).uniqueMethodWithOriginalName("typeSwitch")));
 
     parameters.assumeJvmTestParameters();
     testForJvm(parameters)
@@ -87,8 +56,7 @@ public class TypeSwitchTest extends TestBase {
 
   @Test
   public void testD8() throws Exception {
-    parameters.assumeDexRuntime();
-    testForD8()
+    testForD8(parameters.getBackend())
         .addInnerClassesAndStrippedOuter(getClass())
         .setMinApi(parameters)
         .run(parameters.getRuntime(), Main.class)
@@ -97,9 +65,16 @@ public class TypeSwitchTest extends TestBase {
 
   @Test
   public void testR8() throws Exception {
-    Assume.assumeTrue("For Cf we should compile with Jdk 21 library", parameters.isDexRuntime());
+    parameters.assumeR8TestParameters();
+    Assume.assumeTrue(
+        parameters.isDexRuntime()
+            || (parameters.isCfRuntime()
+                && parameters.getCfRuntime().isNewerThanOrEqual(CfVm.JDK21)));
     testForR8(parameters.getBackend())
         .addInnerClassesAndStrippedOuter(getClass())
+        .applyIf(
+            parameters.isCfRuntime(),
+            b -> b.addLibraryProvider(JdkClassFileProvider.fromSystemJdk()))
         .addKeepMainRule(Main.class)
         .setMinApi(parameters)
         .run(parameters.getRuntime(), Main.class)

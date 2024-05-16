@@ -3,9 +3,13 @@
 // BSD-style license that can be found in the LICENSE file.
 package switchpatternmatching;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
+import static switchpatternmatching.SwitchTestHelper.desugarMatchException;
+import static switchpatternmatching.SwitchTestHelper.hasJdk21TypeSwitch;
+import static switchpatternmatching.SwitchTestHelper.matchException;
 
+import com.android.tools.r8.JdkClassFileProvider;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestBuilder;
 import com.android.tools.r8.TestParameters;
@@ -14,14 +18,12 @@ import com.android.tools.r8.TestRuntime.CfVm;
 import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.utils.StringUtils;
 import com.android.tools.r8.utils.codeinspector.CodeInspector;
-import com.android.tools.r8.utils.codeinspector.InstructionSubject;
 import org.junit.Assume;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameter;
 import org.junit.runners.Parameterized.Parameters;
-import switchpatternmatching.StringSwitchTest.Main;
 
 @RunWith(Parameterized.class)
 public class EnumSwitchTest extends TestBase {
@@ -30,7 +32,7 @@ public class EnumSwitchTest extends TestBase {
 
   @Parameters(name = "{0}")
   public static TestParametersCollection data() {
-    return getTestParameters().withAllRuntimesAndApiLevels().build();
+    return getTestParameters().withAllRuntimes().withAllApiLevelsAlsoForCf().build();
   }
 
   public static String EXPECTED_OUTPUT =
@@ -40,33 +42,8 @@ public class EnumSwitchTest extends TestBase {
   public void testJvm() throws Exception {
     assumeTrue(parameters.isCfRuntime());
     CodeInspector inspector = new CodeInspector(ToolHelper.getClassFileForTestClass(Main.class));
-    // javac generated an invokedynamic using bootstrap method
-    // java.lang.runtime.SwitchBootstraps.typeSwitch.
-    assertEquals(
-        1,
-        inspector
-            .clazz(Main.class)
-            .uniqueMethodWithOriginalName("enumSwitch")
-            .streamInstructions()
-            .filter(InstructionSubject::isInvokeDynamic)
-            .map(
-                instruction ->
-                    instruction
-                        .asCfInstruction()
-                        .getInstruction()
-                        .asInvokeDynamic()
-                        .getCallSite()
-                        .getBootstrapMethod()
-                        .member
-                        .asDexMethod())
-            .filter(
-                method ->
-                    method
-                        .getHolderType()
-                        .toString()
-                        .contains("java.lang.runtime.SwitchBootstraps"))
-            .filter(method -> method.toString().contains("typeSwitch"))
-            .count());
+    assertTrue(
+        hasJdk21TypeSwitch(inspector.clazz(Main.class).uniqueMethodWithOriginalName("enumSwitch")));
 
     parameters.assumeJvmTestParameters();
     testForJvm(parameters)
@@ -74,9 +51,7 @@ public class EnumSwitchTest extends TestBase {
         .run(parameters.getRuntime(), Main.class)
         .applyIf(
             parameters.getCfRuntime().isNewerThanOrEqual(CfVm.JDK21),
-            r ->
-                r.assertSuccessWithOutput(
-                    String.format(EXPECTED_OUTPUT, "java.lang.MatchException")),
+            r -> r.assertSuccessWithOutput(String.format(EXPECTED_OUTPUT, matchException())),
             r -> r.assertFailureWithErrorThatThrows(UnsupportedClassVersionError.class));
   }
 
@@ -112,23 +87,29 @@ public class EnumSwitchTest extends TestBase {
 
   @Test
   public void testD8() throws Exception {
-    parameters.assumeDexRuntime();
-    testForD8()
+    testForD8(parameters.getBackend())
         .apply(this::addModifiedProgramClasses)
         .setMinApi(parameters)
         .run(parameters.getRuntime(), Main.class)
-        .assertSuccessWithOutput(String.format(EXPECTED_OUTPUT, "java.lang.RuntimeException"));
+        .assertSuccessWithOutput(String.format(EXPECTED_OUTPUT, desugarMatchException()));
   }
 
   @Test
   public void testR8() throws Exception {
-    Assume.assumeTrue("For Cf we should compile with Jdk 21 library", parameters.isDexRuntime());
+    parameters.assumeR8TestParameters();
+    Assume.assumeTrue(
+        parameters.isDexRuntime()
+            || (parameters.isCfRuntime()
+                && parameters.getCfRuntime().isNewerThanOrEqual(CfVm.JDK21)));
     testForR8(parameters.getBackend())
         .apply(this::addModifiedProgramClasses)
+        .applyIf(
+            parameters.isCfRuntime(),
+            b -> b.addLibraryProvider(JdkClassFileProvider.fromSystemJdk()))
         .setMinApi(parameters)
         .addKeepMainRule(Main.class)
         .run(parameters.getRuntime(), Main.class)
-        .assertSuccessWithOutput(String.format(EXPECTED_OUTPUT, "java.lang.RuntimeException"));
+        .assertSuccessWithOutput(String.format(EXPECTED_OUTPUT, matchException(parameters)));
   }
 
   // D is added to the list of permitted subclasses to reproduce the MatchException.

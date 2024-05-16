@@ -196,11 +196,16 @@ public class ProtoReferences {
     return isDynamicMethodBridge(method.getReference());
   }
 
-  @SuppressWarnings("ReferenceEquality")
   public boolean isFindLiteExtensionByNumberMethod(DexMethod method) {
-    return method.proto == findLiteExtensionByNumberProto
-        && method.name.startsWith(findLiteExtensionByNumberName)
-        && method.holder != extensionRegistryLiteType;
+    return method.getProto().isIdenticalTo(findLiteExtensionByNumberProto)
+        && method.getName().startsWith(findLiteExtensionByNumberName)
+        && method.getHolderType().isNotIdenticalTo(extensionRegistryLiteType);
+  }
+
+  public boolean isFindLiteExtensionByNumberBridgeMethod(DexMethod method) {
+    return method.getProto().isIdenticalTo(findLiteExtensionByNumberProto)
+        && method.getName().startsWith(findLiteExtensionByNumberName)
+        && method.getHolderType().isIdenticalTo(extensionRegistryLiteType);
   }
 
   public boolean isFindLiteExtensionByNumberMethod(ProgramMethod method) {
@@ -278,6 +283,7 @@ public class ProtoReferences {
     public final DexMethod createBuilderMethod;
     public final DexMethod dynamicMethodBridgeMethod;
     public final DexMethod dynamicMethodBridgeMethodWithObject;
+    public final DexMethod newMutableInstanceMethod;
     public final DexMethod newRepeatedGeneratedExtension;
     public final DexMethod newSingularGeneratedExtension;
 
@@ -298,6 +304,11 @@ public class ProtoReferences {
               dexItemFactory.createProto(
                   dexItemFactory.objectType, methodToInvokeType, dexItemFactory.objectType),
               "dynamicMethod");
+      newMutableInstanceMethod =
+          dexItemFactory.createMethod(
+              generatedMessageLiteType,
+              dexItemFactory.createProto(generatedMessageLiteType),
+              "newMutableInstance");
       newRepeatedGeneratedExtension =
           dexItemFactory.createMethod(
               generatedMessageLiteType,
