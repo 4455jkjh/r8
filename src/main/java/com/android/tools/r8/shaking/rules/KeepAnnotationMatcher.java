@@ -4,7 +4,6 @@
 
 package com.android.tools.r8.shaking.rules;
 
-import com.android.tools.r8.errors.Unimplemented;
 import com.android.tools.r8.graph.AppInfoWithClassHierarchy;
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.DexProgramClass;
@@ -14,6 +13,8 @@ import com.android.tools.r8.graph.ProgramMember;
 import com.android.tools.r8.keepanno.ast.KeepAnnotationPattern;
 import com.android.tools.r8.keepanno.ast.KeepBindingReference;
 import com.android.tools.r8.keepanno.ast.KeepBindings.KeepBindingSymbol;
+import com.android.tools.r8.keepanno.ast.KeepCheck;
+import com.android.tools.r8.keepanno.ast.KeepCheck.KeepCheckKind;
 import com.android.tools.r8.keepanno.ast.KeepClassItemPattern;
 import com.android.tools.r8.keepanno.ast.KeepCondition;
 import com.android.tools.r8.keepanno.ast.KeepConstraint.Annotation;
@@ -32,7 +33,6 @@ import com.android.tools.r8.keepanno.ast.KeepConstraint.VisibilityRestrict;
 import com.android.tools.r8.keepanno.ast.KeepConstraintVisitor;
 import com.android.tools.r8.keepanno.ast.KeepConstraints;
 import com.android.tools.r8.keepanno.ast.KeepDeclaration;
-import com.android.tools.r8.keepanno.ast.KeepEdge;
 import com.android.tools.r8.keepanno.ast.KeepItemPattern;
 import com.android.tools.r8.keepanno.ast.KeepItemReference;
 import com.android.tools.r8.keepanno.ast.KeepMemberItemPattern;
@@ -88,40 +88,84 @@ public class KeepAnnotationMatcher {
                 result -> {
                   if (result.preconditions.isEmpty()) {
                     builder.addRootRule(
-                        keepInfoCollection -> createKeepInfo(result, keepInfoCollection));
+                        keepInfoCollection ->
+                            createKeepInfo(result, keepInfoCollection, predicates));
                   } else {
                     builder.addConditionalRule(
                         new PendingInitialConditionalRule(
                             result.preconditions,
-                            createKeepInfo(result, MinimumKeepInfoCollection.create())));
+                            createKeepInfo(
+                                result, MinimumKeepInfoCollection.create(), predicates)));
                   }
                 }),
         check -> {
-          throw new Unimplemented();
+          edgeMatcher.forEachMatch(
+              check,
+              result -> {
+                assert result.preconditions.isEmpty();
+                builder.addRootRule(
+                    keepInfoCollection ->
+                        createCheckDiscardInfo(check, result, keepInfoCollection));
+              });
         });
   }
 
+  private static void createCheckDiscardInfo(
+      KeepCheck check, MatchResult result, MinimumKeepInfoCollection keepInfoCollection) {
+    boolean isRemovedCheck = check.getKind() == KeepCheckKind.REMOVED;
+    ListUtils.forEachWithIndex(
+        result.consequences,
+        (item, i) -> {
+          applyCheckDiscardConstraints(isRemovedCheck, keepInfoCollection, item);
+          // If a check-discard is annotated on a type, then it applies to all members of the type.
+          if (item.isClass()) {
+            item.asProgramClass()
+                .forEachProgramMember(
+                    member ->
+                        applyCheckDiscardConstraints(isRemovedCheck, keepInfoCollection, member));
+          }
+        });
+  }
+
+  private static void applyCheckDiscardConstraints(
+      boolean isRemovedCheck,
+      MinimumKeepInfoCollection keepInfoCollection,
+      ProgramDefinition item) {
+    Joiner<?, ?, ?> joiner = keepInfoCollection.getOrCreateMinimumKeepInfoFor(item.getReference());
+    joiner.setCheckDiscarded();
+    if (isRemovedCheck) {
+      joiner.disallowOptimization();
+    }
+  }
+
   private static MinimumKeepInfoCollection createKeepInfo(
-      MatchResult result, MinimumKeepInfoCollection minimumKeepInfoCollection) {
+      MatchResult result,
+      MinimumKeepInfoCollection minimumKeepInfoCollection,
+      KeepAnnotationMatcherPredicates predicates) {
     ListUtils.forEachWithIndex(
         result.consequences,
         (item, i) -> {
           Joiner<?, ?, ?> joiner =
               minimumKeepInfoCollection.getOrCreateMinimumKeepInfoFor(item.getReference());
-          updateWithConstraints(item, joiner, result.constraints.get(i), result.edge);
+          updateWithConstraints(
+              item, joiner, result.constraints.get(i), result.declaration, predicates);
         });
     return minimumKeepInfoCollection;
   }
 
   private static void updateWithConstraints(
-      ProgramDefinition item, Joiner<?, ?, ?> joiner, KeepConstraints constraints, KeepEdge edge) {
+      ProgramDefinition item,
+      Joiner<?, ?, ?> joiner,
+      KeepConstraints constraints,
+      KeepDeclaration declaration,
+      KeepAnnotationMatcherPredicates predicates) {
     constraints.forEachAccept(
         new KeepConstraintVisitor() {
 
           @Override
           public void onLookup(Lookup constraint) {
             joiner.disallowShrinking();
-            joiner.addRule(new KeepAnnotationFakeProguardRule(edge.getMetaInfo()));
+            joiner.addRule(new KeepAnnotationFakeProguardRule(declaration.getMetaInfo()));
           }
 
           @Override
@@ -188,8 +232,15 @@ public class KeepAnnotationMatcher {
             if (pattern.getNamePattern().isAny()) {
               joiner.disallowAnnotationRemoval(toRetentionInfo(pattern));
             } else {
-              // TODO(b/319474935): Add to the type specific keep info.
-              joiner.disallowAnnotationRemoval(toRetentionInfo(pattern));
+              item.getDefinition()
+                  .annotations()
+                  .forEach(
+                      annotation -> {
+                        if (predicates.matchesAnnotation(annotation, pattern)) {
+                          joiner.disallowAnnotationRemoval(
+                              toRetentionInfo(pattern), annotation.getAnnotationType());
+                        }
+                      });
             }
           }
 
@@ -209,17 +260,17 @@ public class KeepAnnotationMatcher {
   }
 
   public static class MatchResult {
-    private final KeepEdge edge;
+    private final KeepDeclaration declaration;
     private final List<ProgramDefinition> preconditions;
     private final List<ProgramDefinition> consequences;
     private final List<KeepConstraints> constraints;
 
     public MatchResult(
-        KeepEdge edge,
+        KeepDeclaration declaration,
         List<ProgramDefinition> preconditions,
         List<ProgramDefinition> consequences,
         List<KeepConstraints> constraints) {
-      this.edge = edge;
+      this.declaration = declaration;
       this.preconditions = preconditions;
       this.consequences = consequences;
       this.constraints = constraints;
@@ -241,9 +292,9 @@ public class KeepAnnotationMatcher {
       this.predicates = predicates;
     }
 
-    public void forEachMatch(KeepEdge edge, Consumer<MatchResult> callback) {
+    public void forEachMatch(KeepDeclaration declaration, Consumer<MatchResult> callback) {
       this.callback = callback;
-      schema = new NormalizedSchema(edge);
+      schema = new NormalizedSchema(declaration);
       assignment = new Assignment(schema);
       findMatchingClass(0);
       schema = null;
@@ -362,7 +413,7 @@ public class KeepAnnotationMatcher {
    */
   private static class NormalizedSchema {
 
-    final KeepEdge edge;
+    final KeepDeclaration declaration;
     final Reference2IntMap<KeepBindingSymbol> symbolToKey = new Reference2IntOpenHashMap<>();
     final List<KeepClassItemPattern> classes = new ArrayList<>();
     final List<KeepMemberItemPattern> members = new ArrayList<>();
@@ -371,10 +422,21 @@ public class KeepAnnotationMatcher {
     final IntList consequences = new IntArrayList();
     final List<KeepConstraints> constraints = new ArrayList<>();
 
-    public NormalizedSchema(KeepEdge edge) {
-      this.edge = edge;
-      edge.getPreconditions().forEach(this::addPrecondition);
-      edge.getConsequences().forEachTarget(this::addConsequence);
+    public NormalizedSchema(KeepDeclaration declaration) {
+      this.declaration = declaration;
+      declaration.match(
+          edge -> {
+            edge.getPreconditions().forEach(this::addPrecondition);
+            edge.getConsequences().forEachTarget(this::addConsequence);
+          },
+          check -> {
+            consequences.add(defineItemPattern(check.getItemPattern()));
+          });
+    }
+
+    private KeepItemPattern getItemForBinding(KeepBindingSymbol symbol) {
+      assert declaration.isKeepEdge();
+      return declaration.asKeepEdge().getBindings().get(symbol).getItem();
     }
 
     public static boolean isClassKeyReference(int keyRef) {
@@ -408,8 +470,7 @@ public class KeepAnnotationMatcher {
 
     private int defineBindingReference(KeepBindingReference reference) {
       return symbolToKey.computeIfAbsent(
-          reference.getName(),
-          symbol -> defineItemPattern(edge.getBindings().get(symbol).getItem()));
+          reference.getName(), symbol -> defineItemPattern(getItemForBinding(symbol)));
     }
 
     private int defineItemPattern(KeepItemPattern item) {
@@ -475,7 +536,7 @@ public class KeepAnnotationMatcher {
 
     public MatchResult createMatch(NormalizedSchema schema) {
       return new MatchResult(
-          schema.edge,
+          schema.declaration,
           schema.preconditions.isEmpty()
               ? Collections.emptyList()
               : getItemList(schema.preconditions),

@@ -108,11 +108,11 @@ tasks {
              "--output",
              "$outputJar",
              "--map",
-             "kotlinx.metadata.**->com.android.tools.r8.jetbrains.kotlinx.metadata"))
+             "kotlin.metadata.**->com.android.tools.r8.jetbrains.kotlin.metadata"))
   }
 
-  // When testing R8 lib with relocated deps we must relocate kotlinx.metadata in the tests, since
-  // types from kotlinx.metadata are used on the R8 main/R8 test boundary.
+  // When testing R8 lib with relocated deps we must relocate kotlin.metadata in the tests, since
+  // types from kotlin.metadata are used on the R8 main/R8 test boundary.
   //
   // This is not needed when testing R8 lib excluding deps since we simply include the deps on the
   // classpath at runtime.
@@ -188,6 +188,7 @@ tasks {
     val r8WithRelocatedDepsJar = r8WithRelocatedDepsTask.getSingleOutputFile()
     val keepRuleFiles = listOf(
             getRoot().resolveAll("src", "main", "keep.txt"),
+            getRoot().resolveAll("src", "main", "discard.txt"),
             generatedKeepRulesProvider.getSingleOutputFile(),
             // TODO(b/294351878): Remove once enum issue is fixed
             getRoot().resolveAll("src", "main", "keep_r8resourceshrinker.txt"))
