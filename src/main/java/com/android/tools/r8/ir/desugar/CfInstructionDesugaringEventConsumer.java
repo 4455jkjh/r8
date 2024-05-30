@@ -347,6 +347,12 @@ public abstract class CfInstructionDesugaringEventConsumer
     }
 
     @Override
+    public void acceptInvokeObjectCloneOutliningMethod(
+        ProgramMethod method, ProgramMethod context) {
+      methodProcessor.scheduleDesugaredMethodForProcessing(method);
+    }
+
+    @Override
     public void acceptWrapperClasspathClass(DexClasspathClass clazz) {
       // Intentionally empty.
     }
@@ -609,7 +615,16 @@ public abstract class CfInstructionDesugaringEventConsumer
     @Override
     public void acceptInvokeStaticInterfaceOutliningMethod(
         ProgramMethod method, ProgramMethod context) {
-      // Intentionally empty. The method will be hit by tracing if required.
+      // The method will be hit by tracing if required.
+      // Pin the synthetic so it is not inlined again.
+      additions.addMinimumSyntheticKeepInfo(method, Joiner::disallowInlining);
+    }
+
+    @Override
+    public void acceptInvokeObjectCloneOutliningMethod(
+        ProgramMethod method, ProgramMethod context) {
+      // The method will be hit by tracing if required.
+      // Pin the synthetic so it is not inlined again.
       additions.addMinimumSyntheticKeepInfo(method, Joiner::disallowInlining);
     }
 
