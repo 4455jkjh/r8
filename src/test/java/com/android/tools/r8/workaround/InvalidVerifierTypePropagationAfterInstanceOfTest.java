@@ -69,7 +69,6 @@ public class InvalidVerifierTypePropagationAfterInstanceOfTest extends TestBase 
     runResult.applyIf(
         parameters.isCfRuntime()
             || parameters.getDexRuntimeVersion().isOlderThan(Version.V7_0_0)
-            || parameters.getDexRuntimeVersion().isNewerThanOrEqual(Version.V15_0_0)
             || isR8,
         TestRunResult::assertSuccessWithEmptyOutput,
         rr -> runResult.assertFailureWithErrorThatThrows(VerifyError.class));
