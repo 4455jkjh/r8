@@ -44,13 +44,14 @@ public enum AndroidApiLevel implements Ordered<AndroidApiLevel> {
   Sv2(32),
   T(33),
   U(34),
-  MAIN(35); // API level for main is tentative.
+  V(35),
+  MAIN(36); // API level for main is tentative.
 
   // When updating LATEST and a new version goes public, add a new api-versions.xml to third_party
   // and update the version and generated jar in AndroidApiDatabaseBuilderGeneratorTest. Together
   // with that update third_party/android_jar/libcore_latest/core-oj.jar and run
   // GenerateCovariantReturnTypeMethodsTest.
-  public static final AndroidApiLevel LATEST = U;
+  public static final AndroidApiLevel LATEST = V;
 
   public static final AndroidApiLevel API_DATABASE_LEVEL = LATEST;
 
@@ -114,7 +115,7 @@ public enum AndroidApiLevel implements Ordered<AndroidApiLevel> {
 
   public static AndroidApiLevel getAndroidApiLevel(int apiLevel) {
     assert apiLevel > 0;
-    assert U == LATEST; // This has to be updated when we add new api levels.
+    assert V == LATEST; // This has to be updated when we add new api levels.
     assert UNKNOWN.isGreaterThan(LATEST);
     switch (apiLevel) {
       case 1:
@@ -185,6 +186,8 @@ public enum AndroidApiLevel implements Ordered<AndroidApiLevel> {
         return T;
       case 34:
         return U;
+      case 35:
+        return V;
       default:
         return MAIN;
     }
