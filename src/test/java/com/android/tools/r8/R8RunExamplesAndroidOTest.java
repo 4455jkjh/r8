@@ -97,6 +97,10 @@ public class R8RunExamplesAndroidOTest extends RunExamplesAndroidOTest<R8Command
               Version.V14_0_0,
               // TODO(120402963) Triage.
               ImmutableList.of("invokecustom-with-shrinking", "invokecustom2-with-shrinking"))
+          .put(
+              Version.V15_0_0,
+              // TODO(120402963) Triage.
+              ImmutableList.of("invokecustom-with-shrinking", "invokecustom2-with-shrinking"))
           .put(Version.DEFAULT, ImmutableList.of())
           .build();
 
@@ -205,7 +209,7 @@ public class R8RunExamplesAndroidOTest extends RunExamplesAndroidOTest<R8Command
         .withDexCheck(
             inspector ->
                 checkLambdaCount(
-                    inspector, enableProguardCompatibilityMode ? 3 : 4, "lambdadesugaringnplus"))
+                    inspector, enableProguardCompatibilityMode ? 1 : 2, "lambdadesugaringnplus"))
         .run();
 
     test("lambdadesugaringnplus", "lambdadesugaringnplus", "LambdasWithStaticAndDefaultMethods")
@@ -247,7 +251,7 @@ public class R8RunExamplesAndroidOTest extends RunExamplesAndroidOTest<R8Command
             b ->
                 b.addProguardConfiguration(
                     getProguardOptionsNPlus(enableProguardCompatibilityMode), Origin.unknown()))
-        .withDexCheck(inspector -> checkLambdaCount(inspector, 4, "lambdadesugaringnplus"))
+        .withDexCheck(inspector -> checkLambdaCount(inspector, 2, "lambdadesugaringnplus"))
         .run();
 
     test("lambdadesugaringnplus", "lambdadesugaringnplus", "LambdasWithStaticAndDefaultMethods")

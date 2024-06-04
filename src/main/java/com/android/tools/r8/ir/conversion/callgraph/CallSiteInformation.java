@@ -7,15 +7,18 @@ import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.DexMethod;
 import com.android.tools.r8.graph.ImmediateProgramSubtypingInfo;
 import com.android.tools.r8.graph.ProgramMethod;
+import com.android.tools.r8.ir.conversion.MethodProcessorWithWave;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
 import com.android.tools.r8.shaking.KeepMethodInfo;
+import com.android.tools.r8.synthesis.SyntheticItems;
 import com.android.tools.r8.utils.InternalOptions;
 import com.android.tools.r8.utils.classhierarchy.MethodOverridesCollector;
+import com.android.tools.r8.utils.collections.BidirectionalManyToOneHashMap;
+import com.android.tools.r8.utils.collections.MutableBidirectionalManyToOneMap;
 import com.android.tools.r8.utils.collections.ProgramMethodSet;
 import com.google.common.collect.Sets;
-import java.util.IdentityHashMap;
-import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 public abstract class CallSiteInformation {
 
@@ -36,6 +39,8 @@ public abstract class CallSiteInformation {
   public abstract boolean hasSingleCallSite(ProgramMethod method);
 
   public abstract boolean isMultiCallerInlineCandidate(ProgramMethod method);
+
+  public abstract void notifyMethodInlined(ProgramMethod caller, ProgramMethod callee);
 
   public abstract void unsetCallSiteInformation(ProgramMethod method);
 
@@ -63,6 +68,9 @@ public abstract class CallSiteInformation {
     }
 
     @Override
+    public void notifyMethodInlined(ProgramMethod caller, ProgramMethod callee) {}
+
+    @Override
     public void unsetCallSiteInformation(ProgramMethod method) {
       // Intentionally empty.
     }
@@ -70,12 +78,21 @@ public abstract class CallSiteInformation {
 
   static class CallGraphBasedCallSiteInformation extends CallSiteInformation {
 
+    private final MethodProcessorWithWave methodProcessor;
+
     // Single callers track their calling context to ensure that the predicate is stable after
     // inlining of the caller.
-    private final Map<DexMethod, DexMethod> singleCallerMethods = new IdentityHashMap<>();
+    private final MutableBidirectionalManyToOneMap<DexMethod, DexMethod> singleCallerMethods =
+        BidirectionalManyToOneHashMap.newIdentityHashMap();
     private final Set<DexMethod> multiCallerInlineCandidates = Sets.newIdentityHashSet();
+    private final Set<DexMethod> noSingleCallerInliningInto = ConcurrentHashMap.newKeySet();
 
-    CallGraphBasedCallSiteInformation(AppView<AppInfoWithLiveness> appView, CallGraph graph) {
+    CallGraphBasedCallSiteInformation(
+        AppView<AppInfoWithLiveness> appView,
+        CallGraph graph,
+        MethodProcessorWithWave methodProcessor) {
+      this.methodProcessor = methodProcessor;
+
       InternalOptions options = appView.options();
       ProgramMethodSet pinned =
           MethodOverridesCollector.findAllMethodsAndOverridesThatMatches(
@@ -114,6 +131,14 @@ public abstract class CallSiteInformation {
           if (!appView.getKeepInfo(method).isSingleCallerInliningAllowed(options)) {
             continue;
           }
+          if (methodProcessor.isPostMethodProcessor()) {
+            SyntheticItems syntheticItems = appView.getSyntheticItems();
+            if (syntheticItems.hasKindThatMatches(
+                method.getHolderType(),
+                (kind, naming) -> !kind.isSingleCallerInlineableInPostMethodProcessor(naming))) {
+              continue;
+            }
+          }
           Set<Node> callersWithDeterministicOrder = node.getCallersWithDeterministicOrder();
           DexMethod caller = reference;
           // We can have recursive methods where the recursive call is the only call site. We do
@@ -122,9 +147,9 @@ public abstract class CallSiteInformation {
             assert callersWithDeterministicOrder.size() == 1;
             caller = callersWithDeterministicOrder.iterator().next().getMethod().getReference();
           }
-          DexMethod existing = singleCallerMethods.put(reference, caller);
-          assert existing == null;
-        } else if (numberOfCallSites > 1) {
+          assert !singleCallerMethods.containsKey(reference);
+          singleCallerMethods.put(reference, caller);
+        } else if (numberOfCallSites > 1 && methodProcessor.isPrimaryMethodProcessor()) {
           multiCallerInlineCandidates.add(reference);
         }
       }
@@ -137,9 +162,9 @@ public abstract class CallSiteInformation {
      * library method this always returns false.
      */
     @Override
-    @SuppressWarnings("ReferenceEquality")
     public boolean hasSingleCallSite(ProgramMethod method, ProgramMethod context) {
-      return singleCallerMethods.get(method.getReference()) == context.getReference();
+      return !noSingleCallerInliningInto.contains(context.getReference())
+          && context.getReference().isIdenticalTo(singleCallerMethods.get(method.getReference()));
     }
 
     /**
@@ -162,6 +187,19 @@ public abstract class CallSiteInformation {
     @Override
     public boolean isMultiCallerInlineCandidate(ProgramMethod method) {
       return multiCallerInlineCandidates.contains(method.getReference());
+    }
+
+    @Override
+    public void notifyMethodInlined(ProgramMethod caller, ProgramMethod callee) {
+      if (methodProcessor.isPrimaryMethodProcessor()) {
+        return;
+      }
+      assert methodProcessor.isPostMethodProcessor();
+      // If the callee is the single caller of another method, then disallow that single caller
+      // inlining, since we have now duplicated the call site as a result of this inlining.
+      if (singleCallerMethods.containsValue(callee.getReference())) {
+        noSingleCallerInliningInto.add(callee.getReference());
+      }
     }
 
     @Override

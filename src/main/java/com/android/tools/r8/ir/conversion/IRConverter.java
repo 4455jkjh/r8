@@ -63,6 +63,7 @@ import com.android.tools.r8.ir.optimize.classinliner.ClassInliner;
 import com.android.tools.r8.ir.optimize.enums.EnumUnboxer;
 import com.android.tools.r8.ir.optimize.enums.EnumValueOptimizer;
 import com.android.tools.r8.ir.optimize.info.CallSiteOptimizationInfo;
+import com.android.tools.r8.ir.optimize.info.MethodOptimizationInfo;
 import com.android.tools.r8.ir.optimize.info.MethodOptimizationInfoCollector;
 import com.android.tools.r8.ir.optimize.info.OptimizationFeedback;
 import com.android.tools.r8.ir.optimize.info.OptimizationFeedbackDelayed;
@@ -88,8 +89,8 @@ import com.android.tools.r8.utils.Action;
 import com.android.tools.r8.utils.DescriptorUtils;
 import com.android.tools.r8.utils.ExceptionUtils;
 import com.android.tools.r8.utils.InternalOptions;
+import com.android.tools.r8.utils.InternalOptions.InlinerOptions;
 import com.android.tools.r8.utils.InternalOptions.NeverMergeGroup;
-import com.android.tools.r8.utils.LazyBox;
 import com.android.tools.r8.utils.StringDiagnostic;
 import com.android.tools.r8.utils.ThreadUtils;
 import com.android.tools.r8.utils.Timing;
@@ -108,7 +109,7 @@ public class IRConverter {
   private final CodeRewriterPassCollection rewriterPassCollection;
   private final ClassInitializerDefaultsOptimization classInitializerDefaultsOptimization;
   protected final CfInstructionDesugaringCollection instructionDesugaring;
-  protected final FieldAccessAnalysis fieldAccessAnalysis;
+  protected FieldAccessAnalysis fieldAccessAnalysis;
   protected final LibraryMethodOverrideAnalysis libraryMethodOverrideAnalysis;
   protected final IdempotentFunctionCallCanonicalizer idempotentFunctionCallCanonicalizer;
   private final ClassInliner classInliner;
@@ -281,6 +282,14 @@ public class IRConverter {
 
   public Inliner getInliner() {
     return inliner;
+  }
+
+  public void unsetEnumUnboxer() {
+    enumUnboxer = EnumUnboxer.empty();
+  }
+
+  public void unsetFieldAccessAnalysis() {
+    fieldAccessAnalysis = null;
   }
 
   private boolean needsIRConversion(ProgramMethod method) {
@@ -720,21 +729,10 @@ public class IRConverter {
       timing.begin("Inline classes");
       // Class inliner should work before lambda merger, so if it inlines the
       // lambda, it does not get collected by merger.
-      assert options.inlinerOptions().enableInlining && inliner != null;
+      assert options.inlinerOptions().enableInlining;
+      assert inliner != null;
       classInliner.processMethodCode(
-          code.context(),
-          code,
-          feedback,
-          methodProcessor,
-          methodProcessingContext,
-          new LazyBox<>(
-              () ->
-                  inliner.createDefaultOracle(
-                      code.context(),
-                      methodProcessor,
-                      // Inlining instruction allowance is not needed for the class inliner since it
-                      // always uses a force inlining oracle for inlining.
-                      -1)));
+          context, code, feedback, methodProcessor, methodProcessingContext);
       timing.end();
       code.removeRedundantBlocks();
       assert code.isConsistentSSA(appView);
@@ -840,11 +838,12 @@ public class IRConverter {
     timing.begin("Finalize IR");
     finalizeIR(code, feedback, bytecodeMetadataProviderBuilder.build(), timing, previous);
     timing.end();
+    maybeMarkCallersForProcessing(context, methodProcessor);
     return timing;
   }
 
   private boolean shouldPassThrough(ProgramMethod method) {
-    if (appView.isCfByteCodePassThrough(method.getDefinition())) {
+    if (appView.isCfByteCodePassThrough(method)) {
       return true;
     }
     Code code = method.getDefinition().getCode();
@@ -900,6 +899,9 @@ public class IRConverter {
       timing.begin("Analyze field accesses");
       fieldAccessAnalysis.recordFieldAccesses(
           code, bytecodeMetadataProviderBuilder, feedback, methodProcessor);
+      if (classInitializerDefaultsResult != null) {
+        fieldAccessAnalysis.acceptClassInitializerDefaultsResult(classInitializerDefaultsResult);
+      }
       timing.end();
     }
 
@@ -963,6 +965,54 @@ public class IRConverter {
         finalizer.finalizeCode(code, bytecodeMetadataProvider, timing, printString), appView);
     markProcessed(code, feedback);
     printMethod(code.context(), "After finalization");
+  }
+
+  private void maybeMarkCallersForProcessing(
+      ProgramMethod method, MethodProcessor methodProcessor) {
+    if (methodProcessor.isPostMethodProcessor()) {
+      PostMethodProcessor postMethodProcessor = methodProcessor.asPostMethodProcessor();
+      if (shouldMarkCallersForProcessing(method)) {
+        postMethodProcessor.markCallersForProcessing(method);
+      }
+    }
+  }
+
+  private boolean shouldMarkCallersForProcessing(ProgramMethod method) {
+    Code bytecode = method.getDefinition().getCode();
+    InlinerOptions inlinerOptions = appView.options().inlinerOptions();
+    int instructionLimit = inlinerOptions.getSimpleInliningInstructionLimit();
+    int estimatedIncrement = getEstimatedInliningInstructionLimitIncrementForReturn();
+    if (bytecode.estimatedSizeForInliningAtMost(instructionLimit + estimatedIncrement)) {
+      return true;
+    }
+    if (delayedOptimizationFeedback.hasPendingOptimizationInfo(method)) {
+      MethodOptimizationInfo oldOptimizationInfo = method.getOptimizationInfo();
+      MethodOptimizationInfo newOptimizationInfo =
+          delayedOptimizationFeedback.getMethodOptimizationInfoForUpdating(method);
+      if (!oldOptimizationInfo
+          .getAbstractReturnValue()
+          .equals(newOptimizationInfo.getAbstractReturnValue())) {
+        return true;
+      }
+      if (!oldOptimizationInfo.getDynamicType().equals(newOptimizationInfo.getDynamicType())) {
+        return true;
+      }
+      if (oldOptimizationInfo.mayHaveSideEffects() && !newOptimizationInfo.mayHaveSideEffects()) {
+        return true;
+      }
+      if (!oldOptimizationInfo.neverReturnsNormally()
+          && newOptimizationInfo.neverReturnsNormally()) {
+        return true;
+      }
+      if (!oldOptimizationInfo.returnsArgument() && newOptimizationInfo.returnsArgument()) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  private int getEstimatedInliningInstructionLimitIncrementForReturn() {
+    return 1;
   }
 
   private IRCode roundtripThroughLir(
@@ -1090,6 +1140,9 @@ public class IRConverter {
     assert method.getHolder().lookupMethod(method.getReference()) == null;
     appView.withArgumentPropagator(argumentPropagator -> argumentPropagator.onMethodPruned(method));
     enumUnboxer.onMethodPruned(method);
+    if (fieldAccessAnalysis != null) {
+      fieldAccessAnalysis.fieldAssignmentTracker().onMethodPruned(method);
+    }
     numberUnboxer.onMethodPruned(method);
     outliner.onMethodPruned(method);
     if (inliner != null) {
@@ -1107,6 +1160,9 @@ public class IRConverter {
     appView.withArgumentPropagator(
         argumentPropagator -> argumentPropagator.onMethodCodePruned(method));
     enumUnboxer.onMethodCodePruned(method);
+    if (fieldAccessAnalysis != null) {
+      fieldAccessAnalysis.fieldAssignmentTracker().onMethodCodePruned(method);
+    }
     numberUnboxer.onMethodCodePruned(method);
     outliner.onMethodCodePruned(method);
     if (inliner != null) {

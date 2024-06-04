@@ -4,6 +4,7 @@
 
 package com.android.tools.r8.ir.analysis.type;
 
+import com.android.tools.r8.graph.AppInfoWithClassHierarchy;
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.DexClass;
 import com.android.tools.r8.graph.DexType;
@@ -22,7 +23,7 @@ import java.util.Set;
 public abstract class DynamicType {
 
   public static DynamicTypeWithUpperBound create(
-      AppView<AppInfoWithLiveness> appView, TypeElement dynamicUpperBoundType) {
+      AppView<? extends AppInfoWithClassHierarchy> appView, TypeElement dynamicUpperBoundType) {
     ClassTypeElement dynamicLowerBoundType = null;
     if (dynamicUpperBoundType.isClassType()) {
       ClassTypeElement dynamicUpperBoundClassType = dynamicUpperBoundType.asClassType();
@@ -36,7 +37,7 @@ public abstract class DynamicType {
   }
 
   public static DynamicTypeWithUpperBound create(
-      AppView<AppInfoWithLiveness> appView,
+      AppView<? extends AppInfoWithClassHierarchy> appView,
       TypeElement dynamicUpperBoundType,
       ClassTypeElement dynamicLowerBoundType) {
     if (dynamicUpperBoundType.isBottom()) {
@@ -66,7 +67,7 @@ public abstract class DynamicType {
   }
 
   public static DynamicTypeWithUpperBound create(
-      AppView<AppInfoWithLiveness> appView, Value value) {
+      AppView<? extends AppInfoWithClassHierarchy> appView, Value value) {
     assert value.getType().isReferenceType();
     TypeElement dynamicUpperBoundType = value.getDynamicUpperBoundType(appView);
     ClassTypeElement dynamicLowerBoundType =
@@ -170,8 +171,8 @@ public abstract class DynamicType {
     if (isBottom()) {
       // Account for the fact that the in-static-type may be more precise than the static type of
       // the current dynamic type.
-      if (inDynamicType.isNotNullType() && inStaticType != null) {
-        return create(appView, inStaticType.toNonNullTypeElement(appView));
+      if (inStaticType != null) {
+        return inDynamicType.uncanonicalizeNotNullType(appView, inStaticType);
       }
       return inDynamicType;
     }
@@ -188,7 +189,7 @@ public abstract class DynamicType {
       if (inStaticType == null || inStaticType.isIdenticalTo(outStaticType)) {
         return getNullability().isNullable() ? unknown() : inDynamicType;
       }
-      inDynamicType = create(appView, inStaticType.toNonNullTypeElement(appView));
+      inDynamicType = inDynamicType.uncanonicalizeNotNullType(appView, inStaticType);
     }
     assert isDynamicTypeWithUpperBound();
     assert inDynamicType.isDynamicTypeWithUpperBound();
@@ -198,6 +199,11 @@ public abstract class DynamicType {
   public abstract DynamicType rewrittenWithLens(
       AppView<AppInfoWithLiveness> appView, GraphLens graphLens, Set<DexType> prunedTypes);
 
+  public DynamicType uncanonicalizeNotNullType(
+      AppView<AppInfoWithLiveness> appView, DexType staticType) {
+    return this;
+  }
+
   public abstract DynamicType withNullability(Nullability nullability);
 
   @Override
@@ -206,13 +212,8 @@ public abstract class DynamicType {
   @Override
   public abstract int hashCode();
 
-  public DynamicType uncanonicalizeNotNullType(
-      AppView<AppInfoWithLiveness> appView, DexType staticType) {
-    return this;
-  }
-
   private static boolean verifyNotEffectivelyFinalClassType(
-      AppView<AppInfoWithLiveness> appView, TypeElement type) {
+      AppView<? extends AppInfoWithClassHierarchy> appView, TypeElement type) {
     if (type.isClassType()) {
       ClassTypeElement classType = type.asClassType();
       DexClass clazz = appView.definitionFor(classType.getClassType());

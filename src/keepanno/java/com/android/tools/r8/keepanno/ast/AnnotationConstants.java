@@ -188,6 +188,7 @@ public final class AnnotationConstants {
     public static final String FIELD_REPLACE = "FIELD_REPLACE";
     public static final String NEVER_INLINE = "NEVER_INLINE";
     public static final String CLASS_OPEN_HIERARCHY = "CLASS_OPEN_HIERARCHY";
+    public static final String GENERIC_SIGNATURE = "GENERIC_SIGNATURE";
   }
 
   public static final class MemberAccess {
@@ -244,7 +245,9 @@ public final class AnnotationConstants {
     public static final String classNameGroup = "class-name";
     public static final String name = "name";
     public static final String constant = "constant";
+    public static final String classSimpleNameGroup = "class-simple-name";
     public static final String simpleName = "simpleName";
+    public static final String simpleNamePattern = "simpleNamePattern";
     public static final String packageName = "packageName";
   }
 

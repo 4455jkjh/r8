@@ -181,6 +181,9 @@ public class SingleCallerInliner {
       }
 
       @Override
+      public void notifyMethodInlined(ProgramMethod caller, ProgramMethod callee) {}
+
+      @Override
       public void unsetCallSiteInformation(ProgramMethod method) {
         throw new Unreachable();
       }
@@ -250,12 +253,12 @@ public class SingleCallerInliner {
 
     @Override
     public DefaultInliningOracle createDefaultOracle(
+        IRCode code,
         ProgramMethod method,
         MethodProcessor methodProcessor,
-        int inliningInstructionAllowance,
         InliningReasonStrategy inliningReasonStrategy) {
       return new DefaultInliningOracle(
-          appView, inliningReasonStrategy, method, methodProcessor, inliningInstructionAllowance) {
+          appView, method, methodProcessor, inliningReasonStrategy, code) {
 
         @Override
         public InlineResult computeInlining(

@@ -7,6 +7,8 @@ import static com.android.tools.r8.utils.MapUtils.ignoreKey;
 
 import com.android.tools.r8.errors.Unreachable;
 import com.android.tools.r8.graph.AppView;
+import com.android.tools.r8.graph.Code;
+import com.android.tools.r8.graph.DefaultUseRegistryWithResult;
 import com.android.tools.r8.graph.DexProgramClass;
 import com.android.tools.r8.graph.DexType;
 import com.android.tools.r8.graph.ProgramField;
@@ -17,6 +19,8 @@ import com.android.tools.r8.ir.analysis.type.TypeElement;
 import com.android.tools.r8.ir.analysis.value.AbstractValue;
 import com.android.tools.r8.ir.analysis.value.AbstractValueFactory;
 import com.android.tools.r8.ir.code.IRCode;
+import com.android.tools.r8.ir.code.Instruction;
+import com.android.tools.r8.ir.code.NewInstance;
 import com.android.tools.r8.ir.conversion.MethodConversionOptions;
 import com.android.tools.r8.optimize.argumentpropagation.codescanner.ConcreteArrayTypeValueState;
 import com.android.tools.r8.optimize.argumentpropagation.codescanner.ConcreteClassTypeValueState;
@@ -26,14 +30,11 @@ import com.android.tools.r8.optimize.argumentpropagation.codescanner.FieldStateC
 import com.android.tools.r8.optimize.argumentpropagation.codescanner.NonEmptyValueState;
 import com.android.tools.r8.optimize.argumentpropagation.codescanner.ValueState;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
-import com.android.tools.r8.utils.IterableUtils;
-import com.android.tools.r8.utils.ListUtils;
 import com.android.tools.r8.utils.MapUtils;
 import com.android.tools.r8.utils.Pair;
 import com.android.tools.r8.utils.ThreadUtils;
 import com.android.tools.r8.utils.Timing;
 import com.android.tools.r8.utils.collections.ProgramFieldSet;
-import com.google.common.collect.Lists;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -42,21 +43,28 @@ import java.util.Deque;
 import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.function.Consumer;
+import java.util.function.Predicate;
 
 public class DefaultFieldValueJoiner {
 
   private final AppView<AppInfoWithLiveness> appView;
+  private final Set<DexProgramClass> classesWithSingleCallerInlinedInstanceInitializers;
   private final FieldStateCollection fieldStates;
   private final List<FlowGraph> flowGraphs;
 
   public DefaultFieldValueJoiner(
       AppView<AppInfoWithLiveness> appView,
+      Set<DexProgramClass> classesWithSingleCallerInlinedInstanceInitializers,
       FieldStateCollection fieldStates,
       List<FlowGraph> flowGraphs) {
     this.appView = appView;
+    this.classesWithSingleCallerInlinedInstanceInitializers =
+        classesWithSingleCallerInlinedInstanceInitializers;
     this.fieldStates = fieldStates;
     this.flowGraphs = flowGraphs;
   }
@@ -66,24 +74,40 @@ public class DefaultFieldValueJoiner {
     // Find all the fields where we need to determine if each field read is guaranteed to be
     // dominated by a write.
     Map<DexProgramClass, List<ProgramField>> fieldsOfInterest = getFieldsOfInterest();
+    if (fieldsOfInterest.isEmpty()) {
+      return Collections.emptyMap();
+    }
 
     // If constructor inlining is disabled, then we focus on whether each instance initializer
     // definitely assigns the given field before it is read. We do the same for final and static
     // fields.
-    Map<DexProgramClass, List<ProgramField>> nonFinalInstanceFields =
+    Map<DexType, ProgramFieldSet> fieldsNotSubjectToInitializerAnalysis =
         removeFieldsNotSubjectToInitializerAnalysis(fieldsOfInterest);
     ProgramFieldSet fieldsWithLiveDefaultValue = ProgramFieldSet.createConcurrent();
-    analyzeInitializers(fieldsOfInterest, fieldsWithLiveDefaultValue::add, executorService);
+    analyzeInitializers(
+        fieldsOfInterest,
+        field -> {
+          if (!field.getAccessFlags().isFinal() && !field.getAccessFlags().isStatic()) {
+            fieldsNotSubjectToInitializerAnalysis
+                .computeIfAbsent(
+                    field.getHolderType(), ignoreKey(ProgramFieldSet::createConcurrent))
+                .add(field);
+          } else {
+            fieldsWithLiveDefaultValue.add(field);
+          }
+        },
+        executorService);
 
     // For non-final fields where writes in instance initializers may have been subject to
     // constructor inlining, we find all new-instance instructions (including subtype allocations)
     // and check if the field is written on each allocation before it is possibly read.
-    analyzeNewInstanceInstructions(nonFinalInstanceFields, fieldsWithLiveDefaultValue::add);
+    analyzeNewInstanceInstructions(
+        fieldsNotSubjectToInitializerAnalysis, fieldsWithLiveDefaultValue::add, executorService);
 
     return updateFlowGraphs(fieldsWithLiveDefaultValue, executorService);
   }
 
-  private Map<DexProgramClass, List<ProgramField>> getFieldsOfInterest() {
+  protected Map<DexProgramClass, List<ProgramField>> getFieldsOfInterest() {
     Map<DexProgramClass, List<ProgramField>> fieldsOfInterest = new IdentityHashMap<>();
     for (DexProgramClass clazz : appView.appInfo().classes()) {
       clazz.forEachProgramField(
@@ -108,32 +132,43 @@ public class DefaultFieldValueJoiner {
     return fieldsOfInterest;
   }
 
-  private Map<DexProgramClass, List<ProgramField>> removeFieldsNotSubjectToInitializerAnalysis(
-      Map<DexProgramClass, List<ProgramField>> fieldsOfInterest) {
-    // When constructor inlining is disabled, we only analyze the initializers of each field holder.
+  private Map<DexType, ProgramFieldSet> removeFieldsNotSubjectToInitializerAnalysis(
+      Map<DexProgramClass, List<ProgramField>> fieldsSubjectToInitializerAnalysis) {
+    // When there is no constructor inlining, we can always analyze the initializers.
+    Map<DexType, ProgramFieldSet> fieldsNotSubjectToInitializerAnalysis = new ConcurrentHashMap<>();
     if (!appView.options().canInitNewInstanceUsingSuperclassConstructor()) {
-      return Collections.emptyMap();
+      return fieldsNotSubjectToInitializerAnalysis;
+    }
+    if (classesWithSingleCallerInlinedInstanceInitializers != null
+        && classesWithSingleCallerInlinedInstanceInitializers.isEmpty()) {
+      return fieldsNotSubjectToInitializerAnalysis;
     }
 
     // When constructor inlining is enabled, we can still limit the analysis to the instance
     // initializers for final fields. We can do the same for static fields as <clinit> is not
     // subject to inlining.
-    Map<DexProgramClass, List<ProgramField>> nonFinalInstanceFields = new IdentityHashMap<>();
     MapUtils.removeIf(
-        fieldsOfInterest,
+        fieldsSubjectToInitializerAnalysis,
         (holder, fields) -> {
+          if (classesWithSingleCallerInlinedInstanceInitializers != null
+              && !classesWithSingleCallerInlinedInstanceInitializers.contains(holder)) {
+            return false;
+          }
+
           fields.removeIf(
               field -> {
                 if (!field.getAccessFlags().isFinal() && !field.getAccessFlags().isStatic()) {
-                  nonFinalInstanceFields
-                      .computeIfAbsent(holder, ignoreKey(ArrayList::new))
+                  fieldsNotSubjectToInitializerAnalysis
+                      .computeIfAbsent(
+                          holder.getType(), ignoreKey(ProgramFieldSet::createConcurrent))
                       .add(field);
+                  return true;
                 }
                 return false;
               });
           return fields.isEmpty();
         });
-    return nonFinalInstanceFields;
+    return fieldsNotSubjectToInitializerAnalysis;
   }
 
   private void analyzeInitializers(
@@ -190,32 +225,118 @@ public class DefaultFieldValueJoiner {
 
   private void analyzeInstanceInitializerAssignments(
       DexProgramClass clazz,
-      ProgramFieldSet instanceFieldsWithLiveDefaultValue,
+      ProgramFieldSet instanceFieldsWithoutDefaultValue,
       Consumer<ProgramField> liveDefaultValueConsumer) {
-    if (instanceFieldsWithLiveDefaultValue.isEmpty()) {
+    if (instanceFieldsWithoutDefaultValue.isEmpty()) {
       return;
     }
-    List<ProgramMethod> instanceInitializers =
-        Lists.newArrayList(clazz.programInstanceInitializers());
-    // TODO(b/296030319): Handle multiple instance initializers.
-    if (instanceInitializers.size() == 1) {
-      ProgramMethod instanceInitializer = ListUtils.first(instanceInitializers);
+    ProgramFieldSet instanceFieldsWithDefaultValue = ProgramFieldSet.create();
+    for (ProgramMethod instanceInitializer : clazz.programInstanceInitializers()) {
       IRCode code = instanceInitializer.buildIR(appView, MethodConversionOptions.nonConverting());
       FieldReadBeforeWriteAnalysis analysis = new FieldReadBeforeWriteAnalysis(appView, code);
-      instanceFieldsWithLiveDefaultValue.removeIf(analysis::isInstanceFieldNeverReadBeforeWrite);
+      instanceFieldsWithoutDefaultValue.removeIf(
+          field -> {
+            if (analysis.isInstanceFieldMaybeReadBeforeWrite(field)
+                && instanceFieldsWithDefaultValue.add(field)) {
+              liveDefaultValueConsumer.accept(field);
+              return true;
+            }
+            return false;
+          });
     }
-    instanceFieldsWithLiveDefaultValue.forEach(liveDefaultValueConsumer);
   }
 
   private void analyzeNewInstanceInstructions(
-      Map<DexProgramClass, List<ProgramField>> nonFinalInstanceFields,
-      Consumer<ProgramField> liveDefaultValueConsumer) {
-    // Conservatively treat all fields as maybe read before written.
-    // TODO(b/296030319): Implement analysis by building IR for all methods that instantiate the
-    //  relevant classes and analyzing the puts to the newly created instances.
-    for (ProgramField field : IterableUtils.flatten(nonFinalInstanceFields.values())) {
-      liveDefaultValueConsumer.accept(field);
+      Map<DexType, ProgramFieldSet> nonFinalInstanceFields,
+      Consumer<ProgramField> liveDefaultValueConsumer,
+      ExecutorService executorService)
+      throws ExecutionException {
+    // To simplify the analysis, we currently bail out for non-final classes.
+    // TODO(b/296030319): Handle non-final classes.
+    MapUtils.removeIf(
+        nonFinalInstanceFields,
+        (holderType, fields) -> {
+          assert !fields.isEmpty();
+          DexProgramClass holder = fields.iterator().next().getHolder();
+          if (holder.isFinal() || !appView.appInfo().isInstantiatedIndirectly(holder)) {
+            // When the class is not explicitly marked final, the class could in principle have
+            // injected subclasses if it is pinned. However, none of the fields are pinned, so we
+            // should be allowed to reason about the field assignments in the program.
+            assert fields.stream()
+                .allMatch(
+                    field -> appView.getKeepInfo(field).isValuePropagationAllowed(appView, field));
+            return false;
+          }
+          fields.forEach(liveDefaultValueConsumer);
+          return true;
+        });
+
+    // We analyze all allocations of the classes that declare one of the given fields.
+    ThreadUtils.processMethods(
+        appView,
+        method ->
+            analyzeNewInstanceInstructionsInMethod(
+                nonFinalInstanceFields, liveDefaultValueConsumer, method),
+        appView.options().getThreadingModule(),
+        executorService);
+  }
+
+  private void analyzeNewInstanceInstructionsInMethod(
+      Map<DexType, ProgramFieldSet> nonFinalInstanceFields,
+      Consumer<ProgramField> liveDefaultValueConsumer,
+      ProgramMethod method) {
+    if (!maybeHasNewInstanceThatMatches(method, nonFinalInstanceFields::containsKey)) {
+      return;
     }
+    IRCode code = method.buildIR(appView, MethodConversionOptions.nonConverting());
+    for (NewInstance newInstance : code.<NewInstance>instructions(Instruction::isNewInstance)) {
+      ProgramFieldSet fieldsOfInterest = nonFinalInstanceFields.get(newInstance.getType());
+      if (fieldsOfInterest == null) {
+        continue;
+      }
+      FieldReadBeforeWriteDfsAnalysis analysis =
+          new FieldReadBeforeWriteDfsAnalysis(appView, code, fieldsOfInterest, newInstance) {
+
+            @Override
+            public AnalysisContinuation acceptFieldMaybeReadBeforeWrite(ProgramField field) {
+              // Remove this field from the `fieldsOfInterest`, so that we do not spend more time
+              // analyzing it.
+              if (fieldsOfInterest.remove(field)) {
+                liveDefaultValueConsumer.accept(field);
+              }
+              return AnalysisContinuation.abortIf(fieldsOfInterest.isEmpty());
+            }
+          };
+      analysis.run();
+      if (fieldsOfInterest.isEmpty()) {
+        nonFinalInstanceFields.remove(newInstance.getType());
+      }
+    }
+  }
+
+  private boolean maybeHasNewInstanceThatMatches(
+      ProgramMethod method, Predicate<DexType> predicate) {
+    Code code = method.getDefinition().getCode();
+    if (code == null || code.isSharedCodeObject()) {
+      return false;
+    }
+    if (code.isLirCode()) {
+      return code.asLirCode()
+          .hasConstantItemThatMatches(
+              constant -> constant instanceof DexType && predicate.test((DexType) constant));
+    }
+    assert appView.isCfByteCodePassThrough(method);
+    assert code.isCfCode();
+    return method.registerCodeReferencesWithResult(
+        new DefaultUseRegistryWithResult<>(appView, method, false) {
+
+          @Override
+          public void registerNewInstance(DexType type) {
+            if (predicate.test(type)) {
+              setResult(true);
+            }
+          }
+        });
   }
 
   private Map<FlowGraph, Deque<FlowGraphNode>> updateFlowGraphs(

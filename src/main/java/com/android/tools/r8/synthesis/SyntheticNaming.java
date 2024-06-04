@@ -76,6 +76,7 @@ public class SyntheticNaming {
       generator.forSingleMethod("BackportWithForwarding");
   public final SyntheticKind STATIC_INTERFACE_CALL =
       generator.forSingleMethod("StaticInterfaceCall");
+  public final SyntheticKind OBJECT_CLONE_OUTLINE = generator.forSingleMethod("ObjectCloneOutline");
   public final SyntheticKind TO_STRING_IF_NOT_NULL =
       generator.forSingleMethodWithGlobalMerging("ToStringIfNotNull");
   public final SyntheticKind THROW_CCE_IF_NOT_NULL =
@@ -230,6 +231,14 @@ public class SyntheticNaming {
 
     public String getDescriptor() {
       return descriptor;
+    }
+
+    public boolean isSingleCallerInlineableInPostMethodProcessor(SyntheticNaming naming) {
+      // Do not allow single caller inlining the enum utility classes in the second optimization
+      // pass. We rewrite code on-the-fly to call these method, so removing them as a result of
+      // single caller inlining would lead to compilation errors.
+      return !equals(naming.ENUM_UNBOXING_LOCAL_UTILITY_CLASS)
+          && !equals(naming.ENUM_UNBOXING_SHARED_UTILITY_CLASS);
     }
 
     public boolean isSyntheticMethodKind() {

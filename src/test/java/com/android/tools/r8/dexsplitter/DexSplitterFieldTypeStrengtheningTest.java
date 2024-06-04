@@ -7,7 +7,6 @@ package com.android.tools.r8.dexsplitter;
 import static com.android.tools.r8.utils.codeinspector.Matchers.isPresent;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assume.assumeTrue;
 
 import com.android.tools.r8.CompilationFailedException;
 import com.android.tools.r8.TestParameters;
@@ -42,7 +41,7 @@ public class DexSplitterFieldTypeStrengtheningTest extends SplitterTestBase {
 
   @Test
   public void testOnR8Splitter() throws IOException, CompilationFailedException {
-    assumeTrue(parameters.isDexRuntime());
+    parameters.assumeDexRuntime();
     ProcessResult processResult =
         testR8Splitter(
             parameters,
@@ -66,8 +65,8 @@ public class DexSplitterFieldTypeStrengtheningTest extends SplitterTestBase {
             testBuilder ->
                 testBuilder.addLibraryFiles(
                     parameters.getDefaultAndroidJarAbove(AndroidApiLevel.K)));
-    assertEquals(processResult.exitCode, 0);
-    assertEquals(processResult.stdout, EXPECTED);
+    assertEquals(processResult.stdout + processResult.stderr, 0, processResult.exitCode);
+    assertEquals(EXPECTED, processResult.stdout);
   }
 
   public abstract static class BaseSuperClass implements RunInterface {

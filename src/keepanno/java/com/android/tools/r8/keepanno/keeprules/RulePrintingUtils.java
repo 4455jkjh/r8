@@ -334,11 +334,7 @@ public abstract class RulePrintingUtils {
 
   private static RulePrinter printSimpleClassName(
       KeepUnqualfiedClassNamePattern namePattern, RulePrinter builder) {
-    if (namePattern.isAny()) {
-      return builder.appendStar();
-    }
-    assert namePattern.isExact();
-    return builder.append(namePattern.asExact().getExactNameAsString());
+    return printStringPattern(builder, namePattern.asStringPattern());
   }
 
   private static String getOptionString(KeepOption option) {
@@ -353,6 +349,8 @@ public abstract class RulePrintingUtils {
         return "accessmodification";
       case ANNOTATION_REMOVAL:
         return "annotationremoval";
+      case SIGNATURE_REMOVAL:
+        return "signatureremoval";
       default:
         throw new Unimplemented();
     }

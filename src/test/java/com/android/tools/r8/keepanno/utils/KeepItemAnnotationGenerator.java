@@ -132,6 +132,8 @@ public class KeepItemAnnotationGenerator {
       enumRef(KEEP_CONSTRAINT, "NEVER_INLINE");
   private static final EnumReference CONSTRAINT_CLASS_OPEN_HIERARCHY =
       enumRef(KEEP_CONSTRAINT, "CLASS_OPEN_HIERARCHY");
+  private static final EnumReference CONSTRAINT_GENERIC_SIGNATURE =
+      enumRef(KEEP_CONSTRAINT, "GENERIC_SIGNATURE");
   static final List<EnumReference> KEEP_CONSTRAINT_VALUES =
       ImmutableList.of(
           CONSTRAINT_LOOKUP,
@@ -146,7 +148,8 @@ public class KeepItemAnnotationGenerator {
           CONSTRAINT_METHOD_REPLACE,
           CONSTRAINT_FIELD_REPLACE,
           CONSTRAINT_NEVER_INLINE,
-          CONSTRAINT_CLASS_OPEN_HIERARCHY);
+          CONSTRAINT_CLASS_OPEN_HIERARCHY,
+          CONSTRAINT_GENERIC_SIGNATURE);
 
   static final ClassReference MEMBER_ACCESS_FLAGS = annoClass("MemberAccessFlags");
   private static final EnumReference MEMBER_ACCESS_PUBLIC = enumRef(MEMBER_ACCESS_FLAGS, "PUBLIC");
@@ -646,7 +649,13 @@ public class KeepItemAnnotationGenerator {
                       "For example, the simple name of {@code com.example.MyClass} is {@code"
                           + " MyClass}.")
                   .addParagraph("The default matches any simple name.")
-                  .defaultEmptyString());
+                  .defaultEmptyString())
+          .addMember(
+              new GroupMember("simpleNamePattern")
+                  .setDocTitle("Define the simple-name pattern by a string pattern.")
+                  .addParagraph("The default matches any simple name.")
+                  .setDocReturn("The string pattern of the class simple name.")
+                  .defaultValue(STRING_PATTERN, DEFAULT_INVALID_STRING_PATTERN));
     }
 
     private Group classNamePatternPackageGroup() {

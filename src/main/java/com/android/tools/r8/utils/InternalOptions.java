@@ -409,6 +409,7 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
   // Optimization-related flags. These should conform to -dontoptimize and disableAllOptimizations.
   public boolean enableFieldBitAccessAnalysis =
       System.getProperty("com.android.tools.r8.fieldBitAccessAnalysis") != null;
+  public boolean enableFieldAssignmentTracker = true;
   public boolean enableFieldValueAnalysis = true;
   public boolean enableUnusedInterfaceRemoval = true;
   public boolean enableDevirtualization = true;
@@ -2353,6 +2354,8 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
     public boolean enableCheckCastAndInstanceOfRemoval = true;
     public boolean enableDeadSwitchCaseElimination = true;
     public boolean enableInvokeSuperToInvokeVirtualRewriting = true;
+    public boolean enableLegacyClassDefOrdering =
+        System.getProperty("com.android.tools.r8.enableLegacyClassDefOrdering") != null;
     public boolean enableMultiANewArrayDesugaringForClassFiles = false;
     public boolean enableStrictFrameVerification = false;
     public boolean enableSyntheticSharing = true;
@@ -2739,6 +2742,10 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
     return hasFeaturePresentFrom(AndroidApiLevel.N);
   }
 
+  public boolean canUseJavaUtilObjectsNonNull() {
+    return isGeneratingDex() && hasFeaturePresentFrom(AndroidApiLevel.N);
+  }
+
   public boolean canUseSuppressedExceptions() {
     // TODO(b/214239152): Suppressed exceptions are @hide from at least 4.0.1 / Android I / API 14.
     return hasFeaturePresentFrom(AndroidApiLevel.K);
@@ -3012,6 +3019,22 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
     return canHaveBugPresentUntilExclusive(AndroidApiLevel.Q);
   }
 
+  // The art verifier incorrectly propagates type information for instance-of instructions that
+  // always evaluate to false (b/288273207, b/335663487).
+  //
+  // Type t = new Type()
+  // Object o = t
+  // if (o instanceof UnrelatedToType) {
+  //   t.f <- VerifyError: Cannot read field f from object of type UnrelatedToType.
+  // }
+  //
+  // This can happen with D8, but is most likely to hit in R8 after inlining.
+  //
+  // Not known when/if Art will fix this.
+  public boolean canHaveArtFalsyInstanceOfVerifierBug() {
+    return true;
+  }
+
   // Some Art Lollipop version do not deal correctly with long-to-int conversions.
   //
   // In particular, the following code performs an out of bounds array access when the
@@ -3062,6 +3085,12 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
   //
   // See b/69826014.
   public boolean canHaveIncorrectJoinForArrayOfInterfacesBug() {
+    return true;
+  }
+
+  // Art 7 and up can fail access check for array clone calls from within interface methods.
+  // See b/342802978.
+  public boolean canHaveArtArrayCloneFromInterfaceMethodBug() {
     return true;
   }
 

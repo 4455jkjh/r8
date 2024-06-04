@@ -136,7 +136,7 @@ public class AppView<T extends AppInfo> implements DexDefinitionSupplier, Librar
   private final LibraryMethodSideEffectModelCollection libraryMethodSideEffectModelCollection;
 
   // Optimizations.
-  private final ArgumentPropagator argumentPropagator;
+  private ArgumentPropagator argumentPropagator;
   private final LibraryMemberOptimizer libraryMemberOptimizer;
   private final ProtoShrinker protoShrinker;
 
@@ -564,6 +564,10 @@ public class AppView<T extends AppInfo> implements DexDefinitionSupplier, Librar
     return appInfo.getSyntheticItems();
   }
 
+  public void unsetArgumentPropagator() {
+    argumentPropagator = null;
+  }
+
   public <E extends Throwable> void withArgumentPropagator(
       ThrowingConsumer<ArgumentPropagator, E> consumer) throws E {
     if (argumentPropagator != null) {
@@ -969,6 +973,10 @@ public class AppView<T extends AppInfo> implements DexDefinitionSupplier, Librar
       return OptionalBool.TRUE;
     }
     return OptionalBool.unknown();
+  }
+
+  public boolean isCfByteCodePassThrough(ProgramMethod method) {
+    return isCfByteCodePassThrough(method.getDefinition());
   }
 
   public boolean isCfByteCodePassThrough(DexEncodedMethod method) {

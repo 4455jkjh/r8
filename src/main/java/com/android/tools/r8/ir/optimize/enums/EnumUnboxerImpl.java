@@ -712,6 +712,7 @@ public class EnumUnboxerImpl extends EnumUnboxer {
 
     if (enumUnboxingCandidatesInfo.isEmpty()) {
       assert enumDataMap.isEmpty();
+      converter.unsetEnumUnboxer();
       timing.end();
       return;
     }
@@ -781,6 +782,7 @@ public class EnumUnboxerImpl extends EnumUnboxer {
     appView.testing().checkDeterminism(postMethodProcessorBuilder::dump);
 
     appView.notifyOptimizationFinishedForTesting();
+    converter.unsetEnumUnboxer();
     timing.end();
   }
 
@@ -967,9 +969,6 @@ public class EnumUnboxerImpl extends EnumUnboxer {
                 unboxedValues.put(field.getReference(), ordinalToUnboxedInt(ordinal));
                 ordinalToObjectState.put(ordinal, enumState);
                 if (isEnumWithSubtypes) {
-                  // If the dynamic type is a NotNull dynamic type, then uncanonicalize the dynamic
-                  // type. If the static type is an effectively final class then this yields an
-                  // exact dynamic type.
                   DynamicType dynamicType =
                       field
                           .getOptimizationInfo()
