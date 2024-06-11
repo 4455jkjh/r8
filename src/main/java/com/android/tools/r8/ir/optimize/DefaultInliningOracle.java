@@ -16,6 +16,7 @@ import com.android.tools.r8.errors.Unreachable;
 import com.android.tools.r8.features.FeatureSplitBoundaryOptimizationUtils;
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.Code;
+import com.android.tools.r8.graph.DefaultUseRegistryWithResult;
 import com.android.tools.r8.graph.DexEncodedField;
 import com.android.tools.r8.graph.DexField;
 import com.android.tools.r8.graph.DexItemFactory;
@@ -461,6 +462,11 @@ public final class DefaultInliningOracle implements InliningOracle {
       return null;
     }
 
+    if (isInliningBlockedDueToArrayClone(context, singleTarget, appView)) {
+      whyAreYouNotInliningReporter.reportUnsafeDueToArrayCloneCall();
+      return null;
+    }
+
     // Make sure constructor inlining is legal.
     if (singleTarget.getDefinition().isInstanceInitializer()
         && !canInlineInstanceInitializer(
@@ -603,6 +609,25 @@ public final class DefaultInliningOracle implements InliningOracle {
     }
 
     return false;
+  }
+
+  public static boolean isInliningBlockedDueToArrayClone(
+      ProgramMethod context, ProgramMethod singleTarget, AppView<?> appView) {
+    if (!appView.options().canHaveArtArrayCloneFromInterfaceMethodBug()) {
+      return false;
+    }
+    if (!context.getHolder().isInterface()) {
+      return false;
+    }
+    return singleTarget.registerCodeReferencesWithResult(
+        new DefaultUseRegistryWithResult<>(appView, context, false) {
+          @Override
+          public void registerInvokeVirtual(DexMethod method) {
+            if (appView.dexItemFactory().isArrayClone(method)) {
+              setResult(true);
+            }
+          }
+        });
   }
 
   @Override

@@ -134,4 +134,7 @@ public class NopWhyAreYouNotInliningReporter extends WhyAreYouNotInliningReporte
   public boolean unsetReasonHasBeenReportedFlag() {
     return true;
   }
+
+  @Override
+  public void reportUnsafeDueToArrayCloneCall() {}
 }
