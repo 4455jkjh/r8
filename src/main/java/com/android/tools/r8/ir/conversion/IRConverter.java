@@ -589,13 +589,6 @@ public class IRConverter {
     CheckNotNullConverter.runIfNecessary(appView, code);
     previous = printMethod(code, "IR after disable assertions (SSA)", previous);
 
-    if (identifierNameStringMarker != null) {
-      timing.begin("Decouple identifier-name strings");
-      identifierNameStringMarker.decoupleIdentifierNameStringsInMethod(code);
-      timing.end();
-      previous = printMethod(code, "IR after identifier-name strings (SSA)", previous);
-    }
-
     if (memberValuePropagation != null) {
       timing.begin("Propagate member values");
       memberValuePropagation.run(code);
