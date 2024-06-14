@@ -19,6 +19,7 @@ import com.android.tools.r8.lightir.LirConstant;
 import com.android.tools.r8.lightir.LirInstructionView;
 import com.android.tools.r8.lightir.LirOpcodes;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
+import com.android.tools.r8.utils.AndroidApiLevelUtils;
 import com.android.tools.r8.utils.ObjectUtils;
 import com.android.tools.r8.utils.ThreadUtils;
 import com.android.tools.r8.utils.collections.ProgramMethodMap;
@@ -40,6 +41,10 @@ public class SingleCallerScanner {
       throws ExecutionException {
     ProgramMethodMap<ProgramMethod> singleCallerMethodCandidates =
         traceConstantPools(executorService);
+    singleCallerMethodCandidates.removeIf(
+        (callee, caller) ->
+            callee.getDefinition().isLibraryMethodOverride().isPossiblyTrue()
+                || !AndroidApiLevelUtils.isApiSafeForInlining(caller, callee, appView.options()));
     return traceInstructions(singleCallerMethodCandidates, executorService);
   }
 
