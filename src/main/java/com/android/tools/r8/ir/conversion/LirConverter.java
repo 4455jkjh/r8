@@ -25,8 +25,10 @@ import com.android.tools.r8.ir.optimize.DeadCodeRemover;
 import com.android.tools.r8.lightir.IR2LirConverter;
 import com.android.tools.r8.lightir.LirCode;
 import com.android.tools.r8.lightir.LirStrategy;
+import com.android.tools.r8.naming.IdentifierNameStringMarker;
 import com.android.tools.r8.naming.RecordInvokeDynamicInvokeCustomRewriter;
 import com.android.tools.r8.optimize.MemberRebindingIdentityLens;
+import com.android.tools.r8.shaking.AppInfoWithLiveness;
 import com.android.tools.r8.utils.ObjectUtils;
 import com.android.tools.r8.utils.ThreadUtils;
 import com.android.tools.r8.utils.Timing;
@@ -37,7 +39,7 @@ import java.util.concurrent.ExecutorService;
 public class LirConverter {
 
   public static void enterLirSupportedPhase(
-      AppView<? extends AppInfoWithClassHierarchy> appView, ExecutorService executorService)
+      AppView<AppInfoWithLiveness> appView, ExecutorService executorService)
       throws ExecutionException {
     assert appView.testing().canUseLir(appView);
     assert appView.testing().isPreLirPhase();
@@ -54,6 +56,7 @@ public class LirConverter {
                 assert !method.getDefinition().getCode().hasExplicitCodeLens();
                 IRCode code = method.buildIR(appView, MethodConversionOptions.forLirPhase(appView));
                 constResourceNumberRewriter.run(code, Timing.empty());
+                new IdentifierNameStringMarker(appView).decoupleIdentifierNameStringsInMethod(code);
                 LirCode<Integer> lirCode =
                     IR2LirConverter.translate(
                         code,

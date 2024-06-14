@@ -615,13 +615,6 @@ public class IRConverter {
       previous = printMethod(code, "IR after service rewriting (SSA)", previous);
     }
 
-    if (identifierNameStringMarker != null) {
-      timing.begin("Decouple identifier-name strings");
-      identifierNameStringMarker.decoupleIdentifierNameStringsInMethod(code);
-      timing.end();
-      previous = printMethod(code, "IR after identifier-name strings (SSA)", previous);
-    }
-
     if (memberValuePropagation != null) {
       timing.begin("Propagate member values");
       memberValuePropagation.run(code);
