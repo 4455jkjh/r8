@@ -4,6 +4,7 @@
 package com.android.tools.r8.benchmarks;
 
 import com.android.tools.r8.utils.StringUtils;
+import java.io.PrintStream;
 
 public interface BenchmarkResults {
   // Append a runtime result. This may be summed or averaged depending on the benchmark set up.
@@ -19,7 +20,9 @@ public interface BenchmarkResults {
   // This will throw if called on a benchmark without sub-benchmarks.
   BenchmarkResults getSubResults(String name);
 
-  void printResults(ResultMode resultMode);
+  void printResults(ResultMode resultMode, boolean failOnCodeSizeDifferences);
+
+  void writeResults(PrintStream out);
 
   static String prettyTime(long nanoTime) {
     return "" + (nanoTime / 1000000) + " ms";

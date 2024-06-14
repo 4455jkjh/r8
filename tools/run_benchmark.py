@@ -63,6 +63,12 @@ def parse_options(argv):
                         help='Enable assertions when running',
                         default=False,
                         action='store_true')
+    result.add_argument('--iterations',
+                        '-i',
+                        help='Number of iterations to run',
+                        type=int)
+    result.add_argument('--output',
+                        help='Output path where to write the result')
     result.add_argument('--print-times',
                         help='Print timing information from r8',
                         default=False,
@@ -72,17 +78,35 @@ def parse_options(argv):
         '-v',
         help='Use R8 version/hash for the run (default local build)',
         default=None)
+    result.add_argument(
+        '--version-jar',
+        help='The r8.jar corresponding to the version given at --version.',
+        default=None)
     result.add_argument('--temp',
                         help='A directory to use for temporaries and outputs.',
                         default=None)
-    return result.parse_known_args(argv)
+    result.add_argument('--verbose',
+                        help='To enable verbose logging.',
+                        action='store_true',
+                        default=False)
+    options, args = result.parse_known_args(argv)
+    options.quiet = not options.verbose
+    # We must download the non-lib distribution when running with a specific
+    # version, since BenchmarkMainEntryRunner is using R8 internals.
+    # TODO(b/346477461): Look into removing this limitation.
+    assert options.version is None or options.nolib
+    return options, args
 
 
 def main(argv, temp):
-    (options, args) = parse_options(argv)
+    options, args = parse_options(argv)
+
+    if options.output:
+        options.output = os.path.abspath(options.output)
 
     if options.temp:
         temp = options.temp
+        os.makedirs(temp, exist_ok=True)
 
     if options.golem:
         options.no_build = True
@@ -92,11 +116,14 @@ def main(argv, temp):
 
     if options.nolib:
         testBuildTargets = [
-            utils.GRADLE_TASK_TEST_JAR, utils.GRADLE_TASK_TEST_DEPS_JAR
+            utils.GRADLE_TASK_TEST_JAR, utils.GRADLE_TASK_TEST_DEPS_JAR,
+            utils.GRADLE_TASK_TEST_UNZIP_TESTBASE
         ]
         buildTargets = [utils.GRADLE_TASK_R8] + testBuildTargets
         r8jar = utils.R8_JAR
-        testjars = [utils.R8_TESTS_JAR, utils.R8_TESTS_DEPS_JAR, utils.R8_TESTBASE_JAR]
+        testjars = [
+            utils.R8_TESTS_JAR, utils.R8_TESTS_DEPS_JAR, utils.R8_TESTBASE_JAR
+        ]
     else:
         testBuildTargets = GOLEM_BUILD_TARGETS_TESTS
         buildTargets = GOLEM_BUILD_TARGETS
@@ -107,11 +134,11 @@ def main(argv, temp):
             os.path.join(utils.R8LIB_TESTBASE_JAR)
         ]
 
-    if options.version:
+    if options.version or options.version_jar:
         # r8 is downloaded so only test jar needs to be built.
         buildTargets = testBuildTargets
-        r8jar = compiledump.download_distribution(options.version,
-                                                  options.nolib, temp)
+        r8jar = options.version_jar or compiledump.download_distribution(
+            options.version, options, temp)
 
     if not options.no_build:
         gradle.RunGradle(buildTargets + ['-Pno_internal'])
@@ -127,7 +154,11 @@ def main(argv, temp):
 
 def run(options, r8jar, testjars):
     jdkhome = get_jdk_home(options, options.benchmark)
-    cmd = [jdk.GetJavaExecutable(jdkhome)]
+    cmd = [
+        jdk.GetJavaExecutable(jdkhome), '-Xms8g', '-Xmx8g',
+        '-XX:+TieredCompilation', '-XX:TieredStopAtLevel=4',
+        '-DBENCHMARK_IGNORE_CODE_SIZE_DIFFERENCES'
+    ]
     if options.enable_assertions:
         cmd.append('-ea')
     if options.print_times:
@@ -137,6 +168,12 @@ def run(options, r8jar, testjars):
             f'-DTEST_DATA_LOCATION={utils.REPO_ROOT}/d8_r8/test_modules/tests_java_8/build/classes/java/test',
             f'-DTESTBASE_DATA_LOCATION={utils.REPO_ROOT}/d8_r8/test_modules/testbase/build/classes/java/main',
         ])
+    if options.iterations is not None:
+        if options.iterations == 0:
+            return
+        cmd.append(f'-DBENCHMARK_ITERATIONS={options.iterations}')
+    if options.output:
+        cmd.append(f'-DBENCHMARK_OUTPUT={options.output}')
     cmd.extend(['-cp', ':'.join([r8jar] + testjars)])
     cmd.extend([
         'com.android.tools.r8.benchmarks.BenchmarkMainEntryRunner',
@@ -146,6 +183,7 @@ def run(options, r8jar, testjars):
         # repository root as an argument. The runner can then setup dependencies.
         'golem' if options.golem else utils.REPO_ROOT,
     ])
+    utils.PrintCmd(cmd, quiet=options.quiet)
     return subprocess.check_call(cmd)
 
 

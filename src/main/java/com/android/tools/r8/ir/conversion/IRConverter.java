@@ -522,7 +522,7 @@ public class IRConverter {
       previous = printMethod(code, "IR after disable assertions (SSA)", previous);
     }
 
-    boolean isDebugMode = options.debug || context.getOrComputeReachabilitySensitive(appView);
+    boolean isDebugMode = options.debug || context.isReachabilitySensitive();
     assert !method.isProcessed() || !isDebugMode
         : "Method already processed: "
             + context.toSourceString()
@@ -597,13 +597,6 @@ public class IRConverter {
     assertionsRewriter.run(method, code, deadCodeRemover, timing);
     CheckNotNullConverter.runIfNecessary(appView, code);
     previous = printMethod(code, "IR after disable assertions (SSA)", previous);
-
-    if (identifierNameStringMarker != null) {
-      timing.begin("Decouple identifier-name strings");
-      identifierNameStringMarker.decoupleIdentifierNameStringsInMethod(code);
-      timing.end();
-      previous = printMethod(code, "IR after identifier-name strings (SSA)", previous);
-    }
 
     timing.begin("Run proto shrinking tasks");
     appView.withGeneratedExtensionRegistryShrinker(shrinker -> shrinker.rewriteCode(method, code));

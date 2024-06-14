@@ -24,14 +24,11 @@ import com.android.tools.r8.utils.TriFunction;
 import java.util.List;
 import java.util.function.Consumer;
 import kotlin.Metadata;
-import kotlin.metadata.KmExtensionType;
 import kotlin.metadata.KmProperty;
-import kotlin.metadata.KmPropertyExtensionVisitor;
-import kotlin.metadata.KmPropertyVisitor;
+import kotlin.metadata.jvm.JvmExtensionsKt;
 import kotlin.metadata.jvm.JvmFieldSignature;
+import kotlin.metadata.jvm.JvmMetadataVersion;
 import kotlin.metadata.jvm.JvmMethodSignature;
-import kotlin.metadata.jvm.JvmPropertyExtensionVisitor;
-import kotlin.metadata.jvm.KotlinClassMetadata;
 
 public class KotlinMetadataUtils {
 
@@ -105,49 +102,25 @@ public class KotlinMetadataUtils {
       JvmMethodSignature methodSignature, int intArguments) {
     return new JvmMethodSignature(
         methodSignature.getName() + "$default",
-        methodSignature.getDesc().replace(")", "I".repeat(intArguments) + "Ljava/lang/Object;)"));
+        methodSignature
+            .getDescriptor()
+            .replace(")", "I".repeat(intArguments) + "Ljava/lang/Object;)"));
   }
 
   static class KmPropertyProcessor {
-    private JvmFieldSignature fieldSignature = null;
+    private final JvmFieldSignature fieldSignature;
     // Custom getter via @get:JvmName("..."). Otherwise, null.
-    private JvmMethodSignature getterSignature = null;
+    private final JvmMethodSignature getterSignature;
     // Custom getter via @set:JvmName("..."). Otherwise, null.
-    private JvmMethodSignature setterSignature = null;
-    private JvmMethodSignature syntheticMethodForAnnotationsSignature = null;
+    private final JvmMethodSignature setterSignature;
+    private final JvmMethodSignature syntheticMethodForAnnotationsSignature;
 
     KmPropertyProcessor(KmProperty kmProperty) {
-      kmProperty.accept(
-          new KmPropertyVisitor() {
-            @Override
-            @SuppressWarnings("ReferenceEquality")
-            public KmPropertyExtensionVisitor visitExtensions(KmExtensionType type) {
-              if (type != JvmPropertyExtensionVisitor.TYPE) {
-                return null;
-              }
-              return new JvmPropertyExtensionVisitor() {
-                @Override
-                public void visit(
-                    int flags,
-                    JvmFieldSignature fieldDesc,
-                    JvmMethodSignature getterDesc,
-                    JvmMethodSignature setterDesc) {
-                  assert fieldSignature == null : fieldSignature.asString();
-                  fieldSignature = fieldDesc;
-                  assert getterSignature == null : getterSignature.asString();
-                  getterSignature = getterDesc;
-                  assert setterSignature == null : setterSignature.asString();
-                  setterSignature = setterDesc;
-                }
-
-                @Override
-                public void visitSyntheticMethodForAnnotations(JvmMethodSignature signature) {
-                  assert syntheticMethodForAnnotationsSignature == null : signature.asString();
-                  syntheticMethodForAnnotationsSignature = signature;
-                }
-              };
-            }
-          });
+      fieldSignature = JvmExtensionsKt.getFieldSignature(kmProperty);
+      getterSignature = JvmExtensionsKt.getGetterSignature(kmProperty);
+      setterSignature = JvmExtensionsKt.getSetterSignature(kmProperty);
+      syntheticMethodForAnnotationsSignature =
+          JvmExtensionsKt.getSyntheticMethodForAnnotations(kmProperty);
     }
 
     JvmFieldSignature fieldSignature() {
@@ -248,7 +221,12 @@ public class KotlinMetadataUtils {
   }
 
   static int[] getCompatibleKotlinInfo() {
-    return KotlinClassMetadata.COMPATIBLE_METADATA_VERSION;
+    // The kotlin metadata changelog recommends:
+    // "Main migration path here is to replace KotlinClassMetadata.COMPATIBLE_METADATA_VERSION
+    // with new value with the same meaning: JvmMetadataVersion.LATEST_STABLE_SUPPORTED."
+    // The inspection error "Usage of Kotlin internal declaration from different module" does not
+    // prevent the code to work correctly.
+    return JvmMetadataVersion.LATEST_STABLE_SUPPORTED.toIntArray();
   }
 
   static <TKm> TKm consume(TKm tKm, Consumer<TKm> consumer) {

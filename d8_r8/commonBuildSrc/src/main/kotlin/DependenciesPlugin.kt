@@ -388,6 +388,7 @@ fun Project.createR8LibCommandLine(
 object JvmCompatibility {
   val sourceCompatibility = JavaVersion.VERSION_11
   val targetCompatibility = JavaVersion.VERSION_11
+  val release = 11
 }
 
 object Versions {
@@ -398,7 +399,7 @@ object Versions {
   const val guavaVersion = "32.1.2-jre"
   const val javassist = "3.29.2-GA"
   const val junitVersion = "4.13-beta-2"
-  const val kotlinVersion = "1.9.0"
+  const val kotlinVersion = "1.9.20"
   const val kotlinMetadataVersion = "2.0.0-Beta5"
   const val mockito = "2.10.0"
   const val smaliVersion = "3.0.3"

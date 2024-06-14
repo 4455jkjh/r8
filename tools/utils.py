@@ -56,6 +56,7 @@ GRADLE_TASK_ALL_TESTS_WITH_APPLY_MAPPING_JAR = ':test:rewriteTestsForR8LibWithRe
 GRADLE_TASK_TESTBASE_WITH_APPLY_MAPPING_JAR = ':test:rewriteTestBaseForR8LibWithRelocatedDeps'
 GRADLE_TASK_TEST_DEPS_JAR = ':test:packageTestDeps'
 GRADLE_TASK_TEST_JAR = ':test:relocateTestsForR8LibWithRelocatedDeps'
+GRADLE_TASK_TEST_UNZIP_TESTBASE = ':test:unzipTestBase'
 
 R8 = 'r8'
 R8LIB = 'r8lib'
@@ -67,8 +68,10 @@ R8LIB_MAP = '%s.map' % R8LIB_JAR
 R8_SRC_JAR = os.path.join(LIBS, 'r8-src.jar')
 R8LIB_EXCLUDE_DEPS_JAR = os.path.join(LIBS, 'r8lib-exclude-deps.jar')
 R8_FULL_EXCLUDE_DEPS_JAR = os.path.join(LIBS, 'r8-full-exclude-deps.jar')
-THREADING_MODULE_BLOCKING_JAR = os.path.join(LIBS, 'threading-module-blocking.jar')
-THREADING_MODULE_SINGLE_THREADED_JAR = os.path.join(LIBS, 'threading-module-single-threaded.jar')
+THREADING_MODULE_BLOCKING_JAR = os.path.join(LIBS,
+                                             'threading-module-blocking.jar')
+THREADING_MODULE_SINGLE_THREADED_JAR = os.path.join(
+    LIBS, 'threading-module-single-threaded.jar')
 R8_TESTS_JAR = os.path.join(LIBS, 'r8tests.jar')
 R8_TESTBASE_JAR = os.path.join(LIBS, 'r8test_base.jar')
 R8LIB_TESTBASE_JAR = os.path.join(LIBS, 'r8libtestbase-cf.jar')
@@ -81,7 +84,8 @@ LIBRARY_DESUGAR_CONVERSIONS_LEGACY_ZIP = os.path.join(
 LIBRARY_DESUGAR_CONVERSIONS_ZIP = os.path.join(
     CUSTOM_CONVERSION_DIR, 'library_desugar_conversions.jar')
 KEEPANNO_ANNOTATIONS_JAR = os.path.join(LIBS, 'keepanno-annotations.jar')
-KEEPANNO_ANNOTATIONS_DOC = os.path.join('d8_r8', 'keepanno', 'build', 'docs', 'javadoc')
+KEEPANNO_ANNOTATIONS_DOC = os.path.join('d8_r8', 'keepanno', 'build', 'docs',
+                                        'javadoc')
 
 DESUGAR_CONFIGURATION = os.path.join('src', 'library_desugar',
                                      'desugar_jdk_libs.json')
@@ -346,6 +350,14 @@ def DownloadFromGoogleCloudStorage(sha1_file,
         subprocess.check_output(cmd)
 
 
+def get_nth_sha1_from_revision(n, revision):
+    result = subprocess.check_output([
+        'git', 'log', revision, f'--skip={n}', '--max-count=1',
+        '--pretty=format:%H'
+    ]).decode('utf-8')
+    return result.strip()
+
+
 def get_sha1(filename):
     sha1 = hashlib.sha1()
     with open(filename, 'rb') as f:
@@ -357,6 +369,13 @@ def get_sha1(filename):
     return sha1.hexdigest()
 
 
+def get_sha1_from_revision(revision):
+    cmd = ['git', 'rev-parse', revision]
+    PrintCmd(cmd)
+    with ChangedWorkingDirectory(REPO_ROOT):
+        return subprocess.check_output(cmd).decode('utf-8').strip()
+
+
 def get_HEAD_branch():
     result = subprocess.check_output(
         ['git', 'rev-parse', '--abbrev-ref', 'HEAD']).decode('utf-8')
@@ -364,18 +383,11 @@ def get_HEAD_branch():
 
 
 def get_HEAD_sha1():
-    return get_HEAD_sha1_for_checkout(REPO_ROOT)
+    return get_sha1_from_revision('HEAD')
 
 
 def get_HEAD_diff_stat():
     return subprocess.check_output(['git', 'diff', '--stat']).decode('utf-8')
-
-
-def get_HEAD_sha1_for_checkout(checkout):
-    cmd = ['git', 'rev-parse', 'HEAD']
-    PrintCmd(cmd)
-    with ChangedWorkingDirectory(checkout):
-        return subprocess.check_output(cmd).decode('utf-8').strip()
 
 
 def makedirs_if_needed(path):
@@ -390,11 +402,14 @@ def get_gsutil():
     return 'gsutil.py' if os.name != 'nt' else 'gsutil.py.bat'
 
 
-def upload_file_to_cloud_storage(source, destination):
-    cmd = [get_gsutil(), 'cp']
-    cmd += [source, destination]
+def upload_file_to_cloud_storage(source, destination, header=None):
+    cmd = [get_gsutil()]
+    if header:
+        cmd.extend(['-h', header])
+    cmd.extend(['cp', source, destination])
     PrintCmd(cmd)
     subprocess.check_call(cmd)
+
 
 def check_dir_args(source, destination):
     # We require that the dirname of the paths coincide, e.g., src/dirname and dst/dirname
@@ -406,9 +421,10 @@ def check_dir_args(source, destination):
             f'{source} and {destination}')
     if len(destination_parent.strip()) == 0:
         raise Exception(
-            'Attempt to upload directory to empty destination directory: '
-            + destination)
+            'Attempt to upload directory to empty destination directory: ' +
+            destination)
     return destination_parent
+
 
 def upload_directory_to_cloud_storage(source, destination, parallel=True):
     destination_parent = check_dir_args(source, destination)
@@ -420,6 +436,7 @@ def upload_directory_to_cloud_storage(source, destination, parallel=True):
     PrintCmd(cmd)
     subprocess.check_call(cmd)
 
+
 def rsync_directory_to_cloud_storage(source, destination, parallel=True):
     check_dir_args(source, destination)
     cmd = [get_gsutil()]
@@ -429,6 +446,7 @@ def rsync_directory_to_cloud_storage(source, destination, parallel=True):
     cmd += [source, destination]
     PrintCmd(cmd)
     subprocess.check_call(cmd)
+
 
 def delete_file_from_cloud_storage(destination):
     cmd = [get_gsutil(), 'rm', destination]
@@ -460,8 +478,18 @@ def file_exists_on_cloud_storage(destination):
     return subprocess.call(cmd) == 0
 
 
-def download_file_from_cloud_storage(source, destination, quiet=False):
-    cmd = [get_gsutil(), 'cp', source, destination]
+def download_file_from_cloud_storage(source,
+                                     destination,
+                                     concurrent=False,
+                                     flags=None,
+                                     quiet=False):
+    cmd = [get_gsutil()]
+    if concurrent:
+        cmd.append('-m')
+    cmd.append('cp')
+    if flags:
+        cmd.extend(flags)
+    cmd.extend([source, destination])
     PrintCmd(cmd, quiet=quiet)
     subprocess.check_call(cmd)
 

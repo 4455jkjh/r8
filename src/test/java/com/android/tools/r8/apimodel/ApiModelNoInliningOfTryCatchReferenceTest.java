@@ -24,7 +24,7 @@ import org.junit.runners.Parameterized.Parameters;
 @RunWith(Parameterized.class)
 public class ApiModelNoInliningOfTryCatchReferenceTest extends TestBase {
 
-  private final AndroidApiLevel exceptionApiLevel = AndroidApiLevel.L_MR1;
+  private final AndroidApiLevel exceptionApiLevel = AndroidApiLevel.M;
 
   @Parameter() public TestParameters parameters;
 
@@ -51,8 +51,9 @@ public class ApiModelNoInliningOfTryCatchReferenceTest extends TestBase {
         .enableInliningAnnotations()
         .addHorizontallyMergedClassesInspector(
             horizontallyMergedClassesInspector -> {
+              // Dalvik verifier error present up to and not including L.
               if (parameters.isDexRuntime()
-                  && parameters.getApiLevel().isGreaterThanOrEqualTo(exceptionApiLevel)) {
+                  && parameters.getApiLevel().isGreaterThanOrEqualTo(AndroidApiLevel.L)) {
                 horizontallyMergedClassesInspector.assertIsCompleteMergeGroup(
                     TestClass.class, Caller.class);
               } else {
@@ -63,11 +64,14 @@ public class ApiModelNoInliningOfTryCatchReferenceTest extends TestBase {
             ApiModelingTestHelper.addTracedApiReferenceLevelCallBack(
                 (reference, apiLevel) -> {
                   if (reference.equals(Reference.methodFromMethod(tryCatch))) {
+                    // Dalvik verifier error present up to and not including L.
                     assertEquals(
-                        exceptionApiLevel.max(
-                            parameters.isCfRuntime()
-                                ? AndroidApiLevel.B
-                                : parameters.getApiLevel()),
+                        parameters.isDexRuntime()
+                                && parameters
+                                    .getApiLevel()
+                                    .isGreaterThanOrEqualTo(AndroidApiLevel.L)
+                            ? parameters.getApiLevel()
+                            : exceptionApiLevel,
                         apiLevel);
                   }
                 }))

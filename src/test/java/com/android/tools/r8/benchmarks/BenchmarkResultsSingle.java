@@ -3,8 +3,11 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8.benchmarks;
 
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import it.unimi.dsi.fastutil.longs.LongArrayList;
 import it.unimi.dsi.fastutil.longs.LongList;
+import java.io.PrintStream;
 import java.util.Set;
 
 public class BenchmarkResultsSingle implements BenchmarkResults {
@@ -17,6 +20,18 @@ public class BenchmarkResultsSingle implements BenchmarkResults {
   public BenchmarkResultsSingle(String name, Set<BenchmarkMetric> metrics) {
     this.name = name;
     this.metrics = metrics;
+  }
+
+  public String getName() {
+    return name;
+  }
+
+  public LongList getCodeSizeResults() {
+    return codeSizeResults;
+  }
+
+  public LongList getRuntimeResults() {
+    return runtimeResults;
   }
 
   @Override
@@ -75,7 +90,7 @@ public class BenchmarkResultsSingle implements BenchmarkResults {
   }
 
   @Override
-  public void printResults(ResultMode mode) {
+  public void printResults(ResultMode mode, boolean failOnCodeSizeDifferences) {
     verifyConfigAndResults();
     if (!runtimeResults.isEmpty()) {
       long sum = runtimeResults.stream().mapToLong(l -> l).sum();
@@ -84,13 +99,24 @@ public class BenchmarkResultsSingle implements BenchmarkResults {
     }
     if (!codeSizeResults.isEmpty()) {
       long size = codeSizeResults.getLong(0);
-      for (int i = 1; i < codeSizeResults.size(); i++) {
-        if (size != codeSizeResults.getLong(i)) {
-          throw new RuntimeException(
-              "Unexpected code size difference: " + size + " and " + codeSizeResults.getLong(i));
+      if (failOnCodeSizeDifferences) {
+        for (int i = 1; i < codeSizeResults.size(); i++) {
+          if (size != codeSizeResults.getLong(i)) {
+            throw new RuntimeException(
+                "Unexpected code size difference: " + size + " and " + codeSizeResults.getLong(i));
+          }
         }
       }
       printCodeSize(size);
     }
+  }
+
+  @Override
+  public void writeResults(PrintStream out) {
+    Gson gson =
+        new GsonBuilder()
+            .registerTypeAdapter(BenchmarkResultsSingle.class, new BenchmarkResultsSingleAdapter())
+            .create();
+    out.print(gson.toJson(this));
   }
 }

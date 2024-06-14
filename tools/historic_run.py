@@ -34,6 +34,10 @@ def ParseOptions(argv):
     result.add_option('--output',
                       default='build',
                       help='Directory where to output results')
+    result.add_option('--timeout',
+                      default=1000,
+                      help='Timeout in seconds (-1 for no timeout)',
+                      type=int)
     return result.parse_args(argv)
 
 
@@ -52,16 +56,30 @@ class GitCommit(object):
     def __repr__(self):
         return self.__str__()
 
+    def hash(self):
+        return self.git_hash
+
+    def title(self):
+        result = subprocess.check_output(
+            ['git', 'show-branch', '--no-name', self.git_hash]).decode('utf-8')
+        return result.strip()
+
+    def author_name(self):
+        result = subprocess.check_output([
+            'git', 'show', '--no-notes', '--no-patch', '--pretty=%an',
+            self.git_hash
+        ]).decode('utf-8')
+        return result.strip()
+
+    def committer_timestamp(self):
+        return self.timestamp
+
 
 def git_commit_from_hash(hash):
-    commit_timestamp = subprocess.check_output([
-        'git',
-        'show',
-        '--no-patch',
-        '--no-notes',
-        '--pretty=\'%ct\'',
-         hash
-    ]).decode().strip().strip('\'')
+    commit_timestamp_str = subprocess.check_output(
+        ['git', 'show', '--no-patch', '--no-notes', '--pretty=%ct',
+         hash]).decode('utf-8').strip()
+    commit_timestamp = int(commit_timestamp_str)
     destination_dir = '%s/%s/' % (MASTER_COMMITS, hash)
     destination = '%s%s' % (destination_dir, 'r8.jar')
     commit = GitCommit(hash, destination_dir, destination, commit_timestamp)
@@ -70,9 +88,12 @@ def git_commit_from_hash(hash):
 
 def enumerate_git_commits(top, bottom):
     if bottom is None:
-        output = subprocess.check_output(['git', 'rev-list', '--first-parent', '-n', 1000, top])
+        output = subprocess.check_output(
+            ['git', 'rev-list', '--first-parent', '-n', 1000, top])
     else:
-        output = subprocess.check_output(['git', 'rev-list', '--first-parent', '%s^..%s' % (bottom, top)])
+        output = subprocess.check_output(
+            ['git', 'rev-list', '--first-parent',
+             '%s^..%s' % (bottom, top)])
     commits = []
     for c in output.decode().splitlines():
         commit_hash = c.strip()
@@ -81,8 +102,8 @@ def enumerate_git_commits(top, bottom):
 
 
 def get_available_commits(commits):
-    cloud_commits = subprocess.check_output(
-        ['gsutil.py', 'ls', MASTER_COMMITS]).decode().splitlines()
+    cloud_commits = subprocess.check_output(['gsutil.py', 'ls', MASTER_COMMITS
+                                            ]).decode().splitlines()
     available_commits = []
     for commit in commits:
         if commit.destination_dir in cloud_commits:
@@ -129,7 +150,7 @@ def benchmark(commits, command, dryrun=False):
     count = 0
     for index in commit_permutations:
         count += 1
-        print('Running commit %s out of %s' % (count, len(commits)))
+        print('\nRunning commit %s out of %s' % (count, len(commits)))
         commit = commits[index]
         if not utils.cloud_storage_exists(commit.destination):
             # We may have a directory, but no r8.jar
@@ -164,11 +185,13 @@ def make_cmd(options):
 
 
 def run_cmd(options, commit):
-    cmd = [options.cmd, commit.git_hash]
+    cmd = options.cmd.split(' ')
+    cmd.append(commit.git_hash)
     output_path = options.output or 'build'
     time_commit = '%s_%s' % (commit.timestamp, commit.git_hash)
     time_commit_path = os.path.join(output_path, time_commit)
     print(' '.join(cmd))
+    status = None
     if not options.dry_run:
         if not os.path.exists(time_commit_path):
             os.makedirs(time_commit_path)
@@ -177,15 +200,20 @@ def run_cmd(options, commit):
         with open(stdout_path, 'w') as stdout:
             with open(stderr_path, 'w') as stderr:
                 process = subprocess.Popen(cmd, stdout=stdout, stderr=stderr)
-                timeout = 1000
-                while process.poll() is None and timeout > 0:
+                timeout = options.timeout
+                while process.poll() is None and timeout != 0:
                     time.sleep(1)
                     timeout -= 1
                 if process.poll() is None:
                     process.kill()
                     print("Task timed out")
                     stderr.write("timeout\n")
-    print('Wrote outputs to: %s' % time_commit_path)
+                    status = 'TIMED OUT'
+                else:
+                    returncode = process.returncode
+                    status = 'SUCCESS' if returncode == 0 else f'FAILED ({returncode})'
+    print(f'Wrote outputs to: {time_commit_path}')
+    print(status)
 
 
 def main(argv):

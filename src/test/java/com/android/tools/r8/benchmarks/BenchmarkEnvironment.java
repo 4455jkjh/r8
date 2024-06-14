@@ -19,6 +19,10 @@ public class BenchmarkEnvironment {
     this.isGolem = isGolem;
   }
 
+  public boolean failOnCodeSizeDifferences() {
+    return System.getProperty("BENCHMARK_IGNORE_CODE_SIZE_DIFFERENCES") == null;
+  }
+
   public BenchmarkConfig getConfig() {
     return config;
   }
@@ -35,5 +39,21 @@ public class BenchmarkEnvironment {
 
   public Path getGolemDependencyRoot() {
     return Paths.get("benchmarks", config.getDependencyDirectoryName());
+  }
+
+  public boolean hasBenchmarkIterationsOverride() {
+    return System.getProperty("BENCHMARK_ITERATIONS") != null;
+  }
+
+  public int getBenchmarkIterationsOverride() {
+    return Integer.parseInt(System.getProperty("BENCHMARK_ITERATIONS"));
+  }
+
+  public boolean hasOutputPath() {
+    return System.getProperty("BENCHMARK_OUTPUT") != null;
+  }
+
+  public Path getOutputPath() {
+    return Paths.get(System.getProperty("BENCHMARK_OUTPUT"));
   }
 }

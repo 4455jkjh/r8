@@ -82,6 +82,11 @@ public class EnqueuerDeferredTracingImpl extends EnqueuerDeferredTracing {
       ProgramMethod context,
       FieldAccessKind accessKind,
       FieldAccessMetadata metadata) {
+    if (!fieldReference.getType().isPrimitiveType()
+        && !options.getTestingOptions().enableEnqueuerDeferredTracingForReferenceFields) {
+      return false;
+    }
+
     ProgramField field = resolutionResult.getSingleProgramField();
     if (field == null) {
       return false;
@@ -97,7 +102,7 @@ public class EnqueuerDeferredTracingImpl extends EnqueuerDeferredTracing {
     }
 
     // If the access is from a reachability sensitive method, then bail out.
-    if (context.getHolder().getOrComputeReachabilitySensitive(appView)) {
+    if (context.getHolder().isReachabilitySensitive()) {
       return enqueueDeferredEnqueuerActions(field);
     }
 
