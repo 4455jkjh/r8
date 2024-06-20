@@ -12,9 +12,9 @@ import utils
 
 import sys
 
-APPS = ['NowInAndroidApp', 'TiviApp']
+APPS = perf.APPS
 TARGETS = ['r8-full']
-NUM_COMMITS = 250
+NUM_COMMITS = 1000
 
 INDEX_HTML = os.path.join(utils.TOOLS_DIR, 'perf/index.html')
 
@@ -92,9 +92,9 @@ def run():
 
         # Write output files to public bucket.
         perf.ArchiveOutputFile(benchmark_data_file,
-                               'perf/benchmark_data.json',
+                               'benchmark_data.json',
                                header='Cache-Control:no-store')
-        perf.ArchiveOutputFile(INDEX_HTML, 'perf/index.html')
+        perf.ArchiveOutputFile(INDEX_HTML, 'index.html')
 
 
 def main():

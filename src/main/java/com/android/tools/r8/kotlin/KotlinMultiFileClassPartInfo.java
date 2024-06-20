@@ -4,8 +4,7 @@
 
 package com.android.tools.r8.kotlin;
 
-import static com.android.tools.r8.kotlin.KotlinMetadataUtils.getCompatibleKotlinInfo;
-import static kotlin.metadata.jvm.KotlinClassMetadata.Companion;
+import static com.android.tools.r8.kotlin.KotlinMetadataUtils.updateJvmMetadataVersionIfRequired;
 
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.DexClass;
@@ -20,35 +19,26 @@ import kotlin.metadata.jvm.KotlinClassMetadata.MultiFileClassPart;
 // Holds information about Metadata.MultiFileClassPartInfo
 public class KotlinMultiFileClassPartInfo implements KotlinClassLevelInfo {
 
-  private final String facadeClassName;
+  private final MultiFileClassPart classPart;
   private final KotlinPackageInfo packageInfo;
   private final String packageName;
-  private final int[] metadataVersion;
 
   private KotlinMultiFileClassPartInfo(
-      String facadeClassName,
-      KotlinPackageInfo packageInfo,
-      String packageName,
-      int[] metadataVersion) {
-    this.facadeClassName = facadeClassName;
+      MultiFileClassPart classPart, KotlinPackageInfo packageInfo, String packageName) {
+    this.classPart = classPart;
     this.packageInfo = packageInfo;
     this.packageName = packageName;
-    this.metadataVersion = metadataVersion;
   }
 
   static KotlinMultiFileClassPartInfo create(
       MultiFileClassPart classPart,
       String packageName,
-      int[] metadataVersion,
       DexClass clazz,
       AppView<?> appView,
       Consumer<DexEncodedMethod> keepByteCode) {
     KmPackage kmPackage = classPart.getKmPackage();
     return new KotlinMultiFileClassPartInfo(
-        classPart.getFacadeClassName(),
-        KotlinPackageInfo.create(kmPackage, clazz, appView, keepByteCode),
-        packageName,
-        metadataVersion);
+        classPart, KotlinPackageInfo.create(kmPackage, clazz, appView, keepByteCode), packageName);
   }
 
   @Override
@@ -65,9 +55,9 @@ public class KotlinMultiFileClassPartInfo implements KotlinClassLevelInfo {
   public Pair<Metadata, Boolean> rewrite(DexClass clazz, AppView<?> appView) {
     KmPackage kmPackage = new KmPackage();
     boolean rewritten = packageInfo.rewrite(kmPackage, clazz, appView);
-    return Pair.create(
-        Companion.writeMultiFileClassPart(kmPackage, facadeClassName, getCompatibleKotlinInfo(), 0),
-        rewritten);
+    updateJvmMetadataVersionIfRequired(classPart);
+    classPart.setKmPackage(kmPackage);
+    return Pair.create(classPart.write(), rewritten);
   }
 
   @Override
@@ -81,7 +71,7 @@ public class KotlinMultiFileClassPartInfo implements KotlinClassLevelInfo {
 
   @Override
   public int[] getMetadataVersion() {
-    return metadataVersion;
+    return KotlinJvmMetadataVersionUtils.toIntArray(classPart.getVersion());
   }
 
   @Override
@@ -90,6 +80,6 @@ public class KotlinMultiFileClassPartInfo implements KotlinClassLevelInfo {
   }
 
   public String getFacadeClassName() {
-    return facadeClassName;
+    return classPart.getFacadeClassName();
   }
 }

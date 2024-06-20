@@ -400,7 +400,7 @@ object Versions {
   const val javassist = "3.29.2-GA"
   const val junitVersion = "4.13-beta-2"
   const val kotlinVersion = "1.9.20"
-  const val kotlinMetadataVersion = "2.0.0-Beta5"
+  const val kotlinMetadataVersion = "2.0.0"
   const val mockito = "2.10.0"
   const val smaliVersion = "3.0.3"
 }
@@ -453,6 +453,10 @@ object ThirdPartyDeps {
     Paths.get("third_party", "chrome", "chrome_200430").toFile(),
     Paths.get("third_party", "chrome", "chrome_200430.tar.gz.sha1").toFile(),
     DependencyType.X20)
+  val chromeBenchmark = ThirdPartyDependency(
+    "chrome-benchmark",
+    Paths.get("third_party", "opensource-apps", "chrome").toFile(),
+    Paths.get("third_party", "opensource-apps", "chrome.tar.gz.sha1").toFile())
   val compilerApi = ThirdPartyDependency(
     "compiler-api",
     Paths.get(
@@ -469,6 +473,70 @@ object ThirdPartyDeps {
     Paths.get(
       "third_party", "opensource-apps", "compose-examples",
       "changed-bitwise-value-propagation.tar.gz.sha1").toFile())
+  val composeSamplesCrane = ThirdPartyDependency(
+    "compose-samples-crane",
+    Paths.get(
+      "third_party", "opensource-apps", "android", "compose-samples",
+      "crane").toFile(),
+    Paths.get(
+      "third_party", "opensource-apps", "android", "compose-samples",
+      "crane.tar.gz.sha1").toFile())
+  val composeSamplesJetCaster = ThirdPartyDependency(
+    "compose-samples-jetcaster",
+    Paths.get(
+      "third_party", "opensource-apps", "android", "compose-samples",
+      "jetcaster").toFile(),
+    Paths.get(
+      "third_party", "opensource-apps", "android", "compose-samples",
+      "jetcaster.tar.gz.sha1").toFile())
+  val composeSamplesJetChat = ThirdPartyDependency(
+    "compose-samples-jetchat",
+    Paths.get(
+      "third_party", "opensource-apps", "android", "compose-samples",
+      "jetchat").toFile(),
+    Paths.get(
+      "third_party", "opensource-apps", "android", "compose-samples",
+      "jetchat.tar.gz.sha1").toFile())
+  val composeSamplesJetLagged = ThirdPartyDependency(
+    "compose-samples-jetlagged",
+    Paths.get(
+      "third_party", "opensource-apps", "android", "compose-samples",
+      "jetlagged").toFile(),
+    Paths.get(
+      "third_party", "opensource-apps", "android", "compose-samples",
+      "jetlagged.tar.gz.sha1").toFile())
+  val composeSamplesJetNews = ThirdPartyDependency(
+    "compose-samples-jetnews",
+    Paths.get(
+      "third_party", "opensource-apps", "android", "compose-samples",
+      "jetnews").toFile(),
+    Paths.get(
+      "third_party", "opensource-apps", "android", "compose-samples",
+      "jetnews.tar.gz.sha1").toFile())
+  val composeSamplesJetSnack = ThirdPartyDependency(
+    "compose-samples-jetsnack",
+    Paths.get(
+      "third_party", "opensource-apps", "android", "compose-samples",
+      "jetsnack").toFile(),
+    Paths.get(
+      "third_party", "opensource-apps", "android", "compose-samples",
+      "jetsnack.tar.gz.sha1").toFile())
+  val composeSamplesOwl = ThirdPartyDependency(
+    "compose-samples-owl",
+    Paths.get(
+      "third_party", "opensource-apps", "android", "compose-samples",
+      "owl").toFile(),
+    Paths.get(
+      "third_party", "opensource-apps", "android", "compose-samples",
+      "owl.tar.gz.sha1").toFile())
+  val composeSamplesReply = ThirdPartyDependency(
+    "compose-samples-reply",
+    Paths.get(
+      "third_party", "opensource-apps", "android", "compose-samples",
+      "reply").toFile(),
+    Paths.get(
+      "third_party", "opensource-apps", "android", "compose-samples",
+      "reply.tar.gz.sha1").toFile())
   val coreLambdaStubs = ThirdPartyDependency(
     "coreLambdaStubs",
     Paths.get("third_party", "core-lambda-stubs").toFile(),
@@ -615,6 +683,10 @@ object ThirdPartyDeps {
     Paths.get("third_party", "proguardsettings").toFile(),
     Paths.get("third_party", "proguardsettings.tar.gz.sha1").toFile(),
     DependencyType.X20)
+  val protoc = ThirdPartyDependency(
+    "protoc",
+    Paths.get("third_party", "protoc").toFile(),
+    Paths.get("third_party", "protoc.tar.gz.sha1").toFile())
   val protoRuntimeEdition2023 = ThirdPartyDependency(
     "protoRuntimeEdition2023",
     Paths.get("third_party", "proto", "runtime", "edition2023").toFile(),

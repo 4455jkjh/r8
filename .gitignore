@@ -219,6 +219,8 @@ third_party/opensource-apps/applymapping
 third_party/opensource-apps/applymapping.tar.gz
 third_party/opensource-apps/chanu
 third_party/opensource-apps/chanu.tar.gz
+third_party/opensource-apps/chrome
+third_party/opensource-apps/chrome.tar.gz
 third_party/opensource-apps/compose-examples/changed-bitwise-value-propagation
 third_party/opensource-apps/compose-examples/changed-bitwise-value-propagation.tar.gz
 third_party/opensource-apps/empty-activity
@@ -283,6 +285,8 @@ third_party/proto/test/proto2
 third_party/proto/test/proto2.tar.gz
 third_party/proto/test/proto3
 third_party/proto/test/proto3.tar.gz
+third_party/protoc
+third_party/protoc.tar.gz
 third_party/r8
 third_party/r8.tar.gz
 third_party/r8-releases/2.0.74

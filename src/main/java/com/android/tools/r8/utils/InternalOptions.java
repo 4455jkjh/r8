@@ -317,7 +317,6 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
     assert !proguardConfiguration.isObfuscating();
     getProguardConfiguration().getKeepAttributes().sourceFile = true;
     getProguardConfiguration().getKeepAttributes().sourceDebugExtension = true;
-    getProguardConfiguration().getKeepAttributes().lineNumberTable = true;
     getProguardConfiguration().getKeepAttributes().localVariableTable = true;
     getProguardConfiguration().getKeepAttributes().localVariableTypeTable = true;
   }
@@ -826,6 +825,13 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
     return proguardConfiguration == null
         || (isForceProguardCompatibilityEnabled()
             && proguardConfiguration.getKeepAttributes().exceptions);
+  }
+
+  @Override
+  public boolean isForceKeepMethodParametersAttributeEnabled() {
+    return proguardConfiguration == null
+        || (isForceProguardCompatibilityEnabled()
+            && proguardConfiguration.getKeepAttributes().methodParameters);
   }
 
   @Override

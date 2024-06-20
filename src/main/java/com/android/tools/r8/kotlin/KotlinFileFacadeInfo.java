@@ -4,8 +4,7 @@
 
 package com.android.tools.r8.kotlin;
 
-import static com.android.tools.r8.kotlin.KotlinMetadataUtils.getCompatibleKotlinInfo;
-import static kotlin.metadata.jvm.KotlinClassMetadata.Companion;
+import static com.android.tools.r8.kotlin.KotlinMetadataUtils.updateJvmMetadataVersionIfRequired;
 
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.DexClass;
@@ -20,29 +19,28 @@ import kotlin.metadata.jvm.KotlinClassMetadata.FileFacade;
 // Holds information about Metadata.FileFacade
 public class KotlinFileFacadeInfo implements KotlinClassLevelInfo {
 
+  private final FileFacade kmFileFacade;
   private final KotlinPackageInfo packageInfo;
   private final String packageName;
-  private final int[] metadataVersion;
 
   private KotlinFileFacadeInfo(
-      KotlinPackageInfo packageInfo, String packageName, int[] metadataVersion) {
+      FileFacade kmFileFacade, KotlinPackageInfo packageInfo, String packageName) {
+    this.kmFileFacade = kmFileFacade;
     this.packageInfo = packageInfo;
     this.packageName = packageName;
-    this.metadataVersion = metadataVersion;
   }
 
   public static KotlinFileFacadeInfo create(
       FileFacade kmFileFacade,
       String packageName,
-      int[] metadataVersion,
       DexClass clazz,
       AppView<?> appView,
       Consumer<DexEncodedMethod> keepByteCode) {
     KmPackage kmPackage = kmFileFacade.getKmPackage();
     return new KotlinFileFacadeInfo(
+        kmFileFacade,
         KotlinPackageInfo.create(kmPackage, clazz, appView, keepByteCode),
-        packageName,
-        metadataVersion);
+        packageName);
   }
 
   @Override
@@ -59,8 +57,9 @@ public class KotlinFileFacadeInfo implements KotlinClassLevelInfo {
   public Pair<Metadata, Boolean> rewrite(DexClass clazz, AppView<?> appView) {
     KmPackage kmPackage = new KmPackage();
     boolean rewritten = packageInfo.rewrite(kmPackage, clazz, appView);
-    return Pair.create(
-        Companion.writeFileFacade(kmPackage, getCompatibleKotlinInfo(), 0), rewritten);
+    updateJvmMetadataVersionIfRequired(kmFileFacade);
+    kmFileFacade.setKmPackage(kmPackage);
+    return Pair.create(kmFileFacade.write(), rewritten);
   }
 
   @Override
@@ -74,7 +73,7 @@ public class KotlinFileFacadeInfo implements KotlinClassLevelInfo {
 
   @Override
   public int[] getMetadataVersion() {
-    return metadataVersion;
+    return KotlinJvmMetadataVersionUtils.toIntArray(kmFileFacade.getVersion());
   }
 
   @Override

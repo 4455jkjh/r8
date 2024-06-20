@@ -29,9 +29,11 @@ import kotlin.metadata.jvm.JvmExtensionsKt;
 import kotlin.metadata.jvm.JvmFieldSignature;
 import kotlin.metadata.jvm.JvmMetadataVersion;
 import kotlin.metadata.jvm.JvmMethodSignature;
+import kotlin.metadata.jvm.KotlinClassMetadata;
 
 public class KotlinMetadataUtils {
 
+  private static final JvmMetadataVersion VERSION_1_4_0 = new JvmMetadataVersion(1, 4, 0);
   private static final NoKotlinInfo NO_KOTLIN_INFO = new NoKotlinInfo("NO_KOTLIN_INFO");
   private static final NoKotlinInfo INVALID_KOTLIN_INFO = new NoKotlinInfo("INVALID_KOTLIN_INFO");
 
@@ -220,18 +222,10 @@ public class KotlinMetadataUtils {
     return DescriptorUtils.descriptorToKotlinClassifier(descriptor);
   }
 
-  static int[] getCompatibleKotlinInfo() {
-    // The kotlin metadata changelog recommends:
-    // "Main migration path here is to replace KotlinClassMetadata.COMPATIBLE_METADATA_VERSION
-    // with new value with the same meaning: JvmMetadataVersion.LATEST_STABLE_SUPPORTED."
-    // The inspection error "Usage of Kotlin internal declaration from different module" does not
-    // prevent the code to work correctly.
-    return JvmMetadataVersion.LATEST_STABLE_SUPPORTED.toIntArray();
-  }
-
-  static <TKm> TKm consume(TKm tKm, Consumer<TKm> consumer) {
-    consumer.accept(tKm);
-    return tKm;
+  public static void updateJvmMetadataVersionIfRequired(KotlinClassMetadata metadata) {
+    if (metadata.getVersion().compareTo(VERSION_1_4_0) < 0) {
+      metadata.setVersion(VERSION_1_4_0);
+    }
   }
 
   static <TInfo, TKm> boolean rewriteIfNotNull(
