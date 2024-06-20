@@ -23,13 +23,14 @@ public final class KeepCondition {
 
     private Builder() {}
 
-    public Builder setItemReference(KeepItemReference item) {
-      this.item = item;
+    public Builder setItemBindingReference(KeepBindingReference item) {
+      this.item = item.toItemReference();
       return this;
     }
 
-    public Builder setItemPattern(KeepItemPattern itemPattern) {
-      return setItemReference(itemPattern.toItemReference());
+    public Builder setItemReference(KeepItemReference item) {
+      this.item = item;
+      return this;
     }
 
     public KeepCondition build() {

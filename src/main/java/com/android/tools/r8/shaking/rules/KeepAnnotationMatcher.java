@@ -12,6 +12,7 @@ import com.android.tools.r8.graph.ProgramDefinition;
 import com.android.tools.r8.graph.ProgramMember;
 import com.android.tools.r8.keepanno.ast.KeepAnnotationPattern;
 import com.android.tools.r8.keepanno.ast.KeepBindingReference;
+import com.android.tools.r8.keepanno.ast.KeepBindings;
 import com.android.tools.r8.keepanno.ast.KeepBindings.KeepBindingSymbol;
 import com.android.tools.r8.keepanno.ast.KeepCheck;
 import com.android.tools.r8.keepanno.ast.KeepCheck.KeepCheckKind;
@@ -34,6 +35,7 @@ import com.android.tools.r8.keepanno.ast.KeepConstraint.VisibilityRestrict;
 import com.android.tools.r8.keepanno.ast.KeepConstraintVisitor;
 import com.android.tools.r8.keepanno.ast.KeepConstraints;
 import com.android.tools.r8.keepanno.ast.KeepDeclaration;
+import com.android.tools.r8.keepanno.ast.KeepEdge;
 import com.android.tools.r8.keepanno.ast.KeepItemPattern;
 import com.android.tools.r8.keepanno.ast.KeepItemReference;
 import com.android.tools.r8.keepanno.ast.KeepMemberItemPattern;
@@ -355,8 +357,16 @@ public class KeepAnnotationMatcher {
     }
 
     private void continueWithNoClass(int classIndex) {
+      continueWithNoClassClearingMembers(classIndex, 0, null);
+    }
+
+    private void continueWithNoClassClearingMembers(
+        int classIndex, int memberInHolderIndex, IntList memberIndexTranslation) {
       if (schema.isOptionalClass(classIndex)) {
         assignment.setClass(classIndex, null);
+        for (int i = 0; i < memberInHolderIndex; i++) {
+          assignment.setMember(memberIndexTranslation.getInt(i), null);
+        }
         findMatchingClass(classIndex + 1);
       }
     }
@@ -404,9 +414,9 @@ public class KeepAnnotationMatcher {
                   holder.forEachProgramMethodMatching(
                       m -> predicates.matchesMethod(m, methodPattern), continueWithMember));
       if (didContinue.isFalse()) {
-        // No match for the member pattern existed, continue with empty member.
-        continueWithNoMember(
-            memberIndex, memberInHolderIndex + 1, memberIndexTranslation, holder, nextClassIndex);
+        // No match for the member pattern existed, continue with next class.
+        continueWithNoClassClearingMembers(
+            nextClassIndex - 1, memberInHolderIndex, memberIndexTranslation);
       }
     }
 
@@ -429,18 +439,6 @@ public class KeepAnnotationMatcher {
           definition.getContextClass(),
           nextClassIndex);
     }
-
-    private void continueWithNoMember(
-        int memberIndex,
-        int nextMemberInHolderIndex,
-        IntList memberIndexTranslation,
-        DexProgramClass holder,
-        int nextClassIndex) {
-      if (schema.isOptionalMember(memberIndex, nextClassIndex - 1)) {
-        assignment.setMember(memberIndex, null);
-        findMatchingMember(nextMemberInHolderIndex, memberIndexTranslation, holder, nextClassIndex);
-      }
-    }
   }
 
   /**
@@ -456,7 +454,6 @@ public class KeepAnnotationMatcher {
     final List<KeepClassItemPattern> classes = new ArrayList<>();
     final List<KeepMemberItemPattern> members = new ArrayList<>();
     final List<IntList> classMembers = new ArrayList<>();
-    final IntList boundClasses = new IntArrayList();
     final IntList preconditions = new IntArrayList();
     final IntList consequences = new IntArrayList();
     final List<KeepConstraints> constraints = new ArrayList<>();
@@ -480,16 +477,12 @@ public class KeepAnnotationMatcher {
     }
 
     private KeepItemPattern getItemForBinding(KeepBindingSymbol symbol) {
-      assert declaration.isKeepEdge();
-      return declaration.asKeepEdge().getBindings().get(symbol).getItem();
+      KeepBindings bindings = declaration.apply(KeepEdge::getBindings, KeepCheck::getBindings);
+      return bindings.get(symbol).getItem();
     }
 
     public boolean isOptionalClass(int classIndex) {
-      return classIndex >= preconditionClassesCount && !boundClasses.contains(classIndex);
-    }
-
-    public boolean isOptionalMember(int memberIndex, int classIndex) {
-      return memberIndex >= preconditionMembersCount && isOptionalClass(classIndex);
+      return classIndex >= preconditionClassesCount;
     }
 
     public static boolean isClassKeyReference(int keyRef) {
@@ -523,14 +516,7 @@ public class KeepAnnotationMatcher {
 
     private int defineBindingReference(KeepBindingReference reference) {
       return symbolToKey.computeIfAbsent(
-          reference.getName(),
-          symbol -> {
-            int bindingId = defineItemPattern(getItemForBinding(symbol));
-            if (isClassKeyReference(bindingId)) {
-              boundClasses.add(bindingId);
-            }
-            return bindingId;
-          });
+          reference.getName(), symbol -> defineItemPattern(getItemForBinding(symbol)));
     }
 
     private int defineItemPattern(KeepItemPattern item) {

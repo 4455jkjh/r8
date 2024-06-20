@@ -14,13 +14,14 @@ public class KeepTarget {
 
     private Builder() {}
 
-    public Builder setItemReference(KeepItemReference item) {
-      this.item = item;
+    public Builder setItemBindingReference(KeepBindingReference reference) {
+      this.item = reference.toItemReference();
       return this;
     }
 
-    public Builder setItemPattern(KeepItemPattern itemPattern) {
-      return setItemReference(itemPattern.toItemReference());
+    public Builder setItemReference(KeepItemReference item) {
+      this.item = item;
+      return this;
     }
 
     public Builder setConstraints(KeepConstraints constraints) {
