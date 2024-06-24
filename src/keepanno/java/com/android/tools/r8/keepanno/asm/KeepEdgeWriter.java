@@ -25,8 +25,8 @@ import com.android.tools.r8.keepanno.ast.AnnotationConstants.TypePattern;
 import com.android.tools.r8.keepanno.ast.KeepAnnotationPattern;
 import com.android.tools.r8.keepanno.ast.KeepBindingReference;
 import com.android.tools.r8.keepanno.ast.KeepBindings;
+import com.android.tools.r8.keepanno.ast.KeepClassBindingReference;
 import com.android.tools.r8.keepanno.ast.KeepClassItemPattern;
-import com.android.tools.r8.keepanno.ast.KeepClassItemReference;
 import com.android.tools.r8.keepanno.ast.KeepConsequences;
 import com.android.tools.r8.keepanno.ast.KeepConstraint;
 import com.android.tools.r8.keepanno.ast.KeepConstraints;
@@ -38,7 +38,6 @@ import com.android.tools.r8.keepanno.ast.KeepFieldAccessPattern;
 import com.android.tools.r8.keepanno.ast.KeepFieldPattern;
 import com.android.tools.r8.keepanno.ast.KeepInstanceOfPattern;
 import com.android.tools.r8.keepanno.ast.KeepItemPattern;
-import com.android.tools.r8.keepanno.ast.KeepItemReference;
 import com.android.tools.r8.keepanno.ast.KeepMemberAccessPattern;
 import com.android.tools.r8.keepanno.ast.KeepMemberItemPattern;
 import com.android.tools.r8.keepanno.ast.KeepMemberPattern;
@@ -259,19 +258,10 @@ public class KeepEdgeWriter implements Opcodes {
   }
 
   private void writeConstraints(
-      AnnotationVisitor visitor, KeepConstraints constraints, KeepItemReference item) {
+      AnnotationVisitor visitor, KeepConstraints constraints, KeepBindingReference item) {
     Set<KeepConstraint> typedConstraints;
-    if (item.isClassItemReference()) {
+    if (item.isClassType()) {
       typedConstraints = constraints.getClassConstraints();
-    } else if (item.isMemberItemPattern()) {
-      KeepMemberPattern memberPattern = item.asMemberItemPattern().getMemberPattern();
-      if (memberPattern.isMethod()) {
-        typedConstraints = constraints.getMethodConstraints();
-      } else if (memberPattern.isField()) {
-        typedConstraints = constraints.getFieldConstraints();
-      } else {
-        typedConstraints = constraints.getMemberConstraints();
-      }
     } else {
       typedConstraints = constraints.getMemberConstraints();
     }
@@ -340,15 +330,11 @@ public class KeepEdgeWriter implements Opcodes {
     }
   }
 
-  private void writeItemReference(AnnotationVisitor visitor, KeepItemReference itemReference) {
-    if (itemReference.isBindingReference()) {
-      KeepBindingReference bindingReference = itemReference.asBindingReference();
-      String bindingProperty =
-          bindingReference.isClassType() ? Item.classFromBinding : Item.memberFromBinding;
-      visitor.visit(bindingProperty, bindingReference.getName().toString());
-    } else {
-      writeItem(visitor, itemReference.asItemPattern());
-    }
+  private void writeItemReference(
+      AnnotationVisitor visitor, KeepBindingReference bindingReference) {
+    String bindingProperty =
+        bindingReference.isClassType() ? Item.classFromBinding : Item.memberFromBinding;
+    visitor.visit(bindingProperty, bindingReference.getName().toString());
   }
 
   private void writeItem(AnnotationVisitor itemVisitor, KeepItemPattern item) {
@@ -386,13 +372,8 @@ public class KeepEdgeWriter implements Opcodes {
 
   private void writeMemberItem(
       KeepMemberItemPattern memberItemPattern, AnnotationVisitor itemVisitor) {
-    KeepClassItemReference classReference = memberItemPattern.getClassReference();
-    if (classReference.isBindingReference()) {
-      KeepBindingReference bindingReference = classReference.asBindingReference();
-      itemVisitor.visit(Item.classFromBinding, bindingReference.getName().toString());
-    } else {
-      writeClassItem(classReference.asClassItemPattern(), itemVisitor);
-    }
+    KeepClassBindingReference bindingReference = memberItemPattern.getClassReference();
+    itemVisitor.visit(Item.classFromBinding, bindingReference.getName().toString());
     writeMember(memberItemPattern.getMemberPattern(), itemVisitor);
   }
 

@@ -3,8 +3,6 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8.keepanno.ast;
 
-import java.util.Arrays;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.IdentityHashMap;
@@ -39,6 +37,34 @@ public class KeepBindings {
     return bindings.get(bindingReference);
   }
 
+  public KeepClassItemPattern getClassItem(KeepClassBindingReference reference) {
+    KeepBindingSymbol symbol = reference.getName();
+    Binding binding = get(symbol);
+    if (binding == null) {
+      throw new KeepEdgeException("Unbound binding for reference '" + symbol + "'");
+    }
+    KeepItemPattern item = binding.getItem();
+    if (!item.isClassItemPattern()) {
+      throw new KeepEdgeException(
+          "Attempt to get class item from non-class binding '" + symbol + "'");
+    }
+    return item.asClassItemPattern();
+  }
+
+  public KeepMemberItemPattern getMemberItem(KeepMemberBindingReference reference) {
+    KeepBindingSymbol symbol = reference.getName();
+    Binding binding = get(symbol);
+    if (binding == null) {
+      throw new KeepEdgeException("Unbound binding for reference '" + symbol + "'");
+    }
+    KeepItemPattern item = binding.getItem();
+    if (!item.isMemberItemPattern()) {
+      throw new KeepEdgeException(
+          "Attempt to get member item from non-member binding '" + symbol + "'");
+    }
+    return item.asMemberItemPattern();
+  }
+
   public int size() {
     return bindings.size();
   }
@@ -57,28 +83,6 @@ public class KeepBindings {
         + bindings.entrySet().stream()
             .map(e -> e.getKey() + "=" + e.getValue())
             .collect(Collectors.joining(", "));
-  }
-
-  public void verify(KeepItemReference... references) {
-    verify(Arrays.asList(references));
-  }
-
-  public void verify(Collection<KeepItemReference> references) {
-    for (KeepItemReference reference : references) {
-      if (reference.isBindingReference()) {
-        KeepBindingReference bindingReference = reference.asBindingReference();
-        if (!bindings.containsKey(bindingReference.getName())) {
-          throw new KeepEdgeException("Unbound reference to " + bindingReference);
-        }
-      } else {
-        KeepItemPattern itemPattern = reference.asItemPattern();
-        for (KeepBindingReference bindingReference : itemPattern.getBindingReferences()) {
-          if (!bindings.containsKey(bindingReference.getName())) {
-            throw new KeepEdgeException("Unbound reference to " + bindingReference);
-          }
-        }
-      }
-    }
   }
 
   /**
@@ -223,7 +227,6 @@ public class KeepBindings {
       return bindings.get(symbol);
     }
 
-    @SuppressWarnings("ReferenceEquality")
     public KeepBindings build() {
       if (bindings.isEmpty()) {
         return NONE_INSTANCE;

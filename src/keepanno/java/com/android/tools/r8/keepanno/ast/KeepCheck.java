@@ -15,7 +15,7 @@ public class KeepCheck extends KeepDeclaration {
     private KeepEdgeMetaInfo metaInfo = KeepEdgeMetaInfo.none();
     private KeepCheckKind kind = KeepCheckKind.REMOVED;
     private KeepBindings bindings = KeepBindings.none();
-    private KeepItemReference itemReference;
+    private KeepBindingReference itemReference;
 
     public Builder setMetaInfo(KeepEdgeMetaInfo metaInfo) {
       this.metaInfo = metaInfo;
@@ -32,12 +32,7 @@ public class KeepCheck extends KeepDeclaration {
       return this;
     }
 
-    public Builder setItemBindingReference(KeepBindingReference bindingReference) {
-      this.itemReference = bindingReference.toItemReference();
-      return this;
-    }
-
-    public Builder setItemReference(KeepItemReference itemReference) {
+    public Builder setItemReference(KeepBindingReference itemReference) {
       this.itemReference = itemReference;
       return this;
     }
@@ -46,8 +41,15 @@ public class KeepCheck extends KeepDeclaration {
       if (itemReference == null) {
         throw new KeepEdgeException("KeepCheck must have an item pattern.");
       }
-      bindings.verify(itemReference);
-      return new KeepCheck(metaInfo, kind, bindings, itemReference);
+
+      KeepBindingsNormalizer normalizer = KeepBindingsNormalizer.create(bindings);
+      itemReference =
+          normalizer.registerAndNormalizeReference(
+              itemReference,
+              itemReference,
+              (newItemReference, oldItemReference) -> newItemReference);
+
+      return new KeepCheck(metaInfo, kind, normalizer.buildBindings(), itemReference);
     }
   }
 
@@ -58,13 +60,13 @@ public class KeepCheck extends KeepDeclaration {
   private final KeepEdgeMetaInfo metaInfo;
   private final KeepCheckKind kind;
   private final KeepBindings bindings;
-  private final KeepItemReference itemReference;
+  private final KeepBindingReference itemReference;
 
   private KeepCheck(
       KeepEdgeMetaInfo metaInfo,
       KeepCheckKind kind,
       KeepBindings bindings,
-      KeepItemReference itemReference) {
+      KeepBindingReference itemReference) {
     this.metaInfo = metaInfo;
     this.kind = kind;
     this.bindings = bindings;
@@ -88,15 +90,8 @@ public class KeepCheck extends KeepDeclaration {
     return bindings;
   }
 
-  public KeepItemReference getItemReference() {
-    return itemReference;
-  }
-
   public KeepItemPattern getItemPattern() {
-    if (itemReference.isBindingReference()) {
-      return bindings.get(itemReference.asBindingReference()).getItem();
-    }
-    return itemReference.asItemPattern();
+    return bindings.get(itemReference).getItem();
   }
 
   @Override
