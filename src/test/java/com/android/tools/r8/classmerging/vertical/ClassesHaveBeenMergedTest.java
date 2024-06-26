@@ -48,11 +48,13 @@ public class ClassesHaveBeenMergedTest extends VerticalClassMergerTestBase {
   }
 
   private void inspectVerticallyMergedClasses(VerticallyMergedClassesInspector inspector) {
-    inspector.assertMergedIntoSubtype(
-        GenericInterface.class,
-        GenericAbstractClass.class,
-        Outer.SuperClass.class,
-        SuperClass.class);
+    inspector
+        .assertMergedIntoSubtype(
+            GenericInterface.class,
+            GenericAbstractClass.class,
+            Outer.SuperClass.class,
+            SuperClass.class)
+        .assertNoOtherClassesMerged();
   }
 
   private void inspect(CodeInspector inspector) {
