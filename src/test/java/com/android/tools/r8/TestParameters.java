@@ -82,6 +82,10 @@ public class TestParameters {
     return isDexRuntime() && vm == getDexRuntimeVersion();
   }
 
+  public boolean isDexRuntimeVersionOlderThanOrEqual(DexVm.Version vm) {
+    return isDexRuntime() && getDexRuntimeVersion().isOlderThanOrEqual(vm);
+  }
+
   public boolean isNoneRuntime() {
     return runtime == NoneRuntime.getInstance();
   }
