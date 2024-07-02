@@ -3,6 +3,10 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8.keepanno.ast;
 
+import com.android.tools.r8.keepanno.proto.KeepSpecProtos;
+import com.android.tools.r8.keepanno.proto.KeepSpecProtos.Check;
+import com.android.tools.r8.keepanno.proto.KeepSpecProtos.CheckKind;
+
 public class KeepCheck extends KeepDeclaration {
 
   public enum KeepCheckKind {
@@ -16,6 +20,37 @@ public class KeepCheck extends KeepDeclaration {
     private KeepCheckKind kind = KeepCheckKind.REMOVED;
     private KeepBindings bindings = KeepBindings.none();
     private KeepBindingReference itemReference;
+
+    public Builder applyProto(KeepSpecProtos.Check proto, KeepSpecVersion version) {
+      // MetaInfo is optional, but that is handled in its applyProto.
+      setMetaInfo(KeepEdgeMetaInfo.fromProto(proto.getMetaInfo(), version));
+
+      switch (proto.getKindValue()) {
+        case CheckKind.CHECK_OPTIMIZED_OUT_VALUE:
+          setKind(KeepCheckKind.OPTIMIZED_OUT);
+          break;
+        case CheckKind.CHECK_REMOVED_VALUE:
+        default:
+          // The kind is not optional, but in the even of a format change we assume removed.
+          assert proto.getKind() == CheckKind.CHECK_REMOVED;
+          setKind(KeepCheckKind.REMOVED);
+      }
+
+      // Bindings are not optional.
+      if (!proto.hasBindings()) {
+        throw new KeepEdgeException("Invalid Check, must have valid bindings.");
+      }
+      KeepBindings.Builder bindingsBuilder = KeepBindings.builder().applyProto(proto.getBindings());
+      setBindings(bindingsBuilder.build());
+
+      // The check item reference is not optional.
+      if (!proto.hasItem() || proto.getItem().getName().isEmpty()) {
+        throw new KeepEdgeException("Invalid check, must have a valid item reference.");
+      }
+      setItemReference(
+          bindingsBuilder.getBindingReferenceForUserBinding(proto.getItem().getName()));
+      return this;
+    }
 
     public Builder setMetaInfo(KeepEdgeMetaInfo metaInfo) {
       this.metaInfo = metaInfo;
@@ -97,5 +132,20 @@ public class KeepCheck extends KeepDeclaration {
   @Override
   public String toString() {
     return "KeepCheck{kind=" + kind + ", item=" + itemReference + "}";
+  }
+
+  public static KeepCheck fromCheckProto(Check proto, KeepSpecVersion version) {
+    return builder().applyProto(proto, version).build();
+  }
+
+  public Check.Builder buildCheckProto() {
+    return Check.newBuilder()
+        .setMetaInfo(getMetaInfo().buildProto())
+        .setBindings(getBindings().buildProto())
+        .setItem(itemReference.buildProto())
+        .setKind(
+            kind == KeepCheckKind.REMOVED
+                ? KeepSpecProtos.CheckKind.CHECK_REMOVED
+                : KeepSpecProtos.CheckKind.CHECK_OPTIMIZED_OUT);
   }
 }

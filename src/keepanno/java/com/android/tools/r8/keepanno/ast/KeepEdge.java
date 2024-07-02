@@ -3,7 +3,8 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8.keepanno.ast;
 
-import com.android.tools.r8.keepanno.proto.KeepAnnoProtos;
+import com.android.tools.r8.keepanno.proto.KeepSpecProtos.Edge;
+import com.android.tools.r8.keepanno.utils.Unimplemented;
 
 /**
  * An edge in the keep graph.
@@ -146,8 +147,9 @@ public final class KeepEdge extends KeepDeclaration {
 
     private Builder() {}
 
-    public Builder applyProto(KeepAnnoProtos.Edge edge) {
+    public Builder applyProto(Edge edge, KeepSpecVersion version) {
       // TODO(b/343389186): implement this.
+      KeepEdgeMetaInfo.builder().applyProto(edge.getMetaInfo(), version).build();
       return this;
     }
 
@@ -264,7 +266,8 @@ public final class KeepEdge extends KeepDeclaration {
         + '}';
   }
 
-  public void buildProto(KeepAnnoProtos.Edge.Builder builder) {
-    // TODO(b/343389186): implement this.
+  public Edge.Builder buildEdgeProto() {
+    Edge.newBuilder().setMetaInfo(getMetaInfo().buildProto());
+    throw new Unimplemented();
   }
 }

@@ -36,7 +36,8 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 
 public abstract class StartupProfile
-    implements AbstractProfile<StartupProfileClassRule, StartupProfileMethodRule> {
+    implements AbstractProfile<
+        StartupProfileClassRule, StartupProfileMethodRule, StartupProfile, StartupProfile.Builder> {
 
   protected StartupProfile() {}
 
@@ -195,6 +196,13 @@ public abstract class StartupProfile
     }
 
     @Override
+    public boolean addClassRule(DexType type) {
+      int oldSize = size();
+      addClassRule(StartupProfileClassRule.builder().setClassReference(type).build());
+      return size() > oldSize;
+    }
+
+    @Override
     public Builder addMethodRule(StartupProfileMethodRule methodRule) {
       return addStartupItem(methodRule);
     }
@@ -258,6 +266,7 @@ public abstract class StartupProfile
       return this;
     }
 
+    @Override
     public int size() {
       return startupItems.size();
     }

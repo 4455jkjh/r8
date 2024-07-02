@@ -4,6 +4,7 @@
 
 package com.android.tools.r8.keepanno.ast;
 
+import com.android.tools.r8.keepanno.proto.KeepSpecProtos.ClassItemPattern;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Objects;
@@ -18,6 +19,16 @@ public class KeepClassItemPattern extends KeepItemPattern {
     return new Builder();
   }
 
+  public static KeepClassItemPattern fromClassProto(ClassItemPattern proto) {
+    return builder().applyProto(proto).build();
+  }
+
+  public ClassItemPattern.Builder buildClassProto() {
+    // TODO(b/343389186): Add instance-of.
+    // TODO(b/343389186): Add annotated-by.
+    return ClassItemPattern.newBuilder().setClassName(classNamePattern.buildProto());
+  }
+
   public static class Builder {
 
     private KeepQualifiedClassNamePattern classNamePattern = KeepQualifiedClassNamePattern.any();
@@ -26,6 +37,17 @@ public class KeepClassItemPattern extends KeepItemPattern {
         OptionalPattern.absent();
 
     private Builder() {}
+
+    public Builder applyProto(ClassItemPattern protoItem) {
+      assert classNamePattern.isAny();
+      if (protoItem.hasClassName()) {
+        setClassNamePattern(KeepQualifiedClassNamePattern.fromProto(protoItem.getClassName()));
+      }
+
+      // TODO(b/343389186): Add instance-of.
+      // TODO(b/343389186): Add annotated-by.
+      return this;
+    }
 
     public Builder copyFrom(KeepClassItemPattern pattern) {
       return setClassNamePattern(pattern.getClassNamePattern())

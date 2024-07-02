@@ -23,11 +23,16 @@ import com.android.tools.r8.keepanno.KeepAnnoParameters.KeepAnnoConfig;
 import com.android.tools.r8.keepanno.asm.KeepEdgeReader;
 import com.android.tools.r8.keepanno.asm.KeepEdgeWriter;
 import com.android.tools.r8.keepanno.ast.KeepDeclaration;
+import com.android.tools.r8.keepanno.ast.KeepSpecVersion;
 import com.android.tools.r8.keepanno.keeprules.KeepRuleExtractorOptions;
+import com.android.tools.r8.keepanno.proto.KeepSpecProtos.KeepSpec;
+import com.android.tools.r8.keepanno.utils.Unimplemented;
 import com.android.tools.r8.origin.Origin;
 import com.android.tools.r8.utils.DescriptorUtils;
 import com.android.tools.r8.utils.InternalOptions;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -65,6 +70,12 @@ public abstract class KeepAnnoTestBuilder {
   public final TestParameters parameters() {
     return keepAnnoParams.parameters();
   }
+
+  public KeepAnnoTestBuilder addInnerClasses(Class<?> clazz) throws IOException {
+    return addProgramFiles(new ArrayList<>(ToolHelper.getClassFilesForInnerClasses(clazz)));
+  }
+
+  public abstract KeepAnnoTestBuilder addProgramFiles(List<Path> programFiles) throws IOException;
 
   public abstract KeepAnnoTestBuilder addProgramClasses(List<Class<?>> programClasses)
       throws IOException;
@@ -145,6 +156,12 @@ public abstract class KeepAnnoTestBuilder {
         assert parameters().isDexRuntime();
         builder = TestBase.testForD8(temp).setMinApi(parameters());
       }
+    }
+
+    @Override
+    public KeepAnnoTestBuilder addProgramFiles(List<Path> programFiles) {
+      builder.addProgramFiles(programFiles);
+      return this;
     }
 
     @Override
@@ -230,6 +247,14 @@ public abstract class KeepAnnoTestBuilder {
     }
 
     @Override
+    public KeepAnnoTestBuilder addProgramFiles(List<Path> programFiles) throws IOException {
+      for (Path programFile : programFiles) {
+        extractAndAdd(Files.readAllBytes(programFile));
+      }
+      return this;
+    }
+
+    @Override
     public KeepAnnoTestBuilder addProgramClasses(List<Class<?>> programClasses) throws IOException {
       for (Class<?> programClass : programClasses) {
         extractAndAdd(ToolHelper.getClassAsBytes(programClass));
@@ -258,6 +283,23 @@ public abstract class KeepAnnoTestBuilder {
       if (isNormalizeEdges()) {
         List<KeepDeclaration> declarations = KeepEdgeReader.readKeepEdges(classFileData);
         if (!declarations.isEmpty()) {
+          List<KeepDeclaration> legacyExtract = new ArrayList<>();
+          KeepSpec.Builder keepSpecBuilder = KeepSpec.newBuilder();
+          keepSpecBuilder.setVersion(KeepSpecVersion.getCurrent().buildProto());
+          for (KeepDeclaration declaration : declarations) {
+            try {
+              keepSpecBuilder.addDeclarations(declaration.buildDeclarationProto());
+            } catch (Unimplemented e) {
+              legacyExtract.add(declaration);
+            }
+          }
+          builder
+              .getBuilder()
+              .addKeepSpecificationData(keepSpecBuilder.build().toByteArray(), Origin.unknown());
+          if (legacyExtract.isEmpty()) {
+            // TODO(b/343389186): Finish the proto encoding and remove the below extraction.
+            return;
+          }
           String binaryName =
               DescriptorUtils.getBinaryNameFromDescriptor(extractClassDescriptor(classFileData));
           String synthesizingTarget = binaryName + "$$ExtractedKeepEdges";
@@ -270,7 +312,7 @@ public abstract class KeepAnnoTestBuilder {
               "java/lang/Object",
               null);
           KeepEdgeWriter.writeExtractedEdges(
-              declarations,
+              legacyExtract,
               (descriptor, visible) ->
                   KeepAnnoTestUtils.wrap(classWriter.visitAnnotation(descriptor, visible)));
           classWriter.visitEnd();
@@ -316,6 +358,14 @@ public abstract class KeepAnnoTestBuilder {
     public KeepAnnoTestBuilder applyIfR8(
         ThrowableConsumer<TestShrinkerBuilder<?, ?, ?, ?, ?>> builderConsumer) {
       builderConsumer.acceptWithRuntimeException(builder);
+      return this;
+    }
+
+    @Override
+    public KeepAnnoTestBuilder addProgramFiles(List<Path> programFiles) throws IOException {
+      List<String> rules = KeepAnnoTestUtils.extractRulesFromFiles(programFiles, extractorOptions);
+      builder.addProgramFiles(programFiles);
+      builder.addKeepRules(rules);
       return this;
     }
 
@@ -368,6 +418,14 @@ public abstract class KeepAnnoTestBuilder {
     @Override
     public KeepAnnoTestBuilder applyIfPG(ThrowableConsumer<ProguardTestBuilder> builderConsumer) {
       builderConsumer.acceptWithRuntimeException(builder);
+      return this;
+    }
+
+    @Override
+    public KeepAnnoTestBuilder addProgramFiles(List<Path> programFiles) throws IOException {
+      List<String> rules = KeepAnnoTestUtils.extractRulesFromFiles(programFiles, extractorOptions);
+      builder.addProgramFiles(programFiles);
+      builder.addKeepRules(rules);
       return this;
     }
 

@@ -3,6 +3,8 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8.keepanno.ast;
 
+import com.android.tools.r8.keepanno.ast.KeepBindings.KeepBindingSymbol;
+import com.android.tools.r8.keepanno.proto.KeepSpecProtos.ItemPattern;
 import java.util.Collection;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -10,12 +12,10 @@ import java.util.function.Function;
 /**
  * A pattern for matching items in the program.
  *
- * <p>An item pattern can be any item, or it can describe a family of classes or a family of members
- * on a classes.
+ * <p>An item pattern can describe a family of classes or a family of members.
  *
  * <p>A pattern cannot describe both a class *and* a member of a class. Either it is a pattern on
- * classes or it is a pattern on members. The distinction is defined by having a "none" member
- * pattern.
+ * classes or it is a pattern on members.
  */
 public abstract class KeepItemPattern {
 
@@ -53,6 +53,27 @@ public abstract class KeepItemPattern {
   public final void match(
       Consumer<KeepClassItemPattern> onClass, Consumer<KeepMemberItemPattern> onMember) {
     apply(AstUtils.toVoidFunction(onClass), AstUtils.toVoidFunction(onMember));
+  }
+
+  public static KeepItemPattern fromItemProto(
+      ItemPattern proto,
+      KeepItemPattern defaultValue,
+      Function<String, KeepBindingSymbol> getSymbol) {
+    if (proto.hasClassItem()) {
+      return KeepClassItemPattern.fromClassProto(proto.getClassItem());
+    }
+    if (proto.hasMemberItem()) {
+      return KeepMemberItemPattern.fromMemberProto(proto.getMemberItem(), getSymbol);
+    }
+    return defaultValue;
+  }
+
+  public ItemPattern.Builder buildItemProto() {
+    ItemPattern.Builder builder = ItemPattern.newBuilder();
+    match(
+        clazz -> builder.setClassItem(clazz.buildClassProto()),
+        member -> builder.setMemberItem(member.buildMemberProto()));
+    return builder;
   }
 }
 

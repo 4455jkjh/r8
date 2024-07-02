@@ -94,6 +94,7 @@ import com.android.tools.r8.shaking.Enqueuer;
 import com.android.tools.r8.shaking.Enqueuer.Mode;
 import com.android.tools.r8.shaking.EnqueuerFactory;
 import com.android.tools.r8.shaking.EnqueuerResult;
+import com.android.tools.r8.shaking.KeepSpecificationSource;
 import com.android.tools.r8.shaking.MainDexInfo;
 import com.android.tools.r8.shaking.MainDexListBuilder;
 import com.android.tools.r8.shaking.ProguardConfigurationRule;
@@ -105,6 +106,7 @@ import com.android.tools.r8.shaking.RuntimeTypeCheckInfo;
 import com.android.tools.r8.shaking.TreePruner;
 import com.android.tools.r8.shaking.TreePrunerConfiguration;
 import com.android.tools.r8.shaking.WhyAreYouKeepingConsumer;
+import com.android.tools.r8.startup.NonStartupInStartupOutliner;
 import com.android.tools.r8.synthesis.SyntheticFinalization;
 import com.android.tools.r8.synthesis.SyntheticItems;
 import com.android.tools.r8.utils.AndroidApp;
@@ -308,6 +310,8 @@ public class R8 {
       }
       timing.begin("Register references and more setup");
       assert ArtProfileCompletenessChecker.verify(appView);
+
+      readKeepSpecifications(appView, keepDeclarations);
 
       // Check for potentially having pass-through of Cf-code for kotlin libraries.
       options.enableCfByteCodePassThrough =
@@ -706,6 +710,8 @@ public class R8 {
           appView.getArtProfileCollection().withoutMissingItems(appView));
       appView.setStartupProfile(appView.getStartupProfile().withoutMissingItems(appView));
 
+      new NonStartupInStartupOutliner(appView).runIfNecessary(executorService, timing);
+
       if (appView.appInfo().hasLiveness()) {
         SyntheticFinalization.finalizeWithLiveness(appView.withLiveness(), executorService, timing);
       } else {
@@ -889,6 +895,19 @@ public class R8 {
       inputApp.signalFinishedToProviders(options.reporter);
       options.signalFinishedToConsumers();
     }
+  }
+
+  private void readKeepSpecifications(
+      AppView<AppInfoWithClassHierarchy> appView, List<KeepDeclaration> keepDeclarations) {
+    timing.begin("Read keep specifications");
+    try {
+      for (KeepSpecificationSource source : appView.options().getKeepSpecifications()) {
+        source.parse(keepDeclarations::add);
+      }
+    } catch (ResourceException e) {
+      options.reporter.error(new ExceptionDiagnostic(e, e.getOrigin()));
+    }
+    timing.end();
   }
 
   private void writeKeepDeclarationsToConfigurationConsumer(

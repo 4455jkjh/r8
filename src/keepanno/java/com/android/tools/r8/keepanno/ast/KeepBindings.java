@@ -3,9 +3,12 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8.keepanno.ast;
 
+import com.android.tools.r8.keepanno.proto.KeepSpecProtos;
+import com.android.tools.r8.keepanno.proto.KeepSpecProtos.Bindings;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.IdentityHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
@@ -83,6 +86,17 @@ public class KeepBindings {
         + bindings.entrySet().stream()
             .map(e -> e.getKey() + "=" + e.getValue())
             .collect(Collectors.joining(", "));
+  }
+
+  public KeepSpecProtos.Bindings.Builder buildProto() {
+    KeepSpecProtos.Bindings.Builder builder = KeepSpecProtos.Bindings.newBuilder();
+    bindings.forEach(
+        ((symbol, binding) ->
+            builder.addBindings(
+                KeepSpecProtos.Binding.newBuilder()
+                    .setName(symbol.toString())
+                    .setItem(binding.getItem().buildItemProto()))));
+    return builder;
   }
 
   /**
@@ -190,9 +204,51 @@ public class KeepBindings {
     private final Map<String, KeepBindingSymbol> reserved = new HashMap<>();
     private final Map<KeepBindingSymbol, KeepItemPattern> bindings = new IdentityHashMap<>();
 
+    public Builder applyProto(Bindings proto) {
+      List<KeepSpecProtos.Binding> protoList = proto.getBindingsList();
+      // The structure of keep edges and checks requires at least one consequent/check item.
+      // Thus, we should never be building empty binding lists, but the code is not incorrect.
+      assert !protoList.isEmpty();
+
+      // Two pass build.
+      // First pass validates and allocates symbols for each binding.
+      for (KeepSpecProtos.Binding binding : protoList) {
+        String protoName = binding.getName();
+        if (protoName.isEmpty()) {
+          throw new KeepEdgeException("Invalid binding to empty name");
+        }
+        create(protoName);
+      }
+      // Second pass constructs the items which may themselves have references to symbols.
+      for (KeepSpecProtos.Binding binding : protoList) {
+        KeepBindingSymbol symbol = reserved.get(binding.getName());
+        // We can only create a binding for an item that is present.
+        if (binding.hasItem()) {
+          KeepItemPattern itemPattern =
+              KeepItemPattern.fromItemProto(binding.getItem(), null, reserved::get);
+          // It also must be a class/member kind.
+          if (itemPattern != null) {
+            addBinding(symbol, itemPattern);
+          }
+        }
+      }
+      // We expect the bindings to have been read (a format change could invalidate this).
+      assert bindings.size() == protoList.size();
+      return this;
+    }
+
     public KeepBindingSymbol generateFreshSymbol(String hint) {
       // Allocate a fresh non-forgeable symbol. The actual name is chosen at build time.
       return new KeepBindingSymbol(hint);
+    }
+
+    public KeepBindingReference getBindingReferenceForUserBinding(String name) {
+      KeepBindingSymbol symbol = reserved.get(name);
+      if (symbol == null) {
+        throw new KeepEdgeException("Undefined binding for name '" + name + "'");
+      }
+      KeepItemPattern item = getItemForBinding(symbol);
+      return KeepBindingReference.forItem(symbol, item);
     }
 
     public KeepBindingSymbol create(String name) {

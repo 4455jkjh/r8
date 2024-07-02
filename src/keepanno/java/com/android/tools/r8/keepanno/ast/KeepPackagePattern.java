@@ -3,6 +3,10 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8.keepanno.ast;
 
+import com.android.tools.r8.keepanno.proto.KeepSpecProtos;
+import com.android.tools.r8.keepanno.proto.KeepSpecProtos.PackagePattern;
+import com.android.tools.r8.keepanno.utils.Unimplemented;
+
 public abstract class KeepPackagePattern {
 
   public static Builder builder() {
@@ -21,9 +25,47 @@ public abstract class KeepPackagePattern {
     return KeepPackagePattern.builder().exact(fullPackage).build();
   }
 
+  public static KeepPackagePattern fromProto(PackagePattern proto) {
+    return builder().applyProto(proto).build();
+  }
+
+  public PackagePattern.Builder buildProto() {
+    PackagePattern.Builder builder = PackagePattern.newBuilder();
+    if (isAny()) {
+      // An unset oneof implies "any package" (including multiple package parts).
+      return builder;
+    }
+    if (isTop()) {
+      // The top/unspecified package is encoded as the empty package name.
+      return builder.setName(KeepSpecProtos.StringPattern.newBuilder().setExact(""));
+    }
+    // TODO(b/343389186): Rewrite the package patterns to use the tree structure.
+    return builder.setExactPackageHack(getExactPackageAsString());
+  }
+
   public static class Builder {
 
     private KeepPackagePattern pattern;
+
+    public Builder applyProto(PackagePattern pkg) {
+      if (pkg.hasExactPackageHack()) {
+        exact(pkg.getExactPackageHack());
+        return this;
+      }
+      if (pkg.hasName()) {
+        KeepStringPattern stringPattern = KeepStringPattern.fromProto(pkg.getName());
+        if (stringPattern.isExact() && stringPattern.asExactString().isEmpty()) {
+          return top();
+        }
+        throw new Unimplemented();
+      }
+      if (pkg.hasNode()) {
+        throw new Unimplemented();
+      }
+      // The unset oneof implies any package.
+      assert pattern.isAny();
+      return this;
+    }
 
     public Builder any() {
       pattern = Any.getInstance();

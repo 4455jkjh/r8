@@ -1,0 +1,226 @@
+// Copyright (c) 2024, the R8 project authors. Please see the AUTHORS file
+// for details. All rights reserved. Use of this source code is governed by a
+// BSD-style license that can be found in the LICENSE file.
+syntax = "proto3";
+
+package com.android.tools.r8.keepanno.proto;
+
+// All messages are placed under the outer class. This makes it a bit nicer to
+// implement the AST <-> Proto conversions without type conflicts.
+option java_multiple_files = false;
+
+// Camel-case the outer class name (default is `Keepspec`).
+option java_outer_classname = "KeepSpecProtos";
+
+// Java package consistent with R8 convention.
+option java_package = "com.android.tools.r8.keepanno.proto";
+
+// Top-level container for the keep specification
+message KeepSpec {
+  Version version = 1;
+  repeated Declaration declarations = 2;
+}
+
+message Version {
+  uint32 major = 1;
+  uint32 minor = 2;
+  uint32 patch = 3;
+}
+
+message Declaration {
+  oneof decl_oneof {
+    Edge edge = 2;
+    Check check = 3;
+  }
+}
+
+// Note: the messages and fields avoid the use of `descriptor` in any place as
+// that name is used internally in the protobuf encodings. We consistently use
+// the short-form `desc` throughout.
+
+message Context {
+  oneof context_oneof {
+    TypeDesc class_desc = 1;
+    MethodDesc method_desc = 2;
+    FieldDesc field_desc = 3;
+  }
+}
+
+message TypeDesc {
+  string desc = 1;
+}
+
+message MethodDesc {
+  string name = 1;
+  TypeDesc holder = 2;
+  TypeDesc return_type = 3;
+  repeated TypeDesc parameter_types = 4;
+}
+
+message FieldDesc {
+  string name = 1;
+  TypeDesc holder = 2;
+  TypeDesc field_type = 3;
+}
+
+message MetaInfo {
+  optional Context context = 1;
+  optional string description = 2;
+}
+
+enum CheckKind {
+  CHECK_UNSPECIFIED = 0;
+  CHECK_REMOVED = 1;
+  CHECK_OPTIMIZED_OUT = 2;
+}
+
+message Check {
+  optional MetaInfo meta_info = 1;
+  CheckKind kind = 2;
+  Bindings bindings = 3;
+  BindingReference item = 4;
+}
+
+message Edge {
+  MetaInfo meta_info = 1;
+  // TODO(b/343389186): Add content.
+}
+
+message Bindings {
+  repeated Binding bindings = 1;
+}
+
+message Binding {
+  string name = 1;
+  ItemPattern item = 2;
+}
+
+message BindingReference {
+  string name = 1;
+}
+
+message ItemPattern {
+  oneof item_oneof {
+    ClassItemPattern class_item = 1;
+    MemberItemPattern member_item = 2;
+  }
+}
+
+message ClassItemPattern {
+  optional ClassNamePattern class_name = 1;
+  // TODO(b/343389186): Add instance-of.
+  // TODO(b/343389186): Add annotated-by.
+}
+
+message ClassNamePattern {
+  optional PackagePattern package = 1;
+  optional UnqualifiedNamePattern unqualified_name = 2;
+}
+
+message PackagePattern {
+  oneof package_oneof {
+    // An unset oneof implies any package (including multiple package parts).
+    StringPattern name = 1;
+    PackageNode node = 2;
+    // TODO(b/343389186): Rewrite package pattern AST to the tree structure.
+    string exact_package_hack = 3;
+  }
+}
+
+message PackageNode {
+  PackagePattern lhs = 1;
+  PackagePattern rhs = 2;
+}
+
+message StringPattern {
+  // The string pattern is split in two so that we can distinguish the exact
+  // empty string, from the inexact patterns.
+  oneof pattern_oneof {
+    // Unset oneof denotes any type.
+    string exact = 1;
+    StringPatternInexact inexact = 2;
+  }
+}
+
+message StringPatternInexact {
+  optional string prefix = 2;
+  optional string suffix = 3;
+}
+
+message UnqualifiedNamePattern {
+  optional StringPattern name = 1;
+}
+
+message MemberItemPattern {
+  BindingReference class_reference = 1;
+  optional MemberPattern member_pattern = 2;
+}
+
+message MemberPattern {
+  oneof member_oneof {
+    MemberPatternGeneral general_member = 1;
+    MemberPatternField field_member = 2;
+    MemberPatternMethod method_member = 3;
+  }
+}
+
+message MemberPatternGeneral {
+  // TODO(b/343389186): Add content.
+}
+
+message MemberPatternField {
+  // TODO(b/343389186): Add content.
+}
+
+message MemberPatternMethod {
+  optional StringPattern name = 1;
+  optional MethodReturnTypePattern return_type = 2;
+  optional MethodParameterTypesPattern parameter_types = 3;
+  // TODO(b/343389186): Add annotated-by.
+  // TODO(b/343389186): Add access.
+}
+
+message MethodReturnTypePattern {
+  oneof return_type_oneof {
+    // Unset type denotes any type.
+    TypeVoid void_type = 1;
+    TypePattern some_type = 2;
+  }
+}
+
+message MethodParameterTypesPattern {
+  repeated TypePattern types = 1;
+}
+
+message TypeVoid {
+  // Placeholder to denote a 'void' method return type.
+}
+
+message TypePattern {
+  oneof type_oneof {
+    // Unset type denotes any type.
+    TypePatternPrimitive primitive = 1;
+    TypePatternArray array = 2;
+    ClassNamePattern clazz = 3;
+    // TODO(b/343389186): Add instance-of.
+  }
+}
+
+enum TypePatternPrimitive {
+  PRIMITIVE_UNSPECIFIED = 0; // Denotes any primitive.
+  PRIMITIVE_BOOLEAN = 1;
+  PRIMITIVE_BYTE = 2;
+  PRIMITIVE_CHAR = 3;
+  PRIMITIVE_SHORT = 4;
+  PRIMITIVE_INT = 5;
+  PRIMITIVE_LONG = 6;
+  PRIMITIVE_FLOAT = 7;
+  PRIMITIVE_DOUBLE = 8;
+}
+
+message TypePatternArray {
+  // An unset or zero-valued dimensions will be interpreted as 1.
+  optional uint32 dimensions = 1;
+  optional TypePattern base_type = 2;
+}
+

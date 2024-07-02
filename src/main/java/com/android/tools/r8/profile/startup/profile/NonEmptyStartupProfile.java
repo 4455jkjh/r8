@@ -8,7 +8,6 @@ import com.android.tools.r8.graph.AppInfo;
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.DexClass;
 import com.android.tools.r8.graph.DexMethod;
-import com.android.tools.r8.graph.DexProgramClass;
 import com.android.tools.r8.graph.DexReference;
 import com.android.tools.r8.graph.DexType;
 import com.android.tools.r8.graph.PrunedItems;
@@ -21,7 +20,6 @@ import com.android.tools.r8.utils.Timing;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
-import java.util.function.BiConsumer;
 
 public class NonEmptyStartupProfile extends StartupProfile {
 
@@ -105,6 +103,11 @@ public class NonEmptyStartupProfile extends StartupProfile {
     return startupRules.size();
   }
 
+  @Override
+  public Builder toEmptyBuilderWithCapacity() {
+    return builderWithCapacity(size());
+  }
+
   /**
    * This is called to process the startup profile before computing the startup layouts.
    *
@@ -118,42 +121,7 @@ public class NonEmptyStartupProfile extends StartupProfile {
    */
   @Override
   public StartupProfile toStartupProfileForWriting(AppView<?> appView) {
-    return transform(
-        (classRule, builder) -> addStartupItem(classRule, builder, appView),
-        (methodRule, builder) -> addStartupItem(methodRule, builder, appView));
-  }
-
-  private static void addStartupItem(
-      StartupProfileRule startupItem, Builder builder, AppView<?> appView) {
-    startupItem.accept(
-        classRule -> addClassAndParentClasses(classRule.getReference(), builder, appView),
-        builder::addMethodRule);
-  }
-
-  private static boolean addClass(DexProgramClass clazz, Builder builder) {
-    int oldSize = builder.size();
-    builder.addClassRule(
-        StartupProfileClassRule.builder().setClassReference(clazz.getType()).build());
-    return builder.size() > oldSize;
-  }
-
-  private static void addClassAndParentClasses(DexType type, Builder builder, AppView<?> appView) {
-    DexProgramClass definition = appView.app().programDefinitionFor(type);
-    if (definition != null) {
-      addClassAndParentClasses(definition, builder, appView);
-    }
-  }
-
-  private static void addClassAndParentClasses(
-      DexProgramClass clazz, Builder builder, AppView<?> appView) {
-    if (addClass(clazz, builder)) {
-      addParentClasses(clazz, builder, appView);
-    }
-  }
-
-  private static void addParentClasses(DexProgramClass clazz, Builder builder, AppView<?> appView) {
-    clazz.forEachImmediateSupertype(
-        supertype -> addClassAndParentClasses(supertype, builder, appView));
+    return toProfileWithSuperclasses(appView);
   }
 
   @Override
@@ -193,15 +161,5 @@ public class NonEmptyStartupProfile extends StartupProfile {
             });
     timing.end();
     return result;
-  }
-
-  private StartupProfile transform(
-      BiConsumer<StartupProfileClassRule, Builder> classRuleTransformer,
-      BiConsumer<StartupProfileMethodRule, Builder> methodRuleTransformer) {
-    Builder builder = builderWithCapacity(startupRules.size());
-    forEachRule(
-        classRule -> classRuleTransformer.accept(classRule, builder),
-        methodRule -> methodRuleTransformer.accept(methodRule, builder));
-    return builder.build();
   }
 }
