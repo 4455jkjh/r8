@@ -1009,7 +1009,7 @@ task buildDesugaredLibrary(type: Exec) {
     inputs.file script
     outputs.dir outputDir
     dependsOn downloadDeps
-    commandLine "python", script
+    commandLine "python3", script
     workingDir = projectDir
 }
 
@@ -1122,7 +1122,7 @@ task createArtTests(type: Exec) {
     inputs.files files("tests/2017-10-04/art.tar.gz", createArtTestsScript)
     outputs.dir outputDir
     dependsOn downloadDeps
-    commandLine "python", createArtTestsScript
+    commandLine "python3", createArtTestsScript
     workingDir = projectDir
 }
 
@@ -1132,7 +1132,7 @@ task createJctfTests(type: Exec) {
     inputs.file script
     outputs.dir outputDir
     dependsOn downloadDeps
-    commandLine "python", script
+    commandLine "python3", script
     workingDir = projectDir
 }
 
@@ -1863,7 +1863,7 @@ def shouldRetrace() {
 def retrace(Throwable exception) {
     def out = new StringBuffer()
     def err = new StringBuffer()
-    def command = "python tools/retrace.py --quiet"
+    def command = "python3 tools/retrace.py --quiet"
     def header = "RETRACED STACKTRACE";
     if (System.getenv('BUILDBOT_BUILDERNAME') != null
             && !System.getenv('BUILDBOT_BUILDERNAME').endsWith("_release")) {
