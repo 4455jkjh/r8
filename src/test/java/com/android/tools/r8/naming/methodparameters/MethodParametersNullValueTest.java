@@ -39,8 +39,8 @@ public class MethodParametersNullValueTest extends TestBase {
 
   @Test
   public void testJvm() throws Exception {
-    parameters.assumeJvmTestParameters();
-    testForJvm(parameters)
+    assumeTrue(parameters.getRuntime().isCf());
+    testForJvm()
         .addProgramClassFileData(getTransformedTestClass())
         .run(parameters.getRuntime(), TestClass.class)
         .apply(this::checkExpected);
@@ -50,14 +50,13 @@ public class MethodParametersNullValueTest extends TestBase {
   public void testD8() throws Exception {
     testForD8(parameters.getBackend())
         .addProgramClassFileData(getTransformedTestClass())
-        .setMinApi(parameters)
+        .setMinApi(parameters.getApiLevel())
         .run(parameters.getRuntime(), TestClass.class)
         .apply(this::checkExpected);
   }
 
   @Test
   public void testR8() throws Exception {
-    parameters.assumeR8TestParameters();
     // Don't run on old API as that build is "ill configured" and triggers missing type refs.
     assumeTrue(
         parameters.isCfRuntime()
@@ -66,7 +65,7 @@ public class MethodParametersNullValueTest extends TestBase {
                 .isGreaterThanOrEqualTo(apiLevelWithMethodParametersSupport()));
     testForR8(parameters.getBackend())
         .addProgramClassFileData(getTransformedTestClass())
-        .setMinApi(parameters)
+        .setMinApi(parameters.getApiLevel())
         .addKeepClassAndMembersRules(TestClass.class)
         .addKeepAllAttributes()
         .run(parameters.getRuntime(), TestClass.class)

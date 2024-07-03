@@ -651,7 +651,7 @@ public class ClassFileTransformer {
               for (String parameterName : parameterNames) {
                 mv.visitParameter(parameterName, 0);
               }
-              return new MethodVisitor(ASM_VERSION, mv) {
+              return new MethodVisitor(ASM7, mv) {
                 @Override
                 public void visitParameter(String name, int access) {
                   // Ignore all existing method parameter.
