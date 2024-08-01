@@ -2053,8 +2053,12 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
                   try {
                     ZipUtils.iter(
                         Paths.get(lib),
-                        (entry, input) -> consumer.accept(extractClassDescriptor(input)));
-                  } catch (IOException e) {
+                        (entry, input) -> {
+                          if (ZipUtils.isClassFile(entry.getName())) {
+                            consumer.accept(extractClassDescriptor(input));
+                          }
+                        });
+                  } catch (Exception e) {
                     throw new CompilationError("Failed to read extension library " + lib, e);
                   }
                 });
@@ -3283,5 +3287,12 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
 
   public boolean canInitNewInstanceUsingSuperclassConstructor() {
     return isGeneratingDex() && minApiLevel.isGreaterThanOrEqualTo(AndroidApiLevel.L);
+  }
+
+  // b/302826300 Dalvik can vms gives hard verification errors when we rebind program types to
+  // library types that are superclasses of unavailable classes on the specific api level.
+  // Instead, we should always rebind to just the first library class.
+  public boolean canHaveDalvikVerifyErrorOnVirtualInvokeWithMissingClasses() {
+    return canHaveBugPresentUntilExclusive(AndroidApiLevel.L);
   }
 }
