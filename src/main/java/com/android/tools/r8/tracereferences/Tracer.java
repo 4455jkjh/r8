@@ -13,10 +13,12 @@ import com.android.tools.r8.graph.DexAnnotation;
 import com.android.tools.r8.graph.DexCallSite;
 import com.android.tools.r8.graph.DexClass;
 import com.android.tools.r8.graph.DexClassAndField;
+import com.android.tools.r8.graph.DexClassAndMember;
 import com.android.tools.r8.graph.DexClassAndMethod;
 import com.android.tools.r8.graph.DexEncodedMethod;
 import com.android.tools.r8.graph.DexField;
 import com.android.tools.r8.graph.DexItemFactory;
+import com.android.tools.r8.graph.DexMember;
 import com.android.tools.r8.graph.DexMethod;
 import com.android.tools.r8.graph.DexProgramClass;
 import com.android.tools.r8.graph.DexProto;
@@ -67,12 +69,8 @@ public class Tracer {
     UseCollector useCollector = new UseCollector(appView, consumer, diagnostics, targetPredicate);
     for (DexProgramClass clazz : appView.appInfo().classes()) {
       DefinitionContext classContext = DefinitionContextUtils.create(clazz);
-      if (clazz.superType != null) {
-        useCollector.registerSuperType(clazz, clazz.superType, classContext);
-      }
-      for (DexType implementsType : clazz.getInterfaces()) {
-        useCollector.registerSuperType(clazz, implementsType, classContext);
-      }
+      clazz.forEachImmediateSupertype(
+          supertype -> useCollector.registerSuperType(clazz, supertype, classContext));
       clazz.forEachProgramField(useCollector::registerField);
       clazz.forEachProgramMethod(
           method -> {
@@ -160,9 +158,29 @@ public class Tracer {
       if (isTargetType(clazz.getType())) {
         TracedClassImpl tracedClass = new TracedClassImpl(clazz, referencedFrom);
         consumer.acceptType(tracedClass, diagnostics);
-        if (clazz.getAccessFlags().isVisibilityDependingOnPackage()) {
+        if (clazz.getAccessFlags().isPackagePrivateOrProtected()) {
           consumer.acceptPackage(
               Reference.packageFromString(clazz.getType().getPackageName()), diagnostics);
+        }
+      }
+    }
+
+    private void handleMemberResolution(
+        DexMember<?, ?> reference,
+        DexClassAndMember<?, ?> member,
+        ProgramMethod context,
+        DefinitionContext referencedFrom) {
+      DexClass holder = member.getHolder();
+      assert isTargetType(holder.getType());
+      if (member.getHolderType().isNotIdenticalTo(reference.getHolderType())) {
+        TracedClassImpl tracedClass = new TracedClassImpl(holder, referencedFrom);
+        consumer.acceptType(tracedClass, diagnostics);
+      }
+      if (member.getAccessFlags().isPackagePrivateOrProtected()) {
+        if (member.getAccessFlags().isPackagePrivate()
+            || !appInfo().isSubtype(context.getHolder(), member.getHolder())) {
+          consumer.acceptPackage(
+              Reference.packageFromString(holder.getType().getPackageName()), diagnostics);
         }
       }
     }
@@ -181,7 +199,7 @@ public class Tracer {
       TracedMethodImpl tracedMethod = new TracedMethodImpl(method.getDefinition(), referencedFrom);
       if (isTargetType(method.getHolderType())) {
         consumer.acceptMethod(tracedMethod, diagnostics);
-        if (method.getAccessFlags().isVisibilityDependingOnPackage()) {
+        if (method.getAccessFlags().isPackagePrivateOrProtected()) {
           consumer.acceptPackage(
               Reference.packageFromString(method.getHolderType().getPackageName()), diagnostics);
         }
@@ -215,13 +233,12 @@ public class Tracer {
       addType(field.getType(), referencedFrom);
     }
 
-    @SuppressWarnings("ReferenceEquality")
     private void registerMethod(ProgramMethod method) {
       DefinitionContext referencedFrom = DefinitionContextUtils.create(method);
       addTypes(method.getParameters(), referencedFrom);
       addType(method.getReturnType(), referencedFrom);
-      for (DexAnnotation annotation : method.getDefinition().annotations().annotations) {
-        if (annotation.getAnnotationType() == factory.annotationThrows) {
+      for (DexAnnotation annotation : method.getAnnotations().getAnnotations()) {
+        if (annotation.getAnnotationType().isIdenticalTo(factory.annotationThrows)) {
           DexValueArray dexValues = annotation.annotation.elements[0].value.asDexValueArray();
           for (DexValue dexValType : dexValues.getValues()) {
             addType(dexValType.asDexValueType().value, referencedFrom);
@@ -245,7 +262,6 @@ public class Tracer {
       method.registerCodeReferences(new MethodUseCollector(method));
     }
 
-    @SuppressWarnings("ReferenceEquality")
     private void registerSuperType(
         DexProgramClass clazz, DexType superType, DefinitionContext referencedFrom) {
       addType(superType, referencedFrom);
@@ -254,7 +270,10 @@ public class Tracer {
           method -> {
             DexClassAndMethod resolvedMethod =
                 appInfo()
-                    .resolveMethodOn(superType, method.getReference(), superType != clazz.superType)
+                    .resolveMethodOn(
+                        superType,
+                        method.getReference(),
+                        superType.isNotIdenticalTo(clazz.getSuperType()))
                     .getResolutionPair();
             if (resolvedMethod != null
                 && !resolvedMethod.isProgramMethod()
@@ -386,7 +405,6 @@ public class Tracer {
         }
       }
 
-      @SuppressWarnings("ReferenceEquality")
       private void handleRewrittenMethodReference(
           DexMethod method, DexClassAndMethod resolvedMethod) {
         addType(method.getHolderType(), referencedFrom);
@@ -397,16 +415,9 @@ public class Tracer {
           assert resolvedMethod.getReference().match(method)
               || resolvedMethod.getHolder().isSignaturePolymorphicMethod(definition, factory);
           if (isTargetType(resolvedMethod.getHolderType())) {
-            if (resolvedMethod.getHolderType() != method.getHolderType()) {
-              addType(resolvedMethod.getHolderType(), referencedFrom);
-            }
+            handleMemberResolution(method, resolvedMethod, getContext(), referencedFrom);
             TracedMethodImpl tracedMethod = new TracedMethodImpl(definition, referencedFrom);
             consumer.acceptMethod(tracedMethod, diagnostics);
-            if (resolvedMethod.getAccessFlags().isVisibilityDependingOnPackage()) {
-              consumer.acceptPackage(
-                  Reference.packageFromString(resolvedMethod.getHolderType().getPackageName()),
-                  diagnostics);
-            }
           }
         } else {
           TracedMethodImpl tracedMethod = new TracedMethodImpl(method, referencedFrom);
@@ -449,32 +460,22 @@ public class Tracer {
         handleRewrittenFieldReference(lookupResult.getReference());
       }
 
-      @SuppressWarnings("ReferenceEquality")
       private void handleRewrittenFieldReference(DexField field) {
         addType(field.getHolderType(), referencedFrom);
         addType(field.getType(), referencedFrom);
 
         FieldResolutionResult resolutionResult = appInfo().resolveField(field);
-        resolutionResult.forEachFieldResolutionResult(
-            singleResolutionResult -> {
-              if (!singleResolutionResult.isSingleFieldResolutionResult()) {
-                return;
-              }
-              DexClassAndField resolvedField = singleResolutionResult.getResolutionPair();
-              if (isTargetType(resolvedField.getHolderType())) {
-                if (resolvedField.getHolderType() != field.getHolderType()) {
-                  addClass(resolvedField.getHolder(), referencedFrom);
+        if (resolutionResult.hasSuccessfulResolutionResult()) {
+          resolutionResult.forEachSuccessfulFieldResolutionResult(
+              singleResolutionResult -> {
+                DexClassAndField resolvedField = singleResolutionResult.getResolutionPair();
+                if (isTargetType(resolvedField.getHolderType())) {
+                  handleMemberResolution(field, resolvedField, getContext(), referencedFrom);
+                  TracedFieldImpl tracedField = new TracedFieldImpl(resolvedField, referencedFrom);
+                  consumer.acceptField(tracedField, diagnostics);
                 }
-                TracedFieldImpl tracedField = new TracedFieldImpl(resolvedField, referencedFrom);
-                consumer.acceptField(tracedField, diagnostics);
-                if (resolvedField.getAccessFlags().isVisibilityDependingOnPackage()) {
-                  consumer.acceptPackage(
-                      Reference.packageFromString(resolvedField.getHolderType().getPackageName()),
-                      diagnostics);
-                }
-              }
-            });
-        if (!resolutionResult.hasSuccessfulResolutionResult()) {
+              });
+        } else {
           TracedFieldImpl tracedField = new TracedFieldImpl(field, referencedFrom);
           collectMissingField(tracedField);
           consumer.acceptField(tracedField, diagnostics);

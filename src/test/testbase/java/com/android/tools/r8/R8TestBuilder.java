@@ -14,6 +14,7 @@ import com.android.tools.r8.dexsplitter.SplitterTestBase.SplitRunner;
 import com.android.tools.r8.errors.Unreachable;
 import com.android.tools.r8.experimental.graphinfo.GraphConsumer;
 import com.android.tools.r8.keepanno.KeepAnnoTestUtils;
+import com.android.tools.r8.metadata.R8BuildMetadata;
 import com.android.tools.r8.origin.Origin;
 import com.android.tools.r8.origin.PathOrigin;
 import com.android.tools.r8.profile.art.ArtProfileConsumer;
@@ -37,9 +38,11 @@ import com.android.tools.r8.shaking.ProguardConfigurationRule;
 import com.android.tools.r8.startup.StartupProfileProvider;
 import com.android.tools.r8.utils.AndroidApp;
 import com.android.tools.r8.utils.ArchiveResourceProvider;
+import com.android.tools.r8.utils.Box;
 import com.android.tools.r8.utils.FileUtils;
 import com.android.tools.r8.utils.InternalOptions;
 import com.android.tools.r8.utils.MapIdTemplateProvider;
+import com.android.tools.r8.utils.OptionalBool;
 import com.android.tools.r8.utils.Pair;
 import com.android.tools.r8.utils.SemanticVersion;
 import com.android.tools.r8.utils.SourceFileTemplateProvider;
@@ -76,7 +79,7 @@ public abstract class R8TestBuilder<T extends R8TestBuilder<T>>
 
   private AllowedDiagnosticMessages allowedDiagnosticMessages = AllowedDiagnosticMessages.NONE;
   private boolean allowUnusedProguardConfigurationRules = false;
-  private boolean enableEmptyMemberRulesToDefaultInitRuleConversion = false;
+  private OptionalBool enableEmptyMemberRulesToDefaultInitRuleConversion = OptionalBool.FALSE;
   private boolean enableIsolatedSplits = false;
   private boolean enableMissingLibraryApiModeling = true;
   private boolean enableStartupLayoutOptimization = true;
@@ -88,6 +91,7 @@ public abstract class R8TestBuilder<T extends R8TestBuilder<T>>
   private final List<Path> features = new ArrayList<>();
   private Path resourceShrinkerOutput = null;
   private HashMap<String, Path> resourceShrinkerOutputForFeatures = new HashMap<>();
+  private Box<R8BuildMetadata> buildMetadata;
 
   @Override
   public boolean isR8TestBuilder() {
@@ -140,11 +144,16 @@ public abstract class R8TestBuilder<T extends R8TestBuilder<T>>
     ToolHelper.addSyntheticProguardRulesConsumerForTesting(
         builder, rules -> box.syntheticProguardRules = rules);
     libraryDesugaringTestConfiguration.configure(builder);
-    builder.setEnableEmptyMemberRulesToDefaultInitRuleConversion(
-        enableEmptyMemberRulesToDefaultInitRuleConversion);
+    if (!enableEmptyMemberRulesToDefaultInitRuleConversion.isUnknown()) {
+      builder.setEnableEmptyMemberRulesToDefaultInitRuleConversion(
+          enableEmptyMemberRulesToDefaultInitRuleConversion.toBoolean());
+    }
     builder.setEnableIsolatedSplits(enableIsolatedSplits);
     builder.setEnableExperimentalMissingLibraryApiModeling(enableMissingLibraryApiModeling);
     builder.setEnableStartupLayoutOptimization(enableStartupLayoutOptimization);
+    if (buildMetadata != null) {
+      builder.setBuildMetadataConsumer(buildMetadata::set);
+    }
     StringBuilder pgConfOutput = wrapProguardConfigConsumer(builder);
     ToolHelper.runAndBenchmarkR8WithoutResult(builder, optionsConsumer, benchmarkResults);
     R8TestCompileResult compileResult =
@@ -161,7 +170,8 @@ public abstract class R8TestBuilder<T extends R8TestBuilder<T>>
             features,
             residualArtProfiles,
             resourceShrinkerOutput,
-            resourceShrinkerOutputForFeatures);
+            resourceShrinkerOutputForFeatures,
+            buildMetadata != null ? buildMetadata.get() : null);
     switch (allowedDiagnosticMessages) {
       case ALL:
         compileResult.getDiagnosticMessages().assertAllDiagnosticsMatch(new IsAnything<>());
@@ -888,7 +898,12 @@ public abstract class R8TestBuilder<T extends R8TestBuilder<T>>
   public T enableEmptyMemberRulesToDefaultInitRuleConversion(
       boolean enableEmptyMemberRulesToDefaultInitRuleConversion) {
     this.enableEmptyMemberRulesToDefaultInitRuleConversion =
-        enableEmptyMemberRulesToDefaultInitRuleConversion;
+        OptionalBool.of(enableEmptyMemberRulesToDefaultInitRuleConversion);
+    return self();
+  }
+
+  public T clearEnableEmptyMemberRulesToDefaultInitRuleConversion() {
+    this.enableEmptyMemberRulesToDefaultInitRuleConversion = OptionalBool.UNKNOWN;
     return self();
   }
 
@@ -993,6 +1008,12 @@ public abstract class R8TestBuilder<T extends R8TestBuilder<T>>
         .setAndroidResourceProvider(
             new ArchiveProtoAndroidResourceProvider(input, new PathOrigin(input)));
     getBuilder().setAndroidResourceConsumer(new ArchiveProtoAndroidResourceConsumer(output, input));
+    return self();
+  }
+
+  public T collectBuildMetadata() {
+    assert buildMetadata == null;
+    buildMetadata = new Box<>();
     return self();
   }
 }
