@@ -176,34 +176,32 @@ public class Tracer {
         TracedClassImpl tracedClass = new TracedClassImpl(holder, referencedFrom);
         consumer.acceptType(tracedClass, diagnostics);
       }
+      ensurePackageAccessToMember(member, context);
+    }
+
+    private void ensurePackageAccessToMember(
+        DexClassAndMember<?, ?> member, ProgramMethod context) {
       if (member.getAccessFlags().isPackagePrivateOrProtected()) {
         if (member.getAccessFlags().isPackagePrivate()
             || !appInfo().isSubtype(context.getHolder(), member.getHolder())) {
           consumer.acceptPackage(
-              Reference.packageFromString(holder.getType().getPackageName()), diagnostics);
+              Reference.packageFromString(member.getHolderType().getPackageName()), diagnostics);
         }
       }
     }
 
     private void addSuperMethodFromTarget(
-        DexClassAndMethod method, DefinitionContext referencedFrom) {
+        DexClassAndMethod method, ProgramMethod context, DefinitionContext referencedFrom) {
       assert !method.isProgramMethod();
       assert isTargetType(method.getHolderType());
-
       // There should be no need to register the types referenced from the method signature:
       // - The return type and the parameter types are registered when visiting the source method
       //   that overrides this target method,
       // - The holder type is registered from visiting the extends/implements clause of the sub
       //   class.
-
       TracedMethodImpl tracedMethod = new TracedMethodImpl(method.getDefinition(), referencedFrom);
-      if (isTargetType(method.getHolderType())) {
-        consumer.acceptMethod(tracedMethod, diagnostics);
-        if (method.getAccessFlags().isPackagePrivateOrProtected()) {
-          consumer.acceptPackage(
-              Reference.packageFromString(method.getHolderType().getPackageName()), diagnostics);
-        }
-      }
+      consumer.acceptMethod(tracedMethod, diagnostics);
+      ensurePackageAccessToMember(method, context);
     }
 
     private <R, T extends TracedReference<R, ?>> void collectMissing(
@@ -245,17 +243,6 @@ public class Tracer {
           }
         }
       }
-      MethodResolutionResult methodResolutionResult =
-          method.getHolder().isInterface()
-              ? appInfo().resolveMethodOnInterface(method.getHolder(), method.getReference())
-              : appInfo().resolveMethodOnClass(method.getHolder(), method.getReference());
-      DexClassAndMethod superTarget =
-          methodResolutionResult.lookupInvokeSpecialTarget(method.getHolder(), appView);
-      if (superTarget != null
-          && !superTarget.isProgramMethod()
-          && isTargetType(superTarget.getHolderType())) {
-        addSuperMethodFromTarget(superTarget, referencedFrom);
-      }
     }
 
     private void traceCode(ProgramMethod method) {
@@ -266,7 +253,7 @@ public class Tracer {
         DexProgramClass clazz, DexType superType, DefinitionContext referencedFrom) {
       addType(superType, referencedFrom);
       // If clazz overrides any methods in superType, we should keep those as well.
-      clazz.forEachMethod(
+      clazz.forEachProgramVirtualMethod(
           method -> {
             DexClassAndMethod resolvedMethod =
                 appInfo()
@@ -278,7 +265,7 @@ public class Tracer {
             if (resolvedMethod != null
                 && !resolvedMethod.isProgramMethod()
                 && isTargetType(resolvedMethod.getHolderType())) {
-              addSuperMethodFromTarget(resolvedMethod, referencedFrom);
+              addSuperMethodFromTarget(resolvedMethod, method, referencedFrom);
             }
           });
     }
