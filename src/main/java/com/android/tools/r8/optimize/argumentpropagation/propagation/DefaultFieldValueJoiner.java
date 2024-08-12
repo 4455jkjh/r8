@@ -115,7 +115,7 @@ public class DefaultFieldValueJoiner {
             }
             if (state.isReferenceState()) {
               ConcreteReferenceTypeValueState referenceState = state.asReferenceState();
-              if (referenceState.getDynamicType().getNullability().isNullable()
+              if (referenceState.getNullability().isNullable()
                   && referenceState.getAbstractValue(appView).isUnknown()) {
                 return;
               }
