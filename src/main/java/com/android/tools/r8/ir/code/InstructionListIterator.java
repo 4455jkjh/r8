@@ -20,6 +20,7 @@ import com.android.tools.r8.utils.InternalOptions;
 import com.google.common.collect.Sets;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.ListIterator;
 import java.util.Set;
@@ -69,11 +70,14 @@ public interface InstructionListIterator
         code, blockIterator, Arrays.asList(instructionsToAdd), options);
   }
 
-  BasicBlock addThrowingInstructionToPossiblyThrowingBlock(
+  default InstructionListIterator addPossiblyThrowingInstructionToPossiblyThrowingBlock(
       IRCode code,
-      ListIterator<BasicBlock> blockIterator,
-      Instruction instruction,
-      InternalOptions options);
+      BasicBlockIterator blockIterator,
+      Instruction instructionToAdd,
+      InternalOptions options) {
+    return addPossiblyThrowingInstructionsToPossiblyThrowingBlock(
+        code, blockIterator, Collections.singleton(instructionToAdd), options);
+  }
 
   default void addAndPositionBeforeNewInstruction(Instruction instruction) {
     add(instruction);
