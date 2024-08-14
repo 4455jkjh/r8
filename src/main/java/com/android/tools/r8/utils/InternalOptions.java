@@ -699,8 +699,31 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
     return !canUseNestBasedAccess();
   }
 
-  public boolean shouldDesugarRecords() {
-    return desugarState.isOn() && !canUseRecords();
+  public enum DesugarRecordState {
+    OFF,
+    PARTIAL,
+    FULL;
+
+    public boolean isFull() {
+      return this == FULL;
+    }
+
+    public boolean isNotOff() {
+      return this != OFF;
+    }
+  }
+
+  public boolean recordPartialDesugaring =
+      System.getProperty("com.android.tools.r8.recordPartialDesugaring") != null;
+
+  public DesugarRecordState desugarRecordState() {
+    if (desugarState.isOff()) {
+      return DesugarRecordState.OFF;
+    }
+    if (!canUseRecords()) {
+      return DesugarRecordState.FULL;
+    }
+    return recordPartialDesugaring ? DesugarRecordState.PARTIAL : DesugarRecordState.OFF;
   }
 
   public boolean canUseDesugarBufferCovariantReturnType() {
@@ -930,6 +953,7 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
     return testing.readInputStackMaps ? testing.readInputStackMaps : isGeneratingClassFiles();
   }
 
+  public boolean ignoreUnusedProguardRules = false;
   public boolean ignoreMissingClasses = false;
   public boolean reportMissingClassesInEnclosingMethodAttribute = false;
   public boolean reportMissingClassesInInnerClassAttributes = false;
@@ -1162,6 +1186,10 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
     List<DexType> sortedKeys =
         ListUtils.sort(warningLibraryProgramDuplicates.keySet(), DexType::compareTo);
     for (DexType key : sortedKeys) {
+      // Allow for suppression of the duplicates with -dontwarn
+      if (appViewWithLiveness.getDontWarnConfiguration().matches(key)) {
+        continue;
+      }
       // If the type has been pruned from the program then don't issue a diagnostic.
       if (DexProgramClass.asProgramClassOrNull(
               appViewWithLiveness.appInfo().definitionForWithoutExistenceAssert(key))

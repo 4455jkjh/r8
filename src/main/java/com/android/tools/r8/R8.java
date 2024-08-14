@@ -45,8 +45,8 @@ import com.android.tools.r8.ir.desugar.CfClassSynthesizerDesugaringCollection;
 import com.android.tools.r8.ir.desugar.CfClassSynthesizerDesugaringEventConsumer;
 import com.android.tools.r8.ir.desugar.desugaredlibrary.DesugaredLibraryAmender;
 import com.android.tools.r8.ir.desugar.itf.InterfaceMethodRewriter;
-import com.android.tools.r8.ir.desugar.records.RecordDesugaring;
 import com.android.tools.r8.ir.desugar.records.RecordFieldValuesRewriter;
+import com.android.tools.r8.ir.desugar.records.RecordInstructionDesugaring;
 import com.android.tools.r8.ir.desugar.varhandle.VarHandleDesugaring;
 import com.android.tools.r8.ir.optimize.AssertionsRewriter;
 import com.android.tools.r8.ir.optimize.Inliner;
@@ -327,8 +327,8 @@ public class R8 {
       if (options.enableEnumUnboxing) {
         EnumUnboxingCfMethods.registerSynthesizedCodeReferences(appView.dexItemFactory());
       }
-      if (options.shouldDesugarRecords()) {
-        RecordDesugaring.registerSynthesizedCodeReferences(appView.dexItemFactory());
+      if (options.desugarRecordState().isNotOff()) {
+        RecordInstructionDesugaring.registerSynthesizedCodeReferences(appView.dexItemFactory());
       }
       if (options.shouldDesugarVarHandle()) {
         VarHandleDesugaring.registerSynthesizedCodeReferences(appView.dexItemFactory());
