@@ -3,8 +3,9 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8.benchmarks;
 
+import com.android.tools.r8.utils.IterableUtils;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Sets;
+import com.google.common.collect.Iterables;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -12,7 +13,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
@@ -25,20 +25,6 @@ public class BenchmarkConfig {
     if (benchmark.isSingleBenchmark() != other.isSingleBenchmark()) {
       throw new BenchmarkConfigError(
           "Inconsistent single/group benchmark setup: " + benchmark + " and " + other);
-    }
-    Set<String> subNames =
-        Sets.union(benchmark.getSubBenchmarks().keySet(), other.getSubBenchmarks().keySet());
-    for (String subName : subNames) {
-      if (!Objects.equals(
-          benchmark.getSubBenchmarks().get(subName), other.getSubBenchmarks().get(subName))) {
-        throw new BenchmarkConfigError(
-            "Inconsistent metrics for sub-benchmark "
-                + subName
-                + " in benchmarks: "
-                + benchmark
-                + " and "
-                + other);
-      }
     }
     if (!benchmark.getSuite().equals(other.getSuite())) {
       throw new BenchmarkConfigError(
@@ -182,6 +168,11 @@ public class BenchmarkConfig {
       return this;
     }
 
+    public Builder measureComposableCodeSize() {
+      metrics.add(BenchmarkMetric.ComposableCodeSize);
+      return this;
+    }
+
     public Builder measureWarmup() {
       measureWarmup = true;
       return this;
@@ -248,6 +239,16 @@ public class BenchmarkConfig {
     this.dependencies = dependencies;
     this.timeout = timeout;
     this.measureWarmup = measureWarmup;
+  }
+
+  public boolean containsMetric(BenchmarkMetric metric) {
+    Iterable<BenchmarkMetric> metrics =
+        isSingleBenchmark() ? getMetrics() : IterableUtils.flatten(getSubBenchmarks().values());
+    return Iterables.contains(metrics, metric);
+  }
+
+  public boolean containsComposableCodeSizeMetric() {
+    return containsMetric(BenchmarkMetric.ComposableCodeSize);
   }
 
   public BenchmarkIdentifier getIdentifier() {

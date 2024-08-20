@@ -114,6 +114,7 @@ import com.android.tools.r8.utils.ExceptionDiagnostic;
 import com.android.tools.r8.utils.ExceptionUtils;
 import com.android.tools.r8.utils.InternalOptions;
 import com.android.tools.r8.utils.Reporter;
+import com.android.tools.r8.utils.ResourceShrinkerUtils;
 import com.android.tools.r8.utils.SelfRetraceTest;
 import com.android.tools.r8.utils.StringDiagnostic;
 import com.android.tools.r8.utils.StringUtils;
@@ -968,6 +969,9 @@ public class R8 {
       if (options.androidResourceProguardMapStrings != null) {
         resourceShrinkerBuilder.setProguardMapStrings(options.androidResourceProguardMapStrings);
       }
+      resourceShrinkerBuilder.setShrinkerDebugReporter(
+          ResourceShrinkerUtils.shrinkerDebugReporterFromStringConsumer(
+              options.resourceShrinkerConfiguration.getDebugConsumer(), reporter));
       LegacyResourceShrinker shrinker = resourceShrinkerBuilder.build();
       ShrinkerResult shrinkerResult;
       if (options.resourceShrinkerConfiguration.isOptimizedShrinking()) {
@@ -1024,6 +1028,9 @@ public class R8 {
                   shrinkerResult.getResourceTableInProtoFormat(featureSplit)),
               reporter);
           break;
+        case KEEP_RULE_FILE:
+          // Intentionally not written
+          break;
         case RES_FOLDER_FILE:
         case XML_FILE:
           if (toKeep.contains(androidResource.getPath().location())) {
@@ -1058,6 +1065,9 @@ public class R8 {
             break;
           case XML_FILE:
             resourceShrinkerBuilder.addXmlInput(path, bytes);
+            break;
+          case KEEP_RULE_FILE:
+            resourceShrinkerBuilder.addKeepRuleInput(bytes);
             break;
           case UNKNOWN:
             break;

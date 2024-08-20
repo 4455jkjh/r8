@@ -10,6 +10,7 @@ import com.android.tools.r8.graph.DexProgramClass;
 import com.android.tools.r8.graph.ImmediateProgramSubtypingInfo;
 import com.android.tools.r8.graph.ProgramMethod;
 import com.android.tools.r8.graph.PrunedItems;
+import com.android.tools.r8.ir.analysis.path.PathConstraintSupplier;
 import com.android.tools.r8.ir.code.AbstractValueSupplier;
 import com.android.tools.r8.ir.code.IRCode;
 import com.android.tools.r8.ir.conversion.IRConverter;
@@ -17,6 +18,7 @@ import com.android.tools.r8.ir.conversion.MethodProcessor;
 import com.android.tools.r8.ir.conversion.PostMethodProcessor;
 import com.android.tools.r8.ir.conversion.PrimaryR8IRConverter;
 import com.android.tools.r8.optimize.argumentpropagation.codescanner.FieldStateCollection;
+import com.android.tools.r8.optimize.argumentpropagation.codescanner.InFlowComparator;
 import com.android.tools.r8.optimize.argumentpropagation.codescanner.MethodState;
 import com.android.tools.r8.optimize.argumentpropagation.codescanner.MethodStateCollectionByReference;
 import com.android.tools.r8.optimize.argumentpropagation.codescanner.VirtualRootMethodsAnalysis;
@@ -127,7 +129,9 @@ public class ArgumentPropagator {
       assert methodProcessor.isPrimaryMethodProcessor();
       AbstractValueSupplier abstractValueSupplier =
           value -> value.getAbstractValue(appView, method);
-      codeScanner.scan(method, code, abstractValueSupplier, timing);
+      PathConstraintSupplier pathConstraintSupplier =
+          new PathConstraintSupplier(appView, code, codeScanner.getMethodParameterFactory());
+      codeScanner.scan(method, code, abstractValueSupplier, pathConstraintSupplier, timing);
 
       assert effectivelyUnusedArgumentsAnalysis != null;
       effectivelyUnusedArgumentsAnalysis.scan(method, code);
@@ -249,6 +253,7 @@ public class ArgumentPropagator {
     assert appView.isAllCodeProcessed();
     FieldStateCollection fieldStates = codeScanner.getFieldStates();
     MethodStateCollectionByReference methodStates = codeScanner.getMethodStates();
+    InFlowComparator inFlowComparator = codeScanner.getInFlowComparator();
     appView.testing().argumentPropagatorEventConsumer.acceptCodeScannerResult(methodStates);
     codeScanner = null;
 
@@ -261,6 +266,7 @@ public class ArgumentPropagator {
             immediateSubtypingInfo,
             fieldStates,
             methodStates,
+            inFlowComparator,
             stronglyConnectedProgramComponents,
             interfaceDispatchOutsideProgram)
         .propagateOptimizationInfo(

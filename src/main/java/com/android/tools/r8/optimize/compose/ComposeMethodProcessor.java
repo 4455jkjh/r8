@@ -13,6 +13,7 @@ import com.android.tools.r8.graph.DexProgramClass;
 import com.android.tools.r8.graph.ProgramField;
 import com.android.tools.r8.graph.ProgramMethod;
 import com.android.tools.r8.ir.analysis.constant.SparseConditionalConstantPropagation;
+import com.android.tools.r8.ir.analysis.path.PathConstraintSupplier;
 import com.android.tools.r8.ir.analysis.value.AbstractValue;
 import com.android.tools.r8.ir.code.AbstractValueSupplier;
 import com.android.tools.r8.ir.code.IRCode;
@@ -30,6 +31,7 @@ import com.android.tools.r8.optimize.argumentpropagation.codescanner.ConcreteMon
 import com.android.tools.r8.optimize.argumentpropagation.codescanner.ConcretePrimitiveTypeValueState;
 import com.android.tools.r8.optimize.argumentpropagation.codescanner.ConcreteValueState;
 import com.android.tools.r8.optimize.argumentpropagation.codescanner.FieldStateCollection;
+import com.android.tools.r8.optimize.argumentpropagation.codescanner.InFlowComparator;
 import com.android.tools.r8.optimize.argumentpropagation.codescanner.MethodParameter;
 import com.android.tools.r8.optimize.argumentpropagation.codescanner.MethodState;
 import com.android.tools.r8.optimize.argumentpropagation.codescanner.MethodStateCollectionByReference;
@@ -95,9 +97,15 @@ public class ComposeMethodProcessor extends MethodProcessor {
       throws ExecutionException {
     prepareForInFlowPropagator();
 
+    InFlowComparator emptyComparator = InFlowComparator.builder().build();
     InFlowPropagator inFlowPropagator =
         new InFlowPropagator(
-            appView, null, converter, codeScanner.getFieldStates(), codeScanner.getMethodStates()) {
+            appView,
+            null,
+            converter,
+            codeScanner.getFieldStates(),
+            codeScanner.getMethodStates(),
+            emptyComparator) {
 
           @Override
           protected DefaultFieldValueJoiner createDefaultFieldValueJoiner(
@@ -226,7 +234,9 @@ public class ComposeMethodProcessor extends MethodProcessor {
           assert abstractValue != null;
           return abstractValue;
         };
-    codeScanner.scan(method, code, abstractValueSupplier, timing);
+    PathConstraintSupplier pathConstraintSupplier =
+        new PathConstraintSupplier(appView, code, codeScanner.getMethodParameterFactory());
+    codeScanner.scan(method, code, abstractValueSupplier, pathConstraintSupplier, timing);
   }
 
   public boolean isProcessed(ComposableCallGraphNode node) {

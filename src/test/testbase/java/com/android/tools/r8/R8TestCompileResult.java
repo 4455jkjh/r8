@@ -3,6 +3,7 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8;
 
+import static com.android.tools.r8.utils.codeinspector.Matchers.isPresent;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -12,6 +13,8 @@ import com.android.tools.r8.androidresources.AndroidResourceTestingUtils;
 import com.android.tools.r8.androidresources.AndroidResourceTestingUtils.ResourceTableInspector;
 import com.android.tools.r8.benchmarks.BenchmarkResults;
 import com.android.tools.r8.dexsplitter.SplitterTestBase.SplitRunner;
+import com.android.tools.r8.graph.DexType;
+import com.android.tools.r8.graph.ProgramMethod;
 import com.android.tools.r8.metadata.R8BuildMetadata;
 import com.android.tools.r8.profile.art.model.ExternalArtProfile;
 import com.android.tools.r8.profile.art.utils.ArtProfileInspector;
@@ -25,7 +28,7 @@ import com.android.tools.r8.utils.ThrowingConsumer;
 import com.android.tools.r8.utils.ZipUtils;
 import com.android.tools.r8.utils.codeinspector.ClassSubject;
 import com.android.tools.r8.utils.codeinspector.CodeInspector;
-import com.android.tools.r8.utils.codeinspector.Matchers;
+import com.android.tools.r8.utils.codeinspector.FoundClassSubject;
 import com.android.tools.r8.utils.graphinspector.GraphInspector;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -266,21 +269,18 @@ public class R8TestCompileResult extends TestCompileResult<R8TestCompileResult, 
       throws IOException {
     assert getBackend() == runtime.getBackend();
     ClassSubject mainClassSubject = inspector().clazz(SplitRunner.class);
-    assertThat(
-        "Did you forget a keep rule for the main method?", mainClassSubject, Matchers.isPresent());
+    assertThat("Did you forget a keep rule for the main method?", mainClassSubject, isPresent());
     assertThat(
         "Did you forget a keep rule for the main method?",
         mainClassSubject.mainMethod(),
-        Matchers.isPresent());
+        isPresent());
     ClassSubject mainFeatureClassSubject = featureInspector(feature).clazz(mainFeatureClass);
     assertThat(
-        "Did you forget a keep rule for the run method?",
-        mainFeatureClassSubject,
-        Matchers.isPresent());
+        "Did you forget a keep rule for the run method?", mainFeatureClassSubject, isPresent());
     assertThat(
         "Did you forget a keep rule for the run method?",
         mainFeatureClassSubject.uniqueMethodWithOriginalName("run"),
-        Matchers.isPresent());
+        isPresent());
     String[] args = new String[2 + featureDependencies.length];
     args[0] = mainFeatureClassSubject.getFinalName();
     args[1] = feature.toString();
@@ -318,5 +318,30 @@ public class R8TestCompileResult extends TestCompileResult<R8TestCompileResult, 
         AndroidApp.builder(app).addProgramFiles(features).build().applicationSize();
     results.addCodeSizeResult(applicationSizeWithFeatures);
     return self();
+  }
+
+  @Override
+  public R8TestCompileResult benchmarkComposableCodeSize(BenchmarkResults results)
+      throws IOException {
+    int composableCodeSize = getComposableCodeSize(inspector());
+    for (Path feature : features) {
+      composableCodeSize += getComposableCodeSize(featureInspector(feature));
+    }
+    results.addComposableCodeSizeResult(composableCodeSize);
+    return self();
+  }
+
+  private int getComposableCodeSize(CodeInspector inspector) {
+    DexType composableType =
+        inspector.getFactory().createType("Landroidx/compose/runtime/Composable;");
+    int composableCodeSize = 0;
+    for (FoundClassSubject classSubject : inspector.allClasses()) {
+      for (ProgramMethod method : classSubject.getDexProgramClass().directProgramMethods()) {
+        if (method.getAnnotations().hasAnnotation(composableType)) {
+          composableCodeSize += method.getDefinition().getCode().asDexCode().codeSizeInBytes();
+        }
+      }
+    }
+    return composableCodeSize;
   }
 }

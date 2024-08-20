@@ -16,7 +16,6 @@ import com.android.aapt.Resources.Value;
 import com.android.aapt.Resources.XmlAttribute;
 import com.android.aapt.Resources.XmlElement;
 import com.android.aapt.Resources.XmlNode;
-import com.android.build.shrinker.NoDebugReporter;
 import com.android.build.shrinker.ResourceShrinkerImplKt;
 import com.android.build.shrinker.ResourceShrinkerModel;
 import com.android.build.shrinker.ResourceTableUtilKt;
@@ -54,6 +53,7 @@ public class R8ResourceShrinkerState {
   private final Function<Exception, RuntimeException> errorHandler;
   private final R8ResourceShrinkerModel r8ResourceShrinkerModel;
   private final Map<String, Supplier<InputStream>> xmlFileProviders = new HashMap<>();
+  private final List<Supplier<InputStream>> keepRuleFileProviders = new ArrayList<>();
 
   private final List<Supplier<InputStream>> manifestProviders = new ArrayList<>();
   private final Map<String, Supplier<InputStream>> resfileProviders = new HashMap<>();
@@ -69,8 +69,10 @@ public class R8ResourceShrinkerState {
     boolean tryClass(String possibleClass, Origin xmlFileOrigin);
   }
 
-  public R8ResourceShrinkerState(Function<Exception, RuntimeException> errorHandler) {
-    r8ResourceShrinkerModel = new R8ResourceShrinkerModel(NoDebugReporter.INSTANCE, true);
+  public R8ResourceShrinkerState(
+      Function<Exception, RuntimeException> errorHandler,
+      ShrinkerDebugReporter shrinkerDebugReporter) {
+    r8ResourceShrinkerModel = new R8ResourceShrinkerModel(shrinkerDebugReporter, true);
     this.errorHandler = errorHandler;
   }
 
@@ -138,6 +140,10 @@ public class R8ResourceShrinkerState {
 
   public void addXmlFileProvider(Supplier<InputStream> inputStreamSupplier, String location) {
     this.xmlFileProviders.put(location, inputStreamSupplier);
+  }
+
+  public void addKeepRuleRileProvider(Supplier<InputStream> inputStreamSupplier) {
+    this.keepRuleFileProviders.add(inputStreamSupplier);
   }
 
   public void addResFileProvider(Supplier<InputStream> inputStreamSupplier, String location) {
@@ -307,11 +313,9 @@ public class R8ResourceShrinkerState {
   }
 
   public void updateModelWithKeepXmlReferences() throws IOException {
-    for (Map.Entry<String, Supplier<InputStream>> entry : xmlFileProviders.entrySet()) {
-      if (entry.getKey().startsWith("res/raw")) {
-        ToolsAttributeUsageRecorderKt.processRawXml(
-            getUtfReader(entry.getValue().get().readAllBytes()), r8ResourceShrinkerModel);
-      }
+    for (Supplier<InputStream> keepRuleFileProvider : keepRuleFileProviders) {
+      ToolsAttributeUsageRecorderKt.processRawXml(
+          getUtfReader(keepRuleFileProvider.get().readAllBytes()), r8ResourceShrinkerModel);
     }
   }
 

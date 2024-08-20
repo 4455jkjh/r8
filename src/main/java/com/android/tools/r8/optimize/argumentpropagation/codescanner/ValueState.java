@@ -11,6 +11,7 @@ import com.android.tools.r8.graph.ProgramField;
 import com.android.tools.r8.ir.analysis.value.AbstractValue;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
 import com.android.tools.r8.utils.Action;
+import com.android.tools.r8.utils.ObjectUtils;
 
 public abstract class ValueState {
 
@@ -136,4 +137,14 @@ public abstract class ValueState {
       DexType outStaticType,
       StateCloner cloner,
       Action onChangedAction);
+
+  @Override
+  public abstract boolean equals(Object obj);
+
+  @Override
+  public abstract int hashCode();
+
+  public final boolean identical(ValueState state) {
+    return ObjectUtils.identical(this, state);
+  }
 }

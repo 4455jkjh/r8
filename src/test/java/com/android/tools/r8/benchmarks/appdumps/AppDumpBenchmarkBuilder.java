@@ -3,6 +3,8 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8.benchmarks.appdumps;
 
+import static junit.framework.TestCase.assertFalse;
+
 import com.android.tools.r8.LibraryDesugaringTestConfiguration;
 import com.android.tools.r8.R8FullTestBuilder;
 import com.android.tools.r8.TestBase;
@@ -20,7 +22,12 @@ import com.android.tools.r8.benchmarks.BenchmarkSuite;
 import com.android.tools.r8.benchmarks.BenchmarkTarget;
 import com.android.tools.r8.dump.CompilerDump;
 import com.android.tools.r8.dump.DumpOptions;
+import com.android.tools.r8.keepanno.annotations.AnnotationPattern;
+import com.android.tools.r8.keepanno.annotations.KeepEdge;
+import com.android.tools.r8.keepanno.annotations.KeepItemKind;
+import com.android.tools.r8.keepanno.annotations.KeepTarget;
 import java.io.IOException;
+import java.lang.annotation.RetentionPolicy;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -30,6 +37,18 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 public class AppDumpBenchmarkBuilder {
+
+  @KeepEdge(
+      consequences =
+          @KeepTarget(
+              kind = KeepItemKind.ONLY_METHODS,
+              methodAnnotatedByClassName = "androidx.compose.runtime.Composable",
+              constraints = {},
+              constrainAnnotations =
+                  @AnnotationPattern(
+                      name = "androidx.compose.runtime.Composable",
+                      retention = RetentionPolicy.CLASS)))
+  static class KeepComposableAnnotations {}
 
   public static AppDumpBenchmarkBuilder builder() {
     return new AppDumpBenchmarkBuilder();
@@ -99,6 +118,7 @@ public class AppDumpBenchmarkBuilder {
         .addDependency(dumpDependency)
         .measureRunTime()
         .measureCodeSize()
+        .measureComposableCodeSize()
         .setTimeout(10, TimeUnit.MINUTES)
         .build();
   }
@@ -158,6 +178,10 @@ public class AppDumpBenchmarkBuilder {
     return name + "Code";
   }
 
+  private String nameForComposableCodePart() {
+    return name + "ComposableCode";
+  }
+
   private String nameForLibraryPart() {
     return name + "Library";
   }
@@ -210,6 +234,16 @@ public class AppDumpBenchmarkBuilder {
                 options -> options.getOpenClosedInterfacesOptions().suppressAllOpenInterfaces());
   }
 
+  private static ThrowableConsumer<? super R8FullTestBuilder>
+      getKeepComposableAnnotationsConfiguration() {
+    return testBuilder ->
+        testBuilder
+            .addProgramClasses(KeepComposableAnnotations.class)
+            .addKeepClassAndMembersRules("androidx.compose.runtime.Composable")
+            .addKeepRuntimeVisibleAnnotations()
+            .enableExperimentalKeepAnnotations();
+  }
+
   private static BenchmarkMethod runR8(
       AppDumpBenchmarkBuilder builder, ThrowableConsumer<? super R8FullTestBuilder> configuration) {
     return internalRunR8(builder, false, configuration);
@@ -253,20 +287,26 @@ public class AppDumpBenchmarkBuilder {
                           })
                       .apply(configuration)
                       .applyIf(
+                          environment.getConfig().containsComposableCodeSizeMetric(),
+                          getKeepComposableAnnotationsConfiguration())
+                      .applyIf(
                           enableResourceShrinking,
                           b ->
                               b.enableOptimizedShrinking()
                                   .setAndroidResourcesFromPath(dump.getAndroidResources()))
                       .applyIf(
                           enableResourceShrinking,
+                          r -> {
+                            assertFalse(environment.getConfig().containsComposableCodeSizeMetric());
+                            r.benchmarkCompile(results.getSubResults(builder.nameForRuntimePart()))
+                                .benchmarkCodeSize(results.getSubResults(builder.nameForCodePart()))
+                                .benchmarkResourceSize(
+                                    results.getSubResults(builder.nameForResourcePart()));
+                          },
                           r ->
-                              r.benchmarkCompile(
-                                      results.getSubResults(builder.nameForRuntimePart()))
-                                  .benchmarkCodeSize(
-                                      results.getSubResults(builder.nameForCodePart()))
-                                  .benchmarkResourceSize(
-                                      results.getSubResults(builder.nameForResourcePart())),
-                          r -> r.benchmarkCompile(results).benchmarkCodeSize(results));
+                              r.benchmarkCompile(results)
+                                  .benchmarkCodeSize(results)
+                                  .benchmarkComposableCodeSize(results));
                 });
   }
 
