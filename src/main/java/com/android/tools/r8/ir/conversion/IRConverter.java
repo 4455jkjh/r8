@@ -41,7 +41,6 @@ import com.android.tools.r8.ir.conversion.passes.StringSwitchRemover;
 import com.android.tools.r8.ir.conversion.passes.ThrowCatchOptimizer;
 import com.android.tools.r8.ir.conversion.passes.TrivialPhiSimplifier;
 import com.android.tools.r8.ir.desugar.CfInstructionDesugaringCollection;
-import com.android.tools.r8.ir.desugar.CovariantReturnTypeAnnotationTransformer;
 import com.android.tools.r8.ir.optimize.AssertionErrorTwoArgsConstructorRewriter;
 import com.android.tools.r8.ir.optimize.AssertionsRewriter;
 import com.android.tools.r8.ir.optimize.AssumeInserter;
@@ -120,7 +119,6 @@ public class IRConverter {
   protected final Inliner inliner;
   protected final IdentifierNameStringMarker identifierNameStringMarker;
   private final Devirtualizer devirtualizer;
-  protected final CovariantReturnTypeAnnotationTransformer covariantReturnTypeAnnotationTransformer;
   private final TypeChecker typeChecker;
   protected EnumUnboxer enumUnboxer;
   protected final NumberUnboxer numberUnboxer;
@@ -190,7 +188,6 @@ public class IRConverter {
       assert options.desugarState.isOn();
       this.instructionDesugaring =
           CfInstructionDesugaringCollection.create(appView, appView.apiLevelCompute());
-      this.covariantReturnTypeAnnotationTransformer = null;
       this.dynamicTypeOptimization = null;
       this.classInliner = null;
       this.fieldAccessAnalysis = null;
@@ -213,10 +210,6 @@ public class IRConverter {
         appView.enableWholeProgramOptimizations()
             ? CfInstructionDesugaringCollection.empty()
             : CfInstructionDesugaringCollection.create(appView, appView.apiLevelCompute());
-    this.covariantReturnTypeAnnotationTransformer =
-        options.processCovariantReturnTypeAnnotations
-            ? new CovariantReturnTypeAnnotationTransformer(appView, this)
-            : null;
     removeVerificationErrorForUnknownReturnedValues =
         (appView.options().apiModelingOptions().enableLibraryApiModeling
                 && appView.options().canHaveVerifyErrorForUnknownUnusedReturnValue())
@@ -870,10 +863,6 @@ public class IRConverter {
       Timing timing) {
     appView.withArgumentPropagator(
         argumentPropagator -> argumentPropagator.scan(method, code, methodProcessor, timing));
-
-    if (methodProcessor.isComposeMethodProcessor()) {
-      methodProcessor.asComposeMethodProcessor().scan(method, code, timing);
-    }
 
     if (methodProcessor.isPrimaryMethodProcessor()) {
       enumUnboxer.analyzeEnums(code, methodProcessor);

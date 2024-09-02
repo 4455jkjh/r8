@@ -41,8 +41,6 @@ public class RestartLambdaPropagationWithDefaultArgumentTest extends TestBase {
     testForR8(parameters.getBackend())
         .addInnerClasses(getClass())
         .addKeepMainRule(Main.class)
-        .addOptionsModification(
-            options -> options.getTestingOptions().enableIfThenElseAbstractFunction = true)
         .enableInliningAnnotations()
         .setMinApi(parameters)
         .compile()
@@ -71,11 +69,10 @@ public class RestartLambdaPropagationWithDefaultArgumentTest extends TestBase {
                       .streamInstructions()
                       .noneMatch(
                           instruction -> instruction.isConstString("DefaultValueNeverUsed")));
-              // TODO(b/302281503): This argument is never used and should be removed.
               assertTrue(
                   mainMethodSubject
                       .streamInstructions()
-                      .anyMatch(
+                      .noneMatch(
                           instruction ->
                               instruction.isConstString("Unused[DefaultValueAlwaysUsed]")));
 

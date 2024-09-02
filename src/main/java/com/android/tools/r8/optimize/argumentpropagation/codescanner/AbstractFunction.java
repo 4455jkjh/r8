@@ -4,7 +4,9 @@
 package com.android.tools.r8.optimize.argumentpropagation.codescanner;
 
 import com.android.tools.r8.graph.AppView;
+import com.android.tools.r8.graph.DexType;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
+import com.android.tools.r8.utils.TraversalContinuation;
 
 public interface AbstractFunction extends InFlow {
 
@@ -12,17 +14,14 @@ public interface AbstractFunction extends InFlow {
     return IdentityAbstractFunction.get();
   }
 
-  static UnknownAbstractFunction unknown() {
-    return UnknownAbstractFunction.get();
-  }
-
   /**
-   * Applies the current abstract function to its declared inputs (in {@link #getBaseInFlow()}).
+   * Applies the current abstract function to its declared inputs (from {@link
+   * #traverseBaseInFlow}).
    *
    * <p>It is guaranteed by the caller that the given {@param state} is the abstract state for the
    * field or parameter that caused this function to be reevaluated. If this abstract function takes
    * a single input, then {@param state} is guaranteed to be the state for the node returned by
-   * {@link #getBaseInFlow()}, and {@param flowGraphStateProvider} should never be used.
+   * {@link #traverseBaseInFlow}, and {@param flowGraphStateProvider} should never be used.
    *
    * <p>Abstract functions that depend on multiple inputs can lookup the state for each input in
    * {@param flowGraphStateProvider}. Attempting to lookup the state of a non-declared input is an
@@ -31,16 +30,8 @@ public interface AbstractFunction extends InFlow {
   ValueState apply(
       AppView<AppInfoWithLiveness> appView,
       FlowGraphStateProvider flowGraphStateProvider,
-      ConcreteValueState inState);
-
-  /** Returns true if the given {@param inFlow} is a declared input of this abstract function. */
-  boolean verifyContainsBaseInFlow(BaseInFlow inFlow);
-
-  /**
-   * Returns the program field or parameter graph nodes that this function depends on. Upon any
-   * change to the abstract state of any of these nodes this abstract function must be re-evaluated.
-   */
-  Iterable<BaseInFlow> getBaseInFlow();
+      ConcreteValueState inState,
+      DexType outStaticType);
 
   default boolean usesFlowGraphStateProvider() {
     return false;
@@ -58,5 +49,17 @@ public interface AbstractFunction extends InFlow {
 
   default boolean isIdentity() {
     return false;
+  }
+
+  default boolean isUpdateChangedFlags() {
+    return false;
+  }
+
+  /** Verifies that {@param stoppingCriterion} is a declared input of this abstract function. */
+  default boolean verifyContainsBaseInFlow(BaseInFlow stoppingCriterion) {
+    assert traverseBaseInFlow(
+            inFlow -> TraversalContinuation.breakIf(inFlow.equals(stoppingCriterion)))
+        .shouldBreak();
+    return true;
   }
 }

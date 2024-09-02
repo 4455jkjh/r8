@@ -102,6 +102,13 @@ import org.junit.rules.TemporaryFolder;
 public class ToolHelper {
 
   public static String getProjectRoot() {
+    String oracle = System.getProperty("REPO_ROOT");
+    if (oracle != null) {
+      if (!oracle.endsWith("/")) {
+        oracle = oracle + "/";
+      }
+      return oracle;
+    }
     String current = System.getProperty("user.dir");
     if (!current.contains("d8_r8")) {
       return "";
@@ -387,6 +394,8 @@ public class ToolHelper {
       /** This should generally be the latest DEX VM fully supported. */
       // TODO(b/204855476): Rename to DEFAULT alias once the checked in VM is removed.
       public static final Version NEW_DEFAULT = DEFAULT;
+
+      public static final Version LATEST_DEX2OAT = V12_0_0;
 
       Version(String shortName) {
         this.shortName = shortName;

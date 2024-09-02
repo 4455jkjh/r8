@@ -34,6 +34,10 @@ public class BottomPrimitiveTypeValueState extends BottomValueState {
     if (inState.isUnknown()) {
       return inState;
     }
+    if (inState.isUnused()) {
+      assert inState.identical(unusedPrimitiveTypeState());
+      return inState;
+    }
     assert inState.isPrimitiveState();
     return cloner.mutableCopy(inState);
   }

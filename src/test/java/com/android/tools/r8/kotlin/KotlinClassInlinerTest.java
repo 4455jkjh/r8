@@ -8,6 +8,8 @@ import static com.android.tools.r8.KotlinCompilerTool.KotlinCompilerVersion.KOTL
 import static com.android.tools.r8.KotlinCompilerTool.KotlinCompilerVersion.KOTLINC_1_5_0;
 import static com.android.tools.r8.KotlinCompilerTool.KotlinCompilerVersion.KOTLINC_1_6_0;
 import static com.android.tools.r8.KotlinCompilerTool.KotlinCompilerVersion.KOTLINC_1_9_21;
+import static com.android.tools.r8.KotlinCompilerTool.KotlinCompilerVersion.KOTLINC_2_0_20;
+import static com.android.tools.r8.KotlinCompilerTool.KotlinCompilerVersion.KOTLIN_DEV;
 import static com.android.tools.r8.utils.codeinspector.Matchers.isAbsent;
 import static com.android.tools.r8.utils.codeinspector.Matchers.isAbsentIf;
 import static com.android.tools.r8.utils.codeinspector.Matchers.isPresent;
@@ -212,12 +214,26 @@ public class KotlinClassInlinerTest extends AbstractR8KotlinTestBase {
                                     kotlinParameters
                                         .getCompiler()
                                         .getCompilerVersion()
-                                        .isGreaterThanOrEqualTo(KOTLINC_1_9_21),
+                                        .isBetweenBothIncluded(KOTLINC_1_9_21, KOTLINC_2_0_20),
                                     i ->
                                         i.assertIsCompleteMergeGroup(
                                             SyntheticItemsTestUtils.syntheticLambdaClass(mainKt, 0),
                                             SyntheticItemsTestUtils.syntheticLambdaClass(
-                                                mainKt, 1)))
+                                                mainKt, 1)),
+                                    kotlinParameters
+                                        .getCompiler()
+                                        .getCompilerVersion()
+                                        .isEqualTo(KOTLIN_DEV),
+                                    i -> {
+                                      ClassReference sequencesKt =
+                                          Reference.classFromTypeName(
+                                              "kotlin.sequences.SequencesKt__SequencesKt");
+                                      i.assertIsCompleteMergeGroup(
+                                          SyntheticItemsTestUtils.syntheticLambdaClass(mainKt, 0),
+                                          SyntheticItemsTestUtils.syntheticLambdaClass(mainKt, 1),
+                                          SyntheticItemsTestUtils.syntheticLambdaClass(
+                                              sequencesKt, 0));
+                                    })
                                 .assertNoOtherClassesMerged();
                           } else {
                             assert kotlinParameters.getLambdaGeneration().isInvokeDynamic()

@@ -9,10 +9,15 @@ import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.DexType;
 import com.android.tools.r8.graph.lens.GraphLens;
 import com.android.tools.r8.ir.analysis.value.objectstate.ObjectState;
-import com.android.tools.r8.optimize.argumentpropagation.codescanner.MethodParameter;
+import com.android.tools.r8.optimize.argumentpropagation.codescanner.BaseInFlow;
+import com.android.tools.r8.optimize.argumentpropagation.codescanner.FlowGraphStateProvider;
+import com.android.tools.r8.optimize.argumentpropagation.codescanner.InFlow;
+import com.android.tools.r8.optimize.argumentpropagation.codescanner.InFlowComparator;
+import com.android.tools.r8.optimize.argumentpropagation.codescanner.InFlowKind;
 import com.android.tools.r8.optimize.argumentpropagation.computation.ComputationTreeNode;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
-import java.util.function.IntFunction;
+import com.android.tools.r8.utils.TraversalContinuation;
+import java.util.function.Function;
 
 public abstract class AbstractValue implements ComputationTreeNode {
 
@@ -26,13 +31,35 @@ public abstract class AbstractValue implements ComputationTreeNode {
 
   @Override
   public AbstractValue evaluate(
-      IntFunction<AbstractValue> argumentAssignment, AbstractValueFactory abstractValueFactory) {
+      AppView<AppInfoWithLiveness> appView, FlowGraphStateProvider flowGraphStateProvider) {
     return this;
   }
 
   @Override
-  public MethodParameter getSingleOpenVariable() {
+  public <TB, TC> TraversalContinuation<TB, TC> traverseBaseInFlow(
+      Function<? super BaseInFlow, TraversalContinuation<TB, TC>> fn) {
+    // Abstract values do not contain any open variables.
+    return TraversalContinuation.doContinue();
+  }
+
+  @Override
+  public InFlowKind getKind() {
+    throw new Unreachable();
+  }
+
+  @Override
+  public BaseInFlow getSingleOpenVariable() {
     return null;
+  }
+
+  @Override
+  public int internalCompareToSameKind(InFlow inFlow, InFlowComparator comparator) {
+    throw new Unreachable();
+  }
+
+  @Override
+  public final boolean isComputationLeaf() {
+    return true;
   }
 
   public abstract boolean isNonTrivial();

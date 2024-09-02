@@ -9,9 +9,9 @@ import com.android.tools.r8.ir.analysis.value.AbstractValue;
 import com.android.tools.r8.ir.code.Position.SourcePosition;
 import com.android.tools.r8.optimize.argumentpropagation.computation.ComputationTreeNode;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
-import com.android.tools.r8.utils.ListUtils;
-import java.util.List;
+import com.android.tools.r8.utils.TraversalContinuation;
 import java.util.Objects;
+import java.util.function.Function;
 
 /**
  * Represents a ternary expression (exp ? u : v). The {@link #condition} is an expression containing
@@ -19,6 +19,7 @@ import java.util.Objects;
  * true, then `u` is chosen. If the abstract value is false, then `v` is chosen. Otherwise, the
  * result is unknown.
  */
+// TODO(b/302281503): Replace this by a ComputationTreeNode.
 // TODO(b/302281503): Evaluate the impact of using the join of `u` and `v` instead of unknown when
 //  the condition does not evaluate to true or false.
 public class IfThenElseAbstractFunction implements AbstractFunction {
@@ -42,8 +43,9 @@ public class IfThenElseAbstractFunction implements AbstractFunction {
   public ValueState apply(
       AppView<AppInfoWithLiveness> appView,
       FlowGraphStateProvider flowGraphStateProvider,
-      ConcreteValueState inState) {
-    AbstractValue conditionValue = evaluateCondition(appView, flowGraphStateProvider);
+      ConcreteValueState inState,
+      DexType outStaticType) {
+    AbstractValue conditionValue = condition.evaluate(appView, flowGraphStateProvider);
     NonEmptyValueState resultState;
     if (conditionValue.isTrue()) {
       resultState = thenState;
@@ -60,30 +62,14 @@ public class IfThenElseAbstractFunction implements AbstractFunction {
     if (!concreteResultState.hasInFlow()) {
       return concreteResultState;
     }
-    return resolveInFlow(appView, flowGraphStateProvider, concreteResultState);
-  }
-
-  private AbstractValue evaluateCondition(
-      AppView<AppInfoWithLiveness> appView, FlowGraphStateProvider flowGraphStateProvider) {
-    MethodParameter openVariable = condition.getSingleOpenVariable();
-    assert openVariable != null;
-    ValueState variableState = flowGraphStateProvider.getState(openVariable, () -> null);
-    if (variableState == null) {
-      // TODO(b/302281503): Conservatively return unknown for now. Investigate exactly when this
-      //  happens and whether we can return something more precise instead of unknown.
-      assert false;
-      return AbstractValue.unknown();
-    }
-    AbstractValue variableValue = variableState.getAbstractValue(appView);
-    // Since the condition is guaranteed to have a single open variable we simply return the
-    // `variableValue` for any given argument index.
-    return condition.evaluate(i -> variableValue, appView.abstractValueFactory());
+    return resolveInFlow(appView, flowGraphStateProvider, concreteResultState, outStaticType);
   }
 
   private ValueState resolveInFlow(
       AppView<AppInfoWithLiveness> appView,
       FlowGraphStateProvider flowGraphStateProvider,
-      ConcreteValueState resultStateWithInFlow) {
+      ConcreteValueState resultStateWithInFlow,
+      DexType outStaticType) {
     ValueState resultStateWithoutInFlow = resultStateWithInFlow.mutableCopyWithoutInFlow();
     for (InFlow inFlow : resultStateWithInFlow.getInFlow()) {
       // We currently only allow the primitive kinds of in flow (fields and method parameters) to
@@ -91,13 +77,11 @@ public class IfThenElseAbstractFunction implements AbstractFunction {
       assert inFlow.isBaseInFlow();
       ValueState inFlowState = flowGraphStateProvider.getState(inFlow.asBaseInFlow(), () -> null);
       if (inFlowState == null) {
-        assert false;
         return ValueState.unknown();
       }
       // TODO(b/302281503): The IfThenElseAbstractFunction is only used on input to base in flow.
       //  We should set  the `outStaticType` to the static type of the current field/parameter.
       DexType inStaticType = null;
-      DexType outStaticType = null;
       resultStateWithoutInFlow =
           resultStateWithoutInFlow.mutableJoin(
               appView, inFlowState, inStaticType, outStaticType, StateCloner.getCloner());
@@ -106,27 +90,25 @@ public class IfThenElseAbstractFunction implements AbstractFunction {
   }
 
   @Override
-  public boolean verifyContainsBaseInFlow(BaseInFlow inFlow) {
-    // TODO(b/302281503): Implement this.
-    return true;
-  }
-
-  @Override
-  public Iterable<BaseInFlow> getBaseInFlow() {
-    List<BaseInFlow> baseInFlow = ListUtils.newArrayList(condition.getSingleOpenVariable());
+  public <TB, TC> TraversalContinuation<TB, TC> traverseBaseInFlow(
+      Function<? super BaseInFlow, TraversalContinuation<TB, TC>> fn) {
+    TraversalContinuation<TB, TC> traversalContinuation = condition.traverseBaseInFlow(fn);
+    if (traversalContinuation.shouldBreak()) {
+      return traversalContinuation;
+    }
     if (thenState.isConcrete()) {
-      for (InFlow inFlow : thenState.asConcrete().getInFlow()) {
-        assert inFlow.isBaseInFlow();
-        baseInFlow.add(inFlow.asBaseInFlow());
+      traversalContinuation = thenState.asConcrete().traverseBaseInFlow(fn);
+      if (traversalContinuation.shouldBreak()) {
+        return traversalContinuation;
       }
     }
     if (elseState.isConcrete()) {
-      for (InFlow inFlow : elseState.asConcrete().getInFlow()) {
-        assert inFlow.isBaseInFlow();
-        baseInFlow.add(inFlow.asBaseInFlow());
+      traversalContinuation = elseState.asConcrete().traverseBaseInFlow(fn);
+      if (traversalContinuation.shouldBreak()) {
+        return traversalContinuation;
       }
     }
-    return baseInFlow;
+    return traversalContinuation;
   }
 
   @Override

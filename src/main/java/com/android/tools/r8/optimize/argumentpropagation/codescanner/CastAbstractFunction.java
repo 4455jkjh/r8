@@ -6,8 +6,9 @@ package com.android.tools.r8.optimize.argumentpropagation.codescanner;
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.DexType;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
-import java.util.Collections;
+import com.android.tools.r8.utils.TraversalContinuation;
 import java.util.Objects;
+import java.util.function.Function;
 
 public class CastAbstractFunction implements AbstractFunction {
 
@@ -23,19 +24,15 @@ public class CastAbstractFunction implements AbstractFunction {
   public ValueState apply(
       AppView<AppInfoWithLiveness> appView,
       FlowGraphStateProvider flowGraphStateProvider,
-      ConcreteValueState predecessorState) {
+      ConcreteValueState predecessorState,
+      DexType outStaticType) {
     return predecessorState.asReferenceState().cast(appView, type);
   }
 
   @Override
-  public boolean verifyContainsBaseInFlow(BaseInFlow inFlow) {
-    assert inFlow.equals(this.inFlow);
-    return true;
-  }
-
-  @Override
-  public Iterable<BaseInFlow> getBaseInFlow() {
-    return Collections.singleton(inFlow);
+  public <TB, TC> TraversalContinuation<TB, TC> traverseBaseInFlow(
+      Function<? super BaseInFlow, TraversalContinuation<TB, TC>> fn) {
+    return inFlow.traverseBaseInFlow(fn);
   }
 
   @Override

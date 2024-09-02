@@ -3,11 +3,12 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8.optimize.argumentpropagation.computation;
 
+import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.ir.analysis.value.AbstractValue;
-import com.android.tools.r8.ir.analysis.value.AbstractValueFactory;
 import com.android.tools.r8.ir.analysis.value.arithmetic.AbstractCalculator;
+import com.android.tools.r8.optimize.argumentpropagation.codescanner.FlowGraphStateProvider;
+import com.android.tools.r8.shaking.AppInfoWithLiveness;
 import java.util.Objects;
-import java.util.function.IntFunction;
 
 public class ComputationTreeLogicalBinopAndNode extends ComputationTreeLogicalBinopNode {
 
@@ -24,11 +25,17 @@ public class ComputationTreeLogicalBinopAndNode extends ComputationTreeLogicalBi
 
   @Override
   public AbstractValue evaluate(
-      IntFunction<AbstractValue> argumentAssignment, AbstractValueFactory abstractValueFactory) {
+      AppView<AppInfoWithLiveness> appView, FlowGraphStateProvider flowGraphStateProvider) {
     assert getNumericType().isInt();
-    AbstractValue leftValue = left.evaluate(argumentAssignment, abstractValueFactory);
-    AbstractValue rightValue = right.evaluate(argumentAssignment, abstractValueFactory);
-    return AbstractCalculator.andIntegers(abstractValueFactory, leftValue, rightValue);
+    AbstractValue leftValue = left.evaluate(appView, flowGraphStateProvider);
+    if (leftValue.isBottom()) {
+      return leftValue;
+    }
+    AbstractValue rightValue = right.evaluate(appView, flowGraphStateProvider);
+    if (rightValue.isBottom()) {
+      return rightValue;
+    }
+    return AbstractCalculator.andIntegers(appView, leftValue, rightValue);
   }
 
   @Override
@@ -46,5 +53,10 @@ public class ComputationTreeLogicalBinopAndNode extends ComputationTreeLogicalBi
   @Override
   public int hashCode() {
     return Objects.hash(getClass(), left, right);
+  }
+
+  @Override
+  public String toString() {
+    return left.toStringWithParenthesis() + " & " + right.toStringWithParenthesis();
   }
 }

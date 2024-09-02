@@ -5,7 +5,10 @@ package com.android.tools.r8.optimize.argumentpropagation.codescanner;
 
 import com.android.tools.r8.errors.Unreachable;
 import com.android.tools.r8.graph.AppView;
+import com.android.tools.r8.graph.DexType;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
+import com.android.tools.r8.utils.TraversalContinuation;
+import java.util.function.Function;
 
 public class IdentityAbstractFunction implements AbstractFunction {
 
@@ -21,17 +24,14 @@ public class IdentityAbstractFunction implements AbstractFunction {
   public ValueState apply(
       AppView<AppInfoWithLiveness> appView,
       FlowGraphStateProvider flowGraphStateProvider,
-      ConcreteValueState inState) {
+      ConcreteValueState inState,
+      DexType outStaticType) {
     return inState;
   }
 
   @Override
-  public boolean verifyContainsBaseInFlow(BaseInFlow inFlow) {
-    throw new Unreachable();
-  }
-
-  @Override
-  public Iterable<BaseInFlow> getBaseInFlow() {
+  public <TB, TC> TraversalContinuation<TB, TC> traverseBaseInFlow(
+      Function<? super BaseInFlow, TraversalContinuation<TB, TC>> fn) {
     throw new Unreachable();
   }
 

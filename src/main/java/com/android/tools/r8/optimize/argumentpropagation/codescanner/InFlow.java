@@ -5,7 +5,9 @@ package com.android.tools.r8.optimize.argumentpropagation.codescanner;
 
 import com.android.tools.r8.graph.DexField;
 import com.android.tools.r8.graph.DexMethod;
-import com.android.tools.r8.optimize.compose.UpdateChangedFlagsAbstractFunction;
+import com.android.tools.r8.optimize.argumentpropagation.computation.ComputationTreeNode;
+import com.android.tools.r8.utils.TraversalContinuation;
+import java.util.function.Function;
 
 public interface InFlow {
 
@@ -19,6 +21,14 @@ public interface InFlow {
   int internalCompareToSameKind(InFlow inFlow, InFlowComparator comparator);
 
   InFlowKind getKind();
+
+  default boolean isAbstractComputation() {
+    return false;
+  }
+
+  default ComputationTreeNode asAbstractComputation() {
+    return null;
+  }
 
   default boolean isAbstractFunction() {
     return false;
@@ -84,19 +94,10 @@ public interface InFlow {
     return null;
   }
 
-  default OrAbstractFunction asOrAbstractFunction() {
-    return null;
-  }
-
-  default boolean isUnknownAbstractFunction() {
+  default boolean isUnknown() {
     return false;
   }
 
-  default boolean isUpdateChangedFlagsAbstractFunction() {
-    return false;
-  }
-
-  default UpdateChangedFlagsAbstractFunction asUpdateChangedFlagsAbstractFunction() {
-    return null;
-  }
+  <TB, TC> TraversalContinuation<TB, TC> traverseBaseInFlow(
+      Function<? super BaseInFlow, TraversalContinuation<TB, TC>> fn);
 }

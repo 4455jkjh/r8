@@ -22,6 +22,7 @@ import com.android.tools.r8.cf.code.CfInstruction;
 import com.android.tools.r8.cf.code.CfInvoke;
 import com.android.tools.r8.contexts.CompilationContext.MethodProcessingContext;
 import com.android.tools.r8.contexts.CompilationContext.ProcessorContext;
+import com.android.tools.r8.desugar.covariantreturntype.CovariantReturnTypeEnqueuerExtension;
 import com.android.tools.r8.dex.IndexedItemCollection;
 import com.android.tools.r8.dex.code.CfOrDexInstruction;
 import com.android.tools.r8.errors.InterfaceDesugarMissingTypeDiagnostic;
@@ -537,6 +538,7 @@ public class Enqueuer {
           shrinker -> registerAnalysis(shrinker.createEnqueuerAnalysis()));
       IsolatedFeatureSplitsChecker.register(appView, this);
       ResourceAccessAnalysis.register(appView, this);
+      CovariantReturnTypeEnqueuerExtension.register(appView, this);
     }
 
     targetedMethods = new LiveMethodsSet(graphReporter::registerMethod);
@@ -4807,7 +4809,9 @@ public class Enqueuer {
 
         // Notify each analysis that a fixpoint has been reached, and give each analysis an
         // opportunity to add items to the worklist.
-        analyses.forEach(analysis -> analysis.notifyFixpoint(this, worklist, timing));
+        for (EnqueuerAnalysis analysis : analyses) {
+          analysis.notifyFixpoint(this, worklist, executorService, timing);
+        }
         if (!worklist.isEmpty()) {
           continue;
         }

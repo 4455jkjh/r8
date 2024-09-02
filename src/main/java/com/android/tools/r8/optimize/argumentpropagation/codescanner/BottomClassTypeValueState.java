@@ -36,6 +36,10 @@ public class BottomClassTypeValueState extends BottomValueState {
     if (inState.isUnknown()) {
       return inState;
     }
+    if (inState.isUnused()) {
+      assert inState.identical(unusedClassTypeState());
+      return inState;
+    }
     assert inState.isConcrete();
     assert inState.asConcrete().isReferenceState();
     ConcreteReferenceTypeValueState concreteState = inState.asConcrete().asReferenceState();
@@ -60,7 +64,6 @@ public class BottomClassTypeValueState extends BottomValueState {
     if (outStaticType != null) {
       return WideningUtils.widenDynamicNonReceiverType(appView, joinedDynamicType, outStaticType);
     } else {
-      assert !joinedDynamicType.isUnknown();
       return joinedDynamicType;
     }
   }

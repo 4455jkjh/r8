@@ -8,6 +8,8 @@ import static com.android.tools.r8.ir.desugar.itf.InterfaceMethodRewriter.Flavor
 import static com.android.tools.r8.ir.desugar.lambda.D8LambdaDesugaring.rewriteEnclosingLambdaMethodAttributes;
 
 import com.android.tools.r8.contexts.CompilationContext.MethodProcessingContext;
+import com.android.tools.r8.desugar.covariantreturntype.CovariantReturnTypeAnnotationTransformer;
+import com.android.tools.r8.desugar.covariantreturntype.CovariantReturnTypeAnnotationTransformerEventConsumer;
 import com.android.tools.r8.errors.CompilationError;
 import com.android.tools.r8.graph.AppInfo;
 import com.android.tools.r8.graph.AppView;
@@ -22,7 +24,6 @@ import com.android.tools.r8.ir.desugar.CfClassSynthesizerDesugaringEventConsumer
 import com.android.tools.r8.ir.desugar.CfInstructionDesugaringEventConsumer;
 import com.android.tools.r8.ir.desugar.CfPostProcessingDesugaringCollection;
 import com.android.tools.r8.ir.desugar.CfPostProcessingDesugaringEventConsumer;
-import com.android.tools.r8.ir.desugar.CovariantReturnTypeAnnotationTransformerEventConsumer;
 import com.android.tools.r8.ir.desugar.ProgramAdditions;
 import com.android.tools.r8.ir.desugar.desugaredlibrary.apiconversion.DesugaredLibraryAPIConverter;
 import com.android.tools.r8.ir.desugar.itf.EmulatedInterfaceApplicationRewriter;
@@ -77,6 +78,8 @@ public class PrimaryD8L8IRConverter extends IRConverter {
 
     application = commitPendingSyntheticItems(appView, application);
 
+    processCovariantReturnTypeAnnotations(profileCollectionAdditions, executorService);
+
     // Build a new application with jumbo string info,
     Builder<?> builder = application.builder();
 
@@ -84,8 +87,6 @@ public class PrimaryD8L8IRConverter extends IRConverter {
       new EmulatedInterfaceApplicationRewriter(appView).rewriteApplication(builder);
       new L8InnerOuterAttributeEraser(appView).run();
     }
-
-    processCovariantReturnTypeAnnotations(builder, profileCollectionAdditions);
 
     timing.end();
 
@@ -272,6 +273,7 @@ public class PrimaryD8L8IRConverter extends IRConverter {
               appView.appInfo().getMainDexInfo()));
       application = appView.appInfo().app();
     }
+    assert application == appView.appInfo().app();
     return application;
   }
 
@@ -338,14 +340,13 @@ public class PrimaryD8L8IRConverter extends IRConverter {
     programAdditions.apply(threadingModule, executorService);
   }
 
-  @SuppressWarnings("BadImport")
   private void processCovariantReturnTypeAnnotations(
-      Builder<?> builder, ProfileCollectionAdditions profileCollectionAdditions) {
-    if (covariantReturnTypeAnnotationTransformer != null) {
-      covariantReturnTypeAnnotationTransformer.process(
-          builder,
-          CovariantReturnTypeAnnotationTransformerEventConsumer.create(profileCollectionAdditions));
-    }
+      ProfileCollectionAdditions profileCollectionAdditions, ExecutorService executorService)
+      throws ExecutionException {
+    CovariantReturnTypeAnnotationTransformerEventConsumer eventConsumer =
+        CovariantReturnTypeAnnotationTransformerEventConsumer.create(profileCollectionAdditions);
+    CovariantReturnTypeAnnotationTransformer.runIfNecessary(
+        appView, this, eventConsumer, executorService);
   }
 
   Timing rewriteNonDesugaredCode(

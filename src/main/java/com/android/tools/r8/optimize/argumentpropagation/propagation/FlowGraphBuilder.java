@@ -16,7 +16,6 @@ import com.android.tools.r8.graph.ProgramField;
 import com.android.tools.r8.graph.ProgramMethod;
 import com.android.tools.r8.ir.conversion.IRConverter;
 import com.android.tools.r8.optimize.argumentpropagation.codescanner.AbstractFunction;
-import com.android.tools.r8.optimize.argumentpropagation.codescanner.BaseInFlow;
 import com.android.tools.r8.optimize.argumentpropagation.codescanner.ConcreteMonomorphicMethodState;
 import com.android.tools.r8.optimize.argumentpropagation.codescanner.ConcreteValueState;
 import com.android.tools.r8.optimize.argumentpropagation.codescanner.FieldStateCollection;
@@ -159,38 +158,34 @@ public class FlowGraphBuilder {
 
   // Returns BREAK if the current node has been set to unknown.
   private TraversalContinuation<?, ?> addInFlow(InFlow inFlow, FlowGraphNode node) {
-    if (inFlow.isAbstractFunction()) {
-      return addInFlow(inFlow.asAbstractFunction(), node);
-    } else if (inFlow.isFieldValue()) {
+    if (inFlow.isFieldValue()) {
       return addInFlow(inFlow.asFieldValue(), node);
     } else if (inFlow.isMethodParameter()) {
       return addInFlow(inFlow.asMethodParameter(), node);
+    } else if (inFlow.isAbstractFunction()) {
+      return addInFlow(inFlow.asAbstractFunction(), node);
     } else {
       throw new Unreachable(inFlow.getClass().getTypeName());
     }
   }
 
   private TraversalContinuation<?, ?> addInFlow(AbstractFunction inFlow, FlowGraphNode node) {
-    for (BaseInFlow baseInFlow : inFlow.getBaseInFlow()) {
-      TraversalContinuation<?, ?> traversalContinuation;
-      if (baseInFlow.isFieldValue()) {
-        traversalContinuation = addInFlow(baseInFlow.asFieldValue(), node, inFlow);
-      } else {
-        assert baseInFlow.isMethodParameter();
-        traversalContinuation = addInFlow(baseInFlow.asMethodParameter(), node, inFlow);
-      }
-      if (traversalContinuation.shouldBreak()) {
-        return traversalContinuation;
-      }
-    }
-    return TraversalContinuation.doContinue();
+    return inFlow.traverseBaseInFlow(
+        baseInFlow -> {
+          if (baseInFlow.isFieldValue()) {
+            return addInFlow(baseInFlow.asFieldValue(), node, inFlow);
+          } else {
+            assert baseInFlow.isMethodParameter();
+            return addInFlow(baseInFlow.asMethodParameter(), node, inFlow);
+          }
+        });
   }
 
-  private TraversalContinuation<?, ?> addInFlow(FieldValue inFlow, FlowGraphNode node) {
+  private <TB, TC> TraversalContinuation<TB, TC> addInFlow(FieldValue inFlow, FlowGraphNode node) {
     return addInFlow(inFlow, node, AbstractFunction.identity());
   }
 
-  private TraversalContinuation<?, ?> addInFlow(
+  private <TB, TC> TraversalContinuation<TB, TC> addInFlow(
       FieldValue inFlow, FlowGraphNode node, AbstractFunction transferFunction) {
     assert !node.isUnknown();
 

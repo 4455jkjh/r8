@@ -4,15 +4,17 @@
 
 package com.android.tools.r8.optimize.argumentpropagation.codescanner;
 
+import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.DexClassAndMethod;
 import com.android.tools.r8.graph.DexMethod;
 import com.android.tools.r8.graph.DexType;
 import com.android.tools.r8.ir.analysis.value.AbstractValue;
-import com.android.tools.r8.ir.analysis.value.AbstractValueFactory;
 import com.android.tools.r8.optimize.argumentpropagation.computation.ComputationTreeNode;
+import com.android.tools.r8.shaking.AppInfoWithLiveness;
 import com.android.tools.r8.utils.BooleanUtils;
+import com.android.tools.r8.utils.TraversalContinuation;
 import java.util.Objects;
-import java.util.function.IntFunction;
+import java.util.function.Function;
 
 public class MethodParameter implements BaseInFlow, ComputationTreeNode {
 
@@ -30,8 +32,10 @@ public class MethodParameter implements BaseInFlow, ComputationTreeNode {
     this.isMethodStatic = isMethodStatic;
   }
 
-  public static MethodParameter createStatic(DexMethod method, int index) {
-    return new MethodParameter(method, index, true);
+  @Override
+  public <TB, TC> TraversalContinuation<TB, TC> traverseBaseInFlow(
+      Function<? super BaseInFlow, TraversalContinuation<TB, TC>> fn) {
+    return fn.apply(this);
   }
 
   @Override
@@ -48,7 +52,7 @@ public class MethodParameter implements BaseInFlow, ComputationTreeNode {
   }
 
   @Override
-  public MethodParameter getSingleOpenVariable() {
+  public BaseInFlow getSingleOpenVariable() {
     return this;
   }
 
@@ -58,8 +62,9 @@ public class MethodParameter implements BaseInFlow, ComputationTreeNode {
 
   @Override
   public AbstractValue evaluate(
-      IntFunction<AbstractValue> argumentAssignment, AbstractValueFactory abstractValueFactory) {
-    return argumentAssignment.apply(index);
+      AppView<AppInfoWithLiveness> appView, FlowGraphStateProvider flowGraphStateProvider) {
+    ValueState state = flowGraphStateProvider.getState(this, () -> ValueState.bottom(getType()));
+    return state.getAbstractValue(appView);
   }
 
   @Override
@@ -78,6 +83,11 @@ public class MethodParameter implements BaseInFlow, ComputationTreeNode {
   }
 
   @Override
+  public boolean isComputationLeaf() {
+    return true;
+  }
+
+  @Override
   public boolean isMethodParameter() {
     return true;
   }
@@ -93,13 +103,16 @@ public class MethodParameter implements BaseInFlow, ComputationTreeNode {
   }
 
   @Override
-  @SuppressWarnings({"EqualsGetClass", "ReferenceEquality"})
+  @SuppressWarnings("EqualsGetClass")
   public boolean equals(Object obj) {
+    if (this == obj) {
+      return true;
+    }
     if (obj == null || getClass() != obj.getClass()) {
       return false;
     }
     MethodParameter methodParameter = (MethodParameter) obj;
-    return method == methodParameter.method && index == methodParameter.index;
+    return method.isIdenticalTo(methodParameter.method) && index == methodParameter.index;
   }
 
   @Override

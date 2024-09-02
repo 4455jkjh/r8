@@ -5,9 +5,11 @@ package com.android.tools.r8.optimize.argumentpropagation.codescanner;
 
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.DexField;
+import com.android.tools.r8.graph.DexType;
 import com.android.tools.r8.ir.analysis.value.AbstractValue;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
-import com.google.common.collect.Lists;
+import com.android.tools.r8.utils.TraversalContinuation;
+import java.util.function.Function;
 
 public class InstanceFieldReadAbstractFunction implements AbstractFunction {
 
@@ -23,7 +25,8 @@ public class InstanceFieldReadAbstractFunction implements AbstractFunction {
   public ValueState apply(
       AppView<AppInfoWithLiveness> appView,
       FlowGraphStateProvider flowGraphStateProvider,
-      ConcreteValueState predecessorState) {
+      ConcreteValueState predecessorState,
+      DexType outStaticType) {
     ValueState state = flowGraphStateProvider.getState(receiver, () -> ValueState.bottom(field));
     if (state.isBottom()) {
       return ValueState.bottom(field);
@@ -47,14 +50,13 @@ public class InstanceFieldReadAbstractFunction implements AbstractFunction {
   }
 
   @Override
-  public boolean verifyContainsBaseInFlow(BaseInFlow inFlow) {
-    assert inFlow.equals(receiver) || inFlow.isFieldValue(field);
-    return true;
-  }
-
-  @Override
-  public Iterable<BaseInFlow> getBaseInFlow() {
-    return Lists.newArrayList(receiver, new FieldValue(field));
+  public <TB, TC> TraversalContinuation<TB, TC> traverseBaseInFlow(
+      Function<? super BaseInFlow, TraversalContinuation<TB, TC>> fn) {
+    TraversalContinuation<TB, TC> traversalContinuation = fn.apply(receiver);
+    if (traversalContinuation.shouldContinue()) {
+      traversalContinuation = fn.apply(new FieldValue(field));
+    }
+    return traversalContinuation;
   }
 
   private ValueState getFallbackState(FlowGraphStateProvider flowGraphStateProvider) {

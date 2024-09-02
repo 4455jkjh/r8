@@ -4,7 +4,9 @@
 package com.android.tools.r8.optimize.argumentpropagation.computation;
 
 import com.android.tools.r8.ir.code.NumericType;
-import com.android.tools.r8.optimize.argumentpropagation.codescanner.MethodParameter;
+import com.android.tools.r8.optimize.argumentpropagation.codescanner.BaseInFlow;
+import com.android.tools.r8.utils.TraversalContinuation;
+import java.util.function.Function;
 
 public abstract class ComputationTreeLogicalBinopNode extends ComputationTreeBaseNode {
 
@@ -17,13 +19,23 @@ public abstract class ComputationTreeLogicalBinopNode extends ComputationTreeBas
     this.right = right;
   }
 
+  @Override
+  public <TB, TC> TraversalContinuation<TB, TC> traverseBaseInFlow(
+      Function<? super BaseInFlow, TraversalContinuation<TB, TC>> fn) {
+    TraversalContinuation<TB, TC> traversalContinuation = left.traverseBaseInFlow(fn);
+    if (traversalContinuation.shouldContinue()) {
+      traversalContinuation = right.traverseBaseInFlow(fn);
+    }
+    return traversalContinuation;
+  }
+
   public NumericType getNumericType() {
     return NumericType.INT;
   }
 
   @Override
-  public final MethodParameter getSingleOpenVariable() {
-    MethodParameter openVariable = left.getSingleOpenVariable();
+  public final BaseInFlow getSingleOpenVariable() {
+    BaseInFlow openVariable = left.getSingleOpenVariable();
     if (openVariable != null) {
       return right.getSingleOpenVariable() == null ? openVariable : null;
     }

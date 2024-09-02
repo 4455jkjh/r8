@@ -3,11 +3,14 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8.optimize.argumentpropagation.computation;
 
+import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.ir.analysis.value.AbstractValue;
-import com.android.tools.r8.ir.analysis.value.AbstractValueFactory;
+import com.android.tools.r8.ir.analysis.value.SingleNumberValue;
 import com.android.tools.r8.ir.code.IfType;
+import com.android.tools.r8.optimize.argumentpropagation.codescanner.FlowGraphStateProvider;
+import com.android.tools.r8.optimize.argumentpropagation.codescanner.MethodParameter;
+import com.android.tools.r8.shaking.AppInfoWithLiveness;
 import java.util.Objects;
-import java.util.function.IntFunction;
 
 public class ComputationTreeUnopCompareNode extends ComputationTreeUnopNode {
 
@@ -27,9 +30,26 @@ public class ComputationTreeUnopCompareNode extends ComputationTreeUnopNode {
 
   @Override
   public AbstractValue evaluate(
-      IntFunction<AbstractValue> argumentAssignment, AbstractValueFactory abstractValueFactory) {
-    AbstractValue operandValue = operand.evaluate(argumentAssignment, abstractValueFactory);
-    return type.evaluate(operandValue, abstractValueFactory);
+      AppView<AppInfoWithLiveness> appView, FlowGraphStateProvider flowGraphStateProvider) {
+    AbstractValue operandValue = operand.evaluate(appView, flowGraphStateProvider);
+    if (operandValue.isBottom()) {
+      return operandValue;
+    }
+    return type.evaluate(operandValue, appView);
+  }
+
+  @Override
+  public boolean isArgumentBitSetCompareNode() {
+    if (!type.isEqualsOrNotEquals() || !(operand instanceof ComputationTreeLogicalBinopAndNode)) {
+      return false;
+    }
+    ComputationTreeLogicalBinopAndNode andOperand = (ComputationTreeLogicalBinopAndNode) operand;
+    return andOperand.left instanceof MethodParameter
+        && andOperand.right instanceof SingleNumberValue;
+  }
+
+  public ComputationTreeUnopCompareNode negate() {
+    return new ComputationTreeUnopCompareNode(operand, type.inverted());
   }
 
   @Override
@@ -47,5 +67,10 @@ public class ComputationTreeUnopCompareNode extends ComputationTreeUnopNode {
   @Override
   public int hashCode() {
     return Objects.hash(getClass(), operand, type);
+  }
+
+  @Override
+  public String toString() {
+    return operand.toStringWithParenthesis() + " " + type.getSymbol() + " 0";
   }
 }

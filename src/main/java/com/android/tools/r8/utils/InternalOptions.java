@@ -372,7 +372,8 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
     if (isAndroidPlatformBuild) {
       apiModelingOptions().disableApiModeling();
       disableBackportsAndReportIfTriggered = true;
-      addAndroidPlatformBuildToMarker = isAndroidPlatformBuild;
+      addAndroidPlatformBuildToMarker = true;
+      processCovariantReturnTypeAnnotations = true;
     }
   }
 
@@ -436,6 +437,8 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
   public boolean enableSideEffectAnalysis = true;
   public boolean enableDeterminismAnalysis = true;
   public boolean enableServiceLoaderRewriting = true;
+  public boolean allowServiceLoaderRewritingPinnedTypes =
+      System.getProperty("com.android.tools.r8.allowServiceLoaderRewritingPinnedTypes") != null;
   public boolean enableNameReflectionOptimization = true;
   public boolean enableStringConcatenationOptimization = true;
   // Enabled only for R8 (not D8).
@@ -778,7 +781,7 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
   public OffOrAuto tryWithResourcesDesugaring = OffOrAuto.Auto;
   // Flag to turn on/off processing of @dalvik.annotation.codegen.CovariantReturnType and
   // @dalvik.annotation.codegen.CovariantReturnType$CovariantReturnTypes.
-  public boolean processCovariantReturnTypeAnnotations = true;
+  public boolean processCovariantReturnTypeAnnotations = false;
 
   public boolean loadAllClassDefinitions = false;
 
@@ -2460,7 +2463,6 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
     public boolean enableDeadSwitchCaseElimination = true;
     public boolean enableEnqueuerDeferredTracingForReferenceFields =
         System.getProperty("com.android.tools.r8.disableEnqueuerDeferredTracing") == null;
-    public boolean enableIfThenElseAbstractFunction = false;
     public boolean enableInvokeSuperToInvokeVirtualRewriting = true;
     public boolean enableLegacyClassDefOrdering =
         System.getProperty("com.android.tools.r8.enableLegacyClassDefOrdering") != null;
