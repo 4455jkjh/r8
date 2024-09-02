@@ -14,7 +14,6 @@ import com.android.tools.r8.dexsplitter.SplitterTestBase.SplitRunner;
 import com.android.tools.r8.errors.Unreachable;
 import com.android.tools.r8.experimental.graphinfo.GraphConsumer;
 import com.android.tools.r8.keepanno.KeepAnnoTestUtils;
-import com.android.tools.r8.metadata.R8BuildMetadata;
 import com.android.tools.r8.origin.Origin;
 import com.android.tools.r8.origin.PathOrigin;
 import com.android.tools.r8.profile.art.ArtProfileConsumer;
@@ -94,7 +93,6 @@ public abstract class R8TestBuilder<T extends R8TestBuilder<T>>
   private final List<Path> features = new ArrayList<>();
   private Path resourceShrinkerOutput = null;
   private HashMap<String, Path> resourceShrinkerOutputForFeatures = new HashMap<>();
-  private Box<R8BuildMetadata> buildMetadata;
 
   @Override
   public boolean isR8TestBuilder() {
@@ -148,9 +146,6 @@ public abstract class R8TestBuilder<T extends R8TestBuilder<T>>
     builder.setEnableIsolatedSplits(enableIsolatedSplits);
     builder.setEnableExperimentalMissingLibraryApiModeling(enableMissingLibraryApiModeling);
     builder.setEnableStartupLayoutOptimization(enableStartupLayoutOptimization);
-    if (buildMetadata != null) {
-      builder.setBuildMetadataConsumer(buildMetadata::set);
-    }
     StringBuilder pgConfOutput = wrapProguardConfigConsumer(builder);
     ToolHelper.runAndBenchmarkR8WithoutResult(builder, optionsConsumer, benchmarkResults);
     R8TestCompileResult compileResult =
@@ -167,8 +162,7 @@ public abstract class R8TestBuilder<T extends R8TestBuilder<T>>
             features,
             residualArtProfiles,
             resourceShrinkerOutput,
-            resourceShrinkerOutputForFeatures,
-            buildMetadata != null ? buildMetadata.get() : null);
+            resourceShrinkerOutputForFeatures);
     switch (allowedDiagnosticMessages) {
       case ALL:
         compileResult.getDiagnosticMessages().assertAllDiagnosticsMatch(new IsAnything<>());
@@ -1046,12 +1040,6 @@ public abstract class R8TestBuilder<T extends R8TestBuilder<T>>
         .setAndroidResourceProvider(
             new ArchiveProtoAndroidResourceProvider(input, new PathOrigin(input)));
     getBuilder().setAndroidResourceConsumer(new ArchiveProtoAndroidResourceConsumer(output, input));
-    return self();
-  }
-
-  public T collectBuildMetadata() {
-    assert buildMetadata == null;
-    buildMetadata = new Box<>();
     return self();
   }
 }

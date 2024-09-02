@@ -15,7 +15,6 @@ import com.android.tools.r8.benchmarks.BenchmarkResults;
 import com.android.tools.r8.dexsplitter.SplitterTestBase.SplitRunner;
 import com.android.tools.r8.graph.DexType;
 import com.android.tools.r8.graph.ProgramMethod;
-import com.android.tools.r8.metadata.R8BuildMetadata;
 import com.android.tools.r8.profile.art.model.ExternalArtProfile;
 import com.android.tools.r8.profile.art.utils.ArtProfileInspector;
 import com.android.tools.r8.shaking.CollectingGraphConsumer;
@@ -50,7 +49,6 @@ public class R8TestCompileResult extends TestCompileResult<R8TestCompileResult, 
   private final List<ExternalArtProfile> residualArtProfiles;
   private final Path resourceShrinkerOutput;
   private final Map<String, Path> resourceShrinkerOutputForFeatures;
-  private final R8BuildMetadata buildMetadata;
 
   R8TestCompileResult(
       TestState state,
@@ -65,8 +63,7 @@ public class R8TestCompileResult extends TestCompileResult<R8TestCompileResult, 
       List<Path> features,
       List<ExternalArtProfile> residualArtProfiles,
       Path resourceShrinkerOutput,
-      HashMap<String, Path> resourceShrinkerOutputForFeatures,
-      R8BuildMetadata buildMetadata) {
+      HashMap<String, Path> resourceShrinkerOutputForFeatures) {
     super(state, app, minApiLevel, outputMode, libraryDesugaringTestConfiguration);
     this.proguardConfiguration = proguardConfiguration;
     this.syntheticProguardRules = syntheticProguardRules;
@@ -76,7 +73,6 @@ public class R8TestCompileResult extends TestCompileResult<R8TestCompileResult, 
     this.residualArtProfiles = residualArtProfiles;
     this.resourceShrinkerOutput = resourceShrinkerOutput;
     this.resourceShrinkerOutputForFeatures = resourceShrinkerOutputForFeatures;
-    this.buildMetadata = buildMetadata;
   }
 
   public R8TestCompileResult benchmarkResourceSize(BenchmarkResults results) throws IOException {
@@ -87,11 +83,6 @@ public class R8TestCompileResult extends TestCompileResult<R8TestCompileResult, 
   @Override
   public R8TestCompileResult self() {
     return this;
-  }
-
-  public R8BuildMetadata getBuildMetadata() {
-    assert buildMetadata != null;
-    return buildMetadata;
   }
 
   @Override

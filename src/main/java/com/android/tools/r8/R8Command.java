@@ -20,7 +20,6 @@ import com.android.tools.r8.keepanno.annotations.KeepForApi;
 import com.android.tools.r8.keepanno.asm.KeepEdgeReader;
 import com.android.tools.r8.keepanno.ast.KeepDeclaration;
 import com.android.tools.r8.keepanno.keeprules.KeepRuleExtractor;
-import com.android.tools.r8.metadata.R8BuildMetadata;
 import com.android.tools.r8.naming.MapConsumer;
 import com.android.tools.r8.naming.ProguardMapStringConsumer;
 import com.android.tools.r8.naming.SourceFileRewriter;
@@ -134,7 +133,6 @@ public final class R8Command extends BaseCompilerCommand {
     private GraphConsumer keptGraphConsumer = null;
     private GraphConsumer mainDexKeptGraphConsumer = null;
     private InputDependencyGraphConsumer inputDependencyGraphConsumer = null;
-    private Consumer<? super R8BuildMetadata> buildMetadataConsumer = null;
     private final FeatureSplitConfiguration.Builder featureSplitConfigurationBuilder =
         FeatureSplitConfiguration.builder();
     private String synthesizedClassPrefix = "";
@@ -405,16 +403,6 @@ public final class R8Command extends BaseCompilerCommand {
     public Builder setInputDependencyGraphConsumer(
         InputDependencyGraphConsumer inputDependencyGraphConsumer) {
       this.inputDependencyGraphConsumer = inputDependencyGraphConsumer;
-      return self();
-    }
-
-    /**
-     * Set a consumer for receiving metadata about the current build intended for being stored in
-     * the app bundle.
-     */
-    public Builder setBuildMetadataConsumer(
-        Consumer<? super R8BuildMetadata> buildMetadataConsumer) {
-      this.buildMetadataConsumer = buildMetadataConsumer;
       return self();
     }
 
@@ -789,8 +777,7 @@ public final class R8Command extends BaseCompilerCommand {
               androidResourceProvider,
               androidResourceConsumer,
               resourceShrinkerConfiguration,
-              keepSpecifications,
-              buildMetadataConsumer);
+              keepSpecifications);
 
       if (inputDependencyGraphConsumer != null) {
         inputDependencyGraphConsumer.finished();
@@ -985,7 +972,6 @@ public final class R8Command extends BaseCompilerCommand {
   private final AndroidResourceProvider androidResourceProvider;
   private final AndroidResourceConsumer androidResourceConsumer;
   private final ResourceShrinkerConfiguration resourceShrinkerConfiguration;
-  private final Consumer<? super R8BuildMetadata> buildMetadataConsumer;
 
   /** Get a new {@link R8Command.Builder}. */
   public static Builder builder() {
@@ -1084,8 +1070,7 @@ public final class R8Command extends BaseCompilerCommand {
       AndroidResourceProvider androidResourceProvider,
       AndroidResourceConsumer androidResourceConsumer,
       ResourceShrinkerConfiguration resourceShrinkerConfiguration,
-      List<KeepSpecificationSource> keepSpecifications,
-      Consumer<? super R8BuildMetadata> buildMetadataConsumer) {
+      List<KeepSpecificationSource> keepSpecifications) {
     super(
         inputApp,
         mode,
@@ -1134,7 +1119,6 @@ public final class R8Command extends BaseCompilerCommand {
     this.androidResourceProvider = androidResourceProvider;
     this.androidResourceConsumer = androidResourceConsumer;
     this.resourceShrinkerConfiguration = resourceShrinkerConfiguration;
-    this.buildMetadataConsumer = buildMetadataConsumer;
   }
 
   private R8Command(boolean printHelp, boolean printVersion) {
@@ -1163,7 +1147,6 @@ public final class R8Command extends BaseCompilerCommand {
     androidResourceProvider = null;
     androidResourceConsumer = null;
     resourceShrinkerConfiguration = null;
-    buildMetadataConsumer = null;
   }
 
   public DexItemFactory getDexItemFactory() {
@@ -1276,7 +1259,6 @@ public final class R8Command extends BaseCompilerCommand {
     internal.keptGraphConsumer = keptGraphConsumer;
     internal.mainDexKeptGraphConsumer = mainDexKeptGraphConsumer;
 
-    internal.buildMetadataConsumer = buildMetadataConsumer;
     internal.dataResourceConsumer = internal.programConsumer.getDataResourceConsumer();
 
     internal.featureSplitConfiguration = featureSplitConfiguration;
