@@ -12,11 +12,14 @@ import utils
 
 import sys
 
-APPS = perf.APPS
+BENCHMARKS = perf.BENCHMARKS
 TARGETS = ['r8-full']
 NUM_COMMITS = 1000
 
-INDEX_HTML = os.path.join(utils.TOOLS_DIR, 'perf/index.html')
+FILES = [
+    'chart.js', 'd8.html', 'dom.js', 'extensions.js', 'r8.html', 'retrace.html',
+    'scales.js', 'state.js', 'stylesheet.css', 'url.js', 'utils.js'
+]
 
 
 def DownloadCloudBucket(dest):
@@ -40,6 +43,51 @@ def ParseJsonFromCloudStorage(filename, local_bucket):
             return None
 
 
+def RecordBenchmarkResult(commit, benchmark, benchmark_info, local_bucket,
+                          target, benchmarks):
+    if not target in benchmark_info['targets']:
+        return
+    filename = perf.GetArtifactLocation(benchmark, target, commit.hash(),
+                                        'result.json')
+    benchmark_data = ParseJsonFromCloudStorage(filename, local_bucket)
+    if benchmark_data:
+        benchmarks[benchmark] = benchmark_data
+
+
+def RecordBenchmarkResults(commit, benchmarks, benchmark_data):
+    if benchmarks or benchmark_data:
+        benchmark_data.append({
+            'author': commit.author_name(),
+            'hash': commit.hash(),
+            'submitted': commit.committer_timestamp(),
+            'title': commit.title(),
+            'benchmarks': benchmarks
+        })
+
+
+def TrimBenchmarkResults(benchmark_data):
+    new_benchmark_data_len = len(benchmark_data)
+    while new_benchmark_data_len > 0:
+        candidate_len = new_benchmark_data_len - 1
+        if not benchmark_data[candidate_len]['benchmarks']:
+            new_benchmark_data_len = candidate_len
+        else:
+            break
+    return benchmark_data[0:new_benchmark_data_len]
+
+
+def ArchiveBenchmarkResults(benchmark_data, dest, temp):
+    # Serialize JSON to temp file.
+    benchmark_data_file = os.path.join(temp, dest)
+    with open(benchmark_data_file, 'w') as f:
+        json.dump(benchmark_data, f)
+
+    # Write output files to public bucket.
+    perf.ArchiveOutputFile(benchmark_data_file,
+                           dest,
+                           header='Cache-Control:no-store')
+
+
 def run():
     # Get the N most recent commits sorted by newest first.
     top = utils.get_sha1_from_revision('origin/main')
@@ -52,49 +100,45 @@ def run():
         local_bucket = os.path.join(temp, perf.BUCKET)
         DownloadCloudBucket(local_bucket)
 
-        # Aggregate all the result.json files into a single benchmark_data.json file
-        # that has the same format as tools/perf/benchmark_data.json.
-        benchmark_data = []
+        # Aggregate all the result.json files into a single file that has the
+        # same format as tools/perf/benchmark_data.json.
+        d8_benchmark_data = []
+        r8_benchmark_data = []
+        retrace_benchmark_data = []
         for commit in commits:
-            benchmarks = {}
-            for app in APPS:
-                for target in TARGETS:
-                    filename = perf.GetArtifactLocation(app, target,
-                                                        commit.hash(),
-                                                        'result.json')
-                    app_benchmark_data = ParseJsonFromCloudStorage(
-                        filename, local_bucket)
-                    if app_benchmark_data:
-                        benchmarks[app] = app_benchmark_data
-            if benchmarks or benchmark_data:
-                benchmark_data.append({
-                    'author': commit.author_name(),
-                    'hash': commit.hash(),
-                    'submitted': commit.committer_timestamp(),
-                    'title': commit.title(),
-                    'benchmarks': benchmarks
-                })
+            d8_benchmarks = {}
+            r8_benchmarks = {}
+            retrace_benchmarks = {}
+            for benchmark, benchmark_info in BENCHMARKS.items():
+                RecordBenchmarkResult(commit, benchmark, benchmark_info,
+                                      local_bucket, 'd8', d8_benchmarks)
+                RecordBenchmarkResult(commit, benchmark, benchmark_info,
+                                      local_bucket, 'r8-full', r8_benchmarks)
+                RecordBenchmarkResult(commit, benchmark, benchmark_info,
+                                      local_bucket, 'retrace',
+                                      retrace_benchmarks)
+            RecordBenchmarkResults(commit, d8_benchmarks, d8_benchmark_data)
+            RecordBenchmarkResults(commit, r8_benchmarks, r8_benchmark_data)
+            RecordBenchmarkResults(commit, retrace_benchmarks,
+                                   retrace_benchmark_data)
 
         # Trim data.
-        new_benchmark_data_len = len(benchmark_data)
-        while new_benchmark_data_len > 0:
-            candidate_len = new_benchmark_data_len - 1
-            if not benchmark_data[candidate_len]['benchmarks']:
-                new_benchmark_data_len = candidate_len
-            else:
-                break
-        benchmark_data = benchmark_data[0:new_benchmark_data_len]
-
-        # Serialize JSON to temp file.
-        benchmark_data_file = os.path.join(temp, 'benchmark_data.json')
-        with open(benchmark_data_file, 'w') as f:
-            json.dump(benchmark_data, f)
+        d8_benchmark_data = TrimBenchmarkResults(d8_benchmark_data)
+        r8_benchmark_data = TrimBenchmarkResults(r8_benchmark_data)
+        retrace_benchmark_data = TrimBenchmarkResults(retrace_benchmark_data)
 
         # Write output files to public bucket.
-        perf.ArchiveOutputFile(benchmark_data_file,
-                               'benchmark_data.json',
-                               header='Cache-Control:no-store')
-        perf.ArchiveOutputFile(INDEX_HTML, 'index.html')
+        ArchiveBenchmarkResults(d8_benchmark_data, 'd8_benchmark_data.json',
+                                temp)
+        ArchiveBenchmarkResults(r8_benchmark_data, 'r8_benchmark_data.json',
+                                temp)
+        ArchiveBenchmarkResults(retrace_benchmark_data,
+                                'retrace_benchmark_data.json', temp)
+
+        # Write remaining files to public bucket.
+        for file in FILES:
+            dest = os.path.join(utils.TOOLS_DIR, 'perf', file)
+            perf.ArchiveOutputFile(dest, file)
 
 
 def main():

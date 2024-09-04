@@ -57,6 +57,7 @@ public class AppDumpBenchmarkBuilder {
   private String name;
   private BenchmarkDependency dumpDependency;
   private int fromRevision = -1;
+  private boolean enableLibraryDesugaring = true;
   private final List<String> programPackages = new ArrayList<>();
 
   public void verify() {
@@ -69,6 +70,11 @@ public class AppDumpBenchmarkBuilder {
     if (fromRevision < 0) {
       throw new BenchmarkConfigError("Missing from-revision");
     }
+  }
+
+  public AppDumpBenchmarkBuilder setEnableLibraryDesugaring(boolean enableLibraryDesugaring) {
+    this.enableLibraryDesugaring = enableLibraryDesugaring;
+    return this;
   }
 
   public AppDumpBenchmarkBuilder setName(String name) {
@@ -111,7 +117,7 @@ public class AppDumpBenchmarkBuilder {
     verify();
     return BenchmarkConfig.builder()
         .setName(name)
-        .setTarget(BenchmarkTarget.R8_NON_COMPAT)
+        .setTarget(BenchmarkTarget.R8)
         .setSuite(BenchmarkSuite.OPENSOURCE_BENCHMARKS)
         .setMethod(runR8(this, configuration))
         .setFromRevision(fromRevision)
@@ -130,7 +136,7 @@ public class AppDumpBenchmarkBuilder {
     verify();
     return BenchmarkConfig.builder()
         .setName(name)
-        .setTarget(BenchmarkTarget.R8_NON_COMPAT)
+        .setTarget(BenchmarkTarget.R8)
         .setSuite(BenchmarkSuite.OPENSOURCE_BENCHMARKS)
         .setMethod(runR8WithResourceShrinking(this, getDefaultR8Configuration()))
         .setFromRevision(fromRevision)
@@ -327,7 +333,7 @@ public class AppDumpBenchmarkBuilder {
                       .addProgramFiles(dump.getProgramArchive())
                       .addLibraryFiles(dump.getLibraryArchive())
                       .setMinApi(dumpProperties.getMinApi())
-                      .apply(b -> addDesugaredLibrary(b, dump))
+                      .applyIf(builder.enableLibraryDesugaring, b -> addDesugaredLibrary(b, dump))
                       .benchmarkCompile(results)
                       .benchmarkCodeSize(results);
                 });

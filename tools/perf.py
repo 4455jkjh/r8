@@ -15,11 +15,59 @@ import utils
 if utils.is_bot():
     import upload_benchmark_data_to_google_storage
 
-APPS = [
-    'ChromeApp', 'CraneApp', 'JetLaggedApp', 'JetNewsApp', 'JetCasterApp',
-    'JetChatApp', 'JetSnackApp', 'NowInAndroidApp', 'OwlApp', 'ReplyApp',
-    'TiviApp'
-]
+BENCHMARKS = {
+    'ChromeApp': {
+        'targets': ['r8-full']
+    },
+    'CraneApp': {
+        'targets': ['r8-full']
+    },
+    'HelloWorld': {
+        'targets': ['d8']
+    },
+    'HelloWorldNoLib': {
+        'targets': ['d8']
+    },
+    'HelloWorldCf': {
+        'targets': ['d8']
+    },
+    'HelloWorldCfNoLib': {
+        'targets': ['d8']
+    },
+    'JetLaggedApp': {
+        'targets': ['r8-full']
+    },
+    'JetNewsApp': {
+        'targets': ['r8-full']
+    },
+    'JetCasterApp': {
+        'targets': ['r8-full']
+    },
+    'JetChatApp': {
+        'targets': ['r8-full']
+    },
+    'JetSnackApp': {
+        'targets': ['r8-full']
+    },
+    'NowInAndroidApp': {
+        'targets': ['d8', 'r8-full']
+    },
+    'NowInAndroidAppNoJ$': {
+        'targets': ['d8']
+    },
+    'OwlApp': {
+        'targets': ['r8-full']
+    },
+    'R8': {
+        'targets': ['retrace']
+    },
+    'ReplyApp': {
+        'targets': ['r8-full']
+    },
+    'TiviApp': {
+        'targets': ['r8-full']
+    },
+}
 BUCKET = "r8-perf-results"
 SAMPLE_BENCHMARK_RESULT_JSON = {
     'benchmark_name': '<benchmark_name>',
@@ -37,8 +85,8 @@ SAMPLE_BENCHMARK_RESULT_JSON = {
 # meta contains information about the execution (machine)
 def ParseOptions():
     result = argparse.ArgumentParser()
-    result.add_argument('--app',
-                        help='Specific app(s) to measure.',
+    result.add_argument('--benchmark',
+                        help='Specific benchmark(s) to measure.',
                         action='append')
     result.add_argument('--iterations',
                         help='How many times run_benchmark is run.',
@@ -54,10 +102,10 @@ def ParseOptions():
                         help='Skip if output exists.',
                         action='store_true',
                         default=False)
-    result.add_argument('--target',
-                        help='Specific target to run on.',
-                        default='r8-full',
-                        choices=['d8', 'r8-full', 'r8-force', 'r8-compat'])
+    result.add_argument(
+        '--target',
+        help='Specific target to run on.',
+        choices=['d8', 'r8-full', 'r8-force', 'r8-compat', 'retrace'])
     result.add_argument('--verbose',
                         help='To enable verbose logging.',
                         action='store_true',
@@ -67,21 +115,22 @@ def ParseOptions():
                         help='Use R8 hash for the run (default local build)',
                         default=None)
     options, args = result.parse_known_args()
-    options.apps = options.app or APPS
+    options.benchmarks = options.benchmark or BENCHMARKS.keys()
     options.quiet = not options.verbose
-    del options.app
+    del options.benchmark
     return options, args
 
 
 def Build(options):
     utils.Print('Building', quiet=options.quiet)
-    build_cmd = GetRunCmd('N/A', options, ['--iterations', '0'])
+    target = options.target or 'r8-full'
+    build_cmd = GetRunCmd('N/A', target, options, ['--iterations', '0'])
     subprocess.check_call(build_cmd)
 
 
-def GetRunCmd(app, options, args):
+def GetRunCmd(benchmark, target, options, args):
     base_cmd = [
-        'tools/run_benchmark.py', '--benchmark', app, '--target', options.target
+        'tools/run_benchmark.py', '--benchmark', benchmark, '--target', target
     ]
     if options.verbose:
         base_cmd.append('--verbose')
@@ -119,9 +168,9 @@ def ParseBenchmarkResultJsonFile(result_json_file):
         return json.loads(''.join(lines))
 
 
-def GetArtifactLocation(app, target, version, filename):
+def GetArtifactLocation(benchmark, target, version, filename):
     version_or_head = version or utils.get_HEAD_sha1()
-    return f'{app}/{target}/{version_or_head}/{filename}'
+    return f'{benchmark}/{target}/{version_or_head}/{filename}'
 
 
 def GetGSLocation(filename, bucket=BUCKET):
@@ -155,61 +204,69 @@ def main():
             download_options = argparse.Namespace(no_build=True, nolib=True)
             r8jar = compiledump.download_distribution(options.version,
                                                       download_options, temp)
-        for app in options.apps:
-            if options.skip_if_output_exists:
-                if options.outdir:
-                    raise NotImplementedError
-                output = GetGSLocation(
-                    GetArtifactLocation(app, options.target, options.version,
-                                        'result.json'))
-                if utils.cloud_storage_exists(output):
-                    print(f'Skipping run, {output} already exists.')
+        for benchmark in options.benchmarks:
+            targets = [options.target
+                      ] if options.target else BENCHMARKS[benchmark]['targets']
+            for target in targets:
+                if options.skip_if_output_exists:
+                    if options.outdir:
+                        raise NotImplementedError
+                    output = GetGSLocation(
+                        GetArtifactLocation(benchmark, target, options.version,
+                                            'result.json'))
+                    if utils.cloud_storage_exists(output):
+                        print(f'Skipping run, {output} already exists.')
+                        continue
+
+                # Run benchmark.
+                benchmark_result_json_files = []
+                failed = False
+                for i in range(options.iterations):
+                    utils.Print(
+                        f'Benchmarking {benchmark} ({i+1}/{options.iterations})',
+                        quiet=options.quiet)
+                    benchhmark_result_file = os.path.join(
+                        temp, f'result_file_{i}')
+                    iteration_cmd = GetRunCmd(benchmark, target, options, [
+                        '--iterations',
+                        str(options.iterations_inner), '--output',
+                        benchhmark_result_file, '--no-build'
+                    ])
+                    try:
+                        subprocess.check_call(iteration_cmd)
+                        benchmark_result_json_files.append(
+                            benchhmark_result_file)
+                    except subprocess.CalledProcessError as e:
+                        failed = True
+                        any_failed = True
+                        break
+
+                if failed:
                     continue
 
-            # Run benchmark.
-            benchmark_result_json_files = []
-            failed = False
-            for i in range(options.iterations):
-                utils.Print(f'Benchmarking {app} ({i+1}/{options.iterations})',
-                            quiet=options.quiet)
-                benchhmark_result_file = os.path.join(temp, f'result_file_{i}')
-                iteration_cmd = GetRunCmd(app, options, [
-                    '--iterations',
-                    str(options.iterations_inner), '--output',
-                    benchhmark_result_file, '--no-build'
-                ])
-                try:
-                    subprocess.check_call(iteration_cmd)
-                    benchmark_result_json_files.append(benchhmark_result_file)
-                except subprocess.CalledProcessError as e:
-                    failed = True
-                    any_failed = True
-                    break
-
-            if failed:
-                continue
-
-            # Merge results and write output.
-            result_file = os.path.join(temp, 'result_file')
-            with open(result_file, 'w') as f:
-                json.dump(
-                    MergeBenchmarkResultJsonFiles(benchmark_result_json_files),
-                    f)
-            ArchiveOutputFile(result_file,
-                              GetArtifactLocation(app, options.target,
-                                                  options.version,
-                                                  'result.json'),
-                              outdir=options.outdir)
-
-            # Write metadata.
-            if utils.is_bot():
-                meta_file = os.path.join(temp, "meta")
-                with open(meta_file, 'w') as f:
-                    f.write("Produced by: " + os.environ.get('SWARMING_BOT_ID'))
-                ArchiveOutputFile(meta_file,
-                                  GetArtifactLocation(app, options.target,
-                                                      options.version, 'meta'),
+                # Merge results and write output.
+                result_file = os.path.join(temp, 'result_file')
+                with open(result_file, 'w') as f:
+                    json.dump(
+                        MergeBenchmarkResultJsonFiles(
+                            benchmark_result_json_files), f)
+                ArchiveOutputFile(result_file,
+                                  GetArtifactLocation(benchmark, target,
+                                                      options.version,
+                                                      'result.json'),
                                   outdir=options.outdir)
+
+                # Write metadata.
+                if utils.is_bot():
+                    meta_file = os.path.join(temp, "meta")
+                    with open(meta_file, 'w') as f:
+                        f.write("Produced by: " +
+                                os.environ.get('SWARMING_BOT_ID'))
+                    ArchiveOutputFile(meta_file,
+                                      GetArtifactLocation(
+                                          benchmark, target, options.version,
+                                          'meta'),
+                                      outdir=options.outdir)
 
     if utils.is_bot():
         upload_benchmark_data_to_google_storage.run()
