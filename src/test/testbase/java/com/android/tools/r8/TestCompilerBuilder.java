@@ -322,9 +322,9 @@ public abstract class TestCompilerBuilder<
           };
     }
 
-    if ((isD8TestBuilder() || isR8TestBuilder()) && !isBenchmarkRunner) {
+    if (isD8TestBuilder() || isR8TestBuilder()) {
       addOptionsModification(
-          o -> o.getArtProfileOptions().setEnableCompletenessCheckForTesting(true));
+          o -> o.getArtProfileOptions().setEnableCompletenessCheckForTesting(!isBenchmarkRunner));
     }
 
     builder.setOptimizeMultidexForLinearAlloc(optimizeMultidexForLinearAlloc);

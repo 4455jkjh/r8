@@ -25,7 +25,11 @@ public class ConcreteClassTypeValueState extends ConcreteReferenceTypeValueState
   private DynamicType dynamicType;
 
   public ConcreteClassTypeValueState(InFlow inFlow) {
-    this(AbstractValue.bottom(), DynamicType.bottom(), SetUtils.newHashSet(inFlow));
+    this(SetUtils.newHashSet(inFlow));
+  }
+
+  public ConcreteClassTypeValueState(Set<InFlow> inFlow) {
+    this(AbstractValue.bottom(), DynamicType.bottom(), inFlow);
   }
 
   public ConcreteClassTypeValueState(AbstractValue abstractValue, DynamicType dynamicType) {
@@ -79,6 +83,11 @@ public class ConcreteClassTypeValueState extends ConcreteReferenceTypeValueState
   @Override
   public BottomValueState getCorrespondingBottom() {
     return bottomClassTypeState();
+  }
+
+  @Override
+  public UnusedValueState getCorrespondingUnused() {
+    return unusedClassTypeState();
   }
 
   @Override
@@ -155,7 +164,8 @@ public class ConcreteClassTypeValueState extends ConcreteReferenceTypeValueState
     if (widenInFlow(appView)) {
       return unknown();
     }
-    if (abstractValueChanged || dynamicTypeChanged || inFlowChanged) {
+    boolean unusedChanged = mutableJoinUnused(inState);
+    if (abstractValueChanged || dynamicTypeChanged || inFlowChanged || unusedChanged) {
       onChangedAction.execute();
     }
     return this;

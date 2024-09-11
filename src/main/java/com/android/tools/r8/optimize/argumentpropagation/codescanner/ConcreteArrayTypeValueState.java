@@ -23,7 +23,11 @@ public class ConcreteArrayTypeValueState extends ConcreteReferenceTypeValueState
   private Nullability nullability;
 
   public ConcreteArrayTypeValueState(InFlow inFlow) {
-    this(Nullability.bottom(), SetUtils.newHashSet(inFlow));
+    this(SetUtils.newHashSet(inFlow));
+  }
+
+  public ConcreteArrayTypeValueState(Set<InFlow> inFlow) {
+    this(Nullability.bottom(), inFlow);
   }
 
   public ConcreteArrayTypeValueState(Nullability nullability) {
@@ -62,6 +66,11 @@ public class ConcreteArrayTypeValueState extends ConcreteReferenceTypeValueState
   @Override
   public BottomValueState getCorrespondingBottom() {
     return bottomArrayTypeState();
+  }
+
+  @Override
+  public UnusedValueState getCorrespondingUnused() {
+    return unusedArrayTypeState();
   }
 
   @Override
@@ -124,7 +133,8 @@ public class ConcreteArrayTypeValueState extends ConcreteReferenceTypeValueState
     if (widenInFlow(appView)) {
       return unknown();
     }
-    if (nullabilityChanged || inFlowChanged) {
+    boolean unusedChanged = mutableJoinUnused(inState);
+    if (nullabilityChanged || inFlowChanged || unusedChanged) {
       onChangedAction.execute();
     }
     return this;

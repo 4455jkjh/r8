@@ -32,7 +32,11 @@ public class ConcretePrimitiveTypeValueState extends ConcreteValueState {
   }
 
   public ConcretePrimitiveTypeValueState(InFlow inFlow) {
-    this(AbstractValue.bottom(), SetUtils.newHashSet(inFlow));
+    this(SetUtils.newHashSet(inFlow));
+  }
+
+  public ConcretePrimitiveTypeValueState(Set<InFlow> inFlow) {
+    this(AbstractValue.bottom(), inFlow);
   }
 
   public static NonEmptyValueState create(AbstractValue abstractValue) {
@@ -74,7 +78,8 @@ public class ConcretePrimitiveTypeValueState extends ConcreteValueState {
     if (widenInFlow(appView)) {
       return unknown();
     }
-    if (abstractValueChanged || inFlowChanged) {
+    boolean unusedChanged = mutableJoinUnused(state);
+    if (abstractValueChanged || inFlowChanged || unusedChanged) {
       onChangedAction.execute();
     }
     return this;
@@ -102,6 +107,11 @@ public class ConcretePrimitiveTypeValueState extends ConcreteValueState {
   @Override
   public BottomValueState getCorrespondingBottom() {
     return bottomPrimitiveTypeState();
+  }
+
+  @Override
+  public UnusedValueState getCorrespondingUnused() {
+    return unusedPrimitiveTypeState();
   }
 
   @Override

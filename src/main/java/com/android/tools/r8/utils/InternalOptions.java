@@ -76,6 +76,7 @@ import com.android.tools.r8.ir.desugar.desugaredlibrary.machinespecification.Mac
 import com.android.tools.r8.ir.desugar.nest.Nest;
 import com.android.tools.r8.ir.optimize.Inliner;
 import com.android.tools.r8.ir.optimize.enums.EnumDataMap;
+import com.android.tools.r8.metadata.D8BuildMetadata;
 import com.android.tools.r8.metadata.R8BuildMetadata;
 import com.android.tools.r8.naming.ClassNameMapper;
 import com.android.tools.r8.naming.MapConsumer;
@@ -253,7 +254,8 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
   private GlobalSyntheticsConsumer globalSyntheticsConsumer = null;
   private SyntheticInfoConsumer syntheticInfoConsumer = null;
 
-  public Consumer<? super R8BuildMetadata> buildMetadataConsumer = null;
+  public Consumer<? super D8BuildMetadata> d8BuildMetadataConsumer = null;
+  public Consumer<? super R8BuildMetadata> r8BuildMetadataConsumer = null;
   public DataResourceConsumer dataResourceConsumer;
   public FeatureSplitConfiguration featureSplitConfiguration;
 
@@ -939,8 +941,7 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
    * If any non-static class merging is enabled, information about types referred to by instanceOf
    * and check cast instructions needs to be collected.
    */
-  public boolean isClassMergingExtensionRequired(Enqueuer.Mode mode) {
-    assert mode.isFinalTreeShaking();
+  public boolean isClassMergingExtensionRequired() {
     WholeProgramOptimizations wholeProgramOptimizations = WholeProgramOptimizations.ON;
     return horizontalClassMergerOptions.isEnabled(wholeProgramOptimizations)
         && !horizontalClassMergerOptions.isRestrictedToSynthetics();
@@ -1719,6 +1720,11 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
   public class CallSiteOptimizationOptions {
 
     private boolean enabled = true;
+    // Unsound optimization for Composable argument removal. Do not enable except for running
+    // experiments.
+    private boolean enableComposableArgumentRemoval =
+        SystemPropertyUtils.parseSystemPropertyForDevelopmentOrDefault(
+            "com.android.tools.r8.enableComposableArgumentRemoval", false);
     private boolean enableMethodStaticizing = true;
 
     private boolean forceSyntheticsForInstanceInitializers = false;
@@ -1736,6 +1742,10 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
         return false;
       }
       return enabled;
+    }
+
+    public boolean isComposableArgumentRemovalEnabled() {
+      return enableComposableArgumentRemoval;
     }
 
     public boolean isForceSyntheticsForInstanceInitializersEnabled() {

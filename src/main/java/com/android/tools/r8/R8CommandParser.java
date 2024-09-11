@@ -13,6 +13,7 @@ import com.android.tools.r8.origin.PathOrigin;
 import com.android.tools.r8.profile.art.ArtProfileConsumerUtils;
 import com.android.tools.r8.profile.art.ArtProfileProviderUtils;
 import com.android.tools.r8.profile.startup.StartupProfileProviderUtils;
+import com.android.tools.r8.utils.ArchiveResourceProvider;
 import com.android.tools.r8.utils.FlagFile;
 import com.android.tools.r8.utils.MapIdTemplateProvider;
 import com.android.tools.r8.utils.SourceFileTemplateProvider;
@@ -377,22 +378,25 @@ public class R8CommandParser extends BaseCompilerCommandParser<R8Command, R8Comm
         builder.addProgramFiles(Paths.get(arg));
       }
     }
-    addFeatureSplitConfigs(builder, featureSplitConfigCollector.getConfigs());
+    addFeatureSplitConfigs(
+        builder, featureSplitConfigCollector.getConfigs(), state.includeDataResources);
   }
 
   private void addFeatureSplitConfigs(
-      R8Command.Builder builder, Collection<FeatureSplitConfig> featureSplitConfigs) {
+      R8Command.Builder builder,
+      Collection<FeatureSplitConfig> featureSplitConfigs,
+      boolean includeDataResources) {
     for (FeatureSplitConfig featureSplitConfig : featureSplitConfigs) {
       builder.addFeatureSplit(
           featureSplitGenerator -> {
             if (featureSplitConfig.outputJar != null) {
               featureSplitGenerator.setProgramConsumer(
                   builder.createProgramOutputConsumer(
-                      featureSplitConfig.outputJar, OutputMode.DexIndexed, true));
+                      featureSplitConfig.outputJar, OutputMode.DexIndexed, includeDataResources));
             }
             for (Path inputPath : featureSplitConfig.inputJars) {
               featureSplitGenerator.addProgramResourceProvider(
-                  ArchiveProgramResourceProvider.fromArchive(inputPath));
+                  ArchiveResourceProvider.fromArchive(inputPath, false));
             }
             if (featureSplitConfig.inputResources != null) {
               featureSplitGenerator.setAndroidResourceProvider(

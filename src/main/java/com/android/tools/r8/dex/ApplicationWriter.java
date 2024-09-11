@@ -15,6 +15,7 @@ import com.android.tools.r8.DataResourceProvider;
 import com.android.tools.r8.DataResourceProvider.Visitor;
 import com.android.tools.r8.DexFilePerClassFileConsumer;
 import com.android.tools.r8.DexIndexedConsumer;
+import com.android.tools.r8.FeatureSplit;
 import com.android.tools.r8.ProgramConsumer;
 import com.android.tools.r8.ResourceException;
 import com.android.tools.r8.SourceFileEnvironment;
@@ -79,6 +80,7 @@ import com.google.common.collect.ObjectArrays;
 import it.unimi.dsi.fastutil.objects.Reference2LongMap;
 import it.unimi.dsi.fastutil.objects.Reference2LongOpenHashMap;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
@@ -88,6 +90,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.function.Consumer;
@@ -671,10 +674,10 @@ public class ApplicationWriter {
     KotlinModuleSynthesizer kotlinModuleSynthesizer = new KotlinModuleSynthesizer(appView);
 
     DataResourceConsumer dataResourceConsumer = options.dataResourceConsumer;
+    ResourceAdapter resourceAdapter = new ResourceAdapter(appView);
     if (dataResourceConsumer != null) {
       ImmutableList<DataResourceProvider> dataResourceProviders =
           appView.app().dataResourceProviders;
-      ResourceAdapter resourceAdapter = new ResourceAdapter(appView);
       adaptAndPassDataResources(
           options,
           dataResourceConsumer,
@@ -682,31 +685,7 @@ public class ApplicationWriter {
           resourceAdapter,
           kotlinModuleSynthesizer);
 
-      // Write the META-INF/services resources. Sort on service names and keep the order from
-      // the input for the implementation lines for deterministic output.
-      if (!appView.appServices().isEmpty()) {
-        NamingLens namingLens = appView.getNamingLens();
-        appView
-            .appServices()
-            .visit(
-                (DexType service, List<DexType> implementations) -> {
-                  String serviceName =
-                      DescriptorUtils.descriptorToJavaType(
-                          namingLens.lookupDescriptor(service).toString());
-                  dataResourceConsumer.accept(
-                      DataEntryResource.fromBytes(
-                          StringUtils.lines(
-                                  implementations.stream()
-                                      .map(namingLens::lookupDescriptor)
-                                      .map(DexString::toString)
-                                      .map(DescriptorUtils::descriptorToJavaType)
-                                      .collect(Collectors.toList()))
-                              .getBytes(),
-                          AppServices.SERVICE_DIRECTORY_NAME + serviceName,
-                          Origin.unknown()),
-                      reporter);
-                });
-      }
+      addServiceResources(FeatureSplit.BASE, appView, reporter, dataResourceConsumer);
       // Rewrite/synthesize kotlin_module files
       kotlinModuleSynthesizer
           .synthesizeKotlinModuleFiles()
@@ -716,20 +695,58 @@ public class ApplicationWriter {
     if (options.featureSplitConfiguration != null) {
       for (DataResourceProvidersAndConsumer entry :
           options.featureSplitConfiguration.getDataResourceProvidersAndConsumers()) {
-        ResourceAdapter resourceAdapter = new ResourceAdapter(appView);
         adaptAndPassDataResources(
-            options,
-            entry.getConsumer(),
-            entry.getProviders(),
-            resourceAdapter,
-            kotlinModuleSynthesizer);
+            options, entry.consumer, entry.providers, resourceAdapter, kotlinModuleSynthesizer);
+        addServiceResources(entry.featureSplit, appView, reporter, entry.consumer);
       }
     }
 
-    if (options.buildMetadataConsumer != null) {
+    if (options.d8BuildMetadataConsumer != null) {
+      assert !appView.hasClassHierarchy();
+      options.d8BuildMetadataConsumer.accept(
+          BuildMetadataFactory.create(appView.withoutClassHierarchy()));
+    }
+
+    if (options.r8BuildMetadataConsumer != null) {
       assert appView.hasClassHierarchy();
-      options.buildMetadataConsumer.accept(
+      options.r8BuildMetadataConsumer.accept(
           BuildMetadataFactory.create(appView.withClassHierarchy(), virtualFiles));
+    }
+  }
+
+  private static void addServiceResources(
+      FeatureSplit featureSplit,
+      AppView<?> appView,
+      Reporter reporter,
+      DataResourceConsumer dataResourceConsumer) {
+    // Write the META-INF/services resources. Sort on service names and keep the order from
+    // the input for the implementation lines for deterministic output.
+    NamingLens namingLens = appView.getNamingLens();
+    TreeMap<String, String> servicesFiles = new TreeMap<>();
+    appView
+        .appServices()
+        .visit(
+            featureSplit,
+            (DexType service, List<DexType> implementations) -> {
+              String serviceName =
+                  DescriptorUtils.descriptorToJavaType(
+                      namingLens.lookupDescriptor(service).toString());
+              servicesFiles.put(
+                  serviceName,
+                  StringUtils.lines(
+                      implementations.stream()
+                          .map(namingLens::lookupDescriptor)
+                          .map(DexString::toString)
+                          .map(DescriptorUtils::descriptorToJavaType)
+                          .collect(Collectors.toList())));
+            });
+    for (var entry : servicesFiles.entrySet()) {
+      dataResourceConsumer.accept(
+          DataEntryResource.fromBytes(
+              entry.getValue().getBytes(StandardCharsets.UTF_8),
+              AppServices.SERVICE_DIRECTORY_NAME + entry.getKey(),
+              Origin.unknown()),
+          reporter);
     }
   }
 
@@ -756,8 +773,13 @@ public class ApplicationWriter {
 
               @Override
               public void visit(DataEntryResource file) {
-                if (resourceAdapter.isService(file)) {
-                  // META-INF/services resources are handled below.
+                if ("META-INF/MANIFEST.MF".equals(file.getName())) {
+                  // Many android library input .jar files contain a MANIFEST.MF. It does not make
+                  // sense to propagate them since they are manifests of the input libraries.
+                  return;
+                }
+                if (file.getName().startsWith(AppServices.SERVICE_DIRECTORY_NAME)) {
+                  // META-INF/services resources are handled separately.
                   return;
                 }
                 if (kotlinModuleSynthesizer.isKotlinModuleFile(file)) {

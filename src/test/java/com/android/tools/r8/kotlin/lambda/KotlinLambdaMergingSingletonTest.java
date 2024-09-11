@@ -5,9 +5,7 @@
 package com.android.tools.r8.kotlin.lambda;
 
 import static com.android.tools.r8.KotlinCompilerTool.KotlinCompilerVersion.KOTLINC_1_9_21;
-import static com.android.tools.r8.KotlinCompilerTool.KotlinCompilerVersion.KOTLINC_2_0_20;
 import static junit.framework.TestCase.assertEquals;
-import static org.hamcrest.CoreMatchers.containsString;
 import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 
@@ -71,14 +69,11 @@ public class KotlinLambdaMergingSingletonTest extends KotlinTestBase {
         KotlinLambdasInInput.create(getProgramFiles(), getTestName());
     assertEquals(
         kotlinParameters.getLambdaGeneration().isInvokeDynamic()
-                && kotlinParameters.getCompilerVersion().isLessThanOrEqualTo(KOTLINC_2_0_20)
             ? 8
             : 2,
         lambdasInInput.getNumberOfJStyleLambdas());
     assertEquals(
-        kotlinParameters.getLambdaGeneration().isInvokeDynamic()
-            ? (kotlinParameters.getCompilerVersion().isLessThanOrEqualTo(KOTLINC_2_0_20) ? 0 : 6)
-            : 7,
+        kotlinParameters.getLambdaGeneration().isInvokeDynamic() ? 0 : 7,
         lambdasInInput.getNumberOfKStyleLambdas());
 
     testForR8(parameters.getBackend())
@@ -86,12 +81,9 @@ public class KotlinLambdaMergingSingletonTest extends KotlinTestBase {
         .addKeepMainRule(getMainClassName())
         .addHorizontallyMergedClassesInspector(inspector -> inspect(inspector, lambdasInInput))
         .allowAccessModification(allowAccessModification)
-        .allowDiagnosticWarningMessages()
         .noClassInlining()
         .setMinApi(parameters)
         .compile()
-        .assertAllWarningMessagesMatch(
-            containsString("Resource 'META-INF/MANIFEST.MF' already exists."))
         .inspect(inspector -> inspect(inspector, lambdasInInput))
         .run(parameters.getRuntime(), getMainClassName())
         .assertSuccessWithOutput(getExpectedOutput());

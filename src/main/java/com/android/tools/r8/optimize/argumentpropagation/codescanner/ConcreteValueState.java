@@ -27,6 +27,7 @@ public abstract class ConcreteValueState extends NonEmptyValueState {
   }
 
   private Set<InFlow> inFlow;
+  private boolean unused;
 
   ConcreteValueState(Set<InFlow> inFlow) {
     this.inFlow = inFlow;
@@ -54,11 +55,25 @@ public abstract class ConcreteValueState extends NonEmptyValueState {
     }
   }
 
+  public static ConcreteValueState create(DexType staticType, Set<InFlow> inFlow) {
+    if (staticType.isArrayType()) {
+      return new ConcreteArrayTypeValueState(inFlow);
+    } else if (staticType.isClassType()) {
+      return new ConcreteClassTypeValueState(inFlow);
+    } else {
+      assert staticType.isPrimitiveType();
+      return new ConcretePrimitiveTypeValueState(inFlow);
+    }
+  }
+
   public ValueState clearInFlow() {
     if (hasInFlow()) {
       internalClearInFlow();
       if (isEffectivelyBottom()) {
         return getCorrespondingBottom();
+      }
+      if (isEffectivelyUnused()) {
+        return getCorrespondingUnused();
       }
     }
     assert !isEffectivelyBottom();
@@ -98,12 +113,22 @@ public abstract class ConcreteValueState extends NonEmptyValueState {
     return traversalContinuation;
   }
 
+  public boolean hasSeenUnused() {
+    return unused;
+  }
+
   public abstract BottomValueState getCorrespondingBottom();
+
+  public abstract UnusedValueState getCorrespondingUnused();
 
   public abstract ConcreteParameterStateKind getKind();
 
   public final boolean isEffectivelyBottom() {
-    return isEffectivelyBottomIgnoringInFlow() && !hasInFlow();
+    return !hasInFlow() && isEffectivelyBottomIgnoringInFlow() && !hasSeenUnused();
+  }
+
+  public final boolean isEffectivelyUnused() {
+    return !hasInFlow() && isEffectivelyBottomIgnoringInFlow() && hasSeenUnused();
   }
 
   public abstract boolean isEffectivelyBottomIgnoringInFlow();
@@ -145,11 +170,14 @@ public abstract class ConcreteValueState extends NonEmptyValueState {
       DexType outStaticType,
       StateCloner cloner,
       Action onChangedAction) {
-    if (inState.isBottom() || inState.isUnused()) {
+    if (inState.isBottom()) {
       return this;
     }
     if (inState.isUnknown()) {
       return unknown();
+    }
+    if (inState.isUnused()) {
+      return mutableJoinUnused(inState.asUnused());
     }
     ConcreteValueState concreteState = inState.asConcrete();
     if (isReferenceState()) {
@@ -179,6 +207,20 @@ public abstract class ConcreteValueState extends NonEmptyValueState {
       inFlow = new HashSet<>();
     }
     return inFlow.addAll(otherInFlow);
+  }
+
+  public boolean mutableJoinUnused(ConcreteValueState other) {
+    if (!unused && other.unused) {
+      unused = true;
+      return true;
+    }
+    return false;
+  }
+
+  public ConcreteValueState mutableJoinUnused(UnusedValueState witness) {
+    assert witness != null;
+    unused = true;
+    return this;
   }
 
   /**
