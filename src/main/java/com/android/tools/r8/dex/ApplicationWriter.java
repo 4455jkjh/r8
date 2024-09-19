@@ -48,7 +48,7 @@ import com.android.tools.r8.graph.EnclosingMethodAttribute;
 import com.android.tools.r8.graph.InnerClassAttribute;
 import com.android.tools.r8.graph.ObjectToOffsetMapping;
 import com.android.tools.r8.graph.ParameterAnnotationsList;
-import com.android.tools.r8.metadata.BuildMetadataFactory;
+import com.android.tools.r8.metadata.impl.BuildMetadataFactory;
 import com.android.tools.r8.naming.KotlinModuleSynthesizer;
 import com.android.tools.r8.naming.NamingLens;
 import com.android.tools.r8.naming.ProguardMapSupplier.ProguardMapId;
@@ -647,6 +647,7 @@ public class ApplicationWriter {
       ((DexIndexedConsumer) consumer)
           .accept(virtualFile.getId(), data, virtualFile.getClassDescriptors(), options.reporter);
     }
+    virtualFile.calculateChecksumForBuildMetadata(data, options);
     timing.end();
     // Release use of the backing buffer now that accept has returned.
     data.invalidate();

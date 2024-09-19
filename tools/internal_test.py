@@ -116,6 +116,8 @@ TEST_COMMANDS = [
         'tools/test.py', '--only_internal', '--slow_tests',
         '--java_max_memory_size=8G'
     ],
+    # Run internal benchmarks.
+    ['tools/perf.py', '--internal', '--iterations-inner', '3'],
     # Ensure that all internal apps compile.
     ['tools/run_on_app.py', '--run-all', '--out=out', '--workers', '3'],
 ]

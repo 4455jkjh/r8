@@ -15,7 +15,8 @@ import utils
 if utils.is_bot():
     import upload_benchmark_data_to_google_storage
 
-BENCHMARKS = {
+# A collection of benchmarks that should be run on the perf bot.
+EXTERNAL_BENCHMARKS = {
     'ChromeApp': {
         'targets': ['r8-full']
     },
@@ -80,6 +81,18 @@ BENCHMARKS = {
         'targets': ['r8-full']
     },
 }
+# A collection of internal benchmarks that should be run on the internal bot.
+INTERNAL_BENCHMARKS = {
+    'SystemUIApp': {'targets': ['r8-full']},
+}
+# A collection of benchmarks that should not be run on the bots, but can be used
+# for running locally.
+LOCAL_BENCHMARKS = {
+    'SystemUIAppTreeShaking': {'targets': ['r8-full']}}
+ALL_BENCHMARKS = {}
+ALL_BENCHMARKS.update(EXTERNAL_BENCHMARKS)
+ALL_BENCHMARKS.update(INTERNAL_BENCHMARKS)
+ALL_BENCHMARKS.update(LOCAL_BENCHMARKS)
 BUCKET = "r8-perf-results"
 SAMPLE_BENCHMARK_RESULT_JSON = {
     'benchmark_name': '<benchmark_name>',
@@ -100,6 +113,10 @@ def ParseOptions():
     result.add_argument('--benchmark',
                         help='Specific benchmark(s) to measure.',
                         action='append')
+    result.add_argument('--internal',
+                        help='Run internal benchmarks.',
+                        action='store_true',
+                        default=False)
     result.add_argument('--iterations',
                         help='How many times run_benchmark is run.',
                         type=int,
@@ -124,10 +141,16 @@ def ParseOptions():
                         default=False)
     result.add_argument('--version',
                         '-v',
-                        help='Use R8 hash for the run (default local build)',
-                        default=None)
+                        help='Use R8 hash for the run (default local build)')
+    result.add_argument('--version-jar',
+                        help='The r8lib.jar for the given version.')
     options, args = result.parse_known_args()
-    options.benchmarks = options.benchmark or BENCHMARKS.keys()
+    if options.benchmark:
+        options.benchmarks = options.benchmark
+    elif options.internal:
+        options.benchmarks = INTERNAL_BENCHMARKS.keys()
+    else:
+        options.benchmarks = EXTERNAL_BENCHMARKS.keys()
     options.quiet = not options.verbose
     del options.benchmark
     return options, args
@@ -140,13 +163,13 @@ def Build(options):
     subprocess.check_call(build_cmd)
 
 
-def GetRunCmd(benchmark, target, options, args):
+def GetRunCmd(benchmark, target, options, args, r8jar=None):
     base_cmd = [
         'tools/run_benchmark.py', '--benchmark', benchmark, '--target', target
     ]
     if options.verbose:
         base_cmd.append('--verbose')
-    if options.version:
+    if options.version and r8jar is not None:
         base_cmd.extend(
             ['--version', options.version, '--version-jar', r8jar, '--nolib'])
     return base_cmd + args
@@ -225,10 +248,12 @@ def main():
         if options.version:
             # Download r8.jar once instead of once per run_benchmark.py invocation.
             download_options = argparse.Namespace(no_build=True, nolib=True)
-            r8jar = compiledump.download_distribution(options.version,
-                                                      download_options, temp)
+            r8jar = options.version_jar or compiledump.download_distribution(
+                options.version, download_options, temp)
+        else:
+            r8jar = None
         for benchmark in options.benchmarks:
-            benchmark_info = BENCHMARKS[benchmark]
+            benchmark_info = ALL_BENCHMARKS[benchmark]
             targets = [options.target
                       ] if options.target else benchmark_info['targets']
             for target in targets:
@@ -274,13 +299,14 @@ def main():
                         '--iterations',
                         str(options.iterations_inner), '--output',
                         benchmark_result_file, '--no-build'
-                    ])
+                    ], r8jar)
                     try:
                         subprocess.check_call(iteration_cmd)
                         if sub_benchmarks_for_target:
                             for sub_benchmark in sub_benchmarks_for_target:
                                 sub_benchmark_result_file = os.path.join(
-                                    benchmark_result_file, benchmark + sub_benchmark)
+                                    benchmark_result_file,
+                                    benchmark + sub_benchmark)
                                 benchmark_result_json_files[
                                     sub_benchmark].append(
                                         sub_benchmark_result_file)
@@ -319,8 +345,9 @@ def main():
                                           'meta'),
                                       outdir=options.outdir)
 
-    if utils.is_bot():
-        upload_benchmark_data_to_google_storage.run()
+    # Only upload benchmark data when running on the perf bot.
+    if utils.is_bot() and not options.internal:
+        upload_benchmark_data_to_google_storage.run_bucket()
 
     if any_failed:
         return 1
