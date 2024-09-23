@@ -3,11 +3,13 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8.shaking;
 
+import static com.android.tools.r8.graph.DexProgramClass.asProgramClassOrNull;
+import static com.google.common.base.Predicates.alwaysTrue;
+
 import com.android.tools.r8.errors.Unreachable;
 import com.android.tools.r8.graph.AppInfoWithClassHierarchy;
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.ClassResolutionResult;
-import com.android.tools.r8.graph.DexClass;
 import com.android.tools.r8.graph.DexDefinitionSupplier;
 import com.android.tools.r8.graph.DexItemFactory;
 import com.android.tools.r8.graph.DexProgramClass;
@@ -15,14 +17,14 @@ import com.android.tools.r8.graph.DexType;
 import com.android.tools.r8.graph.SubtypingInfo;
 import com.android.tools.r8.origin.Origin;
 import com.android.tools.r8.position.Position;
+import com.android.tools.r8.shaking.ProguardWildcard.BackReference;
 import com.android.tools.r8.utils.BooleanBox;
 import com.android.tools.r8.utils.IterableUtils;
 import com.android.tools.r8.utils.StringUtils;
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
-import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
+import java.util.function.Predicate;
 
 public abstract class ProguardConfigurationRule extends ProguardClassSpecification {
 
@@ -149,47 +151,53 @@ public abstract class ProguardConfigurationRule extends ProguardClassSpecificati
   Iterable<DexProgramClass> relevantCandidatesForRule(
       AppView<? extends AppInfoWithClassHierarchy> appView,
       SubtypingInfo subtypingInfo,
-      Iterable<DexProgramClass> defaultValue) {
-    List<DexType> specificTypes = getClassNames().asSpecificDexTypes();
-    if (specificTypes != null) {
-      return DexProgramClass.asProgramClasses(
-          specificTypes,
-          new DexDefinitionSupplier() {
-            @Override
-            public ClassResolutionResult contextIndependentDefinitionForWithResolutionResult(
-                DexType type) {
-              throw new Unreachable("Add support for multiple definitions with rule evaluation");
-            }
-
-            @Override
-            public DexClass definitionFor(DexType type) {
-              if (canReferenceDeadTypes) {
-                return appView.appInfo().definitionForWithoutExistenceAssert(type);
-              }
-              return appView.definitionFor(type);
-            }
-
-            @Override
-            public DexItemFactory dexItemFactory() {
-              return appView.dexItemFactory();
-            }
-          });
-    }
-    if (hasInheritanceClassName() && getInheritanceClassName().hasSpecificType()) {
+      Iterable<DexProgramClass> defaultValue,
+      Predicate<DexProgramClass> isRelevant) {
+    Iterable<DexType> specificTypes;
+    if (getClassNames().hasSpecificTypes()) {
+      specificTypes = getClassNames().getSpecificTypes();
+    } else if (hasInheritanceClassName() && getInheritanceClassName().hasSpecificType()) {
       DexType type = getInheritanceClassName().getSpecificType();
       if (appView.getVerticallyMergedClasses() != null
           && appView.getVerticallyMergedClasses().hasBeenMergedIntoSubtype(type)) {
         DexType target = appView.getVerticallyMergedClasses().getTargetFor(type);
-        DexClass clazz = appView.definitionFor(target);
-        assert clazz != null && clazz.isProgramClass();
-        return Iterables.concat(
-            ImmutableList.of(clazz.asProgramClass()),
-            DexProgramClass.asProgramClasses(subtypingInfo.subtypes(type), appView));
+        DexProgramClass clazz = asProgramClassOrNull(appView.definitionFor(target));
+        assert clazz != null;
+        specificTypes = IterableUtils.append(subtypingInfo.subtypes(type), clazz.getType());
       } else {
-        return DexProgramClass.asProgramClasses(subtypingInfo.subtypes(type), appView);
+        specificTypes = subtypingInfo.subtypes(type);
       }
+    } else {
+      return defaultValue;
     }
-    return defaultValue;
+    assert specificTypes != null;
+    return DexProgramClass.asProgramClasses(
+        specificTypes,
+        new DexDefinitionSupplier() {
+          @Override
+          public ClassResolutionResult contextIndependentDefinitionForWithResolutionResult(
+              DexType type) {
+            throw new Unreachable("Add support for multiple definitions with rule evaluation");
+          }
+
+          @Override
+          public DexProgramClass definitionFor(DexType type) {
+            DexProgramClass result =
+                asProgramClassOrNull(
+                    canReferenceDeadTypes
+                        ? appView.appInfo().definitionForWithoutExistenceAssert(type)
+                        : appView.definitionFor(type));
+            if (result != null && isRelevant.test(result)) {
+              return result;
+            }
+            return null;
+          }
+
+          @Override
+          public DexItemFactory dexItemFactory() {
+            return appView.dexItemFactory();
+          }
+        });
   }
 
   abstract String typeString();
@@ -206,16 +214,29 @@ public abstract class ProguardConfigurationRule extends ProguardClassSpecificati
     return false;
   }
 
-  protected Iterable<ProguardWildcard> getWildcards() {
-    List<ProguardMemberRule> memberRules = getMemberRules();
+  protected boolean hasBackReferences() {
+    return !Iterables.isEmpty(getBackReferences());
+  }
+
+  public Iterable<BackReference> getBackReferences() {
+    return getWildcardsThatMatches(ProguardWildcard::isBackReference);
+  }
+
+  protected final Iterable<ProguardWildcard> getWildcards() {
+    return getWildcardsThatMatches(alwaysTrue());
+  }
+
+  protected <T extends ProguardWildcard> Iterable<T> getWildcardsThatMatches(
+      Predicate<? super ProguardWildcard> predicate) {
     return Iterables.concat(
-        ProguardTypeMatcher.getWildcardsOrEmpty(getClassAnnotations()),
-        ProguardClassNameList.getWildcardsOrEmpty(getClassNames()),
-        ProguardTypeMatcher.getWildcardsOrEmpty(getInheritanceAnnotations()),
-        ProguardTypeMatcher.getWildcardsOrEmpty(getInheritanceClassName()),
-        memberRules == null
-            ? Collections::emptyIterator
-            : IterableUtils.flatMap(memberRules, ProguardMemberRule::getWildcards));
+        ProguardTypeMatcher.getWildcardsThatMatchesOrEmpty(getClassAnnotations(), predicate),
+        ProguardClassNameList.getWildcardsThatMatchesOrEmpty(getClassNames(), predicate),
+        ProguardTypeMatcher.getWildcardsThatMatchesOrEmpty(getInheritanceAnnotations(), predicate),
+        ProguardTypeMatcher.getWildcardsThatMatchesOrEmpty(getInheritanceClassName(), predicate),
+        hasMemberRules()
+            ? IterableUtils.flatMap(
+                getMemberRules(), memberRule -> memberRule.getWildcardsThatMatches(predicate))
+            : IterableUtils.empty());
   }
 
   @Override

@@ -33,7 +33,6 @@ import com.android.tools.r8.graph.LazyLoadedDexApplication;
 import com.android.tools.r8.graph.ProgramDefinition;
 import com.android.tools.r8.graph.PrunedItems;
 import com.android.tools.r8.graph.SubtypingInfo;
-import com.android.tools.r8.graph.analysis.ClassInitializerAssertionEnablingAnalysis;
 import com.android.tools.r8.horizontalclassmerging.HorizontalClassMerger;
 import com.android.tools.r8.inspector.internal.InspectorImpl;
 import com.android.tools.r8.ir.conversion.IRConverter;
@@ -49,12 +48,10 @@ import com.android.tools.r8.ir.desugar.itf.InterfaceMethodRewriter;
 import com.android.tools.r8.ir.desugar.records.RecordFieldValuesRewriter;
 import com.android.tools.r8.ir.desugar.records.RecordInstructionDesugaring;
 import com.android.tools.r8.ir.desugar.varhandle.VarHandleDesugaring;
-import com.android.tools.r8.ir.optimize.AssertionsRewriter;
 import com.android.tools.r8.ir.optimize.Inliner;
 import com.android.tools.r8.ir.optimize.NestReducer;
 import com.android.tools.r8.ir.optimize.SwitchMapCollector;
 import com.android.tools.r8.ir.optimize.enums.EnumUnboxingCfMethods;
-import com.android.tools.r8.ir.optimize.info.OptimizationFeedbackSimple;
 import com.android.tools.r8.ir.optimize.info.OptimizationInfoRemover;
 import com.android.tools.r8.ir.optimize.templates.CfUtilityMethodsForCodeOptimizations;
 import com.android.tools.r8.jar.CfApplicationWriter;
@@ -560,17 +557,17 @@ public class R8 {
             }
           }
 
+          if (options.isClassMergingExtensionRequired()) {
+            finalRuntimeTypeCheckInfoBuilder = new RuntimeTypeCheckInfo.Builder(appView);
+          }
           Enqueuer enqueuer =
               EnqueuerFactory.createForFinalTreeShaking(
                   appView,
                   executorService,
                   SubtypingInfo.create(appView),
                   keptGraphConsumer,
-                  prunedTypes);
-          if (options.isClassMergingExtensionRequired(enqueuer.getMode())) {
-            finalRuntimeTypeCheckInfoBuilder = new RuntimeTypeCheckInfo.Builder(appView);
-            finalRuntimeTypeCheckInfoBuilder.attach(enqueuer);
-          }
+                  prunedTypes,
+                  finalRuntimeTypeCheckInfoBuilder);
           EnqueuerResult enqueuerResult =
               enqueuer.traceApplication(appView.rootSet(), executorService, timing);
           appView.setAppInfo(enqueuerResult.getAppInfo());
@@ -946,34 +943,35 @@ public class R8 {
 
   private void shrinkResources(
       Map<String, byte[]> dexFileContent, AppView<AppInfoWithClassHierarchy> appView) {
-    LegacyResourceShrinker.Builder resourceShrinkerBuilder = LegacyResourceShrinker.builder();
     Reporter reporter = options.reporter;
-    dexFileContent.forEach(resourceShrinkerBuilder::addDexInput);
     try {
-      addResourcesToBuilder(
-          resourceShrinkerBuilder, reporter, options.androidResourceProvider, FeatureSplit.BASE);
-      if (options.featureSplitConfiguration != null) {
-        for (FeatureSplit featureSplit : options.featureSplitConfiguration.getFeatureSplits()) {
-          if (featureSplit.getAndroidResourceProvider() != null) {
-            addResourcesToBuilder(
-                resourceShrinkerBuilder,
-                reporter,
-                featureSplit.getAndroidResourceProvider(),
-                featureSplit);
-          }
-        }
-      }
-      if (options.androidResourceProguardMapStrings != null) {
-        resourceShrinkerBuilder.setProguardMapStrings(options.androidResourceProguardMapStrings);
-      }
-      resourceShrinkerBuilder.setShrinkerDebugReporter(
-          ResourceShrinkerUtils.shrinkerDebugReporterFromStringConsumer(
-              options.resourceShrinkerConfiguration.getDebugConsumer(), reporter));
-      LegacyResourceShrinker shrinker = resourceShrinkerBuilder.build();
       ShrinkerResult shrinkerResult;
-      if (options.resourceShrinkerConfiguration.isOptimizedShrinking()) {
+
+      if (appView.options().isOptimizedResourceShrinking()) {
         shrinkerResult = appView.getResourceShrinkerState().shrinkModel();
       } else {
+        LegacyResourceShrinker.Builder resourceShrinkerBuilder = LegacyResourceShrinker.builder();
+        dexFileContent.forEach(resourceShrinkerBuilder::addDexInput);
+        addResourcesToBuilder(
+            resourceShrinkerBuilder, reporter, options.androidResourceProvider, FeatureSplit.BASE);
+        if (options.featureSplitConfiguration != null) {
+          for (FeatureSplit featureSplit : options.featureSplitConfiguration.getFeatureSplits()) {
+            if (featureSplit.getAndroidResourceProvider() != null) {
+              addResourcesToBuilder(
+                  resourceShrinkerBuilder,
+                  reporter,
+                  featureSplit.getAndroidResourceProvider(),
+                  featureSplit);
+            }
+          }
+        }
+        if (options.androidResourceProguardMapStrings != null) {
+          resourceShrinkerBuilder.setProguardMapStrings(options.androidResourceProguardMapStrings);
+        }
+        resourceShrinkerBuilder.setShrinkerDebugReporter(
+            ResourceShrinkerUtils.shrinkerDebugReporterFromStringConsumer(
+                options.resourceShrinkerConfiguration.getDebugConsumer(), reporter));
+        LegacyResourceShrinker shrinker = resourceShrinkerBuilder.build();
         shrinkerResult = shrinker.run();
       }
       Set<String> toKeep = shrinkerResult.getResFolderEntriesToKeep();
@@ -1166,13 +1164,6 @@ public class R8 {
             appView, profileCollectionAdditions, executorService, subtypingInfo);
     enqueuer.setKeepDeclarations(keepDeclarations);
     enqueuer.setAnnotationRemoverBuilder(annotationRemoverBuilder);
-    if (AssertionsRewriter.isEnabled(appView.options())) {
-      ClassInitializerAssertionEnablingAnalysis analysis =
-          new ClassInitializerAssertionEnablingAnalysis(
-              appView, OptimizationFeedbackSimple.getInstance());
-      enqueuer.registerAnalysis(analysis);
-      enqueuer.registerFieldAccessAnalysis(analysis);
-    }
     timing.end();
     timing.begin("Trace application");
     EnqueuerResult enqueuerResult =

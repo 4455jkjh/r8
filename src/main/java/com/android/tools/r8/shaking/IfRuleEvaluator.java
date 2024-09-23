@@ -13,31 +13,33 @@ import com.android.tools.r8.graph.DexEncodedField;
 import com.android.tools.r8.graph.DexItemFactory;
 import com.android.tools.r8.graph.DexProgramClass;
 import com.android.tools.r8.graph.SubtypingInfo;
-import com.android.tools.r8.shaking.InlineRule.InlineRuleType;
-import com.android.tools.r8.shaking.RootSetUtils.ConsequentRootSet;
 import com.android.tools.r8.shaking.RootSetUtils.ConsequentRootSetBuilder;
 import com.android.tools.r8.shaking.RootSetUtils.RootSetBuilder;
+import com.android.tools.r8.shaking.ifrules.MaterializedSubsequentRulesOptimizer;
 import com.android.tools.r8.threading.TaskCollection;
-import com.android.tools.r8.utils.InternalOptions.TestingOptions.ProguardIfRuleEvaluationData;
+import com.android.tools.r8.utils.MapUtils;
+import com.android.tools.r8.utils.Pair;
+import com.android.tools.r8.utils.UncheckedExecutionException;
+import com.android.tools.r8.utils.collections.ProgramMethodSet;
 import com.google.common.base.Equivalence.Wrapper;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
+import java.util.function.BiPredicate;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 public class IfRuleEvaluator {
 
   private final AppView<? extends AppInfoWithClassHierarchy> appView;
+  private final DexItemFactory factory;
   private final SubtypingInfo subtypingInfo;
   private final Enqueuer enqueuer;
-  private final Map<Wrapper<ProguardIfRule>, Set<ProguardIfRule>> ifRules;
   private final ConsequentRootSetBuilder rootSetBuilder;
   private final TaskCollection<?> tasks;
 
@@ -45,29 +47,26 @@ public class IfRuleEvaluator {
       AppView<? extends AppInfoWithClassHierarchy> appView,
       SubtypingInfo subtypingInfo,
       Enqueuer enqueuer,
-      ExecutorService executorService,
-      Map<Wrapper<ProguardIfRule>, Set<ProguardIfRule>> ifRules,
-      ConsequentRootSetBuilder rootSetBuilder) {
+      ConsequentRootSetBuilder rootSetBuilder,
+      TaskCollection<?> tasks) {
+    assert tasks.isEmpty();
     this.appView = appView;
+    this.factory = appView.dexItemFactory();
     this.subtypingInfo = subtypingInfo;
     this.enqueuer = enqueuer;
-    this.ifRules = ifRules;
     this.rootSetBuilder = rootSetBuilder;
-    this.tasks = new TaskCollection<>(appView.options(), executorService);
+    this.tasks = tasks;
   }
 
-  public ConsequentRootSet run() throws ExecutionException {
-    appView.appInfo().app().timing.begin("Find consequent items for -if rules...");
-    try {
-      if (ifRules != null && !ifRules.isEmpty()) {
-        Iterator<Map.Entry<Wrapper<ProguardIfRule>, Set<ProguardIfRule>>> it =
-            ifRules.entrySet().iterator();
-        while (it.hasNext()) {
-          Map.Entry<Wrapper<ProguardIfRule>, Set<ProguardIfRule>> ifRuleEntry = it.next();
-          ProguardIfRule ifRuleKey = ifRuleEntry.getKey().get();
-          Set<ProguardIfRule> ifRulesInEquivalence = ifRuleEntry.getValue();
-          ProguardIfRuleEvaluationData ifRuleEvaluationData =
-              appView.options().testing.proguardIfRuleEvaluationData;
+  public void processActiveIfRulesWithMembers(
+      Map<Wrapper<ProguardIfRule>, Set<ProguardIfRule>> ifRules,
+      Iterable<DexProgramClass> classesWithNewlyLiveMembers,
+      Predicate<DexProgramClass> isEffectivelyLive)
+      throws ExecutionException {
+    MapUtils.removeIf(
+        ifRules,
+        (ifRuleWrapper, ifRulesInEquivalence) -> {
+          ProguardIfRule ifRuleKey = ifRuleWrapper.get();
           List<ProguardIfRule> toRemove = new ArrayList<>();
 
           // Depending on which types that trigger the -if rule, the application of the subsequent
@@ -75,47 +74,119 @@ public class IfRuleEvaluator {
           // rule and live types.
           for (DexProgramClass clazz :
               ifRuleKey.relevantCandidatesForRule(
-                  appView, subtypingInfo, appView.appInfo().classes())) {
-            if (!isEffectivelyLive(clazz)) {
-              continue;
-            }
-
-            // Check if the class matches the if-rule.
-            if (appView.options().testing.measureProguardIfRuleEvaluations) {
-              ifRuleEvaluationData.numberOfProguardIfRuleClassEvaluations++;
-            }
-            if (evaluateClassForIfRule(ifRuleKey, clazz)) {
-              // When matching an if rule against a type, the if-rule are filled with the current
-              // capture of wildcards. Propagate this down to member rules with same class part
-              // equivalence.
-              for (ProguardIfRule ifRule : ifRulesInEquivalence) {
-                registerClassCapture(ifRule, clazz, clazz);
-                if (appView.options().testing.measureProguardIfRuleEvaluations) {
-                  ifRuleEvaluationData.numberOfProguardIfRuleMemberEvaluations++;
-                }
-                boolean matched = evaluateIfRuleMembersAndMaterialize(ifRule, clazz);
-                if (matched && canRemoveSubsequentKeepRule(ifRule)) {
-                  toRemove.add(ifRule);
-                }
-              }
-            }
+                  appView, subtypingInfo, classesWithNewlyLiveMembers, isEffectivelyLive)) {
+            assert isEffectivelyLive.test(clazz);
+            processActiveIfRulesWithMembersAndSameClassPrecondition(
+                ifRuleKey, ifRulesInEquivalence, clazz, toRemove);
           }
           if (ifRulesInEquivalence.size() == toRemove.size()) {
-            it.remove();
-          } else if (!toRemove.isEmpty()) {
-            ifRulesInEquivalence.removeAll(toRemove);
+            return true;
           }
-        }
-        tasks.await();
-      }
-    } finally {
-      appView.appInfo().app().timing.end();
+          toRemove.forEach(ifRulesInEquivalence::remove);
+          return false;
+        });
+    tasks.await();
+  }
+
+  private void processActiveIfRulesWithMembersAndSameClassPrecondition(
+      ProguardIfRule ifRuleKey,
+      Set<ProguardIfRule> ifRulesInEquivalence,
+      DexProgramClass clazz,
+      List<ProguardIfRule> toRemove) {
+    // Check if the class matches the if-rule.
+    if (!evaluateClassForIfRule(ifRuleKey, clazz)) {
+      return;
     }
-    return rootSetBuilder.buildConsequentRootSet();
+    // When matching an if rule against a type, the if-rule are filled with the current
+    // capture of wildcards. Propagate this down to member rules with same class part
+    // equivalence.
+    for (ProguardIfRule ifRule : ifRulesInEquivalence) {
+      registerClassCapture(ifRule, clazz, clazz);
+      List<Pair<ProguardIfRulePreconditionMatch, ProguardKeepRule>> materializedSubsequentRules =
+          new ArrayList<>();
+      evaluateIfRuleMembersAndMaterialize(
+          ifRule,
+          clazz,
+          (ifRulePreconditionMatch, materializedSubsequentRule) -> {
+            materializedSubsequentRules.add(
+                new Pair<>(ifRulePreconditionMatch, materializedSubsequentRule));
+            if (canRemoveSubsequentKeepRule(ifRule)) {
+              toRemove.add(ifRule);
+              return true;
+            }
+            return false;
+          });
+      applyMaterializedSubsequentRules(ifRule, materializedSubsequentRules);
+    }
+  }
+
+  public void processActiveIfRulesWithoutMembers(
+      Map<Wrapper<ProguardIfRule>, Set<ProguardIfRule>> ifRules,
+      Iterable<DexProgramClass> newlyLiveClasses)
+      throws ExecutionException {
+    MapUtils.removeIf(
+        ifRules,
+        (ifRuleWrapper, ifRulesInEquivalence) -> {
+          // Depending on which types that trigger the -if rule, the application of the subsequent
+          // -keep rule may vary (due to back references). So, we need to try all pairs of -if
+          // rule and live types.
+          ProguardIfRule ifRuleKey = ifRuleWrapper.get();
+          List<DexProgramClass> classMatches = new ArrayList<>();
+          for (DexProgramClass clazz : newlyLiveClasses) {
+            if (evaluateClassForIfRule(ifRuleKey, clazz)) {
+              classMatches.add(clazz);
+            }
+          }
+          if (!classMatches.isEmpty()) {
+            ifRulesInEquivalence.removeIf(
+                ifRule -> processActiveIfRuleWithWithoutMembers(ifRule, classMatches));
+          }
+          return ifRulesInEquivalence.isEmpty();
+        });
+    tasks.await();
+  }
+
+  /**
+   * Returns true if the subsequent rule of {@param ifRule} has been fully evaluated, meaning it can
+   * be safely ignored for the remainder of the current tree shaking.
+   */
+  private boolean processActiveIfRuleWithWithoutMembers(
+      ProguardIfRule ifRule, List<DexProgramClass> classMatches) {
+    boolean isSubsequentRuleFullyEvaluated = false;
+    boolean noBackReferences = canRemoveSubsequentKeepRule(ifRule);
+    List<Pair<ProguardIfRulePreconditionMatch, ProguardKeepRule>> materializedSubsequentRules =
+        new ArrayList<>();
+    for (DexProgramClass clazz : classMatches) {
+      registerClassCapture(ifRule, clazz, clazz);
+      ProguardIfRulePreconditionMatch ifRulePreconditionMatch =
+          new ProguardIfRulePreconditionMatch(ifRule, clazz);
+      ifRulePreconditionMatch.disallowOptimizationsForReevaluation(enqueuer, rootSetBuilder);
+      ProguardKeepRule materializedSubsequentRule = ifRule.materialize(factory);
+      materializedSubsequentRules.add(
+          new Pair<>(ifRulePreconditionMatch, materializedSubsequentRule));
+      if (noBackReferences) {
+        isSubsequentRuleFullyEvaluated = true;
+        break;
+      }
+    }
+    applyMaterializedSubsequentRules(ifRule, materializedSubsequentRules);
+    return isSubsequentRuleFullyEvaluated;
+  }
+
+  private void incrementNumberOfProguardIfRuleClassEvaluations() {
+    if (appView.testing().measureProguardIfRuleEvaluations) {
+      appView.testing().proguardIfRuleEvaluationData.numberOfProguardIfRuleClassEvaluations++;
+    }
+  }
+
+  private void incrementNumberOfProguardIfRuleMemberEvaluations() {
+    if (appView.testing().measureProguardIfRuleEvaluations) {
+      appView.testing().proguardIfRuleEvaluationData.numberOfProguardIfRuleMemberEvaluations++;
+    }
   }
 
   private boolean canRemoveSubsequentKeepRule(ProguardIfRule rule) {
-    return Iterables.isEmpty(rule.subsequentRule.getWildcards());
+    return !rule.getSubsequentRule().hasBackReferences();
   }
 
   /**
@@ -135,12 +206,9 @@ public class IfRuleEvaluator {
     }
   }
 
-  private boolean isEffectivelyLive(DexProgramClass clazz) {
-    return enqueuer.isEffectivelyLive(clazz);
-  }
-
   /** Determines if {@param clazz} satisfies the given if-rule class specification. */
   private boolean evaluateClassForIfRule(ProguardIfRule rule, DexProgramClass clazz) {
+    incrementNumberOfProguardIfRuleClassEvaluations();
     if (!RootSetBuilder.satisfyClassType(rule, clazz)) {
       return false;
     }
@@ -162,13 +230,13 @@ public class IfRuleEvaluator {
     return true;
   }
 
-  private boolean evaluateIfRuleMembersAndMaterialize(ProguardIfRule rule, DexProgramClass clazz)
-      throws ExecutionException {
+  private void evaluateIfRuleMembersAndMaterialize(
+      ProguardIfRule rule,
+      DexProgramClass clazz,
+      BiPredicate<ProguardIfRulePreconditionMatch, ProguardKeepRule> materializedIfRuleConsumer) {
+    incrementNumberOfProguardIfRuleMemberEvaluations();
     Collection<ProguardMemberRule> memberKeepRules = rule.getMemberRules();
-    if (memberKeepRules.isEmpty()) {
-      materializeIfRule(rule, clazz);
-      return true;
-    }
+    assert !memberKeepRules.isEmpty();
 
     List<DexClassAndField> fieldsInlinedByJavaC = new ArrayList<>();
     Set<DexDefinition> filteredMembers = Sets.newIdentityHashSet();
@@ -223,7 +291,7 @@ public class IfRuleEvaluator {
 
     // If the number of member rules to hold is more than live members, we can't make it.
     if (filteredMembers.size() < memberKeepRules.size()) {
-      return false;
+      return;
     }
 
     // Depending on which members trigger the -if rule, the application of the subsequent
@@ -243,21 +311,32 @@ public class IfRuleEvaluator {
               .collect(Collectors.toList());
       // Member rules are combined as AND logic: if found unsatisfied member rule, this
       // combination of live members is not a good fit.
+      ProgramMethodSet methodsSatisfyingRule = ProgramMethodSet.create();
       boolean satisfied =
           memberKeepRules.stream()
               .allMatch(
-                  memberRule ->
-                      rootSetBuilder.ruleSatisfiedByFields(memberRule, fieldsInCombination)
-                          || rootSetBuilder.ruleSatisfiedByMethods(
-                              memberRule, methodsInCombination));
+                  memberRule -> {
+                    if (rootSetBuilder.ruleSatisfiedByFields(memberRule, fieldsInCombination)) {
+                      return true;
+                    }
+                    DexClassAndMethod methodSatisfyingRule =
+                        rootSetBuilder.getMethodSatisfyingRule(memberRule, methodsInCombination);
+                    if (methodSatisfyingRule != null) {
+                      methodsSatisfyingRule.add(methodSatisfyingRule.asProgramMethod());
+                      return true;
+                    }
+                    return false;
+                  });
       if (satisfied) {
-        materializeIfRule(rule, clazz);
-        if (canRemoveSubsequentKeepRule(rule)) {
-          return true;
+        ProguardIfRulePreconditionMatch ifRulePreconditionMatch =
+            new ProguardIfRulePreconditionMatch(rule, clazz, methodsSatisfyingRule);
+        ifRulePreconditionMatch.disallowOptimizationsForReevaluation(enqueuer, rootSetBuilder);
+        ProguardKeepRule materializedSubsequentRule = rule.materialize(factory);
+        if (materializedIfRuleConsumer.test(ifRulePreconditionMatch, materializedSubsequentRule)) {
+          return;
         }
       }
     }
-    return false;
   }
 
   private boolean isFieldInlinedByJavaC(DexEncodedField field) {
@@ -266,44 +345,29 @@ public class IfRuleEvaluator {
       // initial pass.
       return field.getIsInlinableByJavaC();
     }
-    return field.getOrComputeIsInlinableByJavaC(appView.dexItemFactory());
+    return field.getOrComputeIsInlinableByJavaC(factory);
   }
 
-  private void materializeIfRule(ProguardIfRule rule, DexProgramClass precondition)
-      throws ExecutionException {
-    DexItemFactory dexItemFactory = appView.dexItemFactory();
-    ProguardIfRule materializedRule = rule.materialize(dexItemFactory, precondition);
-
-    if (enqueuer.getMode().isInitialTreeShaking()
-        && !rule.isUsed()
-        && !rule.isTrivalAllClassMatch()) {
-      InlineRule neverInlineForClassInliningRuleForCondition =
-          materializedRule.neverInlineRuleForCondition(
-              dexItemFactory, InlineRuleType.NEVER_CLASS_INLINE);
-      if (neverInlineForClassInliningRuleForCondition != null) {
-        rootSetBuilder.runPerRule(tasks, neverInlineForClassInliningRuleForCondition, null);
-      }
-
-      // If the condition of the -if rule has any members, then we need to keep these members to
-      // ensure that the subsequent rule will be applied again in the second round of tree
-      // shaking.
-      InlineRule neverInlineRuleForCondition =
-          materializedRule.neverInlineRuleForCondition(dexItemFactory, InlineRuleType.NEVER);
-      if (neverInlineRuleForCondition != null) {
-        rootSetBuilder.runPerRule(tasks, neverInlineRuleForCondition, null);
-      }
-
-      rootSetBuilder
-          .getDependentMinimumKeepInfo()
-          .getOrCreateUnconditionalMinimumKeepInfoFor(precondition.getType())
-          .asClassJoiner()
-          .disallowClassInlining()
-          .disallowHorizontalClassMerging()
-          .disallowVerticalClassMerging();
+  private void applyMaterializedSubsequentRules(
+      ProguardIfRule ifRule,
+      List<Pair<ProguardIfRulePreconditionMatch, ProguardKeepRule>> materializedSubsequentRules) {
+    materializedSubsequentRules =
+        MaterializedSubsequentRulesOptimizer.optimize(ifRule, materializedSubsequentRules);
+    for (Pair<ProguardIfRulePreconditionMatch, ProguardKeepRule> pair :
+        materializedSubsequentRules) {
+      ProguardIfRulePreconditionMatch ifRulePreconditionMatch = pair.getFirst();
+      ProguardKeepRule materializedSubsequentRule = pair.getSecond();
+      applyMaterializedSubsequentRule(materializedSubsequentRule, ifRulePreconditionMatch);
     }
+  }
 
-    // Keep whatever is required by the -if rule.
-    rootSetBuilder.runPerRule(tasks, materializedRule.subsequentRule, materializedRule);
-    rule.markAsUsed();
+  private void applyMaterializedSubsequentRule(
+      ProguardKeepRule materializedSubsequentRule,
+      ProguardIfRulePreconditionMatch ifRulePreconditionMatch) {
+    try {
+      rootSetBuilder.runPerRule(tasks, materializedSubsequentRule, ifRulePreconditionMatch);
+    } catch (ExecutionException e) {
+      throw new UncheckedExecutionException(e);
+    }
   }
 }

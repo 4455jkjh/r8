@@ -88,19 +88,13 @@ import com.android.tools.r8.graph.ProgramMethod;
 import com.android.tools.r8.graph.SubtypingInfo;
 import com.android.tools.r8.graph.UseRegistry.MethodHandleUse;
 import com.android.tools.r8.graph.analysis.ApiModelAnalysis;
-import com.android.tools.r8.graph.analysis.EnqueuerAnalysis;
-import com.android.tools.r8.graph.analysis.EnqueuerCheckCastAnalysis;
-import com.android.tools.r8.graph.analysis.EnqueuerConstClassAnalysis;
-import com.android.tools.r8.graph.analysis.EnqueuerExceptionGuardAnalysis;
-import com.android.tools.r8.graph.analysis.EnqueuerFieldAccessAnalysis;
-import com.android.tools.r8.graph.analysis.EnqueuerInstanceOfAnalysis;
-import com.android.tools.r8.graph.analysis.EnqueuerInvokeAnalysis;
-import com.android.tools.r8.graph.analysis.EnqueuerNewInstanceAnalysis;
-import com.android.tools.r8.graph.analysis.EnqueuerTypeAccessAnalysis;
+import com.android.tools.r8.graph.analysis.ClassInitializerAssertionEnablingAnalysis;
+import com.android.tools.r8.graph.analysis.EnqueuerAnalysisCollection;
 import com.android.tools.r8.graph.analysis.GetArrayOfMissingTypeVerifyErrorWorkaround;
 import com.android.tools.r8.graph.analysis.InitializedClassesInInstanceMethodsAnalysis;
 import com.android.tools.r8.graph.analysis.InvokeVirtualToInterfaceVerifyErrorWorkaround;
 import com.android.tools.r8.graph.analysis.ResourceAccessAnalysis;
+import com.android.tools.r8.ir.analysis.proto.GeneratedMessageLiteBuilderShrinker;
 import com.android.tools.r8.ir.analysis.proto.ProtoEnqueuerUseRegistry;
 import com.android.tools.r8.ir.analysis.proto.schema.ProtoEnqueuerExtension;
 import com.android.tools.r8.ir.code.ArrayPut;
@@ -147,7 +141,6 @@ import com.android.tools.r8.shaking.KeepInfoCollection.MutableKeepInfoCollection
 import com.android.tools.r8.shaking.KeepMethodInfo.Joiner;
 import com.android.tools.r8.shaking.KeepReason.ReflectiveUseFromXml;
 import com.android.tools.r8.shaking.RootSetUtils.ConsequentRootSet;
-import com.android.tools.r8.shaking.RootSetUtils.ConsequentRootSetBuilder;
 import com.android.tools.r8.shaking.RootSetUtils.RootSet;
 import com.android.tools.r8.shaking.RootSetUtils.RootSetBase;
 import com.android.tools.r8.shaking.RootSetUtils.RootSetBuilder;
@@ -172,7 +165,6 @@ import com.android.tools.r8.utils.WorkList;
 import com.android.tools.r8.utils.collections.ProgramFieldSet;
 import com.android.tools.r8.utils.collections.ProgramMethodMap;
 import com.android.tools.r8.utils.collections.ProgramMethodSet;
-import com.google.common.base.Equivalence.Wrapper;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
@@ -186,7 +178,6 @@ import java.util.Deque;
 import java.util.HashMap;
 import java.util.IdentityHashMap;
 import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.ListIterator;
@@ -258,14 +249,7 @@ public class Enqueuer {
   private final boolean forceProguardCompatibility;
   private final Mode mode;
 
-  private final Set<EnqueuerAnalysis> analyses = new LinkedHashSet<>();
-  private final Set<EnqueuerFieldAccessAnalysis> fieldAccessAnalyses = new LinkedHashSet<>();
-  private final Set<EnqueuerInvokeAnalysis> invokeAnalyses = new LinkedHashSet<>();
-  private final Set<EnqueuerInstanceOfAnalysis> instanceOfAnalyses = new LinkedHashSet<>();
-  private final Set<EnqueuerExceptionGuardAnalysis> exceptionGuardAnalyses = new LinkedHashSet<>();
-  private final Set<EnqueuerCheckCastAnalysis> checkCastAnalyses = new LinkedHashSet<>();
-  private final Set<EnqueuerConstClassAnalysis> constClassAnalyses = new LinkedHashSet<>();
-  private final Set<EnqueuerNewInstanceAnalysis> newInstanceAnalyses = new LinkedHashSet<>();
+  private final EnqueuerAnalysisCollection analyses;
 
   private final Map<DexProgramClass, Boolean> rClassLookupCache = new IdentityHashMap<>();
 
@@ -279,8 +263,6 @@ public class Enqueuer {
   private RootSet rootSet;
   private final EnqueuerUseRegistryFactory useRegistryFactory;
   private AnnotationRemover.Builder annotationRemoverBuilder;
-  private final EnqueuerDefinitionSupplier enqueuerDefinitionSupplier =
-      new EnqueuerDefinitionSupplier(this);
 
   private final FieldAccessInfoCollectionImpl fieldAccessInfoCollection =
       new FieldAccessInfoCollectionImpl();
@@ -360,7 +342,7 @@ public class Enqueuer {
   private Set<DexType> initialDeadProtoTypes = Sets.newIdentityHashSet();
 
   /** Set of types that was pruned during the first round of tree shaking. */
-  private Set<DexType> initialPrunedTypes;
+  private final Set<DexType> initialPrunedTypes;
 
   private final Set<DexType> noClassMerging = Sets.newIdentityHashSet();
 
@@ -460,9 +442,6 @@ public class Enqueuer {
   private final Map<DexType, Map<DexAnnotation, List<ProgramDefinition>>>
       deferredParameterAnnotations = new IdentityHashMap<>();
 
-  /** Map of active if rules to speed up aapt2 generated keep rules. */
-  private Map<Wrapper<ProguardIfRule>, Set<ProguardIfRule>> activeIfRules;
-
   /**
    * A cache of ScopedDexMethodSet for each live type used for determining that virtual methods that
    * cannot be removed because they are widening access for another virtual method defined earlier
@@ -500,10 +479,31 @@ public class Enqueuer {
       SubtypingInfo subtypingInfo,
       GraphConsumer keptGraphConsumer,
       Mode mode) {
+    this(
+        appView,
+        profileCollectionAdditions,
+        executorService,
+        subtypingInfo,
+        keptGraphConsumer,
+        mode,
+        null,
+        null);
+  }
+
+  Enqueuer(
+      AppView<? extends AppInfoWithClassHierarchy> appView,
+      ProfileCollectionAdditions profileCollectionAdditions,
+      ExecutorService executorService,
+      SubtypingInfo subtypingInfo,
+      GraphConsumer keptGraphConsumer,
+      Mode mode,
+      Set<DexType> initialPrunedTypes,
+      RuntimeTypeCheckInfo.Builder runtimeTypeCheckInfoBuilder) {
     assert appView.appServices() != null;
     InternalOptions options = appView.options();
     this.appInfo = appView.appInfo();
     this.appView = appView.withClassHierarchy();
+    this.mode = mode;
     this.profileCollectionAdditions = profileCollectionAdditions;
     this.deferredTracing = EnqueuerDeferredTracing.create(appView, this, mode);
     this.executorService = executorService;
@@ -511,7 +511,6 @@ public class Enqueuer {
     this.forceProguardCompatibility = options.forceProguardCompatibility;
     this.graphReporter = new GraphReporter(appView, keptGraphConsumer);
     this.missingClassesBuilder = appView.appInfo().getMissingClasses().builder();
-    this.mode = mode;
     this.options = options;
     this.keepInfo = new MutableKeepInfoCollection(options);
     this.useRegistryFactory = createUseRegistryFactory();
@@ -520,24 +519,33 @@ public class Enqueuer {
         mode.isInitialTreeShaking() && options.forceProguardCompatibility
             ? ProguardCompatibilityActions.builder()
             : null;
+    this.initialPrunedTypes = initialPrunedTypes;
 
     if (options.isOptimizedResourceShrinking()) {
       appView.getResourceShrinkerState().setEnqueuerCallback(this::recordReferenceFromResources);
     }
+
+    EnqueuerAnalysisCollection.Builder analysesBuilder = EnqueuerAnalysisCollection.builder();
     if (mode.isTreeShaking()) {
-      InitializedClassesInInstanceMethodsAnalysis.register(appView, this);
-      GetArrayOfMissingTypeVerifyErrorWorkaround.register(appView, this);
-      InitializedClassesInInstanceMethodsAnalysis.register(appView, this);
-      InvokeVirtualToInterfaceVerifyErrorWorkaround.register(appView, this);
-      if (options.protoShrinking().enableGeneratedMessageLiteShrinking) {
-        registerAnalysis(new ProtoEnqueuerExtension(appView));
-      }
-      appView.withGeneratedMessageLiteBuilderShrinker(
-          shrinker -> registerAnalysis(shrinker.createEnqueuerAnalysis()));
-      IsolatedFeatureSplitsChecker.register(appView, this);
-      ResourceAccessAnalysis.register(appView, this);
-      CovariantReturnTypeEnqueuerExtension.register(appView, this);
+      EnqueuerDefinitionSupplier enqueuerDefinitionSupplier = new EnqueuerDefinitionSupplier(this);
+      ApiModelAnalysis.register(appView, analysesBuilder);
+      ClassInitializerAssertionEnablingAnalysis.register(appView, this, analysesBuilder);
+      CovariantReturnTypeEnqueuerExtension.register(appView, this, analysesBuilder);
+      GeneratedMessageLiteBuilderShrinker.register(appView, analysesBuilder);
+      GenericSignatureEnqueuerAnalysis.register(
+          appView, enqueuerDefinitionSupplier, analysesBuilder);
+      GetArrayOfMissingTypeVerifyErrorWorkaround.register(appView, this, analysesBuilder);
+      IfRuleEvaluatorFactory.register(appView, this, analysesBuilder, executorService);
+      InitializedClassesInInstanceMethodsAnalysis.register(appView, this, analysesBuilder);
+      InvokeVirtualToInterfaceVerifyErrorWorkaround.register(appView, this, analysesBuilder);
+      IsolatedFeatureSplitsChecker.register(appView, analysesBuilder);
+      KotlinMetadataEnqueuerExtension.register(
+          appView, enqueuerDefinitionSupplier, initialPrunedTypes, analysesBuilder);
+      ProtoEnqueuerExtension.register(appView, analysesBuilder);
+      ResourceAccessAnalysis.register(appView, this, analysesBuilder);
+      RuntimeTypeCheckInfo.register(runtimeTypeCheckInfoBuilder, analysesBuilder);
     }
+    analyses = analysesBuilder.build();
 
     targetedMethods = new LiveMethodsSet(graphReporter::registerMethod);
     failedClassResolutionTargets = SetUtils.newIdentityHashSet(0);
@@ -588,54 +596,6 @@ public class Enqueuer {
     return useRegistryFactory;
   }
 
-  public Enqueuer registerAnalysis(EnqueuerAnalysis analysis) {
-    analyses.add(analysis);
-    return this;
-  }
-
-  public Enqueuer registerFieldAccessAnalysis(EnqueuerFieldAccessAnalysis analysis) {
-    fieldAccessAnalyses.add(analysis);
-    return this;
-  }
-
-  public Enqueuer registerInvokeAnalysis(EnqueuerInvokeAnalysis analysis) {
-    invokeAnalyses.add(analysis);
-    return this;
-  }
-
-  public Enqueuer registerInstanceOfAnalysis(EnqueuerInstanceOfAnalysis analysis) {
-    instanceOfAnalyses.add(analysis);
-    return this;
-  }
-
-  public Enqueuer registerCheckCastAnalysis(EnqueuerCheckCastAnalysis analysis) {
-    checkCastAnalyses.add(analysis);
-    return this;
-  }
-
-  public Enqueuer registerConstClassAnalysis(EnqueuerConstClassAnalysis analysis) {
-    constClassAnalyses.add(analysis);
-    return this;
-  }
-
-  public Enqueuer registerExceptionGuardAnalysis(EnqueuerExceptionGuardAnalysis analysis) {
-    exceptionGuardAnalyses.add(analysis);
-    return this;
-  }
-
-  public Enqueuer registerNewInstanceAnalysis(EnqueuerNewInstanceAnalysis analysis) {
-    newInstanceAnalyses.add(analysis);
-    return this;
-  }
-
-  public Enqueuer registerTypeAccessAnalysis(EnqueuerTypeAccessAnalysis analysis) {
-    return registerCheckCastAnalysis(analysis)
-        .registerConstClassAnalysis(analysis)
-        .registerExceptionGuardAnalysis(analysis)
-        .registerInstanceOfAnalysis(analysis)
-        .registerNewInstanceAnalysis(analysis);
-  }
-
   public void setKeepDeclarations(List<KeepDeclaration> keepDeclarations) {
     // Keep declarations are used during initial tree shaking. Re-runs use the rule instance sets.
     assert mode.isInitialTreeShaking();
@@ -650,11 +610,6 @@ public class Enqueuer {
   public void setInitialDeadProtoTypes(Set<DexType> initialDeadProtoTypes) {
     assert mode.isFinalTreeShaking();
     this.initialDeadProtoTypes = initialDeadProtoTypes;
-  }
-
-  public void setInitialPrunedTypes(Set<DexType> initialPrunedTypes) {
-    assert mode.isFinalTreeShaking();
-    this.initialPrunedTypes = initialPrunedTypes;
   }
 
   public void addDeadProtoTypeCandidate(DexType type) {
@@ -834,6 +789,10 @@ public class Enqueuer {
     return keepInfo.getClassInfo(clazz);
   }
 
+  public SubtypingInfo getSubtypingInfo() {
+    return subtypingInfo;
+  }
+
   public boolean hasMinimumKeepInfoThatMatches(
       DexProgramClass clazz, Predicate<KeepClassInfo.Joiner> predicate) {
     MinimumKeepInfoCollection minimumKeepInfoCollection =
@@ -895,7 +854,7 @@ public class Enqueuer {
         // rules.
         handleLibraryTypeInheritingFromProgramType(clazz.asLibraryClass());
       }
-      analyses.forEach(analysis -> analysis.processNewLiveNonProgramType(clazz));
+      analyses.processNewlyLiveNonProgramType(clazz);
       clazz.forEachClassField(
           field ->
               addNonProgramClassToWorklist(
@@ -1178,7 +1137,7 @@ public class Enqueuer {
     }
   }
 
-  private FieldAccessInfoImpl getOrCreateFieldAccessInfo(DexEncodedField field) {
+  private FieldAccessInfoImpl getOrCreateFieldAccessInfo(DexClassAndField field) {
     // Check if we have previously created a FieldAccessInfo object for the field definition.
     FieldAccessInfoImpl info = fieldAccessInfoCollection.get(field.getReference());
 
@@ -1186,6 +1145,11 @@ public class Enqueuer {
     if (info == null) {
       info = new FieldAccessInfoImpl(field.getReference());
       fieldAccessInfoCollection.extend(field.getReference(), info);
+
+      // Notify analyses.
+      if (field.isProgramField()) {
+        analyses.processNewlyReferencedField(field.asProgramField());
+      }
     }
 
     return info;
@@ -1213,12 +1177,12 @@ public class Enqueuer {
         return true;
       }
 
-      DexEncodedField encodedField = seenResult.get().getDefinition();
-      info = getOrCreateFieldAccessInfo(encodedField);
+      DexClassAndField resolvedField = seenResult.get();
+      info = getOrCreateFieldAccessInfo(resolvedField);
 
       // If `field` is an indirect reference, then create a mapping for it, such that we don't have
       // to resolve the field the next time we see the reference.
-      if (field != encodedField.getReference()) {
+      if (field != resolvedField.getReference()) {
         fieldAccessInfoCollection.extend(field, info);
       }
     } else if (info == MISSING_FIELD_ACCESS_INFO) {
@@ -1318,12 +1282,12 @@ public class Enqueuer {
 
   void traceCheckCast(DexType type, ProgramMethod currentMethod, boolean ignoreCompatRules) {
     DexClass clazz = internalTraceConstClassOrCheckCast(type, currentMethod, ignoreCompatRules);
-    checkCastAnalyses.forEach(analysis -> analysis.traceCheckCast(type, clazz, currentMethod));
+    analyses.traceCheckCast(type, clazz, currentMethod);
   }
 
   void traceSafeCheckCast(DexType type, ProgramMethod currentMethod) {
     DexClass clazz = internalTraceConstClassOrCheckCast(type, currentMethod, true);
-    checkCastAnalyses.forEach(analysis -> analysis.traceSafeCheckCast(type, clazz, currentMethod));
+    analyses.traceSafeCheckCast(type, clazz, currentMethod);
   }
 
   void traceConstClass(
@@ -1333,7 +1297,7 @@ public class Enqueuer {
       boolean ignoreCompatRules) {
     handleLockCandidate(type, currentMethod, iterator);
     DexClass clazz = internalTraceConstClassOrCheckCast(type, currentMethod, ignoreCompatRules);
-    constClassAnalyses.forEach(analysis -> analysis.traceConstClass(type, clazz, currentMethod));
+    analyses.traceConstClass(type, clazz, currentMethod);
   }
 
   private void handleLockCandidate(
@@ -1496,14 +1460,13 @@ public class Enqueuer {
   void traceInstanceOf(DexType type, ProgramMethod currentMethod) {
     DexClass clazz = resolveBaseType(type, currentMethod);
     traceTypeReference(type, currentMethod);
-    instanceOfAnalyses.forEach(analysis -> analysis.traceInstanceOf(type, clazz, currentMethod));
+    analyses.traceInstanceOf(type, clazz, currentMethod);
   }
 
   void traceExceptionGuard(DexType type, ProgramMethod currentMethod) {
     DexClass clazz = resolveBaseType(type, currentMethod);
     traceTypeReference(type, currentMethod);
-    exceptionGuardAnalyses.forEach(
-        analysis -> analysis.traceExceptionGuard(type, clazz, currentMethod));
+    analyses.traceExceptionGuard(type, clazz, currentMethod);
   }
 
   void traceInvokeDirect(
@@ -1552,8 +1515,7 @@ public class Enqueuer {
     markTypeAsLive(invokedMethod.getHolderType(), context);
     MethodResolutionResult resolutionResult =
         handleInvokeOfDirectTarget(invokedMethod, context, reason);
-    invokeAnalyses.forEach(
-        analysis -> analysis.traceInvokeDirect(invokedMethod, resolutionResult, context));
+    analyses.traceInvokeDirect(invokedMethod, resolutionResult, context);
   }
 
   void traceInvokeInterface(
@@ -1578,8 +1540,7 @@ public class Enqueuer {
     markTypeAsLive(invokedMethod.getHolderType(), context);
     MethodResolutionResult result =
         markVirtualMethodAsReachable(invokedMethod, true, context, keepReason);
-    invokeAnalyses.forEach(
-        analysis -> analysis.traceInvokeInterface(invokedMethod, result, context));
+    analyses.traceInvokeInterface(invokedMethod, result, context);
   }
 
   void traceInvokeStatic(
@@ -1624,8 +1585,7 @@ public class Enqueuer {
     markTypeAsLive(invokedMethod.getHolderType(), context);
     MethodResolutionResult resolutionResult =
         handleInvokeOfStaticTarget(invokedMethod, context, reason);
-    invokeAnalyses.forEach(
-        analysis -> analysis.traceInvokeStatic(invokedMethod, resolutionResult, context));
+    analyses.traceInvokeStatic(invokedMethod, resolutionResult, context);
   }
 
   void traceInvokeSuper(
@@ -1671,8 +1631,7 @@ public class Enqueuer {
     markTypeAsLive(invokedMethod.getHolderType(), context);
     MethodResolutionResult resolutionResult =
         markVirtualMethodAsReachable(invokedMethod, false, context, reason);
-    invokeAnalyses.forEach(
-        analysis -> analysis.traceInvokeVirtual(invokedMethod, resolutionResult, context));
+    analyses.traceInvokeVirtual(invokedMethod, resolutionResult, context);
   }
 
   void traceMethodPosition(com.android.tools.r8.ir.code.Position position, ProgramMethod context) {
@@ -1721,7 +1680,7 @@ public class Enqueuer {
             context,
             InstantiationReason.NEW_INSTANCE_INSTRUCTION,
             KeepReason.instantiatedIn(context));
-    newInstanceAnalyses.forEach(analysis -> analysis.traceNewInstance(type, clazz, context));
+    analyses.traceNewInstance(type, clazz, context);
   }
 
   void traceNewInstanceFromLambda(DexType type, ProgramMethod context) {
@@ -1872,10 +1831,8 @@ public class Enqueuer {
 
     resolutionResult.visitFieldResolutionResults(
         singleResolutionResult -> {
-          fieldAccessAnalyses.forEach(
-              analysis ->
-                  analysis.traceInstanceFieldRead(
-                      fieldReference, singleResolutionResult, currentMethod, worklist));
+          analyses.traceInstanceFieldRead(
+              fieldReference, singleResolutionResult, currentMethod, worklist);
 
           ProgramField field = singleResolutionResult.getProgramField();
           if (field == null) {
@@ -1938,10 +1895,8 @@ public class Enqueuer {
 
     resolutionResult.visitFieldResolutionResults(
         singleResolutionResult -> {
-          fieldAccessAnalyses.forEach(
-              analysis ->
-                  analysis.traceInstanceFieldWrite(
-                      fieldReference, singleResolutionResult, currentMethod, worklist));
+          analyses.traceInstanceFieldWrite(
+              fieldReference, singleResolutionResult, currentMethod, worklist);
 
           ProgramField field = singleResolutionResult.getProgramField();
           if (field == null) {
@@ -2017,10 +1972,8 @@ public class Enqueuer {
 
     resolutionResult.visitFieldResolutionResults(
         singleResolutionResult -> {
-          fieldAccessAnalyses.forEach(
-              analysis ->
-                  analysis.traceStaticFieldRead(
-                      fieldReference, singleResolutionResult, currentMethod, worklist));
+          analyses.traceStaticFieldRead(
+              fieldReference, singleResolutionResult, currentMethod, worklist);
 
           ProgramField field = singleResolutionResult.getProgramField();
           if (field == null) {
@@ -2107,10 +2060,8 @@ public class Enqueuer {
 
     resolutionResult.visitFieldResolutionResults(
         singleResolutionResult -> {
-          fieldAccessAnalyses.forEach(
-              analysis ->
-                  analysis.traceStaticFieldWrite(
-                      fieldReference, singleResolutionResult, currentMethod, worklist));
+          analyses.traceStaticFieldWrite(
+              fieldReference, singleResolutionResult, currentMethod, worklist);
 
           ProgramField field = singleResolutionResult.getProgramField();
           if (field == null) {
@@ -2354,7 +2305,7 @@ public class Enqueuer {
     compatEnqueueHolderIfDependentNonStaticMember(
         clazz, rootSet.getDependentKeepClassCompatRule(clazz.getType()));
 
-    analyses.forEach(analysis -> analysis.processNewlyLiveClass(clazz, worklist));
+    analyses.processNewlyLiveClass(clazz, worklist);
   }
 
   private void processDeferredAnnotations(
@@ -2942,9 +2893,7 @@ public class Enqueuer {
     // Notify analyses. This is done even if `clazz` has already been marked as instantiated,
     // because each analysis may depend on seeing all the (clazz, reason) pairs. Thus, not doing so
     // could lead to nondeterminism.
-    analyses.forEach(
-        analysis ->
-            analysis.processNewlyInstantiatedClass(clazz.asProgramClass(), context, worklist));
+    analyses.processNewlyInstantiatedClass(clazz.asProgramClass(), context, worklist);
 
     if (!markInstantiatedClass(clazz, context, instantiationReason, keepReason)) {
       return;
@@ -3355,7 +3304,7 @@ public class Enqueuer {
     }
 
     // Notify analyses.
-    analyses.forEach(analysis -> analysis.processNewlyLiveField(field, context, worklist));
+    analyses.processNewlyLiveField(field, context, worklist);
   }
 
   // Package protected due to entry point from worklist.
@@ -3383,7 +3332,7 @@ public class Enqueuer {
     addEffectivelyLiveOriginalField(field);
     traceFieldDefinition(field);
 
-    analyses.forEach(analysis -> analysis.notifyMarkFieldAsReachable(field, worklist));
+    analyses.processNewlyReachableField(field, worklist);
   }
 
   private void handleFieldAccessWithInaccessibleFieldType(
@@ -3534,29 +3483,6 @@ public class Enqueuer {
     return liveTypes.contains(clazz);
   }
 
-  public boolean isEffectivelyLive(DexProgramClass clazz) {
-    if (isTypeLive(clazz)) {
-      return true;
-    }
-    if (mode.isInitialTreeShaking()) {
-      return false;
-    }
-    // TODO(b/325014359): Replace this by value tracking in instructions (akin to resource values).
-    for (DexEncodedField field : clazz.fields()) {
-      if (field.getOptimizationInfo().valueHasBeenPropagated()) {
-        return true;
-      }
-    }
-    // TODO(b/325014359): Replace this by value or position tracking.
-    //  We need to be careful not to throw away such values/positions.
-    for (DexEncodedMethod method : clazz.methods()) {
-      if (method.getOptimizationInfo().returnValueHasBeenPropagated()) {
-        return true;
-      }
-    }
-    return false;
-  }
-
   public boolean isOriginalReferenceEffectivelyLive(DexReference reference) {
     // The effectively-live original set contains types, fields and methods witnessed by
     // instructions, such as method inlining positions.
@@ -3687,7 +3613,6 @@ public class Enqueuer {
     target.accept(
         method -> markVirtualDispatchMethodTargetAsLive(method, reason),
         lambda -> markVirtualDispatchLambdaTargetAsLive(lambda, reason));
-    analyses.forEach(analysis -> analysis.notifyMarkVirtualDispatchTargetAsLive(target, worklist));
   }
 
   private void markVirtualDispatchMethodTargetAsLive(
@@ -3819,10 +3744,8 @@ public class Enqueuer {
               resolution.lookupInvokeSuperTarget(context.getHolder(), appView);
           if (target == null) {
             failedMethodResolutionTargets.add(resolution.getResolvedMethod().getReference());
-            analyses.forEach(
-                analyses ->
-                    analyses.notifyFailedMethodResolutionTarget(
-                        resolution.getResolvedMethod(), worklist));
+            analyses.processNewlyFailedMethodResolutionTarget(
+                resolution.getResolvedMethod(), worklist);
             return;
           }
 
@@ -3844,8 +3767,7 @@ public class Enqueuer {
             }
           }
         });
-    invokeAnalyses.forEach(
-        analysis -> analysis.traceInvokeSuper(reference, resolutionResults, context));
+    analyses.traceInvokeSuper(reference, resolutionResults, context);
   }
 
   public boolean isRClass(DexProgramClass dexProgramClass) {
@@ -3882,29 +3804,6 @@ public class Enqueuer {
       RootSet rootSet, ExecutorService executorService, Timing timing) throws ExecutionException {
     this.rootSet = rootSet;
     rootSet.pendingMethodMoveInverse.forEach(pendingMethodMoveInverse::put);
-    // Translate the result of root-set computation into enqueuer actions.
-    timing.begin("Register analysis");
-    // TODO(b/323816623): This check does not include presence of keep declarations.
-    //  The non-presense of PG config seems like a exeedingly rare corner case so maybe just
-    //  make this conditional on tree shaking and the specific option flag.
-    if (mode.isTreeShaking()
-        && appView.options().hasProguardConfiguration()
-        && !options.kotlinOptimizationOptions().disableKotlinSpecificOptimizations) {
-      registerAnalysis(
-          new KotlinMetadataEnqueuerExtension(
-              appView, enqueuerDefinitionSupplier, initialPrunedTypes));
-    }
-    // TODO(b/323816623): This check does not include presence of keep declarations.
-    //  We should consider if we should always run the signature analysis and just not emit them
-    //  in the end?
-    if (appView.options().getProguardConfiguration() != null
-        && appView.options().getProguardConfiguration().getKeepAttributes().signature) {
-      registerAnalysis(new GenericSignatureEnqueuerAnalysis(enqueuerDefinitionSupplier));
-    }
-    if (options.apiModelingOptions().enableLibraryApiModeling) {
-      registerAnalysis(new ApiModelAnalysis(appView));
-    }
-    timing.end();
 
     // Transfer the minimum keep info from the root set into the Enqueuer state.
     timing.begin("Transfer minimum keep info");
@@ -3950,8 +3849,7 @@ public class Enqueuer {
     finalizeLibraryMethodOverrideInformation();
     timing.end();
     timing.begin("Finish analysis");
-    analyses.forEach(analyses -> analyses.done(this));
-    fieldAccessAnalyses.forEach(fieldAccessAnalyses -> fieldAccessAnalyses.done(this));
+    analyses.done(this);
     if (appView.options().isOptimizedResourceShrinking()) {
       appView.getResourceShrinkerState().enqueuerDone(this.mode.isFinalTreeShaking());
     }
@@ -4747,7 +4645,7 @@ public class Enqueuer {
     try {
       while (true) {
         long numberOfLiveItems = getNumberOfLiveItems();
-        while (!worklist.isEmpty()) {
+        while (worklist.hasNext()) {
           EnqueuerAction action = worklist.poll();
           action.run(this);
         }
@@ -4756,30 +4654,8 @@ public class Enqueuer {
         long numberOfLiveItemsAfterProcessing = getNumberOfLiveItems();
         if (numberOfLiveItemsAfterProcessing > numberOfLiveItems) {
           timing.time("Conditional rules", () -> applicableRules.evaluateConditionalRules(this));
-
-          // Build the mapping of active if rules. We use a single collection of if-rules to allow
-          // removing if rules that have a constant sequent keep rule when they materialize.
-          if (activeIfRules == null) {
-            activeIfRules = new HashMap<>();
-            IfRuleClassPartEquivalence equivalence = new IfRuleClassPartEquivalence();
-            for (ProguardIfRule ifRule : rootSet.ifRules) {
-              Wrapper<ProguardIfRule> wrap = equivalence.wrap(ifRule);
-              activeIfRules.computeIfAbsent(wrap, ignore -> new LinkedHashSet<>()).add(ifRule);
-            }
-          }
-          ConsequentRootSetBuilder consequentSetBuilder =
-              ConsequentRootSet.builder(appView, this, subtypingInfo);
-          IfRuleEvaluator ifRuleEvaluator =
-              new IfRuleEvaluator(
-                  appView,
-                  subtypingInfo,
-                  this,
-                  executorService,
-                  activeIfRules,
-                  consequentSetBuilder);
-          addConsequentRootSet(ifRuleEvaluator.run());
           assert getNumberOfLiveItems() == numberOfLiveItemsAfterProcessing;
-          if (!worklist.isEmpty()) {
+          if (worklist.hasNext()) {
             continue;
           }
         }
@@ -4795,22 +4671,20 @@ public class Enqueuer {
           pendingReflectiveUses.forEach(this::handleReflectiveBehavior);
           pendingReflectiveUses.clear();
         }
-        if (!worklist.isEmpty()) {
+        if (worklist.hasNext()) {
           continue;
         }
 
         // Allow deferred tracing to enqueue worklist items.
         if (deferredTracing.enqueueWorklistActions(worklist)) {
-          assert !worklist.isEmpty();
+          assert worklist.hasNext();
           continue;
         }
 
         // Notify each analysis that a fixpoint has been reached, and give each analysis an
         // opportunity to add items to the worklist.
-        for (EnqueuerAnalysis analysis : analyses) {
-          analysis.notifyFixpoint(this, worklist, executorService, timing);
-        }
-        if (!worklist.isEmpty()) {
+        analyses.notifyFixpoint(this, worklist, executorService, timing);
+        if (worklist.hasNext()) {
           continue;
         }
 
@@ -4831,7 +4705,7 @@ public class Enqueuer {
             .merge(consequentRootSet.getDependentMinimumKeepInfo());
         rootSet.delayedRootSetActionItems.clear();
 
-        if (!worklist.isEmpty()) {
+        if (worklist.hasNext()) {
           continue;
         }
 
@@ -4891,13 +4765,13 @@ public class Enqueuer {
 
     worklist = worklist.nonPushable();
 
-    while (!worklist.isEmpty()) {
+    while (worklist.hasNext()) {
       EnqueuerAction action = worklist.poll();
       action.run(this);
     }
   }
 
-  private long getNumberOfLiveItems() {
+  public long getNumberOfLiveItems() {
     long result = liveTypes.getItems().size();
     result += liveMethods.items.size();
     result += liveFields.fields.size();
@@ -4905,7 +4779,7 @@ public class Enqueuer {
     return result;
   }
 
-  private void addConsequentRootSet(ConsequentRootSet consequentRootSet) {
+  void addConsequentRootSet(ConsequentRootSet consequentRootSet) {
     // TODO(b/132600955): This modifies the root set, but the consequent should not be persistent.
     //  Instead, the consequent root set should be added to collections that are owned by the
     //  enqueuer, similar to Enqueuer#dependentMinimumKeepClassInfo.
@@ -5008,7 +4882,7 @@ public class Enqueuer {
 
   // Package protected due to entry point from worklist.
   void markFieldAsKept(ProgramField field, KeepReason reason) {
-    FieldAccessInfoImpl fieldAccessInfo = getOrCreateFieldAccessInfo(field.getDefinition());
+    FieldAccessInfoImpl fieldAccessInfo = getOrCreateFieldAccessInfo(field);
     fieldAccessInfo.setHasReflectiveRead();
     fieldAccessInfo.setHasReflectiveWrite();
 
@@ -5106,8 +4980,7 @@ public class Enqueuer {
       }
     }
 
-    // Notify analyses.
-    analyses.forEach(analysis -> analysis.processNewlyLiveMethod(method, context, this, worklist));
+    analyses.processNewlyLiveMethod(method, context, this, worklist);
   }
 
   private void markMethodAsTargeted(ProgramMethod method, KeepReason reason) {
@@ -5127,7 +5000,7 @@ public class Enqueuer {
         markMethodAsLiveWithCompatRule(method);
       }
     }
-    analyses.forEach(analysis -> analysis.notifyMarkMethodAsTargeted(method, worklist));
+    analyses.processNewlyTargetedMethod(method, worklist);
   }
 
   void traceMethodDefinitionExcludingCode(ProgramMethod method) {
@@ -5161,8 +5034,7 @@ public class Enqueuer {
     DefaultEnqueuerUseRegistry registry =
         useRegistryFactory.create(appView, method, this, appView.apiLevelCompute());
     method.registerCodeReferences(registry);
-    // Notify analyses.
-    analyses.forEach(analysis -> analysis.processTracedCode(method, registry, worklist));
+    analyses.processNewlyLiveCode(method, registry, worklist);
   }
 
   private void markReferencedTypesAsLive(ProgramMethod method) {

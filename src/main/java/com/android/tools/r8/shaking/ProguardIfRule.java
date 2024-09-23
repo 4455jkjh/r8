@@ -14,6 +14,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 public class ProguardIfRule extends ProguardKeepRuleBase {
@@ -132,8 +133,11 @@ public class ProguardIfRule extends ProguardKeepRuleBase {
   }
 
   @Override
-  protected Iterable<ProguardWildcard> getWildcards() {
-    return Iterables.concat(super.getWildcards(), subsequentRule.getWildcards());
+  protected <T extends ProguardWildcard> Iterable<T> getWildcardsThatMatches(
+      Predicate<? super ProguardWildcard> predicate) {
+    return Iterables.concat(
+        super.getWildcardsThatMatches(predicate),
+        subsequentRule.getWildcardsThatMatches(predicate));
   }
 
   @Override
@@ -146,30 +150,9 @@ public class ProguardIfRule extends ProguardKeepRuleBase {
     return this;
   }
 
-  protected ProguardIfRule materialize(
-      DexItemFactory dexItemFactory, DexProgramClass precondition) {
-    return new ProguardIfRule(
-        getOrigin(),
-        getPosition(),
-        getSource(),
-        ProguardTypeMatcher.materializeList(getClassAnnotations(), dexItemFactory),
-        getClassAccessFlags(),
-        getNegatedClassAccessFlags(),
-        getClassTypeNegated(),
-        getClassType(),
-        getClassNames().materialize(dexItemFactory),
-        ProguardTypeMatcher.materializeList(getInheritanceAnnotations(), dexItemFactory),
-        getInheritanceClassName() == null
-            ? null
-            : getInheritanceClassName().materialize(dexItemFactory),
-        getInheritanceIsExtends(),
-        getMemberRules() == null
-            ? null
-            : getMemberRules().stream()
-                .map(memberRule -> memberRule.materialize(dexItemFactory))
-                .collect(Collectors.toList()),
-        subsequentRule.materialize(dexItemFactory),
-        precondition);
+  protected ProguardKeepRule materialize(DexItemFactory dexItemFactory) {
+    markAsUsed();
+    return subsequentRule.materialize(dexItemFactory);
   }
 
   /**
@@ -248,5 +231,24 @@ public class ProguardIfRule extends ProguardKeepRuleBase {
     super.append(builder);
     builder.append('\n');
     return subsequentRule.append(builder);
+  }
+
+  public ProguardIfRule withPrecondition(DexProgramClass precondition) {
+    return new ProguardIfRule(
+        getOrigin(),
+        getPosition(),
+        getSource(),
+        getClassAnnotations(),
+        getClassAccessFlags(),
+        getNegatedClassAccessFlags(),
+        getClassTypeNegated(),
+        getClassType(),
+        getClassNames(),
+        getInheritanceAnnotations(),
+        getInheritanceClassName(),
+        getInheritanceIsExtends(),
+        getMemberRules(),
+        getSubsequentRule(),
+        precondition);
   }
 }

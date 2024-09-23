@@ -3,19 +3,22 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8.shaking;
 
+import static com.google.common.base.Predicates.alwaysTrue;
+
 import com.android.tools.r8.graph.DexItemFactory;
 import com.android.tools.r8.graph.DexType;
 import com.android.tools.r8.utils.IterableUtils;
 import com.android.tools.r8.utils.TraversalContinuation;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
+import com.google.common.collect.Sets;
 import it.unimi.dsi.fastutil.objects.Object2BooleanArrayMap;
 import it.unimi.dsi.fastutil.objects.Object2BooleanMap;
 import it.unimi.dsi.fastutil.objects.Object2BooleanMap.Entry;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -82,20 +85,28 @@ public abstract class ProguardClassNameList {
   @Override
   public abstract int hashCode();
 
-  public abstract List<DexType> asSpecificDexTypes();
+  public abstract boolean hasSpecificTypes();
+
+  public abstract Set<DexType> getSpecificTypes();
 
   public abstract boolean matches(DexType type);
 
-  protected Iterable<ProguardWildcard> getWildcards() {
-    return Collections::emptyIterator;
+  protected final Iterable<ProguardWildcard> getWildcards() {
+    return getWildcardsThatMatches(alwaysTrue());
+  }
+
+  protected <T extends ProguardWildcard> Iterable<T> getWildcardsThatMatches(
+      Predicate<? super ProguardWildcard> predicate) {
+    return IterableUtils.empty();
   }
 
   public boolean hasWildcards() {
     return getWildcards().iterator().hasNext();
   }
 
-  static Iterable<ProguardWildcard> getWildcardsOrEmpty(ProguardClassNameList nameList) {
-    return nameList == null ? Collections::emptyIterator : nameList.getWildcards();
+  static <T extends ProguardWildcard> Iterable<T> getWildcardsThatMatchesOrEmpty(
+      ProguardClassNameList nameList, Predicate<? super ProguardWildcard> predicate) {
+    return nameList != null ? nameList.getWildcardsThatMatches(predicate) : IterableUtils.empty();
   }
 
   protected ProguardClassNameList materialize(DexItemFactory dexItemFactory) {
@@ -154,7 +165,12 @@ public abstract class ProguardClassNameList {
     }
 
     @Override
-    public List<DexType> asSpecificDexTypes() {
+    public boolean hasSpecificTypes() {
+      return false;
+    }
+
+    @Override
+    public Set<DexType> getSpecificTypes() {
       return null;
     }
 
@@ -211,9 +227,19 @@ public abstract class ProguardClassNameList {
     }
 
     @Override
-    public List<DexType> asSpecificDexTypes() {
-      DexType specific = className.getSpecificType();
-      return specific == null ? null : Collections.singletonList(specific);
+    public boolean hasSpecificTypes() {
+      return className.hasSpecificType() || className.hasSpecificTypes();
+    }
+
+    @Override
+    public Set<DexType> getSpecificTypes() {
+      if (className.hasSpecificType()) {
+        return Collections.singleton(className.getSpecificType());
+      }
+      if (className.hasSpecificTypes()) {
+        return className.getSpecificTypes();
+      }
+      return null;
     }
 
     @Override
@@ -222,8 +248,9 @@ public abstract class ProguardClassNameList {
     }
 
     @Override
-    protected Iterable<ProguardWildcard> getWildcards() {
-      return className.getWildcards();
+    protected <T extends ProguardWildcard> Iterable<T> getWildcardsThatMatches(
+        Predicate<? super ProguardWildcard> predicate) {
+      return className.getWildcardsThatMatches(predicate);
     }
 
     @Override
@@ -246,6 +273,8 @@ public abstract class ProguardClassNameList {
   private static class PositiveClassNameList extends ProguardClassNameList {
 
     private final ImmutableList<ProguardTypeMatcher> classNames;
+
+    private Set<DexType> specificTypes;
 
     private PositiveClassNameList(Collection<ProguardTypeMatcher> classNames) {
       this.classNames = ImmutableList.copyOf(classNames);
@@ -287,14 +316,31 @@ public abstract class ProguardClassNameList {
     }
 
     @Override
-    public List<DexType> asSpecificDexTypes() {
-      if (classNames.stream().allMatch(k -> k.getSpecificType() != null)) {
-        return classNames.stream()
-            .map(ProguardTypeMatcher::getSpecificType)
-            .collect(Collectors.toList());
-      }
-      return null;
+    public boolean hasSpecificTypes() {
+      return getSpecificTypes() != null;
     }
+
+    @Override
+    public Set<DexType> getSpecificTypes() {
+      if (specificTypes == null) {
+        if (Iterables.all(
+            classNames, className -> className.hasSpecificType() || className.hasSpecificTypes())) {
+          specificTypes = Sets.newIdentityHashSet();
+          for (var className : classNames) {
+            if (className.hasSpecificType()) {
+              specificTypes.add(className.getSpecificType());
+            } else {
+              assert className.hasSpecificTypes();
+              specificTypes.addAll(className.getSpecificTypes());
+            }
+          }
+        } else {
+          specificTypes = Collections.emptySet();
+        }
+      }
+      return specificTypes.isEmpty() ? null : specificTypes;
+    }
+
 
     @Override
     public boolean matches(DexType type) {
@@ -302,8 +348,10 @@ public abstract class ProguardClassNameList {
     }
 
     @Override
-    protected Iterable<ProguardWildcard> getWildcards() {
-      return IterableUtils.flatMap(classNames, ProguardTypeMatcher::getWildcards);
+    protected <T extends ProguardWildcard> Iterable<T> getWildcardsThatMatches(
+        Predicate<? super ProguardWildcard> predicate) {
+      return IterableUtils.flatMap(
+          classNames, className -> className.getWildcardsThatMatches(predicate));
     }
 
     @Override
@@ -378,7 +426,12 @@ public abstract class ProguardClassNameList {
     }
 
     @Override
-    public List<DexType> asSpecificDexTypes() {
+    public boolean hasSpecificTypes() {
+      return false;
+    }
+
+    @Override
+    public Set<DexType> getSpecificTypes() {
       return null;
     }
 
@@ -396,8 +449,10 @@ public abstract class ProguardClassNameList {
     }
 
     @Override
-    protected Iterable<ProguardWildcard> getWildcards() {
-      return IterableUtils.flatMap(classNames.keySet(), ProguardTypeMatcher::getWildcards);
+    protected <T extends ProguardWildcard> Iterable<T> getWildcardsThatMatches(
+        Predicate<? super ProguardWildcard> predicate) {
+      return IterableUtils.flatMap(
+          classNames.keySet(), className -> className.getWildcardsThatMatches(predicate));
     }
 
     @Override
