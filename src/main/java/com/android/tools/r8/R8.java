@@ -171,7 +171,7 @@ public class R8 {
   private final Timing timing;
   private final InternalOptions options;
 
-  private R8(InternalOptions options) {
+  R8(InternalOptions options) {
     this.options = options;
     if (options.printMemory) {
       System.gc();
@@ -209,7 +209,7 @@ public class R8 {
     ExceptionUtils.withR8CompilationHandler(
         command.getReporter(),
         () -> {
-          run(app, options, executor);
+          runInternal(app, options, executor);
         });
   }
 
@@ -238,16 +238,24 @@ public class R8 {
         options.reporter,
         () -> {
           try {
-            run(app, options, executor);
+            runInternal(app, options, executor);
           } finally {
             executor.shutdown();
           }
         });
   }
 
-  private static void run(AndroidApp app, InternalOptions options, ExecutorService executor)
+  static void runInternal(AndroidApp app, InternalOptions options, ExecutorService executor)
       throws IOException {
-    new R8(options).run(app, executor);
+    if (options.r8PartialCompilationOptions.enabled) {
+      try {
+        new R8Partial(options).runInternal(app, executor);
+      } catch (ResourceException e) {
+        throw new RuntimeException(e);
+      }
+    } else {
+      new R8(options).runInternal(app, executor);
+    }
   }
 
   private static DirectMappedDexApplication getDirectApp(AppView<?> appView) {
@@ -255,7 +263,7 @@ public class R8 {
   }
 
   @SuppressWarnings("DefaultCharset")
-  private void run(AndroidApp inputApp, ExecutorService executorService) throws IOException {
+  void runInternal(AndroidApp inputApp, ExecutorService executorService) throws IOException {
     timing.begin("Run prelude");
     assert options.programConsumer != null;
     if (options.quiet) {
@@ -1268,8 +1276,8 @@ public class R8 {
     InternalOptions options = command.getInternalOptions();
     ExecutorService executorService = ThreadUtils.getExecutorService(options);
     try {
-      ExceptionUtils.withR8CompilationHandler(options.reporter, () ->
-          run(command.getInputApp(), options, executorService));
+      ExceptionUtils.withR8CompilationHandler(
+          options.reporter, () -> runInternal(command.getInputApp(), options, executorService));
     } finally {
       executorService.shutdown();
     }

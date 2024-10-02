@@ -1,13 +1,11 @@
 // Copyright (c) 2024, the R8 project authors. Please see the AUTHORS file
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
-package com.android.tools.r8.resolution;
+package com.android.tools.r8.ir.optimize.string;
 
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
-import com.android.tools.r8.utils.StringUtils;
-import java.util.LinkedHashMap;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -15,7 +13,7 @@ import org.junit.runners.Parameterized.Parameter;
 import org.junit.runners.Parameterized.Parameters;
 
 @RunWith(Parameterized.class)
-public class B367915233Test extends TestBase {
+public class B369739224Test extends TestBase {
 
   @Parameter(0)
   public TestParameters parameters;
@@ -25,7 +23,24 @@ public class B367915233Test extends TestBase {
     return getTestParameters().withAllRuntimesAndApiLevels().build();
   }
 
-  private static final String EXPECTED_OUTPUT = StringUtils.lines("Hello, world!");
+  @Test
+  public void testJvm() throws Exception {
+    parameters.assumeJvmTestParameters();
+    testForJvm(parameters)
+        .addInnerClasses(getClass())
+        .run(parameters.getRuntime(), TestClass.class)
+        .assertFailureWithErrorThatThrows(IndexOutOfBoundsException.class);
+  }
+
+  @Test
+  public void testD8() throws Exception {
+    parameters.assumeDexRuntime();
+    testForD8(parameters.getBackend())
+        .addInnerClasses(getClass())
+        .setMinApi(parameters.getApiLevel())
+        .run(parameters.getRuntime(), TestClass.class)
+        .assertFailureWithErrorThatThrows(IndexOutOfBoundsException.class);
+  }
 
   @Test
   public void testR8() throws Exception {
@@ -34,17 +49,17 @@ public class B367915233Test extends TestBase {
         .addKeepMainRule(TestClass.class)
         .setMinApi(parameters)
         .run(parameters.getRuntime(), TestClass.class)
-        .applyIf(
-            parameters.isCfRuntime(),
-            r -> r.assertFailureWithErrorThatThrows(VerifyError.class),
-            r -> r.assertSuccessWithOutput(EXPECTED_OUTPUT));
+        // TODO(b/369739224): Should throw IndexOutOfBoundsException.
+        .assertSuccessWithOutputLines("46");
   }
 
   static class TestClass {
 
     public static void main(String[] args) {
-      new LinkedHashMap<>().clone();
-      System.out.println("Hello, world!");
+      String f = "";
+      int c = '.';
+      new StringBuilder().append(f, 0, c);
+      System.out.println(c);
     }
   }
 }

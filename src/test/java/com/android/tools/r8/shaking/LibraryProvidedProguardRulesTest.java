@@ -29,8 +29,6 @@ import com.android.tools.r8.origin.ArchiveEntryOrigin;
 import com.android.tools.r8.origin.Origin;
 import com.android.tools.r8.utils.AndroidApiLevel;
 import com.android.tools.r8.utils.DescriptorUtils;
-import com.android.tools.r8.utils.StringUtils;
-import com.android.tools.r8.utils.ZipUtils.ZipBuilder;
 import com.android.tools.r8.utils.codeinspector.CodeInspector;
 import com.google.common.collect.ImmutableList;
 import com.google.common.io.ByteStreams;
@@ -74,7 +72,7 @@ public class LibraryProvidedProguardRulesTest extends LibraryProvidedProguardRul
   @Parameter(2)
   public ProviderType providerType;
 
-  @Parameters(name = "{0}, AAR: {1}, {2}")
+  @Parameters(name = "{0}, libraryType: {1}, providerType: {2}")
   public static List<Object[]> data() {
     return buildParameters(
         getTestParameters().withDefaultRuntimes().withApiLevel(AndroidApiLevel.B).build(),
@@ -83,27 +81,7 @@ public class LibraryProvidedProguardRulesTest extends LibraryProvidedProguardRul
   }
 
   private Path buildLibrary(List<String> rules) throws Exception {
-    ZipBuilder jarBuilder =
-        ZipBuilder.builder(temp.newFile(libraryType.isAar() ? "classes.jar" : "test.jar").toPath());
-    addTestClassesToZip(jarBuilder.getOutputStream(), ImmutableList.of(A.class, B.class));
-    if (libraryType.hasRulesInJar()) {
-      for (int i = 0; i < rules.size(); i++) {
-        String name = "META-INF/proguard/jar" + (i == 0 ? "" : i) + ".rules";
-        jarBuilder.addText(name, rules.get(i));
-      }
-    }
-    if (libraryType.isAar()) {
-      Path jar = jarBuilder.build();
-      String allRules = StringUtils.lines(rules);
-      ZipBuilder aarBuilder = ZipBuilder.builder(temp.newFile("test.aar").toPath());
-      aarBuilder.addFilesRelative(jar.getParent(), jar);
-      if (libraryType.hasRulesInAar()) {
-        aarBuilder.addText("proguard.txt", allRules);
-      }
-      return aarBuilder.build();
-    } else {
-      return jarBuilder.build();
-    }
+    return buildLibrary(libraryType, ImmutableList.of(A.class, B.class), rules);
   }
 
   private CodeInspector runTest(List<String> rules) throws Exception {
@@ -153,7 +131,7 @@ public class LibraryProvidedProguardRulesTest extends LibraryProvidedProguardRul
   }
 
   @Test
-  public void syntaxError() {
+  public void providedKeepRuleSyntaxError() {
     // TODO(b/228319861): Read Proguard rules from AAR's.
     assumeTrue(!libraryType.isAar());
     assertThrows(
@@ -172,7 +150,24 @@ public class LibraryProvidedProguardRulesTest extends LibraryProvidedProguardRul
   }
 
   @Test
-  public void includeError() {
+  public void providedKeepRuleInjarsError() {
+    // TODO(b/228319861): Read Proguard rules from AAR's.
+    assumeTrue(!libraryType.isAar());
+    assertThrows(
+        CompilationFailedException.class,
+        () ->
+            testForR8(parameters.getBackend())
+                .addProgramFiles(buildLibrary(ImmutableList.of("-injars some.jar")))
+                .setMinApi(parameters)
+                .compileWithExpectedDiagnostics(
+                    diagnostics ->
+                        diagnostics.assertErrorThatMatches(
+                            diagnosticMessage(
+                                containsString("Options with file names are not supported")))));
+  }
+
+  @Test
+  public void providedKeepRuleIncludeError() {
     // TODO(b/228319861): Read Proguard rules from AAR's.
     assumeTrue(!libraryType.isAar());
     assertThrows(

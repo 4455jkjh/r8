@@ -7,7 +7,6 @@ package com.android.tools.r8.optimize.serviceloader;
 import static com.android.tools.r8.ToolHelper.DexVm.Version.V7_0_0;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assume.assumeTrue;
 
 import com.android.tools.r8.CompilationFailedException;
 import com.android.tools.r8.NeverInline;
@@ -31,12 +30,16 @@ public class ServiceLoaderRewritingTest extends ServiceLoaderTestBase {
   private final String EXPECTED_OUTPUT =
       StringUtils.lines("Hello World!", "Hello World!", "Hello World!");
 
+  interface NonPublicService {
+    void print();
+  }
+
   public interface Service {
 
     void print();
   }
 
-  public static class ServiceImpl implements Service {
+  public static class ServiceImpl implements Service, NonPublicService {
 
     @Override
     public void print() {
@@ -150,6 +153,13 @@ public class ServiceLoaderRewritingTest extends ServiceLoaderTestBase {
     }
   }
 
+  public static class MainWithNonPublicService {
+
+    public static void main(String[] args) {
+      ServiceLoader.load(NonPublicService.class, null).iterator().next().print();
+    }
+  }
+
   @Parameterized.Parameters(name = "{0}, enableRewriting: {1}")
   public static List<Object[]> data() {
     return buildParameters(
@@ -169,8 +179,11 @@ public class ServiceLoaderRewritingTest extends ServiceLoaderTestBase {
     }
   }
 
-  private boolean isDexV7() {
-    // Runtime uses boot classloader rather than system classloader on this version.
+  private boolean isAndroid7() {
+    // Runtime uses boot classloader rather than system classloader on this version. See b/130164528
+    // for more details.
+    // The CL that changed behaviour after Nougat is:
+    // https://android-review.googlesource.com/c/platform/libcore/+/273135
     return parameters.isDexRuntime() && parameters.getDexRuntimeVersion() == V7_0_0;
   }
 
@@ -192,7 +205,7 @@ public class ServiceLoaderRewritingTest extends ServiceLoaderTestBase {
         .compile()
         .run(parameters.getRuntime(), MainRunner.class)
         .applyIf(
-            isDexV7() && !enableRewriting,
+            isAndroid7() && !enableRewriting,
             runResult ->
                 runResult.assertFailureWithErrorThatThrows(ServiceConfigurationError.class),
             runResult ->
@@ -212,7 +225,7 @@ public class ServiceLoaderRewritingTest extends ServiceLoaderTestBase {
         .compile()
         .run(parameters.getRuntime(), MainRunner.class)
         .applyIf(
-            isDexV7() && !enableRewriting,
+            isAndroid7() && !enableRewriting,
             runResult ->
                 runResult.assertFailureWithErrorThatThrows(ServiceConfigurationError.class),
             runResult ->
@@ -288,7 +301,7 @@ public class ServiceLoaderRewritingTest extends ServiceLoaderTestBase {
         .compileWithExpectedDiagnostics(expectedDiagnostics)
         .run(parameters.getRuntime(), MainRunner.class)
         .applyIf(
-            !isDexV7(),
+            !isAndroid7(),
             runResult -> runResult.assertSuccessWithOutput(EXPECTED_OUTPUT),
             runResult ->
                 runResult.assertFailureWithErrorThatThrows(ServiceConfigurationError.class));
@@ -332,22 +345,39 @@ public class ServiceLoaderRewritingTest extends ServiceLoaderTestBase {
   @Test
   public void testKeepAsOriginal()
       throws IOException, CompilationFailedException, ExecutionException {
-    // The CL that changed behaviour after Nougat is:
-    // https://android-review.googlesource.com/c/platform/libcore/+/273135
-    assumeTrue(
-        parameters.getRuntime().isCf()
-            || !parameters.getRuntime().asDex().getVm().getVersion().equals(V7_0_0));
     serviceLoaderTest(Service.class, ServiceImpl.class)
         .addKeepMainRule(MainRunner.class)
         .addKeepClassRules(Service.class)
         .allowDiagnosticInfoMessages(enableRewriting)
         .compileWithExpectedDiagnostics(expectedDiagnostics)
-        .run(parameters.getRuntime(), MainRunner.class)
-        .assertSuccessWithOutput(EXPECTED_OUTPUT)
         .inspect(
             inspector -> {
               assertEquals(3, getServiceLoaderLoads(inspector));
               verifyServiceMetaInf(inspector, Service.class, ServiceImpl.class);
-            });
+            })
+        .run(parameters.getRuntime(), MainRunner.class)
+        .applyIf(
+            isAndroid7(),
+            r -> r.assertFailureWithErrorThatThrows(ServiceConfigurationError.class),
+            r -> r.assertSuccessWithOutput(EXPECTED_OUTPUT));
+  }
+
+  @Test
+  public void testNonPublicService()
+      throws IOException, CompilationFailedException, ExecutionException {
+    serviceLoaderTest(NonPublicService.class, ServiceImpl.class)
+        .addKeepMainRule(MainWithNonPublicService.class)
+        .allowDiagnosticInfoMessages(enableRewriting)
+        .compileWithExpectedDiagnostics(expectedDiagnostics)
+        .inspect(
+            inspector -> {
+              assertEquals(1, getServiceLoaderLoads(inspector));
+              verifyServiceMetaInf(inspector, NonPublicService.class, ServiceImpl.class);
+            })
+        .run(parameters.getRuntime(), MainWithNonPublicService.class)
+        .applyIf(
+            isAndroid7(),
+            r -> r.assertFailureWithErrorThatThrows(ServiceConfigurationError.class),
+            r -> r.assertSuccessWithOutputLines("Hello World!"));
   }
 }
