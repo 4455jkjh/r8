@@ -4,6 +4,7 @@
 package com.android.tools.r8.partial;
 
 import static com.android.tools.r8.utils.codeinspector.Matchers.isAbsent;
+import static com.android.tools.r8.utils.codeinspector.Matchers.isPresent;
 import static com.android.tools.r8.utils.codeinspector.Matchers.isPresentAndNotRenamed;
 import static com.android.tools.r8.utils.codeinspector.Matchers.isPresentAndRenamed;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -13,9 +14,10 @@ import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.ToolHelper.DexVm;
 import com.android.tools.r8.utils.AndroidApiLevel;
+import com.android.tools.r8.utils.R8PartialCompilationConfiguration;
 import com.android.tools.r8.utils.ThrowingConsumer;
 import com.android.tools.r8.utils.codeinspector.CodeInspector;
-import java.util.function.Predicate;
+import java.util.function.Consumer;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -40,15 +42,18 @@ public class ClassHierarchyInterleavedD8AndR8Test extends TestBase {
   }
 
   private void runTest(
-      Predicate<String> isR8, ThrowingConsumer<CodeInspector, RuntimeException> inspector)
+      Consumer<R8PartialCompilationConfiguration.Builder> partialConfigurationBuilderConsumer,
+      ThrowingConsumer<CodeInspector, RuntimeException> d8Inspector,
+      ThrowingConsumer<CodeInspector, RuntimeException> inspector)
       throws Exception {
     // Path tempDir = temp.newFolder().toPath();
     testForR8Partial(parameters.getBackend())
         .setMinApi(parameters)
         .addProgramClasses(A.class, B.class, C.class, Main.class)
         .addKeepMainRule(Main.class)
-        .setR8PartialConfigurationPredicate(isR8)
+        .setR8PartialConfiguration(partialConfigurationBuilderConsumer)
         .compile()
+        .inspectD8Input(d8Inspector)
         .inspect(inspector)
         .run(parameters.getRuntime(), Main.class)
         .assertSuccessWithEmptyOutput();
@@ -57,7 +62,13 @@ public class ClassHierarchyInterleavedD8AndR8Test extends TestBase {
   @Test
   public void testD8Top() throws Exception {
     runTest(
-        name -> !name.equals(A.class.getTypeName()),
+        partialConfigurationBuilder ->
+            partialConfigurationBuilder.includeAll().excludeClasses(A.class),
+        inspector -> {
+          assertThat(inspector.programClass(A.class), isPresent());
+          assertThat(inspector.programClass(B.class), isAbsent());
+          assertThat(inspector.programClass(C.class), isAbsent());
+        },
         inspector -> {
           assertThat(inspector.clazz(A.class), isPresentAndNotRenamed());
           assertThat(inspector.clazz(B.class), isAbsent()); // Merged into C.
@@ -68,7 +79,13 @@ public class ClassHierarchyInterleavedD8AndR8Test extends TestBase {
   @Test
   public void testD8Middle() throws Exception {
     runTest(
-        name -> !name.equals(B.class.getTypeName()),
+        partialConfigurationBuilder ->
+            partialConfigurationBuilder.includeAll().excludeClasses(B.class),
+        inspector -> {
+          assertThat(inspector.programClass(A.class), isPresent());
+          assertThat(inspector.programClass(B.class), isPresent());
+          assertThat(inspector.programClass(C.class), isAbsent());
+        },
         inspector -> {
           assertThat(inspector.clazz(A.class), isPresentAndNotRenamed());
           assertThat(inspector.clazz(B.class), isPresentAndNotRenamed());
@@ -79,7 +96,13 @@ public class ClassHierarchyInterleavedD8AndR8Test extends TestBase {
   @Test
   public void testD8Bottom() throws Exception {
     runTest(
-        name -> !name.equals(C.class.getTypeName()),
+        partialConfigurationBuilder ->
+            partialConfigurationBuilder.includeAll().excludeClasses(C.class),
+        inspector -> {
+          assertThat(inspector.programClass(A.class), isPresent());
+          assertThat(inspector.programClass(B.class), isPresent());
+          assertThat(inspector.programClass(C.class), isPresent());
+        },
         inspector -> {
           assertThat(inspector.clazz(A.class), isPresentAndNotRenamed());
           assertThat(inspector.clazz(B.class), isPresentAndNotRenamed());

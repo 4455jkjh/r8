@@ -4,6 +4,8 @@
 package com.android.tools.r8.utils.codeinspector;
 
 import static com.android.tools.r8.utils.ConsumerUtils.emptyConsumer;
+import static com.android.tools.r8.utils.codeinspector.CodeInspector.ClassType.ANY;
+import static com.android.tools.r8.utils.codeinspector.CodeInspector.ClassType.PROGRAM;
 
 import com.android.tools.r8.DexIndexedConsumer;
 import com.android.tools.r8.StringResource;
@@ -45,6 +47,7 @@ import com.android.tools.r8.retrace.internal.RetracerImpl;
 import com.android.tools.r8.synthesis.SyntheticItemsTestUtils;
 import com.android.tools.r8.utils.AndroidApp;
 import com.android.tools.r8.utils.BiMapContainer;
+import com.android.tools.r8.utils.BooleanBox;
 import com.android.tools.r8.utils.DescriptorUtils;
 import com.android.tools.r8.utils.InternalOptions;
 import com.android.tools.r8.utils.Timing;
@@ -61,6 +64,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
@@ -77,6 +81,11 @@ public class CodeInspector {
   final Map<String, String> originalToObfuscatedMapping;
   final Map<String, String> obfuscatedToOriginalMapping;
   private Retracer lazyRetracer = null;
+
+  public enum ClassType {
+    PROGRAM,
+    ANY
+  }
 
   public static MethodSignature MAIN =
       new MethodSignature("main", "void", new String[] {"java.lang.String[]"});
@@ -293,6 +302,10 @@ public class CodeInspector {
     return rewriter.getSignature();
   }
 
+  public ClassSubject clazz(Class<?> clazz, ClassType classType) {
+    return clazz(Reference.classFromClass(clazz), classType);
+  }
+
   public ClassSubject clazz(Class<?> clazz) {
     return clazz(Reference.classFromClass(clazz));
   }
@@ -300,6 +313,10 @@ public class CodeInspector {
   /** Lookup a class by name. This allows both original and obfuscated names. */
   public ClassSubject clazz(String name) {
     return clazz(Reference.classFromTypeName(name));
+  }
+
+  public ClassSubject programClass(Class<?> clazz) {
+    return clazz(Reference.classFromClass(clazz), PROGRAM);
   }
 
   public ClassNameMapper getMapping() {
@@ -355,7 +372,7 @@ public class CodeInspector {
     }
   }
 
-  public ClassSubject clazz(ClassReference reference) {
+  public ClassSubject clazz(ClassReference reference, ClassType classType) {
     String descriptor = reference.getDescriptor();
     String name = DescriptorUtils.descriptorToJavaType(descriptor);
     ClassNamingForNameMapper naming = null;
@@ -374,11 +391,18 @@ public class CodeInspector {
         }
       }
     }
-    DexClass clazz = application.definitionFor(toDexTypeIgnorePrimitives(name));
+    DexClass clazz =
+        classType == ANY
+            ? application.definitionFor(toDexTypeIgnorePrimitives(name))
+            : application.programDefinitionFor(toDexTypeIgnorePrimitives(name));
     if (clazz == null) {
       return new AbsentClassSubject(this, reference);
     }
     return new FoundClassSubject(this, clazz, MappingWrapper.create(mapping, naming), reference);
+  }
+
+  public ClassSubject clazz(ClassReference reference) {
+    return clazz(reference, ANY);
   }
 
   public ClassSubject companionClassFor(Class<?> clazz) {
@@ -400,6 +424,18 @@ public class CodeInspector {
     ImmutableList.Builder<FoundClassSubject> builder = ImmutableList.builder();
     forAllClasses(builder::add);
     return builder.build();
+  }
+
+  public boolean hasExactlyProgramClasses(Class<?>... classes) {
+    return hasExactlyProgramClasses(Arrays.asList(classes));
+  }
+
+  public boolean hasExactlyProgramClasses(Collection<Class<?>> classes) {
+    Set<ClassReference> descriptors =
+        classes.stream().map(Reference::classFromClass).collect(Collectors.toSet());
+    BooleanBox allFound = new BooleanBox(true);
+    forAllClasses(clazz -> allFound.and(descriptors.remove(clazz.reference)));
+    return descriptors.isEmpty() && allFound.get();
   }
 
   public Stream<InstructionSubject> streamInstructions() {
