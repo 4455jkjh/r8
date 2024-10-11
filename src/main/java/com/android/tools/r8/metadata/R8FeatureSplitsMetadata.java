@@ -4,9 +4,12 @@
 package com.android.tools.r8.metadata;
 
 import com.android.tools.r8.keepanno.annotations.KeepForApi;
+import java.util.List;
 
 @KeepForApi
-public interface R8StartupOptimizationOptions {
+public interface R8FeatureSplitsMetadata {
 
-  int getNumberOfStartupDexFiles();
+  List<R8FeatureSplitMetadata> getFeatureSplits();
+
+  boolean isIsolatedSplitsEnabled();
 }

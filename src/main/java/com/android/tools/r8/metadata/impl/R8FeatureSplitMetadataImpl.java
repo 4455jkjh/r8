@@ -8,11 +8,11 @@ import com.android.tools.r8.keepanno.annotations.FieldAccessFlags;
 import com.android.tools.r8.keepanno.annotations.KeepConstraint;
 import com.android.tools.r8.keepanno.annotations.KeepItemKind;
 import com.android.tools.r8.keepanno.annotations.UsedByReflection;
-import com.android.tools.r8.metadata.D8ApiModelingOptions;
-import com.android.tools.r8.metadata.D8LibraryDesugaringOptions;
-import com.android.tools.r8.metadata.D8Options;
-import com.android.tools.r8.utils.InternalOptions;
+import com.android.tools.r8.metadata.R8DexFileMetadata;
+import com.android.tools.r8.metadata.R8FeatureSplitMetadata;
+import com.google.gson.annotations.Expose;
 import com.google.gson.annotations.SerializedName;
+import java.util.List;
 
 @UsedByReflection(
     description = "Keep and preserve @SerializedName for correct (de)serialization",
@@ -21,13 +21,18 @@ import com.google.gson.annotations.SerializedName;
     kind = KeepItemKind.CLASS_AND_FIELDS,
     fieldAccess = {FieldAccessFlags.PRIVATE},
     fieldAnnotatedByClassConstant = SerializedName.class)
-public class D8OptionsImpl extends D8R8OptionsImpl<D8ApiModelingOptions, D8LibraryDesugaringOptions>
-    implements D8Options {
+public class R8FeatureSplitMetadataImpl implements R8FeatureSplitMetadata {
 
-  public D8OptionsImpl(InternalOptions options) {
-    super(
-        D8ApiModelingOptionsImpl.create(options),
-        D8LibraryDesugaringOptionsImpl.create(options),
-        options);
+  @Expose
+  @SerializedName("dexFiles")
+  private final List<R8DexFileMetadata> dexFilesMetadata;
+
+  public R8FeatureSplitMetadataImpl(List<R8DexFileMetadata> dexFilesMetadata) {
+    this.dexFilesMetadata = dexFilesMetadata;
+  }
+
+  @Override
+  public List<R8DexFileMetadata> getDexFilesMetadata() {
+    return dexFilesMetadata;
   }
 }

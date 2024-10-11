@@ -6,4 +6,7 @@ package com.android.tools.r8.metadata;
 import com.android.tools.r8.keepanno.annotations.KeepForApi;
 
 @KeepForApi
-public interface R8ApiModelingOptions {}
+public interface R8StartupOptimizationMetadata {
+
+  int getNumberOfStartupDexFiles();
+}

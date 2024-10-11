@@ -8,7 +8,9 @@ import com.android.tools.r8.keepanno.annotations.FieldAccessFlags;
 import com.android.tools.r8.keepanno.annotations.KeepConstraint;
 import com.android.tools.r8.keepanno.annotations.KeepItemKind;
 import com.android.tools.r8.keepanno.annotations.UsedByReflection;
-import com.android.tools.r8.metadata.D8ApiModelingOptions;
+import com.android.tools.r8.metadata.D8ApiModelingMetadata;
+import com.android.tools.r8.metadata.D8LibraryDesugaringMetadata;
+import com.android.tools.r8.metadata.D8OptionsMetadata;
 import com.android.tools.r8.utils.InternalOptions;
 import com.google.gson.annotations.SerializedName;
 
@@ -19,13 +21,14 @@ import com.google.gson.annotations.SerializedName;
     kind = KeepItemKind.CLASS_AND_FIELDS,
     fieldAccess = {FieldAccessFlags.PRIVATE},
     fieldAnnotatedByClassConstant = SerializedName.class)
-public class D8ApiModelingOptionsImpl implements D8ApiModelingOptions {
+public class D8OptionsMetadataImpl
+    extends D8R8OptionsMetadataImpl<D8ApiModelingMetadata, D8LibraryDesugaringMetadata>
+    implements D8OptionsMetadata {
 
-  private D8ApiModelingOptionsImpl() {}
-
-  public static D8ApiModelingOptionsImpl create(InternalOptions options) {
-    return options.apiModelingOptions().enableLibraryApiModeling
-        ? new D8ApiModelingOptionsImpl()
-        : null;
+  public D8OptionsMetadataImpl(InternalOptions options) {
+    super(
+        D8ApiModelingMetadataImpl.create(options),
+        D8LibraryDesugaringMetadataImpl.create(options),
+        options);
   }
 }
