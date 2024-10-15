@@ -8,5 +8,7 @@ import com.android.tools.r8.keepanno.annotations.KeepForApi;
 @KeepForApi
 public interface R8StartupOptimizationMetadata {
 
-  int getNumberOfStartupDexFiles();
+  boolean isDexLayoutOptimizationEnabled();
+
+  boolean isProfileGuidedOptimizationEnabled();
 }

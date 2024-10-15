@@ -22,6 +22,7 @@ public interface D8BuildMetadata {
             D8ApiModelingMetadata.class, deserializeTo(D8ApiModelingMetadataImpl.class))
         .registerTypeAdapter(
             D8LibraryDesugaringMetadata.class, deserializeTo(D8LibraryDesugaringMetadataImpl.class))
+        .serializeNulls()
         .create()
         .fromJson(json, D8BuildMetadataImpl.class);
   }
@@ -30,7 +31,7 @@ public interface D8BuildMetadata {
     return (element, type, context) -> context.deserialize(element, implClass);
   }
 
-  D8OptionsMetadata getOptions();
+  D8OptionsMetadata getOptionsMetadata();
 
   String getVersion();
 
