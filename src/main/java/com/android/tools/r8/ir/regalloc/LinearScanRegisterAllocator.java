@@ -10,6 +10,7 @@ import static com.android.tools.r8.ir.regalloc.LiveIntervals.NO_REGISTER;
 import com.android.tools.r8.cf.FixedLocalValue;
 import com.android.tools.r8.dex.Constants;
 import com.android.tools.r8.errors.CompilationError;
+import com.android.tools.r8.errors.Unreachable;
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.DebugLocalInfo;
 import com.android.tools.r8.graph.ProgramMethod;
@@ -92,10 +93,31 @@ public class LinearScanRegisterAllocator implements RegisterAllocator {
   public static final int MIN_CONSTANT_FREE_FOR_POSITIONS = 5;
   public static final int EXCEPTION_INTERVALS_OVERLAP_CUTOFF = 500;
 
-  private enum ArgumentReuseMode {
+  public enum ArgumentReuseMode {
     ALLOW_ARGUMENT_REUSE_U4BIT,
     ALLOW_ARGUMENT_REUSE_U8BIT,
-    ALLOW_ARGUMENT_REUSE_U16BIT
+    ALLOW_ARGUMENT_REUSE_U16BIT;
+
+    boolean hasRegisterConstraint(LiveIntervals intervals) {
+      return hasRegisterConstraint(intervals.getRegisterLimit());
+    }
+
+    boolean hasRegisterConstraint(LiveIntervalsUse use) {
+      return hasRegisterConstraint(use.getLimit());
+    }
+
+    private boolean hasRegisterConstraint(int constraint) {
+      switch (this) {
+        case ALLOW_ARGUMENT_REUSE_U4BIT:
+          return false;
+        case ALLOW_ARGUMENT_REUSE_U8BIT:
+          return constraint == Constants.U4BIT_MAX;
+        case ALLOW_ARGUMENT_REUSE_U16BIT:
+          return constraint != Constants.U16BIT_MAX;
+        default:
+          throw new Unreachable();
+      }
+    }
   }
 
   private static class LocalRange implements Comparable<LocalRange> {
@@ -741,7 +763,7 @@ public class LinearScanRegisterAllocator implements RegisterAllocator {
     Value current = firstArgumentValue;
     while (current != null) {
       LiveIntervals intervals = current.getLiveIntervals();
-      assert intervals.getRegisterLimit() == Constants.U16BIT_MAX;
+      assert !mode.hasRegisterConstraint(intervals);
       boolean canUseArgumentRegister = true;
       boolean couldUseArgumentRegister = true;
       for (LiveIntervals child : intervals.getSplitChildren()) {
@@ -852,7 +874,7 @@ public class LinearScanRegisterAllocator implements RegisterAllocator {
       LiveIntervals argumentInterval = argumentValue.getLiveIntervals();
       assert argumentInterval.getRegister() != NO_REGISTER;
       unhandled.remove(argumentInterval);
-      if (mode == ArgumentReuseMode.ALLOW_ARGUMENT_REUSE_U4BIT) {
+      if (!mode.hasRegisterConstraint(argumentInterval)) {
         // All the argument intervals are active in the beginning and have preallocated registers.
         active.add(argumentInterval);
       } else {
@@ -1658,6 +1680,89 @@ public class LinearScanRegisterAllocator implements RegisterAllocator {
       registerConstraint += numberOfArgumentRegisters;
     }
 
+    RegisterPositions freePositions = computeFreePositions(unhandledInterval, registerConstraint);
+    assert freePositionsAreConsistentWithFreeRegisters(freePositions, registerConstraint);
+
+    // Attempt to use register hints.
+    if (useRegisterHint(unhandledInterval, registerConstraint, freePositions, needsRegisterPair)) {
+      return true;
+    }
+
+    // Get the register (pair) that is free the longest. That is the register with the largest
+    // free position.
+    int candidate =
+        getLargestValidCandidate(
+            unhandledInterval, registerConstraint, needsRegisterPair, freePositions, Type.ANY);
+
+    // It is not always possible to find a largest valid candidate. If none of the usable register
+    // are free we typically get the last candidate. However, if that candidate has to be
+    // discarded in order to workaround bugs we get REGISTER_CANDIDATE_NOT_FOUND. In both cases
+    // we need to spill a valid candidate. That path is triggered when largestFreePosition is 0.
+    int largestFreePosition = 0;
+    if (candidate != REGISTER_CANDIDATE_NOT_FOUND) {
+      largestFreePosition = freePositions.get(candidate);
+      if (needsRegisterPair) {
+        largestFreePosition = Math.min(largestFreePosition, freePositions.get(candidate + 1));
+      }
+    }
+
+    // Determine what to do based on how long the selected candidate is free.
+    if (largestFreePosition == 0) {
+      // Not free. We need to spill.
+      if (mode == ArgumentReuseMode.ALLOW_ARGUMENT_REUSE_U4BIT) {
+        // No spilling is allowed when we allow argument reuse. Bailout and start over with
+        // argument reuse disallowed.
+        return false;
+      }
+      // If the first use for these intervals is unconstrained, just spill this interval instead
+      // of finding another candidate to spill via allocateBlockedRegister.
+      assert unhandledInterval.hasUses();
+      if (!unhandledInterval.getUses().first().hasConstraint()) {
+        int nextConstrainedPosition = unhandledInterval.firstUseWithConstraint(mode).getPosition();
+        int register = getSpillRegister(unhandledInterval, null);
+        LiveIntervals split = unhandledInterval.splitBefore(nextConstrainedPosition);
+        assignFreeRegisterToUnhandledInterval(unhandledInterval, register);
+        unhandled.add(split);
+      } else {
+        allocateBlockedRegister(unhandledInterval);
+      }
+    } else {
+      // We will use the candidate register(s) for unhandledInterval, and therefore potentially
+      // need to adjust maxRegisterNumber.
+      int candidateEnd = candidate + unhandledInterval.requiredRegisters() - 1;
+      if (largestFreePosition >= unhandledInterval.getEnd()) {
+        // Free for the entire interval. Allocate the register.
+        ensureCapacity(candidateEnd);
+        assignFreeRegisterToUnhandledInterval(unhandledInterval, candidate);
+      } else if (mode == ArgumentReuseMode.ALLOW_ARGUMENT_REUSE_U4BIT) {
+        // No splitting is allowed when we allow argument reuse. Bailout and start over with
+        // argument reuse disallowed.
+        return false;
+      } else {
+        // The candidate is free for the beginning of an interval. We split the interval
+        // and use the register for as long as we can.
+        int registerConstraintBeforeSplit = unhandledInterval.getRegisterLimit();
+        LiveIntervals split = unhandledInterval.splitBefore(largestFreePosition);
+        assert split != unhandledInterval;
+        unhandled.add(split);
+
+        // After splitting the live intervals we may be able to find a more appropriate register
+        // than the current candidate register. This is especially true if this is an argument that
+        // is pinned in its incoming register, since if the live intervals is now unconstrained we
+        // avoid a redundant move to a low register.
+        if (unhandledInterval.getRegisterLimit() != registerConstraintBeforeSplit) {
+          return allocateSingleInterval(unhandledInterval, mode);
+        }
+
+        ensureCapacity(candidateEnd);
+        assignFreeRegisterToUnhandledInterval(unhandledInterval, candidate);
+      }
+    }
+    return true;
+  }
+
+  private RegisterPositions computeFreePositions(
+      LiveIntervals unhandledInterval, int registerConstraint) {
     // Set all free positions for possible registers to max integer.
     RegisterPositions freePositions = new RegisterPositionsImpl(registerConstraint + 1);
 
@@ -1727,77 +1832,7 @@ public class LinearScanRegisterAllocator implements RegisterAllocator {
         }
       }
     }
-
-    assert freePositionsAreConsistentWithFreeRegisters(freePositions, registerConstraint);
-
-    // Attempt to use register hints.
-    if (useRegisterHint(unhandledInterval, registerConstraint, freePositions, needsRegisterPair)) {
-      return true;
-    }
-
-    // Get the register (pair) that is free the longest. That is the register with the largest
-    // free position.
-    int candidate =
-        getLargestValidCandidate(
-            unhandledInterval, registerConstraint, needsRegisterPair, freePositions, Type.ANY);
-
-    // It is not always possible to find a largest valid candidate. If none of the usable register
-    // are free we typically get the last candidate. However, if that candidate has to be
-    // discarded in order to workaround bugs we get REGISTER_CANDIDATE_NOT_FOUND. In both cases
-    // we need to spill a valid candidate. That path is triggered when largestFreePosition is 0.
-    int largestFreePosition = 0;
-    if (candidate != REGISTER_CANDIDATE_NOT_FOUND) {
-      largestFreePosition = freePositions.get(candidate);
-      if (needsRegisterPair) {
-        largestFreePosition = Math.min(largestFreePosition, freePositions.get(candidate + 1));
-      }
-    }
-
-    // Determine what to do based on how long the selected candidate is free.
-    if (largestFreePosition == 0) {
-      // Not free. We need to spill.
-      if (mode == ArgumentReuseMode.ALLOW_ARGUMENT_REUSE_U4BIT) {
-        // No spilling is allowed when we allow argument reuse. Bailout and start over with
-        // argument reuse disallowed.
-        return false;
-      }
-      // If the first use for these intervals is unconstrained, just spill this interval instead
-      // of finding another candidate to spill via allocateBlockedRegister.
-      if (!unhandledInterval.hasUses() || !unhandledInterval.getUses().first().hasConstraint()) {
-        int nextConstrainedPosition = unhandledInterval.firstUseWithConstraint().getPosition();
-        int register = getSpillRegister(unhandledInterval, null);
-        LiveIntervals split = unhandledInterval.splitBefore(nextConstrainedPosition);
-        assignFreeRegisterToUnhandledInterval(unhandledInterval, register);
-        unhandled.add(split);
-      } else {
-        allocateBlockedRegister(unhandledInterval);
-      }
-    } else {
-      // We will use the candidate register(s) for unhandledInterval, and therefore potentially
-      // need to adjust maxRegisterNumber.
-      int candidateEnd = candidate + unhandledInterval.requiredRegisters() - 1;
-      if (candidateEnd > maxRegisterNumber) {
-        increaseCapacity(candidateEnd);
-      }
-
-      if (largestFreePosition >= unhandledInterval.getEnd()) {
-        // Free for the entire interval. Allocate the register.
-        assignFreeRegisterToUnhandledInterval(unhandledInterval, candidate);
-      } else {
-        if (mode == ArgumentReuseMode.ALLOW_ARGUMENT_REUSE_U4BIT) {
-          // No splitting is allowed when we allow argument reuse. Bailout and start over with
-          // argument reuse disallowed.
-          return false;
-        }
-        // The candidate is free for the beginning of an interval. We split the interval
-        // and use the register for as long as we can.
-        LiveIntervals split = unhandledInterval.splitBefore(largestFreePosition);
-        assert split != unhandledInterval;
-        assignFreeRegisterToUnhandledInterval(unhandledInterval, candidate);
-        unhandled.add(split);
-      }
-    }
-    return true;
+    return freePositions;
   }
 
   // Attempt to use the register hint for the unhandled interval in order to avoid generating
@@ -2448,7 +2483,9 @@ public class LinearScanRegisterAllocator implements RegisterAllocator {
             split != null;
             split = sortedChildren.poll()) {
           int position = split.getStart();
-          spillMoves.addSpillOrRestoreMove(toGapPosition(position), split, current);
+          if (!isPinnedArgumentRegister(split)) {
+            spillMoves.addSpillOrRestoreMove(toGapPosition(position), split, current);
+          }
           current = split;
         }
       }
@@ -2501,6 +2538,10 @@ public class LinearScanRegisterAllocator implements RegisterAllocator {
           LiveIntervals parentInterval = value.getLiveIntervals();
           LiveIntervals fromIntervals = parentInterval.getSplitCovering(fromInstruction);
           LiveIntervals toIntervals = parentInterval.getSplitCovering(toInstruction);
+          if (isPinnedArgumentRegister(toIntervals)) {
+            // No need to add resolution moves to pinned argument registers.
+            continue;
+          }
           if (fromIntervals != toIntervals) {
             if (block.exit().isGoto() && !isCatch) {
               spillMoves.addOutResolutionMove(fromInstruction - 1, toIntervals, fromIntervals);
@@ -2524,6 +2565,14 @@ public class LinearScanRegisterAllocator implements RegisterAllocator {
         }
       }
     }
+  }
+
+  boolean isPinnedArgumentRegister(LiveIntervals intervals) {
+    if (intervals.isArgumentInterval()) {
+      assert intervals.getRegister() != NO_REGISTER;
+      return intervals.getRegister() < numberOfArgumentRegisters;
+    }
+    return false;
   }
 
   private static void addLiveRange(
@@ -3041,6 +3090,12 @@ public class LinearScanRegisterAllocator implements RegisterAllocator {
         assignRegister(argumentLiveInterval, register);
         register += current.requiredRegisters();
       }
+    }
+  }
+
+  private void ensureCapacity(int newMaxRegisterNumber) {
+    if (newMaxRegisterNumber > maxRegisterNumber) {
+      increaseCapacity(newMaxRegisterNumber);
     }
   }
 
