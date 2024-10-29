@@ -51,6 +51,8 @@ public interface InstructionSubject {
 
   boolean isInvokeDynamic();
 
+  boolean isInvokeRange();
+
   default boolean isInvokeSpecialOrDirect() {
     if (isCfInstruction()) {
       return asCfInstruction().isInvokeSpecial();
@@ -165,6 +167,12 @@ public interface InstructionSubject {
   boolean isMonitorExit();
 
   boolean isMove();
+
+  boolean isMoveException();
+
+  boolean isMoveFrom(int register);
+
+  boolean isMoveResult();
 
   boolean isFilledNewArray();
 

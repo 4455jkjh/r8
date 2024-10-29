@@ -19,18 +19,18 @@ import org.junit.runners.Parameterized.Parameter;
 import org.junit.runners.Parameterized.Parameters;
 
 @RunWith(Parameterized.class)
-public class ArgumentIn4BitRegisterTest extends TestBase {
+public class RedundantSpillingBeforeInvokeRangeTest extends TestBase {
 
   @Parameter(0)
   public TestParameters parameters;
 
   @Parameters(name = "{0}")
   public static TestParametersCollection data() {
-    return getTestParameters().withDexRuntimesAndAllApiLevels().build();
+    return getTestParameters().withDefaultDexRuntime().withMaximumApiLevel().build();
   }
 
   @Test
-  public void test() throws Exception {
+  public void testD8() throws Exception {
     testForD8()
         .addInnerClasses(getClass())
         .addOptionsModification(
@@ -43,8 +43,10 @@ public class ArgumentIn4BitRegisterTest extends TestBase {
               MethodSubject testMethodSubject =
                   inspector.clazz(Main.class).uniqueMethodWithOriginalName("test");
               assertThat(testMethodSubject, isPresent());
+              // TODO(b/302281605): Should not naively move each argument into different low
+              //  registers.
               assertEquals(
-                  0,
+                  18,
                   testMethodSubject
                       .streamInstructions()
                       .filter(InstructionSubject::isMove)
@@ -54,20 +56,20 @@ public class ArgumentIn4BitRegisterTest extends TestBase {
 
   static class Main {
 
-    public static void test(
-        Object a, long b, long c, long d, long e, long f, long g, long h, long i) {
-      Main main = (Main) a;
-      // Keep all argument alive.
-      use(b);
-      use(c);
-      use(d);
-      use(e);
-      use(f);
-      use(g);
-      use(h);
-      use(i);
+    Main(long a, long b, long c, long d, long e, long f, long g, long h) {}
+
+    void test(long a, long b, long c, long d, long e, long f, long g, long h) {
+      forceIntoLowRegister(a, a);
+      forceIntoLowRegister(b, b);
+      forceIntoLowRegister(c, c);
+      forceIntoLowRegister(d, d);
+      forceIntoLowRegister(e, e);
+      forceIntoLowRegister(f, f);
+      forceIntoLowRegister(g, g);
+      forceIntoLowRegister(h, h);
+      new Main(a, b, c, d, e, f, g, h);
     }
 
-    private static void use(long a) {}
+    static void forceIntoLowRegister(long a, long b) {}
   }
 }

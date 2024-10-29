@@ -140,6 +140,11 @@ public class CfInstructionSubject implements InstructionSubject {
   }
 
   @Override
+  public boolean isInvokeRange() {
+    return false;
+  }
+
+  @Override
   public boolean isPop() {
     return instruction instanceof CfStackInstruction
         && ((CfStackInstruction) instruction).getOpcode() == Opcode.Pop;
@@ -398,6 +403,21 @@ public class CfInstructionSubject implements InstructionSubject {
 
   @Override
   public boolean isMove() {
+    return false;
+  }
+
+  @Override
+  public boolean isMoveException() {
+    return false;
+  }
+
+  @Override
+  public boolean isMoveFrom(int register) {
+    return false;
+  }
+
+  @Override
+  public boolean isMoveResult() {
     return false;
   }
 

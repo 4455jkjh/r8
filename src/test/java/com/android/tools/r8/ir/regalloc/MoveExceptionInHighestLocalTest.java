@@ -6,12 +6,17 @@ package com.android.tools.r8.ir.regalloc;
 import static com.android.tools.r8.utils.codeinspector.Matchers.isPresent;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
+import com.android.tools.r8.dex.Constants;
+import com.android.tools.r8.dex.code.DexMoveException;
+import com.android.tools.r8.graph.DexCode;
 import com.android.tools.r8.utils.codeinspector.InstructionSubject;
 import com.android.tools.r8.utils.codeinspector.MethodSubject;
+import com.google.common.collect.MoreCollectors;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -19,7 +24,7 @@ import org.junit.runners.Parameterized.Parameter;
 import org.junit.runners.Parameterized.Parameters;
 
 @RunWith(Parameterized.class)
-public class ArgumentInLowRegisterWithMoreThan16RegistersTest extends TestBase {
+public class MoveExceptionInHighestLocalTest extends TestBase {
 
   @Parameter(0)
   public TestParameters parameters;
@@ -34,50 +39,45 @@ public class ArgumentInLowRegisterWithMoreThan16RegistersTest extends TestBase {
     testForD8()
         .addInnerClasses(getClass())
         .addOptionsModification(
-            options -> options.getTestingOptions().enableRegisterAllocation8BitRefinement = true)
+            options -> {
+              options.getTestingOptions().enableRegisterAllocation8BitRefinement = true;
+              options.getTestingOptions().enableUseLastLocalRegisterAsMoveExceptionRegister = true;
+            })
         .release()
         .setMinApi(parameters)
         .compile()
         .inspect(
             inspector -> {
               MethodSubject testMethodSubject =
-                  inspector.clazz(Main.class).uniqueInstanceInitializer();
+                  inspector.clazz(Main.class).uniqueMethodWithOriginalName("test");
               assertThat(testMethodSubject, isPresent());
-              assertEquals(
-                  2,
+
+              DexCode code = testMethodSubject.getMethod().getCode().asDexCode();
+              DexMoveException moveException =
                   testMethodSubject
                       .streamInstructions()
-                      .filter(InstructionSubject::isMove)
-                      .count());
+                      .filter(InstructionSubject::isMoveException)
+                      .collect(MoreCollectors.onlyElement())
+                      .asDexInstruction()
+                      .getInstruction();
+              int expectedMoveExceptionRegister = code.registerSize - code.incomingRegisterSize - 1;
+              assertTrue(expectedMoveExceptionRegister > Constants.U4BIT_MAX);
+              assertEquals(expectedMoveExceptionRegister, moveException.AA);
             })
-        .run(parameters.getRuntime(), Main.class)
-        .assertSuccessWithEmptyOutput();
+        .runDex2Oat(parameters.getRuntime())
+        .assertNoVerificationErrors();
   }
 
   static class Main {
 
-    long a;
-    long b;
-    long c;
-    long d;
-    long e;
-    long f;
-    long g;
-    long h;
-
-    Main(long a, long b, long c, long d, long e, long f, long g, long h) {
-      this.a = a;
-      this.b = b;
-      this.c = c;
-      this.d = d;
-      this.e = e;
-      this.f = f;
-      this.g = g;
-      this.h = h;
+    void test(long a, long b, long c, long d, long e, long f, long g, long h) {
+      try {
+        test(1, 2, 3, 4, 5, 6, 7, 8);
+      } catch (Exception exception) {
+        constrainedUse(exception, exception);
+      }
     }
 
-    public static void main(String[] args) {
-      new Main(1, 2, 3, 4, 5, 6, 7, 8);
-    }
+    static void constrainedUse(Object a, Object b) {}
   }
 }

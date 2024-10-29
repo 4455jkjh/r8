@@ -5,7 +5,7 @@ package com.android.tools.r8.ir.regalloc;
 
 import static com.android.tools.r8.utils.codeinspector.Matchers.isPresent;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
@@ -19,18 +19,18 @@ import org.junit.runners.Parameterized.Parameter;
 import org.junit.runners.Parameterized.Parameters;
 
 @RunWith(Parameterized.class)
-public class ArgumentIn4BitRegisterTest extends TestBase {
+public class InvokeRangeForConsecutiveArgumentsTest extends TestBase {
 
   @Parameter(0)
   public TestParameters parameters;
 
   @Parameters(name = "{0}")
   public static TestParametersCollection data() {
-    return getTestParameters().withDexRuntimesAndAllApiLevels().build();
+    return getTestParameters().withDefaultDexRuntime().withMaximumApiLevel().build();
   }
 
   @Test
-  public void test() throws Exception {
+  public void testD8() throws Exception {
     testForD8()
         .addInnerClasses(getClass())
         .addOptionsModification(
@@ -43,31 +43,23 @@ public class ArgumentIn4BitRegisterTest extends TestBase {
               MethodSubject testMethodSubject =
                   inspector.clazz(Main.class).uniqueMethodWithOriginalName("test");
               assertThat(testMethodSubject, isPresent());
-              assertEquals(
-                  0,
+              assertTrue(
                   testMethodSubject
                       .streamInstructions()
-                      .filter(InstructionSubject::isMove)
-                      .count());
+                      .filter(InstructionSubject::isInvokeMethod)
+                      .allMatch(InstructionSubject::isInvokeRange));
+              assertTrue(
+                  testMethodSubject.streamInstructions().noneMatch(InstructionSubject::isMove));
             });
   }
 
   static class Main {
 
-    public static void test(
-        Object a, long b, long c, long d, long e, long f, long g, long h, long i) {
-      Main main = (Main) a;
-      // Keep all argument alive.
-      use(b);
-      use(c);
-      use(d);
-      use(e);
-      use(f);
-      use(g);
-      use(h);
-      use(i);
+    void test(long a, long b, long c, long d, long e, long f, long g, long h) {
+      test(a, b, c, d, e, f, g, h);
+      testPartial(g, h);
     }
 
-    private static void use(long a) {}
+    static void testPartial(long a, long b) {}
   }
 }
