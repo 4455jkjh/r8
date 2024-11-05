@@ -180,7 +180,7 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
     }
   }
 
-  public static final CfVersion SUPPORTED_CF_VERSION = CfVersion.V24;
+  public static final CfVersion SUPPORTED_CF_VERSION = CfVersion.V25;
 
   public static final int SUPPORTED_DEX_VERSION =
       AndroidApiLevel.LATEST.getDexVersion().getIntValue();
@@ -2481,6 +2481,8 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
     public boolean allowUnusedDontWarnRules = true;
     public boolean alwaysUseExistingAccessInfoCollectionsInMemberRebinding = true;
     public boolean alwaysUsePessimisticRegisterAllocation = false;
+    public boolean enableLiveIntervalsSplittingForInvokeRange = false;
+    public boolean enableRegisterHintsForBlockedRegisters = false;
     // TODO(b/374266460): Investigate why enabling this leads to more moves, for example, in
     //  JetNews. Also investigate the impact on performance and how often the refinement pass is
     //  successful (i.e., how often the assumed 4 bit argument registers actually end up being 4

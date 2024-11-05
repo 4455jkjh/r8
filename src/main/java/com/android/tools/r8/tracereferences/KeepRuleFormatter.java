@@ -23,9 +23,22 @@ class KeepRuleFormatter extends Formatter {
       appendLine("# Missing class: " + tracedClass.getReference().getTypeName());
       return;
     }
-    append(allowObfuscation ? "-keep,allowobfuscation" : "-keep");
+    // Don't obfuscate enums as the Java runtime will use Enum.valueOf to find enum's referenced in
+    // annotations, see b/236691999.
+    append(
+        allowObfuscation
+                && (!tracedClass.getAccessFlags().isEnum()
+                    || System.getProperty("com.android.tools.r8.tracereferences.obfuscateAllEnums")
+                        != null)
+            ? "-keep,allowobfuscation"
+            : "-keep");
     if (tracedClass.getAccessFlags().isInterface()) {
-      appendLine(" interface " + tracedClass.getReference().getTypeName() + " {");
+      appendLine(
+          " "
+              + (tracedClass.getAccessFlags().isAnnotation() ? "@" : "")
+              + "interface "
+              + tracedClass.getReference().getTypeName()
+              + " {");
     } else if (tracedClass.getAccessFlags().isEnum()) {
       appendLine(" enum " + tracedClass.getReference().getTypeName() + " {");
     } else {
