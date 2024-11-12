@@ -319,7 +319,7 @@ public class CfRegisterAllocator implements RegisterAllocator {
 
   private void updateHints(LiveIntervals intervals) {
     for (Phi phi : intervals.getValue().uniquePhiUsers()) {
-      if (!phi.isValueOnStack() && phi.getLiveIntervals().getHint() == null) {
+      if (!phi.isValueOnStack() && !phi.getLiveIntervals().hasHint()) {
         phi.getLiveIntervals().setHint(intervals, unhandled);
         for (Value value : phi.getOperands()) {
           value.getLiveIntervals().setHint(intervals, unhandled);
@@ -329,7 +329,7 @@ public class CfRegisterAllocator implements RegisterAllocator {
   }
 
   private boolean tryHint(LiveIntervals unhandled) {
-    if (unhandled.getHint() == null) {
+    if (!unhandled.hasHint()) {
       return false;
     }
     boolean isWide = unhandled.getType().isWide();
@@ -521,10 +521,11 @@ public class CfRegisterAllocator implements RegisterAllocator {
 
   private void applyInstructionsBackwardsToRegisterLiveness(
       BasicBlock block, IntSet liveRegisters, int suffixSize) {
-    InstructionIterator iterator = block.iterator(block.getInstructions().size());
-    int instructionsLeft = suffixSize;
-    while (--instructionsLeft >= 0 && iterator.hasPrevious()) {
-      Instruction current = iterator.previous();
+    int i = 0;
+    for (var current = block.getLastInstruction(); current != null; current = current.getPrev()) {
+      if (++i > suffixSize) {
+        break;
+      }
       Value outValue = current.outValue();
       if (outValue != null && outValue.needsRegister()) {
         int register = getRegisterForValue(outValue);

@@ -97,7 +97,9 @@ import com.android.tools.r8.graph.analysis.ResourceAccessAnalysis;
 import com.android.tools.r8.ir.analysis.proto.GeneratedMessageLiteBuilderShrinker;
 import com.android.tools.r8.ir.analysis.proto.ProtoEnqueuerUseRegistry;
 import com.android.tools.r8.ir.analysis.proto.schema.ProtoEnqueuerExtension;
+import com.android.tools.r8.ir.analysis.type.ClassTypeElement;
 import com.android.tools.r8.ir.code.ArrayPut;
+import com.android.tools.r8.ir.code.ConstClass;
 import com.android.tools.r8.ir.code.ConstantValueUtils;
 import com.android.tools.r8.ir.code.IRCode;
 import com.android.tools.r8.ir.code.Instruction;
@@ -1127,7 +1129,7 @@ public class Enqueuer {
   }
 
   public void traceResourceValue(int value) {
-    appView.getResourceShrinkerState().trace(value);
+    appView.getResourceShrinkerState().trace(value, "from dex");
   }
 
   public void traceReflectiveFieldWrite(ProgramField field, ProgramMethod context) {
@@ -1516,6 +1518,11 @@ public class Enqueuer {
     MethodResolutionResult resolutionResult =
         handleInvokeOfDirectTarget(invokedMethod, context, reason);
     analyses.traceInvokeDirect(invokedMethod, resolutionResult, context);
+
+    if (invokedMethod.equals(appView.dexItemFactory().javaUtilEnumMapMembers.constructor)) {
+      // EnumMap uses reflection.
+      pendingReflectiveUses.add(context);
+    }
   }
 
   void traceInvokeInterface(
@@ -1570,16 +1577,14 @@ public class Enqueuer {
       identifierNameStrings.add(invokedMethod);
       // Revisit the current method to implicitly add -keep rule for items with reflective access.
       pendingReflectiveUses.add(context);
-    }
-    // See comment in handleJavaLangEnumValueOf.
-    if (invokedMethod == dexItemFactory.enumMembers.valueOf) {
+    } else if (invokedMethod == dexItemFactory.enumMembers.valueOf
+        || dexItemFactory.javaUtilEnumSetMembers.isFactoryMethod(invokedMethod)) {
+      // See comment in handleEnumValueOfOrCollectionInstantiation.
       pendingReflectiveUses.add(context);
-    }
-    // Handling of application services.
-    if (dexItemFactory.serviceLoaderMethods.isLoadMethod(invokedMethod)) {
+    } else if (invokedMethod == dexItemFactory.proxyMethods.newProxyInstance) {
       pendingReflectiveUses.add(context);
-    }
-    if (invokedMethod == dexItemFactory.proxyMethods.newProxyInstance) {
+    } else if (dexItemFactory.serviceLoaderMethods.isLoadMethod(invokedMethod)) {
+      // Handling of application services.
       pendingReflectiveUses.add(context);
     }
     markTypeAsLive(invokedMethod.getHolderType(), context);
@@ -4187,7 +4192,7 @@ public class Enqueuer {
     }
   }
 
-  private void synthesize() throws ExecutionException {
+  private void synthesize(Timing timing) throws ExecutionException {
     if (!mode.isInitialTreeShaking()) {
       return;
     }
@@ -4195,20 +4200,20 @@ public class Enqueuer {
     // In particular these additions are order independent, i.e., it does not matter which are
     // registered first and no dependencies may exist among them.
     SyntheticAdditions additions = new SyntheticAdditions(appView.createProcessorContext());
-    desugar(additions);
-    synthesizeInterfaceMethodBridges();
+    timing.time("Desugar", () -> desugar(additions));
+    timing.time("Synthesize interface method bridges", this::synthesizeInterfaceMethodBridges);
     if (additions.isEmpty()) {
       return;
     }
 
     // Commit the pending synthetics and recompute subtypes.
-    appInfo = appInfo.rebuildWithClassHierarchy(app -> app);
+    appInfo = timing.time("Rebuild AppInfo", () -> appInfo.rebuildWithClassHierarchy(app -> app));
     appView.setAppInfo(appInfo);
-    subtypingInfo = SubtypingInfo.create(appView);
+    subtypingInfo = timing.time("Create SubtypingInfo", () -> SubtypingInfo.create(appView));
 
     // Finally once all synthesized items "exist" it is now safe to continue tracing. The new work
     // items are enqueued and the fixed point will continue once this subroutine returns.
-    additions.enqueueWorkItems(this);
+    timing.time("Enqueue work items", () -> additions.enqueueWorkItems(this));
   }
 
   private boolean mustMoveToInterfaceCompanionMethod(ProgramMethod method) {
@@ -4638,7 +4643,9 @@ public class Enqueuer {
   private void trace(ExecutorService executorService, Timing timing) throws ExecutionException {
     timing.begin("Grow the tree.");
     try {
+      int round = 1;
       while (true) {
+        timing.begin("Compute fixpoint #" + round++);
         long numberOfLiveItems = getNumberOfLiveItems();
         while (worklist.hasNext()) {
           EnqueuerAction action = worklist.poll();
@@ -4651,38 +4658,49 @@ public class Enqueuer {
           timing.time("Conditional rules", () -> applicableRules.evaluateConditionalRules(this));
           assert getNumberOfLiveItems() == numberOfLiveItemsAfterProcessing;
           if (worklist.hasNext()) {
+            timing.end();
             continue;
           }
         }
 
         // Process all deferred annotations.
+        timing.begin("Process deferred annotations");
         processDeferredAnnotations(deferredAnnotations, AnnotatedKind::from);
         processDeferredAnnotations(
             deferredParameterAnnotations, annotatedItem -> AnnotatedKind.PARAMETER);
+        timing.end();
 
         // Continue fix-point processing while there are additional work items to ensure items that
         // are passed to Java reflections are traced.
         if (!pendingReflectiveUses.isEmpty()) {
+          timing.begin("Handle reflective behavior");
           pendingReflectiveUses.forEach(this::handleReflectiveBehavior);
           pendingReflectiveUses.clear();
+          timing.end();
         }
         if (worklist.hasNext()) {
+          timing.end();
           continue;
         }
 
         // Allow deferred tracing to enqueue worklist items.
-        if (deferredTracing.enqueueWorklistActions(worklist)) {
+        if (deferredTracing.enqueueWorklistActions(worklist, timing)) {
           assert worklist.hasNext();
+          timing.end();
           continue;
         }
 
         // Notify each analysis that a fixpoint has been reached, and give each analysis an
         // opportunity to add items to the worklist.
-        analyses.notifyFixpoint(this, worklist, executorService, timing);
+        timing.time(
+            "Notify analyses",
+            () -> analyses.notifyFixpoint(this, worklist, executorService, timing));
         if (worklist.hasNext()) {
+          timing.end();
           continue;
         }
 
+        timing.begin("Process delayed root set items");
         for (DelayedRootSetActionItem delayedRootSetActionItem :
             rootSet.delayedRootSetActionItems) {
           if (delayedRootSetActionItem.isInterfaceMethodSyntheticBridgeAction()) {
@@ -4690,26 +4708,31 @@ public class Enqueuer {
                 delayedRootSetActionItem.asInterfaceMethodSyntheticBridgeAction());
           }
         }
+        timing.end();
 
-        synthesize();
+        timing.time("Synthesize", () -> synthesize(timing));
 
+        timing.begin("Delayed interface method synthetic bridges");
         ConsequentRootSet consequentRootSet = computeDelayedInterfaceMethodSyntheticBridges();
         addConsequentRootSet(consequentRootSet);
         rootSet
             .getDependentMinimumKeepInfo()
             .merge(consequentRootSet.getDependentMinimumKeepInfo());
         rootSet.delayedRootSetActionItems.clear();
+        timing.end();
 
         if (worklist.hasNext()) {
+          timing.end();
           continue;
         }
 
         // Reached the fixpoint.
+        timing.end();
         break;
       }
 
       if (mode.isInitialTreeShaking()) {
-        postProcessingDesugaring();
+        timing.time("Post processing desugaring", this::postProcessingDesugaring);
       }
     } finally {
       timing.end();
@@ -5129,8 +5152,10 @@ public class Enqueuer {
       handleJavaLangReflectConstructorNewInstance(method, invoke);
       return;
     }
-    if (invokedMethod == dexItemFactory.enumMembers.valueOf) {
-      handleJavaLangEnumValueOf(method, invoke);
+    if (invokedMethod == dexItemFactory.enumMembers.valueOf
+        || invokedMethod == dexItemFactory.javaUtilEnumMapMembers.constructor
+        || dexItemFactory.javaUtilEnumSetMembers.isFactoryMethod(invokedMethod)) {
+      handleEnumValueOfOrCollectionInstantiation(method, invoke);
       return;
     }
     if (invokedMethod == dexItemFactory.proxyMethods.newProxyInstance) {
@@ -5462,17 +5487,44 @@ public class Enqueuer {
     }
   }
 
-  private void handleJavaLangEnumValueOf(ProgramMethod method, InvokeMethod invoke) {
+  private void handleEnumValueOfOrCollectionInstantiation(
+      ProgramMethod context, InvokeMethod invoke) {
+    if (invoke.inValues().isEmpty()) {
+      // Should never happen.
+      return;
+    }
+
     // The use of java.lang.Enum.valueOf(java.lang.Class, java.lang.String) will indirectly
     // access the values() method of the enum class passed as the first argument. The method
     // SomeEnumClass.valueOf(java.lang.String) which is generated by javac for all enums will
     // call this method.
-    if (invoke.inValues().get(0).isConstClass()) {
-      DexType type = invoke.inValues().get(0).definition.asConstClass().getType();
-      DexProgramClass clazz = getProgramClassOrNull(type, method);
-      if (clazz != null && clazz.isEnum()) {
-        markEnumValuesAsReachable(clazz, KeepReason.invokedFrom(method));
+    // Likewise, EnumSet and EnumMap call values() on the passed in Class.
+    Value firstArg = invoke.getFirstNonReceiverArgument();
+    if (firstArg.isPhi()) {
+      return;
+    }
+    DexType type;
+    if (invoke
+        .getInvokedMethod()
+        .getParameter(0)
+        .isIdenticalTo(appView.dexItemFactory().classType)) {
+      // EnumMap.<init>(), EnumSet.noneOf(), EnumSet.allOf(), Enum.valueOf().
+      ConstClass constClass = firstArg.definition.asConstClass();
+      if (constClass == null || !constClass.getType().isClassType()) {
+        return;
       }
+      type = constClass.getType();
+    } else {
+      // EnumSet.of(), EnumSet.range()
+      ClassTypeElement typeElement = firstArg.getType().asClassType();
+      if (typeElement == null) {
+        return;
+      }
+      type = typeElement.getClassType();
+    }
+    DexProgramClass clazz = getProgramClassOrNull(type, context);
+    if (clazz != null && clazz.isEnum()) {
+      markEnumValuesAsReachable(clazz, KeepReason.invokedFrom(context));
     }
   }
 

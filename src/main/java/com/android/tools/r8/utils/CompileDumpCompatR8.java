@@ -10,8 +10,10 @@ import com.android.tools.r8.DexIndexedConsumer.ArchiveConsumer;
 import com.android.tools.r8.OutputMode;
 import com.android.tools.r8.R8;
 import com.android.tools.r8.R8Command;
-import com.android.tools.r8.R8Command.Builder;
 import com.android.tools.r8.StringConsumer;
+import com.android.tools.r8.utils.compiledump.CompilerCommandDumpUtils;
+import com.android.tools.r8.utils.compiledump.ResourceShrinkerDumpUtils;
+import com.android.tools.r8.utils.compiledump.StartupProfileDumpUtils;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -95,9 +97,9 @@ public class CompileDumpCompatR8 extends CompileDumpBase {
     Path androidResourcesOutput = null;
     int minApi = 1;
     int threads = -1;
-    boolean enableMissingLibraryApiModeling = false;
-    boolean androidPlatformBuild = false;
-    boolean isolatedSplits = false;
+    BooleanBox enableMissingLibraryApiModeling = new BooleanBox(false);
+    BooleanBox androidPlatformBuild = new BooleanBox(false);
+    BooleanBox isolatedSplits = new BooleanBox(false);
     for (int i = 0; i < args.length; i++) {
       String option = args[i];
       if (VALID_OPTIONS.contains(option)) {
@@ -123,13 +125,13 @@ public class CompileDumpCompatR8 extends CompileDumpBase {
               break;
             }
           case "--enable-missing-library-api-modeling":
-            enableMissingLibraryApiModeling = true;
+            enableMissingLibraryApiModeling.set(true);
             break;
           case "--android-platform-build":
-            androidPlatformBuild = true;
+            androidPlatformBuild.set(true);
             break;
           case ISOLATED_SPLITS_FLAG:
-            isolatedSplits = true;
+            isolatedSplits.set(true);
             break;
           default:
             throw new IllegalArgumentException("Unimplemented option: " + option);
@@ -228,7 +230,7 @@ public class CompileDumpCompatR8 extends CompileDumpBase {
         program.add(Paths.get(option));
       }
     }
-    Builder commandBuilder =
+    R8Command.Builder commandBuilder =
         new CompatProguardCommandBuilder(isCompatMode)
             .addProgramFiles(program)
             .addLibraryFiles(library)
@@ -238,15 +240,35 @@ public class CompileDumpCompatR8 extends CompileDumpBase {
             .setOutput(outputPath, outputMode)
             .setMode(compilationMode);
     addArtProfilesForRewriting(commandBuilder, artProfileFiles);
-    addStartupProfileProviders(commandBuilder, startupProfileFiles);
-    setAndroidPlatformBuild(commandBuilder, androidPlatformBuild);
-    setIsolatedSplits(commandBuilder, isolatedSplits);
-    setEnableExperimentalMissingLibraryApiModeling(commandBuilder, enableMissingLibraryApiModeling);
+    if (!startupProfileFiles.isEmpty()) {
+      runIgnoreMissing(
+          () -> StartupProfileDumpUtils.addStartupProfiles(startupProfileFiles, commandBuilder),
+          "Could not add startup profiles.");
+    }
+    runIgnoreMissing(
+        () ->
+            CompilerCommandDumpUtils.setAndroidPlatformBuild(
+                commandBuilder, androidPlatformBuild.get()),
+        "Android platform flag not available.");
+    runIgnoreMissing(
+        () -> CompilerCommandDumpUtils.setIsolatedSplits(commandBuilder, isolatedSplits.get()),
+        "Isolated splits flag not available.");
+    runIgnoreMissing(
+        () ->
+            CompilerCommandDumpUtils.setEnableExperimentalMissingLibraryApiModeling(
+                commandBuilder, enableMissingLibraryApiModeling.get()),
+        "Missing library api modeling not available.");
     if (desugaredLibJson != null) {
       commandBuilder.addDesugaredLibraryConfiguration(readAllBytesJava7(desugaredLibJson));
     }
     if (androidResourcesInput != null) {
-      setupResourceShrinking(androidResourcesInput, androidResourcesOutput, commandBuilder);
+      Path finalAndroidResourcesInput = androidResourcesInput;
+      Path finalAndroidResourcesOutput = androidResourcesOutput;
+      runIgnoreMissing(
+          () ->
+              ResourceShrinkerDumpUtils.setupBaseResourceShrinking(
+                  finalAndroidResourcesInput, finalAndroidResourcesOutput, commandBuilder),
+          "Failed initializing resource shrinker.");
     }
     if (desugaredLibKeepRuleConsumer != null) {
       commandBuilder.setDesugaredLibraryKeepRuleConsumer(desugaredLibKeepRuleConsumer);

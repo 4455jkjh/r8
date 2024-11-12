@@ -35,7 +35,6 @@ public class RedundantSpillingBeforeInvokeRangeTest extends TestBase {
         .addInnerClasses(getClass())
         .addOptionsModification(
             options -> {
-              options.getTestingOptions().enableLiveIntervalsSplittingForInvokeRange = true;
               options.getTestingOptions().enableRegisterAllocation8BitRefinement = true;
               options.getTestingOptions().enableRegisterHintsForBlockedRegisters = true;
             })
@@ -62,7 +61,7 @@ public class RedundantSpillingBeforeInvokeRangeTest extends TestBase {
 
     Main(long a, long b, long c, long d, long e, long f, long g, long h) {}
 
-    void test(long a, long b, long c, long d, long e, long f, long g, long h) {
+    Main test(long a, long b, long c, long d, long e, long f, long g, long h) {
       forceIntoLowRegister(a, a);
       forceIntoLowRegister(b, b);
       forceIntoLowRegister(c, c);
@@ -71,7 +70,7 @@ public class RedundantSpillingBeforeInvokeRangeTest extends TestBase {
       forceIntoLowRegister(f, f);
       forceIntoLowRegister(g, g);
       forceIntoLowRegister(h, h);
-      new Main(a, b, c, d, e, f, g, h);
+      return new Main(a, b, c, d, e, f, g, h);
     }
 
     static void forceIntoLowRegister(long a, long b) {}
