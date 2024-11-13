@@ -544,6 +544,21 @@ public class RegisterMoveSchedulerTest extends TestBase {
     assertEquals(2, scheduler.getUsedTempRegisters());
   }
 
+  @Test
+  public void regressionTestBug378850589() {
+    CollectMovesIterator moves = new CollectMovesIterator();
+    int temp = 42;
+    RegisterMoveScheduler scheduler = new RegisterMoveScheduler(moves, temp);
+    scheduler.addMove(new RegisterMove(9, 12, TypeElement.getLong()));
+    scheduler.addMove(new RegisterMove(11, 8, TypeElement.getLong()));
+    scheduler.schedule();
+    assertEquals(3, moves.size());
+    assertEquals("42 <- 12", toString(moves.get(0)));
+    assertEquals("11 <- 8", toString(moves.get(1)));
+    assertEquals("9 <- 42", toString(moves.get(3)));
+    assertEquals(2, scheduler.getUsedTempRegisters());
+  }
+
   // Debugging aid.
   private void printMoves(List<Instruction> moves) {
     System.out.println("Generated moves:");

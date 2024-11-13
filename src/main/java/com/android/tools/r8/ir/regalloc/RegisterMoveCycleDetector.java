@@ -19,10 +19,7 @@ public class RegisterMoveCycleDetector {
 
   @SuppressWarnings("MixedMutabilityReturnType")
   static List<RegisterMoveCycle> getMoveCycles(TreeSet<RegisterMove> moveSet) {
-    // Although there can be a cycle when there are two moves, we return no cycles, since the
-    // default move scheduling has the same behavior as the cycle-based move scheduling in this
-    // case.
-    if (moveSet.size() <= 2) {
+    if (moveSet.size() <= 1) {
       return Collections.emptyList();
     }
     List<RegisterMoveCycle> moveCycles = new ArrayList<>();
