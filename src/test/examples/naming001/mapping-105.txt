@@ -1,2 +1,0 @@
-naming001.D -> naming001.D:
-    void keep() -> peek

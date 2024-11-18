@@ -1,4 +1,0 @@
-minification.InterfaceA -> ItfA:
-    int functionFromIntToInt(int) -> foo
-minification.InterfaceB -> ItfB:
-    int functionFromIntToInt(int) -> bar
