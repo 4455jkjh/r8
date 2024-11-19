@@ -1,0 +1,31 @@
+name: GitHub Repo Sync
+author: Wei He <github@weispot.com>
+description: ⤵️ Sync current repository with remote
+branding:
+  icon: 'git-branch'
+  color: 'gray-dark'
+inputs:
+  source_repo:
+    description: GitHub public repo slug or full https clone url (with access_token if needed)
+    required: true
+  source_branch:
+    description: Branch name to sync from
+    required: true
+  destination_branch:
+    description: Branch name to sync to in this repo
+    required: true
+  github_token:
+    description: GitHub token secret
+    required: true
+  sync_tags:
+    description: Should tags also be synced
+    required: false
+runs:
+  using: 'docker'
+  image: docker://ghcr.io/repo-sync/github-sync:v2.3.0
+  env:
+    GITHUB_TOKEN: ${{ inputs.github_token }}
+    SYNC_TAGS: ${{ inputs.sync_tags }}
+  args:
+    - ${{ inputs.source_repo }}
+    - ${{ inputs.source_branch }}:${{ inputs.destination_branch }}
