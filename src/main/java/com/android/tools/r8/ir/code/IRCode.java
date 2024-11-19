@@ -251,7 +251,7 @@ public class IRCode implements IRControlFlowGraph, ValueFactory {
       // normal successor.
       assert liveStack.isEmpty()
           || block.getSuccessors().size() - exceptionalSuccessors.size() == 1;
-      InstructionIterator iterator = block.listIterator(this, block.getInstructions().size());
+      InstructionIterator iterator = block.listIterator(block.getInstructions().size());
       while (iterator.hasPrevious()) {
         Instruction instruction = iterator.previous();
         Value outValue = instruction.outValue();
@@ -364,7 +364,7 @@ public class IRCode implements IRControlFlowGraph, ValueFactory {
     ListIterator<BasicBlock> blockIterator = listIterator();
     while (blockIterator.hasNext()) {
       BasicBlock block = blockIterator.next();
-      InstructionListIterator instructionIterator = block.listIterator(this);
+      InstructionListIterator instructionIterator = block.listIterator();
       boolean hasSeenThrowingInstruction = false;
       while (instructionIterator.hasNext()) {
         Instruction instruction = instructionIterator.next();
@@ -384,9 +384,6 @@ public class IRCode implements IRControlFlowGraph, ValueFactory {
         List<BasicBlock> successors = block.getSuccessors();
         if (successors.size() == 1 && ListUtils.first(successors).getPredecessors().size() > 1) {
           BasicBlock splitBlock = block.createSplitBlock(getNextBlockNumber(), true, null);
-          Goto newGoto = new Goto();
-          newGoto.setPosition(Position.none());
-          splitBlock.getInstructions().addLast(newGoto);
           blockIterator.add(splitBlock);
         }
       }

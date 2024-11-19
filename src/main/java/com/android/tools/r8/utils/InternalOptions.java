@@ -356,7 +356,6 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
   }
 
   public void disableGlobalOptimizations() {
-    inlinerOptions.enableInlining = false;
     enableClassInlining = false;
     enableDevirtualization = false;
     enableEnumUnboxing = false;
@@ -1874,6 +1873,13 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
       this.options = options;
     }
 
+    public boolean isEnabled() {
+      // Note that this is deliberately enabled in release mode even when optimizations and
+      // shrinking are disabled, since we still allow inlining of javac synthetic lambda methods
+      // into their R8 generated accessor methods.
+      return enableInlining && !options.debug;
+    }
+
     public static void disableInlining(InternalOptions options) {
       options.inlinerOptions().enableInlining = false;
     }
@@ -2606,6 +2612,15 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
     public boolean enableExperimentalMapFileVersion = false;
 
     public boolean alwaysGenerateLambdaFactoryMethods = false;
+
+    // Work-in-progress optimization: b/145280859.
+    public boolean listIterationRewritingEnabled =
+        System.getProperty("com.android.tools.r8.enableListIterationRewriting") != null;
+    public boolean listIterationRewritingRewriteInterfaces =
+        "all".equals(System.getProperty("com.android.tools.r8.enableListIterationRewriting"));
+    // Used by unit tests.
+    public boolean listIterationRewritingRewriteCustomIterators =
+        listIterationRewritingRewriteInterfaces;
   }
 
   public MapVersion getMapFileVersion() {

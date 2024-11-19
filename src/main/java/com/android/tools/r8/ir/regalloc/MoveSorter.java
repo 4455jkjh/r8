@@ -162,7 +162,7 @@ public class MoveSorter {
 
   void sortSuffix(BasicBlock predecessor, Set<Wrapper<Instruction>> sharedSuffix) {
     InstructionListIterator iterator =
-        predecessor.listIterator(code, predecessor.getInstructions().size() - 1);
+        predecessor.listIterator(predecessor.getInstructions().size() - 1);
     Deque<Instruction> removedInstructions = new ArrayDeque<>();
     while (iterator.hasPrevious()) {
       Instruction instruction = iterator.previous();
@@ -176,9 +176,7 @@ public class MoveSorter {
       }
     }
     assert removedInstructions.size() == sharedSuffix.size();
-    predecessor
-        .listIterator(code, predecessor.getInstructions().size() - 1)
-        .addAll(removedInstructions);
+    predecessor.listIterator(predecessor.getInstructions().size() - 1).addAll(removedInstructions);
   }
 
   private boolean hasTwoPredecessorsWithUniqueSuccessor(BasicBlock block) {
@@ -192,15 +190,17 @@ public class MoveSorter {
     // Check if either of the two instructions write the operand of the other instruction.
     if (instruction.isMove()) {
       FixedRegisterValue inValue = instruction.getFirstOperand().asFixedRegisterValue();
+      FixedRegisterValue outValue = instruction.outValue().asFixedRegisterValue();
       FixedRegisterValue laterOutValue = laterInstruction.outValue().asFixedRegisterValue();
-      if (laterOutValue.usesRegister(inValue)) {
+      if (laterOutValue.usesRegister(inValue) || laterOutValue.usesRegister(outValue)) {
         return true;
       }
     }
     if (laterInstruction.isMove()) {
       FixedRegisterValue outValue = instruction.outValue().asFixedRegisterValue();
       FixedRegisterValue laterInValue = laterInstruction.getFirstOperand().asFixedRegisterValue();
-      if (outValue.usesRegister(laterInValue)) {
+      FixedRegisterValue laterOutValue = laterInstruction.outValue().asFixedRegisterValue();
+      if (outValue.usesRegister(laterInValue) || outValue.usesRegister(laterOutValue)) {
         return true;
       }
     }
