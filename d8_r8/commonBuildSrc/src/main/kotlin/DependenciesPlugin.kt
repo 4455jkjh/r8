@@ -623,10 +623,10 @@ object ThirdPartyDeps {
     "google-java-format",
     Paths.get("third_party", "google-java-format").toFile(),
     Paths.get("third_party", "google-java-format.tar.gz.sha1").toFile())
-  val googleJavaFormat_1_14 = ThirdPartyDependency(
-    "google-java-format-1.14",
-    Paths.get("third_party", "google", "google-java-format", "1.14.0").toFile(),
-    Paths.get("third_party", "google", "google-java-format", "1.14.0.tar.gz.sha1").toFile())
+  val googleJavaFormat_1_24 = ThirdPartyDependency(
+    "google-java-format-1.24",
+    Paths.get("third_party", "google", "google-java-format", "1.24.0").toFile(),
+    Paths.get("third_party", "google", "google-java-format", "1.24.0.tar.gz.sha1").toFile())
   val googleYapf_20231013 = ThirdPartyDependency(
     "google-yapf-20231013",
     Paths.get("third_party", "google", "yapf", "20231013").toFile(),
@@ -817,7 +817,8 @@ fun getThirdPartyAndroidJars() : List<ThirdPartyDependency> {
     "lib-v32",
     "lib-v33",
     "lib-v34",
-    "lib-v35"
+    "lib-v35",
+    "lib-v36"
   ).map(::getThirdPartyAndroidJar)
 }
 
@@ -893,6 +894,7 @@ fun getThirdPartyKotlinCompilers() : List<ThirdPartyDependency> {
     "kotlin-compiler-1.8.0",
     "kotlin-compiler-1.9.21",
     "kotlin-compiler-2.0.20",
+    "kotlin-compiler-2.1.0-Beta1",
     "kotlin-compiler-dev")
     .map { ThirdPartyDependency(
       it,

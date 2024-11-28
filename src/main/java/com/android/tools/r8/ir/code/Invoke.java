@@ -241,13 +241,13 @@ public abstract class Invoke extends Instruction {
     if (arguments().isEmpty()) {
       return false;
     }
-    Value current = getFirstArgument();
-    if (!current.isArgument()) {
+    Argument current = getFirstArgument().getDefinitionOrNull(Instruction::isArgument);
+    if (current == null) {
       return false;
     }
     for (int i = 1; i < arguments().size(); i++) {
-      Value next = getArgument(i);
-      if (current.getNextConsecutive() != next) {
+      Argument next = getArgument(i).getDefinitionOrNull(Instruction::isArgument);
+      if (current.getNext() != next) {
         return false;
       }
       current = next;
@@ -317,5 +317,5 @@ public abstract class Invoke extends Instruction {
    * Subclasses must implement load and store handling and make sure to deal with a null out-value
    */
   @Override
-  public abstract void insertLoadAndStores(InstructionListIterator it, LoadStoreHelper helper);
+  public abstract void insertLoadAndStores(LoadStoreHelper helper);
 }

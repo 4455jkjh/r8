@@ -8,6 +8,7 @@ import static com.android.tools.r8.dex.Constants.U8BIT_MAX;
 import static com.android.tools.r8.ir.code.IRCode.INSTRUCTION_NUMBER_DELTA;
 
 import com.android.tools.r8.ir.code.Instruction;
+import com.android.tools.r8.ir.code.Invoke;
 import com.android.tools.r8.ir.code.JumpInstruction;
 import com.android.tools.r8.ir.code.Phi;
 import com.android.tools.r8.ir.code.Value;
@@ -36,14 +37,15 @@ public class LiveIntervals implements Comparable<LiveIntervals> {
   private final List<LiveIntervals> splitChildren = new ArrayList<>();
   private final IntArrayList sortedSplitChildrenEnds = new IntArrayList();
   private boolean sortedChildren = false;
-  private List<LiveRange> ranges = new ArrayList<>();
+  private ArrayList<LiveRange> ranges = new ArrayList<>();
   private final TreeSet<LiveIntervalsUse> uses = new TreeSet<>();
   private int register = NO_REGISTER;
   private int hint = NO_REGISTER;
   private boolean spilled = false;
-  private boolean isInvokeRangeIntervals = false;
+  private Invoke isInvokeRangeIntervals = null;
   private boolean usedInMonitorOperations = false;
   private boolean liveAtMoveExceptionEntry = false;
+  private boolean handled = false;
 
   // Only registers up to and including the registerLimit are allowed for this interval.
   private int registerLimit = U16BIT_MAX;
@@ -110,6 +112,15 @@ public class LiveIntervals implements Comparable<LiveIntervals> {
     return hint;
   }
 
+  public boolean isHandled() {
+    return handled;
+  }
+
+  // Equivalent to removing the live intervals from the unhandled set. This is O(1) instead of O(n).
+  public void setHandled() {
+    handled = true;
+  }
+
   public void setSpilled(boolean value) {
     // Check that we always spill arguments to their original register.
     assert getRegister() != NO_REGISTER;
@@ -141,10 +152,6 @@ public class LiveIntervals implements Comparable<LiveIntervals> {
   public void link(LiveIntervals next) {
     nextConsecutive = next;
     next.previousConsecutive = this;
-  }
-
-  public boolean isLinked() {
-    return splitParent.previousConsecutive != null || splitParent.nextConsecutive != null;
   }
 
   public boolean isArgumentInterval() {
@@ -297,17 +304,21 @@ public class LiveIntervals implements Comparable<LiveIntervals> {
   }
 
   public boolean isInvokeRangeIntervals() {
+    return isInvokeRangeIntervals != null;
+  }
+
+  public Invoke getIsInvokeRangeIntervals() {
     return isInvokeRangeIntervals;
   }
 
-  public void setIsInvokeRangeIntervals() {
-    assert !isInvokeRangeIntervals;
-    isInvokeRangeIntervals = true;
+  public void setIsInvokeRangeIntervals(Invoke invoke) {
+    assert !isInvokeRangeIntervals();
+    isInvokeRangeIntervals = invoke;
   }
 
   public void unsetIsInvokeRangeIntervals() {
     assert isSplitParent();
-    isInvokeRangeIntervals = false;
+    isInvokeRangeIntervals = null;
   }
 
   public boolean isLiveAtMoveExceptionEntry() {
@@ -372,6 +383,9 @@ public class LiveIntervals implements Comparable<LiveIntervals> {
   }
 
   public boolean overlapsPosition(int position) {
+    if (position < getStart() || position >= getEnd()) {
+      return false;
+    }
     for (LiveRange range : ranges) {
       if (range.start > position) {
         // Ranges are sorted. When a range starts after position there is no overlap.
@@ -386,6 +400,25 @@ public class LiveIntervals implements Comparable<LiveIntervals> {
 
   public boolean overlaps(LiveIntervals other) {
     return nextOverlap(other) != -1;
+  }
+
+  public boolean overlapsAnyInvokeRangeIntervals(List<LiveIntervals> intervalsList) {
+    boolean checked = false;
+    for (LiveIntervals intervals : intervalsList) {
+      boolean skip;
+      if (intervals.getValue().isDefinedByInstructionSatisfying(Instruction::isMove)) {
+        skip = false;
+      } else {
+        skip = checked;
+        if (!checked) {
+          checked = true;
+        }
+      }
+      if (!skip && overlaps(intervals)) {
+        return true;
+      }
+    }
+    return false;
   }
 
   public boolean anySplitOverlaps(LiveIntervals other) {
@@ -427,6 +460,18 @@ public class LiveIntervals implements Comparable<LiveIntervals> {
     return Integer.MAX_VALUE;
   }
 
+  public int firstUseWithConstraintAfter(int unhandledStart, ArgumentReuseMode mode) {
+    if (isInvokeRangeIntervals()) {
+      return getFirstUse();
+    }
+    for (LiveIntervalsUse use : uses) {
+      if (use.hasConstraint(mode) && use.getPosition() >= unhandledStart) {
+        return use.getPosition();
+      }
+    }
+    return Integer.MAX_VALUE;
+  }
+
   public boolean hasUses() {
     return !uses.isEmpty();
   }
@@ -451,17 +496,19 @@ public class LiveIntervals implements Comparable<LiveIntervals> {
     }
   }
 
-  public LiveIntervals splitBefore(Instruction instruction) {
-    return splitBefore(instruction.getNumber());
+  public LiveIntervals splitBefore(Instruction instruction, ArgumentReuseMode mode) {
+    return splitBefore(instruction.getNumber(), mode);
   }
 
-  public LiveIntervals splitAfter(Instruction instruction) {
-    return splitBefore(instruction.getNumber() + INSTRUCTION_NUMBER_DELTA);
+  public LiveIntervals splitAfter(Instruction instruction, ArgumentReuseMode mode) {
+    return splitBefore(instruction.getNumber() + INSTRUCTION_NUMBER_DELTA, mode);
   }
 
-  public LiveIntervals splitBefore(int start) {
+  public LiveIntervals splitBefore(int start, ArgumentReuseMode mode) {
     if (toInstructionPosition(start) == toInstructionPosition(getStart())) {
-      assert uses.size() == 0 || getFirstUse() != start;
+      assert uses.isEmpty()
+          || getFirstUse() != start
+          || (!uses.first().hasConstraint(mode) && !isInvokeRangeIntervals());
       register = NO_REGISTER;
       return this;
     }
@@ -472,8 +519,8 @@ public class LiveIntervals implements Comparable<LiveIntervals> {
     LiveIntervals splitChild = new LiveIntervals(splitParent);
     splitParent.splitChildren.add(splitChild);
     splitParent.sortedChildren = splitParent.splitChildren.size() == 1;
-    List<LiveRange> beforeSplit = new ArrayList<>();
-    List<LiveRange> afterSplit = new ArrayList<>();
+    ArrayList<LiveRange> beforeSplit = new ArrayList<>();
+    ArrayList<LiveRange> afterSplit = new ArrayList<>();
     if (start == getEnd()) {
       beforeSplit = ranges;
       afterSplit.add(new LiveRange(start, start));

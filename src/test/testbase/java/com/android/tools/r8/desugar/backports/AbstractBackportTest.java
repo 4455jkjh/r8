@@ -36,13 +36,14 @@ import java.util.Set;
 import org.junit.Assert;
 import org.junit.Test;
 
-abstract class AbstractBackportTest extends TestBase {
+public abstract class AbstractBackportTest extends TestBase {
   protected final TestParameters parameters;
   private final ClassInfo targetClass;
   private final ClassInfo testClass;
   private final Path testJar;
   private final String testClassName;
   private final Int2IntSortedMap invokeStaticCounts = new Int2IntAVLTreeMap();
+  private final Int2IntSortedMap staticGetCounts = new Int2IntAVLTreeMap();
   private final Set<String> ignoredInvokes = new HashSet<>();
 
   private static class ClassInfo {
@@ -85,22 +86,22 @@ abstract class AbstractBackportTest extends TestBase {
     }
   }
 
-  AbstractBackportTest(TestParameters parameters, Class<?> targetClass,
-      Class<?> testClass) {
+  protected AbstractBackportTest(
+      TestParameters parameters, Class<?> targetClass, Class<?> testClass) {
     this(parameters, new ClassInfo(targetClass), new ClassInfo(testClass), null, null);
   }
 
-  AbstractBackportTest(
+  protected AbstractBackportTest(
       TestParameters parameters, Class<?> targetClass, List<byte[]> testClassFileData) {
     this(parameters, new ClassInfo(targetClass), new ClassInfo(testClassFileData), null, null);
   }
 
-  AbstractBackportTest(
+  protected AbstractBackportTest(
       TestParameters parameters, String className, List<byte[]> testClassFileData) {
     this(parameters, new ClassInfo(className), new ClassInfo(testClassFileData), null, null);
   }
 
-  AbstractBackportTest(
+  protected AbstractBackportTest(
       TestParameters parameters, byte[] targetClassFileData, List<byte[]> testClassFileData) {
     this(
         parameters,
@@ -110,8 +111,8 @@ abstract class AbstractBackportTest extends TestBase {
         null);
   }
 
-  AbstractBackportTest(TestParameters parameters, Class<?> targetClass,
-      Path testJar, String testClassName) {
+  public AbstractBackportTest(
+      TestParameters parameters, Class<?> targetClass, Path testJar, String testClassName) {
     this(parameters, new ClassInfo(targetClass), null, testJar, testClassName);
   }
 
@@ -136,12 +137,17 @@ abstract class AbstractBackportTest extends TestBase {
       this.testClassName = testClassName;
     }
 
-    // Assume all method calls will be rewritten on the lowest API level.
+    // Assume all method calls and static gets will be rewritten on the lowest API level.
     invokeStaticCounts.put(AndroidApiLevel.B.getLevel(), 0);
+    staticGetCounts.put(AndroidApiLevel.B.getLevel(), 0);
   }
 
-  void registerTarget(AndroidApiLevel apiLevel, int invokeStaticCount) {
+  protected void registerTarget(AndroidApiLevel apiLevel, int invokeStaticCount) {
     invokeStaticCounts.put(apiLevel.getLevel(), invokeStaticCount);
+  }
+
+  void registerFieldTarget(AndroidApiLevel apiLevel, int getStaticCount) {
+    staticGetCounts.put(apiLevel.getLevel(), getStaticCount);
   }
 
   private int getTargetInvokesCount(AndroidApiLevel apiLevel) {
@@ -149,7 +155,12 @@ abstract class AbstractBackportTest extends TestBase {
     return invokeStaticCounts.get(key);
   }
 
-  void ignoreInvokes(String methodName) {
+  private int getTargetGetCount(AndroidApiLevel apiLevel) {
+    int key = staticGetCounts.headMap(apiLevel.getLevel() + 1).lastIntKey();
+    return staticGetCounts.get(key);
+  }
+
+  protected void ignoreInvokes(String methodName) {
     ignoredInvokes.add(methodName);
   }
 
@@ -243,6 +254,27 @@ abstract class AbstractBackportTest extends TestBase {
         + actualTargetInvokes
         + ": "
         + javaInvokeStatics, expectedTargetInvokes, actualTargetInvokes);
+
+    List<InstructionSubject> javaStaticGets =
+        testSubject.allMethods().stream()
+            .flatMap(MethodSubject::streamInstructions)
+            .filter(InstructionSubject::isStaticGet)
+            .filter(is -> is.getField().holder.toSourceString().equals(targetClass.getName()))
+            .collect(toList());
+
+    long expectedTargetStaticGets = getTargetGetCount(apiLevel);
+    long actualTargetStaticGets = javaStaticGets.size();
+    assertEquals(
+        "Expected "
+            + expectedTargetStaticGets
+            + " static gets on "
+            + targetClass.getName()
+            + " but found "
+            + actualTargetStaticGets
+            + ": "
+            + javaStaticGets,
+        expectedTargetStaticGets,
+        actualTargetStaticGets);
   }
 
   public String getTestClassName() {
@@ -250,7 +282,7 @@ abstract class AbstractBackportTest extends TestBase {
   }
 
   /** JUnit {@link Assert} isn't available in the VM runtime. This is a mini mirror of its API. */
-  static abstract class MiniAssert {
+  public abstract static class MiniAssert {
     static void assertTrue(boolean value) {
       assertEquals(true, value);
     }
