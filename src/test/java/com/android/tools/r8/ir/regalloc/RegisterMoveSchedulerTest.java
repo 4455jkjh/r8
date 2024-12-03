@@ -22,6 +22,7 @@ import com.android.tools.r8.ir.analysis.type.Nullability;
 import com.android.tools.r8.ir.analysis.type.TypeElement;
 import com.android.tools.r8.ir.code.BasicBlock;
 import com.android.tools.r8.ir.code.BasicBlockIterator;
+import com.android.tools.r8.ir.code.ConstNumber;
 import com.android.tools.r8.ir.code.IRCode;
 import com.android.tools.r8.ir.code.InitClass;
 import com.android.tools.r8.ir.code.Instruction;
@@ -56,6 +57,10 @@ public class RegisterMoveSchedulerTest extends TestBase {
 
     public Move get(int i) {
       return list.get(i).asMove();
+    }
+
+    public ConstNumber getConst(int i) {
+      return list.get(i).asConstNumber();
     }
 
     public int size() {
@@ -583,6 +588,34 @@ public class RegisterMoveSchedulerTest extends TestBase {
     assertEquals(2, scheduler.getUsedTempRegisters());
   }
 
+  @Test
+  public void reproNoSuchElementException() {
+    CollectMovesIterator moves = new CollectMovesIterator();
+    int temp = 42;
+    RegisterMoveScheduler scheduler = new RegisterMoveScheduler(moves, temp);
+    scheduler.addMove(new RegisterMove(10, 2, TypeElement.getInt()));
+    scheduler.addMove(new RegisterMove(2, 7, TypeElement.getLong()));
+    scheduler.addMove(new RegisterMove(4, 11, TypeElement.getLong()));
+    scheduler.addMove(new RegisterMove(6, 0, TypeElement.getLong()));
+    scheduler.addMove(new RegisterMove(8, 3, TypeElement.getLong()));
+    scheduler.addMove(
+        new RegisterMove(
+            11,
+            TypeElement.getInt(),
+            new ConstNumber(new Value(0, TypeElement.getInt(), null), 0)));
+    scheduler.schedule();
+    assertEquals(8, moves.size());
+    assertEquals("10 <- 2", toString(moves.get(0)));
+    assertEquals("5 <- 11", toString(moves.get(1)));
+    assertEquals("11 <- const 0", toString(moves.getConst(2)));
+    assertEquals("42 <- 7", toString(moves.get(3)));
+    assertEquals("8 <- 3", toString(moves.get(4)));
+    assertEquals("2 <- 42", toString(moves.get(5)));
+    assertEquals("4 <- 5", toString(moves.get(6)));
+    assertEquals("6 <- 0", toString(moves.get(7)));
+    assertEquals(2, scheduler.getUsedTempRegisters());
+  }
+
   // Debugging aid.
   private void printMoves(List<Instruction> moves) {
     System.out.println("Generated moves:");
@@ -594,7 +627,13 @@ public class RegisterMoveSchedulerTest extends TestBase {
     System.out.println("----------------");
   }
 
-  private String toString(Instruction move) {
+  private String toString(ConstNumber move) {
+    return move.outValue().asFixedRegisterValue().getRegister()
+        + " <- const "
+        + move.asConstNumber().getRawValue();
+  }
+
+  private String toString(Move move) {
     return move.outValue().asFixedRegisterValue().getRegister()
         + " <- "
         + move.getFirstOperand().asFixedRegisterValue().getRegister();

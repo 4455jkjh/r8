@@ -32,6 +32,8 @@ val javaTestBaseJarTask = projectTask("testbase", "testJar")
 val javaTestBaseDepsJar = projectTask("testbase", "depsJar")
 val java8TestJarTask = projectTask("tests_java_8", "testJar")
 val java11TestJarTask = projectTask("tests_java_11", "testJar")
+val java17TestJarTask = projectTask("tests_java_17", "testJar")
+val java21TestJarTask = projectTask("tests_java_21", "testJar")
 val bootstrapTestsDepsJarTask = projectTask("tests_bootstrap", "depsJar")
 val bootstrapTestJarTask = projectTask("tests_bootstrap", "testJar")
 val testsJava8SourceSetDependenciesTask = projectTask("tests_java_8", "sourceSetDependencyTask")
@@ -63,9 +65,13 @@ tasks {
   val packageTests by registering(Jar::class) {
     dependsOn(java8TestJarTask)
     dependsOn(java11TestJarTask)
+    dependsOn(java17TestJarTask)
+    dependsOn(java21TestJarTask)
     dependsOn(bootstrapTestJarTask)
     from(java8TestJarTask.outputs.files.map(::zipTree))
     from(java11TestJarTask.outputs.files.map(::zipTree))
+    from(java17TestJarTask.outputs.files.map(::zipTree))
+    from(java21TestJarTask.outputs.files.map(::zipTree))
     from(bootstrapTestJarTask.outputs.files.map(::zipTree))
     exclude("META-INF/*.kotlin_module", "**/*.kotlin_metadata")
     destinationDirectory.set(getRoot().resolveAll("build", "libs"))
@@ -149,7 +155,7 @@ tasks {
     val argList = mutableListOf("--keep-rules",
                     "--allowobfuscation",
                     "--lib",
-                    "${org.gradle.internal.jvm.Jvm.current().getJavaHome()}",
+                    "${getJavaHome(Jdk.JDK_21)}",
                     "--lib",
                     "$mainDepsJar",
                     "--lib",
@@ -283,7 +289,7 @@ tasks {
       "--classfile",
       "--debug",
       "--lib",
-      "${org.gradle.internal.jvm.Jvm.current().getJavaHome()}",
+      "${getJavaHome(Jdk.JDK_21)}",
       "--classpath",
       "$r8Jar",
       "--classpath",
@@ -424,6 +430,8 @@ tasks {
     systemProperty("com.android.tools.r8.artprofilerewritingcompletenesscheck", "true")
     systemProperty("R8_WITH_RELOCATED_DEPS", r8WithRelocatedDepsTask.outputs.files.singleFile)
 
+    javaLauncher = getJavaLauncher(Jdk.JDK_21)
+
     reports.junitXml.outputLocation.set(getRoot().resolveAll("build", "test-results", "test"))
     reports.html.outputLocation.set(getRoot().resolveAll("build", "reports", "tests", "test"))
   }
@@ -456,6 +464,7 @@ tasks {
     } else {
       dependsOn(gradle.includedBuild("tests_java_8").task(":test"))
       dependsOn(gradle.includedBuild("tests_java_17").task(":test"))
+      dependsOn(gradle.includedBuild("tests_java_21").task(":test"))
       dependsOn(gradle.includedBuild("tests_bootstrap").task(":test"))
     }
   }
