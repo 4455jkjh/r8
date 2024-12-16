@@ -47,6 +47,7 @@ import com.android.tools.r8.graph.ProgramMethod;
 import com.android.tools.r8.ir.code.Position;
 import com.android.tools.r8.ir.code.Position.SourcePosition;
 import com.android.tools.r8.ir.code.ValueType;
+import com.android.tools.r8.ir.desugar.backports.AndroidOsBuildVersionCodesFullRewrites;
 import com.android.tools.r8.ir.desugar.backports.BackportedMethodDesugaringEventConsumer;
 import com.android.tools.r8.ir.desugar.backports.BackportedMethods;
 import com.android.tools.r8.ir.desugar.backports.BooleanMethodRewrites;
@@ -110,11 +111,7 @@ public final class BackportedMethodRewriter implements CfInstructionDesugaring {
     if (instruction.isInvoke()) {
       CfInvoke invoke = instruction.asInvoke();
       MethodProvider<DexMethod> methodProvider = getProviderOrNull(invoke.getMethod(), context);
-      if (methodProvider == null
-          || appView
-              .getSyntheticItems()
-              .isSyntheticOfKind(
-                  context.getContextType(), kinds -> kinds.BACKPORT_WITH_FORWARDING)) {
+      if (methodProvider == null || shouldNotBackportInContext(context)) {
         return DesugarDescription.nothing();
       }
       return desugarInstruction(invoke, methodProvider);
@@ -122,17 +119,20 @@ public final class BackportedMethodRewriter implements CfInstructionDesugaring {
       assert instruction.isStaticFieldGet();
       CfStaticFieldRead staticGet = instruction.asStaticFieldGet();
       MethodProvider<DexField> methodProvider = getProviderOrNull(staticGet.getField());
-      if (methodProvider == null
-          || appView
-              .getSyntheticItems()
-              .isSyntheticOfKind(context.getContextType(), kinds -> kinds.BACKPORT_WITH_FORWARDING)
-          || appView
-              .getSyntheticItems()
-              .isSyntheticOfKind(context.getContextType(), kinds -> kinds.API_MODEL_OUTLINE)) {
+      if (methodProvider == null || shouldNotBackportInContext(context)) {
         return DesugarDescription.nothing();
       }
       return desugarInstruction(staticGet, methodProvider);
     }
+  }
+
+  private boolean shouldNotBackportInContext(ProgramMethod context) {
+    return appView
+            .getSyntheticItems()
+            .isSyntheticOfKind(context.getContextType(), kinds -> kinds.BACKPORT_WITH_FORWARDING)
+        || appView
+            .getSyntheticItems()
+            .isSyntheticOfKind(context.getContextType(), kinds -> kinds.API_MODEL_OUTLINE);
   }
 
   private DesugarDescription desugarInstruction(
@@ -280,7 +280,6 @@ public final class BackportedMethodRewriter implements CfInstructionDesugaring {
         new IdentityHashMap<>();
     private final Map<DexField, MethodProvider<DexField>> rewritableFields =
         new IdentityHashMap<>();
-    MethodProvider<DexField> singleBackportedField = null; // As there is only one now skip map.
 
     RewritableMethods(AppView<?> appView) {
       InternalOptions options = appView.options();
@@ -320,7 +319,7 @@ public final class BackportedMethodRewriter implements CfInstructionDesugaring {
       }
       if (options.getMinApiLevel().isLessThan(AndroidApiLevel.R)) {
         if (options.testing.alwaysBackportListSetMapMethods
-            || typeIsPresentWithoutBackportsFrom(factory.setType, AndroidApiLevel.R)) {
+            || typeIsPresentWithoutBackportsFrom(factory.javaUtilSetType, AndroidApiLevel.R)) {
           initializeAndroidRSetListMapMethodProviders(factory);
         }
         if (typeIsAbsentOrPresentWithoutBackportsFrom(factory.objectsType, AndroidApiLevel.R)) {
@@ -333,7 +332,7 @@ public final class BackportedMethodRewriter implements CfInstructionDesugaring {
       if (options.getMinApiLevel().isLessThan(AndroidApiLevel.S)) {
         initializeAndroidSMethodProviders(factory);
         if (options.testing.alwaysBackportListSetMapMethods
-            || typeIsPresentWithoutBackportsFrom(factory.setType, AndroidApiLevel.S)) {
+            || typeIsPresentWithoutBackportsFrom(factory.javaUtilSetType, AndroidApiLevel.S)) {
           initializeAndroidSSetListMapMethodProviders(factory);
         }
       }
@@ -368,7 +367,7 @@ public final class BackportedMethodRewriter implements CfInstructionDesugaring {
       builder.put(factory.objectsType, AndroidApiLevel.K);
       builder.put(factory.optionalType, AndroidApiLevel.N);
       builder.put(factory.predicateType, AndroidApiLevel.N);
-      builder.put(factory.setType, AndroidApiLevel.B);
+      builder.put(factory.javaUtilSetType, AndroidApiLevel.B);
       builder.put(factory.streamType, AndroidApiLevel.N);
       builder.put(factory.supplierType, AndroidApiLevel.N);
       ImmutableMap<DexType, AndroidApiLevel> typeMinApi = builder.build();
@@ -1240,61 +1239,65 @@ public final class BackportedMethodRewriter implements CfInstructionDesugaring {
       DexProto proto;
       DexMethod method;
 
-      // List<E> List.of(<args>) for 0 to 10 arguments and List.of(E[])
+      // Map empty collections to Collections.{EMPTY_LIST,EMPTY_MAP,EMPTY_SET}.
+      addProvider(
+          new InvokeRewriter(
+              factory.javaUtilListMembers.of0, CollectionMethodRewrites.REWRITE_EMPTY_LIST));
+      addProvider(
+          new InvokeRewriter(
+              factory.javaUtilMapMembers.of0, CollectionMethodRewrites.REWRITE_EMPTY_MAP));
+      addProvider(
+          new InvokeRewriter(
+              factory.javaUtilSetMembers.of0, CollectionMethodRewrites.REWRITE_EMPTY_SET));
+
+      // List<E> List.of(<args>) for 1 to 10 arguments and List.of(E[])
       type = factory.javaUtilListType;
       name = factory.createString("of");
-      for (int i = 0; i <= 10; i++) {
+      for (int i = 1; i <= 10; i++) {
         final int formalCount = i;
         proto = factory.createProto(type, Collections.nCopies(i, factory.objectType));
         method = factory.createMethod(type, proto, name);
         addProvider(
-            i == 0
-                ? new InvokeRewriter(method, CollectionMethodRewrites.rewriteListOfEmpty())
-                : new MethodGenerator(
-                    method,
-                    (options, methodArg) ->
-                        CollectionMethodGenerators.generateListOf(
-                            options, methodArg, formalCount)));
+            new MethodGenerator(
+                method,
+                (options, methodArg) ->
+                    CollectionMethodGenerators.generateListOf(options, methodArg, formalCount)));
       }
       proto = factory.createProto(type, factory.objectArrayType);
       method = factory.createMethod(type, proto, name);
       addProvider(
           new MethodGenerator(method, BackportedMethods::CollectionMethods_listOfArray, "ofArray"));
 
-      // Set<E> Set.of(<args>) for 0 to 10 arguments and Set.of(E[])
-      type = factory.setType;
+      // Set<E> Set.of(<args>) for 1 to 10 arguments and Set.of(E[])
+      type = factory.javaUtilSetType;
       name = factory.createString("of");
-      for (int i = 0; i <= 10; i++) {
+      for (int i = 1; i <= 10; i++) {
         final int formalCount = i;
         proto = factory.createProto(type, Collections.nCopies(i, factory.objectType));
         method = factory.createMethod(type, proto, name);
         addProvider(
-            i == 0
-                ? new InvokeRewriter(method, CollectionMethodRewrites.rewriteSetOfEmpty())
-                : new MethodGenerator(
-                    method,
-                    (options, methodArg) ->
-                        CollectionMethodGenerators.generateSetOf(options, methodArg, formalCount)));
+            new MethodGenerator(
+                method,
+                (options, methodArg) ->
+                    CollectionMethodGenerators.generateSetOf(options, methodArg, formalCount)));
       }
       proto = factory.createProto(type, factory.objectArrayType);
       method = factory.createMethod(type, proto, name);
       addProvider(
           new MethodGenerator(method, BackportedMethods::CollectionMethods_setOfArray, "ofArray"));
 
-      // Map<K, V> Map.of(<K, V args>) for 0 to 10 pairs and Map.ofEntries(Map.Entry<K, V>[])
-      type = factory.mapType;
+      // Map<K, V> Map.of(<K, V args>) for 1 to 10 pairs and Map.ofEntries(Map.Entry<K, V>[])
+      type = factory.javaUtilMapType;
       name = factory.createString("of");
-      for (int i = 0; i <= 10; i++) {
+      for (int i = 1; i <= 10; i++) {
         final int formalCount = i;
         proto = factory.createProto(type, Collections.nCopies(i * 2, factory.objectType));
         method = factory.createMethod(type, proto, name);
         addProvider(
-            i == 0
-                ? new InvokeRewriter(method, CollectionMethodRewrites.rewriteMapOfEmpty())
-                : new MethodGenerator(
-                    method,
-                    (ignore, methodArg) ->
-                        CollectionMethodGenerators.generateMapOf(factory, methodArg, formalCount)));
+            new MethodGenerator(
+                method,
+                (ignore, methodArg) ->
+                    CollectionMethodGenerators.generateMapOf(factory, methodArg, formalCount)));
       }
       proto = factory.createProto(type, factory.createArrayType(1, factory.mapEntryType));
       method = factory.createMethod(type, proto, "ofEntries");
@@ -1303,7 +1306,7 @@ public final class BackportedMethodRewriter implements CfInstructionDesugaring {
               method, BackportedMethods::CollectionMethods_mapOfEntries, "ofEntries"));
 
       // Map.Entry<K, V> Map.entry(K, V)
-      type = factory.mapType;
+      type = factory.javaUtilMapType;
       proto = factory.createProto(factory.mapEntryType, factory.objectType, factory.objectType);
       method = factory.createMethod(type, proto, "entry");
       addProvider(new MethodGenerator(method, BackportedMethods::CollectionMethods_mapEntry));
@@ -1327,22 +1330,22 @@ public final class BackportedMethodRewriter implements CfInstructionDesugaring {
               method, BackportedMethods::CollectionsMethods_copyOfList, "copyOfList"));
 
       // Set
-      type = factory.setType;
+      type = factory.javaUtilSetType;
 
       // Set Set.copyOf(Collection)
       name = factory.createString("copyOf");
-      proto = factory.createProto(factory.setType, factory.collectionType);
+      proto = factory.createProto(factory.javaUtilSetType, factory.collectionType);
       method = factory.createMethod(type, proto, name);
       addProvider(
           new MethodGenerator(
               method, BackportedMethods::CollectionsMethods_copyOfSet, "copyOfSet"));
 
       // Map
-      type = factory.mapType;
+      type = factory.javaUtilMapType;
 
       // Map Map.copyOf(Map)
       name = factory.createString("copyOf");
-      proto = factory.createProto(factory.mapType, factory.mapType);
+      proto = factory.createProto(factory.javaUtilMapType, factory.javaUtilMapType);
       method = factory.createMethod(type, proto, name);
       addProvider(
           new MethodGenerator(
@@ -1762,17 +1765,103 @@ public final class BackportedMethodRewriter implements CfInstructionDesugaring {
     }
 
     private void initializeAndroidBaklavaMethodProviders(DexItemFactory factory) {
+      DexType type;
+      DexString name;
+      DexProto proto;
+      DexMethod method;
+      DexField field;
+
+      // android.os.Build
+      type = factory.androidOsBuildType;
+
+      // int android.os.Build.getMajorSdkVersion(int)
+      name = factory.createString("getMajorSdkVersion");
+      proto = factory.createProto(factory.intType, factory.intType);
+      method = factory.createMethod(type, proto, name);
+      addProvider(
+          new MethodWithForwardingGenerator(
+              method, BackportedMethods::AndroidOsBuildMethods_getMajorSdkVersion));
+
+      // int android.os.Build.getMinorSdkVersion(int)
+      name = factory.createString("getMinorSdkVersion");
+      proto = factory.createProto(factory.intType, factory.intType);
+      method = factory.createMethod(type, proto, name);
+      addProvider(
+          new MethodWithForwardingGenerator(
+              method, BackportedMethods::AndroidOsBuildMethods_getMinorSdkVersion));
+
       // android.os.Build$VERSION
-      DexType type = factory.androidOsBuildVersionType;
+      type = factory.androidOsBuildVersionType;
 
       // int android.os.Build$VERSION.SDK_INT_FULL
-      DexString name = factory.createString("SDK_INT_FULL");
-      DexField field = factory.createField(type, factory.intType, name);
+      name = factory.createString("SDK_INT_FULL");
+      field = factory.createField(type, factory.intType, name);
       addProviderForField(
           new StaticFieldGetMethodWithForwardingGenerator(
               field,
               // Template code calls the method again.
               BackportedMethods::AndroidOsBuildVersionMethods_getSdkIntFull));
+
+      // android.os.Build$VERSION_CODES_FULL
+      Object[][] versionCodesFull = {
+        {"BASE", 10_000},
+        {"BASE_1_1", 20_000},
+        {"CUPCAKE", 30_000},
+        {"DONUT", 40_000},
+        {"ECLAIR", 50_000},
+        {"ECLAIR_0_1", 60_000},
+        {"ECLAIR_MR1", 70_000},
+        {"FROYO", 80_000},
+        {"GINGERBREAD", 90_000},
+        {"GINGERBREAD_MR1", 100_000},
+        {"HONEYCOMB", 110_000},
+        {"HONEYCOMB_MR1", 120_000},
+        {"HONEYCOMB_MR2", 130_000},
+        {"ICE_CREAM_SANDWICH", 140_000},
+        {"ICE_CREAM_SANDWICH_MR1", 150_000},
+        {"JELLY_BEAN", 160_000},
+        {"JELLY_BEAN_MR1", 170_000},
+        {"JELLY_BEAN_MR2", 180_000},
+        {"KITKAT", 190_000},
+        {"KITKAT_WATCH", 200_000},
+        {"LOLLIPOP", 210_000},
+        {"LOLLIPOP_MR1", 220_000},
+        {"M", 230_000},
+        {"N", 240_000},
+        {"N_MR1", 250_000},
+        {"O", 260_000},
+        {"O_MR1", 270_000},
+        {"P", 280_000},
+        {"Q", 290_000},
+        {"R", 300_000},
+        {"S", 310_000},
+        {"S_V2", 320_000},
+        {"TIRAMISU", 330_000},
+        {"UPSIDE_DOWN_CAKE", 340_000},
+        {"VANILLA_ICE_CREAM", 350_000},
+      };
+      type = factory.createType("Landroid/os/Build$VERSION_CODES_FULL;");
+      for (Object[] versionCodeFull : versionCodesFull) {
+        name = factory.createString((String) versionCodeFull[0]);
+        field = factory.createField(type, factory.intType, name);
+        addProviderForField(
+            new StaticGetRewriter(
+                field,
+                AndroidOsBuildVersionCodesFullRewrites.rewriteToConstInstruction(
+                    (Integer) versionCodeFull[1])));
+      }
+
+      // void java.util.concurrent.ExecutorService.close()
+      type = factory.createType("Ljava/util/concurrent/ExecutorService;");
+      name = factory.createString("close");
+      proto = factory.createProto(factory.voidType);
+      method = factory.createMethod(type, proto, name);
+      addProvider(
+          new StatifyingMethodGenerator(
+              method,
+              BackportedMethods::ExecutorServiceMethods_closeExecutorService,
+              "closeExecutorService",
+              type));
     }
 
     private void initializeAndroidUMethodProviders(DexItemFactory factory) {
@@ -1908,16 +1997,10 @@ public final class BackportedMethodRewriter implements CfInstructionDesugaring {
     private void addProviderForField(MethodProvider<DexField> generator) {
       MethodProvider<DexField> replaced = rewritableFields.put(generator.member, generator);
       assert replaced == null;
-      assert singleBackportedField == null;
-      singleBackportedField = generator;
     }
 
     MethodProvider<DexField> getProvider(DexField field) {
-      if (field.isIdenticalTo(singleBackportedField.member)) {
-        return singleBackportedField;
-      }
-      assert !rewritableFields.containsKey(field);
-      return null;
+      return rewritableFields.get(field);
     }
   }
 
@@ -1972,6 +2055,28 @@ public final class BackportedMethodRewriter implements CfInstructionDesugaring {
       instructionsWithPositions.add(end);
       instructionsWithPositions.add(new CfPosition(end, position));
       return instructionsWithPositions;
+    }
+  }
+
+  private static final class StaticGetRewriter extends MethodProvider<DexField> {
+
+    private final StaticFieldReadRewriter rewriter;
+
+    StaticGetRewriter(DexField field, StaticFieldReadRewriter rewriter) {
+      super(field);
+      this.rewriter = rewriter;
+    }
+
+    @Override
+    public Collection<CfInstruction> rewriteInstruction(
+        Position position,
+        CfInstruction instruction,
+        AppView<?> appView,
+        BackportedMethodDesugaringEventConsumer eventConsumer,
+        MethodProcessingContext methodProcessingContext,
+        LocalStackAllocator localStackAllocator) {
+      return rewriter.rewrite(
+          instruction.asStaticFieldGet(), appView.dexItemFactory(), localStackAllocator);
     }
   }
 
@@ -2036,6 +2141,19 @@ public final class BackportedMethodRewriter implements CfInstructionDesugaring {
 
     public Code generateTemplateMethod(DexItemFactory dexItemFactory, DexMethod method) {
       return factory.create(dexItemFactory, method);
+    }
+  }
+
+  // Version of MethodGenerator for backports which will call the method they backport.
+  // Such backports will not go through backporting again as that would cause infinite recursion.
+  private static class MethodWithForwardingGenerator extends MethodGenerator {
+    MethodWithForwardingGenerator(DexMethod method, TemplateMethodFactory factory) {
+      super(method, factory);
+    }
+
+    @Override
+    protected SyntheticKind getSyntheticKind(SyntheticNaming naming) {
+      return naming.BACKPORT_WITH_FORWARDING;
     }
   }
 
@@ -2255,6 +2373,19 @@ public final class BackportedMethodRewriter implements CfInstructionDesugaring {
     default Collection<CfInstruction> rewrite(
         CfInvoke invoke, DexItemFactory factory, LocalStackAllocator localStackAllocator) {
       return ImmutableList.of(rewriteSingle(invoke, factory));
+    }
+  }
+
+  public interface StaticFieldReadRewriter {
+
+    CfInstruction rewriteSingle(CfStaticFieldRead staticGet, DexItemFactory factory);
+
+    // Convenience wrapper since most rewrites are to a single instruction.
+    default Collection<CfInstruction> rewrite(
+        CfStaticFieldRead staticGet,
+        DexItemFactory factory,
+        LocalStackAllocator localStackAllocator) {
+      return ImmutableList.of(rewriteSingle(staticGet, factory));
     }
   }
 

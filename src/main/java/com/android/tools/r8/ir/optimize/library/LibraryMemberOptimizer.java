@@ -7,10 +7,10 @@ package com.android.tools.r8.ir.optimize.library;
 import com.android.tools.r8.contexts.CompilationContext.MethodProcessingContext;
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.DexClassAndMethod;
-import com.android.tools.r8.graph.DexEncodedField;
 import com.android.tools.r8.graph.DexField;
 import com.android.tools.r8.graph.DexItemFactory.LibraryMembers;
 import com.android.tools.r8.graph.DexType;
+import com.android.tools.r8.graph.LibraryField;
 import com.android.tools.r8.graph.ProgramMethod;
 import com.android.tools.r8.ir.code.BasicBlock;
 import com.android.tools.r8.ir.code.BasicBlockIterator;
@@ -47,10 +47,14 @@ public class LibraryMemberOptimizer implements CodeOptimization {
     timing.begin("Register optimizers");
     PrimitiveMethodOptimizer.forEachPrimitiveOptimizer(appView, this::register);
     register(new ClassOptimizer(appView));
+    register(new CollectionsOptimizer(appView));
     register(new ConstructorOptimizer(appView));
+    register(new ListOptimizer(appView));
+    register(new MapOptimizer(appView));
     register(new MethodOptimizer(appView));
     register(new ObjectMethodOptimizer(appView));
     register(new ObjectsMethodOptimizer(appView));
+    register(new SetOptimizer(appView));
     register(new StringBuilderMethodOptimizer(appView));
     register(new StringMethodOptimizer(appView));
     if (appView.enableWholeProgramOptimizations()
@@ -87,8 +91,15 @@ public class LibraryMemberOptimizer implements CodeOptimization {
   }
 
   /** Returns true if it is safe to assume that the given library field is final. */
-  public boolean isFinalLibraryField(DexEncodedField field) {
-    return field.isFinal() && finalLibraryFields.contains(field.getReference());
+  public boolean isFinalLibraryField(LibraryField field) {
+    // We currently assume that fields declared final in the given android.jar are final at runtime.
+    // If this turns out not to be the case for some fields, we can either add a deny list or extend
+    // the API database.
+    //
+    // We explicitly do not treat System.in, System.out and System.err as final since they have
+    // explicit setters, e.g., System#setIn.
+    return field.getAccessFlags().isFinal()
+        && field.getHolderType().isNotIdenticalTo(appView.dexItemFactory().javaLangSystemType);
   }
 
   /**
@@ -148,13 +159,6 @@ public class LibraryMemberOptimizer implements CodeOptimization {
         LibraryMethodModelCollection<?> optimizer =
             libraryMethodModelCollections.get(singleTarget.getHolderType());
         if (optimizer == null) {
-          continue;
-        }
-
-        if (invoke.hasUnusedOutValue()
-            && !singleTarget.getDefinition().isInstanceInitializer()
-            && !invoke.instructionMayHaveSideEffects(appView, code.context())) {
-          instructionIterator.removeOrReplaceByDebugLocalRead();
           continue;
         }
 

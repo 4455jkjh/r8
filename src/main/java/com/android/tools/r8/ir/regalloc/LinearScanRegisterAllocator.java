@@ -22,6 +22,7 @@ import com.android.tools.r8.ir.code.Argument;
 import com.android.tools.r8.ir.code.ArithmeticBinop;
 import com.android.tools.r8.ir.code.BasicBlock;
 import com.android.tools.r8.ir.code.CheckCast;
+import com.android.tools.r8.ir.code.DebugLocalWrite;
 import com.android.tools.r8.ir.code.DebugLocalsChange;
 import com.android.tools.r8.ir.code.IRCode;
 import com.android.tools.r8.ir.code.IRCode.LiveAtEntrySets;
@@ -1087,13 +1088,12 @@ public class LinearScanRegisterAllocator implements RegisterAllocator {
         intervals.setSpilled(false);
       }
       intervals.clearRegisterAssignment();
+      intervals.unsetHandled();
       intervals.unsetIsInvokeRangeIntervals();
     }
   }
 
-  /**
-   * Get the register allocated to a given set of live intervals.
-   */
+  /** Get the register allocated to a given set of live intervals. */
   private int getRegisterForIntervals(LiveIntervals intervals) {
     int intervalsRegister = intervals.getRegister();
     return realRegisterNumberFromAllocated(intervalsRegister);
@@ -1143,12 +1143,6 @@ public class LinearScanRegisterAllocator implements RegisterAllocator {
     processArgumentLiveIntervals();
     boolean hasInvokeRangeLiveIntervals = splitLiveIntervalsForInvokeRange();
     allocateRegistersForMoveExceptionIntervals(hasInvokeRangeLiveIntervals);
-    timing.end();
-
-    timing.begin("Argument linked");
-    for (LiveIntervals argumentLiveIntervals : getArgumentLiveIntervals()) {
-      allocateRegistersForInvokeRangeSplits(argumentLiveIntervals);
-    }
     timing.end();
 
     // Go through each unhandled live interval and find a register for it.
@@ -1474,78 +1468,88 @@ public class LinearScanRegisterAllocator implements RegisterAllocator {
    */
   @SuppressWarnings("JdkObsolete")
   private void allocateRegistersForInvokeRangeSplits(LiveIntervals unhandledIntervals) {
-    if (!unhandledIntervals.isSplitParent()) {
+    LiveIntervals splitParent = unhandledIntervals.getSplitParent();
+    if (splitParent.isInvokeRangeIntervalsProcessed()) {
       return;
     }
     timing.begin("Extract splits");
     List<LiveIntervals> invokeRangeIntervals =
         ListUtils.filter(
-            unhandledIntervals.getSplitChildren(),
+            splitParent.getSplitChildren(),
             split -> split.isInvokeRangeIntervals() && !split.hasRegister());
     timing.end();
     timing.begin("Process splits");
-    for (LiveIntervals split : invokeRangeIntervals) {
-      timing.begin("Extract list");
-      Invoke invoke = split.getIsInvokeRangeIntervals();
-      List<LiveIntervals> intervalsList =
-          ListUtils.map(
-              invoke.arguments(),
-              invokeArgument -> {
-                LiveIntervals overlappingInvokeArgumentIntervals =
-                    invokeArgument.getLiveIntervals().getSplitCovering(invoke);
-                assert !overlappingInvokeArgumentIntervals.hasRegister();
-                assert overlappingInvokeArgumentIntervals.getStart() == invoke.getNumber() - 1;
-                assert overlappingInvokeArgumentIntervals.getEnd() == invoke.getNumber()
-                    || overlappingInvokeArgumentIntervals.getEnd() == invoke.getNumber() + 1;
-                return overlappingInvokeArgumentIntervals;
-              });
-      timing.end();
-      timing.begin("Prelude");
-
-      // Save the current register allocation state so we can restore it at the end.
-      timing.begin("Copy free registers");
-      IntSortedSet savedFreeRegisters = new IntRBTreeSet(freeRegisters);
-      int savedMaxRegisterNumber = maxRegisterNumber;
-      timing.end();
-
-      // Simulate adding all the active intervals to the inactive set by blocking their register if
-      // they overlap with any of the invoke/range intervals.
-      timing.begin("Overlaps active");
-      for (LiveIntervals active : active) {
-        // We could allow the use of all the currently active registers for the ranged invoke (by
-        // adding the registers for all the active intervals to freeRegisters here). That could lead
-        // to lower register pressure. However, it would also often mean that we cannot allocate the
-        // right argument register to the current unhandled interval. Size measurements on GMSCore
-        // indicate that blocking the current active registers works the best for code size.
-        if (Iterables.any(intervalsList, active::overlaps)) {
-          excludeRegistersForInterval(active);
-        } else if (active.isArgumentInterval()) {
-          // Allow the ranged invoke to use argument registers if free. This improves register
-          // allocation for bridge methods that forwards all of their arguments after check-cast
-          // checks on their types.
-          freeOccupiedRegistersForIntervals(active);
-        }
-      }
-      timing.end();
-
-      timing.begin("Remove intervals from unhandled");
-      intervalsList.forEach(LiveIntervals::setHandled);
-      timing.end();
-      timing.end();
-      timing.begin("Allocate");
-      allocateLinkedIntervals(intervalsList, invoke);
-      timing.end();
-      timing.begin("Postlude");
-      // Restore the register allocation state.
-      freeRegisters = savedFreeRegisters;
-      // In case maxRegisterNumber has changed, update freeRegisters.
-      for (int i = savedMaxRegisterNumber + 1; i <= maxRegisterNumber; i++) {
-        freeRegisters.add(i);
-      }
-      // Move all the argument intervals to the inactive set.
-      inactive.addAll(intervalsList);
-      timing.end();
+    if (splitParent.isInvokeRangeIntervals() && !splitParent.hasRegister()) {
+      allocateRegistersForInvokeRangeSplit(unhandledIntervals);
     }
+    for (LiveIntervals split : invokeRangeIntervals) {
+      allocateRegistersForInvokeRangeSplit(split);
+    }
+    splitParent.setInvokeRangeIntervalsProcessed();
+    timing.end();
+  }
+
+  private void allocateRegistersForInvokeRangeSplit(LiveIntervals split) {
+
+    timing.begin("Extract list");
+    Invoke invoke = split.getIsInvokeRangeIntervals();
+    List<LiveIntervals> intervalsList =
+        ListUtils.map(
+            invoke.arguments(),
+            invokeArgument -> {
+              LiveIntervals overlappingInvokeArgumentIntervals =
+                  invokeArgument.getLiveIntervals().getSplitCovering(invoke);
+              assert !overlappingInvokeArgumentIntervals.hasRegister();
+              assert overlappingInvokeArgumentIntervals.getStart() == invoke.getNumber() - 1;
+              assert overlappingInvokeArgumentIntervals.getEnd() == invoke.getNumber()
+                  || overlappingInvokeArgumentIntervals.getEnd() == invoke.getNumber() + 1;
+              return overlappingInvokeArgumentIntervals;
+            });
+    timing.end();
+    timing.begin("Prelude");
+
+    // Save the current register allocation state so we can restore it at the end.
+    timing.begin("Copy free registers");
+    IntSortedSet savedFreeRegisters = new IntRBTreeSet(freeRegisters);
+    int savedMaxRegisterNumber = maxRegisterNumber;
+    timing.end();
+
+    // Simulate adding all the active intervals to the inactive set by blocking their register if
+    // they overlap with any of the invoke/range intervals.
+    timing.begin("Overlaps active");
+    for (LiveIntervals active : active) {
+      // We could allow the use of all the currently active registers for the ranged invoke (by
+      // adding the registers for all the active intervals to freeRegisters here). That could lead
+      // to lower register pressure. However, it would also often mean that we cannot allocate the
+      // right argument register to the current unhandled interval. Size measurements on GMSCore
+      // indicate that blocking the current active registers works the best for code size.
+      if (Iterables.any(intervalsList, active::overlaps)) {
+        excludeRegistersForInterval(active);
+      } else if (active.isArgumentInterval()) {
+        // Allow the ranged invoke to use argument registers if free. This improves register
+        // allocation for bridge methods that forwards all of their arguments after check-cast
+        // checks on their types.
+        freeOccupiedRegistersForIntervals(active);
+      }
+    }
+    timing.end();
+
+    timing.begin("Remove intervals from unhandled");
+    intervalsList.forEach(LiveIntervals::setHandled);
+    timing.end();
+    timing.end();
+    timing.begin("Allocate");
+    allocateLinkedIntervals(intervalsList, invoke);
+    timing.end();
+    timing.begin("Postlude");
+    // Restore the register allocation state.
+    freeRegisters = savedFreeRegisters;
+    // In case maxRegisterNumber has changed, update freeRegisters.
+    for (int i = savedMaxRegisterNumber + 1; i <= maxRegisterNumber; i++) {
+      freeRegisters.add(i);
+    }
+    // Move all the argument intervals to the inactive set.
+    inactive.addAll(intervalsList);
     timing.end();
   }
 
@@ -2267,43 +2271,52 @@ public class LinearScanRegisterAllocator implements RegisterAllocator {
     return freePositions;
   }
 
-  // Attempt to use the register hint for the unhandled interval in order to avoid generating
-  // moves.
+  // Looks at surrounding alias live intervals and tries to assign similar registers to the current
+  // register. If an explicit hint is set on the live intervals we also try to use that.
   private boolean useRegisterHint(
       LiveIntervals unhandledInterval, int registerConstraint, RegisterPositions freePositions) {
-    // If the unhandled interval has a hint we give it that register if it is available without
-    // spilling. For phis we also use the hint before looking at the operand registers. The
-    // phi could have a hint from an argument moves which it seems more important to honor in
-    // practice.
+    // Keep track of which hints have been tested to avoid redundant analysis.
     IntSet triedHints = new IntArraySet();
+
+    // First attempt to assign a register that has already been assigned to another live intervals
+    // for the current value. We also consider the live intervals for any alias SSA values through
+    // DebugLocalWrite instructions (debug mode only). Prioritize the most frequently used
+    // registers.
+    Multiset<Integer> hints = HashMultiset.create();
+    for (LiveIntervals sibling : unhandledInterval.getSplitParent().getSplitChildren()) {
+      if (sibling.hasRegister()) {
+        hints.add(sibling.getRegister());
+      }
+    }
+    if (options().debug) {
+      for (Instruction user :
+          unhandledInterval.getValue().uniqueUsers(Instruction::isDebugLocalWrite)) {
+        for (LiveIntervals aliasSibling : user.outValue().getLiveIntervals().getSplitChildren()) {
+          if (aliasSibling.hasRegister()) {
+            hints.add(aliasSibling.getRegister());
+          }
+        }
+      }
+    }
+    if (tryHints(unhandledInterval, registerConstraint, freePositions, hints, triedHints)) {
+      return true;
+    }
+
+    // Try to use the explicit hint, if any.
     if (unhandledInterval.hasHint()
-        && triedHints.add(unhandledInterval.getHint())
         && tryHint(
             unhandledInterval,
             registerConstraint,
             freePositions,
-            unhandledInterval.getHint())) {
+            unhandledInterval.getHint(),
+            triedHints)) {
       return true;
     }
 
-    LiveIntervals previousSplit = unhandledInterval.getPreviousSplit();
-    if (previousSplit != null
-        && triedHints.add(previousSplit.getRegister())
-        && tryHint(
-            unhandledInterval,
-            registerConstraint,
-            freePositions,
-            previousSplit.getRegister())) {
-      return true;
-    }
-
+    // If the next split has already assigned a register, then it is an invoke-range intervals. Try
+    // to "steal" the register if it is blocked by spilling the values that occupy the register.
     LiveIntervals nextSplit = unhandledInterval.getNextSplit();
     if (nextSplit != null && nextSplit.hasRegister()) {
-      if (triedHints.add(nextSplit.getRegister())
-          && tryHint(
-              unhandledInterval, registerConstraint, freePositions, nextSplit.getRegister())) {
-        return true;
-      }
       if (freePositions.isBlocked(nextSplit.getRegister(), unhandledInterval.isWide())
           && tryAllocateBlockedHint(
               unhandledInterval, registerConstraint, nextSplit.getRegister())) {
@@ -2315,29 +2328,54 @@ public class LinearScanRegisterAllocator implements RegisterAllocator {
     // the registers assigned to the operand intervals. We determine all the registers used
     // for operands and try them one by one based on frequency.
     Value value = unhandledInterval.getValue();
-    if (value.isPhi()) {
+    if (value.isDefinedByInstructionSatisfying(Instruction::isDebugLocalWrite)) {
+      DebugLocalWrite debugLocalWrite = value.getDefinition().asDebugLocalWrite();
+      LiveIntervals theIntervals =
+          debugLocalWrite.src().getLiveIntervals().getSplitCovering(debugLocalWrite);
+      assert theIntervals != null;
+      if (tryHint(unhandledInterval, registerConstraint, freePositions, theIntervals, triedHints)) {
+        return true;
+      }
+    } else if (value.isPhi()) {
+      // Search for a good register for phis using the registers assigned to the operand intervals.
+      // We determine all the registers used for operands and try them one by one based on
+      // frequency.
       Phi phi = value.asPhi();
-      Multiset<Integer> map = HashMultiset.create();
-      List<Value> operands = phi.getOperands();
-      for (int i = 0; i < operands.size(); i++) {
-        LiveIntervals intervals = operands.get(i).getLiveIntervals();
+      hints.clear();
+      for (int i = 0; i < phi.getOperands().size(); i++) {
+        LiveIntervals intervals = phi.getOperand(i).getLiveIntervals();
         if (intervals.hasSplits()) {
           BasicBlock pred = phi.getBlock().getPredecessor(i);
           intervals = intervals.getSplitCovering(pred.exit().getNumber());
         }
         if (intervals.hasRegister()) {
-          map.add(intervals.getRegister());
+          hints.add(intervals.getRegister());
         }
       }
-      for (Multiset.Entry<Integer> entry : Multisets.copyHighestCountFirst(map).entrySet()) {
-        int register = entry.getElement();
-        if (tryHint(unhandledInterval, registerConstraint, freePositions, register)) {
-          return true;
-        }
-      }
+      return tryHints(unhandledInterval, registerConstraint, freePositions, hints, triedHints);
     }
-
     return false;
+  }
+
+  private boolean tryHint(
+      LiveIntervals unhandledInterval,
+      int registerConstraint,
+      RegisterPositions freePositions,
+      LiveIntervals hint,
+      IntSet triedHints) {
+    return hint.hasRegister()
+        && tryHint(
+            unhandledInterval, registerConstraint, freePositions, hint.getRegister(), triedHints);
+  }
+
+  private boolean tryHint(
+      LiveIntervals unhandledInterval,
+      int registerConstraint,
+      RegisterPositions freePositions,
+      int hint,
+      IntSet triedHints) {
+    return triedHints.add(hint)
+        && tryHint(unhandledInterval, registerConstraint, freePositions, hint);
   }
 
   // Attempt to allocate the hint register to the unhandled intervals.
@@ -2370,6 +2408,21 @@ public class LinearScanRegisterAllocator implements RegisterAllocator {
     }
     assignFreeRegisterToUnhandledInterval(unhandledInterval, register);
     return true;
+  }
+
+  private boolean tryHints(
+      LiveIntervals unhandledInterval,
+      int registerConstraint,
+      RegisterPositions freePositions,
+      Multiset<Integer> hints,
+      IntSet triedHints) {
+    for (Multiset.Entry<Integer> entry : Multisets.copyHighestCountFirst(hints).entrySet()) {
+      int hint = entry.getElement();
+      if (tryHint(unhandledInterval, registerConstraint, freePositions, hint, triedHints)) {
+        return true;
+      }
+    }
+    return false;
   }
 
   private boolean tryAllocateBlockedHint(
@@ -2901,17 +2954,20 @@ public class LinearScanRegisterAllocator implements RegisterAllocator {
   private void splitRangesForSpilledArgument(LiveIntervals spilled) {
     assert spilled.isSpilled();
     assert spilled.isArgumentInterval();
-    // Argument intervals are spilled to the original argument register. We don't know what
-    // that is yet, and therefore we split before the next use to make sure we get a usable
+    // Argument intervals are spilled to the original argument register. We don't know what that is
+    // yet, and therefore we split before the next constrained use to make sure we get a usable
     // register at the next use.
-    if (!spilled.getUses().isEmpty()) {
-      LiveIntervals split = spilled.splitBefore(spilled.getUses().first().getPosition(), mode);
-      if (split != spilled) {
-        unhandled.add(split);
-      } else {
-        spilled.setRegister(spilled.getSplitParent().getRegister());
-      }
+    LiveIntervalsUse firstUseWithConstraint = spilled.firstUseWithConstraint(mode);
+    if (firstUseWithConstraint == null
+        || (mode.is8BitRefinement()
+            && spilled.getSplitParent().getRegisterEnd() < numberOf4BitArgumentRegisters)) {
+      spilled.setRegister(spilled.getSplitParent().getRegister());
+      spilled.setSpilled(false);
+      return;
     }
+    LiveIntervals splitOfSplit = spilled.splitBefore(firstUseWithConstraint.getPosition(), mode);
+    assert splitOfSplit != spilled;
+    unhandled.add(splitOfSplit);
   }
 
   private void splitRangesForSpilledInterval(LiveIntervals spilled) {

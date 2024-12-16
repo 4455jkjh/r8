@@ -13,6 +13,8 @@ import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertEquals;
 
+import com.android.tools.r8.D8TestBuilder;
+import com.android.tools.r8.D8TestCompileResult;
 import com.android.tools.r8.D8TestRunResult;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestBuilder;
@@ -29,6 +31,8 @@ import com.google.common.collect.ImmutableList;
 import it.unimi.dsi.fastutil.ints.Int2IntAVLTreeMap;
 import it.unimi.dsi.fastutil.ints.Int2IntSortedMap;
 import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.nio.file.Path;
 import java.util.HashSet;
 import java.util.List;
@@ -79,9 +83,30 @@ public abstract class AbstractBackportTest extends TestBase {
 
     TestBuilder<?, ?> addAsProgramClass(TestBuilder<?, ?> builder) throws IOException {
       if (clazz != null) {
+        addStrippedOuter(builder);
         return builder.addProgramClassesAndInnerClasses(clazz);
       } else {
         return builder.addProgramClassFileData(classFileData);
+      }
+    }
+
+    private void addStrippedOuter(TestBuilder<?, ?> builder) throws IOException {
+      try {
+        Method getNestHost = Class.class.getDeclaredMethod("getNestHost");
+        Class<?> nestHost = (Class<?>) getNestHost.invoke(clazz);
+        if (nestHost != null) {
+          if (nestHost != clazz) {
+            builder.addStrippedOuter(nestHost);
+          } else {
+            // TODO(b/383494861): In Java 21 reflection on getNestHost fails from command line.
+            nestHost = clazz.getEnclosingClass();
+            if (nestHost != clazz) {
+              builder.addStrippedOuter(nestHost);
+            }
+          }
+        }
+      } catch (NoSuchMethodException | InvocationTargetException | IllegalAccessException e) {
+        // Ignored on old JDKs.
       }
     }
   }
@@ -210,9 +235,19 @@ public abstract class AbstractBackportTest extends TestBase {
         .apply(this::configureProgram)
         .setIncludeClassesChecksum(true)
         .compileWithExpectedDiagnostics(this::checkDiagnostics)
+        .apply(this::configure)
         .inspect(this::assertDesugaring)
+        .apply(this::configure)
         .run(parameters.getRuntime(), testClassName)
         .apply(runResultConsumer);
+  }
+
+  protected void configure(D8TestBuilder builder) throws Exception {
+    // For subclasses to further configure the test builder.
+  }
+
+  protected void configure(D8TestCompileResult result) throws Exception {
+    // For subclasses to further configure the compile result.
   }
 
   @Test
