@@ -2991,10 +2991,8 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
 
   // The dalvik jit had a bug where the long operations add, sub, or, xor and and would write
   // the first part of the result long before reading the second part of the input longs.
-  //
-  // The same issue was seen on an Android 23 device running x86.
   public boolean canHaveOverlappingLongRegisterBug() {
-    return canHaveBugPresentUntilInclusive(AndroidApiLevel.M);
+    return canHaveBugPresentUntilExclusive(AndroidApiLevel.L);
   }
 
   // Some dalvik versions found in the wild perform invalid JIT compilation of cmp-long
