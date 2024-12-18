@@ -42,6 +42,9 @@ class ApplicationWriterExperimental extends ApplicationWriter {
       List<VirtualFile> virtualFiles,
       List<LazyDexString> lazyDexStrings)
       throws ExecutionException {
+    if (virtualFiles.size() == 0) {
+      return new ArrayList<>();
+    }
     // Collect strings from all virtual files into the last DEX section.
     VirtualFile lastFile = virtualFiles.get(virtualFiles.size() - 1);
     List<VirtualFile> allExceptLastFile = virtualFiles.subList(0, virtualFiles.size() - 1);

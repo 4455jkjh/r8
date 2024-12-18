@@ -56,6 +56,11 @@ class GitCommit(object):
     def __repr__(self):
         return self.__str__()
 
+    def branch(self):
+        result = subprocess.check_output(
+            ['git', 'rev-parse', '--abbrev-ref', 'HEAD']).decode('utf-8')
+        return result.strip()
+
     def hash(self):
         return self.git_hash
 
@@ -71,8 +76,22 @@ class GitCommit(object):
         ]).decode('utf-8')
         return result.strip()
 
+    def changed_files(self):
+        result = subprocess.check_output(
+            ['git', 'show', '--name-only', '--no-notes',
+             '--pretty=']).decode('utf-8')
+        return result.strip().splitlines()
+
     def committer_timestamp(self):
         return self.timestamp
+
+    def version(self):
+        title = self.title()
+        if title.startswith(
+                'Version '
+        ) and 'src/main/java/com/android/tools/r8/Version.java' in changes_files:
+            return title[len('Version '):]
+        return None
 
 
 def git_commit_from_hash(hash):

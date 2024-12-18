@@ -89,12 +89,13 @@ EXTERNAL_BENCHMARKS = {
 }
 # A collection of internal benchmarks that should be run on the internal bot.
 INTERNAL_BENCHMARKS = {
-    'SystemUIApp': {'targets': ['r8-full']},
+    'SystemUIApp': {
+        'targets': ['r8-full']
+    },
 }
 # A collection of benchmarks that should not be run on the bots, but can be used
 # for running locally.
-LOCAL_BENCHMARKS = {
-    'SystemUIAppTreeShaking': {'targets': ['r8-full']}}
+LOCAL_BENCHMARKS = {'SystemUIAppTreeShaking': {'targets': ['r8-full']}}
 ALL_BENCHMARKS = {}
 ALL_BENCHMARKS.update(EXTERNAL_BENCHMARKS)
 ALL_BENCHMARKS.update(INTERNAL_BENCHMARKS)
@@ -131,6 +132,10 @@ def ParseOptions():
                         help='How many iterations to run inside run_benchmark.',
                         type=int,
                         default=10)
+    result.add_argument('--no-upload-benchmark-data-to-google-storage',
+                        help='Skip upload to GCS.',
+                        action='store_true',
+                        default=False)
     result.add_argument('--outdir',
                         help='Output directory for running locally.')
     result.add_argument('--skip-if-output-exists',
@@ -210,8 +215,14 @@ def ParseBenchmarkResultJsonFile(result_json_file):
 
 
 def GetArtifactLocation(benchmark, target, version, filename):
-    version_or_head = version or utils.get_HEAD_sha1()
-    return f'{benchmark}/{target}/{version_or_head}/{filename}'
+    if version:
+        return f'{benchmark}/{target}/{version}/{filename}'
+    else:
+        commit = utils.get_HEAD_commit()
+        branch = commit.branch()
+        if branch == 'main':
+            return f'{benchmark}/{target}/{commit.hash()}/{filename}'
+        return f'branches/{branch}/{benchmark}/{target}/{commit.hash()}/{filename}'
 
 
 def GetGSLocation(filename, bucket=BUCKET):
@@ -352,7 +363,8 @@ def main():
                                       outdir=options.outdir)
 
     # Only upload benchmark data when running on the perf bot.
-    if utils.is_bot() and not options.internal:
+    if utils.is_bot(
+    ) and not options.no_upload_benchmark_data_to_google_storage:
         upload_benchmark_data_to_google_storage.run_bucket()
 
     if any_failed:
