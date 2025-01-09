@@ -12,6 +12,7 @@ import com.android.tools.r8.cf.code.CfInvoke;
 import com.android.tools.r8.cf.code.CfLabel;
 import com.android.tools.r8.cf.code.CfLoad;
 import com.android.tools.r8.cf.code.CfNew;
+import com.android.tools.r8.cf.code.CfOpcodeUtils;
 import com.android.tools.r8.cf.code.CfPosition;
 import com.android.tools.r8.cf.code.CfReturn;
 import com.android.tools.r8.cf.code.CfReturnVoid;
@@ -85,6 +86,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.function.Consumer;
+import java.util.function.IntConsumer;
 import org.objectweb.asm.Opcodes;
 
 public final class BackportedMethodRewriter implements CfInstructionDesugaring {
@@ -100,6 +102,12 @@ public final class BackportedMethodRewriter implements CfInstructionDesugaring {
 
   public boolean hasBackports() {
     return !rewritableMethods.isEmpty();
+  }
+
+  @Override
+  public void acceptRelevantAsmOpcodes(IntConsumer consumer) {
+    CfOpcodeUtils.acceptCfInvokeOpcodes(consumer);
+    consumer.accept(Opcodes.GETSTATIC);
   }
 
   @Override
@@ -1936,40 +1944,130 @@ public final class BackportedMethodRewriter implements CfInstructionDesugaring {
       addProvider(
           new MethodGenerator(
               method, BackportedMethods::CharacterMethods_toStringCodepoint, "toStringCodepoint"));
-
-      // int {Math.StrictMath}.clamp(long, int, int)
-      // long {Math.StrictMath}.clamp(long, long, long)
-      // double {Math.StrictMath}.clamp(double, double, double)
-      // float {Math.StrictMath}.clamp(float, float, float)
-      name = factory.createString("clamp");
       for (DexType mathType : new DexType[] {factory.mathType, factory.strictMathType}) {
+        // int {Math.StrictMath}.clamp(long, int, int)
+        // long {Math.StrictMath}.clamp(long, long, long)
+        // double {Math.StrictMath}.clamp(double, double, double)
+        // float {Math.StrictMath}.clamp(float, float, float)
+        name = factory.createString("clamp");
         proto =
             factory.createProto(
                 factory.intType, factory.longType, factory.intType, factory.intType);
         method = factory.createMethod(mathType, proto, name);
         addProvider(
             new MethodGenerator(method, BackportedMethods::MathMethods_clampInt, "clampInt"));
-
         proto =
             factory.createProto(
                 factory.longType, factory.longType, factory.longType, factory.longType);
         method = factory.createMethod(mathType, proto, name);
         addProvider(
             new MethodGenerator(method, BackportedMethods::MathMethods_clampLong, "clampLong"));
-
         proto =
             factory.createProto(
                 factory.doubleType, factory.doubleType, factory.doubleType, factory.doubleType);
         method = factory.createMethod(mathType, proto, name);
         addProvider(
             new MethodGenerator(method, BackportedMethods::MathMethods_clampDouble, "clampDouble"));
-
         proto =
             factory.createProto(
                 factory.floatType, factory.floatType, factory.floatType, factory.floatType);
         method = factory.createMethod(mathType, proto, name);
         addProvider(
             new MethodGenerator(method, BackportedMethods::MathMethods_clampFloat, "clampFloat"));
+
+        // int {Math.StrictMath}.ceilDiv(int, int)
+        // long {Math.StrictMath}.ceilDiv(long, int)
+        // long {Math.StrictMath}.ceilDiv(long, long)
+        name = factory.createString("ceilDiv");
+        proto = factory.createProto(factory.intType, factory.intType, factory.intType);
+        method = factory.createMethod(mathType, proto, name);
+        addProvider(
+            new MethodGenerator(
+                method, BackportedMethods::MathMethods_ceilDivIntInt, "ceilDivIntInt"));
+        proto = factory.createProto(factory.longType, factory.longType, factory.longType);
+        method = factory.createMethod(mathType, proto, name);
+        addProvider(
+            new MethodGenerator(
+                method, BackportedMethods::MathMethods_ceilDivLongLong, "ceilDivLongLong"));
+        proto = factory.createProto(factory.longType, factory.longType, factory.intType);
+        method = factory.createMethod(mathType, proto, name);
+        addProvider(
+            new MethodGenerator(
+                method, BackportedMethods::MathMethods_ceilDivLongInt, "ceilDivLongInt"));
+
+        // int {Math.StrictMath}.ceilDivExact(int, int)
+        // long {Math.StrictMath}.ceilDivExact(long, long)
+        name = factory.createString("ceilDivExact");
+        proto = factory.createProto(factory.intType, factory.intType, factory.intType);
+        method = factory.createMethod(mathType, proto, name);
+        addProvider(
+            new MethodGenerator(
+                method, BackportedMethods::MathMethods_ceilDivExactIntInt, "ceilDivExactIntInt"));
+        proto = factory.createProto(factory.longType, factory.longType, factory.longType);
+        method = factory.createMethod(mathType, proto, name);
+        addProvider(
+            new MethodGenerator(
+                method,
+                BackportedMethods::MathMethods_ceilDivExactLongLong,
+                "ceilDivExactLongLong"));
+
+        // int {Math.StrictMath}.ceilMod(int, int)
+        // int {Math.StrictMath}.ceilMod(long, int)
+        // long {Math.StrictMath}.ceilMod(long, long)
+        name = factory.createString("ceilMod");
+        proto = factory.createProto(factory.intType, factory.intType, factory.intType);
+        method = factory.createMethod(mathType, proto, name);
+        addProvider(
+            new MethodGenerator(
+                method, BackportedMethods::MathMethods_ceilModIntInt, "ceilModIntInt"));
+        proto = factory.createProto(factory.longType, factory.longType, factory.longType);
+        method = factory.createMethod(mathType, proto, name);
+        addProvider(
+            new MethodGenerator(
+                method, BackportedMethods::MathMethods_ceilModLongLong, "ceilModLongLong"));
+        proto = factory.createProto(factory.intType, factory.longType, factory.intType);
+        method = factory.createMethod(mathType, proto, name);
+        addProvider(
+            new MethodGenerator(
+                method, BackportedMethods::MathMethods_ceilModLongInt, "ceilModLongInt"));
+
+        // int divideExact(int, int)
+        // long divideExact(long, long)
+        name = factory.createString("divideExact");
+        proto = factory.createProto(factory.intType, factory.intType, factory.intType);
+        method = factory.createMethod(mathType, proto, name);
+        addProvider(
+            new MethodGenerator(
+                method, BackportedMethods::MathMethods_divideExactInt, "divideExactInt"));
+        proto = factory.createProto(factory.longType, factory.longType, factory.longType);
+        method = factory.createMethod(mathType, proto, name);
+        addProvider(
+            new MethodGenerator(
+                method, BackportedMethods::MathMethods_divideExactLong, "divideExactLong"));
+
+        // int floorDivExact(int, int)
+        // long floorDivExact(long, long)
+        name = factory.createString("floorDivExact");
+        proto = factory.createProto(factory.intType, factory.intType, factory.intType);
+        method = factory.createMethod(mathType, proto, name);
+        addProvider(
+            new MethodGenerator(
+                method, BackportedMethods::MathMethods_floorDivExactInt, "floorDivExactInt"));
+        proto = factory.createProto(factory.longType, factory.longType, factory.longType);
+        method = factory.createMethod(mathType, proto, name);
+        addProvider(
+            new MethodGenerator(
+                method, BackportedMethods::MathMethods_floorDivExactLong, "floorDivExactLong"));
+
+        // long unsignedMultiplyHigh(long, long)
+        name = factory.createString("unsignedMultiplyHigh");
+        proto = factory.createProto(factory.longType, factory.longType, factory.longType);
+        method = factory.createMethod(mathType, proto, name);
+        addProvider(
+            new MethodGenerator(
+                method,
+                BackportedMethods::MathMethods_unsignedMultiplyHigh,
+                "unsignedMultiplyHigh"));
       }
     }
 

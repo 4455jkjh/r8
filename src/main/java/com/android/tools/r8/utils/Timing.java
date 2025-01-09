@@ -21,8 +21,11 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.ExecutorService;
 
-public class Timing {
+public class Timing implements AutoCloseable {
 
+  private static final int MINIMUM_REPORT_MS =
+      SystemPropertyUtils.parseSystemPropertyOrDefault(
+          "com.android.tools.r8.printtimes.minvalue_ms", 10);
   private static final int MINIMUM_REPORT_PERCENTAGE =
       SystemPropertyUtils.parseSystemPropertyOrDefault(
           "com.android.tools.r8.printtimes.minvalue", 2);
@@ -50,8 +53,9 @@ public class Timing {
         }
 
         @Override
-        public void begin(String title) {
+        public Timing begin(String title) {
           // Ignore.
+          return this;
         }
 
         @Override
@@ -83,8 +87,9 @@ public class Timing {
     }
 
     @Override
-    public void begin(String title) {
+    public Timing begin(String title) {
       timing.begin(title);
+      return this;
     }
 
     @Override
@@ -117,11 +122,11 @@ public class Timing {
     }
 
     @Override
-    public void begin(String title) {
+    public Timing begin(String title) {
       if (options.checkIfCancelled()) {
         throw new CancelCompilationException();
       }
-      super.begin(title);
+      return super.begin(title);
     }
   }
 
@@ -225,6 +230,9 @@ public class Timing {
 
     public void report(int depth, Node top) {
       assert duration() >= 0;
+      if (durationInMs(duration()) < MINIMUM_REPORT_MS) {
+        return;
+      }
       if (percentage(duration(), top.duration()) < MINIMUM_REPORT_PERCENTAGE) {
         return;
       }
@@ -243,7 +251,8 @@ public class Timing {
       }
       if (childTime < duration()) {
         long unaccounted = duration() - childTime;
-        if (percentage(unaccounted, top.duration()) >= MINIMUM_REPORT_PERCENTAGE) {
+        if (durationInMs(unaccounted) >= MINIMUM_REPORT_MS
+            && percentage(unaccounted, top.duration()) >= MINIMUM_REPORT_PERCENTAGE) {
           printPrefix(depth + 1);
           System.out.println(
               "("
@@ -407,6 +416,10 @@ public class Timing {
     return new TimingMerger(title, numberOfThreads, this);
   }
 
+  private static long durationInMs(long value) {
+    return value / 1000000;
+  }
+
   private static long percentage(long part, long total) {
     return part * 100 / total;
   }
@@ -416,7 +429,7 @@ public class Timing {
   }
 
   private static String prettyTime(long value) {
-    return (value / 1000000) + "ms";
+    return durationInMs(value) + "ms";
   }
 
   private static String prettySize(long value) {
@@ -443,7 +456,7 @@ public class Timing {
     return builder.toString();
   }
 
-  public void begin(String title) {
+  public Timing begin(String title) {
     Node parent = stack.peek();
     Node child;
     if (parent.children.containsKey(title)) {
@@ -454,6 +467,7 @@ public class Timing {
       parent.children.put(title, child);
     }
     stack.push(child);
+    return this;
   }
 
   public <E extends Exception> void time(String title, ThrowingAction<E> action) throws E {
@@ -472,6 +486,11 @@ public class Timing {
     } finally {
       end();
     }
+  }
+
+  @Override
+  public final void close() {
+    end();
   }
 
   public void end() {
