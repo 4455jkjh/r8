@@ -1747,6 +1747,18 @@ public class Enqueuer {
     return clazz;
   }
 
+  private void traceReflectiveNewInstance(
+      ProgramMethod context, DexProgramClass clazz, ProgramMethod initializer) {
+    assert initializer.getDefinition().isInstanceInitializer();
+    KeepReason reason = KeepReason.reflectiveUseIn(context);
+    traceNewInstance(clazz.getType(), context, InstantiationReason.REFLECTION, reason);
+    markMethodAsTargeted(initializer, reason);
+    markDirectStaticOrConstructorMethodAsLive(initializer, reason);
+    applyMinimumKeepInfoWhenLiveOrTargeted(
+        initializer, KeepMethodInfo.newEmptyJoiner().disallowOptimization());
+    applyMinimumKeepInfoWhenLive(clazz, KeepClassInfo.newEmptyJoiner().disallowOptimization());
+  }
+
   void traceInstanceFieldRead(DexField field, ProgramMethod currentMethod) {
     traceInstanceFieldRead(field, currentMethod, FieldAccessMetadata.DEFAULT);
   }
@@ -5383,12 +5395,7 @@ public class Enqueuer {
     }
     ProgramMethod defaultInitializer = clazz.getProgramDefaultInitializer();
     if (defaultInitializer != null) {
-      KeepReason reason = KeepReason.reflectiveUseIn(method);
-      markClassAsInstantiatedWithReason(clazz, reason);
-      markMethodAsTargeted(defaultInitializer, reason);
-      markDirectStaticOrConstructorMethodAsLive(defaultInitializer, reason);
-      applyMinimumKeepInfoWhenLiveOrTargeted(
-          defaultInitializer, KeepMethodInfo.newEmptyJoiner().disallowOptimization());
+      traceReflectiveNewInstance(method, clazz, defaultInitializer);
     }
   }
 
@@ -5504,12 +5511,7 @@ public class Enqueuer {
     }
 
     if (initializer != null) {
-      KeepReason reason = KeepReason.reflectiveUseIn(method);
-      markClassAsInstantiatedWithReason(clazz, reason);
-      markMethodAsTargeted(initializer, reason);
-      markDirectStaticOrConstructorMethodAsLive(initializer, reason);
-      applyMinimumKeepInfoWhenLiveOrTargeted(
-          initializer, KeepMethodInfo.newEmptyJoiner().disallowOptimization());
+      traceReflectiveNewInstance(method, clazz, initializer);
     }
   }
 
