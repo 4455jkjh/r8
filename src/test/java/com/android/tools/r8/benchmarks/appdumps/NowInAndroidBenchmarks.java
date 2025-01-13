@@ -80,6 +80,11 @@ public class NowInAndroidBenchmarks extends BenchmarkBase {
             .setFromRevision(16017)
             .buildR8(),
         AppDumpBenchmarkBuilder.builder()
+            .setName("NowInAndroidAppPartial")
+            .setDumpDependencyPath(dump)
+            .setFromRevision(16017)
+            .buildR8WithPartialShrinking(),
+        AppDumpBenchmarkBuilder.builder()
             .setName("NowInAndroidAppWithResourceShrinking")
             .setDumpDependencyPath(dump)
             .setFromRevision(16017)

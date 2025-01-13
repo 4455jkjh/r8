@@ -17,7 +17,7 @@ import zipfile
 
 import utils
 
-R8_DEV_BRANCH = '8.9'
+R8_DEV_BRANCH = '8.10'
 R8_VERSION_FILE = os.path.join('src', 'main', 'java', 'com', 'android', 'tools',
                                'r8', 'Version.java')
 THIS_FILE_RELATIVE = os.path.join('tools', 'r8_release.py')
@@ -187,88 +187,19 @@ def update_prebuilds(r8_checkout, version, checkout, keepanno=False):
     subprocess.check_call(cmd)
 
 
-def release_studio_or_aosp(r8_checkout,
-                           path,
-                           options,
-                           git_message,
-                           keepanno=False):
-    with utils.ChangedWorkingDirectory(path):
-        if not options.use_existing_work_branch:
-            subprocess.call(['repo', 'abandon', 'update-r8'])
-        if not options.no_sync:
-            subprocess.check_call(['repo', 'sync', '-cq', '-j', '16'])
-
-        prebuilts_r8 = os.path.join(path, 'prebuilts', 'r8')
-
-        if not options.use_existing_work_branch:
-            with utils.ChangedWorkingDirectory(prebuilts_r8):
-                subprocess.check_call(['repo', 'start', 'update-r8'])
-
-        update_prebuilds(r8_checkout, options.version, path, keepanno)
-
-        with utils.ChangedWorkingDirectory(prebuilts_r8):
-            if not options.use_existing_work_branch:
-                subprocess.check_call(
-                    ['git', 'commit', '-a', '-m', git_message])
-            else:
-                print('Not committing when --use-existing-work-branch. ' +
-                      'Commit message should be:\n\n' + git_message + '\n')
-            # Don't upload if requested not to, or if changes are not committed due
-            # to --use-existing-work-branch
-            if not options.no_upload and not options.use_existing_work_branch:
-                process = subprocess.Popen(
-                    ['repo', 'upload', '.', '--verify', '--current-branch'],
-                    stdin=subprocess.PIPE)
-                return process.communicate(input=b'y\n')[0]
-
-
-def prepare_aosp(args):
-    assert args.version
-
-    if (not args.legacy_release):
-        print("Please use the new release process, see go/r8-release-prebuilts. "
-            + "If for some reason the legacy release process is needed "
-            + "pass --legacy-release")
-        sys.exit(1)
-
-    assert os.path.exists(args.aosp), "Could not find AOSP path %s" % args.aosp
-
-    def release_aosp(options):
-        print("Releasing for AOSP")
-        if options.dry_run:
-            return 'DryRun: omitting AOSP release for %s' % options.version
-
-        git_message = ("""Update D8 and R8 to %s
-
-Version: %s
-This build IS NOT suitable for preview or public release.
-
-Built here: go/r8-releases/raw/%s
-
-Test: TARGET_PRODUCT=aosp_arm64 m -j core-oj""" %
-                       (args.version, args.version, args.version))
-        # Fixes to Android U branch is based of 8.2.2-dev where the keepanno library
-        # is not built.
-        keepanno = not args.version.startswith('8.2.2-udc')
-        return release_studio_or_aosp(utils.REPO_ROOT,
-                                      args.aosp,
-                                      options,
-                                      git_message,
-                                      keepanno=keepanno)
-
-    return release_aosp
-
-
 def prepare_maven(args):
     assert args.version
 
     def release_maven(options):
-        gfile = '/bigstore/r8-releases/raw/%s/r8lib.zip' % args.version
-        release_id = gmaven_publisher_stage(options, [gfile])
+        gfiles = []
+        for version in args.version:
+            gfiles.append('/bigstore/r8-releases/raw/%s/r8lib.zip' % version)
+
+        release_id = gmaven_publisher_stage(options, gfiles)
 
         print("Staged Release ID " + release_id + ".\n")
         gmaven_publisher_stage_redir_test_info(
-            release_id, "com.android.tools:r8:%s" % args.version, "r8lib.jar")
+            release_id, "com.android.tools:r8:%s" % args.version[0], "r8lib.jar")
 
         print
         answer = input("Continue with publishing [y/N]:")
@@ -285,62 +216,8 @@ def prepare_maven(args):
     return release_maven
 
 
-# ------------------------------------------------------ column 70 --v
-def git_message_dev(version, bugs):
-    return """Update D8 R8 to %s
-
-This is a development snapshot, it's fine to use for studio canary
-build, but not for BETA or release, for those we would need a release
-version of R8 binaries. This build IS suitable for preview release
-but IS NOT suitable for public release.
-
-Built here: go/r8-releases/raw/%s
-Test: ./gradlew check
-Bug: %s""" % (version, version, '\nBug: '.join(map(bug_fmt, bugs)))
-
-
-def git_message_release(version, bugs):
-    return """D8 R8 version %s
-
-Built here: go/r8-releases/raw/%s/
-Test: ./gradlew check
-
-Bug: %s""" % (version, version, '\nBug: '.join(map(bug_fmt, bugs)))
-
-
 def bug_fmt(bug):
     return "b/%s" % bug
-
-
-def prepare_studio(args):
-    assert args.version
-    assert os.path.exists(args.studio), ("Could not find STUDIO path %s" %
-                                         args.studio)
-    if (not args.legacy_release):
-        print("Please use the new release process, see go/r8-release-prebuilts. "
-            + "If for some reason the legacy release process is needed "
-            + "pass --legacy-release")
-        sys.exit(1)
-
-    def release_studio(options):
-        print("Releasing for STUDIO")
-        if options.dry_run:
-            return 'DryRun: omitting studio release for %s' % options.version
-
-        if 'dev' in options.version:
-            git_message = git_message_dev(options.version, options.bug)
-            r8_checkout = utils.REPO_ROOT
-            return release_studio_or_aosp(r8_checkout, args.studio, options,
-                                          git_message)
-        else:
-            with utils.TempDir() as temp:
-                checkout_r8(temp,
-                            options.version[0:options.version.rindex('.')])
-                git_message = git_message_release(options.version, options.bug)
-                return release_studio_or_aosp(temp, args.studio, options,
-                                              git_message)
-
-    return release_studio
 
 
 def g4_cp(old, new, file):
@@ -439,15 +316,18 @@ def branch_from_version(version):
 
 
 def prepare_google3(args):
-    assert args.version
+    assert len(args.version == 1)
+
     # Check if an existing client exists.
     if not args.use_existing_work_branch:
         check_no_google3_client(args, args.p4_client)
 
     def release_google3(options):
+        assert len(options.version == 1)
+        version = options.version[0]
         print("Releasing for Google 3")
         if options.dry_run:
-            return 'DryRun: omitting g3 release for %s' % options.version
+            return 'DryRun: omitting g3 release for %s' % version
 
         google3_base = subprocess.check_output(
             ['p4', 'g4d', '-f', args.p4_client]).decode('utf-8').rstrip()
@@ -463,28 +343,28 @@ def prepare_google3(args):
             g4_open('desugar_jdk_libs_configuration.jar')
             g4_open('threading-module-blocking.jar')
             g4_open('threading-module-single-threaded.jar')
-            download_file(options.version,
+            download_file(version,
                           'r8-full-exclude-deps.jar',
                           'full.jar')
-            download_file(options.version,
+            download_file(version,
                           'r8-src.jar',
                           'src.jar')
-            download_file(options.version,
+            download_file(version,
                           'r8lib-exclude-deps.jar',
                           'lib.jar')
-            download_file(options.version,
+            download_file(version,
                           'r8lib-exclude-deps.jar.map',
                           'lib.jar.map')
-            download_file(options.version,
+            download_file(version,
                           'desugar_jdk_libs_configuration.jar',
                           'desugar_jdk_libs_configuration.jar')
-            download_file(options.version,
+            download_file(version,
                           'threading-module-blocking.jar',
                           'threading-module-blocking.jar')
-            download_file(options.version,
+            download_file(version,
                           'threading-module-single-threaded.jar',
                           'threading-module-single-threaded.jar')
-            if options.version != 'main':
+            if version != 'main':
                 g4_open('METADATA')
                 metadata_path = os.path.join(third_party_r8, 'METADATA')
                 match_count = 0
@@ -514,14 +394,14 @@ def prepare_google3(args):
                     run again with options --google3 --use-existing-work-branch.
                     """)
                     sys.exit(1)
-                sed(version_match_regexp, options.version, metadata_path)
+                sed(version_match_regexp, version, metadata_path)
                 sed(r'\{ year.*\}',
                     f'{{ year: {today.year} month: {today.month} day: {today.day} }}',
                     metadata_path)
             subprocess.check_output('chmod u+w *', shell=True)
             previous_version = match_value
-            if not options.version.endswith('-dev') or not previous_version.endswith('-dev'):
-                print(f'ERROR: At least one of {options.version} (new version) '
+            if not version.endswith('-dev') or not previous_version.endswith('-dev'):
+                print(f'ERROR: At least one of {version} (new version) '
                     + f'and {previous_version} (previous version) is not a -dev version. '
                     + 'Expected both to be.')
                 sys.exit(1)
@@ -532,7 +412,7 @@ def prepare_google3(args):
                     current_version_hash = find_r8_version_hash(
                         'origin/' + branch_from_version(previous_version), previous_version)
                     new_version_hash = find_r8_version_hash(
-                        'origin/' + branch_from_version(options.version), options.version)
+                        'origin/' + branch_from_version(version), version)
                     if not current_version_hash or not new_version_hash:
                         print('ERROR: Failed to generate merged commits log, missing version')
                         sys.exit(1)
@@ -552,10 +432,10 @@ def prepare_google3(args):
         with utils.ChangedWorkingDirectory(google3_base):
             blaze_result = blaze_run('//third_party/java/r8:d8 -- --version')
 
-            assert options.version in blaze_result
+            assert version in blaze_result
 
             if not options.no_upload:
-                change_result = g4_change(options.version, commit_info)
+                change_result = g4_change(version, commit_info)
                 change_result += 'Run \'(g4d ' + args.p4_client \
                                  + ' && tap_presubmit -p all --train -c ' \
                                  + get_cl_id(change_result) + ')\' for running TAP global' \
@@ -1040,9 +920,11 @@ def parse_options():
                        help='The hash to use for the new dev version of R8')
     group.add_argument(
         '--version',
-        metavar=('<version>'),
+        metavar=('<version(s)>'),
+        default=[],
+        action='append',
         help=
-        'The new version of R8 (e.g., 1.4.51) to release to selected channels')
+        'The new version(s) of R8 (e.g., 1.4.51) to release to selected channels')
     group.add_argument(
         '--desugar-library',
         nargs=2,
@@ -1076,23 +958,6 @@ def parse_options():
                         default=[],
                         action='append',
                         help='List of bugs for release version')
-    result.add_argument('--no-bugs',
-                        default=False,
-                        action='store_true',
-                        help='Allow Studio release without specifying any bugs')
-    result.add_argument(
-        '--studio',
-        metavar=('<path>'),
-        help='Release for studio by setting the path to a studio '
-        'checkout')
-    result.add_argument('--legacy-release',
-                        default=False,
-                        action='store_true',
-                        help='Allow Studio/AOSP release using the legacy process')
-    result.add_argument('--aosp',
-                        metavar=('<path>'),
-                        help='Release for aosp by setting the path to the '
-                        'checkout')
     result.add_argument('--maven',
                         default=False,
                         action='store_true',
@@ -1110,17 +975,12 @@ def parse_options():
         '--use_existing_work_branch',
         default=False,
         action='store_true',
-        help='Use existing work branch/CL in aosp/studio/google3')
+        help='Use existing work CL in google3')
     result.add_argument('--delete-work-branch',
                         '--delete_work_branch',
                         default=False,
                         action='store_true',
                         help='Delete CL in google3')
-    result.add_argument('--bypass-hooks',
-                        '--bypass_hooks',
-                        default=False,
-                        action='store_true',
-                        help="Bypass hooks when uploading")
     result.add_argument('--no-upload',
                         '--no_upload',
                         default=False,
@@ -1137,18 +997,13 @@ def parse_options():
                         metavar=('<path>'),
                         help='Location for dry run output.')
     args = result.parse_args()
-    if (len(args.bug) > 0 and args.no_bugs):
-        print("Use of '--bug' and '--no-bugs' are mutually exclusive")
-        sys.exit(1)
 
-    if (args.studio and args.version and not 'dev' in args.version and
-            args.bug == [] and not args.no_bugs):
-        print("When releasing a release version to Android Studio add the " +
-              "list of bugs by using '--bug'")
-        sys.exit(1)
-
-    if args.version and not 'dev' in args.version and args.google3:
-        print("WARNING: You should not roll a release version into google 3")
+    if args.google3:
+        if len(args.version) != 1:
+            print("ERROR: only one version supported for google 3")
+            sys.exit(1)
+        if not 'dev' in args.version[0]:
+            print("WARNING: You should not roll a release version into google 3")
 
     return args
 
@@ -1158,13 +1013,13 @@ def main():
     targets_to_run = []
 
     if args.new_dev_branch:
-        if args.google3 or args.studio or args.aosp:
+        if args.google3 or args.maven:
             print('Cannot create a branch and roll at the same time.')
             sys.exit(1)
         targets_to_run.append(prepare_branch(args))
 
     if args.dev_release:
-        if args.google3 or args.studio or args.aosp:
+        if args.google3 or args.maven:
             print('Cannot create a dev release and roll at the same time.')
             sys.exit(1)
         targets_to_run.append(prepare_release(args))
@@ -1173,10 +1028,6 @@ def main():
 
     if args.google3:
         targets_to_run.append(prepare_google3(args))
-    if args.studio and not args.update_desugar_library_in_studio:
-        targets_to_run.append(prepare_studio(args))
-    if args.aosp:
-        targets_to_run.append(prepare_aosp(args))
     if args.maven:
         targets_to_run.append(prepare_maven(args))
 
