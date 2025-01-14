@@ -1878,11 +1878,18 @@ public class LinearScanRegisterAllocator implements RegisterAllocator {
       // of finding another candidate to spill via allocateBlockedRegister.
       assert unhandledInterval.hasUses();
       if (!unhandledInterval.getUses().first().hasConstraint()) {
-        int nextConstrainedPosition = unhandledInterval.firstUseWithConstraint(mode).getPosition();
-        int register = getSpillRegister(unhandledInterval, null);
-        LiveIntervals split = unhandledInterval.splitBefore(nextConstrainedPosition);
-        assignFreeRegisterToUnhandledInterval(unhandledInterval, register);
-        unhandled.add(split);
+        if (mode.hasRegisterConstraint(unhandledInterval)) {
+          int nextConstrainedPosition =
+              unhandledInterval.firstUseWithConstraint(mode).getPosition();
+          int register = getSpillRegister(unhandledInterval, null);
+          LiveIntervals split = unhandledInterval.splitBefore(nextConstrainedPosition);
+          assignFreeRegisterToUnhandledInterval(unhandledInterval, register);
+          unhandled.add(split);
+        } else {
+          assert unhandledInterval.firstUseWithConstraint(mode) == null;
+          int register = getSpillRegister(unhandledInterval, null);
+          assignFreeRegisterToUnhandledInterval(unhandledInterval, register);
+        }
       } else {
         allocateBlockedRegister(unhandledInterval);
       }
