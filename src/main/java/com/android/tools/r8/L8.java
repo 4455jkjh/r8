@@ -96,8 +96,6 @@ public class L8 {
             // Desugar to class file format and turn off switch optimizations, as the final
             // compilation with D8 or R8 will do that.
             assert options.isCfDesugaring();
-            assert !options.forceAnnotateSynthetics;
-            options.forceAnnotateSynthetics = true;
             assert options.enableSwitchRewriting;
             options.enableSwitchRewriting = false;
             assert options.enableStringSwitchConversion;
@@ -108,7 +106,6 @@ public class L8 {
 
             desugar(app, options, executorService);
 
-            options.forceAnnotateSynthetics = false;
             options.enableSwitchRewriting = true;
             options.enableStringSwitchConversion = true;
             options.enableVarHandleDesugaring = false;
@@ -158,7 +155,7 @@ public class L8 {
       inputApp.signalFinishedToProviders(options.reporter);
       options.signalFinishedToConsumers();
       // Dump timings.
-      if (options.printTimes) {
+      if (options.isPrintTimesReportingEnabled()) {
         timing.report();
       }
     }

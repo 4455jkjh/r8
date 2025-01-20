@@ -3025,6 +3025,7 @@ public class Enqueuer {
     }
     markTypeAsLive(clazz, witness);
     transitionDependentItemsForInstantiatedInterface(clazz);
+    transitionMethodsForInstantiatedClass(clazz, Timing.empty());
   }
 
   private void markLambdaAsInstantiated(LambdaDescriptor descriptor, ProgramMethod context) {
@@ -3069,7 +3070,6 @@ public class Enqueuer {
 
   private void transitionMethodsForInstantiatedClass(DexProgramClass clazz, Timing timing) {
     assert !clazz.isAnnotation();
-    assert !clazz.isInterface();
     transitionMethodsForInstantiatedObject(
         InstantiatedObject.of(clazz), clazz.type, Collections.emptyList(), timing);
   }
@@ -3936,7 +3936,7 @@ public class Enqueuer {
     enqueueAllIfNotShrinking();
     timing.end();
     timing.begin("Trace");
-    traceManifests(timing);
+    traceManifestsAndRoots(timing);
     trace(executorService, timing);
     timing.end();
     options.reporter.failIfPendingErrors();
@@ -3969,10 +3969,16 @@ public class Enqueuer {
     return result;
   }
 
-  private void traceManifests(Timing timing) {
+  private void traceManifestsAndRoots(Timing timing) {
     if (options.isOptimizedResourceShrinking()) {
       timing.begin("Trace AndroidManifest.xml files");
       appView.getResourceShrinkerState().traceKeepXmlAndManifest();
+      if (options.partialSubCompilationConfiguration != null) {
+        for (int d8TracedResourceId :
+            options.partialSubCompilationConfiguration.getD8TracedResourceIds()) {
+          appView.getResourceShrinkerState().trace(d8TracedResourceId, "Non shrunken dex code");
+        }
+      }
       timing.end();
     }
   }
