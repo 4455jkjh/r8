@@ -362,10 +362,12 @@ public class Tracer {
             // For annotations in target handle annotation "methods" used to set values.
             annotation.forEachElement(
                 element -> {
-                  for (DexEncodedMethod method : resolvedClass.methods()) {
-                    if (method.getName().isIdenticalTo(element.name)) {
-                      TracedMethodImpl tracedMethod = new TracedMethodImpl(method, referencedFrom);
-                      consumer.acceptMethod(tracedMethod, diagnostics);
+                  if (isTargetType(resolvedClass.getType())) {
+                    for (DexEncodedMethod method : resolvedClass.methods()) {
+                      if (method.getName().isIdenticalTo(element.name)) {
+                        TracedMethodImpl tracedMethod = new TracedMethodImpl(method, referencedFrom);
+                        consumer.acceptMethod(tracedMethod, diagnostics);
+                      }
                     }
                   }
                   // Handle the argument values passed to the annotation "method".
