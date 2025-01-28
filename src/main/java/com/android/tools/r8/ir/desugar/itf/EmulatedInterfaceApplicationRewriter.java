@@ -5,11 +5,11 @@ package com.android.tools.r8.ir.desugar.itf;
 
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.DexApplication;
-import com.android.tools.r8.graph.DexEncodedField;
 import com.android.tools.r8.graph.DexEncodedMethod;
 import com.android.tools.r8.graph.DexProgramClass;
 import com.android.tools.r8.graph.DexType;
 import com.android.tools.r8.graph.DexTypeList;
+import com.android.tools.r8.graph.FieldCollection.FieldCollectionFactory;
 import com.android.tools.r8.graph.GenericSignature;
 import com.android.tools.r8.graph.GenericSignature.ClassSignature;
 import com.android.tools.r8.graph.MethodCollection.MethodCollectionFactory;
@@ -32,16 +32,14 @@ public final class EmulatedInterfaceApplicationRewriter {
     emulatedInterfaces = new IdentityHashMap<>();
     appView
         .options()
-        .machineDesugaredLibrarySpecification
+        .getLibraryDesugaringOptions()
+        .getMachineDesugaredLibrarySpecification()
         .getEmulatedInterfaces()
-        .forEach(
-            (ei, descriptor) -> {
-              emulatedInterfaces.put(ei, descriptor.getRewrittenType());
-            });
+        .forEach((ei, descriptor) -> emulatedInterfaces.put(ei, descriptor.getRewrittenType()));
   }
 
   public void rewriteApplication(DexApplication.Builder<?> builder) {
-    assert appView.options().isDesugaredLibraryCompilation();
+    assert appView.options().getLibraryDesugaringOptions().isDesugaredLibraryCompilation();
     ArrayList<DexProgramClass> newProgramClasses = new ArrayList<>();
     for (DexProgramClass clazz : builder.getProgramClasses()) {
       if (emulatedInterfaces.containsKey(clazz.type)) {
@@ -86,8 +84,7 @@ public final class EmulatedInterfaceApplicationRewriter {
             Collections.emptyList(),
             emulatedInterface.getClassSignature(),
             emulatedInterface.annotations(),
-            DexEncodedField.EMPTY_ARRAY,
-            DexEncodedField.EMPTY_ARRAY,
+            FieldCollectionFactory.empty(),
             MethodCollectionFactory.fromMethods(newDirectMethods, newVirtualMethods),
             false,
             emulatedInterface.getChecksumSupplier(),
@@ -128,7 +125,8 @@ public final class EmulatedInterfaceApplicationRewriter {
             m ->
                 appView
                         .options()
-                        .machineDesugaredLibrarySpecification
+                        .getLibraryDesugaringOptions()
+                        .getMachineDesugaredLibrarySpecification()
                         .getEmulatedInterfaceEmulatedDispatchMethodDescriptor(m.getReference())
                     != null);
     List<ProgramMethod> methodArray = IterableUtils.toNewArrayList(emulatedMethods);

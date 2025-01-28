@@ -137,20 +137,8 @@ public class R8PartialTestBuilder
       Box<List<ProguardConfigurationRule>> syntheticProguardRulesConsumer,
       StringBuilder proguardMapBuilder)
       throws CompilationFailedException {
-    Box<AndroidApp> r8InputAppBox = new Box<>();
-    Box<AndroidApp> d8InputAppBox = new Box<>();
-    Box<AndroidApp> r8OutputAppBox = new Box<>();
-    Box<AndroidApp> d8OutputAppBox = new Box<>();
-    Consumer<InternalOptions> configureR8PartialCompilation =
-        options -> {
-          options.partialCompilationConfiguration = getPartialConfiguration();
-          options.partialCompilationConfiguration.r8InputAppConsumer = r8InputAppBox::set;
-          options.partialCompilationConfiguration.d8InputAppConsumer = d8InputAppBox::set;
-          options.partialCompilationConfiguration.r8OutputAppConsumer = r8OutputAppBox::set;
-          options.partialCompilationConfiguration.d8OutputAppConsumer = d8OutputAppBox::set;
-        };
-    ToolHelper.runAndBenchmarkR8PartialWithoutResult(
-        builder, configureR8PartialCompilation.andThen(optionsConsumer), benchmarkResults);
+    builder.setPartialCompilationConfiguration(getPartialConfiguration());
+    ToolHelper.runAndBenchmarkR8PartialWithoutResult(builder, optionsConsumer, benchmarkResults);
     return new R8PartialTestCompileResult(
         getState(),
         getOutputMode(),
@@ -165,11 +153,7 @@ public class R8PartialTestBuilder
         residualArtProfiles,
         resourceShrinkerOutput,
         resourceShrinkerOutputForFeatures,
-        buildMetadata != null ? buildMetadata.get() : null,
-        r8InputAppBox.get(),
-        d8InputAppBox.get(),
-        r8OutputAppBox.get(),
-        d8OutputAppBox.get());
+        buildMetadata != null ? buildMetadata.get() : null);
   }
 
   @Override
@@ -186,13 +170,6 @@ public class R8PartialTestBuilder
                 options.partialCompilationConfiguration.d8DexOptionsConsumer.andThen(consumer));
   }
 
-  public R8PartialTestBuilder addD8MergeOptionsModification(Consumer<InternalOptions> consumer) {
-    return super.addOptionsModification(
-        options ->
-            options.partialCompilationConfiguration.d8MergeOptionsConsumer =
-                options.partialCompilationConfiguration.d8MergeOptionsConsumer.andThen(consumer));
-  }
-
   public R8PartialTestBuilder addR8PartialOptionsModification(Consumer<InternalOptions> consumer) {
     return super.addOptionsModification(
         options ->
@@ -202,7 +179,6 @@ public class R8PartialTestBuilder
 
   public R8PartialTestBuilder addGlobalOptionsModification(Consumer<InternalOptions> consumer) {
     return addD8PartialOptionsModification(consumer)
-        .addD8MergeOptionsModification(consumer)
         .addR8PartialOptionsModification(consumer);
   }
 

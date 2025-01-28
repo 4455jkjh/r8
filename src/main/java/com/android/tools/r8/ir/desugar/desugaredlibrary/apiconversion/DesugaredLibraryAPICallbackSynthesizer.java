@@ -121,10 +121,12 @@ public class DesugaredLibraryAPICallbackSynthesizer implements CfPostProcessingD
         || definition.isLibraryMethodOverride().isFalse()) {
       return false;
     }
-    if (!appView.typeRewriter.hasRewrittenTypeInSignature(definition.getProto(), appView)
+    if (!appView.desugaredLibraryTypeRewriter.hasRewrittenTypeInSignature(
+            definition.getProto(), appView)
         || appView
             .options()
-            .machineDesugaredLibrarySpecification
+            .getLibraryDesugaringOptions()
+            .getMachineDesugaredLibrarySpecification()
             .getEmulatedInterfaces()
             .containsKey(method.getHolderType())) {
       return false;
@@ -138,12 +140,16 @@ public class DesugaredLibraryAPICallbackSynthesizer implements CfPostProcessingD
       if (method.getHolder().isInterface()
           && method.getDefinition().isDefaultMethod()
           && (!appView.options().canUseDefaultAndStaticInterfaceMethods()
-              || appView.options().isDesugaredLibraryCompilation())) {
+              || appView.options().getLibraryDesugaringOptions().isDesugaredLibraryCompilation())) {
         return false;
       }
     }
-    if (!appView.options().machineDesugaredLibrarySpecification.supportAllCallbacksFromLibrary()
-        && appView.options().isDesugaredLibraryCompilation()) {
+    if (!appView
+            .options()
+            .getLibraryDesugaringOptions()
+            .getMachineDesugaredLibrarySpecification()
+            .supportAllCallbacksFromLibrary()
+        && appView.options().getLibraryDesugaringOptions().isDesugaredLibraryCompilation()) {
       return false;
     }
     return overridesNonFinalLibraryMethod(method);
@@ -170,7 +176,8 @@ public class DesugaredLibraryAPICallbackSynthesizer implements CfPostProcessingD
       if (dexClass.superType != factory.objectType) {
         workList.addIfNotSeen(dexClass.superType);
       }
-      if (!dexClass.isLibraryClass() && !appView.options().isDesugaredLibraryCompilation()) {
+      if (!dexClass.isLibraryClass()
+          && !appView.options().getLibraryDesugaringOptions().isDesugaredLibraryCompilation()) {
         continue;
       }
       if (!shouldGenerateCallbacksForEmulateInterfaceAPIs(dexClass)) {
@@ -179,7 +186,7 @@ public class DesugaredLibraryAPICallbackSynthesizer implements CfPostProcessingD
       DexEncodedMethod dexEncodedMethod = dexClass.lookupVirtualMethod(method.getReference());
       if (dexEncodedMethod != null) {
         // In this case, the object will be wrapped.
-        if (appView.typeRewriter.hasRewrittenType(dexClass.type, appView)) {
+        if (appView.desugaredLibraryTypeRewriter.hasRewrittenType(dexClass.type, appView)) {
           return false;
         }
         if (dexEncodedMethod.isFinal()) {
@@ -194,13 +201,11 @@ public class DesugaredLibraryAPICallbackSynthesizer implements CfPostProcessingD
   }
 
   private boolean shouldGenerateCallbacksForEmulateInterfaceAPIs(DexClass dexClass) {
-    if (appView.options().machineDesugaredLibrarySpecification.supportAllCallbacksFromLibrary()) {
-      return true;
-    }
     MachineDesugaredLibrarySpecification specification =
-        appView.options().machineDesugaredLibrarySpecification;
-    return !(specification.getEmulatedInterfaces().containsKey(dexClass.type)
-        || specification.isEmulatedInterfaceRewrittenType(dexClass.type));
+        appView.options().getLibraryDesugaringOptions().getMachineDesugaredLibrarySpecification();
+    return specification.supportAllCallbacksFromLibrary()
+        || !(specification.getEmulatedInterfaces().containsKey(dexClass.type)
+            || specification.isEmulatedInterfaceRewrittenType(dexClass.type));
   }
 
   private void generateTrackingWarnings() {

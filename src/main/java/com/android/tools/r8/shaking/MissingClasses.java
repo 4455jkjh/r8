@@ -131,6 +131,10 @@ public class MissingClasses {
       return build();
     }
 
+    public MissingClasses ignoreMissingClasses() {
+      return build();
+    }
+
     public MissingClasses reportMissingClasses(
         AppView<?> appView, SynthesizingContextOracle synthesizingContextOracle) {
       Map<DexType, Set<ProgramDerivedContext>> missingClassesToBeReported =
@@ -294,7 +298,8 @@ public class MissingClasses {
                   dexItemFactory.unsafeType);
       appView
           .options()
-          .machineDesugaredLibrarySpecification
+          .getLibraryDesugaringOptions()
+          .getMachineDesugaredLibrarySpecification()
           .getCustomConversions()
           .forEach(
               (type, conversions) -> {
@@ -312,7 +317,7 @@ public class MissingClasses {
     private static void addWithRewrittenType(
         ImmutableSet.Builder<DexType> builder, DexType type, AppView<?> appView) {
       builder.add(type);
-      DexType rewrittenType = appView.typeRewriter.rewrittenType(type, appView);
+      DexType rewrittenType = appView.desugaredLibraryTypeRewriter.rewrittenType(type, appView);
       if (rewrittenType != null) {
         builder.add(rewrittenType);
       }

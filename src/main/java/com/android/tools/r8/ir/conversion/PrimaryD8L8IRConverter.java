@@ -4,7 +4,6 @@
 
 package com.android.tools.r8.ir.conversion;
 
-import static com.android.tools.r8.ir.desugar.itf.InterfaceMethodRewriter.Flavor.ExcludeDexResources;
 import static com.android.tools.r8.ir.desugar.lambda.D8LambdaDesugaring.rewriteEnclosingLambdaMethodAttributes;
 
 import com.android.tools.r8.contexts.CompilationContext.MethodProcessingContext;
@@ -21,17 +20,16 @@ import com.android.tools.r8.graph.DexString;
 import com.android.tools.r8.graph.ProgramMethod;
 import com.android.tools.r8.ir.desugar.CfClassSynthesizerDesugaringCollection;
 import com.android.tools.r8.ir.desugar.CfClassSynthesizerDesugaringEventConsumer;
+import com.android.tools.r8.ir.desugar.CfInstructionDesugaringCollection;
 import com.android.tools.r8.ir.desugar.CfInstructionDesugaringEventConsumer;
 import com.android.tools.r8.ir.desugar.CfPostProcessingDesugaringCollection;
 import com.android.tools.r8.ir.desugar.CfPostProcessingDesugaringEventConsumer;
 import com.android.tools.r8.ir.desugar.ProgramAdditions;
-import com.android.tools.r8.ir.desugar.desugaredlibrary.apiconversion.DesugaredLibraryAPIConverter;
 import com.android.tools.r8.ir.desugar.itf.EmulatedInterfaceApplicationRewriter;
 import com.android.tools.r8.ir.desugar.itf.InterfaceMethodProcessorFacade;
 import com.android.tools.r8.ir.desugar.itf.InterfaceProcessor;
 import com.android.tools.r8.ir.desugar.itf.L8InnerOuterAttributeEraser;
 import com.android.tools.r8.ir.desugar.lambda.LambdaDeserializationMethodRemover;
-import com.android.tools.r8.ir.desugar.nest.D8NestBasedAccessDesugaring;
 import com.android.tools.r8.ir.optimize.info.OptimizationFeedback;
 import com.android.tools.r8.position.MethodPosition;
 import com.android.tools.r8.profile.rewriting.ProfileCollectionAdditions;
@@ -69,8 +67,7 @@ public class PrimaryD8L8IRConverter extends IRConverter {
 
     convertClasses(methodProcessor, interfaceProcessor, executorService);
 
-    reportNestDesugarDependencies();
-    clearNestAttributes();
+    instructionDesugaring.finalizeNestDesugaring();
 
     application = commitPendingSyntheticItems(appView, application);
 
@@ -83,7 +80,7 @@ public class PrimaryD8L8IRConverter extends IRConverter {
     // Build a new application with jumbo string info,
     Builder<?> builder = application.builder();
 
-    if (appView.options().isDesugaredLibraryCompilation()) {
+    if (appView.options().getLibraryDesugaringOptions().isDesugaredLibraryCompilation()) {
       new EmulatedInterfaceApplicationRewriter(appView).rewriteApplication(builder);
       new L8InnerOuterAttributeEraser(appView).run();
     }
@@ -91,11 +88,7 @@ public class PrimaryD8L8IRConverter extends IRConverter {
     timing.end();
 
     application = builder.build();
-    appView.setAppInfo(
-        new AppInfo(
-            appView.appInfo().getSyntheticItems().commit(application),
-            appView.appInfo().getMainDexInfo()));
-
+    appView.rebuildAppInfo(application);
     profileCollectionAdditions.commit(appView);
   }
 
@@ -267,13 +260,10 @@ public class PrimaryD8L8IRConverter extends IRConverter {
   private DexApplication commitPendingSyntheticItems(
       AppView<AppInfo> appView, DexApplication application) {
     if (appView.getSyntheticItems().hasPendingSyntheticClasses()) {
-      appView.setAppInfo(
-          new AppInfo(
-              appView.appInfo().getSyntheticItems().commit(application),
-              appView.appInfo().getMainDexInfo()));
-      application = appView.appInfo().app();
+      appView.rebuildAppInfo(application);
+      application = appView.app();
     }
-    assert application == appView.appInfo().app();
+    assert application == appView.app();
     return application;
   }
 
@@ -288,7 +278,8 @@ public class PrimaryD8L8IRConverter extends IRConverter {
 
     // The synthesis of accessibility bridges in nest based access desugaring will schedule and
     // await the processing of synthesized methods.
-    synthesizeBridgesForNestBasedAccessesOnClasspath(methodProcessor, executorService);
+    instructionDesugaring.processClasspath(methodProcessor, executorService);
+    methodProcessor.awaitMethodProcessing();
 
     // There should be no outstanding method processing.
     methodProcessor.verifyNoPendingMethodProcessing();
@@ -296,8 +287,7 @@ public class PrimaryD8L8IRConverter extends IRConverter {
     rewriteEnclosingLambdaMethodAttributes(
         appView, classConverterResult.getForcefullyMovedLambdaMethods());
 
-    instructionDesugaring.withDesugaredLibraryAPIConverter(
-        DesugaredLibraryAPIConverter::generateTrackingWarnings);
+    instructionDesugaring.generateDesugaredLibraryApiConverterTrackingWarnings();
   }
 
   private void postProcessingDesugaringForD8(
@@ -313,8 +303,7 @@ public class PrimaryD8L8IRConverter extends IRConverter {
             instructionDesugaring);
     methodProcessor.newWave();
     InterfaceMethodProcessorFacade interfaceDesugaring =
-        instructionDesugaring.getInterfaceMethodPostProcessingDesugaringD8(
-            ExcludeDexResources, interfaceProcessor);
+        instructionDesugaring.getInterfaceMethodProcessorFacade(interfaceProcessor);
     CfPostProcessingDesugaringCollection.create(appView, interfaceDesugaring, m -> true)
         .postProcessingDesugaring(appView.appInfo().classes(), eventConsumer, executorService);
     methodProcessor.awaitMethodProcessing();
@@ -330,10 +319,13 @@ public class PrimaryD8L8IRConverter extends IRConverter {
     ThreadUtils.processItems(
         appView.appInfo().classes(),
         clazz -> {
+          CfInstructionDesugaringCollection instructionDesugaringForClass =
+              instructionDesugaring.get(clazz);
           clazz.forEachProgramMethodMatching(
               method -> method.hasCode() && method.getCode().isCfCode(),
               method ->
-                  instructionDesugaring.prepare(method, desugaringEventConsumer, programAdditions));
+                  instructionDesugaringForClass.prepare(
+                      method, desugaringEventConsumer, programAdditions));
         },
         threadingModule,
         executorService);
@@ -367,20 +359,19 @@ public class PrimaryD8L8IRConverter extends IRConverter {
                 methodProcessingContext));
   }
 
-  @SuppressWarnings("UnusedVariable")
   private Timing rewriteNonDesugaredCodeInternal(
       ProgramMethod method,
       CfInstructionDesugaringEventConsumer desugaringEventConsumer,
       OptimizationFeedback feedback,
       MethodProcessor methodProcessor,
       MethodProcessingContext methodProcessingContext) {
-    boolean didDesugar = desugar(method, desugaringEventConsumer, methodProcessingContext);
+    desugar(method, desugaringEventConsumer, methodProcessingContext);
     return rewriteDesugaredCodeInternal(
         method,
         feedback,
         methodProcessor,
         methodProcessingContext,
-        MethodConversionOptions.forD8(appView));
+        MethodConversionOptions.forD8(appView, method));
   }
 
   private boolean desugar(
@@ -391,31 +382,14 @@ public class PrimaryD8L8IRConverter extends IRConverter {
     if (!method.getDefinition().getCode().isCfCode()) {
       return false;
     }
-    instructionDesugaring.scan(method, desugaringEventConsumer);
-    if (instructionDesugaring.needsDesugaring(method)) {
-      instructionDesugaring.desugar(method, methodProcessingContext, desugaringEventConsumer);
+    CfInstructionDesugaringCollection instructionDesugaringForMethod =
+        instructionDesugaring.get(method);
+    instructionDesugaringForMethod.scan(method, desugaringEventConsumer);
+    if (instructionDesugaringForMethod.needsDesugaring(method)) {
+      instructionDesugaringForMethod.desugar(
+          method, methodProcessingContext, desugaringEventConsumer);
       return true;
     }
     return false;
-  }
-
-  private void clearNestAttributes() {
-    instructionDesugaring.withD8NestBasedAccessDesugaring(
-        D8NestBasedAccessDesugaring::clearNestAttributes);
-  }
-
-  private void reportNestDesugarDependencies() {
-    instructionDesugaring.withD8NestBasedAccessDesugaring(
-        D8NestBasedAccessDesugaring::reportDesugarDependencies);
-  }
-
-  private void synthesizeBridgesForNestBasedAccessesOnClasspath(
-      D8MethodProcessor methodProcessor, ExecutorService executorService)
-      throws ExecutionException {
-    instructionDesugaring.withD8NestBasedAccessDesugaring(
-        d8NestBasedAccessDesugaring ->
-            d8NestBasedAccessDesugaring.synthesizeBridgesForNestBasedAccessesOnClasspath(
-                methodProcessor, executorService));
-    methodProcessor.awaitMethodProcessing();
   }
 }

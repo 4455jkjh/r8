@@ -4,6 +4,8 @@
 
 package com.android.tools.r8.graph;
 
+import static com.android.tools.r8.features.ClassToFeatureSplitMap.createEmptyClassToFeatureSplitMap;
+
 import com.android.build.shrinker.r8integration.R8ResourceShrinkerState;
 import com.android.tools.r8.androidapi.AndroidApiLevelCompute;
 import com.android.tools.r8.androidapi.ComputedApiLevel;
@@ -22,7 +24,6 @@ import com.android.tools.r8.graph.lens.InitClassLens;
 import com.android.tools.r8.graph.lens.NonIdentityGraphLens;
 import com.android.tools.r8.horizontalclassmerging.HorizontallyMergedClasses;
 import com.android.tools.r8.ir.analysis.inlining.SimpleInliningConstraintFactory;
-import com.android.tools.r8.ir.analysis.proto.EnumLiteProtoShrinker;
 import com.android.tools.r8.ir.analysis.proto.GeneratedExtensionRegistryShrinker;
 import com.android.tools.r8.ir.analysis.proto.GeneratedMessageLiteBuilderShrinker;
 import com.android.tools.r8.ir.analysis.proto.GeneratedMessageLiteShrinker;
@@ -31,7 +32,7 @@ import com.android.tools.r8.ir.analysis.value.AbstractValueFactory;
 import com.android.tools.r8.ir.analysis.value.AbstractValueJoiner.AbstractValueConstantPropagationJoiner;
 import com.android.tools.r8.ir.analysis.value.AbstractValueJoiner.AbstractValueFieldJoiner;
 import com.android.tools.r8.ir.analysis.value.AbstractValueJoiner.AbstractValueParameterJoiner;
-import com.android.tools.r8.ir.desugar.TypeRewriter;
+import com.android.tools.r8.ir.desugar.desugaredlibrary.DesugaredLibraryTypeRewriter;
 import com.android.tools.r8.ir.optimize.enums.EnumDataMap;
 import com.android.tools.r8.ir.optimize.info.MethodResolutionOptimizationInfoCollection;
 import com.android.tools.r8.ir.optimize.info.field.InstanceFieldInitializationInfoFactory;
@@ -130,7 +131,7 @@ public class AppView<T extends AppInfo> implements DexDefinitionSupplier, Librar
       new SimpleInliningConstraintFactory();
 
   // Desugaring.
-  public final TypeRewriter typeRewriter;
+  public final DesugaredLibraryTypeRewriter desugaredLibraryTypeRewriter;
 
   // Modeling.
   private final LibraryMethodSideEffectModelCollection libraryMethodSideEffectModelCollection;
@@ -174,7 +175,7 @@ public class AppView<T extends AppInfo> implements DexDefinitionSupplier, Librar
       ArtProfileCollection artProfileCollection,
       StartupProfile startupProfile,
       WholeProgramOptimizations wholeProgramOptimizations,
-      TypeRewriter mapper) {
+      DesugaredLibraryTypeRewriter mapper) {
     this(
         appInfo,
         artProfileCollection,
@@ -189,7 +190,7 @@ public class AppView<T extends AppInfo> implements DexDefinitionSupplier, Librar
       ArtProfileCollection artProfileCollection,
       StartupProfile startupProfile,
       WholeProgramOptimizations wholeProgramOptimizations,
-      TypeRewriter mapper,
+      DesugaredLibraryTypeRewriter mapper,
       Timing timing) {
     assert appInfo != null;
     this.appInfo = appInfo;
@@ -213,7 +214,7 @@ public class AppView<T extends AppInfo> implements DexDefinitionSupplier, Librar
             "Dont warn config",
             () -> DontWarnConfiguration.create(options().getProguardConfiguration()));
     this.initClassLens = timing.time("Init class lens", InitClassLens::getThrowingInstance);
-    this.typeRewriter = mapper;
+    this.desugaredLibraryTypeRewriter = mapper;
     timing.begin("Create argument propagator");
     if (enableWholeProgramOptimizations() && options().callSiteOptimizationOptions().isEnabled()) {
       this.argumentPropagator = new ArgumentPropagator(withLiveness());
@@ -246,9 +247,8 @@ public class AppView<T extends AppInfo> implements DexDefinitionSupplier, Librar
     return libraryMemberOptimizer.isModeled(type);
   }
 
-  private static <T extends AppInfo> TypeRewriter defaultTypeRewriter(T appInfo) {
-    InternalOptions options = appInfo.options();
-    return options.getTypeRewriter();
+  private static DesugaredLibraryTypeRewriter defaultTypeRewriter(AppInfo appInfo) {
+    return appInfo.options().getLibraryDesugaringOptions().getTypeRewriter();
   }
 
   public static <T extends AppInfo> AppView<T> createForD8(T appInfo) {
@@ -260,14 +260,12 @@ public class AppView<T extends AppInfo> implements DexDefinitionSupplier, Librar
         defaultTypeRewriter(appInfo));
   }
 
-  public static AppView<AppInfoWithClassHierarchy> createForSimulatingR8InD8(
+  public static AppView<AppInfoWithClassHierarchy> createForD8MainDexTracing(
       DirectMappedDexApplication application, MainDexInfo mainDexInfo) {
-    ClassToFeatureSplitMap classToFeatureSplitMap =
-        ClassToFeatureSplitMap.createInitialClassToFeatureSplitMap(application.options);
     AppInfoWithClassHierarchy appInfo =
         AppInfoWithClassHierarchy.createInitialAppInfoWithClassHierarchy(
             application,
-            classToFeatureSplitMap,
+            createEmptyClassToFeatureSplitMap(),
             mainDexInfo,
             GlobalSyntheticsStrategy.forSingleOutputMode());
     return new AppView<>(
@@ -279,7 +277,7 @@ public class AppView<T extends AppInfo> implements DexDefinitionSupplier, Librar
   }
 
   public static <T extends AppInfo> AppView<T> createForD8(
-      T appInfo, TypeRewriter mapper, Timing timing) {
+      T appInfo, DesugaredLibraryTypeRewriter mapper, Timing timing) {
     return new AppView<>(
         appInfo,
         ArtProfileCollection.createInitialArtProfileCollection(appInfo, appInfo.options()),
@@ -296,7 +294,7 @@ public class AppView<T extends AppInfo> implements DexDefinitionSupplier, Librar
   public static AppView<AppInfoWithClassHierarchy> createForR8(
       DexApplication application, MainDexInfo mainDexInfo) {
     ClassToFeatureSplitMap classToFeatureSplitMap =
-        ClassToFeatureSplitMap.createInitialClassToFeatureSplitMap(application.options);
+        ClassToFeatureSplitMap.createInitialR8ClassToFeatureSplitMap(application.options);
     AppInfoWithClassHierarchy appInfo =
         AppInfoWithClassHierarchy.createInitialAppInfoWithClassHierarchy(
             application,
@@ -311,7 +309,8 @@ public class AppView<T extends AppInfo> implements DexDefinitionSupplier, Librar
         defaultTypeRewriter(appInfo));
   }
 
-  public static <T extends AppInfo> AppView<T> createForL8(T appInfo, TypeRewriter mapper) {
+  public static <T extends AppInfo> AppView<T> createForL8(
+      T appInfo, DesugaredLibraryTypeRewriter mapper) {
     return new AppView<>(
         appInfo,
         ArtProfileCollection.createInitialArtProfileCollection(appInfo, appInfo.options()),
@@ -424,6 +423,20 @@ public class AppView<T extends AppInfo> implements DexDefinitionSupplier, Librar
     @SuppressWarnings("unchecked")
     AppView<U> appViewWithSpecializedAppInfo = (AppView<U>) this;
     return appViewWithSpecializedAppInfo;
+  }
+
+  public void rebuildAppInfo() {
+    rebuildAppInfo(app());
+  }
+
+  public void rebuildAppInfo(DexApplication app) {
+    if (hasLiveness()) {
+      withLiveness().setAppInfo(appInfoWithLiveness().rebuild(app));
+    } else if (hasClassHierarchy()) {
+      withClassHierarchy().setAppInfo(appInfoWithClassHierarchy().rebuild(app));
+    } else {
+      withoutClassHierarchy().setAppInfo(appInfo().rebuild(app));
+    }
   }
 
   public boolean isAllCodeProcessed() {
@@ -601,13 +614,6 @@ public class AppView<T extends AppInfo> implements DexDefinitionSupplier, Librar
   public <U> U withProtoShrinker(Function<ProtoShrinker, U> consumer, U defaultValue) {
     if (protoShrinker != null) {
       return consumer.apply(protoShrinker);
-    }
-    return defaultValue;
-  }
-
-  public <U> U withProtoEnumShrinker(Function<EnumLiteProtoShrinker, U> fn, U defaultValue) {
-    if (protoShrinker != null && options().protoShrinking().isEnumLiteProtoShrinkingEnabled()) {
-      return fn.apply(protoShrinker.enumLiteProtoShrinker);
     }
     return defaultValue;
   }
@@ -1340,6 +1346,11 @@ public class AppView<T extends AppInfo> implements DexDefinitionSupplier, Librar
     // the lens prior to lens rewriting AppView.
     assert changed || lens.isHorizontalClassMergerGraphLens();
 
+    AppInfo appInfo = appView.appInfo();
+    SyntheticItems syntheticItems = appView.getSyntheticItems();
+    appView.setAppInfo(
+        appInfo.rebuildWithMainDexInfo(
+            appInfo.getMainDexInfo().rewrittenWithLens(syntheticItems, lens, timing)));
     appView.setArtProfileCollection(
         appView.getArtProfileCollection().rewrittenWithLens(appView, lens, timing));
   }

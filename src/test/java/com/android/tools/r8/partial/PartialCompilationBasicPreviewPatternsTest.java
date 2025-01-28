@@ -13,6 +13,7 @@ import com.android.tools.r8.partial.pkg1.A2;
 import com.android.tools.r8.partial.pkg1.subpkg.B;
 import com.android.tools.r8.partial.pkg2.C1;
 import com.android.tools.r8.partial.pkg2.C2;
+import com.android.tools.r8.utils.AndroidApiLevel;
 import com.google.common.collect.ImmutableList;
 import java.util.List;
 import org.junit.Test;
@@ -24,9 +25,9 @@ import org.junit.runners.Parameterized.Parameters;
 @RunWith(Parameterized.class)
 public class PartialCompilationBasicPreviewPatternsTest extends TestBase {
 
-  private static String PKG1 = getPackageName(A1.class);
-  private static String SUBPKG = getPackageName(B.class);
-  private static String PKG2 = getPackageName(C2.class);
+  private static final String PKG1 = getPackageName(A1.class);
+  private static final String SUBPKG = getPackageName(B.class);
+  private static final String PKG2 = getPackageName(C2.class);
 
   private static String getPackageName(Class<?> clazz) {
     return clazz.getTypeName().substring(0, clazz.getTypeName().lastIndexOf('.'));
@@ -37,7 +38,10 @@ public class PartialCompilationBasicPreviewPatternsTest extends TestBase {
 
   @Parameters(name = "{0}")
   public static TestParametersCollection data() {
-    return getTestParameters().withDexRuntimesAndAllApiLevels().build();
+    return getTestParameters()
+        .withDexRuntimes()
+        .withApiLevelsStartingAtIncluding(AndroidApiLevel.L)
+        .build();
   }
 
   private static final List<Class<?>> ALL_CLASSES =
@@ -58,12 +62,6 @@ public class PartialCompilationBasicPreviewPatternsTest extends TestBase {
         .addProgramClasses(ALL_CLASSES)
         .setR8PartialConfiguration(builder -> builder.addJavaTypeIncludePattern(PKG1 + ".**"))
         .compile()
-        .inspectD8Input(
-            inspector ->
-                assertTrue(inspector.hasExactlyProgramClasses(C1.class, C2.class, Main.class)))
-        .inspectR8Input(
-            inspector ->
-                assertTrue(inspector.hasExactlyProgramClasses(A1.class, A2.class, B.class)))
         .inspect(
             inspector ->
                 assertTrue(inspector.hasExactlyProgramClasses(C1.class, C2.class, Main.class)))
@@ -83,12 +81,6 @@ public class PartialCompilationBasicPreviewPatternsTest extends TestBase {
         .addProgramClasses(ALL_CLASSES)
         .setR8PartialConfiguration(builder -> builder.addJavaTypeIncludePattern(PKG1 + ".*"))
         .compile()
-        .inspectD8Input(
-            inspector ->
-                assertTrue(
-                    inspector.hasExactlyProgramClasses(B.class, C1.class, C2.class, Main.class)))
-        .inspectR8Input(
-            inspector -> assertTrue(inspector.hasExactlyProgramClasses(A1.class, A2.class)))
         .inspect(
             inspector ->
                 assertTrue(
@@ -109,12 +101,6 @@ public class PartialCompilationBasicPreviewPatternsTest extends TestBase {
                     .addJavaTypeIncludePattern(PKG1 + ".**")
                     .addJavaTypeExcludePattern(SUBPKG + ".*"))
         .compile()
-        .inspectD8Input(
-            inspector ->
-                assertTrue(
-                    inspector.hasExactlyProgramClasses(C1.class, C2.class, B.class, Main.class)))
-        .inspectR8Input(
-            inspector -> assertTrue(inspector.hasExactlyProgramClasses(A1.class, A2.class)))
         .inspect(
             inspector ->
                 assertTrue(
@@ -135,12 +121,6 @@ public class PartialCompilationBasicPreviewPatternsTest extends TestBase {
                     .addJavaTypeIncludePattern(PKG1 + ".**")
                     .addJavaTypeExcludePattern(PKG1 + ".A*"))
         .compile()
-        .inspectD8Input(
-            inspector ->
-                assertTrue(
-                    inspector.hasExactlyProgramClasses(
-                        A1.class, A2.class, C1.class, C2.class, Main.class)))
-        .inspectR8Input(inspector -> assertTrue(inspector.hasExactlyProgramClasses(B.class)))
         .inspect(
             inspector ->
                 assertTrue(
@@ -163,12 +143,6 @@ public class PartialCompilationBasicPreviewPatternsTest extends TestBase {
                     .addJavaTypeExcludePattern(PKG1 + ".A1")
                     .addJavaTypeExcludePattern(PKG1 + ".A2"))
         .compile()
-        .inspectD8Input(
-            inspector ->
-                assertTrue(
-                    inspector.hasExactlyProgramClasses(
-                        A1.class, A2.class, C1.class, C2.class, Main.class)))
-        .inspectR8Input(inspector -> assertTrue(inspector.hasExactlyProgramClasses(B.class)))
         .inspect(
             inspector ->
                 assertTrue(
@@ -191,12 +165,6 @@ public class PartialCompilationBasicPreviewPatternsTest extends TestBase {
                     .addJavaTypeIncludePattern(PKG2 + ".**")
                     .addJavaTypeExcludePattern(PKG2 + ".C1"))
         .compile()
-        .inspectD8Input(
-            inspector -> assertTrue(inspector.hasExactlyProgramClasses(C1.class, Main.class)))
-        .inspectR8Input(
-            inspector ->
-                assertTrue(
-                    inspector.hasExactlyProgramClasses(A1.class, A2.class, B.class, C2.class)))
         .inspect(inspector -> assertTrue(inspector.hasExactlyProgramClasses(C1.class, Main.class)))
         .run(parameters.getRuntime(), Main.class, ALL_TYPE_NAMES)
         .assertSuccessWithOutputLines(
@@ -220,12 +188,6 @@ public class PartialCompilationBasicPreviewPatternsTest extends TestBase {
                     .addJavaTypeIncludePattern(PKG2 + ".*")
                     .addJavaTypeExcludePattern(PKG1 + ".A1"))
         .compile()
-        .inspectD8Input(
-            inspector -> assertTrue(inspector.hasExactlyProgramClasses(A1.class, Main.class)))
-        .inspectR8Input(
-            inspector ->
-                assertTrue(
-                    inspector.hasExactlyProgramClasses(A2.class, B.class, C1.class, C2.class)))
         .inspect(inspector -> assertTrue(inspector.hasExactlyProgramClasses(A1.class, Main.class)))
         .run(parameters.getRuntime(), Main.class, ALL_TYPE_NAMES)
         .assertSuccessWithOutputLines(
@@ -248,12 +210,6 @@ public class PartialCompilationBasicPreviewPatternsTest extends TestBase {
                     .addJavaTypeIncludePattern(PKG2 + ".**")
                     .addJavaTypeExcludePattern(SUBPKG + ".*"))
         .compile()
-        .inspectD8Input(
-            inspector -> assertTrue(inspector.hasExactlyProgramClasses(B.class, Main.class)))
-        .inspectR8Input(
-            inspector ->
-                assertTrue(
-                    inspector.hasExactlyProgramClasses(A1.class, A2.class, C1.class, C2.class)))
         .inspect(inspector -> assertTrue(inspector.hasExactlyProgramClasses(B.class, Main.class)))
         .run(parameters.getRuntime(), Main.class, ALL_TYPE_NAMES)
         .assertSuccessWithOutputLines(

@@ -9,6 +9,7 @@ import com.android.tools.r8.ProgramResource;
 import com.android.tools.r8.ProgramResource.Kind;
 import com.android.tools.r8.dex.MixedSectionCollection;
 import com.android.tools.r8.errors.Unreachable;
+import com.android.tools.r8.graph.FieldCollection.FieldCollectionFactory;
 import com.android.tools.r8.graph.GenericSignature.ClassSignature;
 import com.android.tools.r8.graph.MethodCollection.MethodCollectionFactory;
 import com.android.tools.r8.kotlin.KotlinClassLevelInfo;
@@ -16,7 +17,10 @@ import com.android.tools.r8.origin.Origin;
 import com.android.tools.r8.utils.structural.StructuralItem;
 import com.android.tools.r8.utils.structural.StructuralMapping;
 import com.android.tools.r8.utils.structural.StructuralSpecification;
+import java.util.Collection;
+import java.util.IdentityHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
@@ -41,8 +45,7 @@ public class DexClasspathClass extends DexClass
       List<InnerClassAttribute> innerClasses,
       ClassSignature classSignature,
       DexAnnotationSet annotations,
-      DexEncodedField[] staticFields,
-      DexEncodedField[] instanceFields,
+      FieldCollectionFactory fieldCollectionFactory,
       MethodCollectionFactory methodCollectionFactory,
       boolean skipNameValidationForTesting) {
     super(
@@ -51,8 +54,7 @@ public class DexClasspathClass extends DexClass
         accessFlags,
         superType,
         type,
-        staticFields,
-        instanceFields,
+        fieldCollectionFactory,
         methodCollectionFactory,
         nestHost,
         nestMembers,
@@ -65,6 +67,37 @@ public class DexClasspathClass extends DexClass
         origin,
         skipNameValidationForTesting);
     assert kind == Kind.CF : "Invalid kind " + kind + " for class-path class " + type;
+  }
+
+  public static DexClasspathClass toClasspathClass(DexProgramClass programClass) {
+    return new DexClasspathClass(
+        programClass.getType(),
+        programClass.getOriginKind(),
+        programClass.getOrigin(),
+        programClass.getAccessFlags(),
+        programClass.getSuperType(),
+        programClass.getInterfaces(),
+        programClass.getSourceFile(),
+        programClass.getNestHostClassAttribute(),
+        programClass.getNestMembersClassAttributes(),
+        programClass.getPermittedSubclassAttributes(),
+        programClass.getRecordComponents(),
+        programClass.getEnclosingMethodAttribute(),
+        programClass.getInnerClasses(),
+        programClass.getClassSignature(),
+        programClass.annotations(),
+        FieldCollectionFactory.fromFieldCollection(programClass.getFieldCollection()),
+        MethodCollectionFactory.fromMethodCollection(programClass.getMethodCollection()),
+        false);
+  }
+
+  public static Map<DexType, DexClasspathClass> toClasspathClasses(
+      Collection<DexProgramClass> programClasses) {
+    Map<DexType, DexClasspathClass> classpathClasses = new IdentityHashMap<>(programClasses.size());
+    for (DexProgramClass programClass : programClasses) {
+      classpathClasses.put(programClass.getType(), toClasspathClass(programClass));
+    }
+    return classpathClasses;
   }
 
   @Override

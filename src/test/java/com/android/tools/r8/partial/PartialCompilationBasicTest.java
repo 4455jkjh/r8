@@ -10,6 +10,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
+import com.android.tools.r8.utils.AndroidApiLevel;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -24,7 +25,10 @@ public class PartialCompilationBasicTest extends TestBase {
 
   @Parameters(name = "{0}")
   public static TestParametersCollection data() {
-    return getTestParameters().withDexRuntimesAndAllApiLevels().build();
+    return getTestParameters()
+        .withDexRuntimes()
+        .withApiLevelsStartingAtIncluding(AndroidApiLevel.L)
+        .build();
   }
 
   @Test
@@ -35,30 +39,6 @@ public class PartialCompilationBasicTest extends TestBase {
         .addKeepMainRule(Main.class)
         .setR8PartialConfiguration(builder -> builder.includeAll().excludeClasses(A.class))
         .compile()
-        .inspectR8Input(
-            inspector -> {
-              assertThat(inspector.programClass(A.class), isAbsent());
-              assertThat(inspector.programClass(B.class), isPresent());
-              assertThat(inspector.programClass(Main.class), isPresent());
-            })
-        .inspectD8Input(
-            inspector -> {
-              assertThat(inspector.programClass(A.class), isPresent());
-              assertThat(inspector.programClass(B.class), isAbsent());
-              assertThat(inspector.programClass(Main.class), isAbsent());
-            })
-        .inspectR8Output(
-            inspector -> {
-              assertThat(inspector.clazz(A.class), isAbsent());
-              assertThat(inspector.clazz(B.class), isAbsent());
-              assertThat(inspector.clazz(Main.class), isPresent());
-            })
-        .inspectD8Output(
-            inspector -> {
-              assertThat(inspector.clazz(A.class), isPresent());
-              assertThat(inspector.clazz(B.class), isAbsent());
-              assertThat(inspector.clazz(Main.class), isAbsent());
-            })
         .inspect(
             inspector -> {
               assertThat(inspector.clazz(A.class), isPresent());
@@ -77,34 +57,6 @@ public class PartialCompilationBasicTest extends TestBase {
         .addKeepMainRule(Main.class)
         .setR8PartialConfiguration(builder -> builder.includeAll().excludeClasses(B.class))
         .compile()
-        .inspectR8Input(
-            inspector -> {
-              // TODO(b/309743298): These are all present as inspection currently also look at
-              //  classpath.
-              assertThat(inspector.programClass(A.class), isPresent());
-              assertThat(inspector.programClass(B.class), isAbsent());
-              assertThat(inspector.programClass(Main.class), isPresent());
-            })
-        .inspectD8Input(
-            inspector -> {
-              // TODO(b/309743298): These are all present as inspection currently also look at
-              //  classpath.
-              assertThat(inspector.programClass(A.class), isAbsent());
-              assertThat(inspector.programClass(B.class), isPresent());
-              assertThat(inspector.programClass(Main.class), isAbsent());
-            })
-        .inspectR8Output(
-            inspector -> {
-              assertThat(inspector.clazz(A.class), isAbsent());
-              assertThat(inspector.clazz(B.class), isAbsent());
-              assertThat(inspector.clazz(Main.class), isPresent());
-            })
-        .inspectD8Output(
-            inspector -> {
-              assertThat(inspector.clazz(A.class), isAbsent());
-              assertThat(inspector.clazz(B.class), isPresent());
-              assertThat(inspector.clazz(Main.class), isAbsent());
-            })
         .inspect(
             inspector -> {
               assertThat(inspector.clazz(A.class), isAbsent());

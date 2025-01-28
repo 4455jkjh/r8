@@ -12,8 +12,6 @@ import com.android.tools.r8.contexts.CompilationContext.UniqueContext;
 import com.android.tools.r8.errors.MissingGlobalSyntheticsConsumerDiagnostic;
 import com.android.tools.r8.errors.Unreachable;
 import com.android.tools.r8.features.ClassToFeatureSplitMap;
-import com.android.tools.r8.graph.AppInfo;
-import com.android.tools.r8.graph.AppInfoWithClassHierarchy;
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.ClassResolutionResult;
 import com.android.tools.r8.graph.ClasspathMethod;
@@ -329,11 +327,11 @@ public class SyntheticItems implements SyntheticDefinitionsProvider {
     if (appView.appInfo().hasClassHierarchy()) {
       appView
           .withClassHierarchy()
-          .setAppInfo(appView.appInfo().withClassHierarchy().rebuildWithClassHierarchy(commit));
+          .setAppInfo(appView.appInfo().withClassHierarchy().rebuildWithCommittedItems(commit));
     } else {
       appView
           .withoutClassHierarchy()
-          .setAppInfo(new AppInfo(commit, appView.appInfo().getMainDexInfo()));
+          .setAppInfo(appView.appInfo().rebuildWithCommittedItems(commit));
     }
   }
 
@@ -667,12 +665,7 @@ public class SyntheticItems implements SyntheticDefinitionsProvider {
 
   private SynthesizingContext getSynthesizingContext(
       ProgramDefinition context, AppView<?> appView) {
-    if (appView.hasClassHierarchy()) {
-      AppInfoWithClassHierarchy appInfo = appView.appInfoWithClassHierarchy();
-      return getSynthesizingContext(context, appInfo.getClassToFeatureSplitMap());
-    }
-    return getSynthesizingContext(
-        context, ClassToFeatureSplitMap.createEmptyClassToFeatureSplitMap());
+    return getSynthesizingContext(context, appView.appInfo().getClassToFeatureSplitMap());
   }
 
   /** Used to find the synthesizing context for a new synthetic that is about to be created. */
@@ -778,13 +771,14 @@ public class SyntheticItems implements SyntheticDefinitionsProvider {
       AppView<?> appView,
       DexType type) {
     DexType rewrittenContextType =
-        appView.typeRewriter.rewrittenContextType(outerContext.getSynthesizingContextType());
+        appView.desugaredLibraryTypeRewriter.rewrittenContextType(
+            outerContext.getSynthesizingContextType());
     if (rewrittenContextType == null) {
       return;
     }
     SynthesizingContext synthesizingContext = SynthesizingContext.fromType(rewrittenContextType);
     DexType rewrittenType = contextToType.apply(synthesizingContext);
-    appView.typeRewriter.rewriteType(type, rewrittenType);
+    appView.desugaredLibraryTypeRewriter.rewriteType(type, rewrittenType);
   }
 
   public DexProgramClass createClass(

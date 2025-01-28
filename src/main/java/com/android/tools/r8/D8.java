@@ -3,6 +3,7 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8;
 
+import static com.android.tools.r8.features.ClassToFeatureSplitMap.createInitialD8ClassToFeatureSplitMap;
 import static com.android.tools.r8.utils.AssertionUtils.forTesting;
 import static com.android.tools.r8.utils.ExceptionUtils.unwrapExecutionException;
 
@@ -23,20 +24,21 @@ import com.android.tools.r8.horizontalclassmerging.HorizontalClassMerger;
 import com.android.tools.r8.inspector.internal.InspectorImpl;
 import com.android.tools.r8.ir.analysis.value.AbstractValueFactory;
 import com.android.tools.r8.ir.conversion.PrimaryD8L8IRConverter;
-import com.android.tools.r8.ir.desugar.TypeRewriter;
 import com.android.tools.r8.ir.desugar.desugaredlibrary.DesugaredLibraryAmender;
+import com.android.tools.r8.ir.desugar.desugaredlibrary.DesugaredLibraryTypeRewriter;
+import com.android.tools.r8.ir.desugar.desugaredlibrary.PrefixRewritingNamingLens;
 import com.android.tools.r8.ir.optimize.AssertionsRewriter;
 import com.android.tools.r8.ir.optimize.info.OptimizationFeedbackSimple;
 import com.android.tools.r8.jar.CfApplicationWriter;
 import com.android.tools.r8.keepanno.annotations.KeepForApi;
 import com.android.tools.r8.kotlin.KotlinMetadataRewriter;
 import com.android.tools.r8.naming.NamingLens;
-import com.android.tools.r8.naming.PrefixRewritingNamingLens;
 import com.android.tools.r8.naming.RecordRewritingNamingLens;
 import com.android.tools.r8.naming.VarHandleDesugaringRewritingNamingLens;
 import com.android.tools.r8.naming.signature.GenericSignatureRewriter;
 import com.android.tools.r8.origin.CommandLineOrigin;
 import com.android.tools.r8.origin.Origin;
+import com.android.tools.r8.partial.R8PartialApplicationWriter;
 import com.android.tools.r8.profile.startup.instrumentation.StartupInstrumentation;
 import com.android.tools.r8.shaking.AssumeInfoCollection;
 import com.android.tools.r8.shaking.MainDexInfo;
@@ -174,9 +176,10 @@ public final class D8 {
     LazyLoadedDexApplication app = applicationReader.read(executor);
     timing.end();
     timing.begin("Load desugared lib");
-    options.loadMachineDesugaredLibrarySpecification(timing, app);
+    options.getLibraryDesugaringOptions().loadMachineDesugaredLibrarySpecification(timing, app);
     timing.end();
-    TypeRewriter typeRewriter = options.getTypeRewriter();
+    DesugaredLibraryTypeRewriter typeRewriter =
+        options.getLibraryDesugaringOptions().getTypeRewriter();
     AppInfo appInfo =
         timing.time(
             "Create app-info",
@@ -186,6 +189,7 @@ public final class D8 {
                     options.isGeneratingDexIndexed()
                         ? GlobalSyntheticsStrategy.forSingleOutputMode()
                         : GlobalSyntheticsStrategy.forPerFileMode(),
+                    createInitialD8ClassToFeatureSplitMap(options),
                     applicationReader.readMainDexClasses(app)));
     return timing.time("Create app-view", () -> AppView.createForD8(appInfo, typeRewriter, timing));
   }
@@ -268,20 +272,16 @@ public final class D8 {
 
       timing.time(
           "Create prefix rewriting lens",
-          () ->
-              appView.setNamingLens(
-                  PrefixRewritingNamingLens.createPrefixRewritingNamingLens(appView)));
+          () -> PrefixRewritingNamingLens.commitPrefixRewritingNamingLens(appView));
 
       timing.time(
           "Create record rewriting lens",
-          () ->
-              appView.setNamingLens(
-                  RecordRewritingNamingLens.createRecordRewritingNamingLens(appView)));
+          () -> RecordRewritingNamingLens.commitRecordRewritingNamingLens(appView));
 
       if (options.isGeneratingDex()
           && hasDexResources
           && hasClassResources
-          && appView.typeRewriter.isRewriting()) {
+          && appView.desugaredLibraryTypeRewriter.isRewriting()) {
         // There are both cf and dex inputs in the program, and rewriting is required for
         // desugared library only on cf inputs. We cannot easily rewrite part of the program
         // without iterating again the IR. We fall-back to writing one app with rewriting and
@@ -289,10 +289,7 @@ public final class D8 {
         timing.begin("Rewrite non-dex inputs");
         DexApplication app = rewriteNonDexInputs(appView, inputApp, executor, marker, timing);
         timing.end();
-        appView.setAppInfo(
-            new AppInfo(
-                appView.appInfo().getSyntheticItems().commit(app),
-                appView.appInfo().getMainDexInfo()));
+        appView.rebuildAppInfo(app);
         appView.setNamingLens(NamingLens.getIdentityLens());
       } else if (options.isGeneratingDex() && hasDexResources) {
         appView.setNamingLens(NamingLens.getIdentityLens());
@@ -326,13 +323,8 @@ public final class D8 {
       timing.end(); // post-converter
 
       reportSyntheticInformation(appView);
+      writeApplication(appView, inputApp, marker, executor);
 
-      if (options.isGeneratingClassFiles()) {
-        new CfApplicationWriter(appView, marker)
-            .write(options.getClassFileConsumer(), executor, inputApp);
-      } else {
-        ApplicationWriter.create(appView, marker).write(executor, inputApp);
-      }
       options.printWarnings();
     } catch (ExecutionException e) {
       throw unwrapExecutionException(e);
@@ -353,6 +345,20 @@ public final class D8 {
     }
     appView.getSyntheticItems().reportSyntheticsInformation(consumer);
     consumer.finished();
+  }
+
+  private static void writeApplication(
+      AppView<AppInfo> appView, AndroidApp inputApp, Marker marker, ExecutorService executor)
+      throws ExecutionException, IOException {
+    InternalOptions options = appView.options();
+    if (options.partialSubCompilationConfiguration != null) {
+      new R8PartialApplicationWriter(appView).write(executor);
+    } else if (options.isGeneratingClassFiles()) {
+      new CfApplicationWriter(appView, marker)
+          .write(options.getClassFileConsumer(), executor, inputApp);
+    } else {
+      ApplicationWriter.create(appView, marker).write(executor, inputApp);
+    }
   }
 
   private static void initializeAssumeInfoCollection(AppView<AppInfo> appView) {
@@ -428,10 +434,7 @@ public final class D8 {
     }
     DexApplication cfApp =
         appView.app().builder().replaceProgramClasses(nonDexProgramClasses).build();
-    appView.setAppInfo(
-        new AppInfo(
-            appView.appInfo().getSyntheticItems().commit(cfApp),
-            appView.appInfo().getMainDexInfo()));
+    appView.rebuildAppInfo(cfApp);
     ConvertedCfFiles convertedCfFiles = new ConvertedCfFiles();
     new GenericSignatureRewriter(appView).run(appView.appInfo().classes(), executor);
     new KotlinMetadataRewriter(appView).runForD8(executor);

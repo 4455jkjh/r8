@@ -137,8 +137,8 @@ public class LookUpCloseResourceTest extends TestBase {
       toSuper.remove(dexType);
     }
 
-    Assert.assertEquals(10, toSuper.size());
-    Assert.assertEquals(11, classIntroducedBeforeClose.size());
+    Assert.assertEquals(9, toSuper.size());
+    Assert.assertEquals(12, classIntroducedBeforeClose.size());
     Assert.assertEquals(6, closeBackports.size());
 
     if (DEBUG_PRINT) {
@@ -188,6 +188,7 @@ public class LookUpCloseResourceTest extends TestBase {
         new ApplicationReader(app, options, Timing.empty()).read().toDirect();
     AppInfo initialAppInfo =
         AppInfo.createInitialAppInfo(libHolder, GlobalSyntheticsStrategy.forNonSynthesizing());
-    return AppView.createForD8(initialAppInfo, options.getTypeRewriter(), Timing.empty());
+    return AppView.createForD8(
+        initialAppInfo, options.getLibraryDesugaringOptions().getTypeRewriter(), Timing.empty());
   }
 }

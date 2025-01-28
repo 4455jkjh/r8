@@ -56,9 +56,6 @@ public class PrimaryR8IRConverter extends IRConverter {
   private DexApplication internalOptimize(
       AppView<AppInfoWithLiveness> appView, ExecutorService executorService)
       throws ExecutionException {
-    // Desugaring happens in the enqueuer.
-    assert instructionDesugaring.isEmpty();
-
     workaroundAbstractMethodOnNonAbstractClassVerificationBug(executorService);
 
     // The process is in two phases in general.
@@ -244,10 +241,7 @@ public class PrimaryR8IRConverter extends IRConverter {
 
   private static void commitPendingSyntheticItems(AppView<AppInfoWithLiveness> appView) {
     if (appView.getSyntheticItems().hasPendingSyntheticClasses()) {
-      appView.setAppInfo(
-          appView
-              .appInfo()
-              .rebuildWithLiveness(appView.getSyntheticItems().commit(appView.appInfo().app())));
+      appView.rebuildAppInfo();
     }
   }
 

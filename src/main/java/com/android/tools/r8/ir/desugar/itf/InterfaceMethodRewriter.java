@@ -150,7 +150,7 @@ public final class InterfaceMethodRewriter implements CfInstructionDesugaring {
 
   public static void checkForAssumedLibraryTypes(AppInfo appInfo, InternalOptions options) {
     MachineDesugaredLibrarySpecification machineDesugaredLibrarySpecification =
-        options.machineDesugaredLibrarySpecification;
+        options.getLibraryDesugaringOptions().getMachineDesugaredLibrarySpecification();
     machineDesugaredLibrarySpecification
         .getEmulatedInterfaces()
         .forEach(
@@ -192,7 +192,11 @@ public final class InterfaceMethodRewriter implements CfInstructionDesugaring {
 
   private void initializeEmulatedInterfaceVariables() {
     Set<DexType> emulateLibraryInterface =
-        options.machineDesugaredLibrarySpecification.getEmulatedInterfaces().keySet();
+        options
+            .getLibraryDesugaringOptions()
+            .getMachineDesugaredLibrarySpecification()
+            .getEmulatedInterfaces()
+            .keySet();
     for (DexType interfaceType : emulateLibraryInterface) {
       DexClass emulatedInterfaceClass = appView.definitionFor(interfaceType);
       if (emulatedInterfaceClass != null) {
@@ -923,17 +927,15 @@ public final class InterfaceMethodRewriter implements CfInstructionDesugaring {
   }
 
   public InterfaceMethodProcessorFacade getPostProcessingDesugaringD8(
-      Flavor flavour, InterfaceProcessor interfaceProcessor) {
-    return new InterfaceMethodProcessorFacade(
-        appView, flavour, m -> true, interfaceProcessor, desugaringMode);
+      InterfaceProcessor interfaceProcessor) {
+    return new InterfaceMethodProcessorFacade(appView, interfaceProcessor, desugaringMode);
   }
 
   public InterfaceMethodProcessorFacade getPostProcessingDesugaringR8(
-      Flavor flavour,
       Predicate<ProgramMethod> isLiveMethod,
       InterfaceProcessor interfaceProcessor) {
     return new InterfaceMethodProcessorFacade(
-        appView, flavour, isLiveMethod, interfaceProcessor, desugaringMode);
+        appView, interfaceProcessor, desugaringMode, isLiveMethod);
   }
 
   private Origin getMethodOrigin(DexMethod method) {

@@ -40,7 +40,7 @@ import com.android.tools.r8.ir.conversion.passes.StringSwitchConverter;
 import com.android.tools.r8.ir.conversion.passes.StringSwitchRemover;
 import com.android.tools.r8.ir.conversion.passes.ThrowCatchOptimizer;
 import com.android.tools.r8.ir.conversion.passes.TrivialPhiSimplifier;
-import com.android.tools.r8.ir.desugar.CfInstructionDesugaringCollection;
+import com.android.tools.r8.ir.desugar.CfInstructionDesugaringCollectionSupplier;
 import com.android.tools.r8.ir.optimize.AssertionErrorTwoArgsConstructorRewriter;
 import com.android.tools.r8.ir.optimize.AssertionsRewriter;
 import com.android.tools.r8.ir.optimize.AssumeInserter;
@@ -107,7 +107,7 @@ public class IRConverter {
   public final Outliner outliner;
   protected final CodeRewriterPassCollection rewriterPassCollection;
   private final ClassInitializerDefaultsOptimization classInitializerDefaultsOptimization;
-  protected final CfInstructionDesugaringCollection instructionDesugaring;
+  protected final CfInstructionDesugaringCollectionSupplier instructionDesugaring;
   protected FieldAccessAnalysis fieldAccessAnalysis;
   protected final LibraryMethodOverrideAnalysis libraryMethodOverrideAnalysis;
   protected final IdempotentFunctionCallCanonicalizer idempotentFunctionCallCanonicalizer;
@@ -169,7 +169,7 @@ public class IRConverter {
             prefix ->
                 options.itemFactory.createString(
                     "L" + DescriptorUtils.getPackageBinaryNameFromJavaType(prefix)));
-    if (options.isDesugaredLibraryCompilation()) {
+    if (options.getLibraryDesugaringOptions().isDesugaredLibraryCompilation()) {
       // Specific L8 Settings, performs all desugaring including L8 specific desugaring.
       //
       // The following desugarings are required for L8 specific desugaring:
@@ -186,8 +186,7 @@ public class IRConverter {
       // - nest based access desugaring,
       // - invoke-special desugaring.
       assert options.desugarState.isOn();
-      this.instructionDesugaring =
-          CfInstructionDesugaringCollection.create(appView, appView.apiLevelCompute());
+      this.instructionDesugaring = CfInstructionDesugaringCollectionSupplier.createForL8(appView);
       this.dynamicTypeOptimization = null;
       this.classInliner = null;
       this.fieldAccessAnalysis = null;
@@ -208,8 +207,8 @@ public class IRConverter {
     }
     this.instructionDesugaring =
         appView.enableWholeProgramOptimizations()
-            ? CfInstructionDesugaringCollection.empty()
-            : CfInstructionDesugaringCollection.create(appView, appView.apiLevelCompute());
+            ? CfInstructionDesugaringCollectionSupplier.empty()
+            : CfInstructionDesugaringCollectionSupplier.createForD8(appView);
     removeVerificationErrorForUnknownReturnedValues =
         (appView.options().apiModelingOptions().isApiModelingEnabled()
                 && appView.options().canHaveVerifyErrorForUnknownUnusedReturnValue())
@@ -289,7 +288,8 @@ public class IRConverter {
     fieldAccessAnalysis = null;
   }
 
-  private boolean needsIRConversion(ProgramMethod method) {
+  private boolean needsIRConversion(
+      ProgramMethod method, MethodConversionOptions conversionOptions) {
     if (method.getDefinition().getCode().isThrowNullCode()) {
       return false;
     }
@@ -300,6 +300,10 @@ public class IRConverter {
       return true;
     }
     assert method.getDefinition().getCode().isCfCode();
+    if (options.partialSubCompilationConfiguration != null) {
+      assert conversionOptions.isGeneratingClassFiles() || conversionOptions.isGeneratingDex();
+      return conversionOptions.isGeneratingDex();
+    }
     return !options.isGeneratingClassFiles();
   }
 
@@ -475,7 +479,7 @@ public class IRConverter {
       options.testing.hookInIrConversion.run();
     }
 
-    if (!needsIRConversion(method) || options.skipIR) {
+    if (!needsIRConversion(method, conversionOptions) || options.skipIR) {
       feedback.markProcessed(method.getDefinition(), ConstraintWithTarget.NEVER);
       return Timing.empty();
     }

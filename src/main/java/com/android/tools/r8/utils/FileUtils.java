@@ -93,6 +93,10 @@ public class FileUtils {
         || name.endsWith(AAR_EXTENSION);
   }
 
+  public static String readTextFile(Path file) throws IOException {
+    return readTextFile(file, StandardCharsets.UTF_8);
+  }
+
   public static String readTextFile(Path file, Charset charset) throws IOException {
     return new String(Files.readAllBytes(file), charset);
   }
@@ -107,6 +111,11 @@ public class FileUtils {
 
   public static List<String> readAllLines(Path file) throws IOException {
     return Files.readAllLines(file);
+  }
+
+  public static Path writeTextFile(Path file, String text) throws IOException {
+    Files.writeString(file, text, StandardCharsets.UTF_8);
+    return file;
   }
 
   public static Path writeTextFile(Path file, List<String> lines) throws IOException {

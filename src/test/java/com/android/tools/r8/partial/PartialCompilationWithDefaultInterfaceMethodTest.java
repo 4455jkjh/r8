@@ -3,7 +3,6 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8.partial;
 
-import static com.android.tools.r8.ir.desugar.itf.InterfaceDesugaringSyntheticHelper.DEFAULT_METHOD_PREFIX;
 import static com.android.tools.r8.utils.codeinspector.CodeMatchers.invokesMethod;
 import static com.android.tools.r8.utils.codeinspector.Matchers.isAbstract;
 import static com.android.tools.r8.utils.codeinspector.Matchers.isPresent;
@@ -14,6 +13,7 @@ import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.synthesis.SyntheticItemsTestUtils;
+import com.android.tools.r8.utils.AndroidApiLevel;
 import com.android.tools.r8.utils.codeinspector.ClassSubject;
 import com.android.tools.r8.utils.codeinspector.MethodSubject;
 import org.junit.Test;
@@ -30,7 +30,10 @@ public class PartialCompilationWithDefaultInterfaceMethodTest extends TestBase {
 
   @Parameters(name = "{0}")
   public static TestParametersCollection data() {
-    return getTestParameters().withDexRuntimesAndAllApiLevels().build();
+    return getTestParameters()
+        .withDexRuntimes()
+        .withApiLevelsStartingAtIncluding(AndroidApiLevel.L)
+        .build();
   }
 
   @Test
@@ -58,8 +61,7 @@ public class PartialCompilationWithDefaultInterfaceMethodTest extends TestBase {
                 assertThat(jCompanionClassSubject, isPresent());
 
                 MethodSubject jCompanionMethodSubject =
-                    jCompanionClassSubject.uniqueMethodWithOriginalName(
-                        DEFAULT_METHOD_PREFIX + "m");
+                    jCompanionClassSubject.uniqueMethodWithOriginalName("m");
                 assertThat(jCompanionMethodSubject, isPresent());
 
                 ClassSubject aClassSubject = inspector.clazz(A.class);

@@ -447,7 +447,7 @@ public class ApplicationWriter {
 
       // A consumer can manage the generated keep rules.
       if (options.desugaredLibraryKeepRuleConsumer != null && !desugaredLibraryCodeToKeep.isNop()) {
-        assert !options.isDesugaredLibraryCompilation();
+        assert !options.getLibraryDesugaringOptions().isDesugaredLibraryCompilation();
         desugaredLibraryCodeToKeep.generateKeepRules(options);
       }
       // Fail if there are pending errors, e.g., the program consumers may have reported errors.
@@ -469,7 +469,6 @@ public class ApplicationWriter {
     }
     DexItemFactory factory = appView.dexItemFactory();
     currentMarker
-        .filter(this::includeMarker)
         .ifPresent(
             marker -> {
               if (willComputeProguardMap()) {
@@ -488,13 +487,6 @@ public class ApplicationWriter {
             });
     allMarkers.sort(Comparator.comparing(Marker::toString));
     markerStrings = ListUtils.map(allMarkers, marker -> marker.toDexString(factory));
-  }
-
-  private boolean includeMarker(Marker marker) {
-    if (options.partialSubCompilationConfiguration != null) {
-      return options.partialSubCompilationConfiguration.includeMarker();
-    }
-    return true;
   }
 
   private OriginalSourceFiles computeSourceFileString(
@@ -705,9 +697,9 @@ public class ApplicationWriter {
           .forEach(file -> dataResourceConsumer.accept(file, reporter));
     }
 
-    if (options.featureSplitConfiguration != null) {
+    if (options.hasFeatureSplitConfiguration()) {
       for (DataResourceProvidersAndConsumer entry :
-          options.featureSplitConfiguration.getDataResourceProvidersAndConsumers()) {
+          options.getFeatureSplitConfiguration().getDataResourceProvidersAndConsumers()) {
         adaptAndPassDataResources(
             options, entry.consumer, entry.providers, resourceAdapter, kotlinModuleSynthesizer);
         addServiceResources(entry.featureSplit, appView, reporter, entry.consumer);

@@ -21,6 +21,7 @@ import com.android.tools.r8.experimental.graphinfo.GraphConsumer;
 import com.android.tools.r8.graph.AppInfoWithClassHierarchy;
 import com.android.tools.r8.graph.AppServices;
 import com.android.tools.r8.graph.AppView;
+import com.android.tools.r8.graph.DexApplication;
 import com.android.tools.r8.graph.DexApplicationReadFlags;
 import com.android.tools.r8.graph.DexClass;
 import com.android.tools.r8.graph.DexEncodedMethod;
@@ -45,6 +46,7 @@ import com.android.tools.r8.ir.desugar.BackportedMethodRewriter;
 import com.android.tools.r8.ir.desugar.CfClassSynthesizerDesugaringCollection;
 import com.android.tools.r8.ir.desugar.CfClassSynthesizerDesugaringEventConsumer;
 import com.android.tools.r8.ir.desugar.desugaredlibrary.DesugaredLibraryAmender;
+import com.android.tools.r8.ir.desugar.desugaredlibrary.PrefixRewritingNamingLens;
 import com.android.tools.r8.ir.desugar.itf.InterfaceMethodRewriter;
 import com.android.tools.r8.ir.desugar.records.RecordFieldValuesRewriter;
 import com.android.tools.r8.ir.desugar.records.RecordInstructionDesugaring;
@@ -63,7 +65,6 @@ import com.android.tools.r8.kotlin.KotlinMetadataRewriter;
 import com.android.tools.r8.kotlin.KotlinMetadataUtils;
 import com.android.tools.r8.naming.IdentifierMinifier;
 import com.android.tools.r8.naming.Minifier;
-import com.android.tools.r8.naming.PrefixRewritingNamingLens;
 import com.android.tools.r8.naming.ProguardMapMinifier;
 import com.android.tools.r8.naming.RecordRewritingNamingLens;
 import com.android.tools.r8.naming.signature.GenericSignatureRewriter;
@@ -80,6 +81,7 @@ import com.android.tools.r8.optimize.redundantbridgeremoval.RedundantBridgeRemov
 import com.android.tools.r8.optimize.singlecaller.SingleCallerInliner;
 import com.android.tools.r8.origin.CommandLineOrigin;
 import com.android.tools.r8.origin.Origin;
+import com.android.tools.r8.partial.R8PartialSubCompilationConfiguration.R8PartialR8SubCompilationConfiguration;
 import com.android.tools.r8.profile.art.ArtProfileCompletenessChecker;
 import com.android.tools.r8.profile.rewriting.ProfileCollectionAdditions;
 import com.android.tools.r8.repackaging.Repackaging;
@@ -226,6 +228,11 @@ public class R8 {
         new CfApplicationWriter(appView, marker)
             .write(options.getClassFileConsumer(), executorService, inputApp);
       } else {
+        if (options.partialSubCompilationConfiguration != null) {
+          R8PartialR8SubCompilationConfiguration r8SubCompilationConfiguration =
+              options.partialSubCompilationConfiguration.asR8();
+          r8SubCompilationConfiguration.commitDexingOutputClasses(appView.withClassHierarchy());
+        }
         ApplicationWriter.create(appView, marker).write(executorService, inputApp);
       }
     } catch (IOException e) {
@@ -296,7 +303,9 @@ public class R8 {
         DirectMappedDexApplication application = lazyLoaded.toDirect();
         timing.end();
         timing.end();
-        options.loadMachineDesugaredLibrarySpecification(timing, application);
+        options
+            .getLibraryDesugaringOptions()
+            .loadMachineDesugaredLibrarySpecification(timing, application);
         timing.begin("Read main dex classes");
         MainDexInfo mainDexInfo = applicationReader.readMainDexClassesForR8(application);
         timing.end();
@@ -345,11 +354,7 @@ public class R8 {
           .synthesizeClasses(executorService, classSynthesizerEventConsumer);
       classSynthesizerEventConsumer.finished(appView);
       if (appView.getSyntheticItems().hasPendingSyntheticClasses()) {
-        appView.setAppInfo(
-            appView
-                .appInfo()
-                .rebuildWithClassHierarchy(
-                    appView.getSyntheticItems().commit(appView.appInfo().app())));
+        appView.rebuildAppInfo();
       }
       timing.end();
       timing.begin("Strip unused code");
@@ -370,6 +375,7 @@ public class R8 {
                     Iterables.concat(
                         options.getProguardConfiguration().getRules(), synthesizedProguardRules))
                 .setAssumeInfoCollectionBuilder(assumeInfoCollectionBuilder)
+                .tracePartialCompilationDexingOutputClasses(executorService)
                 .build(executorService));
         appView.setAssumeInfoCollection(assumeInfoCollectionBuilder.build());
 
@@ -815,14 +821,7 @@ public class R8 {
       // Validity checks.
       assert getDirectApp(appView).verifyCodeObjectsOwners();
       assert appView.appInfo().classes().stream().allMatch(clazz -> clazz.isValid(options));
-
-      assert options.testing.disableMappingToOriginalProgramVerification
-          || appView
-              .graphLens()
-              .verifyMappingToOriginalProgram(
-                  appView,
-                  new ApplicationReader(inputApp.withoutMainDexList(), options, timing)
-                      .readWithoutDumping(executorService));
+      assert verifyMappingToOriginalProgram(appView, inputApp, executorService);
 
       // Report synthetic rules (only for testing).
       // TODO(b/120959039): Move this to being reported through the graph consumer.
@@ -830,8 +829,8 @@ public class R8 {
         options.syntheticProguardRulesConsumer.accept(synthesizedProguardRules);
       }
 
-      appView.setNamingLens(PrefixRewritingNamingLens.createPrefixRewritingNamingLens(appView));
-      appView.setNamingLens(RecordRewritingNamingLens.createRecordRewritingNamingLens(appView));
+      PrefixRewritingNamingLens.commitPrefixRewritingNamingLens(appView);
+      RecordRewritingNamingLens.commitRecordRewritingNamingLens(appView);
 
       new ApiReferenceStubber(appView).run(executorService);
 
@@ -863,9 +862,10 @@ public class R8 {
         options.programConsumer =
             wrapConsumerStoreBytesInList(
                 dexFileContent, (DexIndexedConsumer) options.programConsumer, "base");
-        if (options.featureSplitConfiguration != null) {
+        if (options.hasFeatureSplitConfiguration()) {
           int featureIndex = 0;
-          for (FeatureSplit featureSplit : options.featureSplitConfiguration.getFeatureSplits()) {
+          for (FeatureSplit featureSplit :
+              options.getFeatureSplitConfiguration().getFeatureSplits()) {
             featureSplit.internalSetProgramConsumer(
                 wrapConsumerStoreBytesInList(
                     dexFileContent,
@@ -914,6 +914,25 @@ public class R8 {
       options.reporter.error(new ExceptionDiagnostic(e, e.getOrigin()));
     }
     timing.end();
+  }
+
+  private boolean verifyMappingToOriginalProgram(
+      AppView<AppInfoWithClassHierarchy> appView,
+      AndroidApp inputAndroidApp,
+      ExecutorService executorService)
+      throws IOException {
+    if (options.testing.disableMappingToOriginalProgramVerification) {
+      return true;
+    }
+    if (options.partialSubCompilationConfiguration != null) {
+      // TODO(b/390587690): Find a way to re-enable this assert in R8 partial.
+      return true;
+    }
+    DexApplication inputApp =
+        new ApplicationReader(inputAndroidApp.withoutMainDexList(), options, timing)
+            .readWithoutDumping(executorService);
+    assert appView.graphLens().verifyMappingToOriginalProgram(appView, inputApp);
+    return true;
   }
 
   private void writeKeepDeclarationsToConfigurationConsumer(
@@ -965,8 +984,9 @@ public class R8 {
         dexFileContent.forEach(resourceShrinkerBuilder::addDexInput);
         addResourcesToBuilder(
             resourceShrinkerBuilder, reporter, options.androidResourceProvider, FeatureSplit.BASE);
-        if (options.featureSplitConfiguration != null) {
-          for (FeatureSplit featureSplit : options.featureSplitConfiguration.getFeatureSplits()) {
+        if (options.hasFeatureSplitConfiguration()) {
+          for (FeatureSplit featureSplit :
+              options.getFeatureSplitConfiguration().getFeatureSplits()) {
             if (featureSplit.getAndroidResourceProvider() != null) {
               addResourcesToBuilder(
                   resourceShrinkerBuilder,
@@ -991,8 +1011,9 @@ public class R8 {
           options.androidResourceProvider,
           options.androidResourceConsumer,
           FeatureSplit.BASE);
-      if (options.featureSplitConfiguration != null) {
-        for (FeatureSplit featureSplit : options.featureSplitConfiguration.getFeatureSplits()) {
+      if (options.hasFeatureSplitConfiguration()) {
+        for (FeatureSplit featureSplit :
+            options.getFeatureSplitConfiguration().getFeatureSplits()) {
           if (featureSplit.getAndroidResourceProvider() != null) {
             writeResourcesToConsumer(
                 reporter,

@@ -20,7 +20,6 @@ import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.ClassAccessFlags;
 import com.android.tools.r8.graph.DexAnnotationSet;
 import com.android.tools.r8.graph.DexClass;
-import com.android.tools.r8.graph.DexEncodedField;
 import com.android.tools.r8.graph.DexItemFactory;
 import com.android.tools.r8.graph.DexLibraryClass;
 import com.android.tools.r8.graph.DexProgramClass;
@@ -28,14 +27,14 @@ import com.android.tools.r8.graph.DexType;
 import com.android.tools.r8.graph.DexTypeList;
 import com.android.tools.r8.graph.DirectMappedDexApplication;
 import com.android.tools.r8.graph.EnclosingMethodAttribute;
+import com.android.tools.r8.graph.FieldCollection.FieldCollectionFactory;
 import com.android.tools.r8.graph.GenericSignature.ClassSignature;
 import com.android.tools.r8.graph.MethodCollection.MethodCollectionFactory;
 import com.android.tools.r8.graph.NestHostClassAttribute;
-import com.android.tools.r8.graph.ProgramDefinition;
-import com.android.tools.r8.graph.ProgramMethod;
 import com.android.tools.r8.graph.ThrowExceptionCode;
 import com.android.tools.r8.ir.conversion.PrimaryD8L8IRConverter;
-import com.android.tools.r8.ir.desugar.TypeRewriter;
+import com.android.tools.r8.ir.desugar.desugaredlibrary.DesugaredLibraryTypeRewriter;
+import com.android.tools.r8.ir.desugar.records.RecordDesugaringEventConsumer;
 import com.android.tools.r8.ir.desugar.records.RecordTagSynthesizer;
 import com.android.tools.r8.ir.desugar.varhandle.VarHandleDesugaring;
 import com.android.tools.r8.ir.desugar.varhandle.VarHandleDesugaringEventConsumer;
@@ -45,7 +44,6 @@ import com.android.tools.r8.naming.RecordRewritingNamingLens;
 import com.android.tools.r8.naming.VarHandleDesugaringRewritingNamingLens;
 import com.android.tools.r8.origin.CommandLineOrigin;
 import com.android.tools.r8.origin.Origin;
-import com.android.tools.r8.shaking.MainDexInfo;
 import com.android.tools.r8.synthesis.SyntheticFinalization;
 import com.android.tools.r8.synthesis.SyntheticItems.GlobalSyntheticsStrategy;
 import com.android.tools.r8.synthesis.SyntheticNaming;
@@ -60,9 +58,7 @@ import com.android.tools.r8.utils.ThreadUtils;
 import com.android.tools.r8.utils.Timing;
 import com.google.common.collect.ImmutableSet;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Collections;
-import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -161,13 +157,13 @@ public class GlobalSyntheticsGenerator {
     ApplicationReader applicationReader = new ApplicationReader(inputApp, options, timing);
     DirectMappedDexApplication app = applicationReader.read(executor).toDirect();
     timing.end();
-    TypeRewriter typeRewriter = options.getTypeRewriter();
+    DesugaredLibraryTypeRewriter typeRewriter =
+        options.getLibraryDesugaringOptions().getTypeRewriter();
     AppInfo appInfo =
         timing.time(
             "Create app-info",
             () ->
-                AppInfo.createInitialAppInfo(
-                    app, GlobalSyntheticsStrategy.forSingleOutputMode(), MainDexInfo.none()));
+                AppInfo.createInitialAppInfo(app, GlobalSyntheticsStrategy.forSingleOutputMode()));
     // Now that the dex-application is fully loaded, close any internal archive providers.
     inputApp.closeInternalArchiveProviders();
     return timing.time("Create app-view", () -> AppView.createForD8(appInfo, typeRewriter, timing));
@@ -180,26 +176,12 @@ public class GlobalSyntheticsGenerator {
     Set<DexProgramClass> synthesizingContext =
         ImmutableSet.of(createSynthesizingContext(appView.dexItemFactory()));
 
-    List<ProgramMethod> methodsToProcess = new ArrayList<>();
     // Add global synthetic class for records.
     RecordTagSynthesizer.ensureRecordClassHelper(
-        appView,
-        synthesizingContext,
-        recordTagClass -> recordTagClass.programMethods().forEach(methodsToProcess::add),
-        null,
-        null);
+        appView, synthesizingContext, RecordDesugaringEventConsumer.empty(), null, null);
 
     VarHandleDesugaringEventConsumer varHandleEventConsumer =
-        new VarHandleDesugaringEventConsumer() {
-          @Override
-          public void acceptVarHandleDesugaringClass(DexProgramClass clazz) {
-            clazz.programMethods().forEach(methodsToProcess::add);
-          }
-
-          @Override
-          public void acceptVarHandleDesugaringClassContext(
-              DexProgramClass clazz, ProgramDefinition context) {}
-        };
+        VarHandleDesugaringEventConsumer.empty();
 
     // Add global synthetic class for var handles.
     VarHandleDesugaring.ensureVarHandleClass(appView, varHandleEventConsumer, synthesizingContext);
@@ -212,24 +194,17 @@ public class GlobalSyntheticsGenerator {
     // We must run proper D8 conversion as the global synthetics may give rise to additional
     // synthetics as part of their implementation.
     assert appView.getSyntheticItems().hasPendingSyntheticClasses();
-    appView.setAppInfo(
-        new AppInfo(
-            appView.appInfo().getSyntheticItems().commit(appView.app()),
-            appView.appInfo().getMainDexInfo()));
+    appView.rebuildAppInfo();
 
     new PrimaryD8L8IRConverter(appView, Timing.empty()).convert(appView, executorService);
 
-    appView
-        .setAppInfo(
-            new AppInfo(
-                appView.appInfo().getSyntheticItems().commit(appView.app()),
-                appView.appInfo().getMainDexInfo()));
+    appView.rebuildAppInfo();
 
     timing.time(
         "Finalize synthetics",
         () -> SyntheticFinalization.finalize(appView, timing, executorService));
 
-    appView.setNamingLens(RecordRewritingNamingLens.createRecordRewritingNamingLens(appView));
+    RecordRewritingNamingLens.commitRecordRewritingNamingLens(appView);
     appView.setNamingLens(
         VarHandleDesugaringRewritingNamingLens.createVarHandleDesugaringRewritingNamingLens(
             appView));
@@ -239,11 +214,7 @@ public class GlobalSyntheticsGenerator {
       createAllApiStubs(appView, synthesizingContext, executorService);
     }
 
-    appView
-        .setAppInfo(
-            new AppInfo(
-                appView.appInfo().getSyntheticItems().commit(appView.app()),
-                appView.appInfo().getMainDexInfo()));
+    appView.rebuildAppInfo();
   }
 
   private static DexProgramClass createSynthesizingContext(DexItemFactory factory) {
@@ -263,8 +234,7 @@ public class GlobalSyntheticsGenerator {
         Collections.emptyList(),
         ClassSignature.noSignature(),
         DexAnnotationSet.empty(),
-        DexEncodedField.EMPTY_ARRAY,
-        DexEncodedField.EMPTY_ARRAY,
+        FieldCollectionFactory.empty(),
         MethodCollectionFactory.empty(),
         factory.getSkipNameValidationForTesting(),
         DexProgramClass::invalidChecksumRequest,

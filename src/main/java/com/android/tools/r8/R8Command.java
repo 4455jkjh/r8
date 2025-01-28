@@ -12,10 +12,13 @@ import com.android.tools.r8.dump.DumpOptions;
 import com.android.tools.r8.errors.DexFileOverflowDiagnostic;
 import com.android.tools.r8.experimental.graphinfo.GraphConsumer;
 import com.android.tools.r8.features.FeatureSplitConfiguration;
+import com.android.tools.r8.graph.DexEncodedMethod;
 import com.android.tools.r8.graph.DexItemFactory;
+import com.android.tools.r8.graph.DexProgramClass;
 import com.android.tools.r8.inspector.Inspector;
 import com.android.tools.r8.inspector.internal.InspectorImpl;
 import com.android.tools.r8.ir.desugar.desugaredlibrary.DesugaredLibrarySpecification;
+import com.android.tools.r8.ir.desugar.desugaredlibrary.LibraryDesugaringOptions;
 import com.android.tools.r8.keepanno.annotations.KeepForApi;
 import com.android.tools.r8.keepanno.asm.KeepEdgeReader;
 import com.android.tools.r8.keepanno.ast.KeepDeclaration;
@@ -50,6 +53,7 @@ import com.android.tools.r8.utils.InternalOptions.DesugarState;
 import com.android.tools.r8.utils.InternalOptions.HorizontalClassMergerOptions;
 import com.android.tools.r8.utils.InternalOptions.LineNumberOptimization;
 import com.android.tools.r8.utils.InternalOptions.MappingComposeOptions;
+import com.android.tools.r8.utils.InternalProgramClassProvider;
 import com.android.tools.r8.utils.ProgramClassCollection;
 import com.android.tools.r8.utils.R8PartialCompilationConfiguration;
 import com.android.tools.r8.utils.Reporter;
@@ -149,7 +153,10 @@ public final class R8Command extends BaseCompilerCommand {
     private AndroidResourceConsumer androidResourceConsumer = null;
     private ResourceShrinkerConfiguration resourceShrinkerConfiguration =
         ResourceShrinkerConfiguration.DEFAULT_CONFIGURATION;
-    private R8PartialCompilationConfiguration partialCompilationConfiguration = null;
+    private R8PartialCompilationConfiguration partialCompilationConfiguration =
+        R8PartialCompilationConfiguration.fromIncludeExcludePatterns(
+            System.getProperty("com.android.tools.r8.experimentalPartialShrinkingIncludePatterns"),
+            System.getProperty("com.android.tools.r8.experimentalPartialShrinkingExcludePatterns"));
 
     private final ProguardConfigurationParserOptions.Builder parserOptionsBuilder =
         ProguardConfigurationParserOptions.builder().readEnvironment();
@@ -465,8 +472,30 @@ public final class R8Command extends BaseCompilerCommand {
 
     @Override
     public Builder addProgramResourceProvider(ProgramResourceProvider programProvider) {
-      return super.addProgramResourceProvider(
-          new EnsureNonDexProgramResourceProvider(programProvider));
+      if (programProvider instanceof InternalProgramClassProvider) {
+        InternalProgramClassProvider internalProgramProvider =
+            (InternalProgramClassProvider) programProvider;
+        assert verifyNonDexProgramResourceProvider(internalProgramProvider);
+        assert internalProgramProvider.getDataResourceProvider() == null;
+        return super.addProgramResourceProvider(internalProgramProvider);
+      } else {
+        return super.addProgramResourceProvider(
+            new EnsureNonDexProgramResourceProvider(programProvider));
+      }
+    }
+
+    private boolean verifyNonDexProgramResourceProvider(
+        InternalProgramClassProvider internalProgramProvider) {
+      for (DexProgramClass clazz : internalProgramProvider.getClasses()) {
+        for (DexEncodedMethod method : clazz.methods()) {
+          if (!method.hasCode()) {
+            continue;
+          }
+          assert !method.getCode().isDexCode()
+              : "Unexpected method with DEX code: " + method.toSourceString();
+        }
+      }
+      return true;
     }
 
     /**
@@ -597,6 +626,12 @@ public final class R8Command extends BaseCompilerCommand {
       return self();
     }
 
+    Builder setPartialCompilationConfiguration(
+        R8PartialCompilationConfiguration partialCompilationConfiguration) {
+      this.partialCompilationConfiguration = partialCompilationConfiguration;
+      return this;
+    }
+
     @Override
     protected InternalProgramOutputPathConsumer createProgramOutputConsumer(
         Path path,
@@ -689,17 +724,12 @@ public final class R8Command extends BaseCompilerCommand {
       if (getProgramConsumer() instanceof DexFilePerClassFileConsumer) {
         reporter.error("R8 does not support compiling to a single DEX file per Java class file");
       }
-      if (getMainDexListConsumer() != null
-          && mainDexRules.isEmpty()
-          && !getAppBuilder().hasMainDexList()) {
+      if (getMainDexListConsumer() != null && !hasMainDexList() && !hasMainDexRules()) {
         reporter.error(
             "Option --main-dex-list-output requires --main-dex-rules and/or --main-dex-list");
       }
-      if (!(getProgramConsumer() instanceof ClassFileConsumer)
-          && getMinApiLevel() >= AndroidApiLevel.L.getLevel()) {
-        if (getMainDexListConsumer() != null
-            || !mainDexRules.isEmpty()
-            || getAppBuilder().hasMainDexList()) {
+      if (!(getProgramConsumer() instanceof ClassFileConsumer) && hasNativeMultidex()) {
+        if (getMainDexListConsumer() != null || hasMainDexRules() || hasMainDexList()) {
           reporter.error(
               "R8 does not support main-dex inputs and outputs when compiling to API level "
                   + AndroidApiLevel.L.getLevel()
@@ -725,7 +755,35 @@ public final class R8Command extends BaseCompilerCommand {
       if (hasDesugaredLibraryConfiguration() && getDisableDesugaring()) {
         reporter.error("Using desugared library configuration requires desugaring to be enabled");
       }
+      if (partialCompilationConfiguration.isEnabled()) {
+        validateR8Partial();
+      }
       super.validate();
+    }
+
+    private void validateR8Partial() {
+      Reporter reporter = getReporter();
+      if (!(getProgramConsumer() instanceof DexIndexedConsumer)) {
+        reporter.error("Partial shrinking does not support generating class files");
+      }
+      if (!hasNativeMultidex()) {
+        reporter.error("Partial shrinking requires min API level >= 21");
+      }
+      if (forceProguardCompatibility) {
+        reporter.error("Partial shrinking does not support Proguard compatibility mode");
+      }
+    }
+
+    private boolean hasMainDexList() {
+      return getAppBuilder().hasMainDexList();
+    }
+
+    private boolean hasMainDexRules() {
+      return !mainDexRules.isEmpty();
+    }
+
+    private boolean hasNativeMultidex() {
+      return isMinApiLevelSet() && getMinApiLevel() >= AndroidApiLevel.L.getLevel();
     }
 
     private static void verifyResourceSplitOrProgramSplit(FeatureSplit featureSplit) {
@@ -739,63 +797,18 @@ public final class R8Command extends BaseCompilerCommand {
       if (isPrintHelp() || isPrintVersion()) {
         return new R8Command(isPrintHelp(), isPrintVersion());
       }
-      return makeR8Command();
+      DexItemFactory factory = new DexItemFactory();
+      return makeR8Command(factory, makeConfiguration(factory));
     }
 
-    private R8Command makeR8Command() {
+    R8Command makeR8Command(DexItemFactory factory, ProguardConfiguration configuration) {
       long created = System.nanoTime();
       Reporter reporter = getReporter();
-      DexItemFactory factory = new DexItemFactory();
       List<ProguardConfigurationRule> mainDexKeepRules =
           ProguardConfigurationParser.parse(mainDexRules, factory, reporter);
 
       DesugaredLibrarySpecification desugaredLibrarySpecification =
           getDesugaredLibraryConfiguration(factory, false);
-
-      ProguardConfigurationParserOptions parserOptions = parserOptionsBuilder.build();
-      ProguardConfigurationParser parser =
-          new ProguardConfigurationParser(
-              factory, reporter, parserOptions, inputDependencyGraphConsumer);
-      ProguardConfiguration.Builder configurationBuilder =
-          parser
-              .getConfigurationBuilder()
-              .setForceProguardCompatibility(forceProguardCompatibility);
-      if (!proguardConfigs.isEmpty()) {
-        parser.parse(proguardConfigs);
-      }
-
-      if (getMode() == CompilationMode.DEBUG) {
-        disableMinification = true;
-        configurationBuilder.disableOptimization();
-      }
-
-      if (disableTreeShaking) {
-        configurationBuilder.disableShrinking();
-      }
-
-      if (disableMinification) {
-        configurationBuilder.disableObfuscation();
-      }
-
-      if (proguardConfigurationConsumerForTesting != null) {
-        proguardConfigurationConsumerForTesting.accept(configurationBuilder);
-      }
-
-      // Add embedded keep rules.
-      amendWithRulesAndProvidersForInjarsAndMetaInf(reporter, parser);
-
-      // Extract out rules for keep annotations and amend the configuration.
-      // TODO(b/248408342): Remove this and parse annotations as part of R8 root-set & enqueuer.
-      extractKeepAnnotationRules(parser);
-      ProguardConfiguration configuration = configurationBuilder.build();
-      if (!parserOptions.isKeepRuntimeInvisibleAnnotationsEnabled()) {
-        if (configuration.getKeepAttributes().runtimeInvisibleAnnotations
-            || configuration.getKeepAttributes().runtimeInvisibleParameterAnnotations
-            || configuration.getKeepAttributes().runtimeInvisibleTypeAnnotations) {
-          throw fatalError(
-              new StringDiagnostic("Illegal attempt to keep runtime invisible annotations"));
-        }
-      }
       getAppBuilder().addFilteredLibraryArchives(configuration.getLibraryjars());
 
       assert getProgramConsumer() != null;
@@ -860,6 +873,54 @@ public final class R8Command extends BaseCompilerCommand {
         inputDependencyGraphConsumer.finished();
       }
       return command;
+    }
+
+    private ProguardConfiguration makeConfiguration(DexItemFactory factory) {
+      ProguardConfigurationParserOptions parserOptions = parserOptionsBuilder.build();
+      ProguardConfigurationParser parser =
+          new ProguardConfigurationParser(
+              factory, getReporter(), parserOptions, inputDependencyGraphConsumer);
+      ProguardConfiguration.Builder configurationBuilder =
+          parser
+              .getConfigurationBuilder()
+              .setForceProguardCompatibility(forceProguardCompatibility);
+      if (!proguardConfigs.isEmpty()) {
+        parser.parse(proguardConfigs);
+      }
+
+      if (getMode() == CompilationMode.DEBUG) {
+        disableMinification = true;
+        configurationBuilder.disableOptimization();
+      }
+
+      if (disableTreeShaking) {
+        configurationBuilder.disableShrinking();
+      }
+
+      if (disableMinification) {
+        configurationBuilder.disableObfuscation();
+      }
+
+      if (proguardConfigurationConsumerForTesting != null) {
+        proguardConfigurationConsumerForTesting.accept(configurationBuilder);
+      }
+
+      // Add embedded keep rules.
+      amendWithRulesAndProvidersForInjarsAndMetaInf(getReporter(), parser);
+
+      // Extract out rules for keep annotations and amend the configuration.
+      // TODO(b/248408342): Remove this and parse annotations as part of R8 root-set & enqueuer.
+      extractKeepAnnotationRules(parser);
+      ProguardConfiguration configuration = configurationBuilder.build();
+      if (!parserOptions.isKeepRuntimeInvisibleAnnotationsEnabled()) {
+        if (configuration.getKeepAttributes().runtimeInvisibleAnnotations
+            || configuration.getKeepAttributes().runtimeInvisibleParameterAnnotations
+            || configuration.getKeepAttributes().runtimeInvisibleTypeAnnotations) {
+          throw fatalError(
+              new StringDiagnostic("Illegal attempt to keep runtime invisible annotations"));
+        }
+      }
+      return configuration;
     }
 
     private void amendWithRulesAndProvidersForInjarsAndMetaInf(
@@ -1361,7 +1422,7 @@ public final class R8Command extends BaseCompilerCommand {
     internal.r8BuildMetadataConsumer = buildMetadataConsumer;
     internal.dataResourceConsumer = internal.programConsumer.getDataResourceConsumer();
 
-    internal.featureSplitConfiguration = featureSplitConfiguration;
+    internal.setFeatureSplitConfiguration(featureSplitConfiguration);
 
     internal.syntheticProguardRulesConsumer = syntheticProguardRulesConsumer;
 
@@ -1398,17 +1459,18 @@ public final class R8Command extends BaseCompilerCommand {
     }
 
     // EXPERIMENTAL flags.
-    if (partialCompilationConfiguration != null) {
-      internal.partialCompilationConfiguration = partialCompilationConfiguration;
-    }
+    assert partialCompilationConfiguration != null;
+    internal.partialCompilationConfiguration = partialCompilationConfiguration;
 
     assert !internal.forceProguardCompatibility;
     internal.forceProguardCompatibility = forceProguardCompatibility;
 
     internal.enableInheritanceClassInDexDistributor = isOptimizeMultidexForLinearAlloc();
 
-    internal.configureDesugaredLibrary(desugaredLibrarySpecification, synthesizedClassPrefix);
-    boolean l8Shrinking = !internal.synthesizedClassPrefix.isEmpty();
+    LibraryDesugaringOptions libraryDesugaringOptions = internal.getLibraryDesugaringOptions();
+    libraryDesugaringOptions.configureDesugaredLibrary(
+        desugaredLibrarySpecification, synthesizedClassPrefix);
+    boolean l8Shrinking = libraryDesugaringOptions.isL8();
     // TODO(b/214382176): Enable all the time.
     internal.loadAllClassDefinitions = l8Shrinking;
     if (l8Shrinking) {

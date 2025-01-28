@@ -56,15 +56,19 @@ public abstract class CfPostProcessingDesugaringCollection {
         InterfaceMethodProcessorFacade interfaceMethodProcessorFacade,
         Predicate<ProgramMethod> isLiveMethod) {
       ArrayList<CfPostProcessingDesugaring> desugarings = new ArrayList<>();
-      if (appView.options().machineDesugaredLibrarySpecification.hasRetargeting()
-          && !appView.options().isDesugaredLibraryCompilation()) {
+      if (appView
+              .options()
+              .getLibraryDesugaringOptions()
+              .getMachineDesugaredLibrarySpecification()
+              .hasRetargeting()
+          && !appView.options().getLibraryDesugaringOptions().isDesugaredLibraryCompilation()) {
         desugarings.add(new DesugaredLibraryRetargeterPostProcessor(appView));
       }
       if (interfaceMethodProcessorFacade != null) {
         desugarings.add(interfaceMethodProcessorFacade);
       }
       DesugaredLibraryAPICallbackSynthesizer apiCallbackSynthesizor =
-          appView.typeRewriter.isRewriting()
+          appView.desugaredLibraryTypeRewriter.isRewriting()
               ? new DesugaredLibraryAPICallbackSynthesizer(appView, isLiveMethod)
               : null;
       // At this point the desugaredLibraryAPIConverter is required to be last to generate
