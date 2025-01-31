@@ -1026,8 +1026,8 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
   private final LibraryDesugaringOptions libraryDesugaringOptions =
       new LibraryDesugaringOptions(this);
   private final MappingComposeOptions mappingComposeOptions = new MappingComposeOptions();
-  private final ArtProfileOptions artProfileOptions = new ArtProfileOptions(this);
-  private final StartupOptions startupOptions = new StartupOptions();
+  private ArtProfileOptions artProfileOptions = new ArtProfileOptions(this);
+  private StartupOptions startupOptions = new StartupOptions(this);
   private final InstrumentationOptions instrumentationOptions;
   public R8PartialCompilationConfiguration partialCompilationConfiguration =
       R8PartialCompilationConfiguration.disabledConfiguration();
@@ -1127,8 +1127,16 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
     return artProfileOptions;
   }
 
+  public void setArtProfileOptions(ArtProfileOptions artProfileOptions) {
+    this.artProfileOptions = artProfileOptions;
+  }
+
   public StartupOptions getStartupOptions() {
     return startupOptions;
+  }
+
+  public void setStartupOptions(StartupOptions startupOptions) {
+    this.startupOptions = startupOptions;
   }
 
   public InstrumentationOptions getInstrumentationOptions() {
@@ -2114,6 +2122,7 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
         System.getProperty("com.android.tools.r8.enableKeepAnnotations") != null;
     public boolean reverseClassSortingForDeterminism = false;
 
+    public boolean enableAutoCloseableDesugaring = false;
     public boolean enableNumberUnboxer = false;
     public boolean printNumberUnboxed = false;
     public boolean roundtripThroughLir = false;
@@ -2429,9 +2438,6 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
 
     public boolean alwaysGenerateLambdaFactoryMethods = false;
 
-    // Work-in-progress optimization: b/145280859.
-    public boolean listIterationRewritingEnabled =
-        System.getProperty("com.android.tools.r8.enableListIterationRewriting") != null;
     public boolean listIterationRewritingRewriteInterfaces =
         "all".equals(System.getProperty("com.android.tools.r8.enableListIterationRewriting"));
     // Used by unit tests.
@@ -2688,6 +2694,17 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
     return desugarState.isOn()
         && interfaceMethodDesugaring == OffOrAuto.Auto
         && !canUseDefaultAndStaticInterfaceMethods();
+  }
+
+  public boolean canHaveMissingImplementsAutoCloseableInterface() {
+    return getMinApiLevel().isLessThanOrEqualTo(AndroidApiLevel.V);
+  }
+
+  public boolean shouldDesugarAutoCloseable() {
+    return desugarState.isOn()
+        && getMinApiLevel().isGreaterThanOrEqualTo(AndroidApiLevel.K)
+        && canHaveMissingImplementsAutoCloseableInterface()
+        && testing.enableAutoCloseableDesugaring;
   }
 
   public boolean isSwitchRewritingEnabled() {

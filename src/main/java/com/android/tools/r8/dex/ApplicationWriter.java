@@ -53,6 +53,7 @@ import com.android.tools.r8.naming.KotlinModuleSynthesizer;
 import com.android.tools.r8.naming.NamingLens;
 import com.android.tools.r8.naming.ProguardMapSupplier.ProguardMapId;
 import com.android.tools.r8.origin.Origin;
+import com.android.tools.r8.partial.R8PartialSubCompilationConfiguration.R8PartialR8SubCompilationConfiguration;
 import com.android.tools.r8.profile.startup.StartupCompleteness;
 import com.android.tools.r8.profile.startup.profile.StartupProfile;
 import com.android.tools.r8.shaking.MainDexInfo;
@@ -67,6 +68,7 @@ import com.android.tools.r8.utils.InternalGlobalSyntheticsProgramConsumer.Intern
 import com.android.tools.r8.utils.InternalGlobalSyntheticsProgramConsumer.InternalGlobalSyntheticsDexPerFileConsumer;
 import com.android.tools.r8.utils.InternalOptions;
 import com.android.tools.r8.utils.ListUtils;
+import com.android.tools.r8.utils.MapUtils;
 import com.android.tools.r8.utils.OriginalSourceFiles;
 import com.android.tools.r8.utils.PredicateUtils;
 import com.android.tools.r8.utils.Reporter;
@@ -84,8 +86,8 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.HashSet;
+import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -94,6 +96,7 @@ import java.util.TreeMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
@@ -247,18 +250,12 @@ public class ApplicationWriter {
         && options.enableMainDexListCheck) {
       distributor = new VirtualFile.MonoDexDistributor(this, classes, options);
     } else {
-      // Retrieve the startup order for writing the app. In R8, the startup order is created
-      // up-front to guide optimizations through-out the compilation. In D8, the startup
-      // order is only used for writing the app, so we create it here for the first time.
-      StartupProfile startupProfile;
-      if (options.getStartupOptions().isStartupLayoutOptimizationEnabled()) {
-        startupProfile =
-            appView.appInfo().hasClassHierarchy()
-                ? appView.getStartupProfile()
-                : StartupProfile.createInitialStartupProfileForD8(appView);
-      } else {
-        startupProfile = StartupProfile.empty();
-      }
+      // Retrieve the startup order for writing the app. Use an empty startup profile if the startup
+      // profile should not be used for layout.
+      StartupProfile startupProfile =
+          options.getStartupOptions().isStartupLayoutOptimizationEnabled()
+              ? appView.getStartupProfile()
+              : StartupProfile.empty();
       distributor =
           new VirtualFile.FillFilesDistributor(
               this, classes, options, executorService, startupProfile);
@@ -495,29 +492,41 @@ public class ApplicationWriter {
       return OriginalSourceFiles.fromClasses();
     }
     if (!willComputeProguardMap()) {
-      rewriteSourceFile(null);
+      rewriteSourceFile(appView.appInfo().classes(), null);
       return OriginalSourceFiles.unreachable();
     }
     // Clear all source files so as not to collect the original files.
-    Collection<DexProgramClass> classes = appView.appInfo().classes();
-    Map<DexType, DexString> originalSourceFiles = new HashMap<>(classes.size());
-    for (DexProgramClass clazz : classes) {
-      DexString originalSourceFile = clazz.getSourceFile();
-      if (originalSourceFile != null) {
-        originalSourceFiles.put(clazz.getType(), originalSourceFile);
-        clazz.setSourceFile(null);
-      }
-    }
+    Map<DexProgramClass, DexString> originalSourceFiles = computeOriginalSourceFiles();
     // Add a lazy dex string computation to defer construction of the actual string.
     lazyDexStrings.add(
         new LazyDexString() {
           @Override
           public DexString internalCompute() {
-            return rewriteSourceFile(delayedProguardMapId.get());
+            return rewriteSourceFile(originalSourceFiles.keySet(), delayedProguardMapId.get());
           }
         });
-
     return OriginalSourceFiles.fromMap(originalSourceFiles);
+  }
+
+  private Map<DexProgramClass, DexString> computeOriginalSourceFiles() {
+    Collection<DexProgramClass> classes = appView.appInfo().classes();
+    if (options.partialSubCompilationConfiguration == null) {
+      return MapUtils.transform(
+          classes,
+          IdentityHashMap::new,
+          Function.identity(),
+          DexProgramClass::getAndClearSourceFile);
+    } else {
+      R8PartialR8SubCompilationConfiguration subCompilationConfiguration =
+          options.partialSubCompilationConfiguration.asR8();
+      return MapUtils.transform(
+          classes,
+          ignore ->
+              new IdentityHashMap<>(
+                  classes.size() - subCompilationConfiguration.getDexingOutputClasses().size()),
+          clazz -> subCompilationConfiguration.isD8Definition(clazz) ? null : clazz,
+          DexProgramClass::getAndClearSourceFile);
+    }
   }
 
   public static SourceFileEnvironment createSourceFileEnvironment(ProguardMapId proguardMapId) {
@@ -547,13 +556,14 @@ public class ApplicationWriter {
     };
   }
 
-  private DexString rewriteSourceFile(ProguardMapId proguardMapId) {
+  private DexString rewriteSourceFile(
+      Collection<DexProgramClass> classes, ProguardMapId proguardMapId) {
     assert options.sourceFileProvider != null;
     SourceFileEnvironment environment = createSourceFileEnvironment(proguardMapId);
     String sourceFile = options.sourceFileProvider.get(environment);
     DexString dexSourceFile =
         sourceFile == null ? null : options.itemFactory.createString(sourceFile);
-    appView.appInfo().classes().forEach(clazz -> clazz.setSourceFile(dexSourceFile));
+    classes.forEach(clazz -> clazz.setSourceFile(dexSourceFile));
     return dexSourceFile;
   }
 

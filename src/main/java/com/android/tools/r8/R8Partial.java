@@ -13,6 +13,8 @@ import com.android.tools.r8.partial.R8PartialInput;
 import com.android.tools.r8.partial.R8PartialProgramPartioning;
 import com.android.tools.r8.partial.R8PartialSubCompilationConfiguration.R8PartialD8SubCompilationConfiguration;
 import com.android.tools.r8.partial.R8PartialSubCompilationConfiguration.R8PartialR8SubCompilationConfiguration;
+import com.android.tools.r8.profile.art.ArtProfileOptions;
+import com.android.tools.r8.profile.startup.StartupOptions;
 import com.android.tools.r8.utils.AndroidApp;
 import com.android.tools.r8.utils.ExceptionUtils;
 import com.android.tools.r8.utils.FeatureSplitConsumers;
@@ -55,13 +57,6 @@ class R8Partial {
   }
 
   void runInternal(AndroidApp app, ExecutorService executor) throws IOException, ResourceException {
-    if (!options.getArtProfileOptions().getArtProfileProviders().isEmpty()) {
-      throw options.reporter.fatalError(
-          "Partial shrinking does not support baseline profile rewriting");
-    }
-    if (!options.getStartupOptions().getStartupProfileProviders().isEmpty()) {
-      throw options.reporter.fatalError("Partial shrinking does not support startup profiles");
-    }
     if (options.getProguardConfiguration().isProtoShrinkingEnabled()) {
       throw options.reporter.fatalError("Partial shrinking does not support proto shrinking");
     }
@@ -90,9 +85,8 @@ class R8Partial {
 
   private R8PartialInput runProcessInputStep(AndroidApp androidApp, ExecutorService executor)
       throws IOException {
-    // TODO(b/388421578): Add support for generating R8 partial compile dumps.
     DirectMappedDexApplication app =
-        new ApplicationReader(androidApp, options, timing).readWithoutDumping(executor).toDirect();
+        new ApplicationReader(androidApp, options, timing).read(executor).toDirect();
     R8PartialProgramPartioning partioning = R8PartialProgramPartioning.create(app);
     return new R8PartialInput(
         partioning.getD8Classes(),
@@ -120,13 +114,18 @@ class R8Partial {
     options.partialCompilationConfiguration.d8DexOptionsConsumer.accept(d8Options);
     R8PartialD8SubCompilationConfiguration subCompilationConfiguration =
         new R8PartialD8SubCompilationConfiguration(input.getD8Types(), input.getR8Types(), timing);
+    d8Options.setArtProfileOptions(
+        new ArtProfileOptions(d8Options, options.getArtProfileOptions()));
     d8Options.setFeatureSplitConfiguration(options.getFeatureSplitConfiguration());
+    d8Options.setStartupOptions(new StartupOptions(d8Options, options.getStartupOptions()));
     d8Options.partialSubCompilationConfiguration = subCompilationConfiguration;
     D8.runInternal(d8App, d8Options, executor);
     return new R8PartialD8Result(
+        subCompilationConfiguration.getArtProfiles(),
         subCompilationConfiguration.getClassToFeatureSplitMap(),
         subCompilationConfiguration.getDexedOutputClasses(),
-        subCompilationConfiguration.getDesugaredOutputClasses());
+        subCompilationConfiguration.getDesugaredOutputClasses(),
+        subCompilationConfiguration.getStartupProfile());
   }
 
   private void runR8Step(
@@ -191,8 +190,15 @@ class R8Partial {
     options.partialCompilationConfiguration.r8OptionsConsumer.accept(r8Options);
     r8Options.partialSubCompilationConfiguration =
         new R8PartialR8SubCompilationConfiguration(
-            d8Result.getClassToFeatureSplitMap(), d8Result.getDexedClasses(), timing);
+            d8Result.getArtProfiles(),
+            d8Result.getClassToFeatureSplitMap(),
+            d8Result.getDexedClasses(),
+            d8Result.getStartupProfile(),
+            timing);
+    r8Options.setArtProfileOptions(
+        new ArtProfileOptions(r8Options, options.getArtProfileOptions()));
     r8Options.setFeatureSplitConfiguration(options.getFeatureSplitConfiguration());
+    r8Options.setStartupOptions(new StartupOptions(r8Options, options.getStartupOptions()));
     r8Options.mapConsumer = options.mapConsumer;
     if (options.androidResourceProvider != null) {
       r8Options.androidResourceProvider = options.androidResourceProvider;

@@ -4,6 +4,7 @@
 
 package com.android.tools.r8.profile.art;
 
+import com.android.tools.r8.graph.AppInfo;
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.PrunedItems;
 import com.android.tools.r8.graph.lens.GraphLens;
@@ -94,6 +95,28 @@ public class NonEmptyArtProfileCollection extends ArtProfileCollection {
           .rewrittenWithLens(appView, appView.getNamingLens())
           .supplyConsumer(input.getResidualArtProfileConsumer(), options.reporter);
     }
+  }
+
+  /**
+   * Processes the D8 art profiles before forwarding them to R8, in R8 partial.
+   *
+   * <p>When testing, a synthetic art profile is injected for completeness testing. This first runs
+   * the completeness checker and then removes the synthetic profile.
+   *
+   * <p>In release, this returns the art profiles as-is.
+   */
+  @Override
+  public ArtProfileCollection transformForR8Partial(AppView<AppInfo> appView) {
+    ArtProfileOptions artProfileOptions = appView.options().getArtProfileOptions();
+    assert !artProfileOptions.isNopCheckForTestingEnabled();
+    if (artProfileOptions.isCompletenessCheckForTestingEnabled()) {
+      assert ArtProfileCompletenessChecker.verify(appView);
+      ListUtils.removeLast(artProfiles);
+      if (artProfiles.isEmpty()) {
+        return ArtProfileCollection.empty();
+      }
+    }
+    return this;
   }
 
   @Override
