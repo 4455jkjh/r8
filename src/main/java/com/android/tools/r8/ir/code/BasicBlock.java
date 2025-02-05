@@ -365,6 +365,10 @@ public class BasicBlock {
     return predecessors.size() == 1;
   }
 
+  public boolean hasUniquePredecessorWithUniqueSuccessor() {
+    return hasUniquePredecessor() && getUniquePredecessor().getSuccessors().size() == 1;
+  }
+
   public BasicBlock getUniquePredecessor() {
     assert hasUniquePredecessor();
     return predecessors.get(0);
