@@ -770,6 +770,8 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
       System.getProperty("com.android.tools.r8.ignoreBootClasspathEnumsForMaindexTracing") != null;
   public boolean pruneNonVissibleAnnotationClasses =
       System.getProperty("com.android.tools.r8.pruneNonVissibleAnnotationClasses") != null;
+  public boolean experimentalTraceAndroidEnumSerialization =
+      System.getProperty("com.android.tools.r8.experimentalTraceAndroidEnumSerialization") != null;
 
   // Flag to turn on/offLoad/store optimization in the Cf back-end.
   public boolean enableLoadStoreOptimization = true;
@@ -979,6 +981,7 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
 
   // EXPERIMENTAL flag to get behaviour as close to Proguard as possible.
   public boolean forceProguardCompatibility = false;
+  public boolean protectApiSurface = false;
   public AssertionConfigurationWithDefault assertionsConfiguration = null;
   public boolean configurationDebugging = false;
 
@@ -997,6 +1000,10 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
 
   public boolean shouldCompileMethodInReleaseMode(AppView<?> appView, ProgramMethod method) {
     return !shouldCompileMethodInDebugMode(method);
+  }
+
+  public boolean shouldProtectApiSurface() {
+    return protectApiSurface || isGeneratingClassFiles();
   }
 
   private final AccessModifierOptions accessModifierOptions = new AccessModifierOptions(this);
@@ -2122,7 +2129,7 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
         System.getProperty("com.android.tools.r8.enableKeepAnnotations") != null;
     public boolean reverseClassSortingForDeterminism = false;
 
-    public boolean enableAutoCloseableDesugaring = false;
+    public boolean enableAutoCloseableDesugaring = true;
     public boolean enableNumberUnboxer = false;
     public boolean printNumberUnboxed = false;
     public boolean roundtripThroughLir = false;
@@ -2703,8 +2710,7 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
   public boolean shouldDesugarAutoCloseable() {
     return desugarState.isOn()
         && getMinApiLevel().isGreaterThanOrEqualTo(AndroidApiLevel.K)
-        && canHaveMissingImplementsAutoCloseableInterface()
-        && testing.enableAutoCloseableDesugaring;
+        && canHaveMissingImplementsAutoCloseableInterface();
   }
 
   public boolean isSwitchRewritingEnabled() {

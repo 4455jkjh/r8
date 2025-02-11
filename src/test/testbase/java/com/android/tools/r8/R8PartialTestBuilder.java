@@ -77,6 +77,11 @@ public class R8PartialTestBuilder
     return self();
   }
 
+  public R8PartialTestBuilder clearR8PartialConfiguration() {
+    r8PartialConfiguration = R8PartialCompilationConfiguration.disabledConfiguration();
+    return this;
+  }
+
   public R8PartialTestBuilder addR8IncludedClasses(Class<?>... classes) {
     return addR8IncludedClasses(true, classes);
   }
@@ -208,7 +213,7 @@ public class R8PartialTestBuilder
 
   @Override
   public R8PartialTestBuilder enableExperimentalKeepAnnotations() {
-    return addR8PartialR8OptionsModification(
+    return addR8PartialOptionsModification(
             o -> o.getTestingOptions().enableEmbeddedKeepAnnotations = true)
         .addKeepAnnoLibToClasspath();
   }

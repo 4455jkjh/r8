@@ -298,7 +298,10 @@ public class R8 {
         timing.begin("Read app");
         ApplicationReader applicationReader = new ApplicationReader(inputApp, options, timing);
         LazyLoadedDexApplication lazyLoaded = applicationReader.read(executorService);
-        keepDeclarations = lazyLoaded.getKeepDeclarations();
+        keepDeclarations =
+            options.partialSubCompilationConfiguration != null
+                ? options.partialSubCompilationConfiguration.asR8().getAndClearKeepDeclarations()
+                : lazyLoaded.getKeepDeclarations();
         timing.begin("To direct app");
         DirectMappedDexApplication application = lazyLoaded.toDirect();
         timing.end();
@@ -351,7 +354,7 @@ public class R8 {
       CfClassSynthesizerDesugaringEventConsumer classSynthesizerEventConsumer =
           CfClassSynthesizerDesugaringEventConsumer.createForR8(appView);
       CfClassSynthesizerDesugaringCollection.create(appView)
-          .synthesizeClasses(executorService, classSynthesizerEventConsumer);
+          .synthesizeClasses(executorService, classSynthesizerEventConsumer, timing);
       classSynthesizerEventConsumer.finished(appView);
       if (appView.getSyntheticItems().hasPendingSyntheticClasses()) {
         appView.rebuildAppInfo();

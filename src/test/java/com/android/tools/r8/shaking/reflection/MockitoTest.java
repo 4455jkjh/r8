@@ -8,12 +8,17 @@ import static com.android.tools.r8.utils.codeinspector.Matchers.isFinal;
 import static com.android.tools.r8.utils.codeinspector.Matchers.isInterface;
 import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.Assert.assertTrue;
 
 import com.android.tools.r8.NeverInline;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.shaking.reflection.MockitoTest.Helpers.ShouldNotBeMergedImpl;
+import com.android.tools.r8.shaking.reflection.MockitoTest.Helpers.SpyImpl1;
+import com.android.tools.r8.shaking.reflection.MockitoTest.Helpers.SpyImpl2;
+import com.android.tools.r8.shaking.reflection.MockitoTest.Helpers.SpyInterface;
+import com.android.tools.r8.utils.codeinspector.InstructionSubject;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
@@ -36,7 +41,7 @@ public class MockitoTest extends TestBase {
   }
 
   private static final List<String> EXPECTED_OUTPUT =
-      Arrays.asList("A", "B", "C", "D", "E", "did thing");
+      Arrays.asList("A", "B", "C", "D", "I spy 1", "did thing", "not inlined");
 
   public static class MockitoStub {
     public static <T> T mock(Class<T> classToMock) {
@@ -89,10 +94,20 @@ public class MockitoTest extends TestBase {
       }
     }
 
-    public static class E {
+    public interface SpyInterface {
+      void spiedMethod();
+    }
+    public static class SpyImpl1 implements SpyInterface {
       @Override
-      public String toString() {
-        return "E";
+      public void spiedMethod() {
+        System.out.println("I spy 1");
+      }
+    }
+
+    public static class SpyImpl2 implements SpyInterface {
+      @Override
+      public void spiedMethod() {
+        System.out.println("I spy 2");
       }
     }
 
@@ -106,6 +121,14 @@ public class MockitoTest extends TestBase {
         System.out.println("did thing");
       }
     }
+
+    public static class Base {
+      public void shouldNotBeInlined() {
+        System.out.println("not inlined");
+      }
+    }
+
+    public static class Sub extends Base {}
   }
 
   public static class TestMain {
@@ -139,9 +162,14 @@ public class MockitoTest extends TestBase {
     }
 
     @NeverInline
+    private static void spyHelper(SpyInterface inst) {
+      MockitoStub.spy(inst);
+      inst.spiedMethod();
+    }
+
+    @NeverInline
     private static void spy3() {
-      MockitoStub.spy(new Helpers.E());
-      System.out.println(new Helpers.E());
+      spyHelper(System.currentTimeMillis() > 0 ? new SpyImpl1() : new SpyImpl2());
     }
 
     @NeverInline
@@ -149,6 +177,14 @@ public class MockitoTest extends TestBase {
       Helpers.ShouldNotBeMerged iface = MockitoStub.mock(Helpers.ShouldNotBeMerged.class);
       if (iface == null) {
         new ShouldNotBeMergedImpl().doThing();
+      }
+    }
+
+    @NeverInline
+    private static void mockSubclass() {
+      Helpers.Sub sub = MockitoStub.mock(Helpers.Sub.class);
+      if (sub == null) {
+        new Helpers.Sub().shouldNotBeInlined();
       }
     }
 
@@ -160,6 +196,7 @@ public class MockitoTest extends TestBase {
       spy2();
       spy3();
       mockInterface();
+      mockSubclass();
     }
   }
 
@@ -201,12 +238,30 @@ public class MockitoTest extends TestBase {
         .compile()
         .inspect(
             inspector -> {
+              // Ensure mocked interface is not removed.
               assertThat(inspector.clazz(Helpers.ShouldNotBeMerged.class), isInterface());
+              // Ensure virtual method of mocked subclass is not finalized.
+              assertThat(
+                  inspector.clazz(Helpers.Base.class).method("void", "shouldNotBeInlined"),
+                  not(isFinal()));
+              // Ensure mocked class prevents inlining of virtual calls (System.out should not be
+              // there).
+              assertTrue(
+                  inspector
+                      .clazz(TestMain.class)
+                      .method("void", "mockSubclass")
+                      .streamInstructions()
+                      .noneMatch(InstructionSubject::isStaticGet));
+              // Ensure mocked classes are not marked as "final".
               inspector.forAllClasses(
                   clazz -> {
                     String className = clazz.getOriginalTypeName();
                     if (!className.endsWith("TestMain") && !className.endsWith("Impl")) {
                       assertThat(clazz.getOriginalTypeName(), clazz, not(isFinal()));
+                      // No mocked methods should be finalized.
+                      clazz.forAllMethods(method -> {
+                        assertThat(method, not(isFinal()));
+                      });
                     }
                   });
             })

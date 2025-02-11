@@ -17,9 +17,9 @@ import static org.junit.Assume.assumeTrue;
 
 import com.android.tools.r8.DiagnosticsLevel;
 import com.android.tools.r8.DiagnosticsMatcher;
+import com.android.tools.r8.TestDiagnosticMessages;
 import com.android.tools.r8.errors.CheckDiscardDiagnostic;
 import com.android.tools.r8.keepanno.annotations.CheckOptimizedOut;
-import com.android.tools.r8.utils.AndroidApiLevel;
 import com.android.tools.r8.utils.StringUtils;
 import com.android.tools.r8.utils.codeinspector.CodeInspector;
 import com.google.common.collect.ImmutableList;
@@ -39,7 +39,7 @@ public class CheckOptimizedOutAnnotationTest extends KeepAnnoTestBase {
   @Parameterized.Parameters(name = "{0}")
   public static List<KeepAnnoParameters> data() {
     return createParameters(
-        getTestParameters().withDefaultRuntimes().withApiLevel(AndroidApiLevel.B).build());
+        getTestParameters().withDefaultRuntimes().withMaximumApiLevel().build());
   }
 
   @Test
@@ -68,24 +68,20 @@ public class CheckOptimizedOutAnnotationTest extends KeepAnnoTestBase {
                     .setDiagnosticsLevelModifier(
                         (level, diagnostic) ->
                             level == DiagnosticsLevel.ERROR ? DiagnosticsLevel.WARNING : level)
-                    .compileWithExpectedDiagnostics(
-                        diagnostics -> {
-                          diagnostics
-                              .assertOnlyWarnings()
-                              .assertWarningsMatch(
-                                  DiagnosticsMatcher.diagnosticType(CheckDiscardDiagnostic.class));
-                          CheckDiscardDiagnostic discard =
-                              (CheckDiscardDiagnostic) diagnostics.getWarnings().get(0);
-                          // The discard error should report one error for A.toString.
-                          assertEquals(
-                              discard.getDiagnosticMessage(), 1, discard.getNumberOfFailures());
-                          assertThat(
-                              discard,
-                              diagnosticMessage(containsString("A.toString() was not discarded")));
-                        })
+                    .compileWithExpectedDiagnostics(this::inspectDiagnostics)
                     .run(parameters.getRuntime(), TestClass.class)
                     .assertSuccessWithOutput(EXPECTED)
                     .inspect(this::checkOutput));
+  }
+
+  private void inspectDiagnostics(TestDiagnosticMessages diagnostics) {
+    diagnostics
+        .assertOnlyWarnings()
+        .assertWarningsMatch(DiagnosticsMatcher.diagnosticType(CheckDiscardDiagnostic.class));
+    CheckDiscardDiagnostic discard = (CheckDiscardDiagnostic) diagnostics.getWarnings().get(0);
+    // The discard error should report one error for A.toString.
+    assertEquals(discard.getDiagnosticMessage(), 1, discard.getNumberOfFailures());
+    assertThat(discard, diagnosticMessage(containsString("A.toString() was not discarded")));
   }
 
   @Test
