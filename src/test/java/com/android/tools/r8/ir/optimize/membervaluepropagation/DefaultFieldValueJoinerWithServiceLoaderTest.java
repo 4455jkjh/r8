@@ -38,7 +38,7 @@ public class DefaultFieldValueJoinerWithServiceLoaderTest extends TestBase {
     testForR8(parameters.getBackend())
         .addInnerClasses(getClass())
         .addKeepMainRule(Main.class)
-        .addDataResources(
+        .addDataEntryResources(
             DataEntryResource.fromBytes(
                 StringUtils.lines(serviceImplementations).getBytes(),
                 "META-INF/services/" + A.class.getTypeName(),
