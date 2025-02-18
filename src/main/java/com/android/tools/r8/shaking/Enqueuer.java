@@ -161,7 +161,6 @@ import com.android.tools.r8.utils.InternalOptions;
 import com.android.tools.r8.utils.IteratorUtils;
 import com.android.tools.r8.utils.ListUtils;
 import com.android.tools.r8.utils.OptionalBool;
-import com.android.tools.r8.utils.Pair;
 import com.android.tools.r8.utils.SetUtils;
 import com.android.tools.r8.utils.StringDiagnostic;
 import com.android.tools.r8.utils.ThreadUtils;
@@ -4131,10 +4130,6 @@ public class Enqueuer {
     private final Map<DexProgramClass, Set<DexClass>> injectedInterfaces =
         new ConcurrentHashMap<>();
 
-    // Subset of live methods that need have keep requirements.
-    private final List<Pair<ProgramMethod, Consumer<KeepMethodInfo.Joiner>>>
-        liveMethodsWithKeepActions = new ArrayList<>();
-
     SyntheticAdditions(ProcessorContext processorContext) {
       this.processorContext = processorContext;
     }
@@ -4150,7 +4145,6 @@ public class Enqueuer {
               && liveMethods.isEmpty()
               && syntheticClasspathClasses.isEmpty()
               && injectedInterfaces.isEmpty();
-      assert !empty || liveMethodsWithKeepActions.isEmpty();
       return empty;
     }
 
@@ -4191,13 +4185,9 @@ public class Enqueuer {
 
       // All synthetic additions are initial tree shaking only. No need to track keep reasons.
       KeepReasonWitness fakeReason = enqueuer.graphReporter.fakeReportShouldNotBeUsed();
-
       for (ProgramMethod desugaredMethod : desugaredMethods) {
         enqueuer.worklist.enqueueTraceCodeAction(desugaredMethod);
       }
-
-      liveMethodsWithKeepActions.forEach(
-          item -> enqueuer.keepInfo.joinMethod(item.getFirst(), item.getSecond()));
       for (ProgramMethod liveMethod : liveMethods.values()) {
         assert !enqueuer.targetedMethods.contains(liveMethod.getDefinition());
         enqueuer.markMethodAsTargeted(liveMethod, fakeReason);
@@ -4209,7 +4199,6 @@ public class Enqueuer {
             enqueuer.objectAllocationInfoCollection.injectInterfaces(
                 enqueuer.appInfo(), clazz, itfs);
           });
-
       minimumSyntheticKeepInfo.forEach(
           (method, minimumKeepInfoForMethod) -> {
             enqueuer.getKeepInfo().registerCompilerSynthesizedMethod(method);
