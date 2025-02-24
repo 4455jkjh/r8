@@ -561,6 +561,7 @@ def prepare_r8_wrapper(dist, temp, jdkhome):
 
 
 def prepare_d8_wrapper(dist, temp, jdkhome):
+    compile_reflective_helper(temp, jdkhome)
     compile_wrapper_with_javac(
         dist, temp, jdkhome,
         os.path.join(
@@ -660,7 +661,7 @@ def run1(out, args, otherargs, jdkhome=None, worker_id=None):
             cmd.append('com.android.tools.r8.tracereferences.TraceReferences')
             cmd.extend(
                 determine_trace_references_commands(build_properties, out))
-        if is_r8_compiler('r8'):
+        if is_r8_compiler(compiler):
             prepare_r8_wrapper(jar, temp, jdkhome)
             cmd.append('com.android.tools.r8.utils.CompileDumpCompatR8')
             if compiler == 'r8':

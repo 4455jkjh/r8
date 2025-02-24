@@ -23,6 +23,7 @@ dependencies { }
 
 val keepAnnoCompileTask = projectTask("keepanno", "compileJava")
 val keepAnnoSourcesTask = projectTask("keepanno", "sourcesJar")
+val assistantJarTask = projectTask("assistant", "jar")
 val mainDepsJarTask = projectTask("main", "depsJar")
 val swissArmyKnifeTask = projectTask("main", "swissArmyKnife")
 val r8WithRelocatedDepsTask = projectTask("main", "r8WithRelocatedDeps")
@@ -198,16 +199,20 @@ tasks {
     generatedKeepRulesProvider: TaskProvider<Exec>,
     classpath: List<File>,
     artifactName: String) {
-    dependsOn(generatedKeepRulesProvider, inputJarProvider, r8WithRelocatedDepsTask)
+    dependsOn(generatedKeepRulesProvider, inputJarProvider, r8WithRelocatedDepsTask,
+              assistantJarTask)
     val inputJar = inputJarProvider.getSingleOutputFile()
     val r8WithRelocatedDepsJar = r8WithRelocatedDepsTask.getSingleOutputFile()
+    val assistantJar = assistantJarTask.getSingleOutputFile()
     val keepRuleFiles = listOf(
             getRoot().resolveAll("src", "main", "keep.txt"),
             getRoot().resolveAll("src", "main", "discard.txt"),
             generatedKeepRulesProvider.getSingleOutputFile(),
             // TODO(b/294351878): Remove once enum issue is fixed
             getRoot().resolveAll("src", "main", "keep_r8resourceshrinker.txt"))
-    inputs.files(listOf(r8WithRelocatedDepsJar, inputJar).union(keepRuleFiles).union(classpath))
+    inputs.files(listOf(r8WithRelocatedDepsJar, inputJar,
+                        getRoot().resolveAll("tools", "create_r8lib.py"))
+                   .union(keepRuleFiles).union(classpath))
     val outputJar = getRoot().resolveAll("build", "libs", artifactName)
     outputs.file(outputJar)
     commandLine = createR8LibCommandLine(
@@ -217,7 +222,8 @@ tasks {
       keepRuleFiles,
       excludingDepsVariant = classpath.isNotEmpty(),
       debugVariant = false,
-      classpath = classpath)
+      classpath = classpath,
+      replaceFromJar = assistantJar)
   }
 
   val assembleR8LibNoDeps by registering(Exec::class) {

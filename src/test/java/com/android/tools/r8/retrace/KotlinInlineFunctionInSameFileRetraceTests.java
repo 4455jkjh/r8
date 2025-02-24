@@ -8,7 +8,6 @@ import static com.android.tools.r8.utils.codeinspector.Matchers.containsLinePosi
 import static com.android.tools.r8.utils.codeinspector.Matchers.isInlineFrame;
 import static com.android.tools.r8.utils.codeinspector.Matchers.isInlineStack;
 import static com.android.tools.r8.utils.codeinspector.Matchers.isPresent;
-import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.StringContains.containsString;
 
@@ -72,7 +71,7 @@ public class KotlinInlineFunctionInSameFileRetraceTests extends KotlinTestBase {
   }
 
   private int getObfuscatedLinePosition() {
-    return kotlinc.is(KotlinCompilerVersion.KOTLINC_1_3_72) ? 43 : 32;
+    return kotlinc.is(KotlinCompilerVersion.KOTLINC_1_3_72) ? 43 : 30;
   }
 
   @Test
@@ -115,10 +114,10 @@ public class KotlinInlineFunctionInSameFileRetraceTests extends KotlinTestBase {
                               .uniqueMethodWithOriginalName("foo")
                               .asFoundMethodSubject(),
                           1,
-                          8,
+                          7,
                           FILENAME_INLINE),
                       LinePosition.create(
-                          mainSubject.asFoundMethodSubject(), 1, 21, FILENAME_INLINE));
+                          mainSubject.asFoundMethodSubject(), 1, 19, FILENAME_INLINE));
               checkInlineInformation(stackTrace, codeInspector, mainSubject, inlineStack);
             });
   }
