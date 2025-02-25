@@ -18,21 +18,23 @@
 // MAINTAINED AND TESTED IN THE R8 REPO. PLEASE MAKE CHANGES THERE AND REPLICATE.
 // ***********************************************************************************
 
-package androidx.annotation.keep;
+package androidx.annotation.keep
 
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
+import kotlin.annotation.Retention
+import kotlin.annotation.Target
 
-@Target({ElementType.TYPE, ElementType.FIELD, ElementType.METHOD, ElementType.CONSTRUCTOR})
-@Retention(RetentionPolicy.CLASS)
-public @interface KeepEdge {
-  String description() default "";
+@Retention(AnnotationRetention.BINARY)
+@Target(
+  AnnotationTarget.TYPE,
+  AnnotationTarget.FIELD,
+  AnnotationTarget.FUNCTION,
+  AnnotationTarget.CONSTRUCTOR,
+)
+public annotation class KeepEdge(
+  val description: String = "",
 
-  KeepBinding[] bindings() default {};
-
-  KeepCondition[] preconditions() default {};
-
-  KeepTarget[] consequences();
-}
+  //   val retention : Array<RetentionPolicy> = [RetentionPolicy.RUNTIME]
+  val bindings: Array<KeepBinding> = [],
+  val preconditions: Array<KeepCondition> = [],
+  val consequences: Array<KeepTarget> = [],
+)

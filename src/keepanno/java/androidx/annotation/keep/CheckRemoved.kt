@@ -18,34 +18,25 @@
 // MAINTAINED AND TESTED IN THE R8 REPO. PLEASE MAKE CHANGES THERE AND REPLICATE.
 // ***********************************************************************************
 
-package androidx.annotation.keep;
+package androidx.annotation.keep
+
+import kotlin.annotation.Retention
+import kotlin.annotation.Target
 
 /**
- * Valid matches on field access flags and their negations.
+ * Mark that an item must be fully removed from the residual program.
  *
- * <p>The negated elements make it easier to express the inverse as we cannot use a "not/negation"
- * operation syntactically.
+ * <p>Being removed from the program means that the item declaration is not present at all in the
+ * residual program. For example, inlined functions are not considered removed. If content of the
+ * item is allowed to be in the residual, use {@link CheckOptimizedOut}.
+ *
+ * <p>A class is removed if all of its members are removed and no references to the class remain.
  */
-public enum FieldAccessFlags {
-  // General member flags.
-  PUBLIC,
-  NON_PUBLIC,
-  PRIVATE,
-  NON_PRIVATE,
-  PROTECTED,
-  NON_PROTECTED,
-  PACKAGE_PRIVATE,
-  NON_PACKAGE_PRIVATE,
-  STATIC,
-  NON_STATIC,
-  FINAL,
-  NON_FINAL,
-  SYNTHETIC,
-  NON_SYNTHETIC,
-  // Field specific flags.
-  VOLATILE,
-  NON_VOLATILE,
-  TRANSIENT,
-  NON_TRANSIENT,
-  // ENUM - No PG parser support.
-}
+@Retention(AnnotationRetention.BINARY)
+@Target(
+  AnnotationTarget.TYPE,
+  AnnotationTarget.FIELD,
+  AnnotationTarget.FUNCTION,
+  AnnotationTarget.CONSTRUCTOR,
+)
+public annotation class CheckRemoved(val description: String = "")
