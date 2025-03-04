@@ -17,11 +17,17 @@ public class ReflectiveOracle {
       // TODO(b/393249304): Support injecting alternative receiver.
       synchronized (instanceLock) {
         if (INSTANCE == null) {
-          INSTANCE = new ReflectiveOperationLogger();
+          INSTANCE = getReceiver();
         }
       }
     }
     return INSTANCE;
+  }
+
+  // Might be rewritten to call new instance on a custom receiver.
+  private static ReflectiveOperationReceiver getReceiver() {
+    // Default, might be replaced, don't change this without changing the instrumentation
+    return new ReflectiveOperationLogger();
   }
 
   @KeepForApi
@@ -66,6 +72,10 @@ public class ReflectiveOracle {
     getInstance().onClassGetDeclaredMethod(Stack.createStack(), clazz, name, parameters);
   }
 
+  public static void onClassForName(String className) {
+    getInstance().onClassForName(Stack.createStack(), className);
+  }
+
   @KeepForApi
   public static class ReflectiveOperationLogger implements ReflectiveOperationReceiver {
     @Override
@@ -77,6 +87,11 @@ public class ReflectiveOracle {
     public void onClassGetDeclaredMethod(
         Stack stack, Class<?> clazz, String method, Class<?>... parameters) {
       System.out.println("Reflectively got declared method " + method + " on " + clazz.getName());
+    }
+
+    @Override
+    public void onClassForName(Stack stack, String className) {
+      System.out.println("Reflectively called Class.forName on " + className);
     }
 
     @Override

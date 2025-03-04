@@ -13,6 +13,8 @@ import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.ToolHelper;
+import com.android.tools.r8.assistant.runtime.ReflectiveOperationReceiver;
+import com.android.tools.r8.assistant.runtime.ReflectiveOracle.Stack;
 import com.android.tools.r8.utils.ZipUtils;
 import com.android.tools.r8.utils.codeinspector.ClassSubject;
 import com.android.tools.r8.utils.codeinspector.CodeInspector;
@@ -28,6 +30,7 @@ import org.junit.runners.Parameterized.Parameters;
 
 @RunWith(Parameterized.class)
 public class R8AssistentReflectiveInstrumentationTest extends TestBase {
+
   @Parameter(0)
   public TestParameters parameters;
 
@@ -59,15 +62,116 @@ public class R8AssistentReflectiveInstrumentationTest extends TestBase {
   @Test
   public void testInstrumentation() throws Exception {
     testForAssistant()
-        .addInnerClasses(getClass())
+        .addProgramClasses(TestClass.class, Foo.class, Bar.class)
         .setMinApi(parameters)
         .compile()
-        .inspectOriginalDex(inspector -> inspectStaticCallsInReflectOn(0, inspector))
-        .inspect(inspector -> inspectStaticCallsInReflectOn(2, inspector))
+        .inspectOriginalDex(inspector -> inspectStaticCallsInReflectOn(1, inspector))
+        .inspect(inspector -> inspectStaticCallsInReflectOn(4, inspector))
         .run(parameters.getRuntime(), TestClass.class)
         .assertSuccessWithOutputLines(
             "Reflectively created new instance of " + Bar.class.getName(),
-            "Reflectively got declared method callMe on " + Bar.class.getName());
+            "Reflectively got declared method callMe on " + Bar.class.getName(),
+            "Reflectively called Class.forName on " + Bar.class.getName());
+  }
+
+  @Test
+  public void testInstrumentationWithCustomOracle() throws Exception {
+    testForAssistant()
+        .addProgramClasses(TestClass.class, Foo.class, Bar.class)
+        .addInstrumentationClasses(InstrumentationClass.class)
+        .setCustomReflectiveOperationReceiver(InstrumentationClass.class)
+        .setMinApi(parameters)
+        .compile()
+        .inspectOriginalDex(inspector -> inspectStaticCallsInReflectOn(1, inspector))
+        .inspect(inspector -> inspectStaticCallsInReflectOn(4, inspector))
+        .run(parameters.getRuntime(), TestClass.class)
+        .assertSuccessWithOutputLines(
+            "Custom receiver " + Bar.class.getName(),
+            "Custom receiver method callMe",
+            "Custom receiver classForName " + Bar.class.getName());
+  }
+
+  @Test
+  public void testStack() throws Exception {
+    testForAssistant()
+        .addProgramClasses(TestClass.class, Foo.class, Bar.class)
+        .addInstrumentationClasses(TestReflectiveOperationReceiverStackHandler.class)
+        .setCustomReflectiveOperationReceiver(
+            descriptor(TestReflectiveOperationReceiverStackHandler.class))
+        .setMinApi(parameters)
+        .compile()
+        .inspectOriginalDex(inspector -> inspectStaticCallsInReflectOn(1, inspector))
+        .inspect(inspector -> inspectStaticCallsInReflectOn(4, inspector))
+        .run(parameters.getRuntime(), TestClass.class)
+        .assertSuccessWithOutputLines("correct", "correct", "correct");
+  }
+
+  // Injected into the app by the R8Assistant.
+  public static class TestReflectiveOperationReceiverStackHandler
+      implements ReflectiveOperationReceiver {
+
+    int lineNumberOfNewInstance = -1;
+
+    @Override
+    public void onClassForName(Stack stack, String className) {
+      if (!className.equals(Bar.class.getName())) {
+        throw new RuntimeException("Wrong class name passed");
+      }
+      int lineNumberOfTopOfStack = getLineNumberOfTopOfStack(stack);
+      if (lineNumberOfTopOfStack != lineNumberOfNewInstance + 2) {
+        throw new RuntimeException("Wrong line number on top of stack " + lineNumberOfTopOfStack);
+      }
+      ensureCorrectStack(stack);
+    }
+
+    private void ensureCorrectStack(Stack stack) {
+      StackTraceElement[] stackTraceElements = stack.getStackTraceElements();
+      if (stackTraceElements.length != 2) {
+        // Only main and reflectOn should be in the stack
+        throw new RuntimeException("Wrong stack hight of " + stackTraceElements.length);
+      }
+      String topOfStack = stack.getStackTraceElements()[0].toString();
+      String secondToTopOfStack = stack.getStackTraceElements()[1].toString();
+      String sourceFile = "R8AssistentReflectiveInstrumentationTest";
+      if (!topOfStack.contains("reflectOn(" + sourceFile)) {
+        throw new RuntimeException("reflectOn must be top of stack, got " + topOfStack);
+      }
+      if (!secondToTopOfStack.contains("main(" + sourceFile)) {
+        throw new RuntimeException("main must be second to top of stack");
+      }
+      System.out.println("correct");
+    }
+
+    private int getLineNumberOfTopOfStack(Stack stack) {
+      return stack.getStackTraceElements()[0].getLineNumber();
+    }
+
+    @Override
+    public void onClassNewInstance(Stack stack, Class<?> clazz) {
+      if (!clazz.equals(Bar.class)) {
+        throw new RuntimeException("Wrong class passed");
+      }
+      ensureCorrectStack(stack);
+      lineNumberOfNewInstance = getLineNumberOfTopOfStack(stack);
+    }
+
+    @Override
+    public void onClassGetDeclaredMethod(
+        Stack stack, Class<?> clazz, String method, Class<?>... parameters) {
+      if (!clazz.equals(Bar.class) || !method.equals("callMe")) {
+        throw new RuntimeException("Wrong method passed");
+      }
+      int lineNumberOfTopOfStack = getLineNumberOfTopOfStack(stack);
+      if (lineNumberOfTopOfStack != lineNumberOfNewInstance + 1) {
+        throw new RuntimeException("Wrong line number on top of stack " + lineNumberOfTopOfStack);
+      }
+      ensureCorrectStack(stack);
+    }
+
+    @Override
+    public boolean requiresStackInformation() {
+      return true;
+    }
   }
 
   private static void inspectStaticCallsInReflectOn(int count, CodeInspector inspector) {
@@ -80,6 +184,25 @@ public class R8AssistentReflectiveInstrumentationTest extends TestBase {
     assertEquals(count, codeCount);
   }
 
+  public static class InstrumentationClass implements ReflectiveOperationReceiver {
+
+    @Override
+    public void onClassForName(Stack stack, String className) {
+      System.out.println("Custom receiver classForName " + className);
+    }
+
+    @Override
+    public void onClassNewInstance(Stack stack, Class<?> clazz) {
+      System.out.println("Custom receiver " + clazz.getName());
+    }
+
+    @Override
+    public void onClassGetDeclaredMethod(
+        Stack stack, Class<?> clazz, String method, Class<?>... parameters) {
+      System.out.println("Custom receiver method " + method);
+    }
+  }
+
   static class TestClass {
     public static void main(String[] args) {
       reflectOn(System.currentTimeMillis() == 0 ? Foo.class : Bar.class);
@@ -89,8 +212,11 @@ public class R8AssistentReflectiveInstrumentationTest extends TestBase {
       try {
         clazz.newInstance();
         clazz.getDeclaredMethod("callMe");
-
-      } catch (InstantiationException | IllegalAccessException | NoSuchMethodException e) {
+        Class.forName(clazz.getName());
+      } catch (InstantiationException
+          | IllegalAccessException
+          | NoSuchMethodException
+          | ClassNotFoundException e) {
         throw new RuntimeException(e);
       }
     }

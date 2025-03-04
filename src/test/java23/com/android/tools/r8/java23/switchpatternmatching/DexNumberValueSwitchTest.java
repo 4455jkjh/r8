@@ -1,7 +1,8 @@
-// Copyright (c) 2024, the R8 project authors. Please see the AUTHORS file
+// Copyright (c) 2025, the R8 project authors. Please see the AUTHORS file
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
-package switchpatternmatching;
+
+package com.android.tools.r8.java23.switchpatternmatching;
 
 import static com.android.tools.r8.desugar.switchpatternmatching.SwitchTestHelper.hasJdk21TypeSwitch;
 import static org.junit.Assert.assertTrue;
@@ -15,47 +16,44 @@ import com.android.tools.r8.TestRuntime.CfVm;
 import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.utils.StringUtils;
 import com.android.tools.r8.utils.codeinspector.CodeInspector;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameter;
 import org.junit.runners.Parameterized.Parameters;
 
-// This test is copied into later JDK tests (currently JDK-23). The reason for the copy is that
-// from JDK-23 the code generation changed. Please update the copy as well if updating this test.
 @RunWith(Parameterized.class)
-public class StringSwitchTest extends TestBase {
+public class DexNumberValueSwitchTest extends TestBase {
 
   @Parameter public TestParameters parameters;
 
   @Parameters(name = "{0}")
   public static TestParametersCollection data() {
     return getTestParameters()
-        .withCfRuntimesStartingFromIncluding(CfVm.JDK21)
+        .withCfRuntimesStartingFromIncluding(CfVm.JDK23)
         .withDexRuntimes()
         .withAllApiLevelsAlsoForCf()
         .build();
   }
 
-  public static String EXPECTED_OUTPUT =
-      StringUtils.lines(
-          "null", "y or Y", "y or Y", "n or N", "n or N", "yes", "yes", "no", "no", "unknown");
+  public static String EXPECTED_OUTPUT = StringUtils.lines("TODO");
 
   @Test
   public void testJvm() throws Exception {
     assumeTrue(parameters.isCfRuntime());
     CodeInspector inspector = new CodeInspector(ToolHelper.getClassFileForTestClass(Main.class));
     assertTrue(
-        hasJdk21TypeSwitch(
-            inspector.clazz(Main.class).uniqueMethodWithOriginalName("stringSwitch")));
-
+        hasJdk21TypeSwitch(inspector.clazz(Main.class).uniqueMethodWithOriginalName("longSwitch")));
     parameters.assumeJvmTestParameters();
     testForJvm(parameters)
         .addInnerClassesAndStrippedOuter(getClass())
         .run(parameters.getRuntime(), Main.class)
-        .assertSuccessWithOutput(EXPECTED_OUTPUT);
+        // This is successful with the jvm with --enable-preview flag only.
+        .assertFailureWithErrorThatThrows(BootstrapMethodError.class);
   }
 
+  @Ignore("Fixed in next CL")
   @Test
   public void testD8() throws Exception {
     testForD8(parameters.getBackend())
@@ -65,6 +63,7 @@ public class StringSwitchTest extends TestBase {
         .assertSuccessWithOutput(EXPECTED_OUTPUT);
   }
 
+  @Ignore("Fixed in next CL")
   @Test
   public void testR8() throws Exception {
     parameters.assumeR8TestParameters();
@@ -80,40 +79,91 @@ public class StringSwitchTest extends TestBase {
   }
 
   static class Main {
-    static void stringSwitch(String string) {
-      switch (string) {
+
+    static void booleanSwitch(Boolean b) {
+      switch (b) {
         case null -> {
           System.out.println("null");
         }
-        case String s when s.equalsIgnoreCase("YES") -> {
-          System.out.println("yes");
+        case true -> {
+          System.out.println("true");
         }
-        case "y", "Y" -> {
-          System.out.println("y or Y");
+        default -> {
+          System.out.println("false");
         }
-        case String s when s.equalsIgnoreCase("NO") -> {
-          System.out.println("no");
+      }
+    }
+
+    static void doubleSwitch(Double d) {
+      switch (d) {
+        case null -> {
+          System.out.println("null");
         }
-        case "n", "N" -> {
-          System.out.println("n or N");
+        case 42.0 -> {
+          System.out.println("42");
         }
-        case String s -> {
-          System.out.println("unknown");
+        case Double f2 when f2 > 0 -> {
+          System.out.println("positif");
+        }
+        default -> {
+          System.out.println("negatif");
+        }
+      }
+    }
+
+    static void floatSwitch(Float f) {
+      switch (f) {
+        case null -> {
+          System.out.println("null");
+        }
+        case 42.0f -> {
+          System.out.println("42");
+        }
+        case Float f2 when f2 > 0 -> {
+          System.out.println("positif");
+        }
+        default -> {
+          System.out.println("negatif");
+        }
+      }
+    }
+
+    static void longSwitch(Long l) {
+      switch (l) {
+        case null -> {
+          System.out.println("null");
+        }
+        case 42L -> {
+          System.out.println("42");
+        }
+        case Long i2 when i2 > 0 -> {
+          System.out.println("positif");
+        }
+        default -> {
+          System.out.println("negatif");
         }
       }
     }
 
     public static void main(String[] args) {
-      stringSwitch(null);
-      stringSwitch("y");
-      stringSwitch("Y");
-      stringSwitch("n");
-      stringSwitch("N");
-      stringSwitch("yes");
-      stringSwitch("YES");
-      stringSwitch("no");
-      stringSwitch("NO");
-      stringSwitch("?");
+      longSwitch(null);
+      longSwitch(42L);
+      longSwitch(12L);
+      longSwitch(-1L);
+
+      floatSwitch(null);
+      floatSwitch(42.0f);
+      floatSwitch(12.0f);
+      floatSwitch(-1.0f);
+
+      doubleSwitch(null);
+      doubleSwitch(42.0);
+      doubleSwitch(12.0);
+      doubleSwitch(-1.0);
+
+      booleanSwitch(null);
+      booleanSwitch(true);
+      booleanSwitch(false);
     }
   }
 }
