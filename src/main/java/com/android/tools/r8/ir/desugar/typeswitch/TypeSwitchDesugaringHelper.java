@@ -5,12 +5,8 @@
 package com.android.tools.r8.ir.desugar.typeswitch;
 
 import com.android.tools.r8.errors.CompilationError;
-import com.android.tools.r8.graph.AppView;
+import com.android.tools.r8.graph.Definition;
 import com.android.tools.r8.graph.DexCallSite;
-import com.android.tools.r8.graph.DexClass;
-import com.android.tools.r8.graph.DexClassAndMethod;
-import com.android.tools.r8.graph.DexEncodedField;
-import com.android.tools.r8.graph.DexField;
 import com.android.tools.r8.graph.DexItemFactory;
 import com.android.tools.r8.graph.DexMethod;
 import com.android.tools.r8.graph.DexMethodHandle;
@@ -18,13 +14,12 @@ import com.android.tools.r8.graph.DexProto;
 import com.android.tools.r8.graph.DexString;
 import com.android.tools.r8.graph.DexType;
 import com.android.tools.r8.graph.DexValue;
-import com.android.tools.r8.graph.DexValue.DexValueConstDynamic;
 import com.android.tools.r8.ir.desugar.constantdynamic.ConstantDynamicReference;
 import com.android.tools.r8.utils.DescriptorUtils;
+import java.util.function.BiConsumer;
 
 public class TypeSwitchDesugaringHelper {
-  private static CompilationError throwEnumFieldConstantDynamic(
-      String msg, DexClassAndMethod context) {
+  private static CompilationError throwEnumFieldConstantDynamic(String msg, Definition context) {
     throw new CompilationError(
         "Unexpected ConstantDynamic in TypeSwitch: " + msg, context.getOrigin());
   }
@@ -54,7 +49,7 @@ public class TypeSwitchDesugaringHelper {
     return methodHandleIsInvokeStaticTo(dexValue.asDexValueMethodHandle().getValue(), method);
   }
 
-  private static boolean methodHandleIsInvokeStaticTo(
+  public static boolean methodHandleIsInvokeStaticTo(
       DexMethodHandle methodHandle, DexMethod method) {
     return methodHandle.type.isInvokeStatic() && methodHandle.asMethod().isIdenticalTo(method);
   }
@@ -65,10 +60,11 @@ public class TypeSwitchDesugaringHelper {
         && methodProto.getParameter(1).isIdenticalTo(intType);
   }
 
-  public static DexField extractEnumField(
-      DexValueConstDynamic dexValueConstDynamic, DexClassAndMethod context, AppView<?> appView) {
-    DexItemFactory factory = appView.dexItemFactory();
-    ConstantDynamicReference enumCstDynamic = dexValueConstDynamic.getValue();
+  public static void dispatchEnumField(
+      BiConsumer<DexType, DexString> enumConsumer,
+      ConstantDynamicReference enumCstDynamic,
+      Definition context,
+      DexItemFactory factory) {
     DexMethod bootstrapMethod = factory.constantDynamicBootstrapMethod;
     if (!(enumCstDynamic.getType().isIdenticalTo(factory.enumDescType)
         && enumCstDynamic.getName().isIdenticalTo(bootstrapMethod.getName())
@@ -103,24 +99,7 @@ public class TypeSwitchDesugaringHelper {
       throw throwEnumFieldConstantDynamic("Class name " + dexValueClassName, context);
     }
     DexString className = dexValueClassName.asDexValueString().getValue();
-    DexType enumType =
-        factory.createType(DescriptorUtils.javaTypeToDescriptor(className.toString()));
-    return getEnumField(fieldName, enumType, appView);
-  }
-
-  public static DexField getEnumField(DexString fieldName, DexType enumType, AppView<?> appView) {
-    DexClass enumClass = appView.appInfo().definitionForWithoutExistenceAssert(enumType);
-    if (enumClass == null) {
-      // If the enum class is missing, the case is (interestingly) considered unreachable and
-      // effectively removed from the switch (base on jdk 21 behavior).
-      return null;
-    }
-    DexEncodedField dexEncodedField = enumClass.lookupUniqueStaticFieldWithName(fieldName);
-    if (dexEncodedField == null) {
-      // If the field is missing, but the class is there, the case is considered unreachable and
-      // effectively removed from the switch.
-      return null;
-    }
-    return dexEncodedField.getReference();
+    DexType type = factory.createType(DescriptorUtils.javaTypeToDescriptor(className.toString()));
+    enumConsumer.accept(type, fieldName);
   }
 }

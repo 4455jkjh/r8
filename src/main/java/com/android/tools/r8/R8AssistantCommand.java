@@ -4,6 +4,7 @@
 package com.android.tools.r8;
 
 import com.android.tools.r8.assistant.ClassInjectionHelper;
+import com.android.tools.r8.assistant.runtime.EmptyReflectiveOperationReceiver;
 import com.android.tools.r8.assistant.runtime.ReflectiveOperationReceiver;
 import com.android.tools.r8.assistant.runtime.ReflectiveOracle;
 import com.android.tools.r8.assistant.runtime.ReflectiveOracle.ReflectiveOperationLogger;
@@ -145,19 +146,13 @@ public class R8AssistantCommand extends BaseCompilerCommand {
 
     @Override
     R8AssistantCommand makeCommand() {
-      ClassInjectionHelper injectionHelper = new ClassInjectionHelper(getReporter());
-      String reason = "Reflective instrumentation";
-      addClassProgramData(
-          injectionHelper.getClassBytes(ReflectiveOracle.class),
-          new SynthesizedOrigin(reason, ReflectiveOracle.class));
-      addClassProgramData(
-          injectionHelper.getClassBytes(Stack.class), new SynthesizedOrigin(reason, Stack.class));
-      addClassProgramData(
-          injectionHelper.getClassBytes(ReflectiveOperationReceiver.class),
-          new SynthesizedOrigin(reason, ReflectiveOperationReceiver.class));
-      addClassProgramData(
-          injectionHelper.getClassBytes(ReflectiveOperationLogger.class),
-          new SynthesizedOrigin(reason, ReflectiveOperationLogger.class));
+      injectClasses(
+          EmptyReflectiveOperationReceiver.class,
+          ReflectiveOperationLogger.class,
+          ReflectiveOperationReceiver.NameLookupType.class,
+          ReflectiveOperationReceiver.class,
+          ReflectiveOracle.class,
+          Stack.class);
       return new R8AssistantCommand(
           getAppBuilder().build(),
           getMode(),
@@ -165,6 +160,15 @@ public class R8AssistantCommand extends BaseCompilerCommand {
           getMinApiLevel(),
           getReporter(),
           reflectiveReceiverDescriptor);
+    }
+
+    private void injectClasses(Class<?>... classes) {
+      ClassInjectionHelper injectionHelper = new ClassInjectionHelper(getReporter());
+      String reason = "Reflective instrumentation";
+      for (Class<?> clazz : classes) {
+        addClassProgramData(
+            injectionHelper.getClassBytes(clazz), new SynthesizedOrigin(reason, clazz));
+      }
     }
   }
 }

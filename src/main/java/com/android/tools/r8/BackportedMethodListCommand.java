@@ -6,12 +6,10 @@ package com.android.tools.r8;
 import com.android.tools.r8.graph.DexItemFactory;
 import com.android.tools.r8.ir.desugar.desugaredlibrary.DesugaredLibrarySpecification;
 import com.android.tools.r8.ir.desugar.desugaredlibrary.DesugaredLibrarySpecificationParser;
-import com.android.tools.r8.ir.desugar.desugaredlibrary.humanspecification.HumanDesugaredLibrarySpecification;
 import com.android.tools.r8.keepanno.annotations.KeepForApi;
 import com.android.tools.r8.origin.Origin;
 import com.android.tools.r8.utils.AndroidApiLevel;
 import com.android.tools.r8.utils.AndroidApp;
-import com.android.tools.r8.utils.InternalOptions;
 import com.android.tools.r8.utils.Reporter;
 import com.android.tools.r8.utils.StringDiagnostic;
 import com.google.common.collect.ImmutableSet;
@@ -47,7 +45,6 @@ public class BackportedMethodListCommand {
   private final DesugaredLibrarySpecification desugaredLibrarySpecification;
   private final AndroidApp app;
   private final StringConsumer backportedMethodListConsumer;
-  private final DexItemFactory factory;
 
   public boolean isPrintHelp() {
     return printHelp;
@@ -90,7 +87,6 @@ public class BackportedMethodListCommand {
     this.desugaredLibrarySpecification = null;
     this.app = null;
     this.backportedMethodListConsumer = null;
-    this.factory = null;
   }
 
   private BackportedMethodListCommand(
@@ -99,8 +95,7 @@ public class BackportedMethodListCommand {
       boolean androidPlatformBuild,
       DesugaredLibrarySpecification desugaredLibrarySpecification,
       AndroidApp app,
-      StringConsumer backportedMethodListConsumer,
-      DexItemFactory factory) {
+      StringConsumer backportedMethodListConsumer) {
     this.printHelp = false;
     this.printVersion = false;
     this.reporter = reporter;
@@ -109,16 +104,6 @@ public class BackportedMethodListCommand {
     this.desugaredLibrarySpecification = desugaredLibrarySpecification;
     this.app = app;
     this.backportedMethodListConsumer = backportedMethodListConsumer;
-    this.factory = factory;
-  }
-
-  InternalOptions getInternalOptions() {
-    InternalOptions options = new InternalOptions(factory, getReporter());
-    options.setMinApiLevel(AndroidApiLevel.getAndroidApiLevel(minApiLevel));
-    options
-        .getLibraryDesugaringOptions()
-        .setDesugaredLibrarySpecification(desugaredLibrarySpecification);
-    return options;
   }
 
   public static Builder builder() {
@@ -262,7 +247,7 @@ public class BackportedMethodListCommand {
 
     DesugaredLibrarySpecification getDesugaredLibraryConfiguration(DexItemFactory factory) {
       if (desugaredLibrarySpecificationResources.isEmpty()) {
-        return HumanDesugaredLibrarySpecification.empty();
+        return DesugaredLibrarySpecification.empty();
       }
       if (desugaredLibrarySpecificationResources.size() > 1) {
         reporter.fatalError("Only one desugared library configuration is supported.");
@@ -354,8 +339,7 @@ public class BackportedMethodListCommand {
           androidPlatformBuild,
           getDesugaredLibraryConfiguration(factory),
           library,
-          backportedMethodListConsumer,
-          factory);
+          backportedMethodListConsumer);
     }
   }
 }

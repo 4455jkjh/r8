@@ -13,7 +13,7 @@ import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.ToolHelper;
-import com.android.tools.r8.assistant.runtime.ReflectiveOperationReceiver;
+import com.android.tools.r8.assistant.runtime.EmptyReflectiveOperationReceiver;
 import com.android.tools.r8.assistant.runtime.ReflectiveOracle.Stack;
 import com.android.tools.r8.utils.ZipUtils;
 import com.android.tools.r8.utils.codeinspector.ClassSubject;
@@ -66,11 +66,12 @@ public class R8AssistentReflectiveInstrumentationTest extends TestBase {
         .setMinApi(parameters)
         .compile()
         .inspectOriginalDex(inspector -> inspectStaticCallsInReflectOn(1, inspector))
-        .inspect(inspector -> inspectStaticCallsInReflectOn(4, inspector))
+        .inspect(inspector -> inspectStaticCallsInReflectOn(5, inspector))
         .run(parameters.getRuntime(), TestClass.class)
         .assertSuccessWithOutputLines(
             "Reflectively created new instance of " + Bar.class.getName(),
             "Reflectively got declared method callMe on " + Bar.class.getName(),
+            "Reflectively got name on " + Bar.class.getName() + "(NAME)",
             "Reflectively called Class.forName on " + Bar.class.getName());
   }
 
@@ -83,7 +84,7 @@ public class R8AssistentReflectiveInstrumentationTest extends TestBase {
         .setMinApi(parameters)
         .compile()
         .inspectOriginalDex(inspector -> inspectStaticCallsInReflectOn(1, inspector))
-        .inspect(inspector -> inspectStaticCallsInReflectOn(4, inspector))
+        .inspect(inspector -> inspectStaticCallsInReflectOn(5, inspector))
         .run(parameters.getRuntime(), TestClass.class)
         .assertSuccessWithOutputLines(
             "Custom receiver " + Bar.class.getName(),
@@ -101,14 +102,14 @@ public class R8AssistentReflectiveInstrumentationTest extends TestBase {
         .setMinApi(parameters)
         .compile()
         .inspectOriginalDex(inspector -> inspectStaticCallsInReflectOn(1, inspector))
-        .inspect(inspector -> inspectStaticCallsInReflectOn(4, inspector))
+        .inspect(inspector -> inspectStaticCallsInReflectOn(5, inspector))
         .run(parameters.getRuntime(), TestClass.class)
         .assertSuccessWithOutputLines("correct", "correct", "correct");
   }
 
   // Injected into the app by the R8Assistant.
   public static class TestReflectiveOperationReceiverStackHandler
-      implements ReflectiveOperationReceiver {
+      extends EmptyReflectiveOperationReceiver {
 
     int lineNumberOfNewInstance = -1;
 
@@ -184,8 +185,7 @@ public class R8AssistentReflectiveInstrumentationTest extends TestBase {
     assertEquals(count, codeCount);
   }
 
-  public static class InstrumentationClass implements ReflectiveOperationReceiver {
-
+  public static class InstrumentationClass extends EmptyReflectiveOperationReceiver {
     @Override
     public void onClassForName(Stack stack, String className) {
       System.out.println("Custom receiver classForName " + className);

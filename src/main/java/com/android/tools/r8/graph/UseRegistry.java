@@ -265,11 +265,17 @@ public abstract class UseRegistry<T extends Definition> {
             throw new CompilationError(
                 "Unsupported const dynamic in call site " + arg, getContext().getOrigin());
           }
-          DexField enumField =
-              TypeSwitchDesugaringHelper.extractEnumField(
-                  arg.asDexValueConstDynamic(), getMethodContext(), appView);
-          if (enumField != null) {
-            registerStaticFieldRead(enumField);
+          if (arg.asDexValueConstDynamic()
+              .getValue()
+              .getType()
+              .isIdenticalTo(appView.dexItemFactory().enumDescType)) {
+            TypeSwitchDesugaringHelper.dispatchEnumField(
+                (type, fieldName) -> {
+                  registerTypeReference(type);
+                },
+                arg.asDexValueConstDynamic().getValue(),
+                context,
+                dexItemFactory());
           }
           break;
         default:
