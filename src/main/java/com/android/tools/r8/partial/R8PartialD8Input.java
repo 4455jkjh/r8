@@ -3,9 +3,7 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8.partial;
 
-import com.android.tools.r8.BaseCompilerCommand;
 import com.android.tools.r8.D8Command;
-import com.android.tools.r8.R8Command;
 import com.android.tools.r8.graph.DexClass;
 import com.android.tools.r8.graph.DexClasspathClass;
 import com.android.tools.r8.graph.DexLibraryClass;
@@ -23,7 +21,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-public class R8PartialInput {
+public class R8PartialD8Input {
 
   private final Collection<DexProgramClass> d8Classes;
   private final Collection<DexProgramClass> r8Classes;
@@ -31,7 +29,7 @@ public class R8PartialInput {
   private final Map<DexType, DexLibraryClass> libraryClasses;
   private final List<KeepDeclaration> keepDeclarations;
 
-  public R8PartialInput(
+  public R8PartialD8Input(
       Collection<DexProgramClass> d8Classes,
       Collection<DexProgramClass> r8Classes,
       Collection<DexClasspathClass> classpathClasses,
@@ -47,21 +45,9 @@ public class R8PartialInput {
   }
 
   public void configure(D8Command.Builder commandBuilder) throws IOException {
-    configureBase(commandBuilder);
     commandBuilder
         .addProgramResourceProvider(new InternalProgramClassProvider(d8Classes))
-        .addProgramResourceProvider(new InternalProgramClassProvider(r8Classes));
-  }
-
-  public void configure(R8Command.Builder commandBuilder) throws IOException {
-    configureBase(commandBuilder);
-    commandBuilder.addClasspathResourceProvider(
-        new InternalClasspathOrLibraryClassProvider<>(
-            DexClasspathClass.toClasspathClasses(d8Classes)));
-  }
-
-  private void configureBase(BaseCompilerCommand.Builder<?, ?> commandBuilder) {
-    commandBuilder
+        .addProgramResourceProvider(new InternalProgramClassProvider(r8Classes))
         .addClasspathResourceProvider(
             new InternalClasspathOrLibraryClassProvider<>(classpathClasses))
         .addLibraryResourceProvider(new InternalClasspathOrLibraryClassProvider<>(libraryClasses));

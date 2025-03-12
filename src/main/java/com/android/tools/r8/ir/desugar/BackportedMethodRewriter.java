@@ -76,7 +76,7 @@ import com.android.tools.r8.synthesis.SyntheticProgramClassBuilder;
 import com.android.tools.r8.utils.AndroidApiLevel;
 import com.android.tools.r8.utils.AndroidApp;
 import com.android.tools.r8.utils.InternalOptions;
-import com.android.tools.r8.utils.Timing;
+import com.android.tools.r8.utils.timing.Timing;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import java.io.IOException;
@@ -1859,7 +1859,7 @@ public final class BackportedMethodRewriter implements CfInstructionDesugaring {
         {"TIRAMISU", 3300_000},
         {"UPSIDE_DOWN_CAKE", 3400_000},
         {"VANILLA_ICE_CREAM", 3500_000},
-        {"BAKLAVA", 1_000_000_000},
+        {"BAKLAVA", 3600_000},
       };
       type = factory.createType("Landroid/os/Build$VERSION_CODES_FULL;");
       for (Object[] versionCodeFull : versionCodesFull) {

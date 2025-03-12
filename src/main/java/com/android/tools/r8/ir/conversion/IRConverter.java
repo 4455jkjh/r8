@@ -92,8 +92,8 @@ import com.android.tools.r8.utils.InternalOptions.InlinerOptions;
 import com.android.tools.r8.utils.InternalOptions.NeverMergeGroup;
 import com.android.tools.r8.utils.StringDiagnostic;
 import com.android.tools.r8.utils.ThreadUtils;
-import com.android.tools.r8.utils.Timing;
 import com.android.tools.r8.utils.collections.ProgramMethodSet;
+import com.android.tools.r8.utils.timing.Timing;
 import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
@@ -300,11 +300,7 @@ public class IRConverter {
       return true;
     }
     assert method.getDefinition().getCode().isCfCode();
-    if (options.partialSubCompilationConfiguration != null) {
-      assert conversionOptions.isGeneratingClassFiles() || conversionOptions.isGeneratingDex();
-      return conversionOptions.isGeneratingDex();
-    }
-    return !options.isGeneratingClassFiles();
+    return !conversionOptions.isGeneratingClassFiles();
   }
 
   protected void workaroundAbstractMethodOnNonAbstractClassVerificationBug(

@@ -18,7 +18,7 @@ import com.android.tools.r8.synthesis.SyntheticItems.GlobalSyntheticsStrategy;
 import com.android.tools.r8.utils.ExceptionUtils;
 import com.android.tools.r8.utils.InternalOptions;
 import com.android.tools.r8.utils.ThreadUtils;
-import com.android.tools.r8.utils.Timing;
+import com.android.tools.r8.utils.timing.Timing;
 import java.io.IOException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -50,7 +50,7 @@ public class R8Assistant {
   static void runInternal(
       R8AssistantCommand command, InternalOptions options, ExecutorService executorService)
       throws IOException {
-    Timing timing = new Timing("R8 Assistant " + Version.LABEL);
+    Timing timing = Timing.create("R8 Assistant " + Version.LABEL, options);
     try {
       ApplicationReader applicationReader =
           new ApplicationReader(command.getInputApp(), options, timing);

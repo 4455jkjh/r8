@@ -11,7 +11,7 @@ import com.android.tools.r8.errors.Unreachable;
 import com.android.tools.r8.naming.ClassNameMapper;
 import com.android.tools.r8.synthesis.SyntheticDefinitionsProvider;
 import com.android.tools.r8.utils.InternalOptions;
-import com.android.tools.r8.utils.Timing;
+import com.android.tools.r8.utils.timing.Timing;
 import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -256,6 +256,8 @@ public abstract class DexApplication implements DexDefinitionSupplier {
       programClasses.addAll(classes);
       return self();
     }
+
+    public abstract T addClasspathClass(DexClasspathClass clazz);
 
     public List<DexProgramClass> getProgramClasses() {
       return programClasses;

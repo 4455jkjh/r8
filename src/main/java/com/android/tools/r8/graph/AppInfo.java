@@ -14,7 +14,7 @@ import com.android.tools.r8.synthesis.SyntheticItems;
 import com.android.tools.r8.synthesis.SyntheticItems.GlobalSyntheticsStrategy;
 import com.android.tools.r8.utils.BooleanBox;
 import com.android.tools.r8.utils.InternalOptions;
-import com.android.tools.r8.utils.Timing;
+import com.android.tools.r8.utils.timing.Timing;
 import java.util.Collection;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -37,8 +37,15 @@ public class AppInfo implements DexDefinitionSupplier {
     return createInitialAppInfo(
         application,
         globalSyntheticsStrategy,
-        ClassToFeatureSplitMap.createEmptyClassToFeatureSplitMap(),
-        MainDexInfo.none());
+        ClassToFeatureSplitMap.createEmptyClassToFeatureSplitMap());
+  }
+
+  public static AppInfo createInitialAppInfo(
+      DexApplication application,
+      GlobalSyntheticsStrategy globalSyntheticsStrategy,
+      ClassToFeatureSplitMap classToFeatureSplitMap) {
+    return createInitialAppInfo(
+        application, globalSyntheticsStrategy, classToFeatureSplitMap, MainDexInfo.none());
   }
 
   public static AppInfo createInitialAppInfo(

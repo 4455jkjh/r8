@@ -52,7 +52,7 @@ import com.android.tools.r8.references.ClassReference;
 import com.android.tools.r8.references.MethodReference;
 import com.android.tools.r8.utils.AndroidApp;
 import com.android.tools.r8.utils.InternalOptions;
-import com.android.tools.r8.utils.Timing;
+import com.android.tools.r8.utils.timing.Timing;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import com.google.common.collect.Streams;
@@ -485,7 +485,7 @@ final public class ResourceShrinker {
   public static void runForTesting(
       AndroidApp inputApp, InternalOptions options, ReferenceChecker callback)
       throws IOException, ExecutionException {
-    Timing timing = new Timing("resource shrinker analyzer");
+    Timing timing = Timing.create("resource shrinker analyzer", options);
     DexApplication dexApplication = new ApplicationReader(inputApp, options, timing).read();
     runForTesting(dexApplication.classes(), callback);
   }

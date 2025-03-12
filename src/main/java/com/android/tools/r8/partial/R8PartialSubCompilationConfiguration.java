@@ -8,6 +8,8 @@ import com.android.tools.r8.graph.AppInfo;
 import com.android.tools.r8.graph.AppInfoWithClassHierarchy;
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.DexClass;
+import com.android.tools.r8.graph.DexClasspathClass;
+import com.android.tools.r8.graph.DexLibraryClass;
 import com.android.tools.r8.graph.DexMember;
 import com.android.tools.r8.graph.DexProgramClass;
 import com.android.tools.r8.graph.DexReference;
@@ -25,7 +27,7 @@ import com.android.tools.r8.shaking.MissingClasses;
 import com.android.tools.r8.synthesis.SyntheticItems;
 import com.android.tools.r8.utils.ListUtils;
 import com.android.tools.r8.utils.MapUtils;
-import com.android.tools.r8.utils.Timing;
+import com.android.tools.r8.utils.timing.Timing;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
@@ -68,6 +70,8 @@ public abstract class R8PartialSubCompilationConfiguration {
     private ClassToFeatureSplitMap classToFeatureSplitMap;
     private Collection<DexProgramClass> dexedOutputClasses;
     private Collection<DexProgramClass> desugaredOutputClasses;
+    private Collection<DexClasspathClass> outputClasspathClasses;
+    private Collection<DexLibraryClass> outputLibraryClasses;
     private StartupProfile startupProfile;
 
     public R8PartialD8SubCompilationConfiguration(
@@ -96,6 +100,16 @@ public abstract class R8PartialSubCompilationConfiguration {
       return desugaredOutputClasses;
     }
 
+    public Collection<DexClasspathClass> getOutputClasspathClasses() {
+      assert outputClasspathClasses != null;
+      return outputClasspathClasses;
+    }
+
+    public Collection<DexLibraryClass> getOutputLibraryClasses() {
+      assert outputLibraryClasses != null;
+      return outputLibraryClasses;
+    }
+
     public StartupProfile getStartupProfile() {
       assert startupProfile != null;
       return startupProfile;
@@ -105,7 +119,7 @@ public abstract class R8PartialSubCompilationConfiguration {
         ProgramDefinition definition, AppView<?> appView) {
       DexType type = definition.getContextType();
       if (d8Types.contains(type)) {
-        return Target.DEX;
+        return Target.LIR;
       } else if (r8Types.contains(type)) {
         return Target.CF;
       } else {
@@ -116,7 +130,7 @@ public abstract class R8PartialSubCompilationConfiguration {
         assert syntheticContexts.size() == 1;
         DexType syntheticContext = syntheticContexts.iterator().next();
         if (d8Types.contains(syntheticContext)) {
-          return Target.DEX;
+          return Target.LIR;
         } else {
           assert r8Types.contains(syntheticContext);
           return Target.CF;
@@ -141,12 +155,15 @@ public abstract class R8PartialSubCompilationConfiguration {
       dexedOutputClasses = new ArrayList<>();
       desugaredOutputClasses = new ArrayList<>();
       for (DexProgramClass clazz : appView.appInfo().classes()) {
-        if (getTargetFor(clazz, appView) == Target.DEX) {
+        if (getTargetFor(clazz, appView) == Target.LIR) {
           dexedOutputClasses.add(clazz);
         } else {
           desugaredOutputClasses.add(clazz);
         }
       }
+      DirectMappedDexApplication app = appView.app().toDirect();
+      outputClasspathClasses = app.classpathClasses();
+      outputLibraryClasses = app.libraryClasses();
       startupProfile = appView.getStartupProfile();
     }
   }

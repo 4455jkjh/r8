@@ -29,7 +29,7 @@ import com.android.tools.r8.utils.ExceptionUtils;
 import com.android.tools.r8.utils.InternalOptions;
 import com.android.tools.r8.utils.SortingStringConsumer;
 import com.android.tools.r8.utils.ThreadUtils;
-import com.android.tools.r8.utils.Timing;
+import com.android.tools.r8.utils.timing.Timing;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -38,10 +38,11 @@ import java.util.concurrent.ExecutorService;
 
 @KeepForApi
 public class GenerateMainDexList {
-  private final Timing timing = new Timing("maindex");
+  private final Timing timing;
   private final InternalOptions options;
 
   public GenerateMainDexList(InternalOptions options) {
+    timing = Timing.create("maindex", options);
     this.options = options;
   }
 

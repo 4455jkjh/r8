@@ -164,12 +164,12 @@ import com.android.tools.r8.utils.OptionalBool;
 import com.android.tools.r8.utils.SetUtils;
 import com.android.tools.r8.utils.StringDiagnostic;
 import com.android.tools.r8.utils.ThreadUtils;
-import com.android.tools.r8.utils.Timing;
 import com.android.tools.r8.utils.Visibility;
 import com.android.tools.r8.utils.WorkList;
 import com.android.tools.r8.utils.collections.ProgramFieldSet;
 import com.android.tools.r8.utils.collections.ProgramMethodMap;
 import com.android.tools.r8.utils.collections.ProgramMethodSet;
+import com.android.tools.r8.utils.timing.Timing;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
@@ -4462,6 +4462,7 @@ public class Enqueuer {
     appView
         .dexItemFactory()
         .forEachPossiblyCompilerSynthesizedType(this::recordCompilerSynthesizedTypeReference);
+    appView.rootSet().rootLibraryTypes.forEach(this::recordCompilerSynthesizedTypeReference);
     timing.end();
 
     // Rebuild a new app only containing referenced types.

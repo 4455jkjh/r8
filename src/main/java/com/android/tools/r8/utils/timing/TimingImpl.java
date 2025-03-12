@@ -1,27 +1,20 @@
-// Copyright (c) 2016, the R8 project authors. Please see the AUTHORS file
+// Copyright (c) 2025, the R8 project authors. Please see the AUTHORS file
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
-package com.android.tools.r8.utils;
+package com.android.tools.r8.utils.timing;
 
-// Helper for collecting timing information during execution.
-// Timing t = new Timing("R8");
-// A timing tree is collected by calling the following pair (nesting will create the tree):
-//     t.begin("My task);
-//     try { ... } finally { t.end(); }
-// or alternatively:
-//     t.scope("My task", () -> { ... });
-// Finally a report is printed by:
-//     t.report();
-
+import com.android.tools.r8.utils.InternalOptions;
+import com.android.tools.r8.utils.SystemPropertyUtils;
+import com.android.tools.r8.utils.ThrowingAction;
+import com.android.tools.r8.utils.ThrowingSupplier;
 import java.util.ArrayDeque;
 import java.util.Collection;
 import java.util.Deque;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.concurrent.ExecutorService;
 
-public class Timing implements AutoCloseable {
+public class TimingImpl extends Timing {
 
   private static final int MINIMUM_REPORT_MS =
       SystemPropertyUtils.parseSystemPropertyOrDefault(
@@ -30,142 +23,12 @@ public class Timing implements AutoCloseable {
       SystemPropertyUtils.parseSystemPropertyOrDefault(
           "com.android.tools.r8.printtimes.minvalue", 0);
 
-  private static final Timing EMPTY =
-      new Timing("<empty>", false) {
-        @Override
-        public TimingMerger beginMerger(String title, int numberOfThreads) {
-          return new TimingMerger(null, -1, this) {
-            @Override
-            public void add(Collection<Timing> timings) {
-              // Ignore.
-            }
-
-            @Override
-            public void end() {
-              // Ignore.
-            }
-
-            @Override
-            public boolean isEmpty() {
-              return true;
-            }
-          };
-        }
-
-        @Override
-        public Timing begin(String title) {
-          // Ignore.
-          return this;
-        }
-
-        @Override
-        public Timing end() {
-          // Ignore.
-          return this;
-        }
-
-        @Override
-        public void report() {
-          // Ignore.
-        }
-      };
-
-  public static Timing empty() {
-    return Timing.EMPTY;
-  }
-
-  private abstract static class TimingDelegateBase extends Timing {
-    private final Timing timing;
-
-    public TimingDelegateBase(String title, Timing timing) {
-      super(title);
-      this.timing = timing;
-    }
-
-    @Override
-    public TimingMerger beginMerger(String title, int numberOfThreads) {
-      return timing.beginMerger(title, numberOfThreads);
-    }
-
-    @Override
-    public Timing begin(String title) {
-      timing.begin(title);
-      return this;
-    }
-
-    @Override
-    public <E extends Exception> void time(String title, ThrowingAction<E> action) throws E {
-      timing.time(title, action);
-    }
-
-    @Override
-    public <T, E extends Exception> T time(String title, ThrowingSupplier<T, E> supplier) throws E {
-      return timing.time(title, supplier);
-    }
-
-    @Override
-    public Timing end() {
-      timing.end();
-      return this;
-    }
-
-    @Override
-    public void report() {
-      timing.report();
-    }
-  }
-
-  private static class TimingWithCancellation extends TimingDelegateBase {
-    private final InternalOptions options;
-
-    TimingWithCancellation(InternalOptions options, Timing timing) {
-      super("<cancel>", timing);
-      this.options = options;
-    }
-
-    @Override
-    public Timing begin(String title) {
-      if (options.checkIfCancelled()) {
-        throw new CancelCompilationException();
-      }
-      return super.begin(title);
-    }
-  }
-
-  public static Timing createRoot(String title, InternalOptions options) {
-    if (options.partialSubCompilationConfiguration != null) {
-      return options.partialSubCompilationConfiguration.timing;
-    }
-    return create(title, options);
-  }
-
-  public static Timing create(String title, InternalOptions options) {
-    // We also create a timer when running assertions to validate wellformedness of the node stack.
-    Timing timing =
-        options.printTimes || InternalOptions.assertionsEnabled()
-            ? new Timing(title, options.printMemory)
-            : Timing.empty();
-    if (options.cancelCompilationChecker != null) {
-      return new TimingWithCancellation(options, timing);
-    }
-    return timing;
-  }
-
-  public static Timing create(String title, boolean printMemory) {
-    return new Timing(title, printMemory);
-  }
-
   private final Node top;
   private final Deque<Node> stack;
   private final boolean trackMemory;
 
-  @Deprecated
-  public Timing(String title) {
-    this(title, false);
-  }
-
-  private Timing(String title, boolean trackMemory) {
-    this.trackMemory = trackMemory;
+  TimingImpl(String title, InternalOptions options) {
+    this.trackMemory = options.printMemory;
     stack = new ArrayDeque<>();
     top = new Node(title, trackMemory);
     stack.push(top);
@@ -271,7 +134,6 @@ public class Timing implements AutoCloseable {
         }
       }
       childNodes.forEach(p -> p.report(depth + 1, top));
-
     }
 
     void printPrefix(int depth) {
@@ -302,18 +164,16 @@ public class Timing implements AutoCloseable {
     }
   }
 
-  public static class TimingMerger {
+  private static class TimingMergerImpl implements TimingMerger {
+
     final Node parent;
     final Node merged;
 
     private int taskCount = 0;
     private Node slowest = new Node("<zero>", false);
 
-    private TimingMerger(String title, int numberOfThreads, Timing timing) {
-      Deque<Timing.Node> stack =
-          timing instanceof TimingDelegateBase
-              ? ((TimingDelegateBase) timing).timing.stack
-              : timing.stack;
+    TimingMergerImpl(String title, int numberOfThreads, TimingImpl timing) {
+      Deque<Node> stack = timing.stack;
       parent = stack.peek();
       merged =
           new Node(title, timing.trackMemory) {
@@ -333,7 +193,7 @@ public class Timing implements AutoCloseable {
                         + ", threads: "
                         + numberOfThreads
                         + ", utilization: "
-                        + prettyPercentage(perThreadTime, walltime));
+                        + TimingImpl.prettyPercentage(perThreadTime, walltime));
               }
               if (trackMemory) {
                 printMemory(depth);
@@ -356,16 +216,19 @@ public class Timing implements AutoCloseable {
           };
     }
 
+    @Override
     public TimingMerger disableSlowestReporting() {
       slowest = null;
       return this;
     }
 
+    @Override
     public boolean isEmpty() {
       return false;
     }
 
     private static class Item {
+
       final Node mergeTarget;
       final Node mergeSource;
 
@@ -375,24 +238,24 @@ public class Timing implements AutoCloseable {
       }
     }
 
+    @Override
     public void add(Collection<Timing> timings) {
       final boolean trackMemory = merged.trackMemory;
       Deque<Item> worklist = new ArrayDeque<>();
       for (Timing timing : timings) {
-        if (timing == empty()) {
+        if (timing == Timing.empty()) {
           continue;
         }
-        Deque<Timing.Node> stack =
-            timing instanceof TimingDelegateBase
-                ? ((TimingDelegateBase) timing).timing.stack
-                : timing.stack;
+        assert timing instanceof TimingImpl;
+        TimingImpl timingImpl = (TimingImpl) timing;
+        Deque<Node> stack = timingImpl.stack;
         assert stack.isEmpty() : "Expected sub-timing to have completed prior to merge";
         ++taskCount;
-        merged.duration += timing.top.duration;
-        if (slowest != null && timing.top.duration > slowest.duration) {
-          slowest = timing.top;
+        merged.duration += timingImpl.top.duration;
+        if (slowest != null && timingImpl.top.duration > slowest.duration) {
+          slowest = timingImpl.top;
         }
-        worklist.addLast(new Item(merged, timing.top));
+        worklist.addLast(new Item(merged, timingImpl.top));
       }
       while (!worklist.isEmpty()) {
         Item item = worklist.pollFirst();
@@ -409,8 +272,9 @@ public class Timing implements AutoCloseable {
       }
     }
 
+    @Override
     public void end() {
-      assert verifyUnambiguous(parent, merged.title);
+      assert TimingImpl.verifyUnambiguous(parent, merged.title);
       merged.end();
       parent.children.put(merged.title, merged);
     }
@@ -423,14 +287,11 @@ public class Timing implements AutoCloseable {
     return true;
   }
 
-  public final TimingMerger beginMerger(String title, ExecutorService executorService) {
-    return beginMerger(title, ThreadUtils.getNumberOfThreads(executorService));
-  }
-
+  @Override
   public TimingMerger beginMerger(String title, int numberOfThreads) {
     assert !stack.isEmpty();
     assert verifyUnambiguous(stack.peekFirst(), title);
-    return new TimingMerger(title, numberOfThreads, this);
+    return new TimingMergerImpl(title, numberOfThreads, this);
   }
 
   private static long durationInMs(long value) {
@@ -473,6 +334,7 @@ public class Timing implements AutoCloseable {
     return builder.toString();
   }
 
+  @Override
   public Timing begin(String title) {
     Node parent = stack.peek();
     Node child;
@@ -487,6 +349,7 @@ public class Timing implements AutoCloseable {
     return this;
   }
 
+  @Override
   public <E extends Exception> void time(String title, ThrowingAction<E> action) throws E {
     begin(title);
     try {
@@ -496,6 +359,7 @@ public class Timing implements AutoCloseable {
     }
   }
 
+  @Override
   public <T, E extends Exception> T time(String title, ThrowingSupplier<T, E> supplier) throws E {
     begin(title);
     try {
@@ -510,12 +374,14 @@ public class Timing implements AutoCloseable {
     end();
   }
 
+  @Override
   public Timing end() {
-    stack.peek().end();  // record time.
+    stack.peek().end(); // record time.
     stack.pop();
     return this;
   }
 
+  @Override
   public void report() {
     assert stack.size() == 1 : "Unexpected non-singleton stack: " + stack;
     Node top = stack.peek();

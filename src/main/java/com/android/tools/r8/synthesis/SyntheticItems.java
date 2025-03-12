@@ -48,7 +48,7 @@ import com.android.tools.r8.utils.IterableUtils;
 import com.android.tools.r8.utils.ListUtils;
 import com.android.tools.r8.utils.SetUtils;
 import com.android.tools.r8.utils.StringDiagnostic;
-import com.android.tools.r8.utils.Timing;
+import com.android.tools.r8.utils.timing.Timing;
 import com.google.common.base.Predicate;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -1203,9 +1203,9 @@ public class SyntheticItems implements SyntheticDefinitionsProvider {
             } else {
               appBuilder.addProgramClass(definition.asProgramDefinition().getHolder());
             }
-          } else if (appBuilder.isDirect()) {
+          } else {
             assert definition.isClasspathDefinition();
-            appBuilder.asDirect().addClasspathClass(definition.asClasspathDefinition().getHolder());
+            appBuilder.addClasspathClass(definition.asClasspathDefinition().getHolder());
           }
           builder.addItem(definition);
         }
