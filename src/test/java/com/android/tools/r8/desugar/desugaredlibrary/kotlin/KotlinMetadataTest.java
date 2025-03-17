@@ -86,6 +86,7 @@ public class KotlinMetadataTest extends DesugaredLibraryTestBase {
         .addProgramFiles(compiledJars.getForConfiguration(kotlinParameters))
         .addProgramFiles(kotlinc.getKotlinStdlibJar())
         .addProgramFiles(kotlinc.getKotlinReflectJar())
+        .enableServiceLoader()
         .applyIf(
             compilationSpecification.isProgramShrink(),
             builder -> builder.addProgramFiles(kotlinc.getKotlinAnnotationJar()))

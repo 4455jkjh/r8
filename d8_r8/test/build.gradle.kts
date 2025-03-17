@@ -58,7 +58,6 @@ tasks {
     dependsOn(gradle.includedBuild("tests_bootstrap").task(":clean"))
     dependsOn(gradle.includedBuild("tests_java_8").task(":clean"))
     dependsOn(gradle.includedBuild("tests_java_9").task(":clean"))
-    dependsOn(gradle.includedBuild("tests_java_10").task(":clean"))
     dependsOn(gradle.includedBuild("tests_java_11").task(":clean"))
     dependsOn(gradle.includedBuild("tests_java_17").task(":clean"))
     dependsOn(gradle.includedBuild("tests_java_21").task(":clean"))
@@ -409,11 +408,7 @@ tasks {
             rewriteTestBaseForR8LibWithRelocatedDeps,
             unzipRewrittenTests,
             unzipTests,
-            unzipTestBase,
-            gradle.includedBuild("shared").task(":downloadDeps"))
-    if (!project.hasProperty("no_internal")) {
-      dependsOn(gradle.includedBuild("shared").task(":downloadDepsInternal"))
-    }
+            unzipTestBase)
     val r8LibJar = r8Lib.getSingleOutputFile()
     val r8LibMappingFile = file(r8LibJar.toString() + ".map")
     val r8WithRelocatedDepsJar = r8WithRelocatedDepsTask.getSingleOutputFile()
@@ -436,8 +431,6 @@ tasks {
         "keepanno" + File.separator,
         keepAnnoCompileTask.outputs.files.asPath,
         keepAnnoCompileKotlinTask.outputs.files.asPath))
-    systemProperty("EXAMPLES_JAVA_11_JAVAC_BUILD_DIR",
-            getRoot().resolveAll("build", "test", "examplesJava11", "classes"))
     systemProperty("BUILD_PROP_R8_RUNTIME_PATH", r8LibJar)
     systemProperty("R8_DEPS", mainDepsJarTask.getSingleOutputFile())
     systemProperty("com.android.tools.r8.artprofilerewritingcompletenesscheck", "true")
@@ -470,6 +463,12 @@ tasks {
   }
 
   test {
+    dependsOn(gradle.includedBuild("shared").task(":downloadDeps"))
+    dependsOn(gradle.includedBuild("shared").task(":downloadTestDeps"))
+    if (!project.hasProperty("no_internal")) {
+      dependsOn(gradle.includedBuild("shared").task(":downloadDepsInternal"))
+      dependsOn(gradle.includedBuild("shared").task(":downloadTestDepsInternal"))
+    }
     if (project.hasProperty("r8lib")) {
       dependsOn(testR8LibWithRelocatedDeps)
     } else if (project.hasProperty("r8lib_no_deps")) {
