@@ -50,6 +50,7 @@ import com.android.tools.r8.graph.SubtypingInfo;
 import com.android.tools.r8.jasmin.JasminBuilder;
 import com.android.tools.r8.origin.Origin;
 import com.android.tools.r8.origin.PathOrigin;
+import com.android.tools.r8.partial.R8PartialCompilationConfiguration;
 import com.android.tools.r8.profile.rewriting.ProfileCollectionAdditions;
 import com.android.tools.r8.references.ClassReference;
 import com.android.tools.r8.references.FieldReference;
@@ -229,12 +230,13 @@ public class TestBase {
     return true;
   }
 
-  public R8TestBuilder<?, ?, ?> testForR8(TestParameters parameters) {
+  public R8TestBuilder<? extends R8TestCompileResultBase<?>, R8TestRunResult, ?> testForR8(
+      TestParameters parameters) {
     return testForR8(parameters.getBackend(), parameters.getPartialCompilationTestParameters())
-        .setMinApi(parameters);
+        .applyIf(parameters.hasApiLevel(), b -> b.setMinApi(parameters));
   }
 
-  public R8TestBuilder<?, ?, ?> testForR8(
+  public R8TestBuilder<? extends R8TestCompileResultBase<?>, R8TestRunResult, ?> testForR8(
       Backend backend, PartialCompilationTestParameters parameters) {
     if (parameters.isNone()) {
       return testForR8(backend);
@@ -283,7 +285,7 @@ public class TestBase {
 
   public TestCompilerBuilder<?, ?, ?, ?, ?> testForD8(TestParameters parameters) {
     return testForD8(parameters.getBackend(), parameters.getPartialCompilationTestParameters())
-        .setMinApi(parameters);
+        .applyIf(parameters.hasApiLevel(), b -> b.setMinApi(parameters));
   }
 
   public TestCompilerBuilder<?, ?, ?, ?, ?> testForD8(
@@ -292,7 +294,9 @@ public class TestBase {
       return testForD8(backend);
     }
     assumeTrue(partialCompilationTestParameters.isExcludeAll());
-    return testForR8Partial(backend).setR8PartialConfiguration(builder -> builder.excludeAll());
+    return testForR8Partial(backend)
+        .allowDiagnosticMessages()
+        .setR8PartialConfiguration(R8PartialCompilationConfiguration.Builder::excludeAll);
   }
 
   public AssistantTestBuilder testForAssistant() {
@@ -408,7 +412,7 @@ public class TestBase {
   /** @deprecated use {@link #testForProguard(ProguardVersion)} instead. */
   @Deprecated
   public ProguardTestBuilder testForProguard() {
-    return testForProguard(ProguardVersion.V6_0_1);
+    return testForProguard(ProguardVersion.V7_0_0);
   }
 
   public ProguardTestBuilder testForProguard(ProguardVersion version) {

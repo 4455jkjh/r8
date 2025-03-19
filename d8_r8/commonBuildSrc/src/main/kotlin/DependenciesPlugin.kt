@@ -1075,20 +1075,13 @@ fun getJdks(): List<ThirdPartyDependency> {
 }
 
 fun getThirdPartyProguards(): List<ThirdPartyDependency> {
-  return listOf(
-      "proguard5.2.1",
-      "proguard6.0.1",
-      "proguard-7.0.0",
-      "proguard-7.3.2",
-      "proguard-7.4.1",
+  return listOf("proguard-7.0.0", "proguard-7.3.2", "proguard-7.4.1").map {
+    ThirdPartyDependency(
+      it,
+      Paths.get("third_party", "proguard", it).toFile(),
+      Paths.get("third_party", "proguard", "${it}.tar.gz.sha1").toFile(),
     )
-    .map {
-      ThirdPartyDependency(
-        it,
-        Paths.get("third_party", "proguard", it).toFile(),
-        Paths.get("third_party", "proguard", "${it}.tar.gz.sha1").toFile(),
-      )
-    }
+  }
 }
 
 fun getThirdPartyKotlinCompilers(): List<ThirdPartyDependency> {
@@ -1101,7 +1094,7 @@ fun getThirdPartyKotlinCompilers(): List<ThirdPartyDependency> {
       "kotlin-compiler-1.8.0",
       "kotlin-compiler-1.9.21",
       "kotlin-compiler-2.0.20",
-      "kotlin-compiler-2.1.0-Beta1",
+      "kotlin-compiler-2.1.10",
       "kotlin-compiler-dev",
     )
     .map {

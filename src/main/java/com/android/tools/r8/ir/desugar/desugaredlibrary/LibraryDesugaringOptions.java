@@ -70,8 +70,20 @@ public class LibraryDesugaringOptions {
     return machineDesugaredLibrarySpecification.isLibraryCompilation();
   }
 
+  public boolean isEnabled() {
+    return !machineDesugaredLibrarySpecification.isEmpty();
+  }
+
   public boolean isL8() {
     return !synthesizedClassPrefix.isEmpty();
+  }
+
+  public boolean isCfToCfLibraryDesugaringEnabled() {
+    return !isLirToLirLibraryDesugaringEnabled();
+  }
+
+  public boolean isLirToLirLibraryDesugaringEnabled() {
+    return options.partialSubCompilationConfiguration != null;
   }
 
   public void resetDesugaredLibrarySpecificationForTesting() {

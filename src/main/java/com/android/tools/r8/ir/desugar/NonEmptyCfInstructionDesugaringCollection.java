@@ -18,6 +18,7 @@ import com.android.tools.r8.graph.ProgramMethod;
 import com.android.tools.r8.ir.code.Position;
 import com.android.tools.r8.ir.desugar.apimodel.ApiInvokeOutlinerDesugaring;
 import com.android.tools.r8.ir.desugar.constantdynamic.ConstantDynamicInstructionDesugaring;
+import com.android.tools.r8.ir.desugar.desugaredlibrary.apiconversion.CfToCfDesugaredLibraryApiConverter;
 import com.android.tools.r8.ir.desugar.desugaredlibrary.apiconversion.DesugaredLibraryAPIConverter;
 import com.android.tools.r8.ir.desugar.desugaredlibrary.disabledesugarer.DesugaredLibraryDisableDesugarer;
 import com.android.tools.r8.ir.desugar.desugaredlibrary.retargeter.AutoCloseableRetargeter;
@@ -43,7 +44,6 @@ import com.android.tools.r8.utils.ListUtils;
 import com.android.tools.r8.utils.SetUtils;
 import com.android.tools.r8.utils.StringDiagnostic;
 import com.android.tools.r8.utils.ThrowingConsumer;
-import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import it.unimi.dsi.fastutil.ints.Int2ReferenceMap;
 import it.unimi.dsi.fastutil.ints.Int2ReferenceMap.Entry;
@@ -66,7 +66,7 @@ public class NonEmptyCfInstructionDesugaringCollection extends CfInstructionDesu
   private final NestBasedAccessDesugaring nestBasedAccessDesugaring;
   private final DesugaredLibraryRetargeter desugaredLibraryRetargeter;
   private final InterfaceMethodRewriter interfaceMethodRewriter;
-  private final DesugaredLibraryAPIConverter desugaredLibraryAPIConverter;
+  private final CfToCfDesugaredLibraryApiConverter desugaredLibraryAPIConverter;
   private final DesugaredLibraryDisableDesugarer disableDesugarer;
 
   private final CfInstructionDesugaring[][] asmOpcodeOrCompareToIdToDesugaringsMap;
@@ -135,8 +135,9 @@ public class NonEmptyCfInstructionDesugaringCollection extends CfInstructionDesu
     if (appView.options().enableTryWithResourcesDesugaring()) {
       desugarings.add(new TwrInstructionDesugaring(appView));
     }
+    TypeSwitchDesugaring typeSwitchDesugaring = null;
     if (appView.options().enableTypeSwitchDesugaring) {
-      desugarings.add(new TypeSwitchDesugaring(appView));
+      desugarings.add(typeSwitchDesugaring = new TypeSwitchDesugaring(appView));
     }
     RecordInstructionDesugaring recordRewriter = RecordInstructionDesugaring.create(appView);
     if (recordRewriter != null) {
@@ -156,22 +157,18 @@ public class NonEmptyCfInstructionDesugaringCollection extends CfInstructionDesu
                 autoCloseableRetargeter,
                 desugaredLibraryRetargeter),
             SetUtils.newImmutableSetExcludingNullItems(
-                lambdaDesugaring, stringConcatDesugaring, recordRewriter));
+                lambdaDesugaring, stringConcatDesugaring, recordRewriter, typeSwitchDesugaring));
     if (interfaceMethodRewriter != null) {
       desugarings.add(interfaceMethodRewriter);
     } else if (appView.options().canHaveArtArrayCloneFromInterfaceMethodBug()) {
       desugarings.add(new OutlineArrayCloneFromInterfaceMethodDesugaring(appView));
     }
     desugaredLibraryAPIConverter =
-        appView.options().getLibraryDesugaringOptions().hasTypeRewriter()
-            ? new DesugaredLibraryAPIConverter(
-                appView,
-                SetUtils.newImmutableSetExcludingNullItems(
-                    interfaceMethodRewriter, desugaredLibraryRetargeter, backportedMethodRewriter),
-                interfaceMethodRewriter != null
-                    ? interfaceMethodRewriter.getEmulatedMethods()
-                    : ImmutableSet.of())
-            : null;
+        DesugaredLibraryAPIConverter.createForCfToCf(
+            appView,
+            SetUtils.newImmutableSetExcludingNullItems(
+                interfaceMethodRewriter, desugaredLibraryRetargeter, backportedMethodRewriter),
+            interfaceMethodRewriter);
     if (desugaredLibraryAPIConverter != null) {
       desugarings.add(desugaredLibraryAPIConverter);
     }
@@ -267,13 +264,6 @@ public class NonEmptyCfInstructionDesugaringCollection extends CfInstructionDesu
     ensureCfCode(method);
     desugarings.forEach(d -> d.prepare(method, eventConsumer, programAdditions));
     yieldingDesugarings.forEach(d -> d.prepare(method, eventConsumer, programAdditions));
-  }
-
-  @Override
-  public void scan(ProgramMethod method, CfInstructionDesugaringEventConsumer eventConsumer) {
-    ensureCfCode(method);
-    desugarings.forEach(d -> d.scan(method, eventConsumer));
-    yieldingDesugarings.forEach(d -> d.scan(method, eventConsumer));
   }
 
   @Override

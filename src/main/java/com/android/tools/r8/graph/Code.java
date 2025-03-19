@@ -87,6 +87,10 @@ public abstract class Code extends CachedHashValueDexItem {
     return false;
   }
 
+  public boolean isLazyCfCode() {
+    return false;
+  }
+
   public boolean isCfWritableCode() {
     return false;
   }
@@ -176,7 +180,7 @@ public abstract class Code extends CachedHashValueDexItem {
   }
 
   public LazyCfCode asLazyCfCode() {
-    throw new Unreachable(getClass().getCanonicalName() + ".asLazyCfCode()");
+    return null;
   }
 
   public DexCode asDexCode() {
@@ -253,11 +257,11 @@ public abstract class Code extends CachedHashValueDexItem {
     assert !callerPosition.isOutline();
     // Copy the callee frame to ensure transfer of the outline key if present.
     PositionBuilder<?, ?> newCallerBuilder =
-        outermostCallee.builderWithCopy().setMethod(callerPosition.getMethod());
-    // Transfer the callers outer frames if any.
-    if (callerPosition.hasCallerPosition()) {
-      newCallerBuilder.setCallerPosition(callerPosition.getCallerPosition());
-    }
+        outermostCallee
+            .builderWithCopy()
+            .setIsD8R8Synthesized(callerPosition.isD8R8Synthesized())
+            .setMethod(callerPosition.getMethod())
+            .setCallerPosition(callerPosition.getCallerPosition());
     // If the callee is an outline, the line must be that of the outline to maintain the positions.
     if (outermostCallee.isOutline()) {
       // This does not implement inlining an outline. The cases this hits should always be a full
