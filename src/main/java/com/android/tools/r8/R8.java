@@ -874,7 +874,7 @@ public class R8 {
                 wrapConsumerStoreBytesInList(
                     dexFileContent,
                     (DexIndexedConsumer) featureSplit.getProgramConsumer(),
-                    "feature" + featureIndex));
+                    "feature" + featureIndex++));
           }
         }
       }
