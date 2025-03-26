@@ -154,6 +154,7 @@ public class R8PartialTestBuilder
         residualArtProfiles,
         resourceShrinkerOutput,
         resourceShrinkerOutputForFeatures,
+        resourceShrinkerLogConsumer,
         buildMetadata != null ? buildMetadata.get() : null);
   }
 
@@ -221,5 +222,14 @@ public class R8PartialTestBuilder
     return addR8PartialOptionsModification(
             o -> o.getTestingOptions().enableEmbeddedKeepAnnotations = true)
         .addKeepAnnoLibToClasspath(keepAnnotationLibrary);
+  }
+
+  @Override
+  public R8PartialTestBuilder setPartialCompilationSeed(TestParameters parameters, long seed) {
+    if (parameters.getPartialCompilationTestParameters().isRandom()) {
+      r8PartialConfiguration =
+          R8PartialCompilationConfiguration.builder().randomizeForTesting(seed).build();
+    }
+    return this;
   }
 }

@@ -3,18 +3,14 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8.androidresources;
 
-import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-import com.android.tools.r8.DiagnosticsHandler;
-import com.android.tools.r8.StringConsumer;
+import com.android.tools.r8.R8TestBuilder;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.androidresources.AndroidResourceTestingUtils.AndroidTestResource;
 import com.android.tools.r8.androidresources.AndroidResourceTestingUtils.AndroidTestResourceBuilder;
-import com.android.tools.r8.utils.BooleanBox;
 import com.android.tools.r8.utils.BooleanUtils;
-import com.android.tools.r8.utils.StringUtils;
 import com.google.common.collect.ImmutableList;
 import java.util.List;
 import org.junit.Test;
@@ -49,33 +45,11 @@ public class ResourceShrinkerLoggingTest extends TestBase {
 
   @Test
   public void testR8() throws Exception {
-    StringBuilder log = new StringBuilder();
-    BooleanBox finished = new BooleanBox(false);
     testForR8(parameters.getBackend())
         .setMinApi(parameters)
         .addProgramClasses(FooBar.class)
-        .apply(
-            b ->
-                b.getBuilder()
-                    .setResourceShrinkerConfiguration(
-                        configurationBuilder -> {
-                          if (optimized) {
-                            configurationBuilder.enableOptimizedShrinkingWithR8();
-                          }
-                          configurationBuilder.setDebugConsumer(
-                              new StringConsumer() {
-                                @Override
-                                public void accept(String string, DiagnosticsHandler handler) {
-                                  log.append(string);
-                                }
-
-                                @Override
-                                public void finished(DiagnosticsHandler handler) {
-                                  finished.set(true);
-                                }
-                              });
-                          return configurationBuilder.build();
-                        }))
+        .applyIf(optimized, R8TestBuilder::enableOptimizedShrinking)
+        .addResourceShrinkerLogCapture()
         .addAndroidResources(getTestResources(temp))
         .addKeepMainRule(FooBar.class)
         .compile()
@@ -89,104 +63,29 @@ public class ResourceShrinkerLoggingTest extends TestBase {
               resourceTableInspector.assertDoesNotContainResourceWithName(
                   "drawable", "unused_drawable");
             })
+        .inspectResourceShrinkerLog(
+            inspector -> {
+              assertTrue(inspector.getFinished());
+              if (!optimized) {
+                // Consistent with the old AGP embedded shrinker
+                // string:bar reachable from code
+                for (String dexReachableString : ImmutableList.of("bar", "foo")) {
+                  inspector.ensureDexReachable("string", dexReachableString);
+                }
+                // The app name is only reachable from the manifest, not dex
+                inspector.ensureResourceRoot("string", "app_name");
+                inspector.ensureUnreachable("drawable", "unused_drawable");
+                inspector.ensureDexReachable("drawable", "foobar");
+              } else {
+                inspector.ensureReachableOptimized("string", "bar");
+                inspector.ensureReachableOptimized("string", "foo");
+                inspector.ensureReachableOptimized("drawable", "foobar");
+
+                inspector.ensureUnreachableOptimized("drawable", "unused_drawable");
+              }
+            })
         .run(parameters.getRuntime(), FooBar.class)
         .assertSuccess();
-    // TODO(b/360284664): Add (non compatible) logging for optimized shrinking
-    if (!optimized) {
-      assertTrue(finished.get());
-      // Consistent with the old AGP embedded shrinker
-      List<String> strings = StringUtils.splitLines(log.toString());
-      // string:bar reachable from code
-      for (String dexReachableString : ImmutableList.of("bar", "foo")) {
-        ensureDexReachableResourcesState(strings, "string", dexReachableString, true);
-        ensureResourceReachabilityState(strings, "string", dexReachableString, true);
-        ensureRootResourceState(strings, "string", dexReachableString, true);
-        ensureUnusedState(strings, "string", dexReachableString, false);
-      }
-      // The app name is only reachable from the manifest, not dex
-      ensureDexReachableResourcesState(strings, "string", "app_name", false);
-      ensureResourceReachabilityState(strings, "string", "app_name", true);
-      ensureRootResourceState(strings, "string", "app_name", true);
-      ensureUnusedState(strings, "string", "app_name", false);
-
-      ensureDexReachableResourcesState(strings, "drawable", "unused_drawable", false);
-      ensureResourceReachabilityState(strings, "drawable", "unused_drawable", false);
-      ensureRootResourceState(strings, "drawable", "unused_drawable", false);
-      ensureUnusedState(strings, "drawable", "unused_drawable", true);
-
-      ensureDexReachableResourcesState(strings, "drawable", "foobar", true);
-      ensureResourceReachabilityState(strings, "drawable", "foobar", true);
-      ensureRootResourceState(strings, "drawable", "foobar", true);
-      ensureUnusedState(strings, "drawable", "foobar", false);
-    } else {
-      assertTrue(finished.get());
-      List<String> strings = StringUtils.splitLines(log.toString());
-      ensureReachableOptimized(strings, "string", "bar", true);
-      ensureReachableOptimized(strings, "string", "foo", true);
-      ensureReachableOptimized(strings, "drawable", "foobar", true);
-      ensureReachableOptimized(strings, "drawable", "unused_drawable", false);
-    }
-  }
-
-  private void ensureReachableOptimized(
-      List<String> logStrings, String type, String name, boolean reachable) {
-    assertEquals(
-        logStrings.stream().anyMatch(s -> s.startsWith(type + ":" + name + ":")), reachable);
-  }
-
-  private void ensureDexReachableResourcesState(
-      List<String> logStrings, String type, String name, boolean reachable) {
-    // Example line:
-    // Marking drawable:foobar:2130771968 reachable: referenced from classes.dex
-    assertEquals(
-        logStrings.stream()
-            .anyMatch(
-                s ->
-                    s.contains("Marking " + type + ":" + name)
-                        && s.contains("reachable: referenced from")),
-        reachable);
-  }
-
-  private void ensureResourceReachabilityState(
-      List<String> logStrings, String type, String name, boolean reachable) {
-    // Example line:
-    // @packagename:string/bar : reachable=true
-    assertTrue(
-        logStrings.stream()
-            .anyMatch(s -> s.contains(type + "/" + name + " : reachable=" + reachable)));
-  }
-
-  private void ensureRootResourceState(
-      List<String> logStrings, String type, String name, boolean isRoot) {
-    assertEquals(isInSection(logStrings, type, name, "The root reachable resources are:"), isRoot);
-  }
-
-  private void ensureUnusedState(
-      List<String> logStrings, String type, String name, boolean isUnused) {
-    assertEquals(isInSection(logStrings, type, name, "Unused resources are: "), isUnused);
-  }
-
-  private static boolean isInSection(
-      List<String> logStrings, String type, String name, String sectionHeader) {
-    // Example for roots
-    // "The root reachable resources are:"
-    // " drawable:foobar:2130771968"
-    boolean isInSection = false;
-    for (String logString : logStrings) {
-      if (logString.equals(sectionHeader)) {
-        isInSection = true;
-        continue;
-      }
-      if (isInSection) {
-        if (!logString.startsWith(" ")) {
-          return false;
-        }
-        if (logString.startsWith(" " + type + ":" + name)) {
-          return true;
-        }
-      }
-    }
-    return false;
   }
 
   public static class FooBar {

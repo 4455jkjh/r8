@@ -4,16 +4,14 @@
 
 package com.android.tools.r8.ir.desugar.itf;
 
-import static com.android.tools.r8.ir.desugar.itf.InterfaceDesugaringSyntheticHelper.InterfaceMethodDesugaringMode.ALL;
-import static com.android.tools.r8.ir.desugar.itf.InterfaceDesugaringSyntheticHelper.InterfaceMethodDesugaringMode.EMULATED_INTERFACE_ONLY;
-import static com.android.tools.r8.ir.desugar.itf.InterfaceDesugaringSyntheticHelper.InterfaceMethodDesugaringMode.NONE;
-import static com.android.tools.r8.ir.desugar.itf.InterfaceDesugaringSyntheticHelper.getInterfaceMethodDesugaringMode;
+import static com.android.tools.r8.ir.desugar.itf.InterfaceMethodDesugaringMode.LIBRARY_DESUGARING_N_PLUS;
 
 import com.android.tools.r8.cf.CfVersion;
 import com.android.tools.r8.cf.code.CfInstruction;
 import com.android.tools.r8.cf.code.CfInvoke;
 import com.android.tools.r8.cf.code.CfInvokeDynamic;
 import com.android.tools.r8.cf.code.CfOpcodeUtils;
+import com.android.tools.r8.contexts.CompilationContext.MethodProcessingContext;
 import com.android.tools.r8.errors.CompilationError;
 import com.android.tools.r8.errors.Unimplemented;
 import com.android.tools.r8.graph.AppInfo;
@@ -34,14 +32,16 @@ import com.android.tools.r8.graph.MethodAccessFlags;
 import com.android.tools.r8.graph.MethodResolutionResult;
 import com.android.tools.r8.graph.MethodResolutionResult.SingleResolutionResult;
 import com.android.tools.r8.graph.ProgramMethod;
+import com.android.tools.r8.ir.code.InvokeType;
 import com.android.tools.r8.ir.desugar.CfInstructionDesugaring;
 import com.android.tools.r8.ir.desugar.CfInstructionDesugaringEventConsumer;
 import com.android.tools.r8.ir.desugar.DesugarDescription;
+import com.android.tools.r8.ir.desugar.DesugarDescription.ScanCallback;
 import com.android.tools.r8.ir.desugar.ProgramAdditions;
 import com.android.tools.r8.ir.desugar.desugaredlibrary.machinespecification.DerivedMethod;
+import com.android.tools.r8.ir.desugar.desugaredlibrary.machinespecification.EmulatedDispatchMethodDescriptor;
 import com.android.tools.r8.ir.desugar.desugaredlibrary.machinespecification.MachineDesugaredLibrarySpecification;
 import com.android.tools.r8.ir.desugar.icce.AlwaysThrowingInstructionDesugaring;
-import com.android.tools.r8.ir.desugar.itf.InterfaceDesugaringSyntheticHelper.InterfaceMethodDesugaringMode;
 import com.android.tools.r8.ir.synthetic.ForwardMethodBuilder;
 import com.android.tools.r8.origin.Origin;
 import com.android.tools.r8.position.MethodPosition;
@@ -51,7 +51,6 @@ import com.android.tools.r8.utils.collections.ProgramMethodSet;
 import com.android.tools.r8.utils.structural.Ordered;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
@@ -107,46 +106,51 @@ public final class InterfaceMethodRewriter implements CfInstructionDesugaring {
   private final Set<CfInstructionDesugaring> precedingDesugaringsForInvoke;
   private final Set<CfInstructionDesugaring> precedingDesugaringsForInvokeDynamic;
 
-  /** Defines a minor variation in desugaring. */
-  public enum Flavor {
-    /** Process all application resources. */
-    IncludeAllResources,
-    /** Process all but DEX application resources. */
-    ExcludeDexResources
-  }
-
-  public static InterfaceMethodRewriter create(
-      AppView<?> appView,
-      Set<CfInstructionDesugaring> precedingDesugaringsForInvoke,
-      Set<CfInstructionDesugaring> precedingDesugaringsForInvokeDynamic) {
-    InterfaceMethodDesugaringMode desugaringMode =
-        getInterfaceMethodDesugaringMode(appView.options());
-    if (desugaringMode == NONE) {
-      return null;
-    }
-    return new InterfaceMethodRewriter(
-        appView,
-        precedingDesugaringsForInvoke,
-        precedingDesugaringsForInvokeDynamic,
-        desugaringMode);
-  }
-
   private InterfaceMethodRewriter(
       AppView<?> appView,
+      InterfaceMethodDesugaringMode desugaringMode,
       Set<CfInstructionDesugaring> precedingDesugaringsForInvoke,
-      Set<CfInstructionDesugaring> precedingDesugaringsForInvokeDynamic,
-      InterfaceMethodDesugaringMode desugaringMode) {
+      Set<CfInstructionDesugaring> precedingDesugaringsForInvokeDynamic) {
+    assert desugaringMode.isSome();
+    assert desugaringMode == LIBRARY_DESUGARING_N_PLUS
+        || appView.options().isInterfaceMethodDesugaringEnabled();
     this.appView = appView;
+    this.desugaringMode = desugaringMode;
     this.precedingDesugaringsForInvoke = precedingDesugaringsForInvoke;
     this.precedingDesugaringsForInvokeDynamic = precedingDesugaringsForInvokeDynamic;
     this.options = appView.options();
     this.factory = appView.dexItemFactory();
-    assert desugaringMode == EMULATED_INTERFACE_ONLY || desugaringMode == ALL;
-    this.desugaringMode = desugaringMode;
-    assert desugaringMode == EMULATED_INTERFACE_ONLY
-        || appView.options().isInterfaceMethodDesugaringEnabled();
     this.helper = new InterfaceDesugaringSyntheticHelper(appView);
-    initializeEmulatedInterfaceVariables();
+    if (desugaringMode.isLibraryDesugaring()) {
+      initializeEmulatedInterfaceVariables();
+    }
+  }
+
+  public static InterfaceMethodRewriter createCfToCf(
+      AppView<?> appView,
+      Set<CfInstructionDesugaring> precedingDesugaringsForInvoke,
+      Set<CfInstructionDesugaring> precedingDesugaringsForInvokeDynamic) {
+    InterfaceMethodDesugaringMode desugaringMode =
+        InterfaceMethodDesugaringMode.createCfToCf(appView.options());
+    return create(
+        appView,
+        desugaringMode,
+        precedingDesugaringsForInvoke,
+        precedingDesugaringsForInvokeDynamic);
+  }
+
+  private static InterfaceMethodRewriter create(
+      AppView<?> appView,
+      InterfaceMethodDesugaringMode desugaringMode,
+      Set<CfInstructionDesugaring> precedingDesugaringsForInvoke,
+      Set<CfInstructionDesugaring> precedingDesugaringsForInvokeDynamic) {
+    return desugaringMode.isSome()
+        ? new InterfaceMethodRewriter(
+            appView,
+            desugaringMode,
+            precedingDesugaringsForInvoke,
+            precedingDesugaringsForInvokeDynamic)
+        : null;
   }
 
   public static void checkForAssumedLibraryTypes(AppInfo appInfo, InternalOptions options) {
@@ -240,7 +244,7 @@ public final class InterfaceMethodRewriter implements CfInstructionDesugaring {
       ProgramMethod method,
       CfInstructionDesugaringEventConsumer eventConsumer,
       ProgramAdditions programAdditions) {
-    if (desugaringMode == EMULATED_INTERFACE_ONLY) {
+    if (desugaringMode == LIBRARY_DESUGARING_N_PLUS) {
       return;
     }
     if (isSyntheticMethodThatShouldNotBeDoubleProcessed(method)) {
@@ -259,163 +263,105 @@ public final class InterfaceMethodRewriter implements CfInstructionDesugaring {
 
   @Override
   public DesugarDescription compute(CfInstruction instruction, ProgramMethod context) {
-    if (isSyntheticMethodThatShouldNotBeDoubleProcessed(context)) {
-      return DesugarDescription.nothing();
-    }
-    // Interface desugaring is only interested in invokes.
     CfInvoke invoke = instruction.asInvoke();
-    if (invoke == null) {
-      return DesugarDescription.nothing();
+    // Interface desugaring is only interested in invokes that are not desugared by preceeding
+    // desugarings.
+    if (invoke != null && !isAlreadyDesugared(invoke, context)) {
+      return compute(
+          invoke.getMethod(),
+          invoke.getInvokeTypePreDesugar(
+              appView, context.getDefinition().getCode().getCodeLens(appView), context),
+          invoke.isInterface(),
+          context);
     }
-    // Don't desugar if the invoke is to be desugared by preceeding desugar tasks.
-    if (isAlreadyDesugared(invoke, context)) {
-      return DesugarDescription.nothing();
+    return DesugarDescription.nothing();
+  }
+
+  private DesugarDescription compute(
+      DexMethod invokedMethod, InvokeType invokeType, boolean isInterface, ProgramMethod context) {
+    RetargetMethodSupplier retargetMethodSupplier =
+        getRetargetMethodSupplier(invokedMethod, invokeType, isInterface, context);
+    return retargetMethodSupplier != RetargetMethodSupplier.none()
+        ? retargetMethodSupplier.toDesugarDescription(context)
+        : DesugarDescription.nothing();
+  }
+
+  private RetargetMethodSupplier getRetargetMethodSupplier(
+      DexMethod invokedMethod, InvokeType invokeType, boolean isInterface, ProgramMethod context) {
+    if (isSyntheticMethodThatShouldNotBeDoubleProcessed(context)) {
+      return RetargetMethodSupplier.none();
     }
-    // There should never be any calls to interface initializers.
-    if (invoke.isInvokeSpecial() && invoke.isInvokeConstructor(factory)) {
-      return DesugarDescription.nothing();
+    if (invokedMethod.getHolderType().isArrayType() || factory.isConstructor(invokedMethod)) {
+      return RetargetMethodSupplier.none();
     }
-    if (desugaringMode == EMULATED_INTERFACE_ONLY) {
-      return computeInvokeForEmulatedInterfaceOnly(invoke, context);
+    // Continue with invoke type logic. If the invoke is not an interface invoke, then there should
+    // generally not be any desugaring. However, there are some cases where the insertion of
+    // forwarding methods can change behavior so we need to identify them at the various call sites
+    // here.
+    DexClass holder = appView.definitionForHolder(invokedMethod, context);
+    if (invokeType.isInterface()) {
+      return computeInvokeInterface(holder, invokedMethod, invokeType, isInterface, context);
+    } else if (invokeType.isDirectOrSuper()) {
+      return computeInvokeSpecial(holder, invokedMethod, invokeType, isInterface, context);
+    } else if (invokeType.isStatic()) {
+      return computeInvokeStatic(holder, invokedMethod, invokeType, isInterface, context);
+    } else {
+      assert invokeType.isVirtual() || invokeType.isPolymorphic();
+      return computeInvokeVirtual(holder, invokedMethod, invokeType, isInterface, context);
     }
-    // If the invoke is not an interface invoke, then there should generally not be any desugaring.
-    // However, there are some cases where the insertion of forwarding methods can change behavior
-    // so we need to identify them at the various call sites here.
-    if (!invoke.isInterface()) {
-      return computeNonInterfaceInvoke(invoke, context);
+  }
+
+  private RetargetMethodSupplier computeInvokeSpecial(
+      DexClass holder,
+      DexMethod invokedMethod,
+      InvokeType invokeType,
+      boolean isInterface,
+      ProgramMethod context) {
+    assert invokeType.isDirectOrSuper();
+    if (desugaringMode == LIBRARY_DESUGARING_N_PLUS) {
+      return computeInvokeSpecialEmulatedInterfaceForwardingMethod(holder, invokedMethod, context);
     }
-    // If the target holder does not resolve we may want to issue diagnostics.
-    DexClass holder = appView.definitionForHolder(invoke.getMethod(), context);
+    if (!isInterface) {
+      return computeEmulatedInterfaceInvokeSpecial(holder, invokedMethod, context);
+    }
     if (holder == null) {
-      if (invoke.isInvokeVirtual() || invoke.isInvokeInterface()) {
-        // For virtual targets we should not report anything as any virtual dispatch just remains.
-        return DesugarDescription.nothing();
-      }
-      // For static, private and special invokes, they may require desugaring and should warn.
-      return DesugarDescription.builder()
-          .addScanEffect(
-              () -> {
-                if (invoke.isInvokeStatic()) {
-                  leavingStaticInvokeToInterface(context);
-                }
-                warnMissingType(context, invoke.getMethod().getHolderType());
-              })
-          .build();
+      return new WarningRetargetMethodSupplier(
+          () -> warnMissingType(context, invokedMethod.getHolderType()));
     }
-    // Continue with invoke type logic.
-    if (invoke.isInvokeVirtual() || invoke.isInvokeInterface()) {
-      return computeInvokeVirtualDispatch(holder, invoke, context);
+    MethodResolutionResult resolutionResult =
+        appView.appInfoForDesugaring().resolveMethodLegacy(invokedMethod, isInterface);
+    if (invokeType.isSuper()) {
+      return rewriteInvokeSuper(
+          holder, invokedMethod, invokeType, context, resolutionResult.asSingleResolution());
+    } else {
+      return computeInvokeDirect(holder, invokedMethod, invokeType, context, resolutionResult);
     }
-    if (invoke.isInvokeStatic()) {
-      return computeInvokeStatic(holder, invoke, context);
-    }
-    if (invoke.isInvokeSpecial()) {
-      return computeInvokeSpecial(holder, invoke, context);
-    }
-    return DesugarDescription.nothing();
   }
 
-  private DesugarDescription computeInvokeForEmulatedInterfaceOnly(
-      CfInvoke invoke, ProgramMethod context) {
-    if (!invoke.getMethod().getHolderType().isClassType()) {
-      return DesugarDescription.nothing();
+  private RetargetMethodSupplier computeInvokeStatic(
+      DexClass holder,
+      DexMethod invokedMethod,
+      InvokeType invokeType,
+      boolean isInterface,
+      ProgramMethod context) {
+    assert invokeType.isStatic();
+    if (desugaringMode == LIBRARY_DESUGARING_N_PLUS || !isInterface) {
+      return RetargetMethodSupplier.none();
     }
-    DexClass holder = appView.definitionForHolder(invoke.getMethod(), context);
     if (holder == null) {
-      return DesugarDescription.nothing();
+      return new WarningRetargetMethodSupplier(
+          () -> {
+            leavingStaticInvokeToInterface(context);
+            warnMissingType(context, invokedMethod.getHolderType());
+          });
     }
-
-    if (!invoke.isInterface()) {
-      if (invoke.isInvokeSpecial()) {
-        return computeEmulatedInterfaceInvokeSpecial(holder, invoke.getMethod(), context);
-      }
-      if (invoke.isInvokeVirtual() || invoke.isInvokeInterface()) {
-        DesugarDescription description = computeEmulatedInterfaceVirtualDispatchOrNull(invoke);
-        return description == null ? DesugarDescription.nothing() : description;
-      }
-      return DesugarDescription.nothing();
-    }
-
-    if (invoke.isInvokeVirtual() || invoke.isInvokeInterface()) {
-      AppInfoWithClassHierarchy appInfoForDesugaring = appView.appInfoForDesugaring();
-      SingleResolutionResult<?> resolution =
-          appInfoForDesugaring
-              .resolveMethodLegacy(invoke.getMethod(), invoke.isInterface())
-              .asSingleResolution();
-      if (resolution != null
-          && resolution.getResolvedMethod().isPrivate()
-          && resolution.isAccessibleFrom(context, appView, appInfoForDesugaring).isTrue()) {
-        return DesugarDescription.nothing();
-      }
-      if (resolution != null && resolution.getResolvedMethod().isStatic()) {
-        return DesugarDescription.nothing();
-      }
-      DesugarDescription description = computeEmulatedInterfaceVirtualDispatchOrNull(invoke);
-      return description != null ? description : DesugarDescription.nothing();
-    }
-
-    // Note: We do not rewrite invoke-static to emulated interfaces above api 24 and there is
-    // no way to encode it, but we could add the support here.
-
-    return DesugarDescription.nothing();
-  }
-
-  private DesugarDescription computeNonInterfaceInvoke(CfInvoke invoke, ProgramMethod context) {
-    assert !invoke.isInterface();
-    // Emulated interface desugaring will rewrite non-interface invokes.
-    if (invoke.isInvokeSpecial()) {
-      DexClass clazz = appView.definitionForHolder(invoke.getMethod(), context);
-      if (clazz == null) {
-        return DesugarDescription.nothing();
-      }
-      return computeEmulatedInterfaceInvokeSpecial(clazz, invoke.getMethod(), context);
-    }
-    if (!invoke.isInvokeVirtual() && !invoke.isInvokeInterface()) {
-      return DesugarDescription.nothing();
-    }
-    DesugarDescription description = computeEmulatedInterfaceVirtualDispatchOrNull(invoke);
-    if (description != null) {
-      return description;
-    }
-    // It may be the case that a virtual invoke resolves to a static method. In such a case, if
-    // a default method could give rise to a forwarding method in the resolution path, the program
-    // would change behavior from throwing ICCE to dispatching to the companion class method.
-    AppInfoWithClassHierarchy appInfo = appView.appInfoForDesugaring();
-    MethodResolutionResult resolution =
-        appInfo.resolveMethodLegacy(invoke.getMethod(), invoke.isInterface());
-    if (!resolution.isSingleResolution()
-        || !resolution.asSingleResolution().getResolvedMethod().isStatic()) {
-      return DesugarDescription.nothing();
-    }
-    DexClass holder = appInfo.definitionFor(invoke.getMethod().getHolderType(), context);
-    DexClassAndMethod target = appInfo.lookupMaximallySpecificMethod(holder, invoke.getMethod());
-    if (target != null && target.isDefaultMethod()) {
-      // Rewrite the invoke to a throw ICCE as the default method forward would otherwise hide the
-      // static / virtual mismatch.
-      return computeInvokeAsThrowRewrite(invoke, resolution.asSingleResolution(), context);
-    }
-    return DesugarDescription.nothing();
-  }
-
-  private DesugarDescription computeInvokeSpecial(
-      DexClass holder, CfInvoke invoke, ProgramMethod context) {
-    if (invoke.isInvokeSuper(context.getHolderType())) {
-      return rewriteInvokeSuper(invoke, context);
-    }
-    return computeInvokeDirect(holder, invoke, context);
-  }
-
-  private DesugarDescription computeInvokeStatic(
-      DexClass holder, CfInvoke invoke, ProgramMethod context) {
     if (!holder.isInterface()) {
-      return DesugarDescription.builder()
-          .addScanEffect(() -> leavingStaticInvokeToInterface(context))
-          .build();
+      return new WarningRetargetMethodSupplier(() -> leavingStaticInvokeToInterface(context));
     }
     // TODO(b/199135051): This should not be needed. Targeted synthetics should be in place.
-    if (appView.getSyntheticItems().isPendingSynthetic(invoke.getMethod().getHolderType())) {
+    if (appView.getSyntheticItems().isPendingSynthetic(invokedMethod.getHolderType())) {
       // We did not create this code yet, but it will not require rewriting.
-      return DesugarDescription.nothing();
+      return RetargetMethodSupplier.none();
     }
     if (isNonDesugaredLibraryClass(holder)) {
       // NOTE: we intentionally don't desugar static calls into static interface
@@ -429,9 +375,7 @@ public final class InterfaceMethodRewriter implements CfInstructionDesugaring {
       // Retarget call to an appropriate method of companion class.
       if (options.canLeaveStaticInterfaceMethodInvokes()) {
         // When leaving static interface method invokes upgrade the class file version.
-        return DesugarDescription.builder()
-            .addScanEffect(() -> leavingStaticInvokeToInterface(context))
-            .build();
+        return new WarningRetargetMethodSupplier(() -> leavingStaticInvokeToInterface(context));
       }
       // On pre-L devices static calls to interface methods result in verifier
       // rejecting the whole class. We have to create special dispatch classes,
@@ -442,132 +386,171 @@ public final class InterfaceMethodRewriter implements CfInstructionDesugaring {
         // When reprocessing the method generated below, the desugaring asserts this method
         // does not need any new desugaring, while the interface method rewriter tries
         // to outline again the invoke-static. Just do nothing instead.
-        return DesugarDescription.nothing();
+        return RetargetMethodSupplier.none();
       }
-      return DesugarDescription.builder()
-          .setDesugarRewrite(
-              (position,
-                  freshLocalProvider,
-                  localStackAllocator,
-                  desugaringInfo,
-                  eventConsumer,
-                  context1,
-                  methodProcessingContext,
-                  desugaringCollection,
-                  dexItemFactory) -> {
-                ProgramMethod newProgramMethod =
-                    appView
-                        .getSyntheticItems()
-                        .createMethod(
-                            kind -> kind.STATIC_INTERFACE_CALL,
-                            methodProcessingContext.createUniqueContext(),
-                            appView,
-                            syntheticMethodBuilder ->
-                                syntheticMethodBuilder
-                                    .setProto(invoke.getMethod().getProto())
-                                    .setAccessFlags(MethodAccessFlags.createPublicStaticSynthetic())
-                                    .setCode(
-                                        m ->
-                                            ForwardMethodBuilder.builder(factory)
-                                                .setStaticTarget(invoke.getMethod(), true)
-                                                .setStaticSource(m)
-                                                .buildCf()));
-                synthesizedMethods.add(newProgramMethod);
-                eventConsumer.acceptInvokeStaticInterfaceOutliningMethod(
-                    newProgramMethod, context1);
-                // The synthetic dispatch class has static interface method invokes, so set
-                // the class file version accordingly.
-                leavingStaticInvokeToInterface(newProgramMethod);
-                return getInvokeStaticInstructions(newProgramMethod.getReference());
-              })
-          .build();
+      return new StaticRetargetMethodSupplier() {
+        @Override
+        public DexMethod getRetargetMethod(
+            CfInstructionDesugaringEventConsumer eventConsumer,
+            MethodProcessingContext methodProcessingContext) {
+          ProgramMethod newProgramMethod =
+              appView
+                  .getSyntheticItems()
+                  .createMethod(
+                      kind -> kind.STATIC_INTERFACE_CALL,
+                      methodProcessingContext.createUniqueContext(),
+                      appView,
+                      syntheticMethodBuilder ->
+                          syntheticMethodBuilder
+                              .setProto(invokedMethod.getProto())
+                              .setAccessFlags(MethodAccessFlags.createPublicStaticSynthetic())
+                              .setCode(
+                                  m ->
+                                      ForwardMethodBuilder.builder(factory)
+                                          .setStaticTarget(invokedMethod, true)
+                                          .setStaticSource(m)
+                                          .buildCf()));
+          synthesizedMethods.add(newProgramMethod);
+          eventConsumer.acceptInvokeStaticInterfaceOutliningMethod(newProgramMethod, context);
+          // The synthetic dispatch class has static interface method invokes, so set
+          // the class file version accordingly.
+          leavingStaticInvokeToInterface(newProgramMethod);
+          return newProgramMethod.getReference();
+        }
+      };
     }
 
     SingleResolutionResult<?> resolutionResult =
         appView
             .appInfoForDesugaring()
-            .resolveMethodOnInterfaceLegacy(holder, invoke.getMethod())
+            .resolveMethodOnInterfaceLegacy(holder, invokedMethod)
             .asSingleResolution();
     if (holder.isInterface() && shouldRewriteToInvokeToThrow(resolutionResult, true)) {
-      return computeInvokeAsThrowRewrite(invoke, resolutionResult, context);
+      return computeInvokeAsThrowRewrite(invokedMethod, invokeType, resolutionResult);
     }
 
     assert resolutionResult != null;
     assert resolutionResult.getResolvedMethod().isStatic();
     DexClassAndMethod method = resolutionResult.getResolutionPair();
-    return DesugarDescription.builder()
-        .setDesugarRewrite(
-            (position,
-                freshLocalProvider,
-                localStackAllocator,
-                desugaringInfo,
-                eventConsumer,
-                context12,
-                methodProcessingContext,
-                desugaringCollection,
-                dexItemFactory) -> {
-              DexClassAndMethod companionMethod =
-                  helper.ensureStaticAsMethodOfCompanionClassStub(method, eventConsumer);
-              return getInvokeStaticInstructions(companionMethod.getReference());
-            })
-        .build();
+    return new StaticRetargetMethodSupplier() {
+      @Override
+      public DexMethod getRetargetMethod(
+          CfInstructionDesugaringEventConsumer eventConsumer,
+          MethodProcessingContext methodProcessingContext) {
+        return helper
+            .ensureStaticAsMethodOfCompanionClassStub(method, eventConsumer)
+            .getReference();
+      }
+    };
   }
 
-  private DesugarDescription computeInvokeVirtualDispatch(
-      DexClass holder, CfInvoke invoke, ProgramMethod context) {
+  private RetargetMethodSupplier computeInvokeInterface(
+      DexClass holder,
+      DexMethod invokedMethod,
+      InvokeType invokeType,
+      boolean isInterface,
+      ProgramMethod context) {
+    assert invokeType.isInterface();
+    if (holder == null) {
+      // For virtual targets we should not report anything as any virtual dispatch just remains.
+      return RetargetMethodSupplier.none();
+    }
     AppInfoWithClassHierarchy appInfoForDesugaring = appView.appInfoForDesugaring();
-    SingleResolutionResult<?> resolution =
-        appInfoForDesugaring
-            .resolveMethodLegacy(invoke.getMethod(), invoke.isInterface())
-            .asSingleResolution();
-    if (resolution != null
-        && resolution.getResolvedMethod().isPrivate()
-        && resolution.isAccessibleFrom(context, appView, appInfoForDesugaring).isTrue()) {
+    SingleResolutionResult<?> resolutionResult =
+        appInfoForDesugaring.resolveMethodLegacy(invokedMethod, isInterface).asSingleResolution();
+    if (resolutionResult == null) {
+      return RetargetMethodSupplier.none();
+    }
+    if (desugaringMode == LIBRARY_DESUGARING_N_PLUS) {
+      return computeEmulatedInterfaceVirtualDispatch(resolutionResult);
+    }
+    if (resolutionResult.getResolvedMethod().isPrivate()
+        && resolutionResult.isAccessibleFrom(context, appView, appInfoForDesugaring).isTrue()) {
       // TODO(b/198267586): What about the private in-accessible case?
-      return computeInvokeDirect(holder, invoke, context);
+      return computeInvokeDirect(holder, invokedMethod, invokeType, context, resolutionResult);
     }
-    if (resolution != null && resolution.getResolvedMethod().isStatic()) {
-      return computeInvokeAsThrowRewrite(invoke, resolution, context);
+    if (resolutionResult.getResolvedMethod().isStatic()) {
+      return computeInvokeAsThrowRewrite(invokedMethod, invokeType, resolutionResult);
     }
-    DesugarDescription description = computeEmulatedInterfaceVirtualDispatchOrNull(invoke);
-    return description != null ? description : DesugarDescription.nothing();
+    return computeEmulatedInterfaceVirtualDispatch(resolutionResult);
   }
 
-  private DesugarDescription computeEmulatedInterfaceVirtualDispatchOrNull(CfInvoke invoke) {
-    MethodResolutionResult resolutionResult =
-        appView
-            .appInfoForDesugaring()
-            .resolveMethodLegacy(invoke.getMethod(), invoke.isInterface());
-    DerivedMethod emulatedDispatchMethod =
-        helper.computeEmulatedInterfaceDispatchMethod(resolutionResult);
-    if (emulatedDispatchMethod == null) {
-      return null;
+  private RetargetMethodSupplier computeInvokeVirtual(
+      DexClass holder,
+      DexMethod invokedMethod,
+      InvokeType invokeType,
+      boolean isInterface,
+      ProgramMethod context) {
+    assert invokeType.isVirtual() || invokeType.isPolymorphic();
+    if (holder == null) {
+      // For virtual targets we should not report anything as any virtual dispatch just remains.
+      return RetargetMethodSupplier.none();
     }
-    return DesugarDescription.builder()
-        .setDesugarRewrite(
-            (position,
-                freshLocalProvider,
-                localStackAllocator,
-                desugaringInfo,
-                eventConsumer,
-                context1,
-                methodProcessingContext,
-                desugaringCollection,
-                dexItemFactory) ->
-                getInvokeStaticInstructions(
-                    helper
-                        .ensureEmulatedInterfaceDispatchMethod(
-                            emulatedDispatchMethod, eventConsumer)
-                        .getReference()))
-        .build();
+    AppInfoWithClassHierarchy appInfo = appView.appInfoForDesugaring();
+    SingleResolutionResult<?> resolutionResult =
+        appInfo.resolveMethodLegacy(invokedMethod, isInterface).asSingleResolution();
+    if (resolutionResult == null) {
+      return RetargetMethodSupplier.none();
+    }
+    if (desugaringMode == LIBRARY_DESUGARING_N_PLUS) {
+      if (resolutionResult.getResolvedMethod().isPrivate()
+          && resolutionResult.isAccessibleFrom(context, appView, appInfo).isTrue()) {
+        return RetargetMethodSupplier.none();
+      }
+      if (resolutionResult.getResolvedMethod().isStatic()) {
+        return RetargetMethodSupplier.none();
+      }
+      return computeEmulatedInterfaceVirtualDispatch(resolutionResult);
+    }
+    RetargetMethodSupplier description = computeEmulatedInterfaceVirtualDispatch(resolutionResult);
+    if (description != RetargetMethodSupplier.none()) {
+      return description;
+    }
+    // It may be the case that a virtual invoke resolves to a static method. In such a case, if
+    // a default method could give rise to a forwarding method in the resolution path, the program
+    // would change behavior from throwing ICCE to dispatching to the companion class method.
+    if (resolutionResult.getResolvedMethod().isStatic()) {
+      DexClassAndMethod target = appInfo.lookupMaximallySpecificMethod(holder, invokedMethod);
+      if (target != null && target.isDefaultMethod()) {
+        // Rewrite the invoke to a throw ICCE as the default method forward would otherwise hide the
+        // static / virtual mismatch.
+        return computeInvokeAsThrowRewrite(
+            invokedMethod, invokeType, resolutionResult.asSingleResolution());
+      }
+    }
+    return RetargetMethodSupplier.none();
   }
 
-  @SuppressWarnings("ReferenceEquality")
-  private DesugarDescription computeInvokeDirect(
-      DexClass clazz, CfInvoke invoke, ProgramMethod context) {
-    DexMethod invokedMethod = invoke.getMethod();
+  private RetargetMethodSupplier computeEmulatedInterfaceVirtualDispatch(
+      SingleResolutionResult<?> resolutionResult) {
+    assert resolutionResult != null;
+    EmulatedDispatchMethodDescriptor emulatedDispatchMethodDescriptor =
+        helper.getEmulatedDispatchDescriptor(
+            resolutionResult.getInitialResolutionHolder(), resolutionResult.getResolutionPair());
+    if (emulatedDispatchMethodDescriptor == null) {
+      return RetargetMethodSupplier.none();
+    }
+    return new StaticRetargetMethodSupplier() {
+
+      @Override
+      public DexMethod getRetargetMethod(
+          CfInstructionDesugaringEventConsumer eventConsumer,
+          MethodProcessingContext methodProcessingContext) {
+        return helper
+            .ensureEmulatedInterfaceDispatchMethod(emulatedDispatchMethodDescriptor, eventConsumer)
+            .getReference();
+      }
+    };
+  }
+
+  private RetargetMethodSupplier computeInvokeDirect(
+      DexClass clazz,
+      DexMethod invokedMethod,
+      InvokeType invokeType,
+      ProgramMethod context,
+      MethodResolutionResult resolutionResult) {
     if (!clazz.isInterface()) {
-      return DesugarDescription.nothing();
+      return RetargetMethodSupplier.none();
     }
 
     if (clazz.isLibraryClass()) {
@@ -578,55 +561,45 @@ public final class InterfaceMethodRewriter implements CfInstructionDesugaring {
           getMethodOrigin(context.getReference()));
     }
 
-    MethodResolutionResult resolution =
-        appView.appInfoForDesugaring().resolveMethodLegacy(invokedMethod, invoke.isInterface());
-    if (resolution.isFailedResolution()) {
-      return computeInvokeAsThrowRewrite(invoke, null, context);
+    if (resolutionResult.isFailedResolution()) {
+      return computeInvokeAsThrowRewrite(invokedMethod, invokeType, null);
     }
 
-    SingleResolutionResult<?> singleResolution = resolution.asSingleResolution();
+    SingleResolutionResult<?> singleResolution = resolutionResult.asSingleResolution();
     if (singleResolution == null) {
-      return DesugarDescription.nothing();
+      return RetargetMethodSupplier.none();
     }
 
     DexClassAndMethod directTarget = clazz.lookupClassMethod(invokedMethod);
     if (directTarget != null) {
       // TODO(b/199135051): Replace this by use of the resolution result.
       assert directTarget.getDefinition() == singleResolution.getResolutionPair().getDefinition();
-      return DesugarDescription.builder()
-          .setDesugarRewrite(
-              (position,
-                  freshLocalProvider,
-                  localStackAllocator,
-                  desugaringInfo,
-                  eventConsumer,
-                  context1,
-                  methodProcessingContext,
-                  desugaringCollection,
-                  dexItemFactory) -> {
-                // This can be a private instance method call. Note that the referenced
-                // method is expected to be in the current class since it is private, but desugaring
-                // may move some methods or their code into other classes.
-                DexClassAndMethod companionMethodDefinition;
-                DexMethod companionMethod;
-                if (directTarget.getDefinition().isPrivateMethod()) {
-                  if (directTarget.isProgramMethod()) {
-                    companionMethodDefinition =
-                        helper.ensurePrivateAsMethodOfProgramCompanionClassStub(
-                            directTarget.asProgramMethod(), eventConsumer);
-                    companionMethod = companionMethodDefinition.getReference();
-                  } else {
-                    // TODO(b/200938617): Why does this not create a stub on the class path?
-                    companionMethod = helper.privateAsMethodOfCompanionClass(directTarget);
-                  }
-                } else {
-                  companionMethodDefinition =
-                      helper.ensureDefaultAsMethodOfCompanionClassStub(directTarget, eventConsumer);
-                  companionMethod = companionMethodDefinition.getReference();
-                }
-                return getInvokeStaticInstructions(companionMethod);
-              })
-          .build();
+      return new StaticRetargetMethodSupplier() {
+        @Override
+        public DexMethod getRetargetMethod(
+            CfInstructionDesugaringEventConsumer eventConsumer,
+            MethodProcessingContext methodProcessingContext) {
+          // This can be a private instance method call. Note that the referenced
+          // method is expected to be in the current class since it is private, but desugaring
+          // may move some methods or their code into other classes.
+          DexClassAndMethod companionMethodDefinition;
+          if (directTarget.getDefinition().isPrivateMethod()) {
+            if (directTarget.isProgramMethod()) {
+              companionMethodDefinition =
+                  helper.ensurePrivateAsMethodOfProgramCompanionClassStub(
+                      directTarget.asProgramMethod(), eventConsumer);
+              return companionMethodDefinition.getReference();
+            } else {
+              // TODO(b/200938617): Why does this not create a stub on the class path?
+              return helper.privateAsMethodOfCompanionClass(directTarget);
+            }
+          } else {
+            companionMethodDefinition =
+                helper.ensureDefaultAsMethodOfCompanionClassStub(directTarget, eventConsumer);
+            return companionMethodDefinition.getReference();
+          }
+        }
+      };
     } else {
       // The method can be a default method in the interface hierarchy.
       DexClassAndMethod virtualTarget =
@@ -635,43 +608,36 @@ public final class InterfaceMethodRewriter implements CfInstructionDesugaring {
         // TODO(b/199135051): Replace this by use of the resolution result.
         assert virtualTarget.getDefinition()
             == singleResolution.getResolutionPair().getDefinition();
-        return DesugarDescription.builder()
-            .setDesugarRewrite(
-                (position,
-                    freshLocalProvider,
-                    localStackAllocator,
-                    desugaringInfo,
-                    eventConsumer,
-                    context12,
-                    methodProcessingContext,
-                    desugaringCollection,
-                    dexItemFactory) -> {
-                  // This is a invoke-direct call to a virtual method.
-                  DexClassAndMethod companionMethod =
-                      helper.ensureDefaultAsMethodOfCompanionClassStub(
-                          virtualTarget, eventConsumer);
-                  return getInvokeStaticInstructions(companionMethod.getReference());
-                })
-            .build();
+        return new StaticRetargetMethodSupplier() {
+          @Override
+          public DexMethod getRetargetMethod(
+              CfInstructionDesugaringEventConsumer eventConsumer,
+              MethodProcessingContext methodProcessingContext) {
+            // This is a invoke-direct call to a virtual method.
+            return helper
+                .ensureDefaultAsMethodOfCompanionClassStub(virtualTarget, eventConsumer)
+                .getReference();
+          }
+        };
       } else {
         // The below assert is here because a well-type program should have a target, but we
         // cannot throw a compilation error, since we have no knowledge about the input.
         assert false;
       }
     }
-    return DesugarDescription.nothing();
+    return RetargetMethodSupplier.none();
   }
 
-  private DesugarDescription computeInvokeAsThrowRewrite(
-      CfInvoke invoke, SingleResolutionResult<?> resolution, ProgramMethod context) {
-    assert !isAlreadyDesugared(invoke, context);
-    return AlwaysThrowingInstructionDesugaring.computeInvokeAsThrowRewrite(
-        appView, invoke, resolution);
-  }
+  private RetargetMethodSupplier computeInvokeAsThrowRewrite(
+      DexMethod invokedMethod, InvokeType invokeType, SingleResolutionResult<?> resolution) {
+    return new ThrowingRetargetMethodSupplier() {
 
-  private Collection<CfInstruction> getInvokeStaticInstructions(DexMethod newTarget) {
-    return Collections.singletonList(
-        new CfInvoke(org.objectweb.asm.Opcodes.INVOKESTATIC, newTarget, false));
+      @Override
+      public DesugarDescription toDesugarDescription(ProgramMethod context) {
+        return AlwaysThrowingInstructionDesugaring.computeInvokeAsThrowRewrite(
+            appView, invokedMethod, invokeType, resolution);
+      }
+    };
   }
 
   private void leavingStaticInvokeToInterface(ProgramMethod method) {
@@ -719,28 +685,18 @@ public final class InterfaceMethodRewriter implements CfInstructionDesugaring {
   }
 
   @SuppressWarnings("ReferenceEquality")
-  private DesugarDescription rewriteInvokeSuper(CfInvoke invoke, ProgramMethod context) {
-    DexMethod invokedMethod = invoke.getMethod();
-    DexClass clazz = appView.definitionFor(invokedMethod.holder, context);
-    if (clazz == null) {
-      // NOTE: leave unchanged those calls to undefined targets. This may lead to runtime
-      // exception but we can not report it as error since it can also be the intended
-      // behavior.
-      return DesugarDescription.builder()
-          .addScanEffect(() -> warnMissingType(context, invokedMethod.holder))
-          .build();
+  private RetargetMethodSupplier rewriteInvokeSuper(
+      DexClass holder,
+      DexMethod invokedMethod,
+      InvokeType invokeType,
+      ProgramMethod context,
+      SingleResolutionResult<?> resolutionResult) {
+    if (holder.isInterface() && shouldRewriteToInvokeToThrow(resolutionResult, false)) {
+      return computeInvokeAsThrowRewrite(invokedMethod, invokeType, resolutionResult);
     }
 
-    SingleResolutionResult<?> resolutionResult =
-        appView
-            .appInfoForDesugaring()
-            .resolveMethodOnLegacy(clazz, invokedMethod)
-            .asSingleResolution();
-    if (clazz.isInterface() && shouldRewriteToInvokeToThrow(resolutionResult, false)) {
-      return computeInvokeAsThrowRewrite(invoke, resolutionResult, context);
-    }
-
-    if (clazz.isInterface() && !resolutionResult.getResolutionPair().getHolder().isLibraryClass()) {
+    if (holder.isInterface()
+        && !resolutionResult.getResolutionPair().getHolder().isLibraryClass()) {
       // NOTE: we intentionally don't desugar super calls into interface methods
       // coming from android.jar since it is only possible in case v24+ version
       // of android.jar is provided.
@@ -755,146 +711,139 @@ public final class InterfaceMethodRewriter implements CfInstructionDesugaring {
             .isAccessibleFrom(context, appView, appView.appInfoForDesugaring())
             .isFalse()) {
           // TODO(b/145775365): This should throw IAE.
-          return computeInvokeAsThrowRewrite(invoke, null, context);
+          return computeInvokeAsThrowRewrite(invokedMethod, invokeType, null);
         }
-        return DesugarDescription.builder()
-            .setDesugarRewrite(
-                (position,
-                    freshLocalProvider,
-                    localStackAllocator,
-                    desugaringInfo,
-                    eventConsumer,
-                    context1,
-                    methodProcessingContext,
-                    desugaringCollection,
-                    dexItemFactory) -> {
-                  DexClassAndMethod method = resolutionResult.getResolutionPair();
-                  DexMethod companionMethod;
-                  if (method.isProgramMethod()) {
-                    ProgramMethod companionMethodDefinition =
-                        helper.ensurePrivateAsMethodOfProgramCompanionClassStub(
-                            method.asProgramMethod(), eventConsumer);
-                    companionMethod = companionMethodDefinition.getReference();
-                  } else {
-                    companionMethod = helper.privateAsMethodOfCompanionClass(method);
-                  }
-                  return getInvokeStaticInstructions(companionMethod);
-                })
-            .build();
+        return new StaticRetargetMethodSupplier() {
+          @Override
+          public DexMethod getRetargetMethod(
+              CfInstructionDesugaringEventConsumer eventConsumer,
+              MethodProcessingContext methodProcessingContext) {
+            DexClassAndMethod method = resolutionResult.getResolutionPair();
+            if (method.isProgramMethod()) {
+              ProgramMethod companionMethodDefinition =
+                  helper.ensurePrivateAsMethodOfProgramCompanionClassStub(
+                      method.asProgramMethod(), eventConsumer);
+              return companionMethodDefinition.getReference();
+            } else {
+              return helper.privateAsMethodOfCompanionClass(method);
+            }
+          }
+        };
       } else {
         DexClassAndMethod method = resolutionResult.getResolutionPair();
         if (method.getAccessFlags().isAbstract()) {
-          return computeInvokeAsThrowRewrite(invoke, resolutionResult, context);
+          return computeInvokeAsThrowRewrite(invokedMethod, invokeType, resolutionResult);
         }
-        return DesugarDescription.builder()
-            .setDesugarRewrite(
-                (position,
-                    freshLocalProvider,
-                    localStackAllocator,
-                    desugaringInfo,
-                    eventConsumer,
-                    context12,
-                    methodProcessingContext,
-                    desugaringCollection,
-                    dexItemFactory) -> {
-                  // TODO(b/199135051): Why do this amend routine. We have done resolution, so would
-                  //  that not be the correct target!? I think this is just legacy from before
-                  //  resolution was implemented in full.
-                  DexMethod amendedMethod =
-                      amendDefaultMethod(context12.getHolder(), invokedMethod);
-                  assert method.getReference() == amendedMethod;
-                  DexClassAndMethod companionMethod =
-                      helper.ensureDefaultAsMethodOfCompanionClassStub(method, eventConsumer);
-                  return getInvokeStaticInstructions(companionMethod.getReference());
-                })
-            .build();
+        return new StaticRetargetMethodSupplier() {
+          @Override
+          public DexMethod getRetargetMethod(
+              CfInstructionDesugaringEventConsumer eventConsumer,
+              MethodProcessingContext methodProcessingContext) {
+            // TODO(b/199135051): Why do this amend routine. We have done resolution, so would
+            //  that not be the correct target!? I think this is just legacy from before
+            //  resolution was implemented in full.
+            DexMethod amendedMethod = amendDefaultMethod(context.getHolder(), invokedMethod);
+            assert method.getReference() == amendedMethod;
+            DexClassAndMethod companionMethod =
+                helper.ensureDefaultAsMethodOfCompanionClassStub(method, eventConsumer);
+            return companionMethod.getReference();
+          }
+        };
       }
     }
 
-    DesugarDescription emulatedInterfaceDesugaring =
-        computeEmulatedInterfaceInvokeSpecial(clazz, invokedMethod, context);
-    if (!emulatedInterfaceDesugaring.needsDesugaring()) {
+    RetargetMethodSupplier emulatedInterfaceDesugaring =
+        computeEmulatedInterfaceInvokeSpecial(holder, invokedMethod, context);
+    if (emulatedInterfaceDesugaring == RetargetMethodSupplier.none()) {
       if (context.isDefaultMethod()) {
-        return AlwaysThrowingInstructionDesugaring.computeInvokeAsThrowNSMERewrite(
-            appView,
-            invoke,
-            () ->
-                appView
-                    .reporter()
-                    .warning(
-                        new StringDiagnostic(
-                            "Interface method desugaring has inserted NoSuchMethodError replacing a"
-                                + " super call in "
-                                + context.toSourceString(),
-                            context.getOrigin())));
+        return new ThrowingRetargetMethodSupplier() {
+          @Override
+          public DesugarDescription toDesugarDescription(ProgramMethod context) {
+            return AlwaysThrowingInstructionDesugaring.computeInvokeAsThrowNSMERewrite(
+                appView,
+                invokedMethod,
+                invokeType,
+                () ->
+                    appView
+                        .reporter()
+                        .warning(
+                            new StringDiagnostic(
+                                "Interface method desugaring has inserted NoSuchMethodError"
+                                    + " replacing a super call in "
+                                    + context.toSourceString(),
+                                context.getOrigin())));
+          }
+        };
       } else {
-        return DesugarDescription.builder()
-            .addScanEffect(() -> leavingSuperInvokeToInterface(context))
-            .build();
+        return new WarningRetargetMethodSupplier(() -> leavingSuperInvokeToInterface(context));
       }
     }
 
     return emulatedInterfaceDesugaring;
   }
 
-  private DesugarDescription computeEmulatedInterfaceInvokeSpecial(
+  private RetargetMethodSupplier computeEmulatedInterfaceInvokeSpecial(
       DexClass clazz, DexMethod invokedMethod, ProgramMethod context) {
-    AppInfoWithClassHierarchy appInfoForDesugaring = appView.appInfoForDesugaring();
+    assert desugaringMode != LIBRARY_DESUGARING_N_PLUS;
+    if (clazz == null) {
+      return RetargetMethodSupplier.none();
+    }
+    AppInfoWithClassHierarchy appInfo = appView.appInfoForDesugaring();
     DexClassAndMethod superTarget =
-        appView
-            .appInfoForDesugaring()
-            .lookupSuperTarget(invokedMethod, context, appView, appInfoForDesugaring);
+        appInfo.lookupSuperTarget(invokedMethod, context, appView, appInfo);
+    if (superTarget == null) {
+      return RetargetMethodSupplier.none();
+    }
     if (clazz.isInterface()
         && clazz.isLibraryClass()
         && helper.isInDesugaredLibrary(clazz)
-        && !helper.isEmulatedInterface(clazz.type)) {
-      if (superTarget != null && superTarget.getDefinition().isDefaultMethod()) {
-        DexClass holder = superTarget.getHolder();
-        if (holder.isLibraryClass() && holder.isInterface()) {
-          return DesugarDescription.builder()
-              .setDesugarRewrite(
-                  (position,
-                      freshLocalProvider,
-                      localStackAllocator,
-                      desugaringInfo,
-                      eventConsumer,
-                      context13,
-                      methodProcessingContext,
-                      desugaringCollection,
-                      dexItemFactory) -> {
-                    DexClassAndMethod companionTarget =
-                        helper.ensureDefaultAsMethodOfCompanionClassStub(
-                            superTarget, eventConsumer);
-                    return getInvokeStaticInstructions(companionTarget.getReference());
-                  })
-              .build();
+        && !helper.isEmulatedInterface(clazz.type)
+        && superTarget.isDefaultMethod()
+        && superTarget.isLibraryMethod()) {
+      return new StaticRetargetMethodSupplier() {
+        @Override
+        public DexMethod getRetargetMethod(
+            CfInstructionDesugaringEventConsumer eventConsumer,
+            MethodProcessingContext methodProcessingContext) {
+          return helper
+              .ensureDefaultAsMethodOfCompanionClassStub(superTarget, eventConsumer)
+              .getReference();
         }
-      }
+      };
+    } else {
+      return computeInvokeSpecialEmulatedInterfaceForwardingMethod(clazz, superTarget);
     }
-    // That invoke super may not resolve since the super method may not be present
-    // since it's in the emulated interface. We need to force resolution. If it resolves
-    // to a library method, then it needs to be rewritten.
-    // If it resolves to a program overrides, the invoke-super can remain.
+  }
+
+  private RetargetMethodSupplier computeInvokeSpecialEmulatedInterfaceForwardingMethod(
+      DexClass clazz, DexMethod invokedMethod, ProgramMethod context) {
+    if (clazz == null) {
+      return RetargetMethodSupplier.none();
+    }
+    AppInfoWithClassHierarchy appInfo = appView.appInfoForDesugaring();
+    DexClassAndMethod superTarget =
+        appInfo.lookupSuperTarget(invokedMethod, context, appView, appInfo);
+    return computeInvokeSpecialEmulatedInterfaceForwardingMethod(clazz, superTarget);
+  }
+
+  private RetargetMethodSupplier computeInvokeSpecialEmulatedInterfaceForwardingMethod(
+      DexClass clazz, DexClassAndMethod superTarget) {
+    // That invoke super may not resolve since the super method may not be present since it's in the
+    // emulated interface. We need to force resolution. If it resolves to a library method, then it
+    // needs to be rewritten. If it resolves to a program overrides, the invoke-super can remain.
     DerivedMethod forwardingMethod =
         helper.computeEmulatedInterfaceForwardingMethod(clazz, superTarget);
-    if (forwardingMethod == null) {
-      return DesugarDescription.nothing();
+    if (forwardingMethod != null) {
+      return new StaticRetargetMethodSupplier() {
+        @Override
+        public DexMethod getRetargetMethod(
+            CfInstructionDesugaringEventConsumer eventConsumer,
+            MethodProcessingContext methodProcessingContext) {
+          return helper.ensureEmulatedInterfaceForwardingMethod(forwardingMethod, eventConsumer);
+        }
+      };
     }
-    return DesugarDescription.builder()
-        .setDesugarRewrite(
-            (position,
-                freshLocalProvider,
-                localStackAllocator,
-                desugaringInfo,
-                eventConsumer,
-                context14,
-                methodProcessingContext,
-                desugaringCollection,
-                dexItemFactory) ->
-                getInvokeStaticInstructions(
-                    helper.ensureEmulatedInterfaceForwardingMethod(
-                        forwardingMethod, eventConsumer)))
-        .build();
+    return RetargetMethodSupplier.none();
   }
 
   private boolean shouldRewriteToInvokeToThrow(
@@ -954,7 +903,7 @@ public final class InterfaceMethodRewriter implements CfInstructionDesugaring {
     return clazz == null ? Origin.unknown() : clazz.getOrigin();
   }
 
-  final DefaultMethodsHelper.Collection getOrCreateInterfaceInfo(
+  DefaultMethodsHelper.Collection getOrCreateInterfaceInfo(
       DexClass classToDesugar, DexClass implementing, DexType iface) {
     DefaultMethodsHelper.Collection collection = cache.get(iface);
     if (collection != null) {
@@ -1024,7 +973,60 @@ public final class InterfaceMethodRewriter implements CfInstructionDesugaring {
     }
     DexMethod method = appView.graphLens().getOriginalMethodSignature(context.getReference());
     Origin origin = getMethodOrigin(method);
-    MethodPosition position = new MethodPosition(method.asMethodReference());
+    MethodPosition position = new MethodPosition(method);
     options.warningMissingTypeForDesugar(origin, position, missing, method);
+  }
+
+  private interface RetargetMethodSupplier {
+
+    static RetargetMethodSupplier none() {
+      return null;
+    }
+
+    DesugarDescription toDesugarDescription(ProgramMethod context);
+  }
+
+  private abstract static class StaticRetargetMethodSupplier implements RetargetMethodSupplier {
+
+    public abstract DexMethod getRetargetMethod(
+        CfInstructionDesugaringEventConsumer eventConsumer,
+        MethodProcessingContext methodProcessingContext);
+
+    @Override
+    public final DesugarDescription toDesugarDescription(ProgramMethod context) {
+      return DesugarDescription.builder()
+          .setDesugarRewrite(
+              (position,
+                  freshLocalProvider,
+                  localStackAllocator,
+                  desugaringInfo,
+                  eventConsumer,
+                  context1,
+                  methodProcessingContext,
+                  desugaringCollection,
+                  dexItemFactory) -> {
+                DexMethod retargetMethod =
+                    getRetargetMethod(eventConsumer, methodProcessingContext);
+                return Collections.singletonList(
+                    new CfInvoke(org.objectweb.asm.Opcodes.INVOKESTATIC, retargetMethod, false));
+              })
+          .build();
+    }
+  }
+
+  private abstract static class ThrowingRetargetMethodSupplier implements RetargetMethodSupplier {}
+
+  private static class WarningRetargetMethodSupplier implements RetargetMethodSupplier {
+
+    private final ScanCallback generator;
+
+    WarningRetargetMethodSupplier(ScanCallback generator) {
+      this.generator = generator;
+    }
+
+    @Override
+    public DesugarDescription toDesugarDescription(ProgramMethod context) {
+      return DesugarDescription.builder().addScanEffect(generator).build();
+    }
   }
 }
