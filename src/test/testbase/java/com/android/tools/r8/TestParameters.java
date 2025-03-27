@@ -171,6 +171,10 @@ public class TestParameters {
     testCompilerBuilder.setMinApi(apiLevel);
   }
 
+  public boolean hasApiLevel() {
+    return apiLevel != null;
+  }
+
   // TODO(b/270021825): Tests should not access the underlying API level directly, but may be
   //  allowed to query if the api level satisfies some condition.
   @Deprecated
@@ -199,6 +203,10 @@ public class TestParameters {
   public CfRuntime getCfRuntime() {
     assert isCfRuntime();
     return runtime.asCf();
+  }
+
+  public PartialCompilationTestParameters getPartialCompilationTestParameters() {
+    return PartialCompilationTestParameters.NONE;
   }
 
   // Access to underlying runtime/wrapper.

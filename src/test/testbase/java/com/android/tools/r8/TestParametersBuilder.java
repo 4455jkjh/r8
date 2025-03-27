@@ -181,6 +181,22 @@ public class TestParametersBuilder {
         vm -> vm != startExcluding && startExcluding.isOlderThanOrEqual(vm));
   }
 
+  public TestParametersBuilder withPartialCompilation() {
+    return this;
+  }
+
+  public TestParametersBuilder withIncludeAllPartialCompilation() {
+    return this;
+  }
+
+  public TestParametersBuilder withExcludeAllPartialCompilation() {
+    return this;
+  }
+
+  public TestParametersBuilder withRandomPartialCompilation() {
+    return this;
+  }
+
   /** Add all available DEX runtimes ending at and including {@param endInclusive}. */
   public TestParametersBuilder withDexRuntimesEndingAtIncluding(DexVm.Version endInclusive) {
     return withDexRuntimeFilter(vm -> vm.isOlderThanOrEqual(endInclusive));
