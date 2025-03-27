@@ -210,6 +210,18 @@ public class TestBase {
     return testForR8(temp, backend);
   }
 
+  public R8TestBuilder<? extends R8TestCompileResultBase<?>, R8TestRunResult, ?> testForR8(
+      TestParameters parameters) {
+    return testForR8(parameters.getBackend(), parameters.getPartialCompilationTestParameters())
+        .applyIf(parameters.hasApiLevel(), b -> b.setMinApi(parameters));
+  }
+
+  public R8TestBuilder<? extends R8TestCompileResultBase<?>, R8TestRunResult, ?> testForR8(
+      Backend backend, PartialCompilationTestParameters parameters) {
+    assertTrue(parameters.isNone());
+    return testForR8(backend);
+  }
+
   public R8PartialTestBuilder testForR8Partial(Backend backend) {
     return testForR8Partial(temp, backend);
   }
@@ -236,6 +248,17 @@ public class TestBase {
 
   public D8TestBuilder testForD8(Backend backend) {
     return testForD8(temp, backend);
+  }
+
+  public TestCompilerBuilder<?, ?, ?, ?, ?> testForD8(TestParameters parameters) {
+    return testForD8(parameters.getBackend(), parameters.getPartialCompilationTestParameters())
+        .applyIf(parameters.hasApiLevel(), b -> b.setMinApi(parameters));
+  }
+
+  public TestCompilerBuilder<?, ?, ?, ?, ?> testForD8(
+      Backend backend, PartialCompilationTestParameters partialCompilationTestParameters) {
+    assertTrue(partialCompilationTestParameters.isNone());
+    return testForD8(backend);
   }
 
   public AssistantTestBuilder testForAssistant() {
