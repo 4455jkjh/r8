@@ -213,6 +213,10 @@ public class TestParameters {
     return PartialCompilationTestParameters.NONE;
   }
 
+  public boolean isRandomPartialCompilation() {
+    return getPartialCompilationTestParameters().isRandom();
+  }
+
   // Access to underlying runtime/wrapper.
   public TestRuntime getRuntime() {
     return runtime;
