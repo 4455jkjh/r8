@@ -9,6 +9,7 @@ import static com.android.tools.r8.TestBase.transformer;
 import com.android.aapt.Resources;
 import com.android.aapt.Resources.ConfigValue;
 import com.android.aapt.Resources.Item;
+import com.android.aapt.Resources.Package;
 import com.android.aapt.Resources.ResourceTable;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestBase.Backend;
@@ -16,6 +17,7 @@ import com.android.tools.r8.TestRuntime.CfRuntime;
 import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.ToolHelper.ProcessResult;
 import com.android.tools.r8.graph.DexItemFactory;
+import com.android.tools.r8.transformers.ClassFileTransformer;
 import com.android.tools.r8.transformers.ClassTransformer;
 import com.android.tools.r8.transformers.MethodTransformer;
 import com.android.tools.r8.utils.AndroidApiLevel;
@@ -24,6 +26,7 @@ import com.android.tools.r8.utils.FileUtils;
 import com.android.tools.r8.utils.StreamUtils;
 import com.android.tools.r8.utils.StringUtils;
 import com.android.tools.r8.utils.ZipUtils;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.MoreCollectors;
 import com.google.protobuf.InvalidProtocolBufferException;
@@ -36,6 +39,7 @@ import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -44,6 +48,7 @@ import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
@@ -160,9 +165,9 @@ public class AndroidResourceTestingUtils {
     private final Path javaFilePath;
     // The compiled class files, with the class names rewritten to the names used in passed
     // in R class from the test.
-    private final List<byte[]> classFileData;
+    private final Map<String, byte[]> classFileData;
 
-    AndroidTestRClass(Path javaFilePath, List<byte[]> classFileData) throws IOException {
+    AndroidTestRClass(Path javaFilePath, Map<String, byte[]> classFileData) throws IOException {
       this.javaFilePath = javaFilePath;
       this.classFileData = classFileData;
     }
@@ -170,8 +175,25 @@ public class AndroidResourceTestingUtils {
       return javaFilePath;
     }
 
-    public List<byte[]> getClassFileData() {
+    public Map<String, byte[]> getClassFileData() {
       return classFileData;
+    }
+
+    public void transformClassFileData(ClassTransformer transformer) {
+      transformClassFileData(transformer, s -> true);
+    }
+
+    public void transformClassFileData(ClassTransformer transformer, Predicate<String> include) {
+      Map<String, byte[]> changed = new HashMap<>();
+      for (Entry<String, byte[]> entry : classFileData.entrySet()) {
+        if (include.test(entry.getKey())) {
+          byte[] transform =
+              ClassFileTransformer.transform(
+                  entry.getValue(), ImmutableList.of(transformer), Collections.EMPTY_LIST, 0);
+          changed.put(entry.getKey(), transform);
+        }
+      }
+      classFileData.putAll(changed);
     }
   }
 
@@ -209,6 +231,11 @@ public class AndroidResourceTestingUtils {
       return this;
     }
 
+    public TestResourceTable getTestResourceTable() throws IOException {
+      return new TestResourceTable(
+          ResourceTable.parseFrom(ZipUtils.readSingleEntry(resourceZip, "resources.pb")));
+    }
+
     public AndroidTestRClass getRClass() {
       return rClass;
     }
@@ -224,14 +251,17 @@ public class AndroidResourceTestingUtils {
 
   // Easy traversable resource table.
   public static class TestResourceTable {
-    private Map<String, ResourceNameToValueMapping> mapping = new HashMap<>();
+    private Map<String, ResourceNameToValueMapping> valueMapping = new HashMap<>();
+    private Map<String, ResourceNameToIdMapping> idMapping = new HashMap<>();
 
     private TestResourceTable(ResourceTable resourceTable) {
       // For now, we don't have any test that use multiple packages.
       assert resourceTable.getPackageCount() == 1;
-      for (Resources.Type type : resourceTable.getPackage(0).getTypeList()) {
+      Package aPackage = resourceTable.getPackage(0);
+      for (Resources.Type type : aPackage.getTypeList()) {
         String typeName = type.getName();
-        mapping.put(typeName, new ResourceNameToValueMapping(type));
+        valueMapping.put(typeName, new ResourceNameToValueMapping(type));
+        idMapping.put(typeName, new ResourceNameToIdMapping(type, aPackage));
       }
     }
 
@@ -240,11 +270,33 @@ public class AndroidResourceTestingUtils {
     }
 
     public boolean containsValueFor(String type, String name) {
-      return mapping.containsKey(type) && mapping.get(type).containsValueFor(name);
+      return valueMapping.containsKey(type) && valueMapping.get(type).containsValueFor(name);
+    }
+
+    public int idFor(String type, String name) {
+      return idMapping.get(type).getIdFor(name);
     }
 
     public Collection<String> entriesForType(String type) {
-      return mapping.get(type).mapping.keySet();
+      return valueMapping.get(type).mapping.keySet();
+    }
+
+    public static class ResourceNameToIdMapping {
+      private final Map<String, Integer> mapping = new HashMap<>();
+
+      public ResourceNameToIdMapping(Resources.Type type, Package aPackage) {
+        for (Resources.Entry entry : type.getEntryList()) {
+          int id =
+              aPackage.getPackageId().getId() << 24
+                  | type.getTypeId().getId() << 16
+                  | entry.getEntryId().getId();
+          mapping.put(entry.getName(), id);
+        }
+      }
+
+      public int getIdFor(String name) {
+        return mapping.get(name);
+      }
     }
 
     public static class ResourceNameToValueMapping {
@@ -541,12 +593,13 @@ public class AndroidResourceTestingUtils {
                   Collectors.toMap(
                       AndroidResourceTestingUtils::rClassWithoutNamespaceAndOuter,
                       DescriptorUtils::getClassBinaryName));
-      List<byte[]> rewrittenRClassFiles = new ArrayList<>();
+      Map<String, byte[]> rewrittenRClassFiles = new HashMap<>();
       ZipUtils.iter(
           rClassClassFileOutput,
           (entry, input) -> {
             if (ZipUtils.isClassFile(entry.getName()) && !entry.getName().endsWith("R.class")) {
-              rewrittenRClassFiles.add(
+              rewrittenRClassFiles.put(
+                  entry.getName(),
                   transformer(StreamUtils.streamToByteArrayClose(input), null)
                       .addClassTransformer(
                           new ClassTransformer() {

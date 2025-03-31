@@ -66,7 +66,7 @@ import com.android.tools.r8.ir.analysis.type.DynamicTypeWithUpperBound;
 import com.android.tools.r8.ir.analysis.value.AbstractValue;
 import com.android.tools.r8.ir.analysis.value.StatefulObjectValue;
 import com.android.tools.r8.ir.analysis.value.objectstate.ObjectState;
-import com.android.tools.r8.ir.analysis.value.objectstate.ObjectStateAnalysis;
+import com.android.tools.r8.ir.code.AbstractValueSupplier;
 import com.android.tools.r8.ir.code.AliasedValueConfiguration;
 import com.android.tools.r8.ir.code.Argument;
 import com.android.tools.r8.ir.code.AssumeAndCheckCastAliasedValueConfiguration;
@@ -211,7 +211,8 @@ public class MethodOptimizationInfoCollector {
         if (definition.isArgument()) {
           feedback.methodReturnsArgument(method, definition.asArgument().getIndex());
         }
-        AbstractValue abstractReturnValue = definition.getAbstractValue(appView, context);
+        AbstractValue abstractReturnValue =
+            definition.getAbstractValue(appView, context, AbstractValueSupplier.shallow());
         if (abstractReturnValue.isNonTrivial()) {
           feedback.methodReturnsAbstractValue(method, appView, abstractReturnValue);
           if (checkCastAndInstanceOfMethodSpecialization != null) {
@@ -220,9 +221,7 @@ public class MethodOptimizationInfoCollector {
           }
         } else if (returnValue.getType().isReferenceType()) {
           // TODO(b/204159267): Move this logic into Instruction#getAbstractValue in NewInstance.
-          ObjectState objectState =
-              ObjectStateAnalysis.computeObjectState(aliasedValue, appView, context);
-          // TODO(b/204272377): Avoid wrapping and unwrapping the object state.
+          ObjectState objectState = aliasedValue.computeObjectState(appView, context);
           feedback.methodReturnsAbstractValue(
               method, appView, StatefulObjectValue.create(objectState));
         }

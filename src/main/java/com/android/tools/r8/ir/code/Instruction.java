@@ -25,6 +25,7 @@ import com.android.tools.r8.ir.analysis.framework.intraprocedural.AbstractInstru
 import com.android.tools.r8.ir.analysis.type.TypeElement;
 import com.android.tools.r8.ir.analysis.value.AbstractValue;
 import com.android.tools.r8.ir.analysis.value.UnknownValue;
+import com.android.tools.r8.ir.analysis.value.objectstate.ObjectState;
 import com.android.tools.r8.ir.conversion.CfBuilder;
 import com.android.tools.r8.ir.conversion.DexBuilder;
 import com.android.tools.r8.ir.conversion.MethodConversionOptions;
@@ -206,8 +207,11 @@ public abstract class Instruction
     return oldOutValue;
   }
 
-  public final AbstractValue getAbstractValue(AppView<?> appView, ProgramMethod context) {
-    return getAbstractValue(appView, context, AbstractValueSupplier.unknown());
+  public ObjectState computeObjectState(
+      AppView<AppInfoWithLiveness> appView,
+      ProgramMethod context,
+      AbstractValueSupplier abstractValueSupplier) {
+    return ObjectState.empty();
   }
 
   public AbstractValue getAbstractValue(
@@ -645,8 +649,7 @@ public abstract class Instruction
   }
 
   public final boolean instructionMayHaveSideEffects(AppView<?> appView, ProgramMethod context) {
-    return instructionMayHaveSideEffects(
-        appView, context, AbstractValueSupplier.getShallow(appView, context));
+    return instructionMayHaveSideEffects(appView, context, AbstractValueSupplier.shallow());
   }
 
   public final boolean instructionMayHaveSideEffects(
@@ -658,7 +661,7 @@ public abstract class Instruction
   public final boolean instructionMayHaveSideEffects(
       AppView<?> appView, ProgramMethod context, SideEffectAssumption assumption) {
     return instructionMayHaveSideEffects(
-        appView, context, AbstractValueSupplier.getShallow(appView, context), assumption);
+        appView, context, AbstractValueSupplier.shallow(), assumption);
   }
 
   public boolean instructionMayHaveSideEffects(
@@ -677,8 +680,7 @@ public abstract class Instruction
       AppView<?> appView, ProgramMethod context);
 
   public final boolean instructionInstanceCanThrow(AppView<?> appView, ProgramMethod context) {
-    return instructionInstanceCanThrow(
-        appView, context, AbstractValueSupplier.getShallow(appView, context));
+    return instructionInstanceCanThrow(appView, context, AbstractValueSupplier.shallow());
   }
 
   public final boolean instructionInstanceCanThrow(
@@ -690,7 +692,7 @@ public abstract class Instruction
   public final boolean instructionInstanceCanThrow(
       AppView<?> appView, ProgramMethod context, SideEffectAssumption assumption) {
     return instructionInstanceCanThrow(
-        appView, context, AbstractValueSupplier.getShallow(appView, context), assumption);
+        appView, context, AbstractValueSupplier.shallow(), assumption);
   }
 
   public boolean instructionInstanceCanThrow(
