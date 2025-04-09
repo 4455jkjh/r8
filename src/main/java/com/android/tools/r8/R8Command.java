@@ -6,6 +6,7 @@ package com.android.tools.r8;
 import static com.android.tools.r8.utils.InternalOptions.DETERMINISTIC_DEBUGGING;
 import static com.android.tools.r8.utils.MapConsumerUtils.wrapExistingMapConsumerIfNotNull;
 
+import com.android.build.shrinker.r8integration.LegacyResourceShrinker;
 import com.android.tools.r8.ProgramResource.Kind;
 import com.android.tools.r8.dex.Marker.Tool;
 import com.android.tools.r8.dump.DumpOptions;
@@ -24,6 +25,8 @@ import com.android.tools.r8.keepanno.asm.KeepEdgeReader;
 import com.android.tools.r8.keepanno.ast.KeepDeclaration;
 import com.android.tools.r8.keepanno.keeprules.KeepRuleExtractor;
 import com.android.tools.r8.metadata.R8BuildMetadata;
+import com.android.tools.r8.naming.ClassNameMapper;
+import com.android.tools.r8.naming.ClassNamingForNameMapper;
 import com.android.tools.r8.naming.MapConsumer;
 import com.android.tools.r8.naming.ProguardMapStringConsumer;
 import com.android.tools.r8.naming.SourceFileRewriter;
@@ -77,6 +80,7 @@ import java.util.Set;
 import java.util.function.BiPredicate;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
@@ -161,7 +165,7 @@ public final class R8Command extends BaseCompilerCommand {
 
     private final ProguardConfigurationParserOptions.Builder parserOptionsBuilder =
         ProguardConfigurationParserOptions.builder().readEnvironment();
-    private final boolean allowDexInArchive =
+    private final boolean allowDexInputToR8 =
         System.getProperty("com.android.tools.r8.allowDexInputToR8") != null;
 
     // TODO(zerny): Consider refactoring CompatProguardCommandBuilder to avoid subclassing.
@@ -171,17 +175,17 @@ public final class R8Command extends BaseCompilerCommand {
 
     Builder(DiagnosticsHandler diagnosticsHandler) {
       super(diagnosticsHandler);
-      setIgnoreDexInArchive(!allowDexInArchive);
+      setIgnoreDexInArchive(!allowDexInputToR8);
     }
 
     private Builder(AndroidApp app) {
       super(app);
-      setIgnoreDexInArchive(!allowDexInArchive);
+      setIgnoreDexInArchive(!allowDexInputToR8);
     }
 
     private Builder(AndroidApp app, DiagnosticsHandler diagnosticsHandler) {
       super(app, diagnosticsHandler);
-      setIgnoreDexInArchive(!allowDexInArchive);
+      setIgnoreDexInArchive(!allowDexInputToR8);
     }
 
     // Internal
@@ -750,7 +754,7 @@ public final class R8Command extends BaseCompilerCommand {
       }
 
       for (Path file : programFiles) {
-        if (FileUtils.isDexFile(file)) {
+        if (FileUtils.isDexFile(file) && !allowDexInputToR8) {
           reporter.error(new StringDiagnostic(
               "R8 does not support compiling DEX inputs", new PathOrigin(file)));
         }
@@ -1397,10 +1401,7 @@ public final class R8Command extends BaseCompilerCommand {
         wrapExistingMapConsumerIfNotNull(
             mapConsumer,
             androidResourceConsumer,
-            nonNulStringConsumer ->
-                ProguardMapStringConsumer.builder()
-                    .setStringConsumer(new ResourceShrinkerMapStringConsumer(internal))
-                    .build());
+            nonNulStringConsumer -> new ResourceShrinkerMapStringConsumer(internal));
     // Amend the usage information consumer with options from the proguard configuration.
     internal.usageInformationConsumer =
         wrapStringConsumer(
@@ -1539,42 +1540,31 @@ public final class R8Command extends BaseCompilerCommand {
     return optionConsumer;
   }
 
-  private static class ResourceShrinkerMapStringConsumer implements StringConsumer {
+  private static class ResourceShrinkerMapStringConsumer implements MapConsumer {
 
     private final InternalOptions internal;
-    private List<String> mappingStrings = new ArrayList<>();
-    private StringBuilder current = new StringBuilder();
+    private final Predicate<String> classNamePredicate;
+    private StringBuilder resultBuilder = new StringBuilder();
 
     public ResourceShrinkerMapStringConsumer(InternalOptions internal) {
       this.internal = internal;
-    }
-
-    @Override
-    public void accept(String string, DiagnosticsHandler handler) {
-      current.append(string);
-      if (string.endsWith("\n")) {
-        addNoneCommentLinesAndReset();
-      }
-    }
-
-    private void addNoneCommentLinesAndReset() {
-      StringUtils.splitLines(
-          current.toString(),
-          false,
-          line -> {
-            if (!line.startsWith("#")) {
-              mappingStrings.add(line);
-            }
-          });
-      current.setLength(0);
+      this.classNamePredicate =
+          LegacyResourceShrinker.classNamesNeededForResourceShrinkingPredicate();
     }
 
     @Override
     public void finished(DiagnosticsHandler handler) {
-      if (current.length() != 0) {
-        addNoneCommentLinesAndReset();
+      internal.androidResourceProguardMapStrings = StringUtils.splitLines(resultBuilder.toString());
+      resultBuilder = null;
+    }
+
+    @Override
+    public void accept(DiagnosticsHandler diagnosticsHandler, ClassNameMapper classNameMapper) {
+      for (ClassNamingForNameMapper entry : classNameMapper.getClassNameMappings().values()) {
+        if (classNamePredicate.test(entry.originalName)) {
+          resultBuilder.append(entry.toProguardMapSource());
+        }
       }
-      internal.androidResourceProguardMapStrings = mappingStrings;
     }
   }
 

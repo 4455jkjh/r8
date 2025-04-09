@@ -44,9 +44,9 @@ import com.android.tools.r8.graph.DexProto;
 import com.android.tools.r8.graph.DexType;
 import com.android.tools.r8.graph.GenericSignature;
 import com.android.tools.r8.graph.GenericSignature.ClassSignature;
+import com.android.tools.r8.graph.ImmediateAppSubtypingInfo;
 import com.android.tools.r8.graph.ProgramMethod;
 import com.android.tools.r8.graph.SmaliWriter;
-import com.android.tools.r8.graph.SubtypingInfo;
 import com.android.tools.r8.jasmin.JasminBuilder;
 import com.android.tools.r8.origin.Origin;
 import com.android.tools.r8.origin.PathOrigin;
@@ -969,18 +969,21 @@ public class TestBase {
     // Run the tree shaker to compute an instance of AppInfoWithLiveness.
     ExecutorService executor = Executors.newSingleThreadExecutor();
     ProfileCollectionAdditions profileCollectionAdditions = ProfileCollectionAdditions.nop();
-    SubtypingInfo subtypingInfo = SubtypingInfo.create(appView);
     RootSet rootSet =
         RootSet.builder(
                 appView,
                 profileCollectionAdditions,
-                subtypingInfo,
+                ImmediateAppSubtypingInfo.create(appView),
                 appView.options().getProguardConfiguration().getRules())
             .build(executor);
     appView.setRootSet(rootSet);
+    appView.rebuildAppInfo();
     EnqueuerResult enqueuerResult =
         EnqueuerFactory.createForInitialTreeShaking(
-                appView, profileCollectionAdditions, executor, subtypingInfo)
+                appView,
+                profileCollectionAdditions,
+                executor,
+                ImmediateAppSubtypingInfo.create(appView))
             .traceApplication(rootSet, executor, Timing.empty());
     executor.shutdown();
     // We do not run the tree pruner to ensure that the hierarchy is as designed and not modified

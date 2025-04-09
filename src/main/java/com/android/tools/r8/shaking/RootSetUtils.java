@@ -9,6 +9,7 @@ import static com.google.common.base.Predicates.alwaysTrue;
 import static java.util.Collections.emptyMap;
 
 import com.android.tools.r8.dex.Constants;
+import com.android.tools.r8.diagnostic.DefinitionContext;
 import com.android.tools.r8.errors.AssumeNoSideEffectsRuleForObjectMembersDiagnostic;
 import com.android.tools.r8.errors.AssumeValuesMissingStaticFieldDiagnostic;
 import com.android.tools.r8.errors.InlinableStaticFinalFieldPreconditionDiagnostic;
@@ -38,13 +39,13 @@ import com.android.tools.r8.graph.DexProgramClass;
 import com.android.tools.r8.graph.DexReference;
 import com.android.tools.r8.graph.DexType;
 import com.android.tools.r8.graph.DirectMappedDexApplication;
+import com.android.tools.r8.graph.ImmediateAppSubtypingInfo;
 import com.android.tools.r8.graph.MethodResolutionResult.SingleResolutionResult;
 import com.android.tools.r8.graph.ProgramDefinition;
 import com.android.tools.r8.graph.ProgramField;
 import com.android.tools.r8.graph.ProgramMember;
 import com.android.tools.r8.graph.ProgramMethod;
 import com.android.tools.r8.graph.PrunedItems;
-import com.android.tools.r8.graph.SubtypingInfo;
 import com.android.tools.r8.graph.lens.GraphLens;
 import com.android.tools.r8.ir.analysis.type.DynamicType;
 import com.android.tools.r8.ir.analysis.value.AbstractValue;
@@ -119,7 +120,7 @@ public class RootSetUtils {
     private final AppView<? extends AppInfoWithClassHierarchy> appView;
     private AssumeInfoCollection.Builder assumeInfoCollectionBuilder;
     private final RootSetBuilderEventConsumer eventConsumer;
-    private final SubtypingInfo subtypingInfo;
+    private final ImmediateAppSubtypingInfo subtypingInfo;
     private final DirectMappedDexApplication application;
     private final Set<DexType> rootLibraryTypes = Sets.newIdentityHashSet();
     private final Iterable<? extends ProguardConfigurationRule> rules;
@@ -163,7 +164,7 @@ public class RootSetUtils {
     private RootSetBuilder(
         AppView<? extends AppInfoWithClassHierarchy> appView,
         RootSetBuilderEventConsumer eventConsumer,
-        SubtypingInfo subtypingInfo,
+        ImmediateAppSubtypingInfo subtypingInfo,
         Iterable<? extends ProguardConfigurationRule> rules) {
       this.appView = appView;
       this.eventConsumer = eventConsumer;
@@ -196,7 +197,7 @@ public class RootSetUtils {
     private RootSetBuilder(
         AppView<? extends AppInfoWithClassHierarchy> appView,
         Enqueuer enqueuer,
-        SubtypingInfo subtypingInfo) {
+        ImmediateAppSubtypingInfo subtypingInfo) {
       this(
           appView,
           RootSetBuilderEventConsumer.create(enqueuer.getProfileCollectionAdditions()),
@@ -258,15 +259,27 @@ public class RootSetUtils {
                 rootLibraryTypes.add(definition.getContextType());
               }
             }
+
+            @Override
+            protected void notifyMissingClass(DexType type, DefinitionContext referencedFrom) {
+              assert recordMissingClassWhenAssertionsEnabled(type);
+            }
+
+            private boolean recordMissingClassWhenAssertionsEnabled(DexType type) {
+              // Record missing class references from the D8 compilation unit in R8 partial.
+              // We use this to ensure that calling AppInfoWithLiveness#definitionFor does not fail
+              // when looking up a missing class type from the D8 part (which happens during library
+              // desugaring).
+              options.partialSubCompilationConfiguration.asR8().d8MissingClasses.add(type);
+              return true;
+            }
           };
       useCollector.run(executorService);
 
       // Trace resources.
-      // TODO(b/400935182): Extend R8PartialResourceUseCollector to support LIR.
-      if (options.isOptimizedResourceShrinking()) {
+      if (options.androidResourceProvider != null) {
         R8PartialResourceUseCollector resourceUseCollector =
             new R8PartialResourceUseCollector(appView) {
-
               @Override
               protected void keep(int resourceId) {
                 resourceRootIds.add(resourceId);
@@ -444,11 +457,12 @@ public class RootSetUtils {
 
       tasks.submit(
           () -> {
-            for (DexProgramClass clazz :
-                rule.relevantCandidatesForRule(
-                    appView, subtypingInfo, application.classes(), alwaysTrue())) {
-              process(clazz, rule, ifRulePreconditionMatch);
-            }
+            rule.forEachRelevantCandidate(
+                appView,
+                subtypingInfo,
+                application.classes(),
+                alwaysTrue(),
+                clazz -> process(clazz, rule, ifRulePreconditionMatch));
             if (rule.applyToNonProgramClasses()) {
               for (DexLibraryClass clazz : application.libraryClasses()) {
                 process(clazz, rule, ifRulePreconditionMatch);
@@ -512,8 +526,8 @@ public class RootSetUtils {
     }
 
     private void propagateAssumeRules(DexClass clazz) {
-      Set<DexType> subTypes = subtypingInfo.allImmediateSubtypes(clazz.type);
-      if (subTypes.isEmpty()) {
+      List<DexClass> subclasses = subtypingInfo.getSubclasses(clazz);
+      if (subclasses.isEmpty()) {
         return;
       }
       for (DexEncodedMethod encodedMethod : clazz.virtualMethods()) {
@@ -522,15 +536,18 @@ public class RootSetUtils {
           assert !encodedMethod.shouldNotHaveCode();
           continue;
         }
-        propagateAssumeRules(clazz, encodedMethod.getReference(), subTypes);
+        propagateAssumeRules(clazz, encodedMethod.getReference(), subclasses);
       }
     }
 
-    private void propagateAssumeRules(DexClass clazz, DexMethod reference, Set<DexType> subTypes) {
+    private void propagateAssumeRules(
+        DexClass clazz, DexMethod reference, List<DexClass> subclasses) {
       AssumeInfo infoToBePropagated = null;
-      for (DexType subType : subTypes) {
+      for (DexClass subclass : subclasses) {
         DexMethod referenceInSubType =
-            appView.dexItemFactory().createMethod(subType, reference.proto, reference.name);
+            appView
+                .dexItemFactory()
+                .createMethod(subclass.getType(), reference.proto, reference.name);
         // Those rules are bound to definitions, not references. If the current subtype does not
         // override the method, and when the retrieval of bound rule fails, it is unclear whether it
         // is due to the lack of the definition or it indeed means no matching rules. Similar to how
@@ -756,7 +773,7 @@ public class RootSetUtils {
                           resolutionMethod
                               .getDefinition()
                               .toForwardingMethod(originalClazz, appView)));
-          assert methodToKeepReference.equals(methodToKeep.getReference());
+          assert methodToKeepReference.isIdenticalTo(methodToKeep.getReference());
         } else {
           methodToKeep = resolutionMethod;
         }
@@ -786,25 +803,21 @@ public class RootSetUtils {
         Map<Predicate<DexDefinition>, DexProgramClass> preconditionSupplier,
         boolean onlyIncludeProgramClasses,
         ProguardIfRulePreconditionMatch ifRulePreconditionMatch) {
-      Set<DexType> visited = new HashSet<>();
-      Deque<DexType> worklist = new ArrayDeque<>();
+      Set<DexClass> visited = Sets.newIdentityHashSet();
+      Deque<DexClass> worklist = new ArrayDeque<>();
       // Intentionally skip the current `clazz`, assuming it's covered by
       // markMatchingVisibleMethods.
-      worklist.addAll(subtypingInfo.allImmediateSubtypes(clazz.type));
+      worklist.addAll(subtypingInfo.getSubclasses(clazz));
 
       while (!worklist.isEmpty()) {
-        DexType currentType = worklist.poll();
-        if (!visited.add(currentType)) {
+        DexClass currentClass = worklist.poll();
+        if (!visited.add(currentClass)) {
           continue;
         }
-        DexClass currentClazz = appView.definitionFor(currentType);
-        if (currentClazz == null) {
+        if (!onlyIncludeProgramClasses && currentClass.isNotProgramClass()) {
           continue;
         }
-        if (!onlyIncludeProgramClasses && currentClazz.isNotProgramClass()) {
-          continue;
-        }
-        currentClazz.forEachClassMethodMatching(
+        currentClass.forEachClassMethodMatching(
             DexEncodedMethod::belongsToVirtualPool,
             method -> {
               DexProgramClass precondition =
@@ -812,7 +825,7 @@ public class RootSetUtils {
               markMethod(
                   method, memberKeepRules, null, rule, precondition, ifRulePreconditionMatch);
             });
-        worklist.addAll(subtypingInfo.allImmediateSubtypes(currentClazz.type));
+        worklist.addAll(subtypingInfo.getSubclasses(currentClass));
       }
     }
 
@@ -2352,14 +2365,14 @@ public class RootSetUtils {
     public static RootSetBuilder builder(
         AppView<? extends AppInfoWithClassHierarchy> appView,
         Enqueuer enqueuer,
-        SubtypingInfo subtypingInfo) {
+        ImmediateAppSubtypingInfo subtypingInfo) {
       return new RootSetBuilder(appView, enqueuer, subtypingInfo);
     }
 
     public static RootSetBuilder builder(
         AppView<? extends AppInfoWithClassHierarchy> appView,
         ProfileCollectionAdditions profileCollectionAdditions,
-        SubtypingInfo subtypingInfo,
+        ImmediateAppSubtypingInfo subtypingInfo,
         Iterable<? extends ProguardConfigurationRule> rules) {
       return new RootSetBuilder(
           appView,
@@ -2376,7 +2389,7 @@ public class RootSetUtils {
     private ConsequentRootSetBuilder(
         AppView<? extends AppInfoWithClassHierarchy> appView,
         Enqueuer enqueuer,
-        SubtypingInfo subtypingInfo) {
+        ImmediateAppSubtypingInfo subtypingInfo) {
       super(
           appView,
           RootSetBuilderEventConsumer.create(enqueuer.getProfileCollectionAdditions()),
@@ -2422,7 +2435,7 @@ public class RootSetUtils {
     private MainDexRootSetBuilder(
         AppView<? extends AppInfoWithClassHierarchy> appView,
         ProfileCollectionAdditions profileCollectionAdditions,
-        SubtypingInfo subtypingInfo,
+        ImmediateAppSubtypingInfo subtypingInfo,
         Iterable<? extends ProguardConfigurationRule> rules) {
       super(
           appView,
@@ -2475,7 +2488,7 @@ public class RootSetUtils {
     public static MainDexRootSetBuilder builder(
         AppView<? extends AppInfoWithClassHierarchy> appView,
         ProfileCollectionAdditions profileCollectionAdditions,
-        SubtypingInfo subtypingInfo,
+        ImmediateAppSubtypingInfo subtypingInfo,
         Iterable<? extends ProguardConfigurationRule> rules) {
       return new MainDexRootSetBuilder(appView, profileCollectionAdditions, subtypingInfo, rules);
     }

@@ -845,21 +845,12 @@ public class DexItemFactory {
       createStaticallyKnownType("Ljava/lang/invoke/LambdaMetafactory;");
   public final DexType constantBootstrapsType =
       createStaticallyKnownType("Ljava/lang/invoke/ConstantBootstraps;");
+  public final ConstantBootstrapsMembers constantBootstrapsMembers =
+      new ConstantBootstrapsMembers();
   public final DexType switchBootstrapType = createType("Ljava/lang/runtime/SwitchBootstraps;");
   public final DexType callSiteType = createStaticallyKnownType("Ljava/lang/invoke/CallSite;");
   public final DexType lookupType =
       createStaticallyKnownType("Ljava/lang/invoke/MethodHandles$Lookup;");
-  public final DexMethod constantDynamicBootstrapMethod =
-      createMethod(
-          constantBootstrapsType,
-          createProto(
-              objectType,
-              methodHandlesLookupType,
-              stringType,
-              classType,
-              methodHandleType,
-              objectArrayType),
-          invokeMethodName);
   public final DexProto switchBootstrapMethodProto =
       createProto(
           callSiteType, methodHandlesLookupType, stringType, methodTypeType, objectArrayType);
@@ -905,6 +896,17 @@ public class DexItemFactory {
   public SyntheticNaming getSyntheticNaming() {
     return syntheticNaming;
   }
+
+  public final Map<String, DexType> primitiveDescriptorToType =
+      ImmutableMap.of(
+          byteDescriptor.toString(), byteType,
+          charDescriptor.toString(), charType,
+          shortDescriptor.toString(), shortType,
+          intDescriptor.toString(), intType,
+          longDescriptor.toString(), longType,
+          floatDescriptor.toString(), floatType,
+          doubleDescriptor.toString(), doubleType,
+          booleanDescriptor.toString(), booleanType);
 
   public final BiMap<DexType, DexType> primitiveToBoxed = HashBiMap.create(
       ImmutableMap.<DexType, DexType>builder()
@@ -1888,6 +1890,31 @@ public class DexItemFactory {
       }
       return null;
     }
+  }
+
+  public class ConstantBootstrapsMembers {
+    public final DexMethod invoke =
+        createMethod(
+            constantBootstrapsType,
+            createProto(
+                objectType,
+                methodHandlesLookupType,
+                stringType,
+                classType,
+                methodHandleType,
+                objectArrayType),
+            invokeMethodName);
+    public final DexMethod getStaticFinal =
+        createMethod(
+            constantBootstrapsType,
+            createProto(objectType, methodHandlesLookupType, stringType, classType),
+            "getStaticFinal");
+
+    public final DexMethod primitiveClass =
+        createMethod(
+            constantBootstrapsType,
+            createProto(classType, methodHandlesLookupType, stringType, classType),
+            "primitiveClass");
   }
 
   public class BufferMembers {
