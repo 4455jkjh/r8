@@ -5,6 +5,7 @@
 package com.android.tools.r8.desugar.desugaredlibrary.test;
 
 import static com.android.tools.r8.utils.ConsumerUtils.emptyConsumer;
+import static com.android.tools.r8.utils.ConsumerUtils.emptyThrowingConsumer;
 
 import com.android.tools.r8.ClassFileResourceProvider;
 import com.android.tools.r8.CompilationFailedException;
@@ -100,7 +101,7 @@ public class DesugaredLibraryTestBuilder<T extends DesugaredLibraryTestBase> {
     // Cf back-end is only allowed in Cf to cf compilations.
     parameters.assumeDexRuntime();
     if (compilationSpecification.isProgramShrink()) {
-      if (compilationSpecification == CompilationSpecification.R8_PARTIAL_INCLUDE_L8SHRINK) {
+      if (compilationSpecification.isProgramShrinkWithPartial()) {
         parameters.assumeCanUseR8Partial();
         return test.testForR8Partial(parameters.getBackend())
             .setR8PartialConfiguration(Builder::includeAll);
@@ -108,7 +109,7 @@ public class DesugaredLibraryTestBuilder<T extends DesugaredLibraryTestBase> {
         return test.testForR8(parameters.getBackend());
       }
     } else {
-      if (compilationSpecification == CompilationSpecification.R8_PARTIAL_EXCLUDE_L8SHRINK) {
+      if (compilationSpecification.isNotProgramShrinkWithPartial()) {
         parameters.assumeCanUseR8Partial();
         return test.testForR8Partial(parameters.getBackend())
             .setR8PartialConfiguration(Builder::excludeAll);
@@ -312,6 +313,12 @@ public class DesugaredLibraryTestBuilder<T extends DesugaredLibraryTestBase> {
 
   public <E1 extends Throwable, E2 extends Throwable>
       DesugaredLibraryTestBuilder<T> applyIfR8PartialTestBuilder(
+          ThrowingConsumer<R8PartialTestBuilder, E1> thenConsumer) throws E1, E2 {
+    return applyIfR8PartialTestBuilder(thenConsumer, emptyThrowingConsumer());
+  }
+
+  public <E1 extends Throwable, E2 extends Throwable>
+      DesugaredLibraryTestBuilder<T> applyIfR8PartialTestBuilder(
           ThrowingConsumer<R8PartialTestBuilder, E1> thenConsumer,
           ThrowingConsumer<DesugaredLibraryTestBuilder<T>, E2> elseConsumer)
           throws E1, E2 {
@@ -347,7 +354,7 @@ public class DesugaredLibraryTestBuilder<T extends DesugaredLibraryTestBase> {
     return this;
   }
 
-  public DesugaredLibraryTestBuilder<T> addKeepRules(String keepRules) {
+  public DesugaredLibraryTestBuilder<T> addKeepRules(String... keepRules) {
     if (compilationSpecification.isProgramShrink()) {
       withR8TestBuilder(b -> b.addKeepRules(keepRules));
     }
@@ -468,7 +475,8 @@ public class DesugaredLibraryTestBuilder<T extends DesugaredLibraryTestBase> {
     return this;
   }
 
-  public DesugaredLibraryTestBuilder<T> apply(Consumer<DesugaredLibraryTestBuilder<T>> consumer) {
+  public DesugaredLibraryTestBuilder<T> apply(
+      Consumer<? super DesugaredLibraryTestBuilder<T>> consumer) {
     consumer.accept(this);
     return this;
   }
@@ -643,7 +651,7 @@ public class DesugaredLibraryTestBuilder<T extends DesugaredLibraryTestBase> {
       boolean supportAllCallbacksFromLibrary, boolean libraryCompilation) {
     return opt ->
         opt.getLibraryDesugaringOptions()
-            .setDesugaredLibrarySpecification(
+            .configureDesugaredLibrary(
                 DesugaredLibrarySpecificationParser.parseDesugaredLibrarySpecificationforTesting(
                     StringResource.fromFile(libraryDesugaringSpecification.getSpecification()),
                     opt.dexItemFactory(),
@@ -651,7 +659,8 @@ public class DesugaredLibraryTestBuilder<T extends DesugaredLibraryTestBase> {
                     libraryCompilation,
                     parameters.getApiLevel().getLevel(),
                     builder ->
-                        builder.setSupportAllCallbacksFromLibrary(supportAllCallbacksFromLibrary)));
+                        builder.setSupportAllCallbacksFromLibrary(supportAllCallbacksFromLibrary)),
+                opt.getLibraryDesugaringOptions().getSynthesizedClassPrefix());
   }
 
   public DesugaredLibraryTestBuilder<T> addAndroidBuildVersion() {

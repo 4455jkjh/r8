@@ -3,18 +3,18 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8.ir.desugar;
 
-import com.android.tools.r8.errors.Unreachable;
 import com.android.tools.r8.graph.AppInfoWithClassHierarchy;
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.DexClass;
 import com.android.tools.r8.graph.DexProgramClass;
-import com.android.tools.r8.graph.ProgramMethod;
-import com.android.tools.r8.ir.desugar.desugaredlibrary.apiconversion.DesugaredLibraryAPICallbackSynthesizer;
+import com.android.tools.r8.ir.desugar.desugaredlibrary.LibraryDesugaringOptions;
+import com.android.tools.r8.ir.desugar.desugaredlibrary.apiconversion.DesugaredLibraryApiCallbackSynthesizerPostProcessor;
 import com.android.tools.r8.ir.desugar.desugaredlibrary.disabledesugarer.DesugaredLibraryDisableDesugarerPostProcessor;
 import com.android.tools.r8.ir.desugar.desugaredlibrary.retargeter.AutoCloseableRetargeterPostProcessor;
 import com.android.tools.r8.ir.desugar.desugaredlibrary.retargeter.DesugaredLibraryRetargeterPostProcessor;
 import com.android.tools.r8.ir.desugar.itf.InterfaceMethodProcessorFacade;
-import com.android.tools.r8.ir.desugar.records.RecordClassDesugaring;
+import com.android.tools.r8.ir.desugar.records.RecordClassDesugaringPostProcessor;
+import com.android.tools.r8.shaking.Enqueuer;
 import com.android.tools.r8.utils.CollectionUtils;
 import com.android.tools.r8.utils.timing.Timing;
 import java.util.ArrayList;
@@ -23,26 +23,40 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
-import java.util.function.Predicate;
 
 public abstract class CfPostProcessingDesugaringCollection {
 
-  public static CfPostProcessingDesugaringCollection create(
+  public static CfPostProcessingDesugaringCollection createForD8(
+      AppView<?> appView, InterfaceMethodProcessorFacade interfaceMethodProcessorFacade) {
+    return create(appView, interfaceMethodProcessorFacade, null);
+  }
+
+  public static CfPostProcessingDesugaringCollection createForR8CfToCfDesugaring(
       AppView<?> appView,
       InterfaceMethodProcessorFacade interfaceMethodProcessorFacade,
-      Predicate<ProgramMethod> isLiveMethod) {
+      Enqueuer enqueuer) {
     if (appView.options().desugarState.isOn()) {
       return NonEmptyCfPostProcessingDesugaringCollection.create(
-          appView, interfaceMethodProcessorFacade, isLiveMethod);
+          appView, interfaceMethodProcessorFacade, enqueuer);
     }
     return empty();
   }
 
-  @SuppressWarnings("DoNotCallSuggester")
   public static CfPostProcessingDesugaringCollection createForR8LirToLirLibraryDesugaring(
       AppView<? extends AppInfoWithClassHierarchy> appView,
       InterfaceMethodProcessorFacade interfaceDesugaring) {
-    throw new Unreachable();
+    return create(appView, interfaceDesugaring, null);
+  }
+
+  private static CfPostProcessingDesugaringCollection create(
+      AppView<?> appView,
+      InterfaceMethodProcessorFacade interfaceMethodProcessorFacade,
+      Enqueuer enqueuer) {
+    if (appView.options().desugarState.isOn()) {
+      return NonEmptyCfPostProcessingDesugaringCollection.create(
+          appView, interfaceMethodProcessorFacade, enqueuer);
+    }
+    return empty();
   }
 
   static CfPostProcessingDesugaringCollection empty() {
@@ -69,44 +83,66 @@ public abstract class CfPostProcessingDesugaringCollection {
     public static CfPostProcessingDesugaringCollection create(
         AppView<?> appView,
         InterfaceMethodProcessorFacade interfaceMethodProcessorFacade,
-        Predicate<ProgramMethod> isLiveMethod) {
+        Enqueuer enqueuer) {
       ArrayList<CfPostProcessingDesugaring> desugarings = new ArrayList<>();
-      if (appView
-              .options()
-              .getLibraryDesugaringOptions()
-              .getMachineDesugaredLibrarySpecification()
-              .hasRetargeting()
-          && !appView.options().getLibraryDesugaringOptions().isDesugaredLibraryCompilation()) {
-        desugarings.add(new DesugaredLibraryRetargeterPostProcessor(appView));
+      addIfNotNull(desugarings, interfaceMethodProcessorFacade);
+      if (isLibraryDesugaringEnabled(appView, enqueuer)) {
+        addIfNotNull(
+            desugarings,
+            DesugaredLibraryApiCallbackSynthesizerPostProcessor.create(appView, enqueuer),
+            DesugaredLibraryDisableDesugarerPostProcessor.create(appView),
+            DesugaredLibraryRetargeterPostProcessor.create(appView));
       }
-      if (appView.options().shouldDesugarAutoCloseable()) {
-        desugarings.add(new AutoCloseableRetargeterPostProcessor(appView));
+      if (isNormalDesugaringEnabled(appView, enqueuer)) {
+        addIfNotNull(
+            desugarings,
+            AutoCloseableRetargeterPostProcessor.create(appView),
+            RecordClassDesugaringPostProcessor.create(appView));
       }
-      if (interfaceMethodProcessorFacade != null) {
-        desugarings.add(interfaceMethodProcessorFacade);
+      return desugarings.isEmpty()
+          ? empty()
+          : new NonEmptyCfPostProcessingDesugaringCollection(desugarings);
+    }
+
+    private static void addIfNotNull(
+        Collection<CfPostProcessingDesugaring> collection,
+        CfPostProcessingDesugaring... desugarings) {
+      for (CfPostProcessingDesugaring desugaring : desugarings) {
+        if (desugaring != null) {
+          collection.add(desugaring);
+        }
       }
-      DesugaredLibraryAPICallbackSynthesizer apiCallbackSynthesizor =
-          appView.options().getLibraryDesugaringOptions().hasTypeRewriter()
-              ? new DesugaredLibraryAPICallbackSynthesizer(appView, isLiveMethod)
-              : null;
-      // At this point the desugaredLibraryAPIConverter is required to be last to generate
-      // call-backs on the forwarding methods.
-      if (apiCallbackSynthesizor != null) {
-        desugarings.add(apiCallbackSynthesizor);
+    }
+
+    private static boolean isLibraryDesugaringEnabled(AppView<?> appView, Enqueuer enqueuer) {
+      LibraryDesugaringOptions libraryDesugaringOptions =
+          appView.options().getLibraryDesugaringOptions();
+      if (!libraryDesugaringOptions.isEnabled()) {
+        return false;
       }
-      RecordClassDesugaring recordRewriter = RecordClassDesugaring.create(appView);
-      if (recordRewriter != null) {
-        desugarings.add(recordRewriter);
+      if (appView.enableWholeProgramOptimizations()) {
+        if (enqueuer != null) {
+          return libraryDesugaringOptions.isCfToCfLibraryDesugaringEnabled();
+        } else {
+          // We only reach here if we are running lir-to-lir library desugaring.
+          assert libraryDesugaringOptions.isLirToLirLibraryDesugaringEnabled();
+          return true;
+        }
+      } else {
+        // Library desugaring is cf-to-cf in D8.
+        assert libraryDesugaringOptions.isCfToCfLibraryDesugaringEnabled();
+        return true;
       }
-      DesugaredLibraryDisableDesugarerPostProcessor disableDesugarer =
-          DesugaredLibraryDisableDesugarerPostProcessor.create(appView);
-      if (disableDesugarer != null) {
-        desugarings.add(disableDesugarer);
+    }
+
+    private static boolean isNormalDesugaringEnabled(AppView<?> appView, Enqueuer enqueuer) {
+      if (appView.enableWholeProgramOptimizations()) {
+        // Normal desugaring is only enabled in tree shaking in R8.
+        return enqueuer != null;
+      } else {
+        // All desugaring runs as cf-to-cf in D8.
+        return true;
       }
-      if (desugarings.isEmpty()) {
-        return empty();
-      }
-      return new NonEmptyCfPostProcessingDesugaringCollection(desugarings);
     }
 
     @Override

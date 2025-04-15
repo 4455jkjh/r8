@@ -98,6 +98,10 @@ public class KotlinBlogTest extends DesugaredLibraryTestBase {
         .applyIf(
             kotlinParameters.getCompiler().isNot(KOTLINC_1_3_72),
             DesugaredLibraryTestBuilder::allowUnusedDontWarnPatterns)
+        .applyIf(
+            kotlinParameters.getCompiler().isNot(KOTLINC_1_3_72)
+                && compilationSpecification == CompilationSpecification.R8_PARTIAL_EXCLUDE_L8SHRINK,
+            DesugaredLibraryTestBuilder::allowUnusedProguardConfigurationRules)
         .compile()
         .withArt6Plus64BitsLib()
         .run(parameters.getRuntime(), PKG + ".BlogKt")

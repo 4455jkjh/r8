@@ -782,6 +782,28 @@ public final class R8Command extends BaseCompilerCommand {
       if (forceProguardCompatibility) {
         reporter.error("Partial shrinking does not support Proguard compatibility mode");
       }
+      if (androidResourceProvider != null
+          && !resourceShrinkerConfiguration.isOptimizedShrinking()) {
+        reporter.error("Partial shrinking only supports optimized resource shrinking");
+      }
+    }
+
+    private void validateProguardConfiguration(
+        ProguardConfiguration configuration, ProguardConfigurationParserOptions parserOptions) {
+      Reporter reporter = getReporter();
+      if (!parserOptions.isKeepRuntimeInvisibleAnnotationsEnabled()) {
+        if (configuration.getKeepAttributes().runtimeInvisibleAnnotations
+            || configuration.getKeepAttributes().runtimeInvisibleParameterAnnotations
+            || configuration.getKeepAttributes().runtimeInvisibleTypeAnnotations) {
+          throw fatalError(
+              new StringDiagnostic("Illegal attempt to keep runtime invisible annotations"));
+        }
+      }
+      if (partialCompilationConfiguration.isEnabled()) {
+        if (configuration.isProtoShrinkingEnabled()) {
+          reporter.error("Partial shrinking does not support -shrinkunusedprotofields");
+        }
+      }
     }
 
     private boolean hasMainDexList() {
@@ -919,14 +941,7 @@ public final class R8Command extends BaseCompilerCommand {
       // TODO(b/248408342): Remove this and parse annotations as part of R8 root-set & enqueuer.
       extractKeepAnnotationRules(parser);
       ProguardConfiguration configuration = configurationBuilder.build();
-      if (!parserOptions.isKeepRuntimeInvisibleAnnotationsEnabled()) {
-        if (configuration.getKeepAttributes().runtimeInvisibleAnnotations
-            || configuration.getKeepAttributes().runtimeInvisibleParameterAnnotations
-            || configuration.getKeepAttributes().runtimeInvisibleTypeAnnotations) {
-          throw fatalError(
-              new StringDiagnostic("Illegal attempt to keep runtime invisible annotations"));
-        }
-      }
+      validateProguardConfiguration(configuration, parserOptions);
       return configuration;
     }
 

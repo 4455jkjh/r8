@@ -8,9 +8,10 @@ import static com.android.tools.r8.kotlin.KotlinMetadataUtils.updateJvmMetadataV
 
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.DexClass;
-import com.android.tools.r8.graph.DexDefinitionSupplier;
+import com.android.tools.r8.graph.DexEncodedMember;
 import com.android.tools.r8.utils.Box;
 import com.android.tools.r8.utils.Pair;
+import java.util.function.BiConsumer;
 import kotlin.Metadata;
 import kotlin.metadata.KmLambda;
 import kotlin.metadata.jvm.JvmMetadataVersion;
@@ -44,13 +45,15 @@ public class KotlinSyntheticClassInfo implements KotlinClassLevelInfo {
       String packageName,
       DexClass clazz,
       Kotlin kotlin,
-      AppView<?> appView) {
+      AppView<?> appView,
+      BiConsumer<DexEncodedMember<?, ?>, KotlinMemberLevelInfo> memberInfoConsumer) {
     KmLambda lambda = syntheticClass.getKmLambda();
     assert lambda == null || syntheticClass.isLambda();
     return new KotlinSyntheticClassInfo(
         syntheticClass,
         lambda != null
-            ? KotlinLambdaInfo.create(clazz, lambda, appView.dexItemFactory(), appView.reporter())
+            ? KotlinLambdaInfo.create(
+                clazz, lambda, appView.dexItemFactory(), memberInfoConsumer, appView.reporter())
             : null,
         getFlavour(clazz, kotlin),
         packageName);
@@ -85,9 +88,9 @@ public class KotlinSyntheticClassInfo implements KotlinClassLevelInfo {
   }
 
   @Override
-  public void trace(DexDefinitionSupplier definitionSupplier) {
+  public void trace(KotlinMetadataUseRegistry registry) {
     if (lambda != null) {
-      lambda.trace(definitionSupplier);
+      lambda.trace(registry);
     }
   }
 

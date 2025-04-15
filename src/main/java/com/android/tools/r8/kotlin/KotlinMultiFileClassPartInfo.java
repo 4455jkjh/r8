@@ -8,9 +8,10 @@ import static com.android.tools.r8.kotlin.KotlinMetadataUtils.updateJvmMetadataV
 
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.DexClass;
-import com.android.tools.r8.graph.DexDefinitionSupplier;
+import com.android.tools.r8.graph.DexEncodedMember;
 import com.android.tools.r8.graph.DexEncodedMethod;
 import com.android.tools.r8.utils.Pair;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import kotlin.Metadata;
 import kotlin.metadata.KmPackage;
@@ -36,10 +37,13 @@ public class KotlinMultiFileClassPartInfo implements KotlinClassLevelInfo {
       String packageName,
       DexClass clazz,
       AppView<?> appView,
-      Consumer<DexEncodedMethod> keepByteCode) {
+      Consumer<DexEncodedMethod> keepByteCode,
+      BiConsumer<DexEncodedMember<?, ?>, KotlinMemberLevelInfo> memberInfoConsumer) {
     KmPackage kmPackage = classPart.getKmPackage();
     return new KotlinMultiFileClassPartInfo(
-        classPart, KotlinPackageInfo.create(kmPackage, clazz, appView, keepByteCode), packageName);
+        classPart,
+        KotlinPackageInfo.create(kmPackage, clazz, appView, keepByteCode, memberInfoConsumer),
+        packageName);
   }
 
   @Override
@@ -76,8 +80,8 @@ public class KotlinMultiFileClassPartInfo implements KotlinClassLevelInfo {
   }
 
   @Override
-  public void trace(DexDefinitionSupplier definitionSupplier) {
-    packageInfo.trace(definitionSupplier);
+  public void trace(KotlinMetadataUseRegistry registry) {
+    packageInfo.trace(registry);
   }
 
   public String getFacadeClassName() {

@@ -8,13 +8,17 @@ import static com.android.tools.r8.kotlin.KotlinMetadataUtils.VERSION_1_4_0;
 import static com.android.tools.r8.kotlin.KotlinMetadataUtils.getInvalidKotlinInfo;
 import static com.android.tools.r8.kotlin.KotlinMetadataUtils.getNoKotlinInfo;
 import static com.android.tools.r8.kotlin.KotlinMetadataWriter.kotlinMetadataToString;
+import static com.android.tools.r8.utils.ConsumerUtils.emptyBiConsumer;
+import static com.android.tools.r8.utils.ConsumerUtils.emptyConsumer;
 
+import com.android.tools.r8.graph.AppInfoWithClassHierarchy;
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.DexAnnotation;
 import com.android.tools.r8.graph.DexAnnotationElement;
 import com.android.tools.r8.graph.DexClass;
 import com.android.tools.r8.graph.DexEncodedAnnotation;
 import com.android.tools.r8.graph.DexItemFactory;
+import com.android.tools.r8.graph.DexProgramClass;
 import com.android.tools.r8.graph.DexString;
 import com.android.tools.r8.graph.DexType;
 import com.android.tools.r8.graph.DexValue;
@@ -23,10 +27,10 @@ import com.android.tools.r8.graph.DexValue.DexValueInt;
 import com.android.tools.r8.graph.DexValue.DexValueString;
 import com.android.tools.r8.graph.lens.GraphLens;
 import com.android.tools.r8.utils.BooleanBox;
-import com.android.tools.r8.utils.ConsumerUtils;
 import com.android.tools.r8.utils.Pair;
 import com.android.tools.r8.utils.ThreadUtils;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -81,6 +85,7 @@ public class KotlinMetadataRewriter {
   }
 
   public void runForR8(ExecutorService executorService) throws ExecutionException {
+    AppView<? extends AppInfoWithClassHierarchy> appView = this.appView.withClassHierarchy();
     GraphLens graphLens = appView.graphLens();
     GraphLens kotlinMetadataLens = appView.getKotlinMetadataLens();
     DexType rewrittenMetadataType =
@@ -112,8 +117,7 @@ public class KotlinMetadataRewriter {
           //  != factory.kotlinMetadataType
           if (oldMeta == null
               || kotlinInfo == getNoKotlinInfo()
-              || (appView.appInfo().hasLiveness()
-                  && !appView.withLiveness().appInfo().isPinned(clazz))) {
+              || !appView.getKeepInfo().isPinned(clazz, appView.options())) {
             // Remove @Metadata in DexAnnotation when there is no kotlin info and the type is not
             // missing.
             if (oldMeta != null) {
@@ -128,6 +132,21 @@ public class KotlinMetadataRewriter {
         },
         appView.options().getThreadingModule(),
         executorService);
+    if (appView.options().partialSubCompilationConfiguration != null) {
+      appView
+          .options()
+          .partialSubCompilationConfiguration
+          .asR8()
+          .commitDexingOutputClasses(appView);
+      processClassesInD8(
+          appView.options().partialSubCompilationConfiguration.asR8().getDexingOutputClasses(),
+          executorService);
+      appView
+          .options()
+          .partialSubCompilationConfiguration
+          .asR8()
+          .uncommitDexingOutputClasses(appView);
+    }
     appView.setKotlinMetadataLens(appView.graphLens());
   }
 
@@ -135,29 +154,76 @@ public class KotlinMetadataRewriter {
     if (appView.getNamingLens().isIdentityLens()) {
       return;
     }
-    final WriteMetadataFieldInfo writeMetadataFieldInfo = WriteMetadataFieldInfo.rewriteAll();
+    processClassesInD8(appView.appInfo().classes(), executorService);
+  }
+
+  private void processClassesInD8(
+      Collection<DexProgramClass> classes, ExecutorService executorService)
+      throws ExecutionException {
     BooleanBox reportedUnknownMetadataVersion = new BooleanBox();
+    WriteMetadataFieldInfo writeMetadataFieldInfo = WriteMetadataFieldInfo.rewriteAll();
     ThreadUtils.processItems(
-        appView.appInfo().classes(),
-        clazz -> {
-          DexAnnotation metadata = clazz.annotations().getFirstMatching(factory.kotlinMetadataType);
-          if (metadata == null) {
-            return;
-          }
-          KotlinClassLevelInfo kotlinInfo =
-              KotlinClassMetadataReader.getKotlinInfoFromAnnotation(
-                  appView,
-                  clazz,
-                  metadata,
-                  ConsumerUtils.emptyConsumer(),
-                  reportedUnknownMetadataVersion::getAndSet);
-          if (kotlinInfo == getNoKotlinInfo()) {
-            return;
-          }
-          writeKotlinInfoToAnnotation(clazz, kotlinInfo, metadata, writeMetadataFieldInfo);
-        },
+        classes,
+        clazz -> processClassInD8(clazz, reportedUnknownMetadataVersion, writeMetadataFieldInfo),
         appView.options().getThreadingModule(),
         executorService);
+  }
+
+  private void processClassInD8(
+      DexProgramClass clazz,
+      BooleanBox reportedUnknownMetadataVersion,
+      WriteMetadataFieldInfo writeMetadataFieldInfo) {
+    DexAnnotation metadata = clazz.annotations().getFirstMatching(factory.kotlinMetadataType);
+    if (metadata == null) {
+      return;
+    }
+    // In D8 of R8 partial the kotlin.Metadata annotations have already been read during trace
+    // references.
+    KotlinClassLevelInfo kotlinInfo;
+    if (appView.options().partialSubCompilationConfiguration != null) {
+      assert verifyKotlinInfoIsSet(clazz, metadata);
+      kotlinInfo = clazz.getKotlinInfo();
+    } else {
+      kotlinInfo =
+          KotlinClassMetadataReader.getKotlinInfoFromAnnotation(
+              appView, clazz, metadata, emptyConsumer(), reportedUnknownMetadataVersion::getAndSet);
+    }
+    if (kotlinInfo == getNoKotlinInfo()) {
+      return;
+    }
+    assert recordMissingClassesInR8Partial(clazz, kotlinInfo);
+    writeKotlinInfoToAnnotation(clazz, kotlinInfo, metadata, writeMetadataFieldInfo);
+  }
+
+  private boolean verifyKotlinInfoIsSet(DexProgramClass clazz, DexAnnotation metadata) {
+    assert appView.options().partialSubCompilationConfiguration != null;
+    KotlinClassLevelInfo classInfo =
+        KotlinClassMetadataReader.getKotlinInfoFromAnnotation(
+            appView, clazz, metadata, emptyConsumer(), () -> false, emptyBiConsumer());
+    assert classInfo.isNoKotlinInformation() || !clazz.getKotlinInfo().isNoKotlinInformation();
+    return true;
+  }
+
+  private boolean recordMissingClassesInR8Partial(
+      DexProgramClass clazz, KotlinClassLevelInfo kotlinInfo) {
+    if (appView.options().partialSubCompilationConfiguration != null) {
+      assert appView.options().partialSubCompilationConfiguration.isR8();
+      KotlinMetadataUseRegistry registry =
+          type -> {
+            DexClass result = appView.appInfo().definitionForWithoutExistenceAssert(type);
+            if (result == null) {
+              appView
+                  .options()
+                  .partialSubCompilationConfiguration
+                  .asR8()
+                  .d8MissingClasses
+                  .add(type);
+            }
+          };
+      kotlinInfo.trace(registry);
+      clazz.forEachProgramMember(member -> member.getDefinition().getKotlinInfo().trace(registry));
+    }
+    return true;
   }
 
   @SuppressWarnings("ReferenceEquality")

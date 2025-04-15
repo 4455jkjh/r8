@@ -9,12 +9,13 @@ import static com.android.tools.r8.kotlin.KotlinMetadataUtils.toJvmMethodSignatu
 
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.DexClass;
-import com.android.tools.r8.graph.DexDefinitionSupplier;
 import com.android.tools.r8.graph.DexEncodedField;
+import com.android.tools.r8.graph.DexEncodedMember;
 import com.android.tools.r8.graph.DexEncodedMethod;
 import com.android.tools.r8.shaking.EnqueuerMetadataTraceable;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import kotlin.metadata.KmPackage;
 import kotlin.metadata.jvm.JvmExtensionsKt;
@@ -42,7 +43,8 @@ public class KotlinPackageInfo implements EnqueuerMetadataTraceable {
       KmPackage kmPackage,
       DexClass clazz,
       AppView<?> appView,
-      Consumer<DexEncodedMethod> keepByteCode) {
+      Consumer<DexEncodedMethod> keepByteCode,
+      BiConsumer<DexEncodedMember<?, ?>, KotlinMemberLevelInfo> memberInfoConsumer) {
     Map<String, DexEncodedField> fieldMap = new HashMap<>();
     for (DexEncodedField field : clazz.fields()) {
       fieldMap.put(toJvmFieldSignature(field.getReference()).toString(), field);
@@ -62,6 +64,7 @@ public class KotlinPackageInfo implements EnqueuerMetadataTraceable {
             appView.dexItemFactory(),
             appView.reporter(),
             keepByteCode,
+            memberInfoConsumer,
             originalMembersWithKotlinInfo),
         KotlinLocalDelegatedPropertyInfo.create(
             JvmExtensionsKt.getLocalDelegatedProperties(kmPackage),
@@ -88,9 +91,9 @@ public class KotlinPackageInfo implements EnqueuerMetadataTraceable {
   }
 
   @Override
-  public void trace(DexDefinitionSupplier definitionSupplier) {
-    containerInfo.trace(definitionSupplier);
-    localDelegatedProperties.trace(definitionSupplier);
+  public void trace(KotlinMetadataUseRegistry registry) {
+    containerInfo.trace(registry);
+    localDelegatedProperties.trace(registry);
   }
 
   public String getModuleName() {

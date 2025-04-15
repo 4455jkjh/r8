@@ -12,8 +12,8 @@ import static com.android.tools.r8.utils.FunctionUtils.forEachApply;
 
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.DexClass;
-import com.android.tools.r8.graph.DexDefinitionSupplier;
 import com.android.tools.r8.graph.DexEncodedField;
+import com.android.tools.r8.graph.DexEncodedMember;
 import com.android.tools.r8.graph.DexEncodedMethod;
 import com.android.tools.r8.graph.DexItemFactory;
 import com.android.tools.r8.graph.DexString;
@@ -29,6 +29,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import kotlin.Metadata;
 import kotlin.metadata.KmClass;
@@ -110,7 +111,8 @@ public class KotlinClassInfo implements KotlinClassLevelInfo {
       String packageName,
       DexClass hostClass,
       AppView<?> appView,
-      Consumer<DexEncodedMethod> keepByteCode) {
+      Consumer<DexEncodedMethod> keepByteCode,
+      BiConsumer<DexEncodedMember<?, ?>, KotlinMemberLevelInfo> memberInfoConsumer) {
     DexItemFactory factory = appView.dexItemFactory();
     Reporter reporter = appView.reporter();
     KmClass kmClass = metadata.getKmClass();
@@ -132,7 +134,7 @@ public class KotlinClassInfo implements KotlinClassLevelInfo {
       if (signature != null) {
         DexEncodedMethod method = methodMap.get(signature.toString());
         if (method != null) {
-          method.setKotlinMemberInfo(constructorInfo);
+          memberInfoConsumer.accept(method, constructorInfo);
           originalMembersWithKotlinInfo.add(method.getReference());
           continue;
         }
@@ -148,6 +150,7 @@ public class KotlinClassInfo implements KotlinClassLevelInfo {
             factory,
             reporter,
             keepByteCode,
+            memberInfoConsumer,
             originalMembersWithKotlinInfo);
     KotlinTypeReference anonymousObjectOrigin = getAnonymousObjectOrigin(kmClass, factory);
     boolean nameCanBeDeducedFromClassOrOrigin =
@@ -458,18 +461,18 @@ public class KotlinClassInfo implements KotlinClassLevelInfo {
   }
 
   @Override
-  public void trace(DexDefinitionSupplier definitionSupplier) {
-    forEachApply(constructorsWithNoBacking, constructor -> constructor::trace, definitionSupplier);
-    declarationContainerInfo.trace(definitionSupplier);
-    forEachApply(typeParameters, param -> param::trace, definitionSupplier);
-    forEachApply(superTypes, type -> type::trace, definitionSupplier);
-    forEachApply(sealedSubClasses, sealedClass -> sealedClass::trace, definitionSupplier);
-    forEachApply(nestedClasses, nested -> nested::trace, definitionSupplier);
-    forEachApply(contextReceiverTypes, nested -> nested::trace, definitionSupplier);
-    localDelegatedProperties.trace(definitionSupplier);
+  public void trace(KotlinMetadataUseRegistry registry) {
+    forEachApply(constructorsWithNoBacking, constructor -> constructor::trace, registry);
+    declarationContainerInfo.trace(registry);
+    forEachApply(typeParameters, param -> param::trace, registry);
+    forEachApply(superTypes, type -> type::trace, registry);
+    forEachApply(sealedSubClasses, sealedClass -> sealedClass::trace, registry);
+    forEachApply(nestedClasses, nested -> nested::trace, registry);
+    forEachApply(contextReceiverTypes, nested -> nested::trace, registry);
+    localDelegatedProperties.trace(registry);
     // TODO(b/154347404): trace enum entries.
     if (anonymousObjectOrigin != null) {
-      anonymousObjectOrigin.trace(definitionSupplier);
+      anonymousObjectOrigin.trace(registry);
     }
   }
 }
