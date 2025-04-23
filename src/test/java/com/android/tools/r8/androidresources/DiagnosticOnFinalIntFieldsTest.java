@@ -12,6 +12,7 @@ import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.androidresources.AndroidResourceTestingUtils.AndroidTestResource;
 import com.android.tools.r8.androidresources.AndroidResourceTestingUtils.AndroidTestResourceBuilder;
 import com.android.tools.r8.errors.FinalRClassEntriesWithOptimizedShrinkingDiagnostic;
+import com.android.tools.r8.errors.UnusedProguardKeepRuleDiagnostic;
 import com.google.common.collect.ImmutableList;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
@@ -28,7 +29,11 @@ public class DiagnosticOnFinalIntFieldsTest extends TestBase {
 
   @Parameters(name = "{0}")
   public static TestParametersCollection parameters() {
-    return getTestParameters().withDefaultDexRuntime().withAllApiLevels().build();
+    return getTestParameters()
+        .withDefaultDexRuntime()
+        .withAllApiLevels()
+        .withPartialCompilation()
+        .build();
   }
 
   public static AndroidTestResource getTestResources(TemporaryFolder temp) throws Exception {
@@ -43,8 +48,7 @@ public class DiagnosticOnFinalIntFieldsTest extends TestBase {
     // We test the final id field type by simply passing the standard test resources but ignoring
     // the aapt generated R class, instead we pass directly the R class from this file, which
     // have no real resource references, but does have a non integer field.
-    testForR8(parameters.getBackend())
-        .setMinApi(parameters)
+    testForR8(parameters)
         .addProgramClasses(FooBar.class)
         .addAndroidResources(
             getTestResources(temp),
@@ -52,13 +56,24 @@ public class DiagnosticOnFinalIntFieldsTest extends TestBase {
             ImmutableList.of(ToolHelper.getClassAsBytes(R.string.class)))
         .addKeepMainRule(FooBar.class)
         .enableOptimizedShrinking()
-        .allowDiagnosticWarningMessages()
+        .allowDiagnosticMessages()
         .compileWithExpectedDiagnostics(
-            diagnostics ->
+            diagnostics -> {
+              if (parameters.isRandomPartialCompilation()) {
+                // In R8 partial, we only report FinalRClassEntriesWithOptimizedShrinkingDiagnostic
+                // if the R8 split contains the R class. We may also report an
+                // UnusedProguardKeepRuleDiagnostic depending on the split.
+                diagnostics
+                    .assertAllInfosMatch(diagnosticType(UnusedProguardKeepRuleDiagnostic.class))
+                    .assertAllWarningsMatch(
+                        diagnosticType(FinalRClassEntriesWithOptimizedShrinkingDiagnostic.class));
+              } else {
                 diagnostics
                     .assertOnlyWarnings()
                     .assertWarningsMatch(
-                        diagnosticType(FinalRClassEntriesWithOptimizedShrinkingDiagnostic.class)));
+                        diagnosticType(FinalRClassEntriesWithOptimizedShrinkingDiagnostic.class));
+              }
+            });
   }
 
   public static class FooBar {

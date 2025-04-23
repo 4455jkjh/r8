@@ -4,11 +4,13 @@
 package com.android.tools.r8.dex.container;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assume.assumeFalse;
 
 import com.android.tools.r8.TestParameters;
-import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.utils.AndroidApiLevel;
+import com.android.tools.r8.utils.BooleanUtils;
 import java.nio.file.Path;
+import java.util.List;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -18,15 +20,21 @@ import org.junit.runners.Parameterized.Parameters;
 @RunWith(Parameterized.class)
 public class DexContainerFormatEmptyTest extends DexContainerFormatTestBase {
 
-  @Parameter() public TestParameters parameters;
+  @Parameter(0)
+  public TestParameters parameters;
 
-  @Parameters(name = "{0}")
-  public static TestParametersCollection data() {
-    return getTestParameters().withNoneRuntime().build();
+  @Parameter(1)
+  public boolean useContainerDexApiLevel;
+
+  @Parameters(name = "{0}, useContainerDexApiLevel = {1}")
+  public static List<Object[]> data() {
+    return buildParameters(getTestParameters().withNoneRuntime().build(), BooleanUtils.values());
   }
 
   @Test
   public void testNonContainerD8() throws Exception {
+    assumeFalse(useContainerDexApiLevel);
+
     Path outputA = testForD8(Backend.DEX).setMinApi(AndroidApiLevel.L).compile().writeToZip();
     assertEquals(0, unzipContent(outputA).size());
 
@@ -43,13 +51,12 @@ public class DexContainerFormatEmptyTest extends DexContainerFormatTestBase {
   }
 
   @Test
-  public void testD8Experiment() throws Exception {
+  public void testD8Container() throws Exception {
     Path outputFromDexing =
         testForD8(Backend.DEX)
-            .setMinApi(AndroidApiLevel.L)
-            .addOptionsModification(
-                options -> options.getTestingOptions().dexContainerExperiment = true)
-            .compile()
+            .apply(b -> enableContainer(b, useContainerDexApiLevel))
+            .compileWithExpectedDiagnostics(
+                diagnostics -> checkContainerApiLevelWarning(diagnostics, useContainerDexApiLevel))
             .writeToZip();
     assertEquals(0, unzipContent(outputFromDexing).size());
   }

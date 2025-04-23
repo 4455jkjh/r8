@@ -60,6 +60,7 @@ import com.android.tools.r8.utils.AndroidApp;
 import com.android.tools.r8.utils.ArrayUtils;
 import com.android.tools.r8.utils.Box;
 import com.android.tools.r8.utils.DescriptorUtils;
+import com.android.tools.r8.utils.DexVersion;
 import com.android.tools.r8.utils.ExceptionUtils;
 import com.android.tools.r8.utils.IntBox;
 import com.android.tools.r8.utils.InternalGlobalSyntheticsProgramConsumer;
@@ -200,8 +201,15 @@ public class ApplicationWriter {
 
   public static ApplicationWriter create(
       AppView<?> appView, Marker marker, DexIndexedConsumer consumer) {
-    if (appView.options().testing.dexContainerExperiment) {
-      return new ApplicationWriterExperimental(appView, marker, consumer);
+    if (appView.options().getTestingOptions().forceDexContainerFormat
+        || appView.options().canUseContainerDex()) {
+      if (!DexVersion.getDexVersion(appView.options().getMinApiLevel()).isContainerDex()) {
+        appView
+            .options()
+            .reporter
+            .warning("Forcing container DEX for an API level not supporting it");
+      }
+      return new ApplicationWriterContainer(appView, marker, consumer);
     } else {
       return new ApplicationWriter(appView, marker, consumer);
     }
@@ -604,7 +612,7 @@ public class ApplicationWriter {
     System.out.println("," + many.get());
   }
 
-  private void writeVirtualFile(
+  protected void writeVirtualFile(
       VirtualFile virtualFile, Timing timing, List<DexString> forcedStrings) {
     if (virtualFile.isEmpty()) {
       return;
