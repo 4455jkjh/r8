@@ -29,18 +29,16 @@ public class R8PartialTestBuilder
   private R8PartialCompilationConfiguration r8PartialConfiguration =
       R8PartialCompilationConfiguration.disabledConfiguration();
 
-  private R8PartialTestBuilder(TestState state, Builder builder, Backend backend) {
-    super(state, builder, backend);
+  private R8PartialTestBuilder(TestState state, Builder builder) {
+    super(state, builder, Backend.DEX);
   }
 
-  public static R8PartialTestBuilder create(TestState state, Backend backend) {
-    Builder builder = R8Command.builder(state.getDiagnosticsHandler());
-    return new R8PartialTestBuilder(state, builder, backend);
+  public static R8PartialTestBuilder create(TestState state) {
+    return new R8PartialTestBuilder(state, R8Command.builder(state.getDiagnosticsHandler()));
   }
 
-  public static R8PartialTestBuilder create(
-      TestState state, AndroidApp.Builder appBuilder, Backend backend) {
-    return new R8PartialTestBuilder(state, R8Command.builder(appBuilder.build()), backend);
+  public static R8PartialTestBuilder create(TestState state, AndroidApp.Builder appBuilder) {
+    return new R8PartialTestBuilder(state, R8Command.builder(appBuilder.build()));
   }
 
   @Override
@@ -178,6 +176,7 @@ public class R8PartialTestBuilder
                 options.partialCompilationConfiguration.d8DexOptionsConsumer.andThen(consumer));
   }
 
+  @Override
   public R8PartialTestBuilder addR8PartialR8OptionsModification(
       Consumer<InternalOptions> consumer) {
     return super.addOptionsModification(
@@ -241,5 +240,12 @@ public class R8PartialTestBuilder
           R8PartialCompilationConfiguration.builder().randomizeForTesting(seed).build();
     }
     return this;
+  }
+
+  @Override
+  public R8PartialTestBuilder enablePrintPartialCompilationPartitioning() {
+    return addR8PartialOptionsModification(
+            options -> options.partialCompilationConfiguration.printPartitioningForTesting = true)
+        .allowStdoutMessages();
   }
 }
