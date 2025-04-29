@@ -535,7 +535,7 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
 
   // TODO(b/293591931): Remove this flag.
   // Flag to allow permitted subclasses annotations in DEX. See b/231930852 for context.
-  private final boolean emitPermittedSubclassesAnnotationsInDex =
+  public boolean emitPermittedSubclassesAnnotationsInDex =
       System.getProperty("com.android.tools.r8.emitPermittedSubclassesAnnotationsInDex") != null;
 
   private DumpInputFlags dumpInputFlags = DumpInputFlags.getDefault();
@@ -2363,7 +2363,6 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
     public boolean enableVerticalClassMergerLensAssertion = false;
     public boolean forceRedundantConstNumberRemoval = false;
     public boolean forceSplitReturnRewriter = false;
-    public boolean enableExperimentalDesugaredLibraryKeepRuleGenerator = false;
     public boolean invertConditionals = false;
     public boolean placeExceptionalBlocksLast = false;
     public boolean forceJumboStringProcessing = false;
@@ -2751,7 +2750,7 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
 
   public boolean canUseContainerDex() {
     assert isGeneratingDex();
-    return hasMinApi(containerDexApiLevel());
+    return false;
   }
 
   public boolean canUseJavaLangVarHandleStoreStoreFence(DexDefinitionSupplier definitions) {

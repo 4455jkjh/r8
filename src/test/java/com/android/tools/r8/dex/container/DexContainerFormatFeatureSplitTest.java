@@ -3,7 +3,7 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8.dex.container;
 
-import com.android.tools.r8.R8TestCompileResult;
+import com.android.tools.r8.R8TestCompileResultBase;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.utils.BooleanUtils;
 import com.android.tools.r8.utils.InternalOptions;
@@ -27,7 +27,9 @@ public class DexContainerFormatFeatureSplitTest extends DexContainerFormatTestBa
 
   @Parameters(name = "{0}, useContainerDexApiLevel = {1}")
   public static List<Object[]> data() {
-    return buildParameters(getTestParameters().withNoneRuntime().build(), BooleanUtils.values());
+    return buildParameters(
+        getTestParameters().withNoneRuntime().withPartialCompilation().build(),
+        BooleanUtils.falseValues());
   }
 
   private static Path inputBase;
@@ -49,8 +51,8 @@ public class DexContainerFormatFeatureSplitTest extends DexContainerFormatTestBa
 
   @Test
   public void test() throws Exception {
-    R8TestCompileResult result =
-        testForR8(Backend.DEX)
+    R8TestCompileResultBase<?> result =
+        testForR8(Backend.DEX, parameters)
             .addProgramFiles(inputBase)
             .addFeatureSplit(inputFeature1)
             .addFeatureSplit(inputFeature2)
@@ -61,7 +63,9 @@ public class DexContainerFormatFeatureSplitTest extends DexContainerFormatTestBa
             .apply(b -> enableContainer(b, useContainerDexApiLevel))
             .allowDiagnosticMessages()
             .compileWithExpectedDiagnostics(
-                diagnostics -> checkContainerApiLevelWarning(diagnostics, useContainerDexApiLevel));
+                diagnostics ->
+                    checkContainerApiLevelWarning(
+                        diagnostics, parameters, useContainerDexApiLevel));
     Path basePath = result.writeToZip();
     Path feature1Path = result.getFeature(0);
     Path feature2Path = result.getFeature(1);

@@ -8,11 +8,11 @@ import static org.junit.Assert.assertEquals;
 import com.android.tools.r8.ResourceShrinker;
 import com.android.tools.r8.ResourceShrinker.ReferenceChecker;
 import com.android.tools.r8.TestParameters;
-import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.ToolHelper;
+import com.android.tools.r8.utils.BooleanUtils;
 import com.android.tools.r8.utils.IntBox;
-import com.android.tools.r8.utils.InternalOptions;
 import java.nio.file.Path;
+import java.util.List;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -26,13 +26,18 @@ public class LegacyResourceShrinkerTest extends DexContainerFormatTestBase {
   @Parameter(0)
   public TestParameters parameters;
 
-  @Parameters(name = "{0}")
-  public static TestParametersCollection data() {
-    return getTestParameters().withNoneRuntime().build();
-  }
+  @Parameter(1)
+  public boolean useContainerDexApiLevel;
 
   private static Path inputA;
   private static Path inputB;
+
+  @Parameters(name = "{0}, useContainerDexApiLevel = {1}")
+  public static List<Object[]> data() {
+    return buildParameters(
+        getTestParameters().withNoneRuntime().withPartialCompilation().build(),
+        BooleanUtils.falseValues());
+  }
 
   @BeforeClass
   public static void generateTestApplications() throws Throwable {
@@ -48,9 +53,9 @@ public class LegacyResourceShrinkerTest extends DexContainerFormatTestBase {
   @Test
   public void test() throws Exception {
     Path outputBoth =
-        testForD8(Backend.DEX)
+        testForD8(Backend.DEX, parameters)
             .addProgramFiles(inputA, inputB)
-            .setMinApi(InternalOptions.containerDexApiLevel())
+            .apply(b -> enableContainer(b, useContainerDexApiLevel))
             .compile()
             .writeToZip();
     validateSingleContainerDex(outputBoth);

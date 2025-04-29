@@ -34,12 +34,12 @@ import com.android.tools.r8.graph.FieldResolutionResult;
 import com.android.tools.r8.graph.InnerClassAttribute;
 import com.android.tools.r8.graph.MethodResolutionResult;
 import com.android.tools.r8.graph.MethodResolutionResult.SingleResolutionResult;
+import com.android.tools.r8.graph.PermittedSubclassAttribute;
+import com.android.tools.r8.graph.ProgramDefinition;
 import com.android.tools.r8.graph.ProgramField;
 import com.android.tools.r8.graph.ProgramMethod;
 import com.android.tools.r8.graph.UseRegistry;
-import com.android.tools.r8.graph.lens.FieldLookupResult;
-import com.android.tools.r8.graph.lens.GraphLens;
-import com.android.tools.r8.graph.lens.MethodLookupResult;
+import com.android.tools.r8.ir.code.InvokeType;
 import com.android.tools.r8.ir.desugar.LambdaDescriptor;
 import com.android.tools.r8.kotlin.KotlinClassLevelInfo;
 import com.android.tools.r8.kotlin.KotlinClassMetadataReader;
@@ -122,9 +122,33 @@ public class UseCollector implements UseCollectorEventConsumer {
     for (DexAnnotation annotation : clazz.annotations().getAnnotations()) {
       registerAnnotation(annotation, clazz, classContext, getDefaultEventConsumer());
     }
+    traceEnclosingMethod(clazz, classContext, getDefaultEventConsumer());
     traceInnerClasses(clazz, classContext, getDefaultEventConsumer());
     traceKotlinMetadata(clazz, classContext, kotlinMetadataEventConsumer);
+    traceNest(clazz, classContext, getDefaultEventConsumer());
+    tracePermittedSubclasses(clazz, classContext, getDefaultEventConsumer());
     traceSignature(clazz, classContext, getDefaultEventConsumer());
+  }
+
+  private void traceEnclosingMethod(
+      DexProgramClass clazz,
+      DefinitionContext classContext,
+      UseCollectorEventConsumer eventConsumer) {
+    if (clazz.hasEnclosingMethodAttribute()) {
+      if (clazz.getEnclosingMethodAttribute().hasEnclosingMethod()) {
+        DexMethod enclosingMethod = clazz.getEnclosingMethodAttribute().getEnclosingMethod();
+        handleMethodResolution(
+            enclosingMethod,
+            appInfo().unsafeResolveMethodDueToDexFormat(enclosingMethod),
+            SingleResolutionResult::getResolutionPair,
+            clazz,
+            classContext,
+            eventConsumer);
+      } else {
+        addType(
+            clazz.getEnclosingMethodAttribute().getEnclosingClass(), classContext, eventConsumer);
+      }
+    }
   }
 
   private void traceInnerClasses(
@@ -166,6 +190,26 @@ public class UseCollector implements UseCollectorEventConsumer {
             appView, clazz, metadata, emptyConsumer(), reportUnknownMetadata);
     clazz.setKotlinInfo(kotlinInfo);
     return true;
+  }
+
+  private void traceNest(
+      DexProgramClass clazz,
+      DefinitionContext classContext,
+      UseCollectorEventConsumer eventConsumer) {
+    if (clazz.isNestMember()) {
+      addType(clazz.getNestHost(), classContext, eventConsumer);
+    }
+    clazz.forEachNestMemberOnHost(
+        appView, memberType -> addType(memberType, classContext, eventConsumer));
+  }
+
+  private void tracePermittedSubclasses(
+      DexProgramClass clazz,
+      DefinitionContext classContext,
+      UseCollectorEventConsumer eventConsumer) {
+    for (PermittedSubclassAttribute attribute : clazz.getPermittedSubclassAttributes()) {
+      addType(attribute.getPermittedSubclass(), classContext, eventConsumer);
+    }
   }
 
   private void traceSignature(
@@ -251,10 +295,6 @@ public class UseCollector implements UseCollectorEventConsumer {
 
   AppInfoWithClassHierarchy appInfo() {
     return appView.appInfo();
-  }
-
-  GraphLens graphLens() {
-    return appView.graphLens();
   }
 
   private boolean isTargetType(DexType type) {
@@ -571,6 +611,72 @@ public class UseCollector implements UseCollectorEventConsumer {
     }
   }
 
+  private void handleMethodResolution(
+      DexMethod method,
+      MethodResolutionResult resolutionResult,
+      Function<SingleResolutionResult<?>, DexClassAndMethod> getResult,
+      ProgramDefinition context,
+      DefinitionContext referencedFrom,
+      UseCollectorEventConsumer eventConsumer) {
+    BooleanBox seenSingleResult = new BooleanBox();
+    resolutionResult.forEachMethodResolutionResult(
+        result -> {
+          if (result.isFailedResolution()) {
+            result
+                .asFailedResolution()
+                .forEachFailureDependency(
+                    type -> addType(type, referencedFrom, eventConsumer),
+                    methodCausingFailure ->
+                        handleMethodReference(
+                            method,
+                            methodCausingFailure.asDexClassAndMethod(appView),
+                            context,
+                            referencedFrom,
+                            eventConsumer));
+            return;
+          }
+          seenSingleResult.set();
+          handleMethodReference(
+              method,
+              getResult.apply(result.asSingleResolution()),
+              context,
+              referencedFrom,
+              eventConsumer);
+        });
+    if (seenSingleResult.isFalse()) {
+      resolutionResult.forEachMethodResolutionResult(
+          failingResult -> {
+            assert failingResult.isFailedResolution();
+            if (!failingResult.asFailedResolution().hasMethodsCausingError()) {
+              handleMethodReference(method, null, context, referencedFrom, eventConsumer);
+            }
+          });
+    }
+  }
+
+  private void handleMethodReference(
+      DexMethod method,
+      DexClassAndMethod resolvedMethod,
+      ProgramDefinition context,
+      DefinitionContext referencedFrom,
+      UseCollectorEventConsumer eventConsumer) {
+    addType(method.getHolderType(), referencedFrom, eventConsumer);
+    addTypes(method.getParameters(), referencedFrom, eventConsumer);
+    addType(method.getReturnType(), referencedFrom, eventConsumer);
+    if (resolvedMethod != null) {
+      DexEncodedMethod definition = resolvedMethod.getDefinition();
+      assert resolvedMethod.getReference().match(method)
+          || resolvedMethod.getHolder().isSignaturePolymorphicMethod(definition, factory);
+      if (isTargetType(resolvedMethod.getHolderType())) {
+        handleMemberResolution(
+            method, resolvedMethod, context.getContextClass(), referencedFrom, eventConsumer);
+        eventConsumer.notifyPresentMethod(resolvedMethod, referencedFrom);
+      }
+    } else {
+      eventConsumer.notifyMissingMethod(method, referencedFrom);
+    }
+  }
+
   class MethodUseCollector extends UseRegistry<ProgramMethod> {
 
     private final DefinitionContext referencedFrom;
@@ -589,140 +695,88 @@ public class UseCollector implements UseCollectorEventConsumer {
 
     @Override
     public void registerInvokeDirect(DexMethod method) {
-      MethodLookupResult lookupResult = graphLens().lookupInvokeDirect(method, getContext());
-      assert lookupResult.getType().isDirect();
-      DexMethod rewrittenMethod = lookupResult.getReference();
       if (getContext().getHolder().originatesFromDexResource()) {
-        handleRewrittenMethodResolution(
-            rewrittenMethod,
-            appInfo().unsafeResolveMethodDueToDexFormat(rewrittenMethod),
-            SingleResolutionResult::getResolutionPair);
+        handleMethodResolution(
+            method,
+            appInfo().unsafeResolveMethodDueToDexFormat(method),
+            SingleResolutionResult::getResolutionPair,
+            getContext(),
+            referencedFrom,
+            eventConsumer);
       } else {
         BooleanBox seenMethod = new BooleanBox();
         appView
-            .contextIndependentDefinitionForWithResolutionResult(rewrittenMethod.getHolderType())
+            .contextIndependentDefinitionForWithResolutionResult(method.getHolderType())
             .forEachClassResolutionResult(
                 holder -> {
-                  DexClassAndMethod target = rewrittenMethod.lookupMemberOnClass(holder);
+                  DexClassAndMethod target = method.lookupMemberOnClass(holder);
                   if (target != null) {
-                    handleRewrittenMethodReference(rewrittenMethod, target);
+                    handleMethodReference(
+                        method, target, getContext(), referencedFrom, eventConsumer);
                     seenMethod.set();
                   }
                 });
         if (seenMethod.isFalse()) {
-          handleRewrittenMethodReference(rewrittenMethod, null);
+          handleMethodReference(method, null, getContext(), referencedFrom, eventConsumer);
         }
       }
     }
 
     @Override
     public void registerInvokeInterface(DexMethod method) {
-      MethodLookupResult lookupResult = graphLens().lookupInvokeInterface(method, getContext());
-      assert lookupResult.getType().isInterface();
-      handleInvokeWithDynamicDispatch(lookupResult);
+      handleInvokeWithDynamicDispatch(method, InvokeType.INTERFACE);
     }
 
     @Override
     public void registerInvokeStatic(DexMethod method) {
-      MethodLookupResult lookupResult = graphLens().lookupInvokeStatic(method, getContext());
-      assert lookupResult.getType().isStatic();
-      DexMethod rewrittenMethod = lookupResult.getReference();
-      handleRewrittenMethodResolution(
-          rewrittenMethod,
-          appInfo().unsafeResolveMethodDueToDexFormat(rewrittenMethod),
-          SingleResolutionResult::getResolutionPair);
+      handleMethodResolution(
+          method,
+          appInfo().unsafeResolveMethodDueToDexFormat(method),
+          SingleResolutionResult::getResolutionPair,
+          getContext(),
+          referencedFrom,
+          eventConsumer);
     }
 
     @Override
     public void registerInvokeSuper(DexMethod method) {
-      MethodLookupResult lookupResult = graphLens().lookupInvokeSuper(method, getContext());
-      assert lookupResult.getType().isSuper();
-      DexMethod rewrittenMethod = lookupResult.getReference();
-      handleRewrittenMethodResolution(
+      handleMethodResolution(
           method,
-          appInfo().unsafeResolveMethodDueToDexFormat(rewrittenMethod),
-          result -> result.lookupInvokeSuperTarget(getContext().getHolder(), appView, appInfo()));
+          appInfo().unsafeResolveMethodDueToDexFormat(method),
+          result -> result.lookupInvokeSuperTarget(getContext().getHolder(), appView, appInfo()),
+          getContext(),
+          referencedFrom,
+          eventConsumer);
     }
 
     @Override
     public void registerInvokeVirtual(DexMethod method) {
-      MethodLookupResult lookupResult = graphLens().lookupInvokeVirtual(method, getContext());
-      assert lookupResult.getType().isVirtual();
-      handleInvokeWithDynamicDispatch(lookupResult);
+      handleInvokeWithDynamicDispatch(method, InvokeType.VIRTUAL);
     }
 
-    private void handleInvokeWithDynamicDispatch(MethodLookupResult lookupResult) {
-      DexMethod method = lookupResult.getReference();
+    private void handleInvokeWithDynamicDispatch(DexMethod method, InvokeType invokeType) {
       if (method.getHolderType().isArrayType()) {
-        assert lookupResult.getType().isVirtual();
+        assert invokeType.isVirtual();
         addType(method.getHolderType(), referencedFrom, eventConsumer);
         return;
       }
-      assert lookupResult.getType().isInterface() || lookupResult.getType().isVirtual();
-      handleRewrittenMethodResolution(
+      assert invokeType.isInterface() || invokeType.isVirtual();
+      handleMethodResolution(
           method,
-          lookupResult.getType().isInterface()
+          invokeType.isInterface()
               ? appInfo().resolveMethodOnInterfaceHolder(method)
               : appInfo().resolveMethodOnClassHolder(method),
-          SingleResolutionResult::getResolutionPair);
-    }
-
-    private void handleRewrittenMethodResolution(
-        DexMethod method,
-        MethodResolutionResult resolutionResult,
-        Function<SingleResolutionResult<?>, DexClassAndMethod> getResult) {
-      BooleanBox seenSingleResult = new BooleanBox();
-      resolutionResult.forEachMethodResolutionResult(
-          result -> {
-            if (result.isFailedResolution()) {
-              result
-                  .asFailedResolution()
-                  .forEachFailureDependency(
-                      type -> addType(type, referencedFrom, eventConsumer),
-                      methodCausingFailure ->
-                          handleRewrittenMethodReference(
-                              method, methodCausingFailure.asDexClassAndMethod(appView)));
-              return;
-            }
-            seenSingleResult.set();
-            handleRewrittenMethodReference(method, getResult.apply(result.asSingleResolution()));
-          });
-      if (seenSingleResult.isFalse()) {
-        resolutionResult.forEachMethodResolutionResult(
-            failingResult -> {
-              assert failingResult.isFailedResolution();
-              if (!failingResult.asFailedResolution().hasMethodsCausingError()) {
-                handleRewrittenMethodReference(method, null);
-              }
-            });
-      }
-    }
-
-    private void handleRewrittenMethodReference(
-        DexMethod method, DexClassAndMethod resolvedMethod) {
-      addType(method.getHolderType(), referencedFrom, eventConsumer);
-      addTypes(method.getParameters(), referencedFrom, eventConsumer);
-      addType(method.getReturnType(), referencedFrom, eventConsumer);
-      if (resolvedMethod != null) {
-        DexEncodedMethod definition = resolvedMethod.getDefinition();
-        assert resolvedMethod.getReference().match(method)
-            || resolvedMethod.getHolder().isSignaturePolymorphicMethod(definition, factory);
-        if (isTargetType(resolvedMethod.getHolderType())) {
-          handleMemberResolution(
-              method, resolvedMethod, getContext().getHolder(), referencedFrom, eventConsumer);
-          eventConsumer.notifyPresentMethod(resolvedMethod, referencedFrom);
-        }
-      } else {
-        eventConsumer.notifyMissingMethod(method, referencedFrom);
-      }
+          SingleResolutionResult::getResolutionPair,
+          getContext(),
+          referencedFrom,
+          eventConsumer);
     }
 
     // Field references.
 
     @Override
     public void registerInitClass(DexType clazz) {
-      DexType rewrittenClass = graphLens().lookupType(clazz);
-      DexField clinitField = appView.initClassLens().getInitClassField(rewrittenClass);
+      DexField clinitField = appView.initClassLens().getInitClassField(clazz);
       handleRewrittenFieldReference(
           clinitField, getContext().getHolder(), referencedFrom, eventConsumer);
     }
@@ -748,16 +802,14 @@ public class UseCollector implements UseCollectorEventConsumer {
     }
 
     private void handleFieldAccess(DexField field) {
-      FieldLookupResult lookupResult = graphLens().lookupFieldResult(field);
-      handleRewrittenFieldReference(
-          lookupResult.getReference(), getContext().getHolder(), referencedFrom, eventConsumer);
+      handleRewrittenFieldReference(field, getContext().getHolder(), referencedFrom, eventConsumer);
     }
 
     // Type references.
 
     @Override
     public void registerTypeReference(DexType type) {
-      addType(graphLens().lookupType(type), referencedFrom, eventConsumer);
+      addType(type, referencedFrom, eventConsumer);
     }
 
     // Call sites.

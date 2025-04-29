@@ -124,30 +124,6 @@ public abstract class TestCompilerBuilder<
   LibraryDesugaringTestConfiguration libraryDesugaringTestConfiguration =
       LibraryDesugaringTestConfiguration.DISABLED;
 
-  public boolean isD8TestBuilder() {
-    return false;
-  }
-
-  public D8TestBuilder asD8TestBuilder() {
-    return null;
-  }
-
-  public boolean isR8TestBuilder() {
-    return false;
-  }
-
-  public R8TestBuilder<?, ?, ?> asR8TestBuilder() {
-    return null;
-  }
-
-  public boolean isR8PartialTestBuilder() {
-    return false;
-  }
-
-  public R8PartialTestBuilder asR8PartialTestBuilder() {
-    return null;
-  }
-
   public boolean isTestShrinkerBuilder() {
     return false;
   }
@@ -234,6 +210,16 @@ public abstract class TestCompilerBuilder<
     return self();
   }
 
+  public T addR8PartialOptionsModification(Consumer<InternalOptions> optionsConsumer) {
+    // Intentionally empty. Overridden in R8PartialTestBuilder.
+    return self();
+  }
+
+  public T addR8PartialD8OptionsModification(Consumer<InternalOptions> optionsConsumer) {
+    // Intentionally empty. Overridden in R8PartialTestBuilder.
+    return self();
+  }
+
   public T addR8PartialR8OptionsModification(Consumer<InternalOptions> optionsConsumer) {
     // Intentionally empty. Overridden in R8PartialTestBuilder.
     return self();
@@ -298,6 +284,14 @@ public abstract class TestCompilerBuilder<
                     inspector.accept(
                         new VerticallyMergedClassesInspector(
                             dexItemFactory, verticallyMergedClasses))));
+  }
+
+  public T addVerticallyMergedClassesInspectorIf(
+      boolean condition, Consumer<VerticallyMergedClassesInspector> inspector) {
+    if (condition) {
+      return addVerticallyMergedClassesInspector(inspector);
+    }
+    return self();
   }
 
   public CR benchmarkCompile(BenchmarkResults results) throws CompilationFailedException {
