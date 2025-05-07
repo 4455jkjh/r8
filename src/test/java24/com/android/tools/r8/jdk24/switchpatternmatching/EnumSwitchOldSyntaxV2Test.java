@@ -4,15 +4,14 @@
 package com.android.tools.r8.jdk24.switchpatternmatching;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 
 import com.android.tools.r8.JdkClassFileProvider;
+import com.android.tools.r8.R8TestCompileResult;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.TestRuntime.CfVm;
 import com.android.tools.r8.utils.StringUtils;
-import com.android.tools.r8.utils.codeinspector.CodeInspector;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -20,7 +19,7 @@ import org.junit.runners.Parameterized.Parameter;
 import org.junit.runners.Parameterized.Parameters;
 
 @RunWith(Parameterized.class)
-public class EnumSwitchOldSyntaxTest extends TestBase {
+public class EnumSwitchOldSyntaxV2Test extends TestBase {
 
   @Parameter public TestParameters parameters;
 
@@ -64,17 +63,30 @@ public class EnumSwitchOldSyntaxTest extends TestBase {
         .addKeepMainRule(Main.class)
         .addKeepEnumsRule()
         .run(parameters.getRuntime(), Main.class)
-        .inspect(this::assert2Classes)
         .assertSuccessWithOutput(EXPECTED_OUTPUT);
   }
 
-  private void assert2Classes(CodeInspector i) {
-    if (parameters.getPartialCompilationTestParameters().isSome()) {
-      return;
-    }
-    assertTrue(i.clazz(E.class).isPresent());
-    assertTrue(i.clazz(Main.class).isPresent());
-    assertEquals(2, i.allClasses().size());
+  @Test
+  public void testR8Split() throws Exception {
+    parameters.assumeR8TestParameters();
+    R8TestCompileResult compile =
+        testForR8(Backend.CF)
+            .addInnerClassesAndStrippedOuter(getClass())
+            .addLibraryProvider(JdkClassFileProvider.fromSystemJdk())
+            .addKeepMainRule(Main.class)
+            .addKeepEnumsRule()
+            .compile();
+    compile.inspect(i -> assertEquals(1, i.clazz(E.class).allFields().size()));
+    // The enum is there with the $VALUES field but not each enum field.
+    testForR8(parameters)
+        .addProgramFiles(compile.writeToZip())
+        .addKeepMainRule(Main.class)
+        .addKeepEnumsRule()
+        .applyIf(
+            parameters.isCfRuntime(),
+            b -> b.addLibraryProvider(JdkClassFileProvider.fromSystemJdk()))
+        .run(parameters.getRuntime(), Main.class)
+        .assertSuccessWithOutput(EXPECTED_OUTPUT);
   }
 
   public enum E {
@@ -108,9 +120,9 @@ public class EnumSwitchOldSyntaxTest extends TestBase {
       } catch (NullPointerException e) {
         System.out.println("caught npe");
       }
-      enumSwitch(E.E1);
-      enumSwitch(E.E2);
-      enumSwitch(E.E3);
+      for (E value : E.values()) {
+        enumSwitch(value);
+      }
     }
   }
 }

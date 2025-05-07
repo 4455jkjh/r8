@@ -101,6 +101,10 @@ public class UseCollector implements UseCollectorEventConsumer {
     return this;
   }
 
+  protected void notifyReflectiveIdentification(DexMethod invokedMethod, ProgramMethod method) {
+    // Intentionally empty. Overridden in R8PartialUseCollector.
+  }
+
   public void traceClasses(Collection<DexProgramClass> classes) {
     for (DexProgramClass clazz : classes) {
       traceClass(clazz);
@@ -274,6 +278,12 @@ public class UseCollector implements UseCollectorEventConsumer {
       DexClassAndMethod method, DefinitionContext referencedFrom, DexMethod reference) {
     TracedMethodImpl tracedMethod = new TracedMethodImpl(method, referencedFrom, reference);
     consumer.acceptMethod(tracedMethod, diagnostics);
+  }
+
+  @Override
+  public void notifyPresentMethodOverride(
+      DexClassAndMethod method, ProgramMethod override, DefinitionContext referencedFrom) {
+    // Intentionally empty.
   }
 
   @Override
@@ -460,14 +470,13 @@ public class UseCollector implements UseCollectorEventConsumer {
                       method.getReference(),
                       superType.isNotIdenticalTo(clazz.getSuperType()))
                   .getResolutionPair();
-          if (resolvedMethod != null
-              && !resolvedMethod.isProgramMethod()
-              && isTargetType(resolvedMethod.getHolderType())) {
+          if (resolvedMethod != null && isTargetType(resolvedMethod.getHolderType())) {
             // There should be no need to register the types referenced from the method signature:
             // - The return type and the parameter types are registered when visiting the source
             //   method that overrides this target method,
             // - The holder type is registered from visiting the extends/implements clause of the
             //   sub class.
+            eventConsumer.notifyPresentMethodOverride(resolvedMethod, method, referencedFrom);
             if (resolvedMethod.getHolderType().isIdenticalTo(superType)) {
               eventConsumer.notifyPresentMethod(resolvedMethod, referencedFrom);
             } else if (isTargetType(superType)) {
@@ -611,6 +620,18 @@ public class UseCollector implements UseCollectorEventConsumer {
     }
   }
 
+  private void handleInvoke(
+      DexMethod method,
+      MethodResolutionResult resolutionResult,
+      Function<SingleResolutionResult<?>, DexClassAndMethod> getResult,
+      ProgramMethod context,
+      DefinitionContext referencedFrom,
+      UseCollectorEventConsumer eventConsumer) {
+    handleMethodResolution(
+        method, resolutionResult, getResult, context, referencedFrom, eventConsumer);
+    notifyReflectiveIdentification(method, context);
+  }
+
   private void handleMethodResolution(
       DexMethod method,
       MethodResolutionResult resolutionResult,
@@ -696,7 +717,7 @@ public class UseCollector implements UseCollectorEventConsumer {
     @Override
     public void registerInvokeDirect(DexMethod method) {
       if (getContext().getHolder().originatesFromDexResource()) {
-        handleMethodResolution(
+        handleInvoke(
             method,
             appInfo().unsafeResolveMethodDueToDexFormat(method),
             SingleResolutionResult::getResolutionPair,
@@ -729,7 +750,7 @@ public class UseCollector implements UseCollectorEventConsumer {
 
     @Override
     public void registerInvokeStatic(DexMethod method) {
-      handleMethodResolution(
+      handleInvoke(
           method,
           appInfo().unsafeResolveMethodDueToDexFormat(method),
           SingleResolutionResult::getResolutionPair,
@@ -740,7 +761,7 @@ public class UseCollector implements UseCollectorEventConsumer {
 
     @Override
     public void registerInvokeSuper(DexMethod method) {
-      handleMethodResolution(
+      handleInvoke(
           method,
           appInfo().unsafeResolveMethodDueToDexFormat(method),
           result -> result.lookupInvokeSuperTarget(getContext().getHolder(), appView, appInfo()),
@@ -761,7 +782,7 @@ public class UseCollector implements UseCollectorEventConsumer {
         return;
       }
       assert invokeType.isInterface() || invokeType.isVirtual();
-      handleMethodResolution(
+      handleInvoke(
           method,
           invokeType.isInterface()
               ? appInfo().resolveMethodOnInterfaceHolder(method)
@@ -888,6 +909,12 @@ public class UseCollector implements UseCollectorEventConsumer {
     public void notifyPresentMethod(
         DexClassAndMethod method, DefinitionContext referencedFrom, DexMethod reference) {
       parent.notifyPresentMethod(method, referencedFrom, reference);
+    }
+
+    @Override
+    public void notifyPresentMethodOverride(
+        DexClassAndMethod method, ProgramMethod override, DefinitionContext referencedFrom) {
+      parent.notifyPresentMethodOverride(method, override, referencedFrom);
     }
 
     @Override

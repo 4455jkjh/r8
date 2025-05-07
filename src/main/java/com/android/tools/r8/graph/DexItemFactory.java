@@ -358,6 +358,14 @@ public class DexItemFactory {
       createString("Ljava/util/concurrent/atomic/AtomicLongFieldUpdater;");
   public final DexString referenceFieldUpdaterDescriptor =
       createString("Ljava/util/concurrent/atomic/AtomicReferenceFieldUpdater;");
+
+  public final DexType javaUtilConcurrentAtomicAtomicIntegerFieldUpdater =
+      createType(intFieldUpdaterDescriptor);
+  public final DexType javaUtilConcurrentAtomicAtomicLongFieldUpdater =
+      createType(longFieldUpdaterDescriptor);
+  public final DexType javaUtilConcurrentAtomicAtomicReferenceFieldUpdater =
+      createType(referenceFieldUpdaterDescriptor);
+
   public final DexString newUpdaterName = createString("newUpdater");
 
   public final DexString constructorMethodName = createString(Constants.INSTANCE_INITIALIZER_NAME);
@@ -494,6 +502,7 @@ public class DexItemFactory {
   public final DexType mapEntryType = createStaticallyKnownType(mapEntryDescriptor);
   public final DexType abstractMapSimpleEntryType =
       createStaticallyKnownType("Ljava/util/AbstractMap$SimpleEntry;");
+  public final DexType durationType = createStaticallyKnownType("Ljava/time/Duration;");
   public final DexType collectionType = createStaticallyKnownType(collectionDescriptor);
   public final DexType comparatorType = createStaticallyKnownType(comparatorDescriptor);
   public final DexType callableType = createStaticallyKnownType(callableDescriptor);
