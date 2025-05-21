@@ -3,4 +3,15 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8.metadata;
 
-public interface R8PartialCompilationMetadata {}
+import java.util.List;
+
+public interface R8PartialCompilationMetadata {
+
+  List<String> getCommonIncludePatterns();
+
+  int getNumberOfExcludePatterns();
+
+  int getNumberOfIncludePatterns();
+
+  R8PartialCompilationStatsMetadata getStatsMetadata();
+}
