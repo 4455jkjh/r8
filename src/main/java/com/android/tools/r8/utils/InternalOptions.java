@@ -544,6 +544,10 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
   public boolean emitPermittedSubclassesAnnotationsInDex =
       System.getProperty("com.android.tools.r8.emitPermittedSubclassesAnnotationsInDex") != null;
 
+  // TODO(b/417709154): Figure out how to expose this.
+  public boolean emitLambdaMethodAnnotations =
+      System.getProperty("com.android.tools.r8.emitLambdaMethodAnnotations") != null;
+
   private DumpInputFlags dumpInputFlags = DumpInputFlags.getDefault();
 
   // Contain the contents of the build properties file from the compiler command.
@@ -1833,6 +1837,9 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
     public boolean enableConstructorInliningWithFinalFields =
         parseSystemPropertyOrDefault(
             "com.android.tools.r8.enableConstructorInliningWithFinalFields", false);
+    public boolean skipStoreStoreFenceInConstructorInlining =
+        parseSystemPropertyOrDefault(
+            "com.android.tools.r8.skipStoreStoreFenceInConstructorInlining", false);
 
     public boolean enableInlining =
         !parseSystemPropertyForDevelopmentOrDefault("com.android.tools.r8.disableinlining", false);
