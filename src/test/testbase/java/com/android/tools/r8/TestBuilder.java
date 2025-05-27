@@ -96,6 +96,14 @@ public abstract class TestBuilder<RR extends TestRunResult<RR>, T extends TestBu
     return self;
   }
 
+  public boolean isD8TestBuilder() {
+    return false;
+  }
+
+  public D8TestBuilder asD8TestBuilder() {
+    return null;
+  }
+
   public boolean isJvmTestBuilder() {
     return false;
   }
