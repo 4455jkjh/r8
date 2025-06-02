@@ -10,7 +10,17 @@ import com.android.tools.r8.keepanno.annotations.KeepForApi;
 public class EmptyReflectiveOperationReceiver implements ReflectiveOperationReceiver {
 
   @Override
-  public void onClassForName(Stack stack, String className) {}
+  public void onClassForName(
+      Stack stack, String className, boolean initialize, ClassLoader classLoader) {}
+
+  @Override
+  public void onClassGetComponentType(Stack stack, Class<?> clazz) {}
+
+  @Override
+  public void onClassGetPackage(Stack stack, Class<?> clazz) {}
+
+  @Override
+  public void onClassIsAssignableFrom(Stack stack, Class<?> clazz, Class<?> sup) {}
 
   @Override
   public void onClassNewInstance(Stack stack, Class<?> clazz) {}
@@ -26,8 +36,21 @@ public class EmptyReflectiveOperationReceiver implements ReflectiveOperationRece
   public void onClassGetDeclaredMethods(Stack stack, Class<?> clazz) {}
 
   @Override
+  public void onClassGetMethod(
+      Stack stack, Class<?> clazz, String method, Class<?>... parameters) {}
+
+  @Override
+  public void onClassGetField(Stack stack, Class<?> clazz, String fieldName) {}
+
+  @Override
+  public void onClassGetMethods(Stack stack, Class<?> clazz) {}
+
+  @Override
   public void onClassGetName(Stack stack, Class<?> clazz, NameLookupType lookupType) {}
 
   @Override
   public void onClassGetSuperclass(Stack stack, Class<?> clazz) {}
+
+  @Override
+  public void onClassFlag(Stack stack, Class<?> clazz, ClassFlag classFlag) {}
 }

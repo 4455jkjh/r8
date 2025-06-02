@@ -13,7 +13,7 @@ public interface ReflectiveOperationReceiver {
     return false;
   }
 
-  void onClassForName(Stack stack, String className);
+  void onClassForName(Stack stack, String className, boolean initialize, ClassLoader classLoader);
 
   void onClassNewInstance(Stack stack, Class<?> clazz);
 
@@ -23,9 +23,39 @@ public interface ReflectiveOperationReceiver {
 
   void onClassGetDeclaredMethods(Stack stack, Class<?> clazz);
 
+  void onClassGetMethod(Stack stack, Class<?> clazz, String method, Class<?>... parameters);
+
+  void onClassGetField(Stack stack, Class<?> clazz, String fieldName);
+
+  void onClassGetMethods(Stack stack, Class<?> clazz);
+
   void onClassGetName(Stack stack, Class<?> clazz, NameLookupType lookupType);
 
   void onClassGetSuperclass(Stack stack, Class<?> clazz);
+
+  void onClassFlag(Stack stack, Class<?> clazz, ClassFlag classFlag);
+
+  void onClassGetComponentType(Stack stack, Class<?> clazz);
+
+  void onClassGetPackage(Stack stack, Class<?> clazz);
+
+  void onClassIsAssignableFrom(Stack stack, Class<?> clazz, Class<?> sup);
+
+  @KeepForApi
+  enum ClassFlag {
+    ANNOTATION,
+    ANONYMOUS_CLASS,
+    ARRAY,
+    ENUM,
+    HIDDEN,
+    INTERFACE,
+    LOCAL_CLASS,
+    MEMBER_CLASS,
+    PRIMITIVE,
+    RECORD,
+    SEALED,
+    SYNTHETIC
+  }
 
   @KeepForApi
   enum NameLookupType {

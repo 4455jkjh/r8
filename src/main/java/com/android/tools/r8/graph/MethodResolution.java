@@ -41,7 +41,12 @@ public class MethodResolution {
   private final boolean escapeIfLibraryHasProgramSuperType;
   private final boolean canHaveIncompletePaths;
 
-  private MethodResolution(
+  protected MethodResolution(
+      Function<DexType, ClassResolutionResult> definitionFor, DexItemFactory factory) {
+    this(definitionFor, factory, true, true);
+  }
+
+  protected MethodResolution(
       Function<DexType, ClassResolutionResult> definitionFor,
       DexItemFactory factory,
       boolean escapeIfLibraryHasProgramSuperType,
@@ -68,7 +73,7 @@ public class MethodResolution {
 
   public static MethodResolution create(
       Function<DexType, ClassResolutionResult> definitionFor, DexItemFactory factory) {
-    return new MethodResolution(definitionFor, factory, true, true);
+    return new MethodResolution(definitionFor, factory);
   }
 
   private ClassResolutionResult definitionFor(DexType type) {
@@ -92,12 +97,11 @@ public class MethodResolution {
     MethodResolutionResult.Builder builder = MethodResolutionResult.builder();
     definitionFor(holder)
         .forEachClassResolutionResult(
-            clazz -> {
-              builder.addResolutionResult(
-                  clazz.isInterface()
-                      ? resolveMethodOnInterface(clazz, method.getProto(), method.getName())
-                      : resolveMethodOnClass(clazz, method.getProto(), method.getName()));
-            });
+            clazz ->
+                builder.addResolutionResult(
+                    clazz.isInterface()
+                        ? resolveMethodOnInterface(clazz, method.getProto(), method.getName())
+                        : resolveMethodOnClass(clazz, method.getProto(), method.getName())));
     return builder.buildOrIfEmpty(ClassNotFoundResult.INSTANCE, holder);
   }
 
@@ -180,7 +184,7 @@ public class MethodResolution {
           initialResolutionHolder, clazz, result);
     }
     // Pt 2: Find a method that matches the descriptor.
-    result = clazz.lookupMethod(methodProto, methodName);
+    result = lookupMethod(clazz, methodProto, methodName);
     if (result != null) {
       // If the resolved method is private, then it can only be accessed if the symbolic reference
       // that initiated the resolution was the type at which the method resolved on. If that is not
@@ -225,8 +229,7 @@ public class MethodResolution {
    */
   private MethodResolutionResult resolveMethodStep3(
       DexClass clazz, DexProto methodProto, DexString methodName) {
-    MaximallySpecificMethodsBuilder builder =
-        new MaximallySpecificMethodsBuilder(definitionFor, factory);
+    MaximallySpecificMethodsBuilder builder = new MaximallySpecificMethodsBuilder();
     resolveMethodStep3Helper(methodProto, methodName, clazz, builder);
     return builder.resolve(clazz);
   }
@@ -252,16 +255,14 @@ public class MethodResolution {
 
   private MaximallySpecificMethodsBuilder resolveMaximallySpecificTargetHelper(
       DexClass clazz, DexMethod method) {
-    MaximallySpecificMethodsBuilder builder =
-        new MaximallySpecificMethodsBuilder(definitionFor, factory);
+    MaximallySpecificMethodsBuilder builder = new MaximallySpecificMethodsBuilder();
     resolveMethodStep3Helper(method.getProto(), method.getName(), clazz, builder);
     return builder;
   }
 
   private MaximallySpecificMethodsBuilder resolveMaximallySpecificTargetHelper(
       LambdaDescriptor lambda, DexMethod method) {
-    MaximallySpecificMethodsBuilder builder =
-        new MaximallySpecificMethodsBuilder(definitionFor, factory);
+    MaximallySpecificMethodsBuilder builder = new MaximallySpecificMethodsBuilder();
     resolveMethodStep3Helper(
         method.getProto(), method.getName(), null, builder, factory.objectType, lambda.interfaces);
     return builder;
@@ -300,15 +301,14 @@ public class MethodResolution {
       }
     }
 
-    private final Function<DexType, ClassResolutionResult> definitionFor;
+    private final MethodResolution methodResolution;
     private final boolean escapeIfLibraryHasProgramSuperType;
     private final Map<DexClass, Map<DexType, SplitToken>> incompletePaths = new IdentityHashMap<>();
     private final Set<DexType> seenTypes = Sets.newIdentityHashSet();
 
     public UniquePathOracle(
-        Function<DexType, ClassResolutionResult> definitionFor,
-        boolean escapeIfLibraryHasProgramSuperType) {
-      this.definitionFor = definitionFor;
+        MethodResolution methodResolution, boolean escapeIfLibraryHasProgramSuperType) {
+      this.methodResolution = methodResolution;
       this.escapeIfLibraryHasProgramSuperType = escapeIfLibraryHasProgramSuperType;
     }
 
@@ -331,7 +331,7 @@ public class MethodResolution {
       if (splitTokens.isEmpty() && !seenTypes.add(type)) {
         return;
       }
-      ClassResolutionResult resolutionResult = definitionFor.apply(type);
+      ClassResolutionResult resolutionResult = methodResolution.definitionFor.apply(type);
       resolutionResult.forEachClassResolutionResult(
           clazz -> {
             if (escapeIfLibraryHasProgramSuperType
@@ -358,7 +358,9 @@ public class MethodResolution {
                     paths.put(splitToken.split, NO_SPLIT_TOKEN);
                   }
                 });
-            clazz.interfaces.forEach(iface -> lookupPath(iface, clazz, currentSplitTokens));
+            methodResolution
+                .getInterfaces(clazz)
+                .forEach(iface -> lookupPath(iface, clazz, currentSplitTokens));
             if (clazz.superType != null) {
               lookupPath(clazz.superType, clazz, currentSplitTokens);
             }
@@ -401,7 +403,7 @@ public class MethodResolution {
         clazz,
         builder,
         clazz.superType,
-        Arrays.asList(clazz.interfaces.values));
+        Arrays.asList(getInterfaces(clazz).values));
   }
 
   private void resolveMethodStep3Helper(
@@ -413,7 +415,7 @@ public class MethodResolution {
       List<DexType> interfaces) {
     UniquePathOracle uniquePathOracle;
     if (canHaveIncompletePaths) {
-      uniquePathOracle = new UniquePathOracle(definitionFor, escapeIfLibraryHasProgramSuperType);
+      uniquePathOracle = new UniquePathOracle(this, escapeIfLibraryHasProgramSuperType);
       interfaces.forEach(iFace -> uniquePathOracle.lookupPath(iFace, clazz));
       if (superType != null) {
         uniquePathOracle.lookupPath(superType, clazz);
@@ -448,7 +450,7 @@ public class MethodResolution {
               builder.addTypeWithMultipleDefinitions(iface);
             }
             assert definition.isInterface();
-            DexEncodedMethod result = definition.lookupMethod(methodProto, methodName);
+            DexEncodedMethod result = lookupMethod(definition, methodProto, methodName);
             if (isMaximallySpecificCandidate(result)) {
               // The candidate is added and doing so will prohibit shadowed methods from being
               // in the set.
@@ -462,7 +464,7 @@ public class MethodResolution {
                   definition,
                   builder,
                   definition.superType,
-                  Arrays.asList(definition.interfaces.values),
+                  Arrays.asList(getInterfaces(definition).values),
                   uniquePathOracle);
             }
           });
@@ -485,7 +487,7 @@ public class MethodResolution {
                     superClass,
                     builder,
                     superClass.superType,
-                    Arrays.asList(superClass.interfaces.values),
+                    Arrays.asList(getInterfaces(superClass).values),
                     uniquePathOracle);
               });
     }
@@ -497,7 +499,7 @@ public class MethodResolution {
    * from also contribute with a candidate to the type. That is not determined by this method.
    */
   private boolean isMaximallySpecificCandidate(DexEncodedMethod method) {
-    return method != null && !method.accessFlags.isPrivate() && !method.accessFlags.isStatic();
+    return method != null && !method.isPrivate() && !method.isStatic();
   }
 
   /**
@@ -536,7 +538,7 @@ public class MethodResolution {
       DexClass definition, DexProto methodProto, DexString methodName) {
     assert definition.isInterface();
     // Step 2: Look for exact method on interface.
-    DexEncodedMethod result = definition.lookupMethod(methodProto, methodName);
+    DexEncodedMethod result = lookupMethod(definition, methodProto, methodName);
     if (result != null) {
       return MethodResolutionResult.createSingleResolutionResult(definition, definition, result);
     }
@@ -545,10 +547,8 @@ public class MethodResolution {
     definitionFor(factory.objectType)
         .forEachClassResolutionResult(
             objectClass -> {
-              DexEncodedMethod objectResult = objectClass.lookupMethod(methodProto, methodName);
-              if (objectResult != null
-                  && objectResult.accessFlags.isPublic()
-                  && !objectResult.accessFlags.isAbstract()) {
+              DexEncodedMethod objectResult = lookupMethod(objectClass, methodProto, methodName);
+              if (objectResult != null && objectResult.isPublic() && !objectResult.isAbstract()) {
                 builder.addResolutionResult(
                     MethodResolutionResult.createSingleResolutionResult(
                         definition, objectClass, objectResult));
@@ -562,7 +562,7 @@ public class MethodResolution {
     return builder.buildOrIfEmpty(ClassNotFoundResult.INSTANCE, Collections.emptySet());
   }
 
-  static class MaximallySpecificMethodsBuilder {
+  class MaximallySpecificMethodsBuilder {
 
     // The set of actual maximally specific methods.
     // This set is linked map so that in the case where a number of methods remain a deterministic
@@ -574,15 +574,9 @@ public class MethodResolution {
         maximallySpecificMethodsOnCompletePaths = new LinkedHashMap<>();
     private final LinkedHashMap<DexClass, DexEncodedMethod>
         maximallySpecificMethodsOnIncompletePaths = new LinkedHashMap<>();
-    private final Function<DexType, ClassResolutionResult> definitionFor;
     private final Set<DexType> typesWithMultipleDefinitions = Sets.newIdentityHashSet();
-    private final DexItemFactory factory;
 
-    private MaximallySpecificMethodsBuilder(
-        Function<DexType, ClassResolutionResult> definitionFor, DexItemFactory factory) {
-      this.definitionFor = definitionFor;
-      this.factory = factory;
-    }
+    private MaximallySpecificMethodsBuilder() {}
 
     void addTypeWithMultipleDefinitions(DexType type) {
       typesWithMultipleDefinitions.add(type);
@@ -610,7 +604,7 @@ public class MethodResolution {
       // Prune exiting candidates and prohibit future candidates in the super hierarchy.
       assert holder.isInterface();
       assert holder.superType == factory.objectType;
-      for (DexType iface : holder.interfaces.values) {
+      for (DexType iface : getInterfaces(holder).values) {
         markShadowed(iface);
       }
     }
@@ -636,7 +630,7 @@ public class MethodResolution {
                 }
                 maximallySpecificMethodsOnCompletePaths.put(clazz, null);
                 maximallySpecificMethodsOnIncompletePaths.put(clazz, null);
-                for (DexType iface : clazz.interfaces.values) {
+                for (DexType iface : getInterfaces(clazz).values) {
                   markShadowed(iface);
                 }
               });
@@ -738,24 +732,33 @@ public class MethodResolution {
         }
       }
     }
+  }
 
-    private static SingleResolutionResult<?> singleResultHelper(
-        DexClass initialResolutionResult, Entry<DexClass, DexEncodedMethod> entry) {
-      return MethodResolutionResult.createSingleResolutionResult(
-          initialResolutionResult != null ? initialResolutionResult : entry.getKey(),
-          entry.getKey(),
-          entry.getValue());
-    }
+  protected DexTypeList getInterfaces(DexClass clazz) {
+    return clazz.getInterfaces();
+  }
 
-    private static Entry<DexClass, DexEncodedMethod> firstNonNullEntry(
-        Map<DexClass, DexEncodedMethod> candidates) {
-      for (Entry<DexClass, DexEncodedMethod> entry : candidates.entrySet()) {
-        DexEncodedMethod method = entry.getValue();
-        if (method != null) {
-          return entry;
-        }
+  protected DexEncodedMethod lookupMethod(
+      DexClass clazz, DexProto methodProto, DexString methodName) {
+    return clazz.lookupMethod(methodProto, methodName);
+  }
+
+  private static SingleResolutionResult<?> singleResultHelper(
+      DexClass initialResolutionResult, Entry<DexClass, DexEncodedMethod> entry) {
+    return MethodResolutionResult.createSingleResolutionResult(
+        initialResolutionResult != null ? initialResolutionResult : entry.getKey(),
+        entry.getKey(),
+        entry.getValue());
+  }
+
+  private static Entry<DexClass, DexEncodedMethod> firstNonNullEntry(
+      Map<DexClass, DexEncodedMethod> candidates) {
+    for (Entry<DexClass, DexEncodedMethod> entry : candidates.entrySet()) {
+      DexEncodedMethod method = entry.getValue();
+      if (method != null) {
+        return entry;
       }
-      return null;
     }
+    return null;
   }
 }

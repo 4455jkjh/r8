@@ -59,9 +59,7 @@ public class ReflectiveCallExtractor {
               DexType holderType = theMethod.getHolderType();
               DexClass def = appInfo.definitionFor(holderType);
               if (def != null && def.isLibraryClass()) {
-                if (holderType.toSourceString().startsWith("java.lang.reflect")
-                    || holderType.isIdenticalTo(factory.unsafeType)
-                    || holderType.isIdenticalTo(factory.classType)) {
+                if (isReflective(theMethod, factory)) {
                   methods.computeIfAbsent(holderType, t -> new TreeSet<>()).add(theMethod);
                 }
               }
@@ -71,6 +69,22 @@ public class ReflectiveCallExtractor {
       }
     }
     return methods;
+  }
+  private static boolean isReflective(DexMethod method, DexItemFactory factory) {
+    DexType type = method.getHolderType();
+    if (type.isIdenticalTo(factory.classType)) {
+      String name = method.getName().toString();
+      if (name.equals("getResource")
+          || name.equals("getResourceAsStream")
+          || name.equals("getProtectionDomain")
+          || name.equals("getClassLoader")) {
+        return false;
+      }
+      return true;
+    }
+    return type.isIdenticalTo(factory.unsafeType)
+        || type.isIdenticalTo(factory.createType("Ljava/lang/reflect/Array;"))
+        || type.isIdenticalTo(factory.proxyType);
   }
 
   public static String printMethods(Map<DexType, Collection<DexMethod>> methods) {
