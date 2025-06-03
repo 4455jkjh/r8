@@ -32,17 +32,23 @@ public class LambdaCallTargetAnnotationTest extends TestBase {
   @Parameter(1)
   public boolean intermediate;
 
-  @Parameterized.Parameters(name = "{0}, intermediate = {1}")
+  @Parameter(2)
+  public boolean forceLambdaAccessor;
+
+  @Parameterized.Parameters(name = "{0}, intermediate = {1}, forceLambdaAccessor = {2}")
   public static List<Object[]> data() {
-    return buildParameters(getTestParameters().withNoneRuntime().build(), BooleanUtils.values());
+    return buildParameters(
+        getTestParameters().withNoneRuntime().build(),
+        BooleanUtils.values(),
+        BooleanUtils.values());
   }
 
-  private static void checkAnnotationField(
+  private void checkAnnotationField(
       DexEncodedAnnotation encodedAnnotation, int index, String name, String value) {
     assertEquals(name, encodedAnnotation.getElement(index).getName().toString());
-    DexValue holderElementValue = encodedAnnotation.getElement(index).getValue();
-    assertTrue(holderElementValue.isDexValueString());
-    assertEquals(value, holderElementValue.asDexValueString().getValue().toString());
+    DexValue elementValue = encodedAnnotation.getElement(index).getValue();
+    assertTrue(elementValue.isDexValueString());
+    assertEquals(value, elementValue.asDexValueString().getValue().toString());
   }
 
   private void checkAnnotation(
@@ -68,6 +74,8 @@ public class LambdaCallTargetAnnotationTest extends TestBase {
         .setIntermediate(intermediate)
         .addOptionsModification(options -> options.emitLambdaMethodAnnotations = true)
         .applyIf(intermediate, b -> b.getBuilder().setGlobalSyntheticsConsumer(globals))
+        .addOptionsModification(
+            options -> options.testing.forceLambdaAccessorInD8 = forceLambdaAccessor)
         .compile()
         .inspect(
             inspector -> {
