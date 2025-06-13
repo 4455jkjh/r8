@@ -21,6 +21,7 @@ import com.android.tools.r8.utils.timing.Timing;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 
@@ -76,7 +77,7 @@ public class PrimaryR8IRConverter extends IRConverter {
     outliner.prepareForPrimaryOptimizationPass(graphLensForPrimaryOptimizationPass);
 
     if (fieldAccessAnalysis != null && fieldAccessAnalysis.fieldAssignmentTracker() != null) {
-      fieldAccessAnalysis.fieldAssignmentTracker().initialize();
+      fieldAccessAnalysis.fieldAssignmentTracker().initialize(executorService);
     }
 
     // Process the application identifying outlining candidates.
@@ -116,7 +117,7 @@ public class PrimaryR8IRConverter extends IRConverter {
     new IdentifierMinifier(appView).rewriteDexItemBasedConstStringInStaticFields(executorService);
 
     // The field access info collection is not maintained during IR processing.
-    appView.appInfo().withLiveness().getFieldAccessInfoCollection().destroyAccessContexts();
+    appView.appInfoWithLiveness().getMutableFieldAccessInfoCollection().destroyAccessContexts();
 
     // Assure that no more optimization feedback left after primary processing.
     assert feedback.noUpdatesLeft();
@@ -125,7 +126,8 @@ public class PrimaryR8IRConverter extends IRConverter {
     // All the code has been processed so the rewriting required by the lenses is done everywhere,
     // we clear lens code rewriting so that the lens rewriter can be re-executed in phase 2 if new
     // lenses with code rewriting are added.
-    appView.clearCodeRewritings(executorService, Timing.empty());
+    List<GraphLens> prunedGraphLenses =
+        appView.clearCodeRewritings(executorService, Timing.empty());
 
     // Commit synthetics from the primary optimization pass.
     commitPendingSyntheticItems(appView);
@@ -139,7 +141,7 @@ public class PrimaryR8IRConverter extends IRConverter {
     // the parameter optimization infos, and rewrite the application.
     // TODO(b/199237357): Automatically rewrite state when lens changes.
     numberUnboxer.rewriteWithLens();
-    outliner.rewriteWithLens();
+    outliner.updateAppliedLens(prunedGraphLenses).rewriteWithLens();
     appView.withArgumentPropagator(
         argumentPropagator ->
             argumentPropagator.tearDownCodeScanner(

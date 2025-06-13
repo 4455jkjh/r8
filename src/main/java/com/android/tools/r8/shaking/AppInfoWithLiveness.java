@@ -33,13 +33,14 @@ import com.android.tools.r8.graph.DirectMappedDexApplication;
 import com.android.tools.r8.graph.DispatchTargetLookupResult;
 import com.android.tools.r8.graph.FieldAccessInfo;
 import com.android.tools.r8.graph.FieldAccessInfoCollection;
-import com.android.tools.r8.graph.FieldAccessInfoCollectionImpl;
 import com.android.tools.r8.graph.FieldResolutionResult;
 import com.android.tools.r8.graph.InstantiatedSubTypeInfo;
 import com.android.tools.r8.graph.LookupMethodTarget;
 import com.android.tools.r8.graph.LookupResult.LookupResultSuccess;
 import com.android.tools.r8.graph.LookupTarget;
 import com.android.tools.r8.graph.MethodResolutionResult.SingleResolutionResult;
+import com.android.tools.r8.graph.MutableFieldAccessInfo;
+import com.android.tools.r8.graph.MutableFieldAccessInfoCollection;
 import com.android.tools.r8.graph.ObjectAllocationInfoCollection;
 import com.android.tools.r8.graph.ObjectAllocationInfoCollectionImpl;
 import com.android.tools.r8.graph.ProgramField;
@@ -132,7 +133,8 @@ public class AppInfoWithLiveness extends AppInfoWithClassHierarchy
    * a given field is read/written by the program, and it also includes all indirect accesses to
    * each field. The latter is used, for example, during member rebinding.
    */
-  private final FieldAccessInfoCollectionImpl fieldAccessInfoCollection;
+  private final MutableFieldAccessInfoCollection<?, ? extends MutableFieldAccessInfo>
+      fieldAccessInfoCollection;
 
   /** Information about instantiated classes and their allocation sites. */
   private final ObjectAllocationInfoCollectionImpl objectAllocationInfoCollection;
@@ -202,7 +204,8 @@ public class AppInfoWithLiveness extends AppInfoWithClassHierarchy
       Set<DexMethod> bootstrapMethods,
       Set<DexMethod> virtualMethodsTargetedByInvokeDirect,
       Set<DexMethod> liveMethods,
-      FieldAccessInfoCollectionImpl fieldAccessInfoCollection,
+      MutableFieldAccessInfoCollection<?, ? extends MutableFieldAccessInfo>
+          fieldAccessInfoCollection,
       ObjectAllocationInfoCollectionImpl objectAllocationInfoCollection,
       Map<DexCallSite, ProgramMethodSet> callSites,
       KeepInfoCollection keepInfo,
@@ -399,10 +402,6 @@ public class AppInfoWithLiveness extends AppInfoWithClassHierarchy
           });
     }
     return map;
-  }
-
-  public void notifyMemberRebindingFinished(AppView<AppInfoWithLiveness> appView) {
-    getFieldAccessInfoCollection().restrictToProgram(appView);
   }
 
   @Override
@@ -679,7 +678,6 @@ public class AppInfoWithLiveness extends AppInfoWithClassHierarchy
    * @param callSite Call site to resolve.
    * @return Methods implemented by the lambda expression that created the {@code callSite}.
    */
-  @SuppressWarnings("ReferenceEquality")
   public DexClassAndMethodSet lookupLambdaImplementedMethods(
       DexCallSite callSite, AppView<AppInfoWithLiveness> appView) {
     assert checkIfObsolete();
@@ -745,7 +743,8 @@ public class AppInfoWithLiveness extends AppInfoWithClassHierarchy
     return fieldAccessInfoCollection;
   }
 
-  FieldAccessInfoCollectionImpl getMutableFieldAccessInfoCollection() {
+  public MutableFieldAccessInfoCollection<?, ? extends MutableFieldAccessInfo>
+      getMutableFieldAccessInfoCollection() {
     return fieldAccessInfoCollection;
   }
 
@@ -822,7 +821,7 @@ public class AppInfoWithLiveness extends AppInfoWithClassHierarchy
     return !field.isProgramField();
   }
 
-  public boolean isFieldOnlyWrittenInMethod(DexClassAndField field, DexEncodedMethod method) {
+  public boolean isFieldOnlyWrittenInMethod(DexClassAndField field, ProgramMethod method) {
     assert checkIfObsolete();
     assert isFieldWritten(field) : "Expected field `" + field.toSourceString() + "` to be written";
     if (isPinned(field)) {
@@ -832,37 +831,38 @@ public class AppInfoWithLiveness extends AppInfoWithClassHierarchy
   }
 
   public boolean isFieldOnlyWrittenInMethodIgnoringPinning(
-      DexClassAndField field, DexEncodedMethod method) {
+      DexClassAndField field, ProgramMethod method) {
     assert checkIfObsolete();
     assert isFieldWritten(field) : "Expected field `" + field.toSourceString() + "` to be written";
     FieldAccessInfo fieldAccessInfo = getFieldAccessInfoCollection().get(field.getReference());
-    return fieldAccessInfo != null
-        && fieldAccessInfo.isWritten()
-        && !fieldAccessInfo.isWrittenOutside(method);
+    if (fieldAccessInfo == null) {
+      return false;
+    }
+    ProgramMethod uniqueWriteContext = fieldAccessInfo.getUniqueWriteContextForFieldValueAnalysis();
+    return uniqueWriteContext != null
+        && uniqueWriteContext.getReference().isIdenticalTo(method.getReference());
   }
 
-  @SuppressWarnings("ReferenceEquality")
   public boolean isInstanceFieldWrittenOnlyInInstanceInitializers(DexClassAndField field) {
     assert checkIfObsolete();
     assert isFieldWritten(field) : "Expected field `" + field.toSourceString() + "` to be written";
-    if (isPinned(field)) {
+    if (field.getAccessFlags().isFinal()) {
+      return true;
+    }
+    if (!field.isProgramField() || isPinned(field)) {
       return false;
     }
     FieldAccessInfo fieldAccessInfo = getFieldAccessInfoCollection().get(field.getReference());
-    if (fieldAccessInfo == null || !fieldAccessInfo.isWritten()) {
-      return false;
-    }
-    DexType holder = field.getHolderType();
-    return fieldAccessInfo.isWrittenOnlyInMethodSatisfying(
-        method ->
-            method.getHolderType() == holder && method.getDefinition().isInstanceInitializer());
+    return fieldAccessInfo != null
+        && fieldAccessInfo.isWritten()
+        && fieldAccessInfo.isEffectivelyFinal(field.asProgramField());
   }
 
   public boolean isStaticFieldWrittenOnlyInEnclosingStaticInitializer(DexClassAndField field) {
     assert checkIfObsolete();
     assert isFieldWritten(field) : "Expected field `" + field.toSourceString() + "` to be written";
-    DexEncodedMethod staticInitializer =
-        definitionFor(field.getHolderType()).asProgramClass().getClassInitializer();
+    ProgramMethod staticInitializer =
+        definitionFor(field.getHolderType()).asProgramClass().getProgramClassInitializer();
     return staticInitializer != null && isFieldOnlyWrittenInMethod(field, staticInitializer);
   }
 
@@ -1242,7 +1242,6 @@ public class AppInfoWithLiveness extends AppInfoWithClassHierarchy
     return singleMethodTarget;
   }
 
-  @SuppressWarnings("ReferenceEquality")
   private DispatchTargetLookupResult getMethodTargetFromExactRuntimeInformation(
       DexType refinedReceiverType,
       ClassTypeElement receiverLowerBoundType,
@@ -1252,7 +1251,7 @@ public class AppInfoWithLiveness extends AppInfoWithClassHierarchy
     // runtime type information. In this case, the invoke will dispatch to the resolution result
     // from the runtime type of the receiver.
     if (receiverLowerBoundType != null
-        && receiverLowerBoundType.getClassType() == refinedReceiverType) {
+        && receiverLowerBoundType.getClassType().isIdenticalTo(refinedReceiverType)) {
       if (refinedReceiverClass.isProgramClass()) {
         LookupMethodTarget methodTarget =
             resolution.lookupVirtualDispatchTarget(refinedReceiverClass.asProgramClass(), this);

@@ -8,8 +8,9 @@ import com.android.tools.r8.graph.AbstractAccessContexts;
 import com.android.tools.r8.graph.AbstractAccessContexts.ConcreteAccessContexts;
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.DexField;
-import com.android.tools.r8.graph.FieldAccessInfoCollectionImpl;
 import com.android.tools.r8.graph.FieldAccessInfoImpl;
+import com.android.tools.r8.graph.MutableFieldAccessInfo;
+import com.android.tools.r8.graph.MutableFieldAccessInfoCollection;
 import com.android.tools.r8.graph.ProgramMethod;
 import java.util.IdentityHashMap;
 import java.util.Map;
@@ -18,24 +19,7 @@ public class FieldAccessInfoCollectionModifier {
 
   private static class FieldAccessContexts {
 
-    private AbstractAccessContexts readsWithContexts = AbstractAccessContexts.empty();
     private AbstractAccessContexts writesWithContexts = AbstractAccessContexts.empty();
-
-    void addReadContext(DexField field, ProgramMethod context) {
-      if (readsWithContexts.isBottom()) {
-        ConcreteAccessContexts concreteReadContexts = new ConcreteAccessContexts();
-        concreteReadContexts.recordAccess(field, context);
-        readsWithContexts = concreteReadContexts;
-      } else if (readsWithContexts.isConcrete()) {
-        readsWithContexts.asConcrete().recordAccess(field, context);
-      } else {
-        assert readsWithContexts.isTop();
-      }
-    }
-
-    void recordReadInUnknownContext() {
-      readsWithContexts = AbstractAccessContexts.unknown();
-    }
 
     void addWriteContext(DexField field, ProgramMethod context) {
       if (writesWithContexts.isBottom()) {
@@ -66,13 +50,15 @@ public class FieldAccessInfoCollectionModifier {
   }
 
   public void modify(AppView<AppInfoWithLiveness> appView) {
-    FieldAccessInfoCollectionImpl impl = appView.appInfo().getMutableFieldAccessInfoCollection();
+    MutableFieldAccessInfoCollection<?, ? extends MutableFieldAccessInfo>
+        mutableFieldAccessInfoCollection = appView.appInfo().getMutableFieldAccessInfoCollection();
     newFieldAccessContexts.forEach(
         (field, accessContexts) -> {
           FieldAccessInfoImpl fieldAccessInfo = new FieldAccessInfoImpl(field);
-          fieldAccessInfo.setReadsWithContexts(accessContexts.readsWithContexts);
+          fieldAccessInfo.setReadDirectly();
+          fieldAccessInfo.setReadsWithContexts(AbstractAccessContexts.unknown());
           fieldAccessInfo.setWritesWithContexts(accessContexts.writesWithContexts);
-          impl.extend(field, fieldAccessInfo);
+          mutableFieldAccessInfoCollection.extend(field, fieldAccessInfo);
         });
   }
 
@@ -85,15 +71,6 @@ public class FieldAccessInfoCollectionModifier {
 
     private FieldAccessContexts getFieldAccessContexts(DexField field) {
       return newFieldAccessContexts.computeIfAbsent(field, ignore -> new FieldAccessContexts());
-    }
-
-    public void recordFieldReadInContext(DexField field, ProgramMethod context) {
-      getFieldAccessContexts(field).addReadContext(field, context);
-    }
-
-    public Builder recordFieldReadInUnknownContext(DexField field) {
-      getFieldAccessContexts(field).recordReadInUnknownContext();
-      return this;
     }
 
     public void recordFieldWrittenInContext(DexField field, ProgramMethod context) {

@@ -1228,20 +1228,24 @@ public class Enqueuer {
       return false;
     }
     if (isReflective) {
+      return isRead ? info.setHasReflectiveRead() : info.setHasReflectiveWrite();
+    } else {
       if (isRead) {
-        if (!info.hasReflectiveRead()) {
-          info.setHasReflectiveRead();
-          return true;
+        if (appView.options().protoShrinking().enableGeneratedExtensionRegistryShrinking) {
+          if (appView
+              .protoShrinker()
+              .getProtoReferences()
+              .isFindLiteExtensionByNumberMethod(context)) {
+            info.setReadFromFindLiteExtensionByNumberMethod();
+          } else {
+            info.setReadFromNonFindLiteExtensionByNumberMethod();
+          }
         }
+        return info.recordRead(field, context);
       } else {
-        if (!info.hasReflectiveWrite()) {
-          info.setHasReflectiveWrite();
-          return true;
-        }
+        return info.recordWrite(field, context);
       }
-      return false;
     }
-    return isRead ? info.recordRead(field, context) : info.recordWrite(field, context);
   }
 
   void traceCallSite(
@@ -4475,7 +4479,13 @@ public class Enqueuer {
     // and verify that the mapping is then one-to-one.
     timing.begin("Prune field access mappings");
     fieldAccessInfoCollection.removeIf(
-        (field, info) -> field != info.getField() || info == MISSING_FIELD_ACCESS_INFO);
+        (field, info) -> {
+          if (field != info.getField() || info == MISSING_FIELD_ACCESS_INFO) {
+            return true;
+          }
+          info.destroyReadAccessContexts();
+          return false;
+        });
     assert fieldAccessInfoCollection.verifyMappingIsOneToOne();
     timing.end();
 

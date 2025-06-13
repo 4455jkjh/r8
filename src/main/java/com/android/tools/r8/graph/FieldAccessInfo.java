@@ -4,41 +4,14 @@
 
 package com.android.tools.r8.graph;
 
-import com.android.tools.r8.utils.collections.ProgramMethodSet;
-import java.util.function.BiConsumer;
-import java.util.function.Consumer;
-import java.util.function.Predicate;
-
 /** Provides immutable access to {@link FieldAccessInfoImpl}. */
 public interface FieldAccessInfo {
 
-  FieldAccessInfoImpl asMutable();
-
   DexField getField();
 
-  int getNumberOfReadContexts();
+  ProgramMethod getUniqueWriteContextForCallGraphConstruction();
 
-  int getNumberOfWriteContexts();
-
-  AbstractAccessContexts getReadsWithContexts();
-
-  AbstractAccessContexts getWritesWithContexts();
-
-  ProgramMethod getUniqueReadContext();
-
-  boolean hasKnownReadContexts();
-
-  boolean hasKnownWriteContexts();
-
-  void forEachIndirectAccess(Consumer<DexField> consumer);
-
-  void forEachIndirectAccessWithContexts(BiConsumer<DexField, ProgramMethodSet> consumer);
-
-  void forEachAccessContext(Consumer<ProgramMethod> consumer);
-
-  void forEachReadContext(Consumer<ProgramMethod> consumer);
-
-  void forEachWriteContext(Consumer<ProgramMethod> consumer);
+  ProgramMethod getUniqueWriteContextForFieldValueAnalysis();
 
   boolean hasReflectiveAccess();
 
@@ -50,6 +23,8 @@ public interface FieldAccessInfo {
     return isReadFromMethodHandle() || isWrittenFromMethodHandle();
   }
 
+  boolean isEffectivelyFinal(ProgramField field);
+
   boolean isRead();
 
   boolean isReadFromAnnotation();
@@ -58,15 +33,20 @@ public interface FieldAccessInfo {
 
   boolean isReadFromMethodHandle();
 
-  boolean isReadOnlyInMethodSatisfying(Predicate<ProgramMethod> predicate);
+  default boolean isReadIndirectly() {
+    return hasReflectiveRead()
+        || isReadFromAnnotation()
+        || isReadFromMethodHandle()
+        || isReadFromRecordInvokeDynamic();
+  }
+
+  boolean isReadOnlyFromFindLiteExtensionByNumberMethod();
 
   boolean isWritten();
 
   boolean isWrittenFromMethodHandle();
 
-  boolean isWrittenInMethodSatisfying(Predicate<ProgramMethod> predicate);
-
-  boolean isWrittenOnlyInMethodSatisfying(Predicate<ProgramMethod> predicate);
-
-  boolean isWrittenOutside(DexEncodedMethod method);
+  default boolean isWrittenIndirectly() {
+    return hasReflectiveWrite() || isWrittenFromMethodHandle();
+  }
 }

@@ -14,8 +14,8 @@ import com.android.tools.r8.graph.Code;
 import com.android.tools.r8.graph.DexField;
 import com.android.tools.r8.graph.DexProgramClass;
 import com.android.tools.r8.graph.DexType;
-import com.android.tools.r8.graph.FieldAccessInfo;
 import com.android.tools.r8.graph.FieldAccessInfoCollectionImpl;
+import com.android.tools.r8.graph.FieldAccessInfoImpl;
 import com.android.tools.r8.graph.FieldResolutionResult;
 import com.android.tools.r8.graph.ProgramField;
 import com.android.tools.r8.graph.ProgramMethod;
@@ -162,7 +162,7 @@ public class EnqueuerDeferredTracingImpl extends EnqueuerDeferredTracing {
     assert enqueuer.getKeepInfo(field).isBottom();
     assert !enqueuer.getKeepInfo(field).isPinned(options) || options.isOptimizedResourceShrinking();
 
-    FieldAccessInfo info = enqueuer.getFieldAccessInfoCollection().get(field.getReference());
+    FieldAccessInfoImpl info = enqueuer.getFieldAccessInfoCollection().get(field.getReference());
     if (info.hasReflectiveAccess()
         || info.isAccessedFromMethodHandle()
         || info.isReadFromAnnotation()
@@ -252,7 +252,7 @@ public class EnqueuerDeferredTracingImpl extends EnqueuerDeferredTracing {
     Map<DexField, ProgramField> prunedFields = new IdentityHashMap<>();
     deferredEnqueuerActions.forEach(
         (field, ignore) -> {
-          FieldAccessInfo accessInfo = fieldAccessInfoCollection.get(field.getReference());
+          FieldAccessInfoImpl accessInfo = fieldAccessInfoCollection.get(field.getReference());
           prunedFields.put(field.getReference(), field);
           accessInfo.forEachAccessContext(methodsToProcess::add);
           accessInfo.forEachIndirectAccess(reference -> prunedFields.put(reference, field));
