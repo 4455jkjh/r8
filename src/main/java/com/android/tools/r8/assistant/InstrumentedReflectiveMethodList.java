@@ -130,6 +130,39 @@ public class InstrumentedReflectiveMethodList {
             "getMethods"),
         getMethodReferenceWithClassParameter("onClassGetMethods"));
 
+    builder.put(
+        factory.atomicFieldUpdaterMethods.intUpdater,
+        getMethodReferenceWithClassAndStringParameter("onAtomicIntegerFieldUpdaterNewUpdater"));
+    builder.put(
+        factory.atomicFieldUpdaterMethods.longUpdater,
+        getMethodReferenceWithClassAndStringParameter("onAtomicLongFieldUpdaterNewUpdater"));
+    builder.put(
+        factory.atomicFieldUpdaterMethods.referenceUpdater,
+        getMethodReferenceWithParameterTypes(
+            "onAtomicReferenceFieldUpdaterNewUpdater",
+            factory.classType,
+            factory.classType,
+            factory.stringType));
+
+    builder.put(
+        factory.serviceLoaderMethods.load,
+        getMethodReferenceWithClassParameter("onServiceLoaderLoad"));
+    builder.put(
+        factory.serviceLoaderMethods.loadWithClassLoader,
+        getMethodReferenceWithParameterTypes(
+            "onServiceLoaderLoadWithClassLoader", factory.classType, factory.classLoaderType));
+    builder.put(
+        factory.serviceLoaderMethods.loadInstalled,
+        getMethodReferenceWithClassParameter("onServiceLoaderLoadInstalled"));
+
+    builder.put(
+        factory.proxyMethods.newProxyInstance,
+        getMethodReferenceWithParameterTypes(
+            "onProxyNewProxyInstance",
+            factory.classLoaderType,
+            factory.classArrayType,
+            factory.invocationHandlerType));
+
     return builder.build();
   }
 

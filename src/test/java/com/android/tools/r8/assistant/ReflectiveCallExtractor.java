@@ -71,20 +71,44 @@ public class ReflectiveCallExtractor {
     return methods;
   }
   private static boolean isReflective(DexMethod method, DexItemFactory factory) {
+    if (factory.atomicFieldUpdaterMethods.isFieldUpdater(method)) {
+      return true;
+    }
+    if (factory.serviceLoaderMethods.isLoadMethod(method)) {
+      return true;
+    }
+    if (factory.proxyMethods.newProxyInstance.isIdenticalTo(method)) {
+      return true;
+    }
     DexType type = method.getHolderType();
+    String name = method.getName().toString();
     if (type.isIdenticalTo(factory.classType)) {
-      String name = method.getName().toString();
       if (name.equals("getResource")
           || name.equals("getResourceAsStream")
           || name.equals("getProtectionDomain")
-          || name.equals("getClassLoader")) {
+          || name.equals("getClassLoader")
+          || name.equals("hashCode")
+          || name.equals("equals")
+          || name.equals("toString")) {
         return false;
       }
       return true;
     }
-    return type.isIdenticalTo(factory.unsafeType)
-        || type.isIdenticalTo(factory.createType("Ljava/lang/reflect/Array;"))
-        || type.isIdenticalTo(factory.proxyType);
+    if (type.isIdenticalTo(factory.unsafeType)) {
+      // We assume all offset based methods are called using the right method below to compute the
+      // offset in the object, we do not support cases where programmers would compute the
+      // offset on their own with their own knowledge of how the vm writes objects in memory.
+      if (name.equals("fieldOffset")
+          || name.equals("staticFieldBase") // This can be called on a field or a class.
+          || name.equals("staticFieldOffset")
+          || name.equals("objectFieldOffset")
+          || name.equals("shouldBeInitialized")
+          || name.equals("ensureClassInitialized")
+          || name.equals("allocateInstance")) {
+        return true;
+      }
+    }
+    return false;
   }
 
   public static String printMethods(Map<DexType, Collection<DexMethod>> methods) {
@@ -92,9 +116,12 @@ public class ReflectiveCallExtractor {
     List<DexType> types = new ArrayList<>(methods.keySet());
     types.sort(Comparator.naturalOrder());
     for (DexType type : types) {
-      sb.append("+++ ").append(type).append(" +++").append("\n");
-      for (DexMethod dexMethod : methods.get(type)) {
-        sb.append(dexMethod).append("\n");
+      Collection<DexMethod> typeMethods = methods.get(type);
+      if (!typeMethods.isEmpty()) {
+        sb.append("+++ ").append(type).append(" +++").append("\n");
+        for (DexMethod dexMethod : typeMethods) {
+          sb.append(dexMethod).append("\n");
+        }
       }
     }
     return sb.toString();

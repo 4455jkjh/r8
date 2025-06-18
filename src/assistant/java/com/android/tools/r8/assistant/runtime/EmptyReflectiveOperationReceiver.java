@@ -5,6 +5,7 @@ package com.android.tools.r8.assistant.runtime;
 
 import com.android.tools.r8.assistant.runtime.ReflectiveOracle.Stack;
 import com.android.tools.r8.keepanno.annotations.KeepForApi;
+import java.lang.reflect.InvocationHandler;
 
 @KeepForApi
 public class EmptyReflectiveOperationReceiver implements ReflectiveOperationReceiver {
@@ -53,4 +54,24 @@ public class EmptyReflectiveOperationReceiver implements ReflectiveOperationRece
 
   @Override
   public void onClassFlag(Stack stack, Class<?> clazz, ClassFlag classFlag) {}
+
+  @Override
+  public void onAtomicIntegerFieldUpdaterNewUpdater(Stack stack, Class<?> clazz, String name) {}
+
+  @Override
+  public void onAtomicLongFieldUpdaterNewUpdater(Stack stack, Class<?> clazz, String name) {}
+
+  @Override
+  public void onAtomicReferenceFieldUpdaterNewUpdater(
+      Stack stack, Class<?> clazz, Class<?> fieldClass, String name) {}
+
+  @Override
+  public void onServiceLoaderLoad(Stack stack, Class<?> clazz, ClassLoader classLoader) {}
+
+  @Override
+  public void onProxyNewProxyInstance(
+      Stack stack,
+      ClassLoader classLoader,
+      Class<?>[] interfaces,
+      InvocationHandler invocationHandler) {}
 }
