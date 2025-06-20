@@ -9,9 +9,11 @@ import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.DexClass;
 import com.android.tools.r8.graph.DexItemFactory;
 import com.android.tools.r8.graph.DexType;
+import com.android.tools.r8.graph.ImmediateProgramSubtypingInfo;
 import com.android.tools.r8.ir.analysis.type.InterfaceCollection.Builder;
 import com.android.tools.r8.utils.BooleanBox;
 import com.android.tools.r8.utils.Box;
+import com.android.tools.r8.utils.ObjectUtils;
 import com.android.tools.r8.utils.OptionalBool;
 import com.android.tools.r8.utils.Pair;
 import com.android.tools.r8.utils.SetUtils;
@@ -104,6 +106,22 @@ public class ClassTypeElement extends ReferenceTypeElement {
     return lazyInterfaces;
   }
 
+  public boolean hasDefaultImplementedInterfaces() {
+    assert appView != null : "Unexpected use of hasDefaultImplementedInterfaces() in D8";
+    if (lazyInterfaces == null) {
+      return true;
+    }
+    InterfaceCollection defaultImplementedInterfaces =
+        appView
+            .dexItemFactory()
+            .getLeastUpperBoundOfImplementedInterfacesOrDefault(getClassType(), null);
+    if (ObjectUtils.identical(lazyInterfaces, defaultImplementedInterfaces)) {
+      return true;
+    }
+    assert !lazyInterfaces.equals(defaultImplementedInterfaces);
+    return false;
+  }
+
   private ClassTypeElement createVariant(
       Nullability nullability, NullabilityVariants<ClassTypeElement> variants) {
     assert this.nullability != nullability;
@@ -152,6 +170,76 @@ public class ClassTypeElement extends ReferenceTypeElement {
   @Override
   public ClassTypeElement joinNullability(Nullability nullability) {
     return getOrCreateVariant(nullability().join(nullability));
+  }
+
+  public boolean lessThanOrEqual(
+      DexClass otherClass,
+      AppView<? extends AppInfoWithClassHierarchy> appView,
+      ImmediateProgramSubtypingInfo immediateSubtypingInfo) {
+    DexType thisClassType = getClassType();
+    DexType otherClassType = otherClass.getType();
+    if (getInterfaces().isEmpty() || hasDefaultImplementedInterfaces()) {
+      // <= can be implemented by a single class hierarchy check.
+      if (thisClassType.isIdenticalTo(otherClassType)) {
+        return true;
+      }
+      if (otherClass.isFinal()) {
+        return false;
+      }
+      DexClass thisClass = appView.definitionFor(thisClassType);
+      return thisClass != null && appView.appInfo().isSubtype(thisClass, otherClass);
+    } else if (thisClassType.isNotIdenticalTo(otherClassType)) {
+      // Fast-path for when the other class is final.
+      if (isFinalOrHasNoSubclassesInProgram(otherClass, immediateSubtypingInfo)) {
+        return false;
+      }
+    } else {
+      // We need to check the interfaces.
+    }
+    return lessThanOrEqualUpToNullability(otherClassType.toTypeElement(appView), appView);
+  }
+
+  public boolean greaterThanOrEqualTo(
+      DexClass otherClass,
+      AppView<? extends AppInfoWithClassHierarchy> appView,
+      ImmediateProgramSubtypingInfo immediateSubtypingInfo) {
+    DexType thisClassType = getClassType();
+    DexType otherClassType = otherClass.getType();
+    if (getInterfaces().isEmpty() || hasDefaultImplementedInterfaces()) {
+      // >= can be implemented by a single class hierarchy check.
+      if (thisClassType.isIdenticalTo(otherClassType)) {
+        return true;
+      }
+      DexClass thisClass = appView.definitionFor(thisClassType);
+      if (thisClass == null
+          || isFinalOrHasNoSubclassesInProgram(thisClass, immediateSubtypingInfo)) {
+        return false;
+      }
+      return appView.appInfo().isSubtype(otherClass, thisClass);
+    } else if (thisClassType.isNotIdenticalTo(otherClassType)) {
+      // Fast-path for when the current class is final.
+      DexClass thisClass = appView.definitionFor(thisClassType);
+      if (thisClass == null
+          || isFinalOrHasNoSubclassesInProgram(thisClass, immediateSubtypingInfo)) {
+        return false;
+      }
+    } else {
+      // We need to check the interfaces.
+    }
+    ClassTypeElement otherClassElementType = otherClassType.toTypeElement(appView).asClassType();
+    return otherClassElementType.lessThanOrEqualUpToNullability(this, appView);
+  }
+
+  private boolean isFinalOrHasNoSubclassesInProgram(
+      DexClass clazz, ImmediateProgramSubtypingInfo immediateSubtypingInfo) {
+    if (clazz.isFinal()) {
+      return true;
+    }
+    if (clazz.isProgramClass()
+        && immediateSubtypingInfo.getSubclasses(clazz.asProgramClass()).isEmpty()) {
+      return true;
+    }
+    return false;
   }
 
   @Override
