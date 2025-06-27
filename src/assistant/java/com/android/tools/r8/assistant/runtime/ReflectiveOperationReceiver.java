@@ -20,19 +20,37 @@ public interface ReflectiveOperationReceiver {
 
   void onClassGetDeclaredMethod(Stack stack, Class<?> clazz, String method, Class<?>... parameters);
 
+  void onClassGetDeclaredMethods(Stack stack, Class<?> clazz);
+
   void onClassGetDeclaredField(Stack stack, Class<?> clazz, String fieldName);
 
-  void onClassGetDeclaredMethods(Stack stack, Class<?> clazz);
+  void onClassGetDeclaredFields(Stack stack, Class<?> clazz);
+
+  void onClassGetDeclaredConstructor(Stack stack, Class<?> clazz, Class<?>... parameters);
+
+  void onClassGetDeclaredConstructors(Stack stack, Class<?> clazz);
 
   void onClassGetMethod(Stack stack, Class<?> clazz, String method, Class<?>... parameters);
 
+  void onClassGetMethods(Stack stack, Class<?> clazz);
+
   void onClassGetField(Stack stack, Class<?> clazz, String fieldName);
 
-  void onClassGetMethods(Stack stack, Class<?> clazz);
+  void onClassGetFields(Stack stack, Class<?> clazz);
+
+  void onClassGetConstructor(Stack stack, Class<?> clazz, Class<?>... parameters);
+
+  void onClassGetConstructors(Stack stack, Class<?> clazz);
 
   void onClassGetName(Stack stack, Class<?> clazz, NameLookupType lookupType);
 
   void onClassGetSuperclass(Stack stack, Class<?> clazz);
+
+  void onClassAsSubclass(Stack stack, Class<?> holder, Class<?> clazz);
+
+  void onClassIsInstance(Stack stack, Class<?> holder, Object object);
+
+  void onClassCast(Stack stack, Class<?> holder, Object object);
 
   void onClassFlag(Stack stack, Class<?> clazz, ClassFlag classFlag);
 

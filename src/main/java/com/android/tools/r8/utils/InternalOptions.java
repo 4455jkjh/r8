@@ -783,6 +783,8 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
       System.getProperty("com.android.tools.r8.pruneNonVissibleAnnotationClasses") != null;
   public boolean experimentalTraceAndroidEnumSerialization =
       System.getProperty("com.android.tools.r8.experimentalTraceAndroidEnumSerialization") != null;
+  public boolean enableXmlInlining =
+      System.getProperty("com.android.tools.r8.enableXmlInlining") != null;
 
   // Flag to turn on/offLoad/store optimization in the Cf back-end.
   public boolean enableLoadStoreOptimization = true;
@@ -880,6 +882,10 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
   @Override
   public boolean isForceProguardCompatibilityEnabled() {
     return forceProguardCompatibility;
+  }
+
+  public boolean isFullMode() {
+    return !isForceProguardCompatibilityEnabled();
   }
 
   public boolean parseSignatureAttribute() {
@@ -2787,6 +2793,10 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
   public boolean canUseContainerDex() {
     assert isGeneratingDex();
     return false;
+  }
+
+  public boolean enableContainerDex() {
+    return getTestingOptions().forceDexContainerFormat || canUseContainerDex();
   }
 
   public boolean canUseJavaLangVarHandleStoreStoreFence(DexDefinitionSupplier definitions) {

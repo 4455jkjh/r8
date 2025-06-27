@@ -24,15 +24,13 @@ import com.android.tools.r8.debuginfo.DebugRepresentation.DebugRepresentationPre
 import com.android.tools.r8.dex.FileWriter.ByteBufferResult;
 import com.android.tools.r8.dex.VirtualFile.FilePerInputClassDistributor;
 import com.android.tools.r8.dex.VirtualFile.ItemUseInfo;
+import com.android.tools.r8.dex.jumbostrings.JumboStringRewriter;
 import com.android.tools.r8.errors.CompilationError;
 import com.android.tools.r8.features.FeatureSplitConfiguration.DataResourceProvidersAndConsumer;
 import com.android.tools.r8.graph.AppServices;
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.DexAnnotation;
-import com.android.tools.r8.graph.DexAnnotationDirectory;
 import com.android.tools.r8.graph.DexAnnotationSet;
-import com.android.tools.r8.graph.DexDebugInfoForWriting;
-import com.android.tools.r8.graph.DexEncodedArray;
 import com.android.tools.r8.graph.DexEncodedField;
 import com.android.tools.r8.graph.DexEncodedMethod;
 import com.android.tools.r8.graph.DexItem;
@@ -40,13 +38,9 @@ import com.android.tools.r8.graph.DexItemFactory;
 import com.android.tools.r8.graph.DexProgramClass;
 import com.android.tools.r8.graph.DexString;
 import com.android.tools.r8.graph.DexType;
-import com.android.tools.r8.graph.DexTypeList;
-import com.android.tools.r8.graph.DexValue;
-import com.android.tools.r8.graph.DexWritableCode;
 import com.android.tools.r8.graph.EnclosingMethodAttribute;
 import com.android.tools.r8.graph.InnerClassAttribute;
 import com.android.tools.r8.graph.ObjectToOffsetMapping;
-import com.android.tools.r8.graph.ParameterAnnotationsList;
 import com.android.tools.r8.metadata.impl.BuildMetadataFactory;
 import com.android.tools.r8.naming.KotlinModuleSynthesizer;
 import com.android.tools.r8.naming.NamingLens;
@@ -58,7 +52,6 @@ import com.android.tools.r8.profile.startup.profile.StartupProfile;
 import com.android.tools.r8.shaking.MainDexInfo;
 import com.android.tools.r8.utils.AndroidApp;
 import com.android.tools.r8.utils.ArrayUtils;
-import com.android.tools.r8.utils.Box;
 import com.android.tools.r8.utils.DescriptorUtils;
 import com.android.tools.r8.utils.DexVersion;
 import com.android.tools.r8.utils.ExceptionUtils;
@@ -111,72 +104,44 @@ public class ApplicationWriter {
   public DexIndexedConsumer programConsumer;
   public InternalGlobalSyntheticsProgramConsumer globalsSyntheticsConsumer;
 
-  private static class SortAnnotations extends MixedSectionCollection {
+  private static class SortAnnotations {
 
+    private final AppView<?> appView;
     private final NamingLens namingLens;
 
-    public SortAnnotations(NamingLens namingLens) {
-      this.namingLens = namingLens;
+    public SortAnnotations(AppView<?> appView) {
+      this.appView = appView;
+      this.namingLens = appView.getNamingLens();
     }
 
-    @Override
-    public boolean add(DexAnnotationSet dexAnnotationSet) {
-      // Annotation sets are sorted by annotation types.
-      dexAnnotationSet.sort(namingLens);
-      return true;
+    void run(ExecutorService executorService, Timing timing) throws ExecutionException {
+      timing.begin("Sort annotations");
+      ThreadUtils.processItems(
+          appView.appInfo().classes(),
+          this::processClass,
+          appView.options().getThreadingModule(),
+          executorService);
+      timing.end();
     }
 
-    @Override
-    public boolean add(DexAnnotation annotation) {
-      // The elements of encoded annotation must be sorted by name.
-      annotation.annotation.sort();
-      return true;
-    }
-
-    @Override
-    public boolean add(DexEncodedArray dexEncodedArray) {
-      // Dex values must potentially be sorted, eg, for DexValueAnnotation.
-      for (DexValue value : dexEncodedArray.values) {
-        value.sort();
+    private void processClass(DexProgramClass clazz) {
+      // Sort all annotations.
+      clazz.annotations().forEach(this::processAnnotation);
+      for (DexEncodedMethod method : clazz.methods()) {
+        method.annotations().forEach(this::processAnnotation);
+        method.getParameterAnnotations().forEach(this::processAnnotationSet);
       }
-      return true;
+      for (DexEncodedField field : clazz.fields()) {
+        field.annotations().forEach(this::processAnnotation);
+      }
     }
 
-    @Override
-    public boolean add(DexProgramClass dexClassData) {
-      return true;
+    private void processAnnotation(DexAnnotation annotation) {
+      annotation.getAnnotation().sort();
     }
 
-    @Override
-    public boolean add(DexEncodedMethod method, DexWritableCode dexCode) {
-      return true;
-    }
-
-    @Override
-    public boolean add(DexDebugInfoForWriting dexDebugInfo) {
-      return true;
-    }
-
-    @Override
-    public boolean add(DexTypeList dexTypeList) {
-      return true;
-    }
-
-    @Override
-    public boolean add(ParameterAnnotationsList parameterAnnotationsList) {
-      return true;
-    }
-
-    @Override
-    public void setAnnotationsDirectoryForClass(
-        DexProgramClass clazz, DexAnnotationDirectory annotationDirectory) {
-      // Intentionally empty.
-    }
-
-    @Override
-    public void setStaticFieldValuesForClass(
-        DexProgramClass clazz, DexEncodedArray staticFieldValues) {
-      add(staticFieldValues);
+    private void processAnnotationSet(DexAnnotationSet annotationSet) {
+      annotationSet.sort(namingLens);
     }
   }
 
@@ -197,8 +162,7 @@ public class ApplicationWriter {
 
   public static ApplicationWriter create(
       AppView<?> appView, Marker marker, DexIndexedConsumer consumer) {
-    if (appView.options().getTestingOptions().forceDexContainerFormat
-        || appView.options().canUseContainerDex()) {
+    if (appView.options().enableContainerDex()) {
       if (!DexVersion.getDexVersion(appView.options().getMinApiLevel()).isContainerDex()) {
         appView
             .options()
@@ -277,8 +241,8 @@ public class ApplicationWriter {
               : new InternalGlobalSyntheticsDexIndexedConsumer(
                   options.getGlobalSyntheticsConsumer());
     }
-    while (virtualFiles.size() > 0 && virtualFiles.get(virtualFiles.size() - 1).isEmpty()) {
-      virtualFiles.remove(virtualFiles.size() - 1);
+    while (!virtualFiles.isEmpty() && ListUtils.last(virtualFiles).isEmpty()) {
+      ListUtils.removeLast(virtualFiles);
     }
     return virtualFiles;
   }
@@ -315,28 +279,6 @@ public class ApplicationWriter {
     write(executorService, null);
   }
 
-  protected Timing rewriteJumboStringsAndComputeDebugRepresentation(
-      VirtualFile virtualFile, List<LazyDexString> lazyDexStrings) {
-    Timing fileTiming = Timing.create("VirtualFile " + virtualFile.getId(), options);
-    computeOffsetMappingAndRewriteJumboStrings(virtualFile, lazyDexStrings, fileTiming);
-    DebugRepresentation.computeForFile(appView, virtualFile);
-    fileTiming.end();
-    return fileTiming;
-  }
-
-  protected Collection<Timing> rewriteJumboStringsAndComputeDebugRepresentation(
-      ExecutorService executorService,
-      List<VirtualFile> virtualFiles,
-      List<LazyDexString> lazyDexStrings)
-      throws ExecutionException {
-    return ThreadUtils.processItemsWithResults(
-        virtualFiles,
-        virtualFile ->
-            rewriteJumboStringsAndComputeDebugRepresentation(virtualFile, lazyDexStrings),
-        appView.options().getThreadingModule(),
-        executorService);
-  }
-
   protected void writeVirtualFiles(
       ExecutorService executorService,
       List<VirtualFile> virtualFiles,
@@ -371,11 +313,9 @@ public class ApplicationWriter {
 
     timing.begin("DexApplication.write");
 
-    Box<ProguardMapId> delayedProguardMapId = new Box<>();
     List<LazyDexString> lazyDexStrings = new ArrayList<>();
-    computeMarkerStrings(delayedProguardMapId, lazyDexStrings);
-    OriginalSourceFiles originalSourceFiles =
-        computeSourceFileString(delayedProguardMapId, lazyDexStrings);
+    computeMarkerStrings(lazyDexStrings);
+    OriginalSourceFiles originalSourceFiles = computeSourceFileString(lazyDexStrings);
 
     try {
       timing.begin("Insert Attribute Annotations");
@@ -408,37 +348,26 @@ public class ApplicationWriter {
           shrinker -> virtualFiles.stream().allMatch(shrinker::verifyDeadProtoTypesNotReferenced),
           true);
 
-      // TODO(b/151313617): Sorting annotations mutates elements so run single threaded on main.
-      timing.begin("Sort Annotations");
-      SortAnnotations sortAnnotations = new SortAnnotations(getNamingLens());
-      appView.appInfo().classes().forEach((clazz) -> clazz.addDependencies(sortAnnotations));
-      timing.end();
-
-      {
-        // Compute offsets and rewrite jumbo strings so that code offsets are fixed.
-        TimingMerger merger = timing.beginMerger("Pre-write phase", executorService);
-        Collection<Timing> timings =
-            rewriteJumboStringsAndComputeDebugRepresentation(
-                executorService, virtualFiles, lazyDexStrings);
-        merger.add(timings);
-        merger.end();
-      }
+      new SortAnnotations(appView).run(executorService, timing);
+      JumboStringRewriter.create(appView, lazyDexStrings, virtualFiles)
+          .run(executorService, timing);
 
       // Now that the instruction offsets in each code object are fixed, compute the mapping file
       // content.
+      ProguardMapId proguardMapId = null;
       if (willComputeProguardMap()) {
         // TODO(b/220999985): Refactor line number optimization to be per file and thread it above.
         DebugRepresentationPredicate representation =
             DebugRepresentation.fromFiles(virtualFiles, options);
-        delayedProguardMapId.set(
-            runAndWriteMap(inputApp, appView, timing, originalSourceFiles, representation));
+        proguardMapId =
+            runAndWriteMap(inputApp, appView, timing, originalSourceFiles, representation);
       }
 
       // With the mapping id/hash known, it is safe to compute the remaining dex strings.
       timing.begin("Compute lazy strings");
       List<DexString> forcedStrings = new ArrayList<>();
       for (LazyDexString lazyDexString : lazyDexStrings) {
-        forcedStrings.add(lazyDexString.compute());
+        forcedStrings.add(lazyDexString.compute(proguardMapId));
       }
       timing.end();
 
@@ -473,36 +402,33 @@ public class ApplicationWriter {
     }
   }
 
-  private void computeMarkerStrings(
-      Box<ProguardMapId> delayedProguardMapId, List<LazyDexString> lazyDexStrings) {
+  private void computeMarkerStrings(List<LazyDexString> lazyDexStrings) {
     List<Marker> allMarkers = new ArrayList<>();
     if (previousMarkers != null) {
       allMarkers.addAll(previousMarkers);
     }
     DexItemFactory factory = appView.dexItemFactory();
-    currentMarker
-        .ifPresent(
-            marker -> {
-              if (willComputeProguardMap()) {
-                lazyDexStrings.add(
-                    new LazyDexString() {
+    currentMarker.ifPresent(
+        marker -> {
+          if (willComputeProguardMap()) {
+            lazyDexStrings.add(
+                new LazyDexString() {
 
-                      @Override
-                      public DexString internalCompute() {
-                        marker.setPgMapId(delayedProguardMapId.get().getId());
-                        return marker.toDexString(factory);
-                      }
-                    });
-              } else {
-                allMarkers.add(marker);
-              }
-            });
+                  @Override
+                  public DexString internalCompute(ProguardMapId proguardMapId) {
+                    marker.setPgMapId(proguardMapId.getId());
+                    return marker.toDexString(factory);
+                  }
+                });
+          } else {
+            allMarkers.add(marker);
+          }
+        });
     allMarkers.sort(Comparator.comparing(Marker::toString));
     markerStrings = ListUtils.map(allMarkers, marker -> marker.toDexString(factory));
   }
 
-  private OriginalSourceFiles computeSourceFileString(
-      Box<ProguardMapId> delayedProguardMapId, List<LazyDexString> lazyDexStrings) {
+  private OriginalSourceFiles computeSourceFileString(List<LazyDexString> lazyDexStrings) {
     if (options.sourceFileProvider == null) {
       return OriginalSourceFiles.fromClasses();
     }
@@ -516,8 +442,8 @@ public class ApplicationWriter {
     lazyDexStrings.add(
         new LazyDexString() {
           @Override
-          public DexString internalCompute() {
-            return rewriteSourceFile(originalSourceFiles.keySet(), delayedProguardMapId.get());
+          public DexString internalCompute(ProguardMapId proguardMapId) {
+            return rewriteSourceFile(originalSourceFiles.keySet(), proguardMapId);
           }
         });
     return OriginalSourceFiles.fromMap(originalSourceFiles);
@@ -580,19 +506,6 @@ public class ApplicationWriter {
         sourceFile == null ? null : options.itemFactory.createString(sourceFile);
     classes.forEach(clazz -> clazz.setSourceFile(dexSourceFile));
     return dexSourceFile;
-  }
-
-  private void computeOffsetMappingAndRewriteJumboStrings(
-      VirtualFile virtualFile, List<LazyDexString> lazyDexStrings, Timing timing) {
-    if (virtualFile.isEmpty()) {
-      return;
-    }
-    timing.begin("Compute object offset mapping");
-    virtualFile.computeMapping(appView, lazyDexStrings.size(), timing);
-    timing.end();
-    timing.begin("Rewrite jumbo strings");
-    rewriteCodeWithJumboStrings(virtualFile.getObjectMapping(), virtualFile.classes());
-    timing.end();
   }
 
   private <T extends DexItem> void printUse(Map<T, ItemUseInfo> useMap, String label) {
@@ -958,35 +871,6 @@ public class ApplicationWriter {
         method -> method.getDefinition().getCode().asDexWritableCode().setCallSiteContexts(method));
   }
 
-  /**
-   * Rewrites the code for all methods in the given file so that they use JumboString for at least
-   * the strings that require it in mapping.
-   *
-   * <p>If run multiple times on a class, the lowest index that is required to be a JumboString will
-   * be used.
-   */
-  protected void rewriteCodeWithJumboStrings(
-      ObjectToOffsetMapping mapping, Collection<DexProgramClass> classes) {
-    // Do not bail out early if forcing jumbo string processing.
-    if (!options.testing.forceJumboStringProcessing) {
-      // If there are no strings with jumbo indices at all this is a no-op.
-      if (!mapping.hasJumboStrings()) {
-        return;
-      }
-    }
-    for (DexProgramClass clazz : classes) {
-      clazz.forEachProgramMethodMatching(
-          DexEncodedMethod::hasCode,
-          method -> {
-            DexWritableCode code = method.getDefinition().getCode().asDexWritableCode();
-            DexWritableCode rewrittenCode =
-                code.rewriteCodeWithJumboStrings(
-                    method, mapping, appView, options.testing.forceJumboStringProcessing);
-            method.setCode(rewrittenCode.asCode(), appView);
-          });
-    }
-  }
-
   private ByteBufferResult writeDexFile(
       ObjectToOffsetMapping objectMapping,
       ByteBufferProvider provider,
@@ -1020,11 +904,11 @@ public class ApplicationWriter {
   public abstract static class LazyDexString {
     private boolean computed = false;
 
-    public abstract DexString internalCompute();
+    public abstract DexString internalCompute(ProguardMapId proguardMapId);
 
-    public final DexString compute() {
+    public final DexString compute(ProguardMapId proguardMapId) {
       assert !computed;
-      DexString value = internalCompute();
+      DexString value = internalCompute(proguardMapId);
       computed = true;
       return value;
     }

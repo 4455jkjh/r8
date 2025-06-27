@@ -4,6 +4,7 @@
 package com.android.tools.r8.assistant;
 
 import java.io.InputStream;
+import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 
@@ -14,10 +15,13 @@ public class JavaLangClassTestClass {
     try {
       Class<?> clazz = Class.forName(Foo.class.getName());
       Class<?> superClass = clazz.getSuperclass();
-      clazz.getDeclaredMethod("bar");
+      clazz.getDeclaredMethod("barr");
       clazz.getDeclaredField("a");
       clazz.getDeclaredField("b");
       Method[] declaredMethods = clazz.getDeclaredMethods();
+      Field[] declaredFields = clazz.getDeclaredFields();
+      clazz.getDeclaredConstructor();
+      Constructor<?>[] declaredConstructors = clazz.getDeclaredConstructors();
       String s = clazz.getName();
       s += clazz.getCanonicalName();
       s += clazz.getSimpleName();
@@ -37,10 +41,17 @@ public class JavaLangClassTestClass {
 
       Class<?> barClass = Bar.class;
       Method[] methods = barClass.getMethods();
+      Field[] fields = barClass.getFields();
+      Constructor<?>[] constructors = barClass.getConstructors();
       Method bar = barClass.getMethod("bar");
       Field i = barClass.getField("i");
+      Constructor<?> constructor = barClass.getConstructor();
+
+      Object o = new Bar();
+      Bar cast = Bar.class.cast(o);
+      boolean isInst = Bar.class.isInstance(o);
+      Class<?> aClass = Bar.class.asSubclass(Foo.class);
     } catch (ClassNotFoundException | NoSuchFieldException | NoSuchMethodException e) {
-      throw new RuntimeException(e);
     }
   }
 
@@ -48,18 +59,23 @@ public class JavaLangClassTestClass {
     public static int a;
     public int b;
 
-    public static void bar() {}
+    public static void barr() {}
 
     public void foo() {}
 
     public abstract void fooBar();
   }
 
-  public static class Bar {
+  public static class Bar extends Foo {
     public int i;
 
     public int bar() {
       return 11;
+    }
+
+    @Override
+    public void fooBar() {
+      System.out.println("fooBar");
     }
   }
 }
