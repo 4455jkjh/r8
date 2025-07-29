@@ -458,7 +458,7 @@ public class ApplicationWriter {
       options.reporter.failIfPendingErrors();
       // Supply info to all additional resource consumers.
       if (!(programConsumer instanceof ConvertedCfFiles)) {
-        supplyAdditionalConsumers(appView, executorService, virtualFiles);
+        supplyAdditionalConsumers(appView, virtualFiles);
       }
     } finally {
       timing.end();
@@ -674,8 +674,7 @@ public class ApplicationWriter {
   }
 
   @SuppressWarnings("DefaultCharset")
-  public static void supplyAdditionalConsumers(
-      AppView<?> appView, ExecutorService executorService, List<VirtualFile> virtualFiles) {
+  public static void supplyAdditionalConsumers(AppView<?> appView, List<VirtualFile> virtualFiles) {
     InternalOptions options = appView.options();
     Reporter reporter = options.reporter;
     appView.getArtProfileCollection().supplyConsumers(appView);
@@ -731,7 +730,7 @@ public class ApplicationWriter {
     if (options.r8BuildMetadataConsumer != null) {
       assert appView.hasClassHierarchy();
       options.r8BuildMetadataConsumer.accept(
-          BuildMetadataFactory.create(appView.withClassHierarchy(), executorService, virtualFiles));
+          BuildMetadataFactory.create(appView.withClassHierarchy(), virtualFiles));
     }
   }
 
