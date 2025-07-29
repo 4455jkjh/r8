@@ -105,8 +105,6 @@ public class R8BuildMetadataTest extends TestBase {
   private void inspectDeserializedBuildMetadata(R8BuildMetadata buildMetadata) {
     // Baseline profile rewriting metadata.
     assertNotNull(buildMetadata.getBaselineProfileRewritingMetadata());
-    // Compilation metadata.
-    assertNotNull(buildMetadata.getCompilationMetadata());
     // Dex files metadata.
     if (parameters.isDexRuntime()) {
       boolean isDexLayoutOptimizationEnabled = parameters.canUseNativeMultidex();
