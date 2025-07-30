@@ -85,7 +85,8 @@ public class ProguardConfigurationParser {
           "dontshrinkduringoptimization",
           "convert_proto_enum_to_string",
           "adaptkotlinmetadata",
-          "verbose");
+          "verbose",
+          "dontusemixedcaseclassnames");
 
   private static final List<String> IGNORED_CLASS_DESCRIPTOR_OPTIONS =
       ImmutableList.of("isclassnamestring", "whyarenotsimple");
@@ -483,8 +484,6 @@ public class ProguardConfigurationParser {
         configurationBuilder.addRule(parseIfRule(optionStart));
       } else if (acceptString("addconfigurationdebugging")) {
         configurationBuilder.setConfigurationDebugging(true);
-      } else if (acceptString("dontusemixedcaseclassnames")) {
-        configurationBuilder.setDontUseMixedCaseClassnames(true);
       } else if (parseMaximumRemovedAndroidLogLevelRule(optionStart)) {
         return true;
       } else {
@@ -1406,12 +1405,6 @@ public class ProguardConfigurationParser {
                             ProguardTypeMatcher.create(first, ClassOrType.TYPE, dexItemFactory));
                     ruleBuilder.setArguments(parseArgumentList());
                   } else {
-                    if (first.hasUnusualCharacters()) {
-                      warnUnusualCharacters("type", first.pattern, "field", firstStart);
-                    }
-                    if (second.hasUnusualCharacters()) {
-                      warnUnusualCharacters("field name", second.pattern, "field", secondStart);
-                    }
                     ruleBuilder.setRuleType(ProguardMemberType.FIELD);
                     ruleBuilder.setName(second);
                     ruleBuilder
@@ -2240,16 +2233,6 @@ public class ProguardConfigurationParser {
           "Option -" + optionName + " overrides -" + victim, origin, getPosition(start)));
     }
 
-    private void warnUnusualCharacters(
-        String kind, String pattern, String ruleType, TextPosition start) {
-      reporter.warning(new StringDiagnostic(
-          "The " + kind + " \"" + pattern + "\" is used in a " + ruleType + " rule. The "
-              + "characters in this " + kind + " are legal for the JVM, "
-              + "but unlikely to originate from a source language. "
-              + "Maybe this is not the rule you are looking for.",
-          origin, getPosition(start)));
-    }
-
     private void infoIgnoringModifier(String modifier, TextPosition start) {
       reporter.info(new StringDiagnostic(
           "Ignoring modifier: " + modifier, origin, getPosition(start)));
@@ -2330,7 +2313,9 @@ public class ProguardConfigurationParser {
         }
         // Check that start/end angles are matched, and *only* used for well-formed wildcard
         // backreferences (e.g. '<1>', but not '<<1>>', '<<*>>' or '>1<').
-        return !(angleStartCount == angleEndCount && angleStartCount == wildcards.size());
+        long backreferenceCount =
+            wildcards.stream().filter(ProguardWildcard::isBackReference).count();
+        return !(angleStartCount == angleEndCount && angleStartCount == backreferenceCount);
       }
       return false;
     }
