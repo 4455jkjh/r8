@@ -3,12 +3,10 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8.keepanno.androidx.kt
 
-import androidx.annotation.keep.UsesReflectionToConstruct
 import kotlin.reflect.KClass
 import kotlin.reflect.full.primaryConstructor
 
-class OnlyNoArgsConstructor {
-  @UsesReflectionToConstruct(classConstant = KeptClass::class, parameterTypes = [])
+class OnlyNoArgsConstructorWithoutAnnotation {
   fun foo(clazz: KClass<KeptClass>?) {
     println(clazz?.primaryConstructor)
     clazz?.primaryConstructor?.call()
@@ -19,5 +17,6 @@ class OnlyNoArgsConstructor {
 }
 
 fun main() {
-  OnlyNoArgsConstructor().foo(if (System.nanoTime() > 0) KeptClass::class else null)
+  OnlyNoArgsConstructorWithoutAnnotation()
+    .foo(if (System.nanoTime() > 0) KeptClass::class else null)
 }

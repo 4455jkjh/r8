@@ -7,15 +7,23 @@ import static com.android.tools.r8.ToolHelper.getFilesInTestFolderRelativeToClas
 import static org.junit.Assert.assertEquals;
 
 import androidx.annotation.keep.UsesReflectionToConstruct;
+import com.android.tools.r8.KotlinCompileMemoizer;
+import com.android.tools.r8.ToolHelper.DexVm.Version;
+import com.android.tools.r8.references.Reference;
+import com.android.tools.r8.transformers.ClassFileTransformer.AnnotationBuilder;
+import com.android.tools.r8.transformers.ClassFileTransformer.MethodPredicate;
+import com.android.tools.r8.utils.DescriptorUtils;
 import com.android.tools.r8.utils.StringUtils;
 import com.google.common.collect.ImmutableList;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Collection;
+import java.util.function.Consumer;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+import org.objectweb.asm.Type;
 
 @RunWith(Parameterized.class)
 public class KeepUsesReflectionForInstantiationNoArgsConstructorTest
@@ -28,13 +36,30 @@ public class KeepUsesReflectionForInstantiationNoArgsConstructorTest
   @Parameterized.Parameters(name = "{0}, {1}")
   public static Collection<Object[]> data() {
     assertEquals(KeptClass.class.getTypeName(), classNameOfKeptClass);
+    // Test with Android 14, which has `java.lang.ClassValue` to avoid having to deal with R8
+    // missing class warnings for tests using the kotlin-reflect library.
     return buildParameters(
-        createParameters(getTestParameters().withDefaultRuntimes().withMaximumApiLevel().build()),
+        createParameters(
+            getTestParameters()
+                .withDexRuntime(Version.V14_0_0)
+                .withDefaultCfRuntime()
+                .withMaximumApiLevel()
+                .build()),
         getKotlinTestParameters().withLatestCompiler().build());
   }
 
-  protected String getExpectedOutput() {
+  @Override
+  protected String getExpectedOutputForJava() {
     return StringUtils.lines("<init>()");
+  }
+
+  @Override
+  protected String getExpectedOutputForKotlin() {
+    return StringUtils.lines(
+        "fun `<init>`(): com.android.tools.r8.keepanno.androidx.kt.KeptClass",
+        "<init>()",
+        "fun `<init>`(): com.android.tools.r8.keepanno.androidx.kt.KeptClass",
+        "<init>()");
   }
 
   private static Collection<Path> getKotlinSources() {
@@ -61,29 +86,78 @@ public class KeepUsesReflectionForInstantiationNoArgsConstructorTest
     }
   }
 
+  protected static KotlinCompileMemoizer compilationResultsWithoutAnnotation;
+
+  private static Collection<Path> getKotlinSourcesWithoutAnnotation() {
+    try {
+      return getFilesInTestFolderRelativeToClass(
+          KeepUsesReflectionForInstantiationNoArgsConstructorTest.class,
+          "kt",
+          "OnlyNoArgsConstructorWithoutAnnotation.kt",
+          "KeptClass.kt");
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
+  }
+
   @BeforeClass
   public static void beforeClass() throws Exception {
     compilationResults = getCompileMemoizerWithKeepAnnoLib(getKotlinSources());
     compilationResultsClassName = getCompileMemoizerWithKeepAnnoLib(getKotlinSourcesClassName());
+    compilationResultsWithoutAnnotation =
+        new KotlinCompileMemoizer(getKotlinSourcesWithoutAnnotation());
+  }
+
+  private static ExpectedRules getExpectedRulesJava(Class<?> conditionClass) {
+    return getExpectedRulesJava(conditionClass, null);
+  }
+
+  private static ExpectedRules getExpectedRulesJava(
+      Class<?> conditionClass, String contitionMembers) {
+    Consumer<ExpectedKeepRule.Builder> setCondition =
+        b -> b.setConditionClass(conditionClass).setConditionMembers(contitionMembers);
+
+    ExpectedRules.Builder builder =
+        ExpectedRules.builder()
+            .add(
+                ExpectedKeepRule.builder()
+                    .apply(setCondition)
+                    .setConsequentClass(KeptClass.class)
+                    .setConsequentMembers("{ void <init>(); }")
+                    .build());
+    addConsequentKotlinMetadata(builder, b -> b.apply(setCondition));
+    return builder.build();
+  }
+
+  private static ExpectedRules getExpectedRulesKotlin(String conditionClass) {
+    Consumer<ExpectedKeepRule.Builder> setCondition =
+        b ->
+            b.setConditionClass(conditionClass)
+                .setConditionMembers("{ void foo(kotlin.reflect.KClass); }");
+    ExpectedRules.Builder builder =
+        ExpectedRules.builder()
+            .add(
+                ExpectedKeepRule.builder()
+                    .apply(setCondition)
+                    .setConsequentClass("com.android.tools.r8.keepanno.androidx.kt.KeptClass")
+                    .setConsequentMembers("{ void <init>(); }")
+                    .build());
+    addConsequentKotlinMetadata(builder, b -> b.apply(setCondition));
+    return builder.build();
   }
 
   @Test
   public void testOnlyNoArgsConstructor() throws Exception {
     runTestExtractedRulesJava(
         ImmutableList.of(OnlyNoArgsConstructor.class, KeptClass.class),
-        ExpectedRule.builder()
-            .setConditionClass(OnlyNoArgsConstructor.class)
-            .setConditionMembers("{ void foo(java.lang.Class); }")
-            .setConsequentClass(KeptClass.class)
-            .setConsequentMembers("{ void <init>(); }")
-            .build());
+        getExpectedRulesJava(OnlyNoArgsConstructor.class, "{ void foo(java.lang.Class); }"));
   }
 
   static class OnlyNoArgsConstructor {
 
     @UsesReflectionToConstruct(
-        className = classNameOfKeptClass,
-        params = {})
+        classConstant = KeptClass.class,
+        parameterTypes = {})
     public void foo(Class<KeptClass> clazz) throws Exception {
       if (clazz != null) {
         clazz.getDeclaredConstructor().newInstance();
@@ -96,22 +170,18 @@ public class KeepUsesReflectionForInstantiationNoArgsConstructorTest
   }
 
   @Test
-  public void testOnlyNoArgsConstructorClassNames() throws Exception {
+  public void testOnlyNoArgsConstructorClassName() throws Exception {
     runTestExtractedRulesJava(
-        ImmutableList.of(OnlyNoArgsConstructorClassNames.class, KeptClass.class),
-        ExpectedRule.builder()
-            .setConditionClass(OnlyNoArgsConstructorClassNames.class)
-            .setConditionMembers("{ void foo(java.lang.Class); }")
-            .setConsequentClass(KeptClass.class)
-            .setConsequentMembers("{ void <init>(); }")
-            .build());
+        ImmutableList.of(OnlyNoArgsConstructorClassName.class, KeptClass.class),
+        getExpectedRulesJava(
+            OnlyNoArgsConstructorClassName.class, "{ void foo(java.lang.Class); }"));
   }
 
-  static class OnlyNoArgsConstructorClassNames {
+  static class OnlyNoArgsConstructorClassName {
 
     @UsesReflectionToConstruct(
         className = classNameOfKeptClass,
-        params = {})
+        parameterTypes = {})
     public void foo(Class<KeptClass> clazz) throws Exception {
       if (clazz != null) {
         clazz.getDeclaredConstructor().newInstance();
@@ -119,7 +189,7 @@ public class KeepUsesReflectionForInstantiationNoArgsConstructorTest
     }
 
     public static void main(String[] args) throws Exception {
-      new OnlyNoArgsConstructorClassNames().foo(System.nanoTime() > 0 ? KeptClass.class : null);
+      new OnlyNoArgsConstructorClassName().foo(System.nanoTime() > 0 ? KeptClass.class : null);
     }
   }
 
@@ -128,12 +198,7 @@ public class KeepUsesReflectionForInstantiationNoArgsConstructorTest
     runTestExtractedRulesKotlin(
         compilationResults,
         "com.android.tools.r8.keepanno.androidx.kt.OnlyNoArgsConstructorKt",
-        ExpectedRule.builder()
-            .setConditionClass("com.android.tools.r8.keepanno.androidx.kt.OnlyNoArgsConstructor")
-            .setConditionMembers("{ void foo(kotlin.reflect.KClass); }")
-            .setConsequentClass("com.android.tools.r8.keepanno.androidx.kt.KeptClass")
-            .setConsequentMembers("{ void <init>(); }")
-            .build());
+        getExpectedRulesKotlin("com.android.tools.r8.keepanno.androidx.kt.OnlyNoArgsConstructor"));
   }
 
   @Test
@@ -141,13 +206,138 @@ public class KeepUsesReflectionForInstantiationNoArgsConstructorTest
     runTestExtractedRulesKotlin(
         compilationResultsClassName,
         "com.android.tools.r8.keepanno.androidx.kt.OnlyNoArgsConstructorClassNameKt",
-        ExpectedRule.builder()
-            .setConditionClass(
-                "com.android.tools.r8.keepanno.androidx.kt.OnlyNoArgsConstructorClassName")
-            .setConditionMembers("{ void foo(kotlin.reflect.KClass); }")
-            .setConsequentClass("com.android.tools.r8.keepanno.androidx.kt.KeptClass")
-            .setConsequentMembers("{ void <init>(); }")
-            .build());
+        getExpectedRulesKotlin(
+            "com.android.tools.r8.keepanno.androidx.kt.OnlyNoArgsConstructorClassName"));
+  }
+
+  private static void buildNoArgsConstructor(AnnotationBuilder builder, Object clazz) {
+    if (clazz instanceof String) {
+      builder.setField("className", clazz);
+    } else {
+      assert clazz instanceof Class<?> || clazz instanceof Type;
+      builder.setField("classConstant", clazz);
+    }
+    // Set the empty array for the no args constructor.
+    builder.setArray("parameterTypes");
+  }
+
+  @Test
+  // This test is similar to testOnlyNoArgsConstructor() except that the annotation is inserted
+  // by a transformer.
+  public void testOnlyNoArgsConstructorUsingTransformer() throws Exception {
+    runTestExtractedRulesJava(
+        OnlyNoArgsConstructorWithoutAnnotation.class,
+        ImmutableList.of(KeptClass.class),
+        ImmutableList.of(
+            setAnnotationOnMethod(
+                OnlyNoArgsConstructorWithoutAnnotation.class,
+                MethodPredicate.onName("foo"),
+                UsesReflectionToConstruct.class,
+                builder -> buildNoArgsConstructor(builder, KeptClass.class))),
+        getExpectedRulesJava(
+            OnlyNoArgsConstructorWithoutAnnotation.class, "{ void foo(java.lang.Class); }"));
+  }
+
+  @Test
+  public void testOnlyNoArgsConstructorOnClass() throws Exception {
+    runTestExtractedRulesJava(
+        OnlyNoArgsConstructorWithoutAnnotation.class,
+        ImmutableList.of(KeptClass.class),
+        ImmutableList.of(
+            setAnnotationOnClass(
+                OnlyNoArgsConstructorWithoutAnnotation.class,
+                UsesReflectionToConstruct.class,
+                builder -> buildNoArgsConstructor(builder, KeptClass.class))),
+        getExpectedRulesJava(OnlyNoArgsConstructorWithoutAnnotation.class));
+  }
+
+  @Test
+  // This test is similar to testOnlyNoArgsConstructorClassName() except that the annotation is
+  // inserted by a transformer.
+  public void testOnlyNoArgsConstructorClassNameUsingTransformer() throws Exception {
+    runTestExtractedRulesJava(
+        OnlyNoArgsConstructorWithoutAnnotation.class,
+        ImmutableList.of(KeptClass.class),
+        ImmutableList.of(
+            setAnnotationOnMethod(
+                OnlyNoArgsConstructorWithoutAnnotation.class,
+                MethodPredicate.onName("foo"),
+                UsesReflectionToConstruct.class,
+                builder -> buildNoArgsConstructor(builder, classNameOfKeptClass))),
+        getExpectedRulesJava(
+            OnlyNoArgsConstructorWithoutAnnotation.class, "{ void foo(java.lang.Class); }"));
+  }
+
+  @Test
+  public void testOnlyNoArgsConstructorClassNameOnClass() throws Exception {
+    runTestExtractedRulesJava(
+        OnlyNoArgsConstructorWithoutAnnotation.class,
+        ImmutableList.of(KeptClass.class),
+        ImmutableList.of(
+            setAnnotationOnClass(
+                OnlyNoArgsConstructorWithoutAnnotation.class,
+                UsesReflectionToConstruct.class,
+                builder -> buildNoArgsConstructor(builder, classNameOfKeptClass))),
+        getExpectedRulesJava(OnlyNoArgsConstructorWithoutAnnotation.class));
+  }
+
+  @Test
+  public void testOnlyNoArgsConstructorKotlinUsingTransformer() throws Exception {
+    runTestExtractedRulesKotlin(
+        compilationResultsWithoutAnnotation,
+        (classReference, classFileBytes) ->
+            setAnnotationOnMethod(
+                classReference,
+                classFileBytes,
+                Reference.classFromTypeName(
+                    "com.android.tools.r8.keepanno.androidx.kt.OnlyNoArgsConstructorWithoutAnnotation"),
+                MethodPredicate.onName("foo"),
+                UsesReflectionToConstruct.class,
+                builder ->
+                    buildNoArgsConstructor(
+                        builder,
+                        Type.getType(
+                            DescriptorUtils.javaTypeToDescriptor(
+                                "com.android.tools.r8.keepanno.androidx.kt.KeptClass")))),
+        "com.android.tools.r8.keepanno.androidx.kt.OnlyNoArgsConstructorWithoutAnnotationKt",
+        getExpectedRulesKotlin(
+            "com.android.tools.r8.keepanno.androidx.kt.OnlyNoArgsConstructorWithoutAnnotation"));
+  }
+
+  @Test
+  public void testOnlyNoArgsConstructorKotlinClassNameUsingTransformer() throws Exception {
+    runTestExtractedRulesKotlin(
+        compilationResultsWithoutAnnotation,
+        (classReference, classFileBytes) ->
+            setAnnotationOnMethod(
+                classReference,
+                classFileBytes,
+                Reference.classFromTypeName(
+                    "com.android.tools.r8.keepanno.androidx.kt.OnlyNoArgsConstructorWithoutAnnotation"),
+                MethodPredicate.onName("foo"),
+                UsesReflectionToConstruct.class,
+                builder ->
+                    buildNoArgsConstructor(
+                        builder, "com.android.tools.r8.keepanno.androidx.kt.KeptClass")),
+        "com.android.tools.r8.keepanno.androidx.kt.OnlyNoArgsConstructorWithoutAnnotationKt",
+        getExpectedRulesKotlin(
+            "com.android.tools.r8.keepanno.androidx.kt.OnlyNoArgsConstructorWithoutAnnotation"));
+  }
+
+  // Test class without annotation to be used by multiple tests inserting annotations using a
+  // transformer.
+  static class OnlyNoArgsConstructorWithoutAnnotation {
+
+    public void foo(Class<KeptClass> clazz) throws Exception {
+      if (clazz != null) {
+        clazz.getDeclaredConstructor().newInstance();
+      }
+    }
+
+    public static void main(String[] args) throws Exception {
+      new OnlyNoArgsConstructorWithoutAnnotation()
+          .foo(System.nanoTime() > 0 ? KeptClass.class : null);
+    }
   }
 
   static class KeptClass {
