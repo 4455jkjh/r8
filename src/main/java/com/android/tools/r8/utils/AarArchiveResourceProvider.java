@@ -55,8 +55,8 @@ public class AarArchiveResourceProvider implements ProgramResourceProvider {
         String descriptor = DescriptorUtils.guessTypeDescriptor(name);
         ProgramResource resource =
             OneShotByteResource.create(
-                Kind.CF,
                 entryOrigin,
+                Kind.CF,
                 ByteStreams.toByteArray(stream),
                 Collections.singleton(descriptor));
         consumer.accept(resource);
@@ -84,6 +84,7 @@ public class AarArchiveResourceProvider implements ProgramResourceProvider {
     }
   }
 
+  @Deprecated
   @Override
   public Collection<ProgramResource> getProgramResources() throws ResourceException {
     try {

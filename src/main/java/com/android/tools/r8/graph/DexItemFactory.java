@@ -86,6 +86,10 @@ public class DexItemFactory {
       "Landroid/media/MediaMetadataRetriever;";
   public static final String androidResourcesDescriptorString = "Landroid/content/res/Resources;";
   public static final String androidContextDescriptorString = "Landroid/content/Context;";
+  public static final String kotlinJvmInternalIntrinsicsDescriptor =
+      "Lkotlin/jvm/internal/Intrinsics;";
+  public static final String lambdaMethodAnnotationDescriptor =
+      "Lcom/android/tools/r8/annotations/LambdaMethod;";
 
   /** Set of types that may be synthesized during compilation. */
   private final Set<DexType> possibleCompilerSynthesizedTypes = Sets.newIdentityHashSet();
@@ -136,6 +140,10 @@ public class DexItemFactory {
 
   public DexItemFactory() {
     this.kotlin = new Kotlin(this);
+  }
+
+  public Kotlin kotlin() {
+    return kotlin;
   }
 
   public static boolean isInternalSentinel(DexItem item) {
@@ -649,6 +657,8 @@ public class DexItemFactory {
 
   public final DexType kotlinMetadataType = createStaticallyKnownType(kotlinMetadataDescriptor);
   public final DexType kotlinJvmNameType = createStaticallyKnownType(kotlinJvmNameDescriptor);
+  public final DexType kotlinJvmInternalIntrinsicsType =
+      createStaticallyKnownType(kotlinJvmInternalIntrinsicsDescriptor);
 
   public final DexType kotlinEnumEntriesList =
       createStaticallyKnownType("Lkotlin/enums/EnumEntriesList;");
@@ -767,7 +777,7 @@ public class DexItemFactory {
       new PrimitiveTypesBoxedTypeFields();
   public final AtomicFieldUpdaterMethods atomicFieldUpdaterMethods =
       new AtomicFieldUpdaterMethods();
-  public final Kotlin kotlin;
+  private final Kotlin kotlin;
   public final PolymorphicMethods polymorphicMethods = new PolymorphicMethods();
   public final ProxyMethods proxyMethods = new ProxyMethods();
 
@@ -885,7 +895,7 @@ public class DexItemFactory {
   public final DexType annotationSynthesizedClass =
       createStaticallyKnownType("Lcom/android/tools/r8/annotations/SynthesizedClassV2;");
   public final DexType lambdaMethodAnnotation =
-      createStaticallyKnownType("Lcom/android/tools/r8/annotations/LambdaMethod;");
+      createStaticallyKnownType(lambdaMethodAnnotationDescriptor);
 
   public final String annotationReachabilitySensitiveDesc =
       "Ldalvik/annotation/optimization/ReachabilitySensitive;";

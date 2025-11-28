@@ -5,6 +5,7 @@
 package com.android.tools.r8.kotlin.metadata;
 
 import static com.android.tools.r8.KotlinCompilerTool.KotlinCompilerVersion.KOTLINC_1_8_0;
+import static com.android.tools.r8.KotlinCompilerTool.KotlinCompilerVersion.KOTLINC_2_2_0;
 import static com.android.tools.r8.KotlinCompilerTool.KotlinTargetVersion.JAVA_8;
 import static com.android.tools.r8.utils.codeinspector.Matchers.isPresentAndRenamed;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -55,6 +56,7 @@ public class MetadataRewriteContextReceiverTest extends KotlinMetadataTestBase {
         getTestParameters().withCfRuntimes().build(),
         getKotlinTestParameters()
             .withCompilersStartingFromIncluding(KOTLINC_1_8_0)
+            .withCompilersEndingAtIncluding(KOTLINC_2_2_0)
             .withOldCompilersStartingFrom(KOTLINC_1_8_0)
             .withAllLambdaGenerations()
             .withTargetVersion(JAVA_8)

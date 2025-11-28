@@ -1,3 +1,4 @@
+Lcom/android/tools/r8/annotations/LambdaMethod;
 Lmultidex004/MainActivity$0;
 Lmultidex004/MainActivity;
 Lmultidex004/VersionInterface;
