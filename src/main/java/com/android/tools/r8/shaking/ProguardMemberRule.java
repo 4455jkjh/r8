@@ -6,6 +6,7 @@ package com.android.tools.r8.shaking;
 import static com.google.common.base.Predicates.alwaysTrue;
 
 import com.android.tools.r8.errors.Unreachable;
+import com.android.tools.r8.graph.AppInfoWithClassHierarchy;
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.DexClassAndField;
 import com.android.tools.r8.graph.DexClassAndMethod;
@@ -16,6 +17,7 @@ import com.android.tools.r8.graph.DexType;
 import com.android.tools.r8.shaking.ProguardConfigurationParser.IdentifierPatternWithWildcards;
 import com.android.tools.r8.shaking.RootSetUtils.RootSetBuilder;
 import com.android.tools.r8.utils.IterableUtils;
+import com.android.tools.r8.utils.ObjectUtils;
 import com.android.tools.r8.utils.StringUtils;
 import com.google.common.collect.Iterables;
 import java.util.ArrayList;
@@ -37,8 +39,8 @@ public class ProguardMemberRule {
     private ProguardTypeMatcher type;
     private ProguardNameMatcher name;
     private List<ProguardTypeMatcher> arguments;
-    private List<ProguardMemberRuleReturnValue> preconditions;
-    private ProguardMemberRuleReturnValue returnValue;
+    private List<ProguardMemberRuleValue> preconditions;
+    private ProguardMemberRuleValue returnValue;
 
     private Builder() {}
 
@@ -88,7 +90,7 @@ public class ProguardMemberRule {
       return this;
     }
 
-    public Builder setPrecondition(int i, ProguardMemberRuleReturnValue precondition) {
+    public Builder setPrecondition(int i, ProguardMemberRuleValue precondition) {
       if (preconditions == null) {
         preconditions = new ArrayList<>();
       }
@@ -100,7 +102,7 @@ public class ProguardMemberRule {
       return this;
     }
 
-    public Builder setReturnValue(ProguardMemberRuleReturnValue value) {
+    public Builder setReturnValue(ProguardMemberRuleValue value) {
       returnValue = value;
       return this;
     }
@@ -131,8 +133,8 @@ public class ProguardMemberRule {
   private final ProguardTypeMatcher type;
   private final ProguardNameMatcher name;
   private final List<ProguardTypeMatcher> arguments;
-  private final List<ProguardMemberRuleReturnValue> preconditions;
-  private final ProguardMemberRuleReturnValue returnValue;
+  private final List<ProguardMemberRuleValue> preconditions;
+  private final ProguardMemberRuleValue returnValue;
 
   public ProguardMemberRule(
       List<ProguardTypeMatcher> annotations,
@@ -142,8 +144,8 @@ public class ProguardMemberRule {
       ProguardTypeMatcher type,
       ProguardNameMatcher name,
       List<ProguardTypeMatcher> arguments,
-      List<ProguardMemberRuleReturnValue> preconditions,
-      ProguardMemberRuleReturnValue returnValue) {
+      List<ProguardMemberRuleValue> preconditions,
+      ProguardMemberRuleValue returnValue) {
     this.annotations = annotations;
     this.accessFlags = accessFlags;
     this.negatedAccessFlags = negatedAccessFlags;
@@ -204,11 +206,39 @@ public class ProguardMemberRule {
     return preconditions != null;
   }
 
-  public List<ProguardMemberRuleReturnValue> getPreconditions() {
+  public List<ProguardMemberRuleValue> getPreconditions() {
     return preconditions;
   }
 
-  public ProguardMemberRuleReturnValue getReturnValue() {
+  /**
+   * Resolves preconditions on the form {@code foo.bar.Baz.FIELD} to constants if the given field
+   * refers to a static final field with a constant value.
+   */
+  public List<ProguardMemberRuleValue> getResolvedPreconditions(
+      AppView<? extends AppInfoWithClassHierarchy> appView, DexClassAndMethod method) {
+    List<ProguardMemberRuleValue> resolvedPreconditions = null;
+    for (int i = 0; i < preconditions.size(); i++) {
+      ProguardMemberRuleValue precondition = preconditions.get(i);
+      ProguardMemberRuleValue resolvedPrecondition =
+          precondition != null && precondition.isField()
+              ? precondition.resolveFieldValue(appView, method.getParameter(i))
+              : precondition;
+      if (resolvedPreconditions == null
+          && ObjectUtils.identical(resolvedPrecondition, precondition)) {
+        continue;
+      }
+      if (resolvedPreconditions == null) {
+        resolvedPreconditions = new ArrayList<>(preconditions.size());
+        for (int j = 0; j < i; j++) {
+          resolvedPreconditions.add(preconditions.get(j));
+        }
+      }
+      resolvedPreconditions.add(resolvedPrecondition);
+    }
+    return resolvedPreconditions != null ? resolvedPreconditions : preconditions;
+  }
+
+  public ProguardMemberRuleValue getReturnValue() {
     return returnValue;
   }
 

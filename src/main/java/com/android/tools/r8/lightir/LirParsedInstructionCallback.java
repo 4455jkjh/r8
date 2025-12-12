@@ -25,6 +25,7 @@ import com.android.tools.r8.lightir.LirBuilder.NameComputationPayload;
 import com.android.tools.r8.lightir.LirBuilder.RecordFieldValuesPayload;
 import com.android.tools.r8.lightir.LirBuilder.StringSwitchPayload;
 import com.android.tools.r8.naming.dexitembasedstring.NameComputationInfo;
+import com.android.tools.r8.utils.IntUtils;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -335,10 +336,6 @@ public abstract class LirParsedInstructionCallback<EV> implements LirInstruction
     onLogicalBinop(type, left, right);
   }
 
-  public void onNumberConversion(int opcode, EV value) {
-    onNumberConversion(NumberConversionType.fromLirOpcode(opcode), value);
-  }
-
   public void onNumberConversion(NumberConversionType type, EV value) {
     onInstruction();
   }
@@ -600,7 +597,7 @@ public abstract class LirParsedInstructionCallback<EV> implements LirInstruction
       case LirOpcodes.FCONST_2:
         {
           float value = opcode - LirOpcodes.FCONST_0;
-          onConstFloat(Float.floatToRawIntBits(value));
+          onConstFloat(IntUtils.encodeFloat(value));
           return;
         }
       case LirOpcodes.FCONST:
@@ -908,23 +905,93 @@ public abstract class LirParsedInstructionCallback<EV> implements LirInstruction
           return;
         }
       case LirOpcodes.I2L:
+        {
+          EV value = getNextValueOperand(view);
+          onNumberConversion(NumberConversionType.INT_TO_LONG, value);
+          return;
+        }
       case LirOpcodes.I2F:
+        {
+          EV value = getNextValueOperand(view);
+          onNumberConversion(NumberConversionType.INT_TO_FLOAT, value);
+          return;
+        }
       case LirOpcodes.I2D:
+        {
+          EV value = getNextValueOperand(view);
+          onNumberConversion(NumberConversionType.INT_TO_DOUBLE, value);
+          return;
+        }
       case LirOpcodes.L2I:
+        {
+          EV value = getNextValueOperand(view);
+          onNumberConversion(NumberConversionType.LONG_TO_INT, value);
+          return;
+        }
       case LirOpcodes.L2F:
+        {
+          EV value = getNextValueOperand(view);
+          onNumberConversion(NumberConversionType.LONG_TO_FLOAT, value);
+          return;
+        }
       case LirOpcodes.L2D:
+        {
+          EV value = getNextValueOperand(view);
+          onNumberConversion(NumberConversionType.LONG_TO_DOUBLE, value);
+          return;
+        }
       case LirOpcodes.F2I:
+        {
+          EV value = getNextValueOperand(view);
+          onNumberConversion(NumberConversionType.FLOAT_TO_INT, value);
+          return;
+        }
       case LirOpcodes.F2L:
+        {
+          EV value = getNextValueOperand(view);
+          onNumberConversion(NumberConversionType.FLOAT_TO_LONG, value);
+          return;
+        }
       case LirOpcodes.F2D:
+        {
+          EV value = getNextValueOperand(view);
+          onNumberConversion(NumberConversionType.FLOAT_TO_DOUBLE, value);
+          return;
+        }
       case LirOpcodes.D2I:
+        {
+          EV value = getNextValueOperand(view);
+          onNumberConversion(NumberConversionType.DOUBLE_TO_INT, value);
+          return;
+        }
       case LirOpcodes.D2L:
+        {
+          EV value = getNextValueOperand(view);
+          onNumberConversion(NumberConversionType.DOUBLE_TO_LONG, value);
+          return;
+        }
       case LirOpcodes.D2F:
+        {
+          EV value = getNextValueOperand(view);
+          onNumberConversion(NumberConversionType.DOUBLE_TO_FLOAT, value);
+          return;
+        }
       case LirOpcodes.I2B:
+        {
+          EV value = getNextValueOperand(view);
+          onNumberConversion(NumberConversionType.INT_TO_BYTE, value);
+          return;
+        }
       case LirOpcodes.I2C:
+        {
+          EV value = getNextValueOperand(view);
+          onNumberConversion(NumberConversionType.INT_TO_CHAR, value);
+          return;
+        }
       case LirOpcodes.I2S:
         {
           EV value = getNextValueOperand(view);
-          onNumberConversion(opcode, value);
+          onNumberConversion(NumberConversionType.INT_TO_SHORT, value);
           return;
         }
       case LirOpcodes.IFEQ:

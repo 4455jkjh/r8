@@ -4,8 +4,16 @@
 package com.android.tools.r8.shaking;
 
 import static com.android.tools.r8.DiagnosticsChecker.checkDiagnostics;
+import static com.android.tools.r8.DiagnosticsMatcher.diagnosticMessage;
+import static com.android.tools.r8.DiagnosticsMatcher.diagnosticPosition;
+import static com.android.tools.r8.DiagnosticsMatcher.diagnosticType;
+import static com.android.tools.r8.PositionMatcher.positionColumn;
+import static com.android.tools.r8.PositionMatcher.positionLine;
 import static com.android.tools.r8.shaking.ProguardConfigurationSourceStrings.createConfigurationForTesting;
 import static com.android.tools.r8.utils.BooleanUtils.intValue;
+import static org.hamcrest.CoreMatchers.allOf;
+import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
@@ -18,6 +26,7 @@ import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.ToolHelper;
+import com.android.tools.r8.errors.ProguardRuleParserErrorDiagnostic;
 import com.android.tools.r8.errors.dontwarn.DontWarnConfiguration;
 import com.android.tools.r8.graph.ClassAccessFlags;
 import com.android.tools.r8.graph.DexItemFactory;
@@ -32,6 +41,7 @@ import com.android.tools.r8.shaking.ProguardConfigurationParser.IdentifierPatter
 import com.android.tools.r8.shaking.ProguardTypeMatcher.MatchSpecificType;
 import com.android.tools.r8.shaking.constructor.InitMatchingTest;
 import com.android.tools.r8.utils.AbortException;
+import com.android.tools.r8.utils.BooleanUtils;
 import com.android.tools.r8.utils.FileUtils;
 import com.android.tools.r8.utils.InternalOptions.PackageObfuscationMode;
 import com.android.tools.r8.utils.IterableUtils;
@@ -191,8 +201,7 @@ public class ProguardConfigurationParserTest extends TestBase {
             builder);
   }
 
-  @Before
-  public void resetAllowTestOptions() {
+  public void resetAllowNamedAndroidLogLevels() {
     handler = new KeepingDiagnosticHandler();
     reporter = new Reporter(handler);
     dexItemFactory = new DexItemFactory();
@@ -202,7 +211,7 @@ public class ProguardConfigurationParserTest extends TestBase {
             dexItemFactory,
             reporter,
             ProguardConfigurationParserOptions.builder()
-                .setEnableTestingOptions(true)
+                .setEnableNamedAndroidLogLevels(true)
                 .build(),
             null,
             builder);
@@ -1055,7 +1064,8 @@ public class ProguardConfigurationParserTest extends TestBase {
     try {
       parser.parse(path);
       fail();
-    } catch (AbortException e) {
+    } catch (RuntimeException e) {
+      assertTrue(e.getCause() instanceof AbortException);
       checkDiagnostics(handler.errors, path, 6, 1, "Missing n");
     }
   }
@@ -1222,7 +1232,8 @@ public class ProguardConfigurationParserTest extends TestBase {
     try {
       parser.parse(proguardConfig);
       fail();
-    } catch (AbortException e) {
+    } catch (RuntimeException e) {
+      assertTrue(e.getCause() instanceof AbortException);
       checkDiagnostics(handler.errors, proguardConfig, 1, 1,
           "Unknown option", "-keepx");
     }
@@ -1235,7 +1246,8 @@ public class ProguardConfigurationParserTest extends TestBase {
     try {
       parser.parse(proguardConfig);
       fail();
-    } catch (AbortException e) {
+    } catch (RuntimeException e) {
+      assertTrue(e.getCause() instanceof AbortException);
       checkDiagnostics(handler.errors, proguardConfig, 1, 6,
           "Expected [!]interface|@interface|class|enum");
     }
@@ -1251,7 +1263,8 @@ public class ProguardConfigurationParserTest extends TestBase {
     try {
       parser.parse(proguardConfig);
       fail();
-    } catch (AbortException e) {
+    } catch (RuntimeException e) {
+      assertTrue(e.getCause() instanceof AbortException);
       checkDiagnostics(handler.errors, proguardConfig, 1, 1,
           "Unknown option", "-keepclassx");
     }
@@ -1448,7 +1461,8 @@ public class ProguardConfigurationParserTest extends TestBase {
     try {
       parser.parse(createConfigurationForTesting("-"));
       fail();
-    } catch (AbortException e) {
+    } catch (RuntimeException e) {
+      assertTrue(e.getCause() instanceof AbortException);
       assertEquals(1, handler.errors.size());
       assertTrue(handler.errors.get(0).getDiagnosticMessage().contains("-"));
     }
@@ -1459,7 +1473,8 @@ public class ProguardConfigurationParserTest extends TestBase {
     try {
       parser.parse(createConfigurationForTesting("--no-locals"));
       fail();
-    } catch (AbortException e) {
+    } catch (RuntimeException e) {
+      assertTrue(e.getCause() instanceof AbortException);
       assertEquals(1, handler.errors.size());
       assertTrue(handler.errors.get(0).getDiagnosticMessage().contains("--no-locals"));
     }
@@ -1611,7 +1626,8 @@ public class ProguardConfigurationParserTest extends TestBase {
         reset();
         parser.parse(createConfigurationForTesting(option + " class A { *; }"));
         fail("Expect to fail due to testing option being turned off.");
-      } catch (AbortException e) {
+      } catch (RuntimeException e) {
+        assertTrue(e.getCause() instanceof AbortException);
         assertEquals(1, handler.errors.size());
         checkDiagnostics(handler.errors, 0, null, 1, 1, "Unknown option \"" + option + "\"");
       }
@@ -1823,7 +1839,8 @@ public class ProguardConfigurationParserTest extends TestBase {
     try {
       parser.parse(proguardConfig);
       fail();
-    } catch (AbortException e) {
+    } catch (RuntimeException e) {
+      assertTrue(e.getCause() instanceof AbortException);
       checkDiagnostics(handler.errors, proguardConfig, 2, 13,
           "Use of generics not allowed for java type");
     }
@@ -1838,7 +1855,8 @@ public class ProguardConfigurationParserTest extends TestBase {
     try {
       parser.parse(proguardConfig);
       fail();
-    } catch (AbortException e) {
+    } catch (RuntimeException e) {
+      assertTrue(e.getCause() instanceof AbortException);
       checkDiagnostics(handler.errors, proguardConfig, 2, 13,
           "Use of generics not allowed for java type");
     }
@@ -1890,7 +1908,8 @@ public class ProguardConfigurationParserTest extends TestBase {
     try {
       parser.parse(proguardConfig);
       fail();
-    } catch (AbortException e) {
+    } catch (RuntimeException e) {
+      assertTrue(e.getCause() instanceof AbortException);
       checkDiagnostics(handler.errors, proguardConfig, 4, 2,
           "Wildcard", "<4>", "invalid");
     }
@@ -1905,7 +1924,8 @@ public class ProguardConfigurationParserTest extends TestBase {
     try {
       parser.parse(proguardConfig);
       fail();
-    } catch (AbortException e) {
+    } catch (RuntimeException e) {
+      assertTrue(e.getCause() instanceof AbortException);
       checkDiagnostics(handler.errors, proguardConfig, 2, 13,
           "Wildcard", "<0>", "invalid");
     }
@@ -1920,7 +1940,8 @@ public class ProguardConfigurationParserTest extends TestBase {
     try {
       parser.parse(proguardConfig);
       fail();
-    } catch (AbortException e) {
+    } catch (RuntimeException e) {
+      assertTrue(e.getCause() instanceof AbortException);
       checkDiagnostics(handler.errors, proguardConfig, 3, 1,
           "Wildcard", "<4>", "invalid");
     }
@@ -1935,7 +1956,8 @@ public class ProguardConfigurationParserTest extends TestBase {
     try {
       parser.parse(proguardConfig);
       fail();
-    } catch (AbortException e) {
+    } catch (RuntimeException e) {
+      assertTrue(e.getCause() instanceof AbortException);
       checkDiagnostics(handler.errors, proguardConfig, 3, 1,
           "Wildcard", "<2>", "invalid");
     }
@@ -1954,7 +1976,8 @@ public class ProguardConfigurationParserTest extends TestBase {
     try {
       parser.parse(proguardConfig);
       fail();
-    } catch (AbortException e) {
+    } catch (RuntimeException e) {
+      assertTrue(e.getCause() instanceof AbortException);
       checkDiagnostics(handler.errors, proguardConfig, 6, 2,
           "Wildcard", "<3>", "invalid");
     }
@@ -1971,7 +1994,8 @@ public class ProguardConfigurationParserTest extends TestBase {
     try {
       parser.parse(proguardConfig);
       fail();
-    } catch (AbortException e) {
+    } catch (RuntimeException e) {
+      assertTrue(e.getCause() instanceof AbortException);
       checkDiagnostics(handler.errors, proguardConfig, 5, 1,
           "Wildcard", "<3>", "invalid");
     }
@@ -1986,7 +2010,8 @@ public class ProguardConfigurationParserTest extends TestBase {
     try {
       parser.parse(proguardConfig);
       fail();
-    } catch (AbortException e) {
+    } catch (RuntimeException e) {
+      assertTrue(e.getCause() instanceof AbortException);
       checkDiagnostics(handler.errors, proguardConfig, 1, 1,
           "Expecting", "'-keep'", "after", "'-if'");
     }
@@ -2000,7 +2025,8 @@ public class ProguardConfigurationParserTest extends TestBase {
     try {
       parser.parse(proguardConfig);
       fail();
-    } catch (AbortException e) {
+    } catch (RuntimeException e) {
+      assertTrue(e.getCause() instanceof AbortException);
       checkDiagnostics(handler.errors, proguardConfig, 1, 1,
           "Expecting", "'-keep'", "after", "'-if'");
     }
@@ -2394,6 +2420,7 @@ public class ProguardConfigurationParserTest extends TestBase {
       parser.parse(createConfigurationForTesting("-printusage <>"));
       fail("Expect to fail due to the lack of file name.");
     } catch (RuntimeException e) {
+      assertTrue(e.getCause() instanceof AbortException);
       checkDiagnostics(handler.errors, null, 1, 15, "Value of system property '' not found");
     }
   }
@@ -2410,6 +2437,7 @@ public class ProguardConfigurationParserTest extends TestBase {
       parser.parse(createConfigurationForTesting("-printusage <" + property + ">"));
       fail("Expect to fail due to the lack of file name.");
     } catch (RuntimeException e) {
+      assertTrue(e.getCause() instanceof AbortException);
       checkDiagnostics(
           handler.errors, null, 1, 16, "Value of system property '" + property + "' not found");
     }
@@ -2431,6 +2459,7 @@ public class ProguardConfigurationParserTest extends TestBase {
       parser.parse(createConfigurationForTesting(flag + " " + value));
       fail("Expect to fail due to un-closed quote.");
     } catch (RuntimeException e) {
+      assertTrue(e.getCause() instanceof AbortException);
       checker.get();
     }
   }
@@ -2583,6 +2612,7 @@ public class ProguardConfigurationParserTest extends TestBase {
       parser.parse(proguardConfigurationFile);
       fail("Expected to fail since the type name cannot be negated.");
     } catch (RuntimeException e) {
+      assertTrue(e.getCause() instanceof AbortException);
       checkDiagnostics(
           handler.errors,
           proguardConfigurationFile,
@@ -2618,6 +2648,7 @@ public class ProguardConfigurationParserTest extends TestBase {
         parser.parse(proguardConfig);
         fail("Expect to fail due to unsupported constructor name pattern.");
       } catch (RuntimeException e) {
+        assertTrue(e.getCause() instanceof AbortException);
         int column = initName.contains("void") ? initName.indexOf("void") + 8
             : (initName.contains("XYZ") ? initName.indexOf(">") + 4 : 3);
         if (initName.contains("XYZ")) {
@@ -2985,38 +3016,189 @@ public class ProguardConfigurationParserTest extends TestBase {
     }
   }
 
-  @Test
-  public void parseMaximumRemovedAndroidLogLevelWithoutClassSpecification() {
-    String configuration = StringUtils.lines("-maximumremovedandroidloglevel 2");
-    parser.parse(createConfigurationForTesting(configuration));
-    verifyParserEndsCleanly();
+  private static class LogLevel {
+    private int level;
+    private String name;
+    private int levelFromRule;
 
-    ProguardConfiguration config = builder.build();
-    assertEquals(MaximumRemovedAndroidLogLevelRule.VERBOSE, config.getMaxRemovedAndroidLogLevel());
-    assertEquals(0, config.getRules().size());
+    private LogLevel(int level, String name, int levelFromRule) {
+      this.level = level;
+      this.name = name;
+      this.levelFromRule = levelFromRule;
+    }
+
+    private int getLevel() {
+      return level;
+    }
+
+    private String getName() {
+      return name;
+    }
+
+    private int getLevelFromRule() {
+      return levelFromRule;
+    }
   }
 
   @Test
-  public void parseMaximumRemovedAndroidLogLevelWithClassSpecification() {
-    for (String input :
-        new String[] {
-          "-maximumremovedandroidloglevel 2 class * { <methods>; }",
-          "-maximumremovedandroidloglevel 2 @Foo class * { <methods>; }"
+  public void parseMaximumRemovedAndroidLogLevelWithoutClassSpecification() {
+    for (LogLevel logLevel :
+        new LogLevel[] {
+          new LogLevel(7, "assert", MaximumRemovedAndroidLogLevelRule.ASSERT),
+          new LogLevel(6, "error", MaximumRemovedAndroidLogLevelRule.ERROR),
+          new LogLevel(5, "warn", MaximumRemovedAndroidLogLevelRule.WARN),
+          new LogLevel(4, "info", MaximumRemovedAndroidLogLevelRule.INFO),
+          new LogLevel(3, "debug", MaximumRemovedAndroidLogLevelRule.DEBUG),
+          new LogLevel(2, "verbose", MaximumRemovedAndroidLogLevelRule.VERBOSE),
+          new LogLevel(1, "none", MaximumRemovedAndroidLogLevelRule.NONE)
         }) {
       reset();
-      String configuration = StringUtils.lines(input);
+      String configuration =
+          StringUtils.lines("-maximumremovedandroidloglevel " + logLevel.getLevel());
       parser.parse(createConfigurationForTesting(configuration));
       verifyParserEndsCleanly();
 
       ProguardConfiguration config = builder.build();
-      assertEquals(
-          MaximumRemovedAndroidLogLevelRule.NOT_SET, config.getMaxRemovedAndroidLogLevel());
-      assertEquals(1, config.getRules().size());
-      assertTrue(config.getRules().get(0).isMaximumRemovedAndroidLogLevelRule());
+      assertEquals(logLevel.getLevelFromRule(), config.getMaxRemovedAndroidLogLevel());
+      assertEquals(0, config.getRules().size());
 
-      MaximumRemovedAndroidLogLevelRule rule =
-          config.getRules().get(0).asMaximumRemovedAndroidLogLevelRule();
-      assertEquals(MaximumRemovedAndroidLogLevelRule.VERBOSE, rule.getMaxRemovedAndroidLogLevel());
+      resetAllowNamedAndroidLogLevels();
+      configuration = StringUtils.lines("-maximumremovedandroidloglevel " + logLevel.getName());
+      parser.parse(createConfigurationForTesting(configuration));
+      verifyParserEndsCleanly();
+
+      config = builder.build();
+      assertEquals(logLevel.getLevelFromRule(), config.getMaxRemovedAndroidLogLevel());
+      assertEquals(0, config.getRules().size());
+    }
+
+    try {
+      reset();
+      String configuration = StringUtils.lines("-maximumremovedandroidloglevel");
+      parser.parse(createConfigurationForTesting(configuration));
+      fail("Expect to fail due to unsupported value.");
+    } catch (RuntimeException e) {
+      checkDiagnostics(handler.errors, null, 2, 1, "Expected integer greater than or equal to 1");
+    }
+
+    try {
+      resetAllowNamedAndroidLogLevels();
+      String configuration = StringUtils.lines("-maximumremovedandroidloglevel");
+      parser.parse(createConfigurationForTesting(configuration));
+      fail("Expect to fail due to unsupported value.");
+    } catch (RuntimeException e) {
+      checkDiagnostics(handler.errors, null, 2, 1, "Expected log level");
+    }
+
+    try {
+      reset();
+      String configuration = StringUtils.lines("-maximumremovedandroidloglevel 0");
+      parser.parse(createConfigurationForTesting(configuration));
+      fail("Expect to fail due to unsupported value.");
+    } catch (RuntimeException e) {
+      checkDiagnostics(handler.errors, null, 1, 33, "Expected integer greater than or equal to 1");
+    }
+
+    try {
+      reset();
+      String configuration = StringUtils.lines("-maximumremovedandroidloglevel -1");
+      parser.parse(createConfigurationForTesting(configuration));
+      fail("Expect to fail due to unsupported value.");
+    } catch (RuntimeException e) {
+      checkDiagnostics(handler.errors, null, 1, 34, "Expected integer greater than or equal to 1");
+    }
+
+    try {
+      resetAllowNamedAndroidLogLevels();
+      String configuration = StringUtils.lines("-maximumremovedandroidloglevel WARN");
+      parser.parse(createConfigurationForTesting(configuration));
+      fail("Expect to fail due to unsupported value.");
+    } catch (RuntimeException e) {
+      checkDiagnostics(handler.errors, null, 1, 36, "Unsupported log level");
+    }
+  }
+
+  @Test
+  public void parseMaximumRemovedAndroidLogLevelWithClassSpecification() {
+    for (LogLevel logLevel :
+        new LogLevel[] {
+          new LogLevel(7, "assert", MaximumRemovedAndroidLogLevelRule.ASSERT),
+          new LogLevel(6, "error", MaximumRemovedAndroidLogLevelRule.ERROR),
+          new LogLevel(5, "warn", MaximumRemovedAndroidLogLevelRule.WARN),
+          new LogLevel(4, "info", MaximumRemovedAndroidLogLevelRule.INFO),
+          new LogLevel(3, "debug", MaximumRemovedAndroidLogLevelRule.DEBUG),
+          new LogLevel(2, "verbose", MaximumRemovedAndroidLogLevelRule.VERBOSE),
+          new LogLevel(1, "none", MaximumRemovedAndroidLogLevelRule.NONE)
+        }) {
+      for (String input : new String[] {"class * { <methods>; }", "@Foo class * { <methods>; }"}) {
+        for (boolean testNamedAndroidLogLevels : BooleanUtils.values()) {
+          if (testNamedAndroidLogLevels) {
+            resetAllowNamedAndroidLogLevels();
+          } else {
+            reset();
+          }
+
+          String configuration =
+              StringUtils.lines(
+                  "-maximumremovedandroidloglevel "
+                      + (testNamedAndroidLogLevels ? logLevel.getName() : logLevel.getLevel())
+                      + " "
+                      + input);
+          parser.parse(createConfigurationForTesting(configuration));
+          verifyParserEndsCleanly();
+
+          ProguardConfiguration config = builder.build();
+          assertEquals(
+              MaximumRemovedAndroidLogLevelRule.NOT_SET, config.getMaxRemovedAndroidLogLevel());
+          assertEquals(1, config.getRules().size());
+          assertTrue(config.getRules().get(0).isMaximumRemovedAndroidLogLevelRule());
+
+          MaximumRemovedAndroidLogLevelRule rule =
+              config.getRules().get(0).asMaximumRemovedAndroidLogLevelRule();
+          assertEquals(logLevel.getLevelFromRule(), rule.getMaxRemovedAndroidLogLevel());
+        }
+      }
+    }
+
+    for (String input : new String[] {"class * { <methods>; }", "@Foo class * { <methods>; }"}) {
+      try {
+        resetAllowNamedAndroidLogLevels();
+        String configuration = StringUtils.lines("-maximumremovedandroidloglevel " + input);
+        parser.parse(createConfigurationForTesting(configuration));
+        fail("Expect to fail due to unsupported value.");
+      } catch (RuntimeException e) {
+        checkDiagnostics(
+            handler.errors, null, 1, input.startsWith("class") ? 37 : 36, "Unsupported log level");
+      }
+
+      try {
+        reset();
+        String configuration = StringUtils.lines("-maximumremovedandroidloglevel 0 " + input);
+        parser.parse(createConfigurationForTesting(configuration));
+        fail("Expect to fail due to unsupported value.");
+      } catch (RuntimeException e) {
+        checkDiagnostics(
+            handler.errors, null, 1, 33, "Expected integer greater than or equal to 1");
+      }
+
+      try {
+        reset();
+        String configuration = StringUtils.lines("-maximumremovedandroidloglevel -1 " + input);
+        parser.parse(createConfigurationForTesting(configuration));
+        fail("Expect to fail due to unsupported value.");
+      } catch (RuntimeException e) {
+        checkDiagnostics(
+            handler.errors, null, 1, 34, "Expected integer greater than or equal to 1");
+      }
+
+      try {
+        resetAllowNamedAndroidLogLevels();
+        String configuration = StringUtils.lines("-maximumremovedandroidloglevel WARN " + input);
+        parser.parse(createConfigurationForTesting(configuration));
+        fail("Expect to fail due to unsupported value.");
+      } catch (RuntimeException e) {
+        checkDiagnostics(handler.errors, null, 1, 36, "Unsupported log level");
+      }
     }
   }
 
@@ -3093,6 +3275,7 @@ public class ProguardConfigurationParserTest extends TestBase {
       parser.parse(createConfigurationForTesting(configuration));
       fail("Expect to fail due to unsupported value.");
     } catch (RuntimeException e) {
+      assertTrue(e.getCause() instanceof AbortException);
       checkDiagnostics(handler.errors, null, 1, 26, "Illegal value for -processkotlinnullchecks");
     }
   }
@@ -3139,5 +3322,75 @@ public class ProguardConfigurationParserTest extends TestBase {
             "# Include 2",
             "# End of content from include2.txt"),
         StringUtils.replaceAll(parsedConfiguration, temp.getRoot().toString() + separator, ""));
+  }
+
+  @Test
+  public void parseAssumeValuesReturnStringRule() {
+    String configuration = "-assumevalues class * { void m() return \"Hello, world!\"; }";
+    parser.parse(createConfigurationForTesting(configuration));
+    verifyParserEndsCleanly();
+
+    ProguardConfiguration config = builder.build();
+    ProguardAssumeValuesRule rule = (ProguardAssumeValuesRule) config.getRules().get(0);
+    assertTrue(rule.getMemberRule(0).hasReturnValue());
+    assertEquals(
+        "Hello, world!", rule.getMemberRule(0).getReturnValue().getValueString().toString());
+  }
+
+  @Test
+  public void parseAssumeValuesReturnStringRuleWithEscapedCharacters() {
+    // Octal escape \123 is a valid example of a 3 digit octal.
+    // Octal escape \40 is a valid 2 digit octal that does not extend to a 3 digit octal because the
+    // first digit is not in [0;3].
+    String configuration =
+        "-assumevalues class * { void m() return \"Hello\\nworld!\\123\\400\"; }";
+    parser.parse(createConfigurationForTesting(configuration));
+    verifyParserEndsCleanly();
+
+    ProguardConfiguration config = builder.build();
+    ProguardAssumeValuesRule rule = (ProguardAssumeValuesRule) config.getRules().get(0);
+    assertTrue(rule.getMemberRule(0).hasReturnValue());
+    assertEquals(
+        "Hello\nworld!S 0", rule.getMemberRule(0).getReturnValue().getValueString().toString());
+  }
+
+  @Test
+  public void parseAssumeValuesReturnStringRuleWithInvalidEscape() {
+    String configuration = "-assumevalues class * { void m() return \"\\9\"; }";
+    try {
+      parser.parse(createConfigurationForTesting(configuration));
+      fail("Expected parse error");
+    } catch (RuntimeException e) {
+      assertTrue(e.getCause() instanceof AbortException);
+      assertEquals(1, handler.errors.size());
+      assertThat(
+          handler.errors.get(0),
+          allOf(
+              diagnosticType(ProguardRuleParserErrorDiagnostic.class),
+              diagnosticMessage(containsString("Illegal escape sequence: \\9")),
+              diagnosticPosition(positionLine(1)),
+              diagnosticPosition(positionColumn(44))));
+    }
+  }
+
+  @Test
+  public void parseAssumeValuesReturnStringRuleWithNewline() {
+    String configuration =
+        StringUtils.lines("-assumevalues class * { void m() return \"Hello", "world!\"; }");
+    try {
+      parser.parse(createConfigurationForTesting(configuration));
+      fail("Expected parse error");
+    } catch (RuntimeException e) {
+      assertTrue(e.getCause() instanceof AbortException);
+      assertEquals(1, handler.errors.size());
+      assertThat(
+          handler.errors.get(0),
+          allOf(
+              diagnosticType(ProguardRuleParserErrorDiagnostic.class),
+              diagnosticMessage(containsString("Unexpected line termination in string literal")),
+              diagnosticPosition(positionLine(1)),
+              diagnosticPosition(
+                  positionColumn(48 + BooleanUtils.intValue(ToolHelper.isWindows())))));
+    }
   }
 }

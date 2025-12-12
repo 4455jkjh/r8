@@ -143,8 +143,15 @@ public class R8MemberValuePropagation extends MemberValuePropagation<AppInfoWith
     }
 
     DexClassAndMethod singleTarget = invoke.lookupSingleTarget(appView, context);
-    AssumeInfo lookup = AssumeInfoLookup.lookupAssumeInfo(appView, resolutionResult, singleTarget);
+    AssumeInfo lookup =
+        AssumeInfoLookup.lookupAssumeInfo(appView, invoke, context, resolutionResult, singleTarget);
     if (applyAssumeInfo(code, affectedValues, blocks, iterator, invoke, lookup)) {
+      return iterator;
+    }
+
+    if (appView
+        .getAssumeInfoCollection()
+        .neverInlineDueToAssume(invoke, resolutionResult, singleTarget)) {
       return iterator;
     }
 
@@ -257,7 +264,7 @@ public class R8MemberValuePropagation extends MemberValuePropagation<AppInfoWith
     }
 
     // Check if there is a Proguard configuration rule that specifies the value of the field.
-    AssumeInfo lookup = appView.getAssumeInfoCollection().get(target);
+    AssumeInfo lookup = appView.getAssumeInfoCollection().getField(target);
     if (applyAssumeInfo(code, affectedValues, blocks, iterator, current, lookup)) {
       return iterator;
     }

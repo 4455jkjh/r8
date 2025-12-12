@@ -7,10 +7,13 @@ import static com.android.tools.r8.utils.codeinspector.Matchers.isPresent;
 import static java.util.Collections.emptyList;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 import com.android.tools.r8.R8TestCompileResultBase;
 import com.android.tools.r8.references.MethodReference;
 import com.android.tools.r8.references.Reference;
+import com.android.tools.r8.retrace.RetraceElement;
 import com.android.tools.r8.retrace.RetraceMethodElement;
 import com.android.tools.r8.utils.BooleanUtils;
 import com.android.tools.r8.utils.StringUtils;
@@ -77,7 +80,6 @@ public class MethodWithOverloadStackSampleRetraceTest extends StackSampleRetrace
     return Main.class;
   }
 
-  // TODO(b/462362930): Should use pc encoding.
   @Override
   String getExpectedMap() {
     if (keep) {
@@ -150,10 +152,12 @@ public class MethodWithOverloadStackSampleRetraceTest extends StackSampleRetrace
     if (keep) {
       // Expected: `b.get` should retrace to {`Object StringSupplier.get()`,
       // `String StringSupplier.get()`}, which can be represented as just `StringSupplier.get()`.
-      Set<MethodReference> retraceResult =
+      List<RetraceMethodElement> retraceResult =
           getRetraceMethodElements(
-                  Reference.classFromTypeName(obfuscatedClassName), "get", compileResult)
-              .stream()
+              Reference.classFromTypeName(obfuscatedClassName), "get", compileResult);
+      assertTrue(retraceResult.stream().noneMatch(RetraceElement::isCompilerSynthesized));
+      Set<MethodReference> retracedMethods =
+          retraceResult.stream()
               .map(
                   retraceMethodElement ->
                       retraceMethodElement.getRetracedMethod().asKnown().getMethodReference())
@@ -170,11 +174,11 @@ public class MethodWithOverloadStackSampleRetraceTest extends StackSampleRetrace
                   "get",
                   emptyList(),
                   Reference.classFromClass(String.class))),
-          retraceResult);
+          retracedMethods);
     } else {
       // Expected: `b.b` should retrace to `String StringSupplier.get()`.
       {
-        RetraceMethodElement retraceMethodElement =
+        RetraceMethodElement retraceResult =
             getSingleRetraceMethodElement(
                 Reference.classFromTypeName(obfuscatedClassName),
                 obfuscatedMethodNameString,
@@ -185,12 +189,13 @@ public class MethodWithOverloadStackSampleRetraceTest extends StackSampleRetrace
                 "get",
                 emptyList(),
                 Reference.classFromClass(String.class)),
-            retraceMethodElement.getRetracedMethod().asKnown().getMethodReference());
+            retraceResult.getRetracedMethod().asKnown().getMethodReference());
+        assertFalse(retraceResult.isCompilerSynthesized());
       }
 
       // Expected: `b.a` should retrace to `Object StringSupplier.get()`.
       {
-        RetraceMethodElement retraceMethodElement =
+        RetraceMethodElement retraceResult =
             getSingleRetraceMethodElement(
                 Reference.classFromTypeName(obfuscatedClassName),
                 obfuscatedMethodNameObject,
@@ -201,7 +206,8 @@ public class MethodWithOverloadStackSampleRetraceTest extends StackSampleRetrace
                 "get",
                 emptyList(),
                 Reference.classFromClass(Object.class)),
-            retraceMethodElement.getRetracedMethod().asKnown().getMethodReference());
+            retraceResult.getRetracedMethod().asKnown().getMethodReference());
+        assertFalse(retraceResult.isCompilerSynthesized());
       }
     }
   }

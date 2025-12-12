@@ -12,6 +12,7 @@ import com.android.tools.r8.InputDependencyGraphConsumer;
 import com.android.tools.r8.Version;
 import com.android.tools.r8.dex.Constants;
 import com.android.tools.r8.errors.EmptyMemberRulesToDefaultInitRuleConversionDiagnostic;
+import com.android.tools.r8.errors.ProguardRuleParserErrorDiagnostic;
 import com.android.tools.r8.graph.DexItemFactory;
 import com.android.tools.r8.graph.DexString;
 import com.android.tools.r8.graph.DexType;
@@ -25,6 +26,8 @@ import com.android.tools.r8.shaking.ProguardConfiguration.ProcessKotlinNullCheck
 import com.android.tools.r8.shaking.ProguardTypeMatcher.ClassOrType;
 import com.android.tools.r8.shaking.ProguardWildcard.BackReference;
 import com.android.tools.r8.shaking.ProguardWildcard.Pattern;
+import com.android.tools.r8.utils.AbortException;
+import com.android.tools.r8.utils.CharPredicate;
 import com.android.tools.r8.utils.IdentifierUtils;
 import com.android.tools.r8.utils.InternalOptions.PackageObfuscationMode;
 import com.android.tools.r8.utils.LongInterval;
@@ -33,6 +36,7 @@ import com.android.tools.r8.utils.StringDiagnostic;
 import com.android.tools.r8.utils.StringUtils;
 import com.android.tools.r8.utils.ThrowingAction;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import java.io.File;
@@ -47,10 +51,10 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Deque;
 import java.util.List;
+import java.util.Map;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.IntPredicate;
-import java.util.function.Predicate;
 
 public class ProguardConfigurationParser {
 
@@ -117,6 +121,16 @@ public class ProguardConfigurationParser {
   // Just ignoring them would produce outputs incompatible with user expectations.
   private static final List<String> UNSUPPORTED_FLAG_OPTIONS =
       ImmutableList.of("skipnonpubliclibraryclasses");
+
+  static final Map<String, Integer> logLevelNames =
+      ImmutableMap.of(
+          "assert", 7,
+          "error", 6,
+          "warn", 5,
+          "info", 4,
+          "debug", 3,
+          "verbose", 2,
+          "none", 1);
 
   @Deprecated
   public static ImmutableList<ProguardConfigurationRule> parseMainDex(
@@ -211,8 +225,8 @@ public class ProguardConfigurationParser {
       } catch (IOException e) {
         reporter.error(new StringDiagnostic("Failed to read file: " + e.getMessage(),
             source.getOrigin()));
-      } catch (ProguardRuleParserException e) {
-        reporter.error(e);
+      } catch (AbortException e) {
+        // Continue parsing and report all errors in the end.
       }
     }
     reporter.failIfPendingErrors();
@@ -269,7 +283,7 @@ public class ProguardConfigurationParser {
       return pendingIncludes;
     }
 
-    public void parse() throws ProguardRuleParserException {
+    public void parse() {
       do {
         TextPosition whitespaceStart = getPosition();
         if (skipWhitespace()) {
@@ -284,7 +298,7 @@ public class ProguardConfigurationParser {
       reporter.failIfPendingErrors();
     }
 
-    private boolean parseOption() throws ProguardRuleParserException {
+    private boolean parseOption() {
       if (eof()) {
         return false;
       }
@@ -519,8 +533,7 @@ public class ProguardConfigurationParser {
       return true;
     }
 
-    private boolean parseTestingOption(TextPosition optionStart)
-        throws ProguardRuleParserException {
+    private boolean parseTestingOption(TextPosition optionStart) {
       if (!options.isTestingOptionsEnabled()) {
         return false;
       }
@@ -642,8 +655,7 @@ public class ProguardConfigurationParser {
       return true;
     }
 
-    private boolean parseIgnoredOption(TextPosition optionStart)
-        throws ProguardRuleParserException {
+    private boolean parseIgnoredOption(TextPosition optionStart) {
       String option =
           Iterables.find(IGNORED_SINGLE_ARG_OPTIONS, this::skipOptionWithSingleArg, null);
       if (option == null) {
@@ -670,26 +682,24 @@ public class ProguardConfigurationParser {
       return true;
     }
 
-    private void enqueueInclude(TextPosition optionStart) throws ProguardRuleParserException {
+    private void enqueueInclude(TextPosition optionStart) {
       Path includePath = parseFileInputDependency(inputDependencyConsumer::acceptProguardInclude);
       configurationConsumer.addInclude(includePath, this, optionStart);
     }
 
-    private void parseInclude(Path includePath, TextPosition includePositionStart)
-        throws ProguardRuleParserException {
+    private void parseInclude(Path includePath, TextPosition includePositionStart) {
       try {
         new ProguardConfigurationSourceParser(new ProguardConfigurationSourceFile(includePath))
             .parse();
       } catch (FileNotFoundException | NoSuchFileException e) {
-        throw parseError("Included file '" + includePath + "' not found", includePositionStart, e);
+        throw parseError("Included file '" + includePath + "' not found", includePositionStart);
       } catch (IOException e) {
         throw parseError(
-            "Failed to read included file '" + includePath + "'", includePositionStart, e);
+            "Failed to read included file '" + includePath + "'", includePositionStart);
       }
     }
 
-    private boolean acceptArobaseInclude(TextPosition optionStart)
-        throws ProguardRuleParserException {
+    private boolean acceptArobaseInclude(TextPosition optionStart) {
       if (remainingChars() < 2) {
         return false;
       }
@@ -700,7 +710,7 @@ public class ProguardConfigurationParser {
       return true;
     }
 
-    private void parseKeepAttributes(TextPosition start) throws ProguardRuleParserException {
+    private void parseKeepAttributes(TextPosition start) {
       List<String> attributesPatterns = acceptKeepAttributesPatternList();
       if (attributesPatterns.isEmpty()) {
         throw parseError("Expected attribute pattern list");
@@ -722,8 +732,7 @@ public class ProguardConfigurationParser {
           attributesPatterns, this, getPosition(start), start);
     }
 
-    private void parseProcessKotlinNullChecks(TextPosition start)
-        throws ProguardRuleParserException {
+    private void parseProcessKotlinNullChecks(TextPosition start) {
       skipWhitespace();
       TextPosition argumentStart = getPosition();
       String processKotlinNullChecksValue =
@@ -774,19 +783,14 @@ public class ProguardConfigurationParser {
 
     private boolean skipOptionWithClassSpec(String name) {
       if (acceptString(name)) {
-        try {
-          ProguardKeepRule.Builder keepRuleBuilder = ProguardKeepRule.builder();
-          parseClassSpec(keepRuleBuilder, true);
-          return true;
-        } catch (ProguardRuleParserException e) {
-          throw reporter.fatalError(e);
-        }
+        ProguardKeepRule.Builder keepRuleBuilder = ProguardKeepRule.builder();
+        parseClassSpec(keepRuleBuilder, true);
+        return true;
       }
       return false;
     }
 
-    private boolean parseOptimizationOption(TextPosition optionStart)
-        throws ProguardRuleParserException {
+    private boolean parseOptimizationOption(TextPosition optionStart) {
       if (!acceptString("optimizations")) {
         return false;
       }
@@ -799,7 +803,7 @@ public class ProguardConfigurationParser {
       return true;
     }
 
-    private void skipOptimizationName() throws ProguardRuleParserException {
+    private void skipOptimizationName() {
       char quote = acceptQuoteIfPresent();
       if (isQuote(quote)) {
         skipWhitespace();
@@ -822,7 +826,7 @@ public class ProguardConfigurationParser {
     }
 
     @SuppressWarnings("NonCanonicalType")
-    private ProguardKeepRule parseKeepRule(Position start) throws ProguardRuleParserException {
+    private ProguardKeepRule parseKeepRule(Position start) {
       ProguardKeepRule.Builder keepRuleBuilder = ProguardKeepRule.builder()
           .setOrigin(origin)
           .setStart(start);
@@ -856,7 +860,7 @@ public class ProguardConfigurationParser {
 
     @SuppressWarnings("NonCanonicalType")
     private <R extends ProguardConfigurationRule, B extends ProguardConfigurationRule.Builder<R, B>>
-        R parseRuleWithClassSpec(Position start, B builder) throws ProguardRuleParserException {
+        R parseRuleWithClassSpec(Position start, B builder) {
       builder.setOrigin(origin).setStart(start);
       parseClassSpec(builder);
       Position end = getPosition();
@@ -865,8 +869,7 @@ public class ProguardConfigurationParser {
       return builder.build();
     }
 
-    private ProguardIfRule parseIfRule(TextPosition optionStart)
-        throws ProguardRuleParserException {
+    private ProguardIfRule parseIfRule(TextPosition optionStart) {
       ProguardIfRule.Builder ifRuleBuilder = ProguardIfRule.builder()
           .setOrigin(origin)
           .setStart(optionStart);
@@ -889,17 +892,30 @@ public class ProguardConfigurationParser {
           "Expecting '-keep' option after '-if' option.", origin, getPosition(optionStart)));
     }
 
-    private boolean parseMaximumRemovedAndroidLogLevelRule(TextPosition optionStart)
-        throws ProguardRuleParserException {
+    private boolean parseMaximumRemovedAndroidLogLevelRule(TextPosition optionStart) {
       if (!acceptString("maximumremovedandroidloglevel")) {
         return false;
       }
       skipWhitespace();
       // First parse the mandatory log level int.
       Integer maxRemovedAndroidLogLevel = acceptInteger();
-      if (maxRemovedAndroidLogLevel == null
-          || maxRemovedAndroidLogLevel < MaximumRemovedAndroidLogLevelRule.NONE) {
+      if (maxRemovedAndroidLogLevel != null
+          && maxRemovedAndroidLogLevel < MaximumRemovedAndroidLogLevelRule.NONE) {
         throw parseError("Expected integer greater than or equal to 1", getPosition());
+      }
+      if (maxRemovedAndroidLogLevel == null) {
+        if (options.isEnableNamedAndroidLogLevels()) {
+          String logLevelName = acceptString();
+          if (logLevelName == null) {
+            throw parseError("Expected log level", getPosition());
+          }
+          maxRemovedAndroidLogLevel = logLevelNames.get(logLevelName);
+          if (maxRemovedAndroidLogLevel == null) {
+            throw parseError("Unsupported log level", getPosition());
+          }
+        } else {
+          throw parseError("Expected integer greater than or equal to 1", getPosition());
+        }
       }
       MaximumRemovedAndroidLogLevelRule.Builder builder =
           MaximumRemovedAndroidLogLevelRule.builder()
@@ -959,17 +975,15 @@ public class ProguardConfigurationParser {
     private <
             C extends ProguardClassSpecification,
             B extends ProguardClassSpecification.Builder<C, B>>
-        void parseClassSpec(ProguardClassSpecification.Builder<C, B> builder)
-            throws ProguardRuleParserException {
+        void parseClassSpec(ProguardClassSpecification.Builder<C, B> builder) {
       parseClassSpec(builder, false);
     }
 
-    private
-    <C extends ProguardClassSpecification, B extends ProguardClassSpecification.Builder<C, B>>
-    void parseClassSpec(
-        ProguardClassSpecification.Builder<C, B> builder,
-        boolean allowValueSpecification)
-        throws ProguardRuleParserException {
+    private <
+            C extends ProguardClassSpecification,
+            B extends ProguardClassSpecification.Builder<C, B>>
+        void parseClassSpec(
+            ProguardClassSpecification.Builder<C, B> builder, boolean allowValueSpecification) {
       parseClassAnnotationsAndFlags(builder);
       parseClassSpecFromClassTypeInclusive(builder, allowValueSpecification);
     }
@@ -978,8 +992,7 @@ public class ProguardConfigurationParser {
             C extends ProguardClassSpecification,
             B extends ProguardClassSpecification.Builder<C, B>>
         void parseClassSpecFromClassTypeInclusive(
-            ProguardClassSpecification.Builder<C, B> builder, boolean allowValueSpecification)
-            throws ProguardRuleParserException {
+            ProguardClassSpecification.Builder<C, B> builder, boolean allowValueSpecification) {
       parseClassType(
           builder,
           () -> parseClassSpecFromClassNameInclusive(builder, allowValueSpecification),
@@ -990,8 +1003,7 @@ public class ProguardConfigurationParser {
             C extends ProguardClassSpecification,
             B extends ProguardClassSpecification.Builder<C, B>>
         void parseClassSpecFromClassNameInclusive(
-            ProguardClassSpecification.Builder<C, B> builder, boolean allowValueSpecification)
-            throws ProguardRuleParserException {
+            ProguardClassSpecification.Builder<C, B> builder, boolean allowValueSpecification) {
       builder.setClassNames(parseClassNames());
       parseInheritance(builder);
       parseMemberRules(builder, allowValueSpecification);
@@ -1068,7 +1080,7 @@ public class ProguardConfigurationParser {
       }
     }
 
-    private List<ProguardTypeMatcher> parseAnnotationList() throws ProguardRuleParserException {
+    private List<ProguardTypeMatcher> parseAnnotationList() {
       List<ProguardTypeMatcher> annotations = null;
       ProguardTypeMatcher current;
       while ((current = parseAnnotation()) != null) {
@@ -1080,7 +1092,7 @@ public class ProguardConfigurationParser {
       return annotations != null ? annotations : Collections.emptyList();
     }
 
-    private ProguardTypeMatcher parseAnnotation() throws ProguardRuleParserException {
+    private ProguardTypeMatcher parseAnnotation() {
       skipWhitespace();
       int startPosition = position;
       if (acceptChar('@')) {
@@ -1104,8 +1116,8 @@ public class ProguardConfigurationParser {
     }
 
     /** Returns true if any class annotations or flags were parsed. */
-    private boolean parseClassAnnotationsAndFlags(ProguardClassSpecification.Builder<?, ?> builder)
-        throws ProguardRuleParserException {
+    private boolean parseClassAnnotationsAndFlags(
+        ProguardClassSpecification.Builder<?, ?> builder) {
       // We allow interleaving the class annotations and class flags for compatibility with
       // Proguard, although this should not be possible according to the grammar.
       boolean changed = false;
@@ -1181,8 +1193,7 @@ public class ProguardConfigurationParser {
     }
 
     private void parseInheritance(
-        ProguardClassSpecification.Builder<?, ?> classSpecificationBuilder)
-        throws ProguardRuleParserException {
+        ProguardClassSpecification.Builder<?, ?> classSpecificationBuilder) {
       skipWhitespace();
       if (acceptString("implements")) {
         classSpecificationBuilder.setInheritanceIsExtends(false);
@@ -1196,12 +1207,12 @@ public class ProguardConfigurationParser {
           ClassOrType.CLASS, dexItemFactory));
     }
 
-    private
-    <C extends ProguardClassSpecification, B extends ProguardClassSpecification.Builder<C, B>>
-    void parseMemberRules(
-        ProguardClassSpecification.Builder<C, B> classSpecificationBuilder,
-        boolean allowValueSpecification)
-        throws ProguardRuleParserException {
+    private <
+            C extends ProguardClassSpecification,
+            B extends ProguardClassSpecification.Builder<C, B>>
+        void parseMemberRules(
+            ProguardClassSpecification.Builder<C, B> classSpecificationBuilder,
+            boolean allowValueSpecification) {
       skipWhitespace();
       if (!eof() && acceptChar('{')) {
         ProguardMemberRule rule;
@@ -1213,8 +1224,7 @@ public class ProguardConfigurationParser {
       }
     }
 
-    private ProguardMemberRule parseMemberRule(boolean allowValueSpecification)
-        throws ProguardRuleParserException {
+    private ProguardMemberRule parseMemberRule(boolean allowValueSpecification) {
       ProguardMemberRule.Builder ruleBuilder = ProguardMemberRule.builder();
       ruleBuilder.setAnnotations(parseAnnotationList());
       parseMemberAccessFlags(ruleBuilder);
@@ -1299,8 +1309,7 @@ public class ProguardConfigurationParser {
     }
 
     private void parseMemberPattern(
-        ProguardMemberRule.Builder ruleBuilder, boolean allowValueSpecification)
-        throws ProguardRuleParserException {
+        ProguardMemberRule.Builder ruleBuilder, boolean allowValueSpecification) {
       skipWhitespace();
       if (!eof() && peekChar() == '!') {
         throw parseError(
@@ -1384,7 +1393,8 @@ public class ProguardConfigurationParser {
                   }
                   // Parse "return ..." if present.
                   ruleBuilder.setReturnValue(
-                      parseOptionalValueSpecification(allowValueSpecification, "return"));
+                      parseOptionalValueSpecification(
+                          allowValueSpecification, "return", c -> c == ';'));
                 } else {
                   throw parseError("Expected field or method name");
                 }
@@ -1400,8 +1410,8 @@ public class ProguardConfigurationParser {
       }
     }
 
-    private ProguardMemberRuleReturnValue parseOptionalValueSpecification(
-        boolean allowValueSpecification, String symbolStart) throws ProguardRuleParserException {
+    private ProguardMemberRuleValue parseOptionalValueSpecification(
+        boolean allowValueSpecification, String symbolStart, CharPredicate endPredicate) {
       skipWhitespace();
       TextPosition positionStart = getPosition();
       if (!acceptString(symbolStart)) {
@@ -1412,11 +1422,11 @@ public class ProguardConfigurationParser {
       }
       skipWhitespace();
       if (acceptString("true")) {
-        return new ProguardMemberRuleReturnValue(true);
+        return new ProguardMemberRuleValue(true);
       } else if (acceptString("false")) {
-        return new ProguardMemberRuleReturnValue(false);
+        return new ProguardMemberRuleValue(false);
       } else if (acceptString("null")) {
-        return new ProguardMemberRuleReturnValue(Nullability.definitelyNull());
+        return new ProguardMemberRuleValue(Nullability.definitelyNull());
       }
       Integer integer = acceptInteger();
       if (integer != null) {
@@ -1430,14 +1440,18 @@ public class ProguardConfigurationParser {
             throw parseError("Expected integer value");
           }
         }
-        return new ProguardMemberRuleReturnValue(new LongInterval(min, max));
+        return new ProguardMemberRuleValue(new LongInterval(min, max));
+      }
+      String string = acceptQuotedJavaString();
+      if (string != null) {
+        return new ProguardMemberRuleValue(dexItemFactory.createString(string));
       }
       Nullability nullability = Nullability.maybeNull();
       if (acceptString("@NonNull") || acceptString("_NONNULL_")) {
         nullability = Nullability.definitelyNotNull();
         skipWhitespace();
-        if (!eof() && peekChar() == ';') {
-          return new ProguardMemberRuleReturnValue(nullability);
+        if (!eof() && endPredicate.test(peekChar())) {
+          return new ProguardMemberRuleValue(nullability);
         }
       }
       String qualifiedFieldName = acceptQualifiedFieldName();
@@ -1448,14 +1462,13 @@ public class ProguardConfigurationParser {
                 javaTypeToDescriptor(qualifiedFieldName.substring(0, lastDotIndex)));
         DexString fieldName =
             dexItemFactory.createString(qualifiedFieldName.substring(lastDotIndex + 1));
-        return new ProguardMemberRuleReturnValue(fieldHolder, fieldName, nullability);
+        return new ProguardMemberRuleValue(fieldHolder, fieldName, nullability);
       }
       throw parseError("Expected qualified field");
     }
 
     private void checkConstructorPattern(
-        IdentifierPatternWithWildcards pattern, TextPosition position)
-        throws ProguardRuleParserException {
+        IdentifierPatternWithWildcards pattern, TextPosition position) {
       if (pattern.pattern.equals("<clinit>")) {
         reporter.warning(
             new StringDiagnostic("Member rule for <clinit> has no effect.", origin, position));
@@ -1471,8 +1484,7 @@ public class ProguardConfigurationParser {
     }
 
     private List<ProguardTypeMatcher> parseArgumentList(
-        boolean allowValueSpecification, ProguardMemberRule.Builder ruleBuilder)
-        throws ProguardRuleParserException {
+        boolean allowValueSpecification, ProguardMemberRule.Builder ruleBuilder) {
       List<ProguardTypeMatcher> arguments = new ArrayList<>();
       skipWhitespace();
       expectChar('(');
@@ -1490,8 +1502,9 @@ public class ProguardConfigurationParser {
         for (IdentifierPatternWithWildcards identifierPatternWithWildcards = parseClassName();
             identifierPatternWithWildcards != null;
             identifierPatternWithWildcards = acceptChar(',') ? parseClassName() : null, i++) {
-          ProguardMemberRuleReturnValue precondition =
-              parseOptionalValueSpecification(allowValueSpecification, "=");
+          ProguardMemberRuleValue precondition =
+              parseOptionalValueSpecification(
+                  allowValueSpecification, "=", c -> c == ',' || c == ')');
           if (precondition != null) {
             ruleBuilder.setPrecondition(i, precondition);
           }
@@ -1507,8 +1520,7 @@ public class ProguardConfigurationParser {
       return arguments;
     }
 
-    private String replaceSystemPropertyReferences(String fileName)
-        throws ProguardRuleParserException{
+    private String replaceSystemPropertyReferences(String fileName) {
       StringBuilder result = new StringBuilder();
       int copied = 0;  // Last endIndex for substring.
       int start = -1;
@@ -1542,22 +1554,21 @@ public class ProguardConfigurationParser {
       return result.toString();
     }
 
-    private Path parseFileInputDependency(BiConsumer<Origin, Path> dependencyConsumer)
-        throws ProguardRuleParserException {
+    private Path parseFileInputDependency(BiConsumer<Origin, Path> dependencyConsumer) {
       Path file = parseFileName();
       dependencyConsumer.accept(origin, file);
       return file;
     }
 
-    private Path parseOptionalFileName() throws ProguardRuleParserException {
+    private Path parseOptionalFileName() {
       return isOptionalArgumentGiven() ? parseFileName() : null;
     }
 
-    private Path parseFileName() throws ProguardRuleParserException {
+    private Path parseFileName() {
       return parseFileName(false);
     }
 
-    private Path parseFileName(boolean stopAfterPathSeparator) throws ProguardRuleParserException {
+    private Path parseFileName(boolean stopAfterPathSeparator) {
       TextPosition start = getPosition();
       skipWhitespace();
 
@@ -1587,8 +1598,7 @@ public class ProguardConfigurationParser {
       return baseDirectory.resolve(fileName);
     }
 
-    private List<FilteredClassPath> parseClassPath(BiConsumer<Origin, Path> dependencyCallback)
-        throws ProguardRuleParserException {
+    private List<FilteredClassPath> parseClassPath(BiConsumer<Origin, Path> dependencyCallback) {
       List<FilteredClassPath> classPath = new ArrayList<>();
       skipWhitespace();
       TextPosition position = getPosition();
@@ -1605,7 +1615,7 @@ public class ProguardConfigurationParser {
       return classPath;
     }
 
-    private ImmutableList<String> parseClassPathFilters() throws ProguardRuleParserException {
+    private ImmutableList<String> parseClassPathFilters() {
       skipWhitespace();
       if (acceptChar('(')) {
         ImmutableList.Builder<String> filters = new ImmutableList.Builder<>();
@@ -1625,7 +1635,7 @@ public class ProguardConfigurationParser {
       }
     }
 
-    private String parseFileFilter() throws ProguardRuleParserException {
+    private String parseFileFilter() {
       TextPosition start = getPosition();
       skipWhitespace();
       String fileFilter = acceptString(character ->
@@ -1637,8 +1647,7 @@ public class ProguardConfigurationParser {
       return fileFilter;
     }
 
-    private ProguardAssumeNoSideEffectRule parseAssumeNoSideEffectsRule(Position start)
-        throws ProguardRuleParserException {
+    private ProguardAssumeNoSideEffectRule parseAssumeNoSideEffectsRule(Position start) {
       ProguardAssumeNoSideEffectRule.Builder builder = ProguardAssumeNoSideEffectRule.builder()
           .setOrigin(origin)
           .setStart(start);
@@ -1649,8 +1658,7 @@ public class ProguardConfigurationParser {
       return builder.build();
     }
 
-    private ProguardAssumeMayHaveSideEffectsRule parseAssumeMayHaveSideEffectsRule(Position start)
-        throws ProguardRuleParserException {
+    private ProguardAssumeMayHaveSideEffectsRule parseAssumeMayHaveSideEffectsRule(Position start) {
       ProguardAssumeMayHaveSideEffectsRule.Builder builder =
           ProguardAssumeMayHaveSideEffectsRule.builder().setOrigin(origin).setStart(start);
       parseClassSpec(builder);
@@ -1660,8 +1668,7 @@ public class ProguardConfigurationParser {
       return builder.build();
     }
 
-    private ProguardAssumeValuesRule parseAssumeValuesRule(Position start)
-        throws ProguardRuleParserException {
+    private ProguardAssumeValuesRule parseAssumeValuesRule(Position start) {
       ProguardAssumeValuesRule.Builder builder = ProguardAssumeValuesRule.builder()
           .setOrigin(origin)
           .setStart(start);
@@ -1672,8 +1679,7 @@ public class ProguardConfigurationParser {
       return builder.build();
     }
 
-    private CheckEnumUnboxedRule parseCheckEnumUnboxedRule(Position start)
-        throws ProguardRuleParserException {
+    private CheckEnumUnboxedRule parseCheckEnumUnboxedRule(Position start) {
       CheckEnumUnboxedRule.Builder builder =
           CheckEnumUnboxedRule.builder().setOrigin(origin).setStart(start);
       parseClassSpec(builder);
@@ -1683,8 +1689,7 @@ public class ProguardConfigurationParser {
       return builder.build();
     }
 
-    private ConvertCheckNotNullRule parseConvertCheckNotNullRule(Position start)
-        throws ProguardRuleParserException {
+    private ConvertCheckNotNullRule parseConvertCheckNotNullRule(Position start) {
       ConvertCheckNotNullRule.Builder builder =
           ConvertCheckNotNullRule.builder().setOrigin(origin).setStart(start);
       parseClassSpec(builder);
@@ -1736,7 +1741,7 @@ public class ProguardConfigurationParser {
       return peekChar() == c;
     }
 
-    private boolean hasNextChar(Predicate<Character> predicate) {
+    private boolean hasNextChar(CharPredicate predicate) {
       if (eof()) {
         return false;
       }
@@ -1760,7 +1765,7 @@ public class ProguardConfigurationParser {
       return hasNextChar(this::isQuote) ? readChar() : NO_QUOTE;
     }
 
-    private void expectClosingQuote(char quote) throws ProguardRuleParserException {
+    private void expectClosingQuote(char quote) {
       assert isQuote(quote);
       if (!hasNextChar(quote)) {
         throw parseError("Missing closing quote");
@@ -1789,7 +1794,7 @@ public class ProguardConfigurationParser {
       return contents.length() - position;
     }
 
-    private void expectChar(char c) throws ProguardRuleParserException {
+    private void expectChar(char c) {
       if (!acceptChar(c)) {
         throw parseError("Expected char '" + c + "'");
       }
@@ -1812,7 +1817,7 @@ public class ProguardConfigurationParser {
       return acceptString(c -> !Character.isWhitespace(c));
     }
 
-    private String acceptQuotedOrUnquotedString() throws ProguardRuleParserException {
+    private String acceptQuotedOrUnquotedString() {
       final char quote = acceptQuoteIfPresent();
       String result = acceptString(c -> !Character.isWhitespace(c) && c != quote);
       if (isQuote(quote)) {
@@ -1822,11 +1827,127 @@ public class ProguardConfigurationParser {
     }
 
     private Integer acceptInteger() {
+      final char minus = '-';
+      boolean negative = acceptChar(minus);
       String s = acceptString(Character::isDigit);
       if (s == null) {
+        if (negative) {
+          unacceptChar(minus);
+        }
         return null;
       }
-      return Integer.parseInt(s);
+      return Integer.parseInt((negative ? "-" : "") + s);
+    }
+
+    /**
+     * This method does not translate Unicode escapes such as "\u2022". Unicode escapes are
+     * translated by the Java compiler when reading input characters and are not part of the string
+     * literal specification. See also JLS
+     */
+    private String acceptQuotedJavaString() {
+      if (!acceptChar('"')) {
+        return null;
+      }
+      StringBuilder sb = new StringBuilder();
+      while (!eof()) {
+        char c = readChar();
+        if (c == '"') {
+          return sb.toString();
+        }
+        // If it's a newline, then error.
+        if (c == '\n') {
+          throw parseError("Unexpected line termination in string literal");
+        }
+        // If it's not an escape start, just append.
+        if (c != '\\') {
+          sb.append(c);
+          continue;
+        }
+        if (eof()) {
+          break;
+        }
+        // It is an escape sequence, look ahead.
+        c = readChar();
+        switch (c) {
+          case 'b':
+            sb.append('\b');
+            break;
+          case 't':
+            sb.append('\t');
+            break;
+          case 'n':
+            sb.append('\n');
+            break;
+          case 'f':
+            sb.append('\f');
+            break;
+          case 'r':
+            sb.append('\r');
+            break;
+          case '"':
+            sb.append('\"');
+            break;
+          case '\'':
+            sb.append('\'');
+            break;
+          case '\\':
+            sb.append('\\');
+            break;
+
+          // Octal handling (0-3 digits).
+          case '0':
+          case '1':
+          case '2':
+          case '3':
+          case '4':
+          case '5':
+          case '6':
+          case '7':
+            sb.append(parseOctalEscape(c));
+            break;
+
+          default:
+            throw parseError("Illegal escape sequence: \\" + c);
+        }
+      }
+      throw parseError("Unexpected EOF while parsing string literal");
+    }
+
+    private char parseOctalEscape(char firstDigit) {
+      int firstDigitIndex = position - 1;
+
+      // We have at least 1 digit (the current char).
+      int octalLength = 1;
+
+      // Check for a 2nd digit.
+      if (acceptOctalDigit()) {
+        // Check for a 3rd digit. Valid 3-digit octals must start with 0, 1, 2 or 3.
+        // If it starts with 4-7, the max value is \77 (2 digits).
+        if (firstDigit <= '3' && acceptOctalDigit()) {
+          octalLength = 3;
+        } else {
+          octalLength = 2;
+        }
+      }
+
+      // Extract the substring (e.g., "123" or "0") and parse base-8 to int.
+      String octalSeq = getContentInRange(firstDigitIndex, firstDigitIndex + octalLength);
+      int value = Integer.parseInt(octalSeq, 8);
+
+      // Cast to char (UTF-16 unit).
+      return (char) value;
+    }
+
+    private boolean acceptOctalDigit() {
+      if (hasNextChar(this::isOctalDigit)) {
+        position++;
+        return true;
+      }
+      return false;
+    }
+
+    private boolean isOctalDigit(char c) {
+      return '0' <= c && c <= '7';
     }
 
     private boolean isClassName(int codePoint) {
@@ -2011,7 +2132,7 @@ public class ProguardConfigurationParser {
       return contents.substring(start, end);
     }
 
-    private List<String> acceptKeepAttributesPatternList() throws ProguardRuleParserException {
+    private List<String> acceptKeepAttributesPatternList() {
       List<String> patterns = new ArrayList<>();
       skipWhitespace();
       char quote = acceptQuoteIfPresent();
@@ -2081,6 +2202,12 @@ public class ProguardConfigurationParser {
       return contents.substring(start, end);
     }
 
+    private void unacceptChar(char expected) {
+      assert position >= 1;
+      position--;
+      assert expected == contents.charAt(position);
+    }
+
     private void unacceptString(String expected) {
       assert position >= expected.length();
       position -= expected.length();
@@ -2089,15 +2216,14 @@ public class ProguardConfigurationParser {
       }
     }
 
-    private ProguardClassNameList parseOptionalClassFilter() throws ProguardRuleParserException {
+    private ProguardClassNameList parseOptionalClassFilter() {
       skipWhitespace();
       return isOptionalArgumentGiven()
           ? parseClassNames()
           : ProguardClassNameList.singletonList(ProguardTypeMatcher.defaultAllMatcher());
     }
 
-    private void parseClassNameAddToBuilder(ProguardClassNameList.Builder builder)
-        throws ProguardRuleParserException {
+    private void parseClassNameAddToBuilder(ProguardClassNameList.Builder builder) {
       IdentifierPatternWithWildcardsAndNegation name = parseClassName(true);
       builder.addClassName(
           name.negated,
@@ -2105,7 +2231,7 @@ public class ProguardConfigurationParser {
       skipWhitespace();
     }
 
-    private ProguardClassNameList parseClassNames() throws ProguardRuleParserException {
+    private ProguardClassNameList parseClassNames() {
       ProguardClassNameList.Builder builder = ProguardClassNameList.builder();
       do {
         parseClassNameAddToBuilder(builder);
@@ -2118,14 +2244,13 @@ public class ProguardConfigurationParser {
       return name == null ? "" : name;
     }
 
-    private IdentifierPatternWithWildcards parseClassName() throws ProguardRuleParserException {
+    private IdentifierPatternWithWildcards parseClassName() {
       IdentifierPatternWithWildcardsAndNegation name = parseClassName(false);
       assert !name.negated;
       return name.patternWithWildcards;
     }
 
-    private IdentifierPatternWithWildcardsAndNegation parseClassName(boolean allowNegation)
-        throws ProguardRuleParserException {
+    private IdentifierPatternWithWildcardsAndNegation parseClassName(boolean allowNegation) {
       IdentifierPatternWithWildcardsAndNegation name =
           acceptIdentifierWithBackreference(IdentifierType.CLASS_NAME, allowNegation);
       if (name == null) {
@@ -2138,12 +2263,12 @@ public class ProguardConfigurationParser {
       return character != ',' && !Character.isWhitespace(character);
     }
 
-    private ProguardPathList parseOptionalPathFilter() throws ProguardRuleParserException {
+    private ProguardPathList parseOptionalPathFilter() {
       skipWhitespace();
       return isOptionalArgumentGiven() ? parsePathFilter() : ProguardPathList.emptyList();
     }
 
-    private ProguardPathList parsePathFilter() throws ProguardRuleParserException {
+    private ProguardPathList parsePathFilter() {
       ProguardPathList.Builder builder = ProguardPathList.builder();
       skipWhitespace();
       boolean negated = acceptChar('!');
@@ -2193,19 +2318,16 @@ public class ProguardConfigurationParser {
           + '\n' + arrow;
     }
 
-    private ProguardRuleParserException parseError(String message) {
-      return new ProguardRuleParserException(message, snippetForPosition(), origin, getPosition());
+    private RuntimeException parseError(String message) {
+      throw reporter.fatalError(
+          ProguardRuleParserErrorDiagnostic.Factory.create(
+              message, snippetForPosition(), origin, getPosition()));
     }
 
-    private ProguardRuleParserException parseError(String message, TextPosition start,
-        Throwable cause) {
-      return new ProguardRuleParserException(message, snippetForPosition(start),
-          origin, getPosition(start), cause);
-    }
-
-    private ProguardRuleParserException parseError(String message, TextPosition start) {
-      return new ProguardRuleParserException(message, snippetForPosition(start),
-          origin, getPosition(start));
+    private RuntimeException parseError(String message, TextPosition start) {
+      throw reporter.fatalError(
+          ProguardRuleParserErrorDiagnostic.Factory.create(
+              message, snippetForPosition(start), origin, getPosition(start)));
     }
 
     private void infoIgnoringOptions(String optionName, TextPosition start) {

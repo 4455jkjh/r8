@@ -59,6 +59,7 @@ import com.android.tools.r8.ir.code.IRCode;
 import com.android.tools.r8.ir.code.IfType;
 import com.android.tools.r8.ir.code.MemberType;
 import com.android.tools.r8.ir.code.MonitorType;
+import com.android.tools.r8.ir.code.NumberConversionType;
 import com.android.tools.r8.ir.code.NumberGenerator;
 import com.android.tools.r8.ir.code.Position;
 import com.android.tools.r8.ir.code.Position.SourcePosition;
@@ -71,6 +72,7 @@ import com.android.tools.r8.position.TextRange;
 import com.android.tools.r8.utils.DescriptorUtils;
 import com.android.tools.r8.utils.ExceptionUtils;
 import com.android.tools.r8.utils.InternalOptions;
+import com.android.tools.r8.utils.LongUtils;
 import com.android.tools.r8.utils.Reporter;
 import com.android.tools.r8.utils.RetracerForCodePrinting;
 import com.android.tools.r8.utils.StringDiagnostic;
@@ -635,8 +637,7 @@ public class LazyCfCode extends Code {
         case Opcodes.FCONST_1:
         case Opcodes.FCONST_2:
           addInstruction(
-              new CfConstNumber(
-                  Float.floatToRawIntBits(opcode - Opcodes.FCONST_0), ValueType.FLOAT));
+              new CfConstNumber(LongUtils.encodeFloat(opcode - Opcodes.FCONST_0), ValueType.FLOAT));
           break;
         case Opcodes.DCONST_0:
         case Opcodes.DCONST_1:
@@ -718,21 +719,49 @@ public class LazyCfCode extends Code {
           addInstruction(CfLogicalBinop.fromAsm(opcode));
           break;
         case Opcodes.I2L:
+          addInstruction(new CfNumberConversion(NumberConversionType.INT_TO_LONG));
+          break;
         case Opcodes.I2F:
+          addInstruction(new CfNumberConversion(NumberConversionType.INT_TO_FLOAT));
+          break;
         case Opcodes.I2D:
+          addInstruction(new CfNumberConversion(NumberConversionType.INT_TO_DOUBLE));
+          break;
         case Opcodes.L2I:
+          addInstruction(new CfNumberConversion(NumberConversionType.LONG_TO_INT));
+          break;
         case Opcodes.L2F:
+          addInstruction(new CfNumberConversion(NumberConversionType.LONG_TO_FLOAT));
+          break;
         case Opcodes.L2D:
+          addInstruction(new CfNumberConversion(NumberConversionType.LONG_TO_DOUBLE));
+          break;
         case Opcodes.F2I:
+          addInstruction(new CfNumberConversion(NumberConversionType.FLOAT_TO_INT));
+          break;
         case Opcodes.F2L:
+          addInstruction(new CfNumberConversion(NumberConversionType.FLOAT_TO_LONG));
+          break;
         case Opcodes.F2D:
+          addInstruction(new CfNumberConversion(NumberConversionType.FLOAT_TO_DOUBLE));
+          break;
         case Opcodes.D2I:
+          addInstruction(new CfNumberConversion(NumberConversionType.DOUBLE_TO_INT));
+          break;
         case Opcodes.D2L:
+          addInstruction(new CfNumberConversion(NumberConversionType.DOUBLE_TO_LONG));
+          break;
         case Opcodes.D2F:
+          addInstruction(new CfNumberConversion(NumberConversionType.DOUBLE_TO_FLOAT));
+          break;
         case Opcodes.I2B:
+          addInstruction(new CfNumberConversion(NumberConversionType.INT_TO_BYTE));
+          break;
         case Opcodes.I2C:
+          addInstruction(new CfNumberConversion(NumberConversionType.INT_TO_CHAR));
+          break;
         case Opcodes.I2S:
-          addInstruction(CfNumberConversion.fromAsm(opcode));
+          addInstruction(new CfNumberConversion(NumberConversionType.INT_TO_SHORT));
           break;
         case Opcodes.LCMP:
         case Opcodes.FCMPL:
@@ -1035,7 +1064,7 @@ public class LazyCfCode extends Code {
       } else if (cst instanceof Integer) {
         addInstruction(new CfConstNumber((Integer) cst, ValueType.INT));
       } else if (cst instanceof Float) {
-        long i = Float.floatToRawIntBits((Float) cst);
+        long i = LongUtils.encodeFloat((Float) cst);
         addInstruction(new CfConstNumber(i, ValueType.FLOAT));
       } else if (cst instanceof Handle) {
         addInstruction(

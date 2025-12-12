@@ -31,6 +31,7 @@ import com.android.tools.r8.ir.analysis.value.SingleNumberValue;
 import com.android.tools.r8.ir.conversion.CfBuilder;
 import com.android.tools.r8.ir.conversion.DexBuilder;
 import com.android.tools.r8.lightir.LirBuilder;
+import com.android.tools.r8.utils.LongUtils;
 import java.util.Set;
 
 public class NumberConversion extends Unop {
@@ -165,8 +166,44 @@ public class NumberConversion extends Unop {
 
     switch (type) {
       case INT_TO_BYTE:
-        long rawValue = (byte) num.getIntValue();
-        return valueFactory.createSingleNumberValue(rawValue, typeElement);
+        long rawIntToByteValue = (byte) num.getIntValue();
+        return valueFactory.createSingleNumberValue(rawIntToByteValue, typeElement);
+      case INT_TO_CHAR:
+        long rawIntToCharValue = (char) num.getIntValue();
+        return valueFactory.createSingleNumberValue(rawIntToCharValue, typeElement);
+      case INT_TO_SHORT:
+        long rawIntToShortValue = (short) num.getIntValue();
+        return valueFactory.createSingleNumberValue(rawIntToShortValue, typeElement);
+      case INT_TO_LONG:
+        long rawIntToLongValue = (long) num.getIntValue();
+        return valueFactory.createSingleNumberValue(rawIntToLongValue, typeElement);
+      case INT_TO_FLOAT:
+        long rawIntToFloatValue = LongUtils.encodeFloat((float) num.getIntValue());
+        return valueFactory.createSingleNumberValue(rawIntToFloatValue, typeElement);
+      case INT_TO_DOUBLE:
+        long rawIntToDoubleValue = Double.doubleToLongBits((double) num.getIntValue());
+        return valueFactory.createSingleNumberValue(rawIntToDoubleValue, typeElement);
+      case LONG_TO_INT:
+        long rawLongToIntValue = (int) num.getLongValue();
+        return valueFactory.createSingleNumberValue(rawLongToIntValue, typeElement);
+      case LONG_TO_FLOAT:
+        long rawLongToFloatValue = LongUtils.encodeFloat((float) num.getLongValue());
+        return valueFactory.createSingleNumberValue(rawLongToFloatValue, typeElement);
+      case LONG_TO_DOUBLE:
+        long rawLongToDoubleValue = Double.doubleToLongBits((double) num.getLongValue());
+        return valueFactory.createSingleNumberValue(rawLongToDoubleValue, typeElement);
+      case FLOAT_TO_INT:
+        long rawFloatToIntValue = (int) num.getFloatValue();
+        return valueFactory.createSingleNumberValue(rawFloatToIntValue, typeElement);
+      case FLOAT_TO_LONG:
+        long rawFloatToLongValue = (long) num.getFloatValue();
+        return valueFactory.createSingleNumberValue(rawFloatToLongValue, typeElement);
+      case DOUBLE_TO_INT:
+        long rawDoubleToIntValue = (int) num.getDoubleValue();
+        return valueFactory.createSingleNumberValue(rawDoubleToIntValue, typeElement);
+      case DOUBLE_TO_LONG:
+        long rawDoubleToLongValue = (long) num.getDoubleValue();
+        return valueFactory.createSingleNumberValue(rawDoubleToLongValue, typeElement);
       default:
         return super.getAbstractValue(appView, context, abstractValueSupplier);
     }

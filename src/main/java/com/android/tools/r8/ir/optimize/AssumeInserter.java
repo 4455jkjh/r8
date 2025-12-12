@@ -266,7 +266,8 @@ public class AssumeInserter {
             .getSingleDispatchTarget();
     if (invoke.hasUsedOutValue() && invoke.getOutType().isReferenceType()) {
       AssumeInfo assumeInfo =
-          AssumeInfoLookup.lookupAssumeInfo(appView, resolutionResult, singleTarget);
+          AssumeInfoLookup.lookupAssumeInfo(
+              appView, invoke, code.context(), resolutionResult, singleTarget);
       if (assumeInfo.getAssumeType().getNullability().isDefinitelyNotNull()) {
         assumedValuesBuilder.addNonNullValueKnownToDominateAllUsers(invoke, invoke.outValue());
       }
@@ -355,7 +356,7 @@ public class AssumeInserter {
     DexClassAndField field = resolutionResult.getResolutionPair();
 
     if (field.getType().isReferenceType()) {
-      AssumeInfo assumeInfo = appView.getAssumeInfoCollection().get(field);
+      AssumeInfo assumeInfo = appView.getAssumeInfoCollection().getField(field);
       if (assumeInfo.getAssumeType().getNullability().isDefinitelyNotNull()) {
         assumedValuesBuilder.addNonNullValueKnownToDominateAllUsers(fieldGet, fieldGet.outValue());
       }

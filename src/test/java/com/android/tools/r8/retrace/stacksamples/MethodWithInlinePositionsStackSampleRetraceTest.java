@@ -4,6 +4,7 @@
 package com.android.tools.r8.retrace.stacksamples;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 
 import com.android.tools.r8.NeverInline;
 import com.android.tools.r8.R8TestCompileResultBase;
@@ -43,7 +44,6 @@ public class MethodWithInlinePositionsStackSampleRetraceTest extends StackSample
     return Main.class;
   }
 
-  // TODO(b/462362930): Should use pc encoding.
   @Override
   String getExpectedMap() {
     return StringUtils.joinLines(
@@ -82,12 +82,13 @@ public class MethodWithInlinePositionsStackSampleRetraceTest extends StackSample
   @Override
   void testRetrace(R8TestCompileResultBase<?> compileResult) throws Exception {
     // Expected: `a.a` should retrace to `void Main.test()`.
-    RetraceMethodElement retraceMethodElement =
+    RetraceMethodElement retraceResult =
         getSingleRetraceMethodElement(
             Reference.classFromTypeName(obfuscatedClassName), obfuscatedMethodName, compileResult);
     assertEquals(
         Reference.methodFromMethod(Main.class.getDeclaredMethod("test")),
-        retraceMethodElement.getRetracedMethod().asKnown().getMethodReference());
+        retraceResult.getRetracedMethod().asKnown().getMethodReference());
+    assertFalse(retraceResult.isCompilerSynthesized());
   }
 
   static class Main {

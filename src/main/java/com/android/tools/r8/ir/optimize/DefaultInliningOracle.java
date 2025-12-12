@@ -52,7 +52,6 @@ import com.android.tools.r8.ir.optimize.inliner.WhyAreYouNotInliningReporter;
 import com.android.tools.r8.profile.startup.optimization.StartupBoundaryOptimizationUtils;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
 import com.android.tools.r8.shaking.MainDexInfo;
-import com.android.tools.r8.shaking.assume.AssumeInfoCollection;
 import com.android.tools.r8.utils.BooleanUtils;
 import com.android.tools.r8.utils.InternalOptions;
 import com.android.tools.r8.utils.InternalOptions.InlinerOptions;
@@ -527,16 +526,16 @@ public class DefaultInliningOracle implements InliningOracle {
       SingleResolutionResult<?> resolutionResult,
       ProgramMethod singleTarget,
       WhyAreYouNotInliningReporter whyAreYouNotInliningReporter) {
-    DexMethod singleTargetReference = singleTarget.getReference();
     if (!appView.getKeepInfo(singleTarget).isInliningAllowed(options, singleTarget)) {
       whyAreYouNotInliningReporter.reportPinned();
       return true;
     }
 
-    AssumeInfoCollection assumeInfoCollection = appView.getAssumeInfoCollection();
-    if (assumeInfoCollection.isSideEffectFree(invoke.getInvokedMethod())
-        || assumeInfoCollection.isSideEffectFree(resolutionResult.getResolutionPair())
-        || assumeInfoCollection.isSideEffectFree(singleTargetReference)) {
+    // Check for -assume rules. If an invoke *may* be classified as having no side effects, or the
+    // invoke *may* have a specified return value, then do not inline.
+    if (appView
+        .getAssumeInfoCollection()
+        .neverInlineDueToAssume(invoke, resolutionResult, singleTarget)) {
       return !singleTarget.getDefinition().getOptimizationInfo().forceInline();
     }
 

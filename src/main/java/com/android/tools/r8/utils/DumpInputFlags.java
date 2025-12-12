@@ -5,6 +5,7 @@ package com.android.tools.r8.utils;
 
 import com.android.tools.r8.dump.DumpOptions;
 import com.android.tools.r8.errors.Unreachable;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Map;
@@ -19,11 +20,24 @@ public abstract class DumpInputFlags {
 
   public static DumpInputFlags getDefault() {
     String dumpInputToFile = System.getProperty(DUMP_INPUT_TO_FILE_PROPERTY);
+    if (dumpInputToFile == null) {
+      dumpInputToFile = System.getenv("COM_ANDROID_TOOLS_R8_DUMPINPUTTOFILE");
+    }
     if (dumpInputToFile != null) {
       return dumpToFile(Paths.get(dumpInputToFile));
     }
     String dumpInputToDirectory = System.getProperty(DUMP_INPUT_TO_DIRECTORY_PROPERTY);
+    if (dumpInputToDirectory == null) {
+      dumpInputToDirectory = System.getenv("COM_ANDROID_TOOLS_R8_DUMPINPUTTODIRECTORY");
+    }
     if (dumpInputToDirectory != null) {
+      if (!Files.exists(Paths.get(dumpInputToDirectory))) {
+        throw new RuntimeException(
+            "Dump directory "
+                + dumpInputToDirectory
+                + " not found. Dumping compiler input to a directory requires that the directoty"
+                + " already exists.");
+      }
       return dumpToDirectory(Paths.get(dumpInputToDirectory));
     }
     return noDump();

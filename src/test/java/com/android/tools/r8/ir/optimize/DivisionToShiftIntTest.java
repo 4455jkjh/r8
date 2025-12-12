@@ -8,6 +8,8 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 
 import com.android.tools.r8.CompilationMode;
+import com.android.tools.r8.NeverInline;
+import com.android.tools.r8.NeverPropagateValue;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.references.MethodReference;
@@ -61,6 +63,7 @@ public class DivisionToShiftIntTest extends TestBase {
           "0");
 
   private static final int EXPECTED_DIVISION_COUNT = 31;
+  private static final int EXPECTED_DIVISION_COUNT_AFTER_INLINING = 0;
 
   @Parameterized.Parameter(0)
   public TestParameters parameters;
@@ -88,6 +91,8 @@ public class DivisionToShiftIntTest extends TestBase {
     testForR8(parameters)
         .addProgramClasses(PositiveTest.class)
         .setMode(mode)
+        .enableMemberValuePropagationAnnotations()
+        .enableInliningAnnotations()
         .addKeepMainRule(PositiveTest.class)
         .collectSyntheticItems()
         .compile()
@@ -109,16 +114,19 @@ public class DivisionToShiftIntTest extends TestBase {
                   assertEquals(EXPECTED_DIVISION_COUNT, divideUnsignedCallCount(mainMethod));
                 }
               } else {
+                long backportCallCount = backportCallCount(syntheticItemsTestUtils, mainMethod);
+                long divisionCount =
+                    mainMethod.streamInstructions().filter(InstructionSubject::isDivision).count();
                 if (isBackportInlined) {
-                  long divisionCount =
-                      mainMethod
-                          .streamInstructions()
-                          .filter(InstructionSubject::isDivision)
-                          .count();
-                  assertEquals(EXPECTED_DIVISION_COUNT, divisionCount);
+                  assertEquals(0, backportCallCount);
+                  assertEquals(
+                      parameters.isCfRuntime()
+                          ? EXPECTED_DIVISION_COUNT_AFTER_INLINING
+                          : EXPECTED_DIVISION_COUNT,
+                      divisionCount);
                 } else {
-                  long backportCallCount = backportCallCount(syntheticItemsTestUtils, mainMethod);
                   assertEquals(EXPECTED_DIVISION_COUNT, backportCallCount);
+                  assertEquals(0, divisionCount);
                 }
               }
             })
@@ -180,37 +188,74 @@ public class DivisionToShiftIntTest extends TestBase {
 
   public static class PositiveTest {
     public static void main(String[] args) {
-      System.out.println(Integer.divideUnsigned(123456789, 0b00000000000000000000000000000010));
-      System.out.println(Integer.divideUnsigned(123456789, 0b00000000000000000000000000000100));
-      System.out.println(Integer.divideUnsigned(123456789, 0b00000000000000000000000000001000));
-      System.out.println(Integer.divideUnsigned(123456789, 0b00000000000000000000000000010000));
-      System.out.println(Integer.divideUnsigned(123456789, 0b00000000000000000000000000100000));
-      System.out.println(Integer.divideUnsigned(123456789, 0b00000000000000000000000001000000));
-      System.out.println(Integer.divideUnsigned(123456789, 0b00000000000000000000000010000000));
-      System.out.println(Integer.divideUnsigned(123456789, 0b00000000000000000000000100000000));
-      System.out.println(Integer.divideUnsigned(123456789, 0b00000000000000000000001000000000));
-      System.out.println(Integer.divideUnsigned(123456789, 0b00000000000000000000010000000000));
-      System.out.println(Integer.divideUnsigned(123456789, 0b00000000000000000000100000000000));
-      System.out.println(Integer.divideUnsigned(123456789, 0b00000000000000000001000000000000));
-      System.out.println(Integer.divideUnsigned(123456789, 0b00000000000000000010000000000000));
-      System.out.println(Integer.divideUnsigned(123456789, 0b00000000000000000100000000000000));
-      System.out.println(Integer.divideUnsigned(123456789, 0b00000000000000001000000000000000));
-      System.out.println(Integer.divideUnsigned(123456789, 0b00000000000000010000000000000000));
-      System.out.println(Integer.divideUnsigned(123456789, 0b00000000000000100000000000000000));
-      System.out.println(Integer.divideUnsigned(123456789, 0b00000000000001000000000000000000));
-      System.out.println(Integer.divideUnsigned(123456789, 0b00000000000010000000000000000000));
-      System.out.println(Integer.divideUnsigned(123456789, 0b00000000000100000000000000000000));
-      System.out.println(Integer.divideUnsigned(123456789, 0b00000000001000000000000000000000));
-      System.out.println(Integer.divideUnsigned(123456789, 0b00000000010000000000000000000000));
-      System.out.println(Integer.divideUnsigned(123456789, 0b00000000100000000000000000000000));
-      System.out.println(Integer.divideUnsigned(123456789, 0b00000001000000000000000000000000));
-      System.out.println(Integer.divideUnsigned(123456789, 0b00000010000000000000000000000000));
-      System.out.println(Integer.divideUnsigned(123456789, 0b00000100000000000000000000000000));
-      System.out.println(Integer.divideUnsigned(123456789, 0b00001000000000000000000000000000));
-      System.out.println(Integer.divideUnsigned(123456789, 0b00010000000000000000000000000000));
-      System.out.println(Integer.divideUnsigned(123456789, 0b00100000000000000000000000000000));
-      System.out.println(Integer.divideUnsigned(123456789, 0b01000000000000000000000000000000));
-      System.out.println(Integer.divideUnsigned(123456789, 0b10000000000000000000000000000000));
+      System.out.println(
+          Integer.divideUnsigned(hideConst(123456789), 0b00000000000000000000000000000010));
+      System.out.println(
+          Integer.divideUnsigned(hideConst(123456789), 0b00000000000000000000000000000100));
+      System.out.println(
+          Integer.divideUnsigned(hideConst(123456789), 0b00000000000000000000000000001000));
+      System.out.println(
+          Integer.divideUnsigned(hideConst(123456789), 0b00000000000000000000000000010000));
+      System.out.println(
+          Integer.divideUnsigned(hideConst(123456789), 0b00000000000000000000000000100000));
+      System.out.println(
+          Integer.divideUnsigned(hideConst(123456789), 0b00000000000000000000000001000000));
+      System.out.println(
+          Integer.divideUnsigned(hideConst(123456789), 0b00000000000000000000000010000000));
+      System.out.println(
+          Integer.divideUnsigned(hideConst(123456789), 0b00000000000000000000000100000000));
+      System.out.println(
+          Integer.divideUnsigned(hideConst(123456789), 0b00000000000000000000001000000000));
+      System.out.println(
+          Integer.divideUnsigned(hideConst(123456789), 0b00000000000000000000010000000000));
+      System.out.println(
+          Integer.divideUnsigned(hideConst(123456789), 0b00000000000000000000100000000000));
+      System.out.println(
+          Integer.divideUnsigned(hideConst(123456789), 0b00000000000000000001000000000000));
+      System.out.println(
+          Integer.divideUnsigned(hideConst(123456789), 0b00000000000000000010000000000000));
+      System.out.println(
+          Integer.divideUnsigned(hideConst(123456789), 0b00000000000000000100000000000000));
+      System.out.println(
+          Integer.divideUnsigned(hideConst(123456789), 0b00000000000000001000000000000000));
+      System.out.println(
+          Integer.divideUnsigned(hideConst(123456789), 0b00000000000000010000000000000000));
+      System.out.println(
+          Integer.divideUnsigned(hideConst(123456789), 0b00000000000000100000000000000000));
+      System.out.println(
+          Integer.divideUnsigned(hideConst(123456789), 0b00000000000001000000000000000000));
+      System.out.println(
+          Integer.divideUnsigned(hideConst(123456789), 0b00000000000010000000000000000000));
+      System.out.println(
+          Integer.divideUnsigned(hideConst(123456789), 0b00000000000100000000000000000000));
+      System.out.println(
+          Integer.divideUnsigned(hideConst(123456789), 0b00000000001000000000000000000000));
+      System.out.println(
+          Integer.divideUnsigned(hideConst(123456789), 0b00000000010000000000000000000000));
+      System.out.println(
+          Integer.divideUnsigned(hideConst(123456789), 0b00000000100000000000000000000000));
+      System.out.println(
+          Integer.divideUnsigned(hideConst(123456789), 0b00000001000000000000000000000000));
+      System.out.println(
+          Integer.divideUnsigned(hideConst(123456789), 0b00000010000000000000000000000000));
+      System.out.println(
+          Integer.divideUnsigned(hideConst(123456789), 0b00000100000000000000000000000000));
+      System.out.println(
+          Integer.divideUnsigned(hideConst(123456789), 0b00001000000000000000000000000000));
+      System.out.println(
+          Integer.divideUnsigned(hideConst(123456789), 0b00010000000000000000000000000000));
+      System.out.println(
+          Integer.divideUnsigned(hideConst(123456789), 0b00100000000000000000000000000000));
+      System.out.println(
+          Integer.divideUnsigned(hideConst(123456789), 0b01000000000000000000000000000000));
+      System.out.println(
+          Integer.divideUnsigned(hideConst(123456789), 0b10000000000000000000000000000000));
+    }
+
+    @NeverPropagateValue
+    @NeverInline
+    private static int hideConst(int p) {
+      return p;
     }
   }
 

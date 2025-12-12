@@ -16,10 +16,12 @@ import com.android.tools.r8.graph.OriginalFieldWitness;
 import com.android.tools.r8.ir.code.CatchHandlers.CatchHandler;
 import com.android.tools.r8.ir.code.IfType;
 import com.android.tools.r8.ir.code.MemberType;
+import com.android.tools.r8.ir.code.NumberConversionType;
 import com.android.tools.r8.ir.code.NumericType;
 import com.android.tools.r8.lightir.LirBuilder.IntSwitchPayload;
 import com.android.tools.r8.lightir.LirBuilder.StringSwitchPayload;
 import com.android.tools.r8.naming.dexitembasedstring.NameComputationInfo;
+import com.android.tools.r8.utils.IntUtils;
 import com.android.tools.r8.utils.StringUtils;
 import java.util.Arrays;
 import java.util.List;
@@ -160,7 +162,7 @@ public class LirPrinter<EV> extends LirParsedInstructionCallback<EV> {
 
   @Override
   public void onConstFloat(int value) {
-    appendOutValue().append(Float.intBitsToFloat(value));
+    appendOutValue().append(IntUtils.decodeFloat(value));
   }
 
   @Override
@@ -218,7 +220,7 @@ public class LirPrinter<EV> extends LirParsedInstructionCallback<EV> {
   }
 
   @Override
-  public void onNumberConversion(int opcode, EV value) {
+  public void onNumberConversion(NumberConversionType type, EV value) {
     appendOutValue();
     appendValueArguments(value);
   }

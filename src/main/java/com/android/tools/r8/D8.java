@@ -371,13 +371,13 @@ public final class D8 {
     InternalOptions options = appView.options();
     if (options.isGeneratingDex()) {
       assumeInfoCollectionBuilder
+          .getOrCreateFieldInfo(dexItemFactory.androidOsBuildVersionMembers.SDK_INT)
           .meetAssumeValue(
-              dexItemFactory.androidOsBuildVersionMembers.SDK_INT,
               abstractValueFactory.createNumberFromIntervalValue(
                   options.getMinApiLevel().getLevel(), Integer.MAX_VALUE))
-          .setIsSideEffectFree(dexItemFactory.androidOsBuildVersionMembers.SDK_INT);
+          .setIsSideEffectFree();
     }
-    appView.setAssumeInfoCollection(assumeInfoCollectionBuilder.build());
+    appView.setAssumeInfoCollection(assumeInfoCollectionBuilder.build(appView));
   }
 
   private static void finalizeApplication(
