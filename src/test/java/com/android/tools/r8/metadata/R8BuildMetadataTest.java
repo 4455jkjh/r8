@@ -80,7 +80,6 @@ public class R8BuildMetadataTest extends TestBase {
                 })
             .getBuildMetadata();
     String json = buildMetadata.toJson();
-    System.out.println(json);
     // Inspecting the exact contents is not important here, but it *is* important to test that the
     // property names are unobfuscated when testing with R8lib (!).
     assertThat(json, containsString("\"version\":\"" + Version.LABEL + "\""));
@@ -118,6 +117,12 @@ public class R8BuildMetadataTest extends TestBase {
     builder
         .addProgramClasses(Main.class, PostStartup.class)
         .addArtProfileForRewriting(artProfile)
+        // To avoid stripping of R8 stats metadata.
+        .addOptionsModification(
+            options -> {
+              assertEquals(Version.LABEL, options.buildMetadataVersion);
+              options.buildMetadataVersion = "99.99.99";
+            })
         .allowDiagnosticInfoMessages(parameters.canUseNativeMultidex())
         .applyIf(
             parameters.isDexRuntime(),
@@ -235,7 +240,7 @@ public class R8BuildMetadataTest extends TestBase {
     // Stats metadata.
     assertNotNull(buildMetadata.getStatsMetadata());
     // Version metadata.
-    assertEquals(Version.LABEL, buildMetadata.getVersion());
+    assertEquals("99.99.99", buildMetadata.getVersion());
   }
 
   static class Main {
