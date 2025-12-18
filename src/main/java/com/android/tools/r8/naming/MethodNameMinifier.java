@@ -24,6 +24,7 @@ import com.android.tools.r8.utils.timing.Timing;
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
 import com.google.common.collect.ImmutableMap;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -278,9 +279,19 @@ class MethodNameMinifier {
         appView.dexItemFactory().objectType,
         appView.dexItemFactory().objectType,
         rootReservationState);
+    // Include classpath classes so that we also reserve the names in classpath classes that inherit
+    // from program classes.
+    List<DexClass> classes =
+        new ArrayList<>(
+            appView.appInfo().classes().size()
+                + appView.app().asDirect().classpathClasses().size());
+    classes.addAll(appView.appInfo().classesWithDeterministicOrder());
+    classes.addAll(
+        ListUtils.sort(
+            appView.app().asDirect().classpathClasses(), Comparator.comparing(DexClass::getType)));
     TopDownClassHierarchyTraversal.forAllClasses(appView)
         .visit(
-            appView.appInfo().classesWithDeterministicOrder(),
+            classes,
             clazz -> {
               DexType type = clazz.type;
               DexType frontier = frontiers.getOrDefault(clazz.superType, type);
