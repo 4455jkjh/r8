@@ -2215,6 +2215,13 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
 
   public static class TestingOptions {
 
+    public int classToDexDistributionRefinementPasses =
+        SystemPropertyUtils.parseSystemPropertyOrDefault(
+            "com.android.tools.r8.dex.refinementpasses", 0);
+    public int classToDexDistributionRefinementLegRoomPercentage =
+        SystemPropertyUtils.parseSystemPropertyOrDefault(
+            "com.android.tools.r8.dex.refinementlegroom", 5);
+
     public boolean enableEmbeddedKeepAnnotations =
         SystemPropertyUtils.parseSystemPropertyOrDefault(
             "com.android.tools.r8.enableKeepAnnotations", false);
@@ -2280,10 +2287,6 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
         System.getProperty("com.android.tools.r8.dexContainerExperiment") != null;
     public boolean nullOutDebugInfo =
         System.getProperty("com.android.tools.r8.nullOutDebugInfo") != null;
-
-    // Testing options to analyse locality of items in DEX files when they are generated.
-    public boolean calculateItemUseCountInDex = false;
-    public boolean calculateItemUseCountInDexDumpSingleUseStrings = false;
 
     public boolean enableBinopOptimization = true;
 

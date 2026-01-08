@@ -22,8 +22,10 @@ import com.android.tools.r8.SourceFileEnvironment;
 import com.android.tools.r8.debuginfo.DebugRepresentation;
 import com.android.tools.r8.debuginfo.DebugRepresentation.DebugRepresentationPredicate;
 import com.android.tools.r8.dex.FileWriter.ByteBufferResult;
-import com.android.tools.r8.dex.VirtualFile.FilePerInputClassDistributor;
-import com.android.tools.r8.dex.VirtualFile.ItemUseInfo;
+import com.android.tools.r8.dex.distribution.Distributor;
+import com.android.tools.r8.dex.distribution.FilePerInputClassDistributor;
+import com.android.tools.r8.dex.distribution.FillFilesDistributor;
+import com.android.tools.r8.dex.distribution.MonoDexDistributor;
 import com.android.tools.r8.dex.jumbostrings.JumboStringRewriter;
 import com.android.tools.r8.errors.CompilationError;
 import com.android.tools.r8.features.FeatureSplitConfiguration.DataResourceProvidersAndConsumer;
@@ -33,7 +35,6 @@ import com.android.tools.r8.graph.DexAnnotation;
 import com.android.tools.r8.graph.DexAnnotationSet;
 import com.android.tools.r8.graph.DexEncodedField;
 import com.android.tools.r8.graph.DexEncodedMethod;
-import com.android.tools.r8.graph.DexItem;
 import com.android.tools.r8.graph.DexItemFactory;
 import com.android.tools.r8.graph.DexProgramClass;
 import com.android.tools.r8.graph.DexString;
@@ -182,7 +183,8 @@ public class ApplicationWriter {
     return appView.getNamingLens();
   }
 
-  private List<VirtualFile> distribute(ExecutorService executorService) {
+  private List<VirtualFile> distribute(ExecutorService executorService, Timing timing)
+      throws ExecutionException {
     Collection<DexProgramClass> classes = appView.appInfo().classes();
     Collection<DexProgramClass> globalSynthetics = new ArrayList<>();
     if (appView.options().intermediate && appView.options().hasGlobalSyntheticsConsumer()) {
@@ -203,10 +205,10 @@ public class ApplicationWriter {
     }
 
     // Distribute classes into dex files.
-    VirtualFile.Distributor distributor;
+    Distributor distributor;
     if (options.isGeneratingDexFilePerClassFile()) {
       distributor =
-          new VirtualFile.FilePerInputClassDistributor(
+          new FilePerInputClassDistributor(
               this,
               classes,
               options.getDexFilePerClassFileConsumer().combineSyntheticClassesWithPrimaryClass());
@@ -214,7 +216,7 @@ public class ApplicationWriter {
         && options.mainDexKeepRules.isEmpty()
         && appView.appInfo().getMainDexInfo().isEmpty()
         && options.enableMainDexListCheck) {
-      distributor = new VirtualFile.MonoDexDistributor(this, classes, options);
+      distributor = new MonoDexDistributor(this, classes, options, executorService);
     } else {
       // Retrieve the startup order for writing the app. Use an empty startup profile if the startup
       // profile should not be used for layout.
@@ -223,14 +225,13 @@ public class ApplicationWriter {
               ? appView.getStartupProfile()
               : StartupProfile.empty();
       distributor =
-          new VirtualFile.FillFilesDistributor(
-              this, classes, options, executorService, startupProfile);
+          new FillFilesDistributor(this, classes, options, executorService, startupProfile);
     }
 
-    List<VirtualFile> virtualFiles = distributor.run();
+    List<VirtualFile> virtualFiles = distributor.run(timing);
     if (!globalSynthetics.isEmpty()) {
       List<VirtualFile> files =
-          new FilePerInputClassDistributor(this, globalSynthetics, false).run();
+          new FilePerInputClassDistributor(this, globalSynthetics, false).run(timing);
       globalSyntheticFiles = new HashSet<>(files);
       virtualFiles.addAll(globalSyntheticFiles);
       globalsSyntheticsConsumer =
@@ -264,7 +265,9 @@ public class ApplicationWriter {
         DexString desc = getNamingLens().lookupDescriptor(clazz.type);
         toWrite.addChecksum(desc.toString(), inputChecksums.getLong(desc));
       }
-      file.injectString(appView.dexItemFactory().createString(toWrite.toJsonString()));
+      file.getTransaction()
+          .addChecksumString(appView.dexItemFactory().createString(toWrite.toJsonString()));
+      file.commitTransaction();
     }
   }
 
@@ -334,7 +337,7 @@ public class ApplicationWriter {
 
       // Generate the dex file contents.
       timing.begin("Distribute");
-      List<VirtualFile> virtualFiles = distribute(executorService);
+      List<VirtualFile> virtualFiles = distribute(executorService, timing);
       timing.end();
       if (options.encodeChecksums) {
         timing.begin("Encode checksums");
@@ -504,38 +507,11 @@ public class ApplicationWriter {
     return dexSourceFile;
   }
 
-  private <T extends DexItem> void printUse(Map<T, ItemUseInfo> useMap, String label) {
-    assert options.testing.calculateItemUseCountInDex;
-    List<IntBox> notMany = new ArrayList<>();
-    for (int i = 0; i < ItemUseInfo.getManyCount() - 1; i++) {
-      notMany.add(new IntBox());
-    }
-    IntBox many = new IntBox();
-    useMap.forEach(
-        (item, itemUseInfo) -> {
-          if (itemUseInfo.isMany()) {
-            many.increment();
-          } else {
-            assert itemUseInfo.getSize() >= 1;
-            notMany.get(itemUseInfo.getSize() - 1).increment();
-          }
-        });
-
-    System.out.print(label);
-    for (int i = 0; i < ItemUseInfo.getManyCount() - 1; i++) {
-      System.out.print("," + notMany.get(i).get());
-      notMany.add(new IntBox());
-    }
-    System.out.println("," + many.get());
-  }
-
   protected void writeVirtualFile(
       VirtualFile virtualFile, Timing timing, List<DexString> forcedStrings) {
     if (virtualFile.isEmpty()) {
       return;
     }
-
-    printItemUseInfo(virtualFile);
 
     ProgramConsumer consumer;
     ByteBufferProvider byteBufferProvider;
@@ -927,41 +903,6 @@ public class ApplicationWriter {
       DexString value = internalCompute(proguardMapId);
       computed = true;
       return value;
-    }
-  }
-
-  protected void printItemUseInfo(VirtualFile virtualFile) {
-    if (options.testing.calculateItemUseCountInDex) {
-      synchronized (System.out) {
-        System.out.print("\"Item\"");
-        for (int i = 0; i < ItemUseInfo.getManyCount() - 1; i++) {
-          System.out.print(",\"" + (i + 1) + " use\"");
-        }
-        System.out.println(",\"Not single use\"");
-        printUse(virtualFile.indexedItems.stringsUse, "Strings");
-        printUse(virtualFile.indexedItems.typesUse, "Types");
-        printUse(virtualFile.indexedItems.protosUse, "Protos");
-        printUse(virtualFile.indexedItems.fieldsUse, "Fields");
-        printUse(virtualFile.indexedItems.methodsUse, "Methods");
-        printUse(virtualFile.indexedItems.callSitesUse, "CallSites");
-        printUse(virtualFile.indexedItems.methodHandlesUse, "MethodHandles");
-        if (options.testing.calculateItemUseCountInDexDumpSingleUseStrings) {
-          virtualFile.indexedItems.stringsUse.forEach(
-              (string, info) -> {
-                if (info.getSizeOrMany() == 1) {
-                  System.out.println(info.getUse().iterator().next() + ": " + string.toString());
-                }
-              });
-        }
-      }
-    } else {
-      assert virtualFile.indexedItems.stringsUse.isEmpty();
-      assert virtualFile.indexedItems.typesUse.isEmpty();
-      assert virtualFile.indexedItems.protosUse.isEmpty();
-      assert virtualFile.indexedItems.fieldsUse.isEmpty();
-      assert virtualFile.indexedItems.methodsUse.isEmpty();
-      assert virtualFile.indexedItems.callSitesUse.isEmpty();
-      assert virtualFile.indexedItems.methodHandlesUse.isEmpty();
     }
   }
 }

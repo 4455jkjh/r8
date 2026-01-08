@@ -58,9 +58,9 @@ import com.android.tools.r8.shaking.KeepMethodInfo;
 import com.android.tools.r8.shaking.LibraryModeledPredicate;
 import com.android.tools.r8.shaking.MainDexInfo;
 import com.android.tools.r8.shaking.ProguardCompatibilityActions;
-import com.android.tools.r8.shaking.RootSetUtils.MainDexRootSet;
-import com.android.tools.r8.shaking.RootSetUtils.RootSet;
 import com.android.tools.r8.shaking.assume.AssumeInfoCollection;
+import com.android.tools.r8.shaking.rootset.MainDexRootSet;
+import com.android.tools.r8.shaking.rootset.RootSet;
 import com.android.tools.r8.synthesis.SyntheticItems;
 import com.android.tools.r8.synthesis.SyntheticItems.GlobalSyntheticsStrategy;
 import com.android.tools.r8.utils.InternalOptions;
@@ -216,11 +216,7 @@ public class AppView<T extends AppInfo> implements DexDefinitionSupplier, Librar
             () -> DontWarnConfiguration.create(options().getProguardConfiguration()));
     this.initClassLens = timing.time("Init class lens", InitClassLens::getThrowingInstance);
     timing.begin("Create argument propagator");
-    if (enableWholeProgramOptimizations() && options().callSiteOptimizationOptions().isEnabled()) {
-      this.argumentPropagator = new ArgumentPropagator(withLiveness());
-    } else {
-      this.argumentPropagator = null;
-    }
+    this.argumentPropagator = ArgumentPropagator.create(withLiveness());
     if (enableWholeProgramOptimizations() && options().isOptimizedResourceShrinking()) {
       resourceShrinkerState = ResourceShrinkerUtils.createResourceShrinkerState(this);
     }
