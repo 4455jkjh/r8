@@ -494,6 +494,7 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
   public int minimumStringSwitchSize = 3;
   public boolean enableEnumValueOptimization = true;
   public boolean enableEnumSwitchMapRemoval = true;
+  public boolean enableAtomicFieldUpdaterOptimization = false;
   public final OutlineOptions outline = new OutlineOptions();
   public boolean enableInitializedClassesInInstanceMethodsAnalysis = true;
   public boolean enableRedundantFieldLoadElimination = true;
@@ -2955,7 +2956,7 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
   //
   // See b/116683601 and b/116837585.
   public boolean canHaveThisJitCodeDebuggingBug() {
-    return canHaveBugPresentUntilExclusive(AndroidApiLevel.Q);
+    return canHaveBugPresentUntilExclusive(AndroidApiLevel.Q) && debug;
   }
 
   // The dalvik jit had a bug where the long operations add, sub, or, xor and and would write

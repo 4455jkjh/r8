@@ -8,7 +8,6 @@ import static com.android.tools.r8.utils.MapUtils.ignoreKey;
 import static com.google.common.base.Predicates.alwaysFalse;
 
 import com.android.tools.r8.errors.Unreachable;
-import com.android.tools.r8.graph.AppInfoWithClassHierarchy;
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.DexClass;
 import com.android.tools.r8.graph.DexDefinition;
@@ -35,7 +34,6 @@ import com.android.tools.r8.shaking.rules.MaterializedRules;
 import com.android.tools.r8.shaking.rules.ReferencedFromExcludedClassInR8PartialRule;
 import com.android.tools.r8.utils.InternalOptions;
 import com.android.tools.r8.utils.ListUtils;
-import com.android.tools.r8.utils.MapUtils;
 import com.android.tools.r8.utils.timing.Timing;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Streams;
@@ -47,32 +45,20 @@ import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.function.BiConsumer;
 import java.util.function.Consumer;
-import java.util.function.Function;
 import java.util.function.Predicate;
-import java.util.function.Supplier;
 
 // Non-mutable collection of keep information pertaining to a program.
 public abstract class KeepInfoCollection {
 
-  abstract void forEachRuleInstance(
-      AppView<? extends AppInfoWithClassHierarchy> appView,
-      BiConsumer<DexProgramClass, KeepClassInfo.Joiner> classRuleInstanceConsumer,
-      BiConsumer<ProgramField, KeepFieldInfo.Joiner> fieldRuleInstanceConsumer,
-      BiConsumer<ProgramMethod, KeepMethodInfo.Joiner> methodRuleInstanceConsumer);
-
-  // TODO(b/157538235): This should not be bottom.
   private static KeepClassInfo keepInfoForNonProgramClass() {
     return KeepClassInfo.bottom();
   }
 
-  // TODO(b/157538235): This should not be bottom.
   private static KeepMethodInfo keepInfoForNonProgramMethod() {
     return KeepMethodInfo.bottom();
   }
 
-  // TODO(b/157538235): This should not be bottom.
   private static KeepFieldInfo keepInfoForNonProgramField() {
     return KeepFieldInfo.bottom();
   }
@@ -249,6 +235,8 @@ public abstract class KeepInfoCollection {
         && getInfo(definition).isMinificationAllowed(configuration);
   }
 
+  public abstract KeepInfoCollection rebuildWithoutEventConsumer();
+
   public abstract boolean verifyPinnedTypesAreLive(Set<DexType> liveTypes, InternalOptions options);
 
   // TODO(b/156715504): We should try to avoid the need for iterating pinned items.
@@ -294,32 +282,27 @@ public abstract class KeepInfoCollection {
     private final Map<DexMethod, KeepMethodInfo> keepMethodInfo;
     private final Map<DexField, KeepFieldInfo> keepFieldInfo;
 
-    // Map of applied rules for which keys may need to be mutated.
-    private final Map<DexType, KeepClassInfo.Joiner> classRuleInstances;
-    private final Map<DexField, KeepFieldInfo.Joiner> fieldRuleInstances;
-    private final Map<DexMethod, KeepMethodInfo.Joiner> methodRuleInstances;
-
     private boolean allowKotlinMetadataRemoval = true;
 
     // Collection of materialized rules.
     private MaterializedRules materializedRules;
 
     private final KeepInfoCanonicalizer canonicalizer;
+    private KeepInfoCollectionEventConsumer eventConsumer;
 
-    MutableKeepInfoCollection(AppView<?> appView, Enqueuer enqueuer) {
+    MutableKeepInfoCollection(
+        AppView<?> appView, Enqueuer enqueuer, KeepInfoCollectionEventConsumer eventConsumer) {
       this(
           appView,
           enqueuer.getMode(),
           new IdentityHashMap<>(),
           new IdentityHashMap<>(),
           new IdentityHashMap<>(),
-          new IdentityHashMap<>(),
-          new IdentityHashMap<>(),
-          new IdentityHashMap<>(),
           MaterializedRules.empty(),
           appView.testing().enableKeepInfoCanonicalizer
               ? KeepInfoCanonicalizer.newCanonicalizer()
-              : KeepInfoCanonicalizer.newNopCanonicalizer());
+              : KeepInfoCanonicalizer.newNopCanonicalizer(),
+          eventConsumer);
     }
 
     private MutableKeepInfoCollection(
@@ -328,22 +311,18 @@ public abstract class KeepInfoCollection {
         Map<DexType, KeepClassInfo> keepClassInfo,
         Map<DexMethod, KeepMethodInfo> keepMethodInfo,
         Map<DexField, KeepFieldInfo> keepFieldInfo,
-        Map<DexType, KeepClassInfo.Joiner> classRuleInstances,
-        Map<DexField, KeepFieldInfo.Joiner> fieldRuleInstances,
-        Map<DexMethod, KeepMethodInfo.Joiner> methodRuleInstances,
         MaterializedRules materializedRules,
-        KeepInfoCanonicalizer keepInfoCanonicalizer) {
+        KeepInfoCanonicalizer keepInfoCanonicalizer,
+        KeepInfoCollectionEventConsumer eventConsumer) {
       this.appView = appView;
       this.factory = appView.dexItemFactory();
       this.mode = mode;
       this.keepClassInfo = keepClassInfo;
       this.keepMethodInfo = keepMethodInfo;
       this.keepFieldInfo = keepFieldInfo;
-      this.classRuleInstances = classRuleInstances;
-      this.fieldRuleInstances = fieldRuleInstances;
-      this.methodRuleInstances = methodRuleInstances;
       this.materializedRules = materializedRules;
       this.canonicalizer = keepInfoCanonicalizer;
+      this.eventConsumer = eventConsumer;
     }
 
     public void setMaterializedRules(MaterializedRules materializedRules) {
@@ -399,27 +378,9 @@ public abstract class KeepInfoCollection {
               newClassInfo,
               newMethodInfo,
               newFieldInfo,
-              rewriteRuleInstances(
-                  classRuleInstances,
-                  clazz -> {
-                    DexType rewritten = lens.lookupType(clazz);
-                    if (rewritten.isClassType()) {
-                      return rewritten;
-                    }
-                    assert rewritten.isIntType();
-                    return null;
-                  },
-                  KeepClassInfo::newEmptyJoiner),
-              rewriteRuleInstances(
-                  fieldRuleInstances,
-                  lens::getRenamedFieldSignature,
-                  KeepFieldInfo::newEmptyJoiner),
-              rewriteRuleInstances(
-                  methodRuleInstances,
-                  lens::getRenamedMethodSignature,
-                  KeepMethodInfo::newEmptyJoiner),
               materializedRules.rewriteWithLens(lens),
-              canonicalizer);
+              canonicalizer,
+              eventConsumer);
       timing.end();
       return result;
     }
@@ -508,59 +469,6 @@ public abstract class KeepInfoCollection {
       return newMethodInfo;
     }
 
-    private static <R, J extends KeepInfo.Joiner<J, ?, ?>> Map<R, J> rewriteRuleInstances(
-        Map<R, J> ruleInstances, Function<R, R> rewriter, Supplier<J> newEmptyJoiner) {
-      return MapUtils.transform(
-          ruleInstances,
-          IdentityHashMap::new,
-          rewriter,
-          Function.identity(),
-          (reference, joiner, otherJoiner) ->
-              newEmptyJoiner.get().merge(joiner).merge(otherJoiner));
-    }
-
-    @Override
-    void forEachRuleInstance(
-        AppView<? extends AppInfoWithClassHierarchy> appView,
-        BiConsumer<DexProgramClass, KeepClassInfo.Joiner> classRuleInstanceConsumer,
-        BiConsumer<ProgramField, KeepFieldInfo.Joiner> fieldRuleInstanceConsumer,
-        BiConsumer<ProgramMethod, KeepMethodInfo.Joiner> methodRuleInstanceConsumer) {
-      classRuleInstances.forEach(
-          (type, ruleInstance) -> {
-            DexProgramClass clazz = asProgramClassOrNull(appView.definitionFor(type));
-            if (clazz != null) {
-              classRuleInstanceConsumer.accept(clazz, ruleInstance);
-            }
-          });
-      fieldRuleInstances.forEach(
-          (fieldReference, ruleInstance) -> {
-            DexProgramClass holder =
-                asProgramClassOrNull(appView.definitionFor(fieldReference.getHolderType()));
-            ProgramField field = holder.lookupProgramField(fieldReference);
-            if (field != null) {
-              fieldRuleInstanceConsumer.accept(field, ruleInstance);
-            }
-          });
-      methodRuleInstances.forEach(
-          (methodReference, ruleInstance) -> {
-            DexProgramClass holder =
-                asProgramClassOrNull(appView.definitionFor(methodReference.getHolderType()));
-            ProgramMethod method = holder.lookupProgramMethod(methodReference);
-            if (method != null) {
-              methodRuleInstanceConsumer.accept(method, ruleInstance);
-            }
-          });
-    }
-
-    void evaluateMethodRule(ProgramMethod method, KeepMethodInfo.Joiner minimumKeepInfo) {
-      if (!minimumKeepInfo.isBottom()) {
-        joinMethod(method, joiner -> joiner.merge(minimumKeepInfo));
-        methodRuleInstances
-            .computeIfAbsent(method.getReference(), ignoreKey(KeepMethodInfo::newEmptyJoiner))
-            .merge(minimumKeepInfo);
-      }
-    }
-
     public void ensureCompilerSynthesizedClass(DexProgramClass clazz) {
       keepClassInfo.computeIfAbsent(clazz.getType(), ignoreKey(SyntheticKeepClassInfo::bottom));
     }
@@ -609,6 +517,7 @@ public abstract class KeepInfoCollection {
     }
 
     public void joinClass(DexProgramClass clazz, Consumer<? super KeepClassInfo.Joiner> fn) {
+      eventConsumer.acceptKeepClassInfo(clazz.getType(), fn);
       KeepClassInfo info = getClassInfo(clazz);
       if (info.isTop()) {
         assert info == KeepClassInfo.top();
@@ -701,6 +610,7 @@ public abstract class KeepInfoCollection {
     }
 
     public void joinMethod(ProgramMethod method, Consumer<? super KeepMethodInfo.Joiner> fn) {
+      eventConsumer.acceptKeepMethodInfo(method.getReference(), fn);
       KeepMethodInfo info = getMethodInfo(method);
       if (info.isTop()) {
         assert info == KeepMethodInfo.top();
@@ -721,6 +631,7 @@ public abstract class KeepInfoCollection {
     }
 
     public void joinField(ProgramField field, Consumer<? super KeepFieldInfo.Joiner> fn) {
+      eventConsumer.acceptKeepFieldInfo(field.getReference(), fn);
       KeepFieldInfo info = getFieldInfo(field);
       if (info.isTop()) {
         assert info == KeepFieldInfo.top();
@@ -749,6 +660,19 @@ public abstract class KeepInfoCollection {
     public KeepInfoCollection mutate(Consumer<MutableKeepInfoCollection> mutator) {
       mutator.accept(this);
       return this;
+    }
+
+    @Override
+    public KeepInfoCollection rebuildWithoutEventConsumer() {
+      return new MutableKeepInfoCollection(
+          appView,
+          mode,
+          keepClassInfo,
+          keepMethodInfo,
+          keepFieldInfo,
+          materializedRules,
+          canonicalizer,
+          new EmptyKeepInfoCollectionEventConsumer());
     }
 
     @Override

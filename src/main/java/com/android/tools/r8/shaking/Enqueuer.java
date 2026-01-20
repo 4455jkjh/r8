@@ -18,6 +18,8 @@ import static java.util.Collections.emptySet;
 
 import com.android.build.shrinker.r8integration.R8ResourceShrinkerState;
 import com.android.tools.r8.Diagnostic;
+import com.android.tools.r8.blastradius.BlastRadiusReporter;
+import com.android.tools.r8.blastradius.RootSetBlastRadius;
 import com.android.tools.r8.cf.code.CfInstruction;
 import com.android.tools.r8.cf.code.CfInvoke;
 import com.android.tools.r8.contexts.CompilationContext.MethodProcessingContext;
@@ -257,6 +259,7 @@ public class Enqueuer {
   // thread."
   private ReentrantReadWriteLock appReadWriteLock = new ReentrantReadWriteLock(true);
   private final AppView<AppInfoWithClassHierarchy> appView;
+  private final RootSetBlastRadius.Builder blastRadius;
   private final EnqueuerDeferredTracing deferredTracing;
   private final EnqueuerDeferredAnnotationTracing deferredAnnotationTracing;
   private final ExecutorService executorService;
@@ -493,6 +496,7 @@ public class Enqueuer {
     InternalOptions options = appView.options();
     this.appInfo = appView.appInfo();
     this.appView = appView.withClassHierarchy();
+    this.blastRadius = RootSetBlastRadius.builder(appView, mode);
     this.mode = mode;
     this.profileCollectionAdditions = profileCollectionAdditions;
     this.deferredTracing = EnqueuerDeferredTracing.create(appView, this, mode);
@@ -505,7 +509,9 @@ public class Enqueuer {
     this.options = options;
     this.taskCollection =
         new EnqueuerTaskCollection(this, options.getThreadingModule(), executorService);
-    this.keepInfo = new MutableKeepInfoCollection(appView, this);
+    this.keepInfo =
+        new MutableKeepInfoCollection(
+            appView, this, KeepInfoCollectionEventConsumer.create(blastRadius));
     this.reflectiveIdentification = new EnqueuerReflectiveIdentification(appView, this);
     this.useRegistryFactory = createUseRegistryFactory();
     this.worklist = EnqueuerWorklist.createWorklist(this, options.getThreadingModule());
@@ -3925,15 +3931,7 @@ public class Enqueuer {
       if (keepInfoCollection != null) {
         timing.begin("Retain keep info");
         applicableRules = keepInfoCollection.getApplicableRules();
-        EnqueuerEvent preconditionEvent = UnconditionalKeepInfoEvent.get();
         keepInfo.registerCompilerSynthesizedItems(keepInfoCollection);
-        keepInfoCollection.forEachRuleInstance(
-            appView,
-            (clazz, minimumKeepInfo) ->
-                applyMinimumKeepInfoWhenLive(clazz, minimumKeepInfo, preconditionEvent),
-            (field, minimumKeepInfo) ->
-                applyMinimumKeepInfoWhenLive(field, minimumKeepInfo, preconditionEvent),
-            this::applyMinimumKeepInfoWhenLiveOrTargeted);
         timing.end();
       }
     }
@@ -3970,6 +3968,7 @@ public class Enqueuer {
       return null;
     }
     timing.begin("Create result");
+    reportBlastRadius();
     EnqueuerResult result = createEnqueuerResult(appInfo, timing);
     profileCollectionAdditions.commit(appView);
     timing.end();
@@ -4596,6 +4595,12 @@ public class Enqueuer {
     return true;
   }
 
+  private void reportBlastRadius() {
+    if (blastRadius != null) {
+      BlastRadiusReporter.create().report(blastRadius.build().getBlastRadius());
+    }
+  }
+
   @SuppressWarnings("ReferenceEquality")
   private EnqueuerResult createEnqueuerResult(AppInfoWithClassHierarchy appInfo, Timing timing)
       throws ExecutionException {
@@ -4752,7 +4757,7 @@ public class Enqueuer {
             fieldAccessInfoCollection,
             objectAllocationInfoCollection.build(appInfo),
             callSites,
-            getKeepInfo(),
+            getKeepInfo().rebuildWithoutEventConsumer(),
             rootSet.mayHaveSideEffects,
             amendWithCompanionMethods(rootSet.alwaysInline),
             amendWithCompanionMethods(rootSet.reprocess),
@@ -4791,11 +4796,27 @@ public class Enqueuer {
                   .getUnconditionalMinimumKeepInfoOrDefault(MinimumKeepInfoCollection.empty())
                   .getOrDefault(methodReference, KeepMethodInfo.newEmptyJoiner())
                   .asMethodJoiner();
+          if (minimumKeepInfoForCompanion.isBottom()
+              && extraMinimumKeepInfoForCompanion.isBottom()) {
+            return;
+          }
+          DependentMinimumKeepInfoCollection minimumKeepInfo =
+              appView.rootSet().getDependentMinimumKeepInfo();
+          minimumKeepInfo
+              .getOrCreateUnconditionalMinimumKeepInfo()
+              .getOrCreateMinimumKeepInfoFor(companionReference)
+              .asMethodJoiner()
+              .merge(minimumKeepInfoForCompanion)
+              .merge(extraMinimumKeepInfoForCompanion);
           mutateKeepInfo(
               companion,
               (k, m) ->
-                  k.evaluateMethodRule(
-                      m, minimumKeepInfoForCompanion.merge(extraMinimumKeepInfoForCompanion)));
+                  k.joinMethod(
+                      m,
+                      joiner ->
+                          joiner
+                              .merge(minimumKeepInfoForCompanion)
+                              .merge(extraMinimumKeepInfoForCompanion)));
         });
   }
 

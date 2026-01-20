@@ -1,0 +1,104 @@
+// Copyright (c) 2026, the R8 project authors. Please see the AUTHORS file
+// for details. All rights reserved. Use of this source code is governed by a
+// BSD-style license that can be found in the LICENSE file.
+package com.android.tools.r8.blastradius;
+
+import com.android.tools.r8.graph.AppInfoWithClassHierarchy;
+import com.android.tools.r8.graph.AppView;
+import com.android.tools.r8.graph.DexField;
+import com.android.tools.r8.graph.DexMethod;
+import com.android.tools.r8.graph.DexReference;
+import com.android.tools.r8.graph.DexType;
+import com.android.tools.r8.shaking.Enqueuer;
+import com.android.tools.r8.shaking.KeepClassInfo;
+import com.android.tools.r8.shaking.KeepFieldInfo;
+import com.android.tools.r8.shaking.KeepInfo;
+import com.android.tools.r8.shaking.KeepInfoCollectionEventConsumer;
+import com.android.tools.r8.shaking.KeepMethodInfo;
+import com.android.tools.r8.shaking.ProguardKeepRuleBase;
+import com.android.tools.r8.utils.InternalOptions;
+import java.util.Collection;
+import java.util.IdentityHashMap;
+import java.util.Map;
+import java.util.function.BiConsumer;
+import java.util.function.Consumer;
+
+public class RootSetBlastRadius {
+
+  private final Map<ProguardKeepRuleBase, RootSetBlastRadiusForRule> blastRadius;
+
+  private RootSetBlastRadius(Map<ProguardKeepRuleBase, RootSetBlastRadiusForRule> blastRadius) {
+    this.blastRadius = blastRadius;
+  }
+
+  public static Builder builder(
+      AppView<? extends AppInfoWithClassHierarchy> appView, Enqueuer.Mode mode) {
+    InternalOptions options = appView.options();
+    return options.hasProguardConfiguration()
+            && options.getProguardConfiguration().isPrintBlastRadius()
+            && mode.isFinalTreeShaking()
+        ? new Builder()
+        : null;
+  }
+
+  public Collection<RootSetBlastRadiusForRule> getBlastRadius() {
+    return blastRadius.values();
+  }
+
+  public static class Builder implements KeepInfoCollectionEventConsumer {
+
+    private final Map<ProguardKeepRuleBase, RootSetBlastRadiusForRule> blastRadius =
+        new IdentityHashMap<>();
+
+    @Override
+    public void acceptKeepClassInfo(
+        DexType type, Consumer<? super KeepClassInfo.Joiner> keepInfoEffect) {
+      acceptKeepInfo(
+          type,
+          keepInfoEffect,
+          KeepClassInfo.newEmptyJoiner(),
+          RootSetBlastRadiusForRule::addMatchedClass);
+    }
+
+    @Override
+    public void acceptKeepFieldInfo(
+        DexField field, Consumer<? super KeepFieldInfo.Joiner> keepInfoEffect) {
+      acceptKeepInfo(
+          field,
+          keepInfoEffect,
+          KeepFieldInfo.newEmptyJoiner(),
+          RootSetBlastRadiusForRule::addMatchedField);
+    }
+
+    @Override
+    public void acceptKeepMethodInfo(
+        DexMethod method, Consumer<? super KeepMethodInfo.Joiner> keepInfoEffect) {
+      acceptKeepInfo(
+          method,
+          keepInfoEffect,
+          KeepMethodInfo.newEmptyJoiner(),
+          RootSetBlastRadiusForRule::addMatchedMethod);
+    }
+
+    private <R extends DexReference, J extends KeepInfo.Joiner<?, ?, ?>> void acceptKeepInfo(
+        R reference,
+        Consumer<? super J> keepInfoEffect,
+        J emptyJoiner,
+        BiConsumer<RootSetBlastRadiusForRule, R> addReferenceToRuleBlastRadius) {
+      keepInfoEffect.accept(emptyJoiner);
+      for (ProguardKeepRuleBase rule : emptyJoiner.getRules()) {
+        if (rule.isProguardIfRule()) {
+          // Perform attribution to the root -if rule.
+          rule = rule.asProguardIfRule().getParentOrThis();
+        }
+        RootSetBlastRadiusForRule ruleBlastRadius =
+            blastRadius.computeIfAbsent(rule, RootSetBlastRadiusForRule::new);
+        addReferenceToRuleBlastRadius.accept(ruleBlastRadius, reference);
+      }
+    }
+
+    public RootSetBlastRadius build() {
+      return new RootSetBlastRadius(blastRadius);
+    }
+  }
+}
