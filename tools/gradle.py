@@ -100,10 +100,10 @@ def EnsureDeps():
 def RunGradleIn(gradleCmd, args, cwd, throw_on_failure=True, env=None):
     EnsureDeps()
     cmd = [gradleCmd]
-    args.extend(['--offline', '-c=d8_r8/settings.gradle.kts'])
+    args.extend(['--offline', '-Dorg.gradle.configuration-cache=false'])
     cmd.extend(args)
-    utils.PrintCmd(cmd)
     with utils.ChangedWorkingDirectory(cwd):
+        utils.PrintCmd(cmd)
         return_value = subprocess.call(cmd, env=GetJavaEnv(env))
         if throw_on_failure and return_value != 0:
             raise Exception('Failed to execute gradle')

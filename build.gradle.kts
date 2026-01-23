@@ -7,9 +7,25 @@ plugins {
   id("dependencies-plugin")
 }
 
+java {
+  sourceSets {
+    main {
+      java.setSrcDirs(emptyList<File>())
+      resources.setSrcDirs(emptyList<File>())
+    }
+    test {
+      java.setSrcDirs(emptyList<File>())
+      resources.setSrcDirs(emptyList<File>())
+    }
+  }
+}
+
 tasks {
   "clean" {
     dependsOn(gradle.includedBuild("commonBuildSrc").task(":clean"))
+    dependsOn(gradle.includedBuild("shared").task(":clean"))
+    dependsOn(gradle.includedBuild("assistant").task(":clean"))
+    dependsOn(gradle.includedBuild("blastradius").task(":clean"))
     dependsOn(gradle.includedBuild("keepanno").task(":clean"))
     dependsOn(gradle.includedBuild("resourceshrinker").task(":clean"))
     dependsOn(gradle.includedBuild("main").task(":clean"))
