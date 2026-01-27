@@ -3,7 +3,7 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8.blastradius;
 
-import com.android.tools.r8.blastradius.proto.KeepRuleBlastRadiusCollection;
+import com.android.tools.r8.blastradius.proto.BlastRadiusContainer;
 import com.android.tools.r8.graph.AppInfoWithClassHierarchy;
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.DexField;
@@ -12,18 +12,22 @@ import com.android.tools.r8.graph.DexReference;
 import com.android.tools.r8.graph.DexType;
 import com.android.tools.r8.shaking.Enqueuer;
 import com.android.tools.r8.shaking.KeepClassInfo;
+import com.android.tools.r8.shaking.KeepClassMembersNoShrinkingOfInitializerOnSubclassesFakeProguardRule;
 import com.android.tools.r8.shaking.KeepFieldInfo;
 import com.android.tools.r8.shaking.KeepInfo;
 import com.android.tools.r8.shaking.KeepInfoCollectionEventConsumer;
 import com.android.tools.r8.shaking.KeepMethodInfo;
 import com.android.tools.r8.shaking.ProguardKeepRuleBase;
+import com.android.tools.r8.shaking.rules.KeepAnnotationFakeProguardRule;
 import com.android.tools.r8.utils.InternalOptions;
+import com.android.tools.r8.utils.ListUtils;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.IdentityHashMap;
 import java.util.Map;
 import java.util.function.BiConsumer;
@@ -51,9 +55,17 @@ public class RootSetBlastRadius {
     return blastRadius.values();
   }
 
-  public void writeToFile(Path printBlastRadiusFile) {
-    // TODO(b/441055269): Unimplemented.
-    KeepRuleBlastRadiusCollection collection = KeepRuleBlastRadiusCollection.newBuilder().build();
+  public Collection<RootSetBlastRadiusForRule> getBlastRadiusWithDeterministicOrder() {
+    // TODO(b/441055269): Sorting by source is not guaranteed to be deterministic.
+    return ListUtils.sort(getBlastRadius(), Comparator.comparing(x -> x.getRule().getSource()));
+  }
+
+  public Map<RootSetBlastRadiusForRule, Collection<RootSetBlastRadiusForRule>> getSubsumedByInfo() {
+    return new KeepRuleSubsumptionAnalysis(this).run();
+  }
+
+  public void writeToFile(AppView<?> appView, Path printBlastRadiusFile) {
+    BlastRadiusContainer collection = new RootSetBlastRadiusSerializer(appView).serialize(this);
     try (OutputStream output = Files.newOutputStream(printBlastRadiusFile)) {
       collection.writeTo(output);
     } catch (IOException e) {
@@ -114,6 +126,22 @@ public class RootSetBlastRadius {
     }
 
     public RootSetBlastRadius build() {
+      blastRadius
+          .keySet()
+          .removeIf(
+              rule -> {
+                if (rule instanceof KeepAnnotationFakeProguardRule) {
+                  // TODO(b/441055269): Add support for keep annotations.
+                  return true;
+                }
+                if (rule
+                    instanceof
+                    KeepClassMembersNoShrinkingOfInitializerOnSubclassesFakeProguardRule) {
+                  // Intentionally do not report built-in rules.
+                  return true;
+                }
+                return false;
+              });
       return new RootSetBlastRadius(blastRadius);
     }
   }

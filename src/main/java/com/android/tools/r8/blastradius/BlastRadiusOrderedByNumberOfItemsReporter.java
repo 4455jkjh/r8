@@ -4,9 +4,7 @@
 package com.android.tools.r8.blastradius;
 
 import com.android.tools.r8.position.Position;
-import com.android.tools.r8.shaking.KeepClassMembersNoShrinkingOfInitializerOnSubclassesFakeProguardRule;
 import com.android.tools.r8.shaking.ProguardKeepRuleBase;
-import com.android.tools.r8.shaking.rules.KeepAnnotationFakeProguardRule;
 import com.android.tools.r8.utils.ListUtils;
 import java.util.Collection;
 import java.util.Comparator;
@@ -39,41 +37,27 @@ public class BlastRadiusOrderedByNumberOfItemsReporter implements BlastRadiusRep
     for (RootSetBlastRadiusForRule blastRadiusForRule : sorted) {
       assert blastRadiusForRule.getNumberOfItems() > 0;
       ProguardKeepRuleBase rule = blastRadiusForRule.getRule();
-      if (rule instanceof KeepAnnotationFakeProguardRule) {
-        // TODO(b/441055269): Add support for keep annotations.
-        continue;
-      }
-      if (rule instanceof KeepClassMembersNoShrinkingOfInitializerOnSubclassesFakeProguardRule) {
-        // Intentionally do not report built-in rules.
-        continue;
-      }
       if (rule.getPosition() == Position.UNKNOWN) {
         throw new RuntimeException(rule.toString());
       }
-      // TODO(b/441055269): Add support for keep rules that allow shrinking.
-      assert !rule.getModifiers().allowsShrinking;
       System.out.println(i + ". " + rule);
       System.out.println("   @ " + rule.getOriginString());
       System.out.println();
       System.out.print("Blast radius (dontshrink): " + blastRadiusForRule.getNumberOfItems());
       System.out.print(" (");
       boolean needsComma = false;
-      if (blastRadiusForRule.getNumberOfClasses() > 0) {
-        System.out.print(blastRadiusForRule.getNumberOfClasses() + " classes");
+      if (!blastRadiusForRule.getMatchedClasses().isEmpty()) {
+        System.out.print(blastRadiusForRule.getMatchedClasses().size() + " classes");
         needsComma = true;
       }
-      if (blastRadiusForRule.getNumberOfMethods() > 0) {
-        if (needsComma) {
-          System.out.print(", ");
-        }
-        System.out.print(blastRadiusForRule.getNumberOfMethods() + " methods");
+      if (!blastRadiusForRule.getMatchedMethods().isEmpty()) {
+        String comma = needsComma ? ", " : "";
+        System.out.print(comma + blastRadiusForRule.getMatchedMethods().size() + " methods");
         needsComma = true;
       }
-      if (blastRadiusForRule.getNumberOfFields() > 0) {
-        if (needsComma) {
-          System.out.print(", ");
-        }
-        System.out.print(blastRadiusForRule.getNumberOfFields() + " fields");
+      if (!blastRadiusForRule.getMatchedFields().isEmpty()) {
+        String comma = needsComma ? ", " : "";
+        System.out.print(comma + blastRadiusForRule.getMatchedFields().size() + " fields");
       }
       System.out.println(")");
       System.out.println();
