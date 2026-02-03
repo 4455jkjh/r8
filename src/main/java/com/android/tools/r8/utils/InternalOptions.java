@@ -917,6 +917,10 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
       if (isGeneratingClassFiles() && !getTestingOptions().enableRepackagingByDefaultForCf) {
         return getPackageObfuscationModeForNone();
       }
+      // TODO(b/480068080): Also enable by default when -adaptresourcefilenames is enabled.
+      if (proguardConfiguration.getAdaptResourceFilenames().isEnabled()) {
+        return getPackageObfuscationModeForNone();
+      }
       return PackageObfuscationMode.REPACKAGE;
     }
     assert packageObfuscationMode.isFlattenPackageHierarchy()
@@ -2420,6 +2424,9 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
     public boolean allowClassInliningOfSynthetics = true;
     public boolean allowCodeReplacement =
         parseSystemPropertyOrDefault("com.android.tools.r8.allowCodeReplacement", true);
+    public boolean allowConstructorMismatchInClassFiles =
+        parseSystemPropertyOrDefault(
+            "com.android.tools.r8.cf.verification.allowconstructormismatch", false);
     public boolean allowInjectedAnnotationMethods = false;
     public boolean allowInliningOfOutlines = true;
     public boolean allowInliningOfSynthetics = true;

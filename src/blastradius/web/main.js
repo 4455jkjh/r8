@@ -20,9 +20,16 @@ let tables = {
     typeLists: new Map(),
     origins: new Map(),
     jarOrigins: new Map(),
+    keepConstraints: new Map(),
     files: new Map(), // filename -> { rules: [], totalRadius: 0, classes: 0, methods: 0, fields: 0 }
     methodRefs: new Map(),
     fieldRefs: new Map()
+};
+
+let constraintStats = {
+    DONT_OBFUSCATE: { classes: new Set(), methods: new Set(), fields: new Set() },
+    DONT_OPTIMIZE: { classes: new Set(), methods: new Set(), fields: new Set() },
+    DONT_SHRINK: { classes: new Set(), methods: new Set(), fields: new Set() }
 };
 
 const dropZone = document.getElementById('drop-zone');
@@ -115,6 +122,13 @@ function processData() {
     Object.values(tables).forEach(map => map instanceof Map ? map.clear() : null);
     tables.files = new Map();
 
+    // Reset constraint stats
+    Object.values(constraintStats).forEach(s => {
+        s.classes.clear();
+        s.methods.clear();
+        s.fields.clear();
+    });
+
     // Build lookup tables for origins
     if (containerData.classFileInJarOriginTable)
         containerData.classFileInJarOriginTable.forEach(o => tables.jarOrigins.set(o.id, o));
@@ -141,12 +155,28 @@ function processData() {
     if (containerData.keptMethodInfoTable)
         containerData.keptMethodInfoTable.forEach(m => tables.methods.set(m.id, m));
 
+    if (containerData.keepConstraintsTable)
+        containerData.keepConstraintsTable.forEach(c => tables.keepConstraints.set(c.id, c));
+
     if (containerData.keepRuleBlastRadiusTable) {
         containerData.keepRuleBlastRadiusTable.forEach(r => {
             tables.rules.set(r.id, r);
             r.totalRadius = (r.blastRadius.classBlastRadius?.length || 0) +
                            (r.blastRadius.fieldBlastRadius?.length || 0) +
                            (r.blastRadius.methodBlastRadius?.length || 0);
+
+            // Populate constraint stats
+            const constraints = tables.keepConstraints.get(r.constraintsId);
+            if (constraints && constraints.constraints) {
+                constraints.constraints.forEach(c => {
+                    const stats = constraintStats[c];
+                    if (stats) {
+                        r.blastRadius.classBlastRadius?.forEach(id => stats.classes.add(id));
+                        r.blastRadius.methodBlastRadius?.forEach(id => stats.methods.add(id));
+                        r.blastRadius.fieldBlastRadius?.forEach(id => stats.fields.add(id));
+                    }
+                });
+            }
 
             // Group by file
             const fileName = getFileName(r.origin);
@@ -197,10 +227,42 @@ function renderStats() {
     const unusedCount = rules.filter(r => r.totalRadius === 0).length;
     const redundantCount = rules.filter(r => r.blastRadius.subsumedBy && r.blastRadius.subsumedBy.length > 0).length;
 
-    document.getElementById('stat-rules').textContent = rules.length;
-    document.getElementById('stat-classes').textContent = containerData.keptClassInfoTable?.length || 0;
-    document.getElementById('stat-methods').textContent = containerData.keptMethodInfoTable?.length || 0;
-    document.getElementById('stat-fields').textContent = containerData.keptFieldInfoTable?.length || 0;
+    const format = (val) => (val || 0).toLocaleString();
+
+    document.getElementById('stat-rules').textContent = format(rules.length);
+
+    // Constraint-specific counts
+    document.getElementById('stat-no-obfuscation-classes').textContent = format(constraintStats.DONT_OBFUSCATE.classes.size);
+    document.getElementById('stat-no-obfuscation-methods').textContent = format(constraintStats.DONT_OBFUSCATE.methods.size);
+    document.getElementById('stat-no-obfuscation-fields').textContent = format(constraintStats.DONT_OBFUSCATE.fields.size);
+
+    document.getElementById('stat-no-optimization-classes').textContent = format(constraintStats.DONT_OPTIMIZE.classes.size);
+    document.getElementById('stat-no-optimization-methods').textContent = format(constraintStats.DONT_OPTIMIZE.methods.size);
+    document.getElementById('stat-no-optimization-fields').textContent = format(constraintStats.DONT_OPTIMIZE.fields.size);
+
+    document.getElementById('stat-no-shrinking-classes').textContent = format(constraintStats.DONT_SHRINK.classes.size);
+    document.getElementById('stat-no-shrinking-methods').textContent = format(constraintStats.DONT_SHRINK.methods.size);
+    document.getElementById('stat-no-shrinking-fields').textContent = format(constraintStats.DONT_SHRINK.fields.size);
+
+    if (containerData.buildInfo) {
+        const info = containerData.buildInfo;
+        // Reachable counts
+        document.getElementById('stat-reachable-classes').textContent = format(info.liveClassCount);
+        document.getElementById('stat-reachable-methods').textContent = format(info.liveMethodCount);
+        document.getElementById('stat-reachable-fields').textContent = format(info.liveFieldCount);
+        // Total counts
+        document.getElementById('stat-total-classes').textContent = format(info.classCount);
+        document.getElementById('stat-total-methods').textContent = format(info.methodCount);
+        document.getElementById('stat-total-fields').textContent = format(info.fieldCount);
+    } else {
+        // Fallback if buildInfo is missing
+        document.getElementById('stat-reachable-classes').textContent = "-";
+        document.getElementById('stat-reachable-methods').textContent = "-";
+        document.getElementById('stat-reachable-fields').textContent = "-";
+        document.getElementById('stat-total-classes').textContent = "-";
+        document.getElementById('stat-total-methods').textContent = "-";
+        document.getElementById('stat-total-fields').textContent = "-";
+    }
 
     const unusedBadge = document.getElementById('unused-count');
     unusedBadge.textContent = unusedCount;
@@ -238,15 +300,30 @@ function filterFiles(query) {
 function renderRuleList() {
     ruleList.innerHTML = '';
     filteredRules.forEach(rule => {
+        const isRedundant = rule.blastRadius.subsumedBy && rule.blastRadius.subsumedBy.length > 0;
+        let sameOriginSubsumption = false;
+        if (isRedundant) {
+            const ruleOriginFile = getFileName(rule.origin);
+            sameOriginSubsumption = rule.blastRadius.subsumedBy.some(id => {
+                const subsumer = tables.rules.get(id);
+                return subsumer && getFileName(subsumer.origin) === ruleOriginFile;
+            });
+        }
+
         const div = document.createElement('div');
         div.className = 'rule-item';
         div.innerHTML = `
-            <span class="rule-name">${escapeHtml(rule.source)}</span>
-            <div class="rule-stats">
-                Blast radius: ${rule.totalRadius}
-                (${rule.blastRadius.classBlastRadius?.length || 0} classes,
-                 ${rule.blastRadius.methodBlastRadius?.length || 0} methods,
-                 ${rule.blastRadius.fieldBlastRadius?.length || 0} fields)
+            <div style="display: flex; align-items: flex-start; gap: 8px;">
+                ${sameOriginSubsumption ? '<span title="Subsumed by rule in same file" style="color: #ff9800; cursor: help;">⚠️</span>' : ''}
+                <div style="flex: 1;">
+                    <span class="rule-name">${escapeHtml(rule.source)}</span>
+                    <div class="rule-stats">
+                        Blast radius: ${rule.totalRadius}
+                        (${rule.blastRadius.classBlastRadius?.length || 0} classes,
+                         ${rule.blastRadius.methodBlastRadius?.length || 0} methods,
+                         ${rule.blastRadius.fieldBlastRadius?.length || 0} fields)
+                    </div>
+                </div>
             </div>
         `;
         div.onclick = () => selectRule(rule, div);
@@ -287,15 +364,18 @@ function selectFile(file, element) {
 
 function renderRuleDetail(rule) {
     const isRedundant = rule.blastRadius.subsumedBy && rule.blastRadius.subsumedBy.length > 0;
+    const ruleOriginFile = getFileName(rule.origin);
+
     let html = `
         <div class="card">
             <h2>Keep Rule Details</h2>
             ${isRedundant ? rule.blastRadius.subsumedBy.map(id => {
                 const r = tables.rules.get(id);
+                const isSameFile = r && getFileName(r.origin) === ruleOriginFile;
                 const originStr = r ? getOriginString(r.origin) : "Unknown origin";
                 return `
                     <div class="banner banner-warning">
-                        <strong>Redundant Rule:</strong> This rule is fully subsumed by:
+                        <strong>Redundant Rule:</strong> This rule is fully subsumed by ${isSameFile ? 'another rule in the same file' : 'a rule in a different file'}:
                         <div style="margin-top: 0.5rem;">
                             <div class="subsumed-by-item">
                                 <div style="font-weight: 500;">${r ? escapeHtml(r.source) : `Rule ID: ${id}`}</div>

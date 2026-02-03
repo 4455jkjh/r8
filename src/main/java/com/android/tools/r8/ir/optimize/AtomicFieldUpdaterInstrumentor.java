@@ -414,6 +414,9 @@ public class AtomicFieldUpdaterInstrumentor {
             .setField(unsafeField)
             .setAccessFlags(FieldAccessFlags.createPublicStaticFinalSynthetic())
             .setApiLevel(appView.computedMinApiLevel())
+            // Avoid superfluous assert on API in the build call when API modeling is disabled.
+            .disableAndroidApiLevelCheckIf(
+                !appView.options().apiModelingOptions().isApiModelingEnabled())
             .build();
     builder.setStaticFields(ImmutableList.of(field));
     var accessBuilder = FieldAccessInfoCollectionModifier.builder();
@@ -522,6 +525,9 @@ public class AtomicFieldUpdaterInstrumentor {
         .setField(offsetField)
         .setAccessFlags(FieldAccessFlags.createPublicStaticFinalSynthetic())
         .setApiLevel(appView.computedMinApiLevel())
+        // Avoid superfluous API assert in build when API modeling is disabled.
+        .disableAndroidApiLevelCheckIf(
+            !appView.options().apiModelingOptions().isApiModelingEnabled())
         .build();
   }
 
@@ -713,14 +719,16 @@ public class AtomicFieldUpdaterInstrumentor {
     public void reportFailure(DexField field, String reason) {
       if (logs != null) {
         assert !logs.containsKey(field);
-        logs.put(field, "Cannot instrument " + field + ": " + reason);
+        logs.put(field, "Cannot instrument " + field.qualifiedName() + ": " + reason);
       }
     }
 
     public void reportSuccessful(DexField field) {
       if (logs != null) {
         assert !logs.containsKey(field);
-        logs.put(field, "Can instrument    " + field);
+        logs.put(
+            field,
+            "Can instrument    " + field.qualifiedName() + "." + field.name.toSourceString());
       }
     }
 
