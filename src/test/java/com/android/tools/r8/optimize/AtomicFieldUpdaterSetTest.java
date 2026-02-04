@@ -27,7 +27,7 @@ import org.junit.runners.Parameterized.Parameter;
 import org.junit.runners.Parameterized.Parameters;
 
 @RunWith(Parameterized.class)
-public class AtomicFieldUpdaterGetTest extends TestBase {
+public class AtomicFieldUpdaterSetTest extends TestBase {
 
   @Parameter(0)
   public TestParameters parameters;
@@ -64,7 +64,7 @@ public class AtomicFieldUpdaterGetTest extends TestBase {
         .compile()
         .inspectDiagnosticMessages(
             diagnostics -> {
-              assertEquals(3, diagnostics.getInfos().size());
+              assertEquals(4, diagnostics.getInfos().size());
               Diagnostic diagnostic = diagnostics.getInfos().get(0);
               List<String> diagnosticLines =
                   StringUtils.splitLines(diagnostic.getDiagnosticMessage());
@@ -86,6 +86,14 @@ public class AtomicFieldUpdaterGetTest extends TestBase {
               diagnosticLines = StringUtils.splitLines(diagnostic.getDiagnosticMessage());
               for (String message : diagnosticLines) {
                 assertTrue(
+                    "Does not contain 'Can optimize': " + message,
+                    message.contains("Can optimize"));
+              }
+              assertEquals(1, diagnosticLines.size());
+              diagnostic = diagnostics.getInfos().get(3);
+              diagnosticLines = StringUtils.splitLines(diagnostic.getDiagnosticMessage());
+              for (String message : diagnosticLines) {
+                assertTrue(
                     "Does not contain 'Can remove': " + message, message.contains("Can remove"));
               }
               assertEquals(1, diagnosticLines.size());
@@ -96,13 +104,13 @@ public class AtomicFieldUpdaterGetTest extends TestBase {
               assertThat(
                   method,
                   CodeMatchers.invokesMethod(
-                      "java.lang.Object",
+                      "void",
                       "sun.misc.Unsafe",
-                      "getObjectVolatile",
-                      ImmutableList.of("java.lang.Object", "long")));
+                      "putObjectVolatile",
+                      ImmutableList.of("java.lang.Object", "long", "java.lang.Object")));
             })
         .run(parameters.getRuntime(), testClass)
-        .assertSuccessWithOutputLines("Hello");
+        .assertSuccessWithOutputLines("World!");
   }
 
   // Corresponding to simple kotlin usage of `atomic("Hello")` via atomicfu.
@@ -123,7 +131,9 @@ public class AtomicFieldUpdaterGetTest extends TestBase {
     }
 
     public static void main(String[] args) {
-      System.out.println(myString$FU.get(new TestClass()));
+      TestClass instance = new TestClass();
+      myString$FU.set(instance, "World!");
+      System.out.println(myString$FU.get(instance));
     }
   }
 }

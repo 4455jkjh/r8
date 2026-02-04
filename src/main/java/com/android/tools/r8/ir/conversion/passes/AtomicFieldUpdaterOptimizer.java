@@ -134,6 +134,18 @@ public class AtomicFieldUpdaterOptimizer extends CodeRewriterPass<AppInfoWithCla
             next.outValue())) {
           changed = true;
         }
+      } else if (invokedMethod.isIdenticalTo(
+          dexItemFactory.atomicFieldUpdaterMethods.referenceSet)) {
+        if (visitSet(
+            code,
+            it,
+            next.getPosition(),
+            invoke,
+            atomicUpdaterFields,
+            info.getUnsafeInstanceField(),
+            next.outValue())) {
+          changed = true;
+        }
       } else {
         reportFailure(
             next.getPosition(), "not implemented: " + invokedMethod.name.toSourceString());
@@ -170,9 +182,7 @@ public class AtomicFieldUpdaterOptimizer extends CodeRewriterPass<AppInfoWithCla
 
     // Resolve update.
     var updateValue = invoke.getThirdNonReceiverArgument();
-    var expectedType = resolvedUpdater.updaterFieldInfo.reflectedFieldType;
-    if (!updateValue.getType().lessThanOrEqual(expectedType.toTypeElement(appView), appView)) {
-      reportFailure(position, "_.compareAndSet(_, _, HERE) is of unexpected type");
+    if (!isNewValueValid(position, resolvedUpdater, updateValue, "compareAndSet")) {
       return false;
     }
 
@@ -228,13 +238,56 @@ public class AtomicFieldUpdaterOptimizer extends CodeRewriterPass<AppInfoWithCla
     return true;
   }
 
+  private boolean visitSet(
+      IRCode code,
+      IRCodeInstructionListIterator it,
+      Position position,
+      InvokeVirtual invoke,
+      Map<DexField, AtomicFieldUpdaterInfo> atomicUpdaterFields,
+      DexField unsafeInstanceField,
+      Value outValue) {
+    // Resolve updater.
+    var updaterValue = invoke.getReceiver();
+    var resolvedUpdater = resolveUpdater(code, position, atomicUpdaterFields, updaterValue, "set");
+    if (resolvedUpdater == null) {
+      return false;
+    }
+
+    // Resolve holder.
+    var holderValue = invoke.getFirstNonReceiverArgument();
+    var expectedHolder = resolvedUpdater.updaterFieldInfo.holder;
+    if (!isHolderValid(position, holderValue, expectedHolder, "set")) {
+      return false;
+    }
+
+    // Resolve newValue.
+    var newValueValue = invoke.getSecondNonReceiverArgument();
+    if (!isNewValueValid(position, resolvedUpdater, newValueValue, "set")) {
+      return false;
+    }
+
+    reportSuccess(position, resolvedUpdater.isNullable);
+    rewriteSet(
+        code,
+        it,
+        position,
+        resolvedUpdater.isNullable,
+        unsafeInstanceField,
+        updaterValue,
+        holderValue,
+        resolvedUpdater.updaterFieldInfo.offsetField,
+        newValueValue,
+        outValue);
+    return true;
+  }
+
   private ResolvedUpdater resolveUpdater(
       IRCode code,
       Position position,
       Map<DexField, AtomicFieldUpdaterInfo> atomicUpdaterFields,
       Value updaterValue,
       String methodNameForLogging) {
-    var updaterMightBeNull = updaterValue.getType().isNullable();
+    var unusedUpdaterMightBeNull = updaterValue.getType().isNullable();
     DexField updaterField;
     var updaterAbstractValue =
         updaterValue.getAbstractValue(appView, code.context()).removeNullOrAbstractValue();
@@ -256,7 +309,8 @@ public class AtomicFieldUpdaterOptimizer extends CodeRewriterPass<AppInfoWithCla
           "HERE." + methodNameForLogging + "(..) refers to an un-instrumented updater field");
       return null;
     }
-    return new ResolvedUpdater(updaterMightBeNull, updaterInfo);
+    // TODO(b/453628974): stop assuming non-null for all updaters.
+    return new ResolvedUpdater(false, updaterInfo);
   }
 
   private static class ResolvedUpdater {
@@ -285,6 +339,19 @@ public class AtomicFieldUpdaterOptimizer extends CodeRewriterPass<AppInfoWithCla
       }
     }
     return false;
+  }
+
+  private boolean isNewValueValid(
+      Position position,
+      ResolvedUpdater resolvedUpdater,
+      Value newValueValue,
+      String methodNameForLogging) {
+    var expectedType = resolvedUpdater.updaterFieldInfo.reflectedFieldType;
+    if (!newValueValue.getType().lessThanOrEqual(expectedType.toTypeElement(appView), appView)) {
+      reportFailure(position, "_." + methodNameForLogging + "(_, HERE, ..) is of unexpected type");
+      return false;
+    }
+    return true;
   }
 
   /**
@@ -348,8 +415,8 @@ public class AtomicFieldUpdaterOptimizer extends CodeRewriterPass<AppInfoWithCla
 
   /**
    * Rewrites a call to {@code updater.get(holder)} (assumed to be the last instruction returned by
-   * {@code it.next}) into a call {@code SyntheticUnsafeClass.unsafe.getReferenceVolatile(holder)}
-   * and potentially a null-check on updater.
+   * {@code it.next}) into a call {@code SyntheticUnsafeClass.unsafe.getReferenceVolatile(holder,
+   * this.offset)} and potentially a null-check on updater.
    */
   private void rewriteGet(
       IRCode code,
@@ -393,6 +460,62 @@ public class AtomicFieldUpdaterOptimizer extends CodeRewriterPass<AppInfoWithCla
             ImmutableList.of(unsafeInstance.outValue(), holderValue, offset.outValue()));
     unsafeGet.setPosition(position);
     it.replaceCurrentInstruction(unsafeGet);
+    // TODO(b/453628974): Does profiling need to be updated?
+  }
+
+  /**
+   * Rewrites a call to {@code updater.set(holder, newValue)} (assumed to be the last instruction
+   * returned by {@code it.next}) into a call {@code
+   * SyntheticUnsafeClass.unsafe.putReferenceVolatile(holder, this.offset, newValue)} and
+   * potentially a null-check on updater.
+   */
+  private void rewriteSet(
+      IRCode code,
+      IRCodeInstructionListIterator it,
+      Position position,
+      boolean updaterMightBeNull,
+      DexField unsafeInstanceField,
+      Value updaterValue,
+      Value holderValue,
+      DexField offsetField,
+      Value newValueValue,
+      Value outValue) {
+    var instructions = new ArrayList<Instruction>(3);
+
+    // Null-check for updater.
+    if (updaterMightBeNull) {
+      instructions.add(createNullCheck(code, position, updaterValue));
+    }
+
+    // Get unsafe instance.
+    Instruction unsafeInstance = createUnsafeGet(code, position, unsafeInstanceField);
+    instructions.add(unsafeInstance);
+
+    // Get offset field.
+    Instruction offset = createOffsetGet(code, position, offsetField);
+    instructions.add(offset);
+
+    // Add instructions BEFORE the get instruction.
+    insertInstructionsBeforeCurrentInstruction(it, instructions);
+
+    // Call underlying unsafe method.
+    DexMethod unsafeSetMethod =
+        dexItemFactory.createMethod(
+            dexItemFactory.unsafeType,
+            dexItemFactory.createProto(
+                dexItemFactory.voidType,
+                dexItemFactory.objectType,
+                dexItemFactory.longType,
+                dexItemFactory.objectType),
+            "putObjectVolatile");
+    Instruction unsafeSet =
+        new InvokeVirtual(
+            unsafeSetMethod,
+            outValue,
+            ImmutableList.of(
+                unsafeInstance.outValue(), holderValue, offset.outValue(), newValueValue));
+    unsafeSet.setPosition(position);
+    it.replaceCurrentInstruction(unsafeSet);
     // TODO(b/453628974): Does profiling need to be updated?
   }
 
