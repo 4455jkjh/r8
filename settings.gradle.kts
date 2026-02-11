@@ -61,10 +61,10 @@ downloadFromGoogleStorage(thirdParty.resolve("dependencies_plugin"))
 pluginManagement {
   repositories {
     maven {
-      url = uri("file:third_party/dependencies_plugin")
+      url = uri("file:third_party/dependencies")
     }
     maven {
-      url = uri("file:third_party/dependencies")
+      url = uri("file:third_party/dependencies_plugin")
     }
   }
   includeBuild(rootProject.projectDir.resolve("d8_r8/commonBuildSrc"))
@@ -72,6 +72,9 @@ pluginManagement {
 
 dependencyResolutionManagement {
   repositories {
+    maven {
+      url = uri("file:third_party/dependencies_plugin")
+    }
     maven {
       url = uri("file:third_party/dependencies")
     }
@@ -82,6 +85,7 @@ includeBuild(rootProject.projectDir.resolve("d8_r8/shared"))
 includeBuild(rootProject.projectDir.resolve("d8_r8/assistant"))
 includeBuild(rootProject.projectDir.resolve("d8_r8/blastradius"))
 includeBuild(rootProject.projectDir.resolve("d8_r8/keepanno"))
+includeBuild(rootProject.projectDir.resolve("d8_r8/libanalyzer"))
 includeBuild(rootProject.projectDir.resolve("d8_r8/resourceshrinker"))
 
 // We need to include src/main as a composite-build otherwise our test-modules

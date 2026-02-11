@@ -27,17 +27,17 @@ tasks {
     dependsOn(gradle.includedBuild("assistant").task(":clean"))
     dependsOn(gradle.includedBuild("blastradius").task(":clean"))
     dependsOn(gradle.includedBuild("keepanno").task(":clean"))
+    dependsOn(gradle.includedBuild("libanalyzer").task(":clean"))
     dependsOn(gradle.includedBuild("resourceshrinker").task(":clean"))
     dependsOn(gradle.includedBuild("main").task(":clean"))
     dependsOn(gradle.includedBuild("library_desugar").task(":clean"))
     dependsOn(gradle.includedBuild("test").task(":clean"))
   }
 
-  val r8 by registering() {
-    dependsOn(gradle.includedBuild("main").task(":r8WithRelocatedDeps"))
-  }
+  val r8 by registering() { dependsOn(gradle.includedBuild("main").task(":r8WithRelocatedDeps")) }
 
-  val r8lib by registering() {
-    dependsOn(gradle.includedBuild("test").task(":assembleR8LibWithRelocatedDeps"))
-  }
+  val r8lib by
+    registering() {
+      dependsOn(gradle.includedBuild("test").task(":assembleR8LibWithRelocatedDeps"))
+    }
 }

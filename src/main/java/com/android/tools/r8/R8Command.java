@@ -301,23 +301,22 @@ public final class R8Command extends BaseCompilerCommand {
       return self();
     }
 
-    /** Add proguard configuration-file resources. */
-    public Builder addProguardConfigurationFiles(Path... paths) {
-      guard(() -> {
-        for (Path path : paths) {
-          proguardConfigs.add(new ProguardConfigurationSourceFile(path));
-        }
-      });
+    /** Add a proguard configuration-file resource with a given origin. */
+    public Builder addProguardConfigurationFile(Path path, Origin origin) {
+      proguardConfigs.add(new ProguardConfigurationSourceFile(path, origin));
       return self();
     }
 
     /** Add proguard configuration-file resources. */
+    public Builder addProguardConfigurationFiles(Path... paths) {
+      return addProguardConfigurationFiles(Arrays.asList(paths));
+    }
+
+    /** Add proguard configuration-file resources. */
     public Builder addProguardConfigurationFiles(List<Path> paths) {
-      guard(() -> {
-        for (Path path : paths) {
-          proguardConfigs.add(new ProguardConfigurationSourceFile(path));
-        }
-      });
+      for (Path path : paths) {
+        proguardConfigs.add(new ProguardConfigurationSourceFile(path));
+      }
       return self();
     }
 
@@ -1021,7 +1020,7 @@ public final class R8Command extends BaseCompilerCommand {
             .map(ClassFileResourceProvider::getDataResourceProvider)
             .filter(Objects::nonNull)
             .forEach(providers::add);
-        for (FilteredClassPath libraryjar : configurationBuilder.build().getLibraryjars()) {
+        for (FilteredClassPath libraryjar : configurationBuilder.getLibraryJars()) {
           if (seen.add(libraryjar)) {
             ArchiveResourceProvider provider = getAppBuilder().createAndAddProvider(libraryjar);
             if (provider != null) {
@@ -1040,15 +1039,13 @@ public final class R8Command extends BaseCompilerCommand {
         ProguardConfigurationParser parser,
         Supplier<SemanticVersion> semanticVersionSupplier,
         DataResourceProvider dataResourceProvider) {
-      if (dataResourceProvider != null) {
-        try {
-          EmbeddedRulesExtractor embeddedProguardConfigurationVisitor =
-              new EmbeddedRulesExtractor(reporter, semanticVersionSupplier);
-          dataResourceProvider.accept(embeddedProguardConfigurationVisitor);
-          embeddedProguardConfigurationVisitor.parseRelevantRules(parser);
-        } catch (ResourceException e) {
-          reporter.error(new ExceptionDiagnostic(e));
-        }
+      try {
+        EmbeddedRulesExtractor embeddedProguardConfigurationVisitor =
+            new EmbeddedRulesExtractor(semanticVersionSupplier, dataResourceProvider, reporter);
+        dataResourceProvider.accept(embeddedProguardConfigurationVisitor);
+        embeddedProguardConfigurationVisitor.parseRelevantRules(parser);
+      } catch (ResourceException e) {
+        reporter.error(new ExceptionDiagnostic(e));
       }
     }
 

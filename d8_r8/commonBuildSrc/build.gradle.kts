@@ -7,6 +7,8 @@ plugins {
   `java-gradle-plugin`
 }
 
+dependencies { implementation("net.ltgt.gradle:gradle-errorprone-plugin:3.0.1") }
+
 gradlePlugin {
   plugins.register("dependencies-plugin") {
     id = "dependencies-plugin"
@@ -14,6 +16,4 @@ gradlePlugin {
   }
 }
 
-kotlin {
-  explicitApi()
-}
+kotlin { explicitApi() }

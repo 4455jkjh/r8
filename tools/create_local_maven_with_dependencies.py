@@ -25,7 +25,7 @@ ANDROIDX_COLLECTION_VERSION = '1.6.0-SNAPSHOT'
 ANDROIDX_TRACING_VERSION = '2.0.0-SNAPSHOT'
 ASM_VERSION = '9.9'  # When updating update tools/asmifier.py and Toolhelper as well.
 FASTUTIL_VERSION = '7.2.1'
-KOTLIN_METADATA_VERSION = '2.2.10'
+KOTLIN_METADATA_VERSION = '2.3.10'
 KOTLIN_VERSION = '2.0.21'
 GUAVA_VERSION = '32.1.2-jre'
 GSON_VERSION = '2.10.1'
@@ -35,6 +35,7 @@ MOCKITO_VERSION = '2.10.0'
 SMALI_VERSION = '3.0.3'
 ERROR_PRONE_VERSION = '2.18.0'
 TESTNG_VERSION = '6.10'
+ZIPFLINGER_VERSION = '9.0.0'
 
 # keepanno & resource shrinker dependencies
 PROTOBUF_VERSION = '3.19.3'
@@ -67,6 +68,7 @@ BUILD_DEPENDENCIES = [
         version=STUDIO_SDK_VERSION),
     'com.android.tools:common:{version}'.format(version=STUDIO_SDK_VERSION),
     'com.android.tools:sdk-common:{version}'.format(version=STUDIO_SDK_VERSION),
+    'com.android:zipflinger:{version}'.format(version=ZIPFLINGER_VERSION),
     'com.google.protobuf:protobuf-java:{version}'.format(
         version=PROTOBUF_VERSION),
     'org.jetbrains.kotlin:kotlin-assignment-compiler-plugin-embeddable:{version}'
