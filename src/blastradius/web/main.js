@@ -5,7 +5,8 @@ let protobufRoot = null;
 let containerData = null;
 let filteredRules = [];
 let filteredFiles = [];
-let currentView = 'rules'; // 'rules' or 'files'
+let currentView = 'rules'; // 'rules', 'files', 'unused', 'redundant'
+let currentSubView = 'class'; // 'class', 'method', 'field'
 let currentSelectedRule = null;
 let currentRulePagination = {
   classes: 100,
@@ -53,7 +54,6 @@ const fileInput = document.getElementById('file-input');
 const ruleList = document.getElementById('rule-list');
 const searchInput = document.getElementById('search-input');
 const mainContent = document.getElementById('main-content');
-const statsOverview = document.getElementById('stats-overview');
 
 const embeddedProtoSchemaSource = document.getElementById('blastradius-proto');
 const embeddedProtoDataSource = document.getElementById('blastradius-data');
@@ -78,27 +78,26 @@ if (embeddedProtoSchemaSource) {
 
 // Load blast radius data (.pb).
 if (embeddedProtoDataSource) {
-  try {
-    const binary = atob(embeddedProtoDataSource.textContent.trim());
-    const bytes = new Uint8Array(binary.length);
-    for (let i = 0; i < binary.length; i++) {
-      bytes[i] = binary.charCodeAt(i);
+  setTimeout(() => {
+    try {
+      const data = embeddedProtoDataSource.textContent.trim();
+      const bytes = Uint8Array.from(atob(data), c => c.charCodeAt(0));
+      const BlastRadiusContainer = protobufRoot.lookupType("com.android.tools.r8.blastradius.proto.BlastRadiusContainer");
+      const message = BlastRadiusContainer.decode(bytes);
+      containerData = BlastRadiusContainer.toObject(message, {
+        longs: String,
+        enums: String,
+        bytes: String,
+        defaults: true,
+        arrays: true,
+        objects: true,
+        oneofs: true
+      });
+      processData();
+    } catch (e) {
+      console.error("Failed to decode embedded data:", e);
     }
-    const BlastRadiusContainer = protobufRoot.lookupType("com.android.tools.r8.blastradius.proto.BlastRadiusContainer");
-    const message = BlastRadiusContainer.decode(bytes);
-    containerData = BlastRadiusContainer.toObject(message, {
-      longs: String,
-      enums: String,
-      bytes: String,
-      defaults: true,
-      arrays: true,
-      objects: true,
-      oneofs: true
-    });
-    processData();
-  } catch (e) {
-    console.error("Failed to decode embedded data:", e);
-  }
+  }, 0);
 } else {
   dropZone.addEventListener('click', () => fileInput.click());
 
@@ -131,27 +130,32 @@ if (embeddedProtoDataSource) {
       return;
     }
 
+    renderLoading();
     const reader = new FileReader();
     reader.onload = function(e) {
       const arrayBuffer = e.target.result;
-      try {
-        const BlastRadiusContainer = protobufRoot.lookupType("com.android.tools.r8.blastradius.proto.BlastRadiusContainer");
-        const buffer = new Uint8Array(arrayBuffer);
-        const message = BlastRadiusContainer.decode(buffer);
-        containerData = BlastRadiusContainer.toObject(message, {
-          longs: String,
-          enums: String,
-          bytes: String,
-          defaults: true,
-          arrays: true,
-          objects: true,
-          oneofs: true
-        });
-        processData();
-      } catch (err) {
-        console.error("Error decoding proto:", err);
-        alert("Failed to decode the .pb file. Ensure it matches the blastradius.proto schema.");
-      }
+      setTimeout(() => {
+        try {
+          const BlastRadiusContainer = protobufRoot.lookupType("com.android.tools.r8.blastradius.proto.BlastRadiusContainer");
+          const buffer = new Uint8Array(arrayBuffer);
+          const message = BlastRadiusContainer.decode(buffer);
+          containerData = BlastRadiusContainer.toObject(message, {
+            longs: String,
+            enums: String,
+            bytes: String,
+            defaults: true,
+            arrays: true,
+            objects: true,
+            oneofs: true
+          });
+          processData();
+        } catch (err) {
+          console.error("Error decoding proto:", err);
+          alert("Failed to decode the .pb file. Ensure it matches the blastradius.proto schema.");
+          renderWelcomeMessage();
+          dropZone.classList.remove('hidden');
+        }
+      }, 0);
     };
     reader.readAsArrayBuffer(file);
   }
@@ -164,7 +168,7 @@ searchInput.addEventListener('input', (e) => {
     filterUnusedRules(e.target.value);
   } else if (currentView === 'redundant') {
     filterRedundantRules(e.target.value);
-  } else {
+  } else if (currentView === 'files') {
     filterFiles(e.target.value);
   }
 });
@@ -235,6 +239,7 @@ function processData() {
       if (!tables.files.has(fileName)) {
         tables.files.set(fileName, {
           name: fileName,
+          origin: r.origin,
           rules: [],
           classIds: new Set(),
           methodIds: new Set(),
@@ -257,21 +262,9 @@ function processData() {
     });
   }
 
-  renderStats();
-  if (currentView === 'rules') {
-    filterRules("");
-  } else if (currentView === 'unused') {
-    filterUnusedRules("");
-  } else if (currentView === 'redundant') {
-    filterRedundantRules("");
-  } else {
-    filterFiles("");
-  }
-
   dropZone.classList.add('hidden');
-  statsOverview.classList.remove('hidden');
   document.querySelector('.search-box').classList.remove('hidden');
-  document.getElementById('welcome-message').classList.add('hidden');
+  switchView('rules');
 }
 
 function renderStats() {
@@ -323,6 +316,14 @@ function renderStats() {
   const redundantBadge = document.getElementById('redundant-count');
   redundantBadge.textContent = redundantCount;
   redundantBadge.classList.remove('hidden');
+
+  const rulesBadge = document.getElementById('rules-count');
+  rulesBadge.textContent = rules.length;
+  rulesBadge.classList.remove('hidden');
+
+  const filesBadge = document.getElementById('files-count');
+  filesBadge.textContent = tables.files.size;
+  filesBadge.classList.remove('hidden');
 }
 
 function filterRules(query) {
@@ -364,17 +365,21 @@ function renderRuleList() {
 
     const div = document.createElement('div');
     div.className = 'rule-item';
+    div.dataset.ruleId = rule.id;
+    const classes = rule.blastRadius.classBlastRadius?.length || 0;
+    const methods = rule.blastRadius.methodBlastRadius?.length || 0;
+    const fields = rule.blastRadius.fieldBlastRadius?.length || 0;
     div.innerHTML = `
             <div style="display: flex; align-items: flex-start; gap: 8px;">
                 ${sameOriginSubsumption ? '<span title="Subsumed by rule in same file" style="color: #ff9800; cursor: help;">⚠️</span>' : ''}
                 <div style="flex: 1;">
                     <span class="rule-name">${escapeHtml(rule.source)}</span>
-                    <div class="rule-stats">
-                        Blast radius: ${rule.totalRadius}
-                        (${rule.blastRadius.classBlastRadius?.length || 0} classes,
-                         ${rule.blastRadius.methodBlastRadius?.length || 0} methods,
-                         ${rule.blastRadius.fieldBlastRadius?.length || 0} fields)
-                    </div>
+                    ${currentView !== "unused" ? `
+                        <div class="rule-stats">
+                            Blast radius: ${rule.totalRadius}
+                            ${formatStatsBreakdown(classes, methods, fields)}
+                        </div>
+                    ` : ''}
                 </div>
             </div>
         `;
@@ -389,10 +394,10 @@ function renderFileList() {
     const div = document.createElement('div');
     div.className = 'rule-item';
     div.innerHTML = `
-            <span class="rule-name">${escapeHtml(file.name)}</span>
+            <span class="rule-name">${escapeHtml(getOriginString(file.origin))}</span>
             <div class="rule-stats">
-                Total radius: ${file.totalRadius} across ${file.rules.length} rules
-                <br>(${file.classes} classes, ${file.methods} methods, ${file.fields} fields)
+                Blast radius: ${file.totalRadius} across ${file.rules.length} rules
+                <br>${formatStatsBreakdown(file.classes, file.methods, file.fields)}
             </div>
         `;
     div.onclick = () => selectFile(file, div);
@@ -404,6 +409,7 @@ function selectRule(rule, element) {
   document.querySelectorAll('.rule-item').forEach(el => el.classList.remove('active'));
   element.classList.add('active');
   currentSelectedRule = rule;
+  currentSubView = 'class';
   currentRulePagination = {
     classes: 100,
     methods: 100,
@@ -433,16 +439,27 @@ function renderRuleDetail(rule) {
                     <div class="banner banner-warning">
                         <strong>Redundant Rule:</strong> This rule is fully subsumed by ${isSameFile ? 'another rule in the same file' : 'a rule in a different file'}:
                         <div style="margin-top: 0.5rem;">
-                            <div class="subsumed-by-item">
+                            <div class="subsumed-by-item" onclick="navigateToRule('${id}')">
                                 <div style="font-weight: 500;">${r ? escapeHtml(r.source) : `Rule ID: ${id}`}</div>
-                                <div style="font-size: 0.8rem; color: #666; margin-top: 2px;">Origin: ${originStr}</div>
+                                <div style="font-size: 0.8rem; color: #666; margin-top: 2px;">Origin: ${escapeHtml(originStr)}</div>
                             </div>
                         </div>
                     </div>
                 `;
             }).join('') : ''}
             <div class="keep-rule-source">${escapeHtml(rule.source)}</div>
-            <p><strong>Origin:</strong> ${getOriginString(rule.origin)}</p>
+            <p><strong>Origin:</strong> ${escapeHtml(getOriginString(rule.origin))}</p>
+        </div>
+        <div class="sub-tabs">
+            <button class="sub-tab-button ${currentSubView === 'class' ? 'active' : ''}" onclick="switchSubView('class')">
+                Matched Classes <span class="badge">${rule.blastRadius.classBlastRadius?.length || 0}</span>
+            </button>
+            <button class="sub-tab-button ${currentSubView === 'method' ? 'active' : ''}" onclick="switchSubView('method')">
+                Matched Methods <span class="badge">${rule.blastRadius.methodBlastRadius?.length || 0}</span>
+            </button>
+            <button class="sub-tab-button ${currentSubView === 'field' ? 'active' : ''}" onclick="switchSubView('field')">
+                Matched Fields <span class="badge">${rule.blastRadius.fieldBlastRadius?.length || 0}</span>
+            </button>
         </div>
     `;
 
@@ -451,17 +468,24 @@ function renderRuleDetail(rule) {
 }
 
 function renderFileDetail(file) {
+  const usedRules = file.rules.filter(r => r.totalRadius > 0).sort((a, b) => b.totalRadius - a.totalRadius);
+  const unusedRules = file.rules.filter(r => r.totalRadius === 0).sort((a, b) => a.source.localeCompare(b.source));
+
   let html = `
         <div class="card">
             <h2>File Details</h2>
             <p><strong>File:</strong> ${escapeHtml(file.name)}</p>
-            <p><strong>Total Impact:</strong> ${file.totalRadius} items kept across ${file.rules.length} rules.</p>
+            <p><strong>Blast radius:</strong> ${file.totalRadius} items kept across ${file.rules.length} rules.</p>
         </div>
+    `;
+
+  if (usedRules.length > 0) {
+    html += `
         <div class="card">
             <h2>Keep Rules in this File</h2>
             <div class="item-list">
-                ${file.rules.sort((a,b) => b.totalRadius - a.totalRadius).map(r => `
-                    <div style="padding: 1rem; border-bottom: 1px solid #eee;">
+                ${usedRules.map(r => `
+                    <div class="rule-item" onclick="navigateToRule('${r.id}')">
                         <div class="rule-name">${escapeHtml(r.source)}</div>
                         <div class="rule-stats">Blast radius: ${r.totalRadius}</div>
                     </div>
@@ -469,6 +493,23 @@ function renderFileDetail(file) {
             </div>
         </div>
     `;
+  }
+
+  if (unusedRules.length > 0) {
+    html += `
+        <div class="card">
+            <h2>Unused Keep Rules in this File</h2>
+            <div class="item-list">
+                ${unusedRules.map(r => `
+                    <div class="rule-item" onclick="navigateToRule('${r.id}')">
+                        <div class="rule-name">${escapeHtml(r.source)}</div>
+                    </div>
+                `).join('')}
+            </div>
+        </div>
+    `;
+  }
+
   mainContent.innerHTML = html;
 }
 
@@ -476,19 +517,25 @@ function renderBlastRadiusItems(blastRadius) {
   let html = "";
 
   const renderSection = (title, items, type, formatter, badgeClass, limit) => {
-    if (!items || items.length === 0) return "";
+    if (currentSubView !== type) return "";
+    if (!items || items.length === 0) {
+      return `
+        <div class="card">
+            <p style="color: #666; font-style: italic;">No items matched this category.</p>
+        </div>
+      `;
+    }
     const visibleItems = items.slice(0, limit);
     const hasMore = items.length > limit;
 
     return `
             <div class="card">
-                <div class="section-title">${title} <span class="badge ${badgeClass}">${items.length}</span></div>
                 <ul class="item-list">
                     ${visibleItems.map(id => {
                         const info = type === 'class' ? tables.classes.get(id) :
                                    (type === 'method' ? tables.methods.get(id) : tables.fields.get(id));
-                        return info ? `<li>${formatter(type === 'class' ? info.classReferenceId :
-                                                     (type === 'method' ? info.methodReferenceId : info.fieldReferenceId))}</li>`
+                        return info ? `<li>${escapeHtml(formatter(type === 'class' ? info.classReferenceId :
+                                                     (type === 'method' ? info.methodReferenceId : info.fieldReferenceId)))}</li>`
                                     : `<li>Unknown ${type} ID ${id}</li>`;
                     }).join('')}
                 </ul>
@@ -540,10 +587,22 @@ function filterRedundantRules(query) {
   renderRuleList();
 }
 
-function switchView(view) {
+function navigateToRule(ruleId) {
+  const rule = tables.rules.get(Number(ruleId));
+  if (!rule) return;
+
+  switchView('rules', true);
+  const element = ruleList.querySelector(`[data-rule-id="${rule.id}"]`);
+  if (element) {
+    selectRule(rule, element);
+    element.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+}
+
+function switchView(view, preserveDetail = false) {
   currentView = view;
   document.querySelectorAll('.tab-button').forEach(btn => {
-    btn.classList.toggle('active', btn.getAttribute('onclick').includes(view));
+    btn.classList.toggle('active', btn.getAttribute('onclick').includes(`'${view}'`));
   });
 
   searchInput.value = "";
@@ -552,15 +611,53 @@ function switchView(view) {
   if (containerData) {
     if (view === 'rules') {
       filterRules("");
+      if (!preserveDetail) {
+        renderStatsOverview();
+      }
     } else if (view === 'unused') {
       filterUnusedRules("");
+      mainContent.innerHTML = '';
     } else if (view === 'redundant') {
       filterRedundantRules("");
-    } else {
+      mainContent.innerHTML = '';
+    } else if (view === 'files') {
       filterFiles("");
+      mainContent.innerHTML = '';
     }
+  } else {
+    renderWelcomeMessage();
   }
+}
+
+function switchSubView(subView) {
+  currentSubView = subView;
+  if (currentSelectedRule) {
+    renderRuleDetail(currentSelectedRule);
+  }
+}
+
+function renderStatsOverview() {
+  const template = document.getElementById('stats-overview-template');
   mainContent.innerHTML = '';
+  mainContent.appendChild(template.content.cloneNode(true));
+  renderStats();
+}
+
+function renderWelcomeMessage() {
+  const template = document.getElementById('welcome-message-template');
+  if (template) {
+    mainContent.innerHTML = '';
+    mainContent.appendChild(template.content.cloneNode(true));
+  }
+}
+
+function renderLoading() {
+  mainContent.innerHTML = `
+    <div id="loading-screen">
+      <div class="spinner"></div>
+      <p>Processing data...</p>
+    </div>
+  `;
 }
 
 function formatTypeName(typeId) {
@@ -650,8 +747,22 @@ function getFileName(origin) {
   return fileOrigin ? fileOrigin.filename : "Unknown";
 }
 
+function getMavenCoordinate(origin) {
+  if (!origin) return null;
+  const fileOrigin = tables.origins.get(origin.fileOriginId);
+  return fileOrigin?.mavenCoordinate;
+}
+
+function getMavenCoordinateString(mavenCoordinate) {
+  return mavenCoordinate.groupId + ":" + mavenCoordinate.artifactId + ":" + mavenCoordinate.version;
+}
+
 function getOriginString(origin) {
   if (!origin) return "Unknown";
+  const mavenCoordinate = getMavenCoordinate(origin);
+  if (mavenCoordinate) {
+    return getMavenCoordinateString(mavenCoordinate);
+  }
   const name = getFileName(origin);
   let res = name;
   if (origin.lineNumber) {
@@ -666,4 +777,17 @@ function escapeHtml(text) {
   const div = document.createElement('div');
   div.textContent = text;
   return div.innerHTML;
+}
+
+function formatStatsBreakdown(classes, methods, fields) {
+  const parts = [];
+  if (classes > 0) parts.push(`${classes} class${classes !== 1 ? 'es' : ''}`);
+  if (methods > 0) parts.push(`${methods} method${methods !== 1 ? 's' : ''}`);
+  if (fields > 0) parts.push(`${fields} field${fields !== 1 ? 's' : ''}`);
+  return parts.length > 0 ? `(${parts.join(', ')})` : '';
+}
+
+if (!containerData && !embeddedProtoDataSource) {
+  renderWelcomeMessage();
+  dropZone.classList.remove('hidden');
 }

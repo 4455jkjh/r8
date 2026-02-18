@@ -27,6 +27,7 @@ import com.android.tools.r8.StringConsumer;
 import com.android.tools.r8.SyntheticInfoConsumer;
 import com.android.tools.r8.Version;
 import com.android.tools.r8.androidapi.AndroidApiModelingOptions;
+import com.android.tools.r8.blastradius.BlastRadiusOptions;
 import com.android.tools.r8.cf.CfVersion;
 import com.android.tools.r8.classmerging.Policy;
 import com.android.tools.r8.debuginfo.DebugRepresentation;
@@ -496,7 +497,9 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
   public boolean enableEnumSwitchMapRemoval = true;
   // TODO(b/453628974): enabling this will unsafely disable compareAndSet
   //                    bug-fix backports for Android Sv2 and before.
-  public boolean enableAtomicFieldUpdaterOptimization = false;
+  public boolean enableAtomicFieldUpdaterOptimization =
+      SystemPropertyUtils.parseSystemPropertyOrDefault(
+          "com.android.tools.r8.enableAtomicFieldUpdaterOptimization", false);
   public final OutlineOptions outline = new OutlineOptions();
   public boolean enableInitializedClassesInInstanceMethodsAnalysis = true;
   public boolean enableRedundantFieldLoadElimination = true;
@@ -1071,6 +1074,7 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
   }
 
   private final AccessModifierOptions accessModifierOptions = new AccessModifierOptions(this);
+  private final BlastRadiusOptions blastRadiusOptions = new BlastRadiusOptions(this);
   private final RewriteArrayOptions rewriteArrayOptions = new RewriteArrayOptions();
   private final CallSiteOptimizationOptions callSiteOptimizationOptions =
       new CallSiteOptimizationOptions();
@@ -1198,6 +1202,10 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
 
   public AccessModifierOptions getAccessModifierOptions() {
     return accessModifierOptions;
+  }
+
+  public BlastRadiusOptions getBlastRadiusOptions() {
+    return blastRadiusOptions;
   }
 
   public CfCodeAnalysisOptions getCfCodeAnalysisOptions() {
@@ -2460,7 +2468,8 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
     public boolean enableEnumUnboxingDebugLogs =
         System.getProperty("com.android.tools.r8.enableEnumUnboxingDebugLogs") != null;
     public boolean enableAtomicFieldUpdaterLogs =
-        System.getProperty("com.android.tools.r8.enableAtomicFieldUpdaterExtenderLogs") != null;
+        SystemPropertyUtils.parseSystemPropertyOrDefault(
+            "com.android.tools.r8.enableAtomicFieldUpdaterExtenderLogs", false);
     public boolean enableVerticalClassMergerLensAssertion = false;
     public boolean forceRedundantConstNumberRemoval = false;
     public boolean forceSplitReturnRewriter = false;

@@ -3,6 +3,7 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8;
 
+import static com.android.tools.r8.profile.art.ArtProfileCompletenessChecker.CompletenessExceptions.ALLOW_MISSING_ATOMIC_FIELD_UPDATER_METHODS;
 import static com.android.tools.r8.profile.art.ArtProfileCompletenessChecker.CompletenessExceptions.ALLOW_MISSING_ENUM_UNBOXING_UTILITY_METHODS;
 import static com.android.tools.r8.utils.AssertionUtils.forTesting;
 import static com.android.tools.r8.utils.ExceptionUtils.unwrapExecutionException;
@@ -133,6 +134,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 import javax.xml.parsers.ParserConfigurationException;
 import org.xml.sax.SAXException;
@@ -356,130 +358,129 @@ public class R8 {
       timing.end();
       timing.begin("Strip unused code");
       timing.begin("Before enqueuer");
-      List<ProguardConfigurationRule> synthesizedProguardRules;
-      boolean enableListIterationRewriter;
-      try {
-        synthesizedProguardRules = ProguardConfigurationUtils.synthesizeRules(appView);
-        ProfileCollectionAdditions profileCollectionAdditions =
-            ProfileCollectionAdditions.create(appView);
-        AssumeInfoCollection.Builder assumeInfoCollectionBuilder = AssumeInfoCollection.builder();
-        ImmediateAppSubtypingInfo subtypingInfo = ImmediateAppSubtypingInfo.create(appView);
-        appView.setRootSet(
-            RootSet.builder(
-                    appView,
-                    subtypingInfo,
-                    Iterables.concat(
-                        options.getProguardConfiguration().getRules(), synthesizedProguardRules))
-                .setAssumeInfoCollectionBuilder(assumeInfoCollectionBuilder)
-                .evaluateRules(executorService)
-                .expandAdaptClassStringsPatterns()
-                .tracePartialCompilationDexingOutputClasses(executorService)
-                .build());
-        appView.setAssumeInfoCollection(assumeInfoCollectionBuilder.build(appView));
+      List<ProguardConfigurationRule> synthesizedProguardRules =
+          ProguardConfigurationUtils.synthesizeRules(appView);
+      ProfileCollectionAdditions profileCollectionAdditions =
+          ProfileCollectionAdditions.create(appView);
+      AssumeInfoCollection.Builder assumeInfoCollectionBuilder = AssumeInfoCollection.builder();
+      ImmediateAppSubtypingInfo subtypingInfo = ImmediateAppSubtypingInfo.create(appView);
+      appView.setRootSet(
+          RootSet.builder(
+                  appView,
+                  subtypingInfo,
+                  Iterables.concat(
+                      options.getProguardConfiguration().getRules(), synthesizedProguardRules))
+              .setAssumeInfoCollectionBuilder(assumeInfoCollectionBuilder)
+              .evaluateRules(executorService)
+              .expandAdaptClassStringsPatterns()
+              .tracePartialCompilationDexingOutputClasses(executorService)
+              .build());
+      appView.setAssumeInfoCollection(assumeInfoCollectionBuilder.build(appView));
 
-        // Compute the main dex rootset that will be the base of first and final main dex tracing
-        // before building a new appview with only live classes (and invalidating subtypingInfo).
-        if (!options.mainDexKeepRules.isEmpty()) {
-          assert appView.graphLens().isIdentityLens();
-          // Find classes which may have code executed before secondary dex files installation.
-          MainDexRootSet mainDexRootSet =
-              MainDexRootSet.builder(appView, subtypingInfo, options.mainDexKeepRules)
-                  .evaluateRulesAndBuild(executorService);
-          appView.setMainDexRootSet(mainDexRootSet);
-          appView.appInfo().unsetObsolete();
-        }
-
-        AnnotationRemover.Builder annotationRemoverBuilder =
-            options.isShrinking() ? AnnotationRemover.builder(Mode.INITIAL_TREE_SHAKING) : null;
-        timing.end();
-        timing.begin("Enqueuer");
-        AppView<AppInfoWithLiveness> appViewWithLiveness =
-            runEnqueuer(
-                annotationRemoverBuilder,
-                executorService,
-                appView,
-                profileCollectionAdditions,
-                subtypingInfo,
-                keepDeclarations);
-        timing.end();
-        timing.begin("After enqueuer");
-        assert appView.rootSet().verifyKeptFieldsAreAccessedAndLive(appViewWithLiveness);
-        assert appView.rootSet().verifyKeptMethodsAreTargetedAndLive(appViewWithLiveness);
-        assert appView.rootSet().verifyKeptTypesAreLive(appViewWithLiveness);
-        assert appView.rootSet().verifyKeptItemsAreKept(appView);
-        assert ArtProfileCompletenessChecker.verify(appView);
-        appView.rootSet().checkAllRulesAreUsed(options);
-
-        if (options.apiModelingOptions().isReportUnknownApiReferencesEnabled()) {
-          appView.apiLevelCompute().reportUnknownApiReferences();
-        }
-
-        if (options.proguardSeedsConsumer != null) {
-          ByteArrayOutputStream bytes = new ByteArrayOutputStream();
-          PrintStream out = new PrintStream(bytes);
-          RootSetBuilder.writeSeeds(appView.appInfo().withLiveness(), out, type -> true);
-          out.flush();
-          ExceptionUtils.withConsumeResourceHandler(
-              options.reporter, options.proguardSeedsConsumer, bytes.toString());
-          ExceptionUtils.withFinishedResourceHandler(
-              options.reporter, options.proguardSeedsConsumer);
-        }
-
-        if (options.isShrinking()) {
-          // Mark dead proto extensions fields as neither being read nor written. This step must
-          // run prior to the tree pruner.
-          appView.withGeneratedExtensionRegistryShrinker(
-              shrinker -> shrinker.run(Mode.INITIAL_TREE_SHAKING));
-
-          // Build enclosing information and type-parameter information before pruning.
-          // TODO(b/187922482): Only consider referenced classes.
-          GenericSignatureContextBuilder genericContextBuilder =
-              GenericSignatureContextBuilder.create(appView);
-
-          // Compute if all signatures are valid before modifying them.
-          GenericSignatureCorrectnessHelper.createForInitialCheck(appView, genericContextBuilder)
-              .run(appView.appInfo().classes());
-
-          // TODO(b/226539525): Implement enum lite proto shrinking as deferred tracing.
-          PrunedItems.Builder prunedItemsBuilder = PrunedItems.builder();
-          if (appView.options().protoShrinking().isEnumLiteProtoShrinkingEnabled()) {
-            appView.protoShrinker().enumLiteProtoShrinker.clearDeadEnumLiteMaps(prunedItemsBuilder);
-          }
-
-          TreePruner pruner = new TreePruner(appViewWithLiveness);
-          pruner.run(executorService, timing, prunedItemsBuilder);
-          appViewWithLiveness
-              .appInfo()
-              .notifyTreePrunerFinished(Enqueuer.Mode.INITIAL_TREE_SHAKING);
-
-          // Recompute the subtyping information.
-          new AbstractMethodRemover(appViewWithLiveness).run();
-
-          AnnotationRemover annotationRemover = annotationRemoverBuilder.build(appViewWithLiveness);
-          annotationRemover.ensureValid().run(executorService);
-          new GenericSignatureRewriter(appView, genericContextBuilder)
-              .run(appView.appInfo().classes(), executorService);
-
-          assert appView.checkForTesting(() -> allReferencesAssignedApiLevel(appViewWithLiveness));
-        }
-
-        if (options.isGeneratingClassFiles()) {
-          LirConverter.enterLirSupportedPhaseForCf(appViewWithLiveness, executorService);
-        } else {
-          assert appView.testing().isSupportedLirPhase();
-        }
-
-        // Compute after initial round of tree shaking to not trigger on pruned classes.
-        enableListIterationRewriter =
-            ListIterationRewriter.shouldEnableForR8(appView, subtypingInfo);
-
-        timing.end();
-      } finally {
-        timing.end();
+      // Compute the main dex rootset that will be the base of first and final main dex tracing
+      // before building a new appview with only live classes (and invalidating subtypingInfo).
+      if (!options.mainDexKeepRules.isEmpty()) {
+        assert appView.graphLens().isIdentityLens();
+        // Find classes which may have code executed before secondary dex files installation.
+        MainDexRootSet mainDexRootSet =
+            MainDexRootSet.builder(appView, subtypingInfo, options.mainDexKeepRules)
+                .evaluateRulesAndBuild(executorService);
+        appView.setMainDexRootSet(mainDexRootSet);
+        appView.appInfo().unsetObsolete();
       }
+
+      AnnotationRemover.Builder annotationRemoverBuilder =
+          options.isShrinking() ? AnnotationRemover.builder(Mode.INITIAL_TREE_SHAKING) : null;
+      timing.end();
+      timing.begin("Enqueuer");
+      AppView<AppInfoWithLiveness> appViewWithLiveness =
+          runEnqueuer(
+              annotationRemoverBuilder,
+              executorService,
+              appView,
+              profileCollectionAdditions,
+              subtypingInfo,
+              keepDeclarations);
+      timing.end();
+
+      if (options.getBlastRadiusOptions().shouldExitEarly()) {
+        if (options.isPrintTimesReportingEnabled()) {
+          timing.end().report();
+        }
+        return;
+      }
+
+      timing.begin("After enqueuer");
+      assert appView.rootSet().verifyKeptFieldsAreAccessedAndLive(appViewWithLiveness);
+      assert appView.rootSet().verifyKeptMethodsAreTargetedAndLive(appViewWithLiveness);
+      assert appView.rootSet().verifyKeptTypesAreLive(appViewWithLiveness);
+      assert appView.rootSet().verifyKeptItemsAreKept(appView);
+      assert ArtProfileCompletenessChecker.verify(appView);
+      appView.rootSet().checkAllRulesAreUsed(options);
+
+      if (options.apiModelingOptions().isReportUnknownApiReferencesEnabled()) {
+        appView.apiLevelCompute().reportUnknownApiReferences();
+      }
+
+      if (options.proguardSeedsConsumer != null) {
+        ByteArrayOutputStream bytes = new ByteArrayOutputStream();
+        PrintStream out = new PrintStream(bytes);
+        RootSetBuilder.writeSeeds(appView.appInfo().withLiveness(), out, type -> true);
+        out.flush();
+        ExceptionUtils.withConsumeResourceHandler(
+            options.reporter, options.proguardSeedsConsumer, bytes.toString());
+        ExceptionUtils.withFinishedResourceHandler(options.reporter, options.proguardSeedsConsumer);
+      }
+
+      if (options.isShrinking()) {
+        // Mark dead proto extensions fields as neither being read nor written. This step must
+        // run prior to the tree pruner.
+        appView.withGeneratedExtensionRegistryShrinker(
+            shrinker -> shrinker.run(Mode.INITIAL_TREE_SHAKING));
+
+        // Build enclosing information and type-parameter information before pruning.
+        // TODO(b/187922482): Only consider referenced classes.
+        GenericSignatureContextBuilder genericContextBuilder =
+            GenericSignatureContextBuilder.create(appView);
+
+        // Compute if all signatures are valid before modifying them.
+        GenericSignatureCorrectnessHelper.createForInitialCheck(appView, genericContextBuilder)
+            .run(appView.appInfo().classes());
+
+        // TODO(b/226539525): Implement enum lite proto shrinking as deferred tracing.
+        PrunedItems.Builder prunedItemsBuilder = PrunedItems.builder();
+        if (appView.options().protoShrinking().isEnumLiteProtoShrinkingEnabled()) {
+          appView.protoShrinker().enumLiteProtoShrinker.clearDeadEnumLiteMaps(prunedItemsBuilder);
+        }
+
+        TreePruner pruner = new TreePruner(appViewWithLiveness);
+        pruner.run(executorService, timing, prunedItemsBuilder);
+        appViewWithLiveness.appInfo().notifyTreePrunerFinished(Enqueuer.Mode.INITIAL_TREE_SHAKING);
+
+        // Recompute the subtyping information.
+        new AbstractMethodRemover(appViewWithLiveness).run();
+
+        AnnotationRemover annotationRemover = annotationRemoverBuilder.build(appViewWithLiveness);
+        annotationRemover.ensureValid().run(executorService);
+        new GenericSignatureRewriter(appView, genericContextBuilder)
+            .run(appView.appInfo().classes(), executorService);
+
+        assert appView.checkForTesting(() -> allReferencesAssignedApiLevel(appViewWithLiveness));
+      }
+
+      if (options.isGeneratingClassFiles()) {
+        LirConverter.enterLirSupportedPhaseForCf(appViewWithLiveness, executorService);
+      } else {
+        assert appView.testing().isSupportedLirPhase();
+      }
+
+      // Compute after initial round of tree shaking to not trigger on pruned classes.
+      boolean enableListIterationRewriter =
+          ListIterationRewriter.shouldEnableForR8(appView, subtypingInfo);
+
+      timing.end();
+      timing.end();
       timing.begin("Run center tasks");
-      assert appView.appInfo().hasLiveness();
-      AppView<AppInfoWithLiveness> appViewWithLiveness = appView.withLiveness();
 
       options.reportLibraryAndProgramDuplicates(appViewWithLiveness);
 
@@ -550,14 +551,19 @@ public class R8 {
       Set<DexType> prunedClasspathTypes =
           appView.withLiveness().appInfo().getClasspathTypesIncludingPruned();
 
-      assert ArtProfileCompletenessChecker.verify(appView);
+      // AtomicFieldUpdaterInstrumentor adds a method not yet used.
+      assert ArtProfileCompletenessChecker.verify(
+          appView, ALLOW_MISSING_ATOMIC_FIELD_UPDATER_METHODS);
 
       new PrimaryR8IRConverter(appViewWithLiveness, timing, enableListIterationRewriter)
           .optimize(appViewWithLiveness, executorService);
       assert LirConverter.verifyLirOnly(appView);
 
+      // AtomicFieldUpdaterInstrumentor adds a method not yet used.
       assert ArtProfileCompletenessChecker.verify(
-          appView, ALLOW_MISSING_ENUM_UNBOXING_UTILITY_METHODS);
+          appView,
+          ALLOW_MISSING_ENUM_UNBOXING_UTILITY_METHODS,
+          ALLOW_MISSING_ATOMIC_FIELD_UPDATER_METHODS);
 
       // Clear the reference type lattice element cache to reduce memory pressure.
       appView.getTypeElementFactory().clearTypeElementsCache();
@@ -1394,6 +1400,28 @@ public class R8 {
     @Override
     public Origin getOrigin() {
       return androidResource.getOrigin();
+    }
+  }
+
+  public static class LibraryAnalyzerEntryPoint {
+
+    public static void run(
+        R8Command command,
+        ExecutorService executorService,
+        Consumer<InternalOptions> optionsModification)
+        throws CompilationFailedException {
+      AndroidApp app = command.getInputApp();
+      InternalOptions options = command.getInternalOptions();
+      optionsModification.accept(options);
+      ExceptionUtils.withR8CompilationHandler(
+          options.reporter,
+          () -> {
+            try {
+              runInternal(app, options, executorService);
+            } finally {
+              executorService.shutdown();
+            }
+          });
     }
   }
 

@@ -51,6 +51,7 @@ import com.android.tools.r8.utils.Reporter;
 import com.android.tools.r8.utils.StringUtils;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Sets;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -1926,8 +1927,7 @@ public class ProguardConfigurationParserTest extends TestBase {
       fail();
     } catch (RuntimeException e) {
       assertTrue(e.getCause() instanceof AbortException);
-      checkDiagnostics(handler.errors, proguardConfig, 3, 1,
-          "Wildcard", "<4>", "invalid");
+      checkDiagnostics(handler.errors, proguardConfig, 2, 19, "Wildcard", "<4>", "invalid");
     }
   }
 
@@ -1942,8 +1942,7 @@ public class ProguardConfigurationParserTest extends TestBase {
       fail();
     } catch (RuntimeException e) {
       assertTrue(e.getCause() instanceof AbortException);
-      checkDiagnostics(handler.errors, proguardConfig, 3, 1,
-          "Wildcard", "<2>", "invalid");
+      checkDiagnostics(handler.errors, proguardConfig, 2, 19, "Wildcard", "<2>", "invalid");
     }
   }
 
@@ -1980,8 +1979,7 @@ public class ProguardConfigurationParserTest extends TestBase {
       fail();
     } catch (RuntimeException e) {
       assertTrue(e.getCause() instanceof AbortException);
-      checkDiagnostics(handler.errors, proguardConfig, 5, 1,
-          "Wildcard", "<3>", "invalid");
+      checkDiagnostics(handler.errors, proguardConfig, 4, 28, "Wildcard", "<3>", "invalid");
     }
   }
 
@@ -3382,5 +3380,34 @@ public class ProguardConfigurationParserTest extends TestBase {
               diagnosticPosition(
                   positionColumn(48 + BooleanUtils.intValue(ToolHelper.isWindows())))));
     }
+  }
+
+  @Test
+  public void testSourceOfKeepRuleWithoutMemberRules() {
+    Set<String> sources =
+        Sets.newHashSet(
+            "-keep class *",
+            "-keep class S,T",
+            "-keep class * extends T",
+            "-keep class * implements T");
+    String configuration =
+        StringUtils.lines(sources.stream().map(l -> l + " #suffix").collect(Collectors.toList()));
+    parser.parse(createConfigurationForTesting(configuration));
+    verifyParserEndsCleanly();
+
+    ProguardConfiguration config = builder.build();
+    for (int i = 0; i < config.getRules().size(); i++) {
+      ProguardConfigurationRule rule = config.getRules().get(i);
+      assertTrue(rule.getSource(), sources.remove(rule.getSource()));
+    }
+    assertTrue(sources.isEmpty());
+  }
+
+  @Test
+  public void testParseArFlag() {
+    parser.parse(createConfigurationForTesting("-ar_flag \"--foo\""));
+    assertTrue(handler.infos.isEmpty());
+    assertTrue(handler.errors.isEmpty());
+    checkDiagnostics(handler.warnings, null, 1, 1, "Ignoring option: -ar_flag");
   }
 }

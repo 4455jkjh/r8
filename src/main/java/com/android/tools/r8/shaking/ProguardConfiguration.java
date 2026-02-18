@@ -16,12 +16,10 @@ import com.android.tools.r8.shaking.ProguardConfigurationParser.ProguardConfigur
 import com.android.tools.r8.utils.InternalOptions.PackageObfuscationMode;
 import com.android.tools.r8.utils.Reporter;
 import com.android.tools.r8.utils.StringUtils;
-import com.android.tools.r8.utils.SystemPropertyUtils;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -772,26 +770,12 @@ public class ProguardConfiguration {
   }
 
   public boolean isPrintBlastRadius() {
-    return printBlastRadius
-        || SystemPropertyUtils.isSystemPropertySet(
-        "com.android.tools.r8.dumpblastradiustodirectory")
-        || SystemPropertyUtils.isSystemPropertySet(
-            "com.android.tools.r8.dumpblastradiustofile");
+    return printBlastRadius;
   }
 
   public Path getPrintBlastRadiusFile() {
     assert isPrintBlastRadius();
-    if (printBlastRadius) {
-      return printBlastRadiusFile;
-    }
-    if (SystemPropertyUtils.isSystemPropertySet(
-        "com.android.tools.r8.dumpblastradiustodirectory")) {
-      return Paths.get(System.getProperty("com.android.tools.r8.dumpblastradiustodirectory"))
-          .resolve("blastradius" + System.nanoTime() + ".pb");
-    }
-    assert SystemPropertyUtils.isSystemPropertySet(
-        "com.android.tools.r8.dumpblastradiustofile");
-    return Paths.get(System.getProperty("com.android.tools.r8.dumpblastradiustofile"));
+    return printBlastRadiusFile;
   }
 
   public boolean isPrintConfiguration() {

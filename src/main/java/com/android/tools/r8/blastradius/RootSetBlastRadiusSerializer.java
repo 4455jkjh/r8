@@ -14,9 +14,11 @@ import com.android.tools.r8.blastradius.proto.GlobalKeepRuleBlastRadius;
 import com.android.tools.r8.blastradius.proto.KeepConstraint;
 import com.android.tools.r8.blastradius.proto.KeepConstraints;
 import com.android.tools.r8.blastradius.proto.KeepRuleBlastRadius;
+import com.android.tools.r8.blastradius.proto.KeepRuleTag;
 import com.android.tools.r8.blastradius.proto.KeptClassInfo;
 import com.android.tools.r8.blastradius.proto.KeptFieldInfo;
 import com.android.tools.r8.blastradius.proto.KeptMethodInfo;
+import com.android.tools.r8.blastradius.proto.MavenCoordinate;
 import com.android.tools.r8.blastradius.proto.MethodReference;
 import com.android.tools.r8.blastradius.proto.ProtoReference;
 import com.android.tools.r8.blastradius.proto.TextFileOrigin;
@@ -30,6 +32,7 @@ import com.android.tools.r8.graph.DexProto;
 import com.android.tools.r8.graph.DexReference;
 import com.android.tools.r8.graph.DexType;
 import com.android.tools.r8.graph.DexTypeList;
+import com.android.tools.r8.origin.MavenOrigin;
 import com.android.tools.r8.origin.Origin;
 import com.android.tools.r8.position.Position;
 import com.android.tools.r8.position.TextRange;
@@ -40,6 +43,7 @@ import com.android.tools.r8.shaking.ProguardConfiguration;
 import com.android.tools.r8.shaking.ProguardKeepRuleBase;
 import com.android.tools.r8.shaking.ProguardKeepRuleModifiers;
 import com.android.tools.r8.utils.ArrayUtils;
+import com.android.tools.r8.utils.OriginUtils;
 import com.google.common.base.Equivalence;
 import com.google.common.base.Equivalence.Wrapper;
 import com.google.common.collect.Iterables;
@@ -86,11 +90,12 @@ public class RootSetBlastRadiusSerializer {
     this.appInfo = enqueuerResult.getAppInfo();
   }
 
-  public BlastRadiusContainer serialize(RootSetBlastRadius blastRadius) {
+  public BlastRadiusContainer serialize(
+      RootSetBlastRadius blastRadius, BlastRadiusOptions options) {
     Collection<RootSetBlastRadiusForRule> sortedBlastRadius =
         blastRadius.getBlastRadiusWithDeterministicOrder();
     Map<RootSetBlastRadiusForRule, Collection<RootSetBlastRadiusForRule>> subsumedByInfo =
-        blastRadius.getSubsumedByInfo();
+        blastRadius.getSubsumedByInfo(options);
     for (RootSetBlastRadiusForRule blastRadiusForRule : sortedBlastRadius) {
       ruleIds.put(blastRadiusForRule, ruleIds.size());
     }
@@ -103,6 +108,9 @@ public class RootSetBlastRadiusSerializer {
               .setConstraintsId(serializeConstraints(blastRadiusForRule).getId())
               .setOrigin(serializeTextFileOrigin(blastRadiusForRule.getRule()))
               .setSource(blastRadiusForRule.getSource());
+      if (BlastRadiusKeepRuleClassifier.isPackageWideKeepRule(blastRadiusForRule.getRule())) {
+        ruleProto.addTags(KeepRuleTag.PACKAGE_WIDE);
+      }
       container.addKeepRuleBlastRadiusTable(ruleProto);
     }
     serializeGlobalKeepRuleBlastRadii(ruleIds.size());
@@ -173,7 +181,7 @@ public class RootSetBlastRadiusSerializer {
   private BuildInfo serializeBuildInfo() {
     int classCount = 0, fieldCount = 0, methodCount = 0;
     int liveClassCount = 0, liveFieldCount = 0, liveMethodCount = 0;
-    for (DexProgramClass clazz : appView.appInfo().classes()) {
+    for (DexProgramClass clazz : appInfo.classes()) {
       classCount++;
       fieldCount += clazz.getFieldCollection().size();
       methodCount += clazz.getMethodCollection().size();
@@ -275,9 +283,18 @@ public class RootSetBlastRadiusSerializer {
         origin,
         o -> {
           // TODO(b/441055269): Set the filename correctly.
-          // TODO(b/441055269): Set maven coordinate.
-          FileOrigin fileOrigin =
-              FileOrigin.newBuilder().setId(origins.size()).setFilename(o.toString()).build();
+          FileOrigin.Builder fileOriginBuilder =
+              FileOrigin.newBuilder().setId(origins.size()).setFilename(o.toString());
+          MavenOrigin mavenOrigin = OriginUtils.getMavenOrigin(origin);
+          if (mavenOrigin != null) {
+            fileOriginBuilder.setMavenCoordinate(
+                MavenCoordinate.newBuilder()
+                    .setArtifactId(mavenOrigin.getModule())
+                    .setGroupId(mavenOrigin.getGroup())
+                    .setVersion(mavenOrigin.getVersion())
+                    .build());
+          }
+          FileOrigin fileOrigin = fileOriginBuilder.build();
           container.addFileOriginTable(fileOrigin);
           return fileOrigin;
         });

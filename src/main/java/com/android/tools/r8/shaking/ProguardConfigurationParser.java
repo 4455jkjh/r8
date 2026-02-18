@@ -98,9 +98,11 @@ public class ProguardConfigurationParser {
   private static final List<String> IGNORED_CLASS_DESCRIPTOR_OPTIONS =
       ImmutableList.of("checkenumstringsdiscarded", "isclassnamestring", "whyarenotsimple");
 
-  private static final List<String> WARNED_SINGLE_ARG_OPTIONS = ImmutableList.of(
-      // TODO(b/37137994): -outjars should be reported as errors, not just as warnings!
-      "outjars");
+  private static final List<String> WARNED_SINGLE_ARG_OPTIONS =
+      ImmutableList.of(
+          "ar_flag",
+          // TODO(b/37137994): -outjars should be reported as errors, not just as warnings!
+          "outjars");
 
   private static final List<String> WARNED_OPTIONAL_SINGLE_ARG_OPTIONS = ImmutableList.of(
       // TODO(b/121340442): we may support this later.
@@ -238,7 +240,24 @@ public class ProguardConfigurationParser {
     ANY
   }
 
+  private static class ParserState {
+    int position;
+    int line;
+    int lineStartPosition;
+
+    ParserState() {
+      this(-1, -1, -1);
+    }
+
+    ParserState(int position, int line, int lineStartPosition) {
+      this.position = position;
+      this.line = line;
+      this.lineStartPosition = lineStartPosition;
+    }
+  }
+
   public class ProguardConfigurationSourceParser {
+
     private final String name;
     private final String contents;
     private int position = 0;
@@ -261,6 +280,24 @@ public class ProguardConfigurationParser {
       } else {
         contents = sourceWithPossibleLeadingBOM;
       }
+    }
+
+    private ParserState captureState() {
+      return new ParserState(position, line, lineStartPosition);
+    }
+
+    private void captureState(ParserState state) {
+      if (state != null) {
+        state.position = position;
+        state.line = line;
+        state.lineStartPosition = lineStartPosition;
+      }
+    }
+
+    private void setState(ParserState state) {
+      position = state.position;
+      line = state.line;
+      lineStartPosition = state.lineStartPosition;
     }
 
     public String getContentAfter(int start) {
@@ -1002,9 +1039,13 @@ public class ProguardConfigurationParser {
             B extends ProguardClassSpecification.Builder<C, B>>
         void parseClassSpecFromClassNameInclusive(
             ProguardClassSpecification.Builder<C, B> builder, boolean allowValueSpecification) {
-      builder.setClassNames(parseClassNames());
-      parseInheritance(builder);
-      parseMemberRules(builder, allowValueSpecification);
+      ParserState ruleEnd = new ParserState();
+      builder.setClassNames(parseClassNames(ruleEnd));
+      parseInheritance(builder, ruleEnd);
+      parseMemberRules(builder, allowValueSpecification, ruleEnd);
+      // Undo any whitespace consumed by parsing. This ensures that the source of the rule is not
+      // including any subsequent whitespace.
+      setState(ruleEnd);
     }
 
     private void parseRuleTypeAndModifiers(ProguardKeepRule.Builder builder) {
@@ -1191,7 +1232,8 @@ public class ProguardConfigurationParser {
     }
 
     private void parseInheritance(
-        ProguardClassSpecification.Builder<?, ?> classSpecificationBuilder) {
+        ProguardClassSpecification.Builder<?, ?> classSpecificationBuilder,
+        ParserState inheritanceClassNameEnd) {
       skipWhitespace();
       if (acceptString("implements")) {
         classSpecificationBuilder.setInheritanceIsExtends(false);
@@ -1203,6 +1245,7 @@ public class ProguardConfigurationParser {
       classSpecificationBuilder.addInheritanceAnnotations(parseAnnotationList());
       classSpecificationBuilder.setInheritanceClassName(ProguardTypeMatcher.create(parseClassName(),
           ClassOrType.CLASS, dexItemFactory));
+      captureState(inheritanceClassNameEnd);
     }
 
     private <
@@ -1210,7 +1253,8 @@ public class ProguardConfigurationParser {
             B extends ProguardClassSpecification.Builder<C, B>>
         void parseMemberRules(
             ProguardClassSpecification.Builder<C, B> classSpecificationBuilder,
-            boolean allowValueSpecification) {
+            boolean allowValueSpecification,
+            ParserState memberRulesEnd) {
       skipWhitespace();
       if (!eof() && acceptChar('{')) {
         ProguardMemberRule rule;
@@ -1219,6 +1263,7 @@ public class ProguardConfigurationParser {
         }
         skipWhitespace();
         expectChar('}');
+        captureState(memberRulesEnd);
       }
     }
 
@@ -2138,9 +2183,7 @@ public class ProguardConfigurationParser {
       if (isQuote(quote)) {
         expectClosingQuote(quote);
       }
-      int lastPatternEndLine = line;
-      int lastPatternEndLineStartPosition = lineStartPosition;
-      int lastPatternEndPosition = position;
+      ParserState capturedState = captureState();
       while (pattern != null) {
         patterns.add(pattern);
         skipWhitespace();
@@ -2152,9 +2195,7 @@ public class ProguardConfigurationParser {
           if (isQuote(quote)) {
             expectClosingQuote(quote);
           }
-          lastPatternEndLine = line;
-          lastPatternEndLineStartPosition = lineStartPosition;
-          lastPatternEndPosition = position;
+          captureState(capturedState);
           if (pattern == null) {
             throw parseError("Expected list element", start);
           }
@@ -2167,9 +2208,7 @@ public class ProguardConfigurationParser {
         throw parseError("Unexpected attribute");
       }
       // Position the parser at the end of the rule before notifying the configuration consumer.
-      line = lastPatternEndLine;
-      lineStartPosition = lastPatternEndLineStartPosition;
-      position = lastPatternEndPosition;
+      setState(capturedState);
       return patterns;
     }
 
@@ -2226,13 +2265,19 @@ public class ProguardConfigurationParser {
       builder.addClassName(
           name.negated,
           ProguardTypeMatcher.create(name.patternWithWildcards, ClassOrType.CLASS, dexItemFactory));
-      skipWhitespace();
     }
 
     private ProguardClassNameList parseClassNames() {
+      return parseClassNames(null);
+    }
+
+    private ProguardClassNameList parseClassNames(ParserState classNameEnd) {
       ProguardClassNameList.Builder builder = ProguardClassNameList.builder();
       do {
         parseClassNameAddToBuilder(builder);
+        // Record the position at which the class name ends.
+        captureState(classNameEnd);
+        skipWhitespace();
       } while (acceptChar(','));
       return builder.build();
     }

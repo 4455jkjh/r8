@@ -1,20 +1,18 @@
 // Copyright (c) 2026, the R8 project authors. Please see the AUTHORS file
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
-package com.android.tools.r8.optimize;
+package com.android.tools.r8.optimize.atomicfieldupdater;
 
+import static com.android.tools.r8.DiagnosticsMatcher.diagnosticMessage;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.Assert.assertEquals;
+import static org.hamcrest.core.StringContains.containsString;
 import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
 
-import com.android.tools.r8.Diagnostic;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestShrinkerBuilder;
 import com.android.tools.r8.ToolHelper.DexVm.Version;
 import com.android.tools.r8.utils.BooleanUtils;
-import com.android.tools.r8.utils.StringUtils;
 import com.android.tools.r8.utils.codeinspector.CodeMatchers;
 import com.android.tools.r8.utils.codeinspector.MethodSubject;
 import com.google.common.collect.ImmutableList;
@@ -27,7 +25,7 @@ import org.junit.runners.Parameterized.Parameter;
 import org.junit.runners.Parameterized.Parameters;
 
 @RunWith(Parameterized.class)
-public class AtomicFieldUpdaterCompareAndSetTest extends TestBase {
+public class AtomicFieldUpdaterGetTest extends TestBase {
 
   @Parameter(0)
   public TestParameters parameters;
@@ -62,34 +60,14 @@ public class AtomicFieldUpdaterCompareAndSetTest extends TestBase {
         .allowDiagnosticInfoMessages()
         .addKeepMainRule(testClass)
         .applyIf(dontObfuscate, TestShrinkerBuilder::addDontObfuscate)
-        .compile()
-        .inspectDiagnosticMessages(
+        .compileWithExpectedDiagnostics(
             diagnostics -> {
-              assertEquals(3, diagnostics.getInfos().size());
-              Diagnostic diagnostic = diagnostics.getInfos().get(0);
-              List<String> diagnosticLines =
-                  StringUtils.splitLines(diagnostic.getDiagnosticMessage());
-              for (String message : diagnosticLines) {
-                assertTrue(
-                    "Does not contain 'Can instrument': " + message,
-                    message.contains("Can instrument"));
-              }
-              assertEquals(1, diagnosticLines.size());
-              diagnostic = diagnostics.getInfos().get(1);
-              diagnosticLines = StringUtils.splitLines(diagnostic.getDiagnosticMessage());
-              for (String message : diagnosticLines) {
-                assertTrue(
-                    "Does not contain 'Can optimize': " + message,
-                    message.contains("Can optimize"));
-              }
-              assertEquals(1, diagnosticLines.size());
-              diagnostic = diagnostics.getInfos().get(2);
-              diagnosticLines = StringUtils.splitLines(diagnostic.getDiagnosticMessage());
-              for (String message : diagnosticLines) {
-                assertTrue(
-                    "Does not contain 'Can remove': " + message, message.contains("Can remove"));
-              }
-              assertEquals(1, diagnosticLines.size());
+              diagnostics.assertInfosMatch(
+                  diagnosticMessage(containsString("Can instrument")),
+                  diagnosticMessage(containsString("Can optimize")),
+                  // TODO(b/453628974): The field should be removed once nullability analysis is
+                  // more precise.
+                  diagnosticMessage(containsString("Cannot remove")));
             })
         .inspect(
             inspector -> {
@@ -97,14 +75,13 @@ public class AtomicFieldUpdaterCompareAndSetTest extends TestBase {
               assertThat(
                   method,
                   CodeMatchers.invokesMethod(
-                      "boolean",
+                      "java.lang.Object",
                       "sun.misc.Unsafe",
-                      "compareAndSwapObject",
-                      ImmutableList.of(
-                          "java.lang.Object", "long", "java.lang.Object", "java.lang.Object")));
+                      "getObjectVolatile",
+                      ImmutableList.of("java.lang.Object", "long")));
             })
         .run(parameters.getRuntime(), testClass)
-        .assertSuccessWithOutputLines("true");
+        .assertSuccessWithOutputLines("Hello");
   }
 
   // Corresponding to simple kotlin usage of `atomic("Hello")` via atomicfu.
@@ -125,7 +102,7 @@ public class AtomicFieldUpdaterCompareAndSetTest extends TestBase {
     }
 
     public static void main(String[] args) {
-      System.out.println(myString$FU.compareAndSet(new TestClass(), "Hello", "World!"));
+      System.out.println(myString$FU.get(new TestClass()));
     }
   }
 }

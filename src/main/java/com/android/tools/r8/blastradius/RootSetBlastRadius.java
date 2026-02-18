@@ -20,7 +20,6 @@ import com.android.tools.r8.shaking.KeepInfoCollectionEventConsumer;
 import com.android.tools.r8.shaking.KeepMethodInfo;
 import com.android.tools.r8.shaking.ProguardKeepRuleBase;
 import com.android.tools.r8.shaking.rules.KeepAnnotationFakeProguardRule;
-import com.android.tools.r8.utils.InternalOptions;
 import com.android.tools.r8.utils.ListUtils;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -44,10 +43,7 @@ public class RootSetBlastRadius {
 
   public static Builder builder(
       AppView<? extends AppInfoWithClassHierarchy> appView, Enqueuer.Mode mode) {
-    InternalOptions options = appView.options();
-    return options.hasProguardConfiguration()
-            && options.getProguardConfiguration().isPrintBlastRadius()
-            && mode.isFinalTreeShaking()
+    return mode.isInitialTreeShaking() && appView.options().getBlastRadiusOptions().isEnabled()
         ? new Builder()
         : null;
   }
@@ -61,14 +57,16 @@ public class RootSetBlastRadius {
     return ListUtils.sort(getBlastRadius(), Comparator.comparing(x -> x.getRule().getSource()));
   }
 
-  public Map<RootSetBlastRadiusForRule, Collection<RootSetBlastRadiusForRule>> getSubsumedByInfo() {
-    return new KeepRuleSubsumptionAnalysis(this).run();
+  public Map<RootSetBlastRadiusForRule, Collection<RootSetBlastRadiusForRule>> getSubsumedByInfo(
+      BlastRadiusOptions options) {
+    return new KeepRuleSubsumptionAnalysis(this).run(options);
   }
 
   public void writeToFile(
       AppView<?> appView, EnqueuerResult enqueuerResult, Path printBlastRadiusFile) {
     BlastRadiusContainer collection =
-        new RootSetBlastRadiusSerializer(appView, enqueuerResult).serialize(this);
+        new RootSetBlastRadiusSerializer(appView, enqueuerResult)
+            .serialize(this, appView.options().getBlastRadiusOptions());
     try (OutputStream output = Files.newOutputStream(printBlastRadiusFile)) {
       collection.writeTo(output);
     } catch (IOException e) {

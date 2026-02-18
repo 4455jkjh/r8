@@ -18,7 +18,7 @@ import static java.util.Collections.emptySet;
 
 import com.android.build.shrinker.r8integration.R8ResourceShrinkerState;
 import com.android.tools.r8.Diagnostic;
-import com.android.tools.r8.blastradius.BlastRadiusReporter;
+import com.android.tools.r8.blastradius.BlastRadiusOptions;
 import com.android.tools.r8.blastradius.RootSetBlastRadius;
 import com.android.tools.r8.cf.code.CfInstruction;
 import com.android.tools.r8.cf.code.CfInvoke;
@@ -260,7 +260,7 @@ public class Enqueuer {
   // thread."
   private ReentrantReadWriteLock appReadWriteLock = new ReentrantReadWriteLock(true);
   private final AppView<AppInfoWithClassHierarchy> appView;
-  private final RootSetBlastRadius.Builder blastRadius;
+  private final RootSetBlastRadius.Builder blastRadiusBuilder;
   private final EnqueuerDeferredTracing deferredTracing;
   private final EnqueuerDeferredAnnotationTracing deferredAnnotationTracing;
   private final ExecutorService executorService;
@@ -497,7 +497,7 @@ public class Enqueuer {
     InternalOptions options = appView.options();
     this.appInfo = appView.appInfo();
     this.appView = appView.withClassHierarchy();
-    this.blastRadius = RootSetBlastRadius.builder(appView, mode);
+    this.blastRadiusBuilder = RootSetBlastRadius.builder(appView, mode);
     this.mode = mode;
     this.profileCollectionAdditions = profileCollectionAdditions;
     this.deferredTracing = EnqueuerDeferredTracing.create(appView, this, mode);
@@ -512,7 +512,7 @@ public class Enqueuer {
         new EnqueuerTaskCollection(this, options.getThreadingModule(), executorService);
     this.keepInfo =
         new MutableKeepInfoCollection(
-            appView, this, KeepInfoCollectionEventConsumer.create(blastRadius));
+            appView, this, KeepInfoCollectionEventConsumer.create(blastRadiusBuilder));
     this.reflectiveIdentification = new EnqueuerReflectiveIdentification(appView, this);
     this.useRegistryFactory = createUseRegistryFactory();
     this.worklist = EnqueuerWorklist.createWorklist(this, options.getThreadingModule());
@@ -3989,7 +3989,7 @@ public class Enqueuer {
     }
     timing.begin("Create result");
     EnqueuerResult result = createEnqueuerResult(appInfo, timing);
-    reportBlastRadius(result);
+    reportBlastRadius(result, timing);
     profileCollectionAdditions.commit(appView);
     timing.end();
     return result;
@@ -4616,13 +4616,19 @@ public class Enqueuer {
     return true;
   }
 
-  private void reportBlastRadius(EnqueuerResult result) {
-    if (blastRadius != null) {
-      Path printBlastRadiusFile = options.getProguardConfiguration().getPrintBlastRadiusFile();
-      if (printBlastRadiusFile != null) {
-        blastRadius.build(appView).writeToFile(appView, result, printBlastRadiusFile);
-      } else {
-        BlastRadiusReporter.create().report(blastRadius.build(appView).getBlastRadius());
+  private void reportBlastRadius(EnqueuerResult result, Timing timing) {
+    if (blastRadiusBuilder == null) {
+      return;
+    }
+    try (Timing t0 = timing.begin("Report blast radius")) {
+      RootSetBlastRadius blastRadius = blastRadiusBuilder.build(appView);
+      BlastRadiusOptions blastRadiusOptions = options.getBlastRadiusOptions();
+      if (blastRadiusOptions.blastRadiusConsumer != null) {
+        blastRadiusOptions.blastRadiusConsumer.accept(appView, result.getAppInfo(), blastRadius);
+      }
+      Path blastRadiusOutputPath = blastRadiusOptions.getOutputPath();
+      if (blastRadiusOutputPath != null) {
+        blastRadius.writeToFile(appView, result, blastRadiusOutputPath);
       }
     }
   }
