@@ -2023,6 +2023,10 @@ public class KeepItemAnnotationGenerator {
                   + " `@UsesReflectionToAccessMethod(methodName = \"<init>\")`")
           .addSection("@see UsesReflectionToAccessMethod")
           .addSection("@see UsesReflectionToAccessField")
+          .addSection(
+              "@sample androidx.annotation.keep.samples.usesReflectionToConstructSample_default")
+          .addSection(
+              "@sample androidx.annotation.keep.samples.usesReflectionToConstructSample_parameters")
           .printDoc(this::println);
       printOpenAnnotationClassTargetingClassFieldMethodCtor(USES_REFLECTION_TO_CONSTRUCT);
       println();
