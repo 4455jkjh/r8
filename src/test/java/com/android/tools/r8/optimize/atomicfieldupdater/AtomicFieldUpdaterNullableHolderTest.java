@@ -23,7 +23,7 @@ import org.junit.runners.Parameterized.Parameter;
 import org.junit.runners.Parameterized.Parameters;
 
 @RunWith(Parameterized.class)
-public class AtomicFieldUpdaterSetTest extends TestBase {
+public class AtomicFieldUpdaterNullableHolderTest extends TestBase {
 
   @Parameter(0)
   public TestParameters parameters;
@@ -57,7 +57,6 @@ public class AtomicFieldUpdaterSetTest extends TestBase {
                 diagnostics.assertInfosMatch(
                     diagnosticMessage(containsString("Can instrument")),
                     diagnosticMessage(containsString("Can optimize")),
-                    diagnosticMessage(containsString("Can optimize")),
                     // TODO(b/453628974): The field should be removed once nullability analysis is
                     // more precise.
                     diagnosticMessage(containsString("Cannot remove"))))
@@ -67,13 +66,13 @@ public class AtomicFieldUpdaterSetTest extends TestBase {
               assertThat(
                   method,
                   CodeMatchers.invokesMethod(
-                      "void",
+                      "java.lang.Object",
                       "sun.misc.Unsafe",
-                      "putObjectVolatile",
-                      ImmutableList.of("java.lang.Object", "long", "java.lang.Object")));
+                      "getObjectVolatile",
+                      ImmutableList.of("java.lang.Object", "long")));
             })
         .run(parameters.getRuntime(), testClass)
-        .assertSuccessWithOutputLines("World!");
+        .assertFailureWithErrorThatThrows(ClassCastException.class);
   }
 
   // Corresponding to simple kotlin usage of `atomic("Hello")` via atomicfu.
@@ -94,9 +93,13 @@ public class AtomicFieldUpdaterSetTest extends TestBase {
     }
 
     public static void main(String[] args) {
-      TestClass instance = new TestClass();
-      myString$FU.set(instance, "World!");
-      System.out.println(myString$FU.get(instance));
+      TestClass holder;
+      if (System.out != null) {
+        holder = null;
+      } else {
+        holder = new TestClass();
+      }
+      System.out.println(myString$FU.get(holder));
     }
   }
 }

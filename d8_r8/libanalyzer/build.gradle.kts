@@ -56,9 +56,19 @@ dependencies {
   errorprone(Deps.errorprone)
 }
 
-tasks.named<Jar>("jar") {
-  exclude("libraryanalysisresult.proto")
-  archiveFileName.set("libanalyzer-exclude-deps.jar")
+tasks {
+  jar {
+    exclude("libraryanalysisresult.proto")
+    exclude("com/android/tools/r8/libanalyzer/proto/**")
+    archiveFileName.set("libanalyzer-exclude-deps.jar")
+  }
+
+  val protoJar by
+    registering(Jar::class) {
+      from(sourceSets.main.get().output)
+      include("com/android/tools/r8/libanalyzer/proto/**")
+      archiveFileName.set("libanalyzer-proto.jar")
+    }
 }
 
 tasks.withType<JavaCompile> {

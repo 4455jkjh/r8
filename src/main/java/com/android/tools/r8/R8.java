@@ -12,6 +12,7 @@ import com.android.build.shrinker.r8integration.LegacyResourceShrinker;
 import com.android.build.shrinker.r8integration.LegacyResourceShrinker.ShrinkerResult;
 import com.android.tools.r8.DexIndexedConsumer.ForwardingConsumer;
 import com.android.tools.r8.androidapi.ApiReferenceStubber;
+import com.android.tools.r8.assistant.AssistantExporter;
 import com.android.tools.r8.dex.ApplicationReader;
 import com.android.tools.r8.dex.ApplicationWriter;
 import com.android.tools.r8.dex.Marker;
@@ -405,7 +406,7 @@ public class R8 {
 
       if (options.getBlastRadiusOptions().shouldExitEarly()) {
         if (options.isPrintTimesReportingEnabled()) {
-          timing.end().report();
+          timing.endAll().report();
         }
         return;
       }
@@ -629,19 +630,11 @@ public class R8 {
                 pruner.run(
                     executorService, timing, PrunedItems.builder().addRemovedClasses(prunedTypes));
 
-            if (options.testing.exportFinalKeepInfoCollectionToDirectory != null) {
-              try {
-                appView
-                    .getKeepInfo()
-                    .exportToDirectory(options.testing.exportFinalKeepInfoCollectionToDirectory);
-              } catch (IOException e) {
-                options.reporter.error(
-                    "Could not export final keep info collection: " + e.getMessage());
+            if (AssistantExporter.run(appView).shouldExitEarly()) {
+              if (options.isPrintTimesReportingEnabled()) {
+                timing.endAll().report();
               }
-            }
-            if (options.testing.finalKeepInfoCollectionConsumer != null) {
-              options.testing.finalKeepInfoCollectionConsumer.accept(
-                  appView.getKeepInfo().exportToCollection());
+              return;
             }
             appViewWithLiveness
                 .appInfo()

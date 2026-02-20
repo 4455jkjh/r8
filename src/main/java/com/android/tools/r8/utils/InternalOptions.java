@@ -27,6 +27,7 @@ import com.android.tools.r8.StringConsumer;
 import com.android.tools.r8.SyntheticInfoConsumer;
 import com.android.tools.r8.Version;
 import com.android.tools.r8.androidapi.AndroidApiModelingOptions;
+import com.android.tools.r8.assistant.AssistantOptions;
 import com.android.tools.r8.blastradius.BlastRadiusOptions;
 import com.android.tools.r8.cf.CfVersion;
 import com.android.tools.r8.classmerging.Policy;
@@ -102,7 +103,6 @@ import com.android.tools.r8.repackaging.RepackagingLens;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
 import com.android.tools.r8.shaking.Enqueuer;
 import com.android.tools.r8.shaking.GlobalKeepInfoConfiguration;
-import com.android.tools.r8.shaking.KeepInfoCollectionExported;
 import com.android.tools.r8.shaking.KeepSpecificationSource;
 import com.android.tools.r8.shaking.ProguardConfiguration;
 import com.android.tools.r8.shaking.ProguardConfigurationRule;
@@ -122,7 +122,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
-import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -495,8 +494,6 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
   public int minimumStringSwitchSize = 3;
   public boolean enableEnumValueOptimization = true;
   public boolean enableEnumSwitchMapRemoval = true;
-  // TODO(b/453628974): enabling this will unsafely disable compareAndSet
-  //                    bug-fix backports for Android Sv2 and before.
   public boolean enableAtomicFieldUpdaterOptimization =
       SystemPropertyUtils.parseSystemPropertyOrDefault(
           "com.android.tools.r8.enableAtomicFieldUpdaterOptimization", false);
@@ -1075,6 +1072,9 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
 
   private final AccessModifierOptions accessModifierOptions = new AccessModifierOptions(this);
   private final BlastRadiusOptions blastRadiusOptions = new BlastRadiusOptions(this);
+
+  private final AssistantOptions assistantOptions = new AssistantOptions(this);
+
   private final RewriteArrayOptions rewriteArrayOptions = new RewriteArrayOptions();
   private final CallSiteOptimizationOptions callSiteOptimizationOptions =
       new CallSiteOptimizationOptions();
@@ -1206,6 +1206,10 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
 
   public BlastRadiusOptions getBlastRadiusOptions() {
     return blastRadiusOptions;
+  }
+
+  public AssistantOptions getAssistantOptions() {
+    return assistantOptions;
   }
 
   public CfCodeAnalysisOptions getCfCodeAnalysisOptions() {
@@ -2247,12 +2251,6 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
         SystemPropertyUtils.parseSystemPropertyOrDefault(
             "com.android.tools.r8.enableKeepAnnotations", false);
     public boolean reverseClassSortingForDeterminism = false;
-    public Path exportFinalKeepInfoCollectionToDirectory =
-        System.getProperty("com.android.tools.r8.exportInitialKeepInfoCollection") != null
-            ? Paths.get(System.getProperty("com.android.tools.r8.exportInitialKeepInfoCollection"))
-            : null;
-    public Consumer<KeepInfoCollectionExported> finalKeepInfoCollectionConsumer = null;
-
     public boolean enableAutoCloseableDesugaring = true;
     public boolean enableNumberUnboxer = false;
     public boolean printNumberUnboxed = false;
@@ -2444,6 +2442,13 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
     public boolean applyIfRulesToLibrary =
         SystemPropertyUtils.parseSystemPropertyOrDefault(
             "com.android.tools.r8.applyIfRulesToLibrary", false);
+    // When disabled, input synthetics will be treated as non-synthetic classes.
+    // The primary use case of this is to make blast radius computation more robust in the presence
+    // of input synthetics (e.g., avoid that blast radius cannot be computed due to errors such as
+    // "Attempt at compiling intermediate artifact without its context").
+    public boolean collectSyntheticInputs =
+        SystemPropertyUtils.parseSystemPropertyOrDefault(
+            "com.android.tools.r8.collectSyntheticInputs", true);
     // TODO(b/374715251): Look into enabling this.
     public boolean enableUseLastLocalRegisterAsMoveExceptionRegister = false;
     public boolean enableKeepInfoCanonicalizer = true;

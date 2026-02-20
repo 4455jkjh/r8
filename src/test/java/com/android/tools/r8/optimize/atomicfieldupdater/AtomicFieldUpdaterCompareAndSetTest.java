@@ -8,16 +8,19 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.StringContains.containsString;
 import static org.junit.Assert.assertFalse;
 
+import com.android.tools.r8.Diagnostic;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
-import com.android.tools.r8.TestShrinkerBuilder;
+import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.ToolHelper.DexVm.Version;
-import com.android.tools.r8.utils.BooleanUtils;
+import com.android.tools.r8.utils.AndroidApiLevel;
 import com.android.tools.r8.utils.codeinspector.CodeMatchers;
 import com.android.tools.r8.utils.codeinspector.MethodSubject;
 import com.google.common.collect.ImmutableList;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
+import org.hamcrest.Matcher;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -30,24 +33,20 @@ public class AtomicFieldUpdaterCompareAndSetTest extends TestBase {
   @Parameter(0)
   public TestParameters parameters;
 
-  @Parameter(1)
-  public boolean dontObfuscate;
-
-  @Parameters(name = "{0}, dontObfuscate:{1}")
-  public static List<Object[]> data() {
+  @Parameters(name = "{0}")
+  public static TestParametersCollection data() {
     // TODO(b/453628974): test all dex and api levels.
-    return buildParameters(
-        TestParameters.builder()
-            .withDexRuntimesStartingFromIncluding(
-                Version.V4_4_4) // Unsafe synthetic doesn't work for 4.0.4.
-            .withAllApiLevels()
-            .build(),
-        BooleanUtils.values());
+    return TestParameters.builder()
+        .withDexRuntimesStartingFromIncluding(
+            Version.V4_4_4) // Unsafe synthetic doesn't work for 4.0.4.
+        .withAllApiLevels()
+        .build();
   }
 
   @Test
   public void testR8() throws Exception {
     Class<TestClass> testClass = TestClass.class;
+    boolean usesBackport = parameters.getApiLevel().isLessThan(AndroidApiLevel.Sv2);
     testForR8(parameters)
         .addOptionsModification(
             options -> {
@@ -59,15 +58,19 @@ public class AtomicFieldUpdaterCompareAndSetTest extends TestBase {
         .addProgramClasses(testClass)
         .allowDiagnosticInfoMessages()
         .addKeepMainRule(testClass)
-        .applyIf(dontObfuscate, TestShrinkerBuilder::addDontObfuscate)
         .compileWithExpectedDiagnostics(
             diagnostics -> {
-              diagnostics.assertInfosMatch(
-                  diagnosticMessage(containsString("Can instrument")),
-                  diagnosticMessage(containsString("Can optimize")),
-                  // TODO(b/453628974): The field should be removed once nullability analysis is
-                  // more precise.
-                  diagnosticMessage(containsString("Cannot remove")));
+              List<Matcher<Diagnostic>> matchers = new ArrayList<>(4);
+              matchers.add(diagnosticMessage(containsString("Can instrument")));
+              matchers.add(diagnosticMessage(containsString("Can optimize")));
+              // TODO(b/453628974): The field should be removed once nullability analysis is
+              // more precise.
+              matchers.add(diagnosticMessage(containsString("Cannot remove")));
+              if (usesBackport) {
+                // Another call is inserted by the inlined backport.
+                matchers.add(diagnosticMessage(containsString("Can optimize")));
+              }
+              diagnostics.assertInfosMatch(matchers);
             })
         .inspect(
             inspector -> {

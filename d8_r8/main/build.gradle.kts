@@ -318,10 +318,12 @@ spdxSbom {
 
 val assistantJarTask = projectTask("assistant", "jar")
 val blastRadiusJarTask = projectTask("blastradius", "jar")
+val blastRadiusProtoJarTask = projectTask("blastradius", "protoJar")
 val keepAnnoJarTask = projectTask("keepanno", "jar")
 val keepAnnoDepsJarExceptAsm = projectTask("keepanno", "depsJarExceptAsm")
 val keepAnnoToolsJar = projectTask("keepanno", "toolsJar")
 val libraryAnalyzerJarTask = projectTask("libanalyzer", "jar")
+val libraryAnalyzerProtoJarTask = projectTask("libanalyzer", "protoJar")
 val resourceShrinkerJarTask = projectTask("resourceshrinker", "jar")
 val resourceShrinkerDepsTask = projectTask("resourceshrinker", "depsJar")
 
@@ -536,6 +538,16 @@ tasks {
       archiveFileName.set("deps.jar")
     }
 
+  val protoJar by
+    registering(Zip::class) {
+      dependsOn(blastRadiusProtoJarTask, libraryAnalyzerProtoJarTask)
+      from(blastRadiusProtoJarTask.outputs.files.map(::zipTree))
+      from(libraryAnalyzerProtoJarTask.outputs.files.map(::zipTree))
+      exclude("META-INF/MANIFEST.MF")
+      archiveFileName.set("proto.jar")
+      destinationDirectory.set(getRoot().resolveAll("build", "libs"))
+    }
+
   val swissArmyKnifeWithoutLicense by
     registering(Zip::class) {
       dependsOn(swissArmyKnife)
@@ -601,9 +613,11 @@ tasks {
   val r8WithRelocatedDeps by
     registering(Exec::class) {
       dependsOn(depsJar)
+      dependsOn(protoJar)
       dependsOn(swissArmyKnifeWithoutLicense)
       val swissArmy = swissArmyKnifeWithoutLicense.get().outputs.files.singleFile
       val deps = depsJar.get().outputs.files.singleFile
+      val proto = protoJar.get().outputs.files.singleFile
       inputs.files(listOf(swissArmy, deps))
       val output = getRoot().resolveAll("build", "libs", "r8.jar")
       outputs.file(output)
@@ -616,6 +630,8 @@ tasks {
           listOf(
             "--input",
             "$swissArmy",
+            "--input",
+            "$proto",
             "--input",
             "$deps",
             "--output",
