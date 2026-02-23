@@ -160,8 +160,6 @@ public class AtomicFieldUpdaterInstrumentor {
 
   // TODO(b/453628974): Make sure that all instrumentation is removed if the optimizations do not
   //                    trigger (fields, clinit writes, and synthetic classes).
-  // TODO(b/453628974): Make sure that original AtomicUpdater fields are removed if all uses are
-  //                    optimized away (fields and clinit writes).
   private void runInternal(Timing timing) throws ExecutionException {
     timing.begin("AtomicFieldUpdaterInstrumentor");
 
