@@ -51,6 +51,7 @@ import com.google.common.collect.ImmutableMap;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -465,7 +466,8 @@ public class AtomicFieldUpdaterInstrumentor {
   private static DexProgramClass getDeterministicContext(
       Collection<DexProgramClass> classesWithAtomics) {
     assert !classesWithAtomics.isEmpty();
-    return Collections.min(classesWithAtomics);
+    // Compare by name, not by structure.
+    return Collections.min(classesWithAtomics, Comparator.comparing(DexProgramClass::getType));
   }
 
   private void buildUnsafeClass(SyntheticProgramClassBuilder builder) {
