@@ -21,11 +21,11 @@ message LibraryAnalysisResult {
 }
 
 message D8CompileResult {
-  uint32 dex_size_bytes = 1;
+  int32 dex_size_bytes = 1;
 }
 
 message R8CompileResult {
-  uint32 dex_size_bytes = 1;
+  int32 dex_size_bytes = 1;
   // Information about the R8 configuration, specifically the keep rules.
   ConfigurationSummary configuration = 2;
   // Information about the library's classes and how they are hit by keep rules.
@@ -48,20 +48,20 @@ message ConfigurationSummary {
 
 message ItemCollectionSummary {
   // Total number of items (classes, fields or methods) in the input.
-  uint32 item_count = 1;
+  int32 item_count = 1;
   // Total number of items that are matched by one or more keep rules.
-  uint32 kept_item_count = 2;
+  int32 kept_item_count = 2;
   // Total number of items where obfuscation is prohibited.
-  uint32 no_obfuscation_count = 3;
+  int32 no_obfuscation_count = 3;
   // Total number of items where optimization is prohibited.
-  uint32 no_optimization_count = 4;
+  int32 no_optimization_count = 4;
   // Total number of items where shrinking is prohibited.
-  uint32 no_shrinking_count = 5;
+  int32 no_shrinking_count = 5;
 }
 
 message KeepRuleBlastRadiusSummary {
   string source = 1;
-  uint32 kept_item_count = 2;
+  int32 kept_item_count = 2;
   bool no_obfuscation = 3;
   bool no_optimization = 4;
   bool no_shrinking = 5;

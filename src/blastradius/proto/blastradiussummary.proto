@@ -22,13 +22,13 @@ message BlastRadiusSummary {
   string link = 2;
 
   // Info about number of items.
-  uint32 class_count = 3;
-  uint32 field_count = 4;
-  uint32 method_count = 5;
+  int32 class_count = 3;
+  int32 field_count = 4;
+  int32 method_count = 5;
 
   // Info about number of keep rules.
-  uint32 keep_rule_count = 6;
-  uint32 keep_rule_package_wide_count = 7;
+  int32 keep_rule_count = 6;
+  int32 keep_rule_package_wide_count = 7;
 
   // Info about number of kept items.
   KeepInfoCollectionSummary kept_classes = 8;
@@ -40,13 +40,13 @@ message BlastRadiusSummary {
 }
 
 message KeepInfoCollectionSummary {
-  uint32 item_count = 1;
-  uint32 no_obfuscation_count = 2;
-  uint32 no_optimization_count = 3;
-  uint32 no_shrinking_count = 4;
+  int32 item_count = 1;
+  int32 no_obfuscation_count = 2;
+  int32 no_optimization_count = 3;
+  int32 no_shrinking_count = 4;
 }
 
 message KeepRuleBlastRadiusSummary {
   string source = 1;
-  uint32 item_count = 2;
+  int32 item_count = 2;
 }
