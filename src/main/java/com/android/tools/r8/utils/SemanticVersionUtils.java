@@ -24,8 +24,7 @@ public class SemanticVersionUtils {
                       Version.getPatchVersion())
                   : forceCompilerVersion;
           if (compilerVersion.getMajor() < 0) {
-            compilerVersion =
-                SemanticVersion.create(Integer.MAX_VALUE, Integer.MAX_VALUE, Integer.MAX_VALUE);
+            compilerVersion = SemanticVersion.max();
             reporter.warning(
                 "Running R8 version "
                     + Version.getVersionString()

@@ -18,6 +18,7 @@ option java_package = "com.android.tools.r8.libanalyzer.proto";
 message LibraryAnalysisResult {
   D8CompileResult d8_compile_result = 1;
   R8CompileResult r8_compile_result = 2;
+  ValidateConsumerKeepRulesResult validate_consumer_keep_rules_result = 3;
 }
 
 message D8CompileResult {
@@ -65,4 +66,12 @@ message KeepRuleBlastRadiusSummary {
   bool no_obfuscation = 3;
   bool no_optimization = 4;
   bool no_shrinking = 5;
+}
+
+message ValidateConsumerKeepRulesResult {
+  repeated BlockedConsumerKeepRule blocked_keep_rules = 1;
+}
+
+message BlockedConsumerKeepRule {
+  string source = 1;
 }

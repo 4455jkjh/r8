@@ -43,23 +43,24 @@ public class ExtractR8Rules {
       try {
         EmbeddedRulesExtractor embeddedProguardConfigurationVisitor =
             new EmbeddedRulesExtractor(semanticVersionSupplier, dataResourceProvider, reporter);
-        dataResourceProvider.accept(embeddedProguardConfigurationVisitor);
-        embeddedProguardConfigurationVisitor.visitRelevantRules(
-            rules -> {
-              try {
-                if (includeOriginComments) {
-                  consumer.accept("# Rules extracted from:", reporter);
-                  consumer.accept(StringUtils.LINE_SEPARATOR, reporter);
-                  consumer.accept("# ", reporter);
-                  consumer.accept(rules.getOrigin().toString(), reporter);
-                  consumer.accept(StringUtils.LINE_SEPARATOR, reporter);
-                }
-                consumer.accept(rules.get(), reporter);
-                consumer.accept(StringUtils.LINE_SEPARATOR, reporter);
-              } catch (IOException e) {
-                throw new UncheckedIOException(e);
-              }
-            });
+        embeddedProguardConfigurationVisitor
+            .readSources()
+            .visitRelevantRules(
+                rules -> {
+                  try {
+                    if (includeOriginComments) {
+                      consumer.accept("# Rules extracted from:", reporter);
+                      consumer.accept(StringUtils.LINE_SEPARATOR, reporter);
+                      consumer.accept("# ", reporter);
+                      consumer.accept(rules.getOrigin().toString(), reporter);
+                      consumer.accept(StringUtils.LINE_SEPARATOR, reporter);
+                    }
+                    consumer.accept(rules.get(), reporter);
+                    consumer.accept(StringUtils.LINE_SEPARATOR, reporter);
+                  } catch (IOException e) {
+                    throw new UncheckedIOException(e);
+                  }
+                });
       } catch (ResourceException e) {
         reporter.error(new ExceptionDiagnostic(e));
       }

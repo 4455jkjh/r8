@@ -1050,8 +1050,7 @@ public final class R8Command extends BaseCompilerCommand {
       try {
         EmbeddedRulesExtractor embeddedProguardConfigurationVisitor =
             new EmbeddedRulesExtractor(semanticVersionSupplier, dataResourceProvider, reporter);
-        dataResourceProvider.accept(embeddedProguardConfigurationVisitor);
-        embeddedProguardConfigurationVisitor.parseRelevantRules(parser);
+        embeddedProguardConfigurationVisitor.readSources().parseRelevantRules(parser);
       } catch (ResourceException e) {
         reporter.error(new ExceptionDiagnostic(e));
       }

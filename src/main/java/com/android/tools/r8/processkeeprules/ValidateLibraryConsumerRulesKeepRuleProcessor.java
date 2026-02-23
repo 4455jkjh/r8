@@ -21,7 +21,8 @@ import com.android.tools.r8.utils.Reporter;
 import java.nio.file.Path;
 import java.util.List;
 
-class ValidateLibraryConsumerRulesKeepRuleProcessor implements ProguardConfigurationParserConsumer {
+public class ValidateLibraryConsumerRulesKeepRuleProcessor
+    implements ProguardConfigurationParserConsumer {
 
   private final Reporter reporter;
 
@@ -30,12 +31,12 @@ class ValidateLibraryConsumerRulesKeepRuleProcessor implements ProguardConfigura
     this.reporter = reporter;
   }
 
-  private void handleRule(
+  protected void handleRule(
       ProguardConfigurationSourceParser parser, Position position, String rule) {
     reporter.error(new LibraryConsumerRuleDiagnostic(parser.getOrigin(), position, rule));
   }
 
-  private void handleKeepAttribute(
+  protected void handleKeepAttribute(
       ProguardConfigurationSourceParser parser, Position position, String attribute) {
     reporter.error(
         new KeepAttributeLibraryConsumerRuleDiagnostic(parser.getOrigin(), position, attribute));

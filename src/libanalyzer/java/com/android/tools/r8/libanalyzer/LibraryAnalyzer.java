@@ -10,30 +10,40 @@ import com.android.tools.r8.D8;
 import com.android.tools.r8.D8Command;
 import com.android.tools.r8.R8;
 import com.android.tools.r8.R8Command;
+import com.android.tools.r8.ResourceException;
 import com.android.tools.r8.Version;
 import com.android.tools.r8.blastradius.BlastRadiusKeepRuleClassifier;
 import com.android.tools.r8.blastradius.RootSetBlastRadius;
 import com.android.tools.r8.blastradius.RootSetBlastRadiusForRule;
+import com.android.tools.r8.graph.DexItemFactory;
 import com.android.tools.r8.graph.DexProgramClass;
 import com.android.tools.r8.keepanno.annotations.KeepForApi;
+import com.android.tools.r8.libanalyzer.proto.BlockedConsumerKeepRule;
 import com.android.tools.r8.libanalyzer.proto.ConfigurationSummary;
 import com.android.tools.r8.libanalyzer.proto.D8CompileResult;
 import com.android.tools.r8.libanalyzer.proto.ItemCollectionSummary;
 import com.android.tools.r8.libanalyzer.proto.KeepRuleBlastRadiusSummary;
 import com.android.tools.r8.libanalyzer.proto.LibraryAnalysisResult;
 import com.android.tools.r8.libanalyzer.proto.R8CompileResult;
+import com.android.tools.r8.libanalyzer.proto.ValidateConsumerKeepRulesResult;
 import com.android.tools.r8.libanalyzer.utils.DexIndexedSizeConsumer;
 import com.android.tools.r8.libanalyzer.utils.LibraryAnalyzerOptions;
 import com.android.tools.r8.origin.CommandLineOrigin;
 import com.android.tools.r8.origin.Origin;
+import com.android.tools.r8.position.Position;
+import com.android.tools.r8.processkeeprules.ValidateLibraryConsumerRulesKeepRuleProcessor;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
 import com.android.tools.r8.shaking.KeepInfo;
+import com.android.tools.r8.shaking.ProguardConfigurationParser;
+import com.android.tools.r8.shaking.ProguardConfigurationParser.ProguardConfigurationSourceParser;
+import com.android.tools.r8.utils.AllEmbeddedRulesExtractor;
 import com.android.tools.r8.utils.AndroidApp;
 import com.android.tools.r8.utils.ExceptionDiagnostic;
 import com.android.tools.r8.utils.ExceptionUtils;
 import com.android.tools.r8.utils.InternalOptions;
 import com.android.tools.r8.utils.IterableUtils;
 import com.android.tools.r8.utils.ListUtils;
+import com.android.tools.r8.utils.Reporter;
 import com.android.tools.r8.utils.ThreadUtils;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -52,10 +62,12 @@ public class LibraryAnalyzer {
 
   private final AndroidApp app;
   private final LibraryAnalyzerOptions options;
+  private final Reporter reporter;
 
   private LibraryAnalyzer(AndroidApp app, LibraryAnalyzerOptions options) {
     this.app = app;
     this.options = options;
+    this.reporter = options.reporter;
   }
 
   public static void main(String[] args) {
@@ -102,21 +114,23 @@ public class LibraryAnalyzer {
   private void run(ExecutorService executorService) {
     InternalD8CompileResult d8CompileResult = runD8(executorService);
     R8CompileResult r8CompileResult = runR8(executorService);
-    writeAnalysisResult(d8CompileResult, r8CompileResult);
+    ValidateConsumerKeepRulesResult validateConsumerKeepRulesResult =
+        runValidateConsumerKeepRules();
+    writeAnalysisResult(d8CompileResult, r8CompileResult, validateConsumerKeepRulesResult);
   }
 
   private InternalD8CompileResult runD8(ExecutorService executorService) {
     DexIndexedSizeConsumer sizeConsumer = new DexIndexedSizeConsumer();
     D8Command.Builder commandBuilder =
-        D8Command.builder(options.reporter)
+        D8Command.builder(reporter)
             .setClassConflictResolver((reference, origins, handler) -> origins.iterator().next())
             .setProgramConsumer(sizeConsumer);
     configure(commandBuilder);
     try {
       D8.run(commandBuilder.build(), executorService);
     } catch (CompilationFailedException e) {
-      options.reporter.warning(new ExceptionDiagnostic(e));
-      options.reporter.clearAbort();
+      reporter.warning(new ExceptionDiagnostic(e));
+      reporter.clearAbort();
       return null;
     }
     return new InternalD8CompileResult(sizeConsumer.size());
@@ -125,7 +139,7 @@ public class LibraryAnalyzer {
   private R8CompileResult runR8(ExecutorService executorService) {
     DexIndexedSizeConsumer sizeConsumer = new DexIndexedSizeConsumer();
     R8Command.Builder commandBuilder =
-        R8Command.builder(options.reporter)
+        R8Command.builder(reporter)
             .addProguardConfiguration(List.of("-ignorewarnings"), Origin.unknown())
             .setClassConflictResolver((reference, origins, handler) -> origins.iterator().next())
             .setProgramConsumer(sizeConsumer);
@@ -167,11 +181,61 @@ public class LibraryAnalyzer {
                                 appInfo.getKeepInfo()::getMethodInfo));
           });
     } catch (CompilationFailedException e) {
-      options.reporter.warning(new ExceptionDiagnostic(e));
-      options.reporter.clearAbort();
+      reporter.warning(new ExceptionDiagnostic(e));
+      reporter.clearAbort();
       return null;
     }
     return resultBuilder.setDexSizeBytes(sizeConsumer.size()).build();
+  }
+
+  private ValidateConsumerKeepRulesResult runValidateConsumerKeepRules() {
+    ValidateConsumerKeepRulesResult.Builder resultBuilder =
+        ValidateConsumerKeepRulesResult.newBuilder();
+    try {
+      // TODO(b/486771488): Consider implementing this using ProcessKeepRules, similar to how runD8
+      //  and runR8 works above.
+      ExceptionUtils.withCompilationHandler(
+          reporter, () -> internalRunValidateConsumerKeepRules(resultBuilder));
+    } catch (CompilationFailedException e) {
+      reporter.warning(new ExceptionDiagnostic(e));
+      reporter.clearAbort();
+      return null;
+    }
+    return resultBuilder.build();
+  }
+
+  private void internalRunValidateConsumerKeepRules(
+      ValidateConsumerKeepRulesResult.Builder resultBuilder) throws ResourceException {
+    ProguardConfigurationParser parser =
+        new ProguardConfigurationParser(
+            new DexItemFactory(),
+            reporter,
+            new ValidateLibraryConsumerRulesKeepRuleProcessor(reporter) {
+
+              @Override
+              protected void handleRule(
+                  ProguardConfigurationSourceParser parser, Position position, String rule) {
+                resultBuilder.addBlockedKeepRules(
+                    BlockedConsumerKeepRule.newBuilder().setSource(rule).build());
+              }
+
+              @Override
+              protected void handleKeepAttribute(
+                  ProguardConfigurationSourceParser parser, Position position, String attribute) {
+                resultBuilder.addBlockedKeepRules(
+                    BlockedConsumerKeepRule.newBuilder()
+                        .setSource("-keepattributes " + attribute)
+                        .build());
+              }
+            });
+    for (var programResourceProvider : app.getProgramResourceProviders()) {
+      var dataResourceProvider = programResourceProvider.getDataResourceProvider();
+      if (dataResourceProvider != null) {
+        new AllEmbeddedRulesExtractor(dataResourceProvider, reporter)
+            .readSources()
+            .parseAllRules(parser);
+      }
+    }
   }
 
   private static <T> ItemCollectionSummary getItemCollectionSummary(
@@ -266,7 +330,9 @@ public class LibraryAnalyzer {
   }
 
   private void writeAnalysisResult(
-      InternalD8CompileResult d8CompileResult, R8CompileResult r8CompileResult) {
+      InternalD8CompileResult d8CompileResult,
+      R8CompileResult r8CompileResult,
+      ValidateConsumerKeepRulesResult validateConsumerKeepRulesResult) {
     LibraryAnalysisResult.Builder resultBuilder = LibraryAnalysisResult.newBuilder();
     if (d8CompileResult != null) {
       resultBuilder.setD8CompileResult(
@@ -274,6 +340,9 @@ public class LibraryAnalyzer {
     }
     if (r8CompileResult != null) {
       resultBuilder.setR8CompileResult(r8CompileResult);
+    }
+    if (validateConsumerKeepRulesResult != null) {
+      resultBuilder.setValidateConsumerKeepRulesResult(validateConsumerKeepRulesResult);
     }
     LibraryAnalysisResult result = resultBuilder.build();
     if (options.outputPath != null) {
