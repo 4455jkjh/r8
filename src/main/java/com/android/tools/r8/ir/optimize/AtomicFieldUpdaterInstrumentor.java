@@ -185,7 +185,7 @@ public class AtomicFieldUpdaterInstrumentor {
     var updaterClassesConcurrent = new ConcurrentHashMap<DexProgramClass, ClassWithAtomicsInfo>();
     ThreadUtils.processItemsThatMatches(
         appView.appInfo().classes(),
-        AtomicFieldUpdaterInstrumentor::mightHaveUpdaterFields,
+        this::mightHaveUpdaterFields,
         (clazz, threadTiming) -> findUpdaterFields(clazz, updaterClassesConcurrent, threadTiming),
         appView.options(),
         service,
@@ -194,9 +194,9 @@ public class AtomicFieldUpdaterInstrumentor {
     return ImmutableMap.copyOf(updaterClassesConcurrent);
   }
 
-  private static boolean mightHaveUpdaterFields(DexProgramClass clazz) {
-    // TODO(b/453628974): Check constant pool?
-    return clazz.hasClassInitializer() && clazz.hasStaticFields();
+  private boolean mightHaveUpdaterFields(DexProgramClass clazz) {
+    return clazz.hasClassInitializer()
+        && clazz.hasStaticFields(this::isStaticFinalFieldUpdaterField);
   }
 
   private void findUpdaterFields(
