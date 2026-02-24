@@ -40,18 +40,22 @@ public interface ProgramResource extends Resource {
    * <p>The origin of a file resource is the path of the file.
    */
   static ProgramResource fromFile(Kind kind, Path file) {
-    return new FileResource(kind, file, null);
+    return fromFile(kind, file, null);
+  }
+
+  static ProgramResource fromFile(Kind kind, Path file, Set<String> classDescriptors) {
+    return new FileResource(kind, file, classDescriptors);
   }
 
   /**
    * Create a program resource for a given type, content and type descriptor.
    *
-   * <p>The origin must be supplied upon construction. If no reasonable origin
-   * exits, use {@code Origin.unknown()}.
+   * <p>The origin must be supplied upon construction. If no reasonable origin exits, use {@code
+   * Origin.unknown()}.
    */
   static ProgramResource fromBytes(
-      Origin origin, Kind kind, byte[] bytes, Set<String> typeDescriptors) {
-    return new ByteResource(origin, kind, bytes, typeDescriptors);
+      Origin origin, Kind kind, byte[] bytes, Set<String> classDescriptors) {
+    return new ByteResource(origin, kind, bytes, classDescriptors);
   }
 
   /** Get the program format-kind of the resource. */

@@ -45,10 +45,6 @@ import com.android.tools.r8.utils.IterableUtils;
 import com.android.tools.r8.utils.ListUtils;
 import com.android.tools.r8.utils.Reporter;
 import com.android.tools.r8.utils.ThreadUtils;
-import java.io.IOException;
-import java.io.OutputStream;
-import java.io.UncheckedIOException;
-import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -56,7 +52,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
-// TODO(b/479726064): Add support for writing LibraryAnalyzer tests.
 @KeepForApi
 public class LibraryAnalyzer {
 
@@ -345,14 +340,8 @@ public class LibraryAnalyzer {
       resultBuilder.setValidateConsumerKeepRulesResult(validateConsumerKeepRulesResult);
     }
     LibraryAnalysisResult result = resultBuilder.build();
-    if (options.outputPath != null) {
-      try (OutputStream output = Files.newOutputStream(options.outputPath)) {
-        result.writeTo(output);
-      } catch (IOException e) {
-        throw new UncheckedIOException(e);
-      }
-    } else {
-      System.out.println(result);
+    if (options.outputConsumer != null) {
+      options.outputConsumer.accept(result);
     }
   }
 

@@ -15,15 +15,12 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 
 import com.android.tools.r8.AndroidResourceInput;
 import com.android.tools.r8.AndroidResourceProvider;
-import com.android.tools.r8.ClassFileConsumer;
 import com.android.tools.r8.ClassFileResourceProvider;
 import com.android.tools.r8.DataDirectoryResource;
 import com.android.tools.r8.DataEntryResource;
 import com.android.tools.r8.DataResource;
 import com.android.tools.r8.DataResourceProvider;
 import com.android.tools.r8.DataResourceProvider.Visitor;
-import com.android.tools.r8.DexFilePerClassFileConsumer;
-import com.android.tools.r8.DexIndexedConsumer;
 import com.android.tools.r8.DirectoryClassFileProvider;
 import com.android.tools.r8.FeatureSplit;
 import com.android.tools.r8.OutputMode;
@@ -457,17 +454,21 @@ public class AndroidApp {
     }
   }
 
-  /**
-   * Write the dex program resources and proguard resource to @code{directory}.
-   */
+  /** Write the program resources and data resources to @code{directory}. */
   public void writeToDirectory(Path directory, OutputMode outputMode) throws IOException {
-    List<ProgramResource> dexProgramSources = getDexProgramResourcesForTesting();
     try {
-      if (outputMode == OutputMode.DexIndexed) {
-        DexIndexedConsumer.DirectoryConsumer.writeResources(directory, dexProgramSources);
+      if (outputMode == OutputMode.ClassFile) {
+        ClassFileConsumerUtils.DirectoryConsumerUtils.writeResourcesForTesting(
+            directory, getClassProgramResourcesForTesting());
       } else {
-        DexFilePerClassFileConsumer.DirectoryConsumer.writeResources(
-            directory, dexProgramSources, programResourcesMainDescriptor);
+        List<ProgramResource> dexProgramSources = getDexProgramResourcesForTesting();
+        if (outputMode == OutputMode.DexIndexed) {
+          DexIndexedConsumerUtils.DirectoryConsumerUtils.writeResources(
+              directory, dexProgramSources);
+        } else {
+          DexFilePerClassFileConsumerUtils.DirectoryConsumerUtils.writeResources(
+              directory, dexProgramSources, programResourcesMainDescriptor);
+        }
       }
     } catch (ResourceException e) {
       throw new IOException("Resource Error", e);
@@ -480,7 +481,7 @@ public class AndroidApp {
       if (outputMode == OutputMode.DexIndexed) {
         Pair<Set<DataDirectoryResource>, Set<DataEntryResource>> dataResourcesForTesting =
             getDataResourcesForTesting();
-        DexIndexedConsumer.ArchiveConsumer.writeResourcesForTesting(
+        DexIndexedConsumerUtils.ArchiveConsumerUtils.writeResourcesForTesting(
             archive,
             getDexProgramResourcesForTesting(),
             dataResourcesForTesting.getFirst(),
@@ -488,12 +489,12 @@ public class AndroidApp {
       } else if (outputMode == OutputMode.DexFilePerClassFile
           || outputMode == OutputMode.DexFilePerClass) {
         List<ProgramResource> resources = getDexProgramResourcesForTesting();
-        DexFilePerClassFileConsumer.ArchiveConsumer.writeResourcesForTesting(
+        DexFilePerClassFileConsumerUtils.ArchiveConsumerUtils.writeResourcesForTesting(
             archive, resources, programResourcesMainDescriptor);
       } else if (outputMode == OutputMode.ClassFile) {
         Pair<Set<DataDirectoryResource>, Set<DataEntryResource>> dataResourcesForTesting =
             getDataResourcesForTesting();
-        ClassFileConsumer.ArchiveConsumer.writeResourcesForTesting(
+        ClassFileConsumerUtils.ArchiveConsumerUtils.writeResourcesForTesting(
             archive,
             getClassProgramResourcesForTesting(),
             dataResourcesForTesting.getFirst(),
@@ -1441,15 +1442,20 @@ public class AndroidApp {
     }
 
     public Builder addProgramFile(Path file) {
+      return addProgramFile(file, null);
+    }
+
+    public Builder addProgramFile(Path file, Set<String> classDescriptors) {
       if (!Files.exists(file)) {
         PathOrigin pathOrigin = new PathOrigin(file);
         NoSuchFileException noSuchFileException = new NoSuchFileException(file.toString());
         reporter.error(new ExceptionDiagnostic(noSuchFileException, pathOrigin));
       }
+      assert classDescriptors == null || isClassFile(file);
       if (isDexFile(file)) {
         addProgramResources(ProgramResource.fromFile(Kind.DEX, file));
       } else if (isClassFile(file)) {
-        addProgramResources(ProgramResource.fromFile(Kind.CF, file));
+        addProgramResources(ProgramResource.fromFile(Kind.CF, file, classDescriptors));
       } else if (isAarFile(file)) {
         addProgramResourceProvider(AarArchiveResourceProvider.fromArchive(file));
       } else if (isArchive(file)) {

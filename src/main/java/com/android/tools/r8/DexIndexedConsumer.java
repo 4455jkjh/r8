@@ -7,27 +7,15 @@ import com.android.tools.r8.keepanno.annotations.KeepForApi;
 import com.android.tools.r8.origin.Origin;
 import com.android.tools.r8.origin.PathOrigin;
 import com.android.tools.r8.utils.ArchiveBuilder;
+import com.android.tools.r8.utils.DexIndexedConsumerUtils;
 import com.android.tools.r8.utils.DexUtils;
 import com.android.tools.r8.utils.DirectoryBuilder;
 import com.android.tools.r8.utils.ExceptionDiagnostic;
-import com.android.tools.r8.utils.FileUtils;
 import com.android.tools.r8.utils.OutputBuilder;
 import com.android.tools.r8.utils.StringDiagnostic;
-import com.android.tools.r8.utils.ZipUtils;
-import com.google.common.io.ByteStreams;
-import com.google.common.io.Closer;
-import java.io.BufferedOutputStream;
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.OpenOption;
 import java.nio.file.Path;
-import java.nio.file.StandardOpenOption;
-import java.util.List;
 import java.util.Set;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipOutputStream;
 
 /**
  * Consumer for DEX encoded programs.
@@ -174,38 +162,6 @@ public interface DexIndexedConsumer extends ProgramConsumer, ByteBufferProvider 
       outputBuilder.close(handler);
     }
 
-    public static void writeResourcesForTesting(
-        Path archive,
-        List<ProgramResource> resources,
-        Set<DataDirectoryResource> dataDirectoryResources,
-        Set<DataEntryResource> dataEntryResources)
-        throws IOException, ResourceException {
-      OpenOption[] options =
-          new OpenOption[] {StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING};
-      try (Closer closer = Closer.create()) {
-        try (ZipOutputStream out =
-            new ZipOutputStream(
-                new BufferedOutputStream(Files.newOutputStream(archive, options)))) {
-          for (int i = 0; i < resources.size(); i++) {
-            ProgramResource resource = resources.get(i);
-            String entryName = DexUtils.getDefaultDexFileName(i);
-            byte[] bytes = ByteStreams.toByteArray(closer.register(resource.getByteStream()));
-            ZipUtils.writeToZipStream(out, entryName, bytes, ZipEntry.STORED);
-          }
-          for (DataDirectoryResource dataDirectoryResource : dataDirectoryResources) {
-            ZipUtils.writeToZipStream(
-                out, dataDirectoryResource.getName(), new byte[0], ZipEntry.STORED);
-          }
-          for (DataEntryResource dataEntryResource : dataEntryResources) {
-            String entryName = dataEntryResource.getName();
-            byte[] bytes =
-                ByteStreams.toByteArray(closer.register(dataEntryResource.getByteStream()));
-            ZipUtils.writeToZipStream(out, entryName, bytes, ZipEntry.STORED);
-          }
-        }
-      }
-    }
-
     @Override
     public Path internalGetOutputPath() {
       return outputBuilder.getPath();
@@ -218,14 +174,14 @@ public interface DexIndexedConsumer extends ProgramConsumer, ByteBufferProvider 
     private final Path directory;
     private boolean preparedDirectory = false;
     private final OutputBuilder outputBuilder;
-    protected final boolean consumeDataResouces;
+    protected final boolean consumeDataResources;
 
     public DirectoryConsumer(Path directory) {
       this(directory, null, false);
     }
 
-    public DirectoryConsumer(Path directory, boolean consumeDataResouces) {
-      this(directory, null, consumeDataResouces);
+    public DirectoryConsumer(Path directory, boolean consumeDataResources) {
+      this(directory, null, consumeDataResources);
     }
 
     public DirectoryConsumer(Path directory, DexIndexedConsumer consumer) {
@@ -233,16 +189,16 @@ public interface DexIndexedConsumer extends ProgramConsumer, ByteBufferProvider 
     }
 
     public DirectoryConsumer(
-        Path directory, DexIndexedConsumer consumer, boolean consumeDataResouces) {
+        Path directory, DexIndexedConsumer consumer, boolean consumeDataResources) {
       super(consumer);
       this.directory = directory;
       this.outputBuilder = new DirectoryBuilder(directory);
-      this.consumeDataResouces = consumeDataResouces;
+      this.consumeDataResources = consumeDataResources;
     }
 
     @Override
     public DataResourceConsumer getDataResourceConsumer() {
-      return consumeDataResouces ? this : null;
+      return consumeDataResources ? this : null;
     }
 
     @Override
@@ -278,38 +234,7 @@ public interface DexIndexedConsumer extends ProgramConsumer, ByteBufferProvider 
         return;
       }
       preparedDirectory = true;
-      deleteClassesDexFiles(directory);
-    }
-
-    static void deleteClassesDexFiles(Path directory) throws IOException {
-      try (Stream<Path> filesInDir = Files.list(directory)) {
-        for (Path path : filesInDir.collect(Collectors.toList())) {
-          if (FileUtils.isClassesDexFile(path)) {
-            Files.delete(path);
-          }
-        }
-      }
-    }
-
-    public static void writeResources(Path directory, List<ProgramResource> resources)
-        throws IOException, ResourceException {
-      deleteClassesDexFiles(directory);
-      try (Closer closer = Closer.create()) {
-        for (int i = 0; i < resources.size(); i++) {
-          ProgramResource resource = resources.get(i);
-          Path target = getTargetDexFile(directory, i);
-          writeFile(ByteStreams.toByteArray(closer.register(resource.getByteStream())), target);
-        }
-      }
-    }
-
-    private static Path getTargetDexFile(Path directory, int fileIndex) {
-      return directory.resolve(DexUtils.getDefaultDexFileName(fileIndex));
-    }
-
-    private static void writeFile(byte[] contents, Path target) throws IOException {
-      Files.createDirectories(target.getParent());
-      FileUtils.writeToFile(target, null, contents);
+      DexIndexedConsumerUtils.DirectoryConsumerUtils.deleteClassesDexFiles(directory);
     }
 
     @Override

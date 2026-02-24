@@ -17,6 +17,8 @@ rootProject.name = "testbase"
 
 val root = rootProject.projectDir.parentFile.parentFile
 
+includeBuild(root.resolve("libanalyzer"))
+
 includeBuild(root.resolve("shared"))
 
 includeBuild(root.resolve("keepanno"))

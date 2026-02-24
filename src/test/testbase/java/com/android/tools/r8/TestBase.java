@@ -48,6 +48,7 @@ import com.android.tools.r8.graph.LazyLoadedDexApplication;
 import com.android.tools.r8.graph.ProgramMethod;
 import com.android.tools.r8.graph.SmaliWriter;
 import com.android.tools.r8.jasmin.JasminBuilder;
+import com.android.tools.r8.libanalyzer.LibraryAnalyzerTestBuilder;
 import com.android.tools.r8.origin.Origin;
 import com.android.tools.r8.origin.PathOrigin;
 import com.android.tools.r8.partial.R8PartialCompilationConfiguration;
@@ -165,6 +166,10 @@ public class TestBase {
     }
   }
 
+  public static LibraryAnalyzerTestBuilder testForLibraryAnalyzer(TemporaryFolder temp) {
+    return LibraryAnalyzerTestBuilder.create(temp);
+  }
+
   public static R8FullTestBuilder testForR8(TemporaryFolder temp, Backend backend) {
     return R8FullTestBuilder.create(new TestState(temp), backend);
   }
@@ -206,6 +211,10 @@ public class TestBase {
 
   public static GenerateMainDexListTestBuilder testForMainDexListGenerator(TemporaryFolder temp) {
     return GenerateMainDexListTestBuilder.create(new TestState(temp));
+  }
+
+  public LibraryAnalyzerTestBuilder testForLibraryAnalyzer() {
+    return testForLibraryAnalyzer(temp);
   }
 
   public R8FullTestBuilder testForR8(Backend backend) {
