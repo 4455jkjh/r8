@@ -32,7 +32,6 @@ import com.android.tools.r8.ir.code.StaticGet;
 import com.android.tools.r8.ir.code.StaticPut;
 import com.android.tools.r8.ir.code.Value;
 import com.android.tools.r8.ir.conversion.IRToLirFinalizer;
-import com.android.tools.r8.ir.conversion.passes.AtomicFieldUpdaterOptimizer;
 import com.android.tools.r8.ir.conversion.passes.AtomicFieldUpdaterOptimizer.AtomicFieldUpdaterInfo;
 import com.android.tools.r8.ir.optimize.info.atomicupdaters.eligibility.Event;
 import com.android.tools.r8.ir.optimize.info.atomicupdaters.eligibility.Reason;
@@ -43,6 +42,7 @@ import com.android.tools.r8.shaking.AppInfoWithLiveness;
 import com.android.tools.r8.shaking.FieldAccessInfoCollectionModifier;
 import com.android.tools.r8.synthesis.SyntheticProgramClassBuilder;
 import com.android.tools.r8.utils.AndroidApiLevel;
+import com.android.tools.r8.utils.SetUtils;
 import com.android.tools.r8.utils.ThreadUtils;
 import com.android.tools.r8.utils.timing.Timing;
 import com.google.common.base.Predicates;
@@ -159,8 +159,6 @@ public class AtomicFieldUpdaterInstrumentor {
             "objectFieldOffset");
   }
 
-  // TODO(b/453628974): Make sure that all instrumentation is removed if the optimizations do not
-  //                    trigger (fields, clinit writes, and synthetic classes).
   private void runInternal(Timing timing) throws ExecutionException {
     timing.begin("AtomicFieldUpdaterInstrumentor");
 
@@ -170,14 +168,12 @@ public class AtomicFieldUpdaterInstrumentor {
       var unsafeClass = synthesizeUnsafeClass(classesWithAtomics.keySet(), profiling);
       var unsafeInstanceField = unsafeClass.unsafeInstanceField.getReference();
       var getAndSetMethod = unsafeClass.getAndSetMethod.getReference();
-      var instrumentations = addOffsetFields(classesWithAtomics, unsafeClass, profiling, timing);
-
+      var allOffsetFields = addOffsetFields(classesWithAtomics, unsafeClass, profiling, timing);
       profiling.commit(appView);
       appView.setAtomicFieldUpdaterInstrumentorInfo(
-          new AtomicFieldUpdaterInstrumentorInfo(
-              instrumentations, unsafeInstanceField, getAndSetMethod));
+          buildInstrumentorInfo(
+              classesWithAtomics, allOffsetFields, unsafeInstanceField, getAndSetMethod));
     }
-
     timing.end();
   }
 
@@ -552,13 +548,12 @@ public class AtomicFieldUpdaterInstrumentor {
                                 new CfReturnVoid()))));
   }
 
-  private Map<DexType, Map<DexField, AtomicFieldUpdaterOptimizer.AtomicFieldUpdaterInfo>>
-      addOffsetFields(
-          Map<DexProgramClass, ClassWithAtomicsInfo> classesWithAtomics,
-          UnsafeClassInfo unsafeClass,
-          ProfileCollectionAdditions profiling,
-          Timing timing)
-          throws ExecutionException {
+  private Map<DexField, DexField> addOffsetFields(
+      Map<DexProgramClass, ClassWithAtomicsInfo> classesWithAtomics,
+      UnsafeClassInfo unsafeClass,
+      ProfileCollectionAdditions profiling,
+      Timing timing)
+      throws ExecutionException {
     ConcurrentHashMap<DexField, DexField> offsetFields = new ConcurrentHashMap<>();
     ThreadUtils.processItemsThatMatches(
         classesWithAtomics.keySet(),
@@ -583,21 +578,35 @@ public class AtomicFieldUpdaterInstrumentor {
     offsetFields.values().forEach(builder::addField);
     builder.build().modify(appView);
 
-    Map<DexType, Map<DexField, AtomicFieldUpdaterOptimizer.AtomicFieldUpdaterInfo>>
-        instrumentations = new HashMap<>(classesWithAtomics.size());
+    return offsetFields;
+  }
+
+  private AtomicFieldUpdaterInstrumentorInfo buildInstrumentorInfo(
+      Map<DexProgramClass, ClassWithAtomicsInfo> classesWithAtomics,
+      Map<DexField, DexField> allOffsetFields,
+      DexField unsafeInstanceField,
+      DexMethod getAndSetMethod) {
+    var instrumentations =
+        new HashMap<DexType, Map<DexField, AtomicFieldUpdaterInfo>>(classesWithAtomics.size());
+    var offsetFields = new HashMap<DexType, Set<DexField>>(classesWithAtomics.size());
     classesWithAtomics.forEach(
         (clazz, classInfo) -> {
           var infos = classInfo.fields;
           var fields = new HashMap<DexField, AtomicFieldUpdaterInfo>(infos.size());
+          Set<DexField> localOffsetFields = SetUtils.newIdentityHashSet();
           for (var info : infos) {
+            DexField offsetField = allOffsetFields.get(info.field);
             fields.put(
                 info.field,
                 new AtomicFieldUpdaterInfo(
-                    info.field.holder, info.reflectedFieldType, offsetFields.get(info.field)));
+                    info.field.holder, info.reflectedFieldType, offsetField));
+            localOffsetFields.add(offsetField);
           }
           instrumentations.put(clazz.getType(), fields);
+          offsetFields.put(clazz.getType(), localOffsetFields);
         });
-    return instrumentations;
+    return new AtomicFieldUpdaterInstrumentorInfo(
+        instrumentations, offsetFields, unsafeInstanceField, getAndSetMethod);
   }
 
   private DexEncodedField createOffsetField(
@@ -779,6 +788,7 @@ public class AtomicFieldUpdaterInstrumentor {
   }
 
   private static class ClassWithAtomicsInfo {
+
     public final IRCode code;
     public final Collection<UpdaterFieldInfo<Void>> fields;
 
@@ -791,23 +801,37 @@ public class AtomicFieldUpdaterInstrumentor {
   public static class AtomicFieldUpdaterInstrumentorInfo {
 
     private final Map<DexType, Map<DexField, AtomicFieldUpdaterInfo>> instrumentations;
+    // instrumentations.values() as a set, materialized for efficient lookup.
+    private final Map<DexType, Set<DexField>> offsetFields;
     private final DexField unsafeInstanceField;
     private final DexMethod getAndSetMethod;
 
     public AtomicFieldUpdaterInstrumentorInfo(
         Map<DexType, Map<DexField, AtomicFieldUpdaterInfo>> instrumentations,
+        Map<DexType, Set<DexField>> offsetFields,
         DexField unsafeInstanceField,
         DexMethod getAndSetMethod) {
       assert instrumentations != null;
+      assert offsetFields != null;
       assert unsafeInstanceField != null;
       assert getAndSetMethod != null;
+      assert checkValidMapping(instrumentations, offsetFields);
       this.instrumentations = instrumentations;
+      this.offsetFields = offsetFields;
       this.unsafeInstanceField = unsafeInstanceField;
       this.getAndSetMethod = getAndSetMethod;
     }
 
-    public Map<DexType, Map<DexField, AtomicFieldUpdaterInfo>> getInstrumentations() {
-      return instrumentations;
+    public boolean isInstrumented(DexType holder) {
+      return instrumentations.containsKey(holder);
+    }
+
+    public Map<DexField, AtomicFieldUpdaterInfo> getInstrumentationsOrNull(DexType holder) {
+      return instrumentations.get(holder);
+    }
+
+    public Set<DexField> getOffsetFieldsOrNull(DexType holder) {
+      return offsetFields.get(holder);
     }
 
     public DexField getUnsafeInstanceField() {
@@ -816,6 +840,22 @@ public class AtomicFieldUpdaterInstrumentor {
 
     public DexMethod getGetAndSetMethod() {
       return getAndSetMethod;
+    }
+
+    private static boolean checkValidMapping(
+        Map<DexType, Map<DexField, AtomicFieldUpdaterInfo>> instrumentations,
+        Map<DexType, Set<DexField>> offsetFields) {
+      assert instrumentations.keySet().equals(offsetFields.keySet());
+      for (var holder : instrumentations.keySet()) {
+        var infos = instrumentations.get(holder);
+        var localOffsetFields = offsetFields.get(holder);
+        var computedOffsetFields = SetUtils.newIdentityHashSet();
+        for (var info : infos.values()) {
+          computedOffsetFields.add(info.offsetField);
+        }
+        assert localOffsetFields.equals(computedOffsetFields);
+      }
+      return true;
     }
   }
 }

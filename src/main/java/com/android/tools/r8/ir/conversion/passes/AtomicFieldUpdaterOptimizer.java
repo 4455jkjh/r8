@@ -83,8 +83,7 @@ public class AtomicFieldUpdaterOptimizer extends CodeRewriterPass<AppInfoWithCla
         // TODO(b/453628974): Consider running in second pass (must maintain appView data).
         && appView
             .getAtomicFieldUpdaterInstrumentorInfo()
-            .getInstrumentations()
-            .containsKey(code.context().getHolderType())
+            .isInstrumented(code.context().getHolderType())
         && code.metadata().mayHaveInvokeMethodWithReceiver();
   }
 
@@ -94,7 +93,7 @@ public class AtomicFieldUpdaterOptimizer extends CodeRewriterPass<AppInfoWithCla
       MethodProcessor methodProcessor,
       MethodProcessingContext methodProcessingContext) {
     AtomicFieldUpdaterInstrumentorInfo info = appView.getAtomicFieldUpdaterInstrumentorInfo();
-    var atomicUpdaterFields = info.getInstrumentations().get(code.context().getHolderType());
+    var atomicUpdaterFields = info.getInstrumentationsOrNull(code.context().getHolderType());
     assert atomicUpdaterFields != null;
 
     var it = code.instructionListIterator();
