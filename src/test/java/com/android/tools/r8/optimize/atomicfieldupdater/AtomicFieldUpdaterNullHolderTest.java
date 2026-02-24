@@ -85,6 +85,9 @@ public class AtomicFieldUpdaterNullHolderTest extends AtomicFieldUpdaterBase {
                 assertThat(method, usesUnsafe);
               } else {
                 assertThat(method, not(usesUnsafe));
+                assertThat(
+                    method,
+                    CodeMatchers.invokesMethodWithHolder(AtomicReferenceFieldUpdater.class));
               }
             })
         .run(parameters.getRuntime(), testClass)

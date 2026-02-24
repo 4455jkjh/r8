@@ -8,32 +8,25 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.IsNot.not;
 import static org.hamcrest.core.StringContains.containsString;
 
-import com.android.tools.r8.Diagnostic;
 import com.android.tools.r8.TestParameters;
-import com.android.tools.r8.TestShrinkerBuilder;
 import com.android.tools.r8.utils.BooleanUtils;
 import com.android.tools.r8.utils.codeinspector.CodeMatchers;
 import com.android.tools.r8.utils.codeinspector.MethodSubject;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
-import org.hamcrest.Matcher;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
 
 @RunWith(Parameterized.class)
-public class AtomicFieldUpdaterDontObfuscateTest extends AtomicFieldUpdaterBase {
+public class AtomicFieldUpdaterSubClassTest extends AtomicFieldUpdaterBase {
 
-  public final boolean dontObfuscate;
-
-  public AtomicFieldUpdaterDontObfuscateTest(TestParameters parameters, boolean dontObfuscate) {
+  public AtomicFieldUpdaterSubClassTest(TestParameters parameters, boolean dontObfuscate) {
     super(parameters);
-    this.dontObfuscate = dontObfuscate;
   }
 
-  @Parameters(name = "{0}, dontObfuscate:{1}")
+  @Parameters(name = "{0}")
   public static List<Object[]> data() {
     return buildParameters(
         TestParameters.builder().withAllRuntimesAndApiLevels().build(), BooleanUtils.values());
@@ -44,23 +37,18 @@ public class AtomicFieldUpdaterDontObfuscateTest extends AtomicFieldUpdaterBase 
     Class<TestClass> testClass = TestClass.class;
     testForR8(parameters)
         .apply(this::enableAtomicFieldUpdaterWithInfo)
-        .addProgramClasses(testClass)
+        .addProgramClasses(testClass, SubClass.class)
         .addKeepMainRule(testClass)
-        .applyIf(dontObfuscate, TestShrinkerBuilder::addDontObfuscate)
         .compile()
         .inspectDiagnosticMessagesIf(
             isOptimizationOn(),
-            diagnostics -> {
-              List<Matcher<Diagnostic>> matchers = new ArrayList<>(7);
-              matchers.add(diagnosticMessage(containsString("Can instrument")));
-              matchers.add(diagnosticMessage(containsString("Can optimize")));
-              matchers.add(diagnosticMessage(containsString("Can optimize")));
-              matchers.add(diagnosticMessage(containsString("Can optimize")));
-              // TODO(b/453628974): The field should be removed once nullability analysis is
-              // more precise.
-              matchers.add(diagnosticMessage(containsString("Cannot remove")));
-              diagnostics.assertInfosMatch(matchers);
-            })
+            diagnostics ->
+                diagnostics.assertInfosMatch(
+                    diagnosticMessage(containsString("Can instrument")),
+                    diagnosticMessage(containsString("Can optimize")),
+                    diagnosticMessage(containsString("Can optimize")),
+                    diagnosticMessage(containsString("Can optimize")),
+                    diagnosticMessage(containsString("Cannot remove"))))
         .inspect(
             inspector -> {
               MethodSubject method = inspector.clazz(testClass).mainMethod();
@@ -91,16 +79,22 @@ public class AtomicFieldUpdaterDontObfuscateTest extends AtomicFieldUpdaterBase 
           AtomicReferenceFieldUpdater.newUpdater(TestClass.class, Object.class, "myString");
     }
 
-    public TestClass() {
+    public TestClass(String init) {
       super();
-      myString = "Hello";
+      myString = init;
     }
 
     public static void main(String[] args) {
-      TestClass instance = new TestClass();
+      TestClass instance = new SubClass();
       Object old = myString$FU.getAndSet(instance, "World");
       myString$FU.set(instance, old.toString() + "!!");
       System.out.println(myString$FU.get(instance));
+    }
+  }
+
+  public static class SubClass extends TestClass {
+    public SubClass() {
+      super("Hello");
     }
   }
 }

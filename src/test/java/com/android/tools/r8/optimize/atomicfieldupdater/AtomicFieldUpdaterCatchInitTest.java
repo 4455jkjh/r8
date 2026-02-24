@@ -46,6 +46,8 @@ public class AtomicFieldUpdaterCatchInitTest extends AtomicFieldUpdaterBase {
             inspector -> {
               MethodSubject method = inspector.clazz(testClass).mainMethod();
               assertThat(method, not(INVOKES_UNSAFE));
+              MethodSubject classInitializer = inspector.clazz(testClass).clinit();
+              assertThat(classInitializer, not(INVOKES_UNSAFE));
             })
         .run(parameters.getRuntime(), testClass)
         .assertSuccessWithOutputLines("Hello");

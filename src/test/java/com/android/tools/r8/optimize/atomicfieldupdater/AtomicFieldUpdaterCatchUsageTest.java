@@ -10,6 +10,7 @@ import static org.hamcrest.core.StringContains.containsString;
 
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
+import com.android.tools.r8.utils.codeinspector.CodeMatchers;
 import com.android.tools.r8.utils.codeinspector.MethodSubject;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import org.junit.Test;
@@ -50,6 +51,8 @@ public class AtomicFieldUpdaterCatchUsageTest extends AtomicFieldUpdaterBase {
             inspector -> {
               MethodSubject method = inspector.clazz(testClass).mainMethod();
               assertThat(method, not(INVOKES_UNSAFE));
+              assertThat(
+                  method, CodeMatchers.invokesMethodWithHolder(AtomicReferenceFieldUpdater.class));
             })
         .run(parameters.getRuntime(), testClass)
         .assertSuccessWithOutputLines("Hello!!");

@@ -11,6 +11,7 @@ import static org.hamcrest.core.StringContains.containsString;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.references.Reference;
 import com.android.tools.r8.utils.BooleanUtils;
+import com.android.tools.r8.utils.codeinspector.CodeMatchers;
 import com.android.tools.r8.utils.codeinspector.MethodSubject;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
@@ -66,6 +67,9 @@ public class AtomicFieldUpdaterKeepTest extends AtomicFieldUpdaterBase {
                 assertThat(method, INVOKES_UNSAFE);
               } else {
                 assertThat(method, not(INVOKES_UNSAFE));
+                assertThat(
+                    method,
+                    CodeMatchers.invokesMethodWithHolder(AtomicReferenceFieldUpdater.class));
               }
             })
         .run(parameters.getRuntime(), testClass)

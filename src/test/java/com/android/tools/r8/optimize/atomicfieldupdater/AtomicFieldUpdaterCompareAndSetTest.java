@@ -71,8 +71,7 @@ public class AtomicFieldUpdaterCompareAndSetTest extends AtomicFieldUpdaterBase 
                 assertThat(
                     method,
                     CodeMatchers.invokesMethodWithHolderAndName(
-                        "java.util.concurrent.atomic.AtomicReferenceFieldUpdater",
-                        "compareAndSet"));
+                        AtomicReferenceFieldUpdater.class, "compareAndSet"));
               }
             })
         .run(parameters.getRuntime(), testClass)

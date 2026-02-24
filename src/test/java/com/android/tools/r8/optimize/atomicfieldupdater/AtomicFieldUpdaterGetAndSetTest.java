@@ -73,7 +73,7 @@ public class AtomicFieldUpdaterGetAndSetTest extends AtomicFieldUpdaterBase {
                 assertThat(
                     method,
                     CodeMatchers.invokesMethodWithHolderAndName(
-                        "java.util.concurrent.atomic.AtomicReferenceFieldUpdater", "getAndSet"));
+                        AtomicReferenceFieldUpdater.class, "getAndSet"));
               }
             })
         .run(parameters.getRuntime(), testClass)
