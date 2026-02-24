@@ -19,5 +19,9 @@ public abstract class LibraryAnalyzerResultInspector<
     return self();
   }
 
+  public T getResult() {
+    return result;
+  }
+
   public abstract I self();
 }

@@ -24,14 +24,14 @@ public class BlastRadiusKeepRuleClassifier {
     }
     // Must have exactly one class name that ends in .* or .**.
     ProguardClassNameList classNames = rule.getClassNames();
-    if (classNames == null || classNames.size() != 1) {
+    if (classNames == null) {
       return false;
     }
     TraversalContinuation<?, ?> traversalContinuation =
         classNames.traverseTypeMatchers(
             matcher -> {
-              if (matcher instanceof MatchTypePattern) {
-                String pattern = ((MatchTypePattern) matcher).getPattern();
+              if (!matcher.isNegated() && matcher.getMatcher() instanceof MatchTypePattern) {
+                String pattern = ((MatchTypePattern) matcher.getMatcher()).getPattern();
                 return TraversalContinuation.breakIf(
                     pattern.endsWith(".*") || pattern.endsWith(".**"));
               }

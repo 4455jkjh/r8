@@ -22,6 +22,8 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import org.junit.rules.TemporaryFolder;
@@ -56,7 +58,11 @@ public class LibraryAnalyzerTestBuilder {
   }
 
   public LibraryAnalyzerTestBuilder addKeepRules(String... keepRules) {
-    Collections.addAll(this.keepRules, keepRules);
+    return addKeepRules(Arrays.asList(keepRules));
+  }
+
+  public LibraryAnalyzerTestBuilder addKeepRules(Collection<String> keepRules) {
+    this.keepRules.addAll(keepRules);
     return this;
   }
 

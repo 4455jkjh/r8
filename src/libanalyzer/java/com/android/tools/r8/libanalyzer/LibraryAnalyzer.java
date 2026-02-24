@@ -46,7 +46,6 @@ import com.android.tools.r8.utils.ListUtils;
 import com.android.tools.r8.utils.Reporter;
 import com.android.tools.r8.utils.ThreadUtils;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.function.Function;
@@ -312,7 +311,15 @@ public class LibraryAnalyzer {
                     && predicate.test(rule));
     List<RootSetBlastRadiusForRule> unusedPackageWideKeepRulesSorted =
         ListUtils.sort(
-            unusedPackageWideKeepRules, Comparator.comparing(RootSetBlastRadiusForRule::getSource));
+            unusedPackageWideKeepRules,
+            (x, y) -> {
+              if (x.getNumberOfItems() != y.getNumberOfItems()) {
+                return y.getNumberOfItems() - x.getNumberOfItems();
+              }
+              // TODO(b/441055269): Sorting by source is not guaranteed to be
+              //  deterministic.
+              return x.getSource().compareTo(y.getSource());
+            });
     return ListUtils.map(
         unusedPackageWideKeepRulesSorted,
         rule ->
