@@ -15,9 +15,6 @@ import com.android.tools.r8.utils.Reporter;
 import com.android.tools.r8.utils.ThreadUtils;
 import java.nio.file.Path;
 
-// TODO(b/479726064): This is using R8 internal APIs, such as Reporter. As a result, this won't work
-//  with r8lib.jar on the classpath. Should LibraryAnalyzer relocate internal APIs into, for
-//  example, com.android.tools.r8.libanalyzer.r8?
 @KeepForApi
 public final class LibraryAnalyzerCommand {
 
@@ -83,6 +80,7 @@ public final class LibraryAnalyzerCommand {
     return new Builder(handler);
   }
 
+  @KeepForApi
   public static class Builder {
 
     private final AndroidApp.Builder appBuilder;
