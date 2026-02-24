@@ -145,6 +145,7 @@ public class LibraryAnalyzer {
           commandBuilder.build(),
           executorService,
           r8Options -> {
+            r8Options.ignoreUnusedProguardRules = true;
             if (options.blastRadiusOutputPath != null) {
               r8Options.getBlastRadiusOptions().outputPath =
                   options.blastRadiusOutputPath.toString();
