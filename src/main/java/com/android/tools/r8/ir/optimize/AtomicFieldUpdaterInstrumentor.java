@@ -133,13 +133,16 @@ public class AtomicFieldUpdaterInstrumentor {
   public static void run(
       AppView<AppInfoWithLiveness> appView, ExecutorService service, Timing timing)
       throws ExecutionException {
-    var options = appView.options();
-    if (options.enableAtomicFieldUpdaterOptimization
-        && options.isGeneratingDex()
-        && appView.enableWholeProgramOptimizations()
-        && options.getMinApiLevel().isGreaterThanOrEqualTo(AndroidApiLevel.K)) {
+    if (isOptimizationEnabled(appView)) {
       new AtomicFieldUpdaterInstrumentor(appView, service).runInternal(timing);
     }
+  }
+
+  private static boolean isOptimizationEnabled(AppView<?> appView) {
+    return appView.options().enableAtomicFieldUpdaterOptimization
+        && appView.options().isGeneratingDex()
+        && appView.enableWholeProgramOptimizations()
+        && appView.options().getMinApiLevel().isGreaterThanOrEqualTo(AndroidApiLevel.K);
   }
 
   private AtomicFieldUpdaterInstrumentor(
@@ -707,8 +710,11 @@ public class AtomicFieldUpdaterInstrumentor {
     return newInstructions;
   }
 
-  public static void registerSynthesizedCodeReferences(DexItemFactory factory) {
-    AtomicFieldUpdaterOptimizationMethods.registerSynthesizedCodeReferences(factory);
+  public static void registerSynthesizedCodeReferences(AppView<?> appView) {
+    if (isOptimizationEnabled(appView)) {
+      AtomicFieldUpdaterOptimizationMethods.registerSynthesizedCodeReferences(
+          appView.dexItemFactory());
+    }
   }
 
   private static class UnsafeClassInfo {

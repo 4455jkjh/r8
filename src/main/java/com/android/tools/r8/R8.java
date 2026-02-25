@@ -335,9 +335,7 @@ public class R8 {
       if (options.enableEnumUnboxing) {
         EnumUnboxingCfMethods.registerSynthesizedCodeReferences(appView.dexItemFactory());
       }
-      if (options.enableAtomicFieldUpdaterOptimization) {
-        AtomicFieldUpdaterInstrumentor.registerSynthesizedCodeReferences(appView.dexItemFactory());
-      }
+      AtomicFieldUpdaterInstrumentor.registerSynthesizedCodeReferences(appView);
       if (options.desugarRecordState().isNotOff()) {
         RecordInstructionDesugaring.registerSynthesizedCodeReferences(appView.dexItemFactory());
       }
