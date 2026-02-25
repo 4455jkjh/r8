@@ -214,8 +214,8 @@ class Dump(object):
                 # We can have either jar, res or both.
                 input_string = feature_jar
                 if feature_res:
-                    input_string = '%s:%s' % (feature_jar if feature_jar else
-                                              '', feature_res)
+                    input_string = os.pathsep.join(
+                        (feature_jar if feature_jar else '', feature_res))
                 feature_jars.append(input_string)
                 i = i + 1
             else:
@@ -429,7 +429,7 @@ def determine_feature_output(feature_input, temp):
         feature_jar = '' if len(split[0]) == 0 else os.path.join(
             base_path, output_name(split[0], '.jar'))
         feature_res = os.path.join(base_path, output_name(split[1], '.ap_'))
-        return '%s:%s' % (feature_jar, feature_res)
+        return os.pathsep.join((feature_jar, feature_res))
     return os.path.join(base_path, output_name(feature_input, '.jar'))
 
 
@@ -494,7 +494,7 @@ def download_distribution(version, args, temp):
                 [utils.GRADLE_TASK_R8] if nolib else [utils.GRADLE_TASK_R8LIB])
         return utils.R8_JAR if nolib else utils.R8LIB_JAR
     if version == 'source':
-        return '%s:%s' % (utils.BUILD_JAVA_MAIN_DIR, utils.ALL_DEPS_JAR)
+        return os.pathsep.join((utils.BUILD_JAVA_MAIN_CLASSPATH, utils.ALL_DEPS_JAR))
     name = 'r8.jar' if nolib else 'r8lib.jar'
     source = archive.GetUploadDestination(version, name, is_hash(version))
     dest = os.path.join(temp, 'r8.jar')
@@ -555,7 +555,7 @@ def compile_reflective_helper(temp, jdkhome):
         '-d',
         temp,
         '-cp',
-        utils.BUILD_JAVA_MAIN_DIR,
+        utils.BUILD_JAVA_MAIN_CLASSPATH,
     ]
     cmd.extend(os.path.join(base_path, f) for f in os.listdir(base_path))
     utils.print_cmd(cmd)
@@ -602,7 +602,7 @@ def compile_wrapper_with_javac(dist, temp, jdkhome, path):
         '-d',
         temp,
         '-cp',
-        "%s:%s" % (dist, temp),
+        os.pathsep.join((dist, temp)),
     ]
     utils.print_cmd(cmd)
     subprocess.check_output(cmd)
@@ -679,7 +679,7 @@ def run1(out, args, otherargs, jdkhome=None, worker_id=None):
             cmd.extend(args.properties)
         cmd.extend(determine_properties(build_properties))
         cmd.extend(args.java_opts)
-        cmd.extend(['-cp', '%s:%s' % (temp, jar)])
+        cmd.extend(['-cp', os.pathsep.join((temp, jar))])
         if compiler == 'd8':
             prepare_d8_wrapper(jar, temp, jdkhome)
             cmd.append('com.android.tools.r8.utils.CompileDumpD8')
