@@ -11,7 +11,7 @@ import com.android.tools.r8.CompilationFailedException;
 import com.android.tools.r8.OutputMode;
 import com.android.tools.r8.TestDiagnosticMessagesImpl;
 import com.android.tools.r8.ToolHelper;
-import com.android.tools.r8.libanalyzer.proto.LibraryAnalysisResult;
+import com.android.tools.r8.libanalyzer.proto.LibraryAnalyzerResult;
 import com.android.tools.r8.utils.AndroidApiLevel;
 import com.android.tools.r8.utils.AndroidApp;
 import com.android.tools.r8.utils.Box;
@@ -96,17 +96,17 @@ public class LibraryAnalyzerTestBuilder {
 
   public LibraryAnalyzerCompileResult compile() throws CompilationFailedException {
     assertNotNull("Must call setAar() or setJar() to specify input type.", aarOrJar);
-    Box<LibraryAnalysisResult> libraryAnalysisResult = new Box<>();
+    Box<LibraryAnalyzerResult> LibraryAnalyzerResult = new Box<>();
     if (aarOrJar == AarOrJar.AAR) {
       commandBuilder.addAarPath(createAar());
     } else {
       commandBuilder.addJarPath(createJar());
     }
     LibraryAnalyzerCommand command =
-        commandBuilder.setOutputConsumer(libraryAnalysisResult::set).build();
+        commandBuilder.setOutputConsumer(LibraryAnalyzerResult::set).build();
     LibraryAnalyzer.run(command);
     diagnostics.assertNoMessages();
-    return new LibraryAnalyzerCompileResult(libraryAnalysisResult.get());
+    return new LibraryAnalyzerCompileResult(LibraryAnalyzerResult.get());
   }
 
   private Path createAar() {

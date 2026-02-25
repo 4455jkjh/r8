@@ -5,7 +5,7 @@ package com.android.tools.r8.libanalyzer;
 
 import com.android.tools.r8.DiagnosticsHandler;
 import com.android.tools.r8.keepanno.annotations.KeepForApi;
-import com.android.tools.r8.libanalyzer.proto.LibraryAnalysisResult;
+import com.android.tools.r8.libanalyzer.proto.LibraryAnalyzerResult;
 import com.android.tools.r8.libanalyzer.utils.LibraryAnalyzerOptions;
 import com.android.tools.r8.origin.Origin;
 import com.android.tools.r8.utils.AarArchiveResourceProvider;
@@ -27,7 +27,7 @@ public final class LibraryAnalyzerCommand {
   private final AndroidApp app;
   private final Path blastRadiusOutputPath;
   private final AndroidApiLevel minApiLevel;
-  private final Consumer<LibraryAnalysisResult> outputConsumer;
+  private final Consumer<LibraryAnalyzerResult> outputConsumer;
   private final Reporter reporter;
   private final int threadCount;
   private final boolean printHelp;
@@ -37,7 +37,7 @@ public final class LibraryAnalyzerCommand {
       AndroidApp app,
       Path blastRadiusOutputPath,
       AndroidApiLevel minApiLevel,
-      Consumer<LibraryAnalysisResult> outputConsumer,
+      Consumer<LibraryAnalyzerResult> outputConsumer,
       Reporter reporter,
       int threadCount) {
     this.app = app;
@@ -92,7 +92,7 @@ public final class LibraryAnalyzerCommand {
     private final AndroidApp.Builder appBuilder;
     private Path blastRadiusOutputPath;
     private AndroidApiLevel minApiLevel = AndroidApiLevel.getDefault();
-    private Consumer<LibraryAnalysisResult> outputConsumer;
+    private Consumer<LibraryAnalyzerResult> outputConsumer;
     private final Reporter reporter;
     private int threadCount = ThreadUtils.NOT_SPECIFIED;
 
@@ -149,7 +149,7 @@ public final class LibraryAnalyzerCommand {
      * Must not be added to the public API, as that would require making the protos public API. This
      * API is used for testing.
      */
-    Builder setOutputConsumer(Consumer<LibraryAnalysisResult> outputConsumer) {
+    Builder setOutputConsumer(Consumer<LibraryAnalyzerResult> outputConsumer) {
       if (this.outputConsumer == null) {
         this.outputConsumer = outputConsumer;
       } else {

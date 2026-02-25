@@ -23,7 +23,7 @@ import com.android.tools.r8.libanalyzer.proto.ConfigurationSummary;
 import com.android.tools.r8.libanalyzer.proto.D8CompileResult;
 import com.android.tools.r8.libanalyzer.proto.ItemCollectionSummary;
 import com.android.tools.r8.libanalyzer.proto.KeepRuleBlastRadiusSummary;
-import com.android.tools.r8.libanalyzer.proto.LibraryAnalysisResult;
+import com.android.tools.r8.libanalyzer.proto.LibraryAnalyzerResult;
 import com.android.tools.r8.libanalyzer.proto.R8CompileResult;
 import com.android.tools.r8.libanalyzer.proto.ValidateConsumerKeepRulesResult;
 import com.android.tools.r8.libanalyzer.utils.DexIndexedSizeConsumer;
@@ -336,7 +336,7 @@ public class LibraryAnalyzer {
       InternalD8CompileResult d8CompileResult,
       R8CompileResult r8CompileResult,
       ValidateConsumerKeepRulesResult validateConsumerKeepRulesResult) {
-    LibraryAnalysisResult.Builder resultBuilder = LibraryAnalysisResult.newBuilder();
+    LibraryAnalyzerResult.Builder resultBuilder = LibraryAnalyzerResult.newBuilder();
     if (d8CompileResult != null) {
       resultBuilder.setD8CompileResult(
           D8CompileResult.newBuilder().setDexSizeBytes(d8CompileResult.size).build());
@@ -347,7 +347,7 @@ public class LibraryAnalyzer {
     if (validateConsumerKeepRulesResult != null) {
       resultBuilder.setValidateConsumerKeepRulesResult(validateConsumerKeepRulesResult);
     }
-    LibraryAnalysisResult result = resultBuilder.build();
+    LibraryAnalyzerResult result = resultBuilder.build();
     if (options.outputConsumer != null) {
       options.outputConsumer.accept(result);
     }

@@ -8,14 +8,14 @@ package com.android.tools.r8.libanalyzer.proto;
 // Don't put all messages under the outer class.
 option java_multiple_files = true;
 
-// Camel-case the outer class name (default is `Libraryanalysisresult`).
-option java_outer_classname = "LibraryAnalysisResultProtos";
+// Camel-case the outer class name (default is `Libraryanalyzerresult`).
+option java_outer_classname = "LibraryAnalyzerResultProtos";
 
 // Java package consistent with R8 convention.
 option java_package = "com.android.tools.r8.libanalyzer.proto";
 
 // Analysis result produced by the library analyzer.
-message LibraryAnalysisResult {
+message LibraryAnalyzerResult {
   D8CompileResult d8_compile_result = 1;
   R8CompileResult r8_compile_result = 2;
   ValidateConsumerKeepRulesResult validate_consumer_keep_rules_result = 3;

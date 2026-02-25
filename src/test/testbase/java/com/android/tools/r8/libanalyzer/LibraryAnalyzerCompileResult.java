@@ -3,28 +3,28 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8.libanalyzer;
 
-import com.android.tools.r8.libanalyzer.proto.LibraryAnalysisResult;
+import com.android.tools.r8.libanalyzer.proto.LibraryAnalyzerResult;
 import com.android.tools.r8.utils.ThrowingConsumer;
 
 public class LibraryAnalyzerCompileResult {
 
-  private final LibraryAnalysisResult libraryAnalysisResult;
+  private final LibraryAnalyzerResult LibraryAnalyzerResult;
 
-  LibraryAnalyzerCompileResult(LibraryAnalysisResult libraryAnalysisResult) {
-    this.libraryAnalysisResult = libraryAnalysisResult;
+  LibraryAnalyzerCompileResult(LibraryAnalyzerResult LibraryAnalyzerResult) {
+    this.LibraryAnalyzerResult = LibraryAnalyzerResult;
   }
 
   public <E extends Exception> LibraryAnalyzerCompileResult inspectD8CompileResult(
       ThrowingConsumer<D8CompileResultInspector, E> inspector) {
     inspector.acceptWithRuntimeException(
-        new D8CompileResultInspector(libraryAnalysisResult.getD8CompileResult()));
+        new D8CompileResultInspector(LibraryAnalyzerResult.getD8CompileResult()));
     return this;
   }
 
   public <E extends Exception> LibraryAnalyzerCompileResult inspectR8CompileResult(
       ThrowingConsumer<R8CompileResultInspector, E> inspector) {
     inspector.acceptWithRuntimeException(
-        new R8CompileResultInspector(libraryAnalysisResult.getR8CompileResult()));
+        new R8CompileResultInspector(LibraryAnalyzerResult.getR8CompileResult()));
     return this;
   }
 
@@ -32,7 +32,7 @@ public class LibraryAnalyzerCompileResult {
       ThrowingConsumer<ValidateConsumerKeepRulesResultInspector, E> inspector) {
     inspector.acceptWithRuntimeException(
         new ValidateConsumerKeepRulesResultInspector(
-            libraryAnalysisResult.getValidateConsumerKeepRulesResult()));
+            LibraryAnalyzerResult.getValidateConsumerKeepRulesResult()));
     return this;
   }
 }
