@@ -550,7 +550,8 @@ public class R8 {
       Set<DexType> prunedClasspathTypes =
           appView.withLiveness().appInfo().getClasspathTypesIncludingPruned();
 
-      // AtomicFieldUpdaterInstrumentor adds a method not yet used.
+      // AtomicFieldUpdaterInstrumentor adds instrumentation with yet-to-be-determined uses
+      // and thus no profile information yet.
       assert ArtProfileCompletenessChecker.verify(
           appView, ALLOW_MISSING_ATOMIC_FIELD_UPDATER_METHODS);
 
@@ -558,7 +559,8 @@ public class R8 {
           .optimize(appViewWithLiveness, executorService);
       assert LirConverter.verifyLirOnly(appView);
 
-      // AtomicFieldUpdaterInstrumentor adds a method not yet used.
+      // AtomicFieldUpdaterInstrumentor adds dead code if no optimizations are possible.
+      // This dead code is not present in the profile but will be pruned later.
       assert ArtProfileCompletenessChecker.verify(
           appView,
           ALLOW_MISSING_ENUM_UNBOXING_UTILITY_METHODS,

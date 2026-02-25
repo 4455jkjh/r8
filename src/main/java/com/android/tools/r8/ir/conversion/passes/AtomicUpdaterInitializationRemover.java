@@ -46,6 +46,13 @@ public class AtomicUpdaterInitializationRemover extends CodeRewriterPass<AppInfo
       IRCode code,
       MethodProcessor methodProcessor,
       MethodProcessingContext methodProcessingContext) {
+    // If the original updater field or the instrumented offset field is unused, the regular
+    // compiler flow will remove them. This will however leave the initialization code behind
+    // (e.g. AtomicReferenceFieldUpdater.newUpdater(..)).
+    // This pass finds fields without reads and removes their initialization code.
+    // The offset and updater field uses functions that are generally effectful but side-effect free
+    // in this case based on previous analysis.
+
     // Assumes an earlier run of TrivialFieldAccessReprocessor.
     DexType holder = code.context().getHolderType();
     AtomicFieldUpdaterInstrumentorInfo info = appView.getAtomicFieldUpdaterInstrumentorInfo();
@@ -59,25 +66,24 @@ public class AtomicUpdaterInitializationRemover extends CodeRewriterPass<AppInfo
         continue;
       }
       if (updaterFields.containsKey(staticPut.getField())) {
-        if (!staticPut.canBeDeadCode(appView, code).isDeadIfOutValueIsDead()) {
+        if (isFieldRead(code, staticPut)) {
           reportInfo(appView, new Event.CannotRemove(staticPut.getField()), Reason.NOT_UNUSED);
-          continue;
+        } else {
+          reportInfo(appView, new Event.CanRemove(staticPut.getField()));
+          changed = true;
+          IRCodeUtils.removeInstructionAndTransitiveInputsIfNotUsed(staticPut);
         }
-        reportInfo(appView, new Event.CanRemove(staticPut.getField()));
-        changed = true;
-        // This removes the effectful initialization of the field, which is okay based on previous
-        // analysis.
-        IRCodeUtils.removeInstructionAndTransitiveInputsIfNotUsed(staticPut);
       } else if (offsetFields.contains(staticPut.getField())) {
-        if (!staticPut.canBeDeadCode(appView, code).isDeadIfOutValueIsDead()) {
-          continue;
+        if (!isFieldRead(code, staticPut)) {
+          changed = true;
+          IRCodeUtils.removeInstructionAndTransitiveInputsIfNotUsed(staticPut);
         }
-        changed = true;
-        // This removes the effectful initialization of the field, which is okay based on previous
-        // analysis.
-        IRCodeUtils.removeInstructionAndTransitiveInputsIfNotUsed(staticPut);
       }
     }
     return CodeRewriterResult.hasChanged(changed);
+  }
+
+  private boolean isFieldRead(IRCode code, StaticPut staticPut) {
+    return staticPut.instructionMayHaveSideEffects(appView, code.context());
   }
 }

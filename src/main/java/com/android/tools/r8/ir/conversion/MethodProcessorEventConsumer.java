@@ -6,7 +6,11 @@ package com.android.tools.r8.ir.conversion;
 
 import com.android.tools.r8.graph.AppInfoWithClassHierarchy;
 import com.android.tools.r8.graph.AppView;
+import com.android.tools.r8.graph.DexMethod;
+import com.android.tools.r8.graph.DexType;
+import com.android.tools.r8.graph.ProgramDefinition;
 import com.android.tools.r8.graph.ProgramMethod;
+import com.android.tools.r8.ir.conversion.passes.AtomicUpdaterMethodProcessorEventConsumer;
 import com.android.tools.r8.ir.optimize.AssertionErrorTwoArgsConstructorRewriterEventConsumer;
 import com.android.tools.r8.ir.optimize.ServiceLoaderRewriterEventConsumer;
 import com.android.tools.r8.ir.optimize.UtilityMethodsForCodeOptimizationsEventConsumer;
@@ -15,10 +19,12 @@ import com.android.tools.r8.ir.optimize.enums.EnumUnboxerMethodProcessorEventCon
 import com.android.tools.r8.profile.rewriting.ProfileCollectionAdditions;
 import com.android.tools.r8.profile.rewriting.ProfileRewritingMethodProcessorEventConsumer;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
+import java.util.List;
 
 public abstract class MethodProcessorEventConsumer
     implements AssertionErrorTwoArgsConstructorRewriterEventConsumer,
         EnumUnboxerMethodProcessorEventConsumer,
+        AtomicUpdaterMethodProcessorEventConsumer,
         InstanceInitializerOutlinerEventConsumer,
         ServiceLoaderRewriterEventConsumer,
         UtilityMethodsForCodeOptimizationsEventConsumer {
@@ -63,6 +69,17 @@ public abstract class MethodProcessorEventConsumer
     @Override
     public void acceptEnumUnboxerLocalUtilityClassMethodContext(
         ProgramMethod method, ProgramMethod context) {
+      // Intentionally empty.
+    }
+
+    @Override
+    public void acceptUnsafeInstanceContext(
+        List<DexMethod> initializationMethods, DexType unsafeClass, ProgramDefinition context) {
+      // Intentionally empty.
+    }
+
+    @Override
+    public void acceptUnsafeGetAndSetContext(DexMethod method, ProgramMethod context) {
       // Intentionally empty.
     }
 

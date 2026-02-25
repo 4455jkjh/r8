@@ -5,9 +5,13 @@
 package com.android.tools.r8.profile.rewriting;
 
 import com.android.tools.r8.graph.AppView;
+import com.android.tools.r8.graph.DexMethod;
+import com.android.tools.r8.graph.DexType;
+import com.android.tools.r8.graph.ProgramDefinition;
 import com.android.tools.r8.graph.ProgramMethod;
 import com.android.tools.r8.ir.conversion.MethodProcessorEventConsumer;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
+import java.util.List;
 
 public class ProfileRewritingMethodProcessorEventConsumer extends MethodProcessorEventConsumer {
 
@@ -71,6 +75,26 @@ public class ProfileRewritingMethodProcessorEventConsumer extends MethodProcesso
           method.getHolder().acceptProgramClassInitializer(additionsBuilder::addRule);
         });
     parent.acceptEnumUnboxerSharedUtilityClassMethodContext(method, context);
+  }
+
+  @Override
+  public void acceptUnsafeInstanceContext(
+      List<DexMethod> initializationMethods, DexType unsafeClass, ProgramDefinition context) {
+    assert !initializationMethods.isEmpty();
+    additionsCollection.applyIfContextIsInProfile(
+        context,
+        additionsBuilder -> {
+          initializationMethods.forEach(additionsBuilder::addMethodRule);
+          additionsBuilder.addClassRule(unsafeClass);
+        });
+    parent.acceptUnsafeInstanceContext(initializationMethods, unsafeClass, context);
+  }
+
+  @Override
+  public void acceptUnsafeGetAndSetContext(DexMethod method, ProgramMethod context) {
+    additionsCollection.applyIfContextIsInProfile(
+        context, additionsBuilder -> additionsBuilder.addMethodRule(method));
+    parent.acceptUnsafeGetAndSetContext(method, context);
   }
 
   @Override

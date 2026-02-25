@@ -142,7 +142,7 @@ public class AppView<T extends AppInfo> implements DexDefinitionSupplier, Librar
   private BottomUpOutliner bottomUpOutliner;
   private final LibraryMemberOptimizer libraryMemberOptimizer;
   private final ProtoShrinker protoShrinker;
-  // TODO(b/453628974): Clear info after first optimization pass.
+  // TODO(b/453628974): Maintain until last use and clear after.
   private AtomicFieldUpdaterInstrumentorInfo atomicFieldUpdaterInstrumentorInfo = null;
 
   // Optimization results.
