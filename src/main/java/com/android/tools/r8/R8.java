@@ -8,8 +8,6 @@ import static com.android.tools.r8.profile.art.ArtProfileCompletenessChecker.Com
 import static com.android.tools.r8.utils.AssertionUtils.forTesting;
 import static com.android.tools.r8.utils.ExceptionUtils.unwrapExecutionException;
 
-import com.android.build.shrinker.r8integration.LegacyResourceShrinker;
-import com.android.build.shrinker.r8integration.LegacyResourceShrinker.ShrinkerResult;
 import com.android.tools.r8.DexIndexedConsumer.ForwardingConsumer;
 import com.android.tools.r8.androidapi.ApiReferenceStubber;
 import com.android.tools.r8.assistant.AssistantExporter;
@@ -85,6 +83,8 @@ import com.android.tools.r8.origin.Origin;
 import com.android.tools.r8.profile.art.ArtProfileCompletenessChecker;
 import com.android.tools.r8.profile.rewriting.ProfileCollectionAdditions;
 import com.android.tools.r8.repackaging.Repackaging;
+import com.android.tools.r8.resourceshrinker.r8integration.LegacyResourceShrinker;
+import com.android.tools.r8.resourceshrinker.r8integration.LegacyResourceShrinker.ShrinkerResult;
 import com.android.tools.r8.shaking.AbstractMethodRemover;
 import com.android.tools.r8.shaking.AnnotationRemover;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;

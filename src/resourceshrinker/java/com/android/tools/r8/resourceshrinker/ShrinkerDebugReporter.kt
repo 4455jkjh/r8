@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.android.build.shrinker
+package com.android.tools.r8.resourceshrinker
 
 import java.io.File
 import java.io.PrintWriter

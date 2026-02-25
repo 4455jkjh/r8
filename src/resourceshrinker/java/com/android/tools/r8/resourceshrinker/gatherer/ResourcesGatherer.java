@@ -14,9 +14,21 @@
  * limitations under the License.
  */
 
-package com.android.build.shrinker;
+package com.android.tools.r8.resourceshrinker.gatherer;
 
-public enum LinkedResourcesFormat {
-    BINARY,
-    PROTO,
+import com.android.annotations.NonNull;
+import com.android.tools.r8.resourceshrinker.ResourceShrinkerModel;
+import java.io.IOException;
+
+/**
+ * Interface for unit that should gather application resources and contribute them to
+ * ResourceShrinkerModel
+ */
+public interface ResourcesGatherer {
+
+    /**
+     * Gathers application resources and contribute them to ResourceShrinkerModel via
+     * ResourceShrinkerModel.addResource
+     */
+    void gatherResourceValues(@NonNull ResourceShrinkerModel model) throws IOException;
 }

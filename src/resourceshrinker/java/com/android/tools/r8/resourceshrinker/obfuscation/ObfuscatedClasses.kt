@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.android.build.shrinker.obfuscation
+package com.android.tools.r8.resourceshrinker.obfuscation
 
 import com.google.common.collect.ImmutableMap
 

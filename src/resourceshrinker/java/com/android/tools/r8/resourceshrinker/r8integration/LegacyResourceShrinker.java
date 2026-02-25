@@ -2,7 +2,7 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-package com.android.build.shrinker.r8integration;
+package com.android.tools.r8.resourceshrinker.r8integration;
 
 import static java.nio.charset.StandardCharsets.UTF_16BE;
 import static java.nio.charset.StandardCharsets.UTF_16LE;
@@ -10,27 +10,26 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 
 import com.android.aapt.Resources.ResourceTable;
 import com.android.aapt.Resources.XmlNode;
-import com.android.build.shrinker.ResourceShrinkerImplKt;
-import com.android.build.shrinker.ResourceTableUtilKt;
-import com.android.build.shrinker.ShrinkerDebugReporter;
-import com.android.build.shrinker.graph.ProtoResourcesGraphBuilder;
-import com.android.build.shrinker.obfuscation.ProguardMappingsRecorder;
-import com.android.build.shrinker.r8integration.R8ResourceShrinkerState.R8ResourceShrinkerModel;
-import com.android.build.shrinker.usages.AppCompat;
-import com.android.build.shrinker.usages.DexFileAnalysisCallback;
-import com.android.build.shrinker.usages.DexUsageRecorderKt;
-import com.android.build.shrinker.usages.ProtoAndroidManifestUsageRecorderKt;
-import com.android.build.shrinker.usages.R8ResourceShrinker;
-import com.android.build.shrinker.usages.ToolsAttributeUsageRecorderKt;
 import com.android.ide.common.resources.ResourcesUtil;
 import com.android.ide.common.resources.usage.ResourceStore;
 import com.android.ide.common.resources.usage.ResourceUsageModel.Resource;
 import com.android.resources.ResourceType;
 import com.android.tools.r8.FeatureSplit;
+import com.android.tools.r8.resourceshrinker.ResourceShrinkerImplKt;
+import com.android.tools.r8.resourceshrinker.ResourceTableUtilKt;
+import com.android.tools.r8.resourceshrinker.ShrinkerDebugReporter;
+import com.android.tools.r8.resourceshrinker.graph.ProtoResourcesGraphBuilder;
+import com.android.tools.r8.resourceshrinker.obfuscation.ProguardMappingsRecorder;
+import com.android.tools.r8.resourceshrinker.r8integration.R8ResourceShrinkerState.R8ResourceShrinkerModel;
+import com.android.tools.r8.resourceshrinker.usages.AppCompat;
+import com.android.tools.r8.resourceshrinker.usages.DexFileAnalysisCallback;
+import com.android.tools.r8.resourceshrinker.usages.DexUsageRecorderKt;
+import com.android.tools.r8.resourceshrinker.usages.ProtoAndroidManifestUsageRecorderKt;
+import com.android.tools.r8.resourceshrinker.usages.R8ResourceShrinker;
+import com.android.tools.r8.resourceshrinker.usages.ToolsAttributeUsageRecorderKt;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
-import com.google.protobuf.InvalidProtocolBufferException;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;

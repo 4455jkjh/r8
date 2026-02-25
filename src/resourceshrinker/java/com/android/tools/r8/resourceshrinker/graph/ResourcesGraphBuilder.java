@@ -14,21 +14,21 @@
  * limitations under the License.
  */
 
-package com.android.build.shrinker.gatherer;
+package com.android.tools.r8.resourceshrinker.graph;
 
 import com.android.annotations.NonNull;
-import com.android.build.shrinker.ResourceShrinkerModel;
+import com.android.tools.r8.resourceshrinker.ResourceShrinkerModel;
 import java.io.IOException;
 
 /**
- * Interface for unit that should gather application resources and contribute them to
- * ResourceShrinkerModel
+ * Interface for unit that should find references between resources which are gathered inside
+ * ResourceShrinkerModel.
  */
-public interface ResourcesGatherer {
+public interface ResourcesGraphBuilder {
 
     /**
-     * Gathers application resources and contribute them to ResourceShrinkerModel via
-     * ResourceShrinkerModel.addResource
+     * Finds references between resources and connects them. May introduce and contribute new
+     * resources to ResourceShrinkerModel.
      */
-    void gatherResourceValues(@NonNull ResourceShrinkerModel model) throws IOException;
+    void buildGraph(@NonNull ResourceShrinkerModel model) throws IOException;
 }

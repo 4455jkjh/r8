@@ -14,24 +14,24 @@
  * limitations under the License.
  */
 
-package com.android.build.shrinker
+package com.android.tools.r8.resourceshrinker
 
 import com.android.SdkConstants.DOT_9PNG
 import com.android.SdkConstants.DOT_PNG
 import com.android.SdkConstants.DOT_XML
 import com.android.aapt.Resources
-import com.android.build.shrinker.DummyContent.TINY_9PNG
-import com.android.build.shrinker.DummyContent.TINY_9PNG_CRC
-import com.android.build.shrinker.DummyContent.TINY_BINARY_XML
-import com.android.build.shrinker.DummyContent.TINY_BINARY_XML_CRC
-import com.android.build.shrinker.DummyContent.TINY_PNG
-import com.android.build.shrinker.DummyContent.TINY_PNG_CRC
-import com.android.build.shrinker.DummyContent.TINY_PROTO_XML
-import com.android.build.shrinker.DummyContent.TINY_PROTO_XML_CRC
-import com.android.build.shrinker.gatherer.ResourcesGatherer
-import com.android.build.shrinker.graph.ResourcesGraphBuilder
-import com.android.build.shrinker.obfuscation.ObfuscationMappingsRecorder
-import com.android.build.shrinker.usages.ResourceUsageRecorder
+import com.android.tools.r8.resourceshrinker.DummyContent.TINY_9PNG
+import com.android.tools.r8.resourceshrinker.DummyContent.TINY_9PNG_CRC
+import com.android.tools.r8.resourceshrinker.DummyContent.TINY_BINARY_XML
+import com.android.tools.r8.resourceshrinker.DummyContent.TINY_BINARY_XML_CRC
+import com.android.tools.r8.resourceshrinker.DummyContent.TINY_PNG
+import com.android.tools.r8.resourceshrinker.DummyContent.TINY_PNG_CRC
+import com.android.tools.r8.resourceshrinker.DummyContent.TINY_PROTO_XML
+import com.android.tools.r8.resourceshrinker.DummyContent.TINY_PROTO_XML_CRC
+import com.android.tools.r8.resourceshrinker.gatherer.ResourcesGatherer
+import com.android.tools.r8.resourceshrinker.graph.ResourcesGraphBuilder
+import com.android.tools.r8.resourceshrinker.obfuscation.ObfuscationMappingsRecorder
+import com.android.tools.r8.resourceshrinker.usages.ResourceUsageRecorder
 import com.android.ide.common.resources.findUnusedResources
 import com.android.ide.common.resources.usage.ResourceStore
 import com.android.ide.common.resources.usage.ResourceUsageModel.Resource

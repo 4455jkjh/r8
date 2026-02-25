@@ -1,9 +1,9 @@
 // Copyright (c) 2023, the R8 project authors. Please see the AUTHORS file
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
-package com.android.build.shrinker.r8integration;
+package com.android.tools.r8.resourceshrinker.r8integration;
 
-import static com.android.build.shrinker.r8integration.LegacyResourceShrinker.getUtfReader;
+import static com.android.tools.r8.resourceshrinker.r8integration.LegacyResourceShrinker.getUtfReader;
 
 import com.android.aapt.Resources;
 import com.android.aapt.Resources.ConfigValue;
@@ -17,14 +17,6 @@ import com.android.aapt.Resources.Value;
 import com.android.aapt.Resources.XmlAttribute;
 import com.android.aapt.Resources.XmlElement;
 import com.android.aapt.Resources.XmlNode;
-import com.android.build.shrinker.ResourceShrinkerImplKt;
-import com.android.build.shrinker.ResourceShrinkerModel;
-import com.android.build.shrinker.ResourceTableUtilKt;
-import com.android.build.shrinker.ShrinkerDebugReporter;
-import com.android.build.shrinker.graph.ProtoResourcesGraphBuilder;
-import com.android.build.shrinker.r8integration.LegacyResourceShrinker.ShrinkerResult;
-import com.android.build.shrinker.usages.ProtoAndroidManifestUsageRecorderKt;
-import com.android.build.shrinker.usages.ToolsAttributeUsageRecorderKt;
 import com.android.ide.common.resources.ResourcesUtil;
 import com.android.ide.common.resources.usage.ResourceStore;
 import com.android.ide.common.resources.usage.ResourceUsageModel;
@@ -33,6 +25,14 @@ import com.android.resources.ResourceType;
 import com.android.tools.r8.FeatureSplit;
 import com.android.tools.r8.origin.Origin;
 import com.android.tools.r8.origin.PathOrigin;
+import com.android.tools.r8.resourceshrinker.ResourceShrinkerImplKt;
+import com.android.tools.r8.resourceshrinker.ResourceShrinkerModel;
+import com.android.tools.r8.resourceshrinker.ResourceTableUtilKt;
+import com.android.tools.r8.resourceshrinker.ShrinkerDebugReporter;
+import com.android.tools.r8.resourceshrinker.graph.ProtoResourcesGraphBuilder;
+import com.android.tools.r8.resourceshrinker.r8integration.LegacyResourceShrinker.ShrinkerResult;
+import com.android.tools.r8.resourceshrinker.usages.ProtoAndroidManifestUsageRecorderKt;
+import com.android.tools.r8.resourceshrinker.usages.ToolsAttributeUsageRecorderKt;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import it.unimi.dsi.fastutil.ints.IntOpenHashSet;

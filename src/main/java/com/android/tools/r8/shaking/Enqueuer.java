@@ -16,7 +16,6 @@ import static com.android.tools.r8.utils.FunctionUtils.ignoreArgument;
 import static com.android.tools.r8.utils.MapUtils.ignoreKey;
 import static java.util.Collections.emptySet;
 
-import com.android.build.shrinker.r8integration.R8ResourceShrinkerState;
 import com.android.tools.r8.Diagnostic;
 import com.android.tools.r8.blastradius.BlastRadiusOptions;
 import com.android.tools.r8.blastradius.RootSetBlastRadius;
@@ -122,6 +121,7 @@ import com.android.tools.r8.naming.IdentifierNameStringCollection;
 import com.android.tools.r8.optimize.interfaces.analysis.CfOpenClosedInterfacesAnalysis;
 import com.android.tools.r8.origin.Origin;
 import com.android.tools.r8.profile.rewriting.ProfileCollectionAdditions;
+import com.android.tools.r8.resourceshrinker.r8integration.R8ResourceShrinkerState;
 import com.android.tools.r8.shaking.AnnotationMatchResult.MatchedAnnotation;
 import com.android.tools.r8.shaking.EnqueuerEvent.ClassEnqueuerEvent;
 import com.android.tools.r8.shaking.EnqueuerEvent.InstantiatedClassEnqueuerEvent;

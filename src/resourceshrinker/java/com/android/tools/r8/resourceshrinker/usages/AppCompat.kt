@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-package com.android.build.shrinker.usages
+package com.android.tools.r8.resourceshrinker.usages
 
-import com.android.build.shrinker.obfuscation.ObfuscatedClasses
+import com.android.tools.r8.resourceshrinker.obfuscation.ObfuscatedClasses
 import java.util.function.Predicate
 
 internal object AppCompat {

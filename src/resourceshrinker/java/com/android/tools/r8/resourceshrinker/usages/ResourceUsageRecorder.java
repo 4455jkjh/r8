@@ -14,22 +14,18 @@
  * limitations under the License.
  */
 
-package com.android.build.shrinker.obfuscation;
+package com.android.tools.r8.resourceshrinker.usages;
 
 import com.android.annotations.NonNull;
-import com.android.build.shrinker.ResourceShrinkerModel;
+import com.android.tools.r8.resourceshrinker.ResourceShrinkerModel;
 import java.io.IOException;
 
 /**
- * Interface for unit that should record obfuscation mappings and contribute it to
- * ResourceShrinkerModel.obfuscatedClasses.
+ * Interface for unit that should record resource usages and contribute this information to
+ * ResourceShrinkerModel.
  */
-public interface ObfuscationMappingsRecorder {
+public interface ResourceUsageRecorder {
 
-    /**
-     * Records obfuscation mappings to be able to resolve original class name and original method
-     * name when all references in code are obfuscated. Should create and contribute
-     * ObfuscatedClasses instance to ResourceShrinkerModel.obfuscatedClasses.
-     */
-    void recordObfuscationMappings(@NonNull ResourceShrinkerModel model) throws IOException;
+    /** Records resource usages. */
+    void recordUsages(@NonNull ResourceShrinkerModel model) throws IOException;
 }

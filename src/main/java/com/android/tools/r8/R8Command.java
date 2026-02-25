@@ -6,7 +6,6 @@ package com.android.tools.r8;
 import static com.android.tools.r8.utils.InternalOptions.DETERMINISTIC_DEBUGGING;
 import static com.android.tools.r8.utils.MapConsumerUtils.wrapExistingInternalMapConsumerIfNotNull;
 
-import com.android.build.shrinker.r8integration.LegacyResourceShrinker;
 import com.android.tools.r8.ProgramResource.Kind;
 import com.android.tools.r8.dex.Marker.Tool;
 import com.android.tools.r8.dump.DumpOptions;
@@ -35,6 +34,7 @@ import com.android.tools.r8.origin.Origin;
 import com.android.tools.r8.origin.PathOrigin;
 import com.android.tools.r8.partial.R8PartialCompilationConfiguration;
 import com.android.tools.r8.profile.art.ArtProfileForRewriting;
+import com.android.tools.r8.resourceshrinker.r8integration.LegacyResourceShrinker;
 import com.android.tools.r8.shaking.FilteredClassPath;
 import com.android.tools.r8.shaking.KeepSpecificationSource;
 import com.android.tools.r8.shaking.ProguardConfiguration;

@@ -16,7 +16,7 @@
 
 @file:JvmName("R8ResourceShrinker")
 
-package com.android.build.shrinker.usages
+package com.android.tools.r8.resourceshrinker.usages
 
 import com.android.tools.r8.ProgramResource
 import com.android.tools.r8.ProgramResourceProvider

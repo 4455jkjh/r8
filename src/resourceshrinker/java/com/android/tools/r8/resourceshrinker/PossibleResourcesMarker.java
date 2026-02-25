@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.android.build.shrinker;
+package com.android.tools.r8.resourceshrinker;
 
 import static com.android.ide.common.resources.ResourcesUtil.resourceNameToFieldName;
 import static com.google.common.collect.ImmutableSet.toImmutableSet;

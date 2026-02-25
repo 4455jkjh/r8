@@ -14,10 +14,10 @@
  * limitations under the License.
  */
 
-package com.android.build.shrinker.gatherer
+package com.android.tools.r8.resourceshrinker.gatherer
 
-import com.android.build.shrinker.ResourceShrinkerModel
-import com.android.build.shrinker.entriesSequence
+import com.android.tools.r8.resourceshrinker.ResourceShrinkerModel
+import com.android.tools.r8.resourceshrinker.entriesSequence
 import com.android.ide.common.resources.resourceNameToFieldName
 import com.android.resources.ResourceType
 import java.nio.file.Path

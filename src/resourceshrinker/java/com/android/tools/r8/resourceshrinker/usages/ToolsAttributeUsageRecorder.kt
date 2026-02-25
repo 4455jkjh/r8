@@ -14,10 +14,10 @@
  * limitations under the License.
  */
 
-package com.android.build.shrinker.usages
+package com.android.tools.r8.resourceshrinker.usages
 
 import com.android.SdkConstants.VALUE_STRICT
-import com.android.build.shrinker.ResourceShrinkerModel
+import com.android.tools.r8.resourceshrinker.ResourceShrinkerModel
 import com.android.utils.XmlUtils
 import com.google.common.collect.ImmutableMap
 import com.google.common.collect.ImmutableMap.copyOf

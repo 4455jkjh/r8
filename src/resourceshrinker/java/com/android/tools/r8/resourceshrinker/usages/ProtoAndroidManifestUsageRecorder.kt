@@ -14,10 +14,10 @@
  * limitations under the License.
  */
 
-package com.android.build.shrinker.usages
+package com.android.tools.r8.resourceshrinker.usages
 
 import com.android.aapt.Resources.XmlNode
-import com.android.build.shrinker.ResourceShrinkerModel
+import com.android.tools.r8.resourceshrinker.ResourceShrinkerModel
 import com.android.ide.common.resources.usage.ResourceUsageModel
 import com.android.ide.common.resources.usage.ResourceUsageModel.Resource
 import java.nio.file.Files

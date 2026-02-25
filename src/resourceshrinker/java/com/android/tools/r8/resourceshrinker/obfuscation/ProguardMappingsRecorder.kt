@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-package com.android.build.shrinker.obfuscation
+package com.android.tools.r8.resourceshrinker.obfuscation
 
-import com.android.build.shrinker.ResourceShrinkerModel
+import com.android.tools.r8.resourceshrinker.ResourceShrinkerModel
 import java.nio.charset.StandardCharsets
 import java.nio.file.Files
 import java.nio.file.Path

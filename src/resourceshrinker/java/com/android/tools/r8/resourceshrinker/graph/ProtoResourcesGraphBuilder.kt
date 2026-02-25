@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.android.build.shrinker.graph
+package com.android.tools.r8.resourceshrinker.graph
 
 import com.android.aapt.Resources
 import com.android.aapt.Resources.Entry
@@ -25,8 +25,8 @@ import com.android.aapt.Resources.ResourceTable
 import com.android.aapt.Resources.XmlAttribute
 import com.android.aapt.Resources.XmlElement
 import com.android.aapt.Resources.XmlNode
-import com.android.build.shrinker.ResourceShrinkerModel
-import com.android.build.shrinker.entriesSequence
+import com.android.tools.r8.resourceshrinker.ResourceShrinkerModel
+import com.android.tools.r8.resourceshrinker.entriesSequence
 import com.android.ide.common.resources.usage.ResourceUsageModel
 import com.android.ide.common.resources.usage.ResourceUsageModel.Resource
 import com.android.ide.common.resources.usage.WebTokenizers

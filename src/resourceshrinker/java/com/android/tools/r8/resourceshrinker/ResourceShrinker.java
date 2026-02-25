@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.android.build.shrinker;
+package com.android.tools.r8.resourceshrinker;
 
 import com.android.annotations.NonNull;
 import java.io.File;

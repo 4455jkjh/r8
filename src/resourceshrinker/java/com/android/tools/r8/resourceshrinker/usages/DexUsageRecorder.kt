@@ -14,12 +14,12 @@
  * limitations under the License.
  */
 
-package com.android.build.shrinker.usages
+package com.android.tools.r8.resourceshrinker.usages
 
 import com.android.SdkConstants.DOT_DEX
-import com.android.build.shrinker.ResourceShrinkerModel
-import com.android.build.shrinker.obfuscation.ClassAndMethod
-import com.android.build.shrinker.usages.AppCompat.isAppCompatClass
+import com.android.tools.r8.resourceshrinker.ResourceShrinkerModel
+import com.android.tools.r8.resourceshrinker.obfuscation.ClassAndMethod
+import com.android.tools.r8.resourceshrinker.usages.AppCompat.isAppCompatClass
 import com.android.ide.common.resources.usage.ResourceUsageModel
 import com.android.resources.ResourceType
 import com.android.tools.r8.references.MethodReference

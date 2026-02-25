@@ -14,15 +14,15 @@
  * limitations under the License.
  */
 
-package com.android.build.shrinker;
+package com.android.tools.r8.resourceshrinker;
 
 import com.android.aapt.Resources.ResourceTable;
 import com.android.annotations.NonNull;
 import com.android.annotations.Nullable;
-import com.android.build.shrinker.obfuscation.ObfuscatedClasses;
 import com.android.ide.common.resources.usage.ResourceStore;
 import com.android.ide.common.resources.usage.ResourceUsageModel.Resource;
 import com.android.resources.ResourceType;
+import com.android.tools.r8.resourceshrinker.obfuscation.ObfuscatedClasses;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import java.io.IOException;

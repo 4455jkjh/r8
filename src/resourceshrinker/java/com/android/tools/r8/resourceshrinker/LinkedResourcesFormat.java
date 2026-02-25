@@ -14,21 +14,9 @@
  * limitations under the License.
  */
 
-package com.android.build.shrinker.graph;
+package com.android.tools.r8.resourceshrinker;
 
-import com.android.annotations.NonNull;
-import com.android.build.shrinker.ResourceShrinkerModel;
-import java.io.IOException;
-
-/**
- * Interface for unit that should find references between resources which are gathered inside
- * ResourceShrinkerModel.
- */
-public interface ResourcesGraphBuilder {
-
-    /**
-     * Finds references between resources and connects them. May introduce and contribute new
-     * resources to ResourceShrinkerModel.
-     */
-    void buildGraph(@NonNull ResourceShrinkerModel model) throws IOException;
+public enum LinkedResourcesFormat {
+    BINARY,
+    PROTO,
 }

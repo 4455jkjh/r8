@@ -14,15 +14,15 @@
  * limitations under the License.
  */
 
-package com.android.build.shrinker;
+package com.android.tools.r8.resourceshrinker;
 
-import com.android.build.shrinker.gatherer.ProtoResourceTableGatherer;
-import com.android.build.shrinker.gatherer.ResourcesGatherer;
-import com.android.build.shrinker.graph.ProtoResourcesGraphBuilder;
-import com.android.build.shrinker.usages.DexUsageRecorder;
-import com.android.build.shrinker.usages.ProtoAndroidManifestUsageRecorder;
-import com.android.build.shrinker.usages.ResourceUsageRecorder;
-import com.android.build.shrinker.usages.ToolsAttributeUsageRecorder;
+import com.android.tools.r8.resourceshrinker.gatherer.ProtoResourceTableGatherer;
+import com.android.tools.r8.resourceshrinker.gatherer.ResourcesGatherer;
+import com.android.tools.r8.resourceshrinker.graph.ProtoResourcesGraphBuilder;
+import com.android.tools.r8.resourceshrinker.usages.DexUsageRecorder;
+import com.android.tools.r8.resourceshrinker.usages.ProtoAndroidManifestUsageRecorder;
+import com.android.tools.r8.resourceshrinker.usages.ResourceUsageRecorder;
+import com.android.tools.r8.resourceshrinker.usages.ToolsAttributeUsageRecorder;
 import com.android.utils.FileUtils;
 import java.io.IOException;
 import java.io.PrintStream;

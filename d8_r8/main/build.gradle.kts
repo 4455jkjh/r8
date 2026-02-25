@@ -572,8 +572,6 @@ tasks {
       "--map",
       "com.android.**->${pkg}.com.android",
       "--map",
-      "com.android.build.shrinker.**->${pkg}.resourceshrinker",
-      "--map",
       "com.android.zipflinger.**->${pkg}.com.android.zipflinger",
       "--map",
       "com.google.common.**->${pkg}.com.google.common",
