@@ -517,7 +517,9 @@ public class SyntheticNaming {
     } else {
       return factory.createType(
           DescriptorUtils.getDescriptorFromClassBinaryName(
-              externalSyntheticTypePrefix + INNER_CLASS_SEPARATOR + id));
+              externalSyntheticTypePrefix
+                  + options.getSyntheticItemsOptions().syntheticSeparator
+                  + id));
     }
   }
 
