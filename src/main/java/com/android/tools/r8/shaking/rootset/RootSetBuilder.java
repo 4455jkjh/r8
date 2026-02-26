@@ -124,6 +124,8 @@ import com.android.tools.r8.utils.PredicateSet;
 import com.android.tools.r8.utils.Reporter;
 import com.android.tools.r8.utils.StringDiagnostic;
 import com.android.tools.r8.utils.TraversalContinuation;
+import com.android.tools.r8.utils.WorkList;
+import com.android.tools.r8.utils.collections.DexMethodSignatureSet;
 import com.android.tools.r8.utils.collections.ProgramMethodMap;
 import com.android.tools.r8.utils.timing.Timing;
 import com.google.common.base.Equivalence.Wrapper;
@@ -134,10 +136,8 @@ import com.google.common.collect.Sets;
 import it.unimi.dsi.fastutil.ints.IntOpenHashSet;
 import it.unimi.dsi.fastutil.ints.IntSet;
 import java.io.PrintStream;
-import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Deque;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.IdentityHashMap;
@@ -476,7 +476,7 @@ public class RootSetBuilder {
       markMatchingVisibleMethods(
           clazz, methodKeepRules, rule, null, true, true, ifRulePreconditionMatch);
       markMatchingOverriddenMethods(
-          clazz, methodKeepRules, rule, null, true, true, ifRulePreconditionMatch);
+          clazz, methodKeepRules, rule, null, true, true, ifRulePreconditionMatch, timing);
       markMatchingVisibleFields(
           clazz, fieldKeepRules, rule, null, true, true, ifRulePreconditionMatch);
     } else if (rule instanceof ProguardAssumeNoSideEffectRule
@@ -835,8 +835,8 @@ public class RootSetBuilder {
     }
     // TODO(b/422947619): Evaluate the impact of matching the rule against the superclass.
     boolean includeSuperclasses = !rule.isTrivialAllClassMatch();
-    Set<Wrapper<DexMethod>> methodsMarked =
-        options.forceProguardCompatibility ? null : new HashSet<>();
+    DexMethodSignatureSet methodsMarked =
+        options.forceProguardCompatibility ? null : DexMethodSignatureSet.create();
     DexClass currentClass = clazz;
     do {
       if (!includeClasspathClasses && currentClass.isClasspathClass()) {
@@ -1023,38 +1023,19 @@ public class RootSetBuilder {
       boolean includeLibraryClasses,
       ProguardIfRulePreconditionMatch ifRulePreconditionMatch,
       Timing timing) {
-    timing.begin("Mark overridden methods");
-    markMatchingOverriddenMethods(
-        clazz,
-        memberKeepRules,
-        rule,
-        preconditionSupplier,
-        includeClasspathClasses,
-        includeLibraryClasses,
-        ifRulePreconditionMatch);
-    timing.end();
-  }
-
-  private void markMatchingOverriddenMethods(
-      DexClass clazz,
-      Collection<ProguardMemberRule> memberKeepRules,
-      ProguardConfigurationRule rule,
-      Map<Predicate<DexDefinition>, DexClass> preconditionSupplier,
-      boolean includeClasspathClasses,
-      boolean includeLibraryClasses,
-      ProguardIfRulePreconditionMatch ifRulePreconditionMatch) {
     if (memberKeepRules.isEmpty()) {
       return;
     }
-    Set<DexClass> visited = Sets.newIdentityHashSet();
+    boolean includeSubclasses = !rule.isTrivialAllClassMatch();
     // Intentionally skip the current `clazz`, assuming it's covered by
     // markMatchingVisibleMethods.
-    Deque<DexClass> worklist = new ArrayDeque<>(subtypingInfo.getSubclasses(clazz));
-    while (!worklist.isEmpty()) {
-      DexClass currentClass = worklist.poll();
-      if (!visited.add(currentClass)) {
-        continue;
-      }
+    if (!includeSubclasses) {
+      return;
+    }
+    timing.begin("Mark overridden methods");
+    WorkList<DexClass> worklist = WorkList.newIdentityWorkList(subtypingInfo.getSubclasses(clazz));
+    while (worklist.hasNext()) {
+      DexClass currentClass = worklist.next();
       if (!includeClasspathClasses && currentClass.isClasspathClass()) {
         continue;
       }
@@ -1068,8 +1049,9 @@ public class RootSetBuilder {
                 testAndGetPrecondition(method.getDefinition(), preconditionSupplier);
             markMethod(method, memberKeepRules, null, rule, precondition, ifRulePreconditionMatch);
           });
-      worklist.addAll(subtypingInfo.getSubclasses(currentClass));
+      worklist.addIfNotSeen(subtypingInfo.getSubclasses(currentClass));
     }
+    timing.end();
   }
 
   private void markMatchingMethods(
@@ -1353,7 +1335,7 @@ public class RootSetBuilder {
   private void markMethod(
       DexClassAndMethod method,
       Collection<ProguardMemberRule> rules,
-      Set<Wrapper<DexMethod>> methodsMarked,
+      DexMethodSignatureSet methodsMarked,
       ProguardConfigurationRule context,
       DexClass precondition,
       ProguardIfRulePreconditionMatch ifRulePreconditionMatch) {
@@ -1362,15 +1344,14 @@ public class RootSetBuilder {
         return;
       }
     }
-    if (methodsMarked != null
-        && methodsMarked.contains(MethodSignatureEquivalence.get().wrap(method.getReference()))) {
+    if (methodsMarked != null && methodsMarked.contains(method)) {
       // Ignore, method is overridden in sub class.
       return;
     }
     for (ProguardMemberRule rule : rules) {
       if (rule.matches(method, appView, this::handleMatchedAnnotation, dexStringCache)) {
         if (methodsMarked != null) {
-          methodsMarked.add(MethodSignatureEquivalence.get().wrap(method.getReference()));
+          methodsMarked.add(method);
         }
         addItemToSets(method, context, rule, precondition, ifRulePreconditionMatch);
       }
