@@ -80,7 +80,7 @@ public class GenerateMainDexList {
     ImmediateAppSubtypingInfo subtypingInfo = ImmediateAppSubtypingInfo.create(appView);
     MainDexRootSet mainDexRootSet =
         MainDexRootSet.builder(appView, subtypingInfo, options.mainDexKeepRules)
-            .evaluateRulesAndBuild(executor);
+            .evaluateRulesAndBuild(executor, Timing.empty());
     appView.setMainDexRootSet(mainDexRootSet);
 
     GraphConsumer graphConsumer = options.mainDexKeptGraphConsumer;

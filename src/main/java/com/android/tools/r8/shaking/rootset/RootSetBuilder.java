@@ -637,8 +637,9 @@ public class RootSetBuilder {
         });
   }
 
-  public RootSetBuilder evaluateRules(ExecutorService executorService) throws ExecutionException {
-    application.timing.begin("Build root set...");
+  public RootSetBuilder evaluateRules(ExecutorService executorService, Timing timing)
+      throws ExecutionException {
+    timing.begin("Build root set...");
     try {
       TaskCollection<?> tasks = new TaskCollection<>(options, executorService);
       // Mark all the things explicitly listed in keep rules.
@@ -648,13 +649,16 @@ public class RootSetBuilder {
             ProguardIfRule ifRule = (ProguardIfRule) rule;
             ifRules.add(ifRule);
           } else {
-            runPerRule(tasks, rule, null, application.timing);
+            runPerRule(tasks, rule, null, timing);
           }
         }
+
+        timing.begin("Await task completion");
         tasks.await();
+        timing.end();
       }
     } finally {
-      application.timing.end();
+      timing.end();
     }
     finalizeCheckDiscardedInformation();
     generateAssumeNoSideEffectsWarnings();
@@ -712,8 +716,9 @@ public class RootSetBuilder {
         rootNonProgramTypes);
   }
 
-  public RootSet evaluateRulesAndBuild(ExecutorService executorService) throws ExecutionException {
-    evaluateRules(executorService);
+  public RootSet evaluateRulesAndBuild(ExecutorService executorService, Timing timing)
+      throws ExecutionException {
+    evaluateRules(executorService, timing);
     return build();
   }
 

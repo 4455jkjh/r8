@@ -370,7 +370,7 @@ public class R8 {
                   Iterables.concat(
                       options.getProguardConfiguration().getRules(), synthesizedProguardRules))
               .setAssumeInfoCollectionBuilder(assumeInfoCollectionBuilder)
-              .evaluateRules(executorService)
+              .evaluateRules(executorService, timing)
               .expandAdaptClassStringsPatterns()
               .tracePartialCompilationDexingOutputClasses(executorService)
               .build());
@@ -383,7 +383,7 @@ public class R8 {
         // Find classes which may have code executed before secondary dex files installation.
         MainDexRootSet mainDexRootSet =
             MainDexRootSet.builder(appView, subtypingInfo, options.mainDexKeepRules)
-                .evaluateRulesAndBuild(executorService);
+                .evaluateRulesAndBuild(executorService, timing);
         appView.setMainDexRootSet(mainDexRootSet);
         appView.appInfo().unsetObsolete();
       }

@@ -988,7 +988,7 @@ public class TestBase {
                 appView,
                 ImmediateAppSubtypingInfo.create(appView),
                 appView.options().getProguardConfiguration().getRules())
-            .evaluateRulesAndBuild(executor);
+            .evaluateRulesAndBuild(executor, Timing.empty());
     appView.setRootSet(rootSet);
     appView.rebuildAppInfo();
     EnqueuerResult enqueuerResult =
