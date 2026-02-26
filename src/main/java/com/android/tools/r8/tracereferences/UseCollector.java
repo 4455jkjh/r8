@@ -54,6 +54,7 @@ import com.android.tools.r8.tracereferences.internal.TracedFieldImpl;
 import com.android.tools.r8.tracereferences.internal.TracedMethodImpl;
 import com.android.tools.r8.utils.BooleanBox;
 import com.android.tools.r8.utils.ThreadUtils;
+import com.android.tools.r8.utils.timing.Timing;
 import java.util.Collection;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -109,9 +110,11 @@ public class UseCollector implements UseCollectorEventConsumer {
     // Intentionally empty. Overridden in R8PartialUseCollector.
   }
 
-  public void traceClasses(Collection<DexProgramClass> classes) {
+  public void traceClasses(Collection<DexProgramClass> classes, Timing timing) {
     for (DexProgramClass clazz : classes) {
+      timing.begin("Trace " + clazz.getTypeName());
       traceClass(clazz);
+      timing.end();
     }
   }
 

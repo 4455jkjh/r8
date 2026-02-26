@@ -7,6 +7,7 @@ import com.android.tools.r8.DiagnosticsHandler;
 import com.android.tools.r8.graph.AppInfoWithClassHierarchy;
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.DexType;
+import com.android.tools.r8.utils.timing.Timing;
 import java.util.function.Predicate;
 
 public class Tracer {
@@ -24,9 +25,9 @@ public class Tracer {
     this.targetPredicate = targetPredicate;
   }
 
-  public void run(TraceReferencesConsumer consumer) {
+  public void run(TraceReferencesConsumer consumer, Timing timing) {
     UseCollector useCollector = new UseCollector(appView, consumer, diagnostics, targetPredicate);
-    useCollector.traceClasses(appView.appInfo().classes());
+    useCollector.traceClasses(appView.appInfo().classes(), timing);
     consumer.finished(diagnostics);
   }
 }
