@@ -8,8 +8,6 @@ import static com.android.tools.r8.profile.art.ArtProfileCompletenessChecker.Com
 import static com.android.tools.r8.utils.AssertionUtils.forTesting;
 import static com.android.tools.r8.utils.ExceptionUtils.unwrapExecutionException;
 
-import com.android.build.shrinker.r8integration.LegacyResourceShrinker;
-import com.android.build.shrinker.r8integration.LegacyResourceShrinker.ShrinkerResult;
 import com.android.tools.r8.DexIndexedConsumer.ForwardingConsumer;
 import com.android.tools.r8.androidapi.ApiReferenceStubber;
 import com.android.tools.r8.assistant.AssistantExporter;
@@ -85,6 +83,8 @@ import com.android.tools.r8.origin.Origin;
 import com.android.tools.r8.profile.art.ArtProfileCompletenessChecker;
 import com.android.tools.r8.profile.rewriting.ProfileCollectionAdditions;
 import com.android.tools.r8.repackaging.Repackaging;
+import com.android.tools.r8.resourceshrinker.r8integration.LegacyResourceShrinker;
+import com.android.tools.r8.resourceshrinker.r8integration.LegacyResourceShrinker.ShrinkerResult;
 import com.android.tools.r8.shaking.AbstractMethodRemover;
 import com.android.tools.r8.shaking.AnnotationRemover;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
@@ -335,9 +335,7 @@ public class R8 {
       if (options.enableEnumUnboxing) {
         EnumUnboxingCfMethods.registerSynthesizedCodeReferences(appView.dexItemFactory());
       }
-      if (options.enableAtomicFieldUpdaterOptimization) {
-        AtomicFieldUpdaterInstrumentor.registerSynthesizedCodeReferences(appView.dexItemFactory());
-      }
+      AtomicFieldUpdaterInstrumentor.registerSynthesizedCodeReferences(appView);
       if (options.desugarRecordState().isNotOff()) {
         RecordInstructionDesugaring.registerSynthesizedCodeReferences(appView.dexItemFactory());
       }
@@ -372,7 +370,7 @@ public class R8 {
                   Iterables.concat(
                       options.getProguardConfiguration().getRules(), synthesizedProguardRules))
               .setAssumeInfoCollectionBuilder(assumeInfoCollectionBuilder)
-              .evaluateRules(executorService)
+              .evaluateRules(executorService, timing)
               .expandAdaptClassStringsPatterns()
               .tracePartialCompilationDexingOutputClasses(executorService)
               .build());
@@ -385,7 +383,7 @@ public class R8 {
         // Find classes which may have code executed before secondary dex files installation.
         MainDexRootSet mainDexRootSet =
             MainDexRootSet.builder(appView, subtypingInfo, options.mainDexKeepRules)
-                .evaluateRulesAndBuild(executorService);
+                .evaluateRulesAndBuild(executorService, timing);
         appView.setMainDexRootSet(mainDexRootSet);
         appView.appInfo().unsetObsolete();
       }
@@ -542,9 +540,7 @@ public class R8 {
         appViewWithLiveness.setAppInfo(new SwitchMapCollector(appViewWithLiveness).run());
       }
 
-      if (options.enableAtomicFieldUpdaterOptimization) {
-        AtomicFieldUpdaterInstrumentor.run(appViewWithLiveness, executorService, timing);
-      }
+      AtomicFieldUpdaterInstrumentor.run(appViewWithLiveness, executorService, timing);
 
       // Collect the already pruned types before creating a new app info without liveness.
       // TODO: we should avoid removing liveness.
@@ -552,7 +548,8 @@ public class R8 {
       Set<DexType> prunedClasspathTypes =
           appView.withLiveness().appInfo().getClasspathTypesIncludingPruned();
 
-      // AtomicFieldUpdaterInstrumentor adds a method not yet used.
+      // AtomicFieldUpdaterInstrumentor adds instrumentation with yet-to-be-determined uses
+      // and thus no profile information yet.
       assert ArtProfileCompletenessChecker.verify(
           appView, ALLOW_MISSING_ATOMIC_FIELD_UPDATER_METHODS);
 
@@ -560,7 +557,8 @@ public class R8 {
           .optimize(appViewWithLiveness, executorService);
       assert LirConverter.verifyLirOnly(appView);
 
-      // AtomicFieldUpdaterInstrumentor adds a method not yet used.
+      // AtomicFieldUpdaterInstrumentor adds dead code if no optimizations are possible.
+      // This dead code is not present in the profile but will be pruned later.
       assert ArtProfileCompletenessChecker.verify(
           appView,
           ALLOW_MISSING_ENUM_UNBOXING_UTILITY_METHODS,

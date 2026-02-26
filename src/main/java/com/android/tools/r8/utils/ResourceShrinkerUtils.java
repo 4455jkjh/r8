@@ -3,9 +3,6 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8.utils;
 
-import com.android.build.shrinker.NoDebugReporter;
-import com.android.build.shrinker.ShrinkerDebugReporter;
-import com.android.build.shrinker.r8integration.R8ResourceShrinkerState;
 import com.android.tools.r8.AndroidResourceInput;
 import com.android.tools.r8.AndroidResourceProvider;
 import com.android.tools.r8.DiagnosticsHandler;
@@ -13,6 +10,9 @@ import com.android.tools.r8.FeatureSplit;
 import com.android.tools.r8.ResourceException;
 import com.android.tools.r8.StringConsumer;
 import com.android.tools.r8.graph.AppView;
+import com.android.tools.r8.resourceshrinker.NoDebugReporter;
+import com.android.tools.r8.resourceshrinker.ShrinkerDebugReporter;
+import com.android.tools.r8.resourceshrinker.r8integration.R8ResourceShrinkerState;
 import java.io.InputStream;
 import java.util.function.Supplier;
 

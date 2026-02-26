@@ -27,7 +27,6 @@ import com.android.tools.r8.ir.optimize.AtomicFieldUpdaterInstrumentor.AtomicFie
 import com.android.tools.r8.ir.optimize.UtilityMethodsForCodeOptimizations;
 import com.android.tools.r8.ir.optimize.info.atomicupdaters.eligibility.Event;
 import com.android.tools.r8.ir.optimize.info.atomicupdaters.eligibility.Reason;
-import com.android.tools.r8.profile.rewriting.ProfileCollectionAdditions;
 import com.android.tools.r8.utils.AndroidApiLevel;
 import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
@@ -81,11 +80,9 @@ public class AtomicFieldUpdaterOptimizer extends CodeRewriterPass<AppInfoWithCla
     return !isDebugMode(code.context())
         && methodProcessor.isPrimaryMethodProcessor()
         // TODO(b/453628974): Consider running in second pass (must maintain appView data).
-        && appView.getAtomicFieldUpdaterInstrumentorInfo() != null
         && appView
             .getAtomicFieldUpdaterInstrumentorInfo()
-            .getInstrumentations()
-            .containsKey(code.context().getHolderType())
+            .isInstrumented(code.context().getHolderType())
         && code.metadata().mayHaveInvokeMethodWithReceiver();
   }
 
@@ -95,7 +92,7 @@ public class AtomicFieldUpdaterOptimizer extends CodeRewriterPass<AppInfoWithCla
       MethodProcessor methodProcessor,
       MethodProcessingContext methodProcessingContext) {
     AtomicFieldUpdaterInstrumentorInfo info = appView.getAtomicFieldUpdaterInstrumentorInfo();
-    var atomicUpdaterFields = info.getInstrumentations().get(code.context().getHolderType());
+    var atomicUpdaterFields = info.getInstrumentationsOrNull(code.context().getHolderType());
     assert atomicUpdaterFields != null;
 
     var it = code.instructionListIterator();
@@ -113,6 +110,12 @@ public class AtomicFieldUpdaterOptimizer extends CodeRewriterPass<AppInfoWithCla
       DexMethod invokedMethod = invoke.getInvokedMethod();
       if (!invokedMethod.holder.isIdenticalTo(
           dexItemFactory.javaUtilConcurrentAtomicAtomicReferenceFieldUpdater)) {
+        continue;
+      }
+
+      // TODO(b/453628974): implement and test optimization under handlers.
+      if (invoke.getBlock().hasCatchHandlers()) {
+        reportInfo(appView, new Event.CannotOptimize(invoke), Reason.UNDER_CATCH_HANDLER);
         continue;
       }
 
@@ -545,16 +548,16 @@ public class AtomicFieldUpdaterOptimizer extends CodeRewriterPass<AppInfoWithCla
                   resolvedHolder.value,
                   offset.outValue(),
                   newValueValue));
-      var profiling = ProfileCollectionAdditions.create(appView);
-      profiling.applyIfContextIsInProfile(
-          context.code.context().getReference(),
-          builder -> builder.addMethodRule(backportedGetAndSet));
-      profiling.commit(appView);
+      context
+          .methodProcessor
+          .getEventConsumer()
+          .acceptUnsafeGetAndSetContext(backportedGetAndSet, context.code.context());
     }
     getAndSet.setPosition(position);
     context.it.replaceCurrentInstruction(getAndSet);
   }
 
+  /** Returns an instruction to retrieve offsetField and updates the profile correspondingly. */
   private Instruction createOffsetGet(
       OptimizationContext context, Position position, DexField offsetField) {
     assert offsetField.type.isIdenticalTo(dexItemFactory.longType);
@@ -562,6 +565,14 @@ public class AtomicFieldUpdaterOptimizer extends CodeRewriterPass<AppInfoWithCla
         new StaticGet(
             context.code.createValue(dexItemFactory.longType.toTypeElement(appView)), offsetField);
     offset.setPosition(position);
+    // Update profile on the behalf of the offset initialization in clinit.
+    context
+        .methodProcessor
+        .getEventConsumer()
+        .acceptUnsafeInstanceContext(
+            context.info.initializationMethodsForProfile(),
+            context.info.getUnsafeClass(),
+            offsetField.holder.asProgramClass(appView).getProgramClassInitializer());
     return offset;
   }
 
@@ -588,6 +599,9 @@ public class AtomicFieldUpdaterOptimizer extends CodeRewriterPass<AppInfoWithCla
     return invokeStatic;
   }
 
+  /**
+   * Returns an instruction to retrieve an unsafe instance and updates the profile correspondingly.
+   */
   private Instruction createUnsafeGet(OptimizationContext context, Position position) {
     assert context.info.getUnsafeInstanceField().type.isIdenticalTo(dexItemFactory.unsafeType);
     Instruction unsafeInstance =
@@ -595,14 +609,20 @@ public class AtomicFieldUpdaterOptimizer extends CodeRewriterPass<AppInfoWithCla
             context.code.createValue(dexItemFactory.unsafeType.toTypeElement(appView)),
             context.info.getUnsafeInstanceField());
     unsafeInstance.setPosition(position);
+    context
+        .methodProcessor
+        .getEventConsumer()
+        .acceptUnsafeInstanceContext(
+            context.info.initializationMethodsForProfile(),
+            context.info.getUnsafeClass(),
+            context.code.context());
     return unsafeInstance;
   }
 
   private void insertInstructionsBeforeCurrentInstruction(
       IRCodeInstructionListIterator it, ArrayList<Instruction> instructions) {
     it.previous();
-    // TODO(b/453628974): Test with a local exception handler.
-    it.addPossiblyThrowingInstructionsToPossiblyThrowingBlock(instructions, appView.options());
+    it.addAll(instructions);
     it.next();
   }
 

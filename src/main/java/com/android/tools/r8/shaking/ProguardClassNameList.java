@@ -8,18 +8,18 @@ import static com.google.common.base.Predicates.alwaysTrue;
 import com.android.tools.r8.graph.DexItemFactory;
 import com.android.tools.r8.graph.DexType;
 import com.android.tools.r8.utils.IterableUtils;
+import com.android.tools.r8.utils.ListUtils;
 import com.android.tools.r8.utils.TraversalContinuation;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
+import com.google.common.collect.Iterators;
 import com.google.common.collect.Sets;
 import it.unimi.dsi.fastutil.objects.Object2BooleanArrayMap;
-import it.unimi.dsi.fastutil.objects.Object2BooleanMap;
 import it.unimi.dsi.fastutil.objects.Object2BooleanMap.Entry;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Objects;
 import java.util.Set;
-import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -38,16 +38,17 @@ public abstract class ProguardClassNameList {
     return new SingleClassNameList(matcher);
   }
 
+  public abstract ProguardTypeMatcherAndNegation getLast();
+
   public abstract boolean isMatchAnyClassPattern();
 
   public abstract int size();
 
   public static class Builder {
 
-    /**
-     * Map used to store pairs of patterns and whether they are negated.
-     */
-    private final Object2BooleanMap<ProguardTypeMatcher> matchers = new Object2BooleanArrayMap<>();
+    /** Map used to store pairs of patterns and whether they are negated. */
+    private final Object2BooleanArrayMap<ProguardTypeMatcher> matchers =
+        new Object2BooleanArrayMap<>();
 
     private Builder() {
     }
@@ -123,36 +124,17 @@ public abstract class ProguardClassNameList {
     return this;
   }
 
-  public abstract void forEachTypeMatcher(Consumer<ProguardTypeMatcher> consumer);
-
-  public final void forEachTypeMatcher(
-      Consumer<ProguardTypeMatcher> consumer, Predicate<ProguardTypeMatcher> predicate) {
-    forEachTypeMatcher(
-        matcher -> {
-          if (predicate.test(matcher)) {
-            consumer.accept(matcher);
-          }
-        });
-  }
-
   public abstract TraversalContinuation<?, ?> traverseTypeMatchers(
-      Function<ProguardTypeMatcher, TraversalContinuation<?, ?>> fn);
-
-  public final TraversalContinuation<?, ?> traverseTypeMatchers(
-      Function<ProguardTypeMatcher, TraversalContinuation<?, ?>> fn,
-      Predicate<ProguardTypeMatcher> predicate) {
-    return traverseTypeMatchers(
-        matcher -> {
-          if (predicate.test(matcher)) {
-            return fn.apply(matcher);
-          }
-          return TraversalContinuation.doContinue();
-        });
-  }
+      Function<ProguardTypeMatcherAndNegation, TraversalContinuation<?, ?>> fn);
 
   private static class EmptyClassNameList extends ProguardClassNameList {
 
     private EmptyClassNameList() {
+    }
+
+    @Override
+    public ProguardTypeMatcherAndNegation getLast() {
+      throw new IndexOutOfBoundsException();
     }
 
     @Override
@@ -195,12 +177,8 @@ public abstract class ProguardClassNameList {
     }
 
     @Override
-    public void forEachTypeMatcher(Consumer<ProguardTypeMatcher> consumer) {
-    }
-
-    @Override
     public TraversalContinuation<?, ?> traverseTypeMatchers(
-        Function<ProguardTypeMatcher, TraversalContinuation<?, ?>> fn) {
+        Function<ProguardTypeMatcherAndNegation, TraversalContinuation<?, ?>> fn) {
       return TraversalContinuation.doContinue();
     }
   }
@@ -211,6 +189,11 @@ public abstract class ProguardClassNameList {
 
     private SingleClassNameList(ProguardTypeMatcher className) {
       this.className = className;
+    }
+
+    @Override
+    public ProguardTypeMatcherAndNegation getLast() {
+      return new ProguardTypeMatcherAndNegation(className);
     }
 
     @Override
@@ -289,14 +272,9 @@ public abstract class ProguardClassNameList {
     }
 
     @Override
-    public void forEachTypeMatcher(Consumer<ProguardTypeMatcher> consumer) {
-      consumer.accept(className);
-    }
-
-    @Override
     public TraversalContinuation<?, ?> traverseTypeMatchers(
-        Function<ProguardTypeMatcher, TraversalContinuation<?, ?>> fn) {
-      return fn.apply(className);
+        Function<ProguardTypeMatcherAndNegation, TraversalContinuation<?, ?>> fn) {
+      return fn.apply(new ProguardTypeMatcherAndNegation(className));
     }
   }
 
@@ -309,6 +287,12 @@ public abstract class ProguardClassNameList {
     private PositiveClassNameList(Collection<ProguardTypeMatcher> classNames) {
       this.classNames = ImmutableList.copyOf(classNames);
       assert !hasSpecificTypes() || getSpecificTypes().size() > 1;
+    }
+
+    @Override
+    public ProguardTypeMatcherAndNegation getLast() {
+      ProguardTypeMatcher last = ListUtils.last(classNames);
+      return new ProguardTypeMatcherAndNegation(last);
     }
 
     @Override
@@ -404,15 +388,10 @@ public abstract class ProguardClassNameList {
     }
 
     @Override
-    public void forEachTypeMatcher(Consumer<ProguardTypeMatcher> consumer) {
-      classNames.forEach(consumer);
-    }
-
-    @Override
     public TraversalContinuation<?, ?> traverseTypeMatchers(
-        Function<ProguardTypeMatcher, TraversalContinuation<?, ?>> fn) {
+        Function<ProguardTypeMatcherAndNegation, TraversalContinuation<?, ?>> fn) {
       for (ProguardTypeMatcher matcher : classNames) {
-        if (fn.apply(matcher).shouldBreak()) {
+        if (fn.apply(new ProguardTypeMatcherAndNegation(matcher)).shouldBreak()) {
           return TraversalContinuation.doBreak();
         }
       }
@@ -422,11 +401,20 @@ public abstract class ProguardClassNameList {
 
   private static class MixedClassNameList extends ProguardClassNameList {
 
-    private final Object2BooleanMap<ProguardTypeMatcher> classNames;
+    private final Object2BooleanArrayMap<ProguardTypeMatcher> classNames;
 
-    private MixedClassNameList(Object2BooleanMap<ProguardTypeMatcher> classNames) {
+    private MixedClassNameList(Object2BooleanArrayMap<ProguardTypeMatcher> classNames) {
       assert classNames != null;
       this.classNames = classNames;
+    }
+
+    @Override
+    public ProguardTypeMatcherAndNegation getLast() {
+      if (classNames.isEmpty()) {
+        throw new IndexOutOfBoundsException();
+      }
+      var last = Iterators.getLast(classNames.object2BooleanEntrySet().fastIterator());
+      return new ProguardTypeMatcherAndNegation(last.getKey(), last.getBooleanValue());
     }
 
     @Override
@@ -511,14 +499,10 @@ public abstract class ProguardClassNameList {
     }
 
     @Override
-    public void forEachTypeMatcher(Consumer<ProguardTypeMatcher> consumer) {
-      classNames.object2BooleanEntrySet().forEach(entry -> consumer.accept(entry.getKey()));
-    }
-
-    @Override
     public TraversalContinuation<?, ?> traverseTypeMatchers(
-        Function<ProguardTypeMatcher, TraversalContinuation<?, ?>> fn) {
-      for (ProguardTypeMatcher matcher : classNames.keySet()) {
+        Function<ProguardTypeMatcherAndNegation, TraversalContinuation<?, ?>> fn) {
+      for (var entry : classNames.object2BooleanEntrySet()) {
+        var matcher = new ProguardTypeMatcherAndNegation(entry.getKey(), entry.getBooleanValue());
         if (fn.apply(matcher).shouldBreak()) {
           return TraversalContinuation.doBreak();
         }

@@ -58,7 +58,7 @@ dependencies {
 
 tasks {
   jar {
-    exclude("libraryanalysisresult.proto")
+    exclude("libraryanalyzerresult.proto")
     exclude("com/android/tools/r8/libanalyzer/proto/**")
     archiveFileName.set("libanalyzer-exclude-deps.jar")
   }

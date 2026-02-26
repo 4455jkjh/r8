@@ -19,6 +19,8 @@ val root = rootProject.projectDir.parentFile.parentFile
 
 includeBuild(root.resolve("blastradius"))
 
+includeBuild(root.resolve("libanalyzer"))
+
 includeBuild(root.resolve("shared"))
 
 includeBuild(root.resolve("assistant"))

@@ -292,8 +292,19 @@ public class CodeMatchers {
     };
   }
 
+  public static Matcher<MethodSubject> invokesMethodWithHolder(Class<?> holderType) {
+    assert !holderType.isArray();
+    return invokesMethod(null, holderType.getName(), null, null);
+  }
+
   public static Matcher<MethodSubject> invokesMethodWithHolder(String holderType) {
     return invokesMethod(null, holderType, null, null);
+  }
+
+  public static Matcher<MethodSubject> invokesMethodWithHolderAndName(
+      Class<?> holderType, String name) {
+    assert !holderType.isArray();
+    return invokesMethod(null, holderType.getName(), name, null);
   }
 
   public static Matcher<MethodSubject> invokesMethodWithHolderAndName(

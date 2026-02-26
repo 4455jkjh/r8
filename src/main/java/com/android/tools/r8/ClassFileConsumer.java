@@ -8,17 +8,7 @@ import com.android.tools.r8.utils.ArchiveBuilder;
 import com.android.tools.r8.utils.DescriptorUtils;
 import com.android.tools.r8.utils.DirectoryBuilder;
 import com.android.tools.r8.utils.OutputBuilder;
-import com.android.tools.r8.utils.ZipUtils;
-import com.google.common.io.Closer;
-import java.io.BufferedOutputStream;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.OpenOption;
 import java.nio.file.Path;
-import java.nio.file.StandardOpenOption;
-import java.util.List;
-import java.util.Set;
-import java.util.zip.ZipOutputStream;
 
 /**
  * Consumer for Java classfile encoded programs.
@@ -143,25 +133,6 @@ public interface ClassFileConsumer extends ProgramConsumer {
     public Path internalGetOutputPath() {
       return outputBuilder.getPath();
     }
-
-    public static void writeResourcesForTesting(
-        Path archive,
-        List<ProgramResource> resources,
-        Set<DataDirectoryResource> dataDirectoryResources,
-        Set<DataEntryResource> dataEntryResources)
-        throws IOException, ResourceException {
-      OpenOption[] options =
-          new OpenOption[] {StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING};
-      try (Closer closer = Closer.create()) {
-        try (ZipOutputStream out =
-            new ZipOutputStream(
-                new BufferedOutputStream(Files.newOutputStream(archive, options)))) {
-          ZipUtils.writeResourcesToZip(
-              resources, dataDirectoryResources, dataEntryResources, closer, out);
-        }
-      }
-    }
-
   }
 
   /** Directory consumer to write program resources to a directory. */

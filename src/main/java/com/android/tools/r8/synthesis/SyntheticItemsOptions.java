@@ -4,6 +4,7 @@
 package com.android.tools.r8.synthesis;
 
 import static com.android.tools.r8.graph.DexProgramClass.asProgramClassOrNull;
+import static com.android.tools.r8.utils.DescriptorUtils.INNER_CLASS_SEPARATOR;
 
 import com.android.tools.r8.graph.AppInfoWithClassHierarchy;
 import com.android.tools.r8.graph.AppView;
@@ -18,6 +19,10 @@ public class SyntheticItemsOptions {
   public boolean restrictRenaming =
       SystemPropertyUtils.parseSystemPropertyOrDefault(
           "com.android.tools.r8.synthesis.restrictrenaming", false);
+  public String syntheticSeparator =
+      SystemPropertyUtils.getSystemPropertyOrDefault(
+          "com.android.tools.r8.synthesis.syntheticseparator",
+          Character.toString(INNER_CLASS_SEPARATOR));
 
   public boolean isMinificationAllowed(
       DexProgramClass clazz, AppView<? extends AppInfoWithClassHierarchy> appView) {

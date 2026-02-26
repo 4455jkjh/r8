@@ -4,7 +4,6 @@
 
 package com.android.tools.r8.graph.analysis;
 
-import com.android.build.shrinker.r8integration.R8ResourceShrinkerState;
 import com.android.tools.r8.errors.FinalRClassEntriesWithOptimizedShrinkingDiagnostic;
 import com.android.tools.r8.errors.Unreachable;
 import com.android.tools.r8.graph.AppInfoWithClassHierarchy;
@@ -25,6 +24,7 @@ import com.android.tools.r8.ir.code.NewArrayEmpty;
 import com.android.tools.r8.ir.code.StaticPut;
 import com.android.tools.r8.ir.code.Value;
 import com.android.tools.r8.ir.conversion.MethodConversionOptions;
+import com.android.tools.r8.resourceshrinker.r8integration.R8ResourceShrinkerState;
 import com.android.tools.r8.shaking.Enqueuer;
 import com.android.tools.r8.shaking.EnqueuerWorklist;
 import com.android.tools.r8.shaking.KeepReason;

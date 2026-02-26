@@ -1237,6 +1237,15 @@ public abstract class DexClass extends DexDefinition
     return fieldCollection.hasStaticFields();
   }
 
+  public boolean hasStaticFields(Predicate<? super DexEncodedField> predicate) {
+    for (var field : staticFields()) {
+      if (predicate.test(field)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
   @SuppressWarnings("ReferenceEquality")
   public boolean hasInstanceFields() {
     return fieldCollection.hasInstanceFields();

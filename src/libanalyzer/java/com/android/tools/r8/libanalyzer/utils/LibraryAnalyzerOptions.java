@@ -3,16 +3,18 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8.libanalyzer.utils;
 
+import com.android.tools.r8.libanalyzer.proto.LibraryAnalyzerResult;
 import com.android.tools.r8.threading.ThreadingModule;
 import com.android.tools.r8.utils.AndroidApiLevel;
 import com.android.tools.r8.utils.Reporter;
 import java.nio.file.Path;
+import java.util.function.Consumer;
 
 public class LibraryAnalyzerOptions {
 
   public final Path blastRadiusOutputPath;
   public final AndroidApiLevel minApiLevel;
-  public final Path outputPath;
+  public final Consumer<LibraryAnalyzerResult> outputConsumer;
   public final Reporter reporter;
   public final int threadCount;
 
@@ -21,12 +23,12 @@ public class LibraryAnalyzerOptions {
   public LibraryAnalyzerOptions(
       Path blastRadiusOutputPath,
       AndroidApiLevel minApiLevel,
-      Path outputPath,
+      Consumer<LibraryAnalyzerResult> outputConsumer,
       Reporter reporter,
       int threadCount) {
     this.blastRadiusOutputPath = blastRadiusOutputPath;
     this.minApiLevel = minApiLevel;
-    this.outputPath = outputPath;
+    this.outputConsumer = outputConsumer;
     this.reporter = reporter;
     this.threadCount = threadCount;
   }

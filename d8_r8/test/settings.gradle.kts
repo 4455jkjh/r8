@@ -25,6 +25,8 @@ includeBuild(root.resolve("blastradius"))
 
 includeBuild(root.resolve("keepanno"))
 
+includeBuild(root.resolve("libanalyzer"))
+
 includeBuild(root.resolve("main"))
 
 includeBuild(root.resolve("resourceshrinker"))

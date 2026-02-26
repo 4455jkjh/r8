@@ -24,6 +24,7 @@ val blastRadiusSourcesTask = projectTask("blastradius", "sourcesJar")
 val keepAnnoCompileTask = projectTask("keepanno", "compileJava")
 val keepAnnoCompileKotlinTask = projectTask("keepanno", "compileKotlin")
 val keepAnnoSourcesTask = projectTask("keepanno", "sourcesJar")
+val libraryAnalyzerSourcesTask = projectTask("libanalyzer", "sourcesJar")
 val assistantJarTask = projectTask("assistant", "jar")
 val mainDepsJarTask = projectTask("main", "depsJar")
 val mainProtoJarTask = projectTask("main", "protoJar")
@@ -145,17 +146,18 @@ tasks {
     registering(Exec::class) { executeRelocator(packageTestBase, "r8testbase-relocated.jar") }
 
   fun Exec.generateKeepRulesForR8Lib(
-    targetJarProvider: Task,
+    targetJarProviders: List<Task>,
     testJarProviders: List<TaskProvider<*>>,
     artifactName: String,
   ) {
-    dependsOn(mainDepsJarTask, packageTestDeps, r8WithRelocatedDepsTask, targetJarProvider)
+    dependsOn(mainDepsJarTask, packageTestDeps, r8WithRelocatedDepsTask)
+    targetJarProviders.forEach(::dependsOn)
     testJarProviders.forEach(::dependsOn)
     val mainDepsJar = mainDepsJarTask.getSingleOutputFile()
     val r8WithRelocatedDepsJar = r8WithRelocatedDepsTask.getSingleOutputFile()
-    val targetJar = targetJarProvider.getSingleOutputFile()
     val testDepsJar = packageTestDeps.getSingleOutputFile()
-    inputs.files(mainDepsJar, r8WithRelocatedDepsJar, targetJar, testDepsJar)
+    inputs.files(mainDepsJar, r8WithRelocatedDepsJar, testDepsJar)
+    inputs.files(targetJarProviders.map { it.getSingleOutputFile() })
     inputs.files(testJarProviders.map { it.getSingleOutputFile() })
     val output = file(Paths.get("build", "libs", artifactName))
     outputs.file(output)
@@ -169,11 +171,13 @@ tasks {
         "$mainDepsJar",
         "--lib",
         "$testDepsJar",
-        "--target",
-        "$targetJar",
         "--output",
         "$output",
       )
+    targetJarProviders.forEach {
+      argList.add("--target")
+      argList.add("${it.getSingleOutputFile()}")
+    }
     testJarProviders.forEach {
       argList.add("--source")
       argList.add("${it.getSingleOutputFile()}")
@@ -190,7 +194,7 @@ tasks {
   val generateKeepRulesForR8LibWithRelocatedDeps by
     registering(Exec::class) {
       generateKeepRulesForR8Lib(
-        r8WithRelocatedDepsTask,
+        listOf(r8WithRelocatedDepsTask),
         listOf(relocateTestsForR8LibWithRelocatedDeps, relocateTestBaseForR8LibWithRelocatedDeps),
         "generated-keep-rules-r8lib.txt",
       )
@@ -199,7 +203,7 @@ tasks {
   val generateKeepRulesForR8LibNoDeps by
     registering(Exec::class) {
       generateKeepRulesForR8Lib(
-        swissArmyKnifeTask,
+        listOf(swissArmyKnifeTask, mainProtoJarTask),
         listOf(packageTests, packageTestBase),
         "generated-keep-rules-r8lib-exclude-deps.txt",
       )
@@ -537,14 +541,16 @@ tasks {
 
   val packageSources by
     registering(Jar::class) {
+      dependsOn(blastRadiusSourcesTask)
+      dependsOn(keepAnnoSourcesTask)
+      dependsOn(libraryAnalyzerSourcesTask)
       dependsOn(mainSourcesTask)
       dependsOn(resourceShrinkerSourcesTask)
-      dependsOn(keepAnnoSourcesTask)
-      dependsOn(blastRadiusSourcesTask)
+      from(blastRadiusSourcesTask.outputs.files.map(::zipTree))
+      from(keepAnnoSourcesTask.outputs.files.map(::zipTree))
+      from(libraryAnalyzerSourcesTask.outputs.files.map(::zipTree))
       from(mainSourcesTask.outputs.files.map(::zipTree))
       from(resourceShrinkerSourcesTask.outputs.files.map(::zipTree))
-      from(keepAnnoSourcesTask.outputs.files.map(::zipTree))
-      from(blastRadiusSourcesTask.outputs.files.map(::zipTree))
       archiveClassifier.set("sources")
       archiveFileName.set("r8-src.jar")
       destinationDirectory.set(getRoot().resolveAll("build", "libs"))

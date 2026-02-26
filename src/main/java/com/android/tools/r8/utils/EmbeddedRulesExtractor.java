@@ -11,6 +11,7 @@ import com.android.tools.r8.ResourceException;
 import com.android.tools.r8.shaking.ProguardConfigurationParser;
 import com.android.tools.r8.shaking.ProguardConfigurationSource;
 import com.android.tools.r8.shaking.ProguardConfigurationSourceBytes;
+import com.google.common.collect.Iterables;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
@@ -128,11 +129,25 @@ public class EmbeddedRulesExtractor implements DataResourceProvider.Visitor {
     if (compilerVersion == null) {
       compilerVersion = compilerVersionSupplier.get();
     }
-    return compilerVersion.isNewerOrEqual(from) && (upto == null || upto.isNewer(compilerVersion));
+    if (!testFromCompilerVersion(from)) {
+      return false;
+    }
+    if (upto != null && !testUptoCompilerVersion(upto)) {
+      return false;
+    }
+    return true;
+  }
+
+  protected boolean testFromCompilerVersion(SemanticVersion fromCompilerVersion) {
+    return compilerVersion.isNewerOrEqual(fromCompilerVersion);
+  }
+
+  protected boolean testUptoCompilerVersion(SemanticVersion uptoCompilerVersion) {
+    return uptoCompilerVersion.isNewer(compilerVersion);
   }
 
   private void parse(
-      List<ProguardConfigurationSource> sources, ProguardConfigurationParser parser) {
+      Iterable<ProguardConfigurationSource> sources, ProguardConfigurationParser parser) {
     for (ProguardConfigurationSource source : sources) {
       try {
         parser.parse(source);
@@ -143,7 +158,16 @@ public class EmbeddedRulesExtractor implements DataResourceProvider.Visitor {
   }
 
   private List<ProguardConfigurationSource> getRelevantRules() {
-    return !r8Sources.isEmpty() ? r8Sources : proguardSources;
+    return r8Sources.isEmpty() ? proguardSources : r8Sources;
+  }
+
+  public EmbeddedRulesExtractor readSources() throws ResourceException {
+    dataResourceProvider.accept(this);
+    return this;
+  }
+
+  public void parseAllRules(ProguardConfigurationParser parser) {
+    parse(Iterables.concat(proguardSources, r8Sources), parser);
   }
 
   public void parseRelevantRules(ProguardConfigurationParser parser) {

@@ -5,6 +5,7 @@ package com.android.tools.r8.libanalyzer;
 
 import com.android.tools.r8.DiagnosticsHandler;
 import com.android.tools.r8.keepanno.annotations.KeepForApi;
+import com.android.tools.r8.libanalyzer.proto.LibraryAnalyzerResult;
 import com.android.tools.r8.libanalyzer.utils.LibraryAnalyzerOptions;
 import com.android.tools.r8.origin.Origin;
 import com.android.tools.r8.utils.AarArchiveResourceProvider;
@@ -13,18 +14,20 @@ import com.android.tools.r8.utils.AndroidApp;
 import com.android.tools.r8.utils.ArchiveResourceProvider;
 import com.android.tools.r8.utils.Reporter;
 import com.android.tools.r8.utils.ThreadUtils;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.io.UncheckedIOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.function.Consumer;
 
-// TODO(b/479726064): This is using R8 internal APIs, such as Reporter. As a result, this won't work
-//  with r8lib.jar on the classpath. Should LibraryAnalyzer relocate internal APIs into, for
-//  example, com.android.tools.r8.libanalyzer.r8?
 @KeepForApi
 public final class LibraryAnalyzerCommand {
 
   private final AndroidApp app;
   private final Path blastRadiusOutputPath;
   private final AndroidApiLevel minApiLevel;
-  private final Path outputPath;
+  private final Consumer<LibraryAnalyzerResult> outputConsumer;
   private final Reporter reporter;
   private final int threadCount;
   private final boolean printHelp;
@@ -34,13 +37,13 @@ public final class LibraryAnalyzerCommand {
       AndroidApp app,
       Path blastRadiusOutputPath,
       AndroidApiLevel minApiLevel,
-      Path outputPath,
+      Consumer<LibraryAnalyzerResult> outputConsumer,
       Reporter reporter,
       int threadCount) {
     this.app = app;
     this.blastRadiusOutputPath = blastRadiusOutputPath;
     this.minApiLevel = minApiLevel;
-    this.outputPath = outputPath;
+    this.outputConsumer = outputConsumer;
     this.reporter = reporter;
     this.threadCount = threadCount;
     this.printHelp = false;
@@ -51,7 +54,7 @@ public final class LibraryAnalyzerCommand {
     this.app = null;
     this.blastRadiusOutputPath = null;
     this.minApiLevel = null;
-    this.outputPath = null;
+    this.outputConsumer = null;
     this.reporter = new Reporter();
     this.threadCount = ThreadUtils.NOT_SPECIFIED;
     this.printHelp = printHelp;
@@ -64,7 +67,7 @@ public final class LibraryAnalyzerCommand {
 
   LibraryAnalyzerOptions getInternalOptions() {
     return new LibraryAnalyzerOptions(
-        blastRadiusOutputPath, minApiLevel, outputPath, reporter, threadCount);
+        blastRadiusOutputPath, minApiLevel, outputConsumer, reporter, threadCount);
   }
 
   boolean isPrintHelp() {
@@ -83,12 +86,13 @@ public final class LibraryAnalyzerCommand {
     return new Builder(handler);
   }
 
+  @KeepForApi
   public static class Builder {
 
     private final AndroidApp.Builder appBuilder;
     private Path blastRadiusOutputPath;
     private AndroidApiLevel minApiLevel = AndroidApiLevel.getDefault();
-    private Path outputPath;
+    private Consumer<LibraryAnalyzerResult> outputConsumer;
     private final Reporter reporter;
     private int threadCount = ThreadUtils.NOT_SPECIFIED;
 
@@ -131,14 +135,38 @@ public final class LibraryAnalyzerCommand {
       return this;
     }
 
+    public Builder addLibraryPath(Path libraryPath) {
+      appBuilder.addLibraryFile(libraryPath);
+      return this;
+    }
+
     public Builder setBlastRadiusOutputPath(Path blastRadiusOutputPath) {
       this.blastRadiusOutputPath = blastRadiusOutputPath;
       return this;
     }
 
-    public Builder setOutputPath(Path outputPath) {
-      this.outputPath = outputPath;
+    /**
+     * Must not be added to the public API, as that would require making the protos public API. This
+     * API is used for testing.
+     */
+    Builder setOutputConsumer(Consumer<LibraryAnalyzerResult> outputConsumer) {
+      if (this.outputConsumer == null) {
+        this.outputConsumer = outputConsumer;
+      } else {
+        this.outputConsumer = this.outputConsumer.andThen(outputConsumer);
+      }
       return this;
+    }
+
+    public Builder setOutputPath(Path outputPath) {
+      return setOutputConsumer(
+          result -> {
+            try (OutputStream output = Files.newOutputStream(outputPath)) {
+              result.writeTo(output);
+            } catch (IOException e) {
+              throw new UncheckedIOException(e);
+            }
+          });
     }
 
     public Builder setMinApiLevel(int minMajorApiLevel, int minMinorApiLevel) {
@@ -174,7 +202,7 @@ public final class LibraryAnalyzerCommand {
           appBuilder.build(),
           blastRadiusOutputPath,
           minApiLevel,
-          outputPath,
+          outputConsumer,
           reporter,
           threadCount);
     }

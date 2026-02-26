@@ -4,7 +4,9 @@
 package com.android.tools.r8.desugar.lambdas;
 
 import static com.android.tools.r8.utils.codeinspector.Matchers.isPresentAndNotRenamed;
+import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.Assert.assertEquals;
 
 import com.android.tools.r8.R8TestCompileResultBase;
 import com.android.tools.r8.TestBase;
@@ -12,7 +14,6 @@ import com.android.tools.r8.TestCompileResult;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.synthesis.SyntheticItemsTestUtils;
-import com.android.tools.r8.utils.InternalOptions;
 import com.android.tools.r8.utils.codeinspector.ClassSubject;
 import com.android.tools.r8.utils.codeinspector.CodeInspector;
 import org.junit.Test;
@@ -40,7 +41,23 @@ public class LambdaMinimizeSyntheticNamesTest extends TestBase {
             .collectSyntheticItems()
             .release()
             .compile();
-    compileResult.inspect(inspector -> inspect(inspector, compileResult.getSyntheticItems()));
+    compileResult.inspect(inspector -> inspect(inspector, compileResult.getSyntheticItems(), "$"));
+  }
+
+  @Test
+  public void testD8DoubleSeparator() throws Exception {
+    TestCompileResult<?, ?> compileResult =
+        testForD8(parameters)
+            .addInnerClasses(getClass())
+            .addOptionsModification(
+                options -> {
+                  assertEquals("$", options.getSyntheticItemsOptions().syntheticSeparator);
+                  options.getSyntheticItemsOptions().syntheticSeparator = "$$";
+                })
+            .collectSyntheticItems()
+            .release()
+            .compile();
+    compileResult.inspect(inspector -> inspect(inspector, compileResult.getSyntheticItems(), "$$"));
   }
 
   @Test
@@ -52,12 +69,16 @@ public class LambdaMinimizeSyntheticNamesTest extends TestBase {
             .addDontObfuscate()
             .collectSyntheticItems()
             .compile();
-    compileResult.inspect(inspector -> inspect(inspector, compileResult.getSyntheticItems()));
+    compileResult.inspect(inspector -> inspect(inspector, compileResult.getSyntheticItems(), "$"));
   }
 
-  private void inspect(CodeInspector inspector, SyntheticItemsTestUtils syntheticItems) {
+  private void inspect(
+      CodeInspector inspector, SyntheticItemsTestUtils syntheticItems, String syntheticSeparator) {
     ClassSubject lambdaClass = inspector.clazz(syntheticItems.syntheticLambdaClass(Main.class, 0));
     assertThat(lambdaClass, isPresentAndNotRenamed());
+    assertThat(
+        lambdaClass.getFinalName(),
+        containsString(Main.class.getTypeName() + syntheticSeparator + "0"));
   }
 
   static class Main {

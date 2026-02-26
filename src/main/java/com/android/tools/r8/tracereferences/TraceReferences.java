@@ -38,6 +38,10 @@ import java.util.function.Consumer;
 @KeepForApi
 public class TraceReferences {
 
+  private final ExecutorService executorService;
+  private final InternalOptions options;
+  private final Timing timing;
+
   public static void run(TraceReferencesCommand command) throws CompilationFailedException {
     runForTesting(command, command.getInternalOptions());
   }
@@ -92,10 +96,28 @@ public class TraceReferences {
   static void runInternal(
       TraceReferencesCommand command, InternalOptions options, ExecutorService executorService)
       throws IOException, ResourceException {
-    AndroidApp.Builder builder = AndroidApp.builder();
-    command.getLibrary().forEach(builder::addLibraryResourceProvider);
-    command.getTarget().forEach(builder::addClasspathResourceProvider);
-    command.getSource().forEach(builder::addProgramResourceProvider);
+    new TraceReferences(options, executorService).runInternal(command);
+  }
+
+  private TraceReferences(InternalOptions options, ExecutorService executorService) {
+    this.executorService = executorService;
+    this.options = options;
+    timing = Timing.createRoot("TraceReferences " + Version.LABEL, options, executorService);
+  }
+
+  void runInternal(TraceReferencesCommand command) throws IOException, ResourceException {
+    timing.begin("Build app");
+    AndroidApp androidApp;
+    {
+      AndroidApp.Builder builder = AndroidApp.builder();
+      command.getLibrary().forEach(builder::addLibraryResourceProvider);
+      command.getTarget().forEach(builder::addClasspathResourceProvider);
+      command.getSource().forEach(builder::addProgramResourceProvider);
+      androidApp = builder.build();
+    }
+    timing.end();
+
+    timing.begin("Build target descriptors");
     Set<String> targetDescriptors = new HashSet<>();
     command
         .getTarget()
@@ -103,21 +125,32 @@ public class TraceReferences {
     for (ProgramResourceProvider provider : command.getSource()) {
       forEachDescriptor(provider, targetDescriptors::remove);
     }
+    timing.end();
+
+    timing.begin("Create AppView");
     AppView<AppInfoWithClassHierarchy> appView =
         AppView.createForTracer(
             AppInfoWithClassHierarchy.createInitialAppInfoWithClassHierarchy(
-                new ApplicationReader(builder.build(), options, Timing.empty())
-                    .readDirect(executorService),
+                new ApplicationReader(androidApp, options, timing).readDirect(executorService),
                 ClassToFeatureSplitMap.createEmptyClassToFeatureSplitMap(),
                 MainDexInfo.none(),
                 GlobalSyntheticsStrategy.forSingleOutputMode()));
+    timing.end();
+
     modelLibraryMethodsWithCovariantReturnTypes(appView);
+
+    timing.begin("Run tracer");
     Tracer tracer =
         new Tracer(
             appView,
             command.getReporter(),
             type -> targetDescriptors.contains(type.toDescriptorString()));
-    tracer.run(command.getConsumer());
+    tracer.run(command.getConsumer(), timing);
+    timing.end();
+
+    if (options.isPrintTimesReportingEnabled()) {
+      timing.report();
+    }
   }
 
   public static void run(String... args) throws CompilationFailedException {

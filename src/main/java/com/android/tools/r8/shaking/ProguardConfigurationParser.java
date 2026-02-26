@@ -101,6 +101,10 @@ public class ProguardConfigurationParser {
   private static final List<String> WARNED_SINGLE_ARG_OPTIONS =
       ImmutableList.of(
           "ar_flag",
+          "floggerInjectedLogSiteObfuscation",
+          "floggerForInjectedClassNameObfuscation",
+          "inlinestaticmethodsthatloadclass",
+          "inlinesyntheticaccessor",
           // TODO(b/37137994): -outjars should be reported as errors, not just as warnings!
           "outjars");
 
@@ -852,7 +856,8 @@ public class ProguardConfigurationParser {
       if (acceptChar('!')) {
         skipWhitespace();
       }
-      acceptString(next -> Character.isAlphabetic(next) || next == '/' || next == '*');
+      acceptString(
+          next -> Character.isAlphabetic(next) || next == '/' || next == '*' || next == '_');
       if (isQuote(quote)) {
         skipWhitespace();
         expectClosingQuote(quote);

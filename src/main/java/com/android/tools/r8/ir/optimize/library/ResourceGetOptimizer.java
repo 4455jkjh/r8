@@ -4,7 +4,6 @@
 
 package com.android.tools.r8.ir.optimize.library;
 
-import com.android.build.shrinker.r8integration.R8ResourceShrinkerState;
 import com.android.tools.r8.graph.AppInfoWithClassHierarchy;
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.DexClass;
@@ -20,6 +19,7 @@ import com.android.tools.r8.ir.code.Instruction;
 import com.android.tools.r8.ir.code.InstructionListIterator;
 import com.android.tools.r8.ir.code.InvokeMethod;
 import com.android.tools.r8.ir.optimize.AffectedValues;
+import com.android.tools.r8.resourceshrinker.r8integration.R8ResourceShrinkerState;
 import com.google.common.collect.Iterables;
 import java.util.IdentityHashMap;
 import java.util.Map;

@@ -8,24 +8,12 @@ import static com.android.tools.r8.utils.FileUtils.DEX_EXTENSION;
 import com.android.tools.r8.keepanno.annotations.KeepForApi;
 import com.android.tools.r8.utils.ArchiveBuilder;
 import com.android.tools.r8.utils.DescriptorUtils;
+import com.android.tools.r8.utils.DexFilePerClassFileConsumerUtils;
 import com.android.tools.r8.utils.DirectoryBuilder;
-import com.android.tools.r8.utils.FileUtils;
 import com.android.tools.r8.utils.OutputBuilder;
 import com.android.tools.r8.utils.StringDiagnostic;
-import com.android.tools.r8.utils.ZipUtils;
-import com.google.common.io.ByteStreams;
-import com.google.common.io.Closer;
-import java.io.BufferedOutputStream;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.OpenOption;
 import java.nio.file.Path;
-import java.nio.file.StandardOpenOption;
-import java.util.List;
-import java.util.Map;
 import java.util.Set;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipOutputStream;
 
 /**
  * Consumer for DEX encoded programs.
@@ -145,28 +133,23 @@ public interface DexFilePerClassFileConsumer extends ProgramConsumer, ByteBuffer
     private final OutputBuilder outputBuilder;
     protected final boolean consumeDataResources;
 
-    private static String getDexFileName(String classDescriptor) {
-      assert classDescriptor != null && DescriptorUtils.isClassDescriptor(classDescriptor);
-      return DescriptorUtils.getClassBinaryNameFromDescriptor(classDescriptor) + DEX_EXTENSION;
-    }
-
     public ArchiveConsumer(Path archive) {
       this(archive, null, false);
     }
 
-    public ArchiveConsumer(Path archive, boolean consumeDataResouces) {
-      this(archive, null, consumeDataResouces);
+    public ArchiveConsumer(Path archive, boolean consumeDataResources) {
+      this(archive, null, consumeDataResources);
     }
 
     public ArchiveConsumer(Path archive, DexFilePerClassFileConsumer consumer) {
       this(archive, consumer, false);
     }
 
-    public ArchiveConsumer(Path archive, DexFilePerClassFileConsumer consumer,
-        boolean consumeDataResouces) {
+    public ArchiveConsumer(
+        Path archive, DexFilePerClassFileConsumer consumer, boolean consumeDataResources) {
       super(consumer);
       this.outputBuilder = new ArchiveBuilder(archive);
-      this.consumeDataResources = consumeDataResouces;
+      this.consumeDataResources = consumeDataResources;
       this.outputBuilder.open();
       if (getDataResourceConsumer() != null) {
         this.outputBuilder.open();
@@ -185,7 +168,8 @@ public interface DexFilePerClassFileConsumer extends ProgramConsumer, ByteBuffer
         Set<String> descriptors,
         DiagnosticsHandler handler) {
       super.accept(primaryClassDescriptor, data, descriptors, handler);
-      outputBuilder.addFile(getDexFileName(primaryClassDescriptor), data, handler);
+      outputBuilder.addFile(
+          DexFilePerClassFileConsumerUtils.getDexFileName(primaryClassDescriptor), data, handler);
     }
 
     @Override
@@ -208,27 +192,6 @@ public interface DexFilePerClassFileConsumer extends ProgramConsumer, ByteBuffer
     public Path internalGetOutputPath() {
       return outputBuilder.getPath();
     }
-
-    public static void writeResourcesForTesting(
-        Path archive,
-        List<ProgramResource> resources,
-        Map<Resource, String> primaryClassDescriptors)
-        throws IOException, ResourceException {
-      OpenOption[] options =
-          new OpenOption[] {StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING};
-      try (Closer closer = Closer.create()) {
-        try (ZipOutputStream out =
-            new ZipOutputStream(
-                new BufferedOutputStream(Files.newOutputStream(archive, options)))) {
-          for (ProgramResource resource : resources) {
-            String primaryClassDescriptor = primaryClassDescriptors.get(resource);
-            String entryName = getDexFileName(primaryClassDescriptor);
-            byte[] bytes = ByteStreams.toByteArray(closer.register(resource.getByteStream()));
-            ZipUtils.writeToZipStream(out, entryName, bytes, ZipEntry.STORED);
-          }
-        }
-      }
-    }
   }
 
   /** Directory consumer to write program resources to a directory. */
@@ -236,7 +199,7 @@ public interface DexFilePerClassFileConsumer extends ProgramConsumer, ByteBuffer
   class DirectoryConsumer extends ForwardingConsumer
       implements DataResourceConsumer, InternalProgramOutputPathConsumer {
     private final OutputBuilder outputBuilder;
-    protected final boolean consumeDataResouces;
+    protected final boolean consumeDataResources;
 
     private static String getDexFileName(String classDescriptor) {
       assert classDescriptor != null && DescriptorUtils.isClassDescriptor(classDescriptor);
@@ -247,8 +210,8 @@ public interface DexFilePerClassFileConsumer extends ProgramConsumer, ByteBuffer
       this(directory, null, false);
     }
 
-    public DirectoryConsumer(Path directory, boolean consumeDataResouces) {
-      this(directory, null, consumeDataResouces);
+    public DirectoryConsumer(Path directory, boolean consumeDataResources) {
+      this(directory, null, consumeDataResources);
     }
 
     public DirectoryConsumer(Path directory, DexFilePerClassFileConsumer consumer) {
@@ -256,10 +219,10 @@ public interface DexFilePerClassFileConsumer extends ProgramConsumer, ByteBuffer
     }
 
     public DirectoryConsumer(
-        Path directory, DexFilePerClassFileConsumer consumer, boolean consumeDataResouces) {
+        Path directory, DexFilePerClassFileConsumer consumer, boolean consumeDataResources) {
       super(consumer);
       this.outputBuilder = new DirectoryBuilder(directory);
-      this.consumeDataResouces = consumeDataResouces;
+      this.consumeDataResources = consumeDataResources;
     }
 
     @Override
@@ -289,29 +252,6 @@ public interface DexFilePerClassFileConsumer extends ProgramConsumer, ByteBuffer
     @Override
     public Path internalGetOutputPath() {
       return outputBuilder.getPath();
-    }
-
-    public static void writeResources(
-        Path directory,
-        List<ProgramResource> resources,
-        Map<Resource, String> primaryClassDescriptors)
-        throws IOException, ResourceException {
-      try (Closer closer = Closer.create()) {
-        for (ProgramResource resource : resources) {
-          String primaryClassDescriptor = primaryClassDescriptors.get(resource);
-          Path target = getTargetDexFile(directory, primaryClassDescriptor);
-          writeFile(ByteStreams.toByteArray(closer.register(resource.getByteStream())), target);
-        }
-      }
-    }
-
-    private static Path getTargetDexFile(Path directory, String primaryClassDescriptor) {
-      return directory.resolve(ArchiveConsumer.getDexFileName(primaryClassDescriptor));
-    }
-
-    private static void writeFile(byte[] contents, Path target) throws IOException {
-      Files.createDirectories(target.getParent());
-      FileUtils.writeToFile(target, null, contents);
     }
   }
 }

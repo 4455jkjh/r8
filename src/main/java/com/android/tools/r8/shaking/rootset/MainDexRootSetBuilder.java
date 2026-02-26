@@ -7,6 +7,7 @@ import com.android.tools.r8.graph.AppInfoWithClassHierarchy;
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.ImmediateAppSubtypingInfo;
 import com.android.tools.r8.shaking.ProguardConfigurationRule;
+import com.android.tools.r8.utils.timing.Timing;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 
@@ -25,10 +26,10 @@ public class MainDexRootSetBuilder extends RootSetBuilder {
   }
 
   @Override
-  public MainDexRootSet evaluateRulesAndBuild(ExecutorService executorService)
+  public MainDexRootSet evaluateRulesAndBuild(ExecutorService executorService, Timing timing)
       throws ExecutionException {
     // Call the super builder to have if-tests calculated automatically.
-    RootSet rootSet = super.evaluateRulesAndBuild(executorService);
+    RootSet rootSet = super.evaluateRulesAndBuild(executorService, timing);
     return new MainDexRootSet(
         rootSet.getDependentMinimumKeepInfo(),
         rootSet.reasonAsked,
