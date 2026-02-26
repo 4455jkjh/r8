@@ -494,9 +494,6 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
   public int minimumStringSwitchSize = 3;
   public boolean enableEnumValueOptimization = true;
   public boolean enableEnumSwitchMapRemoval = true;
-  public boolean enableAtomicFieldUpdaterOptimization =
-      SystemPropertyUtils.parseSystemPropertyOrDefault(
-          "com.android.tools.r8.enableAtomicFieldUpdaterOptimization", false);
   public final OutlineOptions outline = new OutlineOptions();
   public boolean enableInitializedClassesInInstanceMethodsAnalysis = true;
   public boolean enableRedundantFieldLoadElimination = true;
