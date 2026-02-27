@@ -73,7 +73,7 @@ def run(args,
     if track_memory_file:
         cmd.extend(['tools/track_memory.sh', track_memory_file])
     cmd.extend(getCmd(args, version))
-    utils.PrintCmd(cmd)
+    utils.print_cmd(cmd)
     subprocess.call(cmd, stdout=stdout, stderr=stderr)
 
 

@@ -76,9 +76,10 @@ def prepare_print_version(dist, temp):
         '-cp',
         dist,
     ]
-    utils.PrintCmd(cmd)
+    utils.print_cmd(cmd)
     subprocess.check_output(cmd)
     return temp
+
 
 # Testing info: To delete a tag use
 #
@@ -90,14 +91,11 @@ def gerrit_tag(args, tag, hash, description):
         "revision": hash
     })
     cmd = ' '.join([
-        'gob-curl',
-        '--header',
-        '"Content-Type: application/json; charset=UTF-8"',
-        '--request',
-        'PUT',
-        '--data',
-        "'{data}'".format(data=data),
-        'https://r8-review.git.corp.google.com/a/projects/r8/tags/{tag}'.format(tag=tag)
+        'gob-curl', '--header',
+        '"Content-Type: application/json; charset=UTF-8"', '--request', 'PUT',
+        '--data', "'{data}'".format(data=data),
+        'https://r8-review.git.corp.google.com/a/projects/r8/tags/{tag}'.format(
+            tag=tag)
     ])
     result = subprocess.check_output(cmd, stderr=subprocess.STDOUT, shell=True)
     print(result)
@@ -161,7 +159,8 @@ def tag_agp_version(agp_version, args):
         run(args, ['git', 'tag', '-f', tag, '-m', message, hash])
         if args.use_push:
             run(args, [
-                'git', 'push', '-o', 'push-justification=b/313360935', 'origin', tag
+                'git', 'push', '-o', 'push-justification=b/313360935', 'origin',
+                tag
             ])
         else:
             gerrit_tag(args, tag, hash, message)
@@ -187,8 +186,8 @@ def tag_r8_branch(branch, args):
             run(args, ['git', 'tag', '-a', version, '-m', message, hash])
             if args.use_push:
                 run(args, [
-                    'git', 'push', '-o', 'push-justification=b/313360935', 'origin',
-                    version
+                    'git', 'push', '-o', 'push-justification=b/313360935',
+                    'origin', version
                 ])
             else:
                 gerrit_tag(args, version, hash, message)

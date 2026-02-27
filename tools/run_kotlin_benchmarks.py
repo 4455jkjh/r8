@@ -57,14 +57,14 @@ def get_jar_for_benchmark(benchmark):
 
 def run_art(dex):
     command = ['bash', ART, '-cp', dex, BENCHMARK_MAIN_CLASS]
-    utils.PrintCmd(command)
+    utils.print_cmd(command)
     benchmark_output = subprocess.check_output(command)
     return get_result(benchmark_output)
 
 
 def adb(args):
     command = ['adb'] + args
-    utils.PrintCmd(command)
+    utils.print_cmd(command)
     return subprocess.check_output(['adb'] + args)
 
 

@@ -26,7 +26,7 @@ def run(args):
     cmd.extend(['-cp', cp])
     cmd.append('org.objectweb.asm.util.ASMifier')
     cmd.extend(args)
-    utils.PrintCmd(cmd)
+    utils.print_cmd(cmd)
     result = subprocess.check_output(cmd).decode('utf-8')
     print(result)
     return result

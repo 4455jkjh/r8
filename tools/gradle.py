@@ -22,9 +22,10 @@ PROTOC_ROOT = os.path.join(utils.THIRD_PARTY, 'protoc')
 PROTOC_SHA1 = os.path.join(utils.THIRD_PARTY, 'protoc.tar.gz.sha1')
 PROTOC_TGZ = os.path.join(utils.THIRD_PARTY, 'protoc.tar.gz')
 
+
 def get_gradle():
     gradle_dir = os.path.join(utils.THIRD_PARTY, 'gradle')
-    if utils.IsWindows():
+    if utils.is_windows():
         return os.path.join(gradle_dir, 'bin', 'gradle.bat')
     else:
         return os.path.join(gradle_dir, 'bin', 'gradle')
@@ -55,7 +56,8 @@ def ParseOptions():
 
 
 def GetJavaEnv(env):
-    java_env = dict(env if env else os.environ, JAVA_HOME=jdk.GetDefaultJdkHome())
+    java_env = dict(env if env else os.environ,
+                    JAVA_HOME=jdk.GetDefaultJdkHome())
     java_env['PATH'] = java_env['PATH'] + os.pathsep + os.path.join(
         jdk.GetDefaultJdkHome(), 'bin')
     java_env['GRADLE_OPTS'] = '-Xmx1g'
@@ -71,8 +73,8 @@ def PrintCmd(s):
 
 
 def EnsureGradle():
-    utils.EnsureDepFromGoogleCloudStorage(get_gradle(), GRADLE8_TGZ,
-                                          GRADLE8_SHA1, 'Gradle binary')
+    utils.ensure_dep_from_google_cloud_storage(get_gradle(), GRADLE8_TGZ,
+                                               GRADLE8_SHA1, 'Gradle binary')
 
 
 def EnsureJdk():
@@ -81,14 +83,12 @@ def EnsureJdk():
     for root in jdk.GetAllJdkDirs():
         jdkTgz = root + '.tar.gz'
         jdkSha1 = jdkTgz + '.sha1'
-        utils.EnsureDepFromGoogleCloudStorage(root, jdkTgz, jdkSha1, root)
+        utils.ensure_dep_from_google_cloud_storage(root, jdkTgz, jdkSha1, root)
+
 
 def EnsureProtoc():
-    utils.EnsureDepFromGoogleCloudStorage(
-        PROTOC_ROOT,
-        PROTOC_TGZ,
-        PROTOC_SHA1,
-        'Proto Compiler')
+    utils.ensure_dep_from_google_cloud_storage(PROTOC_ROOT, PROTOC_TGZ,
+                                               PROTOC_SHA1, 'Proto Compiler')
 
 
 def EnsureDeps():
@@ -103,11 +103,12 @@ def RunGradleIn(gradleCmd, args, cwd, throw_on_failure=True, env=None):
     args.extend(['--offline', '-Dorg.gradle.configuration-cache=false'])
     cmd.extend(args)
     with utils.ChangedWorkingDirectory(cwd):
-        utils.PrintCmd(cmd)
+        utils.print_cmd(cmd)
         return_value = subprocess.call(cmd, env=GetJavaEnv(env))
         if throw_on_failure and return_value != 0:
             raise Exception('Failed to execute gradle')
         return return_value
+
 
 def RunGradle(args, throw_on_failure=True, env=None):
     return RunGradleIn(get_gradle(),
@@ -115,6 +116,7 @@ def RunGradle(args, throw_on_failure=True, env=None):
                        utils.REPO_ROOT,
                        throw_on_failure,
                        env=env)
+
 
 def Main():
     (options, args) = ParseOptions()

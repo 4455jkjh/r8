@@ -89,23 +89,24 @@ def repack(apk, clear_profile, processed_out, desugared_library_dex,
             subprocess.check_call(
                 ['unzip', apk, '-d', processed_out, 'classes*.dex'])
         else:
-            utils.Print('Using original dex as is', quiet=quiet)
+            utils.print_info('Using original dex as is', quiet=quiet)
             return processed_apk
 
-    utils.Print('Repacking APK with dex files from {}'.format(processed_out),
-                quiet=quiet)
+    utils.print_info(
+        'Repacking APK with dex files from {}'.format(processed_out),
+        quiet=quiet)
 
     # Delete original dex files in APK.
     with utils.ChangedWorkingDirectory(temp, quiet=quiet):
         cmd = ['zip', '-d', 'processed.apk', '*.dex']
-        utils.RunCmd(cmd, quiet=quiet, logging=logging)
+        utils.run_cmd(cmd, quiet=quiet, logging=logging)
 
     # Unzip the jar or zip file into `temp`.
     if is_archive(processed_out):
         cmd = ['unzip', processed_out, '-d', temp]
         if quiet:
             cmd.insert(1, '-q')
-        utils.RunCmd(cmd, quiet=quiet, logging=logging)
+        utils.run_cmd(cmd, quiet=quiet, logging=logging)
         processed_out = temp
     elif desugared_library_dex:
         for dex_name in glob.glob('*.dex', root_dir=processed_out):
@@ -136,7 +137,7 @@ def repack(apk, clear_profile, processed_out, desugared_library_dex,
         cmd.append(processed_apk)
         cmd.extend(dex_files)
         cmd.extend(resource_files)
-        utils.RunCmd(cmd, quiet=quiet, logging=logging)
+        utils.run_cmd(cmd, quiet=quiet, logging=logging)
     return processed_apk
 
 
@@ -150,7 +151,7 @@ def sign(unsigned_apk, keystore, temp, quiet, logging):
 
 
 def align(signed_apk, temp, quiet, logging):
-    utils.Print('Aligning', quiet=quiet)
+    utils.print_info('Aligning', quiet=quiet)
     aligned_apk = os.path.join(temp, 'aligned.apk')
     return apk_utils.align(signed_apk, aligned_apk)
 
@@ -190,8 +191,8 @@ def masseur(apk,
                                    resources, temp, quiet, logging)
         else:
             assert not desugared_library_dex
-            utils.Print('Signing original APK without modifying apk',
-                        quiet=quiet)
+            utils.print_info('Signing original APK without modifying apk',
+                             quiet=quiet)
             processed_apk = os.path.join(temp, 'processed.apk')
             shutil.copyfile(apk, processed_apk)
         if sign_before_align:
@@ -201,7 +202,7 @@ def masseur(apk,
                               quiet=quiet,
                               logging=logging)
             aligned_apk = align(signed_apk, temp, quiet=quiet, logging=logging)
-            utils.Print('Writing result to {}'.format(out), quiet=quiet)
+            utils.print_info('Writing result to {}'.format(out), quiet=quiet)
             shutil.copyfile(aligned_apk, out)
         else:
             aligned_apk = align(processed_apk,
@@ -213,7 +214,7 @@ def masseur(apk,
                               temp,
                               quiet=quiet,
                               logging=logging)
-            utils.Print('Writing result to {}'.format(out), quiet=quiet)
+            utils.print_info('Writing result to {}'.format(out), quiet=quiet)
             shutil.copyfile(signed_apk, out)
         if install:
             adb_cmd = ['adb']
@@ -221,7 +222,7 @@ def masseur(apk,
                 adb_cmd.extend(
                     [option for option in adb_options.split(' ') if option])
             adb_cmd.extend(['install', '-t', '-r', '-d', out])
-            utils.RunCmd(adb_cmd, quiet=quiet, logging=logging)
+            utils.run_cmd(adb_cmd, quiet=quiet, logging=logging)
 
 
 def main():

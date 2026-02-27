@@ -558,7 +558,7 @@ def compile_reflective_helper(temp, jdkhome):
         utils.BUILD_JAVA_MAIN_DIR,
     ]
     cmd.extend(os.path.join(base_path, f) for f in os.listdir(base_path))
-    utils.PrintCmd(cmd)
+    utils.print_cmd(cmd)
     subprocess.check_output(cmd)
 
 
@@ -604,7 +604,7 @@ def compile_wrapper_with_javac(dist, temp, jdkhome, path):
         '-cp',
         "%s:%s" % (dist, temp),
     ]
-    utils.PrintCmd(cmd)
+    utils.print_cmd(cmd)
     subprocess.check_output(cmd)
 
 
@@ -779,7 +779,7 @@ def run1(out, args, otherargs, jdkhome=None, worker_id=None):
         if args.threads:
             cmd.extend(['--threads', args.threads])
         cmd.extend(compilerargs)
-        utils.PrintCmd(cmd, worker_id=worker_id)
+        utils.print_cmd(cmd, worker_id=worker_id)
         try:
             start = time.time()
             output = subprocess.check_output(cmd, stderr=subprocess.STDOUT)

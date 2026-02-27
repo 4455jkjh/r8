@@ -2,8 +2,6 @@
 # for details. All rights reserved. Use of this source code is governed by a
 # BSD-style license that can be found in the LICENSE file.
 
-# Different utility functions used accross scripts
-
 import hashlib
 import jdk
 import json
@@ -16,9 +14,9 @@ import tarfile
 import tempfile
 import zipfile
 
+from thread_utils import print_thread
 import defines
 import historic_run
-from thread_utils import print_thread
 
 ANDROID_JAR_DIR = 'third_party/android_jar/lib-v{api}'
 ANDROID_JAR = os.path.join(ANDROID_JAR_DIR, 'android.jar')
@@ -165,6 +163,7 @@ R8_INTERNAL_TEST_RESULTS_BUCKET = 'r8-internal-test-results'
 
 ARCHIVE_DETAILS = os.path.join(BUILD, 'archive_details.json')
 
+
 def archive_file(name, gs_dir, src_file):
     gs_file = '%s/%s' % (gs_dir, name)
     upload_file_to_cloud_storage(src_file, gs_file)
@@ -172,18 +171,18 @@ def archive_file(name, gs_dir, src_file):
 
 def archive_value(name, gs_dir, value):
     with TempDir() as temp:
-        temparchive = os.path.join(temp, name)
-        with open(temparchive, 'w') as f:
+        temp_archive = os.path.join(temp, name)
+        with open(temp_archive, 'w') as f:
             f.write(str(value))
-        archive_file(name, gs_dir, temparchive)
+        archive_file(name, gs_dir, temp_archive)
 
 
-def find_cloud_storage_file_from_options(name, options, orElse=None):
+def find_cloud_storage_file_from_options(name, options, or_else=None):
     # Import archive on-demand since archive depends on utils.
     from archive import GetUploadDestination
     hash_or_version = find_hash_or_version_from_options(options)
     if not hash_or_version:
-        return orElse
+        return or_else
     is_hash = options.commit_hash is not None
     download_path = GetUploadDestination(hash_or_version, name, is_hash)
     if file_exists_on_cloud_storage(download_path):
@@ -216,21 +215,22 @@ def find_hash_or_version_from_tag(tag_or_hash):
     return None
 
 
-def getAndroidHome():
+def get_android_home():
     return os.environ.get(ANDROID_HOME_ENVIROMENT_NAME,
                           os.path.join(USER_HOME, 'Android', 'Sdk'))
 
 
-def getAndroidBuildTools():
+def get_android_build_tools():
     if ANDROID_TOOLS_VERSION_ENVIRONMENT_NAME in os.environ:
         version = os.environ.get(ANDROID_TOOLS_VERSION_ENVIRONMENT_NAME)
-        build_tools_dir = os.path.join(getAndroidHome(), 'build-tools', version)
+        build_tools_dir = os.path.join(get_android_home(), 'build-tools',
+                                       version)
         assert os.path.exists(build_tools_dir)
         return build_tools_dir
     else:
         versions = ['35.0.1', '34.0.0', '33.0.1', '32.0.0']
         for version in versions:
-            build_tools_dir = os.path.join(getAndroidHome(), 'build-tools',
+            build_tools_dir = os.path.join(get_android_home(), 'build-tools',
                                            version)
             if os.path.exists(build_tools_dir):
                 return build_tools_dir
@@ -241,19 +241,19 @@ def is_python3():
     return sys.version_info.major == 3
 
 
-def Print(s, quiet=False):
+def print_info(s, quiet=False):
     if quiet:
         return
     print(s)
 
 
-def Warn(message):
-    CRED = '\033[91m'
-    CEND = '\033[0m'
-    print(CRED + message + CEND)
+def print_warning(message):
+    color_red = '\033[91m'
+    color_end = '\033[0m'
+    print(color_red + message + color_end)
 
 
-def PrintCmd(cmd, env=None, quiet=False, worker_id=None):
+def print_cmd(cmd, env=None, quiet=False, worker_id=None):
     if quiet:
         return
     if type(cmd) is list:
@@ -294,13 +294,13 @@ class ProgressLogger(object):
             sys.stdout.write(ProgressLogger.UP)
 
 
-def RunCmd(cmd,
-           env_vars=None,
-           quiet=False,
-           fail=True,
-           logging=True,
-           shell=False):
-    PrintCmd(cmd, env=env_vars, quiet=quiet)
+def run_cmd(cmd,
+            env_vars=None,
+            quiet=False,
+            fail=True,
+            logging=True,
+            shell=False):
+    print_cmd(cmd, env=env_vars, quiet=quiet)
     env = os.environ.copy()
     if env_vars:
         env.update(env_vars)
@@ -334,21 +334,21 @@ def RunCmd(cmd,
             exit_code = process.poll()
             if exit_code or failed:
                 for line in stdout:
-                    Warn(line)
+                    print_warning(line)
                 if fail:
                     raise subprocess.CalledProcessError(
                         exit_code or -1, cmd, output='\n'.join(stdout))
             return stdout
 
 
-def IsWindows():
+def is_windows():
     return defines.IsWindows()
 
 
-def EnsureDepFromGoogleCloudStorage(dep, tgz, sha1, msg):
+def ensure_dep_from_google_cloud_storage(dep, tgz, sha1, msg):
     if (not os.path.exists(dep) or not os.path.exists(tgz) or
             os.path.getmtime(tgz) < os.path.getmtime(sha1)):
-        DownloadFromGoogleCloudStorage(sha1)
+        download_from_google_cloud_storage(sha1)
         # Update the mtime of the tar file to make sure we do not run again unless
         # there is an update.
         os.utime(tgz, None)
@@ -356,25 +356,25 @@ def EnsureDepFromGoogleCloudStorage(dep, tgz, sha1, msg):
         print('Ensure cloud dependency:', msg, 'present')
 
 
-def DownloadFromX20(sha1_file):
+def download_from_x20(sha1_file):
     download_script = os.path.join(REPO_ROOT, 'tools', 'download_from_x20.py')
     cmd = [download_script, sha1_file]
-    PrintCmd(cmd)
+    print_cmd(cmd)
     subprocess.check_call(cmd)
 
 
-def DownloadFromGoogleCloudStorage(sha1_file,
-                                   bucket='r8-deps',
-                                   auth=False,
-                                   quiet=False):
-    suffix = '.bat' if IsWindows() else ''
+def download_from_google_cloud_storage(sha1_file,
+                                       bucket='r8-deps',
+                                       auth=False,
+                                       quiet=False):
+    suffix = '.bat' if is_windows() else ''
     download_script = 'download_from_google_storage%s' % suffix
     cmd = [download_script]
     if not auth:
         cmd.append('-n')
     cmd.extend(['-b', bucket, '-u', '-s', sha1_file])
     if not quiet:
-        PrintCmd(cmd)
+        print_cmd(cmd)
         subprocess.check_call(cmd)
     else:
         subprocess.check_output(cmd)
@@ -401,26 +401,26 @@ def get_sha1(filename):
 
 def get_sha1_from_revision(revision):
     cmd = ['git', 'rev-parse', revision]
-    PrintCmd(cmd)
+    print_cmd(cmd)
     with ChangedWorkingDirectory(REPO_ROOT):
         return subprocess.check_output(cmd).decode('utf-8').strip()
 
 
-def get_HEAD_branch():
+def get_head_branch():
     result = subprocess.check_output(
         ['git', 'rev-parse', '--abbrev-ref', 'HEAD']).decode('utf-8')
     return result.strip()
 
 
-def get_HEAD_commit():
-    return historic_run.git_commit_from_hash(get_HEAD_sha1())
+def get_head_commit():
+    return historic_run.git_commit_from_hash(get_head_sha1())
 
 
-def get_HEAD_sha1():
+def get_head_sha1():
     return get_sha1_from_revision('HEAD')
 
 
-def get_HEAD_diff_stat():
+def get_head_diff_stat():
     return subprocess.check_output(['git', 'diff', '--stat']).decode('utf-8')
 
 
@@ -441,7 +441,7 @@ def upload_file_to_cloud_storage(source, destination, header=None):
     if header:
         cmd.extend(['-h', header])
     cmd.extend(['cp', source, destination])
-    PrintCmd(cmd)
+    print_cmd(cmd)
     subprocess.check_call(cmd)
 
 
@@ -467,7 +467,7 @@ def upload_directory_to_cloud_storage(source, destination, parallel=True):
         cmd += ['-m']
     cmd += ['cp', '-R']
     cmd += [source, destination_parent + '/']
-    PrintCmd(cmd)
+    print_cmd(cmd)
     subprocess.check_call(cmd)
 
 
@@ -478,25 +478,25 @@ def rsync_directory_to_cloud_storage(source, destination, parallel=True):
         cmd += ['-m']
     cmd += ['rsync', '-R']
     cmd += [source, destination]
-    PrintCmd(cmd)
+    print_cmd(cmd)
     subprocess.check_call(cmd)
 
 
 def delete_file_from_cloud_storage(destination):
     cmd = [get_gsutil(), 'rm', destination]
-    PrintCmd(cmd)
+    print_cmd(cmd)
     subprocess.check_call(cmd)
 
 
 def ls_files_on_cloud_storage(destination):
     cmd = [get_gsutil(), 'ls', destination]
-    PrintCmd(cmd)
+    print_cmd(cmd)
     return subprocess.check_output(cmd).decode('utf-8')
 
 
 def cat_file_on_cloud_storage(destination, ignore_errors=False):
     cmd = [get_gsutil(), 'cat', destination]
-    PrintCmd(cmd)
+    print_cmd(cmd)
     try:
         return subprocess.check_output(cmd).decode('utf-8').strip()
     except subprocess.CalledProcessError as e:
@@ -508,7 +508,7 @@ def cat_file_on_cloud_storage(destination, ignore_errors=False):
 
 def file_exists_on_cloud_storage(destination):
     cmd = [get_gsutil(), 'ls', destination]
-    PrintCmd(cmd)
+    print_cmd(cmd)
     return subprocess.call(cmd) == 0
 
 
@@ -527,7 +527,7 @@ def download_file_from_cloud_storage(source,
     if flags:
         cmd.extend(flags)
     cmd.extend([source, destination])
-    PrintCmd(cmd, quiet=not printcmd)
+    print_cmd(cmd, quiet=not printcmd)
     subprocess.check_call(cmd)
 
 
@@ -566,7 +566,7 @@ def check_gcert():
 # for synchronization.
 def cloud_storage_exists(destination):
     cmd = [get_gsutil(), 'ls', destination]
-    PrintCmd(cmd)
+    print_cmd(cmd)
     exit_code = subprocess.call(cmd)
     return exit_code == 0
 
@@ -675,11 +675,11 @@ def grep_memoryuse(logfile):
 
 
 # Return a dictionary: {segment_name -> segments_size}
-def getDexSegmentSizes(dex_files):
+def get_dex_segment_sizes(dex_files):
     assert len(dex_files) > 0
     cmd = [jdk.GetJavaExecutable(), '-jar', R8_JAR, 'dexsegments']
     cmd.extend(dex_files)
-    PrintCmd(cmd)
+    print_cmd(cmd)
     output = subprocess.check_output(cmd).decode('utf-8')
 
     matches = DEX_SEGMENTS_RESULT_PATTERN.findall(output)
@@ -697,19 +697,19 @@ def getDexSegmentSizes(dex_files):
 
 
 # Return a dictionary: {segment_name -> segments_size}
-def getCfSegmentSizes(cfFile):
+def get_cf_segment_sizes(cf_file):
     cmd = [
         jdk.GetJavaExecutable(), '-cp', CF_SEGMENTS_TOOL,
-        'com.android.tools.r8.cf_segments.MeasureLib', cfFile
+        'com.android.tools.r8.cf_segments.MeasureLib', cf_file
     ]
-    PrintCmd(cmd)
+    print_cmd(cmd)
     output = subprocess.check_output(cmd).decode('utf-8')
 
     matches = DEX_SEGMENTS_RESULT_PATTERN.findall(output)
 
     if matches is None or len(matches) == 0:
         raise Exception('CfSegments failed to return any output for' \
-                        ' the file: ' + cfFile)
+                        ' the file: ' + cf_file)
 
     result = {}
 
@@ -725,12 +725,12 @@ def get_maven_path(artifact, version):
 
 def print_cfsegments(prefix, cf_files):
     for cf_file in cf_files:
-        for segment_name, size in getCfSegmentSizes(cf_file).items():
+        for segment_name, size in get_cf_segment_sizes(cf_file).items():
             print('{}-{}(CodeSize): {}'.format(prefix, segment_name, size))
 
 
 def print_dexsegments(prefix, dex_files, worker_id=None):
-    for segment_name, size in getDexSegmentSizes(dex_files).items():
+    for segment_name, size in get_dex_segment_sizes(dex_files).items():
         print_thread('{}-{}(CodeSize): {}'.format(prefix, segment_name, size),
                      worker_id)
 
@@ -783,7 +783,7 @@ def desugar_configuration_name_and_version(configuration, is_for_maven):
         configuration_json = json.loads(f.read())
         configuration_format_version = \
             configuration_json.get('configuration_format_version')
-        if (not configuration_format_version):
+        if not configuration_format_version:
             raise Exception('No "configuration_format_version" found in ' +
                             configuration)
         if (configuration_format_version != 3 and
@@ -799,10 +799,10 @@ def desugar_configuration_name_and_version(configuration, is_for_maven):
                 if not identifier:
                     raise Exception('No "identifier" found in ' + configuration)
                 identifier_split = identifier.split(':')
-                if (len(identifier_split) != 3):
+                if len(identifier_split) != 3:
                     raise Exception('Invalid "identifier" found in ' +
                                     configuration)
-                if (identifier_split[0] != 'com.tools.android'):
+                if identifier_split[0] != 'com.tools.android':
                     raise Exception('Invalid "identifier" found in ' +
                                     configuration)
                 if not identifier_split[1].startswith(
@@ -820,7 +820,7 @@ def desugar_configuration_name_and_version(configuration, is_for_maven):
         # understand errors.
         check_basic_semver_version(version,
                                    'in ' + configuration,
-                                   allowPrerelease=False)
+                                   allow_prerelease=False)
         return (name, version)
 
 
@@ -852,19 +852,19 @@ class SemanticVersion:
 
 
 # Check that the passed string is formatted as a basic semver version (x.y.z or x.y.z-prerelease
-# depending on the value of allowPrerelease).
+# depending on the value of allow_prerelease).
 # See https://semver.org/. The regexp parts used are not all complient with what is suggested
 # on https://semver.org/#is-there-a-suggested-regular-expression-regex-to-check-a-semver-string.
 def check_basic_semver_version(version,
                                error_context='',
                                components=3,
-                               allowPrerelease=False):
+                               allow_prerelease=False):
     regexp = '^'
     for x in range(components):
         regexp += '([0-9]+)'
         if x < components - 1:
             regexp += '\\.'
-    if allowPrerelease:
+    if allow_prerelease:
         # This part is from
         # https://semver.org/#is-there-a-suggested-regular-expression-regex-to-check-a-semver-string
         regexp += r'(?:-(?P<prerelease>(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?'
@@ -877,10 +877,10 @@ def check_basic_semver_version(version,
     if components == 2:
         return SemanticVersion(int(match.group(1)), int(match.group(2)), None,
                                None)
-    elif components == 3 and not allowPrerelease:
+    elif components == 3 and not allow_prerelease:
         return SemanticVersion(int(match.group(1)), int(match.group(2)),
                                int(match.group(3)), None)
-    elif components == 3 and allowPrerelease:
+    elif components == 3 and allow_prerelease:
         return SemanticVersion(int(match.group(1)), int(match.group(2)),
                                int(match.group(3)), match.group('prerelease'))
     else:
