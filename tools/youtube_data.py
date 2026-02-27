@@ -42,11 +42,14 @@ VERSIONS = {
     },
 }
 
+
 def get_latest_version():
     return LATEST_VERSION
 
+
 def get_name():
     return 'youtube'
+
 
 def get_memory_data(version):
     assert version == '16.20'
