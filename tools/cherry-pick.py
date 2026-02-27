@@ -96,7 +96,7 @@ def run(args, branch):
         for i in range(len(args.hashes) + 1):
             local_branch_name = 'cherry-%s-%d' % (branch, i + 1)
             print('Deleting branch %s' % local_branch_name)
-            subprocess.run(['git', '--delete', '--force', 'branch', local_branch_name]) 
+            subprocess.run(['git', 'branch', '--delete', '--force', local_branch_name])
 
     bugs = set()
 
@@ -215,7 +215,7 @@ def promote_dev(args):
         subprocess.check_call(['git', 'clone', utils.REPO_SOURCE, temp])
         with utils.ChangedWorkingDirectory(temp):
             local_branch_name = 'promote-dev-%s' % branch
-            subprocess.run(['git', 'branch', local_branch_name, '-D'])
+            subprocess.run(['git', 'branch', '--delete', '--force', local_branch_name])
             git_new_branch(local_branch_name, '%s/%s' % (args.remote, branch))
 
             dev_version = version_from_version_file()
