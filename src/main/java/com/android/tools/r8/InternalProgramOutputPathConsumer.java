@@ -6,7 +6,7 @@ package com.android.tools.r8;
 import java.nio.file.Path;
 
 // Internal interface for testing the command setup.
-interface InternalProgramOutputPathConsumer extends ProgramConsumer, DataResourceConsumer {
+public interface InternalProgramOutputPathConsumer extends ProgramConsumer, DataResourceConsumer {
 
   Path internalGetOutputPath();
 

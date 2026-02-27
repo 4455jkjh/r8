@@ -3,9 +3,10 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8;
 
+import static com.android.tools.r8.BaseCompilerCommandUtils.createProgramOutputConsumer;
+
 import com.android.tools.r8.dump.DumpOptions;
 import com.android.tools.r8.errors.CompilationError;
-import com.android.tools.r8.errors.Unreachable;
 import com.android.tools.r8.graph.DexItemFactory;
 import com.android.tools.r8.inspector.Inspector;
 import com.android.tools.r8.ir.desugar.desugaredlibrary.DesugaredLibrarySpecification;
@@ -548,43 +549,6 @@ public abstract class BaseCompilerCommand extends BaseCommand {
       assert filter != null;
       this.dexClassChecksumFilter = filter;
       return self();
-    }
-
-    InternalProgramOutputPathConsumer createProgramOutputConsumer(
-        Path path, OutputMode mode, boolean consumeDataResources) {
-      if (mode == OutputMode.DexIndexed) {
-        return FileUtils.isArchive(path)
-            ? new DexIndexedConsumer.ArchiveConsumer(path, consumeDataResources)
-            : new DexIndexedConsumer.DirectoryConsumer(path, consumeDataResources);
-      }
-      if (mode == OutputMode.DexFilePerClass) {
-        if (FileUtils.isArchive(path)) {
-          return new DexFilePerClassFileConsumer.ArchiveConsumer(path, consumeDataResources) {
-            @Override
-            public boolean combineSyntheticClassesWithPrimaryClass() {
-              return false;
-            }
-          };
-        } else {
-          return new DexFilePerClassFileConsumer.DirectoryConsumer(path, consumeDataResources) {
-            @Override
-            public boolean combineSyntheticClassesWithPrimaryClass() {
-              return false;
-            }
-          };
-        }
-      }
-      if (mode == OutputMode.DexFilePerClassFile) {
-        return FileUtils.isArchive(path)
-            ? new DexFilePerClassFileConsumer.ArchiveConsumer(path, consumeDataResources)
-            : new DexFilePerClassFileConsumer.DirectoryConsumer(path, consumeDataResources);
-      }
-      if (mode == OutputMode.ClassFile) {
-        return FileUtils.isArchive(path)
-            ? new ClassFileConsumer.ArchiveConsumer(path, consumeDataResources)
-            : new ClassFileConsumer.DirectoryConsumer(path, consumeDataResources);
-      }
-      throw new Unreachable("Unexpected output mode: " + mode);
     }
 
     /** Get the minimum API level (aka SDK version). */
