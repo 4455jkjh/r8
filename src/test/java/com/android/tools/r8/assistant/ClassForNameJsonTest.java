@@ -54,7 +54,7 @@ public class ClassForNameJsonTest extends TestBase {
         .assertSuccess();
     List<ReflectiveEvent> reflectiveEvents =
         new ReflectiveOperationJsonParser(factoryBox.get()).parse(path);
-    assertEquals(4, reflectiveEvents.size());
+    assertEquals(2, reflectiveEvents.size());
 
     assertTrue(reflectiveEvents.get(0).isClassForName());
     assertTrue(reflectiveEvents.get(1).isClassGetName());
@@ -62,11 +62,6 @@ public class ClassForNameJsonTest extends TestBase {
     assertEquals(
         "com.android.tools.r8.assistant.ClassForNameTestClass",
         event0.getClassName().getTypeName());
-
-    assertTrue(reflectiveEvents.get(2).isClassForName());
-    assertTrue(reflectiveEvents.get(3).isClassGetName());
-    ClassForName event1 = reflectiveEvents.get(2).asClassForName();
-    assertEquals("java.lang.Object", event1.getClassName().getTypeName());
 
     Box<KeepInfoCollectionExported> keepInfoBox = new Box<>();
     testForR8(parameters)
