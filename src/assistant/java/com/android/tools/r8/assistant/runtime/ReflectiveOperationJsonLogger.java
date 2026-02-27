@@ -116,6 +116,19 @@ public class ReflectiveOperationJsonLogger implements ReflectiveOperationReceive
     return classLoader == null ? "null" : printClass(classLoader.getClass());
   }
 
+  private boolean isIgnored(Class<?> clazz) {
+    return clazz != null && isIgnored(clazz.getName());
+  }
+
+  private boolean isIgnored(String name) {
+    return name != null
+        && (name.startsWith("java.")
+            || name.startsWith("android.")
+            || name.startsWith("androidx.")
+            || name.startsWith("kotlin.")
+            || name.startsWith("kotlinx."));
+  }
+
   private synchronized void output(ReflectiveEventType event, Stack stack, String... args) {
     try {
       output.write("{\"event\": \"");
@@ -150,80 +163,125 @@ public class ReflectiveOperationJsonLogger implements ReflectiveOperationReceive
 
   @Override
   public void onClassNewInstance(Stack stack, Class<?> clazz) {
+    if (isIgnored(clazz)) {
+      return;
+    }
     output(CLASS_NEW_INSTANCE, stack, printClass(clazz));
   }
 
   @Override
   public void onClassGetDeclaredMethod(
       Stack stack, Class<?> returnType, Class<?> clazz, String method, Class<?>... parameters) {
+    if (isIgnored(clazz)) {
+      return;
+    }
     output(CLASS_GET_DECLARED_METHOD, stack, methodToString(returnType, clazz, method, parameters));
   }
 
   @Override
   public void onClassGetDeclaredMethods(Stack stack, Class<?> clazz) {
+    if (isIgnored(clazz)) {
+      return;
+    }
     output(CLASS_GET_DECLARED_METHODS, stack, printClass(clazz));
   }
 
   @Override
   public void onClassGetDeclaredField(
       Stack stack, Class<?> fieldType, Class<?> clazz, String fieldName) {
+    if (isIgnored(clazz)) {
+      return;
+    }
     output(CLASS_GET_DECLARED_FIELD, stack, printClass(fieldType), printClass(clazz), fieldName);
   }
 
   @Override
   public void onClassGetDeclaredFields(Stack stack, Class<?> clazz) {
+    if (isIgnored(clazz)) {
+      return;
+    }
     output(CLASS_GET_DECLARED_FIELDS, stack, printClass(clazz));
   }
 
   @Override
   public void onClassGetDeclaredConstructor(Stack stack, Class<?> clazz, Class<?>... parameters) {
+    if (isIgnored(clazz)) {
+      return;
+    }
     output(CLASS_GET_DECLARED_CONSTRUCTOR, stack, constructorToString(clazz, parameters));
   }
 
   @Override
   public void onClassGetDeclaredConstructors(Stack stack, Class<?> clazz) {
+    if (isIgnored(clazz)) {
+      return;
+    }
     output(CLASS_GET_DECLARED_CONSTRUCTORS, stack, printClass(clazz));
   }
 
   @Override
   public void onClassGetMethod(
       Stack stack, Class<?> returnType, Class<?> clazz, String method, Class<?>... parameters) {
+    if (isIgnored(clazz)) {
+      return;
+    }
     output(CLASS_GET_METHOD, stack, methodToString(returnType, clazz, method, parameters));
   }
 
   @Override
   public void onClassGetMethods(Stack stack, Class<?> clazz) {
+    if (isIgnored(clazz)) {
+      return;
+    }
     output(CLASS_GET_METHODS, stack, printClass(clazz));
   }
 
   @Override
   public void onClassGetField(Stack stack, Class<?> fieldType, Class<?> clazz, String fieldName) {
+    if (isIgnored(clazz)) {
+      return;
+    }
     output(CLASS_GET_FIELD, stack, printClass(fieldType), printClass(clazz), fieldName);
   }
 
   @Override
   public void onClassGetFields(Stack stack, Class<?> clazz) {
+    if (isIgnored(clazz)) {
+      return;
+    }
     output(CLASS_GET_FIELDS, stack, printClass(clazz));
   }
 
   @Override
   public void onClassGetConstructor(Stack stack, Class<?> clazz, Class<?>... parameters) {
+    if (isIgnored(clazz)) {
+      return;
+    }
     output(CLASS_GET_CONSTRUCTOR, stack, constructorToString(clazz, parameters));
   }
 
   @Override
   public void onClassGetConstructors(Stack stack, Class<?> clazz) {
+    if (isIgnored(clazz)) {
+      return;
+    }
     output(CLASS_GET_CONSTRUCTORS, stack, printClass(clazz));
   }
 
   @Override
   public void onClassGetName(Stack stack, Class<?> clazz, NameLookupType lookupType) {
+    if (isIgnored(clazz)) {
+      return;
+    }
     output(CLASS_GET_NAME, stack, printClass(clazz), lookupType.name());
   }
 
   @Override
   public void onClassForName(
       Stack stack, String className, boolean initialize, ClassLoader classLoader) {
+    if (isIgnored(className)) {
+      return;
+    }
     output(
         CLASS_FOR_NAME,
         stack,
@@ -234,31 +292,49 @@ public class ReflectiveOperationJsonLogger implements ReflectiveOperationReceive
 
   @Override
   public void onClassGetComponentType(Stack stack, Class<?> clazz) {
+    if (isIgnored(clazz)) {
+      return;
+    }
     output(CLASS_GET_COMPONENT_TYPE, stack, printClass(clazz));
   }
 
   @Override
   public void onClassGetPackage(Stack stack, Class<?> clazz) {
+    if (isIgnored(clazz)) {
+      return;
+    }
     output(CLASS_GET_PACKAGE, stack, printClass(clazz));
   }
 
   @Override
   public void onClassIsAssignableFrom(Stack stack, Class<?> clazz, Class<?> sup) {
+    if (isIgnored(clazz)) {
+      return;
+    }
     output(CLASS_IS_ASSIGNABLE_FROM, stack, printClass(clazz), printClass(sup));
   }
 
   @Override
   public void onClassGetSuperclass(Stack stack, Class<?> clazz) {
+    if (isIgnored(clazz)) {
+      return;
+    }
     output(CLASS_GET_SUPERCLASS, stack, printClass(clazz));
   }
 
   @Override
   public void onClassAsSubclass(Stack stack, Class<?> holder, Class<?> clazz) {
+    if (isIgnored(holder)) {
+      return;
+    }
     output(CLASS_AS_SUBCLASS, stack, printClass(holder), printClass(clazz));
   }
 
   @Override
   public void onClassIsInstance(Stack stack, Class<?> holder, Object object) {
+    if (isIgnored(holder)) {
+      return;
+    }
     output(
         CLASS_IS_INSTANCE,
         stack,
@@ -268,23 +344,35 @@ public class ReflectiveOperationJsonLogger implements ReflectiveOperationReceive
 
   @Override
   public void onClassCast(Stack stack, Class<?> holder, Object object) {
+    if (isIgnored(holder)) {
+      return;
+    }
     output(CLASS_CAST, stack, printClass(holder), printClass(object.getClass()));
   }
 
   @Override
   public void onClassFlag(Stack stack, Class<?> clazz, ClassFlag classFlag) {
+    if (isIgnored(clazz)) {
+      return;
+    }
     output(CLASS_FLAG, stack, printClass(clazz), classFlag.name());
   }
 
   @Override
   public void onAtomicFieldUpdaterNewUpdater(
       Stack stack, Class<?> fieldClass, Class<?> clazz, String name) {
+    if (isIgnored(clazz)) {
+      return;
+    }
     output(
         ATOMIC_FIELD_UPDATER_NEW_UPDATER, stack, printClass(fieldClass), printClass(clazz), name);
   }
 
   @Override
   public void onServiceLoaderLoad(Stack stack, Class<?> clazz, ClassLoader classLoader) {
+    if (isIgnored(clazz)) {
+      return;
+    }
     output(SERVICE_LOADER_LOAD, stack, printClass(clazz), printClassLoader(classLoader));
   }
 
@@ -294,6 +382,16 @@ public class ReflectiveOperationJsonLogger implements ReflectiveOperationReceive
       ClassLoader classLoader,
       Class<?>[] interfaces,
       InvocationHandler invocationHandler) {
+    boolean allIgnored = true;
+    for (Class<?> itf : interfaces) {
+      if (!isIgnored(itf)) {
+        allIgnored = false;
+        break;
+      }
+    }
+    if (allIgnored) {
+      return;
+    }
     String[] methodStrings = new String[interfaces.length + 2];
     methodStrings[0] = printClassLoader(classLoader);
     methodStrings[1] = invocationHandler.toString();
