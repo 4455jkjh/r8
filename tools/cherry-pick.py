@@ -15,6 +15,23 @@ VERSION_FILE = 'src/main/java/com/android/tools/r8/Version.java'
 VERSION_PREFIX = 'String LABEL = "'
 
 
+def sed(old, new, file):
+    subprocess.run(['sed', '-i', 's/%s/%s/' % (old, new), file])
+
+
+def git_new_branch(name, upstream=None):
+    cmd = ['git', 'new-branch', name]
+    if upstream:
+        cmd += ['--upstream', upstream]
+    else:
+        cmd += ['--upstream-current']
+    subprocess.run(cmd)
+
+
+def git_commit(message):
+    subprocess.run(['git', 'commit', '-a', '-m', message])
+
+
 def parse_options():
     parser = argparse.ArgumentParser(description='Release r8')
     parser.add_argument('--branch',
@@ -32,10 +49,6 @@ def parse_options():
                         default=False,
                         action='store_true',
                         help='Do not upload to Gerrit')
-    parser.add_argument('hashes',
-                        metavar='<hash>',
-                        nargs='+',
-                        help='Hashed to merge')
     parser.add_argument('--remote',
                         default='origin',
                         help='The remote name (defaults to "origin")')
@@ -54,7 +67,28 @@ def parse_options():
                         default=False,
                         action='store_true',
                         help='Send Gerrit review request right away')
+    exclusive = parser.add_mutually_exclusive_group(required=True)
+    exclusive.add_argument('hashes',
+                           default=[],
+                           metavar='<hash>',
+                           nargs='*',
+                           help='Hashes to merge')
+    exclusive.add_argument('--promote-dev',
+                           '--promote_dev',
+                           default=False,
+                           action='store_true',
+                           help='Promote a -dev branch to stable')
     return parser.parse_args()
+
+
+def version_from_version_file():
+    for line in open(VERSION_FILE, 'r'):
+        index = line.find(VERSION_PREFIX)
+        if index > 0:
+            index += len(VERSION_PREFIX)
+            subline = line[index:]
+            return subline[:subline.index('"')]
+    return "unknown"
 
 
 def run(args, branch):
@@ -62,7 +96,7 @@ def run(args, branch):
         for i in range(len(args.hashes) + 1):
             local_branch_name = 'cherry-%s-%d' % (branch, i + 1)
             print('Deleting branch %s' % local_branch_name)
-            subprocess.run(['git', 'branch', local_branch_name, '-D'])
+            subprocess.run(['git', '--delete', '--force', 'branch', local_branch_name]) 
 
     bugs = set()
 
@@ -71,38 +105,24 @@ def run(args, branch):
         local_branch_name = 'cherry-%s-%d' % (branch, count)
         print('Cherry-picking %s in %s' % (hash, local_branch_name))
         if count == 1:
-            subprocess.run([
-                'git', 'new-branch', local_branch_name, '--upstream',
-                '%s/%s' % (args.remote, branch)
-            ])
+            git_new_branch(local_branch_name, '%s/%s' % (args.remote, branch))
         else:
-            subprocess.run(['git', 'new-branch', local_branch_name, '--upstream-current'])
+            git_new_branch(local_branch_name)
 
         subprocess.run(['git', 'cherry-pick', hash])
         confirm_and_upload(local_branch_name, args, bugs)
         count = count + 1
 
     local_branch_name = 'cherry-%s-%d' % (branch, count)
-    subprocess.run(['git', 'new-branch', local_branch_name, '--upstream-current'])
+    git_new_branch(local_branch_name)
 
-    old_version = 'unknown'
-    for line in open(VERSION_FILE, 'r'):
-        index = line.find(VERSION_PREFIX)
-        if index > 0:
-            index += len(VERSION_PREFIX)
-            subline = line[index:]
-            old_version = subline[:subline.index('"')]
-            break
-
+    old_version = version_from_version_file()
     new_version = 'unknown'
     if old_version.find('.') > 0 and old_version.find('-') == -1:
         split_version = old_version.split('.')
         new_version = '.'.join(split_version[:-1] +
                                [str(int(split_version[-1]) + 1)])
-        subprocess.run([
-            'sed', '-i',
-            's/%s/%s/' % (old_version, new_version), VERSION_FILE
-        ])
+        sed(old_version, new_version, VERSION_FILE)
     else:
         editor = os.environ.get('VISUAL')
         if not editor:
@@ -119,7 +139,7 @@ def run(args, branch):
     for bug in sorted(bugs):
         message += 'Bug: b/%s\n' % bug
 
-    subprocess.run(['git', 'commit', '-a', '-m', message])
+    git_commit(message)
     confirm_and_upload(branch, args, None)
     if not args.current_checkout and not args.yes:
         while True:
@@ -180,12 +200,55 @@ def confirm_and_upload(local_branch_name, args, bugs):
         print('Not uploading, upload command was "%s"' % cmd)
 
 
+def promote_dev(args):
+    if len(args.branch) > 1:
+        print("Only one branch can be specified for --promote-dev.")
+        sys.exit(1)
+    branch = args.branch[0]
+
+    if args.current_checkout:
+        print("--current-checkout not supported for --promote-dev.")
+        sys.exit(1)
+
+    with utils.TempDir() as temp:
+        print("Performing promote dev in %s" % temp)
+        subprocess.check_call(['git', 'clone', utils.REPO_SOURCE, temp])
+        with utils.ChangedWorkingDirectory(temp):
+            local_branch_name = 'promote-dev-%s' % branch
+            subprocess.run(['git', 'branch', local_branch_name, '-D'])
+            git_new_branch(local_branch_name, '%s/%s' % (args.remote, branch))
+
+            dev_version = version_from_version_file()
+            print(dev_version)
+            if not dev_version.endswith('-dev'):
+                print("Not a -dev version branch")
+                sys.exit(1)
+            version = dev_version[0:len(dev_version) - 4]
+
+            print("Promoting %s to %s" % (dev_version, version))
+            sed(dev_version, version, VERSION_FILE)
+
+            message = ('Version %s\n\n'
+                'Promoting version %s to version %s' % (version, dev_version, version))
+
+            git_commit(message)
+            confirm_and_upload(branch, args, None)
+
+
 def main():
     args = parse_options()
+
     if len(args.branch) == 0:
         print("No branches specified.")
         sys.exit(1)
 
+    if args.promote_dev:
+        promote_dev(args)
+        sys.exit(0)
+
+    # At least one hash even though it is optional, as it is in an exclusive group
+    # with --promote-dev which is checked above.
+    assert len(args.hashes) > 0
     branches = args.branch
     args.branch = None
     for branch in branches:
