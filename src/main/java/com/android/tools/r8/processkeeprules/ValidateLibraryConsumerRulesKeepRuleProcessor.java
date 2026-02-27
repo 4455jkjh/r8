@@ -101,7 +101,16 @@ public class ValidateLibraryConsumerRulesKeepRuleProcessor
 
   @Override
   public void addIgnoredOption(
-      String option, ProguardConfigurationSourceParser parser, TextPosition positionStart) {}
+      String option, ProguardConfigurationSourceParser parser, TextPosition positionStart) {
+    assert !option.isEmpty() && option.charAt(0) != '-';
+    handleRule(parser, positionStart, "-" + option);
+  }
+
+  @Override
+  public void addUnsupportedOption(
+      String option, ProguardConfigurationSourceParser parser, TextPosition positionStart) {
+    handleRule(parser, positionStart, "-" + option);
+  }
 
   @Override
   public void addInclude(

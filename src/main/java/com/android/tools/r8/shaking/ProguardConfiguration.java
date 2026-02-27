@@ -15,6 +15,7 @@ import com.android.tools.r8.shaking.ProguardConfigurationParser.IncludeWorkItem;
 import com.android.tools.r8.shaking.ProguardConfigurationParser.ProguardConfigurationSourceParser;
 import com.android.tools.r8.utils.InternalOptions.PackageObfuscationMode;
 import com.android.tools.r8.utils.Reporter;
+import com.android.tools.r8.utils.StringDiagnostic;
 import com.android.tools.r8.utils.StringUtils;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
@@ -120,6 +121,14 @@ public class ProguardConfiguration {
     public void addIgnoredOption(
         String option, ProguardConfigurationSourceParser parser, TextPosition positionStart) {
       // Intentionally empty.
+    }
+
+    @Override
+    public void addUnsupportedOption(
+        String option, ProguardConfigurationSourceParser parser, TextPosition positionStart) {
+      reporter.error(
+          new StringDiagnostic(
+              "Unsupported option: -" + option, parser.getOrigin(), positionStart));
     }
 
     @Override
