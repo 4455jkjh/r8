@@ -97,9 +97,6 @@ public interface ClassFileConsumer extends ProgramConsumer {
       this.outputBuilder = new ArchiveBuilder(archive);
       this.consumeDataResources = consumeDataResouces;
       this.outputBuilder.open();
-      if (getDataResourceConsumer() != null) {
-        this.outputBuilder.open();
-      }
     }
 
     @Override
