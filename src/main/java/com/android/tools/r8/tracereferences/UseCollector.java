@@ -39,11 +39,18 @@ import com.android.tools.r8.graph.ProgramDefinition;
 import com.android.tools.r8.graph.ProgramField;
 import com.android.tools.r8.graph.ProgramMethod;
 import com.android.tools.r8.graph.UseRegistry;
+import com.android.tools.r8.ir.code.IRCode;
+import com.android.tools.r8.ir.code.Instruction;
+import com.android.tools.r8.ir.code.InvokeMethod;
+import com.android.tools.r8.ir.code.InvokeStatic;
 import com.android.tools.r8.ir.code.InvokeType;
+import com.android.tools.r8.ir.code.Value;
+import com.android.tools.r8.ir.conversion.MethodConversionOptions;
 import com.android.tools.r8.ir.desugar.LambdaDescriptor;
 import com.android.tools.r8.kotlin.KotlinClassLevelInfo;
 import com.android.tools.r8.kotlin.KotlinClassMetadataReader;
 import com.android.tools.r8.kotlin.KotlinMetadataUseRegistry;
+import com.android.tools.r8.origin.MethodOrigin;
 import com.android.tools.r8.references.ClassReference;
 import com.android.tools.r8.references.FieldReference;
 import com.android.tools.r8.references.MethodReference;
@@ -54,6 +61,7 @@ import com.android.tools.r8.tracereferences.internal.TracedFieldImpl;
 import com.android.tools.r8.tracereferences.internal.TracedMethodImpl;
 import com.android.tools.r8.utils.BooleanBox;
 import com.android.tools.r8.utils.ThreadUtils;
+import com.android.tools.r8.utils.collections.ProgramMethodSet;
 import com.android.tools.r8.utils.timing.Timing;
 import java.util.Collection;
 import java.util.Set;
@@ -83,9 +91,130 @@ public class UseCollector implements UseCollectorEventConsumer {
 
   public final DexString dalvikAnnotationCodegenPrefix;
 
+  public interface NativeIdentification {
+
+    void process(Collection<DexProgramClass> classes);
+
+    void scanInvoke(DexMethod invokedMethod, ProgramMethod method);
+
+    static NativeIdentification create(
+        TraceReferencesNativeReferencesConsumer nativeReferencesConsumer,
+        AppView<? extends AppInfoWithClassHierarchy> appView,
+        DiagnosticsHandler diagnostics) {
+      if (nativeReferencesConsumer != null) {
+        return new NativeIdentificationImpl(nativeReferencesConsumer, appView, diagnostics);
+      } else {
+        return new NativeIdentification() {
+          @Override
+          public void process(Collection<DexProgramClass> classes) {
+            // Do nothing.
+          }
+
+          @Override
+          public void scanInvoke(DexMethod invokedMethod, ProgramMethod method) {
+            // Do nothing.
+          }
+        };
+      }
+    }
+  }
+
+  public static class NativeIdentificationImpl implements NativeIdentification {
+
+    private final TraceReferencesNativeReferencesConsumer nativeReferencesConsumer;
+
+    private final AppView<? extends AppInfoWithClassHierarchy> appView;
+    private final DiagnosticsHandler diagnostics;
+    private final DexItemFactory factory;
+    private final DexString loadLibrary;
+    private final DexString load;
+
+    private final ProgramMethodSet worklist = ProgramMethodSet.create();
+
+    NativeIdentificationImpl(
+        TraceReferencesNativeReferencesConsumer nativeReferencesConsumer,
+        AppView<? extends AppInfoWithClassHierarchy> appView,
+        DiagnosticsHandler diagnostics) {
+      this.nativeReferencesConsumer = nativeReferencesConsumer;
+      this.appView = appView;
+      this.diagnostics = diagnostics;
+      this.factory = appView.dexItemFactory();
+      this.loadLibrary = factory.createString("loadLibrary");
+      this.load = factory.createString("load");
+    }
+
+    @Override
+    public void process(Collection<DexProgramClass> classes) {
+      // TODO(b/481400921): Parallelize.
+      classes.forEach(
+          clazz ->
+              clazz.forEachProgramMethodMatching(
+                  method -> method.getAccessFlags().isNative(),
+                  method ->
+                      nativeReferencesConsumer.acceptNativeMethod(
+                          method.getMethodReference(), diagnostics)));
+      worklist.forEach(this::processMethod);
+      worklist.clear();
+      nativeReferencesConsumer.finished(diagnostics);
+    }
+
+    @Override
+    public void scanInvoke(DexMethod invokedMethod, ProgramMethod method) {
+      if (isSystemLoadLibrary(invokedMethod) || isSystemLoad(invokedMethod)) {
+        worklist.add(method);
+      }
+    }
+
+    private void processMethod(ProgramMethod method) {
+      if (method.getAccessFlags().isNative()) {
+        nativeReferencesConsumer.acceptNativeMethod(method.getMethodReference(), diagnostics);
+      } else {
+        IRCode code = method.buildIR(appView, MethodConversionOptions.nonConverting());
+        for (InvokeMethod invoke : code.<InvokeMethod>instructions(Instruction::isInvokeStatic)) {
+          processInvoke(method, invoke.asInvokeStatic());
+        }
+      }
+    }
+
+    private void processInvoke(ProgramMethod method, InvokeStatic invoke) {
+      DexMethod invokedMethod = invoke.getInvokedMethod();
+      if (isSystemLoadLibrary(invokedMethod) || isSystemLoad(invokedMethod)) {
+        Value argument = invoke.getFirstArgument().getAliasedValue();
+        MethodOrigin origin = new MethodOrigin(method.getMethodReference(), method.getOrigin());
+        if (argument.isConstString()) {
+          String name = argument.getDefinition().asConstString().getValue().toString();
+          if (isSystemLoadLibrary(invokedMethod)) {
+            nativeReferencesConsumer.acceptLoadLibrary(name, origin, diagnostics);
+          } else {
+            nativeReferencesConsumer.acceptLoad(name, origin, diagnostics);
+          }
+        } else {
+          if (isSystemLoadLibrary(invokedMethod)) {
+            nativeReferencesConsumer.acceptLoadLibraryAny(origin, diagnostics);
+          } else {
+            nativeReferencesConsumer.acceptLoadAny(origin, diagnostics);
+          }
+        }
+      }
+    }
+
+    private boolean isSystemLoadLibrary(DexMethod method) {
+      return method.getHolderType().isIdenticalTo(factory.javaLangSystemType)
+          && method.getName().isIdenticalTo(loadLibrary);
+    }
+
+    private boolean isSystemLoad(DexMethod method) {
+      return method.getHolderType().isIdenticalTo(factory.javaLangSystemType)
+          && method.getName().isIdenticalTo(load);
+    }
+  }
+
+  public final NativeIdentification nativeIdentification;
+
   public UseCollector(
       AppView<? extends AppInfoWithClassHierarchy> appView,
       TraceReferencesConsumer consumer,
+      TraceReferencesNativeReferencesConsumer nativeReferencesConsumer,
       DiagnosticsHandler diagnostics,
       Predicate<DexType> targetPredicate) {
     this.appView = appView;
@@ -96,6 +225,8 @@ public class UseCollector implements UseCollectorEventConsumer {
     this.targetPredicate = targetPredicate;
     this.traceReferencesOptions = appView.options().getTraceReferencesOptions();
     this.dalvikAnnotationCodegenPrefix = factory.createString("Ldalvik/annotation/codegen/");
+    this.nativeIdentification =
+        NativeIdentification.create(nativeReferencesConsumer, appView, diagnostics);
   }
 
   private UseCollectorEventConsumer getDefaultEventConsumer() {
@@ -116,6 +247,7 @@ public class UseCollector implements UseCollectorEventConsumer {
       traceClass(clazz);
       timing.end();
     }
+    nativeIdentification.process(classes);
   }
 
   public void traceClasses(Collection<DexProgramClass> classes, ExecutorService executorService)
@@ -644,6 +776,7 @@ public class UseCollector implements UseCollectorEventConsumer {
     handleMethodResolution(
         method, resolutionResult, getResult, context, referencedFrom, eventConsumer);
     notifyReflectiveIdentification(method, context);
+    nativeIdentification.scanInvoke(method, context);
   }
 
   private void handleMethodResolution(

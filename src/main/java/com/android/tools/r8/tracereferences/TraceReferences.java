@@ -145,7 +145,7 @@ public class TraceReferences {
             appView,
             command.getReporter(),
             type -> targetDescriptors.contains(type.toDescriptorString()));
-    tracer.run(command.getConsumer(), timing);
+    tracer.run(command.getConsumer(), command.getNativeReferencesConsumer(), timing);
     timing.end();
 
     if (options.isPrintTimesReportingEnabled()) {

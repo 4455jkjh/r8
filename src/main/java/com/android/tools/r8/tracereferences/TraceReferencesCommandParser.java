@@ -19,6 +19,7 @@ import com.android.tools.r8.origin.ArchiveEntryOrigin;
 import com.android.tools.r8.origin.Origin;
 import com.android.tools.r8.origin.PathOrigin;
 import com.android.tools.r8.references.ClassReference;
+import com.android.tools.r8.tracereferences.internal.TraceReferencesNativesPrinter;
 import com.android.tools.r8.utils.ExceptionDiagnostic;
 import com.android.tools.r8.utils.FlagFile;
 import com.android.tools.r8.utils.StringDiagnostic;
@@ -66,7 +67,9 @@ class TraceReferencesCommandParser {
             "--keep-rules",
             "[<keep-rules-options>]",
             "Traced references will be output in the keep-rules",
-            "format."));
+            "format."),
+        // TODO(b/481400921): Remove experimental.
+        ParseFlagInfoImpl.flag0("--natives", "EXPERIMENTAL."));
   }
 
   static List<ParseFlagInfo> getOptionFlags() {
@@ -136,7 +139,8 @@ class TraceReferencesCommandParser {
 
   private enum Command {
     CHECK,
-    KEEP_RULES;
+    KEEP_RULES,
+    NATIVES;
   }
 
   private void checkCommandNotSet(
@@ -184,6 +188,9 @@ class TraceReferencesCommandParser {
       } else if (arg.equals("--keep-rules")) {
         checkCommandNotSet(command, builder, origin);
         command = Command.KEEP_RULES;
+      } else if (arg.equals("--natives")) {
+        checkCommandNotSet(command, builder, origin);
+        command = Command.NATIVES;
       } else if (arg.equals("--allowobfuscation")) {
         allowObfuscation = true;
       } else if (arg.equals(LIB_FLAG)) {
@@ -249,6 +256,16 @@ class TraceReferencesCommandParser {
                             ? new FileConsumer(output)
                             : new WriterConsumer(null, new PrintWriter(System.out)))
                     .build()));
+        break;
+      case NATIVES:
+        // TODO(b/481400921): Remove experimental.
+        System.out.println("Command --natives is still EXPERIMENTAL!!!");
+        builder
+            .setConsumer(TraceReferencesConsumer.emptyConsumer())
+            .setNativeReferencesConsumer(
+                TraceReferencesNativesPrinter.builder()
+                    .setOutputConsumer((string, handler) -> System.out.println(string))
+                    .build());
         break;
       default:
         throw new Unreachable();
