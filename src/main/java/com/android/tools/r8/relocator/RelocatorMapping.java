@@ -10,7 +10,6 @@ import com.android.tools.r8.graph.DexEncodedMethod;
 import com.android.tools.r8.graph.DexField;
 import com.android.tools.r8.graph.DexItemFactory;
 import com.android.tools.r8.graph.DexMethod;
-import com.android.tools.r8.graph.DexProgramClass;
 import com.android.tools.r8.graph.DexString;
 import com.android.tools.r8.graph.DexType;
 import com.android.tools.r8.graph.InnerClassAttribute;
@@ -21,11 +20,15 @@ import com.android.tools.r8.references.PackageReference;
 import com.android.tools.r8.references.Reference;
 import com.android.tools.r8.utils.DescriptorUtils;
 import com.android.tools.r8.utils.InternalOptions;
+import com.android.tools.r8.utils.ThreadUtils;
+import com.android.tools.r8.utils.timing.Timing;
+import com.android.tools.r8.utils.timing.TimingMerger;
 import com.google.common.collect.ImmutableMap;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
 
 public class RelocatorMapping {
 
@@ -56,15 +59,11 @@ public class RelocatorMapping {
     return packageMappings;
   }
 
-  public NamingLens compute(AppView<?> appView) throws ExecutionException {
+  public NamingLens compute(AppView<?> appView, ExecutorService executorService)
+      throws ExecutionException {
     // Prefetch all code objects to ensure we have seen all types.
-    for (DexProgramClass clazz : appView.appInfo().classes()) {
-      for (DexEncodedMethod method : clazz.methods()) {
-        if (method.getCode() != null) {
-          method.getCode().asCfCode();
-        }
-      }
-    }
+    parseCfCode(appView, executorService);
+
     // Map all package mappings for resource rewriting.
     Map<String, String> packageMappingForResourceRewriting = new HashMap<>();
     packageMappings.forEach(
@@ -72,17 +71,49 @@ public class RelocatorMapping {
             packageMappingForResourceRewriting.put(
                 source.getPackageBinaryName(), target.getPackageBinaryName()));
 
-    Map<DexType, DexString> typeMappings = new ConcurrentHashMap<>();
-    DexItemFactory factory = appView.dexItemFactory();
-    factory.forAllTypes(
-        type ->
-            computeTypeMapping(type, factory, typeMappings, packageMappingForResourceRewriting));
+    Map<DexType, DexString> typeMappings =
+        computeTypeMappings(appView, packageMappingForResourceRewriting, executorService);
+    return new RelocatorNamingLens(
+        typeMappings, packageMappingForResourceRewriting, appView.dexItemFactory());
+  }
 
-    return new RelocatorNamingLens(typeMappings, packageMappingForResourceRewriting, factory);
+  private void parseCfCode(AppView<?> appView, ExecutorService executorService)
+      throws ExecutionException {
+    ThreadUtils.processItems(
+        appView.appInfo().classes(),
+        clazz -> {
+          for (DexEncodedMethod method : clazz.methods()) {
+            if (method.getCode() != null) {
+              method.getCode().asCfCode();
+            }
+          }
+        },
+        appView.options().getThreadingModule(),
+        executorService);
   }
 
   private PackageReference getPackageReference(String packageName) {
     return stringToPackageReferenceCache.computeIfAbsent(packageName, Reference::packageFromString);
+  }
+
+  private Map<DexType, DexString> computeTypeMappings(
+      AppView<?> appView,
+      Map<String, String> packageMappingForResourceRewriting,
+      ExecutorService executorService)
+      throws ExecutionException {
+    DexItemFactory factory = appView.dexItemFactory();
+    factory.commitPendingItems();
+    Map<DexType, DexString> typeMappings = new ConcurrentHashMap<>();
+    ThreadUtils.processItemsThatMatches(
+        factory.getCommittedTypes(),
+        DexType::isClassType,
+        (type, threadTiming) ->
+            computeTypeMapping(type, factory, typeMappings, packageMappingForResourceRewriting),
+        appView.options(),
+        executorService,
+        Timing.empty(),
+        TimingMerger.empty());
+    return typeMappings;
   }
 
   private void computeTypeMapping(
@@ -90,14 +121,6 @@ public class RelocatorMapping {
       DexItemFactory factory,
       Map<DexType, DexString> typeMappings,
       Map<String, String> rewritePackageMappings) {
-    if (!type.isReferenceType()) {
-      return;
-    }
-    if (type.isArrayType()) {
-      computeTypeMapping(type.getBaseType(), factory, typeMappings, rewritePackageMappings);
-      return;
-    }
-    assert type.isClassType();
     ClassReference directClassMapping = classMappings.get(type.asClassReference());
     if (directClassMapping != null) {
       typeMappings.put(type, factory.createString(directClassMapping.getDescriptor()));

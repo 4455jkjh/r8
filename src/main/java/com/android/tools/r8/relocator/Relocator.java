@@ -86,7 +86,7 @@ public class Relocator {
       timing.end();
 
       timing.begin("Compute naming lens");
-      appView.setNamingLens(command.getMapping().compute(appView));
+      appView.setNamingLens(command.getMapping().compute(appView, executor));
       timing.end();
 
       timing.begin("Rewrite signatures");

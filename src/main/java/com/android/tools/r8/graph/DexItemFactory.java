@@ -41,7 +41,6 @@ import it.unimi.dsi.fastutil.ints.Int2ReferenceArrayMap;
 import it.unimi.dsi.fastutil.ints.Int2ReferenceMap;
 import it.unimi.dsi.fastutil.ints.Int2ReferenceOpenHashMap;
 import java.util.ArrayDeque;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -3840,11 +3839,8 @@ public class DexItemFactory {
     return method.name == classConstructorMethodName;
   }
 
-  @Deprecated
-  synchronized public void forAllTypes(Consumer<DexType> f) {
-    List<DexType> allTypes = new ArrayList<>(committedTypes.values());
-    allTypes.addAll(types.values());
-    allTypes.forEach(f);
+  public Collection<DexType> getCommittedTypes() {
+    return committedTypes.values();
   }
 
   public void commitPendingItems() {
