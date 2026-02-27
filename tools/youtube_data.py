@@ -42,16 +42,13 @@ VERSIONS = {
     },
 }
 
-
-def GetLatestVersion():
+def get_latest_version():
     return LATEST_VERSION
 
-
-def GetName():
+def get_name():
     return 'youtube'
 
-
-def GetMemoryData(version):
+def get_memory_data(version):
     assert version == '16.20'
     return {
         'find-xmx-min': 3150,
