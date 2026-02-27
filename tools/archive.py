@@ -314,7 +314,7 @@ def Run(options):
         create_maven_release.write_default_r8_pom_file(default_pom_file,
                                                        version)
         gradle.RunGradle([
-            ':main:spdxSbom',
+            ':dist:spdxSbom',
             '-PspdxVersion=' + version,
             '-PspdxRevision=' + GetGitHash()
         ])
