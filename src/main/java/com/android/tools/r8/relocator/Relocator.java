@@ -74,21 +74,44 @@ public class Relocator {
       throws IOException {
     Timing timing = Timing.createRoot("Relocator", options, executor);
     try {
+      timing.begin("Read app");
       DexApplication app = new ApplicationReader(inputApp, options, timing).read(executor);
+      timing.end();
+
+      timing.begin("Create AppView");
       AppInfo appInfo =
           AppInfo.createInitialAppInfo(app, GlobalSyntheticsStrategy.forNonSynthesizing());
       AppView<?> appView = AppView.createForRelocator(appInfo);
       appView.setAppServices(AppServices.builder(appView).build());
+      timing.end();
+
+      timing.begin("Compute naming lens");
       appView.setNamingLens(command.getMapping().compute(appView));
+      timing.end();
+
+      timing.begin("Rewrite signatures");
       new GenericSignatureRewriter(appView).run(appInfo.classes(), executor);
+      timing.end();
+
+      timing.begin("Write application");
       new CfApplicationWriter(appView, new Marker(Tool.Relocator))
           .write(command.getConsumer(), executor);
+      timing.end();
+
+      timing.begin("Print warnings");
       options.printWarnings();
+      timing.end();
     } catch (ExecutionException e) {
       throw unwrapExecutionException(e);
     } finally {
+      timing.begin("Signal providers finished");
       inputApp.signalFinishedToProviders(options.reporter);
-      options.signalFinishedToConsumers();
+      timing.end();
+
+      timing.begin("Signal consumers finished");
+      options.signalFinishedToConsumers(timing);
+      timing.end();
+
       // Dump timings.
       if (options.isPrintTimesReportingEnabled()) {
         timing.report();

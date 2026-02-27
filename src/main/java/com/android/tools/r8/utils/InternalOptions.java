@@ -114,6 +114,7 @@ import com.android.tools.r8.utils.IROrdering.IdentityIROrdering;
 import com.android.tools.r8.utils.IROrdering.NondeterministicIROrdering;
 import com.android.tools.r8.utils.collections.ProgramMethodSet;
 import com.android.tools.r8.utils.structural.Ordered;
+import com.android.tools.r8.utils.timing.Timing;
 import com.android.tools.r8.verticalclassmerging.VerticalClassMergerOptions;
 import com.android.tools.r8.verticalclassmerging.VerticallyMergedClasses;
 import com.google.common.annotations.VisibleForTesting;
@@ -710,13 +711,23 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
   }
 
   public void signalFinishedToConsumers() {
+    signalFinishedToConsumers(Timing.empty());
+  }
+
+  public void signalFinishedToConsumers(Timing timing) {
     if (programConsumer != null) {
+      timing.begin("Signal program consumer finished");
       programConsumer.finished(reporter);
+      timing.end();
+
       if (dataResourceConsumer != null) {
+        timing.begin("Signal data resource consumer finished");
         dataResourceConsumer.finished(reporter);
+        timing.end();
       }
     }
     if (hasFeatureSplitConfiguration()) {
+      timing.begin("Signal feature split consumers finished");
       for (FeatureSplit featureSplit : getFeatureSplitConfiguration().getFeatureSplits()) {
         ProgramConsumer programConsumer = featureSplit.getProgramConsumer();
         if (programConsumer != null) {
@@ -727,12 +738,17 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
           }
         }
       }
+      timing.end();
     }
     if (desugarGraphConsumer != null) {
+      timing.begin("Signal desugar graph consumer finished");
       desugarGraphConsumer.finished();
+      timing.end();
     }
     if (resourceShrinkerConfiguration.getDebugConsumer() != null) {
+      timing.begin("Signal resource shrinker configuration finished");
       resourceShrinkerConfiguration.getDebugConsumer().finished(reporter);
+      timing.end();
     }
   }
 
