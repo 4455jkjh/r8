@@ -25,8 +25,12 @@ public class Tracer {
     this.targetPredicate = targetPredicate;
   }
 
-  public void run(TraceReferencesConsumer consumer, Timing timing) {
-    UseCollector useCollector = new UseCollector(appView, consumer, diagnostics, targetPredicate);
+  public void run(
+      TraceReferencesConsumer consumer,
+      TraceReferencesNativeReferencesConsumer nativeReferencesConsumer,
+      Timing timing) {
+    UseCollector useCollector =
+        new UseCollector(appView, consumer, nativeReferencesConsumer, diagnostics, targetPredicate);
     useCollector.traceClasses(appView.appInfo().classes(), timing);
     consumer.finished(diagnostics);
   }

@@ -12,6 +12,7 @@ import com.android.tools.r8.ArchiveClassFileProvider;
 import com.android.tools.r8.ClassConflictResolver;
 import com.android.tools.r8.ClassFileResourceProvider;
 import com.android.tools.r8.CompilationFailedException;
+import com.android.tools.r8.DexIndexedConsumer;
 import com.android.tools.r8.Diagnostic;
 import com.android.tools.r8.DiagnosticsHandler;
 import com.android.tools.r8.ProgramResource;
@@ -55,6 +56,7 @@ public class TraceReferencesCommand {
   private final ImmutableList<ClassFileResourceProvider> traceTarget;
   private final ImmutableList<ProgramResourceProvider> traceSource;
   private final TraceReferencesConsumer consumer;
+  private final TraceReferencesNativeReferencesConsumer nativeReferencesConsumer;
   private final ClassConflictResolver classConflictResolver;
 
   TraceReferencesCommand(
@@ -65,6 +67,7 @@ public class TraceReferencesCommand {
       ImmutableList<ClassFileResourceProvider> traceTarget,
       ImmutableList<ProgramResourceProvider> traceSource,
       TraceReferencesConsumer consumer,
+      TraceReferencesNativeReferencesConsumer nativeReferencesConsumer,
       ClassConflictResolver classConflictResolver) {
     this.printHelp = printHelp;
     this.printVersion = printVersion;
@@ -73,6 +76,7 @@ public class TraceReferencesCommand {
     this.traceTarget = traceTarget;
     this.traceSource = traceSource;
     this.consumer = consumer;
+    this.nativeReferencesConsumer = nativeReferencesConsumer;
     this.classConflictResolver = classConflictResolver;
   }
 
@@ -84,6 +88,7 @@ public class TraceReferencesCommand {
     this.traceTarget = null;
     this.traceSource = null;
     this.consumer = null;
+    this.nativeReferencesConsumer = null;
     this.classConflictResolver = null;
   }
 
@@ -137,6 +142,7 @@ public class TraceReferencesCommand {
     private final ImmutableList.Builder<ProgramResourceProvider> traceSourceBuilder =
         ImmutableList.builder();
     private TraceReferencesConsumer consumer;
+    private TraceReferencesNativeReferencesConsumer nativeReferencesConsumer;
     private ClassConflictResolver classConflictResolver;
 
     private Builder() {
@@ -353,6 +359,21 @@ public class TraceReferencesCommand {
       return this;
     }
 
+    // TODO(b/481400921): Remove experimental.
+    /**
+     * Enable tracing of native references by adding a consumer.
+     *
+     * <p>THIS IS STILL AN EXPERIMENTAL API!
+     *
+     * @param nativeReferencesConsumer Consumer for native references
+     */
+    @Deprecated
+    public Builder setNativeReferencesConsumer(
+        TraceReferencesNativeReferencesConsumer nativeReferencesConsumer) {
+      this.nativeReferencesConsumer = nativeReferencesConsumer;
+      return this;
+    }
+
     /**
      * Set a conflict resolver to determine which class definition to use in case of duplicates.
      *
@@ -394,6 +415,7 @@ public class TraceReferencesCommand {
           traceTarget,
           traceSource,
           consumer,
+          nativeReferencesConsumer,
           classConflictResolver);
     }
 
@@ -434,6 +456,10 @@ public class TraceReferencesCommand {
     return consumer;
   }
 
+  TraceReferencesNativeReferencesConsumer getNativeReferencesConsumer() {
+    return nativeReferencesConsumer;
+  }
+
   InternalOptions getInternalOptions() {
     InternalOptions options = new InternalOptions();
     options.loadAllClassDefinitions = true;
@@ -450,6 +476,11 @@ public class TraceReferencesCommand {
     options.dumpOptions = builder.build();
     options.programClassConflictResolver =
         ProgramClassCollection.wrappedConflictResolver(classConflictResolver, options.reporter);
+
+    // IR building used for tracing native references needs a program consumer to derive output
+    // format.
+    options.programConsumer = DexIndexedConsumer.emptyConsumer();
+
     return options;
   }
 }

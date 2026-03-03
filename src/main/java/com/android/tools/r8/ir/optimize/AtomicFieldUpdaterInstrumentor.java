@@ -139,8 +139,7 @@ public class AtomicFieldUpdaterInstrumentor {
   }
 
   private static boolean isOptimizationEnabled(AppView<?> appView) {
-    return appView.options().enableAtomicFieldUpdaterOptimization
-        && appView.options().isGeneratingDex()
+    return appView.options().isGeneratingDex()
         && appView.enableWholeProgramOptimizations()
         && appView.options().getMinApiLevel().isGreaterThanOrEqualTo(AndroidApiLevel.K);
   }

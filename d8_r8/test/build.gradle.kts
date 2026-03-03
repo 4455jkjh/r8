@@ -26,12 +26,12 @@ val keepAnnoCompileKotlinTask = projectTask("keepanno", "compileKotlin")
 val keepAnnoSourcesTask = projectTask("keepanno", "sourcesJar")
 val libraryAnalyzerSourcesTask = projectTask("libanalyzer", "sourcesJar")
 val assistantJarTask = projectTask("assistant", "jar")
-val mainDepsJarTask = projectTask("main", "depsJar")
-val mainProtoJarTask = projectTask("main", "protoJar")
-val swissArmyKnifeTask = projectTask("main", "swissArmyKnife")
+val mainProtoJarTask = projectTask("dist", "protoJar")
+val mainDepsJarTask = projectTask("dist", "depsJar")
+val swissArmyKnifeTask = projectTask("dist", "swissArmyKnife")
 val processKeepRulesLibWithRelocatedDepsTask =
-  projectTask("main", "processKeepRulesLibWithRelocatedDeps")
-val r8WithRelocatedDepsTask = projectTask("main", "r8WithRelocatedDeps")
+  projectTask("dist", "processKeepRulesLibWithRelocatedDeps")
+val r8WithRelocatedDepsTask = projectTask("dist", "r8WithRelocatedDeps")
 val mainSourcesTask = projectTask("main", "sourcesJar")
 val resourceShrinkerSourcesTask = projectTask("resourceshrinker", "sourcesJar")
 val javaTestBaseJarTask = projectTask("testbase", "testJar")
@@ -45,7 +45,7 @@ val bootstrapTestsDepsJarTask = projectTask("tests_bootstrap", "depsJar")
 val bootstrapTestJarTask = projectTask("tests_bootstrap", "testJar")
 val testsJava8SourceSetDependenciesTask = projectTask("tests_java_8", "sourceSetDependencyTask")
 val keepAnnoAndroidXAnnotationsJar = projectTask("keepanno", "keepAnnoAndroidXAnnotationsJar")
-val keepAnnoToolsWithRelocatedDepsTask = projectTask("main", "keepAnnoToolsWithRelocatedDeps")
+val keepAnnoToolsWithRelocatedDepsTask = projectTask("dist", "keepAnnoToolsWithRelocatedDeps")
 val depsJarOnlyAsmTask = projectTask("keepanno", "depsJarOnlyAsm")
 
 tasks {
@@ -485,6 +485,7 @@ tasks {
       processKeepRulesLibWithRelocatedDepsTask,
       r8Lib,
       r8WithRelocatedDepsTask,
+      swissArmyKnifeTask,
       assembleR8LibNoDeps,
       testsJava8SourceSetDependenciesTask,
       rewriteTestBaseForR8LibWithRelocatedDeps,
@@ -496,6 +497,7 @@ tasks {
     val r8LibJar = r8Lib.getSingleOutputFile()
     val r8LibMappingFile = file(r8LibJar.toString() + ".map")
     val r8WithRelocatedDepsJar = r8WithRelocatedDepsTask.getSingleOutputFile()
+    val swissArmyKnifeJar = swissArmyKnifeTask.getSingleOutputFile()
     configure(isR8Lib = true, r8Jar = r8WithRelocatedDepsJar, r8LibMappingFile = r8LibMappingFile)
 
     // R8lib should be used instead of the main output and all the tests in r8 should be mapped and
@@ -523,7 +525,8 @@ tasks {
     systemProperty("BUILD_PROP_R8_RUNTIME_PATH", r8LibJar)
     systemProperty("R8_DEPS", mainDepsJarTask.getSingleOutputFile())
     systemProperty("com.android.tools.r8.artprofilerewritingcompletenesscheck", "true")
-    systemProperty("R8_WITH_RELOCATED_DEPS", r8WithRelocatedDepsTask.outputs.files.singleFile)
+    systemProperty("R8_SWISS_ARMY_KNIFE", swissArmyKnifeJar)
+    systemProperty("R8_WITH_RELOCATED_DEPS", r8WithRelocatedDepsJar)
 
     javaLauncher = getJavaLauncher(Jdk.JDK_21)
 

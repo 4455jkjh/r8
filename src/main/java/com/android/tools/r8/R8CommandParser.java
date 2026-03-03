@@ -3,6 +3,7 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8;
 
+import static com.android.tools.r8.BaseCompilerCommandUtils.createProgramOutputConsumer;
 import static com.android.tools.r8.ParseFlagInfoImpl.flag0;
 import static com.android.tools.r8.ParseFlagInfoImpl.flag1;
 import static com.android.tools.r8.ParseFlagInfoImpl.flag2;
@@ -440,7 +441,7 @@ public class R8CommandParser extends BaseCompilerCommandParser<R8Command, R8Comm
           featureSplitGenerator -> {
             if (featureSplitConfig.outputJar != null) {
               featureSplitGenerator.setProgramConsumer(
-                  builder.createProgramOutputConsumer(
+                  createProgramOutputConsumer(
                       featureSplitConfig.outputJar, OutputMode.DexIndexed, includeDataResources));
             }
             for (Path inputPath : featureSplitConfig.inputJars) {

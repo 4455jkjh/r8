@@ -4,9 +4,10 @@
 
 package com.android.tools.r8.relocator;
 
+import static com.android.tools.r8.BaseCompilerCommandUtils.createClassFileProgramOutputConsumer;
+
 import com.android.tools.r8.BaseCompilerCommandParser;
 import com.android.tools.r8.ClassFileConsumer;
-import com.android.tools.r8.ClassFileConsumer.ArchiveConsumer;
 import com.android.tools.r8.CompilationFailedException;
 import com.android.tools.r8.CompilationMode;
 import com.android.tools.r8.Diagnostic;
@@ -211,7 +212,7 @@ public class RelocatorCommand {
         this.consumer = null;
         return this;
       }
-      this.consumer = new ArchiveConsumer(outputPath, true);
+      this.consumer = createClassFileProgramOutputConsumer(outputPath, true);
       return this;
     }
 

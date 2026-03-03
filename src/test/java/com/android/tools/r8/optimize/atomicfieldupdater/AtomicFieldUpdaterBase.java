@@ -32,8 +32,6 @@ public class AtomicFieldUpdaterBase extends TestBase {
     builder
         .addOptionsModification(
             options -> {
-              assertFalse(options.enableAtomicFieldUpdaterOptimization);
-              options.enableAtomicFieldUpdaterOptimization = true;
               assertFalse(options.testing.enableAtomicFieldUpdaterLogs);
               options.testing.enableAtomicFieldUpdaterLogs = true;
             })

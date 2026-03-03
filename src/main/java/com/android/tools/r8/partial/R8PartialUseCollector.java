@@ -57,6 +57,7 @@ public abstract class R8PartialUseCollector extends UseCollector {
     super(
         appView,
         new MissingReferencesConsumer(),
+        null,
         new NopDiagnosticsHandler(),
         getTargetPredicate(appView));
     this.identifierNameStrings = identifierNameStrings;

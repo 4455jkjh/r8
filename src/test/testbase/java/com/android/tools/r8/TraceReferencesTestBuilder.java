@@ -7,6 +7,7 @@ import com.android.tools.r8.TestCompilerBuilder.DiagnosticsConsumer;
 import com.android.tools.r8.tracereferences.TraceReferences;
 import com.android.tools.r8.tracereferences.TraceReferencesCommand;
 import com.android.tools.r8.tracereferences.TraceReferencesConsumer;
+import com.android.tools.r8.tracereferences.TraceReferencesNativeReferencesConsumer;
 import com.android.tools.r8.utils.InternalOptions;
 import com.android.tools.r8.utils.ListUtils;
 import com.android.tools.r8.utils.ZipUtils.ZipBuilder;
@@ -66,6 +67,12 @@ public class TraceReferencesTestBuilder {
 
   public TraceReferencesTestBuilder setConsumer(TraceReferencesConsumer consumer) {
     builder.setConsumer(consumer);
+    return this;
+  }
+
+  public TraceReferencesTestBuilder setNativeReferencesConsumer(
+      TraceReferencesNativeReferencesConsumer nativeReferencesConsumer) {
+    builder.setNativeReferencesConsumer(nativeReferencesConsumer);
     return this;
   }
 

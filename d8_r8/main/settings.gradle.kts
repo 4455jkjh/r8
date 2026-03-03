@@ -25,6 +25,4 @@ includeBuild(root.resolve("assistant"))
 
 includeBuild(root.resolve("keepanno"))
 
-includeBuild(root.resolve("libanalyzer"))
-
 includeBuild(root.resolve("resourceshrinker"))

@@ -41,7 +41,6 @@ import it.unimi.dsi.fastutil.ints.Int2ReferenceArrayMap;
 import it.unimi.dsi.fastutil.ints.Int2ReferenceMap;
 import it.unimi.dsi.fastutil.ints.Int2ReferenceOpenHashMap;
 import java.util.ArrayDeque;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -228,6 +227,7 @@ public class DexItemFactory {
 
   public final DexString valueOfMethodName = createString("valueOf");
   public final DexString valuesMethodName = createString("values");
+  public final DexString toCharArrayMethodName = createString("toCharArray");
   public final DexString toStringMethodName = createString("toString");
   public final DexString internMethodName = createString("intern");
 
@@ -2710,15 +2710,17 @@ public class DexItemFactory {
     public final DexMethod valueOfDouble;
     public final DexMethod valueOfObject;
     public final DexMethod toString;
+    public final DexMethod toCharArray;
     public final DexMethod intern;
 
     public final DexMethod trim = createMethod(stringType, createProto(stringType), trimName);
 
     private StringMembers() {
-      isEmpty = createMethod(
-          stringDescriptor, isEmptyMethodName, booleanDescriptor, DexString.EMPTY_ARRAY);
-      length = createMethod(
-          stringDescriptor, lengthMethodName, intDescriptor, DexString.EMPTY_ARRAY);
+      isEmpty =
+          createMethod(
+              stringDescriptor, isEmptyMethodName, booleanDescriptor, DexString.EMPTY_ARRAY);
+      length =
+          createMethod(stringDescriptor, lengthMethodName, intDescriptor, DexString.EMPTY_ARRAY);
 
       DexString[] charSequenceArgs = {charSequenceDescriptor};
       DexString[] intArgs = {intDescriptor};
@@ -2809,6 +2811,7 @@ public class DexItemFactory {
       valueOfObject =
           createMethod(stringDescriptor, valueOfMethodName, stringDescriptor, objectArgs);
 
+      toCharArray = createMethod(stringType, createProto(charArrayType), toCharArrayMethodName);
       toString =
           createMethod(
               stringDescriptor, toStringMethodName, stringDescriptor, DexString.EMPTY_ARRAY);
@@ -3840,11 +3843,8 @@ public class DexItemFactory {
     return method.name == classConstructorMethodName;
   }
 
-  @Deprecated
-  synchronized public void forAllTypes(Consumer<DexType> f) {
-    List<DexType> allTypes = new ArrayList<>(committedTypes.values());
-    allTypes.addAll(types.values());
-    allTypes.forEach(f);
+  public Collection<DexType> getCommittedTypes() {
+    return committedTypes.values();
   }
 
   public void commitPendingItems() {

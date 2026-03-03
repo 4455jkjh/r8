@@ -7,6 +7,10 @@ import java.util.Collection;
 
 public interface TimingMerger {
 
+  static EmptyTimingMerger empty() {
+    return EmptyTimingMerger.get();
+  }
+
   void add(Collection<Timing> timings);
 
   void end();

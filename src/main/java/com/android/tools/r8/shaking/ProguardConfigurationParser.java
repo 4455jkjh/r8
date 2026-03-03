@@ -153,6 +153,48 @@ public class ProguardConfigurationParser {
     return ImmutableList.copyOf(builder.build().getRules());
   }
 
+  public static List<String> getUnsupportedOptions() {
+    return ImmutableList.<String>builder().addAll(UNSUPPORTED_FLAG_OPTIONS).build();
+  }
+
+  public static List<String> getIgnoredOptions() {
+    return ImmutableList.<String>builder()
+        .addAll(IGNORED_OPTIONAL_SINGLE_ARG_OPTIONS)
+        .addAll(IGNORED_FLAG_OPTIONS)
+        .addAll(WARNED_OPTIONAL_SINGLE_ARG_OPTIONS)
+        .addAll(WARNED_FLAG_OPTIONS)
+        .build();
+  }
+
+  public static List<String> getIgnoredOptionsSingleArg() {
+    return ImmutableList.<String>builder()
+        .addAll(IGNORED_SINGLE_ARG_OPTIONS)
+        .addAll(WARNED_SINGLE_ARG_OPTIONS)
+        .add("optimizationpasses")
+        .add("optimizations")
+        .build();
+  }
+
+  public static List<String> getIgnoredOptionsClassDescriptor() {
+    return ImmutableList.<String>builder()
+        .addAll(IGNORED_CLASS_DESCRIPTOR_OPTIONS)
+        .addAll(WARNED_CLASS_DESCRIPTOR_OPTIONS)
+        .build();
+  }
+
+  public static List<String> getIgnoredOptionsWithWarning() {
+    return ImmutableList.<String>builder()
+        .addAll(WARNED_OPTIONAL_SINGLE_ARG_OPTIONS)
+        .addAll(WARNED_FLAG_OPTIONS)
+        .addAll(WARNED_SINGLE_ARG_OPTIONS)
+        .addAll(WARNED_CLASS_DESCRIPTOR_OPTIONS)
+        .build();
+  }
+
+  public static List<String> getIgnoredOptionsWithInfo() {
+    return ImmutableList.<String>builder().add("optimizationpasses").add("optimizations").build();
+  }
+
   public ProguardConfigurationParser(
       DexItemFactory dexItemFactory,
       Reporter reporter,
@@ -353,7 +395,7 @@ public class ProguardConfigurationParser {
       if (parseIgnoredOption(optionStart)
           || parseIgnoredOptionAndWarn(optionStart)
           || parseTestingOption(optionStart)
-          || parseUnsupportedOptionAndErr(optionStart)) {
+          || parseUnsupportedOption(optionStart)) {
         // Intentionally left empty.
       } else if (acceptString("keepkotlinmetadata")) {
         configurationConsumer.addKeepKotlinMetadata(this, getPosition(optionStart), optionStart);
@@ -669,14 +711,19 @@ public class ProguardConfigurationParser {
               getPosition(optionStart)));
     }
 
-    private boolean parseUnsupportedOptionAndErr(TextPosition optionStart) {
-      String option = Iterables.find(UNSUPPORTED_FLAG_OPTIONS, this::skipFlag, null);
-      if (option != null) {
-        reporter.error(new StringDiagnostic(
-            "Unsupported option: -" + option, origin, getPosition(optionStart)));
-        return true;
-      }
-      return false;
+    private boolean parseUnsupportedOption(TextPosition optionStart) {
+      String option =
+          Iterables.find(
+              UNSUPPORTED_FLAG_OPTIONS,
+              name -> {
+                if (acceptString(name)) {
+                  configurationConsumer.addUnsupportedOption(name, this, optionStart);
+                  return true;
+                }
+                return false;
+              },
+              null);
+      return option != null;
     }
 
     private boolean parseIgnoredOptionAndWarn(TextPosition optionStart) {
@@ -801,7 +848,9 @@ public class ProguardConfigurationParser {
     }
 
     private boolean skipFlag(String name) {
+      TextPosition start = getPosition();
       if (acceptString(name)) {
+        configurationConsumer.addIgnoredOption(name, this, start);
         return true;
       }
       return false;
