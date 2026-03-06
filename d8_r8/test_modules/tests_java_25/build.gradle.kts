@@ -2,8 +2,6 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-import org.gradle.api.JavaVersion
-
 plugins {
   `kotlin-dsl`
   `java-library`
@@ -14,32 +12,30 @@ val root = getRoot()
 
 java {
   sourceSets.test.configure { java.srcDir(root.resolveAll("src", "test", "java25")) }
-  sourceCompatibility = JavaVersion.VERSION_25
-  targetCompatibility = JavaVersion.VERSION_25
+  toolchain { languageVersion = JavaLanguageVersion.of(25) }
 }
 
 kotlin { explicitApi() }
 
-val testbaseJavaCompileTask = projectTask("testbase", "compileJava")
+val mainCompileJavaTask = projectTask("main", "compileJava")
+val mainProcessResourcesTask = projectTask("main", "processResources")
+val mainTurboCompileJavaTask = projectTask("main", "compileTurboJava")
+val sharedDownloadDepsTask = projectTask("shared", "downloadDeps")
+val testbaseCompileJavaTask = projectTask("testbase", "compileJava")
 val testbaseDepsJarTask = projectTask("testbase", "depsJar")
-val mainTurboCompileTask = projectTask("main", "compileTurboJava")
-val mainCompileTask = projectTask("main", "compileJava")
 
 dependencies {
-  implementation(files(testbaseDepsJarTask.outputs.files.getSingleFile()))
-  implementation(testbaseJavaCompileTask.outputs.files)
-  implementation(mainTurboCompileTask.outputs.files)
-  implementation(mainCompileTask.outputs.files)
-  implementation(projectTask("main", "processResources").outputs.files)
+  implementation(mainCompileJavaTask.outputs.files)
+  implementation(mainProcessResourcesTask.outputs.files)
+  implementation(mainTurboCompileJavaTask.outputs.files)
+  implementation(testbaseCompileJavaTask.outputs.files)
+  implementation(testbaseDepsJarTask.outputs.files)
+  testImplementation(Deps.junitJupiter)
+  testRuntimeOnly(Deps.junitPlatform)
 }
 
 tasks {
-  withType<JavaCompile> {
-    dependsOn(gradle.includedBuild("shared").task(":downloadDeps"))
-    options.setFork(true)
-    options.forkOptions.memoryMaximumSize = "3g"
-    options.forkOptions.executable = getCompilerPath(Jdk.JDK_25)
-  }
+  withType<JavaCompile> { dependsOn(sharedDownloadDepsTask) }
 
   withType<Test> {
     notCompatibleWithConfigurationCache(
@@ -53,7 +49,7 @@ tasks {
     )
     systemProperty(
       "TESTBASE_DATA_LOCATION",
-      testbaseJavaCompileTask.outputs.files.getAsPath().split(File.pathSeparator)[0],
+      testbaseCompileJavaTask.outputs.files.getAsPath().split(File.pathSeparator)[0],
     )
   }
 }

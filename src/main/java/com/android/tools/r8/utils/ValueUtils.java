@@ -4,9 +4,18 @@
 
 package com.android.tools.r8.utils;
 
+import com.android.tools.r8.graph.AppView;
+import com.android.tools.r8.graph.DexClassAndMethod;
 import com.android.tools.r8.graph.DexItemFactory;
+import com.android.tools.r8.graph.DexMethod;
+import com.android.tools.r8.graph.DexType;
+import com.android.tools.r8.graph.DispatchTargetLookupResult;
+import com.android.tools.r8.graph.MethodResolutionResult.SingleResolutionResult;
+import com.android.tools.r8.graph.ProgramMethod;
+import com.android.tools.r8.ir.analysis.type.DynamicType;
 import com.android.tools.r8.ir.analysis.type.TypeElement;
 import com.android.tools.r8.ir.code.ArrayPut;
+import com.android.tools.r8.ir.code.Assume;
 import com.android.tools.r8.ir.code.BasicBlock;
 import com.android.tools.r8.ir.code.Instruction;
 import com.android.tools.r8.ir.code.InvokeVirtual;
@@ -14,6 +23,7 @@ import com.android.tools.r8.ir.code.NewArrayEmpty;
 import com.android.tools.r8.ir.code.NewArrayFilled;
 import com.android.tools.r8.ir.code.NewInstance;
 import com.android.tools.r8.ir.code.Value;
+import com.android.tools.r8.shaking.AppInfoWithLiveness;
 import java.util.Arrays;
 import java.util.List;
 
@@ -285,5 +295,49 @@ public class ValueUtils {
     }
 
     return new ArrayValues(arrayValue, arrayPutsByIndex);
+  }
+
+  /**
+   * Returns the method that would be called on if dexMethod were to be invoked on receiver. Returns
+   * null if the exact method cannot be determined.
+   */
+  public static DexClassAndMethod lookupSingleTarget(
+      Value receiver,
+      DexMethod method,
+      AppView<AppInfoWithLiveness> appView,
+      ProgramMethod context) {
+    // toDexType() does not work for bottom / top types.
+    // Checking isClassType() means array methods cannot be looked up, but we generally never look
+    // for that.
+    if (!receiver.getType().isClassType()) {
+      return null;
+    }
+    DexItemFactory dexItemFactory = appView.dexItemFactory();
+    DexType dexType = receiver.getType().toDexType(dexItemFactory);
+    SingleResolutionResult<?> methodResolutionResult =
+        appView
+            .appInfo()
+            .resolveMethod(method.withHolder(dexType, dexItemFactory), false)
+            .asSingleResolution();
+    if (methodResolutionResult != null) {
+      DynamicType dynamicReceiverType = receiver.getDynamicType(appView);
+      DispatchTargetLookupResult lookupResult =
+          methodResolutionResult.lookupVirtualDispatchTarget(
+              appView, method, false, dynamicReceiverType, context);
+      if (lookupResult.isSingleResult()) {
+        return lookupResult.asSingleResult().getSingleDispatchTarget();
+      }
+    }
+    return null;
+  }
+
+  /** Must have already removed the current user from value. */
+  public static void removeAliasChain(Value value, Value aliasedValue) {
+    while (value != aliasedValue && !value.hasAnyUsers()) {
+      Assume definition = value.getDefinition().asAssume();
+      assert definition != null : value.getDefinition();
+      value = definition.src();
+      definition.removeOrReplaceByDebugLocalRead();
+    }
   }
 }

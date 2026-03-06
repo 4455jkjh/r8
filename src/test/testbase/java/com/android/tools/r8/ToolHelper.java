@@ -281,9 +281,10 @@ public class ToolHelper {
   public static final Path R8LIB_EXCLUDE_DEPS_MAP =
       Paths.get(LIBS_DIR, "r8lib-exclude-deps.jar.map");
 
-  public static Path getDeps() {
+  public static List<Path> getDeps() {
     assert System.getProperty("R8_DEPS") != null;
-    return Paths.get(System.getProperty("R8_DEPS"));
+    return ListUtils.map(
+        StringUtils.split(System.getProperty("R8_DEPS"), File.pathSeparatorChar), Paths::get);
   }
 
   public static Path getR8WithRelocatedDeps() {
@@ -1331,7 +1332,7 @@ public class ToolHelper {
   }
 
   public static Path getJunitFromDeps() {
-    return Paths.get(DEPENDENCIES, "junit", "junit", "4.13-beta-2", "junit-4.13-beta-2.jar");
+    return Paths.get(DEPENDENCIES, "junit", "junit", "4.13.2", "junit-4.13.2.jar");
   }
 
   public static Path getHamcrestFromDeps() {

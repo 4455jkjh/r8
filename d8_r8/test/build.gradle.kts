@@ -3,6 +3,7 @@
 // BSD-style license that can be found in the LICENSE file.
 
 import java.nio.file.Paths
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
@@ -28,6 +29,7 @@ val libraryAnalyzerSourcesTask = projectTask("libanalyzer", "sourcesJar")
 val assistantJarTask = projectTask("assistant", "jar")
 val mainProtoJarTask = projectTask("dist", "protoJar")
 val mainDepsJarTask = projectTask("dist", "depsJar")
+val mainDepsJarFilesTask = projectTask("dist", "depsJarFiles")
 val swissArmyKnifeTask = projectTask("dist", "swissArmyKnife")
 val processKeepRulesLibWithRelocatedDepsTask =
   projectTask("dist", "processKeepRulesLibWithRelocatedDeps")
@@ -51,7 +53,7 @@ val depsJarOnlyAsmTask = projectTask("keepanno", "depsJarOnlyAsm")
 tasks {
   withType<Exec> { doFirst { println("Executing command: ${commandLine.joinToString(" ")}") } }
 
-  withType<KotlinCompile> { kotlinOptions { jvmTarget = "17" } }
+  withType<KotlinCompile> { compilerOptions { jvmTarget = JvmTarget.JVM_17 } }
 
   "clean" {
     dependsOn(gradle.includedBuild("tests_bootstrap").task(":clean"))
@@ -150,13 +152,13 @@ tasks {
     testJarProviders: List<TaskProvider<*>>,
     artifactName: String,
   ) {
-    dependsOn(mainDepsJarTask, packageTestDeps, r8WithRelocatedDepsTask)
+    dependsOn(mainDepsJarFilesTask, packageTestDeps, r8WithRelocatedDepsTask)
     targetJarProviders.forEach(::dependsOn)
     testJarProviders.forEach(::dependsOn)
-    val mainDepsJar = mainDepsJarTask.getSingleOutputFile()
     val r8WithRelocatedDepsJar = r8WithRelocatedDepsTask.getSingleOutputFile()
     val testDepsJar = packageTestDeps.getSingleOutputFile()
-    inputs.files(mainDepsJar, r8WithRelocatedDepsJar, testDepsJar)
+    inputs.files(r8WithRelocatedDepsJar, testDepsJar)
+    inputs.files(mainDepsJarFilesTask.outputs.files)
     inputs.files(targetJarProviders.map { it.getSingleOutputFile() })
     inputs.files(testJarProviders.map { it.getSingleOutputFile() })
     val output = file(Paths.get("build", "libs", artifactName))
@@ -168,12 +170,14 @@ tasks {
         "--lib",
         "${getJavaHome(Jdk.JDK_25)}",
         "--lib",
-        "$mainDepsJar",
-        "--lib",
         "$testDepsJar",
         "--output",
         "$output",
       )
+    mainDepsJarFilesTask.outputs.files.forEach {
+      argList.add("--lib")
+      argList.add("$it")
+    }
     targetJarProviders.forEach {
       argList.add("--target")
       argList.add("${it.getSingleOutputFile()}")
@@ -254,7 +258,7 @@ tasks {
 
   val assembleR8LibNoDeps by
     registering(Exec::class) {
-      dependsOn(mainDepsJarTask)
+      dependsOn(mainDepsJarTask, mainProtoJarTask)
       val mainDepsJar = mainDepsJarTask.getSingleOutputFile()
       val mainProtoJar = mainProtoJarTask.getSingleOutputFile()
       assembleR8Lib(
@@ -523,7 +527,7 @@ tasks {
     )
     systemProperty("BUILD_PROP_PROCESS_KEEP_RULES_RUNTIME_PATH", processKeepRulesLibJar)
     systemProperty("BUILD_PROP_R8_RUNTIME_PATH", r8LibJar)
-    systemProperty("R8_DEPS", mainDepsJarTask.getSingleOutputFile())
+    systemProperty("R8_DEPS", mainDepsJarFilesTask.outputs.files.getAsPath())
     systemProperty("com.android.tools.r8.artprofilerewritingcompletenesscheck", "true")
     systemProperty("R8_SWISS_ARMY_KNIFE", swissArmyKnifeJar)
     systemProperty("R8_WITH_RELOCATED_DEPS", r8WithRelocatedDepsJar)
@@ -576,6 +580,7 @@ tasks {
       dependsOn(testR8LibNoDeps)
     } else {
       dependsOn(gradle.includedBuild("tests_java_8").task(":test"))
+      dependsOn(gradle.includedBuild("tests_java_9").task(":test"))
       dependsOn(gradle.includedBuild("tests_java_11").task(":test"))
       dependsOn(gradle.includedBuild("tests_java_17").task(":test"))
       dependsOn(gradle.includedBuild("tests_java_21").task(":test"))

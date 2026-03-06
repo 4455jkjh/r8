@@ -16,6 +16,7 @@ import org.gradle.api.Task
 import org.gradle.api.file.ConfigurableFileCollection
 import org.gradle.api.file.Directory
 import org.gradle.api.file.DuplicatesStrategy
+import org.gradle.api.file.FileCollection
 import org.gradle.api.file.RegularFile
 import org.gradle.api.plugins.JavaPluginExtension
 import org.gradle.api.tasks.JavaExec
@@ -321,6 +322,25 @@ private fun getClasspath(vararg paths: File): String {
 }
 
 public fun Project.baseCompilerCommandLine(
+  jars: FileCollection,
+  deps: File,
+  compiler: String,
+  args: List<String> = listOf(),
+): List<String> {
+  // Execute r8 commands against a stable r8 with dependencies.
+  // TODO(b/139725780): See if we can remove or lower the heap size (-Xmx8g).
+  return listOf(
+    getJavaPath(Jdk.JDK_17),
+    "-Xmx8g",
+    "-ea",
+    "-cp",
+    getClasspath(*(jars.toList().toTypedArray() + deps)),
+    "com.android.tools.r8.SwissArmyKnife",
+    compiler,
+  ) + args
+}
+
+public fun Project.baseCompilerCommandLine(
   jar: File,
   deps: File,
   compiler: String,
@@ -448,7 +468,8 @@ private object Versions {
   public const val gsonVersion = "2.10.1"
   public const val guavaVersion = "32.1.2-jre"
   public const val javassist = "3.29.2-GA"
-  public const val junitVersion = "4.13-beta-2"
+  public const val junitJupiterVersion = "5.14.3"
+  public const val junitPlatformVersion = "1.14.3"
   public const val kotlinVersion = "1.9.20"
   public const val kotlinMetadataVersion = "2.3.10"
   public const val mockito = "2.10.0"
@@ -477,7 +498,16 @@ public object Deps {
   public val gson: String by lazy { "com.google.code.gson:gson:${Versions.gsonVersion}" }
   public val guava: String by lazy { "com.google.guava:guava:${Versions.guavaVersion}" }
   public val javassist: String by lazy { "org.javassist:javassist:${Versions.javassist}" }
-  public val junit: String by lazy { "junit:junit:${Versions.junitVersion}" }
+  public val junitJupiter: String by lazy {
+    "org.junit.jupiter:junit-jupiter:${Versions.junitJupiterVersion}"
+  }
+  public val junitVintageEngine: String by lazy {
+    "org.junit.vintage:junit-vintage-engine:${Versions.junitJupiterVersion}"
+  }
+  public val junitPlatform: String by lazy {
+    "org.junit.platform:junit-platform-launcher:${Versions.junitPlatformVersion}"
+  }
+
   public val kotlinMetadata: String by lazy {
     "org.jetbrains.kotlin:kotlin-metadata-jvm:${Versions.kotlinMetadataVersion}"
   }
@@ -496,6 +526,23 @@ public object Deps {
     "com.google.protobuf:protobuf-java:${Versions.protobufVersion}"
   }
   public val zipflinger: String by lazy { "com.android:zipflinger:${Versions.zipflingerVersion}" }
+
+  public val compilerDeps: List<String> by lazy {
+    listOf(
+      androidxCollection,
+      androidxTracingDriver,
+      androidxTracingDriverWire,
+      asm,
+      asmCommons,
+      asmUtil,
+      fastUtil,
+      gson,
+      guava,
+      kotlinMetadata,
+      protobuf,
+      zipflinger,
+    )
+  }
 }
 
 public object ThirdPartyDeps {

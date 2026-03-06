@@ -22,12 +22,16 @@ PROTOC_ROOT = os.path.join(utils.THIRD_PARTY, 'protoc')
 PROTOC_SHA1 = os.path.join(utils.THIRD_PARTY, 'protoc.tar.gz.sha1')
 PROTOC_TGZ = os.path.join(utils.THIRD_PARTY, 'protoc.tar.gz')
 
-def get_gradle():
-    gradle_dir = os.path.join(utils.THIRD_PARTY, 'gradle')
+
+def get_gradle_dir():
+    return os.path.join(utils.THIRD_PARTY, 'gradle')
+
+
+def get_gradle_executable():
     if utils.IsWindows():
-        return os.path.join(gradle_dir, 'bin', 'gradle.bat')
+        return os.path.join(get_gradle_dir(), 'bin', 'gradle.bat')
     else:
-        return os.path.join(gradle_dir, 'bin', 'gradle')
+        return os.path.join(get_gradle_dir(), 'bin', 'gradle')
 
 
 def ParseOptions():
@@ -55,9 +59,9 @@ def ParseOptions():
 
 
 def GetJavaEnv(env):
-    java_env = dict(env if env else os.environ, JAVA_HOME=jdk.GetDefaultJdkHome())
+    java_env = dict(env if env else os.environ, JAVA_HOME=jdk.GetGradleJdkHome())
     java_env['PATH'] = java_env['PATH'] + os.pathsep + os.path.join(
-        jdk.GetDefaultJdkHome(), 'bin')
+        jdk.GetGradleJdkHome(), 'bin')
     java_env['GRADLE_OPTS'] = '-Xmx1g'
     return java_env
 
@@ -71,9 +75,21 @@ def PrintCmd(s):
 
 
 def EnsureGradle():
-    utils.EnsureDepFromGoogleCloudStorage(get_gradle(), GRADLE8_TGZ,
+    utils.EnsureDepFromGoogleCloudStorage(get_gradle_executable(), GRADLE8_TGZ,
                                           GRADLE8_SHA1, 'Gradle binary')
 
+
+def EnsureGradleRepositories():
+    dependencies_path = os.path.join(utils.THIRD_PARTY, 'dependencies')
+    dependencies_tgz = os.path.join(utils.THIRD_PARTY, 'dependencies.tar.gz')
+    dependencies_sha1 = os.path.join(utils.THIRD_PARTY, 'dependencies.tar.gz.sha1')
+    utils.EnsureDepFromGoogleCloudStorage(dependencies_path, dependencies_tgz,
+                                          dependencies_sha1, 'Gradle dependencies')
+    dependencies_plugin_path = os.path.join(utils.THIRD_PARTY, 'dependencies_plugin')
+    dependencies_plugin_tgz = os.path.join(utils.THIRD_PARTY, 'dependencies_plugin.tar.gz')
+    dependencies_plugin_sha1 = os.path.join(utils.THIRD_PARTY, 'dependencies_plugin.tar.gz.sha1')
+    utils.EnsureDepFromGoogleCloudStorage(dependencies_plugin_path, dependencies_plugin_tgz,
+                                          dependencies_plugin_sha1, 'Gradle plugin dependencies')
 
 def EnsureJdk():
     # Gradle in the new setup will use the jdks in the evaluation - fetch
@@ -82,6 +98,7 @@ def EnsureJdk():
         jdkTgz = root + '.tar.gz'
         jdkSha1 = jdkTgz + '.sha1'
         utils.EnsureDepFromGoogleCloudStorage(root, jdkTgz, jdkSha1, root)
+
 
 def EnsureProtoc():
     utils.EnsureDepFromGoogleCloudStorage(
@@ -93,6 +110,7 @@ def EnsureProtoc():
 
 def EnsureDeps():
     EnsureGradle()
+    EnsureGradleRepositories()
     EnsureJdk()
     EnsureProtoc()
 
@@ -100,6 +118,7 @@ def EnsureDeps():
 def RunGradleIn(gradleCmd, args, cwd, throw_on_failure=True, env=None):
     EnsureDeps()
     cmd = [gradleCmd]
+    # Changes to these flags should be copied to gradle_benchmark.scenarios.
     args.extend(['--offline', '-Dorg.gradle.configuration-cache=false'])
     cmd.extend(args)
     with utils.ChangedWorkingDirectory(cwd):
@@ -110,7 +129,7 @@ def RunGradleIn(gradleCmd, args, cwd, throw_on_failure=True, env=None):
         return return_value
 
 def RunGradle(args, throw_on_failure=True, env=None):
-    return RunGradleIn(get_gradle(),
+    return RunGradleIn(get_gradle_executable(),
                        args,
                        utils.REPO_ROOT,
                        throw_on_failure,
