@@ -43,11 +43,17 @@ public class DependenciesPlugin : Plugin<Project> {
 
   public companion object {
     public fun computeRoot(file: File): File {
-      var parent = file
-      while (!parent.getName().equals("d8_r8")) {
-        parent = parent.getParentFile()
+      // The root folder name is setup dependent.
+      // It is instead identified by being a folder with a child folder called 'd8_r8'.
+      var current: File? = file
+      while (current != null) {
+        if (current.resolve("d8_r8").isDirectory) {
+          return current
+        } else {
+          current = current.getParentFile()
+        }
       }
-      return parent.getParentFile()
+      throw RuntimeException("Could not find root dir from $file")
     }
   }
 }
@@ -279,6 +285,8 @@ private fun Project.getJavaPath(jdk: Jdk): String {
 }
 
 public fun Project.getJavaLauncher(jdk: Jdk): JavaLauncher {
+  val installationPath = project.layout.projectDirectory.dir(getJavaHome(jdk).toString())
+  val executablePath = project.layout.projectDirectory.file(getJavaPath(jdk))
   return object : JavaLauncher {
     override fun getMetadata(): JavaInstallationMetadata {
       return object : JavaInstallationMetadata {
@@ -299,7 +307,7 @@ public fun Project.getJavaLauncher(jdk: Jdk): JavaLauncher {
         }
 
         override fun getInstallationPath(): Directory {
-          return project.layout.projectDirectory.dir(getJavaHome(jdk).toString())
+          return installationPath
         }
 
         override fun isCurrentJvm(): Boolean {
@@ -309,7 +317,7 @@ public fun Project.getJavaLauncher(jdk: Jdk): JavaLauncher {
     }
 
     override fun getExecutablePath(): RegularFile {
-      return project.layout.projectDirectory.file(getJavaPath(jdk))
+      return executablePath
     }
   }
 }
