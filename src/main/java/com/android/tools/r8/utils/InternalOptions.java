@@ -404,8 +404,11 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
       System.getProperty("com.android.tools.r8.enableJvmCompatibleStepOutBehavior") != null
           || System.getenv("R8_ENABLE_JVM_COMPATIBLE_STEP_OUT_BEHAVIOR") != null;
 
-  // Flag to toggle if DEX code objects should pass-through without IR processing.
+  // Flags to toggle if DEX code objects should pass-through without IR processing.
   public boolean passthroughDexCode = false;
+  public boolean enableDexToDexCodeOptimizations =
+      SystemPropertyUtils.parseSystemPropertyOrDefault(
+          "com.android.tools.r8.enableDexToDexCodeOptimizations", false);
 
   public static class NeverMergeGroup<T> {
     private final List<T> prefixes;
@@ -1117,6 +1120,7 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
   public R8PartialCompilationConfiguration partialCompilationConfiguration =
       R8PartialCompilationConfiguration.disabledConfiguration();
   public R8PartialSubCompilationConfiguration partialSubCompilationConfiguration = null;
+  public boolean libraryAnalyzerSubCompilation;
   public final TestingOptions testing = new TestingOptions();
 
   public List<ProguardConfigurationRule> mainDexKeepRules = ImmutableList.of();

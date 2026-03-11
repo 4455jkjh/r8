@@ -26,6 +26,10 @@ evaluationDependsOn(":tests_java_9")
 
 evaluationDependsOn(":tests_java_11")
 
+evaluationDependsOn(":tests_java_17")
+
+evaluationDependsOn(":tests_java_21")
+
 dependencies {}
 
 val blastRadiusSourcesTask = projectTask("blastradius", "sourcesJar")
@@ -45,8 +49,6 @@ val mainSourcesTask = projectTask("main", "sourcesJar")
 val resourceShrinkerSourcesTask = projectTask("resourceshrinker", "sourcesJar")
 val javaTestBaseJarTask = projectTask("testbase", "testJar")
 val javaTestBaseDepsJar = projectTask("testbase", "depsJar")
-val java17TestJarTask = projectTask("tests_java_17", "testJar")
-val java21TestJarTask = projectTask("tests_java_21", "testJar")
 val bootstrapTestsDepsJarTask = projectTask("tests_bootstrap", "depsJar")
 val bootstrapTestJarTask = projectTask("tests_bootstrap", "testJar")
 val keepAnnoAndroidXAnnotationsJar = projectTask("keepanno", "keepAnnoAndroidXAnnotationsJar")
@@ -63,9 +65,9 @@ tasks {
     dependsOn(":tests_java_8:clean")
     dependsOn(":tests_java_9:clean")
     dependsOn(":tests_java_11:clean")
-    dependsOn(gradle.includedBuild("tests_java_17").task(":clean"))
-    dependsOn(gradle.includedBuild("tests_java_21").task(":clean"))
-    dependsOn(gradle.includedBuild("tests_java_25").task(":clean"))
+    dependsOn(":tests_java_17:clean")
+    dependsOn(":tests_java_21:clean")
+    dependsOn(":tests_java_25:clean")
   }
 
   val packageTests by
@@ -73,8 +75,8 @@ tasks {
       dependsOn(":tests_java_8:testJar")
       dependsOn(":tests_java_9:testJar")
       dependsOn(":tests_java_11:testJar")
-      dependsOn(java17TestJarTask)
-      dependsOn(java21TestJarTask)
+      dependsOn(":tests_java_17:testJar")
+      dependsOn(":tests_java_21:testJar")
       dependsOn(bootstrapTestJarTask)
       from(
         project(":tests_java_8").tasks.named("testJar").map { zipTree(it.outputs.files.singleFile) }
@@ -87,8 +89,16 @@ tasks {
           zipTree(it.outputs.files.singleFile)
         }
       )
-      from(java17TestJarTask.outputs.files.map(::zipTree))
-      from(java21TestJarTask.outputs.files.map(::zipTree))
+      from(
+        project(":tests_java_17").tasks.named("testJar").map {
+          zipTree(it.outputs.files.singleFile)
+        }
+      )
+      from(
+        project(":tests_java_21").tasks.named("testJar").map {
+          zipTree(it.outputs.files.singleFile)
+        }
+      )
       from(bootstrapTestJarTask.outputs.files.map(::zipTree))
       exclude("META-INF/*.kotlin_module", "**/*.kotlin_metadata")
       destinationDirectory.set(getRoot().resolveAll("build", "libs"))
@@ -324,7 +334,7 @@ tasks {
     dependsOn(r8LibJarProvider)
     val r8LibJar = r8LibJarProvider.getSingleOutputFile()
     inputs.files(r8LibJar)
-    val output = rootProject.buildDir.resolveAll("libs", artifactName)
+    val output = rootProject.layout.buildDirectory.get().asFile.resolveAll("libs", artifactName)
     outputs.files(output)
     doLast {
       // TODO(b/299065371): We should be able to take in the partition map output.
@@ -437,14 +447,14 @@ tasks {
   val cleanUnzipTests by
     registering(Delete::class) {
       dependsOn(packageTests)
-      val outputDir = file("${buildDir}/unpacked/test")
+      val outputDir = layout.buildDirectory.dir("unpacked/test")
       setDelete(outputDir)
     }
 
   val unzipTests by
     registering(Copy::class) {
       dependsOn(cleanUnzipTests, packageTests)
-      val outputDir = file("${buildDir}/unpacked/test")
+      val outputDir = layout.buildDirectory.dir("unpacked/test")
       from(zipTree(packageTests.getSingleOutputFile()))
       into(outputDir)
     }
@@ -452,7 +462,7 @@ tasks {
   val unzipTestBase by
     registering(Copy::class) {
       dependsOn(cleanUnzipTests, packageTestBase)
-      val outputDir = file("${buildDir}/unpacked/testbase")
+      val outputDir = layout.buildDirectory.dir("unpacked/testbase")
       from(zipTree(packageTestBase.getSingleOutputFile()))
       into(outputDir)
     }
@@ -462,7 +472,7 @@ tasks {
     outDirName: String,
   ) {
     dependsOn(rewrittenTestJarProvider)
-    val outputDir = file("$buildDir/unpacked/$outDirName")
+    val outputDir = layout.buildDirectory.dir("unpacked/$outDirName")
     val rewrittenTestJar = rewrittenTestJarProvider.getSingleOutputFile()
     from(zipTree(rewrittenTestJar))
     into(outputDir)
@@ -470,7 +480,7 @@ tasks {
 
   val cleanUnzipRewrittenTestsForR8LibWithRelocatedDeps by
     registering(Delete::class) {
-      val outputDir = file("${buildDir}/unpacked/rewrittentests-r8lib")
+      val outputDir = layout.buildDirectory.dir("unpacked/rewrittentests-r8lib")
       setDelete(outputDir)
     }
 
@@ -482,7 +492,7 @@ tasks {
 
   val cleanUnzipRewrittenTestsForR8LibNoDeps by
     registering(Delete::class) {
-      val outputDir = file("${buildDir}/unpacked/rewrittentests-r8lib-exclude-deps")
+      val outputDir = layout.buildDirectory.dir("unpacked/rewrittentests-r8lib-exclude-deps")
       setDelete(outputDir)
     }
 
@@ -593,8 +603,8 @@ tasks {
       dependsOn(":tests_java_8:test")
       dependsOn(":tests_java_9:test")
       dependsOn(":tests_java_11:test")
-      dependsOn(gradle.includedBuild("tests_java_17").task(":test"))
-      dependsOn(gradle.includedBuild("tests_java_21").task(":test"))
+      dependsOn(":tests_java_17:test")
+      dependsOn(":tests_java_21:test")
       dependsOn(gradle.includedBuild("tests_bootstrap").task(":test"))
     }
   }
