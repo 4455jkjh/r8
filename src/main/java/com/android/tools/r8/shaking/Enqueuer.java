@@ -693,7 +693,13 @@ public class Enqueuer {
       return false;
     }
     DexType dexType =
-        appView.dexItemFactory().createType(DescriptorUtils.javaTypeToDescriptor(possibleClass));
+        appView
+            .dexItemFactory()
+            .createType(DescriptorUtils.javaTypeToDescriptor(possibleClass))
+            .getBaseType();
+    if (!dexType.isClassType()) {
+      return false;
+    }
     DexProgramClass clazz = appView.definitionForProgramType(dexType);
     if (clazz != null) {
       ReflectiveUseFromXml reason = KeepReason.reflectiveUseFromXml(origin);
