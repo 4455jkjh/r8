@@ -37,7 +37,7 @@ def ensure_deps():
 
 
 def run_gradle_profiler(cwd, benchmark_name, scenario_file, local_output_dir,
-                        tmp_gradle_home, just_once, run_specific,
+                        tmp_gradle_home, just_once, run_specific, trace,
                         throw_on_failure):
     cmd = [get_profiler_executable(), '--benchmark']
     # Title in html report.
@@ -51,6 +51,8 @@ def run_gradle_profiler(cwd, benchmark_name, scenario_file, local_output_dir,
         # The profiler requires warmups >= 1.
         cmd.extend(['--warmups', '1'])
         cmd.extend(['--iterations', '1'])
+    if trace:
+        cmd.extend(['--build-ops-trace'])
     # Set output directory.
     cmd.extend(['--output-dir', local_output_dir])
     # Point to benchmark scenarios.
@@ -79,6 +81,10 @@ def parse_options():
                         default=None)
     parser.add_argument('--upload-benchmark-data-to-google-storage',
                         help='Uploads the benchmark data.',
+                        default=False,
+                        action='store_true')
+    parser.add_argument('--perfetto-trace',
+                        help='Emit a perfetto trace for each benchmark.',
                         default=False,
                         action='store_true')
     parser.add_argument(
@@ -204,9 +210,19 @@ def run_gradle_profiler_with_output_dir(args, profiler_output_dir):
                                 tmp_gradle_home=temp_gradle_home,
                                 just_once=args.just_once,
                                 run_specific=args.scenario,
+                                trace=args.perfetto_trace,
                                 throw_on_failure=True)
         if args.upload_benchmark_data_to_google_storage:
             upload_benchmark(csv_path, args.output_dir)
+        if utils.is_bot():
+            print(
+                ''
+                'To generate a perfetto graph locally, use'
+                ''
+                '  tools/gradle_benchmark.py --perfetto-trace --profiler-output-dir=gradle_benchmark_output/ --scenario=<benchmark_name>'
+                ''
+                'The trace is in gradle_benchmark_output/<benchmark_name>.perfetto.proto.'
+            )
 
 
 def main():
