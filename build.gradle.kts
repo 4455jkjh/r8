@@ -32,13 +32,12 @@ tasks {
     dependsOn(gradle.includedBuild("main").task(":clean"))
     dependsOn(gradle.includedBuild("library_desugar").task(":clean"))
     dependsOn(":test:clean")
-    dependsOn(gradle.includedBuild("dist").task(":clean"))
+    dependsOn(":dist:clean")
   }
 
-  val r8 by registering() { dependsOn(gradle.includedBuild("dist").task(":r8WithRelocatedDeps")) }
+  val r8 by registering() { dependsOn(":dist:r8WithRelocatedDeps") }
 
-  val swissArmyKnife by
-    registering() { dependsOn(gradle.includedBuild("dist").task(":swissArmyKnife")) }
+  val swissArmyKnife by registering() { dependsOn(":dist:swissArmyKnife") }
 
   val r8lib by registering() { dependsOn(":test:assembleR8LibWithRelocatedDeps") }
 }

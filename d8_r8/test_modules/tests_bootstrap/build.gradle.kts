@@ -25,8 +25,8 @@ java {
 
 kotlin { explicitApi() }
 
-val distR8WithRelocatedDeps = projectTask("dist", "r8WithRelocatedDeps")
-val distSwissArmyKnife = projectTask("dist", "swissArmyKnife")
+val distR8WithRelocatedDeps = project(":dist").tasks.named("r8WithRelocatedDeps")
+val distSwissArmyKnife = project(":dist").tasks.named("swissArmyKnife")
 val keepAnnoCompileJavaTask = projectTask("keepanno", "compileJava")
 val keepAnnoCompileKotlinTask = projectTask("keepanno", "compileKotlin")
 val keepAnnoJarTask = projectTask("keepanno", "jar")
@@ -90,9 +90,12 @@ tasks {
         )
       },
     )
-    systemProperty("R8_SWISS_ARMY_KNIFE", distSwissArmyKnife.outputs.files.singleFile)
-    systemProperty("R8_WITH_RELOCATED_DEPS", distR8WithRelocatedDeps.outputs.files.singleFile)
-    systemProperty("BUILD_PROP_R8_RUNTIME_PATH", distR8WithRelocatedDeps.outputs.files.singleFile)
+    systemProperty("R8_SWISS_ARMY_KNIFE", distSwissArmyKnife.get().outputs.files.singleFile)
+    systemProperty("R8_WITH_RELOCATED_DEPS", distR8WithRelocatedDeps.get().outputs.files.singleFile)
+    systemProperty(
+      "BUILD_PROP_R8_RUNTIME_PATH",
+      distR8WithRelocatedDeps.get().outputs.files.singleFile,
+    )
   }
 
   val assembleTestJar by

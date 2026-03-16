@@ -34,7 +34,7 @@ kotlin { explicitApi() }
 // incompatible java class file version. By depending on the jar we circumvent that.
 val assistantCompileTask = projectTask("assistant", "compileJava")
 val blastRadiusCompileTask = projectTask("blastradius", "compileJava")
-val distDepsFilesTask = projectTask("dist", "depsFiles")
+val distDepsFilesTask = project(":dist").tasks.named("depsFiles")
 val keepAnnoJarTask = projectTask("keepanno", "jar")
 val keepAnnoCompileJavaTask = projectTask("keepanno", "compileJava")
 val keepAnnoCompileKotlinTask = projectTask("keepanno", "compileKotlin")
@@ -158,7 +158,7 @@ tasks {
         File.pathSeparator +
         mainTurboCompileJavaTask.outputs.files.getAsPath().split(File.pathSeparator)[0] +
         File.pathSeparator +
-        distDepsFilesTask.outputs.files.getAsPath() +
+        distDepsFilesTask.get().outputs.files.getAsPath() +
         File.pathSeparator +
         getRoot().resolveAll("src", "main", "resources") +
         File.pathSeparator +
@@ -171,7 +171,7 @@ tasks {
         resourceShrinkerCompileKotlinTask.outputs.files.getAsPath().split(File.pathSeparator)[1]
     systemProperty("BUILD_PROP_PROCESS_KEEP_RULES_RUNTIME_PATH", r8RuntimePath)
     systemProperty("BUILD_PROP_R8_RUNTIME_PATH", r8RuntimePath)
-    systemProperty("R8_DEPS", distDepsFilesTask.outputs.files.getAsPath())
+    systemProperty("R8_DEPS", distDepsFilesTask.get().outputs.files.getAsPath())
     systemProperty("com.android.tools.r8.artprofilerewritingcompletenesscheck", "true")
   }
 
