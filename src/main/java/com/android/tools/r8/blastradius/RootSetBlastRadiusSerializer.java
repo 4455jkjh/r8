@@ -34,6 +34,7 @@ import com.android.tools.r8.graph.DexType;
 import com.android.tools.r8.graph.DexTypeList;
 import com.android.tools.r8.origin.MavenOrigin;
 import com.android.tools.r8.origin.Origin;
+import com.android.tools.r8.origin.PathOrigin;
 import com.android.tools.r8.position.Position;
 import com.android.tools.r8.position.TextRange;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
@@ -283,8 +284,12 @@ public class RootSetBlastRadiusSerializer {
         origin,
         o -> {
           // TODO(b/441055269): Set the filename correctly.
-          FileOrigin.Builder fileOriginBuilder =
-              FileOrigin.newBuilder().setId(origins.size()).setFilename(o.toString());
+          FileOrigin.Builder fileOriginBuilder = FileOrigin.newBuilder().setId(origins.size());
+          if (o instanceof PathOrigin) {
+            fileOriginBuilder.setFilename(((PathOrigin) o).getPath().toString());
+          } else {
+            fileOriginBuilder.setFilename(o.toString());
+          }
           MavenOrigin mavenOrigin = OriginUtils.getMavenOrigin(origin);
           if (mavenOrigin != null) {
             fileOriginBuilder.setMavenCoordinate(
