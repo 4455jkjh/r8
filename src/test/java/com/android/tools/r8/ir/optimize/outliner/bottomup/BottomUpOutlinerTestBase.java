@@ -49,6 +49,13 @@ public abstract class BottomUpOutlinerTestBase extends TestBase {
     assertTrue(receivedCallback.isTrue());
   }
 
+  public void assumeDebug() {
+    if (mode.isRelease()) {
+      receivedCallback.set();
+    }
+    assumeTrue(mode.isDebug());
+  }
+
   public void assumeRelease() {
     if (mode.isDebug()) {
       receivedCallback.set();
