@@ -98,6 +98,7 @@ public class TestConfigurationHelper {
 
     @OptIn(ExperimentalEncodingApi::class)
     private fun reportToResultSink(
+      test: Test,
       desc: TestDescriptor?,
       result: TestResult?,
       rootDir: File,
@@ -112,12 +113,11 @@ public class TestConfigurationHelper {
       val testId = "${desc.className}.${desc.name}"
       val status =
         when (result.resultType) {
-          TestResult.ResultType.SUCCESS -> "PASS"
-          TestResult.ResultType.FAILURE -> "FAIL"
-          TestResult.ResultType.SKIPPED -> "SKIP"
-          else -> "FAIL"
+          TestResult.ResultType.SUCCESS -> "PASSED"
+          TestResult.ResultType.FAILURE -> "FAILED"
+          TestResult.ResultType.SKIPPED -> "SKIPPED"
+          else -> "PRECLUDED"
         }
-      val expected = result.resultType == TestResult.ResultType.SUCCESS
       val durationMs = result.endTime - result.startTime
       val duration = "${durationMs / 1000.0}s"
 
@@ -135,27 +135,47 @@ public class TestConfigurationHelper {
       }
 
       val payloadObj = JsonObject()
-      val testResultsArr = com.google.gson.JsonArray()
+      val testResultsArr = JsonArray()
       val testResultObj = JsonObject()
 
       val testIdStructuredObj = JsonObject()
       val testIdCaseNameComponents = JsonArray()
-      testIdCaseNameComponents.add(desc.displayName.substringBeforeLast('['))
-      val argumentString = desc.displayName.substringAfterLast('[').substringBeforeLast(']')
+      testIdCaseNameComponents.add(desc.displayName.substringBefore('['))
+      val argumentString = desc.displayName.substringAfter('[').substringBeforeLast(']')
+      val moduleVariant = JsonObject()
+      val project = test.project
+      if (project.hasProperty("runtimes")) {
+        moduleVariant.addProperty("runtimes", project.property("runtimes").toString())
+      }
+      if (project.hasProperty("dex_vm")) {
+        moduleVariant.addProperty("dex_vm", project.property("dex_vm").toString())
+      }
+      moduleVariant.addProperty("args", argumentString)
       testIdStructuredObj.addProperty("module", "junit")
+      testIdStructuredObj.add("moduleVariant", moduleVariant)
       testIdStructuredObj.addProperty("coarseName", desc.className?.substringBeforeLast(".") ?: "")
       testIdStructuredObj.addProperty("fineName", desc.className?.substringAfterLast(".") ?: "")
       testIdStructuredObj.add("caseNameComponents", testIdCaseNameComponents)
       testResultObj.add("testIdStructured", testIdStructuredObj)
 
       testResultObj.addProperty("testId", testId)
-      testResultObj.addProperty("status", status)
-      testResultObj.addProperty("expected", expected)
+      testResultObj.addProperty("statusV2", status)
       testResultObj.addProperty("duration", duration)
+
+      if (result.resultType == TestResult.ResultType.FAILURE) {
+        val failureReasonObj = JsonObject()
+        failureReasonObj.addProperty("kind", "ORDINARY")
+        testResultObj.add("failureReason", failureReasonObj)
+      } else if (result.resultType == TestResult.ResultType.SKIPPED) {
+        val skipReasonObj = JsonObject()
+        skipReasonObj.addProperty("kind", "DISABLED_AT_DECLARATION")
+        testResultObj.add("skippedReason", skipReasonObj)
+      }
+
       val summaryHtml = "<p>Arguments string: $argumentString</p>"
       if (stackTraceStr != null) {
         val artifact = JsonObject()
-        val encodedStackTrace = Base64.Default.encode(stackTraceStr.encodeToByteArray())
+        val encodedStackTrace = Base64.encode(stackTraceStr.encodeToByteArray())
         val jsonObject = JsonObject()
         jsonObject.addProperty("contents", encodedStackTrace)
         artifact.add("artifact-content-in-request", jsonObject)
@@ -341,6 +361,7 @@ public class TestConfigurationHelper {
                 }
               }
               reportToResultSink(
+                test,
                 desc,
                 result,
                 rootDir,
@@ -370,6 +391,7 @@ public class TestConfigurationHelper {
                 println(baos)
               }
               reportToResultSink(
+                test,
                 desc,
                 result,
                 rootDir,

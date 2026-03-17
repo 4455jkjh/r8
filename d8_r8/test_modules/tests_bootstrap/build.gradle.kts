@@ -36,8 +36,6 @@ val resourceShrinkerCompileKotlinTask = projectTask("resourceshrinker", "compile
 val resourceShrinkerDepsJarTask = projectTask("resourceshrinker", "depsJar")
 val sharedDownloadDepsTask = projectTask("shared", "downloadDeps")
 val sharedDownloadDepsInternalTask = projectTask("shared", "downloadDepsInternal")
-val testbaseCompileJavaTask = projectTask("testbase", "compileJava")
-val testbaseDepsJarTask = projectTask("testbase", "depsJar")
 
 dependencies {
   implementation(keepAnnoJarTask.outputs.files)
@@ -45,8 +43,8 @@ dependencies {
   implementation(resourceShrinkerCompileJavaTask.outputs.files)
   implementation(resourceShrinkerCompileKotlinTask.outputs.files)
   implementation(resourceShrinkerDepsJarTask.outputs.files)
-  implementation(testbaseDepsJarTask.outputs.files)
-  implementation(testbaseCompileJavaTask.outputs.files)
+  implementation(project(":testbase"))
+  implementation(project(":testbase", "depsJar"))
 }
 
 fun testDependencies(): FileCollection {
@@ -72,7 +70,14 @@ tasks {
     systemProperty(
       "TESTBASE_DATA_LOCATION",
       project.provider {
-        testbaseCompileJavaTask.outputs.files.getAsPath().split(File.pathSeparator)[0]
+        project(":testbase")
+          .tasks
+          .named<JavaCompile>("compileJava")
+          .get()
+          .outputs
+          .files
+          .asPath
+          .split(File.pathSeparator)[0]
       },
     )
     systemProperty(
@@ -90,14 +95,14 @@ tasks {
     systemProperty("BUILD_PROP_R8_RUNTIME_PATH", distR8WithRelocatedDeps.outputs.files.singleFile)
   }
 
-  val testJar by
+  val assembleTestJar by
     registering(Jar::class) {
       from(sourceSets.test.get().output)
       // TODO(b/296486206): Seems like IntelliJ has a problem depending on test source sets.
       archiveFileName.set("not_named_tests_bootstrap.jar")
     }
 
-  val depsJar by
+  val assembleDepsJar by
     registering(Jar::class) {
       dependsOn(keepAnnoJarTask)
       dependsOn(sharedDownloadDepsTask)
@@ -108,4 +113,13 @@ tasks {
       duplicatesStrategy = DuplicatesStrategy.EXCLUDE
       archiveFileName.set("deps.jar")
     }
+}
+
+val testJar by configurations.consumable("testJar")
+
+val depsJar by configurations.consumable("depsJar")
+
+artifacts {
+  add(testJar.name, tasks.named("assembleTestJar"))
+  add(depsJar.name, tasks.named("assembleDepsJar"))
 }

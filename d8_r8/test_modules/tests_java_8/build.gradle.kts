@@ -30,12 +30,6 @@ java {
 
 kotlin { explicitApi() }
 
-// TODO(jonathanlist): This should be removed by "following gradle best practices".
-evaluationDependsOn(":tests_java_9")
-
-val testbaseCompileJavaTask = projectTask("testbase", "compileJava")
-val testbaseDepsJarTask = projectTask("testbase", "depsJar")
-
 // If we depend on keepanno by referencing the project source outputs we get an error regarding
 // incompatible java class file version. By depending on the jar we circumvent that.
 val assistantCompileTask = projectTask("assistant", "compileJava")
@@ -65,12 +59,9 @@ dependencies {
   implementation(resourceShrinkerCompileJavaTask.outputs.files)
   implementation(resourceShrinkerCompileKotlinTask.outputs.files)
   implementation(resourceShrinkerDepsJarTask.outputs.files)
-  implementation(testbaseDepsJarTask.outputs.files)
-  implementation(testbaseCompileJavaTask.outputs.files)
+  implementation(project(":testbase"))
+  implementation(project(":testbase", "depsJar"))
 }
-
-val sourceSetDependenciesTasks =
-  arrayOf(project(":tests_java_9").tasks.named(getExampleJarsTaskName("examplesJava9")))
 
 fun testDependencies(): FileCollection {
   return sourceSets.test.get().compileClasspath.filter {
@@ -105,7 +96,7 @@ tasks {
     }
   "compileTestJava" {
     dependsOn(sharedDownloadDepsTask)
-    dependsOn(testbaseCompileJavaTask)
+    dependsOn(":testbase:compileJava")
   }
   withType<JavaCompile> {
     dependsOn(createArtTests)
@@ -113,7 +104,7 @@ tasks {
     dependsOn(mainCompileJavaTask)
     dependsOn(resourceShrinkerCompileJavaTask)
     dependsOn(sharedDownloadDepsTask)
-    dependsOn(testbaseCompileJavaTask)
+    dependsOn(":testbase:compileJava")
   }
 
   withType<JavaExec> {
@@ -126,7 +117,9 @@ tasks {
 
   withType<KotlinCompile> { enabled = false }
 
-  val sourceSetDependencyTask by registering { dependsOn(*sourceSetDependenciesTasks) }
+  val sourceSetDependencyTask by registering {
+    dependsOn(":tests_java_9:${getExampleJarsTaskName("examplesJava9")}")
+  }
 
   withType<Test> {
     TestingState.setUpTestingState(this)
@@ -142,7 +135,14 @@ tasks {
     )
     systemProperty(
       "TESTBASE_DATA_LOCATION",
-      testbaseCompileJavaTask.outputs.files.asPath.split(File.pathSeparator)[0],
+      project(":testbase")
+        .tasks
+        .named<JavaCompile>("compileJava")
+        .get()
+        .outputs
+        .files
+        .asPath
+        .split(File.pathSeparator)[0],
     )
     systemProperty(
       "BUILD_PROP_KEEPANNO_RUNTIME_PATH",
@@ -175,7 +175,7 @@ tasks {
     systemProperty("com.android.tools.r8.artprofilerewritingcompletenesscheck", "true")
   }
 
-  val testJar by
+  val assembleTestJar by
     registering(Jar::class) {
       from(sourceSets.test.get().output)
       // TODO(b/296486206): Seems like IntelliJ has a problem depending on test source sets.
@@ -185,3 +185,7 @@ tasks {
       archiveFileName.set("not_named_tests_java_8.jar")
     }
 }
+
+val testJar by configurations.consumable("testJar")
+
+artifacts { add(testJar.name, tasks.named("assembleTestJar")) }

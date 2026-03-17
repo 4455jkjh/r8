@@ -21,15 +21,13 @@ val mainCompileJavaTask = projectTask("main", "compileJava")
 val mainProcessResourcesTask = projectTask("main", "processResources")
 val mainTurboCompileJavaTask = projectTask("main", "compileTurboJava")
 val sharedDownloadDepsTask = projectTask("shared", "downloadDeps")
-val testbaseCompileJavaTask = projectTask("testbase", "compileJava")
-val testbaseDepsJarTask = projectTask("testbase", "depsJar")
 
 dependencies {
   implementation(mainCompileJavaTask.outputs.files)
   implementation(mainProcessResourcesTask.outputs.files)
   implementation(mainTurboCompileJavaTask.outputs.files)
-  implementation(testbaseCompileJavaTask.outputs.files)
-  implementation(testbaseDepsJarTask.outputs.files)
+  implementation(project(":testbase"))
+  implementation(project(":testbase", "depsJar"))
   testImplementation(Deps.junitJupiter)
   testRuntimeOnly(Deps.junitPlatform)
 }
@@ -49,7 +47,14 @@ tasks {
     )
     systemProperty(
       "TESTBASE_DATA_LOCATION",
-      testbaseCompileJavaTask.outputs.files.getAsPath().split(File.pathSeparator)[0],
+      project(":testbase")
+        .tasks
+        .named<JavaCompile>("compileJava")
+        .get()
+        .outputs
+        .files
+        .asPath
+        .split(File.pathSeparator)[0],
     )
   }
 }

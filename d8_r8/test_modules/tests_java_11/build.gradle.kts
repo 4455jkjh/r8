@@ -21,15 +21,13 @@ val mainCompileJavaTask = projectTask("main", "compileJava")
 val mainProcessResourcesTask = projectTask("main", "processResources")
 val mainTurboCompileJavaTask = projectTask("main", "compileTurboJava")
 val sharedDownloadDepsTask = projectTask("shared", "downloadDeps")
-val testbaseCompileJavaTask = projectTask("testbase", "compileJava")
-val testbaseDepsJarTask = projectTask("testbase", "depsJar")
 
 dependencies {
   implementation(mainCompileJavaTask.outputs.files)
   implementation(mainProcessResourcesTask.outputs.files)
   implementation(mainTurboCompileJavaTask.outputs.files)
-  implementation(testbaseCompileJavaTask.outputs.files)
-  implementation(testbaseDepsJarTask.outputs.files)
+  implementation(project(":testbase"))
+  implementation(project(":testbase", "depsJar"))
 }
 
 tasks {
@@ -47,11 +45,18 @@ tasks {
     )
     systemProperty(
       "TESTBASE_DATA_LOCATION",
-      testbaseCompileJavaTask.outputs.files.getAsPath().split(File.pathSeparator)[0],
+      project(":testbase")
+        .tasks
+        .named<JavaCompile>("compileJava")
+        .get()
+        .outputs
+        .files
+        .asPath
+        .split(File.pathSeparator)[0],
     )
   }
 
-  val testJar by
+  val assembleTestJar by
     registering(Jar::class) {
       from(sourceSets.test.get().output)
       // TODO(b/296486206): Seems like IntelliJ has a problem depending on test source sets.
@@ -61,3 +66,7 @@ tasks {
       archiveFileName.set("not_named_tests_java_11.jar")
     }
 }
+
+val testJar by configurations.consumable("testJar")
+
+artifacts { add(testJar.name, tasks.named("assembleTestJar")) }

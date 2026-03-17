@@ -943,8 +943,7 @@ public class ProguardConfigurationParser {
     }
 
     @SuppressWarnings("NonCanonicalType")
-    private <
-            R extends ProguardConfigurationRule, B extends ProguardClassSpecification.Builder<R, B>>
+    private <R extends ProguardConfigurationRule, B extends ProguardConfigurationRule.Builder<R, B>>
         R parseRuleWithClassSpec(Position start, B builder) {
       builder.setOrigin(origin).setStart(start);
       parseClassSpec(builder);
@@ -1066,13 +1065,15 @@ public class ProguardConfigurationParser {
     }
 
     private <
-            C extends ProguardConfigurationRule, B extends ProguardClassSpecification.Builder<C, B>>
+            C extends ProguardClassSpecification,
+            B extends ProguardClassSpecification.Builder<C, B>>
         void parseClassSpec(ProguardClassSpecification.Builder<C, B> builder) {
       parseClassSpec(builder, false);
     }
 
     private <
-            C extends ProguardConfigurationRule, B extends ProguardClassSpecification.Builder<C, B>>
+            C extends ProguardClassSpecification,
+            B extends ProguardClassSpecification.Builder<C, B>>
         void parseClassSpec(
             ProguardClassSpecification.Builder<C, B> builder, boolean allowValueSpecification) {
       parseClassAnnotationsAndFlags(builder);
@@ -1080,7 +1081,8 @@ public class ProguardConfigurationParser {
     }
 
     private <
-            C extends ProguardConfigurationRule, B extends ProguardClassSpecification.Builder<C, B>>
+            C extends ProguardClassSpecification,
+            B extends ProguardClassSpecification.Builder<C, B>>
         void parseClassSpecFromClassTypeInclusive(
             ProguardClassSpecification.Builder<C, B> builder, boolean allowValueSpecification) {
       parseClassType(
@@ -1090,7 +1092,8 @@ public class ProguardConfigurationParser {
     }
 
     private <
-            C extends ProguardConfigurationRule, B extends ProguardClassSpecification.Builder<C, B>>
+            C extends ProguardClassSpecification,
+            B extends ProguardClassSpecification.Builder<C, B>>
         void parseClassSpecFromClassNameInclusive(
             ProguardClassSpecification.Builder<C, B> builder, boolean allowValueSpecification) {
       ParserState ruleEnd = new ParserState();
@@ -1303,7 +1306,8 @@ public class ProguardConfigurationParser {
     }
 
     private <
-            C extends ProguardConfigurationRule, B extends ProguardClassSpecification.Builder<C, B>>
+            C extends ProguardClassSpecification,
+            B extends ProguardClassSpecification.Builder<C, B>>
         void parseMemberRules(
             ProguardClassSpecification.Builder<C, B> classSpecificationBuilder,
             boolean allowValueSpecification,

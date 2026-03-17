@@ -41,9 +41,13 @@ includeBuild(rootProject.projectDir.resolve("d8_r8/dist"))
 
 includeBuild(rootProject.projectDir.resolve("d8_r8/library_desugar"))
 
-includeBuild(rootProject.projectDir.resolve("d8_r8/test_modules/testbase"))
+include(":testbase")
 
-includeBuild(rootProject.projectDir.resolve("d8_r8/test_modules/tests_bootstrap"))
+project(":testbase").projectDir = file("d8_r8/test_modules/testbase")
+
+include(":tests_bootstrap")
+
+project(":tests_bootstrap").projectDir = file("d8_r8/test_modules/tests_bootstrap")
 
 include(":tests_java_8")
 

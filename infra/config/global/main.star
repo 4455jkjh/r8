@@ -57,6 +57,19 @@ luci.project(
             roles = "role/swarming.poolViewer",
             groups = "googlers",
         ),
+        # Roles for LUCI Analysis.
+        luci.binding(
+            roles = "role/analysis.reader",
+            groups = "mdb/r8-team",
+        ),
+        luci.binding(
+            roles = "role/analysis.queryUser",
+            groups = "mdb/r8-team",
+        ),
+        luci.binding(
+            roles = "role/analysis.editor",
+            groups = "mdb/r8-team",
+        ),
     ],
 )
 
@@ -437,9 +450,9 @@ def gradle_benchmark():
         triggering_policy = scheduler.policy(
             kind = scheduler.GREEDY_BATCHING_KIND,
             max_batch_size = 1,
-            max_concurrent_invocations = 3,
+            max_concurrent_invocations = 1,
         ),
-        priority = 25,
+        priority = 35,
         properties = {
             "test_wrapper": "tools/gradle_benchmark.py",
             "builder_group": "internal.client.r8",
@@ -704,3 +717,8 @@ def add_view_entries():
             )
 
 add_view_entries()
+
+lucicfg.emit(
+    dest = "luci-resultdb.cfg",
+    data = io.read_file("luci-resultdb.cfg"),
+)

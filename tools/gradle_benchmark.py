@@ -9,23 +9,24 @@ import json
 import gradle
 import utils
 import os
-import shutil
 import perf
 import csv
 
 
 def get_profiler_executable():
-    profiler_path = os.path.join(utils.THIRD_PARTY, 'gradle-profiler',
-                                 'gradle-profiler-0.23.0', 'bin')
     if utils.IsWindows():
-        return os.path.join(profiler_path, 'gradle-profiler.bat')
+        return os.path.join(GRADLE_PROFILER_BIN, 'gradle-profiler.bat')
     else:
-        return os.path.join(profiler_path, 'gradle-profiler')
+        return os.path.join(GRADLE_PROFILER_BIN, 'gradle-profiler')
 
 
-GRADLE_PROFILER_SHA1 = os.path.join(utils.THIRD_PARTY,
-                                    'gradle-profiler.tar.gz.sha1')
-GRADLE_PROFILER_TGZ = os.path.join(utils.THIRD_PARTY, 'gradle-profiler.tar.gz')
+GRADLE_PROFILER_DIR = os.path.join(utils.THIRD_PARTY, 'gradle-profiler')
+GRADLE_PROFILER_SHA1 = os.path.join(GRADLE_PROFILER_DIR,
+                                    'gradle-profiler-0.24.0.tar.gz.sha1')
+GRADLE_PROFILER_TGZ = os.path.join(GRADLE_PROFILER_DIR,
+                                   'gradle-profiler-0.24.0.tar.gz')
+GRADLE_PROFILER_BIN = os.path.join(GRADLE_PROFILER_DIR,
+                                   'gradle-profiler-0.24.0', 'bin')
 
 
 def ensure_deps():
@@ -36,7 +37,7 @@ def ensure_deps():
 
 
 def run_gradle_profiler(cwd, benchmark_name, scenario_file, local_output_dir,
-                        tmp_gradle_home, just_once, run_specific,
+                        tmp_gradle_home, just_once, run_specific, trace,
                         throw_on_failure):
     cmd = [get_profiler_executable(), '--benchmark']
     # Title in html report.
@@ -50,6 +51,8 @@ def run_gradle_profiler(cwd, benchmark_name, scenario_file, local_output_dir,
         # The profiler requires warmups >= 1.
         cmd.extend(['--warmups', '1'])
         cmd.extend(['--iterations', '1'])
+    if trace:
+        cmd.extend(['--build-ops-trace'])
     # Set output directory.
     cmd.extend(['--output-dir', local_output_dir])
     # Point to benchmark scenarios.
@@ -80,6 +83,10 @@ def parse_options():
                         help='Uploads the benchmark data.',
                         default=False,
                         action='store_true')
+    parser.add_argument('--perfetto-trace',
+                        help='Emit a perfetto trace for each benchmark.',
+                        default=False,
+                        action='store_true')
     parser.add_argument(
         '--skip-benchmarks',
         help='Skips the benchmarking but performs uploading and so on.',
@@ -98,15 +105,15 @@ def parse_options():
 
 
 # Upload to google storage unless a outdir is specified.
-def upload_benchmark(csv_path, log_path, outdir=None):
+def upload_benchmark(csv_path, outdir=None):
     benchmark_data = read_benchmark_csv(csv_path)
     for runs in benchmark_data:
-        upload_run(log_path, runs['benchmark'], runs['warmups'],
-                   runs['iterations'], outdir)
+        upload_run(runs['benchmark'], runs['warmups'], runs['iterations'],
+                   outdir)
 
 
 # Upload to google storage unless a outdir is specified.
-def upload_run(log_path, benchmark_name, warmups, iterations, outdir):
+def upload_run(benchmark_name, warmups, iterations, outdir):
     with utils.TempDir() as temp:
         output_file = os.path.join(temp, 'result.json')
         target_name = "build"
@@ -118,13 +125,6 @@ def upload_run(log_path, benchmark_name, warmups, iterations, outdir):
                                                   version=None,
                                                   filename="result.json")
         perf.ArchiveOutputFile(output_file, benchmark_dest, outdir=outdir)
-
-        # Write log.
-        log_dest = perf.GetArtifactLocation(benchmark=benchmark_name,
-                                            target=target_name,
-                                            version=None,
-                                            filename="log.txt")
-        perf.ArchiveOutputFile(log_path, log_dest, outdir=outdir)
 
         # Write metadata.
         if utils.is_bot():
@@ -199,7 +199,6 @@ def convert_ms_to_ns(time):
 def run_gradle_profiler_with_output_dir(args, profiler_output_dir):
     with utils.TempDir() as temp_gradle_home:
         csv_path = os.path.join(profiler_output_dir, 'benchmark.csv')
-        log_path = os.path.join(profiler_output_dir, 'profile.log')
         if not args.skip_benchmarks:
             ensure_deps()
             run_gradle_profiler(cwd=utils.REPO_ROOT,
@@ -211,9 +210,19 @@ def run_gradle_profiler_with_output_dir(args, profiler_output_dir):
                                 tmp_gradle_home=temp_gradle_home,
                                 just_once=args.just_once,
                                 run_specific=args.scenario,
+                                trace=args.perfetto_trace,
                                 throw_on_failure=True)
         if args.upload_benchmark_data_to_google_storage:
-            upload_benchmark(csv_path, log_path, args.output_dir)
+            upload_benchmark(csv_path, args.output_dir)
+        if utils.is_bot():
+            print(
+                ''
+                'To generate a perfetto graph locally, use'
+                ''
+                '  tools/gradle_benchmark.py --perfetto-trace --profiler-output-dir=gradle_benchmark_output/ --scenario=<benchmark_name>'
+                ''
+                'The trace is in gradle_benchmark_output/<benchmark_name>.perfetto.proto.'
+            )
 
 
 def main():
