@@ -215,14 +215,13 @@ def run_gradle_profiler_with_output_dir(args, profiler_output_dir):
         if args.upload_benchmark_data_to_google_storage:
             upload_benchmark(csv_path, args.output_dir)
         if utils.is_bot():
-            print(
-                ''
-                'To generate a perfetto graph locally, use'
-                ''
-                '  tools/gradle_benchmark.py --perfetto-trace --profiler-output-dir=gradle_benchmark_output/ --scenario=<benchmark_name>'
-                ''
-                'The trace is in gradle_benchmark_output/<benchmark_name>.perfetto.proto.'
-            )
+            print("""
+To generate a perfetto graph locally, use
+
+  tools/gradle_benchmark.py --perfetto-trace --profiler-output-dir=gradle_benchmark_output/ --scenario=<benchmark_name>
+
+The trace is in gradle_benchmark_output/<benchmark_name>.perfetto.proto.
+""")
 
 
 def main():
