@@ -27,15 +27,27 @@ public class TestConfigurationHelper {
     private data class ResultSinkInfo(val address: String, val authToken: String)
 
     private val resultSinkInfo: ResultSinkInfo? by lazy {
-      val luciContextPath = System.getenv("LUCI_CONTEXT") ?: return@lazy null
-      try {
-        val content = File(luciContextPath).readText()
-        val json = Gson().fromJson(content, JsonObject::class.java)
-        val resultSink = json.getAsJsonObject("result_sink") ?: return@lazy null
-        val address = resultSink.get("address")?.asString ?: return@lazy null
-        val authToken = resultSink.get("auth_token")?.asString ?: return@lazy null
-        ResultSinkInfo(address, authToken)
-      } catch (e: Exception) {
+      val luciContextPath = System.getenv("LUCI_CONTEXT")
+      if (luciContextPath != null) {
+        try {
+          val content = File(luciContextPath).readText()
+          val json = Gson().fromJson(content, JsonObject::class.java)
+          val resultSink = json.getAsJsonObject("result_sink")
+          if (resultSink != null) {
+            val address = resultSink.get("address")?.asString
+            val authToken = resultSink.get("auth_token")?.asString
+            if (address != null && authToken != null) {
+              ResultSinkInfo(address, authToken)
+            } else {
+              null
+            }
+          } else {
+            null
+          }
+        } catch (e: Exception) {
+          null
+        }
+      } else {
         null
       }
     }
@@ -109,9 +121,10 @@ public class TestConfigurationHelper {
       val durationMs = result.endTime - result.startTime
       val duration = "${durationMs / 1000.0}s"
 
-      val stackTraceStr: String? =
-        if (result.resultType == TestResult.ResultType.FAILURE && result.exception != null) {
-          val exception = result.exception as Throwable
+      var stackTraceStr: String? = null
+      if (result.resultType == TestResult.ResultType.FAILURE && result.exception != null) {
+        val exception = result.exception as Throwable
+        stackTraceStr =
           if (isR8Lib && r8Jar != null && r8LibMappingFile != null) {
             retrace(rootDir, r8Jar, r8LibMappingFile, exception, printObfuscatedStacktraces)
           } else {
@@ -119,69 +132,65 @@ public class TestConfigurationHelper {
             exception.printStackTrace(PrintStream(baos, true, StandardCharsets.UTF_8))
             baos.toString()
           }
-        } else {
-          null
-        }
+      }
 
+      val payloadObj = JsonObject()
+      val testResultsArr = JsonArray()
+      val testResultObj = JsonObject()
+
+      val testIdStructuredObj = JsonObject()
+      val testIdCaseNameComponents = JsonArray()
+      testIdCaseNameComponents.add(desc.displayName.substringBefore('['))
       val argumentString = desc.displayName.substringAfter('[').substringBeforeLast(']')
-      val testIdStructuredObj =
-        JsonObject().apply {
-          addProperty("coarseName", desc.className?.substringBeforeLast(".") ?: "")
-          addProperty("fineName", desc.className?.substringAfterLast(".") ?: "")
-          add(
-            "caseNameComponents",
-            JsonArray().apply {
-              add(desc.displayName.substringBefore('['))
-              desc.displayName
-                .substringAfter('[')
-                .substringBeforeLast(']')
-                // result_sink uses `:` to separate case name components.
-                .replace(Regex(": ?"), "=")
-                .split(", ")
-                .forEach { add(it) }
-            },
-          )
-        }
+      val moduleVariant = JsonObject()
+      val project = test.project
+      if (project.hasProperty("runtimes")) {
+        moduleVariant.addProperty("runtimes", project.property("runtimes").toString())
+      }
+      if (project.hasProperty("dex_vm")) {
+        moduleVariant.addProperty("dex_vm", project.property("dex_vm").toString())
+      }
+      moduleVariant.addProperty("args", argumentString)
+      testIdStructuredObj.addProperty("module", "junit")
+      testIdStructuredObj.add("moduleVariant", moduleVariant)
+      testIdStructuredObj.addProperty("coarseName", desc.className?.substringBeforeLast(".") ?: "")
+      testIdStructuredObj.addProperty("fineName", desc.className?.substringAfterLast(".") ?: "")
+      testIdStructuredObj.add("caseNameComponents", testIdCaseNameComponents)
+      testResultObj.add("testIdStructured", testIdStructuredObj)
 
-      val testResultObj =
-        JsonObject().apply {
-          addProperty("testId", testId)
-          addProperty("statusV2", status)
-          addProperty("duration", duration)
-          add("testIdStructured", testIdStructuredObj)
+      testResultObj.addProperty("testId", testId)
+      testResultObj.addProperty("statusV2", status)
+      testResultObj.addProperty("duration", duration)
 
-          if (result.resultType == TestResult.ResultType.FAILURE) {
-            add("failureReason", JsonObject().apply { addProperty("kind", "ORDINARY") })
-          } else if (result.resultType == TestResult.ResultType.SKIPPED) {
-            add(
-              "skippedReason",
-              JsonObject().apply { addProperty("kind", "DISABLED_AT_DECLARATION") },
-            )
-          }
+      if (result.resultType == TestResult.ResultType.FAILURE) {
+        val failureReasonObj = JsonObject()
+        failureReasonObj.addProperty("kind", "ORDINARY")
+        testResultObj.add("failureReason", failureReasonObj)
+      } else if (result.resultType == TestResult.ResultType.SKIPPED) {
+        val skipReasonObj = JsonObject()
+        skipReasonObj.addProperty("kind", "DISABLED_AT_DECLARATION")
+        testResultObj.add("skippedReason", skipReasonObj)
+      }
 
-          val summaryHtml = "<p>Arguments string: $argumentString</p>"
-          if (stackTraceStr != null) {
-            val artifactContent =
-              JsonObject().apply {
-                addProperty("contents", Base64.encode(stackTraceStr.encodeToByteArray()))
-              }
-            add(
-              "artifacts",
-              JsonObject().apply { add("artifact-content-in-request", artifactContent) },
-            )
-            addProperty(
-              "summaryHtml",
-              summaryHtml +
-                "<p>Stack trace:</p>" +
-                "<p><text-artifact artifact-id=\"artifact-content-in-request\"></p>",
-            )
-          } else {
-            addProperty("summaryHtml", summaryHtml)
-          }
-        }
-
-      val payloadObj =
-        JsonObject().apply { add("testResults", JsonArray().apply { add(testResultObj) }) }
+      val summaryHtml = "<p>Arguments string: $argumentString</p>"
+      if (stackTraceStr != null) {
+        val artifact = JsonObject()
+        val encodedStackTrace = Base64.encode(stackTraceStr.encodeToByteArray())
+        val jsonObject = JsonObject()
+        jsonObject.addProperty("contents", encodedStackTrace)
+        artifact.add("artifact-content-in-request", jsonObject)
+        testResultObj.add("artifacts", artifact)
+        testResultObj.addProperty(
+          "summaryHtml",
+          summaryHtml +
+            "<p>Stack trace:</p>" +
+            "<p><text-artifact artifact-id=\"artifact-content-in-request\"></p>",
+        )
+      } else {
+        testResultObj.addProperty("summaryHtml", summaryHtml)
+      }
+      testResultsArr.add(testResultObj)
+      payloadObj.add("testResults", testResultsArr)
 
       try {
         val url = URL("http://${info.address}/prpc/luci.resultsink.v1.Sink/ReportTestResults")
