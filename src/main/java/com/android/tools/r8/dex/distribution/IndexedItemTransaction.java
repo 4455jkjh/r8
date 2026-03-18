@@ -35,11 +35,14 @@ public class IndexedItemTransaction implements IndexedItemCollection {
   // Sets with reference counting.
   final Reference2IntMap<DexCallSite> callSites = new Reference2IntOpenHashMap<>();
   final Reference2IntMap<DexField> fields = new Reference2IntOpenHashMap<>();
+  final Reference2IntMap<DexField> fieldsAlreadyInBase = new Reference2IntOpenHashMap<>();
   final Reference2IntMap<DexMethod> methods = new Reference2IntOpenHashMap<>();
+  final Reference2IntMap<DexMethod> methodsAlreadyInBase = new Reference2IntOpenHashMap<>();
   final Reference2IntMap<DexMethodHandle> methodHandles = new Reference2IntOpenHashMap<>();
   final Reference2IntMap<DexProto> protos = new Reference2IntOpenHashMap<>();
   final Reference2IntMap<DexString> strings = new Reference2IntOpenHashMap<>();
   final Reference2IntMap<DexType> types = new Reference2IntOpenHashMap<>();
+  final Reference2IntMap<DexType> typesAlreadyInBase = new Reference2IntOpenHashMap<>();
 
   // For reference counting.
   Set<DexCallSite> callSitesInCurrentClass;
@@ -104,9 +107,9 @@ public class IndexedItemTransaction implements IndexedItemCollection {
     currentClass = null;
     commitItemsInCurrentClass(callSites, callSitesInCurrentClass);
     callSitesInCurrentClass = null;
-    commitItemsInCurrentClass(fields, fieldsInCurrentClass);
+    commitItemsInCurrentClass(fields, fieldsInCurrentClass, base.fields, fieldsAlreadyInBase);
     fieldsInCurrentClass = null;
-    commitItemsInCurrentClass(methods, methodsInCurrentClass);
+    commitItemsInCurrentClass(methods, methodsInCurrentClass, base.methods, methodsAlreadyInBase);
     methodsInCurrentClass = null;
     commitItemsInCurrentClass(methodHandles, methodHandlesInCurrentClass);
     methodHandlesInCurrentClass = null;
@@ -114,7 +117,7 @@ public class IndexedItemTransaction implements IndexedItemCollection {
     protosInCurrentClass = null;
     commitItemsInCurrentClass(strings, stringsInCurrentClass);
     stringsInCurrentClass = null;
-    commitItemsInCurrentClass(types, typesInCurrentClass);
+    commitItemsInCurrentClass(types, typesInCurrentClass, base.types, typesAlreadyInBase);
     typesInCurrentClass = null;
   }
 
@@ -123,6 +126,22 @@ public class IndexedItemTransaction implements IndexedItemCollection {
       int counter = committedItems.containsKey(item) ? committedItems.getInt(item) : 0;
       assert counter != NO_REF_COUNT;
       committedItems.put(item, counter + 1);
+    }
+    items.clear();
+  }
+
+  private <T> void commitItemsInCurrentClass(
+      Reference2IntMap<T> committedItems,
+      Set<T> items,
+      Reference2IntMap<T> baseCommittedItems,
+      Reference2IntMap<T> committedItemsAlreadyInBase) {
+    for (T item : items) {
+      Reference2IntMap<T> committedItemsForItem =
+          baseCommittedItems.containsKey(item) ? committedItemsAlreadyInBase : committedItems;
+      int counter =
+          committedItemsForItem.containsKey(item) ? committedItemsForItem.getInt(item) : 0;
+      assert counter != NO_REF_COUNT;
+      committedItemsForItem.put(item, counter + 1);
     }
     items.clear();
   }
@@ -236,19 +255,25 @@ public class IndexedItemTransaction implements IndexedItemCollection {
     classes.clear();
     commitItemsTo(callSites, base.callSites);
     commitItemsTo(fields, base.fields);
+    commitItemsTo(fieldsAlreadyInBase, base.fields);
     commitItemsTo(methods, base.methods);
+    commitItemsTo(methodsAlreadyInBase, base.methods);
     commitItemsTo(methodHandles, base.methodHandles);
     commitItemsTo(strings, base.strings);
     commitItemsTo(protos, base.protos);
     commitItemsTo(types, base.types);
+    commitItemsTo(typesAlreadyInBase, base.types);
   }
 
   public void abort() {
     classes.clear();
     fields.clear();
+    fieldsAlreadyInBase.clear();
     methods.clear();
+    methodsAlreadyInBase.clear();
     protos.clear();
     types.clear();
+    typesAlreadyInBase.clear();
     strings.clear();
     callSites.clear();
     methodHandles.clear();
@@ -257,9 +282,12 @@ public class IndexedItemTransaction implements IndexedItemCollection {
   public boolean isEmpty() {
     return classes.isEmpty()
         && fields.isEmpty()
+        && fieldsAlreadyInBase.isEmpty()
         && methods.isEmpty()
+        && methodsAlreadyInBase.isEmpty()
         && protos.isEmpty()
         && types.isEmpty()
+        && typesAlreadyInBase.isEmpty()
         && strings.isEmpty()
         && callSites.isEmpty()
         && methodHandles.isEmpty();

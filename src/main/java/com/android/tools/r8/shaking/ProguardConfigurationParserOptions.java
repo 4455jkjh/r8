@@ -59,6 +59,9 @@ public class ProguardConfigurationParserOptions {
     private boolean forceProguardCompatibility = false;
 
     public Builder readEnvironment() {
+      canMatchRuntimeInvisibleAnnotationsWithWildcards =
+          parseSystemPropertyOrDefault(
+              "com.android.tools.r8.canMatchRuntimeInvisibleAnnotationsWithWildcards", true);
       enableLegacyFullModeForKeepRules =
           parseSystemPropertyOrDefault(
               "com.android.tools.r8.enableLegacyFullModeForKeepRules", true);
@@ -68,6 +71,10 @@ public class ProguardConfigurationParserOptions {
       enableTestingOptions =
           parseSystemPropertyOrDefault("com.android.tools.r8.allowTestProguardOptions", false);
       return this;
+    }
+
+    public boolean getCanMatchRuntimeInvisibleAnnotationsWithWildcards() {
+      return canMatchRuntimeInvisibleAnnotationsWithWildcards;
     }
 
     public Builder setCanMatchRuntimeInvisibleAnnotationsWithWildcards(
