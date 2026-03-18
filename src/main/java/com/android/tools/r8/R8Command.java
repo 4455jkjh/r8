@@ -935,7 +935,8 @@ public final class R8Command extends BaseCompilerCommand {
       ProguardConfigurationParserOptions parserOptions =
           parserOptionsBuilder
               .setCanMatchRuntimeInvisibleAnnotationsWithWildcards(
-                  getProgramConsumer() instanceof ClassFileConsumer)
+                  getProgramConsumer() instanceof ClassFileConsumer
+                      && parserOptionsBuilder.getCanMatchRuntimeInvisibleAnnotationsWithWildcards())
               .setForceProguardCompatibility(forceProguardCompatibility)
               .build();
       ProguardConfiguration.Builder configurationBuilder =
