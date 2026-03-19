@@ -46,6 +46,12 @@ public class RelocatorTestCompileResult extends TestRunResult<RelocatorTestCompi
   }
 
   @Override
+  public RelocatorTestCompileResult assertStdoutLinesMatchesUnordered(
+      Iterable<Matcher<String>> lines) {
+    throw new Unreachable("Not implemented");
+  }
+
+  @Override
   public RelocatorTestCompileResult assertFailure() {
     throw new Unreachable("Not implemented");
   }

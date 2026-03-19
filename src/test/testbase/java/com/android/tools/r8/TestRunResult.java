@@ -31,6 +31,8 @@ public abstract class TestRunResult<RR extends TestRunResult<RR>> {
 
   public abstract RR assertStdoutMatches(Matcher<String> matcher);
 
+  public abstract RR assertStdoutLinesMatchesUnordered(Iterable<Matcher<String>> lines);
+
   public abstract RR assertFailure();
 
   public abstract RR assertStderrMatches(Matcher<String> matcher);

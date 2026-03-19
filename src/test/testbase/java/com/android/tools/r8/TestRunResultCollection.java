@@ -48,6 +48,11 @@ public abstract class TestRunResultCollection<
   }
 
   @Override
+  public RR assertStdoutLinesMatchesUnordered(Iterable<Matcher<String>> lines) {
+    return forEach(r -> r.assertStdoutLinesMatchesUnordered(lines));
+  }
+
+  @Override
   public RR assertStderrMatches(Matcher<String> matcher) {
     return forEach(r -> r.assertStderrMatches(matcher));
   }

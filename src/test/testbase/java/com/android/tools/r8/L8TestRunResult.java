@@ -31,6 +31,11 @@ public class L8TestRunResult extends TestRunResult<L8TestRunResult> {
   }
 
   @Override
+  public L8TestRunResult assertStdoutLinesMatchesUnordered(Iterable<Matcher<String>> lines) {
+    throw new Unimplemented();
+  }
+
+  @Override
   public L8TestRunResult assertFailure() {
     throw new Unimplemented();
   }
