@@ -4,8 +4,7 @@
 
 package com.android.tools.r8;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
+import static org.hamcrest.MatcherAssert.assertThat;
 
 import com.android.tools.r8.TestBase.Backend;
 import com.android.tools.r8.dex.Marker;
@@ -14,8 +13,6 @@ import com.android.tools.r8.utils.AndroidApiLevel;
 import com.android.tools.r8.utils.StringUtils;
 import com.google.common.collect.ImmutableList;
 import java.util.Collection;
-import java.util.HashSet;
-import java.util.Set;
 import org.hamcrest.Description;
 import org.hamcrest.Matcher;
 import org.hamcrest.TypeSafeMatcher;
@@ -28,58 +25,7 @@ public abstract class MarkerMatcher extends TypeSafeMatcher<Marker> {
 
   public static void assertMarkersMatch(
       Iterable<Marker> markers, Collection<Matcher<Marker>> matchers) {
-    // Match is unordered, but we make no attempts to find the maximum match.
-    int markerCount = 0;
-    Set<Marker> matchedMarkers = new HashSet<>();
-    Set<Matcher<Marker>> matchedMatchers = new HashSet<>();
-    for (Marker marker : markers) {
-      markerCount++;
-      for (Matcher<Marker> matcher : matchers) {
-        if (matchedMatchers.contains(matcher)) {
-          continue;
-        }
-        if (matcher.matches(marker)) {
-          matchedMarkers.add(marker);
-          matchedMatchers.add(matcher);
-          break;
-        }
-      }
-    }
-    StringBuilder builder = new StringBuilder();
-    boolean failedMatching = false;
-    if (matchedMarkers.size() < markerCount) {
-      failedMatching = true;
-      builder.append("\nUnmatched markers:");
-      for (Marker marker : markers) {
-        if (!matchedMarkers.contains(marker)) {
-          builder.append("\n  - ").append(marker);
-        }
-      }
-    }
-    if (matchedMatchers.size() < matchers.size()) {
-      failedMatching = true;
-      builder.append("\nUnmatched matchers:");
-      for (Matcher<Marker> matcher : matchers) {
-        if (!matchedMatchers.contains(matcher)) {
-          builder.append("\n  - ").append(matcher);
-        }
-      }
-    }
-    if (failedMatching) {
-      builder.append("\nAll markers:");
-      for (Marker marker : markers) {
-        builder.append("\n  - ").append(marker);
-      }
-      builder.append("\nAll matchers:");
-      for (Matcher<Marker> matcher : matchers) {
-        builder.append("\n  - ").append(matcher);
-      }
-      fail(builder.toString());
-    }
-    // Double check consistency.
-    assertEquals(matchers.size(), markerCount);
-    assertEquals(markerCount, matchedMarkers.size());
-    assertEquals(markerCount, matchedMatchers.size());
+    assertThat(markers, UnorderedCollectionMatcher.matchesOneToOne(matchers));
   }
 
   public static Matcher<Marker> markerTool(Tool tool) {

@@ -14,9 +14,7 @@ import com.android.tools.r8.utils.ListUtils;
 import com.google.common.collect.Iterables;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 import java.util.function.BiFunction;
 import org.hamcrest.Matcher;
 
@@ -186,66 +184,9 @@ public class TestDiagnosticMessagesImpl extends TestDiagnosticMessages
 
   private static void assertDiagnosticsMatch(
       Iterable<Diagnostic> diagnostics, String tag, Collection<Matcher<Diagnostic>> matchers) {
-    // Match is unordered, but we make no attempts to find the maximum match.
-    int diagnosticsCount = 0;
-    Set<Diagnostic> matchedDiagnostics = new HashSet<>();
-    Set<Matcher<Diagnostic>> matchedMatchers = new HashSet<>();
-    for (Diagnostic diagnostic : diagnostics) {
-      diagnosticsCount++;
-      for (Matcher<Diagnostic> matcher : matchers) {
-        if (matchedMatchers.contains(matcher)) {
-          continue;
-        }
-        if (matcher.matches(diagnostic)) {
-          matchedDiagnostics.add(diagnostic);
-          matchedMatchers.add(matcher);
-          break;
-        }
-      }
-    }
-    StringBuilder builder = new StringBuilder();
-    boolean failedMatching = false;
-    if (matchedDiagnostics.size() < diagnosticsCount) {
-      failedMatching = true;
-      builder.append("\nUnmatched diagnostics:");
-      for (Diagnostic diagnostic : diagnostics) {
-        if (!matchedDiagnostics.contains(diagnostic)) {
-          builder
-              .append("\n  - ")
-              .append(diagnostic.getClass().getName())
-              .append(": ")
-              .append(diagnostic.getDiagnosticMessage());
-        }
-      }
-    }
-    if (matchedMatchers.size() < matchers.size()) {
-      failedMatching = true;
-      builder.append("\nUnmatched matchers:");
-      for (Matcher<Diagnostic> matcher : matchers) {
-        if (!matchedMatchers.contains(matcher)) {
-          builder.append("\n  - ").append(matcher);
-        }
-      }
-    }
-    if (failedMatching) {
-      builder.append("\nAll diagnostics:");
-      for (Diagnostic diagnostic : diagnostics) {
-        builder
-            .append("\n  - ")
-            .append(diagnostic.getClass().getName())
-            .append(": ")
-            .append(diagnostic.getDiagnosticMessage());
-      }
-      builder.append("\nAll matchers:");
-      for (Matcher<Diagnostic> matcher : matchers) {
-        builder.append("\n  - ").append(matcher);
-      }
-      fail(builder.toString());
-    }
-    // Double check consistency.
-    assertEquals(matchers.size(), diagnosticsCount);
-    assertEquals(diagnosticsCount, matchedDiagnostics.size());
-    assertEquals(diagnosticsCount, matchedMatchers.size());
+    assertThat(
+        diagnostics,
+        UnorderedCollectionMatcher.matchesOneToOne(matchers, Diagnostic::getDiagnosticMessage));
   }
 
   @Override
