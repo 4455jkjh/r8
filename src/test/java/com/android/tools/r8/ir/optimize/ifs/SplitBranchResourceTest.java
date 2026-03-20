@@ -70,11 +70,11 @@ public class SplitBranchResourceTest extends TestBase {
               }
               long count = method.streamInstructions().filter(InstructionSubject::isIf).count();
               if (name.equals("getResourceIdOrZero")) {
-                assertEquals("Wrong count for " + name, 6, count);
+                assertEquals("Wrong count for " + name, 5, count);
               } else if (name.equals("testMultiplePhis")) {
-                assertEquals("Wrong count for " + name, 3, count);
-              } else if (name.equals("testMixed") || name.equals("testEquality")) {
                 assertEquals("Wrong count for " + name, 2, count);
+              } else if (name.equals("testMixed") || name.equals("testEquality")) {
+                assertEquals("Wrong count for " + name, 1, count);
               }
             });
   }
