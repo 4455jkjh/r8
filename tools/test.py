@@ -279,6 +279,10 @@ def ParseOptions():
                         help='Specify to run tests on older kotlin compilers',
                         default=False,
                         action='store_true')
+    result.add_argument('--compile-only',
+                        help='Only compile project and tests, do not run tests',
+                        default=False,
+                        action='store_true')
     options, args = result.parse_known_args()
     if options.java_max_memory_size is None:
         # YouTubeV1719Test OOM's with 4G, so raise xmx to 6G when running internal tests.
@@ -509,6 +513,18 @@ def test(options, args):
 
     # Enable completeness testing of ART profile rewriting.
     gradle_args.append('-Part_profile_rewriting_completeness_check=true')
+
+    if options.compile_only:
+        gradle_args.append('testClasses')
+        gradle_args.append(utils.GRADLE_TASK_TEST_DEPS_JAR)
+        if options.r8lib_no_deps:
+            gradle_args.append(utils.GRADLE_TASK_R8LIB_NO_DEPS)
+        elif not options.no_r8lib:
+            gradle_args.append(utils.GRADLE_TASK_R8LIB)
+        else:
+            gradle_args.append(utils.GRADLE_TASK_R8)
+        return_code = gradle.run_gradle(gradle_args, throw_on_failure=False)
+        return archive_and_return(return_code, options)
 
     gradle_args.append(utils.GRADLE_TASK_TEST)
     gradle_args.append('--stacktrace')
