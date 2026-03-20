@@ -57,6 +57,10 @@ public final class Reference {
     }
   }
 
+  public static TypeReference typeFromClassReference(ClassReference clazz) {
+    return typeFromDescriptor(clazz.getDescriptor());
+  }
+
   public static TypeReference typeFromTypeName(String typeName) {
     return typeFromDescriptor(DescriptorUtils.javaTypeToDescriptor(typeName));
   }
