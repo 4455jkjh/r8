@@ -29,6 +29,10 @@ val testbaseTestJars by
 val testDepsJarsScope by configurations.dependencyScope("testDepsJarsScope")
 val testDepsJars by configurations.resolvable("testDepsJars") { extendsFrom(testDepsJarsScope) }
 
+val mainDepsJarFilesScope by configurations.dependencyScope("mainDepsJarFilesScope")
+val mainDepsJarFilesConfig by
+  configurations.resolvable("mainDepsJarFilesConfig") { extendsFrom(mainDepsJarFilesScope) }
+
 dependencies {
   testJarsScope(project(":tests_java_8", "testJar"))
   testJarsScope(project(":tests_java_9", "testJar"))
@@ -39,6 +43,7 @@ dependencies {
   testbaseTestJarsScope(project(":testbase", "testJar"))
   testDepsJarsScope(project(":tests_bootstrap", "depsJar"))
   testDepsJarsScope(project(":testbase", "depsJar"))
+  mainDepsJarFilesScope(project(":dist", "depsJarFiles"))
 }
 
 val blastRadiusSourcesTask = projectTask("blastradius", "sourcesJar")
@@ -47,17 +52,17 @@ val keepAnnoCompileKotlinTask = projectTask("keepanno", "compileKotlin")
 val keepAnnoSourcesTask = projectTask("keepanno", "sourcesJar")
 val libraryAnalyzerSourcesTask = projectTask("libanalyzer", "sourcesJar")
 val assistantJarTask = projectTask("assistant", "jar")
-val mainProtoJarTask = projectTask("dist", "protoJar")
-val mainDepsJarTask = projectTask("dist", "depsJar")
-val mainDepsJarFilesTask = projectTask("dist", "depsJarFiles")
-val swissArmyKnifeTask = projectTask("dist", "swissArmyKnife")
+val mainProtoJarTask = project(":dist").tasks.getByName("protoJar")
+val mainDepsJarTask = project(":dist").tasks.getByName("depsJar")
+val swissArmyKnifeTask = project(":dist").tasks.getByName("swissArmyKnife")
 val processKeepRulesLibWithRelocatedDepsTask =
-  projectTask("dist", "processKeepRulesLibWithRelocatedDeps")
-val r8WithRelocatedDepsTask = projectTask("dist", "r8WithRelocatedDeps")
+  project(":dist").tasks.getByName("processKeepRulesLibWithRelocatedDeps")
+val r8WithRelocatedDepsTask = project(":dist").tasks.getByName("r8WithRelocatedDeps")
 val mainSourcesTask = projectTask("main", "sourcesJar")
 val resourceShrinkerSourcesTask = projectTask("resourceshrinker", "sourcesJar")
 val keepAnnoAndroidXAnnotationsJar = projectTask("keepanno", "keepAnnoAndroidXAnnotationsJar")
-val keepAnnoToolsWithRelocatedDepsTask = projectTask("dist", "keepAnnoToolsWithRelocatedDeps")
+val keepAnnoToolsWithRelocatedDepsTask =
+  project(":dist").tasks.getByName("keepAnnoToolsWithRelocatedDeps")
 val depsJarOnlyAsmTask = projectTask("keepanno", "depsJarOnlyAsm")
 
 tasks {
@@ -150,13 +155,13 @@ tasks {
     testJarProviders: List<TaskProvider<*>>,
     artifactName: String,
   ) {
-    dependsOn(mainDepsJarFilesTask, packageTestDeps, r8WithRelocatedDepsTask)
+    dependsOn(mainDepsJarFilesConfig, packageTestDeps, r8WithRelocatedDepsTask)
     targetJarProviders.forEach(::dependsOn)
     testJarProviders.forEach(::dependsOn)
     val r8WithRelocatedDepsJar = r8WithRelocatedDepsTask.getSingleOutputFile()
     val testDepsJar = packageTestDeps.getSingleOutputFile()
     inputs.files(r8WithRelocatedDepsJar, testDepsJar)
-    inputs.files(mainDepsJarFilesTask.outputs.files)
+    inputs.files(mainDepsJarFilesConfig)
     inputs.files(targetJarProviders.map { it.getSingleOutputFile() })
     inputs.files(testJarProviders.map { it.getSingleOutputFile() })
     val output = file(Paths.get("build", "libs", artifactName))
@@ -172,7 +177,7 @@ tasks {
         "--output",
         "$output",
       )
-    mainDepsJarFilesTask.outputs.files.forEach {
+    mainDepsJarFilesConfig.forEach {
       argList.add("--lib")
       argList.add("$it")
     }
@@ -525,7 +530,7 @@ tasks {
     )
     systemProperty("BUILD_PROP_PROCESS_KEEP_RULES_RUNTIME_PATH", processKeepRulesLibJar)
     systemProperty("BUILD_PROP_R8_RUNTIME_PATH", r8LibJar)
-    systemProperty("R8_DEPS", mainDepsJarFilesTask.outputs.files.getAsPath())
+    systemProperty("R8_DEPS", mainDepsJarFilesConfig.asPath)
     systemProperty("com.android.tools.r8.artprofilerewritingcompletenesscheck", "true")
     systemProperty("R8_SWISS_ARMY_KNIFE", swissArmyKnifeJar)
     systemProperty("R8_WITH_RELOCATED_DEPS", r8WithRelocatedDepsJar)

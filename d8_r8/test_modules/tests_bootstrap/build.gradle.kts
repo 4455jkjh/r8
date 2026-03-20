@@ -25,8 +25,8 @@ java {
 
 kotlin { explicitApi() }
 
-val distR8WithRelocatedDeps = projectTask("dist", "r8WithRelocatedDeps")
-val distSwissArmyKnife = projectTask("dist", "swissArmyKnife")
+val distR8WithRelocatedDeps = project(":dist").tasks.getByName("r8WithRelocatedDeps")
+val distSwissArmyKnife = project(":dist").tasks.getByName("swissArmyKnife")
 val keepAnnoCompileJavaTask = projectTask("keepanno", "compileJava")
 val keepAnnoCompileKotlinTask = projectTask("keepanno", "compileKotlin")
 val keepAnnoJarTask = projectTask("keepanno", "jar")
