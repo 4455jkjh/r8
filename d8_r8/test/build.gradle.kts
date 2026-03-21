@@ -364,7 +364,7 @@ tasks {
         "--classfile",
         "--debug",
         "--lib",
-        "${getJavaHome(Jdk.JDK_25)}",
+        "${getJavaHome(Jdk.JDK_21)}",
         "--classpath",
         "$r8Jar",
         "--classpath",
@@ -530,8 +530,7 @@ tasks {
     systemProperty("R8_SWISS_ARMY_KNIFE", swissArmyKnifeJar)
     systemProperty("R8_WITH_RELOCATED_DEPS", r8WithRelocatedDepsJar)
 
-    javaLauncher = getJavaLauncher(Jdk.JDK_25)
-    jvmArgs("--enable-preview")
+    javaLauncher = getJavaLauncher(Jdk.JDK_21)
 
     reports.junitXml.outputLocation.set(getRoot().resolveAll("build", "test-results", "test"))
     reports.html.outputLocation.set(getRoot().resolveAll("build", "reports", "tests", "test"))
