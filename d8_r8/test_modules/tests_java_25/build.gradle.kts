@@ -33,10 +33,7 @@ dependencies {
 }
 
 tasks {
-  withType<JavaCompile> {
-    dependsOn(sharedDownloadDepsTask)
-    options.compilerArgs.add("--enable-preview")
-  }
+  withType<JavaCompile> { dependsOn(sharedDownloadDepsTask) }
 
   withType<Test> {
     notCompatibleWithConfigurationCache(
@@ -44,7 +41,6 @@ tasks {
     )
     TestingState.setUpTestingState(this)
     javaLauncher = getJavaLauncher(Jdk.JDK_25)
-    jvmArgs("--enable-preview")
     systemProperty(
       "TEST_DATA_LOCATION",
       layout.buildDirectory.dir("classes/java/test").get().toString(),
@@ -61,18 +57,4 @@ tasks {
         .split(File.pathSeparator)[0],
     )
   }
-
-  val assembleTestJar by
-    registering(Jar::class) {
-      from(sourceSets.test.get().output)
-      // TODO(b/296486206): Seems like IntelliJ has a problem depending on test source sets.
-      // Renaming
-      //  this from the default name (tests_java_8.jar) will allow IntelliJ to find the resources in
-      //  the jar and not show red underlines. However, navigation to base classes will not work.
-      archiveFileName.set("not_named_tests_java_25.jar")
-    }
 }
-
-val testJar by configurations.consumable("testJar")
-
-artifacts { add(testJar.name, tasks.named("assembleTestJar")) }
