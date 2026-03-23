@@ -33,7 +33,10 @@ dependencies {
 }
 
 tasks {
-  withType<JavaCompile> { dependsOn(sharedDownloadDepsTask) }
+  withType<JavaCompile> {
+    dependsOn(sharedDownloadDepsTask)
+    options.compilerArgs.add("--enable-preview")
+  }
 
   withType<Test> {
     notCompatibleWithConfigurationCache(
