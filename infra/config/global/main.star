@@ -37,6 +37,8 @@ luci.project(
             ],
             users = [
                 "luci-scheduler@appspot.gserviceaccount.com",
+                "r8-try-builder@chops-service-accounts.iam.gserviceaccount.com",
+                "r8-ci-builder@chops-service-accounts.iam.gserviceaccount.com",
             ],
         ),
         acl.entry(
