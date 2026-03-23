@@ -288,7 +288,7 @@ tasks.withType<KotlinCompile> { enabled = false }
 
 tasks.withType<JavaCompile> {
   dependsOn(gradle.includedBuild("shared").task(":downloadDeps"))
-  println("NOTE: Running with JDK: " + org.gradle.internal.jvm.Jvm.current().javaHome)
+  logger.info("NOTE: Running with JDK: " + org.gradle.internal.jvm.Jvm.current().javaHome)
 }
 
 tasks.withType<ProcessResources> { dependsOn(gradle.includedBuild("shared").task(":downloadDeps")) }

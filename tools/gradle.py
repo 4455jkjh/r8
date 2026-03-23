@@ -56,6 +56,11 @@ def parse_options():
                         'the gradle caches.',
                         action='store_true',
                         default=False)
+    parser.add_argument('--quiet',
+                        '-q',
+                        help='Only print warnings and errors from gradle.',
+                        action='store_true',
+                        default=False)
     return parser.parse_known_args()
 
 
@@ -121,26 +126,63 @@ def ensure_deps():
     ensure_protoc()
 
 
-def run_gradle_in(gradle_cmd, args, cwd, throw_on_failure=True, env=None):
+def run_gradle_in(gradle_cmd,
+                  args,
+                  cwd,
+                  throw_on_failure=True,
+                  env=None,
+                  quiet=False):
     ensure_deps()
     cmd = [gradle_cmd]
     # Changes to these flags should be copied to gradle_benchmark.scenarios.
     args.extend(['--offline'])
+    if not any(
+            arg.startswith('-Porg.gradle.java.installations.paths=')
+            for arg in args):
+        args.append('-Porg.gradle.java.installations.paths=' +
+                    get_java_installations_paths())
+    if not any(
+            arg.startswith('-Porg.gradle.java.installations.auto-detect=')
+            for arg in args):
+        args.append('-Porg.gradle.java.installations.auto-detect=false')
+    if not any(
+            arg.startswith('-Porg.gradle.java.installations.auto-download=')
+            for arg in args):
+        args.append('-Porg.gradle.java.installations.auto-download=false')
+    if quiet:
+        args.append('--quiet')
     cmd.extend(args)
     with utils.ChangedWorkingDirectory(cwd):
-        utils.PrintCmd(cmd)
+        if not quiet:
+            utils.PrintCmd(cmd)
         return_value = subprocess.call(cmd, env=get_java_env(env))
         if throw_on_failure and return_value != 0:
             raise Exception('Failed to execute gradle')
         return return_value
 
 
-def run_gradle(args, throw_on_failure=True, env=None):
+def run_gradle(args, throw_on_failure=True, env=None, quiet=False):
     return run_gradle_in(get_gradle_executable(),
                          args,
                          utils.REPO_ROOT,
                          throw_on_failure,
-                         env=env)
+                         env=env,
+                         quiet=quiet)
+
+
+def get_java_installations_paths():
+    paths = []
+    openjdk_dir = os.path.join(utils.THIRD_PARTY, 'openjdk')
+    if os.path.exists(openjdk_dir):
+        for jdk in os.listdir(openjdk_dir):
+            jdk_dir = os.path.join(openjdk_dir, jdk)
+            if not os.path.isdir(jdk_dir):
+                continue
+            for platform in ['linux', 'osx', 'windows']:
+                platform_dir = os.path.join(jdk_dir, platform)
+                if os.path.exists(platform_dir):
+                    paths.append(platform_dir)
+    return ','.join(paths)
 
 
 def main():
@@ -153,7 +195,7 @@ def main():
         args.append('-Pexclude_deps')
     if options.worktree:
         args.append('-g=' + os.path.join(utils.REPO_ROOT, ".gradle_user_home"))
-    return run_gradle(args)
+    return run_gradle(args, quiet=options.quiet)
 
 
 if __name__ == '__main__':

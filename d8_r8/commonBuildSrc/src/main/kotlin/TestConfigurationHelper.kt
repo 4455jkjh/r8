@@ -219,13 +219,13 @@ public class TestConfigurationHelper {
       }
 
       if (project.hasProperty("dex_vm") && project.property("dex_vm") != "default") {
-        println("NOTE: Running with non default vm: " + project.property("dex_vm"))
+        project.logger.info("NOTE: Running with non default vm: " + project.property("dex_vm"))
         test.systemProperty("dex_vm", project.property("dex_vm")!!)
       }
 
       // Forward runtime configurations for test parameters.
       if (project.hasProperty("runtimes")) {
-        println("NOTE: Running with runtimes: " + project.property("runtimes"))
+        project.logger.info("NOTE: Running with runtimes: " + project.property("runtimes"))
         test.systemProperty("runtimes", project.property("runtimes")!!)
       }
 

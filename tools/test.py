@@ -87,6 +87,11 @@ def ParseOptions():
                         help='Print test stdout to, well, stdout.',
                         default=False,
                         action='store_true')
+    result.add_argument('-q',
+                        '--quiet',
+                        help='Only print warnings and errors from gradle.',
+                        default=False,
+                        action='store_true')
     result.add_argument(
         '--dex-vm',
         '--dex_vm',
@@ -361,7 +366,7 @@ def Main():
 
 def test(options, args):
     if utils.is_bot():
-        gradle.run_gradle(['--no-daemon', 'clean'])
+        gradle.run_gradle(['--no-daemon', 'clean'], quiet=options.quiet)
         print('Running with python ' + str(sys.version_info))
         # Always print stats on bots if command cache is enabled
         options.command_cache_stats = options.command_cache_dir is not None
@@ -610,7 +615,9 @@ def test(options, args):
                 runtimes.extend(matches)
             gradle_args.append('-Pruntimes=%s' % ':'.join(runtimes))
 
-        return_code = gradle.run_gradle(gradle_args, throw_on_failure=False)
+        return_code = gradle.run_gradle(gradle_args,
+                                        throw_on_failure=False,
+                                        quiet=options.quiet)
         return archive_and_return(return_code, options)
 
     # Legacy testing populates the runtimes based on dex_vm.
@@ -626,7 +633,8 @@ def test(options, args):
             '-Pdex_vm=%s' % art_vm + vm_suffix,
             '-Pruntimes=%s' % ':'.join(runtimes),
         ],
-                                        throw_on_failure=False)
+                                        throw_on_failure=False,
+                                        quiet=options.quiet)
         if options.generate_golden_files_to:
             sha1 = '%s' % utils.get_HEAD_sha1()
             with utils.ChangedWorkingDirectory(

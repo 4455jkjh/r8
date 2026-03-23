@@ -485,8 +485,8 @@ tasks {
     }
 
   fun Test.testR8Lib(r8Lib: TaskProvider<Exec>, unzipRewrittenTests: TaskProvider<Copy>) {
-    println("NOTE: Number of processors " + Runtime.getRuntime().availableProcessors())
-    println("NOTE: Max parallel forks " + maxParallelForks)
+    logger.info("NOTE: Number of processors " + Runtime.getRuntime().availableProcessors())
+    logger.info("NOTE: Max parallel forks " + maxParallelForks)
     dependsOn(
       packageTestDeps,
       processKeepRulesLibWithRelocatedDepsTask,
