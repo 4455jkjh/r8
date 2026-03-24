@@ -75,8 +75,19 @@ val blastRadiusProtoJarTask = projectTask("blastradius", "protoJar")
 val keepAnnoJarTask = projectTask("keepanno", "jar")
 val keepAnnoDepsJarExceptAsm = projectTask("keepanno", "depsJarExceptAsm")
 val keepAnnoToolsJarTask = projectTask("keepanno", "toolsJar")
-val libraryAnalyzerJarTask = projectTask("libanalyzer", "jar")
-val libraryAnalyzerProtoJarTask = projectTask("libanalyzer", "protoJar")
+
+val libanalyzerJarScope by configurations.dependencyScope("libanalyzerJarScope")
+val libanalyzerJarConfig by
+  configurations.resolvable("libanalyzerJarConfig") { extendsFrom(libanalyzerJarScope) }
+val libanalyzerProtoJarScope by configurations.dependencyScope("libanalyzerProtoJarScope")
+val libanalyzerProtoJarConfig by
+  configurations.resolvable("libanalyzerProtoJarConfig") { extendsFrom(libanalyzerProtoJarScope) }
+
+dependencies {
+  libanalyzerJarScope(project(":libanalyzer", "libanalyzer-jar"))
+  libanalyzerProtoJarScope(project(":libanalyzer", "libanalyzer-proto-jar"))
+}
+
 val resourceShrinkerJarTask = projectTask("resourceshrinker", "jar")
 val resourceShrinkerDepsJarTask = projectTask("resourceshrinker", "depsJar")
 val mainJarTask = projectTask("main", "jar")
@@ -275,7 +286,7 @@ tasks {
       from(assistantJarTask)
       from(blastRadiusJarTask)
       from(keepAnnoJarTask)
-      from(libraryAnalyzerJarTask)
+      from(libanalyzerJarConfig)
       from(mainJarTask)
       from(resourceShrinkerJarTask)
     }
@@ -345,9 +356,9 @@ tasks {
 
   val protoJar by
     registering(Zip::class) {
-      dependsOn(blastRadiusProtoJarTask, libraryAnalyzerProtoJarTask)
+      dependsOn(blastRadiusProtoJarTask, libanalyzerProtoJarConfig)
       from(blastRadiusProtoJarTask.outputs.files.map(::zipTree))
-      from(libraryAnalyzerProtoJarTask.outputs.files.map(::zipTree))
+      from(libanalyzerProtoJarConfig.map(::zipTree))
       exclude("META-INF/MANIFEST.MF")
       archiveFileName.set("proto.jar")
       destinationDirectory.set(getRoot().resolveAll("build", "libs"))
