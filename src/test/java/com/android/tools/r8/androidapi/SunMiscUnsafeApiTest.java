@@ -49,9 +49,9 @@ public class SunMiscUnsafeApiTest extends TestBase {
     return TestParameters.builder().withDexRuntimes().withMaximumApiLevel().build();
   }
 
-  private static final Map<ClassReference, AndroidApiLevel> classApiMap = new HashMap<>();
-  private static final Map<FieldReference, AndroidApiLevel> fieldApiMap = new HashMap<>();
-  private static final Map<MethodReference, AndroidApiLevel> methodApiMap = new HashMap<>();
+  public static final Map<ClassReference, AndroidApiLevel> classApiMap = new HashMap<>();
+  public static final Map<FieldReference, AndroidApiLevel> fieldApiMap = new HashMap<>();
+  public static final Map<MethodReference, AndroidApiLevel> methodApiMap = new HashMap<>();
 
   private static final ClassReference CLASS = Reference.classFromClass(Class.class);
   private static final ClassReference OBJECT = Reference.classFromClass(Object.class);

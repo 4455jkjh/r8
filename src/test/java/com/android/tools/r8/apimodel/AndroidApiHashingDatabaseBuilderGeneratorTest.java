@@ -20,14 +20,19 @@ import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.androidapi.AndroidApiLevelCompute;
 import com.android.tools.r8.androidapi.AndroidApiLevelCompute.DefaultAndroidApiLevelCompute;
 import com.android.tools.r8.androidapi.AndroidApiLevelHashingDatabaseImpl;
+import com.android.tools.r8.androidapi.ComputedApiLevel;
+import com.android.tools.r8.androidapi.SunMiscUnsafeApiTest;
 import com.android.tools.r8.apimodel.AndroidApiVersionsXmlParser.ParsedApiClass;
 import com.android.tools.r8.graph.AppInfoWithClassHierarchy;
 import com.android.tools.r8.graph.AppView;
+import com.android.tools.r8.graph.DexClass;
 import com.android.tools.r8.graph.DexField;
 import com.android.tools.r8.graph.DexItemFactory;
 import com.android.tools.r8.graph.DexLibraryClass;
 import com.android.tools.r8.graph.DexMethod;
 import com.android.tools.r8.graph.DexType;
+import com.android.tools.r8.references.ClassReference;
+import com.android.tools.r8.references.FieldReference;
 import com.android.tools.r8.references.MethodReference;
 import com.android.tools.r8.references.Reference;
 import com.android.tools.r8.utils.AndroidApiLevel;
@@ -42,6 +47,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
@@ -62,9 +68,6 @@ public class AndroidApiHashingDatabaseBuilderGeneratorTest extends TestBase {
           .resolve("api_database")
           .resolve("resources")
           .resolve("new_api_database.ser");
-
-  // Test flag to get all the not modeled items when adding a new API database.
-  private static List<String> notModelledDump = new ArrayList<>();
 
   // Update the API_LEVEL below to have the database generated for a new api level.
   private static final AndroidApiLevel API_LEVEL = AndroidApiLevel.API_DATABASE_LEVEL;
@@ -309,20 +312,95 @@ public class AndroidApiHashingDatabaseBuilderGeneratorTest extends TestBase {
     ensureAllPublicMethodsAreMapped(appView, androidApiLevelCompute);
   }
 
+  private static class ApiTruthLookup {
+    private final Map<ClassReference, AndroidApiLevel> classApiMap;
+    private final Map<FieldReference, AndroidApiLevel> fieldApiMap;
+    private final Map<MethodReference, AndroidApiLevel> methodApiMap;
+
+    private ApiTruthLookup(
+        Map<ClassReference, AndroidApiLevel> classApiMap,
+        Map<FieldReference, AndroidApiLevel> fieldApiMap,
+        Map<MethodReference, AndroidApiLevel> methodApiMap) {
+      this.classApiMap = classApiMap;
+      this.fieldApiMap = fieldApiMap;
+      this.methodApiMap = methodApiMap;
+    }
+
+    /** Returns null if there is no error. */
+    public String computeError(DexClass clazz, AndroidApiLevel foundApiLevel) {
+      AndroidApiLevel expected = classApiMap.get(clazz.getClassReference());
+      if (expected != null && expected.isEqualTo(foundApiLevel)) {
+        return clazz.toSourceString()
+            + " has unexpected API. found: "
+            + foundApiLevel
+            + ", expected: "
+            + expected;
+      } else {
+        return null;
+      }
+    }
+
+    /** Returns null if there is no error. */
+    public String computeError(DexField field, AndroidApiLevel foundApiLevel) {
+      FieldReference reference = field.asFieldReference();
+      AndroidApiLevel expected = fieldApiMap.get(reference);
+      if (expected != null && expected.isEqualTo(foundApiLevel)) {
+        return reference.toString()
+            + " has unexpected API. found: "
+            + foundApiLevel
+            + ", expected: "
+            + expected;
+      } else {
+        return null;
+      }
+    }
+
+    /** Returns null if there is no error. */
+    public String computeError(DexMethod method, AndroidApiLevel foundApiLevel) {
+      MethodReference reference = method.asMethodReference();
+      AndroidApiLevel expected = methodApiMap.get(reference);
+      if (expected != null && expected.isEqualTo(foundApiLevel)) {
+        return reference.toString()
+            + " has unexpected API. found: "
+            + foundApiLevel
+            + ", expected: "
+            + expected;
+      } else {
+        return null;
+      }
+    }
+  }
+
+  private static ApiTruthLookup createExpectedApi() {
+    return new ApiTruthLookup(
+        SunMiscUnsafeApiTest.classApiMap,
+        SunMiscUnsafeApiTest.fieldApiMap,
+        SunMiscUnsafeApiTest.methodApiMap);
+  }
+
   private static void ensureAllPublicMethodsAreMapped(
       AppView<AppInfoWithClassHierarchy> appView, AndroidApiLevelCompute apiLevelCompute) {
+    List<String> notModelledDump = new ArrayList<>();
+    List<String> unexpectedApiDump = new ArrayList<>();
     Set<String> notModeledTypes = notModeledTypes();
     Set<String> notModeledFields = notModeledFields();
     Set<String> notModeledMethods = notModeledMethods();
+    ApiTruthLookup expectedApi = createExpectedApi();
     for (DexLibraryClass clazz : appView.app().asDirect().libraryClasses()) {
       String typeName = clazz.getClassReference().getTypeName();
       if (notModeledTypes.contains(typeName)) {
         notModeledTypes.remove(typeName);
         continue;
       }
-      if (!apiLevelCompute
-          .computeApiLevelForLibraryReference(clazz.getReference())
-          .isKnownApiLevel()) {
+      ComputedApiLevel clazzApiLevel =
+          apiLevelCompute.computeApiLevelForLibraryReference(clazz.getReference());
+      if (clazzApiLevel.isKnownApiLevel()) {
+        String error =
+            expectedApi.computeError(clazz, clazzApiLevel.asKnownApiLevel().getApiLevel());
+        if (error != null) {
+          unexpectedApiDump.add(error);
+        }
+      } else {
         notModelledDump.add("notModeledTypes.add(\"" + clazz.toSourceString() + "\");");
         continue;
       }
@@ -332,9 +410,16 @@ public class AndroidApiHashingDatabaseBuilderGeneratorTest extends TestBase {
             if (field.getAccessFlags().isPublic()
                 && !field.toSourceString().contains("this$0")
                 && !notModeledFields.contains(field.toSourceString())) {
-              if (!apiLevelCompute
-                  .computeApiLevelForLibraryReference(field.getReference())
-                  .isKnownApiLevel()) {
+              ComputedApiLevel fieldApiLevel =
+                  apiLevelCompute.computeApiLevelForLibraryReference(field.getReference());
+              if (fieldApiLevel.isKnownApiLevel()) {
+                String error =
+                    expectedApi.computeError(
+                        field.getReference(), fieldApiLevel.asKnownApiLevel().getApiLevel());
+                if (error != null) {
+                  unexpectedApiDump.add(error);
+                }
+              } else {
                 notModelledDump.add("notModeledFields.add(\"" + field.toSourceString() + "\");");
               }
             }
@@ -344,9 +429,16 @@ public class AndroidApiHashingDatabaseBuilderGeneratorTest extends TestBase {
           method -> {
             if (method.getAccessFlags().isPublic()
                 && !notModeledMethods.contains(method.toSourceString())) {
-              if (!apiLevelCompute
-                  .computeApiLevelForLibraryReference(method.getReference())
-                  .isKnownApiLevel()) {
+              ComputedApiLevel methodApiLevel =
+                  apiLevelCompute.computeApiLevelForLibraryReference(method.getReference());
+              if (methodApiLevel.isKnownApiLevel()) {
+                String error =
+                    expectedApi.computeError(
+                        method.getReference(), methodApiLevel.asKnownApiLevel().getApiLevel());
+                if (error != null) {
+                  unexpectedApiDump.add(error);
+                }
+              } else {
                 notModelledDump.add("notModelledMethods.add(\"" + method.toSourceString() + "\");");
               }
             }
@@ -358,6 +450,10 @@ public class AndroidApiHashingDatabaseBuilderGeneratorTest extends TestBase {
       fail(
           "Some items, not found in API database. Did you forget to run main method in this class"
               + " to regenerate it?");
+    }
+    if (!unexpectedApiDump.isEmpty()) {
+      unexpectedApiDump.stream().sorted().forEach(System.out::println);
+      fail("Some items have unexpected API levels in the database");
     }
 
     assertTrue(
