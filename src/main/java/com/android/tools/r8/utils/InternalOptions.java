@@ -2272,7 +2272,6 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
         SystemPropertyUtils.parseSystemPropertyOrDefault(
             "com.android.tools.r8.enableKeepAnnotations", false);
     public boolean reverseClassSortingForDeterminism = false;
-    public boolean enableAutoCloseableDesugaring = true;
     public boolean enableNumberUnboxer = false;
     public boolean printNumberUnboxed = false;
     public boolean roundtripThroughLir = false;
