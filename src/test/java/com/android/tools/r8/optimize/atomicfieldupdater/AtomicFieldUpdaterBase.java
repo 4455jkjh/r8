@@ -6,6 +6,7 @@ package com.android.tools.r8.optimize.atomicfieldupdater;
 
 import static org.hamcrest.core.AnyOf.anyOf;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 import com.android.tools.r8.R8TestBuilder;
 import com.android.tools.r8.TestBase;
@@ -32,6 +33,7 @@ public class AtomicFieldUpdaterBase extends TestBase {
     builder
         .addOptionsModification(
             options -> {
+              assertTrue(options.enableAtomicUpdaterOptimization);
               assertFalse(options.testing.enableAtomicFieldUpdaterLogs);
               options.testing.enableAtomicFieldUpdaterLogs = true;
             })

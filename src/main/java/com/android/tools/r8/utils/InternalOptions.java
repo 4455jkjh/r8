@@ -450,6 +450,8 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
   public boolean enableUnusedInterfaceRemoval = true;
   public boolean enableDevirtualization = true;
   public boolean enableEnumUnboxing = true;
+  public boolean enableAtomicUpdaterOptimization =
+      parseSystemPropertyOrDefault("com.android.tools.r8.enableAtomicUpdaterOptimization", true);
   public boolean enableSimpleInliningConstraints = true;
   public final int simpleInliningConstraintThreshold = 1;
   public boolean enableClassInlining = true;
