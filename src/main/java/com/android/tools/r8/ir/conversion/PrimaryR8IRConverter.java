@@ -11,6 +11,7 @@ import com.android.tools.r8.graph.DexEncodedMethod;
 import com.android.tools.r8.graph.DexProgramClass;
 import com.android.tools.r8.graph.lens.GraphLens;
 import com.android.tools.r8.ir.analysis.fieldaccess.TrivialFieldAccessReprocessor;
+import com.android.tools.r8.ir.optimize.AtomicFieldUpdaterInstrumentor;
 import com.android.tools.r8.ir.optimize.info.MethodResolutionOptimizationInfoAnalysis;
 import com.android.tools.r8.ir.optimize.info.OptimizationFeedbackDelayed;
 import com.android.tools.r8.naming.IdentifierMinifier;
@@ -286,6 +287,10 @@ public class PrimaryR8IRConverter extends IRConverter {
     unsetConditionalAssumeRules();
     if (inliner != null) {
       inliner.onLastWaveDone(postMethodProcessorBuilder, executorService, timing);
+    }
+    if (appView.getAtomicFieldUpdaterInstrumentorInfo() != null) {
+      AtomicFieldUpdaterInstrumentor.addInitializersToPostMethodOptimization(
+          appView, postMethodProcessorBuilder);
     }
 
     // Ensure determinism of method-to-reprocess set.
