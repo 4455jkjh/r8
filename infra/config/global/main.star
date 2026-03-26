@@ -37,6 +37,8 @@ luci.project(
             ],
             users = [
                 "luci-scheduler@appspot.gserviceaccount.com",
+                "r8-try-builder@chops-service-accounts.iam.gserviceaccount.com",
+                "r8-ci-builder@chops-service-accounts.iam.gserviceaccount.com",
             ],
         ),
         acl.entry(
@@ -298,9 +300,15 @@ def r8_tester(
         expiration_timeout = time.hour * 35,
         max_concurrent_invocations = 1,
         category = None,
-        release_trigger = None):
+        release_trigger = None,
+        extra_properties = {}):
     dimensions = dimensions if dimensions else get_dimensions()
     names = [name, name + "_release"] if trigger else [name]
+    properties = {
+        "test_options": test_options,
+        "builder_group": "internal.client.r8",
+    }
+    properties.update(extra_properties)
     for name in names:
         r8_builder(
             name = name,
@@ -312,10 +320,7 @@ def r8_tester(
             dimensions = dimensions,
             release_trigger = release_trigger,
             max_concurrent_invocations = max_concurrent_invocations,
-            properties = {
-                "test_options": test_options,
-                "builder_group": "internal.client.r8",
-            },
+            properties = properties,
         )
 
 def r8_tester_with_default(
@@ -327,7 +332,8 @@ def r8_tester_with_default(
         category = None,
         release_trigger = None,
         max_concurrent_invocations = 1,
-        execution_timeout = default_timeout):
+        execution_timeout = default_timeout,
+        extra_properties = {}):
     r8_tester(
         name,
         test_options + common_test_options,
@@ -338,6 +344,7 @@ def r8_tester_with_default(
         release_trigger = release_trigger,
         max_concurrent_invocations = max_concurrent_invocations,
         execution_timeout = execution_timeout,
+        extra_properties = extra_properties,
     )
 
 def archivers():
@@ -470,11 +477,38 @@ r8_tester_with_default(
     max_concurrent_invocations = 2,
 )
 
+presubmit_testers = [
+    "linux-default",
+    "linux-none",
+    "linux-jdk8",
+    "linux-jdk11",
+    "linux-jdk17",
+    "linux-jdk21",
+    "linux-jdk25",
+    "linux-android-4.0",
+    "linux-android-4.4",
+    "linux-android-5",
+    "linux-android-6",
+    "linux-android-7",
+    "linux-android-8",
+    "linux-android-9",
+    "linux-android-10",
+    "linux-android-12",
+    "linux-android-13",
+    "linux-android-14",
+    "linux-android-15",
+    "linux-android-16",
+    "win",
+]
+
 r8_tester_with_default(
     "presubmit",
     [],
     bucket = "try",
     trigger = False,
+    extra_properties = {
+        "testers": presubmit_testers,
+    },
 )
 
 luci.cq_tryjob_verifier(

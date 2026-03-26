@@ -10,6 +10,7 @@ import com.android.tools.r8.cf.code.CfReturnVoid;
 import com.android.tools.r8.cf.code.CfStaticFieldWrite;
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.CfCode;
+import com.android.tools.r8.graph.DexClass;
 import com.android.tools.r8.graph.DexEncodedField;
 import com.android.tools.r8.graph.DexField;
 import com.android.tools.r8.graph.DexItemFactory;
@@ -32,6 +33,7 @@ import com.android.tools.r8.ir.code.StaticGet;
 import com.android.tools.r8.ir.code.StaticPut;
 import com.android.tools.r8.ir.code.Value;
 import com.android.tools.r8.ir.conversion.IRToLirFinalizer;
+import com.android.tools.r8.ir.conversion.PostMethodProcessor;
 import com.android.tools.r8.ir.conversion.passes.AtomicFieldUpdaterOptimizer.AtomicFieldUpdaterInfo;
 import com.android.tools.r8.ir.optimize.info.atomicupdaters.eligibility.Event;
 import com.android.tools.r8.ir.optimize.info.atomicupdaters.eligibility.Reason;
@@ -139,7 +141,8 @@ public class AtomicFieldUpdaterInstrumentor {
   }
 
   private static boolean isOptimizationEnabled(AppView<?> appView) {
-    return appView.options().isGeneratingDex()
+    return appView.options().enableAtomicUpdaterOptimization
+        && appView.options().isGeneratingDex()
         && appView.enableWholeProgramOptimizations()
         && appView.options().getMinApiLevel().isGreaterThanOrEqualTo(AndroidApiLevel.K);
   }
@@ -716,6 +719,23 @@ public class AtomicFieldUpdaterInstrumentor {
     }
   }
 
+  public static void addInitializersToPostMethodOptimization(
+      AppView<?> appView, PostMethodProcessor.Builder postMethodProcessorBuilder) {
+    // This allows AtomicUpdaterInitializationRemover to remove unused initialization code.
+    var info = appView.getAtomicFieldUpdaterInstrumentorInfo();
+    if (info == null) {
+      return;
+    }
+    for (var classReference : info.getInstrumentedClasses()) {
+      DexClass clazz = appView.contextIndependentDefinitionFor(classReference);
+      // Only program classes with static initializers are instrumented.
+      assert clazz.isProgramClass();
+      ProgramMethod classInitializer = clazz.asProgramClass().getProgramClassInitializer();
+      assert classInitializer != null;
+      postMethodProcessorBuilder.add(classInitializer);
+    }
+  }
+
   private static class UnsafeClassInfo {
 
     public final ProgramMethod classInitializer;
@@ -823,6 +843,10 @@ public class AtomicFieldUpdaterInstrumentor {
 
     public Map<DexField, AtomicFieldUpdaterInfo> getInstrumentationsOrNull(DexType holder) {
       return instrumentations.get(holder);
+    }
+
+    public Set<DexType> getInstrumentedClasses() {
+      return instrumentations.keySet();
     }
 
     public Set<DexField> getOffsetFieldsOrNull(DexType holder) {

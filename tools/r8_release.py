@@ -348,7 +348,7 @@ def prepare_google3(args):
             g4_open('threading-module-single-threaded.jar')
             g4_open('proto/blastradius.proto')
             g4_open('proto/blastradiussummary.proto')
-            g4_open('proto/libraryanalysisresult.proto')
+            g4_open('proto/libraryanalyzerresult.proto')
             download_file(version, 'r8-full-exclude-deps.jar', 'full.jar')
             download_file(version, 'r8-src.jar', 'src.jar')
             download_file(version, 'r8lib-exclude-deps.jar', 'lib.jar')
@@ -363,8 +363,8 @@ def prepare_google3(args):
                           'proto/blastradius.proto')
             download_file(version, 'blastradiussummary.proto',
                           'proto/blastradiussummary.proto')
-            download_file(version, 'libraryanalysisresult.proto',
-                          'proto/libraryanalysisresult.proto')
+            download_file(version, 'libraryanalyzerresult.proto',
+                          'proto/libraryanalyzerresult.proto')
             if version != 'main':
                 g4_open('METADATA')
                 metadata_path = os.path.join(third_party_r8, 'METADATA')

@@ -854,6 +854,11 @@ class SemanticVersion:
         else:
             return False
 
+    def equals_to(self, other):
+        return (self.major == other.major and self.minor == other.minor and
+                self.patch == other.patch and
+                self.prerelease == other.prerelease)
+
 
 # Check that the passed string is formatted as a basic semver version (x.y.z or x.y.z-prerelease
 # depending on the value of allowPrerelease).

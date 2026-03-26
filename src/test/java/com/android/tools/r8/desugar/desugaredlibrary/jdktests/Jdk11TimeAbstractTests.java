@@ -177,15 +177,24 @@ public abstract class Jdk11TimeAbstractTests extends DesugaredLibraryTestBase {
       };
   static final String[] RAW_TEMPORAL_SUCCESSES_IF_BRIDGE =
       new String[] {"tck.java.time.TestIsoChronology"};
-  static final String[] RAW_TEMPORAL_SUCCESSES_UP_TO_11 = new String[] {
-        // TODO(b/491047736): Reenable test.
-        // "test.java.time.temporal.TestIsoWeekFields"
-      };
+
   static final String[] RAW_TEMPORAL_SUCCESSES_UP_TO_14 =
       new String[] {
         // Reflective lookup Class.forName("java.time.Clock$SystemClock").getDeclaredField("offset")
         // fails.
         "test.java.time.TestClock_System"
+      };
+
+  static final String[] RAW_TEMPORAL_ISO_TESTS =
+      new String[] {"test.java.time.temporal.TestIsoWeekFields"};
+  static final String[] FORMAT_CHRONO_ISO_TESTS =
+      new String[] {
+        "test.java.time.chrono.TestIsoChronoImpl", "test.java.time.chrono.TestJapaneseChronology",
+        // The test was written before the japanese REIWA era, so recent VM have a more accurate
+        // result, and old VMs are disabled.
+        // "test.java.time.chrono.TestUmmAlQuraChronology",
+        // Disabled: missing quarter data on devices where it could be enabled.
+        // "test.java.time.format.TestDateTimeFormatterBuilderWithLocale"
       };
   static final String[] FORMAT_CHRONO_SUCCESSES =
       new String[] {
@@ -206,23 +215,27 @@ public abstract class Jdk11TimeAbstractTests extends DesugaredLibraryTestBase {
         "test.java.time.format.TestCharLiteralParser",
         "test.java.time.chrono.TestChronologyPerf",
         "test.java.time.chrono.TestExampleCode",
-        // TODO(b/491047736): Reenable test.
-        // "test.java.time.chrono.TestJapaneseChronology",
-        "test.java.time.chrono.TestChronoLocalDate",
-        // TODO(b/491047736): Reenable test.
-        // "test.java.time.chrono.TestIsoChronoImpl",
+        "test.java.time.chrono.TestChronoLocalDate"
       };
   static final String[] FORMAT_CHRONO_SUCCESSES_UP_TO_11 =
       new String[] {
         "test.java.time.format.TestDateTimeTextProviderWithLocale",
         "test.java.time.format.TestUnicodeExtension",
-        // TODO(b/491047736): Reenable test.
-        // "test.java.time.format.TestDateTimeFormatterBuilderWithLocale",
         "test.java.time.format.TestTextParserWithLocale",
-        "test.java.time.format.TestTextPrinterWithLocale",
-        // TODO(b/491047736): Reenable test.
-        // "test.java.time.chrono.TestUmmAlQuraChronology",
+        "test.java.time.format.TestTextPrinterWithLocale"
       };
+
+  // The iso implementation in desugared library is based on jdk 12, hence the jdk11 tests related
+  // to it fail (Some features are implemented in desugared library and not in jdk11). On Android
+  // 12+, the jdk12 behavior is implemented. Time desugaring is enabled up to api 26, so in between
+  // 26 and 31 (26 <= api < 31), the iso implementation follows jdk11 implementation, outside, it
+  // follows the jdk12 implementation.
+  // Below V8, the tests rely on GregorianCalendar#getCalendarType which is not supported.
+  private boolean isJdk11IsoCompliant() {
+    return (libraryDesugaringSpecification.hasCompleteTimeDesugaring(parameters)
+            && parameters.getDexRuntimeVersion().isNewerThan(Version.V8_1_0))
+        || parameters.getDexRuntimeVersion().isNewerThan(Version.V10_0_0);
+  }
 
   public String[] getFormatChronoSuccesses() {
     List<String> allTests = new ArrayList<>();
@@ -231,16 +244,19 @@ public abstract class Jdk11TimeAbstractTests extends DesugaredLibraryTestBase {
       // Formatting issues starting from 12.
       Collections.addAll(allTests, FORMAT_CHRONO_SUCCESSES_UP_TO_11);
     }
+    if (isJdk11IsoCompliant()) {
+      Collections.addAll(allTests, FORMAT_CHRONO_ISO_TESTS);
+    }
     return allTests.toArray(new String[0]);
   }
 
   public String[] getRawTemporalSuccesses() {
     List<String> allTests = new ArrayList<>();
-    Collections.addAll(allTests, RAW_TEMPORAL_SUCCESSES);
-    if (parameters.getDexRuntimeVersion().isOlderThan(Version.V12_0_0)) {
-      // In 12 some ISO is supported that other versions do not support.
-      Collections.addAll(allTests, RAW_TEMPORAL_SUCCESSES_UP_TO_11);
+    if (!libraryDesugaringSpecification.hasCompleteTimeDesugaring(parameters)
+        && parameters.getDexRuntimeVersion().isNewerThan(Version.V12_0_0)) {
+      Collections.addAll(allTests, RAW_TEMPORAL_ISO_TESTS);
     }
+    Collections.addAll(allTests, RAW_TEMPORAL_SUCCESSES);
     if (parameters.getDexRuntimeVersion().isOlderThan(Version.V14_0_0)) {
       // In 14 some reflection used in test fails.
       Collections.addAll(allTests, RAW_TEMPORAL_SUCCESSES_UP_TO_14);
@@ -261,6 +277,10 @@ public abstract class Jdk11TimeAbstractTests extends DesugaredLibraryTestBase {
   }
 
   void compileAndTestTime(String[] toRun) throws Exception {
+    if (toRun.length == 0) {
+      System.out.println("No tests to run, may happen while debugging.");
+      return;
+    }
     // The compilation time is significantly higher than the test time, it is important to compile
     // once and test multiple times on the same artifact for test performance.
     String verbosity = "2";

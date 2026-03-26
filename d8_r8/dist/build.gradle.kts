@@ -97,6 +97,12 @@ fun mainJarDependencies(): FileCollection {
   )
 }
 
+val depsJarFilesScope by configurations.dependencyScope("depsJarFilesScope")
+
+val depsJarFiles by configurations.consumable("depsJarFiles") { extendsFrom(depsJarFilesScope) }
+
+val depsFiles by configurations.consumable("depsFiles") { extendsFrom(depsJarFilesScope) }
+
 fun relocateDepsExceptAsm(pkg: String): List<String> {
   return listOf(
     "--map",
@@ -303,40 +309,24 @@ tasks {
       archiveFileName.set("threading-module-single-threaded.jar")
     }
 
-  // Task that provides all dependencies as a file collection.
-  val depsJarFiles by registering {
-    dependsOn(downloadDepsTask)
-    dependsOn(resourceShrinkerDepsJarTask)
-    dependsOn(threadingModuleBlockingJar)
-    dependsOn(threadingModuleSingleThreadedJar)
-    outputs.files(
-      Callable {
-        listOf(
-          mainJarDependencies(),
-          resourceShrinkerDepsJarTask,
-          threadingModuleBlockingJar,
-          threadingModuleSingleThreadedJar,
-        )
-      }
-    )
+  dependencies {
+    add(depsJarFilesScope.name, mainJarDependencies())
+    add(depsJarFilesScope.name, files(resourceShrinkerDepsJarTask))
+    add(depsJarFilesScope.name, files(threadingModuleBlockingJar))
+    add(depsJarFilesScope.name, files(threadingModuleSingleThreadedJar))
   }
 
-  val depsFiles by registering {
-    dependsOn(consolidatedLicense)
-    dependsOn(depsJarFiles)
-    outputs.files(Callable { listOf(consolidatedLicense, depsJarFiles) })
-  }
+  artifacts { add(depsFiles.name, consolidatedLicense) }
+
+  val depsJarFilesConfig by
+    configurations.resolvable("depsJarFilesConfig") { extendsFrom(depsJarFilesScope) }
 
   // Jar containing all 3p deps, plus R8 threading modules.
   val depsJar by
     registering(Zip::class) {
-      dependsOn(depsFiles)
-      from(
-        Callable {
-          depsFiles.get().outputs.files.filter { it.extension == "jar" }.map(::zipTree) +
-            depsFiles.get().outputs.files.filter { it.extension != "jar" }
-        }
-      )
+      dependsOn(depsJarFilesConfig)
+      from(Callable { depsJarFilesConfig.files.map(::zipTree) })
+      from(consolidatedLicense)
       include("**/*.class")
       include("META-INF/services/kotlin.metadata.internal.extensions.MetadataExtensions")
       include("LICENSE")

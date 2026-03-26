@@ -14,6 +14,7 @@ import com.android.tools.r8.debug.DebugTestConfig;
 import com.android.tools.r8.naming.retrace.StackTrace;
 import com.android.tools.r8.synthesis.SyntheticItemsTestUtils;
 import com.android.tools.r8.utils.AndroidApp;
+import com.android.tools.r8.utils.StringUtils;
 import com.android.tools.r8.utils.ThrowingConsumer;
 import com.android.tools.r8.utils.codeinspector.CodeInspector;
 import java.io.IOException;
@@ -102,6 +103,13 @@ public abstract class SingleTestRunResult<RR extends SingleTestRunResult<RR>>
   @Override
   public RR assertStdoutMatches(Matcher<String> matcher) {
     assertThat(errorMessage("Run stdout incorrect.", matcher.toString()), result.stdout, matcher);
+    return self();
+  }
+
+  @Override
+  public RR assertStdoutLinesMatchesUnordered(Iterable<Matcher<String>> lines) {
+    assertThat(
+        StringUtils.splitLines(result.stdout), UnorderedCollectionMatcher.matchesOneToOne(lines));
     return self();
   }
 

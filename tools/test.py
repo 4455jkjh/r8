@@ -87,6 +87,11 @@ def ParseOptions():
                         help='Print test stdout to, well, stdout.',
                         default=False,
                         action='store_true')
+    result.add_argument('-q',
+                        '--quiet',
+                        help='Only print warnings and errors from gradle.',
+                        default=False,
+                        action='store_true')
     result.add_argument(
         '--dex-vm',
         '--dex_vm',
@@ -279,6 +284,10 @@ def ParseOptions():
                         help='Specify to run tests on older kotlin compilers',
                         default=False,
                         action='store_true')
+    result.add_argument('--compile-only',
+                        help='Only compile project and tests, do not run tests',
+                        default=False,
+                        action='store_true')
     options, args = result.parse_known_args()
     if options.java_max_memory_size is None:
         # YouTubeV1719Test OOM's with 4G, so raise xmx to 6G when running internal tests.
@@ -357,7 +366,7 @@ def Main():
 
 def test(options, args):
     if utils.is_bot():
-        gradle.run_gradle(['--no-daemon', 'clean'])
+        gradle.run_gradle(['--no-daemon', 'clean'], quiet=options.quiet)
         print('Running with python ' + str(sys.version_info))
         # Always print stats on bots if command cache is enabled
         options.command_cache_stats = options.command_cache_dir is not None
@@ -510,6 +519,18 @@ def test(options, args):
     # Enable completeness testing of ART profile rewriting.
     gradle_args.append('-Part_profile_rewriting_completeness_check=true')
 
+    if options.compile_only:
+        gradle_args.append('testClasses')
+        gradle_args.append(utils.GRADLE_TASK_TEST_DEPS_JAR)
+        if options.r8lib_no_deps:
+            gradle_args.append(utils.GRADLE_TASK_R8LIB_NO_DEPS)
+        elif not options.no_r8lib:
+            gradle_args.append(utils.GRADLE_TASK_R8LIB)
+        else:
+            gradle_args.append(utils.GRADLE_TASK_R8)
+        return_code = gradle.run_gradle(gradle_args, throw_on_failure=False)
+        return archive_and_return(return_code, options)
+
     gradle_args.append(utils.GRADLE_TASK_TEST)
     gradle_args.append('--stacktrace')
     gradle_args.append('-Pprint_full_stacktraces')
@@ -594,7 +615,9 @@ def test(options, args):
                 runtimes.extend(matches)
             gradle_args.append('-Pruntimes=%s' % ':'.join(runtimes))
 
-        return_code = gradle.run_gradle(gradle_args, throw_on_failure=False)
+        return_code = gradle.run_gradle(gradle_args,
+                                        throw_on_failure=False,
+                                        quiet=options.quiet)
         return archive_and_return(return_code, options)
 
     # Legacy testing populates the runtimes based on dex_vm.
@@ -610,7 +633,8 @@ def test(options, args):
             '-Pdex_vm=%s' % art_vm + vm_suffix,
             '-Pruntimes=%s' % ':'.join(runtimes),
         ],
-                                        throw_on_failure=False)
+                                        throw_on_failure=False,
+                                        quiet=options.quiet)
         if options.generate_golden_files_to:
             sha1 = '%s' % utils.get_HEAD_sha1()
             with utils.ChangedWorkingDirectory(

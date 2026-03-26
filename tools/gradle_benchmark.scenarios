@@ -20,7 +20,11 @@ scenario-groups {
 
 base_config {
     # These flags should mirror gradle.py
-    gradle-args = ["--offline"]
+    gradle-args = [
+        "--offline",
+        "-Porg.gradle.java.installations.auto-detect=false",
+        "-Porg.gradle.java.installations.auto-download=false"
+    ]
     # A bug in the csv output prevents changing the amount of warmups per scenario
     # https://github.com/gradle/gradle-profiler/issues/317
     warm-ups = 2

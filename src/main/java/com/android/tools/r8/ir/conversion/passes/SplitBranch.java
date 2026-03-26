@@ -7,10 +7,10 @@ package com.android.tools.r8.ir.conversion.passes;
 import com.android.tools.r8.graph.AppInfo;
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.ir.code.BasicBlock;
-import com.android.tools.r8.ir.code.ConstNumber;
 import com.android.tools.r8.ir.code.Goto;
 import com.android.tools.r8.ir.code.IRCode;
 import com.android.tools.r8.ir.code.If;
+import com.android.tools.r8.ir.code.Instruction;
 import com.android.tools.r8.ir.code.Phi;
 import com.android.tools.r8.ir.code.Value;
 import com.android.tools.r8.ir.conversion.MethodProcessor;
@@ -108,7 +108,7 @@ public class SplitBranch extends CodeRewriterPass<AppInfo> {
                   // if. This is run before constant canonicalization.
                   if (theIf.isZeroTest()
                       || current.getInstructions().size() != 2
-                      || !current.entry().isConstNumber()) {
+                      || !isConstNumber(current.entry())) {
                     return;
                   }
                   Value value = current.entry().outValue();
@@ -132,7 +132,7 @@ public class SplitBranch extends CodeRewriterPass<AppInfo> {
       if (!ALLOW_PARTIAL_REWRITE) {
         for (Phi phi : foundPhis) {
           for (Value value : phi.getOperands()) {
-            if (!value.isConstNumber() && !(value.isPhi() && foundPhis.contains(value.asPhi()))) {
+            if (!isConstNumber(value) && !(value.isPhi() && foundPhis.contains(value.asPhi()))) {
               continue candidateLoop;
             }
           }
@@ -142,7 +142,7 @@ public class SplitBranch extends CodeRewriterPass<AppInfo> {
         BasicBlock phiBlock = phi.getBlock();
         for (int i = 0; i < phi.getOperands().size(); i++) {
           Value value = phi.getOperand(i);
-          if (value.isConstNumber()) {
+          if (isConstNumber(value)) {
             recordNewTargetForGoto(value, phiBlock.getPredecessors().get(i), theIf, newTargets);
           }
         }
@@ -160,13 +160,13 @@ public class SplitBranch extends CodeRewriterPass<AppInfo> {
       return true;
     }
     assert theIf.lhs().getType() == theIf.rhs().getType();
-    return theIf.lhs().isConstNumber() || theIf.rhs().isConstNumber();
+    return isConstNumber(theIf.lhs()) || isConstNumber(theIf.rhs());
   }
 
   private Value nonConstNumberOperand(If theIf) {
     return theIf.isZeroTest()
         ? theIf.lhs()
-        : (theIf.lhs().isConstNumber() ? theIf.rhs() : theIf.lhs());
+        : (isConstNumber(theIf.lhs()) ? theIf.rhs() : theIf.lhs());
   }
 
   private List<BasicBlock> computeCandidates(IRCode code) {
@@ -188,17 +188,31 @@ public class SplitBranch extends CodeRewriterPass<AppInfo> {
     return candidates;
   }
 
-  private BasicBlock targetFromCondition(If theIf, ConstNumber constForPhi) {
+  private boolean isConstNumber(Value value) {
+    return value.isConstNumber() || value.isConstResourceNumber();
+  }
+
+  private boolean isConstNumber(Instruction instruction) {
+    return instruction.isConstNumber() || instruction.isResourceConstNumber();
+  }
+
+  private long getRawValue(Value value) {
+    if (value.isConstNumber()) {
+      return value.getConstInstruction().asConstNumber().getRawValue();
+    }
+    assert value.isConstResourceNumber();
+    return value.getConstInstruction().asResourceConstNumber().getValue();
+  }
+
+  private BasicBlock targetFromCondition(If theIf, Value constForPhi) {
     if (theIf.isZeroTest()) {
-      return theIf.targetFromCondition(constForPhi);
+      return theIf.targetFromCondition(Long.signum(getRawValue(constForPhi)));
     }
-    if (theIf.lhs().isConstNumber()) {
-      return theIf.targetFromCondition(
-          theIf.lhs().getConstInstruction().asConstNumber(), constForPhi);
+    if (isConstNumber(theIf.lhs())) {
+      return theIf.targetFromCondition(getRawValue(theIf.lhs()), getRawValue(constForPhi));
     }
-    assert theIf.rhs().isConstNumber();
-    return theIf.targetFromCondition(
-        constForPhi, theIf.rhs().getConstInstruction().asConstNumber());
+    assert isConstNumber(theIf.rhs());
+    return theIf.targetFromCondition(getRawValue(constForPhi), getRawValue(theIf.rhs()));
   }
 
   private void recordNewTargetForGoto(
@@ -207,7 +221,7 @@ public class SplitBranch extends CodeRewriterPass<AppInfo> {
     // the correct if destination.
     assert basicBlock.exit().isGoto();
     assert value.isConstant();
-    BasicBlock newTarget = targetFromCondition(theIf, value.getConstInstruction().asConstNumber());
+    BasicBlock newTarget = targetFromCondition(theIf, value);
     Goto aGoto = basicBlock.exit().asGoto();
     newTargets.put(aGoto, newTarget);
   }

@@ -67,6 +67,7 @@ public class AndroidResourceTestingUtils {
     STYLEABLE,
     XML,
     ID,
+    FRACTION,
     COLOR;
 
     public static RClassType fromClass(Class clazz) {
@@ -381,6 +382,7 @@ public class AndroidResourceTestingUtils {
     private String manifest;
     private final Map<String, String> stringValues = new TreeMap<>();
     private final Set<String> idValues = new TreeSet<>();
+    private final Map<String, String> fractionValues = new TreeMap<>();
     private final Set<String> stringValuesWithExtraLanguage = new TreeSet<>();
     private final Map<String, String> overlayableValues = new TreeMap<>();
     private final Map<String, Integer> styleables = new TreeMap<>();
@@ -421,6 +423,9 @@ public class AndroidResourceTestingUtils {
           }
           if (rClassType == RClassType.COLOR) {
             addColor(name, "#FCFCFC");
+          }
+          if (rClassType == RClassType.FRACTION) {
+            addFractionValue(name, "10%");
           }
           if (rClassType == RClassType.DRAWABLE) {
             addDrawable(name + ".png", TINY_PNG);
@@ -487,6 +492,11 @@ public class AndroidResourceTestingUtils {
 
     AndroidTestResourceBuilder addStringValue(String name, String value) {
       stringValues.put(name, value);
+      return this;
+    }
+
+    AndroidTestResourceBuilder addFractionValue(String name, String value) {
+      fractionValues.put(name, value);
       return this;
     }
 
@@ -570,6 +580,9 @@ public class AndroidResourceTestingUtils {
           Path alternativeValues = temp.newFolder("res", "values-night").toPath();
           FileUtils.writeTextFile(alternativeValues.resolve("colors.xml"), createColorXml(true));
         }
+      }
+      if (fractionValues.size() > 0) {
+        FileUtils.writeTextFile(valuesFolder.resolve("fractions.xml"), createFractionResourceXml());
       }
       if (overlayableValues.size() > 0) {
         FileUtils.writeTextFile(valuesFolder.resolve("overlayable.xml"), createOverlayableXml());
@@ -754,6 +767,17 @@ public class AndroidResourceTestingUtils {
               stringBuilder.append(
                   "<string name=\"" + name + "\">" + value + languagePostFix + "</string>\n");
             }
+          });
+      stringBuilder.append("</resources>");
+      return stringBuilder.toString();
+    }
+
+    private String createFractionResourceXml() {
+      StringBuilder stringBuilder = new StringBuilder("<resources>\n");
+      fractionValues.forEach(
+          (name, value) -> {
+            stringBuilder.append(
+                "<item type=\"fraction\" name=\"" + name + "\">" + value + "</item>\n");
           });
       stringBuilder.append("</resources>");
       return stringBuilder.toString();

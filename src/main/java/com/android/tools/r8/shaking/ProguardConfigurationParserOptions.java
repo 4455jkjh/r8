@@ -73,14 +73,18 @@ public class ProguardConfigurationParserOptions {
       return this;
     }
 
-    public boolean getCanMatchRuntimeInvisibleAnnotationsWithWildcards() {
-      return canMatchRuntimeInvisibleAnnotationsWithWildcards;
+    public boolean hasExplicitCanMatchRuntimeInvisibleAnnotationsWithWildcards() {
+      return System.getProperty(
+              "com.android.tools.r8.canMatchRuntimeInvisibleAnnotationsWithWildcards")
+          != null;
     }
 
     public Builder setCanMatchRuntimeInvisibleAnnotationsWithWildcards(
         boolean canMatchRuntimeInvisibleAnnotationsWithWildcards) {
-      this.canMatchRuntimeInvisibleAnnotationsWithWildcards =
-          canMatchRuntimeInvisibleAnnotationsWithWildcards;
+      if (!hasExplicitCanMatchRuntimeInvisibleAnnotationsWithWildcards()) {
+        this.canMatchRuntimeInvisibleAnnotationsWithWildcards =
+            canMatchRuntimeInvisibleAnnotationsWithWildcards;
+      }
       return this;
     }
 

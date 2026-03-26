@@ -34,7 +34,8 @@ kotlin { explicitApi() }
 // incompatible java class file version. By depending on the jar we circumvent that.
 val assistantCompileTask = projectTask("assistant", "compileJava")
 val blastRadiusCompileTask = projectTask("blastradius", "compileJava")
-val distDepsFilesTask = projectTask("dist", "depsFiles")
+val distDepsFilesScope by configurations.dependencyScope("distDepsFilesScope")
+val distDepsFiles by configurations.resolvable("distDepsFiles") { extendsFrom(distDepsFilesScope) }
 val keepAnnoJarTask = projectTask("keepanno", "jar")
 val keepAnnoCompileJavaTask = projectTask("keepanno", "compileJava")
 val keepAnnoCompileKotlinTask = projectTask("keepanno", "compileKotlin")
@@ -49,6 +50,7 @@ val sharedDownloadDepsTask = projectTask("shared", "downloadDeps")
 val sharedDownloadDepsInternalTask = projectTask("shared", "downloadDepsInternal")
 
 dependencies {
+  distDepsFilesScope(project(":dist", "depsFiles"))
   implementation(assistantCompileTask.outputs.files)
   implementation(blastRadiusCompileTask.outputs.files)
   implementation(keepAnnoJarTask.outputs.files)
@@ -123,7 +125,7 @@ tasks {
 
   withType<Test> {
     TestingState.setUpTestingState(this)
-    dependsOn(distDepsFilesTask)
+    dependsOn(distDepsFiles)
     dependsOn(sharedDownloadDepsTask)
     if (!project.hasProperty("no_internal")) {
       dependsOn(sharedDownloadDepsInternalTask)
@@ -158,7 +160,7 @@ tasks {
         File.pathSeparator +
         mainTurboCompileJavaTask.outputs.files.getAsPath().split(File.pathSeparator)[0] +
         File.pathSeparator +
-        distDepsFilesTask.outputs.files.getAsPath() +
+        distDepsFiles.asPath +
         File.pathSeparator +
         getRoot().resolveAll("src", "main", "resources") +
         File.pathSeparator +
@@ -171,7 +173,7 @@ tasks {
         resourceShrinkerCompileKotlinTask.outputs.files.getAsPath().split(File.pathSeparator)[1]
     systemProperty("BUILD_PROP_PROCESS_KEEP_RULES_RUNTIME_PATH", r8RuntimePath)
     systemProperty("BUILD_PROP_R8_RUNTIME_PATH", r8RuntimePath)
-    systemProperty("R8_DEPS", distDepsFilesTask.outputs.files.getAsPath())
+    systemProperty("R8_DEPS", distDepsFiles.asPath)
     systemProperty("com.android.tools.r8.artprofilerewritingcompletenesscheck", "true")
   }
 
