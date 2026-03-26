@@ -411,7 +411,7 @@ public class IdentifierNameStringMarker extends CodeRewriterPass<AppInfoWithClas
         returnType == appView.dexItemFactory().referenceFieldUpdaterType;
     if (isReferenceFieldUpdater) {
       assert invoke.getInvokedMethod()
-          == appView.dexItemFactory().atomicFieldUpdaterMethods.referenceUpdater;
+          == appView.dexItemFactory().atomicReferenceUpdaterMethods.newUpdater;
       return 2;
     }
 

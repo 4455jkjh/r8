@@ -119,23 +119,20 @@ public class AtomicFieldUpdaterOptimizer extends CodeRewriterPass<AppInfoWithCla
         continue;
       }
 
-      if (invokedMethod.isIdenticalTo(
-          dexItemFactory.atomicFieldUpdaterMethods.referenceCompareAndSet)) {
+      if (invokedMethod.isIdenticalTo(dexItemFactory.atomicReferenceUpdaterMethods.compareAndSet)) {
         if (visitCompareAndSet(context, invoke)) {
           changed = true;
         }
-      } else if (invokedMethod.isIdenticalTo(
-          dexItemFactory.atomicFieldUpdaterMethods.referenceGet)) {
+      } else if (invokedMethod.isIdenticalTo(dexItemFactory.atomicReferenceUpdaterMethods.get)) {
         if (visitGet(context, invoke)) {
           changed = true;
         }
-      } else if (invokedMethod.isIdenticalTo(
-          dexItemFactory.atomicFieldUpdaterMethods.referenceSet)) {
+      } else if (invokedMethod.isIdenticalTo(dexItemFactory.atomicReferenceUpdaterMethods.set)) {
         if (visitSet(context, invoke)) {
           changed = true;
         }
       } else if (invokedMethod.isIdenticalTo(
-          dexItemFactory.atomicFieldUpdaterMethods.referenceGetAndSet)) {
+          dexItemFactory.atomicReferenceUpdaterMethods.getAndSet)) {
         if (visitGetAndSet(context, invoke)) {
           changed = true;
         }

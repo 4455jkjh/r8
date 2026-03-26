@@ -785,8 +785,10 @@ public class DexItemFactory {
       new IllegalArgumentExceptionMethods();
   public final PrimitiveTypesBoxedTypeFields primitiveTypesBoxedTypeFields =
       new PrimitiveTypesBoxedTypeFields();
-  public final AtomicFieldUpdaterMethods atomicFieldUpdaterMethods =
-      new AtomicFieldUpdaterMethods();
+  public final AtomicIntUpdaterMethods atomicIntUpdaterMethods = new AtomicIntUpdaterMethods();
+  public final AtomicLongUpdaterMethods atomicLongUpdaterMethods = new AtomicLongUpdaterMethods();
+  public final AtomicReferenceUpdaterMethods atomicReferenceUpdaterMethods =
+      new AtomicReferenceUpdaterMethods();
   private final Kotlin kotlin;
   public final PolymorphicMethods polymorphicMethods = new PolymorphicMethods();
   public final ProxyMethods proxyMethods = new ProxyMethods();
@@ -1173,7 +1175,9 @@ public class DexItemFactory {
               stringMembers.concat,
               stringMembers.formatWithLocale,
               stringMembers.valueOfObject,
-              atomicFieldUpdaterMethods.referenceUpdater)
+              atomicReferenceUpdaterMethods.newUpdater,
+              atomicIntUpdaterMethods.newUpdater,
+              atomicLongUpdaterMethods.newUpdater)
           .addAll(javaUtilArraysMethods.copyOfMethods)
           .addAll(boxedValueOfMethods())
           .addAll(stringBufferMethods.appendMethods)
@@ -2585,69 +2589,77 @@ public class DexItemFactory {
     }
   }
 
-  /**
-   * A class that encompasses methods that create different types of atomic field updaters:
-   * Atomic(Integer|Long|Reference)FieldUpdater#newUpdater.
-   */
-  public class AtomicFieldUpdaterMethods {
-    public final DexMethod intUpdater;
-    public final DexMethod longUpdater;
-    public final DexMethod referenceUpdater;
-    public final DexMethod referenceCompareAndSet;
-    public final DexMethod referenceGet;
-    public final DexMethod referenceSet;
-    public final DexMethod referenceGetAndSet;
-    private final Set<DexMethod> updaters;
+  public class AtomicIntUpdaterMethods {
+    public final DexMethod newUpdater;
 
-    private AtomicFieldUpdaterMethods() {
-      intUpdater =
+    private AtomicIntUpdaterMethods() {
+      newUpdater =
           createMethod(
               intFieldUpdaterDescriptor,
               newUpdaterName,
               intFieldUpdaterDescriptor,
               new DexString[] {classDescriptor, stringDescriptor});
-      longUpdater =
+    }
+  }
+
+  public class AtomicLongUpdaterMethods {
+    public final DexMethod newUpdater;
+
+    private AtomicLongUpdaterMethods() {
+      newUpdater =
           createMethod(
               longFieldUpdaterDescriptor,
               newUpdaterName,
               longFieldUpdaterDescriptor,
               new DexString[] {classDescriptor, stringDescriptor});
-      referenceUpdater =
+    }
+  }
+
+  public class AtomicReferenceUpdaterMethods {
+    public final DexMethod newUpdater;
+    public final DexMethod compareAndSet;
+    public final DexMethod get;
+    public final DexMethod set;
+    public final DexMethod getAndSet;
+
+    private AtomicReferenceUpdaterMethods() {
+      newUpdater =
           createMethod(
               referenceFieldUpdaterDescriptor,
               newUpdaterName,
               referenceFieldUpdaterDescriptor,
               new DexString[] {classDescriptor, classDescriptor, stringDescriptor});
-      updaters = ImmutableSet.of(intUpdater, longUpdater, referenceUpdater);
-      referenceCompareAndSet =
+      compareAndSet =
           createMethod(
               referenceFieldUpdaterDescriptor,
               compareAndSetName,
               booleanDescriptor,
               new DexString[] {objectDescriptor, objectDescriptor, objectDescriptor});
-      referenceGet =
+      get =
           createMethod(
               referenceFieldUpdaterDescriptor,
               getName,
               objectDescriptor,
               new DexString[] {objectDescriptor});
-      referenceSet =
+      set =
           createMethod(
               referenceFieldUpdaterDescriptor,
               setName,
               voidDescriptor,
               new DexString[] {objectDescriptor, objectDescriptor});
-      referenceGetAndSet =
+      getAndSet =
           createMethod(
               referenceFieldUpdaterDescriptor,
               getAndSetName,
               objectDescriptor,
               new DexString[] {objectDescriptor, objectDescriptor});
     }
+  }
 
-    public boolean isFieldUpdater(DexMethod method) {
-      return updaters.contains(method);
-    }
+  public boolean isAtomicFieldUpdaterConstructor(DexMethod method) {
+    return method.isIdenticalTo(atomicReferenceUpdaterMethods.newUpdater)
+        || method.isIdenticalTo(atomicIntUpdaterMethods.newUpdater)
+        || method.isIdenticalTo(atomicLongUpdaterMethods.newUpdater);
   }
 
   public class ShortMembers extends BoxedPrimitiveMembers {
