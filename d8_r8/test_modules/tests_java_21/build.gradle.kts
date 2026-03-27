@@ -18,16 +18,24 @@ java {
 kotlin { explicitApi() }
 
 val assistantCompileJavaTask = projectTask("assistant", "compileJava")
-val mainCompileJavaTask = projectTask("main", "compileJava")
-val mainProcessResourcesTask = projectTask("main", "processResources")
-val mainTurboCompileJavaTask = projectTask("main", "compileTurboJava")
 val sharedDownloadDepsTask = projectTask("shared", "downloadDeps")
+val mainClassesScope by configurations.dependencyScope("mainClassesScope")
+val mainClassesOutput =
+  configurations.resolvable("mainClassesOutput") { extendsFrom(mainClassesScope) }
+val mainResourcesScope by configurations.dependencyScope("mainResourcesScope")
+val mainResources = configurations.resolvable("mainResources") { extendsFrom(mainResourcesScope) }
+val turboClassesScope by configurations.dependencyScope("turboClassesScope")
+val turboClassesOutput =
+  configurations.resolvable("turboClassesOutput") { extendsFrom(turboClassesScope) }
 
 dependencies {
+  mainClassesScope(project(":main", "mainClassesOutput"))
+  mainResourcesScope(project(":main", "mainResources"))
+  turboClassesScope(project(":main", "turboClassesOutput"))
   implementation(assistantCompileJavaTask.outputs.files)
-  implementation(mainCompileJavaTask.outputs.files)
-  implementation(mainProcessResourcesTask.outputs.files)
-  implementation(mainTurboCompileJavaTask.outputs.files)
+  implementation(project(":main", "mainClassesOutput"))
+  implementation(project(":main", "mainResources"))
+  implementation(project(":main", "turboClassesOutput"))
   implementation(project(":testbase"))
   implementation(project(":testbase", "depsJar"))
 }
@@ -58,11 +66,11 @@ tasks {
     )
     systemProperty(
       "BUILD_PROP_R8_RUNTIME_PATH",
-      mainCompileJavaTask.outputs.files.getAsPath().split(File.pathSeparator)[0] +
+      project.files(mainClassesOutput).asPath.split(File.pathSeparator)[0] +
         File.pathSeparator +
-        mainTurboCompileJavaTask.outputs.files.getAsPath().split(File.pathSeparator)[0] +
+        project.files(turboClassesOutput).asPath.split(File.pathSeparator)[0] +
         File.pathSeparator +
-        getRoot().resolveAll("src", "main", "resources") +
+        project.files(mainResources).asPath.split(File.pathSeparator)[0] +
         File.pathSeparator +
         assistantCompileJavaTask.outputs.files.getAsPath().split(File.pathSeparator)[0],
     )

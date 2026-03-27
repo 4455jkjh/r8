@@ -16,8 +16,6 @@ val root = getRoot()
 
 java {
   sourceSets.test.configure { java { srcDir(root.resolveAll("src", "test", "bootstrap")) } }
-  // We are using a new JDK to compile to an older language version, which is not directly
-  // compatible with java toolchains.
   sourceCompatibility = JavaVersion.VERSION_1_8
   targetCompatibility = JavaVersion.VERSION_1_8
   toolchain { languageVersion = JavaLanguageVersion.of(JvmCompatibility.release) }
@@ -30,7 +28,6 @@ val distSwissArmyKnife = project(":dist").tasks.getByName("swissArmyKnife")
 val keepAnnoCompileJavaTask = projectTask("keepanno", "compileJava")
 val keepAnnoCompileKotlinTask = projectTask("keepanno", "compileKotlin")
 val keepAnnoJarTask = projectTask("keepanno", "jar")
-val mainJarTask = projectTask("main", "jar")
 val resourceShrinkerCompileJavaTask = projectTask("resourceshrinker", "compileJava")
 val resourceShrinkerCompileKotlinTask = projectTask("resourceshrinker", "compileKotlin")
 val resourceShrinkerDepsJarTask = projectTask("resourceshrinker", "depsJar")
@@ -39,7 +36,7 @@ val sharedDownloadDepsInternalTask = projectTask("shared", "downloadDepsInternal
 
 dependencies {
   implementation(keepAnnoJarTask.outputs.files)
-  implementation(mainJarTask.outputs.files)
+  implementation(project(":main", "mainJar"))
   implementation(resourceShrinkerCompileJavaTask.outputs.files)
   implementation(resourceShrinkerCompileKotlinTask.outputs.files)
   implementation(resourceShrinkerDepsJarTask.outputs.files)
@@ -56,8 +53,6 @@ fun testDependencies(): FileCollection {
 }
 
 tasks {
-  withType<JavaCompile> { dependsOn(mainJarTask) }
-
   withType<KotlinCompile> { compilerOptions { enabled = false } }
 
   withType<Test> {

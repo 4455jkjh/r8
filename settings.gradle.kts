@@ -35,9 +35,9 @@ project(":libanalyzer").projectDir = file("d8_r8/libanalyzer")
 
 includeBuild(rootProject.projectDir.resolve("d8_r8/resourceshrinker"))
 
-// We need to include src/main as a composite-build otherwise our test-modules
-// will compete with the test to compile the source files.
-includeBuild(rootProject.projectDir.resolve("d8_r8/main"))
+include(":main")
+
+project(":main").projectDir = file("d8_r8/main")
 
 include(":dist")
 

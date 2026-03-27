@@ -36,12 +36,17 @@ val assistantCompileTask = projectTask("assistant", "compileJava")
 val blastRadiusCompileTask = projectTask("blastradius", "compileJava")
 val distDepsFilesScope by configurations.dependencyScope("distDepsFilesScope")
 val distDepsFiles by configurations.resolvable("distDepsFiles") { extendsFrom(distDepsFilesScope) }
+val mainClassesScope by configurations.dependencyScope("mainClassesScope")
+val mainClassesOutput =
+  configurations.resolvable("mainClassesOutput") { extendsFrom(mainClassesScope) }
+val mainResourcesScope by configurations.dependencyScope("mainResourcesScope")
+val mainResources = configurations.resolvable("mainResources") { extendsFrom(mainResourcesScope) }
+val turboClassesScope by configurations.dependencyScope("turboClassesScope")
+val turboClassesOutput =
+  configurations.resolvable("turboClassesOutput") { extendsFrom(turboClassesScope) }
 val keepAnnoJarTask = projectTask("keepanno", "jar")
 val keepAnnoCompileJavaTask = projectTask("keepanno", "compileJava")
 val keepAnnoCompileKotlinTask = projectTask("keepanno", "compileKotlin")
-val mainCompileJavaTask = projectTask("main", "compileJava")
-val mainProcessResourcesTask = projectTask("main", "processResources")
-val mainTurboCompileJavaTask = projectTask("main", "compileTurboJava")
 val resourceShrinkerCompileJavaTask = projectTask("resourceshrinker", "compileJava")
 val resourceShrinkerCompileKotlinTask = projectTask("resourceshrinker", "compileKotlin")
 val resourceShrinkerDepsJarTask = projectTask("resourceshrinker", "depsJar")
@@ -50,13 +55,16 @@ val sharedDownloadDepsInternalTask = projectTask("shared", "downloadDepsInternal
 
 dependencies {
   distDepsFilesScope(project(":dist", "depsFiles"))
+  mainClassesScope(project(":main", "mainClassesOutput"))
+  mainResourcesScope(project(":main", "mainResources"))
+  turboClassesScope(project(":main", "turboClassesOutput"))
   implementation(assistantCompileTask.outputs.files)
   implementation(blastRadiusCompileTask.outputs.files)
   implementation(keepAnnoJarTask.outputs.files)
   implementation(project(":libanalyzer", "libanalyzer-compile-java"))
-  implementation(mainCompileJavaTask.outputs.files)
-  implementation(mainProcessResourcesTask.outputs.files)
-  implementation(mainTurboCompileJavaTask.outputs.files)
+  implementation(files(mainClassesOutput))
+  implementation(files(mainResources))
+  implementation(files(turboClassesOutput))
   implementation(resourceShrinkerCompileJavaTask.outputs.files)
   implementation(resourceShrinkerCompileKotlinTask.outputs.files)
   implementation(resourceShrinkerDepsJarTask.outputs.files)
@@ -102,7 +110,6 @@ tasks {
   withType<JavaCompile> {
     dependsOn(createArtTests)
     dependsOn(keepAnnoCompileJavaTask)
-    dependsOn(mainCompileJavaTask)
     dependsOn(resourceShrinkerCompileJavaTask)
     dependsOn(sharedDownloadDepsTask)
     dependsOn(":testbase:compileJava")
@@ -155,13 +162,13 @@ tasks {
     )
     // This path is set when compiling examples jar task in DependenciesPlugin.
     val r8RuntimePath =
-      mainCompileJavaTask.outputs.files.getAsPath().split(File.pathSeparator)[0] +
+      project.files(mainClassesOutput).asPath.split(File.pathSeparator)[0] +
         File.pathSeparator +
-        mainTurboCompileJavaTask.outputs.files.getAsPath().split(File.pathSeparator)[0] +
+        project.files(turboClassesOutput).asPath.split(File.pathSeparator)[0] +
         File.pathSeparator +
         distDepsFiles.asPath +
         File.pathSeparator +
-        getRoot().resolveAll("src", "main", "resources") +
+        project.files(mainResources).asPath.split(File.pathSeparator)[0] +
         File.pathSeparator +
         keepAnnoCompileJavaTask.outputs.files.getAsPath().split(File.pathSeparator)[0] +
         File.pathSeparator +

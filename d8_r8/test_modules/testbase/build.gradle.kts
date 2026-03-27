@@ -17,8 +17,6 @@ val root = getRoot()
 java {
   sourceSets.main.configure { java { srcDir(root.resolveAll("src", "test", "testbase", "java")) } }
 
-  // We are using a new JDK to compile to an older language version, which is not directly
-  // compatible with java toolchains.
   sourceCompatibility = JavaVersion.VERSION_1_8
   targetCompatibility = JavaVersion.VERSION_1_8
   toolchain { languageVersion = JavaLanguageVersion.of(JvmCompatibility.release) }
@@ -30,10 +28,6 @@ kotlin { explicitApi() }
 // incompatible java class file version. By depending on the jar we circumvent that.
 val keepAnnoJarTask = projectTask("keepanno", "jar")
 val keepAnnoCompileJavaTask = projectTask("keepanno", "compileJava")
-
-val mainCompileJavaTask = projectTask("main", "compileJava")
-val mainProcessResourcesTask = projectTask("main", "processResources")
-val mainTurboCompileJavaTask = projectTask("main", "compileTurboJava")
 val resourceShrinkerCompileJavaTask = projectTask("resourceshrinker", "compileJava")
 val resourceShrinkerCompileKotlinTask = projectTask("resourceshrinker", "compileKotlin")
 val resourceShrinkerDepsJarTask = projectTask("resourceshrinker", "depsJar")
@@ -43,9 +37,9 @@ val sharedDownloadTestDepsTask = projectTask("shared", "downloadTestDeps")
 dependencies {
   implementation(keepAnnoJarTask.outputs.files)
   implementation(project(":libanalyzer", "libanalyzer-compile-java"))
-  implementation(mainCompileJavaTask.outputs.files)
-  implementation(mainProcessResourcesTask.outputs.files)
-  implementation(mainTurboCompileJavaTask.outputs.files)
+  implementation(project(":main", "mainClassesOutput"))
+  implementation(project(":main", "mainResources"))
+  implementation(project(":main", "turboClassesOutput"))
   implementation(resourceShrinkerCompileJavaTask.outputs.files)
   implementation(resourceShrinkerCompileKotlinTask.outputs.files)
   implementation(resourceShrinkerDepsJarTask.outputs.files)
@@ -83,9 +77,6 @@ fun testDependencies(): FileCollection {
 tasks {
   withType<JavaCompile> {
     dependsOn(keepAnnoCompileJavaTask)
-    dependsOn(mainCompileJavaTask)
-    dependsOn(mainProcessResourcesTask)
-    dependsOn(mainTurboCompileJavaTask)
     dependsOn(resourceShrinkerCompileJavaTask)
     dependsOn(sharedDownloadDepsTask)
     dependsOn(sharedDownloadTestDepsTask)

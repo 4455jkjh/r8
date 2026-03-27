@@ -33,6 +33,10 @@ val mainDepsJarFilesScope by configurations.dependencyScope("mainDepsJarFilesSco
 val mainDepsJarFilesConfig by
   configurations.resolvable("mainDepsJarFilesConfig") { extendsFrom(mainDepsJarFilesScope) }
 
+val mainSourcesScope by configurations.dependencyScope("mainSourcesScope")
+val mainSourcesConfig by
+  configurations.resolvable("mainSourcesConfig") { extendsFrom(mainSourcesScope) }
+
 dependencies {
   testJarsScope(project(":tests_java_8", "testJar"))
   testJarsScope(project(":tests_java_9", "testJar"))
@@ -44,6 +48,7 @@ dependencies {
   testDepsJarsScope(project(":tests_bootstrap", "depsJar"))
   testDepsJarsScope(project(":testbase", "depsJar"))
   mainDepsJarFilesScope(project(":dist", "depsJarFiles"))
+  mainSourcesScope(project(":main", "mainSources"))
 }
 
 val blastRadiusSourcesTask = projectTask("blastradius", "sourcesJar")
@@ -64,7 +69,6 @@ val swissArmyKnifeTask = project(":dist").tasks.getByName("swissArmyKnife")
 val processKeepRulesLibWithRelocatedDepsTask =
   project(":dist").tasks.getByName("processKeepRulesLibWithRelocatedDeps")
 val r8WithRelocatedDepsTask = project(":dist").tasks.getByName("r8WithRelocatedDeps")
-val mainSourcesTask = projectTask("main", "sourcesJar")
 val resourceShrinkerSourcesTask = projectTask("resourceshrinker", "sourcesJar")
 val keepAnnoAndroidXAnnotationsJar = projectTask("keepanno", "keepAnnoAndroidXAnnotationsJar")
 val keepAnnoToolsWithRelocatedDepsTask =
@@ -560,12 +564,11 @@ tasks {
       dependsOn(blastRadiusSourcesTask)
       dependsOn(keepAnnoSourcesTask)
       dependsOn(libanalyzerSourcesConfig)
-      dependsOn(mainSourcesTask)
       dependsOn(resourceShrinkerSourcesTask)
       from(blastRadiusSourcesTask.outputs.files.map(::zipTree))
       from(keepAnnoSourcesTask.outputs.files.map(::zipTree))
       from(libanalyzerSourcesConfig.map(::zipTree))
-      from(mainSourcesTask.outputs.files.map(::zipTree))
+      from(mainSourcesConfig.map(::zipTree))
       from(resourceShrinkerSourcesTask.outputs.files.map(::zipTree))
       archiveClassifier.set("sources")
       archiveFileName.set("r8-src.jar")
