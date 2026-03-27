@@ -78,7 +78,7 @@ public class Java25ValidationTest extends TestBase {
   @Test
   public void testTestClassClassFileVersion() throws Exception {
     assertEquals(
-        CfVersion.V24,
+        CfVersion.V25,
         extractClassFileVersion(ToolHelper.getClassFileForTestClass(TestClass.class)));
   }
 
