@@ -309,6 +309,7 @@ tasks {
 
   val threadingModuleBlockingJar by
     registering(Zip::class) {
+      dependsOn(mainJarConfig)
       from(mainJarConfig.elements.map { it.map { zipTree(it) } })
       include("com/android/tools/r8/threading/providers/blocking/**")
       destinationDirectory.set(getRoot().resolveAll("build", "libs"))
@@ -317,6 +318,7 @@ tasks {
 
   val threadingModuleSingleThreadedJar by
     registering(Zip::class) {
+      dependsOn(mainJarConfig)
       from(mainJarConfig.elements.map { it.map { zipTree(it) } })
       include("com/android/tools/r8/threading/providers/singlethreaded/**")
       destinationDirectory.set(getRoot().resolveAll("build", "libs"))

@@ -560,6 +560,7 @@ tasks {
       dependsOn(keepAnnoSourcesTask)
       dependsOn(libanalyzerSourcesConfig)
       dependsOn(resourceShrinkerSourcesTask)
+      dependsOn(mainSourcesConfig)
       from(blastRadiusSourcesTask.outputs.files.map(::zipTree))
       from(keepAnnoSourcesTask.outputs.files.map(::zipTree))
       from(libanalyzerSourcesConfig.map(::zipTree))
