@@ -37,7 +37,9 @@ public class InliningWithUnsafeTest extends TestBase {
   }
 
   // sun.misc.Unsafe is a hidden class, accessed via reflection. This non-existence at compile-time
-  // foils some inlining checks that reasons about method accessibility and thus prevents inlining.
+  // foiled some inlining checks that reasons about method accessibility and thus prevented
+  // inlining.
+  // This is not the case anymore, as verified here.
   @Test
   public void testR8() throws Exception {
     String stubDescriptor = DescriptorUtils.javaClassToDescriptor(UnsafeStub.class);
@@ -59,17 +61,9 @@ public class InliningWithUnsafeTest extends TestBase {
                   inspector.clazz(testClassReference).allMethods().stream()
                       .map(MethodSubject::getOriginalMethodName)
                       .collect(Collectors.toSet());
-              ImmutableSet<String> expected;
-              // The CF runtime jar has sun.misc.Unsafe exposed, which permits inlining.
-              boolean isInlined = parameters.isCfRuntime();
-              if (isInlined) {
-                expected = ImmutableSet.of("main", "nonObviousNull");
-              } else {
-                expected = ImmutableSet.of("main", "nonObviousNull", "useUnsafe");
-              }
               assertEquals(
-                  "The remaining methods of the test class were unexpected:",
-                  expected,
+                  "The methods of the test class were unexpected:",
+                  ImmutableSet.of("main", "nonObviousNull"),
                   foundMethods);
             });
   }
