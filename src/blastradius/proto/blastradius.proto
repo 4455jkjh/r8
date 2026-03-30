@@ -165,6 +165,7 @@ message FileOrigin {
   int32 id = 1;
   string filename = 2;
   MavenCoordinate maven_coordinate = 3;
+  bool provided_by_build_system = 4;
 }
 
 // The ids of ClassFileInJarOrigin and FileOrigin are non-overlapping

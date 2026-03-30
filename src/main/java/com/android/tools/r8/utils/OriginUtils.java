@@ -3,6 +3,7 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8.utils;
 
+import com.android.tools.r8.origin.BuildSystemProvidedKeepRulesOrigin;
 import com.android.tools.r8.origin.MavenOrigin;
 import com.android.tools.r8.origin.Origin;
 
@@ -16,5 +17,9 @@ public class OriginUtils {
       return getMavenOrigin(origin.parent());
     }
     return null;
+  }
+
+  public static boolean isProvidedByBuildSystem(Origin origin) {
+    return origin instanceof BuildSystemProvidedKeepRulesOrigin;
   }
 }

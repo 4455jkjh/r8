@@ -299,6 +299,9 @@ public class RootSetBlastRadiusSerializer {
                     .setVersion(mavenOrigin.getVersion())
                     .build());
           }
+          if (OriginUtils.isProvidedByBuildSystem(origin)) {
+            fileOriginBuilder.setProvidedByBuildSystem(true);
+          }
           FileOrigin fileOrigin = fileOriginBuilder.build();
           container.addFileOriginTable(fileOrigin);
           return fileOrigin;
