@@ -92,12 +92,12 @@ tasks {
   val createArtTests by
     registering(Exec::class) {
       dependsOn(sharedDownloadDepsTask)
+      dependOnPythonScripts()
       // TODO(b/327315907): Don't generating into the root build dir.
       val outputDir =
         getRoot()
           .resolveAll("build", "generated", "test", "java", "com", "android", "tools", "r8", "art")
       val createArtTestsScript = getRoot().resolveAll("tools", "create_art_tests.py")
-      inputs.file(createArtTestsScript)
       inputs.dir(getRoot().resolveAll("tests", "2017-10-04"))
       outputs.dir(outputDir)
       workingDir(getRoot())

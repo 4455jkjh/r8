@@ -472,14 +472,12 @@ tasks {
   val processKeepRulesLibWithRelocatedDeps by
     registering(Exec::class) {
       dependsOn(r8WithRelocatedDeps)
-      val createR8LibFile = getRoot().resolveAll("tools", "create_r8lib.py")
+      dependOnPythonScripts()
       val keepRulesFile = getRoot().resolveAll("src", "main", "keep_processkeeprules.txt")
       val outputJar = getRoot().resolveAll("build", "libs", "processkeepruleslib.jar")
       outputs.file(outputJar)
       inputs.files(
-        Callable {
-          listOf(createR8LibFile, keepRulesFile, r8WithRelocatedDeps.get().getSingleOutputFile())
-        }
+        Callable { listOf(keepRulesFile, r8WithRelocatedDeps.get().getSingleOutputFile()) }
       )
       doFirst {
         val r8WithRelocatedDepsJar = r8WithRelocatedDeps.get().getSingleOutputFile()

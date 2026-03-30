@@ -238,6 +238,7 @@ tasks {
       r8WithRelocatedDepsTask,
       assistantJarTask,
     )
+    dependOnPythonScripts()
     val inputJar = inputJarProvider.getSingleOutputFile()
     val r8WithRelocatedDepsJar = r8WithRelocatedDepsTask.getSingleOutputFile()
     val assistantJar = assistantJarTask.getSingleOutputFile()
@@ -249,11 +250,7 @@ tasks {
         // TODO(b/294351878): Remove once enum issue is fixed
         getRoot().resolveAll("src", "main", "keep_r8resourceshrinker.txt"),
       )
-    inputs.files(
-      listOf(r8WithRelocatedDepsJar, inputJar, getRoot().resolveAll("tools", "create_r8lib.py"))
-        .union(keepRuleFiles)
-        .union(classpath)
-    )
+    inputs.files(listOf(r8WithRelocatedDepsJar, inputJar).union(keepRuleFiles).union(classpath))
     val outputJar = getRoot().resolveAll("build", "libs", artifactName)
     outputs.file(outputJar)
     commandLine =
@@ -297,13 +294,11 @@ tasks {
       dependsOn(r8WithRelocatedDepsTask)
       dependsOn(keepAnnoToolsWithRelocatedDepsTask)
       dependsOn(depsJarOnlyAsmTask)
+      dependOnPythonScripts()
       val inputJar = keepAnnoToolsWithRelocatedDepsTask.getSingleOutputFile()
       val r8WithRelocatedDepsJar = r8WithRelocatedDepsTask.getSingleOutputFile()
       val keepRuleFiles = listOf(getRoot().resolveAll("src", "keepanno", "keep.txt"))
-      inputs.files(
-        listOf(r8WithRelocatedDepsJar, inputJar, getRoot().resolveAll("tools", "create_r8lib.py"))
-          .union(keepRuleFiles)
-      )
+      inputs.files(listOf(r8WithRelocatedDepsJar, inputJar).union(keepRuleFiles))
       val outputJar = getRoot().resolveAll("build", "libs", "keepanno-toolslib.jar")
       outputs.file(outputJar)
       commandLine =
