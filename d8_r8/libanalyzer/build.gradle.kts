@@ -11,7 +11,7 @@ import org.gradle.nativeplatform.platform.internal.DefaultNativePlatform
 plugins {
   `kotlin-dsl`
   id("dependencies-plugin")
-  id("net.ltgt.errorprone") version "3.0.1"
+  id("net.ltgt.errorprone")
 }
 
 // It seems like the use of a local maven repo does not allow adding the plugin with the id+version
@@ -57,20 +57,41 @@ dependencies {
   errorprone(Deps.errorprone)
 }
 
-tasks {
-  jar {
+val jarTask =
+  tasks.named<Jar>("jar") {
     exclude("libraryanalyzerresult.proto")
     exclude("com/android/tools/r8/libanalyzer/proto/**")
     archiveFileName.set("libanalyzer-exclude-deps.jar")
+    destinationDirectory.set(layout.buildDirectory.dir("sub-libs"))
   }
 
-  val protoJar by
-    registering(Jar::class) {
-      from(sourceSets.main.get().output)
-      include("com/android/tools/r8/libanalyzer/proto/**")
-      archiveFileName.set("libanalyzer-proto.jar")
-    }
-}
+val protoJarTask =
+  tasks.register<Jar>("protoJar") {
+    from(sourceSets.main.get().output)
+    include("com/android/tools/r8/libanalyzer/proto/**")
+    archiveFileName.set("libanalyzer-proto.jar")
+    destinationDirectory.set(layout.buildDirectory.dir("sub-libs"))
+  }
+
+val libanalyzerJar by configurations.consumable("libanalyzer-jar") { outgoing.artifact(jarTask) }
+
+val libanalyzerProtoJar by
+  configurations.consumable("libanalyzer-proto-jar") { outgoing.artifact(protoJarTask) }
+
+val libanalyzerSourcesJar by
+  configurations.consumable("libanalyzer-sources-jar") {
+    outgoing.artifact(tasks.named<Jar>("sourcesJar"))
+  }
+
+val compileJavaJarTask =
+  tasks.register<Jar>("compileJavaJar") {
+    from(tasks.named("compileJava"))
+    archiveFileName.set("libanalyzer-compile-java.jar")
+    destinationDirectory.set(project.layout.buildDirectory.dir("sub-libs"))
+  }
+
+val libanalyzerCompileJava by
+  configurations.consumable("libanalyzer-compile-java") { outgoing.artifact(compileJavaJarTask) }
 
 tasks.withType<JavaCompile> {
   options.errorprone.excludedPaths.set(".*/build/generated/source/proto/main/java/.*")

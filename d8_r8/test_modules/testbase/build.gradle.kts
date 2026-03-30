@@ -30,7 +30,7 @@ kotlin { explicitApi() }
 // incompatible java class file version. By depending on the jar we circumvent that.
 val keepAnnoJarTask = projectTask("keepanno", "jar")
 val keepAnnoCompileJavaTask = projectTask("keepanno", "compileJava")
-val libraryAnalyzerCompileJavaTask = projectTask("libanalyzer", "compileJava")
+
 val mainCompileJavaTask = projectTask("main", "compileJava")
 val mainProcessResourcesTask = projectTask("main", "processResources")
 val mainTurboCompileJavaTask = projectTask("main", "compileTurboJava")
@@ -42,7 +42,7 @@ val sharedDownloadTestDepsTask = projectTask("shared", "downloadTestDeps")
 
 dependencies {
   implementation(keepAnnoJarTask.outputs.files)
-  implementation(libraryAnalyzerCompileJavaTask.outputs.files)
+  implementation(project(":libanalyzer", "libanalyzer-compile-java"))
   implementation(mainCompileJavaTask.outputs.files)
   implementation(mainProcessResourcesTask.outputs.files)
   implementation(mainTurboCompileJavaTask.outputs.files)

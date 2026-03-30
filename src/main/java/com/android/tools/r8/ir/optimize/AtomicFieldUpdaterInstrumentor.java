@@ -326,7 +326,7 @@ public class AtomicFieldUpdaterInstrumentor {
     InvokeStatic invokeStatic = input.asInvokeStatic();
     if (!invokeStatic
         .getInvokedMethod()
-        .isIdenticalTo(itemFactory.atomicFieldUpdaterMethods.referenceUpdater)) {
+        .isIdenticalTo(itemFactory.atomicReferenceUpdaterMethods.newUpdater)) {
       reportInfo(
           appView,
           new Event.CannotInstrument(updaterField),

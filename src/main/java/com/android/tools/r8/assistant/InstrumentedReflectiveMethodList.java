@@ -185,13 +185,13 @@ public class InstrumentedReflectiveMethodList {
     // AtomicFieldUpdater methods.
 
     builder.put(
-        factory.atomicFieldUpdaterMethods.intUpdater,
+        factory.atomicIntUpdaterMethods.newUpdater,
         getMethodReferenceWithClassAndStringParameter("onAtomicIntegerFieldUpdaterNewUpdater"));
     builder.put(
-        factory.atomicFieldUpdaterMethods.longUpdater,
+        factory.atomicLongUpdaterMethods.newUpdater,
         getMethodReferenceWithClassAndStringParameter("onAtomicLongFieldUpdaterNewUpdater"));
     builder.put(
-        factory.atomicFieldUpdaterMethods.referenceUpdater,
+        factory.atomicReferenceUpdaterMethods.newUpdater,
         getMethodReferenceWithParameterTypes(
             "onAtomicReferenceFieldUpdaterNewUpdater",
             factory.classType,

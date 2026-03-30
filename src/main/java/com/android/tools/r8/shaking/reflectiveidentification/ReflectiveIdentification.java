@@ -112,7 +112,7 @@ public class ReflectiveIdentification {
       // java.util.concurrent.atomic.AtomicIntegerFieldUpdater
       // java.util.concurrent.atomic.AtomicLongFieldUpdater
       // java.util.concurrent.atomic.AtomicReferenceFieldUpdater
-      if (factory.atomicFieldUpdaterMethods.isFieldUpdater(invokedMethod)) {
+      if (factory.isAtomicFieldUpdaterConstructor(invokedMethod)) {
         identifierNameStringAdditions.add(invokedMethod);
         enqueue(method);
       }
@@ -201,7 +201,7 @@ public class ReflectiveIdentification {
       }
     } else if (holder.isIdenticalTo(factory.javaUtilConcurrentAtomicAtomicIntegerFieldUpdater)) {
       // java.util.concurrent.atomic.AtomicIntegerFieldUpdater
-      if (factory.atomicFieldUpdaterMethods.isFieldUpdater(invokedMethod)) {
+      if (factory.atomicIntUpdaterMethods.newUpdater.isIdenticalTo(invokedMethod)) {
         handleJavaUtilConcurrentAtomicAtomicFieldUpdater(
             method,
             invoke,
@@ -212,7 +212,7 @@ public class ReflectiveIdentification {
       }
     } else if (holder.isIdenticalTo(factory.javaUtilConcurrentAtomicAtomicLongFieldUpdater)) {
       // java.util.concurrent.atomic.AtomicLongFieldUpdater
-      if (factory.atomicFieldUpdaterMethods.isFieldUpdater(invokedMethod)) {
+      if (factory.atomicLongUpdaterMethods.newUpdater.isIdenticalTo(invokedMethod)) {
         handleJavaUtilConcurrentAtomicAtomicFieldUpdater(
             method,
             invoke,
@@ -223,7 +223,7 @@ public class ReflectiveIdentification {
       }
     } else if (holder.isIdenticalTo(factory.javaUtilConcurrentAtomicAtomicReferenceFieldUpdater)) {
       // java.util.concurrent.atomic.AtomicReferenceFieldUpdater
-      if (factory.atomicFieldUpdaterMethods.isFieldUpdater(invokedMethod)) {
+      if (factory.atomicReferenceUpdaterMethods.newUpdater.isIdenticalTo(invokedMethod)) {
         handleJavaUtilConcurrentAtomicAtomicFieldUpdater(
             method,
             invoke,

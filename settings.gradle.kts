@@ -29,7 +29,9 @@ includeBuild(rootProject.projectDir.resolve("d8_r8/blastradius"))
 
 includeBuild(rootProject.projectDir.resolve("d8_r8/keepanno"))
 
-includeBuild(rootProject.projectDir.resolve("d8_r8/libanalyzer"))
+include(":libanalyzer")
+
+project(":libanalyzer").projectDir = file("d8_r8/libanalyzer")
 
 includeBuild(rootProject.projectDir.resolve("d8_r8/resourceshrinker"))
 

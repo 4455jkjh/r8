@@ -53,7 +53,7 @@ public final class IdentifierNameStringUtils {
     // So, why is this simply not like:
     //   return dexItemFactory.classMethods.isReflectiveClassLookup(method)
     //       || dexItemFactory.classMethods.isReflectiveMemberLookup(method)
-    //       || dexItemFactory.atomicFieldUpdaterMethods.isFieldUpdater(method);
+    //       || dexItemFactory.isAtomicFieldUpdaterConstructor(method);
     // ?
     // That is because the counter part of other shrinkers supports users' own reflective methods
     // whose signature matches with reflection methods in Java. Hence, explicit signature matching.

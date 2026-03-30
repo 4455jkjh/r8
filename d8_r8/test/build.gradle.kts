@@ -50,7 +50,13 @@ val blastRadiusSourcesTask = projectTask("blastradius", "sourcesJar")
 val keepAnnoCompileTask = projectTask("keepanno", "compileJava")
 val keepAnnoCompileKotlinTask = projectTask("keepanno", "compileKotlin")
 val keepAnnoSourcesTask = projectTask("keepanno", "sourcesJar")
-val libraryAnalyzerSourcesTask = projectTask("libanalyzer", "sourcesJar")
+
+val libanalyzerSourcesScope by configurations.dependencyScope("libanalyzerSourcesScope")
+val libanalyzerSourcesConfig by
+  configurations.resolvable("libanalyzerSourcesConfig") { extendsFrom(libanalyzerSourcesScope) }
+
+dependencies { libanalyzerSourcesScope(project(":libanalyzer", "libanalyzer-sources-jar")) }
+
 val assistantJarTask = projectTask("assistant", "jar")
 val mainProtoJarTask = project(":dist").tasks.getByName("protoJar")
 val mainDepsJarTask = project(":dist").tasks.getByName("depsJar")
@@ -553,12 +559,12 @@ tasks {
     registering(Jar::class) {
       dependsOn(blastRadiusSourcesTask)
       dependsOn(keepAnnoSourcesTask)
-      dependsOn(libraryAnalyzerSourcesTask)
+      dependsOn(libanalyzerSourcesConfig)
       dependsOn(mainSourcesTask)
       dependsOn(resourceShrinkerSourcesTask)
       from(blastRadiusSourcesTask.outputs.files.map(::zipTree))
       from(keepAnnoSourcesTask.outputs.files.map(::zipTree))
-      from(libraryAnalyzerSourcesTask.outputs.files.map(::zipTree))
+      from(libanalyzerSourcesConfig.map(::zipTree))
       from(mainSourcesTask.outputs.files.map(::zipTree))
       from(resourceShrinkerSourcesTask.outputs.files.map(::zipTree))
       archiveClassifier.set("sources")
