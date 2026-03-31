@@ -419,7 +419,7 @@ public class AtomicFieldUpdaterInstrumentor {
     // If this assert fails then check these things before updating the assert:
     //   * Check if AtomicReferenceFieldUpdater.newUpdater has changed implementation.
     //     * If so, verify/correct the static checks to match the runtime checks.
-    assert AndroidApiLevel.LATEST.isEqualTo(AndroidApiLevel.BAKLAVA_1);
+    assert AndroidApiLevel.LATEST.isEqualTo(AndroidApiLevel.CINNAMON_BUN);
     return UpdaterFieldInfo.create(
         updaterField, fieldType, holderValue, fieldNameValue, invokeStatic.getPosition());
   }

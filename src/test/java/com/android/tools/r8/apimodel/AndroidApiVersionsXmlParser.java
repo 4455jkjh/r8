@@ -108,7 +108,7 @@ public class AndroidApiVersionsXmlParser {
     Set<String> removedTypeNames = new HashSet<>();
     if (maxApiLevel.isGreaterThanOrEqualTo(AndroidApiLevel.U)) {
       if (maxApiLevel.isLessThan(AndroidApiLevel.V)
-          || maxApiLevel.equals(AndroidApiLevel.BAKLAVA_1)) {
+          || maxApiLevel.isGreaterThanOrEqualTo(AndroidApiLevel.BAKLAVA_1)) {
         removedTypeNames.add("com.android.internal.util.Predicate");
       }
       if (maxApiLevel.isLessThan(AndroidApiLevel.BAKLAVA_1)) {
@@ -145,7 +145,8 @@ public class AndroidApiVersionsXmlParser {
         if (!clazz.getOriginalTypeName().startsWith("android.test")
             && !clazz.getOriginalTypeName().startsWith("junit")) {
           assert exemptionList.contains(type) || hasRemoved(node) : type;
-          assert exemptionList.contains(type) || getRemoved(node).isLessThanOrEqualTo(maxApiLevel)
+          assert exemptionList.contains(type)
+                  || getRemoved(node, version).isLessThanOrEqualTo(maxApiLevel)
               : type;
           if (!hasRemoved(node)) {
             exemptionList.remove(type);
@@ -180,7 +181,7 @@ public class AndroidApiVersionsXmlParser {
                     + " in class "
                     + type
                     + " to be marked as removed";
-            assert getRemoved(memberNode).isLessThanOrEqualTo(maxApiLevel);
+            assert getRemoved(memberNode, version).isLessThanOrEqualTo(maxApiLevel);
             continue;
           }
           parsedApiClass.register(
@@ -239,10 +240,11 @@ public class AndroidApiVersionsXmlParser {
     return AndroidApiLevel.parseAndroidApiLevel(since.getNodeValue());
   }
 
-  private AndroidApiLevel getRemoved(Node node) {
+  private AndroidApiLevel getRemoved(Node node, int version) {
     assert hasRemoved(node);
     Node removed = node.getAttributes().getNamedItem("removed");
-    return AndroidApiLevel.getAndroidApiLevel(Integer.parseInt(removed.getNodeValue()));
+    assert version == 4 || !removed.getNodeValue().contains(".");
+    return AndroidApiLevel.parseAndroidApiLevel(removed.getNodeValue());
   }
 
   private AndroidApiLevel getMaxAndroidApiLevelFromNode(
