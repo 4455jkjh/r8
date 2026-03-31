@@ -218,11 +218,12 @@ common_test_options = [
 
 default_timeout = time.hour * 6
 
-def get_dimensions(windows = False, internal = False, archive = False, jammy = True):
+def get_dimensions(windows = False, internal = False, archive = False, tester = False, jammy = True):
     # We use the following setup:
     #   windows -> always windows machine
     #   internal -> always internal, single small, machine
-    #   archie -> archive or normal machines (normal machines set archive)
+    #   archive -> archive or normal machines (normal machines set archive)
+    #   tester -> tester or normal machines
     #   all_other -> normal linux machines
     dimensions = {
         "cpu": "x86-64",
@@ -238,6 +239,8 @@ def get_dimensions(windows = False, internal = False, archive = False, jammy = T
         dimensions["internal"] = "true"
     elif archive:
         dimensions["archive"] = "true"
+    elif tester:
+         dimensions["tester"] = "true"
     else:
         dimensions["normal"] = "true"
     return dimensions
@@ -283,11 +286,11 @@ def r8_builder(
     if bucket == "ci":
         category = category if category else "R8"
         category = "Release|" + category if release else category
-        builder_view(name, category, name.split("-")[-1].replace("_release", ""))
+        builder_view(bucket + "/" + name, category, name.split("-")[-1].replace("_release", ""))
     elif bucket == "try":
         luci.list_view_entry(
             list_view = "try",
-            builder = name,
+            builder = bucket + "/" + name,
         )
 
 def r8_tester(
@@ -304,24 +307,30 @@ def r8_tester(
         extra_properties = {}):
     dimensions = dimensions if dimensions else get_dimensions()
     names = [name, name + "_release"] if trigger else [name]
-    properties = {
-        "test_options": test_options,
-        "builder_group": "internal.client.r8",
-    }
-    properties.update(extra_properties)
-    for name in names:
-        r8_builder(
-            name = name,
-            bucket = bucket,
-            trigger = trigger,
-            category = category,
-            execution_timeout = execution_timeout,
-            expiration_timeout = expiration_timeout,
-            dimensions = dimensions,
-            release_trigger = release_trigger,
-            max_concurrent_invocations = max_concurrent_invocations,
-            properties = properties,
-        )
+    for n in names:
+        buckets = [bucket]
+        if bucket == "ci" and not n.endswith("release"):
+            buckets.append("try")
+
+        for b in buckets:
+            actual_trigger = trigger and b == "ci"
+            properties = {
+                "test_options": test_options,
+                "builder_group": "internal.client.r8",
+            }
+            properties.update(extra_properties)
+            r8_builder(
+                name = n,
+                bucket = b,
+                trigger = actual_trigger,
+                category = category,
+                execution_timeout = execution_timeout,
+                expiration_timeout = expiration_timeout,
+                dimensions = dimensions,
+                release_trigger = release_trigger,
+                max_concurrent_invocations = max_concurrent_invocations,
+                properties = properties,
+            )
 
 def r8_tester_with_default(
         name,
@@ -512,9 +521,10 @@ r8_tester_with_default(
 )
 
 luci.cq_tryjob_verifier(
-    builder = "presubmit",
+    builder = "try/presubmit",
     cq_group = "main-cq",
 )
+
 r8_tester_with_default(
     "linux-none",
     ["--runtimes=none", "--command_cache_dir=/tmp/ccache"],
