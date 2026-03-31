@@ -32,6 +32,7 @@ import com.android.tools.r8.graph.DexProto;
 import com.android.tools.r8.graph.DexReference;
 import com.android.tools.r8.graph.DexType;
 import com.android.tools.r8.graph.DexTypeList;
+import com.android.tools.r8.origin.ArchiveEntryOrigin;
 import com.android.tools.r8.origin.MavenOrigin;
 import com.android.tools.r8.origin.Origin;
 import com.android.tools.r8.origin.PathOrigin;
@@ -276,7 +277,13 @@ public class RootSetBlastRadiusSerializer {
   private FileOrigin serializeOrigin(DexReference reference) {
     DexProgramClass clazz = asProgramClassOrNull(appView.definitionFor(reference.getContextType()));
     assert clazz != null;
-    return serializeOrigin(clazz.getOrigin());
+    Origin origin = clazz.getOrigin();
+    if (origin instanceof ArchiveEntryOrigin) {
+      // The class file entry inside the archive is immediately clear from the reference,
+      // so do not create a unique origin in the blast radius data per class file.
+      return serializeOrigin(origin.parent());
+    }
+    return serializeOrigin(origin);
   }
 
   private FileOrigin serializeOrigin(Origin origin) {
