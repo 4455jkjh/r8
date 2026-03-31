@@ -4,7 +4,6 @@
 
 package com.android.tools.r8.globalsynthetics;
 
-import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -14,7 +13,6 @@ import com.android.tools.r8.GlobalSyntheticsTestingConsumer;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.ToolHelper;
-import com.android.tools.r8.UnorderedCollectionMatcher;
 import com.android.tools.r8.graph.DexItemFactory;
 import com.android.tools.r8.utils.AndroidApiLevel;
 import com.android.tools.r8.utils.SetUtils;
@@ -122,7 +120,7 @@ public class GlobalSyntheticsEnsureClassesOutputTest extends TestBase {
                               "Lcom/android/tools/r8/DesugarMethodHandlesLookup"));
                 });
     assertTrue(globalsConsumer.isSingleGlobal());
-    testForD8(backend)
+    testForD8()
         .apply(
             b ->
                 b.getBuilder().addGlobalSyntheticsResourceProviders(globalsConsumer.getProviders()))
@@ -134,9 +132,7 @@ public class GlobalSyntheticsEnsureClassesOutputTest extends TestBase {
                   inspector.allClasses().stream()
                       .map(FoundClassSubject::getFinalDescriptor)
                       .collect(Collectors.toSet());
-              assertThat(
-                  readGlobalSynthetics,
-                  UnorderedCollectionMatcher.matchesItemsOneToOne(generatedGlobalSynthetics));
+              assertEquals(generatedGlobalSynthetics, readGlobalSynthetics);
             });
   }
 }

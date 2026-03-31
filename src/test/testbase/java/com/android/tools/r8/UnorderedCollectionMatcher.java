@@ -4,7 +4,6 @@
 
 package com.android.tools.r8;
 
-import com.android.tools.r8.utils.IterableUtils;
 import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -15,7 +14,6 @@ import java.util.function.Function;
 import org.hamcrest.Description;
 import org.hamcrest.Matcher;
 import org.hamcrest.TypeSafeMatcher;
-import org.hamcrest.core.IsEqual;
 
 /** Matcher for a collection of items that matches a collection of matchers one-to-one. */
 public class UnorderedCollectionMatcher<T> extends TypeSafeMatcher<Iterable<? extends T>> {
@@ -32,11 +30,6 @@ public class UnorderedCollectionMatcher<T> extends TypeSafeMatcher<Iterable<? ex
   public static <T> Matcher<Iterable<? extends T>> matchesOneToOne(
       Iterable<? extends Matcher<? super T>> matchers) {
     return matchesOneToOne(matchers, null);
-  }
-
-  public static <T> Matcher<Iterable<? extends T>> matchesItemsOneToOne(
-      Iterable<? super T> matchers) {
-    return matchesOneToOne(IterableUtils.transform(matchers, IsEqual::equalTo), null);
   }
 
   public static <T> Matcher<Iterable<? extends T>> matchesOneToOne(

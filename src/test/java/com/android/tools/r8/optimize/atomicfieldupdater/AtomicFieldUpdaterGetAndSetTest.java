@@ -4,11 +4,14 @@
 package com.android.tools.r8.optimize.atomicfieldupdater;
 
 import static com.android.tools.r8.DiagnosticsMatcher.diagnosticMessage;
+import static com.android.tools.r8.utils.codeinspector.Matchers.isPresent;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.StringContains.containsString;
 
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
+import com.android.tools.r8.synthesis.SyntheticItemsTestUtils;
+import com.android.tools.r8.utils.codeinspector.ClassSubject;
 import com.android.tools.r8.utils.codeinspector.CodeMatchers;
 import com.android.tools.r8.utils.codeinspector.MethodSubject;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
@@ -57,8 +60,14 @@ public class AtomicFieldUpdaterGetAndSetTest extends AtomicFieldUpdaterBase {
                       CodeMatchers.invokesMethodWithHolderAndName(
                           "sun.misc.Unsafe", "getAndSetObject"));
                 } else {
-                  // getAndSetObject is backported via other unsafe methods and then inlined.
-                  assertThat(method, INVOKES_UNSAFE);
+                  ClassSubject helper =
+                      inspector.clazz(
+                          SyntheticItemsTestUtils.syntheticAtomicFieldUpdaterHelper(
+                              TestClass.class));
+                  assertThat(helper, isPresent());
+                  assertThat(
+                      method,
+                      CodeMatchers.invokesMethod(helper.uniqueMethodWithOriginalName("getAndSet")));
                 }
               } else {
                 assertThat(

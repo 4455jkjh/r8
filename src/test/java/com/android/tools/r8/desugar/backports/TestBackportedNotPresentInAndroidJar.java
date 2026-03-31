@@ -22,7 +22,6 @@ import com.android.tools.r8.graph.DexType;
 import com.android.tools.r8.ir.desugar.BackportedMethodRewriter;
 import com.android.tools.r8.references.MethodReference;
 import com.android.tools.r8.references.Reference;
-import com.android.tools.r8.references.TypeReference;
 import com.android.tools.r8.utils.AndroidApiLevel;
 import com.android.tools.r8.utils.AndroidApp;
 import com.android.tools.r8.utils.InternalOptions;
@@ -86,21 +85,11 @@ public class TestBackportedNotPresentInAndroidJar extends TestBase {
         .getTypeName()
         .equals("java.math.BigDecimal");
 
-    TypeReference objectType = Reference.typeFromTypeName("java.lang.Object");
-    MethodReference Unsafe_compareAndSwapObject =
-        Reference.method(
-            Reference.classFromDescriptor("Lsun/misc/Unsafe;"),
-            "compareAndSwapObject",
-            ImmutableList.of(
-                objectType, Reference.primitiveFromDescriptor("J"), objectType, objectType),
-            Reference.primitiveFromDescriptor("Z"));
-
     return ImmutableSet.of(
         factory.createMethod(AtomicReferenceFieldUpdater_compareAndSet),
         factory.createMethod(AtomicReference_compareAndSet),
         factory.createMethod(AtomicReferenceArray_compareAndSet),
-        factory.createMethod(BigDecimal_stripTrailingZeros),
-        factory.createMethod(Unsafe_compareAndSwapObject));
+        factory.createMethod(BigDecimal_stripTrailingZeros));
   }
 
   private static ImmutableMap<DexMethod, AndroidApiLevel> backportedBeyondApiLevelWhereIntroduced(

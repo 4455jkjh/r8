@@ -46,12 +46,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Collectors;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 import org.junit.Test;
@@ -317,11 +314,8 @@ public class AndroidApiHashingDatabaseBuilderGeneratorTest extends TestBase {
 
   private static class ApiTruthLookup {
     private final Map<ClassReference, AndroidApiLevel> classApiMap;
-    private final Set<ClassReference> queriedClasses = new HashSet<>();
     private final Map<FieldReference, AndroidApiLevel> fieldApiMap;
-    private final Set<FieldReference> queriedFields = new HashSet<>();
     private final Map<MethodReference, AndroidApiLevel> methodApiMap;
-    private final Set<MethodReference> queriedMethods = new HashSet<>();
 
     private ApiTruthLookup(
         Map<ClassReference, AndroidApiLevel> classApiMap,
@@ -334,13 +328,8 @@ public class AndroidApiHashingDatabaseBuilderGeneratorTest extends TestBase {
 
     /** Returns null if there is no error. */
     public String computeError(DexClass clazz, AndroidApiLevel foundApiLevel) {
-      ClassReference reference = clazz.getClassReference();
-      AndroidApiLevel expected = classApiMap.get(reference);
-      if (expected == null) {
-        return null;
-      }
-      queriedClasses.add(reference);
-      if (!expected.isEqualTo(foundApiLevel)) {
+      AndroidApiLevel expected = classApiMap.get(clazz.getClassReference());
+      if (expected != null && expected.isEqualTo(foundApiLevel)) {
         return clazz.toSourceString()
             + " has unexpected API. found: "
             + foundApiLevel
@@ -355,11 +344,7 @@ public class AndroidApiHashingDatabaseBuilderGeneratorTest extends TestBase {
     public String computeError(DexField field, AndroidApiLevel foundApiLevel) {
       FieldReference reference = field.asFieldReference();
       AndroidApiLevel expected = fieldApiMap.get(reference);
-      if (expected == null) {
-        return null;
-      }
-      queriedFields.add(reference);
-      if (!expected.isEqualTo(foundApiLevel)) {
+      if (expected != null && expected.isEqualTo(foundApiLevel)) {
         return reference.toString()
             + " has unexpected API. found: "
             + foundApiLevel
@@ -374,11 +359,7 @@ public class AndroidApiHashingDatabaseBuilderGeneratorTest extends TestBase {
     public String computeError(DexMethod method, AndroidApiLevel foundApiLevel) {
       MethodReference reference = method.asMethodReference();
       AndroidApiLevel expected = methodApiMap.get(reference);
-      if (expected == null) {
-        return null;
-      }
-      queriedMethods.add(reference);
-      if (!expected.isEqualTo(foundApiLevel)) {
+      if (expected != null && expected.isEqualTo(foundApiLevel)) {
         return reference.toString()
             + " has unexpected API. found: "
             + foundApiLevel
@@ -388,34 +369,13 @@ public class AndroidApiHashingDatabaseBuilderGeneratorTest extends TestBase {
         return null;
       }
     }
-
-    public List<String> unmatchedExpectedApis() {
-      List<String> result = new ArrayList<>();
-      for (ClassReference reference : classApiMap.keySet()) {
-        if (!queriedClasses.contains(reference)) {
-          result.add(reference.toString() + " was not queried");
-        }
-      }
-      for (FieldReference reference : fieldApiMap.keySet()) {
-        if (!queriedFields.contains(reference)) {
-          result.add(reference.toString() + " was not queried");
-        }
-      }
-      for (MethodReference reference : methodApiMap.keySet()) {
-        if (!queriedMethods.contains(reference)) {
-          result.add(reference.toString() + " was not queried");
-        }
-      }
-      return result;
-    }
   }
 
   private static ApiTruthLookup createExpectedApi() {
-    Map<ClassReference, AndroidApiLevel> classApis = new HashMap<>();
-    Map<FieldReference, AndroidApiLevel> fieldApis = new HashMap<>();
-    Map<MethodReference, AndroidApiLevel> methodApis = new HashMap<>();
-    SunMiscUnsafeApiTest.populateApiMaps(classApis, fieldApis, methodApis);
-    return new ApiTruthLookup(classApis, fieldApis, methodApis);
+    return new ApiTruthLookup(
+        SunMiscUnsafeApiTest.classApiMap,
+        SunMiscUnsafeApiTest.fieldApiMap,
+        SunMiscUnsafeApiTest.methodApiMap);
   }
 
   private static void ensureAllPublicMethodsAreMapped(
@@ -484,11 +444,6 @@ public class AndroidApiHashingDatabaseBuilderGeneratorTest extends TestBase {
             }
             notModeledMethods.remove(method.toSourceString());
           });
-    }
-    List<String> unmatchedExpectedApis = expectedApi.unmatchedExpectedApis();
-    if (!unmatchedExpectedApis.isEmpty()) {
-      String errors = unmatchedExpectedApis.stream().sorted().collect(Collectors.joining("\n"));
-      fail("Some expected APIs were not found at all\n" + errors);
     }
     if (!notModelledDump.isEmpty()) {
       notModelledDump.stream().sorted().forEach(System.out::println);

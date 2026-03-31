@@ -73,7 +73,7 @@ public class DexType extends DexReference implements NamingLensComparable<DexTyp
   }
 
   public TypeReference asTypeReference() {
-    return Reference.returnTypeFromDescriptor(toDescriptorString());
+    return Reference.typeFromDescriptor(toDescriptorString());
   }
 
   public DynamicTypeWithUpperBound toDynamicType(AppView<AppInfoWithLiveness> appView) {
