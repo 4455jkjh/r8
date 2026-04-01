@@ -133,7 +133,7 @@ public class BlastRadiusHtmlReportGenerator {
             "]</script>"));
   }
 
-  public static String encodeMessageToString(AbstractMessage message) {
+  private static String encodeMessageToString(AbstractMessage message) {
     ByteArrayOutputStream baos = new ByteArrayOutputStream();
     try {
       message.writeTo(baos);

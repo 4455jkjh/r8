@@ -23,7 +23,11 @@ import com.android.tools.r8.blastradius.proto.BlastRadiusContainer;
 import com.android.tools.r8.origin.Origin;
 import com.android.tools.r8.utils.AndroidApiLevel;
 import com.android.tools.r8.utils.Box;
+import com.google.protobuf.AbstractMessage;
 import com.sun.tools.javac.util.List;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.util.Base64;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -65,9 +69,13 @@ public class BlastRadiusCommandTest extends TestBase {
 
     // Check that the report consumer received the HTML.
     assertThat(reportConsumer.value, startsWith("<!DOCTYPE html>"));
-    assertThat(
-        reportConsumer.value,
-        containsString(BlastRadiusHtmlReportGenerator.encodeMessageToString(container)));
+    assertThat(reportConsumer.value, containsString(encodeMessageToString(container)));
+  }
+
+  public static String encodeMessageToString(AbstractMessage message) throws IOException {
+    ByteArrayOutputStream baos = new ByteArrayOutputStream();
+    message.writeTo(baos);
+    return Base64.getEncoder().encodeToString(baos.toByteArray());
   }
 
   private static class InMemoryStringConsumer implements StringConsumer {
