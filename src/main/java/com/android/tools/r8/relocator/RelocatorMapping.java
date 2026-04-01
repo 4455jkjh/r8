@@ -24,7 +24,6 @@ import com.android.tools.r8.utils.ThreadUtils;
 import com.android.tools.r8.utils.timing.Timing;
 import com.android.tools.r8.utils.timing.TimingMerger;
 import com.google.common.collect.ImmutableMap;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
@@ -65,7 +64,7 @@ public class RelocatorMapping {
     parseCfCode(appView, executorService);
 
     // Map all package mappings for resource rewriting.
-    Map<String, String> packageMappingForResourceRewriting = new HashMap<>();
+    Map<String, String> packageMappingForResourceRewriting = new ConcurrentHashMap<>();
     packageMappings.forEach(
         (source, target) ->
             packageMappingForResourceRewriting.put(
