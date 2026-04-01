@@ -366,7 +366,6 @@ def Main():
 
 def test(options, args):
     if utils.is_bot():
-        gradle.run_gradle(['--no-daemon', 'clean'], quiet=options.quiet)
         print('Running with python ' + str(sys.version_info))
         # Always print stats on bots if command cache is enabled
         options.command_cache_stats = options.command_cache_dir is not None
