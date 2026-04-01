@@ -3,7 +3,6 @@
 // BSD-style license that can be found in the LICENSE file.
 
 plugins {
-  `kotlin-dsl`
   `java-library`
   id("dependencies-plugin")
 }
@@ -14,8 +13,6 @@ java {
   sourceSets.test.configure { java.srcDir(root.resolveAll("src", "test", "java11")) }
   toolchain { languageVersion = JavaLanguageVersion.of(11) }
 }
-
-kotlin { explicitApi() }
 
 val sharedDownloadDepsTask = projectTask("shared", "downloadDeps")
 

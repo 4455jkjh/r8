@@ -9,10 +9,9 @@ import org.gradle.api.provider.Provider
 import org.gradle.api.provider.ValueSource
 import org.gradle.api.provider.ValueSourceParameters
 import org.gradle.process.ExecOperations
-import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
-  `kotlin-dsl`
+  `java-library`
   id("dependencies-plugin")
   id("net.ltgt.errorprone")
 }
@@ -202,8 +201,6 @@ java {
   withSourcesJar()
 }
 
-kotlin { explicitApi() }
-
 val assistantJarTask = projectTask("assistant", "jar")
 val blastRadiusJarTask = projectTask("blastradius", "jar")
 val blastRadiusProtoJarTask = projectTask("blastradius", "protoJar")
@@ -283,8 +280,6 @@ tasks {
 
   withType<Exec> { doFirst { println("Executing command: ${commandLine.joinToString(" ")}") } }
 }
-
-tasks.withType<KotlinCompile> { enabled = false }
 
 tasks.withType<JavaCompile> {
   dependsOn(gradle.includedBuild("shared").task(":downloadDeps"))

@@ -3,11 +3,9 @@
 // BSD-style license that can be found in the LICENSE file.
 
 import java.nio.file.Paths
-import org.jetbrains.kotlin.gradle.dsl.JvmTarget
-import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
-  `kotlin-dsl`
+  `java-library`
   id("dependencies-plugin")
 }
 
@@ -16,8 +14,6 @@ java {
   targetCompatibility = JvmCompatibility.targetCompatibility
   toolchain { languageVersion = JavaLanguageVersion.of(JvmCompatibility.release) }
 }
-
-kotlin { explicitApi() }
 
 val testJarsScope by configurations.dependencyScope("testJarsScope")
 val testJars by configurations.resolvable("testJars") { extendsFrom(testJarsScope) }
@@ -77,8 +73,6 @@ val depsJarOnlyAsmTask = projectTask("keepanno", "depsJarOnlyAsm")
 
 tasks {
   withType<Exec> { doFirst { println("Executing command: ${commandLine.joinToString(" ")}") } }
-
-  withType<KotlinCompile> { compilerOptions { jvmTarget = JvmTarget.JVM_17 } }
 
   "clean" {
     dependsOn(":testbase:clean")

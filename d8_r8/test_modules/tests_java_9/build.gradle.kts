@@ -5,7 +5,6 @@
 import org.gradle.api.JavaVersion
 
 plugins {
-  `kotlin-dsl`
   `java-library`
   id("dependencies-plugin")
 }
@@ -18,8 +17,6 @@ java {
   targetCompatibility = JavaVersion.VERSION_1_9
   toolchain { languageVersion = JavaLanguageVersion.of(JvmCompatibility.release) }
 }
-
-kotlin { explicitApi() }
 
 val sharedDownloadDepsTask = projectTask("shared", "downloadDeps")
 

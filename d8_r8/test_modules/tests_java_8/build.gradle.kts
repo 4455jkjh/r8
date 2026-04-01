@@ -3,10 +3,8 @@
 // BSD-style license that can be found in the LICENSE file.
 
 import org.gradle.api.JavaVersion
-import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
-  `kotlin-dsl`
   `java-library`
   id("dependencies-plugin")
 }
@@ -27,8 +25,6 @@ java {
   targetCompatibility = JavaVersion.VERSION_1_8
   toolchain { languageVersion = JavaLanguageVersion.of(11) }
 }
-
-kotlin { explicitApi() }
 
 // If we depend on keepanno by referencing the project source outputs we get an error regarding
 // incompatible java class file version. By depending on the jar we circumvent that.
@@ -122,8 +118,6 @@ tasks {
       notCompatibleWithConfigurationCache("JavaExec created by IntelliJ")
     }
   }
-
-  withType<KotlinCompile> { enabled = false }
 
   val sourceSetDependencyTask by registering {
     dependsOn(":tests_java_9:${getExampleJarsTaskName("examplesJava9")}")

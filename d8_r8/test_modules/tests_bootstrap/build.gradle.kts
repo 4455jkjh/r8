@@ -4,10 +4,8 @@
 
 import java.util.concurrent.Callable
 import org.gradle.api.JavaVersion
-import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
-  `kotlin-dsl`
   `java-library`
   id("dependencies-plugin")
 }
@@ -20,8 +18,6 @@ java {
   targetCompatibility = JavaVersion.VERSION_1_8
   toolchain { languageVersion = JavaLanguageVersion.of(JvmCompatibility.release) }
 }
-
-kotlin { explicitApi() }
 
 val distR8WithRelocatedDeps = project(":dist").tasks.getByName("r8WithRelocatedDeps")
 val distSwissArmyKnife = project(":dist").tasks.getByName("swissArmyKnife")
@@ -53,8 +49,6 @@ fun testDependencies(): FileCollection {
 }
 
 tasks {
-  withType<KotlinCompile> { compilerOptions { enabled = false } }
-
   withType<Test> {
     TestingState.setUpTestingState(this)
     dependsOn(distR8WithRelocatedDeps, distSwissArmyKnife)

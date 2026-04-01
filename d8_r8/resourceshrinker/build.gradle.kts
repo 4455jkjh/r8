@@ -50,13 +50,8 @@ dependencies {
 tasks {
   withType<KotlinCompile> {
     dependsOn(gradle.includedBuild("shared").task(":downloadDeps"))
-    compilerOptions {
-      // We cannot use languageVersion.set(JavaLanguageVersion.of(8)) because gradle cannot figure
-      // out that the jdk is 1_8 and will try to download it.
-      jvmTarget = JvmTarget.fromTarget("${JvmCompatibility.release}")
-    }
+    compilerOptions { jvmTarget = JvmTarget.fromTarget(JvmCompatibility.release.toString()) }
   }
-
   val depsJar by
     registering(Jar::class) {
       from(Callable { jarDependencies().map(::zipTree) })

@@ -3,7 +3,7 @@
 // BSD-style license that can be found in the LICENSE file.
 
 plugins {
-  `kotlin-dsl`
+  `java-library`
   id("dependencies-plugin")
 }
 
@@ -16,7 +16,3 @@ java {
   targetCompatibility = JavaVersion.VERSION_1_8
   toolchain { languageVersion = JavaLanguageVersion.of(JvmCompatibility.release) }
 }
-
-kotlin { explicitApi() }
-
-dependencies {}

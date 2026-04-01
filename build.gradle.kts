@@ -2,26 +2,10 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-plugins {
-  `kotlin-dsl`
-  id("dependencies-plugin")
-}
-
-java {
-  sourceSets {
-    main {
-      java.setSrcDirs(emptyList<File>())
-      resources.setSrcDirs(emptyList<File>())
-    }
-    test {
-      java.setSrcDirs(emptyList<File>())
-      resources.setSrcDirs(emptyList<File>())
-    }
-  }
-}
+plugins { id("dependencies-plugin") }
 
 tasks {
-  "clean" {
+  val clean by registering {
     dependsOn(gradle.includedBuild("commonBuildSrc").task(":clean"))
     dependsOn(gradle.includedBuild("shared").task(":clean"))
     dependsOn(gradle.includedBuild("assistant").task(":clean"))
@@ -35,9 +19,9 @@ tasks {
     dependsOn(":dist:clean")
   }
 
-  val r8 by registering() { dependsOn(":dist:r8WithRelocatedDeps") }
+  val r8 by registering { dependsOn(":dist:r8WithRelocatedDeps") }
 
-  val swissArmyKnife by registering() { dependsOn(":dist:swissArmyKnife") }
+  val swissArmyKnife by registering { dependsOn(":dist:swissArmyKnife") }
 
-  val r8lib by registering() { dependsOn(":test:assembleR8LibWithRelocatedDeps") }
+  val r8lib by registering { dependsOn(":test:assembleR8LibWithRelocatedDeps") }
 }

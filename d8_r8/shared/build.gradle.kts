@@ -3,11 +3,9 @@
 // BSD-style license that can be found in the LICENSE file.
 
 plugins {
-  `kotlin-dsl`
+  `java-library`
   id("dependencies-plugin")
 }
-
-kotlin { explicitApi() }
 
 tasks {
   val downloadDeps by
