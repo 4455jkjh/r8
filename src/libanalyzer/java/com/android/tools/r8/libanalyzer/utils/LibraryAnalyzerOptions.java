@@ -12,7 +12,7 @@ import java.util.function.Consumer;
 
 public class LibraryAnalyzerOptions {
 
-  public final Path blastRadiusOutputPath;
+  public final Path blastRadiusDataOutputPath;
   public final AndroidApiLevel minApiLevel;
   public final Consumer<LibraryAnalyzerResult> outputConsumer;
   public final Reporter reporter;
@@ -21,12 +21,12 @@ public class LibraryAnalyzerOptions {
   private ThreadingModule lazyThreadingModule = null;
 
   public LibraryAnalyzerOptions(
-      Path blastRadiusOutputPath,
+      Path blastRadiusDataOutputPath,
       AndroidApiLevel minApiLevel,
       Consumer<LibraryAnalyzerResult> outputConsumer,
       Reporter reporter,
       int threadCount) {
-    this.blastRadiusOutputPath = blastRadiusOutputPath;
+    this.blastRadiusDataOutputPath = blastRadiusDataOutputPath;
     this.minApiLevel = minApiLevel;
     this.outputConsumer = outputConsumer;
     this.reporter = reporter;

@@ -4,24 +4,31 @@
 package com.android.tools.r8.blastradius;
 
 import com.android.tools.r8.DexIndexedConsumer;
+import com.android.tools.r8.StringConsumer;
 import com.android.tools.r8.blastradius.proto.BlastRadiusContainer;
 import com.android.tools.r8.graph.AppInfoWithClassHierarchy;
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
-import com.android.tools.r8.shaking.ProguardConfiguration;
 import com.android.tools.r8.utils.InternalOptions;
 import com.android.tools.r8.utils.SystemPropertyUtils;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.function.Consumer;
 
 public class BlastRadiusOptions {
 
   public BlastRadiusConsumer blastRadiusConsumer;
   public Consumer<BlastRadiusContainer> blastRadiusContainerConsumer;
-  public final String outputDirectory =
-      System.getProperty("com.android.tools.r8.dumpblastradiustodirectory");
-  public String outputPath = System.getProperty("com.android.tools.r8.dumpblastradiustofile");
+  public final Path dataOutputDirectory =
+      SystemPropertyUtils.parsePathFromSystemProperty(
+          "com.android.tools.r8.dumpblastradiustodirectory");
+  public Path dataOutputPath =
+      SystemPropertyUtils.parsePathFromSystemProperty("com.android.tools.r8.dumpblastradiustofile");
+  public final Path htmlOutputDirectory =
+      SystemPropertyUtils.parsePathFromSystemProperty(
+          "com.android.tools.r8.dumpblastradiushtmltodirectory");
+  public Path htmlOutputPath =
+      SystemPropertyUtils.parsePathFromSystemProperty(
+          "com.android.tools.r8.dumpblastradiushtmltofile");
   public final boolean enableSubsumptionAnalysis =
       SystemPropertyUtils.parseSystemPropertyOrDefault(
           "com.android.tools.r8.blastradius.enablesubsumptionanalysis", true);
@@ -42,29 +49,35 @@ public class BlastRadiusOptions {
 
   public Consumer<BlastRadiusContainer> getBlastRadiusContainerConsumer() {
     Consumer<BlastRadiusContainer> result = blastRadiusContainerConsumer;
-    Path outputPath = getOutputPath();
-    if (outputPath != null) {
-      Consumer<BlastRadiusContainer> writeToFile =
-          container -> BlastRadiusContainerUtils.writeToFile(container, outputPath);
-      result = result != null ? result.andThen(writeToFile) : writeToFile;
+    Path dataOutputPath = getDataOutputPath();
+    if (dataOutputPath != null) {
+      Consumer<BlastRadiusContainer> writeDataToFile =
+          container -> BlastRadiusContainerUtils.writeToFile(container, dataOutputPath);
+      result = result != null ? result.andThen(writeDataToFile) : writeDataToFile;
+    }
+    Path htmlOutputPath = getHtmlOutputPath();
+    if (htmlOutputPath != null) {
+      Consumer<BlastRadiusContainer> writeHtmlToFile =
+          container ->
+              BlastRadiusContainerUtils.writeHtmlToConsumer(
+                  container, new StringConsumer.FileConsumer(htmlOutputPath), options.reporter);
+      result = result != null ? result.andThen(writeHtmlToFile) : writeHtmlToFile;
     }
     return result;
   }
 
-  public Path getOutputPath() {
-    if (outputDirectory != null) {
-      return Paths.get(outputDirectory).resolve("blastradius" + System.nanoTime() + ".pb");
+  public Path getDataOutputPath() {
+    if (dataOutputDirectory != null) {
+      return dataOutputDirectory.resolve("blastradius" + System.nanoTime() + ".pb");
     }
-    if (outputPath != null) {
-      return Paths.get(outputPath);
+    return dataOutputPath;
+  }
+
+  public Path getHtmlOutputPath() {
+    if (htmlOutputDirectory != null) {
+      return htmlOutputDirectory.resolve("report" + System.nanoTime() + ".html");
     }
-    if (options.hasProguardConfiguration()) {
-      ProguardConfiguration configuration = options.getProguardConfiguration();
-      if (configuration.isPrintBlastRadius()) {
-        return configuration.getPrintBlastRadiusFile();
-      }
-    }
-    return null;
+    return htmlOutputPath;
   }
 
   public boolean shouldExitEarly() {

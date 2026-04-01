@@ -217,15 +217,6 @@ public class ValidateLibraryConsumerRulesKeepRuleProcessor
       TextPosition positionStart) {}
 
   @Override
-  public void enablePrintBlastRadius(
-      Path printBlastRadiusFile,
-      ProguardConfigurationSourceParser parser,
-      Position position,
-      TextPosition positionStart) {
-    handleRule(parser, position, "-printblastradius");
-  }
-
-  @Override
   public void enablePrintConfiguration(
       Path printConfigurationFile,
       ProguardConfigurationSourceParser parser,

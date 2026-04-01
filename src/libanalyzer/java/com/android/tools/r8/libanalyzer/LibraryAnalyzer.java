@@ -155,9 +155,8 @@ public class LibraryAnalyzer {
           r8Options -> {
             r8Options.libraryAnalyzerSubCompilation = true;
             r8Options.ignoreUnusedProguardRules = true;
-            if (options.blastRadiusOutputPath != null) {
-              r8Options.getBlastRadiusOptions().outputPath =
-                  options.blastRadiusOutputPath.toString();
+            if (options.blastRadiusDataOutputPath != null) {
+              r8Options.getBlastRadiusOptions().dataOutputPath = options.blastRadiusDataOutputPath;
             }
             r8Options.getBlastRadiusOptions().blastRadiusConsumer =
                 (appView, appInfo, blastRadius) ->

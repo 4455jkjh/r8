@@ -63,8 +63,6 @@ public class ProguardConfiguration {
     private final List<DontOptimizeRule> dontOptimizeRules = new ArrayList<>();
     private final List<DontRepackageRule> dontRepackageRules = new ArrayList<>();
     private final List<DontShrinkRule> dontShrinkRules = new ArrayList<>();
-    private boolean printBlastRadius;
-    private Path printBlastRadiusFile;
     private boolean printConfiguration;
     private Path printConfigurationFile;
     private boolean printUsage;
@@ -245,16 +243,6 @@ public class ProguardConfiguration {
 
     public boolean isShrinking() {
       return dontShrinkRules.isEmpty();
-    }
-
-    @Override
-    public void enablePrintBlastRadius(
-        Path printBlastRadiusFile,
-        ProguardConfigurationSourceParser parser,
-        Position position,
-        TextPosition positionStart) {
-      this.printBlastRadius = true;
-      this.printBlastRadiusFile = printBlastRadiusFile;
     }
 
     @Override
@@ -547,8 +535,6 @@ public class ProguardConfiguration {
               dontOptimizeRules,
               dontRepackageRules,
               dontShrinkRules,
-              printBlastRadius,
-              printBlastRadiusFile,
               printConfiguration,
               printConfigurationFile,
               printUsage,
@@ -592,8 +578,6 @@ public class ProguardConfiguration {
   private final List<DontOptimizeRule> dontOptimizeRules;
   private final List<DontRepackageRule> dontRepackageRules;
   private final List<DontShrinkRule> dontShrinkRules;
-  private final boolean printBlastRadius;
-  private final Path printBlastRadiusFile;
   private final boolean printConfiguration;
   private final Path printConfigurationFile;
   private final boolean printUsage;
@@ -636,8 +620,6 @@ public class ProguardConfiguration {
       List<DontOptimizeRule> dontOptimizeRules,
       List<DontRepackageRule> dontRepackageRules,
       List<DontShrinkRule> dontShrinkRules,
-      boolean printBlastRadius,
-      Path printBlastRadiusFile,
       boolean printConfiguration,
       Path printConfigurationFile,
       boolean printUsage,
@@ -676,8 +658,6 @@ public class ProguardConfiguration {
     this.dontOptimizeRules = dontOptimizeRules;
     this.dontRepackageRules = dontRepackageRules;
     this.dontShrinkRules = dontShrinkRules;
-    this.printBlastRadius = printBlastRadius;
-    this.printBlastRadiusFile = printBlastRadiusFile;
     this.printConfiguration = printConfiguration;
     this.printConfigurationFile = printConfigurationFile;
     this.printUsage = printUsage;
@@ -776,15 +756,6 @@ public class ProguardConfiguration {
 
   public boolean isShrinking() {
     return dontShrinkRules.isEmpty();
-  }
-
-  public boolean isPrintBlastRadius() {
-    return printBlastRadius;
-  }
-
-  public Path getPrintBlastRadiusFile() {
-    assert isPrintBlastRadius();
-    return printBlastRadiusFile;
   }
 
   public boolean isPrintConfiguration() {

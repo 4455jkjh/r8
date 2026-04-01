@@ -448,10 +448,6 @@ public class ProguardConfigurationParser {
         configurationConsumer.disableRepackaging(this, getPosition(optionStart));
       } else if (acceptString("dontshrink")) {
         configurationConsumer.disableShrinking(this, getPosition(optionStart));
-      } else if (acceptString("printblastradius")) {
-        skipWhitespace();
-        configurationConsumer.enablePrintBlastRadius(
-            parseOptionalFileName(), this, getPosition(optionStart), optionStart);
       } else if (acceptString("printconfiguration")) {
         skipWhitespace();
         configurationConsumer.enablePrintConfiguration(
