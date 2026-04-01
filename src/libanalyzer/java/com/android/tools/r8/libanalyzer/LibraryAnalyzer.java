@@ -23,7 +23,6 @@ import com.android.tools.r8.libanalyzer.proto.ConfigurationSummary;
 import com.android.tools.r8.libanalyzer.proto.D8CompileResult;
 import com.android.tools.r8.libanalyzer.proto.ItemCollectionSummary;
 import com.android.tools.r8.libanalyzer.proto.KeepRuleBlastRadiusSummary;
-import com.android.tools.r8.libanalyzer.proto.LibraryAnalyzerResult;
 import com.android.tools.r8.libanalyzer.proto.R8CompileResult;
 import com.android.tools.r8.libanalyzer.proto.ValidateConsumerKeepRulesResult;
 import com.android.tools.r8.libanalyzer.utils.DexIndexedSizeConsumer;
@@ -109,14 +108,15 @@ public class LibraryAnalyzer {
   }
 
   private void run(ExecutorService executorService) {
-    InternalD8CompileResult d8CompileResult = runD8(executorService);
+    D8CompileResult d8CompileResult = runD8(executorService);
     R8CompileResult r8CompileResult = runR8(executorService);
     ValidateConsumerKeepRulesResult validateConsumerKeepRulesResult =
         runValidateConsumerKeepRules();
-    writeAnalysisResult(d8CompileResult, r8CompileResult, validateConsumerKeepRulesResult);
+    LibraryAnalyzerWriter.writeAnalysisResult(
+        d8CompileResult, r8CompileResult, validateConsumerKeepRulesResult, options);
   }
 
-  private InternalD8CompileResult runD8(ExecutorService executorService) {
+  private D8CompileResult runD8(ExecutorService executorService) {
     DexIndexedSizeConsumer sizeConsumer = new DexIndexedSizeConsumer();
     D8Command.Builder commandBuilder =
         D8Command.builder(reporter)
@@ -133,7 +133,7 @@ public class LibraryAnalyzer {
       reporter.clearAbort();
       return null;
     }
-    return new InternalD8CompileResult(sizeConsumer.size());
+    return D8CompileResult.newBuilder().setDexSizeBytes(sizeConsumer.size()).build();
   }
 
   private R8CompileResult runR8(ExecutorService executorService) {
@@ -339,27 +339,6 @@ public class LibraryAnalyzer {
                 .build());
   }
 
-  private void writeAnalysisResult(
-      InternalD8CompileResult d8CompileResult,
-      R8CompileResult r8CompileResult,
-      ValidateConsumerKeepRulesResult validateConsumerKeepRulesResult) {
-    LibraryAnalyzerResult.Builder resultBuilder = LibraryAnalyzerResult.newBuilder();
-    if (d8CompileResult != null) {
-      resultBuilder.setD8CompileResult(
-          D8CompileResult.newBuilder().setDexSizeBytes(d8CompileResult.size).build());
-    }
-    if (r8CompileResult != null) {
-      resultBuilder.setR8CompileResult(r8CompileResult);
-    }
-    if (validateConsumerKeepRulesResult != null) {
-      resultBuilder.setValidateConsumerKeepRulesResult(validateConsumerKeepRulesResult);
-    }
-    LibraryAnalyzerResult result = resultBuilder.build();
-    if (options.outputConsumer != null) {
-      options.outputConsumer.accept(result);
-    }
-  }
-
   private void configure(BaseCompilerCommand.Builder<?, ?> commandBuilder) {
     commandBuilder
         .setMode(CompilationMode.RELEASE)
@@ -367,21 +346,5 @@ public class LibraryAnalyzer {
     app.getProgramResourceProviders().forEach(commandBuilder::addProgramResourceProvider);
     app.getClasspathResourceProviders().forEach(commandBuilder::addClasspathResourceProvider);
     app.getLibraryResourceProviders().forEach(commandBuilder::addLibraryResourceProvider);
-  }
-
-  private abstract static class CompileResult {
-
-    final int size;
-
-    CompileResult(int size) {
-      this.size = size;
-    }
-  }
-
-  private static class InternalD8CompileResult extends CompileResult {
-
-    InternalD8CompileResult(int size) {
-      super(size);
-    }
   }
 }
