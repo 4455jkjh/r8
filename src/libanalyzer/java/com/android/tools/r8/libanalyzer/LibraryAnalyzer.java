@@ -8,6 +8,9 @@ import com.android.tools.r8.CompilationFailedException;
 import com.android.tools.r8.CompilationMode;
 import com.android.tools.r8.D8;
 import com.android.tools.r8.D8Command;
+import com.android.tools.r8.Diagnostic;
+import com.android.tools.r8.DiagnosticsHandler;
+import com.android.tools.r8.DiagnosticsLevel;
 import com.android.tools.r8.R8;
 import com.android.tools.r8.R8Command;
 import com.android.tools.r8.ResourceException;
@@ -15,6 +18,7 @@ import com.android.tools.r8.Version;
 import com.android.tools.r8.blastradius.BlastRadiusKeepRuleClassifier;
 import com.android.tools.r8.blastradius.RootSetBlastRadius;
 import com.android.tools.r8.blastradius.RootSetBlastRadiusForRule;
+import com.android.tools.r8.diagnostic.MissingDefinitionsDiagnostic;
 import com.android.tools.r8.graph.DexItemFactory;
 import com.android.tools.r8.graph.DexProgramClass;
 import com.android.tools.r8.keepanno.annotations.KeepForApi;
@@ -28,7 +32,6 @@ import com.android.tools.r8.libanalyzer.proto.ValidateConsumerKeepRulesResult;
 import com.android.tools.r8.libanalyzer.utils.DexIndexedSizeConsumer;
 import com.android.tools.r8.libanalyzer.utils.LibraryAnalyzerOptions;
 import com.android.tools.r8.origin.CommandLineOrigin;
-import com.android.tools.r8.origin.Origin;
 import com.android.tools.r8.position.Position;
 import com.android.tools.r8.processkeeprules.ValidateLibraryConsumerRulesKeepRuleProcessor;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
@@ -39,6 +42,7 @@ import com.android.tools.r8.utils.AllEmbeddedRulesExtractor;
 import com.android.tools.r8.utils.AndroidApp;
 import com.android.tools.r8.utils.ExceptionDiagnostic;
 import com.android.tools.r8.utils.ExceptionUtils;
+import com.android.tools.r8.utils.ForwardingDiagnosticsHandler;
 import com.android.tools.r8.utils.InternalOptions;
 import com.android.tools.r8.utils.IterableUtils;
 import com.android.tools.r8.utils.ListUtils;
@@ -139,8 +143,7 @@ public class LibraryAnalyzer {
   private R8CompileResult runR8(ExecutorService executorService) {
     DexIndexedSizeConsumer sizeConsumer = new DexIndexedSizeConsumer();
     R8Command.Builder commandBuilder =
-        R8Command.builder(reporter)
-            .addProguardConfiguration(List.of("-ignorewarnings"), Origin.unknown())
+        R8Command.builder(new R8DiagnosticsHandler(reporter))
             .setClassConflictResolver((reference, origins, handler) -> origins.iterator().next())
             .setProgramConsumer(sizeConsumer);
     configure(commandBuilder);
@@ -346,5 +349,21 @@ public class LibraryAnalyzer {
     app.getProgramResourceProviders().forEach(commandBuilder::addProgramResourceProvider);
     app.getClasspathResourceProviders().forEach(commandBuilder::addClasspathResourceProvider);
     app.getLibraryResourceProviders().forEach(commandBuilder::addLibraryResourceProvider);
+  }
+
+  private static class R8DiagnosticsHandler extends ForwardingDiagnosticsHandler {
+
+    R8DiagnosticsHandler(DiagnosticsHandler diagnosticsHandler) {
+      super(diagnosticsHandler);
+    }
+
+    @Override
+    public DiagnosticsLevel modifyDiagnosticsLevel(DiagnosticsLevel level, Diagnostic diagnostic) {
+      if (diagnostic instanceof MissingDefinitionsDiagnostic) {
+        // Intentionally drop missing classes diagnostics in LibraryAnalyzer.
+        return DiagnosticsLevel.NONE;
+      }
+      return super.modifyDiagnosticsLevel(level, diagnostic);
+    }
   }
 }

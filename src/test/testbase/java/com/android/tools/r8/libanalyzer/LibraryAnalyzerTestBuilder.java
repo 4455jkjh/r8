@@ -10,6 +10,8 @@ import static org.junit.Assert.assertNull;
 import com.android.tools.r8.ByteArrayConsumer;
 import com.android.tools.r8.CompilationFailedException;
 import com.android.tools.r8.OutputMode;
+import com.android.tools.r8.TestCompilerBuilder.DiagnosticsConsumer;
+import com.android.tools.r8.TestDiagnosticMessages;
 import com.android.tools.r8.TestDiagnosticMessagesImpl;
 import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.libanalyzer.proto.LibraryAnalyzerResult;
@@ -101,6 +103,11 @@ public class LibraryAnalyzerTestBuilder {
   }
 
   public LibraryAnalyzerCompileResult compile() throws CompilationFailedException {
+    return compileWithExpectedDiagnostics(TestDiagnosticMessages::assertNoMessages);
+  }
+
+  public <E extends Exception> LibraryAnalyzerCompileResult compileWithExpectedDiagnostics(
+      DiagnosticsConsumer<E> diagnosticsConsumer) throws CompilationFailedException, E {
     assertNotNull("Must call setAar() or setJar() to specify input type.", aarOrJar);
     Box<LibraryAnalyzerResult> LibraryAnalyzerResult = new Box<>();
     if (aarOrJar == AarOrJar.AAR) {
@@ -111,7 +118,7 @@ public class LibraryAnalyzerTestBuilder {
     LibraryAnalyzerCommand command =
         commandBuilder.setInternalOutputConsumer(LibraryAnalyzerResult::set).build();
     LibraryAnalyzer.run(command);
-    diagnostics.assertNoMessages();
+    diagnosticsConsumer.accept(diagnostics);
     return new LibraryAnalyzerCompileResult(LibraryAnalyzerResult.get());
   }
 
