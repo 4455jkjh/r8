@@ -20,15 +20,15 @@ public class BlastRadiusOptions {
   public Consumer<BlastRadiusContainer> blastRadiusContainerConsumer;
   public final Path dataOutputDirectory =
       SystemPropertyUtils.parsePathFromSystemProperty(
-          "com.android.tools.r8.dumpblastradiustodirectory");
+          "com.android.tools.r8.dumpkeepradiustodirectory");
   public Path dataOutputPath =
-      SystemPropertyUtils.parsePathFromSystemProperty("com.android.tools.r8.dumpblastradiustofile");
+      SystemPropertyUtils.parsePathFromSystemProperty("com.android.tools.r8.dumpkeepradiustofile");
   public final Path htmlOutputDirectory =
       SystemPropertyUtils.parsePathFromSystemProperty(
-          "com.android.tools.r8.dumpblastradiushtmltodirectory");
+          "com.android.tools.r8.dumpkeepradiushtmltodirectory");
   public Path htmlOutputPath =
       SystemPropertyUtils.parsePathFromSystemProperty(
-          "com.android.tools.r8.dumpblastradiushtmltofile");
+          "com.android.tools.r8.dumpkeepradiushtmltofile");
   public final boolean enableSubsumptionAnalysis =
       SystemPropertyUtils.parseSystemPropertyOrDefault(
           "com.android.tools.r8.blastradius.enablesubsumptionanalysis", true);

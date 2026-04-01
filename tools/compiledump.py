@@ -42,9 +42,9 @@ def make_parser():
                         '--compiler',
                         help='Compiler to use',
                         default=None)
-    parser.add_argument('--dump-blast-radius-to-directory',
-                        '--dump_blast_radius_to_directory',
-                        help='Dump blast radius to the given directory')
+    parser.add_argument('--dump-keep-radius-to-directory',
+                        '--dump_keep_radius_to_directory',
+                        help='Dump keep radius to the given directory')
     parser.add_argument('--dump-trace-to-directory',
                         '--dump_trace_to_directory',
                         help='Dump perfetto trace to the given directory')
@@ -667,7 +667,7 @@ def run1(out, args, otherargs, jdkhome=None, worker_id=None):
             cmd.append('-Dcom.android.tools.r8.enableTestAssertions=1')
         feature_jars = dump.feature_jars()
         if args.dump_blast_radius_to_directory is not None:
-            cmd.append('-Dcom.android.tools.r8.dumpblastradiustodirectory=' +
+            cmd.append('-Dcom.android.tools.r8.dumpkeepradiustodirectory=' +
                        args.dump_blast_radius_to_directory)
         if args.dump_trace_to_directory is not None:
             cmd.append('-Dcom.android.tools.r8.dumptracetodirectory=' +
