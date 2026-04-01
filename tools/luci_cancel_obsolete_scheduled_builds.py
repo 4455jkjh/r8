@@ -117,11 +117,14 @@ def main(argv):
     while True:
         latest_commit_hash = get_latest_commit_hash()
         for scheduled_build in get_scheduled_builds():
+            if not is_by_r8(scheduled_build):
+                continue
+            commit_hash = get_commit_hash_from_scheduled_build(scheduled_build)
+            if not commit_hash or commit_hash == latest_commit_hash:
+                continue
             builder_name = get_builder_name_from_scheduled_build(
                 scheduled_build)
-            commit_hash = get_commit_hash_from_scheduled_build(scheduled_build)
-            if commit_hash and commit_hash != latest_commit_hash and is_cancelation_enabled_for_builder(
-                    builder_name) and is_by_r8(scheduled_build):
+            if is_cancelation_enabled_for_builder(builder_name):
                 cancel_build(scheduled_build, builder_name, commit_hash)
         time.sleep(5 * 60)
     return 0
