@@ -7,6 +7,7 @@ import static com.android.tools.r8.utils.InternalOptions.DETERMINISTIC_DEBUGGING
 import static com.android.tools.r8.utils.MapConsumerUtils.wrapExistingInternalMapConsumerIfNotNull;
 
 import com.android.tools.r8.ProgramResource.Kind;
+import com.android.tools.r8.blastradius.BlastRadiusContainerUtils;
 import com.android.tools.r8.dex.Marker.Tool;
 import com.android.tools.r8.dump.DumpOptions;
 import com.android.tools.r8.errors.DexFileOverflowDiagnostic;
@@ -164,6 +165,8 @@ public final class R8Command extends BaseCompilerCommand {
     private SemanticVersion fakeCompilerVersion = null;
     private AndroidResourceProvider androidResourceProvider = null;
     private AndroidResourceConsumer androidResourceConsumer = null;
+    private ByteArrayConsumer<?> configurationAnalysisDataConsumer = null;
+    private StringConsumer configurationAnalysisHtmlReportConsumer = null;
     private ResourceShrinkerConfiguration resourceShrinkerConfiguration =
         ResourceShrinkerConfiguration.DEFAULT_CONFIGURATION;
     private R8PartialCompilationConfiguration partialCompilationConfiguration =
@@ -722,6 +725,23 @@ public final class R8Command extends BaseCompilerCommand {
     }
 
     /**
+     * API for retrieving the proto message backing the R8 Configuration Analysis HTML Report. The
+     * corresponding schema is defined in src/blastradius/proto/blastradius.proto.
+     */
+    public Builder setConfigurationAnalysisDataConsumer(
+        ByteArrayConsumer<?> configurationAnalysisDataConsumer) {
+      this.configurationAnalysisDataConsumer = configurationAnalysisDataConsumer;
+      return this;
+    }
+
+    /** API for retrieving the R8 Configuration Analysis HTML Report. */
+    public Builder setConfigurationAnalysisHtmlReportConsumer(
+        StringConsumer configurationAnalysisHtmlReportConsumer) {
+      this.configurationAnalysisHtmlReportConsumer = configurationAnalysisHtmlReportConsumer;
+      return this;
+    }
+
+    /**
      * API for configuring resource shrinking.
      *
      * <p>Set the configuration properties on the provided builder.
@@ -918,6 +938,8 @@ public final class R8Command extends BaseCompilerCommand {
               getCancelCompilationChecker(),
               androidResourceProvider,
               androidResourceConsumer,
+              configurationAnalysisDataConsumer,
+              configurationAnalysisHtmlReportConsumer,
               resourceShrinkerConfiguration,
               keepSpecifications,
               blastRadiusOutputPath,
@@ -1193,6 +1215,8 @@ public final class R8Command extends BaseCompilerCommand {
   private final boolean enableStartupLayoutOptimization;
   private final AndroidResourceProvider androidResourceProvider;
   private final AndroidResourceConsumer androidResourceConsumer;
+  private final ByteArrayConsumer<?> configurationAnalysisDataConsumer;
+  private final StringConsumer configurationAnalysisHtmlReportConsumer;
   private final ResourceShrinkerConfiguration resourceShrinkerConfiguration;
   private final Path blastRadiusOutputPath;
   private final Consumer<? super R8BuildMetadata> buildMetadataConsumer;
@@ -1296,6 +1320,8 @@ public final class R8Command extends BaseCompilerCommand {
       CancelCompilationChecker cancelCompilationChecker,
       AndroidResourceProvider androidResourceProvider,
       AndroidResourceConsumer androidResourceConsumer,
+      ByteArrayConsumer<?> configurationAnalysisDataConsumer,
+      StringConsumer configurationAnalysisHtmlReportConsumer,
       ResourceShrinkerConfiguration resourceShrinkerConfiguration,
       List<KeepSpecificationSource> keepSpecifications,
       Path blastRadiusOutputPath,
@@ -1350,6 +1376,8 @@ public final class R8Command extends BaseCompilerCommand {
     this.enableStartupLayoutOptimization = enableStartupLayoutOptimization;
     this.androidResourceProvider = androidResourceProvider;
     this.androidResourceConsumer = androidResourceConsumer;
+    this.configurationAnalysisDataConsumer = configurationAnalysisDataConsumer;
+    this.configurationAnalysisHtmlReportConsumer = configurationAnalysisHtmlReportConsumer;
     this.resourceShrinkerConfiguration = resourceShrinkerConfiguration;
     this.blastRadiusOutputPath = blastRadiusOutputPath;
     this.buildMetadataConsumer = buildMetadataConsumer;
@@ -1382,6 +1410,8 @@ public final class R8Command extends BaseCompilerCommand {
     enableStartupLayoutOptimization = true;
     androidResourceProvider = null;
     androidResourceConsumer = null;
+    configurationAnalysisDataConsumer = null;
+    configurationAnalysisHtmlReportConsumer = null;
     resourceShrinkerConfiguration = null;
     blastRadiusOutputPath = null;
     buildMetadataConsumer = null;
@@ -1582,6 +1612,21 @@ public final class R8Command extends BaseCompilerCommand {
     internal.androidResourceProvider = androidResourceProvider;
     internal.androidResourceConsumer = androidResourceConsumer;
     internal.resourceShrinkerConfiguration = resourceShrinkerConfiguration;
+
+    if (configurationAnalysisDataConsumer != null
+        || configurationAnalysisHtmlReportConsumer != null) {
+      internal.getBlastRadiusOptions().blastRadiusContainerConsumer =
+          blastRadiusContainer -> {
+            if (configurationAnalysisDataConsumer != null) {
+              BlastRadiusContainerUtils.writeToConsumer(
+                  blastRadiusContainer, configurationAnalysisDataConsumer, internal.reporter);
+            }
+            if (configurationAnalysisHtmlReportConsumer != null) {
+              BlastRadiusContainerUtils.writeHtmlToConsumer(
+                  blastRadiusContainer, configurationAnalysisHtmlReportConsumer, internal.reporter);
+            }
+          };
+    }
 
     if (!DETERMINISTIC_DEBUGGING) {
       assert internal.threadCount == ThreadUtils.NOT_SPECIFIED;

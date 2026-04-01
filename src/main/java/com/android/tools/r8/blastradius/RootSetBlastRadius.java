@@ -3,7 +3,6 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8.blastradius;
 
-import com.android.tools.r8.blastradius.proto.BlastRadiusContainer;
 import com.android.tools.r8.graph.AppInfoWithClassHierarchy;
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.DexField;
@@ -11,7 +10,6 @@ import com.android.tools.r8.graph.DexMethod;
 import com.android.tools.r8.graph.DexReference;
 import com.android.tools.r8.graph.DexType;
 import com.android.tools.r8.shaking.Enqueuer;
-import com.android.tools.r8.shaking.EnqueuerResult;
 import com.android.tools.r8.shaking.KeepClassInfo;
 import com.android.tools.r8.shaking.KeepClassMembersNoShrinkingOfInitializerOnSubclassesFakeProguardRule;
 import com.android.tools.r8.shaking.KeepFieldInfo;
@@ -21,11 +19,6 @@ import com.android.tools.r8.shaking.KeepMethodInfo;
 import com.android.tools.r8.shaking.ProguardKeepRuleBase;
 import com.android.tools.r8.shaking.rules.KeepAnnotationFakeProguardRule;
 import com.android.tools.r8.utils.ListUtils;
-import java.io.IOException;
-import java.io.OutputStream;
-import java.io.UncheckedIOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.IdentityHashMap;
@@ -60,18 +53,6 @@ public class RootSetBlastRadius {
   public Map<RootSetBlastRadiusForRule, Collection<RootSetBlastRadiusForRule>> getSubsumedByInfo(
       BlastRadiusOptions options) {
     return new KeepRuleSubsumptionAnalysis(this).run(options);
-  }
-
-  public void writeToFile(
-      AppView<?> appView, EnqueuerResult enqueuerResult, Path printBlastRadiusFile) {
-    BlastRadiusContainer collection =
-        new RootSetBlastRadiusSerializer(appView, enqueuerResult)
-            .serialize(this, appView.options().getBlastRadiusOptions());
-    try (OutputStream output = Files.newOutputStream(printBlastRadiusFile)) {
-      collection.writeTo(output);
-    } catch (IOException e) {
-      throw new UncheckedIOException(e);
-    }
   }
 
   public static class Builder implements KeepInfoCollectionEventConsumer {

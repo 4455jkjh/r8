@@ -87,7 +87,7 @@ public class RootSetBlastRadiusSerializer {
 
   private final Map<Wrapper<KeepConstraints>, KeepConstraints> keepConstraints = new HashMap<>();
 
-  RootSetBlastRadiusSerializer(AppView<?> appView, EnqueuerResult enqueuerResult) {
+  public RootSetBlastRadiusSerializer(AppView<?> appView, EnqueuerResult enqueuerResult) {
     this.appView = appView;
     this.appInfo = enqueuerResult.getAppInfo();
   }
@@ -275,7 +275,7 @@ public class RootSetBlastRadiusSerializer {
   }
 
   private FileOrigin serializeOrigin(DexReference reference) {
-    DexProgramClass clazz = asProgramClassOrNull(appView.definitionFor(reference.getContextType()));
+    DexProgramClass clazz = asProgramClassOrNull(appInfo.definitionFor(reference.getContextType()));
     assert clazz != null;
     Origin origin = clazz.getOrigin();
     if (origin instanceof ArchiveEntryOrigin) {
