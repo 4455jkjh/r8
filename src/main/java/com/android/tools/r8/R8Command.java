@@ -149,7 +149,6 @@ public final class R8Command extends BaseCompilerCommand {
     private GraphConsumer keptGraphConsumer = null;
     private GraphConsumer mainDexKeptGraphConsumer = null;
     private InputDependencyGraphConsumer inputDependencyGraphConsumer = null;
-    private Path blastRadiusOutputPath = null;
     private Consumer<? super R8BuildMetadata> buildMetadataConsumer = null;
     private final FeatureSplitConfiguration.Builder featureSplitConfigurationBuilder =
         FeatureSplitConfiguration.builder();
@@ -433,12 +432,6 @@ public final class R8Command extends BaseCompilerCommand {
     public Builder setInputDependencyGraphConsumer(
         InputDependencyGraphConsumer inputDependencyGraphConsumer) {
       this.inputDependencyGraphConsumer = inputDependencyGraphConsumer;
-      return self();
-    }
-
-    /** Set the blast radius output path. */
-    public Builder setBlastRadiusOutputPath(Path blastRadiusOutputPath) {
-      this.blastRadiusOutputPath = blastRadiusOutputPath;
       return self();
     }
 
@@ -942,7 +935,6 @@ public final class R8Command extends BaseCompilerCommand {
               configurationAnalysisHtmlReportConsumer,
               resourceShrinkerConfiguration,
               keepSpecifications,
-              blastRadiusOutputPath,
               buildMetadataConsumer,
               partialCompilationConfiguration,
               created);
@@ -1218,7 +1210,6 @@ public final class R8Command extends BaseCompilerCommand {
   private final ByteArrayConsumer<?> configurationAnalysisDataConsumer;
   private final StringConsumer configurationAnalysisHtmlReportConsumer;
   private final ResourceShrinkerConfiguration resourceShrinkerConfiguration;
-  private final Path blastRadiusOutputPath;
   private final Consumer<? super R8BuildMetadata> buildMetadataConsumer;
   private final R8PartialCompilationConfiguration partialCompilationConfiguration;
   private final long created;
@@ -1324,7 +1315,6 @@ public final class R8Command extends BaseCompilerCommand {
       StringConsumer configurationAnalysisHtmlReportConsumer,
       ResourceShrinkerConfiguration resourceShrinkerConfiguration,
       List<KeepSpecificationSource> keepSpecifications,
-      Path blastRadiusOutputPath,
       Consumer<? super R8BuildMetadata> buildMetadataConsumer,
       R8PartialCompilationConfiguration partialCompilationConfiguration,
       long created) {
@@ -1379,7 +1369,6 @@ public final class R8Command extends BaseCompilerCommand {
     this.configurationAnalysisDataConsumer = configurationAnalysisDataConsumer;
     this.configurationAnalysisHtmlReportConsumer = configurationAnalysisHtmlReportConsumer;
     this.resourceShrinkerConfiguration = resourceShrinkerConfiguration;
-    this.blastRadiusOutputPath = blastRadiusOutputPath;
     this.buildMetadataConsumer = buildMetadataConsumer;
     this.partialCompilationConfiguration = partialCompilationConfiguration;
     this.created = created;
@@ -1413,7 +1402,6 @@ public final class R8Command extends BaseCompilerCommand {
     configurationAnalysisDataConsumer = null;
     configurationAnalysisHtmlReportConsumer = null;
     resourceShrinkerConfiguration = null;
-    blastRadiusOutputPath = null;
     buildMetadataConsumer = null;
     partialCompilationConfiguration = null;
     created = -1;
@@ -1528,9 +1516,6 @@ public final class R8Command extends BaseCompilerCommand {
     internal.keptGraphConsumer = keptGraphConsumer;
     internal.mainDexKeptGraphConsumer = mainDexKeptGraphConsumer;
 
-    if (blastRadiusOutputPath != null) {
-      internal.getBlastRadiusOptions().outputPath = blastRadiusOutputPath.toString();
-    }
     internal.r8BuildMetadataConsumer = buildMetadataConsumer;
     internal.dataResourceConsumer = internal.programConsumer.getDataResourceConsumer();
 
