@@ -3,6 +3,7 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8.blastradius;
 
+import static com.android.tools.r8.blastradius.BlastRadiusHtmlReportGenerator.encodeMessageToStringForTesting;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.startsWith;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -23,11 +24,7 @@ import com.android.tools.r8.blastradius.proto.BlastRadiusContainer;
 import com.android.tools.r8.origin.Origin;
 import com.android.tools.r8.utils.AndroidApiLevel;
 import com.android.tools.r8.utils.Box;
-import com.google.protobuf.AbstractMessage;
-import com.sun.tools.javac.util.List;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.util.Base64;
+import com.google.common.collect.ImmutableList;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -53,7 +50,7 @@ public class BlastRadiusCommandTest extends TestBase {
         R8Command.builder()
             .addProgramFiles(ToolHelper.getClassFileForTestClass(Main.class))
             .addLibraryFiles(ToolHelper.getMostRecentAndroidJar())
-            .addProguardConfiguration(List.of("-keep class * { *; }"), Origin.unknown())
+            .addProguardConfiguration(ImmutableList.of("-keep class * { *; }"), Origin.unknown())
             .setConfigurationAnalysisDataConsumer(
                 (ByteArrayConsumer.ArrayConsumer) dataConsumer::set)
             .setConfigurationAnalysisHtmlReportConsumer(reportConsumer)
@@ -69,13 +66,7 @@ public class BlastRadiusCommandTest extends TestBase {
 
     // Check that the report consumer received the HTML.
     assertThat(reportConsumer.value, startsWith("<!DOCTYPE html>"));
-    assertThat(reportConsumer.value, containsString(encodeMessageToString(container)));
-  }
-
-  public static String encodeMessageToString(AbstractMessage message) throws IOException {
-    ByteArrayOutputStream baos = new ByteArrayOutputStream();
-    message.writeTo(baos);
-    return Base64.getEncoder().encodeToString(baos.toByteArray());
+    assertThat(reportConsumer.value, containsString(encodeMessageToStringForTesting(container)));
   }
 
   private static class InMemoryStringConsumer implements StringConsumer {

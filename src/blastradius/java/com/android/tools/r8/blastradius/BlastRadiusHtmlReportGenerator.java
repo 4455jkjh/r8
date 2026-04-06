@@ -144,6 +144,11 @@ public class BlastRadiusHtmlReportGenerator {
     return Base64.getEncoder().encodeToString(baos.toByteArray());
   }
 
+  // Helper method for converting a proto to a string in tests. Should only be used for testing.
+  public static String encodeMessageToStringForTesting(Object object) {
+    return encodeMessageToString((AbstractMessage) object);
+  }
+
   private static BlastRadiusSummary getSummary(
       BlastRadiusContainer blastRadius, String name, String link) {
     BlastRadiusSummary.Builder summaryBuilder =
