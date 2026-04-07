@@ -218,12 +218,13 @@ common_test_options = [
 
 default_timeout = time.hour * 6
 
-def get_dimensions(windows = False, internal = False, archive = False, tester = False, jammy = True):
+def get_dimensions(windows = False, internal = False, archive = False, tester = False, jammy = True, coordinator = False):
     # We use the following setup:
     #   windows -> always windows machine
     #   internal -> always internal, single small, machine
     #   archive -> archive or normal machines (normal machines set archive)
     #   tester -> tester or normal machines
+    #   coordinator -> coordinator machines
     #   all_other -> normal linux machines
     dimensions = {
         "cpu": "x86-64",
@@ -235,7 +236,9 @@ def get_dimensions(windows = False, internal = False, archive = False, tester = 
         dimensions["os"] = "Ubuntu-22.04"
     else:
         dimensions["os"] = "Ubuntu-20.04"
-    if internal:
+    if coordinator:
+        dimensions["coordinator"] = "true"
+    elif internal:
         dimensions["internal"] = "true"
     elif archive:
         dimensions["archive"] = "true"
@@ -486,6 +489,11 @@ r8_tester_with_default(
     max_concurrent_invocations = 2,
 )
 
+r8_tester_with_default(
+    "compile-only",
+    ["--command_cache_dir=/tmp/ccache"],
+)
+
 presubmit_testers = [
     "linux-default",
     "linux-none",
@@ -515,6 +523,7 @@ r8_tester_with_default(
     [],
     bucket = "try",
     trigger = False,
+    dimensions = get_dimensions(coordinator = True),
     extra_properties = {
         "testers": presubmit_testers,
     },
