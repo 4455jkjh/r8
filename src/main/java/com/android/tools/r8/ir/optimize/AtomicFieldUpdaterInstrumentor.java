@@ -8,6 +8,7 @@ import static com.android.tools.r8.ir.optimize.info.atomicupdaters.eligibility.R
 import com.android.tools.r8.cf.code.CfInvoke;
 import com.android.tools.r8.cf.code.CfReturnVoid;
 import com.android.tools.r8.cf.code.CfStaticFieldWrite;
+import com.android.tools.r8.errors.Unreachable;
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.CfCode;
 import com.android.tools.r8.graph.DexClass;
@@ -217,10 +218,6 @@ public class AtomicFieldUpdaterInstrumentor {
     clazz.forEachStaticFieldMatching(
         this::isStaticFinalFieldUpdaterField,
         field -> {
-          // Check that fields are constructed with known information, i.e. a single write of a
-          // direct
-          // and valid call to
-          // AtomicReferenceFieldUpdater.newUpdater(ThisClass.class, FieldType.class, "fieldName").
           var f = new ProgramField(clazz, field);
           // Keep info must be checked before static write to report the correct reason.
           if (!appView.getKeepInfo(f).isOptimizationAllowed(appView.options())) {
@@ -239,6 +236,10 @@ public class AtomicFieldUpdaterInstrumentor {
             initialUpdaterFields.add(field.getReference());
           }
         });
+
+    // Check that fields are constructed with known information, i.e. a single write of a
+    // direct and valid call to
+    // AtomicXFieldUpdater.newUpdater(ThisClass.class, FieldType.class, "fieldName").
 
     // Construct clinit IR.
     var classInitializer = clazz.getProgramClassInitializer();
@@ -260,7 +261,7 @@ public class AtomicFieldUpdaterInstrumentor {
       if (!initialUpdaterFields.contains(modifiedField)) {
         continue;
       }
-      // TODO(b/453628974): implement and test optimization under handlers.
+      // TODO(b/453628974): Implement and test optimization under handlers.
       if (staticPut.getBlock().hasCatchHandlers()) {
         reportInfo(appView, new Event.CannotInstrument(modifiedField), Reason.UNDER_CATCH_HANDLER);
         fieldInfos.remove(modifiedField);
@@ -297,11 +298,14 @@ public class AtomicFieldUpdaterInstrumentor {
   }
 
   private boolean isStaticFinalFieldUpdaterField(DexEncodedField field) {
-    return field.isStatic()
-        && field.isFinal()
-        && field
-            .getType()
-            .isIdenticalTo(itemFactory.javaUtilConcurrentAtomicAtomicReferenceFieldUpdater);
+    if (field.isStatic() && field.isFinal()) {
+      var type = field.getType();
+      return type.isIdenticalTo(itemFactory.javaUtilConcurrentAtomicAtomicReferenceFieldUpdater)
+          || type.isIdenticalTo(itemFactory.javaUtilConcurrentAtomicAtomicIntegerFieldUpdater)
+          || type.isIdenticalTo(itemFactory.javaUtilConcurrentAtomicAtomicLongFieldUpdater);
+    } else {
+      return false;
+    }
   }
 
   /**
@@ -324,15 +328,26 @@ public class AtomicFieldUpdaterInstrumentor {
       return null;
     }
     InvokeStatic invokeStatic = input.asInvokeStatic();
-    if (!invokeStatic
-        .getInvokedMethod()
-        .isIdenticalTo(itemFactory.atomicReferenceUpdaterMethods.newUpdater)) {
+    DexMethod invokedMethod = invokeStatic.getInvokedMethod();
+    if (invokedMethod.isIdenticalTo(itemFactory.atomicReferenceUpdaterMethods.newUpdater)) {
+      return resolveReferenceNewUpdaterCall(clazz, updaterField, invokeStatic);
+    } else if (invokedMethod.isIdenticalTo(itemFactory.atomicIntUpdaterMethods.newUpdater)) {
+      reportInfo(appView, new Event.CannotInstrument(updaterField), Reason.NOT_SUPPORTED);
+      return null;
+    } else if (invokedMethod.isIdenticalTo(itemFactory.atomicLongUpdaterMethods.newUpdater)) {
+      reportInfo(appView, new Event.CannotInstrument(updaterField), Reason.NOT_SUPPORTED);
+      return null;
+    } else {
       reportInfo(
           appView,
           new Event.CannotInstrument(updaterField),
           Reason.UPDATER_NOT_INITIALIZED_BY_NEW_UPDATER);
       return null;
     }
+  }
+
+  private ReferenceUpdaterFieldInfo<Void> resolveReferenceNewUpdaterCall(
+      DexProgramClass clazz, DexField updaterField, InvokeStatic invokeStatic) {
     assert invokeStatic.arguments().size() == 3;
     var holderValue = invokeStatic.getFirstArgument();
     if (holderValue.isPhi()) {
@@ -420,7 +435,7 @@ public class AtomicFieldUpdaterInstrumentor {
     //   * Check if AtomicReferenceFieldUpdater.newUpdater has changed implementation.
     //     * If so, verify/correct the static checks to match the runtime checks.
     assert AndroidApiLevel.LATEST.isEqualTo(AndroidApiLevel.CINNAMON_BUN);
-    return UpdaterFieldInfo.create(
+    return UpdaterFieldInfo.createReference(
         updaterField, fieldType, holderValue, fieldNameValue, invokeStatic.getPosition());
   }
 
@@ -594,12 +609,17 @@ public class AtomicFieldUpdaterInstrumentor {
           var fields = new HashMap<DexField, AtomicFieldUpdaterInfo>(infos.size());
           Set<DexField> localOffsetFields = SetUtils.newIdentityHashSet();
           for (var info : infos) {
-            DexField offsetField = allOffsetFields.get(info.field);
-            fields.put(
-                info.field,
-                new AtomicFieldUpdaterInfo(
-                    info.field.holder, info.reflectedFieldType, offsetField));
-            localOffsetFields.add(offsetField);
+            if (info.asReferenceFieldUpdaterInfo() != null) {
+              var referenceInfo = info.asReferenceFieldUpdaterInfo();
+              DexField offsetField = allOffsetFields.get(referenceInfo.field);
+              fields.put(
+                  referenceInfo.field,
+                  new AtomicFieldUpdaterInfo(
+                      referenceInfo.field.holder, referenceInfo.reflectedFieldType, offsetField));
+              localOffsetFields.add(offsetField);
+            } else {
+              throw new Unreachable("Updater was not ReferenceFieldUpdaterInfo.");
+            }
           }
           instrumentations.put(clazz.getType(), fields);
           offsetFields.put(clazz.getType(), localOffsetFields);
@@ -761,43 +781,69 @@ public class AtomicFieldUpdaterInstrumentor {
 
   // The OffsetField type parameter is used to track the nullness of offsetField statically
   // (Either Void or DexField).
-  private static class UpdaterFieldInfo<OffsetField> {
+  private abstract static class UpdaterFieldInfo<OffsetField> {
 
     public final DexField field;
-    public final DexType reflectedFieldType;
     public final Value holderValue;
     public final Value fieldName;
     public final Position position;
     public final OffsetField offsetField;
 
-    private UpdaterFieldInfo(
+    protected UpdaterFieldInfo(
         DexField field,
-        DexType reflectedFieldType,
         Value holderValue,
         Value reflectedFieldName,
         Position position,
         OffsetField offsetField) {
       this.field = field;
-      this.reflectedFieldType = reflectedFieldType;
       this.holderValue = holderValue;
       this.fieldName = reflectedFieldName;
       this.position = position;
       this.offsetField = offsetField;
     }
 
-    public static UpdaterFieldInfo<Void> create(
+    public static ReferenceUpdaterFieldInfo<Void> createReference(
         DexField field,
         DexType reflectedFieldType,
         Value holdingClass,
         Value reflectedFieldName,
         Position position) {
-      return new UpdaterFieldInfo<>(
+      return new ReferenceUpdaterFieldInfo<>(
           field, reflectedFieldType, holdingClass, reflectedFieldName, position, null);
     }
 
-    public <T> UpdaterFieldInfo<T> copyWithOffsetField(T offsetField) {
-      return new UpdaterFieldInfo<>(
+    public ReferenceUpdaterFieldInfo<OffsetField> asReferenceFieldUpdaterInfo() {
+      return null;
+    }
+
+    public abstract <T> UpdaterFieldInfo<T> copyWithOffsetField(T offsetField);
+  }
+
+  private static class ReferenceUpdaterFieldInfo<OffsetField>
+      extends UpdaterFieldInfo<OffsetField> {
+
+    public final DexType reflectedFieldType;
+
+    protected ReferenceUpdaterFieldInfo(
+        DexField field,
+        DexType reflectedFieldType,
+        Value holderValue,
+        Value reflectedFieldName,
+        Position position,
+        OffsetField offsetField) {
+      super(field, holderValue, reflectedFieldName, position, offsetField);
+      this.reflectedFieldType = reflectedFieldType;
+    }
+
+    @Override
+    public <T> ReferenceUpdaterFieldInfo<T> copyWithOffsetField(T offsetField) {
+      return new ReferenceUpdaterFieldInfo<>(
           field, reflectedFieldType, holderValue, fieldName, position, offsetField);
+    }
+
+    @Override
+    public ReferenceUpdaterFieldInfo<OffsetField> asReferenceFieldUpdaterInfo() {
+      return this;
     }
   }
 

@@ -20,7 +20,7 @@ public class AtomicFieldUpdaterBase extends TestBase {
 
   protected final TestParameters parameters;
 
-  static AnyOf<MethodSubject> INVOKES_UNSAFE =
+  public static AnyOf<MethodSubject> INVOKES_UNSAFE =
       anyOf(
           CodeMatchers.invokesMethodWithHolder("sun.misc.Unsafe"),
           CodeMatchers.invokesMethodWithHolder("jdk.internal.misc.Unsafe"));
@@ -29,7 +29,7 @@ public class AtomicFieldUpdaterBase extends TestBase {
     this.parameters = parameters;
   }
 
-  void enableAtomicFieldUpdaterWithInfo(R8TestBuilder<?, ?, ?> builder) {
+  public void enableAtomicFieldUpdaterWithInfo(R8TestBuilder<?, ?, ?> builder) {
     builder
         .addOptionsModification(
             options -> {
@@ -40,7 +40,7 @@ public class AtomicFieldUpdaterBase extends TestBase {
         .applyIf(isOptimizationOn(), R8TestBuilder::allowDiagnosticInfoMessages);
   }
 
-  boolean isOptimizationOn() {
+  public boolean isOptimizationOn() {
     return parameters.isDexRuntime()
         && parameters.getApiLevel().isGreaterThanOrEqualTo(AndroidApiLevel.K);
   }

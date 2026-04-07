@@ -1,42 +1,54 @@
 // Copyright (c) 2026, the R8 project authors. Please see the AUTHORS file
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
-package com.android.tools.r8.optimize.atomicfieldupdater;
+package com.android.tools.r8.optimize.atomicfieldupdater.reference;
 
 import static com.android.tools.r8.DiagnosticsMatcher.diagnosticMessage;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.core.AnyOf.anyOf;
 import static org.hamcrest.core.IsNot.not;
 import static org.hamcrest.core.StringContains.containsString;
 
-import com.android.tools.r8.Diagnostic;
 import com.android.tools.r8.TestParameters;
-import com.android.tools.r8.TestShrinkerBuilder;
+import com.android.tools.r8.optimize.atomicfieldupdater.AtomicFieldUpdaterBase;
+import com.android.tools.r8.references.Reference;
 import com.android.tools.r8.utils.BooleanUtils;
 import com.android.tools.r8.utils.codeinspector.CodeMatchers;
 import com.android.tools.r8.utils.codeinspector.MethodSubject;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
-import org.hamcrest.Matcher;
+import org.hamcrest.core.AnyOf;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
 
 @RunWith(Parameterized.class)
-public class AtomicFieldUpdaterDontObfuscateTest extends AtomicFieldUpdaterBase {
+public class AtomicFieldUpdaterNullHolderTest extends AtomicFieldUpdaterBase {
 
-  public final boolean dontObfuscate;
+  public final boolean optimize;
 
-  public AtomicFieldUpdaterDontObfuscateTest(TestParameters parameters, boolean dontObfuscate) {
+  public AtomicFieldUpdaterNullHolderTest(TestParameters parameters, boolean optimize) {
     super(parameters);
-    this.dontObfuscate = dontObfuscate;
+    this.optimize = optimize;
   }
 
-  @Parameters(name = "{0}, dontObfuscate:{1}")
+  @Parameters(name = "{0}, optimize:{1}")
   public static List<Object[]> data() {
     return buildParameters(
         TestParameters.builder().withAllRuntimesAndApiLevels().build(), BooleanUtils.values());
+  }
+
+  private static final Class<? extends Throwable> EXPECTED_EXCEPTION = ClassCastException.class;
+
+  @Test
+  public void testJvm() throws Exception {
+    parameters.assumeJvmTestParameters();
+    Class<TestClass> testClass = TestClass.class;
+    testForJvm(parameters)
+        .addProgramClasses(testClass)
+        .run(parameters.getRuntime(), testClass)
+        .assertFailureWithErrorThatThrows(EXPECTED_EXCEPTION);
   }
 
   @Test
@@ -46,37 +58,41 @@ public class AtomicFieldUpdaterDontObfuscateTest extends AtomicFieldUpdaterBase 
         .apply(this::enableAtomicFieldUpdaterWithInfo)
         .addProgramClasses(testClass)
         .addKeepMainRule(testClass)
-        .applyIf(dontObfuscate, TestShrinkerBuilder::addDontObfuscate)
+        .applyIf(
+            !optimize,
+            testing ->
+                testing.addKeepFieldRules(
+                    Reference.fieldFromField(testClass.getDeclaredField("myString$FU"))))
         .compile()
         .inspectDiagnosticMessagesIf(
             isOptimizationOn(),
             diagnostics -> {
-              List<Matcher<Diagnostic>> matchers = new ArrayList<>(7);
-              matchers.add(diagnosticMessage(containsString("Can instrument")));
-              matchers.add(diagnosticMessage(containsString("Can optimize")));
-              matchers.add(diagnosticMessage(containsString("Can optimize")));
-              matchers.add(diagnosticMessage(containsString("Can optimize")));
-              // TODO(b/453628974): The field should be removed once nullability analysis is
-              // more precise.
-              matchers.add(diagnosticMessage(containsString("Cannot remove")));
-              diagnostics.assertInfosMatch(matchers);
+              if (optimize) {
+                diagnostics.assertInfoThatMatches(
+                    diagnosticMessage(containsString("Can instrument")));
+              } else {
+                diagnostics.assertInfosMatch(
+                    diagnosticMessage(containsString("Cannot instrument")));
+              }
             })
         .inspect(
             inspector -> {
               MethodSubject method = inspector.clazz(testClass).mainMethod();
-              if (isOptimizationOn()) {
-                assertThat(
-                    method,
-                    not(CodeMatchers.invokesMethodWithHolder(AtomicReferenceFieldUpdater.class)));
+              AnyOf<MethodSubject> usesUnsafe =
+                  anyOf(
+                      CodeMatchers.invokesMethodWithHolder("sun.misc.Unsafe"),
+                      CodeMatchers.invokesMethodWithHolder("jdk.internal.misc.Unsafe"));
+              if (isOptimizationOn() && optimize) {
+                assertThat(method, usesUnsafe);
               } else {
-                assertThat(method, not(INVOKES_UNSAFE));
+                assertThat(method, not(usesUnsafe));
                 assertThat(
                     method,
                     CodeMatchers.invokesMethodWithHolder(AtomicReferenceFieldUpdater.class));
               }
             })
         .run(parameters.getRuntime(), testClass)
-        .assertSuccessWithOutputLines("Hello!!");
+        .assertFailureWithErrorThatThrows(EXPECTED_EXCEPTION);
   }
 
   // Corresponding to simple kotlin usage of `atomic("Hello")` via atomicfu.
@@ -97,9 +113,12 @@ public class AtomicFieldUpdaterDontObfuscateTest extends AtomicFieldUpdaterBase 
     }
 
     public static void main(String[] args) {
-      TestClass instance = new TestClass();
-      Object old = myString$FU.getAndSet(instance, "World");
-      myString$FU.set(instance, old.toString() + "!!");
+      TestClass instance;
+      if (System.out == null) {
+        instance = new TestClass();
+      } else {
+        instance = null;
+      }
       System.out.println(myString$FU.get(instance));
     }
   }

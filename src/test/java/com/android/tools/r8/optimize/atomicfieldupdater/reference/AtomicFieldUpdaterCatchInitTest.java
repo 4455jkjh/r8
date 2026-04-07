@@ -1,7 +1,7 @@
 // Copyright (c) 2026, the R8 project authors. Please see the AUTHORS file
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
-package com.android.tools.r8.optimize.atomicfieldupdater;
+package com.android.tools.r8.optimize.atomicfieldupdater.reference;
 
 import static com.android.tools.r8.DiagnosticsMatcher.diagnosticMessage;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -10,7 +10,7 @@ import static org.hamcrest.core.StringContains.containsString;
 
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
-import com.android.tools.r8.utils.codeinspector.CodeMatchers;
+import com.android.tools.r8.optimize.atomicfieldupdater.AtomicFieldUpdaterBase;
 import com.android.tools.r8.utils.codeinspector.MethodSubject;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import org.junit.Test;
@@ -19,9 +19,9 @@ import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
 
 @RunWith(Parameterized.class)
-public class AtomicFieldUpdaterCatchUsageTest extends AtomicFieldUpdaterBase {
+public class AtomicFieldUpdaterCatchInitTest extends AtomicFieldUpdaterBase {
 
-  public AtomicFieldUpdaterCatchUsageTest(TestParameters parameters) {
+  public AtomicFieldUpdaterCatchInitTest(TestParameters parameters) {
     super(parameters);
   }
 
@@ -42,20 +42,16 @@ public class AtomicFieldUpdaterCatchUsageTest extends AtomicFieldUpdaterBase {
             isOptimizationOn(),
             diagnostics ->
                 diagnostics.assertInfosMatch(
-                    diagnosticMessage(containsString("Can instrument")),
-                    diagnosticMessage(containsString("Cannot optimize")),
-                    diagnosticMessage(containsString("Cannot optimize")),
-                    diagnosticMessage(containsString("Cannot optimize")),
-                    diagnosticMessage(containsString("Cannot remove"))))
+                    diagnosticMessage(containsString("Cannot instrument"))))
         .inspect(
             inspector -> {
               MethodSubject method = inspector.clazz(testClass).mainMethod();
               assertThat(method, not(INVOKES_UNSAFE));
-              assertThat(
-                  method, CodeMatchers.invokesMethodWithHolder(AtomicReferenceFieldUpdater.class));
+              MethodSubject classInitializer = inspector.clazz(testClass).clinit();
+              assertThat(classInitializer, not(INVOKES_UNSAFE));
             })
         .run(parameters.getRuntime(), testClass)
-        .assertSuccessWithOutputLines("Hello!!");
+        .assertSuccessWithOutputLines("Hello");
   }
 
   // Corresponding to simple kotlin usage of `atomic("Hello")` via atomicfu.
@@ -66,8 +62,13 @@ public class AtomicFieldUpdaterCatchUsageTest extends AtomicFieldUpdaterBase {
     private static final AtomicReferenceFieldUpdater<TestClass, Object> myString$FU;
 
     static {
-      myString$FU =
-          AtomicReferenceFieldUpdater.newUpdater(TestClass.class, Object.class, "myString");
+      try {
+        myString$FU =
+            AtomicReferenceFieldUpdater.newUpdater(TestClass.class, Object.class, "myString");
+      } catch (Exception e) {
+        // The try block never throws. This is here to test the rewriting with catch handlers.
+        throw new RuntimeException(e);
+      }
     }
 
     public TestClass() {
@@ -77,14 +78,7 @@ public class AtomicFieldUpdaterCatchUsageTest extends AtomicFieldUpdaterBase {
 
     public static void main(String[] args) {
       TestClass instance = new TestClass();
-      try {
-        Object old = myString$FU.getAndSet(instance, "World");
-        myString$FU.set(instance, old.toString() + "!!");
-        System.out.println(myString$FU.get(instance));
-      } catch (Exception e) {
-        // The try block never throws. This is here to test the rewriting with catch handlers.
-        throw new RuntimeException(e);
-      }
+      System.out.println(myString$FU.get(instance));
     }
   }
 }
