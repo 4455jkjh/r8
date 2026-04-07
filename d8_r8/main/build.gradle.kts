@@ -220,12 +220,22 @@ fun mainJarDependencies(): FileCollection {
     })
 }
 
+val internalJarScope by configurations.dependencyScope("internalJarScope")
+val internalJarResolvable by
+  configurations.resolvable("internalJarResolvable") { extendsFrom(internalJarScope) }
+val internalClassesScope by configurations.dependencyScope("internalClassesScope")
+val internalClassesResolvable by
+  configurations.resolvable("internalClassesResolvable") { extendsFrom(internalClassesScope) }
+
 dependencies {
+  internalJarScope(project(":utils", "isolatedJar"))
+  internalClassesScope(project(":utils", "isolatedClasses"))
   implementation(assistantJarTask.outputs.files)
   implementation(blastRadiusJarTask.outputs.files)
   implementation(blastRadiusProtoJarTask.outputs.files)
   implementation(keepAnnoJarTask.outputs.files)
   implementation(resourceShrinkerJarTask.outputs.files)
+  implementation(project(":utils"))
   Deps.compilerDeps.forEach { compileOnly(it) }
   errorprone(Deps.errorprone)
 }
@@ -288,8 +298,13 @@ tasks.withType<JavaCompile> {
 
 tasks.withType<ProcessResources> { dependsOn(gradle.includedBuild("shared").task(":downloadDeps")) }
 
-val mainJar by configurations.consumable("mainJar")
-val mainClassesOutput by configurations.consumable("mainClassesOutput")
+// Contains both :main jar and :utils jar but not third party dependencies.
+val mainJar by configurations.consumable("mainJar") { extendsFrom(internalJarResolvable) }
+// Contains partial class files of :main and all class files of :utils but not third party
+// dependencies.
+val mainClassesOutput by
+  configurations.consumable("mainClassesOutput") { extendsFrom(internalClassesResolvable) }
+// Contains partial class files of :main but not :utils nor third party dependencies.
 val turboClassesOutput by configurations.consumable("turboClassesOutput")
 val mainResources by configurations.consumable("mainResources")
 val mainSources by configurations.consumable("mainSources")
