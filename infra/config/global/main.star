@@ -491,7 +491,8 @@ r8_tester_with_default(
 
 r8_tester_with_default(
     "compile-only",
-    ["--command_cache_dir=/tmp/ccache"],
+    [],
+    bucket = "try",
 )
 
 presubmit_testers = [
