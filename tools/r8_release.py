@@ -924,9 +924,13 @@ def prepare_branch(args):
                                  ['git', 'cl', 'upload', '-f', '-m', message])
 
                 print('')
+                print('Make sure to:')
+                print(' * send out the two branch change CL for review'
+                      ' (on %s and main).' % branch_version)
                 print(
-                    'Make sure to send out the two branch change CL for review'
-                    ' (on %s and main).' % branch_version)
+                    ' * promote previous -dev branch to stable by running '
+                    '"tools/cherry-pick.py --promote-dev --branch <previous version>"'
+                )
                 print('')
 
     return make_branch
