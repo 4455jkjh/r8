@@ -619,7 +619,7 @@ const App = {
             <tr>
               <th rowspan="2" class="text-left bg-gray-50 z-30" style="padding: 1rem; width: 600px; min-width: 600px; border-bottom: 1px solid var(--border-color);">Rule</th>
               <th colspan="4" class="text-center border-l border-gray-200 bg-gray-50" style="padding: 0.5rem; border-bottom: 1px solid var(--border-color);">Kept Items (higher is worse)</th>
-              <th rowspan="2" colspan="3" class="text-center border-l border-gray-200 bg-gray-50" style="padding: 0.5rem; width: 150px; min-width: 150px; border-bottom: 1px solid var(--border-color);">Properties blocked by rule</th>
+              <th rowspan="2" colspan="3" class="text-center border-l border-gray-200 bg-gray-50" style="padding: 0.5rem; width: 150px; min-width: 150px; border-bottom: 1px solid var(--border-color);">Steps blocked by rule</th>
             </tr>
             <tr>
               <th class="text-center text-xs font-medium text-gray-500 border-l border-gray-200" style="padding: 0.5rem; width: 100px; min-width: 100px; border-bottom: 1px solid var(--border-color);">Total</th>
@@ -1918,7 +1918,7 @@ const ReportApp = {
                 </div>
               </th>
               <th colspan="4" class="text-center border-l border-gray-200 bg-gray-50" style="padding: 0.5rem;">Kept Items (higher is worse)</th>
-              <th rowspan="2" colspan="3" class="text-center border-l border-gray-200 bg-gray-50" style="padding: 0.5rem; width: 150px; min-width: 150px;">Properties blocked by rule</th>
+              <th rowspan="2" colspan="3" class="text-center border-l border-gray-200 bg-gray-50" style="padding: 0.5rem; width: 150px; min-width: 150px;">Steps blocked by rule</th>
               <th rowspan="2" class="bg-gray-50" style="width: 100%;"></th>
             `;
 
