@@ -252,6 +252,12 @@ public fun Project.projectTask(project: String, taskName: String): Task {
   return task.taskDependencies.getDependencies(tasks.getByName(name)).iterator().next()
 }
 
+public fun Task.dependOnPythonScripts() {
+  // There is no easy way to track transitive python dependencies, so add all python files.
+  val toolsDir = project.fileTree(project.getRoot().resolve("tools"))
+  inputs.files(toolsDir.include("**/*.py"))
+}
+
 public fun File.resolveAll(vararg xs: String): File {
   var that = this
   for (x in xs) {
@@ -399,6 +405,7 @@ public fun Project.baseCompilerCommandLine(
   ) + args
 }
 
+/** Remember to add dependOnPythonScripts() to track dependencies. */
 public fun Project.createR8LibCommandLine(
   r8Compiler: File,
   input: File,
@@ -1123,6 +1130,7 @@ private fun getThirdPartyAndroidJars(): List<ThirdPartyDependency> {
       "lib-v35",
       "lib-v36",
       "lib-v36.1",
+      "lib-v37",
     )
     .map(::getThirdPartyAndroidJar)
 }

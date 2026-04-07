@@ -9,7 +9,7 @@ import org.gradle.api.tasks.bundling.Jar
 import org.gradle.nativeplatform.platform.internal.DefaultNativePlatform
 
 plugins {
-  `kotlin-dsl`
+  `java-library`
   id("dependencies-plugin")
   id("net.ltgt.errorprone") version "3.0.1"
 }
@@ -45,8 +45,6 @@ java {
   toolchain { languageVersion = JavaLanguageVersion.of(JvmCompatibility.release) }
   withSourcesJar()
 }
-
-kotlin { explicitApi() }
 
 dependencies {
   compileOnly(":keepanno")

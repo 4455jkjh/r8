@@ -46,7 +46,7 @@ public class BlastRadiusEarlyExitTest extends TestBase {
         .addProgramClasses(Main.class)
         .addOptionsModification(
             options -> {
-              options.getBlastRadiusOptions().outputPath = outputPath.toString();
+              options.getBlastRadiusOptions().dataOutputPath = outputPath;
               options.getTestingOptions().waveModifier = waves -> seenWaves.set();
               if (earlyExit) {
                 // Signal finished to the test program consumer.

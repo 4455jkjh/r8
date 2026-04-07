@@ -18,7 +18,10 @@ import static java.util.Collections.emptySet;
 
 import com.android.tools.r8.Diagnostic;
 import com.android.tools.r8.blastradius.BlastRadiusOptions;
+import com.android.tools.r8.blastradius.BlastRadiusOptions.BlastRadiusConsumer;
 import com.android.tools.r8.blastradius.RootSetBlastRadius;
+import com.android.tools.r8.blastradius.RootSetBlastRadiusSerializer;
+import com.android.tools.r8.blastradius.proto.BlastRadiusContainer;
 import com.android.tools.r8.cf.code.CfInstruction;
 import com.android.tools.r8.cf.code.CfInvoke;
 import com.android.tools.r8.contexts.CompilationContext.MethodProcessingContext;
@@ -169,7 +172,6 @@ import com.android.tools.r8.utils.timing.Timing;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
-import java.nio.file.Path;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -4629,12 +4631,17 @@ public class Enqueuer {
     try (Timing t0 = timing.begin("Report blast radius")) {
       RootSetBlastRadius blastRadius = blastRadiusBuilder.build(appView);
       BlastRadiusOptions blastRadiusOptions = options.getBlastRadiusOptions();
-      if (blastRadiusOptions.blastRadiusConsumer != null) {
-        blastRadiusOptions.blastRadiusConsumer.accept(appView, result.getAppInfo(), blastRadius);
+      BlastRadiusConsumer blastRadiusConsumer = blastRadiusOptions.getBlastRadiusConsumer();
+      if (blastRadiusConsumer != null) {
+        blastRadiusConsumer.accept(appView, result.getAppInfo(), blastRadius);
       }
-      Path blastRadiusOutputPath = blastRadiusOptions.getOutputPath();
-      if (blastRadiusOutputPath != null) {
-        blastRadius.writeToFile(appView, result, blastRadiusOutputPath);
+      Consumer<BlastRadiusContainer> blastRadiusContainerConsumer =
+          blastRadiusOptions.getBlastRadiusContainerConsumer();
+      if (blastRadiusContainerConsumer != null) {
+        BlastRadiusContainer container =
+            new RootSetBlastRadiusSerializer(appView, result)
+                .serialize(blastRadius, appView.options().getBlastRadiusOptions());
+        blastRadiusContainerConsumer.accept(container);
       }
     }
   }

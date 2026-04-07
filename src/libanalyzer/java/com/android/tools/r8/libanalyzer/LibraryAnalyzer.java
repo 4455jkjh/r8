@@ -8,6 +8,9 @@ import com.android.tools.r8.CompilationFailedException;
 import com.android.tools.r8.CompilationMode;
 import com.android.tools.r8.D8;
 import com.android.tools.r8.D8Command;
+import com.android.tools.r8.Diagnostic;
+import com.android.tools.r8.DiagnosticsHandler;
+import com.android.tools.r8.DiagnosticsLevel;
 import com.android.tools.r8.R8;
 import com.android.tools.r8.R8Command;
 import com.android.tools.r8.ResourceException;
@@ -15,6 +18,7 @@ import com.android.tools.r8.Version;
 import com.android.tools.r8.blastradius.BlastRadiusKeepRuleClassifier;
 import com.android.tools.r8.blastradius.RootSetBlastRadius;
 import com.android.tools.r8.blastradius.RootSetBlastRadiusForRule;
+import com.android.tools.r8.diagnostic.MissingDefinitionsDiagnostic;
 import com.android.tools.r8.graph.DexItemFactory;
 import com.android.tools.r8.graph.DexProgramClass;
 import com.android.tools.r8.keepanno.annotations.KeepForApi;
@@ -23,13 +27,11 @@ import com.android.tools.r8.libanalyzer.proto.ConfigurationSummary;
 import com.android.tools.r8.libanalyzer.proto.D8CompileResult;
 import com.android.tools.r8.libanalyzer.proto.ItemCollectionSummary;
 import com.android.tools.r8.libanalyzer.proto.KeepRuleBlastRadiusSummary;
-import com.android.tools.r8.libanalyzer.proto.LibraryAnalyzerResult;
 import com.android.tools.r8.libanalyzer.proto.R8CompileResult;
 import com.android.tools.r8.libanalyzer.proto.ValidateConsumerKeepRulesResult;
 import com.android.tools.r8.libanalyzer.utils.DexIndexedSizeConsumer;
 import com.android.tools.r8.libanalyzer.utils.LibraryAnalyzerOptions;
 import com.android.tools.r8.origin.CommandLineOrigin;
-import com.android.tools.r8.origin.Origin;
 import com.android.tools.r8.position.Position;
 import com.android.tools.r8.processkeeprules.ValidateLibraryConsumerRulesKeepRuleProcessor;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
@@ -40,6 +42,7 @@ import com.android.tools.r8.utils.AllEmbeddedRulesExtractor;
 import com.android.tools.r8.utils.AndroidApp;
 import com.android.tools.r8.utils.ExceptionDiagnostic;
 import com.android.tools.r8.utils.ExceptionUtils;
+import com.android.tools.r8.utils.ForwardingDiagnosticsHandler;
 import com.android.tools.r8.utils.InternalOptions;
 import com.android.tools.r8.utils.IterableUtils;
 import com.android.tools.r8.utils.ListUtils;
@@ -109,14 +112,15 @@ public class LibraryAnalyzer {
   }
 
   private void run(ExecutorService executorService) {
-    InternalD8CompileResult d8CompileResult = runD8(executorService);
+    D8CompileResult d8CompileResult = runD8(executorService);
     R8CompileResult r8CompileResult = runR8(executorService);
     ValidateConsumerKeepRulesResult validateConsumerKeepRulesResult =
         runValidateConsumerKeepRules();
-    writeAnalysisResult(d8CompileResult, r8CompileResult, validateConsumerKeepRulesResult);
+    LibraryAnalyzerWriter.writeAnalysisResult(
+        d8CompileResult, r8CompileResult, validateConsumerKeepRulesResult, options);
   }
 
-  private InternalD8CompileResult runD8(ExecutorService executorService) {
+  private D8CompileResult runD8(ExecutorService executorService) {
     DexIndexedSizeConsumer sizeConsumer = new DexIndexedSizeConsumer();
     D8Command.Builder commandBuilder =
         D8Command.builder(reporter)
@@ -133,14 +137,13 @@ public class LibraryAnalyzer {
       reporter.clearAbort();
       return null;
     }
-    return new InternalD8CompileResult(sizeConsumer.size());
+    return D8CompileResult.newBuilder().setDexSizeBytes(sizeConsumer.size()).build();
   }
 
   private R8CompileResult runR8(ExecutorService executorService) {
     DexIndexedSizeConsumer sizeConsumer = new DexIndexedSizeConsumer();
     R8Command.Builder commandBuilder =
-        R8Command.builder(reporter)
-            .addProguardConfiguration(List.of("-ignorewarnings"), Origin.unknown())
+        R8Command.builder(new R8DiagnosticsHandler(reporter))
             .setClassConflictResolver((reference, origins, handler) -> origins.iterator().next())
             .setProgramConsumer(sizeConsumer);
     configure(commandBuilder);
@@ -152,9 +155,8 @@ public class LibraryAnalyzer {
           r8Options -> {
             r8Options.libraryAnalyzerSubCompilation = true;
             r8Options.ignoreUnusedProguardRules = true;
-            if (options.blastRadiusOutputPath != null) {
-              r8Options.getBlastRadiusOptions().outputPath =
-                  options.blastRadiusOutputPath.toString();
+            if (options.blastRadiusDataOutputPath != null) {
+              r8Options.getBlastRadiusOptions().dataOutputPath = options.blastRadiusDataOutputPath;
             }
             r8Options.getBlastRadiusOptions().blastRadiusConsumer =
                 (appView, appInfo, blastRadius) ->
@@ -339,27 +341,6 @@ public class LibraryAnalyzer {
                 .build());
   }
 
-  private void writeAnalysisResult(
-      InternalD8CompileResult d8CompileResult,
-      R8CompileResult r8CompileResult,
-      ValidateConsumerKeepRulesResult validateConsumerKeepRulesResult) {
-    LibraryAnalyzerResult.Builder resultBuilder = LibraryAnalyzerResult.newBuilder();
-    if (d8CompileResult != null) {
-      resultBuilder.setD8CompileResult(
-          D8CompileResult.newBuilder().setDexSizeBytes(d8CompileResult.size).build());
-    }
-    if (r8CompileResult != null) {
-      resultBuilder.setR8CompileResult(r8CompileResult);
-    }
-    if (validateConsumerKeepRulesResult != null) {
-      resultBuilder.setValidateConsumerKeepRulesResult(validateConsumerKeepRulesResult);
-    }
-    LibraryAnalyzerResult result = resultBuilder.build();
-    if (options.outputConsumer != null) {
-      options.outputConsumer.accept(result);
-    }
-  }
-
   private void configure(BaseCompilerCommand.Builder<?, ?> commandBuilder) {
     commandBuilder
         .setMode(CompilationMode.RELEASE)
@@ -369,19 +350,19 @@ public class LibraryAnalyzer {
     app.getLibraryResourceProviders().forEach(commandBuilder::addLibraryResourceProvider);
   }
 
-  private abstract static class CompileResult {
+  private static class R8DiagnosticsHandler extends ForwardingDiagnosticsHandler {
 
-    final int size;
-
-    CompileResult(int size) {
-      this.size = size;
+    R8DiagnosticsHandler(DiagnosticsHandler diagnosticsHandler) {
+      super(diagnosticsHandler);
     }
-  }
 
-  private static class InternalD8CompileResult extends CompileResult {
-
-    InternalD8CompileResult(int size) {
-      super(size);
+    @Override
+    public DiagnosticsLevel modifyDiagnosticsLevel(DiagnosticsLevel level, Diagnostic diagnostic) {
+      if (diagnostic instanceof MissingDefinitionsDiagnostic) {
+        // Intentionally drop missing classes diagnostics in LibraryAnalyzer.
+        return DiagnosticsLevel.NONE;
+      }
+      return super.modifyDiagnosticsLevel(level, diagnostic);
     }
   }
 }

@@ -83,16 +83,21 @@ val libanalyzerProtoJarScope by configurations.dependencyScope("libanalyzerProto
 val libanalyzerProtoJarConfig by
   configurations.resolvable("libanalyzerProtoJarConfig") { extendsFrom(libanalyzerProtoJarScope) }
 
+val mainJarScope by configurations.dependencyScope("mainJarScope")
+val mainJarConfig by configurations.resolvable("mainJarConfig") { extendsFrom(mainJarScope) }
+val mainResourcesScope by configurations.dependencyScope("mainResourcesScope")
+val mainResourcesConfig by
+  configurations.resolvable("mainResourcesConfig") { extendsFrom(mainResourcesScope) }
+
 dependencies {
   libanalyzerJarScope(project(":libanalyzer", "libanalyzer-jar"))
   libanalyzerProtoJarScope(project(":libanalyzer", "libanalyzer-proto-jar"))
+  mainJarScope(project(":main", "mainJar"))
+  mainResourcesScope(project(":main", "mainResources"))
 }
 
 val resourceShrinkerJarTask = projectTask("resourceshrinker", "jar")
 val resourceShrinkerDepsJarTask = projectTask("resourceshrinker", "depsJar")
-val mainJarTask = projectTask("main", "jar")
-val mainCompileJavaTask = projectTask("main", "compileJava")
-val mainProcessResourcesTask = projectTask("main", "processResources")
 val downloadDepsTask = projectTask("shared", "downloadDeps")
 val downloadTestDepsTask = projectTask("shared", "downloadTestDeps")
 
@@ -287,7 +292,7 @@ tasks {
       from(blastRadiusJarTask)
       from(keepAnnoJarTask)
       from(libanalyzerJarConfig)
-      from(mainJarTask)
+      from(mainJarConfig)
       from(resourceShrinkerJarTask)
     }
 
@@ -304,8 +309,8 @@ tasks {
 
   val threadingModuleBlockingJar by
     registering(Zip::class) {
-      dependsOn(mainJarTask)
-      from(mainJarTask.outputs.files.map(::zipTree))
+      dependsOn(mainJarConfig)
+      from(mainJarConfig.elements.map { it.map { zipTree(it) } })
       include("com/android/tools/r8/threading/providers/blocking/**")
       destinationDirectory.set(getRoot().resolveAll("build", "libs"))
       archiveFileName.set("threading-module-blocking.jar")
@@ -313,8 +318,8 @@ tasks {
 
   val threadingModuleSingleThreadedJar by
     registering(Zip::class) {
-      dependsOn(mainJarTask)
-      from(mainJarTask.outputs.files.map(::zipTree))
+      dependsOn(mainJarConfig)
+      from(mainJarConfig.elements.map { it.map { zipTree(it) } })
       include("com/android/tools/r8/threading/providers/singlethreaded/**")
       destinationDirectory.set(getRoot().resolveAll("build", "libs"))
       archiveFileName.set("threading-module-single-threaded.jar")
@@ -372,7 +377,7 @@ tasks {
 
   val r8WithRelocatedDeps by
     registering(Exec::class) {
-      dependsOn(depsJar, protoJar, swissArmyKnife, mainProcessResourcesTask)
+      dependsOn(depsJar, protoJar, swissArmyKnife, mainResourcesConfig)
       dependsOn(r8WithRelocatedDepsManifest)
       val output = getRoot().resolveAll("build", "libs", "r8.jar")
       outputs.file(output)
@@ -382,7 +387,7 @@ tasks {
             depsJar.get().getSingleOutputFile(),
             protoJar.getSingleOutputFile(),
             swissArmyKnife.getSingleOutputFile(),
-            mainProcessResourcesTask.getSingleOutputFile(),
+            mainResourcesConfig,
             r8WithRelocatedDepsManifest.getSingleOutputFile(),
           )
         }
@@ -391,7 +396,7 @@ tasks {
         val deps = depsJar.get().getSingleOutputFile()
         val proto = protoJar.getSingleOutputFile()
         val swissArmyKnifeJar = swissArmyKnife.getSingleOutputFile()
-        val mainResourcesDir = mainProcessResourcesTask.getSingleOutputFile()
+        val mainResourcesDir = mainResourcesConfig.singleFile
         val manifestJar = r8WithRelocatedDepsManifest.getSingleOutputFile()
         val pkg = "com.android.tools.r8"
         commandLine =
@@ -469,14 +474,12 @@ tasks {
   val processKeepRulesLibWithRelocatedDeps by
     registering(Exec::class) {
       dependsOn(r8WithRelocatedDeps)
-      val createR8LibFile = getRoot().resolveAll("tools", "create_r8lib.py")
+      dependOnPythonScripts()
       val keepRulesFile = getRoot().resolveAll("src", "main", "keep_processkeeprules.txt")
       val outputJar = getRoot().resolveAll("build", "libs", "processkeepruleslib.jar")
       outputs.file(outputJar)
       inputs.files(
-        Callable {
-          listOf(createR8LibFile, keepRulesFile, r8WithRelocatedDeps.get().getSingleOutputFile())
-        }
+        Callable { listOf(keepRulesFile, r8WithRelocatedDeps.get().getSingleOutputFile()) }
       )
       doFirst {
         val r8WithRelocatedDepsJar = r8WithRelocatedDeps.get().getSingleOutputFile()

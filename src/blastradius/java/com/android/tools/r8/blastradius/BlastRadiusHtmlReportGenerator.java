@@ -90,7 +90,8 @@ public class BlastRadiusHtmlReportGenerator {
         blastRadius = BlastRadiusContainer.parseFrom(is);
       }
       Files.createDirectories(blastRadiusOutputFile.getParent());
-      Files.write(blastRadiusOutputFile, generate(blastRadius).getBytes(StandardCharsets.UTF_8));
+      Files.write(
+          blastRadiusOutputFile, generateHtmlReport(blastRadius).getBytes(StandardCharsets.UTF_8));
       if (summarize) {
         Path relPath = input.relativize(blastRadiusFile);
         String name = relPath.getParent().toString();
@@ -107,14 +108,14 @@ public class BlastRadiusHtmlReportGenerator {
     }
   }
 
-  private static String generate(BlastRadiusContainer blastRadius) {
+  public static String generateHtmlReport(BlastRadiusContainer blastRadius) {
     String html = BlastRadiusHtmlReportTemplate.getHtmlTemplate();
     return html.replace(
         "<script id=\"blastradius-data\" type=\"application/octet-stream\"></script>",
         String.join(
             "",
             "<script id=\"blastradius-data\" type=\"application/octet-stream\">",
-            encodeToString(blastRadius),
+            encodeMessageToString(blastRadius),
             "</script>"));
   }
 
@@ -126,13 +127,13 @@ public class BlastRadiusHtmlReportGenerator {
             "",
             "<script id=\"blastradius-data\" type=\"application/json\">[",
             blastRadiusSummaries.stream()
-                .map(BlastRadiusHtmlReportGenerator::encodeToString)
+                .map(BlastRadiusHtmlReportGenerator::encodeMessageToString)
                 .map(s -> "\"" + s + "\"")
                 .collect(Collectors.joining(",")),
             "]</script>"));
   }
 
-  private static String encodeToString(AbstractMessage message) {
+  private static String encodeMessageToString(AbstractMessage message) {
     ByteArrayOutputStream baos = new ByteArrayOutputStream();
     try {
       message.writeTo(baos);
@@ -141,6 +142,11 @@ public class BlastRadiusHtmlReportGenerator {
       throw new UncheckedIOException(e);
     }
     return Base64.getEncoder().encodeToString(baos.toByteArray());
+  }
+
+  // Helper method for converting a proto to a string in tests. Should only be used for testing.
+  public static String encodeMessageToStringForTesting(Object object) {
+    return encodeMessageToString((AbstractMessage) object);
   }
 
   private static BlastRadiusSummary getSummary(

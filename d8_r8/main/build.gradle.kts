@@ -9,12 +9,11 @@ import org.gradle.api.provider.Provider
 import org.gradle.api.provider.ValueSource
 import org.gradle.api.provider.ValueSourceParameters
 import org.gradle.process.ExecOperations
-import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
-  `kotlin-dsl`
+  `java-library`
   id("dependencies-plugin")
-  id("net.ltgt.errorprone") version "3.0.1"
+  id("net.ltgt.errorprone")
 }
 
 // Properties that you can set in your ~/.gradle/gradle.properties:
@@ -202,8 +201,6 @@ java {
   withSourcesJar()
 }
 
-kotlin { explicitApi() }
-
 val assistantJarTask = projectTask("assistant", "jar")
 val blastRadiusJarTask = projectTask("blastradius", "jar")
 val blastRadiusProtoJarTask = projectTask("blastradius", "protoJar")
@@ -284,13 +281,34 @@ tasks {
   withType<Exec> { doFirst { println("Executing command: ${commandLine.joinToString(" ")}") } }
 }
 
-tasks.withType<KotlinCompile> { enabled = false }
-
 tasks.withType<JavaCompile> {
   dependsOn(gradle.includedBuild("shared").task(":downloadDeps"))
   logger.info("NOTE: Running with JDK: " + org.gradle.internal.jvm.Jvm.current().javaHome)
 }
 
 tasks.withType<ProcessResources> { dependsOn(gradle.includedBuild("shared").task(":downloadDeps")) }
+
+val mainJar by configurations.consumable("mainJar")
+val mainClassesOutput by configurations.consumable("mainClassesOutput")
+val turboClassesOutput by configurations.consumable("turboClassesOutput")
+val mainResources by configurations.consumable("mainResources")
+val mainSources by configurations.consumable("mainSources")
+
+artifacts {
+  add(mainJar.name, tasks.named("jar"))
+  add(
+    mainClassesOutput.name,
+    tasks.named<JavaCompile>("compileJava").map { it.destinationDirectory },
+  )
+  add(
+    turboClassesOutput.name,
+    tasks.named<JavaCompile>("compileTurboJava").map { it.destinationDirectory },
+  )
+  add(
+    mainResources.name,
+    tasks.named<ProcessResources>("processResources").map { it.destinationDir },
+  )
+  add(mainSources.name, tasks.named("sourcesJar"))
+}
 
 configureErrorProneForJavaCompile()

@@ -3,11 +3,9 @@
 // BSD-style license that can be found in the LICENSE file.
 
 import java.nio.file.Paths
-import org.jetbrains.kotlin.gradle.dsl.JvmTarget
-import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
-  `kotlin-dsl`
+  `java-library`
   id("dependencies-plugin")
 }
 
@@ -16,8 +14,6 @@ java {
   targetCompatibility = JvmCompatibility.targetCompatibility
   toolchain { languageVersion = JavaLanguageVersion.of(JvmCompatibility.release) }
 }
-
-kotlin { explicitApi() }
 
 val testJarsScope by configurations.dependencyScope("testJarsScope")
 val testJars by configurations.resolvable("testJars") { extendsFrom(testJarsScope) }
@@ -33,6 +29,10 @@ val mainDepsJarFilesScope by configurations.dependencyScope("mainDepsJarFilesSco
 val mainDepsJarFilesConfig by
   configurations.resolvable("mainDepsJarFilesConfig") { extendsFrom(mainDepsJarFilesScope) }
 
+val mainSourcesScope by configurations.dependencyScope("mainSourcesScope")
+val mainSourcesConfig by
+  configurations.resolvable("mainSourcesConfig") { extendsFrom(mainSourcesScope) }
+
 dependencies {
   testJarsScope(project(":tests_java_8", "testJar"))
   testJarsScope(project(":tests_java_9", "testJar"))
@@ -44,6 +44,7 @@ dependencies {
   testDepsJarsScope(project(":tests_bootstrap", "depsJar"))
   testDepsJarsScope(project(":testbase", "depsJar"))
   mainDepsJarFilesScope(project(":dist", "depsJarFiles"))
+  mainSourcesScope(project(":main", "mainSources"))
 }
 
 val blastRadiusSourcesTask = projectTask("blastradius", "sourcesJar")
@@ -64,7 +65,6 @@ val swissArmyKnifeTask = project(":dist").tasks.getByName("swissArmyKnife")
 val processKeepRulesLibWithRelocatedDepsTask =
   project(":dist").tasks.getByName("processKeepRulesLibWithRelocatedDeps")
 val r8WithRelocatedDepsTask = project(":dist").tasks.getByName("r8WithRelocatedDeps")
-val mainSourcesTask = projectTask("main", "sourcesJar")
 val resourceShrinkerSourcesTask = projectTask("resourceshrinker", "sourcesJar")
 val keepAnnoAndroidXAnnotationsJar = projectTask("keepanno", "keepAnnoAndroidXAnnotationsJar")
 val keepAnnoToolsWithRelocatedDepsTask =
@@ -73,8 +73,6 @@ val depsJarOnlyAsmTask = projectTask("keepanno", "depsJarOnlyAsm")
 
 tasks {
   withType<Exec> { doFirst { println("Executing command: ${commandLine.joinToString(" ")}") } }
-
-  withType<KotlinCompile> { compilerOptions { jvmTarget = JvmTarget.JVM_17 } }
 
   "clean" {
     dependsOn(":testbase:clean")
@@ -234,6 +232,7 @@ tasks {
       r8WithRelocatedDepsTask,
       assistantJarTask,
     )
+    dependOnPythonScripts()
     val inputJar = inputJarProvider.getSingleOutputFile()
     val r8WithRelocatedDepsJar = r8WithRelocatedDepsTask.getSingleOutputFile()
     val assistantJar = assistantJarTask.getSingleOutputFile()
@@ -245,11 +244,7 @@ tasks {
         // TODO(b/294351878): Remove once enum issue is fixed
         getRoot().resolveAll("src", "main", "keep_r8resourceshrinker.txt"),
       )
-    inputs.files(
-      listOf(r8WithRelocatedDepsJar, inputJar, getRoot().resolveAll("tools", "create_r8lib.py"))
-        .union(keepRuleFiles)
-        .union(classpath)
-    )
+    inputs.files(listOf(r8WithRelocatedDepsJar, inputJar).union(keepRuleFiles).union(classpath))
     val outputJar = getRoot().resolveAll("build", "libs", artifactName)
     outputs.file(outputJar)
     commandLine =
@@ -293,13 +288,11 @@ tasks {
       dependsOn(r8WithRelocatedDepsTask)
       dependsOn(keepAnnoToolsWithRelocatedDepsTask)
       dependsOn(depsJarOnlyAsmTask)
+      dependOnPythonScripts()
       val inputJar = keepAnnoToolsWithRelocatedDepsTask.getSingleOutputFile()
       val r8WithRelocatedDepsJar = r8WithRelocatedDepsTask.getSingleOutputFile()
       val keepRuleFiles = listOf(getRoot().resolveAll("src", "keepanno", "keep.txt"))
-      inputs.files(
-        listOf(r8WithRelocatedDepsJar, inputJar, getRoot().resolveAll("tools", "create_r8lib.py"))
-          .union(keepRuleFiles)
-      )
+      inputs.files(listOf(r8WithRelocatedDepsJar, inputJar).union(keepRuleFiles))
       val outputJar = getRoot().resolveAll("build", "libs", "keepanno-toolslib.jar")
       outputs.file(outputJar)
       commandLine =
@@ -560,12 +553,12 @@ tasks {
       dependsOn(blastRadiusSourcesTask)
       dependsOn(keepAnnoSourcesTask)
       dependsOn(libanalyzerSourcesConfig)
-      dependsOn(mainSourcesTask)
       dependsOn(resourceShrinkerSourcesTask)
+      dependsOn(mainSourcesConfig)
       from(blastRadiusSourcesTask.outputs.files.map(::zipTree))
       from(keepAnnoSourcesTask.outputs.files.map(::zipTree))
       from(libanalyzerSourcesConfig.map(::zipTree))
-      from(mainSourcesTask.outputs.files.map(::zipTree))
+      from(mainSourcesConfig.map(::zipTree))
       from(resourceShrinkerSourcesTask.outputs.files.map(::zipTree))
       archiveClassifier.set("sources")
       archiveFileName.set("r8-src.jar")

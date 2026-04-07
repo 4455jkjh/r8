@@ -4,21 +4,31 @@
 package com.android.tools.r8.blastradius;
 
 import com.android.tools.r8.DexIndexedConsumer;
+import com.android.tools.r8.StringConsumer;
+import com.android.tools.r8.blastradius.proto.BlastRadiusContainer;
 import com.android.tools.r8.graph.AppInfoWithClassHierarchy;
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
-import com.android.tools.r8.shaking.ProguardConfiguration;
 import com.android.tools.r8.utils.InternalOptions;
 import com.android.tools.r8.utils.SystemPropertyUtils;
 import java.nio.file.Path;
-import java.nio.file.Paths;
+import java.util.function.Consumer;
 
 public class BlastRadiusOptions {
 
   public BlastRadiusConsumer blastRadiusConsumer;
-  public final String outputDirectory =
-      System.getProperty("com.android.tools.r8.dumpblastradiustodirectory");
-  public String outputPath = System.getProperty("com.android.tools.r8.dumpblastradiustofile");
+  public Consumer<BlastRadiusContainer> blastRadiusContainerConsumer;
+  public final Path dataOutputDirectory =
+      SystemPropertyUtils.parsePathFromSystemProperty(
+          "com.android.tools.r8.dumpkeepradiustodirectory");
+  public Path dataOutputPath =
+      SystemPropertyUtils.parsePathFromSystemProperty("com.android.tools.r8.dumpkeepradiustofile");
+  public final Path htmlOutputDirectory =
+      SystemPropertyUtils.parsePathFromSystemProperty(
+          "com.android.tools.r8.dumpkeepradiushtmltodirectory");
+  public Path htmlOutputPath =
+      SystemPropertyUtils.parsePathFromSystemProperty(
+          "com.android.tools.r8.dumpkeepradiushtmltofile");
   public final boolean enableSubsumptionAnalysis =
       SystemPropertyUtils.parseSystemPropertyOrDefault(
           "com.android.tools.r8.blastradius.enablesubsumptionanalysis", true);
@@ -30,30 +40,44 @@ public class BlastRadiusOptions {
   }
 
   public boolean isEnabled() {
-    if (blastRadiusConsumer != null || outputDirectory != null || outputPath != null) {
-      return true;
-    }
-    if (options.hasProguardConfiguration()) {
-      return options.getProguardConfiguration().isPrintBlastRadius();
-    }
-    return false;
+    return getBlastRadiusConsumer() != null || getBlastRadiusContainerConsumer() != null;
   }
 
-  public Path getOutputPath() {
-    assert isEnabled();
-    if (outputDirectory != null) {
-      return Paths.get(outputDirectory).resolve("blastradius" + System.nanoTime() + ".pb");
+  public BlastRadiusConsumer getBlastRadiusConsumer() {
+    return blastRadiusConsumer;
+  }
+
+  public Consumer<BlastRadiusContainer> getBlastRadiusContainerConsumer() {
+    Consumer<BlastRadiusContainer> result = blastRadiusContainerConsumer;
+    Path dataOutputPath = getDataOutputPath();
+    if (dataOutputPath != null) {
+      Consumer<BlastRadiusContainer> writeDataToFile =
+          container -> BlastRadiusContainerUtils.writeToFile(container, dataOutputPath);
+      result = result != null ? result.andThen(writeDataToFile) : writeDataToFile;
     }
-    if (outputPath != null) {
-      return Paths.get(outputPath);
+    Path htmlOutputPath = getHtmlOutputPath();
+    if (htmlOutputPath != null) {
+      Consumer<BlastRadiusContainer> writeHtmlToFile =
+          container ->
+              BlastRadiusContainerUtils.writeHtmlToConsumer(
+                  container, new StringConsumer.FileConsumer(htmlOutputPath), options.reporter);
+      result = result != null ? result.andThen(writeHtmlToFile) : writeHtmlToFile;
     }
-    if (options.hasProguardConfiguration()) {
-      ProguardConfiguration configuration = options.getProguardConfiguration();
-      if (configuration.isPrintBlastRadius()) {
-        return configuration.getPrintBlastRadiusFile();
-      }
+    return result;
+  }
+
+  public Path getDataOutputPath() {
+    if (dataOutputDirectory != null) {
+      return dataOutputDirectory.resolve("blastradius" + System.nanoTime() + ".pb");
     }
-    return null;
+    return dataOutputPath;
+  }
+
+  public Path getHtmlOutputPath() {
+    if (htmlOutputDirectory != null) {
+      return htmlOutputDirectory.resolve("report" + System.nanoTime() + ".html");
+    }
+    return htmlOutputPath;
   }
 
   public boolean shouldExitEarly() {

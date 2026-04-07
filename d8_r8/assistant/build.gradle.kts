@@ -3,7 +3,7 @@
 // BSD-style license that can be found in the LICENSE file.
 
 plugins {
-  `kotlin-dsl`
+  `java-library`
   id("dependencies-plugin")
 }
 
@@ -21,5 +21,3 @@ tasks.withType<Jar> {
   destinationDirectory.set(getRoot().resolveAll("build", "libs"))
   archiveFileName.set("assistant.jar")
 }
-
-kotlin { explicitApi() }

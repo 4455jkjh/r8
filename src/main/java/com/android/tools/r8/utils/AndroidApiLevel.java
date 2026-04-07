@@ -49,6 +49,7 @@ public class AndroidApiLevel implements Ordered<AndroidApiLevel> {
   public static final AndroidApiLevel V;
   public static final AndroidApiLevel BAKLAVA;
   public static final AndroidApiLevel BAKLAVA_1;
+  public static final AndroidApiLevel CINNAMON_BUN;
   public static final AndroidApiLevel MAIN;
   // Used for API modeling of Android extension APIs.
   public static final AndroidApiLevel EXTENSION;
@@ -105,13 +106,14 @@ public class AndroidApiLevel implements Ordered<AndroidApiLevel> {
     builder.add(V = new AndroidApiLevel(35, 0, "V"));
     builder.add(BAKLAVA = new AndroidApiLevel(36, 0, "BAKLAVA"));
     builder.add(BAKLAVA_1 = new AndroidApiLevel(36, 1, "BAKLAVA_1"));
-    builder.add(MAIN = new AndroidApiLevel(37, 0, "MAIN"));
+    builder.add(CINNAMON_BUN = new AndroidApiLevel(37, 0, "CINNAMON_BUN"));
+    builder.add(MAIN = new AndroidApiLevel(38, 0, "MAIN"));
     builder.add(EXTENSION = new AndroidApiLevel(Integer.MAX_VALUE, 0, "EXTENSION"));
     valuesSorted = builder.build();
-    assert valuesSorted.size() == 39;
+    assert valuesSorted.size() == 40;
     assert checkValuesSorted();
 
-    LATEST = BAKLAVA_1;
+    LATEST = CINNAMON_BUN;
     API_DATABASE_LEVEL = LATEST;
     UNKNOWN = MAIN;
   }
@@ -202,7 +204,7 @@ public class AndroidApiLevel implements Ordered<AndroidApiLevel> {
     if ((apiLevel <= 35 && minor != 0) || minor > 1) {
       throw new IllegalArgumentException();
     }
-    assert BAKLAVA_1 == LATEST; // This has to be updated when we add new api levels.
+    assert CINNAMON_BUN == LATEST; // This has to be updated when we add new api levels.
     assert UNKNOWN.isGreaterThan(LATEST);
     switch (apiLevel) {
       case 1:
@@ -278,6 +280,9 @@ public class AndroidApiLevel implements Ordered<AndroidApiLevel> {
       case 36:
         assert minor <= 1;
         return minor == 0 ? BAKLAVA : BAKLAVA_1;
+      case 37:
+        assert minor == 0;
+        return CINNAMON_BUN;
       default:
         return MAIN;
     }

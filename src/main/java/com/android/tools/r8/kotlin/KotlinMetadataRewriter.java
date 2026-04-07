@@ -262,12 +262,12 @@ public class KotlinMetadataRewriter {
             throw appView
                 .options()
                 .reporter
-                .fatalError(KotlinMetadataDiagnostic.unexpectedErrorWhenRewriting(clazz.type, t));
+                .fatalError(KotlinMetadataDiagnostic.unexpectedErrorWhenRewriting(clazz, t));
           });
       appView
           .options()
           .reporter
-          .warning(KotlinMetadataDiagnostic.unexpectedErrorWhenRewriting(clazz.type, t));
+          .warning(KotlinMetadataDiagnostic.unexpectedErrorWhenRewriting(clazz, t));
     }
   }
 

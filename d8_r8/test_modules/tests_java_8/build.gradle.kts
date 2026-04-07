@@ -3,10 +3,8 @@
 // BSD-style license that can be found in the LICENSE file.
 
 import org.gradle.api.JavaVersion
-import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
-  `kotlin-dsl`
   `java-library`
   id("dependencies-plugin")
 }
@@ -28,20 +26,23 @@ java {
   toolchain { languageVersion = JavaLanguageVersion.of(11) }
 }
 
-kotlin { explicitApi() }
-
 // If we depend on keepanno by referencing the project source outputs we get an error regarding
 // incompatible java class file version. By depending on the jar we circumvent that.
 val assistantCompileTask = projectTask("assistant", "compileJava")
 val blastRadiusCompileTask = projectTask("blastradius", "compileJava")
 val distDepsFilesScope by configurations.dependencyScope("distDepsFilesScope")
 val distDepsFiles by configurations.resolvable("distDepsFiles") { extendsFrom(distDepsFilesScope) }
+val mainClassesScope by configurations.dependencyScope("mainClassesScope")
+val mainClassesOutput =
+  configurations.resolvable("mainClassesOutput") { extendsFrom(mainClassesScope) }
+val mainResourcesScope by configurations.dependencyScope("mainResourcesScope")
+val mainResources = configurations.resolvable("mainResources") { extendsFrom(mainResourcesScope) }
+val turboClassesScope by configurations.dependencyScope("turboClassesScope")
+val turboClassesOutput =
+  configurations.resolvable("turboClassesOutput") { extendsFrom(turboClassesScope) }
 val keepAnnoJarTask = projectTask("keepanno", "jar")
 val keepAnnoCompileJavaTask = projectTask("keepanno", "compileJava")
 val keepAnnoCompileKotlinTask = projectTask("keepanno", "compileKotlin")
-val mainCompileJavaTask = projectTask("main", "compileJava")
-val mainProcessResourcesTask = projectTask("main", "processResources")
-val mainTurboCompileJavaTask = projectTask("main", "compileTurboJava")
 val resourceShrinkerCompileJavaTask = projectTask("resourceshrinker", "compileJava")
 val resourceShrinkerCompileKotlinTask = projectTask("resourceshrinker", "compileKotlin")
 val resourceShrinkerDepsJarTask = projectTask("resourceshrinker", "depsJar")
@@ -50,13 +51,16 @@ val sharedDownloadDepsInternalTask = projectTask("shared", "downloadDepsInternal
 
 dependencies {
   distDepsFilesScope(project(":dist", "depsFiles"))
+  mainClassesScope(project(":main", "mainClassesOutput"))
+  mainResourcesScope(project(":main", "mainResources"))
+  turboClassesScope(project(":main", "turboClassesOutput"))
   implementation(assistantCompileTask.outputs.files)
   implementation(blastRadiusCompileTask.outputs.files)
   implementation(keepAnnoJarTask.outputs.files)
   implementation(project(":libanalyzer", "libanalyzer-compile-java"))
-  implementation(mainCompileJavaTask.outputs.files)
-  implementation(mainProcessResourcesTask.outputs.files)
-  implementation(mainTurboCompileJavaTask.outputs.files)
+  implementation(files(mainClassesOutput))
+  implementation(files(mainResources))
+  implementation(files(turboClassesOutput))
   implementation(resourceShrinkerCompileJavaTask.outputs.files)
   implementation(resourceShrinkerCompileKotlinTask.outputs.files)
   implementation(resourceShrinkerDepsJarTask.outputs.files)
@@ -84,12 +88,12 @@ tasks {
   val createArtTests by
     registering(Exec::class) {
       dependsOn(sharedDownloadDepsTask)
+      dependOnPythonScripts()
       // TODO(b/327315907): Don't generating into the root build dir.
       val outputDir =
         getRoot()
           .resolveAll("build", "generated", "test", "java", "com", "android", "tools", "r8", "art")
       val createArtTestsScript = getRoot().resolveAll("tools", "create_art_tests.py")
-      inputs.file(createArtTestsScript)
       inputs.dir(getRoot().resolveAll("tests", "2017-10-04"))
       outputs.dir(outputDir)
       workingDir(getRoot())
@@ -102,7 +106,6 @@ tasks {
   withType<JavaCompile> {
     dependsOn(createArtTests)
     dependsOn(keepAnnoCompileJavaTask)
-    dependsOn(mainCompileJavaTask)
     dependsOn(resourceShrinkerCompileJavaTask)
     dependsOn(sharedDownloadDepsTask)
     dependsOn(":testbase:compileJava")
@@ -115,8 +118,6 @@ tasks {
       notCompatibleWithConfigurationCache("JavaExec created by IntelliJ")
     }
   }
-
-  withType<KotlinCompile> { enabled = false }
 
   val sourceSetDependencyTask by registering {
     dependsOn(":tests_java_9:${getExampleJarsTaskName("examplesJava9")}")
@@ -155,13 +156,13 @@ tasks {
     )
     // This path is set when compiling examples jar task in DependenciesPlugin.
     val r8RuntimePath =
-      mainCompileJavaTask.outputs.files.getAsPath().split(File.pathSeparator)[0] +
+      project.files(mainClassesOutput).asPath.split(File.pathSeparator)[0] +
         File.pathSeparator +
-        mainTurboCompileJavaTask.outputs.files.getAsPath().split(File.pathSeparator)[0] +
+        project.files(turboClassesOutput).asPath.split(File.pathSeparator)[0] +
         File.pathSeparator +
         distDepsFiles.asPath +
         File.pathSeparator +
-        getRoot().resolveAll("src", "main", "resources") +
+        project.files(mainResources).asPath.split(File.pathSeparator)[0] +
         File.pathSeparator +
         keepAnnoCompileJavaTask.outputs.files.getAsPath().split(File.pathSeparator)[0] +
         File.pathSeparator +

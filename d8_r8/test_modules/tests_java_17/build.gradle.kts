@@ -3,7 +3,6 @@
 // BSD-style license that can be found in the LICENSE file.
 
 plugins {
-  `kotlin-dsl`
   `java-library`
   id("dependencies-plugin")
 }
@@ -18,17 +17,12 @@ java {
   toolchain { languageVersion = JavaLanguageVersion.of(17) }
 }
 
-kotlin { explicitApi() }
-
-val mainCompileJavaTask = projectTask("main", "compileJava")
-val mainProcessResourcesTask = projectTask("main", "processResources")
-val mainTurboCompileJavaTask = projectTask("main", "compileTurboJava")
 val sharedDownloadDepsTask = projectTask("shared", "downloadDeps")
 
 dependencies {
-  implementation(mainCompileJavaTask.outputs.files)
-  implementation(mainProcessResourcesTask.outputs.files)
-  implementation(mainTurboCompileJavaTask.outputs.files)
+  implementation(project(":main", "mainClassesOutput"))
+  implementation(project(":main", "mainResources"))
+  implementation(project(":main", "turboClassesOutput"))
   implementation(project(":testbase"))
   implementation(project(":testbase", "depsJar"))
 }

@@ -71,7 +71,7 @@ public class DeadCodeRemover {
         BasicBlock block = worklist.removeLast();
         worklist.removeSeen(block);
         removeDeadInstructions(worklist, code, block, affectedValues, valueIsDeadAnalysis);
-        removeDeadAndTrivialPhis(worklist, block, valueIsDeadAnalysis);
+        removeDeadAndTrivialPhis(worklist, block, affectedValues, valueIsDeadAnalysis);
       }
       affectedValues.narrowingWithAssumeRemoval(appView, code);
     } while (branchSimplifier
@@ -131,7 +131,10 @@ public class DeadCodeRemover {
   }
 
   private void removeDeadAndTrivialPhis(
-      WorkList<BasicBlock> worklist, BasicBlock block, ValueIsDeadAnalysis valueIsDeadAnalysis) {
+      WorkList<BasicBlock> worklist,
+      BasicBlock block,
+      AffectedValues affectedValues,
+      ValueIsDeadAnalysis valueIsDeadAnalysis) {
     Iterator<Phi> phiIt = block.getPhis().iterator();
     while (phiIt.hasNext()) {
       Phi phi = phiIt.next();
@@ -143,7 +146,7 @@ public class DeadCodeRemover {
         }
       } else if (phi.isTrivialPhi()) {
         phiIt.remove();
-        phi.removeTrivialPhi();
+        phi.removeTrivialPhi(null, affectedValues);
       }
     }
   }
@@ -168,10 +171,13 @@ public class DeadCodeRemover {
                   && checkCast.outValue().getLocalInfo() == checkCast.object().getLocalInfo()) {
                 updateWorklistWithNonDebugUses(worklist, checkCast);
                 checkCast.outValue().replaceUsers(checkCast.object(), affectedValues);
-                checkCast.object().uniquePhiUsers().forEach(Phi::removeTrivialPhi);
-            }
+                checkCast
+                    .object()
+                    .uniquePhiUsers()
+                    .forEach(user -> user.removeTrivialPhi(null, affectedValues));
+              }
               break;
-          }
+            }
           case INVOKE_CUSTOM:
           case INVOKE_DIRECT:
           case INVOKE_INTERFACE:

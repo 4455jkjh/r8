@@ -210,6 +210,26 @@ public class TestConfigurationHelper {
         test.filter.setFailOnNoMatchingTests(false)
         test.filter.setIncludePatterns(*(testFilter.split("|").toTypedArray()))
       }
+      if (project.hasProperty("shard_count") && project.hasProperty("shard_number")) {
+        val shardCount = project.property("shard_count").toString().toInt()
+        val shardNumber = project.property("shard_number").toString().toInt()
+        if (shardNumber < 0 || shardNumber >= shardCount) {
+          throw org.gradle.api.GradleException(
+            "Invalid shard_number $shardNumber for shard_count $shardCount. " +
+              "shard_number must be non-negative and less than shard_count."
+          )
+        }
+        println("NOTE: Running shard $shardNumber of $shardCount")
+        test.exclude { element ->
+          if (element.isDirectory) return@exclude false
+          val path = element.path
+          if (!path.endsWith(".class")) return@exclude false
+          // We use the class name (path) to determine the shard.
+          // Inner classes (e.g., MyTest$1.class) must fall into the same shard as the main class.
+          val baseName = path.substringBefore("$").substringBefore(".class")
+          Math.floorMod(baseName.hashCode(), shardCount) != shardNumber
+        }
+      }
       if (project.hasProperty("kotlin_compiler_dev")) {
         test.systemProperty("com.android.tools.r8.kotlincompilerdev", "1")
       }

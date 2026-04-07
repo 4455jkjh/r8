@@ -1,32 +1,26 @@
-# R8 Blast Radius
+# R8 Keep Radius
 
-The "blast radius" of a keep rule refers to the negative impact that the rule has on the final application.
+The "keep radius" of a keep rule refers to the negative impact that the rule has on the final application.
 
-R8 provides a tool to analyze and visualize this blast radius. This helps developers:
+R8 provides a tool to analyze and visualize this keep radius. This helps developers:
 
-* **Identify expensive rules**: Find keep rules that are preventing R8 from
+* **Identify expensive rules**: Find keep rules that prevent R8 from
 optimizing large parts of the application.
-* **Debug dependencies**: See which libraries are introducing broad keep rules.
+* **Debug dependencies**: See which libraries introduce broad keep rules.
 * **Remove redundancy**: Discover rules that are not needed because they are
 covered by other rules.
 
 > **Note**: This feature is currently **experimental** and requires R8 version
-> 9.2.1-dev or higher. When visualizing the data, it is important to use the
-> same version of R8 that was used to generate the `.pb` file, as the protocol
-> buffer schema may change. The r8.jar corresponding to a given version can be
-> downloaded from https://storage.googleapis.com/r8-releases. For example,
-> R8 9.2.1-dev can be downloaded from
-> https://storage.googleapis.com/r8-releases/raw/9.2.1-dev/r8.jar.
+> 9.2.14-dev or higher.
 
-## Generating the Blast Radius Data
+## Generating the R8 Configuration Analysis Report
 
-R8 outputs the blast radius information as a Protocol Buffer (`.pb`) file, which
-uses the schema defined in `src/blastradius/proto/blastradius.proto`.
+R8 supports outputting a Configuration Analysis Report as an HTML file.
 
 ### Gradle
 
-To generate the blast radius file from a Gradle build, pass the
-`com.android.tools.r8.dumpblastradiustodirectory` system property.
+To generate the HTML report from a Gradle build, pass the
+`com.android.tools.r8.dumpkeepradiushtmltodirectory` system property.
 
 See [Replacing R8 in AGP](../README.md#replacing-r8-in-agp) for instructions on
 how to update the R8 version in your build.
@@ -34,14 +28,14 @@ how to update the R8 version in your build.
 ```bash
 ./gradlew assembleRelease \
     --no-daemon \
-    -Dcom.android.tools.r8.dumpblastradiustodirectory=<output_directory>
+    -Dcom.android.tools.r8.dumpkeepradiushtmltodirectory=<output_directory>
 ```
 
 **Example**:
 ```bash
 ./gradlew assembleRelease \
     --no-daemon \
-    -Dcom.android.tools.r8.dumpblastradiustodirectory=/tmp/blastradius
+    -Dcom.android.tools.r8.dumpkeepradiushtmltodirectory=/tmp/blastradius
 ```
 
 ### Android Platform

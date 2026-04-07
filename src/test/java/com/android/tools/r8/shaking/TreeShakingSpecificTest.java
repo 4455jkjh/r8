@@ -29,7 +29,7 @@ import org.junit.runners.Parameterized.Parameters;
 @RunWith(Parameterized.class)
 public class TreeShakingSpecificTest extends TestBase {
 
-  private static final AndroidApiLevel minApi = AndroidApiLevel.LATEST;
+  private static final AndroidApiLevel minApi = AndroidApiLevel.BAKLAVA;
 
   private final Backend backend;
 
