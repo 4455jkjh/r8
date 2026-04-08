@@ -526,6 +526,7 @@ r8_tester_with_default(
     dimensions = get_dimensions(coordinator = True),
     extra_properties = {
         "testers": presubmit_testers,
+        "shard_count": 5
     },
 )
 
