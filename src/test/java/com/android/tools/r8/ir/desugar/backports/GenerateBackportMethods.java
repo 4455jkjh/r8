@@ -109,7 +109,7 @@ public class GenerateBackportMethods extends MethodGenerationBase {
             classToType(LongStub.class),
             factory.boxedLongType,
             classToType(UnsafeStub.class),
-            factory.unsafeType,
+            factory.sunMiscUnsafeType,
             classToType(AndroidOsBuildStub.class),
             factory.androidOsBuildType,
             classToType(AndroidOsBuildVersionStub.class),

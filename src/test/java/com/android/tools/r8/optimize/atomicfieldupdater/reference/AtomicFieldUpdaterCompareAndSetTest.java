@@ -66,8 +66,12 @@ public class AtomicFieldUpdaterCompareAndSetTest extends AtomicFieldUpdaterBase 
               if (isOptimizationOn()) {
                 assertThat(
                     method,
-                    CodeMatchers.invokesMethodWithHolderAndName(
-                        "sun.misc.Unsafe", "compareAndSwapObject"));
+                    CodeMatchers.invokesMethod(
+                        inspector
+                            .getFactory()
+                            .sunMiscUnsafeMethods
+                            .compareAndSwapObject
+                            .asMethodReference()));
               } else {
                 assertThat(
                     method,

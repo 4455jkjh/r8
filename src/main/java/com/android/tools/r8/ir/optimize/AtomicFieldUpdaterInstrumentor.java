@@ -157,7 +157,7 @@ public class AtomicFieldUpdaterInstrumentor {
 
     objectFieldOffset =
         itemFactory.createMethod(
-            itemFactory.unsafeType,
+            itemFactory.sunMiscUnsafeType,
             itemFactory.createProto(itemFactory.longType, itemFactory.fieldType),
             "objectFieldOffset");
   }
@@ -453,13 +453,13 @@ public class AtomicFieldUpdaterInstrumentor {
     var unsafeField =
         unsafeClass.lookupProgramField(
             itemFactory.createField(
-                unsafeClass.getType(), itemFactory.unsafeType, unsafeFieldName));
+                unsafeClass.getType(), itemFactory.sunMiscUnsafeType, unsafeFieldName));
     assert unsafeField != null;
     var getUnsafeMethod =
         unsafeClass.lookupProgramMethod(
             itemFactory.createMethod(
                 unsafeClass.getType(),
-                itemFactory.createProto(itemFactory.unsafeType),
+                itemFactory.createProto(itemFactory.sunMiscUnsafeType),
                 getUnsafeMethodName));
     assert getUnsafeMethod != null;
     var getAndSetMethod =
@@ -468,7 +468,7 @@ public class AtomicFieldUpdaterInstrumentor {
                 unsafeClass.getType(),
                 itemFactory.createProto(
                     itemFactory.objectType,
-                    itemFactory.unsafeType,
+                    itemFactory.sunMiscUnsafeType,
                     itemFactory.objectType,
                     itemFactory.longType,
                     itemFactory.objectType),
@@ -487,7 +487,7 @@ public class AtomicFieldUpdaterInstrumentor {
 
   private void buildUnsafeClass(SyntheticProgramClassBuilder builder) {
     DexField unsafeField =
-        itemFactory.createField(builder.getType(), itemFactory.unsafeType, unsafeFieldName);
+        itemFactory.createField(builder.getType(), itemFactory.sunMiscUnsafeType, unsafeFieldName);
     var field =
         DexEncodedField.syntheticBuilder()
             .setField(unsafeField)
@@ -505,7 +505,7 @@ public class AtomicFieldUpdaterInstrumentor {
     DexMethod getUnsafeMethod =
         itemFactory.createMethod(
             builder.getType(),
-            itemFactory.createProto(itemFactory.unsafeType),
+            itemFactory.createProto(itemFactory.sunMiscUnsafeType),
             getUnsafeMethodName);
     builder.addMethod(
         methodBuilder -> {
@@ -529,7 +529,7 @@ public class AtomicFieldUpdaterInstrumentor {
             builder.getType(),
             itemFactory.createProto(
                 itemFactory.objectType,
-                itemFactory.unsafeType,
+                itemFactory.sunMiscUnsafeType,
                 itemFactory.objectType,
                 itemFactory.longType,
                 itemFactory.objectType),

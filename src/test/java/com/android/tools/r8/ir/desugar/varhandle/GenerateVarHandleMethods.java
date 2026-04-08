@@ -81,7 +81,9 @@ public class GenerateVarHandleMethods extends MethodGenerationBase {
   protected DexEncodedField getField(DexEncodedField field) {
     if (field.getType().getTypeName().endsWith("$UnsafeStub")) {
       return DexEncodedField.builder(field)
-          .setField(factory.createField(field.getHolderType(), factory.unsafeType, field.getName()))
+          .setField(
+              factory.createField(
+                  field.getHolderType(), factory.sunMiscUnsafeType, field.getName()))
           .disableAndroidApiLevelCheck()
           .build();
     }
@@ -112,7 +114,7 @@ public class GenerateVarHandleMethods extends MethodGenerationBase {
                 factory.varHandleType,
                 factory.createType(
                     DescriptorUtils.javaClassToDescriptor(DesugarVarHandle.UnsafeStub.class)),
-                factory.unsafeType),
+                factory.sunMiscUnsafeType),
             GenerateVarHandleMethods::mapMethodName);
     code.setInstructions(
         code.getInstructions().stream()
@@ -141,7 +143,7 @@ public class GenerateVarHandleMethods extends MethodGenerationBase {
     } else if (proto.getReturnType() == desugarMethodHandlesLookupStub) {
       proto = factory.createProto(methodHandlesLookup, proto.parameters);
     } else if (proto.getReturnType().getTypeName().endsWith("$UnsafeStub")) {
-      proto = proto.withReturnType(factory.unsafeType, factory);
+      proto = proto.withReturnType(factory.sunMiscUnsafeType, factory);
     }
     return DexEncodedMethod.syntheticBuilder(method)
         .setMethod(factory.createMethod(holder, proto, factory.createString(name)))

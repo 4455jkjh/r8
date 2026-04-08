@@ -74,7 +74,9 @@ public class GenerateAtomicFieldUpdaterOptimizationMethods extends MethodGenerat
   protected DexEncodedField getField(DexEncodedField field) {
     if (field.getType().getTypeName().endsWith("UnsafeStub")) {
       return DexEncodedField.builder(field)
-          .setField(factory.createField(field.getHolderType(), factory.unsafeType, field.getName()))
+          .setField(
+              factory.createField(
+                  field.getHolderType(), factory.sunMiscUnsafeType, field.getName()))
           .disableAndroidApiLevelCheck()
           .build();
     }
@@ -89,7 +91,7 @@ public class GenerateAtomicFieldUpdaterOptimizationMethods extends MethodGenerat
             factory,
             ImmutableMap.of(
                 factory.createType(DescriptorUtils.javaClassToDescriptor(UnsafeStub.class)),
-                factory.unsafeType),
+                factory.sunMiscUnsafeType),
             Function.identity());
     code.setInstructions(
         code.getInstructions().stream()
@@ -106,7 +108,7 @@ public class GenerateAtomicFieldUpdaterOptimizationMethods extends MethodGenerat
     DexProto originalProto = method.getProto();
     DexType returnType;
     if (originalProto.getReturnType().isIdenticalTo(unsafeStub)) {
-      returnType = factory.unsafeType;
+      returnType = factory.sunMiscUnsafeType;
     } else {
       returnType = originalProto.getReturnType();
     }
@@ -114,7 +116,7 @@ public class GenerateAtomicFieldUpdaterOptimizationMethods extends MethodGenerat
         originalProto.parameters.map(
             param -> {
               if (param.isIdenticalTo(unsafeStub)) {
-                return factory.unsafeType;
+                return factory.sunMiscUnsafeType;
               } else {
                 return param;
               }

@@ -951,7 +951,7 @@ public class DexItemFactory {
   public final DexType comparableType = createStaticallyKnownType("Ljava/lang/Comparable;");
   public final DexType stringConcatFactoryType =
       createStaticallyKnownType("Ljava/lang/invoke/StringConcatFactory;");
-  public final DexType unsafeType = createStaticallyKnownType("Lsun/misc/Unsafe;");
+  public final DexType sunMiscUnsafeType = createStaticallyKnownType("Lsun/misc/Unsafe;");
   public final DexType desugarVarHandleType =
       createStaticallyKnownType(desugarVarHandleDescriptorString);
   public final DexType desugarMethodHandlesLookupType =
@@ -960,6 +960,7 @@ public class DexItemFactory {
       createStaticallyKnownType("Ljava/util/concurrent/ExecutorService;");
   public final DexType javaUtilConcurrentForkJoinPoolType =
       createStaticallyKnownType("Ljava/util/concurrent/ForkJoinPool;");
+  public final SunMiscUnsafeMethods sunMiscUnsafeMethods = new SunMiscUnsafeMethods();
 
   public final ObjectMethodsMembers objectMethodsMembers = new ObjectMethodsMembers();
   public final ServiceLoaderMethods serviceLoaderMethods = new ServiceLoaderMethods();
@@ -2660,6 +2661,19 @@ public class DexItemFactory {
     return method.isIdenticalTo(atomicReferenceUpdaterMethods.newUpdater)
         || method.isIdenticalTo(atomicIntUpdaterMethods.newUpdater)
         || method.isIdenticalTo(atomicLongUpdaterMethods.newUpdater);
+  }
+
+  public class SunMiscUnsafeMethods {
+
+    public final DexMethod compareAndSwapObject;
+
+    private SunMiscUnsafeMethods() {
+      this.compareAndSwapObject =
+          createMethod(
+              sunMiscUnsafeType,
+              createProto(booleanType, objectType, longType, objectType, objectType),
+              "compareAndSwapObject");
+    }
   }
 
   public class ShortMembers extends BoxedPrimitiveMembers {

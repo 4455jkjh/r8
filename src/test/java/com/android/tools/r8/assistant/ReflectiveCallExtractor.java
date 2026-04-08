@@ -94,7 +94,7 @@ public class ReflectiveCallExtractor {
       }
       return true;
     }
-    if (type.isIdenticalTo(factory.unsafeType)) {
+    if (type.isIdenticalTo(factory.sunMiscUnsafeType)) {
       // We assume all offset based methods are called using the right method below to compute the
       // offset in the object, we do not support cases where programmers would compute the
       // offset on their own with their own knowledge of how the vm writes objects in memory.
