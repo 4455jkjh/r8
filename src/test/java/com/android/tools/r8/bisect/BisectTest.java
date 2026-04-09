@@ -95,7 +95,7 @@ public class BisectTest extends TestBase {
           state.setPreviousResult(lastResult);
         }
         Path output = temp.newFolder().toPath();
-        clazz = Bisect.run(state, null, output, executor);
+        clazz = Bisect.run(timing, state, null, output, executor);
         state.write();
         if (clazz == null) {
           lastResult = command(new CodeInspector(output.resolve("classes.dex")));
@@ -118,7 +118,11 @@ public class BisectTest extends TestBase {
       BisectState state = new BisectState(appGood, appBad, null);
       DexProgramClass clazz =
           Bisect.run(
-              state, app -> command(new CodeInspector(app)), temp.newFolder().toPath(), executor);
+              timing,
+              state,
+              app -> command(new CodeInspector(app)),
+              temp.newFolder().toPath(),
+              executor);
       assertEquals(clazz.type.toString(), ERRONEOUS_CLASS);
     } finally {
       executor.shutdown();

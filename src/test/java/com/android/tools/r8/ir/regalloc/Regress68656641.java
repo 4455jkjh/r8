@@ -61,7 +61,7 @@ public class Regress68656641 extends SmaliTestBase {
     InternalOptions options = new InternalOptions();
     AppInfo appInfo =
         AppInfo.createInitialAppInfo(
-            DexApplication.builder(options, null).build(),
+            DexApplication.builder(options).build(Timing.empty()),
             GlobalSyntheticsStrategy.forNonSynthesizing());
     AppView<?> appView = AppView.createForD8(appInfo);
     IRCode code = simpleCode();

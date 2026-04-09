@@ -318,7 +318,7 @@ public class VerticalClassMerger {
             .asDirect()
             .builder()
             .removeProgramClasses(clazz -> verticallyMergedClasses.isMergeSource(clazz.getType()))
-            .build();
+            .build(timing);
     PrunedItems prunedItems =
         PrunedItems.builder()
             .addRemovedClasses(verticallyMergedClasses.getSources())

@@ -32,6 +32,7 @@ import com.android.tools.r8.utils.InternalOptions;
 import com.android.tools.r8.utils.ListUtils;
 import com.android.tools.r8.utils.SetUtils;
 import com.android.tools.r8.utils.ThreadUtils;
+import com.android.tools.r8.utils.timing.Timing;
 import com.google.common.collect.Sets;
 import java.util.Arrays;
 import java.util.Collection;
@@ -62,7 +63,7 @@ public class ApiReferenceStubber {
     this.eventConsumer = ApiReferenceStubberEventConsumer.create(appView);
   }
 
-  public void run(ExecutorService executorService) throws ExecutionException {
+  public void run(ExecutorService executorService, Timing timing) throws ExecutionException {
     InternalOptions options = appView.options();
     if (options.apiModelingOptions().isStubbingOfClassesEnabled()) {
       Collection<DexProgramClass> classes =
@@ -98,7 +99,7 @@ public class ApiReferenceStubber {
                       appView.dexItemFactory().javaLangNoClassDefFoundErrorType),
                   eventConsumer));
       // Commit the synthetic items.
-      appView.rebuildAppInfo();
+      appView.rebuildAppInfo(timing);
     }
     eventConsumer.finished(appView);
   }

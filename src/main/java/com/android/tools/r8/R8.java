@@ -352,7 +352,7 @@ public class R8 {
           .synthesizeClasses(executorService, classSynthesizerEventConsumer, timing);
       classSynthesizerEventConsumer.finished(appView);
       if (appView.getSyntheticItems().hasPendingSyntheticClasses()) {
-        appView.rebuildAppInfo();
+        appView.rebuildAppInfo(timing);
       }
       timing.end();
       timing.begin("Strip unused code");
@@ -537,7 +537,7 @@ public class R8 {
 
       // Collect switch maps and ordinals maps.
       if (options.enableEnumSwitchMapRemoval) {
-        appViewWithLiveness.setAppInfo(new SwitchMapCollector(appViewWithLiveness).run());
+        appViewWithLiveness.setAppInfo(new SwitchMapCollector(appViewWithLiveness).run(timing));
       }
 
       AtomicFieldUpdaterInstrumentor.run(appViewWithLiveness, executorService, timing);
@@ -776,7 +776,8 @@ public class R8 {
         if (options.getPackageObfuscationMode().isSome()) {
           new Repackaging(appView.withLiveness()).run(executorService, timing);
         }
-        assert Repackaging.verifyIdentityRepackaging(appView.withLiveness(), executorService);
+        assert Repackaging.verifyIdentityRepackaging(
+            appView.withLiveness(), executorService, timing);
       }
 
       GenericSignatureContextBuilder genericContextBuilderBeforeFinalMerging = null;
@@ -875,7 +876,7 @@ public class R8 {
       PrefixRewritingNamingLens.commitPrefixRewritingNamingLens(appView);
       RecordRewritingNamingLens.commitRecordRewritingNamingLens(appView);
 
-      new ApiReferenceStubber(appView).run(executorService);
+      new ApiReferenceStubber(appView).run(executorService, timing);
 
       timing.begin("MinifyKotlinMetadata");
       new KotlinMetadataRewriter(appView).runForR8(executorService);
@@ -1181,7 +1182,7 @@ public class R8 {
         EnqueuerFactory.createForInitialMainDexTracing(
                 appView, executorService, ImmediateAppSubtypingInfo.create(appView))
             .traceMainDex(executorService, timing);
-    appView.setAppInfo(appView.appInfo().rebuildWithMainDexInfo(mainDexInfo));
+    appView.setAppInfo(appView.appInfo().rebuildWithMainDexInfo(mainDexInfo, timing));
   }
 
   private void performFinalMainDexTracing(
@@ -1207,7 +1208,7 @@ public class R8 {
             mainDexKeptGraphConsumer);
     // Find classes which may have code executed before secondary dex files installation.
     MainDexInfo mainDexInfo = enqueuer.traceMainDex(executorService, timing);
-    appView.setAppInfo(appView.appInfo().rebuildWithMainDexInfo(mainDexInfo));
+    appView.setAppInfo(appView.appInfo().rebuildWithMainDexInfo(mainDexInfo, timing));
 
     processWhyAreYouKeepingAndCheckDiscarded(
         appView.getMainDexRootSet(),

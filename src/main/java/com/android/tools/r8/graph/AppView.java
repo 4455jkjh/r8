@@ -417,17 +417,17 @@ public class AppView<T extends AppInfo> implements DexDefinitionSupplier, Librar
     return appViewWithSpecializedAppInfo;
   }
 
-  public void rebuildAppInfo() {
-    rebuildAppInfo(app());
+  public void rebuildAppInfo(Timing timing) {
+    rebuildAppInfo(timing, app());
   }
 
-  public void rebuildAppInfo(DexApplication app) {
+  public void rebuildAppInfo(Timing timing, DexApplication app) {
     if (hasLiveness()) {
-      withLiveness().setAppInfo(appInfoWithLiveness().rebuild(app));
+      withLiveness().setAppInfo(appInfoWithLiveness().rebuild(app, timing));
     } else if (hasClassHierarchy()) {
-      withClassHierarchy().setAppInfo(appInfoWithClassHierarchy().rebuild(app));
+      withClassHierarchy().setAppInfo(appInfoWithClassHierarchy().rebuild(app, timing));
     } else {
-      withoutClassHierarchy().setAppInfo(appInfo().rebuild(app));
+      withoutClassHierarchy().setAppInfo(appInfo().rebuild(app, timing));
     }
   }
 
@@ -1176,7 +1176,7 @@ public class AppView<T extends AppInfo> implements DexDefinitionSupplier, Librar
                         appInfo
                             .getMainDexInfo()
                             .rewrittenWithLens(appView.getSyntheticItems(), lens, timing);
-                    result = appInfo.rebuildWithMainDexInfo(rewrittenMainDexInfo);
+                    result = appInfo.rebuildWithMainDexInfo(rewrittenMainDexInfo, timing);
                   }
                 }
 
@@ -1391,7 +1391,7 @@ public class AppView<T extends AppInfo> implements DexDefinitionSupplier, Librar
     SyntheticItems syntheticItems = appView.getSyntheticItems();
     appView.setAppInfo(
         appInfo.rebuildWithMainDexInfo(
-            appInfo.getMainDexInfo().rewrittenWithLens(syntheticItems, lens, timing)));
+            appInfo.getMainDexInfo().rewrittenWithLens(syntheticItems, lens, timing), timing));
     appView.setArtProfileCollection(
         appView.getArtProfileCollection().rewrittenWithLens(appView, lens, timing));
   }

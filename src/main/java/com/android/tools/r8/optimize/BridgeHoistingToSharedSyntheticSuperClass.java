@@ -80,7 +80,7 @@ public class BridgeHoistingToSharedSyntheticSuperClass {
     groups = refineGroups(groups);
     if (!groups.isEmpty()) {
       rewriteApplication(groups);
-      commitPendingSyntheticClasses();
+      commitPendingSyntheticClasses(timing);
       updateArtProfiles(groups);
       new BridgeHoisting(appView).run(executorService, timing);
     }
@@ -218,9 +218,9 @@ public class BridgeHoistingToSharedSyntheticSuperClass {
     }
   }
 
-  private void commitPendingSyntheticClasses() {
+  private void commitPendingSyntheticClasses(Timing timing) {
     assert appView.getSyntheticItems().hasPendingSyntheticClasses();
-    appView.rebuildAppInfo();
+    appView.rebuildAppInfo(timing);
   }
 
   private void updateArtProfiles(Collection<Group> groups) {

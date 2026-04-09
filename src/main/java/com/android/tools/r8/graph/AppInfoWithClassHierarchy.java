@@ -89,8 +89,8 @@ public class AppInfoWithClassHierarchy extends AppInfo {
   }
 
   @Override
-  protected AppInfoWithClassHierarchy rebuild(DexApplication application) {
-    return rebuildWithCommittedItems(getSyntheticItems().commit(application));
+  protected AppInfoWithClassHierarchy rebuild(DexApplication application, Timing timing) {
+    return rebuildWithCommittedItems(getSyntheticItems().commit(application, timing));
   }
 
   @Override
@@ -104,21 +104,21 @@ public class AppInfoWithClassHierarchy extends AppInfo {
   }
 
   public AppInfoWithClassHierarchy rebuildWithClassHierarchy(
-      Function<DexApplication, DexApplication> fn) {
+      Function<DexApplication, DexApplication> fn, Timing timing) {
     assert checkIfObsolete();
     return new AppInfoWithClassHierarchy(
-        getSyntheticItems().commit(fn.apply(app())),
+        getSyntheticItems().commit(fn.apply(app()), timing),
         getClassToFeatureSplitMap(),
         getMainDexInfo(),
         getMissingClasses());
   }
 
   @Override
-  public AppInfoWithClassHierarchy rebuildWithMainDexInfo(MainDexInfo mainDexInfo) {
+  public AppInfoWithClassHierarchy rebuildWithMainDexInfo(MainDexInfo mainDexInfo, Timing timing) {
     assert getClass() == AppInfoWithClassHierarchy.class;
     assert checkIfObsolete();
     return new AppInfoWithClassHierarchy(
-        getSyntheticItems().commit(app()),
+        getSyntheticItems().commit(app(), timing),
         getClassToFeatureSplitMap(),
         mainDexInfo,
         getMissingClasses());
@@ -137,7 +137,7 @@ public class AppInfoWithClassHierarchy extends AppInfo {
     timing.begin("Pruning AppInfoWithClassHierarchy");
     AppInfoWithClassHierarchy result =
         new AppInfoWithClassHierarchy(
-            getSyntheticItems().commitPrunedItems(prunedItems),
+            getSyntheticItems().commitPrunedItems(prunedItems, timing),
             getClassToFeatureSplitMap().withoutPrunedItems(prunedItems),
             getMainDexInfo().withoutPrunedItems(prunedItems),
             getMissingClasses());

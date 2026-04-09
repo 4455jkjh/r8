@@ -93,8 +93,8 @@ public class PrimaryD8L8IRConverter extends IRConverter {
 
     timing.end();
 
-    application = builder.build();
-    appView.rebuildAppInfo(application);
+    application = builder.build(timing);
+    appView.rebuildAppInfo(timing, application);
     profileCollectionAdditions.commit(appView);
   }
 
@@ -275,7 +275,7 @@ public class PrimaryD8L8IRConverter extends IRConverter {
   private DexApplication commitPendingSyntheticItems(
       AppView<AppInfo> appView, DexApplication application) {
     if (appView.getSyntheticItems().hasPendingSyntheticClasses()) {
-      appView.rebuildAppInfo(application);
+      appView.rebuildAppInfo(timing, application);
       application = appView.app();
     }
     assert application == appView.app();

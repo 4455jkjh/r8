@@ -77,7 +77,8 @@ public class Repackaging {
     DirectMappedDexApplication.Builder appBuilder = appView.appInfo().app().asDirect().builder();
     RepackagingLens lens = repackageClasses(appBuilder, executorService);
     if (lens != null) {
-      appView.rewriteWithLensAndApplication(lens, appBuilder.build(), executorService, timing);
+      appView.rewriteWithLensAndApplication(
+          lens, appBuilder.build(timing), executorService, timing);
       appView.testing().repackagingLensConsumer.accept(appView.dexItemFactory(), lens);
       new GenericSignatureRewriter(appView).run(appView.appInfo().classes(), executorService);
       new IdentifierMinifier(appView).rewriteDexItemBasedConstStringInStaticFields(executorService);
@@ -87,7 +88,7 @@ public class Repackaging {
   }
 
   public static boolean verifyIdentityRepackaging(
-      AppView<AppInfoWithLiveness> appView, ExecutorService executorService)
+      AppView<AppInfoWithLiveness> appView, ExecutorService executorService, Timing timing)
       throws ExecutionException {
     // Running the tree fixer with an identity mapping helps ensure that the fixup of items is
     // complete as the rewrite replaces all items regardless of repackaging.
@@ -122,7 +123,7 @@ public class Repackaging {
             .asDirect()
             .builder()
             .replaceProgramClasses(new ArrayList<>(newProgramClasses))
-            .build();
+            .build(timing);
     appView.rewriteWithLensAndApplication(
         emptyRepackagingLens, newApplication, executorService, Timing.empty());
     return true;

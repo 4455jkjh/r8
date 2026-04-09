@@ -169,7 +169,7 @@ public class AtomicFieldUpdaterInstrumentor {
     if (!classesWithAtomics.isEmpty()) {
       // To avoid imprecise profile propagation, the synthetic class is not added to the profile
       // until use-sites are found.
-      var unsafeClass = synthesizeUnsafeClass(classesWithAtomics.keySet());
+      var unsafeClass = synthesizeUnsafeClass(classesWithAtomics.keySet(), timing);
       var allOffsetFields = addOffsetFields(classesWithAtomics, unsafeClass, timing);
       var unsafeInstanceField = unsafeClass.unsafeInstanceField.getReference();
       var getAndSetMethod = unsafeClass.getAndSetMethod.getReference();
@@ -439,7 +439,8 @@ public class AtomicFieldUpdaterInstrumentor {
         updaterField, fieldType, holderValue, fieldNameValue, invokeStatic.getPosition());
   }
 
-  private UnsafeClassInfo synthesizeUnsafeClass(Set<DexProgramClass> classesWithAtomics) {
+  private UnsafeClassInfo synthesizeUnsafeClass(
+      Set<DexProgramClass> classesWithAtomics, Timing timing) {
     var context = getDeterministicContext(classesWithAtomics);
     var unsafeClass =
         appView
@@ -474,7 +475,7 @@ public class AtomicFieldUpdaterInstrumentor {
                     itemFactory.objectType),
                 getAndSetMethodName));
     assert getAndSetMethod != null;
-    appView.rebuildAppInfo();
+    appView.rebuildAppInfo(timing);
     return new UnsafeClassInfo(classInitializer, unsafeField, getUnsafeMethod, getAndSetMethod);
   }
 

@@ -83,7 +83,7 @@ public class TreePruner {
     DirectMappedDexApplication application = appView.appInfo().app().asDirect();
     DirectMappedDexApplication.Builder builder = removeUnused(application);
     DirectMappedDexApplication newApplication =
-        prunedTypes.isEmpty() ? application : builder.build();
+        prunedTypes.isEmpty() ? application : builder.build(timing);
     fixupOptimizationInfo(newApplication, executorService);
     PrunedItems prunedItems =
         prunedItemsBuilder

@@ -17,6 +17,7 @@ import com.android.tools.r8.ir.code.InvokeVirtual;
 import com.android.tools.r8.ir.code.Value;
 import com.android.tools.r8.ir.conversion.MethodConversionOptions;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
+import com.android.tools.r8.utils.timing.Timing;
 import it.unimi.dsi.fastutil.ints.Int2ReferenceArrayMap;
 import it.unimi.dsi.fastutil.ints.Int2ReferenceMap;
 import java.util.IdentityHashMap;
@@ -77,12 +78,12 @@ public class SwitchMapCollector {
     intArrayType = dexItemFactory.intArrayType;
   }
 
-  public AppInfoWithLiveness run() {
+  public AppInfoWithLiveness run(Timing timing) {
     for (DexProgramClass clazz : appView.appInfo().classes()) {
       processClasses(clazz);
     }
     if (!switchMaps.isEmpty()) {
-      return appView.appInfo().withSwitchMaps(switchMaps);
+      return appView.appInfo().withSwitchMaps(switchMaps, timing);
     }
     return appView.appInfo();
   }

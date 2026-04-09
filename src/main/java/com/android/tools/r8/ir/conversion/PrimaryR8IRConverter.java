@@ -48,7 +48,7 @@ public class PrimaryR8IRConverter extends IRConverter {
       DexApplication application =
           internalOptimize(appView.withLiveness(), executorService).asDirect();
       AppInfoWithClassHierarchy newAppInfo =
-          appView.appInfo().rebuildWithClassHierarchy(previous -> application);
+          appView.appInfo().rebuildWithClassHierarchy(previous -> application, timing);
       appView.withClassHierarchy().setAppInfo(newAppInfo);
     } finally {
       timing.end();
@@ -134,7 +134,7 @@ public class PrimaryR8IRConverter extends IRConverter {
         appView.clearCodeRewritings(executorService, Timing.empty());
 
     // Commit synthetics from the primary optimization pass.
-    commitPendingSyntheticItems(appView);
+    commitPendingSyntheticItems(appView, timing);
 
     // Post processing:
     //   1) Second pass for methods whose collected call site information become more precise.
@@ -221,7 +221,7 @@ public class PrimaryR8IRConverter extends IRConverter {
 
     // Commit synthetics before creating a builder (otherwise the builder will not include the
     // synthetics.)
-    commitPendingSyntheticItems(appView);
+    commitPendingSyntheticItems(appView, timing);
 
     // Update optimization info for all synthesized methods at once.
     feedback.updateVisibleOptimizationInfo();
@@ -247,9 +247,10 @@ public class PrimaryR8IRConverter extends IRConverter {
     clazz.forEachMethod(DexEncodedMethod::markNotProcessed);
   }
 
-  private static void commitPendingSyntheticItems(AppView<AppInfoWithLiveness> appView) {
+  private static void commitPendingSyntheticItems(
+      AppView<AppInfoWithLiveness> appView, Timing timing) {
     if (appView.getSyntheticItems().hasPendingSyntheticClasses()) {
-      appView.rebuildAppInfo();
+      appView.rebuildAppInfo(timing);
     }
   }
 

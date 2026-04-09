@@ -47,9 +47,8 @@ public class DebugByteCodeWriterTest {
     AppView<AppInfo> appView =
         AppView.createForD8(
             AppInfo.createInitialAppInfo(
-                DexApplication.builder(
-                        new InternalOptions(new DexItemFactory(), new Reporter()), null)
-                    .build(),
+                DexApplication.builder(new InternalOptions(new DexItemFactory(), new Reporter()))
+                    .build(Timing.empty()),
                 GlobalSyntheticsStrategy.forNonSynthesizing()));
     return new ObjectToOffsetMapping(
         appView,

@@ -74,7 +74,7 @@ public class NonStartupInStartupOutliner {
         ProfileCollectionAdditions.create(appView);
     performOutlining(methodsToOutline, executorService, profileCollectionAdditions);
     profileCollectionAdditions.commit(appView);
-    commitPendingSyntheticClasses();
+    commitPendingSyntheticClasses(timing);
     setSyntheticKeepInfo();
     rewriteWithLens(executorService, timing);
   }
@@ -359,9 +359,9 @@ public class NonStartupInStartupOutliner {
                         }));
   }
 
-  private void commitPendingSyntheticClasses() {
+  private void commitPendingSyntheticClasses(Timing timing) {
     if (appView.getSyntheticItems().hasPendingSyntheticClasses()) {
-      appView.rebuildAppInfo();
+      appView.rebuildAppInfo(timing);
     }
   }
 

@@ -154,7 +154,7 @@ public class ConstantRemovalTest {
     options.debug = true;
     AppInfo appInfo =
         AppInfo.createInitialAppInfo(
-            DexApplication.builder(options, null).build(),
+            DexApplication.builder(options).build(Timing.empty()),
             GlobalSyntheticsStrategy.forNonSynthesizing());
     AppView<?> appView = AppView.createForD8(appInfo);
     IRCode code =

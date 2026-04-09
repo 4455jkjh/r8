@@ -63,8 +63,8 @@ public class DirectMappedDexApplication extends DexApplication {
     this.keepDeclarations = keepDeclarations;
   }
 
-  public static Builder directBuilder(InternalOptions options, Timing timing) {
-    return new Builder(options, timing);
+  public static Builder directBuilder(InternalOptions options) {
+    return new Builder(options);
   }
 
   public Collection<DexClasspathClass> classpathClasses() {
@@ -246,8 +246,8 @@ public class DirectMappedDexApplication extends DexApplication {
       keepDeclarations = application.keepDeclarations;
     }
 
-    private Builder(InternalOptions options, Timing timing) {
-      super(options, timing);
+    private Builder(InternalOptions options) {
+      super(options);
     }
 
     @Override
@@ -350,7 +350,7 @@ public class DirectMappedDexApplication extends DexApplication {
     }
 
     @Override
-    public DirectMappedDexApplication build() {
+    public DirectMappedDexApplication build(Timing timing) {
       try (Timing t0 = timing.begin("Build")) {
         // Rebuild the map. This will fail if keys are not unique.
         // TODO(zerny): Consider not rebuilding the map if no program classes are added.
