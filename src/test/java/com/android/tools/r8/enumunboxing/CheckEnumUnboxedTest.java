@@ -42,18 +42,20 @@ public class CheckEnumUnboxedTest extends TestBase {
                 .enableCheckEnumUnboxedAnnotations()
                 .setMinApi(parameters)
                 .compileWithExpectedDiagnostics(
-                    diagnostics -> {
-                      diagnostics.assertErrorsMatch(
-                          allOf(
-                              diagnosticType(CheckEnumUnboxedDiagnostic.class),
-                              diagnosticMessage(
-                                  equalTo(
-                                      "Enum unboxing checks failed."
-                                          + System.lineSeparator()
-                                          + "Enum "
-                                          + EscapingEnum.class.getTypeName()
-                                          + " was not unboxed."))));
-                    }));
+                    diagnostics ->
+                        diagnostics
+                            .assertNoInfos()
+                            .assertNoWarnings()
+                            .assertErrorsMatch(
+                                allOf(
+                                    diagnosticType(CheckEnumUnboxedDiagnostic.class),
+                                    diagnosticMessage(
+                                        equalTo(
+                                            "Enum unboxing checks failed."
+                                                + System.lineSeparator()
+                                                + "Enum "
+                                                + EscapingEnum.class.getTypeName()
+                                                + " was not unboxed."))))));
   }
 
   static class Main {

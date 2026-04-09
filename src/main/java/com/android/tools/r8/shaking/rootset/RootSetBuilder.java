@@ -1866,6 +1866,7 @@ public class RootSetBuilder {
             .getOrCreateMinimumKeepInfoFor(clazz.getType())
             .asClassJoiner()
             .setCheckEnumUnboxed();
+        rule.markAsUsed();
       } else {
         StringDiagnostic warning =
             new StringDiagnostic(
