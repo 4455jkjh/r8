@@ -358,8 +358,10 @@ public class SimplifyArrayConstructionTest extends TestBase {
   public static final class Main {
     static final String assumedNonNullField = null;
     static final String assumedNullField = null;
+    static int trickyZero = 0;
 
     public static void main(String[] args) {
+      trickyZero = args.length;
       stringArrays();
       referenceArraysNoCasts();
       referenceArraysWithSubclasses();
@@ -378,7 +380,7 @@ public class SimplifyArrayConstructionTest extends TestBase {
       twoDimensionalArrays();
       objectArraysFilledNewArrayRange();
       arraysThatUseFilledData();
-      arraysThatUseNewArrayEmpty(args.length);
+      arraysThatUseNewArrayEmpty();
       reversedArray();
       arrayWithCorrectCountButIncompleteCoverage();
       arrayWithExtraInitialPuts();
@@ -791,7 +793,7 @@ public class SimplifyArrayConstructionTest extends TestBase {
     }
 
     @NeverInline
-    private static void arraysThatUseNewArrayEmpty(int trickyZero) {
+    private static void arraysThatUseNewArrayEmpty() {
       // int/object of size zero should not use filled-new-array.
       int[] intArr = {};
       System.out.println(Arrays.toString(intArr));
@@ -814,7 +816,7 @@ public class SimplifyArrayConstructionTest extends TestBase {
 
       // Array used before all members are set.
       int[] readArray = new int[2];
-      readArray[0] = (int) (System.currentTimeMillis() / System.nanoTime());
+      readArray[0] = trickyZero;
       readArray[1] = readArray[0] + 1;
       System.out.println(Arrays.toString(readArray));
 
