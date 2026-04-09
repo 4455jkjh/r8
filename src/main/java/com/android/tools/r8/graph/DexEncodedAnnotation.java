@@ -10,17 +10,16 @@ import com.android.tools.r8.utils.structural.StructuralItem;
 import com.android.tools.r8.utils.structural.StructuralMapping;
 import com.android.tools.r8.utils.structural.StructuralSpecification;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
 public class DexEncodedAnnotation extends DexItem implements StructuralItem<DexEncodedAnnotation> {
 
-  private static final int UNSORTED = 0;
-
   public final DexType type;
   public final DexAnnotationElement[] elements;
 
-  private int sorted = UNSORTED;
+  private volatile boolean sorted = false;
 
   private static void specify(StructuralSpecification<DexEncodedAnnotation, ?> spec) {
     spec.withItem(a -> a.type).withItemArray(a -> a.elements);
@@ -95,20 +94,22 @@ public class DexEncodedAnnotation extends DexItem implements StructuralItem<DexE
   }
 
   public void sort() {
-    if (sorted != UNSORTED) {
-      assert sorted == sortedHashCode();
-      return;
+    if (!sorted) {
+      if (elements.length > 0) {
+        synchronized (this) {
+          if (!sorted) {
+            Arrays.sort(elements, Comparator.comparing(a -> a.name));
+            for (DexAnnotationElement element : elements) {
+              element.value.sort();
+            }
+            sorted = true;
+          }
+        }
+      } else {
+        sorted = true;
+      }
     }
-    Arrays.sort(elements, (a, b) -> a.name.compareTo(b.name));
-    for (DexAnnotationElement element : elements) {
-      element.value.sort();
-    }
-    sorted = sortedHashCode();
-  }
-
-  private int sortedHashCode() {
-    int hashCode = hashCode();
-    return hashCode == UNSORTED ? 1 : hashCode;
+    assert sorted;
   }
 
   @SuppressWarnings("ReferenceEquality")
