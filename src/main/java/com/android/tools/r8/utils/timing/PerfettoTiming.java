@@ -11,8 +11,7 @@ import androidx.tracing.ProcessTrack;
 import androidx.tracing.PropagationUnsupportedToken;
 import androidx.tracing.ThreadTrack;
 import androidx.tracing.TraceContext;
-import androidx.tracing.TraceDriver;
-import androidx.tracing.wire.TraceDriverUtils;
+import androidx.tracing.wire.TraceDriver;
 import androidx.tracing.wire.TraceSink;
 import androidx.tracing.wire.TraceSinkUtils;
 import com.android.tools.r8.utils.InternalOptions;
@@ -55,7 +54,7 @@ public class PerfettoTiming extends TimingImplBase {
       sink = TraceSinkUtils.TraceSink(directory, sequenceId);
     }
     // Populates the process track correctly.
-    traceDriver = TraceDriverUtils.TraceDriver(sink);
+    traceDriver = new TraceDriver(sink);
     TraceContext traceContext = traceDriver.getContext();
     processTrack = traceContext.getProcess();
     int mainThreadId = (int) Thread.currentThread().getId();
