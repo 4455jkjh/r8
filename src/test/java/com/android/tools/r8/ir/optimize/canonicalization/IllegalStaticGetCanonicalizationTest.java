@@ -33,7 +33,7 @@ public class IllegalStaticGetCanonicalizationTest extends TestBase {
     testForR8(parameters.getBackend())
         .addInnerClasses(IllegalStaticGetCanonicalizationTest.class)
         .addKeepMainRule(TestClass.class)
-        .addOptionsModification(options -> options.enableRedundantFieldLoadElimination = false)
+        .addOptionsModification(options -> options.enableRedundantLoadAndStoreElimination = false)
         .enableInliningAnnotations()
         .enableReprocessClassInitializerAnnotations()
         .setMinApi(parameters)

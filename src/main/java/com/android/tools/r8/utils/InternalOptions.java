@@ -502,7 +502,7 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
   public boolean enableEnumSwitchMapRemoval = true;
   public final OutlineOptions outline = new OutlineOptions();
   public boolean enableInitializedClassesInInstanceMethodsAnalysis = true;
-  public boolean enableRedundantFieldLoadElimination = true;
+  public boolean enableRedundantLoadAndStoreElimination = true;
   // TODO(b/138917494): Disable until we have numbers on potential performance penalties.
   public boolean enableRedundantConstNumberOptimization = false;
   public boolean enableLoopUnrolling = true;
