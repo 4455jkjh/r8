@@ -1281,7 +1281,7 @@ public class Inliner {
 
     if (action.shouldEnsureStoreStoreFenceCauses != null) {
       assert !action.shouldEnsureStoreStoreFenceCauses.isEmpty();
-      assert converter.isInWave();
+      assert methodProcessor.hasWaves();
       inlinedFinalFieldsInWave.addAll(action.shouldEnsureStoreStoreFenceCauses);
       scheduleWaveDone();
     }
@@ -1468,7 +1468,7 @@ public class Inliner {
   }
 
   private void onWaveDone() {
-    inlinedFinalFieldsInWave.forEach(field -> field.getAccessFlags().demoteFromFinal());
+    unsetFinalFlagFromInlinedFinalFields();
     singleCallerInlinedMethodsInWave.forEach(
         (clazz, singleCallerInlinedMethodsForClass) -> {
           // Convert and remove virtual single caller inlined methods to abstract or throw null.
@@ -1505,12 +1505,16 @@ public class Inliner {
                 });
           }
         });
-    inlinedFinalFieldsInWave.clear();
     singleCallerInlinedMethodsInWave.clear();
     waveDoneScheduled.set(false);
   }
 
-  private void scheduleWaveDone() {
+  public void unsetFinalFlagFromInlinedFinalFields() {
+    inlinedFinalFieldsInWave.forEach(field -> field.getAccessFlags().demoteFromFinal());
+    inlinedFinalFieldsInWave.clear();
+  }
+
+  protected void scheduleWaveDone() {
     if (!waveDoneScheduled.getAndSet(true)) {
       converter.addWaveDoneAction(this::onWaveDone);
     }
