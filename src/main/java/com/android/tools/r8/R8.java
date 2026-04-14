@@ -111,6 +111,7 @@ import com.android.tools.r8.shaking.rootset.RootSetBuilder;
 import com.android.tools.r8.startup.NonStartupInStartupOutliner;
 import com.android.tools.r8.synthesis.SyntheticFinalization;
 import com.android.tools.r8.synthesis.SyntheticItems;
+import com.android.tools.r8.tracereferences.NativeReferencesHelper;
 import com.android.tools.r8.utils.AndroidApp;
 import com.android.tools.r8.utils.ExceptionDiagnostic;
 import com.android.tools.r8.utils.ExceptionUtils;
@@ -923,6 +924,13 @@ public class R8 {
       LirConverter.finalizeLirToOutputFormat(appView, timing, executorService);
       LirConverter.finalizeClasspathLirToOutputFormat(appView, timing, executorService);
       assert appView.getTypeElementFactory().verifyNoCachedTypeElements();
+
+      if (options.nativeReferencesConsumer != null) {
+        NativeReferencesHelper helper =
+            new NativeReferencesHelper(appView, options.nativeReferencesConsumer, options.reporter);
+        helper.registerNativeMethods(appView.appInfo().classes());
+        helper.registerSystemLoadInvocations(appView.appInfo().classes());
+      }
 
       // Generate the resulting application resources.
       writeKeepDeclarationsToConfigurationConsumer(keepDeclarations);

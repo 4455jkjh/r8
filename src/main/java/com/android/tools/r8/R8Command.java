@@ -46,6 +46,7 @@ import com.android.tools.r8.shaking.ProguardConfigurationSource;
 import com.android.tools.r8.shaking.ProguardConfigurationSourceFile;
 import com.android.tools.r8.shaking.ProguardConfigurationSourceStrings;
 import com.android.tools.r8.startup.StartupProfileProvider;
+import com.android.tools.r8.tracereferences.TraceReferencesNativeReferencesConsumer;
 import com.android.tools.r8.utils.AndroidApiLevel;
 import com.android.tools.r8.utils.AndroidApp;
 import com.android.tools.r8.utils.ArchiveResourceProvider;
@@ -148,6 +149,7 @@ public final class R8Command extends BaseCompilerCommand {
     private StringConsumer proguardConfigurationConsumer = null;
     private GraphConsumer keptGraphConsumer = null;
     private GraphConsumer mainDexKeptGraphConsumer = null;
+    private TraceReferencesNativeReferencesConsumer nativeReferencesConsumer = null;
     private InputDependencyGraphConsumer inputDependencyGraphConsumer = null;
     private Consumer<? super R8BuildMetadata> buildMetadataConsumer = null;
     private final FeatureSplitConfiguration.Builder featureSplitConfigurationBuilder =
@@ -757,6 +759,21 @@ public final class R8Command extends BaseCompilerCommand {
       return super.setEnableVerboseSyntheticNames(enableVerboseSyntheticNames);
     }
 
+    // TODO(b/481400921): Remove experimental.
+    /**
+     * Enable tracing of native references by adding a consumer.
+     *
+     * <p>THIS IS STILL AN EXPERIMENTAL API!
+     *
+     * @param nativeReferencesConsumer Consumer for native references
+     */
+    @Deprecated
+    public Builder setNativeReferencesConsumer(
+        TraceReferencesNativeReferencesConsumer nativeReferencesConsumer) {
+      this.nativeReferencesConsumer = nativeReferencesConsumer;
+      return this;
+    }
+
     @Override
     void validate() {
       if (isPrintHelp()) {
@@ -909,6 +926,7 @@ public final class R8Command extends BaseCompilerCommand {
               proguardConfigurationConsumer,
               keptGraphConsumer,
               mainDexKeptGraphConsumer,
+              nativeReferencesConsumer,
               syntheticProguardRulesConsumer,
               isOptimizeMultidexForLinearAlloc(),
               getIncludeClassesChecksum(),
@@ -1199,6 +1217,7 @@ public final class R8Command extends BaseCompilerCommand {
   private final StringConsumer proguardConfigurationConsumer;
   private final GraphConsumer keptGraphConsumer;
   private final GraphConsumer mainDexKeptGraphConsumer;
+  private final TraceReferencesNativeReferencesConsumer nativeReferencesConsumer;
   private final Consumer<List<ProguardConfigurationRule>> syntheticProguardRulesConsumer;
   private final DesugaredLibrarySpecification desugaredLibrarySpecification;
   private final FeatureSplitConfiguration featureSplitConfiguration;
@@ -1289,6 +1308,7 @@ public final class R8Command extends BaseCompilerCommand {
       StringConsumer proguardConfigurationConsumer,
       GraphConsumer keptGraphConsumer,
       GraphConsumer mainDexKeptGraphConsumer,
+      TraceReferencesNativeReferencesConsumer nativeReferencesConsumer,
       Consumer<List<ProguardConfigurationRule>> syntheticProguardRulesConsumer,
       boolean optimizeMultidexForLinearAlloc,
       boolean encodeChecksum,
@@ -1358,6 +1378,7 @@ public final class R8Command extends BaseCompilerCommand {
     this.proguardConfigurationConsumer = proguardConfigurationConsumer;
     this.keptGraphConsumer = keptGraphConsumer;
     this.mainDexKeptGraphConsumer = mainDexKeptGraphConsumer;
+    this.nativeReferencesConsumer = nativeReferencesConsumer;
     this.syntheticProguardRulesConsumer = syntheticProguardRulesConsumer;
     this.desugaredLibrarySpecification = desugaredLibrarySpecification;
     this.featureSplitConfiguration = featureSplitConfiguration;
@@ -1391,6 +1412,7 @@ public final class R8Command extends BaseCompilerCommand {
     proguardConfigurationConsumer = null;
     keptGraphConsumer = null;
     mainDexKeptGraphConsumer = null;
+    nativeReferencesConsumer = null;
     syntheticProguardRulesConsumer = null;
     desugaredLibrarySpecification = null;
     featureSplitConfiguration = null;
@@ -1515,6 +1537,7 @@ public final class R8Command extends BaseCompilerCommand {
     // Set the kept-graph consumer if any. It will only be actively used if the enqueuer triggers.
     internal.keptGraphConsumer = keptGraphConsumer;
     internal.mainDexKeptGraphConsumer = mainDexKeptGraphConsumer;
+    internal.nativeReferencesConsumer = nativeReferencesConsumer;
 
     internal.r8BuildMetadataConsumer = buildMetadataConsumer;
     internal.dataResourceConsumer = internal.programConsumer.getDataResourceConsumer();

@@ -13,6 +13,7 @@ import com.android.tools.r8.references.MethodReference;
 import com.android.tools.r8.utils.Pair;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 class NativeReferencesTestingConsumer implements TraceReferencesNativeReferencesConsumer {
@@ -48,58 +49,82 @@ class NativeReferencesTestingConsumer implements TraceReferencesNativeReferences
     nativeMethods.add(methodReference);
   }
 
-  public NativeReferencesTestingConsumer expectLoadLibrary(String name, Origin origin) {
+  public NativeReferencesTestingConsumer expectLoadLibrary(String name, Predicate<Origin> origin) {
     for (int i = 0; i < loadLibraryKnown.size(); i++) {
       Pair<String, MethodOrigin> element = loadLibraryKnown.get(i);
-      if (element.getFirst().equals(name) && element.getSecond().equals(origin)) {
+      if (element.getFirst().equals(name) && origin.test(element.getSecond())) {
         loadLibraryKnown.remove(i);
         return this;
       }
     }
     fail(
-        "Expected to contain "
-            + name
-            + " with origin "
-            + origin
-            + ", but did not. Content was: "
+        "No predicate match. Content was: ["
             + loadLibraryKnown.stream()
                 .map(o -> o.getFirst() + ": " + o.getSecond())
-                .collect(Collectors.joining(", ")));
+                .collect(Collectors.joining(", "))
+            + "]");
     return this;
   }
 
-  public NativeReferencesTestingConsumer expectLoadLibraryAny(Origin origin) {
+  public NativeReferencesTestingConsumer expectLoadLibrary(String name, Origin origin) {
+    return expectLoadLibrary(name, origin::equals);
+  }
+
+  public NativeReferencesTestingConsumer expectLoadLibraryAny(Predicate<Origin> origin) {
     for (int i = 0; i < loadLibraryAny.size(); i++) {
-      if (loadLibraryAny.get(i).equals(origin)) {
+      if (origin.test(loadLibraryAny.get(i))) {
         loadLibraryAny.remove(i);
         return this;
       }
     }
-    fail("Expected to contain " + origin + ", but did not.");
+    fail(
+        "No predicate match. Content was: ["
+            + loadLibraryAny.stream().map(Object::toString).collect(Collectors.joining(", "))
+            + "]");
     return this;
   }
 
-  public NativeReferencesTestingConsumer expectLoad(String name, Origin origin) {
+  public NativeReferencesTestingConsumer expectLoadLibraryAny(Origin origin) {
+    return expectLoadLibraryAny(origin::equals);
+  }
+
+  public NativeReferencesTestingConsumer expectLoad(String name, Predicate<Origin> origin) {
     for (int i = 0; i < loadKnown.size(); i++) {
       Pair<String, MethodOrigin> element = loadKnown.get(i);
-      if (element.getFirst().equals(name) && element.getSecond().equals(origin)) {
+      if (element.getFirst().equals(name) && origin.test(element.getSecond())) {
         loadKnown.remove(i);
         return this;
       }
     }
-    fail("Expected to contain " + name + " with origin " + origin + ", but did not.");
+    fail(
+        "No predicate match. Content was: ["
+            + loadKnown.stream()
+                .map(o -> o.getFirst() + ": " + o.getSecond())
+                .collect(Collectors.joining(", "))
+            + "]");
     return this;
   }
 
-  public NativeReferencesTestingConsumer expectLoadAny(Origin origin) {
+  public NativeReferencesTestingConsumer expectLoad(String name, Origin origin) {
+    return expectLoad(name, origin::equals);
+  }
+
+  public NativeReferencesTestingConsumer expectLoadAny(Predicate<Origin> origin) {
     for (int i = 0; i < loadAny.size(); i++) {
-      if (loadAny.get(i).equals(origin)) {
+      if (origin.test(loadAny.get(i))) {
         loadAny.remove(i);
         return this;
       }
     }
-    fail("Expected to contain " + origin + ", but did not.");
+    fail(
+        "No predicate match. Content was: ["
+            + loadAny.stream().map(Object::toString).collect(Collectors.joining(", "))
+            + "]");
     return this;
+  }
+
+  public NativeReferencesTestingConsumer expectLoadAny(Origin origin) {
+    return expectLoadAny(origin::equals);
   }
 
   public NativeReferencesTestingConsumer expectNativeMethod(MethodReference methodReference) {
@@ -109,17 +134,21 @@ class NativeReferencesTestingConsumer implements TraceReferencesNativeReferences
         return this;
       }
     }
-    fail("Expected to contain " + methodReference + ", but did not.");
+    fail(
+        "Expected to contain "
+            + methodReference
+            + ", but did not. Content was: ["
+            + nativeMethods.stream().map(Object::toString).collect(Collectors.joining(", "))
+            + "]");
     return this;
   }
 
-  public NativeReferencesTestingConsumer thatsAll() {
+  public void thatsAll() {
     assertTrue(
         "Expected no more load library calls traced.",
         loadLibraryKnown.isEmpty()
             && loadLibraryAny.isEmpty()
             && loadKnown.isEmpty()
             && loadAny.isEmpty());
-    return this;
   }
 }

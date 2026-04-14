@@ -125,9 +125,7 @@ public class UseCollector implements UseCollectorEventConsumer {
 
     private final AppView<? extends AppInfoWithClassHierarchy> appView;
     private final DiagnosticsHandler diagnostics;
-    private final DexItemFactory factory;
-    private final DexString loadLibrary;
-    private final DexString load;
+    private final NativeReferencesHelper helper;
 
     private final ProgramMethodSet worklist = ProgramMethodSet.create();
 
@@ -138,9 +136,7 @@ public class UseCollector implements UseCollectorEventConsumer {
       this.nativeReferencesConsumer = nativeReferencesConsumer;
       this.appView = appView;
       this.diagnostics = diagnostics;
-      this.factory = appView.dexItemFactory();
-      this.loadLibrary = factory.createString("loadLibrary");
-      this.load = factory.createString("load");
+      this.helper = new NativeReferencesHelper(appView, nativeReferencesConsumer, diagnostics);
     }
 
     @Override
@@ -160,7 +156,7 @@ public class UseCollector implements UseCollectorEventConsumer {
 
     @Override
     public void scanInvoke(DexMethod invokedMethod, ProgramMethod method) {
-      if (isSystemLoadLibrary(invokedMethod) || isSystemLoad(invokedMethod)) {
+      if (helper.isSystemLoadLibrary(invokedMethod) || helper.isSystemLoad(invokedMethod)) {
         worklist.add(method);
       }
     }
@@ -178,34 +174,24 @@ public class UseCollector implements UseCollectorEventConsumer {
 
     private void processInvoke(ProgramMethod method, InvokeStatic invoke) {
       DexMethod invokedMethod = invoke.getInvokedMethod();
-      if (isSystemLoadLibrary(invokedMethod) || isSystemLoad(invokedMethod)) {
+      if (helper.isSystemLoadLibrary(invokedMethod) || helper.isSystemLoad(invokedMethod)) {
         Value argument = invoke.getFirstArgument().getAliasedValue();
         MethodOrigin origin = new MethodOrigin(method.getMethodReference(), method.getOrigin());
         if (argument.isConstString()) {
           String name = argument.getDefinition().asConstString().getValue().toString();
-          if (isSystemLoadLibrary(invokedMethod)) {
+          if (helper.isSystemLoadLibrary(invokedMethod)) {
             nativeReferencesConsumer.acceptLoadLibrary(name, origin, diagnostics);
           } else {
             nativeReferencesConsumer.acceptLoad(name, origin, diagnostics);
           }
         } else {
-          if (isSystemLoadLibrary(invokedMethod)) {
+          if (helper.isSystemLoadLibrary(invokedMethod)) {
             nativeReferencesConsumer.acceptLoadLibraryAny(origin, diagnostics);
           } else {
             nativeReferencesConsumer.acceptLoadAny(origin, diagnostics);
           }
         }
       }
-    }
-
-    private boolean isSystemLoadLibrary(DexMethod method) {
-      return method.getHolderType().isIdenticalTo(factory.javaLangSystemType)
-          && method.getName().isIdenticalTo(loadLibrary);
-    }
-
-    private boolean isSystemLoad(DexMethod method) {
-      return method.getHolderType().isIdenticalTo(factory.javaLangSystemType)
-          && method.getName().isIdenticalTo(load);
     }
   }
 

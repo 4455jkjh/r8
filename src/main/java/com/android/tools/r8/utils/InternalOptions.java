@@ -109,6 +109,7 @@ import com.android.tools.r8.shaking.ProguardConfigurationRule;
 import com.android.tools.r8.synthesis.SyntheticItemsOptions;
 import com.android.tools.r8.synthesis.SyntheticNaming.SyntheticKind;
 import com.android.tools.r8.threading.ThreadingModule;
+import com.android.tools.r8.tracereferences.TraceReferencesNativeReferencesConsumer;
 import com.android.tools.r8.tracereferences.TraceReferencesOptions;
 import com.android.tools.r8.utils.IROrdering.IdentityIROrdering;
 import com.android.tools.r8.utils.IROrdering.NondeterministicIROrdering;
@@ -1418,6 +1419,8 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
   // in the main-dex output. If non-null, each edge pertaining to kept parts in the main-dex output
   // of the resulting program must be reported to the consumer.
   public GraphConsumer mainDexKeptGraphConsumer = null;
+
+  public TraceReferencesNativeReferencesConsumer nativeReferencesConsumer = null;
 
   // If null, no desugaring dependencies need to be provided. If non-null, each dependency between
   // code objects needed for correct desugaring needs to be provided to the consumer.
