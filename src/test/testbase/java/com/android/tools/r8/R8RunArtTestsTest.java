@@ -1115,6 +1115,7 @@ public abstract class R8RunArtTestsTest extends TestBase {
                   TestCondition.tools(DexTool.DX, DexTool.NONE), TestCondition.R8_COMPILER))
           // Produces wrong output when compiled in release mode, which we cannot express.
           .put("015-switch", TestCondition.match(TestCondition.runtimes(DexVm.Version.V4_0_4)))
+          .put("074-gc-thrash", TestCondition.match(TestCondition.runtimes(DexVm.Version.V4_0_4)))
           .build();
 
   public static List<String> requireInliningToBeDisabled =
