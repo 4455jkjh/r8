@@ -1927,6 +1927,9 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
     public boolean enableConstructorInliningWithFinalFields =
         parseSystemPropertyOrDefault(
             "com.android.tools.r8.enableConstructorInliningWithFinalFields", true);
+    public boolean enableConstructorInliningWithFinalFieldsPreAndroidT =
+        parseSystemPropertyOrDefault(
+            "com.android.tools.r8.enableConstructorInliningWithFinalFieldsPreAndroidT", false);
     public boolean skipStoreStoreFenceInConstructorInlining =
         parseSystemPropertyOrDefault(
             "com.android.tools.r8.skipStoreStoreFenceInConstructorInlining", false);

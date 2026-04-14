@@ -17,6 +17,10 @@ public class SyntheticUnsafeMethodTemplates {
     return v;
   }
 
+  public static void storeStoreFence() {
+    getUnsafe().storeFence();
+  }
+
   static UnsafeStub getUnsafe() {
     Field theUnsafe = null;
     try {
@@ -52,5 +56,7 @@ public class SyntheticUnsafeMethodTemplates {
         Object receiver, long offset, Object expect, Object update) {
       throw new RuntimeException("Stub called.");
     }
+
+    public void storeFence() {}
   }
 }

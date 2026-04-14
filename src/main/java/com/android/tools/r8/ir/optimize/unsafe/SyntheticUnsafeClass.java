@@ -19,11 +19,13 @@ import com.android.tools.r8.graph.FieldAccessFlags;
 import com.android.tools.r8.graph.MethodAccessFlags;
 import com.android.tools.r8.graph.ProgramField;
 import com.android.tools.r8.graph.ProgramMethod;
+import com.android.tools.r8.graph.lens.GraphLens;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
 import com.android.tools.r8.shaking.FieldAccessInfoCollectionModifier;
 import com.android.tools.r8.shaking.KeepInfo.Joiner;
 import com.android.tools.r8.synthesis.SyntheticProgramClassBuilder;
 import com.android.tools.r8.utils.AndroidApiLevel;
+import com.android.tools.r8.utils.timing.Timing;
 import com.google.common.collect.ImmutableList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -32,23 +34,41 @@ import org.objectweb.asm.Opcodes;
 public class SyntheticUnsafeClass {
 
   private static final String unsafeFieldName = "unsafe";
-  private static final String getUnsafeMethodName = "getUnsafe";
   private static final String getAndSetMethodName = "getAndSet";
+  private static final String getUnsafeMethodName = "getUnsafe";
+  private static final String storeStoreFenceMethodName = "storeStoreFence";
 
   private final DexMethod classInitializer;
   private final DexMethod getUnsafeMethod;
   private final DexMethod getAndSetMethod;
+  private final DexMethod storeStoreFenceMethod;
   private final DexField instanceField;
 
   private SyntheticUnsafeClass(
       ProgramMethod classInitializer,
       ProgramMethod getAndSetMethod,
       ProgramMethod getUnsafeMethod,
+      ProgramMethod storeStoreFenceMethod,
       ProgramField instanceField) {
-    this.classInitializer = classInitializer.getReference();
-    this.getAndSetMethod = getAndSetMethod.getReference();
-    this.getUnsafeMethod = getUnsafeMethod.getReference();
-    this.instanceField = instanceField.getReference();
+    this(
+        classInitializer.getReference(),
+        getAndSetMethod.getReference(),
+        getUnsafeMethod.getReference(),
+        storeStoreFenceMethod != null ? storeStoreFenceMethod.getReference() : null,
+        instanceField.getReference());
+  }
+
+  private SyntheticUnsafeClass(
+      DexMethod classInitializer,
+      DexMethod getAndSetMethod,
+      DexMethod getUnsafeMethod,
+      DexMethod storeStoreFenceMethod,
+      DexField instanceField) {
+    this.classInitializer = classInitializer;
+    this.getAndSetMethod = getAndSetMethod;
+    this.getUnsafeMethod = getUnsafeMethod;
+    this.storeStoreFenceMethod = storeStoreFenceMethod;
+    this.instanceField = instanceField;
   }
 
   public DexMethod getClassInitializer() {
@@ -67,8 +87,23 @@ public class SyntheticUnsafeClass {
     return getUnsafeMethod;
   }
 
+  public DexMethod getStoreStoreFenceMethod() {
+    return storeStoreFenceMethod;
+  }
+
   public DexType getUnsafeClass() {
     return classInitializer.getHolderType();
+  }
+
+  public SyntheticUnsafeClass rewrittenWithLens(GraphLens lens, GraphLens appliedLens) {
+    return new SyntheticUnsafeClass(
+        lens.getRenamedMethodSignature(classInitializer, appliedLens),
+        lens.getRenamedMethodSignature(getAndSetMethod, appliedLens),
+        lens.getRenamedMethodSignature(getUnsafeMethod, appliedLens),
+        storeStoreFenceMethod != null
+            ? lens.getRenamedMethodSignature(storeStoreFenceMethod, appliedLens)
+            : null,
+        lens.getRenamedFieldSignature(instanceField, appliedLens));
   }
 
   public static boolean isEnabled(AppView<? extends AppInfoWithClassHierarchy> appView) {
@@ -78,6 +113,16 @@ public class SyntheticUnsafeClass {
         && options.isOptimizing()
         && options.isShrinking()
         && options.getMinApiLevel().isGreaterThanOrEqualTo(AndroidApiLevel.K);
+  }
+
+  private static boolean isStoreStoreFenceEnabled(
+      AppView<? extends AppInfoWithClassHierarchy> appView) {
+    var options = appView.options();
+    var minApiLevel = options.getMinApiLevel();
+    // >=N so that Unsafe#storeFence is present, <T since then we can use VarHandle#storeStoreFence.
+    return minApiLevel.isGreaterThanOrEqualTo(AndroidApiLevel.N)
+        && minApiLevel.isLessThan(AndroidApiLevel.T)
+        && options.inlinerOptions().enableConstructorInliningWithFinalFieldsPreAndroidT;
   }
 
   public static void synthesize(AppView<AppInfoWithLiveness> appView) {
@@ -118,22 +163,32 @@ public class SyntheticUnsafeClass {
                     factory.objectType),
                 getAndSetMethodName));
     assert getAndSetMethod != null;
-    appView.rebuildAppInfo();
+    var storeStoreFenceMethod =
+        unsafeClass.lookupProgramMethod(
+            factory.createMethod(
+                unsafeClass.getType(),
+                factory.createProto(factory.voidType),
+                storeStoreFenceMethodName));
+    assert storeStoreFenceMethod != null || !isStoreStoreFenceEnabled(appView);
+    appView.rebuildAppInfo(Timing.empty());
     appView.setSyntheticUnsafeClass(
         new SyntheticUnsafeClass(
-            classInitializer, getAndSetMethod, getUnsafeMethod, instanceField));
+            classInitializer,
+            getAndSetMethod,
+            getUnsafeMethod,
+            storeStoreFenceMethod,
+            instanceField));
     appView
         .getKeepInfo()
         .mutate(
             keepInfo -> {
-              keepInfo.ensureCompilerSynthesizedClass(unsafeClass);
-              keepInfo.registerCompilerSynthesizedMethod(classInitializer);
-              keepInfo.registerCompilerSynthesizedMethod(getAndSetMethod);
-              keepInfo.registerCompilerSynthesizedMethod(getUnsafeMethod);
               keepInfo.joinClass(unsafeClass, Joiner::disallowOptimization);
               keepInfo.joinMethod(classInitializer, Joiner::disallowOptimization);
               keepInfo.joinMethod(getAndSetMethod, Joiner::disallowOptimization);
               keepInfo.joinMethod(getUnsafeMethod, Joiner::disallowOptimization);
+              if (storeStoreFenceMethod != null) {
+                keepInfo.joinMethod(storeStoreFenceMethod, Joiner::disallowOptimization);
+              }
             });
   }
 
@@ -176,6 +231,7 @@ public class SyntheticUnsafeClass {
                 appView.options().requiredCfVersionForConstClassInstructions());
           }
         });
+
     DexMethod getAndSetMethod =
         factory.createMethod(
             builder.getType(),
@@ -198,6 +254,27 @@ public class SyntheticUnsafeClass {
                     method ->
                         SyntheticUnsafeMethods.SyntheticUnsafeMethodTemplates_getAndSet(
                             factory, method)));
+
+    // Unsafe#storeFence is only present from API level 24. It is only used if constructor inlining
+    // pre-Android T is enabled.
+    if (isStoreStoreFenceEnabled(appView)) {
+      DexMethod storeStoreFenceMethod =
+          factory.createMethod(
+              builder.getType(), factory.createProto(factory.voidType), storeStoreFenceMethodName);
+      builder.addMethod(
+          methodBuilder ->
+              methodBuilder
+                  .setName(storeStoreFenceMethod.name)
+                  .setProto(storeStoreFenceMethod.proto)
+                  .setAccessFlags(MethodAccessFlags.createPublicStaticSynthetic())
+                  .setApiLevelForDefinition(appView.computedMinApiLevel())
+                  .setApiLevelForCode(appView.computedMinApiLevel())
+                  .setCode(
+                      method ->
+                          SyntheticUnsafeMethods.SyntheticUnsafeMethodTemplates_storeStoreFence(
+                              factory, method)));
+    }
+
     DexMethod clinit = factory.createClassInitializer(builder.getType());
     builder.addMethod(
         methodBuilder ->

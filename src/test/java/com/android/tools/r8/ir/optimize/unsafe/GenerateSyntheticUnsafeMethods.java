@@ -86,6 +86,9 @@ public class GenerateSyntheticUnsafeMethods extends MethodGenerationBase {
         new InstructionTypeMapper(
             factory,
             ImmutableMap.of(
+                factory.createType(
+                    DescriptorUtils.javaClassToDescriptor(SyntheticUnsafeMethodTemplates.class)),
+                GENERATED_TYPE,
                 factory.createType(DescriptorUtils.javaClassToDescriptor(UnsafeStub.class)),
                 factory.sunMiscUnsafeType),
             Function.identity());

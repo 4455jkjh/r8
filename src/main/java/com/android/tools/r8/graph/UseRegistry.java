@@ -309,4 +309,6 @@ public abstract class UseRegistry<T extends Definition> {
       registerTypeReference(type);
     }
   }
+
+  public void registerStoreStoreFence() {}
 }

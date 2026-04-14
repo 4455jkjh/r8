@@ -21,6 +21,7 @@ import com.android.tools.r8.horizontalclassmerging.code.SyntheticInitializerConv
 import com.android.tools.r8.ir.conversion.LirConverter;
 import com.android.tools.r8.naming.IdentifierMinifier;
 import com.android.tools.r8.profile.art.ArtProfileCompletenessChecker;
+import com.android.tools.r8.profile.art.ArtProfileCompletenessChecker.CompletenessExceptions;
 import com.android.tools.r8.profile.rewriting.ProfileCollectionAdditions;
 import com.android.tools.r8.shaking.FieldAccessInfoCollectionModifier;
 import com.android.tools.r8.shaking.KeepInfoCollection;
@@ -70,15 +71,14 @@ public class HorizontalClassMerger {
     if (shouldRun()) {
       run(runtimeTypeCheckInfo, executorService, timing);
 
-      assert ArtProfileCompletenessChecker.verify(appView);
-
       // Clear type elements cache after IR building.
       appView.getTypeElementFactory().clearTypeElementsCache();
       appView.notifyOptimizationFinishedForTesting();
     } else {
       appView.setHorizontallyMergedClasses(HorizontallyMergedClasses.empty());
     }
-    assert ArtProfileCompletenessChecker.verify(appView);
+    assert ArtProfileCompletenessChecker.verify(
+        appView, CompletenessExceptions.ALLOW_MISSING_UNSAFE_HELPER_METHODS);
     timing.end();
   }
 

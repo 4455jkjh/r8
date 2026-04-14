@@ -23,6 +23,7 @@ import com.android.tools.r8.ir.conversion.LirConverter;
 import com.android.tools.r8.naming.IdentifierMinifier;
 import com.android.tools.r8.optimize.argumentpropagation.utils.ProgramClassesBidirectedGraph;
 import com.android.tools.r8.profile.art.ArtProfileCompletenessChecker;
+import com.android.tools.r8.profile.art.ArtProfileCompletenessChecker.CompletenessExceptions;
 import com.android.tools.r8.profile.rewriting.ProfileCollectionAdditions;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
 import com.android.tools.r8.shaking.KeepClassInfo.Joiner;
@@ -88,7 +89,8 @@ public class VerticalClassMerger {
       appView.setVerticallyMergedClasses(VerticallyMergedClasses.empty(), mode);
     }
     assert appView.hasVerticallyMergedClasses();
-    assert ArtProfileCompletenessChecker.verify(appView);
+    assert ArtProfileCompletenessChecker.verify(
+        appView, CompletenessExceptions.ALLOW_MISSING_UNSAFE_HELPER_METHODS);
     timing.end();
   }
 

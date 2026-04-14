@@ -114,7 +114,6 @@ public class StoreStoreFence extends Instruction {
 
   @Override
   void internalRegisterUse(UseRegistry<?> registry, DexClassAndMethod context) {
-    registry.registerInvokeStatic(
-        registry.dexItemFactory().javaLangInvokeVarHandleMembers.storeStoreFence);
+    registry.registerStoreStoreFence();
   }
 }

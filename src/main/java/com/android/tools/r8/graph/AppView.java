@@ -1342,6 +1342,18 @@ public class AppView<T extends AppInfo> implements DexDefinitionSupplier, Librar
                 public boolean shouldRun() {
                   return appView.hasInitializedClassesInInstanceMethods();
                 }
+              },
+              new ThreadTask() {
+                @Override
+                public void run(Timing timing) throws Exception {
+                  appView.setSyntheticUnsafeClass(
+                      appView.getSyntheticUnsafeClass().rewrittenWithLens(lens, appliedLens));
+                }
+
+                @Override
+                public boolean shouldRun() {
+                  return appView.getSyntheticUnsafeClass() != null;
+                }
               });
         });
 

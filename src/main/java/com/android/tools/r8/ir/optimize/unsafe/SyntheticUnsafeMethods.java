@@ -25,6 +25,7 @@ import com.android.tools.r8.cf.code.CfLabel;
 import com.android.tools.r8.cf.code.CfLoad;
 import com.android.tools.r8.cf.code.CfNew;
 import com.android.tools.r8.cf.code.CfReturn;
+import com.android.tools.r8.cf.code.CfReturnVoid;
 import com.android.tools.r8.cf.code.CfStackInstruction;
 import com.android.tools.r8.cf.code.CfStore;
 import com.android.tools.r8.cf.code.CfThrow;
@@ -356,6 +357,36 @@ public final class SyntheticUnsafeMethods {
                 label15,
                 ImmutableList.of(factory.createType("Ljava/lang/Exception;")),
                 ImmutableList.of(label16))),
+        ImmutableList.of());
+  }
+
+  public static CfCode SyntheticUnsafeMethodTemplates_storeStoreFence(
+      DexItemFactory factory, DexMethod method) {
+    CfLabel label0 = new CfLabel();
+    CfLabel label1 = new CfLabel();
+    return new CfCode(
+        method.holder,
+        1,
+        0,
+        ImmutableList.of(
+            label0,
+            new CfInvoke(
+                184,
+                factory.createMethod(
+                    method.getHolderType(),
+                    factory.createProto(factory.createType("Lsun/misc/Unsafe;")),
+                    factory.createString("getUnsafe")),
+                false),
+            new CfInvoke(
+                182,
+                factory.createMethod(
+                    factory.createType("Lsun/misc/Unsafe;"),
+                    factory.createProto(factory.voidType),
+                    factory.createString("storeFence")),
+                false),
+            label1,
+            new CfReturnVoid()),
+        ImmutableList.of(),
         ImmutableList.of());
   }
 }

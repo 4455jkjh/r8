@@ -752,6 +752,9 @@ public class DefaultInliningOracle implements InliningOracle {
         if (target.getAccessFlags().isFinal()) {
           if (inlinerOptions.enableConstructorInliningWithFinalFields
               && (options.canUseJavaLangVarHandleStoreStoreFence(appView)
+                  || (inlinerOptions.enableConstructorInliningWithFinalFieldsPreAndroidT
+                      && appView.getSyntheticUnsafeClass() != null
+                      && appView.getSyntheticUnsafeClass().getStoreStoreFenceMethod() != null)
                   || inlinerOptions.skipStoreStoreFenceInConstructorInlining)
               && methodProcessor.hasWaves()
               && canUnsetFinalFlag(target)) {
