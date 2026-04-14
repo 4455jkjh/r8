@@ -49,7 +49,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -159,15 +158,8 @@ public class AtomicFieldUpdaterInstrumentor {
       // To avoid imprecise profile propagation, the synthetic class is not added to the profile
       // until use-sites are found.
       var allOffsetFields = addOffsetFields(classesWithAtomics, timing);
-      var initializerMethods =
-          ImmutableList.of(
-              appView.getSyntheticUnsafeClass().getClassInitializer(),
-              appView.getSyntheticUnsafeClass().getGetUnsafeMethod());
       appView.setAtomicFieldUpdaterInstrumentorInfo(
-          buildInstrumentorInfo(
-              classesWithAtomics,
-              allOffsetFields,
-              initializerMethods));
+          buildInstrumentorInfo(classesWithAtomics, allOffsetFields));
     }
     timing.end();
   }
@@ -450,8 +442,7 @@ public class AtomicFieldUpdaterInstrumentor {
 
   private AtomicFieldUpdaterInstrumentorInfo buildInstrumentorInfo(
       Map<DexProgramClass, ClassWithAtomicsInfo> classesWithAtomics,
-      Map<DexField, DexField> allOffsetFields,
-      List<DexMethod> initializerMethods) {
+      Map<DexField, DexField> allOffsetFields) {
     var instrumentations =
         new HashMap<DexType, Map<DexField, AtomicFieldUpdaterInfo>>(classesWithAtomics.size());
     var offsetFields = new HashMap<DexType, Set<DexField>>(classesWithAtomics.size());
@@ -476,8 +467,7 @@ public class AtomicFieldUpdaterInstrumentor {
           instrumentations.put(clazz.getType(), fields);
           offsetFields.put(clazz.getType(), localOffsetFields);
         });
-    return new AtomicFieldUpdaterInstrumentorInfo(
-        instrumentations, offsetFields, initializerMethods);
+    return new AtomicFieldUpdaterInstrumentorInfo(instrumentations, offsetFields);
   }
 
   private DexEncodedField createOffsetField(
@@ -688,19 +678,14 @@ public class AtomicFieldUpdaterInstrumentor {
     private final Map<DexType, Map<DexField, AtomicFieldUpdaterInfo>> instrumentations;
     // instrumentations.values() as a set, materialized for efficient lookup.
     private final Map<DexType, Set<DexField>> offsetFields;
-    // These methods needs to be included in profile whenever the unsafe instance field is used.
-    private final List<DexMethod> initializerMethodsForProfile;
 
     public AtomicFieldUpdaterInstrumentorInfo(
         Map<DexType, Map<DexField, AtomicFieldUpdaterInfo>> instrumentations,
-        Map<DexType, Set<DexField>> offsetFields,
-        List<DexMethod> initializerMethodsForProfile) {
+        Map<DexType, Set<DexField>> offsetFields) {
       assert instrumentations != null;
       this.instrumentations = instrumentations;
       assert offsetFields != null;
       this.offsetFields = offsetFields;
-      assert initializerMethodsForProfile != null;
-      this.initializerMethodsForProfile = initializerMethodsForProfile;
       assert checkValidMapping(instrumentations, offsetFields);
     }
 
@@ -718,10 +703,6 @@ public class AtomicFieldUpdaterInstrumentor {
 
     public Set<DexField> getOffsetFieldsOrNull(DexType holder) {
       return offsetFields.get(holder);
-    }
-
-    public List<DexMethod> initializationMethodsForProfile() {
-      return initializerMethodsForProfile;
     }
 
     private static boolean checkValidMapping(

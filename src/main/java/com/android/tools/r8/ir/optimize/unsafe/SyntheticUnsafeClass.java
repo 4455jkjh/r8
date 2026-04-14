@@ -3,12 +3,8 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8.ir.optimize.unsafe;
 
-import com.android.tools.r8.cf.code.CfInvoke;
-import com.android.tools.r8.cf.code.CfReturnVoid;
-import com.android.tools.r8.cf.code.CfStaticFieldWrite;
 import com.android.tools.r8.graph.AppInfoWithClassHierarchy;
 import com.android.tools.r8.graph.AppView;
-import com.android.tools.r8.graph.CfCode;
 import com.android.tools.r8.graph.DexEncodedField;
 import com.android.tools.r8.graph.DexField;
 import com.android.tools.r8.graph.DexItemFactory;
@@ -29,17 +25,14 @@ import com.android.tools.r8.utils.timing.Timing;
 import com.google.common.collect.ImmutableList;
 import java.util.Collections;
 import java.util.Comparator;
-import org.objectweb.asm.Opcodes;
 
 public class SyntheticUnsafeClass {
 
   private static final String unsafeFieldName = "unsafe";
   private static final String getAndSetMethodName = "getAndSet";
-  private static final String getUnsafeMethodName = "getUnsafe";
   private static final String storeStoreFenceMethodName = "storeStoreFence";
 
   private final DexMethod classInitializer;
-  private final DexMethod getUnsafeMethod;
   private final DexMethod getAndSetMethod;
   private final DexMethod storeStoreFenceMethod;
   private final DexField instanceField;
@@ -47,13 +40,11 @@ public class SyntheticUnsafeClass {
   private SyntheticUnsafeClass(
       ProgramMethod classInitializer,
       ProgramMethod getAndSetMethod,
-      ProgramMethod getUnsafeMethod,
       ProgramMethod storeStoreFenceMethod,
       ProgramField instanceField) {
     this(
         classInitializer.getReference(),
         getAndSetMethod.getReference(),
-        getUnsafeMethod.getReference(),
         storeStoreFenceMethod != null ? storeStoreFenceMethod.getReference() : null,
         instanceField.getReference());
   }
@@ -61,12 +52,10 @@ public class SyntheticUnsafeClass {
   private SyntheticUnsafeClass(
       DexMethod classInitializer,
       DexMethod getAndSetMethod,
-      DexMethod getUnsafeMethod,
       DexMethod storeStoreFenceMethod,
       DexField instanceField) {
     this.classInitializer = classInitializer;
     this.getAndSetMethod = getAndSetMethod;
-    this.getUnsafeMethod = getUnsafeMethod;
     this.storeStoreFenceMethod = storeStoreFenceMethod;
     this.instanceField = instanceField;
   }
@@ -83,10 +72,6 @@ public class SyntheticUnsafeClass {
     return getAndSetMethod;
   }
 
-  public DexMethod getGetUnsafeMethod() {
-    return getUnsafeMethod;
-  }
-
   public DexMethod getStoreStoreFenceMethod() {
     return storeStoreFenceMethod;
   }
@@ -99,7 +84,6 @@ public class SyntheticUnsafeClass {
     return new SyntheticUnsafeClass(
         lens.getRenamedMethodSignature(classInitializer, appliedLens),
         lens.getRenamedMethodSignature(getAndSetMethod, appliedLens),
-        lens.getRenamedMethodSignature(getUnsafeMethod, appliedLens),
         storeStoreFenceMethod != null
             ? lens.getRenamedMethodSignature(storeStoreFenceMethod, appliedLens)
             : null,
@@ -140,24 +124,16 @@ public class SyntheticUnsafeClass {
                 appView,
                 builder -> buildUnsafeClass(appView, builder));
     var classInitializer = unsafeClass.getProgramClassInitializer();
-    var instanceField =
+    var unsafeField =
         unsafeClass.lookupProgramField(
             factory.createField(unsafeClass.getType(), factory.sunMiscUnsafeType, unsafeFieldName));
-    assert instanceField != null;
-    var getUnsafeMethod =
-        unsafeClass.lookupProgramMethod(
-            factory.createMethod(
-                unsafeClass.getType(),
-                factory.createProto(factory.sunMiscUnsafeType),
-                getUnsafeMethodName));
-    assert getUnsafeMethod != null;
+    assert unsafeField != null;
     var getAndSetMethod =
         unsafeClass.lookupProgramMethod(
             factory.createMethod(
                 unsafeClass.getType(),
                 factory.createProto(
                     factory.objectType,
-                    factory.sunMiscUnsafeType,
                     factory.objectType,
                     factory.longType,
                     factory.objectType),
@@ -173,11 +149,7 @@ public class SyntheticUnsafeClass {
     appView.rebuildAppInfo(Timing.empty());
     appView.setSyntheticUnsafeClass(
         new SyntheticUnsafeClass(
-            classInitializer,
-            getAndSetMethod,
-            getUnsafeMethod,
-            storeStoreFenceMethod,
-            instanceField));
+            classInitializer, getAndSetMethod, storeStoreFenceMethod, unsafeField));
     appView
         .getKeepInfo()
         .mutate(
@@ -185,7 +157,6 @@ public class SyntheticUnsafeClass {
               keepInfo.joinClass(unsafeClass, Joiner::disallowOptimization);
               keepInfo.joinMethod(classInitializer, Joiner::disallowOptimization);
               keepInfo.joinMethod(getAndSetMethod, Joiner::disallowOptimization);
-              keepInfo.joinMethod(getUnsafeMethod, Joiner::disallowOptimization);
               if (storeStoreFenceMethod != null) {
                 keepInfo.joinMethod(storeStoreFenceMethod, Joiner::disallowOptimization);
               }
@@ -195,49 +166,29 @@ public class SyntheticUnsafeClass {
   private static void buildUnsafeClass(
       AppView<AppInfoWithLiveness> appView, SyntheticProgramClassBuilder builder) {
     DexItemFactory factory = appView.dexItemFactory();
-    DexField unsafeField =
-        factory.createField(builder.getType(), factory.sunMiscUnsafeType, unsafeFieldName);
-    var field =
+    var unsafeField =
         DexEncodedField.syntheticBuilder()
-            .setField(unsafeField)
+            .setField(
+                factory.createField(builder.getType(), factory.sunMiscUnsafeType, unsafeFieldName))
             .setAccessFlags(FieldAccessFlags.createPublicStaticFinalSynthetic())
             .setApiLevel(appView.computedMinApiLevel())
             // Avoid superfluous assert on API in the build call when API modeling is disabled.
             .disableAndroidApiLevelCheckIf(
                 !appView.options().apiModelingOptions().isApiModelingEnabled())
             .build();
-    builder.setStaticFields(ImmutableList.of(field));
-    var accessBuilder = FieldAccessInfoCollectionModifier.builder();
-    accessBuilder.addField(unsafeField);
-    accessBuilder.build().modify(appView);
+    builder.setStaticFields(ImmutableList.of(unsafeField));
 
-    DexMethod getUnsafeMethod =
-        factory.createMethod(
-            builder.getType(), factory.createProto(factory.sunMiscUnsafeType), getUnsafeMethodName);
-    builder.addMethod(
-        methodBuilder -> {
-          methodBuilder
-              .setName(getUnsafeMethod.name)
-              .setProto(getUnsafeMethod.proto)
-              .setAccessFlags(MethodAccessFlags.createPublicStaticSynthetic())
-              .setApiLevelForDefinition(appView.computedMinApiLevel())
-              .setApiLevelForCode(appView.computedMinApiLevel())
-              .setCode(
-                  method ->
-                      SyntheticUnsafeMethods.SyntheticUnsafeMethodTemplates_getUnsafe(
-                          factory, method));
-          if (appView.options().isGeneratingClassFiles()) {
-            methodBuilder.setClassFileVersion(
-                appView.options().requiredCfVersionForConstClassInstructions());
-          }
-        });
+    // Record new field.
+    FieldAccessInfoCollectionModifier.builder()
+        .addField(unsafeField.getReference())
+        .build()
+        .modify(appView);
 
     DexMethod getAndSetMethod =
         factory.createMethod(
             builder.getType(),
             factory.createProto(
                 factory.objectType,
-                factory.sunMiscUnsafeType,
                 factory.objectType,
                 factory.longType,
                 factory.objectType),
@@ -245,8 +196,7 @@ public class SyntheticUnsafeClass {
     builder.addMethod(
         methodBuilder ->
             methodBuilder
-                .setName(getAndSetMethod.name)
-                .setProto(getAndSetMethod.proto)
+                .setMethod(getAndSetMethod)
                 .setAccessFlags(MethodAccessFlags.createPublicStaticSynthetic())
                 .setApiLevelForDefinition(appView.computedMinApiLevel())
                 .setApiLevelForCode(appView.computedMinApiLevel())
@@ -264,8 +214,7 @@ public class SyntheticUnsafeClass {
       builder.addMethod(
           methodBuilder ->
               methodBuilder
-                  .setName(storeStoreFenceMethod.name)
-                  .setProto(storeStoreFenceMethod.proto)
+                  .setMethod(storeStoreFenceMethod)
                   .setAccessFlags(MethodAccessFlags.createPublicStaticSynthetic())
                   .setApiLevelForDefinition(appView.computedMinApiLevel())
                   .setApiLevelForCode(appView.computedMinApiLevel())
@@ -279,21 +228,14 @@ public class SyntheticUnsafeClass {
     builder.addMethod(
         methodBuilder ->
             methodBuilder
-                .setName(clinit.name)
-                .setProto(clinit.proto)
+                .setMethod(clinit)
                 .setAccessFlags(MethodAccessFlags.createForClassInitializer())
                 .setApiLevelForDefinition(appView.computedMinApiLevel())
                 .setApiLevelForCode(appView.computedMinApiLevel())
                 .setCode(
                     method ->
-                        new CfCode(
-                            method.holder,
-                            1,
-                            0,
-                            ImmutableList.of(
-                                new CfInvoke(Opcodes.INVOKESTATIC, getUnsafeMethod, false),
-                                new CfStaticFieldWrite(unsafeField),
-                                new CfReturnVoid()))));
+                        SyntheticUnsafeMethods.SyntheticUnsafeMethodTemplates_classInitializer(
+                            factory, method)));
   }
 
   private static DexProgramClass getDeterministicContext(AppView<AppInfoWithLiveness> appView) {

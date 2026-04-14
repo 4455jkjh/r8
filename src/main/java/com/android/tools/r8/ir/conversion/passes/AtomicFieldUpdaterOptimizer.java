@@ -98,7 +98,7 @@ public class AtomicFieldUpdaterOptimizer extends CodeRewriterPass<AppInfoWithCla
     var it = code.instructionListIterator();
     var context =
         new OptimizationContext(
-            methodProcessor, methodProcessingContext, code, it, info, atomicUpdaterFields);
+            methodProcessor, methodProcessingContext, code, it, atomicUpdaterFields);
     var changed = false;
     while (it.hasNext()) {
       var next = it.nextUntil(Instruction::isInvokeVirtual);
@@ -495,8 +495,16 @@ public class AtomicFieldUpdaterOptimizer extends CodeRewriterPass<AppInfoWithCla
           createNullCheckWithClassCastException(context, position, resolvedHolder.value));
     }
 
-    Instruction unsafeInstance = createUnsafeGet(context, position);
-    instructions.add(unsafeInstance);
+    boolean isGetAndSetDefined =
+        !appView.options().isGeneratingDex()
+            || appView.options().getMinApiLevel().isGreaterThanOrEqualTo(AndroidApiLevel.N);
+    Instruction unsafeInstance;
+    if (isGetAndSetDefined) {
+      unsafeInstance = createUnsafeGet(context, position);
+      instructions.add(unsafeInstance);
+    } else {
+      unsafeInstance = null;
+    }
 
     Instruction offset =
         createOffsetGet(context, position, resolvedUpdater.updaterFieldInfo.offsetField);
@@ -507,9 +515,6 @@ public class AtomicFieldUpdaterOptimizer extends CodeRewriterPass<AppInfoWithCla
 
     // Call underlying unsafe method directly or backport if necessary.
     Instruction getAndSet;
-    boolean isGetAndSetDefined =
-        !appView.options().isGeneratingDex()
-            || appView.options().getMinApiLevel().isGreaterThanOrEqualTo(AndroidApiLevel.N);
     if (isGetAndSetDefined) {
       DexMethod unsafeGetAndSetMethod =
           dexItemFactory.createMethod(
@@ -536,7 +541,6 @@ public class AtomicFieldUpdaterOptimizer extends CodeRewriterPass<AppInfoWithCla
               backportedGetAndSet,
               invoke.outValue(),
               ImmutableList.of(
-                  unsafeInstance.outValue(),
                   resolvedHolder.value,
                   offset.outValue(),
                   newValueValue));
@@ -562,8 +566,7 @@ public class AtomicFieldUpdaterOptimizer extends CodeRewriterPass<AppInfoWithCla
         .methodProcessor
         .getEventConsumer()
         .acceptUnsafeInstanceContext(
-            context.info.initializationMethodsForProfile(),
-            appView.getSyntheticUnsafeClass().getUnsafeClass(),
+            appView.getSyntheticUnsafeClass(),
             offsetField.holder.asProgramClass(appView).getProgramClassInitializer());
     return offset;
   }
@@ -608,10 +611,7 @@ public class AtomicFieldUpdaterOptimizer extends CodeRewriterPass<AppInfoWithCla
     context
         .methodProcessor
         .getEventConsumer()
-        .acceptUnsafeInstanceContext(
-            context.info.initializationMethodsForProfile(),
-            appView.getSyntheticUnsafeClass().getUnsafeClass(),
-            context.code.context());
+        .acceptUnsafeInstanceContext(appView.getSyntheticUnsafeClass(), context.code.context());
     return unsafeInstance;
   }
 
@@ -657,7 +657,6 @@ public class AtomicFieldUpdaterOptimizer extends CodeRewriterPass<AppInfoWithCla
     final MethodProcessingContext methodProcessingContext;
     final IRCode code;
     final IRCodeInstructionListIterator it;
-    final AtomicFieldUpdaterInstrumentorInfo info;
     final Map<DexField, AtomicFieldUpdaterInfo> instrumentations;
 
     public OptimizationContext(
@@ -665,13 +664,11 @@ public class AtomicFieldUpdaterOptimizer extends CodeRewriterPass<AppInfoWithCla
         MethodProcessingContext methodProcessingContext,
         IRCode code,
         IRCodeInstructionListIterator it,
-        AtomicFieldUpdaterInstrumentorInfo info,
         Map<DexField, AtomicFieldUpdaterInfo> instrumentations) {
       this.methodProcessor = methodProcessor;
       this.methodProcessingContext = methodProcessingContext;
       this.code = code;
       this.it = it;
-      this.info = info;
       this.instrumentations = instrumentations;
     }
   }

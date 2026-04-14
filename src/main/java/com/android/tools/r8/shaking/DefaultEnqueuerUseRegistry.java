@@ -242,9 +242,6 @@ public class DefaultEnqueuerUseRegistry extends ComputeApiLevelUseRegistry {
           clazz.lookupProgramMethod(syntheticUnsafeClass.getClassInitializer()),
           KeepMethodInfo.newEmptyJoiner().disallowOptimization());
       enqueuer.applyMinimumKeepInfoWhenLiveOrTargeted(
-          clazz.lookupProgramMethod(syntheticUnsafeClass.getGetUnsafeMethod()),
-          KeepMethodInfo.newEmptyJoiner().disallowOptimization());
-      enqueuer.applyMinimumKeepInfoWhenLiveOrTargeted(
           clazz.lookupProgramMethod(syntheticUnsafeClass.getStoreStoreFenceMethod()),
           KeepMethodInfo.newEmptyJoiner().disallowOptimization());
     }

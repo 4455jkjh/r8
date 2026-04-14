@@ -74,7 +74,6 @@ public class StoreStoreFenceToInvokeRewriter extends CodeRewriterPass<AppInfo> {
             additionsBuilder
                 .addClassRule(syntheticUnsafeClass.getUnsafeClass())
                 .addMethodRule(syntheticUnsafeClass.getClassInitializer())
-                .addMethodRule(syntheticUnsafeClass.getGetUnsafeMethod())
                 .addMethodRule(syntheticUnsafeClass.getStoreStoreFenceMethod()));
   }
 }

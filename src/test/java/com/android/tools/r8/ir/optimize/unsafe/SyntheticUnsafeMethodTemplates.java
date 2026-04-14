@@ -9,7 +9,33 @@ import java.lang.reflect.Modifier;
 
 public class SyntheticUnsafeMethodTemplates {
 
-  public static Object getAndSet(UnsafeStub unsafe, Object o, long offset, Object newValue) {
+  public static UnsafeStub unsafe;
+
+  public static void classInitializer() {
+    Field theUnsafeField = null;
+    try {
+      theUnsafeField = UnsafeStub.class.getDeclaredField("theUnsafe");
+    } catch (NoSuchFieldException e) {
+      for (Field field : UnsafeStub.class.getDeclaredFields()) {
+        if (Modifier.isStatic(field.getModifiers())
+            && UnsafeStub.class.isAssignableFrom(field.getType())) {
+          theUnsafeField = field;
+          break;
+        }
+      }
+      if (theUnsafeField != null) {
+        throw new UnsupportedOperationException("Couldn't find the Unsafe", e);
+      }
+    }
+    theUnsafeField.setAccessible(true);
+    try {
+      unsafe = (UnsafeStub) theUnsafeField.get(null);
+    } catch (IllegalAccessException e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+  public static Object getAndSet(Object o, long offset, Object newValue) {
     Object v;
     do {
       v = unsafe.getObjectVolatile(o, offset);
@@ -18,31 +44,7 @@ public class SyntheticUnsafeMethodTemplates {
   }
 
   public static void storeStoreFence() {
-    getUnsafe().storeFence();
-  }
-
-  static UnsafeStub getUnsafe() {
-    Field theUnsafe = null;
-    try {
-      theUnsafe = UnsafeStub.class.getDeclaredField("theUnsafe");
-    } catch (NoSuchFieldException e) {
-      for (Field field : UnsafeStub.class.getDeclaredFields()) {
-        if (Modifier.isStatic(field.getModifiers())
-            && UnsafeStub.class.isAssignableFrom(field.getType())) {
-          theUnsafe = field;
-          break;
-        }
-      }
-      if (theUnsafe != null) {
-        throw new UnsupportedOperationException("Couldn't find the Unsafe", e);
-      }
-    }
-    theUnsafe.setAccessible(true);
-    try {
-      return (UnsafeStub) theUnsafe.get(null);
-    } catch (Exception e) {
-      throw new RuntimeException(e);
-    }
+    unsafe.storeFence();
   }
 
   // This class exists so references can be rewritten into sun.misc.Unsafe.

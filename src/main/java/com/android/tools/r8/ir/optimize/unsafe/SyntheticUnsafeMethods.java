@@ -27,6 +27,8 @@ import com.android.tools.r8.cf.code.CfNew;
 import com.android.tools.r8.cf.code.CfReturn;
 import com.android.tools.r8.cf.code.CfReturnVoid;
 import com.android.tools.r8.cf.code.CfStackInstruction;
+import com.android.tools.r8.cf.code.CfStaticFieldRead;
+import com.android.tools.r8.cf.code.CfStaticFieldWrite;
 import com.android.tools.r8.cf.code.CfStore;
 import com.android.tools.r8.cf.code.CfThrow;
 import com.android.tools.r8.cf.code.CfTryCatch;
@@ -45,7 +47,7 @@ import java.util.Arrays;
 public final class SyntheticUnsafeMethods {
 
   public static void registerSynthesizedCodeReferences(DexItemFactory factory) {
-    factory.createSynthesizedType("Ljava/lang/Exception;");
+    factory.createSynthesizedType("Ljava/lang/IllegalAccessException;");
     factory.createSynthesizedType("Ljava/lang/NoSuchFieldException;");
     factory.createSynthesizedType("Ljava/lang/RuntimeException;");
     factory.createSynthesizedType("Ljava/lang/UnsupportedOperationException;");
@@ -55,68 +57,7 @@ public final class SyntheticUnsafeMethods {
     factory.createSynthesizedType("[Ljava/lang/reflect/Field;");
   }
 
-  public static CfCode SyntheticUnsafeMethodTemplates_getAndSet(
-      DexItemFactory factory, DexMethod method) {
-    CfLabel label0 = new CfLabel();
-    CfLabel label1 = new CfLabel();
-    CfLabel label2 = new CfLabel();
-    CfLabel label3 = new CfLabel();
-    return new CfCode(
-        method.holder,
-        6,
-        6,
-        ImmutableList.of(
-            label0,
-            new CfFrame(
-                new Int2ObjectAVLTreeMap<>(
-                    new int[] {0, 1, 2, 3, 4},
-                    new FrameType[] {
-                      FrameType.initializedNonNullReference(
-                          factory.createType("Lsun/misc/Unsafe;")),
-                      FrameType.initializedNonNullReference(factory.objectType),
-                      FrameType.longType(),
-                      FrameType.longHighType(),
-                      FrameType.initializedNonNullReference(factory.objectType)
-                    })),
-            new CfLoad(ValueType.OBJECT, 0),
-            new CfLoad(ValueType.OBJECT, 1),
-            new CfLoad(ValueType.LONG, 2),
-            new CfInvoke(
-                182,
-                factory.createMethod(
-                    factory.createType("Lsun/misc/Unsafe;"),
-                    factory.createProto(factory.objectType, factory.objectType, factory.longType),
-                    factory.createString("getObjectVolatile")),
-                false),
-            new CfStore(ValueType.OBJECT, 5),
-            label1,
-            new CfLoad(ValueType.OBJECT, 0),
-            new CfLoad(ValueType.OBJECT, 1),
-            new CfLoad(ValueType.LONG, 2),
-            new CfLoad(ValueType.OBJECT, 5),
-            new CfLoad(ValueType.OBJECT, 4),
-            new CfInvoke(
-                182,
-                factory.createMethod(
-                    factory.createType("Lsun/misc/Unsafe;"),
-                    factory.createProto(
-                        factory.booleanType,
-                        factory.objectType,
-                        factory.longType,
-                        factory.objectType,
-                        factory.objectType),
-                    factory.createString("compareAndSwapObject")),
-                false),
-            new CfIf(IfType.EQ, ValueType.INT, label0),
-            label2,
-            new CfLoad(ValueType.OBJECT, 5),
-            new CfReturn(ValueType.OBJECT),
-            label3),
-        ImmutableList.of(),
-        ImmutableList.of());
-  }
-
-  public static CfCode SyntheticUnsafeMethodTemplates_getUnsafe(
+  public static CfCode SyntheticUnsafeMethodTemplates_classInitializer(
       DexItemFactory factory, DexMethod method) {
     CfLabel label0 = new CfLabel();
     CfLabel label1 = new CfLabel();
@@ -137,6 +78,7 @@ public final class SyntheticUnsafeMethods {
     CfLabel label16 = new CfLabel();
     CfLabel label17 = new CfLabel();
     CfLabel label18 = new CfLabel();
+    CfLabel label19 = new CfLabel();
     return new CfCode(
         method.holder,
         4,
@@ -318,8 +260,13 @@ public final class SyntheticUnsafeMethods {
                     factory.createString("get")),
                 false),
             new CfCheckCast(factory.createType("Lsun/misc/Unsafe;")),
+            new CfStaticFieldWrite(
+                factory.createField(
+                    method.getHolderType(),
+                    factory.createType("Lsun/misc/Unsafe;"),
+                    factory.createString("unsafe"))),
             label15,
-            new CfReturn(ValueType.OBJECT),
+            new CfGoto(label18),
             label16,
             new CfFrame(
                 new Int2ObjectAVLTreeMap<>(
@@ -331,7 +278,7 @@ public final class SyntheticUnsafeMethods {
                 new ArrayDeque<>(
                     Arrays.asList(
                         FrameType.initializedNonNullReference(
-                            factory.createType("Ljava/lang/Exception;"))))),
+                            factory.createType("Ljava/lang/IllegalAccessException;"))))),
             new CfStore(ValueType.OBJECT, 1),
             label17,
             new CfNew(factory.createType("Ljava/lang/RuntimeException;")),
@@ -345,7 +292,16 @@ public final class SyntheticUnsafeMethods {
                     factory.createString("<init>")),
                 false),
             new CfThrow(),
-            label18),
+            label18,
+            new CfFrame(
+                new Int2ObjectAVLTreeMap<>(
+                    new int[] {0},
+                    new FrameType[] {
+                      FrameType.initializedNonNullReference(
+                          factory.createType("Ljava/lang/reflect/Field;"))
+                    })),
+            new CfReturnVoid(),
+            label19),
         ImmutableList.of(
             new CfTryCatch(
                 label1,
@@ -355,8 +311,75 @@ public final class SyntheticUnsafeMethods {
             new CfTryCatch(
                 label14,
                 label15,
-                ImmutableList.of(factory.createType("Ljava/lang/Exception;")),
+                ImmutableList.of(factory.createType("Ljava/lang/IllegalAccessException;")),
                 ImmutableList.of(label16))),
+        ImmutableList.of());
+  }
+
+  public static CfCode SyntheticUnsafeMethodTemplates_getAndSet(
+      DexItemFactory factory, DexMethod method) {
+    CfLabel label0 = new CfLabel();
+    CfLabel label1 = new CfLabel();
+    CfLabel label2 = new CfLabel();
+    CfLabel label3 = new CfLabel();
+    return new CfCode(
+        method.holder,
+        6,
+        5,
+        ImmutableList.of(
+            label0,
+            new CfFrame(
+                new Int2ObjectAVLTreeMap<>(
+                    new int[] {0, 1, 2, 3},
+                    new FrameType[] {
+                      FrameType.initializedNonNullReference(factory.objectType),
+                      FrameType.longType(),
+                      FrameType.longHighType(),
+                      FrameType.initializedNonNullReference(factory.objectType)
+                    })),
+            new CfStaticFieldRead(
+                factory.createField(
+                    method.getHolderType(),
+                    factory.createType("Lsun/misc/Unsafe;"),
+                    factory.createString("unsafe"))),
+            new CfLoad(ValueType.OBJECT, 0),
+            new CfLoad(ValueType.LONG, 1),
+            new CfInvoke(
+                182,
+                factory.createMethod(
+                    factory.createType("Lsun/misc/Unsafe;"),
+                    factory.createProto(factory.objectType, factory.objectType, factory.longType),
+                    factory.createString("getObjectVolatile")),
+                false),
+            new CfStore(ValueType.OBJECT, 4),
+            label1,
+            new CfStaticFieldRead(
+                factory.createField(
+                    method.getHolderType(),
+                    factory.createType("Lsun/misc/Unsafe;"),
+                    factory.createString("unsafe"))),
+            new CfLoad(ValueType.OBJECT, 0),
+            new CfLoad(ValueType.LONG, 1),
+            new CfLoad(ValueType.OBJECT, 4),
+            new CfLoad(ValueType.OBJECT, 3),
+            new CfInvoke(
+                182,
+                factory.createMethod(
+                    factory.createType("Lsun/misc/Unsafe;"),
+                    factory.createProto(
+                        factory.booleanType,
+                        factory.objectType,
+                        factory.longType,
+                        factory.objectType,
+                        factory.objectType),
+                    factory.createString("compareAndSwapObject")),
+                false),
+            new CfIf(IfType.EQ, ValueType.INT, label0),
+            label2,
+            new CfLoad(ValueType.OBJECT, 4),
+            new CfReturn(ValueType.OBJECT),
+            label3),
+        ImmutableList.of(),
         ImmutableList.of());
   }
 
@@ -370,13 +393,11 @@ public final class SyntheticUnsafeMethods {
         0,
         ImmutableList.of(
             label0,
-            new CfInvoke(
-                184,
-                factory.createMethod(
+            new CfStaticFieldRead(
+                factory.createField(
                     method.getHolderType(),
-                    factory.createProto(factory.createType("Lsun/misc/Unsafe;")),
-                    factory.createString("getUnsafe")),
-                false),
+                    factory.createType("Lsun/misc/Unsafe;"),
+                    factory.createString("unsafe"))),
             new CfInvoke(
                 182,
                 factory.createMethod(
