@@ -3,10 +3,10 @@
 // BSD-style license that can be found in the LICENSE file.
 
 // ***********************************************************************************
-// GENERATED FILE. DO NOT EDIT! See GenerateAtomicFieldUpdaterOptimizationMethods.java.
+// GENERATED FILE. DO NOT EDIT! See GenerateSyntheticUnsafeMethods.java.
 // ***********************************************************************************
 
-package com.android.tools.r8.ir.synthetic;
+package com.android.tools.r8.ir.optimize.unsafe;
 
 import com.android.tools.r8.cf.code.CfArrayLength;
 import com.android.tools.r8.cf.code.CfArrayLoad;
@@ -41,7 +41,7 @@ import it.unimi.dsi.fastutil.ints.Int2ObjectAVLTreeMap;
 import java.util.ArrayDeque;
 import java.util.Arrays;
 
-public final class AtomicFieldUpdaterOptimizationMethods {
+public final class SyntheticUnsafeMethods {
 
   public static void registerSynthesizedCodeReferences(DexItemFactory factory) {
     factory.createSynthesizedType("Ljava/lang/Exception;");
@@ -54,7 +54,7 @@ public final class AtomicFieldUpdaterOptimizationMethods {
     factory.createSynthesizedType("[Ljava/lang/reflect/Field;");
   }
 
-  public static CfCode AtomicFieldUpdaterOptimizationMethods_getAndSet(
+  public static CfCode SyntheticUnsafeMethodTemplates_getAndSet(
       DexItemFactory factory, DexMethod method) {
     CfLabel label0 = new CfLabel();
     CfLabel label1 = new CfLabel();
@@ -115,7 +115,7 @@ public final class AtomicFieldUpdaterOptimizationMethods {
         ImmutableList.of());
   }
 
-  public static CfCode AtomicFieldUpdaterOptimizationMethods_getUnsafe(
+  public static CfCode SyntheticUnsafeMethodTemplates_getUnsafe(
       DexItemFactory factory, DexMethod method) {
     CfLabel label0 = new CfLabel();
     CfLabel label1 = new CfLabel();

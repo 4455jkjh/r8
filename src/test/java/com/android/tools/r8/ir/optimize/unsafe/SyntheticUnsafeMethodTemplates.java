@@ -2,12 +2,12 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-package com.android.tools.r8.atomicFieldUpdaterOptimization;
+package com.android.tools.r8.ir.optimize.unsafe;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 
-public class AtomicFieldUpdaterOptimizationMethods {
+public class SyntheticUnsafeMethodTemplates {
 
   public static Object getAndSet(UnsafeStub unsafe, Object o, long offset, Object newValue) {
     Object v;
@@ -41,7 +41,7 @@ public class AtomicFieldUpdaterOptimizationMethods {
     }
   }
 
-  // This class exists so references can be rewritten into sun.misc.unsafe.
+  // This class exists so references can be rewritten into sun.misc.Unsafe.
   public static class UnsafeStub {
 
     public Object getObjectVolatile(Object obj, long offset) {

@@ -530,7 +530,7 @@ public class AtomicFieldUpdaterOptimizer extends CodeRewriterPass<AppInfoWithCla
                   offset.outValue(),
                   newValueValue));
     } else {
-      DexMethod backportedGetAndSet = context.info.getGetAndSetMethod();
+      DexMethod backportedGetAndSet = appView.getSyntheticUnsafeClass().getGetAndSetMethod();
       getAndSet =
           new InvokeStatic(
               backportedGetAndSet,
@@ -563,7 +563,7 @@ public class AtomicFieldUpdaterOptimizer extends CodeRewriterPass<AppInfoWithCla
         .getEventConsumer()
         .acceptUnsafeInstanceContext(
             context.info.initializationMethodsForProfile(),
-            context.info.getUnsafeClass(),
+            appView.getSyntheticUnsafeClass().getUnsafeClass(),
             offsetField.holder.asProgramClass(appView).getProgramClassInitializer());
     return offset;
   }
@@ -595,22 +595,22 @@ public class AtomicFieldUpdaterOptimizer extends CodeRewriterPass<AppInfoWithCla
    * Returns an instruction to retrieve an unsafe instance and updates the profile correspondingly.
    */
   private Instruction createUnsafeGet(OptimizationContext context, Position position) {
-    assert context
-        .info
-        .getUnsafeInstanceField()
-        .type
+    assert appView
+        .getSyntheticUnsafeClass()
+        .getInstanceField()
+        .getType()
         .isIdenticalTo(dexItemFactory.sunMiscUnsafeType);
     Instruction unsafeInstance =
         new StaticGet(
             context.code.createValue(dexItemFactory.sunMiscUnsafeType.toTypeElement(appView)),
-            context.info.getUnsafeInstanceField());
+            appView.getSyntheticUnsafeClass().getInstanceField());
     unsafeInstance.setPosition(position);
     context
         .methodProcessor
         .getEventConsumer()
         .acceptUnsafeInstanceContext(
             context.info.initializationMethodsForProfile(),
-            context.info.getUnsafeClass(),
+            appView.getSyntheticUnsafeClass().getUnsafeClass(),
             context.code.context());
     return unsafeInstance;
   }

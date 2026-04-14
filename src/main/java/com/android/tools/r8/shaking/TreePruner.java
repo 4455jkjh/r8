@@ -135,7 +135,9 @@ public class TreePruner {
         if (clazz.getSourceFile() != null) {
           appView.addPrunedClassSourceFile(clazz.type, clazz.getSourceFile().toString());
         }
-        unusedItemsPrinter.registerUnusedClass(clazz);
+        if (!appView.getSyntheticItems().isSynthetic(clazz)) {
+          unusedItemsPrinter.registerUnusedClass(clazz);
+        }
       }
     }
     unusedItemsPrinter.finished();

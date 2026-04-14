@@ -63,8 +63,7 @@ public class AtomicFieldUpdaterGetAndSetTest extends AtomicFieldUpdaterBase {
                 } else {
                   ClassSubject helper =
                       inspector.clazz(
-                          SyntheticItemsTestUtils.syntheticAtomicFieldUpdaterHelper(
-                              TestClass.class));
+                          SyntheticItemsTestUtils.syntheticUnsafeClass(TestClass.class));
                   assertThat(helper, isPresent());
                   assertThat(
                       method,

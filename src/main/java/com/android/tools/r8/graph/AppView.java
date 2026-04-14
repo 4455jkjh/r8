@@ -39,6 +39,7 @@ import com.android.tools.r8.ir.optimize.info.field.InstanceFieldInitializationIn
 import com.android.tools.r8.ir.optimize.library.LibraryMemberOptimizer;
 import com.android.tools.r8.ir.optimize.library.LibraryMethodSideEffectModelCollection;
 import com.android.tools.r8.ir.optimize.outliner.bottomup.BottomUpOutliner;
+import com.android.tools.r8.ir.optimize.unsafe.SyntheticUnsafeClass;
 import com.android.tools.r8.naming.NamingLens;
 import com.android.tools.r8.naming.SeedMapper;
 import com.android.tools.r8.optimize.MemberRebindingIdentityLens;
@@ -144,6 +145,7 @@ public class AppView<T extends AppInfo> implements DexDefinitionSupplier, Librar
   private final ProtoShrinker protoShrinker;
   // TODO(b/453628974): Maintain until last use and clear after.
   private AtomicFieldUpdaterInstrumentorInfo atomicFieldUpdaterInstrumentorInfo = null;
+  private SyntheticUnsafeClass syntheticUnsafeClass;
 
   // Optimization results.
   private boolean allCodeProcessed = false;
@@ -701,6 +703,14 @@ public class AppView<T extends AppInfo> implements DexDefinitionSupplier, Librar
   public void setAtomicFieldUpdaterInstrumentorInfo(AtomicFieldUpdaterInstrumentorInfo info) {
     assert atomicFieldUpdaterInstrumentorInfo == null;
     atomicFieldUpdaterInstrumentorInfo = info;
+  }
+
+  public SyntheticUnsafeClass getSyntheticUnsafeClass() {
+    return syntheticUnsafeClass;
+  }
+
+  public void setSyntheticUnsafeClass(SyntheticUnsafeClass syntheticUnsafeClass) {
+    this.syntheticUnsafeClass = syntheticUnsafeClass;
   }
 
   public GraphLens codeLens() {

@@ -3,8 +3,8 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8;
 
-import static com.android.tools.r8.profile.art.ArtProfileCompletenessChecker.CompletenessExceptions.ALLOW_MISSING_ATOMIC_FIELD_UPDATER_METHODS;
 import static com.android.tools.r8.profile.art.ArtProfileCompletenessChecker.CompletenessExceptions.ALLOW_MISSING_ENUM_UNBOXING_UTILITY_METHODS;
+import static com.android.tools.r8.profile.art.ArtProfileCompletenessChecker.CompletenessExceptions.ALLOW_MISSING_UNSAFE_HELPER_METHODS;
 import static com.android.tools.r8.utils.AssertionUtils.forTesting;
 import static com.android.tools.r8.utils.ExceptionUtils.unwrapExecutionException;
 
@@ -58,6 +58,8 @@ import com.android.tools.r8.ir.optimize.SwitchMapCollector;
 import com.android.tools.r8.ir.optimize.enums.EnumUnboxingCfMethods;
 import com.android.tools.r8.ir.optimize.info.OptimizationInfoRemover;
 import com.android.tools.r8.ir.optimize.templates.CfUtilityMethodsForCodeOptimizations;
+import com.android.tools.r8.ir.optimize.unsafe.SyntheticUnsafeClass;
+import com.android.tools.r8.ir.optimize.unsafe.SyntheticUnsafeMethods;
 import com.android.tools.r8.jar.CfApplicationWriter;
 import com.android.tools.r8.keepanno.annotations.KeepForApi;
 import com.android.tools.r8.keepanno.ast.KeepDeclaration;
@@ -336,9 +338,11 @@ public class R8 {
       if (options.enableEnumUnboxing) {
         EnumUnboxingCfMethods.registerSynthesizedCodeReferences(appView.dexItemFactory());
       }
-      AtomicFieldUpdaterInstrumentor.registerSynthesizedCodeReferences(appView);
       if (options.desugarRecordState().isNotOff()) {
         RecordInstructionDesugaring.registerSynthesizedCodeReferences(appView.dexItemFactory());
+      }
+      if (SyntheticUnsafeClass.isEnabled(appView)) {
+        SyntheticUnsafeMethods.registerSynthesizedCodeReferences(appView.dexItemFactory());
       }
       if (options.shouldDesugarVarHandle()) {
         VarHandleDesugaring.registerSynthesizedCodeReferences(appView.dexItemFactory());
@@ -541,6 +545,7 @@ public class R8 {
         appViewWithLiveness.setAppInfo(new SwitchMapCollector(appViewWithLiveness).run(timing));
       }
 
+      SyntheticUnsafeClass.synthesize(appViewWithLiveness);
       AtomicFieldUpdaterInstrumentor.run(appViewWithLiveness, executorService, timing);
 
       // Collect the already pruned types before creating a new app info without liveness.
@@ -551,8 +556,7 @@ public class R8 {
 
       // AtomicFieldUpdaterInstrumentor adds instrumentation with yet-to-be-determined uses
       // and thus no profile information yet.
-      assert ArtProfileCompletenessChecker.verify(
-          appView, ALLOW_MISSING_ATOMIC_FIELD_UPDATER_METHODS);
+      assert ArtProfileCompletenessChecker.verify(appView, ALLOW_MISSING_UNSAFE_HELPER_METHODS);
 
       new PrimaryR8IRConverter(appViewWithLiveness, timing, enableListIterationRewriter)
           .optimize(appViewWithLiveness, executorService);
@@ -563,7 +567,7 @@ public class R8 {
       assert ArtProfileCompletenessChecker.verify(
           appView,
           ALLOW_MISSING_ENUM_UNBOXING_UTILITY_METHODS,
-          ALLOW_MISSING_ATOMIC_FIELD_UPDATER_METHODS);
+          ALLOW_MISSING_UNSAFE_HELPER_METHODS);
 
       // Clear the reference type lattice element cache to reduce memory pressure.
       appView.getTypeElementFactory().clearTypeElementsCache();
@@ -625,9 +629,8 @@ public class R8 {
                 GenericSignatureContextBuilder.create(appView);
 
             TreePruner pruner = new TreePruner(appViewWithLiveness, treePrunerConfiguration);
-
-                pruner.run(
-                    executorService, timing, PrunedItems.builder().addRemovedClasses(prunedTypes));
+            pruner.run(
+                executorService, timing, PrunedItems.builder().addRemovedClasses(prunedTypes));
 
             if (AssistantExporter.run(appView).shouldExitEarly()) {
               if (options.isPrintTimesReportingEnabled()) {
