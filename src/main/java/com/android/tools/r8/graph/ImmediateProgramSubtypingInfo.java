@@ -4,15 +4,15 @@
 
 package com.android.tools.r8.graph;
 
-import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 public class ImmediateProgramSubtypingInfo
     extends ImmediateSubtypingInfo<DexProgramClass, DexProgramClass> {
 
   private ImmediateProgramSubtypingInfo(
       AppView<? extends AppInfoWithClassHierarchy> appView,
-      Map<DexProgramClass, List<DexProgramClass>> immediateSubtypes) {
+      Map<DexProgramClass, Set<DexProgramClass>> immediateSubtypes) {
     super(appView, immediateSubtypes);
   }
 

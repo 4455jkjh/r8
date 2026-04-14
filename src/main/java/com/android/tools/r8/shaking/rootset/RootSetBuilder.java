@@ -732,7 +732,7 @@ public class RootSetBuilder {
   }
 
   private void propagateAssumeRules(DexClass clazz) {
-    List<DexClass> subclasses = subtypingInfo.getSubclasses(clazz);
+    Collection<DexClass> subclasses = subtypingInfo.getSubclasses(clazz);
     if (subclasses.isEmpty()) {
       return;
     }
@@ -747,7 +747,7 @@ public class RootSetBuilder {
   }
 
   private void propagateAssumeRules(
-      DexClass clazz, DexMethod reference, List<DexClass> subclasses) {
+      DexClass clazz, DexMethod reference, Collection<DexClass> subclasses) {
     AssumeMethodInfoCollection.Builder infoToBePropagated = null;
     for (DexClass subclass : subclasses) {
       // Those rules are bound to definitions, not references. If the current subtype does not

@@ -11,12 +11,12 @@ import com.android.tools.r8.utils.TraversalContinuation;
 import com.android.tools.r8.utils.WorkList;
 import com.google.common.base.Predicates;
 import com.google.common.collect.Iterables;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.IdentityHashMap;
-import java.util.List;
+import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.function.BiPredicate;
 import java.util.function.Consumer;
@@ -26,10 +26,10 @@ import java.util.function.Predicate;
 public abstract class ImmediateSubtypingInfo<S extends DexClass, T extends DexClass> {
 
   final AppView<? extends AppInfoWithClassHierarchy> appView;
-  final Map<S, List<T>> immediateSubtypes;
+  final Map<S, Set<T>> immediateSubtypes;
 
   ImmediateSubtypingInfo(
-      AppView<? extends AppInfoWithClassHierarchy> appView, Map<S, List<T>> immediateSubtypes) {
+      AppView<? extends AppInfoWithClassHierarchy> appView, Map<S, Set<T>> immediateSubtypes) {
     this.appView = appView;
     this.immediateSubtypes = immediateSubtypes;
   }
@@ -39,14 +39,16 @@ public abstract class ImmediateSubtypingInfo<S extends DexClass, T extends DexCl
           AppView<? extends AppInfoWithClassHierarchy> appView,
           Iterable<T> classes,
           Function<DexClass, S> cast,
-          Function<Map<S, List<T>>, U> factory) {
-    Map<S, List<T>> immediateSubtypes = new IdentityHashMap<>();
+          Function<Map<S, Set<T>>, U> factory) {
+    Map<S, Set<T>> immediateSubtypes = new IdentityHashMap<>();
     for (T clazz : classes) {
       clazz.forEachImmediateSupertype(
           supertype -> {
             S superclass = cast.apply(appView.definitionFor(supertype));
             if (superclass != null) {
-              immediateSubtypes.computeIfAbsent(superclass, ignoreKey(ArrayList::new)).add(clazz);
+              immediateSubtypes
+                  .computeIfAbsent(superclass, ignoreKey(LinkedHashSet::new))
+                  .add(clazz);
             }
           });
     }
@@ -151,8 +153,8 @@ public abstract class ImmediateSubtypingInfo<S extends DexClass, T extends DexCl
         consumer);
   }
 
-  public List<T> getSubclasses(S clazz) {
-    return immediateSubtypes.getOrDefault(clazz, Collections.emptyList());
+  public Set<T> getSubclasses(S clazz) {
+    return immediateSubtypes.getOrDefault(clazz, Collections.emptySet());
   }
 
   public Iterable<T> getSubinterfaces(S clazz) {
