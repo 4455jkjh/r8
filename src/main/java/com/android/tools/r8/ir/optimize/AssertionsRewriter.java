@@ -346,8 +346,10 @@ public class AssertionsRewriter {
     if (enabled) {
       timing.begin("Rewrite assertions");
       boolean needsDeadCodeRemoval = runInternal(method, code);
-      code.removeRedundantBlocks();
       if (needsDeadCodeRemoval) {
+        AffectedValues affectedValues = code.removeUnreachableBlocks();
+        affectedValues.narrowingWithAssumeRemoval(appView, code);
+        code.removeRedundantBlocks();
         deadCodeRemover.run(code, timing);
       }
       assert code.isConsistentSSA(appView);
@@ -433,6 +435,7 @@ public class AssertionsRewriter {
         clinit != null && clinit.getOptimizationInfo().isInitializerEnablingJavaVmAssertions();
     // This code will process the assertion code in all methods including <clinit>.
     InstructionListIterator iterator = code.instructionListIterator();
+    boolean changed = false;
     boolean needsDeadCodeRemoval = false;
     while (iterator.hasNext()) {
       Instruction current = iterator.next();
@@ -444,12 +447,14 @@ public class AssertionsRewriter {
           } else {
             iterator.replaceCurrentInstruction(code.createIntConstant(0, current.getLocalInfo()));
           }
+          changed = true;
         }
       } else if (current.isStaticPut()) {
         StaticPut staticPut = current.asStaticPut();
         if (isInitializerEnablingJavaVmAssertions
             && isUsingJavaAssertionsDisabledField(staticPut)) {
           iterator.remove();
+          changed = true;
         }
       } else if (current.isStaticGet()) {
         StaticGet staticGet = current.asStaticGet();
@@ -461,6 +466,7 @@ public class AssertionsRewriter {
             iterator.replaceCurrentInstruction(
                 code.createIntConstant(
                     configuration.isCompileTimeDisabled() ? 1 : 0, current.getLocalInfo()));
+            changed = true;
           }
         }
         // Rewrite kotlin._Assertions.ENABLED getter.
@@ -470,6 +476,7 @@ public class AssertionsRewriter {
             iterator.replaceCurrentInstruction(
                 code.createIntConstant(
                     kotlinTransformation.isCompileTimeDisabled() ? 0 : 1, current.getLocalInfo()));
+            changed = true;
           }
         }
       }
@@ -480,10 +487,12 @@ public class AssertionsRewriter {
           If ifInstruction = current.asIf();
           if (assertionEntryIfs.containsKey(ifInstruction)) {
             forceAssertionsEnabled(ifInstruction, assertionEntryIfs, iterator);
+            changed = true;
             needsDeadCodeRemoval = true;
           }
           if (additionalAssertionsEnabledIfs.containsKey(ifInstruction)) {
             forceAssertionsEnabled(ifInstruction, additionalAssertionsEnabledIfs, iterator);
+            changed = true;
             needsDeadCodeRemoval = true;
           }
         } else if (current.isThrow()) {
@@ -499,9 +508,13 @@ public class AssertionsRewriter {
             gotoBlockAfterAssertion.setPosition(throwInstruction.getPosition());
             throwingBlock.link(throwSuccessorAfterHandler.get(throwInstruction));
             iterator.add(gotoBlockAfterAssertion);
+            changed = true;
           }
         }
       }
+    }
+    if (changed) {
+      code.removeRedundantBlocks();
     }
     return needsDeadCodeRemoval;
   }
