@@ -19,13 +19,18 @@ import com.android.tools.r8.ir.code.Value;
 import com.android.tools.r8.ir.conversion.MethodConversionOptions;
 import com.android.tools.r8.lightir.LirConstant;
 import com.android.tools.r8.origin.MethodOrigin;
+import com.android.tools.r8.utils.ThreadUtils;
+import com.android.tools.r8.utils.collections.ProgramMethodSet;
 import java.util.Collection;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
 
 public class NativeReferencesHelper {
 
   private final AppView<? extends AppInfoWithClassHierarchy> appView;
   private final TraceReferencesNativeReferencesConsumer nativeReferencesConsumer;
   private final DiagnosticsHandler diagnostics;
+  private final ExecutorService executorService;
   private final DexItemFactory factory;
   private final DexString loadLibrary;
   private final DexString load;
@@ -33,10 +38,12 @@ public class NativeReferencesHelper {
   public NativeReferencesHelper(
       AppView<? extends AppInfoWithClassHierarchy> appView,
       TraceReferencesNativeReferencesConsumer nativeReferencesConsumer,
-      DiagnosticsHandler diagnostics) {
+      DiagnosticsHandler diagnostics,
+      ExecutorService executorService) {
     this.appView = appView;
     this.nativeReferencesConsumer = nativeReferencesConsumer;
     this.diagnostics = diagnostics;
+    this.executorService = executorService;
     this.factory = appView.dexItemFactory();
     this.loadLibrary = factory.createString("loadLibrary");
     this.load = factory.createString("load");
@@ -52,35 +59,32 @@ public class NativeReferencesHelper {
         && method.getName().isIdenticalTo(load);
   }
 
-  public void registerNativeMethods(Collection<DexProgramClass> classes) {
-    // TODO(b/481400921): Parallelize.
-    classes.forEach(
+  public void process(Collection<DexProgramClass> classes) throws ExecutionException {
+    ThreadUtils.processItems(
+        classes,
         clazz ->
             clazz.forEachProgramMethodMatching(
-                method -> method.getAccessFlags().isNative(),
-                method ->
-                    nativeReferencesConsumer.acceptNativeMethod(
-                        appView
-                            .getNamingLens()
-                            .lookupMethod(method.getReference(), appView.dexItemFactory())
-                            .asMethodReference(),
-                        diagnostics)));
+                method -> method.isNative() || methodMightCallSystemLoadOrSystemLoadLibrary(method),
+                this::processMethod),
+        appView.options().getThreadingModule(),
+        executorService);
   }
 
-  public void registerSystemLoadInvocations(Collection<DexProgramClass> classes) {
-    // TODO(b/481400921): Parallelize.
-    classes.forEach(
-        clazz ->
-            clazz.forEachProgramMethodMatching(
-                DexEncodedMethod::hasCode,
-                method -> {
-                  if (methodMightCallSystemLoadOrSystemLoadLibrary(method)) {
-                    processMethod(method);
-                  }
-                }));
+  public void process(ProgramMethodSet methods) throws ExecutionException {
+    ThreadUtils.processItems(
+        methods, this::processMethod, appView.options().getThreadingModule(), executorService);
   }
 
-  public void processMethod(ProgramMethod method) {
+  private void processMethod(ProgramMethod method) {
+    if (method.getAccessFlags().isNative()) {
+      nativeReferencesConsumer.acceptNativeMethod(
+          appView
+              .getNamingLens()
+              .lookupMethod(method.getReference(), appView.dexItemFactory())
+              .asMethodReference(),
+          diagnostics);
+      return;
+    }
     IRCode code = method.buildIR(appView, MethodConversionOptions.nonConverting());
     for (InvokeStatic invoke : code.<InvokeStatic>instructions(Instruction::isInvokeStatic)) {
       processInvoke(method, invoke);
@@ -109,14 +113,14 @@ public class NativeReferencesHelper {
     }
   }
 
-  private boolean methodMightCallSystemLoadOrSystemLoadLibrary(ProgramMethod method) {
-    if (!method.getDefinition().hasCode()) {
+  private boolean methodMightCallSystemLoadOrSystemLoadLibrary(DexEncodedMethod method) {
+    if (!method.hasCode()) {
       return false;
     }
-    if (!method.getDefinition().getCode().isLirCode()) {
+    if (!method.getCode().isLirCode()) {
       return true;
     }
-    for (LirConstant constant : method.getDefinition().getCode().asLirCode().getConstantPool()) {
+    for (LirConstant constant : method.getCode().asLirCode().getConstantPool()) {
       if (constant instanceof DexMethod) {
         DexMethod methodConstant = (DexMethod) constant;
         if (isSystemLoadLibrary(methodConstant) || isSystemLoad(methodConstant)) {

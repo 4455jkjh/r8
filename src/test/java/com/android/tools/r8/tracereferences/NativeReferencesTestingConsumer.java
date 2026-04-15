@@ -18,35 +18,52 @@ import java.util.stream.Collectors;
 
 class NativeReferencesTestingConsumer implements TraceReferencesNativeReferencesConsumer {
 
-  List<Pair<String, MethodOrigin>> loadLibraryKnown = new ArrayList<>();
-  List<MethodOrigin> loadLibraryAny = new ArrayList<>();
-  List<Pair<String, MethodOrigin>> loadKnown = new ArrayList<>();
-  List<MethodOrigin> loadAny = new ArrayList<>();
-  List<MethodReference> nativeMethods = new ArrayList<>();
+  final List<Pair<String, MethodOrigin>> loadLibraryKnown = new ArrayList<>();
+  final List<MethodOrigin> loadLibraryAny = new ArrayList<>();
+  final List<Pair<String, MethodOrigin>> loadKnown = new ArrayList<>();
+  final List<MethodOrigin> loadAny = new ArrayList<>();
+  final List<MethodReference> nativeMethods = new ArrayList<>();
+  boolean finished = false;
 
   @Override
   public void acceptLoadLibrary(String name, MethodOrigin origin, DiagnosticsHandler handler) {
-    loadLibraryKnown.add(new Pair<>(name, origin));
+    synchronized (loadLibraryKnown) {
+      loadLibraryKnown.add(new Pair<>(name, origin));
+    }
   }
 
   @Override
   public void acceptLoadLibraryAny(MethodOrigin origin, DiagnosticsHandler handler) {
-    loadLibraryAny.add(origin);
+    synchronized (loadLibraryAny) {
+      loadLibraryAny.add(origin);
+    }
   }
 
   @Override
   public void acceptLoad(String name, MethodOrigin origin, DiagnosticsHandler handler) {
-    loadKnown.add(new Pair<>(name, origin));
+    synchronized (loadKnown) {
+      loadKnown.add(new Pair<>(name, origin));
+    }
   }
 
   @Override
   public void acceptLoadAny(MethodOrigin origin, DiagnosticsHandler handler) {
-    loadAny.add(origin);
+    synchronized (loadAny) {
+      loadAny.add(origin);
+    }
   }
 
   @Override
   public void acceptNativeMethod(MethodReference methodReference, DiagnosticsHandler handler) {
-    nativeMethods.add(methodReference);
+    synchronized (nativeMethods) {
+      nativeMethods.add(methodReference);
+    }
+  }
+
+  @Override
+  public void finished(DiagnosticsHandler handler) {
+    assert !finished;
+    finished = true;
   }
 
   public NativeReferencesTestingConsumer expectLoadLibrary(String name, Predicate<Origin> origin) {
@@ -149,6 +166,7 @@ class NativeReferencesTestingConsumer implements TraceReferencesNativeReferences
         loadLibraryKnown.isEmpty()
             && loadLibraryAny.isEmpty()
             && loadKnown.isEmpty()
-            && loadAny.isEmpty());
+            && loadAny.isEmpty()
+            && finished);
   }
 }

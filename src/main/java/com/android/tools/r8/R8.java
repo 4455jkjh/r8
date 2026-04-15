@@ -930,9 +930,10 @@ public class R8 {
 
       if (options.nativeReferencesConsumer != null) {
         NativeReferencesHelper helper =
-            new NativeReferencesHelper(appView, options.nativeReferencesConsumer, options.reporter);
-        helper.registerNativeMethods(appView.appInfo().classes());
-        helper.registerSystemLoadInvocations(appView.appInfo().classes());
+            new NativeReferencesHelper(
+                appView, options.nativeReferencesConsumer, appView.reporter(), executorService);
+        helper.process(appView.appInfo().classes());
+        options.nativeReferencesConsumer.finished(appView.reporter());
       }
 
       // Generate the resulting application resources.

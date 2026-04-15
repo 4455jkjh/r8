@@ -39,18 +39,11 @@ import com.android.tools.r8.graph.ProgramDefinition;
 import com.android.tools.r8.graph.ProgramField;
 import com.android.tools.r8.graph.ProgramMethod;
 import com.android.tools.r8.graph.UseRegistry;
-import com.android.tools.r8.ir.code.IRCode;
-import com.android.tools.r8.ir.code.Instruction;
-import com.android.tools.r8.ir.code.InvokeMethod;
-import com.android.tools.r8.ir.code.InvokeStatic;
 import com.android.tools.r8.ir.code.InvokeType;
-import com.android.tools.r8.ir.code.Value;
-import com.android.tools.r8.ir.conversion.MethodConversionOptions;
 import com.android.tools.r8.ir.desugar.LambdaDescriptor;
 import com.android.tools.r8.kotlin.KotlinClassLevelInfo;
 import com.android.tools.r8.kotlin.KotlinClassMetadataReader;
 import com.android.tools.r8.kotlin.KotlinMetadataUseRegistry;
-import com.android.tools.r8.origin.MethodOrigin;
 import com.android.tools.r8.references.ClassReference;
 import com.android.tools.r8.references.FieldReference;
 import com.android.tools.r8.references.MethodReference;
@@ -68,6 +61,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -93,9 +87,11 @@ public class UseCollector implements UseCollectorEventConsumer {
 
   public interface NativeIdentification {
 
-    void process(Collection<DexProgramClass> classes);
+    default void processWorklist() throws ExecutionException {}
 
-    void scanInvoke(DexMethod invokedMethod, ProgramMethod method);
+    default void scanInvoke(DexMethod invokedMethod, ProgramMethod method) {}
+
+    default void registerNativeMethod(ProgramMethod method) {}
 
     static NativeIdentification create(
         TraceReferencesNativeReferencesConsumer nativeReferencesConsumer,
@@ -104,17 +100,7 @@ public class UseCollector implements UseCollectorEventConsumer {
       if (nativeReferencesConsumer != null) {
         return new NativeIdentificationImpl(nativeReferencesConsumer, appView, diagnostics);
       } else {
-        return new NativeIdentification() {
-          @Override
-          public void process(Collection<DexProgramClass> classes) {
-            // Do nothing.
-          }
-
-          @Override
-          public void scanInvoke(DexMethod invokedMethod, ProgramMethod method) {
-            // Do nothing.
-          }
-        };
+        return new NativeIdentification() {};
       }
     }
   }
@@ -123,33 +109,25 @@ public class UseCollector implements UseCollectorEventConsumer {
 
     private final TraceReferencesNativeReferencesConsumer nativeReferencesConsumer;
 
-    private final AppView<? extends AppInfoWithClassHierarchy> appView;
     private final DiagnosticsHandler diagnostics;
     private final NativeReferencesHelper helper;
 
-    private final ProgramMethodSet worklist = ProgramMethodSet.create();
+    private final ProgramMethodSet worklist = ProgramMethodSet.createConcurrent();
 
     NativeIdentificationImpl(
         TraceReferencesNativeReferencesConsumer nativeReferencesConsumer,
         AppView<? extends AppInfoWithClassHierarchy> appView,
         DiagnosticsHandler diagnostics) {
       this.nativeReferencesConsumer = nativeReferencesConsumer;
-      this.appView = appView;
       this.diagnostics = diagnostics;
-      this.helper = new NativeReferencesHelper(appView, nativeReferencesConsumer, diagnostics);
+      this.helper =
+          new NativeReferencesHelper(
+              appView, nativeReferencesConsumer, diagnostics, Executors.newWorkStealingPool());
     }
 
     @Override
-    public void process(Collection<DexProgramClass> classes) {
-      // TODO(b/481400921): Parallelize.
-      classes.forEach(
-          clazz ->
-              clazz.forEachProgramMethodMatching(
-                  method -> method.getAccessFlags().isNative(),
-                  method ->
-                      nativeReferencesConsumer.acceptNativeMethod(
-                          method.getMethodReference(), diagnostics)));
-      worklist.forEach(this::processMethod);
+    public void processWorklist() throws ExecutionException {
+      helper.process(worklist);
       worklist.clear();
       nativeReferencesConsumer.finished(diagnostics);
     }
@@ -161,37 +139,9 @@ public class UseCollector implements UseCollectorEventConsumer {
       }
     }
 
-    private void processMethod(ProgramMethod method) {
-      if (method.getAccessFlags().isNative()) {
-        nativeReferencesConsumer.acceptNativeMethod(method.getMethodReference(), diagnostics);
-      } else {
-        IRCode code = method.buildIR(appView, MethodConversionOptions.nonConverting());
-        for (InvokeMethod invoke : code.<InvokeMethod>instructions(Instruction::isInvokeStatic)) {
-          processInvoke(method, invoke.asInvokeStatic());
-        }
-      }
-    }
-
-    private void processInvoke(ProgramMethod method, InvokeStatic invoke) {
-      DexMethod invokedMethod = invoke.getInvokedMethod();
-      if (helper.isSystemLoadLibrary(invokedMethod) || helper.isSystemLoad(invokedMethod)) {
-        Value argument = invoke.getFirstArgument().getAliasedValue();
-        MethodOrigin origin = new MethodOrigin(method.getMethodReference(), method.getOrigin());
-        if (argument.isConstString()) {
-          String name = argument.getDefinition().asConstString().getValue().toString();
-          if (helper.isSystemLoadLibrary(invokedMethod)) {
-            nativeReferencesConsumer.acceptLoadLibrary(name, origin, diagnostics);
-          } else {
-            nativeReferencesConsumer.acceptLoad(name, origin, diagnostics);
-          }
-        } else {
-          if (helper.isSystemLoadLibrary(invokedMethod)) {
-            nativeReferencesConsumer.acceptLoadLibraryAny(origin, diagnostics);
-          } else {
-            nativeReferencesConsumer.acceptLoadAny(origin, diagnostics);
-          }
-        }
-      }
+    @Override
+    public void registerNativeMethod(ProgramMethod method) {
+      worklist.add(method);
     }
   }
 
@@ -227,13 +177,14 @@ public class UseCollector implements UseCollectorEventConsumer {
     // Intentionally empty. Overridden in R8PartialUseCollector.
   }
 
-  public void traceClasses(Collection<DexProgramClass> classes, Timing timing) {
+  public void traceClasses(Collection<DexProgramClass> classes, Timing timing)
+      throws ExecutionException {
     for (DexProgramClass clazz : classes) {
       timing.begin("Trace " + clazz.getTypeName());
       traceClass(clazz);
       timing.end();
     }
-    nativeIdentification.process(classes);
+    nativeIdentification.processWorklist();
   }
 
   public void traceClasses(Collection<DexProgramClass> classes, ExecutorService executorService)
@@ -583,7 +534,11 @@ public class UseCollector implements UseCollectorEventConsumer {
       ProgramMethod method,
       DefinitionContext referencedFrom,
       UseCollectorEventConsumer eventConsumer) {
-    method.registerCodeReferences(new MethodUseCollector(method, referencedFrom, eventConsumer));
+    if (method.getAccessFlags().isNative()) {
+      nativeIdentification.registerNativeMethod(method);
+    } else {
+      method.registerCodeReferences(new MethodUseCollector(method, referencedFrom, eventConsumer));
+    }
   }
 
   private void registerSuperType(
