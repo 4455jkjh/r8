@@ -8,6 +8,7 @@ import com.android.tools.r8.D8Command.Builder;
 import com.android.tools.r8.errors.CompilationError;
 import com.android.tools.r8.errors.InternalCompilerError;
 import com.android.tools.r8.errors.Unimplemented;
+import com.android.tools.r8.errors.Unreachable;
 import com.android.tools.r8.utils.AndroidApiLevel;
 import com.android.tools.r8.utils.AndroidApp;
 import java.io.IOException;
@@ -67,7 +68,7 @@ public class D8IncrementalRunExamplesJava9Test extends RunExamplesJava9Test<D8Co
       try {
         AndroidApp app = ToolHelper.runD8(builder, this::combinedOptionConsumer);
         assert app.getDexProgramResourcesForTesting().size() == 1;
-      } catch (Unimplemented | CompilationError | InternalCompilerError re) {
+      } catch (Unimplemented | CompilationError | Unreachable | InternalCompilerError re) {
         throw re;
       } catch (RuntimeException re) {
         throw re.getCause() == null ? re : re.getCause();

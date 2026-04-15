@@ -3,10 +3,8 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8.errors;
 
-/**
- * Exception to signal an expected unreachable code path.
- */
-public class Unreachable extends InternalCompilerError {
+/** Exception to signal an expected unreachable code path. */
+public class Unreachable extends RuntimeException {
 
   public static Unreachable raise() {
     throw new Unreachable();
