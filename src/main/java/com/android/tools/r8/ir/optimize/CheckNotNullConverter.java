@@ -10,7 +10,6 @@ import com.android.tools.r8.graph.DexClassAndMethod;
 import com.android.tools.r8.graph.DexMethod;
 import com.android.tools.r8.graph.ProgramMethod;
 import com.android.tools.r8.ir.code.BasicBlock;
-import com.android.tools.r8.ir.code.BasicBlockIterator;
 import com.android.tools.r8.ir.code.IRCode;
 import com.android.tools.r8.ir.code.Instruction;
 import com.android.tools.r8.ir.code.InstructionListIterator;
@@ -21,6 +20,7 @@ public class CheckNotNullConverter {
 
   public static void runIfNecessary(AppView<?> appView, IRCode code) {
     if (appView.enableWholeProgramOptimizations()) {
+      assert code.isConsistentSSA(appView);
       run(appView.withClassHierarchy(), code);
       assert code.isConsistentSSA(appView);
     }
@@ -34,17 +34,18 @@ public class CheckNotNullConverter {
    * removing the invoke.
    */
   private static void run(AppView<? extends AppInfoWithClassHierarchy> appView, IRCode code) {
-    BasicBlockIterator blockIterator = code.listIterator();
-    while (blockIterator.hasNext()) {
-      BasicBlock block = blockIterator.next();
+    AffectedValues affectedValues = new AffectedValues();
+    for (BasicBlock block : code.getBlocks()) {
       InstructionListIterator instructionIterator = block.listIterator();
       while (instructionIterator.hasNext()) {
         Instruction instruction = instructionIterator.next();
         if (instruction.isInvokeMethod()) {
-          rewriteInvoke(appView, code, instructionIterator, instruction.asInvokeMethod());
+          rewriteInvoke(
+              appView, code, instructionIterator, instruction.asInvokeMethod(), affectedValues);
         }
       }
     }
+    affectedValues.narrowingWithAssumeRemoval(appView, code);
   }
 
   static boolean kotlinNullCheckLedgibleForMessageRemoval(
@@ -67,7 +68,8 @@ public class CheckNotNullConverter {
       AppView<? extends AppInfoWithClassHierarchy> appView,
       IRCode code,
       InstructionListIterator instructionIterator,
-      InvokeMethod invoke) {
+      InvokeMethod invoke,
+      AffectedValues affectedValues) {
     ProgramMethod context = code.context();
     DexClassAndMethod singleTarget = invoke.lookupSingleTarget(appView, context);
     if (singleTarget == null || !canConvertNullCheck(appView, singleTarget)) {
@@ -75,7 +77,7 @@ public class CheckNotNullConverter {
     }
     Value checkNotNullValue = invoke.getFirstNonReceiverArgument();
     if (invoke.hasUsedOutValue()) {
-      invoke.outValue().replaceUsers(checkNotNullValue);
+      invoke.outValue().replaceUsers(checkNotNullValue, affectedValues);
     }
     if (appView
             .getAssumeInfoCollection()
