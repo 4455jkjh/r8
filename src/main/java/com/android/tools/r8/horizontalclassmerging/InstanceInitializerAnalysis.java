@@ -31,7 +31,7 @@ import com.android.tools.r8.ir.code.InvokeDirect;
 import com.android.tools.r8.ir.code.Value;
 import com.android.tools.r8.ir.conversion.MethodConversionOptions;
 import com.android.tools.r8.ir.optimize.info.field.InstanceFieldInitializationInfo;
-import com.android.tools.r8.utils.WorkList;
+import com.android.tools.r8.utils.collections.WorkList;
 import com.google.common.collect.Iterables;
 import java.util.ArrayList;
 import java.util.List;

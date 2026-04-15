@@ -4,9 +4,9 @@
 package com.android.tools.r8;
 
 import com.android.tools.r8.errors.Unimplemented;
-import com.android.tools.r8.utils.Pair;
 import com.android.tools.r8.utils.ThrowingConsumer;
 import com.android.tools.r8.utils.codeinspector.CodeInspector;
+import com.android.tools.r8.utils.collections.Pair;
 import com.google.common.base.Predicates;
 import com.google.common.base.Strings;
 import java.io.IOException;

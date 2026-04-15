@@ -45,7 +45,7 @@ import com.android.tools.r8.utils.IterableUtils;
 import com.android.tools.r8.utils.MethodSignatureEquivalence;
 import com.android.tools.r8.utils.OptionalBool;
 import com.android.tools.r8.utils.ThreadUtils;
-import com.android.tools.r8.utils.WorkList;
+import com.android.tools.r8.utils.collections.WorkList;
 import com.google.common.base.Equivalence.Wrapper;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableList.Builder;

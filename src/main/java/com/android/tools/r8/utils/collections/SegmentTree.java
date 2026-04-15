@@ -2,8 +2,9 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-package com.android.tools.r8.utils;
+package com.android.tools.r8.utils.collections;
 
+import com.android.tools.r8.utils.Box;
 import java.util.Collection;
 import java.util.Map;
 import java.util.TreeMap;

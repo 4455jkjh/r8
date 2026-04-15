@@ -18,7 +18,7 @@ import com.android.tools.r8.retrace.RetracedSourceFile;
 import com.android.tools.r8.retrace.internal.RetraceClassResultImpl.RetraceClassElementImpl;
 import com.android.tools.r8.utils.ListUtils;
 import com.android.tools.r8.utils.OptionalBool;
-import com.android.tools.r8.utils.Pair;
+import com.android.tools.r8.utils.collections.Pair;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;

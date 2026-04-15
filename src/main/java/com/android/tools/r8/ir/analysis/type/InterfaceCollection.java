@@ -9,7 +9,7 @@ import com.android.tools.r8.ir.desugar.desugaredlibrary.retargeter.AutoCloseable
 import com.android.tools.r8.utils.BooleanBox;
 import com.android.tools.r8.utils.InternalOptions;
 import com.android.tools.r8.utils.OptionalBool;
-import com.android.tools.r8.utils.Pair;
+import com.android.tools.r8.utils.collections.Pair;
 import it.unimi.dsi.fastutil.objects.Reference2BooleanMap;
 import it.unimi.dsi.fastutil.objects.Reference2BooleanMap.Entry;
 import it.unimi.dsi.fastutil.objects.Reference2BooleanMaps;

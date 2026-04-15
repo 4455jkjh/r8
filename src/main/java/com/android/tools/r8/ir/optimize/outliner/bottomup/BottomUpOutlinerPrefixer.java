@@ -18,7 +18,7 @@ import com.android.tools.r8.ir.code.InvokeVirtual;
 import com.android.tools.r8.ir.code.NewInstance;
 import com.android.tools.r8.ir.code.Value;
 import com.android.tools.r8.utils.SetUtils;
-import com.android.tools.r8.utils.WorkList;
+import com.android.tools.r8.utils.collections.WorkList;
 import java.util.Set;
 
 public class BottomUpOutlinerPrefixer {

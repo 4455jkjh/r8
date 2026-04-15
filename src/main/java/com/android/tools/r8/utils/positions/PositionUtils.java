@@ -14,7 +14,7 @@ import com.android.tools.r8.graph.DexDebugInfo;
 import com.android.tools.r8.graph.DexEncodedMethod;
 import com.android.tools.r8.ir.code.Position;
 import com.android.tools.r8.utils.InternalOptions;
-import com.android.tools.r8.utils.Pair;
+import com.android.tools.r8.utils.collections.Pair;
 import java.util.List;
 
 public class PositionUtils {

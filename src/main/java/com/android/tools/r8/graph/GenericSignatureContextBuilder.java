@@ -9,7 +9,7 @@ import static com.android.tools.r8.graph.GenericSignatureContextBuilder.TypePara
 import com.android.tools.r8.graph.GenericSignature.FieldTypeSignature;
 import com.android.tools.r8.graph.GenericSignature.FormalTypeParameter;
 import com.android.tools.r8.graph.GenericSignature.MethodTypeSignature;
-import com.android.tools.r8.utils.WorkList;
+import com.android.tools.r8.utils.collections.WorkList;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
 import java.util.Collection;

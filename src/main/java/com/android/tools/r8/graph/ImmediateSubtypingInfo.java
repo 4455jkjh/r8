@@ -8,7 +8,7 @@ import static com.android.tools.r8.utils.MapUtils.ignoreKey;
 import static com.google.common.base.Predicates.alwaysTrue;
 
 import com.android.tools.r8.utils.TraversalContinuation;
-import com.android.tools.r8.utils.WorkList;
+import com.android.tools.r8.utils.collections.WorkList;
 import com.google.common.base.Predicates;
 import com.google.common.collect.Iterables;
 import java.util.Collections;

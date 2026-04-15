@@ -50,7 +50,7 @@ import com.android.tools.r8.utils.ListUtils;
 import com.android.tools.r8.utils.ObjectUtils;
 import com.android.tools.r8.utils.OneShotCollectionConsumer;
 import com.android.tools.r8.utils.OriginalSourceFiles;
-import com.android.tools.r8.utils.Pair;
+import com.android.tools.r8.utils.collections.Pair;
 import it.unimi.dsi.fastutil.ints.Int2IntArrayMap;
 import it.unimi.dsi.fastutil.ints.Int2IntLinkedOpenHashMap;
 import it.unimi.dsi.fastutil.ints.Int2IntMap;

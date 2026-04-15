@@ -4,7 +4,7 @@
 package com.android.tools.r8.utils.positions;
 
 import com.android.tools.r8.ir.code.Position;
-import com.android.tools.r8.utils.Pair;
+import com.android.tools.r8.utils.collections.Pair;
 
 public interface MethodPositionRemapper {
 

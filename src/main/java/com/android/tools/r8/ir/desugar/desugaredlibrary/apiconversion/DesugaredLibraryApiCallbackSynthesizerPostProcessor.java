@@ -21,7 +21,7 @@ import com.android.tools.r8.ir.desugar.CfPostProcessingDesugaringEventConsumer;
 import com.android.tools.r8.ir.desugar.desugaredlibrary.machinespecification.MachineDesugaredLibrarySpecification;
 import com.android.tools.r8.shaking.Enqueuer;
 import com.android.tools.r8.utils.SetUtils;
-import com.android.tools.r8.utils.WorkList;
+import com.android.tools.r8.utils.collections.WorkList;
 import com.android.tools.r8.utils.timing.Timing;
 import java.util.ArrayList;
 import java.util.Collection;

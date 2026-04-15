@@ -31,12 +31,12 @@ import com.android.tools.r8.ir.desugar.desugaredlibrary.machinespecification.Emu
 import com.android.tools.r8.lightir.LirInstructionView;
 import com.android.tools.r8.lightir.LirOpcodeUtils;
 import com.android.tools.r8.synthesis.SyntheticMethodBuilder;
-import com.android.tools.r8.utils.Pair;
 import com.android.tools.r8.utils.collections.BidirectionalManyToManyRepresentativeMap;
 import com.android.tools.r8.utils.collections.BidirectionalManyToOneRepresentativeMap;
 import com.android.tools.r8.utils.collections.BidirectionalOneToOneHashMap;
 import com.android.tools.r8.utils.collections.BidirectionalOneToOneMap;
 import com.android.tools.r8.utils.collections.MutableBidirectionalOneToOneMap;
+import com.android.tools.r8.utils.collections.Pair;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Deque;

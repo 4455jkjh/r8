@@ -7,7 +7,7 @@ package com.android.tools.r8.kotlin;
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.DexClass;
 import com.android.tools.r8.shaking.EnqueuerMetadataTraceable;
-import com.android.tools.r8.utils.Pair;
+import com.android.tools.r8.utils.collections.Pair;
 import kotlin.Metadata;
 import kotlin.metadata.jvm.JvmMetadataVersion;
 

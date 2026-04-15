@@ -113,6 +113,7 @@ import com.android.tools.r8.tracereferences.TraceReferencesNativeReferencesConsu
 import com.android.tools.r8.tracereferences.TraceReferencesOptions;
 import com.android.tools.r8.utils.IROrdering.IdentityIROrdering;
 import com.android.tools.r8.utils.IROrdering.NondeterministicIROrdering;
+import com.android.tools.r8.utils.collections.Pair;
 import com.android.tools.r8.utils.collections.ProgramMethodSet;
 import com.android.tools.r8.utils.structural.Ordered;
 import com.android.tools.r8.utils.timing.Timing;

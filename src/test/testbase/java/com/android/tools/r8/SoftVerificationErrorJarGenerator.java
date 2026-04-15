@@ -5,8 +5,8 @@
 package com.android.tools.r8;
 
 import com.android.tools.r8.utils.IntBox;
-import com.android.tools.r8.utils.Pair;
 import com.android.tools.r8.utils.ZipUtils;
+import com.android.tools.r8.utils.collections.Pair;
 import java.io.BufferedOutputStream;
 import java.io.IOException;
 import java.nio.file.Files;

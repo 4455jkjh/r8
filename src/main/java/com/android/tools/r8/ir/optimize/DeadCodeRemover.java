@@ -36,7 +36,7 @@ import com.android.tools.r8.ir.conversion.passes.MoveResultRewriter;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
 import com.android.tools.r8.utils.Box;
 import com.android.tools.r8.utils.IterableUtils;
-import com.android.tools.r8.utils.WorkList;
+import com.android.tools.r8.utils.collections.WorkList;
 import com.android.tools.r8.utils.timing.Timing;
 import com.google.common.collect.ImmutableList;
 import java.util.Collection;

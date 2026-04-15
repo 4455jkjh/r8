@@ -10,7 +10,7 @@ import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.ir.optimize.DeadCodeRemover.DeadInstructionResult;
 import com.android.tools.r8.utils.BooleanBox;
 import com.android.tools.r8.utils.MapUtils;
-import com.android.tools.r8.utils.WorkList;
+import com.android.tools.r8.utils.collections.WorkList;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
 import java.util.Collections;

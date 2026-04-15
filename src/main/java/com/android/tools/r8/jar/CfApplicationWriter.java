@@ -24,7 +24,7 @@ import com.android.tools.r8.utils.InternalGlobalSyntheticsProgramConsumer.Intern
 import com.android.tools.r8.utils.InternalOptions;
 import com.android.tools.r8.utils.ListUtils;
 import com.android.tools.r8.utils.OriginalSourceFiles;
-import com.android.tools.r8.utils.Pair;
+import com.android.tools.r8.utils.collections.Pair;
 import com.android.tools.r8.utils.timing.Timing;
 import java.util.ArrayList;
 import java.util.Collection;

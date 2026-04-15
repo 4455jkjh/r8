@@ -51,6 +51,7 @@ import com.android.tools.r8.profile.startup.StartupProfileProviderUtils;
 import com.android.tools.r8.shaking.FilteredClassPath;
 import com.android.tools.r8.startup.StartupProfileProvider;
 import com.android.tools.r8.synthesis.SyntheticItems;
+import com.android.tools.r8.utils.collections.Pair;
 import com.android.tools.r8.utils.timing.Timing;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;

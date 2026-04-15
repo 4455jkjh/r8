@@ -4,6 +4,7 @@
 package com.android.tools.r8.utils;
 
 import com.android.tools.r8.ir.code.BasicBlock;
+import com.android.tools.r8.utils.collections.WorkList;
 import com.google.common.collect.Sets;
 import java.util.Collections;
 import java.util.Set;

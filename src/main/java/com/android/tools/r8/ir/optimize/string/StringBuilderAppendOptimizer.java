@@ -47,7 +47,7 @@ import com.android.tools.r8.ir.optimize.string.StringBuilderOracle.DefaultString
 import com.android.tools.r8.utils.DepthFirstSearchWorkListBase.DepthFirstSearchWorkList;
 import com.android.tools.r8.utils.DepthFirstSearchWorkListBase.StatefulDepthFirstSearchWorkList;
 import com.android.tools.r8.utils.TraversalContinuation;
-import com.android.tools.r8.utils.WorkList;
+import com.android.tools.r8.utils.collections.WorkList;
 import com.google.common.collect.Sets;
 import it.unimi.dsi.fastutil.objects.Reference2IntLinkedOpenHashMap;
 import it.unimi.dsi.fastutil.objects.Reference2IntMap;

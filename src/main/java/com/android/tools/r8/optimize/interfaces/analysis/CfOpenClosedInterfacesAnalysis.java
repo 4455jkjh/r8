@@ -34,13 +34,13 @@ import com.android.tools.r8.optimize.interfaces.collection.NonEmptyOpenClosedInt
 import com.android.tools.r8.shaking.Enqueuer;
 import com.android.tools.r8.utils.InternalOptions;
 import com.android.tools.r8.utils.InternalOptions.OpenClosedInterfacesOptions;
-import com.android.tools.r8.utils.Pair;
 import com.android.tools.r8.utils.Reporter;
 import com.android.tools.r8.utils.SetUtils;
 import com.android.tools.r8.utils.ThreadUtils;
 import com.android.tools.r8.utils.UnverifiableCfCodeDiagnostic;
-import com.android.tools.r8.utils.WorkList;
+import com.android.tools.r8.utils.collections.Pair;
 import com.android.tools.r8.utils.collections.ProgramMethodMap;
+import com.android.tools.r8.utils.collections.WorkList;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
