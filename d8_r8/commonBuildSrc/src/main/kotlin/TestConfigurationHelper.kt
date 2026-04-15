@@ -98,7 +98,21 @@ public class TestConfigurationHelper {
       val info = resultSinkInfo ?: return
       if (desc == null || result == null || desc.className == null) return
 
-      val testId = "${desc.className}.${desc.name}"
+      val displayName = desc.displayName
+      val methodName = desc.name.substringBefore('[')
+      val parameters =
+        if (displayName.contains('[')) {
+          displayName
+            .substringAfter('[')
+            .substringBeforeLast(']')
+            // result_sink uses `:` to separate case name components.
+            .replace(Regex(": ?"), "=")
+            .split(", ")
+            .filterNot { it.contains("dex-") || it.contains("jdk") }
+        } else {
+          emptyList()
+        }
+
       val status =
         when (result.resultType) {
           TestResult.ResultType.SUCCESS -> "PASSED"
@@ -123,7 +137,12 @@ public class TestConfigurationHelper {
           null
         }
 
-      val argumentString = desc.displayName.substringAfter('[').substringBeforeLast(']')
+      val argumentString =
+        if (displayName.contains('[')) {
+          displayName.substringAfter('[').substringBeforeLast(']')
+        } else {
+          ""
+        }
       val testIdStructuredObj =
         JsonObject().apply {
           addProperty("coarseName", desc.className?.substringBeforeLast(".") ?: "")
@@ -131,22 +150,14 @@ public class TestConfigurationHelper {
           add(
             "caseNameComponents",
             JsonArray().apply {
-              add(desc.displayName.substringBefore('['))
-              desc.displayName
-                .substringAfter('[')
-                .substringBeforeLast(']')
-                // result_sink uses `:` to separate case name components.
-                .replace(Regex(": ?"), "=")
-                .split(", ")
-                .filterNot { it.contains("dex-") || it.contains("jdk") }
-                .forEach { add(it) }
+              add(methodName)
+              parameters.forEach { add(it) }
             },
           )
         }
 
       val testResultObj =
         JsonObject().apply {
-          addProperty("testId", testId)
           addProperty("statusV2", status)
           addProperty("duration", duration)
           add("testIdStructured", testIdStructuredObj)
