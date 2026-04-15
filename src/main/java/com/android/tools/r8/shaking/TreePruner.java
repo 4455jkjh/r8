@@ -83,7 +83,7 @@ public class TreePruner {
     DirectMappedDexApplication application = appView.appInfo().app().asDirect();
     DirectMappedDexApplication.Builder builder = removeUnused(application);
     DirectMappedDexApplication newApplication =
-        prunedTypes.isEmpty() ? application : builder.build();
+        prunedTypes.isEmpty() ? application : builder.build(timing);
     fixupOptimizationInfo(newApplication, executorService);
     PrunedItems prunedItems =
         prunedItemsBuilder
@@ -135,7 +135,9 @@ public class TreePruner {
         if (clazz.getSourceFile() != null) {
           appView.addPrunedClassSourceFile(clazz.type, clazz.getSourceFile().toString());
         }
-        unusedItemsPrinter.registerUnusedClass(clazz);
+        if (!appView.getSyntheticItems().isSynthetic(clazz)) {
+          unusedItemsPrinter.registerUnusedClass(clazz);
+        }
       }
     }
     unusedItemsPrinter.finished();

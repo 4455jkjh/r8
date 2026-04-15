@@ -74,7 +74,7 @@ public class BottomUpOutliner {
     tearDownScanner(Collections.emptyMap(), profileCollectionAdditions, executorService);
     profileCollectionAdditions.commit(appView);
     // Commit pending synthetics.
-    appView.rebuildAppInfo();
+    appView.rebuildAppInfo(timing);
     appView.getTypeElementFactory().clearTypeElementsCache();
     timing.end();
   }

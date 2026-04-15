@@ -5,15 +5,14 @@
 package com.android.tools.r8.ir.conversion.passes;
 
 import com.android.tools.r8.graph.DexMethod;
-import com.android.tools.r8.graph.DexType;
 import com.android.tools.r8.graph.ProgramDefinition;
 import com.android.tools.r8.graph.ProgramMethod;
-import java.util.List;
+import com.android.tools.r8.ir.optimize.unsafe.SyntheticUnsafeClass;
 
 public interface AtomicUpdaterMethodProcessorEventConsumer {
 
   void acceptUnsafeInstanceContext(
-      List<DexMethod> initializationMethods, DexType unsafeClass, ProgramDefinition context);
+      SyntheticUnsafeClass syntheticUnsafeClass, ProgramDefinition context);
 
   void acceptUnsafeGetAndSetContext(DexMethod method, ProgramMethod context);
 }

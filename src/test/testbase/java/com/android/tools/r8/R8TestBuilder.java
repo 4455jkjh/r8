@@ -40,6 +40,7 @@ import com.android.tools.r8.shaking.NoUnusedInterfaceRemovalRule;
 import com.android.tools.r8.shaking.NoVerticalClassMergingRule;
 import com.android.tools.r8.shaking.ProguardConfigurationRule;
 import com.android.tools.r8.startup.StartupProfileProvider;
+import com.android.tools.r8.tracereferences.TraceReferencesNativeReferencesConsumer;
 import com.android.tools.r8.utils.AndroidApp;
 import com.android.tools.r8.utils.ArchiveResourceProvider;
 import com.android.tools.r8.utils.Box;
@@ -1140,6 +1141,12 @@ public abstract class R8TestBuilder<
 
   public T enablePrintPartialCompilationPartitioning() {
     // Intentionally empty. Implemented in R8PartialTestBuilder.
+    return self();
+  }
+
+  public T setNativeReferencesConsumer(
+      TraceReferencesNativeReferencesConsumer nativeReferencesConsumer) {
+    builder.setNativeReferencesConsumer(nativeReferencesConsumer);
     return self();
   }
 }

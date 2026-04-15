@@ -168,6 +168,11 @@ public class LirUseRegistryCallback<EV> extends LirParsedInstructionCallback<EV>
   }
 
   @Override
+  public void onStoreStoreFence(EV value) {
+    registry.registerStoreStoreFence();
+  }
+
+  @Override
   public void onInstanceOf(DexType type, EV value) {
     registry.registerInstanceOf(type);
   }

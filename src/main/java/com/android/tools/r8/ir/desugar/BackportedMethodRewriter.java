@@ -1459,22 +1459,13 @@ public final class BackportedMethodRewriter implements CfInstructionDesugaring {
       // sun.misc.Unsafe
       {
         // compareAndSwapObject(Object receiver, long offset, Object expect, Object update)
-        DexType type = factory.unsafeType;
-        DexString name = factory.createString("compareAndSwapObject");
-        DexProto proto =
-            factory.createProto(
-                factory.booleanType,
-                factory.objectType,
-                factory.longType,
-                factory.objectType,
-                factory.objectType);
-        DexMethod method = factory.createMethod(type, proto, name);
+        DexMethod method = factory.sunMiscUnsafeMethods.compareAndSwapObject;
         addProvider(
             new StatifyingMethodWithForwardingGenerator(
                 method,
                 BackportedMethods::UnsafeMethods_compareAndSwapObject,
                 "compareAndSwapObject",
-                type));
+                factory.sunMiscUnsafeType));
       }
 
       // java.util.concurrent.atomic.AtomicReference

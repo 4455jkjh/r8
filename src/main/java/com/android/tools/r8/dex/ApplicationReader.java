@@ -126,7 +126,7 @@ public class ApplicationReader {
     }
 
     timing.begin("DexApplication.read");
-    LazyLoadedDexApplication.Builder builder = DexApplication.builder(options, timing);
+    LazyLoadedDexApplication.Builder builder = DexApplication.builder(options);
     TaskCollection<?> tasks = createReaderTaskCollection(executorService);
     try {
       // Still preload some of the classes, primarily for two reasons:
@@ -147,7 +147,7 @@ public class ApplicationReader {
           .addProgramClasses(classReader.programClasses)
           .setFlags(flags)
           .setKeepDeclarations(classReader.getKeepDeclarations())
-          .build();
+          .build(timing);
     } catch (ExecutionException e) {
       throw unwrapExecutionException(e);
     } catch (ResourceException e) {
@@ -176,8 +176,7 @@ public class ApplicationReader {
     }
 
     timing.begin("DexApplication.readDirect");
-    DirectMappedDexApplication.Builder builder =
-        DirectMappedDexApplication.directBuilder(options, timing);
+    DirectMappedDexApplication.Builder builder = DirectMappedDexApplication.directBuilder(options);
     TaskCollection<?> tasks = createReaderTaskCollection(executorService);
     try {
       readProguardMap(inputApp.getProguardMapInputData(), builder, tasks);
@@ -199,7 +198,7 @@ public class ApplicationReader {
           .replaceLibraryClasses(allClasses.getLibraryClasses())
           .setFlags(flags)
           .setKeepDeclarations(classReader.getKeepDeclarations())
-          .build();
+          .build(timing);
     } catch (ExecutionException e) {
       throw unwrapExecutionException(e);
     } catch (ResourceException e) {

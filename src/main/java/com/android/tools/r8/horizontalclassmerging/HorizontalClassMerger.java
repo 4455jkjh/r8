@@ -21,6 +21,7 @@ import com.android.tools.r8.horizontalclassmerging.code.SyntheticInitializerConv
 import com.android.tools.r8.ir.conversion.LirConverter;
 import com.android.tools.r8.naming.IdentifierMinifier;
 import com.android.tools.r8.profile.art.ArtProfileCompletenessChecker;
+import com.android.tools.r8.profile.art.ArtProfileCompletenessChecker.CompletenessExceptions;
 import com.android.tools.r8.profile.rewriting.ProfileCollectionAdditions;
 import com.android.tools.r8.shaking.FieldAccessInfoCollectionModifier;
 import com.android.tools.r8.shaking.KeepInfoCollection;
@@ -70,15 +71,14 @@ public class HorizontalClassMerger {
     if (shouldRun()) {
       run(runtimeTypeCheckInfo, executorService, timing);
 
-      assert ArtProfileCompletenessChecker.verify(appView);
-
       // Clear type elements cache after IR building.
       appView.getTypeElementFactory().clearTypeElementsCache();
       appView.notifyOptimizationFinishedForTesting();
     } else {
       appView.setHorizontallyMergedClasses(HorizontallyMergedClasses.empty());
     }
-    assert ArtProfileCompletenessChecker.verify(appView);
+    assert ArtProfileCompletenessChecker.verify(
+        appView, CompletenessExceptions.ALLOW_MISSING_UNSAFE_HELPER_METHODS);
     timing.end();
   }
 
@@ -174,7 +174,7 @@ public class HorizontalClassMerger {
 
     // Must rewrite AppInfoWithLiveness before pruning the merged classes, to ensure that allocation
     // sites, fields accesses, etc. are correctly transferred to the target classes.
-    DexApplication newApplication = getNewApplication(mergedClasses);
+    DexApplication newApplication = getNewApplication(mergedClasses, timing);
     if (appView.enableWholeProgramOptimizations()) {
       // Finalize synthetic code.
       transformIncompleteCode(groups, horizontalClassMergerGraphLens, executorService);
@@ -198,7 +198,7 @@ public class HorizontalClassMerger {
             .partialSubCompilationConfiguration
             .asR8()
             .uncommitDexingOutputClasses(appViewWithClassHierarchy);
-      appView.rebuildAppInfo(newApplication);
+      appView.rebuildAppInfo(timing, newApplication);
     } else {
       SyntheticItems syntheticItems = appView.appInfo().getSyntheticItems();
       assert !syntheticItems.hasPendingSyntheticClasses();
@@ -329,14 +329,14 @@ public class HorizontalClassMerger {
     return true;
   }
 
-  private DexApplication getNewApplication(HorizontallyMergedClasses mergedClasses) {
+  private DexApplication getNewApplication(HorizontallyMergedClasses mergedClasses, Timing timing) {
     // We must forcefully remove the merged classes from the application, since we won't run tree
     // shaking before writing the application.
     return appView
         .app()
         .builder()
         .removeProgramClasses(clazz -> mergedClasses.isMergeSource(clazz.getType()))
-        .build();
+        .build(timing);
   }
 
   // TODO(b/270398965): Replace LinkedList.

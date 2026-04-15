@@ -18,11 +18,10 @@ REPOSITORIES = [
     'B-Google=https://maven.google.com/',
     'C-Maven Central=https://repo1.maven.org/maven2/',
     "D-Gradle Plugins=https://plugins.gradle.org/m2/",
-    'E-AndroidX=https://androidx.dev/snapshots/builds/14756173/artifacts/repository',
 ]
 
-ANDROIDX_COLLECTION_VERSION = '1.6.0-SNAPSHOT'
-ANDROIDX_TRACING_VERSION = '2.0.0-SNAPSHOT'
+ANDROIDX_COLLECTION_VERSION = '1.6.0'
+ANDROIDX_TRACING_VERSION = '2.0.0-alpha05'
 ASM_VERSION = '9.9'  # When updating update tools/asmifier.py and Toolhelper as well.
 FASTUTIL_VERSION = '7.2.1'
 KOTLIN_METADATA_VERSION = '2.3.10'
@@ -107,9 +106,12 @@ TEST_DEPENDENCIES = [
     'org.javassist:javassist:{version}'.format(version=JAVASSIST_VERSION),
     'org.mockito:mockito-core:{version}'.format(version=MOCKITO_VERSION),
     'org.testng:testng:{version}'.format(version=TESTNG_VERSION),
-    'org.junit.jupiter:junit-jupiter:{version}'.format(version=JUNIT_JUPITER_VERSION),
-    'org.junit.vintage:junit-vintage-engine:{version}'.format(version=JUNIT_JUPITER_VERSION),
-    'org.junit.platform:junit-platform-launcher:{version}'.format(version=JUNIT_PLATFORM_VERSION),
+    'org.junit.jupiter:junit-jupiter:{version}'.format(
+        version=JUNIT_JUPITER_VERSION),
+    'org.junit.vintage:junit-vintage-engine:{version}'.format(
+        version=JUNIT_JUPITER_VERSION),
+    'org.junit.platform:junit-platform-launcher:{version}'.format(
+        version=JUNIT_PLATFORM_VERSION),
 ]
 
 PLUGIN_DEPENDENCIES = [

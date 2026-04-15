@@ -37,6 +37,7 @@ import com.android.tools.r8.naming.IdentifierNameStringMarker;
 import com.android.tools.r8.naming.RecordInvokeDynamicInvokeCustomRewriter;
 import com.android.tools.r8.optimize.MemberRebindingIdentityLens;
 import com.android.tools.r8.partial.R8PartialSubCompilationConfiguration.R8PartialR8SubCompilationConfiguration;
+import com.android.tools.r8.profile.rewriting.ProfileCollectionAdditions;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
 import com.android.tools.r8.synthesis.SyntheticItems.GlobalSyntheticsStrategy;
 import com.android.tools.r8.utils.InternalOptions;
@@ -197,8 +198,9 @@ public class LirConverter {
     assert !appView.getSyntheticItems().hasPendingSyntheticClasses();
     assert verifyLirOnly(appView);
     appView.testing().exitLirSupportedPhase();
-
     DeadCodeRemover deadCodeRemover = new DeadCodeRemover(appView);
+    ProfileCollectionAdditions profileCollectionAdditions =
+        ProfileCollectionAdditions.create(appView);
     String output = appView.options().isGeneratingClassFiles() ? "CF" : "DEX";
     timing.begin("LIR->IR->" + output);
     CodeRewriterPassCollection codeRewriterPassCollection =
@@ -206,7 +208,7 @@ public class LirConverter {
             AdaptClassStringsRewriter.create(appView),
             new AssumeRemover(appView),
             new ConstResourceNumberRemover(appView),
-            new StoreStoreFenceToInvokeRewriter(appView),
+            new StoreStoreFenceToInvokeRewriter(appView, profileCollectionAdditions),
             new OriginalFieldWitnessRemover(appView),
             // Must run before DexItemBasedConstStringRemover.
             new StringSwitchRemover(appView),
@@ -237,6 +239,7 @@ public class LirConverter {
     timings.forEach(merger::add);
     merger.end();
     timing.end();
+    profileCollectionAdditions.commit(appView);
     // Clear the reference type cache after conversion to reduce memory pressure.
     appView.getTypeElementFactory().clearTypeElementsCache();
     // At this point all code has been mapped according to the graph lens.

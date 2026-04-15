@@ -219,11 +219,11 @@ public class GlobalSyntheticsGenerator {
     // We must run proper D8 conversion as the global synthetics may give rise to additional
     // synthetics as part of their implementation.
     assert appView.getSyntheticItems().hasPendingSyntheticClasses();
-    appView.rebuildAppInfo();
+    appView.rebuildAppInfo(timing);
 
     new PrimaryD8L8IRConverter(appView, Timing.empty()).convert(appView, executorService);
 
-    appView.rebuildAppInfo();
+    appView.rebuildAppInfo(timing);
 
     timing.time(
         "Finalize synthetics",
@@ -239,7 +239,7 @@ public class GlobalSyntheticsGenerator {
       createAllApiStubs(appView, synthesizingContext, executorService);
     }
 
-    appView.rebuildAppInfo();
+    appView.rebuildAppInfo(timing);
   }
 
   private static DexProgramClass createSynthesizingContext(DexItemFactory factory) {

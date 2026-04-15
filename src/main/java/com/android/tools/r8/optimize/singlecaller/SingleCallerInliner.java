@@ -132,7 +132,14 @@ public class SingleCallerInliner {
     while (!waves.isEmpty()) {
       ProgramMethodSet wave = waves.removeFirst();
       OneTimeMethodProcessor methodProcessor =
-          OneTimeMethodProcessor.create(wave, MethodProcessorEventConsumer.empty(), appView);
+          new OneTimeMethodProcessor(
+              MethodProcessorEventConsumer.empty(), appView.createProcessorContext(), wave) {
+
+            @Override
+            public boolean hasWaves() {
+              return true;
+            }
+          };
       methodProcessor.setCallSiteInformation(callSiteInformation);
       methodProcessor.forEachWaveWithExtension(
           (method, methodProcessingContext) -> {
@@ -158,6 +165,7 @@ public class SingleCallerInliner {
           },
           appView.options().getThreadingModule(),
           executorService);
+      inliner.unsetFinalFlagFromInlinedFinalFields();
     }
   }
 
@@ -248,6 +256,11 @@ public class SingleCallerInliner {
         AppView<AppInfoWithLiveness> appView, ProgramMethodMap<ProgramMethod> singleCallerMethods) {
       super(appView);
       this.singleCallerMethods = singleCallerMethods;
+    }
+
+    @Override
+    protected void scheduleWaveDone() {
+      // Intentionally empty.
     }
 
     @Override

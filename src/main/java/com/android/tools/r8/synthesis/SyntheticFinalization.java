@@ -184,7 +184,7 @@ public class SyntheticFinalization {
         appView
             .appInfo()
             .rebuildWithCommittedItems(result.commit)
-            .rebuildWithMainDexInfo(result.mainDexInfo));
+            .rebuildWithMainDexInfo(result.mainDexInfo, timing));
     if (result.lens != null) {
       appView.rewriteWithD8Lens(result.lens, timing);
     }
@@ -201,7 +201,7 @@ public class SyntheticFinalization {
         appView
             .appInfo()
             .rebuildWithCommittedItems(result.commit)
-            .rebuildWithMainDexInfo(result.mainDexInfo));
+            .rebuildWithMainDexInfo(result.mainDexInfo, timing));
     if (result.lens != null) {
       appView.rewriteWithLens(result.lens, executorService, timing);
     }
@@ -214,7 +214,7 @@ public class SyntheticFinalization {
       throws ExecutionException {
     appView.options().testing.checkDeterminism(appView);
     Result result = appView.getSyntheticItems().computeFinalSynthetics(appView, timing);
-    appView.setAppInfo(appView.appInfo().rebuildWithMainDexInfo(result.mainDexInfo));
+    appView.setAppInfo(appView.appInfo().rebuildWithMainDexInfo(result.mainDexInfo, timing));
     if (result.lens != null) {
       appView.rewriteWithLensAndApplication(
           result.lens, result.commit.getApplication().asDirect(), executorService, timing);
@@ -458,7 +458,7 @@ public class SyntheticFinalization {
           }
         }
         assert newProgramClasses.size() < application.classes().size();
-        application = application.builder().replaceProgramClasses(newProgramClasses).build();
+        application = application.builder().replaceProgramClasses(newProgramClasses).build(timing);
       }
 
       // Assert that the non-representatives have been removed from the app.
@@ -469,7 +469,7 @@ public class SyntheticFinalization {
       DexApplication.Builder<?, ?> builder = application.builder();
       treeFixer.fixupClasses(deduplicatedClasses);
       builder.replaceProgramClasses(treeFixer.fixupClasses(application.classes()));
-      application = builder.build();
+      application = builder.build(timing);
       timing.end();
     }
 

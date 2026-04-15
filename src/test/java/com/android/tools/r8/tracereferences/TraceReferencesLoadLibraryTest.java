@@ -109,47 +109,49 @@ public class TraceReferencesLoadLibraryTest extends TestBase {
 
   @Test
   public void testSingleLoadLibrary() throws Throwable {
-    NativeReferencesTestingConsumer NativeReferencesTestingConsumer =
+    NativeReferencesTestingConsumer nativeReferencesTestingConsumer =
         new NativeReferencesTestingConsumer();
     testForTraceReferences()
         .addLibraryFiles(ToolHelper.getAndroidJar(AndroidApiLevel.P))
         .addSourceFiles(input1Jar)
         .setConsumer(TraceReferencesConsumer.emptyConsumer())
-        .setNativeReferencesConsumer(NativeReferencesTestingConsumer)
+        .setNativeReferencesConsumer(nativeReferencesTestingConsumer)
         .trace();
 
-    NativeReferencesTestingConsumer.expectLoadLibrary("library1", input1MethodOrigin).thatsAll();
+    nativeReferencesTestingConsumer.expectLoadLibrary("library1", input1MethodOrigin).thatsAll();
   }
 
   @Test
   public void testMultipleLoadLibrary() throws Throwable {
-    NativeReferencesTestingConsumer NativeReferencesTestingConsumer =
+    NativeReferencesTestingConsumer nativeReferencesTestingConsumer =
         new NativeReferencesTestingConsumer();
     testForTraceReferences()
         .addLibraryFiles(ToolHelper.getAndroidJar(AndroidApiLevel.P))
         .addSourceFiles(input2Jar)
         .setConsumer(TraceReferencesConsumer.emptyConsumer())
-        .setNativeReferencesConsumer(NativeReferencesTestingConsumer)
+        .setNativeReferencesConsumer(nativeReferencesTestingConsumer)
         .trace();
 
-    NativeReferencesTestingConsumer.expectLoadLibrary("library1", input2Method1Origin)
+    nativeReferencesTestingConsumer
+        .expectLoadLibrary("library1", input2Method1Origin)
         .expectLoadLibrary("library2", input2Method2Origin)
         .thatsAll();
   }
 
   @Test
   public void testMultipleLoadLibraryDuplicate() throws Throwable {
-    NativeReferencesTestingConsumer NativeReferencesTestingConsumer =
+    NativeReferencesTestingConsumer nativeReferencesTestingConsumer =
         new NativeReferencesTestingConsumer();
     testForTraceReferences()
         .addLibraryFiles(ToolHelper.getAndroidJar(AndroidApiLevel.P))
         .addSourceFiles(input1Jar)
         .addSourceFiles(input2Jar)
         .setConsumer(TraceReferencesConsumer.emptyConsumer())
-        .setNativeReferencesConsumer(NativeReferencesTestingConsumer)
+        .setNativeReferencesConsumer(nativeReferencesTestingConsumer)
         .trace();
 
-    NativeReferencesTestingConsumer.expectLoadLibrary("library1", input1MethodOrigin)
+    nativeReferencesTestingConsumer
+        .expectLoadLibrary("library1", input1MethodOrigin)
         .expectLoadLibrary("library1", input2Method1Origin)
         .expectLoadLibrary("library2", input2Method2Origin)
         .thatsAll();
@@ -157,37 +159,38 @@ public class TraceReferencesLoadLibraryTest extends TestBase {
 
   @Test
   public void testUnknownLoadLibraryCall() throws Throwable {
-    NativeReferencesTestingConsumer NativeReferencesTestingConsumer =
+    NativeReferencesTestingConsumer nativeReferencesTestingConsumer =
         new NativeReferencesTestingConsumer();
     testForTraceReferences()
         .addLibraryFiles(ToolHelper.getAndroidJar(AndroidApiLevel.P))
         .addSourceFiles(loadUnknown1Jar)
         .setConsumer(TraceReferencesConsumer.emptyConsumer())
-        .setNativeReferencesConsumer(NativeReferencesTestingConsumer)
+        .setNativeReferencesConsumer(nativeReferencesTestingConsumer)
         .trace();
 
-    NativeReferencesTestingConsumer.expectLoadLibraryAny(loadUnknown1MethodOrigin).thatsAll();
+    nativeReferencesTestingConsumer.expectLoadLibraryAny(loadUnknown1MethodOrigin).thatsAll();
   }
 
   @Test
   public void testUnknownLoadLibraryCallMultiple() throws Throwable {
-    NativeReferencesTestingConsumer NativeReferencesTestingConsumer =
+    NativeReferencesTestingConsumer nativeReferencesTestingConsumer =
         new NativeReferencesTestingConsumer();
     testForTraceReferences()
         .addLibraryFiles(ToolHelper.getAndroidJar(AndroidApiLevel.P))
         .addSourceFiles(loadUnknown2Jar)
         .setConsumer(TraceReferencesConsumer.emptyConsumer())
-        .setNativeReferencesConsumer(NativeReferencesTestingConsumer)
+        .setNativeReferencesConsumer(nativeReferencesTestingConsumer)
         .trace();
 
-    NativeReferencesTestingConsumer.expectLoadLibraryAny(loadUnknown2Method1Origin)
+    nativeReferencesTestingConsumer
+        .expectLoadLibraryAny(loadUnknown2Method1Origin)
         .expectLoadLibraryAny(loadUnknown2Method2Origin)
         .thatsAll();
   }
 
   @Test
   public void testUnknownLoadLibraryAll() throws Throwable {
-    NativeReferencesTestingConsumer NativeReferencesTestingConsumer =
+    NativeReferencesTestingConsumer nativeReferencesTestingConsumer =
         new NativeReferencesTestingConsumer();
     testForTraceReferences()
         .addLibraryFiles(ToolHelper.getAndroidJar(AndroidApiLevel.P))
@@ -196,10 +199,11 @@ public class TraceReferencesLoadLibraryTest extends TestBase {
         .addSourceFiles(loadUnknown1Jar)
         .addSourceFiles(loadUnknown2Jar)
         .setConsumer(TraceReferencesConsumer.emptyConsumer())
-        .setNativeReferencesConsumer(NativeReferencesTestingConsumer)
+        .setNativeReferencesConsumer(nativeReferencesTestingConsumer)
         .trace();
 
-    NativeReferencesTestingConsumer.expectLoadLibrary("library1", input1MethodOrigin)
+    nativeReferencesTestingConsumer
+        .expectLoadLibrary("library1", input1MethodOrigin)
         .expectLoadLibrary("library1", input2Method1Origin)
         .expectLoadLibrary("library2", input2Method2Origin)
         .expectLoadLibraryAny(loadUnknown1MethodOrigin)

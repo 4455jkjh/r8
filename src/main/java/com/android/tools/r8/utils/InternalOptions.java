@@ -109,6 +109,7 @@ import com.android.tools.r8.shaking.ProguardConfigurationRule;
 import com.android.tools.r8.synthesis.SyntheticItemsOptions;
 import com.android.tools.r8.synthesis.SyntheticNaming.SyntheticKind;
 import com.android.tools.r8.threading.ThreadingModule;
+import com.android.tools.r8.tracereferences.TraceReferencesNativeReferencesConsumer;
 import com.android.tools.r8.tracereferences.TraceReferencesOptions;
 import com.android.tools.r8.utils.IROrdering.IdentityIROrdering;
 import com.android.tools.r8.utils.IROrdering.NondeterministicIROrdering;
@@ -502,7 +503,7 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
   public boolean enableEnumSwitchMapRemoval = true;
   public final OutlineOptions outline = new OutlineOptions();
   public boolean enableInitializedClassesInInstanceMethodsAnalysis = true;
-  public boolean enableRedundantFieldLoadElimination = true;
+  public boolean enableRedundantLoadAndStoreElimination = true;
   // TODO(b/138917494): Disable until we have numbers on potential performance penalties.
   public boolean enableRedundantConstNumberOptimization = false;
   public boolean enableLoopUnrolling = true;
@@ -1419,6 +1420,8 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
   // of the resulting program must be reported to the consumer.
   public GraphConsumer mainDexKeptGraphConsumer = null;
 
+  public TraceReferencesNativeReferencesConsumer nativeReferencesConsumer = null;
+
   // If null, no desugaring dependencies need to be provided. If non-null, each dependency between
   // code objects needed for correct desugaring needs to be provided to the consumer.
   public DesugarGraphConsumer desugarGraphConsumer = null;
@@ -1924,6 +1927,9 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
     public boolean enableConstructorInliningWithFinalFields =
         parseSystemPropertyOrDefault(
             "com.android.tools.r8.enableConstructorInliningWithFinalFields", true);
+    public boolean enableConstructorInliningWithFinalFieldsPreAndroidT =
+        parseSystemPropertyOrDefault(
+            "com.android.tools.r8.enableConstructorInliningWithFinalFieldsPreAndroidT", false);
     public boolean skipStoreStoreFenceInConstructorInlining =
         parseSystemPropertyOrDefault(
             "com.android.tools.r8.skipStoreStoreFenceInConstructorInlining", false);

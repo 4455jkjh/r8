@@ -98,7 +98,7 @@ public class AtomicFieldUpdaterOptimizer extends CodeRewriterPass<AppInfoWithCla
     var it = code.instructionListIterator();
     var context =
         new OptimizationContext(
-            methodProcessor, methodProcessingContext, code, it, info, atomicUpdaterFields);
+            methodProcessor, methodProcessingContext, code, it, atomicUpdaterFields);
     var changed = false;
     while (it.hasNext()) {
       var next = it.nextUntil(Instruction::isInvokeVirtual);
@@ -359,19 +359,9 @@ public class AtomicFieldUpdaterOptimizer extends CodeRewriterPass<AppInfoWithCla
     insertInstructionsBeforeCurrentInstruction(context.it, instructions);
 
     // Call underlying unsafe method.
-    DexMethod unsafeCompareAndSetMethod =
-        dexItemFactory.createMethod(
-            dexItemFactory.unsafeType,
-            dexItemFactory.createProto(
-                dexItemFactory.booleanType,
-                dexItemFactory.objectType,
-                dexItemFactory.longType,
-                dexItemFactory.objectType,
-                dexItemFactory.objectType),
-            "compareAndSwapObject");
     Instruction unsafeCompareAndSet =
         new InvokeVirtual(
-            unsafeCompareAndSetMethod,
+            dexItemFactory.sunMiscUnsafeMethods.compareAndSwapObject,
             invoke.outValue(),
             ImmutableList.of(
                 unsafeInstance.outValue(),
@@ -417,7 +407,7 @@ public class AtomicFieldUpdaterOptimizer extends CodeRewriterPass<AppInfoWithCla
     // Call underlying unsafe method.
     DexMethod unsafeGetMethod =
         dexItemFactory.createMethod(
-            dexItemFactory.unsafeType,
+            dexItemFactory.sunMiscUnsafeType,
             dexItemFactory.createProto(
                 dexItemFactory.objectType, dexItemFactory.objectType, dexItemFactory.longType),
             "getObjectVolatile");
@@ -465,7 +455,7 @@ public class AtomicFieldUpdaterOptimizer extends CodeRewriterPass<AppInfoWithCla
     // Call underlying unsafe method.
     DexMethod unsafeSetMethod =
         dexItemFactory.createMethod(
-            dexItemFactory.unsafeType,
+            dexItemFactory.sunMiscUnsafeType,
             dexItemFactory.createProto(
                 dexItemFactory.voidType,
                 dexItemFactory.objectType,
@@ -505,8 +495,16 @@ public class AtomicFieldUpdaterOptimizer extends CodeRewriterPass<AppInfoWithCla
           createNullCheckWithClassCastException(context, position, resolvedHolder.value));
     }
 
-    Instruction unsafeInstance = createUnsafeGet(context, position);
-    instructions.add(unsafeInstance);
+    boolean isGetAndSetDefined =
+        !appView.options().isGeneratingDex()
+            || appView.options().getMinApiLevel().isGreaterThanOrEqualTo(AndroidApiLevel.N);
+    Instruction unsafeInstance;
+    if (isGetAndSetDefined) {
+      unsafeInstance = createUnsafeGet(context, position);
+      instructions.add(unsafeInstance);
+    } else {
+      unsafeInstance = null;
+    }
 
     Instruction offset =
         createOffsetGet(context, position, resolvedUpdater.updaterFieldInfo.offsetField);
@@ -517,13 +515,10 @@ public class AtomicFieldUpdaterOptimizer extends CodeRewriterPass<AppInfoWithCla
 
     // Call underlying unsafe method directly or backport if necessary.
     Instruction getAndSet;
-    boolean isGetAndSetDefined =
-        !appView.options().isGeneratingDex()
-            || appView.options().getMinApiLevel().isGreaterThanOrEqualTo(AndroidApiLevel.N);
     if (isGetAndSetDefined) {
       DexMethod unsafeGetAndSetMethod =
           dexItemFactory.createMethod(
-              dexItemFactory.unsafeType,
+              dexItemFactory.sunMiscUnsafeType,
               dexItemFactory.createProto(
                   dexItemFactory.objectType,
                   dexItemFactory.objectType,
@@ -540,13 +535,12 @@ public class AtomicFieldUpdaterOptimizer extends CodeRewriterPass<AppInfoWithCla
                   offset.outValue(),
                   newValueValue));
     } else {
-      DexMethod backportedGetAndSet = context.info.getGetAndSetMethod();
+      DexMethod backportedGetAndSet = appView.getSyntheticUnsafeClass().getGetAndSetMethod();
       getAndSet =
           new InvokeStatic(
               backportedGetAndSet,
               invoke.outValue(),
               ImmutableList.of(
-                  unsafeInstance.outValue(),
                   resolvedHolder.value,
                   offset.outValue(),
                   newValueValue));
@@ -572,8 +566,7 @@ public class AtomicFieldUpdaterOptimizer extends CodeRewriterPass<AppInfoWithCla
         .methodProcessor
         .getEventConsumer()
         .acceptUnsafeInstanceContext(
-            context.info.initializationMethodsForProfile(),
-            context.info.getUnsafeClass(),
+            appView.getSyntheticUnsafeClass(),
             offsetField.holder.asProgramClass(appView).getProgramClassInitializer());
     return offset;
   }
@@ -605,19 +598,20 @@ public class AtomicFieldUpdaterOptimizer extends CodeRewriterPass<AppInfoWithCla
    * Returns an instruction to retrieve an unsafe instance and updates the profile correspondingly.
    */
   private Instruction createUnsafeGet(OptimizationContext context, Position position) {
-    assert context.info.getUnsafeInstanceField().type.isIdenticalTo(dexItemFactory.unsafeType);
+    assert appView
+        .getSyntheticUnsafeClass()
+        .getInstanceField()
+        .getType()
+        .isIdenticalTo(dexItemFactory.sunMiscUnsafeType);
     Instruction unsafeInstance =
         new StaticGet(
-            context.code.createValue(dexItemFactory.unsafeType.toTypeElement(appView)),
-            context.info.getUnsafeInstanceField());
+            context.code.createValue(dexItemFactory.sunMiscUnsafeType.toTypeElement(appView)),
+            appView.getSyntheticUnsafeClass().getInstanceField());
     unsafeInstance.setPosition(position);
     context
         .methodProcessor
         .getEventConsumer()
-        .acceptUnsafeInstanceContext(
-            context.info.initializationMethodsForProfile(),
-            context.info.getUnsafeClass(),
-            context.code.context());
+        .acceptUnsafeInstanceContext(appView.getSyntheticUnsafeClass(), context.code.context());
     return unsafeInstance;
   }
 
@@ -663,7 +657,6 @@ public class AtomicFieldUpdaterOptimizer extends CodeRewriterPass<AppInfoWithCla
     final MethodProcessingContext methodProcessingContext;
     final IRCode code;
     final IRCodeInstructionListIterator it;
-    final AtomicFieldUpdaterInstrumentorInfo info;
     final Map<DexField, AtomicFieldUpdaterInfo> instrumentations;
 
     public OptimizationContext(
@@ -671,13 +664,11 @@ public class AtomicFieldUpdaterOptimizer extends CodeRewriterPass<AppInfoWithCla
         MethodProcessingContext methodProcessingContext,
         IRCode code,
         IRCodeInstructionListIterator it,
-        AtomicFieldUpdaterInstrumentorInfo info,
         Map<DexField, AtomicFieldUpdaterInfo> instrumentations) {
       this.methodProcessor = methodProcessor;
       this.methodProcessingContext = methodProcessingContext;
       this.code = code;
       this.it = it;
-      this.info = info;
       this.instrumentations = instrumentations;
     }
   }

@@ -309,7 +309,7 @@ public class CfCodePrinter extends CfPrinter {
           .put("Ljava/lang/AutoCloseable;", "autoCloseableType")
           .build();
 
-  private String dexType(DexType type) {
+  protected String dexType(DexType type) {
     String descriptor = type.toDescriptorString();
     String field = knownTypeFields.get(descriptor);
     if (field != null) {

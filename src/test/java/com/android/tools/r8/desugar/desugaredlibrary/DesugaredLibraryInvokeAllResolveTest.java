@@ -123,7 +123,7 @@ public class DesugaredLibraryInvokeAllResolveTest extends DesugaredLibraryTestBa
             .toDirectSingleThreadedForTesting()
             .builder()
             .replaceLibraryClasses(libHolder.libraryClasses())
-            .build();
+            .build(Timing.empty());
     AppInfoWithClassHierarchy appInfo =
         AppView.createForD8(
                 AppInfo.createInitialAppInfo(

@@ -8,6 +8,7 @@ import com.android.tools.r8.graph.DexApplication;
 import com.android.tools.r8.graph.DexProgramClass;
 import com.android.tools.r8.graph.DexType;
 import com.android.tools.r8.utils.InternalOptions;
+import com.android.tools.r8.utils.timing.Timing;
 import java.util.ArrayList;
 import java.util.IdentityHashMap;
 import java.util.List;
@@ -26,7 +27,7 @@ public class L8TreePruner {
     this.options = options;
   }
 
-  public DexApplication prune(DexApplication app) {
+  public DexApplication prune(DexApplication app, Timing timing) {
     Set<DexType> maintainType =
         options
             .getLibraryDesugaringOptions()
@@ -60,6 +61,6 @@ public class L8TreePruner {
     typeMap.clear();
     // TODO(b/134732760): Would be nice to add pruned type to the appView removedClasses instead
     // of just doing nothing with it.
-    return app.builder().replaceProgramClasses(toKeep).build();
+    return app.builder().replaceProgramClasses(toKeep).build(timing);
   }
 }

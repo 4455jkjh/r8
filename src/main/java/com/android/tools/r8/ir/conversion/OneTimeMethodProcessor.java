@@ -24,7 +24,7 @@ public class OneTimeMethodProcessor extends MethodProcessorWithWave {
   private final MethodProcessorEventConsumer eventConsumer;
   private final ProcessorContext processorContext;
 
-  private OneTimeMethodProcessor(
+  public OneTimeMethodProcessor(
       MethodProcessorEventConsumer eventConsumer,
       ProcessorContext processorContext,
       ProgramMethodSet wave) {

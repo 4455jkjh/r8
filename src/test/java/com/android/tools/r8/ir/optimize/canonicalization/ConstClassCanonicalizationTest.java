@@ -97,6 +97,7 @@ public class ConstClassCanonicalizationTest extends TestBase {
   private static final int CANONICALIZED_MAIN_COUNT = 1;
   private static final int CANONICALIZED_OUTER_COUNT = 1;
   private static final int CANONICALIZED_INNER_COUNT = 1;
+  private static final int PARTIALLY_OPTIMIZED_INNER_COUNT = 2;
 
   @Parameterized.Parameters(name = "{0}, isCompat: {1}")
   public static List<Object[]> data() {
@@ -148,7 +149,7 @@ public class ConstClassCanonicalizationTest extends TestBase {
               MethodSubject mainMethod = main.mainMethod();
               assertThat(mainMethod, isPresent());
               assertEquals(
-                  3,
+                  1,
                   mainMethod.streamInstructions().filter(InstructionSubject::isConstClass).count());
             });
   }
@@ -203,8 +204,8 @@ public class ConstClassCanonicalizationTest extends TestBase {
             .run(parameters.getRuntime(), MAIN)
             .assertSuccessWithOutput(JAVA_OUTPUT),
         CANONICALIZED_MAIN_COUNT,
-        ORIGINAL_OUTER_COUNT,
-        ORIGINAL_INNER_COUNT);
+        CANONICALIZED_OUTER_COUNT,
+        PARTIALLY_OPTIMIZED_INNER_COUNT);
   }
 
   @Test

@@ -8,6 +8,7 @@ import com.android.tools.r8.graph.AppInfoWithClassHierarchy;
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.DexType;
 import com.android.tools.r8.utils.timing.Timing;
+import java.util.concurrent.ExecutionException;
 import java.util.function.Predicate;
 
 public class Tracer {
@@ -28,7 +29,8 @@ public class Tracer {
   public void run(
       TraceReferencesConsumer consumer,
       TraceReferencesNativeReferencesConsumer nativeReferencesConsumer,
-      Timing timing) {
+      Timing timing)
+      throws ExecutionException {
     UseCollector useCollector =
         new UseCollector(appView, consumer, nativeReferencesConsumer, diagnostics, targetPredicate);
     useCollector.traceClasses(appView.appInfo().classes(), timing);

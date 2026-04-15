@@ -6,6 +6,7 @@ package com.android.tools.r8;
 import static com.android.tools.r8.TestCondition.compilers;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeFalse;
 
 import com.android.tools.r8.TestCondition.Runtime;
 import com.android.tools.r8.TestCondition.RuntimeSet;
@@ -174,8 +175,8 @@ public abstract class R8RunArtTestsTest extends TestBase {
           .put("975-iface-private", AndroidApiLevel.N)
           .build();
 
-  // Tests that timeout when run with Art.
-  private static final Multimap<String, TestCondition> timeoutOrSkipRunWithArt =
+  // Tests that timeout or flake when run with Art.
+  private static final Multimap<String, TestCondition> skipRunWithArt =
       new ImmutableListMultimap.Builder<String, TestCondition>()
           // Loops on art - timeout.
           .put(
@@ -196,12 +197,6 @@ public abstract class R8RunArtTestsTest extends TestBase {
           // TODO(b/197079442): Triage - fails with "java.lang.NoSuchMethodException:
           //  org.apache.harmony.dalvik.ddmc.DdmVmInternal.enableRecentAllocations [boolean]"
           .put("145-alloc-tracking-stress", fromAndroidS)
-          .build();
-
-  // Tests that are flaky with the Art version we currently use.
-  // TODO(zerny): Amend flaky tests with an expected flaky result to track issues.
-  private static Multimap<String, TestCondition> flakyRunWithArt =
-      new ImmutableListMultimap.Builder<String, TestCondition>()
           // Sometime output also appends "Actually slept about X msec..."
           // So far only seen on the 5.1.1 runtime.
           .put("002-sleep", TestCondition.match(TestCondition.runtimes(DexVm.Version.V5_1_1)))
@@ -227,12 +222,14 @@ public abstract class R8RunArtTestsTest extends TestBase {
           .put("053-wait-some", TestCondition.any())
           // Failed on buildbot with: terminate called after throwing an instance
           // of '__gnu_cxx::recursive_init_error'
-          .put("096-array-copy-concurrent-gc",
+          .put(
+              "096-array-copy-concurrent-gc",
               TestCondition.match(TestCondition.runtimesUpTo(DexVm.Version.V4_4_4)))
           // Failing with: expected "second > first =[tru]e" was "second > first =[fals]e"
           .put("098-ddmc", TestCondition.match(TestCondition.runtimes(DexVm.Version.V6_0_1)))
           // Sometimes fails with out of memory on Dalvik.
-          .put("114-ParallelGC",
+          .put(
+              "114-ParallelGC",
               TestCondition.match(TestCondition.runtimesUpTo(DexVm.Version.V4_4_4)))
           // Seen crash: currently no more information
           .put("144-static-field-sigquit", TestCondition.any())
@@ -1115,6 +1112,10 @@ public abstract class R8RunArtTestsTest extends TestBase {
                   TestCondition.tools(DexTool.DX, DexTool.NONE), TestCondition.R8_COMPILER))
           // Produces wrong output when compiled in release mode, which we cannot express.
           .put("015-switch", TestCondition.match(TestCondition.runtimes(DexVm.Version.V4_0_4)))
+          .put("074-gc-thrash", TestCondition.match(TestCondition.runtimes(DexVm.Version.V4_0_4)))
+          .put(
+              "121-simple-suspend-check",
+              TestCondition.match(TestCondition.runtimes(DexVm.Version.V4_4_4)))
           .build();
 
   public static List<String> requireInliningToBeDisabled =
@@ -1448,10 +1449,6 @@ public abstract class R8RunArtTestsTest extends TestBase {
           collectTestsMatchingConditions(
               dexTool, compilerUnderTest, version, compilationMode, failingWithCompiler);
 
-      // Collect the tests that are flaky.
-      skipArt.addAll(collectTestsMatchingConditions(
-              dexTool, compilerUnderTest, version, compilationMode, flakyRunWithArt));
-
       // Collect tests that has no input:
       if (dexTool == DexTool.NONE) {
         skipTest.addAll(noInputJar);
@@ -1468,7 +1465,7 @@ public abstract class R8RunArtTestsTest extends TestBase {
       // Collect the test that we should skip in this configuration.
       skipArt.addAll(
           collectTestsMatchingConditions(
-              dexTool, compilerUnderTest, version, compilationMode, timeoutOrSkipRunWithArt));
+              dexTool, compilerUnderTest, version, compilationMode, skipRunWithArt));
 
       // Collect the tests failing to run in Art (we still run R8/D8 on these).
       Set<String> failsWithArt =
@@ -1853,14 +1850,9 @@ public abstract class R8RunArtTestsTest extends TestBase {
       }
     }
 
-    if (specification.skipTest) {
-      return;
-    }
+    assumeFalse(specification.skipTest);
 
-    if (specification.nativeLibrary != null && dexVm.getKind() == Kind.TARGET) {
-      // JNI tests not yet supported for devices
-      return;
-    }
+    assumeFalse(specification.nativeLibrary != null && dexVm.getKind() == Kind.TARGET);
 
     File[] inputFiles;
     if (toolchain == DexTool.NONE) {

@@ -90,7 +90,8 @@ public class ApplyMappingAfterHorizontalMergingFieldTest extends TestBase {
     R8TestCompileResult libraryResult =
         testForR8(parameters.getBackend())
             .addProgramClasses(LIBRARY_CLASSES)
-            .addOptionsModification(options -> options.enableRedundantFieldLoadElimination = false)
+            .addOptionsModification(
+                options -> options.enableRedundantLoadAndStoreElimination = false)
             .addKeepMainRule(LibraryMain.class)
             .setMinApi(parameters)
             .compile();

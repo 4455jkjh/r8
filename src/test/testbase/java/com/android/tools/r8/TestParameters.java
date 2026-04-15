@@ -143,6 +143,10 @@ public class TestParameters {
     return isDexRuntime() && getApiLevel().isGreaterThanOrEqualTo(AndroidApiLevel.N);
   }
 
+  public boolean canUseUnsafeStoreFence() {
+    return isDexRuntime() && getApiLevel().isGreaterThanOrEqualTo(AndroidApiLevel.N);
+  }
+
   public boolean canUseSubTypesInFilledNewArray() {
     return isDexRuntime() && getApiLevel().isGreaterThan(AndroidApiLevel.U);
   }

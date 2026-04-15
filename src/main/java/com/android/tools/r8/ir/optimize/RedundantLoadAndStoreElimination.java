@@ -45,7 +45,7 @@ import com.android.tools.r8.ir.code.Value;
 import com.android.tools.r8.ir.conversion.MethodProcessor;
 import com.android.tools.r8.ir.conversion.passes.CodeRewriterPass;
 import com.android.tools.r8.ir.conversion.passes.result.CodeRewriterResult;
-import com.android.tools.r8.ir.optimize.RedundantFieldLoadAndStoreElimination.RedundantFieldLoadAndStoreEliminationOnCode.ExistingValue;
+import com.android.tools.r8.ir.optimize.RedundantLoadAndStoreElimination.RedundantFieldLoadAndStoreEliminationOnCode.ExistingValue;
 import com.android.tools.r8.ir.optimize.info.field.InstanceFieldInitializationInfoCollection;
 import com.android.tools.r8.ir.optimize.info.initializer.InstanceInitializerInfo;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
@@ -65,29 +65,30 @@ import java.util.Map.Entry;
 import java.util.Set;
 
 /**
- * Eliminate redundant field loads.
+ * Eliminate redundant loads and stores.
  *
  * <p>Simple algorithm that goes through all blocks in one pass in topological order and propagates
- * active field sets across control-flow edges where the target has only one predecessor.
+ * active load/store sets across control-flow edges where the target has only one predecessor.
  */
-public class RedundantFieldLoadAndStoreElimination extends CodeRewriterPass<AppInfo> {
+public class RedundantLoadAndStoreElimination extends CodeRewriterPass<AppInfo> {
 
   private static final int MAX_CAPACITY = 10000;
   private static final int MIN_CAPACITY_PER_BLOCK = 50;
 
-  public RedundantFieldLoadAndStoreElimination(AppView<?> appView) {
+  public RedundantLoadAndStoreElimination(AppView<?> appView) {
     super(appView);
   }
 
   @Override
   protected String getRewriterId() {
-    return "RedundantFieldLoadAndStoreElimination";
+    return "RedundantLoadAndStoreElimination";
   }
 
   @Override
   protected boolean shouldRewriteCode(IRCode code, MethodProcessor methodProcessor) {
-    return appView.options().enableRedundantFieldLoadElimination
+    return appView.options().enableRedundantLoadAndStoreElimination
         && (code.metadata().mayHaveArrayGet()
+            || code.metadata().mayHaveConstClass()
             || code.metadata().mayHaveFieldInstruction()
             || code.metadata().mayHaveInitClass());
   }
@@ -97,7 +98,7 @@ public class RedundantFieldLoadAndStoreElimination extends CodeRewriterPass<AppI
     return new RedundantFieldLoadAndStoreEliminationOnCode(code).run();
   }
 
-  private interface FieldValue {
+  private interface ExistingOrMaterializableValue {
 
     default ExistingValue asExistingValue() {
       return null;
@@ -259,7 +260,7 @@ public class RedundantFieldLoadAndStoreElimination extends CodeRewriterPass<AppI
       assert !appView.options().debug;
     }
 
-    class ExistingValue implements FieldValue {
+    class ExistingValue implements ExistingOrMaterializableValue {
 
       private final Value value;
 
@@ -294,7 +295,7 @@ public class RedundantFieldLoadAndStoreElimination extends CodeRewriterPass<AppI
       }
     }
 
-    private class MaterializableValue implements FieldValue {
+    private class MaterializableValue implements ExistingOrMaterializableValue {
 
       private final SingleValue value;
 
@@ -318,7 +319,7 @@ public class RedundantFieldLoadAndStoreElimination extends CodeRewriterPass<AppI
         DexItemFactory dexItemFactory = appView.dexItemFactory();
         if (value.isSingleStringValue() || value.isSingleDexItemBasedStringValue()) {
           return dexItemFactory.stringType.toTypeElement(
-              RedundantFieldLoadAndStoreElimination.this.appView, Nullability.definitelyNotNull());
+              RedundantLoadAndStoreElimination.this.appView, Nullability.definitelyNotNull());
         }
         if (value.isSingleFieldValue()) {
           return value.asSingleFieldValue().getField().getTypeElement(appView);
@@ -394,6 +395,8 @@ public class RedundantFieldLoadAndStoreElimination extends CodeRewriterPass<AppI
               }
             } else if (instruction.isInitClass()) {
               handleInitClass(it, instruction.asInitClass());
+            } else if (instruction.isConstClass()) {
+              handleConstClass(it, instruction.asConstClass());
             } else if (instruction.isMonitor()) {
               if (instruction.isMonitorEnter()) {
                 killAllNonFinalActiveFields();
@@ -428,7 +431,6 @@ public class RedundantFieldLoadAndStoreElimination extends CodeRewriterPass<AppI
                       || instruction.isAssume()
                       || instruction.isBinop()
                       || instruction.isCheckCast()
-                      || instruction.isConstClass()
                       || instruction.isConstMethodHandle()
                       || instruction.isConstMethodType()
                       || instruction.isConstNumber()
@@ -604,6 +606,23 @@ public class RedundantFieldLoadAndStoreElimination extends CodeRewriterPass<AppI
       }
     }
 
+    private void handleConstClass(
+        InstructionListIterator instructionIterator,
+        com.android.tools.r8.ir.code.ConstClass constClass) {
+      if (constClass.outValue().hasLocalInfo()) {
+        return;
+      }
+
+      DexType type = constClass.getType();
+      ExistingOrMaterializableValue replacement = activeState.getConstClassValue(type);
+      if (replacement != null) {
+        replacement.eliminateRedundantRead(instructionIterator, constClass);
+        return;
+      }
+
+      activeState.putConstClassValue(type, new ExistingValue(constClass.outValue()));
+    }
+
     private boolean markClassAsInitialized(DexType type) {
       return activeState.markClassAsInitialized(type);
     }
@@ -637,7 +656,7 @@ public class RedundantFieldLoadAndStoreElimination extends CodeRewriterPass<AppI
       Value array = arrayGet.array().getAliasedValue();
       Value index = arrayGet.index().getAliasedValue();
       ArraySlot arraySlot = ArraySlot.create(array, index, arrayGet.getMemberType());
-      FieldValue replacement = activeState.getArraySlotValue(arraySlot);
+      ExistingOrMaterializableValue replacement = activeState.getArraySlotValue(arraySlot);
       if (replacement != null) {
         TypeElement outType = arrayGet.outValue().getType();
         if (replacement.getType(appView, outType).lessThanOrEqual(outType, appView)) {
@@ -684,7 +703,7 @@ public class RedundantFieldLoadAndStoreElimination extends CodeRewriterPass<AppI
 
       Value object = instanceGet.object().getAliasedValue();
       FieldAndObject fieldAndObject = new FieldAndObject(field.getReference(), object);
-      FieldValue replacement = activeState.getInstanceFieldValue(fieldAndObject);
+      ExistingOrMaterializableValue replacement = activeState.getInstanceFieldValue(fieldAndObject);
       if (replacement != null) {
         if (isRedundantFieldLoadEliminationAllowed(field)) {
           replacement.eliminateRedundantRead(it, instanceGet);
@@ -775,7 +794,8 @@ public class RedundantFieldLoadAndStoreElimination extends CodeRewriterPass<AppI
         return;
       }
 
-      FieldValue replacement = activeState.getStaticFieldValue(field.getReference());
+      ExistingOrMaterializableValue replacement =
+          activeState.getStaticFieldValue(field.getReference());
       if (replacement != null) {
         replacement.eliminateRedundantRead(instructionIterator, staticGet);
         return;
@@ -785,7 +805,7 @@ public class RedundantFieldLoadAndStoreElimination extends CodeRewriterPass<AppI
       killNonFinalActiveFields(staticGet);
       clearMostRecentStaticFieldWrite(staticGet, field);
 
-      FieldValue value = new ExistingValue(staticGet.value());
+      ExistingOrMaterializableValue value = new ExistingValue(staticGet.value());
       if (field.isFinalOrEffectivelyFinal(appView)) {
         activeState.putFinalStaticField(field.getReference(), value);
       } else {
@@ -1032,17 +1052,20 @@ public class RedundantFieldLoadAndStoreElimination extends CodeRewriterPass<AppI
 
   static class BlockState {
 
-    private LinkedHashMap<ArraySlot, FieldValue> arraySlotValues;
+    private LinkedHashMap<ArraySlot, ExistingOrMaterializableValue> arraySlotValues;
 
-    private LinkedHashMap<FieldAndObject, FieldValue> finalInstanceFieldValues;
+    private LinkedHashMap<DexType, ExistingOrMaterializableValue> constClassValues;
 
-    private LinkedHashMap<DexField, FieldValue> finalStaticFieldValues;
+    private LinkedHashMap<FieldAndObject, ExistingOrMaterializableValue> finalInstanceFieldValues;
+
+    private LinkedHashMap<DexField, ExistingOrMaterializableValue> finalStaticFieldValues;
 
     private LinkedHashSet<DexType> initializedClasses;
 
-    private LinkedHashMap<FieldAndObject, FieldValue> nonFinalInstanceFieldValues;
+    private LinkedHashMap<FieldAndObject, ExistingOrMaterializableValue>
+        nonFinalInstanceFieldValues;
 
-    private LinkedHashMap<DexField, FieldValue> nonFinalStaticFieldValues;
+    private LinkedHashMap<DexField, ExistingOrMaterializableValue> nonFinalStaticFieldValues;
 
     private InitClass mostRecentInitClass;
 
@@ -1062,6 +1085,10 @@ public class RedundantFieldLoadAndStoreElimination extends CodeRewriterPass<AppI
         if (state.arraySlotValues != null && !state.arraySlotValues.isEmpty()) {
           arraySlotValues = new LinkedHashMap<>();
           arraySlotValues.putAll(state.arraySlotValues);
+        }
+        if (state.constClassValues != null && !state.constClassValues.isEmpty()) {
+          constClassValues = new LinkedHashMap<>();
+          constClassValues.putAll(state.constClassValues);
         }
         if (state.finalInstanceFieldValues != null && !state.finalInstanceFieldValues.isEmpty()) {
           finalInstanceFieldValues = new LinkedHashMap<>();
@@ -1143,12 +1170,16 @@ public class RedundantFieldLoadAndStoreElimination extends CodeRewriterPass<AppI
       }
     }
 
-    public FieldValue getArraySlotValue(ArraySlot arraySlot) {
+    public ExistingOrMaterializableValue getArraySlotValue(ArraySlot arraySlot) {
       return arraySlotValues != null ? arraySlotValues.get(arraySlot) : null;
     }
 
-    public FieldValue getInstanceFieldValue(FieldAndObject field) {
-      FieldValue value =
+    public ExistingOrMaterializableValue getConstClassValue(DexType type) {
+      return constClassValues != null ? constClassValues.get(type) : null;
+    }
+
+    public ExistingOrMaterializableValue getInstanceFieldValue(FieldAndObject field) {
+      ExistingOrMaterializableValue value =
           nonFinalInstanceFieldValues != null ? nonFinalInstanceFieldValues.get(field) : null;
       if (value != null) {
         return value;
@@ -1156,8 +1187,8 @@ public class RedundantFieldLoadAndStoreElimination extends CodeRewriterPass<AppI
       return finalInstanceFieldValues != null ? finalInstanceFieldValues.get(field) : null;
     }
 
-    public FieldValue getStaticFieldValue(DexField field) {
-      FieldValue value =
+    public ExistingOrMaterializableValue getStaticFieldValue(DexField field) {
+      ExistingOrMaterializableValue value =
           nonFinalStaticFieldValues != null ? nonFinalStaticFieldValues.get(field) : null;
       if (value != null) {
         return value;
@@ -1170,6 +1201,11 @@ public class RedundantFieldLoadAndStoreElimination extends CodeRewriterPass<AppI
         intersectFieldValues(arraySlotValues, state.arraySlotValues);
       } else {
         arraySlotValues = null;
+      }
+      if (constClassValues != null && state.constClassValues != null) {
+        intersectFieldValues(constClassValues, state.constClassValues);
+      } else {
+        constClassValues = null;
       }
       if (finalInstanceFieldValues != null && state.finalInstanceFieldValues != null) {
         intersectFieldValues(finalInstanceFieldValues, state.finalInstanceFieldValues);
@@ -1202,7 +1238,8 @@ public class RedundantFieldLoadAndStoreElimination extends CodeRewriterPass<AppI
     }
 
     private static <K> void intersectFieldValues(
-        Map<K, FieldValue> fieldValues, Map<K, FieldValue> other) {
+        Map<K, ExistingOrMaterializableValue> fieldValues,
+        Map<K, ExistingOrMaterializableValue> other) {
       fieldValues.entrySet().removeIf(entry -> other.get(entry.getKey()) != entry.getValue());
     }
 
@@ -1213,6 +1250,7 @@ public class RedundantFieldLoadAndStoreElimination extends CodeRewriterPass<AppI
 
     public boolean isEmpty() {
       return isEmpty(arraySlotValues)
+          && isEmpty(constClassValues)
           && isEmpty(initializedClasses)
           && isEmpty(finalInstanceFieldValues)
           && isEmpty(finalStaticFieldValues)
@@ -1261,6 +1299,7 @@ public class RedundantFieldLoadAndStoreElimination extends CodeRewriterPass<AppI
       assert numberOfItemsToRemove > 0;
       assert numberOfItemsToRemove < size();
       numberOfItemsToRemove = reduceSize(numberOfItemsToRemove, arraySlotValues);
+      numberOfItemsToRemove = reduceSize(numberOfItemsToRemove, constClassValues);
       numberOfItemsToRemove = reduceSize(numberOfItemsToRemove, initializedClasses);
       numberOfItemsToRemove = reduceSize(numberOfItemsToRemove, nonFinalInstanceFieldValues);
       numberOfItemsToRemove = reduceSize(numberOfItemsToRemove, nonFinalStaticFieldValues);
@@ -1358,7 +1397,7 @@ public class RedundantFieldLoadAndStoreElimination extends CodeRewriterPass<AppI
       }
     }
 
-    public void putArraySlotValue(ArraySlot arraySlot, FieldValue value) {
+    public void putArraySlotValue(ArraySlot arraySlot, ExistingOrMaterializableValue value) {
       ensureCapacityForNewElement();
       if (arraySlotValues == null) {
         arraySlotValues = new LinkedHashMap<>();
@@ -1366,7 +1405,16 @@ public class RedundantFieldLoadAndStoreElimination extends CodeRewriterPass<AppI
       arraySlotValues.put(arraySlot, value);
     }
 
-    public void putFinalOrEffectivelyFinalInstanceField(FieldAndObject field, FieldValue value) {
+    public void putConstClassValue(DexType type, ExistingOrMaterializableValue value) {
+      ensureCapacityForNewElement();
+      if (constClassValues == null) {
+        constClassValues = new LinkedHashMap<>();
+      }
+      constClassValues.put(type, value);
+    }
+
+    public void putFinalOrEffectivelyFinalInstanceField(
+        FieldAndObject field, ExistingOrMaterializableValue value) {
       ensureCapacityForNewElement();
       if (finalInstanceFieldValues == null) {
         finalInstanceFieldValues = new LinkedHashMap<>();
@@ -1374,7 +1422,7 @@ public class RedundantFieldLoadAndStoreElimination extends CodeRewriterPass<AppI
       finalInstanceFieldValues.put(field, value);
     }
 
-    public void putFinalStaticField(DexField field, FieldValue value) {
+    public void putFinalStaticField(DexField field, ExistingOrMaterializableValue value) {
       ensureCapacityForNewElement();
       if (finalStaticFieldValues == null) {
         finalStaticFieldValues = new LinkedHashMap<>();
@@ -1399,7 +1447,8 @@ public class RedundantFieldLoadAndStoreElimination extends CodeRewriterPass<AppI
       return mostRecentStaticFieldWrites.put(field, staticPut);
     }
 
-    public void putNonFinalInstanceField(FieldAndObject field, FieldValue value) {
+    public void putNonFinalInstanceField(
+        FieldAndObject field, ExistingOrMaterializableValue value) {
       ensureCapacityForNewElement();
       assert finalInstanceFieldValues == null || !finalInstanceFieldValues.containsKey(field);
       if (nonFinalInstanceFieldValues == null) {
@@ -1408,7 +1457,7 @@ public class RedundantFieldLoadAndStoreElimination extends CodeRewriterPass<AppI
       nonFinalInstanceFieldValues.put(field, value);
     }
 
-    public void putNonFinalStaticField(DexField field, FieldValue value) {
+    public void putNonFinalStaticField(DexField field, ExistingOrMaterializableValue value) {
       ensureCapacityForNewElement();
       assert nonFinalStaticFieldValues == null || !nonFinalStaticFieldValues.containsKey(field);
       if (nonFinalStaticFieldValues == null) {
@@ -1433,6 +1482,7 @@ public class RedundantFieldLoadAndStoreElimination extends CodeRewriterPass<AppI
 
     public int size() {
       return size(arraySlotValues)
+          + size(constClassValues)
           + size(finalInstanceFieldValues)
           + size(finalStaticFieldValues)
           + size(initializedClasses)

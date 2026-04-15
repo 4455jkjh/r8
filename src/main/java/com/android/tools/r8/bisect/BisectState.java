@@ -10,6 +10,7 @@ import com.android.tools.r8.graph.DexApplication;
 import com.android.tools.r8.graph.DexProgramClass;
 import com.android.tools.r8.graph.DexType;
 import com.android.tools.r8.naming.NamingLens;
+import com.android.tools.r8.utils.timing.Timing;
 import com.google.common.base.Charsets;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -236,7 +237,7 @@ public class BisectState {
     return null;
   }
 
-  public DexApplication bisect() {
+  public DexApplication bisect(Timing timing) {
     assert nextRange == null;
     if (runs.isEmpty()) {
       // First run is a sanity check ensuring that the reference app results in a good state.
@@ -273,7 +274,7 @@ public class BisectState {
       }
     }
     System.out.println("Class split is good: " + goodClasses + ", bad: " + badClasses);
-    return badApp.builder().replaceProgramClasses(programClasses).build();
+    return badApp.builder().replaceProgramClasses(programClasses).build(timing);
   }
 
   private DexProgramClass getGoodClass(DexProgramClass clazz) {

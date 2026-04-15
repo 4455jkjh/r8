@@ -209,7 +209,7 @@ public class GetClassTest extends ReflectionOptimizerTestBase {
     boolean isRelease = mode == CompilationMode.RELEASE;
     boolean expectCallPresent = !isRelease;
     int expectedGetClassCount = isRelease ? 0 : 5;
-    int expectedConstClassCount = isRelease ? (parameters.isCfRuntime() ? 9 : 6) : 1;
+    int expectedConstClassCount = isRelease ? (parameters.isCfRuntime() ? 7 : 6) : 1;
     testForR8(parameters)
         .setMode(mode)
         .addInnerClasses(GetClassTest.class)

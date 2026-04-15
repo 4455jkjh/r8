@@ -1039,7 +1039,7 @@ public class TestBase {
                 appView.options().getProguardConfiguration().getRules())
             .evaluateRulesAndBuild(executor, Timing.empty());
     appView.setRootSet(rootSet);
-    appView.rebuildAppInfo();
+    appView.rebuildAppInfo(Timing.empty());
     EnqueuerResult enqueuerResult =
         EnqueuerFactory.createForInitialTreeShaking(
                 appView,

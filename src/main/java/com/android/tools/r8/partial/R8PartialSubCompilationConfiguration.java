@@ -299,8 +299,8 @@ public abstract class R8PartialSubCompilationConfiguration {
               .builder()
               .removeClasspathClasses(clazz -> dexingOutputClasses.containsKey(clazz.getType()))
               .addProgramClasses(dexingOutputClasses.values())
-              .build();
-      appView.rebuildAppInfo(newApp);
+              .build(timing);
+      appView.rebuildAppInfo(timing, newApp);
     }
 
     public void uncommitDexingOutputClasses(AppView<? extends AppInfoWithClassHierarchy> appView) {
@@ -315,8 +315,8 @@ public abstract class R8PartialSubCompilationConfiguration {
               .builder()
               .removeProgramClasses(clazz -> dexingOutputClasses.containsKey(clazz.getType()))
               .addClasspathClasses(newClasspathClasses)
-              .build();
-      appView.rebuildAppInfo(newApp);
+              .build(timing);
+      appView.rebuildAppInfo(timing, newApp);
     }
 
     public boolean hasD8DefinitionFor(DexReference reference) {

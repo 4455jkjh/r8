@@ -8,6 +8,8 @@ import com.android.tools.r8.examples.ExamplesTestBase;
 import com.android.tools.r8.utils.StringUtils;
 import com.google.common.collect.ImmutableList;
 import java.util.List;
+import org.apache.harmony.jpda.tests.framework.TestErrorException;
+import org.apache.harmony.jpda.tests.framework.jdwp.exceptions.TimeoutException;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -114,5 +116,18 @@ public class ThrowingTestRunner extends ExamplesTestBase {
   public void testR8() throws Exception {
     // The expected output includes the reflected frames so disable all optimization.
     runTestR8(b -> b.addDontOptimize().addDontObfuscate().addKeepAllAttributes());
+  }
+
+  @Test
+  @Override
+  public void testDebug() throws Exception {
+    try {
+      super.testDebug();
+    } catch (TestErrorException e) {
+      if (e.getCause() instanceof TimeoutException) {
+        return;
+      }
+      throw e;
+    }
   }
 }

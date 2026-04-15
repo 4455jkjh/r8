@@ -4,6 +4,7 @@
 package com.android.tools.r8.tracereferences;
 
 import static com.android.tools.r8.utils.CovariantReturnTypeUtils.modelLibraryMethodsWithCovariantReturnTypes;
+import static com.android.tools.r8.utils.ExceptionUtils.unwrapExecutionException;
 
 import com.android.tools.r8.CompilationFailedException;
 import com.android.tools.r8.ProgramResource.Kind;
@@ -32,6 +33,7 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.function.Consumer;
 
@@ -145,8 +147,13 @@ public class TraceReferences {
             appView,
             command.getReporter(),
             type -> targetDescriptors.contains(type.toDescriptorString()));
-    tracer.run(command.getConsumer(), command.getNativeReferencesConsumer(), timing);
-    timing.end();
+    try {
+      tracer.run(command.getConsumer(), command.getNativeReferencesConsumer(), timing);
+    } catch (ExecutionException e) {
+      throw unwrapExecutionException(e);
+    } finally {
+      timing.end();
+    }
 
     if (options.isPrintTimesReportingEnabled()) {
       timing.report();

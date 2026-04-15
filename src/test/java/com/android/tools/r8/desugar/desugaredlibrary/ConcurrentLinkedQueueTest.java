@@ -66,15 +66,7 @@ public class ConcurrentLinkedQueueTest extends DesugaredLibraryTestBase {
         syntheticItems.syntheticBackportWithForwardingMethod(
             Reference.classFromDescriptor("Lj$/com/android/tools/r8/DesugarVarHandle;"),
             0,
-            Reference.method(
-                Reference.classFromDescriptor("Lsun/misc/Unsafe;"),
-                "compareAndSwapObject",
-                ImmutableList.of(
-                    Reference.typeFromDescriptor("Ljava/lang/Object;"),
-                    Reference.LONG,
-                    Reference.typeFromDescriptor("Ljava/lang/Object;"),
-                    Reference.typeFromDescriptor("Ljava/lang/Object;")),
-                Reference.BOOL));
+            inspector.getFactory().sunMiscUnsafeMethods.compareAndSwapObject.asMethodReference());
 
     assertThat(
         inspector.clazz(

@@ -96,7 +96,7 @@ public class R8LibraryDesugaring {
     processSynthesizedMethods(synthesizedMethods, executorService, timing);
 
     // Commit pending synthetics.
-    timing.time("Commit pending synthetics", () -> appView.rebuildAppInfo());
+    timing.time("Commit pending synthetics", () -> appView.rebuildAppInfo(timing));
 
     // In R8 partial, uncommit the D8 classes from the app so that they will not be subject to whole
     // program optimizations.
@@ -186,7 +186,7 @@ public class R8LibraryDesugaring {
     }
 
     // Commit pending synthetics.
-    appView.rebuildAppInfo();
+    appView.rebuildAppInfo(timing);
     assert !appView.getSyntheticItems().hasPendingSyntheticClasses();
     timing.end().end();
   }

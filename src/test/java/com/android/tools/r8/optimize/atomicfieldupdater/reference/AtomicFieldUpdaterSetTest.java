@@ -1,17 +1,15 @@
 // Copyright (c) 2026, the R8 project authors. Please see the AUTHORS file
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
-package com.android.tools.r8.optimize.atomicfieldupdater;
+package com.android.tools.r8.optimize.atomicfieldupdater.reference;
 
 import static com.android.tools.r8.DiagnosticsMatcher.diagnosticMessage;
-import static com.android.tools.r8.utils.codeinspector.Matchers.isPresent;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.StringContains.containsString;
 
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
-import com.android.tools.r8.synthesis.SyntheticItemsTestUtils;
-import com.android.tools.r8.utils.codeinspector.ClassSubject;
+import com.android.tools.r8.optimize.atomicfieldupdater.AtomicFieldUpdaterBase;
 import com.android.tools.r8.utils.codeinspector.CodeMatchers;
 import com.android.tools.r8.utils.codeinspector.MethodSubject;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
@@ -21,9 +19,9 @@ import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
 
 @RunWith(Parameterized.class)
-public class AtomicFieldUpdaterGetAndSetTest extends AtomicFieldUpdaterBase {
+public class AtomicFieldUpdaterSetTest extends AtomicFieldUpdaterBase {
 
-  public AtomicFieldUpdaterGetAndSetTest(TestParameters parameters) {
+  public AtomicFieldUpdaterSetTest(TestParameters parameters) {
     super(parameters);
   }
 
@@ -46,38 +44,27 @@ public class AtomicFieldUpdaterGetAndSetTest extends AtomicFieldUpdaterBase {
                 diagnostics.assertInfosMatch(
                     diagnosticMessage(containsString("Can instrument")),
                     diagnosticMessage(containsString("Can optimize")),
+                    diagnosticMessage(containsString("Can optimize")),
                     // TODO(b/453628974): The field should be removed once nullability analysis is
                     // more precise.
                     diagnosticMessage(containsString("Cannot remove"))))
         .inspect(
             inspector -> {
               MethodSubject method = inspector.clazz(testClass).mainMethod();
-              boolean isGetAndSetDefined = parameters.canUseUnsafeGetAndSet();
               if (isOptimizationOn()) {
-                if (isGetAndSetDefined) {
-                  assertThat(
-                      method,
-                      CodeMatchers.invokesMethodWithHolderAndName(
-                          "sun.misc.Unsafe", "getAndSetObject"));
-                } else {
-                  ClassSubject helper =
-                      inspector.clazz(
-                          SyntheticItemsTestUtils.syntheticAtomicFieldUpdaterHelper(
-                              TestClass.class));
-                  assertThat(helper, isPresent());
-                  assertThat(
-                      method,
-                      CodeMatchers.invokesMethod(helper.uniqueMethodWithOriginalName("getAndSet")));
-                }
+                assertThat(
+                    method,
+                    CodeMatchers.invokesMethodWithHolderAndName(
+                        "sun.misc.Unsafe", "putObjectVolatile"));
               } else {
                 assertThat(
                     method,
                     CodeMatchers.invokesMethodWithHolderAndName(
-                        AtomicReferenceFieldUpdater.class, "getAndSet"));
+                        AtomicReferenceFieldUpdater.class, "set"));
               }
             })
         .run(parameters.getRuntime(), testClass)
-        .assertSuccessWithOutputLines("Hello");
+        .assertSuccessWithOutputLines("World!");
   }
 
   // Corresponding to simple kotlin usage of `atomic("Hello")` via atomicfu.
@@ -98,7 +85,9 @@ public class AtomicFieldUpdaterGetAndSetTest extends AtomicFieldUpdaterBase {
     }
 
     public static void main(String[] args) {
-      System.out.println(myString$FU.getAndSet(new TestClass(), "World!"));
+      TestClass instance = new TestClass();
+      myString$FU.set(instance, "World!");
+      System.out.println(myString$FU.get(instance));
     }
   }
 }

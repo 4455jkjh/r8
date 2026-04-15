@@ -5,6 +5,7 @@
 package com.android.tools.r8.rewrite.arrays;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assume.assumeTrue;
 
 import com.android.tools.r8.CompilationMode;
 import com.android.tools.r8.NeverInline;
@@ -54,8 +55,11 @@ public class ConstClassArrayWithNonUniqueValuesTest extends TestBase {
     assertEquals(
         expectingFilledNewArray ? 1 : 0,
         method.streamInstructions().filter(InstructionSubject::isFilledNewArray).count());
+    // When using filled-new-array, we generate 1 const-class instruction + 99 moves.
     assertEquals(
-        expectingFilledNewArray || parameters.isCfRuntime() ? puts : constClasses,
+        (compilationMode.isDebug() && expectingFilledNewArray) || parameters.isCfRuntime()
+            ? puts
+            : constClasses,
         method.streamInstructions().filter(InstructionSubject::isConstClass).count());
   }
 
@@ -69,7 +73,9 @@ public class ConstClassArrayWithNonUniqueValuesTest extends TestBase {
     inspect(inspector.clazz(TestClass.class).uniqueMethodWithOriginalName("m1"), 1, 100);
     inspect(
         inspector.clazz(TestClass.class).uniqueMethodWithOriginalName("m2"),
-        maxMaterializingConstants == 2 ? 98 : 26,
+        canUseFilledNewArrayOfNonStringObjects(parameters) || maxMaterializingConstants != 2
+            ? 26
+            : 98,
         104);
   }
 
@@ -79,6 +85,7 @@ public class ConstClassArrayWithNonUniqueValuesTest extends TestBase {
     testForD8(parameters.getBackend())
         .addInnerClasses(getClass())
         .setMinApi(parameters)
+        .setMode(compilationMode)
         .apply(this::configure)
         .run(parameters.getRuntime(), TestClass.class)
         .inspect(this::inspectD8)
@@ -89,12 +96,17 @@ public class ConstClassArrayWithNonUniqueValuesTest extends TestBase {
     inspect(inspector.clazz(TestClass.class).uniqueMethodWithOriginalName("m1"), 1, 100);
     inspect(
         inspector.clazz(TestClass.class).uniqueMethodWithOriginalName("m2"),
-        maxMaterializingConstants == 2 ? 32 : 26,
+        // The lowering from FilledNewArray to a sequence of ArrayPut instructions in the compiler
+        // uses rematerialization when possible, rather than moves.
+        canUseFilledNewArrayOfNonStringObjects(parameters) || maxMaterializingConstants != 2
+            ? 26
+            : 32,
         104);
   }
 
   @Test
   public void testR8() throws Exception {
+    assumeTrue(compilationMode.isRelease());
     testForR8(parameters.getBackend())
         .addInnerClasses(getClass())
         .addKeepMainRule(TestClass.class)

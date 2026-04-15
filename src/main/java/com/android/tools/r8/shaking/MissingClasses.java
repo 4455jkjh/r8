@@ -295,7 +295,7 @@ public class MissingClasses {
                   dexItemFactory.annotationSynthesizedClass,
                   dexItemFactory.annotationThrows,
                   dexItemFactory.serializedLambdaType,
-                  dexItemFactory.unsafeType);
+                  dexItemFactory.sunMiscUnsafeType);
       appView
           .options()
           .getLibraryDesugaringOptions()

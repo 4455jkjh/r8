@@ -40,6 +40,9 @@ public class BlastRadiusOptions {
   }
 
   public boolean isEnabled() {
+    if (options.getLibraryDesugaringOptions().isL8()) {
+      return false;
+    }
     return getBlastRadiusConsumer() != null || getBlastRadiusContainerConsumer() != null;
   }
 

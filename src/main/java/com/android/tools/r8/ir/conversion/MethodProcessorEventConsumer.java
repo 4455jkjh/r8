@@ -7,7 +7,6 @@ package com.android.tools.r8.ir.conversion;
 import com.android.tools.r8.graph.AppInfoWithClassHierarchy;
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.DexMethod;
-import com.android.tools.r8.graph.DexType;
 import com.android.tools.r8.graph.ProgramDefinition;
 import com.android.tools.r8.graph.ProgramMethod;
 import com.android.tools.r8.ir.conversion.passes.AtomicUpdaterMethodProcessorEventConsumer;
@@ -16,10 +15,10 @@ import com.android.tools.r8.ir.optimize.ServiceLoaderRewriterEventConsumer;
 import com.android.tools.r8.ir.optimize.UtilityMethodsForCodeOptimizationsEventConsumer;
 import com.android.tools.r8.ir.optimize.api.InstanceInitializerOutlinerEventConsumer;
 import com.android.tools.r8.ir.optimize.enums.EnumUnboxerMethodProcessorEventConsumer;
+import com.android.tools.r8.ir.optimize.unsafe.SyntheticUnsafeClass;
 import com.android.tools.r8.profile.rewriting.ProfileCollectionAdditions;
 import com.android.tools.r8.profile.rewriting.ProfileRewritingMethodProcessorEventConsumer;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
-import java.util.List;
 
 public abstract class MethodProcessorEventConsumer
     implements AssertionErrorTwoArgsConstructorRewriterEventConsumer,
@@ -74,7 +73,7 @@ public abstract class MethodProcessorEventConsumer
 
     @Override
     public void acceptUnsafeInstanceContext(
-        List<DexMethod> initializationMethods, DexType unsafeClass, ProgramDefinition context) {
+        SyntheticUnsafeClass syntheticUnsafeClass, ProgramDefinition context) {
       // Intentionally empty.
     }
 

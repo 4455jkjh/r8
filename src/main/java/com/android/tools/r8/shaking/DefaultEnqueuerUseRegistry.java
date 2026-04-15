@@ -31,6 +31,7 @@ import com.android.tools.r8.graph.OriginalFieldWitness;
 import com.android.tools.r8.graph.ProgramMethod;
 import com.android.tools.r8.ir.code.InvokeType;
 import com.android.tools.r8.ir.code.Position;
+import com.android.tools.r8.ir.optimize.unsafe.SyntheticUnsafeClass;
 import com.google.common.collect.Sets;
 import java.util.IdentityHashMap;
 import java.util.ListIterator;
@@ -224,6 +225,26 @@ public class DefaultEnqueuerUseRegistry extends ComputeApiLevelUseRegistry {
   public void registerStaticFieldWriteFromMethodHandle(DexField field) {
     super.registerStaticFieldWriteFromMethodHandle(field);
     enqueuer.traceStaticFieldWriteFromMethodHandle(field, getContext());
+  }
+
+  @Override
+  public void registerStoreStoreFence() {
+    if (appView.options().canUseJavaLangVarHandleStoreStoreFence(appView)) {
+      registerInvokeStatic(dexItemFactory().javaLangInvokeVarHandleMembers.storeStoreFence);
+    } else {
+      SyntheticUnsafeClass syntheticUnsafeClass = appView.getSyntheticUnsafeClass();
+      DexProgramClass clazz =
+          appView.definitionFor(syntheticUnsafeClass.getUnsafeClass()).asProgramClass();
+      registerInvokeStatic(syntheticUnsafeClass.getStoreStoreFenceMethod());
+      enqueuer.applyMinimumKeepInfoWhenLive(
+          clazz, KeepClassInfo.newEmptyJoiner().disallowOptimization());
+      enqueuer.applyMinimumKeepInfoWhenLiveOrTargeted(
+          clazz.lookupProgramMethod(syntheticUnsafeClass.getClassInitializer()),
+          KeepMethodInfo.newEmptyJoiner().disallowOptimization());
+      enqueuer.applyMinimumKeepInfoWhenLiveOrTargeted(
+          clazz.lookupProgramMethod(syntheticUnsafeClass.getStoreStoreFenceMethod()),
+          KeepMethodInfo.newEmptyJoiner().disallowOptimization());
+    }
   }
 
   @Override

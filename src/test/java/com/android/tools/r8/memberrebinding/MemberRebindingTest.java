@@ -254,7 +254,7 @@ public class MemberRebindingTest extends TestBase {
         .addKeepRules("-neverpropagatevalue class * { *; }")
         .addOptionsModification(
             options -> {
-              options.enableRedundantFieldLoadElimination = false;
+              options.enableRedundantLoadAndStoreElimination = false;
               options.inlinerOptions().enableInlining = false;
             })
         .enableProguardTestOptions()

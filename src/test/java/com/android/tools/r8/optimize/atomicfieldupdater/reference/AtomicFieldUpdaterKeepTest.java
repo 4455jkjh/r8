@@ -1,53 +1,40 @@
 // Copyright (c) 2026, the R8 project authors. Please see the AUTHORS file
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
-package com.android.tools.r8.optimize.atomicfieldupdater;
+package com.android.tools.r8.optimize.atomicfieldupdater.reference;
 
 import static com.android.tools.r8.DiagnosticsMatcher.diagnosticMessage;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.core.AnyOf.anyOf;
 import static org.hamcrest.core.IsNot.not;
 import static org.hamcrest.core.StringContains.containsString;
 
 import com.android.tools.r8.TestParameters;
+import com.android.tools.r8.optimize.atomicfieldupdater.AtomicFieldUpdaterBase;
 import com.android.tools.r8.references.Reference;
 import com.android.tools.r8.utils.BooleanUtils;
 import com.android.tools.r8.utils.codeinspector.CodeMatchers;
 import com.android.tools.r8.utils.codeinspector.MethodSubject;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
-import org.hamcrest.core.AnyOf;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
 
 @RunWith(Parameterized.class)
-public class AtomicFieldUpdaterNullHolderTest extends AtomicFieldUpdaterBase {
+public class AtomicFieldUpdaterKeepTest extends AtomicFieldUpdaterBase {
 
-  public final boolean optimize;
+  public final boolean keepRule;
 
-  public AtomicFieldUpdaterNullHolderTest(TestParameters parameters, boolean optimize) {
+  public AtomicFieldUpdaterKeepTest(TestParameters parameters, boolean keepRule) {
     super(parameters);
-    this.optimize = optimize;
+    this.keepRule = keepRule;
   }
 
-  @Parameters(name = "{0}, optimize:{1}")
+  @Parameters(name = "{0}, keeprule:{1}")
   public static List<Object[]> data() {
     return buildParameters(
         TestParameters.builder().withAllRuntimesAndApiLevels().build(), BooleanUtils.values());
-  }
-
-  private static final Class<? extends Throwable> EXPECTED_EXCEPTION = ClassCastException.class;
-
-  @Test
-  public void testJvm() throws Exception {
-    parameters.assumeJvmTestParameters();
-    Class<TestClass> testClass = TestClass.class;
-    testForJvm(parameters)
-        .addProgramClasses(testClass)
-        .run(parameters.getRuntime(), testClass)
-        .assertFailureWithErrorThatThrows(EXPECTED_EXCEPTION);
   }
 
   @Test
@@ -58,7 +45,7 @@ public class AtomicFieldUpdaterNullHolderTest extends AtomicFieldUpdaterBase {
         .addProgramClasses(testClass)
         .addKeepMainRule(testClass)
         .applyIf(
-            !optimize,
+            keepRule,
             testing ->
                 testing.addKeepFieldRules(
                     Reference.fieldFromField(testClass.getDeclaredField("myString$FU"))))
@@ -66,32 +53,28 @@ public class AtomicFieldUpdaterNullHolderTest extends AtomicFieldUpdaterBase {
         .inspectDiagnosticMessagesIf(
             isOptimizationOn(),
             diagnostics -> {
-              if (optimize) {
-                diagnostics.assertInfoThatMatches(
-                    diagnosticMessage(containsString("Can instrument")));
-              } else {
+              if (keepRule) {
                 diagnostics.assertInfosMatch(
                     diagnosticMessage(containsString("Cannot instrument")));
+              } else {
+                diagnostics.assertInfoThatMatches(
+                    diagnosticMessage(containsString("Can instrument")));
               }
             })
         .inspect(
             inspector -> {
               MethodSubject method = inspector.clazz(testClass).mainMethod();
-              AnyOf<MethodSubject> usesUnsafe =
-                  anyOf(
-                      CodeMatchers.invokesMethodWithHolder("sun.misc.Unsafe"),
-                      CodeMatchers.invokesMethodWithHolder("jdk.internal.misc.Unsafe"));
-              if (isOptimizationOn() && optimize) {
-                assertThat(method, usesUnsafe);
+              if (isOptimizationOn() && !keepRule) {
+                assertThat(method, INVOKES_UNSAFE);
               } else {
-                assertThat(method, not(usesUnsafe));
+                assertThat(method, not(INVOKES_UNSAFE));
                 assertThat(
                     method,
                     CodeMatchers.invokesMethodWithHolder(AtomicReferenceFieldUpdater.class));
               }
             })
         .run(parameters.getRuntime(), testClass)
-        .assertFailureWithErrorThatThrows(EXPECTED_EXCEPTION);
+        .assertSuccessWithOutputLines("Hello");
   }
 
   // Corresponding to simple kotlin usage of `atomic("Hello")` via atomicfu.
@@ -112,12 +95,7 @@ public class AtomicFieldUpdaterNullHolderTest extends AtomicFieldUpdaterBase {
     }
 
     public static void main(String[] args) {
-      TestClass instance;
-      if (System.out == null) {
-        instance = new TestClass();
-      } else {
-        instance = null;
-      }
+      TestClass instance = new TestClass();
       System.out.println(myString$FU.get(instance));
     }
   }

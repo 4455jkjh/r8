@@ -4353,7 +4353,8 @@ public class Enqueuer {
 
     // Commit the pending synthetics and recompute subtypes.
     subtypingInfo.update(appView);
-    appInfo = timing.time("Rebuild AppInfo", () -> appInfo.rebuildWithClassHierarchy(app -> app));
+    appInfo =
+        timing.time("Rebuild AppInfo", () -> appInfo.rebuildWithClassHierarchy(app -> app, timing));
     appView.setAppInfo(appInfo);
     assert subtypingInfo.verifyUpToDate(appView);
 
@@ -4763,7 +4764,7 @@ public class Enqueuer {
             .builder()
             .replaceLibraryClasses(libraryClasses)
             .replaceClasspathClasses(classpathClasses)
-            .build();
+            .build(timing);
     timing.end();
 
     // Verify the references on the pruned application after type synthesis.
@@ -4782,7 +4783,7 @@ public class Enqueuer {
     timing.begin("Create app info with liveness");
     AppInfoWithLiveness appInfoWithLiveness =
         new AppInfoWithLiveness(
-            appInfo.getSyntheticItems().commit(app),
+            appInfo.getSyntheticItems().commit(app, timing),
             appInfo.getClassToFeatureSplitMap(),
             appInfo.getMainDexInfo(),
             mode.isInitialTreeShaking()
@@ -5083,7 +5084,7 @@ public class Enqueuer {
     }
 
     // Commit the pending synthetics and recompute subtypes.
-    appInfo = appInfo.rebuildWithClassHierarchy(app -> app);
+    appInfo = appInfo.rebuildWithClassHierarchy(app -> app, timing);
     appView.setAppInfo(appInfo);
     subtypingInfo =
         timing.time("Create SubtypingInfo", () -> ImmediateAppSubtypingInfo.create(appView));

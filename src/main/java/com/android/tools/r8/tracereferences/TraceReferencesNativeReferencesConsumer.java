@@ -12,6 +12,8 @@ import com.android.tools.r8.references.MethodReference;
 /**
  * Consumer interface for recording references.
  *
+ * <p>The calls to the acceptXXX methods can happen concurrently.
+ *
  * <p>THIS IS STILL AN EXPERIMENTAL API!
  */
 @Deprecated

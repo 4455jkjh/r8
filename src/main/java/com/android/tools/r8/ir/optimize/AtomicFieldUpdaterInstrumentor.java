@@ -5,11 +5,8 @@ package com.android.tools.r8.ir.optimize;
 
 import static com.android.tools.r8.ir.optimize.info.atomicupdaters.eligibility.Reporter.reportInfo;
 
-import com.android.tools.r8.cf.code.CfInvoke;
-import com.android.tools.r8.cf.code.CfReturnVoid;
-import com.android.tools.r8.cf.code.CfStaticFieldWrite;
+import com.android.tools.r8.errors.Unreachable;
 import com.android.tools.r8.graph.AppView;
-import com.android.tools.r8.graph.CfCode;
 import com.android.tools.r8.graph.DexClass;
 import com.android.tools.r8.graph.DexEncodedField;
 import com.android.tools.r8.graph.DexField;
@@ -18,7 +15,6 @@ import com.android.tools.r8.graph.DexMethod;
 import com.android.tools.r8.graph.DexProgramClass;
 import com.android.tools.r8.graph.DexType;
 import com.android.tools.r8.graph.FieldAccessFlags;
-import com.android.tools.r8.graph.MethodAccessFlags;
 import com.android.tools.r8.graph.ProgramField;
 import com.android.tools.r8.graph.ProgramMethod;
 import com.android.tools.r8.graph.bytecodemetadata.BytecodeMetadataProvider;
@@ -37,12 +33,11 @@ import com.android.tools.r8.ir.conversion.PostMethodProcessor;
 import com.android.tools.r8.ir.conversion.passes.AtomicFieldUpdaterOptimizer.AtomicFieldUpdaterInfo;
 import com.android.tools.r8.ir.optimize.info.atomicupdaters.eligibility.Event;
 import com.android.tools.r8.ir.optimize.info.atomicupdaters.eligibility.Reason;
-import com.android.tools.r8.ir.synthetic.AtomicFieldUpdaterOptimizationMethods;
 import com.android.tools.r8.lightir.LirCode;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
 import com.android.tools.r8.shaking.FieldAccessInfoCollectionModifier;
-import com.android.tools.r8.synthesis.SyntheticProgramClassBuilder;
 import com.android.tools.r8.utils.AndroidApiLevel;
+import com.android.tools.r8.utils.InternalOptions;
 import com.android.tools.r8.utils.SetUtils;
 import com.android.tools.r8.utils.ThreadUtils;
 import com.android.tools.r8.utils.timing.Timing;
@@ -52,16 +47,13 @@ import com.google.common.collect.ImmutableMap;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
-import org.objectweb.asm.Opcodes;
 
 /**
  * Finds classes with:
@@ -128,9 +120,6 @@ public class AtomicFieldUpdaterInstrumentor {
 
   private final DexItemFactory itemFactory;
   private final DexMethod objectFieldOffset;
-  private static final String unsafeFieldName = "unsafe";
-  private static final String getUnsafeMethodName = "getUnsafe";
-  private static final String getAndSetMethodName = "getAndSet";
 
   public static void run(
       AppView<AppInfoWithLiveness> appView, ExecutorService service, Timing timing)
@@ -141,10 +130,10 @@ public class AtomicFieldUpdaterInstrumentor {
   }
 
   private static boolean isOptimizationEnabled(AppView<?> appView) {
-    return appView.options().enableAtomicUpdaterOptimization
-        && appView.options().isGeneratingDex()
+    InternalOptions options = appView.options();
+    return options.enableAtomicUpdaterOptimization
         && appView.enableWholeProgramOptimizations()
-        && appView.options().getMinApiLevel().isGreaterThanOrEqualTo(AndroidApiLevel.K);
+        && appView.getSyntheticUnsafeClass() != null;
   }
 
   private AtomicFieldUpdaterInstrumentor(
@@ -156,7 +145,7 @@ public class AtomicFieldUpdaterInstrumentor {
 
     objectFieldOffset =
         itemFactory.createMethod(
-            itemFactory.unsafeType,
+            itemFactory.sunMiscUnsafeType,
             itemFactory.createProto(itemFactory.longType, itemFactory.fieldType),
             "objectFieldOffset");
   }
@@ -168,21 +157,9 @@ public class AtomicFieldUpdaterInstrumentor {
     if (!classesWithAtomics.isEmpty()) {
       // To avoid imprecise profile propagation, the synthetic class is not added to the profile
       // until use-sites are found.
-      var unsafeClass = synthesizeUnsafeClass(classesWithAtomics.keySet());
-      var allOffsetFields = addOffsetFields(classesWithAtomics, unsafeClass, timing);
-      var unsafeInstanceField = unsafeClass.unsafeInstanceField.getReference();
-      var getAndSetMethod = unsafeClass.getAndSetMethod.getReference();
-      var initializerMethods =
-          ImmutableList.of(
-              unsafeClass.classInitializer.getReference(),
-              unsafeClass.getUnsafeMethod.getReference());
+      var allOffsetFields = addOffsetFields(classesWithAtomics, timing);
       appView.setAtomicFieldUpdaterInstrumentorInfo(
-          buildInstrumentorInfo(
-              classesWithAtomics,
-              allOffsetFields,
-              unsafeInstanceField,
-              getAndSetMethod,
-              initializerMethods));
+          buildInstrumentorInfo(classesWithAtomics, allOffsetFields));
     }
     timing.end();
   }
@@ -217,10 +194,6 @@ public class AtomicFieldUpdaterInstrumentor {
     clazz.forEachStaticFieldMatching(
         this::isStaticFinalFieldUpdaterField,
         field -> {
-          // Check that fields are constructed with known information, i.e. a single write of a
-          // direct
-          // and valid call to
-          // AtomicReferenceFieldUpdater.newUpdater(ThisClass.class, FieldType.class, "fieldName").
           var f = new ProgramField(clazz, field);
           // Keep info must be checked before static write to report the correct reason.
           if (!appView.getKeepInfo(f).isOptimizationAllowed(appView.options())) {
@@ -239,6 +212,10 @@ public class AtomicFieldUpdaterInstrumentor {
             initialUpdaterFields.add(field.getReference());
           }
         });
+
+    // Check that fields are constructed with known information, i.e. a single write of a
+    // direct and valid call to
+    // AtomicXFieldUpdater.newUpdater(ThisClass.class, FieldType.class, "fieldName").
 
     // Construct clinit IR.
     var classInitializer = clazz.getProgramClassInitializer();
@@ -260,7 +237,7 @@ public class AtomicFieldUpdaterInstrumentor {
       if (!initialUpdaterFields.contains(modifiedField)) {
         continue;
       }
-      // TODO(b/453628974): implement and test optimization under handlers.
+      // TODO(b/453628974): Implement and test optimization under handlers.
       if (staticPut.getBlock().hasCatchHandlers()) {
         reportInfo(appView, new Event.CannotInstrument(modifiedField), Reason.UNDER_CATCH_HANDLER);
         fieldInfos.remove(modifiedField);
@@ -297,11 +274,14 @@ public class AtomicFieldUpdaterInstrumentor {
   }
 
   private boolean isStaticFinalFieldUpdaterField(DexEncodedField field) {
-    return field.isStatic()
-        && field.isFinal()
-        && field
-            .getType()
-            .isIdenticalTo(itemFactory.javaUtilConcurrentAtomicAtomicReferenceFieldUpdater);
+    if (field.isStatic() && field.isFinal()) {
+      var type = field.getType();
+      return type.isIdenticalTo(itemFactory.javaUtilConcurrentAtomicAtomicReferenceFieldUpdater)
+          || type.isIdenticalTo(itemFactory.javaUtilConcurrentAtomicAtomicIntegerFieldUpdater)
+          || type.isIdenticalTo(itemFactory.javaUtilConcurrentAtomicAtomicLongFieldUpdater);
+    } else {
+      return false;
+    }
   }
 
   /**
@@ -324,15 +304,26 @@ public class AtomicFieldUpdaterInstrumentor {
       return null;
     }
     InvokeStatic invokeStatic = input.asInvokeStatic();
-    if (!invokeStatic
-        .getInvokedMethod()
-        .isIdenticalTo(itemFactory.atomicReferenceUpdaterMethods.newUpdater)) {
+    DexMethod invokedMethod = invokeStatic.getInvokedMethod();
+    if (invokedMethod.isIdenticalTo(itemFactory.atomicReferenceUpdaterMethods.newUpdater)) {
+      return resolveReferenceNewUpdaterCall(clazz, updaterField, invokeStatic);
+    } else if (invokedMethod.isIdenticalTo(itemFactory.atomicIntUpdaterMethods.newUpdater)) {
+      reportInfo(appView, new Event.CannotInstrument(updaterField), Reason.NOT_SUPPORTED);
+      return null;
+    } else if (invokedMethod.isIdenticalTo(itemFactory.atomicLongUpdaterMethods.newUpdater)) {
+      reportInfo(appView, new Event.CannotInstrument(updaterField), Reason.NOT_SUPPORTED);
+      return null;
+    } else {
       reportInfo(
           appView,
           new Event.CannotInstrument(updaterField),
           Reason.UPDATER_NOT_INITIALIZED_BY_NEW_UPDATER);
       return null;
     }
+  }
+
+  private ReferenceUpdaterFieldInfo<Void> resolveReferenceNewUpdaterCall(
+      DexProgramClass clazz, DexField updaterField, InvokeStatic invokeStatic) {
     assert invokeStatic.arguments().size() == 3;
     var holderValue = invokeStatic.getFirstArgument();
     if (holderValue.isPhi()) {
@@ -420,141 +411,12 @@ public class AtomicFieldUpdaterInstrumentor {
     //   * Check if AtomicReferenceFieldUpdater.newUpdater has changed implementation.
     //     * If so, verify/correct the static checks to match the runtime checks.
     assert AndroidApiLevel.LATEST.isEqualTo(AndroidApiLevel.CINNAMON_BUN);
-    return UpdaterFieldInfo.create(
+    return UpdaterFieldInfo.createReference(
         updaterField, fieldType, holderValue, fieldNameValue, invokeStatic.getPosition());
-  }
-
-  private UnsafeClassInfo synthesizeUnsafeClass(Set<DexProgramClass> classesWithAtomics) {
-    var context = getDeterministicContext(classesWithAtomics);
-    var unsafeClass =
-        appView
-            .getSyntheticItems()
-            .createFixedClass(
-                kinds -> kinds.ATOMIC_FIELD_UPDATER_HELPER,
-                context,
-                appView,
-                this::buildUnsafeClass);
-    var classInitializer = unsafeClass.getProgramClassInitializer();
-    var unsafeField =
-        unsafeClass.lookupProgramField(
-            itemFactory.createField(
-                unsafeClass.getType(), itemFactory.unsafeType, unsafeFieldName));
-    assert unsafeField != null;
-    var getUnsafeMethod =
-        unsafeClass.lookupProgramMethod(
-            itemFactory.createMethod(
-                unsafeClass.getType(),
-                itemFactory.createProto(itemFactory.unsafeType),
-                getUnsafeMethodName));
-    assert getUnsafeMethod != null;
-    var getAndSetMethod =
-        unsafeClass.lookupProgramMethod(
-            itemFactory.createMethod(
-                unsafeClass.getType(),
-                itemFactory.createProto(
-                    itemFactory.objectType,
-                    itemFactory.unsafeType,
-                    itemFactory.objectType,
-                    itemFactory.longType,
-                    itemFactory.objectType),
-                getAndSetMethodName));
-    assert getAndSetMethod != null;
-    appView.rebuildAppInfo();
-    return new UnsafeClassInfo(classInitializer, unsafeField, getUnsafeMethod, getAndSetMethod);
-  }
-
-  private static DexProgramClass getDeterministicContext(
-      Collection<DexProgramClass> classesWithAtomics) {
-    assert !classesWithAtomics.isEmpty();
-    // Compare by name, not by structure.
-    return Collections.min(classesWithAtomics, Comparator.comparing(DexProgramClass::getType));
-  }
-
-  private void buildUnsafeClass(SyntheticProgramClassBuilder builder) {
-    DexField unsafeField =
-        itemFactory.createField(builder.getType(), itemFactory.unsafeType, unsafeFieldName);
-    var field =
-        DexEncodedField.syntheticBuilder()
-            .setField(unsafeField)
-            .setAccessFlags(FieldAccessFlags.createPublicStaticFinalSynthetic())
-            .setApiLevel(appView.computedMinApiLevel())
-            // Avoid superfluous assert on API in the build call when API modeling is disabled.
-            .disableAndroidApiLevelCheckIf(
-                !appView.options().apiModelingOptions().isApiModelingEnabled())
-            .build();
-    builder.setStaticFields(ImmutableList.of(field));
-    var accessBuilder = FieldAccessInfoCollectionModifier.builder();
-    accessBuilder.addField(unsafeField);
-    accessBuilder.build().modify(appView);
-
-    DexMethod getUnsafeMethod =
-        itemFactory.createMethod(
-            builder.getType(),
-            itemFactory.createProto(itemFactory.unsafeType),
-            getUnsafeMethodName);
-    builder.addMethod(
-        methodBuilder -> {
-          methodBuilder
-              .setName(getUnsafeMethod.name)
-              .setProto(getUnsafeMethod.proto)
-              .setAccessFlags(MethodAccessFlags.createPublicStaticSynthetic())
-              .setApiLevelForDefinition(appView.computedMinApiLevel())
-              .setApiLevelForCode(appView.computedMinApiLevel())
-              .setCode(
-                  method ->
-                      AtomicFieldUpdaterOptimizationMethods
-                          .AtomicFieldUpdaterOptimizationMethods_getUnsafe(itemFactory, method));
-          if (appView.options().isGeneratingClassFiles()) {
-            methodBuilder.setClassFileVersion(
-                appView.options().requiredCfVersionForConstClassInstructions());
-          }
-        });
-    DexMethod getAndSetMethod =
-        itemFactory.createMethod(
-            builder.getType(),
-            itemFactory.createProto(
-                itemFactory.objectType,
-                itemFactory.unsafeType,
-                itemFactory.objectType,
-                itemFactory.longType,
-                itemFactory.objectType),
-            getAndSetMethodName);
-    builder.addMethod(
-        methodBuilder ->
-            methodBuilder
-                .setName(getAndSetMethod.name)
-                .setProto(getAndSetMethod.proto)
-                .setAccessFlags(MethodAccessFlags.createPublicStaticSynthetic())
-                .setApiLevelForDefinition(appView.computedMinApiLevel())
-                .setApiLevelForCode(appView.computedMinApiLevel())
-                .setCode(
-                    method ->
-                        AtomicFieldUpdaterOptimizationMethods
-                            .AtomicFieldUpdaterOptimizationMethods_getAndSet(itemFactory, method)));
-    DexMethod clinit = itemFactory.createClassInitializer(builder.getType());
-    builder.addMethod(
-        methodBuilder ->
-            methodBuilder
-                .setName(clinit.name)
-                .setProto(clinit.proto)
-                .setAccessFlags(MethodAccessFlags.createForClassInitializer())
-                .setApiLevelForDefinition(appView.computedMinApiLevel())
-                .setApiLevelForCode(appView.computedMinApiLevel())
-                .setCode(
-                    method ->
-                        new CfCode(
-                            method.holder,
-                            1,
-                            0,
-                            ImmutableList.of(
-                                new CfInvoke(Opcodes.INVOKESTATIC, getUnsafeMethod, false),
-                                new CfStaticFieldWrite(unsafeField),
-                                new CfReturnVoid()))));
   }
 
   private Map<DexField, DexField> addOffsetFields(
       Map<DexProgramClass, ClassWithAtomicsInfo> classesWithAtomics,
-      UnsafeClassInfo unsafeClass,
       Timing timing)
       throws ExecutionException {
     ConcurrentHashMap<DexField, DexField> offsetFields = new ConcurrentHashMap<>();
@@ -566,7 +428,6 @@ public class AtomicFieldUpdaterInstrumentor {
                 clazz,
                 classesWithAtomics.get(clazz),
                 offsetFields,
-                unsafeClass.unsafeInstanceField,
                 threadTiming),
         appView.options(),
         service,
@@ -581,10 +442,7 @@ public class AtomicFieldUpdaterInstrumentor {
 
   private AtomicFieldUpdaterInstrumentorInfo buildInstrumentorInfo(
       Map<DexProgramClass, ClassWithAtomicsInfo> classesWithAtomics,
-      Map<DexField, DexField> allOffsetFields,
-      DexField unsafeInstanceField,
-      DexMethod getAndSetMethod,
-      List<DexMethod> initializerMethods) {
+      Map<DexField, DexField> allOffsetFields) {
     var instrumentations =
         new HashMap<DexType, Map<DexField, AtomicFieldUpdaterInfo>>(classesWithAtomics.size());
     var offsetFields = new HashMap<DexType, Set<DexField>>(classesWithAtomics.size());
@@ -594,18 +452,22 @@ public class AtomicFieldUpdaterInstrumentor {
           var fields = new HashMap<DexField, AtomicFieldUpdaterInfo>(infos.size());
           Set<DexField> localOffsetFields = SetUtils.newIdentityHashSet();
           for (var info : infos) {
-            DexField offsetField = allOffsetFields.get(info.field);
-            fields.put(
-                info.field,
-                new AtomicFieldUpdaterInfo(
-                    info.field.holder, info.reflectedFieldType, offsetField));
-            localOffsetFields.add(offsetField);
+            if (info.asReferenceFieldUpdaterInfo() != null) {
+              var referenceInfo = info.asReferenceFieldUpdaterInfo();
+              DexField offsetField = allOffsetFields.get(referenceInfo.field);
+              fields.put(
+                  referenceInfo.field,
+                  new AtomicFieldUpdaterInfo(
+                      referenceInfo.field.holder, referenceInfo.reflectedFieldType, offsetField));
+              localOffsetFields.add(offsetField);
+            } else {
+              throw new Unreachable("Updater was not ReferenceFieldUpdaterInfo.");
+            }
           }
           instrumentations.put(clazz.getType(), fields);
           offsetFields.put(clazz.getType(), localOffsetFields);
         });
-    return new AtomicFieldUpdaterInstrumentorInfo(
-        instrumentations, offsetFields, unsafeInstanceField, getAndSetMethod, initializerMethods);
+    return new AtomicFieldUpdaterInstrumentorInfo(instrumentations, offsetFields);
   }
 
   private DexEncodedField createOffsetField(
@@ -630,7 +492,6 @@ public class AtomicFieldUpdaterInstrumentor {
       DexProgramClass clazz,
       ClassWithAtomicsInfo classInfo,
       ConcurrentHashMap<DexField, DexField> offsetFields,
-      ProgramField unsafeInstanceField,
       Timing timing) {
     var updaterFields = classInfo.fields;
     assert !updaterFields.isEmpty();
@@ -649,11 +510,10 @@ public class AtomicFieldUpdaterInstrumentor {
     Collections.sort(fieldsToAdd);
     clazz.appendStaticFields(fieldsToAdd);
 
-    extendClassInitializer(unsafeInstanceField, method, classInfo, extendedUpdaterFields, timing);
+    extendClassInitializer(method, classInfo, extendedUpdaterFields, timing);
   }
 
   private void extendClassInitializer(
-      ProgramField unsafeInstanceField,
       ProgramMethod classInitializer,
       ClassWithAtomicsInfo classInfo,
       Map<DexField, UpdaterFieldInfo<DexField>> updaterFields,
@@ -672,7 +532,7 @@ public class AtomicFieldUpdaterInstrumentor {
       if (updaterFieldInfo == null) {
         continue;
       }
-      var newInstructions = createFieldWriteInstructions(ir, unsafeInstanceField, updaterFieldInfo);
+      var newInstructions = createFieldWriteInstructions(ir, updaterFieldInfo);
       it.addAll(newInstructions);
     }
     LirCode<Integer> newLir =
@@ -681,12 +541,13 @@ public class AtomicFieldUpdaterInstrumentor {
   }
 
   private Collection<Instruction> createFieldWriteInstructions(
-      IRCode ir, ProgramField unsafeInstanceField, UpdaterFieldInfo<DexField> creationInfo) {
+      IRCode ir, UpdaterFieldInfo<DexField> creationInfo) {
     var newInstructions = new ArrayList<Instruction>(4);
+    var unsafeInstanceField = appView.getSyntheticUnsafeClass().getInstanceField();
     Instruction unsafeInstance =
         new StaticGet(
             ir.createValue(unsafeInstanceField.getType().toTypeElement(appView)),
-            unsafeInstanceField.getReference());
+            unsafeInstanceField);
     unsafeInstance.setPosition(creationInfo.position);
     newInstructions.add(unsafeInstance);
 
@@ -716,13 +577,6 @@ public class AtomicFieldUpdaterInstrumentor {
     return newInstructions;
   }
 
-  public static void registerSynthesizedCodeReferences(AppView<?> appView) {
-    if (isOptimizationEnabled(appView)) {
-      AtomicFieldUpdaterOptimizationMethods.registerSynthesizedCodeReferences(
-          appView.dexItemFactory());
-    }
-  }
-
   public static void addInitializersToPostMethodOptimization(
       AppView<?> appView, PostMethodProcessor.Builder postMethodProcessorBuilder) {
     // This allows AtomicUpdaterInitializationRemover to remove unused initialization code.
@@ -740,64 +594,71 @@ public class AtomicFieldUpdaterInstrumentor {
     }
   }
 
-  private static class UnsafeClassInfo {
-
-    public final ProgramMethod classInitializer;
-    public final ProgramField unsafeInstanceField;
-    public final ProgramMethod getUnsafeMethod;
-    public final ProgramMethod getAndSetMethod;
-
-    private UnsafeClassInfo(
-        ProgramMethod classInitializer,
-        ProgramField unsafeInstanceField,
-        ProgramMethod getUnsafeMethod,
-        ProgramMethod getAndSetMethod) {
-      this.classInitializer = classInitializer;
-      this.unsafeInstanceField = unsafeInstanceField;
-      this.getUnsafeMethod = getUnsafeMethod;
-      this.getAndSetMethod = getAndSetMethod;
-    }
-  }
-
   // The OffsetField type parameter is used to track the nullness of offsetField statically
   // (Either Void or DexField).
-  private static class UpdaterFieldInfo<OffsetField> {
+  private abstract static class UpdaterFieldInfo<OffsetField> {
 
     public final DexField field;
-    public final DexType reflectedFieldType;
     public final Value holderValue;
     public final Value fieldName;
     public final Position position;
     public final OffsetField offsetField;
 
-    private UpdaterFieldInfo(
+    protected UpdaterFieldInfo(
         DexField field,
-        DexType reflectedFieldType,
         Value holderValue,
         Value reflectedFieldName,
         Position position,
         OffsetField offsetField) {
       this.field = field;
-      this.reflectedFieldType = reflectedFieldType;
       this.holderValue = holderValue;
       this.fieldName = reflectedFieldName;
       this.position = position;
       this.offsetField = offsetField;
     }
 
-    public static UpdaterFieldInfo<Void> create(
+    public static ReferenceUpdaterFieldInfo<Void> createReference(
         DexField field,
         DexType reflectedFieldType,
         Value holdingClass,
         Value reflectedFieldName,
         Position position) {
-      return new UpdaterFieldInfo<>(
+      return new ReferenceUpdaterFieldInfo<>(
           field, reflectedFieldType, holdingClass, reflectedFieldName, position, null);
     }
 
-    public <T> UpdaterFieldInfo<T> copyWithOffsetField(T offsetField) {
-      return new UpdaterFieldInfo<>(
+    public ReferenceUpdaterFieldInfo<OffsetField> asReferenceFieldUpdaterInfo() {
+      return null;
+    }
+
+    public abstract <T> UpdaterFieldInfo<T> copyWithOffsetField(T offsetField);
+  }
+
+  private static class ReferenceUpdaterFieldInfo<OffsetField>
+      extends UpdaterFieldInfo<OffsetField> {
+
+    public final DexType reflectedFieldType;
+
+    protected ReferenceUpdaterFieldInfo(
+        DexField field,
+        DexType reflectedFieldType,
+        Value holderValue,
+        Value reflectedFieldName,
+        Position position,
+        OffsetField offsetField) {
+      super(field, holderValue, reflectedFieldName, position, offsetField);
+      this.reflectedFieldType = reflectedFieldType;
+    }
+
+    @Override
+    public <T> ReferenceUpdaterFieldInfo<T> copyWithOffsetField(T offsetField) {
+      return new ReferenceUpdaterFieldInfo<>(
           field, reflectedFieldType, holderValue, fieldName, position, offsetField);
+    }
+
+    @Override
+    public ReferenceUpdaterFieldInfo<OffsetField> asReferenceFieldUpdaterInfo() {
+      return this;
     }
   }
 
@@ -817,27 +678,14 @@ public class AtomicFieldUpdaterInstrumentor {
     private final Map<DexType, Map<DexField, AtomicFieldUpdaterInfo>> instrumentations;
     // instrumentations.values() as a set, materialized for efficient lookup.
     private final Map<DexType, Set<DexField>> offsetFields;
-    private final DexField unsafeInstanceField;
-    private final DexMethod getAndSetMethod;
-    // These methods needs to be included in profile whenever the unsafe instance field is used.
-    private final List<DexMethod> initializerMethodsForProfile;
 
     public AtomicFieldUpdaterInstrumentorInfo(
         Map<DexType, Map<DexField, AtomicFieldUpdaterInfo>> instrumentations,
-        Map<DexType, Set<DexField>> offsetFields,
-        DexField unsafeInstanceField,
-        DexMethod getAndSetMethod,
-        List<DexMethod> initializerMethodsForProfile) {
+        Map<DexType, Set<DexField>> offsetFields) {
       assert instrumentations != null;
       this.instrumentations = instrumentations;
       assert offsetFields != null;
       this.offsetFields = offsetFields;
-      assert unsafeInstanceField != null;
-      this.unsafeInstanceField = unsafeInstanceField;
-      assert getAndSetMethod != null;
-      this.getAndSetMethod = getAndSetMethod;
-      assert initializerMethodsForProfile != null;
-      this.initializerMethodsForProfile = initializerMethodsForProfile;
       assert checkValidMapping(instrumentations, offsetFields);
     }
 
@@ -855,22 +703,6 @@ public class AtomicFieldUpdaterInstrumentor {
 
     public Set<DexField> getOffsetFieldsOrNull(DexType holder) {
       return offsetFields.get(holder);
-    }
-
-    public DexField getUnsafeInstanceField() {
-      return unsafeInstanceField;
-    }
-
-    public DexMethod getGetAndSetMethod() {
-      return getAndSetMethod;
-    }
-
-    public List<DexMethod> initializationMethodsForProfile() {
-      return initializerMethodsForProfile;
-    }
-
-    public DexType getUnsafeClass() {
-      return unsafeInstanceField.holder;
     }
 
     private static boolean checkValidMapping(

@@ -12,11 +12,17 @@ import com.android.tools.r8.ir.code.InvokeStatic;
 import com.android.tools.r8.ir.code.StoreStoreFence;
 import com.android.tools.r8.ir.conversion.MethodProcessor;
 import com.android.tools.r8.ir.conversion.passes.result.CodeRewriterResult;
+import com.android.tools.r8.ir.optimize.unsafe.SyntheticUnsafeClass;
+import com.android.tools.r8.profile.rewriting.ProfileCollectionAdditions;
 
 public class StoreStoreFenceToInvokeRewriter extends CodeRewriterPass<AppInfo> {
 
-  public StoreStoreFenceToInvokeRewriter(AppView<?> appView) {
+  private final ProfileCollectionAdditions profileCollectionAdditions;
+
+  public StoreStoreFenceToInvokeRewriter(
+      AppView<?> appView, ProfileCollectionAdditions profileCollectionAdditions) {
     super(appView);
+    this.profileCollectionAdditions = profileCollectionAdditions;
   }
 
   @Override
@@ -38,14 +44,36 @@ public class StoreStoreFenceToInvokeRewriter extends CodeRewriterPass<AppInfo> {
       if (current.isStoreStoreFence()) {
         StoreStoreFence storeStoreFence = current.asStoreStoreFence();
         storeStoreFence.getFirstOperand().removeUser(storeStoreFence);
-        iterator.replaceCurrentInstruction(
-            InvokeStatic.builder()
-                .setMethod(appView.dexItemFactory().javaLangInvokeVarHandleMembers.storeStoreFence)
-                .setPosition(storeStoreFence)
-                .build());
+        if (options.canUseJavaLangVarHandleStoreStoreFence(appView)) {
+          iterator.replaceCurrentInstruction(
+              InvokeStatic.builder()
+                  .setMethod(
+                      appView.dexItemFactory().javaLangInvokeVarHandleMembers.storeStoreFence)
+                  .setPosition(storeStoreFence)
+                  .build());
+        } else {
+          SyntheticUnsafeClass syntheticUnsafeClass = appView.getSyntheticUnsafeClass();
+          iterator.replaceCurrentInstruction(
+              InvokeStatic.builder()
+                  .setMethod(syntheticUnsafeClass.getStoreStoreFenceMethod())
+                  .setPosition(storeStoreFence)
+                  .build());
+          includeSyntheticUnsafeClassInProfile(code, syntheticUnsafeClass);
+        }
         hasChanged = true;
       }
     }
     return CodeRewriterResult.hasChanged(hasChanged);
+  }
+
+  private void includeSyntheticUnsafeClassInProfile(
+      IRCode code, SyntheticUnsafeClass syntheticUnsafeClass) {
+    profileCollectionAdditions.applyIfContextIsInProfile(
+        code.context().getReference(),
+        additionsBuilder ->
+            additionsBuilder
+                .addClassRule(syntheticUnsafeClass.getUnsafeClass())
+                .addMethodRule(syntheticUnsafeClass.getClassInitializer())
+                .addMethodRule(syntheticUnsafeClass.getStoreStoreFenceMethod()));
   }
 }

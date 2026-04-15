@@ -151,13 +151,11 @@ public abstract class DexApplication implements DexDefinitionSupplier {
     public final InternalOptions options;
     public final DexItemFactory dexItemFactory;
     ClassNameMapper proguardMap;
-    final Timing timing;
     DexApplicationReadFlags flags;
 
-    public Builder(InternalOptions options, Timing timing) {
+    public Builder(InternalOptions options) {
       this.options = options;
       this.dexItemFactory = options.itemFactory;
-      this.timing = timing;
     }
 
     abstract T self();
@@ -167,7 +165,6 @@ public abstract class DexApplication implements DexDefinitionSupplier {
       programClasses.addAll(application.programClasses());
       dataResourceProviders.addAll(application.dataResourceProviders);
       proguardMap = application.getProguardMap();
-      timing = application.timing;
       options = application.options;
       dexItemFactory = application.dexItemFactory;
     }
@@ -249,11 +246,11 @@ public abstract class DexApplication implements DexDefinitionSupplier {
       return programClasses;
     }
 
-    public abstract S build();
+    public abstract S build(Timing timing);
   }
 
-  public static LazyLoadedDexApplication.Builder builder(InternalOptions options, Timing timing) {
-    return new LazyLoadedDexApplication.Builder(options, timing);
+  public static LazyLoadedDexApplication.Builder builder(InternalOptions options) {
+    return new LazyLoadedDexApplication.Builder(options);
   }
 
   public DirectMappedDexApplication asDirect() {

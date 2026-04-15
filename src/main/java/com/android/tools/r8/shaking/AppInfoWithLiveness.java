@@ -278,10 +278,10 @@ public class AppInfoWithLiveness extends AppInfoWithClassHierarchy
   }
 
   private AppInfoWithLiveness(
-      AppInfoWithLiveness previous, PrunedItems prunedItems, TaskCollection<?> tasks)
+      AppInfoWithLiveness previous, PrunedItems prunedItems, TaskCollection<?> tasks, Timing timing)
       throws ExecutionException {
     this(
-        previous.getSyntheticItems().commitPrunedItems(prunedItems),
+        previous.getSyntheticItems().commitPrunedItems(prunedItems, timing),
         previous.getClassToFeatureSplitMap().withoutPrunedItems(prunedItems),
         previous.getMainDexInfo().withoutPrunedItems(prunedItems),
         previous.getMissingClasses(),
@@ -404,9 +404,9 @@ public class AppInfoWithLiveness extends AppInfoWithClassHierarchy
   }
 
   @Override
-  public AppInfoWithLiveness rebuildWithMainDexInfo(MainDexInfo mainDexInfo) {
+  public AppInfoWithLiveness rebuildWithMainDexInfo(MainDexInfo mainDexInfo, Timing timing) {
     return new AppInfoWithLiveness(
-        getSyntheticItems().commit(app()),
+        getSyntheticItems().commit(app(), timing),
         getClassToFeatureSplitMap(),
         mainDexInfo,
         getMissingClasses(),
@@ -474,9 +474,11 @@ public class AppInfoWithLiveness extends AppInfoWithClassHierarchy
   }
 
   public AppInfoWithLiveness(
-      AppInfoWithLiveness previous, Map<DexField, Int2ReferenceMap<DexField>> switchMaps) {
+      AppInfoWithLiveness previous,
+      Map<DexField, Int2ReferenceMap<DexField>> switchMaps,
+      Timing timing) {
     super(
-        previous.getSyntheticItems().commit(previous.app()),
+        previous.getSyntheticItems().commit(previous.app(), timing),
         previous.getClassToFeatureSplitMap(),
         previous.getMainDexInfo(),
         previous.getMissingClasses());
@@ -932,15 +934,16 @@ public class AppInfoWithLiveness extends AppInfoWithClassHierarchy
       keepInfo.mutate(keepInfo -> keepInfo.removeKeepInfoForPrunedItems(prunedItems));
     }
     TaskCollection<?> tasks = new TaskCollection<>(options(), executorService);
-    AppInfoWithLiveness appInfoWithLiveness = new AppInfoWithLiveness(this, prunedItems, tasks);
+    AppInfoWithLiveness appInfoWithLiveness =
+        new AppInfoWithLiveness(this, prunedItems, tasks, timing);
     tasks.await();
     timing.end();
     return appInfoWithLiveness;
   }
 
   @Override
-  public AppInfoWithLiveness rebuild(DexApplication application) {
-    return rebuildWithCommittedItems(getSyntheticItems().commit(application));
+  public AppInfoWithLiveness rebuild(DexApplication application, Timing timing) {
+    return rebuildWithCommittedItems(getSyntheticItems().commit(application, timing));
   }
 
   @Override
@@ -1252,10 +1255,11 @@ public class AppInfoWithLiveness extends AppInfoWithClassHierarchy
     return null;
   }
 
-  public AppInfoWithLiveness withSwitchMaps(Map<DexField, Int2ReferenceMap<DexField>> switchMaps) {
+  public AppInfoWithLiveness withSwitchMaps(
+      Map<DexField, Int2ReferenceMap<DexField>> switchMaps, Timing timing) {
     assert checkIfObsolete();
     assert this.switchMaps.isEmpty();
-    return new AppInfoWithLiveness(this, switchMaps);
+    return new AppInfoWithLiveness(this, switchMaps, timing);
   }
 
   /**

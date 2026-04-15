@@ -26,6 +26,7 @@ import com.android.tools.r8.ir.conversion.DexBuilder;
 import com.android.tools.r8.ir.optimize.Inliner.ConstraintWithTarget;
 import com.android.tools.r8.ir.optimize.InliningConstraints;
 import com.android.tools.r8.lightir.LirBuilder;
+import com.android.tools.r8.utils.AndroidApiLevelUtils;
 
 public class ConstClass extends ConstInstruction {
 
@@ -120,16 +121,17 @@ public class ConstClass extends ConstInstruction {
       AbstractValueSupplier abstractValueSupplier,
       SideEffectAssumption assumption) {
     DexType baseType = getType().getBaseType();
-    if (baseType.isPrimitiveType()) {
+    if (baseType.isPrimitiveType() || baseType.isIdenticalTo(context.getHolderType())) {
       return false;
+    }
+
+    DexClass clazz = appView.definitionFor(baseType);
+    if (clazz != null && clazz.isLibraryClass()) {
+      return !AndroidApiLevelUtils.isApiSafeForReference(clazz.asLibraryClass(), appView);
     }
 
     // Not applicable for D8.
     if (!appView.enableWholeProgramOptimizations()) {
-      // Unless the type of interest is same as the context.
-      if (baseType == context.getHolderType()) {
-        return false;
-      }
       return true;
     }
 
@@ -137,7 +139,6 @@ public class ConstClass extends ConstInstruction {
     AppView<? extends AppInfoWithClassHierarchy> appViewWithClassHierarchy =
         appView.withClassHierarchy();
 
-    DexClass clazz = appView.definitionFor(baseType);
     // * Check that the class and its super types are present.
     if (clazz == null || !clazz.isResolvable(appView)) {
       return true;

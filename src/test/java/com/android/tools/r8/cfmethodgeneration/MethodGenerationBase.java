@@ -77,7 +77,16 @@ public abstract class MethodGenerationBase extends CodeGenerationBase {
 
   // Running this method generate the content of the generated class but does not overwrite it.
   protected String generateMethods() throws IOException {
-    CfCodePrinter codePrinter = new CfCodePrinter();
+    CfCodePrinter codePrinter =
+        new CfCodePrinter() {
+          @Override
+          protected String dexType(DexType type) {
+            if (type.isIdenticalTo(getGeneratedType())) {
+              return "method.getHolderType()";
+            }
+            return super.dexType(type);
+          }
+        };
 
     File tempFile = File.createTempFile("output-", ".java");
 
@@ -94,8 +103,7 @@ public abstract class MethodGenerationBase extends CodeGenerationBase {
   private void readMethodTemplatesInto(
       CfCodePrinter codePrinter,
       BiConsumer<DexEncodedMethod, String> generatedMethods,
-      Consumer<DexEncodedField> generatedFields)
-      throws IOException {
+      Consumer<DexEncodedField> generatedFields) {
     InternalOptions options = new InternalOptions(factory, new Reporter());
     options.testing.readInputStackMaps = true;
     JarClassFileReader<DexProgramClass> reader =

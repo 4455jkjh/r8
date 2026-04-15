@@ -39,6 +39,7 @@ import com.android.tools.r8.ir.optimize.info.field.InstanceFieldInitializationIn
 import com.android.tools.r8.ir.optimize.library.LibraryMemberOptimizer;
 import com.android.tools.r8.ir.optimize.library.LibraryMethodSideEffectModelCollection;
 import com.android.tools.r8.ir.optimize.outliner.bottomup.BottomUpOutliner;
+import com.android.tools.r8.ir.optimize.unsafe.SyntheticUnsafeClass;
 import com.android.tools.r8.naming.NamingLens;
 import com.android.tools.r8.naming.SeedMapper;
 import com.android.tools.r8.optimize.MemberRebindingIdentityLens;
@@ -144,6 +145,7 @@ public class AppView<T extends AppInfo> implements DexDefinitionSupplier, Librar
   private final ProtoShrinker protoShrinker;
   // TODO(b/453628974): Maintain until last use and clear after.
   private AtomicFieldUpdaterInstrumentorInfo atomicFieldUpdaterInstrumentorInfo = null;
+  private SyntheticUnsafeClass syntheticUnsafeClass;
 
   // Optimization results.
   private boolean allCodeProcessed = false;
@@ -417,17 +419,17 @@ public class AppView<T extends AppInfo> implements DexDefinitionSupplier, Librar
     return appViewWithSpecializedAppInfo;
   }
 
-  public void rebuildAppInfo() {
-    rebuildAppInfo(app());
+  public void rebuildAppInfo(Timing timing) {
+    rebuildAppInfo(timing, app());
   }
 
-  public void rebuildAppInfo(DexApplication app) {
+  public void rebuildAppInfo(Timing timing, DexApplication app) {
     if (hasLiveness()) {
-      withLiveness().setAppInfo(appInfoWithLiveness().rebuild(app));
+      withLiveness().setAppInfo(appInfoWithLiveness().rebuild(app, timing));
     } else if (hasClassHierarchy()) {
-      withClassHierarchy().setAppInfo(appInfoWithClassHierarchy().rebuild(app));
+      withClassHierarchy().setAppInfo(appInfoWithClassHierarchy().rebuild(app, timing));
     } else {
-      withoutClassHierarchy().setAppInfo(appInfo().rebuild(app));
+      withoutClassHierarchy().setAppInfo(appInfo().rebuild(app, timing));
     }
   }
 
@@ -701,6 +703,14 @@ public class AppView<T extends AppInfo> implements DexDefinitionSupplier, Librar
   public void setAtomicFieldUpdaterInstrumentorInfo(AtomicFieldUpdaterInstrumentorInfo info) {
     assert atomicFieldUpdaterInstrumentorInfo == null;
     atomicFieldUpdaterInstrumentorInfo = info;
+  }
+
+  public SyntheticUnsafeClass getSyntheticUnsafeClass() {
+    return syntheticUnsafeClass;
+  }
+
+  public void setSyntheticUnsafeClass(SyntheticUnsafeClass syntheticUnsafeClass) {
+    this.syntheticUnsafeClass = syntheticUnsafeClass;
   }
 
   public GraphLens codeLens() {
@@ -1176,7 +1186,7 @@ public class AppView<T extends AppInfo> implements DexDefinitionSupplier, Librar
                         appInfo
                             .getMainDexInfo()
                             .rewrittenWithLens(appView.getSyntheticItems(), lens, timing);
-                    result = appInfo.rebuildWithMainDexInfo(rewrittenMainDexInfo);
+                    result = appInfo.rebuildWithMainDexInfo(rewrittenMainDexInfo, timing);
                   }
                 }
 
@@ -1332,6 +1342,18 @@ public class AppView<T extends AppInfo> implements DexDefinitionSupplier, Librar
                 public boolean shouldRun() {
                   return appView.hasInitializedClassesInInstanceMethods();
                 }
+              },
+              new ThreadTask() {
+                @Override
+                public void run(Timing timing) throws Exception {
+                  appView.setSyntheticUnsafeClass(
+                      appView.getSyntheticUnsafeClass().rewrittenWithLens(lens, appliedLens));
+                }
+
+                @Override
+                public boolean shouldRun() {
+                  return appView.getSyntheticUnsafeClass() != null;
+                }
               });
         });
 
@@ -1391,7 +1413,7 @@ public class AppView<T extends AppInfo> implements DexDefinitionSupplier, Librar
     SyntheticItems syntheticItems = appView.getSyntheticItems();
     appView.setAppInfo(
         appInfo.rebuildWithMainDexInfo(
-            appInfo.getMainDexInfo().rewrittenWithLens(syntheticItems, lens, timing)));
+            appInfo.getMainDexInfo().rewrittenWithLens(syntheticItems, lens, timing), timing));
     appView.setArtProfileCollection(
         appView.getArtProfileCollection().rewrittenWithLens(appView, lens, timing));
   }

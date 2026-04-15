@@ -106,7 +106,10 @@ public abstract class Event {
 
     @Override
     public String toString() {
-      return "Cannot instrument " + field.qualifiedName();
+      return "Cannot instrument "
+          + field.qualifiedName()
+          + " of type "
+          + field.getType().getSimpleName();
     }
   }
 

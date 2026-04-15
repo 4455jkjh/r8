@@ -89,22 +89,13 @@ public abstract class VarHandleDesugaringTestBase extends TestBase {
     IntBox unsafeCompareAndSwapObject = new IntBox();
     DexString compareAndSwapInt = inspector.getFactory().createString("compareAndSwapInt");
     DexString compareAndSwapLong = inspector.getFactory().createString("compareAndSwapLong");
-    DexString compareAndSwapObject = inspector.getFactory().createString("compareAndSwapObject");
     // Right now we only expect one backport coming out of DesugarVarHandle - the backport with
     // forwarding of Unsafe.compareAndSwapObject.
     MethodReference firstBackportFromVarHandle =
         syntheticItems.syntheticBackportWithForwardingMethod(
             Reference.classFromDescriptor("Ljava/lang/invoke/VarHandle;"),
             0,
-            Reference.method(
-                Reference.classFromDescriptor("Lsun/misc/Unsafe;"),
-                "compareAndSwapObject",
-                ImmutableList.of(
-                    Reference.typeFromDescriptor("Ljava/lang/Object;"),
-                    Reference.LONG,
-                    Reference.typeFromDescriptor("Ljava/lang/Object;"),
-                    Reference.typeFromDescriptor("Ljava/lang/Object;")),
-                Reference.BOOL));
+            inspector.getFactory().sunMiscUnsafeMethods.compareAndSwapObject.asMethodReference());
     // The synthesizing context is java.lang.invoke.VarHandle, which is rewritten to
     // com.android.tools.r8.DesugarVarHandle using a NamingLens (but D8 does not emit a mapping
     // file).
@@ -131,7 +122,8 @@ public abstract class VarHandleDesugaringTestBase extends TestBase {
                         instruction -> {
                           if (instruction.isInvoke()) {
                             DexMethod target = instruction.getMethod();
-                            if (target.getHolderType() == inspector.getFactory().unsafeType) {
+                            if (target.getHolderType()
+                                == inspector.getFactory().sunMiscUnsafeType) {
                               if (target.getName() == compareAndSwapInt
                                   || target.getName() == compareAndSwapLong) {
                                 // All compareAndSwapInt and compareAndSwapLong stay on
@@ -143,7 +135,10 @@ public abstract class VarHandleDesugaringTestBase extends TestBase {
                                     target.getName() == compareAndSwapInt);
                                 unsafeCompareAndSwapLong.incrementIf(
                                     target.getName() == compareAndSwapLong);
-                              } else if (target.getName() == compareAndSwapObject) {
+                              } else if (target.isIdenticalTo(
+                                  inspector.getFactory()
+                                      .sunMiscUnsafeMethods
+                                      .compareAndSwapObject)) {
                                 // compareAndSwapObject is not on DesugarVarHandle - it must be
                                 // backported.
                                 assertNotSame(

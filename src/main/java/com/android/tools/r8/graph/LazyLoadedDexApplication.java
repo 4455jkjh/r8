@@ -377,8 +377,8 @@ public class LazyLoadedDexApplication extends DexApplication {
     private LibraryClassCollection libraryClasses;
     private List<KeepDeclaration> keepDeclarations = Collections.emptyList();
 
-    Builder(InternalOptions options, Timing timing) {
-      super(options, timing);
+    Builder(InternalOptions options) {
+      super(options);
       this.classpathClasses = ClasspathClassCollection.empty();
       this.synthesizedClasspathClasses = null;
       this.libraryClasses = LibraryClassCollection.empty();
@@ -430,7 +430,7 @@ public class LazyLoadedDexApplication extends DexApplication {
     }
 
     @Override
-    public LazyLoadedDexApplication build() {
+    public LazyLoadedDexApplication build(Timing timing) {
       return new LazyLoadedDexApplication(
           proguardMap,
           flags,
@@ -468,7 +468,7 @@ public class LazyLoadedDexApplication extends DexApplication {
       AllClasses allClasses = loadAllClasses(executorService, timing);
       DirectMappedDexApplication.Builder builder =
           new DirectMappedDexApplication.Builder(this, allClasses);
-      return builder.build();
+      return builder.build(timing);
     } catch (ExecutionException e) {
       throw unwrapExecutionException(e);
     }

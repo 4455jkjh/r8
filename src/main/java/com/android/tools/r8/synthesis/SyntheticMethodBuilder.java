@@ -64,6 +64,10 @@ public class SyntheticMethodBuilder {
     return this;
   }
 
+  public SyntheticMethodBuilder setMethod(DexMethod method) {
+    return setName(method.getName()).setProto(method.getProto());
+  }
+
   public SyntheticMethodBuilder setName(String name) {
     return setName(factory.createString(name));
   }

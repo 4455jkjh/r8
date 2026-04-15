@@ -39,6 +39,10 @@ include(":main")
 
 project(":main").projectDir = file("d8_r8/main")
 
+include(":utils")
+
+project(":utils").projectDir = file("d8_r8/utils")
+
 include(":dist")
 
 project(":dist").projectDir = file("d8_r8/dist")

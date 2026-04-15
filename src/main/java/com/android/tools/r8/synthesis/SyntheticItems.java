@@ -1268,11 +1268,11 @@ public class SyntheticItems {
 
   // Commit of the synthetic items to a new fully populated application.
 
-  public CommittedItems commit(DexApplication application) {
-    return commitPrunedItems(PrunedItems.empty(application));
+  public CommittedItems commit(DexApplication application, Timing timing) {
+    return commitPrunedItems(PrunedItems.empty(application), timing);
   }
 
-  public CommittedItems commitPrunedItems(PrunedItems prunedItems) {
+  public CommittedItems commitPrunedItems(PrunedItems prunedItems, Timing timing) {
     return commit(
         prunedItems,
         pending,
@@ -1280,7 +1280,8 @@ public class SyntheticItems {
         committed,
         finalized,
         state,
-        globalSyntheticsStrategy);
+        globalSyntheticsStrategy,
+        timing);
   }
 
   public CommittedItems commitRewrittenWithLens(
@@ -1295,7 +1296,8 @@ public class SyntheticItems {
             committed.rewriteWithLens(lens, timing),
             finalized.rewriteWithLens(lens, timing),
             state,
-            globalSyntheticsStrategy);
+            globalSyntheticsStrategy,
+            timing);
     timing.end();
     return committedItems;
   }
@@ -1307,7 +1309,8 @@ public class SyntheticItems {
       CommittedSyntheticsCollection committed,
       CommittedSyntheticsCollection finalized,
       State state,
-      GlobalSyntheticsStrategy globalSyntheticsStrategy) {
+      GlobalSyntheticsStrategy globalSyntheticsStrategy,
+      Timing timing) {
     DexApplication application = prunedItems.getPrunedApp();
     Set<DexType> removedClasses = prunedItems.getRemovedClasses();
     CommittedSyntheticsCollection.Builder committedBuilder = committed.builder();
@@ -1339,7 +1342,7 @@ public class SyntheticItems {
       }
       committedBuilder.addGlobalContexts(globalContexts);
       committedProgramTypes = committedProgramTypesBuilder.build();
-      amendedApplication = appBuilder.build();
+      amendedApplication = appBuilder.build(timing);
     }
     return new CommittedItems(
         state,

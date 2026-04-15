@@ -167,7 +167,7 @@ public class L8 {
     LazyLoadedDexApplication lazyApp =
         new ApplicationReader(inputApp, options, timing).read(executor);
     options.getLibraryDesugaringOptions().loadMachineDesugaredLibrarySpecification(timing, lazyApp);
-    DexApplication app = new L8TreePruner(options).prune(lazyApp);
+    DexApplication app = new L8TreePruner(options).prune(lazyApp, timing);
     return AppView.createForL8(
         AppInfo.createInitialAppInfo(app, GlobalSyntheticsStrategy.forSingleOutputMode()));
   }

@@ -35,6 +35,7 @@ import com.android.tools.r8.ir.code.ValueType;
 import com.android.tools.r8.ir.optimize.AffectedValues;
 import com.android.tools.r8.synthesis.SyntheticItems.GlobalSyntheticsStrategy;
 import com.android.tools.r8.utils.InternalOptions;
+import com.android.tools.r8.utils.timing.Timing;
 import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
@@ -472,7 +473,7 @@ public class RegisterMoveSchedulerTest extends TestBase {
     AppView<AppInfo> appInfo =
         AppView.createForD8(
             AppInfo.createInitialAppInfo(
-                DexApplication.builder(options, null).build(),
+                DexApplication.builder(options).build(Timing.empty()),
                 GlobalSyntheticsStrategy.forNonSynthesizing()));
     TypeElement objectType =
         TypeElement.fromDexType(options.itemFactory.objectType, Nullability.maybeNull(), appInfo);

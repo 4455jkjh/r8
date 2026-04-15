@@ -3,8 +3,8 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8;
 
-import static com.android.tools.r8.profile.art.ArtProfileCompletenessChecker.CompletenessExceptions.ALLOW_MISSING_ATOMIC_FIELD_UPDATER_METHODS;
 import static com.android.tools.r8.profile.art.ArtProfileCompletenessChecker.CompletenessExceptions.ALLOW_MISSING_ENUM_UNBOXING_UTILITY_METHODS;
+import static com.android.tools.r8.profile.art.ArtProfileCompletenessChecker.CompletenessExceptions.ALLOW_MISSING_UNSAFE_HELPER_METHODS;
 import static com.android.tools.r8.utils.AssertionUtils.forTesting;
 import static com.android.tools.r8.utils.ExceptionUtils.unwrapExecutionException;
 
@@ -58,6 +58,8 @@ import com.android.tools.r8.ir.optimize.SwitchMapCollector;
 import com.android.tools.r8.ir.optimize.enums.EnumUnboxingCfMethods;
 import com.android.tools.r8.ir.optimize.info.OptimizationInfoRemover;
 import com.android.tools.r8.ir.optimize.templates.CfUtilityMethodsForCodeOptimizations;
+import com.android.tools.r8.ir.optimize.unsafe.SyntheticUnsafeClass;
+import com.android.tools.r8.ir.optimize.unsafe.SyntheticUnsafeMethods;
 import com.android.tools.r8.jar.CfApplicationWriter;
 import com.android.tools.r8.keepanno.annotations.KeepForApi;
 import com.android.tools.r8.keepanno.ast.KeepDeclaration;
@@ -111,6 +113,7 @@ import com.android.tools.r8.shaking.rootset.RootSetBuilder;
 import com.android.tools.r8.startup.NonStartupInStartupOutliner;
 import com.android.tools.r8.synthesis.SyntheticFinalization;
 import com.android.tools.r8.synthesis.SyntheticItems;
+import com.android.tools.r8.tracereferences.NativeReferencesHelper;
 import com.android.tools.r8.utils.AndroidApp;
 import com.android.tools.r8.utils.ExceptionDiagnostic;
 import com.android.tools.r8.utils.ExceptionUtils;
@@ -335,9 +338,11 @@ public class R8 {
       if (options.enableEnumUnboxing) {
         EnumUnboxingCfMethods.registerSynthesizedCodeReferences(appView.dexItemFactory());
       }
-      AtomicFieldUpdaterInstrumentor.registerSynthesizedCodeReferences(appView);
       if (options.desugarRecordState().isNotOff()) {
         RecordInstructionDesugaring.registerSynthesizedCodeReferences(appView.dexItemFactory());
+      }
+      if (SyntheticUnsafeClass.isEnabled(appView)) {
+        SyntheticUnsafeMethods.registerSynthesizedCodeReferences(appView.dexItemFactory());
       }
       if (options.shouldDesugarVarHandle()) {
         VarHandleDesugaring.registerSynthesizedCodeReferences(appView.dexItemFactory());
@@ -352,7 +357,7 @@ public class R8 {
           .synthesizeClasses(executorService, classSynthesizerEventConsumer, timing);
       classSynthesizerEventConsumer.finished(appView);
       if (appView.getSyntheticItems().hasPendingSyntheticClasses()) {
-        appView.rebuildAppInfo();
+        appView.rebuildAppInfo(timing);
       }
       timing.end();
       timing.begin("Strip unused code");
@@ -537,9 +542,10 @@ public class R8 {
 
       // Collect switch maps and ordinals maps.
       if (options.enableEnumSwitchMapRemoval) {
-        appViewWithLiveness.setAppInfo(new SwitchMapCollector(appViewWithLiveness).run());
+        appViewWithLiveness.setAppInfo(new SwitchMapCollector(appViewWithLiveness).run(timing));
       }
 
+      SyntheticUnsafeClass.synthesize(appViewWithLiveness);
       AtomicFieldUpdaterInstrumentor.run(appViewWithLiveness, executorService, timing);
 
       // Collect the already pruned types before creating a new app info without liveness.
@@ -550,8 +556,7 @@ public class R8 {
 
       // AtomicFieldUpdaterInstrumentor adds instrumentation with yet-to-be-determined uses
       // and thus no profile information yet.
-      assert ArtProfileCompletenessChecker.verify(
-          appView, ALLOW_MISSING_ATOMIC_FIELD_UPDATER_METHODS);
+      assert ArtProfileCompletenessChecker.verify(appView, ALLOW_MISSING_UNSAFE_HELPER_METHODS);
 
       new PrimaryR8IRConverter(appViewWithLiveness, timing, enableListIterationRewriter)
           .optimize(appViewWithLiveness, executorService);
@@ -562,7 +567,7 @@ public class R8 {
       assert ArtProfileCompletenessChecker.verify(
           appView,
           ALLOW_MISSING_ENUM_UNBOXING_UTILITY_METHODS,
-          ALLOW_MISSING_ATOMIC_FIELD_UPDATER_METHODS);
+          ALLOW_MISSING_UNSAFE_HELPER_METHODS);
 
       // Clear the reference type lattice element cache to reduce memory pressure.
       appView.getTypeElementFactory().clearTypeElementsCache();
@@ -624,9 +629,8 @@ public class R8 {
                 GenericSignatureContextBuilder.create(appView);
 
             TreePruner pruner = new TreePruner(appViewWithLiveness, treePrunerConfiguration);
-
-                pruner.run(
-                    executorService, timing, PrunedItems.builder().addRemovedClasses(prunedTypes));
+            pruner.run(
+                executorService, timing, PrunedItems.builder().addRemovedClasses(prunedTypes));
 
             if (AssistantExporter.run(appView).shouldExitEarly()) {
               if (options.isPrintTimesReportingEnabled()) {
@@ -776,7 +780,8 @@ public class R8 {
         if (options.getPackageObfuscationMode().isSome()) {
           new Repackaging(appView.withLiveness()).run(executorService, timing);
         }
-        assert Repackaging.verifyIdentityRepackaging(appView.withLiveness(), executorService);
+        assert Repackaging.verifyIdentityRepackaging(
+            appView.withLiveness(), executorService, timing);
       }
 
       GenericSignatureContextBuilder genericContextBuilderBeforeFinalMerging = null;
@@ -875,7 +880,7 @@ public class R8 {
       PrefixRewritingNamingLens.commitPrefixRewritingNamingLens(appView);
       RecordRewritingNamingLens.commitRecordRewritingNamingLens(appView);
 
-      new ApiReferenceStubber(appView).run(executorService);
+      new ApiReferenceStubber(appView).run(executorService, timing);
 
       timing.begin("MinifyKotlinMetadata");
       new KotlinMetadataRewriter(appView).runForR8(executorService);
@@ -922,6 +927,14 @@ public class R8 {
       LirConverter.finalizeLirToOutputFormat(appView, timing, executorService);
       LirConverter.finalizeClasspathLirToOutputFormat(appView, timing, executorService);
       assert appView.getTypeElementFactory().verifyNoCachedTypeElements();
+
+      if (options.nativeReferencesConsumer != null) {
+        NativeReferencesHelper helper =
+            new NativeReferencesHelper(
+                appView, options.nativeReferencesConsumer, appView.reporter(), executorService);
+        helper.process(appView.appInfo().classes());
+        options.nativeReferencesConsumer.finished(appView.reporter());
+      }
 
       // Generate the resulting application resources.
       writeKeepDeclarationsToConfigurationConsumer(keepDeclarations);
@@ -1181,7 +1194,7 @@ public class R8 {
         EnqueuerFactory.createForInitialMainDexTracing(
                 appView, executorService, ImmediateAppSubtypingInfo.create(appView))
             .traceMainDex(executorService, timing);
-    appView.setAppInfo(appView.appInfo().rebuildWithMainDexInfo(mainDexInfo));
+    appView.setAppInfo(appView.appInfo().rebuildWithMainDexInfo(mainDexInfo, timing));
   }
 
   private void performFinalMainDexTracing(
@@ -1207,7 +1220,7 @@ public class R8 {
             mainDexKeptGraphConsumer);
     // Find classes which may have code executed before secondary dex files installation.
     MainDexInfo mainDexInfo = enqueuer.traceMainDex(executorService, timing);
-    appView.setAppInfo(appView.appInfo().rebuildWithMainDexInfo(mainDexInfo));
+    appView.setAppInfo(appView.appInfo().rebuildWithMainDexInfo(mainDexInfo, timing));
 
     processWhyAreYouKeepingAndCheckDiscarded(
         appView.getMainDexRootSet(),

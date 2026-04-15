@@ -69,13 +69,13 @@ public class StartupInstrumentation {
     this.instrumentationOptions = options.getInstrumentationOptions();
   }
 
-  public static void run(AppView<AppInfo> appView, ExecutorService executorService)
+  public static void run(AppView<AppInfo> appView, ExecutorService executorService, Timing timing)
       throws ExecutionException {
     if (appView.options().getInstrumentationOptions().isInstrumentationEnabled()
         && appView.options().isGeneratingDex()) {
       StartupInstrumentation startupInstrumentation = new StartupInstrumentation(appView);
       startupInstrumentation.instrumentAllClasses(executorService);
-      startupInstrumentation.injectStartupRuntimeLibrary(executorService);
+      startupInstrumentation.injectStartupRuntimeLibrary(executorService, timing);
     }
   }
 
@@ -87,7 +87,7 @@ public class StartupInstrumentation {
         executorService);
   }
 
-  private void injectStartupRuntimeLibrary(ExecutorService executorService)
+  private void injectStartupRuntimeLibrary(ExecutorService executorService, Timing timing)
       throws ExecutionException {
     // Only inject the startup instrumentation server if it is not already in the app.
     if (appView.definitionFor(references.instrumentationServerImplType) != null) {
@@ -116,8 +116,8 @@ public class StartupInstrumentation {
         executorService);
 
     DexApplication newApplication =
-        appView.app().builder().addProgramClasses(extraProgramClasses).build();
-    appView.rebuildAppInfo(newApplication);
+        appView.app().builder().addProgramClasses(extraProgramClasses).build(timing);
+    appView.rebuildAppInfo(timing, newApplication);
   }
 
   private List<DexProgramClass> createStartupRuntimeLibraryClasses() {

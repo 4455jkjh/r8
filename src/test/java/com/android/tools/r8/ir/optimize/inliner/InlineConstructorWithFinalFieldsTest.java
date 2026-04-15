@@ -4,19 +4,24 @@
 package com.android.tools.r8.ir.optimize.inliner;
 
 import static com.android.tools.r8.utils.codeinspector.CodeMatchers.invokesMethod;
+import static com.android.tools.r8.utils.codeinspector.CodeMatchers.invokesMethodWithName;
 import static com.android.tools.r8.utils.codeinspector.Matchers.isAbsentIf;
 import static com.android.tools.r8.utils.codeinspector.Matchers.isFinal;
 import static com.android.tools.r8.utils.codeinspector.Matchers.isPresent;
-import static com.android.tools.r8.utils.codeinspector.Matchers.notIf;
+import static com.android.tools.r8.utils.codeinspector.Matchers.isPresentAndRenamed;
 import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 
 import com.android.tools.r8.AlwaysInline;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.references.Reference;
+import com.android.tools.r8.synthesis.SyntheticItemsTestUtils;
 import com.android.tools.r8.utils.BooleanUtils;
+import com.android.tools.r8.utils.InternalOptions.InlinerOptions;
 import com.android.tools.r8.utils.MethodReferenceUtils;
 import com.android.tools.r8.utils.codeinspector.ClassSubject;
 import com.android.tools.r8.utils.codeinspector.FieldSubject;
@@ -53,9 +58,13 @@ public class InlineConstructorWithFinalFieldsTest extends TestBase {
             testBuilder -> testBuilder.addLibraryFiles(ToolHelper.getMostRecentAndroidJar()))
         .addKeepMainRule(Main.class)
         .addOptionsModification(
-            options ->
-                options.inlinerOptions().skipStoreStoreFenceInConstructorInlining =
-                    skipStoreStoreFenceInConstructorInlining)
+            options -> {
+              InlinerOptions inlinerOptions = options.inlinerOptions();
+              assertFalse(inlinerOptions.enableConstructorInliningWithFinalFieldsPreAndroidT);
+              inlinerOptions.enableConstructorInliningWithFinalFieldsPreAndroidT = true;
+              inlinerOptions.skipStoreStoreFenceInConstructorInlining =
+                  skipStoreStoreFenceInConstructorInlining;
+            })
         .enableAlwaysInliningAnnotations()
         .setMinApi(parameters)
         .compile()
@@ -75,6 +84,7 @@ public class InlineConstructorWithFinalFieldsTest extends TestBase {
                   initMethodSubject,
                   isAbsentIf(
                       parameters.canUseJavaLangInvokeVarHandleStoreStoreFence()
+                          || parameters.canUseUnsafeStoreFence()
                           || (parameters.canInitNewInstanceUsingSuperclassConstructor()
                               && skipStoreStoreFenceInConstructorInlining)));
 
@@ -89,13 +99,28 @@ public class InlineConstructorWithFinalFieldsTest extends TestBase {
                 assertThat(
                     mainMethodSubject,
                     invokesMethod(MethodReferenceUtils.instanceConstructor(Object.class)));
-                assertThat(
-                    mainMethodSubject,
-                    notIf(
-                        invokesMethod(
-                            Reference.methodFromDescriptor(
-                                "Ljava/lang/invoke/VarHandle;", "storeStoreFence", "()V")),
-                        skipStoreStoreFenceInConstructorInlining));
+                if (skipStoreStoreFenceInConstructorInlining) {
+                  assertThat(mainMethodSubject, not(invokesMethodWithName("storeStoreFence")));
+                  // Synthetic Unsafe class not present.
+                  assertEquals(1, inspector.allClasses().size());
+                } else if (parameters.canUseJavaLangInvokeVarHandleStoreStoreFence()) {
+                  // Synthetic Unsafe class not present.
+                  assertEquals(1, inspector.allClasses().size());
+                  assertThat(
+                      mainMethodSubject,
+                      invokesMethod(
+                          Reference.methodFromDescriptor(
+                              "Ljava/lang/invoke/VarHandle;", "storeStoreFence", "()V")));
+                } else {
+                  ClassSubject unsafeClass =
+                      inspector.clazz(SyntheticItemsTestUtils.syntheticUnsafeClass(Main.class));
+                  assertThat(unsafeClass, isPresentAndRenamed());
+
+                  MethodSubject storeStoreFenceMethod =
+                      unsafeClass.uniqueMethodWithOriginalName("storeStoreFence");
+                  assertThat(storeStoreFenceMethod, isPresentAndRenamed());
+                  assertThat(mainMethodSubject, invokesMethod(storeStoreFenceMethod));
+                }
                 assertThat(xFieldSubject, not(isFinal()));
                 assertThat(yFieldSubject, not(isFinal()));
               }

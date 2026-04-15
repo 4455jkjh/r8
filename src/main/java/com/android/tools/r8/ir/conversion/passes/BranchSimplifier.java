@@ -150,10 +150,14 @@ public class BranchSimplifier extends CodeRewriterPass<AppInfo> {
         }
       }
     }
-    AffectedValues affectedValues = code.removeUnreachableBlocks();
-    affectedValues.narrowingWithAssumeRemoval(appView, code);
-    code.removeRedundantBlocks();
-    return create(!affectedValues.isEmpty(), simplified);
+    if (simplified) {
+      AffectedValues affectedValues = code.removeUnreachableBlocks();
+      code.removeAllDeadAndTrivialPhis(null, affectedValues);
+      affectedValues.narrowingWithAssumeRemoval(appView, code);
+      code.removeRedundantBlocks();
+      return create(!affectedValues.isEmpty(), simplified);
+    }
+    return NO_CHANGE;
   }
 
   public static class ControlFlowSimplificationResult implements CodeRewriterResult {

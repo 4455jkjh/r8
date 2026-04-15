@@ -115,21 +115,21 @@ public class AppInfo implements DexDefinitionSupplier {
     AppInfo result =
         new AppInfo(
             classToFeatureSplitMap.withoutPrunedItems(prunedItems),
-            getSyntheticItems().commitPrunedItems(prunedItems),
+            getSyntheticItems().commitPrunedItems(prunedItems, timing),
             getMainDexInfo().withoutPrunedItems(prunedItems));
     timing.end();
     return result;
   }
 
-  protected AppInfo rebuild(DexApplication app) {
-    return rebuildWithCommittedItems(getSyntheticItems().commit(app));
+  protected AppInfo rebuild(DexApplication app, Timing timing) {
+    return rebuildWithCommittedItems(getSyntheticItems().commit(app, timing));
   }
 
   public AppInfo rebuildWithCommittedItems(CommittedItems committedItems) {
     return new AppInfo(classToFeatureSplitMap, committedItems, mainDexInfo);
   }
 
-  public AppInfo rebuildWithMainDexInfo(MainDexInfo mainDexInfo) {
+  public AppInfo rebuildWithMainDexInfo(MainDexInfo mainDexInfo, Timing timing) {
     assert checkIfObsolete();
     return new AppInfo(app, classToFeatureSplitMap, syntheticItems, mainDexInfo, new BooleanBox());
   }

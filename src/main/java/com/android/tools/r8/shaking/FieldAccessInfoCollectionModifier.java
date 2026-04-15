@@ -43,8 +43,9 @@ public class FieldAccessInfoCollectionModifier {
 
     public Builder() {}
 
-    public void addField(DexField field) {
+    public Builder addField(DexField field) {
       newFields.add(field);
+      return this;
     }
 
     public FieldAccessInfoCollectionModifier build() {

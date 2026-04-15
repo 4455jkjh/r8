@@ -292,7 +292,7 @@ public final class D8 {
         LazyLoadedDexApplication app =
             rewriteNonDexInputs(appView, inputApp, executor, marker, timing);
         timing.end();
-        appView.rebuildAppInfo(app);
+        appView.rebuildAppInfo(timing, app);
         appView.setNamingLens(NamingLens.getIdentityLens());
       } else if (options.isGeneratingDex() && hasDexResources) {
         appView.setNamingLens(NamingLens.getIdentityLens());
@@ -305,7 +305,7 @@ public final class D8 {
         appView.getTypeElementFactory().clearTypeElementsCache();
         MainDexInfo mainDexInfo =
             new GenerateMainDexList(options).traceMainDexForD8(appView, executor);
-        appView.setAppInfo(appView.appInfo().rebuildWithMainDexInfo(mainDexInfo));
+        appView.setAppInfo(appView.appInfo().rebuildWithMainDexInfo(mainDexInfo, timing));
         timing.end();
       }
 
@@ -404,10 +404,12 @@ public final class D8 {
         () -> new KotlinMetadataRewriter(appView).runForD8(executorService));
 
     timing.time(
-        "Startup instrumentation", () -> StartupInstrumentation.run(appView, executorService));
+        "Startup instrumentation",
+        () -> StartupInstrumentation.run(appView, executorService, timing));
 
     timing.time(
-        "Api reference stubber", () -> new ApiReferenceStubber(appView).run(executorService));
+        "Api reference stubber",
+        () -> new ApiReferenceStubber(appView).run(executorService, timing));
   }
 
   private static LazyLoadedDexApplication rewriteNonDexInputs(
@@ -436,8 +438,8 @@ public final class D8 {
       }
     }
     DexApplication cfApp =
-        appView.app().builder().replaceProgramClasses(nonDexProgramClasses).build();
-    appView.rebuildAppInfo(cfApp);
+        appView.app().builder().replaceProgramClasses(nonDexProgramClasses).build(timing);
+    appView.rebuildAppInfo(timing, cfApp);
     ConvertedCfFiles convertedCfFiles = new ConvertedCfFiles();
     new GenericSignatureRewriter(appView).run(appView.appInfo().classes(), executor);
     new KotlinMetadataRewriter(appView).runForD8(executor);
@@ -452,7 +454,7 @@ public final class D8 {
     for (DexProgramClass dexProgramClass : dexProgramClasses) {
       finalDexApp.addProgramClass(dexProgramClass);
     }
-    return finalDexApp.build();
+    return finalDexApp.build(timing);
   }
 
   public static class ConvertedCfFiles implements DexIndexedConsumer, ProgramResourceProvider {

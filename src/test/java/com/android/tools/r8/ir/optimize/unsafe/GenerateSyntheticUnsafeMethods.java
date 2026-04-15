@@ -2,14 +2,13 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-package com.android.tools.r8.atomicFieldUpdaterOptimization;
+package com.android.tools.r8.ir.optimize.unsafe;
 
 import static org.junit.Assert.assertEquals;
 
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.ToolHelper.TestDataSourceSet;
-import com.android.tools.r8.atomicFieldUpdaterOptimization.AtomicFieldUpdaterOptimizationMethods.UnsafeStub;
 import com.android.tools.r8.cfmethodgeneration.InstructionTypeMapper;
 import com.android.tools.r8.cfmethodgeneration.MethodGenerationBase;
 import com.android.tools.r8.graph.CfCode;
@@ -18,6 +17,7 @@ import com.android.tools.r8.graph.DexEncodedMethod;
 import com.android.tools.r8.graph.DexProto;
 import com.android.tools.r8.graph.DexType;
 import com.android.tools.r8.graph.DexTypeList;
+import com.android.tools.r8.ir.optimize.unsafe.SyntheticUnsafeMethodTemplates.UnsafeStub;
 import com.android.tools.r8.utils.DescriptorUtils;
 import com.android.tools.r8.utils.FileUtils;
 import com.google.common.collect.ImmutableList;
@@ -31,28 +31,24 @@ import java.util.stream.Collectors;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameter;
 import org.junit.runners.Parameterized.Parameters;
 
 @RunWith(Parameterized.class)
-public class GenerateAtomicFieldUpdaterOptimizationMethods extends MethodGenerationBase {
+public class GenerateSyntheticUnsafeMethods extends MethodGenerationBase {
 
   private final DexType GENERATED_TYPE =
-      factory.createType(
-          DescriptorUtils.javaClassToDescriptor(
-              com.android.tools.r8.ir.synthetic.AtomicFieldUpdaterOptimizationMethods.class));
+      factory.createType(DescriptorUtils.javaClassToDescriptor(SyntheticUnsafeMethods.class));
 
   private final List<Class<?>> METHOD_TEMPLATE_CLASSES =
-      ImmutableList.of(AtomicFieldUpdaterOptimizationMethods.class);
+      ImmutableList.of(SyntheticUnsafeMethodTemplates.class);
 
-  protected final TestParameters parameters;
+  @Parameter(0)
+  public TestParameters parameters;
 
   @Parameters(name = "{0}")
   public static TestParametersCollection data() {
     return getTestParameters().withNoneRuntime().build();
-  }
-
-  public GenerateAtomicFieldUpdaterOptimizationMethods(TestParameters parameters) {
-    this.parameters = parameters;
   }
 
   @Override
@@ -74,7 +70,9 @@ public class GenerateAtomicFieldUpdaterOptimizationMethods extends MethodGenerat
   protected DexEncodedField getField(DexEncodedField field) {
     if (field.getType().getTypeName().endsWith("UnsafeStub")) {
       return DexEncodedField.builder(field)
-          .setField(factory.createField(field.getHolderType(), factory.unsafeType, field.getName()))
+          .setField(
+              factory.createField(
+                  field.getHolderType(), factory.sunMiscUnsafeType, field.getName()))
           .disableAndroidApiLevelCheck()
           .build();
     }
@@ -88,8 +86,11 @@ public class GenerateAtomicFieldUpdaterOptimizationMethods extends MethodGenerat
         new InstructionTypeMapper(
             factory,
             ImmutableMap.of(
+                factory.createType(
+                    DescriptorUtils.javaClassToDescriptor(SyntheticUnsafeMethodTemplates.class)),
+                GENERATED_TYPE,
                 factory.createType(DescriptorUtils.javaClassToDescriptor(UnsafeStub.class)),
-                factory.unsafeType),
+                factory.sunMiscUnsafeType),
             Function.identity());
     code.setInstructions(
         code.getInstructions().stream()
@@ -106,7 +107,7 @@ public class GenerateAtomicFieldUpdaterOptimizationMethods extends MethodGenerat
     DexProto originalProto = method.getProto();
     DexType returnType;
     if (originalProto.getReturnType().isIdenticalTo(unsafeStub)) {
-      returnType = factory.unsafeType;
+      returnType = factory.sunMiscUnsafeType;
     } else {
       returnType = originalProto.getReturnType();
     }
@@ -114,7 +115,7 @@ public class GenerateAtomicFieldUpdaterOptimizationMethods extends MethodGenerat
         originalProto.parameters.map(
             param -> {
               if (param.isIdenticalTo(unsafeStub)) {
-                return factory.unsafeType;
+                return factory.sunMiscUnsafeType;
               } else {
                 return param;
               }
@@ -137,6 +138,6 @@ public class GenerateAtomicFieldUpdaterOptimizationMethods extends MethodGenerat
   public static void main(String[] args) throws Exception {
     setUpSystemPropertiesForMain(
         TestDataSourceSet.TESTS_JAVA_8, TestDataSourceSet.TESTBASE_DATA_LOCATION);
-    new GenerateAtomicFieldUpdaterOptimizationMethods(null).generateMethodsAndWriteThemToFile();
+    new GenerateSyntheticUnsafeMethods().generateMethodsAndWriteThemToFile();
   }
 }

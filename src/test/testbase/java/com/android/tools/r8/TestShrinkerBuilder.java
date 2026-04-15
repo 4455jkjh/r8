@@ -398,6 +398,15 @@ public abstract class TestShrinkerBuilder<
     return self();
   }
 
+  public T addKeepNativeRule() {
+    addKeepRules(
+        StringUtils.lines(
+            "-keepclasseswithmembernames,includedescriptorclasses class * {",
+            "  native <methods>;",
+            "}"));
+    return self();
+  }
+
   public T addPrintSeeds() {
     return addKeepRules("-printseeds");
   }

@@ -395,6 +395,7 @@ def test(options, args):
             utils.DownloadFromGoogleCloudStorage(utils.BAZEL_SHA_FILE)
             utils.DownloadFromGoogleCloudStorage(utils.JAVA8_SHA_FILE)
             utils.DownloadFromGoogleCloudStorage(utils.JAVA11_SHA_FILE)
+            utils.DownloadFromGoogleCloudStorage(utils.JAVA17_SHA_FILE)
             (library_jar,
              maven_zip) = archive_desugar_jdk_libs.BuildDesugaredLibrary(
                  checkout_dir, 'jdk11_legacy' if

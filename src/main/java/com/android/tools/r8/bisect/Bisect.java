@@ -70,11 +70,11 @@ public class Bisect {
     this.options = options;
   }
 
-  public static DexProgramClass run(BisectState state, Command command, Path output,
-      ExecutorService executor)
+  public static DexProgramClass run(
+      Timing timing, BisectState state, Command command, Path output, ExecutorService executor)
       throws Exception {
     while (true) {
-      DexApplication app = state.bisect();
+      DexApplication app = state.bisect(timing);
       state.write();
       if (app == null) {
         return state.getFinalClass();
@@ -91,7 +91,7 @@ public class Bisect {
     }
   }
 
-  public DexProgramClass run() throws Exception {
+  public DexProgramClass run(Timing timing) throws Exception {
     // Setup output directory (or write to a temp dir).
     Path output;
     if (options.output != null) {
@@ -131,7 +131,7 @@ public class Bisect {
       }
 
       // Run bisection.
-      return run(state, command, output, executor);
+      return run(timing, state, command, output, executor);
     } finally {
       executor.shutdown();
     }
@@ -198,8 +198,8 @@ public class Bisect {
     options.mapConsumer = mapConsumer;
   }
 
-  public static DexProgramClass run(BisectOptions options) throws Exception {
-    return new Bisect(options).run();
+  public static DexProgramClass run(Timing timing, BisectOptions options) throws Exception {
+    return new Bisect(options).run(timing);
   }
 
   public static void main(String[] args) throws Exception {
@@ -214,7 +214,7 @@ public class Bisect {
     if (options == null) {
       return;
     }
-    DexProgramClass clazz = Bisect.run(options);
+    DexProgramClass clazz = Bisect.run(Timing.empty(), options);
     if (clazz != null) {
       System.out.println("Bisection found final bad class " + clazz);
     }
