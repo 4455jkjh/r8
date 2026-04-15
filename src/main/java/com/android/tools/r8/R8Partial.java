@@ -123,6 +123,7 @@ class R8Partial {
             .setMode(options.getCompilationMode())
             .setProgramConsumer(DexIndexedConsumer.emptyConsumer());
     input.configure(d8Builder);
+    d8Builder.getAppBuilder().disableAndroidJarHiddenClassExtension();
     d8Builder.validate();
     D8Command d8Command = d8Builder.makeD8Command(options.dexItemFactory());
     AndroidApp d8App = d8Command.getInputApp();
@@ -230,6 +231,7 @@ class R8Partial {
             });
       }
     }
+    r8Builder.getAppBuilder().disableAndroidJarHiddenClassExtension();
     r8Builder.validate();
     R8Command r8Command =
         r8Builder.makeR8Command(options.dexItemFactory(), options.getProguardConfiguration());

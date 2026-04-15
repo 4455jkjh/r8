@@ -89,6 +89,7 @@ public class AndroidApiLevelDatabaseHelper {
     addNfcMethods(factory, apiLevelConsumer);
     addWebkitCookieSyncManagerMethods(factory, apiLevelConsumer);
     addChronoTimeMethods(factory, apiLevelConsumer);
+    addUnsafeMethods(factory, apiLevelConsumer);
   }
 
   private static void addStringBuilderAndBufferMethods(
@@ -373,5 +374,454 @@ public class AndroidApiLevelDatabaseHelper {
             factory.createProto(factory.booleanType),
             "isLeapYear"),
         AndroidApiLevel.O);
+  }
+
+  public static void addUnsafeMethods(
+      DexItemFactory factory, BiConsumer<DexReference, AndroidApiLevel> apiLevelConsumer) {
+    // If this assert fails then check these things before updating the assert:
+    //   * Check if libcore/ojluni/src/main/java/sun/misc/Unsafe.java has new public methods,
+    //     including new overloads.
+    //     * If so, add the new methods here
+    //       (and to SunMiscUnsafeApiTest but it will fail if you don't).
+    //   * Verify that no existing methods have been removed.
+    assert AndroidApiLevel.LATEST.isEqualTo(AndroidApiLevel.CINNAMON_BUN);
+
+    AndroidApiLevel always = AndroidApiLevel.B;
+
+    apiLevelConsumer.accept(factory.sunMiscUnsafeType, always);
+
+    // Fields
+    apiLevelConsumer.accept(
+        factory.createField(factory.sunMiscUnsafeType, factory.intType, "INVALID_FIELD_OFFSET"),
+        AndroidApiLevel.N);
+
+    // Methods
+    apiLevelConsumer.accept(
+        factory.createMethod(
+            factory.sunMiscUnsafeType, factory.createProto(factory.intType), "addressSize"),
+        AndroidApiLevel.N);
+    apiLevelConsumer.accept(
+        factory.createMethod(
+            factory.sunMiscUnsafeType,
+            factory.createProto(factory.objectType, factory.classType),
+            "allocateInstance"),
+        AndroidApiLevel.J);
+    apiLevelConsumer.accept(
+        factory.createMethod(
+            factory.sunMiscUnsafeType,
+            factory.createProto(factory.longType, factory.longType),
+            "allocateMemory"),
+        AndroidApiLevel.N);
+    apiLevelConsumer.accept(
+        factory.createMethod(
+            factory.sunMiscUnsafeType,
+            factory.createProto(factory.intType, factory.classType),
+            "arrayBaseOffset"),
+        always);
+    apiLevelConsumer.accept(
+        factory.createMethod(
+            factory.sunMiscUnsafeType,
+            factory.createProto(factory.intType, factory.classType),
+            "arrayIndexScale"),
+        always);
+    apiLevelConsumer.accept(
+        factory.createMethod(
+            factory.sunMiscUnsafeType,
+            factory.createProto(
+                factory.booleanType,
+                factory.objectType,
+                factory.longType,
+                factory.intType,
+                factory.intType),
+            "compareAndSwapInt"),
+        always);
+    apiLevelConsumer.accept(
+        factory.createMethod(
+            factory.sunMiscUnsafeType,
+            factory.createProto(
+                factory.booleanType,
+                factory.objectType,
+                factory.longType,
+                factory.longType,
+                factory.longType),
+            "compareAndSwapLong"),
+        always);
+    apiLevelConsumer.accept(factory.sunMiscUnsafeMethods.compareAndSwapObject, always);
+    apiLevelConsumer.accept(
+        factory.createMethod(
+            factory.sunMiscUnsafeType,
+            factory.createProto(
+                factory.voidType, factory.longType, factory.longType, factory.longType),
+            "copyMemory"),
+        AndroidApiLevel.N);
+    apiLevelConsumer.accept(
+        factory.createMethod(
+            factory.sunMiscUnsafeType,
+            factory.createProto(
+                factory.voidType,
+                factory.objectType,
+                factory.longType,
+                factory.longType,
+                factory.longType),
+            "copyMemoryFromPrimitiveArray"),
+        AndroidApiLevel.N);
+    apiLevelConsumer.accept(
+        factory.createMethod(
+            factory.sunMiscUnsafeType,
+            factory.createProto(
+                factory.voidType,
+                factory.longType,
+                factory.objectType,
+                factory.longType,
+                factory.longType),
+            "copyMemoryToPrimitiveArray"),
+        AndroidApiLevel.N);
+    apiLevelConsumer.accept(
+        factory.createMethod(
+            factory.sunMiscUnsafeType,
+            factory.createProto(factory.voidType, factory.longType),
+            "freeMemory"),
+        AndroidApiLevel.N);
+    apiLevelConsumer.accept(
+        factory.createMethod(
+            factory.sunMiscUnsafeType, factory.createProto(factory.voidType), "fullFence"),
+        AndroidApiLevel.N);
+    apiLevelConsumer.accept(
+        factory.createMethod(
+            factory.sunMiscUnsafeType,
+            factory.createProto(
+                factory.intType, factory.objectType, factory.longType, factory.intType),
+            "getAndAddInt"),
+        AndroidApiLevel.N);
+    apiLevelConsumer.accept(
+        factory.createMethod(
+            factory.sunMiscUnsafeType,
+            factory.createProto(
+                factory.longType, factory.objectType, factory.longType, factory.longType),
+            "getAndAddLong"),
+        AndroidApiLevel.N);
+    apiLevelConsumer.accept(
+        factory.createMethod(
+            factory.sunMiscUnsafeType,
+            factory.createProto(
+                factory.intType, factory.objectType, factory.longType, factory.intType),
+            "getAndSetInt"),
+        AndroidApiLevel.N);
+    apiLevelConsumer.accept(
+        factory.createMethod(
+            factory.sunMiscUnsafeType,
+            factory.createProto(
+                factory.longType, factory.objectType, factory.longType, factory.longType),
+            "getAndSetLong"),
+        AndroidApiLevel.N);
+    apiLevelConsumer.accept(
+        factory.createMethod(
+            factory.sunMiscUnsafeType,
+            factory.createProto(
+                factory.objectType, factory.objectType, factory.longType, factory.objectType),
+            "getAndSetObject"),
+        AndroidApiLevel.N);
+    apiLevelConsumer.accept(
+        factory.createMethod(
+            factory.sunMiscUnsafeType,
+            factory.createProto(factory.booleanType, factory.objectType, factory.longType),
+            "getBoolean"),
+        AndroidApiLevel.N);
+    apiLevelConsumer.accept(
+        factory.createMethod(
+            factory.sunMiscUnsafeType,
+            factory.createProto(factory.byteType, factory.longType),
+            "getByte"),
+        AndroidApiLevel.N);
+    apiLevelConsumer.accept(
+        factory.createMethod(
+            factory.sunMiscUnsafeType,
+            factory.createProto(factory.byteType, factory.objectType, factory.longType),
+            "getByte"),
+        AndroidApiLevel.N);
+    apiLevelConsumer.accept(
+        factory.createMethod(
+            factory.sunMiscUnsafeType,
+            factory.createProto(factory.charType, factory.longType),
+            "getChar"),
+        AndroidApiLevel.N);
+    apiLevelConsumer.accept(
+        factory.createMethod(
+            factory.sunMiscUnsafeType,
+            factory.createProto(factory.charType, factory.objectType, factory.longType),
+            "getChar"),
+        AndroidApiLevel.N);
+    apiLevelConsumer.accept(
+        factory.createMethod(
+            factory.sunMiscUnsafeType,
+            factory.createProto(factory.doubleType, factory.longType),
+            "getDouble"),
+        AndroidApiLevel.N);
+    apiLevelConsumer.accept(
+        factory.createMethod(
+            factory.sunMiscUnsafeType,
+            factory.createProto(factory.doubleType, factory.objectType, factory.longType),
+            "getDouble"),
+        AndroidApiLevel.N);
+    apiLevelConsumer.accept(
+        factory.createMethod(
+            factory.sunMiscUnsafeType,
+            factory.createProto(factory.floatType, factory.longType),
+            "getFloat"),
+        AndroidApiLevel.N);
+    apiLevelConsumer.accept(
+        factory.createMethod(
+            factory.sunMiscUnsafeType,
+            factory.createProto(factory.floatType, factory.objectType, factory.longType),
+            "getFloat"),
+        AndroidApiLevel.N);
+    apiLevelConsumer.accept(
+        factory.createMethod(
+            factory.sunMiscUnsafeType,
+            factory.createProto(factory.intType, factory.longType),
+            "getInt"),
+        AndroidApiLevel.N);
+    apiLevelConsumer.accept(
+        factory.createMethod(
+            factory.sunMiscUnsafeType,
+            factory.createProto(factory.intType, factory.objectType, factory.longType),
+            "getInt"),
+        always);
+    apiLevelConsumer.accept(
+        factory.createMethod(
+            factory.sunMiscUnsafeType,
+            factory.createProto(factory.intType, factory.objectType, factory.longType),
+            "getIntVolatile"),
+        always);
+    apiLevelConsumer.accept(
+        factory.createMethod(
+            factory.sunMiscUnsafeType,
+            factory.createProto(factory.longType, factory.longType),
+            "getLong"),
+        AndroidApiLevel.N);
+    apiLevelConsumer.accept(
+        factory.createMethod(
+            factory.sunMiscUnsafeType,
+            factory.createProto(factory.longType, factory.objectType, factory.longType),
+            "getLong"),
+        always);
+    apiLevelConsumer.accept(
+        factory.createMethod(
+            factory.sunMiscUnsafeType,
+            factory.createProto(factory.longType, factory.objectType, factory.longType),
+            "getLongVolatile"),
+        always);
+    apiLevelConsumer.accept(
+        factory.createMethod(
+            factory.sunMiscUnsafeType,
+            factory.createProto(factory.objectType, factory.objectType, factory.longType),
+            "getObject"),
+        always);
+    apiLevelConsumer.accept(
+        factory.createMethod(
+            factory.sunMiscUnsafeType,
+            factory.createProto(factory.objectType, factory.objectType, factory.longType),
+            "getObjectVolatile"),
+        always);
+    apiLevelConsumer.accept(
+        factory.createMethod(
+            factory.sunMiscUnsafeType,
+            factory.createProto(factory.shortType, factory.longType),
+            "getShort"),
+        AndroidApiLevel.N);
+    apiLevelConsumer.accept(
+        factory.createMethod(
+            factory.sunMiscUnsafeType,
+            factory.createProto(factory.shortType, factory.objectType, factory.longType),
+            "getShort"),
+        AndroidApiLevel.N);
+    apiLevelConsumer.accept(
+        factory.createMethod(
+            factory.sunMiscUnsafeType, factory.createProto(factory.sunMiscUnsafeType), "getUnsafe"),
+        always);
+    apiLevelConsumer.accept(
+        factory.createMethod(
+            factory.sunMiscUnsafeType, factory.createProto(factory.voidType), "loadFence"),
+        AndroidApiLevel.N);
+    apiLevelConsumer.accept(
+        factory.createMethod(
+            factory.sunMiscUnsafeType,
+            factory.createProto(factory.longType, factory.fieldType),
+            "objectFieldOffset"),
+        always);
+    apiLevelConsumer.accept(
+        factory.createMethod(
+            factory.sunMiscUnsafeType, factory.createProto(factory.intType), "pageSize"),
+        AndroidApiLevel.N);
+    apiLevelConsumer.accept(
+        factory.createMethod(
+            factory.sunMiscUnsafeType,
+            factory.createProto(factory.voidType, factory.booleanType, factory.longType),
+            "park"),
+        always);
+    apiLevelConsumer.accept(
+        factory.createMethod(
+            factory.sunMiscUnsafeType,
+            factory.createProto(
+                factory.voidType, factory.objectType, factory.longType, factory.booleanType),
+            "putBoolean"),
+        AndroidApiLevel.N);
+    apiLevelConsumer.accept(
+        factory.createMethod(
+            factory.sunMiscUnsafeType,
+            factory.createProto(factory.voidType, factory.longType, factory.byteType),
+            "putByte"),
+        AndroidApiLevel.N);
+    apiLevelConsumer.accept(
+        factory.createMethod(
+            factory.sunMiscUnsafeType,
+            factory.createProto(
+                factory.voidType, factory.objectType, factory.longType, factory.byteType),
+            "putByte"),
+        AndroidApiLevel.N);
+    apiLevelConsumer.accept(
+        factory.createMethod(
+            factory.sunMiscUnsafeType,
+            factory.createProto(factory.voidType, factory.longType, factory.charType),
+            "putChar"),
+        AndroidApiLevel.N);
+    apiLevelConsumer.accept(
+        factory.createMethod(
+            factory.sunMiscUnsafeType,
+            factory.createProto(
+                factory.voidType, factory.objectType, factory.longType, factory.charType),
+            "putChar"),
+        AndroidApiLevel.N);
+    apiLevelConsumer.accept(
+        factory.createMethod(
+            factory.sunMiscUnsafeType,
+            factory.createProto(factory.voidType, factory.longType, factory.doubleType),
+            "putDouble"),
+        AndroidApiLevel.N);
+    apiLevelConsumer.accept(
+        factory.createMethod(
+            factory.sunMiscUnsafeType,
+            factory.createProto(
+                factory.voidType, factory.objectType, factory.longType, factory.doubleType),
+            "putDouble"),
+        AndroidApiLevel.N);
+    apiLevelConsumer.accept(
+        factory.createMethod(
+            factory.sunMiscUnsafeType,
+            factory.createProto(factory.voidType, factory.longType, factory.floatType),
+            "putFloat"),
+        AndroidApiLevel.N);
+    apiLevelConsumer.accept(
+        factory.createMethod(
+            factory.sunMiscUnsafeType,
+            factory.createProto(
+                factory.voidType, factory.objectType, factory.longType, factory.floatType),
+            "putFloat"),
+        AndroidApiLevel.N);
+    apiLevelConsumer.accept(
+        factory.createMethod(
+            factory.sunMiscUnsafeType,
+            factory.createProto(factory.voidType, factory.longType, factory.intType),
+            "putInt"),
+        AndroidApiLevel.N);
+    apiLevelConsumer.accept(
+        factory.createMethod(
+            factory.sunMiscUnsafeType,
+            factory.createProto(
+                factory.voidType, factory.objectType, factory.longType, factory.intType),
+            "putInt"),
+        always);
+    apiLevelConsumer.accept(
+        factory.createMethod(
+            factory.sunMiscUnsafeType,
+            factory.createProto(
+                factory.voidType, factory.objectType, factory.longType, factory.intType),
+            "putIntVolatile"),
+        always);
+    apiLevelConsumer.accept(
+        factory.createMethod(
+            factory.sunMiscUnsafeType,
+            factory.createProto(factory.voidType, factory.longType, factory.longType),
+            "putLong"),
+        AndroidApiLevel.N);
+    apiLevelConsumer.accept(
+        factory.createMethod(
+            factory.sunMiscUnsafeType,
+            factory.createProto(
+                factory.voidType, factory.objectType, factory.longType, factory.longType),
+            "putLong"),
+        always);
+    apiLevelConsumer.accept(
+        factory.createMethod(
+            factory.sunMiscUnsafeType,
+            factory.createProto(
+                factory.voidType, factory.objectType, factory.longType, factory.longType),
+            "putLongVolatile"),
+        always);
+    apiLevelConsumer.accept(
+        factory.createMethod(
+            factory.sunMiscUnsafeType,
+            factory.createProto(
+                factory.voidType, factory.objectType, factory.longType, factory.objectType),
+            "putObject"),
+        always);
+    apiLevelConsumer.accept(
+        factory.createMethod(
+            factory.sunMiscUnsafeType,
+            factory.createProto(
+                factory.voidType, factory.objectType, factory.longType, factory.objectType),
+            "putObjectVolatile"),
+        always);
+    apiLevelConsumer.accept(
+        factory.createMethod(
+            factory.sunMiscUnsafeType,
+            factory.createProto(
+                factory.voidType, factory.objectType, factory.longType, factory.intType),
+            "putOrderedInt"),
+        always);
+    apiLevelConsumer.accept(
+        factory.createMethod(
+            factory.sunMiscUnsafeType,
+            factory.createProto(
+                factory.voidType, factory.objectType, factory.longType, factory.longType),
+            "putOrderedLong"),
+        always);
+    apiLevelConsumer.accept(
+        factory.createMethod(
+            factory.sunMiscUnsafeType,
+            factory.createProto(
+                factory.voidType, factory.objectType, factory.longType, factory.objectType),
+            "putOrderedObject"),
+        always);
+    apiLevelConsumer.accept(
+        factory.createMethod(
+            factory.sunMiscUnsafeType,
+            factory.createProto(factory.voidType, factory.longType, factory.shortType),
+            "putShort"),
+        AndroidApiLevel.N);
+    apiLevelConsumer.accept(
+        factory.createMethod(
+            factory.sunMiscUnsafeType,
+            factory.createProto(
+                factory.voidType, factory.objectType, factory.longType, factory.shortType),
+            "putShort"),
+        AndroidApiLevel.N);
+    apiLevelConsumer.accept(
+        factory.createMethod(
+            factory.sunMiscUnsafeType,
+            factory.createProto(
+                factory.voidType, factory.longType, factory.longType, factory.byteType),
+            "setMemory"),
+        AndroidApiLevel.N);
+    apiLevelConsumer.accept(
+        factory.createMethod(
+            factory.sunMiscUnsafeType, factory.createProto(factory.voidType), "storeFence"),
+        AndroidApiLevel.N);
+    apiLevelConsumer.accept(
+        factory.createMethod(
+            factory.sunMiscUnsafeType,
+            factory.createProto(factory.voidType, factory.objectType),
+            "unpark"),
+        always);
   }
 }

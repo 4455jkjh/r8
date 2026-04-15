@@ -33,6 +33,7 @@ import com.android.tools.r8.Resource;
 import com.android.tools.r8.ResourceException;
 import com.android.tools.r8.StringResource;
 import com.android.tools.r8.Version;
+import com.android.tools.r8.dex.SunMiscUnsafeResourceProvider;
 import com.android.tools.r8.dump.DumpOptions;
 import com.android.tools.r8.errors.CompilationError;
 import com.android.tools.r8.errors.InternalCompilerError;
@@ -980,6 +981,7 @@ public class AndroidApp {
     private List<StringResource> mainDexListResources = new ArrayList<>();
     private List<String> mainDexListClasses = new ArrayList<>();
     private boolean ignoreDexInArchive = false;
+    private boolean extendAndroidJarWithHiddenClasses = true;
 
     private StringResource proguardMapOutputData;
     private StringResource proguardMapInputData;
@@ -1241,6 +1243,11 @@ public class AndroidApp {
       return this;
     }
 
+    public Builder disableAndroidJarHiddenClassExtension() {
+      this.extendAndroidJarWithHiddenClasses = false;
+      return this;
+    }
+
     /**
      * Add dex program-data with class descriptor.
      */
@@ -1388,6 +1395,7 @@ public class AndroidApp {
      */
     public AndroidApp build() {
       ensureAllResourcesAreInProviders();
+      extendAndroidJarWithHiddenClasses();
       return new AndroidApp(
           ImmutableList.copyOf(programResourceProviders),
           ImmutableMap.copyOf(programResourcesMainDescriptor),
@@ -1440,6 +1448,41 @@ public class AndroidApp {
           });
       programResources.clear();
       dataResources.clear();
+    }
+
+    /** Returns true if this AndroidApp has a jar that looks like Android.jar. */
+    private boolean containsAndroidJar() {
+      for (var provider : this.getLibraryResourceProviders()) {
+        if (provider.getProgramResource("Landroid/os/Build;") != null) {
+          return true;
+        }
+      }
+      return false;
+    }
+
+    /** Return true if this AndroidApp has already been extended with hidden android APIs. */
+    private boolean containsExtendedAndroidJar() {
+      for (var provider : this.getLibraryResourceProviders()) {
+        if (provider.getProgramResource("Lsun/misc/Unsafe;") != null) {
+          return true;
+        }
+      }
+      for (var provider : this.getClasspathResourceProviders()) {
+        if (provider.getProgramResource("Lsun/misc/Unsafe;") != null) {
+          return true;
+        }
+      }
+      return false;
+    }
+
+    private void extendAndroidJarWithHiddenClasses() {
+      if (!extendAndroidJarWithHiddenClasses) {
+        return;
+      }
+      if (!containsAndroidJar() || containsExtendedAndroidJar()) {
+        return;
+      }
+      addLibraryResourceProvider(SunMiscUnsafeResourceProvider.create());
     }
 
     public Builder addProgramFile(Path file) {

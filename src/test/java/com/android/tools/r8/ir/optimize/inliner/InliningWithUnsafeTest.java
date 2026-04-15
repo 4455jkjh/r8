@@ -14,6 +14,7 @@ import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.ir.optimize.inliner.InliningWithUnsafeTest.TestClass.UnsafeStub;
 import com.android.tools.r8.references.ClassReference;
 import com.android.tools.r8.transformers.ClassFileTransformer;
+import com.android.tools.r8.utils.AndroidApiLevel;
 import com.android.tools.r8.utils.DescriptorUtils;
 import com.android.tools.r8.utils.codeinspector.MethodSubject;
 import com.google.common.collect.ImmutableSet;
@@ -37,7 +38,9 @@ public class InliningWithUnsafeTest extends TestBase {
   }
 
   // sun.misc.Unsafe is a hidden class, accessed via reflection. This non-existence at compile-time
-  // foils some inlining checks that reasons about method accessibility and thus prevents inlining.
+  // foiled some inlining checks that reasons about method accessibility and thus prevented
+  // inlining.
+  // This is not the case anymore, as verified here.
   @Test
   public void testR8() throws Exception {
     String stubDescriptor = DescriptorUtils.javaClassToDescriptor(UnsafeStub.class);
@@ -60,17 +63,15 @@ public class InliningWithUnsafeTest extends TestBase {
                       .map(MethodSubject::getOriginalMethodName)
                       .collect(Collectors.toSet());
               ImmutableSet<String> expected;
-              // The CF runtime jar has sun.misc.Unsafe exposed, which permits inlining.
-              boolean isInlined = parameters.isCfRuntime();
-              if (isInlined) {
-                expected = ImmutableSet.of("main", "nonObviousNull");
-              } else {
+              // See InternalOptions.canHaveBugWithInlinedMethodsContainingUnsafe.
+              if (parameters.isDexRuntime()
+                  && parameters.getApiLevel().isLessThanOrEqualTo(AndroidApiLevel.L_MR1)) {
                 expected = ImmutableSet.of("main", "nonObviousNull", "useUnsafe");
+              } else {
+                expected = ImmutableSet.of("main", "nonObviousNull");
               }
               assertEquals(
-                  "The remaining methods of the test class were unexpected:",
-                  expected,
-                  foundMethods);
+                  "The methods of the test class were unexpected:", expected, foundMethods);
             });
   }
 

@@ -61,6 +61,7 @@ public class AtomicFieldUpdaterGetAndSetTest extends AtomicFieldUpdaterBase {
                       CodeMatchers.invokesMethodWithHolderAndName(
                           "sun.misc.Unsafe", "getAndSetObject"));
                 } else {
+                  // getAndSetObject is backported.
                   ClassSubject helper =
                       inspector.clazz(
                           SyntheticItemsTestUtils.syntheticUnsafeClass(TestClass.class));

@@ -3422,4 +3422,10 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
   public boolean canHaveDalvikVerifyErrorOnVirtualInvokeWithMissingClasses() {
     return canHaveBugPresentUntilExclusive(AndroidApiLevel.L);
   }
+
+  // b/502885276 Some functions with references to sun.misc.Unsafe crash ART when inlined,
+  // it is unclear whether it is strictly related to Unsafe or if it is a coincidence.
+  public boolean canHaveBugWithInlinedMethodsContainingUnsafe() {
+    return isGeneratingDex() && minApiLevel.isLessThanOrEqualTo(AndroidApiLevel.L_MR1);
+  }
 }

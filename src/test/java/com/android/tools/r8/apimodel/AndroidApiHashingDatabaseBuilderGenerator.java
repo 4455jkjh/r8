@@ -79,8 +79,12 @@ public class AndroidApiHashingDatabaseBuilderGenerator extends TestBase {
     Map<DexReference, AndroidApiLevel> referenceMap = new HashMap<>();
 
     Path androidJar = ToolHelper.getAndroidJar(androidJarApiLevel);
-    AppView<AppInfoWithClassHierarchy> appView =
-        computeAppViewWithClassHierarchy(AndroidApp.builder().addLibraryFile(androidJar).build());
+    AndroidApp androidApp =
+        AndroidApp.builder()
+            .addLibraryFile(androidJar)
+            .disableAndroidJarHiddenClassExtension()
+            .build();
+    AppView<AppInfoWithClassHierarchy> appView = computeAppViewWithClassHierarchy(androidApp);
     DexItemFactory factory = appView.dexItemFactory();
 
     CovariantMethodsInJarResult covariantMethodsInJar = CovariantMethodsInJarResult.create();

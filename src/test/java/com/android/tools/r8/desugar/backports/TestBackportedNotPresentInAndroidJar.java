@@ -175,7 +175,7 @@ public class TestBackportedNotPresentInAndroidJar extends TestBase {
           assertTrue(apiLevel.isLessThanOrEqualTo(backportedBeyond.get(method)));
         } else {
           assertThat(
-              foundInAndroidJar + " present in " + apiLevel,
+              foundInAndroidJar + " present in " + apiLevel + " (" + method.toSourceString() + ")",
               foundInAndroidJar,
               notIf(isPresent(), !alwaysPresent.contains(method)));
         }
