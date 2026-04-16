@@ -9,10 +9,9 @@ import com.android.tools.r8.DiagnosticsHandler;
 import com.android.tools.r8.origin.MethodOrigin;
 import com.android.tools.r8.references.MethodReference;
 import com.android.tools.r8.tracereferences.TraceReferencesNativeReferencesConsumer;
-import com.android.tools.r8.utils.SetUtils;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class TraceReferencesNativeResult {
 
@@ -60,15 +59,15 @@ public class TraceReferencesNativeResult {
   }
 
   public static class Builder implements TraceReferencesNativeReferencesConsumer {
-    private final Map<String, Set<MethodOrigin>> loadLibraryCalls = new HashMap<>();
-    private Set<MethodOrigin> loadLibraryAnyCalls = SetUtils.newHashSet();
-    private final Map<String, Set<MethodOrigin>> loadCalls = new HashMap<>();
-    private Set<MethodOrigin> loadAnyCalls = SetUtils.newHashSet();
-    private final Set<MethodReference> nativeMethods = SetUtils.newHashSet();
+    private final Map<String, Set<MethodOrigin>> loadLibraryCalls = new ConcurrentHashMap<>();
+    private final Set<MethodOrigin> loadLibraryAnyCalls = ConcurrentHashMap.newKeySet();
+    private final Map<String, Set<MethodOrigin>> loadCalls = new ConcurrentHashMap<>();
+    private final Set<MethodOrigin> loadAnyCalls = ConcurrentHashMap.newKeySet();
+    private final Set<MethodReference> nativeMethods = ConcurrentHashMap.newKeySet();
 
     @Override
     public void acceptLoadLibrary(String name, MethodOrigin origin, DiagnosticsHandler handler) {
-      loadLibraryCalls.computeIfAbsent(name, ignoreKey(SetUtils::newHashSet)).add(origin);
+      loadLibraryCalls.computeIfAbsent(name, ignoreKey(ConcurrentHashMap::newKeySet)).add(origin);
     }
 
     @Override
@@ -78,7 +77,7 @@ public class TraceReferencesNativeResult {
 
     @Override
     public void acceptLoad(String path, MethodOrigin origin, DiagnosticsHandler handler) {
-      loadCalls.computeIfAbsent(path, ignoreKey(SetUtils::newHashSet)).add(origin);
+      loadCalls.computeIfAbsent(path, ignoreKey(ConcurrentHashMap::newKeySet)).add(origin);
     }
 
     @Override
