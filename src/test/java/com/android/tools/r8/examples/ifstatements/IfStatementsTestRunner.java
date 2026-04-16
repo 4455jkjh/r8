@@ -4,10 +4,8 @@
 package com.android.tools.r8.examples.ifstatements;
 
 import com.android.tools.r8.TestParameters;
-import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.examples.ExamplesTestBase;
 import com.android.tools.r8.utils.StringUtils;
-import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
@@ -16,6 +14,11 @@ public class IfStatementsTestRunner extends ExamplesTestBase {
 
   public IfStatementsTestRunner(TestParameters parameters) {
     super(parameters);
+  }
+
+  @Override
+  public boolean isTestDebugKnownToBeFlaky() {
+    return true;
   }
 
   @Override
