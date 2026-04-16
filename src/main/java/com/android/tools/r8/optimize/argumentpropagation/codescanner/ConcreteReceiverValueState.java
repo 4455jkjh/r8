@@ -10,6 +10,7 @@ import com.android.tools.r8.graph.DexType;
 import com.android.tools.r8.ir.analysis.type.DynamicType;
 import com.android.tools.r8.ir.analysis.type.Nullability;
 import com.android.tools.r8.ir.analysis.value.AbstractValue;
+import com.android.tools.r8.ir.analysis.value.AbstractValueJoiner;
 import com.android.tools.r8.optimize.argumentpropagation.utils.WideningUtils;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
 import com.android.tools.r8.utils.Action;
@@ -108,6 +109,7 @@ public class ConcreteReceiverValueState extends ConcreteReferenceTypeValueState 
   @Override
   public NonEmptyValueState mutableJoin(
       AppView<AppInfoWithLiveness> appView,
+      AbstractValueJoiner abstractValueJoiner,
       ConcreteReferenceTypeValueState inState,
       DexType inStaticType,
       DexType outStaticType,

@@ -351,7 +351,7 @@ public class MethodResolutionOptimizationInfoAnalysis {
         TypeElement staticReturnType = method.getReturnType().toTypeElement(appView);
         abstractReturnValue =
             appView
-                .getAbstractValueConstantPropagationJoiner()
+                .getDefaultAbstractValueJoiner()
                 .join(
                     info.getAbstractReturnValue(),
                     otherInfo.getAbstractReturnValue(),

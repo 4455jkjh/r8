@@ -7,7 +7,9 @@ package com.android.tools.r8.optimize.argumentpropagation.codescanner;
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.DexMethodSignature;
 import com.android.tools.r8.graph.DexType;
+import com.android.tools.r8.ir.analysis.value.AbstractValueJoiner;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
+import com.android.tools.r8.utils.IntObjToObjFunction;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Streams;
 import java.util.ArrayList;
@@ -71,6 +73,7 @@ public class ConcreteMonomorphicMethodState extends ConcreteMethodState
 
   public ConcreteMonomorphicMethodStateOrUnknown mutableJoin(
       AppView<AppInfoWithLiveness> appView,
+      IntObjToObjFunction<AppView<AppInfoWithLiveness>, AbstractValueJoiner> abstractValueJoiner,
       DexMethodSignature methodSignature,
       ConcreteMonomorphicMethodState methodState,
       StateCloner cloner) {
@@ -93,7 +96,12 @@ public class ConcreteMonomorphicMethodState extends ConcreteMethodState
       parameterStates.set(
           0,
           parameterState.mutableJoin(
-              appView, otherParameterState, inStaticType, outStaticType, cloner));
+              appView,
+              abstractValueJoiner.apply(argumentIndex, appView),
+              otherParameterState,
+              inStaticType,
+              outStaticType,
+              cloner));
       argumentIndex++;
     }
 
@@ -105,7 +113,12 @@ public class ConcreteMonomorphicMethodState extends ConcreteMethodState
       parameterStates.set(
           argumentIndex,
           parameterState.mutableJoin(
-              appView, otherParameterState, inStaticType, outStaticType, cloner));
+              appView,
+              abstractValueJoiner.apply(argumentIndex, appView),
+              otherParameterState,
+              inStaticType,
+              outStaticType,
+              cloner));
       assert !parameterStates.get(argumentIndex).isConcrete()
           || !parameterStates.get(argumentIndex).asConcrete().isReceiverState();
     }

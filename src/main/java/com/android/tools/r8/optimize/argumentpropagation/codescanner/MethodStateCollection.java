@@ -46,7 +46,12 @@ abstract class MethodStateCollection<K> {
             } else {
               newMethodState =
                   existingMethodState.mutableJoin(
-                      appView, getSignature(method), methodState, StateCloner.getCloner());
+                      appView,
+                      (argumentIndex, appViewCapture) ->
+                          appViewCapture.getDefaultAbstractValueJoiner(),
+                      getSignature(method),
+                      methodState,
+                      StateCloner.getCloner());
             }
             assert !newMethodState.isBottom();
             return newMethodState;
@@ -74,7 +79,13 @@ abstract class MethodStateCollection<K> {
           timing.begin("Join temporary method state");
           MethodState joinResult =
               existingMethodState.mutableJoin(
-                  appView, getSignature(method), methodStateSupplier, StateCloner.getIdentity());
+                  appView,
+                  // TODO(b/503184789): Allow choosing another joiner based on the parameter being
+                  //  assigned.
+                  (argumentIndex, appViewCapture) -> appViewCapture.getDefaultAbstractValueJoiner(),
+                  getSignature(method),
+                  methodStateSupplier,
+                  StateCloner.getIdentity());
           assert !joinResult.isBottom();
           timing.end();
           return joinResult;

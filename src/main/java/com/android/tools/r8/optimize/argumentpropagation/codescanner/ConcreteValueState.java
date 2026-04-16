@@ -8,6 +8,7 @@ import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.DexType;
 import com.android.tools.r8.ir.analysis.type.DynamicType;
 import com.android.tools.r8.ir.analysis.value.AbstractValue;
+import com.android.tools.r8.ir.analysis.value.AbstractValueJoiner;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
 import com.android.tools.r8.utils.Action;
 import com.android.tools.r8.utils.TraversalContinuation;
@@ -165,6 +166,7 @@ public abstract class ConcreteValueState extends NonEmptyValueState {
   @Override
   public final NonEmptyValueState mutableJoin(
       AppView<AppInfoWithLiveness> appView,
+      AbstractValueJoiner abstractValueJoiner,
       ValueState inState,
       DexType inStaticType,
       DexType outStaticType,
@@ -185,13 +187,19 @@ public abstract class ConcreteValueState extends NonEmptyValueState {
       return asReferenceState()
           .mutableJoin(
               appView,
+              abstractValueJoiner,
               concreteState.asReferenceState(),
               inStaticType,
               outStaticType,
               onChangedAction);
     }
     return asPrimitiveState()
-        .mutableJoin(appView, concreteState.asPrimitiveState(), outStaticType, onChangedAction);
+        .mutableJoin(
+            appView,
+            abstractValueJoiner,
+            concreteState.asPrimitiveState(),
+            outStaticType,
+            onChangedAction);
   }
 
   boolean mutableJoinInFlow(ConcreteValueState state) {

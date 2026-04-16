@@ -6,29 +6,45 @@ package com.android.tools.r8.ir.analysis.value;
 
 import static com.android.tools.r8.ir.analysis.value.AbstractValue.unknown;
 
-import com.android.tools.r8.graph.AppInfoWithClassHierarchy;
 import com.android.tools.r8.graph.AppView;
-import com.android.tools.r8.graph.DexType;
 import com.android.tools.r8.graph.ProgramField;
 import com.android.tools.r8.ir.analysis.type.PrimitiveTypeElement;
 import com.android.tools.r8.ir.analysis.type.TypeElement;
 
-public abstract class AbstractValueJoiner {
+public class AbstractValueJoiner {
 
   protected final AppView<?> appView;
+  protected final AbstractValueJoinerConfig config;
 
-  private AbstractValueJoiner(AppView<?> appView) {
+  public AbstractValueJoiner(AppView<?> appView, AbstractValueJoinerConfig config) {
     this.appView = appView;
+    this.config = config;
   }
 
   private AbstractValueFactory factory() {
     return appView.abstractValueFactory();
   }
 
+  public AbstractValue join(
+      AbstractValue abstractValue, AbstractValue otherAbstractValue, ProgramField field) {
+    return join(abstractValue, otherAbstractValue, field.getType().toTypeElement(appView));
+  }
+
+  public AbstractValue join(
+      AbstractValue abstractValue, AbstractValue otherAbstractValue, TypeElement type) {
+    AbstractValue result = internalJoin(abstractValue, otherAbstractValue, type);
+    assert result.equals(internalJoin(otherAbstractValue, abstractValue, type));
+    return result;
+  }
+
+  public boolean lessThanOrEqualTo(
+      AbstractValue abstractValue, AbstractValue otherAbstractValue, TypeElement type) {
+    return join(abstractValue, otherAbstractValue, type).equals(otherAbstractValue);
+  }
+
   final AbstractValue internalJoin(
       AbstractValue abstractValue,
       AbstractValue otherAbstractValue,
-      AbstractValueJoinerConfig config,
       TypeElement type) {
     if (abstractValue.isBottom() || otherAbstractValue.isUnknown()) {
       return otherAbstractValue;
@@ -47,19 +63,18 @@ public abstract class AbstractValueJoiner {
       return joinReference(abstractValue, otherAbstractValue);
     } else {
       assert type.isPrimitiveType();
-      return joinPrimitive(abstractValue, otherAbstractValue, config, type.asPrimitiveType());
+      return joinPrimitive(abstractValue, otherAbstractValue, type.asPrimitiveType());
     }
   }
 
   private AbstractValue joinPrimitive(
       AbstractValue abstractValue,
       AbstractValue otherAbstractValue,
-      AbstractValueJoinerConfig config,
       PrimitiveTypeElement type) {
     assert !abstractValue.isNullOrAbstractValue();
     assert !otherAbstractValue.isNullOrAbstractValue();
 
-    if (config.canUseNumberIntervalAndNumberSetAbstraction()
+    if (config.canUseNumberSetAbstraction()
         && abstractValue.isConstantOrNonConstantNumberValue()
         && otherAbstractValue.isConstantOrNonConstantNumberValue()) {
       NumberFromSetValue.Builder numberFromSetValueBuilder;
@@ -143,83 +158,27 @@ public abstract class AbstractValueJoiner {
     return unknown();
   }
 
-  public static class AbstractValueConstantPropagationJoiner extends AbstractValueJoiner {
-
-    public AbstractValueConstantPropagationJoiner(AppView<?> appView) {
-      super(appView);
-    }
-
-    public AbstractValue join(
-        AbstractValue abstractValue, AbstractValue otherAbstractValue, TypeElement type) {
-      AbstractValueJoinerConfig config = AbstractValueJoinerConfig.getDefaultConfig();
-      AbstractValue result = internalJoin(abstractValue, otherAbstractValue, config, type);
-      assert result.equals(internalJoin(otherAbstractValue, abstractValue, config, type));
-      return result;
-    }
-
-    public boolean lessThanOrEqualTo(
-        AbstractValue abstractValue, AbstractValue otherAbstractValue, TypeElement type) {
-      return join(abstractValue, otherAbstractValue, type).equals(otherAbstractValue);
-    }
-  }
-
-  public static class AbstractValueFieldJoiner extends AbstractValueJoiner {
-
-    public AbstractValueFieldJoiner(AppView<? extends AppInfoWithClassHierarchy> appView) {
-      super(appView);
-    }
-
-    public AbstractValue join(
-        AbstractValue abstractValue, AbstractValue otherAbstractValue, ProgramField field) {
-      AbstractValueJoinerConfig config = AbstractValueJoinerConfig.getDefaultConfig();
-      TypeElement type = field.getType().toTypeElement(appView);
-      AbstractValue result = internalJoin(abstractValue, otherAbstractValue, config, type);
-      assert result.equals(internalJoin(otherAbstractValue, abstractValue, config, type));
-      return result;
-    }
-  }
-
-  public static class AbstractValueParameterJoiner extends AbstractValueJoiner {
-
-    public AbstractValueParameterJoiner(AppView<? extends AppInfoWithClassHierarchy> appView) {
-      super(appView);
-    }
-
-    public AbstractValue join(
-        AbstractValue abstractValue, AbstractValue otherAbstractValue, DexType type) {
-      // TODO(b/196017578): Use a config that allows the definite bits abstraction for parameters
-      //  used in bitwise operations.
-      AbstractValueJoinerConfig config = AbstractValueJoinerConfig.getDefaultConfig();
-      TypeElement typeElement = type.toTypeElement(appView);
-      AbstractValue result = internalJoin(abstractValue, otherAbstractValue, config, typeElement);
-      assert result.equals(internalJoin(otherAbstractValue, abstractValue, config, typeElement));
-      return result;
-    }
-  }
-
-  private static class AbstractValueJoinerConfig {
-
-    private static final AbstractValueJoinerConfig DEFAULT_CONFIG =
-        new AbstractValueJoinerConfig().setCanUseDefiniteBitsAbstraction();
-
-    public static AbstractValueJoinerConfig getDefaultConfig() {
-      return DEFAULT_CONFIG;
-    }
+  public static class AbstractValueJoinerConfig {
 
     private boolean canUseDefiniteBitsAbstraction;
+    private boolean canUseNumberSetAbstraction;
 
     boolean canUseDefiniteBitsAbstraction() {
       return canUseDefiniteBitsAbstraction;
     }
 
-    @SuppressWarnings("UnusedMethod")
-    AbstractValueJoinerConfig setCanUseDefiniteBitsAbstraction() {
+    public AbstractValueJoinerConfig setCanUseDefiniteBitsAbstraction() {
       canUseDefiniteBitsAbstraction = true;
       return this;
     }
 
-    boolean canUseNumberIntervalAndNumberSetAbstraction() {
-      return false;
+    boolean canUseNumberSetAbstraction() {
+      return canUseNumberSetAbstraction;
+    }
+
+    public AbstractValueJoinerConfig setCanUseNumberSetAbstraction() {
+      canUseNumberSetAbstraction = true;
+      return this;
     }
   }
 }

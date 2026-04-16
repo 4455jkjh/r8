@@ -89,9 +89,13 @@ public class ConcretePolymorphicMethodState extends ConcreteMethodState
       return unknown();
     }
     assert methodState.isMonomorphic();
-    return methodState
-        .asMonomorphic()
-        .mutableJoin(appView, methodSignature, other.asMonomorphic(), cloner);
+    ConcreteMonomorphicMethodState monomorphicMethodState = methodState.asMonomorphic();
+    return monomorphicMethodState.mutableJoin(
+        appView,
+        (argumentIndex, appViewCapture) -> appViewCapture.getDefaultAbstractValueJoiner(),
+        methodSignature,
+        other.asMonomorphic(),
+        cloner);
   }
 
   public void forEach(

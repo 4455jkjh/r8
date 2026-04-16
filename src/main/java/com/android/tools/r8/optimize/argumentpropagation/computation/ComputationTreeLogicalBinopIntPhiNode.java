@@ -6,7 +6,7 @@ package com.android.tools.r8.optimize.argumentpropagation.computation;
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.ir.analysis.type.TypeElement;
 import com.android.tools.r8.ir.analysis.value.AbstractValue;
-import com.android.tools.r8.ir.analysis.value.AbstractValueJoiner.AbstractValueConstantPropagationJoiner;
+import com.android.tools.r8.ir.analysis.value.AbstractValueJoiner;
 import com.android.tools.r8.optimize.argumentpropagation.codescanner.BaseInFlow;
 import com.android.tools.r8.optimize.argumentpropagation.codescanner.FlowGraphStateProvider;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
@@ -56,8 +56,7 @@ public class ComputationTreeLogicalBinopIntPhiNode extends ComputationTreeLogica
     } else if (result.isFalse()) {
       return right.evaluate(appView, flowGraphStateProvider);
     } else {
-      AbstractValueConstantPropagationJoiner joiner =
-          appView.getAbstractValueConstantPropagationJoiner();
+      AbstractValueJoiner joiner = appView.getDefaultAbstractValueJoiner();
       AbstractValue leftValue = left.evaluate(appView, flowGraphStateProvider);
       AbstractValue rightValue = right.evaluate(appView, flowGraphStateProvider);
       return joiner.join(leftValue, rightValue, TypeElement.getInt());

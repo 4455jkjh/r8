@@ -42,6 +42,7 @@ public abstract class FlowGraphNode {
     ValueState newState =
         oldState.mutableJoin(
             appView,
+            appView.getDefaultAbstractValueJoiner(),
             inState,
             inStaticType,
             getStaticType(),

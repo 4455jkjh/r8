@@ -306,6 +306,7 @@ public class VirtualDispatchMethodArgumentPropagator extends MethodArgumentPropa
       methodState =
           methodState.mutableJoin(
               appViewWithLiveness,
+              (argumentIndex, appViewCapture) -> appViewCapture.getDefaultAbstractValueJoiner(),
               methodSignature,
               activeUntilCurrentClass.get(method),
               StateCloner.getCloner());
@@ -314,6 +315,7 @@ public class VirtualDispatchMethodArgumentPropagator extends MethodArgumentPropa
           methodState =
               methodState.mutableJoin(
                   appViewWithLiveness,
+                  (argumentIndex, appViewCapture) -> appViewCapture.getDefaultAbstractValueJoiner(),
                   methodSignature,
                   methodStates.get(method),
                   StateCloner.getCloner());

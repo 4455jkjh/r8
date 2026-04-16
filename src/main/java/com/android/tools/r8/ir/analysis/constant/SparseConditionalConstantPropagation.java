@@ -8,7 +8,7 @@ import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.DexString;
 import com.android.tools.r8.graph.ProgramMethod;
 import com.android.tools.r8.ir.analysis.value.AbstractValue;
-import com.android.tools.r8.ir.analysis.value.AbstractValueJoiner.AbstractValueConstantPropagationJoiner;
+import com.android.tools.r8.ir.analysis.value.AbstractValueJoiner;
 import com.android.tools.r8.ir.code.AbstractValueSupplier;
 import com.android.tools.r8.ir.code.BasicBlock;
 import com.android.tools.r8.ir.code.ConstNumber;
@@ -43,11 +43,11 @@ import java.util.Map;
  */
 public class SparseConditionalConstantPropagation extends CodeRewriterPass<AppInfo> {
 
-  private final AbstractValueConstantPropagationJoiner joiner;
+  private final AbstractValueJoiner joiner;
 
   public SparseConditionalConstantPropagation(AppView<?> appView) {
     super(appView);
-    joiner = appView.getAbstractValueConstantPropagationJoiner();
+    joiner = appView.getDefaultAbstractValueJoiner();
   }
 
   @Override

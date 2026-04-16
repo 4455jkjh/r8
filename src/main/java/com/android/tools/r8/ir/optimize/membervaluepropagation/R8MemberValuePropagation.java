@@ -343,7 +343,7 @@ public class R8MemberValuePropagation extends MemberValuePropagation<AppInfoWith
     assert computedValue.isUnknown()
         || !field.hasExplicitStaticValue()
         || appView
-            .getAbstractValueConstantPropagationJoiner()
+            .getDefaultAbstractValueJoiner()
             .lessThanOrEqualTo(staticValue, computedValue, field.getTypeElement(appView));
     return true;
   }

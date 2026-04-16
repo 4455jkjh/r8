@@ -39,6 +39,7 @@ public class FieldStateCollection {
           DexType inStaticType = null;
           return existingFieldState.mutableJoin(
               appView,
+              appView.getDefaultAbstractValueJoiner(),
               fieldStateToAdd,
               inStaticType,
               field.getType(),

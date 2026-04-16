@@ -322,6 +322,9 @@ public class ArgumentPropagatorCodeScanner {
             NonEmptyValueState newFieldState =
                 existingFieldState.mutableJoin(
                     appView,
+                    // TODO(b/503184789): Allow choosing another joiner based on the field being
+                    //  assigned.
+                    appView.getDefaultAbstractValueJoiner(),
                     fieldStateToAdd,
                     inStaticType,
                     field.getType(),
@@ -610,6 +613,7 @@ public class ArgumentPropagatorCodeScanner {
         state =
             state.mutableJoin(
                 appView,
+                appView.getDefaultAbstractValueJoiner(),
                 valueStateSupplier.apply(nonArgument),
                 null,
                 staticType,

@@ -6,7 +6,9 @@ package com.android.tools.r8.optimize.argumentpropagation.codescanner;
 
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.DexMethodSignature;
+import com.android.tools.r8.ir.analysis.value.AbstractValueJoiner;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
+import com.android.tools.r8.utils.IntObjToObjFunction;
 import java.util.function.Function;
 
 public class BottomMethodState extends MethodStateBase
@@ -43,6 +45,7 @@ public class BottomMethodState extends MethodStateBase
   @Override
   public MethodState mutableJoin(
       AppView<AppInfoWithLiveness> appView,
+      IntObjToObjFunction<AppView<AppInfoWithLiveness>, AbstractValueJoiner> abstractValueJoiner,
       DexMethodSignature methodSignature,
       MethodState methodState,
       StateCloner cloner) {
@@ -52,9 +55,11 @@ public class BottomMethodState extends MethodStateBase
   @Override
   public MethodState mutableJoin(
       AppView<AppInfoWithLiveness> appView,
+      IntObjToObjFunction<AppView<AppInfoWithLiveness>, AbstractValueJoiner> abstractValueJoiner,
       DexMethodSignature methodSignature,
       Function<MethodState, MethodState> methodStateSupplier,
       StateCloner cloner) {
-    return mutableJoin(appView, methodSignature, methodStateSupplier.apply(this), cloner);
+    return mutableJoin(
+        appView, abstractValueJoiner, methodSignature, methodStateSupplier.apply(this), cloner);
   }
 }
