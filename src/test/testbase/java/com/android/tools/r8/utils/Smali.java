@@ -118,7 +118,7 @@ public class Smali {
                   AppInfo.createInitialAppInfo(
                       dexApp, GlobalSyntheticsStrategy.forNonSynthesizing())),
               null);
-      writer.write(executor);
+      writer.write(executor, Timing.empty());
       return consumer.contents;
     } finally {
       executor.shutdown();

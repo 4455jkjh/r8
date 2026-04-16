@@ -25,6 +25,7 @@ import com.android.tools.r8.graph.MethodResolutionResult;
 import com.android.tools.r8.graph.MethodResolutionResult.SingleResolutionResult;
 import com.android.tools.r8.utils.AndroidApp;
 import com.android.tools.r8.utils.ZipUtils.ZipBuilder;
+import com.android.tools.r8.utils.timing.Timing;
 import com.google.common.collect.ImmutableSet;
 import java.nio.file.Path;
 import java.util.HashSet;
@@ -75,7 +76,10 @@ public class MaximallySpecificSingleProgramPartialTest extends TestBase {
     builder.addLibraryFiles(parameters.getDefaultRuntimeLibrary(), libraryClasses);
     AppView<AppInfoWithClassHierarchy> appView =
         computeAppViewWithClassHierarchy(
-            builder.build(), null, options -> options.loadAllClassDefinitions = true);
+            builder.build(),
+            Timing.empty(),
+            null,
+            options -> options.loadAllClassDefinitions = true);
     AppInfoWithClassHierarchy appInfo = appView.appInfo();
     DexItemFactory factory = appInfo.dexItemFactory();
     DexMethod method = buildNullaryVoidMethod(Main.class, "foo", factory);

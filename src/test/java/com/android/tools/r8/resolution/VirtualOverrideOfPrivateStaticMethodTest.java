@@ -15,6 +15,7 @@ import com.android.tools.r8.graph.DexClass;
 import com.android.tools.r8.graph.DexMethod;
 import com.android.tools.r8.graph.MethodResolutionResult;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
+import com.android.tools.r8.utils.timing.Timing;
 import com.google.common.collect.ImmutableList;
 import java.io.IOException;
 import java.util.List;
@@ -67,7 +68,9 @@ public class VirtualOverrideOfPrivateStaticMethodTest extends TestBase {
   public static void computeAppInfo() throws Exception {
     appView =
         computeAppViewWithLiveness(
-            buildClasses(CLASSES).addLibraryFile(getMostRecentAndroidJar()).build(), Main.class);
+            buildClasses(CLASSES).addLibraryFile(getMostRecentAndroidJar()).build(),
+            Timing.empty(),
+            Main.class);
     appInfo = appView.appInfo();
   }
 

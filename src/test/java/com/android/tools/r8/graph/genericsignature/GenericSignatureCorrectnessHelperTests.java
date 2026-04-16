@@ -24,6 +24,7 @@ import com.android.tools.r8.shaking.ProguardKeepAttributes;
 import com.android.tools.r8.transformers.ClassFileTransformer.MethodPredicate;
 import com.android.tools.r8.utils.DescriptorUtils;
 import com.android.tools.r8.utils.Reporter;
+import com.android.tools.r8.utils.timing.Timing;
 import com.google.common.collect.ImmutableList;
 import java.util.List;
 import org.junit.Test;
@@ -50,6 +51,7 @@ public class GenericSignatureCorrectnessHelperTests extends TestBase {
             buildInnerClasses(GenericSignatureCorrectnessHelperTests.class)
                 .addLibraryFile(ToolHelper.getJava8RuntimeJar())
                 .build(),
+            Timing.empty(),
             factory ->
                 ProguardConfiguration.builder(
                         factory, new Reporter(new TestDiagnosticMessagesImpl()))
@@ -193,6 +195,7 @@ public class GenericSignatureCorrectnessHelperTests extends TestBase {
                 .addClassProgramData(transformations)
                 .addLibraryFile(ToolHelper.getJava8RuntimeJar())
                 .build(),
+            Timing.empty(),
             factory ->
                 ProguardConfiguration.builder(
                         factory, new Reporter(new TestDiagnosticMessagesImpl()))

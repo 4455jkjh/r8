@@ -26,8 +26,6 @@ public abstract class DexApplication implements DexDefinitionSupplier {
 
   private final ClassNameMapper proguardMap;
 
-  public final Timing timing;
-
   public final InternalOptions options;
   public final DexItemFactory dexItemFactory;
   private final DexApplicationReadFlags flags;
@@ -37,14 +35,12 @@ public abstract class DexApplication implements DexDefinitionSupplier {
       ClassNameMapper proguardMap,
       DexApplicationReadFlags flags,
       ImmutableList<DataResourceProvider> dataResourceProviders,
-      InternalOptions options,
-      Timing timing) {
+      InternalOptions options) {
     this.proguardMap = proguardMap;
     this.flags = flags;
     this.dataResourceProviders = dataResourceProviders;
     this.options = options;
     this.dexItemFactory = options.itemFactory;
-    this.timing = timing;
   }
 
   public abstract Builder<?, ?> builder();

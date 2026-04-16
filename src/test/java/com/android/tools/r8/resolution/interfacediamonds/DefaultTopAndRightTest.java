@@ -14,6 +14,7 @@ import com.android.tools.r8.graph.DexEncodedMethod;
 import com.android.tools.r8.graph.DexMethod;
 import com.android.tools.r8.graph.MethodResolutionResult;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
+import com.android.tools.r8.utils.timing.Timing;
 import com.google.common.collect.ImmutableList;
 import java.util.List;
 import org.junit.Test;
@@ -47,7 +48,7 @@ public class DefaultTopAndRightTest extends TestBase {
             .addLibraryFiles(parameters.getDefaultRuntimeLibrary())
             .addKeepMainRule(Main.class)
             .setMinApi(apiLevelWithDefaultInterfaceMethodsSupport())
-            .buildWithLiveness()
+            .buildWithLiveness(Timing.empty())
             .appInfo();
     DexMethod method = buildNullaryVoidMethod(B.class, "f", appInfo.dexItemFactory());
     MethodResolutionResult resolutionResult = appInfo.resolveMethodOnClassHolderLegacy(method);

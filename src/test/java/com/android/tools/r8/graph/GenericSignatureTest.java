@@ -32,6 +32,7 @@ import com.android.tools.r8.utils.codeinspector.CodeInspector;
 import com.android.tools.r8.utils.codeinspector.FieldSubject;
 import com.android.tools.r8.utils.codeinspector.FoundMethodSubject;
 import com.android.tools.r8.utils.codeinspector.MethodSubject;
+import com.android.tools.r8.utils.timing.Timing;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -74,7 +75,7 @@ public class GenericSignatureTest extends TestBase {
                     ? ToolHelper.getJava8RuntimeJar()
                     : ToolHelper.getMostRecentAndroidJar())
             .build();
-    AppView<AppInfoWithLiveness> appView = computeAppViewWithLiveness(app);
+    AppView<AppInfoWithLiveness> appView = computeAppViewWithLiveness(app, Timing.empty());
     DexItemFactory factory = appView.dexItemFactory();
     CodeInspector inspector = new CodeInspector(appView.appInfo().app());
 

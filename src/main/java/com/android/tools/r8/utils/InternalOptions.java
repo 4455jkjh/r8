@@ -2398,7 +2398,7 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
       this.mixedSectionLayoutStrategyInspector = mixedSectionLayoutStrategyInspector;
     }
 
-    public BiConsumer<AppInfoWithLiveness, Enqueuer.Mode> enqueuerInspector = null;
+    public TriConsumer<AppInfoWithLiveness, Enqueuer.Mode, Timing> enqueuerInspector = null;
 
     public Consumer<String> processingContextsConsumer = null;
 

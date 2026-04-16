@@ -29,6 +29,7 @@ import com.android.tools.r8.references.MethodReference;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
 import com.android.tools.r8.utils.AndroidApiLevel;
 import com.android.tools.r8.utils.StringUtils;
+import com.android.tools.r8.utils.timing.Timing;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import java.util.Collection;
@@ -70,7 +71,7 @@ public class MultipleMaximallySpecificTest extends TestBase {
             .addTestingAnnotations()
             .addKeepMainRule(Main.class)
             .setMinApi(AndroidApiLevel.LATEST)
-            .buildWithLiveness();
+            .buildWithLiveness(Timing.empty());
     AppInfoWithLiveness appInfo = appView.appInfo();
     DexMethod fooI = buildNullaryVoidMethod(I.class, "foo", appInfo.dexItemFactory());
     DexMethod fooJ = buildNullaryVoidMethod(J.class, "foo", appInfo.dexItemFactory());

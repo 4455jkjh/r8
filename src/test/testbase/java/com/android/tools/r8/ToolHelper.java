@@ -2722,9 +2722,9 @@ public class ToolHelper {
     return builder;
   }
 
-  public static void writeApplication(AppView<?> appView) throws ExecutionException {
+  public static void writeApplication(AppView<?> appView, Timing timing) throws ExecutionException {
     appView.options().tool = Tool.R8;
-    R8.writeApplication(appView, null, Executors.newSingleThreadExecutor());
+    R8.writeApplication(appView, null, Executors.newSingleThreadExecutor(), timing);
   }
 
   public static void disassemble(AndroidApp app, PrintStream ps)

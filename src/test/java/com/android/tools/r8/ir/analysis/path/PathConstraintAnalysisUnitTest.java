@@ -25,6 +25,7 @@ import com.android.tools.r8.optimize.argumentpropagation.computation.Computation
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
 import com.android.tools.r8.utils.AndroidApp;
 import com.android.tools.r8.utils.codeinspector.CodeInspector;
+import com.android.tools.r8.utils.timing.Timing;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -52,7 +53,7 @@ public class PathConstraintAnalysisUnitTest extends TestBase {
             .addProgramFiles(ToolHelper.getClassFileForTestClass(Main.class))
             .addLibraryFile(ToolHelper.getMostRecentAndroidJar())
             .build();
-    AppView<AppInfoWithLiveness> appView = computeAppViewWithLiveness(app);
+    AppView<AppInfoWithLiveness> appView = computeAppViewWithLiveness(app, Timing.empty());
     CodeInspector inspector = new CodeInspector(app);
     IRCode code =
         inspector.clazz(Main.class).uniqueMethodWithOriginalName("greet").buildIR(appView);

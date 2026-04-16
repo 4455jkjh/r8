@@ -15,6 +15,7 @@ import com.android.tools.r8.graph.MethodResolutionResult;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
 import com.android.tools.r8.utils.OptionalBool;
 import com.android.tools.r8.utils.StringUtils;
+import com.android.tools.r8.utils.timing.Timing;
 import com.google.common.collect.ImmutableList;
 import java.util.Collection;
 import org.junit.Test;
@@ -54,6 +55,7 @@ public class SelfVirtualMethodAccessTest extends TestBase {
                 .addClassProgramData(getTransformedClasses())
                 .addLibraryFile(parameters.getDefaultRuntimeLibrary())
                 .build(),
+            Timing.empty(),
             Main.class);
     AppInfoWithLiveness appInfo = appView.appInfo();
     DexProgramClass aClass =

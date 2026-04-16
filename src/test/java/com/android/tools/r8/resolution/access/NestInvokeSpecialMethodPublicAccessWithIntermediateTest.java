@@ -26,6 +26,7 @@ import com.android.tools.r8.utils.OptionalBool;
 import com.android.tools.r8.utils.StringUtils;
 import com.android.tools.r8.utils.codeinspector.CodeInspector;
 import com.android.tools.r8.utils.codeinspector.MethodSubject;
+import com.android.tools.r8.utils.timing.Timing;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Streams;
 import java.util.Collection;
@@ -153,6 +154,7 @@ public class NestInvokeSpecialMethodPublicAccessWithIntermediateTest extends Tes
             .addClassProgramData(getTransformedClasses())
             .addLibraryFile(parameters.getDefaultRuntimeLibrary())
             .build(),
+        Timing.empty(),
         Main.class);
   }
 

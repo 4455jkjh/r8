@@ -20,6 +20,7 @@ import com.android.tools.r8.graph.DexProgramClass;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
 import com.android.tools.r8.shaking.b169045091.testclasses.HelloGreeter;
 import com.android.tools.r8.shaking.b169045091.testclasses.WorldGreeterBase;
+import com.android.tools.r8.utils.timing.Timing;
 import com.google.common.collect.ImmutableList;
 import java.util.List;
 import org.junit.Test;
@@ -87,6 +88,7 @@ public class B169045091 extends TestBase {
                 .addClassProgramData(getWorldGreeterClassFileData())
                 .addLibraryFile(parameters.getDefaultRuntimeLibrary())
                 .build(),
+            Timing.empty(),
             TestClass.class);
     AppInfoWithLiveness appInfo = appView.appInfo();
     DexItemFactory dexItemFactory = appView.dexItemFactory();

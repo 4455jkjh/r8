@@ -26,6 +26,7 @@ import com.android.tools.r8.utils.InternalOptions;
 import com.android.tools.r8.utils.ListUtils;
 import com.android.tools.r8.utils.codeinspector.CodeInspector;
 import com.android.tools.r8.utils.codeinspector.MethodSubject;
+import com.android.tools.r8.utils.timing.Timing;
 import com.google.common.collect.ImmutableList;
 import java.io.IOException;
 import java.util.List;
@@ -130,10 +131,10 @@ public class IrInjectionTestBase extends SmaliTestBase {
       return iterator;
     }
 
-    private AndroidApp writeDex() {
+    private AndroidApp writeDex(Timing timing) {
       try {
         InternalOptions options = appView.options();
-        ToolHelper.writeApplication(appView);
+        ToolHelper.writeApplication(appView, timing);
         options.signalFinishedToConsumers();
         return consumers.build();
       } catch (ExecutionException e) {
@@ -145,7 +146,7 @@ public class IrInjectionTestBase extends SmaliTestBase {
       IRConverter converter = new IRConverter(appView);
       code.removeRedundantBlocks();
       converter.replaceCodeForTesting(code);
-      AndroidApp app = writeDex();
+      AndroidApp app = writeDex(Timing.empty());
       return runOnArtRaw(app, DEFAULT_MAIN_CLASS_NAME).stdout;
     }
   }

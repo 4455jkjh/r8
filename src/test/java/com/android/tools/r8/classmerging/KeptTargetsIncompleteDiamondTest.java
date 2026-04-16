@@ -22,6 +22,7 @@ import com.android.tools.r8.graph.MethodResolutionResult;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
 import com.android.tools.r8.shaking.ProguardConfigurationRule;
 import com.android.tools.r8.utils.AndroidApiLevel;
+import com.android.tools.r8.utils.timing.Timing;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import java.util.HashSet;
@@ -56,7 +57,7 @@ public class KeptTargetsIncompleteDiamondTest extends TestBase {
                     .addAll(buildKeepRuleForClassAndMethods(Main.class, factory))
                     .build())
         .setMinApi(AndroidApiLevel.N)
-        .buildWithLiveness();
+        .buildWithLiveness(Timing.empty());
   }
 
   @Test

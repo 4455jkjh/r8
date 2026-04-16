@@ -19,6 +19,7 @@ import com.android.tools.r8.jdk11.nest.b169045091.NestHost.NestMember;
 import com.android.tools.r8.references.Reference;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
 import com.android.tools.r8.utils.AndroidApp;
+import com.android.tools.r8.utils.timing.Timing;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -45,6 +46,7 @@ public class NestMemberAccessibilityTest extends TestBase {
                 .addClassProgramData(ToolHelper.getClassAsBytes(NonNestMember.class))
                 .addClassProgramData(getNestHostClassTransformed())
                 .build(),
+            Timing.empty(),
             TestClass.class);
     AppInfoWithLiveness appInfo = appView.appInfo();
     DexItemFactory dexItemFactory = appView.dexItemFactory();

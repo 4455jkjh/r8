@@ -69,7 +69,8 @@ public class NullabilityTest extends TestBase {
       throws Exception {
     AppView<AppInfoWithLiveness> appView =
         computeAppViewWithLiveness(
-            buildClasses(classes).addLibraryFile(getMostRecentAndroidJar()).build());
+            buildClasses(classes).addLibraryFile(getMostRecentAndroidJar()).build(),
+            Timing.empty());
     CodeInspector codeInspector = new CodeInspector(appView.appInfo().app());
     MethodSubject fooSubject = codeInspector.clazz(mainClass.getName()).method(signature);
     IRCode irCode = fooSubject.buildIR(appView);

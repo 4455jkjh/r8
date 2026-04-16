@@ -26,6 +26,7 @@ import com.android.tools.r8.ir.analysis.type.DynamicTypeWithLowerBound;
 import com.android.tools.r8.ir.analysis.type.TypeElement;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
 import com.android.tools.r8.shaking.LibraryModeledPredicate;
+import com.android.tools.r8.utils.timing.Timing;
 import com.google.common.collect.Sets;
 import java.util.Set;
 import org.junit.Test;
@@ -52,6 +53,7 @@ public class InstantiatedLowerBoundTest extends TestBase {
             buildClasses(A.class, B.class, Main.class)
                 .addLibraryFile(getMostRecentAndroidJar())
                 .build(),
+            Timing.empty(),
             factory ->
                 buildConfigForRules(factory, buildKeepRuleForClassAndMethods(Main.class, factory)));
     AppInfoWithLiveness appInfo = appView.appInfo();
@@ -85,6 +87,7 @@ public class InstantiatedLowerBoundTest extends TestBase {
             buildClasses(A.class, B.class, C.class, Main.class)
                 .addLibraryFile(getMostRecentAndroidJar())
                 .build(),
+            Timing.empty(),
             factory ->
                 buildConfigForRules(factory, buildKeepRuleForClassAndMethods(Main.class, factory)));
     AppInfoWithLiveness appInfo = appView.appInfo();
@@ -118,6 +121,7 @@ public class InstantiatedLowerBoundTest extends TestBase {
             buildClasses(A.class, B.class, C.class, MainAllInstantiated.class)
                 .addLibraryFile(getMostRecentAndroidJar())
                 .build(),
+            Timing.empty(),
             factory ->
                 buildConfigForRules(
                     factory, buildKeepRuleForClassAndMethods(MainAllInstantiated.class, factory)));

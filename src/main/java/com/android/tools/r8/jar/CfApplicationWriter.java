@@ -50,21 +50,21 @@ public class CfApplicationWriter {
     this.marker = Optional.ofNullable(marker);
   }
 
-  public void write(ClassFileConsumer consumer, ExecutorService executorService)
+  public void write(ClassFileConsumer consumer, ExecutorService executorService, Timing timing)
       throws ExecutionException {
     assert !options.hasMappingFileSupport();
-    write(consumer, executorService, null);
+    write(consumer, executorService, timing, null);
   }
 
   public void write(
-      ClassFileConsumer consumer, ExecutorService executorService, AndroidApp inputApp)
+      ClassFileConsumer consumer,
+      ExecutorService executorService,
+      Timing timing,
+      AndroidApp inputApp)
       throws ExecutionException {
-    application.timing.begin("CfApplicationWriter.write");
-    try {
-      writeApplication(inputApp, consumer, executorService);
-    } finally {
-      application.timing.end();
-    }
+    timing.time(
+        "CfApplicationWriter.write",
+        () -> writeApplication(inputApp, consumer, executorService, timing));
   }
 
   private boolean includeMarker(Marker marker) {
@@ -79,9 +79,11 @@ public class CfApplicationWriter {
   }
 
   private void writeApplication(
-      AndroidApp inputApp, ClassFileConsumer consumer, ExecutorService executorService)
+      AndroidApp inputApp,
+      ClassFileConsumer consumer,
+      ExecutorService executorService,
+      Timing timing)
       throws ExecutionException {
-    Timing timing = appView.appInfo().app().timing;
     timing.begin("CfApplication.write");
 
     ProguardMapSupplierResult mapSupplierResult = ProguardMapSupplierResult.createEmpty();

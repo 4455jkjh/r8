@@ -221,7 +221,7 @@ public class R8 {
   }
 
   static void writeApplication(
-      AppView<?> appView, AndroidApp inputApp, ExecutorService executorService)
+      AppView<?> appView, AndroidApp inputApp, ExecutorService executorService, Timing timing)
       throws ExecutionException {
     InternalOptions options = appView.options();
     InspectorImpl.runInspections(options.outputInspections, appView.appInfo().classes());
@@ -230,9 +230,9 @@ public class R8 {
       assert marker != null;
       if (options.isGeneratingClassFiles()) {
         new CfApplicationWriter(appView, marker)
-            .write(options.getClassFileConsumer(), executorService, inputApp);
+            .write(options.getClassFileConsumer(), executorService, timing, inputApp);
       } else {
-        ApplicationWriter.create(appView, marker).write(executorService, inputApp);
+        ApplicationWriter.create(appView, marker).write(executorService, timing, inputApp);
       }
     } catch (IOException e) {
       throw new RuntimeException("Cannot write application", e);
@@ -938,7 +938,7 @@ public class R8 {
 
       // Generate the resulting application resources.
       writeKeepDeclarationsToConfigurationConsumer(keepDeclarations);
-      writeApplication(appView, inputApp, executorService);
+      writeApplication(appView, inputApp, executorService, timing);
 
       if (options.androidResourceProvider != null && options.androidResourceConsumer != null) {
         shrinkResources(dexFileContent, appView);

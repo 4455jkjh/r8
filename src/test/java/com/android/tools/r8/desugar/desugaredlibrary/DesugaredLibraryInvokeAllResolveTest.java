@@ -120,7 +120,7 @@ public class DesugaredLibraryInvokeAllResolveTest extends DesugaredLibraryTestBa
         inspector
             .getApplication()
             .asLazy()
-            .toDirectSingleThreadedForTesting()
+            .toDirectSingleThreadedForTesting(Timing.empty())
             .builder()
             .replaceLibraryClasses(libHolder.libraryClasses())
             .build(Timing.empty());

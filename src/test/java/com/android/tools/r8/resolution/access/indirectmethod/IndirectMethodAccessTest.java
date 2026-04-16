@@ -17,6 +17,7 @@ import com.android.tools.r8.resolution.access.indirectmethod.pkg.C;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
 import com.android.tools.r8.utils.OptionalBool;
 import com.android.tools.r8.utils.StringUtils;
+import com.android.tools.r8.utils.timing.Timing;
 import com.google.common.collect.ImmutableList;
 import java.io.IOException;
 import java.util.List;
@@ -60,6 +61,7 @@ public class IndirectMethodAccessTest extends TestBase {
                 .addClassProgramData(getTransforms())
                 .addLibraryFile(parameters.getDefaultRuntimeLibrary())
                 .build(),
+            Timing.empty(),
             Main.class);
     AppInfoWithLiveness appInfo = appView.appInfo();
     DexProgramClass cClass =

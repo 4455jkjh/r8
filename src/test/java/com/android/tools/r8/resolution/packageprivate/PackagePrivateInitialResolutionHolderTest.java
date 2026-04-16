@@ -20,6 +20,7 @@ import com.android.tools.r8.graph.MethodResolutionResult;
 import com.android.tools.r8.references.Reference;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
 import com.android.tools.r8.utils.OptionalBool;
+import com.android.tools.r8.utils.timing.Timing;
 import com.google.common.collect.ImmutableList;
 import java.util.Collection;
 import java.util.Collections;
@@ -50,6 +51,7 @@ public class PackagePrivateInitialResolutionHolderTest extends TestBase {
                 .addClassProgramData(getRewrittenResources())
                 .addLibraryFile(parameters.getDefaultRuntimeLibrary())
                 .build(),
+            Timing.empty(),
             Main.class);
     AppInfoWithLiveness appInfo = appView.appInfo();
     DexMethod method =

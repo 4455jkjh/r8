@@ -80,7 +80,7 @@ public class Bisect {
         return state.getFinalClass();
       }
       if (command == null) {
-        writeApp(app, output, executor);
+        writeApp(app, output, executor, timing);
         System.out.println("Bisecting completed with build in " + output + "/");
         System.out.println("Continue bisection by passing either --"
             + BisectOptions.RESULT_GOOD_FLAG + " or --"
@@ -125,7 +125,7 @@ public class Bisect {
       if (options.command != null) {
         command =
             (application) -> {
-              writeApp(application, output, executor);
+              writeApp(application, output, executor, timing);
               return runCommand(options.command, options.goodBuild, options.badBuild, output);
             };
       }
@@ -178,7 +178,8 @@ public class Bisect {
     return new ApplicationReader(app, options, Timing.empty()).read(executor);
   }
 
-  private static void writeApp(DexApplication app, Path output, ExecutorService executor)
+  private static void writeApp(
+      DexApplication app, Path output, ExecutorService executor, Timing timing)
       throws IOException, ExecutionException {
     InternalOptions options = app.options;
     // Save the original consumers, so they can be unwrapped after write.
@@ -190,7 +191,7 @@ public class Bisect {
             AppView.createForD8(
                 AppInfo.createInitialAppInfo(app, GlobalSyntheticsStrategy.forNonSynthesizing())),
             null);
-    writer.write(executor);
+    writer.write(executor, timing);
     options.signalFinishedToConsumers();
     compatSink.build().writeToDirectory(output, OutputMode.DexIndexed);
     // Restore original consumers.

@@ -11,6 +11,7 @@ import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
+import com.android.tools.r8.utils.timing.Timing;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -70,6 +71,7 @@ public class InterfaceNotInitializedByInvokeStaticOnSubClassTest
             buildInnerClasses(getClass())
                 .addLibraryFile(ToolHelper.getMostRecentAndroidJar())
                 .build(),
+            Timing.empty(),
             TestClass.class);
     assertNoClassInitializationSideEffects(appView, A.class);
   }

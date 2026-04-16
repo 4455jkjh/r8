@@ -33,6 +33,7 @@ import com.android.tools.r8.utils.AndroidApp;
 import com.android.tools.r8.utils.IntBox;
 import com.android.tools.r8.utils.ThrowingBiConsumer;
 import com.android.tools.r8.utils.collections.Pair;
+import com.android.tools.r8.utils.timing.Timing;
 import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
 import java.io.FileOutputStream;
@@ -84,7 +85,8 @@ public class AndroidApiHashingDatabaseBuilderGenerator extends TestBase {
             .addLibraryFile(androidJar)
             .disableAndroidJarHiddenClassExtension()
             .build();
-    AppView<AppInfoWithClassHierarchy> appView = computeAppViewWithClassHierarchy(androidApp);
+    AppView<AppInfoWithClassHierarchy> appView =
+        computeAppViewWithClassHierarchy(androidApp, Timing.empty());
     DexItemFactory factory = appView.dexItemFactory();
 
     CovariantMethodsInJarResult covariantMethodsInJar = CovariantMethodsInJarResult.create();

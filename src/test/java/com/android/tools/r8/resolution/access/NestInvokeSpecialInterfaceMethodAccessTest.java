@@ -28,6 +28,7 @@ import com.android.tools.r8.utils.OptionalBool;
 import com.android.tools.r8.utils.StringUtils;
 import com.android.tools.r8.utils.codeinspector.CodeInspector;
 import com.android.tools.r8.utils.codeinspector.MethodSubject;
+import com.android.tools.r8.utils.timing.Timing;
 import com.google.common.collect.ImmutableList;
 import java.util.Collection;
 import java.util.List;
@@ -171,7 +172,8 @@ public class NestInvokeSpecialInterfaceMethodAccessTest extends TestBase {
         buildClasses(getClasses())
             .addClassProgramData(getTransformedClasses())
             .addLibraryFile(parameters.getDefaultRuntimeLibrary())
-            .build());
+            .build(),
+        Timing.empty());
   }
 
   @Test

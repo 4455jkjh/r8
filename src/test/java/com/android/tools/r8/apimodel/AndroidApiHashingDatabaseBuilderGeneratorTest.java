@@ -41,6 +41,7 @@ import com.android.tools.r8.utils.FileUtils;
 import com.android.tools.r8.utils.IntBox;
 import com.android.tools.r8.utils.InternalOptions;
 import com.android.tools.r8.utils.ZipUtils;
+import com.android.tools.r8.utils.timing.Timing;
 import com.google.common.collect.ImmutableList;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -309,7 +310,8 @@ public class AndroidApiHashingDatabaseBuilderGeneratorTest extends TestBase {
   public void testAmendedClassesToApiDatabase() throws Exception {
     Path androidJar = ToolHelper.getAndroidJar(API_LEVEL);
     AppView<AppInfoWithClassHierarchy> appView =
-        computeAppViewWithClassHierarchy(AndroidApp.builder().addLibraryFile(androidJar).build());
+        computeAppViewWithClassHierarchy(
+            AndroidApp.builder().addLibraryFile(androidJar).build(), Timing.empty());
     AndroidApiLevelCompute androidApiLevelCompute = DefaultAndroidApiLevelCompute.create(appView);
     assertTrue(androidApiLevelCompute.isEnabled());
     ensureAllPublicMethodsAreMapped(appView, androidApiLevelCompute);

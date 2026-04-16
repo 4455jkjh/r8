@@ -27,6 +27,7 @@ import com.android.tools.r8.utils.OptionalBool;
 import com.android.tools.r8.utils.StringUtils;
 import com.android.tools.r8.utils.codeinspector.CodeInspector;
 import com.android.tools.r8.utils.codeinspector.MethodSubject;
+import com.android.tools.r8.utils.timing.Timing;
 import com.google.common.collect.ImmutableList;
 import java.util.Collection;
 import java.util.List;
@@ -180,7 +181,8 @@ public class NestInvokeSpecialMethodAccessWithIntermediateTest extends TestBase 
 
   private AppView<AppInfoWithClassHierarchy> getAppView() throws Exception {
     return computeAppViewWithClassHierarchy(
-        buildClasses(getClasses()).addClassProgramData(getTransformedClasses()).build());
+        buildClasses(getClasses()).addClassProgramData(getTransformedClasses()).build(),
+        Timing.empty());
   }
 
   @Test

@@ -20,6 +20,7 @@ import com.android.tools.r8.graph.MethodResolutionResult;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
 import com.android.tools.r8.utils.AndroidApp;
 import com.android.tools.r8.utils.DescriptorUtils;
+import com.android.tools.r8.utils.timing.Timing;
 import com.google.common.collect.ImmutableList;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -51,7 +52,8 @@ public class ProtectedDifferentPackageLookupTest extends TestBase {
     builder.addClassProgramData(
         ImmutableList.of(getBInAnotherPackage(), getMainWithCallToRelocatedB()));
     builder.addLibraryFile(parameters.getDefaultRuntimeLibrary());
-    AppView<AppInfoWithLiveness> appView = computeAppViewWithLiveness(builder.build(), Main.class);
+    AppView<AppInfoWithLiveness> appView =
+        computeAppViewWithLiveness(builder.build(), Timing.empty(), Main.class);
     AppInfoWithLiveness appInfo = appView.appInfo();
     DexMethod method = buildNullaryVoidMethod(A.class, "foo", appInfo.dexItemFactory());
     MethodResolutionResult resolutionResult = appInfo.resolveMethodOnClassHolderLegacy(method);

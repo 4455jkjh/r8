@@ -36,6 +36,7 @@ import com.android.tools.r8.resolution.singletarget.two.OtherSubSubClassOne;
 import com.android.tools.r8.resolution.singletarget.two.OtherSubSubClassTwo;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
 import com.android.tools.r8.shaking.LibraryModeledPredicate;
+import com.android.tools.r8.utils.timing.Timing;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Sets;
 import java.util.Collections;
@@ -102,7 +103,7 @@ public class SingleTargetLookupTest extends AsmTestBase {
             // Some of these tests resolve default methods.
             // If desugared they will hit the forward methods and not the expected defaults.
             .setMinApi(apiLevelWithDefaultInterfaceMethodsSupport())
-            .buildWithLiveness();
+            .buildWithLiveness(Timing.empty());
     appInfo = appView.appInfo();
   }
 

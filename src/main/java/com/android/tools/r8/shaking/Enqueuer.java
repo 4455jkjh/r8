@@ -4820,7 +4820,7 @@ public class Enqueuer {
     timing.end();
     appInfo.markObsolete();
     if (options.testing.enqueuerInspector != null) {
-      options.testing.enqueuerInspector.accept(appInfoWithLiveness, mode);
+      options.testing.enqueuerInspector.accept(appInfoWithLiveness, mode, timing);
     }
     return new EnqueuerResult(appInfoWithLiveness);
   }

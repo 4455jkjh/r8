@@ -20,6 +20,7 @@ import com.android.tools.r8.transformers.ClassFileTransformer;
 import com.android.tools.r8.utils.BooleanUtils;
 import com.android.tools.r8.utils.OptionalBool;
 import com.android.tools.r8.utils.StringUtils;
+import com.android.tools.r8.utils.timing.Timing;
 import com.google.common.collect.ImmutableList;
 import java.util.Collection;
 import java.util.List;
@@ -69,6 +70,7 @@ public class NestStaticMethodAccessTest extends TestBase {
                 .addClassProgramData(getTransformedClasses())
                 .addLibraryFile(parameters.getDefaultRuntimeLibrary())
                 .build(),
+            Timing.empty(),
             Main.class);
     AppInfoWithLiveness appInfo = appView.appInfo();
     DexProgramClass bClass =

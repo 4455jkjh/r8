@@ -16,6 +16,7 @@ import com.android.tools.r8.utils.AndroidApp;
 import com.android.tools.r8.utils.InternalOptions;
 import com.android.tools.r8.utils.codeinspector.CodeInspector;
 import com.android.tools.r8.utils.codeinspector.MethodSubject;
+import com.android.tools.r8.utils.timing.Timing;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 import org.junit.Before;
@@ -89,7 +90,7 @@ public abstract class AnalysisTestBase extends TestBase {
 
   @Before
   public void setup() throws Exception {
-    appView = computeAppViewWithLiveness(app, null, this::configure);
+    appView = computeAppViewWithLiveness(app, Timing.empty(), null, this::configure);
   }
 
   public void buildAndCheckIR(String methodName, Consumer<IRCode> irInspector) {

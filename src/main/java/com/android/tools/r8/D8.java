@@ -326,7 +326,7 @@ public final class D8 {
       timing.end(); // post-converter
 
       reportSyntheticInformation(appView);
-      writeApplication(appView, inputApp, marker, executor);
+      writeApplication(appView, inputApp, marker, executor, timing);
 
       options.printWarnings();
     } catch (ExecutionException e) {
@@ -351,16 +351,20 @@ public final class D8 {
   }
 
   private static void writeApplication(
-      AppView<AppInfo> appView, AndroidApp inputApp, Marker marker, ExecutorService executor)
+      AppView<AppInfo> appView,
+      AndroidApp inputApp,
+      Marker marker,
+      ExecutorService executor,
+      Timing timing)
       throws ExecutionException, IOException {
     InternalOptions options = appView.options();
     if (options.partialSubCompilationConfiguration != null) {
       new R8PartialApplicationWriter(appView).write(executor);
     } else if (options.isGeneratingClassFiles()) {
       new CfApplicationWriter(appView, marker)
-          .write(options.getClassFileConsumer(), executor, inputApp);
+          .write(options.getClassFileConsumer(), executor, timing, inputApp);
     } else {
-      ApplicationWriter.create(appView, marker).write(executor, inputApp);
+      ApplicationWriter.create(appView, marker).write(executor, timing, inputApp);
     }
   }
 
@@ -443,7 +447,7 @@ public final class D8 {
     ConvertedCfFiles convertedCfFiles = new ConvertedCfFiles();
     new GenericSignatureRewriter(appView).run(appView.appInfo().classes(), executor);
     new KotlinMetadataRewriter(appView).runForD8(executor);
-    ApplicationWriter.create(appView, marker, convertedCfFiles).write(executor);
+    ApplicationWriter.create(appView, marker, convertedCfFiles).write(executor, timing);
     AndroidApp.Builder builder = AndroidApp.builder(inputApp);
     builder.getProgramResourceProviders().clear();
     builder.addProgramResourceProvider(convertedCfFiles);
