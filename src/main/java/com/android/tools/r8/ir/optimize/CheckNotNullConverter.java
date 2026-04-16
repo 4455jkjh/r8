@@ -11,7 +11,6 @@ import com.android.tools.r8.graph.DexMethod;
 import com.android.tools.r8.graph.ProgramMethod;
 import com.android.tools.r8.ir.code.BasicBlock;
 import com.android.tools.r8.ir.code.IRCode;
-import com.android.tools.r8.ir.code.Instruction;
 import com.android.tools.r8.ir.code.InstructionListIterator;
 import com.android.tools.r8.ir.code.InvokeMethod;
 import com.android.tools.r8.ir.code.Value;
@@ -35,15 +34,20 @@ public class CheckNotNullConverter {
    */
   private static void run(AppView<? extends AppInfoWithClassHierarchy> appView, IRCode code) {
     AffectedValues affectedValues = new AffectedValues();
+    boolean changed = false;
     for (BasicBlock block : code.getBlocks()) {
       InstructionListIterator instructionIterator = block.listIterator();
       while (instructionIterator.hasNext()) {
-        Instruction instruction = instructionIterator.next();
-        if (instruction.isInvokeMethod()) {
-          rewriteInvoke(
-              appView, code, instructionIterator, instruction.asInvokeMethod(), affectedValues);
+        InvokeMethod instruction = instructionIterator.next().asInvokeMethod();
+        if (instruction != null) {
+          if (rewriteInvoke(appView, code, instructionIterator, instruction, affectedValues)) {
+            changed = true;
+          }
         }
       }
+    }
+    if (changed) {
+      code.removeRedundantBlocks();
     }
     affectedValues.narrowingWithAssumeRemoval(appView, code);
   }
@@ -64,7 +68,7 @@ public class CheckNotNullConverter {
         || kotlinNullCheckLedgibleForMessageRemoval(appView, singleTarget.getReference());
   }
 
-  private static void rewriteInvoke(
+  private static boolean rewriteInvoke(
       AppView<? extends AppInfoWithClassHierarchy> appView,
       IRCode code,
       InstructionListIterator instructionIterator,
@@ -73,7 +77,7 @@ public class CheckNotNullConverter {
     ProgramMethod context = code.context();
     DexClassAndMethod singleTarget = invoke.lookupSingleTarget(appView, context);
     if (singleTarget == null || !canConvertNullCheck(appView, singleTarget)) {
-      return;
+      return false;
     }
     Value checkNotNullValue = invoke.getFirstNonReceiverArgument();
     if (invoke.hasUsedOutValue()) {
@@ -88,5 +92,6 @@ public class CheckNotNullConverter {
     } else {
       instructionIterator.replaceCurrentInstructionWithNullCheck(appView, checkNotNullValue);
     }
+    return true;
   }
 }
