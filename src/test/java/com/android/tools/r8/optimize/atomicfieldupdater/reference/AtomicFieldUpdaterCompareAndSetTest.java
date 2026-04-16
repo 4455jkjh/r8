@@ -52,8 +52,8 @@ public class AtomicFieldUpdaterCompareAndSetTest extends AtomicFieldUpdaterBase 
               matchers.add(diagnosticMessage(containsString("Can instrument")));
               matchers.add(diagnosticMessage(containsString("Can optimize")));
               // TODO(b/453628974): The field should be removed once nullability analysis is
-              // more precise.
-              matchers.add(diagnosticMessage(containsString("Cannot remove")));
+              //                    more precise.
+              // matchers.add(diagnosticMessage(containsString("Can remove")));
               if (isCompareAndSetBackported) {
                 // Another call is inserted by the inlined backport.
                 matchers.add(diagnosticMessage(containsString("Can optimize")));
