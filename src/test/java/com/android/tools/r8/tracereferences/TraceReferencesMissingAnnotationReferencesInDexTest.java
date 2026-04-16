@@ -24,8 +24,8 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 import java.nio.file.Path;
-import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -44,7 +44,7 @@ public class TraceReferencesMissingAnnotationReferencesInDexTest extends TestBas
 
   static class MissingReferencesConsumer implements TraceReferencesConsumer {
 
-    Set<ClassReference> missingTypes = new HashSet<>();
+    private final Set<ClassReference> missingTypes = ConcurrentHashMap.newKeySet();
 
     @Override
     public void acceptType(TracedClass tracedClass, DiagnosticsHandler handler) {

@@ -24,8 +24,8 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 import java.nio.file.Path;
-import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -44,7 +44,7 @@ public class TraceReferencesAnnotationReferencesInDexTest extends TestBase {
 
   static class Consumer implements TraceReferencesConsumer {
 
-    Map<ClassReference, DefinitionContext> tracedTypes = new HashMap<>();
+    private final Map<ClassReference, DefinitionContext> tracedTypes = new ConcurrentHashMap<>();
 
     @Override
     public void acceptType(TracedClass tracedClass, DiagnosticsHandler handler) {

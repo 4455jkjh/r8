@@ -17,9 +17,10 @@ import com.android.tools.r8.references.TypeReference;
 import com.android.tools.r8.utils.AndroidApiLevel;
 import com.android.tools.r8.utils.ZipUtils.ZipBuilder;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Sets;
 import java.nio.file.Path;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -38,9 +39,9 @@ public class TraceReferencesArrayTypesTest extends TestBase {
 
   static class MissingReferencesConsumer implements TraceReferencesConsumer {
 
-    Set<TypeReference> tracedTypes = Sets.newHashSet();
-    boolean acceptFieldCalled;
-    boolean acceptMethodCalled;
+    private final Set<TypeReference> tracedTypes = ConcurrentHashMap.newKeySet();
+    private final AtomicBoolean acceptFieldCalled = new AtomicBoolean();
+    private final AtomicBoolean acceptMethodCalled = new AtomicBoolean();
 
     @Override
     public void acceptType(TracedClass tracedClass, DiagnosticsHandler handler) {
@@ -50,7 +51,7 @@ public class TraceReferencesArrayTypesTest extends TestBase {
 
     @Override
     public void acceptField(TracedField tracedField, DiagnosticsHandler handler) {
-      acceptFieldCalled = true;
+      acceptFieldCalled.set(true);
       assertFalse(tracedField.isMissingDefinition());
       assertEquals(
           Reference.classFromClass(Target.class), tracedField.getReference().getHolderClass());
@@ -60,7 +61,7 @@ public class TraceReferencesArrayTypesTest extends TestBase {
 
     @Override
     public void acceptMethod(TracedMethod tracedMethod, DiagnosticsHandler handler) {
-      acceptMethodCalled = true;
+      acceptMethodCalled.set(true);
       assertFalse(tracedMethod.isMissingDefinition());
       assertEquals(
           Reference.classFromClass(Target.class), tracedMethod.getReference().getHolderClass());
@@ -113,8 +114,8 @@ public class TraceReferencesArrayTypesTest extends TestBase {
             Reference.classFromClass(TargetArrayCloneType.class),
             Reference.classFromClass(TargetArrayCloneType2.class)),
         consumer.tracedTypes);
-    assertTrue(consumer.acceptFieldCalled);
-    assertTrue(consumer.acceptMethodCalled);
+    assertTrue(consumer.acceptFieldCalled.get());
+    assertTrue(consumer.acceptMethodCalled.get());
   }
 
   static class TargetFieldType {}

@@ -12,10 +12,9 @@ import com.android.tools.r8.tracereferences.TraceReferencesConsumer;
 import com.android.tools.r8.tracereferences.TraceReferencesConsumer.TracedClass;
 import com.android.tools.r8.tracereferences.TraceReferencesConsumer.TracedField;
 import com.android.tools.r8.tracereferences.TraceReferencesConsumer.TracedMethod;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class TraceReferencesResult {
 
@@ -56,10 +55,10 @@ public class TraceReferencesResult {
   }
 
   public static class Builder implements TraceReferencesConsumer {
-    private final Set<TracedClass> types = new HashSet<>();
-    private final Map<ClassReference, Set<TracedField>> fields = new HashMap<>();
-    private final Map<ClassReference, Set<TracedMethod>> methods = new HashMap<>();
-    private final Set<PackageReference> keepPackageNames = new HashSet<>();
+    private final Set<TracedClass> types = ConcurrentHashMap.newKeySet();
+    private final Map<ClassReference, Set<TracedField>> fields = new ConcurrentHashMap<>();
+    private final Map<ClassReference, Set<TracedMethod>> methods = new ConcurrentHashMap<>();
+    private final Set<PackageReference> keepPackageNames = ConcurrentHashMap.newKeySet();
 
     @Override
     public void acceptType(TracedClass tracedClass, DiagnosticsHandler handler) {
@@ -69,13 +68,17 @@ public class TraceReferencesResult {
     @Override
     public void acceptField(TracedField tracedField, DiagnosticsHandler handler) {
       FieldReference field = tracedField.getReference();
-      fields.computeIfAbsent(field.getHolderClass(), k -> new HashSet<>()).add(tracedField);
+      fields
+          .computeIfAbsent(field.getHolderClass(), k -> ConcurrentHashMap.newKeySet())
+          .add(tracedField);
     }
 
     @Override
     public void acceptMethod(TracedMethod tracedMethod, DiagnosticsHandler handler) {
       MethodReference method = tracedMethod.getReference();
-      methods.computeIfAbsent(method.getHolderClass(), k -> new HashSet<>()).add(tracedMethod);
+      methods
+          .computeIfAbsent(method.getHolderClass(), k -> ConcurrentHashMap.newKeySet())
+          .add(tracedMethod);
     }
 
     @Override

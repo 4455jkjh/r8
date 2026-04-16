@@ -377,7 +377,7 @@ public class R8 {
               .setAssumeInfoCollectionBuilder(assumeInfoCollectionBuilder)
               .evaluateRules(executorService, timing)
               .expandAdaptClassStringsPatterns()
-              .tracePartialCompilationDexingOutputClasses(executorService)
+              .tracePartialCompilationDexingOutputClasses(executorService, timing)
               .build());
       appView.setAssumeInfoCollection(assumeInfoCollectionBuilder.build(appView));
 
@@ -931,8 +931,8 @@ public class R8 {
       if (options.nativeReferencesConsumer != null) {
         NativeReferencesHelper helper =
             new NativeReferencesHelper(
-                appView, options.nativeReferencesConsumer, appView.reporter(), executorService);
-        helper.process(appView.appInfo().classes());
+                appView, options.nativeReferencesConsumer, appView.reporter());
+        helper.process(appView.appInfo().classes(), executorService);
         options.nativeReferencesConsumer.finished(appView.reporter());
       }
 

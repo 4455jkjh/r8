@@ -80,6 +80,8 @@ public interface TraceReferencesConsumer {
   /**
    * Callback when class has been traced.
    *
+   * <p>The calls to all acceptXXX methods can happen concurrently.
+   *
    * <p>The consumer is expected not to throw, but instead report any errors via the diagnostics
    * {@param handler}. If an error is reported via {@param handler} and no exceptions are thrown,
    * then trace references guaranties to exit with an error.
@@ -91,6 +93,8 @@ public interface TraceReferencesConsumer {
 
   /**
    * Callback when class has been traced.
+   *
+   * <p>The calls to all acceptXXX methods can happen concurrently.
    *
    * <p>The consumer is expected not to throw, but instead report any errors via the diagnostics
    * {@param handler}. If an error is reported via {@param handler} and no exceptions are thrown,
@@ -104,6 +108,8 @@ public interface TraceReferencesConsumer {
   /**
    * Callback when class has been traced.
    *
+   * <p>The calls to all acceptXXX methods can happen concurrently.
+   *
    * <p>The consumer is expected not to throw, but instead report any errors via the diagnostics
    * {@param handler}. If an error is reported via {@param handler} and no exceptions are thrown,
    * then trace references guaranties to exit with an error.
@@ -115,6 +121,8 @@ public interface TraceReferencesConsumer {
 
   /**
    * Callback when package which is required for package private access has been traced.
+   *
+   * <p>The calls to all acceptXXX methods can happen concurrently.
    *
    * <p>The consumer is expected not to throw, but instead report any errors via the diagnostics
    * {@param handler}. If an error is reported via {@param handler} and no exceptions are thrown,

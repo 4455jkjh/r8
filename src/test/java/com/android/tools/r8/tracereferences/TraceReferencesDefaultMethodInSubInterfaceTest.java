@@ -18,8 +18,8 @@ import com.android.tools.r8.utils.ZipUtils.ZipBuilder;
 import com.google.common.collect.ImmutableSet;
 import java.nio.file.Path;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -68,7 +68,7 @@ public class TraceReferencesDefaultMethodInSubInterfaceTest extends TestBase {
 
   static class SeenReferencesConsumer implements TraceReferencesConsumer {
 
-    private final Set<MethodReference> seenMethods = new HashSet<>();
+    private final Set<MethodReference> seenMethods = ConcurrentHashMap.newKeySet();
 
     @Override
     public void acceptType(TracedClass tracedClass, DiagnosticsHandler handler) {}

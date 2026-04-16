@@ -4,6 +4,7 @@
 package com.android.tools.r8.tracereferences;
 
 import static com.android.tools.r8.utils.ConsumerUtils.emptyConsumer;
+import static com.google.common.base.Predicates.alwaysTrue;
 
 import com.android.tools.r8.DiagnosticsHandler;
 import com.android.tools.r8.diagnostic.DefinitionContext;
@@ -61,7 +62,6 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -87,7 +87,7 @@ public class UseCollector implements UseCollectorEventConsumer {
 
   public interface NativeIdentification {
 
-    default void processWorklist() throws ExecutionException {}
+    default void processWorklist(ExecutorService executorService) throws ExecutionException {}
 
     default void scanInvoke(DexMethod invokedMethod, ProgramMethod method) {}
 
@@ -120,14 +120,12 @@ public class UseCollector implements UseCollectorEventConsumer {
         DiagnosticsHandler diagnostics) {
       this.nativeReferencesConsumer = nativeReferencesConsumer;
       this.diagnostics = diagnostics;
-      this.helper =
-          new NativeReferencesHelper(
-              appView, nativeReferencesConsumer, diagnostics, Executors.newWorkStealingPool());
+      this.helper = new NativeReferencesHelper(appView, nativeReferencesConsumer, diagnostics);
     }
 
     @Override
-    public void processWorklist() throws ExecutionException {
-      helper.process(worklist);
+    public void processWorklist(ExecutorService executorService) throws ExecutionException {
+      helper.process(worklist, executorService);
       worklist.clear();
       nativeReferencesConsumer.finished(diagnostics);
     }
@@ -177,37 +175,42 @@ public class UseCollector implements UseCollectorEventConsumer {
     // Intentionally empty. Overridden in R8PartialUseCollector.
   }
 
-  public void traceClasses(Collection<DexProgramClass> classes, Timing timing)
+  public void traceClasses(
+      Collection<DexProgramClass> classes, ExecutorService executorService, Timing timing)
       throws ExecutionException {
-    for (DexProgramClass clazz : classes) {
-      timing.begin("Trace " + clazz.getTypeName());
-      traceClass(clazz);
+    ThreadUtils.processItemsThatMatches(
+        classes,
+        alwaysTrue(),
+        this::traceClass,
+        appView.options(),
+        executorService,
+        timing,
+        timing.beginMerger("Trace classes", executorService),
+        (index, clazz) -> clazz.getTypeName());
+    nativeIdentification.processWorklist(executorService);
+  }
+
+  public void traceClass(DexProgramClass clazz, Timing timing) {
+    timing.begin("Trace class");
+    try {
+      DefinitionContext classContext = DefinitionContextUtils.create(clazz);
+      clazz.forEachImmediateSupertype(
+          supertype ->
+              registerSuperType(clazz, supertype, classContext, getDefaultEventConsumer()));
+      clazz.forEachProgramField(field -> registerField(field, getDefaultEventConsumer()));
+      clazz.forEachProgramMethod(method -> registerMethod(method, getDefaultEventConsumer()));
+      for (DexAnnotation annotation : clazz.annotations().getAnnotations()) {
+        registerAnnotation(annotation, clazz, classContext, getDefaultEventConsumer());
+      }
+      traceEnclosingMethod(clazz, classContext, getDefaultEventConsumer());
+      traceInnerClasses(clazz, classContext, getDefaultEventConsumer());
+      traceKotlinMetadata(clazz, classContext, kotlinMetadataEventConsumer);
+      traceNest(clazz, classContext, getDefaultEventConsumer());
+      tracePermittedSubclasses(clazz, classContext, getDefaultEventConsumer());
+      traceSignature(clazz, classContext, getDefaultEventConsumer());
+    } finally {
       timing.end();
     }
-    nativeIdentification.processWorklist();
-  }
-
-  public void traceClasses(Collection<DexProgramClass> classes, ExecutorService executorService)
-      throws ExecutionException {
-    ThreadUtils.processItems(
-        classes, this::traceClass, appView.options().getThreadingModule(), executorService);
-  }
-
-  public void traceClass(DexProgramClass clazz) {
-    DefinitionContext classContext = DefinitionContextUtils.create(clazz);
-    clazz.forEachImmediateSupertype(
-        supertype -> registerSuperType(clazz, supertype, classContext, getDefaultEventConsumer()));
-    clazz.forEachProgramField(field -> registerField(field, getDefaultEventConsumer()));
-    clazz.forEachProgramMethod(method -> registerMethod(method, getDefaultEventConsumer()));
-    for (DexAnnotation annotation : clazz.annotations().getAnnotations()) {
-      registerAnnotation(annotation, clazz, classContext, getDefaultEventConsumer());
-    }
-    traceEnclosingMethod(clazz, classContext, getDefaultEventConsumer());
-    traceInnerClasses(clazz, classContext, getDefaultEventConsumer());
-    traceKotlinMetadata(clazz, classContext, kotlinMetadataEventConsumer);
-    traceNest(clazz, classContext, getDefaultEventConsumer());
-    tracePermittedSubclasses(clazz, classContext, getDefaultEventConsumer());
-    traceSignature(clazz, classContext, getDefaultEventConsumer());
   }
 
   private void traceEnclosingMethod(

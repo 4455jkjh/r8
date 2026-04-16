@@ -23,7 +23,7 @@ class NativeReferencesTestingConsumer implements TraceReferencesNativeReferences
   final List<Pair<String, MethodOrigin>> loadKnown = new ArrayList<>();
   final List<MethodOrigin> loadAny = new ArrayList<>();
   final List<MethodReference> nativeMethods = new ArrayList<>();
-  boolean finished = false;
+  private volatile boolean finished = false;
 
   @Override
   public void acceptLoadLibrary(String name, MethodOrigin origin, DiagnosticsHandler handler) {
@@ -167,6 +167,7 @@ class NativeReferencesTestingConsumer implements TraceReferencesNativeReferences
             && loadLibraryAny.isEmpty()
             && loadKnown.isEmpty()
             && loadAny.isEmpty()
+            && nativeMethods.isEmpty()
             && finished);
   }
 }

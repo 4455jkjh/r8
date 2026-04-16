@@ -18,8 +18,8 @@ import com.android.tools.r8.utils.AndroidApiLevel;
 import com.android.tools.r8.utils.ZipUtils.ZipBuilder;
 import com.google.common.collect.ImmutableSet;
 import java.nio.file.Path;
-import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -39,7 +39,7 @@ public class TraceReferenceStaticFieldIndirectionTest extends TestBase {
 
   static class MissingReferencesConsumer implements TraceReferencesConsumer {
 
-    private Set<FieldReference> seenFields = new HashSet<>();
+    private final Set<FieldReference> seenFields = ConcurrentHashMap.newKeySet();
 
     @Override
     public void acceptType(TracedClass tracedClass, DiagnosticsHandler handler) {}

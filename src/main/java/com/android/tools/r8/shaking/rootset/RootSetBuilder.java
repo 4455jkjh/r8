@@ -252,8 +252,8 @@ public class RootSetBuilder {
     return this;
   }
 
-  public RootSetBuilder tracePartialCompilationDexingOutputClasses(ExecutorService executorService)
-      throws ExecutionException {
+  public RootSetBuilder tracePartialCompilationDexingOutputClasses(
+      ExecutorService executorService, Timing timing) throws ExecutionException {
     if (options.partialSubCompilationConfiguration == null) {
       return this;
     }
@@ -343,7 +343,7 @@ public class RootSetBuilder {
             return true;
           }
         };
-    useCollector.run(executorService);
+    useCollector.run(executorService, timing);
 
     // Trace resources.
     if (options.androidResourceProvider != null) {
