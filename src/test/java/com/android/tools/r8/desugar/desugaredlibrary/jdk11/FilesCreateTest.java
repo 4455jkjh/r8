@@ -139,7 +139,9 @@ public class FilesCreateTest extends DesugaredLibraryTestBase {
     }
 
     public static void main(String[] args) throws Throwable {
-      Path root = Files.createTempDirectory("tmp_test");
+      Path root = null;
+      try {
+        root = Files.createTempDirectory("tmp_test");
       Files.createDirectories(root.resolve("ind1s/dir"));
       Files.createDirectories(root.resolve("ind2s/dir"), getFileAttribute());
       try {
@@ -201,16 +203,32 @@ public class FilesCreateTest extends DesugaredLibraryTestBase {
       Files.createFile(root.resolve("f3.txt"));
       Files.createFile(root.resolve("f4.txt"), getFileAttribute());
 
-      Files.walk(root)
-          .sorted(Comparator.reverseOrder())
-          .map(
-              f -> {
-                if (f != root) {
-                  System.out.println(f.subpath(2, f.getNameCount()));
-                }
-                return f.toFile();
-              })
-          .forEach(File::delete);
+        Path finalRoot = root;
+        Files.walk(root)
+            .sorted(Comparator.reverseOrder())
+            .map(
+                f -> {
+                  if (f != finalRoot) {
+                    System.out.println(f.subpath(2, f.getNameCount()));
+                  }
+                  return f.toFile();
+                })
+            .forEach(File::delete);
+      } finally {
+        if (root != null) {
+          deleteDirectory(root.toFile());
+        }
+      }
+    }
+
+    private static void deleteDirectory(java.io.File directoryToBeDeleted) {
+      java.io.File[] allContents = directoryToBeDeleted.listFiles();
+      if (allContents != null) {
+        for (java.io.File file : allContents) {
+          deleteDirectory(file);
+        }
+      }
+      directoryToBeDeleted.delete();
     }
 
     public static FileAttribute<Set<PosixFilePermission>> getFileAttribute() {

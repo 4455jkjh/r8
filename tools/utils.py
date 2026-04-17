@@ -577,7 +577,7 @@ def cloud_storage_exists(destination):
 
 class TempDir(object):
 
-    def __init__(self, prefix='', delete=True):
+    def __init__(self, prefix='r8-tmp-', delete=True):
         self._temp_dir = None
         self._prefix = prefix
         self._delete = delete

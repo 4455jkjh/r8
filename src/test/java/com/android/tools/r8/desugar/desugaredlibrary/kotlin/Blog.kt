@@ -10,12 +10,16 @@ import java.nio.file.StandardOpenOption
 
 fun main() {
   val tempDirectory = Files.createTempDirectory("tempFile")
-  val tempFile = tempDirectory.resolve("tempFile")
-  Files.write(tempFile, "first ".toByteArray(StandardCharsets.UTF_8), StandardOpenOption.CREATE)
-  Files.write(tempFile, "second".toByteArray(StandardCharsets.UTF_8), StandardOpenOption.APPEND)
-  println("Content: " + Files.readAllLines(tempFile).get(0))
-  println("Size: " + Files.getAttribute(tempFile, "basic:size"))
-  println("Exists (before deletion): " + Files.exists(tempFile))
-  Files.deleteIfExists(tempFile)
-  println("Exists (after deletion): " + Files.exists(tempFile))
+  try {
+    val tempFile = tempDirectory.resolve("tempFile")
+    Files.write(tempFile, "first ".toByteArray(StandardCharsets.UTF_8), StandardOpenOption.CREATE)
+    Files.write(tempFile, "second".toByteArray(StandardCharsets.UTF_8), StandardOpenOption.APPEND)
+    println("Content: " + Files.readAllLines(tempFile).get(0))
+    println("Size: " + Files.getAttribute(tempFile, "basic:size"))
+    println("Exists (before deletion): " + Files.exists(tempFile))
+    Files.deleteIfExists(tempFile)
+    println("Exists (after deletion): " + Files.exists(tempFile))
+  } finally {
+    Files.deleteIfExists(tempDirectory)
+  }
 }

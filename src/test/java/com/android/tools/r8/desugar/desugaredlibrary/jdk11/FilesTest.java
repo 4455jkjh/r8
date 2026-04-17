@@ -141,6 +141,7 @@ public class FilesTest extends DesugaredLibraryTestBase {
 
     public static void main(String[] args) throws Throwable {
       Path path = Files.createTempFile("example", ".txt");
+      path.toFile().deleteOnExit();
       readWriteThroughFilesAPI(path);
       readThroughFileChannelAPI(path);
       Files.setAttribute(path, "basic:lastModifiedTime", FileTime.from(Instant.EPOCH));
@@ -220,7 +221,9 @@ public class FilesTest extends DesugaredLibraryTestBase {
 
     private static void pathGeneric() throws IOException {
       Path tmpDict = Files.createTempDirectory("tmpDict");
+      tmpDict.toFile().deleteOnExit();
       Path tmpFile = Files.createFile(tmpDict.resolve("tmpFile"));
+      tmpFile.toFile().deleteOnExit();
       Iterator<Path> iterator = tmpDict.iterator();
       System.out.println(iterator.next());
       Iterable<Path> rootDirectories = tmpFile.getFileSystem().getRootDirectories();

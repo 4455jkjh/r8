@@ -94,33 +94,45 @@ public class FilesWatchEventTest extends DesugaredLibraryTestBase {
   public static class TestClass {
 
     public static void main(String[] args) throws IOException, InterruptedException {
-      Path dir = Files.createTempDirectory("tmpDictWatch");
-      FileSystem fs = FileSystems.getDefault();
+      Path dir = null;
+      try {
+        dir = Files.createTempDirectory("tmpDictWatch");
+        FileSystem fs = FileSystems.getDefault();
 
-      try (WatchService watcher = fs.newWatchService()) {
-        WatchKey myKey = dir.register(watcher, ENTRY_CREATE);
-        System.out.println(myKey.isValid());
-        System.out.println(myKey.watchable().equals(dir));
+        try (WatchService watcher = fs.newWatchService()) {
+          WatchKey myKey = dir.register(watcher, ENTRY_CREATE);
+          System.out.println(myKey.isValid());
+          System.out.println(myKey.watchable().equals(dir));
 
-        Path file = dir.resolve("foo");
-        Files.createFile(file);
+          Path file = dir.resolve("foo");
+          Files.createFile(file);
 
-        WatchKey key = watcher.take();
-        System.out.println(key.equals(myKey));
+          WatchKey key = watcher.take();
+          System.out.println(key.equals(myKey));
 
-        WatchEvent<?> event = myKey.pollEvents().iterator().next();
-        System.out.println(event.kind());
-        System.out.println(event.kind().type().getSimpleName());
-        System.out.println(event.context());
-        System.out.println(((Path) event.context()).getFileName());
+          WatchEvent<?> event = myKey.pollEvents().iterator().next();
+          System.out.println(event.kind());
+          System.out.println(event.kind().type().getSimpleName());
+          System.out.println(event.context());
+          System.out.println(((Path) event.context()).getFileName());
 
-        System.out.println(myKey.reset());
-        Files.delete(file);
-      } catch (UnsupportedOperationException e) {
-        System.out.println(e.getClass() + " :: " + e.getMessage());
+          System.out.println(myKey.reset());
+          Files.delete(file);
+        } catch (UnsupportedOperationException e) {
+          System.out.println(e.getClass() + " :: " + e.getMessage());
+        }
+      } finally {
+        if (dir != null) {
+          try {
+            Files.deleteIfExists(dir.resolve("foo"));
+          } catch (Exception ignored) {
+          }
+          try {
+            Files.deleteIfExists(dir);
+          } catch (Exception ignored) {
+          }
+        }
       }
-
-      Files.delete(dir);
     }
   }
 }

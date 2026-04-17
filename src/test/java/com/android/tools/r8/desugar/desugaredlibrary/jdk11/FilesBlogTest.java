@@ -74,15 +74,22 @@ public class FilesBlogTest extends DesugaredLibraryTestBase {
   public static class TestClass {
 
     public static void main(String[] args) throws Throwable {
-      Path tempDirectory = Files.createTempDirectory("tempFile");
-      Path tempFile = tempDirectory.resolve("tempFile");
-      Files.write(tempFile, "first ".getBytes(StandardCharsets.UTF_8), StandardOpenOption.CREATE);
-      Files.write(tempFile, "second".getBytes(StandardCharsets.UTF_8), StandardOpenOption.APPEND);
-      System.out.println("Content: " + Files.readAllLines(tempFile).get(0));
-      System.out.println("Size: " + Files.getAttribute(tempFile, "basic:size"));
-      System.out.println("Exists (before deletion): " + Files.exists(tempFile));
-      Files.deleteIfExists(tempFile);
-      System.out.println("Exists (after deletion): " + Files.exists(tempFile));
+      Path tempDirectory = null;
+      try {
+        tempDirectory = Files.createTempDirectory("tempFile");
+        Path tempFile = tempDirectory.resolve("tempFile");
+        Files.write(tempFile, "first ".getBytes(StandardCharsets.UTF_8), StandardOpenOption.CREATE);
+        Files.write(tempFile, "second".getBytes(StandardCharsets.UTF_8), StandardOpenOption.APPEND);
+        System.out.println("Content: " + Files.readAllLines(tempFile).get(0));
+        System.out.println("Size: " + Files.getAttribute(tempFile, "basic:size"));
+        System.out.println("Exists (before deletion): " + Files.exists(tempFile));
+        Files.deleteIfExists(tempFile);
+        System.out.println("Exists (after deletion): " + Files.exists(tempFile));
+      } finally {
+        if (tempDirectory != null) {
+          Files.deleteIfExists(tempDirectory);
+        }
+      }
     }
   }
 }

@@ -107,6 +107,7 @@ public class FileChannelTest extends DesugaredLibraryTestBase {
     @SuppressWarnings("all")
     private static void instanceTest() throws IOException {
       Path tmp = Files.createTempFile("tmp", ".txt");
+      tmp.toFile().deleteOnExit();
       System.out.println(
           new FileInputStream(tmp.toFile()).getChannel() instanceof SeekableByteChannel);
       System.out.println(
@@ -120,6 +121,7 @@ public class FileChannelTest extends DesugaredLibraryTestBase {
     private static void fosTest() throws IOException {
       String toWrite = "The monkey eats...";
       Path tmp = Files.createTempFile("fos", ".txt");
+      tmp.toFile().deleteOnExit();
 
       ByteBuffer byteBuffer = ByteBuffer.wrap(toWrite.getBytes(StandardCharsets.UTF_8));
       FileOutputStream fos = new FileOutputStream(tmp.toFile());
@@ -138,6 +140,7 @@ public class FileChannelTest extends DesugaredLibraryTestBase {
 
     private static void fileChannelOpenLockTest() throws IOException {
       Path tmp = Files.createTempFile("lock", ".txt");
+      tmp.toFile().deleteOnExit();
       String contents = "Bananas!";
       Files.write(tmp, contents.getBytes(StandardCharsets.UTF_8));
       FileChannel fc = FileChannel.open(tmp, StandardOpenOption.READ);
@@ -149,6 +152,7 @@ public class FileChannelTest extends DesugaredLibraryTestBase {
 
     private static void fileChannelOpenTest() throws IOException {
       Path tmp = Files.createTempFile("a", ".txt");
+      tmp.toFile().deleteOnExit();
       String contents = "Bananas!";
       Files.write(tmp, contents.getBytes(StandardCharsets.UTF_8));
       FileChannel fc = FileChannel.open(tmp, StandardOpenOption.READ, StandardOpenOption.WRITE);
@@ -161,6 +165,7 @@ public class FileChannelTest extends DesugaredLibraryTestBase {
 
     private static void fileChannelOpenSetTest() throws IOException {
       Path tmp = Files.createTempFile("b", ".txt");
+      tmp.toFile().deleteOnExit();
       String contents = "Bananas!";
       Files.write(tmp, contents.getBytes(StandardCharsets.UTF_8));
       Set<OpenOption> options = new HashSet<>();
@@ -183,6 +188,7 @@ public class FileChannelTest extends DesugaredLibraryTestBase {
       String toWrite = "Hello World! ";
       String toWriteFIS = "Bye bye. ";
       Path tmp = Files.createTempFile("tmp", ".txt");
+      tmp.toFile().deleteOnExit();
       Files.write(tmp, (toWrite + toWriteFIS).getBytes(StandardCharsets.UTF_8));
 
       ByteBuffer byteBuffer = ByteBuffer.allocate(toWrite.length());
@@ -208,6 +214,7 @@ public class FileChannelTest extends DesugaredLibraryTestBase {
     private static void fisOwner() throws IOException {
       String toWrite = "Hello World! ";
       Path tmp = Files.createTempFile("tmp", ".txt");
+      tmp.toFile().deleteOnExit();
       Files.write(tmp, toWrite.getBytes(StandardCharsets.UTF_8));
 
       ByteBuffer byteBuffer = ByteBuffer.allocate(toWrite.length());
@@ -221,6 +228,7 @@ public class FileChannelTest extends DesugaredLibraryTestBase {
     private static void fisOwnerTryResources() throws IOException {
       String toWrite = "Hello World! ";
       Path tmp = Files.createTempFile("tmp", ".txt");
+      tmp.toFile().deleteOnExit();
       Files.write(tmp, toWrite.getBytes(StandardCharsets.UTF_8));
 
       ByteBuffer byteBuffer = ByteBuffer.allocate(toWrite.length());
