@@ -110,7 +110,7 @@ public class AndroidApp {
   private static final String dumpClasspathFileName = "classpath.jar";
   private static final String dumpLibraryFileName = "library.jar";
   private static final String dumpConfigFileName = "proguard.config";
-  private static final String dumpInputConfigFileName = "proguard_input.config";
+  public static final String dumpProguardInputMapFileName = "proguard_input.map";
   public static final String dumpR8IncludeFileName = "r8-include.txt";
   public static final String dumpR8ExcludeFileName = "r8-exclude.txt";
 
@@ -550,7 +550,7 @@ public class AndroidApp {
             "Dumping proguard map input data may have side effects due to I/O on Paths.");
         writeToZipStream(
             out,
-            dumpInputConfigFileName,
+            dumpProguardInputMapFileName,
             proguardMapInputData.getString().getBytes(UTF_8),
             ZipEntry.DEFLATED);
       }

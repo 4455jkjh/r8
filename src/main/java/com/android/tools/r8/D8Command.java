@@ -909,6 +909,7 @@ public final class D8Command extends BaseCompilerCommand {
         .setDesugaredLibraryConfiguration(desugaredLibrarySpecification)
         .setMainDexKeepRules(mainDexKeepRules)
         .setEnableMissingLibraryApiModeling(enableMissingLibraryApiModeling)
+        .setHasProguardMapConsumer(proguardMapConsumer != null)
         .build();
   }
 
