@@ -198,7 +198,8 @@ class R8Partial {
             .setMode(options.getCompilationMode())
             .setPartialCompilationConfiguration(options.partialCompilationConfiguration)
             .setProgramConsumer(options.programConsumer)
-            .setSourceFileProvider(options.sourceFileProvider);
+            .setSourceFileProvider(options.sourceFileProvider)
+            .setNativeReferencesConsumer(options.nativeReferencesConsumer);
     // The program input that R8 must compile is provided above using an
     // InternalProgramClassProvider. This passes in the data resources that we must either rewrite
     // or pass through.

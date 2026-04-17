@@ -107,9 +107,6 @@ public class UseCollector implements UseCollectorEventConsumer {
 
   public static class NativeIdentificationImpl implements NativeIdentification {
 
-    private final TraceReferencesNativeReferencesConsumer nativeReferencesConsumer;
-
-    private final DiagnosticsHandler diagnostics;
     private final NativeReferencesHelper helper;
 
     private final ProgramMethodSet worklist = ProgramMethodSet.createConcurrent();
@@ -118,8 +115,6 @@ public class UseCollector implements UseCollectorEventConsumer {
         TraceReferencesNativeReferencesConsumer nativeReferencesConsumer,
         AppView<? extends AppInfoWithClassHierarchy> appView,
         DiagnosticsHandler diagnostics) {
-      this.nativeReferencesConsumer = nativeReferencesConsumer;
-      this.diagnostics = diagnostics;
       this.helper = new NativeReferencesHelper(appView, nativeReferencesConsumer, diagnostics);
     }
 
@@ -127,7 +122,6 @@ public class UseCollector implements UseCollectorEventConsumer {
     public void processWorklist(ExecutorService executorService) throws ExecutionException {
       helper.process(worklist, executorService);
       worklist.clear();
-      nativeReferencesConsumer.finished(diagnostics);
     }
 
     @Override

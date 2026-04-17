@@ -94,7 +94,13 @@ public class NativeReferencesHelper {
     DexMethod invokedMethod = invoke.getInvokedMethod();
     if (isSystemLoadLibrary(invokedMethod) || isSystemLoad(invokedMethod)) {
       Value argument = invoke.getFirstArgument().getAliasedValue();
-      MethodOrigin origin = new MethodOrigin(method.getMethodReference(), method.getOrigin());
+      MethodOrigin origin =
+          new MethodOrigin(
+              appView
+                  .getNamingLens()
+                  .lookupMethod(method.getReference(), appView.dexItemFactory())
+                  .asMethodReference(),
+              method.getOrigin());
       if (argument.isConstString()) {
         String name = argument.getDefinition().asConstString().getValue().toString();
         if (isSystemLoadLibrary(invokedMethod)) {

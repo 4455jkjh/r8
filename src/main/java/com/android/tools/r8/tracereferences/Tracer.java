@@ -37,5 +37,8 @@ public class Tracer {
         new UseCollector(appView, consumer, nativeReferencesConsumer, diagnostics, targetPredicate);
     useCollector.traceClasses(appView.appInfo().classes(), executorService, timing);
     consumer.finished(diagnostics);
+    if (nativeReferencesConsumer != null) {
+      nativeReferencesConsumer.finished(diagnostics);
+    }
   }
 }
