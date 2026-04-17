@@ -2666,6 +2666,7 @@ public class DexItemFactory {
   public class SunMiscUnsafeMethods {
 
     public final DexMethod compareAndSwapObject;
+    public final DexMethod objectFieldOffset;
 
     private SunMiscUnsafeMethods() {
       this.compareAndSwapObject =
@@ -2673,6 +2674,8 @@ public class DexItemFactory {
               sunMiscUnsafeType,
               createProto(booleanType, objectType, longType, objectType, objectType),
               "compareAndSwapObject");
+      this.objectFieldOffset =
+          createMethod(sunMiscUnsafeType, createProto(longType, fieldType), "objectFieldOffset");
     }
   }
 

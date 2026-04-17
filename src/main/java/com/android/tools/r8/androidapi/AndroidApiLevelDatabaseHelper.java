@@ -643,12 +643,7 @@ public class AndroidApiLevelDatabaseHelper {
         factory.createMethod(
             factory.sunMiscUnsafeType, factory.createProto(factory.voidType), "loadFence"),
         AndroidApiLevel.N);
-    apiLevelConsumer.accept(
-        factory.createMethod(
-            factory.sunMiscUnsafeType,
-            factory.createProto(factory.longType, factory.fieldType),
-            "objectFieldOffset"),
-        always);
+    apiLevelConsumer.accept(factory.sunMiscUnsafeMethods.objectFieldOffset, always);
     apiLevelConsumer.accept(
         factory.createMethod(
             factory.sunMiscUnsafeType, factory.createProto(factory.intType), "pageSize"),

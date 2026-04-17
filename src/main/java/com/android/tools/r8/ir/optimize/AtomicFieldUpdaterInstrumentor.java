@@ -117,7 +117,6 @@ public class AtomicFieldUpdaterInstrumentor {
   private final ExecutorService service;
 
   private final DexItemFactory itemFactory;
-  private final DexMethod objectFieldOffset;
 
   public static void run(
       AppView<AppInfoWithLiveness> appView, ExecutorService service, Timing timing)
@@ -140,12 +139,6 @@ public class AtomicFieldUpdaterInstrumentor {
     this.service = service;
 
     itemFactory = appView.dexItemFactory();
-
-    objectFieldOffset =
-        itemFactory.createMethod(
-            itemFactory.sunMiscUnsafeType,
-            itemFactory.createProto(itemFactory.longType, itemFactory.fieldType),
-            "objectFieldOffset");
   }
 
   private void runInternal(Timing timing) throws ExecutionException {
@@ -561,7 +554,7 @@ public class AtomicFieldUpdaterInstrumentor {
 
     var getOffset =
         new InvokeVirtual(
-            objectFieldOffset,
+            itemFactory.sunMiscUnsafeMethods.objectFieldOffset,
             ir.createValue(
                 TypeElement.fromDexType(itemFactory.longType, Nullability.maybeNull(), appView)),
             ImmutableList.of(unsafeInstance.outValue(), reflectedField.outValue()));
