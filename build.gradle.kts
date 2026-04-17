@@ -2,7 +2,11 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-plugins { id("dependencies-plugin") }
+plugins {
+  // Kotlin version is fixed by create_local_maven_dependencies.py
+  id("org.jetbrains.kotlin.jvm") version "2.0.21" apply false
+  id("dependencies-plugin")
+}
 
 tasks {
   val clean by registering {
