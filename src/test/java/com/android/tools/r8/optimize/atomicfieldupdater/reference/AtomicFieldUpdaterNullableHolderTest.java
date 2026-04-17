@@ -54,8 +54,12 @@ public class AtomicFieldUpdaterNullableHolderTest extends AtomicFieldUpdaterBase
               if (isOptimizationOn()) {
                 assertThat(
                     method,
-                    CodeMatchers.invokesMethodWithHolderAndName(
-                        "sun.misc.Unsafe", "getObjectVolatile"));
+                    CodeMatchers.invokesMethod(
+                        inspector
+                            .getFactory()
+                            .sunMiscUnsafeMethods
+                            .getObjectVolatile
+                            .asMethodReference()));
               } else {
                 assertThat(
                     method,
