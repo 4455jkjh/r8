@@ -552,7 +552,7 @@ public class ApplicationWriter {
       ((DexIndexedConsumer) consumer)
           .accept(virtualFile.getId(), data, virtualFile.getClassDescriptors(), options.reporter);
     }
-    virtualFile.calculateChecksumForBuildMetadata(data, options);
+    virtualFile.recordChecksumAndSizeInBytesForBuildMetadata(data, options);
     timing.end();
     // Release use of the backing buffer now that accept has returned.
     data.invalidate();

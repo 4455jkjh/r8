@@ -51,6 +51,7 @@ public class VirtualFile {
   private DebugRepresentation debugRepresentation;
   private boolean startup = false;
   private HashCode checksumForBuildMetadata;
+  private int sizeInBytesForBuildMetadata;
 
   public VirtualFile(int id, AppView<?> appView) {
     this(id, appView, null, null, StartupProfile.empty());
@@ -87,6 +88,10 @@ public class VirtualFile {
     return checksumForBuildMetadata;
   }
 
+  public int getSizeInBytesForBuildMetadata() {
+    return sizeInBytesForBuildMetadata;
+  }
+
   public VirtualFileIndexedItemCollection getIndexedItems() {
     return indexedItems;
   }
@@ -95,11 +100,13 @@ public class VirtualFile {
     return transaction;
   }
 
-  public void calculateChecksumForBuildMetadata(ByteDataView data, InternalOptions options) {
+  public void recordChecksumAndSizeInBytesForBuildMetadata(
+      ByteDataView data, InternalOptions options) {
     if (options.r8BuildMetadataConsumer != null) {
       checksumForBuildMetadata =
           Hashing.sha256()
               .hashBytes(data.getBuffer(), data.getOffset(), data.getOffset() + data.getLength());
+      sizeInBytesForBuildMetadata = data.getLength();
     }
   }
 

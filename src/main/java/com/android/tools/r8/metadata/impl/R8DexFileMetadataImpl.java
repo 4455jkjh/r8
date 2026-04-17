@@ -27,24 +27,35 @@ public class R8DexFileMetadataImpl implements R8DexFileMetadata {
   private final String checksum;
 
   @Expose
+  @SerializedName("sizeInBytes")
+  private final int sizeInBytes;
+
+  @Expose
   @SerializedName("startup")
   private final boolean startup;
 
-  private R8DexFileMetadataImpl(String checksum, boolean startup) {
+  private R8DexFileMetadataImpl(String checksum, int sizeInBytes, boolean startup) {
     this.checksum = checksum;
+    this.sizeInBytes = sizeInBytes;
     this.startup = startup;
   }
 
   public static R8DexFileMetadataImpl create(VirtualFile virtualFile) {
     assert !virtualFile.isEmpty();
     String checksum = virtualFile.getChecksumForBuildMetadata().toString();
+    int sizeInBytes = virtualFile.getSizeInBytesForBuildMetadata();
     boolean startup = virtualFile.isStartup();
-    return new R8DexFileMetadataImpl(checksum, startup);
+    return new R8DexFileMetadataImpl(checksum, sizeInBytes, startup);
   }
 
   @Override
   public String getChecksum() {
     return checksum;
+  }
+
+  @Override
+  public int getSizeInBytes() {
+    return sizeInBytes;
   }
 
   @Override
