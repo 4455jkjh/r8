@@ -36,7 +36,7 @@ public class InterfaceWithNewProxyInstanceAllowCodeReplacementTest extends TestB
         .enableInliningAnnotations()
         .setMinApi(parameters)
         .run(parameters.getRuntime(), TestClass.class)
-        .assertFailureWithErrorThatThrows(NullPointerException.class);
+        .assertSuccessWithOutputLines("Hello, world!");
   }
 
   static class TestClass {
@@ -44,7 +44,7 @@ public class InterfaceWithNewProxyInstanceAllowCodeReplacementTest extends TestB
     public static void main(String[] args) {
       // With allowCodeReplacement=false, we will propagate to the call site that I.m
       // unconditionally throws and materialize a `throw null` instruction after the call.
-      // The reflective identification should set allowCodeReplacement=true for I.m.
+      // The reflective identification sets allowCodeReplacement=true for I.m to avoid this.
       createProxyInstance().m();
       try {
         new A().m();

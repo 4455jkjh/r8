@@ -134,7 +134,13 @@ public class EnqueuerReflectiveIdentificationEventConsumer
               enqueuer.mutateKeepInfo(
                   virtualMethod,
                   (k, m) ->
-                      k.joinMethod(m, joiner -> joiner.disallowOptimization().disallowShrinking()));
+                      k.joinMethod(
+                          m,
+                          joiner ->
+                              joiner
+                                  .allowCodeReplacement()
+                                  .disallowOptimization()
+                                  .disallowShrinking()));
               enqueuer.markVirtualMethodAsReachable(
                   virtualMethod.getReference(), true, context, reason);
             });
