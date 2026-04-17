@@ -7,21 +7,25 @@ import static com.android.tools.r8.DiagnosticsMatcher.diagnosticMessage;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.StringContains.containsString;
 
+import com.android.tools.r8.Diagnostic;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.optimize.atomicfieldupdater.AtomicFieldUpdaterBase;
 import com.android.tools.r8.utils.codeinspector.CodeMatchers;
 import com.android.tools.r8.utils.codeinspector.MethodSubject;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
+import org.hamcrest.Matcher;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
 
 @RunWith(Parameterized.class)
-public class AtomicFieldUpdaterGetTest extends AtomicFieldUpdaterBase {
+public class AtomicFieldUpdaterCompareAndSetTest extends AtomicFieldUpdaterBase {
 
-  public AtomicFieldUpdaterGetTest(TestParameters parameters) {
+  public AtomicFieldUpdaterCompareAndSetTest(TestParameters parameters) {
     super(parameters);
   }
 
@@ -41,41 +45,54 @@ public class AtomicFieldUpdaterGetTest extends AtomicFieldUpdaterBase {
         .inspectDiagnosticMessagesIf(
             isOptimizationOn(),
             diagnostics -> {
-              diagnostics.assertInfosMatch(
-                  diagnosticMessage(containsString("Can instrument")),
-                  diagnosticMessage(containsString("Cannot optimize")),
-                  diagnosticMessage(containsString("Cannot remove")));
+              List<Matcher<Diagnostic>> matchers = new ArrayList<>(4);
+              matchers.add(diagnosticMessage(containsString("Can instrument")));
+              matchers.add(diagnosticMessage(containsString("Can optimize")));
+              // TODO(b/453628974): The field should be removed once nullability analysis is
+              //                    more precise.
+              diagnostics.assertInfosMatch(matchers);
             })
         .inspect(
             inspector -> {
               MethodSubject method = inspector.clazz(testClass).mainMethod();
-              assertThat(
-                  method,
-                  CodeMatchers.invokesMethodWithHolderAndName(
-                      AtomicIntegerFieldUpdater.class, "get"));
+              if (isOptimizationOn()) {
+                assertThat(
+                    method,
+                    CodeMatchers.invokesMethod(
+                        inspector
+                            .getFactory()
+                            .sunMiscUnsafeMethods
+                            .compareAndSwapInt
+                            .asMethodReference()));
+              } else {
+                assertThat(
+                    method,
+                    CodeMatchers.invokesMethodWithHolderAndName(
+                        AtomicIntegerFieldUpdater.class, "compareAndSet"));
+              }
             })
         .run(parameters.getRuntime(), testClass)
-        .assertSuccessWithOutputLines("123");
+        .assertSuccessWithOutputLines("true");
   }
 
-  // Corresponding to simple kotlin usage of `atomic("Hello")` via atomicfu.
+  // Corresponding to simple kotlin usage of `atomic(-1)` via atomicfu.
   public static class TestClass {
 
     private volatile int myInt;
 
-    private static final AtomicIntegerFieldUpdater<TestClass> myString$FU;
+    private static final AtomicIntegerFieldUpdater<TestClass> myInt$FU;
 
     static {
-      myString$FU = AtomicIntegerFieldUpdater.newUpdater(TestClass.class, "myInt");
+      myInt$FU = AtomicIntegerFieldUpdater.newUpdater(TestClass.class, "myInt");
     }
 
     public TestClass() {
       super();
-      myInt = 123;
+      myInt = -1;
     }
 
     public static void main(String[] args) {
-      System.out.println(myString$FU.get(new TestClass()));
+      System.out.println(myInt$FU.compareAndSet(new TestClass(), -1, 42));
     }
   }
 }

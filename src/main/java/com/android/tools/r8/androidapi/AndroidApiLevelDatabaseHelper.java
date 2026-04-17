@@ -424,17 +424,7 @@ public class AndroidApiLevelDatabaseHelper {
             factory.createProto(factory.intType, factory.classType),
             "arrayIndexScale"),
         always);
-    apiLevelConsumer.accept(
-        factory.createMethod(
-            factory.sunMiscUnsafeType,
-            factory.createProto(
-                factory.booleanType,
-                factory.objectType,
-                factory.longType,
-                factory.intType,
-                factory.intType),
-            "compareAndSwapInt"),
-        always);
+    apiLevelConsumer.accept(factory.sunMiscUnsafeMethods.compareAndSwapInt, always);
     apiLevelConsumer.accept(
         factory.createMethod(
             factory.sunMiscUnsafeType,

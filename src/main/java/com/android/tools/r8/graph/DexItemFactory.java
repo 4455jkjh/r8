@@ -2592,6 +2592,7 @@ public class DexItemFactory {
 
   public class AtomicIntUpdaterMethods {
     public final DexMethod newUpdater;
+    public final DexMethod compareAndSet;
 
     private AtomicIntUpdaterMethods() {
       newUpdater =
@@ -2600,6 +2601,12 @@ public class DexItemFactory {
               newUpdaterName,
               intFieldUpdaterDescriptor,
               new DexString[] {classDescriptor, stringDescriptor});
+      compareAndSet =
+          createMethod(
+              intFieldUpdaterDescriptor,
+              compareAndSetName,
+              booleanDescriptor,
+              new DexString[] {objectDescriptor, intDescriptor, intDescriptor});
     }
   }
 
@@ -2665,10 +2672,16 @@ public class DexItemFactory {
 
   public class SunMiscUnsafeMethods {
 
+    public final DexMethod compareAndSwapInt;
     public final DexMethod compareAndSwapObject;
     public final DexMethod objectFieldOffset;
 
     private SunMiscUnsafeMethods() {
+      this.compareAndSwapInt =
+          createMethod(
+              sunMiscUnsafeType,
+              createProto(booleanType, objectType, longType, intType, intType),
+              "compareAndSwapInt");
       this.compareAndSwapObject =
           createMethod(
               sunMiscUnsafeType,

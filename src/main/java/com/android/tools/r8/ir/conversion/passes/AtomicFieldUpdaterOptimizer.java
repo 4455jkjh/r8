@@ -108,8 +108,13 @@ public class AtomicFieldUpdaterOptimizer extends CodeRewriterPass<AppInfoWithCla
       var invoke = next.asInvokeVirtual();
       assert invoke != null;
       DexMethod invokedMethod = invoke.getInvokedMethod();
-      if (!invokedMethod.holder.isIdenticalTo(
-          dexItemFactory.javaUtilConcurrentAtomicAtomicReferenceFieldUpdater)) {
+      DexType invocationHolder = invokedMethod.holder;
+      if (!(invocationHolder.isIdenticalTo(
+              dexItemFactory.javaUtilConcurrentAtomicAtomicReferenceFieldUpdater)
+          || invocationHolder.isIdenticalTo(
+              dexItemFactory.javaUtilConcurrentAtomicAtomicIntegerFieldUpdater)
+          || invocationHolder.isIdenticalTo(
+              dexItemFactory.javaUtilConcurrentAtomicAtomicLongFieldUpdater))) {
         continue;
       }
 
@@ -125,7 +130,8 @@ public class AtomicFieldUpdaterOptimizer extends CodeRewriterPass<AppInfoWithCla
       assert AndroidApiLevel.LATEST.isEqualTo(AndroidApiLevel.CINNAMON_BUN);
 
       if (invokedMethod.isIdenticalTo(dexItemFactory.atomicReferenceUpdaterMethods.compareAndSet)) {
-        if (visitCompareAndSet(context, invoke)) {
+        if (visitCompareAndSet(
+            context, invoke, dexItemFactory.sunMiscUnsafeMethods.compareAndSwapObject)) {
           changed = true;
         }
       } else if (invokedMethod.isIdenticalTo(dexItemFactory.atomicReferenceUpdaterMethods.get)) {
@@ -141,6 +147,12 @@ public class AtomicFieldUpdaterOptimizer extends CodeRewriterPass<AppInfoWithCla
         if (visitGetAndSet(context, invoke)) {
           changed = true;
         }
+      } else if (invokedMethod.isIdenticalTo(
+          dexItemFactory.atomicIntUpdaterMethods.compareAndSet)) {
+        if (visitCompareAndSet(
+            context, invoke, dexItemFactory.sunMiscUnsafeMethods.compareAndSwapInt)) {
+          changed = true;
+        }
       } else {
         reportInfo(appView, new Event.CannotOptimize(invoke), Reason.NOT_SUPPORTED);
       }
@@ -149,7 +161,8 @@ public class AtomicFieldUpdaterOptimizer extends CodeRewriterPass<AppInfoWithCla
   }
 
   /** Returns true if {@code invoke} was rewritten. */
-  private boolean visitCompareAndSet(OptimizationContext context, InvokeVirtual invoke) {
+  private boolean visitCompareAndSet(
+      OptimizationContext context, InvokeVirtual invoke, DexMethod target) {
     var resolvedUpdater = resolveUpdater(context, invoke);
     if (resolvedUpdater == null) {
       return false;
@@ -172,7 +185,7 @@ public class AtomicFieldUpdaterOptimizer extends CodeRewriterPass<AppInfoWithCla
         appView,
         new Event.CanOptimize(invoke, resolvedUpdater.isNullable, resolvedHolder.isNullable));
     rewriteCompareAndSet(
-        context, invoke, resolvedUpdater, resolvedHolder, expectValue, updateValue);
+        context, invoke, resolvedUpdater, resolvedHolder, expectValue, updateValue, target);
     return true;
   }
 
@@ -327,7 +340,7 @@ public class AtomicFieldUpdaterOptimizer extends CodeRewriterPass<AppInfoWithCla
 
   /**
    * Rewrites {@code updater.compareAndSet(holder, expect, update)} into {@code
-   * SyntheticUnsafeClass.unsafe.compareAndSwapObject(holder, this.offsetField, expect, update)}.
+   * SyntheticUnsafeClass.unsafe.<target>(holder, this.offsetField, expect, update)}.
    */
   private void rewriteCompareAndSet(
       OptimizationContext context,
@@ -335,7 +348,8 @@ public class AtomicFieldUpdaterOptimizer extends CodeRewriterPass<AppInfoWithCla
       ResolvedUpdater resolvedUpdater,
       ResolvedHolder resolvedHolder,
       Value expectValue,
-      Value updateValue) {
+      Value updateValue,
+      DexMethod target) {
     var position = invoke.getPosition();
     var instructions = new ArrayList<Instruction>(4);
 
@@ -361,7 +375,7 @@ public class AtomicFieldUpdaterOptimizer extends CodeRewriterPass<AppInfoWithCla
     // Call underlying unsafe method.
     Instruction unsafeCompareAndSet =
         new InvokeVirtual(
-            dexItemFactory.sunMiscUnsafeMethods.compareAndSwapObject,
+            target,
             invoke.outValue(),
             ImmutableList.of(
                 unsafeInstance.outValue(),
@@ -640,7 +654,12 @@ public class AtomicFieldUpdaterOptimizer extends CodeRewriterPass<AppInfoWithCla
   public static class AtomicFieldUpdaterInfo {
 
     public final DexType holder;
+
+    /**
+     * A reflected type of the primitives int or long indicate an Atomic(Integer|Long)FieldUpdater.
+     */
     public final DexType reflectedFieldType;
+
     public final DexField offsetField;
 
     public AtomicFieldUpdaterInfo(
