@@ -13,7 +13,7 @@ import com.android.tools.r8.graph.PrunedItems;
 import com.android.tools.r8.graph.lens.GraphLens;
 import com.android.tools.r8.graph.proto.ArgumentInfoCollection;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
-import com.android.tools.r8.utils.InternalOptions;
+import com.android.tools.r8.utils.AssertionUtils;
 import com.android.tools.r8.utils.SetUtils;
 import com.google.common.collect.Sets;
 import java.util.Collections;
@@ -41,7 +41,7 @@ public class ConcreteMutableFieldSet extends AbstractFieldSet implements KnownFi
   }
 
   public Set<DexEncodedField> getFields() {
-    if (InternalOptions.assertionsEnabled()) {
+    if (AssertionUtils.assertionsEnabled()) {
       return Collections.unmodifiableSet(fields);
     }
     return fields;

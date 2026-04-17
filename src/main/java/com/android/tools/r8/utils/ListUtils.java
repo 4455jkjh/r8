@@ -420,6 +420,6 @@ public class ListUtils {
   }
 
   public static <T> List<T> unmodifiableForTesting(List<T> list) {
-    return InternalOptions.assertionsEnabled() ? Collections.unmodifiableList(list) : list;
+    return AssertionUtils.assertionsEnabled() ? Collections.unmodifiableList(list) : list;
   }
 }

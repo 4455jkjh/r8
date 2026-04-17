@@ -115,6 +115,7 @@ import com.android.tools.r8.synthesis.SyntheticFinalization;
 import com.android.tools.r8.synthesis.SyntheticItems;
 import com.android.tools.r8.tracereferences.NativeReferencesHelper;
 import com.android.tools.r8.utils.AndroidApp;
+import com.android.tools.r8.utils.AssertionUtils;
 import com.android.tools.r8.utils.ExceptionDiagnostic;
 import com.android.tools.r8.utils.ExceptionUtils;
 import com.android.tools.r8.utils.InternalOptions;
@@ -1271,7 +1272,7 @@ public class R8 {
     timing.begin("Finalize enqueuer result");
     AppView<AppInfoWithLiveness> appViewWithLiveness =
         appView.setAppInfo(enqueuerResult.getAppInfo());
-    if (InternalOptions.assertionsEnabled()) {
+    if (AssertionUtils.assertionsEnabled()) {
       // Register the dead proto types. These are needed to verify that no new missing types are
       // reported and that no dead proto types are referenced in the generated application.
       appViewWithLiveness.withProtoShrinker(

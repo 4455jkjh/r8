@@ -1432,18 +1432,6 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
   public MapIdProvider mapIdProvider = null;
   public SourceFileProvider sourceFileProvider = null;
 
-  public static boolean assertionsEnabled() {
-    boolean assertionsEnabled = false;
-    assert assertionsEnabled = true; // Intentional side-effect.
-    return assertionsEnabled;
-  }
-
-  public static void checkAssertionsEnabled() {
-    if (!assertionsEnabled()) {
-      throw new Unreachable();
-    }
-  }
-
   /** A set of dexitems we have reported missing to dedupe warnings. */
   private final Set<DexItem> reportedMissingForDesugaring = SetUtils.newConcurrentHashSet();
 
@@ -2385,7 +2373,7 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
     public byte[] forceDexVersionBytes = null;
 
     public IROrdering irOrdering =
-        InternalOptions.assertionsEnabled() && !InternalOptions.DETERMINISTIC_DEBUGGING
+        AssertionUtils.assertionsEnabled() && !InternalOptions.DETERMINISTIC_DEBUGGING
             ? NondeterministicIROrdering.getInstance()
             : IdentityIROrdering.getInstance();
 

@@ -40,6 +40,7 @@ import com.android.tools.r8.partial.R8PartialSubCompilationConfiguration.R8Parti
 import com.android.tools.r8.profile.rewriting.ProfileCollectionAdditions;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
 import com.android.tools.r8.synthesis.SyntheticItems.GlobalSyntheticsStrategy;
+import com.android.tools.r8.utils.AssertionUtils;
 import com.android.tools.r8.utils.InternalOptions;
 import com.android.tools.r8.utils.ObjectUtils;
 import com.android.tools.r8.utils.ThreadUtils;
@@ -73,7 +74,7 @@ public class LirConverter {
             new IdentifierNameStringMarker(appView));
     // Only used for checking assertions.
     ProtoReferences protoReferences =
-        InternalOptions.assertionsEnabled() ? new ProtoReferences(appView.dexItemFactory()) : null;
+        AssertionUtils.assertionsEnabled() ? new ProtoReferences(appView.dexItemFactory()) : null;
     // Convert code objects to LIR.
     ThreadUtils.processItems(
         appView.appInfo().classes(),

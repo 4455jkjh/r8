@@ -247,6 +247,6 @@ public class MapUtils {
   }
 
   public static <K, V> Map<K, V> unmodifiableForTesting(Map<K, V> map) {
-    return InternalOptions.assertionsEnabled() ? Collections.unmodifiableMap(map) : map;
+    return AssertionUtils.assertionsEnabled() ? Collections.unmodifiableMap(map) : map;
   }
 }

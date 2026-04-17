@@ -4,9 +4,23 @@
 
 package com.android.tools.r8.utils;
 
+import com.android.tools.r8.errors.Unreachable;
 import java.util.function.Supplier;
 
 public class AssertionUtils {
+
+  public static boolean assertionsEnabled() {
+    boolean assertionsEnabled = false;
+    //noinspection AssertWithSideEffects
+    assert assertionsEnabled = true; // Intentional side-effect.
+    return assertionsEnabled;
+  }
+
+  public static void checkAssertionsEnabled() {
+    if (!assertionsEnabled()) {
+      throw new Unreachable();
+    }
+  }
 
   public static boolean assertNotNull(Object o) {
     assert o != null;

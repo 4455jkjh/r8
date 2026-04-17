@@ -21,7 +21,7 @@ import com.android.tools.r8.shaking.Enqueuer.FieldAccessMetadata;
 import com.android.tools.r8.shaking.GraphReporter.KeepReasonWitness;
 import com.android.tools.r8.threading.ThreadingModule;
 import com.android.tools.r8.utils.Action;
-import com.android.tools.r8.utils.InternalOptions;
+import com.android.tools.r8.utils.AssertionUtils;
 import com.android.tools.r8.utils.ObjectUtils;
 import com.android.tools.r8.utils.timing.Timing;
 import java.util.Collection;
@@ -806,7 +806,7 @@ public abstract class EnqueuerWorklist {
 
     @Override
     boolean enqueueAssertAction(Action assertion) {
-      if (InternalOptions.assertionsEnabled()) {
+      if (AssertionUtils.assertionsEnabled()) {
         queue.add(new AssertAction(assertion));
       }
       return true;

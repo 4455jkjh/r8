@@ -6,14 +6,13 @@ package com.android.tools.r8.graph;
 import static com.google.common.base.Predicates.alwaysTrue;
 
 import com.android.tools.r8.utils.ArrayUtils;
-import com.android.tools.r8.utils.InternalOptions;
+import com.android.tools.r8.utils.ListUtils;
 import com.android.tools.r8.utils.TraversalContinuation;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
@@ -162,10 +161,7 @@ public class FieldArrayBacking extends FieldCollectionBacking {
 
   @Override
   List<DexEncodedField> staticFieldsAsList() {
-    if (InternalOptions.assertionsEnabled()) {
-      return Collections.unmodifiableList(Arrays.asList(staticFields));
-    }
-    return Arrays.asList(staticFields);
+    return ListUtils.unmodifiableForTesting(Arrays.asList(staticFields));
   }
 
   @Override
@@ -191,10 +187,7 @@ public class FieldArrayBacking extends FieldCollectionBacking {
 
   @Override
   List<DexEncodedField> instanceFieldsAsList() {
-    if (InternalOptions.assertionsEnabled()) {
-      return Collections.unmodifiableList(Arrays.asList(instanceFields));
-    }
-    return Arrays.asList(instanceFields);
+    return ListUtils.unmodifiableForTesting(Arrays.asList(instanceFields));
   }
 
   @Override

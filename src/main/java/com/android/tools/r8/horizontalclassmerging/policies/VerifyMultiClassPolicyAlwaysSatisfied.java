@@ -6,7 +6,7 @@ package com.android.tools.r8.horizontalclassmerging.policies;
 
 import com.android.tools.r8.horizontalclassmerging.HorizontalMergeGroup;
 import com.android.tools.r8.horizontalclassmerging.MultiClassPolicy;
-import com.android.tools.r8.utils.InternalOptions;
+import com.android.tools.r8.utils.AssertionUtils;
 import java.util.Collection;
 import java.util.Collections;
 
@@ -25,7 +25,7 @@ public class VerifyMultiClassPolicyAlwaysSatisfied extends MultiClassPolicy {
 
   @Override
   public boolean shouldSkipPolicy() {
-    return !InternalOptions.assertionsEnabled() || policy.shouldSkipPolicy();
+    return !AssertionUtils.assertionsEnabled() || policy.shouldSkipPolicy();
   }
 
   @Override

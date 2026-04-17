@@ -9,7 +9,7 @@ import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.DexType;
 import com.android.tools.r8.ir.analysis.proto.schema.ProtoFieldTypeFactory;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
-import com.android.tools.r8.utils.InternalOptions;
+import com.android.tools.r8.utils.AssertionUtils;
 import com.android.tools.r8.utils.StringDiagnostic;
 import com.google.common.collect.Sets;
 import java.util.Set;
@@ -84,7 +84,7 @@ public class ProtoShrinker {
 
   public void setDeadProtoTypes(Set<DexType> deadProtoTypes) {
     // We should only need to keep track of the dead proto types for assertion purposes.
-    InternalOptions.checkAssertionsEnabled();
+    AssertionUtils.checkAssertionsEnabled();
     this.deadProtoTypes = deadProtoTypes;
   }
 

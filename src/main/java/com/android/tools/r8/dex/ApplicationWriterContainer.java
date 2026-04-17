@@ -18,8 +18,8 @@ import com.android.tools.r8.dex.FileWriter.MapItem;
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.DexString;
 import com.android.tools.r8.graph.ObjectToOffsetMapping;
+import com.android.tools.r8.utils.AssertionUtils;
 import com.android.tools.r8.utils.BitUtils;
-import com.android.tools.r8.utils.InternalOptions;
 import com.android.tools.r8.utils.ListUtils;
 import com.android.tools.r8.utils.timing.Timing;
 import com.google.common.collect.Sets;
@@ -111,7 +111,7 @@ class ApplicationWriterContainer extends ApplicationWriter {
                 dexOutputBuffer,
                 i == virtualFiles.size() - 1);
 
-        if (InternalOptions.assertionsEnabled()) {
+        if (AssertionUtils.assertionsEnabled()) {
           // Check that writing did not modify already written sections.
           byte[] outputSoFar = dexOutputBuffer.asArray();
           for (int j = 0; j < offset; j++) {

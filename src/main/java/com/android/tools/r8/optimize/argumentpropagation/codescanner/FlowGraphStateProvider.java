@@ -12,13 +12,13 @@ import com.android.tools.r8.ir.code.InvokeMethod;
 import com.android.tools.r8.ir.optimize.info.MethodOptimizationInfo;
 import com.android.tools.r8.optimize.argumentpropagation.propagation.FlowGraph;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
-import com.android.tools.r8.utils.InternalOptions;
+import com.android.tools.r8.utils.AssertionUtils;
 import java.util.function.Supplier;
 
 public interface FlowGraphStateProvider {
 
   static FlowGraphStateProvider create(FlowGraph flowGraph, AbstractFunction abstractFunction) {
-    if (!InternalOptions.assertionsEnabled()) {
+    if (!AssertionUtils.assertionsEnabled()) {
       return flowGraph;
     }
     // If the abstract function needs to perform state lookups, we restrict state lookups to the
