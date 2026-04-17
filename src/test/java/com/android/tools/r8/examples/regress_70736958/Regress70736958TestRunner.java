@@ -128,9 +128,4 @@ public class Regress70736958TestRunner extends ExamplesTestBase {
             + " 1.6101889E9, 1.6101889E9, 1.6101889E9, 1.6101889E9, 1.6101889E9, 1.6101889E9,"
             + " 1.6101889E9, 1.6101889E9, 1.6101889E9, 1.6101889E9, 1.6101889E9, 1.6101889E9]");
   }
-
-  @Override
-  public boolean isTestDebugKnownToBeFlaky() {
-    return true;
-  }
 }

@@ -17,11 +17,6 @@ public class IfStatementsTestRunner extends ExamplesTestBase {
   }
 
   @Override
-  public boolean isTestDebugKnownToBeFlaky() {
-    return true;
-  }
-
-  @Override
   public Class<?> getMainClass() {
     return IfStatements.class;
   }

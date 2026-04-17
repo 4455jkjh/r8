@@ -19,6 +19,7 @@ import org.gradle.api.tasks.testing.Test
 import org.gradle.api.tasks.testing.TestDescriptor
 import org.gradle.api.tasks.testing.TestListener
 import org.gradle.api.tasks.testing.TestResult
+import org.gradle.testretry.TestRetryTaskExtension
 
 public class TestConfigurationHelper {
 
@@ -441,6 +442,17 @@ public class TestConfigurationHelper {
           test.maxParallelForks = 15
         }
       }
+
+      val isCiServer = System.getenv().containsKey("SWARMING_BOT_ID")
+      val retry = test.extensions.getByType(TestRetryTaskExtension::class.java)
+      if (isCiServer) {
+        retry.maxRetries.set(2)
+        // High maxFailures so parameterized tests aren't aborted from retries.
+        retry.maxFailures.set(200)
+        retry.filter { includeAnnotationClasses.add("com.android.tools.r8.Retryable") }
+      }
+      retry.failOnPassedAfterRetry.set(false)
+      retry.failOnSkippedAfterRetry.set(false)
     }
   }
 }

@@ -6,9 +6,8 @@ package com.android.tools.r8.desugar.desugaredlibrary;
 
 import static junit.framework.TestCase.assertEquals;
 
-import com.android.tools.r8.DiagnosticsHandler;
 import com.android.tools.r8.L8TestBuilder;
-import com.android.tools.r8.StringConsumer;
+import com.android.tools.r8.Retryable;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
@@ -17,12 +16,12 @@ import com.android.tools.r8.ToolHelper.DexVm.Version;
 import com.android.tools.r8.desugar.desugaredlibrary.test.CompilationSpecification;
 import com.android.tools.r8.desugar.desugaredlibrary.test.DesugaredLibraryTestBuilder;
 import com.android.tools.r8.desugar.desugaredlibrary.test.LibraryDesugaringSpecification;
-import com.android.tools.r8.errors.Unreachable;
 import com.android.tools.r8.utils.AndroidApiLevel;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
+@Retryable
 public class DesugaredLibraryTestBase extends TestBase {
 
   // For conversions tests, we need DexRuntimes where classes to convert are present (DexRuntimes

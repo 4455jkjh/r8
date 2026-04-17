@@ -30,6 +30,7 @@ GUAVA_VERSION = '32.1.2-jre'
 GSON_VERSION = '2.10.1'
 JAVASSIST_VERSION = '3.29.2-GA'
 MOCKITO_VERSION = '2.10.0'
+TEST_RETRY_VERSION = '1.6.4'
 SMALI_VERSION = '3.0.3'
 ERROR_PRONE_VERSION = '2.18.0'
 TESTNG_VERSION = '6.10'
@@ -103,6 +104,8 @@ TEST_DEPENDENCIES = [
         version=SMALI_VERSION),
     'com.google.errorprone:error_prone_core:{version}'.format(
         version=ERROR_PRONE_VERSION),
+    'org.gradle:test-retry-gradle-plugin:{version}'.format(
+        version=TEST_RETRY_VERSION),
     'org.javassist:javassist:{version}'.format(version=JAVASSIST_VERSION),
     'org.mockito:mockito-core:{version}'.format(version=MOCKITO_VERSION),
     'org.testng:testng:{version}'.format(version=TESTNG_VERSION),
