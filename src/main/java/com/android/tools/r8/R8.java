@@ -5,7 +5,6 @@ package com.android.tools.r8;
 
 import static com.android.tools.r8.profile.art.ArtProfileCompletenessChecker.CompletenessExceptions.ALLOW_MISSING_ENUM_UNBOXING_UTILITY_METHODS;
 import static com.android.tools.r8.profile.art.ArtProfileCompletenessChecker.CompletenessExceptions.ALLOW_MISSING_UNSAFE_HELPER_METHODS;
-import static com.android.tools.r8.utils.AssertionUtils.forTesting;
 import static com.android.tools.r8.utils.ExceptionUtils.unwrapExecutionException;
 
 import com.android.tools.r8.DexIndexedConsumer.ForwardingConsumer;
@@ -280,7 +279,7 @@ public class R8 {
       options.reporter.info(new R8VersionDiagnostic());
     }
     // Synthetic assertion to check that testing assertions works and can be enabled.
-    assert forTesting(options, () -> !options.testing.testEnableTestAssertions);
+    assert options.forTesting(() -> !options.testing.testEnableTestAssertions);
     if (options.printMemory) {
       // Run GC twice to remove objects with finalizers.
       System.gc();

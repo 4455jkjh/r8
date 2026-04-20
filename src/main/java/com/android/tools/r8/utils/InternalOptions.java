@@ -145,6 +145,7 @@ import java.util.function.BiPredicate;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import org.objectweb.asm.Opcodes;
 
@@ -2601,6 +2602,10 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
         isSystemPropertySet("com.android.tools.r8.enableListIterationRewriting");
     // Testing flag to always generate D8 lambda accessors.
     public boolean forceLambdaAccessorInD8 = false;
+  }
+
+  public boolean forTesting(Supplier<Boolean> test) {
+    return testing.enableTestAssertions ? test.get() : true;
   }
 
   public MapVersion getMapFileVersion() {

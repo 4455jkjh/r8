@@ -5,7 +5,6 @@
 package com.android.tools.r8.utils;
 
 import com.android.tools.r8.utils.exceptions.Unreachable;
-import java.util.function.Supplier;
 
 public class AssertionUtils {
 
@@ -32,9 +31,5 @@ public class AssertionUtils {
       throw new AssertionError("Expected integer value to be non-negative");
     }
     return i;
-  }
-
-  public static boolean forTesting(InternalOptions options, Supplier<Boolean> test) {
-    return options.testing.enableTestAssertions ? test.get() : true;
   }
 }

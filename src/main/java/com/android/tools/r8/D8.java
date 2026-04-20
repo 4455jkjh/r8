@@ -4,7 +4,6 @@
 package com.android.tools.r8;
 
 import static com.android.tools.r8.features.ClassToFeatureSplitMap.createInitialD8ClassToFeatureSplitMap;
-import static com.android.tools.r8.utils.AssertionUtils.forTesting;
 import static com.android.tools.r8.utils.ExceptionUtils.unwrapExecutionException;
 
 import com.android.tools.r8.androidapi.ApiReferenceStubber;
@@ -212,7 +211,7 @@ public final class D8 {
     try {
       timing.begin("Pre conversion");
       // Synthetic assertion to check that testing assertions works and can be enabled.
-      assert forTesting(options, () -> !options.testing.testEnableTestAssertions);
+      assert options.forTesting(() -> !options.testing.testEnableTestAssertions);
 
       timing.begin("Read input app");
       AppView<AppInfo> appView = readApp(inputApp, options, executor, timing);
