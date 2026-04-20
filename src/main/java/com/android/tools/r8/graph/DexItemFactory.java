@@ -2594,6 +2594,7 @@ public class DexItemFactory {
     public final DexMethod newUpdater;
     public final DexMethod compareAndSet;
     public final DexMethod get;
+    public final DexMethod set;
 
     private AtomicIntUpdaterMethods() {
       newUpdater =
@@ -2614,6 +2615,12 @@ public class DexItemFactory {
               getName,
               intDescriptor,
               new DexString[] {objectDescriptor});
+      set =
+          createMethod(
+              intFieldUpdaterDescriptor,
+              setName,
+              voidDescriptor,
+              new DexString[] {objectDescriptor, intDescriptor});
     }
   }
 
@@ -2683,7 +2690,9 @@ public class DexItemFactory {
     public final DexMethod compareAndSwapObject;
     public final DexMethod objectFieldOffset;
     public final DexMethod getObjectVolatile;
+    public final DexMethod putObjectVolatile;
     public final DexMethod getIntVolatile;
+    public final DexMethod putIntVolatile;
 
     private SunMiscUnsafeMethods() {
       this.compareAndSwapInt =
@@ -2703,9 +2712,19 @@ public class DexItemFactory {
               sunMiscUnsafeType,
               createProto(objectType, objectType, longType),
               "getObjectVolatile");
+      this.putObjectVolatile =
+          createMethod(
+              sunMiscUnsafeType,
+              createProto(voidType, objectType, longType, objectType),
+              "putObjectVolatile");
       this.getIntVolatile =
           createMethod(
               sunMiscUnsafeType, createProto(intType, objectType, longType), "getIntVolatile");
+      this.putIntVolatile =
+          createMethod(
+              sunMiscUnsafeType,
+              createProto(voidType, objectType, longType, intType),
+              "putIntVolatile");
     }
   }
 

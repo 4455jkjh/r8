@@ -706,13 +706,7 @@ public class AndroidApiLevelDatabaseHelper {
                 factory.voidType, factory.objectType, factory.longType, factory.intType),
             "putInt"),
         always);
-    apiLevelConsumer.accept(
-        factory.createMethod(
-            factory.sunMiscUnsafeType,
-            factory.createProto(
-                factory.voidType, factory.objectType, factory.longType, factory.intType),
-            "putIntVolatile"),
-        always);
+    apiLevelConsumer.accept(factory.sunMiscUnsafeMethods.putIntVolatile, always);
     apiLevelConsumer.accept(
         factory.createMethod(
             factory.sunMiscUnsafeType,
@@ -740,13 +734,7 @@ public class AndroidApiLevelDatabaseHelper {
                 factory.voidType, factory.objectType, factory.longType, factory.objectType),
             "putObject"),
         always);
-    apiLevelConsumer.accept(
-        factory.createMethod(
-            factory.sunMiscUnsafeType,
-            factory.createProto(
-                factory.voidType, factory.objectType, factory.longType, factory.objectType),
-            "putObjectVolatile"),
-        always);
+    apiLevelConsumer.accept(factory.sunMiscUnsafeMethods.putObjectVolatile, always);
     apiLevelConsumer.accept(
         factory.createMethod(
             factory.sunMiscUnsafeType,

@@ -19,9 +19,9 @@ import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
 
 @RunWith(Parameterized.class)
-public class AtomicFieldUpdaterGetTest extends AtomicFieldUpdaterBase {
+public class AtomicFieldUpdaterSetTest extends AtomicFieldUpdaterBase {
 
-  public AtomicFieldUpdaterGetTest(TestParameters parameters) {
+  public AtomicFieldUpdaterSetTest(TestParameters parameters) {
     super(parameters);
   }
 
@@ -40,55 +40,54 @@ public class AtomicFieldUpdaterGetTest extends AtomicFieldUpdaterBase {
         .compile()
         .inspectDiagnosticMessagesIf(
             isOptimizationOn(),
-            diagnostics -> {
-              diagnostics.assertInfosMatch(
-                  diagnosticMessage(containsString("Can instrument")),
-                  diagnosticMessage(containsString("Can optimize"))
-                  // TODO(b/453628974): The field should be removed once nullability analysis is
-                  //                    more precise.
-                  );
-            })
+            diagnostics ->
+                diagnostics.assertInfosMatch(
+                    diagnosticMessage(containsString("Can instrument")),
+                    diagnosticMessage(containsString("Can optimize")),
+                    diagnosticMessage(containsString("Can optimize"))
+                    // TODO(b/453628974): The field should be removed once nullability analysis is
+                    //                    more precise.
+                    // diagnosticMessage(containsString("Can remove"))
+                    ))
         .inspect(
             inspector -> {
               MethodSubject method = inspector.clazz(testClass).mainMethod();
               if (isOptimizationOn()) {
                 assertThat(
                     method,
-                    CodeMatchers.invokesMethod(
-                        inspector
-                            .getFactory()
-                            .sunMiscUnsafeMethods
-                            .getIntVolatile
-                            .asMethodReference()));
+                    CodeMatchers.invokesMethodWithHolderAndName(
+                        "sun.misc.Unsafe", "putIntVolatile"));
               } else {
                 assertThat(
                     method,
                     CodeMatchers.invokesMethodWithHolderAndName(
-                        AtomicIntegerFieldUpdater.class, "get"));
+                        AtomicIntegerFieldUpdater.class, "set"));
               }
             })
         .run(parameters.getRuntime(), testClass)
         .assertSuccessWithOutputLines("123");
   }
 
-  // Corresponding to simple kotlin usage of `atomic(123)` via atomicfu.
+  // Corresponding to simple kotlin usage of `atomic(-1)` via atomicfu.
   public static class TestClass {
 
     private volatile int myInt;
 
-    private static final AtomicIntegerFieldUpdater<TestClass> myString$FU;
+    private static final AtomicIntegerFieldUpdater<TestClass> myInt$FU;
 
     static {
-      myString$FU = AtomicIntegerFieldUpdater.newUpdater(TestClass.class, "myInt");
+      myInt$FU = AtomicIntegerFieldUpdater.newUpdater(TestClass.class, "myInt");
     }
 
     public TestClass() {
       super();
-      myInt = 123;
+      myInt = -1;
     }
 
     public static void main(String[] args) {
-      System.out.println(myString$FU.get(new TestClass()));
+      TestClass instance = new TestClass();
+      myInt$FU.set(instance, 123);
+      System.out.println(myInt$FU.get(instance));
     }
   }
 }
