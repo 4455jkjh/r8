@@ -352,6 +352,13 @@ def IsWindows():
 def EnsureDepFromGoogleCloudStorage(dep, tgz, sha1, msg):
     if (not os.path.exists(dep) or not os.path.exists(tgz) or
             os.path.getmtime(tgz) < os.path.getmtime(sha1)):
+        if os.path.exists(dep):
+            if os.path.isdir(dep):
+                shutil.rmtree(dep)
+            else:
+                os.remove(dep)
+        if os.path.exists(tgz):
+            os.remove(tgz)
         DownloadFromGoogleCloudStorage(sha1)
         # Update the mtime of the tar file to make sure we do not run again unless
         # there is an update.
