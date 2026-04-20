@@ -6,8 +6,8 @@ package com.android.tools.r8.debug;
 import static com.android.tools.r8.naming.ClassNameMapper.MissingFileAction.MISSING_FILE_IS_ERROR;
 
 import com.android.tools.r8.TestRuntime;
-import com.android.tools.r8.errors.Unreachable;
 import com.android.tools.r8.naming.ClassNameMapper;
+import com.android.tools.r8.utils.exceptions.Unreachable;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;

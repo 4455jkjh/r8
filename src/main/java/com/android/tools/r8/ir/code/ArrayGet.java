@@ -16,7 +16,6 @@ import com.android.tools.r8.dex.code.DexAgetShort;
 import com.android.tools.r8.dex.code.DexAgetWide;
 import com.android.tools.r8.dex.code.DexInstruction;
 import com.android.tools.r8.errors.CompilationError;
-import com.android.tools.r8.errors.Unreachable;
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.DexItemFactory;
 import com.android.tools.r8.graph.DexType;
@@ -32,6 +31,7 @@ import com.android.tools.r8.ir.optimize.Inliner.ConstraintWithTarget;
 import com.android.tools.r8.ir.optimize.InliningConstraints;
 import com.android.tools.r8.ir.regalloc.RegisterAllocator;
 import com.android.tools.r8.lightir.LirBuilder;
+import com.android.tools.r8.utils.exceptions.Unreachable;
 import java.util.Arrays;
 import java.util.Set;
 

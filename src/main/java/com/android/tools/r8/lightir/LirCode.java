@@ -4,8 +4,6 @@
 package com.android.tools.r8.lightir;
 
 import com.android.tools.r8.dex.code.CfOrDexInstruction;
-import com.android.tools.r8.errors.Unimplemented;
-import com.android.tools.r8.errors.Unreachable;
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.ArgumentUse;
 import com.android.tools.r8.graph.ClasspathMethod;
@@ -39,6 +37,8 @@ import com.android.tools.r8.utils.IntBox;
 import com.android.tools.r8.utils.IntObjPredicate;
 import com.android.tools.r8.utils.InternalOptions;
 import com.android.tools.r8.utils.RetracerForCodePrinting;
+import com.android.tools.r8.utils.exceptions.Unimplemented;
+import com.android.tools.r8.utils.exceptions.Unreachable;
 import com.android.tools.r8.utils.structural.CompareToVisitor;
 import com.android.tools.r8.utils.structural.HashingVisitor;
 import com.android.tools.r8.utils.structural.StructuralAcceptor;

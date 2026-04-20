@@ -8,7 +8,6 @@ import com.android.tools.r8.cf.TypeVerificationHelper;
 import com.android.tools.r8.dex.code.DexFilledNewArray;
 import com.android.tools.r8.dex.code.DexFilledNewArrayRange;
 import com.android.tools.r8.dex.code.DexInstruction;
-import com.android.tools.r8.errors.Unreachable;
 import com.android.tools.r8.graph.AccessControl;
 import com.android.tools.r8.graph.AppInfoWithClassHierarchy;
 import com.android.tools.r8.graph.AppView;
@@ -29,6 +28,7 @@ import com.android.tools.r8.ir.optimize.Inliner.ConstraintWithTarget;
 import com.android.tools.r8.ir.optimize.InliningConstraints;
 import com.android.tools.r8.lightir.LirBuilder;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
+import com.android.tools.r8.utils.exceptions.Unreachable;
 import java.util.List;
 
 public class NewArrayFilled extends Invoke {

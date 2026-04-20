@@ -4,7 +4,6 @@
 
 package com.android.tools.r8.utils.codeinspector;
 
-import com.android.tools.r8.errors.Unreachable;
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.DexEncodedMethod;
 import com.android.tools.r8.graph.MethodAccessFlags;
@@ -13,6 +12,7 @@ import com.android.tools.r8.ir.code.IRCode;
 import com.android.tools.r8.naming.MemberNaming.MethodSignature;
 import com.android.tools.r8.naming.MemberNaming.Signature;
 import com.android.tools.r8.references.MethodReference;
+import com.android.tools.r8.utils.exceptions.Unreachable;
 import java.util.List;
 
 public class AbsentMethodSubject extends MethodSubject {

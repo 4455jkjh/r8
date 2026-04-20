@@ -20,7 +20,6 @@ import com.android.tools.r8.dex.code.DexIntToShort;
 import com.android.tools.r8.dex.code.DexLongToDouble;
 import com.android.tools.r8.dex.code.DexLongToFloat;
 import com.android.tools.r8.dex.code.DexLongToInt;
-import com.android.tools.r8.errors.Unreachable;
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.ProgramMethod;
 import com.android.tools.r8.ir.analysis.type.PrimitiveTypeElement;
@@ -32,6 +31,7 @@ import com.android.tools.r8.ir.conversion.CfBuilder;
 import com.android.tools.r8.ir.conversion.DexBuilder;
 import com.android.tools.r8.lightir.LirBuilder;
 import com.android.tools.r8.utils.LongUtils;
+import com.android.tools.r8.utils.exceptions.Unreachable;
 import java.util.Set;
 
 public class NumberConversion extends Unop {

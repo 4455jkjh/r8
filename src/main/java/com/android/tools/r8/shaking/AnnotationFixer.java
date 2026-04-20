@@ -4,7 +4,6 @@
 
 package com.android.tools.r8.shaking;
 
-import com.android.tools.r8.errors.Unreachable;
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.DexAnnotation;
 import com.android.tools.r8.graph.DexAnnotationElement;
@@ -26,6 +25,7 @@ import com.android.tools.r8.graph.lens.GraphLens;
 import com.android.tools.r8.ir.optimize.enums.EnumDataMap;
 import com.android.tools.r8.utils.ArrayUtils;
 import com.android.tools.r8.utils.ThreadUtils;
+import com.android.tools.r8.utils.exceptions.Unreachable;
 import java.util.Collection;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;

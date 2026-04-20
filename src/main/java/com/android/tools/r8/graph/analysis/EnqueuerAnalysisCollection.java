@@ -3,7 +3,6 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8.graph.analysis;
 
-import com.android.tools.r8.errors.Unreachable;
 import com.android.tools.r8.graph.ClasspathOrLibraryClass;
 import com.android.tools.r8.graph.DexClass;
 import com.android.tools.r8.graph.DexEncodedMethod;
@@ -24,6 +23,7 @@ import com.android.tools.r8.shaking.Enqueuer.FieldAccessKind;
 import com.android.tools.r8.shaking.EnqueuerWorklist;
 import com.android.tools.r8.shaking.KeepReason;
 import com.android.tools.r8.utils.ArrayUtils;
+import com.android.tools.r8.utils.exceptions.Unreachable;
 import com.android.tools.r8.utils.timing.Timing;
 import java.util.ArrayList;
 import java.util.List;

@@ -3,7 +3,7 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8.lightir;
 
-import com.android.tools.r8.errors.Unreachable;
+import com.android.tools.r8.utils.exceptions.Unreachable;
 
 /**
  * Constants related to LIR.

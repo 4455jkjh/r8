@@ -4,7 +4,6 @@
 
 package com.android.tools.r8.repackaging;
 
-import com.android.tools.r8.errors.Unreachable;
 import com.android.tools.r8.graph.AppInfoWithClassHierarchy;
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.DexAnnotation;
@@ -15,6 +14,7 @@ import com.android.tools.r8.graph.DexMethodHandle;
 import com.android.tools.r8.graph.DexValue;
 import com.android.tools.r8.graph.ParameterAnnotationsList;
 import com.android.tools.r8.graph.lens.GraphLens;
+import com.android.tools.r8.utils.exceptions.Unreachable;
 
 public class RepackagingAnnotationTracer {
 

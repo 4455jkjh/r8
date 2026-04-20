@@ -3,12 +3,12 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8.ir.regalloc;
 
-import com.android.tools.r8.errors.Unreachable;
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.ProgramMethod;
 import com.android.tools.r8.ir.code.BasicBlock;
 import com.android.tools.r8.ir.code.Value;
 import com.android.tools.r8.utils.InternalOptions;
+import com.android.tools.r8.utils.exceptions.Unreachable;
 import java.util.List;
 
 public interface RegisterAllocator {

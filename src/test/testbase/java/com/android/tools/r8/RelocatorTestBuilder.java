@@ -5,14 +5,14 @@ package com.android.tools.r8;
 
 import static com.android.tools.r8.utils.CfUtils.extractClassDescriptor;
 
-import com.android.tools.r8.errors.Unimplemented;
-import com.android.tools.r8.errors.Unreachable;
 import com.android.tools.r8.references.ClassReference;
 import com.android.tools.r8.references.PackageReference;
 import com.android.tools.r8.references.Reference;
 import com.android.tools.r8.relocator.Relocator;
 import com.android.tools.r8.relocator.RelocatorCommand;
 import com.android.tools.r8.relocator.RelocatorCommandLine;
+import com.android.tools.r8.utils.exceptions.Unimplemented;
+import com.android.tools.r8.utils.exceptions.Unreachable;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;

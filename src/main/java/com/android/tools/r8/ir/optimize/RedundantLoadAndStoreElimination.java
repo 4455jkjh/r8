@@ -8,7 +8,6 @@ import static com.android.tools.r8.graph.ProgramField.asProgramFieldOrNull;
 import static com.android.tools.r8.utils.MapUtils.ignoreKey;
 import static com.android.tools.r8.utils.PredicateUtils.not;
 
-import com.android.tools.r8.errors.Unreachable;
 import com.android.tools.r8.graph.AppInfo;
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.DexClassAndField;
@@ -51,6 +50,7 @@ import com.android.tools.r8.ir.optimize.info.initializer.InstanceInitializerInfo
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
 import com.android.tools.r8.utils.ArrayUtils;
 import com.android.tools.r8.utils.ObjectUtils;
+import com.android.tools.r8.utils.exceptions.Unreachable;
 import com.google.common.collect.Sets;
 import it.unimi.dsi.fastutil.objects.Reference2IntMap;
 import it.unimi.dsi.fastutil.objects.Reference2IntOpenHashMap;

@@ -4,8 +4,8 @@
 
 package com.android.tools.r8.utils;
 
-import com.android.tools.r8.errors.Unreachable;
 import com.android.tools.r8.utils.StringUtils.BraceType;
+import com.android.tools.r8.utils.exceptions.Unreachable;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableMap;
 import it.unimi.dsi.fastutil.ints.Int2ReferenceMap;

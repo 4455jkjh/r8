@@ -4,8 +4,8 @@
 package com.android.tools.r8.graph;
 
 import com.android.tools.r8.dex.IndexedItemCollection;
-import com.android.tools.r8.errors.Unreachable;
 import com.android.tools.r8.lightir.LirConstant;
+import com.android.tools.r8.utils.exceptions.Unreachable;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;

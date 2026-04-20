@@ -4,7 +4,7 @@
 
 package com.android.tools.r8.ir.analysis.framework.intraprocedural;
 
-import com.android.tools.r8.errors.Unreachable;
+import com.android.tools.r8.utils.exceptions.Unreachable;
 
 /**
  * Used by the {@link AbstractTransferFunction} to signal that the dataflow analysis should be

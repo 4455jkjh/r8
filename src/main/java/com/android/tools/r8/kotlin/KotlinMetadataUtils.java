@@ -5,7 +5,6 @@
 package com.android.tools.r8.kotlin;
 
 import com.android.tools.r8.errors.InvalidDescriptorException;
-import com.android.tools.r8.errors.Unreachable;
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.DexClass;
 import com.android.tools.r8.graph.DexField;
@@ -20,6 +19,7 @@ import com.android.tools.r8.shaking.ProguardKeepRuleType;
 import com.android.tools.r8.utils.DescriptorUtils;
 import com.android.tools.r8.utils.TriFunction;
 import com.android.tools.r8.utils.collections.Pair;
+import com.android.tools.r8.utils.exceptions.Unreachable;
 import com.google.common.collect.ImmutableList;
 import java.util.List;
 import java.util.function.Consumer;

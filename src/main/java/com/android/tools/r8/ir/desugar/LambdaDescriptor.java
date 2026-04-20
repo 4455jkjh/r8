@@ -4,7 +4,6 @@
 
 package com.android.tools.r8.ir.desugar;
 
-import com.android.tools.r8.errors.Unreachable;
 import com.android.tools.r8.graph.AppInfoWithClassHierarchy;
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.DexCallSite;
@@ -24,6 +23,7 @@ import com.android.tools.r8.graph.UseRegistry.MethodHandleUse;
 import com.android.tools.r8.graph.lens.GraphLens;
 import com.android.tools.r8.ir.conversion.LensCodeRewriterUtils;
 import com.android.tools.r8.utils.SetUtils;
+import com.android.tools.r8.utils.exceptions.Unreachable;
 import com.google.common.collect.Sets;
 import java.util.ArrayList;
 import java.util.Arrays;

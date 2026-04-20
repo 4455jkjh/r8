@@ -4,7 +4,6 @@
 
 package com.android.tools.r8.shaking;
 
-import com.android.tools.r8.errors.Unreachable;
 import com.android.tools.r8.graph.DexAnnotation;
 import com.android.tools.r8.graph.DexAnnotation.AnnotatedKind;
 import com.android.tools.r8.graph.DexField;
@@ -23,6 +22,7 @@ import com.android.tools.r8.threading.ThreadingModule;
 import com.android.tools.r8.utils.Action;
 import com.android.tools.r8.utils.AssertionUtils;
 import com.android.tools.r8.utils.ObjectUtils;
+import com.android.tools.r8.utils.exceptions.Unreachable;
 import com.android.tools.r8.utils.timing.Timing;
 import java.util.Collection;
 import java.util.Queue;

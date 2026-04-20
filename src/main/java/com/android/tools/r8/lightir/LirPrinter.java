@@ -3,7 +3,6 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8.lightir;
 
-import com.android.tools.r8.errors.Unimplemented;
 import com.android.tools.r8.graph.DexCallSite;
 import com.android.tools.r8.graph.DexField;
 import com.android.tools.r8.graph.DexMethod;
@@ -25,6 +24,7 @@ import com.android.tools.r8.naming.dexitembasedstring.NameComputationInfo;
 import com.android.tools.r8.utils.IntUtils;
 import com.android.tools.r8.utils.LongUtils;
 import com.android.tools.r8.utils.StringUtils;
+import com.android.tools.r8.utils.exceptions.Unimplemented;
 import java.util.Arrays;
 import java.util.List;
 

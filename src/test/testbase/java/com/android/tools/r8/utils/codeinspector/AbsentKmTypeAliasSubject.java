@@ -4,7 +4,7 @@
 
 package com.android.tools.r8.utils.codeinspector;
 
-import com.android.tools.r8.errors.Unreachable;
+import com.android.tools.r8.utils.exceptions.Unreachable;
 import com.google.common.collect.ImmutableList;
 import java.util.List;
 import kotlin.metadata.KmAnnotation;

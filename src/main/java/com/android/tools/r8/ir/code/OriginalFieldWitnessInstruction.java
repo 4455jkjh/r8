@@ -4,11 +4,11 @@
 
 package com.android.tools.r8.ir.code;
 
-import com.android.tools.r8.errors.Unreachable;
 import com.android.tools.r8.graph.OriginalFieldWitness;
 import com.android.tools.r8.ir.conversion.CfBuilder;
 import com.android.tools.r8.ir.conversion.DexBuilder;
 import com.android.tools.r8.lightir.LirBuilder;
+import com.android.tools.r8.utils.exceptions.Unreachable;
 
 public class OriginalFieldWitnessInstruction extends Move {
 

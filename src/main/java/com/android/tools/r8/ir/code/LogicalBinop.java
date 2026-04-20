@@ -5,7 +5,6 @@ package com.android.tools.r8.ir.code;
 
 import com.android.tools.r8.cf.code.CfLogicalBinop;
 import com.android.tools.r8.dex.code.DexInstruction;
-import com.android.tools.r8.errors.Unreachable;
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.ProgramMethod;
 import com.android.tools.r8.ir.analysis.value.AbstractValue;
@@ -13,6 +12,7 @@ import com.android.tools.r8.ir.analysis.value.SingleNumberValue;
 import com.android.tools.r8.ir.conversion.CfBuilder;
 import com.android.tools.r8.ir.conversion.DexBuilder;
 import com.android.tools.r8.lightir.LirBuilder;
+import com.android.tools.r8.utils.exceptions.Unreachable;
 
 public abstract class LogicalBinop extends Binop {
 

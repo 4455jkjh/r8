@@ -4,7 +4,7 @@
 
 package com.android.tools.r8.kotlin;
 
-import com.android.tools.r8.errors.Unreachable;
+import com.android.tools.r8.utils.exceptions.Unreachable;
 import java.lang.annotation.Annotation;
 import kotlin.Metadata;
 import kotlin.metadata.jvm.KotlinClassMetadata;

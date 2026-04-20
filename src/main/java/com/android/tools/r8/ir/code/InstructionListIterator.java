@@ -4,7 +4,6 @@
 
 package com.android.tools.r8.ir.code;
 
-import com.android.tools.r8.errors.Unimplemented;
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.DebugLocalInfo;
 import com.android.tools.r8.graph.DexField;
@@ -17,6 +16,7 @@ import com.android.tools.r8.ir.optimize.AffectedValues;
 import com.android.tools.r8.utils.BooleanUtils;
 import com.android.tools.r8.utils.ConsumerUtils;
 import com.android.tools.r8.utils.InternalOptions;
+import com.android.tools.r8.utils.exceptions.Unimplemented;
 import com.google.common.collect.Sets;
 import java.util.Arrays;
 import java.util.Collection;

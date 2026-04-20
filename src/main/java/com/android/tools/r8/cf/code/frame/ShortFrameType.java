@@ -4,11 +4,11 @@
 
 package com.android.tools.r8.cf.code.frame;
 
-import com.android.tools.r8.errors.Unreachable;
 import com.android.tools.r8.graph.DexItemFactory;
 import com.android.tools.r8.graph.DexType;
 import com.android.tools.r8.graph.lens.GraphLens;
 import com.android.tools.r8.naming.NamingLens;
+import com.android.tools.r8.utils.exceptions.Unreachable;
 
 public class ShortFrameType extends SinglePrimitiveFrameType {
 

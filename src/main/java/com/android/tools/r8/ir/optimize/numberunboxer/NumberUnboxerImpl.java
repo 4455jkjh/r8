@@ -8,7 +8,6 @@ import static com.android.tools.r8.ir.optimize.numberunboxer.MethodBoxingStatus.
 import static com.android.tools.r8.ir.optimize.numberunboxer.NumberUnboxerBoxingStatusResolution.MethodBoxingStatusResult.BoxingStatusResult.UNBOX;
 import static com.android.tools.r8.ir.optimize.numberunboxer.ValueBoxingStatus.NOT_UNBOXABLE;
 
-import com.android.tools.r8.errors.Unimplemented;
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.DexClassAndMember;
 import com.android.tools.r8.graph.DexItemFactory;
@@ -32,6 +31,7 @@ import com.android.tools.r8.utils.BooleanUtils;
 import com.android.tools.r8.utils.MapUtils;
 import com.android.tools.r8.utils.ThreadUtils;
 import com.android.tools.r8.utils.collections.DexMethodSignatureMap;
+import com.android.tools.r8.utils.exceptions.Unimplemented;
 import com.android.tools.r8.utils.timing.Timing;
 import com.google.common.collect.Iterables;
 import java.util.ArrayList;

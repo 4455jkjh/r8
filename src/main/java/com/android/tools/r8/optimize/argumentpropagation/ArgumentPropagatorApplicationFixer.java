@@ -6,7 +6,6 @@ package com.android.tools.r8.optimize.argumentpropagation;
 
 import static com.android.tools.r8.ir.optimize.info.OptimizationFeedback.getSimpleFeedback;
 
-import com.android.tools.r8.errors.Unreachable;
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.DexEncodedField;
 import com.android.tools.r8.graph.DexEncodedMethod;
@@ -27,6 +26,7 @@ import com.android.tools.r8.ir.optimize.info.MutableMethodOptimizationInfo;
 import com.android.tools.r8.ir.optimize.info.OptimizationFeedback.OptimizationInfoFixer;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
 import com.android.tools.r8.utils.ThreadUtils;
+import com.android.tools.r8.utils.exceptions.Unreachable;
 import com.android.tools.r8.utils.timing.Timing;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;

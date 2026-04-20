@@ -8,11 +8,11 @@ import static com.android.tools.r8.utils.DescriptorUtils.getDescriptorFromClassB
 import static com.google.common.base.Predicates.alwaysTrue;
 
 import com.android.tools.r8.DiagnosticsHandler;
-import com.android.tools.r8.errors.Unreachable;
 import com.android.tools.r8.graph.GenericSignature.ClassSignature.ClassSignatureBuilder;
 import com.android.tools.r8.naming.NamingLens;
 import com.android.tools.r8.origin.Origin;
 import com.android.tools.r8.utils.DescriptorUtils;
+import com.android.tools.r8.utils.exceptions.Unreachable;
 import com.google.common.collect.ImmutableList;
 import java.lang.reflect.GenericSignatureFormatError;
 import java.nio.CharBuffer;

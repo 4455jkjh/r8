@@ -8,7 +8,7 @@ import static com.android.tools.r8.utils.ConsumerUtils.emptyConsumer;
 import com.android.tools.r8.ProgramResource;
 import com.android.tools.r8.ProgramResourceProvider;
 import com.android.tools.r8.ResourceException;
-import com.android.tools.r8.errors.Unimplemented;
+import com.android.tools.r8.utils.exceptions.Unimplemented;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.function.Consumer;

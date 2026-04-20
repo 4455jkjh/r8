@@ -19,8 +19,8 @@ import com.android.tools.r8.dex.code.DexSubInt;
 import com.android.tools.r8.dex.code.DexSubInt2Addr;
 import com.android.tools.r8.dex.code.DexSubLong;
 import com.android.tools.r8.dex.code.DexSubLong2Addr;
-import com.android.tools.r8.errors.Unreachable;
 import com.android.tools.r8.ir.conversion.DexBuilder;
+import com.android.tools.r8.utils.exceptions.Unreachable;
 
 public class Sub extends ArithmeticBinop {
 

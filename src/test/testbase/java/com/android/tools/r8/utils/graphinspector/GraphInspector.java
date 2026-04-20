@@ -9,8 +9,6 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
-import com.android.tools.r8.errors.Unimplemented;
-import com.android.tools.r8.errors.Unreachable;
 import com.android.tools.r8.experimental.graphinfo.AnnotationGraphNode;
 import com.android.tools.r8.experimental.graphinfo.ClassGraphNode;
 import com.android.tools.r8.experimental.graphinfo.FieldGraphNode;
@@ -30,6 +28,8 @@ import com.android.tools.r8.references.Reference;
 import com.android.tools.r8.shaking.CollectingGraphConsumer;
 import com.android.tools.r8.utils.Box;
 import com.android.tools.r8.utils.codeinspector.CodeInspector;
+import com.android.tools.r8.utils.exceptions.Unimplemented;
+import com.android.tools.r8.utils.exceptions.Unreachable;
 import com.google.common.collect.ImmutableSet;
 import java.lang.annotation.Annotation;
 import java.util.Arrays;

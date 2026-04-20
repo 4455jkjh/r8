@@ -4,7 +4,6 @@
 
 package com.android.tools.r8.graph.lens;
 
-import com.android.tools.r8.errors.Unreachable;
 import com.android.tools.r8.graph.AppInfoWithClassHierarchy;
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.DexField;
@@ -12,6 +11,7 @@ import com.android.tools.r8.graph.DexMethod;
 import com.android.tools.r8.graph.proto.RewrittenPrototypeDescription;
 import com.android.tools.r8.ir.code.InvokeType;
 import com.android.tools.r8.utils.OptionalBool;
+import com.android.tools.r8.utils.exceptions.Unreachable;
 
 // This lens clears all code rewriting (lookup methods mimics identity lens behavior) but still
 // relies on the previous lens for names (getRenamed/Original methods).

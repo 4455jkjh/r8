@@ -3,7 +3,6 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8.shaking;
 
-import com.android.tools.r8.errors.Unreachable;
 import com.android.tools.r8.experimental.graphinfo.AnnotationGraphNode;
 import com.android.tools.r8.experimental.graphinfo.ClassGraphNode;
 import com.android.tools.r8.experimental.graphinfo.FieldGraphNode;
@@ -34,6 +33,7 @@ import com.android.tools.r8.shaking.rules.ReferencedFromExcludedClassInR8Partial
 import com.android.tools.r8.utils.DequeUtils;
 import com.android.tools.r8.utils.InternalOptions;
 import com.android.tools.r8.utils.SetUtils;
+import com.android.tools.r8.utils.exceptions.Unreachable;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableList.Builder;
 import com.google.common.collect.Sets;

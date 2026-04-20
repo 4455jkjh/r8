@@ -4,9 +4,9 @@
 
 package com.android.tools.r8;
 
-import com.android.tools.r8.errors.Unimplemented;
 import com.android.tools.r8.utils.ThrowingConsumer;
 import com.android.tools.r8.utils.codeinspector.CodeInspector;
+import com.android.tools.r8.utils.exceptions.Unimplemented;
 import org.hamcrest.Matcher;
 
 public class L8TestRunResult extends TestRunResult<L8TestRunResult> {

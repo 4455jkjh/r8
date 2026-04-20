@@ -11,7 +11,6 @@ import com.android.tools.r8.dex.code.DexCmpgFloat;
 import com.android.tools.r8.dex.code.DexCmplDouble;
 import com.android.tools.r8.dex.code.DexCmplFloat;
 import com.android.tools.r8.dex.code.DexInstruction;
-import com.android.tools.r8.errors.Unreachable;
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.ProgramMethod;
 import com.android.tools.r8.ir.analysis.type.TypeElement;
@@ -23,6 +22,7 @@ import com.android.tools.r8.ir.conversion.DexBuilder;
 import com.android.tools.r8.lightir.LirBuilder;
 import com.android.tools.r8.utils.StringUtils;
 import com.android.tools.r8.utils.StringUtils.BraceType;
+import com.android.tools.r8.utils.exceptions.Unreachable;
 
 public class Cmp extends Binop {
 

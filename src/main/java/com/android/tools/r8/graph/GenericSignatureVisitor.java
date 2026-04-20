@@ -4,7 +4,6 @@
 
 package com.android.tools.r8.graph;
 
-import com.android.tools.r8.errors.Unreachable;
 import com.android.tools.r8.graph.GenericSignature.ClassSignature;
 import com.android.tools.r8.graph.GenericSignature.ClassTypeSignature;
 import com.android.tools.r8.graph.GenericSignature.FieldTypeSignature;
@@ -12,6 +11,7 @@ import com.android.tools.r8.graph.GenericSignature.FormalTypeParameter;
 import com.android.tools.r8.graph.GenericSignature.MethodTypeSignature;
 import com.android.tools.r8.graph.GenericSignature.ReturnType;
 import com.android.tools.r8.graph.GenericSignature.TypeSignature;
+import com.android.tools.r8.utils.exceptions.Unreachable;
 import java.util.List;
 
 public interface GenericSignatureVisitor {

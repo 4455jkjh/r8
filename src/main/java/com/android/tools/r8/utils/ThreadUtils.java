@@ -11,6 +11,7 @@ import com.android.tools.r8.threading.TaskCollection;
 import com.android.tools.r8.threading.ThreadingModule;
 import com.android.tools.r8.utils.ListUtils.ReferenceAndIntConsumer;
 import com.android.tools.r8.utils.collections.DexClassAndMemberMap;
+import com.android.tools.r8.utils.exceptions.UncheckedExecutionException;
 import com.android.tools.r8.utils.timing.Timing;
 import com.android.tools.r8.utils.timing.TimingMerger;
 import java.util.Collection;

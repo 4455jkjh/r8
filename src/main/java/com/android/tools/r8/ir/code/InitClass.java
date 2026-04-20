@@ -6,7 +6,6 @@ package com.android.tools.r8.ir.code;
 
 import com.android.tools.r8.cf.LoadStoreHelper;
 import com.android.tools.r8.dex.Constants;
-import com.android.tools.r8.errors.Unreachable;
 import com.android.tools.r8.graph.AccessControl;
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.DexClass;
@@ -24,6 +23,7 @@ import com.android.tools.r8.ir.optimize.Inliner.ConstraintWithTarget;
 import com.android.tools.r8.ir.optimize.InliningConstraints;
 import com.android.tools.r8.lightir.LirBuilder;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
+import com.android.tools.r8.utils.exceptions.Unreachable;
 
 public class InitClass extends Instruction {
 

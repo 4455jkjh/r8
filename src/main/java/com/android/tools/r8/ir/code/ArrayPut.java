@@ -14,7 +14,6 @@ import com.android.tools.r8.dex.code.DexAputObject;
 import com.android.tools.r8.dex.code.DexAputShort;
 import com.android.tools.r8.dex.code.DexAputWide;
 import com.android.tools.r8.dex.code.DexInstruction;
-import com.android.tools.r8.errors.Unreachable;
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.ProgramMethod;
 import com.android.tools.r8.ir.analysis.type.ArrayTypeElement;
@@ -28,6 +27,7 @@ import com.android.tools.r8.ir.optimize.Inliner.ConstraintWithTarget;
 import com.android.tools.r8.ir.optimize.InliningConstraints;
 import com.android.tools.r8.ir.regalloc.RegisterAllocator;
 import com.android.tools.r8.lightir.LirBuilder;
+import com.android.tools.r8.utils.exceptions.Unreachable;
 import java.util.Arrays;
 
 public class ArrayPut extends ArrayAccess {

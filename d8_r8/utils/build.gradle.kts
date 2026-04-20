@@ -9,7 +9,11 @@ plugins {
 }
 
 // :utils is assumed to use a subset of :main's dependencies.
-dependencies { errorprone(Deps.errorprone) }
+dependencies {
+  compileOnly(Deps.guava)
+
+  errorprone(Deps.errorprone)
+}
 
 configureErrorProneForJavaCompile()
 

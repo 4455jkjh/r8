@@ -3,9 +3,9 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8.utils.codeinspector;
 
-import com.android.tools.r8.errors.Unreachable;
 import com.android.tools.r8.graph.DexAnnotation;
 import com.android.tools.r8.graph.DexClass;
+import com.android.tools.r8.utils.exceptions.Unreachable;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;

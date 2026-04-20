@@ -5,7 +5,6 @@ package com.android.tools.r8.graph;
 
 import com.android.tools.r8.dex.MixedSectionCollection;
 import com.android.tools.r8.dex.code.CfOrDexInstruction;
-import com.android.tools.r8.errors.Unreachable;
 import com.android.tools.r8.graph.bytecodemetadata.BytecodeInstructionMetadata;
 import com.android.tools.r8.graph.bytecodemetadata.BytecodeMetadata;
 import com.android.tools.r8.graph.lens.GraphLens;
@@ -20,6 +19,7 @@ import com.android.tools.r8.ir.conversion.MethodConversionOptions.MutableMethodC
 import com.android.tools.r8.lightir.LirCode;
 import com.android.tools.r8.utils.Int2StructuralItemArrayMap;
 import com.android.tools.r8.utils.RetracerForCodePrinting;
+import com.android.tools.r8.utils.exceptions.Unreachable;
 import it.unimi.dsi.fastutil.ints.Int2ReferenceMap;
 import java.util.function.Consumer;
 

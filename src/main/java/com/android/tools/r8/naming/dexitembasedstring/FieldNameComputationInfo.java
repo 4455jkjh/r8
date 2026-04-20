@@ -4,12 +4,12 @@
 
 package com.android.tools.r8.naming.dexitembasedstring;
 
-import com.android.tools.r8.errors.Unreachable;
 import com.android.tools.r8.graph.DexDefinitionSupplier;
 import com.android.tools.r8.graph.DexField;
 import com.android.tools.r8.graph.DexString;
 import com.android.tools.r8.graph.lens.GraphLens;
 import com.android.tools.r8.naming.NamingLens;
+import com.android.tools.r8.utils.exceptions.Unreachable;
 import com.android.tools.r8.utils.structural.CompareToVisitor;
 import com.android.tools.r8.utils.structural.HashingVisitor;
 

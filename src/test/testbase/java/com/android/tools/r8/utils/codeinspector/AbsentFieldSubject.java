@@ -4,12 +4,12 @@
 
 package com.android.tools.r8.utils.codeinspector;
 
-import com.android.tools.r8.errors.Unreachable;
 import com.android.tools.r8.graph.AccessFlags;
 import com.android.tools.r8.graph.DexEncodedField;
 import com.android.tools.r8.graph.DexValue;
 import com.android.tools.r8.naming.MemberNaming.Signature;
 import com.android.tools.r8.references.FieldReference;
+import com.android.tools.r8.utils.exceptions.Unreachable;
 import java.util.List;
 
 public class AbsentFieldSubject extends FieldSubject {

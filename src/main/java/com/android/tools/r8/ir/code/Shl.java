@@ -10,10 +10,10 @@ import com.android.tools.r8.dex.code.DexShlInt2Addr;
 import com.android.tools.r8.dex.code.DexShlIntLit8;
 import com.android.tools.r8.dex.code.DexShlLong;
 import com.android.tools.r8.dex.code.DexShlLong2Addr;
-import com.android.tools.r8.errors.Unreachable;
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.ir.analysis.value.AbstractValue;
 import com.android.tools.r8.ir.analysis.value.arithmetic.AbstractCalculator;
+import com.android.tools.r8.utils.exceptions.Unreachable;
 
 public class Shl extends LogicalBinop {
 

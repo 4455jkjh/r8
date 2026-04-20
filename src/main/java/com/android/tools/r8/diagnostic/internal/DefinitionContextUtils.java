@@ -8,11 +8,11 @@ import com.android.tools.r8.diagnostic.DefinitionClassContext;
 import com.android.tools.r8.diagnostic.DefinitionContext;
 import com.android.tools.r8.diagnostic.DefinitionFieldContext;
 import com.android.tools.r8.diagnostic.DefinitionMethodContext;
-import com.android.tools.r8.errors.Unreachable;
 import com.android.tools.r8.graph.Definition;
 import com.android.tools.r8.graph.ProgramDerivedContext;
 import com.android.tools.r8.utils.FieldReferenceUtils;
 import com.android.tools.r8.utils.MethodReferenceUtils;
+import com.android.tools.r8.utils.exceptions.Unreachable;
 import java.util.function.Consumer;
 import java.util.function.Function;
 

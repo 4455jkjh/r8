@@ -23,7 +23,6 @@ import com.android.tools.r8.cf.code.CfStore;
 import com.android.tools.r8.contexts.CompilationContext.MethodProcessingContext;
 import com.android.tools.r8.dex.Constants;
 import com.android.tools.r8.errors.CompilationError;
-import com.android.tools.r8.errors.Unreachable;
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.CfCode;
 import com.android.tools.r8.graph.DexClass;
@@ -51,6 +50,7 @@ import com.android.tools.r8.ir.synthetic.RecordCfCodeProvider.RecordGetFieldsAsO
 import com.android.tools.r8.ir.synthetic.RecordCfCodeProvider.RecordHashCfCodeProvider;
 import com.android.tools.r8.ir.synthetic.SyntheticCfCodeProvider;
 import com.android.tools.r8.utils.collections.Pair;
+import com.android.tools.r8.utils.exceptions.Unreachable;
 import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
 import java.util.Collections;

@@ -9,7 +9,6 @@ import static com.android.tools.r8.androidapi.AndroidApiLevelCompute.noAndroidAp
 import com.android.tools.r8.androidapi.AndroidApiLevelCompute;
 import com.android.tools.r8.cf.code.CfInstruction;
 import com.android.tools.r8.contexts.CompilationContext.MethodProcessingContext;
-import com.android.tools.r8.errors.Unreachable;
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.CfCode;
 import com.android.tools.r8.graph.CfCompareHelper;
@@ -48,6 +47,7 @@ import com.android.tools.r8.utils.ListUtils;
 import com.android.tools.r8.utils.SetUtils;
 import com.android.tools.r8.utils.StringDiagnostic;
 import com.android.tools.r8.utils.ThrowingConsumer;
+import com.android.tools.r8.utils.exceptions.Unreachable;
 import com.google.common.collect.Iterables;
 import it.unimi.dsi.fastutil.ints.Int2ReferenceMap;
 import it.unimi.dsi.fastutil.ints.Int2ReferenceMap.Entry;

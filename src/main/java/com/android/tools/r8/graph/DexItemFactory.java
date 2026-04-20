@@ -8,7 +8,6 @@ import static com.android.tools.r8.utils.ConsumerUtils.emptyConsumer;
 
 import com.android.tools.r8.dex.Constants;
 import com.android.tools.r8.dex.Marker;
-import com.android.tools.r8.errors.Unreachable;
 import com.android.tools.r8.graph.DexDebugEvent.AdvanceLine;
 import com.android.tools.r8.graph.DexDebugEvent.AdvancePC;
 import com.android.tools.r8.graph.DexDebugEvent.Default;
@@ -32,6 +31,7 @@ import com.android.tools.r8.utils.ArrayUtils;
 import com.android.tools.r8.utils.DescriptorUtils;
 import com.android.tools.r8.utils.ListUtils;
 import com.android.tools.r8.utils.SetUtils;
+import com.android.tools.r8.utils.exceptions.Unreachable;
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
 import com.google.common.collect.ImmutableList;

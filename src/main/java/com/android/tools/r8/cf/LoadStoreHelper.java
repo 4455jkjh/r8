@@ -3,7 +3,6 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8.cf;
 
-import com.android.tools.r8.errors.Unreachable;
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.DexType;
 import com.android.tools.r8.ir.code.BasicBlock;
@@ -23,6 +22,7 @@ import com.android.tools.r8.ir.code.Position;
 import com.android.tools.r8.ir.code.StackValue;
 import com.android.tools.r8.ir.code.Store;
 import com.android.tools.r8.ir.code.Value;
+import com.android.tools.r8.utils.exceptions.Unreachable;
 import java.util.ArrayList;
 import java.util.IdentityHashMap;
 import java.util.List;

@@ -4,12 +4,12 @@
 
 package com.android.tools.r8.utils.codeinspector;
 
-import com.android.tools.r8.errors.Unreachable;
 import com.android.tools.r8.graph.DexAnnotation;
 import com.android.tools.r8.graph.DexAnnotationSet;
 import com.android.tools.r8.graph.DexEncodedAnnotation;
 import com.android.tools.r8.graph.DexTypeAnnotation;
 import com.android.tools.r8.utils.ListUtils;
+import com.android.tools.r8.utils.exceptions.Unreachable;
 import java.util.List;
 
 public class FoundAnnotationSubject extends AnnotationSubject {

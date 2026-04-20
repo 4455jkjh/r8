@@ -18,7 +18,6 @@ import com.android.tools.r8.dex.code.DexInvokeSuperRange;
 import com.android.tools.r8.dex.code.DexInvokeVirtual;
 import com.android.tools.r8.dex.code.DexInvokeVirtualRange;
 import com.android.tools.r8.dex.code.DexNewArray;
-import com.android.tools.r8.errors.Unreachable;
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.DexClass;
 import com.android.tools.r8.graph.DexClassAndMethod;
@@ -29,6 +28,7 @@ import com.android.tools.r8.graph.DexType;
 import com.android.tools.r8.graph.lens.GraphLens;
 import com.android.tools.r8.graph.lens.MethodLookupResult;
 import com.android.tools.r8.lightir.LirOpcodes;
+import com.android.tools.r8.utils.exceptions.Unreachable;
 import org.objectweb.asm.Opcodes;
 
 public enum InvokeType {

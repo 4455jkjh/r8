@@ -8,7 +8,6 @@ import static com.android.tools.r8.naming.dexitembasedstring.ClassNameComputatio
 import static com.android.tools.r8.naming.dexitembasedstring.ClassNameComputationInfo.ClassNameMapping.NAME;
 import static com.android.tools.r8.naming.dexitembasedstring.ClassNameComputationInfo.ClassNameMapping.SIMPLE_NAME;
 
-import com.android.tools.r8.errors.Unreachable;
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.DexClass;
 import com.android.tools.r8.graph.DexClassAndField;
@@ -56,6 +55,7 @@ import com.android.tools.r8.shaking.AppInfoWithLiveness;
 import com.android.tools.r8.shaking.KeepClassInfo;
 import com.android.tools.r8.utils.Action;
 import com.android.tools.r8.utils.IteratorUtils;
+import com.android.tools.r8.utils.exceptions.Unreachable;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import java.util.IdentityHashMap;

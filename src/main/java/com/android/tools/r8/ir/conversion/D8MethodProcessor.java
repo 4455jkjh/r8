@@ -4,7 +4,6 @@
 package com.android.tools.r8.ir.conversion;
 
 import com.android.tools.r8.contexts.CompilationContext.ProcessorContext;
-import com.android.tools.r8.errors.Unreachable;
 import com.android.tools.r8.graph.DexProgramClass;
 import com.android.tools.r8.graph.DexType;
 import com.android.tools.r8.graph.ProgramMethod;
@@ -13,6 +12,7 @@ import com.android.tools.r8.ir.desugar.CfInstructionDesugaringEventConsumer;
 import com.android.tools.r8.ir.optimize.info.OptimizationFeedbackIgnore;
 import com.android.tools.r8.profile.rewriting.ProfileCollectionAdditions;
 import com.android.tools.r8.threading.SynchronizedTaskCollection;
+import com.android.tools.r8.utils.exceptions.Unreachable;
 import com.android.tools.r8.utils.timing.Timing;
 import com.google.common.collect.Sets;
 import java.util.Set;

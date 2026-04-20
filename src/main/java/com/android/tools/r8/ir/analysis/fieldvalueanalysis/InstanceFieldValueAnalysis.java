@@ -6,7 +6,6 @@ package com.android.tools.r8.ir.analysis.fieldvalueanalysis;
 
 import static com.android.tools.r8.ir.analysis.type.Nullability.maybeNull;
 
-import com.android.tools.r8.errors.Unreachable;
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.DexClassAndField;
 import com.android.tools.r8.graph.DexClassAndMethod;
@@ -35,6 +34,7 @@ import com.android.tools.r8.ir.optimize.info.field.InstanceFieldInitializationIn
 import com.android.tools.r8.ir.optimize.info.field.UnknownInstanceFieldInitializationInfo;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
 import com.android.tools.r8.shaking.KeepFieldInfo;
+import com.android.tools.r8.utils.exceptions.Unreachable;
 import com.android.tools.r8.utils.timing.Timing;
 
 public class InstanceFieldValueAnalysis extends FieldValueAnalysis {

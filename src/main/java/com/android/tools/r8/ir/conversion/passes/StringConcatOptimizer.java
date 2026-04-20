@@ -4,7 +4,6 @@
 
 package com.android.tools.r8.ir.conversion.passes;
 
-import com.android.tools.r8.errors.Unreachable;
 import com.android.tools.r8.graph.AppInfo;
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.DexItemFactory;
@@ -23,6 +22,7 @@ import com.android.tools.r8.ir.code.Value;
 import com.android.tools.r8.ir.conversion.MethodProcessor;
 import com.android.tools.r8.ir.conversion.passes.result.CodeRewriterResult;
 import com.android.tools.r8.utils.ValueUtils;
+import com.android.tools.r8.utils.exceptions.Unreachable;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;

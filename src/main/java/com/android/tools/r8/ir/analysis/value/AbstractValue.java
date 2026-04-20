@@ -4,7 +4,6 @@
 
 package com.android.tools.r8.ir.analysis.value;
 
-import com.android.tools.r8.errors.Unreachable;
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.DexType;
 import com.android.tools.r8.graph.lens.GraphLens;
@@ -17,6 +16,7 @@ import com.android.tools.r8.optimize.argumentpropagation.codescanner.InFlowKind;
 import com.android.tools.r8.optimize.argumentpropagation.computation.ComputationTreeNode;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
 import com.android.tools.r8.utils.TraversalContinuation;
+import com.android.tools.r8.utils.exceptions.Unreachable;
 import java.util.function.Function;
 
 public abstract class AbstractValue implements ComputationTreeNode {

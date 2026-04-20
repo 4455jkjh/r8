@@ -4,7 +4,6 @@
 
 package com.android.tools.r8.lightir;
 
-import com.android.tools.r8.errors.Unimplemented;
 import com.android.tools.r8.graph.DexCallSite;
 import com.android.tools.r8.graph.DexField;
 import com.android.tools.r8.graph.DexMethod;
@@ -20,6 +19,7 @@ import com.android.tools.r8.graph.bytecodemetadata.BytecodeInstructionMetadata;
 import com.android.tools.r8.ir.code.IfType;
 import com.android.tools.r8.ir.code.NumericType;
 import com.android.tools.r8.naming.dexitembasedstring.NameComputationInfo;
+import com.android.tools.r8.utils.exceptions.Unimplemented;
 import java.util.List;
 
 public class LirUseRegistryCallback<EV> extends LirParsedInstructionCallback<EV> {

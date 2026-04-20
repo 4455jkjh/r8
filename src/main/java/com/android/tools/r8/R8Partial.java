@@ -5,7 +5,6 @@ package com.android.tools.r8;
 
 import com.android.tools.r8.dex.ApplicationReader;
 import com.android.tools.r8.diagnostic.R8VersionDiagnostic;
-import com.android.tools.r8.errors.Unreachable;
 import com.android.tools.r8.features.FeatureSplitConfiguration;
 import com.android.tools.r8.graph.DexClasspathClass;
 import com.android.tools.r8.graph.DirectMappedDexApplication;
@@ -27,6 +26,7 @@ import com.android.tools.r8.utils.InternalOptions;
 import com.android.tools.r8.utils.InternalProgramClassProvider;
 import com.android.tools.r8.utils.ListUtils;
 import com.android.tools.r8.utils.ThreadUtils;
+import com.android.tools.r8.utils.exceptions.Unreachable;
 import com.android.tools.r8.utils.timing.Timing;
 import java.io.IOException;
 import java.util.Collection;

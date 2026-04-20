@@ -30,7 +30,6 @@ import com.android.tools.r8.desugar.covariantreturntype.CovariantReturnTypeEnque
 import com.android.tools.r8.dex.IndexedItemCollection;
 import com.android.tools.r8.dex.code.CfOrDexInstruction;
 import com.android.tools.r8.errors.InterfaceDesugarMissingTypeDiagnostic;
-import com.android.tools.r8.errors.Unreachable;
 import com.android.tools.r8.experimental.graphinfo.GraphConsumer;
 import com.android.tools.r8.features.IsolatedFeatureSplitsChecker;
 import com.android.tools.r8.graph.AccessControl;
@@ -168,6 +167,7 @@ import com.android.tools.r8.utils.collections.ProgramFieldSet;
 import com.android.tools.r8.utils.collections.ProgramMethodMap;
 import com.android.tools.r8.utils.collections.ProgramMethodSet;
 import com.android.tools.r8.utils.collections.WorkList;
+import com.android.tools.r8.utils.exceptions.Unreachable;
 import com.android.tools.r8.utils.timing.Timing;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;

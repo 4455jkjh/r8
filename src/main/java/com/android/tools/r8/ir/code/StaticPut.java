@@ -14,7 +14,6 @@ import com.android.tools.r8.dex.code.DexSputChar;
 import com.android.tools.r8.dex.code.DexSputObject;
 import com.android.tools.r8.dex.code.DexSputShort;
 import com.android.tools.r8.dex.code.DexSputWide;
-import com.android.tools.r8.errors.Unreachable;
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.DexClassAndField;
 import com.android.tools.r8.graph.DexClassAndMethod;
@@ -34,6 +33,7 @@ import com.android.tools.r8.ir.optimize.InliningConstraints;
 import com.android.tools.r8.ir.regalloc.RegisterAllocator;
 import com.android.tools.r8.lightir.LirBuilder;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
+import com.android.tools.r8.utils.exceptions.Unreachable;
 
 public class StaticPut extends FieldInstruction implements FieldPut, StaticFieldInstruction {
 

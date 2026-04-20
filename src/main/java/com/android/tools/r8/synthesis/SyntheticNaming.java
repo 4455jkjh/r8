@@ -6,7 +6,6 @@ package com.android.tools.r8.synthesis;
 import static com.android.tools.r8.utils.DescriptorUtils.INNER_CLASS_SEPARATOR;
 
 import com.android.tools.r8.Version;
-import com.android.tools.r8.errors.Unreachable;
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.DexItemFactory;
 import com.android.tools.r8.graph.DexType;
@@ -15,6 +14,7 @@ import com.android.tools.r8.references.ClassReference;
 import com.android.tools.r8.references.Reference;
 import com.android.tools.r8.utils.DescriptorUtils;
 import com.android.tools.r8.utils.InternalOptions;
+import com.android.tools.r8.utils.exceptions.Unreachable;
 import com.android.tools.r8.utils.structural.Equatable;
 import com.android.tools.r8.utils.structural.Ordered;
 import com.google.common.hash.Hasher;

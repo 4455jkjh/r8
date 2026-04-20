@@ -8,8 +8,8 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 
 import com.android.tools.r8.ToolHelper.ProcessResult;
-import com.android.tools.r8.errors.Unreachable;
 import com.android.tools.r8.jasmin.JasminBuilder.ClassFileVersion;
+import com.android.tools.r8.utils.exceptions.Unreachable;
 import com.google.common.collect.ImmutableList;
 import java.util.List;
 import org.junit.Test;

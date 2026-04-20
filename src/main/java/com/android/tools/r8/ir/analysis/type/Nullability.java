@@ -4,7 +4,7 @@
 
 package com.android.tools.r8.ir.analysis.type;
 
-import com.android.tools.r8.errors.Unreachable;
+import com.android.tools.r8.utils.exceptions.Unreachable;
 
 /**
  * Encodes the following lattice.

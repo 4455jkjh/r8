@@ -6,7 +6,6 @@ package com.android.tools.r8.ir.code;
 import com.android.tools.r8.cf.LoadStoreHelper;
 import com.android.tools.r8.cf.TypeVerificationHelper;
 import com.android.tools.r8.cf.code.CfMultiANewArray;
-import com.android.tools.r8.errors.Unreachable;
 import com.android.tools.r8.graph.AccessControl;
 import com.android.tools.r8.graph.AppInfoWithClassHierarchy;
 import com.android.tools.r8.graph.AppView;
@@ -23,6 +22,7 @@ import com.android.tools.r8.ir.optimize.Inliner.ConstraintWithTarget;
 import com.android.tools.r8.ir.optimize.InliningConstraints;
 import com.android.tools.r8.lightir.LirBuilder;
 import com.android.tools.r8.utils.LongInterval;
+import com.android.tools.r8.utils.exceptions.Unreachable;
 import java.util.List;
 
 public class InvokeMultiNewArray extends Invoke {

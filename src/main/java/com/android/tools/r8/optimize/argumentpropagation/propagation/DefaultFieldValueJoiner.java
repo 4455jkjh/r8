@@ -5,7 +5,6 @@ package com.android.tools.r8.optimize.argumentpropagation.propagation;
 
 import static com.android.tools.r8.utils.MapUtils.ignoreKey;
 
-import com.android.tools.r8.errors.Unreachable;
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.Code;
 import com.android.tools.r8.graph.DefaultUseRegistryWithResult;
@@ -37,6 +36,7 @@ import com.android.tools.r8.utils.MapUtils;
 import com.android.tools.r8.utils.ThreadUtils;
 import com.android.tools.r8.utils.collections.Pair;
 import com.android.tools.r8.utils.collections.ProgramFieldSet;
+import com.android.tools.r8.utils.exceptions.Unreachable;
 import com.android.tools.r8.utils.timing.Timing;
 import com.google.common.collect.Iterables;
 import it.unimi.dsi.fastutil.objects.Reference2BooleanMap;

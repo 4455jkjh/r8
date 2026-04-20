@@ -12,7 +12,6 @@ import com.android.tools.r8.dex.code.DexReturn;
 import com.android.tools.r8.dex.code.DexReturnObject;
 import com.android.tools.r8.dex.code.DexReturnVoid;
 import com.android.tools.r8.dex.code.DexReturnWide;
-import com.android.tools.r8.errors.Unreachable;
 import com.android.tools.r8.graph.ProgramMethod;
 import com.android.tools.r8.ir.analysis.type.TypeElement;
 import com.android.tools.r8.ir.conversion.CfBuilder;
@@ -20,6 +19,7 @@ import com.android.tools.r8.ir.conversion.DexBuilder;
 import com.android.tools.r8.ir.optimize.Inliner.ConstraintWithTarget;
 import com.android.tools.r8.ir.optimize.InliningConstraints;
 import com.android.tools.r8.lightir.LirBuilder;
+import com.android.tools.r8.utils.exceptions.Unreachable;
 
 public class Return extends JumpInstruction {
 

@@ -4,7 +4,6 @@
 
 package com.android.tools.r8.shaking;
 
-import com.android.tools.r8.errors.Unreachable;
 import com.android.tools.r8.graph.DexAnnotation;
 import com.android.tools.r8.graph.DexField;
 import com.android.tools.r8.graph.DexMethod;
@@ -17,6 +16,7 @@ import com.android.tools.r8.references.TypeReference;
 import com.android.tools.r8.utils.ArrayUtils;
 import com.android.tools.r8.utils.DescriptorUtils;
 import com.android.tools.r8.utils.ObjectUtils;
+import com.android.tools.r8.utils.exceptions.Unreachable;
 import com.google.common.collect.ImmutableMap;
 import java.io.File;
 import java.io.IOException;

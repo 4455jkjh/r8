@@ -4,11 +4,11 @@
 
 package com.android.tools.r8;
 
-import com.android.tools.r8.errors.Unreachable;
 import com.android.tools.r8.naming.ClassNameMapper;
 import com.android.tools.r8.naming.InternalMapConsumer;
 import com.android.tools.r8.retrace.ProguardMapPartitioner;
 import com.android.tools.r8.retrace.internal.ProguardMapProducerInternal;
+import com.android.tools.r8.utils.exceptions.Unreachable;
 import java.io.IOException;
 
 public class MapConsumerToPartitionMapConsumer implements InternalMapConsumer {

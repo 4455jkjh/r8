@@ -3,7 +3,6 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8.optimize.argumentpropagation.codescanner;
 
-import com.android.tools.r8.errors.Unreachable;
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.DexField;
 import com.android.tools.r8.graph.ProgramMethod;
@@ -13,6 +12,7 @@ import com.android.tools.r8.ir.optimize.info.MethodOptimizationInfo;
 import com.android.tools.r8.optimize.argumentpropagation.propagation.FlowGraph;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
 import com.android.tools.r8.utils.AssertionUtils;
+import com.android.tools.r8.utils.exceptions.Unreachable;
 import java.util.function.Supplier;
 
 public interface FlowGraphStateProvider {

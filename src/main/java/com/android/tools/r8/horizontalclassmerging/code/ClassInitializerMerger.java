@@ -7,7 +7,6 @@ package com.android.tools.r8.horizontalclassmerging.code;
 
 import com.android.tools.r8.androidapi.ComputedApiLevel;
 import com.android.tools.r8.cf.CfVersion;
-import com.android.tools.r8.errors.Unreachable;
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.ClasspathMethod;
 import com.android.tools.r8.graph.Code;
@@ -33,6 +32,7 @@ import com.android.tools.r8.utils.CfVersionUtils;
 import com.android.tools.r8.utils.InternalOptions;
 import com.android.tools.r8.utils.ListUtils;
 import com.android.tools.r8.utils.RetracerForCodePrinting;
+import com.android.tools.r8.utils.exceptions.Unreachable;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Sets;
 import java.util.ListIterator;

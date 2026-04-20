@@ -13,7 +13,6 @@ import com.android.tools.r8.benchmarks.BenchmarkResults;
 import com.android.tools.r8.debug.DebugTestConfig;
 import com.android.tools.r8.dump.CompilerDump;
 import com.android.tools.r8.dump.DumpOptions;
-import com.android.tools.r8.errors.Unimplemented;
 import com.android.tools.r8.optimize.argumentpropagation.ArgumentPropagatorEventConsumer;
 import com.android.tools.r8.optimize.argumentpropagation.codescanner.MethodStateCollectionByReference;
 import com.android.tools.r8.profile.art.model.ExternalArtProfile;
@@ -34,6 +33,7 @@ import com.android.tools.r8.utils.codeinspector.HorizontallyMergedClassesInspect
 import com.android.tools.r8.utils.codeinspector.MinificationInspector;
 import com.android.tools.r8.utils.codeinspector.RepackagingInspector;
 import com.android.tools.r8.utils.codeinspector.VerticallyMergedClassesInspector;
+import com.android.tools.r8.utils.exceptions.Unimplemented;
 import com.google.common.base.Suppliers;
 import com.google.common.collect.ImmutableSet;
 import java.io.ByteArrayOutputStream;

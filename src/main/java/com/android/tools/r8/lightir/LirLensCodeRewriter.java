@@ -7,7 +7,6 @@ package com.android.tools.r8.lightir;
 import static com.android.tools.r8.graph.UseRegistry.MethodHandleUse.NOT_ARGUMENT_TO_LAMBDA_METAFACTORY;
 import static com.android.tools.r8.lightir.LirOpcodeUtils.getInterfaceBitFromInvokeOpcode;
 
-import com.android.tools.r8.errors.Unreachable;
 import com.android.tools.r8.graph.AppInfoWithClassHierarchy;
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.DexCallSite;
@@ -40,6 +39,7 @@ import com.android.tools.r8.lightir.LirCode.TryCatchTable;
 import com.android.tools.r8.naming.dexitembasedstring.NameComputationInfo;
 import com.android.tools.r8.utils.ArrayUtils;
 import com.android.tools.r8.utils.BooleanUtils;
+import com.android.tools.r8.utils.exceptions.Unreachable;
 import com.android.tools.r8.utils.timing.Timing;
 import com.android.tools.r8.verticalclassmerging.VerticalClassMergerGraphLens;
 import com.google.common.collect.ImmutableSet;

@@ -6,7 +6,6 @@ package com.android.tools.r8.horizontalclassmerging;
 
 import static com.android.tools.r8.ir.analysis.type.Nullability.definitelyNotNull;
 
-import com.android.tools.r8.errors.Unreachable;
 import com.android.tools.r8.graph.AppInfoWithClassHierarchy;
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.DexField;
@@ -22,6 +21,7 @@ import com.android.tools.r8.lightir.LirCode;
 import com.android.tools.r8.lightir.LirEncodingStrategy;
 import com.android.tools.r8.lightir.LirStrategy;
 import com.android.tools.r8.utils.BooleanUtils;
+import com.android.tools.r8.utils.exceptions.Unreachable;
 import it.unimi.dsi.fastutil.ints.Int2ReferenceSortedMap;
 import it.unimi.dsi.fastutil.ints.IntBidirectionalIterator;
 import java.util.ArrayList;

@@ -3,8 +3,8 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8.shaking;
 
-import com.android.tools.r8.errors.Unreachable;
 import com.android.tools.r8.graph.DexClass;
+import com.android.tools.r8.utils.exceptions.Unreachable;
 
 public enum ProguardClassType {
   ANNOTATION_INTERFACE {

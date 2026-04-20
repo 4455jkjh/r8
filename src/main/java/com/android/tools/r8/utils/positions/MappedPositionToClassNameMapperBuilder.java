@@ -6,7 +6,6 @@ package com.android.tools.r8.utils.positions;
 import static com.android.tools.r8.naming.mappinginformation.ResidualSignatureMappingInformation.ResidualFieldSignatureMappingInformation.fromDexField;
 import static com.android.tools.r8.utils.positions.PositionUtils.mustHaveResidualDebugInfo;
 
-import com.android.tools.r8.errors.Unreachable;
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.Code;
 import com.android.tools.r8.graph.DexEncodedMethod;
@@ -51,6 +50,7 @@ import com.android.tools.r8.utils.ObjectUtils;
 import com.android.tools.r8.utils.OneShotCollectionConsumer;
 import com.android.tools.r8.utils.OriginalSourceFiles;
 import com.android.tools.r8.utils.collections.Pair;
+import com.android.tools.r8.utils.exceptions.Unreachable;
 import it.unimi.dsi.fastutil.ints.Int2IntArrayMap;
 import it.unimi.dsi.fastutil.ints.Int2IntLinkedOpenHashMap;
 import it.unimi.dsi.fastutil.ints.Int2IntMap;

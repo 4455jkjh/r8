@@ -8,7 +8,6 @@ import static com.google.common.base.Predicates.alwaysTrue;
 
 import com.android.tools.r8.dex.MixedSectionCollection;
 import com.android.tools.r8.errors.CompilationError;
-import com.android.tools.r8.errors.Unreachable;
 import com.android.tools.r8.graph.FieldCollection.FieldCollectionFactory;
 import com.android.tools.r8.graph.GenericSignature.ClassSignature;
 import com.android.tools.r8.graph.GenericSignature.ClassTypeSignature;
@@ -24,6 +23,7 @@ import com.android.tools.r8.utils.InternalOptions;
 import com.android.tools.r8.utils.IterableUtils;
 import com.android.tools.r8.utils.OptionalBool;
 import com.android.tools.r8.utils.TraversalContinuation;
+import com.android.tools.r8.utils.exceptions.Unreachable;
 import com.google.common.base.Predicates;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;

@@ -4,7 +4,6 @@
 package com.android.tools.r8.ir.conversion;
 
 import com.android.tools.r8.contexts.CompilationContext.MethodProcessingContext;
-import com.android.tools.r8.errors.Unreachable;
 import com.android.tools.r8.graph.AppInfo;
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.Code;
@@ -98,6 +97,7 @@ import com.android.tools.r8.utils.InternalOptions.NeverMergeGroup;
 import com.android.tools.r8.utils.StringDiagnostic;
 import com.android.tools.r8.utils.ThreadUtils;
 import com.android.tools.r8.utils.collections.ProgramMethodSet;
+import com.android.tools.r8.utils.exceptions.Unreachable;
 import com.android.tools.r8.utils.timing.Timing;
 import java.util.Collection;
 import java.util.List;

@@ -4,8 +4,8 @@
 
 package com.android.tools.r8.ir.code;
 
-import com.android.tools.r8.errors.Unreachable;
 import com.android.tools.r8.ir.analysis.type.TypeElement;
+import com.android.tools.r8.utils.exceptions.Unreachable;
 
 /**
  * {@link StackValues} allow us to represent stack operations that produces two or more elements on

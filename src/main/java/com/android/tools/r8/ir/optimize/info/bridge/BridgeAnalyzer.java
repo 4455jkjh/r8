@@ -12,7 +12,6 @@ import static com.android.tools.r8.ir.code.Opcodes.INVOKE_SUPER;
 import static com.android.tools.r8.ir.code.Opcodes.INVOKE_VIRTUAL;
 import static com.android.tools.r8.ir.code.Opcodes.RETURN;
 
-import com.android.tools.r8.errors.Unreachable;
 import com.android.tools.r8.graph.DexEncodedMethod;
 import com.android.tools.r8.ir.code.AssumeAndCheckCastAliasedValueConfiguration;
 import com.android.tools.r8.ir.code.BasicBlock;
@@ -27,6 +26,7 @@ import com.android.tools.r8.ir.code.Return;
 import com.android.tools.r8.ir.code.Value;
 import com.android.tools.r8.utils.BooleanUtils;
 import com.android.tools.r8.utils.SetUtils;
+import com.android.tools.r8.utils.exceptions.Unreachable;
 import java.util.Set;
 
 public class BridgeAnalyzer {

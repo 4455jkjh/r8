@@ -4,10 +4,10 @@
 
 package com.android.tools.r8.retrace.internal;
 
-import com.android.tools.r8.errors.Unreachable;
 import com.android.tools.r8.retrace.StackTraceLineParser;
 import com.android.tools.r8.retrace.internal.StackTraceElementStringProxy.ClassNameType;
 import com.android.tools.r8.retrace.internal.StackTraceElementStringProxy.StackTraceElementStringProxyBuilder;
+import com.android.tools.r8.utils.exceptions.Unreachable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Matcher;

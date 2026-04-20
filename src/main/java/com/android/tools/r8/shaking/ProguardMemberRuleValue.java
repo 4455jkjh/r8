@@ -4,7 +4,6 @@
 
 package com.android.tools.r8.shaking;
 
-import com.android.tools.r8.errors.Unreachable;
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.DexClass;
 import com.android.tools.r8.graph.DexEncodedField;
@@ -23,6 +22,7 @@ import com.android.tools.r8.ir.code.Value;
 import com.android.tools.r8.utils.BooleanUtils;
 import com.android.tools.r8.utils.LongInterval;
 import com.android.tools.r8.utils.ObjectUtils;
+import com.android.tools.r8.utils.exceptions.Unreachable;
 import com.google.common.collect.Lists;
 import java.util.List;
 import java.util.Objects;

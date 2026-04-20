@@ -12,8 +12,8 @@ import static com.android.tools.r8.lightir.LirOpcodes.INVOKESUPER;
 import static com.android.tools.r8.lightir.LirOpcodes.INVOKESUPER_ITF;
 import static com.android.tools.r8.lightir.LirOpcodes.INVOKEVIRTUAL;
 
-import com.android.tools.r8.errors.Unreachable;
 import com.android.tools.r8.ir.code.InvokeType;
+import com.android.tools.r8.utils.exceptions.Unreachable;
 
 public class LirOpcodeUtils {
 

@@ -4,7 +4,7 @@
 
 package com.android.tools.r8.utils;
 
-import com.android.tools.r8.errors.Unreachable;
+import com.android.tools.r8.utils.exceptions.Unreachable;
 import java.util.function.Supplier;
 
 public class AssertionUtils {

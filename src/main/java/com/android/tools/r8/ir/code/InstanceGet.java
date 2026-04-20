@@ -16,7 +16,6 @@ import com.android.tools.r8.dex.code.DexIgetObject;
 import com.android.tools.r8.dex.code.DexIgetShort;
 import com.android.tools.r8.dex.code.DexIgetWide;
 import com.android.tools.r8.dex.code.DexInstruction;
-import com.android.tools.r8.errors.Unreachable;
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.DexClassAndMethod;
 import com.android.tools.r8.graph.DexField;
@@ -34,6 +33,7 @@ import com.android.tools.r8.ir.optimize.Inliner.ConstraintWithTarget;
 import com.android.tools.r8.ir.optimize.InliningConstraints;
 import com.android.tools.r8.lightir.LirBuilder;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
+import com.android.tools.r8.utils.exceptions.Unreachable;
 import java.util.Set;
 
 public class InstanceGet extends FieldInstruction implements FieldGet, InstanceFieldInstruction {

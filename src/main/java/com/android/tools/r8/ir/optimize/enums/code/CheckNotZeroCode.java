@@ -4,7 +4,6 @@
 
 package com.android.tools.r8.ir.optimize.enums.code;
 
-import com.android.tools.r8.errors.Unreachable;
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.ClasspathMethod;
 import com.android.tools.r8.graph.Code;
@@ -25,6 +24,7 @@ import com.android.tools.r8.ir.optimize.AffectedValues;
 import com.android.tools.r8.ir.optimize.enums.EnumUnboxerImpl;
 import com.android.tools.r8.utils.IteratorUtils;
 import com.android.tools.r8.utils.RetracerForCodePrinting;
+import com.android.tools.r8.utils.exceptions.Unreachable;
 
 /**
  * A special code object used by enum unboxing that supplies IR from an existing method

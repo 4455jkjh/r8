@@ -9,7 +9,6 @@ import com.android.tools.r8.dex.code.DexNegDouble;
 import com.android.tools.r8.dex.code.DexNegFloat;
 import com.android.tools.r8.dex.code.DexNegInt;
 import com.android.tools.r8.dex.code.DexNegLong;
-import com.android.tools.r8.errors.Unreachable;
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.ProgramMethod;
 import com.android.tools.r8.ir.analysis.value.AbstractValue;
@@ -18,6 +17,7 @@ import com.android.tools.r8.ir.conversion.CfBuilder;
 import com.android.tools.r8.ir.conversion.DexBuilder;
 import com.android.tools.r8.lightir.LirBuilder;
 import com.android.tools.r8.utils.LongUtils;
+import com.android.tools.r8.utils.exceptions.Unreachable;
 
 public class Neg extends Unop {
 
