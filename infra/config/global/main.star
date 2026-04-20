@@ -344,7 +344,7 @@ def r8_tester_with_default(
         category = None,
         release_trigger = None,
         max_concurrent_invocations = 1,
-        execution_timeout = default_timeout,
+        execution_timeout = time.hour,
         extra_properties = {}):
     r8_tester(
         name,
@@ -524,6 +524,7 @@ r8_tester_with_default(
     bucket = "try",
     trigger = False,
     dimensions = get_dimensions(coordinator = True),
+    execution_timeout = 12 * time.hour,
     extra_properties = {
         "testers": presubmit_testers,
         "shard_count": 1,
