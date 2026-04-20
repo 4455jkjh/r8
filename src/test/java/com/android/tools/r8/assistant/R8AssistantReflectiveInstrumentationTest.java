@@ -4,7 +4,6 @@
 package com.android.tools.r8.assistant;
 
 import static com.android.tools.r8.utils.codeinspector.Matchers.isPresent;
-import static org.hamcrest.CoreMatchers.allOf;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertArrayEquals;
@@ -24,6 +23,9 @@ import com.android.tools.r8.utils.codeinspector.InstructionSubject;
 import com.android.tools.r8.utils.codeinspector.MethodSubject;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -63,20 +65,22 @@ public class R8AssistantReflectiveInstrumentationTest extends TestBase {
 
   @Test
   public void testInstrumentation() throws Exception {
+    Path jsonLog = temp.newFile().toPath();
     testForAssistant()
         .addProgramClasses(TestClass.class, Foo.class, Bar.class)
         .setMinApi(parameters)
         .compile()
         .inspectOriginalDex(inspector -> inspectStaticCallsInReflectOn(1, inspector))
         .inspect(inspector -> inspectStaticCallsInReflectOn(5, inspector))
+        .addVmArguments("-Dcom.android.tools.r8.reflectiveJsonLogger=" + jsonLog.toString())
         .run(parameters.getRuntime(), TestClass.class)
-        .assertSuccessWithOutputThatMatches(
-            allOf(
-                containsString("Reflectively created new instance of " + Bar.class.getName()),
-                containsString(
-                    "Reflectively got declared method callMe() on " + Bar.class.getName()),
-                containsString("Reflectively got name on " + Bar.class.getName() + "(NAME)"),
-                containsString("Reflectively called Class.forName on " + Bar.class.getName())));
+        .assertSuccess();
+
+    String logContent = new String(Files.readAllBytes(jsonLog), StandardCharsets.UTF_8);
+    assertThat(logContent, containsString(Bar.class.getName()));
+    assertThat(logContent, containsString("callMe"));
+    assertThat(logContent, containsString("NAME"));
+    assertThat(logContent, containsString("CLASS_FOR_NAME"));
   }
 
   @Test

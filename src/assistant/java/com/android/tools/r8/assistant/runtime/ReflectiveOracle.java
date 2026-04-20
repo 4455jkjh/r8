@@ -31,7 +31,7 @@ public class ReflectiveOracle {
   // Might be rewritten to call new instance on a custom receiver.
   private static ReflectiveOperationReceiver getReceiver() {
     // Default, might be replaced, don't change this without changing the instrumentation
-    return new ReflectiveOperationLogger();
+    return new ReflectiveOperationJsonLogger();
   }
 
   @KeepForApi
@@ -84,12 +84,13 @@ public class ReflectiveOracle {
     getInstance().onClassNewInstance(Stack.createStack(), clazz);
   }
 
-  public static void onClassForName(String className) {
+  public static void onClassForNameDefault(String className) {
     // The last parameter is implicitly the caller's holder class class loader.
     getInstance().onClassForName(Stack.createStack(), className, true, null);
   }
 
-  public static void onClassForName(String className, boolean initialize, ClassLoader classLoader) {
+  public static void onClassForNameWithLoader(
+      String className, boolean initialize, ClassLoader classLoader) {
     getInstance().onClassForName(Stack.createStack(), className, initialize, classLoader);
   }
 

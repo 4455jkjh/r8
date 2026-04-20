@@ -182,7 +182,13 @@ public class CfCodePrinter extends CfPrinter {
   }
 
   private String quote(String string) {
-    return "\"" + string + "\"";
+    return "\""
+        + string
+            .replace("\\", "\\\\")
+            .replace("\"", "\\\"")
+            .replace("\n", "\\n")
+            .replace("\r", "\\r")
+        + "\"";
   }
 
   private String longValue(long value) {

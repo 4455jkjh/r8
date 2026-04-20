@@ -35,6 +35,20 @@ public class SyntheticNaming {
   public final SyntheticKind VAR_HANDLE = generator.forGlobalClass();
   public final SyntheticKind LAMBDA_METHOD_ANNOTATION = generator.forGlobalClass();
 
+  public final SyntheticKind ASSISTANT_REFLECTIVE_ORACLE = generator.forGlobalClass();
+  public final SyntheticKind ASSISTANT_REFLECTIVE_ORACLE_STACK = generator.forGlobalClass();
+  public final SyntheticKind ASSISTANT_REFLECTIVE_OPERATION_JSON_LOGGER =
+      generator.forGlobalClass();
+  public final SyntheticKind ASSISTANT_REFLECTIVE_OPERATION_LOGGER = generator.forGlobalClass();
+  public final SyntheticKind ASSISTANT_REFLECTIVE_EVENT_TYPE = generator.forGlobalClass();
+  public final SyntheticKind ASSISTANT_REFLECTIVE_OPERATION_RECEIVER = generator.forGlobalClass();
+  public final SyntheticKind ASSISTANT_REFLECTIVE_OPERATION_RECEIVER_CLASS_FLAG =
+      generator.forGlobalClass();
+  public final SyntheticKind ASSISTANT_REFLECTIVE_OPERATION_RECEIVER_NAME_LOOKUP_TYPE =
+      generator.forGlobalClass();
+  public final SyntheticKind ASSISTANT_EMPTY_REFLECTIVE_OPERATION_RECEIVER =
+      generator.forGlobalClass();
+
   // Classpath only synthetics in the global type namespace.
   public final SyntheticKind GENERIC_API_CONVERSION_STUB = generator.forGlobalClasspathClass();
   public final SyntheticKind RETARGET_STUB = generator.forGlobalClasspathClass();

@@ -27,12 +27,14 @@ public class ReflectiveOperationJsonParser {
 
   public List<ReflectiveEvent> parse(Path file) throws IOException {
     List<ReflectiveEvent> result = new ArrayList<>();
-    String contents = Files.readString(file) + "{}]";
-    JsonArray events = new JsonParser().parse(contents).getAsJsonArray();
-    for (JsonElement eventElement : events) {
-      JsonObject event = eventElement.getAsJsonObject();
+    List<String> lines = Files.readAllLines(file);
+    for (String line : lines) {
+      if (line.trim().isEmpty()) {
+        continue;
+      }
+      JsonObject event = new JsonParser().parse(line).getAsJsonObject();
       if (event.isEmpty()) {
-        break;
+        continue;
       }
       ReflectiveEventType eventType = ReflectiveEventType.valueOf(event.get("event").getAsString());
       JsonElement stackElement = event.get("stack");

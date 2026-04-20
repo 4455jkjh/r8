@@ -1631,6 +1631,15 @@ public class ToolHelper {
     if (foundBasePath) {
       return resolveBasePath;
     }
+
+    // Fallback for assistant module test dependencies during CF generation
+    Path assistantPath =
+        Paths.get(getProjectRoot(), "d8_r8", "assistant", "build", "classes", "java", "main")
+            .resolve(filePath);
+    if (Files.exists(assistantPath)) {
+      return assistantPath;
+    }
+
     throw new RuntimeException(
         "Could not find test class in either of paths:\n"
             + resolveTestPath

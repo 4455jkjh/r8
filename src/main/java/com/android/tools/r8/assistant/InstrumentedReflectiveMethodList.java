@@ -34,11 +34,15 @@ public class InstrumentedReflectiveMethodList {
         factory.classMethods.newInstance,
         getMethodReferenceWithClassParameter("onClassNewInstance"));
     builder.put(
-        factory.classMethods.forName, getMethodReferenceWithStringParameter("onClassForName"));
+        factory.classMethods.forName,
+        getMethodReferenceWithStringParameter("onClassForNameDefault"));
     builder.put(
         factory.classMethods.forName3,
         getMethodReferenceWithParameterTypes(
-            "onClassForName", factory.stringType, factory.booleanType, factory.classLoaderType));
+            "onClassForNameWithLoader",
+            factory.stringType,
+            factory.booleanType,
+            factory.classLoaderType));
     builder.put(
         factory.createMethod(
             factory.classType,

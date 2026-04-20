@@ -10,9 +10,7 @@ import java.lang.reflect.InvocationHandler;
 @KeepForApi
 public interface ReflectiveOperationReceiver {
 
-  default boolean requiresStackInformation() {
-    return false;
-  }
+  boolean requiresStackInformation();
 
   void onClassForName(Stack stack, String className, boolean initialize, ClassLoader classLoader);
 
