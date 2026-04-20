@@ -38,7 +38,7 @@ public class DependenciesPlugin : Plugin<Project> {
   override fun apply(target: Project) {
     // Setup all test tasks to listen after system properties passed in by test.py.
     val testTask = target.tasks.findByName("test") as Test?
-    testTask?.configure(isR8Lib = false, r8Jar = null, r8LibMappingFile = null)
+    testTask?.configure(isR8Lib = false, r8Jar = null, r8LibPartitionMapFile = null)
   }
 
   public companion object {
@@ -93,9 +93,9 @@ public enum class Jdk(public val folder: String, public val version: Int) {
   }
 }
 
-public fun Test.configure(isR8Lib: Boolean, r8Jar: File?, r8LibMappingFile: File? = null) {
+public fun Test.configure(isR8Lib: Boolean, r8Jar: File?, r8LibPartitionMapFile: File? = null) {
   project.plugins.apply("org.gradle.test-retry")
-  TestConfigurationHelper.setupTestTask(this, isR8Lib, r8Jar, r8LibMappingFile)
+  TestConfigurationHelper.setupTestTask(this, isR8Lib, r8Jar, r8LibPartitionMapFile)
 }
 
 public fun Project.getRoot(): File {
