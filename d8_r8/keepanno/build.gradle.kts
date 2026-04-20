@@ -6,9 +6,12 @@ import com.google.protobuf.gradle.ProtobufExtension
 import com.google.protobuf.gradle.proto
 import java.util.concurrent.Callable
 import org.gradle.nativeplatform.platform.internal.DefaultNativePlatform
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+import org.jetbrains.kotlin.gradle.dsl.KotlinVersion
 
 plugins {
-  `kotlin-dsl`
+  // Kotlin version is fixed by create_local_maven_dependencies.py
+  id("org.jetbrains.kotlin.jvm") version "2.0.21"
   id("dependencies-plugin")
 }
 
@@ -44,7 +47,14 @@ java {
   withSourcesJar()
 }
 
-kotlin { explicitApi() }
+kotlin {
+  explicitApi()
+  compilerOptions {
+    jvmTarget.set(JvmTarget.fromTarget(JvmCompatibility.release.toString()))
+    languageVersion.set(KotlinVersion.KOTLIN_1_8)
+    apiVersion.set(KotlinVersion.KOTLIN_1_8)
+  }
+}
 
 dependencies {
   compileOnly(Deps.asm)

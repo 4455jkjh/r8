@@ -7,9 +7,11 @@ import com.google.protobuf.gradle.proto
 import net.ltgt.gradle.errorprone.errorprone
 import org.gradle.api.tasks.bundling.Jar
 import org.gradle.nativeplatform.platform.internal.DefaultNativePlatform
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+import org.jetbrains.kotlin.gradle.dsl.KotlinVersion
 
 plugins {
-  `kotlin-dsl`
+  id("org.jetbrains.kotlin.jvm")
   id("dependencies-plugin")
   id("net.ltgt.errorprone")
 }
@@ -46,7 +48,14 @@ java {
   withSourcesJar()
 }
 
-kotlin { explicitApi() }
+kotlin {
+  explicitApi()
+  compilerOptions {
+    jvmTarget.set(JvmTarget.fromTarget(JvmCompatibility.release.toString()))
+    languageVersion.set(KotlinVersion.KOTLIN_1_8)
+    apiVersion.set(KotlinVersion.KOTLIN_1_8)
+  }
+}
 
 dependencies {
   compileOnly(Deps.guava)
