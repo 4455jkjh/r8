@@ -364,10 +364,25 @@ def Main():
     return return_code
 
 
+def clean_temp():
+    import glob
+    for p in glob.glob('/tmp/junit*') + glob.glob('/tmp/tmp*') + glob.glob(
+            '/tmp/tree*'):
+        if os.path.exists(p):
+            try:
+                if os.path.isdir(p):
+                    shutil.rmtree(p)
+                else:
+                    os.remove(p)
+            except Exception as e:
+                print(f"Failed to delete {p}: {e}")
+
+
 def test(options, args):
     if options.command_cache_dir:
         options.command_cache_dir = os.path.abspath(options.command_cache_dir)
     if utils.is_bot():
+        clean_temp()
         print('Running with python ' + str(sys.version_info))
         # Always print stats on bots if command cache is enabled
         options.command_cache_stats = options.command_cache_dir is not None

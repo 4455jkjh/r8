@@ -107,29 +107,35 @@ public class FileChannelTest extends DesugaredLibraryTestBase {
     @SuppressWarnings("all")
     private static void instanceTest() throws IOException {
       Path tmp = Files.createTempFile("tmp", ".txt");
-      tmp.toFile().deleteOnExit();
-      System.out.println(
-          new FileInputStream(tmp.toFile()).getChannel() instanceof SeekableByteChannel);
-      System.out.println(
-          new FileOutputStream(tmp.toFile()).getChannel() instanceof SeekableByteChannel);
-      System.out.println(
-          new RandomAccessFile(tmp.toFile(), "rw").getChannel() instanceof SeekableByteChannel);
-      System.out.println(
-          Files.newByteChannel(tmp, StandardOpenOption.READ) instanceof SeekableByteChannel);
+      try {
+        System.out.println(
+            new FileInputStream(tmp.toFile()).getChannel() instanceof SeekableByteChannel);
+        System.out.println(
+            new FileOutputStream(tmp.toFile()).getChannel() instanceof SeekableByteChannel);
+        System.out.println(
+            new RandomAccessFile(tmp.toFile(), "rw").getChannel() instanceof SeekableByteChannel);
+        System.out.println(
+            Files.newByteChannel(tmp, StandardOpenOption.READ) instanceof SeekableByteChannel);
+      } finally {
+        Files.deleteIfExists(tmp);
+      }
     }
 
     private static void fosTest() throws IOException {
       String toWrite = "The monkey eats...";
       Path tmp = Files.createTempFile("fos", ".txt");
-      tmp.toFile().deleteOnExit();
+      try {
+        ByteBuffer byteBuffer = ByteBuffer.wrap(toWrite.getBytes(StandardCharsets.UTF_8));
+        FileOutputStream fos = new FileOutputStream(tmp.toFile());
+        FileChannel channel = fos.getChannel();
+        channel.write(byteBuffer);
+        fos.close();
 
-      ByteBuffer byteBuffer = ByteBuffer.wrap(toWrite.getBytes(StandardCharsets.UTF_8));
-      FileOutputStream fos = new FileOutputStream(tmp.toFile());
-      FileChannel channel = fos.getChannel();
-      channel.write(byteBuffer);
-
-      List<String> lines = Files.readAllLines(tmp);
-      System.out.println(lines.get(0));
+        List<String> lines = Files.readAllLines(tmp);
+        System.out.println(lines.get(0));
+      } finally {
+        Files.deleteIfExists(tmp);
+      }
     }
 
     private static void fileChannelOpen() throws IOException {
@@ -140,41 +146,50 @@ public class FileChannelTest extends DesugaredLibraryTestBase {
 
     private static void fileChannelOpenLockTest() throws IOException {
       Path tmp = Files.createTempFile("lock", ".txt");
-      tmp.toFile().deleteOnExit();
-      String contents = "Bananas!";
-      Files.write(tmp, contents.getBytes(StandardCharsets.UTF_8));
-      FileChannel fc = FileChannel.open(tmp, StandardOpenOption.READ);
-      ByteBuffer byteBuffer = ByteBuffer.allocate(contents.length());
-      fc.read(byteBuffer);
-      System.out.println(new String(byteBuffer.array()));
-      fc.close();
+      try {
+        String contents = "Bananas!";
+        Files.write(tmp, contents.getBytes(StandardCharsets.UTF_8));
+        FileChannel fc = FileChannel.open(tmp, StandardOpenOption.READ);
+        ByteBuffer byteBuffer = ByteBuffer.allocate(contents.length());
+        fc.read(byteBuffer);
+        System.out.println(new String(byteBuffer.array()));
+        fc.close();
+      } finally {
+        Files.deleteIfExists(tmp);
+      }
     }
 
     private static void fileChannelOpenTest() throws IOException {
       Path tmp = Files.createTempFile("a", ".txt");
-      tmp.toFile().deleteOnExit();
-      String contents = "Bananas!";
-      Files.write(tmp, contents.getBytes(StandardCharsets.UTF_8));
-      FileChannel fc = FileChannel.open(tmp, StandardOpenOption.READ, StandardOpenOption.WRITE);
-      ByteBuffer byteBuffer = ByteBuffer.allocate(contents.length());
-      // Extra indirection through the lock.
-      fc.lock().channel().read(byteBuffer);
-      System.out.println(new String(byteBuffer.array()));
-      fc.close();
+      try {
+        String contents = "Bananas!";
+        Files.write(tmp, contents.getBytes(StandardCharsets.UTF_8));
+        FileChannel fc = FileChannel.open(tmp, StandardOpenOption.READ, StandardOpenOption.WRITE);
+        ByteBuffer byteBuffer = ByteBuffer.allocate(contents.length());
+        // Extra indirection through the lock.
+        fc.lock().channel().read(byteBuffer);
+        System.out.println(new String(byteBuffer.array()));
+        fc.close();
+      } finally {
+        Files.deleteIfExists(tmp);
+      }
     }
 
     private static void fileChannelOpenSetTest() throws IOException {
       Path tmp = Files.createTempFile("b", ".txt");
-      tmp.toFile().deleteOnExit();
-      String contents = "Bananas!";
-      Files.write(tmp, contents.getBytes(StandardCharsets.UTF_8));
-      Set<OpenOption> options = new HashSet<>();
-      options.add(StandardOpenOption.READ);
-      FileChannel fc = FileChannel.open(tmp, options);
-      ByteBuffer byteBuffer = ByteBuffer.allocate(contents.length());
-      fc.read(byteBuffer);
-      System.out.println(new String(byteBuffer.array()));
-      fc.close();
+      try {
+        String contents = "Bananas!";
+        Files.write(tmp, contents.getBytes(StandardCharsets.UTF_8));
+        Set<OpenOption> options = new HashSet<>();
+        options.add(StandardOpenOption.READ);
+        FileChannel fc = FileChannel.open(tmp, options);
+        ByteBuffer byteBuffer = ByteBuffer.allocate(contents.length());
+        fc.read(byteBuffer);
+        System.out.println(new String(byteBuffer.array()));
+        fc.close();
+      } finally {
+        Files.deleteIfExists(tmp);
+      }
     }
 
     private static void fisTest() throws IOException {
@@ -188,55 +203,64 @@ public class FileChannelTest extends DesugaredLibraryTestBase {
       String toWrite = "Hello World! ";
       String toWriteFIS = "Bye bye. ";
       Path tmp = Files.createTempFile("tmp", ".txt");
-      tmp.toFile().deleteOnExit();
-      Files.write(tmp, (toWrite + toWriteFIS).getBytes(StandardCharsets.UTF_8));
+      try {
+        Files.write(tmp, (toWrite + toWriteFIS).getBytes(StandardCharsets.UTF_8));
 
-      ByteBuffer byteBuffer = ByteBuffer.allocate(toWrite.length());
-      ByteBuffer byteBufferFIS = ByteBuffer.allocate(toWriteFIS.length());
-      FileInputStream fileInputStream = new FileInputStream(tmp.toFile());
-      FileDescriptor fd = fileInputStream.getFD();
-      FileInputStream fis2 = new FileInputStream(fd);
-      fileInputStream.getChannel().read(byteBuffer);
-      fis2.getChannel().read(byteBufferFIS);
+        ByteBuffer byteBuffer = ByteBuffer.allocate(toWrite.length());
+        ByteBuffer byteBufferFIS = ByteBuffer.allocate(toWriteFIS.length());
+        FileInputStream fileInputStream = new FileInputStream(tmp.toFile());
+        FileDescriptor fd = fileInputStream.getFD();
+        FileInputStream fis2 = new FileInputStream(fd);
+        fileInputStream.getChannel().read(byteBuffer);
+        fis2.getChannel().read(byteBufferFIS);
 
-      if (closeFirst) {
-        fileInputStream.close();
-        fis2.close();
-      } else {
-        fis2.close();
-        fileInputStream.close();
+        if (closeFirst) {
+          fileInputStream.close();
+          fis2.close();
+        } else {
+          fis2.close();
+          fileInputStream.close();
+        }
+
+        System.out.println(new String(byteBuffer.array()));
+        System.out.println(new String(byteBufferFIS.array()));
+      } finally {
+        Files.deleteIfExists(tmp);
       }
-
-      System.out.println(new String(byteBuffer.array()));
-      System.out.println(new String(byteBufferFIS.array()));
     }
 
     private static void fisOwner() throws IOException {
       String toWrite = "Hello World! ";
       Path tmp = Files.createTempFile("tmp", ".txt");
-      tmp.toFile().deleteOnExit();
-      Files.write(tmp, toWrite.getBytes(StandardCharsets.UTF_8));
+      try {
+        Files.write(tmp, toWrite.getBytes(StandardCharsets.UTF_8));
 
-      ByteBuffer byteBuffer = ByteBuffer.allocate(toWrite.length());
-      FileInputStream fileInputStream = new FileInputStream(tmp.toFile());
-      fileInputStream.getChannel().read(byteBuffer);
-      fileInputStream.close();
+        ByteBuffer byteBuffer = ByteBuffer.allocate(toWrite.length());
+        FileInputStream fileInputStream = new FileInputStream(tmp.toFile());
+        fileInputStream.getChannel().read(byteBuffer);
+        fileInputStream.close();
 
-      System.out.println(new String(byteBuffer.array()));
+        System.out.println(new String(byteBuffer.array()));
+      } finally {
+        Files.deleteIfExists(tmp);
+      }
     }
 
     private static void fisOwnerTryResources() throws IOException {
       String toWrite = "Hello World! ";
       Path tmp = Files.createTempFile("tmp", ".txt");
-      tmp.toFile().deleteOnExit();
-      Files.write(tmp, toWrite.getBytes(StandardCharsets.UTF_8));
+      try {
+        Files.write(tmp, toWrite.getBytes(StandardCharsets.UTF_8));
 
-      ByteBuffer byteBuffer = ByteBuffer.allocate(toWrite.length());
-      try (FileInputStream fileInputStream = new FileInputStream(tmp.toFile())) {
-        fileInputStream.getChannel().read(byteBuffer);
+        ByteBuffer byteBuffer = ByteBuffer.allocate(toWrite.length());
+        try (FileInputStream fileInputStream = new FileInputStream(tmp.toFile())) {
+          fileInputStream.getChannel().read(byteBuffer);
+        }
+
+        System.out.println(new String(byteBuffer.array()));
+      } finally {
+        Files.deleteIfExists(tmp);
       }
-
-      System.out.println(new String(byteBuffer.array()));
     }
   }
 }
