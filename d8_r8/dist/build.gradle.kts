@@ -9,24 +9,13 @@ import java.nio.file.Paths
 import java.util.UUID
 import java.util.concurrent.Callable
 import org.gradle.api.tasks.bundling.Jar
-import org.jetbrains.kotlin.gradle.dsl.JvmTarget
-import org.jetbrains.kotlin.gradle.dsl.KotlinVersion
 import org.spdx.sbom.gradle.SpdxSbomTask
 import org.spdx.sbom.gradle.extensions.DefaultSpdxSbomTaskExtension
 
 plugins {
-  id("org.jetbrains.kotlin.jvm")
+  `kotlin-dsl`
   id("dependencies-plugin")
   id("org.spdx.sbom") version "0.4.0"
-}
-
-kotlin {
-  explicitApi()
-  compilerOptions {
-    jvmTarget.set(JvmTarget.fromTarget(JvmCompatibility.release.toString()))
-    languageVersion.set(KotlinVersion.KOTLIN_1_8)
-    apiVersion.set(KotlinVersion.KOTLIN_1_8)
-  }
 }
 
 if (project.hasProperty("spdxVersion")) {
