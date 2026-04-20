@@ -131,17 +131,6 @@
       ]
     },
     {
-      "api_level_below_or_equal": 34,
-      "emulate_interface": {
-        "java.lang.CharSequence": {
-          "rewrittenType": "j$.lang.CharSequence",
-          "emulatedMethods": [
-            "public boolean java.lang.CharSequence#isEmpty()"
-          ]
-        }
-      }
-    },
-    {
       "api_level_below_or_equal": 33,
       "api_level_greater_or_equal": 24,
       "emulate_interface": {
