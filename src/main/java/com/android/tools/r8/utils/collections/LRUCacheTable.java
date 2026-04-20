@@ -1,7 +1,7 @@
 // Copyright (c) 2018, the R8 project authors. Please see the AUTHORS file
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
-package com.android.tools.r8.utils;
+package com.android.tools.r8.utils.collections;
 
 import com.google.common.collect.ImmutableMap;
 import java.util.LinkedHashMap;
@@ -19,7 +19,7 @@ public class LRUCacheTable<R, C, V> extends LinkedHashMap<R, Map<C, V>> {
     }
 
     @Override
-    protected boolean removeEldestEntry(Map.Entry<C, V> eldest){
+    protected boolean removeEldestEntry(Map.Entry<C, V> eldest) {
       return size() > this.columnCapacity;
     }
   }
@@ -38,7 +38,7 @@ public class LRUCacheTable<R, C, V> extends LinkedHashMap<R, Map<C, V>> {
   }
 
   @Override
-  protected boolean removeEldestEntry(Map.Entry<R, Map<C, V>> eldest){
+  protected boolean removeEldestEntry(Map.Entry<R, Map<C, V>> eldest) {
     return size() > this.rowCapacity;
   }
 
@@ -58,5 +58,4 @@ public class LRUCacheTable<R, C, V> extends LinkedHashMap<R, Map<C, V>> {
   public V getOrDefault(R rowKey, C columnKey, V defaultValue) {
     return getOrDefault(rowKey, ImmutableMap.of()).getOrDefault(columnKey, defaultValue);
   }
-
 }
