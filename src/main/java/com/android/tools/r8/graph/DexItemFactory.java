@@ -2626,6 +2626,7 @@ public class DexItemFactory {
 
   public class AtomicLongUpdaterMethods {
     public final DexMethod newUpdater;
+    public final DexMethod compareAndSet;
     public final DexMethod get;
     public final DexMethod set;
 
@@ -2636,6 +2637,12 @@ public class DexItemFactory {
               newUpdaterName,
               longFieldUpdaterDescriptor,
               new DexString[] {classDescriptor, stringDescriptor});
+      compareAndSet =
+          createMethod(
+              longFieldUpdaterDescriptor,
+              compareAndSetName,
+              booleanDescriptor,
+              new DexString[] {objectDescriptor, longDescriptor, longDescriptor});
       get =
           createMethod(
               longFieldUpdaterDescriptor,
@@ -2701,6 +2708,7 @@ public class DexItemFactory {
   public class SunMiscUnsafeMethods {
 
     public final DexMethod compareAndSwapInt;
+    public final DexMethod compareAndSwapLong;
     public final DexMethod compareAndSwapObject;
     public final DexMethod objectFieldOffset;
     public final DexMethod getObjectVolatile;
@@ -2716,6 +2724,11 @@ public class DexItemFactory {
               sunMiscUnsafeType,
               createProto(booleanType, objectType, longType, intType, intType),
               "compareAndSwapInt");
+      this.compareAndSwapLong =
+          createMethod(
+              sunMiscUnsafeType,
+              createProto(booleanType, objectType, longType, longType, longType),
+              "compareAndSwapLong");
       this.compareAndSwapObject =
           createMethod(
               sunMiscUnsafeType,
