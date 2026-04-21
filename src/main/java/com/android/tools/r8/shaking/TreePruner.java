@@ -112,23 +112,19 @@ public class TreePruner {
       boolean isLiveClass = appInfo.isLiveProgramClass(clazz);
       if (isLiveClass) {
         newClasses.add(clazz);
-        if (!appInfo.getObjectAllocationInfoCollection().isInstantiatedDirectly(clazz)
-            && !options.forceProguardCompatibility) {
-          // The class is only needed as a type but never instantiated. Make it abstract to reflect
-          // this.
-          if (clazz.isFinal()) {
-            // We cannot mark this class abstract, as it is final (not supported on Android).
-            // However, this might extend an abstract class and we might have removed the
-            // corresponding methods in this class. This might happen if we only keep this
-            // class around for its constants.
-            // For now, we remove the final flag to still be able to mark it abstract.
-            clazz.accessFlags.demoteFromFinal();
-          }
-          clazz.accessFlags.setAbstract();
-        }
         // The class is used and must be kept. Remove the unused fields and methods from the class.
-        pruneUnusedInterfaces(clazz);
-        pruneMembersAndAttributes(clazz);
+        unusedItemsPrinter.visiting(clazz);
+        if (options.isShrinking()) {
+          fixupAccessFlags(clazz);
+          pruneFields(clazz);
+          pruneMethods(clazz);
+          pruneAttributes(clazz);
+          pruneUnusedInterfaces(clazz);
+        } else {
+          // Only attempt to remove synthetic methods inserted by desugaring.
+          pruneMethods(clazz);
+        }
+        unusedItemsPrinter.visited();
       } else {
         // The class is completely unused and we can remove it.
         prunedTypes.add(clazz.type);
@@ -140,6 +136,25 @@ public class TreePruner {
     }
     unusedItemsPrinter.finished();
     return newClasses;
+  }
+
+  private void fixupAccessFlags(DexProgramClass clazz) {
+    AppInfoWithLiveness appInfo = appView.appInfo();
+    InternalOptions options = appView.options();
+    if (!appInfo.getObjectAllocationInfoCollection().isInstantiatedDirectly(clazz)
+        && !options.forceProguardCompatibility) {
+      // The class is only needed as a type but never instantiated. Make it abstract to reflect
+      // this.
+      if (clazz.isFinal()) {
+        // We cannot mark this class abstract, as it is final (not supported on Android).
+        // However, this might extend an abstract class and we might have removed the
+        // corresponding methods in this class. This might happen if we only keep this
+        // class around for its constants.
+        // For now, we remove the final flag to still be able to mark it abstract.
+        clazz.accessFlags.demoteFromFinal();
+      }
+      clazz.accessFlags.setAbstract();
+    }
   }
 
   private void pruneUnusedInterfaces(DexProgramClass clazz) {
@@ -203,17 +218,16 @@ public class TreePruner {
     }
   }
 
-  private void pruneMembersAndAttributes(DexProgramClass clazz) {
-    unusedItemsPrinter.visiting(clazz);
-    DexEncodedMethod[] reachableDirectMethods = reachableMethods(clazz.directMethods(), clazz);
-    if (reachableDirectMethods != null) {
-      clazz.setDirectMethods(reachableDirectMethods);
-    }
-    DexEncodedMethod[] reachableVirtualMethods =
-        reachableMethods(clazz.virtualMethods(), clazz);
-    if (reachableVirtualMethods != null) {
-      clazz.setVirtualMethods(reachableVirtualMethods);
-    }
+  private void pruneAttributes(DexProgramClass clazz) {
+    clazz.removeAnnotations(this::isAnnotationReferencingPrunedType);
+    clazz.forEachMember(m -> m.removeAllAnnotations(this::isAnnotationReferencingPrunedType));
+    clazz.removeInnerClasses(this::isAttributeReferencingMissingOrPrunedType);
+    clazz.removeEnclosingMethodAttribute(this::isAttributeReferencingPrunedItem);
+    rewriteNestAttributes(clazz, this::isTypeLive, appView::definitionFor);
+    clazz.removePermittedSubclassAttribute(this::isAttributeReferencingPrunedType);
+  }
+
+  private void pruneFields(DexProgramClass clazz) {
     DexEncodedField[] reachableInstanceFields = reachableFields(clazz.instanceFields());
     if (reachableInstanceFields != null) {
       clazz.setInstanceFields(reachableInstanceFields);
@@ -222,11 +236,6 @@ public class TreePruner {
     if (reachableStaticFields != null) {
       clazz.setStaticFields(reachableStaticFields);
     }
-    clazz.removeAnnotations(this::isAnnotationReferencingPrunedType);
-    clazz.forEachMember(m -> m.removeAllAnnotations(this::isAnnotationReferencingPrunedType));
-    clazz.removeInnerClasses(this::isAttributeReferencingMissingOrPrunedType);
-    clazz.removeEnclosingMethodAttribute(this::isAttributeReferencingPrunedItem);
-    rewriteNestAttributes(clazz, this::isTypeLive, appView::definitionFor);
     // TODO(b/274888318): Check this.
     if (reachableInstanceFields != null) {
       if (!clazz.getRecordComponents().isEmpty()) {
@@ -234,9 +243,18 @@ public class TreePruner {
             PredicateUtils.not(isReachableInstanceField(reachableInstanceFields)));
       }
     }
-    clazz.removePermittedSubclassAttribute(this::isAttributeReferencingPrunedType);
-    unusedItemsPrinter.visited();
     assert verifyNoDeadFields(clazz);
+  }
+
+  private void pruneMethods(DexProgramClass clazz) {
+    DexEncodedMethod[] reachableDirectMethods = reachableMethods(clazz.directMethods(), clazz);
+    if (reachableDirectMethods != null) {
+      clazz.setDirectMethods(reachableDirectMethods);
+    }
+    DexEncodedMethod[] reachableVirtualMethods = reachableMethods(clazz.virtualMethods(), clazz);
+    if (reachableVirtualMethods != null) {
+      clazz.setVirtualMethods(reachableVirtualMethods);
+    }
   }
 
   public static void rewriteNestAttributes(
