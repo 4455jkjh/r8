@@ -365,6 +365,8 @@ def Main():
 
 
 def test(options, args):
+    if options.command_cache_dir:
+        options.command_cache_dir = os.path.abspath(options.command_cache_dir)
     if utils.is_bot():
         print('Running with python ' + str(sys.version_info))
         # Always print stats on bots if command cache is enabled
