@@ -4,7 +4,7 @@
 
 package com.android.tools.r8.ir.code;
 
-import com.android.tools.r8.utils.IteratorUtils;
+import com.android.tools.r8.utils.internal.IteratorUtils;
 import java.util.ListIterator;
 import java.util.function.Predicate;
 

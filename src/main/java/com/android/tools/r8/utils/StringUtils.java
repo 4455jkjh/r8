@@ -4,6 +4,7 @@
 package com.android.tools.r8.utils;
 
 import com.android.tools.r8.utils.internal.IntBox;
+import com.android.tools.r8.utils.internal.IterableUtils;
 import com.android.tools.r8.utils.internal.exceptions.Unreachable;
 import java.io.PrintWriter;
 import java.io.StringWriter;

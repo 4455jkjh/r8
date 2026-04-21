@@ -3,8 +3,8 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8.horizontalclassmerging.policies;
 
-import static com.android.tools.r8.utils.internal.FunctionUtils.ignoreArgument;
 import static com.android.tools.r8.utils.MapUtils.ignoreKey;
+import static com.android.tools.r8.utils.internal.FunctionUtils.ignoreArgument;
 import static com.android.tools.r8.utils.internal.TraversalContinuation.doContinue;
 
 import com.android.tools.r8.graph.AppInfoWithClassHierarchy;
@@ -20,14 +20,14 @@ import com.android.tools.r8.graph.MethodResolution;
 import com.android.tools.r8.graph.MethodResolutionResult;
 import com.android.tools.r8.horizontalclassmerging.HorizontalMergeGroup;
 import com.android.tools.r8.horizontalclassmerging.MultiClassPolicy;
-import com.android.tools.r8.utils.IterableUtils;
 import com.android.tools.r8.utils.MapUtils;
 import com.android.tools.r8.utils.SetUtils;
-import com.android.tools.r8.utils.internal.TraversalContinuation;
 import com.android.tools.r8.utils.collections.DexClassAndMethodSet;
 import com.android.tools.r8.utils.collections.DexMethodSignatureMap;
 import com.android.tools.r8.utils.collections.DexMethodSignatureSet;
 import com.android.tools.r8.utils.collections.WorkList;
+import com.android.tools.r8.utils.internal.IterableUtils;
+import com.android.tools.r8.utils.internal.TraversalContinuation;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Sets;
 import java.util.Collection;

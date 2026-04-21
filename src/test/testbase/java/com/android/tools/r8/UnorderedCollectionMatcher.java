@@ -4,7 +4,7 @@
 
 package com.android.tools.r8;
 
-import com.android.tools.r8.utils.IterableUtils;
+import com.android.tools.r8.utils.internal.IterableUtils;
 import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
 import java.util.Iterator;

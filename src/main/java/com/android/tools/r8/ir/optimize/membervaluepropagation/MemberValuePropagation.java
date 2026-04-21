@@ -37,7 +37,7 @@ import com.android.tools.r8.ir.code.Value;
 import com.android.tools.r8.ir.optimize.AffectedValues;
 import com.android.tools.r8.ir.optimize.membervaluepropagation.assume.AssumeInfo;
 import com.android.tools.r8.utils.ArrayUtils;
-import com.android.tools.r8.utils.IteratorUtils;
+import com.android.tools.r8.utils.internal.IteratorUtils;
 import java.util.Set;
 import java.util.function.Predicate;
 

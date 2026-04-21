@@ -3,7 +3,7 @@ package com.android.tools.r8.graph;
 import static com.google.common.base.Predicates.alwaysTrue;
 
 import com.android.tools.r8.utils.InternalOptions;
-import com.android.tools.r8.utils.IterableUtils;
+import com.android.tools.r8.utils.internal.IterableUtils;
 import com.android.tools.r8.utils.internal.TraversalContinuation;
 import com.google.common.base.Function;
 import com.google.common.base.Functions;

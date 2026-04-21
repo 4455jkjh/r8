@@ -18,11 +18,11 @@ import com.android.tools.r8.ir.conversion.MethodProcessor;
 import com.android.tools.r8.ir.conversion.passes.result.CodeRewriterResult;
 import com.android.tools.r8.shaking.KeepMethodInfo;
 import com.android.tools.r8.utils.CollectionUtils;
-import com.android.tools.r8.utils.IterableUtils;
-import com.android.tools.r8.utils.IteratorUtils;
+import com.android.tools.r8.utils.InstructionIteratorUtils;
 import com.android.tools.r8.utils.ListUtils;
-import com.android.tools.r8.utils.internal.TraversalContinuation;
 import com.android.tools.r8.utils.collections.WorkList;
+import com.android.tools.r8.utils.internal.IterableUtils;
+import com.android.tools.r8.utils.internal.TraversalContinuation;
 import com.google.common.collect.Iterables;
 import java.util.ArrayDeque;
 import java.util.Deque;
@@ -102,7 +102,7 @@ public class ParentConstructorHoistingCodeRewriter
       instructionIterator.addAll(constants);
       instructionIterator.add(invoke);
       instructionIterator.add(previousInstruction);
-      IteratorUtils.skip(instructionIterator, -numInstructions);
+      InstructionIteratorUtils.skip(instructionIterator, -numInstructions);
     }
   }
 
@@ -132,7 +132,7 @@ public class ParentConstructorHoistingCodeRewriter
 
     // Position the predecessor instruction iterator right before the first instruction that is
     // subject to hoisting.
-    IteratorUtils.skip(predecessorInstructionIterator, -constants.size() - 1);
+    InstructionIteratorUtils.skip(predecessorInstructionIterator, -constants.size() - 1);
     assert predecessorInstructionIterator.peekNext()
         == CollectionUtils.getFirstOrDefault(constants, invoke);
     return true;

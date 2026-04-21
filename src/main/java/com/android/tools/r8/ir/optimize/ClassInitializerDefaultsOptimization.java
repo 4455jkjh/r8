@@ -54,7 +54,7 @@ import com.android.tools.r8.naming.dexitembasedstring.ClassNameComputationInfo.C
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
 import com.android.tools.r8.shaking.KeepClassInfo;
 import com.android.tools.r8.utils.internal.Action;
-import com.android.tools.r8.utils.IteratorUtils;
+import com.android.tools.r8.utils.internal.IteratorUtils;
 import com.android.tools.r8.utils.internal.exceptions.Unreachable;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;

@@ -2,13 +2,8 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-package com.android.tools.r8.utils;
+package com.android.tools.r8.utils.internal;
 
-import com.android.tools.r8.ir.code.Instruction;
-import com.android.tools.r8.ir.code.InstructionIterator;
-import com.android.tools.r8.ir.code.InstructionListIterator;
-import com.android.tools.r8.utils.internal.IntBox;
-import com.android.tools.r8.utils.internal.exceptions.Unimplemented;
 import com.android.tools.r8.utils.internal.exceptions.Unreachable;
 import com.google.common.collect.Iterables;
 import java.util.Iterator;
@@ -157,31 +152,6 @@ public class IteratorUtils {
       T item = iterator.next();
       if (predicate.test(item)) {
         iterator.remove();
-      }
-    }
-  }
-
-  /**
-   * @deprecated Use {@link #removeIf(InstructionListIterator, Predicate)} instead.
-   */
-  @Deprecated
-  @SuppressWarnings("DoNotCallSuggester")
-  public static void removeIf(InstructionIterator iterator, Predicate<Instruction> predicate) {
-    throw new Unimplemented();
-  }
-
-  public static void removeIf(InstructionListIterator iterator, Predicate<Instruction> predicate) {
-    removeIf((Iterator<Instruction>) iterator, predicate);
-  }
-
-  public static void skip(InstructionIterator iterator, int times) {
-    if (times >= 0) {
-      for (int i = 0; i < times; i++) {
-        iterator.next();
-      }
-    } else {
-      for (int i = 0; i > times; i--) {
-        iterator.previous();
       }
     }
   }

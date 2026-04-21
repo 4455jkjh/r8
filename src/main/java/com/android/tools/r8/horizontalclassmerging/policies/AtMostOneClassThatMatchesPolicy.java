@@ -4,7 +4,7 @@
 
 package com.android.tools.r8.horizontalclassmerging.policies;
 
-import static com.android.tools.r8.utils.IteratorUtils.createCircularIterator;
+import static com.android.tools.r8.utils.internal.IteratorUtils.createCircularIterator;
 
 import com.android.tools.r8.graph.DexProgramClass;
 import com.android.tools.r8.horizontalclassmerging.HorizontalMergeGroup;

@@ -12,7 +12,7 @@ import com.android.tools.r8.ir.code.BasicBlock;
 import com.android.tools.r8.ir.code.IRCode;
 import com.android.tools.r8.ir.code.LinearFlowInstructionListIterator;
 import com.android.tools.r8.utils.InternalOptions;
-import com.android.tools.r8.utils.IteratorUtils;
+import com.android.tools.r8.utils.internal.IteratorUtils;
 import com.google.common.collect.ImmutableList;
 import java.util.List;
 import java.util.ListIterator;
