@@ -140,7 +140,7 @@ public class FilesTest extends DesugaredLibraryTestBase {
   public static class TestClass {
 
     public static void main(String[] args) throws Throwable {
-      Path path = Files.createTempFile("example", ".txt");
+      Path path = Files.createTempFile("r8-example", ".txt");
       path.toFile().deleteOnExit();
       readWriteThroughFilesAPI(path);
       readThroughFileChannelAPI(path);

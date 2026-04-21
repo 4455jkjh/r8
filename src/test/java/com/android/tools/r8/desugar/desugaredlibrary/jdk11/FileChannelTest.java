@@ -106,7 +106,7 @@ public class FileChannelTest extends DesugaredLibraryTestBase {
      */
     @SuppressWarnings("all")
     private static void instanceTest() throws IOException {
-      Path tmp = Files.createTempFile("tmp", ".txt");
+      Path tmp = Files.createTempFile("r8-tmp", ".txt");
       try {
         System.out.println(
             new FileInputStream(tmp.toFile()).getChannel() instanceof SeekableByteChannel);
@@ -123,7 +123,7 @@ public class FileChannelTest extends DesugaredLibraryTestBase {
 
     private static void fosTest() throws IOException {
       String toWrite = "The monkey eats...";
-      Path tmp = Files.createTempFile("fos", ".txt");
+      Path tmp = Files.createTempFile("r8-fos", ".txt");
       try {
         ByteBuffer byteBuffer = ByteBuffer.wrap(toWrite.getBytes(StandardCharsets.UTF_8));
         FileOutputStream fos = new FileOutputStream(tmp.toFile());
@@ -145,7 +145,7 @@ public class FileChannelTest extends DesugaredLibraryTestBase {
     }
 
     private static void fileChannelOpenLockTest() throws IOException {
-      Path tmp = Files.createTempFile("lock", ".txt");
+      Path tmp = Files.createTempFile("r8-lock", ".txt");
       try {
         String contents = "Bananas!";
         Files.write(tmp, contents.getBytes(StandardCharsets.UTF_8));
@@ -160,7 +160,7 @@ public class FileChannelTest extends DesugaredLibraryTestBase {
     }
 
     private static void fileChannelOpenTest() throws IOException {
-      Path tmp = Files.createTempFile("a", ".txt");
+      Path tmp = Files.createTempFile("r8-a", ".txt");
       try {
         String contents = "Bananas!";
         Files.write(tmp, contents.getBytes(StandardCharsets.UTF_8));
@@ -176,7 +176,7 @@ public class FileChannelTest extends DesugaredLibraryTestBase {
     }
 
     private static void fileChannelOpenSetTest() throws IOException {
-      Path tmp = Files.createTempFile("b", ".txt");
+      Path tmp = Files.createTempFile("r8-b", ".txt");
       try {
         String contents = "Bananas!";
         Files.write(tmp, contents.getBytes(StandardCharsets.UTF_8));
@@ -202,7 +202,7 @@ public class FileChannelTest extends DesugaredLibraryTestBase {
     private static void fisNotOwner(boolean closeFirst) throws IOException {
       String toWrite = "Hello World! ";
       String toWriteFIS = "Bye bye. ";
-      Path tmp = Files.createTempFile("tmp", ".txt");
+      Path tmp = Files.createTempFile("r8-tmp", ".txt");
       try {
         Files.write(tmp, (toWrite + toWriteFIS).getBytes(StandardCharsets.UTF_8));
 
@@ -231,7 +231,7 @@ public class FileChannelTest extends DesugaredLibraryTestBase {
 
     private static void fisOwner() throws IOException {
       String toWrite = "Hello World! ";
-      Path tmp = Files.createTempFile("tmp", ".txt");
+      Path tmp = Files.createTempFile("r8-tmp", ".txt");
       try {
         Files.write(tmp, toWrite.getBytes(StandardCharsets.UTF_8));
 
@@ -248,7 +248,7 @@ public class FileChannelTest extends DesugaredLibraryTestBase {
 
     private static void fisOwnerTryResources() throws IOException {
       String toWrite = "Hello World! ";
-      Path tmp = Files.createTempFile("tmp", ".txt");
+      Path tmp = Files.createTempFile("r8-tmp", ".txt");
       try {
         Files.write(tmp, toWrite.getBytes(StandardCharsets.UTF_8));
 

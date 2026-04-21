@@ -14,6 +14,7 @@ import subprocess
 import sys
 import time
 import uuid
+import glob
 
 import archive_desugar_jdk_libs
 import download_kotlin
@@ -365,10 +366,11 @@ def Main():
 
 
 def clean_temp():
-    import glob
-    for p in glob.glob('/tmp/junit*') + glob.glob('/tmp/tmp*') + glob.glob(
-            '/tmp/tree*'):
-        if os.path.exists(p):
+    patterns = ['/tmp/junit*', '/tmp/tmp*', '/tmp/tree*', '/tmp/r8-*']
+    for pattern in patterns:
+        for p in glob.glob(pattern):
+            if not os.path.exists(p):
+                continue
             try:
                 if os.path.isdir(p):
                     shutil.rmtree(p)
