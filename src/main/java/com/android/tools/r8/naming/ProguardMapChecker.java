@@ -9,7 +9,7 @@ import static com.android.tools.r8.naming.ProguardMapMarkerInfo.SHA_256_KEY;
 
 import com.android.tools.r8.DiagnosticsHandler;
 import com.android.tools.r8.StringConsumer;
-import com.android.tools.r8.utils.AssertionUtils;
+import com.android.tools.r8.utils.internal.AssertionUtils;
 import com.google.common.hash.Hasher;
 import com.google.common.hash.Hashing;
 import java.io.IOException;

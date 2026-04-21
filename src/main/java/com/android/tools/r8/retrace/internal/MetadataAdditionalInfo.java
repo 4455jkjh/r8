@@ -6,8 +6,8 @@ package com.android.tools.r8.retrace.internal;
 
 import com.android.tools.r8.dex.CompatByteBuffer;
 import com.android.tools.r8.retrace.RetracePartitionException;
-import com.android.tools.r8.utils.SerializationUtils;
 import com.android.tools.r8.utils.StringUtils;
+import com.android.tools.r8.utils.internal.SerializationUtils;
 import com.android.tools.r8.utils.internal.exceptions.Unreachable;
 import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;

@@ -20,7 +20,7 @@ import com.android.tools.r8.shaking.Enqueuer.FieldAccessMetadata;
 import com.android.tools.r8.shaking.GraphReporter.KeepReasonWitness;
 import com.android.tools.r8.threading.ThreadingModule;
 import com.android.tools.r8.utils.internal.Action;
-import com.android.tools.r8.utils.AssertionUtils;
+import com.android.tools.r8.utils.internal.AssertionUtils;
 import com.android.tools.r8.utils.internal.ObjectUtils;
 import com.android.tools.r8.utils.internal.exceptions.Unreachable;
 import com.android.tools.r8.utils.timing.Timing;

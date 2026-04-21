@@ -6,7 +6,7 @@ package com.android.tools.r8.horizontalclassmerging.policies;
 
 import com.android.tools.r8.horizontalclassmerging.HorizontalMergeGroup;
 import com.android.tools.r8.horizontalclassmerging.MultiClassPolicy;
-import com.android.tools.r8.utils.AssertionUtils;
+import com.android.tools.r8.utils.internal.AssertionUtils;
 import java.util.Collection;
 import java.util.Collections;
 

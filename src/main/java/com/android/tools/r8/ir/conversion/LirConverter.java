@@ -40,10 +40,10 @@ import com.android.tools.r8.partial.R8PartialSubCompilationConfiguration.R8Parti
 import com.android.tools.r8.profile.rewriting.ProfileCollectionAdditions;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
 import com.android.tools.r8.synthesis.SyntheticItems.GlobalSyntheticsStrategy;
-import com.android.tools.r8.utils.AssertionUtils;
 import com.android.tools.r8.utils.InternalOptions;
-import com.android.tools.r8.utils.internal.ObjectUtils;
 import com.android.tools.r8.utils.ThreadUtils;
+import com.android.tools.r8.utils.internal.AssertionUtils;
+import com.android.tools.r8.utils.internal.ObjectUtils;
 import com.android.tools.r8.utils.internal.ThrowingAction;
 import com.android.tools.r8.utils.internal.collections.Pair;
 import com.android.tools.r8.utils.timing.Timing;

@@ -112,13 +112,14 @@ import com.android.tools.r8.tracereferences.TraceReferencesNativeReferencesConsu
 import com.android.tools.r8.tracereferences.TraceReferencesOptions;
 import com.android.tools.r8.utils.IROrdering.IdentityIROrdering;
 import com.android.tools.r8.utils.IROrdering.NondeterministicIROrdering;
+import com.android.tools.r8.utils.collections.ProgramMethodSet;
+import com.android.tools.r8.utils.internal.AssertionUtils;
 import com.android.tools.r8.utils.internal.ConsumerUtils;
 import com.android.tools.r8.utils.internal.QuadConsumer;
 import com.android.tools.r8.utils.internal.ThrowingConsumer;
 import com.android.tools.r8.utils.internal.TriConsumer;
 import com.android.tools.r8.utils.internal.TriFunction;
 import com.android.tools.r8.utils.internal.collections.Pair;
-import com.android.tools.r8.utils.collections.ProgramMethodSet;
 import com.android.tools.r8.utils.internal.exceptions.Unreachable;
 import com.android.tools.r8.utils.structural.Ordered;
 import com.android.tools.r8.utils.timing.Timing;

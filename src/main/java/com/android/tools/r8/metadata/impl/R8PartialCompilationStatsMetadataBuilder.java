@@ -3,7 +3,7 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8.metadata.impl;
 
-import static com.android.tools.r8.utils.AssertionUtils.checkNotNegative;
+import static com.android.tools.r8.utils.internal.AssertionUtils.checkNotNegative;
 
 import com.android.tools.r8.graph.AppInfoWithClassHierarchy;
 import com.android.tools.r8.graph.AppView;
@@ -11,8 +11,8 @@ import com.android.tools.r8.graph.DexEncodedMethod;
 import com.android.tools.r8.graph.DexProgramClass;
 import com.android.tools.r8.partial.R8PartialD8Input;
 import com.android.tools.r8.partial.R8PartialSubCompilationConfiguration.R8PartialR8SubCompilationConfiguration;
-import com.android.tools.r8.utils.internal.IntBox;
 import com.android.tools.r8.utils.InternalOptions;
+import com.android.tools.r8.utils.internal.IntBox;
 import com.google.common.base.Predicate;
 import com.google.common.collect.Iterables;
 

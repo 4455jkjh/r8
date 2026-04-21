@@ -7,7 +7,7 @@ package com.android.tools.r8.retrace.internal;
 import static com.android.tools.r8.retrace.internal.MappingPartitionKeyStrategy.OBFUSCATED_TYPE_NAME_AS_KEY;
 import static com.android.tools.r8.retrace.internal.MappingPartitionKeyStrategy.OBFUSCATED_TYPE_NAME_AS_KEY_WITH_PARTITIONS;
 import static com.android.tools.r8.retrace.internal.MappingPartitionKeyStrategy.getByKey;
-import static com.android.tools.r8.utils.SerializationUtils.getZeroByte;
+import static com.android.tools.r8.utils.internal.SerializationUtils.getZeroByte;
 
 import com.android.tools.r8.DiagnosticsHandler;
 import com.android.tools.r8.dex.CompatByteBuffer;

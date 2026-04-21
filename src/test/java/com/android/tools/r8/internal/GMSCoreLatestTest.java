@@ -17,7 +17,7 @@ import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.ThrowableConsumer;
 import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.utils.AndroidApiLevel;
-import com.android.tools.r8.utils.AssertionUtils;
+import com.android.tools.r8.utils.internal.AssertionUtils;
 import com.google.common.collect.Sets;
 import java.nio.file.Path;
 import java.nio.file.Paths;

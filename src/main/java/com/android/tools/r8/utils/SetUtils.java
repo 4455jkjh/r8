@@ -4,6 +4,7 @@
 
 package com.android.tools.r8.utils;
 
+import com.android.tools.r8.utils.internal.AssertionUtils;
 import com.android.tools.r8.utils.internal.ForEachable;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;

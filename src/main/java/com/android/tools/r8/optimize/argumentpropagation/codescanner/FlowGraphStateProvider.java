@@ -11,7 +11,7 @@ import com.android.tools.r8.ir.code.InvokeMethod;
 import com.android.tools.r8.ir.optimize.info.MethodOptimizationInfo;
 import com.android.tools.r8.optimize.argumentpropagation.propagation.FlowGraph;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
-import com.android.tools.r8.utils.AssertionUtils;
+import com.android.tools.r8.utils.internal.AssertionUtils;
 import com.android.tools.r8.utils.internal.exceptions.Unreachable;
 import java.util.function.Supplier;
 

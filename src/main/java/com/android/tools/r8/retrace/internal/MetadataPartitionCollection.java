@@ -5,8 +5,8 @@
 package com.android.tools.r8.retrace.internal;
 
 import com.android.tools.r8.dex.CompatByteBuffer;
-import com.android.tools.r8.utils.SerializationUtils;
 import com.android.tools.r8.utils.StringUtils;
+import com.android.tools.r8.utils.internal.SerializationUtils;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
