@@ -461,6 +461,12 @@ public class R8 {
               .run(appView.appInfo().classes(), executorService);
 
           assert appView.checkForTesting(() -> allReferencesAssignedApiLevel(appViewWithLiveness));
+        } else {
+          // Also run tree pruner with -dontshrink to eliminate synthetic classes/fields/methods that
+          // become unreachable as a result of branch pruning that happen prior to tracing.
+          TreePruner pruner = new TreePruner(appViewWithLiveness);
+          pruner.run(executorService, timing, PrunedItems.builder());
+          appViewWithLiveness.appInfo().notifyTreePrunerFinished(Enqueuer.Mode.INITIAL_TREE_SHAKING);
         }
 
         if (options.isGeneratingClassFiles()) {
