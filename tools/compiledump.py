@@ -231,8 +231,7 @@ class Dump(object):
         return self.if_exists('desugared-library.json')
 
     def proguard_input_map(self):
-        if self.if_exists('proguard_input.config'):
-            print("Unimplemented: proguard_input configuration.")
+        return self.if_exists('proguard_input.map')
 
     def main_dex_list_resource(self):
         return self.if_exists('main-dex-list.txt')
@@ -373,6 +372,10 @@ def determine_trace_references_commands(build_properties, output):
         return args
 
 
+def is_d8_compiler(compiler):
+    return compiler.startswith('d8')
+
+
 def is_l8_compiler(compiler):
     return compiler.startswith('l8')
 
@@ -466,6 +469,12 @@ def determine_compilation_mode(args, build_properties):
     if args.compilation_mode:
         return args.compilation_mode
     return build_properties.get('mode')
+
+
+def determine_d8_proguard_map_output(args, build_properties):
+    if args.android_platform_build:
+        return True
+    return build_properties.get('proguard-map-output') == 'true'
 
 
 def determine_properties(build_properties):
@@ -751,6 +760,10 @@ def run1(out, args, otherargs, jdkhome=None, worker_id=None):
                 clean_configs(config_files, args)
             for config_file in config_files:
                 cmd.extend(['--pg-conf', config_file])
+        if is_r8_compiler(
+                compiler
+        ) or compiler == 'l8' or determine_d8_proguard_map_output(
+                args, build_properties):
             cmd.extend(['--pg-map-output', '%s.map' % out])
         if dump.main_dex_list_resource():
             cmd.extend(['--main-dex-list', dump.main_dex_list_resource()])
@@ -773,6 +786,11 @@ def run1(out, args, otherargs, jdkhome=None, worker_id=None):
             cmd.extend(['--classfile'])
         if android_platform_build:
             cmd.extend(['--android-platform-build'])
+        if dump.proguard_input_map():
+            if is_d8_compiler(compiler):
+                cmd.extend(['--pg-map', dump.proguard_input_map()])
+            else:
+                raise Exception("Proguard map input only supported for D8 dump")
         if is_r8_compiler(compiler) and optimized_resource_shrinking:
             cmd.extend(['--optimized-resource-shrinking'])
         if enable_missing_library_api_modeling:

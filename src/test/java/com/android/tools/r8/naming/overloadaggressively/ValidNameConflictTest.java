@@ -23,6 +23,7 @@ import com.android.tools.r8.utils.codeinspector.MethodSubject;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import java.util.List;
+import org.hamcrest.CoreMatchers;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -107,7 +108,8 @@ public class ValidNameConflictTest extends JasminTestBase {
           .addProgramClassFileData(programClassFileData)
           .noVerify()
           .run(parameters.getRuntime(), CLASS_NAME)
-          .assertSuccessWithOutputLines(EXPECTED_OUTPUT);
+          .assertSuccess()
+          .assertStdoutLinesMatchesUnordered(ListUtils.map(EXPECTED_OUTPUT, CoreMatchers::equalTo));
     }
 
     R8TestRunResult runResult =
@@ -120,7 +122,9 @@ public class ValidNameConflictTest extends JasminTestBase {
             .compile()
             .applyIf(parameters.isCfRuntime(), TestCompileResult::noVerify)
             .run(parameters.getRuntime(), CLASS_NAME)
-            .assertSuccessWithOutputLines(EXPECTED_OUTPUT);
+            .assertSuccess()
+            .assertStdoutLinesMatchesUnordered(
+                ListUtils.map(EXPECTED_OUTPUT, CoreMatchers::equalTo));
 
     CodeInspector codeInspector = runResult.inspector();
     ClassSubject clazz = codeInspector.clazz(CLASS_NAME);
@@ -143,7 +147,8 @@ public class ValidNameConflictTest extends JasminTestBase {
           .addProgramClassFileData(programClassFileData)
           .noVerify()
           .run(parameters.getRuntime(), CLASS_NAME)
-          .assertSuccessWithOutputLines(EXPECTED_OUTPUT);
+          .assertSuccess()
+          .assertStdoutLinesMatchesUnordered(ListUtils.map(EXPECTED_OUTPUT, CoreMatchers::equalTo));
     }
 
     R8TestRunResult runResult =
@@ -155,7 +160,9 @@ public class ValidNameConflictTest extends JasminTestBase {
             .compile()
             .applyIf(parameters.isCfRuntime(), TestCompileResult::noVerify)
             .run(parameters.getRuntime(), CLASS_NAME)
-            .assertSuccessWithOutputLines(EXPECTED_OUTPUT);
+            .assertSuccess()
+            .assertStdoutLinesMatchesUnordered(
+                ListUtils.map(EXPECTED_OUTPUT, CoreMatchers::equalTo));
 
     CodeInspector codeInspector = runResult.inspector();
     ClassSubject clazz = codeInspector.clazz(CLASS_NAME);
@@ -202,7 +209,8 @@ public class ValidNameConflictTest extends JasminTestBase {
           .addProgramClassFileData(programClassFileData)
           .noVerify()
           .run(parameters.getRuntime(), CLASS_NAME)
-          .assertSuccessWithOutputLines(EXPECTED_OUTPUT);
+          .assertSuccess()
+          .assertStdoutLinesMatchesUnordered(ListUtils.map(EXPECTED_OUTPUT, CoreMatchers::equalTo));
     }
 
     R8TestRunResult runResult =
@@ -215,7 +223,9 @@ public class ValidNameConflictTest extends JasminTestBase {
             .compile()
             .applyIf(parameters.isCfRuntime(), TestCompileResult::noVerify)
             .run(parameters.getRuntime(), CLASS_NAME)
-            .assertSuccessWithOutputLines(EXPECTED_OUTPUT);
+            .assertSuccess()
+            .assertStdoutLinesMatchesUnordered(
+                ListUtils.map(EXPECTED_OUTPUT, CoreMatchers::equalTo));
 
     CodeInspector codeInspector = runResult.inspector();
     ClassSubject clazz = codeInspector.clazz(ANOTHER_CLASS);
@@ -238,7 +248,8 @@ public class ValidNameConflictTest extends JasminTestBase {
           .addProgramClassFileData(programClassFileData)
           .noVerify()
           .run(parameters.getRuntime(), CLASS_NAME)
-          .assertSuccessWithOutputLines(EXPECTED_OUTPUT);
+          .assertSuccess()
+          .assertStdoutLinesMatchesUnordered(ListUtils.map(EXPECTED_OUTPUT, CoreMatchers::equalTo));
     }
 
     R8TestRunResult runResult =
@@ -250,10 +261,9 @@ public class ValidNameConflictTest extends JasminTestBase {
             .compile()
             .applyIf(parameters.isCfRuntime(), TestCompileResult::noVerify)
             .run(parameters.getRuntime(), CLASS_NAME)
-            .applyIf(
-                parameters.isCfRuntime(),
-                r -> r.assertSuccessWithOutputLines(ListUtils.reverse(EXPECTED_OUTPUT)),
-                r -> r.assertSuccessWithOutputLines(EXPECTED_OUTPUT));
+            .assertSuccess()
+            .assertStdoutLinesMatchesUnordered(
+                ListUtils.map(EXPECTED_OUTPUT, CoreMatchers::equalTo));
 
     CodeInspector codeInspector = runResult.inspector();
     ClassSubject clazz = codeInspector.clazz(ANOTHER_CLASS);
@@ -319,7 +329,8 @@ public class ValidNameConflictTest extends JasminTestBase {
           .addProgramClassFileData(programClassFileData)
           .noVerify()
           .run(parameters.getRuntime(), CLASS_NAME)
-          .assertSuccessWithOutputLines(EXPECTED_OUTPUT);
+          .assertSuccess()
+          .assertStdoutLinesMatchesUnordered(ListUtils.map(EXPECTED_OUTPUT, CoreMatchers::equalTo));
     }
 
     R8TestRunResult runResult =
@@ -332,7 +343,9 @@ public class ValidNameConflictTest extends JasminTestBase {
             .compile()
             .applyIf(parameters.isCfRuntime(), TestCompileResult::noVerify)
             .run(parameters.getRuntime(), CLASS_NAME)
-            .assertSuccessWithOutputLines(EXPECTED_OUTPUT);
+            .assertSuccess()
+            .assertStdoutLinesMatchesUnordered(
+                ListUtils.map(EXPECTED_OUTPUT, CoreMatchers::equalTo));
 
     CodeInspector codeInspector = runResult.inspector();
     ClassSubject sup = codeInspector.clazz(SUPER_CLASS);
@@ -369,7 +382,8 @@ public class ValidNameConflictTest extends JasminTestBase {
           .addProgramClassFileData(programClassFileData)
           .noVerify()
           .run(parameters.getRuntime(), CLASS_NAME)
-          .assertSuccessWithOutputLines(EXPECTED_OUTPUT);
+          .assertSuccess()
+          .assertStdoutLinesMatchesUnordered(ListUtils.map(EXPECTED_OUTPUT, CoreMatchers::equalTo));
     }
 
     R8TestRunResult runResult =
@@ -381,10 +395,9 @@ public class ValidNameConflictTest extends JasminTestBase {
             .compile()
             .applyIf(parameters.isCfRuntime(), TestCompileResult::noVerify)
             .run(parameters.getRuntime(), CLASS_NAME)
-            .applyIf(
-                parameters.isCfRuntime(),
-                r -> r.assertSuccessWithOutputLines(ListUtils.reverse(EXPECTED_OUTPUT)),
-                r -> r.assertSuccessWithOutputLines(EXPECTED_OUTPUT));
+            .assertSuccess()
+            .assertStdoutLinesMatchesUnordered(
+                ListUtils.map(EXPECTED_OUTPUT, CoreMatchers::equalTo));
 
     CodeInspector codeInspector = runResult.inspector();
     ClassSubject sup = codeInspector.clazz(SUPER_CLASS);

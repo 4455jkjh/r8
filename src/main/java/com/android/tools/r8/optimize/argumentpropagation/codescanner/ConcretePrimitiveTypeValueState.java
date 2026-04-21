@@ -7,7 +7,9 @@ package com.android.tools.r8.optimize.argumentpropagation.codescanner;
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.DexType;
 import com.android.tools.r8.graph.ProgramField;
+import com.android.tools.r8.ir.analysis.type.TypeElement;
 import com.android.tools.r8.ir.analysis.value.AbstractValue;
+import com.android.tools.r8.ir.analysis.value.AbstractValueJoiner;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
 import com.android.tools.r8.utils.Action;
 import com.android.tools.r8.utils.ObjectUtils;
@@ -55,8 +57,12 @@ public class ConcretePrimitiveTypeValueState extends ConcreteValueState {
   }
 
   public NonEmptyValueState mutableJoin(
-      AppView<AppInfoWithLiveness> appView, ProgramField field, AbstractValue abstractValue) {
-    mutableJoinAbstractValue(appView, abstractValue, field.getType());
+      AppView<AppInfoWithLiveness> appView,
+      AbstractValueJoiner abstractValueJoiner,
+      ProgramField field,
+      AbstractValue abstractValue) {
+    mutableJoinAbstractValue(
+        abstractValueJoiner, abstractValue, field.getType().toTypeElement(appView));
     if (isEffectivelyUnknown()) {
       return unknown();
     }
@@ -65,12 +71,14 @@ public class ConcretePrimitiveTypeValueState extends ConcreteValueState {
 
   public NonEmptyValueState mutableJoin(
       AppView<AppInfoWithLiveness> appView,
+      AbstractValueJoiner abstractValueJoiner,
       ConcretePrimitiveTypeValueState state,
       DexType staticType,
       Action onChangedAction) {
     assert staticType.isPrimitiveType();
     boolean abstractValueChanged =
-        mutableJoinAbstractValue(appView, state.getAbstractValue(), staticType);
+        mutableJoinAbstractValue(
+            abstractValueJoiner, state.getAbstractValue(), staticType.toTypeElement(appView));
     if (isEffectivelyUnknown()) {
       return unknown();
     }
@@ -86,12 +94,11 @@ public class ConcretePrimitiveTypeValueState extends ConcreteValueState {
   }
 
   private boolean mutableJoinAbstractValue(
-      AppView<AppInfoWithLiveness> appView, AbstractValue otherAbstractValue, DexType staticType) {
+      AbstractValueJoiner abstractValueJoiner,
+      AbstractValue otherAbstractValue,
+      TypeElement staticType) {
     AbstractValue oldAbstractValue = abstractValue;
-    abstractValue =
-        appView
-            .getAbstractValueParameterJoiner()
-            .join(abstractValue, otherAbstractValue, staticType);
+    abstractValue = abstractValueJoiner.join(abstractValue, otherAbstractValue, staticType);
     return !abstractValue.equals(oldAbstractValue);
   }
 

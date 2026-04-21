@@ -4,7 +4,6 @@
 
 package com.android.tools.r8.ir.optimize.inliner;
 
-import com.android.tools.r8.errors.Unreachable;
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.ProgramMethod;
 import com.android.tools.r8.ir.code.IRCode;
@@ -13,6 +12,7 @@ import com.android.tools.r8.ir.code.NumberGenerator;
 import com.android.tools.r8.ir.code.Position;
 import com.android.tools.r8.ir.conversion.LensCodeRewriter;
 import com.android.tools.r8.ir.conversion.MethodProcessor;
+import com.android.tools.r8.utils.exceptions.Unreachable;
 import java.util.IdentityHashMap;
 import java.util.Map;
 

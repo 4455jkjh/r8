@@ -6,9 +6,9 @@ package com.android.tools.r8.kotlin;
 
 import com.android.tools.r8.graph.DexValue.DexValueString;
 import com.android.tools.r8.naming.Range;
-import com.android.tools.r8.utils.SegmentTree;
 import com.android.tools.r8.utils.StringUtils;
 import com.android.tools.r8.utils.ThrowingConsumer;
+import com.android.tools.r8.utils.collections.SegmentTree;
 import java.io.BufferedReader;
 import java.io.Closeable;
 import java.io.IOException;

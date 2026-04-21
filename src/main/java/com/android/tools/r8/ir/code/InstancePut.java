@@ -15,7 +15,6 @@ import com.android.tools.r8.dex.code.DexIputChar;
 import com.android.tools.r8.dex.code.DexIputObject;
 import com.android.tools.r8.dex.code.DexIputShort;
 import com.android.tools.r8.dex.code.DexIputWide;
-import com.android.tools.r8.errors.Unreachable;
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.DexClassAndField;
 import com.android.tools.r8.graph.DexClassAndMethod;
@@ -36,6 +35,7 @@ import com.android.tools.r8.ir.optimize.InliningConstraints;
 import com.android.tools.r8.ir.regalloc.RegisterAllocator;
 import com.android.tools.r8.lightir.LirBuilder;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
+import com.android.tools.r8.utils.exceptions.Unreachable;
 import java.util.Arrays;
 
 public class InstancePut extends FieldInstruction implements FieldPut, InstanceFieldInstruction {

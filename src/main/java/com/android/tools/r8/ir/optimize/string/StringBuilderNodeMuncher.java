@@ -20,7 +20,7 @@ import com.android.tools.r8.ir.optimize.string.StringBuilderNode.InitOrAppendNod
 import com.android.tools.r8.ir.optimize.string.StringBuilderNode.NewInstanceNode;
 import com.android.tools.r8.ir.optimize.string.StringBuilderNode.StringBuilderInstruction;
 import com.android.tools.r8.ir.optimize.string.StringBuilderNode.ToStringNode;
-import com.android.tools.r8.utils.WorkList;
+import com.android.tools.r8.utils.collections.WorkList;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import java.util.IdentityHashMap;

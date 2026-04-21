@@ -6,7 +6,7 @@ package com.android.tools.r8.shaking;
 import com.android.tools.r8.shaking.KeepInfoEquivalenceNoAnnotations.ClassEquivalenceNoAnnotations;
 import com.android.tools.r8.shaking.KeepInfoEquivalenceNoAnnotations.FieldEquivalenceNoAnnotations;
 import com.android.tools.r8.shaking.KeepInfoEquivalenceNoAnnotations.MethodEquivalenceNoAnnotations;
-import com.android.tools.r8.utils.LRUCache;
+import com.android.tools.r8.utils.collections.LRUCache;
 import com.google.common.base.Equivalence;
 import java.util.Map;
 

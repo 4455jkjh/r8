@@ -6,8 +6,8 @@ package com.android.tools.r8.utils.timing;
 import androidx.tracing.EventMetadataCloseable;
 import androidx.tracing.PropagationUnsupportedToken;
 import androidx.tracing.ThreadTrack;
-import com.android.tools.r8.errors.Unreachable;
 import com.android.tools.r8.utils.InternalOptions;
+import com.android.tools.r8.utils.exceptions.Unreachable;
 
 class PerfettoThreadTiming extends TimingImplBase {
   // The API now allows you to specify the category and in the future let you conditionally turn on

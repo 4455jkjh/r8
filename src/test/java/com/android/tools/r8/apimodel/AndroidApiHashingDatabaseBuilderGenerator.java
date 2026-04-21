@@ -17,7 +17,6 @@ import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.androidapi.AndroidApiDataAccess;
 import com.android.tools.r8.androidapi.GenerateCovariantReturnTypeMethodsTest.CovariantMethodsInJarResult;
 import com.android.tools.r8.apimodel.AndroidApiVersionsXmlParser.ParsedApiClass;
-import com.android.tools.r8.errors.Unreachable;
 import com.android.tools.r8.graph.AppInfoWithClassHierarchy;
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.DexField;
@@ -31,8 +30,10 @@ import com.android.tools.r8.references.ClassReference;
 import com.android.tools.r8.utils.AndroidApiLevel;
 import com.android.tools.r8.utils.AndroidApp;
 import com.android.tools.r8.utils.IntBox;
-import com.android.tools.r8.utils.Pair;
 import com.android.tools.r8.utils.ThrowingBiConsumer;
+import com.android.tools.r8.utils.collections.Pair;
+import com.android.tools.r8.utils.exceptions.Unreachable;
+import com.android.tools.r8.utils.timing.Timing;
 import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
 import java.io.FileOutputStream;
@@ -79,8 +80,13 @@ public class AndroidApiHashingDatabaseBuilderGenerator extends TestBase {
     Map<DexReference, AndroidApiLevel> referenceMap = new HashMap<>();
 
     Path androidJar = ToolHelper.getAndroidJar(androidJarApiLevel);
+    AndroidApp androidApp =
+        AndroidApp.builder()
+            .addLibraryFile(androidJar)
+            .disableAndroidJarHiddenClassExtension()
+            .build();
     AppView<AppInfoWithClassHierarchy> appView =
-        computeAppViewWithClassHierarchy(AndroidApp.builder().addLibraryFile(androidJar).build());
+        computeAppViewWithClassHierarchy(androidApp, Timing.empty());
     DexItemFactory factory = appView.dexItemFactory();
 
     CovariantMethodsInJarResult covariantMethodsInJar = CovariantMethodsInJarResult.create();

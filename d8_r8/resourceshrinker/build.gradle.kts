@@ -4,10 +4,12 @@
 
 import java.util.concurrent.Callable
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+import org.jetbrains.kotlin.gradle.dsl.KotlinVersion
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
-  `kotlin-dsl`
+  // Kotlin version is fixed by create_local_maven_dependencies.py
+  id("org.jetbrains.kotlin.jvm") version "2.0.21"
   id("dependencies-plugin")
 }
 
@@ -22,7 +24,14 @@ java {
   withSourcesJar()
 }
 
-kotlin { explicitApi() }
+kotlin {
+  explicitApi()
+  compilerOptions {
+    jvmTarget.set(JvmTarget.fromTarget(JvmCompatibility.release.toString()))
+    languageVersion.set(KotlinVersion.KOTLIN_1_8)
+    apiVersion.set(KotlinVersion.KOTLIN_1_8)
+  }
+}
 
 fun jarDependencies(): FileCollection {
   return sourceSets.main
@@ -48,10 +57,7 @@ dependencies {
 }
 
 tasks {
-  withType<KotlinCompile> {
-    dependsOn(gradle.includedBuild("shared").task(":downloadDeps"))
-    compilerOptions { jvmTarget = JvmTarget.fromTarget(JvmCompatibility.release.toString()) }
-  }
+  withType<KotlinCompile> { dependsOn(gradle.includedBuild("shared").task(":downloadDeps")) }
   val depsJar by
     registering(Jar::class) {
       from(Callable { jarDependencies().map(::zipTree) })

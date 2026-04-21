@@ -5,7 +5,6 @@
 package com.android.tools.r8.cf.code.frame;
 
 import com.android.tools.r8.cf.code.CfLabel;
-import com.android.tools.r8.errors.Unreachable;
 import com.android.tools.r8.graph.DexItemFactory;
 import com.android.tools.r8.graph.DexType;
 import com.android.tools.r8.graph.lens.GraphLens;
@@ -15,6 +14,7 @@ import com.android.tools.r8.ir.analysis.type.TypeElement;
 import com.android.tools.r8.ir.code.MemberType;
 import com.android.tools.r8.ir.code.NumericType;
 import com.android.tools.r8.naming.NamingLens;
+import com.android.tools.r8.utils.exceptions.Unreachable;
 import java.util.function.Function;
 
 public interface FrameType {

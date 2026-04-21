@@ -48,8 +48,11 @@ public class AtomicFieldUpdaterSubClassTest extends AtomicFieldUpdaterBase {
                     diagnosticMessage(containsString("Can instrument")),
                     diagnosticMessage(containsString("Can optimize")),
                     diagnosticMessage(containsString("Can optimize")),
-                    diagnosticMessage(containsString("Can optimize")),
-                    diagnosticMessage(containsString("Cannot remove"))))
+                    diagnosticMessage(containsString("Can optimize"))
+                    // TODO(b/453628974): The field should be removed once nullability analysis is
+                    //                    more precise.
+                    // diagnosticMessage(containsString("Can remove"))
+                    ))
         .inspect(
             inspector -> {
               MethodSubject method = inspector.clazz(testClass).mainMethod();

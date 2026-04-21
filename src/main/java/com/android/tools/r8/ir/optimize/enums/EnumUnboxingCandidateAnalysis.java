@@ -20,7 +20,7 @@ import com.android.tools.r8.shaking.AppInfoWithLiveness;
 import com.android.tools.r8.shaking.KeepInfoCollection;
 import com.android.tools.r8.utils.InternalOptions;
 import com.google.common.collect.ImmutableSet;
-import java.util.List;
+import java.util.Collection;
 
 class EnumUnboxingCandidateAnalysis {
 
@@ -74,7 +74,7 @@ class EnumUnboxingCandidateAnalysis {
     if (!isSuperEnumUnboxingCandidate(clazz)) {
       return;
     }
-    List<DexProgramClass> subtypes = subtypingInfo.getSubclasses(clazz);
+    Collection<DexProgramClass> subtypes = subtypingInfo.getSubclasses(clazz);
     for (DexProgramClass subEnum : subtypes) {
       if (!isSubEnumUnboxingCandidate(subEnum)) {
         return;

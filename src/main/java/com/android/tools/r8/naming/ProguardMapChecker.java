@@ -9,8 +9,7 @@ import static com.android.tools.r8.naming.ProguardMapMarkerInfo.SHA_256_KEY;
 
 import com.android.tools.r8.DiagnosticsHandler;
 import com.android.tools.r8.StringConsumer;
-import com.android.tools.r8.errors.Unreachable;
-import com.android.tools.r8.utils.InternalOptions;
+import com.android.tools.r8.utils.AssertionUtils;
 import com.google.common.hash.Hasher;
 import com.google.common.hash.Hashing;
 import java.io.IOException;
@@ -22,10 +21,8 @@ public class ProguardMapChecker implements StringConsumer {
   private final StringBuilder contents = new StringBuilder();
 
   ProguardMapChecker(StringConsumer inner) {
-    if (!InternalOptions.assertionsEnabled()) {
-      // Make sure we never get here without assertions enabled.
-      throw new Unreachable();
-    }
+    // Make sure we never get here without assertions enabled.
+    AssertionUtils.checkAssertionsEnabled();
     this.inner = inner;
   }
 

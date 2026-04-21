@@ -57,7 +57,7 @@ public class VirtualRootMethodsAnalysis extends VirtualRootMethodsAnalysisBase {
 
   @Override
   public void forEachSubClass(DexProgramClass clazz, Consumer<DexProgramClass> consumer) {
-    List<DexProgramClass> subclasses = immediateSubtypingInfo.getSubclasses(clazz);
+    Collection<DexProgramClass> subclasses = immediateSubtypingInfo.getSubclasses(clazz);
     if (subclasses.isEmpty()) {
       promoteToFinalIfPossible(clazz);
     } else {

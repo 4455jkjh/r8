@@ -4,7 +4,6 @@
 
 package com.android.tools.r8.ir.optimize.library;
 
-import com.android.tools.r8.errors.Unreachable;
 import com.android.tools.r8.graph.DexClassAndMethod;
 import com.android.tools.r8.graph.DexType;
 import com.android.tools.r8.ir.code.BasicBlock;
@@ -13,6 +12,7 @@ import com.android.tools.r8.ir.code.IRCode;
 import com.android.tools.r8.ir.code.InstructionListIterator;
 import com.android.tools.r8.ir.code.InvokeMethod;
 import com.android.tools.r8.ir.optimize.AffectedValues;
+import com.android.tools.r8.utils.exceptions.Unreachable;
 import java.util.Set;
 
 public class NopLibraryMethodModelCollection extends StatelessLibraryMethodModelCollection {

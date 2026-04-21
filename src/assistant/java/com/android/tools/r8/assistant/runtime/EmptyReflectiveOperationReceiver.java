@@ -11,6 +11,11 @@ import java.lang.reflect.InvocationHandler;
 public class EmptyReflectiveOperationReceiver implements ReflectiveOperationReceiver {
 
   @Override
+  public boolean requiresStackInformation() {
+    return false;
+  }
+
+  @Override
   public void onClassForName(
       Stack stack, String className, boolean initialize, ClassLoader classLoader) {}
 

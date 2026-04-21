@@ -47,7 +47,6 @@ import com.android.tools.r8.errors.InterfaceDesugarMissingTypeDiagnostic;
 import com.android.tools.r8.errors.InvalidDebugInfoException;
 import com.android.tools.r8.errors.InvalidLibrarySuperclassDiagnostic;
 import com.android.tools.r8.errors.MissingNestHostNestDesugarDiagnostic;
-import com.android.tools.r8.errors.Unreachable;
 import com.android.tools.r8.experimental.graphinfo.GraphConsumer;
 import com.android.tools.r8.features.FeatureSplitConfiguration;
 import com.android.tools.r8.graph.AppInfoWithClassHierarchy;
@@ -113,7 +112,9 @@ import com.android.tools.r8.tracereferences.TraceReferencesNativeReferencesConsu
 import com.android.tools.r8.tracereferences.TraceReferencesOptions;
 import com.android.tools.r8.utils.IROrdering.IdentityIROrdering;
 import com.android.tools.r8.utils.IROrdering.NondeterministicIROrdering;
+import com.android.tools.r8.utils.collections.Pair;
 import com.android.tools.r8.utils.collections.ProgramMethodSet;
+import com.android.tools.r8.utils.exceptions.Unreachable;
 import com.android.tools.r8.utils.structural.Ordered;
 import com.android.tools.r8.utils.timing.Timing;
 import com.android.tools.r8.verticalclassmerging.VerticalClassMergerOptions;
@@ -144,6 +145,7 @@ import java.util.function.BiPredicate;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import org.objectweb.asm.Opcodes;
 
@@ -1431,18 +1433,6 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
   public MapIdProvider mapIdProvider = null;
   public SourceFileProvider sourceFileProvider = null;
 
-  public static boolean assertionsEnabled() {
-    boolean assertionsEnabled = false;
-    assert assertionsEnabled = true; // Intentional side-effect.
-    return assertionsEnabled;
-  }
-
-  public static void checkAssertionsEnabled() {
-    if (!assertionsEnabled()) {
-      throw new Unreachable();
-    }
-  }
-
   /** A set of dexitems we have reported missing to dedupe warnings. */
   private final Set<DexItem> reportedMissingForDesugaring = SetUtils.newConcurrentHashSet();
 
@@ -2384,7 +2374,7 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
     public byte[] forceDexVersionBytes = null;
 
     public IROrdering irOrdering =
-        InternalOptions.assertionsEnabled() && !InternalOptions.DETERMINISTIC_DEBUGGING
+        AssertionUtils.assertionsEnabled() && !InternalOptions.DETERMINISTIC_DEBUGGING
             ? NondeterministicIROrdering.getInstance()
             : IdentityIROrdering.getInstance();
 
@@ -2397,7 +2387,7 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
       this.mixedSectionLayoutStrategyInspector = mixedSectionLayoutStrategyInspector;
     }
 
-    public BiConsumer<AppInfoWithLiveness, Enqueuer.Mode> enqueuerInspector = null;
+    public TriConsumer<AppInfoWithLiveness, Enqueuer.Mode, Timing> enqueuerInspector = null;
 
     public Consumer<String> processingContextsConsumer = null;
 
@@ -2612,6 +2602,10 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
         isSystemPropertySet("com.android.tools.r8.enableListIterationRewriting");
     // Testing flag to always generate D8 lambda accessors.
     public boolean forceLambdaAccessorInD8 = false;
+  }
+
+  public boolean forTesting(Supplier<Boolean> test) {
+    return testing.enableTestAssertions ? test.get() : true;
   }
 
   public MapVersion getMapFileVersion() {
@@ -3421,5 +3415,11 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
   // Instead, we should always rebind to just the first library class.
   public boolean canHaveDalvikVerifyErrorOnVirtualInvokeWithMissingClasses() {
     return canHaveBugPresentUntilExclusive(AndroidApiLevel.L);
+  }
+
+  // b/502885276 Some functions with references to sun.misc.Unsafe crash ART when inlined,
+  // it is unclear whether it is strictly related to Unsafe or if it is a coincidence.
+  public boolean canHaveBugWithInlinedMethodsContainingUnsafe() {
+    return isGeneratingDex() && minApiLevel.isLessThanOrEqualTo(AndroidApiLevel.L_MR1);
   }
 }

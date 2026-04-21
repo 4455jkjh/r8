@@ -11,7 +11,6 @@ import com.android.tools.r8.dex.Constants;
 import com.android.tools.r8.diagnostic.DefinitionContext;
 import com.android.tools.r8.errors.AssumeNoSideEffectsRuleForObjectMembersDiagnostic;
 import com.android.tools.r8.errors.AssumeValuesMissingStaticFieldDiagnostic;
-import com.android.tools.r8.errors.Unreachable;
 import com.android.tools.r8.graph.AccessControl;
 import com.android.tools.r8.graph.AppInfoWithClassHierarchy;
 import com.android.tools.r8.graph.AppView;
@@ -120,13 +119,14 @@ import com.android.tools.r8.utils.InternalOptions;
 import com.android.tools.r8.utils.LazyBox;
 import com.android.tools.r8.utils.MethodSignatureEquivalence;
 import com.android.tools.r8.utils.OriginWithPosition;
-import com.android.tools.r8.utils.PredicateSet;
 import com.android.tools.r8.utils.Reporter;
 import com.android.tools.r8.utils.StringDiagnostic;
 import com.android.tools.r8.utils.TraversalContinuation;
-import com.android.tools.r8.utils.WorkList;
 import com.android.tools.r8.utils.collections.DexMethodSignatureSet;
+import com.android.tools.r8.utils.collections.PredicateSet;
 import com.android.tools.r8.utils.collections.ProgramMethodMap;
+import com.android.tools.r8.utils.collections.WorkList;
+import com.android.tools.r8.utils.exceptions.Unreachable;
 import com.android.tools.r8.utils.timing.Timing;
 import com.google.common.base.Equivalence.Wrapper;
 import com.google.common.collect.ImmutableList;
@@ -252,8 +252,8 @@ public class RootSetBuilder {
     return this;
   }
 
-  public RootSetBuilder tracePartialCompilationDexingOutputClasses(ExecutorService executorService)
-      throws ExecutionException {
+  public RootSetBuilder tracePartialCompilationDexingOutputClasses(
+      ExecutorService executorService, Timing timing) throws ExecutionException {
     if (options.partialSubCompilationConfiguration == null) {
       return this;
     }
@@ -343,7 +343,7 @@ public class RootSetBuilder {
             return true;
           }
         };
-    useCollector.run(executorService);
+    useCollector.run(executorService, timing);
 
     // Trace resources.
     if (options.androidResourceProvider != null) {
@@ -732,7 +732,7 @@ public class RootSetBuilder {
   }
 
   private void propagateAssumeRules(DexClass clazz) {
-    List<DexClass> subclasses = subtypingInfo.getSubclasses(clazz);
+    Collection<DexClass> subclasses = subtypingInfo.getSubclasses(clazz);
     if (subclasses.isEmpty()) {
       return;
     }
@@ -747,7 +747,7 @@ public class RootSetBuilder {
   }
 
   private void propagateAssumeRules(
-      DexClass clazz, DexMethod reference, List<DexClass> subclasses) {
+      DexClass clazz, DexMethod reference, Collection<DexClass> subclasses) {
     AssumeMethodInfoCollection.Builder infoToBePropagated = null;
     for (DexClass subclass : subclasses) {
       // Those rules are bound to definitions, not references. If the current subtype does not

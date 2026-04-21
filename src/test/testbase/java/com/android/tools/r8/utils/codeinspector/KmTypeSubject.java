@@ -5,9 +5,9 @@ package com.android.tools.r8.utils.codeinspector;
 
 import static com.android.tools.r8.utils.DescriptorUtils.getDescriptorFromKotlinClassifier;
 
-import com.android.tools.r8.errors.Unreachable;
 import com.android.tools.r8.kotlin.KotlinFlagUtils;
 import com.android.tools.r8.references.Reference;
+import com.android.tools.r8.utils.exceptions.Unreachable;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;

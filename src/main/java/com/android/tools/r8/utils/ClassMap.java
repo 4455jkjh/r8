@@ -5,11 +5,11 @@ package com.android.tools.r8.utils;
 
 import com.android.tools.r8.ProgramResource;
 import com.android.tools.r8.errors.CompilationError;
-import com.android.tools.r8.errors.Unreachable;
 import com.android.tools.r8.graph.ClassKind;
 import com.android.tools.r8.graph.DexClass;
 import com.android.tools.r8.graph.DexType;
 import com.android.tools.r8.threading.TaskCollection;
+import com.android.tools.r8.utils.exceptions.Unreachable;
 import com.android.tools.r8.utils.timing.Timing;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;

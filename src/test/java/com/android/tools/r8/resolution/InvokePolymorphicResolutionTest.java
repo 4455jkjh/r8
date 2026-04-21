@@ -18,6 +18,7 @@ import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.MethodResolutionResult;
 import com.android.tools.r8.references.MethodReference;
 import com.android.tools.r8.references.Reference;
+import com.android.tools.r8.utils.timing.Timing;
 import java.lang.invoke.MethodHandle;
 import java.util.Collections;
 import org.junit.Test;
@@ -42,7 +43,7 @@ public class InvokePolymorphicResolutionTest extends TestBase {
     AppView<? extends AppInfoWithClassHierarchy> appView =
         TestAppViewBuilder.builder()
             .addLibraryFiles(ToolHelper.getJava8RuntimeJar())
-            .buildWithLiveness();
+            .buildWithLiveness(Timing.empty());
 
     // An exact resolution will find invokeExact.
     MethodReference invokeExact =

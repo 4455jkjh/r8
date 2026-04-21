@@ -7,7 +7,6 @@ package com.android.tools.r8.naming.mappinginformation;
 import static com.android.tools.r8.naming.mappinginformation.RewriteFrameMappingInformation.RemoveInnerFramesAction.REMOVE_INNER_FRAMES_NAME;
 
 import com.android.tools.r8.errors.CompilationError;
-import com.android.tools.r8.errors.Unimplemented;
 import com.android.tools.r8.naming.MapVersion;
 import com.android.tools.r8.naming.MappingComposeException;
 import com.android.tools.r8.naming.mappinginformation.MappingInformation.PositionalMappingInformation;
@@ -16,6 +15,7 @@ import com.android.tools.r8.references.Reference;
 import com.android.tools.r8.retrace.internal.RetraceStackTraceContextImpl;
 import com.android.tools.r8.retrace.internal.RetraceStackTraceCurrentEvaluationInformation;
 import com.android.tools.r8.utils.DescriptorUtils;
+import com.android.tools.r8.utils.exceptions.Unimplemented;
 import com.google.common.collect.ImmutableList;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;

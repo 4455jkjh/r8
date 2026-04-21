@@ -23,7 +23,7 @@ import com.android.tools.r8.utils.DominatorChecker;
 import com.android.tools.r8.utils.InternalOptions.RewriteArrayOptions;
 import com.android.tools.r8.utils.ValueUtils;
 import com.android.tools.r8.utils.ValueUtils.ArrayValues;
-import com.android.tools.r8.utils.WorkList;
+import com.android.tools.r8.utils.collections.WorkList;
 import com.google.common.collect.Sets;
 import java.util.ArrayList;
 import java.util.IdentityHashMap;

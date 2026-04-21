@@ -25,11 +25,11 @@ import com.android.tools.r8.synthesis.SyntheticItems.GlobalSyntheticsStrategy;
 import com.android.tools.r8.utils.AndroidApiLevel;
 import com.android.tools.r8.utils.AndroidApp;
 import com.android.tools.r8.utils.InternalOptions;
-import com.android.tools.r8.utils.Pair;
 import com.android.tools.r8.utils.codeinspector.CodeInspector;
 import com.android.tools.r8.utils.codeinspector.FoundClassSubject;
 import com.android.tools.r8.utils.codeinspector.FoundMethodSubject;
 import com.android.tools.r8.utils.codeinspector.InstructionSubject;
+import com.android.tools.r8.utils.collections.Pair;
 import com.android.tools.r8.utils.timing.Timing;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
@@ -120,7 +120,7 @@ public class DesugaredLibraryInvokeAllResolveTest extends DesugaredLibraryTestBa
         inspector
             .getApplication()
             .asLazy()
-            .toDirectSingleThreadedForTesting()
+            .toDirectSingleThreadedForTesting(Timing.empty())
             .builder()
             .replaceLibraryClasses(libHolder.libraryClasses())
             .build(Timing.empty());

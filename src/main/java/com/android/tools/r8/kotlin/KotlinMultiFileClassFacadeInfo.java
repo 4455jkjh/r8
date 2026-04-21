@@ -10,7 +10,7 @@ import static com.android.tools.r8.utils.FunctionUtils.forEachApply;
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.DexClass;
 import com.android.tools.r8.graph.DexItemFactory;
-import com.android.tools.r8.utils.Pair;
+import com.android.tools.r8.utils.collections.Pair;
 import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
 import java.util.List;

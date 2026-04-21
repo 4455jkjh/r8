@@ -30,7 +30,6 @@ public class NativeReferencesHelper {
   private final AppView<? extends AppInfoWithClassHierarchy> appView;
   private final TraceReferencesNativeReferencesConsumer nativeReferencesConsumer;
   private final DiagnosticsHandler diagnostics;
-  private final ExecutorService executorService;
   private final DexItemFactory factory;
   private final DexString loadLibrary;
   private final DexString load;
@@ -38,12 +37,10 @@ public class NativeReferencesHelper {
   public NativeReferencesHelper(
       AppView<? extends AppInfoWithClassHierarchy> appView,
       TraceReferencesNativeReferencesConsumer nativeReferencesConsumer,
-      DiagnosticsHandler diagnostics,
-      ExecutorService executorService) {
+      DiagnosticsHandler diagnostics) {
     this.appView = appView;
     this.nativeReferencesConsumer = nativeReferencesConsumer;
     this.diagnostics = diagnostics;
-    this.executorService = executorService;
     this.factory = appView.dexItemFactory();
     this.loadLibrary = factory.createString("loadLibrary");
     this.load = factory.createString("load");
@@ -59,7 +56,8 @@ public class NativeReferencesHelper {
         && method.getName().isIdenticalTo(load);
   }
 
-  public void process(Collection<DexProgramClass> classes) throws ExecutionException {
+  public void process(Collection<DexProgramClass> classes, ExecutorService executorService)
+      throws ExecutionException {
     ThreadUtils.processItems(
         classes,
         clazz ->
@@ -70,7 +68,8 @@ public class NativeReferencesHelper {
         executorService);
   }
 
-  public void process(ProgramMethodSet methods) throws ExecutionException {
+  public void process(ProgramMethodSet methods, ExecutorService executorService)
+      throws ExecutionException {
     ThreadUtils.processItems(
         methods, this::processMethod, appView.options().getThreadingModule(), executorService);
   }
@@ -95,7 +94,13 @@ public class NativeReferencesHelper {
     DexMethod invokedMethod = invoke.getInvokedMethod();
     if (isSystemLoadLibrary(invokedMethod) || isSystemLoad(invokedMethod)) {
       Value argument = invoke.getFirstArgument().getAliasedValue();
-      MethodOrigin origin = new MethodOrigin(method.getMethodReference(), method.getOrigin());
+      MethodOrigin origin =
+          new MethodOrigin(
+              appView
+                  .getNamingLens()
+                  .lookupMethod(method.getReference(), appView.dexItemFactory())
+                  .asMethodReference(),
+              method.getOrigin());
       if (argument.isConstString()) {
         String name = argument.getDefinition().asConstString().getValue().toString();
         if (isSystemLoadLibrary(invokedMethod)) {

@@ -19,6 +19,13 @@ public interface R8DexFileMetadata {
    */
   String getChecksum();
 
+  /**
+   * Returns the size in bytes of this single dex file.
+   *
+   * <p>Present since R8 9.3.2-dev.
+   */
+  int getSizeInBytes();
+
   /** Returns true if a startup profile is given and this dex file is a startup dex file. */
   boolean isStartup();
 }

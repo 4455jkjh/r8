@@ -4,13 +4,13 @@
 
 package com.android.tools.r8.ir.analysis.proto;
 
-import com.android.tools.r8.errors.Unreachable;
 import com.android.tools.r8.ir.code.InstancePut;
 import com.android.tools.r8.ir.code.Instruction;
 import com.android.tools.r8.ir.code.InvokeMethod;
 import com.android.tools.r8.ir.code.Value;
 import com.android.tools.r8.utils.ValueUtils;
 import com.android.tools.r8.utils.ValueUtils.ArrayValues;
+import com.android.tools.r8.utils.exceptions.Unreachable;
 
 public class ProtoUtils {
 

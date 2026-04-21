@@ -84,7 +84,12 @@ public class IfThenElseAbstractFunction implements AbstractFunction {
       DexType inStaticType = null;
       resultStateWithoutInFlow =
           resultStateWithoutInFlow.mutableJoin(
-              appView, inFlowState, inStaticType, outStaticType, StateCloner.getCloner());
+              appView,
+              appView.getDefaultAbstractValueJoiner(),
+              inFlowState,
+              inStaticType,
+              outStaticType,
+              StateCloner.getCloner());
     }
     return resultStateWithoutInFlow;
   }

@@ -270,7 +270,7 @@ public class TraceReferencesDiagnosticTest extends TestBase {
 
   static class FailingConsumer implements TraceReferencesConsumer {
     private final String where;
-    private boolean reported;
+    private volatile boolean reported;
 
     FailingConsumer(String where) {
       this.where = where;

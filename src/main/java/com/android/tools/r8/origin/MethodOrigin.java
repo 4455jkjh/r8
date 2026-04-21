@@ -6,6 +6,7 @@ package com.android.tools.r8.origin;
 
 import com.android.tools.r8.keepanno.annotations.KeepForApi;
 import com.android.tools.r8.references.MethodReference;
+import com.android.tools.r8.utils.MethodReferenceUtils;
 
 /** Origin representing a method. */
 @KeepForApi
@@ -20,7 +21,7 @@ public class MethodOrigin extends Origin {
 
   @Override
   public String part() {
-    return method.getMethodDescriptor();
+    return MethodReferenceUtils.toSmaliString(method);
   }
 
   public MethodReference getMethod() {

@@ -49,6 +49,7 @@ public abstract class NamingTestBase extends TestBase {
                 .addProgramFile(Paths.get(appFileName))
                 .addLibraryFile(getMostRecentAndroidJar())
                 .build(),
+            Timing.empty(),
             factory -> ToolHelper.loadProguardConfiguration(factory, configPaths));
     dexItemFactory = appView.dexItemFactory();
     ExecutorService executor = Executors.newSingleThreadExecutor();

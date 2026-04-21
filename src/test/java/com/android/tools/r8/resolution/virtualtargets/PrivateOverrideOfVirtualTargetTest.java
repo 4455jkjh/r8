@@ -22,6 +22,7 @@ import com.android.tools.r8.resolution.virtualtargets.package_a.A;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
 import com.android.tools.r8.utils.Box;
 import com.android.tools.r8.utils.DescriptorUtils;
+import com.android.tools.r8.utils.timing.Timing;
 import com.google.common.collect.ImmutableSet;
 import java.io.IOException;
 import java.util.HashSet;
@@ -58,6 +59,7 @@ public class PrivateOverrideOfVirtualTargetTest extends TestBase {
                 .addClassProgramData(getBWithModifiedInvokes())
                 .addLibraryFile(parameters.getDefaultRuntimeLibrary())
                 .build(),
+            Timing.empty(),
             Main.class);
     AppInfoWithLiveness appInfo = appView.appInfo();
     DexMethod method = buildNullaryVoidMethod(A.class, "bar", appInfo.dexItemFactory());

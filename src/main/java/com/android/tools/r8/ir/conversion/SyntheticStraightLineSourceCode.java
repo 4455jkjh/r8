@@ -4,11 +4,11 @@
 
 package com.android.tools.r8.ir.conversion;
 
-import com.android.tools.r8.errors.Unreachable;
 import com.android.tools.r8.graph.DebugLocalInfo;
 import com.android.tools.r8.ir.code.CatchHandlers;
 import com.android.tools.r8.ir.code.Position;
 import com.android.tools.r8.utils.ConsumerUtils;
+import com.android.tools.r8.utils.exceptions.Unreachable;
 import java.util.List;
 import java.util.function.Consumer;
 

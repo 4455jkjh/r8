@@ -43,10 +43,11 @@ public class AtomicFieldUpdaterGetTest extends AtomicFieldUpdaterBase {
             diagnostics -> {
               diagnostics.assertInfosMatch(
                   diagnosticMessage(containsString("Can instrument")),
-                  diagnosticMessage(containsString("Can optimize")),
+                  diagnosticMessage(containsString("Can optimize"))
                   // TODO(b/453628974): The field should be removed once nullability analysis is
-                  // more precise.
-                  diagnosticMessage(containsString("Cannot remove")));
+                  //                    more precise.
+                  // diagnosticMessage(containsString("Can remove"))
+                  );
             })
         .inspect(
             inspector -> {
@@ -54,8 +55,12 @@ public class AtomicFieldUpdaterGetTest extends AtomicFieldUpdaterBase {
               if (isOptimizationOn()) {
                 assertThat(
                     method,
-                    CodeMatchers.invokesMethodWithHolderAndName(
-                        "sun.misc.Unsafe", "getObjectVolatile"));
+                    CodeMatchers.invokesMethod(
+                        inspector
+                            .getFactory()
+                            .sunMiscUnsafeMethods
+                            .getObjectVolatile
+                            .asMethodReference()));
               } else {
                 assertThat(
                     method,

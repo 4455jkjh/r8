@@ -16,6 +16,7 @@ import com.android.tools.r8.ir.optimize.Inliner.Constraint;
 import com.android.tools.r8.ir.optimize.Inliner.ConstraintWithTarget;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
 import com.android.tools.r8.utils.AndroidApp;
+import com.android.tools.r8.utils.timing.Timing;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -40,7 +41,7 @@ public class ConstraintWithTargetTest extends TestBase {
   @BeforeClass
   public static void makeAppInfo() throws Exception {
     AndroidApp app = AndroidApp.builder().addLibraryFiles(ToolHelper.getJava8RuntimeJar()).build();
-    appView = computeAppViewWithLiveness(app);
+    appView = computeAppViewWithLiveness(app, Timing.empty());
     factory = appView.dexItemFactory();
   }
 

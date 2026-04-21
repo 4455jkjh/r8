@@ -6,8 +6,8 @@ package com.android.tools.r8.retrace.internal;
 
 import static java.lang.Integer.MAX_VALUE;
 
-import com.android.tools.r8.errors.Unreachable;
 import com.android.tools.r8.naming.LineReader;
+import com.android.tools.r8.utils.exceptions.Unreachable;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.MappedByteBuffer;

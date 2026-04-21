@@ -18,7 +18,7 @@ import com.android.tools.r8.profile.AbstractProfileClassRule;
 import com.android.tools.r8.profile.AbstractProfileMethodRule;
 import com.android.tools.r8.profile.AbstractProfileRule;
 import com.android.tools.r8.utils.SetUtils;
-import com.android.tools.r8.utils.WorkList;
+import com.android.tools.r8.utils.collections.WorkList;
 import com.google.common.collect.Sets;
 import java.util.ArrayList;
 import java.util.Collections;

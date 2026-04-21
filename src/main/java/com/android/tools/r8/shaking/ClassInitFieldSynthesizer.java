@@ -7,7 +7,6 @@ package com.android.tools.r8.shaking;
 import static com.android.tools.r8.graph.DexProgramClass.asProgramClassOrNull;
 
 import com.android.tools.r8.dex.Constants;
-import com.android.tools.r8.errors.Unreachable;
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.DexEncodedField;
 import com.android.tools.r8.graph.DexField;
@@ -17,6 +16,7 @@ import com.android.tools.r8.graph.FieldAccessFlags;
 import com.android.tools.r8.graph.lens.InitClassLens;
 import com.android.tools.r8.utils.ThreadUtils;
 import com.android.tools.r8.utils.Visibility;
+import com.android.tools.r8.utils.exceptions.Unreachable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 

@@ -269,9 +269,10 @@ public class ApplicationWriter {
   }
 
   /** Writer that never needs the input app to deal with mapping info for kotlin. */
-  public void write(ExecutorService executorService) throws IOException, ExecutionException {
+  public void write(ExecutorService executorService, Timing timing)
+      throws IOException, ExecutionException {
     assert !willComputeProguardMap();
-    write(executorService, null);
+    write(executorService, timing, null);
   }
 
   protected void writeVirtualFiles(
@@ -303,9 +304,8 @@ public class ApplicationWriter {
     }
   }
 
-  public void write(ExecutorService executorService, AndroidApp inputApp)
+  public void write(ExecutorService executorService, Timing timing, AndroidApp inputApp)
       throws IOException, ExecutionException {
-    Timing timing = appView.appInfo().app().timing;
     timing.begin("DexApplication.write");
 
     List<LazyDexString> lazyDexStrings = new ArrayList<>();
@@ -552,7 +552,7 @@ public class ApplicationWriter {
       ((DexIndexedConsumer) consumer)
           .accept(virtualFile.getId(), data, virtualFile.getClassDescriptors(), options.reporter);
     }
-    virtualFile.calculateChecksumForBuildMetadata(data, options);
+    virtualFile.recordChecksumAndSizeInBytesForBuildMetadata(data, options);
     timing.end();
     // Release use of the backing buffer now that accept has returned.
     data.invalidate();

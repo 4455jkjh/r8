@@ -7,7 +7,6 @@ import static com.android.tools.r8.dex.Constants.U4BIT_MAX;
 import static com.android.tools.r8.dex.Constants.U8BIT_MAX;
 
 import com.android.tools.r8.cf.LoadStoreHelper;
-import com.android.tools.r8.errors.Unreachable;
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.ProgramMethod;
 import com.android.tools.r8.ir.analysis.type.PrimitiveTypeElement;
@@ -16,6 +15,7 @@ import com.android.tools.r8.ir.analysis.value.AbstractValue;
 import com.android.tools.r8.ir.optimize.Inliner.ConstraintWithTarget;
 import com.android.tools.r8.ir.optimize.InliningConstraints;
 import com.android.tools.r8.ir.regalloc.RegisterAllocator;
+import com.android.tools.r8.utils.exceptions.Unreachable;
 
 public abstract class Binop extends Instruction {
 

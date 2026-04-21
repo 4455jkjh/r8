@@ -23,8 +23,6 @@ import com.android.tools.r8.cf.CfVersion;
 import com.android.tools.r8.desugar.desugaredlibrary.test.LibraryDesugaringSpecification.CustomConversionVersion;
 import com.android.tools.r8.dex.ApplicationReader;
 import com.android.tools.r8.dex.Marker.Tool;
-import com.android.tools.r8.errors.Unimplemented;
-import com.android.tools.r8.errors.Unreachable;
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.AssemblyWriter;
 import com.android.tools.r8.graph.DexApplication;
@@ -46,10 +44,12 @@ import com.android.tools.r8.utils.ExceptionUtils;
 import com.android.tools.r8.utils.FileUtils;
 import com.android.tools.r8.utils.InternalOptions;
 import com.android.tools.r8.utils.ListUtils;
-import com.android.tools.r8.utils.Pair;
 import com.android.tools.r8.utils.Reporter;
 import com.android.tools.r8.utils.StringUtils;
 import com.android.tools.r8.utils.ZipUtils;
+import com.android.tools.r8.utils.collections.Pair;
+import com.android.tools.r8.utils.exceptions.Unimplemented;
+import com.android.tools.r8.utils.exceptions.Unreachable;
 import com.android.tools.r8.utils.timing.Timing;
 import com.google.common.base.Charsets;
 import com.google.common.collect.ImmutableList;
@@ -1631,6 +1631,15 @@ public class ToolHelper {
     if (foundBasePath) {
       return resolveBasePath;
     }
+
+    // Fallback for assistant module test dependencies during CF generation
+    Path assistantPath =
+        Paths.get(getProjectRoot(), "d8_r8", "assistant", "build", "classes", "java", "main")
+            .resolve(filePath);
+    if (Files.exists(assistantPath)) {
+      return assistantPath;
+    }
+
     throw new RuntimeException(
         "Could not find test class in either of paths:\n"
             + resolveTestPath
@@ -2722,9 +2731,9 @@ public class ToolHelper {
     return builder;
   }
 
-  public static void writeApplication(AppView<?> appView) throws ExecutionException {
+  public static void writeApplication(AppView<?> appView, Timing timing) throws ExecutionException {
     appView.options().tool = Tool.R8;
-    R8.writeApplication(appView, null, Executors.newSingleThreadExecutor());
+    R8.writeApplication(appView, null, Executors.newSingleThreadExecutor(), timing);
   }
 
   public static void disassemble(AndroidApp app, PrintStream ps)

@@ -19,6 +19,7 @@ import com.android.tools.r8.ir.code.Instruction;
 import com.android.tools.r8.ir.code.InvokeVirtual;
 import com.android.tools.r8.ir.code.NewInstance;
 import com.android.tools.r8.ir.code.Value;
+import com.android.tools.r8.utils.timing.Timing;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
@@ -54,7 +55,7 @@ public class EscapeAnalysisForNameReflectionTest extends AnalysisTestBase {
   @Before
   @Override
   public void setup() throws Exception {
-    appView = computeAppViewWithClassHierarchy(app, null, this::configure);
+    appView = computeAppViewWithClassHierarchy(app, Timing.empty(), null, this::configure);
   }
 
   @Test

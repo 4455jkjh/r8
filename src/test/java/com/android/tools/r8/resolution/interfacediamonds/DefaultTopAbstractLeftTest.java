@@ -15,6 +15,7 @@ import com.android.tools.r8.graph.DexEncodedMethod;
 import com.android.tools.r8.graph.DexMethod;
 import com.android.tools.r8.graph.MethodResolutionResult;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
+import com.android.tools.r8.utils.timing.Timing;
 import com.google.common.collect.ImmutableList;
 import java.util.Collection;
 import java.util.Collections;
@@ -50,6 +51,7 @@ public class DefaultTopAbstractLeftTest extends TestBase {
                     .addClassProgramData(Collections.singletonList(transformB()))
                     .addLibraryFile(parameters.getDefaultRuntimeLibrary())
                     .build(),
+                Timing.empty(),
                 Main.class)
             .appInfo();
     DexMethod method = buildNullaryVoidMethod(B.class, "f", appInfo.dexItemFactory());

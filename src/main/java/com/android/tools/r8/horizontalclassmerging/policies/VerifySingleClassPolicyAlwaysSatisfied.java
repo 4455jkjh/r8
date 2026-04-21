@@ -6,7 +6,7 @@ package com.android.tools.r8.horizontalclassmerging.policies;
 
 import com.android.tools.r8.graph.DexProgramClass;
 import com.android.tools.r8.horizontalclassmerging.SingleClassPolicy;
-import com.android.tools.r8.utils.InternalOptions;
+import com.android.tools.r8.utils.AssertionUtils;
 
 public class VerifySingleClassPolicyAlwaysSatisfied extends SingleClassPolicy {
 
@@ -29,6 +29,6 @@ public class VerifySingleClassPolicyAlwaysSatisfied extends SingleClassPolicy {
 
   @Override
   public boolean shouldSkipPolicy() {
-    return !InternalOptions.assertionsEnabled() || policy.shouldSkipPolicy();
+    return !AssertionUtils.assertionsEnabled() || policy.shouldSkipPolicy();
   }
 }

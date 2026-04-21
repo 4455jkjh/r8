@@ -4,7 +4,6 @@
 
 package com.android.tools.r8.ir.synthetic;
 
-import com.android.tools.r8.errors.Unreachable;
 import com.android.tools.r8.graph.DebugLocalInfo;
 import com.android.tools.r8.graph.ProgramMethod;
 import com.android.tools.r8.ir.code.CatchHandlers;
@@ -14,6 +13,7 @@ import com.android.tools.r8.ir.conversion.DexSourceCode;
 import com.android.tools.r8.ir.conversion.IRBuilder;
 import com.android.tools.r8.ir.conversion.SourceCode;
 import com.android.tools.r8.utils.ArrayUtils;
+import com.android.tools.r8.utils.exceptions.Unreachable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;

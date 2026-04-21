@@ -148,7 +148,8 @@ public class TraceReferences {
             command.getReporter(),
             type -> targetDescriptors.contains(type.toDescriptorString()));
     try {
-      tracer.run(command.getConsumer(), command.getNativeReferencesConsumer(), timing);
+      tracer.run(
+          command.getConsumer(), command.getNativeReferencesConsumer(), executorService, timing);
     } catch (ExecutionException e) {
       throw unwrapExecutionException(e);
     } finally {

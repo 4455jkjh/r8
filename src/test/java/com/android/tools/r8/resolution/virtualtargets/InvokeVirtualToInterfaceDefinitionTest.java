@@ -23,6 +23,7 @@ import com.android.tools.r8.graph.DexProgramClass;
 import com.android.tools.r8.graph.LookupResult;
 import com.android.tools.r8.graph.MethodResolutionResult;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
+import com.android.tools.r8.utils.timing.Timing;
 import com.google.common.collect.ImmutableSet;
 import java.io.IOException;
 import java.util.HashSet;
@@ -59,7 +60,7 @@ public class InvokeVirtualToInterfaceDefinitionTest extends TestBase {
             .addLibraryFiles(parameters.getDefaultRuntimeLibrary())
             .addKeepMainRule(Main.class)
             .setMinApi(apiLevelWithDefaultInterfaceMethodsSupport())
-            .buildWithLiveness();
+            .buildWithLiveness(Timing.empty());
     AppInfoWithLiveness appInfo = appView.appInfo();
     DexMethod method = buildNullaryVoidMethod(A.class, "foo", appInfo.dexItemFactory());
     MethodResolutionResult resolutionResult = appInfo.resolveMethodOnClassHolderLegacy(method);

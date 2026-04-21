@@ -137,6 +137,9 @@ EXTERNAL_BENCHMARKS = {
 }
 # A collection of internal benchmarks that should be run on the internal bot.
 INTERNAL_BENCHMARKS = {
+    'AGSA': {
+        'targets': ['r8-full']
+    },
     'SystemUIApp': {
         'targets': ['r8-full']
     },
@@ -150,9 +153,6 @@ INTERNAL_BENCHMARKS = {
 # A collection of benchmarks that should not be run on the bots, but can be used
 # for running locally.
 LOCAL_BENCHMARKS = {
-    'AGSA': {
-        'targets': ['r8-full']
-    },
     'ChromeAppTreeShaking': {
         'targets': ['r8-full']
     },

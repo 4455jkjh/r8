@@ -5,7 +5,6 @@ package com.android.tools.r8.graph;
 
 import static com.android.tools.r8.utils.ConsumerUtils.emptyConsumer;
 
-import com.android.tools.r8.errors.Unreachable;
 import com.android.tools.r8.graph.LookupResult.LookupResultSuccess;
 import com.android.tools.r8.graph.LookupResult.LookupResultSuccess.LookupResultCollectionState;
 import com.android.tools.r8.ir.analysis.type.DynamicType;
@@ -26,6 +25,7 @@ import com.android.tools.r8.utils.ConsumerUtils;
 import com.android.tools.r8.utils.ListUtils;
 import com.android.tools.r8.utils.OptionalBool;
 import com.android.tools.r8.utils.SetUtils;
+import com.android.tools.r8.utils.exceptions.Unreachable;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
 import java.util.ArrayList;

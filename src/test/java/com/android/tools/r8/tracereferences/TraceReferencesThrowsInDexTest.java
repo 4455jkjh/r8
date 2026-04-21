@@ -20,9 +20,9 @@ import com.android.tools.r8.utils.StringUtils;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import java.nio.file.Path;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -44,8 +44,8 @@ public class TraceReferencesThrowsInDexTest extends TestBase {
 
   static class Consumer implements TraceReferencesConsumer {
 
-    Set<ClassReference> tracedTypes = new HashSet<>();
-    Set<MethodReference> tracedMethods = new HashSet<>();
+    private final Set<ClassReference> tracedTypes = ConcurrentHashMap.newKeySet();
+    private final Set<MethodReference> tracedMethods = ConcurrentHashMap.newKeySet();
 
     @Override
     public void acceptType(TracedClass tracedClass, DiagnosticsHandler handler) {

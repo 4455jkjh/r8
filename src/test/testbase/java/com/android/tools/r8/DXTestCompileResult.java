@@ -4,8 +4,8 @@
 package com.android.tools.r8;
 
 import com.android.tools.r8.ToolHelper.ProcessResult;
-import com.android.tools.r8.errors.Unimplemented;
 import com.android.tools.r8.utils.AndroidApp;
+import com.android.tools.r8.utils.exceptions.Unimplemented;
 import java.util.Set;
 
 public class DXTestCompileResult extends TestCompileResult<DXTestCompileResult, DXTestRunResult> {

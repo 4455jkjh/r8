@@ -42,7 +42,7 @@ import com.android.tools.r8.shaking.KeepInfo;
 import com.android.tools.r8.shaking.MinimumKeepInfoCollection;
 import com.android.tools.r8.utils.DominatorChecker;
 import com.android.tools.r8.utils.ListUtils;
-import com.android.tools.r8.utils.WorkList;
+import com.android.tools.r8.utils.collections.WorkList;
 import com.google.common.collect.Sets;
 import java.util.ArrayList;
 import java.util.Collections;

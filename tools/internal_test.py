@@ -429,12 +429,6 @@ def get_test_commands(try_run):
         # the try run should do.
         return [get_perf_test_command(try_run)]
     test_commands = get_default_test_commands()
-    version = utils.get_HEAD_commit().version()
-    if version and version.endswith('-dev'):
-        test_commands.append([
-            'tools/perf.py', '--benchmark', 'AGSA', '--iterations-inner', '1',
-            '--no-upload-benchmark-data-to-google-storage'
-        ])
     return test_commands
 
 

@@ -6,7 +6,6 @@ package com.android.tools.r8.synthesis;
 import static com.android.tools.r8.utils.DescriptorUtils.INNER_CLASS_SEPARATOR;
 
 import com.android.tools.r8.Version;
-import com.android.tools.r8.errors.Unreachable;
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.DexItemFactory;
 import com.android.tools.r8.graph.DexType;
@@ -15,6 +14,7 @@ import com.android.tools.r8.references.ClassReference;
 import com.android.tools.r8.references.Reference;
 import com.android.tools.r8.utils.DescriptorUtils;
 import com.android.tools.r8.utils.InternalOptions;
+import com.android.tools.r8.utils.exceptions.Unreachable;
 import com.android.tools.r8.utils.structural.Equatable;
 import com.android.tools.r8.utils.structural.Ordered;
 import com.google.common.hash.Hasher;
@@ -34,6 +34,20 @@ public class SyntheticNaming {
   public final SyntheticKind METHOD_HANDLES_LOOKUP = generator.forGlobalClass();
   public final SyntheticKind VAR_HANDLE = generator.forGlobalClass();
   public final SyntheticKind LAMBDA_METHOD_ANNOTATION = generator.forGlobalClass();
+
+  public final SyntheticKind ASSISTANT_REFLECTIVE_ORACLE = generator.forGlobalClass();
+  public final SyntheticKind ASSISTANT_REFLECTIVE_ORACLE_STACK = generator.forGlobalClass();
+  public final SyntheticKind ASSISTANT_REFLECTIVE_OPERATION_JSON_LOGGER =
+      generator.forGlobalClass();
+  public final SyntheticKind ASSISTANT_REFLECTIVE_OPERATION_LOGGER = generator.forGlobalClass();
+  public final SyntheticKind ASSISTANT_REFLECTIVE_EVENT_TYPE = generator.forGlobalClass();
+  public final SyntheticKind ASSISTANT_REFLECTIVE_OPERATION_RECEIVER = generator.forGlobalClass();
+  public final SyntheticKind ASSISTANT_REFLECTIVE_OPERATION_RECEIVER_CLASS_FLAG =
+      generator.forGlobalClass();
+  public final SyntheticKind ASSISTANT_REFLECTIVE_OPERATION_RECEIVER_NAME_LOOKUP_TYPE =
+      generator.forGlobalClass();
+  public final SyntheticKind ASSISTANT_EMPTY_REFLECTIVE_OPERATION_RECEIVER =
+      generator.forGlobalClass();
 
   // Classpath only synthetics in the global type namespace.
   public final SyntheticKind GENERIC_API_CONVERSION_STUB = generator.forGlobalClasspathClass();

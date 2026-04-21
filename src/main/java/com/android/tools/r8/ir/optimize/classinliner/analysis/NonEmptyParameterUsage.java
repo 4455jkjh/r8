@@ -4,12 +4,12 @@
 
 package com.android.tools.r8.ir.optimize.classinliner.analysis;
 
-import com.android.tools.r8.errors.Unreachable;
 import com.android.tools.r8.graph.DexField;
 import com.android.tools.r8.graph.DexMethod;
 import com.android.tools.r8.graph.DexType;
 import com.android.tools.r8.ir.code.InvokeMethodWithReceiver;
 import com.android.tools.r8.utils.ObjectUtils;
+import com.android.tools.r8.utils.exceptions.Unreachable;
 import com.google.common.collect.Multiset;
 import java.util.Set;
 

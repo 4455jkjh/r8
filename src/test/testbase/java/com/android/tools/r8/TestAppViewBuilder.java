@@ -11,6 +11,7 @@ import com.android.tools.r8.utils.AndroidApiLevel;
 import com.android.tools.r8.utils.AndroidApp;
 import com.android.tools.r8.utils.InternalOptions;
 import com.android.tools.r8.utils.ListUtils;
+import com.android.tools.r8.utils.timing.Timing;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -80,9 +81,10 @@ public class TestAppViewBuilder {
     return this;
   }
 
-  public AppView<AppInfoWithLiveness> buildWithLiveness() throws Exception {
+  public AppView<AppInfoWithLiveness> buildWithLiveness(Timing timing) throws Exception {
     return TestBase.computeAppViewWithLiveness(
         builder.build(),
+        timing,
         (rules == null
             ? null
             : factory ->

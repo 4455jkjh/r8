@@ -6,8 +6,9 @@ package com.android.tools.r8;
 
 import com.android.tools.r8.errors.CompilationError;
 import com.android.tools.r8.errors.InternalCompilerError;
-import com.android.tools.r8.errors.Unimplemented;
 import com.android.tools.r8.utils.AndroidApiLevel;
+import com.android.tools.r8.utils.exceptions.Unimplemented;
+import com.android.tools.r8.utils.exceptions.Unreachable;
 import java.nio.file.Path;
 import java.util.function.UnaryOperator;
 
@@ -42,7 +43,7 @@ public class D8RunExamplesAndroidPTest extends RunExamplesAndroidPTest<D8Command
           .setOutput(out, OutputMode.DexIndexed);
       try {
         ToolHelper.runD8(builder, this::combinedOptionConsumer);
-      } catch (Unimplemented | CompilationError | InternalCompilerError re) {
+      } catch (Unimplemented | CompilationError | Unreachable | InternalCompilerError re) {
         throw re;
       } catch (RuntimeException re) {
         throw re.getCause() == null ? re : re.getCause();

@@ -40,7 +40,7 @@ public class InlineOutlineWithAssumeTest extends TestBase {
               options.outline.threshold = 2;
               options.outline.minSize = 2;
               options.getTestingOptions().enqueuerInspector =
-                  (appView, mode) -> {
+                  (appView, mode, timing) -> {
                     // Replace the body of otherOutlineCallSite() by `throw null` after the second
                     // round of tree shaking so that the outline gets single call inlined in the
                     // backed.

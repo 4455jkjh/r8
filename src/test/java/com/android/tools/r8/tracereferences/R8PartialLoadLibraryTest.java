@@ -1,0 +1,554 @@
+// Copyright (c) 2026, the R8 project authors. Please see the AUTHORS file
+// for details. All rights reserved. Use of this source code is governed by a
+// BSD-style license that can be found in the LICENSE file.
+package com.android.tools.r8.tracereferences;
+
+import com.android.tools.r8.TestBase;
+import com.android.tools.r8.TestParameters;
+import com.android.tools.r8.ToolHelper;
+import com.android.tools.r8.origin.ArchiveEntryOrigin;
+import com.android.tools.r8.origin.MethodOrigin;
+import com.android.tools.r8.origin.Origin;
+import com.android.tools.r8.origin.PathOrigin;
+import com.android.tools.r8.references.Reference;
+import com.android.tools.r8.utils.AndroidApiLevel;
+import com.android.tools.r8.utils.BooleanUtils;
+import com.android.tools.r8.utils.Box;
+import com.android.tools.r8.utils.ZipUtils;
+import com.android.tools.r8.utils.ZipUtils.ZipBuilder;
+import com.google.common.collect.ImmutableList;
+import java.nio.file.Path;
+import java.util.List;
+import java.util.function.Consumer;
+import org.junit.BeforeClass;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameter;
+import org.junit.runners.Parameterized.Parameters;
+
+@RunWith(Parameterized.class)
+public class R8PartialLoadLibraryTest extends TestBase {
+
+  @Parameters(name = "{0}, System.loadLibrary in D8 code = {1}")
+  public static List<Object[]> data() {
+    return buildParameters(getTestParameters().withNoneRuntime().build(), BooleanUtils.values());
+  }
+
+  @Parameter(0)
+  public TestParameters parameters;
+
+  @Parameter(1)
+  public boolean loadLibraryInD8;
+
+  public static Path input1Jar;
+  public static Origin input1MethodOrigin;
+  public static Path input2Jar;
+  public static Origin input2Method1Origin;
+  public static Origin input2Method2Origin;
+  public static Path loadUnknown1Jar;
+  public static Origin loadUnknown1MethodOrigin;
+  public static Path loadUnknown2Jar;
+  public static Origin loadUnknown2Method1Origin;
+  public static Origin loadUnknown2Method2Origin;
+
+  @BeforeClass
+  public static void createTestJars() throws Exception {
+    Box<Origin> jarOrigin = new Box<>();
+    Path dir = getStaticTemp().newFolder().toPath();
+    createJarAndOrigin(dir, Class1.class, "input1.jar", path -> input1Jar = path, jarOrigin::set);
+    input1MethodOrigin =
+        new MethodOrigin(Reference.methodFromMethod(Class1.class.getMethod("m")), jarOrigin.get());
+    createJarAndOrigin(dir, Class2.class, "input2.jar", path -> input2Jar = path, jarOrigin::set);
+    input2Method1Origin =
+        new MethodOrigin(Reference.methodFromMethod(Class2.class.getMethod("m1")), jarOrigin.get());
+    input2Method2Origin =
+        new MethodOrigin(Reference.methodFromMethod(Class2.class.getMethod("m2")), jarOrigin.get());
+    createJarAndOrigin(
+        dir,
+        ClassLoadUnknownLibrary1.class,
+        "loadunknown1.jar",
+        path -> loadUnknown1Jar = path,
+        jarOrigin::set);
+    loadUnknown1MethodOrigin =
+        new MethodOrigin(
+            Reference.methodFromMethod(ClassLoadUnknownLibrary1.class.getMethod("m", String.class)),
+            jarOrigin.get());
+    createJarAndOrigin(
+        dir,
+        ClassLoadUnknownLibrary2.class,
+        "loadunknown2.jar",
+        path -> loadUnknown2Jar = path,
+        jarOrigin::set);
+    loadUnknown2Method1Origin =
+        new MethodOrigin(
+            Reference.methodFromMethod(
+                ClassLoadUnknownLibrary2.class.getMethod("m1", String.class)),
+            jarOrigin.get());
+    loadUnknown2Method2Origin =
+        new MethodOrigin(
+            Reference.methodFromMethod(
+                ClassLoadUnknownLibrary2.class.getMethod("m2", String.class)),
+            jarOrigin.get());
+  }
+
+  private static void createJarAndOrigin(
+      Path dir,
+      Class<?> clazz,
+      String filename,
+      Consumer<Path> pathConsumer,
+      Consumer<Origin> originConsumer)
+      throws Exception {
+    Path jarPath = dir.resolve(filename);
+    Path classFile = ToolHelper.getClassFileForTestClass(clazz);
+    ZipBuilder.builder(jarPath)
+        .addFilesRelative(ToolHelper.getClassPathForTests(), classFile)
+        .build();
+    Origin origin =
+        new ArchiveEntryOrigin(
+            ZipUtils.zipEntryFromPath(ToolHelper.getClassPathForTests().relativize(classFile)),
+            new PathOrigin(jarPath));
+    pathConsumer.accept(jarPath);
+    originConsumer.accept(origin);
+  }
+
+  @Test
+  public void testSingleLoadLibrary() throws Throwable {
+    NativeReferencesTestingConsumer nativeReferencesTestingConsumer =
+        new NativeReferencesTestingConsumer();
+    testForR8Partial(Backend.DEX)
+        .addLibraryFiles(ToolHelper.getAndroidJar(AndroidApiLevel.P))
+        .addProgramFiles(input1Jar)
+        .addProgramClasses(UseClass1Method.class)
+        .setR8PartialConfiguration(
+            builder ->
+                builder
+                    .includeAll()
+                    .excludeClasses(loadLibraryInD8 ? Class1.class : UseClass1Method.class))
+        .applyIf(loadLibraryInD8, b -> b.addKeepMainRule(UseClass1Method.class))
+        .setNativeReferencesConsumer(nativeReferencesTestingConsumer)
+        .compile()
+        .inspect(
+            inspector -> {
+              if (loadLibraryInD8) {
+                nativeReferencesTestingConsumer
+                    .expectLoadLibrary("library1", input1MethodOrigin)
+                    .thatsAll();
+              } else {
+                nativeReferencesTestingConsumer
+                    .expectLoadLibrary(
+                        "library1",
+                        origin ->
+                            origin instanceof MethodOrigin
+                                && ((MethodOrigin) origin)
+                                    .getMethod()
+                                    .equals(
+                                        inspector
+                                            .clazz(Class1.class)
+                                            .uniqueMethod()
+                                            .getFinalReference()))
+                    .thatsAll();
+              }
+            });
+  }
+
+  @Test
+  public void testMultipleLoadLibrary() throws Throwable {
+    NativeReferencesTestingConsumer nativeReferencesTestingConsumer =
+        new NativeReferencesTestingConsumer();
+    testForR8Partial(Backend.DEX)
+        .addLibraryFiles(ToolHelper.getAndroidJar(AndroidApiLevel.P))
+        .addProgramFiles(input2Jar)
+        .addProgramClasses(UseClass2Methods.class)
+        .setR8PartialConfiguration(
+            builder ->
+                builder
+                    .includeAll()
+                    .excludeClasses(loadLibraryInD8 ? Class2.class : UseClass2Methods.class))
+        .applyIf(loadLibraryInD8, b -> b.addKeepMainRule(UseClass2Methods.class))
+        .setNativeReferencesConsumer(nativeReferencesTestingConsumer)
+        .compile()
+        .inspect(
+            inspector -> {
+              if (loadLibraryInD8) {
+                nativeReferencesTestingConsumer
+                    .expectLoadLibrary("library1", input2Method1Origin)
+                    .expectLoadLibrary("library2", input2Method2Origin)
+                    .thatsAll();
+              } else {
+                nativeReferencesTestingConsumer
+                    .expectLoadLibrary(
+                        "library1",
+                        origin ->
+                            origin instanceof MethodOrigin
+                                && ((MethodOrigin) origin)
+                                    .getMethod()
+                                    .equals(
+                                        inspector
+                                            .clazz(Class2.class)
+                                            .uniqueMethodWithOriginalName("m1")
+                                            .getFinalReference()))
+                    .expectLoadLibrary(
+                        "library2",
+                        origin ->
+                            origin instanceof MethodOrigin
+                                && ((MethodOrigin) origin)
+                                    .getMethod()
+                                    .equals(
+                                        inspector
+                                            .clazz(Class2.class)
+                                            .uniqueMethodWithOriginalName("m2")
+                                            .getFinalReference()))
+                    .thatsAll();
+              }
+            });
+  }
+
+  @Test
+  public void testMultipleLoadLibraryDuplicate() throws Throwable {
+    NativeReferencesTestingConsumer nativeReferencesTestingConsumer =
+        new NativeReferencesTestingConsumer();
+    testForR8Partial(Backend.DEX)
+        .addLibraryFiles(ToolHelper.getAndroidJar(AndroidApiLevel.P))
+        .addProgramFiles(input1Jar)
+        .addProgramFiles(input2Jar)
+        .addProgramClasses(UseClass1Method.class)
+        .addProgramClasses(UseClass2Methods.class)
+        .setR8PartialConfiguration(
+            builder ->
+                builder
+                    .includeAll()
+                    .excludeClasses(
+                        loadLibraryInD8
+                            ? ImmutableList.of(Class1.class, Class2.class)
+                            : ImmutableList.of(UseClass1Method.class, UseClass2Methods.class)))
+        .applyIf(
+            loadLibraryInD8,
+            b -> b.addKeepMainRule(UseClass1Method.class).addKeepMainRule(UseClass2Methods.class))
+        .setNativeReferencesConsumer(nativeReferencesTestingConsumer)
+        .compile()
+        .inspect(
+            inspector -> {
+              if (loadLibraryInD8) {
+                nativeReferencesTestingConsumer
+                    .expectLoadLibrary("library1", input1MethodOrigin)
+                    .expectLoadLibrary("library1", input2Method1Origin)
+                    .expectLoadLibrary("library2", input2Method2Origin)
+                    .thatsAll();
+              } else {
+                nativeReferencesTestingConsumer
+                    .expectLoadLibrary(
+                        "library1",
+                        origin ->
+                            origin instanceof MethodOrigin
+                                && ((MethodOrigin) origin)
+                                    .getMethod()
+                                    .equals(
+                                        inspector
+                                            .clazz(Class1.class)
+                                            .uniqueMethod()
+                                            .getFinalReference()))
+                    .expectLoadLibrary(
+                        "library1",
+                        origin ->
+                            origin instanceof MethodOrigin
+                                && ((MethodOrigin) origin)
+                                    .getMethod()
+                                    .equals(
+                                        inspector
+                                            .clazz(Class2.class)
+                                            .uniqueMethodWithOriginalName("m1")
+                                            .getFinalReference()))
+                    .expectLoadLibrary(
+                        "library2",
+                        origin ->
+                            origin instanceof MethodOrigin
+                                && ((MethodOrigin) origin)
+                                    .getMethod()
+                                    .equals(
+                                        inspector
+                                            .clazz(Class2.class)
+                                            .uniqueMethodWithOriginalName("m2")
+                                            .getFinalReference()))
+                    .thatsAll();
+              }
+            });
+  }
+
+  @Test
+  public void testUnknownLoadLibraryCall() throws Throwable {
+    NativeReferencesTestingConsumer nativeReferencesTestingConsumer =
+        new NativeReferencesTestingConsumer();
+    testForR8Partial(Backend.DEX)
+        .addLibraryFiles(ToolHelper.getAndroidJar(AndroidApiLevel.P))
+        .addProgramFiles(loadUnknown1Jar)
+        .addProgramClasses(UseClassLoadUnknownLibrary1.class)
+        .setR8PartialConfiguration(
+            builder ->
+                builder
+                    .includeAll()
+                    .excludeClasses(
+                        loadLibraryInD8
+                            ? ClassLoadUnknownLibrary1.class
+                            : UseClassLoadUnknownLibrary1.class))
+        .applyIf(loadLibraryInD8, b -> b.addKeepMainRule(UseClassLoadUnknownLibrary1.class))
+        .setNativeReferencesConsumer(nativeReferencesTestingConsumer)
+        .compile()
+        .inspect(
+            inspector -> {
+              if (loadLibraryInD8) {
+                nativeReferencesTestingConsumer
+                    .expectLoadLibraryAny(loadUnknown1MethodOrigin)
+                    .thatsAll();
+              } else {
+                nativeReferencesTestingConsumer
+                    .expectLoadLibraryAny(
+                        origin ->
+                            origin instanceof MethodOrigin
+                                && ((MethodOrigin) origin)
+                                    .getMethod()
+                                    .equals(
+                                        inspector
+                                            .clazz(ClassLoadUnknownLibrary1.class)
+                                            .uniqueMethod()
+                                            .getFinalReference()))
+                    .thatsAll();
+              }
+            });
+  }
+
+  @Test
+  public void testUnknownLoadLibraryCallMultiple() throws Throwable {
+    NativeReferencesTestingConsumer nativeReferencesTestingConsumer =
+        new NativeReferencesTestingConsumer();
+    testForR8Partial(Backend.DEX)
+        .addLibraryFiles(ToolHelper.getAndroidJar(AndroidApiLevel.P))
+        .addProgramFiles(loadUnknown2Jar)
+        .addProgramClasses(UseClassLoadUnknownLibrary2.class)
+        .setR8PartialConfiguration(
+            builder ->
+                builder
+                    .includeAll()
+                    .excludeClasses(
+                        loadLibraryInD8
+                            ? ClassLoadUnknownLibrary2.class
+                            : UseClassLoadUnknownLibrary2.class))
+        .applyIf(loadLibraryInD8, b -> b.addKeepMainRule(UseClassLoadUnknownLibrary2.class))
+        .setNativeReferencesConsumer(nativeReferencesTestingConsumer)
+        .compile()
+        .inspect(
+            inspector -> {
+              if (loadLibraryInD8) {
+                nativeReferencesTestingConsumer
+                    .expectLoadLibraryAny(loadUnknown2Method1Origin)
+                    .expectLoadLibraryAny(loadUnknown2Method2Origin)
+                    .thatsAll();
+              } else {
+                nativeReferencesTestingConsumer
+                    .expectLoadLibraryAny(
+                        origin ->
+                            origin instanceof MethodOrigin
+                                && ((MethodOrigin) origin)
+                                    .getMethod()
+                                    .equals(
+                                        inspector
+                                            .clazz(ClassLoadUnknownLibrary2.class)
+                                            .uniqueMethodWithOriginalName("m1")
+                                            .getFinalReference()))
+                    .expectLoadLibraryAny(
+                        origin ->
+                            origin instanceof MethodOrigin
+                                && ((MethodOrigin) origin)
+                                    .getMethod()
+                                    .equals(
+                                        inspector
+                                            .clazz(ClassLoadUnknownLibrary2.class)
+                                            .uniqueMethodWithOriginalName("m2")
+                                            .getFinalReference()))
+                    .thatsAll();
+              }
+            });
+  }
+
+  @Test
+  public void testUnknownLoadLibraryAll() throws Throwable {
+    NativeReferencesTestingConsumer nativeReferencesTestingConsumer =
+        new NativeReferencesTestingConsumer();
+    testForR8Partial(Backend.DEX)
+        .addLibraryFiles(ToolHelper.getAndroidJar(AndroidApiLevel.P))
+        .addProgramFiles(input1Jar)
+        .addProgramFiles(input2Jar)
+        .addProgramFiles(loadUnknown1Jar)
+        .addProgramFiles(loadUnknown2Jar)
+        .addProgramClasses(UseClass1Method.class)
+        .addProgramClasses(UseClass2Methods.class)
+        .addProgramClasses(UseClassLoadUnknownLibrary1.class)
+        .addProgramClasses(UseClassLoadUnknownLibrary2.class)
+        .setR8PartialConfiguration(
+            builder ->
+                builder
+                    .includeAll()
+                    .excludeClasses(
+                        loadLibraryInD8
+                            ? ImmutableList.of(
+                                Class1.class,
+                                Class2.class,
+                                ClassLoadUnknownLibrary1.class,
+                                ClassLoadUnknownLibrary2.class)
+                            : ImmutableList.of(
+                                UseClass1Method.class,
+                                UseClass2Methods.class,
+                                UseClassLoadUnknownLibrary1.class,
+                                UseClassLoadUnknownLibrary2.class)))
+        .applyIf(
+            loadLibraryInD8,
+            b ->
+                b.addKeepMainRule(UseClass1Method.class)
+                    .addKeepMainRule(UseClass2Methods.class)
+                    .addKeepMainRule(UseClassLoadUnknownLibrary1.class)
+                    .addKeepMainRule(UseClassLoadUnknownLibrary2.class))
+        .setNativeReferencesConsumer(nativeReferencesTestingConsumer)
+        .compile()
+        .inspect(
+            inspector -> {
+              if (loadLibraryInD8) {
+                nativeReferencesTestingConsumer
+                    .expectLoadLibrary("library1", input1MethodOrigin)
+                    .expectLoadLibrary("library1", input2Method1Origin)
+                    .expectLoadLibrary("library2", input2Method2Origin)
+                    .expectLoadLibraryAny(loadUnknown1MethodOrigin)
+                    .expectLoadLibraryAny(loadUnknown2Method1Origin)
+                    .expectLoadLibraryAny(loadUnknown2Method2Origin)
+                    .thatsAll();
+              } else {
+                nativeReferencesTestingConsumer
+                    .expectLoadLibrary(
+                        "library1",
+                        origin ->
+                            origin instanceof MethodOrigin
+                                && ((MethodOrigin) origin)
+                                    .getMethod()
+                                    .equals(
+                                        inspector
+                                            .clazz(Class1.class)
+                                            .uniqueMethod()
+                                            .getFinalReference()))
+                    .expectLoadLibrary(
+                        "library1",
+                        origin ->
+                            origin instanceof MethodOrigin
+                                && ((MethodOrigin) origin)
+                                    .getMethod()
+                                    .equals(
+                                        inspector
+                                            .clazz(Class2.class)
+                                            .uniqueMethodWithOriginalName("m1")
+                                            .getFinalReference()))
+                    .expectLoadLibrary(
+                        "library2",
+                        origin ->
+                            origin instanceof MethodOrigin
+                                && ((MethodOrigin) origin)
+                                    .getMethod()
+                                    .equals(
+                                        inspector
+                                            .clazz(Class2.class)
+                                            .uniqueMethodWithOriginalName("m2")
+                                            .getFinalReference()))
+                    .expectLoadLibraryAny(
+                        origin ->
+                            origin instanceof MethodOrigin
+                                && ((MethodOrigin) origin)
+                                    .getMethod()
+                                    .equals(
+                                        inspector
+                                            .clazz(ClassLoadUnknownLibrary1.class)
+                                            .uniqueMethod()
+                                            .getFinalReference()))
+                    .expectLoadLibraryAny(
+                        origin ->
+                            origin instanceof MethodOrigin
+                                && ((MethodOrigin) origin)
+                                    .getMethod()
+                                    .equals(
+                                        inspector
+                                            .clazz(ClassLoadUnknownLibrary2.class)
+                                            .uniqueMethodWithOriginalName("m1")
+                                            .getFinalReference()))
+                    .expectLoadLibraryAny(
+                        origin ->
+                            origin instanceof MethodOrigin
+                                && ((MethodOrigin) origin)
+                                    .getMethod()
+                                    .equals(
+                                        inspector
+                                            .clazz(ClassLoadUnknownLibrary2.class)
+                                            .uniqueMethodWithOriginalName("m2")
+                                            .getFinalReference()))
+                    .thatsAll();
+              }
+            });
+  }
+
+  static class Class1 {
+    public static void m() {
+      System.loadLibrary("library1");
+    }
+  }
+
+  static class Class2 {
+    public static void m1() {
+      System.loadLibrary("library1");
+    }
+
+    public static void m2() {
+      System.loadLibrary("library2");
+    }
+  }
+
+  static class ClassLoadUnknownLibrary1 {
+    public static void m(String s) {
+      System.loadLibrary(s);
+    }
+  }
+
+  static class ClassLoadUnknownLibrary2 {
+    public static void m1(String s) {
+      System.loadLibrary(s);
+    }
+
+    public static void m2(String s) {
+      System.loadLibrary(s);
+    }
+  }
+
+  static class UseClass1Method {
+
+    public static void main(String[] args) {
+      Class1.m();
+    }
+  }
+
+  static class UseClass2Methods {
+
+    public static void main(String[] args) {
+      Class2.m1();
+      Class2.m2();
+    }
+  }
+
+  static class UseClassLoadUnknownLibrary1 {
+
+    public static void main(String[] args) {
+      ClassLoadUnknownLibrary1.m(args[0]);
+    }
+  }
+
+  static class UseClassLoadUnknownLibrary2 {
+
+    public static void main(String[] args) {
+      ClassLoadUnknownLibrary2.m1(args[0]);
+      ClassLoadUnknownLibrary2.m2(args[0]);
+    }
+  }
+}

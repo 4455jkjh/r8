@@ -76,7 +76,7 @@ public class R8Assistant {
       }
       SyntheticFinalization.finalize(appView, timing, executorService);
       ApplicationWriter writer = ApplicationWriter.create(appView, options.getMarker());
-      writer.write(executorService);
+      writer.write(executorService, timing);
     } catch (ExecutionException e) {
       throw unwrapExecutionException(e);
     } finally {

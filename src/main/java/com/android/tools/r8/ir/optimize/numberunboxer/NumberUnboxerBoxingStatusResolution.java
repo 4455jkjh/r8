@@ -14,7 +14,7 @@ import com.android.tools.r8.ir.optimize.numberunboxer.TransitiveDependency.Metho
 import com.android.tools.r8.ir.optimize.numberunboxer.TransitiveDependency.MethodRet;
 import com.android.tools.r8.utils.ArrayUtils;
 import com.android.tools.r8.utils.ListUtils;
-import com.android.tools.r8.utils.WorkList;
+import com.android.tools.r8.utils.collections.WorkList;
 import java.util.Arrays;
 import java.util.IdentityHashMap;
 import java.util.List;

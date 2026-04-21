@@ -20,6 +20,7 @@ import com.android.tools.r8.resolution.access.indirectfield.pkg.C;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
 import com.android.tools.r8.utils.OptionalBool;
 import com.android.tools.r8.utils.StringUtils;
+import com.android.tools.r8.utils.timing.Timing;
 import com.google.common.collect.ImmutableList;
 import java.util.List;
 import org.junit.Test;
@@ -53,6 +54,7 @@ public class IndirectFieldAccessTest extends TestBase {
             buildClasses(getClasses())
                 .addLibraryFile(parameters.getDefaultRuntimeLibrary())
                 .build(),
+            Timing.empty(),
             Main.class);
     AppInfoWithLiveness appInfo = appView.appInfo();
     DexProgramClass cClass =

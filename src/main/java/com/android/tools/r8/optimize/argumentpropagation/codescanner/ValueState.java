@@ -9,6 +9,7 @@ import com.android.tools.r8.graph.DexField;
 import com.android.tools.r8.graph.DexType;
 import com.android.tools.r8.graph.ProgramField;
 import com.android.tools.r8.ir.analysis.value.AbstractValue;
+import com.android.tools.r8.ir.analysis.value.AbstractValueJoiner;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
 import com.android.tools.r8.utils.Action;
 import com.android.tools.r8.utils.ObjectUtils;
@@ -157,15 +158,18 @@ public abstract class ValueState {
 
   public ValueState mutableJoin(
       AppView<AppInfoWithLiveness> appView,
+      AbstractValueJoiner abstractValueJoiner,
       ValueState inState,
       DexType inStaticType,
       DexType outStaticType,
       StateCloner cloner) {
-    return mutableJoin(appView, inState, inStaticType, outStaticType, cloner, Action.empty());
+    return mutableJoin(
+        appView, abstractValueJoiner, inState, inStaticType, outStaticType, cloner, Action.empty());
   }
 
   public abstract ValueState mutableJoin(
       AppView<AppInfoWithLiveness> appView,
+      AbstractValueJoiner abstractValueJoiner,
       ValueState inState,
       DexType inStaticType,
       DexType outStaticType,

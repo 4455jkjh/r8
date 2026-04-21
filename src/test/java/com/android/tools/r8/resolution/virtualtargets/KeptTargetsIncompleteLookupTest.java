@@ -22,6 +22,7 @@ import com.android.tools.r8.graph.LookupResult.LookupResultSuccess;
 import com.android.tools.r8.graph.MethodResolutionResult;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
 import com.android.tools.r8.shaking.ProguardConfigurationRule;
+import com.android.tools.r8.utils.timing.Timing;
 import com.google.common.collect.ImmutableSet;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -78,6 +79,7 @@ public class KeptTargetsIncompleteLookupTest extends TestBase {
     AppView<AppInfoWithLiveness> appView =
         computeAppViewWithLiveness(
             buildClasses(classes).addLibraryFile(getMostRecentAndroidJar()).build(),
+            Timing.empty(),
             factory -> {
               List<ProguardConfigurationRule> rules = new ArrayList<>();
               rules.addAll(buildKeepRuleForClassAndMethods(methodToBeKept, factory));
@@ -235,7 +237,8 @@ public class KeptTargetsIncompleteLookupTest extends TestBase {
     AppView<AppInfoWithClassHierarchy> appView =
         computeAppViewWithClassHierarchy(
             buildClasses(Collections.singletonList(B.class), Arrays.asList(A.class, I.class))
-                .build());
+                .build(),
+            Timing.empty());
     AppInfoWithClassHierarchy appInfo = appView.appInfo();
     DexMethod method = buildNullaryVoidMethod(B.class, "foo", appInfo.dexItemFactory());
     MethodResolutionResult resolutionResult = appInfo.resolveMethodOnClassHolderLegacy(method);
@@ -270,6 +273,7 @@ public class KeptTargetsIncompleteLookupTest extends TestBase {
     AppView<AppInfoWithLiveness> appView =
         computeAppViewWithLiveness(
             buildClasses(Unrelated.class).addLibraryFile(getMostRecentAndroidJar()).build(),
+            Timing.empty(),
             Unrelated.class);
     AppInfoWithLiveness appInfo = appView.appInfo();
     DexMethod method = buildNullaryVoidMethod(Unrelated.class, "foo", appInfo.dexItemFactory());

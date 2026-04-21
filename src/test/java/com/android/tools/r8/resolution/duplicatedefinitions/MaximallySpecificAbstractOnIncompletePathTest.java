@@ -22,6 +22,7 @@ import com.android.tools.r8.graph.MethodResolutionResult.SingleResolutionResult;
 import com.android.tools.r8.transformers.ClassFileTransformer.MethodPredicate;
 import com.android.tools.r8.utils.AndroidApp;
 import com.android.tools.r8.utils.ZipUtils.ZipBuilder;
+import com.android.tools.r8.utils.timing.Timing;
 import java.nio.file.Path;
 import org.junit.Before;
 import org.junit.Test;
@@ -68,6 +69,7 @@ public class MaximallySpecificAbstractOnIncompletePathTest extends TestBase {
                 .addClassProgramData(getMainWithoutFoo(), getIOnProgram())
                 .addLibraryFiles(parameters.getDefaultRuntimeLibrary(), libraryClasses)
                 .build(),
+            Timing.empty(),
             null,
             options -> options.loadAllClassDefinitions = true);
     AppInfoWithClassHierarchy appInfo = appView.appInfo();

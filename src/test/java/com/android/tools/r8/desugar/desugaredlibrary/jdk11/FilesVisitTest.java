@@ -105,10 +105,26 @@ public class FilesVisitTest extends DesugaredLibraryTestBase {
     private static Path root;
 
     public static void main(String[] args) throws IOException {
-      createDirStructure();
-      findTest();
-      listTest();
-      walkTest();
+      try {
+        createDirStructure();
+        findTest();
+        listTest();
+        walkTest();
+      } finally {
+        if (root != null) {
+          deleteDirectory(root.toFile());
+        }
+      }
+    }
+
+    private static void deleteDirectory(java.io.File directoryToBeDeleted) {
+      java.io.File[] allContents = directoryToBeDeleted.listFiles();
+      if (allContents != null) {
+        for (java.io.File file : allContents) {
+          deleteDirectory(file);
+        }
+      }
+      directoryToBeDeleted.delete();
     }
 
     /** Creates the following structure root | f1 | f2 | f3 | innerDir | f4 */

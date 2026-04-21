@@ -36,13 +36,13 @@ import static com.android.tools.r8.ir.desugar.desugaredlibrary.machinespecificat
 
 import com.android.tools.r8.DiagnosticsHandler;
 import com.android.tools.r8.StringConsumer;
-import com.android.tools.r8.errors.Unreachable;
 import com.android.tools.r8.graph.AccessFlags;
 import com.android.tools.r8.graph.DexField;
 import com.android.tools.r8.graph.DexItem;
 import com.android.tools.r8.graph.DexMethod;
 import com.android.tools.r8.graph.DexType;
 import com.android.tools.r8.ir.desugar.desugaredlibrary.ApiLevelRange;
+import com.android.tools.r8.utils.exceptions.Unreachable;
 import com.google.gson.Gson;
 import java.util.ArrayList;
 import java.util.Collection;

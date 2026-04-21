@@ -22,6 +22,7 @@ import com.android.tools.r8.ir.analysis.type.DynamicTypeWithUpperBound;
 import com.android.tools.r8.optimize.interfaces.collection.NonEmptyOpenClosedInterfacesCollection;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
 import com.android.tools.r8.shaking.LibraryModeledPredicate;
+import com.android.tools.r8.utils.timing.Timing;
 import java.util.Collections;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -47,6 +48,7 @@ public class SuccessAndInvalidLookupTest extends TestBase {
             buildClasses(I.class, A.class, Main.class)
                 .addLibraryFile(getMostRecentAndroidJar())
                 .build(),
+            Timing.empty(),
             factory ->
                 buildConfigForRules(factory, buildKeepRuleForClassAndMethods(Main.class, factory)));
     AppInfoWithLiveness appInfo = appView.appInfo();
@@ -77,6 +79,7 @@ public class SuccessAndInvalidLookupTest extends TestBase {
             buildClasses(I.class, A.class, Main.class)
                 .addLibraryFile(getMostRecentAndroidJar())
                 .build(),
+            Timing.empty(),
             factory ->
                 buildConfigForRules(factory, buildKeepRuleForClassAndMethods(Main.class, factory)));
     appView.setOpenClosedInterfacesCollection(

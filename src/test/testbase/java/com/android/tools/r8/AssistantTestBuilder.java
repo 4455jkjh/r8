@@ -9,10 +9,10 @@ import static com.android.tools.r8.TestBase.writeClassesToJar;
 
 import com.android.tools.r8.TestBase.Backend;
 import com.android.tools.r8.benchmarks.BenchmarkResults;
-import com.android.tools.r8.errors.Unimplemented;
 import com.android.tools.r8.utils.AndroidApp;
 import com.android.tools.r8.utils.ExceptionUtils;
 import com.android.tools.r8.utils.InternalOptions;
+import com.android.tools.r8.utils.exceptions.Unimplemented;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Path;

@@ -9,7 +9,7 @@ import com.android.tools.r8.ir.analysis.framework.intraprocedural.DataflowAnalys
 import com.android.tools.r8.ir.analysis.framework.intraprocedural.DataflowAnalysisResult.SuccessfulDataflowAnalysisResult;
 import com.android.tools.r8.utils.TraversalContinuation;
 import com.android.tools.r8.utils.TraversalUtils;
-import com.android.tools.r8.utils.WorkList;
+import com.android.tools.r8.utils.collections.WorkList;
 import com.android.tools.r8.utils.timing.Timing;
 import java.util.IdentityHashMap;
 import java.util.Map;

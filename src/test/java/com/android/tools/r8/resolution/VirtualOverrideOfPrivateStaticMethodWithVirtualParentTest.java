@@ -17,6 +17,7 @@ import com.android.tools.r8.ToolHelper.DexVm;
 import com.android.tools.r8.graph.DexMethod;
 import com.android.tools.r8.graph.MethodResolutionResult;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
+import com.android.tools.r8.utils.timing.Timing;
 import com.google.common.collect.ImmutableList;
 import java.util.List;
 import org.junit.BeforeClass;
@@ -83,6 +84,7 @@ public class VirtualOverrideOfPrivateStaticMethodWithVirtualParentTest extends T
                     .addClassProgramData(getDumps())
                     .addLibraryFile(getMostRecentAndroidJar())
                     .build(),
+                Timing.empty(),
                 Main.class)
             .appInfo();
   }

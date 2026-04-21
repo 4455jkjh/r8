@@ -22,7 +22,7 @@ import com.android.tools.r8.shaking.KeepFieldInfo;
 import com.android.tools.r8.shaking.KeepMethodInfo;
 import com.android.tools.r8.shaking.KeepReason;
 import com.android.tools.r8.utils.InternalOptions;
-import com.android.tools.r8.utils.WorkList;
+import com.android.tools.r8.utils.collections.WorkList;
 import java.util.Collection;
 import java.util.Set;
 
@@ -134,7 +134,13 @@ public class EnqueuerReflectiveIdentificationEventConsumer
               enqueuer.mutateKeepInfo(
                   virtualMethod,
                   (k, m) ->
-                      k.joinMethod(m, joiner -> joiner.disallowOptimization().disallowShrinking()));
+                      k.joinMethod(
+                          m,
+                          joiner ->
+                              joiner
+                                  .allowCodeReplacement()
+                                  .disallowOptimization()
+                                  .disallowShrinking()));
               enqueuer.markVirtualMethodAsReachable(
                   virtualMethod.getReference(), true, context, reason);
             });

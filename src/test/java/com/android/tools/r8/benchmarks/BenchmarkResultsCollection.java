@@ -4,7 +4,7 @@
 package com.android.tools.r8.benchmarks;
 
 import com.android.tools.r8.DexSegments.SegmentInfo;
-import com.android.tools.r8.errors.Unimplemented;
+import com.android.tools.r8.utils.exceptions.Unimplemented;
 import it.unimi.dsi.fastutil.ints.Int2ReferenceMap;
 import java.io.IOException;
 import java.nio.file.Path;

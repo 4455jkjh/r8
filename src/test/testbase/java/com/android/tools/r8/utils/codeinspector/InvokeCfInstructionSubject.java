@@ -6,8 +6,8 @@ package com.android.tools.r8.utils.codeinspector;
 
 import com.android.tools.r8.cf.code.CfInstruction;
 import com.android.tools.r8.cf.code.CfInvoke;
-import com.android.tools.r8.errors.Unimplemented;
 import com.android.tools.r8.graph.DexMethod;
+import com.android.tools.r8.utils.exceptions.Unimplemented;
 
 public class InvokeCfInstructionSubject extends CfInstructionSubject
     implements InvokeInstructionSubject {

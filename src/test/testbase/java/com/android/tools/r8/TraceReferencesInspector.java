@@ -5,15 +5,15 @@ package com.android.tools.r8;
 
 import com.android.tools.r8.references.PackageReference;
 import com.android.tools.r8.tracereferences.TraceReferencesConsumer;
-import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class TraceReferencesInspector implements TraceReferencesConsumer {
 
-  private final Set<TracedClass> classes = new HashSet<>();
-  private final Set<TracedField> fields = new HashSet<>();
-  private final Set<TracedMethod> methods = new HashSet<>();
-  private final Set<PackageReference> packages = new HashSet<>();
+  private final Set<TracedClass> classes = ConcurrentHashMap.newKeySet();
+  private final Set<TracedField> fields = ConcurrentHashMap.newKeySet();
+  private final Set<TracedMethod> methods = ConcurrentHashMap.newKeySet();
+  private final Set<PackageReference> packages = ConcurrentHashMap.newKeySet();
 
   @Override
   public void acceptType(TracedClass tracedClass, DiagnosticsHandler handler) {

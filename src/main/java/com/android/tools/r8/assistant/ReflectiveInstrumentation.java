@@ -8,6 +8,7 @@ import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.DexItemFactory;
 import com.android.tools.r8.graph.DexMethod;
 import com.android.tools.r8.graph.DexProgramClass;
+import com.android.tools.r8.graph.DexString;
 import com.android.tools.r8.graph.DexType;
 import com.android.tools.r8.graph.ProgramMethod;
 import com.android.tools.r8.ir.code.BasicBlockInstructionListIterator;
@@ -74,7 +75,12 @@ public class ReflectiveInstrumentation {
   public void instrumentClasses() {
     Map<DexMethod, DexMethod> instrumentedMethodsAndTargets =
         new InstrumentedReflectiveMethodList(dexItemFactory).getInstrumentedMethodsAndTargets();
+    DexString runtimePrefix =
+        dexItemFactory.createString("Lcom/android/tools/r8/assistant/runtime/");
     for (DexProgramClass clazz : appView.appInfo().classes()) {
+      if (clazz.getType().getDescriptor().startsWith(runtimePrefix)) {
+        continue;
+      }
       clazz.forEachProgramMethodMatching(
           method -> method.hasCode() && method.getCode().isDexCode(),
           method -> {

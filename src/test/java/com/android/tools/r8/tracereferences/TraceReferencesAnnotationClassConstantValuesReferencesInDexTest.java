@@ -21,9 +21,9 @@ import com.google.common.collect.ImmutableList;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.nio.file.Path;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -68,9 +68,9 @@ public class TraceReferencesAnnotationClassConstantValuesReferencesInDexTest ext
 
   static class Consumer implements TraceReferencesConsumer {
 
-    Set<ClassReference> tracedTypes = new HashSet<>();
-    Set<MethodReference> tracedMethods = new HashSet<>();
-    Set<FieldReference> tracedFields = new HashSet<>();
+    private final Set<ClassReference> tracedTypes = ConcurrentHashMap.newKeySet();
+    private final Set<MethodReference> tracedMethods = ConcurrentHashMap.newKeySet();
+    private final Set<FieldReference> tracedFields = ConcurrentHashMap.newKeySet();
 
     @Override
     public void acceptType(TracedClass tracedClass, DiagnosticsHandler handler) {

@@ -1,16 +1,16 @@
 // Copyright (c) 2017, the R8 project authors. Please see the AUTHORS file
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
-package com.android.tools.r8.utils;
+package com.android.tools.r8.utils.collections;
 
-import com.android.tools.r8.errors.Unreachable;
+import com.android.tools.r8.utils.exceptions.Unreachable;
 
 /**
- *  Simple pair to enable returning multiple values from a function.
+ * Simple pair to enable returning multiple values from a function.
  *
- *  <p>This should not be used for anything besides arguments and return values. In particular, it
- *  is not comparable and does not support hashing. Introduce a proper named type for use cases
- *  demanding such.
+ * <p>This should not be used for anything besides arguments and return values. In particular, it is
+ * not comparable and does not support hashing. Introduce a proper named type for use cases
+ * demanding such.
  */
 public class Pair<T, S> {
   private T first;

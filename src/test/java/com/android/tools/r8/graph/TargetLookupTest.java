@@ -27,6 +27,7 @@ import com.android.tools.r8.smali.SmaliBuilder;
 import com.android.tools.r8.smali.SmaliTestBase;
 import com.android.tools.r8.utils.AndroidApp;
 import com.android.tools.r8.utils.codeinspector.CodeInspector;
+import com.android.tools.r8.utils.timing.Timing;
 import com.google.common.collect.ImmutableList;
 import java.nio.file.Path;
 import java.util.Collections;
@@ -92,7 +93,8 @@ public class TargetLookupTest extends SmaliTestBase {
     );
 
     AndroidApp application = buildApplication(builder);
-    AppView<AppInfoWithClassHierarchy> appView = computeAppViewWithClassHierarchy(application);
+    AppView<AppInfoWithClassHierarchy> appView =
+        computeAppViewWithClassHierarchy(application, Timing.empty());
     AppInfoWithClassHierarchy appInfo = appView.appInfo();
     CodeInspector inspector = new CodeInspector(appInfo.app());
     ProgramMethod method = getMethod(inspector, DEFAULT_CLASS_NAME, "int", "x", ImmutableList.of());
@@ -166,7 +168,8 @@ public class TargetLookupTest extends SmaliTestBase {
     );
 
     AndroidApp application = buildApplication(builder);
-    AppView<AppInfoWithClassHierarchy> appView = computeAppViewWithClassHierarchy(application);
+    AppView<AppInfoWithClassHierarchy> appView =
+        computeAppViewWithClassHierarchy(application, Timing.empty());
     AppInfoWithClassHierarchy appInfo = appView.appInfo();
     CodeInspector inspector = new CodeInspector(appInfo.app());
 
@@ -257,7 +260,8 @@ public class TargetLookupTest extends SmaliTestBase {
       builder.addLibraryFiles(ToolHelper.getDefaultAndroidJar());
     }
     AndroidApp application = builder.build();
-    AppView<AppInfoWithClassHierarchy> appView = computeAppViewWithClassHierarchy(application);
+    AppView<AppInfoWithClassHierarchy> appView =
+        computeAppViewWithClassHierarchy(application, Timing.empty());
     AppInfoWithClassHierarchy appInfo = appView.appInfo();
     DexItemFactory factory = appInfo.dexItemFactory();
 

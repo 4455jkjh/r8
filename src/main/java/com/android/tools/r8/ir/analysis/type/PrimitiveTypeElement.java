@@ -4,10 +4,10 @@
 package com.android.tools.r8.ir.analysis.type;
 
 import com.android.tools.r8.errors.InternalCompilerError;
-import com.android.tools.r8.errors.Unreachable;
 import com.android.tools.r8.graph.DexItemFactory;
 import com.android.tools.r8.graph.DexType;
 import com.android.tools.r8.ir.code.NumericType;
+import com.android.tools.r8.utils.exceptions.Unreachable;
 
 /** A {@link TypeElement} that abstracts primitive types. */
 public abstract class PrimitiveTypeElement extends TypeElement {

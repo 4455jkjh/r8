@@ -11,11 +11,6 @@ import com.android.tools.r8.origin.MethodOrigin;
 import com.android.tools.r8.origin.Origin;
 import com.android.tools.r8.origin.PathOrigin;
 import com.android.tools.r8.references.Reference;
-import com.android.tools.r8.tracereferences.R8LoadLibraryTest.Class1;
-import com.android.tools.r8.tracereferences.R8LoadLibraryTest.Class2;
-import com.android.tools.r8.tracereferences.R8LoadLibraryTest.ClassLoadUnknownLibrary1;
-import com.android.tools.r8.tracereferences.R8LoadLibraryTest.ClassLoadUnknownLibrary2;
-import com.android.tools.r8.tracereferences.R8LoadLibraryTest.UseClass1Method;
 import com.android.tools.r8.utils.AndroidApiLevel;
 import com.android.tools.r8.utils.BooleanUtils;
 import com.android.tools.r8.utils.Box;
@@ -164,7 +159,7 @@ public class R8LoadTest extends TestBase {
   }
 
   @Test
-  public void testMultipleLoadLibraryDuplicate() throws Throwable {
+  public void testMultipleLoadDuplicate() throws Throwable {
     NativeReferencesTestingConsumer nativeReferencesConsumer =
         new NativeReferencesTestingConsumer();
     testForR8(Backend.DEX)
@@ -199,7 +194,7 @@ public class R8LoadTest extends TestBase {
   }
 
   @Test
-  public void testUnknownLoadLibraryCall() throws Throwable {
+  public void testUnknownLoadCall() throws Throwable {
     NativeReferencesTestingConsumer nativeReferencesConsumer =
         new NativeReferencesTestingConsumer();
     testForR8(Backend.DEX)

@@ -4,7 +4,7 @@
 package com.android.tools.r8.utils;
 
 import com.android.tools.r8.dump.DumpOptions;
-import com.android.tools.r8.errors.Unreachable;
+import com.android.tools.r8.utils.exceptions.Unreachable;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;

@@ -15,7 +15,6 @@ import com.android.tools.r8.graph.ProgramField;
 import com.android.tools.r8.graph.lens.GraphLens;
 import com.android.tools.r8.ir.analysis.type.DynamicType;
 import com.android.tools.r8.ir.analysis.value.AbstractValue;
-import com.android.tools.r8.ir.analysis.value.AbstractValueJoiner.AbstractValueFieldJoiner;
 import com.android.tools.r8.ir.analysis.value.AbstractValueWithWitness;
 import com.android.tools.r8.ir.analysis.value.UnknownValue;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
@@ -93,7 +92,7 @@ public class MutableFieldOptimizationInfo extends FieldOptimizationInfo
       return setAbstractValue(witnessValue);
     }
     return setAbstractValue(
-        new AbstractValueFieldJoiner(appView).join(abstractValue, witnessValue, field));
+        appView.getDefaultAbstractValueJoiner().join(abstractValue, witnessValue, field));
   }
 
   private MutableFieldOptimizationInfo setAbstractValue(AbstractValue abstractValue) {

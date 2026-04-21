@@ -5,7 +5,6 @@ package com.android.tools.r8;
 
 import com.android.tools.r8.dex.ApplicationReader;
 import com.android.tools.r8.diagnostic.R8VersionDiagnostic;
-import com.android.tools.r8.errors.Unreachable;
 import com.android.tools.r8.features.FeatureSplitConfiguration;
 import com.android.tools.r8.graph.DexClasspathClass;
 import com.android.tools.r8.graph.DirectMappedDexApplication;
@@ -27,6 +26,7 @@ import com.android.tools.r8.utils.InternalOptions;
 import com.android.tools.r8.utils.InternalProgramClassProvider;
 import com.android.tools.r8.utils.ListUtils;
 import com.android.tools.r8.utils.ThreadUtils;
+import com.android.tools.r8.utils.exceptions.Unreachable;
 import com.android.tools.r8.utils.timing.Timing;
 import java.io.IOException;
 import java.util.Collection;
@@ -123,6 +123,7 @@ class R8Partial {
             .setMode(options.getCompilationMode())
             .setProgramConsumer(DexIndexedConsumer.emptyConsumer());
     input.configure(d8Builder);
+    d8Builder.getAppBuilder().disableAndroidJarHiddenClassExtension();
     d8Builder.validate();
     D8Command d8Command = d8Builder.makeD8Command(options.dexItemFactory());
     AndroidApp d8App = d8Command.getInputApp();
@@ -197,7 +198,8 @@ class R8Partial {
             .setMode(options.getCompilationMode())
             .setPartialCompilationConfiguration(options.partialCompilationConfiguration)
             .setProgramConsumer(options.programConsumer)
-            .setSourceFileProvider(options.sourceFileProvider);
+            .setSourceFileProvider(options.sourceFileProvider)
+            .setNativeReferencesConsumer(options.nativeReferencesConsumer);
     // The program input that R8 must compile is provided above using an
     // InternalProgramClassProvider. This passes in the data resources that we must either rewrite
     // or pass through.
@@ -230,6 +232,7 @@ class R8Partial {
             });
       }
     }
+    r8Builder.getAppBuilder().disableAndroidJarHiddenClassExtension();
     r8Builder.validate();
     R8Command r8Command =
         r8Builder.makeR8Command(options.dexItemFactory(), options.getProguardConfiguration());

@@ -12,6 +12,7 @@ import com.android.tools.r8.references.ClassReference;
 import com.android.tools.r8.references.FieldReference;
 import com.android.tools.r8.references.MethodReference;
 import com.android.tools.r8.utils.MethodReferenceUtils;
+import com.android.tools.r8.utils.codeinspector.InstructionSubject.JumboStringMode;
 import java.util.Arrays;
 import java.util.List;
 import java.util.function.Predicate;
@@ -152,6 +153,11 @@ public class CodeMatchers {
   }
 
   public static Matcher<MethodSubject> containsConstString(String string) {
+    return containsConstString(string, JumboStringMode.ALLOW);
+  }
+
+  public static Matcher<MethodSubject> containsConstString(
+      String string, JumboStringMode jumboStringMode) {
     return new TypeSafeMatcher<MethodSubject>() {
       @Override
       protected boolean matchesSafely(MethodSubject subject) {
@@ -159,7 +165,9 @@ public class CodeMatchers {
             && subject.getMethod().hasCode()
             && subject
                 .streamInstructions()
-                .anyMatch(instructionSubject -> instructionSubject.isConstString(string));
+                .anyMatch(
+                    instructionSubject ->
+                        instructionSubject.isConstString(string, jumboStringMode));
       }
 
       @Override

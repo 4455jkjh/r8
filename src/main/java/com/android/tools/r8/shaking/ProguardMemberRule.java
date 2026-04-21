@@ -5,7 +5,6 @@ package com.android.tools.r8.shaking;
 
 import static com.google.common.base.Predicates.alwaysTrue;
 
-import com.android.tools.r8.errors.Unreachable;
 import com.android.tools.r8.graph.AppInfoWithClassHierarchy;
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.DexClassAndField;
@@ -19,6 +18,7 @@ import com.android.tools.r8.shaking.rootset.RootSetBuilder;
 import com.android.tools.r8.utils.IterableUtils;
 import com.android.tools.r8.utils.ObjectUtils;
 import com.android.tools.r8.utils.StringUtils;
+import com.android.tools.r8.utils.exceptions.Unreachable;
 import com.google.common.collect.Iterables;
 import java.util.ArrayList;
 import java.util.Collections;

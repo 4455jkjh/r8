@@ -16,6 +16,7 @@ import com.android.tools.r8.graph.DexMethod;
 import com.android.tools.r8.graph.DexProgramClass;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
 import com.android.tools.r8.utils.DescriptorUtils;
+import com.android.tools.r8.utils.timing.Timing;
 import java.io.IOException;
 import java.util.concurrent.ExecutionException;
 import org.junit.Assert;
@@ -47,6 +48,7 @@ public class InvokeInterfaceWithStaticTargetTest extends TestBase {
                 .addClassProgramData(transformMain())
                 .addLibraryFile(parameters.getDefaultRuntimeLibrary())
                 .build(),
+            Timing.empty(),
             Main.class);
     AppInfoWithLiveness appInfo = appView.appInfo();
     DexMethod method = buildNullaryVoidMethod(I.class, "bar", appInfo.dexItemFactory());

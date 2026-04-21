@@ -26,6 +26,7 @@ import com.android.tools.r8.resolution.virtualtargets.package_a.ViewModelRunner;
 import com.android.tools.r8.resolution.virtualtargets.package_a.ViewModelRunnerWithCast;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
 import com.android.tools.r8.utils.DescriptorUtils;
+import com.android.tools.r8.utils.timing.Timing;
 import com.google.common.collect.ImmutableSet;
 import java.io.IOException;
 import java.util.HashSet;
@@ -65,6 +66,7 @@ public class PackagePrivateFinalOverrideTest extends TestBase {
                     MyViewModel.class, ViewModel.class, Main.class, ViewModelRunner.class)
                 .addLibraryFile(parameters.getDefaultRuntimeLibrary())
                 .build(),
+            Timing.empty(),
             Main.class);
     AppInfoWithLiveness appInfo = appView.appInfo();
     DexMethod method = buildNullaryVoidMethod(ViewModel.class, "clear", appInfo.dexItemFactory());
@@ -116,6 +118,7 @@ public class PackagePrivateFinalOverrideTest extends TestBase {
                     MyViewModel.class, ViewModel.class, Main.class, ViewModelRunner.class)
                 .addLibraryFile(parameters.getDefaultRuntimeLibrary())
                 .build(),
+            Timing.empty(),
             Main.class);
     AppInfoWithLiveness appInfo = appView.appInfo();
     DexMethod method = buildNullaryVoidMethod(ViewModel.class, "clear", appInfo.dexItemFactory());
@@ -168,6 +171,7 @@ public class PackagePrivateFinalOverrideTest extends TestBase {
                     ViewModelRunnerWithCast.class)
                 .addLibraryFile(parameters.getDefaultRuntimeLibrary())
                 .build(),
+            Timing.empty(),
             Main.class);
     AppInfoWithLiveness appInfo = appView.appInfo();
     DexMethod method = buildNullaryVoidMethod(ViewModel.class, "clear", appInfo.dexItemFactory());

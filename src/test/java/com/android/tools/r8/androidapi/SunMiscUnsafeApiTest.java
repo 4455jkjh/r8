@@ -4,26 +4,22 @@
 
 package com.android.tools.r8.androidapi;
 
-import static com.android.tools.r8.references.Reference.BOOL;
-import static com.android.tools.r8.references.Reference.BYTE;
-import static com.android.tools.r8.references.Reference.CHAR;
-import static com.android.tools.r8.references.Reference.DOUBLE;
-import static com.android.tools.r8.references.Reference.FLOAT;
-import static com.android.tools.r8.references.Reference.INT;
-import static com.android.tools.r8.references.Reference.LONG;
-import static com.android.tools.r8.references.Reference.SHORT;
 import static org.hamcrest.CoreMatchers.equalTo;
 
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
+import com.android.tools.r8.graph.DexField;
+import com.android.tools.r8.graph.DexItemFactory;
+import com.android.tools.r8.graph.DexMethod;
+import com.android.tools.r8.graph.DexType;
 import com.android.tools.r8.references.ClassReference;
 import com.android.tools.r8.references.FieldReference;
 import com.android.tools.r8.references.MethodReference;
 import com.android.tools.r8.references.Reference;
 import com.android.tools.r8.references.TypeReference;
 import com.android.tools.r8.utils.AndroidApiLevel;
-import com.google.common.collect.ImmutableList;
+import com.android.tools.r8.utils.ListUtils;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
@@ -49,61 +45,39 @@ public class SunMiscUnsafeApiTest extends TestBase {
     return TestParameters.builder().withDexRuntimes().withMaximumApiLevel().build();
   }
 
-  public static final Map<ClassReference, AndroidApiLevel> classApiMap = new HashMap<>();
-  public static final Map<FieldReference, AndroidApiLevel> fieldApiMap = new HashMap<>();
-  public static final Map<MethodReference, AndroidApiLevel> methodApiMap = new HashMap<>();
-
-  private static final ClassReference CLASS = Reference.classFromClass(Class.class);
-  private static final ClassReference OBJECT = Reference.classFromClass(Object.class);
-  private static final ClassReference FIELD = Reference.classFromClass(Field.class);
-  private static final TypeReference VOID = Reference.returnTypeFromDescriptor("V");
-
-  private static void addClass(ClassReference holder, AndroidApiLevel introducedAtApi) {
-    classApiMap.put(holder, introducedAtApi);
-  }
-
-  private static void addField(
-      ClassReference holder, String name, AndroidApiLevel introducedAtApi, TypeReference type) {
-    fieldApiMap.put(Reference.field(holder, name, type), introducedAtApi);
-  }
-
-  private static void addMethod(
-      ClassReference holder,
-      String name,
-      AndroidApiLevel introducedAtApi,
-      TypeReference returnType,
-      TypeReference... parameters) {
-    methodApiMap.put(
-        Reference.method(holder, name, ImmutableList.copyOf(parameters), returnType),
-        introducedAtApi);
-  }
-
   @Test
   public void test() throws Exception {
     parameters.assumeDexRuntime();
     Class<?> testClass = TestClass.class;
+    Map<ClassReference, AndroidApiLevel> classApis = new HashMap<>();
+    Map<FieldReference, AndroidApiLevel> fieldApis = new HashMap<>();
+    Map<MethodReference, AndroidApiLevel> methodApis = new HashMap<>();
+    populateApiMaps(classApis, fieldApis, methodApis);
     testForD8(parameters)
         .addProgramClasses(testClass)
         .compile()
         .run(parameters.getRuntime(), testClass)
         .assertSuccess()
-        .assertStdoutLinesMatchesUnordered(expectedOutput());
+        .assertStdoutLinesMatchesUnordered(expectedOutput(classApis, fieldApis, methodApis));
   }
 
-  private List<Matcher<String>> expectedOutput() {
+  private List<Matcher<String>> expectedOutput(
+      Map<ClassReference, AndroidApiLevel> classApis,
+      Map<FieldReference, AndroidApiLevel> fieldApis,
+      Map<MethodReference, AndroidApiLevel> methodApis) {
     List<Matcher<String>> expectedMatchers = new ArrayList<>();
     AndroidApiLevel apiLevel = parameters.getApiLevel();
-    classApiMap.forEach(
+    classApis.forEach(
         (clazz, api) -> {
           boolean shouldBeDefined = apiLevel.isGreaterThanOrEqualTo(api);
           expectedMatchers.add(equalTo(clazz.getTypeName() + ": " + shouldBeDefined));
         });
-    fieldApiMap.forEach(
+    fieldApis.forEach(
         (field, api) -> {
           boolean shouldBeDefined = apiLevel.isGreaterThanOrEqualTo(api);
           expectedMatchers.add(equalTo(field.toSourceString() + ": " + shouldBeDefined));
         });
-    methodApiMap.forEach(
+    methodApis.forEach(
         (method, api) -> {
           boolean shouldBeDefined = apiLevel.isGreaterThanOrEqualTo(api);
           expectedMatchers.add(equalTo(method.toSourceString() + ": " + shouldBeDefined));
@@ -111,101 +85,35 @@ public class SunMiscUnsafeApiTest extends TestBase {
     return expectedMatchers;
   }
 
-  static {
-    ClassReference sunUnsafe = Reference.classFromBinaryName("sun/misc/Unsafe");
-    TypeReference sunUnsafeType = Reference.typeFromClassReference(sunUnsafe);
-    ClassReference jdkUnsafe = Reference.classFromBinaryName("jdk/internal/misc/Unsafe");
-    TypeReference jdkUnsafeType = Reference.typeFromClassReference(jdkUnsafe);
-
-    // This should be set to the lowest API tested NOT the lowest possible API.
-    AndroidApiLevel always = AndroidApiLevel.I_MR1;
-
-    addClass(sunUnsafe, always);
-
-    addField(sunUnsafe, "INVALID_FIELD_OFFSET", AndroidApiLevel.N, Reference.INT);
-    addField(sunUnsafe, "THE_ONE", always, sunUnsafeType);
-    addField(sunUnsafe, "theInternalUnsafe", AndroidApiLevel.MAIN, jdkUnsafeType);
-    addField(sunUnsafe, "theUnsafe", AndroidApiLevel.K, sunUnsafeType);
-
-    addMethod(sunUnsafe, "addressSize", AndroidApiLevel.N, INT);
-    addMethod(sunUnsafe, "allocateInstance", AndroidApiLevel.J, OBJECT, CLASS);
-    addMethod(sunUnsafe, "allocateMemory", AndroidApiLevel.N, LONG, LONG);
-    addMethod(sunUnsafe, "arrayBaseOffset", always, INT, CLASS);
-    addMethod(sunUnsafe, "arrayIndexScale", always, INT, CLASS);
-    addMethod(sunUnsafe, "compareAndSwapInt", always, BOOL, OBJECT, LONG, INT, INT);
-    addMethod(sunUnsafe, "compareAndSwapLong", always, BOOL, OBJECT, LONG, LONG, LONG);
-    addMethod(sunUnsafe, "compareAndSwapObject", always, BOOL, OBJECT, LONG, OBJECT, OBJECT);
-    addMethod(sunUnsafe, "copyMemory", AndroidApiLevel.N, VOID, LONG, LONG, LONG);
-    addMethod(
-        sunUnsafe,
-        "copyMemoryFromPrimitiveArray",
-        AndroidApiLevel.N,
-        VOID,
-        OBJECT,
-        LONG,
-        LONG,
-        LONG);
-    addMethod(
-        sunUnsafe, "copyMemoryToPrimitiveArray", AndroidApiLevel.N, VOID, LONG, OBJECT, LONG, LONG);
-    addMethod(sunUnsafe, "forbidObtainingRecordFieldOffsets", AndroidApiLevel.MAIN, BOOL);
-    addMethod(sunUnsafe, "freeMemory", AndroidApiLevel.N, VOID, LONG);
-    addMethod(sunUnsafe, "fullFence", AndroidApiLevel.N, VOID);
-    addMethod(sunUnsafe, "getAndAddInt", AndroidApiLevel.N, INT, OBJECT, LONG, INT);
-    addMethod(sunUnsafe, "getAndAddLong", AndroidApiLevel.N, LONG, OBJECT, LONG, LONG);
-    addMethod(sunUnsafe, "getAndSetInt", AndroidApiLevel.N, INT, OBJECT, LONG, INT);
-    addMethod(sunUnsafe, "getAndSetLong", AndroidApiLevel.N, LONG, OBJECT, LONG, LONG);
-    addMethod(sunUnsafe, "getAndSetObject", AndroidApiLevel.N, OBJECT, OBJECT, LONG, OBJECT);
-    addMethod(sunUnsafe, "getArrayBaseOffsetForComponentType", AndroidApiLevel.L_MR1, INT, CLASS);
-    addMethod(sunUnsafe, "getArrayIndexScaleForComponentType", AndroidApiLevel.L_MR1, INT, CLASS);
-    addMethod(sunUnsafe, "getBoolean", AndroidApiLevel.N, BOOL, OBJECT, LONG);
-    addMethod(sunUnsafe, "getByte", AndroidApiLevel.N, BYTE, LONG);
-    addMethod(sunUnsafe, "getByte", AndroidApiLevel.N, BYTE, OBJECT, LONG);
-    addMethod(sunUnsafe, "getChar", AndroidApiLevel.N, CHAR, LONG);
-    addMethod(sunUnsafe, "getChar", AndroidApiLevel.N, CHAR, OBJECT, LONG);
-    addMethod(sunUnsafe, "getDouble", AndroidApiLevel.N, DOUBLE, LONG);
-    addMethod(sunUnsafe, "getDouble", AndroidApiLevel.N, DOUBLE, OBJECT, LONG);
-    addMethod(sunUnsafe, "getFloat", AndroidApiLevel.N, FLOAT, LONG);
-    addMethod(sunUnsafe, "getFloat", AndroidApiLevel.N, FLOAT, OBJECT, LONG);
-    addMethod(sunUnsafe, "getInt", AndroidApiLevel.N, INT, LONG);
-    addMethod(sunUnsafe, "getInt", always, INT, OBJECT, LONG);
-    addMethod(sunUnsafe, "getIntVolatile", always, INT, OBJECT, LONG);
-    addMethod(sunUnsafe, "getLong", AndroidApiLevel.N, LONG, LONG);
-    addMethod(sunUnsafe, "getLong", always, LONG, OBJECT, LONG);
-    addMethod(sunUnsafe, "getLongVolatile", always, LONG, OBJECT, LONG);
-    addMethod(sunUnsafe, "getObject", always, OBJECT, OBJECT, LONG);
-    addMethod(sunUnsafe, "getObjectVolatile", always, OBJECT, OBJECT, LONG);
-    addMethod(sunUnsafe, "getShort", AndroidApiLevel.N, SHORT, LONG);
-    addMethod(sunUnsafe, "getShort", AndroidApiLevel.N, SHORT, OBJECT, LONG);
-    addMethod(sunUnsafe, "getUnsafe", always, sunUnsafe);
-    addMethod(sunUnsafe, "loadFence", AndroidApiLevel.N, VOID);
-    addMethod(sunUnsafe, "objectFieldOffset", always, LONG, FIELD);
-    addMethod(sunUnsafe, "pageSize", AndroidApiLevel.N, INT);
-    addMethod(sunUnsafe, "park", always, VOID, BOOL, LONG);
-    addMethod(sunUnsafe, "putBoolean", AndroidApiLevel.N, VOID, OBJECT, LONG, BOOL);
-    addMethod(sunUnsafe, "putByte", AndroidApiLevel.N, VOID, LONG, BYTE);
-    addMethod(sunUnsafe, "putByte", AndroidApiLevel.N, VOID, OBJECT, LONG, BYTE);
-    addMethod(sunUnsafe, "putChar", AndroidApiLevel.N, VOID, LONG, CHAR);
-    addMethod(sunUnsafe, "putChar", AndroidApiLevel.N, VOID, OBJECT, LONG, CHAR);
-    addMethod(sunUnsafe, "putDouble", AndroidApiLevel.N, VOID, LONG, DOUBLE);
-    addMethod(sunUnsafe, "putDouble", AndroidApiLevel.N, VOID, OBJECT, LONG, DOUBLE);
-    addMethod(sunUnsafe, "putFloat", AndroidApiLevel.N, VOID, LONG, FLOAT);
-    addMethod(sunUnsafe, "putFloat", AndroidApiLevel.N, VOID, OBJECT, LONG, FLOAT);
-    addMethod(sunUnsafe, "putInt", AndroidApiLevel.N, VOID, LONG, INT);
-    addMethod(sunUnsafe, "putInt", always, VOID, OBJECT, LONG, INT);
-    addMethod(sunUnsafe, "putIntVolatile", always, VOID, OBJECT, LONG, INT);
-    addMethod(sunUnsafe, "putLong", AndroidApiLevel.N, VOID, LONG, LONG);
-    addMethod(sunUnsafe, "putLong", always, VOID, OBJECT, LONG, LONG);
-    addMethod(sunUnsafe, "putLongVolatile", always, VOID, OBJECT, LONG, LONG);
-    addMethod(sunUnsafe, "putObject", always, VOID, OBJECT, LONG, OBJECT);
-    addMethod(sunUnsafe, "putObjectVolatile", always, VOID, OBJECT, LONG, OBJECT);
-    addMethod(sunUnsafe, "putOrderedInt", always, VOID, OBJECT, LONG, INT);
-    addMethod(sunUnsafe, "putOrderedLong", always, VOID, OBJECT, LONG, LONG);
-    addMethod(sunUnsafe, "putOrderedObject", always, VOID, OBJECT, LONG, OBJECT);
-    addMethod(sunUnsafe, "putShort", AndroidApiLevel.N, VOID, LONG, SHORT);
-    addMethod(sunUnsafe, "putShort", AndroidApiLevel.N, VOID, OBJECT, LONG, SHORT);
-    addMethod(sunUnsafe, "setMemory", AndroidApiLevel.N, VOID, LONG, LONG, BYTE);
-    addMethod(sunUnsafe, "storeFence", AndroidApiLevel.N, VOID);
-    addMethod(sunUnsafe, "unpark", always, VOID, OBJECT);
+  public static void populateApiMaps(
+      Map<ClassReference, AndroidApiLevel> classApis,
+      Map<FieldReference, AndroidApiLevel> fieldApis,
+      Map<MethodReference, AndroidApiLevel> methodApis) {
+    AndroidApiLevelDatabaseHelper.addUnsafeMethods(
+        // A short-lived item factory only used to extract non-canonical Reference-types.
+        new DexItemFactory(),
+        (reference, apiLevel) -> {
+          if (reference.isDexType()) {
+            ClassReference holder = reference.asDexType().asClassReference();
+            classApis.put(holder, apiLevel);
+          } else if (reference.isDexField()) {
+            DexField field = reference.asDexField();
+            ClassReference holder = field.getHolderType().asClassReference();
+            TypeReference fieldType = field.type.asTypeReference();
+            String name = field.name.toString();
+            fieldApis.put(Reference.field(holder, name, fieldType), apiLevel);
+          } else if (reference.isDexMethod()) {
+            DexMethod method = reference.asDexMethod();
+            ClassReference holder = method.getHolderType().asClassReference();
+            TypeReference returnType = method.getReturnType().asTypeReference();
+            List<TypeReference> parameters =
+                ListUtils.map(method.getParameters().values, DexType::asTypeReference);
+            String name = method.name.toString();
+            methodApis.put(Reference.method(holder, name, parameters, returnType), apiLevel);
+          } else {
+            throw new RuntimeException("Unexpected API entry: " + reference);
+          }
+        });
   }
 
   static class TestClass {
@@ -215,9 +123,6 @@ public class SunMiscUnsafeApiTest extends TestBase {
       checkClass(UNSAFE);
 
       checkField(UNSAFE, "INVALID_FIELD_OFFSET", int.class);
-      checkField(UNSAFE, "THE_ONE", UNSAFE);
-      checkField(UNSAFE, "theInternalUnsafe", "jdk.internal.misc.Unsafe");
-      checkField(UNSAFE, "theUnsafe", UNSAFE);
 
       checkMethod(UNSAFE, "addressSize", int.class);
       checkMethod(UNSAFE, "allocateInstance", Object.class, Class.class);
@@ -265,7 +170,6 @@ public class SunMiscUnsafeApiTest extends TestBase {
           Object.class,
           long.class,
           long.class);
-      checkMethod(UNSAFE, "forbidObtainingRecordFieldOffsets", boolean.class);
       checkMethod(UNSAFE, "freeMemory", void.class, long.class);
       checkMethod(UNSAFE, "fullFence", void.class);
       checkMethod(UNSAFE, "getAndAddInt", int.class, Object.class, long.class, int.class);
@@ -273,8 +177,6 @@ public class SunMiscUnsafeApiTest extends TestBase {
       checkMethod(UNSAFE, "getAndSetInt", int.class, Object.class, long.class, int.class);
       checkMethod(UNSAFE, "getAndSetLong", long.class, Object.class, long.class, long.class);
       checkMethod(UNSAFE, "getAndSetObject", Object.class, Object.class, long.class, Object.class);
-      checkMethod(UNSAFE, "getArrayBaseOffsetForComponentType", int.class, Class.class);
-      checkMethod(UNSAFE, "getArrayIndexScaleForComponentType", int.class, Class.class);
       checkMethod(UNSAFE, "getBoolean", boolean.class, Object.class, long.class);
       checkMethod(UNSAFE, "getByte", byte.class, Object.class, long.class);
       checkMethod(UNSAFE, "getByte", byte.class, long.class);

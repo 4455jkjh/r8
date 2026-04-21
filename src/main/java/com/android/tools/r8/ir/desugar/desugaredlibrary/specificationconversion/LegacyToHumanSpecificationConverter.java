@@ -28,8 +28,8 @@ import com.android.tools.r8.ir.desugar.desugaredlibrary.legacyspecification.Lega
 import com.android.tools.r8.ir.desugar.desugaredlibrary.legacyspecification.MultiAPILevelLegacyDesugaredLibrarySpecification;
 import com.android.tools.r8.origin.Origin;
 import com.android.tools.r8.utils.AndroidApiLevel;
-import com.android.tools.r8.utils.Pair;
 import com.android.tools.r8.utils.Reporter;
+import com.android.tools.r8.utils.collections.Pair;
 import com.android.tools.r8.utils.timing.Timing;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;

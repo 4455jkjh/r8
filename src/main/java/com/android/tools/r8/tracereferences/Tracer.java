@@ -9,6 +9,7 @@ import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.DexType;
 import com.android.tools.r8.utils.timing.Timing;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
 import java.util.function.Predicate;
 
 public class Tracer {
@@ -29,11 +30,15 @@ public class Tracer {
   public void run(
       TraceReferencesConsumer consumer,
       TraceReferencesNativeReferencesConsumer nativeReferencesConsumer,
+      ExecutorService executorService,
       Timing timing)
       throws ExecutionException {
     UseCollector useCollector =
         new UseCollector(appView, consumer, nativeReferencesConsumer, diagnostics, targetPredicate);
-    useCollector.traceClasses(appView.appInfo().classes(), timing);
+    useCollector.traceClasses(appView.appInfo().classes(), executorService, timing);
     consumer.finished(diagnostics);
+    if (nativeReferencesConsumer != null) {
+      nativeReferencesConsumer.finished(diagnostics);
+    }
   }
 }

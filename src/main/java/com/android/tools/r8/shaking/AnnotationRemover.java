@@ -6,7 +6,6 @@ package com.android.tools.r8.shaking;
 import static com.android.tools.r8.graph.DexAnnotation.VISIBILITY_BUILD;
 import static com.android.tools.r8.graph.DexAnnotation.alwaysRetainCompileTimeAnnotation;
 
-import com.android.tools.r8.errors.Unreachable;
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.DexAnnotation;
 import com.android.tools.r8.graph.DexAnnotation.AnnotatedKind;
@@ -32,6 +31,7 @@ import com.android.tools.r8.shaking.Enqueuer.Mode;
 import com.android.tools.r8.utils.ArrayUtils;
 import com.android.tools.r8.utils.InternalOptions;
 import com.android.tools.r8.utils.ThreadUtils;
+import com.android.tools.r8.utils.exceptions.Unreachable;
 import com.google.common.collect.Sets;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;

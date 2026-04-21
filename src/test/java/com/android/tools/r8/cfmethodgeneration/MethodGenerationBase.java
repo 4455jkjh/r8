@@ -129,9 +129,13 @@ public abstract class MethodGenerationBase extends CodeGenerationBase {
                   methodName = "clinit";
                 }
                 String generatedMethodName = holderName + "_" + methodName;
-                CfCode code = getCode(holderName, methodName, method.getCode().asCfCode());
-                if (code != null) {
-                  codePrinter.visitMethod(generatedMethodName, code);
+                if (method.hasCode()) {
+                  CfCode code = getCode(holderName, methodName, method.getCode().asCfCode());
+                  if (code != null) {
+                    codePrinter.visitMethod(generatedMethodName, code);
+                    generatedMethods.accept(method, generatedMethodName);
+                  }
+                } else {
                   generatedMethods.accept(method, generatedMethodName);
                 }
               }
@@ -190,15 +194,14 @@ public abstract class MethodGenerationBase extends CodeGenerationBase {
             : "            MethodAccessFlags.fromSharedAccessFlags(\n"
                 + "                Constants.ACC_PUBLIC "
                 + (method.isStatic() ? "| Constants.ACC_STATIC " : "")
+                + (method.isAbstract() ? "| Constants.ACC_ABSTRACT " : "")
                 + "| Constants.ACC_SYNTHETIC, "
                 + (method.isInstanceInitializer())
                 + ")\n")
         + ")\n"
-        + "        .setCode("
-        + codeGenerator
-        + "(factory, "
-        + name
-        + "))\n"
+        + (method.hasCode()
+            ? "        .setCode(" + codeGenerator + "(factory, " + name + "))\n"
+            : "")
         + "        .disableAndroidApiLevelCheck()\n"
         + "        .build()";
   }
@@ -236,7 +239,7 @@ public abstract class MethodGenerationBase extends CodeGenerationBase {
     forMethodEachSorted(
         generatedMethods,
         (method, codeGenerator) -> {
-          if (method.getHolderType().toSourceString().equals(clazz.getCanonicalName())) {
+          if (method.getHolderType().toSourceString().equals(clazz.getTypeName())) {
             String name =
                 method.isInstanceInitializer()
                     ? "constructor_" + method.getProto().getArity()
@@ -257,7 +260,7 @@ public abstract class MethodGenerationBase extends CodeGenerationBase {
     forMethodEachSorted(
         generatedMethods,
         (method, codeGenerator) -> {
-          if (method.getHolderType().toSourceString().equals(clazz.getCanonicalName())
+          if (method.getHolderType().toSourceString().equals(clazz.getTypeName())
               && filter.test(method)) {
             if (!first.get()) {
               printer.println(",\n");
@@ -296,7 +299,7 @@ public abstract class MethodGenerationBase extends CodeGenerationBase {
     printer.println("ImmutableList.of(");
     BooleanBox first = new BooleanBox(true);
     for (DexEncodedField field : fields) {
-      if (field.getHolderType().toSourceString().equals(clazz.getCanonicalName())
+      if (field.getHolderType().toSourceString().equals(clazz.getTypeName())
           && filter.test(field)) {
         if (!first.get()) {
           printer.println(",\n");
@@ -325,11 +328,11 @@ public abstract class MethodGenerationBase extends CodeGenerationBase {
       List<DexEncodedField> classFields =
           ListUtils.filter(
               allFields,
-              field -> field.getHolderType().toSourceString().equals(clazz.getCanonicalName()));
+              field -> field.getHolderType().toSourceString().equals(clazz.getTypeName()));
       Map<DexEncodedMethod, String> classMethods =
           filterMapOnKey(
               allMethods,
-              method -> method.getHolderType().toSourceString().equals(clazz.getCanonicalName()));
+              method -> method.getHolderType().toSourceString().equals(clazz.getTypeName()));
       requiredImports.add("com.android.tools.r8.synthesis.SyntheticProgramClassBuilder");
       printer.println(
           "public static void generate"
@@ -342,11 +345,28 @@ public abstract class MethodGenerationBase extends CodeGenerationBase {
       generateFieldList(classFields, requiredImports, printer, clazz, field -> !field.isStatic());
       printer.println(");");
       generateDexMethodLocals(classMethods, printer, clazz);
-      if (clazz.getSuperclass() != Object.class) {
+      if (clazz.isInterface()) {
+        printer.println("    builder.setInterface();");
+      }
+      if (clazz.getSuperclass() != Object.class && clazz.getSuperclass() != null) {
         printer.println(
             "    builder.setSuperType("
                 + createType(factory.createType(Reference.classFromClass(clazz.getSuperclass())))
                 + ");");
+      }
+      if (clazz.getInterfaces().length > 0) {
+        printer.println("    builder.setInterfaces(");
+        printer.println("        ImmutableList.of(");
+        boolean firstInterface = true;
+        for (Class<?> itf : clazz.getInterfaces()) {
+          if (!firstInterface) {
+            printer.println(",");
+          }
+          firstInterface = false;
+          printer.print(
+              "            " + createType(factory.createType(Reference.classFromClass(itf))));
+        }
+        printer.println("));");
       }
       printer.println("builder.setDirectMethods(");
       generateSyntheticMethodsList(

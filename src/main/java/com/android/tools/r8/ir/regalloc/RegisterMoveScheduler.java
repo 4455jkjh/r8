@@ -7,7 +7,6 @@ import static com.android.tools.r8.ir.regalloc.LiveIntervals.NO_REGISTER;
 import static com.android.tools.r8.utils.IntConsumerUtils.emptyIntConsumer;
 import static com.google.common.base.Predicates.not;
 
-import com.android.tools.r8.errors.Unreachable;
 import com.android.tools.r8.ir.analysis.type.TypeElement;
 import com.android.tools.r8.ir.code.Argument;
 import com.android.tools.r8.ir.code.ConstInstruction;
@@ -19,6 +18,7 @@ import com.android.tools.r8.ir.code.Move;
 import com.android.tools.r8.ir.code.Position;
 import com.android.tools.r8.ir.code.Value;
 import com.android.tools.r8.utils.ObjectUtils;
+import com.android.tools.r8.utils.exceptions.Unreachable;
 import com.google.common.collect.Iterables;
 import it.unimi.dsi.fastutil.ints.Int2IntMap;
 import it.unimi.dsi.fastutil.ints.Int2IntOpenHashMap;

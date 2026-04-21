@@ -10,25 +10,63 @@ import com.android.tools.r8.DiagnosticsHandler;
 import com.android.tools.r8.origin.MethodOrigin;
 import com.android.tools.r8.origin.Origin;
 import com.android.tools.r8.references.MethodReference;
-import com.android.tools.r8.utils.Pair;
+import com.android.tools.r8.utils.ObjectUtils;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 class NativeReferencesTestingConsumer implements TraceReferencesNativeReferencesConsumer {
 
-  final List<Pair<String, MethodOrigin>> loadLibraryKnown = new ArrayList<>();
+  private static class LibraryAndOrigin {
+    private final String library;
+    private final MethodOrigin origin;
+
+    LibraryAndOrigin(String library, MethodOrigin origin) {
+      this.library = library;
+      this.origin = origin;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+      if (this == o) return true;
+      if (o == null || getClass() != o.getClass()) return false;
+      LibraryAndOrigin that = (LibraryAndOrigin) o;
+      return library.equals(that.library) && origin.equals(that.origin);
+    }
+
+    public String getLibrary() {
+      return library;
+    }
+
+    public MethodOrigin getOrigin() {
+      return origin;
+    }
+
+    @Override
+    public int hashCode() {
+      return ObjectUtils.hashLL(library, origin);
+    }
+
+    @Override
+    public String toString() {
+      return library + ": " + origin;
+    }
+  }
+
+  final List<LibraryAndOrigin> loadLibraryKnown = new ArrayList<>();
   final List<MethodOrigin> loadLibraryAny = new ArrayList<>();
-  final List<Pair<String, MethodOrigin>> loadKnown = new ArrayList<>();
+  final List<LibraryAndOrigin> loadKnown = new ArrayList<>();
   final List<MethodOrigin> loadAny = new ArrayList<>();
-  final List<MethodReference> nativeMethods = new ArrayList<>();
-  boolean finished = false;
+  final Set<MethodReference> nativeMethods = ConcurrentHashMap.newKeySet();
+  private volatile boolean finished = false;
 
   @Override
   public void acceptLoadLibrary(String name, MethodOrigin origin, DiagnosticsHandler handler) {
     synchronized (loadLibraryKnown) {
-      loadLibraryKnown.add(new Pair<>(name, origin));
+      loadLibraryKnown.add(new LibraryAndOrigin(name, origin));
     }
   }
 
@@ -42,7 +80,7 @@ class NativeReferencesTestingConsumer implements TraceReferencesNativeReferences
   @Override
   public void acceptLoad(String name, MethodOrigin origin, DiagnosticsHandler handler) {
     synchronized (loadKnown) {
-      loadKnown.add(new Pair<>(name, origin));
+      loadKnown.add(new LibraryAndOrigin(name, origin));
     }
   }
 
@@ -55,9 +93,8 @@ class NativeReferencesTestingConsumer implements TraceReferencesNativeReferences
 
   @Override
   public void acceptNativeMethod(MethodReference methodReference, DiagnosticsHandler handler) {
-    synchronized (nativeMethods) {
-      nativeMethods.add(methodReference);
-    }
+    boolean added = nativeMethods.add(methodReference);
+    assert added;
   }
 
   @Override
@@ -67,18 +104,15 @@ class NativeReferencesTestingConsumer implements TraceReferencesNativeReferences
   }
 
   public NativeReferencesTestingConsumer expectLoadLibrary(String name, Predicate<Origin> origin) {
-    for (int i = 0; i < loadLibraryKnown.size(); i++) {
-      Pair<String, MethodOrigin> element = loadLibraryKnown.get(i);
-      if (element.getFirst().equals(name) && origin.test(element.getSecond())) {
-        loadLibraryKnown.remove(i);
+    for (LibraryAndOrigin element : loadLibraryKnown) {
+      if (element.getLibrary().equals(name) && origin.test(element.getOrigin())) {
+        loadLibraryKnown.remove(element);
         return this;
       }
     }
     fail(
         "No predicate match. Content was: ["
-            + loadLibraryKnown.stream()
-                .map(o -> o.getFirst() + ": " + o.getSecond())
-                .collect(Collectors.joining(", "))
+            + loadLibraryKnown.stream().map(Object::toString).collect(Collectors.joining(", "))
             + "]");
     return this;
   }
@@ -88,9 +122,9 @@ class NativeReferencesTestingConsumer implements TraceReferencesNativeReferences
   }
 
   public NativeReferencesTestingConsumer expectLoadLibraryAny(Predicate<Origin> origin) {
-    for (int i = 0; i < loadLibraryAny.size(); i++) {
-      if (origin.test(loadLibraryAny.get(i))) {
-        loadLibraryAny.remove(i);
+    for (MethodOrigin element : loadLibraryAny) {
+      if (origin.test(element)) {
+        loadLibraryAny.remove(element);
         return this;
       }
     }
@@ -106,18 +140,15 @@ class NativeReferencesTestingConsumer implements TraceReferencesNativeReferences
   }
 
   public NativeReferencesTestingConsumer expectLoad(String name, Predicate<Origin> origin) {
-    for (int i = 0; i < loadKnown.size(); i++) {
-      Pair<String, MethodOrigin> element = loadKnown.get(i);
-      if (element.getFirst().equals(name) && origin.test(element.getSecond())) {
-        loadKnown.remove(i);
+    for (LibraryAndOrigin element : loadKnown) {
+      if (element.getLibrary().equals(name) && origin.test(element.getOrigin())) {
+        loadKnown.remove(element);
         return this;
       }
     }
     fail(
         "No predicate match. Content was: ["
-            + loadKnown.stream()
-                .map(o -> o.getFirst() + ": " + o.getSecond())
-                .collect(Collectors.joining(", "))
+            + loadKnown.stream().map(Object::toString).collect(Collectors.joining(", "))
             + "]");
     return this;
   }
@@ -127,9 +158,9 @@ class NativeReferencesTestingConsumer implements TraceReferencesNativeReferences
   }
 
   public NativeReferencesTestingConsumer expectLoadAny(Predicate<Origin> origin) {
-    for (int i = 0; i < loadAny.size(); i++) {
-      if (origin.test(loadAny.get(i))) {
-        loadAny.remove(i);
+    for (MethodOrigin element : loadAny) {
+      if (origin.test(element)) {
+        loadAny.remove(element);
         return this;
       }
     }
@@ -145,9 +176,9 @@ class NativeReferencesTestingConsumer implements TraceReferencesNativeReferences
   }
 
   public NativeReferencesTestingConsumer expectNativeMethod(MethodReference methodReference) {
-    for (int i = 0; i < nativeMethods.size(); i++) {
-      if (nativeMethods.get(i).equals(methodReference)) {
-        nativeMethods.remove(i);
+    for (MethodReference element : nativeMethods) {
+      if (element.equals(methodReference)) {
+        nativeMethods.remove(element);
         return this;
       }
     }
@@ -167,6 +198,7 @@ class NativeReferencesTestingConsumer implements TraceReferencesNativeReferences
             && loadLibraryAny.isEmpty()
             && loadKnown.isEmpty()
             && loadAny.isEmpty()
+            && nativeMethods.isEmpty()
             && finished);
   }
 }

@@ -57,7 +57,8 @@ public class NonNullTrackerTest extends TestBase {
       throws Exception {
     AppView<AppInfoWithLiveness> appView =
         computeAppViewWithLiveness(
-            buildClasses(classes).addLibraryFile(getMostRecentAndroidJar()).build());
+            buildClasses(classes).addLibraryFile(getMostRecentAndroidJar()).build(),
+            Timing.empty());
     CodeInspector codeInspector = new CodeInspector(appView.appInfo().app());
     MethodSubject fooSubject = codeInspector.clazz(testClass.getName()).method(signature);
     IRCode code = fooSubject.buildIR(appView);

@@ -14,6 +14,7 @@ import com.android.tools.r8.graph.DexItemFactory;
 import com.android.tools.r8.graph.DexProgramClass;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
 import com.android.tools.r8.shaking.Enqueuer;
+import com.android.tools.r8.utils.timing.Timing;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -58,7 +59,8 @@ public class LibraryMethodOverrideOfClassMethodWithInterfaceTest extends TestBas
         .assertSuccessWithOutputLines(EXPECTED);
   }
 
-  private void verifyLibraryOverrideInformation(AppInfoWithLiveness appInfo, Enqueuer.Mode mode) {
+  private void verifyLibraryOverrideInformation(
+      AppInfoWithLiveness appInfo, Enqueuer.Mode mode, Timing timing) {
     DexItemFactory dexItemFactory = appInfo.dexItemFactory();
     DexProgramClass clazz =
         appInfo

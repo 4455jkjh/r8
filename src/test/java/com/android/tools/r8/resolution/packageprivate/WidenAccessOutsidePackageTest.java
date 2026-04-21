@@ -23,6 +23,7 @@ import com.android.tools.r8.graph.MethodResolutionResult;
 import com.android.tools.r8.resolution.packageprivate.a.A;
 import com.android.tools.r8.resolution.packageprivate.a.A.B;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
+import com.android.tools.r8.utils.timing.Timing;
 import com.google.common.collect.ImmutableSet;
 import java.io.IOException;
 import java.util.HashSet;
@@ -57,6 +58,7 @@ public class WidenAccessOutsidePackageTest extends TestBase {
             buildClasses(A.class, B.class, C.class, Main.class)
                 .addLibraryFile(parameters.getDefaultRuntimeLibrary())
                 .build(),
+            Timing.empty(),
             Main.class);
     AppInfoWithLiveness appInfo = appView.appInfo();
     DexMethod method = buildNullaryVoidMethod(A.class, "bar", appInfo.dexItemFactory());

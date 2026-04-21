@@ -344,7 +344,7 @@ def r8_tester_with_default(
         category = None,
         release_trigger = None,
         max_concurrent_invocations = 1,
-        execution_timeout = default_timeout,
+        execution_timeout = time.hour,
         extra_properties = {}):
     r8_tester(
         name,
@@ -485,7 +485,7 @@ gradle_benchmark()
 
 r8_tester_with_default(
     "linux-default",
-    ["--runtimes=dex-default", "--command_cache_dir=/tmp/ccache"],
+    ["--runtimes=dex-default", "--command_cache_dir=.ccache"],
     max_concurrent_invocations = 2,
 )
 
@@ -524,6 +524,7 @@ r8_tester_with_default(
     bucket = "try",
     trigger = False,
     dimensions = get_dimensions(coordinator = True),
+    execution_timeout = 12 * time.hour,
     extra_properties = {
         "testers": presubmit_testers,
         "shard_count": 1,
@@ -537,105 +538,105 @@ luci.cq_tryjob_verifier(
 
 r8_tester_with_default(
     "linux-none",
-    ["--runtimes=none", "--command_cache_dir=/tmp/ccache"],
+    ["--runtimes=none", "--command_cache_dir=.ccache"],
     max_concurrent_invocations = 2,
     dimensions = get_dimensions(tester = True),
 )
 r8_tester_with_default(
     "linux-jdk8",
-    ["--runtimes=jdk8", "--command_cache_dir=/tmp/ccache"],
+    ["--runtimes=jdk8", "--command_cache_dir=.ccache"],
     dimensions = get_dimensions(tester = True),
 )
 r8_tester_with_default(
     "linux-jdk11",
-    ["--runtimes=jdk11", "--command_cache_dir=/tmp/ccache"],
+    ["--runtimes=jdk11", "--command_cache_dir=.ccache"],
     dimensions = get_dimensions(tester = True),
 )
 r8_tester_with_default(
     "linux-jdk17",
-    ["--runtimes=jdk17", "--command_cache_dir=/tmp/ccache"],
+    ["--runtimes=jdk17", "--command_cache_dir=.ccache"],
     dimensions = get_dimensions(tester = True),
 )
 r8_tester_with_default(
     "linux-jdk21",
-    ["--runtimes=jdk21", "--command_cache_dir=/tmp/ccache"],
+    ["--runtimes=jdk21", "--command_cache_dir=.ccache"],
     dimensions = get_dimensions(tester = True),
 )
 r8_tester_with_default(
     "linux-jdk25",
-    ["--runtimes=jdk25", "--command_cache_dir=/tmp/ccache"],
+    ["--runtimes=jdk25", "--command_cache_dir=.ccache"],
     release_trigger = ["branch-gitiles-9.0-forward"],
     dimensions = get_dimensions(tester = True),
 )
 
 r8_tester_with_default(
     "linux-android-4.0",
-    ["--dex_vm=4.0.4", "--all_tests", "--command_cache_dir=/tmp/ccache"],
+    ["--dex_vm=4.0.4", "--all_tests", "--command_cache_dir=.ccache"],
     max_concurrent_invocations = 2,
     dimensions = get_dimensions(tester = True),
 )
 r8_tester_with_default(
     "linux-android-4.4",
-    ["--dex_vm=4.4.4", "--all_tests", "--command_cache_dir=/tmp/ccache"],
+    ["--dex_vm=4.4.4", "--all_tests", "--command_cache_dir=.ccache"],
     dimensions = get_dimensions(tester = True),
 )
 
 r8_tester_with_default(
     "linux-android-5",
-    ["--dex_vm=5.1.1", "--all_tests", "--command_cache_dir=/tmp/ccache"],
+    ["--dex_vm=5.1.1", "--all_tests", "--command_cache_dir=.ccache"],
     dimensions = get_dimensions(jammy = True, tester = True),
 )
 
 r8_tester_with_default(
     "linux-android-6",
-    ["--dex_vm=6.0.1", "--all_tests", "--command_cache_dir=/tmp/ccache"],
+    ["--dex_vm=6.0.1", "--all_tests", "--command_cache_dir=.ccache"],
     dimensions = get_dimensions(tester = True),
 )
 r8_tester_with_default(
     "linux-android-7",
-    ["--dex_vm=7.0.0", "--all_tests", "--command_cache_dir=/tmp/ccache"],
+    ["--dex_vm=7.0.0", "--all_tests", "--command_cache_dir=.ccache"],
     dimensions = get_dimensions(tester = True),
 )
 
 r8_tester_with_default(
     "linux-android-8",
-    ["--dex_vm=8.1.0", "--all_tests", "--command_cache_dir=/tmp/ccache"],
+    ["--dex_vm=8.1.0", "--all_tests", "--command_cache_dir=.ccache"],
     dimensions = get_dimensions(tester = True),
 )
 r8_tester_with_default(
     "linux-android-9",
-    ["--dex_vm=9.0.0", "--all_tests", "--command_cache_dir=/tmp/ccache"],
+    ["--dex_vm=9.0.0", "--all_tests", "--command_cache_dir=.ccache"],
     dimensions = get_dimensions(tester = True),
 )
 r8_tester_with_default(
     "linux-android-10",
-    ["--dex_vm=10.0.0", "--all_tests", "--command_cache_dir=/tmp/ccache"],
+    ["--dex_vm=10.0.0", "--all_tests", "--command_cache_dir=.ccache"],
     dimensions = get_dimensions(tester = True),
 )
 r8_tester_with_default(
     "linux-android-12",
-    ["--dex_vm=12.0.0", "--all_tests", "--command_cache_dir=/tmp/ccache"],
+    ["--dex_vm=12.0.0", "--all_tests", "--command_cache_dir=.ccache"],
     dimensions = get_dimensions(tester = True),
 )
 r8_tester_with_default(
     "linux-android-13",
-    ["--dex_vm=13.0.0", "--all_tests", "--command_cache_dir=/tmp/ccache"],
+    ["--dex_vm=13.0.0", "--all_tests", "--command_cache_dir=.ccache"],
     dimensions = get_dimensions(tester = True),
 )
 r8_tester_with_default(
     "linux-android-14",
-    ["--dex_vm=14.0.0", "--all_tests", "--command_cache_dir=/tmp/ccache"],
+    ["--dex_vm=14.0.0", "--all_tests", "--command_cache_dir=.ccache"],
     dimensions = get_dimensions(tester = True),
 )
 r8_tester_with_default(
     "linux-android-15",
-    ["--dex_vm=15.0.0", "--all_tests", "--command_cache_dir=/tmp/ccache"],
+    ["--dex_vm=15.0.0", "--all_tests", "--command_cache_dir=.ccache"],
     dimensions = get_dimensions(tester = True),
     release_trigger = ["branch-gitiles-8.5-forward"],
 )
 r8_tester_with_default(
     "linux-android-16",
-    ["--dex_vm=16.0.0", "--all_tests", "--command_cache_dir=/tmp/ccache"],
+    ["--dex_vm=16.0.0", "--all_tests", "--command_cache_dir=.ccache"],
     dimensions = get_dimensions(tester = True),
     release_trigger = ["branch-gitiles-9.0-forward"],
 )

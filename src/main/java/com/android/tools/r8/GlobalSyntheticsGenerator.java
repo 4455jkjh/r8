@@ -12,6 +12,7 @@ import com.android.tools.r8.androidapi.AndroidApiUnknownReferenceDiagnosticHelpe
 import com.android.tools.r8.androidapi.ApiReferenceStubber;
 import com.android.tools.r8.androidapi.ApiReferenceStubberEventConsumer;
 import com.android.tools.r8.androidapi.ComputedApiLevel.KnownApiLevel;
+import com.android.tools.r8.assistant.AssistantInstrumentation;
 import com.android.tools.r8.dex.ApplicationReader;
 import com.android.tools.r8.dex.ApplicationWriter;
 import com.android.tools.r8.errors.CompilationError;
@@ -81,7 +82,16 @@ public class GlobalSyntheticsGenerator {
           || kind.equals(naming.API_MODEL_STUB)
           || kind.equals(naming.METHOD_HANDLES_LOOKUP)
           || kind.equals(naming.VAR_HANDLE)
-          || kind.equals(naming.LAMBDA_METHOD_ANNOTATION);
+          || kind.equals(naming.LAMBDA_METHOD_ANNOTATION)
+          || kind.equals(naming.ASSISTANT_EMPTY_REFLECTIVE_OPERATION_RECEIVER)
+          || kind.equals(naming.ASSISTANT_REFLECTIVE_EVENT_TYPE)
+          || kind.equals(naming.ASSISTANT_REFLECTIVE_OPERATION_JSON_LOGGER)
+          || kind.equals(naming.ASSISTANT_REFLECTIVE_OPERATION_LOGGER)
+          || kind.equals(naming.ASSISTANT_REFLECTIVE_OPERATION_RECEIVER)
+          || kind.equals(naming.ASSISTANT_REFLECTIVE_OPERATION_RECEIVER_CLASS_FLAG)
+          || kind.equals(naming.ASSISTANT_REFLECTIVE_OPERATION_RECEIVER_NAME_LOOKUP_TYPE)
+          || kind.equals(naming.ASSISTANT_REFLECTIVE_ORACLE)
+          || kind.equals(naming.ASSISTANT_REFLECTIVE_ORACLE_STACK);
     }
     return true;
   }
@@ -133,11 +143,12 @@ public class GlobalSyntheticsGenerator {
 
               assert GlobalSyntheticsGeneratorVerifier.verifyExpectedClassesArePresent(appView);
               if (options.isGeneratingDex()) {
-                ApplicationWriter.create(appView, options.getMarker()).write(executorService, app);
+                ApplicationWriter.create(appView, options.getMarker())
+                    .write(executorService, timing, app);
               } else {
                 assert options.isGeneratingClassFiles();
                 new CfApplicationWriter(appView, options.getMarker())
-                    .write(options.getClassFileConsumer(), executorService, app);
+                    .write(options.getClassFileConsumer(), executorService, timing, app);
               }
             } catch (ExecutionException e) {
               throw unwrapExecutionException(e);
@@ -213,6 +224,10 @@ public class GlobalSyntheticsGenerator {
 
       LambdaClass.ensureLambdaMethodAnnotationClass(
           appView, emptyLambdaDesugaringEventConsumer, synthesizingContext);
+    }
+
+    if (appView.options().getAssistantOptions().enableAssistantInstrumentation) {
+      AssistantInstrumentation.ensureGlobalSynthetics(appView, synthesizingContext);
     }
 
     // Commit all the synthetics to the program and then convert as per D8.

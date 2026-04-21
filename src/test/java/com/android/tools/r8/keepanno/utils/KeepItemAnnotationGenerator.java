@@ -11,7 +11,6 @@ import static java.nio.file.StandardOpenOption.TRUNCATE_EXISTING;
 
 import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.cfmethodgeneration.CodeGenerationBase;
-import com.android.tools.r8.errors.Unreachable;
 import com.android.tools.r8.keepanno.annotations.KeepItemKind;
 import com.android.tools.r8.references.ClassReference;
 import com.android.tools.r8.references.Reference;
@@ -19,6 +18,7 @@ import com.android.tools.r8.utils.DescriptorUtils;
 import com.android.tools.r8.utils.FileUtils;
 import com.android.tools.r8.utils.StringUtils;
 import com.android.tools.r8.utils.StringUtils.BraceType;
+import com.android.tools.r8.utils.exceptions.Unreachable;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 import java.io.ByteArrayOutputStream;

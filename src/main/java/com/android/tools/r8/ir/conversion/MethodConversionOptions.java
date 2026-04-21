@@ -4,11 +4,11 @@
 
 package com.android.tools.r8.ir.conversion;
 
-import com.android.tools.r8.errors.Unreachable;
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.ProgramMethod;
 import com.android.tools.r8.ir.optimize.DeadCodeRemover;
 import com.android.tools.r8.partial.R8PartialSubCompilationConfiguration;
+import com.android.tools.r8.utils.exceptions.Unreachable;
 
 public abstract class MethodConversionOptions {
 

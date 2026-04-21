@@ -4,7 +4,6 @@
 
 package com.android.tools.r8.utils;
 
-import com.android.tools.r8.errors.Unreachable;
 import com.android.tools.r8.graph.DexItemFactory;
 import com.android.tools.r8.graph.DexProto;
 import com.android.tools.r8.graph.DexType;
@@ -12,6 +11,7 @@ import com.android.tools.r8.references.ArrayReference;
 import com.android.tools.r8.references.ClassReference;
 import com.android.tools.r8.references.PrimitiveReference;
 import com.android.tools.r8.references.TypeReference;
+import com.android.tools.r8.utils.exceptions.Unreachable;
 import java.util.Comparator;
 import java.util.List;
 import java.util.function.Function;

@@ -49,9 +49,9 @@ public class VerticalClassMergerPolicyExecutor extends PolicyExecutor<VerticalMe
       Set<DexProgramClass> connectedComponent) {
     List<VerticalMergeGroup> groups = new ArrayList<>();
     for (DexProgramClass mergeCandidate : connectedComponent) {
-      List<DexProgramClass> subclasses = immediateSubtypingInfo.getSubclasses(mergeCandidate);
+      Collection<DexProgramClass> subclasses = immediateSubtypingInfo.getSubclasses(mergeCandidate);
       if (subclasses.size() == 1) {
-        groups.add(new VerticalMergeGroup(mergeCandidate, ListUtils.first(subclasses)));
+        groups.add(new VerticalMergeGroup(mergeCandidate, subclasses.iterator().next()));
       }
     }
     return ListUtils.destructiveSort(

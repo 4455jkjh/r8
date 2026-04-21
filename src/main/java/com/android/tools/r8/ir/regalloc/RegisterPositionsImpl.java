@@ -4,7 +4,7 @@
 
 package com.android.tools.r8.ir.regalloc;
 
-import com.android.tools.r8.errors.Unreachable;
+import com.android.tools.r8.utils.exceptions.Unreachable;
 import java.util.Arrays;
 import java.util.BitSet;
 

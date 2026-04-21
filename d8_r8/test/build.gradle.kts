@@ -501,10 +501,14 @@ tasks {
     )
     val processKeepRulesLibJar = processKeepRulesLibWithRelocatedDepsTask.getSingleOutputFile()
     val r8LibJar = r8Lib.getSingleOutputFile()
-    val r8LibMappingFile = file(r8LibJar.toString() + ".map")
+    val r8LibPartitionMapFile = file(r8LibJar.toString() + "_map.zip")
     val r8WithRelocatedDepsJar = r8WithRelocatedDepsTask.getSingleOutputFile()
     val swissArmyKnifeJar = swissArmyKnifeTask.getSingleOutputFile()
-    configure(isR8Lib = true, r8Jar = r8WithRelocatedDepsJar, r8LibMappingFile = r8LibMappingFile)
+    configure(
+      isR8Lib = true,
+      r8Jar = r8WithRelocatedDepsJar,
+      r8LibPartitionMapFile = r8LibPartitionMapFile,
+    )
 
     // R8lib should be used instead of the main output and all the tests in r8 should be mapped and
     // exists in r8LibTestPath.

@@ -352,6 +352,13 @@ def IsWindows():
 def EnsureDepFromGoogleCloudStorage(dep, tgz, sha1, msg):
     if (not os.path.exists(dep) or not os.path.exists(tgz) or
             os.path.getmtime(tgz) < os.path.getmtime(sha1)):
+        if os.path.exists(dep):
+            if os.path.isdir(dep):
+                shutil.rmtree(dep)
+            else:
+                os.remove(dep)
+        if os.path.exists(tgz):
+            os.remove(tgz)
         DownloadFromGoogleCloudStorage(sha1)
         # Update the mtime of the tar file to make sure we do not run again unless
         # there is an update.
@@ -577,7 +584,7 @@ def cloud_storage_exists(destination):
 
 class TempDir(object):
 
-    def __init__(self, prefix='', delete=True):
+    def __init__(self, prefix='r8-tmp-', delete=True):
         self._temp_dir = None
         self._prefix = prefix
         self._delete = delete

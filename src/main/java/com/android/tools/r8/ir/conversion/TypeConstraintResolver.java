@@ -4,7 +4,6 @@
 package com.android.tools.r8.ir.conversion;
 
 import com.android.tools.r8.errors.CompilationError;
-import com.android.tools.r8.errors.Unreachable;
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.ir.analysis.type.ArrayTypeElement;
 import com.android.tools.r8.ir.analysis.type.TypeAnalysis;
@@ -22,6 +21,7 @@ import com.android.tools.r8.ir.code.Value;
 import com.android.tools.r8.ir.code.ValueTypeConstraint;
 import com.android.tools.r8.position.MethodPosition;
 import com.android.tools.r8.utils.StringDiagnostic;
+import com.android.tools.r8.utils.exceptions.Unreachable;
 import com.google.common.collect.ImmutableSet;
 import java.util.ArrayList;
 import java.util.HashMap;

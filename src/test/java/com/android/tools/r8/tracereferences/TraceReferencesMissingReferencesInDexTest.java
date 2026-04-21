@@ -24,8 +24,8 @@ import com.android.tools.r8.utils.AndroidApiLevel;
 import com.google.common.collect.ImmutableSet;
 import java.io.IOException;
 import java.nio.file.Path;
-import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -44,9 +44,9 @@ public class TraceReferencesMissingReferencesInDexTest extends TestBase {
 
   static class MissingReferencesConsumer implements TraceReferencesConsumer {
 
-    Set<ClassReference> missingTypes = new HashSet<>();
-    Set<FieldReference> missingFields = new HashSet<>();
-    Set<MethodReference> missingMethods = new HashSet<>();
+    private final Set<ClassReference> missingTypes = ConcurrentHashMap.newKeySet();
+    private final Set<FieldReference> missingFields = ConcurrentHashMap.newKeySet();
+    private final Set<MethodReference> missingMethods = ConcurrentHashMap.newKeySet();
 
     boolean hasMissingTypes() {
       return missingTypes.size() > 0;

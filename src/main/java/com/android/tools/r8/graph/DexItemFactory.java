@@ -8,7 +8,6 @@ import static com.android.tools.r8.utils.ConsumerUtils.emptyConsumer;
 
 import com.android.tools.r8.dex.Constants;
 import com.android.tools.r8.dex.Marker;
-import com.android.tools.r8.errors.Unreachable;
 import com.android.tools.r8.graph.DexDebugEvent.AdvanceLine;
 import com.android.tools.r8.graph.DexDebugEvent.AdvancePC;
 import com.android.tools.r8.graph.DexDebugEvent.Default;
@@ -32,6 +31,7 @@ import com.android.tools.r8.utils.ArrayUtils;
 import com.android.tools.r8.utils.DescriptorUtils;
 import com.android.tools.r8.utils.ListUtils;
 import com.android.tools.r8.utils.SetUtils;
+import com.android.tools.r8.utils.exceptions.Unreachable;
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
 import com.google.common.collect.ImmutableList;
@@ -2592,6 +2592,9 @@ public class DexItemFactory {
 
   public class AtomicIntUpdaterMethods {
     public final DexMethod newUpdater;
+    public final DexMethod compareAndSet;
+    public final DexMethod get;
+    public final DexMethod set;
 
     private AtomicIntUpdaterMethods() {
       newUpdater =
@@ -2600,6 +2603,24 @@ public class DexItemFactory {
               newUpdaterName,
               intFieldUpdaterDescriptor,
               new DexString[] {classDescriptor, stringDescriptor});
+      compareAndSet =
+          createMethod(
+              intFieldUpdaterDescriptor,
+              compareAndSetName,
+              booleanDescriptor,
+              new DexString[] {objectDescriptor, intDescriptor, intDescriptor});
+      get =
+          createMethod(
+              intFieldUpdaterDescriptor,
+              getName,
+              intDescriptor,
+              new DexString[] {objectDescriptor});
+      set =
+          createMethod(
+              intFieldUpdaterDescriptor,
+              setName,
+              voidDescriptor,
+              new DexString[] {objectDescriptor, intDescriptor});
     }
   }
 
@@ -2665,14 +2686,45 @@ public class DexItemFactory {
 
   public class SunMiscUnsafeMethods {
 
+    public final DexMethod compareAndSwapInt;
     public final DexMethod compareAndSwapObject;
+    public final DexMethod objectFieldOffset;
+    public final DexMethod getObjectVolatile;
+    public final DexMethod putObjectVolatile;
+    public final DexMethod getIntVolatile;
+    public final DexMethod putIntVolatile;
 
     private SunMiscUnsafeMethods() {
+      this.compareAndSwapInt =
+          createMethod(
+              sunMiscUnsafeType,
+              createProto(booleanType, objectType, longType, intType, intType),
+              "compareAndSwapInt");
       this.compareAndSwapObject =
           createMethod(
               sunMiscUnsafeType,
               createProto(booleanType, objectType, longType, objectType, objectType),
               "compareAndSwapObject");
+      this.objectFieldOffset =
+          createMethod(sunMiscUnsafeType, createProto(longType, fieldType), "objectFieldOffset");
+      this.getObjectVolatile =
+          createMethod(
+              sunMiscUnsafeType,
+              createProto(objectType, objectType, longType),
+              "getObjectVolatile");
+      this.putObjectVolatile =
+          createMethod(
+              sunMiscUnsafeType,
+              createProto(voidType, objectType, longType, objectType),
+              "putObjectVolatile");
+      this.getIntVolatile =
+          createMethod(
+              sunMiscUnsafeType, createProto(intType, objectType, longType), "getIntVolatile");
+      this.putIntVolatile =
+          createMethod(
+              sunMiscUnsafeType,
+              createProto(voidType, objectType, longType, intType),
+              "putIntVolatile");
     }
   }
 

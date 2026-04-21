@@ -6,7 +6,6 @@ package com.android.tools.r8.ir.conversion.passes;
 
 import static com.android.tools.r8.utils.BitUtils.ALL_BITS_SET_MASK;
 
-import com.android.tools.r8.errors.Unreachable;
 import com.android.tools.r8.ir.code.Add;
 import com.android.tools.r8.ir.code.And;
 import com.android.tools.r8.ir.code.Binop;
@@ -19,6 +18,7 @@ import com.android.tools.r8.ir.code.Sub;
 import com.android.tools.r8.ir.code.Ushr;
 import com.android.tools.r8.ir.code.Value;
 import com.android.tools.r8.ir.code.Xor;
+import com.android.tools.r8.utils.exceptions.Unreachable;
 
 /**
  * A Binop descriptor describes left and right identity and absorbing element of binop. <code>

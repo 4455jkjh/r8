@@ -19,8 +19,8 @@ import com.android.tools.r8.utils.MethodReferenceUtils;
 import com.android.tools.r8.utils.ZipUtils.ZipBuilder;
 import com.google.common.collect.ImmutableSet;
 import java.nio.file.Path;
-import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -40,8 +40,8 @@ public class TraceReferenceNonReboundConstructorCallTest extends TestBase {
 
   static class MissingReferencesConsumer implements TraceReferencesConsumer {
 
-    private Set<MethodReference> foundMethods = new HashSet<>();
-    private Set<MethodReference> missingMethods = new HashSet<>();
+    private final Set<MethodReference> foundMethods = ConcurrentHashMap.newKeySet();
+    private final Set<MethodReference> missingMethods = ConcurrentHashMap.newKeySet();
 
     @Override
     public void acceptType(TracedClass tracedClass, DiagnosticsHandler handler) {}

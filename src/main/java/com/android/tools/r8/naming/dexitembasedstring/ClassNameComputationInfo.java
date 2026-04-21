@@ -8,7 +8,6 @@ import static com.android.tools.r8.utils.DescriptorUtils.getCanonicalNameFromDes
 import static com.android.tools.r8.utils.DescriptorUtils.getClassNameFromDescriptor;
 import static com.android.tools.r8.utils.DescriptorUtils.getUnqualifiedClassNameFromDescriptor;
 
-import com.android.tools.r8.errors.Unreachable;
 import com.android.tools.r8.graph.DexClass;
 import com.android.tools.r8.graph.DexDefinitionSupplier;
 import com.android.tools.r8.graph.DexItemFactory;
@@ -16,6 +15,7 @@ import com.android.tools.r8.graph.DexString;
 import com.android.tools.r8.graph.DexType;
 import com.android.tools.r8.graph.lens.GraphLens;
 import com.android.tools.r8.naming.NamingLens;
+import com.android.tools.r8.utils.exceptions.Unreachable;
 import com.android.tools.r8.utils.structural.CompareToVisitor;
 import com.android.tools.r8.utils.structural.HashingVisitor;
 import com.android.tools.r8.utils.structural.StructuralItem;

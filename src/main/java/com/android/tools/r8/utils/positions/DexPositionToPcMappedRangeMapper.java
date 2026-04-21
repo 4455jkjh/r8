@@ -17,7 +17,7 @@ import com.android.tools.r8.graph.DexEncodedMethod;
 import com.android.tools.r8.graph.ProgramMethod;
 import com.android.tools.r8.ir.code.Position;
 import com.android.tools.r8.utils.IntBox;
-import com.android.tools.r8.utils.Pair;
+import com.android.tools.r8.utils.collections.Pair;
 import com.android.tools.r8.utils.positions.PositionToMappedRangeMapper.PcBasedDebugInfoRecorder;
 import com.android.tools.r8.utils.timing.Timing;
 import java.util.ArrayList;

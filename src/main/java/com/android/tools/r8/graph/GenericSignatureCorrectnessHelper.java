@@ -11,7 +11,6 @@ import static com.android.tools.r8.graph.GenericSignatureCorrectnessHelper.Signa
 import static com.android.tools.r8.graph.GenericSignatureCorrectnessHelper.SignatureEvaluationResult.VALID;
 import static com.google.common.base.Predicates.alwaysFalse;
 
-import com.android.tools.r8.errors.Unreachable;
 import com.android.tools.r8.graph.GenericSignature.ClassSignature;
 import com.android.tools.r8.graph.GenericSignature.ClassTypeSignature;
 import com.android.tools.r8.graph.GenericSignature.DexDefinitionSignature;
@@ -25,6 +24,7 @@ import com.android.tools.r8.shaking.KeepClassInfo;
 import com.android.tools.r8.shaking.KeepFieldInfo;
 import com.android.tools.r8.shaking.KeepMethodInfo;
 import com.android.tools.r8.utils.ListUtils;
+import com.android.tools.r8.utils.exceptions.Unreachable;
 import java.util.Collection;
 import java.util.List;
 import java.util.function.Consumer;

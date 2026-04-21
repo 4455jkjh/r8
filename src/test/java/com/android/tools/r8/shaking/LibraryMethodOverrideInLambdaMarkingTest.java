@@ -16,6 +16,7 @@ import com.android.tools.r8.graph.DexItemFactory;
 import com.android.tools.r8.graph.DexProgramClass;
 import com.android.tools.r8.graph.DexType;
 import com.android.tools.r8.shaking.Enqueuer.Mode;
+import com.android.tools.r8.utils.timing.Timing;
 import java.util.Iterator;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -50,7 +51,8 @@ public class LibraryMethodOverrideInLambdaMarkingTest extends TestBase {
         .assertSuccessWithOutputLines("null", "null");
   }
 
-  private void verifyLibraryOverrideInformation(AppInfoWithLiveness appInfo, Mode mode) {
+  private void verifyLibraryOverrideInformation(
+      AppInfoWithLiveness appInfo, Mode mode, Timing timing) {
     DexItemFactory dexItemFactory = appInfo.dexItemFactory();
     verifyIteratorMethodMarkedAsOverridingLibraryMethod(
         appInfo, dexItemFactory.createType(descriptor(I.class)));

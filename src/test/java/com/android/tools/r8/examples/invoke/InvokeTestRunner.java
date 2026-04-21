@@ -92,9 +92,4 @@ public class InvokeTestRunner extends ExamplesTestBase {
         "519",
         "15");
   }
-
-  @Override
-  public boolean isTestDebugKnownToBeFlaky() {
-    return true;
-  }
 }

@@ -46,6 +46,7 @@ public class PartialCallGraphTest extends CallGraphTestBase {
     this.appView =
         computeAppViewWithLiveness(
             app,
+            Timing.empty(),
             factory -> {
               Reporter reporter = new Reporter();
               ProguardConfiguration.Builder configurationBuilder =

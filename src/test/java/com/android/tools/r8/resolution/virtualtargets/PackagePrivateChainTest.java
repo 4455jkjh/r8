@@ -25,6 +25,7 @@ import com.android.tools.r8.resolution.virtualtargets.package_a.Middle;
 import com.android.tools.r8.resolution.virtualtargets.package_a.Top;
 import com.android.tools.r8.resolution.virtualtargets.package_a.TopRunner;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
+import com.android.tools.r8.utils.timing.Timing;
 import com.google.common.collect.ImmutableSet;
 import java.io.IOException;
 import java.util.HashSet;
@@ -59,6 +60,7 @@ public class PackagePrivateChainTest extends TestBase {
             buildClasses(Top.class, Middle.class, Bottom.class, TopRunner.class, Main.class)
                 .addLibraryFile(parameters.getDefaultRuntimeLibrary())
                 .build(),
+            Timing.empty(),
             Main.class);
     AppInfoWithLiveness appInfo = appView.appInfo();
     DexMethod method = buildNullaryVoidMethod(Top.class, "clear", appInfo.dexItemFactory());

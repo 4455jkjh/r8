@@ -85,6 +85,7 @@ public class DumpOptions {
   private final AndroidResourceProvider androidResourceProvider;
   private final R8PartialCompilationConfiguration partialCompilationConfiguration;
   private final Map<String, String> systemProperties;
+  private final Optional<Boolean> hasProguardMapConsumer;
 
   // TraceReferences only.
   private final String traceReferencesConsumer;
@@ -119,7 +120,8 @@ public class DumpOptions {
       String traceReferencesConsumer,
       AndroidResourceProvider androidResourceProvider,
       R8PartialCompilationConfiguration partialCompilationConfiguration,
-      Optional<Boolean> optimizedResourceShrinking) {
+      Optional<Boolean> optimizedResourceShrinking,
+      Optional<Boolean> hasProguardMapConsumer) {
     this.backend = backend;
     this.tool = tool;
     this.compilationMode = compilationMode;
@@ -147,6 +149,7 @@ public class DumpOptions {
     this.traceReferencesConsumer = traceReferencesConsumer;
     this.androidResourceProvider = androidResourceProvider;
     this.partialCompilationConfiguration = partialCompilationConfiguration;
+    this.hasProguardMapConsumer = hasProguardMapConsumer;
   }
 
   public String getBuildPropertiesFileContent() {
@@ -191,6 +194,8 @@ public class DumpOptions {
       addDumpEntry(buildProperties, TRACE_REFERENCES_CONSUMER, traceReferencesConsumer);
     }
     addOptionalDumpEntry(buildProperties, MINIFICATION_KEY, minification);
+    addOptionalDumpEntry(buildProperties, "proguard-map-output", hasProguardMapConsumer);
+
     ArrayList<String> sortedKeys = new ArrayList<>(systemProperties.keySet());
     sortedKeys.sort(String::compareTo);
     sortedKeys.forEach(
@@ -415,6 +420,7 @@ public class DumpOptions {
     private AndroidResourceProvider androidResourceProvider;
     private R8PartialCompilationConfiguration partialCompilationConfiguration;
     private Optional<Boolean> optimizedResourceShrinking = Optional.empty();
+    private Optional<Boolean> hasProgramMapConsumer = Optional.empty();
 
     private boolean enableMissingLibraryApiModeling = false;
     private boolean isAndroidPlatformBuild = false;
@@ -557,6 +563,13 @@ public class DumpOptions {
       return this;
     }
 
+    public Builder setHasProguardMapConsumer(boolean value) {
+      if (value) {
+        hasProgramMapConsumer = Optional.of(value);
+      }
+      return this;
+    }
+
     public Builder setSystemProperty(String key, String value) {
       this.systemProperties.put(key, value);
       return this;
@@ -611,7 +624,8 @@ public class DumpOptions {
           traceReferencesConsumer,
           androidResourceProvider,
           partialCompilationConfiguration,
-          optimizedResourceShrinking);
+          optimizedResourceShrinking,
+          hasProgramMapConsumer);
     }
 
     public Builder setAndroidResourceProvider(AndroidResourceProvider androidResourceProvider) {

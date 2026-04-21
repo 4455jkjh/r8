@@ -41,21 +41,37 @@ public class AtomicFieldUpdaterGetTest extends AtomicFieldUpdaterBase {
         .inspectDiagnosticMessagesIf(
             isOptimizationOn(),
             diagnostics -> {
-              diagnostics.assertInfosMatch(diagnosticMessage(containsString("Cannot instrument")));
+              diagnostics.assertInfosMatch(
+                  diagnosticMessage(containsString("Can instrument")),
+                  diagnosticMessage(containsString("Can optimize"))
+                  // TODO(b/453628974): The field should be removed once nullability analysis is
+                  //                    more precise.
+                  );
             })
         .inspect(
             inspector -> {
               MethodSubject method = inspector.clazz(testClass).mainMethod();
-              assertThat(
-                  method,
-                  CodeMatchers.invokesMethodWithHolderAndName(
-                      AtomicIntegerFieldUpdater.class, "get"));
+              if (isOptimizationOn()) {
+                assertThat(
+                    method,
+                    CodeMatchers.invokesMethod(
+                        inspector
+                            .getFactory()
+                            .sunMiscUnsafeMethods
+                            .getIntVolatile
+                            .asMethodReference()));
+              } else {
+                assertThat(
+                    method,
+                    CodeMatchers.invokesMethodWithHolderAndName(
+                        AtomicIntegerFieldUpdater.class, "get"));
+              }
             })
         .run(parameters.getRuntime(), testClass)
         .assertSuccessWithOutputLines("123");
   }
 
-  // Corresponding to simple kotlin usage of `atomic("Hello")` via atomicfu.
+  // Corresponding to simple kotlin usage of `atomic(123)` via atomicfu.
   public static class TestClass {
 
     private volatile int myInt;

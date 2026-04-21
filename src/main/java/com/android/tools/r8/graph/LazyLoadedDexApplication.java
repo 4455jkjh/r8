@@ -55,9 +55,8 @@ public class LazyLoadedDexApplication extends DexApplication {
       Map<DexType, DexClasspathClass> synthesizedClasspathClasses,
       LibraryClassCollection libraryClasses,
       List<KeepDeclaration> keepDeclarations,
-      InternalOptions options,
-      Timing timing) {
-    super(proguardMap, flags, dataResourceProviders, options, timing);
+      InternalOptions options) {
+    super(proguardMap, flags, dataResourceProviders, options);
     this.programClasses = programClasses;
     this.classpathClasses = classpathClasses;
     this.synthesizedClasspathClasses = synthesizedClasspathClasses;
@@ -440,8 +439,7 @@ public class LazyLoadedDexApplication extends DexApplication {
           synthesizedClasspathClasses,
           libraryClasses,
           keepDeclarations,
-          options,
-          timing);
+          options);
     }
   }
 
@@ -456,13 +454,14 @@ public class LazyLoadedDexApplication extends DexApplication {
   }
 
   @Deprecated
-  public DirectMappedDexApplication toDirectSingleThreadedForTesting() {
+  public DirectMappedDexApplication toDirectSingleThreadedForTesting(Timing timing) {
     ExecutorService executor = Executors.newSingleThreadExecutor();
-    return toDirectForTesting(executor);
+    return toDirectForTesting(executor, timing);
   }
 
   @Deprecated
-  private DirectMappedDexApplication toDirectForTesting(ExecutorService executorService) {
+  private DirectMappedDexApplication toDirectForTesting(
+      ExecutorService executorService, Timing timing) {
     try (Timing t0 = timing.begin("To direct app")) {
       // As a side-effect, this will force-load all classes.
       AllClasses allClasses = loadAllClasses(executorService, timing);

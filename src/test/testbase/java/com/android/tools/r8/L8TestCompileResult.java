@@ -7,12 +7,12 @@ package com.android.tools.r8;
 import static org.junit.Assert.assertNotNull;
 
 import com.android.tools.r8.ToolHelper.ProcessResult;
-import com.android.tools.r8.errors.Unimplemented;
 import com.android.tools.r8.utils.AndroidApiLevel;
 import com.android.tools.r8.utils.AndroidApp;
 import com.android.tools.r8.utils.FileUtils;
 import com.android.tools.r8.utils.ThrowingConsumer;
 import com.android.tools.r8.utils.codeinspector.CodeInspector;
+import com.android.tools.r8.utils.exceptions.Unimplemented;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;

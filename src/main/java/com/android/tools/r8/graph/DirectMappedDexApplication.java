@@ -53,9 +53,8 @@ public class DirectMappedDexApplication extends DexApplication {
       ImmutableCollection<DexClasspathClass> classpathClasses,
       ImmutableList<DataResourceProvider> dataResourceProviders,
       List<KeepDeclaration> keepDeclarations,
-      InternalOptions options,
-      Timing timing) {
-    super(proguardMap, flags, dataResourceProviders, options, timing);
+      InternalOptions options) {
+    super(proguardMap, flags, dataResourceProviders, options);
     this.programOrClasspathClasses = programOrClasspathClasses;
     this.libraryClasses = libraryClasses;
     this.programClasses = programClasses;
@@ -381,8 +380,7 @@ public class DirectMappedDexApplication extends DexApplication {
             newClasspathClasses,
             ImmutableList.copyOf(dataResourceProviders),
             keepDeclarations,
-            options,
-            timing);
+            options);
       }
     }
 

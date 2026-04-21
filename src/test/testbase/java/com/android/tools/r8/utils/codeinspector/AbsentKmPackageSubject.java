@@ -3,8 +3,8 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8.utils.codeinspector;
 
-import com.android.tools.r8.errors.Unreachable;
 import com.android.tools.r8.graph.DexClass;
+import com.android.tools.r8.utils.exceptions.Unreachable;
 import java.util.List;
 
 public class AbsentKmPackageSubject extends KmPackageSubject {

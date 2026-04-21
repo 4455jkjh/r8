@@ -8,8 +8,10 @@ import static com.android.tools.r8.utils.MapUtils.ignoreKey;
 
 import com.google.common.collect.Iterables;
 import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
@@ -17,7 +19,7 @@ public class ImmediateAppSubtypingInfo extends ImmediateSubtypingInfo<DexClass, 
 
   private ImmediateAppSubtypingInfo(
       AppView<? extends AppInfoWithClassHierarchy> appView,
-      Map<DexClass, List<DexClass>> immediateSubtypes) {
+      Map<DexClass, Set<DexClass>> immediateSubtypes) {
     super(appView, immediateSubtypes);
   }
 
@@ -66,7 +68,7 @@ public class ImmediateAppSubtypingInfo extends ImmediateSubtypingInfo<DexClass, 
         if (superclass == null) {
           continue;
         }
-        immediateSubtypes.computeIfAbsent(superclass, ignoreKey(ArrayList::new)).add(clazz);
+        immediateSubtypes.computeIfAbsent(superclass, ignoreKey(LinkedHashSet::new)).add(clazz);
       }
     }
   }

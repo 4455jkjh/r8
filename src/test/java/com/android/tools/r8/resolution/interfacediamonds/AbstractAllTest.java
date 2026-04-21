@@ -14,6 +14,7 @@ import com.android.tools.r8.graph.DexMethod;
 import com.android.tools.r8.graph.MethodResolutionResult;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
 import com.android.tools.r8.utils.AndroidApp;
+import com.android.tools.r8.utils.timing.Timing;
 import com.google.common.collect.ImmutableList;
 import java.util.List;
 import org.junit.Test;
@@ -43,7 +44,8 @@ public class AbstractAllTest extends TestBase {
     assumeTrue(parameters.isOrSimulateNoneRuntime());
     AndroidApp app =
         buildClasses(CLASSES).addLibraryFile(parameters.getDefaultRuntimeLibrary()).build();
-    AppInfoWithLiveness appInfo = computeAppViewWithLiveness(app, Main.class).appInfo();
+    AppInfoWithLiveness appInfo =
+        computeAppViewWithLiveness(app, Timing.empty(), Main.class).appInfo();
     DexMethod method = buildNullaryVoidMethod(B.class, "f", appInfo.dexItemFactory());
     MethodResolutionResult resolutionResult = appInfo.resolveMethodOnClassHolderLegacy(method);
     DexEncodedMethod resolutionTarget = resolutionResult.getSingleTarget();

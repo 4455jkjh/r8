@@ -38,7 +38,7 @@ public class DependenciesPlugin : Plugin<Project> {
   override fun apply(target: Project) {
     // Setup all test tasks to listen after system properties passed in by test.py.
     val testTask = target.tasks.findByName("test") as Test?
-    testTask?.configure(isR8Lib = false, r8Jar = null, r8LibMappingFile = null)
+    testTask?.configure(isR8Lib = false, r8Jar = null, r8LibPartitionMapFile = null)
   }
 
   public companion object {
@@ -93,8 +93,9 @@ public enum class Jdk(public val folder: String, public val version: Int) {
   }
 }
 
-public fun Test.configure(isR8Lib: Boolean, r8Jar: File?, r8LibMappingFile: File? = null) {
-  TestConfigurationHelper.setupTestTask(this, isR8Lib, r8Jar, r8LibMappingFile)
+public fun Test.configure(isR8Lib: Boolean, r8Jar: File?, r8LibPartitionMapFile: File? = null) {
+  project.plugins.apply("org.gradle.test-retry")
+  TestConfigurationHelper.setupTestTask(this, isR8Lib, r8Jar, r8LibPartitionMapFile)
 }
 
 public fun Project.getRoot(): File {
@@ -488,6 +489,7 @@ private object Versions {
   public const val kotlinVersion = "1.9.20"
   public const val kotlinMetadataVersion = "2.3.10"
   public const val mockito = "2.10.0"
+  public const val testRetry = "1.6.4"
   public const val smaliVersion = "3.0.3"
   public const val protobufVersion = "4.33.5"
   public const val zipflingerVersion = "9.0.0"
@@ -533,6 +535,9 @@ public object Deps {
     "org.jetbrains.kotlin:kotlin-reflect:${Versions.kotlinVersion}"
   }
   public val mockito: String by lazy { "org.mockito:mockito-core:${Versions.mockito}" }
+  public val testretry: String by lazy {
+    "org.gradle.test-retry-gradle-plugin:${Versions.testRetry}"
+  }
   public val smali: String by lazy { "com.android.tools.smali:smali:${Versions.smaliVersion}" }
   public val smaliUtil: String by lazy {
     "com.android.tools.smali:smali-util:${Versions.smaliVersion}"

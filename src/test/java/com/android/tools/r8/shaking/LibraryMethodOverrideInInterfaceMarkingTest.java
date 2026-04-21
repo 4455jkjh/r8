@@ -14,6 +14,7 @@ import com.android.tools.r8.graph.DexEncodedMethod;
 import com.android.tools.r8.graph.DexItemFactory;
 import com.android.tools.r8.graph.DexProgramClass;
 import com.android.tools.r8.graph.DexType;
+import com.android.tools.r8.utils.timing.Timing;
 import java.util.AbstractList;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -46,7 +47,8 @@ public class LibraryMethodOverrideInInterfaceMarkingTest extends TestBase {
         .assertSuccessWithOutputLines("true", "true");
   }
 
-  private void verifyLibraryOverrideInformation(AppInfoWithLiveness appInfo, Enqueuer.Mode mode) {
+  private void verifyLibraryOverrideInformation(
+      AppInfoWithLiveness appInfo, Enqueuer.Mode mode, Timing timing) {
     DexItemFactory dexItemFactory = appInfo.dexItemFactory();
     verifyIsEmptyMarkedAsOverridingLibraryMethod(
         appInfo, dexItemFactory.createType(descriptor(A.class)));

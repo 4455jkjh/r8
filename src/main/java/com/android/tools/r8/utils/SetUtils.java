@@ -177,6 +177,6 @@ public class SetUtils {
   }
 
   public static <K> Set<K> unmodifiableForTesting(Set<K> map) {
-    return InternalOptions.assertionsEnabled() ? Collections.unmodifiableSet(map) : map;
+    return AssertionUtils.assertionsEnabled() ? Collections.unmodifiableSet(map) : map;
   }
 }

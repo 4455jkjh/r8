@@ -9,6 +9,7 @@ plugins {
 
 dependencies {
   implementation("net.ltgt.gradle:gradle-errorprone-plugin:3.0.1")
+  implementation("org.gradle:test-retry-gradle-plugin:1.6.4")
   implementation("com.google.code.gson:gson:2.10.1")
 }
 

@@ -315,6 +315,7 @@ public class ArgumentPropagatorOptimizationInfoPopulator {
             argumentIndex,
             parameterState.mutableJoin(
                 appView,
+                appView.getDefaultAbstractValueJoiner(),
                 new ConcreteClassTypeValueState(AbstractValue.bottom(), DynamicType.unknown()),
                 inStaticType,
                 outStaticType,

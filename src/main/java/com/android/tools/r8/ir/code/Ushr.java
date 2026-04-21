@@ -10,10 +10,10 @@ import com.android.tools.r8.dex.code.DexUshrInt2Addr;
 import com.android.tools.r8.dex.code.DexUshrIntLit8;
 import com.android.tools.r8.dex.code.DexUshrLong;
 import com.android.tools.r8.dex.code.DexUshrLong2Addr;
-import com.android.tools.r8.errors.Unreachable;
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.ir.analysis.value.AbstractValue;
 import com.android.tools.r8.ir.analysis.value.arithmetic.AbstractCalculator;
+import com.android.tools.r8.utils.exceptions.Unreachable;
 
 public class Ushr extends LogicalBinop {
 

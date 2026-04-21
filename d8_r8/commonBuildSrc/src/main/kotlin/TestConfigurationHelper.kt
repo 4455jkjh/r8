@@ -19,6 +19,7 @@ import org.gradle.api.tasks.testing.Test
 import org.gradle.api.tasks.testing.TestDescriptor
 import org.gradle.api.tasks.testing.TestListener
 import org.gradle.api.tasks.testing.TestResult
+import org.gradle.testretry.TestRetryTaskExtension
 
 public class TestConfigurationHelper {
 
@@ -43,7 +44,7 @@ public class TestConfigurationHelper {
     private fun retrace(
       rootDir: File,
       r8jar: File,
-      mappingFile: File,
+      partitionMapFile: File,
       exception: Throwable,
       printObfuscatedStacktraces: Boolean,
     ): String {
@@ -58,8 +59,8 @@ public class TestConfigurationHelper {
           "python3",
           retracePath.toString(),
           "--quiet",
-          "--map",
-          mappingFile.toString(),
+          "--partition-map",
+          partitionMapFile.toString(),
           "--r8jar",
           r8jar.toString(),
         )
@@ -92,13 +93,27 @@ public class TestConfigurationHelper {
       rootDir: File,
       isR8Lib: Boolean,
       r8Jar: File?,
-      r8LibMappingFile: File?,
+      r8LibPartitionMapFile: File?,
       printObfuscatedStacktraces: Boolean,
     ) {
       val info = resultSinkInfo ?: return
       if (desc == null || result == null || desc.className == null) return
 
-      val testId = "${desc.className}.${desc.name}"
+      val displayName = desc.displayName
+      val methodName = desc.name.substringBefore('[')
+      val parameters =
+        if (displayName.contains('[')) {
+          displayName
+            .substringAfter('[')
+            .substringBeforeLast(']')
+            // result_sink uses `:` to separate case name components.
+            .replace(Regex(": ?"), "=")
+            .split(", ")
+            .filterNot { it.contains("dex-") || it.contains("jdk") }
+        } else {
+          emptyList()
+        }
+
       val status =
         when (result.resultType) {
           TestResult.ResultType.SUCCESS -> "PASSED"
@@ -112,8 +127,8 @@ public class TestConfigurationHelper {
       val stackTraceStr: String? =
         if (result.resultType == TestResult.ResultType.FAILURE && result.exception != null) {
           val exception = result.exception as Throwable
-          if (isR8Lib && r8Jar != null && r8LibMappingFile != null) {
-            retrace(rootDir, r8Jar, r8LibMappingFile, exception, printObfuscatedStacktraces)
+          if (isR8Lib && r8Jar != null && r8LibPartitionMapFile != null) {
+            retrace(rootDir, r8Jar, r8LibPartitionMapFile, exception, printObfuscatedStacktraces)
           } else {
             val baos = ByteArrayOutputStream()
             exception.printStackTrace(PrintStream(baos, true, StandardCharsets.UTF_8))
@@ -123,7 +138,12 @@ public class TestConfigurationHelper {
           null
         }
 
-      val argumentString = desc.displayName.substringAfter('[').substringBeforeLast(']')
+      val argumentString =
+        if (displayName.contains('[')) {
+          displayName.substringAfter('[').substringBeforeLast(']')
+        } else {
+          ""
+        }
       val testIdStructuredObj =
         JsonObject().apply {
           addProperty("coarseName", desc.className?.substringBeforeLast(".") ?: "")
@@ -131,22 +151,14 @@ public class TestConfigurationHelper {
           add(
             "caseNameComponents",
             JsonArray().apply {
-              add(desc.displayName.substringBefore('['))
-              desc.displayName
-                .substringAfter('[')
-                .substringBeforeLast(']')
-                // result_sink uses `:` to separate case name components.
-                .replace(Regex(": ?"), "=")
-                .split(", ")
-                .filterNot { it.contains("dex-") || it.contains("jdk") }
-                .forEach { add(it) }
+              add(methodName)
+              parameters.forEach { add(it) }
             },
           )
         }
 
       val testResultObj =
         JsonObject().apply {
-          addProperty("testId", testId)
           addProperty("statusV2", status)
           addProperty("duration", duration)
           add("testIdStructured", testIdStructuredObj)
@@ -200,7 +212,12 @@ public class TestConfigurationHelper {
       }
     }
 
-    public fun setupTestTask(test: Test, isR8Lib: Boolean, r8Jar: File?, r8LibMappingFile: File?) {
+    public fun setupTestTask(
+      test: Test,
+      isR8Lib: Boolean,
+      r8Jar: File?,
+      r8LibPartitionMapFile: File?,
+    ) {
       // TODO(b/489058560) Enable when we have figured out re-running single test variants.
       // test.useJUnitPlatform()
       test.useJUnit()
@@ -361,7 +378,7 @@ public class TestConfigurationHelper {
                     retrace(
                       rootDir,
                       r8Jar!!,
-                      r8LibMappingFile!!,
+                      r8LibPartitionMapFile!!,
                       exception,
                       printObfuscatedStacktraces,
                     )
@@ -379,7 +396,7 @@ public class TestConfigurationHelper {
                 rootDir,
                 isR8Lib,
                 r8Jar,
-                r8LibMappingFile,
+                r8LibPartitionMapFile,
                 printObfuscatedStacktraces,
               )
             }
@@ -409,7 +426,7 @@ public class TestConfigurationHelper {
                 rootDir,
                 isR8Lib,
                 r8Jar,
-                r8LibMappingFile,
+                r8LibPartitionMapFile,
                 printObfuscatedStacktraces,
               )
             }
@@ -430,6 +447,17 @@ public class TestConfigurationHelper {
           test.maxParallelForks = 15
         }
       }
+
+      val isCiServer = System.getenv().containsKey("SWARMING_BOT_ID")
+      val retry = test.extensions.getByType(TestRetryTaskExtension::class.java)
+      if (isCiServer) {
+        retry.maxRetries.set(2)
+        // High maxFailures so parameterized tests aren't aborted from retries.
+        retry.maxFailures.set(200)
+        retry.filter { includeAnnotationClasses.add("com.android.tools.r8.Retryable") }
+      }
+      retry.failOnPassedAfterRetry.set(false)
+      retry.failOnSkippedAfterRetry.set(false)
     }
   }
 }

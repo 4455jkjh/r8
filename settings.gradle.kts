@@ -14,12 +14,7 @@ pluginManagement {
   includeBuild(rootProject.projectDir.resolve("d8_r8/commonBuildSrc"))
 }
 
-dependencyResolutionManagement {
-  repositories {
-    maven { url = uri("third_party/dependencies_plugin") }
-    maven { url = uri("third_party/dependencies") }
-  }
-}
+dependencyResolutionManagement { repositories { maven { url = uri("third_party/dependencies") } } }
 
 includeBuild(rootProject.projectDir.resolve("d8_r8/shared"))
 

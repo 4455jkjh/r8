@@ -8,13 +8,13 @@ import static com.android.tools.r8.lightir.ByteUtils.unsetBitAtIndex;
 
 import com.android.tools.r8.DiagnosticsHandler;
 import com.android.tools.r8.dex.CompatByteBuffer;
-import com.android.tools.r8.errors.Unreachable;
 import com.android.tools.r8.graph.DexReference;
 import com.android.tools.r8.graph.DexString;
 import com.android.tools.r8.utils.AndroidApiLevel;
 import com.android.tools.r8.utils.ExceptionDiagnostic;
 import com.android.tools.r8.utils.InternalOptions;
 import com.android.tools.r8.utils.StringDiagnostic;
+import com.android.tools.r8.utils.exceptions.Unreachable;
 import com.android.zipflinger.Entry;
 import com.android.zipflinger.ZipArchive;
 import com.google.common.io.ByteStreams;

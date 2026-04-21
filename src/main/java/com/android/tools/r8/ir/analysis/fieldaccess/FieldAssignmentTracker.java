@@ -249,7 +249,8 @@ public class FieldAssignmentTracker {
 
           if (fieldState.isPrimitiveState()) {
             ConcretePrimitiveTypeValueState primitiveFieldState = fieldState.asPrimitiveState();
-            return primitiveFieldState.mutableJoin(appView, field, abstractValue);
+            return primitiveFieldState.mutableJoin(
+                appView, appView.getDefaultAbstractValueJoiner(), field, abstractValue);
           }
 
           assert fieldState.isClassState();
@@ -257,7 +258,12 @@ public class FieldAssignmentTracker {
           ConcreteClassTypeValueState classFieldState = fieldState.asClassState();
           DexType inStaticType = null;
           return classFieldState.mutableJoin(
-              appView, abstractValue, value.getDynamicType(appView), inStaticType, field);
+              appView,
+              appView.getDefaultAbstractValueJoiner(),
+              abstractValue,
+              value.getDynamicType(appView),
+              inStaticType,
+              field);
         });
   }
 
@@ -305,13 +311,13 @@ public class FieldAssignmentTracker {
               AbstractValue argumentAbstractValue = argument.getAbstractValue(appView, context);
               abstractValue =
                   appView
-                      .getAbstractValueFieldJoiner()
+                      .getDefaultAbstractValueJoiner()
                       .join(abstractValue, argumentAbstractValue, field);
             } else if (initializationInfo.isSingleValue()) {
               SingleValue singleValueInitializationInfo = initializationInfo.asSingleValue();
               abstractValue =
                   appView
-                      .getAbstractValueFieldJoiner()
+                      .getDefaultAbstractValueJoiner()
                       .join(abstractValue, singleValueInitializationInfo, field);
             } else if (initializationInfo.isTypeInitializationInfo()) {
               // TODO(b/149732532): Not handled, for now.
@@ -398,7 +404,7 @@ public class FieldAssignmentTracker {
       if (fieldInitializationInfo.isSingleValue()) {
         abstractValue =
             appView
-                .getAbstractValueFieldJoiner()
+                .getDefaultAbstractValueJoiner()
                 .join(abstractValue, fieldInitializationInfo.asSingleValue(), field);
         if (abstractValue.isUnknown()) {
           break;

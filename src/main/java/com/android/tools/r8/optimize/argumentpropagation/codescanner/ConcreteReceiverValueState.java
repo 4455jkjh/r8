@@ -4,16 +4,17 @@
 
 package com.android.tools.r8.optimize.argumentpropagation.codescanner;
 
-import com.android.tools.r8.errors.Unreachable;
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.DexType;
 import com.android.tools.r8.ir.analysis.type.DynamicType;
 import com.android.tools.r8.ir.analysis.type.Nullability;
 import com.android.tools.r8.ir.analysis.value.AbstractValue;
+import com.android.tools.r8.ir.analysis.value.AbstractValueJoiner;
 import com.android.tools.r8.optimize.argumentpropagation.utils.WideningUtils;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
 import com.android.tools.r8.utils.Action;
 import com.android.tools.r8.utils.ObjectUtils;
+import com.android.tools.r8.utils.exceptions.Unreachable;
 import java.util.Collections;
 import java.util.Set;
 import java.util.function.Supplier;
@@ -108,6 +109,7 @@ public class ConcreteReceiverValueState extends ConcreteReferenceTypeValueState 
   @Override
   public NonEmptyValueState mutableJoin(
       AppView<AppInfoWithLiveness> appView,
+      AbstractValueJoiner abstractValueJoiner,
       ConcreteReferenceTypeValueState inState,
       DexType inStaticType,
       DexType outStaticType,

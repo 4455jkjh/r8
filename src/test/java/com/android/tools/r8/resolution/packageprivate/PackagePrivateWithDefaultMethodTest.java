@@ -27,6 +27,7 @@ import com.android.tools.r8.resolution.packageprivate.a.NonAbstract;
 import com.android.tools.r8.resolution.packageprivate.a.NonAbstractExtendingA;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
 import com.android.tools.r8.transformers.ClassTransformer;
+import com.android.tools.r8.utils.timing.Timing;
 import java.io.IOException;
 import java.util.concurrent.ExecutionException;
 import org.junit.Test;
@@ -64,6 +65,7 @@ public class PackagePrivateWithDefaultMethodTest extends TestBase {
                 .addClassProgramData(getNonAbstractWithoutDeclaredMethods())
                 .addLibraryFile(parameters.getDefaultRuntimeLibrary())
                 .build(),
+            Timing.empty(),
             Main.class);
     AppInfoWithLiveness appInfo = appView.appInfo();
     DexMethod method = buildNullaryVoidMethod(A.class, "foo", appInfo.dexItemFactory());

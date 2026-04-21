@@ -29,9 +29,8 @@ import com.android.tools.r8.ir.analysis.proto.GeneratedMessageLiteShrinker;
 import com.android.tools.r8.ir.analysis.proto.ProtoShrinker;
 import com.android.tools.r8.ir.analysis.type.TypeElementFactory;
 import com.android.tools.r8.ir.analysis.value.AbstractValueFactory;
-import com.android.tools.r8.ir.analysis.value.AbstractValueJoiner.AbstractValueConstantPropagationJoiner;
-import com.android.tools.r8.ir.analysis.value.AbstractValueJoiner.AbstractValueFieldJoiner;
-import com.android.tools.r8.ir.analysis.value.AbstractValueJoiner.AbstractValueParameterJoiner;
+import com.android.tools.r8.ir.analysis.value.AbstractValueJoiner;
+import com.android.tools.r8.ir.analysis.value.AbstractValueJoiner.AbstractValueJoinerConfig;
 import com.android.tools.r8.ir.optimize.AtomicFieldUpdaterInstrumentor.AtomicFieldUpdaterInstrumentorInfo;
 import com.android.tools.r8.ir.optimize.enums.EnumDataMap;
 import com.android.tools.r8.ir.optimize.info.MethodResolutionOptimizationInfoCollection;
@@ -127,9 +126,8 @@ public class AppView<T extends AppInfo> implements DexDefinitionSupplier, Librar
   private ComposeReferences composeReferences = null;
 
   private final AbstractValueFactory abstractValueFactory;
-  private final AbstractValueConstantPropagationJoiner abstractValueConstantPropagationJoiner;
-  private final AbstractValueFieldJoiner abstractValueFieldJoiner;
-  private final AbstractValueParameterJoiner abstractValueParameterJoiner;
+  private final AbstractValueJoiner abstractValueJoiner;
+  private final AbstractValueJoiner abstractValueJoinerWithNumberSetAbstraction;
   private final InstanceFieldInitializationInfoFactory instanceFieldInitializationInfoFactory =
       new InstanceFieldInitializationInfoFactory();
   private final SimpleInliningConstraintFactory simpleInliningConstraintFactory =
@@ -205,14 +203,15 @@ public class AppView<T extends AppInfo> implements DexDefinitionSupplier, Librar
             "Compilation context", () -> CompilationContext.createInitialContext(options()));
     this.wholeProgramOptimizations = wholeProgramOptimizations;
     abstractValueFactory = new AbstractValueFactory();
-    abstractValueConstantPropagationJoiner = new AbstractValueConstantPropagationJoiner(this);
-    if (enableWholeProgramOptimizations()) {
-      abstractValueFieldJoiner = new AbstractValueFieldJoiner(withClassHierarchy());
-      abstractValueParameterJoiner = new AbstractValueParameterJoiner(withClassHierarchy());
-    } else {
-      abstractValueFieldJoiner = null;
-      abstractValueParameterJoiner = null;
-    }
+    abstractValueJoiner =
+        new AbstractValueJoiner(
+            this, new AbstractValueJoinerConfig().setCanUseDefiniteBitsAbstraction());
+    abstractValueJoinerWithNumberSetAbstraction =
+        new AbstractValueJoiner(
+            this,
+            new AbstractValueJoinerConfig()
+                .setCanUseDefiniteBitsAbstraction()
+                .setCanUseNumberSetAbstraction());
     this.artProfileCollection = artProfileCollection;
     this.startupProfile = startupProfile;
     this.dontWarnConfiguration =
@@ -332,16 +331,12 @@ public class AppView<T extends AppInfo> implements DexDefinitionSupplier, Librar
     return abstractValueFactory;
   }
 
-  public AbstractValueConstantPropagationJoiner getAbstractValueConstantPropagationJoiner() {
-    return abstractValueConstantPropagationJoiner;
+  public AbstractValueJoiner getDefaultAbstractValueJoiner() {
+    return abstractValueJoiner;
   }
 
-  public AbstractValueFieldJoiner getAbstractValueFieldJoiner() {
-    return abstractValueFieldJoiner;
-  }
-
-  public AbstractValueParameterJoiner getAbstractValueParameterJoiner() {
-    return abstractValueParameterJoiner;
+  public AbstractValueJoiner getAbstractValueJoinerWithNumberSetAbstraction() {
+    return abstractValueJoinerWithNumberSetAbstraction;
   }
 
   public void clearMethodResolutionOptimizationInfoCollection() {

@@ -5,10 +5,10 @@
 package com.android.tools.r8.ir.code;
 
 import com.android.tools.r8.errors.InternalCompilerError;
-import com.android.tools.r8.errors.Unreachable;
 import com.android.tools.r8.graph.DexType;
 import com.android.tools.r8.ir.analysis.type.PrimitiveTypeElement;
 import com.android.tools.r8.ir.analysis.type.TypeElement;
+import com.android.tools.r8.utils.exceptions.Unreachable;
 
 public enum ValueTypeConstraint {
   OBJECT,

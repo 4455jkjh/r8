@@ -52,7 +52,9 @@ public class CompileDumpD8 extends CompileDumpBase {
           "--desugared-lib",
           "--threads",
           "--startup-profile",
-          "--desugared-lib");
+          "--desugared-lib",
+          "--pg-map",
+          "--pg-map-output");
 
   private static final List<String> VALID_OPTIONS_WITH_TWO_OPERANDS =
       Arrays.asList("--art-profile");
@@ -68,6 +70,8 @@ public class CompileDumpD8 extends CompileDumpBase {
     List<Path> mainDexRulesFiles = new ArrayList<>();
     Map<Path, Path> artProfileFiles = new LinkedHashMap<>();
     List<Path> startupProfileFiles = new ArrayList<>();
+    Path pgMap = null;
+    Path pgOutputMap = null;
     int minApi = 1;
     int threads = -1;
     BooleanBox enableMissingLibraryApiModeling = new BooleanBox(false);
@@ -143,6 +147,16 @@ public class CompileDumpD8 extends CompileDumpBase {
               startupProfileFiles.add(Paths.get(operand));
               break;
             }
+          case "--pg-map":
+            {
+              pgMap = Paths.get(operand);
+              break;
+            }
+          case "--pg-map-output":
+            {
+              pgOutputMap = Paths.get(operand);
+              break;
+            }
           default:
             throw new IllegalArgumentException("Unimplemented option: " + option);
         }
@@ -190,6 +204,15 @@ public class CompileDumpD8 extends CompileDumpBase {
       commandBuilder.addDesugaredLibraryConfiguration(readAllBytesJava7(desugaredLibJson));
     }
     commandBuilder.setMinApiLevel(minApi);
+    if (pgMap != null) {
+      commandBuilder.setProguardMapInputFile(pgMap);
+    }
+    if (pgOutputMap != null) {
+      Path pgOutputMapFinal = pgOutputMap;
+      runIgnoreMissing(
+          () -> CompilerCommandDumpUtils.setProguardMapOutputPath(commandBuilder, pgOutputMapFinal),
+          "Mapping file output not available.");
+    }
     D8Command command = commandBuilder.build();
     if (threads != -1) {
       ExecutorService executor = Executors.newWorkStealingPool(threads);

@@ -22,6 +22,7 @@ import com.android.tools.r8.graph.MethodResolutionResult;
 import com.android.tools.r8.ir.analysis.type.DynamicType;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
 import com.android.tools.r8.shaking.LibraryModeledPredicate;
+import com.android.tools.r8.utils.timing.Timing;
 import com.google.common.collect.ImmutableList;
 import java.util.List;
 import org.junit.Assert;
@@ -152,6 +153,7 @@ public class VirtualOverrideOfStaticMethodWithVirtualParentTest extends AsmTestB
                 .addClassProgramData(DUMPS)
                 .addLibraryFile(getMostRecentAndroidJar())
                 .build(),
+            Timing.empty(),
             Main.class);
     appInfo = appView.appInfo();
   }

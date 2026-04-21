@@ -28,7 +28,6 @@ import com.android.tools.r8.ToolHelper.ProcessResult;
 import com.android.tools.r8.cf.CfVersion;
 import com.android.tools.r8.dex.ApplicationReader;
 import com.android.tools.r8.dex.code.DexInstruction;
-import com.android.tools.r8.errors.Unreachable;
 import com.android.tools.r8.features.ClassToFeatureSplitMap;
 import com.android.tools.r8.graph.AppInfo;
 import com.android.tools.r8.graph.AppInfoWithClassHierarchy;
@@ -84,7 +83,6 @@ import com.android.tools.r8.utils.AndroidAppConsumers;
 import com.android.tools.r8.utils.DescriptorUtils;
 import com.android.tools.r8.utils.InternalOptions;
 import com.android.tools.r8.utils.ListUtils;
-import com.android.tools.r8.utils.Pair;
 import com.android.tools.r8.utils.PreloadedClassFileProvider;
 import com.android.tools.r8.utils.Reporter;
 import com.android.tools.r8.utils.StringUtils;
@@ -95,6 +93,8 @@ import com.android.tools.r8.utils.codeinspector.CodeInspector;
 import com.android.tools.r8.utils.codeinspector.FoundClassSubject;
 import com.android.tools.r8.utils.codeinspector.FoundMethodSubject;
 import com.android.tools.r8.utils.codeinspector.MethodSubject;
+import com.android.tools.r8.utils.collections.Pair;
+import com.android.tools.r8.utils.exceptions.Unreachable;
 import com.android.tools.r8.utils.timing.Timing;
 import com.google.common.base.Predicates;
 import com.google.common.cache.CacheBuilder;
@@ -964,17 +964,19 @@ public class TestBase {
   }
 
   protected static AppView<AppInfoWithClassHierarchy> computeAppViewWithClassHierarchy(
-      AndroidApp app) throws Exception {
-    return computeAppViewWithClassHierarchy(app, null);
+      AndroidApp app, Timing timing) throws Exception {
+    return computeAppViewWithClassHierarchy(app, timing, null);
   }
 
   protected static AppView<AppInfoWithClassHierarchy> computeAppViewWithClassHierarchy(
-      AndroidApp app, Function<DexItemFactory, ProguardConfiguration> keepConfig) throws Exception {
-    return computeAppViewWithClassHierarchy(app, keepConfig, null);
+      AndroidApp app, Timing timing, Function<DexItemFactory, ProguardConfiguration> keepConfig)
+      throws Exception {
+    return computeAppViewWithClassHierarchy(app, timing, keepConfig, null);
   }
 
   protected static AppView<AppInfoWithClassHierarchy> computeAppViewWithClassHierarchy(
       AndroidApp app,
+      Timing timing,
       Function<DexItemFactory, ProguardConfiguration> keepConfig,
       Consumer<InternalOptions> optionsConsumer)
       throws Exception {
@@ -998,37 +1000,42 @@ public class TestBase {
     }
     LazyLoadedDexApplication dexApplication = readApplicationForDexOutput(app, options);
     AppView<AppInfoWithClassHierarchy> appView =
-        AppView.createForR8(dexApplication.toDirectSingleThreadedForTesting());
+        AppView.createForR8(dexApplication.toDirectSingleThreadedForTesting(timing));
     appView.setAppServices(AppServices.builder(appView).build());
     return appView;
   }
 
-  protected static AppView<AppInfoWithLiveness> computeAppViewWithLiveness(AndroidApp app)
-      throws Exception {
-    return TestAppViewBuilder.builder().addAndroidApp(app).addKeepAllRule().buildWithLiveness();
+  protected static AppView<AppInfoWithLiveness> computeAppViewWithLiveness(
+      AndroidApp app, Timing timing) throws Exception {
+    return TestAppViewBuilder.builder()
+        .addAndroidApp(app)
+        .addKeepAllRule()
+        .buildWithLiveness(timing);
   }
 
   protected static AppView<AppInfoWithLiveness> computeAppViewWithLiveness(
-      AndroidApp app, Class<?> mainClass) throws Exception {
+      AndroidApp app, Timing timing, Class<?> mainClass) throws Exception {
     return TestAppViewBuilder.builder()
         .addAndroidApp(app)
         .addKeepMainRule(mainClass)
-        .buildWithLiveness();
+        .buildWithLiveness(timing);
   }
 
   // We should try to get rid of this usage of keep rule building which is very internal.
   protected static AppView<AppInfoWithLiveness> computeAppViewWithLiveness(
-      AndroidApp app, Function<DexItemFactory, ProguardConfiguration> keepConfig) throws Exception {
-    return computeAppViewWithLiveness(app, keepConfig, null);
+      AndroidApp app, Timing timing, Function<DexItemFactory, ProguardConfiguration> keepConfig)
+      throws Exception {
+    return computeAppViewWithLiveness(app, timing, keepConfig, null);
   }
 
   protected static AppView<AppInfoWithLiveness> computeAppViewWithLiveness(
       AndroidApp app,
+      Timing timing,
       Function<DexItemFactory, ProguardConfiguration> keepConfig,
       Consumer<InternalOptions> optionsConsumer)
       throws Exception {
     AppView<AppInfoWithClassHierarchy> appView =
-        computeAppViewWithClassHierarchy(app, keepConfig, optionsConsumer);
+        computeAppViewWithClassHierarchy(app, timing, keepConfig, optionsConsumer);
     // Run the tree shaker to compute an instance of AppInfoWithLiveness.
     ExecutorService executor = Executors.newSingleThreadExecutor();
     ProfileCollectionAdditions profileCollectionAdditions = ProfileCollectionAdditions.nop();

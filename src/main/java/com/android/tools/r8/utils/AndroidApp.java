@@ -33,10 +33,10 @@ import com.android.tools.r8.Resource;
 import com.android.tools.r8.ResourceException;
 import com.android.tools.r8.StringResource;
 import com.android.tools.r8.Version;
+import com.android.tools.r8.dex.SunMiscUnsafeResourceProvider;
 import com.android.tools.r8.dump.DumpOptions;
 import com.android.tools.r8.errors.CompilationError;
 import com.android.tools.r8.errors.InternalCompilerError;
-import com.android.tools.r8.errors.Unreachable;
 import com.android.tools.r8.features.ClassToFeatureSplitMap;
 import com.android.tools.r8.features.FeatureSplitConfiguration;
 import com.android.tools.r8.graph.DexType;
@@ -50,6 +50,8 @@ import com.android.tools.r8.profile.startup.StartupProfileProviderUtils;
 import com.android.tools.r8.shaking.FilteredClassPath;
 import com.android.tools.r8.startup.StartupProfileProvider;
 import com.android.tools.r8.synthesis.SyntheticItems;
+import com.android.tools.r8.utils.collections.Pair;
+import com.android.tools.r8.utils.exceptions.Unreachable;
 import com.android.tools.r8.utils.timing.Timing;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -108,7 +110,7 @@ public class AndroidApp {
   private static final String dumpClasspathFileName = "classpath.jar";
   private static final String dumpLibraryFileName = "library.jar";
   private static final String dumpConfigFileName = "proguard.config";
-  private static final String dumpInputConfigFileName = "proguard_input.config";
+  public static final String dumpProguardInputMapFileName = "proguard_input.map";
   public static final String dumpR8IncludeFileName = "r8-include.txt";
   public static final String dumpR8ExcludeFileName = "r8-exclude.txt";
 
@@ -548,7 +550,7 @@ public class AndroidApp {
             "Dumping proguard map input data may have side effects due to I/O on Paths.");
         writeToZipStream(
             out,
-            dumpInputConfigFileName,
+            dumpProguardInputMapFileName,
             proguardMapInputData.getString().getBytes(UTF_8),
             ZipEntry.DEFLATED);
       }
@@ -980,6 +982,7 @@ public class AndroidApp {
     private List<StringResource> mainDexListResources = new ArrayList<>();
     private List<String> mainDexListClasses = new ArrayList<>();
     private boolean ignoreDexInArchive = false;
+    private boolean extendAndroidJarWithHiddenClasses = true;
 
     private StringResource proguardMapOutputData;
     private StringResource proguardMapInputData;
@@ -1241,6 +1244,11 @@ public class AndroidApp {
       return this;
     }
 
+    public Builder disableAndroidJarHiddenClassExtension() {
+      this.extendAndroidJarWithHiddenClasses = false;
+      return this;
+    }
+
     /**
      * Add dex program-data with class descriptor.
      */
@@ -1388,6 +1396,7 @@ public class AndroidApp {
      */
     public AndroidApp build() {
       ensureAllResourcesAreInProviders();
+      extendAndroidJarWithHiddenClasses();
       return new AndroidApp(
           ImmutableList.copyOf(programResourceProviders),
           ImmutableMap.copyOf(programResourcesMainDescriptor),
@@ -1440,6 +1449,41 @@ public class AndroidApp {
           });
       programResources.clear();
       dataResources.clear();
+    }
+
+    /** Returns true if this AndroidApp has a jar that looks like Android.jar. */
+    private boolean containsAndroidJar() {
+      for (var provider : this.getLibraryResourceProviders()) {
+        if (provider.getProgramResource("Landroid/os/Build;") != null) {
+          return true;
+        }
+      }
+      return false;
+    }
+
+    /** Return true if this AndroidApp has already been extended with hidden android APIs. */
+    private boolean containsExtendedAndroidJar() {
+      for (var provider : this.getLibraryResourceProviders()) {
+        if (provider.getProgramResource("Lsun/misc/Unsafe;") != null) {
+          return true;
+        }
+      }
+      for (var provider : this.getClasspathResourceProviders()) {
+        if (provider.getProgramResource("Lsun/misc/Unsafe;") != null) {
+          return true;
+        }
+      }
+      return false;
+    }
+
+    private void extendAndroidJarWithHiddenClasses() {
+      if (!extendAndroidJarWithHiddenClasses) {
+        return;
+      }
+      if (!containsAndroidJar() || containsExtendedAndroidJar()) {
+        return;
+      }
+      addLibraryResourceProvider(SunMiscUnsafeResourceProvider.create());
     }
 
     public Builder addProgramFile(Path file) {

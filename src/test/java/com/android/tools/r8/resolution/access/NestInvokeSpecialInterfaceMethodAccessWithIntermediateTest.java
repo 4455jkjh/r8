@@ -30,6 +30,7 @@ import com.android.tools.r8.utils.BooleanUtils;
 import com.android.tools.r8.utils.DescriptorUtils;
 import com.android.tools.r8.utils.codeinspector.CodeInspector;
 import com.android.tools.r8.utils.codeinspector.MethodSubject;
+import com.android.tools.r8.utils.timing.Timing;
 import com.google.common.collect.ImmutableList;
 import java.util.Collection;
 import java.util.List;
@@ -171,7 +172,7 @@ public class NestInvokeSpecialInterfaceMethodAccessWithIntermediateTest extends 
             .addLibraryFiles(parameters.getDefaultRuntimeLibrary())
             .addKeepMainRule(Main.class)
             .setMinApi(parameters)
-            .buildWithLiveness();
+            .buildWithLiveness(Timing.empty());
     convertLirToDex(appView);
     return appView;
   }

@@ -13,7 +13,6 @@ import com.android.tools.r8.Version;
 import com.android.tools.r8.benchmarks.BenchmarkBase;
 import com.android.tools.r8.benchmarks.BenchmarkConfig;
 import com.android.tools.r8.utils.LibraryProvidedProguardRulesTestUtils;
-import com.android.tools.r8.utils.timing.Timing;
 import com.google.common.collect.ImmutableList;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -84,9 +83,8 @@ public class ChromeBenchmarks extends BenchmarkBase {
     testBuilder.addOptionsModification(
         options ->
             options.getTestingOptions().enqueuerInspector =
-                (appInfo, enqueuerMode) -> {
+                (appInfo, enqueuerMode, timing) -> {
                   if (appInfo.options().printTimes) {
-                    Timing timing = appInfo.app().timing;
                     timing.end(); // End "Create result"
                     timing.end(); // End "Trace application"
                     timing.end(); // End "Enqueuer"

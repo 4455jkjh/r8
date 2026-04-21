@@ -5,7 +5,6 @@ package com.android.tools.r8;
 
 import static com.android.tools.r8.profile.art.ArtProfileCompletenessChecker.CompletenessExceptions.ALLOW_MISSING_ENUM_UNBOXING_UTILITY_METHODS;
 import static com.android.tools.r8.profile.art.ArtProfileCompletenessChecker.CompletenessExceptions.ALLOW_MISSING_UNSAFE_HELPER_METHODS;
-import static com.android.tools.r8.utils.AssertionUtils.forTesting;
 import static com.android.tools.r8.utils.ExceptionUtils.unwrapExecutionException;
 
 import com.android.tools.r8.DexIndexedConsumer.ForwardingConsumer;
@@ -115,6 +114,7 @@ import com.android.tools.r8.synthesis.SyntheticFinalization;
 import com.android.tools.r8.synthesis.SyntheticItems;
 import com.android.tools.r8.tracereferences.NativeReferencesHelper;
 import com.android.tools.r8.utils.AndroidApp;
+import com.android.tools.r8.utils.AssertionUtils;
 import com.android.tools.r8.utils.ExceptionDiagnostic;
 import com.android.tools.r8.utils.ExceptionUtils;
 import com.android.tools.r8.utils.InternalOptions;
@@ -221,7 +221,7 @@ public class R8 {
   }
 
   static void writeApplication(
-      AppView<?> appView, AndroidApp inputApp, ExecutorService executorService)
+      AppView<?> appView, AndroidApp inputApp, ExecutorService executorService, Timing timing)
       throws ExecutionException {
     InternalOptions options = appView.options();
     InspectorImpl.runInspections(options.outputInspections, appView.appInfo().classes());
@@ -230,9 +230,9 @@ public class R8 {
       assert marker != null;
       if (options.isGeneratingClassFiles()) {
         new CfApplicationWriter(appView, marker)
-            .write(options.getClassFileConsumer(), executorService, inputApp);
+            .write(options.getClassFileConsumer(), executorService, timing, inputApp);
       } else {
-        ApplicationWriter.create(appView, marker).write(executorService, inputApp);
+        ApplicationWriter.create(appView, marker).write(executorService, timing, inputApp);
       }
     } catch (IOException e) {
       throw new RuntimeException("Cannot write application", e);
@@ -279,7 +279,7 @@ public class R8 {
       options.reporter.info(new R8VersionDiagnostic());
     }
     // Synthetic assertion to check that testing assertions works and can be enabled.
-    assert forTesting(options, () -> !options.testing.testEnableTestAssertions);
+    assert options.forTesting(() -> !options.testing.testEnableTestAssertions);
     if (options.printMemory) {
       // Run GC twice to remove objects with finalizers.
       System.gc();
@@ -377,7 +377,7 @@ public class R8 {
               .setAssumeInfoCollectionBuilder(assumeInfoCollectionBuilder)
               .evaluateRules(executorService, timing)
               .expandAdaptClassStringsPatterns()
-              .tracePartialCompilationDexingOutputClasses(executorService)
+              .tracePartialCompilationDexingOutputClasses(executorService, timing)
               .build());
       appView.setAssumeInfoCollection(assumeInfoCollectionBuilder.build(appView));
 
@@ -470,6 +470,12 @@ public class R8 {
             .run(appView.appInfo().classes(), executorService);
 
         assert appView.checkForTesting(() -> allReferencesAssignedApiLevel(appViewWithLiveness));
+      } else {
+        // Also run tree pruner with -dontshrink to eliminate synthetic classes/fields/methods that
+        // become unreachable as a result of branch pruning that happen prior to tracing.
+        TreePruner pruner = new TreePruner(appViewWithLiveness);
+        pruner.run(executorService, timing, PrunedItems.builder());
+        appViewWithLiveness.appInfo().notifyTreePrunerFinished(Enqueuer.Mode.INITIAL_TREE_SHAKING);
       }
 
       if (options.isGeneratingClassFiles()) {
@@ -931,14 +937,14 @@ public class R8 {
       if (options.nativeReferencesConsumer != null) {
         NativeReferencesHelper helper =
             new NativeReferencesHelper(
-                appView, options.nativeReferencesConsumer, appView.reporter(), executorService);
-        helper.process(appView.appInfo().classes());
+                appView, options.nativeReferencesConsumer, appView.reporter());
+        helper.process(appView.appInfo().classes(), executorService);
         options.nativeReferencesConsumer.finished(appView.reporter());
       }
 
       // Generate the resulting application resources.
       writeKeepDeclarationsToConfigurationConsumer(keepDeclarations);
-      writeApplication(appView, inputApp, executorService);
+      writeApplication(appView, inputApp, executorService, timing);
 
       if (options.androidResourceProvider != null && options.androidResourceConsumer != null) {
         shrinkResources(dexFileContent, appView);
@@ -1271,7 +1277,7 @@ public class R8 {
     timing.begin("Finalize enqueuer result");
     AppView<AppInfoWithLiveness> appViewWithLiveness =
         appView.setAppInfo(enqueuerResult.getAppInfo());
-    if (InternalOptions.assertionsEnabled()) {
+    if (AssertionUtils.assertionsEnabled()) {
       // Register the dead proto types. These are needed to verify that no new missing types are
       // reported and that no dead proto types are referenced in the generated application.
       appViewWithLiveness.withProtoShrinker(

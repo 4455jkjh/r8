@@ -6,8 +6,8 @@ package com.android.tools.r8.utils;
 import com.android.tools.r8.ProgramResource;
 import com.android.tools.r8.ProgramResourceProvider;
 import com.android.tools.r8.ResourceException;
-import com.android.tools.r8.errors.Unreachable;
 import com.android.tools.r8.graph.DexProgramClass;
+import com.android.tools.r8.utils.exceptions.Unreachable;
 import java.util.Collection;
 
 public class InternalProgramClassProvider implements ProgramResourceProvider {

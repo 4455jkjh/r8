@@ -4,8 +4,8 @@
 package com.android.tools.r8.internal.proto;
 
 import com.android.tools.r8.ToolHelper;
-import com.android.tools.r8.errors.Unreachable;
 import com.android.tools.r8.utils.codeinspector.CodeInspector;
+import com.android.tools.r8.utils.exceptions.Unreachable;
 import com.google.common.collect.ImmutableList;
 import java.io.IOException;
 import java.nio.file.Files;

@@ -4,7 +4,6 @@
 
 package com.android.tools.r8.ir.optimize;
 
-import com.android.tools.r8.errors.Unreachable;
 import com.android.tools.r8.features.FeatureSplitBoundaryOptimizationUtils;
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.DexClass;
@@ -18,7 +17,6 @@ import com.android.tools.r8.graph.FieldResolutionResult.SingleFieldResolutionRes
 import com.android.tools.r8.graph.MethodResolutionResult.SingleResolutionResult;
 import com.android.tools.r8.graph.ProgramMethod;
 import com.android.tools.r8.ir.analysis.type.TypeElement;
-import com.android.tools.r8.ir.code.InvokeType;
 import com.android.tools.r8.ir.optimize.Inliner.Constraint;
 import com.android.tools.r8.ir.optimize.Inliner.ConstraintWithTarget;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
@@ -110,27 +108,6 @@ public class InliningConstraints {
 
   public ConstraintWithTarget forInstancePut(DexField field, ProgramMethod context) {
     return forFieldInstruction(field, context);
-  }
-
-  public ConstraintWithTarget forInvoke(DexMethod method, InvokeType type, ProgramMethod context) {
-    switch (type) {
-      case DIRECT:
-        return forInvokeDirect(method, context);
-      case INTERFACE:
-        return forInvokeInterface(method, context);
-      case STATIC:
-        return forInvokeStatic(method, context);
-      case SUPER:
-        return forInvokeSuper(method, context);
-      case VIRTUAL:
-        return forInvokeVirtual(method, context);
-      case CUSTOM:
-        return forInvokeCustom();
-      case POLYMORPHIC:
-        return forInvokePolymorphic(method, context);
-      default:
-        throw new Unreachable("Unexpected type: " + type);
-    }
   }
 
   public ConstraintWithTarget forInvokeCustom() {
@@ -309,6 +286,12 @@ public class InliningConstraints {
       DexMethod method, ProgramMethod context, boolean isInterface) {
     if (method.holder.isArrayType()) {
       return ConstraintWithTarget.ALWAYS;
+    }
+
+    if (!isInterface
+        && method.holder.isIdenticalTo(appView.dexItemFactory().sunMiscUnsafeType)
+        && appView.options().canHaveBugWithInlinedMethodsContainingUnsafe()) {
+      return ConstraintWithTarget.NEVER;
     }
 
     // Perform resolution and derive inlining constraints based on the accessibility of the

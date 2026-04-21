@@ -95,7 +95,7 @@ public class Relocator {
 
       timing.begin("Write application");
       new CfApplicationWriter(appView, new Marker(Tool.Relocator))
-          .write(command.getConsumer(), executor);
+          .write(command.getConsumer(), executor, timing);
       timing.end();
 
       timing.begin("Print warnings");
