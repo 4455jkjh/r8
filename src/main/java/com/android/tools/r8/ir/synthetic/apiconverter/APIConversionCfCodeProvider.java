@@ -18,7 +18,7 @@ import com.android.tools.r8.graph.DexMethod;
 import com.android.tools.r8.graph.DexType;
 import com.android.tools.r8.ir.code.ValueType;
 import com.android.tools.r8.ir.synthetic.SyntheticCfCodeProvider;
-import com.android.tools.r8.utils.BooleanUtils;
+import com.android.tools.r8.utils.internal.BooleanUtils;
 import java.util.ArrayList;
 import java.util.List;
 import org.objectweb.asm.Opcodes;

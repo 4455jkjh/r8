@@ -15,7 +15,7 @@ import com.android.tools.r8.startup.profile.ExternalStartupClass;
 import com.android.tools.r8.startup.profile.ExternalStartupItem;
 import com.android.tools.r8.startup.profile.ExternalStartupMethod;
 import com.android.tools.r8.startup.utils.StartupTestingUtils;
-import com.android.tools.r8.utils.BooleanUtils;
+import com.android.tools.r8.utils.internal.BooleanUtils;
 import com.android.tools.r8.utils.MethodReferenceUtils;
 import com.android.tools.r8.utils.codeinspector.CodeInspector;
 import com.google.common.collect.ImmutableList;

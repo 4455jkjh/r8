@@ -7,7 +7,7 @@ import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestBuilder;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestRunResult;
-import com.android.tools.r8.utils.BooleanUtils;
+import com.android.tools.r8.utils.internal.BooleanUtils;
 import java.util.List;
 import org.junit.Test;
 import org.junit.runner.RunWith;

@@ -42,8 +42,8 @@ import com.android.tools.r8.ir.desugar.lambda.LambdaInstructionDesugaring.Desuga
 import com.android.tools.r8.ir.desugar.lambda.SyntheticLambdaAccessorMethodConsumer;
 import com.android.tools.r8.synthesis.SyntheticProgramClassBuilder;
 import com.android.tools.r8.utils.InternalOptions;
-import com.android.tools.r8.utils.exceptions.Unimplemented;
-import com.android.tools.r8.utils.exceptions.Unreachable;
+import com.android.tools.r8.utils.internal.exceptions.Unimplemented;
+import com.android.tools.r8.utils.internal.exceptions.Unreachable;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import java.util.ArrayList;

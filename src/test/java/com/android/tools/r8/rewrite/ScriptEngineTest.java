@@ -18,7 +18,7 @@ import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.TestRuntime.CfVm;
 import com.android.tools.r8.ToolHelper.DexVm.Version;
 import com.android.tools.r8.origin.Origin;
-import com.android.tools.r8.utils.StreamUtils;
+import com.android.tools.r8.utils.internal.StreamUtils;
 import com.android.tools.r8.utils.StringUtils;
 import java.io.IOException;
 import java.io.Reader;

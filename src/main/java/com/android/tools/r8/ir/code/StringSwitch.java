@@ -11,9 +11,9 @@ import com.android.tools.r8.graph.DexString;
 import com.android.tools.r8.ir.conversion.CfBuilder;
 import com.android.tools.r8.ir.conversion.DexBuilder;
 import com.android.tools.r8.lightir.LirBuilder;
-import com.android.tools.r8.utils.ThrowingBiConsumer;
-import com.android.tools.r8.utils.ThrowingConsumer;
-import com.android.tools.r8.utils.exceptions.Unreachable;
+import com.android.tools.r8.utils.internal.ThrowingBiConsumer;
+import com.android.tools.r8.utils.internal.ThrowingConsumer;
+import com.android.tools.r8.utils.internal.exceptions.Unreachable;
 import java.util.IdentityHashMap;
 import java.util.Map;
 

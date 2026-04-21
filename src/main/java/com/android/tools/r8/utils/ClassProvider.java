@@ -13,7 +13,7 @@ import com.android.tools.r8.graph.DexType;
 import com.android.tools.r8.graph.JarApplicationReader;
 import com.android.tools.r8.graph.JarClassFileReader;
 import com.android.tools.r8.threading.TaskCollection;
-import com.android.tools.r8.utils.exceptions.Unimplemented;
+import com.android.tools.r8.utils.internal.exceptions.Unimplemented;
 import com.android.tools.r8.utils.timing.Timing;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;

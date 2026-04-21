@@ -8,7 +8,7 @@ import com.android.tools.r8.graph.DexField;
 import com.android.tools.r8.graph.DexMethod;
 import com.android.tools.r8.graph.DexType;
 import com.android.tools.r8.ir.code.InvokeMethodWithReceiver;
-import com.android.tools.r8.utils.ObjectUtils;
+import com.android.tools.r8.utils.internal.ObjectUtils;
 import com.google.common.collect.ImmutableMultiset;
 import com.google.common.collect.ImmutableSet;
 import java.util.Collection;

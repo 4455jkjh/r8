@@ -12,7 +12,7 @@ import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.androidresources.AndroidResourceTestingUtils.AndroidTestResource;
 import com.android.tools.r8.androidresources.AndroidResourceTestingUtils.AndroidTestResourceBuilder;
-import com.android.tools.r8.utils.BooleanUtils;
+import com.android.tools.r8.utils.internal.BooleanUtils;
 import java.util.List;
 import org.junit.Assume;
 import org.junit.Test;

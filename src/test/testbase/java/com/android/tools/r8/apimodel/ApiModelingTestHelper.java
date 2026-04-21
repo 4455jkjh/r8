@@ -25,7 +25,7 @@ import com.android.tools.r8.references.Reference;
 import com.android.tools.r8.synthesis.SyntheticItemsTestUtils;
 import com.android.tools.r8.utils.AndroidApiLevel;
 import com.android.tools.r8.utils.InternalOptions;
-import com.android.tools.r8.utils.ThrowingConsumer;
+import com.android.tools.r8.utils.internal.ThrowingConsumer;
 import com.android.tools.r8.utils.codeinspector.CodeInspector;
 import com.android.tools.r8.utils.codeinspector.CodeMatchers;
 import com.android.tools.r8.utils.codeinspector.FoundClassSubject;

@@ -20,8 +20,8 @@ import com.android.tools.r8.ir.code.ValueFactory;
 import com.android.tools.r8.ir.optimize.info.field.InstanceFieldInitializationInfo;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
 import com.android.tools.r8.utils.ArrayUtils;
-import com.android.tools.r8.utils.LongUtils;
-import com.android.tools.r8.utils.OptionalBool;
+import com.android.tools.r8.utils.internal.LongUtils;
+import com.android.tools.r8.utils.internal.OptionalBool;
 
 public class SingleNumberValue extends SingleConstValue
     implements ConstantOrNonConstantNumberValue {

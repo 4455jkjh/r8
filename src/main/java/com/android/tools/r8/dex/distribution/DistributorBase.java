@@ -18,7 +18,7 @@ import com.android.tools.r8.naming.ClassNameMapper;
 import com.android.tools.r8.profile.startup.profile.StartupProfile;
 import com.android.tools.r8.shaking.MainDexInfo;
 import com.android.tools.r8.utils.DescriptorUtils;
-import com.android.tools.r8.utils.IntBox;
+import com.android.tools.r8.utils.internal.IntBox;
 import com.android.tools.r8.utils.InternalOptions;
 import com.android.tools.r8.utils.SetUtils;
 import com.android.tools.r8.utils.timing.Timing;

@@ -5,7 +5,7 @@ package com.android.tools.r8.dex.container;
 
 import com.android.tools.r8.R8TestCompileResultBase;
 import com.android.tools.r8.TestParameters;
-import com.android.tools.r8.utils.BooleanUtils;
+import com.android.tools.r8.utils.internal.BooleanUtils;
 import com.android.tools.r8.utils.InternalOptions;
 import java.nio.file.Path;
 import java.util.List;

@@ -10,7 +10,7 @@ import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestRuntime.CfVm;
 import com.android.tools.r8.cf.CfVersion;
 import com.android.tools.r8.transformers.ClassFileTransformer.MethodPredicate;
-import com.android.tools.r8.utils.BooleanUtils;
+import com.android.tools.r8.utils.internal.BooleanUtils;
 import com.android.tools.r8.utils.codeinspector.AssertUtils;
 import java.util.List;
 import org.junit.Test;

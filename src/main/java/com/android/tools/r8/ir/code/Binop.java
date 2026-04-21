@@ -15,7 +15,7 @@ import com.android.tools.r8.ir.analysis.value.AbstractValue;
 import com.android.tools.r8.ir.optimize.Inliner.ConstraintWithTarget;
 import com.android.tools.r8.ir.optimize.InliningConstraints;
 import com.android.tools.r8.ir.regalloc.RegisterAllocator;
-import com.android.tools.r8.utils.exceptions.Unreachable;
+import com.android.tools.r8.utils.internal.exceptions.Unreachable;
 
 public abstract class Binop extends Instruction {
 

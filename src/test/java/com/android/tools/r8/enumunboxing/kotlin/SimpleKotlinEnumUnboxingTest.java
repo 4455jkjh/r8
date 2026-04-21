@@ -11,7 +11,7 @@ import com.android.tools.r8.KotlinTestParameters;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.enumunboxing.EnumUnboxingTestBase;
-import com.android.tools.r8.utils.BooleanUtils;
+import com.android.tools.r8.utils.internal.BooleanUtils;
 import com.android.tools.r8.utils.DescriptorUtils;
 import java.nio.file.Paths;
 import java.util.List;

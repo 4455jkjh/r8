@@ -7,7 +7,7 @@ package com.android.tools.r8.ir.optimize.inliner.conditionalsimpleinlining;
 import com.android.tools.r8.R8FullTestBuilder;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
-import com.android.tools.r8.utils.BooleanUtils;
+import com.android.tools.r8.utils.internal.BooleanUtils;
 import com.android.tools.r8.utils.InternalOptions;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;

@@ -10,7 +10,7 @@ import com.android.tools.r8.shaking.ProguardMemberRule;
 import com.android.tools.r8.shaking.ProguardMemberType;
 import com.android.tools.r8.shaking.ProguardTypeMatcher;
 import com.android.tools.r8.shaking.ProguardTypeMatcher.MatchTypePattern;
-import com.android.tools.r8.utils.TraversalContinuation;
+import com.android.tools.r8.utils.internal.TraversalContinuation;
 import java.util.List;
 
 public class BlastRadiusKeepRuleClassifier {

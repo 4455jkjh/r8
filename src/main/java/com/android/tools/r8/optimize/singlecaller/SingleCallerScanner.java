@@ -20,7 +20,7 @@ import com.android.tools.r8.lightir.LirOpcodeUtils;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
 import com.android.tools.r8.utils.AndroidApiLevelUtils;
 import com.android.tools.r8.utils.InternalOptions;
-import com.android.tools.r8.utils.ObjectUtils;
+import com.android.tools.r8.utils.internal.ObjectUtils;
 import com.android.tools.r8.utils.ThreadUtils;
 import com.android.tools.r8.utils.collections.ProgramMethodMap;
 import com.android.tools.r8.utils.collections.ProgramMethodSet;

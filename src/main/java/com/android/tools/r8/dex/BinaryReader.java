@@ -8,7 +8,7 @@ import com.android.tools.r8.ProgramResource;
 import com.android.tools.r8.ResourceException;
 import com.android.tools.r8.origin.Origin;
 import com.android.tools.r8.utils.LebUtils;
-import com.android.tools.r8.utils.StreamUtils;
+import com.android.tools.r8.utils.internal.StreamUtils;
 import java.io.IOException;
 
 /**

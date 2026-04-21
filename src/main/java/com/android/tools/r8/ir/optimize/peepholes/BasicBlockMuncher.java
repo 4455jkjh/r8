@@ -5,7 +5,7 @@
 package com.android.tools.r8.ir.optimize.peepholes;
 
 import static com.android.tools.r8.utils.InternalOptions.TestingOptions.NO_LIMIT;
-import static com.android.tools.r8.utils.PredicateUtils.not;
+import static com.android.tools.r8.utils.internal.PredicateUtils.not;
 
 import com.android.tools.r8.errors.CompilationError;
 import com.android.tools.r8.ir.code.BasicBlock;

@@ -11,7 +11,7 @@ import com.android.tools.r8.graph.DexClass;
 import com.android.tools.r8.graph.DexProgramClass;
 import com.android.tools.r8.graph.DexType;
 import com.android.tools.r8.threading.TaskCollection;
-import com.android.tools.r8.utils.IntBox;
+import com.android.tools.r8.utils.internal.IntBox;
 import com.google.common.collect.Maps;
 import java.util.ArrayList;
 import java.util.BitSet;

@@ -6,7 +6,7 @@ package com.android.tools.r8.naming;
 
 import com.android.tools.r8.DiagnosticsHandler;
 import com.android.tools.r8.MapConsumer;
-import com.android.tools.r8.utils.ChainableStringConsumer;
+import com.android.tools.r8.utils.internal.ChainableStringConsumer;
 import com.android.tools.r8.utils.StringUtils;
 
 /***

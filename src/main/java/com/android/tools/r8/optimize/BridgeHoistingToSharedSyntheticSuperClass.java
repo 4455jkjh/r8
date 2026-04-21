@@ -26,7 +26,7 @@ import com.android.tools.r8.shaking.AppInfoWithLiveness;
 import com.android.tools.r8.utils.InternalOptions;
 import com.android.tools.r8.utils.InternalOptions.TestingOptions;
 import com.android.tools.r8.utils.ListUtils;
-import com.android.tools.r8.utils.OptionalBool;
+import com.android.tools.r8.utils.internal.OptionalBool;
 import com.android.tools.r8.utils.SetUtils;
 import com.android.tools.r8.utils.collections.DexMethodSignatureMap;
 import com.android.tools.r8.utils.timing.Timing;

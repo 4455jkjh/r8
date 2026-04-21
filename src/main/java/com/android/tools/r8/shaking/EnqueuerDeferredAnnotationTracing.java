@@ -12,7 +12,7 @@ import com.android.tools.r8.graph.DexDefinition;
 import com.android.tools.r8.graph.DexProgramClass;
 import com.android.tools.r8.graph.ProgramDefinition;
 import com.android.tools.r8.utils.MapUtils;
-import com.android.tools.r8.utils.ObjectUtils;
+import com.android.tools.r8.utils.internal.ObjectUtils;
 import com.google.common.collect.Sets;
 import java.util.Collections;
 import java.util.HashSet;

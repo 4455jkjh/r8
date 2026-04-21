@@ -3,7 +3,7 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8.graph;
 
-import com.android.tools.r8.utils.TraversalContinuation;
+import com.android.tools.r8.utils.internal.TraversalContinuation;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;

@@ -6,7 +6,7 @@ package com.android.tools.r8.retrace.internal;
 
 import com.android.tools.r8.naming.ClassNameMapper;
 import com.android.tools.r8.retrace.ProguardMapProducer;
-import com.android.tools.r8.utils.exceptions.Unreachable;
+import com.android.tools.r8.utils.internal.exceptions.Unreachable;
 import java.io.IOException;
 import java.io.InputStream;
 

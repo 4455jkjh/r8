@@ -36,7 +36,7 @@ import com.android.tools.r8.position.MethodPosition;
 import com.android.tools.r8.profile.rewriting.ProfileCollectionAdditions;
 import com.android.tools.r8.threading.ThreadingModule;
 import com.android.tools.r8.utils.ExceptionUtils;
-import com.android.tools.r8.utils.ForEachable;
+import com.android.tools.r8.utils.internal.ForEachable;
 import com.android.tools.r8.utils.ListUtils;
 import com.android.tools.r8.utils.ThreadUtils;
 import com.android.tools.r8.utils.timing.Timing;

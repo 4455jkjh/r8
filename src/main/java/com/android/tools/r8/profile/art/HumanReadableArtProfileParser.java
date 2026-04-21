@@ -11,7 +11,7 @@ import com.android.tools.r8.references.ClassReference;
 import com.android.tools.r8.references.MethodReference;
 import com.android.tools.r8.references.Reference;
 import com.android.tools.r8.references.TypeReference;
-import com.android.tools.r8.utils.Action;
+import com.android.tools.r8.utils.internal.Action;
 import com.android.tools.r8.utils.DescriptorUtils;
 import com.android.tools.r8.utils.MethodReferenceUtils;
 import com.android.tools.r8.utils.Reporter;

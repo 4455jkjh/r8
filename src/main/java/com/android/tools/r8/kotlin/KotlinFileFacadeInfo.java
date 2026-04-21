@@ -10,7 +10,7 @@ import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.DexClass;
 import com.android.tools.r8.graph.DexEncodedMember;
 import com.android.tools.r8.graph.DexEncodedMethod;
-import com.android.tools.r8.utils.collections.Pair;
+import com.android.tools.r8.utils.internal.collections.Pair;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import kotlin.Metadata;

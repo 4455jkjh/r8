@@ -14,7 +14,7 @@ import static org.junit.Assert.assertTrue;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestShrinkerBuilder;
 import com.android.tools.r8.ToolHelper;
-import com.android.tools.r8.utils.ThrowingConsumer;
+import com.android.tools.r8.utils.internal.ThrowingConsumer;
 import com.android.tools.r8.utils.codeinspector.ClassSubject;
 import com.android.tools.r8.utils.codeinspector.CodeInspector;
 import com.android.tools.r8.utils.codeinspector.MethodSubject;

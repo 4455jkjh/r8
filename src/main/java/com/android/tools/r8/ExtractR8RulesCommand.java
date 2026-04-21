@@ -10,7 +10,7 @@ import com.android.tools.r8.origin.CommandLineOrigin;
 import com.android.tools.r8.utils.AndroidApp;
 import com.android.tools.r8.utils.InternalOptions;
 import com.android.tools.r8.utils.Reporter;
-import com.android.tools.r8.utils.SemanticVersion;
+import com.android.tools.r8.utils.internal.SemanticVersion;
 import com.android.tools.r8.utils.StringDiagnostic;
 import com.android.tools.r8.utils.StringUtils;
 import java.nio.file.Path;

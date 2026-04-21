@@ -18,7 +18,7 @@ import com.android.tools.r8.utils.DescriptorUtils;
 import com.android.tools.r8.utils.FileUtils;
 import com.android.tools.r8.utils.StringUtils;
 import com.android.tools.r8.utils.StringUtils.BraceType;
-import com.android.tools.r8.utils.exceptions.Unreachable;
+import com.android.tools.r8.utils.internal.exceptions.Unreachable;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 import java.io.ByteArrayOutputStream;

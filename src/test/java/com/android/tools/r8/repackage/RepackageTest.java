@@ -32,7 +32,7 @@ import com.android.tools.r8.repackage.testclasses.repackagetest.KeptClassAllowRe
 import com.android.tools.r8.repackage.testclasses.repackagetest.ReachableClassWithKeptMethod;
 import com.android.tools.r8.repackage.testclasses.repackagetest.ReachableClassWithKeptMethodAllowRenaming;
 import com.android.tools.r8.repackage.testclasses.repackagetest.TestClass;
-import com.android.tools.r8.utils.BooleanUtils;
+import com.android.tools.r8.utils.internal.BooleanUtils;
 import com.android.tools.r8.utils.codeinspector.CodeInspector;
 import com.google.common.collect.ImmutableList;
 import java.util.List;

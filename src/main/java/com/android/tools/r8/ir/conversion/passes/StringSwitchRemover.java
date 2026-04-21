@@ -32,7 +32,7 @@ import com.android.tools.r8.ir.conversion.passes.result.CodeRewriterResult;
 import com.android.tools.r8.naming.IdentifierNameStringMarker;
 import com.android.tools.r8.utils.ArrayUtils;
 import com.android.tools.r8.utils.SetUtils;
-import com.android.tools.r8.utils.exceptions.Unreachable;
+import com.android.tools.r8.utils.internal.exceptions.Unreachable;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Sets;
 import it.unimi.dsi.fastutil.ints.Int2ReferenceMap;

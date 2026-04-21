@@ -6,7 +6,7 @@ package com.android.tools.r8.ir.optimize.classinliner.analysis;
 
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.ir.analysis.framework.intraprocedural.AbstractState;
-import com.android.tools.r8.utils.IntObjToObjFunction;
+import com.android.tools.r8.utils.internal.IntObjToObjFunction;
 
 public abstract class ParameterUsages extends AbstractState<ParameterUsages> {
 

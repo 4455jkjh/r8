@@ -8,7 +8,7 @@ import static junit.framework.TestCase.assertEquals;
 
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParametersCollection;
-import com.android.tools.r8.utils.BooleanUtils;
+import com.android.tools.r8.utils.internal.BooleanUtils;
 import com.android.tools.r8.utils.InternalOptions;
 import com.android.tools.r8.utils.StringUtils;
 import java.util.List;

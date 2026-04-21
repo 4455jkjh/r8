@@ -11,7 +11,7 @@ import com.android.tools.r8.origin.Origin;
 import com.android.tools.r8.shaking.ProguardConfigurationParser.IdentifierPatternWithWildcardsAndNegation;
 import com.android.tools.r8.utils.AndroidApiLevel;
 import com.android.tools.r8.utils.InternalOptions;
-import com.android.tools.r8.utils.LongInterval;
+import com.android.tools.r8.utils.internal.LongInterval;
 import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
 import java.util.Collections;

@@ -23,7 +23,7 @@ import com.android.tools.r8.utils.DescriptorUtils;
 import com.android.tools.r8.utils.ListUtils;
 import com.android.tools.r8.utils.StringUtils;
 import com.android.tools.r8.utils.StringUtils.BraceType;
-import com.android.tools.r8.utils.collections.Pair;
+import com.android.tools.r8.utils.internal.collections.Pair;
 import java.io.PrintStream;
 import java.util.ArrayDeque;
 import java.util.ArrayList;

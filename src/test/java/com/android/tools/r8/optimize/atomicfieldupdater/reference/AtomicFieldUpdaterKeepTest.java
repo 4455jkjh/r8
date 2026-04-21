@@ -11,7 +11,7 @@ import static org.hamcrest.core.StringContains.containsString;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.optimize.atomicfieldupdater.AtomicFieldUpdaterBase;
 import com.android.tools.r8.references.Reference;
-import com.android.tools.r8.utils.BooleanUtils;
+import com.android.tools.r8.utils.internal.BooleanUtils;
 import com.android.tools.r8.utils.codeinspector.CodeMatchers;
 import com.android.tools.r8.utils.codeinspector.MethodSubject;
 import java.util.List;

@@ -4,7 +4,7 @@
 package com.android.tools.r8.ir.code;
 
 import static com.android.tools.r8.ir.analysis.type.Nullability.definitelyNotNull;
-import static com.android.tools.r8.utils.ConsumerUtils.emptyConsumer;
+import static com.android.tools.r8.utils.internal.ConsumerUtils.emptyConsumer;
 
 import com.android.tools.r8.graph.AppInfoWithClassHierarchy;
 import com.android.tools.r8.graph.AppView;
@@ -29,19 +29,19 @@ import com.android.tools.r8.ir.conversion.IRBuilder;
 import com.android.tools.r8.ir.conversion.MethodConversionOptions;
 import com.android.tools.r8.ir.conversion.MethodConversionOptions.MutableMethodConversionOptions;
 import com.android.tools.r8.ir.optimize.AffectedValues;
-import com.android.tools.r8.utils.BooleanUtils;
-import com.android.tools.r8.utils.DequeUtils;
+import com.android.tools.r8.utils.internal.BooleanUtils;
+import com.android.tools.r8.utils.internal.DequeUtils;
 import com.android.tools.r8.utils.InternalOptions;
 import com.android.tools.r8.utils.IteratorUtils;
-import com.android.tools.r8.utils.LinkedHashSetUtils;
+import com.android.tools.r8.utils.internal.LinkedHashSetUtils;
 import com.android.tools.r8.utils.ListUtils;
-import com.android.tools.r8.utils.LongUtils;
+import com.android.tools.r8.utils.internal.LongUtils;
 import com.android.tools.r8.utils.SetUtils;
 import com.android.tools.r8.utils.StringUtils;
-import com.android.tools.r8.utils.TraversalContinuation;
-import com.android.tools.r8.utils.TriFunction;
+import com.android.tools.r8.utils.internal.TraversalContinuation;
+import com.android.tools.r8.utils.internal.TriFunction;
 import com.android.tools.r8.utils.collections.WorkList;
-import com.android.tools.r8.utils.exceptions.Unreachable;
+import com.android.tools.r8.utils.internal.exceptions.Unreachable;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;

@@ -9,7 +9,7 @@ import com.android.tools.r8.graph.DexEncodedField;
 import com.android.tools.r8.graph.DexValue;
 import com.android.tools.r8.naming.MemberNaming.Signature;
 import com.android.tools.r8.references.FieldReference;
-import com.android.tools.r8.utils.exceptions.Unreachable;
+import com.android.tools.r8.utils.internal.exceptions.Unreachable;
 import java.util.List;
 
 public class AbsentFieldSubject extends FieldSubject {

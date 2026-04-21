@@ -17,6 +17,7 @@ import com.android.tools.r8.naming.IdentifierMinifier;
 import com.android.tools.r8.optimize.argumentpropagation.ArgumentPropagator;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
 import com.android.tools.r8.utils.collections.ProgramMethodSet;
+import com.android.tools.r8.utils.internal.Action;
 import com.android.tools.r8.utils.timing.Timing;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -273,7 +274,7 @@ public class PrimaryR8IRConverter extends IRConverter {
       enumUnboxer.updateEnumUnboxingCandidatesInfo();
       assert delayedOptimizationFeedback.noUpdatesLeft();
       if (onWaveDoneActions != null) {
-        onWaveDoneActions.forEach(com.android.tools.r8.utils.Action::execute);
+        onWaveDoneActions.forEach(Action::execute);
         onWaveDoneActions = null;
       }
     }

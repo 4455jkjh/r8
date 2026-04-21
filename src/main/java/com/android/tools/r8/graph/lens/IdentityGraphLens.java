@@ -10,7 +10,7 @@ import com.android.tools.r8.graph.DexType;
 import com.android.tools.r8.graph.proto.RewrittenPrototypeDescription;
 import com.android.tools.r8.ir.code.InvokeType;
 import com.android.tools.r8.utils.IterableUtils;
-import com.android.tools.r8.utils.OptionalBool;
+import com.android.tools.r8.utils.internal.OptionalBool;
 import java.util.function.Predicate;
 
 final class IdentityGraphLens extends GraphLens {

@@ -7,7 +7,7 @@ package com.android.tools.r8.graph.lens;
 import com.android.tools.r8.graph.DexItemFactory;
 import com.android.tools.r8.graph.DexMember;
 import com.android.tools.r8.graph.DexType;
-import com.android.tools.r8.utils.ObjectUtils;
+import com.android.tools.r8.utils.internal.ObjectUtils;
 import com.android.tools.r8.utils.collections.BidirectionalManyToManyRepresentativeMap;
 import com.android.tools.r8.utils.collections.BidirectionalManyToOneRepresentativeMap;
 import java.util.Map;

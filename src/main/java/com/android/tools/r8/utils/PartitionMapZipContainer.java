@@ -11,6 +11,7 @@ import com.android.tools.r8.retrace.MappingPartitionMetadata;
 import com.android.tools.r8.retrace.PartitionMappingSupplier;
 import com.android.tools.r8.retrace.RetracePartitionException;
 import com.android.tools.r8.utils.ZipUtils.ZipBuilder;
+import com.android.tools.r8.utils.internal.Box;
 import com.google.common.io.ByteStreams;
 import java.io.IOException;
 import java.nio.file.Path;

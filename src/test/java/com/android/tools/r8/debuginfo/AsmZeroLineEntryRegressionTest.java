@@ -14,7 +14,7 @@ import com.android.tools.r8.naming.retrace.StackTrace.StackTraceLine;
 import com.android.tools.r8.references.ClassReference;
 import com.android.tools.r8.references.Reference;
 import com.android.tools.r8.transformers.MethodTransformer;
-import com.android.tools.r8.utils.IntBox;
+import com.android.tools.r8.utils.internal.IntBox;
 import java.io.IOException;
 import org.junit.Test;
 import org.junit.runner.RunWith;

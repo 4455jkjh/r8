@@ -15,7 +15,7 @@ import com.android.tools.r8.diagnostic.DefinitionContext;
 import com.android.tools.r8.diagnostic.internal.DefinitionClassContextImpl;
 import com.android.tools.r8.references.ClassReference;
 import com.android.tools.r8.references.Reference;
-import com.android.tools.r8.utils.BooleanUtils;
+import com.android.tools.r8.utils.internal.BooleanUtils;
 import java.util.List;
 import org.junit.Test;
 import org.junit.runners.Parameterized.Parameters;

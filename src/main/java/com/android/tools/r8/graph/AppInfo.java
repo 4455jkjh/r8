@@ -12,7 +12,7 @@ import com.android.tools.r8.shaking.MainDexInfo;
 import com.android.tools.r8.synthesis.CommittedItems;
 import com.android.tools.r8.synthesis.SyntheticItems;
 import com.android.tools.r8.synthesis.SyntheticItems.GlobalSyntheticsStrategy;
-import com.android.tools.r8.utils.BooleanBox;
+import com.android.tools.r8.utils.internal.BooleanBox;
 import com.android.tools.r8.utils.InternalOptions;
 import com.android.tools.r8.utils.timing.Timing;
 import java.util.Collection;

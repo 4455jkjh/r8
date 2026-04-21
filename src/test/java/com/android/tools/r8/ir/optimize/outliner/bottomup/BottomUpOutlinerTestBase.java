@@ -12,7 +12,7 @@ import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestCompilerBuilder;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.graph.DexItemFactory;
-import com.android.tools.r8.utils.BooleanBox;
+import com.android.tools.r8.utils.internal.BooleanBox;
 import java.util.Collection;
 import java.util.List;
 import org.junit.After;

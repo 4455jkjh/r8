@@ -25,7 +25,7 @@ import com.android.tools.r8.ir.optimize.info.OptimizationFeedback;
 import com.android.tools.r8.ir.optimize.info.field.InstanceFieldInitializationInfo;
 import com.android.tools.r8.ir.optimize.info.field.UnknownInstanceFieldInitializationInfo;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
-import com.android.tools.r8.utils.DequeUtils;
+import com.android.tools.r8.utils.internal.DequeUtils;
 import com.android.tools.r8.utils.ListUtils;
 import com.android.tools.r8.utils.collections.DexClassAndFieldMap;
 import com.google.common.collect.Iterables;

@@ -19,7 +19,7 @@ import com.android.tools.r8.ToolHelper.DexVm.Version;
 import com.android.tools.r8.shaking.ProguardKeepAttributes;
 import com.android.tools.r8.transformers.ClassFileTransformer.MethodPredicate;
 import com.android.tools.r8.utils.AndroidApiLevel;
-import com.android.tools.r8.utils.BooleanUtils;
+import com.android.tools.r8.utils.internal.BooleanUtils;
 import java.io.IOException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;

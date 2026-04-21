@@ -24,7 +24,7 @@ import com.android.tools.r8.origin.Origin;
 import com.android.tools.r8.origin.PathOrigin;
 import com.android.tools.r8.utils.AndroidApiLevel;
 import com.android.tools.r8.utils.ArchiveResourceProvider;
-import com.android.tools.r8.utils.BooleanBox;
+import com.android.tools.r8.utils.internal.BooleanBox;
 import com.android.tools.r8.utils.FileUtils;
 import com.android.tools.r8.utils.ZipUtils;
 import java.io.IOException;

@@ -26,7 +26,7 @@ import com.android.tools.r8.retrace.Retrace;
 import com.android.tools.r8.retrace.RetraceCommand;
 import com.android.tools.r8.utils.FileUtils;
 import com.android.tools.r8.utils.StringUtils;
-import com.android.tools.r8.utils.collections.Pair;
+import com.android.tools.r8.utils.internal.collections.Pair;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import java.io.IOException;

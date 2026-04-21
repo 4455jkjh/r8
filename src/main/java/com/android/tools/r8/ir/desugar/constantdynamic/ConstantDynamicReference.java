@@ -8,7 +8,7 @@ import com.android.tools.r8.graph.DexString;
 import com.android.tools.r8.graph.DexType;
 import com.android.tools.r8.graph.DexValue;
 import com.android.tools.r8.graph.JarApplicationReader;
-import com.android.tools.r8.utils.ObjectUtils;
+import com.android.tools.r8.utils.internal.ObjectUtils;
 import com.android.tools.r8.utils.structural.Equatable;
 import com.android.tools.r8.utils.structural.StructuralItem;
 import com.android.tools.r8.utils.structural.StructuralMapping;

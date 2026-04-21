@@ -15,7 +15,7 @@ import com.android.tools.r8.graph.JarApplicationReader;
 import com.android.tools.r8.graph.JarClassFileReader;
 import com.android.tools.r8.origin.Origin;
 import com.android.tools.r8.references.MethodReference;
-import com.android.tools.r8.utils.Box;
+import com.android.tools.r8.utils.internal.Box;
 import com.android.tools.r8.utils.FileUtils;
 import com.android.tools.r8.utils.InternalOptions;
 import com.android.tools.r8.utils.Reporter;

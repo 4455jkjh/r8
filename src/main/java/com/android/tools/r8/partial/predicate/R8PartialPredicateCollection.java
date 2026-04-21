@@ -7,7 +7,7 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 
 import com.android.tools.r8.graph.DexProgramClass;
 import com.android.tools.r8.graph.DexString;
-import com.android.tools.r8.utils.exceptions.Unimplemented;
+import com.android.tools.r8.utils.internal.exceptions.Unimplemented;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;

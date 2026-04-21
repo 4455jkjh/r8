@@ -14,7 +14,7 @@ import com.android.tools.r8.jasmin.JasminBuilder;
 import com.android.tools.r8.jasmin.JasminBuilder.ClassBuilder;
 import com.android.tools.r8.kotlin.TestKotlinClass.Visibility;
 import com.android.tools.r8.utils.AndroidApp;
-import com.android.tools.r8.utils.BooleanUtils;
+import com.android.tools.r8.utils.internal.BooleanUtils;
 import java.nio.file.Path;
 import java.util.Collection;
 import java.util.Collections;

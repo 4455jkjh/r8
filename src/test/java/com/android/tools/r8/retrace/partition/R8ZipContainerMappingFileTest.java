@@ -21,7 +21,7 @@ import com.android.tools.r8.retrace.MappingPartitionMetadata;
 import com.android.tools.r8.retrace.PartitionMappingSupplier;
 import com.android.tools.r8.retrace.partition.testclasses.R8ZipContainerMappingFileTestClasses;
 import com.android.tools.r8.retrace.partition.testclasses.R8ZipContainerMappingFileTestClasses.Main;
-import com.android.tools.r8.utils.BooleanBox;
+import com.android.tools.r8.utils.internal.BooleanBox;
 import com.android.tools.r8.utils.ZipUtils.ZipBuilder;
 import com.google.common.io.ByteStreams;
 import java.io.IOException;

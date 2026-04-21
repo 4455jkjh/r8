@@ -15,7 +15,7 @@ import com.android.tools.r8.partial.R8PartialSubCompilationConfiguration;
 import com.android.tools.r8.synthesis.SyntheticItems;
 import com.android.tools.r8.utils.MapUtils;
 import com.android.tools.r8.utils.SetUtils;
-import com.android.tools.r8.utils.ThrowingConsumer;
+import com.android.tools.r8.utils.internal.ThrowingConsumer;
 import com.android.tools.r8.utils.timing.Timing;
 import java.util.LinkedHashMap;
 import java.util.Map;

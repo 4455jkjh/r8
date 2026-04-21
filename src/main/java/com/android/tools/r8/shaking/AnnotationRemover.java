@@ -31,7 +31,7 @@ import com.android.tools.r8.shaking.Enqueuer.Mode;
 import com.android.tools.r8.utils.ArrayUtils;
 import com.android.tools.r8.utils.InternalOptions;
 import com.android.tools.r8.utils.ThreadUtils;
-import com.android.tools.r8.utils.exceptions.Unreachable;
+import com.android.tools.r8.utils.internal.exceptions.Unreachable;
 import com.google.common.collect.Sets;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;

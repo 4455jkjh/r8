@@ -10,7 +10,7 @@ import static org.junit.Assert.assertEquals;
 
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestShrinkerBuilder;
-import com.android.tools.r8.utils.ThrowingConsumer;
+import com.android.tools.r8.utils.internal.ThrowingConsumer;
 import com.android.tools.r8.utils.codeinspector.CodeInspector;
 import com.google.common.collect.ImmutableList;
 import java.util.List;

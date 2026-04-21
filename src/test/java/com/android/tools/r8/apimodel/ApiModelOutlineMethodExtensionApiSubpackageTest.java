@@ -16,7 +16,7 @@ import com.android.tools.r8.TestCompilerBuilder;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.apimodel.extension.ExtensionApiLibraryClass;
 import com.android.tools.r8.apimodel.extension.subpackage.SubpackageExtensionApiLibraryClass;
-import com.android.tools.r8.utils.BooleanUtils;
+import com.android.tools.r8.utils.internal.BooleanUtils;
 import com.android.tools.r8.utils.StringUtils;
 import com.android.tools.r8.utils.codeinspector.CodeInspector;
 import java.nio.file.Path;

@@ -7,7 +7,7 @@ import com.android.tools.r8.OutputMode;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.utils.AndroidApiLevel;
-import com.android.tools.r8.utils.BooleanUtils;
+import com.android.tools.r8.utils.internal.BooleanUtils;
 import com.android.tools.r8.utils.DexVersion;
 import java.nio.file.Path;
 import java.util.List;

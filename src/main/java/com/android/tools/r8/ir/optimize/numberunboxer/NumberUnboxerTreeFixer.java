@@ -18,7 +18,7 @@ import com.android.tools.r8.graph.proto.RewrittenPrototypeDescription;
 import com.android.tools.r8.ir.optimize.numberunboxer.NumberUnboxerBoxingStatusResolution.MethodBoxingStatusResult;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
 import com.android.tools.r8.utils.ArrayUtils;
-import com.android.tools.r8.utils.OptionalBool;
+import com.android.tools.r8.utils.internal.OptionalBool;
 import com.android.tools.r8.utils.timing.Timing;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;

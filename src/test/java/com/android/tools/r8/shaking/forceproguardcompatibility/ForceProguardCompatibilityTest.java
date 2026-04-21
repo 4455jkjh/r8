@@ -30,7 +30,7 @@ import com.android.tools.r8.shaking.forceproguardcompatibility.defaultmethods.In
 import com.android.tools.r8.shaking.forceproguardcompatibility.defaultmethods.TestClass;
 import com.android.tools.r8.shaking.forceproguardcompatibility.keepattributes.TestKeepAttributes;
 import com.android.tools.r8.utils.AndroidApiLevel;
-import com.android.tools.r8.utils.BooleanUtils;
+import com.android.tools.r8.utils.internal.BooleanUtils;
 import com.android.tools.r8.utils.codeinspector.ClassSubject;
 import com.android.tools.r8.utils.codeinspector.CodeInspector;
 import com.android.tools.r8.utils.codeinspector.FieldSubject;

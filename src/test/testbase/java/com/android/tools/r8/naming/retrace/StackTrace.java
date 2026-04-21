@@ -16,7 +16,7 @@ import com.android.tools.r8.retrace.ProguardMapProducer;
 import com.android.tools.r8.retrace.ProguardMappingSupplier;
 import com.android.tools.r8.retrace.Retrace;
 import com.android.tools.r8.retrace.RetraceCommand;
-import com.android.tools.r8.utils.Box;
+import com.android.tools.r8.utils.internal.Box;
 import com.android.tools.r8.utils.StringUtils;
 import com.google.common.base.Equivalence;
 import java.util.ArrayList;

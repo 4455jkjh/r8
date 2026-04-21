@@ -15,7 +15,7 @@ import com.android.tools.r8.graph.lens.GraphLens;
 import com.android.tools.r8.ir.code.InvokeType;
 import com.android.tools.r8.ir.code.Position;
 import com.android.tools.r8.ir.desugar.constantdynamic.ConstantDynamicReference;
-import com.android.tools.r8.utils.TraversalContinuation;
+import com.android.tools.r8.utils.internal.TraversalContinuation;
 import java.util.List;
 import java.util.ListIterator;
 

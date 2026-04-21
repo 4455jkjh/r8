@@ -11,7 +11,7 @@ import com.android.tools.r8.graph.DexItemFactory;
 import com.android.tools.r8.graph.DexType;
 import com.android.tools.r8.graph.ObjectAllocationInfoCollection;
 import com.android.tools.r8.ir.analysis.type.ClassTypeElement;
-import com.android.tools.r8.utils.TraversalContinuation;
+import com.android.tools.r8.utils.internal.TraversalContinuation;
 
 public class ObjectAllocationInfoCollectionUtils {
 

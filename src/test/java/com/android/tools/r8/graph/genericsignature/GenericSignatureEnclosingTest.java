@@ -14,7 +14,7 @@ import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.graph.genericsignature.GenericSignatureEnclosingTest.Bar.Inner;
 import com.android.tools.r8.graph.genericsignature.GenericSignatureEnclosingTest.Bar.SubInner;
-import com.android.tools.r8.utils.BooleanUtils;
+import com.android.tools.r8.utils.internal.BooleanUtils;
 import com.android.tools.r8.utils.codeinspector.ClassSubject;
 import com.android.tools.r8.utils.codeinspector.CodeInspector;
 import java.util.List;

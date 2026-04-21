@@ -18,7 +18,7 @@ import com.android.tools.r8.ir.desugar.desugaredlibrary.legacyspecification.Mult
 import com.android.tools.r8.ir.desugar.desugaredlibrary.machinespecification.MultiAPILevelMachineDesugaredLibrarySpecification;
 import com.android.tools.r8.ir.desugar.desugaredlibrary.machinespecification.MultiAPILevelMachineDesugaredLibrarySpecificationJsonExporter;
 import com.android.tools.r8.utils.AndroidApp;
-import com.android.tools.r8.utils.Box;
+import com.android.tools.r8.utils.internal.Box;
 import com.android.tools.r8.utils.ExceptionDiagnostic;
 import com.android.tools.r8.utils.InternalOptions;
 import com.android.tools.r8.utils.ThreadUtils;

@@ -36,7 +36,7 @@ import com.android.tools.r8.utils.collections.BidirectionalManyToOneRepresentati
 import com.android.tools.r8.utils.collections.BidirectionalOneToOneHashMap;
 import com.android.tools.r8.utils.collections.BidirectionalOneToOneMap;
 import com.android.tools.r8.utils.collections.MutableBidirectionalOneToOneMap;
-import com.android.tools.r8.utils.collections.Pair;
+import com.android.tools.r8.utils.internal.collections.Pair;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Deque;

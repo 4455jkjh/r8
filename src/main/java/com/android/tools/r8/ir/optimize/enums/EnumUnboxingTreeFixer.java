@@ -69,8 +69,8 @@ import com.android.tools.r8.ir.synthetic.EnumUnboxingCfCodeProvider.EnumUnboxing
 import com.android.tools.r8.ir.synthetic.ThrowCfCodeProvider;
 import com.android.tools.r8.profile.rewriting.ProfileCollectionAdditions;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
-import com.android.tools.r8.utils.ImmutableArrayUtils;
-import com.android.tools.r8.utils.OptionalBool;
+import com.android.tools.r8.utils.internal.ImmutableArrayUtils;
+import com.android.tools.r8.utils.internal.OptionalBool;
 import com.android.tools.r8.utils.SetUtils;
 import com.android.tools.r8.utils.ThreadUtils;
 import com.android.tools.r8.utils.collections.DexMethodSignatureSet;

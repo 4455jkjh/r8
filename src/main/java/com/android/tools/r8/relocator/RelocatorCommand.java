@@ -27,7 +27,7 @@ import com.android.tools.r8.shaking.ProguardConfigurationParserOptions;
 import com.android.tools.r8.shaking.ProguardPathList;
 import com.android.tools.r8.utils.AbortException;
 import com.android.tools.r8.utils.AndroidApp;
-import com.android.tools.r8.utils.Box;
+import com.android.tools.r8.utils.internal.Box;
 import com.android.tools.r8.utils.DirectoryProgramResourceProvider;
 import com.android.tools.r8.utils.ExceptionDiagnostic;
 import com.android.tools.r8.utils.ExceptionUtils;

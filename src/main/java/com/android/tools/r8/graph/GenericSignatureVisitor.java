@@ -11,7 +11,7 @@ import com.android.tools.r8.graph.GenericSignature.FormalTypeParameter;
 import com.android.tools.r8.graph.GenericSignature.MethodTypeSignature;
 import com.android.tools.r8.graph.GenericSignature.ReturnType;
 import com.android.tools.r8.graph.GenericSignature.TypeSignature;
-import com.android.tools.r8.utils.exceptions.Unreachable;
+import com.android.tools.r8.utils.internal.exceptions.Unreachable;
 import java.util.List;
 
 public interface GenericSignatureVisitor {

@@ -5,7 +5,7 @@
 package com.android.tools.r8.graph;
 
 import com.android.tools.r8.utils.collections.ProgramMethodSet;
-import com.android.tools.r8.utils.exceptions.Unreachable;
+import com.android.tools.r8.utils.internal.exceptions.Unreachable;
 import java.util.IdentityHashMap;
 import java.util.Map;
 import java.util.function.BiConsumer;

@@ -19,7 +19,7 @@ import com.android.tools.r8.references.Reference;
 import com.android.tools.r8.shaking.ProguardKeepAttributes;
 import com.android.tools.r8.transformers.ClassTransformer;
 import com.android.tools.r8.utils.AndroidApiLevel;
-import com.android.tools.r8.utils.StreamUtils;
+import com.android.tools.r8.utils.internal.StreamUtils;
 import com.android.tools.r8.utils.ZipUtils;
 import com.android.tools.r8.utils.codeinspector.AnnotationSubject;
 import com.android.tools.r8.utils.codeinspector.CodeInspector;

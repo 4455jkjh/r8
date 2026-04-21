@@ -4,7 +4,7 @@
 package com.android.tools.r8.ir.code;
 
 import com.android.tools.r8.ir.analysis.type.TypeElement;
-import com.android.tools.r8.utils.exceptions.Unreachable;
+import com.android.tools.r8.utils.internal.exceptions.Unreachable;
 import java.util.function.Predicate;
 
 // Value that has a fixed register allocated. These are used for inserting spill, restore, and phi

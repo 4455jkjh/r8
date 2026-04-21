@@ -30,7 +30,7 @@ import com.android.tools.r8.naming.mappinginformation.ResidualSignatureMappingIn
 import com.android.tools.r8.shaking.KeepInfoCollection;
 import com.android.tools.r8.utils.AndroidApp;
 import com.android.tools.r8.utils.InternalOptions;
-import com.android.tools.r8.utils.ObjectUtils;
+import com.android.tools.r8.utils.internal.ObjectUtils;
 import com.android.tools.r8.utils.OriginalSourceFiles;
 import com.android.tools.r8.utils.ThreadUtils;
 import com.android.tools.r8.utils.positions.MappedPositionToClassNameMapperBuilder.MappedPositionToClassNamingBuilder;

@@ -5,10 +5,10 @@
 package com.android.tools.r8.graph;
 
 import static com.android.tools.r8.features.ClassToFeatureSplitMap.createEmptyClassToFeatureSplitMap;
-import static com.android.tools.r8.utils.BiPredicateUtils.alwaysFalse;
-import static com.android.tools.r8.utils.TraversalContinuation.breakIf;
-import static com.android.tools.r8.utils.TraversalContinuation.doBreak;
-import static com.android.tools.r8.utils.TraversalContinuation.doContinue;
+import static com.android.tools.r8.utils.internal.BiPredicateUtils.alwaysFalse;
+import static com.android.tools.r8.utils.internal.TraversalContinuation.breakIf;
+import static com.android.tools.r8.utils.internal.TraversalContinuation.doBreak;
+import static com.android.tools.r8.utils.internal.TraversalContinuation.doContinue;
 
 import com.android.tools.r8.features.ClassToFeatureSplitMap;
 import com.android.tools.r8.ir.analysis.type.InterfaceCollection;
@@ -19,9 +19,9 @@ import com.android.tools.r8.shaking.MissingClasses;
 import com.android.tools.r8.synthesis.CommittedItems;
 import com.android.tools.r8.synthesis.SyntheticItems;
 import com.android.tools.r8.synthesis.SyntheticItems.GlobalSyntheticsStrategy;
-import com.android.tools.r8.utils.TraversalContinuation;
-import com.android.tools.r8.utils.TriFunction;
-import com.android.tools.r8.utils.collections.Pair;
+import com.android.tools.r8.utils.internal.TraversalContinuation;
+import com.android.tools.r8.utils.internal.TriFunction;
+import com.android.tools.r8.utils.internal.collections.Pair;
 import com.android.tools.r8.utils.collections.WorkList;
 import com.android.tools.r8.utils.timing.Timing;
 import com.google.common.collect.Sets;

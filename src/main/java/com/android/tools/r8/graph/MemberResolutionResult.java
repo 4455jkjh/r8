@@ -4,7 +4,7 @@
 
 package com.android.tools.r8.graph;
 
-import com.android.tools.r8.utils.OptionalBool;
+import com.android.tools.r8.utils.internal.OptionalBool;
 
 public abstract class MemberResolutionResult<
     D extends DexEncodedMember<D, R>, R extends DexMember<D, R>> {

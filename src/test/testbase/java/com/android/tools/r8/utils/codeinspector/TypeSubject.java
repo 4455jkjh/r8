@@ -6,7 +6,7 @@ package com.android.tools.r8.utils.codeinspector;
 
 import com.android.tools.r8.graph.DexType;
 import com.android.tools.r8.references.TypeReference;
-import com.android.tools.r8.utils.exceptions.Unreachable;
+import com.android.tools.r8.utils.internal.exceptions.Unreachable;
 
 public class TypeSubject extends Subject {
 

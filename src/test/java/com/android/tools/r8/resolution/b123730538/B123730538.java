@@ -18,7 +18,7 @@ import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.resolution.b123730538.runner.PublicClassExtender;
 import com.android.tools.r8.resolution.b123730538.runner.Runner;
 import com.android.tools.r8.resolution.b123730538.sub.PublicClass;
-import com.android.tools.r8.utils.BooleanUtils;
+import com.android.tools.r8.utils.internal.BooleanUtils;
 import com.android.tools.r8.utils.StringUtils;
 import com.android.tools.r8.utils.codeinspector.ClassSubject;
 import com.android.tools.r8.utils.codeinspector.CodeInspector;

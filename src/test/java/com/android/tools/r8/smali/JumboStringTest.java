@@ -14,7 +14,7 @@ import com.android.tools.r8.utils.StringUtils;
 import com.android.tools.r8.utils.codeinspector.ClassSubject;
 import com.android.tools.r8.utils.codeinspector.InstructionSubject;
 import com.android.tools.r8.utils.codeinspector.MethodSubject;
-import com.android.tools.r8.utils.collections.Pair;
+import com.android.tools.r8.utils.internal.collections.Pair;
 import com.google.common.collect.ImmutableList;
 import org.junit.BeforeClass;
 import org.junit.Test;

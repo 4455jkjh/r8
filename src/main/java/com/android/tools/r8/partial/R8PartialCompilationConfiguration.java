@@ -16,7 +16,7 @@ import com.android.tools.r8.partial.predicate.R8PartialPredicateCollection;
 import com.android.tools.r8.partial.predicate.UnnamedPackageMatcher;
 import com.android.tools.r8.references.ClassReference;
 import com.android.tools.r8.references.PackageReference;
-import com.android.tools.r8.utils.ConsumerUtils;
+import com.android.tools.r8.utils.internal.ConsumerUtils;
 import com.android.tools.r8.utils.DescriptorUtils;
 import com.android.tools.r8.utils.InternalOptions;
 import com.android.tools.r8.utils.ListUtils;

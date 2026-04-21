@@ -28,7 +28,7 @@ import com.android.tools.r8.references.Reference;
 import com.android.tools.r8.shaking.WhyAreYouKeepingConsumer;
 import com.android.tools.r8.synthesis.SyntheticItemsTestUtils;
 import com.android.tools.r8.utils.AndroidApiLevel;
-import com.android.tools.r8.utils.Box;
+import com.android.tools.r8.utils.internal.Box;
 import com.android.tools.r8.utils.DescriptorUtils;
 import com.android.tools.r8.utils.FileUtils;
 import com.android.tools.r8.utils.StringUtils;

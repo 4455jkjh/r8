@@ -42,7 +42,7 @@ import com.android.tools.r8.ir.conversion.CfState.Slot;
 import com.android.tools.r8.ir.conversion.CfState.Snapshot;
 import com.android.tools.r8.ir.conversion.IRBuilder.BlockInfo;
 import com.android.tools.r8.utils.InternalOutputMode;
-import com.android.tools.r8.utils.exceptions.Unreachable;
+import com.android.tools.r8.utils.internal.exceptions.Unreachable;
 import it.unimi.dsi.fastutil.ints.Int2ObjectSortedMap;
 import it.unimi.dsi.fastutil.ints.Int2ReferenceMap;
 import it.unimi.dsi.fastutil.ints.Int2ReferenceMap.Entry;

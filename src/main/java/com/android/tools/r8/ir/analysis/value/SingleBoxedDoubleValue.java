@@ -12,7 +12,7 @@ import com.android.tools.r8.ir.code.Instruction;
 import com.android.tools.r8.ir.code.InvokeStatic;
 import com.android.tools.r8.ir.code.MaterializingInstructionsInfo;
 import com.android.tools.r8.ir.code.ValueFactory;
-import com.android.tools.r8.utils.LongUtils;
+import com.android.tools.r8.utils.internal.LongUtils;
 
 public class SingleBoxedDoubleValue extends SingleBoxedPrimitiveValue {
 

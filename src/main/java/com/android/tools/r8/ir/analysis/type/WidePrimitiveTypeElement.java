@@ -3,7 +3,7 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8.ir.analysis.type;
 
-import com.android.tools.r8.utils.exceptions.Unreachable;
+import com.android.tools.r8.utils.internal.exceptions.Unreachable;
 
 /** A {@link TypeElement} that abstracts primitive types, which fit in 64 bits. */
 public class WidePrimitiveTypeElement extends PrimitiveTypeElement {

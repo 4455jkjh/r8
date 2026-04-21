@@ -10,7 +10,7 @@ import static org.junit.Assume.assumeFalse;
 import com.android.tools.r8.PartialCompilationTestParameters;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.utils.AndroidApiLevel;
-import com.android.tools.r8.utils.BooleanUtils;
+import com.android.tools.r8.utils.internal.BooleanUtils;
 import java.nio.file.Path;
 import java.util.List;
 import org.junit.BeforeClass;

@@ -4,8 +4,8 @@
 
 package com.android.tools.r8.desugar.desugaredlibrary.test;
 
-import static com.android.tools.r8.utils.ConsumerUtils.emptyConsumer;
-import static com.android.tools.r8.utils.ConsumerUtils.emptyThrowingConsumer;
+import static com.android.tools.r8.utils.internal.ConsumerUtils.emptyConsumer;
+import static com.android.tools.r8.utils.internal.ConsumerUtils.emptyThrowingConsumer;
 
 import com.android.tools.r8.ClassFileResourceProvider;
 import com.android.tools.r8.CompilationFailedException;
@@ -38,7 +38,7 @@ import com.android.tools.r8.tracereferences.TraceReferences;
 import com.android.tools.r8.utils.FileUtils;
 import com.android.tools.r8.utils.InternalOptions;
 import com.android.tools.r8.utils.StringUtils;
-import com.android.tools.r8.utils.ThrowingConsumer;
+import com.android.tools.r8.utils.internal.ThrowingConsumer;
 import com.android.tools.r8.utils.codeinspector.VerticallyMergedClassesInspector;
 import com.google.common.base.Charsets;
 import java.io.IOException;

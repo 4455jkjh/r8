@@ -7,7 +7,7 @@ package com.android.tools.r8.shaking;
 import com.android.tools.r8.graph.Definition;
 import com.android.tools.r8.graph.DexAnnotation;
 import com.android.tools.r8.graph.DexAnnotation.AnnotatedKind;
-import com.android.tools.r8.utils.ObjectUtils;
+import com.android.tools.r8.utils.internal.ObjectUtils;
 import java.util.List;
 
 public abstract class AnnotationMatchResult {

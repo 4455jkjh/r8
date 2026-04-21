@@ -13,7 +13,7 @@ import com.android.tools.r8.TestRuntime.CfVm;
 import com.android.tools.r8.transformers.ClassFileTransformer.MethodPredicate;
 import com.android.tools.r8.transformers.MethodTransformer;
 import com.android.tools.r8.utils.AndroidApiLevel;
-import com.android.tools.r8.utils.BooleanUtils;
+import com.android.tools.r8.utils.internal.BooleanUtils;
 import com.android.tools.r8.utils.StringUtils;
 import java.util.List;
 import org.junit.Test;

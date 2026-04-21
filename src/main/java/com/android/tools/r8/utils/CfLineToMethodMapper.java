@@ -13,6 +13,7 @@ import com.android.tools.r8.kotlin.KotlinSourceDebugExtensionParser.KotlinSource
 import com.android.tools.r8.references.ClassReference;
 import com.android.tools.r8.references.Reference;
 import com.android.tools.r8.utils.ArchiveResourceProvider.ArchiveResourceProviderHelper;
+import com.android.tools.r8.utils.internal.StreamUtils;
 import com.android.tools.r8.utils.timing.Timing;
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
 import it.unimi.dsi.fastutil.ints.Int2ObjectMaps;

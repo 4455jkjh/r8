@@ -4,7 +4,7 @@
 package com.android.tools.r8.experimental.graphinfo;
 
 import com.android.tools.r8.keepanno.annotations.KeepForApi;
-import com.android.tools.r8.utils.ObjectUtils;
+import com.android.tools.r8.utils.internal.ObjectUtils;
 
 @KeepForApi
 public final class AnnotationGraphNode extends GraphNode {

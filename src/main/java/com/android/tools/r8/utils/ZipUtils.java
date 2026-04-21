@@ -16,6 +16,7 @@ import com.android.tools.r8.androidapi.AndroidApiDataAccess;
 import com.android.tools.r8.errors.CompilationError;
 import com.android.tools.r8.references.ClassReference;
 import com.android.tools.r8.references.Reference;
+import com.android.tools.r8.utils.internal.BooleanBox;
 import com.google.common.io.ByteStreams;
 import com.google.common.io.Closer;
 import java.io.BufferedOutputStream;

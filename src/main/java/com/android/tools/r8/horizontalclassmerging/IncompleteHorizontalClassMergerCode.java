@@ -17,7 +17,7 @@ import com.android.tools.r8.ir.code.IRCode;
 import com.android.tools.r8.ir.conversion.MethodConversionOptions.MutableMethodConversionOptions;
 import com.android.tools.r8.lightir.LirCode;
 import com.android.tools.r8.utils.RetracerForCodePrinting;
-import com.android.tools.r8.utils.exceptions.Unreachable;
+import com.android.tools.r8.utils.internal.exceptions.Unreachable;
 
 public abstract class IncompleteHorizontalClassMergerCode extends Code {
 

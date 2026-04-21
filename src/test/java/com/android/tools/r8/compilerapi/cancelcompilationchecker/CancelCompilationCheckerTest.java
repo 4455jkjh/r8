@@ -17,7 +17,7 @@ import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.compilerapi.CompilerApiTest;
 import com.android.tools.r8.compilerapi.CompilerApiTestRunner;
 import com.android.tools.r8.origin.Origin;
-import com.android.tools.r8.utils.IntBox;
+import com.android.tools.r8.utils.internal.IntBox;
 import java.util.function.BooleanSupplier;
 import org.junit.Test;
 

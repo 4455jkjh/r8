@@ -5,7 +5,7 @@ package com.android.tools.r8.shaking;
 
 import com.android.tools.r8.origin.Origin;
 import com.android.tools.r8.position.Position;
-import com.android.tools.r8.utils.exceptions.Unreachable;
+import com.android.tools.r8.utils.internal.exceptions.Unreachable;
 import java.util.List;
 
 public class ReprocessClassInitializerRule extends ProguardConfigurationRule {

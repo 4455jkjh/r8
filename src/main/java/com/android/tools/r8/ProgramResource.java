@@ -6,7 +6,7 @@ package com.android.tools.r8;
 import com.android.tools.r8.keepanno.annotations.KeepForApi;
 import com.android.tools.r8.origin.Origin;
 import com.android.tools.r8.origin.PathOrigin;
-import com.android.tools.r8.utils.StreamUtils;
+import com.android.tools.r8.utils.internal.StreamUtils;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;

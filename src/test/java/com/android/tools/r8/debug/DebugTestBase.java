@@ -19,7 +19,7 @@ import com.android.tools.r8.naming.MemberNaming.Signature;
 import com.android.tools.r8.references.MethodReference;
 import com.android.tools.r8.utils.DescriptorUtils;
 import com.android.tools.r8.utils.TestDescriptionWatcher;
-import com.android.tools.r8.utils.exceptions.Unreachable;
+import com.android.tools.r8.utils.internal.exceptions.Unreachable;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import it.unimi.dsi.fastutil.longs.LongArrayList;

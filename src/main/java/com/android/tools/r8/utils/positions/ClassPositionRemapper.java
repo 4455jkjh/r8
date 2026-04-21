@@ -17,7 +17,7 @@ import com.android.tools.r8.utils.CfLineToMethodMapper;
 import com.android.tools.r8.utils.DescriptorUtils;
 import com.android.tools.r8.utils.InternalOptions;
 import com.android.tools.r8.utils.KotlinSourceDebugExtensionCollection;
-import com.android.tools.r8.utils.collections.Pair;
+import com.android.tools.r8.utils.internal.collections.Pair;
 import java.util.Map;
 import java.util.Map.Entry;
 

@@ -19,7 +19,7 @@ import com.android.tools.r8.graph.DexProgramClass;
 import com.android.tools.r8.origin.Origin;
 import com.android.tools.r8.utils.AndroidApp;
 import com.android.tools.r8.utils.codeinspector.CodeInspector;
-import com.android.tools.r8.utils.exceptions.Unimplemented;
+import com.android.tools.r8.utils.internal.exceptions.Unimplemented;
 import com.google.common.collect.Sets;
 import it.unimi.dsi.fastutil.ints.IntOpenHashSet;
 import it.unimi.dsi.fastutil.ints.IntSet;

@@ -12,7 +12,7 @@ import com.android.tools.r8.graph.DexType;
 import com.android.tools.r8.origin.Origin;
 import com.android.tools.r8.references.Reference;
 import com.android.tools.r8.utils.InternalGlobalSyntheticsProgramProvider.GlobalsEntryOrigin;
-import com.android.tools.r8.utils.exceptions.Unreachable;
+import com.android.tools.r8.utils.internal.exceptions.Unreachable;
 import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
 import java.util.Collection;

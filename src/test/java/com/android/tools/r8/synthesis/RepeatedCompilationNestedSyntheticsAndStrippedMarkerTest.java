@@ -19,7 +19,7 @@ import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.origin.Origin;
 import com.android.tools.r8.references.ClassReference;
 import com.android.tools.r8.utils.AndroidApiLevel;
-import com.android.tools.r8.utils.BooleanBox;
+import com.android.tools.r8.utils.internal.BooleanBox;
 import com.google.common.collect.ImmutableSet;
 import java.util.Collections;
 import java.util.HashMap;

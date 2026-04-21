@@ -6,7 +6,7 @@ package com.android.tools.r8.graph;
 import static com.google.common.base.Predicates.alwaysTrue;
 
 import com.android.tools.r8.utils.IterableUtils;
-import com.android.tools.r8.utils.TraversalContinuation;
+import com.android.tools.r8.utils.internal.TraversalContinuation;
 import it.unimi.dsi.fastutil.objects.Object2ReferenceLinkedOpenHashMap;
 import java.util.ArrayList;
 import java.util.Collection;

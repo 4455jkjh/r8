@@ -12,7 +12,7 @@ import com.android.tools.r8.graph.DexEncodedMethod;
 import com.android.tools.r8.graph.DexProgramClass;
 import com.android.tools.r8.profile.startup.profile.StartupProfile;
 import com.android.tools.r8.utils.InternalOptions;
-import com.android.tools.r8.utils.exceptions.Unimplemented;
+import com.android.tools.r8.utils.internal.exceptions.Unimplemented;
 import it.unimi.dsi.fastutil.objects.Reference2IntMap;
 import it.unimi.dsi.fastutil.objects.Reference2IntOpenHashMap;
 import java.util.ArrayList;

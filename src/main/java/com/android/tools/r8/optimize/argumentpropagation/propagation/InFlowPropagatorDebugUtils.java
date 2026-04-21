@@ -10,7 +10,7 @@ import com.android.tools.r8.optimize.argumentpropagation.codescanner.ConcreteVal
 import com.android.tools.r8.optimize.argumentpropagation.codescanner.FlowGraphStateProvider;
 import com.android.tools.r8.optimize.argumentpropagation.codescanner.ValueState;
 import com.android.tools.r8.utils.StringUtils;
-import com.android.tools.r8.utils.TraversalContinuation;
+import com.android.tools.r8.utils.internal.TraversalContinuation;
 import com.android.tools.r8.utils.collections.WorkList;
 import java.util.ArrayList;
 import java.util.List;

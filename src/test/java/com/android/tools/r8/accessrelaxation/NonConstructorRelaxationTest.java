@@ -18,7 +18,7 @@ import com.android.tools.r8.accessrelaxation.privatestatic.B;
 import com.android.tools.r8.accessrelaxation.privatestatic.BB;
 import com.android.tools.r8.accessrelaxation.privatestatic.C;
 import com.android.tools.r8.naming.MemberNaming.MethodSignature;
-import com.android.tools.r8.utils.BooleanUtils;
+import com.android.tools.r8.utils.internal.BooleanUtils;
 import com.android.tools.r8.utils.StringUtils;
 import com.android.tools.r8.utils.codeinspector.CodeInspector;
 import com.google.common.collect.ImmutableList;

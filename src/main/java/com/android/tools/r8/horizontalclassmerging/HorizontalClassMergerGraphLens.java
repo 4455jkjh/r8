@@ -22,7 +22,7 @@ import com.android.tools.r8.ir.code.InvokeType;
 import com.android.tools.r8.ir.conversion.ExtraConstantIntParameter;
 import com.android.tools.r8.ir.conversion.ExtraParameter;
 import com.android.tools.r8.utils.IterableUtils;
-import com.android.tools.r8.utils.OptionalBool;
+import com.android.tools.r8.utils.internal.OptionalBool;
 import com.android.tools.r8.utils.collections.BidirectionalManyToOneHashMap;
 import com.android.tools.r8.utils.collections.BidirectionalManyToOneMap;
 import com.android.tools.r8.utils.collections.BidirectionalManyToOneRepresentativeHashMap;

@@ -100,7 +100,7 @@ import com.android.tools.r8.references.ClassReference;
 import com.android.tools.r8.references.Reference;
 import com.android.tools.r8.repackaging.RepackagingLens;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
-import com.android.tools.r8.shaking.Enqueuer;
+import com.android.tools.r8.shaking.Enqueuer.Mode;
 import com.android.tools.r8.shaking.GlobalKeepInfoConfiguration;
 import com.android.tools.r8.shaking.KeepSpecificationSource;
 import com.android.tools.r8.shaking.ProguardConfiguration;
@@ -112,9 +112,14 @@ import com.android.tools.r8.tracereferences.TraceReferencesNativeReferencesConsu
 import com.android.tools.r8.tracereferences.TraceReferencesOptions;
 import com.android.tools.r8.utils.IROrdering.IdentityIROrdering;
 import com.android.tools.r8.utils.IROrdering.NondeterministicIROrdering;
-import com.android.tools.r8.utils.collections.Pair;
+import com.android.tools.r8.utils.internal.ConsumerUtils;
+import com.android.tools.r8.utils.internal.QuadConsumer;
+import com.android.tools.r8.utils.internal.ThrowingConsumer;
+import com.android.tools.r8.utils.internal.TriConsumer;
+import com.android.tools.r8.utils.internal.TriFunction;
+import com.android.tools.r8.utils.internal.collections.Pair;
 import com.android.tools.r8.utils.collections.ProgramMethodSet;
-import com.android.tools.r8.utils.exceptions.Unreachable;
+import com.android.tools.r8.utils.internal.exceptions.Unreachable;
 import com.android.tools.r8.utils.structural.Ordered;
 import com.android.tools.r8.utils.timing.Timing;
 import com.android.tools.r8.verticalclassmerging.VerticalClassMergerOptions;
@@ -2387,7 +2392,7 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
       this.mixedSectionLayoutStrategyInspector = mixedSectionLayoutStrategyInspector;
     }
 
-    public TriConsumer<AppInfoWithLiveness, Enqueuer.Mode, Timing> enqueuerInspector = null;
+    public TriConsumer<AppInfoWithLiveness, Mode, Timing> enqueuerInspector = null;
 
     public Consumer<String> processingContextsConsumer = null;
 

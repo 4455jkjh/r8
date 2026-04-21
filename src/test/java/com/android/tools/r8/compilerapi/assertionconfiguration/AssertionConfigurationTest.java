@@ -22,7 +22,7 @@ import com.android.tools.r8.compilerapi.mockdata.MockClassWithAssertion;
 import com.android.tools.r8.origin.Origin;
 import com.android.tools.r8.references.MethodReference;
 import com.android.tools.r8.references.Reference;
-import com.android.tools.r8.utils.ThrowingBiConsumer;
+import com.android.tools.r8.utils.internal.ThrowingBiConsumer;
 import com.android.tools.r8.utils.codeinspector.CodeInspector;
 import com.android.tools.r8.utils.codeinspector.InstructionSubject;
 import com.android.tools.r8.utils.codeinspector.InvokeInstructionSubject;

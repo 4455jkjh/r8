@@ -13,7 +13,7 @@ import com.android.tools.r8.dex.code.DexShlLong2Addr;
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.ir.analysis.value.AbstractValue;
 import com.android.tools.r8.ir.analysis.value.arithmetic.AbstractCalculator;
-import com.android.tools.r8.utils.exceptions.Unreachable;
+import com.android.tools.r8.utils.internal.exceptions.Unreachable;
 
 public class Shl extends LogicalBinop {
 

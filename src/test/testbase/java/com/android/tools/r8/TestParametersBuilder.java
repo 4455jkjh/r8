@@ -11,7 +11,7 @@ import com.android.tools.r8.TestRuntime.DexRuntime;
 import com.android.tools.r8.TestRuntime.NoneRuntime;
 import com.android.tools.r8.ToolHelper.DexVm;
 import com.android.tools.r8.utils.AndroidApiLevel;
-import com.android.tools.r8.utils.BooleanBox;
+import com.android.tools.r8.utils.internal.BooleanBox;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedHashMap;

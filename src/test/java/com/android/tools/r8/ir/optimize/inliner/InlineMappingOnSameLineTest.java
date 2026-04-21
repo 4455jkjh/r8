@@ -13,7 +13,7 @@ import com.android.tools.r8.R8TestBuilder;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.naming.retrace.RetraceTestBase;
 import com.android.tools.r8.naming.retrace.StackTrace;
-import com.android.tools.r8.utils.BooleanUtils;
+import com.android.tools.r8.utils.internal.BooleanUtils;
 import com.google.common.collect.ImmutableList;
 import java.util.Collection;
 import org.junit.Test;

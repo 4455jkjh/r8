@@ -13,7 +13,7 @@ import com.android.tools.r8.R8TestBuilder;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.ToolHelper;
-import com.android.tools.r8.utils.BooleanUtils;
+import com.android.tools.r8.utils.internal.BooleanUtils;
 import com.google.common.collect.ImmutableList;
 import java.util.List;
 import org.junit.Test;

@@ -22,7 +22,7 @@ import com.android.tools.r8.shaking.AppInfoWithLiveness;
 import com.android.tools.r8.utils.DepthFirstSearchWorkListBase.DepthFirstSearchWorkList;
 import com.android.tools.r8.utils.ListUtils;
 import com.android.tools.r8.utils.MethodSignatureEquivalence;
-import com.android.tools.r8.utils.TraversalContinuation;
+import com.android.tools.r8.utils.internal.TraversalContinuation;
 import com.android.tools.r8.utils.collections.DexMethodSignatureSet;
 import com.android.tools.r8.utils.timing.Timing;
 import com.google.common.base.Equivalence;

@@ -7,7 +7,7 @@ package com.android.tools.r8.rewrite.assertions;
 import com.android.tools.r8.AssertionsConfiguration;
 import com.android.tools.r8.KotlinTestParameters;
 import com.android.tools.r8.TestParameters;
-import com.android.tools.r8.utils.BooleanUtils;
+import com.android.tools.r8.utils.internal.BooleanUtils;
 import java.util.Collection;
 import org.junit.Test;
 import org.junit.runner.RunWith;

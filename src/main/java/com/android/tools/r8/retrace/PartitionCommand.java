@@ -9,7 +9,7 @@ import com.android.tools.r8.DiagnosticsHandler;
 import com.android.tools.r8.PartitionMapConsumer;
 import com.android.tools.r8.keepanno.annotations.KeepForApi;
 import com.android.tools.r8.origin.Origin;
-import com.android.tools.r8.utils.Box;
+import com.android.tools.r8.utils.internal.Box;
 import com.android.tools.r8.utils.ExceptionUtils;
 import com.android.tools.r8.utils.Reporter;
 

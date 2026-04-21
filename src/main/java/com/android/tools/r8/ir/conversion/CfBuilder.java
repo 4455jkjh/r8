@@ -57,7 +57,7 @@ import com.android.tools.r8.ir.optimize.PhiOptimizations;
 import com.android.tools.r8.ir.optimize.peepholes.BasicBlockMuncher;
 import com.android.tools.r8.utils.ListUtils;
 import com.android.tools.r8.utils.collections.WorkList;
-import com.android.tools.r8.utils.exceptions.Unreachable;
+import com.android.tools.r8.utils.internal.exceptions.Unreachable;
 import com.android.tools.r8.utils.timing.Timing;
 import com.google.common.collect.Sets;
 import it.unimi.dsi.fastutil.ints.Int2ReferenceMap;

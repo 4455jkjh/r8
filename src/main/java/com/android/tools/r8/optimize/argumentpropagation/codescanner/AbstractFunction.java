@@ -6,7 +6,7 @@ package com.android.tools.r8.optimize.argumentpropagation.codescanner;
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.DexType;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
-import com.android.tools.r8.utils.TraversalContinuation;
+import com.android.tools.r8.utils.internal.TraversalContinuation;
 
 public interface AbstractFunction extends InFlow {
 

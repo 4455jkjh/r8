@@ -24,7 +24,7 @@ import com.android.tools.r8.graph.DexItemFactory;
 import com.android.tools.r8.references.Reference;
 import com.android.tools.r8.shaking.KeepInfoCollectionExported;
 import com.android.tools.r8.utils.AndroidApiLevel;
-import com.android.tools.r8.utils.Box;
+import com.android.tools.r8.utils.internal.Box;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;

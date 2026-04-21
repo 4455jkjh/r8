@@ -4,6 +4,8 @@
 package com.android.tools.r8.utils;
 
 import com.android.tools.r8.graph.DexType;
+import com.android.tools.r8.utils.internal.BooleanUtils;
+import com.android.tools.r8.utils.internal.IntObjToObjFunction;
 import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Arrays;

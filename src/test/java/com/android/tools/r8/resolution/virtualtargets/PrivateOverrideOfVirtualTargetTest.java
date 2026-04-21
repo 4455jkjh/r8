@@ -20,7 +20,7 @@ import com.android.tools.r8.graph.LookupResult;
 import com.android.tools.r8.graph.MethodResolutionResult;
 import com.android.tools.r8.resolution.virtualtargets.package_a.A;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
-import com.android.tools.r8.utils.Box;
+import com.android.tools.r8.utils.internal.Box;
 import com.android.tools.r8.utils.DescriptorUtils;
 import com.android.tools.r8.utils.timing.Timing;
 import com.google.common.collect.ImmutableSet;

@@ -38,7 +38,7 @@ import com.android.tools.r8.ir.desugar.desugaredlibrary.specificationconversion.
 import com.android.tools.r8.ir.desugar.desugaredlibrary.specificationconversion.LegacyToHumanSpecificationConverter;
 import com.android.tools.r8.origin.Origin;
 import com.android.tools.r8.utils.AndroidApiLevel;
-import com.android.tools.r8.utils.Box;
+import com.android.tools.r8.utils.internal.Box;
 import com.android.tools.r8.utils.InternalOptions;
 import com.android.tools.r8.utils.timing.Timing;
 import java.io.IOException;

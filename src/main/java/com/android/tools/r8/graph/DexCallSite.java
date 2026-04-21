@@ -10,7 +10,7 @@ import com.android.tools.r8.graph.DexValue.DexValueMethodHandle;
 import com.android.tools.r8.graph.DexValue.DexValueMethodType;
 import com.android.tools.r8.graph.DexValue.DexValueString;
 import com.android.tools.r8.lightir.LirConstant;
-import com.android.tools.r8.utils.exceptions.Unreachable;
+import com.android.tools.r8.utils.internal.exceptions.Unreachable;
 import com.android.tools.r8.utils.structural.CompareToVisitor;
 import com.android.tools.r8.utils.structural.HashingVisitor;
 import com.android.tools.r8.utils.structural.StructuralItem;

@@ -12,6 +12,7 @@ import com.android.tools.r8.references.FieldReference;
 import com.android.tools.r8.references.MethodReference;
 import com.android.tools.r8.references.Reference;
 import com.android.tools.r8.references.TypeReference;
+import com.android.tools.r8.utils.internal.CompareResult;
 import java.util.Comparator;
 
 public class FieldReferenceUtils {

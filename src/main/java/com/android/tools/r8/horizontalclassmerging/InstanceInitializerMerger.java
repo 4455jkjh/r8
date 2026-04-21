@@ -24,7 +24,7 @@ import com.android.tools.r8.ir.conversion.ExtraConstantIntParameter;
 import com.android.tools.r8.ir.conversion.ExtraUnusedParameter;
 import com.android.tools.r8.profile.rewriting.ProfileCollectionAdditions;
 import com.android.tools.r8.utils.ArrayUtils;
-import com.android.tools.r8.utils.BooleanUtils;
+import com.android.tools.r8.utils.internal.BooleanUtils;
 import com.android.tools.r8.utils.ListUtils;
 import com.android.tools.r8.utils.SetUtils;
 import com.android.tools.r8.utils.structural.Ordered;

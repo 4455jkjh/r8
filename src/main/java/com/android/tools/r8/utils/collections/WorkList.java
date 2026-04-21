@@ -5,7 +5,7 @@
 package com.android.tools.r8.utils.collections;
 
 import com.android.tools.r8.utils.SetUtils;
-import com.android.tools.r8.utils.TraversalContinuation;
+import com.android.tools.r8.utils.internal.TraversalContinuation;
 import com.google.common.collect.Sets;
 import java.util.ArrayDeque;
 import java.util.Deque;

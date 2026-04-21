@@ -15,7 +15,7 @@ import com.android.tools.r8.naming.retrace.StackTrace;
 import com.android.tools.r8.synthesis.SyntheticItemsTestUtils;
 import com.android.tools.r8.utils.AndroidApp;
 import com.android.tools.r8.utils.StringUtils;
-import com.android.tools.r8.utils.ThrowingConsumer;
+import com.android.tools.r8.utils.internal.ThrowingConsumer;
 import com.android.tools.r8.utils.codeinspector.CodeInspector;
 import java.io.IOException;
 import java.io.PrintStream;

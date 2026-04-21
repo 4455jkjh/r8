@@ -8,8 +8,8 @@ import static com.android.tools.r8.shaking.KeepInfoCollectionExported.KeepAnnota
 
 import com.android.tools.r8.graph.DexAnnotation;
 import com.android.tools.r8.graph.DexType;
-import com.android.tools.r8.utils.ObjectUtils;
-import com.android.tools.r8.utils.exceptions.Unreachable;
+import com.android.tools.r8.utils.internal.ObjectUtils;
+import com.android.tools.r8.utils.internal.exceptions.Unreachable;
 import java.util.ArrayList;
 import java.util.IdentityHashMap;
 import java.util.List;

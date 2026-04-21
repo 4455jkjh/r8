@@ -4,14 +4,14 @@
 
 package com.android.tools.r8.profile.art;
 
-import static com.android.tools.r8.utils.ConsumerUtils.emptyConsumer;
+import static com.android.tools.r8.utils.internal.ConsumerUtils.emptyConsumer;
 
 import com.android.tools.r8.TextInputStream;
 import com.android.tools.r8.origin.Origin;
 import com.android.tools.r8.origin.PathOrigin;
 import com.android.tools.r8.references.ClassReference;
 import com.android.tools.r8.references.MethodReference;
-import com.android.tools.r8.utils.Box;
+import com.android.tools.r8.utils.internal.Box;
 import com.android.tools.r8.utils.ClassReferenceUtils;
 import com.android.tools.r8.utils.MethodReferenceUtils;
 import com.android.tools.r8.utils.UTF8TextInputStream;

@@ -21,7 +21,7 @@ import com.android.tools.r8.annotations.testclasses.NotNullTestRuntime;
 import com.android.tools.r8.annotations.testclasses.SuperInterface;
 import com.android.tools.r8.annotations.testclasses.TestClassWithTypeAndGenericAnnotations;
 import com.android.tools.r8.references.ClassReference;
-import com.android.tools.r8.utils.Box;
+import com.android.tools.r8.utils.internal.Box;
 import com.android.tools.r8.utils.StringUtils;
 import com.android.tools.r8.utils.codeinspector.ClassSubject;
 import com.android.tools.r8.utils.codeinspector.FieldSubject;

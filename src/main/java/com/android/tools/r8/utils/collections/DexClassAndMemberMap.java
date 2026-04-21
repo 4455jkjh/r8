@@ -5,11 +5,11 @@
 package com.android.tools.r8.utils.collections;
 
 import com.android.tools.r8.graph.DexClassAndMember;
-import com.android.tools.r8.utils.BiForEachable;
+import com.android.tools.r8.utils.internal.BiForEachable;
 import com.android.tools.r8.utils.ListUtils;
-import com.android.tools.r8.utils.TraversalContinuation;
-import com.android.tools.r8.utils.TriPredicate;
-import com.android.tools.r8.utils.exceptions.Unimplemented;
+import com.android.tools.r8.utils.internal.TraversalContinuation;
+import com.android.tools.r8.utils.internal.TriPredicate;
+import com.android.tools.r8.utils.internal.exceptions.Unimplemented;
 import com.google.common.base.Equivalence.Wrapper;
 import java.util.ArrayList;
 import java.util.Collection;

@@ -21,7 +21,7 @@ import com.android.tools.r8.utils.CollectionUtils;
 import com.android.tools.r8.utils.IterableUtils;
 import com.android.tools.r8.utils.IteratorUtils;
 import com.android.tools.r8.utils.ListUtils;
-import com.android.tools.r8.utils.TraversalContinuation;
+import com.android.tools.r8.utils.internal.TraversalContinuation;
 import com.android.tools.r8.utils.collections.WorkList;
 import com.google.common.collect.Iterables;
 import java.util.ArrayDeque;

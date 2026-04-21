@@ -10,7 +10,7 @@ import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.references.MethodReference;
 import com.android.tools.r8.references.Reference;
-import com.android.tools.r8.utils.IntBox;
+import com.android.tools.r8.utils.internal.IntBox;
 import com.android.tools.r8.utils.InternalOptions.LineNumberOptimization;
 import org.junit.Test;
 import org.junit.runner.RunWith;

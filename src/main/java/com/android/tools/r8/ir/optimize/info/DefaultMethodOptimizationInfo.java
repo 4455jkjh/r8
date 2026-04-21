@@ -19,7 +19,7 @@ import com.android.tools.r8.ir.optimize.info.initializer.InstanceInitializerInfo
 import com.android.tools.r8.optimize.argumentpropagation.codescanner.AbstractFunction;
 import com.android.tools.r8.shaking.MaximumRemovedAndroidLogLevelRule;
 import com.android.tools.r8.utils.InternalOptions;
-import com.android.tools.r8.utils.OptionalBool;
+import com.android.tools.r8.utils.internal.OptionalBool;
 import com.google.common.collect.ImmutableSet;
 import java.util.BitSet;
 import java.util.Set;

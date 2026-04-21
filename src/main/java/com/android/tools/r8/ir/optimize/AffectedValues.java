@@ -4,7 +4,7 @@
 
 package com.android.tools.r8.ir.optimize;
 
-import static com.android.tools.r8.utils.ConsumerUtils.emptyConsumer;
+import static com.android.tools.r8.utils.internal.ConsumerUtils.emptyConsumer;
 
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.ir.analysis.type.TypeAnalysis;

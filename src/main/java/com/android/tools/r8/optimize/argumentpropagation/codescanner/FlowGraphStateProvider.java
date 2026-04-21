@@ -12,7 +12,7 @@ import com.android.tools.r8.ir.optimize.info.MethodOptimizationInfo;
 import com.android.tools.r8.optimize.argumentpropagation.propagation.FlowGraph;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
 import com.android.tools.r8.utils.AssertionUtils;
-import com.android.tools.r8.utils.exceptions.Unreachable;
+import com.android.tools.r8.utils.internal.exceptions.Unreachable;
 import java.util.function.Supplier;
 
 public interface FlowGraphStateProvider {

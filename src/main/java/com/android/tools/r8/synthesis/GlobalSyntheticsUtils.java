@@ -16,7 +16,7 @@ import com.android.tools.r8.utils.ArchiveBuilder;
 import com.android.tools.r8.utils.DirectoryBuilder;
 import com.android.tools.r8.utils.OutputBuilder;
 import com.android.tools.r8.utils.StringDiagnostic;
-import com.android.tools.r8.utils.exceptions.Unreachable;
+import com.android.tools.r8.utils.internal.exceptions.Unreachable;
 import java.nio.file.Files;
 import java.nio.file.Path;
 

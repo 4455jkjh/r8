@@ -10,7 +10,7 @@ import com.android.tools.r8.graph.DexItemFactory;
 import com.android.tools.r8.graph.DexReference;
 import com.android.tools.r8.graph.DexType;
 import com.android.tools.r8.utils.AndroidApiLevel;
-import com.android.tools.r8.utils.ConsumerUtils;
+import com.android.tools.r8.utils.internal.ConsumerUtils;
 import com.android.tools.r8.utils.SetUtils;
 import com.google.common.collect.ImmutableList;
 import java.util.List;

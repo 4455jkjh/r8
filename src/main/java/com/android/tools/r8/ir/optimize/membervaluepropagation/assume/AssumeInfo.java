@@ -13,7 +13,7 @@ import com.android.tools.r8.ir.analysis.type.Nullability;
 import com.android.tools.r8.ir.analysis.value.AbstractValue;
 import com.android.tools.r8.ir.analysis.value.SingleFieldValue;
 import com.android.tools.r8.shaking.ProguardConfigurationRule;
-import com.android.tools.r8.utils.ObjectUtils;
+import com.android.tools.r8.utils.internal.ObjectUtils;
 import com.google.common.collect.Sets;
 import java.util.Collections;
 import java.util.Set;

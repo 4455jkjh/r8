@@ -4,7 +4,7 @@
 
 package com.android.tools.r8.utils.codeinspector;
 
-import com.android.tools.r8.utils.exceptions.Unimplemented;
+import com.android.tools.r8.utils.internal.exceptions.Unimplemented;
 
 public abstract class Subject {
 

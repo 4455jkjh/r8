@@ -4,10 +4,9 @@
 package com.android.tools.r8.desugar;
 
 import com.android.tools.r8.ToolHelper;
-import com.android.tools.r8.utils.ConsumerUtils;
+import com.android.tools.r8.utils.internal.ConsumerUtils;
 import com.android.tools.r8.utils.DescriptorUtils;
 import com.android.tools.r8.utils.ZipUtils.ZipBuilder;
-import com.google.common.collect.ObjectArrays;
 import java.nio.file.Path;
 import java.util.function.Consumer;
 import org.junit.Assume;

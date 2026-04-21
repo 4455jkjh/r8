@@ -4,7 +4,7 @@
 
 package com.android.tools.r8.ir.analysis.value;
 
-import com.android.tools.r8.utils.OptionalBool;
+import com.android.tools.r8.utils.internal.OptionalBool;
 
 public interface ConstantOrNonConstantNumberValue {
 

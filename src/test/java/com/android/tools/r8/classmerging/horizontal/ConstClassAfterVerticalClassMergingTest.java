@@ -5,7 +5,7 @@ package com.android.tools.r8.classmerging.horizontal;
 
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
-import com.android.tools.r8.utils.BooleanUtils;
+import com.android.tools.r8.utils.internal.BooleanUtils;
 import com.android.tools.r8.utils.codeinspector.HorizontallyMergedClassesInspector;
 import java.util.HashMap;
 import java.util.List;

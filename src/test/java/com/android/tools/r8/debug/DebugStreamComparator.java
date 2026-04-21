@@ -13,7 +13,7 @@ import com.android.tools.r8.debug.DebugTestBase.JUnit3Wrapper.FrameInspector;
 import com.android.tools.r8.utils.ListUtils;
 import com.android.tools.r8.utils.StringUtils;
 import com.android.tools.r8.utils.StringUtils.BraceType;
-import com.android.tools.r8.utils.collections.Pair;
+import com.android.tools.r8.utils.internal.collections.Pair;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Deque;

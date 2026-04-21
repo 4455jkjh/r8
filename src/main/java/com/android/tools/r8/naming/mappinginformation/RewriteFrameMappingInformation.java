@@ -15,7 +15,7 @@ import com.android.tools.r8.references.Reference;
 import com.android.tools.r8.retrace.internal.RetraceStackTraceContextImpl;
 import com.android.tools.r8.retrace.internal.RetraceStackTraceCurrentEvaluationInformation;
 import com.android.tools.r8.utils.DescriptorUtils;
-import com.android.tools.r8.utils.exceptions.Unimplemented;
+import com.android.tools.r8.utils.internal.exceptions.Unimplemented;
 import com.google.common.collect.ImmutableList;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;

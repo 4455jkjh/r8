@@ -45,7 +45,7 @@ import com.android.tools.r8.optimize.argumentpropagation.utils.ProgramClassesBid
 import com.android.tools.r8.profile.rewriting.ProfileCollectionAdditions;
 import com.android.tools.r8.utils.ArrayUtils;
 import com.android.tools.r8.utils.ListUtils;
-import com.android.tools.r8.utils.ObjectUtils;
+import com.android.tools.r8.utils.internal.ObjectUtils;
 import com.android.tools.r8.utils.SetUtils;
 import com.android.tools.r8.utils.ThreadUtils;
 import com.android.tools.r8.utils.collections.WorkList;

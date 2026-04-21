@@ -21,7 +21,7 @@ import com.android.tools.r8.profile.AbstractProfile;
 import com.android.tools.r8.profile.AbstractProfileRule;
 import com.android.tools.r8.utils.InternalOptions;
 import com.android.tools.r8.utils.Reporter;
-import com.android.tools.r8.utils.ThrowingConsumer;
+import com.android.tools.r8.utils.internal.ThrowingConsumer;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.io.UncheckedIOException;

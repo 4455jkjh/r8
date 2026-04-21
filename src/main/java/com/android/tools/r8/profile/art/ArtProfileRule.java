@@ -6,8 +6,8 @@ package com.android.tools.r8.profile.art;
 
 import com.android.tools.r8.graph.DexReference;
 import com.android.tools.r8.profile.AbstractProfileRule;
-import com.android.tools.r8.utils.ThrowingConsumer;
-import com.android.tools.r8.utils.ThrowingFunction;
+import com.android.tools.r8.utils.internal.ThrowingConsumer;
+import com.android.tools.r8.utils.internal.ThrowingFunction;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
 

@@ -5,7 +5,7 @@
 package com.android.tools.r8.ir.desugar.desugaredlibrary;
 
 import com.android.tools.r8.utils.AndroidApiLevel;
-import com.android.tools.r8.utils.ObjectUtils;
+import com.android.tools.r8.utils.internal.ObjectUtils;
 import java.util.Objects;
 
 public class ApiLevelRange {

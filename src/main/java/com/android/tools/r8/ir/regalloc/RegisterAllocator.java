@@ -8,7 +8,7 @@ import com.android.tools.r8.graph.ProgramMethod;
 import com.android.tools.r8.ir.code.BasicBlock;
 import com.android.tools.r8.ir.code.Value;
 import com.android.tools.r8.utils.InternalOptions;
-import com.android.tools.r8.utils.exceptions.Unreachable;
+import com.android.tools.r8.utils.internal.exceptions.Unreachable;
 import java.util.List;
 
 public interface RegisterAllocator {

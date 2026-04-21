@@ -13,7 +13,7 @@ import com.android.tools.r8.ir.analysis.type.Nullability;
 import com.android.tools.r8.ir.analysis.type.TypeElement;
 import com.android.tools.r8.ir.analysis.value.AbstractValueJoiner;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
-import com.android.tools.r8.utils.Action;
+import com.android.tools.r8.utils.internal.Action;
 import java.util.Set;
 
 public abstract class ConcreteReferenceTypeValueState extends ConcreteValueState {

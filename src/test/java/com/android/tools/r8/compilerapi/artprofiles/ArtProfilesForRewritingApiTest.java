@@ -29,7 +29,7 @@ import com.android.tools.r8.profile.art.ArtProfileRuleConsumer;
 import com.android.tools.r8.references.ClassReference;
 import com.android.tools.r8.references.MethodReference;
 import com.android.tools.r8.references.Reference;
-import com.android.tools.r8.utils.ThrowingBiConsumer;
+import com.android.tools.r8.utils.internal.ThrowingBiConsumer;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;

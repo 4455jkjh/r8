@@ -15,7 +15,7 @@ import com.android.tools.r8.GlobalSyntheticsGeneratorCommand;
 import com.android.tools.r8.OutputMode;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
-import com.android.tools.r8.utils.BooleanUtils;
+import com.android.tools.r8.utils.internal.BooleanUtils;
 import com.android.tools.r8.utils.codeinspector.CodeInspector;
 import java.nio.file.Path;
 import java.util.List;

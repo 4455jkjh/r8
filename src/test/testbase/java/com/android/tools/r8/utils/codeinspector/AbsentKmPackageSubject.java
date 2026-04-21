@@ -4,7 +4,7 @@
 package com.android.tools.r8.utils.codeinspector;
 
 import com.android.tools.r8.graph.DexClass;
-import com.android.tools.r8.utils.exceptions.Unreachable;
+import com.android.tools.r8.utils.internal.exceptions.Unreachable;
 import java.util.List;
 
 public class AbsentKmPackageSubject extends KmPackageSubject {

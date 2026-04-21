@@ -4,6 +4,7 @@
 
 package com.android.tools.r8.utils;
 
+import com.android.tools.r8.utils.internal.ObjectUtils;
 import com.android.tools.r8.utils.structural.StructuralItem;
 import com.android.tools.r8.utils.structural.StructuralMapping;
 import com.android.tools.r8.utils.structural.StructuralSpecification;

@@ -15,7 +15,7 @@ import com.android.tools.r8.optimize.argumentpropagation.codescanner.ConcreteVal
 import com.android.tools.r8.optimize.argumentpropagation.codescanner.StateCloner;
 import com.android.tools.r8.optimize.argumentpropagation.codescanner.ValueState;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
-import com.android.tools.r8.utils.Action;
+import com.android.tools.r8.utils.internal.Action;
 import java.util.Deque;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;

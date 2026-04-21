@@ -5,7 +5,7 @@ package com.android.tools.r8.profile.art;
 
 import com.android.tools.r8.DiagnosticsHandler;
 import com.android.tools.r8.TextOutputStream;
-import com.android.tools.r8.utils.exceptions.Unreachable;
+import com.android.tools.r8.utils.internal.exceptions.Unreachable;
 
 public class ThrowingArtProfileConsumer implements ArtProfileConsumer {
 

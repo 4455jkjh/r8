@@ -18,7 +18,7 @@ import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.ir.conversion.CfBuilder;
 import com.android.tools.r8.ir.conversion.DexBuilder;
 import com.android.tools.r8.lightir.LirBuilder;
-import com.android.tools.r8.utils.IntObjConsumer;
+import com.android.tools.r8.utils.internal.IntObjConsumer;
 import com.android.tools.r8.utils.InternalOutputMode;
 import it.unimi.dsi.fastutil.ints.Int2ReferenceAVLTreeMap;
 import it.unimi.dsi.fastutil.ints.Int2ReferenceSortedMap;

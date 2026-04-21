@@ -11,7 +11,7 @@ import com.android.tools.r8.graph.DexEncodedMethod;
 import com.android.tools.r8.graph.DexProgramClass;
 import com.android.tools.r8.partial.R8PartialD8Input;
 import com.android.tools.r8.partial.R8PartialSubCompilationConfiguration.R8PartialR8SubCompilationConfiguration;
-import com.android.tools.r8.utils.IntBox;
+import com.android.tools.r8.utils.internal.IntBox;
 import com.android.tools.r8.utils.InternalOptions;
 import com.google.common.base.Predicate;
 import com.google.common.collect.Iterables;

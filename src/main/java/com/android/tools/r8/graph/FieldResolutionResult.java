@@ -4,10 +4,10 @@
 
 package com.android.tools.r8.graph;
 
-import com.android.tools.r8.utils.BooleanUtils;
-import com.android.tools.r8.utils.Box;
-import com.android.tools.r8.utils.OptionalBool;
-import com.android.tools.r8.utils.exceptions.Unimplemented;
+import com.android.tools.r8.utils.internal.BooleanUtils;
+import com.android.tools.r8.utils.internal.Box;
+import com.android.tools.r8.utils.internal.OptionalBool;
+import com.android.tools.r8.utils.internal.exceptions.Unimplemented;
 import com.google.common.collect.Iterables;
 import java.util.ArrayList;
 import java.util.List;

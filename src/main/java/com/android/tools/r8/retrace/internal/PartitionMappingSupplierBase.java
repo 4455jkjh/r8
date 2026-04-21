@@ -23,7 +23,7 @@ import com.android.tools.r8.retrace.PartitionMappingSupplier;
 import com.android.tools.r8.retrace.PrepareMappingPartitionsCallback;
 import com.android.tools.r8.retrace.RegisterMappingPartitionCallback;
 import com.android.tools.r8.retrace.internal.ProguardMapReaderWithFiltering.ProguardMapReaderWithFilteringInputBuffer;
-import com.android.tools.r8.utils.Box;
+import com.android.tools.r8.utils.internal.Box;
 import com.android.tools.r8.utils.DescriptorUtils;
 import com.android.tools.r8.utils.StringDiagnostic;
 import java.io.ByteArrayInputStream;

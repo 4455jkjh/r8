@@ -25,7 +25,7 @@ import com.android.tools.r8.desugar.desugaredlibrary.test.DesugaredLibraryTestBu
 import com.android.tools.r8.desugar.desugaredlibrary.test.LibraryDesugaringSpecification;
 import com.android.tools.r8.kotlin.KotlinMetadataWriter;
 import com.android.tools.r8.shaking.ProguardKeepAttributes;
-import com.android.tools.r8.utils.ConsumerUtils;
+import com.android.tools.r8.utils.internal.ConsumerUtils;
 import com.android.tools.r8.utils.DescriptorUtils;
 import com.android.tools.r8.utils.FileUtils;
 import com.android.tools.r8.utils.codeinspector.ClassSubject;

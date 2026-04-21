@@ -11,7 +11,7 @@ import static org.junit.Assert.assertEquals;
 
 import com.android.tools.r8.diagnosticinspector.DiagnosticSubject;
 import com.android.tools.r8.diagnosticinspector.FoundDiagnosticSubject;
-import com.android.tools.r8.utils.ThrowingConsumer;
+import com.android.tools.r8.utils.internal.ThrowingConsumer;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;

@@ -5,9 +5,9 @@
 package com.android.tools.r8.ir.analysis.framework.intraprocedural;
 
 import com.android.tools.r8.graph.DexType;
-import com.android.tools.r8.utils.TraversalContinuation;
-import com.android.tools.r8.utils.TraversalUtils;
-import com.android.tools.r8.utils.TriFunction;
+import com.android.tools.r8.utils.internal.TraversalContinuation;
+import com.android.tools.r8.utils.internal.TraversalUtils;
+import com.android.tools.r8.utils.internal.TriFunction;
 import java.util.Collection;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;

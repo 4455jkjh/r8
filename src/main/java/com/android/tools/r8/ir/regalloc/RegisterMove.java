@@ -7,7 +7,7 @@ import static com.android.tools.r8.ir.regalloc.LiveIntervals.NO_REGISTER;
 
 import com.android.tools.r8.ir.analysis.type.TypeElement;
 import com.android.tools.r8.ir.code.Instruction;
-import com.android.tools.r8.utils.ObjectUtils;
+import com.android.tools.r8.utils.internal.ObjectUtils;
 import it.unimi.dsi.fastutil.ints.Int2IntMap;
 import java.util.Objects;
 import java.util.Set;

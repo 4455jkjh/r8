@@ -88,7 +88,7 @@ import com.android.tools.r8.optimize.argumentpropagation.ArgumentPropagatorIROpt
 import com.android.tools.r8.position.MethodPosition;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
 import com.android.tools.r8.shaking.LibraryMethodOverrideAnalysis;
-import com.android.tools.r8.utils.Action;
+import com.android.tools.r8.utils.internal.Action;
 import com.android.tools.r8.utils.DescriptorUtils;
 import com.android.tools.r8.utils.ExceptionUtils;
 import com.android.tools.r8.utils.InternalOptions;
@@ -97,7 +97,7 @@ import com.android.tools.r8.utils.InternalOptions.NeverMergeGroup;
 import com.android.tools.r8.utils.StringDiagnostic;
 import com.android.tools.r8.utils.ThreadUtils;
 import com.android.tools.r8.utils.collections.ProgramMethodSet;
-import com.android.tools.r8.utils.exceptions.Unreachable;
+import com.android.tools.r8.utils.internal.exceptions.Unreachable;
 import com.android.tools.r8.utils.timing.Timing;
 import java.util.Collection;
 import java.util.List;
@@ -348,7 +348,7 @@ public class IRConverter {
         executorService);
   }
 
-  public void addWaveDoneAction(com.android.tools.r8.utils.Action action) {
+  public void addWaveDoneAction(com.android.tools.r8.utils.internal.Action action) {
     if (!appView.enableWholeProgramOptimizations()) {
       throw new Unreachable("addWaveDoneAction() should never be used in D8.");
     }

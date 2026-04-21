@@ -4,7 +4,7 @@
 
 package com.android.tools.r8.apimodel;
 
-import com.android.tools.r8.utils.Action;
+import com.android.tools.r8.utils.internal.Action;
 import com.android.tools.r8.utils.StringUtils;
 import com.android.tools.r8.utils.StringUtils.BraceType;
 import java.util.Arrays;

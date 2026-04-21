@@ -13,7 +13,7 @@ import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.keepanno.KeepAnnoParameters;
 import com.android.tools.r8.keepanno.KeepAnnoTestBase;
 import com.android.tools.r8.keepanno.KeepAnnoTestUtils;
-import com.android.tools.r8.utils.Box;
+import com.android.tools.r8.utils.internal.Box;
 import com.android.tools.r8.utils.ListUtils;
 import com.android.tools.r8.utils.StringUtils;
 import com.google.common.collect.ImmutableList;

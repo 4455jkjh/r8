@@ -11,7 +11,7 @@ import com.android.tools.r8.CompilationFailedException;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
-import com.android.tools.r8.utils.BooleanBox;
+import com.android.tools.r8.utils.internal.BooleanBox;
 import com.android.tools.r8.utils.ThreadUtils.WorkLoad;
 import com.google.common.collect.ImmutableList;
 import java.util.Collection;

@@ -21,7 +21,7 @@ import com.android.tools.r8.compilerapi.CompilerApiTestRunner;
 import com.android.tools.r8.errors.ProguardKeepRuleDiagnostic;
 import com.android.tools.r8.errors.UnusedProguardKeepRuleDiagnostic;
 import com.android.tools.r8.origin.Origin;
-import com.android.tools.r8.utils.ThrowingConsumer;
+import com.android.tools.r8.utils.internal.ThrowingConsumer;
 import java.util.Collections;
 import org.junit.Test;
 

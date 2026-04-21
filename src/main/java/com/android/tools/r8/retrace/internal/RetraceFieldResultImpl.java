@@ -12,7 +12,7 @@ import com.android.tools.r8.retrace.RetraceFieldResult;
 import com.android.tools.r8.retrace.RetracedSourceFile;
 import com.android.tools.r8.retrace.internal.RetraceClassResultImpl.RetraceClassElementImpl;
 import com.android.tools.r8.utils.DescriptorUtils;
-import com.android.tools.r8.utils.collections.Pair;
+import com.android.tools.r8.utils.internal.collections.Pair;
 import java.util.List;
 import java.util.stream.Stream;
 

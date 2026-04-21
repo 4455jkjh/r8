@@ -4,6 +4,7 @@
 
 package com.android.tools.r8.utils;
 
+import com.android.tools.r8.utils.internal.IntObjConsumer;
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
 
 public class Int2ObjectMapUtils {

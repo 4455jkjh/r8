@@ -27,7 +27,7 @@ import com.android.tools.r8.ir.conversion.CfBuilder;
 import com.android.tools.r8.ir.conversion.DexBuilder;
 import com.android.tools.r8.lightir.LirBuilder;
 import com.android.tools.r8.utils.InternalOutputMode;
-import com.android.tools.r8.utils.LongUtils;
+import com.android.tools.r8.utils.internal.LongUtils;
 import com.android.tools.r8.utils.NumberUtils;
 import java.util.Set;
 

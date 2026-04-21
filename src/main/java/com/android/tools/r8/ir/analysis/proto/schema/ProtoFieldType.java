@@ -5,9 +5,9 @@
 package com.android.tools.r8.ir.analysis.proto.schema;
 
 import static com.android.tools.r8.ir.analysis.proto.schema.ProtoOneOfFieldType.FIRST_ONE_OF_ID;
-import static com.android.tools.r8.utils.BitUtils.isBitInMaskSet;
+import static com.android.tools.r8.utils.internal.BitUtils.isBitInMaskSet;
 
-import com.android.tools.r8.utils.BooleanUtils;
+import com.android.tools.r8.utils.internal.BooleanUtils;
 
 public class ProtoFieldType {
 

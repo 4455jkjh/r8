@@ -5,7 +5,7 @@ package com.android.tools.r8.naming;
 
 import static com.android.tools.r8.utils.positions.MappedPositionToClassNameMapperBuilder.getMaxLineNumber;
 
-import com.android.tools.r8.utils.ObjectUtils;
+import com.android.tools.r8.utils.internal.ObjectUtils;
 
 /** Represents a line number range. */
 public class Range {

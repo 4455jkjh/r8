@@ -12,7 +12,7 @@ import com.android.tools.r8.graph.GenericSignature.ClassSignature.ClassSignature
 import com.android.tools.r8.naming.NamingLens;
 import com.android.tools.r8.origin.Origin;
 import com.android.tools.r8.utils.DescriptorUtils;
-import com.android.tools.r8.utils.exceptions.Unreachable;
+import com.android.tools.r8.utils.internal.exceptions.Unreachable;
 import com.google.common.collect.ImmutableList;
 import java.lang.reflect.GenericSignatureFormatError;
 import java.nio.CharBuffer;

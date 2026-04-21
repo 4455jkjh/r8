@@ -11,7 +11,7 @@ import com.android.tools.r8.utils.ExceptionDiagnostic;
 import com.android.tools.r8.utils.ExceptionUtils;
 import com.android.tools.r8.utils.InternalOptions;
 import com.android.tools.r8.utils.Reporter;
-import com.android.tools.r8.utils.SemanticVersion;
+import com.android.tools.r8.utils.internal.SemanticVersion;
 import com.android.tools.r8.utils.SemanticVersionUtils;
 import com.android.tools.r8.utils.StringUtils;
 import java.io.IOException;

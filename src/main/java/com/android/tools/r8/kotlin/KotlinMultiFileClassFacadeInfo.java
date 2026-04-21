@@ -5,12 +5,12 @@
 package com.android.tools.r8.kotlin;
 
 import static com.android.tools.r8.kotlin.KotlinMetadataUtils.updateJvmMetadataVersionIfRequired;
-import static com.android.tools.r8.utils.FunctionUtils.forEachApply;
+import static com.android.tools.r8.utils.internal.FunctionUtils.forEachApply;
 
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.DexClass;
 import com.android.tools.r8.graph.DexItemFactory;
-import com.android.tools.r8.utils.collections.Pair;
+import com.android.tools.r8.utils.internal.collections.Pair;
 import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
 import java.util.List;

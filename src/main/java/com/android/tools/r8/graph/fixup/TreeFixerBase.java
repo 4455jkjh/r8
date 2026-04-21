@@ -25,7 +25,7 @@ import com.android.tools.r8.graph.NestMemberClassAttribute;
 import com.android.tools.r8.graph.PermittedSubclassAttribute;
 import com.android.tools.r8.graph.RecordComponentInfo;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
-import com.android.tools.r8.utils.ConsumerUtils;
+import com.android.tools.r8.utils.internal.ConsumerUtils;
 import com.android.tools.r8.utils.DescriptorUtils;
 import java.util.ArrayList;
 import java.util.Collection;

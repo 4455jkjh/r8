@@ -4,7 +4,7 @@
 
 package com.android.tools.r8.ir.optimize.classinliner.analysis;
 
-import com.android.tools.r8.utils.IntObjToObjFunction;
+import com.android.tools.r8.utils.internal.IntObjToObjFunction;
 
 public class UnknownParameterUsages extends ParameterUsages {
 

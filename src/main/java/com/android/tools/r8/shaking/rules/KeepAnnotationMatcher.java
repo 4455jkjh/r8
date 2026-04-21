@@ -44,7 +44,7 @@ import com.android.tools.r8.keepanno.ast.KeepTarget;
 import com.android.tools.r8.shaking.KeepAnnotationCollectionInfo.RetentionInfo;
 import com.android.tools.r8.shaking.KeepInfo.Joiner;
 import com.android.tools.r8.shaking.MinimumKeepInfoCollection;
-import com.android.tools.r8.utils.BooleanBox;
+import com.android.tools.r8.utils.internal.BooleanBox;
 import com.android.tools.r8.utils.ListUtils;
 import com.android.tools.r8.utils.ThreadUtils;
 import com.google.common.collect.ImmutableList;

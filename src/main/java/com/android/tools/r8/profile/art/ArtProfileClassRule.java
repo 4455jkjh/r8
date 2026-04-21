@@ -9,8 +9,8 @@ import com.android.tools.r8.graph.DexType;
 import com.android.tools.r8.profile.AbstractProfileClassRule;
 import com.android.tools.r8.references.ClassReference;
 import com.android.tools.r8.references.Reference;
-import com.android.tools.r8.utils.ThrowingConsumer;
-import com.android.tools.r8.utils.ThrowingFunction;
+import com.android.tools.r8.utils.internal.ThrowingConsumer;
+import com.android.tools.r8.utils.internal.ThrowingFunction;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
 

@@ -3,7 +3,7 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8.ir.code;
 
-import static com.android.tools.r8.utils.ConsumerUtils.emptyConsumer;
+import static com.android.tools.r8.utils.internal.ConsumerUtils.emptyConsumer;
 import static com.google.common.base.Predicates.alwaysFalse;
 
 import com.android.tools.r8.cf.TypeVerificationHelper;
@@ -22,7 +22,7 @@ import com.android.tools.r8.ir.conversion.IRBuilder;
 import com.android.tools.r8.ir.conversion.TypeConstraintResolver;
 import com.android.tools.r8.ir.optimize.AffectedValues;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
-import com.android.tools.r8.utils.DequeUtils;
+import com.android.tools.r8.utils.internal.DequeUtils;
 import com.android.tools.r8.utils.ListUtils;
 import com.android.tools.r8.utils.Reporter;
 import com.android.tools.r8.utils.SetUtils;

@@ -5,7 +5,7 @@ package com.android.tools.r8.graph;
 
 import static com.google.common.base.Predicates.alwaysTrue;
 
-import com.android.tools.r8.utils.TraversalContinuation;
+import com.android.tools.r8.utils.internal.TraversalContinuation;
 import com.google.common.base.Functions;
 import java.util.Collection;
 import java.util.Set;

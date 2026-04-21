@@ -14,7 +14,7 @@ import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.jasmin.JasminBuilder.ClassFileVersion;
 import com.android.tools.r8.naming.MemberNaming.MethodSignature;
-import com.android.tools.r8.utils.BooleanUtils;
+import com.android.tools.r8.utils.internal.BooleanUtils;
 import com.android.tools.r8.utils.InternalOptions;
 import com.android.tools.r8.utils.StringUtils;
 import com.google.common.collect.ImmutableList;

@@ -4,7 +4,7 @@
 package com.android.tools.r8.kotlin.metadata;
 
 import static com.android.tools.r8.KotlinCompilerTool.KotlinCompilerVersion.KOTLINC_2_0_20;
-import static com.android.tools.r8.utils.FunctionUtils.ignoreArgument;
+import static com.android.tools.r8.utils.internal.FunctionUtils.ignoreArgument;
 import static com.android.tools.r8.utils.codeinspector.Matchers.isPresent;
 import static junit.framework.TestCase.assertNotNull;
 import static org.hamcrest.CoreMatchers.anyOf;
@@ -20,7 +20,7 @@ import com.android.tools.r8.TestCompileResult;
 import com.android.tools.r8.kotlin.KotlinMetadataAnnotationWrapper;
 import com.android.tools.r8.kotlin.KotlinMetadataWriter;
 import com.android.tools.r8.utils.DescriptorUtils;
-import com.android.tools.r8.utils.IntBox;
+import com.android.tools.r8.utils.internal.IntBox;
 import com.android.tools.r8.utils.codeinspector.ClassSubject;
 import com.android.tools.r8.utils.codeinspector.CodeInspector;
 import com.android.tools.r8.utils.codeinspector.FoundClassSubject;

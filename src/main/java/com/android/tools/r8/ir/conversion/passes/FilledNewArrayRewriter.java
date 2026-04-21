@@ -33,7 +33,7 @@ import com.android.tools.r8.ir.code.StaticGet;
 import com.android.tools.r8.ir.code.Value;
 import com.android.tools.r8.ir.conversion.MethodProcessor;
 import com.android.tools.r8.ir.conversion.passes.result.CodeRewriterResult;
-import com.android.tools.r8.utils.BooleanBox;
+import com.android.tools.r8.utils.internal.BooleanBox;
 import com.android.tools.r8.utils.InternalOptions.RewriteArrayOptions;
 import com.android.tools.r8.utils.SetUtils;
 import com.google.common.collect.ImmutableSet;

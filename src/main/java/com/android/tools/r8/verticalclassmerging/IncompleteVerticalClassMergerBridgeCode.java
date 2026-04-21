@@ -27,7 +27,7 @@ import com.android.tools.r8.lightir.LirEncodingStrategy;
 import com.android.tools.r8.lightir.LirStrategy;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
 import com.android.tools.r8.utils.RetracerForCodePrinting;
-import com.android.tools.r8.utils.exceptions.Unreachable;
+import com.android.tools.r8.utils.internal.exceptions.Unreachable;
 import java.util.ArrayList;
 import java.util.List;
 

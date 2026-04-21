@@ -6,7 +6,7 @@ package com.android.tools.r8.ir.optimize.inliner.multicallerinliner;
 
 import com.android.tools.r8.graph.ProgramMethod;
 import com.android.tools.r8.ir.conversion.callgraph.NodeBase;
-import com.android.tools.r8.utils.exceptions.Unreachable;
+import com.android.tools.r8.utils.internal.exceptions.Unreachable;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class MultiCallerInlinerNode extends NodeBase<MultiCallerInlinerNode> {

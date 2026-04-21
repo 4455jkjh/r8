@@ -8,7 +8,7 @@ import com.android.tools.r8.AssertionsConfiguration;
 import com.android.tools.r8.KotlinCompilerTool.KotlinTargetVersion;
 import com.android.tools.r8.KotlinTestParameters;
 import com.android.tools.r8.TestParameters;
-import com.android.tools.r8.utils.BooleanUtils;
+import com.android.tools.r8.utils.internal.BooleanUtils;
 import java.util.Collection;
 import org.junit.Assume;
 import org.junit.Test;

@@ -12,7 +12,7 @@ import com.android.tools.r8.graph.DexMethod;
 import com.android.tools.r8.graph.DexTypeList;
 import com.android.tools.r8.graph.ProgramMethod;
 import com.android.tools.r8.ir.optimize.info.field.InstanceFieldInitializationInfo;
-import com.android.tools.r8.utils.ObjectUtils;
+import com.android.tools.r8.utils.internal.ObjectUtils;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;

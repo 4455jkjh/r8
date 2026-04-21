@@ -11,7 +11,7 @@ import static org.junit.Assert.assertTrue;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.repackage.testclasses.RepackagingWithNonReboundMethodReferenceTestClasses;
 import com.android.tools.r8.repackage.testclasses.RepackagingWithNonReboundMethodReferenceTestClasses.B;
-import com.android.tools.r8.utils.BooleanUtils;
+import com.android.tools.r8.utils.internal.BooleanUtils;
 import com.google.common.collect.ImmutableList;
 import java.util.List;
 import org.junit.Test;

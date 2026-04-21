@@ -9,7 +9,7 @@ import com.android.tools.r8.shaking.ProguardConfigurationParser.IdentifierPatter
 import com.android.tools.r8.shaking.ProguardConfigurationParser.IdentifierPatternWithWildcardsAndNegation;
 import com.android.tools.r8.shaking.ProguardWildcard.BackReference;
 import com.android.tools.r8.shaking.ProguardWildcard.Pattern;
-import com.android.tools.r8.utils.BooleanUtils;
+import com.android.tools.r8.utils.internal.BooleanUtils;
 import com.android.tools.r8.utils.IterableUtils;
 import java.util.Collections;
 import java.util.List;

@@ -13,7 +13,7 @@ import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.Version;
 import com.android.tools.r8.utils.AndroidApiLevel;
 import com.android.tools.r8.utils.LibraryProvidedProguardRulesTestUtils;
-import com.android.tools.r8.utils.SemanticVersion;
+import com.android.tools.r8.utils.internal.SemanticVersion;
 import com.android.tools.r8.utils.StringUtils;
 import com.android.tools.r8.utils.ZipUtils.ZipBuilder;
 import com.google.common.collect.ImmutableList;

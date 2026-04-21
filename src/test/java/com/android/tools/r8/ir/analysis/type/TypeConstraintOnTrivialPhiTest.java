@@ -17,7 +17,7 @@ import com.android.tools.r8.origin.Origin;
 import com.android.tools.r8.smali.SmaliBuilder;
 import com.android.tools.r8.utils.AndroidApp;
 import com.android.tools.r8.utils.StringUtils;
-import com.android.tools.r8.utils.exceptions.Unreachable;
+import com.android.tools.r8.utils.internal.exceptions.Unreachable;
 import com.google.common.collect.ImmutableList;
 import java.util.function.Consumer;
 import org.junit.Test;

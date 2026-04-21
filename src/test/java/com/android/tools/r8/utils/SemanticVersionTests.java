@@ -3,7 +3,7 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8.utils;
 
-import static com.android.tools.r8.utils.SemanticVersion.parse;
+import static com.android.tools.r8.utils.internal.SemanticVersion.parse;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 

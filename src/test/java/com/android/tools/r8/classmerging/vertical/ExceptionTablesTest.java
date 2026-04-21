@@ -14,7 +14,7 @@ import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.transformers.ClassFileTransformer;
 import com.android.tools.r8.transformers.MethodTransformer;
 import com.android.tools.r8.utils.ArrayUtils;
-import com.android.tools.r8.utils.BooleanUtils;
+import com.android.tools.r8.utils.internal.BooleanUtils;
 import com.android.tools.r8.utils.codeinspector.CodeInspector;
 import com.android.tools.r8.utils.codeinspector.MethodSubject;
 import com.android.tools.r8.utils.codeinspector.TypeSubject;

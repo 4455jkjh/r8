@@ -13,7 +13,7 @@ import static org.junit.Assume.assumeFalse;
 import com.android.tools.r8.NeverPropagateValue;
 import com.android.tools.r8.R8TestRunResult;
 import com.android.tools.r8.TestBase;
-import com.android.tools.r8.utils.BooleanUtils;
+import com.android.tools.r8.utils.internal.BooleanUtils;
 import com.android.tools.r8.utils.StringUtils;
 import com.android.tools.r8.utils.codeinspector.ClassSubject;
 import com.android.tools.r8.utils.codeinspector.CodeInspector;

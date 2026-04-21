@@ -5,7 +5,7 @@ package com.android.tools.r8.ir.synthetic;
 
 import static com.android.tools.r8.ir.analysis.type.Nullability.definitelyNotNull;
 import static com.android.tools.r8.ir.analysis.type.Nullability.maybeNull;
-import static com.android.tools.r8.utils.ConsumerUtils.emptyConsumer;
+import static com.android.tools.r8.utils.internal.ConsumerUtils.emptyConsumer;
 
 import com.android.tools.r8.cf.code.CfCheckCast;
 import com.android.tools.r8.cf.code.CfInstruction;
@@ -32,9 +32,9 @@ import com.android.tools.r8.lightir.LirBuilder;
 import com.android.tools.r8.lightir.LirCode;
 import com.android.tools.r8.lightir.LirEncodingStrategy;
 import com.android.tools.r8.lightir.LirStrategy;
-import com.android.tools.r8.utils.BooleanUtils;
-import com.android.tools.r8.utils.exceptions.Unimplemented;
-import com.android.tools.r8.utils.exceptions.Unreachable;
+import com.android.tools.r8.utils.internal.BooleanUtils;
+import com.android.tools.r8.utils.internal.exceptions.Unimplemented;
+import com.android.tools.r8.utils.internal.exceptions.Unreachable;
 import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
 import java.util.List;

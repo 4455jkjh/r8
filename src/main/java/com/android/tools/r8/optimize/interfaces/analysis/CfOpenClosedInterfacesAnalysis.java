@@ -38,7 +38,7 @@ import com.android.tools.r8.utils.Reporter;
 import com.android.tools.r8.utils.SetUtils;
 import com.android.tools.r8.utils.ThreadUtils;
 import com.android.tools.r8.utils.UnverifiableCfCodeDiagnostic;
-import com.android.tools.r8.utils.collections.Pair;
+import com.android.tools.r8.utils.internal.collections.Pair;
 import com.android.tools.r8.utils.collections.ProgramMethodMap;
 import com.android.tools.r8.utils.collections.WorkList;
 import java.util.ArrayList;

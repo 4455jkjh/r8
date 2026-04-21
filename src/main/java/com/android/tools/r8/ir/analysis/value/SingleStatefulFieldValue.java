@@ -6,7 +6,7 @@ package com.android.tools.r8.ir.analysis.value;
 
 import com.android.tools.r8.graph.DexField;
 import com.android.tools.r8.ir.analysis.value.objectstate.ObjectState;
-import com.android.tools.r8.utils.ObjectUtils;
+import com.android.tools.r8.utils.internal.ObjectUtils;
 
 public class SingleStatefulFieldValue extends SingleFieldValue {
 

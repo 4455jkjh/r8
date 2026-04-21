@@ -21,7 +21,7 @@ import com.android.tools.r8.checkdiscarded.testclasses.UnusedClass;
 import com.android.tools.r8.checkdiscarded.testclasses.UsedClass;
 import com.android.tools.r8.checkdiscarded.testclasses.WillBeGone;
 import com.android.tools.r8.checkdiscarded.testclasses.WillStay;
-import com.android.tools.r8.utils.BooleanUtils;
+import com.android.tools.r8.utils.internal.BooleanUtils;
 import com.android.tools.r8.utils.InternalOptions;
 import java.util.List;
 import java.util.function.Consumer;

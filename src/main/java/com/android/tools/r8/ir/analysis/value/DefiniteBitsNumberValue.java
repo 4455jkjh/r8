@@ -8,8 +8,8 @@ import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.DexType;
 import com.android.tools.r8.graph.lens.GraphLens;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
-import com.android.tools.r8.utils.ObjectUtils;
-import com.android.tools.r8.utils.OptionalBool;
+import com.android.tools.r8.utils.internal.ObjectUtils;
+import com.android.tools.r8.utils.internal.OptionalBool;
 
 public class DefiniteBitsNumberValue extends NonConstantNumberValue {
 

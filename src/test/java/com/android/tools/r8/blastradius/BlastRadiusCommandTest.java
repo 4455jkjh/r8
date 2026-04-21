@@ -23,7 +23,7 @@ import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.blastradius.proto.BlastRadiusContainer;
 import com.android.tools.r8.origin.Origin;
 import com.android.tools.r8.utils.AndroidApiLevel;
-import com.android.tools.r8.utils.Box;
+import com.android.tools.r8.utils.internal.Box;
 import com.google.common.collect.ImmutableList;
 import org.junit.Test;
 import org.junit.runner.RunWith;

@@ -15,7 +15,7 @@ import com.android.tools.r8.references.Reference;
 import com.android.tools.r8.relocator.foo.Base;
 import com.android.tools.r8.relocator.foo.bar.Baz;
 import com.android.tools.r8.relocator.foo.bar.BazImpl;
-import com.android.tools.r8.utils.BooleanUtils;
+import com.android.tools.r8.utils.internal.BooleanUtils;
 import com.android.tools.r8.utils.codeinspector.ClassSubject;
 import java.util.List;
 import org.junit.Test;

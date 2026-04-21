@@ -5,8 +5,8 @@
 package com.android.tools.r8.ir.conversion.passes.result;
 
 import com.android.tools.r8.ir.conversion.passes.BranchSimplifier.ControlFlowSimplificationResult;
-import com.android.tools.r8.utils.OptionalBool;
-import com.android.tools.r8.utils.exceptions.Unreachable;
+import com.android.tools.r8.utils.internal.OptionalBool;
+import com.android.tools.r8.utils.internal.exceptions.Unreachable;
 
 public interface CodeRewriterResult {
 

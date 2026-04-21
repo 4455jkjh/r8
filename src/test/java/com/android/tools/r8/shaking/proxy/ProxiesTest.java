@@ -17,7 +17,7 @@ import com.android.tools.r8.shaking.proxy.testclasses.SubClass;
 import com.android.tools.r8.shaking.proxy.testclasses.SubInterface;
 import com.android.tools.r8.shaking.proxy.testclasses.TestClass;
 import com.android.tools.r8.utils.StringUtils;
-import com.android.tools.r8.utils.ThrowingConsumer;
+import com.android.tools.r8.utils.internal.ThrowingConsumer;
 import com.android.tools.r8.utils.codeinspector.CodeInspector;
 import com.android.tools.r8.utils.codeinspector.FoundMethodSubject;
 import com.android.tools.r8.utils.codeinspector.InstructionSubject;

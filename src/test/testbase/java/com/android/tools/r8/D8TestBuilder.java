@@ -14,7 +14,7 @@ import com.android.tools.r8.profile.art.model.ExternalArtProfile;
 import com.android.tools.r8.profile.art.utils.ArtProfileTestingUtils;
 import com.android.tools.r8.startup.StartupProfileProvider;
 import com.android.tools.r8.utils.AndroidApp;
-import com.android.tools.r8.utils.Box;
+import com.android.tools.r8.utils.internal.Box;
 import com.android.tools.r8.utils.InternalOptions;
 import java.nio.file.Path;
 import java.util.ArrayList;

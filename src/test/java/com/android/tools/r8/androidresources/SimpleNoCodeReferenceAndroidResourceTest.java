@@ -16,7 +16,7 @@ import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.androidresources.AndroidResourceTestingUtils.AndroidTestResource;
 import com.android.tools.r8.androidresources.AndroidResourceTestingUtils.AndroidTestResourceBuilder;
 import com.android.tools.r8.androidresources.AndroidResourceTestingUtils.ResourceTableInspector;
-import com.android.tools.r8.utils.BooleanUtils;
+import com.android.tools.r8.utils.internal.BooleanUtils;
 import com.android.tools.r8.utils.FileUtils;
 import com.android.tools.r8.utils.ZipUtils;
 import java.io.IOException;

@@ -20,7 +20,7 @@ import com.android.tools.r8.graph.ParameterAnnotationsList;
 import com.android.tools.r8.ir.optimize.info.DefaultMethodOptimizationInfo;
 import com.android.tools.r8.ir.optimize.info.MethodOptimizationInfo;
 import com.android.tools.r8.synthesis.SyntheticNaming.SyntheticKind;
-import com.android.tools.r8.utils.OptionalBool;
+import com.android.tools.r8.utils.internal.OptionalBool;
 
 public class SyntheticMethodBuilder {
 

@@ -10,7 +10,7 @@ import static com.android.tools.r8.DiagnosticsMatcher.diagnosticType;
 import static com.android.tools.r8.PositionMatcher.positionColumn;
 import static com.android.tools.r8.PositionMatcher.positionLine;
 import static com.android.tools.r8.shaking.ProguardConfigurationSourceStrings.createConfigurationForTesting;
-import static com.android.tools.r8.utils.BooleanUtils.intValue;
+import static com.android.tools.r8.utils.internal.BooleanUtils.intValue;
 import static org.hamcrest.CoreMatchers.allOf;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -41,7 +41,7 @@ import com.android.tools.r8.shaking.ProguardConfigurationParser.IdentifierPatter
 import com.android.tools.r8.shaking.ProguardTypeMatcher.MatchSpecificType;
 import com.android.tools.r8.shaking.constructor.InitMatchingTest;
 import com.android.tools.r8.utils.AbortException;
-import com.android.tools.r8.utils.BooleanUtils;
+import com.android.tools.r8.utils.internal.BooleanUtils;
 import com.android.tools.r8.utils.FileUtils;
 import com.android.tools.r8.utils.InternalOptions.PackageObfuscationMode;
 import com.android.tools.r8.utils.IterableUtils;

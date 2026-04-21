@@ -22,7 +22,7 @@ import com.android.tools.r8.shaking.ProguardWildcard.BackReference;
 import com.android.tools.r8.shaking.rootset.RootSetBuilder;
 import com.android.tools.r8.shaking.rootset.RootSetBuilderAnnotationIndex;
 import com.android.tools.r8.utils.IterableUtils;
-import com.android.tools.r8.utils.OptionalBool;
+import com.android.tools.r8.utils.internal.OptionalBool;
 import com.android.tools.r8.utils.StringUtils;
 import com.google.common.collect.Iterables;
 import java.util.List;

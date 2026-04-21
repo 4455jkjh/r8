@@ -6,7 +6,7 @@ package com.android.tools.r8.ir.desugar.desugaredlibrary.machinespecification;
 
 import com.android.tools.r8.graph.DexMethod;
 import com.android.tools.r8.graph.DexType;
-import com.android.tools.r8.utils.ObjectUtils;
+import com.android.tools.r8.utils.internal.ObjectUtils;
 import java.util.Map;
 
 /**

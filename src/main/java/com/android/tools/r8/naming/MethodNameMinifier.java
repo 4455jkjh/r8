@@ -3,7 +3,7 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8.naming;
 
-import static com.android.tools.r8.utils.FunctionUtils.ignoreArgument;
+import static com.android.tools.r8.utils.internal.FunctionUtils.ignoreArgument;
 import static com.android.tools.r8.utils.MapUtils.unmodifiableForTesting;
 
 import com.android.tools.r8.graph.AppView;

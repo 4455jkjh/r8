@@ -7,7 +7,7 @@ import static com.android.tools.r8.naming.ClassNameMapper.MissingFileAction.MISS
 
 import com.android.tools.r8.TestRuntime;
 import com.android.tools.r8.naming.ClassNameMapper;
-import com.android.tools.r8.utils.exceptions.Unreachable;
+import com.android.tools.r8.utils.internal.exceptions.Unreachable;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;

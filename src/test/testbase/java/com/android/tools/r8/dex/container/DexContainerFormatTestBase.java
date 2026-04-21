@@ -35,7 +35,7 @@ import com.android.tools.r8.dex.Constants;
 import com.android.tools.r8.errors.CompilationError;
 import com.android.tools.r8.transformers.ClassTransformer;
 import com.android.tools.r8.utils.AndroidApiLevel;
-import com.android.tools.r8.utils.BitUtils;
+import com.android.tools.r8.utils.internal.BitUtils;
 import com.android.tools.r8.utils.DescriptorUtils;
 import com.android.tools.r8.utils.DexVersion;
 import com.android.tools.r8.utils.InternalOptions;

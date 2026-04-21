@@ -18,7 +18,7 @@ import com.android.tools.r8.origin.Origin;
 import com.android.tools.r8.startup.StartupProfileBuilder;
 import com.android.tools.r8.startup.StartupProfileProvider;
 import com.android.tools.r8.utils.AndroidApiLevel;
-import com.android.tools.r8.utils.ConsumerUtils;
+import com.android.tools.r8.utils.internal.ConsumerUtils;
 import com.android.tools.r8.utils.UTF8TextInputStream;
 import java.io.ByteArrayInputStream;
 import org.junit.Test;

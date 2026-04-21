@@ -4,6 +4,7 @@
 package com.android.tools.r8.utils;
 
 import com.android.tools.r8.DataResourceProvider;
+import com.android.tools.r8.utils.internal.SemanticVersion;
 
 public class AllEmbeddedRulesExtractor extends EmbeddedRulesExtractor {
 

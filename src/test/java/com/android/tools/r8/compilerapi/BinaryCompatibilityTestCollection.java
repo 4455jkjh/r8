@@ -19,7 +19,7 @@ import com.android.tools.r8.transformers.ClassFileTransformer;
 import com.android.tools.r8.transformers.ClassFileTransformer.InnerClassPredicate;
 import com.android.tools.r8.utils.DescriptorUtils;
 import com.android.tools.r8.utils.FileUtils;
-import com.android.tools.r8.utils.IntBox;
+import com.android.tools.r8.utils.internal.IntBox;
 import com.android.tools.r8.utils.ZipUtils;
 import com.android.tools.r8.utils.ZipUtils.ZipBuilder;
 import com.google.common.collect.ImmutableList;

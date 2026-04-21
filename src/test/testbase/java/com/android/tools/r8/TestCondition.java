@@ -6,7 +6,7 @@ package com.android.tools.r8;
 import com.android.tools.r8.R8RunArtTestsTest.CompilerUnderTest;
 import com.android.tools.r8.R8RunArtTestsTest.DexTool;
 import com.android.tools.r8.ToolHelper.DexVm;
-import com.android.tools.r8.utils.exceptions.Unreachable;
+import com.android.tools.r8.utils.internal.exceptions.Unreachable;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.EnumSet;

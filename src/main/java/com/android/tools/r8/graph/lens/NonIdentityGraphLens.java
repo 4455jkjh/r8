@@ -11,8 +11,8 @@ import com.android.tools.r8.graph.DexItemFactory;
 import com.android.tools.r8.graph.DexMethod;
 import com.android.tools.r8.graph.DexType;
 import com.android.tools.r8.ir.code.InvokeType;
-import com.android.tools.r8.utils.OptionalBool;
-import com.android.tools.r8.utils.ThrowingAction;
+import com.android.tools.r8.utils.internal.OptionalBool;
+import com.android.tools.r8.utils.internal.ThrowingAction;
 import com.google.common.collect.Streams;
 import java.util.function.Predicate;
 

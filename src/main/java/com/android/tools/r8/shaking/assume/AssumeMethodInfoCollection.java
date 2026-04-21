@@ -13,7 +13,7 @@ import com.android.tools.r8.ir.code.InvokeMethod;
 import com.android.tools.r8.ir.optimize.membervaluepropagation.assume.AssumeInfo;
 import com.android.tools.r8.shaking.ProguardMemberRuleValue;
 import com.android.tools.r8.utils.MapUtils;
-import com.android.tools.r8.utils.ObjectUtils;
+import com.android.tools.r8.utils.internal.ObjectUtils;
 import com.android.tools.r8.utils.StringUtils;
 import java.util.Collections;
 import java.util.HashMap;

@@ -48,7 +48,7 @@ import com.android.tools.r8.ir.synthetic.apiconverter.APIConversionCfCodeProvide
 import com.android.tools.r8.ir.synthetic.apiconverter.EqualsCfCodeProvider;
 import com.android.tools.r8.ir.synthetic.apiconverter.HashCodeCfCodeProvider;
 import com.android.tools.r8.utils.ArrayUtils;
-import com.android.tools.r8.utils.OptionalBool;
+import com.android.tools.r8.utils.internal.OptionalBool;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.function.BiFunction;

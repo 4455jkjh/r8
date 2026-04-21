@@ -10,7 +10,7 @@ import com.android.tools.r8.graph.DexEncodedMethod;
 import com.android.tools.r8.graph.DexProgramClass;
 import com.android.tools.r8.graph.DexType;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
-import com.android.tools.r8.utils.TraversalContinuation;
+import com.android.tools.r8.utils.internal.TraversalContinuation;
 import com.android.tools.r8.verticalclassmerging.IllegalAccessDetector;
 import com.android.tools.r8.verticalclassmerging.VerticalMergeGroup;
 

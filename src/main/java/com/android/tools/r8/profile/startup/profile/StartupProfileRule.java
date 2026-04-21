@@ -6,7 +6,7 @@ package com.android.tools.r8.profile.startup.profile;
 
 import com.android.tools.r8.graph.DexReference;
 import com.android.tools.r8.profile.AbstractProfileRule;
-import com.android.tools.r8.utils.ThrowingConsumer;
+import com.android.tools.r8.utils.internal.ThrowingConsumer;
 import java.io.IOException;
 import java.util.function.Function;
 

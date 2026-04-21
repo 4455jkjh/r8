@@ -16,7 +16,7 @@ import com.android.tools.r8.graph.lens.GraphLens;
 import com.android.tools.r8.ir.conversion.callgraph.CallGraph;
 import com.android.tools.r8.utils.ThreadUtils;
 import com.android.tools.r8.utils.collections.ProgramMethodMap;
-import com.android.tools.r8.utils.exceptions.UncheckedExecutionException;
+import com.android.tools.r8.utils.internal.exceptions.UncheckedExecutionException;
 import java.util.IdentityHashMap;
 import java.util.Map;
 import java.util.Optional;

@@ -4,7 +4,7 @@
 
 package com.android.tools.r8.ir.analysis.value;
 
-import static com.android.tools.r8.utils.BitUtils.ALL_BITS_SET_MASK;
+import static com.android.tools.r8.utils.internal.BitUtils.ALL_BITS_SET_MASK;
 
 import com.android.tools.r8.graph.DexField;
 import com.android.tools.r8.graph.DexReference;
@@ -14,7 +14,7 @@ import com.android.tools.r8.ir.analysis.type.TypeElement;
 import com.android.tools.r8.ir.analysis.value.objectstate.KnownLengthArrayState;
 import com.android.tools.r8.ir.analysis.value.objectstate.ObjectState;
 import com.android.tools.r8.naming.dexitembasedstring.NameComputationInfo;
-import com.android.tools.r8.utils.BooleanUtils;
+import com.android.tools.r8.utils.internal.BooleanUtils;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class AbstractValueFactory {

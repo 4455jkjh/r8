@@ -16,7 +16,7 @@ import com.android.tools.r8.retrace.RetracedFieldReference;
 import com.android.tools.r8.retrace.RetracedTypeReference;
 import com.android.tools.r8.retrace.StackTraceElementProxy;
 import com.android.tools.r8.utils.StringUtils;
-import com.android.tools.r8.utils.TriFunction;
+import com.android.tools.r8.utils.internal.TriFunction;
 import java.util.ArrayList;
 import java.util.List;
 

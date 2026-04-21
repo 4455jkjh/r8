@@ -40,7 +40,7 @@ import com.android.tools.r8.keepanno.ast.KeepTypePattern;
 import com.android.tools.r8.keepanno.ast.KeepUnqualfiedClassNamePattern;
 import com.android.tools.r8.keepanno.ast.ModifierPattern;
 import com.android.tools.r8.keepanno.ast.OptionalPattern;
-import com.android.tools.r8.utils.TraversalContinuation;
+import com.android.tools.r8.utils.internal.TraversalContinuation;
 import java.util.List;
 
 public class KeepAnnotationMatcherPredicates {

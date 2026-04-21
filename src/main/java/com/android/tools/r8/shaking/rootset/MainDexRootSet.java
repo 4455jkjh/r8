@@ -17,7 +17,7 @@ import com.android.tools.r8.shaking.DependentMinimumKeepInfoCollection;
 import com.android.tools.r8.shaking.InterfaceMethodSyntheticBridgeAction;
 import com.android.tools.r8.shaking.ProguardConfigurationRule;
 import com.android.tools.r8.shaking.ProguardIfRule;
-import com.android.tools.r8.utils.collections.PredicateSet;
+import com.android.tools.r8.utils.internal.collections.PredicateSet;
 import com.android.tools.r8.utils.collections.ProgramMethodMap;
 import com.android.tools.r8.utils.timing.Timing;
 import com.google.common.collect.ImmutableList;

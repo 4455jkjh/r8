@@ -23,7 +23,7 @@ import com.android.tools.r8.transformers.MethodTransformer;
 import com.android.tools.r8.utils.AndroidApiLevel;
 import com.android.tools.r8.utils.DescriptorUtils;
 import com.android.tools.r8.utils.FileUtils;
-import com.android.tools.r8.utils.StreamUtils;
+import com.android.tools.r8.utils.internal.StreamUtils;
 import com.android.tools.r8.utils.StringUtils;
 import com.android.tools.r8.utils.ZipUtils;
 import com.google.common.collect.ImmutableList;

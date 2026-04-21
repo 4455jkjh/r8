@@ -6,7 +6,7 @@ package com.android.tools.r8.profile.startup.instrumentation;
 
 import static com.android.tools.r8.graph.DexProgramClass.asProgramClassOrNull;
 import static com.android.tools.r8.ir.analysis.type.Nullability.definitelyNotNull;
-import static com.android.tools.r8.utils.PredicateUtils.not;
+import static com.android.tools.r8.utils.internal.PredicateUtils.not;
 
 import com.android.tools.r8.androidapi.ComputedApiLevel;
 import com.android.tools.r8.cf.CfVersion;

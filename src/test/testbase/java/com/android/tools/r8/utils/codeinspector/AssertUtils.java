@@ -8,7 +8,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
 import com.android.tools.r8.CompilationFailedException;
-import com.android.tools.r8.utils.ThrowingAction;
+import com.android.tools.r8.utils.internal.ThrowingAction;
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 import java.util.function.Consumer;

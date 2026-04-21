@@ -12,7 +12,7 @@ import com.android.tools.r8.references.MethodReference;
 import com.android.tools.r8.references.Reference;
 import com.android.tools.r8.references.TypeReference;
 import com.android.tools.r8.utils.AndroidApiLevel;
-import com.android.tools.r8.utils.TraversalContinuation;
+import com.android.tools.r8.utils.internal.TraversalContinuation;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.BiFunction;

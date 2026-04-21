@@ -3,7 +3,7 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8.tracereferences;
 
-import static com.android.tools.r8.utils.ConsumerUtils.emptyConsumer;
+import static com.android.tools.r8.utils.internal.ConsumerUtils.emptyConsumer;
 import static com.google.common.base.Predicates.alwaysTrue;
 
 import com.android.tools.r8.DiagnosticsHandler;
@@ -53,7 +53,7 @@ import com.android.tools.r8.tracereferences.TraceReferencesConsumer.TracedRefere
 import com.android.tools.r8.tracereferences.internal.TracedClassImpl;
 import com.android.tools.r8.tracereferences.internal.TracedFieldImpl;
 import com.android.tools.r8.tracereferences.internal.TracedMethodImpl;
-import com.android.tools.r8.utils.BooleanBox;
+import com.android.tools.r8.utils.internal.BooleanBox;
 import com.android.tools.r8.utils.ThreadUtils;
 import com.android.tools.r8.utils.collections.ProgramMethodSet;
 import com.android.tools.r8.utils.timing.Timing;

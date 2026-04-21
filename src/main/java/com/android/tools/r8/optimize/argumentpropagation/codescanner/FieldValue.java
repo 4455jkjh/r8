@@ -8,7 +8,7 @@ import com.android.tools.r8.graph.DexField;
 import com.android.tools.r8.ir.analysis.value.AbstractValue;
 import com.android.tools.r8.optimize.argumentpropagation.computation.ComputationTreeNode;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
-import com.android.tools.r8.utils.TraversalContinuation;
+import com.android.tools.r8.utils.internal.TraversalContinuation;
 import java.util.function.Function;
 
 // TODO(b/296030319): Change DexField to implement InFlow and use DexField in all places instead of

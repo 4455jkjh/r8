@@ -13,7 +13,7 @@ import static com.android.tools.r8.lightir.LirOpcodes.INVOKESUPER;
 import static com.android.tools.r8.lightir.LirOpcodes.INVOKESUPER_ITF;
 import static com.android.tools.r8.lightir.LirOpcodes.INVOKEVIRTUAL;
 
-import com.android.tools.r8.utils.exceptions.Unreachable;
+import com.android.tools.r8.utils.internal.exceptions.Unreachable;
 
 public class IROpcodeUtils {
 

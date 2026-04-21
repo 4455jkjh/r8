@@ -12,6 +12,7 @@ import com.android.tools.r8.graph.DexDebugPositionState;
 import com.android.tools.r8.graph.DexMethod;
 import com.android.tools.r8.ir.code.Position;
 import com.android.tools.r8.utils.DexDebugUtils.PositionInfo.PositionInfoBuilder;
+import com.android.tools.r8.utils.internal.Box;
 import java.util.List;
 
 public class DexDebugUtils {

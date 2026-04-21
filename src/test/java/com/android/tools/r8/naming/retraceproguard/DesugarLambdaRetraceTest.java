@@ -12,7 +12,7 @@ import static org.junit.Assert.assertEquals;
 import com.android.tools.r8.CompilationMode;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.naming.retraceproguard.StackTrace.StackTraceLine;
-import com.android.tools.r8.utils.BooleanUtils;
+import com.android.tools.r8.utils.internal.BooleanUtils;
 import com.google.common.collect.ImmutableList;
 import java.util.Collection;
 import org.junit.Ignore;
