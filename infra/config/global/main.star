@@ -434,7 +434,7 @@ def perf():
                 max_concurrent_invocations = 3,
             ),
             release_trigger = ["branch-gitiles-8.9-forward"],
-            priority = 25,
+            priority = 30,
             properties = properties,
             execution_timeout = time.hour * 6,
             expiration_timeout = time.hour * 35,
@@ -450,7 +450,7 @@ def perf():
             max_concurrent_invocations = 3,
         ),
         release_trigger = ["branch-gitiles-9.2-forward"],
-        priority = 25,
+        priority = 30,
         properties = {
             "test_wrapper": "tools/analyze_gmaven.py",
             "builder_group": "internal.client.r8",
@@ -469,7 +469,7 @@ def gradle_benchmark():
         triggering_policy = scheduler.policy(
             kind = scheduler.GREEDY_BATCHING_KIND,
             max_batch_size = 1,
-            max_concurrent_invocations = 1,
+            max_concurrent_invocations = 3,
         ),
         priority = 35,
         properties = {
