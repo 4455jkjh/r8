@@ -19,9 +19,9 @@ import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
 
 @RunWith(Parameterized.class)
-public class AtomicLongFieldUpdaterSetTest extends AtomicFieldUpdaterBase {
+public class AtomicFieldUpdaterGetTest extends AtomicFieldUpdaterBase {
 
-  public AtomicLongFieldUpdaterSetTest(TestParameters parameters) {
+  public AtomicFieldUpdaterGetTest(TestParameters parameters) {
     super(parameters);
   }
 
@@ -43,8 +43,7 @@ public class AtomicLongFieldUpdaterSetTest extends AtomicFieldUpdaterBase {
             diagnostics ->
                 diagnostics.assertInfosMatch(
                     diagnosticMessage(containsString("Can instrument")),
-                    diagnosticMessage(containsString("Can optimize")),
-                    diagnosticMessage(containsString("Cannot optimize"))
+                    diagnosticMessage(containsString("Can optimize"))
                     // TODO(b/453628974): The field should be removed once nullability analysis is
                     //                    more precise.
                     // diagnosticMessage(containsString("Can remove"))
@@ -56,19 +55,19 @@ public class AtomicLongFieldUpdaterSetTest extends AtomicFieldUpdaterBase {
                 assertThat(
                     method,
                     CodeMatchers.invokesMethodWithHolderAndName(
-                        "sun.misc.Unsafe", "putLongVolatile"));
+                        "sun.misc.Unsafe", "getLongVolatile"));
               } else {
                 assertThat(
                     method,
                     CodeMatchers.invokesMethodWithHolderAndName(
-                        AtomicLongFieldUpdater.class, "set"));
+                        AtomicLongFieldUpdater.class, "get"));
               }
             })
         .run(parameters.getRuntime(), testClass)
         .assertSuccessWithOutputLines("123");
   }
 
-  // Corresponding to simple kotlin usage of `atomic(-1L)` via atomicfu.
+  // Corresponding to simple kotlin usage of `atomic(123L)` via atomicfu.
   public static class TestClass {
 
     private volatile long myLong;
@@ -81,12 +80,11 @@ public class AtomicLongFieldUpdaterSetTest extends AtomicFieldUpdaterBase {
 
     public TestClass() {
       super();
-      myLong = -1L;
+      myLong = 123L;
     }
 
     public static void main(String[] args) {
       TestClass instance = new TestClass();
-      myLong$FU.set(instance, 123);
       System.out.println(myLong$FU.get(instance));
     }
   }

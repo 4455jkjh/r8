@@ -161,6 +161,10 @@ public class AtomicFieldUpdaterOptimizer extends CodeRewriterPass<AppInfoWithCla
         if (visitSet(context, invoke, dexItemFactory.sunMiscUnsafeMethods.putIntVolatile)) {
           changed = true;
         }
+      } else if (invokedMethod.isIdenticalTo(dexItemFactory.atomicLongUpdaterMethods.get)) {
+        if (visitGet(context, invoke, dexItemFactory.sunMiscUnsafeMethods.getLongVolatile)) {
+          changed = true;
+        }
       } else if (invokedMethod.isIdenticalTo(dexItemFactory.atomicLongUpdaterMethods.set)) {
         if (visitSet(context, invoke, dexItemFactory.sunMiscUnsafeMethods.putLongVolatile)) {
           changed = true;

@@ -590,12 +590,7 @@ public class AndroidApiLevelDatabaseHelper {
             factory.createProto(factory.longType, factory.objectType, factory.longType),
             "getLong"),
         always);
-    apiLevelConsumer.accept(
-        factory.createMethod(
-            factory.sunMiscUnsafeType,
-            factory.createProto(factory.longType, factory.objectType, factory.longType),
-            "getLongVolatile"),
-        always);
+    apiLevelConsumer.accept(factory.sunMiscUnsafeMethods.getLongVolatile, always);
     apiLevelConsumer.accept(
         factory.createMethod(
             factory.sunMiscUnsafeType,
