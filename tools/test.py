@@ -356,6 +356,8 @@ def Main():
 
 
 def test(options, args):
+    if options.command_cache_dir:
+        options.command_cache_dir = os.path.abspath(options.command_cache_dir)
     if utils.is_bot():
         gradle.RunGradle(['--no-daemon', 'clean'])
         print('Running with python ' + str(sys.version_info))
