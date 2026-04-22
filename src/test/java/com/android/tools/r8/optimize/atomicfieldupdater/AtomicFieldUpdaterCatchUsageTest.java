@@ -4,6 +4,7 @@
 package com.android.tools.r8.optimize.atomicfieldupdater;
 
 import static com.android.tools.r8.DiagnosticsMatcher.diagnosticMessage;
+import static com.android.tools.r8.utils.codeinspector.CodeMatchers.invokesMethodWithHolder;
 import static java.util.Collections.nCopies;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.IsNot.not;
@@ -16,7 +17,6 @@ import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.graph.DexItemFactory;
 import com.android.tools.r8.graph.DexType;
 import com.android.tools.r8.utils.AndroidApiLevel;
-import com.android.tools.r8.utils.codeinspector.CodeMatchers;
 import com.android.tools.r8.utils.codeinspector.InstructionSubject;
 import com.android.tools.r8.utils.codeinspector.MethodSubject;
 import java.util.ArrayList;
@@ -46,7 +46,9 @@ public class AtomicFieldUpdaterCatchUsageTest extends AtomicFieldUpdaterBase {
   public void testR8() throws Exception {
     Class<TestClass> testClass = TestClass.class;
     boolean isCompareAndSetBackported =
-        isOptimizationOn() && parameters.getApiLevel().isLessThan(AndroidApiLevel.Sv2);
+        parameters.isDexRuntime() && parameters.getApiLevel().isLessThan(AndroidApiLevel.Sv2);
+    // Non-initializer calls to AtomicXFieldUpdater.
+    int methodCount = 9 + (isCompareAndSetBackported ? 1 : 0);
     testForR8(parameters)
         .apply(this::enableAtomicFieldUpdaterWithInfo)
         .addProgramClasses(testClass)
@@ -58,41 +60,38 @@ public class AtomicFieldUpdaterCatchUsageTest extends AtomicFieldUpdaterBase {
               List<Matcher<Diagnostic>> matchers = new ArrayList<>();
               matchers.addAll(nCopies(3, diagnosticMessage(containsString("Can instrument"))));
               matchers.addAll(
-                  nCopies(
-                      13 + (isCompareAndSetBackported ? 1 : 0),
-                      diagnosticMessage(containsString("Cannot optimize"))));
-              matchers.addAll(nCopies(3, diagnosticMessage(containsString("Cannot remove"))));
+                  nCopies(methodCount, diagnosticMessage(containsString("Can optimize"))));
+              // TODO(b/453628974): The field should be removed once nullability analysis is
+              //                    more precise.
+              // matchers.addAll(nCopies(3, diagnosticMessage(containsString("Can remove"))));
               diagnostics.assertInfosMatch(matchers);
             })
         .inspect(
             inspector -> {
               MethodSubject method = inspector.clazz(testClass).mainMethod();
-              assertThat(method, not(INVOKES_UNSAFE));
+              DexItemFactory factory = inspector.getFactory();
               if (isOptimizationOn()) {
-                DexItemFactory factory = inspector.getFactory();
+                assertThat(method, not(invokesMethodWithHolder(AtomicReferenceFieldUpdater.class)));
+                assertThat(method, not(invokesMethodWithHolder(AtomicIntegerFieldUpdater.class)));
+                assertThat(method, not(invokesMethodWithHolder(AtomicLongFieldUpdater.class)));
+                assertEquals(methodCount, countInvokesTo(method, factory.sunMiscUnsafeType));
+              } else {
+                assertThat(method, not(INVOKES_UNSAFE));
                 assertEquals(
-                    isCompareAndSetBackported ? 6 : 5,
+                    3 + (isCompareAndSetBackported ? 1 : 0),
                     countInvokesTo(
                         method, factory.javaUtilConcurrentAtomicAtomicReferenceFieldUpdater));
                 assertEquals(
-                    4,
+                    3,
                     countInvokesTo(
                         method, factory.javaUtilConcurrentAtomicAtomicIntegerFieldUpdater));
                 assertEquals(
-                    4,
+                    3,
                     countInvokesTo(method, factory.javaUtilConcurrentAtomicAtomicLongFieldUpdater));
-              } else {
-                assertThat(
-                    method,
-                    CodeMatchers.invokesMethodWithHolder(AtomicReferenceFieldUpdater.class));
-                assertThat(
-                    method, CodeMatchers.invokesMethodWithHolder(AtomicIntegerFieldUpdater.class));
-                assertThat(
-                    method, CodeMatchers.invokesMethodWithHolder(AtomicLongFieldUpdater.class));
               }
             })
         .run(parameters.getRuntime(), testClass)
-        .assertSuccessWithOutputLines("Hello!!", "1", "1");
+        .assertSuccessWithOutputLines("Hello!!", "43", "45");
   }
 
   private long countInvokesTo(MethodSubject method, DexType holder) {
@@ -122,7 +121,7 @@ public class AtomicFieldUpdaterCatchUsageTest extends AtomicFieldUpdaterBase {
 
     public TestClass() {
       super();
-      myString = "Hello";
+      myString = "empty";
       myInt = 0;
       myLong = 0L;
     }
@@ -131,21 +130,18 @@ public class AtomicFieldUpdaterCatchUsageTest extends AtomicFieldUpdaterBase {
       TestClass instance = new TestClass();
       try {
         // Reference.
-        Object old = myString$FU.getAndSet(instance, "World");
-        myString$FU.compareAndSet(instance, "World", old.toString() + "!!");
-        myString$FU.set(instance, myString$FU.get(instance));
+        myString$FU.set(instance, "Hello");
+        myString$FU.compareAndSet(instance, "Hello", "Hello!!");
         System.out.println(myString$FU.get(instance));
 
         // Integer.
-        int oldInt = myInt$FU.getAndSet(instance, -1);
         myInt$FU.set(instance, 42);
-        myInt$FU.compareAndSet(instance, 42, oldInt + 1);
+        myInt$FU.compareAndSet(instance, 42, 43);
         System.out.println(myInt$FU.get(instance));
 
         // Long.
-        long oldLong = myLong$FU.getAndSet(instance, -1L);
-        myLong$FU.set(instance, 42L);
-        myLong$FU.compareAndSet(instance, 42L, oldLong + 1L);
+        myLong$FU.set(instance, 44L);
+        myLong$FU.compareAndSet(instance, 44L, 45L);
         System.out.println(myLong$FU.get(instance));
       } catch (Exception e) {
         // The try block never throws. This is here to test the rewriting with catch handlers.

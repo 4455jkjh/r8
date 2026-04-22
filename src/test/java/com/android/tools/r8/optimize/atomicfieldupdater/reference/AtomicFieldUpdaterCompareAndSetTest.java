@@ -39,7 +39,7 @@ public class AtomicFieldUpdaterCompareAndSetTest extends AtomicFieldUpdaterBase 
   public void testR8() throws Exception {
     Class<TestClass> testClass = TestClass.class;
     boolean isCompareAndSetBackported =
-        isOptimizationOn() && parameters.getApiLevel().isLessThan(AndroidApiLevel.Sv2);
+        parameters.isDexRuntime() && parameters.getApiLevel().isLessThan(AndroidApiLevel.Sv2);
     testForR8(parameters)
         .apply(this::enableAtomicFieldUpdaterWithInfo)
         .addProgramClasses(testClass)
