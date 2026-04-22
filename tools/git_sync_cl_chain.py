@@ -45,6 +45,14 @@ def ParseOptions(argv):
     result.add_option('--bypass-hooks',
                       help='Bypass presubmit hooks',
                       action='store_true')
+    result.add_option(
+        '--dry-run',
+        help='Send the top patchset to do a CQ dry run right after upload',
+        action='store_true')
+    result.add_option(
+        '--dry-run-all',
+        help='Send all patchset(s) to do a CQ dry run right after upload',
+        action='store_true')
     result.add_option('--delete',
                       '-d',
                       help='Delete closed branches',
@@ -117,6 +125,7 @@ def main(argv):
         has_seen_local_branch = False  # A branch that is not uploaded.
         has_seen_open_branch = False  # A branch that is not closed.
         while len(stack) > 0:
+            top_of_stack = len(stack) == 0
             branch = stack.pop()
 
             utils.RunCmd(['git', 'checkout', branch.name], quiet=True)
@@ -157,6 +166,9 @@ def main(argv):
                     upload_cmd = ['git', 'cl', 'upload', '-m', options.message]
                     if options.bypass_hooks:
                         upload_cmd.append('--bypass-hooks')
+                    if (options.dry_run and
+                            top_of_stack) or options.dry_run_all:
+                        upload_cmd.append('--dry-run')
                     utils.RunCmd(upload_cmd, quiet=True)
 
         if get_delete_branches_option(closed_branches, options):
