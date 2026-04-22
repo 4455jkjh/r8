@@ -9,20 +9,12 @@ plugins {
 }
 
 tasks {
-  val clean by registering {
-    dependsOn(gradle.includedBuild("commonBuildSrc").task(":clean"))
-    dependsOn(gradle.includedBuild("shared").task(":clean"))
-    dependsOn(gradle.includedBuild("assistant").task(":clean"))
-    dependsOn(gradle.includedBuild("blastradius").task(":clean"))
-    dependsOn(gradle.includedBuild("keepanno").task(":clean"))
-    dependsOn(":libanalyzer:clean")
-    dependsOn(gradle.includedBuild("resourceshrinker").task(":clean"))
-    dependsOn(":main:clean")
-    dependsOn(gradle.includedBuild("library_desugar").task(":clean"))
-    dependsOn(":test:clean")
-    dependsOn(":dist:clean")
-    dependsOn(":utils:clean")
-  }
+  val clean by
+    registering(Delete::class) {
+      delete(rootProject.layout.buildDirectory)
+      gradle.includedBuilds.forEach { dependsOn(it.task(":clean")) }
+      subprojects.forEach { dependsOn(it.tasks.named("clean")) }
+    }
 
   val r8 by registering { dependsOn(":dist:r8WithRelocatedDeps") }
 
