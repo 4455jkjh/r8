@@ -5,6 +5,7 @@
 package com.android.tools.r8.jdk11.string;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 import com.android.tools.r8.Jdk9TestUtils;
@@ -45,8 +46,11 @@ public class StringConcatTest extends TestBase {
           "3 true 4 true",
           "ONE true TWO true",
           "start  middle  end",
-          "ONE 1 TWO 0",
+          "s1 s2 s3",
           "a 1 b 2 c 3 d 4 e CONST_STR f CONST_STR",
+          "ONE 1 TWO 0",
+          "ONE 0 TWO 1",
+          "ZXY",
           "false123456.07.08hi",
           "SIDE EFFECT",
           "10",
@@ -181,6 +185,13 @@ public class StringConcatTest extends TestBase {
     method = mainClass.uniqueMethodWithOriginalName("numericAndBooleanStrings");
     assertTrue(method.isPresent());
     assertEquals(0, method.streamInstructions().filter(ins -> ins.isConstString()).count());
+
+    method = mainClass.uniqueMethodWithOriginalName("mergeStringsWithSideEffects_sameOrder");
+    assertTrue(method.isPresent());
+    assertEquals(2, countStringBuilderOrInvokeDynamic(method));
+
+    method = mainClass.uniqueMethodWithOriginalName("noOutValues_noSideEffects");
+    assertFalse("Empty method should be removed.", method.isPresent());
   }
 
   static class Main {
@@ -203,6 +214,39 @@ public class StringConcatTest extends TestBase {
       }
     }
 
+    static class ToStringNoSideEffect {
+      @Override
+      public String toString() {
+        return "HELLO";
+      }
+    }
+
+    static class ToStringSneakySideEffects {
+      static String retValue;
+
+      @Override
+      public String toString() {
+        return retValue;
+      }
+    }
+
+    static class Y {
+      static String s = "Y";
+
+      @Override
+      public String toString() {
+        return s;
+      }
+    }
+
+    static class Z {
+      @Override
+      public String toString() {
+        Y.s = null;
+        return "Z";
+      }
+    }
+
     public static void main(String[] strArr) {
       shouldConvertToValueOf();
       shouldConvertToConcat();
@@ -210,10 +254,14 @@ public class StringConcatTest extends TestBase {
       secondSharedConcatWithTryCatch();
       mergeStringsSharedConcat();
       mergeAdjacentConstantsAcrossConcats();
-      mergeStringsWithSideEffects();
+      mergeStringsSneakySideEffect();
       mergeConstants();
+      mergeStringsWithSideEffects_reverseOrder();
+      mergeStringsWithSideEffects_sameOrder();
+      mergeStringsWithSideEffects_interaction();
       System.out.println(allTheParams(false, (byte) 1, '2', (short) 3, 4, 5, 6, 7, 8, "hi"));
-      noOutValues();
+      noOutValues_withSideEffects();
+      noOutValues_noSideEffects();
       doesNotRemoveExplicitToString();
       doesRemoveExplicitToString_singleUser();
       doesRemoveExplicitToString_multiUser();
@@ -268,6 +316,16 @@ public class StringConcatTest extends TestBase {
     }
 
     @NeverInline
+    public static void mergeStringsSneakySideEffect() {
+      boolean alwaysTrue = System.currentTimeMillis() > 0;
+      ToStringSneakySideEffects.retValue = "s2";
+      ToStringSneakySideEffects s2 = new ToStringSneakySideEffects();
+      String concat1 = (alwaysTrue ? "s1 " : "") + s2;
+      ToStringSneakySideEffects.retValue = "gotcha!";
+      System.out.println(concat1 + " s3");
+    }
+
+    @NeverInline
     public static void mergeAdjacentConstantsAcrossConcats() {
       boolean alwaysTrue = System.currentTimeMillis() > 0;
       // concat1 ends with a constant " middle "
@@ -279,10 +337,12 @@ public class StringConcatTest extends TestBase {
     }
 
     @NeverInline
-    public static void mergeStringsWithSideEffects() {
+    public static void mergeStringsWithSideEffects_sameOrder() {
       sideEffectCounter = 0;
-      String partTwo = " TWO " + new ToStringThatCounts();
+      // These can be merged into a single concat since doing so does not change the order of the
+      // side effects.
       String partOne = "ONE " + new ToStringThatCounts();
+      String partTwo = " TWO " + new ToStringThatCounts();
       System.out.println(partOne + partTwo);
     }
 
@@ -306,18 +366,47 @@ public class StringConcatTest extends TestBase {
       }
     }
 
+    @NeverInline
+    public static void mergeStringsWithSideEffects_reverseOrder() {
+      sideEffectCounter = 0;
+      // These cannot be merged into a single concat since doing so would change the order of the
+      // side effects.
+      String partTwo = " TWO " + new ToStringThatCounts();
+      String partOne = "ONE " + new ToStringThatCounts();
+      System.out.println(partOne + partTwo);
+    }
+
+    @NeverInline
+    public static void mergeStringsWithSideEffects_interaction() {
+      Y.s = "Y";
+      String x = "X";
+      Y y = new Y();
+      Z z = new Z();
+      String xy = x + y;
+      String zxy = z + xy;
+      System.out.println(zxy);
+    }
+
     private static void noop(String value) {
       // Tests removing StringConcat with no out value.
     }
 
     @NeverInline
-    public static void noOutValues() {
+    public static void noOutValues_withSideEffects() {
       boolean alwaysTrue = System.currentTimeMillis() > 0;
       try {
-        // Values should be removed.
-        noop(1 + "a" + 3);
         // Should not be removed due to side effects.
         noop("asdf" + (alwaysTrue ? new ToStringThatPrints() : null));
+      } catch (Throwable t) {
+        t.printStackTrace();
+      }
+    }
+
+    @NeverInline
+    public static void noOutValues_noSideEffects() {
+      try {
+        // Values should be removed.
+        noop(1 + "a" + 3 + new ToStringNoSideEffect());
       } catch (Throwable t) {
         t.printStackTrace();
       }

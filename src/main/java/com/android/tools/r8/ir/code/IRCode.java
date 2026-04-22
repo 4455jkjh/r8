@@ -1576,6 +1576,62 @@ public class IRCode implements IRControlFlowGraph, ValueFactory {
   }
 
   /**
+   * Visits all instructions between from & to (non-inclusive) and returns whether the predicate
+   * returned true for any of them.
+   *
+   * <p>This assumes that {@code from} dominates {@code to}.
+   */
+  public boolean anyInstructionBetween(
+      Instruction from, Instruction to, Predicate<Instruction> predicate) {
+    BasicBlock fromBlock = from.getBlock();
+    BasicBlock toBlock = to.getBlock();
+    if (fromBlock == toBlock) {
+      assert from.comesBefore(to);
+      for (Instruction cur = from.getNext(); cur != to; cur = cur.getNext()) {
+        if (predicate.test(cur)) {
+          return true;
+        }
+      }
+      return false;
+    }
+
+    for (Instruction cur = from.getNext(); cur != null; cur = cur.getNext()) {
+      if (predicate.test(cur)) {
+        return true;
+      }
+    }
+
+    for (Instruction cur = to.getPrev(); cur != null; cur = cur.getPrev()) {
+      if (predicate.test(cur)) {
+        return true;
+      }
+    }
+
+    int color = reserveMarkingColor();
+    try {
+      fromBlock.mark(color);
+      toBlock.mark(color);
+      Deque<BasicBlock> worklist = new ArrayDeque<>(toBlock.getPredecessors());
+
+      while (!worklist.isEmpty()) {
+        BasicBlock block = worklist.poll();
+        if (block.isMarked(color)) {
+          continue;
+        }
+        for (Instruction unused : block.getInstructions(predicate)) {
+          return true;
+        }
+        block.mark(color);
+        worklist.addAll(block.getPredecessors());
+      }
+    } finally {
+      returnMarkingColor(color);
+    }
+
+    return false;
+  }
+
+  /**
    * Returns the set of blocks that are reachable from the given source. The source itself is only
    * included if there is a path from the given block to itself.
    */
