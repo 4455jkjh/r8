@@ -8,10 +8,8 @@ import static com.android.tools.r8.desugar.desugaredlibrary.test.CompilationSpec
 import static com.android.tools.r8.desugar.desugaredlibrary.test.LibraryDesugaringSpecification.getJdk8Jdk11;
 
 import com.android.tools.r8.TestParameters;
-import com.android.tools.r8.TestRuntime.CfVm;
 import com.android.tools.r8.desugar.desugaredlibrary.test.CompilationSpecification;
 import com.android.tools.r8.desugar.desugaredlibrary.test.LibraryDesugaringSpecification;
-import com.android.tools.r8.utils.AndroidApiLevel;
 import com.android.tools.r8.utils.StringUtils;
 import java.time.Instant;
 import java.util.Date;
@@ -50,35 +48,37 @@ public class DateInstantConversionTest extends DesugaredLibraryTestBase {
       testForJvm(parameters)
           .addInnerClasses(DateInstantConversionTest.class)
           .run(parameters.getRuntime(), Main.class)
-          .assertSuccessWithOutput(getExpectedResult(parameters.isCfRuntime(CfVm.JDK8)));
+          .assertSuccessWithOutput(getExpectedResult());
       return;
     }
     testForDesugaredLibrary(parameters, libraryDesugaringSpecification, compilationSpecification)
         .addInnerClasses(getClass())
         .addKeepMainRule(Main.class)
         .run(parameters.getRuntime(), Main.class)
-        .assertSuccessWithOutput(
-            getExpectedResult(parameters.getApiLevel().isLessThan(AndroidApiLevel.T)));
+        .assertSuccessWithOutput(getExpectedResult());
   }
 
-  private String getExpectedResult(boolean equals) {
-    if (equals) {
-      return StringUtils.lines("true");
-    }
-    return StringUtils.lines("false", "true");
+  private String getExpectedResult() {
+    return StringUtils.lines("true", "false", "true");
   }
 
   static class Main {
 
     public static void main(String[] args) {
-      Instant now = Instant.now();
-      Date date = Date.from(now);
-      boolean result = date.toInstant().equals(now);
+      // Case 1: No nanos
+      Instant nowNoNanos = Instant.ofEpochMilli(1234567890L);
+      Date dateNoNanos = Date.from(nowNoNanos);
+      System.out.println(dateNoNanos.toInstant().equals(nowNoNanos));
+
+      // Case 2: With nanos
+      Instant nowWithNanos = nowNoNanos.plusNanos(123456);
+      Date dateWithNanos = Date.from(nowWithNanos);
+      boolean result = dateWithNanos.toInstant().equals(nowWithNanos);
       System.out.println(result);
       if (!result) {
         // Last character is Z.
-        String shortVersion = allButLast(date.toInstant().toString());
-        String longVersion = allButLast(now.toString());
+        String shortVersion = allButLast(dateWithNanos.toInstant().toString());
+        String longVersion = allButLast(nowWithNanos.toString());
         System.out.println(longVersion.startsWith(shortVersion));
       }
     }
