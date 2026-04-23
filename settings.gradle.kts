@@ -22,7 +22,9 @@ include(":assistant")
 
 project(":assistant").projectDir = file("d8_r8/assistant")
 
-includeBuild(rootProject.projectDir.resolve("d8_r8/blastradius"))
+include(":blastradius")
+
+project(":blastradius").projectDir = file("d8_r8/blastradius")
 
 includeBuild(rootProject.projectDir.resolve("d8_r8/keepanno"))
 

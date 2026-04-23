@@ -201,8 +201,6 @@ java {
   withSourcesJar()
 }
 
-val blastRadiusJarTask = projectTask("blastradius", "jar")
-val blastRadiusProtoJarTask = projectTask("blastradius", "protoJar")
 val keepAnnoJarTask = projectTask("keepanno", "jar")
 val keepAnnoToolsJar = projectTask("keepanno", "toolsJar")
 val resourceShrinkerJarTask = projectTask("resourceshrinker", "jar")
@@ -230,8 +228,7 @@ dependencies {
   internalJarScope(project(":utils", "isolatedJar"))
   internalClassesScope(project(":utils", "isolatedClasses"))
   implementation(project(":assistant", "assistantJar"))
-  implementation(blastRadiusJarTask.outputs.files)
-  implementation(blastRadiusProtoJarTask.outputs.files)
+  implementation(project(":blastradius", "blastradiusJar"))
   implementation(keepAnnoJarTask.outputs.files)
   implementation(resourceShrinkerJarTask.outputs.files)
   implementation(project(":utils"))

@@ -83,8 +83,15 @@ spdxSbom {
 val assistantJarScope by configurations.dependencyScope("assistantJarScope")
 val assistantJarConfig by
   configurations.resolvable("assistantJarConfig") { extendsFrom(assistantJarScope) }
-val blastRadiusJarTask = projectTask("blastradius", "jar")
-val blastRadiusProtoJarTask = projectTask("blastradius", "protoJar")
+val blastRadiusWithoutProtoJarScope by
+  configurations.dependencyScope("blastRadiusWithoutProtoJarScope")
+val blastRadiusWithoutProtoJarConfig by
+  configurations.resolvable("blastRadiusWithoutProtoJarConfig") {
+    extendsFrom(blastRadiusWithoutProtoJarScope)
+  }
+val blastRadiusProtoJarScope by configurations.dependencyScope("blastRadiusProtoJarScope")
+val blastRadiusProtoJarConfig by
+  configurations.resolvable("blastRadiusProtoJarConfig") { extendsFrom(blastRadiusProtoJarScope) }
 val keepAnnoJarTask = projectTask("keepanno", "jar")
 val keepAnnoDepsJarExceptAsm = projectTask("keepanno", "depsJarExceptAsm")
 val keepAnnoToolsJarTask = projectTask("keepanno", "toolsJar")
@@ -104,6 +111,8 @@ val mainResourcesConfig by
 
 dependencies {
   assistantJarScope(project(":assistant", "assistantJar"))
+  blastRadiusWithoutProtoJarScope(project(":blastradius", "blastradiusWithoutProtoJar"))
+  blastRadiusProtoJarScope(project(":blastradius", "blastradiusProtoJar"))
   libanalyzerJarScope(project(":libanalyzer", "libanalyzer-jar"))
   libanalyzerProtoJarScope(project(":libanalyzer", "libanalyzer-proto-jar"))
   mainJarScope(project(":main", "mainJar"))
@@ -303,7 +312,7 @@ tasks {
   val swissArmyKnifeJarFiles =
     objects.fileCollection().apply {
       from(assistantJarConfig)
-      from(blastRadiusJarTask)
+      from(blastRadiusWithoutProtoJarConfig)
       from(keepAnnoJarTask)
       from(libanalyzerJarConfig)
       from(mainJarConfig)
@@ -375,8 +384,8 @@ tasks {
 
   val protoJar by
     registering(Zip::class) {
-      dependsOn(blastRadiusProtoJarTask, libanalyzerProtoJarConfig)
-      from(blastRadiusProtoJarTask.outputs.files.map(::zipTree))
+      dependsOn(blastRadiusProtoJarConfig, libanalyzerProtoJarConfig)
+      from(blastRadiusProtoJarConfig.map(::zipTree))
       from(libanalyzerProtoJarConfig.map(::zipTree))
       exclude("META-INF/MANIFEST.MF")
       archiveFileName.set("proto.jar")

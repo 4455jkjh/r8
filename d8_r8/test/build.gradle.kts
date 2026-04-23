@@ -36,9 +36,13 @@ val mainSourcesConfig by
 val assistantJarScope by configurations.dependencyScope("assistantJarScope")
 val assistantJarConfig by
   configurations.resolvable("assistantJarConfig") { extendsFrom(assistantJarScope) }
+val blastRadiusSourcesScope by configurations.dependencyScope("blastRadiusSourcesScope")
+val blastRadiusSourcesConfig by
+  configurations.resolvable("blastRadiusSourcesConfig") { extendsFrom(blastRadiusSourcesScope) }
 
 dependencies {
   assistantJarScope(project(":assistant", "assistantJar"))
+  blastRadiusSourcesScope(project(":blastradius", "blastradiusSources"))
   testJarsScope(project(":tests_java_8", "testJar"))
   testJarsScope(project(":tests_java_9", "testJar"))
   testJarsScope(project(":tests_java_11", "testJar"))
@@ -52,7 +56,6 @@ dependencies {
   mainSourcesScope(project(":main", "mainSources"))
 }
 
-val blastRadiusSourcesTask = projectTask("blastradius", "sourcesJar")
 val keepAnnoCompileTask = projectTask("keepanno", "compileJava")
 val keepAnnoCompileKotlinTask = projectTask("keepanno", "compileKotlin")
 val keepAnnoSourcesTask = projectTask("keepanno", "sourcesJar")
@@ -558,12 +561,12 @@ tasks {
 
   val packageSources by
     registering(Jar::class) {
-      dependsOn(blastRadiusSourcesTask)
+      dependsOn(blastRadiusSourcesConfig)
       dependsOn(keepAnnoSourcesTask)
       dependsOn(libanalyzerSourcesConfig)
       dependsOn(resourceShrinkerSourcesTask)
       dependsOn(mainSourcesConfig)
-      from(blastRadiusSourcesTask.outputs.files.map(::zipTree))
+      from(blastRadiusSourcesConfig.map(::zipTree))
       from(keepAnnoSourcesTask.outputs.files.map(::zipTree))
       from(libanalyzerSourcesConfig.map(::zipTree))
       from(mainSourcesConfig.map(::zipTree))

@@ -31,7 +31,6 @@ java {
 val assistantClassesScope by configurations.dependencyScope("assistantClassesScope")
 val assistantClassesOutput =
   configurations.resolvable("assistantClassesOutput") { extendsFrom(assistantClassesScope) }
-val blastRadiusCompileTask = projectTask("blastradius", "compileJava")
 val distDepsFilesScope by configurations.dependencyScope("distDepsFilesScope")
 val distDepsFiles by configurations.resolvable("distDepsFiles") { extendsFrom(distDepsFilesScope) }
 val mainClassesScope by configurations.dependencyScope("mainClassesScope")
@@ -58,7 +57,7 @@ dependencies {
   mainResourcesScope(project(":main", "mainResources"))
   turboClassesScope(project(":main", "turboClassesOutput"))
   implementation(project(":assistant", "assistantJar"))
-  implementation(blastRadiusCompileTask.outputs.files)
+  implementation(project(":blastradius", "blastradiusJar"))
   implementation(keepAnnoJarTask.outputs.files)
   implementation(project(":libanalyzer", "libanalyzer-compile-java"))
   implementation(project(":main", "mainClassesOutput"))

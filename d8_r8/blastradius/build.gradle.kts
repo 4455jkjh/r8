@@ -11,7 +11,7 @@ import org.gradle.nativeplatform.platform.internal.DefaultNativePlatform
 plugins {
   `java-library`
   id("dependencies-plugin")
-  id("net.ltgt.errorprone") version "3.0.1"
+  id("net.ltgt.errorprone")
 }
 
 // It seems like the use of a local maven repo does not allow adding the plugin with the id+version
@@ -73,3 +73,24 @@ tasks.withType<JavaCompile> {
 }
 
 configureErrorProneForJavaCompile()
+
+val blastradiusWithoutProtoJar by
+  configurations.consumable("blastradiusWithoutProtoJar") {
+    outgoing.artifact(tasks.named<Jar>("jar"))
+  }
+
+val blastradiusProtoJar by
+  configurations.consumable("blastradiusProtoJar") {
+    outgoing.artifact(tasks.named<Jar>("protoJar"))
+  }
+
+val blastradiusJar by
+  configurations.consumable("blastradiusJar") {
+    outgoing.artifact(tasks.named<Jar>("jar"))
+    outgoing.artifact(tasks.named<Jar>("protoJar"))
+  }
+
+val blastradiusSources by
+  configurations.consumable("blastradiusSources") {
+    outgoing.artifact(tasks.named<Jar>("sourcesJar"))
+  }
