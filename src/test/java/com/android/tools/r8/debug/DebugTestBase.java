@@ -3,6 +3,7 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8.debug;
 
+import com.android.tools.r8.Retryable;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestRuntime;
 import com.android.tools.r8.ToolHelper;
@@ -79,9 +80,10 @@ import org.junit.rules.TestName;
 /**
  * Base class for debugging tests.
  *
- * The protocol messages are described here:
+ * <p>The protocol messages are described here:
  * https://docs.oracle.com/javase/8/docs/platform/jpda/jdwp/jdwp-protocol.html
  */
+@Retryable
 public abstract class DebugTestBase extends TestBase {
 
   // Set to true to enable verbose logs
