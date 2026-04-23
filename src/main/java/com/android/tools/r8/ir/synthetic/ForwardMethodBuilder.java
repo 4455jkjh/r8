@@ -251,9 +251,6 @@ public class ForwardMethodBuilder {
         || codeLens != null) {
       throw new Unimplemented();
     }
-    if (invokeType != InvokeType.STATIC && invokeType != InvokeType.SPECIAL) {
-      throw new Unimplemented();
-    }
     if (invokeType == InvokeType.SPECIAL
         && sourceMethod.getHolderType().isIdenticalTo(targetMethod.getHolderType())) {
       throw new Unimplemented();
@@ -279,10 +276,23 @@ public class ForwardMethodBuilder {
       lirBuilder.addArgument(instructionIndex, argumentType.isBooleanType());
     }
 
-    if (isStaticTarget()) {
-      lirBuilder.addInvokeStatic(targetMethod, argumentValues, isInterface);
-    } else {
-      lirBuilder.addInvokeSuper(targetMethod, argumentValues, isInterface);
+    switch (invokeType) {
+      case INTERFACE:
+        assert isInterface;
+        lirBuilder.addInvokeInterface(targetMethod, argumentValues);
+        break;
+      case STATIC:
+        lirBuilder.addInvokeStatic(targetMethod, argumentValues, isInterface);
+        break;
+      case SPECIAL:
+        lirBuilder.addInvokeSuper(targetMethod, argumentValues, isInterface);
+        break;
+      case VIRTUAL:
+        assert !isInterface;
+        lirBuilder.addInvokeVirtual(targetMethod, argumentValues);
+        break;
+      default:
+        throw new Unreachable();
     }
 
     if (sourceMethod.getReturnType().isVoidType()) {
