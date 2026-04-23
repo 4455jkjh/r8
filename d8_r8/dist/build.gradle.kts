@@ -80,7 +80,9 @@ spdxSbom {
   }
 }
 
-val assistantJarTask = projectTask("assistant", "jar")
+val assistantJarScope by configurations.dependencyScope("assistantJarScope")
+val assistantJarConfig by
+  configurations.resolvable("assistantJarConfig") { extendsFrom(assistantJarScope) }
 val blastRadiusJarTask = projectTask("blastradius", "jar")
 val blastRadiusProtoJarTask = projectTask("blastradius", "protoJar")
 val keepAnnoJarTask = projectTask("keepanno", "jar")
@@ -101,6 +103,7 @@ val mainResourcesConfig by
   configurations.resolvable("mainResourcesConfig") { extendsFrom(mainResourcesScope) }
 
 dependencies {
+  assistantJarScope(project(":assistant", "assistantJar"))
   libanalyzerJarScope(project(":libanalyzer", "libanalyzer-jar"))
   libanalyzerProtoJarScope(project(":libanalyzer", "libanalyzer-proto-jar"))
   mainJarScope(project(":main", "mainJar"))
@@ -299,7 +302,7 @@ tasks {
 
   val swissArmyKnifeJarFiles =
     objects.fileCollection().apply {
-      from(assistantJarTask)
+      from(assistantJarConfig)
       from(blastRadiusJarTask)
       from(keepAnnoJarTask)
       from(libanalyzerJarConfig)

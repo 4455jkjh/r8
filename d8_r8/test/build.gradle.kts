@@ -33,7 +33,12 @@ val mainSourcesScope by configurations.dependencyScope("mainSourcesScope")
 val mainSourcesConfig by
   configurations.resolvable("mainSourcesConfig") { extendsFrom(mainSourcesScope) }
 
+val assistantJarScope by configurations.dependencyScope("assistantJarScope")
+val assistantJarConfig by
+  configurations.resolvable("assistantJarConfig") { extendsFrom(assistantJarScope) }
+
 dependencies {
+  assistantJarScope(project(":assistant", "assistantJar"))
   testJarsScope(project(":tests_java_8", "testJar"))
   testJarsScope(project(":tests_java_9", "testJar"))
   testJarsScope(project(":tests_java_11", "testJar"))
@@ -58,7 +63,6 @@ val libanalyzerSourcesConfig by
 
 dependencies { libanalyzerSourcesScope(project(":libanalyzer", "libanalyzer-sources-jar")) }
 
-val assistantJarTask = projectTask("assistant", "jar")
 val mainProtoJarTask = project(":dist").tasks.getByName("protoJar")
 val mainDepsJarTask = project(":dist").tasks.getByName("depsJar")
 val swissArmyKnifeTask = project(":dist").tasks.getByName("swissArmyKnife")
@@ -230,12 +234,12 @@ tasks {
       generatedKeepRulesProvider,
       inputJarProvider,
       r8WithRelocatedDepsTask,
-      assistantJarTask,
+      assistantJarConfig,
     )
     dependOnPythonScripts()
     val inputJar = inputJarProvider.getSingleOutputFile()
     val r8WithRelocatedDepsJar = r8WithRelocatedDepsTask.getSingleOutputFile()
-    val assistantJar = assistantJarTask.getSingleOutputFile()
+    val assistantJar = assistantJarConfig.singleFile
     val keepRuleFiles =
       listOf(
         getRoot().resolveAll("src", "main", "keep.txt"),
