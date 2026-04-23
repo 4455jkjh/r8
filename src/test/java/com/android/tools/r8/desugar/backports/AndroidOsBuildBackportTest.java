@@ -6,9 +6,9 @@ package com.android.tools.r8.desugar.backports;
 
 import static com.android.tools.r8.utils.AndroidApiLevel.BAKLAVA;
 
-import com.android.tools.r8.D8TestBuilder;
-import com.android.tools.r8.D8TestCompileResult;
 import com.android.tools.r8.SingleTestRunResult;
+import com.android.tools.r8.TestBuilder;
+import com.android.tools.r8.TestCompileResult;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.ToolHelper.DexVm.Version;
@@ -57,14 +57,27 @@ public class AndroidOsBuildBackportTest extends AbstractBackportTest {
   }
 
   @Override
-  protected void configure(D8TestBuilder builder) throws Exception {
+  public void testR8() throws Exception {
+    testR8(
+        r ->
+            r.applyIf(
+                parameters.getApiLevel().isLessThan(BAKLAVA),
+                SingleTestRunResult::assertSuccess,
+                // No backporting from BAKLAVA, so android.os.Build not found (not in host ART
+                // runtime).
+                rr -> rr.assertFailureWithErrorThatThrows(NoClassDefFoundError.class)));
+  }
+
+  @Override
+  protected void configureProgram(TestBuilder<?, ?> builder) throws Exception {
+    super.configureProgram(builder);
     // Use BAKLAVA library to get API level for getMajorVersion() and getMinorVersion().
     builder.addLibraryFiles(ToolHelper.getAndroidJar(BAKLAVA));
   }
 
   @Override
   // Add minimal android.os.Build$VERSION class to runtime classpath.
-  protected void configure(D8TestCompileResult result) throws Exception {
+  protected void configure(TestCompileResult<?, ?> result) throws Exception {
     result.addRunClasspathFiles(
         testForD8()
             .addProgramClassFileData(getTransformedBuildVERSIONClass())

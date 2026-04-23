@@ -8,8 +8,8 @@ import static com.android.tools.r8.desugar.AutoCloseableAndroidLibraryFileData.c
 import static com.android.tools.r8.desugar.AutoCloseableAndroidLibraryFileData.getAutoCloseableAndroidClassData;
 import static org.hamcrest.CoreMatchers.containsString;
 
-import com.android.tools.r8.D8TestCompileResult;
 import com.android.tools.r8.TestBuilder;
+import com.android.tools.r8.TestCompileResult;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.TestRuntime.CfVm;
@@ -93,11 +93,11 @@ public class AutoCloseableRetargeterAndroidSubtypeTest extends AbstractBackportT
   }
 
   @Override
-  protected void configure(D8TestCompileResult builder) throws Exception {
+  protected void configure(TestCompileResult<?, ?> result) throws Exception {
     if (parameters.isDexRuntime()) {
-      builder.addBootClasspathFiles(compileAutoCloseableAndroidLibraryClasses(this, parameters));
+      result.addBootClasspathFiles(compileAutoCloseableAndroidLibraryClasses(this, parameters));
     } else {
-      builder.addRunClasspathClassFileData(getAutoCloseableAndroidClassData(parameters));
+      result.addRunClasspathClassFileData(getAutoCloseableAndroidClassData(parameters));
     }
   }
 

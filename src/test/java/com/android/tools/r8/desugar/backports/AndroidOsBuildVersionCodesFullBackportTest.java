@@ -6,8 +6,8 @@ package com.android.tools.r8.desugar.backports;
 
 import static com.android.tools.r8.utils.AndroidApiLevel.BAKLAVA;
 
-import com.android.tools.r8.D8TestBuilder;
-import com.android.tools.r8.D8TestCompileResult;
+import com.android.tools.r8.TestBuilder;
+import com.android.tools.r8.TestCompileResult;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.ToolHelper.DexVm.Version;
@@ -53,14 +53,15 @@ public class AndroidOsBuildVersionCodesFullBackportTest extends AbstractBackport
   }
 
   @Override
-  protected void configure(D8TestBuilder builder) throws Exception {
+  protected void configureProgram(TestBuilder<?, ?> builder) throws Exception {
+    super.configureProgram(builder);
     // Use BAKLAVA library to get API level for getMajorVersion() and getMinorVersion().
     builder.addLibraryFiles(ToolHelper.getAndroidJar(AndroidApiLevel.BAKLAVA));
   }
 
   @Override
   // Add android.os.Build$VERSION_CODES_FULL class to runtime classpath.
-  protected void configure(D8TestCompileResult result) throws Exception {
+  protected void configure(TestCompileResult<?, ?> result) throws Exception {
     // Only add when this is not backported away.
     if (parameters.frameworkHasBuildVersionCodesFull()) {
       result.addRunClasspathFiles(

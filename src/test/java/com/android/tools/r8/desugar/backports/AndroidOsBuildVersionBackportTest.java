@@ -4,8 +4,8 @@
 
 package com.android.tools.r8.desugar.backports;
 
-import com.android.tools.r8.D8TestBuilder;
-import com.android.tools.r8.D8TestCompileResult;
+import com.android.tools.r8.TestBuilder;
+import com.android.tools.r8.TestCompileResult;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.ToolHelper.DexVm.Version;
@@ -41,14 +41,15 @@ public class AndroidOsBuildVersionBackportTest extends AbstractBackportTest {
   }
 
   @Override
-  protected void configure(D8TestBuilder builder) throws Exception {
+  protected void configureProgram(TestBuilder<?, ?> builder) throws Exception {
+    super.configureProgram(builder);
     // Use BAKLAVA library to get API level for getMajorVersion() and getMinorVersion().
     builder.addLibraryFiles(ToolHelper.getAndroidJar(AndroidApiLevel.BAKLAVA));
   }
 
   @Override
   // Add minimal android.os.Build$VERSION class to runtime classpath.
-  protected void configure(D8TestCompileResult result) throws Exception {
+  protected void configure(TestCompileResult<?, ?> result) throws Exception {
     result.addRunClasspathFiles(
         testForD8()
             .addProgramClassFileData(getTransformedBuildVERSIONClassForRuntimeClasspath())

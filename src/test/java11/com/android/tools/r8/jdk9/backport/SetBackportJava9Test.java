@@ -10,6 +10,7 @@ import com.android.tools.r8.TestRuntime.CfVm;
 import com.android.tools.r8.desugar.backports.AbstractBackportTest;
 import com.android.tools.r8.desugar.backports.IgnoreInvokes;
 import com.android.tools.r8.utils.AndroidApiLevel;
+import com.android.tools.r8.utils.codeinspector.CodeInspector;
 import java.util.Set;
 import org.hamcrest.CoreMatchers;
 import org.junit.Test;
@@ -40,6 +41,13 @@ public class SetBackportJava9Test extends AbstractBackportTest {
 
     // Set.of added in API 30.
     registerTarget(AndroidApiLevel.R, 21);
+  }
+
+  @Override
+  protected void assertDesugaring(CodeInspector inspector, boolean isR8) {
+    if (!isR8 || parameters.getApiLevel().isLessThan(AndroidApiLevel.R)) {
+      super.assertDesugaring(inspector, isR8);
+    }
   }
 
   @Test

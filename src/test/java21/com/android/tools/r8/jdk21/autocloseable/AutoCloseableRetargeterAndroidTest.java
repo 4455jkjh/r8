@@ -7,9 +7,10 @@ package com.android.tools.r8.jdk21.autocloseable;
 import static com.android.tools.r8.desugar.AutoCloseableAndroidLibraryFileData.compileAutoCloseableAndroidLibraryClasses;
 import static com.android.tools.r8.desugar.AutoCloseableAndroidLibraryFileData.getAutoCloseableAndroidClassData;
 import static org.hamcrest.CoreMatchers.containsString;
+import static org.junit.Assume.assumeTrue;
 
-import com.android.tools.r8.D8TestCompileResult;
 import com.android.tools.r8.TestBuilder;
+import com.android.tools.r8.TestCompileResult;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestRuntime.CfVm;
 import com.android.tools.r8.ToolHelper;
@@ -24,6 +25,7 @@ import com.android.tools.r8.utils.AndroidApiLevel;
 import com.google.common.collect.ImmutableList;
 import java.io.IOException;
 import java.util.List;
+import java.util.concurrent.ForkJoinPool;
 import org.junit.Assume;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -65,6 +67,7 @@ public class AutoCloseableRetargeterAndroidTest extends AbstractBackportTest {
     registerTarget(AndroidApiLevel.B, 5);
   }
 
+  @Override
   protected void configureProgram(TestBuilder<?, ?> builder) throws Exception {
     super.configureProgram(builder);
     if (builder.isJvmTestBuilder()) {
@@ -82,16 +85,21 @@ public class AutoCloseableRetargeterAndroidTest extends AbstractBackportTest {
           // No need to run without default runtime library on the JVM.
           Assume.assumeFalse(builder.isJvmTestBuilder());
         }
+      } else {
+        assert compileTimeLib == CompileTimeLib.DEFAULT;
+        if (builder.isR8TestBuilder() && parameters.getApiLevel().isLessThan(AndroidApiLevel.L)) {
+          builder.asR8TestBuilder().addDontWarn(ForkJoinPool.class);
+        }
       }
     }
   }
 
   @Override
-  protected void configure(D8TestCompileResult builder) throws Exception {
+  protected void configure(TestCompileResult<?, ?> result) throws Exception {
     if (parameters.isDexRuntime()) {
-      builder.addBootClasspathFiles(compileAutoCloseableAndroidLibraryClasses(this, parameters));
+      result.addBootClasspathFiles(compileAutoCloseableAndroidLibraryClasses(this, parameters));
     } else {
-      builder.addRunClasspathClassFileData(getAutoCloseableAndroidClassData(parameters));
+      result.addRunClasspathClassFileData(getAutoCloseableAndroidClassData(parameters));
     }
   }
 
@@ -106,7 +114,13 @@ public class AutoCloseableRetargeterAndroidTest extends AbstractBackportTest {
         .assertFailureWithErrorThatMatches(containsString("close should not be called"));
   }
 
-  private static byte[] getTestRunner() throws IOException {
+  @Override
+  public void testR8() throws Exception {
+    assumeTrue(compileTimeLib != CompileTimeLib.NONE);
+    super.testR8();
+  }
+
+  private static byte[] getTestRunner() {
     return transformer(TestRunner.class)
         .replaceClassDescriptorInMethodInstructions(
             descriptor(ContentProviderClient.class),
