@@ -1151,6 +1151,7 @@ private fun getThirdPartyAndroidJar(version: String): ThirdPartyDependency {
 private fun getThirdPartyAndroidVms(): List<ThirdPartyDependency> {
   return listOf(
       listOf("host", "art-master"),
+      listOf("host", "art-17.0.0-beta4"),
       listOf("host", "art-16.0.0"),
       listOf("host", "art-15.0.0-beta2"),
       listOf("host", "art-14.0.0-beta3"),

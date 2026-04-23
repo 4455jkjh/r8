@@ -29,6 +29,7 @@ public class TestCondition {
     ART_V14_0_0,
     ART_V15_0_0,
     ART_V16_0_0,
+    ART_V17_0_0,
     ART_DEFAULT,
     ART_MASTER,
     JAVA;
@@ -61,6 +62,8 @@ public class TestCondition {
           return ART_V15_0_0;
         case V16_0_0:
           return ART_V16_0_0;
+        case V17_0_0:
+          return ART_V17_0_0;
         case DEFAULT:
           return ART_DEFAULT;
         case MASTER:

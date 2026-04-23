@@ -377,6 +377,8 @@ public class ToolHelper {
     ART_15_0_0_HOST(Version.V15_0_0, Kind.HOST),
     ART_16_0_0_TARGET(Version.V16_0_0, Kind.TARGET),
     ART_16_0_0_HOST(Version.V16_0_0, Kind.HOST),
+    ART_17_0_0_TARGET(Version.V17_0_0, Kind.TARGET),
+    ART_17_0_0_HOST(Version.V17_0_0, Kind.HOST),
     ART_MASTER_TARGET(Version.MASTER, Kind.TARGET),
     ART_MASTER_HOST(Version.MASTER, Kind.HOST);
 
@@ -400,6 +402,7 @@ public class ToolHelper {
       V14_0_0("14.0.0"),
       V15_0_0("15.0.0"),
       V16_0_0("16.0.0"),
+      V17_0_0("17.0.0"),
       MASTER("master");
 
       /** This should generally be the latest DEX VM fully supported. */
@@ -474,7 +477,7 @@ public class ToolHelper {
       }
 
       public static Version last() {
-        return V16_0_0;
+        return V17_0_0;
       }
 
       public static Version master() {
@@ -993,6 +996,7 @@ public class ToolHelper {
       ImmutableMap.<DexVm, String>builder()
           .put(DexVm.ART_DEFAULT, "art")
           .put(DexVm.ART_MASTER_HOST, "host/art-master")
+          .put(DexVm.ART_17_0_0_HOST, "host/art-17.0.0-beta4")
           .put(DexVm.ART_16_0_0_HOST, "host/art-16.0.0")
           .put(DexVm.ART_15_0_0_HOST, "host/art-15.0.0-beta2")
           .put(DexVm.ART_14_0_0_HOST, "host/art-14.0.0-beta3")
@@ -1011,6 +1015,7 @@ public class ToolHelper {
       ImmutableMap.<DexVm, String>builder()
           .put(DexVm.ART_DEFAULT, "bin/art")
           .put(DexVm.ART_MASTER_HOST, "bin/art")
+          .put(DexVm.ART_17_0_0_HOST, "bin/art")
           .put(DexVm.ART_16_0_0_HOST, "bin/art")
           .put(DexVm.ART_15_0_0_HOST, "bin/art")
           .put(DexVm.ART_14_0_0_HOST, "bin/art")
@@ -1029,6 +1034,7 @@ public class ToolHelper {
   private static final Map<DexVm, String> ART_BINARY_VERSIONS_X64 =
       ImmutableMap.<DexVm, String>builder()
           .put(DexVm.ART_DEFAULT, "bin/art")
+          .put(DexVm.ART_17_0_0_HOST, "bin/art")
           .put(DexVm.ART_16_0_0_HOST, "bin/art")
           .put(DexVm.ART_15_0_0_HOST, "bin/art")
           .put(DexVm.ART_14_0_0_HOST, "bin/art")
@@ -1066,6 +1072,7 @@ public class ToolHelper {
     ImmutableMap.Builder<DexVm, List<String>> builder = ImmutableMap.builder();
     builder
         .put(DexVm.ART_DEFAULT, ART_7_TO_10_BOOT_LIBS)
+        .put(DexVm.ART_17_0_0_HOST, ART_12_PLUS_BOOT_LIBS)
         .put(DexVm.ART_16_0_0_HOST, ART_12_PLUS_BOOT_LIBS)
         .put(DexVm.ART_15_0_0_HOST, ART_12_PLUS_BOOT_LIBS)
         .put(DexVm.ART_14_0_0_HOST, ART_12_PLUS_BOOT_LIBS)
@@ -1088,6 +1095,7 @@ public class ToolHelper {
     ImmutableMap.Builder<DexVm, String> builder = ImmutableMap.builder();
     builder
         .put(DexVm.ART_DEFAULT, "angler")
+        .put(DexVm.ART_17_0_0_HOST, "akita")
         .put(DexVm.ART_16_0_0_HOST, "akita")
         .put(DexVm.ART_15_0_0_HOST, "akita")
         .put(DexVm.ART_14_0_0_HOST, "redfin")
@@ -1124,6 +1132,7 @@ public class ToolHelper {
       case V13_0_0:
       case V14_0_0:
       case V15_0_0:
+      case V17_0_0:
       case V16_0_0:
       case MASTER:
         return base.resolve("host").resolve("art-" + version);
@@ -1161,6 +1170,7 @@ public class ToolHelper {
       case V13_0_0:
       case V14_0_0:
       case V15_0_0:
+      case V17_0_0:
       case V16_0_0:
       case MASTER:
         return "x86_64";
@@ -1438,6 +1448,8 @@ public class ToolHelper {
     switch (dexVm.version) {
       case MASTER:
         return AndroidApiLevel.MAIN;
+      case V17_0_0:
+        return AndroidApiLevel.CINNAMON_BUN;
       case V16_0_0:
         return AndroidApiLevel.BAKLAVA;
       case V15_0_0:
@@ -1474,6 +1486,7 @@ public class ToolHelper {
   static final Map<AndroidApiLevel, DexVm.Version> apiLevelToDexVmVersion =
       ImmutableMap.<AndroidApiLevel, DexVm.Version>builder()
           .put(AndroidApiLevel.MAIN, DexVm.Version.MASTER)
+          .put(AndroidApiLevel.CINNAMON_BUN, DexVm.Version.V17_0_0)
           .put(AndroidApiLevel.BAKLAVA, DexVm.Version.V16_0_0)
           .put(AndroidApiLevel.V, DexVm.Version.V15_0_0)
           .put(AndroidApiLevel.U, DexVm.Version.V14_0_0)
