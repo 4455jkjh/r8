@@ -411,10 +411,14 @@ def test(options, args):
             archive_desugar_jdk_libs.CloneDesugaredLibrary(
                 'google', checkout_dir, 'HEAD')
             # Make sure bazel is extracted in third_party.
-            utils.DownloadFromGoogleCloudStorage(utils.BAZEL_SHA_FILE)
-            utils.DownloadFromGoogleCloudStorage(utils.JAVA8_SHA_FILE)
-            utils.DownloadFromGoogleCloudStorage(utils.JAVA11_SHA_FILE)
-            utils.DownloadFromGoogleCloudStorage(utils.JAVA17_SHA_FILE)
+            utils.EnsureDepFromGoogleCloudStorage(utils.BAZEL_SHA_FILE,
+                                                  'Bazel tool')
+            utils.EnsureDepFromGoogleCloudStorage(utils.JAVA8_SHA_FILE,
+                                                  'Java 8 runtime')
+            utils.EnsureDepFromGoogleCloudStorage(utils.JAVA11_SHA_FILE,
+                                                  'Java 11 runtime')
+            utils.EnsureDepFromGoogleCloudStorage(utils.JAVA17_SHA_FILE,
+                                                  'Java 17 runtime')
             (library_jar,
              maven_zip) = archive_desugar_jdk_libs.BuildDesugaredLibrary(
                  checkout_dir, 'jdk11_legacy' if

@@ -21,8 +21,7 @@ KOTLIN_FMT_JAR = path.join('third_party', 'google', 'google-kotlin-format',
 
 KOTLIN_FMT_SHA1 = path.join('third_party', 'google', 'google-kotlin-format',
                             '0.54.tar.gz.sha1')
-KOTLIN_FMT_TGZ = path.join('third_party', 'google', 'google-kotlin-format',
-                           '0.54.tar.gz')
+
 KOTLIN_FMT_IGNORE = {
     'src/test/java/com/android/tools/r8/kotlin/metadata/inline_class_fun_descriptor_classes_app/main.kt'
 }
@@ -35,14 +34,11 @@ FMT_CMD = path.join('third_party', 'google', 'google-java-format', '1.24.0',
 FMT_CMD_JDK17 = path.join('tools', 'google-java-format-diff.py')
 FMT_SHA1 = path.join('third_party', 'google', 'google-java-format',
                      '1.24.0.tar.gz.sha1')
-FMT_TGZ = path.join('third_party', 'google', 'google-java-format',
-                    '1.24.0.tar.gz')
 
 PYTHON_FMT = path.join('third_party', 'google', 'yapf', '20231013')
 PYTHON_FMT_EXEC = path.join('third_party', 'google', 'yapf', '20231013', 'yapf')
 PYTHON_FMT_SHA1 = path.join('third_party', 'google', 'yapf',
                             '20231013.tar.gz.sha1')
-PYTHON_FMT_TGZ = path.join('third_party', 'google', 'yapf', '20231013.tar.gz')
 
 YAPF_PYTHON_PATH = [PYTHON_FMT, os.path.join(PYTHON_FMT, 'third_party')]
 
@@ -72,12 +68,13 @@ def CheckFormatting(input_api, output_api, branch):
     seen_java_error = False
     seen_python_error = False
     pending_kotlin_files = []
-    EnsureDepFromGoogleCloudStorage(KOTLIN_FMT_JAR, KOTLIN_FMT_TGZ,
-                                    KOTLIN_FMT_SHA1, 'google-kotlin-format')
-    EnsureDepFromGoogleCloudStorage(FMT_CMD, FMT_TGZ, FMT_SHA1,
-                                    'google-java-format')
-    EnsureDepFromGoogleCloudStorage(PYTHON_FMT_EXEC, PYTHON_FMT_TGZ,
-                                    PYTHON_FMT_SHA1, 'yapf')
+    EnsureDepFromGoogleCloudStorage(KOTLIN_FMT_SHA1,
+                                    'google-kotlin-format',
+                                    dep=KOTLIN_FMT_JAR)
+    EnsureDepFromGoogleCloudStorage(FMT_SHA1, 'google-java-format', dep=FMT_CMD)
+    EnsureDepFromGoogleCloudStorage(PYTHON_FMT_SHA1,
+                                    'yapf',
+                                    dep=PYTHON_FMT_EXEC)
     results = []
     python_runtime = PythonRuntime()
     for f in input_api.AffectedFiles():
