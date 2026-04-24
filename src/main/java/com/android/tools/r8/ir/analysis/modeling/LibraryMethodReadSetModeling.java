@@ -38,6 +38,20 @@ public class LibraryMethodReadSetModeling {
       return EmptyFieldSet.getInstance();
     }
 
+    // Allow 'static final AtomicXFieldUpdater updater = AtomicXFieldUpdater.newUpdater(..)'
+    // to be removed after updater optimizations.
+    if (appView.dexItemFactory().isAtomicFieldUpdaterConstructor(invokedMethod)) {
+      // newUpdater does technically read the newly written fields of the new updater object.
+      // This is effectively an empty read set.
+      return EmptyFieldSet.getInstance();
+    } else if (invokedMethod.isIdenticalTo(
+        appView.dexItemFactory().sunMiscUnsafeMethods.objectFieldOffset)) {
+      return EmptyFieldSet.getInstance();
+    } else if (invokedMethod.isIdenticalTo(
+        appView.dexItemFactory().classMethods.getDeclaredField)) {
+      return EmptyFieldSet.getInstance();
+    }
+
     // Already handled above.
     assert !appView.dexItemFactory().classMethods.isReflectiveNameLookup(invokedMethod);
 

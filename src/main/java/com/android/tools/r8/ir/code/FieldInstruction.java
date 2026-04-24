@@ -140,7 +140,11 @@ public abstract class FieldInstruction extends Instruction {
 
   @Override
   public AbstractFieldSet readSet(AppView<AppInfoWithLiveness> appView, ProgramMethod context) {
-    if (instructionMayTriggerMethodInvocation(appView, context)) {
+    boolean isSyntheticUnsafeGet =
+        appView.getSyntheticUnsafeClass() != null
+            && getField().isIdenticalTo(appView.getSyntheticUnsafeClass().getInstanceField());
+
+    if (instructionMayTriggerMethodInvocation(appView, context) && !isSyntheticUnsafeGet) {
       // This may trigger class initialization, which could potentially read any field.
       return UnknownFieldSet.getInstance();
     }

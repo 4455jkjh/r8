@@ -61,9 +61,7 @@ public class AtomicFieldUpdaterCatchUsageTest extends AtomicFieldUpdaterBase {
               matchers.addAll(nCopies(3, diagnosticMessage(containsString("Can instrument"))));
               matchers.addAll(
                   nCopies(methodCount, diagnosticMessage(containsString("Can optimize"))));
-              // TODO(b/453628974): The field should be removed once nullability analysis is
-              //                    more precise.
-              // matchers.addAll(nCopies(3, diagnosticMessage(containsString("Can remove"))));
+              matchers.addAll(nCopies(3, diagnosticMessage(containsString("Can remove"))));
               diagnostics.assertInfosMatch(matchers);
             })
         .inspect(
