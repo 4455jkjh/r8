@@ -524,7 +524,6 @@ presubmit_testers = [
     "linux-android-14",
     "linux-android-15",
     "linux-android-16",
-    "linux-android-17",
 ]
 
 r8_tester_with_default(
