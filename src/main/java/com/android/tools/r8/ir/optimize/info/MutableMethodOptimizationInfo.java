@@ -140,6 +140,7 @@ public class MutableMethodOptimizationInfo extends MethodOptimizationInfo
   private MutableMethodOptimizationInfo(MutableMethodOptimizationInfo template) {
     abstractFunction = template.abstractFunction;
     argumentInfos = template.argumentInfos;
+    convertCheckNotNull = template.convertCheckNotNull;
     flags = template.flags;
     initializedClassesOnNormalExit = template.initializedClassesOnNormalExit;
     returnedArgument = template.returnedArgument;
