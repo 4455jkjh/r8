@@ -27,13 +27,13 @@ import com.android.tools.r8.shaking.ProguardTypeMatcher.ClassOrType;
 import com.android.tools.r8.shaking.ProguardWildcard.BackReference;
 import com.android.tools.r8.shaking.ProguardWildcard.Pattern;
 import com.android.tools.r8.utils.AbortException;
-import com.android.tools.r8.utils.internal.CharPredicate;
 import com.android.tools.r8.utils.IdentifierUtils;
 import com.android.tools.r8.utils.InternalOptions.PackageObfuscationMode;
-import com.android.tools.r8.utils.internal.LongInterval;
 import com.android.tools.r8.utils.Reporter;
 import com.android.tools.r8.utils.StringDiagnostic;
 import com.android.tools.r8.utils.StringUtils;
+import com.android.tools.r8.utils.internal.CharPredicate;
+import com.android.tools.r8.utils.internal.LongInterval;
 import com.android.tools.r8.utils.internal.ThrowingAction;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -1149,6 +1149,8 @@ public class ProguardConfigurationParser {
             builder.getModifiersBuilder().setAllowsObfuscation(true);
           } else if (acceptString("accessmodification")) {
             builder.getModifiersBuilder().setAllowsAccessModification(true);
+          } else if (acceptString("finalmodification")) {
+            builder.getModifiersBuilder().setAllowsFinalModification(true);
           } else if (acceptString("repackage")) {
             builder.getModifiersBuilder().setAllowsRepackaging(true);
           } else if (acceptString("permittedsubclassesremoval")) {
@@ -1159,6 +1161,14 @@ public class ProguardConfigurationParser {
             } else if (acceptString("codereplacement")) {
               builder.getModifiersBuilder().setAllowsCodeReplacement(true);
             }
+          }
+        } else if (acceptString("disallow")) {
+          if (acceptString("accessmodification")) {
+            builder.getModifiersBuilder().setAllowsAccessModification(false);
+          } else if (acceptString("finalmodification")) {
+            builder.getModifiersBuilder().setAllowsFinalModification(false);
+          } else if (acceptString("codereplacement")) {
+            builder.getModifiersBuilder().setAllowsCodeReplacement(false);
           }
         } else if (acceptString("includedescriptorclasses")) {
           builder.getModifiersBuilder().setIncludeDescriptorClasses(true);

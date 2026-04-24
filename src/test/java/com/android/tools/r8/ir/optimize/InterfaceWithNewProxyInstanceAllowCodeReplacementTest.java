@@ -31,7 +31,11 @@ public class InterfaceWithNewProxyInstanceAllowCodeReplacementTest extends TestB
     testForR8(parameters.getBackend())
         .addInnerClasses(getClass())
         .addKeepMainRule(TestClass.class)
-        .addOptionsModification(options -> options.getTestingOptions().allowCodeReplacement = false)
+        .addOptionsModification(
+            options -> {
+              options.getTestingOptions().allowCodeReplacementInKeepRule = true;
+              options.getTestingOptions().decoupleCodeReplacementFromOptimization = true;
+            })
         .enableNeverClassInliningAnnotations()
         .enableInliningAnnotations()
         .setMinApi(parameters)

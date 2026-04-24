@@ -895,8 +895,13 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
   }
 
   @Override
-  public boolean isCodeReplacementForceEnabled() {
-    return getTestingOptions().allowCodeReplacement;
+  public boolean isCodeReplacementDecoupledFromOptimization() {
+    return getTestingOptions().decoupleCodeReplacementFromOptimization;
+  }
+
+  @Override
+  public boolean isFinalModificationDecoupledFromOptimization() {
+    return getTestingOptions().decoupleFinalModificationFromOptimization;
   }
 
   @Override
@@ -1042,6 +1047,18 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
   @Override
   public boolean isAccessModificationEnabled() {
     return accessModifierOptions.isAccessModificationEnabled();
+  }
+
+  public boolean getDefaultValueForAccessModification() {
+    return testing.allowAccessModificationInKeepRule;
+  }
+
+  public boolean getDefaultValueForCodeReplacement() {
+    return testing.allowCodeReplacementInKeepRule;
+  }
+
+  public boolean getDefaultValueForFinalModification() {
+    return testing.allowFinalModificationInKeepRule;
   }
 
   @Override
@@ -2441,8 +2458,21 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
     public boolean addCallEdgesForLibraryInvokes = false;
 
     public boolean allowClassInliningOfSynthetics = true;
-    public boolean allowCodeReplacement =
-        parseSystemPropertyOrDefault("com.android.tools.r8.allowCodeReplacement", true);
+    public boolean allowAccessModificationInKeepRule =
+        parseSystemPropertyOrDefault(
+            "com.android.tools.r8.allowAccessModificationInKeepRule", false);
+    public boolean allowCodeReplacementInKeepRule =
+        parseSystemPropertyOrDefault("com.android.tools.r8.allowCodeReplacementInKeepRule", false);
+    public boolean decoupleCodeReplacementFromOptimization =
+        parseSystemPropertyOrDefault(
+            "com.android.tools.r8.decoupleCodeReplacementFromOptimization",
+            // Fallback to legacy property, used by Chrome.
+            !parseSystemPropertyOrDefault("com.android.tools.r8.allowCodeReplacement", true));
+    public boolean allowFinalModificationInKeepRule =
+        parseSystemPropertyOrDefault("com.android.tools.r8.allowFinalModificationInKeepRule", true);
+    public boolean decoupleFinalModificationFromOptimization =
+        parseSystemPropertyOrDefault(
+            "com.android.tools.r8.decoupleFinalModificationFromOptimization", false);
     public boolean allowConstructorMismatchInClassFiles =
         parseSystemPropertyOrDefault(
             "com.android.tools.r8.cf.verification.allowconstructormismatch", false);

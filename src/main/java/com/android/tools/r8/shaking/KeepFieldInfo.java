@@ -29,11 +29,13 @@ public final class KeepFieldInfo extends KeepMemberInfo<KeepFieldInfo.Builder, K
   }
 
   private final boolean allowFieldTypeStrengthening;
+  private final boolean allowFinalModification;
   private final boolean allowRedundantFieldLoadElimination;
 
   private KeepFieldInfo(Builder builder) {
     super(builder);
     this.allowFieldTypeStrengthening = builder.isFieldTypeStrengtheningAllowed();
+    this.allowFinalModification = builder.isFinalModificationAllowed();
     this.allowRedundantFieldLoadElimination = builder.isRedundantFieldLoadEliminationAllowed();
   }
 
@@ -50,6 +52,16 @@ public final class KeepFieldInfo extends KeepMemberInfo<KeepFieldInfo.Builder, K
 
   boolean internalIsFieldTypeStrengtheningAllowed() {
     return allowFieldTypeStrengthening;
+  }
+
+  public boolean isFinalModificationAllowed(GlobalKeepInfoConfiguration configuration) {
+    return configuration.isFinalModificationDecoupledFromOptimization()
+        ? internalIsFinalModificationAllowed()
+        : isOptimizationAllowed(configuration);
+  }
+
+  boolean internalIsFinalModificationAllowed() {
+    return allowFinalModification;
   }
 
   public boolean isRedundantFieldLoadEliminationAllowed(GlobalKeepInfoConfiguration configuration) {
@@ -77,6 +89,7 @@ public final class KeepFieldInfo extends KeepMemberInfo<KeepFieldInfo.Builder, K
 
   private boolean internalBooleanEquals(KeepFieldInfo other) {
     return allowFieldTypeStrengthening == other.internalIsFieldTypeStrengtheningAllowed()
+        && allowFinalModification == other.internalIsFinalModificationAllowed()
         && allowRedundantFieldLoadElimination
             == other.internalIsRedundantFieldLoadEliminationAllowed();
   }
@@ -96,6 +109,7 @@ public final class KeepFieldInfo extends KeepMemberInfo<KeepFieldInfo.Builder, K
     int hash = super.hashCodeNoAnnotations();
     int index = super.numberOfBooleans();
     hash += bit(allowFieldTypeStrengthening, index++);
+    hash += bit(allowFinalModification, index++);
     hash += bit(allowRedundantFieldLoadElimination, index);
     return hash;
   }
@@ -116,6 +130,8 @@ public final class KeepFieldInfo extends KeepMemberInfo<KeepFieldInfo.Builder, K
       }
       if (key.equals("allowFieldTypeStrengthening")) {
         builder.setAllowFieldTypeStrengthening(Boolean.parseBoolean(value));
+      } else if (key.equals("allowFinalModification")) {
+        builder.setAllowFinalModification(Boolean.parseBoolean(value));
       } else if (key.equals("allowRedundantFieldLoadElimination")) {
         builder.setAllowRedundantFieldLoadElimination(Boolean.parseBoolean(value));
       } else {
@@ -131,6 +147,9 @@ public final class KeepFieldInfo extends KeepMemberInfo<KeepFieldInfo.Builder, K
     if (bottom().allowFieldTypeStrengthening != allowFieldTypeStrengthening) {
       lines.add("allowFieldTypeStrengthening: " + allowFieldTypeStrengthening);
     }
+    if (bottom().allowFinalModification != allowFinalModification) {
+      lines.add("allowFinalModification: " + allowFinalModification);
+    }
     if (bottom().allowRedundantFieldLoadElimination != allowRedundantFieldLoadElimination) {
       lines.add("allowRedundantFieldLoadElimination: " + allowRedundantFieldLoadElimination);
     }
@@ -140,6 +159,7 @@ public final class KeepFieldInfo extends KeepMemberInfo<KeepFieldInfo.Builder, K
   public static class Builder extends KeepMemberInfo.Builder<Builder, KeepFieldInfo> {
 
     private boolean allowFieldTypeStrengthening;
+    private boolean allowFinalModification;
     private boolean allowRedundantFieldLoadElimination;
 
     private Builder() {
@@ -149,6 +169,7 @@ public final class KeepFieldInfo extends KeepMemberInfo<KeepFieldInfo.Builder, K
     private Builder(KeepFieldInfo original) {
       super(original);
       allowFieldTypeStrengthening = original.internalIsFieldTypeStrengtheningAllowed();
+      allowFinalModification = original.internalIsFinalModificationAllowed();
       allowRedundantFieldLoadElimination =
           original.internalIsRedundantFieldLoadEliminationAllowed();
     }
@@ -157,6 +178,7 @@ public final class KeepFieldInfo extends KeepMemberInfo<KeepFieldInfo.Builder, K
     public Builder makeTop() {
       return super.makeTop()
           .setAllowFieldTypeStrengthening(false)
+          .setAllowFinalModification(false)
           .setAllowRedundantFieldLoadElimination(false);
     }
 
@@ -164,6 +186,7 @@ public final class KeepFieldInfo extends KeepMemberInfo<KeepFieldInfo.Builder, K
     public Builder makeBottom() {
       return super.makeBottom()
           .setAllowFieldTypeStrengthening(true)
+          .setAllowFinalModification(true)
           .setAllowRedundantFieldLoadElimination(true);
     }
 
@@ -173,6 +196,15 @@ public final class KeepFieldInfo extends KeepMemberInfo<KeepFieldInfo.Builder, K
 
     public Builder setAllowFieldTypeStrengthening(boolean allowFieldTypeStrengthening) {
       this.allowFieldTypeStrengthening = allowFieldTypeStrengthening;
+      return self();
+    }
+
+    public boolean isFinalModificationAllowed() {
+      return allowFinalModification;
+    }
+
+    public Builder setAllowFinalModification(boolean allowFinalModification) {
+      this.allowFinalModification = allowFinalModification;
       return self();
     }
 
@@ -210,6 +242,7 @@ public final class KeepFieldInfo extends KeepMemberInfo<KeepFieldInfo.Builder, K
     boolean internalIsEqualTo(KeepFieldInfo other) {
       return super.internalIsEqualTo(other)
           && isFieldTypeStrengtheningAllowed() == other.internalIsFieldTypeStrengtheningAllowed()
+          && isFinalModificationAllowed() == other.internalIsFinalModificationAllowed()
           && isRedundantFieldLoadEliminationAllowed()
               == other.internalIsRedundantFieldLoadEliminationAllowed();
     }
@@ -231,6 +264,11 @@ public final class KeepFieldInfo extends KeepMemberInfo<KeepFieldInfo.Builder, K
       return self();
     }
 
+    public Joiner disallowFinalModification() {
+      builder.setAllowFinalModification(false);
+      return self();
+    }
+
     public Joiner disallowRedundantFieldLoadElimination() {
       builder.setAllowRedundantFieldLoadElimination(false);
       return self();
@@ -248,6 +286,9 @@ public final class KeepFieldInfo extends KeepMemberInfo<KeepFieldInfo.Builder, K
           .applyIf(
               !joiner.builder.isFieldTypeStrengtheningAllowed(),
               KeepFieldInfo.Joiner::disallowFieldTypeStrengthening)
+          .applyIf(
+              !joiner.builder.isFinalModificationAllowed(),
+              KeepFieldInfo.Joiner::disallowFinalModification)
           .applyIf(
               !joiner.builder.isRedundantFieldLoadEliminationAllowed(),
               KeepFieldInfo.Joiner::disallowRedundantFieldLoadElimination);

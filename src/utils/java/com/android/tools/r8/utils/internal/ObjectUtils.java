@@ -34,7 +34,7 @@ public class ObjectUtils {
     return result;
   }
 
-  public static int hashZZZZZZZZZ(
+  public static int hashZZZZZZZIII(
       boolean b1,
       boolean b2,
       boolean b3,
@@ -42,8 +42,9 @@ public class ObjectUtils {
       boolean b5,
       boolean b6,
       boolean b7,
-      boolean b8,
-      boolean b9) {
+      int i8,
+      int i9,
+      int i10) {
     int result = 1;
     result = 31 * result + Boolean.hashCode(b1);
     result = 31 * result + Boolean.hashCode(b2);
@@ -52,8 +53,9 @@ public class ObjectUtils {
     result = 31 * result + Boolean.hashCode(b5);
     result = 31 * result + Boolean.hashCode(b6);
     result = 31 * result + Boolean.hashCode(b7);
-    result = 31 * result + Boolean.hashCode(b8);
-    result = 31 * result + Boolean.hashCode(b9);
+    result = 31 * result + Integer.hashCode(i8);
+    result = 31 * result + Integer.hashCode(i9);
+    result = 31 * result + Integer.hashCode(i10);
     return result;
   }
 
