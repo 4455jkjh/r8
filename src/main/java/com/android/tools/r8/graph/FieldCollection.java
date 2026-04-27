@@ -231,4 +231,8 @@ public class FieldCollection {
     return traverse(field -> TraversalContinuation.breakIf(field.getDefinition().hasAnnotations()))
         .shouldBreak();
   }
+
+  public boolean isEmpty() {
+    return size() == 0;
+  }
 }
