@@ -3,7 +3,6 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8.benchmarks.appdumps;
 
-
 import com.android.tools.r8.R8FullTestBuilder;
 import com.android.tools.r8.R8PartialTestBuilder;
 import com.android.tools.r8.TestParameters;
@@ -53,7 +52,7 @@ public class ComposeSamplesBenchmarks extends BenchmarkBase {
             .setResourcesProvidedInFeature()
             .setDumpDependencyPath(dir.resolve("jetlagged"))
             .setFromRevision(16457)
-            .buildR8(ComposeSamplesBenchmarks::configureWithoutOpenInterfaceSuppression),
+            .buildR8(ComposeSamplesBenchmarks::configureWithOpenInterfaceSuppression),
         AppDumpBenchmarkBuilder.builder()
             .setName("JetLaggedAppPartial")
             .setEnableResourceShrinking(true)
@@ -61,14 +60,14 @@ public class ComposeSamplesBenchmarks extends BenchmarkBase {
             .setDumpDependencyPath(dir.resolve("jetlagged"))
             .setFromRevision(16457)
             .buildR8WithPartialShrinking(
-                ComposeSamplesBenchmarks::configureWithoutOpenInterfaceSuppressionPartial),
+                ComposeSamplesBenchmarks::configureWithOpenInterfaceSuppressionPartial),
         AppDumpBenchmarkBuilder.builder()
             .setName("JetNewsApp")
             .setEnableResourceShrinking(true)
             .setResourcesProvidedInFeature()
             .setDumpDependencyPath(dir.resolve("jetnews"))
             .setFromRevision(16457)
-            .buildR8(ComposeSamplesBenchmarks::configureWithoutOpenInterfaceSuppression),
+            .buildR8(ComposeSamplesBenchmarks::configureWithOpenInterfaceSuppression),
         AppDumpBenchmarkBuilder.builder()
             .setName("JetNewsAppPartial")
             .setEnableResourceShrinking(true)
@@ -76,7 +75,7 @@ public class ComposeSamplesBenchmarks extends BenchmarkBase {
             .setDumpDependencyPath(dir.resolve("jetnews"))
             .setFromRevision(16457)
             .buildR8WithPartialShrinking(
-                ComposeSamplesBenchmarks::configureWithoutOpenInterfaceSuppressionPartial),
+                ComposeSamplesBenchmarks::configureWithOpenInterfaceSuppressionPartial),
         AppDumpBenchmarkBuilder.builder()
             .setName("JetCasterApp")
             .setEnableResourceShrinking(true)
@@ -97,7 +96,7 @@ public class ComposeSamplesBenchmarks extends BenchmarkBase {
             .setResourcesProvidedInFeature()
             .setDumpDependencyPath(dir.resolve("jetchat"))
             .setFromRevision(16457)
-            .buildR8(ComposeSamplesBenchmarks::configureWithoutOpenInterfaceSuppression),
+            .buildR8(ComposeSamplesBenchmarks::configureWithOpenInterfaceSuppression),
         AppDumpBenchmarkBuilder.builder()
             .setName("JetChatAppPartial")
             .setEnableResourceShrinking(true)
@@ -105,14 +104,14 @@ public class ComposeSamplesBenchmarks extends BenchmarkBase {
             .setDumpDependencyPath(dir.resolve("jetchat"))
             .setFromRevision(16457)
             .buildR8WithPartialShrinking(
-                ComposeSamplesBenchmarks::configureWithoutOpenInterfaceSuppressionPartial),
+                ComposeSamplesBenchmarks::configureWithOpenInterfaceSuppressionPartial),
         AppDumpBenchmarkBuilder.builder()
             .setName("JetSnackApp")
             .setEnableResourceShrinking(true)
             .setResourcesProvidedInFeature()
             .setDumpDependencyPath(dir.resolve("jetsnack"))
             .setFromRevision(16457)
-            .buildR8(ComposeSamplesBenchmarks::configureWithoutOpenInterfaceSuppression),
+            .buildR8(ComposeSamplesBenchmarks::configureWithOpenInterfaceSuppression),
         AppDumpBenchmarkBuilder.builder()
             .setName("JetSnackAppPartial")
             .setEnableResourceShrinking(true)
@@ -120,7 +119,7 @@ public class ComposeSamplesBenchmarks extends BenchmarkBase {
             .setDumpDependencyPath(dir.resolve("jetsnack"))
             .setFromRevision(16457)
             .buildR8WithPartialShrinking(
-                ComposeSamplesBenchmarks::configureWithoutOpenInterfaceSuppressionPartial),
+                ComposeSamplesBenchmarks::configureWithOpenInterfaceSuppressionPartial),
         AppDumpBenchmarkBuilder.builder()
             .setName("OwlApp")
             .setDumpDependencyPath(dir.resolve("owl"))
@@ -137,7 +136,7 @@ public class ComposeSamplesBenchmarks extends BenchmarkBase {
             .setResourcesProvidedInFeature()
             .setDumpDependencyPath(dir.resolve("reply"))
             .setFromRevision(16457)
-            .buildR8(ComposeSamplesBenchmarks::configureWithoutOpenInterfaceSuppression),
+            .buildR8(ComposeSamplesBenchmarks::configureWithOpenInterfaceSuppression),
         AppDumpBenchmarkBuilder.builder()
             .setName("ReplyAppPartial")
             .setEnableResourceShrinking(true)
@@ -145,7 +144,20 @@ public class ComposeSamplesBenchmarks extends BenchmarkBase {
             .setDumpDependencyPath(dir.resolve("reply"))
             .setFromRevision(16457)
             .buildR8WithPartialShrinking(
-                ComposeSamplesBenchmarks::configureWithoutOpenInterfaceSuppressionPartial));
+                ComposeSamplesBenchmarks::configureWithOpenInterfaceSuppressionPartial));
+  }
+
+  private static void configureWithOpenInterfaceSuppression(R8FullTestBuilder testBuilder) {
+    configureWithoutOpenInterfaceSuppression(testBuilder);
+    testBuilder.addOptionsModification(
+        options -> options.getOpenClosedInterfacesOptions().suppressAllOpenInterfaces());
+  }
+
+  private static void configureWithOpenInterfaceSuppressionPartial(
+      R8PartialTestBuilder testBuilder) {
+    configureWithoutOpenInterfaceSuppressionPartial(testBuilder);
+    testBuilder.addR8PartialR8OptionsModification(
+        options -> options.getOpenClosedInterfacesOptions().suppressAllOpenInterfaces());
   }
 
   private static void configureWithoutOpenInterfaceSuppression(R8FullTestBuilder testBuilder) {
@@ -188,6 +200,7 @@ public class ComposeSamplesBenchmarks extends BenchmarkBase {
         .addOptionsModification(
             options -> {
               options.getCfCodeAnalysisOptions().setAllowUnreachableCfBlocks(true);
+              options.getOpenClosedInterfacesOptions().suppressAllOpenInterfaces();
             });
   }
 
@@ -198,7 +211,7 @@ public class ComposeSamplesBenchmarks extends BenchmarkBase {
         .allowUnusedDontWarnPatterns()
         .allowUnusedProguardConfigurationRules()
         .addR8PartialR8OptionsModification(
-            options -> options.getOpenClosedInterfacesOptions().disallowOpenInterfaces());
+            options -> options.getOpenClosedInterfacesOptions().suppressAllOpenInterfaces());
   }
 
   @Ignore
