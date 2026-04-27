@@ -60,7 +60,7 @@ kotlin {
 dependencies {
   compileOnly(Deps.guava)
   compileOnly(Deps.protobuf)
-  compileOnly(":keepanno")
+  compileOnly(project(":keepanno", "keepannoClasses"))
   compileOnly(project(":main", "mainClassesOutput"))
   compileOnly(project(":main", "turboClassesOutput"))
   errorprone(Deps.errorprone)

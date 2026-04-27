@@ -201,8 +201,6 @@ java {
   withSourcesJar()
 }
 
-val keepAnnoJarTask = projectTask("keepanno", "jar")
-val keepAnnoToolsJar = projectTask("keepanno", "toolsJar")
 val resourceShrinkerJarTask = projectTask("resourceshrinker", "jar")
 val downloadDepsTask = projectTask("shared", "downloadDeps")
 
@@ -229,7 +227,7 @@ dependencies {
   internalClassesScope(project(":utils", "isolatedClasses"))
   implementation(project(":assistant", "assistantJar"))
   implementation(project(":blastradius", "blastradiusJar"))
-  implementation(keepAnnoJarTask.outputs.files)
+  implementation(project(":keepanno", "keepannoClasses"))
   implementation(resourceShrinkerJarTask.outputs.files)
   implementation(project(":utils"))
   Deps.compilerDeps.forEach { compileOnly(it) }

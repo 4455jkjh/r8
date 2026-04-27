@@ -28,6 +28,9 @@ java {
 
 // If we depend on keepanno by referencing the project source outputs we get an error regarding
 // incompatible java class file version. By depending on the jar we circumvent that.
+val keepAnnoClassesScope by configurations.dependencyScope("keepAnnoClassesScope")
+val keepAnnoClassesConfig by
+  configurations.resolvable("keepAnnoClassesConfig") { extendsFrom(keepAnnoClassesScope) }
 val assistantClassesScope by configurations.dependencyScope("assistantClassesScope")
 val assistantClassesOutput =
   configurations.resolvable("assistantClassesOutput") { extendsFrom(assistantClassesScope) }
@@ -41,9 +44,6 @@ val mainResources = configurations.resolvable("mainResources") { extendsFrom(mai
 val turboClassesScope by configurations.dependencyScope("turboClassesScope")
 val turboClassesOutput =
   configurations.resolvable("turboClassesOutput") { extendsFrom(turboClassesScope) }
-val keepAnnoJarTask = projectTask("keepanno", "jar")
-val keepAnnoCompileJavaTask = projectTask("keepanno", "compileJava")
-val keepAnnoCompileKotlinTask = projectTask("keepanno", "compileKotlin")
 val resourceShrinkerCompileJavaTask = projectTask("resourceshrinker", "compileJava")
 val resourceShrinkerCompileKotlinTask = projectTask("resourceshrinker", "compileKotlin")
 val resourceShrinkerDepsJarTask = projectTask("resourceshrinker", "depsJar")
@@ -51,6 +51,7 @@ val sharedDownloadDepsTask = projectTask("shared", "downloadDeps")
 val sharedDownloadDepsInternalTask = projectTask("shared", "downloadDepsInternal")
 
 dependencies {
+  keepAnnoClassesScope(project(":keepanno", "keepannoClasses"))
   assistantClassesScope(project(":assistant", "assistantJar"))
   distDepsFilesScope(project(":dist", "depsFiles"))
   mainClassesScope(project(":main", "mainClassesOutput"))
@@ -58,7 +59,7 @@ dependencies {
   turboClassesScope(project(":main", "turboClassesOutput"))
   implementation(project(":assistant", "assistantJar"))
   implementation(project(":blastradius", "blastradiusJar"))
-  implementation(keepAnnoJarTask.outputs.files)
+  implementation(project(":keepanno", "keepannoClasses"))
   implementation(project(":libanalyzer", "libanalyzer-compile-java"))
   implementation(project(":main", "mainClassesOutput"))
   implementation(project(":main", "mainResources"))
@@ -107,7 +108,6 @@ tasks {
   }
   withType<JavaCompile> {
     dependsOn(createArtTests)
-    dependsOn(keepAnnoCompileJavaTask)
     dependsOn(resourceShrinkerCompileJavaTask)
     dependsOn(sharedDownloadDepsTask)
     dependsOn(":testbase:compileJava")
@@ -150,11 +150,7 @@ tasks {
     )
     systemProperty(
       "BUILD_PROP_KEEPANNO_RUNTIME_PATH",
-      extractClassesPaths(
-        "keepanno" + File.separator,
-        keepAnnoCompileJavaTask.outputs.files.asPath,
-        keepAnnoCompileKotlinTask.outputs.files.asPath,
-      ),
+      extractClassesPaths("keepanno" + File.separator, keepAnnoClassesConfig.asPath),
     )
     // This path is set when compiling examples jar task in DependenciesPlugin.
     val r8RuntimePath =
@@ -166,7 +162,7 @@ tasks {
         File.pathSeparator +
         project.files(mainResources).asPath.split(File.pathSeparator)[0] +
         File.pathSeparator +
-        keepAnnoCompileJavaTask.outputs.files.getAsPath().split(File.pathSeparator)[0] +
+        keepAnnoClassesConfig.asPath +
         File.pathSeparator +
         project.files(assistantClassesOutput).asPath.split(File.pathSeparator)[0] +
         File.pathSeparator +

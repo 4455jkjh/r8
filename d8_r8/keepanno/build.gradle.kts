@@ -90,11 +90,7 @@ tasks {
       archiveFileName.set("keepanno-annotations-androidx.jar")
     }
 
-  val keepAnnoJar by
-    registering(Jar::class) {
-      dependsOn(gradle.includedBuild("shared").task(":downloadDeps"))
-      from(sourceSets.main.get().output)
-    }
+  named<Jar>("jar") { dependsOn(gradle.includedBuild("shared").task(":downloadDeps")) }
 
   val keepAnnoAnnotationsDoc by
     registering(Javadoc::class) {
@@ -176,3 +172,37 @@ tasks {
       archiveFileName.set("keepanno-tools.jar")
     }
 }
+
+val keepannoJar by
+  configurations.consumable("keepannoJar") { outgoing.artifact(tasks.named<Jar>("jar")) }
+
+val keepannoDepsJarExceptAsm by
+  configurations.consumable("keepannoDepsJarExceptAsm") {
+    outgoing.artifact(tasks.named<Jar>("depsJarExceptAsm"))
+  }
+
+val keepannoToolsJar by
+  configurations.consumable("keepannoToolsJar") { outgoing.artifact(tasks.named<Jar>("toolsJar")) }
+
+val keepannoAndroidXAnnotationsJar by
+  configurations.consumable("keepannoAndroidXAnnotationsJar") {
+    outgoing.artifact(tasks.named<Jar>("keepAnnoAndroidXAnnotationsJar"))
+  }
+
+val keepannoDepsJarOnlyAsm by
+  configurations.consumable("keepannoDepsJarOnlyAsm") {
+    outgoing.artifact(tasks.named<Jar>("depsJarOnlyAsm"))
+  }
+
+val keepannoSources by
+  configurations.consumable("keepannoSources") { outgoing.artifact(tasks.named<Jar>("sourcesJar")) }
+
+val keepannoClasses by
+  configurations.consumable("keepannoClasses") {
+    outgoing.artifact(tasks.named<JavaCompile>("compileJava").map { it.destinationDirectory })
+    outgoing.artifact(
+      tasks.named<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>("compileKotlin").map {
+        it.destinationDirectory
+      }
+    )
+  }

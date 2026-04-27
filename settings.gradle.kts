@@ -26,7 +26,9 @@ include(":blastradius")
 
 project(":blastradius").projectDir = file("d8_r8/blastradius")
 
-includeBuild(rootProject.projectDir.resolve("d8_r8/keepanno"))
+include(":keepanno")
+
+project(":keepanno").projectDir = file("d8_r8/keepanno")
 
 include(":libanalyzer")
 

@@ -47,7 +47,7 @@ java {
 }
 
 dependencies {
-  compileOnly(":keepanno")
+  compileOnly(project(":keepanno", "keepannoClasses"))
   compileOnly(Deps.protobuf)
   errorprone(Deps.errorprone)
 }

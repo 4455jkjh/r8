@@ -20,10 +20,9 @@ java {
   toolchain { languageVersion = JavaLanguageVersion.of(JvmCompatibility.release) }
 }
 
-// If we depend on keepanno by referencing the project source outputs we get an error regarding
-// incompatible java class file version. By depending on the jar we circumvent that.
-val keepAnnoJarTask = projectTask("keepanno", "jar")
-val keepAnnoCompileJavaTask = projectTask("keepanno", "compileJava")
+val keepAnnoJarScope by configurations.dependencyScope("keepAnnoJarScope")
+val keepAnnoJarConfig by
+  configurations.resolvable("keepAnnoJarConfig") { extendsFrom(keepAnnoJarScope) }
 val resourceShrinkerCompileJavaTask = projectTask("resourceshrinker", "compileJava")
 val resourceShrinkerCompileKotlinTask = projectTask("resourceshrinker", "compileKotlin")
 val resourceShrinkerDepsJarTask = projectTask("resourceshrinker", "depsJar")
@@ -31,7 +30,8 @@ val sharedDownloadDepsTask = projectTask("shared", "downloadDeps")
 val sharedDownloadTestDepsTask = projectTask("shared", "downloadTestDeps")
 
 dependencies {
-  implementation(keepAnnoJarTask.outputs.files)
+  keepAnnoJarScope(project(":keepanno", "keepannoJar"))
+  implementation(project(":keepanno", "keepannoJar"))
   implementation(project(":libanalyzer", "libanalyzer-compile-java"))
   implementation(project(":main", "mainClassesOutput"))
   implementation(project(":main", "mainResources"))
@@ -72,7 +72,6 @@ fun testDependencies(): FileCollection {
 
 tasks {
   withType<JavaCompile> {
-    dependsOn(keepAnnoCompileJavaTask)
     dependsOn(resourceShrinkerCompileJavaTask)
     dependsOn(sharedDownloadDepsTask)
     dependsOn(sharedDownloadTestDepsTask)
@@ -98,12 +97,12 @@ tasks {
 
   val assembleDepsJar by
     registering(Jar::class) {
-      dependsOn(keepAnnoJarTask)
+      dependsOn(keepAnnoJarConfig)
       dependsOn(resourceShrinkerDepsJarTask)
       dependsOn(sharedDownloadDepsTask)
       dependsOn(sharedDownloadTestDepsTask)
       from(Callable { testDependencies().map(::zipTree) })
-      from(Callable { keepAnnoJarTask.outputs.getFiles().map(::zipTree) })
+      from(keepAnnoJarConfig.map(::zipTree))
       from(Callable { resourceShrinkerDepsJarTask.outputs.getFiles().map(::zipTree) })
       exclude("com/android/tools/r8/keepanno/annotations/**")
       exclude("androidx/annotation/keep/**")

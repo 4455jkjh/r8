@@ -21,17 +21,19 @@ java {
 
 val distR8WithRelocatedDeps = project(":dist").tasks.getByName("r8WithRelocatedDeps")
 val distSwissArmyKnife = project(":dist").tasks.getByName("swissArmyKnife")
-val keepAnnoCompileJavaTask = projectTask("keepanno", "compileJava")
-val keepAnnoCompileKotlinTask = projectTask("keepanno", "compileKotlin")
-val keepAnnoJarTask = projectTask("keepanno", "jar")
 val resourceShrinkerCompileJavaTask = projectTask("resourceshrinker", "compileJava")
 val resourceShrinkerCompileKotlinTask = projectTask("resourceshrinker", "compileKotlin")
 val resourceShrinkerDepsJarTask = projectTask("resourceshrinker", "depsJar")
 val sharedDownloadDepsTask = projectTask("shared", "downloadDeps")
 val sharedDownloadDepsInternalTask = projectTask("shared", "downloadDepsInternal")
 
+val keepAnnoClassesScope by configurations.dependencyScope("keepAnnoClassesScope")
+val keepAnnoClassesConfig by
+  configurations.resolvable("keepAnnoClassesConfig") { extendsFrom(keepAnnoClassesScope) }
+
 dependencies {
-  implementation(keepAnnoJarTask.outputs.files)
+  keepAnnoClassesScope(project(":keepanno", "keepannoClasses"))
+  implementation(project(":keepanno", "keepannoClasses"))
   implementation(project(":main", "mainJar"))
   implementation(resourceShrinkerCompileJavaTask.outputs.files)
   implementation(resourceShrinkerCompileKotlinTask.outputs.files)
@@ -72,11 +74,7 @@ tasks {
     systemProperty(
       "BUILD_PROP_KEEPANNO_RUNTIME_PATH",
       project.provider {
-        extractClassesPaths(
-          "keepanno" + File.separator,
-          keepAnnoCompileJavaTask.outputs.files.asPath,
-          keepAnnoCompileKotlinTask.outputs.files.asPath,
-        )
+        extractClassesPaths("keepanno" + File.separator, keepAnnoClassesConfig.asPath)
       },
     )
     systemProperty("R8_SWISS_ARMY_KNIFE", distSwissArmyKnife.outputs.files.singleFile)
@@ -93,7 +91,6 @@ tasks {
 
   val assembleDepsJar by
     registering(Jar::class) {
-      dependsOn(keepAnnoJarTask)
       dependsOn(sharedDownloadDepsTask)
       if (!project.hasProperty("no_internal")) {
         dependsOn(sharedDownloadDepsInternalTask)
