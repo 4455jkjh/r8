@@ -41,7 +41,7 @@ public class AccessorMethodSourceCode {
         }
       case INVOKE_CONSTRUCTOR:
         {
-          forwardMethodBuilder.setConstructorTargetWithNewInstance(target);
+          forwardMethodBuilder.setConstructorTargetWithNewInstance(target.getHolderType(), target);
           break;
         }
       default:
