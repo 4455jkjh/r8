@@ -46,13 +46,12 @@ public interface MappingPartitionMetadataInternal extends MappingPartitionMetada
     return MetadataAdditionalInfo.create(null, null);
   }
 
+  MappingPartitionMetadataInternal combineMetadata(
+      MappingPartitionMetadataInternal other, String newMapId);
+
   @SuppressWarnings("MutablePublicArray")
   // Magic byte put into the metadata
   byte[] MAGIC = new byte[] {(byte) 0xAA, (byte) 0xA8};
-
-  static int magicOffset() {
-    return MAGIC.length;
-  }
 
   static MappingPartitionMetadataInternal deserialize(
       CompatByteBuffer buffer,
@@ -99,6 +98,24 @@ public interface MappingPartitionMetadataInternal extends MappingPartitionMetada
     @Override
     public MapVersion getMapVersion() {
       return mapVersion;
+    }
+
+    @Override
+    public MappingPartitionMetadataInternal combineMetadata(
+        MappingPartitionMetadataInternal other, String newMapId) {
+      if (!(other instanceof ObfuscatedTypeNameAsKeyMetadata)) {
+        throw new RetracePartitionException(
+            "Error combining metadata, expected: ObfuscatedTypeNameAsKeyMetadata, got: "
+                + other.getClass().getName());
+      }
+      if (!mapVersion.equals(other.getMapVersion())) {
+        throw new RetracePartitionException(
+            "Error combining metadata, expected same version, got: "
+                + mapVersion
+                + " and "
+                + other.getMapVersion());
+      }
+      return create(mapVersion);
     }
 
     // The format is:
@@ -181,6 +198,31 @@ public interface MappingPartitionMetadataInternal extends MappingPartitionMetada
     @Override
     public MetadataAdditionalInfo getAdditionalInfo() {
       return metadataAdditionalInfo;
+    }
+
+    @Override
+    public MappingPartitionMetadataInternal combineMetadata(
+        MappingPartitionMetadataInternal other, String newMapId) {
+      if (!(other instanceof ObfuscatedTypeNameAsKeyMetadataWithPartitionNames)) {
+        throw new RetracePartitionException(
+            "Error combining metadata, expected: ObfuscatedTypeNameAsKeyMetadataWithPartitionNames,"
+                + " got: "
+                + other.getClass().getName());
+      }
+      if (!mapVersion.equals(other.getMapVersion())) {
+        throw new RetracePartitionException(
+            "Error combining metadata, expected same version, got: "
+                + mapVersion
+                + " and "
+                + other.getMapVersion());
+      }
+      ObfuscatedTypeNameAsKeyMetadataWithPartitionNames otherWithPartitionsNames =
+          (ObfuscatedTypeNameAsKeyMetadataWithPartitionNames) other;
+      return create(
+          mapVersion,
+          metadataPartitionCollection.combine(otherWithPartitionsNames.metadataPartitionCollection),
+          metadataAdditionalInfo.combine(
+              otherWithPartitionsNames.metadataAdditionalInfo, newMapId));
     }
 
     // The format is:

@@ -5,28 +5,24 @@
 package com.android.tools.r8.retrace.partition;
 
 import static com.android.tools.r8.naming.retrace.StackTrace.isSame;
+import static com.android.tools.r8.retrace.partition.RetracePartitionTestUtils.createPartitionZipConsumer;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertTrue;
 
-import com.android.tools.r8.DiagnosticsHandler;
-import com.android.tools.r8.PartitionMapConsumer;
 import com.android.tools.r8.TestBase;
-import com.android.tools.r8.TestDiagnosticMessagesImpl;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.naming.retrace.StackTrace;
 import com.android.tools.r8.naming.retrace.StackTrace.StackTraceLine;
-import com.android.tools.r8.retrace.MappingPartition;
-import com.android.tools.r8.retrace.MappingPartitionMetadata;
 import com.android.tools.r8.retrace.PartitionMappingSupplier;
 import com.android.tools.r8.retrace.partition.testclasses.R8ZipContainerMappingFileTestClasses;
 import com.android.tools.r8.retrace.partition.testclasses.R8ZipContainerMappingFileTestClasses.Main;
 import com.android.tools.r8.utils.internal.BooleanBox;
-import com.android.tools.r8.utils.ZipUtils.ZipBuilder;
 import com.google.common.io.ByteStreams;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -70,16 +66,12 @@ public class R8ZipContainerMappingFileTest extends TestBase {
         .addInnerClasses(R8ZipContainerMappingFileTestClasses.class)
         .run(parameters.getRuntime(), Main.class)
         .assertFailureWithErrorThatThrows(RuntimeException.class)
-        .inspectStackTrace(
-            stackTrace -> {
-              assertThat(stackTrace, isSame(EXPECTED));
-            });
+        .inspectStackTrace(stackTrace -> assertThat(stackTrace, isSame(EXPECTED)));
   }
 
   @Test
   public void testR8() throws Exception {
     Path pgMapFile = temp.newFile("mapping.zip").toPath();
-    DiagnosticsHandler diagnosticsHandler = new TestDiagnosticMessagesImpl();
     StackTrace originalStackTrace =
         testForR8(parameters.getBackend())
             .addInnerClasses(R8ZipContainerMappingFileTestClasses.class)
@@ -101,39 +93,6 @@ public class R8ZipContainerMappingFileTest extends TestBase {
     assertTrue(calledFinished.get());
   }
 
-  private PartitionMapConsumer createPartitionZipConsumer(Path pgMapFile) throws IOException {
-    ZipBuilder zipBuilder = ZipBuilder.builder(pgMapFile);
-    return new PartitionMapConsumer() {
-      @Override
-      public void acceptMappingPartition(MappingPartition mappingPartition) {
-        try {
-          zipBuilder.addBytes(mappingPartition.getKey(), mappingPartition.getPayload());
-        } catch (IOException e) {
-          throw new RuntimeException(e);
-        }
-      }
-
-      @Override
-      public void acceptMappingPartitionMetadata(
-          MappingPartitionMetadata mappingPartitionMetadata) {
-        try {
-          zipBuilder.addBytes("METADATA", mappingPartitionMetadata.getBytes());
-        } catch (IOException e) {
-          throw new RuntimeException(e);
-        }
-      }
-
-      @Override
-      public void finished(DiagnosticsHandler handler) {
-        try {
-          zipBuilder.build();
-        } catch (IOException e) {
-          throw new RuntimeException(e);
-        }
-      }
-    };
-  }
-
   private PartitionMappingSupplier createMappingSupplierFromPartitionZip(
       Path pgMapFile, Runnable finishedCallback) throws IOException {
     ZipFile zipFile = new ZipFile(pgMapFile.toFile());
@@ -143,7 +102,11 @@ public class R8ZipContainerMappingFileTest extends TestBase {
         .setMappingPartitionFromKeySupplier(
             key -> {
               try {
-                return ByteStreams.toByteArray(zipFile.getInputStream(zipFile.getEntry(key)));
+                ZipEntry entry = zipFile.getEntry(key);
+                if (entry != null) {
+                  return ByteStreams.toByteArray(zipFile.getInputStream(zipFile.getEntry(key)));
+                }
+                return null;
               } catch (IOException e) {
                 throw new RuntimeException(e);
               }

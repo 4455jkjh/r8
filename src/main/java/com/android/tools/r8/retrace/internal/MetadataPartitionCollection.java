@@ -12,6 +12,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.LinkedHashSet;
 
 public class MetadataPartitionCollection {
 
@@ -41,6 +42,20 @@ public class MetadataPartitionCollection {
 
   public static MetadataPartitionCollection create(Collection<String> partitionKeys) {
     return new MetadataPartitionCollection(partitionKeys);
+  }
+
+  public MetadataPartitionCollection combine(MetadataPartitionCollection other) {
+    Collection<String> otherKeys = other.getPartitionKeys();
+    if (otherKeys.isEmpty()) {
+      return this;
+    }
+    Collection<String> thisKeys = getPartitionKeys();
+    if (thisKeys.isEmpty()) {
+      return other;
+    }
+    LinkedHashSet<String> combinedKeys = new LinkedHashSet<>(thisKeys);
+    combinedKeys.addAll(otherKeys);
+    return create(combinedKeys);
   }
 
   public static class LazyMetadataPartitionCollection extends MetadataPartitionCollection {
