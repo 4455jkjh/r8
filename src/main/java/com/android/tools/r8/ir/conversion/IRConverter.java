@@ -17,8 +17,6 @@ import com.android.tools.r8.graph.ProgramMethod;
 import com.android.tools.r8.graph.PrunedItems;
 import com.android.tools.r8.graph.bytecodemetadata.BytecodeMetadataProvider;
 import com.android.tools.r8.graph.proto.RewrittenPrototypeDescription;
-import com.android.tools.r8.ir.analysis.TypeChecker;
-import com.android.tools.r8.ir.analysis.VerifyTypesHelper;
 import com.android.tools.r8.ir.analysis.fieldaccess.FieldAccessAnalysis;
 import com.android.tools.r8.ir.analysis.fieldvalueanalysis.InstanceFieldValueAnalysis;
 import com.android.tools.r8.ir.analysis.fieldvalueanalysis.StaticFieldValueAnalysis;
@@ -125,7 +123,6 @@ public class IRConverter {
   protected final Inliner inliner;
   protected final IdentifierNameStringMarker identifierNameStringMarker;
   private final Devirtualizer devirtualizer;
-  private final TypeChecker typeChecker;
   protected EnumUnboxer enumUnboxer;
   protected final TypeSwitchIRRewriter typeSwitchIRRewriter;
   protected final NumberUnboxer numberUnboxer;
@@ -204,7 +201,6 @@ public class IRConverter {
       this.lensCodeRewriter = null;
       this.identifierNameStringMarker = null;
       this.devirtualizer = null;
-      this.typeChecker = null;
       this.methodOptimizationInfoCollector = null;
       this.enumUnboxer = EnumUnboxer.empty();
       this.typeSwitchIRRewriter = null;
@@ -254,7 +250,6 @@ public class IRConverter {
       }
       this.devirtualizer =
           options.enableDevirtualization ? new Devirtualizer(appViewWithLiveness) : null;
-      this.typeChecker = new TypeChecker(appViewWithLiveness, VerifyTypesHelper.create(appView));
     } else {
       AppView<AppInfo> appViewWithoutClassHierarchy =
           appView.enableWholeProgramOptimizations()
@@ -274,7 +269,6 @@ public class IRConverter {
       this.lensCodeRewriter = null;
       this.identifierNameStringMarker = null;
       this.devirtualizer = null;
-      this.typeChecker = null;
       this.methodOptimizationInfoCollector = null;
       this.enumUnboxer = EnumUnboxer.empty();
       this.typeSwitchIRRewriter = null;
@@ -546,23 +540,6 @@ public class IRConverter {
             || !appView.enableWholeProgramOptimizations()
             || appView.getKeepInfo(context).isReprocessingAllowed(options, context)
         : "Unexpected reprocessing of method: " + context.toSourceString();
-
-    if (typeChecker != null && !typeChecker.check(code)) {
-      assert appView.enableWholeProgramOptimizations();
-      assert options.testing.allowTypeErrors
-          : "Could not type check code for method "
-              + method.toSourceString()
-              + "\nWith Code:\n"
-              + code;
-      StringDiagnostic warning =
-          new StringDiagnostic(
-              "The method `"
-                  + method.toSourceString()
-                  + "` does not type check and will be assumed to be unreachable.");
-      options.reporter.warning(warning);
-      context.convertToThrowNullMethod(appView);
-      return timing;
-    }
 
     // This is the first point in time where we can assert that the types are sound. If this
     // assert fails, then the types that we have inferred are unsound, or the method does not type

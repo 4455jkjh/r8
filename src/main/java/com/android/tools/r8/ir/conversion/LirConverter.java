@@ -12,6 +12,8 @@ import com.android.tools.r8.graph.DexProgramClass;
 import com.android.tools.r8.graph.ProgramMethod;
 import com.android.tools.r8.graph.bytecodemetadata.BytecodeMetadataProvider;
 import com.android.tools.r8.graph.lens.GraphLens;
+import com.android.tools.r8.ir.analysis.TypeChecker;
+import com.android.tools.r8.ir.analysis.VerifyTypesHelper;
 import com.android.tools.r8.ir.analysis.proto.ProtoReferences;
 import com.android.tools.r8.ir.code.IRCode;
 import com.android.tools.r8.ir.conversion.passes.AdaptClassStringsRewriter;
@@ -72,6 +74,7 @@ public class LirConverter {
             new ConstResourceNumberRewriter(appView),
             new StringSwitchConverter(appView),
             new IdentifierNameStringMarker(appView));
+    TypeChecker typeChecker = new TypeChecker(appView, VerifyTypesHelper.create(appView));
     // Only used for checking assertions.
     ProtoReferences protoReferences =
         AssertionUtils.assertionsEnabled() ? new ProtoReferences(appView.dexItemFactory()) : null;
@@ -93,6 +96,13 @@ public class LirConverter {
                   method.getDefinition().markNotProcessed();
                 }
                 IRCode code = method.buildIR(appView, MethodConversionOptions.forLirPhase(appView));
+
+                // Code that doesn't type check generally trips up consistency checks, etc.
+                // We replace such code by a canonical `throw null` code object.
+                if (typeChecker.replaceInvalidCode(method, code)) {
+                  return;
+                }
+
                 codeRewriterPassCollection.run(
                     code, null, null, Timing.empty(), null, appView.options());
                 LirCode<Integer> lirCode =
