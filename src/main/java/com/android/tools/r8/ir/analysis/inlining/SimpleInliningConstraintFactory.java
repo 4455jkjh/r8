@@ -8,7 +8,7 @@ import static com.android.tools.r8.ir.analysis.type.Nullability.definitelyNotNul
 import static com.android.tools.r8.ir.analysis.type.Nullability.definitelyNull;
 
 import com.android.tools.r8.ir.analysis.type.Nullability;
-import com.android.tools.r8.utils.ArrayUtils;
+import com.android.tools.r8.utils.internal.ArrayUtils;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Supplier;

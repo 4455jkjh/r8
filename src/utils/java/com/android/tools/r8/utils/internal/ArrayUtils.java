@@ -1,11 +1,8 @@
 // Copyright (c) 2017, the R8 project authors. Please see the AUTHORS file
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
-package com.android.tools.r8.utils;
+package com.android.tools.r8.utils.internal;
 
-import com.android.tools.r8.graph.DexType;
-import com.android.tools.r8.utils.internal.BooleanUtils;
-import com.android.tools.r8.utils.internal.IntObjToObjFunction;
 import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -291,14 +288,5 @@ public class ArrayUtils {
     }
     optionals[ts.length] = Optional.empty();
     return optionals;
-  }
-
-  public static boolean any(DexType[] values, Predicate<DexType> predicate) {
-    for (DexType value : values) {
-      if (predicate.test(value)) {
-        return true;
-      }
-    }
-    return false;
   }
 }

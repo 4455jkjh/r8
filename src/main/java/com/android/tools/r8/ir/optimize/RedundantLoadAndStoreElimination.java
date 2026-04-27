@@ -48,7 +48,7 @@ import com.android.tools.r8.ir.optimize.RedundantLoadAndStoreElimination.Redunda
 import com.android.tools.r8.ir.optimize.info.field.InstanceFieldInitializationInfoCollection;
 import com.android.tools.r8.ir.optimize.info.initializer.InstanceInitializerInfo;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
-import com.android.tools.r8.utils.ArrayUtils;
+import com.android.tools.r8.utils.internal.ArrayUtils;
 import com.android.tools.r8.utils.internal.ObjectUtils;
 import com.android.tools.r8.utils.internal.exceptions.Unreachable;
 import com.google.common.collect.Sets;

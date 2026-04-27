@@ -12,7 +12,7 @@ import com.android.tools.r8.ir.code.ValueType;
 import com.android.tools.r8.ir.conversion.DexSourceCode;
 import com.android.tools.r8.ir.conversion.IRBuilder;
 import com.android.tools.r8.ir.conversion.SourceCode;
-import com.android.tools.r8.utils.ArrayUtils;
+import com.android.tools.r8.utils.internal.ArrayUtils;
 import com.android.tools.r8.utils.internal.exceptions.Unreachable;
 import java.util.ArrayList;
 import java.util.List;

@@ -5,8 +5,8 @@
 package com.android.tools.r8.utils.threads;
 
 import com.android.tools.r8.threading.TaskCollection;
-import com.android.tools.r8.utils.ArrayUtils;
 import com.android.tools.r8.utils.InternalOptions;
+import com.android.tools.r8.utils.internal.ArrayUtils;
 import com.android.tools.r8.utils.timing.Timing;
 import com.android.tools.r8.utils.timing.TimingMerger;
 import java.util.Arrays;

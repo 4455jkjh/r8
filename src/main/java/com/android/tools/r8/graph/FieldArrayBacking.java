@@ -5,8 +5,8 @@ package com.android.tools.r8.graph;
 
 import static com.google.common.base.Predicates.alwaysTrue;
 
-import com.android.tools.r8.utils.ArrayUtils;
 import com.android.tools.r8.utils.ListUtils;
+import com.android.tools.r8.utils.internal.ArrayUtils;
 import com.android.tools.r8.utils.internal.TraversalContinuation;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
