@@ -309,6 +309,7 @@ def r8_tester(
         test_options,
         bucket = "ci",
         trigger = True,
+        priority = 26,
         dimensions = None,
         execution_timeout = default_timeout,
         expiration_timeout = time.hour * 35,
@@ -333,6 +334,7 @@ def r8_tester(
             r8_builder(
                 name = n,
                 bucket = b,
+                priority = priority,
                 trigger = actual_trigger,
                 category = category,
                 execution_timeout = execution_timeout,
@@ -347,6 +349,7 @@ def r8_tester_with_default(
         name,
         test_options,
         bucket = "ci",
+        priority = 26,
         trigger = True,
         dimensions = None,
         category = None,
@@ -358,6 +361,7 @@ def r8_tester_with_default(
         name,
         test_options + common_test_options,
         bucket = bucket,
+        priority = priority,
         trigger = trigger,
         dimensions = dimensions,
         category = category,
@@ -501,6 +505,7 @@ r8_tester_with_default(
     "compile-only",
     [],
     bucket = "try",
+    priority = 20,
 )
 
 presubmit_testers = [
