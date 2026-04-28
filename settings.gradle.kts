@@ -50,7 +50,9 @@ include(":dist")
 
 project(":dist").projectDir = file("d8_r8/dist")
 
-includeBuild(rootProject.projectDir.resolve("d8_r8/library_desugar"))
+include(":library_desugar")
+
+project(":library_desugar").projectDir = file("d8_r8/library_desugar")
 
 include(":testbase")
 
