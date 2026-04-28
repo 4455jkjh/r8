@@ -6,7 +6,6 @@ package com.android.tools.r8.examples;
 import static org.junit.Assume.assumeFalse;
 
 import com.android.tools.r8.R8FullTestBuilder;
-import com.android.tools.r8.Retryable;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.TestRuntime.CfRuntime;
@@ -24,7 +23,6 @@ import org.junit.Assume;
 import org.junit.Test;
 import org.junit.runners.Parameterized.Parameters;
 
-@Retryable
 public abstract class ExamplesTestBase extends DebugTestBase {
 
   @Parameters(name = "{0}")

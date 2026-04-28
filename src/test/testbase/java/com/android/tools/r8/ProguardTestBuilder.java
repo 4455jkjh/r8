@@ -10,7 +10,7 @@ import com.android.tools.r8.benchmarks.BenchmarkResults;
 import com.android.tools.r8.utils.AndroidApp;
 import com.android.tools.r8.utils.FileUtils;
 import com.android.tools.r8.utils.InternalOptions;
-import com.android.tools.r8.utils.exceptions.Unimplemented;
+import com.android.tools.r8.utils.internal.exceptions.Unimplemented;
 import com.google.common.base.Charsets;
 import java.io.IOException;
 import java.nio.file.Files;

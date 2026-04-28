@@ -10,7 +10,7 @@ import com.android.tools.r8.profile.AbstractProfileMethodRule;
 import com.android.tools.r8.references.MethodReference;
 import com.android.tools.r8.startup.StartupMethodBuilder;
 import com.android.tools.r8.utils.MethodReferenceUtils;
-import com.android.tools.r8.utils.ThrowingConsumer;
+import com.android.tools.r8.utils.internal.ThrowingConsumer;
 import java.io.IOException;
 import java.util.function.Function;
 

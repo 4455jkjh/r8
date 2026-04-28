@@ -6,7 +6,7 @@ package com.android.tools.r8;
 import com.android.tools.r8.R8RunArtTestsTest.CompilerUnderTest;
 import com.android.tools.r8.R8RunArtTestsTest.DexTool;
 import com.android.tools.r8.ToolHelper.DexVm;
-import com.android.tools.r8.utils.exceptions.Unreachable;
+import com.android.tools.r8.utils.internal.exceptions.Unreachable;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.EnumSet;
@@ -29,6 +29,7 @@ public class TestCondition {
     ART_V14_0_0,
     ART_V15_0_0,
     ART_V16_0_0,
+    ART_V17_0_0,
     ART_DEFAULT,
     ART_MASTER,
     JAVA;
@@ -61,6 +62,8 @@ public class TestCondition {
           return ART_V15_0_0;
         case V16_0_0:
           return ART_V16_0_0;
+        case V17_0_0:
+          return ART_V17_0_0;
         case DEFAULT:
           return ART_DEFAULT;
         case MASTER:

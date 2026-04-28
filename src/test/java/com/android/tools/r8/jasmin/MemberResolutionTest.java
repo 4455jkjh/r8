@@ -14,7 +14,7 @@ import com.android.tools.r8.VmTestRunner.IgnoreForRangeOfVmVersions;
 import com.android.tools.r8.VmTestRunner.IgnoreForVmVersions;
 import com.android.tools.r8.jasmin.JasminBuilder.ClassBuilder;
 import com.android.tools.r8.jasmin.JasminBuilder.ClassFileVersion;
-import com.android.tools.r8.utils.ThrowingSupplier;
+import com.android.tools.r8.utils.internal.ThrowingSupplier;
 import java.util.function.BiConsumer;
 import org.junit.Assert;
 import org.junit.Test;

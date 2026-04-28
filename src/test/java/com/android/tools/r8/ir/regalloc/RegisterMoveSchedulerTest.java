@@ -34,7 +34,7 @@ import com.android.tools.r8.ir.code.ValueType;
 import com.android.tools.r8.ir.optimize.AffectedValues;
 import com.android.tools.r8.synthesis.SyntheticItems.GlobalSyntheticsStrategy;
 import com.android.tools.r8.utils.InternalOptions;
-import com.android.tools.r8.utils.exceptions.Unimplemented;
+import com.android.tools.r8.utils.internal.exceptions.Unimplemented;
 import com.android.tools.r8.utils.timing.Timing;
 import java.util.Collection;
 import java.util.LinkedList;

@@ -8,7 +8,7 @@ import static org.hamcrest.CoreMatchers.containsString;
 
 import com.android.tools.r8.synthesis.SyntheticItemsTestUtils;
 import com.android.tools.r8.utils.AndroidApiLevel;
-import com.android.tools.r8.utils.Box;
+import com.android.tools.r8.utils.internal.Box;
 import com.android.tools.r8.utils.OffOrAuto;
 import java.nio.file.Path;
 import java.util.function.Consumer;

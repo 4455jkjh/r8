@@ -9,6 +9,7 @@ import static org.junit.Assert.assertNotEquals;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
+import com.android.tools.r8.utils.internal.ArrayUtils;
 import it.unimi.dsi.fastutil.ints.Int2IntArrayMap;
 import java.util.Map;
 import java.util.function.Function;

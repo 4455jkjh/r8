@@ -17,7 +17,16 @@ java {
   withSourcesJar()
 }
 
-tasks.withType<Jar> {
-  destinationDirectory.set(getRoot().resolveAll("build", "libs"))
-  archiveFileName.set("assistant.jar")
-}
+val jarTask =
+  tasks.named<Jar>("jar") {
+    // This path & name is hardcoded in ToolHelper.
+    destinationDirectory.set(getRoot().resolveAll("build", "libs"))
+    archiveFileName.set("assistant.jar")
+  }
+
+val assistantJar by configurations.consumable("assistantJar") { outgoing.artifact(jarTask) }
+
+val assistantSources by
+  configurations.consumable("assistantSources") {
+    outgoing.artifact(tasks.named<Jar>("sourcesJar"))
+  }

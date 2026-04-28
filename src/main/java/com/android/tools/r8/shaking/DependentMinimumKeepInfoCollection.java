@@ -20,7 +20,7 @@ import com.android.tools.r8.shaking.EnqueuerEvent.ClassEnqueuerEvent;
 import com.android.tools.r8.shaking.EnqueuerEvent.UnconditionalKeepInfoEvent;
 import com.android.tools.r8.shaking.KeepInfo.Joiner;
 import com.android.tools.r8.utils.MapUtils;
-import com.android.tools.r8.utils.TriConsumer;
+import com.android.tools.r8.utils.internal.TriConsumer;
 import com.android.tools.r8.utils.timing.Timing;
 import java.util.HashMap;
 import java.util.Map;

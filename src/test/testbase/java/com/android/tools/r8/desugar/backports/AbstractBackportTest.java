@@ -13,20 +13,21 @@ import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertEquals;
 
-import com.android.tools.r8.D8TestBuilder;
-import com.android.tools.r8.D8TestCompileResult;
 import com.android.tools.r8.D8TestRunResult;
+import com.android.tools.r8.R8TestRunResult;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestBuilder;
+import com.android.tools.r8.TestCompileResult;
 import com.android.tools.r8.TestDiagnosticMessages;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.errors.InterfaceDesugarMissingTypeDiagnostic;
 import com.android.tools.r8.utils.AndroidApiLevel;
-import com.android.tools.r8.utils.ThrowingConsumer;
+import com.android.tools.r8.utils.InternalOptions;
 import com.android.tools.r8.utils.codeinspector.ClassSubject;
 import com.android.tools.r8.utils.codeinspector.CodeInspector;
 import com.android.tools.r8.utils.codeinspector.InstructionSubject;
 import com.android.tools.r8.utils.codeinspector.MethodSubject;
+import com.android.tools.r8.utils.internal.ThrowingConsumer;
 import com.google.common.collect.ImmutableList;
 import it.unimi.dsi.fastutil.ints.Int2IntAVLTreeMap;
 import it.unimi.dsi.fastutil.ints.Int2IntSortedMap;
@@ -198,7 +199,7 @@ public abstract class AbstractBackportTest extends TestBase {
     }
   }
 
-  protected void configureD8Options(D8TestBuilder d8TestBuilder) throws IOException {
+  protected void configureOptions(InternalOptions options) {
     // Intentionally empty.
   }
 
@@ -211,7 +212,7 @@ public abstract class AbstractBackportTest extends TestBase {
         .assertSuccess();
   }
 
-  private void checkDiagnostics(TestDiagnosticMessages diagnostics) {
+  protected void checkDiagnostics(TestDiagnosticMessages diagnostics, boolean isR8) {
     if (diagnostics.getWarnings().isEmpty()) {
       diagnostics.assertNoMessages();
       return;
@@ -235,13 +236,35 @@ public abstract class AbstractBackportTest extends TestBase {
       throws Exception {
     parameters.assumeDexRuntime();
     testForD8()
-        .setMinApi(parameters)
         .apply(this::configureProgram)
-        .apply(this::configureD8Options)
+        .addOptionsModification(this::configureOptions)
         .setIncludeClassesChecksum(true)
-        .compileWithExpectedDiagnostics(this::checkDiagnostics)
+        .setMinApi(parameters)
+        .compileWithExpectedDiagnostics(diagnostics -> checkDiagnostics(diagnostics, false))
         .apply(this::configure)
-        .inspect(this::assertDesugaring)
+        .inspect(inspector -> assertDesugaring(inspector, false))
+        .run(parameters.getRuntime(), testClassName, configureD8RunArguments())
+        .apply(runResultConsumer);
+  }
+
+  @Test
+  public void testR8() throws Exception {
+    testR8(R8TestRunResult::assertSuccess);
+  }
+
+  public void testR8(ThrowingConsumer<R8TestRunResult, RuntimeException> runResultConsumer)
+      throws Exception {
+    parameters.assumeDexRuntime();
+    testForR8(parameters)
+        .addDontObfuscate()
+        .addDontOptimize()
+        .addDontShrink()
+        .apply(this::configureProgram)
+        .addOptionsModification(this::configureOptions)
+        .setIncludeClassesChecksum(true)
+        .compileWithExpectedDiagnostics(diagnostics -> checkDiagnostics(diagnostics, true))
+        .apply(this::configure)
+        .inspect(inspector -> assertDesugaring(inspector, true))
         .run(parameters.getRuntime(), testClassName, configureD8RunArguments())
         .apply(runResultConsumer);
   }
@@ -251,11 +274,7 @@ public abstract class AbstractBackportTest extends TestBase {
     return new String[] {};
   }
 
-  protected void configure(D8TestBuilder builder) throws Exception {
-    // For subclasses to further configure the test builder.
-  }
-
-  protected void configure(D8TestCompileResult result) throws Exception {
+  protected void configure(TestCompileResult<?, ?> result) throws Exception {
     // For subclasses to further configure the compile result.
   }
 
@@ -265,16 +284,16 @@ public abstract class AbstractBackportTest extends TestBase {
     testForD8(Backend.CF)
         .setMinApi(parameters)
         .apply(this::configureProgram)
-        .apply(this::configureD8Options)
+        .addOptionsModification(this::configureOptions)
         .setIncludeClassesChecksum(true)
-        .compileWithExpectedDiagnostics(this::checkDiagnostics)
+        .compileWithExpectedDiagnostics(diagnostics -> checkDiagnostics(diagnostics, false))
         .apply(this::configure)
         .run(parameters.getRuntime(), testClassName, configureD8RunArguments())
         .assertSuccess()
-        .inspect(this::assertDesugaring);
+        .inspect(inspector -> assertDesugaring(inspector, false));
   }
 
-  private void assertDesugaring(CodeInspector inspector) {
+  protected void assertDesugaring(CodeInspector inspector, boolean isR8) {
     ClassSubject testSubject = inspector.clazz(testClassName);
     assertThat(testSubject, isPresent());
 

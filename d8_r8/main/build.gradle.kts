@@ -201,9 +201,6 @@ java {
   withSourcesJar()
 }
 
-val assistantJarTask = projectTask("assistant", "jar")
-val blastRadiusJarTask = projectTask("blastradius", "jar")
-val blastRadiusProtoJarTask = projectTask("blastradius", "protoJar")
 val keepAnnoJarTask = projectTask("keepanno", "jar")
 val keepAnnoToolsJar = projectTask("keepanno", "toolsJar")
 val resourceShrinkerJarTask = projectTask("resourceshrinker", "jar")
@@ -230,9 +227,8 @@ val internalClassesResolvable by
 dependencies {
   internalJarScope(project(":utils", "isolatedJar"))
   internalClassesScope(project(":utils", "isolatedClasses"))
-  implementation(assistantJarTask.outputs.files)
-  implementation(blastRadiusJarTask.outputs.files)
-  implementation(blastRadiusProtoJarTask.outputs.files)
+  implementation(project(":assistant", "assistantJar"))
+  implementation(project(":blastradius", "blastradiusJar"))
   implementation(keepAnnoJarTask.outputs.files)
   implementation(resourceShrinkerJarTask.outputs.files)
   implementation(project(":utils"))

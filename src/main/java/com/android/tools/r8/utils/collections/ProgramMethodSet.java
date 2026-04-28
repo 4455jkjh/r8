@@ -12,7 +12,7 @@ import com.android.tools.r8.graph.ProgramMethod;
 import com.android.tools.r8.graph.PrunedItems;
 import com.android.tools.r8.graph.lens.GraphLens;
 import com.android.tools.r8.utils.CollectionUtils;
-import com.android.tools.r8.utils.ForEachable;
+import com.android.tools.r8.utils.internal.ForEachable;
 import com.android.tools.r8.utils.collections.SortedProgramMethodSet.ConcurrentSortedProgramMethodSet;
 import com.google.common.collect.ImmutableMap;
 import java.util.ArrayList;

@@ -18,7 +18,7 @@ import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestRuntime.CfVm;
 import com.android.tools.r8.classmerging.vertical.VerticalClassMergingInvokeSuperToNestMemberTest.Foo.Bar;
 import com.android.tools.r8.classmerging.vertical.VerticalClassMergingInvokeSuperToNestMemberTest.Foo.Baz;
-import com.android.tools.r8.utils.BooleanUtils;
+import com.android.tools.r8.utils.internal.BooleanUtils;
 import com.google.common.collect.ImmutableList;
 import java.util.Collection;
 import java.util.List;

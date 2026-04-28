@@ -7,16 +7,12 @@ import static com.android.tools.r8.DiagnosticsMatcher.diagnosticMessage;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.StringContains.containsString;
 
-import com.android.tools.r8.Diagnostic;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.optimize.atomicfieldupdater.AtomicFieldUpdaterBase;
 import com.android.tools.r8.utils.codeinspector.CodeMatchers;
 import com.android.tools.r8.utils.codeinspector.MethodSubject;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
-import org.hamcrest.Matcher;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -44,14 +40,11 @@ public class AtomicFieldUpdaterCompareAndSetTest extends AtomicFieldUpdaterBase 
         .compile()
         .inspectDiagnosticMessagesIf(
             isOptimizationOn(),
-            diagnostics -> {
-              List<Matcher<Diagnostic>> matchers = new ArrayList<>(4);
-              matchers.add(diagnosticMessage(containsString("Can instrument")));
-              matchers.add(diagnosticMessage(containsString("Can optimize")));
-              // TODO(b/453628974): The field should be removed once nullability analysis is
-              //                    more precise.
-              diagnostics.assertInfosMatch(matchers);
-            })
+            diagnostics ->
+                diagnostics.assertInfosMatch(
+                    diagnosticMessage(containsString("Can instrument")),
+                    diagnosticMessage(containsString("Can optimize")),
+                    diagnosticMessage(containsString("Can remove"))))
         .inspect(
             inspector -> {
               MethodSubject method = inspector.clazz(testClass).mainMethod();

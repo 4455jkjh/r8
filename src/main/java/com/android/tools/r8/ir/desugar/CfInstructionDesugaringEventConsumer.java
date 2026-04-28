@@ -6,7 +6,7 @@ package com.android.tools.r8.ir.desugar;
 
 import static com.android.tools.r8.ir.desugar.lambda.ForcefullyMovedLambdaMethodConsumer.emptyForcefullyMovedLambdaMethodConsumer;
 import static com.android.tools.r8.ir.desugar.lambda.SyntheticLambdaAccessorMethodConsumer.emptySyntheticLambdaAccessorMethodConsumer;
-import static com.android.tools.r8.utils.ConsumerUtils.emptyConsumer;
+import static com.android.tools.r8.utils.internal.ConsumerUtils.emptyConsumer;
 
 import com.android.tools.r8.graph.AppInfoWithClassHierarchy;
 import com.android.tools.r8.graph.AppView;

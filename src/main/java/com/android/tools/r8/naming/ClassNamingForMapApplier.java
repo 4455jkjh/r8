@@ -14,7 +14,7 @@ import com.android.tools.r8.naming.MemberNaming.Signature.SignatureKind;
 import com.android.tools.r8.naming.mappinginformation.MappingInformation;
 import com.android.tools.r8.position.Position;
 import com.android.tools.r8.utils.Reporter;
-import com.android.tools.r8.utils.ThrowingConsumer;
+import com.android.tools.r8.utils.internal.ThrowingConsumer;
 import com.google.common.base.Objects;
 import com.google.common.collect.ImmutableMap;
 import java.util.ArrayList;

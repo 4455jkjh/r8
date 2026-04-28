@@ -300,8 +300,7 @@ public class AtomicFieldUpdaterInstrumentor {
     } else if (invokedMethod.isIdenticalTo(itemFactory.atomicIntUpdaterMethods.newUpdater)) {
       return resolveIntNewUpdaterCall(clazz, updaterField, invokeStatic);
     } else if (invokedMethod.isIdenticalTo(itemFactory.atomicLongUpdaterMethods.newUpdater)) {
-      reportInfo(appView, new Event.CannotInstrument(updaterField), Reason.NOT_SUPPORTED);
-      return null;
+      return resolveLongNewUpdaterCall(clazz, updaterField, invokeStatic);
     } else {
       reportInfo(
           appView,
@@ -350,6 +349,25 @@ public class AtomicFieldUpdaterInstrumentor {
     //     * If so, verify/correct the static checks to match the runtime checks.
     assert AndroidApiLevel.LATEST.isEqualTo(AndroidApiLevel.CINNAMON_BUN);
     return UpdaterFieldInfo.createInt(
+        updaterField, holderValue, fieldNameValue, invokeStatic.getPosition());
+  }
+
+  private LongUpdaterFieldInfo<Void> resolveLongNewUpdaterCall(
+      DexProgramClass clazz, DexField updaterField, InvokeStatic invokeStatic) {
+    assert invokeStatic.arguments().size() == 2;
+    var holderValue = invokeStatic.getFirstArgument();
+    if (!isHolderValid(clazz, holderValue, updaterField)) {
+      return null;
+    }
+    var fieldNameValue = invokeStatic.getSecondArgument();
+    if (!isReflectedFieldValid(clazz, fieldNameValue, itemFactory.longType, updaterField)) {
+      return null;
+    }
+    // If this assert fails then check these things before updating the assert:
+    //   * Check if AtomicLongFieldUpdater.newUpdater has changed implementation.
+    //     * If so, verify/correct the static checks to match the runtime checks.
+    assert AndroidApiLevel.LATEST.isEqualTo(AndroidApiLevel.CINNAMON_BUN);
+    return UpdaterFieldInfo.createLong(
         updaterField, holderValue, fieldNameValue, invokeStatic.getPosition());
   }
 
@@ -634,6 +652,11 @@ public class AtomicFieldUpdaterInstrumentor {
       return new IntUpdaterFieldInfo<>(field, holdingClass, reflectedFieldName, position, null);
     }
 
+    public static LongUpdaterFieldInfo<Void> createLong(
+        DexField field, Value holdingClass, Value reflectedFieldName, Position position) {
+      return new LongUpdaterFieldInfo<>(field, holdingClass, reflectedFieldName, position, null);
+    }
+
     public static ReferenceUpdaterFieldInfo<Void> createReference(
         DexField field,
         DexType reflectedFieldType,
@@ -668,6 +691,28 @@ public class AtomicFieldUpdaterInstrumentor {
     @Override
     public DexType fieldType(DexItemFactory factory) {
       return factory.intType;
+    }
+  }
+
+  private static class LongUpdaterFieldInfo<OffsetField> extends UpdaterFieldInfo<OffsetField> {
+
+    private LongUpdaterFieldInfo(
+        DexField field,
+        Value holderValue,
+        Value reflectedFieldName,
+        Position position,
+        OffsetField offsetField) {
+      super(field, holderValue, reflectedFieldName, position, offsetField);
+    }
+
+    @Override
+    public <T> UpdaterFieldInfo<T> copyWithOffsetField(T offsetField) {
+      return new LongUpdaterFieldInfo<>(field, holderValue, fieldName, position, offsetField);
+    }
+
+    @Override
+    public DexType fieldType(DexItemFactory factory) {
+      return factory.longType;
     }
   }
 

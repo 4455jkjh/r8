@@ -111,7 +111,7 @@ public class FileTypeDetectorTest extends DesugaredLibraryTestBase {
     }
 
     private static Path getGoogleIconPng() throws IOException {
-      Path picture = Files.createTempFile("art", ".png");
+      Path picture = Files.createTempFile("r8-art", ".png");
       Files.write(picture, GoogleIcon.GOOGLE_ICON_PNG);
       return picture;
     }

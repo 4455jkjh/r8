@@ -9,6 +9,7 @@ import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.DexClass;
 import com.android.tools.r8.graph.DexEncodedMethod;
 import com.android.tools.r8.graph.ProgramMethod;
+import com.android.tools.r8.graph.ThrowNullCode;
 import com.android.tools.r8.ir.analysis.type.Nullability;
 import com.android.tools.r8.ir.analysis.type.TypeElement;
 import com.android.tools.r8.ir.code.FieldInstruction;
@@ -18,6 +19,7 @@ import com.android.tools.r8.ir.code.Instruction;
 import com.android.tools.r8.ir.code.Return;
 import com.android.tools.r8.ir.code.StaticPut;
 import com.android.tools.r8.ir.code.Throw;
+import com.android.tools.r8.utils.StringDiagnostic;
 
 /**
  * Utility to determine if a given IR code object type checks.
@@ -38,6 +40,26 @@ public class TypeChecker {
       AppView<? extends AppInfoWithClassHierarchy> appView, VerifyTypesHelper verifyTypesHelper) {
     this.appView = appView;
     this.verifyTypesHelper = verifyTypesHelper;
+  }
+
+  public boolean replaceInvalidCode(ProgramMethod method, IRCode code) {
+    if (check(code)) {
+      return false;
+    }
+    assert appView.enableWholeProgramOptimizations();
+    assert appView.testing().allowTypeErrors
+        : "Could not type check code for method "
+            + method.toSourceString()
+            + "\nWith Code:\n"
+            + code;
+    StringDiagnostic warning =
+        new StringDiagnostic(
+            "The method `"
+                + method.toSourceString()
+                + "` does not type check and will be assumed to be unreachable.");
+    appView.reporter().warning(warning);
+    method.setCode(ThrowNullCode.get(), appView);
+    return true;
   }
 
   public boolean check(IRCode code) {

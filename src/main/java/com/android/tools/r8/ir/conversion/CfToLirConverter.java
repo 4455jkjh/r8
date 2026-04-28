@@ -14,6 +14,8 @@ import com.android.tools.r8.graph.ProgramMethod;
 import com.android.tools.r8.graph.analysis.EnqueuerAnalysisCollection;
 import com.android.tools.r8.graph.analysis.FinishedEnqueuerAnalysis;
 import com.android.tools.r8.graph.bytecodemetadata.BytecodeMetadataProvider;
+import com.android.tools.r8.ir.analysis.TypeChecker;
+import com.android.tools.r8.ir.analysis.VerifyTypesHelper;
 import com.android.tools.r8.ir.code.FieldGet;
 import com.android.tools.r8.ir.code.IRCode;
 import com.android.tools.r8.ir.code.Instruction;
@@ -47,6 +49,7 @@ public class CfToLirConverter implements FinishedEnqueuerAnalysis {
   private final AppView<AppInfoWithClassHierarchy> appView;
   private final CodeRewriterPassCollection codeRewriterPassCollection;
   private final Enqueuer enqueuer;
+  private final TypeChecker typeChecker;
 
   public CfToLirConverter(AppView<AppInfoWithClassHierarchy> appView, Enqueuer enqueuer) {
     this.appView = appView;
@@ -59,6 +62,7 @@ public class CfToLirConverter implements FinishedEnqueuerAnalysis {
 
     this.codeRewriterPassCollection = new CodeRewriterPassCollection(extraPasses);
     this.enqueuer = enqueuer;
+    this.typeChecker = new TypeChecker(appView, VerifyTypesHelper.create(appView));
   }
 
   public static CfToLirConverter register(
@@ -133,6 +137,13 @@ public class CfToLirConverter implements FinishedEnqueuerAnalysis {
       method.getDefinition().markNotProcessed();
     }
     IRCode code = method.buildIR(appView, MethodConversionOptions.forLirPhase(appView));
+
+    // Code that doesn't type check generally trips up consistency checks, etc. We replace such code
+    // by a canonical `throw null` code object.
+    if (typeChecker.replaceInvalidCode(method, code)) {
+      return;
+    }
+
     codeRewriterPassCollection.run(code, null, null, Timing.empty(), null, appView.options());
     if (appView.options().isGeneratingDex() && hasApplicableAssumeValuesRule(code)) {
       new AssumePropagator(appView).run(code);

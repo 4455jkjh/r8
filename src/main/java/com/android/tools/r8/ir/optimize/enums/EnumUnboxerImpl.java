@@ -113,7 +113,7 @@ import com.android.tools.r8.shaking.KeepInfoCollection;
 import com.android.tools.r8.utils.Reporter;
 import com.android.tools.r8.utils.SetUtils;
 import com.android.tools.r8.utils.StringDiagnostic;
-import com.android.tools.r8.utils.TraversalContinuation;
+import com.android.tools.r8.utils.internal.TraversalContinuation;
 import com.android.tools.r8.utils.collections.ImmutableInt2ReferenceSortedMap;
 import com.android.tools.r8.utils.collections.LongLivedClassSetBuilder;
 import com.android.tools.r8.utils.collections.LongLivedProgramMethodMapBuilder;

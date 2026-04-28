@@ -15,7 +15,7 @@ import com.android.tools.r8.optimize.singlecaller.SingleCallerInlinerCallGraph.N
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
 import com.android.tools.r8.utils.collections.ProgramMethodMap;
 import com.android.tools.r8.utils.collections.ProgramMethodSet;
-import com.android.tools.r8.utils.exceptions.Unreachable;
+import com.android.tools.r8.utils.internal.exceptions.Unreachable;
 import com.google.common.collect.Sets;
 import java.util.Collections;
 import java.util.Iterator;

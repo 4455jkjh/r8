@@ -6,7 +6,7 @@ package com.android.tools.r8.dex.distribution;
 import com.android.tools.r8.FeatureSplit;
 import com.android.tools.r8.dex.VirtualFile;
 import com.android.tools.r8.graph.AppView;
-import com.android.tools.r8.utils.IntBox;
+import com.android.tools.r8.utils.internal.IntBox;
 import com.google.common.collect.Iterators;
 import java.util.ArrayList;
 import java.util.Iterator;

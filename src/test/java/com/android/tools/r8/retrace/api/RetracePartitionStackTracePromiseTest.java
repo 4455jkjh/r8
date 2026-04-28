@@ -24,7 +24,7 @@ import com.android.tools.r8.retrace.RetraceStackTraceContext;
 import com.android.tools.r8.retrace.RetraceStackTraceResult;
 import com.android.tools.r8.retrace.api.RetraceApiTypeResultTest.RetracePartitionStackTraceTest;
 import com.android.tools.r8.retrace.api.RetraceApiTypeResultTest.RetracePartitionStackTraceTest.IdentityStackTraceLineParser;
-import com.android.tools.r8.utils.Box;
+import com.android.tools.r8.utils.internal.Box;
 import com.android.tools.r8.utils.StringUtils;
 import java.util.ArrayList;
 import java.util.HashMap;

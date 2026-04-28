@@ -8,7 +8,7 @@ import com.android.tools.r8.assistant.runtime.ReflectiveEventType;
 import com.android.tools.r8.graph.DexItemFactory;
 import com.android.tools.r8.graph.DexType;
 import com.android.tools.r8.shaking.KeepInfoCollectionExported;
-import com.android.tools.r8.utils.ArrayUtils;
+import com.android.tools.r8.utils.internal.ArrayUtils;
 import java.util.Arrays;
 
 public class ProxyNewProxyInstance extends ReflectiveEvent {

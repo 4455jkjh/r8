@@ -5,14 +5,14 @@
 package com.android.tools.r8.ir.optimize.peepholes;
 
 import static com.android.tools.r8.utils.InternalOptions.TestingOptions.NO_LIMIT;
-import static com.android.tools.r8.utils.PredicateUtils.not;
+import static com.android.tools.r8.utils.internal.PredicateUtils.not;
 
 import com.android.tools.r8.errors.CompilationError;
 import com.android.tools.r8.ir.code.BasicBlock;
 import com.android.tools.r8.ir.code.IRCode;
 import com.android.tools.r8.ir.code.LinearFlowInstructionListIterator;
 import com.android.tools.r8.utils.InternalOptions;
-import com.android.tools.r8.utils.IteratorUtils;
+import com.android.tools.r8.utils.internal.IteratorUtils;
 import com.google.common.collect.ImmutableList;
 import java.util.List;
 import java.util.ListIterator;

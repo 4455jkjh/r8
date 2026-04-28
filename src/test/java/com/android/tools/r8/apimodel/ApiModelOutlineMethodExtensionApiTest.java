@@ -18,7 +18,7 @@ import com.android.tools.r8.apimodel.extension.ExtensionApiLibraryClass;
 import com.android.tools.r8.apimodel.extension.ExtensionApiLibraryInterface;
 import com.android.tools.r8.apimodel.extension.ExtensionApiLibraryInterfaceImpl;
 import com.android.tools.r8.apimodel.extension.ExtensionApiLibraryInterfaceProvider;
-import com.android.tools.r8.utils.BooleanUtils;
+import com.android.tools.r8.utils.internal.BooleanUtils;
 import com.android.tools.r8.utils.StringUtils;
 import com.android.tools.r8.utils.codeinspector.CodeInspector;
 import com.google.common.collect.ImmutableList;

@@ -12,7 +12,7 @@ import com.android.tools.r8.origin.Origin;
 import com.android.tools.r8.profile.art.ArtProfileBuilder;
 import com.android.tools.r8.profile.art.ArtProfileProvider;
 import com.android.tools.r8.profile.art.utils.ArtProfileInspector;
-import com.android.tools.r8.utils.exceptions.Unreachable;
+import com.android.tools.r8.utils.internal.exceptions.Unreachable;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;

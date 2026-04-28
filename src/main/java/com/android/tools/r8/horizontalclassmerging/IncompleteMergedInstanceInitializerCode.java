@@ -26,7 +26,7 @@ import com.android.tools.r8.lightir.LirBuilder;
 import com.android.tools.r8.lightir.LirCode;
 import com.android.tools.r8.lightir.LirEncodingStrategy;
 import com.android.tools.r8.lightir.LirStrategy;
-import com.android.tools.r8.utils.Box;
+import com.android.tools.r8.utils.internal.Box;
 import com.android.tools.r8.utils.ListUtils;
 import java.util.ArrayList;
 import java.util.List;

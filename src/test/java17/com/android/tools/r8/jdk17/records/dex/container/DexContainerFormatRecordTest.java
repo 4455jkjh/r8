@@ -9,7 +9,7 @@ import static org.junit.Assume.assumeTrue;
 import com.android.tools.r8.GlobalSyntheticsTestingConsumer;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.dex.container.DexContainerFormatTestBase;
-import com.android.tools.r8.utils.BooleanUtils;
+import com.android.tools.r8.utils.internal.BooleanUtils;
 import com.android.tools.r8.utils.DexVersion;
 import com.android.tools.r8.utils.InternalOptions;
 import java.nio.file.Path;

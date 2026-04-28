@@ -43,7 +43,7 @@ import com.android.tools.r8.synthesis.SyntheticNaming;
 import com.android.tools.r8.utils.AsmUtils;
 import com.android.tools.r8.utils.ComparatorUtils;
 import com.android.tools.r8.utils.InternalOptions;
-import com.android.tools.r8.utils.exceptions.Unreachable;
+import com.android.tools.r8.utils.internal.exceptions.Unreachable;
 import com.android.tools.r8.utils.structural.Ordered;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableMap.Builder;

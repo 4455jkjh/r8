@@ -382,10 +382,13 @@ def Main(argv):
         archive.set_r_limit_to_max()
 
     # Make sure bazel is extracted in third_party.
-    utils.DownloadFromGoogleCloudStorage(utils.BAZEL_SHA_FILE)
-    utils.DownloadFromGoogleCloudStorage(utils.JAVA8_SHA_FILE)
-    utils.DownloadFromGoogleCloudStorage(utils.JAVA17_SHA_FILE)
-    utils.DownloadFromGoogleCloudStorage(utils.DESUGAR_JDK_LIBS_11_SHA_FILE)
+    utils.EnsureDepFromGoogleCloudStorage(utils.BAZEL_SHA_FILE, 'Bazel tool')
+    utils.EnsureDepFromGoogleCloudStorage(utils.JAVA8_SHA_FILE,
+                                          'Java 8 runtime')
+    utils.EnsureDepFromGoogleCloudStorage(utils.JAVA17_SHA_FILE,
+                                          'Java 17 runtime')
+    utils.EnsureDepFromGoogleCloudStorage(utils.DESUGAR_JDK_LIBS_11_SHA_FILE,
+                                          'desugar_jdk_libs_11')
 
     for v in options.variant:
         BuildAndUpload(options, v)

@@ -8,7 +8,7 @@ import com.android.tools.r8.DataResourceProvider;
 import com.android.tools.r8.FeatureSplit;
 import com.android.tools.r8.ProgramResourceProvider;
 import com.android.tools.r8.graph.DexItemFactory;
-import com.android.tools.r8.utils.IterableUtils;
+import com.android.tools.r8.utils.internal.IterableUtils;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;

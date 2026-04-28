@@ -4,7 +4,7 @@
 package com.android.tools.r8.ir.code;
 
 import com.android.tools.r8.ir.code.DominatorTree.Assumption;
-import com.android.tools.r8.utils.Box;
+import com.android.tools.r8.utils.internal.Box;
 
 public class LazyDominatorTree extends Box<DominatorTree> {
 

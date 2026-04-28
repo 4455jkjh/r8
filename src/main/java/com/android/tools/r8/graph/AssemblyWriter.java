@@ -142,7 +142,7 @@ public class AssemblyWriter extends DexByteCodeWriter {
 
   @Override
   void writeFieldsHeader(DexProgramClass clazz, PrintStream ps) {
-    if (writeFields) {
+    if (writeFields && !clazz.getFieldCollection().isEmpty()) {
       ps.println("#");
       ps.println("# Fields:");
       ps.println("#");
@@ -170,7 +170,9 @@ public class AssemblyWriter extends DexByteCodeWriter {
 
   @Override
   void writeFieldsFooter(DexProgramClass clazz, PrintStream ps) {
-    ps.println();
+    if (!clazz.getFieldCollection().isEmpty()) {
+      ps.println();
+    }
   }
 
   @Override

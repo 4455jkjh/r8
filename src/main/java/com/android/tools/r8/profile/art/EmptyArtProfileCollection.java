@@ -9,7 +9,7 @@ import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.PrunedItems;
 import com.android.tools.r8.graph.lens.GraphLens;
 import com.android.tools.r8.naming.NamingLens;
-import com.android.tools.r8.utils.IteratorUtils;
+import com.android.tools.r8.utils.internal.IteratorUtils;
 import com.android.tools.r8.utils.timing.Timing;
 import java.util.Iterator;
 

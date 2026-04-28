@@ -24,7 +24,7 @@ import com.android.tools.r8.references.MethodReference;
 import com.android.tools.r8.references.Reference;
 import com.android.tools.r8.transformers.MethodTransformer.MethodContext;
 import com.android.tools.r8.utils.DescriptorUtils;
-import com.android.tools.r8.utils.ThrowingConsumer;
+import com.android.tools.r8.utils.internal.ThrowingConsumer;
 import com.google.common.collect.ImmutableMap;
 import java.io.IOException;
 import java.lang.reflect.Constructor;

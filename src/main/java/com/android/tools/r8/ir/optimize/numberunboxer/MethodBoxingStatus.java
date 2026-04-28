@@ -4,7 +4,7 @@
 
 package com.android.tools.r8.ir.optimize.numberunboxer;
 
-import com.android.tools.r8.utils.ArrayUtils;
+import com.android.tools.r8.utils.internal.ArrayUtils;
 
 public class MethodBoxingStatus {
 

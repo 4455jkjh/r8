@@ -100,7 +100,7 @@ import com.android.tools.r8.references.ClassReference;
 import com.android.tools.r8.references.Reference;
 import com.android.tools.r8.repackaging.RepackagingLens;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
-import com.android.tools.r8.shaking.Enqueuer;
+import com.android.tools.r8.shaking.Enqueuer.Mode;
 import com.android.tools.r8.shaking.GlobalKeepInfoConfiguration;
 import com.android.tools.r8.shaking.KeepSpecificationSource;
 import com.android.tools.r8.shaking.ProguardConfiguration;
@@ -112,9 +112,15 @@ import com.android.tools.r8.tracereferences.TraceReferencesNativeReferencesConsu
 import com.android.tools.r8.tracereferences.TraceReferencesOptions;
 import com.android.tools.r8.utils.IROrdering.IdentityIROrdering;
 import com.android.tools.r8.utils.IROrdering.NondeterministicIROrdering;
-import com.android.tools.r8.utils.collections.Pair;
 import com.android.tools.r8.utils.collections.ProgramMethodSet;
-import com.android.tools.r8.utils.exceptions.Unreachable;
+import com.android.tools.r8.utils.internal.AssertionUtils;
+import com.android.tools.r8.utils.internal.ConsumerUtils;
+import com.android.tools.r8.utils.internal.QuadConsumer;
+import com.android.tools.r8.utils.internal.ThrowingConsumer;
+import com.android.tools.r8.utils.internal.TriConsumer;
+import com.android.tools.r8.utils.internal.TriFunction;
+import com.android.tools.r8.utils.internal.collections.Pair;
+import com.android.tools.r8.utils.internal.exceptions.Unreachable;
 import com.android.tools.r8.utils.structural.Ordered;
 import com.android.tools.r8.utils.timing.Timing;
 import com.android.tools.r8.verticalclassmerging.VerticalClassMergerOptions;
@@ -889,8 +895,13 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
   }
 
   @Override
-  public boolean isCodeReplacementForceEnabled() {
-    return getTestingOptions().allowCodeReplacement;
+  public boolean isCodeReplacementDecoupledFromOptimization() {
+    return getTestingOptions().decoupleCodeReplacementFromOptimization;
+  }
+
+  @Override
+  public boolean isFinalModificationDecoupledFromOptimization() {
+    return getTestingOptions().decoupleFinalModificationFromOptimization;
   }
 
   @Override
@@ -1036,6 +1047,18 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
   @Override
   public boolean isAccessModificationEnabled() {
     return accessModifierOptions.isAccessModificationEnabled();
+  }
+
+  public boolean getDefaultValueForAccessModification() {
+    return testing.allowAccessModificationInKeepRule;
+  }
+
+  public boolean getDefaultValueForCodeReplacement() {
+    return testing.allowCodeReplacementInKeepRule;
+  }
+
+  public boolean getDefaultValueForFinalModification() {
+    return testing.allowFinalModificationInKeepRule;
   }
 
   @Override
@@ -2387,7 +2410,7 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
       this.mixedSectionLayoutStrategyInspector = mixedSectionLayoutStrategyInspector;
     }
 
-    public TriConsumer<AppInfoWithLiveness, Enqueuer.Mode, Timing> enqueuerInspector = null;
+    public TriConsumer<AppInfoWithLiveness, Mode, Timing> enqueuerInspector = null;
 
     public Consumer<String> processingContextsConsumer = null;
 
@@ -2435,8 +2458,21 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
     public boolean addCallEdgesForLibraryInvokes = false;
 
     public boolean allowClassInliningOfSynthetics = true;
-    public boolean allowCodeReplacement =
-        parseSystemPropertyOrDefault("com.android.tools.r8.allowCodeReplacement", true);
+    public boolean allowAccessModificationInKeepRule =
+        parseSystemPropertyOrDefault(
+            "com.android.tools.r8.allowAccessModificationInKeepRule", false);
+    public boolean allowCodeReplacementInKeepRule =
+        parseSystemPropertyOrDefault("com.android.tools.r8.allowCodeReplacementInKeepRule", false);
+    public boolean decoupleCodeReplacementFromOptimization =
+        parseSystemPropertyOrDefault(
+            "com.android.tools.r8.decoupleCodeReplacementFromOptimization",
+            // Fallback to legacy property, used by Chrome.
+            !parseSystemPropertyOrDefault("com.android.tools.r8.allowCodeReplacement", true));
+    public boolean allowFinalModificationInKeepRule =
+        parseSystemPropertyOrDefault("com.android.tools.r8.allowFinalModificationInKeepRule", true);
+    public boolean decoupleFinalModificationFromOptimization =
+        parseSystemPropertyOrDefault(
+            "com.android.tools.r8.decoupleFinalModificationFromOptimization", false);
     public boolean allowConstructorMismatchInClassFiles =
         parseSystemPropertyOrDefault(
             "com.android.tools.r8.cf.verification.allowconstructormismatch", false);

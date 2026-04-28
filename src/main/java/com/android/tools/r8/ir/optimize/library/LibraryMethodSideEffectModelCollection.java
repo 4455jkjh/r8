@@ -11,7 +11,7 @@ import com.android.tools.r8.graph.LibraryMethod;
 import com.android.tools.r8.ir.code.InvokeMethod;
 import com.android.tools.r8.ir.code.Value;
 import com.android.tools.r8.ir.optimize.library.sideeffects.JavaLangObjectsSideEffectCollection;
-import com.android.tools.r8.utils.BiPredicateUtils;
+import com.android.tools.r8.utils.internal.BiPredicateUtils;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import java.util.List;

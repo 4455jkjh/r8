@@ -9,7 +9,7 @@ import com.android.tools.r8.graph.DexEncodedMethod;
 import com.android.tools.r8.graph.DexMethod;
 import com.android.tools.r8.graph.ProgramMethod;
 import com.android.tools.r8.graph.lens.GraphLens;
-import com.android.tools.r8.utils.ForEachable;
+import com.android.tools.r8.utils.internal.ForEachable;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Map;

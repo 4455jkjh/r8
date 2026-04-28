@@ -9,7 +9,7 @@ import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.libanalyzer.LibraryAnalyzerTestBuilder.AarOrJar;
 import com.android.tools.r8.libanalyzer.proto.LibraryAnalyzerResult;
 import com.android.tools.r8.utils.AndroidApiLevel;
-import com.android.tools.r8.utils.Box;
+import com.android.tools.r8.utils.internal.Box;
 import java.util.List;
 import org.junit.Test;
 import org.junit.runner.RunWith;

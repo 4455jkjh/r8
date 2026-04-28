@@ -10,7 +10,7 @@ import com.android.tools.r8.ir.code.Instruction;
 import com.android.tools.r8.ir.code.IntSwitch;
 import com.android.tools.r8.ir.code.Switch;
 import com.android.tools.r8.ir.code.Value;
-import com.android.tools.r8.utils.LongInterval;
+import com.android.tools.r8.utils.internal.LongInterval;
 
 public class SwitchCaseAnalyzer {
 

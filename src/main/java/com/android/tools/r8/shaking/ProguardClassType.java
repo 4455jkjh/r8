@@ -4,7 +4,7 @@
 package com.android.tools.r8.shaking;
 
 import com.android.tools.r8.graph.DexClass;
-import com.android.tools.r8.utils.exceptions.Unreachable;
+import com.android.tools.r8.utils.internal.exceptions.Unreachable;
 
 public enum ProguardClassType {
   ANNOTATION_INTERFACE {

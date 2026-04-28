@@ -11,7 +11,7 @@ import static com.android.tools.r8.graph.DexEncodedMethod.CompilationState.PROCE
 import static com.android.tools.r8.graph.DexEncodedMethod.CompilationState.PROCESSED_NOT_INLINING_CANDIDATE;
 import static com.android.tools.r8.graph.DexProgramClass.asProgramClassOrNull;
 import static com.android.tools.r8.kotlin.KotlinMetadataUtils.getNoKotlinInfo;
-import static com.android.tools.r8.utils.ConsumerUtils.emptyConsumer;
+import static com.android.tools.r8.utils.internal.ConsumerUtils.emptyConsumer;
 import static java.util.Objects.requireNonNull;
 
 import com.android.tools.r8.androidapi.ComputedApiLevel;
@@ -42,13 +42,13 @@ import com.android.tools.r8.kotlin.KotlinMethodLevelInfo;
 import com.android.tools.r8.lightir.LirCode;
 import com.android.tools.r8.naming.NamingLens;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
-import com.android.tools.r8.utils.BooleanBox;
-import com.android.tools.r8.utils.BooleanUtils;
-import com.android.tools.r8.utils.ConsumerUtils;
-import com.android.tools.r8.utils.ObjectUtils;
-import com.android.tools.r8.utils.OptionalBool;
+import com.android.tools.r8.utils.internal.BooleanBox;
+import com.android.tools.r8.utils.internal.BooleanUtils;
+import com.android.tools.r8.utils.internal.ConsumerUtils;
+import com.android.tools.r8.utils.internal.ObjectUtils;
+import com.android.tools.r8.utils.internal.OptionalBool;
 import com.android.tools.r8.utils.RetracerForCodePrinting;
-import com.android.tools.r8.utils.exceptions.Unreachable;
+import com.android.tools.r8.utils.internal.exceptions.Unreachable;
 import com.android.tools.r8.utils.structural.CompareToVisitor;
 import com.android.tools.r8.utils.structural.HashingVisitor;
 import com.android.tools.r8.utils.structural.Ordered;

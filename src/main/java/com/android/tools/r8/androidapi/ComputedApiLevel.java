@@ -5,7 +5,7 @@
 package com.android.tools.r8.androidapi;
 
 import com.android.tools.r8.utils.AndroidApiLevel;
-import com.android.tools.r8.utils.OptionalBool;
+import com.android.tools.r8.utils.internal.OptionalBool;
 import com.android.tools.r8.utils.structural.Equatable;
 import java.util.Objects;
 

@@ -146,9 +146,9 @@ public class KeepMethodInfo extends KeepMemberInfo<KeepMethodInfo.Builder, KeepM
   }
 
   public boolean isCodeReplacementAllowed(GlobalKeepInfoConfiguration configuration) {
-    return configuration.isCodeReplacementForceEnabled()
-        ? !isOptimizationAllowed(configuration)
-        : internalIsCodeReplacementAllowed();
+    return configuration.isCodeReplacementDecoupledFromOptimization()
+        ? internalIsCodeReplacementAllowed()
+        : !isOptimizationAllowed(configuration);
   }
 
   public boolean isCodeReplacementAllowed(

@@ -17,7 +17,7 @@ import com.android.tools.r8.resolution.singletarget.one.IrrelevantInterfaceWithD
 import com.android.tools.r8.resolution.singletarget.one.SubSubClassOne;
 import com.android.tools.r8.resolution.singletarget.one.SubSubClassThree;
 import com.android.tools.r8.resolution.singletarget.one.SubSubClassTwo;
-import com.android.tools.r8.utils.BooleanUtils;
+import com.android.tools.r8.utils.internal.BooleanUtils;
 import com.android.tools.r8.utils.StringUtils;
 import com.google.common.collect.ImmutableList;
 import java.util.List;

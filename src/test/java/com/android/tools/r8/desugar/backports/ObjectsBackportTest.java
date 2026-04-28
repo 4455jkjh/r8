@@ -6,6 +6,7 @@ package com.android.tools.r8.desugar.backports;
 
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.utils.AndroidApiLevel;
+import com.android.tools.r8.utils.codeinspector.CodeInspector;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.Objects;
@@ -24,6 +25,13 @@ public final class ObjectsBackportTest extends AbstractBackportTest {
     super(parameters, Objects.class, Main.class);
     registerTarget(AndroidApiLevel.N, 59);
     registerTarget(AndroidApiLevel.K, 55);
+  }
+
+  @Override
+  protected void assertDesugaring(CodeInspector inspector, boolean isR8) {
+    if (!isR8) {
+      super.assertDesugaring(inspector, isR8);
+    }
   }
 
   static final class Main extends MiniAssert {

@@ -20,15 +20,16 @@ import com.android.tools.r8.R8TestCompileResult;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.references.MethodReference;
-import com.android.tools.r8.utils.BooleanUtils;
 import com.android.tools.r8.utils.MethodReferenceUtils;
 import com.android.tools.r8.utils.StringUtils;
 import com.android.tools.r8.utils.UnverifiableCfCodeDiagnostic;
+import com.android.tools.r8.utils.internal.BooleanUtils;
 import com.google.common.base.Throwables;
 import java.util.List;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameter;
 import org.junit.runners.Parameterized.Parameters;
 
 /** Test for b/130211035. */
@@ -37,8 +38,11 @@ public class MissingClassesJoinTest extends TestBase {
 
   private static final String expectedOutput = StringUtils.lines("Hello world!");
 
-  private final boolean allowTypeErrors;
-  private final TestParameters parameters;
+  @Parameter(0)
+  public boolean allowTypeErrors;
+
+  @Parameter(1)
+  public TestParameters parameters;
 
   @Parameters(name = "{1}, allow type errors: {0}")
   public static List<Object[]> data() {
@@ -46,13 +50,8 @@ public class MissingClassesJoinTest extends TestBase {
         BooleanUtils.values(), getTestParameters().withAllRuntimesAndApiLevels().build());
   }
 
-  public MissingClassesJoinTest(boolean allowTypeErrors, TestParameters parameters) {
-    this.allowTypeErrors = allowTypeErrors;
-    this.parameters = parameters;
-  }
-
   @Test
-  public void test() throws Exception {
+  public void testD8() throws Exception {
     if (parameters.isDexRuntime() && !allowTypeErrors) {
       D8TestCompileResult compileResult =
           testForD8()
@@ -67,7 +66,10 @@ public class MissingClassesJoinTest extends TestBase {
           .run(parameters.getRuntime(), TestClass.class)
           .assertSuccessWithOutput(expectedOutput);
     }
+  }
 
+  @Test
+  public void testR8() throws Exception {
     try {
       R8TestCompileResult compileResult =
           testForR8(parameters.getBackend())
@@ -75,7 +77,7 @@ public class MissingClassesJoinTest extends TestBase {
               .addProgramClasses(A.class, ASub1.class, Box.class, TestClass.class)
               .addKeepAllClassesRule()
               .addOptionsModification(options -> options.testing.allowTypeErrors = allowTypeErrors)
-              .addDontWarn(ASub2.class)
+              .applyIf(parameters.isCfRuntime(), b -> b.addDontWarn(ASub2.class))
               .allowDiagnosticWarningMessages()
               .enableNoVerticalClassMergingAnnotations()
               .setMinApi(parameters)

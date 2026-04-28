@@ -4,7 +4,7 @@
 package com.android.tools.r8.graph;
 
 import static com.android.tools.r8.ir.desugar.LambdaClass.LAMBDA_INSTANCE_FIELD_NAME;
-import static com.android.tools.r8.utils.ConsumerUtils.emptyConsumer;
+import static com.android.tools.r8.utils.internal.ConsumerUtils.emptyConsumer;
 
 import com.android.tools.r8.dex.Constants;
 import com.android.tools.r8.dex.Marker;
@@ -27,11 +27,11 @@ import com.android.tools.r8.references.ClassReference;
 import com.android.tools.r8.references.FieldReference;
 import com.android.tools.r8.references.MethodReference;
 import com.android.tools.r8.synthesis.SyntheticNaming;
-import com.android.tools.r8.utils.ArrayUtils;
 import com.android.tools.r8.utils.DescriptorUtils;
 import com.android.tools.r8.utils.ListUtils;
 import com.android.tools.r8.utils.SetUtils;
-import com.android.tools.r8.utils.exceptions.Unreachable;
+import com.android.tools.r8.utils.internal.ArrayUtils;
+import com.android.tools.r8.utils.internal.exceptions.Unreachable;
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
 import com.google.common.collect.ImmutableList;
@@ -2626,6 +2626,9 @@ public class DexItemFactory {
 
   public class AtomicLongUpdaterMethods {
     public final DexMethod newUpdater;
+    public final DexMethod compareAndSet;
+    public final DexMethod get;
+    public final DexMethod set;
 
     private AtomicLongUpdaterMethods() {
       newUpdater =
@@ -2634,6 +2637,24 @@ public class DexItemFactory {
               newUpdaterName,
               longFieldUpdaterDescriptor,
               new DexString[] {classDescriptor, stringDescriptor});
+      compareAndSet =
+          createMethod(
+              longFieldUpdaterDescriptor,
+              compareAndSetName,
+              booleanDescriptor,
+              new DexString[] {objectDescriptor, longDescriptor, longDescriptor});
+      get =
+          createMethod(
+              longFieldUpdaterDescriptor,
+              getName,
+              longDescriptor,
+              new DexString[] {objectDescriptor});
+      set =
+          createMethod(
+              longFieldUpdaterDescriptor,
+              setName,
+              voidDescriptor,
+              new DexString[] {objectDescriptor, longDescriptor});
     }
   }
 
@@ -2687,12 +2708,15 @@ public class DexItemFactory {
   public class SunMiscUnsafeMethods {
 
     public final DexMethod compareAndSwapInt;
+    public final DexMethod compareAndSwapLong;
     public final DexMethod compareAndSwapObject;
     public final DexMethod objectFieldOffset;
     public final DexMethod getObjectVolatile;
     public final DexMethod putObjectVolatile;
     public final DexMethod getIntVolatile;
+    public final DexMethod getLongVolatile;
     public final DexMethod putIntVolatile;
+    public final DexMethod putLongVolatile;
 
     private SunMiscUnsafeMethods() {
       this.compareAndSwapInt =
@@ -2700,6 +2724,11 @@ public class DexItemFactory {
               sunMiscUnsafeType,
               createProto(booleanType, objectType, longType, intType, intType),
               "compareAndSwapInt");
+      this.compareAndSwapLong =
+          createMethod(
+              sunMiscUnsafeType,
+              createProto(booleanType, objectType, longType, longType, longType),
+              "compareAndSwapLong");
       this.compareAndSwapObject =
           createMethod(
               sunMiscUnsafeType,
@@ -2720,11 +2749,19 @@ public class DexItemFactory {
       this.getIntVolatile =
           createMethod(
               sunMiscUnsafeType, createProto(intType, objectType, longType), "getIntVolatile");
+      this.getLongVolatile =
+          createMethod(
+              sunMiscUnsafeType, createProto(longType, objectType, longType), "getLongVolatile");
       this.putIntVolatile =
           createMethod(
               sunMiscUnsafeType,
               createProto(voidType, objectType, longType, intType),
               "putIntVolatile");
+      this.putLongVolatile =
+          createMethod(
+              sunMiscUnsafeType,
+              createProto(voidType, objectType, longType, longType),
+              "putLongVolatile");
     }
   }
 

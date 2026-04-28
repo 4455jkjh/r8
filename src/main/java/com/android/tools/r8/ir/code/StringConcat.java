@@ -17,8 +17,9 @@ import com.android.tools.r8.ir.conversion.DexBuilder;
 import com.android.tools.r8.ir.optimize.Inliner;
 import com.android.tools.r8.ir.optimize.Inliner.ConstraintWithTarget;
 import com.android.tools.r8.ir.optimize.InliningConstraints;
+import com.android.tools.r8.ir.optimize.library.sideeffects.JavaLangObjectsSideEffectCollection;
 import com.android.tools.r8.lightir.LirBuilder;
-import com.android.tools.r8.utils.exceptions.Unreachable;
+import com.android.tools.r8.utils.internal.exceptions.Unreachable;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
@@ -36,6 +37,8 @@ public class StringConcat extends Instruction {
   // One entry for each arg type. Null entries mean use an inValue.
   // It's invalid for two constants to be adjacent (they should have been merged in this case).
   private List<DexString> argConstants;
+
+  private Boolean cachedMightCallToStringWithSideEffects;
 
   private StringConcat(
       Value outValue, List<Value> inValues, DexType[] argTypes, List<DexString> argConstants) {
@@ -116,6 +119,7 @@ public class StringConcat extends Instruction {
     inValues.addAll(newInValues);
     argTypes = newArgTypes;
     argConstants = newArgConstants;
+    cachedMightCallToStringWithSideEffects = null;
     assertValidState();
   }
 
@@ -182,22 +186,19 @@ public class StringConcat extends Instruction {
     return true;
   }
 
-  public static boolean toStringMayHaveSideEffects(
-      DexItemFactory dexItemFactory, TypeElement type) {
-    // TODO(467374229): Inspect the actual toString() for side effects.
-    return type.isClassType()
-        && !type.isStringType(dexItemFactory)
-        && dexItemFactory.getPrimitiveFromBoxed(type.toDexType(dexItemFactory)) == null;
-  }
-
   public boolean mightCallToStringWithSideEffects(AppView<?> appView) {
-    // TODO(agrieve): check if the toString method of each argType may have side effects.
+    if (cachedMightCallToStringWithSideEffects != null) {
+      return cachedMightCallToStringWithSideEffects;
+    }
+    boolean ret = false;
     for (Value value : inValues) {
-      if (toStringMayHaveSideEffects(appView.dexItemFactory(), value.getType())) {
-        return true;
+      if (JavaLangObjectsSideEffectCollection.toStringMayHaveSideEffects(appView, value)) {
+        ret = true;
+        break;
       }
     }
-    return false;
+    cachedMightCallToStringWithSideEffects = ret;
+    return ret;
   }
 
   @Override

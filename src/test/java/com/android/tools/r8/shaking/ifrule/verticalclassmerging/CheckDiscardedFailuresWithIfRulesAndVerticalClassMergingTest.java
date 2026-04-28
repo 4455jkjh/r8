@@ -13,7 +13,7 @@ import com.android.tools.r8.R8TestBuilder;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.errors.CheckDiscardDiagnostic;
-import com.android.tools.r8.utils.BooleanUtils;
+import com.android.tools.r8.utils.internal.BooleanUtils;
 import com.android.tools.r8.utils.codeinspector.AssertUtils;
 import com.android.tools.r8.utils.codeinspector.VerticallyMergedClassesInspector;
 import java.util.List;

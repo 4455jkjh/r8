@@ -18,9 +18,13 @@ dependencyResolutionManagement { repositories { maven { url = uri("third_party/d
 
 includeBuild(rootProject.projectDir.resolve("d8_r8/shared"))
 
-includeBuild(rootProject.projectDir.resolve("d8_r8/assistant"))
+include(":assistant")
 
-includeBuild(rootProject.projectDir.resolve("d8_r8/blastradius"))
+project(":assistant").projectDir = file("d8_r8/assistant")
+
+include(":blastradius")
+
+project(":blastradius").projectDir = file("d8_r8/blastradius")
 
 includeBuild(rootProject.projectDir.resolve("d8_r8/keepanno"))
 

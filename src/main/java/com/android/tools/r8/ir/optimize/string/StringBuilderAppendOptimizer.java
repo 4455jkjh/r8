@@ -14,7 +14,7 @@ import static com.android.tools.r8.ir.optimize.string.StringBuilderNode.createMu
 import static com.android.tools.r8.ir.optimize.string.StringBuilderNode.createNewInstanceNode;
 import static com.android.tools.r8.ir.optimize.string.StringBuilderNode.createOtherStringBuilderNode;
 import static com.android.tools.r8.ir.optimize.string.StringBuilderNode.createToStringNode;
-import static com.android.tools.r8.utils.FunctionUtils.ignoreArgument;
+import static com.android.tools.r8.utils.internal.FunctionUtils.ignoreArgument;
 
 import com.android.tools.r8.graph.AppInfo;
 import com.android.tools.r8.graph.AppView;
@@ -46,7 +46,7 @@ import com.android.tools.r8.ir.optimize.string.StringBuilderNodeMuncher.Munching
 import com.android.tools.r8.ir.optimize.string.StringBuilderOracle.DefaultStringBuilderOracle;
 import com.android.tools.r8.utils.DepthFirstSearchWorkListBase.DepthFirstSearchWorkList;
 import com.android.tools.r8.utils.DepthFirstSearchWorkListBase.StatefulDepthFirstSearchWorkList;
-import com.android.tools.r8.utils.TraversalContinuation;
+import com.android.tools.r8.utils.internal.TraversalContinuation;
 import com.android.tools.r8.utils.collections.WorkList;
 import com.google.common.collect.Sets;
 import it.unimi.dsi.fastutil.objects.Reference2IntLinkedOpenHashMap;

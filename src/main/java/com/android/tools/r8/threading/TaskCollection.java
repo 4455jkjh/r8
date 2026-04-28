@@ -8,8 +8,8 @@ import static com.google.common.base.Predicates.alwaysTrue;
 
 import com.android.tools.r8.utils.InternalOptions;
 import com.android.tools.r8.utils.ThreadUtils;
-import com.android.tools.r8.utils.ThrowingAction;
-import com.android.tools.r8.utils.exceptions.UncheckedExecutionException;
+import com.android.tools.r8.utils.internal.ThrowingAction;
+import com.android.tools.r8.utils.internal.exceptions.UncheckedExecutionException;
 import com.android.tools.r8.utils.timing.Timing;
 import com.google.common.util.concurrent.Futures;
 import java.util.ArrayList;

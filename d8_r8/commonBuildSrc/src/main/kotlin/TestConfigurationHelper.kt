@@ -350,6 +350,11 @@ public class TestConfigurationHelper {
                     .forEach { println("${it.first} took: ${it.second}") }
                 }
               }
+              if (desc?.parent == null) {
+                println(
+                  "Test results: ${result?.successfulTestCount} passed, ${result?.failedTestCount} failed, ${result?.skippedTestCount} skipped"
+                )
+              }
             }
 
             override fun beforeTest(desc: TestDescriptor?) {
@@ -408,7 +413,13 @@ public class TestConfigurationHelper {
 
             override fun beforeSuite(desc: TestDescriptor?) {}
 
-            override fun afterSuite(desc: TestDescriptor?, result: TestResult?) {}
+            override fun afterSuite(desc: TestDescriptor?, result: TestResult?) {
+              if (desc?.parent == null) {
+                println(
+                  "Test results: ${result?.successfulTestCount} passed, ${result?.failedTestCount} failed, ${result?.skippedTestCount} skipped"
+                )
+              }
+            }
 
             override fun beforeTest(desc: TestDescriptor?) {}
 

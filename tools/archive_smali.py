@@ -63,7 +63,8 @@ def Main():
     if utils.is_bot() and not utils.IsWindows():
         set_rlimit_to_max()
 
-    utils.DownloadFromGoogleCloudStorage(utils.JAVA11_SHA_FILE)
+    utils.EnsureDepFromGoogleCloudStorage(utils.JAVA11_SHA_FILE,
+                                          'Java 11 runtime')
     with utils.TempDir() as temp:
         # Resolve dry run location to support relative directories.
         dry_run_output = None
@@ -107,7 +108,9 @@ def Main():
             subprocess.check_call([
                 './gradlew',
                 '-Dorg.gradle.java.home=%s' % jdk.GetJdk11Home(),
-                '-Dmaven.repo.local=%s' % m2, 'release', 'test',
+                '-Dmaven.repo.local=%s' % m2,
+                'release',
+                'test',
                 'publishToMavenLocal',
             ])
             base = os.path.join('com', 'android', 'tools', 'smali')

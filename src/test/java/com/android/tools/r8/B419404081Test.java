@@ -6,7 +6,7 @@ package com.android.tools.r8;
 import static org.junit.Assume.assumeTrue;
 
 import com.android.tools.r8.B419404081Test.Cr.Ci_abs_sta;
-import com.android.tools.r8.utils.BooleanUtils;
+import com.android.tools.r8.utils.internal.BooleanUtils;
 import com.android.tools.r8.utils.StringUtils;
 import java.util.List;
 import org.junit.Test;

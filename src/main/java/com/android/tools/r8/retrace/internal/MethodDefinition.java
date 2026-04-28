@@ -7,7 +7,7 @@ package com.android.tools.r8.retrace.internal;
 import com.android.tools.r8.references.ClassReference;
 import com.android.tools.r8.references.MethodReference;
 import com.android.tools.r8.references.Reference;
-import com.android.tools.r8.utils.ObjectUtils;
+import com.android.tools.r8.utils.internal.ObjectUtils;
 
 /** Internal encoding of a method that allows for having either basic info or full info. */
 abstract class MethodDefinition implements Definition {

@@ -20,10 +20,11 @@ import com.android.tools.r8.TestRunResult;
 import com.android.tools.r8.jasmin.JasminBuilder;
 import com.android.tools.r8.jasmin.JasminBuilder.ClassBuilder;
 import com.android.tools.r8.jasmin.JasminTestBase;
-import com.android.tools.r8.utils.BooleanUtils;
+import com.android.tools.r8.utils.AndroidApiLevel;
 import com.android.tools.r8.utils.StringUtils;
 import com.android.tools.r8.utils.UnverifiableCfCodeDiagnostic;
-import com.android.tools.r8.utils.exceptions.Unreachable;
+import com.android.tools.r8.utils.internal.BooleanUtils;
+import com.android.tools.r8.utils.internal.exceptions.Unreachable;
 import com.google.common.collect.ImmutableList;
 import java.nio.file.Path;
 import java.util.Collection;
@@ -313,17 +314,31 @@ public class InvalidTypesTest extends JasminTestBase {
             .compileWithExpectedDiagnostics(
                 diagnostics -> {
                   if (allowDiagnosticWarningMessages) {
-                    diagnostics.assertWarningsMatch(
-                        allOf(
-                            diagnosticType(UnverifiableCfCodeDiagnostic.class),
-                            diagnosticMessage(
-                                containsString(
-                                    "Unverifiable code in `void"
-                                        + " UnverifiableClass.unverifiableMethod()`"))),
-                        diagnosticMessage(
-                            equalTo(
-                                "The method `void UnverifiableClass.unverifiableMethod()` does not"
-                                    + " type check and will be assumed to be unreachable.")));
+                    if (parameters.isDexRuntime()
+                        && parameters.getApiLevel().isGreaterThanOrEqualTo(AndroidApiLevel.L)) {
+                      diagnostics.assertWarningsMatch(
+                          allOf(
+                              diagnosticType(UnverifiableCfCodeDiagnostic.class),
+                              diagnosticMessage(
+                                  containsString(
+                                      "Expected initialized A on stack, but was initialized B"))),
+                          diagnosticMessage(
+                              equalTo(
+                                  "The method `void UnverifiableClass.unverifiableMethod()` does"
+                                      + " not type check and will be assumed to be unreachable.")));
+                    } else {
+                      diagnostics.assertWarningsMatch(
+                          allOf(
+                              diagnosticType(UnverifiableCfCodeDiagnostic.class),
+                              diagnosticMessage(
+                                  containsString(
+                                      "Unverifiable code in `void"
+                                          + " UnverifiableClass.unverifiableMethod()`"))),
+                          diagnosticMessage(
+                              equalTo(
+                                  "The method `void UnverifiableClass.unverifiableMethod()` does"
+                                      + " not type check and will be assumed to be unreachable.")));
+                    }
                   }
                 })
             .run(parameters.getRuntime(), mainClass.name);

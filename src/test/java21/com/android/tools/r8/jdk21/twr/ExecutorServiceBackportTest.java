@@ -7,8 +7,8 @@ package com.android.tools.r8.jdk21.twr;
 import static com.android.tools.r8.desugar.AutoCloseableAndroidLibraryFileData.compileAutoCloseableAndroidLibraryClasses;
 import static com.android.tools.r8.desugar.AutoCloseableAndroidLibraryFileData.getAutoCloseableAndroidClassData;
 
-import com.android.tools.r8.D8TestCompileResult;
 import com.android.tools.r8.TestBuilder;
+import com.android.tools.r8.TestCompileResult;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestRuntime.CfVm;
 import com.android.tools.r8.ToolHelper;
@@ -53,11 +53,11 @@ public class ExecutorServiceBackportTest extends AbstractBackportTest {
   }
 
   @Override
-  protected void configure(D8TestCompileResult builder) throws Exception {
+  protected void configure(TestCompileResult<?, ?> result) throws Exception {
     if (parameters.isDexRuntime()) {
-      builder.addBootClasspathFiles(compileAutoCloseableAndroidLibraryClasses(this, parameters));
+      result.addBootClasspathFiles(compileAutoCloseableAndroidLibraryClasses(this, parameters));
     } else {
-      builder.addRunClasspathClassFileData(getAutoCloseableAndroidClassData(parameters));
+      result.addRunClasspathClassFileData(getAutoCloseableAndroidClassData(parameters));
     }
   }
 

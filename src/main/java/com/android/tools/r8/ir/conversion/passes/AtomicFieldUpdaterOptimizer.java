@@ -118,12 +118,6 @@ public class AtomicFieldUpdaterOptimizer extends CodeRewriterPass<AppInfoWithCla
         continue;
       }
 
-      // TODO(b/453628974): implement and test optimization under handlers.
-      if (invoke.getBlock().hasCatchHandlers()) {
-        reportInfo(appView, new Event.CannotOptimize(invoke), Reason.UNDER_CATCH_HANDLER);
-        continue;
-      }
-
       // If this assert fails then check these things before updating the assert:
       //   * Check if the below AtomicReferenceFieldUpdater methods have changed implementation.
       //     * If so, verify/correct the static checks to match the runtime checks.
@@ -159,6 +153,20 @@ public class AtomicFieldUpdaterOptimizer extends CodeRewriterPass<AppInfoWithCla
         }
       } else if (invokedMethod.isIdenticalTo(dexItemFactory.atomicIntUpdaterMethods.set)) {
         if (visitSet(context, invoke, dexItemFactory.sunMiscUnsafeMethods.putIntVolatile)) {
+          changed = true;
+        }
+      } else if (invokedMethod.isIdenticalTo(
+          dexItemFactory.atomicLongUpdaterMethods.compareAndSet)) {
+        if (visitCompareAndSet(
+            context, invoke, dexItemFactory.sunMiscUnsafeMethods.compareAndSwapLong)) {
+          changed = true;
+        }
+      } else if (invokedMethod.isIdenticalTo(dexItemFactory.atomicLongUpdaterMethods.get)) {
+        if (visitGet(context, invoke, dexItemFactory.sunMiscUnsafeMethods.getLongVolatile)) {
+          changed = true;
+        }
+      } else if (invokedMethod.isIdenticalTo(dexItemFactory.atomicLongUpdaterMethods.set)) {
+        if (visitSet(context, invoke, dexItemFactory.sunMiscUnsafeMethods.putLongVolatile)) {
           changed = true;
         }
       } else {
@@ -627,7 +635,7 @@ public class AtomicFieldUpdaterOptimizer extends CodeRewriterPass<AppInfoWithCla
   private void insertInstructionsBeforeCurrentInstruction(
       IRCodeInstructionListIterator it, ArrayList<Instruction> instructions) {
     it.previous();
-    it.addAll(instructions);
+    it.addPossiblyThrowingInstructionsToPossiblyThrowingBlock(instructions, appView.options());
     it.next();
   }
 

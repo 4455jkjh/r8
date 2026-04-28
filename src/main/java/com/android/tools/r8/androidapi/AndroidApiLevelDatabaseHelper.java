@@ -425,17 +425,7 @@ public class AndroidApiLevelDatabaseHelper {
             "arrayIndexScale"),
         always);
     apiLevelConsumer.accept(factory.sunMiscUnsafeMethods.compareAndSwapInt, always);
-    apiLevelConsumer.accept(
-        factory.createMethod(
-            factory.sunMiscUnsafeType,
-            factory.createProto(
-                factory.booleanType,
-                factory.objectType,
-                factory.longType,
-                factory.longType,
-                factory.longType),
-            "compareAndSwapLong"),
-        always);
+    apiLevelConsumer.accept(factory.sunMiscUnsafeMethods.compareAndSwapLong, always);
     apiLevelConsumer.accept(factory.sunMiscUnsafeMethods.compareAndSwapObject, always);
     apiLevelConsumer.accept(
         factory.createMethod(
@@ -590,12 +580,7 @@ public class AndroidApiLevelDatabaseHelper {
             factory.createProto(factory.longType, factory.objectType, factory.longType),
             "getLong"),
         always);
-    apiLevelConsumer.accept(
-        factory.createMethod(
-            factory.sunMiscUnsafeType,
-            factory.createProto(factory.longType, factory.objectType, factory.longType),
-            "getLongVolatile"),
-        always);
+    apiLevelConsumer.accept(factory.sunMiscUnsafeMethods.getLongVolatile, always);
     apiLevelConsumer.accept(
         factory.createMethod(
             factory.sunMiscUnsafeType,
@@ -720,13 +705,7 @@ public class AndroidApiLevelDatabaseHelper {
                 factory.voidType, factory.objectType, factory.longType, factory.longType),
             "putLong"),
         always);
-    apiLevelConsumer.accept(
-        factory.createMethod(
-            factory.sunMiscUnsafeType,
-            factory.createProto(
-                factory.voidType, factory.objectType, factory.longType, factory.longType),
-            "putLongVolatile"),
-        always);
+    apiLevelConsumer.accept(factory.sunMiscUnsafeMethods.putLongVolatile, always);
     apiLevelConsumer.accept(
         factory.createMethod(
             factory.sunMiscUnsafeType,

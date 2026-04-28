@@ -4,7 +4,7 @@
 package com.android.tools.r8.graph;
 
 import com.android.tools.r8.features.FeatureSplitBoundaryOptimizationUtils;
-import com.android.tools.r8.utils.OptionalBool;
+import com.android.tools.r8.utils.internal.OptionalBool;
 
 /**
  * Definitions of access control routines.

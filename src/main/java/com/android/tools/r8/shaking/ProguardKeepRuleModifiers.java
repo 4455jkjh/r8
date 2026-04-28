@@ -3,15 +3,17 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8.shaking;
 
-import com.android.tools.r8.utils.ObjectUtils;
+import com.android.tools.r8.utils.internal.ObjectUtils;
+import com.android.tools.r8.utils.internal.OptionalBool;
 
 public class ProguardKeepRuleModifiers {
   public static class Builder {
 
-    private boolean allowsAccessModification = false;
+    // The default value of the fields typed as OptionalBool is determined by InternalOptions.
+    private OptionalBool allowsAccessModification = OptionalBool.unknown();
     private boolean allowsAnnotationRemoval = false;
-    // The default value is determined by InternalOptions.
-    private boolean allowsCodeReplacement = false;
+    private OptionalBool allowsCodeReplacement = OptionalBool.unknown();
+    private OptionalBool allowsFinalModification = OptionalBool.unknown();
     private boolean allowsRepackaging = false;
     private boolean allowsShrinking = false;
     private boolean allowsOptimization = false;
@@ -25,6 +27,7 @@ public class ProguardKeepRuleModifiers {
       setAllowsAccessModification(true);
       setAllowsAnnotationRemoval(true);
       setAllowsCodeReplacement(false);
+      setAllowsFinalModification(true);
       setAllowsObfuscation(true);
       setAllowsOptimization(true);
       setAllowsRepackaging(true);
@@ -34,7 +37,7 @@ public class ProguardKeepRuleModifiers {
     }
 
     public Builder setAllowsAccessModification(boolean allowsAccessModification) {
-      this.allowsAccessModification = allowsAccessModification;
+      this.allowsAccessModification = OptionalBool.of(allowsAccessModification);
       return this;
     }
 
@@ -44,7 +47,12 @@ public class ProguardKeepRuleModifiers {
     }
 
     public Builder setAllowsCodeReplacement(boolean allowsCodeReplacement) {
-      this.allowsCodeReplacement = allowsCodeReplacement;
+      this.allowsCodeReplacement = OptionalBool.of(allowsCodeReplacement);
+      return this;
+    }
+
+    public Builder setAllowsFinalModification(boolean allowsFinalModification) {
+      this.allowsFinalModification = OptionalBool.of(allowsFinalModification);
       return this;
     }
 
@@ -85,6 +93,7 @@ public class ProguardKeepRuleModifiers {
           allowsAccessModification,
           allowsAnnotationRemoval,
           allowsCodeReplacement,
+          allowsFinalModification,
           allowsRepackaging,
           allowsShrinking,
           allowsOptimization,
@@ -94,9 +103,10 @@ public class ProguardKeepRuleModifiers {
     }
   }
 
-  public final boolean allowsAccessModification;
+  public final OptionalBool allowsAccessModification;
   public final boolean allowsAnnotationRemoval;
-  public final boolean allowsCodeReplacement;
+  public final OptionalBool allowsCodeReplacement;
+  public final OptionalBool allowsFinalModification;
   public final boolean allowsRepackaging;
   public final boolean allowsShrinking;
   public final boolean allowsOptimization;
@@ -105,9 +115,10 @@ public class ProguardKeepRuleModifiers {
   public final boolean allowsPermittedSubclassesRemoval;
 
   private ProguardKeepRuleModifiers(
-      boolean allowsAccessModification,
+      OptionalBool allowsAccessModification,
       boolean allowsAnnotationRemoval,
-      boolean allowsCodeReplacement,
+      OptionalBool allowsCodeReplacement,
+      OptionalBool allowsFinalModification,
       boolean allowsRepackaging,
       boolean allowsShrinking,
       boolean allowsOptimization,
@@ -117,6 +128,7 @@ public class ProguardKeepRuleModifiers {
     this.allowsAccessModification = allowsAccessModification;
     this.allowsAnnotationRemoval = allowsAnnotationRemoval;
     this.allowsCodeReplacement = allowsCodeReplacement;
+    this.allowsFinalModification = allowsFinalModification;
     this.allowsRepackaging = allowsRepackaging;
     this.allowsShrinking = allowsShrinking;
     this.allowsOptimization = allowsOptimization;
@@ -133,9 +145,10 @@ public class ProguardKeepRuleModifiers {
   }
 
   public boolean isBottom() {
-    return allowsAccessModification
+    return allowsAccessModification.isTrue()
         && allowsAnnotationRemoval
-        && !allowsCodeReplacement
+        && allowsCodeReplacement.isFalse()
+        && allowsFinalModification.isTrue()
         && allowsRepackaging
         && allowsObfuscation
         && allowsOptimization
@@ -150,9 +163,10 @@ public class ProguardKeepRuleModifiers {
       return false;
     }
     ProguardKeepRuleModifiers that = (ProguardKeepRuleModifiers) o;
-    return allowsAccessModification == that.allowsAccessModification
+    return allowsAccessModification.equals(that.allowsAccessModification)
         && allowsAnnotationRemoval == that.allowsAnnotationRemoval
-        && allowsCodeReplacement == that.allowsCodeReplacement
+        && allowsCodeReplacement.equals(that.allowsCodeReplacement)
+        && allowsFinalModification.equals(that.allowsFinalModification)
         && allowsRepackaging == that.allowsRepackaging
         && allowsShrinking == that.allowsShrinking
         && allowsOptimization == that.allowsOptimization
@@ -163,40 +177,55 @@ public class ProguardKeepRuleModifiers {
 
   @Override
   public int hashCode() {
-    return ObjectUtils.hashZZZZZZZZZ(
-        allowsAccessModification,
+    return ObjectUtils.hashZZZZZZZIII(
         allowsAnnotationRemoval,
-        allowsCodeReplacement,
         allowsRepackaging,
         allowsShrinking,
         allowsOptimization,
         allowsObfuscation,
         includeDescriptorClasses,
-        allowsPermittedSubclassesRemoval);
+        allowsPermittedSubclassesRemoval,
+        allowsAccessModification.ordinal(),
+        allowsCodeReplacement.ordinal(),
+        allowsFinalModification.ordinal());
   }
 
   @Override
   public String toString() {
     StringBuilder builder = new StringBuilder();
-    appendWithComma(builder, allowsAccessModification, "allowaccessmodification");
-    appendWithComma(builder, allowsAnnotationRemoval, "allowannotationremoval");
-    appendWithComma(builder, allowsCodeReplacement, "allowcodereplacement");
-    appendWithComma(builder, allowsRepackaging, "allowrepackaging");
-    appendWithComma(builder, allowsObfuscation, "allowobfuscation");
-    appendWithComma(builder, allowsShrinking, "allowshrinking");
-    appendWithComma(builder, allowsOptimization, "allowoptimization");
-    appendWithComma(builder, includeDescriptorClasses, "includedescriptorclasses");
-    appendWithComma(builder, allowsPermittedSubclassesRemoval, "allowpermittedsubclassesremoval");
+    appendWithComma(builder, "accessmodification", allowsAccessModification);
+    appendWithComma(builder, "allowannotationremoval", allowsAnnotationRemoval);
+    appendWithComma(builder, "codereplacement", allowsCodeReplacement);
+    appendWithComma(builder, "finalmodification", allowsFinalModification);
+    appendWithComma(builder, "allowrepackaging", allowsRepackaging);
+    appendWithComma(builder, "allowobfuscation", allowsObfuscation);
+    appendWithComma(builder, "allowshrinking", allowsShrinking);
+    appendWithComma(builder, "allowoptimization", allowsOptimization);
+    appendWithComma(builder, "includedescriptorclasses", includeDescriptorClasses);
+    appendWithComma(builder, "allowpermittedsubclassesremoval", allowsPermittedSubclassesRemoval);
     return builder.toString();
   }
 
-  private void appendWithComma(StringBuilder builder, boolean predicate, String text) {
-    if (!predicate) {
-      return;
-    }
+  private void appendWithComma(StringBuilder builder, String text) {
     if (builder.length() != 0) {
       builder.append(',');
     }
     builder.append(text);
+  }
+
+  private void appendWithComma(StringBuilder builder, String text, boolean predicate) {
+    if (predicate) {
+      appendWithComma(builder, text);
+    }
+  }
+
+  private void appendWithComma(StringBuilder builder, String text, OptionalBool predicate) {
+    if (predicate.isTrueOrFalse()) {
+      if (predicate.isTrue()) {
+        appendWithComma(builder, "allow" + text);
+      } else {
+        appendWithComma(builder, "disallow" + text);
+      }
+    }
   }
 }

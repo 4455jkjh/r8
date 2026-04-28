@@ -22,9 +22,9 @@ import com.android.tools.r8.ir.code.Return;
 import com.android.tools.r8.ir.conversion.MethodConversionOptions.MutableMethodConversionOptions;
 import com.android.tools.r8.ir.optimize.AffectedValues;
 import com.android.tools.r8.ir.optimize.enums.EnumUnboxerImpl;
-import com.android.tools.r8.utils.IteratorUtils;
+import com.android.tools.r8.utils.InstructionIteratorUtils;
 import com.android.tools.r8.utils.RetracerForCodePrinting;
-import com.android.tools.r8.utils.exceptions.Unreachable;
+import com.android.tools.r8.utils.internal.exceptions.Unreachable;
 
 /**
  * A special code object used by enum unboxing that supplies IR from an existing method
@@ -74,7 +74,7 @@ public class CheckNotZeroCode extends Code {
     InstructionListIterator instructionIterator = code.instructionListIterator();
 
     // Start iterating at the argument instruction for the checked argument.
-    IteratorUtils.skip(
+    InstructionIteratorUtils.skip(
         instructionIterator,
         checkNotZeroMethod
             .getOptimizationInfo()

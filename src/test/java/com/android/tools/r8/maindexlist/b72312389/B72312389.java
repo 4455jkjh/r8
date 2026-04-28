@@ -24,7 +24,7 @@ import com.android.tools.r8.ToolHelper.DexVm;
 import com.android.tools.r8.errors.DuplicateTypeInProgramAndLibraryDiagnostic;
 import com.android.tools.r8.origin.Origin;
 import com.android.tools.r8.utils.AndroidApiLevel;
-import com.android.tools.r8.utils.Box;
+import com.android.tools.r8.utils.internal.Box;
 import com.google.common.collect.ImmutableList;
 import java.nio.file.Paths;
 import java.util.List;

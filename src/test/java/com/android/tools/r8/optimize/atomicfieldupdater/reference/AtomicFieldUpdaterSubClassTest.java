@@ -10,9 +10,9 @@ import static org.hamcrest.core.StringContains.containsString;
 
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.optimize.atomicfieldupdater.AtomicFieldUpdaterBase;
-import com.android.tools.r8.utils.BooleanUtils;
 import com.android.tools.r8.utils.codeinspector.CodeMatchers;
 import com.android.tools.r8.utils.codeinspector.MethodSubject;
+import com.android.tools.r8.utils.internal.BooleanUtils;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import org.junit.Test;
@@ -48,11 +48,8 @@ public class AtomicFieldUpdaterSubClassTest extends AtomicFieldUpdaterBase {
                     diagnosticMessage(containsString("Can instrument")),
                     diagnosticMessage(containsString("Can optimize")),
                     diagnosticMessage(containsString("Can optimize")),
-                    diagnosticMessage(containsString("Can optimize"))
-                    // TODO(b/453628974): The field should be removed once nullability analysis is
-                    //                    more precise.
-                    // diagnosticMessage(containsString("Can remove"))
-                    ))
+                    diagnosticMessage(containsString("Can optimize")),
+                    diagnosticMessage(containsString("Can remove"))))
         .inspect(
             inspector -> {
               MethodSubject method = inspector.clazz(testClass).mainMethod();

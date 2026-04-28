@@ -15,7 +15,7 @@ import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.graph.DexEncodedAnnotation;
 import com.android.tools.r8.graph.DexValue;
 import com.android.tools.r8.utils.AndroidApiLevel;
-import com.android.tools.r8.utils.BooleanUtils;
+import com.android.tools.r8.utils.internal.BooleanUtils;
 import com.android.tools.r8.utils.codeinspector.AnnotationSubject;
 import java.util.List;
 import org.junit.Test;

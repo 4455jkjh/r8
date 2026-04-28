@@ -5,6 +5,7 @@
 package com.android.tools.r8.utils;
 
 import com.android.tools.r8.Version;
+import com.android.tools.r8.utils.internal.SemanticVersion;
 import com.google.common.base.Suppliers;
 import java.util.function.Supplier;
 

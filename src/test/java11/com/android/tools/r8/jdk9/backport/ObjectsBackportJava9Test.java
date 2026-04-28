@@ -4,14 +4,20 @@
 
 package com.android.tools.r8.jdk9.backport;
 
+import static com.android.tools.r8.DiagnosticsMatcher.diagnosticMessage;
+import static org.hamcrest.CoreMatchers.containsString;
+
 import com.android.tools.r8.TestBase;
+import com.android.tools.r8.TestBuilder;
+import com.android.tools.r8.TestDiagnosticMessages;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestRuntime.CfVm;
 import com.android.tools.r8.desugar.backports.AbstractBackportTest;
 import com.android.tools.r8.desugar.backports.IgnoreInvokes;
 import com.android.tools.r8.utils.AndroidApiLevel;
+import com.android.tools.r8.utils.codeinspector.CodeInspector;
 import java.util.Objects;
-import org.hamcrest.CoreMatchers;
+import java.util.function.Supplier;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -38,6 +44,38 @@ public final class ObjectsBackportJava9Test extends AbstractBackportTest {
     registerTarget(AndroidApiLevel.B, 4);
   }
 
+  @Override
+  protected void assertDesugaring(CodeInspector inspector, boolean isR8) {
+    if (!isR8 || parameters.getApiLevel().isLessThan(AndroidApiLevel.R)) {
+      super.assertDesugaring(inspector, isR8);
+    }
+  }
+
+  @Override
+  protected void checkDiagnostics(TestDiagnosticMessages diagnostics, boolean isR8) {
+    if (isR8 && parameters.getApiLevel().isLessThan(AndroidApiLevel.N)) {
+      diagnostics
+          .assertOnlyWarnings()
+          .assertWarningsMatch(diagnosticMessage(containsString("Unverifiable code")));
+    } else {
+      super.checkDiagnostics(diagnostics, isR8);
+    }
+  }
+
+  @Override
+  protected void configureProgram(TestBuilder<?, ?> builder) throws Exception {
+    super.configureProgram(builder);
+    if (builder.isR8TestBuilder()) {
+      builder.asR8TestBuilder().allowDiagnosticMessages();
+      if (parameters.getApiLevel().isLessThan(AndroidApiLevel.K)) {
+        builder.asR8TestBuilder().addDontWarn(Objects.class);
+      }
+      if (parameters.getApiLevel().isLessThan(AndroidApiLevel.N)) {
+        builder.asR8TestBuilder().addDontWarn(Supplier.class);
+      }
+    }
+  }
+
   @Test
   public void desugaringApiLevelR() throws Exception {
     // TODO(b/154759404): This test should start to fail when testing on an Android R VM.
@@ -50,8 +88,7 @@ public final class ObjectsBackportJava9Test extends AbstractBackportTest {
           .setIncludeClassesChecksum(true)
           .compile()
           .run(parameters.getRuntime(), ObjectsBackportJava9Main.class)
-          .assertFailureWithErrorThatMatches(
-              CoreMatchers.containsString("java.lang.NoSuchMethodError"));
+          .assertFailureWithErrorThatMatches(containsString("java.lang.NoSuchMethodError"));
     }
   }
 

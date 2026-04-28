@@ -12,7 +12,7 @@ import com.android.tools.r8.KotlinCompilerTool.KotlinTargetVersion;
 import com.android.tools.r8.TestRuntime.CfRuntime;
 import com.android.tools.r8.utils.DescriptorUtils;
 import com.android.tools.r8.utils.FileUtils;
-import com.android.tools.r8.utils.SemanticVersion;
+import com.android.tools.r8.utils.internal.SemanticVersion;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;

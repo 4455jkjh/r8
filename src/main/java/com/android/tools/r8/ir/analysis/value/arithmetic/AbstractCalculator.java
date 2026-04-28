@@ -3,12 +3,12 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8.ir.analysis.value.arithmetic;
 
-import static com.android.tools.r8.utils.BitUtils.INTEGER_SHIFT_MASK;
+import static com.android.tools.r8.utils.internal.BitUtils.INTEGER_SHIFT_MASK;
 
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.ir.analysis.value.AbstractValue;
 import com.android.tools.r8.ir.analysis.value.AbstractValueFactory;
-import com.android.tools.r8.utils.BitUtils;
+import com.android.tools.r8.utils.internal.BitUtils;
 
 public class AbstractCalculator {
 

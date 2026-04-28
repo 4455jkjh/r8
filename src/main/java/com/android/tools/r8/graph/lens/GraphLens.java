@@ -3,7 +3,7 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8.graph.lens;
 
-import static com.android.tools.r8.utils.collections.ThrowingSet.isThrowingSet;
+import static com.android.tools.r8.utils.internal.collections.ThrowingSet.isThrowingSet;
 import static com.google.common.base.Predicates.alwaysFalse;
 
 import com.android.tools.r8.graph.AppView;
@@ -30,7 +30,7 @@ import com.android.tools.r8.optimize.MemberRebindingIdentityLens;
 import com.android.tools.r8.optimize.MemberRebindingLens;
 import com.android.tools.r8.utils.CollectionUtils;
 import com.android.tools.r8.utils.ListUtils;
-import com.android.tools.r8.utils.OptionalBool;
+import com.android.tools.r8.utils.internal.OptionalBool;
 import com.android.tools.r8.utils.SetUtils;
 import com.android.tools.r8.utils.collections.BidirectionalManyToOneRepresentativeHashMap;
 import com.android.tools.r8.utils.collections.MutableBidirectionalManyToOneRepresentativeMap;

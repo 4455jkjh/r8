@@ -21,7 +21,7 @@ import com.android.tools.r8.compilerapi.CompilerApiTestRunner;
 import com.android.tools.r8.compilerapi.mockdata.MockClass;
 import com.android.tools.r8.dex.Marker;
 import com.android.tools.r8.origin.Origin;
-import com.android.tools.r8.utils.ThrowingBiConsumer;
+import com.android.tools.r8.utils.internal.ThrowingBiConsumer;
 import com.android.tools.r8.utils.codeinspector.CodeInspector;
 import java.nio.file.Path;
 import java.util.Collection;

@@ -6,7 +6,7 @@ package com.android.tools.r8.ir.desugar;
 
 import com.android.tools.r8.cf.code.CfInstruction;
 import com.android.tools.r8.graph.ProgramMethod;
-import com.android.tools.r8.utils.exceptions.Unreachable;
+import com.android.tools.r8.utils.internal.exceptions.Unreachable;
 import java.util.function.IntConsumer;
 
 /** Interface for desugaring a single class-file instruction. */

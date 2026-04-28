@@ -113,20 +113,20 @@ import com.android.tools.r8.shaking.assume.AssumeInfoCollection;
 import com.android.tools.r8.shaking.assume.AssumeMethodInfoCollection;
 import com.android.tools.r8.shaking.rules.ReferencedFromExcludedClassInR8PartialRule;
 import com.android.tools.r8.threading.TaskCollection;
-import com.android.tools.r8.utils.Action;
-import com.android.tools.r8.utils.ArrayUtils;
 import com.android.tools.r8.utils.InternalOptions;
-import com.android.tools.r8.utils.LazyBox;
 import com.android.tools.r8.utils.MethodSignatureEquivalence;
 import com.android.tools.r8.utils.OriginWithPosition;
 import com.android.tools.r8.utils.Reporter;
 import com.android.tools.r8.utils.StringDiagnostic;
-import com.android.tools.r8.utils.TraversalContinuation;
 import com.android.tools.r8.utils.collections.DexMethodSignatureSet;
-import com.android.tools.r8.utils.collections.PredicateSet;
 import com.android.tools.r8.utils.collections.ProgramMethodMap;
 import com.android.tools.r8.utils.collections.WorkList;
-import com.android.tools.r8.utils.exceptions.Unreachable;
+import com.android.tools.r8.utils.internal.Action;
+import com.android.tools.r8.utils.internal.ArrayUtils;
+import com.android.tools.r8.utils.internal.LazyBox;
+import com.android.tools.r8.utils.internal.TraversalContinuation;
+import com.android.tools.r8.utils.internal.collections.PredicateSet;
+import com.android.tools.r8.utils.internal.exceptions.Unreachable;
 import com.android.tools.r8.utils.timing.Timing;
 import com.google.common.base.Equivalence.Wrapper;
 import com.google.common.collect.ImmutableList;
@@ -1976,8 +1976,18 @@ public class RootSetBuilder {
                     .getOrCreateMinimumKeepInfoFor(preconditionEvent, item.getReference())
                     .addRule(whyAreYouKeepingKeepRule));
 
-    if (appView.options().isAccessModificationEnabled() && !modifiers.allowsAccessModification) {
+    if (options.isAccessModificationEnabled()
+        && !modifiers.allowsAccessModification.getOrDefault(
+            options.getDefaultValueForAccessModification())) {
       itemJoiner.computeIfAbsent().disallowAccessModification();
+      markAsUsed.execute();
+    }
+
+    if (options.isFinalModificationDecoupledFromOptimization()
+        && !modifiers.allowsFinalModification.getOrDefault(
+            options.getDefaultValueForFinalModification())
+        && item.isProgramField()) {
+      itemJoiner.computeIfAbsent().asFieldJoiner().disallowFinalModification();
       markAsUsed.execute();
     }
 
@@ -2016,25 +2026,24 @@ public class RootSetBuilder {
       markAsUsed.execute();
     }
 
-    if (appView.options().isMinificationEnabled() && !modifiers.allowsObfuscation) {
+    if (options.isMinificationEnabled() && !modifiers.allowsObfuscation) {
       itemJoiner.computeIfAbsent().disallowMinification();
       markAsUsed.execute();
     }
 
-    if (appView.options().getPackageObfuscationMode().isSome()
+    if (options.getPackageObfuscationMode().isSome()
         && item.isProgramClass()
         && isRepackagingDisallowed(item, modifiers)) {
       itemJoiner.computeIfAbsent().asClassJoiner().disallowRepackaging();
       markAsUsed.execute();
     }
 
-    if (appView.options().isOptimizationEnabled() && !modifiers.allowsOptimization) {
+    if (options.isOptimizationEnabled() && !modifiers.allowsOptimization) {
       itemJoiner.computeIfAbsent().disallowOptimization();
       markAsUsed.execute();
     }
 
-    if ((appView.options().isShrinking() || isMainDexRootSetBuilder())
-        && !modifiers.allowsShrinking) {
+    if ((options.isShrinking() || isMainDexRootSetBuilder()) && !modifiers.allowsShrinking) {
       itemJoiner.computeIfAbsent().disallowShrinking();
       markAsUsed.execute();
     }
@@ -2044,15 +2053,16 @@ public class RootSetBuilder {
       markAsUsed.execute();
     }
 
-    if (item.isProgramMethod()
-        && !appView.options().isCodeReplacementForceEnabled()
-        && modifiers.allowsCodeReplacement) {
+    // Code replacement is default disabled.
+    if (options.isCodeReplacementDecoupledFromOptimization()
+        && modifiers.allowsCodeReplacement.getOrDefault(options.getDefaultValueForCodeReplacement())
+        && item.isProgramMethod()) {
       itemJoiner.computeIfAbsent().asMethodJoiner().allowCodeReplacement();
       markAsUsed.execute();
     }
 
     if (item.isProgramClass()
-        && appView.options().isKeepPermittedSubclassesEnabled()
+        && options.isKeepPermittedSubclassesEnabled()
         && !modifiers.allowsPermittedSubclassesRemoval) {
       itemJoiner.computeIfAbsent().asClassJoiner().disallowPermittedSubclassesRemoval();
       markAsUsed.execute();

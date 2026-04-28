@@ -6,7 +6,7 @@ package com.android.tools.r8.ir.analysis.type;
 
 import com.android.tools.r8.graph.AppInfoWithClassHierarchy;
 import com.android.tools.r8.graph.AppView;
-import com.android.tools.r8.utils.ObjectUtils;
+import com.android.tools.r8.utils.internal.ObjectUtils;
 
 public class DynamicTypeWithLowerBound extends DynamicTypeWithUpperBound {
 

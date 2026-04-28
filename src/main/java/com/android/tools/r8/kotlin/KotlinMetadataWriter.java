@@ -7,9 +7,9 @@ package com.android.tools.r8.kotlin;
 import static com.android.tools.r8.utils.StringUtils.LINE_SEPARATOR;
 
 import com.android.tools.r8.graph.DexAnnotation;
-import com.android.tools.r8.utils.Action;
+import com.android.tools.r8.utils.internal.Action;
 import com.android.tools.r8.utils.StringUtils;
-import com.android.tools.r8.utils.exceptions.Unreachable;
+import com.android.tools.r8.utils.internal.exceptions.Unreachable;
 import java.io.PrintStream;
 import java.util.Collection;
 import java.util.Comparator;

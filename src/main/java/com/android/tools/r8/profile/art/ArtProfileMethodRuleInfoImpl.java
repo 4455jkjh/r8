@@ -4,7 +4,7 @@
 
 package com.android.tools.r8.profile.art;
 
-import com.android.tools.r8.utils.ArrayUtils;
+import com.android.tools.r8.utils.internal.ArrayUtils;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
 

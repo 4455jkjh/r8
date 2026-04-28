@@ -11,7 +11,7 @@ import com.android.tools.r8.androidresources.AndroidResourceTestingUtils.Android
 import com.android.tools.r8.androidresources.AndroidResourceTestingUtils.AndroidTestResourceBuilder;
 import com.android.tools.r8.androidresources.ResourceShrinkingWithSeveralFeaturesTest.FeatureSplit.FeatureSplitMain;
 import com.android.tools.r8.androidresources.ResourceShrinkingWithSeveralFeaturesTest.FeatureSplit2.FeatureSplit2Main;
-import com.android.tools.r8.utils.BooleanUtils;
+import com.android.tools.r8.utils.internal.BooleanUtils;
 import com.google.common.collect.ImmutableList;
 import java.io.IOException;
 import java.util.List;

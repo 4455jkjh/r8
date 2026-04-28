@@ -4,7 +4,7 @@
 package com.android.tools.r8.graph;
 
 import com.android.tools.r8.dex.MixedSectionCollection;
-import com.android.tools.r8.utils.exceptions.Unreachable;
+import com.android.tools.r8.utils.internal.exceptions.Unreachable;
 import com.android.tools.r8.utils.structural.CompareToVisitor;
 import java.util.ArrayList;
 import java.util.List;

@@ -23,7 +23,7 @@ import com.android.tools.r8.optimize.argumentpropagation.utils.ProgramClassesBid
 import com.android.tools.r8.optimize.argumentpropagation.utils.WideningUtils;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
 import com.android.tools.r8.shaking.KeepMethodInfo;
-import com.android.tools.r8.utils.BitSetUtils;
+import com.android.tools.r8.utils.internal.BitSetUtils;
 import com.android.tools.r8.utils.MapUtils;
 import com.android.tools.r8.utils.NumberUtils;
 import com.android.tools.r8.utils.ThreadUtils;

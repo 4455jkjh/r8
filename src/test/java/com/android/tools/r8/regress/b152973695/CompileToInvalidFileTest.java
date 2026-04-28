@@ -15,7 +15,7 @@ import com.android.tools.r8.ProgramConsumer;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestDiagnosticMessages;
 import com.android.tools.r8.TestParameters;
-import com.android.tools.r8.utils.BooleanUtils;
+import com.android.tools.r8.utils.internal.BooleanUtils;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;

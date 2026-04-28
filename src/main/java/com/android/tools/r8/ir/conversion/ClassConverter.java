@@ -20,7 +20,7 @@ import com.android.tools.r8.profile.rewriting.ProfileCollectionAdditions;
 import com.android.tools.r8.utils.MapUtils;
 import com.android.tools.r8.utils.SetUtils;
 import com.android.tools.r8.utils.ThreadUtils;
-import com.android.tools.r8.utils.collections.ImmutableDeque;
+import com.android.tools.r8.utils.internal.collections.ImmutableDeque;
 import com.android.tools.r8.utils.timing.Timing;
 import com.google.common.collect.ImmutableList;
 import java.util.ArrayDeque;

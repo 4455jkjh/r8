@@ -25,7 +25,7 @@ import com.android.tools.r8.graph.DexType;
 import com.android.tools.r8.graph.ProgramMethod;
 import com.android.tools.r8.graph.UseRegistry;
 import com.android.tools.r8.synthesis.SyntheticItems;
-import com.android.tools.r8.utils.Box;
+import com.android.tools.r8.utils.internal.Box;
 import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Predicate;

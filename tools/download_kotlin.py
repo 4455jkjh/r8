@@ -98,9 +98,9 @@ def download_newest():
     # Download checked in kotlin dev compiler before owerlaying with the new.
     # TODO(sgjesse): This should just ensure an empty directory instead of
     # relying on overlaying and reusing some jars.
-    utils.DownloadFromGoogleCloudStorage(
-        os.path.join(utils.THIRD_PARTY, "kotlin",
-                     "kotlin-compiler-dev.tar.gz.sha1"))
+    sha1_file = os.path.join(utils.THIRD_PARTY, "kotlin",
+                             "kotlin-compiler-dev.tar.gz.sha1")
+    utils.EnsureDepFromGoogleCloudStorage(sha1_file, 'Kotlin dev compiler')
 
     # Check POM for expected dependencies.
     check_pom(top_most_version_and_build)

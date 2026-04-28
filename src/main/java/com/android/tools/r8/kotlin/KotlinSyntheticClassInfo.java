@@ -9,8 +9,8 @@ import static com.android.tools.r8.kotlin.KotlinMetadataUtils.updateJvmMetadataV
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.DexClass;
 import com.android.tools.r8.graph.DexEncodedMember;
-import com.android.tools.r8.utils.Box;
-import com.android.tools.r8.utils.collections.Pair;
+import com.android.tools.r8.utils.internal.Box;
+import com.android.tools.r8.utils.internal.collections.Pair;
 import java.util.function.BiConsumer;
 import kotlin.Metadata;
 import kotlin.metadata.KmLambda;

@@ -11,7 +11,7 @@ import com.android.tools.r8.benchmarks.BenchmarkEnvironment;
 import com.android.tools.r8.benchmarks.BenchmarkMethod;
 import com.android.tools.r8.benchmarks.BenchmarkTarget;
 import com.android.tools.r8.utils.AndroidApiLevel;
-import com.android.tools.r8.utils.BooleanUtils;
+import com.android.tools.r8.utils.internal.BooleanUtils;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableList.Builder;
 import java.nio.file.Path;

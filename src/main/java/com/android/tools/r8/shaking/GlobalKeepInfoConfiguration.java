@@ -8,7 +8,9 @@ import com.android.tools.r8.utils.InternalOptions.PackageObfuscationMode;
 /** Globally controlled settings that affect the default values for kept items. */
 public interface GlobalKeepInfoConfiguration {
 
-  boolean isCodeReplacementForceEnabled();
+  boolean isCodeReplacementDecoupledFromOptimization();
+
+  boolean isFinalModificationDecoupledFromOptimization();
 
   boolean isTreeShakingEnabled();
 

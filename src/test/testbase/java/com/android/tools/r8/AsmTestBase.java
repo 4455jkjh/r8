@@ -12,7 +12,7 @@ import com.android.tools.r8.origin.Origin;
 import com.android.tools.r8.utils.AndroidApiLevel;
 import com.android.tools.r8.utils.AndroidApp;
 import com.android.tools.r8.utils.InternalOptions;
-import com.android.tools.r8.utils.QuadConsumer;
+import com.android.tools.r8.utils.internal.QuadConsumer;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;

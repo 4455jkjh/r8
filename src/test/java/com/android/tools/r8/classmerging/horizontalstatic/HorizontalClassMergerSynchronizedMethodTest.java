@@ -31,9 +31,9 @@ public class HorizontalClassMergerSynchronizedMethodTest extends TestBase {
 
   @Parameters(name = "{0}")
   public static TestParametersCollection data() {
-    // The 4.0.4 runtime will flakily mark threads as blocking and report DEADLOCKED.
+    // The 4.0.4 and 4.4.4 runtime will flakily mark threads as blocking and report DEADLOCKED.
     return getTestParameters()
-        .withDexRuntimesStartingFromExcluding(Version.V4_0_4)
+        .withDexRuntimesStartingFromExcluding(Version.V4_4_4)
         .withAllApiLevels()
         .build();
   }

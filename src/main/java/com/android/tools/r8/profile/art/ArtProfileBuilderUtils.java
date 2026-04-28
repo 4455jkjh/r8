@@ -10,7 +10,7 @@ import com.android.tools.r8.references.ClassReference;
 import com.android.tools.r8.references.MethodReference;
 import com.android.tools.r8.startup.StartupProfileBuilder;
 import com.android.tools.r8.utils.MethodReferenceUtils;
-import com.android.tools.r8.utils.exceptions.Unreachable;
+import com.android.tools.r8.utils.internal.exceptions.Unreachable;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.util.function.Consumer;

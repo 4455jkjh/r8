@@ -4,7 +4,7 @@
 
 package com.android.tools.r8.horizontalclassmerging.policies;
 
-import static com.android.tools.r8.utils.FunctionUtils.ignoreArgument;
+import static com.android.tools.r8.utils.internal.FunctionUtils.ignoreArgument;
 
 import com.android.tools.r8.graph.AppInfo;
 import com.android.tools.r8.graph.AppView;

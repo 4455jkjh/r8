@@ -7,7 +7,7 @@ import com.android.tools.r8.MapIdEnvironment;
 import com.android.tools.r8.MapIdProvider;
 import com.android.tools.r8.dex.Marker.Tool;
 import com.android.tools.r8.graph.AppView;
-import com.android.tools.r8.utils.ChainableStringConsumer;
+import com.android.tools.r8.utils.internal.ChainableStringConsumer;
 import com.android.tools.r8.utils.ExceptionUtils;
 import com.android.tools.r8.utils.InternalOptions;
 import com.android.tools.r8.utils.ListUtils;

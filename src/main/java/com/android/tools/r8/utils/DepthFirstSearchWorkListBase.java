@@ -9,6 +9,7 @@ import static com.android.tools.r8.utils.DepthFirstSearchWorkListBase.Processing
 import static com.android.tools.r8.utils.DepthFirstSearchWorkListBase.ProcessingState.WAITING;
 
 import com.android.tools.r8.utils.DepthFirstSearchWorkListBase.DFSNodeImpl;
+import com.android.tools.r8.utils.internal.TraversalContinuation;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;

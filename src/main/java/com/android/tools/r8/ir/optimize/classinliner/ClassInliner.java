@@ -27,7 +27,7 @@ import com.android.tools.r8.ir.optimize.classinliner.InlineCandidateProcessor.Il
 import com.android.tools.r8.ir.optimize.info.OptimizationFeedback;
 import com.android.tools.r8.ir.optimize.inliner.InliningIRProvider;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
-import com.android.tools.r8.utils.LazyBox;
+import com.android.tools.r8.utils.internal.LazyBox;
 import com.android.tools.r8.utils.timing.Timing;
 import com.google.common.collect.Lists;
 import java.util.Iterator;

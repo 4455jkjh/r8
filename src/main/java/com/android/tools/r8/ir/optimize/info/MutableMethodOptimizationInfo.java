@@ -29,10 +29,10 @@ import com.android.tools.r8.ir.optimize.info.initializer.InstanceInitializerInfo
 import com.android.tools.r8.optimize.argumentpropagation.codescanner.AbstractFunction;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
 import com.android.tools.r8.shaking.MaximumRemovedAndroidLogLevelRule;
-import com.android.tools.r8.utils.BitSetUtils;
-import com.android.tools.r8.utils.BooleanUtils;
 import com.android.tools.r8.utils.InternalOptions;
-import com.android.tools.r8.utils.OptionalBool;
+import com.android.tools.r8.utils.internal.BitSetUtils;
+import com.android.tools.r8.utils.internal.BooleanUtils;
+import com.android.tools.r8.utils.internal.OptionalBool;
 import java.util.BitSet;
 import java.util.Set;
 import java.util.function.Consumer;
@@ -140,6 +140,7 @@ public class MutableMethodOptimizationInfo extends MethodOptimizationInfo
   private MutableMethodOptimizationInfo(MutableMethodOptimizationInfo template) {
     abstractFunction = template.abstractFunction;
     argumentInfos = template.argumentInfos;
+    convertCheckNotNull = template.convertCheckNotNull;
     flags = template.flags;
     initializedClassesOnNormalExit = template.initializedClassesOnNormalExit;
     returnedArgument = template.returnedArgument;

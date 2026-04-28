@@ -11,6 +11,7 @@ import com.android.tools.r8.ResourceException;
 import com.android.tools.r8.shaking.ProguardConfigurationParser;
 import com.android.tools.r8.shaking.ProguardConfigurationSource;
 import com.android.tools.r8.shaking.ProguardConfigurationSourceBytes;
+import com.android.tools.r8.utils.internal.SemanticVersion;
 import com.google.common.collect.Iterables;
 import java.io.InputStream;
 import java.util.ArrayList;

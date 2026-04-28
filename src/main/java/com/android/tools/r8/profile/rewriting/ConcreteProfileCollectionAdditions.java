@@ -18,7 +18,7 @@ import com.android.tools.r8.profile.art.rewriting.ArtProfileAdditions;
 import com.android.tools.r8.profile.rewriting.ProfileAdditions.ProfileAdditionsBuilder;
 import com.android.tools.r8.profile.startup.profile.StartupProfile;
 import com.android.tools.r8.profile.startup.rewriting.StartupProfileAdditions;
-import com.android.tools.r8.utils.Box;
+import com.android.tools.r8.utils.internal.Box;
 import com.google.common.collect.Iterables;
 import java.util.ArrayList;
 import java.util.Iterator;

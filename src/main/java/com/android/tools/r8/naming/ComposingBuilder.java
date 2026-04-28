@@ -5,7 +5,7 @@
 package com.android.tools.r8.naming;
 
 import static com.android.tools.r8.naming.MappedRangeUtils.isInlineMappedRangeForComposition;
-import static com.android.tools.r8.utils.FunctionUtils.ignoreArgument;
+import static com.android.tools.r8.utils.internal.FunctionUtils.ignoreArgument;
 
 import com.android.tools.r8.naming.ClassNamingForNameMapper.MappedRange;
 import com.android.tools.r8.naming.ClassNamingForNameMapper.MappedRangesOfName;
@@ -24,14 +24,14 @@ import com.android.tools.r8.references.ClassReference;
 import com.android.tools.r8.references.MethodReference;
 import com.android.tools.r8.references.Reference;
 import com.android.tools.r8.references.TypeReference;
-import com.android.tools.r8.utils.ChainableStringConsumer;
-import com.android.tools.r8.utils.ConsumerUtils;
-import com.android.tools.r8.utils.IntBox;
+import com.android.tools.r8.utils.internal.ChainableStringConsumer;
+import com.android.tools.r8.utils.internal.ConsumerUtils;
+import com.android.tools.r8.utils.internal.IntBox;
 import com.android.tools.r8.utils.InternalOptions;
 import com.android.tools.r8.utils.ListUtils;
-import com.android.tools.r8.utils.ObjectUtils;
-import com.android.tools.r8.utils.ThrowingBiFunction;
-import com.android.tools.r8.utils.collections.SegmentTree;
+import com.android.tools.r8.utils.internal.ObjectUtils;
+import com.android.tools.r8.utils.internal.ThrowingBiFunction;
+import com.android.tools.r8.utils.internal.collections.SegmentTree;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Sets;
 import it.unimi.dsi.fastutil.ints.Int2IntLinkedOpenHashMap;

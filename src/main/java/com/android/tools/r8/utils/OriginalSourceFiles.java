@@ -5,7 +5,7 @@ package com.android.tools.r8.utils;
 
 import com.android.tools.r8.graph.DexProgramClass;
 import com.android.tools.r8.graph.DexString;
-import com.android.tools.r8.utils.exceptions.Unreachable;
+import com.android.tools.r8.utils.internal.exceptions.Unreachable;
 import java.util.Map;
 
 /** Abstraction to allow removal of the source file content prior to collecting DEX items. */

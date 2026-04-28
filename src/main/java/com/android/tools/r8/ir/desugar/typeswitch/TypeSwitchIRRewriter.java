@@ -31,7 +31,7 @@ import com.android.tools.r8.ir.conversion.passes.result.CodeRewriterResult;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
 import com.android.tools.r8.utils.collections.BidirectionalManyToOneHashMap;
 import com.android.tools.r8.utils.collections.BidirectionalManyToOneMap;
-import com.android.tools.r8.utils.collections.Pair;
+import com.android.tools.r8.utils.internal.collections.Pair;
 import com.google.common.collect.ImmutableList;
 import java.util.IdentityHashMap;
 import java.util.Map;

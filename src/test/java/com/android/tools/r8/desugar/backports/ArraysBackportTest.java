@@ -4,10 +4,9 @@
 
 package com.android.tools.r8.desugar.backports;
 
-import com.android.tools.r8.D8TestBuilder;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.utils.AndroidApiLevel;
-import java.io.IOException;
+import com.android.tools.r8.utils.InternalOptions;
 import java.util.Arrays;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -26,8 +25,9 @@ public final class ArraysBackportTest extends AbstractBackportTest {
     registerTarget(AndroidApiLevel.V, 68);
   }
 
-  protected void configureD8Options(D8TestBuilder d8TestBuilder) throws IOException {
-    d8TestBuilder.addOptionsModification(options -> options.testing.backportArraysEquals = true);
+  @Override
+  protected void configureOptions(InternalOptions options) {
+    options.testing.backportArraysEquals = true;
   }
 
   static final class Main extends MiniAssert {

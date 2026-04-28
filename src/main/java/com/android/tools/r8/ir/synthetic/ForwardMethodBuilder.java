@@ -5,7 +5,7 @@ package com.android.tools.r8.ir.synthetic;
 
 import static com.android.tools.r8.ir.analysis.type.Nullability.definitelyNotNull;
 import static com.android.tools.r8.ir.analysis.type.Nullability.maybeNull;
-import static com.android.tools.r8.utils.ConsumerUtils.emptyConsumer;
+import static com.android.tools.r8.utils.internal.ConsumerUtils.emptyConsumer;
 
 import com.android.tools.r8.cf.code.CfCheckCast;
 import com.android.tools.r8.cf.code.CfInstruction;
@@ -32,9 +32,9 @@ import com.android.tools.r8.lightir.LirBuilder;
 import com.android.tools.r8.lightir.LirCode;
 import com.android.tools.r8.lightir.LirEncodingStrategy;
 import com.android.tools.r8.lightir.LirStrategy;
-import com.android.tools.r8.utils.BooleanUtils;
-import com.android.tools.r8.utils.exceptions.Unimplemented;
-import com.android.tools.r8.utils.exceptions.Unreachable;
+import com.android.tools.r8.utils.internal.BooleanUtils;
+import com.android.tools.r8.utils.internal.exceptions.Unimplemented;
+import com.android.tools.r8.utils.internal.exceptions.Unreachable;
 import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
 import java.util.List;
@@ -60,6 +60,7 @@ public class ForwardMethodBuilder {
 
   private DexMethod sourceMethod = null;
   private DexMethod targetMethod = null;
+  private DexType newInstanceType = null;
 
   private boolean sourceMethodHasExtraUnusedParameter = false;
   private boolean staticSource = false;
@@ -168,8 +169,10 @@ public class ForwardMethodBuilder {
     return this;
   }
 
-  public ForwardMethodBuilder setConstructorTargetWithNewInstance(DexMethod method) {
+  public ForwardMethodBuilder setConstructorTargetWithNewInstance(
+      DexType newInstanceType, DexMethod method) {
     assert method.isInstanceInitializer(factory);
+    this.newInstanceType = newInstanceType;
     targetMethod = method;
     isConstructorDelegate = true;
     invokeType = InvokeType.SPECIAL;
@@ -191,7 +194,7 @@ public class ForwardMethodBuilder {
       // It is dup'ed on the stack so it is ready to return after the invoke call.
       assert isStaticSource();
       assert invokeType == InvokeType.SPECIAL;
-      instructions.add(new CfNew(targetMethod.getHolderType()));
+      instructions.add(new CfNew(newInstanceType));
       instructions.add(new CfStackInstruction(Opcode.Dup));
       maxStack += 2;
     } else if (!isStaticSource()) {
@@ -245,13 +248,9 @@ public class ForwardMethodBuilder {
   public LirCode<Integer> buildLir(AppView<?> appView) {
     assert validate();
     if (castResult
-        || isConstructorDelegate
         || sourceMethodHasExtraUnusedParameter
         || appInfoForCastArguments != null
         || codeLens != null) {
-      throw new Unimplemented();
-    }
-    if (invokeType != InvokeType.STATIC && invokeType != InvokeType.SPECIAL) {
       throw new Unimplemented();
     }
     if (invokeType == InvokeType.SPECIAL
@@ -279,19 +278,48 @@ public class ForwardMethodBuilder {
       lirBuilder.addArgument(instructionIndex, argumentType.isBooleanType());
     }
 
-    if (isStaticTarget()) {
-      lirBuilder.addInvokeStatic(targetMethod, argumentValues, isInterface);
+    Value returnValue = null;
+    if (isConstructorDelegate) {
+      TypeElement newInstanceTypeElement = newInstanceType.toNonNullClassTypeElement(appView);
+      Value newInstanceValue = Value.createNoDebugLocal(instructionIndex, newInstanceTypeElement);
+      strategy.defineValue(newInstanceValue, newInstanceValue.getNumber());
+      lirBuilder.addNewInstance(newInstanceType);
+      lirBuilder.addInvokeDirect(
+          targetMethod,
+          ImmutableList.<Value>builder().add(newInstanceValue).addAll(argumentValues).build(),
+          isInterface);
+      returnValue = newInstanceValue;
     } else {
-      lirBuilder.addInvokeSuper(targetMethod, argumentValues, isInterface);
+      if (!sourceMethod.getReturnType().isVoidType()) {
+        returnValue =
+            Value.createNoDebugLocal(
+                instructionIndex, sourceMethod.getReturnType().toTypeElement(appView));
+        strategy.defineValue(returnValue, returnValue.getNumber());
+      }
+      switch (invokeType) {
+        case INTERFACE:
+          assert isInterface;
+          lirBuilder.addInvokeInterface(targetMethod, argumentValues);
+          break;
+        case STATIC:
+          lirBuilder.addInvokeStatic(targetMethod, argumentValues, isInterface);
+          break;
+        case SPECIAL:
+          lirBuilder.addInvokeSuper(targetMethod, argumentValues, isInterface);
+          break;
+        case VIRTUAL:
+          assert !isInterface;
+          lirBuilder.addInvokeVirtual(targetMethod, argumentValues);
+          break;
+        default:
+          throw new Unreachable();
+      }
     }
 
     if (sourceMethod.getReturnType().isVoidType()) {
       lirBuilder.addReturnVoid();
     } else {
-      Value returnValue =
-          Value.createNoDebugLocal(
-              instructionIndex, sourceMethod.getReturnType().toTypeElement(appView));
-      strategy.defineValue(returnValue, returnValue.getNumber());
+      assert returnValue != null;
       lirBuilder.addReturn(returnValue);
     }
 

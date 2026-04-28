@@ -105,6 +105,7 @@ public class InstanceInitializerOutliner extends CodeRewriterPass<AppInfo> {
       }
       DexEncodedMethod synthesizedInstanceInitializer =
           createSynthesizedInstanceInitializer(
+              newInstance.getType(),
               invokeDirect.getInvokedMethod(),
               apiReferenceLevel,
               methodProcessor,
@@ -240,23 +241,27 @@ public class InstanceInitializerOutliner extends CodeRewriterPass<AppInfo> {
                         .setCode(
                             m ->
                                 NewInstanceSourceCode.create(appView, m.getHolderType(), targetType)
-                                    .generateCfCode()));
+                                    .generate(m)));
     methodProcessor
         .getEventConsumer()
         .acceptInstanceInitializerOutline(method, methodProcessingContext.getMethodContext());
-    methodProcessor.scheduleDesugaredMethodForProcessing(method);
+    if (appView.enableWholeProgramOptimizations()) {
+      assert method.getDefinition().getCode().isLirCode();
+    } else {
+      assert method.getDefinition().getCode().isCfCode();
+      methodProcessor.scheduleDesugaredMethodForProcessing(method);
+    }
     return method.getDefinition();
   }
 
   private DexEncodedMethod createSynthesizedInstanceInitializer(
+      DexType newInstanceType,
       DexMethod targetMethod,
       ComputedApiLevel computedApiLevel,
       MethodProcessor methodProcessor,
       MethodProcessingContext methodProcessingContext) {
     DexProto proto =
-        appView
-            .dexItemFactory()
-            .createProto(targetMethod.getHolderType(), targetMethod.getParameters());
+        appView.dexItemFactory().createProto(newInstanceType, targetMethod.getParameters());
     ProgramMethod method =
         appView
             .getSyntheticItems()
@@ -267,8 +272,7 @@ public class InstanceInitializerOutliner extends CodeRewriterPass<AppInfo> {
                 builder -> {
                   DynamicType exactDynamicReturnType =
                       DynamicType.createExact(
-                          targetMethod
-                              .getHolderType()
+                          newInstanceType
                               .toTypeElement(appView, Nullability.definitelyNotNull())
                               .asClassType());
                   builder
@@ -279,9 +283,10 @@ public class InstanceInitializerOutliner extends CodeRewriterPass<AppInfo> {
                       .setCode(
                           m ->
                               ForwardMethodBuilder.builder(appView.dexItemFactory())
-                                  .setConstructorTargetWithNewInstance(targetMethod)
+                                  .setConstructorTargetWithNewInstance(
+                                      newInstanceType, targetMethod)
                                   .setStaticSource(m)
-                                  .buildCf())
+                                  .build(appView))
                       .setOptimizationInfo(
                           DefaultMethodOptimizationInfo.getInstance()
                               .toMutableOptimizationInfo()
@@ -290,7 +295,12 @@ public class InstanceInitializerOutliner extends CodeRewriterPass<AppInfo> {
     methodProcessor
         .getEventConsumer()
         .acceptInstanceInitializerOutline(method, methodProcessingContext.getMethodContext());
-    methodProcessor.scheduleDesugaredMethodForProcessing(method);
+    if (appView.enableWholeProgramOptimizations()) {
+      assert method.getDefinition().getCode().isLirCode();
+    } else {
+      assert method.getDefinition().getCode().isCfCode();
+      methodProcessor.scheduleDesugaredMethodForProcessing(method);
+    }
     return method.getDefinition();
   }
 

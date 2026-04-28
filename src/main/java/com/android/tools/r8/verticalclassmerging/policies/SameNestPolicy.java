@@ -4,7 +4,7 @@
 package com.android.tools.r8.verticalclassmerging.policies;
 
 import com.android.tools.r8.graph.DexProgramClass;
-import com.android.tools.r8.utils.ObjectUtils;
+import com.android.tools.r8.utils.internal.ObjectUtils;
 import com.android.tools.r8.verticalclassmerging.VerticalMergeGroup;
 
 public class SameNestPolicy extends VerticalClassMergerPolicy {

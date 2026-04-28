@@ -4,7 +4,7 @@
 
 package com.android.tools.r8.utils.collections;
 
-import com.android.tools.r8.utils.TriConsumer;
+import com.android.tools.r8.utils.internal.TriConsumer;
 import java.util.Collections;
 import java.util.IdentityHashMap;
 import java.util.Map;

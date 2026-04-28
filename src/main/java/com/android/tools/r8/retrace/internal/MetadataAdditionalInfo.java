@@ -6,17 +6,20 @@ package com.android.tools.r8.retrace.internal;
 
 import com.android.tools.r8.dex.CompatByteBuffer;
 import com.android.tools.r8.retrace.RetracePartitionException;
-import com.android.tools.r8.utils.SerializationUtils;
 import com.android.tools.r8.utils.StringUtils;
-import com.android.tools.r8.utils.exceptions.Unreachable;
+import com.android.tools.r8.utils.internal.SerializationUtils;
+import com.android.tools.r8.utils.internal.exceptions.Unreachable;
+import com.google.common.hash.Hashing;
 import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Predicate;
@@ -58,7 +61,7 @@ public class MetadataAdditionalInfo {
     return preamble != null;
   }
 
-  public Collection<String> getPreamble() {
+  public List<String> getPreamble() {
     return preamble;
   }
 
@@ -127,6 +130,60 @@ public class MetadataAdditionalInfo {
     return new MetadataAdditionalInfo(preamble, obfuscatedPackages);
   }
 
+  public MetadataAdditionalInfo combine(MetadataAdditionalInfo other, String newMapId) {
+    Set<String> combinedPackages = new LinkedHashSet<>();
+    Set<String> thisPackages = getObfuscatedPackages();
+    if (thisPackages != null) {
+      combinedPackages.addAll(thisPackages);
+    }
+    Set<String> otherPackages = other.getObfuscatedPackages();
+    if (otherPackages != null) {
+      combinedPackages.addAll(otherPackages);
+    }
+    return create(combinePreambles(getPreamble(), other.getPreamble(), newMapId), combinedPackages);
+  }
+
+  private static List<String> combinePreambles(
+      List<String> preamble, List<String> otherPreamble, String newMapId) {
+    if (preamble == null || otherPreamble == null) {
+      throw new RetracePartitionException("Preamble is missing");
+    }
+    if (preamble.size() < 8 || otherPreamble.size() < 8) {
+      throw new RetracePartitionException("Preamble is too short to be combined");
+    }
+
+    // Build up the new preamble with the new map id.
+    List<String> combinedPreamble = new ArrayList<>();
+    for (int i = 0; i <= 5; i++) {
+      if (!Objects.equals(preamble.get(i), otherPreamble.get(i))) {
+        throw new RetracePartitionException("Preamble lines 0-5 are not identical");
+      }
+      combinedPreamble.add(preamble.get(i));
+    }
+    combinedPreamble.add("# pg_map_id: " + newMapId);
+
+    // Create a new hash.
+    String pgMapHashLine = preamble.get(7);
+    String otherPgMapHashLine = otherPreamble.get(7);
+    if (!pgMapHashLine.startsWith("# pg_map_hash: SHA-256 ")
+        || !otherPgMapHashLine.startsWith("# pg_map_hash: SHA-256 ")) {
+      throw new RetracePartitionException(
+          "Expected last preamble line to start with '# pg_map_hash: SHA-256 '");
+    }
+
+    String pgMapHash = pgMapHashLine.substring("# pg_map_hash: SHA-256 ".length());
+    String otherPgMapHash = otherPgMapHashLine.substring("# pg_map_hash: SHA-256 ".length());
+    String combinedPgMapHash =
+        Hashing.sha256()
+            .newHasher()
+            .putString(pgMapHash, StandardCharsets.UTF_8)
+            .putString(otherPgMapHash, StandardCharsets.UTF_8)
+            .hash()
+            .toString();
+    combinedPreamble.add("# pg_map_hash: SHA-256 " + combinedPgMapHash);
+    return combinedPreamble;
+  }
+
   public static class LazyMetadataAdditionalInfo extends MetadataAdditionalInfo {
 
     private final byte[] bytes;
@@ -146,7 +203,7 @@ public class MetadataAdditionalInfo {
     }
 
     @Override
-    public Collection<String> getPreamble() {
+    public List<String> getPreamble() {
       MetadataAdditionalInfo metadataAdditionalInfo =
           getMetadataAdditionalInfo(AdditionalInfoTypes.PREAMBLE);
       return metadataAdditionalInfo == null ? null : metadataAdditionalInfo.getPreamble();

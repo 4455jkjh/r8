@@ -43,11 +43,8 @@ public class AtomicFieldUpdaterGetTest extends AtomicFieldUpdaterBase {
             diagnostics -> {
               diagnostics.assertInfosMatch(
                   diagnosticMessage(containsString("Can instrument")),
-                  diagnosticMessage(containsString("Can optimize"))
-                  // TODO(b/453628974): The field should be removed once nullability analysis is
-                  //                    more precise.
-                  // diagnosticMessage(containsString("Can remove"))
-                  );
+                  diagnosticMessage(containsString("Can optimize")),
+                  diagnosticMessage(containsString("Can remove")));
             })
         .inspect(
             inspector -> {

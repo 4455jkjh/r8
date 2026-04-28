@@ -15,7 +15,7 @@ import com.android.tools.r8.origin.Origin;
 import com.android.tools.r8.utils.AndroidApiLevel;
 import com.android.tools.r8.utils.ExceptionDiagnostic;
 import com.android.tools.r8.utils.Reporter;
-import com.android.tools.r8.utils.SemanticVersion;
+import com.android.tools.r8.utils.internal.SemanticVersion;
 import com.android.tools.r8.utils.StringDiagnostic;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;

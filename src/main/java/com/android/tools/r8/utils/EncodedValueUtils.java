@@ -5,6 +5,7 @@ package com.android.tools.r8.utils;
 
 import com.android.tools.r8.dex.DexOutputBuffer;
 import com.android.tools.r8.dex.DexReader;
+import com.android.tools.r8.utils.internal.LongUtils;
 
 public class EncodedValueUtils {
 

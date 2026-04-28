@@ -9,7 +9,7 @@ import static com.android.tools.r8.DiagnosticsMatcher.diagnosticType;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.errors.CheckDiscardDiagnostic;
-import com.android.tools.r8.utils.BooleanUtils;
+import com.android.tools.r8.utils.internal.BooleanUtils;
 import com.android.tools.r8.utils.StringUtils;
 import com.android.tools.r8.utils.codeinspector.AssertUtils;
 import java.util.List;

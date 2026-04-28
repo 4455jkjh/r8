@@ -7,9 +7,9 @@ import static com.google.common.base.Predicates.alwaysTrue;
 
 import com.android.tools.r8.graph.DexItemFactory;
 import com.android.tools.r8.graph.DexType;
-import com.android.tools.r8.utils.IterableUtils;
 import com.android.tools.r8.utils.ListUtils;
-import com.android.tools.r8.utils.TraversalContinuation;
+import com.android.tools.r8.utils.internal.IterableUtils;
+import com.android.tools.r8.utils.internal.TraversalContinuation;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Iterators;

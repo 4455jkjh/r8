@@ -4,7 +4,7 @@
 
 package com.android.tools.r8.graph;
 
-import com.android.tools.r8.utils.exceptions.Unreachable;
+import com.android.tools.r8.utils.internal.exceptions.Unreachable;
 
 public class TopDownClassHierarchyTraversal<T extends DexClass>
     extends ClassHierarchyTraversal<T, TopDownClassHierarchyTraversal<T>> {

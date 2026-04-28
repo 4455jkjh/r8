@@ -26,7 +26,7 @@ import com.android.tools.r8.dex.Marker.Tool;
 import com.android.tools.r8.origin.Origin;
 import com.android.tools.r8.references.Reference;
 import com.android.tools.r8.utils.AndroidApiLevel;
-import com.android.tools.r8.utils.ThrowingTriConsumer;
+import com.android.tools.r8.utils.internal.ThrowingTriConsumer;
 import com.android.tools.r8.utils.codeinspector.CodeInspector;
 import java.nio.file.Path;
 import java.util.Collection;

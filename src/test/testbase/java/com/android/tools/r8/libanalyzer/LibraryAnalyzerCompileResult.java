@@ -4,7 +4,7 @@
 package com.android.tools.r8.libanalyzer;
 
 import com.android.tools.r8.libanalyzer.proto.LibraryAnalyzerResult;
-import com.android.tools.r8.utils.ThrowingConsumer;
+import com.android.tools.r8.utils.internal.ThrowingConsumer;
 import java.util.function.Consumer;
 
 public class LibraryAnalyzerCompileResult {

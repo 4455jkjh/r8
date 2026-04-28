@@ -13,6 +13,7 @@ import com.android.tools.r8.ResourceException;
 import com.android.tools.r8.errors.CompilationError;
 import com.android.tools.r8.origin.ArchiveEntryOrigin;
 import com.android.tools.r8.origin.Origin;
+import com.android.tools.r8.utils.internal.BooleanBox;
 import com.google.common.io.ByteStreams;
 import java.io.IOException;
 import java.io.InputStream;

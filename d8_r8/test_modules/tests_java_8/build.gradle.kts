@@ -28,8 +28,9 @@ java {
 
 // If we depend on keepanno by referencing the project source outputs we get an error regarding
 // incompatible java class file version. By depending on the jar we circumvent that.
-val assistantCompileTask = projectTask("assistant", "compileJava")
-val blastRadiusCompileTask = projectTask("blastradius", "compileJava")
+val assistantClassesScope by configurations.dependencyScope("assistantClassesScope")
+val assistantClassesOutput =
+  configurations.resolvable("assistantClassesOutput") { extendsFrom(assistantClassesScope) }
 val distDepsFilesScope by configurations.dependencyScope("distDepsFilesScope")
 val distDepsFiles by configurations.resolvable("distDepsFiles") { extendsFrom(distDepsFilesScope) }
 val mainClassesScope by configurations.dependencyScope("mainClassesScope")
@@ -50,12 +51,13 @@ val sharedDownloadDepsTask = projectTask("shared", "downloadDeps")
 val sharedDownloadDepsInternalTask = projectTask("shared", "downloadDepsInternal")
 
 dependencies {
+  assistantClassesScope(project(":assistant", "assistantJar"))
   distDepsFilesScope(project(":dist", "depsFiles"))
   mainClassesScope(project(":main", "mainClassesOutput"))
   mainResourcesScope(project(":main", "mainResources"))
   turboClassesScope(project(":main", "turboClassesOutput"))
-  implementation(assistantCompileTask.outputs.files)
-  implementation(blastRadiusCompileTask.outputs.files)
+  implementation(project(":assistant", "assistantJar"))
+  implementation(project(":blastradius", "blastradiusJar"))
   implementation(keepAnnoJarTask.outputs.files)
   implementation(project(":libanalyzer", "libanalyzer-compile-java"))
   implementation(project(":main", "mainClassesOutput"))
@@ -166,7 +168,7 @@ tasks {
         File.pathSeparator +
         keepAnnoCompileJavaTask.outputs.files.getAsPath().split(File.pathSeparator)[0] +
         File.pathSeparator +
-        assistantCompileTask.outputs.files.getAsPath().split(File.pathSeparator)[0] +
+        project.files(assistantClassesOutput).asPath.split(File.pathSeparator)[0] +
         File.pathSeparator +
         resourceShrinkerCompileJavaTask.outputs.files.getAsPath().split(File.pathSeparator)[0] +
         File.pathSeparator +

@@ -7,7 +7,7 @@ package com.android.tools.r8.retrace.internal;
 import com.android.tools.r8.references.ClassReference;
 import com.android.tools.r8.references.FieldReference;
 import com.android.tools.r8.references.Reference;
-import com.android.tools.r8.utils.ObjectUtils;
+import com.android.tools.r8.utils.internal.ObjectUtils;
 
 /** Internal encoding of a field that allows for having either basic info or full info. */
 abstract class FieldDefinition implements Definition {

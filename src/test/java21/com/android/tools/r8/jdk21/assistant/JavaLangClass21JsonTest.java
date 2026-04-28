@@ -17,7 +17,7 @@ import com.android.tools.r8.assistant.runtime.ReflectiveOperationJsonLogger;
 import com.android.tools.r8.assistant.runtime.ReflectiveOperationReceiver.ClassFlag;
 import com.android.tools.r8.graph.DexItemFactory;
 import com.android.tools.r8.jdk21.assistant.JavaLangTestClass21.Foo;
-import com.android.tools.r8.utils.Box;
+import com.android.tools.r8.utils.internal.Box;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;

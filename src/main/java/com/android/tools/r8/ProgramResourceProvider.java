@@ -5,7 +5,7 @@ package com.android.tools.r8;
 
 import com.android.tools.r8.keepanno.annotations.KeepForApi;
 import com.android.tools.r8.utils.ProgramResourceProviderUtils;
-import com.android.tools.r8.utils.exceptions.Unimplemented;
+import com.android.tools.r8.utils.internal.exceptions.Unimplemented;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.function.Consumer;

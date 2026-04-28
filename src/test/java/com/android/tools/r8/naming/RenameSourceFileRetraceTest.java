@@ -20,7 +20,7 @@ import com.android.tools.r8.naming.testclasses.ClassToBeMinified;
 import com.android.tools.r8.naming.testclasses.Main;
 import com.android.tools.r8.references.MethodReference;
 import com.android.tools.r8.references.Reference;
-import com.android.tools.r8.utils.BooleanUtils;
+import com.android.tools.r8.utils.internal.BooleanUtils;
 import com.android.tools.r8.utils.codeinspector.ClassSubject;
 import com.android.tools.r8.utils.codeinspector.CodeInspector;
 import com.android.tools.r8.utils.codeinspector.Matchers.LinePosition;

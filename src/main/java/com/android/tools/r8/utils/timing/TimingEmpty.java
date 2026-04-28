@@ -4,8 +4,8 @@
 package com.android.tools.r8.utils.timing;
 
 import com.android.tools.r8.utils.InternalOptions;
-import com.android.tools.r8.utils.ThrowingAction;
-import com.android.tools.r8.utils.ThrowingSupplier;
+import com.android.tools.r8.utils.internal.ThrowingAction;
+import com.android.tools.r8.utils.internal.ThrowingSupplier;
 
 class TimingEmpty extends Timing {
 

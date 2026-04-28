@@ -10,7 +10,7 @@ import com.android.tools.r8.DiagnosticsHandler;
 import com.android.tools.r8.origin.MethodOrigin;
 import com.android.tools.r8.origin.Origin;
 import com.android.tools.r8.references.MethodReference;
-import com.android.tools.r8.utils.ObjectUtils;
+import com.android.tools.r8.utils.internal.ObjectUtils;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;

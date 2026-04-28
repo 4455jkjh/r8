@@ -10,6 +10,7 @@ import com.android.tools.r8.TestRuntime.CfVm;
 import com.android.tools.r8.desugar.backports.AbstractBackportTest;
 import com.android.tools.r8.desugar.backports.IgnoreInvokes;
 import com.android.tools.r8.utils.AndroidApiLevel;
+import com.android.tools.r8.utils.codeinspector.CodeInspector;
 import java.util.AbstractMap;
 import java.util.Map;
 import org.hamcrest.CoreMatchers;
@@ -42,6 +43,13 @@ public class MapBackportJava9Test extends AbstractBackportTest {
 
     // Map.entry, Map.of and Map.ofEntries added in API 30.
     registerTarget(AndroidApiLevel.R, 29);
+  }
+
+  @Override
+  protected void assertDesugaring(CodeInspector inspector, boolean isR8) {
+    if (!isR8 || parameters.getApiLevel().isLessThan(AndroidApiLevel.R)) {
+      super.assertDesugaring(inspector, isR8);
+    }
   }
 
   @Test

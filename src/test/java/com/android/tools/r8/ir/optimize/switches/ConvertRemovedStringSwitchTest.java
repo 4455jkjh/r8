@@ -4,7 +4,7 @@
 
 package com.android.tools.r8.ir.optimize.switches;
 
-import static com.android.tools.r8.utils.BooleanUtils.intValue;
+import static com.android.tools.r8.utils.internal.BooleanUtils.intValue;
 import static com.android.tools.r8.utils.codeinspector.Matchers.isPresent;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertEquals;

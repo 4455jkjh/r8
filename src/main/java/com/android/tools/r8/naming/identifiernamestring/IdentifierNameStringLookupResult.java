@@ -4,7 +4,7 @@
 
 package com.android.tools.r8.naming.identifiernamestring;
 
-import static com.android.tools.r8.utils.FunctionUtils.applyOrElse;
+import static com.android.tools.r8.utils.internal.FunctionUtils.applyOrElse;
 
 import com.android.tools.r8.graph.DexClassAndMember;
 import com.android.tools.r8.graph.DexMember;

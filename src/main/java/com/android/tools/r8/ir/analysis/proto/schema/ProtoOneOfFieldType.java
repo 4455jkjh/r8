@@ -4,7 +4,7 @@
 
 package com.android.tools.r8.ir.analysis.proto.schema;
 
-import com.android.tools.r8.utils.BooleanUtils;
+import com.android.tools.r8.utils.internal.BooleanUtils;
 
 public class ProtoOneOfFieldType extends ProtoFieldType {
 

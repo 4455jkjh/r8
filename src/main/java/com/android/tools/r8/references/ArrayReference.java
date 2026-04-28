@@ -5,8 +5,8 @@ package com.android.tools.r8.references;
 
 import com.android.tools.r8.keepanno.annotations.KeepForApi;
 import com.android.tools.r8.utils.DescriptorUtils;
-import com.android.tools.r8.utils.ObjectUtils;
-import com.android.tools.r8.utils.exceptions.Unreachable;
+import com.android.tools.r8.utils.internal.ObjectUtils;
+import com.android.tools.r8.utils.internal.exceptions.Unreachable;
 
 /** Reference to an array type. */
 @KeepForApi

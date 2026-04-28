@@ -13,7 +13,7 @@ import com.android.tools.r8.graph.DexType;
 import com.android.tools.r8.graph.DexTypeUtils;
 import com.android.tools.r8.horizontalclassmerging.HorizontalClassMergerGraphLens.Builder;
 import com.android.tools.r8.horizontalclassmerging.policies.SameInstanceFields.InstanceFieldInfo;
-import com.android.tools.r8.utils.IterableUtils;
+import com.android.tools.r8.utils.internal.IterableUtils;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
 import java.util.ArrayList;

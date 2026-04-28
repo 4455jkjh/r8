@@ -15,7 +15,7 @@ import com.android.tools.r8.retrace.internal.MappingPartitionMetadataInternal;
 import com.android.tools.r8.retrace.internal.MetadataAdditionalInfo;
 import com.android.tools.r8.retrace.internal.PartitionMappingSupplierBase;
 import com.android.tools.r8.retrace.internal.ProguardMapReaderWithFiltering.ProguardMapReaderWithFilteringInputBuffer;
-import com.android.tools.r8.utils.ChainableStringConsumer;
+import com.android.tools.r8.utils.internal.ChainableStringConsumer;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 

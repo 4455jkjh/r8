@@ -4,7 +4,7 @@
 
 package com.android.tools.r8.apimodel;
 
-import static com.android.tools.r8.utils.FunctionUtils.ignoreArgument;
+import static com.android.tools.r8.utils.internal.FunctionUtils.ignoreArgument;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 

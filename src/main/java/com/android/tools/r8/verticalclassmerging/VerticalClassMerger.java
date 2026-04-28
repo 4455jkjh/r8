@@ -30,7 +30,7 @@ import com.android.tools.r8.shaking.KeepClassInfo.Joiner;
 import com.android.tools.r8.shaking.KeepInfoCollection;
 import com.android.tools.r8.utils.InternalOptions;
 import com.android.tools.r8.utils.ThreadUtils;
-import com.android.tools.r8.utils.ThrowingAction;
+import com.android.tools.r8.utils.internal.ThrowingAction;
 import com.android.tools.r8.utils.timing.Timing;
 import com.android.tools.r8.utils.timing.TimingMerger;
 import com.google.common.collect.Streams;

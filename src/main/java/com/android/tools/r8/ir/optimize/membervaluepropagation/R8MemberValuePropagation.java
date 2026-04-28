@@ -40,7 +40,7 @@ import com.android.tools.r8.ir.optimize.membervaluepropagation.assume.AssumeInfo
 import com.android.tools.r8.ir.optimize.membervaluepropagation.assume.AssumeInfoLookup;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
 import com.android.tools.r8.shaking.KeepMemberInfo;
-import com.android.tools.r8.utils.ArrayUtils;
+import com.android.tools.r8.utils.internal.ArrayUtils;
 import java.util.Set;
 
 public class R8MemberValuePropagation extends MemberValuePropagation<AppInfoWithLiveness> {

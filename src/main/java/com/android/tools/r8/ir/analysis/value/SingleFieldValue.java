@@ -5,7 +5,7 @@
 package com.android.tools.r8.ir.analysis.value;
 
 import static com.android.tools.r8.ir.analysis.type.Nullability.maybeNull;
-import static com.android.tools.r8.utils.ForEachUtils.allMatch;
+import static com.android.tools.r8.utils.internal.ForEachUtils.allMatch;
 
 import com.android.tools.r8.features.ClassToFeatureSplitMap;
 import com.android.tools.r8.graph.AppInfoWithClassHierarchy;

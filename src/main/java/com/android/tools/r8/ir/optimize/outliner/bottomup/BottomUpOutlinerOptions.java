@@ -4,7 +4,7 @@
 package com.android.tools.r8.ir.optimize.outliner.bottomup;
 
 import com.android.tools.r8.graph.AppView;
-import com.android.tools.r8.utils.OptionalBool;
+import com.android.tools.r8.utils.internal.OptionalBool;
 import com.android.tools.r8.utils.SystemPropertyUtils;
 import java.util.Collection;
 import java.util.function.Consumer;

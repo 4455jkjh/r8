@@ -6,7 +6,7 @@ package com.android.tools.r8.kotlin.lambda;
 import com.android.tools.r8.KotlinTestParameters;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.kotlin.AbstractR8KotlinTestBase;
-import com.android.tools.r8.utils.BooleanUtils;
+import com.android.tools.r8.utils.internal.BooleanUtils;
 import java.util.Collection;
 import org.junit.Test;
 import org.junit.runner.RunWith;

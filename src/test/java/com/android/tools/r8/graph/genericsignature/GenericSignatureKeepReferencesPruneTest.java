@@ -18,7 +18,7 @@ import com.android.tools.r8.graph.genericsignature.testclasses.J;
 import com.android.tools.r8.graph.genericsignature.testclasses.K;
 import com.android.tools.r8.graph.genericsignature.testclasses.L;
 import com.android.tools.r8.graph.genericsignature.testclasses.Main;
-import com.android.tools.r8.utils.BooleanUtils;
+import com.android.tools.r8.utils.internal.BooleanUtils;
 import com.android.tools.r8.utils.codeinspector.ClassSubject;
 import com.android.tools.r8.utils.codeinspector.CodeInspector;
 import java.util.List;

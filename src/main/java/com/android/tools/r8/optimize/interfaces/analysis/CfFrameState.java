@@ -23,8 +23,8 @@ import com.android.tools.r8.ir.analysis.type.TypeElement;
 import com.android.tools.r8.ir.code.MemberType;
 import com.android.tools.r8.ir.code.NumericType;
 import com.android.tools.r8.ir.code.ValueType;
-import com.android.tools.r8.utils.FunctionUtils;
-import com.android.tools.r8.utils.TriFunction;
+import com.android.tools.r8.utils.internal.FunctionUtils;
+import com.android.tools.r8.utils.internal.TriFunction;
 import java.util.function.BiFunction;
 import java.util.function.UnaryOperator;
 

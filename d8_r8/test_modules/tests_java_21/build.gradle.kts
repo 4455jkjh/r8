@@ -14,7 +14,9 @@ java {
   toolchain { languageVersion = JavaLanguageVersion.of(21) }
 }
 
-val assistantCompileJavaTask = projectTask("assistant", "compileJava")
+val assistantClassesScope by configurations.dependencyScope("assistantClassesScope")
+val assistantClassesOutput =
+  configurations.resolvable("assistantClassesOutput") { extendsFrom(assistantClassesScope) }
 val sharedDownloadDepsTask = projectTask("shared", "downloadDeps")
 val mainClassesScope by configurations.dependencyScope("mainClassesScope")
 val mainClassesOutput =
@@ -26,10 +28,11 @@ val turboClassesOutput =
   configurations.resolvable("turboClassesOutput") { extendsFrom(turboClassesScope) }
 
 dependencies {
+  assistantClassesScope(project(":assistant", "assistantJar"))
   mainClassesScope(project(":main", "mainClassesOutput"))
   mainResourcesScope(project(":main", "mainResources"))
   turboClassesScope(project(":main", "turboClassesOutput"))
-  implementation(assistantCompileJavaTask.outputs.files)
+  implementation(project(":assistant", "assistantJar"))
   implementation(project(":main", "mainClassesOutput"))
   implementation(project(":main", "mainResources"))
   implementation(project(":main", "turboClassesOutput"))
@@ -69,7 +72,7 @@ tasks {
         File.pathSeparator +
         project.files(mainResources).asPath.split(File.pathSeparator)[0] +
         File.pathSeparator +
-        assistantCompileJavaTask.outputs.files.getAsPath().split(File.pathSeparator)[0],
+        project.files(assistantClassesOutput).asPath.split(File.pathSeparator)[0],
     )
   }
 

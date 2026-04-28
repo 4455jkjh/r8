@@ -5,7 +5,7 @@ package com.android.tools.r8.optimize.argumentpropagation.computation;
 
 import com.android.tools.r8.ir.code.NumericType;
 import com.android.tools.r8.optimize.argumentpropagation.codescanner.BaseInFlow;
-import com.android.tools.r8.utils.TraversalContinuation;
+import com.android.tools.r8.utils.internal.TraversalContinuation;
 import java.util.function.Function;
 
 public abstract class ComputationTreeLogicalBinopNode extends ComputationTreeBaseNode {

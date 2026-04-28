@@ -4,13 +4,13 @@
 
 package com.android.tools.r8.ir.optimize.string;
 
-import static com.android.tools.r8.utils.FunctionUtils.ignoreArgument;
+import static com.android.tools.r8.utils.internal.FunctionUtils.ignoreArgument;
 
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.ir.analysis.framework.intraprocedural.AbstractState;
 import com.android.tools.r8.ir.code.Value;
 import com.android.tools.r8.utils.MapUtils;
-import com.android.tools.r8.utils.ObjectUtils;
+import com.android.tools.r8.utils.internal.ObjectUtils;
 import com.google.common.collect.Sets;
 import java.util.Collection;
 import java.util.Collections;

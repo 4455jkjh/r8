@@ -202,10 +202,10 @@ public class FilesAttributes2Test extends DesugaredLibraryTestBase {
 
     public static void main(String[] args) throws Throwable {
       System.out.println("PRESENT FILE");
-      Path path = Files.createTempFile("example", ".txt");
+      Path path = Files.createTempFile("r8-example", ".txt");
       testProperties(path);
       System.out.println("PRESENT DIR");
-      Path dir = Files.createTempDirectory("dir");
+      Path dir = Files.createTempDirectory("r8-dir");
       testProperties(dir);
       System.out.println("ABSENT FILE");
       Path notExisting = Paths.get("notExisting.txt");

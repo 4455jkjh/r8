@@ -17,11 +17,7 @@ import jdk
 import utils
 
 GRADLE8_SHA1 = os.path.join(utils.THIRD_PARTY, 'gradle.tar.gz.sha1')
-GRADLE8_TGZ = os.path.join(utils.THIRD_PARTY, 'gradle.tar.gz')
-
-PROTOC_ROOT = os.path.join(utils.THIRD_PARTY, 'protoc')
 PROTOC_SHA1 = os.path.join(utils.THIRD_PARTY, 'protoc.tar.gz.sha1')
-PROTOC_TGZ = os.path.join(utils.THIRD_PARTY, 'protoc.tar.gz')
 
 
 def get_gradle_dir():
@@ -81,27 +77,19 @@ def print_cmd(s):
 
 
 def ensure_gradle():
-    utils.EnsureDepFromGoogleCloudStorage(get_gradle_executable(), GRADLE8_TGZ,
-                                          GRADLE8_SHA1, 'Gradle binary')
+    utils.EnsureDepFromGoogleCloudStorage(GRADLE8_SHA1,
+                                          'Gradle binary',
+                                          dep=get_gradle_executable())
 
 
 def ensure_gradle_repositories():
-    dependencies_path = os.path.join(utils.THIRD_PARTY, 'dependencies')
-    dependencies_tgz = os.path.join(utils.THIRD_PARTY, 'dependencies.tar.gz')
     dependencies_sha1 = os.path.join(utils.THIRD_PARTY,
                                      'dependencies.tar.gz.sha1')
-    utils.EnsureDepFromGoogleCloudStorage(dependencies_path, dependencies_tgz,
-                                          dependencies_sha1,
+    utils.EnsureDepFromGoogleCloudStorage(dependencies_sha1,
                                           'Gradle dependencies')
-    dependencies_plugin_path = os.path.join(utils.THIRD_PARTY,
-                                            'dependencies_plugin')
-    dependencies_plugin_tgz = os.path.join(utils.THIRD_PARTY,
-                                           'dependencies_plugin.tar.gz')
     dependencies_plugin_sha1 = os.path.join(utils.THIRD_PARTY,
                                             'dependencies_plugin.tar.gz.sha1')
-    utils.EnsureDepFromGoogleCloudStorage(dependencies_plugin_path,
-                                          dependencies_plugin_tgz,
-                                          dependencies_plugin_sha1,
+    utils.EnsureDepFromGoogleCloudStorage(dependencies_plugin_sha1,
                                           'Gradle plugin dependencies')
 
 
@@ -109,14 +97,12 @@ def ensure_jdk():
     # Gradle in the new setup will use the jdks in the evaluation - fetch
     # all beforehand.
     for root in jdk.GetAllJdkDirs():
-        jdk_tgz = root + '.tar.gz'
-        jdk_sha1 = jdk_tgz + '.sha1'
-        utils.EnsureDepFromGoogleCloudStorage(root, jdk_tgz, jdk_sha1, root)
+        jdk_sha1 = root + '.tar.gz.sha1'
+        utils.EnsureDepFromGoogleCloudStorage(jdk_sha1, root)
 
 
 def ensure_protoc():
-    utils.EnsureDepFromGoogleCloudStorage(PROTOC_ROOT, PROTOC_TGZ, PROTOC_SHA1,
-                                          'Proto Compiler')
+    utils.EnsureDepFromGoogleCloudStorage(PROTOC_SHA1, 'Proto Compiler')
 
 
 def ensure_deps():

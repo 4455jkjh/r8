@@ -5,8 +5,8 @@ package com.android.tools.r8.utils.timing;
 
 import com.android.tools.r8.utils.InternalOptions;
 import com.android.tools.r8.utils.ThreadUtils;
-import com.android.tools.r8.utils.ThrowingAction;
-import com.android.tools.r8.utils.ThrowingSupplier;
+import com.android.tools.r8.utils.internal.ThrowingAction;
+import com.android.tools.r8.utils.internal.ThrowingSupplier;
 import java.util.concurrent.ExecutorService;
 
 public abstract class Timing implements AutoCloseable {

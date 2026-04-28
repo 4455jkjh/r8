@@ -30,8 +30,8 @@ import com.android.tools.r8.ir.analysis.value.SingleNumberValue;
 import com.android.tools.r8.ir.conversion.CfBuilder;
 import com.android.tools.r8.ir.conversion.DexBuilder;
 import com.android.tools.r8.lightir.LirBuilder;
-import com.android.tools.r8.utils.LongUtils;
-import com.android.tools.r8.utils.exceptions.Unreachable;
+import com.android.tools.r8.utils.internal.LongUtils;
+import com.android.tools.r8.utils.internal.exceptions.Unreachable;
 import java.util.Set;
 
 public class NumberConversion extends Unop {

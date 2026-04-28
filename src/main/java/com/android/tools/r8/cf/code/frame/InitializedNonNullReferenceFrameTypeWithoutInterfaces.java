@@ -11,7 +11,7 @@ import com.android.tools.r8.graph.DexType;
 import com.android.tools.r8.graph.lens.GraphLens;
 import com.android.tools.r8.ir.analysis.type.ReferenceTypeElement;
 import com.android.tools.r8.naming.NamingLens;
-import com.android.tools.r8.utils.exceptions.Unreachable;
+import com.android.tools.r8.utils.internal.exceptions.Unreachable;
 import org.objectweb.asm.Opcodes;
 
 public class InitializedNonNullReferenceFrameTypeWithoutInterfaces

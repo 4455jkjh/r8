@@ -13,7 +13,7 @@ import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.jasmin.JasminBuilder;
 import com.android.tools.r8.jasmin.JasminBuilder.ClassBuilder;
 import com.android.tools.r8.jasmin.JasminTestBase;
-import com.android.tools.r8.utils.BooleanUtils;
+import com.android.tools.r8.utils.internal.BooleanUtils;
 import com.android.tools.r8.utils.UnverifiableCfCodeDiagnostic;
 import com.google.common.collect.ImmutableList;
 import java.util.Collection;

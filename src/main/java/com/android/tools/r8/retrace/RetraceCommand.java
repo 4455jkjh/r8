@@ -7,7 +7,7 @@ package com.android.tools.r8.retrace;
 import com.android.tools.r8.DiagnosticsHandler;
 import com.android.tools.r8.keepanno.annotations.KeepForApi;
 import com.android.tools.r8.retrace.internal.StackTraceRegularExpressionParser;
-import com.android.tools.r8.utils.Box;
+import com.android.tools.r8.utils.internal.Box;
 import java.util.List;
 import java.util.function.Consumer;
 

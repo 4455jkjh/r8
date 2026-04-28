@@ -14,7 +14,7 @@ import com.android.tools.r8.keepanno.annotations.KeepItemKind;
 import com.android.tools.r8.keepanno.annotations.UsedByReflection;
 import com.android.tools.r8.metadata.R8StatsMetadata;
 import com.android.tools.r8.shaking.KeepInfo;
-import com.android.tools.r8.utils.BooleanUtils;
+import com.android.tools.r8.utils.internal.BooleanUtils;
 import com.android.tools.r8.utils.InternalOptions;
 import com.google.gson.annotations.Expose;
 import com.google.gson.annotations.SerializedName;

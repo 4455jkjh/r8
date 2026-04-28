@@ -17,7 +17,7 @@ import com.android.tools.r8.shaking.reflection.MockitoTest.Helpers.ShouldNotBeMe
 import com.android.tools.r8.shaking.reflection.MockitoTest.Helpers.SpyImpl1;
 import com.android.tools.r8.shaking.reflection.MockitoTest.Helpers.SpyImpl2;
 import com.android.tools.r8.shaking.reflection.MockitoTest.Helpers.SpyInterface;
-import com.android.tools.r8.utils.BooleanUtils;
+import com.android.tools.r8.utils.internal.BooleanUtils;
 import com.android.tools.r8.utils.codeinspector.InstructionSubject;
 import java.io.IOException;
 import java.util.Arrays;

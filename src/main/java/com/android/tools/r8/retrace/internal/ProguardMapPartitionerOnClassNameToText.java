@@ -26,7 +26,7 @@ import com.android.tools.r8.retrace.internal.ProguardMapReaderWithFiltering.Prog
 import com.android.tools.r8.utils.ExceptionDiagnostic;
 import com.android.tools.r8.utils.StringDiagnostic;
 import com.android.tools.r8.utils.StringUtils;
-import com.android.tools.r8.utils.TriConsumer;
+import com.android.tools.r8.utils.internal.TriConsumer;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;

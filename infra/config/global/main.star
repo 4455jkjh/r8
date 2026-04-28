@@ -156,6 +156,14 @@ luci.gitiles_poller(
 )
 
 luci.gitiles_poller(
+    name = "branch-gitiles-9.3-forward",
+    bucket = "ci",
+    repo = "https://r8.googlesource.com/r8",
+    refs = ["refs/heads/([9]\\.([3-9]|[1-9][0-9])+(\\.[0-9]+)?|[9]\\.[0-9]+(\\.[0-9]+)?)"],
+    path_regexps = ["src/main/java/com/android/tools/r8/Version.java"],
+)
+
+luci.gitiles_poller(
     name = "branch-gitiles-8.5-forward",
     bucket = "ci",
     repo = "https://r8.googlesource.com/r8",
@@ -301,6 +309,7 @@ def r8_tester(
         test_options,
         bucket = "ci",
         trigger = True,
+        priority = 26,
         dimensions = None,
         execution_timeout = default_timeout,
         expiration_timeout = time.hour * 35,
@@ -325,6 +334,7 @@ def r8_tester(
             r8_builder(
                 name = n,
                 bucket = b,
+                priority = priority,
                 trigger = actual_trigger,
                 category = category,
                 execution_timeout = execution_timeout,
@@ -339,6 +349,7 @@ def r8_tester_with_default(
         name,
         test_options,
         bucket = "ci",
+        priority = 26,
         trigger = True,
         dimensions = None,
         category = None,
@@ -350,6 +361,7 @@ def r8_tester_with_default(
         name,
         test_options + common_test_options,
         bucket = bucket,
+        priority = priority,
         trigger = trigger,
         dimensions = dimensions,
         category = category,
@@ -434,7 +446,7 @@ def perf():
                 max_concurrent_invocations = 3,
             ),
             release_trigger = ["branch-gitiles-8.9-forward"],
-            priority = 25,
+            priority = 30,
             properties = properties,
             execution_timeout = time.hour * 6,
             expiration_timeout = time.hour * 35,
@@ -450,7 +462,7 @@ def perf():
             max_concurrent_invocations = 3,
         ),
         release_trigger = ["branch-gitiles-9.2-forward"],
-        priority = 25,
+        priority = 30,
         properties = {
             "test_wrapper": "tools/analyze_gmaven.py",
             "builder_group": "internal.client.r8",
@@ -469,7 +481,7 @@ def gradle_benchmark():
         triggering_policy = scheduler.policy(
             kind = scheduler.GREEDY_BATCHING_KIND,
             max_batch_size = 1,
-            max_concurrent_invocations = 1,
+            max_concurrent_invocations = 3,
         ),
         priority = 35,
         properties = {
@@ -493,6 +505,7 @@ r8_tester_with_default(
     "compile-only",
     [],
     bucket = "try",
+    priority = 20,
 )
 
 presubmit_testers = [
@@ -639,6 +652,12 @@ r8_tester_with_default(
     ["--dex_vm=16.0.0", "--all_tests", "--command_cache_dir=.ccache"],
     dimensions = get_dimensions(tester = True),
     release_trigger = ["branch-gitiles-9.0-forward"],
+)
+r8_tester_with_default(
+    "linux-android-17",
+    ["--dex_vm=17.0.0", "--all_tests", "--command_cache_dir=.ccache"],
+    dimensions = get_dimensions(tester = True),
+    release_trigger = ["branch-gitiles-9.3-forward"],
 )
 
 r8_tester_with_default(

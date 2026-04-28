@@ -33,7 +33,16 @@ val mainSourcesScope by configurations.dependencyScope("mainSourcesScope")
 val mainSourcesConfig by
   configurations.resolvable("mainSourcesConfig") { extendsFrom(mainSourcesScope) }
 
+val assistantJarScope by configurations.dependencyScope("assistantJarScope")
+val assistantJarConfig by
+  configurations.resolvable("assistantJarConfig") { extendsFrom(assistantJarScope) }
+val blastRadiusSourcesScope by configurations.dependencyScope("blastRadiusSourcesScope")
+val blastRadiusSourcesConfig by
+  configurations.resolvable("blastRadiusSourcesConfig") { extendsFrom(blastRadiusSourcesScope) }
+
 dependencies {
+  assistantJarScope(project(":assistant", "assistantJar"))
+  blastRadiusSourcesScope(project(":blastradius", "blastradiusSources"))
   testJarsScope(project(":tests_java_8", "testJar"))
   testJarsScope(project(":tests_java_9", "testJar"))
   testJarsScope(project(":tests_java_11", "testJar"))
@@ -47,7 +56,6 @@ dependencies {
   mainSourcesScope(project(":main", "mainSources"))
 }
 
-val blastRadiusSourcesTask = projectTask("blastradius", "sourcesJar")
 val keepAnnoCompileTask = projectTask("keepanno", "compileJava")
 val keepAnnoCompileKotlinTask = projectTask("keepanno", "compileKotlin")
 val keepAnnoSourcesTask = projectTask("keepanno", "sourcesJar")
@@ -58,7 +66,6 @@ val libanalyzerSourcesConfig by
 
 dependencies { libanalyzerSourcesScope(project(":libanalyzer", "libanalyzer-sources-jar")) }
 
-val assistantJarTask = projectTask("assistant", "jar")
 val mainProtoJarTask = project(":dist").tasks.getByName("protoJar")
 val mainDepsJarTask = project(":dist").tasks.getByName("depsJar")
 val swissArmyKnifeTask = project(":dist").tasks.getByName("swissArmyKnife")
@@ -230,12 +237,12 @@ tasks {
       generatedKeepRulesProvider,
       inputJarProvider,
       r8WithRelocatedDepsTask,
-      assistantJarTask,
+      assistantJarConfig,
     )
     dependOnPythonScripts()
     val inputJar = inputJarProvider.getSingleOutputFile()
     val r8WithRelocatedDepsJar = r8WithRelocatedDepsTask.getSingleOutputFile()
-    val assistantJar = assistantJarTask.getSingleOutputFile()
+    val assistantJar = assistantJarConfig.singleFile
     val keepRuleFiles =
       listOf(
         getRoot().resolveAll("src", "main", "keep.txt"),
@@ -554,12 +561,12 @@ tasks {
 
   val packageSources by
     registering(Jar::class) {
-      dependsOn(blastRadiusSourcesTask)
+      dependsOn(blastRadiusSourcesConfig)
       dependsOn(keepAnnoSourcesTask)
       dependsOn(libanalyzerSourcesConfig)
       dependsOn(resourceShrinkerSourcesTask)
       dependsOn(mainSourcesConfig)
-      from(blastRadiusSourcesTask.outputs.files.map(::zipTree))
+      from(blastRadiusSourcesConfig.map(::zipTree))
       from(keepAnnoSourcesTask.outputs.files.map(::zipTree))
       from(libanalyzerSourcesConfig.map(::zipTree))
       from(mainSourcesConfig.map(::zipTree))

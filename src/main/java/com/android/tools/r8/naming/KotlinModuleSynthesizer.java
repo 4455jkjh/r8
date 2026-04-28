@@ -4,7 +4,7 @@
 
 package com.android.tools.r8.naming;
 
-import static com.android.tools.r8.utils.FunctionUtils.ignoreArgument;
+import static com.android.tools.r8.utils.internal.FunctionUtils.ignoreArgument;
 
 import com.android.tools.r8.DataEntryResource;
 import com.android.tools.r8.graph.AppView;
@@ -15,9 +15,9 @@ import com.android.tools.r8.graph.lens.GraphLens;
 import com.android.tools.r8.kotlin.KotlinClassLevelInfo;
 import com.android.tools.r8.kotlin.KotlinMultiFileClassPartInfo;
 import com.android.tools.r8.origin.Origin;
-import com.android.tools.r8.utils.Box;
+import com.android.tools.r8.utils.internal.Box;
 import com.android.tools.r8.utils.FileUtils;
-import com.android.tools.r8.utils.collections.Pair;
+import com.android.tools.r8.utils.internal.collections.Pair;
 import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
 import java.util.Collections;

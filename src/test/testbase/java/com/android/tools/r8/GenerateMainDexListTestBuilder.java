@@ -6,7 +6,7 @@ package com.android.tools.r8;
 import com.android.tools.r8.GenerateMainDexListCommand.Builder;
 import com.android.tools.r8.origin.Origin;
 import com.android.tools.r8.utils.InternalOptions;
-import com.android.tools.r8.utils.exceptions.Unimplemented;
+import com.android.tools.r8.utils.internal.exceptions.Unimplemented;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;

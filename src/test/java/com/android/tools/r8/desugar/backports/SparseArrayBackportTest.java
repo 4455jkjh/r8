@@ -4,12 +4,14 @@
 
 package com.android.tools.r8.desugar.backports;
 
+import static com.android.tools.r8.DiagnosticsMatcher.diagnosticMessage;
 import static org.hamcrest.CoreMatchers.containsString;
 
+import com.android.tools.r8.TestBuilder;
+import com.android.tools.r8.TestDiagnosticMessages;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.utils.AndroidApiLevel;
 import com.google.common.collect.ImmutableList;
-import java.io.IOException;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -25,7 +27,7 @@ public class SparseArrayBackportTest extends AbstractBackportTest {
     return getTestParameters().withAllRuntimes().withAllApiLevelsAlsoForCf().build();
   }
 
-  public SparseArrayBackportTest(TestParameters parameters) throws IOException {
+  public SparseArrayBackportTest(TestParameters parameters) {
     super(
         parameters,
         SparseArrayBackportTest.getSparseArray(parameters),
@@ -52,7 +54,30 @@ public class SparseArrayBackportTest extends AbstractBackportTest {
         .assertFailureWithErrorThatMatches(containsString("Failed: set should not be called"));
   }
 
-  private static byte[] getSparseArray(TestParameters parameters) throws IOException {
+  @Override
+  protected void configureProgram(TestBuilder<?, ?> builder) throws Exception {
+    super.configureProgram(builder);
+    if (builder.isR8TestBuilder()) {
+      builder.asR8TestBuilder().allowDiagnosticInfoMessages();
+    }
+  }
+
+  @Override
+  protected void checkDiagnostics(TestDiagnosticMessages diagnostics, boolean isR8) {
+    if (isR8) {
+      diagnostics
+          .assertOnlyInfos()
+          .assertInfosMatch(
+              diagnosticMessage(
+                  containsString(
+                      "Type android.util.SparseArray is defined by both the program: <unknown> and"
+                          + " the library")));
+    } else {
+      super.checkDiagnostics(diagnostics, isR8);
+    }
+  }
+
+  private static byte[] getSparseArray(TestParameters parameters) {
     if (parameters.getApiLevel().isGreaterThanOrEqualTo(AndroidApiLevel.S)) {
       return transformer(SparseArrayAndroid12.class)
           .setClassDescriptor(SPARSE_ARRAY_DESCRIPTOR)
@@ -62,7 +87,7 @@ public class SparseArrayBackportTest extends AbstractBackportTest {
     }
   }
 
-  private static byte[] getTestRunner() throws IOException {
+  private static byte[] getTestRunner() {
     return transformer(TestRunner.class)
         .replaceClassDescriptorInMethodInstructions(
             descriptor(SparseArray.class), SPARSE_ARRAY_DESCRIPTOR)

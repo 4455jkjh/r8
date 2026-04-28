@@ -4,7 +4,7 @@
 
 package com.android.tools.r8.ir.optimize.classinliner.analysis;
 
-import com.android.tools.r8.utils.IntObjToObjFunction;
+import com.android.tools.r8.utils.internal.IntObjToObjFunction;
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 
 public class BottomParameterUsages extends ParameterUsages {

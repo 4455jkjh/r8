@@ -15,7 +15,7 @@ import com.android.tools.r8.naming.keeppackagenames.Top;
 import com.android.tools.r8.naming.keeppackagenames.sub.SubClass;
 import com.android.tools.r8.utils.codeinspector.ClassSubject;
 import com.android.tools.r8.utils.codeinspector.CodeInspector;
-import com.android.tools.r8.utils.exceptions.Unreachable;
+import com.android.tools.r8.utils.internal.exceptions.Unreachable;
 import com.google.common.collect.ImmutableList;
 import java.util.List;
 import org.junit.Test;

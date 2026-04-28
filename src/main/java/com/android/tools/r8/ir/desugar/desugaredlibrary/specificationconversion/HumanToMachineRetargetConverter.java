@@ -19,7 +19,7 @@ import com.android.tools.r8.ir.desugar.desugaredlibrary.machinespecification.Der
 import com.android.tools.r8.ir.desugar.desugaredlibrary.machinespecification.EmulatedDispatchMethodDescriptor;
 import com.android.tools.r8.ir.desugar.desugaredlibrary.machinespecification.MachineRewritingFlags;
 import com.android.tools.r8.ir.desugar.desugaredlibrary.machinespecification.MachineSyntheticKind;
-import com.android.tools.r8.utils.TraversalContinuation;
+import com.android.tools.r8.utils.internal.TraversalContinuation;
 import com.google.common.collect.Sets;
 import java.util.LinkedHashMap;
 import java.util.Map;

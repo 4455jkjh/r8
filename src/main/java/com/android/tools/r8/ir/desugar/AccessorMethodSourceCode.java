@@ -8,7 +8,7 @@ import com.android.tools.r8.graph.CfCode;
 import com.android.tools.r8.graph.DexMethod;
 import com.android.tools.r8.graph.DexMethodHandle.MethodHandleType;
 import com.android.tools.r8.ir.synthetic.ForwardMethodBuilder;
-import com.android.tools.r8.utils.exceptions.Unreachable;
+import com.android.tools.r8.utils.internal.exceptions.Unreachable;
 
 // Source code representing synthesized accessor method.
 
@@ -41,7 +41,7 @@ public class AccessorMethodSourceCode {
         }
       case INVOKE_CONSTRUCTOR:
         {
-          forwardMethodBuilder.setConstructorTargetWithNewInstance(target);
+          forwardMethodBuilder.setConstructorTargetWithNewInstance(target.getHolderType(), target);
           break;
         }
       default:

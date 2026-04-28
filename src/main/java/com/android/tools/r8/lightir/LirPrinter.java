@@ -21,10 +21,10 @@ import com.android.tools.r8.ir.optimize.outliner.bottomup.Outline;
 import com.android.tools.r8.lightir.LirBuilder.IntSwitchPayload;
 import com.android.tools.r8.lightir.LirBuilder.StringSwitchPayload;
 import com.android.tools.r8.naming.dexitembasedstring.NameComputationInfo;
-import com.android.tools.r8.utils.IntUtils;
-import com.android.tools.r8.utils.LongUtils;
+import com.android.tools.r8.utils.internal.IntUtils;
+import com.android.tools.r8.utils.internal.LongUtils;
 import com.android.tools.r8.utils.StringUtils;
-import com.android.tools.r8.utils.exceptions.Unimplemented;
+import com.android.tools.r8.utils.internal.exceptions.Unimplemented;
 import java.util.Arrays;
 import java.util.List;
 

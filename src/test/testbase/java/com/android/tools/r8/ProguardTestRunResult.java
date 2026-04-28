@@ -9,7 +9,7 @@ import static org.junit.Assert.assertNotNull;
 import com.android.tools.r8.ToolHelper.ProcessResult;
 import com.android.tools.r8.naming.retrace.StackTrace;
 import com.android.tools.r8.utils.AndroidApp;
-import com.android.tools.r8.utils.ThrowingConsumer;
+import com.android.tools.r8.utils.internal.ThrowingConsumer;
 import com.android.tools.r8.utils.codeinspector.CodeInspector;
 import java.io.IOException;
 

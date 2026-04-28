@@ -6,7 +6,7 @@ package com.android.tools.r8.verticalclassmerging.policies;
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.DexProgramClass;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
-import com.android.tools.r8.utils.TraversalContinuation;
+import com.android.tools.r8.utils.internal.TraversalContinuation;
 import com.android.tools.r8.verticalclassmerging.InvokeSpecialToDefaultLibraryMethodUseRegistry;
 import com.android.tools.r8.verticalclassmerging.VerticalMergeGroup;
 

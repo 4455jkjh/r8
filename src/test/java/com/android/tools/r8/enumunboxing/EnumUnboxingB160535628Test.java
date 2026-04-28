@@ -8,7 +8,7 @@ import static org.hamcrest.core.StringContains.containsString;
 
 import com.android.tools.r8.R8TestCompileResult;
 import com.android.tools.r8.TestParameters;
-import com.android.tools.r8.utils.BooleanUtils;
+import com.android.tools.r8.utils.internal.BooleanUtils;
 import java.nio.file.Path;
 import java.util.List;
 import org.junit.Test;

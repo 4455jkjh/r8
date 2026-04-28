@@ -6,7 +6,7 @@ package com.android.tools.r8.cf.code.frame;
 
 import com.android.tools.r8.graph.lens.GraphLens;
 import com.android.tools.r8.naming.NamingLens;
-import com.android.tools.r8.utils.exceptions.Unreachable;
+import com.android.tools.r8.utils.internal.exceptions.Unreachable;
 
 public class TwoWord extends SingletonFrameType implements WideFrameType {
 

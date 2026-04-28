@@ -6,11 +6,11 @@ package com.android.tools.r8.ir.optimize.classinliner.analysis;
 
 import com.android.tools.r8.ir.code.AssumeAndCheckCastAliasedValueConfiguration;
 import com.android.tools.r8.ir.code.Value;
-import com.android.tools.r8.utils.ArrayUtils;
 import com.android.tools.r8.utils.Int2ObjectMapUtils;
-import com.android.tools.r8.utils.IntObjConsumer;
-import com.android.tools.r8.utils.IntObjPredicate;
-import com.android.tools.r8.utils.IntObjToObjFunction;
+import com.android.tools.r8.utils.internal.ArrayUtils;
+import com.android.tools.r8.utils.internal.IntObjConsumer;
+import com.android.tools.r8.utils.internal.IntObjPredicate;
+import com.android.tools.r8.utils.internal.IntObjToObjFunction;
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 import java.util.ArrayList;

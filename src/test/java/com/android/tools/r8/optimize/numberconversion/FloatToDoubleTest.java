@@ -8,7 +8,7 @@ import static org.junit.Assume.assumeFalse;
 
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.ir.code.NumericType;
-import com.android.tools.r8.utils.LongUtils;
+import com.android.tools.r8.utils.internal.LongUtils;
 import java.util.List;
 import org.junit.Test;
 import org.junit.runner.RunWith;

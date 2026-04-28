@@ -8,7 +8,7 @@ import com.android.tools.r8.graph.AppInfoWithClassHierarchy;
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.DexItemFactory;
 import com.android.tools.r8.graph.ProgramField;
-import com.android.tools.r8.utils.DequeUtils;
+import com.android.tools.r8.utils.internal.DequeUtils;
 import com.android.tools.r8.utils.collections.ProgramFieldMap;
 import com.android.tools.r8.utils.collections.ProgramFieldSet;
 import com.google.common.collect.Sets;

@@ -39,7 +39,7 @@ public class AtomicFieldUpdaterCompareAndSetTest extends AtomicFieldUpdaterBase 
   public void testR8() throws Exception {
     Class<TestClass> testClass = TestClass.class;
     boolean isCompareAndSetBackported =
-        isOptimizationOn() && parameters.getApiLevel().isLessThan(AndroidApiLevel.Sv2);
+        parameters.isDexRuntime() && parameters.getApiLevel().isLessThan(AndroidApiLevel.Sv2);
     testForR8(parameters)
         .apply(this::enableAtomicFieldUpdaterWithInfo)
         .addProgramClasses(testClass)
@@ -51,9 +51,7 @@ public class AtomicFieldUpdaterCompareAndSetTest extends AtomicFieldUpdaterBase 
               List<Matcher<Diagnostic>> matchers = new ArrayList<>(4);
               matchers.add(diagnosticMessage(containsString("Can instrument")));
               matchers.add(diagnosticMessage(containsString("Can optimize")));
-              // TODO(b/453628974): The field should be removed once nullability analysis is
-              //                    more precise.
-              // matchers.add(diagnosticMessage(containsString("Can remove")));
+              matchers.add(diagnosticMessage(containsString("Can remove")));
               if (isCompareAndSetBackported) {
                 // Another call is inserted by the inlined backport.
                 matchers.add(diagnosticMessage(containsString("Can optimize")));

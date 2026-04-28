@@ -7,8 +7,8 @@ package com.android.tools.r8;
 import com.android.tools.r8.errors.CompilationError;
 import com.android.tools.r8.errors.InternalCompilerError;
 import com.android.tools.r8.utils.AndroidApiLevel;
-import com.android.tools.r8.utils.exceptions.Unimplemented;
-import com.android.tools.r8.utils.exceptions.Unreachable;
+import com.android.tools.r8.utils.internal.exceptions.Unimplemented;
+import com.android.tools.r8.utils.internal.exceptions.Unreachable;
 import java.nio.file.Path;
 import java.util.function.UnaryOperator;
 

@@ -5,7 +5,7 @@
 package com.android.tools.r8.utils.codeinspector;
 
 import static com.android.tools.r8.TestBase.toDexType;
-import static com.android.tools.r8.utils.ConsumerUtils.emptyConsumer;
+import static com.android.tools.r8.utils.internal.ConsumerUtils.emptyConsumer;
 import static org.junit.Assert.assertTrue;
 
 import com.android.tools.r8.graph.DexItemFactory;

@@ -14,7 +14,7 @@ import com.android.tools.r8.TestCompilerBuilder;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.references.MethodReference;
 import com.android.tools.r8.rewrite.assertions.assertionhandler.AssertionHandlers;
-import com.android.tools.r8.utils.BooleanUtils;
+import com.android.tools.r8.utils.internal.BooleanUtils;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Collection;

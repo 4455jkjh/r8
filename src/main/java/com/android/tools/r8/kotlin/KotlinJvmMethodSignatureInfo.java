@@ -4,7 +4,7 @@
 
 package com.android.tools.r8.kotlin;
 
-import static com.android.tools.r8.utils.FunctionUtils.forEachApply;
+import static com.android.tools.r8.utils.internal.FunctionUtils.forEachApply;
 
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.DexEncodedMethod;

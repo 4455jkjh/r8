@@ -13,6 +13,7 @@ import com.android.tools.r8.errors.CompilationError;
 import com.android.tools.r8.origin.Origin;
 import com.android.tools.r8.origin.PathOrigin;
 import com.android.tools.r8.position.Position;
+import com.android.tools.r8.utils.internal.TriFunction;
 import com.google.common.collect.ObjectArrays;
 import java.io.IOException;
 import java.nio.file.FileSystemException;

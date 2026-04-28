@@ -7,7 +7,7 @@ import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.DexType;
 import com.android.tools.r8.ir.analysis.value.AbstractValueJoiner;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
-import com.android.tools.r8.utils.Action;
+import com.android.tools.r8.utils.internal.Action;
 
 public class UnusedClassTypeValueState extends UnusedValueState {
 

@@ -13,15 +13,25 @@ import com.android.tools.r8.graph.MethodResolutionResult.SingleResolutionResult;
 import com.android.tools.r8.ir.analysis.type.TypeElement;
 import com.android.tools.r8.ir.code.Value;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
+import java.util.Collections;
 import java.util.List;
 
 public class JavaLangObjectsSideEffectCollection {
 
+  public static boolean toStringMayHaveSideEffects(AppView<?> appView, Value value) {
+    return toStringMayHaveSideEffects(appView, Collections.singletonList(value));
+  }
+
+  /** Returns whether String.valueOf(value) might have side-effects. */
   public static boolean toStringMayHaveSideEffects(AppView<?> appView, List<Value> arguments) {
     // Calling toString() on an array does not call toString() on the array elements.
     DexItemFactory dexItemFactory = appView.dexItemFactory();
-    TypeElement type = arguments.get(0).getType();
-    if (type.isArrayType() || type.isNullType()) {
+    Value value = arguments.get(0);
+    TypeElement type = value.getType();
+    if (type.isPrimitiveType()
+        || type.isStringType(dexItemFactory)
+        || type.isArrayType()
+        || value.isAlwaysNull(appView)) {
       return false;
     }
 

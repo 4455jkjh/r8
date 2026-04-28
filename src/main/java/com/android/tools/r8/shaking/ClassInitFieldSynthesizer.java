@@ -16,7 +16,7 @@ import com.android.tools.r8.graph.FieldAccessFlags;
 import com.android.tools.r8.graph.lens.InitClassLens;
 import com.android.tools.r8.utils.ThreadUtils;
 import com.android.tools.r8.utils.Visibility;
-import com.android.tools.r8.utils.exceptions.Unreachable;
+import com.android.tools.r8.utils.internal.exceptions.Unreachable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 

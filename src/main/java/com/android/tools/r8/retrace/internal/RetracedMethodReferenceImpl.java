@@ -8,7 +8,7 @@ import com.android.tools.r8.references.MethodReference;
 import com.android.tools.r8.references.TypeReference;
 import com.android.tools.r8.retrace.RetracedMethodReference;
 import com.android.tools.r8.utils.ComparatorUtils;
-import com.android.tools.r8.utils.ObjectUtils;
+import com.android.tools.r8.utils.internal.ObjectUtils;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;

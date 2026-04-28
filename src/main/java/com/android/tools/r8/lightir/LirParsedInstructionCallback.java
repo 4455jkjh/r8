@@ -24,10 +24,10 @@ import com.android.tools.r8.lightir.LirBuilder.RecordFieldValuesPayload;
 import com.android.tools.r8.lightir.LirBuilder.StringConcatPayload;
 import com.android.tools.r8.lightir.LirBuilder.StringSwitchPayload;
 import com.android.tools.r8.naming.dexitembasedstring.NameComputationInfo;
-import com.android.tools.r8.utils.IntUtils;
-import com.android.tools.r8.utils.LongUtils;
-import com.android.tools.r8.utils.exceptions.Unimplemented;
-import com.android.tools.r8.utils.exceptions.Unreachable;
+import com.android.tools.r8.utils.internal.IntUtils;
+import com.android.tools.r8.utils.internal.LongUtils;
+import com.android.tools.r8.utils.internal.exceptions.Unimplemented;
+import com.android.tools.r8.utils.internal.exceptions.Unreachable;
 import java.util.ArrayList;
 import java.util.List;
 

@@ -14,7 +14,7 @@ import com.android.tools.r8.ToolHelper.DexVm.Version;
 import com.android.tools.r8.jdk9.twr.twraddsuppressed.asm.TestClass$MyClosableDump;
 import com.android.tools.r8.jdk9.twr.twraddsuppressed.asm.TestClassDump;
 import com.android.tools.r8.utils.AndroidApiLevel;
-import com.android.tools.r8.utils.IntBox;
+import com.android.tools.r8.utils.internal.IntBox;
 import com.android.tools.r8.utils.StringUtils;
 import com.android.tools.r8.utils.codeinspector.ClassSubject;
 import com.android.tools.r8.utils.codeinspector.InstructionSubject;

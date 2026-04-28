@@ -7,7 +7,7 @@ import static com.android.tools.r8.utils.codeinspector.Matchers.isAbsentIf;
 import static com.android.tools.r8.utils.codeinspector.Matchers.isPresent;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.assertFalse;
 
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
@@ -41,7 +41,8 @@ public class AllowCodeReplacementTest extends TestBase {
             "-keepclassmembers,allowshrinking class " + Main.class.getTypeName() + " {",
             "  boolean alwaysFalse();",
             "}")
-        .addOptionsModification(options -> assertTrue(options.testing.allowCodeReplacement))
+        .addOptionsModification(
+            options -> assertFalse(options.testing.decoupleCodeReplacementFromOptimization))
         .setMinApi(parameters)
         .compile()
         .inspect(inspector -> inspect(inspector, false))
@@ -58,7 +59,8 @@ public class AllowCodeReplacementTest extends TestBase {
             "-keepclassmembers,allowshrinking class " + Main.class.getTypeName() + " {",
             "  boolean alwaysFalse();",
             "}")
-        .addOptionsModification(options -> options.testing.allowCodeReplacement = false)
+        .addOptionsModification(
+            options -> options.testing.decoupleCodeReplacementFromOptimization = true)
         .setMinApi(parameters)
         .compile()
         .inspect(inspector -> inspect(inspector, true))
@@ -77,7 +79,8 @@ public class AllowCodeReplacementTest extends TestBase {
                 + " {",
             "  boolean alwaysFalse();",
             "}")
-        .addOptionsModification(options -> options.testing.allowCodeReplacement = false)
+        .addOptionsModification(
+            options -> options.testing.decoupleCodeReplacementFromOptimization = true)
         .enableProguardTestOptions()
         .setMinApi(parameters)
         .compile()

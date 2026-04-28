@@ -8,7 +8,7 @@ import com.android.tools.r8.desugar.desugaredlibrary.DesugaredLibraryTestBase;
 import com.android.tools.r8.references.Reference;
 import com.android.tools.r8.transformers.ClassFileTransformer;
 import com.android.tools.r8.transformers.MethodTransformer;
-import com.android.tools.r8.utils.StreamUtils;
+import com.android.tools.r8.utils.internal.StreamUtils;
 import com.android.tools.r8.utils.ZipUtils;
 import com.google.common.collect.ImmutableMap;
 import java.io.BufferedOutputStream;

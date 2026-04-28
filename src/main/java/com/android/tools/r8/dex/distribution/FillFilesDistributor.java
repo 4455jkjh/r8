@@ -8,7 +8,7 @@ import com.android.tools.r8.dex.ApplicationWriter;
 import com.android.tools.r8.dex.VirtualFile;
 import com.android.tools.r8.graph.DexProgramClass;
 import com.android.tools.r8.profile.startup.profile.StartupProfile;
-import com.android.tools.r8.utils.IntBox;
+import com.android.tools.r8.utils.internal.IntBox;
 import com.android.tools.r8.utils.InternalOptions;
 import com.android.tools.r8.utils.timing.Timing;
 import java.util.Collection;

@@ -6,7 +6,7 @@ package com.android.tools.r8.optimize.serviceloader;
 
 import com.android.tools.r8.NeverInline;
 import com.android.tools.r8.TestParameters;
-import com.android.tools.r8.utils.BooleanUtils;
+import com.android.tools.r8.utils.internal.BooleanUtils;
 import java.util.Iterator;
 import java.util.List;
 import java.util.ServiceLoader;

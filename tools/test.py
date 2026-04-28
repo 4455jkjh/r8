@@ -14,6 +14,7 @@ import subprocess
 import sys
 import time
 import uuid
+import glob
 
 import archive_desugar_jdk_libs
 import download_kotlin
@@ -29,8 +30,8 @@ else:
     import thread
 
 ALL_ART_VMS = [
-    "default", "16.0.0", "15.0.0", "14.0.0", "13.0.0", "12.0.0", "10.0.0",
-    "9.0.0", "8.1.0", "7.0.0", "6.0.1", "5.1.1", "4.4.4", "4.0.4"
+    "default", "17.0.0", "16.0.0", "15.0.0", "14.0.0", "13.0.0", "12.0.0",
+    "10.0.0", "9.0.0", "8.1.0", "7.0.0", "6.0.1", "5.1.1", "4.4.4", "4.0.4"
 ]
 
 # How often do we check for progress on the bots:
@@ -364,10 +365,26 @@ def Main():
     return return_code
 
 
+def clean_temp():
+    patterns = ['/tmp/junit*', '/tmp/tmp*', '/tmp/tree*', '/tmp/r8-*']
+    for pattern in patterns:
+        for p in glob.glob(pattern):
+            if not os.path.exists(p):
+                continue
+            try:
+                if os.path.isdir(p):
+                    shutil.rmtree(p)
+                else:
+                    os.remove(p)
+            except Exception as e:
+                print(f"Failed to delete {p}: {e}")
+
+
 def test(options, args):
     if options.command_cache_dir:
         options.command_cache_dir = os.path.abspath(options.command_cache_dir)
     if utils.is_bot():
+        clean_temp()
         print('Running with python ' + str(sys.version_info))
         # Always print stats on bots if command cache is enabled
         options.command_cache_stats = options.command_cache_dir is not None
@@ -394,10 +411,14 @@ def test(options, args):
             archive_desugar_jdk_libs.CloneDesugaredLibrary(
                 'google', checkout_dir, 'HEAD')
             # Make sure bazel is extracted in third_party.
-            utils.DownloadFromGoogleCloudStorage(utils.BAZEL_SHA_FILE)
-            utils.DownloadFromGoogleCloudStorage(utils.JAVA8_SHA_FILE)
-            utils.DownloadFromGoogleCloudStorage(utils.JAVA11_SHA_FILE)
-            utils.DownloadFromGoogleCloudStorage(utils.JAVA17_SHA_FILE)
+            utils.EnsureDepFromGoogleCloudStorage(utils.BAZEL_SHA_FILE,
+                                                  'Bazel tool')
+            utils.EnsureDepFromGoogleCloudStorage(utils.JAVA8_SHA_FILE,
+                                                  'Java 8 runtime')
+            utils.EnsureDepFromGoogleCloudStorage(utils.JAVA11_SHA_FILE,
+                                                  'Java 11 runtime')
+            utils.EnsureDepFromGoogleCloudStorage(utils.JAVA17_SHA_FILE,
+                                                  'Java 17 runtime')
             (library_jar,
              maven_zip) = archive_desugar_jdk_libs.BuildDesugaredLibrary(
                  checkout_dir, 'jdk11_legacy' if

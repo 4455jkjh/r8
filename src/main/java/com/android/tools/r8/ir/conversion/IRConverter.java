@@ -17,8 +17,6 @@ import com.android.tools.r8.graph.ProgramMethod;
 import com.android.tools.r8.graph.PrunedItems;
 import com.android.tools.r8.graph.bytecodemetadata.BytecodeMetadataProvider;
 import com.android.tools.r8.graph.proto.RewrittenPrototypeDescription;
-import com.android.tools.r8.ir.analysis.TypeChecker;
-import com.android.tools.r8.ir.analysis.VerifyTypesHelper;
 import com.android.tools.r8.ir.analysis.fieldaccess.FieldAccessAnalysis;
 import com.android.tools.r8.ir.analysis.fieldvalueanalysis.InstanceFieldValueAnalysis;
 import com.android.tools.r8.ir.analysis.fieldvalueanalysis.StaticFieldValueAnalysis;
@@ -88,7 +86,7 @@ import com.android.tools.r8.optimize.argumentpropagation.ArgumentPropagatorIROpt
 import com.android.tools.r8.position.MethodPosition;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
 import com.android.tools.r8.shaking.LibraryMethodOverrideAnalysis;
-import com.android.tools.r8.utils.Action;
+import com.android.tools.r8.utils.internal.Action;
 import com.android.tools.r8.utils.DescriptorUtils;
 import com.android.tools.r8.utils.ExceptionUtils;
 import com.android.tools.r8.utils.InternalOptions;
@@ -97,7 +95,7 @@ import com.android.tools.r8.utils.InternalOptions.NeverMergeGroup;
 import com.android.tools.r8.utils.StringDiagnostic;
 import com.android.tools.r8.utils.ThreadUtils;
 import com.android.tools.r8.utils.collections.ProgramMethodSet;
-import com.android.tools.r8.utils.exceptions.Unreachable;
+import com.android.tools.r8.utils.internal.exceptions.Unreachable;
 import com.android.tools.r8.utils.timing.Timing;
 import java.util.Collection;
 import java.util.List;
@@ -125,7 +123,6 @@ public class IRConverter {
   protected final Inliner inliner;
   protected final IdentifierNameStringMarker identifierNameStringMarker;
   private final Devirtualizer devirtualizer;
-  private final TypeChecker typeChecker;
   protected EnumUnboxer enumUnboxer;
   protected final TypeSwitchIRRewriter typeSwitchIRRewriter;
   protected final NumberUnboxer numberUnboxer;
@@ -204,7 +201,6 @@ public class IRConverter {
       this.lensCodeRewriter = null;
       this.identifierNameStringMarker = null;
       this.devirtualizer = null;
-      this.typeChecker = null;
       this.methodOptimizationInfoCollector = null;
       this.enumUnboxer = EnumUnboxer.empty();
       this.typeSwitchIRRewriter = null;
@@ -254,7 +250,6 @@ public class IRConverter {
       }
       this.devirtualizer =
           options.enableDevirtualization ? new Devirtualizer(appViewWithLiveness) : null;
-      this.typeChecker = new TypeChecker(appViewWithLiveness, VerifyTypesHelper.create(appView));
     } else {
       AppView<AppInfo> appViewWithoutClassHierarchy =
           appView.enableWholeProgramOptimizations()
@@ -274,7 +269,6 @@ public class IRConverter {
       this.lensCodeRewriter = null;
       this.identifierNameStringMarker = null;
       this.devirtualizer = null;
-      this.typeChecker = null;
       this.methodOptimizationInfoCollector = null;
       this.enumUnboxer = EnumUnboxer.empty();
       this.typeSwitchIRRewriter = null;
@@ -348,7 +342,7 @@ public class IRConverter {
         executorService);
   }
 
-  public void addWaveDoneAction(com.android.tools.r8.utils.Action action) {
+  public void addWaveDoneAction(com.android.tools.r8.utils.internal.Action action) {
     if (!appView.enableWholeProgramOptimizations()) {
       throw new Unreachable("addWaveDoneAction() should never be used in D8.");
     }
@@ -546,23 +540,6 @@ public class IRConverter {
             || !appView.enableWholeProgramOptimizations()
             || appView.getKeepInfo(context).isReprocessingAllowed(options, context)
         : "Unexpected reprocessing of method: " + context.toSourceString();
-
-    if (typeChecker != null && !typeChecker.check(code)) {
-      assert appView.enableWholeProgramOptimizations();
-      assert options.testing.allowTypeErrors
-          : "Could not type check code for method "
-              + method.toSourceString()
-              + "\nWith Code:\n"
-              + code;
-      StringDiagnostic warning =
-          new StringDiagnostic(
-              "The method `"
-                  + method.toSourceString()
-                  + "` does not type check and will be assumed to be unreachable.");
-      options.reporter.warning(warning);
-      context.convertToThrowNullMethod(appView);
-      return timing;
-    }
 
     // This is the first point in time where we can assert that the types are sound. If this
     // assert fails, then the types that we have inferred are unsound, or the method does not type

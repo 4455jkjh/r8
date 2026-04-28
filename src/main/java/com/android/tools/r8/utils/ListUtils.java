@@ -5,6 +5,9 @@
 package com.android.tools.r8.utils;
 
 import com.android.tools.r8.naming.ClassNamingForNameMapper.MappedRange;
+import com.android.tools.r8.utils.internal.AssertionUtils;
+import com.android.tools.r8.utils.internal.ForEachable;
+import com.android.tools.r8.utils.internal.IntObjToObjFunction;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import it.unimi.dsi.fastutil.ints.IntList;
