@@ -232,6 +232,9 @@ public abstract class R8RunArtTestsTest extends TestBase {
           .put(
               "114-ParallelGC",
               TestCondition.match(TestCondition.runtimesUpTo(DexVm.Version.V4_4_4)))
+          .put(
+              "579-inline-infinite",
+              TestCondition.match(TestCondition.runtimesUpTo(DexVm.Version.V4_4_4)))
           // Seen crash: currently no more information
           .put("144-static-field-sigquit", TestCondition.any())
           // Opens a lot of file descriptors and depending on the state of the machine this
