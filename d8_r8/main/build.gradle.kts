@@ -201,7 +201,6 @@ java {
   withSourcesJar()
 }
 
-val resourceShrinkerJarTask = projectTask("resourceshrinker", "jar")
 val downloadDepsTask = projectTask("shared", "downloadDeps")
 
 fun mainJarDependencies(): FileCollection {
@@ -228,7 +227,7 @@ dependencies {
   implementation(project(":assistant", "assistantJar"))
   implementation(project(":blastradius", "blastradiusJar"))
   implementation(project(":keepanno", "keepannoClasses"))
-  implementation(resourceShrinkerJarTask.outputs.files)
+  implementation(project(":resourceshrinker", "resourceshrinkerJar"))
   implementation(project(":utils"))
   Deps.compilerDeps.forEach { compileOnly(it) }
   errorprone(Deps.errorprone)

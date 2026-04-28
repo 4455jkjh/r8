@@ -21,9 +21,6 @@ java {
 
 val distR8WithRelocatedDeps = project(":dist").tasks.getByName("r8WithRelocatedDeps")
 val distSwissArmyKnife = project(":dist").tasks.getByName("swissArmyKnife")
-val resourceShrinkerCompileJavaTask = projectTask("resourceshrinker", "compileJava")
-val resourceShrinkerCompileKotlinTask = projectTask("resourceshrinker", "compileKotlin")
-val resourceShrinkerDepsJarTask = projectTask("resourceshrinker", "depsJar")
 val sharedDownloadDepsTask = projectTask("shared", "downloadDeps")
 val sharedDownloadDepsInternalTask = projectTask("shared", "downloadDepsInternal")
 
@@ -35,9 +32,8 @@ dependencies {
   keepAnnoClassesScope(project(":keepanno", "keepannoClasses"))
   implementation(project(":keepanno", "keepannoClasses"))
   implementation(project(":main", "mainJar"))
-  implementation(resourceShrinkerCompileJavaTask.outputs.files)
-  implementation(resourceShrinkerCompileKotlinTask.outputs.files)
-  implementation(resourceShrinkerDepsJarTask.outputs.files)
+  implementation(project(":resourceshrinker", "resourceshrinkerClasses"))
+  implementation(project(":resourceshrinker", "resourceshrinkerDepsJar"))
   implementation(project(":testbase"))
   implementation(project(":testbase", "depsJar"))
 }

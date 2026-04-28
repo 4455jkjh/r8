@@ -67,3 +67,22 @@ tasks {
       archiveFileName.set("resourceshrinker_deps.jar")
     }
 }
+
+val resourceshrinkerJar by
+  configurations.consumable("resourceshrinkerJar") { outgoing.artifact(tasks.named<Jar>("jar")) }
+
+val resourceshrinkerDepsJar by
+  configurations.consumable("resourceshrinkerDepsJar") {
+    outgoing.artifact(tasks.named<Jar>("depsJar"))
+  }
+
+val resourceshrinkerSources by
+  configurations.consumable("resourceshrinkerSources") {
+    outgoing.artifact(tasks.named<Jar>("sourcesJar"))
+  }
+
+val resourceshrinkerClasses by
+  configurations.consumable("resourceshrinkerClasses") {
+    outgoing.artifact(tasks.named<JavaCompile>("compileJava").map { it.destinationDirectory })
+    outgoing.artifact(tasks.named<KotlinCompile>("compileKotlin").map { it.destinationDirectory })
+  }

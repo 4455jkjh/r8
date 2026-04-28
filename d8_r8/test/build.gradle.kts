@@ -57,6 +57,12 @@ val keepAnnoClassesScope by configurations.dependencyScope("keepAnnoClassesScope
 val keepAnnoClassesConfig by
   configurations.resolvable("keepAnnoClassesConfig") { extendsFrom(keepAnnoClassesScope) }
 
+val resourceShrinkerSourcesScope by configurations.dependencyScope("resourceShrinkerSourcesScope")
+val resourceShrinkerSourcesConfig by
+  configurations.resolvable("resourceShrinkerSourcesConfig") {
+    extendsFrom(resourceShrinkerSourcesScope)
+  }
+
 dependencies {
   assistantJarScope(project(":assistant", "assistantJar"))
   blastRadiusSourcesScope(project(":blastradius", "blastradiusSources"))
@@ -75,6 +81,7 @@ dependencies {
   testDepsJarsScope(project(":testbase", "depsJar"))
   mainDepsJarFilesScope(project(":dist", "depsJarFiles"))
   mainSourcesScope(project(":main", "mainSources"))
+  resourceShrinkerSourcesScope(project(":resourceshrinker", "resourceshrinkerSources"))
 }
 
 val libanalyzerSourcesScope by configurations.dependencyScope("libanalyzerSourcesScope")
@@ -89,7 +96,6 @@ val swissArmyKnifeTask = project(":dist").tasks.getByName("swissArmyKnife")
 val processKeepRulesLibWithRelocatedDepsTask =
   project(":dist").tasks.getByName("processKeepRulesLibWithRelocatedDeps")
 val r8WithRelocatedDepsTask = project(":dist").tasks.getByName("r8WithRelocatedDeps")
-val resourceShrinkerSourcesTask = projectTask("resourceshrinker", "sourcesJar")
 val keepAnnoToolsWithRelocatedDepsTask =
   project(":dist").tasks.getByName("keepAnnoToolsWithRelocatedDeps")
 
@@ -575,13 +581,13 @@ tasks {
       dependsOn(blastRadiusSourcesConfig)
       dependsOn(keepAnnoSourcesConfig)
       dependsOn(libanalyzerSourcesConfig)
-      dependsOn(resourceShrinkerSourcesTask)
+      dependsOn(resourceShrinkerSourcesConfig)
       dependsOn(mainSourcesConfig)
       from(blastRadiusSourcesConfig.map(::zipTree))
       from(keepAnnoSourcesConfig.map(::zipTree))
       from(libanalyzerSourcesConfig.map(::zipTree))
       from(mainSourcesConfig.map(::zipTree))
-      from(resourceShrinkerSourcesTask.outputs.files.map(::zipTree))
+      from(resourceShrinkerSourcesConfig.map(::zipTree))
       archiveClassifier.set("sources")
       archiveFileName.set("r8-src.jar")
       destinationDirectory.set(getRoot().resolveAll("build", "libs"))

@@ -34,7 +34,9 @@ include(":libanalyzer")
 
 project(":libanalyzer").projectDir = file("d8_r8/libanalyzer")
 
-includeBuild(rootProject.projectDir.resolve("d8_r8/resourceshrinker"))
+include(":resourceshrinker")
+
+project(":resourceshrinker").projectDir = file("d8_r8/resourceshrinker")
 
 include(":main")
 

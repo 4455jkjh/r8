@@ -23,9 +23,11 @@ java {
 val keepAnnoJarScope by configurations.dependencyScope("keepAnnoJarScope")
 val keepAnnoJarConfig by
   configurations.resolvable("keepAnnoJarConfig") { extendsFrom(keepAnnoJarScope) }
-val resourceShrinkerCompileJavaTask = projectTask("resourceshrinker", "compileJava")
-val resourceShrinkerCompileKotlinTask = projectTask("resourceshrinker", "compileKotlin")
-val resourceShrinkerDepsJarTask = projectTask("resourceshrinker", "depsJar")
+val resourceShrinkerDepsJarScope by configurations.dependencyScope("resourceShrinkerDepsJarScope")
+val resourceShrinkerDepsJarConfig by
+  configurations.resolvable("resourceShrinkerDepsJarConfig") {
+    extendsFrom(resourceShrinkerDepsJarScope)
+  }
 val sharedDownloadDepsTask = projectTask("shared", "downloadDeps")
 val sharedDownloadTestDepsTask = projectTask("shared", "downloadTestDeps")
 
@@ -36,9 +38,9 @@ dependencies {
   implementation(project(":main", "mainClassesOutput"))
   implementation(project(":main", "mainResources"))
   implementation(project(":main", "turboClassesOutput"))
-  implementation(resourceShrinkerCompileJavaTask.outputs.files)
-  implementation(resourceShrinkerCompileKotlinTask.outputs.files)
-  implementation(resourceShrinkerDepsJarTask.outputs.files)
+  resourceShrinkerDepsJarScope(project(":resourceshrinker", "resourceshrinkerDepsJar"))
+  implementation(project(":resourceshrinker", "resourceshrinkerClasses"))
+  implementation(project(":resourceshrinker", "resourceshrinkerDepsJar"))
   implementation(Deps.androidxCollection)
   implementation(Deps.androidxTracingDriver)
   implementation(Deps.androidxTracingDriverWire)
@@ -72,7 +74,6 @@ fun testDependencies(): FileCollection {
 
 tasks {
   withType<JavaCompile> {
-    dependsOn(resourceShrinkerCompileJavaTask)
     dependsOn(sharedDownloadDepsTask)
     dependsOn(sharedDownloadTestDepsTask)
   }
@@ -98,12 +99,12 @@ tasks {
   val assembleDepsJar by
     registering(Jar::class) {
       dependsOn(keepAnnoJarConfig)
-      dependsOn(resourceShrinkerDepsJarTask)
+      dependsOn(resourceShrinkerDepsJarConfig)
       dependsOn(sharedDownloadDepsTask)
       dependsOn(sharedDownloadTestDepsTask)
       from(Callable { testDependencies().map(::zipTree) })
       from(keepAnnoJarConfig.map(::zipTree))
-      from(Callable { resourceShrinkerDepsJarTask.outputs.getFiles().map(::zipTree) })
+      from(resourceShrinkerDepsJarConfig.map(::zipTree))
       exclude("com/android/tools/r8/keepanno/annotations/**")
       exclude("androidx/annotation/keep/**")
       duplicatesStrategy = DuplicatesStrategy.EXCLUDE

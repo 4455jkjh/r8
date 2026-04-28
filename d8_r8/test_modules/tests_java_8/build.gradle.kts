@@ -31,6 +31,11 @@ java {
 val keepAnnoClassesScope by configurations.dependencyScope("keepAnnoClassesScope")
 val keepAnnoClassesConfig by
   configurations.resolvable("keepAnnoClassesConfig") { extendsFrom(keepAnnoClassesScope) }
+val resourceShrinkerClassesScope by configurations.dependencyScope("resourceShrinkerClassesScope")
+val resourceShrinkerClassesConfig by
+  configurations.resolvable("resourceShrinkerClassesConfig") {
+    extendsFrom(resourceShrinkerClassesScope)
+  }
 val assistantClassesScope by configurations.dependencyScope("assistantClassesScope")
 val assistantClassesOutput =
   configurations.resolvable("assistantClassesOutput") { extendsFrom(assistantClassesScope) }
@@ -44,9 +49,6 @@ val mainResources = configurations.resolvable("mainResources") { extendsFrom(mai
 val turboClassesScope by configurations.dependencyScope("turboClassesScope")
 val turboClassesOutput =
   configurations.resolvable("turboClassesOutput") { extendsFrom(turboClassesScope) }
-val resourceShrinkerCompileJavaTask = projectTask("resourceshrinker", "compileJava")
-val resourceShrinkerCompileKotlinTask = projectTask("resourceshrinker", "compileKotlin")
-val resourceShrinkerDepsJarTask = projectTask("resourceshrinker", "depsJar")
 val sharedDownloadDepsTask = projectTask("shared", "downloadDeps")
 val sharedDownloadDepsInternalTask = projectTask("shared", "downloadDepsInternal")
 
@@ -64,9 +66,9 @@ dependencies {
   implementation(project(":main", "mainClassesOutput"))
   implementation(project(":main", "mainResources"))
   implementation(project(":main", "turboClassesOutput"))
-  implementation(resourceShrinkerCompileJavaTask.outputs.files)
-  implementation(resourceShrinkerCompileKotlinTask.outputs.files)
-  implementation(resourceShrinkerDepsJarTask.outputs.files)
+  resourceShrinkerClassesScope(project(":resourceshrinker", "resourceshrinkerClasses"))
+  implementation(project(":resourceshrinker", "resourceshrinkerClasses"))
+  implementation(project(":resourceshrinker", "resourceshrinkerDepsJar"))
   implementation(project(":testbase"))
   implementation(project(":testbase", "depsJar"))
 }
@@ -108,7 +110,6 @@ tasks {
   }
   withType<JavaCompile> {
     dependsOn(createArtTests)
-    dependsOn(resourceShrinkerCompileJavaTask)
     dependsOn(sharedDownloadDepsTask)
     dependsOn(":testbase:compileJava")
   }
@@ -166,9 +167,7 @@ tasks {
         File.pathSeparator +
         project.files(assistantClassesOutput).asPath.split(File.pathSeparator)[0] +
         File.pathSeparator +
-        resourceShrinkerCompileJavaTask.outputs.files.getAsPath().split(File.pathSeparator)[0] +
-        File.pathSeparator +
-        resourceShrinkerCompileKotlinTask.outputs.files.getAsPath().split(File.pathSeparator)[1]
+        resourceShrinkerClassesConfig.asPath
     systemProperty("BUILD_PROP_PROCESS_KEEP_RULES_RUNTIME_PATH", r8RuntimePath)
     systemProperty("BUILD_PROP_R8_RUNTIME_PATH", r8RuntimePath)
     systemProperty("R8_DEPS", distDepsFiles.asPath)

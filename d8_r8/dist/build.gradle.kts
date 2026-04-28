@@ -104,6 +104,10 @@ val keepAnnoToolsJarScope by configurations.dependencyScope("keepAnnoToolsJarSco
 val keepAnnoToolsJarConfig by
   configurations.resolvable("keepAnnoToolsJarConfig") { extendsFrom(keepAnnoToolsJarScope) }
 
+val resourceShrinkerJarScope by configurations.dependencyScope("resourceShrinkerJarScope")
+val resourceShrinkerJarConfig by
+  configurations.resolvable("resourceShrinkerJarConfig") { extendsFrom(resourceShrinkerJarScope) }
+
 val libanalyzerJarScope by configurations.dependencyScope("libanalyzerJarScope")
 val libanalyzerJarConfig by
   configurations.resolvable("libanalyzerJarConfig") { extendsFrom(libanalyzerJarScope) }
@@ -128,10 +132,9 @@ dependencies {
   libanalyzerProtoJarScope(project(":libanalyzer", "libanalyzer-proto-jar"))
   mainJarScope(project(":main", "mainJar"))
   mainResourcesScope(project(":main", "mainResources"))
+  resourceShrinkerJarScope(project(":resourceshrinker", "resourceshrinkerJar"))
 }
 
-val resourceShrinkerJarTask = projectTask("resourceshrinker", "jar")
-val resourceShrinkerDepsJarTask = projectTask("resourceshrinker", "depsJar")
 val downloadDepsTask = projectTask("shared", "downloadDeps")
 val downloadTestDepsTask = projectTask("shared", "downloadTestDeps")
 
@@ -327,7 +330,7 @@ tasks {
       from(keepAnnoJarConfig)
       from(libanalyzerJarConfig)
       from(mainJarConfig)
-      from(resourceShrinkerJarTask)
+      from(resourceShrinkerJarConfig)
     }
 
   val swissArmyKnife by
@@ -361,7 +364,7 @@ tasks {
 
   dependencies {
     add(depsJarFilesScope.name, mainJarDependencies())
-    add(depsJarFilesScope.name, files(resourceShrinkerDepsJarTask))
+    add(depsJarFilesScope.name, project(":resourceshrinker", "resourceshrinkerDepsJar"))
     add(depsJarFilesScope.name, files(threadingModuleBlockingJar))
     add(depsJarFilesScope.name, files(threadingModuleSingleThreadedJar))
   }
