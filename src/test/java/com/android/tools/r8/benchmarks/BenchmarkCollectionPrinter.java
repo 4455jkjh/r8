@@ -5,9 +5,9 @@ package com.android.tools.r8.benchmarks;
 
 import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.ToolHelper.ProcessResult;
-import com.android.tools.r8.utils.CollectionUtils;
-import com.android.tools.r8.utils.ListUtils;
+import com.android.tools.r8.utils.internal.CollectionUtils;
 import com.android.tools.r8.utils.internal.IterableUtils;
+import com.android.tools.r8.utils.internal.ListUtils;
 import com.android.tools.r8.utils.internal.StringUtils;
 import com.android.tools.r8.utils.internal.StringUtils.BraceType;
 import com.google.common.base.Strings;

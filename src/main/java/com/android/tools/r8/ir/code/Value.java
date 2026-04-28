@@ -11,7 +11,7 @@ import static com.android.tools.r8.ir.code.Opcodes.CONST_NUMBER;
 import static com.android.tools.r8.ir.code.Opcodes.CONST_STRING;
 import static com.android.tools.r8.ir.code.Opcodes.DEX_ITEM_BASED_CONST_STRING;
 import static com.android.tools.r8.ir.code.Opcodes.INSTANCE_OF;
-import static com.android.tools.r8.utils.MapUtils.ignoreKey;
+import static com.android.tools.r8.utils.internal.MapUtils.ignoreKey;
 
 import com.android.tools.r8.graph.AppInfoWithClassHierarchy;
 import com.android.tools.r8.graph.AppView;

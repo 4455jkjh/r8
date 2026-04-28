@@ -5,7 +5,7 @@ package com.android.tools.r8.optimize.argumentpropagation.propagation;
 
 import static com.android.tools.r8.graph.DexProgramClass.asProgramClassOrNull;
 import static com.android.tools.r8.graph.ProgramField.asProgramFieldOrNull;
-import static com.android.tools.r8.utils.MapUtils.ignoreKey;
+import static com.android.tools.r8.utils.internal.MapUtils.ignoreKey;
 
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.DexField;
@@ -26,7 +26,7 @@ import com.android.tools.r8.optimize.argumentpropagation.codescanner.MethodState
 import com.android.tools.r8.optimize.argumentpropagation.codescanner.MethodStateCollectionByReference;
 import com.android.tools.r8.optimize.argumentpropagation.codescanner.ValueState;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
-import com.android.tools.r8.utils.ListUtils;
+import com.android.tools.r8.utils.internal.ListUtils;
 import com.android.tools.r8.utils.internal.TraversalContinuation;
 import com.android.tools.r8.utils.internal.exceptions.Unreachable;
 import it.unimi.dsi.fastutil.ints.Int2ReferenceMap;

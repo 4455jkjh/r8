@@ -10,7 +10,7 @@ import com.android.tools.r8.graph.lens.GraphLens;
 import com.android.tools.r8.ir.analysis.value.AbstractValue;
 import com.android.tools.r8.ir.analysis.value.UnknownValue;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
-import com.android.tools.r8.utils.ListUtils;
+import com.android.tools.r8.utils.internal.ListUtils;
 import com.android.tools.r8.utils.internal.StringUtils;
 import java.util.ArrayList;
 import java.util.IdentityHashMap;

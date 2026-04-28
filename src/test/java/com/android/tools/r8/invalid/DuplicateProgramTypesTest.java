@@ -24,7 +24,7 @@ import com.android.tools.r8.origin.Origin;
 import com.android.tools.r8.position.Position;
 import com.android.tools.r8.references.Reference;
 import com.android.tools.r8.utils.AndroidApiLevel;
-import com.android.tools.r8.utils.SetUtils;
+import com.android.tools.r8.utils.internal.SetUtils;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;

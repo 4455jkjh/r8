@@ -22,7 +22,7 @@ import com.android.tools.r8.graph.ProgramMethod;
 import com.android.tools.r8.graph.UseRegistry.MethodHandleUse;
 import com.android.tools.r8.graph.lens.GraphLens;
 import com.android.tools.r8.ir.conversion.LensCodeRewriterUtils;
-import com.android.tools.r8.utils.SetUtils;
+import com.android.tools.r8.utils.internal.SetUtils;
 import com.android.tools.r8.utils.internal.exceptions.Unreachable;
 import com.google.common.collect.Sets;
 import java.util.ArrayList;

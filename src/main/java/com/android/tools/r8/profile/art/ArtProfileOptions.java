@@ -10,7 +10,7 @@ import com.android.tools.r8.graph.AppInfo;
 import com.android.tools.r8.graph.DexEncodedMethod;
 import com.android.tools.r8.graph.DexProgramClass;
 import com.android.tools.r8.utils.InternalOptions;
-import com.android.tools.r8.utils.ListUtils;
+import com.android.tools.r8.utils.internal.ListUtils;
 import com.google.common.hash.Hasher;
 import com.google.common.hash.Hashing;
 import java.nio.charset.StandardCharsets;

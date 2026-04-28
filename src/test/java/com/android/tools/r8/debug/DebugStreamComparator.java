@@ -10,7 +10,7 @@ import static org.junit.Assert.fail;
 import com.android.tools.r8.TestRuntime;
 import com.android.tools.r8.debug.DebugTestBase.JUnit3Wrapper.DebuggeeState;
 import com.android.tools.r8.debug.DebugTestBase.JUnit3Wrapper.FrameInspector;
-import com.android.tools.r8.utils.ListUtils;
+import com.android.tools.r8.utils.internal.ListUtils;
 import com.android.tools.r8.utils.internal.StringUtils;
 import com.android.tools.r8.utils.internal.StringUtils.BraceType;
 import com.android.tools.r8.utils.internal.collections.Pair;

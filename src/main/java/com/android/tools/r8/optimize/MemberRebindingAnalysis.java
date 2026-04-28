@@ -3,7 +3,7 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8.optimize;
 
-import static com.android.tools.r8.utils.MapUtils.ignoreKey;
+import static com.android.tools.r8.utils.internal.MapUtils.ignoreKey;
 
 import com.android.tools.r8.graph.AccessControl;
 import com.android.tools.r8.graph.AppView;
@@ -18,11 +18,11 @@ import com.android.tools.r8.graph.MethodResolutionResult.SingleResolutionResult;
 import com.android.tools.r8.graph.ProgramMethod;
 import com.android.tools.r8.ir.code.InvokeType;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
-import com.android.tools.r8.utils.internal.OptionalBool;
 import com.android.tools.r8.utils.ThreadUtils;
+import com.android.tools.r8.utils.collections.ProgramMethodSet;
+import com.android.tools.r8.utils.internal.OptionalBool;
 import com.android.tools.r8.utils.internal.TriConsumer;
 import com.android.tools.r8.utils.internal.collections.Pair;
-import com.android.tools.r8.utils.collections.ProgramMethodSet;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.IdentityHashMap;

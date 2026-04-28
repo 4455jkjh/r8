@@ -15,7 +15,7 @@ import com.android.tools.r8.graph.GenericSignature.ReturnType;
 import com.android.tools.r8.graph.GenericSignature.TypeSignature;
 import com.android.tools.r8.graph.GenericSignature.WildcardIndicator;
 import com.android.tools.r8.graph.GenericSignatureContextBuilder.TypeParameterContext;
-import com.android.tools.r8.utils.ListUtils;
+import com.android.tools.r8.utils.internal.ListUtils;
 import java.util.List;
 import java.util.function.BiPredicate;
 import java.util.function.Predicate;

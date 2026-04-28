@@ -22,8 +22,8 @@ import com.android.tools.r8.ir.desugar.desugaredlibrary.LibraryDesugaringOptions
 import com.android.tools.r8.ir.desugar.desugaredlibrary.apiconversion.DesugaredLibraryWrapperSynthesizerEventConsumer.DesugaredLibraryAPIConverterEventConsumer;
 import com.android.tools.r8.ir.desugar.desugaredlibrary.machinespecification.MachineDesugaredLibrarySpecification;
 import com.android.tools.r8.ir.desugar.itf.InterfaceMethodRewriter;
-import com.android.tools.r8.utils.SetUtils;
 import com.android.tools.r8.utils.StringDiagnostic;
+import com.android.tools.r8.utils.internal.SetUtils;
 import java.util.Collections;
 import java.util.Set;
 

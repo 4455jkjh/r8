@@ -16,7 +16,7 @@ import com.android.tools.r8.ir.desugar.records.RecordDesugaringEventConsumer.Rec
 import com.android.tools.r8.ir.desugar.varhandle.VarHandleDesugaringEventConsumer;
 import com.android.tools.r8.profile.rewriting.ProfileCollectionAdditions;
 import com.android.tools.r8.profile.rewriting.ProfileRewritingCfClassSynthesizerDesugaringEventConsumer;
-import com.android.tools.r8.utils.SetUtils;
+import com.android.tools.r8.utils.internal.SetUtils;
 import java.util.Set;
 
 public abstract class CfClassSynthesizerDesugaringEventConsumer

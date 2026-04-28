@@ -2,14 +2,16 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-package com.android.tools.r8.utils;
+package com.android.tools.r8.utils.internal.dfs;
 
-import static com.android.tools.r8.utils.DepthFirstSearchWorkListBase.ProcessingState.FINISHED;
-import static com.android.tools.r8.utils.DepthFirstSearchWorkListBase.ProcessingState.NOT_PROCESSED;
-import static com.android.tools.r8.utils.DepthFirstSearchWorkListBase.ProcessingState.WAITING;
+import static com.android.tools.r8.utils.internal.dfs.DepthFirstSearchWorkListBase.ProcessingState.FINISHED;
+import static com.android.tools.r8.utils.internal.dfs.DepthFirstSearchWorkListBase.ProcessingState.NOT_PROCESSED;
+import static com.android.tools.r8.utils.internal.dfs.DepthFirstSearchWorkListBase.ProcessingState.WAITING;
 
-import com.android.tools.r8.utils.DepthFirstSearchWorkListBase.DFSNodeImpl;
+import com.android.tools.r8.utils.internal.ListUtils;
+import com.android.tools.r8.utils.internal.MapUtils;
 import com.android.tools.r8.utils.internal.TraversalContinuation;
+import com.android.tools.r8.utils.internal.dfs.DepthFirstSearchWorkListBase.DFSNodeImpl;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;

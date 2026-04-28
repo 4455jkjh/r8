@@ -18,6 +18,8 @@ import com.android.tools.r8.dex.Marker.Tool;
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.DexType;
 import com.android.tools.r8.references.Reference;
+import com.android.tools.r8.utils.internal.ListUtils;
+import com.android.tools.r8.utils.internal.SetUtils;
 import com.android.tools.r8.utils.internal.collections.Pair;
 import com.android.tools.r8.utils.internal.exceptions.Unreachable;
 import java.io.ByteArrayOutputStream;

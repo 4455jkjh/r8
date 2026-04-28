@@ -9,7 +9,7 @@ import static com.android.tools.r8.androidapi.AndroidApiLevelHashingDatabaseImpl
 import static com.android.tools.r8.androidapi.AndroidApiLevelHashingDatabaseImpl.getUniqueDescriptorForReference;
 import static com.android.tools.r8.lightir.ByteUtils.isU2;
 import static com.android.tools.r8.lightir.ByteUtils.setBitAtIndex;
-import static com.android.tools.r8.utils.MapUtils.ignoreKey;
+import static com.android.tools.r8.utils.internal.MapUtils.ignoreKey;
 import static org.junit.Assert.assertEquals;
 
 import com.android.tools.r8.TestBase;

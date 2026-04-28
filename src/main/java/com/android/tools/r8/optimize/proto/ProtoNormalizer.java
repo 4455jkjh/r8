@@ -4,7 +4,7 @@
 
 package com.android.tools.r8.optimize.proto;
 
-import static com.android.tools.r8.utils.MapUtils.ignoreKey;
+import static com.android.tools.r8.utils.internal.MapUtils.ignoreKey;
 
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.DexClass;
@@ -21,16 +21,16 @@ import com.android.tools.r8.graph.proto.RewrittenPrototypeDescription;
 import com.android.tools.r8.ir.conversion.LirConverter;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
 import com.android.tools.r8.shaking.KeepMethodInfo;
-import com.android.tools.r8.utils.DepthFirstSearchWorkListBase.StatefulDepthFirstSearchWorkList;
 import com.android.tools.r8.utils.InternalOptions;
-import com.android.tools.r8.utils.MapUtils;
 import com.android.tools.r8.utils.ThreadUtils;
 import com.android.tools.r8.utils.collections.BidirectionalOneToOneHashMap;
 import com.android.tools.r8.utils.collections.DexMethodSignatureSet;
 import com.android.tools.r8.utils.collections.MutableBidirectionalOneToOneMap;
 import com.android.tools.r8.utils.collections.WorkList;
 import com.android.tools.r8.utils.internal.IterableUtils;
+import com.android.tools.r8.utils.internal.MapUtils;
 import com.android.tools.r8.utils.internal.TraversalContinuation;
+import com.android.tools.r8.utils.internal.dfs.DepthFirstSearchWorkListBase.StatefulDepthFirstSearchWorkList;
 import com.android.tools.r8.utils.internal.exceptions.Unreachable;
 import com.android.tools.r8.utils.timing.Timing;
 import com.google.common.collect.Iterables;

@@ -4,7 +4,7 @@
 
 package com.android.tools.r8.ir.code;
 
-import com.android.tools.r8.utils.ListUtils;
+import com.android.tools.r8.utils.internal.ListUtils;
 
 public class AssumeAndCheckCastAliasedValueConfiguration implements AliasedValueConfiguration {
 

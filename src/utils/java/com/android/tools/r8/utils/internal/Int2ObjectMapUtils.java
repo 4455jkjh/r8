@@ -2,9 +2,8 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-package com.android.tools.r8.utils;
+package com.android.tools.r8.utils.internal;
 
-import com.android.tools.r8.utils.internal.IntObjConsumer;
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
 
 public class Int2ObjectMapUtils {

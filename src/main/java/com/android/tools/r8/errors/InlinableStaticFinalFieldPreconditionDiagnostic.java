@@ -11,7 +11,7 @@ import com.android.tools.r8.position.Position;
 import com.android.tools.r8.references.FieldReference;
 import com.android.tools.r8.shaking.ProguardIfRule;
 import com.android.tools.r8.utils.FieldReferenceUtils;
-import com.android.tools.r8.utils.ListUtils;
+import com.android.tools.r8.utils.internal.ListUtils;
 import com.android.tools.r8.utils.internal.StringUtils;
 import java.util.Collection;
 import java.util.List;

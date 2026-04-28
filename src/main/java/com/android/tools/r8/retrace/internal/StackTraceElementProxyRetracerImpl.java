@@ -27,7 +27,7 @@ import com.android.tools.r8.retrace.Retracer;
 import com.android.tools.r8.retrace.StackTraceElementProxy;
 import com.android.tools.r8.retrace.StackTraceElementProxyRetracer;
 import com.android.tools.r8.utils.internal.Box;
-import com.android.tools.r8.utils.ListUtils;
+import com.android.tools.r8.utils.internal.ListUtils;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.OptionalInt;

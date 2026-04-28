@@ -25,7 +25,7 @@ import com.android.tools.r8.ir.code.InvokeMethodWithReceiver;
 import com.android.tools.r8.ir.code.Return;
 import com.android.tools.r8.ir.code.Value;
 import com.android.tools.r8.utils.internal.BooleanUtils;
-import com.android.tools.r8.utils.SetUtils;
+import com.android.tools.r8.utils.internal.SetUtils;
 import com.android.tools.r8.utils.internal.exceptions.Unreachable;
 import java.util.Set;
 

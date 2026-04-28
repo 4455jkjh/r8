@@ -2,14 +2,9 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-package com.android.tools.r8.utils;
+package com.android.tools.r8.utils.internal;
 
-import com.android.tools.r8.utils.internal.AssertionUtils;
-import com.android.tools.r8.utils.internal.BiForEachable;
-import com.android.tools.r8.utils.internal.StringUtils;
 import com.android.tools.r8.utils.internal.StringUtils.BraceType;
-import com.android.tools.r8.utils.internal.ThrowingBiPredicate;
-import com.android.tools.r8.utils.internal.TriFunction;
 import com.android.tools.r8.utils.internal.exceptions.Unreachable;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableMap;

@@ -5,7 +5,7 @@
 package com.android.tools.r8.utils.collections;
 
 import static com.android.tools.r8.graph.DexProgramClass.asProgramClassOrNull;
-import static com.android.tools.r8.utils.MapUtils.ignoreKey;
+import static com.android.tools.r8.utils.internal.MapUtils.ignoreKey;
 
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.DexMethod;

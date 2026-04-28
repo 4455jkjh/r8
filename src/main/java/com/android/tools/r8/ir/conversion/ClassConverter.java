@@ -17,9 +17,9 @@ import com.android.tools.r8.ir.desugar.CfClassSynthesizerDesugaringEventConsumer
 import com.android.tools.r8.ir.desugar.CfInstructionDesugaringEventConsumer;
 import com.android.tools.r8.ir.desugar.itf.InterfaceProcessor;
 import com.android.tools.r8.profile.rewriting.ProfileCollectionAdditions;
-import com.android.tools.r8.utils.MapUtils;
-import com.android.tools.r8.utils.SetUtils;
 import com.android.tools.r8.utils.ThreadUtils;
+import com.android.tools.r8.utils.internal.MapUtils;
+import com.android.tools.r8.utils.internal.SetUtils;
 import com.android.tools.r8.utils.internal.collections.ImmutableDeque;
 import com.android.tools.r8.utils.timing.Timing;
 import com.google.common.collect.ImmutableList;

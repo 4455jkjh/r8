@@ -4,7 +4,7 @@
 
 package com.android.tools.r8.shaking.assume;
 
-import static com.android.tools.r8.utils.MapUtils.ignoreKey;
+import static com.android.tools.r8.utils.internal.MapUtils.ignoreKey;
 
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.DexClassAndField;
@@ -20,7 +20,7 @@ import com.android.tools.r8.ir.analysis.value.AbstractValue;
 import com.android.tools.r8.ir.code.InvokeMethod;
 import com.android.tools.r8.ir.optimize.membervaluepropagation.assume.AssumeInfo;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
-import com.android.tools.r8.utils.MapUtils;
+import com.android.tools.r8.utils.internal.MapUtils;
 import com.android.tools.r8.utils.timing.Timing;
 import java.util.IdentityHashMap;
 import java.util.Iterator;

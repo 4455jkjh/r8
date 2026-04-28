@@ -6,7 +6,7 @@ package com.android.tools.r8.optimize.argumentpropagation.propagation;
 
 import static com.android.tools.r8.graph.DexProgramClass.asProgramClassOrNull;
 import static com.android.tools.r8.ir.analysis.type.Nullability.definitelyNotNull;
-import static com.android.tools.r8.utils.MapUtils.ignoreKey;
+import static com.android.tools.r8.utils.internal.MapUtils.ignoreKey;
 
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.DexMethodSignature;
@@ -30,8 +30,8 @@ import com.android.tools.r8.optimize.argumentpropagation.codescanner.StateCloner
 import com.android.tools.r8.optimize.argumentpropagation.codescanner.UnknownMethodState;
 import com.android.tools.r8.optimize.argumentpropagation.codescanner.ValueState;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
-import com.android.tools.r8.utils.MapUtils;
 import com.android.tools.r8.utils.collections.DexMethodSignatureSet;
+import com.android.tools.r8.utils.internal.MapUtils;
 import com.android.tools.r8.utils.timing.Timing;
 import java.util.Collection;
 import java.util.Collections;

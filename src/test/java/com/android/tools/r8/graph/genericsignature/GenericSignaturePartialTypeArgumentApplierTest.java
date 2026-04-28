@@ -25,7 +25,7 @@ import com.android.tools.r8.graph.GenericSignaturePartialTypeArgumentApplier;
 import com.android.tools.r8.origin.Origin;
 import com.android.tools.r8.utils.AndroidApp;
 import com.android.tools.r8.utils.internal.BiPredicateUtils;
-import com.android.tools.r8.utils.MapUtils;
+import com.android.tools.r8.utils.internal.MapUtils;
 import com.android.tools.r8.utils.internal.exceptions.Unreachable;
 import com.google.common.collect.ImmutableMap;
 import java.util.Collections;

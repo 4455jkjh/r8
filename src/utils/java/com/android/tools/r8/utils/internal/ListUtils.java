@@ -2,12 +2,8 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-package com.android.tools.r8.utils;
+package com.android.tools.r8.utils.internal;
 
-import com.android.tools.r8.naming.ClassNamingForNameMapper.MappedRange;
-import com.android.tools.r8.utils.internal.AssertionUtils;
-import com.android.tools.r8.utils.internal.ForEachable;
-import com.android.tools.r8.utils.internal.IntObjToObjFunction;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import it.unimi.dsi.fastutil.ints.IntList;
@@ -330,10 +326,6 @@ public class ListUtils {
     for (int i = 0; i < items.size(); i++) {
       consumer.accept(items.get(i), i);
     }
-  }
-
-  public static MappedRange lastOrNull(List<MappedRange> existingMappedRanges) {
-    return existingMappedRanges == null ? null : last(existingMappedRanges);
   }
 
   public interface ReferenceAndIntConsumer<T> {

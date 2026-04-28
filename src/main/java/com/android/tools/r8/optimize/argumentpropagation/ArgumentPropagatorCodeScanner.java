@@ -74,13 +74,13 @@ import com.android.tools.r8.optimize.argumentpropagation.reprocessingcriteria.Pa
 import com.android.tools.r8.optimize.argumentpropagation.unusedarguments.EffectivelyUnusedArgumentsAnalysis;
 import com.android.tools.r8.optimize.argumentpropagation.utils.WideningUtils;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
-import com.android.tools.r8.utils.internal.Action;
 import com.android.tools.r8.utils.DeterminismChecker;
 import com.android.tools.r8.utils.DeterminismChecker.LineCallback;
-import com.android.tools.r8.utils.ListUtils;
-import com.android.tools.r8.utils.internal.TraversalUtils;
 import com.android.tools.r8.utils.collections.ProgramFieldSet;
 import com.android.tools.r8.utils.collections.WorkList;
+import com.android.tools.r8.utils.internal.Action;
+import com.android.tools.r8.utils.internal.ListUtils;
+import com.android.tools.r8.utils.internal.TraversalUtils;
 import com.android.tools.r8.utils.internal.exceptions.Unreachable;
 import com.android.tools.r8.utils.structural.StructuralItem;
 import com.android.tools.r8.utils.timing.Timing;

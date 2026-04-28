@@ -5,7 +5,7 @@
 package com.android.tools.r8.androidapi;
 
 import static com.android.tools.r8.apimodel.JavaSourceCodePrinter.Type.fromType;
-import static com.android.tools.r8.utils.MapUtils.ignoreKey;
+import static com.android.tools.r8.utils.internal.MapUtils.ignoreKey;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 

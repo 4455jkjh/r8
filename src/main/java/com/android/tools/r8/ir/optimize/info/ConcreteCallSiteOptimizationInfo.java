@@ -3,7 +3,7 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8.ir.optimize.info;
 
-import static com.android.tools.r8.utils.MapUtils.canonicalizeEmptyMap;
+import static com.android.tools.r8.utils.internal.MapUtils.canonicalizeEmptyMap;
 import static java.util.Objects.requireNonNull;
 
 import com.android.tools.r8.graph.AppView;

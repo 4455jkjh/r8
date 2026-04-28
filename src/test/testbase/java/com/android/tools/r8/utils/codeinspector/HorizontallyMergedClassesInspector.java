@@ -20,7 +20,7 @@ import com.android.tools.r8.references.ClassReference;
 import com.android.tools.r8.references.Reference;
 import com.android.tools.r8.repackaging.RepackagingLens;
 import com.android.tools.r8.utils.ClassReferenceUtils;
-import com.android.tools.r8.utils.SetUtils;
+import com.android.tools.r8.utils.internal.SetUtils;
 import com.android.tools.r8.utils.internal.StringUtils;
 import com.google.common.collect.Sets;
 import java.util.Arrays;

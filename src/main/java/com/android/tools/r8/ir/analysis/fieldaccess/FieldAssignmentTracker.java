@@ -5,7 +5,7 @@
 package com.android.tools.r8.ir.analysis.fieldaccess;
 
 import static com.android.tools.r8.ir.analysis.type.Nullability.definitelyNotNull;
-import static com.android.tools.r8.utils.MapUtils.ignoreKey;
+import static com.android.tools.r8.utils.internal.MapUtils.ignoreKey;
 
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.DexClassAndMethod;
@@ -49,12 +49,12 @@ import com.android.tools.r8.optimize.argumentpropagation.codescanner.ConcretePri
 import com.android.tools.r8.optimize.argumentpropagation.codescanner.ValueState;
 import com.android.tools.r8.optimize.argumentpropagation.utils.WideningUtils;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
-import com.android.tools.r8.utils.Reference2IntMapUtils;
-import com.android.tools.r8.utils.SetUtils;
 import com.android.tools.r8.utils.ThreadUtils;
-import com.android.tools.r8.utils.internal.TraversalContinuation;
 import com.android.tools.r8.utils.collections.ProgramFieldMap;
 import com.android.tools.r8.utils.collections.ProgramMethodSet;
+import com.android.tools.r8.utils.internal.Reference2IntMapUtils;
+import com.android.tools.r8.utils.internal.SetUtils;
+import com.android.tools.r8.utils.internal.TraversalContinuation;
 import com.google.common.collect.Sets;
 import it.unimi.dsi.fastutil.objects.Reference2IntMap;
 import it.unimi.dsi.fastutil.objects.Reference2IntMap.Entry;

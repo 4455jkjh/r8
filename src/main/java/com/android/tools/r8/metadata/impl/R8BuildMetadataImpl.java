@@ -19,7 +19,7 @@ import com.android.tools.r8.metadata.R8PartialCompilationMetadata;
 import com.android.tools.r8.metadata.R8ResourceOptimizationMetadata;
 import com.android.tools.r8.metadata.R8StartupOptimizationMetadata;
 import com.android.tools.r8.metadata.R8StatsMetadata;
-import com.android.tools.r8.utils.ListUtils;
+import com.android.tools.r8.utils.internal.ListUtils;
 import com.android.tools.r8.utils.internal.SemanticVersion;
 import com.google.gson.Gson;
 import com.google.gson.annotations.Expose;

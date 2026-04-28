@@ -16,7 +16,7 @@ import com.android.tools.r8.ir.desugar.desugaredlibrary.DesugaredLibrarySpecific
 import com.android.tools.r8.ir.desugar.desugaredlibrary.specificationconversion.LibraryValidator;
 import com.android.tools.r8.utils.AndroidApiLevel;
 import com.android.tools.r8.utils.DescriptorUtils;
-import com.android.tools.r8.utils.ListUtils;
+import com.android.tools.r8.utils.internal.ListUtils;
 import com.android.tools.r8.utils.internal.SemanticVersion;
 import com.android.tools.r8.utils.internal.StringUtils;
 import com.android.tools.r8.utils.timing.Timing;

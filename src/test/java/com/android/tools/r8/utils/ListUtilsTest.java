@@ -5,6 +5,7 @@ package com.android.tools.r8.utils;
 
 import static org.junit.Assert.assertEquals;
 
+import com.android.tools.r8.utils.internal.ListUtils;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Predicate;

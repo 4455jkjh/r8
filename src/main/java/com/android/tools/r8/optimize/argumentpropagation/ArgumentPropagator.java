@@ -4,7 +4,7 @@
 
 package com.android.tools.r8.optimize.argumentpropagation;
 
-import static com.android.tools.r8.utils.MapUtils.ignoreKey;
+import static com.android.tools.r8.utils.internal.MapUtils.ignoreKey;
 
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.DexMethodSignature;
@@ -27,10 +27,10 @@ import com.android.tools.r8.optimize.argumentpropagation.reprocessingcriteria.Ar
 import com.android.tools.r8.optimize.argumentpropagation.unusedarguments.EffectivelyUnusedArgumentsAnalysis;
 import com.android.tools.r8.optimize.argumentpropagation.utils.ProgramClassesBidirectedGraph;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
-import com.android.tools.r8.utils.SetUtils;
 import com.android.tools.r8.utils.ThreadUtils;
 import com.android.tools.r8.utils.collections.DexMethodSignatureSet;
 import com.android.tools.r8.utils.collections.ProgramMethodSet;
+import com.android.tools.r8.utils.internal.SetUtils;
 import com.android.tools.r8.utils.timing.Timing;
 import java.util.IdentityHashMap;
 import java.util.List;

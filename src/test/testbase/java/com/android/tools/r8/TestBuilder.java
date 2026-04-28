@@ -12,7 +12,7 @@ import com.android.tools.r8.debug.DebugTestConfig;
 import com.android.tools.r8.transformers.ClassFileTransformer.FieldPredicate;
 import com.android.tools.r8.transformers.ClassFileTransformer.MethodPredicate;
 import com.android.tools.r8.utils.AndroidApiLevel;
-import com.android.tools.r8.utils.ListUtils;
+import com.android.tools.r8.utils.internal.ListUtils;
 import com.android.tools.r8.utils.internal.exceptions.Unimplemented;
 import com.android.tools.r8.utils.structural.Ordered;
 import com.google.common.collect.ImmutableList;

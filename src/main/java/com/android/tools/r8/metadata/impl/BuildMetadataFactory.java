@@ -3,7 +3,7 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8.metadata.impl;
 
-import static com.android.tools.r8.utils.MapUtils.ignoreKey;
+import static com.android.tools.r8.utils.internal.MapUtils.ignoreKey;
 import static com.google.common.base.Predicates.not;
 
 import com.android.tools.r8.FeatureSplit;

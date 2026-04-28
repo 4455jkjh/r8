@@ -39,7 +39,7 @@ import com.android.tools.r8.position.MethodPosition;
 import com.android.tools.r8.position.Position;
 import com.android.tools.r8.utils.AndroidApiLevel;
 import com.android.tools.r8.utils.InternalOptions;
-import com.android.tools.r8.utils.SetUtils;
+import com.android.tools.r8.utils.internal.SetUtils;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableList.Builder;
 import java.util.List;

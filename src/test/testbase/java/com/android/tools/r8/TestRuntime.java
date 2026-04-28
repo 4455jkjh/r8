@@ -7,7 +7,7 @@ package com.android.tools.r8;
 import com.android.tools.r8.TestBase.Backend;
 import com.android.tools.r8.ToolHelper.DexVm;
 import com.android.tools.r8.utils.AndroidApiLevel;
-import com.android.tools.r8.utils.ListUtils;
+import com.android.tools.r8.utils.internal.ListUtils;
 import com.android.tools.r8.utils.internal.StringUtils;
 import com.android.tools.r8.utils.internal.exceptions.Unimplemented;
 import com.android.tools.r8.utils.internal.exceptions.Unreachable;

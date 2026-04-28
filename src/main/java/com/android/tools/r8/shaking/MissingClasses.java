@@ -23,7 +23,7 @@ import com.android.tools.r8.graph.DexType;
 import com.android.tools.r8.graph.ProgramDerivedContext;
 import com.android.tools.r8.graph.ProgramMethod;
 import com.android.tools.r8.synthesis.SyntheticItems.SynthesizingContextOracle;
-import com.android.tools.r8.utils.SetUtils;
+import com.android.tools.r8.utils.internal.SetUtils;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import java.util.Collection;

@@ -4,7 +4,7 @@
 package com.android.tools.r8.shaking;
 
 import static com.android.tools.r8.graph.DexProgramClass.asProgramClassOrNull;
-import static com.android.tools.r8.utils.MapUtils.ignoreKey;
+import static com.android.tools.r8.utils.internal.MapUtils.ignoreKey;
 import static com.google.common.base.Predicates.alwaysFalse;
 
 import com.android.tools.r8.graph.AppView;
@@ -32,7 +32,7 @@ import com.android.tools.r8.shaking.rules.ApplicableRulesEvaluator;
 import com.android.tools.r8.shaking.rules.MaterializedRules;
 import com.android.tools.r8.shaking.rules.ReferencedFromExcludedClassInR8PartialRule;
 import com.android.tools.r8.utils.InternalOptions;
-import com.android.tools.r8.utils.ListUtils;
+import com.android.tools.r8.utils.internal.ListUtils;
 import com.android.tools.r8.utils.internal.exceptions.Unreachable;
 import com.android.tools.r8.utils.timing.Timing;
 import com.google.common.collect.Iterables;

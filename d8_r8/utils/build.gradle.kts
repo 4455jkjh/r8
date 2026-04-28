@@ -11,6 +11,7 @@ plugins {
 // :utils is assumed to use a subset of :main's dependencies.
 dependencies {
   compileOnly(Deps.guava)
+  compileOnly(Deps.fastUtil)
 
   errorprone(Deps.errorprone)
 }

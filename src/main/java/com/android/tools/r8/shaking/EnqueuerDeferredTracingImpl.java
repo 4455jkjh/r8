@@ -6,7 +6,7 @@ package com.android.tools.r8.shaking;
 
 import static com.android.tools.r8.graph.DexProgramClass.asProgramClassOrNull;
 import static com.android.tools.r8.shaking.ObjectAllocationInfoCollectionUtils.mayHaveFinalizeMethodDirectlyOrIndirectly;
-import static com.android.tools.r8.utils.MapUtils.ignoreKey;
+import static com.android.tools.r8.utils.internal.MapUtils.ignoreKey;
 import static com.google.common.base.Predicates.alwaysFalse;
 
 import com.android.tools.r8.graph.AppInfoWithClassHierarchy;

@@ -23,12 +23,12 @@ import com.android.tools.r8.optimize.argumentpropagation.utils.ProgramClassesBid
 import com.android.tools.r8.optimize.argumentpropagation.utils.WideningUtils;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
 import com.android.tools.r8.shaking.KeepMethodInfo;
-import com.android.tools.r8.utils.internal.BitSetUtils;
-import com.android.tools.r8.utils.MapUtils;
 import com.android.tools.r8.utils.NumberUtils;
 import com.android.tools.r8.utils.ThreadUtils;
 import com.android.tools.r8.utils.collections.DexMethodSignatureMap;
 import com.android.tools.r8.utils.collections.DexMethodSignatureSet;
+import com.android.tools.r8.utils.internal.BitSetUtils;
+import com.android.tools.r8.utils.internal.MapUtils;
 import java.util.BitSet;
 import java.util.IdentityHashMap;
 import java.util.List;

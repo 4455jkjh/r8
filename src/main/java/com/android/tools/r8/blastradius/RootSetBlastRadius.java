@@ -18,7 +18,7 @@ import com.android.tools.r8.shaking.KeepInfoCollectionEventConsumer;
 import com.android.tools.r8.shaking.KeepMethodInfo;
 import com.android.tools.r8.shaking.ProguardKeepRuleBase;
 import com.android.tools.r8.shaking.rules.KeepAnnotationFakeProguardRule;
-import com.android.tools.r8.utils.ListUtils;
+import com.android.tools.r8.utils.internal.ListUtils;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.IdentityHashMap;

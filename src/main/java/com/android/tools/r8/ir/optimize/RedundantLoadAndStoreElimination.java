@@ -5,7 +5,7 @@
 package com.android.tools.r8.ir.optimize;
 
 import static com.android.tools.r8.graph.ProgramField.asProgramFieldOrNull;
-import static com.android.tools.r8.utils.MapUtils.ignoreKey;
+import static com.android.tools.r8.utils.internal.MapUtils.ignoreKey;
 import static com.android.tools.r8.utils.internal.PredicateUtils.not;
 
 import com.android.tools.r8.graph.AppInfo;

@@ -62,7 +62,7 @@ import com.android.tools.r8.horizontalclassmerging.policies.VerifyMultiClassPoli
 import com.android.tools.r8.horizontalclassmerging.policies.VerifySingleClassPolicyAlwaysSatisfied;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
 import com.android.tools.r8.shaking.RuntimeTypeCheckInfo;
-import com.android.tools.r8.utils.ListUtils;
+import com.android.tools.r8.utils.internal.ListUtils;
 import com.google.common.collect.ImmutableList;
 import java.util.List;
 

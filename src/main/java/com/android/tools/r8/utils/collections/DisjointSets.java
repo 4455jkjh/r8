@@ -4,7 +4,7 @@
 
 package com.android.tools.r8.utils.collections;
 
-import static com.android.tools.r8.utils.MapUtils.ignoreKey;
+import static com.android.tools.r8.utils.internal.MapUtils.ignoreKey;
 
 import java.util.HashMap;
 import java.util.HashSet;

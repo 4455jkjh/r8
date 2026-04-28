@@ -3,7 +3,7 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8.optimize.argumentpropagation.propagation;
 
-import static com.android.tools.r8.utils.MapUtils.ignoreKey;
+import static com.android.tools.r8.utils.internal.MapUtils.ignoreKey;
 
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.Code;
@@ -32,9 +32,9 @@ import com.android.tools.r8.optimize.argumentpropagation.codescanner.NonEmptyVal
 import com.android.tools.r8.optimize.argumentpropagation.codescanner.ValueState;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
 import com.android.tools.r8.utils.InternalOptions;
-import com.android.tools.r8.utils.MapUtils;
 import com.android.tools.r8.utils.ThreadUtils;
 import com.android.tools.r8.utils.collections.ProgramFieldSet;
+import com.android.tools.r8.utils.internal.MapUtils;
 import com.android.tools.r8.utils.internal.collections.Pair;
 import com.android.tools.r8.utils.internal.exceptions.Unreachable;
 import com.android.tools.r8.utils.timing.Timing;

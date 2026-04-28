@@ -13,7 +13,7 @@ import com.android.tools.r8.metadata.R8PartialCompilationStatsMetadata;
 import com.android.tools.r8.partial.R8PartialCompilationConfiguration;
 import com.android.tools.r8.partial.predicate.R8PartialPredicate;
 import com.android.tools.r8.utils.InternalOptions;
-import com.android.tools.r8.utils.ListUtils;
+import com.android.tools.r8.utils.internal.ListUtils;
 import com.google.common.collect.ImmutableSet;
 import com.google.gson.annotations.Expose;
 import com.google.gson.annotations.SerializedName;

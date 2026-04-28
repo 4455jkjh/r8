@@ -5,7 +5,7 @@ package com.android.tools.r8.ir.optimize;
 
 import static com.android.tools.r8.ir.analysis.type.Nullability.definitelyNotNull;
 import static com.android.tools.r8.ir.optimize.SimpleDominatingEffectAnalysis.canInlineWithoutSynthesizingNullCheckForReceiver;
-import static com.android.tools.r8.utils.MapUtils.ignoreKey;
+import static com.android.tools.r8.utils.internal.MapUtils.ignoreKey;
 import static com.google.common.base.Predicates.not;
 
 import com.android.tools.r8.androidapi.AvailableApiExceptions;
@@ -67,13 +67,13 @@ import com.android.tools.r8.shaking.AppInfoWithLiveness;
 import com.android.tools.r8.shaking.KeepMethodInfo;
 import com.android.tools.r8.shaking.MainDexInfo;
 import com.android.tools.r8.utils.InternalOptions;
-import com.android.tools.r8.utils.ListUtils;
 import com.android.tools.r8.utils.collections.LongLivedProgramMethodSetBuilder;
 import com.android.tools.r8.utils.collections.ProgramFieldSet;
 import com.android.tools.r8.utils.collections.ProgramMethodMap;
 import com.android.tools.r8.utils.collections.ProgramMethodSet;
 import com.android.tools.r8.utils.internal.ConsumerUtils;
 import com.android.tools.r8.utils.internal.IteratorUtils;
+import com.android.tools.r8.utils.internal.ListUtils;
 import com.android.tools.r8.utils.timing.Timing;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;

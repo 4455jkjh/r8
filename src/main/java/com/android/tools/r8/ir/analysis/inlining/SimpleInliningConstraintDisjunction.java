@@ -8,7 +8,7 @@ import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.proto.ArgumentInfoCollection;
 import com.android.tools.r8.ir.code.InvokeMethod;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
-import com.android.tools.r8.utils.ListUtils;
+import com.android.tools.r8.utils.internal.ListUtils;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import java.util.List;

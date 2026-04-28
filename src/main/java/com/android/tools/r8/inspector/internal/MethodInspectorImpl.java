@@ -7,7 +7,7 @@ import com.android.tools.r8.graph.DexEncodedMethod;
 import com.android.tools.r8.inspector.MethodInspector;
 import com.android.tools.r8.references.MethodReference;
 import com.android.tools.r8.references.Reference;
-import com.android.tools.r8.utils.ListUtils;
+import com.android.tools.r8.utils.internal.ListUtils;
 import java.util.Arrays;
 
 public class MethodInspectorImpl implements MethodInspector {

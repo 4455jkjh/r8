@@ -6,7 +6,7 @@ package com.android.tools.r8;
 
 import com.android.tools.r8.references.ClassReference;
 import com.android.tools.r8.references.Reference;
-import com.android.tools.r8.utils.ListUtils;
+import com.android.tools.r8.utils.internal.ListUtils;
 import java.util.List;
 import java.util.function.Consumer;
 

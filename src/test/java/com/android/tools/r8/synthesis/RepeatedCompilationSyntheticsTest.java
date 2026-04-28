@@ -14,7 +14,7 @@ import com.android.tools.r8.DiagnosticsHandler;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.utils.AndroidApiLevel;
-import com.android.tools.r8.utils.ListUtils;
+import com.android.tools.r8.utils.internal.ListUtils;
 import com.android.tools.r8.utils.internal.StringUtils;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;

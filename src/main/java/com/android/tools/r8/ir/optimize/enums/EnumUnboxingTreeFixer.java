@@ -69,13 +69,13 @@ import com.android.tools.r8.ir.synthetic.EnumUnboxingCfCodeProvider.EnumUnboxing
 import com.android.tools.r8.ir.synthetic.ThrowCfCodeProvider;
 import com.android.tools.r8.profile.rewriting.ProfileCollectionAdditions;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
-import com.android.tools.r8.utils.internal.ImmutableArrayUtils;
-import com.android.tools.r8.utils.internal.OptionalBool;
-import com.android.tools.r8.utils.SetUtils;
 import com.android.tools.r8.utils.ThreadUtils;
 import com.android.tools.r8.utils.collections.DexMethodSignatureSet;
 import com.android.tools.r8.utils.collections.ProgramMethodMap;
 import com.android.tools.r8.utils.collections.ProgramMethodSet;
+import com.android.tools.r8.utils.internal.ImmutableArrayUtils;
+import com.android.tools.r8.utils.internal.OptionalBool;
+import com.android.tools.r8.utils.internal.SetUtils;
 import com.android.tools.r8.utils.timing.Timing;
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;

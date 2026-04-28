@@ -22,7 +22,7 @@ import com.android.tools.r8.retrace.RetraceFrameResult;
 import com.android.tools.r8.retrace.RetraceStackTraceContext;
 import com.android.tools.r8.retrace.RetraceUnknownJsonMappingInformationResult;
 import com.android.tools.r8.retrace.RetracedSourceFile;
-import com.android.tools.r8.utils.ListUtils;
+import com.android.tools.r8.utils.internal.ListUtils;
 import com.android.tools.r8.utils.internal.collections.Pair;
 import java.util.ArrayList;
 import java.util.List;

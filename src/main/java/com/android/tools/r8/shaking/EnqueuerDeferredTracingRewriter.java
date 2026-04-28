@@ -8,7 +8,7 @@ import static com.android.tools.r8.ir.code.Opcodes.INSTANCE_GET;
 import static com.android.tools.r8.ir.code.Opcodes.INSTANCE_PUT;
 import static com.android.tools.r8.ir.code.Opcodes.STATIC_GET;
 import static com.android.tools.r8.ir.code.Opcodes.STATIC_PUT;
-import static com.android.tools.r8.utils.MapUtils.ignoreKey;
+import static com.android.tools.r8.utils.internal.MapUtils.ignoreKey;
 
 import com.android.tools.r8.graph.AppInfoWithClassHierarchy;
 import com.android.tools.r8.graph.AppView;

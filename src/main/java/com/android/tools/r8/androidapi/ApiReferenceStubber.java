@@ -4,7 +4,7 @@
 
 package com.android.tools.r8.androidapi;
 
-import static com.android.tools.r8.utils.MapUtils.ignoreKey;
+import static com.android.tools.r8.utils.internal.MapUtils.ignoreKey;
 
 import com.android.tools.r8.errors.MissingGlobalSyntheticsConsumerDiagnostic;
 import com.android.tools.r8.graph.AppView;
@@ -28,9 +28,9 @@ import com.android.tools.r8.partial.R8PartialSubCompilationConfiguration.R8Parti
 import com.android.tools.r8.synthesis.SyntheticItems;
 import com.android.tools.r8.utils.AndroidApiLevel;
 import com.android.tools.r8.utils.InternalOptions;
-import com.android.tools.r8.utils.ListUtils;
-import com.android.tools.r8.utils.SetUtils;
 import com.android.tools.r8.utils.ThreadUtils;
+import com.android.tools.r8.utils.internal.ListUtils;
+import com.android.tools.r8.utils.internal.SetUtils;
 import com.android.tools.r8.utils.internal.exceptions.Unreachable;
 import com.android.tools.r8.utils.timing.Timing;
 import com.google.common.collect.Sets;

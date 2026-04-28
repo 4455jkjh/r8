@@ -7,7 +7,7 @@ package com.android.tools.r8.horizontalclassmerging.policies;
 import static com.android.tools.r8.graph.DexClassAndMethod.asProgramMethodOrNull;
 import static com.android.tools.r8.graph.DexProgramClass.asProgramClassOrNull;
 import static com.android.tools.r8.ir.desugar.LambdaDescriptor.isLambdaMetafactoryMethod;
-import static com.android.tools.r8.utils.MapUtils.ignoreKey;
+import static com.android.tools.r8.utils.internal.MapUtils.ignoreKey;
 
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.DefaultUseRegistry;
@@ -24,11 +24,11 @@ import com.android.tools.r8.horizontalclassmerging.MultiClassPolicyWithPreproces
 import com.android.tools.r8.horizontalclassmerging.policies.deadlock.SingleCallerInformation;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
 import com.android.tools.r8.utils.InternalOptions.HorizontalClassMergerOptions;
-import com.android.tools.r8.utils.SetUtils;
 import com.android.tools.r8.utils.ThreadUtils;
-import com.android.tools.r8.utils.internal.TraversalContinuation;
 import com.android.tools.r8.utils.collections.ProgramMethodSet;
 import com.android.tools.r8.utils.collections.WorkList;
+import com.android.tools.r8.utils.internal.SetUtils;
+import com.android.tools.r8.utils.internal.TraversalContinuation;
 import com.google.common.base.Suppliers;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;

@@ -7,7 +7,7 @@ package com.android.tools.r8.retrace.internal;
 import com.android.tools.r8.naming.ClassNamingForNameMapper.MappedRange;
 import com.android.tools.r8.naming.ClassNamingForNameMapper.MappedRangesOfName;
 import com.android.tools.r8.naming.MemberNaming;
-import com.android.tools.r8.utils.ListUtils;
+import com.android.tools.r8.utils.internal.ListUtils;
 import java.util.List;
 
 class MemberNamingWithMappedRangesOfName {

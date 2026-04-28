@@ -5,7 +5,7 @@ package com.android.tools.r8.horizontalclassmerging;
 
 import static com.android.tools.r8.graph.DexProgramClass.asProgramClassOrNull;
 import static com.android.tools.r8.ir.analysis.type.Nullability.definitelyNotNull;
-import static com.android.tools.r8.utils.MapUtils.ignoreKey;
+import static com.android.tools.r8.utils.internal.MapUtils.ignoreKey;
 
 import com.android.tools.r8.cf.CfVersion;
 import com.android.tools.r8.classmerging.ClassMergerSharedData;
@@ -43,12 +43,12 @@ import com.android.tools.r8.lightir.LirStrategy;
 import com.android.tools.r8.lightir.LirWriter;
 import com.android.tools.r8.optimize.argumentpropagation.utils.ProgramClassesBidirectedGraph;
 import com.android.tools.r8.profile.rewriting.ProfileCollectionAdditions;
-import com.android.tools.r8.utils.ListUtils;
-import com.android.tools.r8.utils.SetUtils;
 import com.android.tools.r8.utils.ThreadUtils;
 import com.android.tools.r8.utils.collections.WorkList;
 import com.android.tools.r8.utils.internal.ArrayUtils;
+import com.android.tools.r8.utils.internal.ListUtils;
 import com.android.tools.r8.utils.internal.ObjectUtils;
+import com.android.tools.r8.utils.internal.SetUtils;
 import com.android.tools.r8.utils.timing.Timing;
 import it.unimi.dsi.fastutil.ints.Int2ReferenceMap;
 import it.unimi.dsi.fastutil.ints.Int2ReferenceOpenHashMap;

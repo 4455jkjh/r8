@@ -5,7 +5,7 @@ package com.android.tools.r8.shaking;
 
 import com.android.tools.r8.errors.CompilationError;
 import com.android.tools.r8.utils.InternalOptions;
-import com.android.tools.r8.utils.ListUtils;
+import com.android.tools.r8.utils.internal.ListUtils;
 import java.util.ArrayList;
 import java.util.List;
 

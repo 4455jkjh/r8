@@ -20,7 +20,7 @@ import com.android.tools.r8.references.FieldReference;
 import com.android.tools.r8.references.MethodReference;
 import com.android.tools.r8.references.TypeReference;
 import com.android.tools.r8.utils.DescriptorUtils;
-import com.android.tools.r8.utils.ListUtils;
+import com.android.tools.r8.utils.internal.ListUtils;
 import com.android.tools.r8.utils.internal.StringUtils;
 import com.android.tools.r8.utils.internal.StringUtils.BraceType;
 import com.android.tools.r8.utils.internal.collections.Pair;

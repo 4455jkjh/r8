@@ -11,7 +11,7 @@ import static com.android.tools.r8.ir.desugar.constantdynamic.LibraryConstantDyn
 import static com.android.tools.r8.ir.desugar.records.RecordRewriterHelper.isInvokeDynamicOnRecord;
 import static com.android.tools.r8.ir.desugar.typeswitch.TypeSwitchDesugaringHelper.isEnumSwitchCallSite;
 import static com.android.tools.r8.ir.desugar.typeswitch.TypeSwitchDesugaringHelper.isTypeSwitchCallSite;
-import static com.android.tools.r8.utils.MapUtils.ignoreKey;
+import static com.android.tools.r8.utils.internal.MapUtils.ignoreKey;
 
 import com.android.tools.r8.androidapi.AndroidApiLevelCompute;
 import com.android.tools.r8.dex.code.CfOrDexInstruction;

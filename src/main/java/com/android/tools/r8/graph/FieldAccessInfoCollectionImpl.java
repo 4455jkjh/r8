@@ -6,7 +6,7 @@ package com.android.tools.r8.graph;
 
 import com.android.tools.r8.graph.lens.GraphLens;
 import com.android.tools.r8.utils.LensUtils;
-import com.android.tools.r8.utils.SetUtils;
+import com.android.tools.r8.utils.internal.SetUtils;
 import com.android.tools.r8.utils.timing.Timing;
 import java.util.IdentityHashMap;
 import java.util.Iterator;

@@ -7,8 +7,8 @@ package com.android.tools.r8.horizontalclassmerging.policies;
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.horizontalclassmerging.HorizontalMergeGroup;
 import com.android.tools.r8.horizontalclassmerging.MultiClassPolicy;
-import com.android.tools.r8.utils.ListUtils;
 import com.android.tools.r8.utils.collections.EmptyBidirectionalOneToOneMap;
+import com.android.tools.r8.utils.internal.ListUtils;
 import java.util.Collection;
 
 /**

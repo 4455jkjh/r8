@@ -113,7 +113,7 @@ import com.android.tools.r8.lightir.LirBuilder.StringSwitchPayload;
 import com.android.tools.r8.lightir.LirCode.PositionEntry;
 import com.android.tools.r8.lightir.LirCode.TryCatchTable;
 import com.android.tools.r8.naming.dexitembasedstring.NameComputationInfo;
-import com.android.tools.r8.utils.ListUtils;
+import com.android.tools.r8.utils.internal.ListUtils;
 import com.android.tools.r8.utils.internal.exceptions.Unimplemented;
 import com.android.tools.r8.utils.internal.exceptions.Unreachable;
 import com.google.common.collect.ImmutableList;

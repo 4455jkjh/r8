@@ -7,6 +7,7 @@ import com.android.tools.r8.ClassFileResourceProvider;
 import com.android.tools.r8.ProgramResource;
 import com.android.tools.r8.graph.DexClass;
 import com.android.tools.r8.graph.DexType;
+import com.android.tools.r8.utils.internal.MapUtils;
 import com.android.tools.r8.utils.internal.exceptions.Unreachable;
 import java.util.Collection;
 import java.util.IdentityHashMap;

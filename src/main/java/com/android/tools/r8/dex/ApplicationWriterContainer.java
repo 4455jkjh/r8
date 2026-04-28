@@ -4,7 +4,7 @@
 package com.android.tools.r8.dex;
 
 import static com.android.tools.r8.utils.DexVersion.Layout.CONTAINER_DEX;
-import static com.android.tools.r8.utils.MapUtils.ignoreKey;
+import static com.android.tools.r8.utils.internal.MapUtils.ignoreKey;
 
 import com.android.tools.r8.ByteBufferProvider;
 import com.android.tools.r8.ByteDataView;
@@ -18,9 +18,9 @@ import com.android.tools.r8.dex.FileWriter.MapItem;
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.DexString;
 import com.android.tools.r8.graph.ObjectToOffsetMapping;
-import com.android.tools.r8.utils.ListUtils;
 import com.android.tools.r8.utils.internal.AssertionUtils;
 import com.android.tools.r8.utils.internal.BitUtils;
+import com.android.tools.r8.utils.internal.ListUtils;
 import com.android.tools.r8.utils.timing.Timing;
 import com.google.common.collect.Sets;
 import java.util.ArrayList;

@@ -12,7 +12,7 @@ import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.DexItemFactory;
 import com.android.tools.r8.graph.DexType;
 import com.android.tools.r8.ir.code.ValueType;
-import com.android.tools.r8.utils.MapUtils;
+import com.android.tools.r8.utils.internal.MapUtils;
 import it.unimi.dsi.fastutil.ints.Int2ObjectSortedMap;
 import java.util.Arrays;
 import java.util.Deque;

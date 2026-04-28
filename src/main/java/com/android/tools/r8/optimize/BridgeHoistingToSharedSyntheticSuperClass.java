@@ -4,7 +4,7 @@
 package com.android.tools.r8.optimize;
 
 import static com.android.tools.r8.ir.optimize.info.OptimizationFeedback.getSimpleFeedback;
-import static com.android.tools.r8.utils.MapUtils.ignoreKey;
+import static com.android.tools.r8.utils.internal.MapUtils.ignoreKey;
 
 import com.android.tools.r8.contexts.CompilationContext.MainThreadContext;
 import com.android.tools.r8.graph.AppView;
@@ -25,10 +25,10 @@ import com.android.tools.r8.profile.rewriting.ProfileCollectionAdditions;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
 import com.android.tools.r8.utils.InternalOptions;
 import com.android.tools.r8.utils.InternalOptions.TestingOptions;
-import com.android.tools.r8.utils.ListUtils;
-import com.android.tools.r8.utils.internal.OptionalBool;
-import com.android.tools.r8.utils.SetUtils;
 import com.android.tools.r8.utils.collections.DexMethodSignatureMap;
+import com.android.tools.r8.utils.internal.ListUtils;
+import com.android.tools.r8.utils.internal.OptionalBool;
+import com.android.tools.r8.utils.internal.SetUtils;
 import com.android.tools.r8.utils.timing.Timing;
 import com.google.common.collect.Iterables;
 import java.util.ArrayList;
