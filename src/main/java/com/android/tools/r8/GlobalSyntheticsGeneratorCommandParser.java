@@ -11,7 +11,7 @@ import static com.android.tools.r8.BaseCompilerCommandParser.parsePositiveIntArg
 import com.android.tools.r8.origin.Origin;
 import com.android.tools.r8.utils.FlagFile;
 import com.android.tools.r8.utils.StringDiagnostic;
-import com.android.tools.r8.utils.StringUtils;
+import com.android.tools.r8.utils.internal.StringUtils;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import java.nio.file.Path;

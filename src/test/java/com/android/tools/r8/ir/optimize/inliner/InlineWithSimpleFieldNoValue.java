@@ -8,7 +8,7 @@ import static junit.framework.TestCase.assertTrue;
 
 import com.android.tools.r8.R8TestRunResult;
 import com.android.tools.r8.TestBase;
-import com.android.tools.r8.utils.StringUtils;
+import com.android.tools.r8.utils.internal.StringUtils;
 import org.junit.Test;
 
 class TestClass {

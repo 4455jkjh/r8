@@ -3,7 +3,7 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8.cf;
 
-import static com.android.tools.r8.utils.StringUtils.join;
+import static com.android.tools.r8.utils.internal.StringUtils.join;
 
 import com.android.tools.r8.cf.code.CfArithmeticBinop;
 import com.android.tools.r8.cf.code.CfArrayLength;
@@ -64,8 +64,8 @@ import com.android.tools.r8.ir.code.MonitorType;
 import com.android.tools.r8.ir.code.NumberConversionType;
 import com.android.tools.r8.ir.code.NumericType;
 import com.android.tools.r8.ir.code.ValueType;
-import com.android.tools.r8.utils.StringUtils;
-import com.android.tools.r8.utils.StringUtils.BraceType;
+import com.android.tools.r8.utils.internal.StringUtils;
+import com.android.tools.r8.utils.internal.StringUtils.BraceType;
 import com.android.tools.r8.utils.internal.exceptions.Unimplemented;
 import com.android.tools.r8.utils.internal.exceptions.Unreachable;
 import com.google.common.collect.ImmutableList;

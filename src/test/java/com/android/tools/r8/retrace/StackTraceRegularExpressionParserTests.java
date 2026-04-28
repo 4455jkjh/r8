@@ -15,7 +15,7 @@ import com.android.tools.r8.retrace.stacktraces.LongLineStackTrace;
 import com.android.tools.r8.retrace.stacktraces.RetraceAssertionErrorStackTrace;
 import com.android.tools.r8.retrace.stacktraces.StackTraceForTest;
 import com.android.tools.r8.utils.internal.BooleanUtils;
-import com.android.tools.r8.utils.StringUtils;
+import com.android.tools.r8.utils.internal.StringUtils;
 import com.google.common.collect.ImmutableList;
 import java.util.Collections;
 import java.util.List;

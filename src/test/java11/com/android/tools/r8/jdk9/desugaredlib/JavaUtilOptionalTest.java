@@ -16,11 +16,11 @@ import com.android.tools.r8.desugar.desugaredlibrary.test.CompilationSpecificati
 import com.android.tools.r8.desugar.desugaredlibrary.test.DesugaredLibraryTestCompileResult;
 import com.android.tools.r8.desugar.desugaredlibrary.test.LibraryDesugaringSpecification;
 import com.android.tools.r8.jdk9.backport.OptionalBackportJava9Test;
-import com.android.tools.r8.utils.StringUtils;
 import com.android.tools.r8.utils.codeinspector.ClassSubject;
 import com.android.tools.r8.utils.codeinspector.CodeInspector;
 import com.android.tools.r8.utils.codeinspector.InstructionSubject;
 import com.android.tools.r8.utils.codeinspector.InvokeInstructionSubject;
+import com.android.tools.r8.utils.internal.StringUtils;
 import com.google.common.collect.ImmutableList;
 import java.util.Iterator;
 import java.util.List;

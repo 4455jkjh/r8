@@ -15,7 +15,7 @@ import com.android.tools.r8.retrace.internal.MappingPartitionImpl;
 import com.android.tools.r8.retrace.internal.MappingPartitionMetadataInternal;
 import com.android.tools.r8.utils.ExceptionUtils;
 import com.android.tools.r8.utils.Reporter;
-import com.android.tools.r8.utils.StringUtils;
+import com.android.tools.r8.utils.internal.StringUtils;
 import java.io.IOException;
 import java.util.LinkedHashMap;
 import java.util.Map;

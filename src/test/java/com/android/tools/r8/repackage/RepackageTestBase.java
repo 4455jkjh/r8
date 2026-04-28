@@ -10,9 +10,9 @@ import static com.android.tools.r8.shaking.ProguardConfigurationParser.REPACKAGE
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestShrinkerBuilder;
-import com.android.tools.r8.utils.StringUtils;
 import com.android.tools.r8.utils.codeinspector.ClassSubject;
 import com.android.tools.r8.utils.codeinspector.CodeInspector;
+import com.android.tools.r8.utils.internal.StringUtils;
 import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
 import java.util.List;

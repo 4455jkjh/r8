@@ -11,7 +11,7 @@ import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.cfmethodgeneration.CfClassGenerator;
 import com.android.tools.r8.graph.DexType;
-import com.android.tools.r8.utils.FileUtils;
+import com.android.tools.r8.utils.internal.FileUtils;
 import com.google.common.collect.ImmutableList;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;

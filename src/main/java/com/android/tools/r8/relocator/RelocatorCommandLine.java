@@ -10,7 +10,7 @@ import com.android.tools.r8.CompilationFailedException;
 import com.android.tools.r8.Version;
 import com.android.tools.r8.origin.CommandLineOrigin;
 import com.android.tools.r8.utils.ExceptionUtils;
-import com.android.tools.r8.utils.StringUtils;
+import com.android.tools.r8.utils.internal.StringUtils;
 
 public class RelocatorCommandLine {
 

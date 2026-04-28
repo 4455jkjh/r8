@@ -15,7 +15,7 @@ import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.errors.UnsupportedFeatureDiagnostic;
 import com.android.tools.r8.references.ClassReference;
 import com.android.tools.r8.references.MethodReference;
-import com.android.tools.r8.utils.StringUtils;
+import com.android.tools.r8.utils.internal.StringUtils;
 import java.lang.invoke.MethodHandle;
 import org.junit.Test;
 import org.junit.runner.RunWith;

@@ -12,7 +12,7 @@ import com.android.tools.r8.TestRunResult;
 import com.android.tools.r8.TestRuntime.CfVm;
 import com.android.tools.r8.ToolHelper.DexVm.Version;
 import com.android.tools.r8.transformers.ClassFileTransformer.MethodPredicate;
-import com.android.tools.r8.utils.StringUtils;
+import com.android.tools.r8.utils.internal.StringUtils;
 import java.lang.reflect.MalformedParametersException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;

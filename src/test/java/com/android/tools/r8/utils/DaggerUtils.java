@@ -10,6 +10,7 @@ import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestRuntime;
 import com.android.tools.r8.TestRuntime.CfRuntime;
 import com.android.tools.r8.ToolHelper;
+import com.android.tools.r8.utils.internal.FileUtils;
 import com.google.common.collect.ImmutableList;
 import com.google.common.io.ByteStreams;
 import java.nio.file.Path;

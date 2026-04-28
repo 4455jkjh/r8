@@ -6,7 +6,7 @@ package com.android.tools.r8.keepanno.doctests;
 import com.android.tools.r8.keepanno.KeepAnnoParameters;
 import com.android.tools.r8.keepanno.KeepAnnoTestBase;
 import com.android.tools.r8.keepanno.doctests.GenericSignaturePrinter.TestClass;
-import com.android.tools.r8.utils.StringUtils;
+import com.android.tools.r8.utils.internal.StringUtils;
 import java.util.List;
 import org.junit.Test;
 import org.junit.runner.RunWith;

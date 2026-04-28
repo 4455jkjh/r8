@@ -10,10 +10,10 @@ import static org.junit.Assert.assertTrue;
 
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
-import com.android.tools.r8.utils.StringUtils;
 import com.android.tools.r8.utils.codeinspector.ClassSubject;
 import com.android.tools.r8.utils.codeinspector.InstructionSubject;
 import com.android.tools.r8.utils.codeinspector.MethodSubject;
+import com.android.tools.r8.utils.internal.StringUtils;
 import com.android.tools.r8.utils.internal.collections.Pair;
 import com.google.common.collect.ImmutableList;
 import org.junit.BeforeClass;

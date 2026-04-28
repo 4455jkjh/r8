@@ -3,8 +3,8 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8;
 
-import static com.android.tools.r8.utils.FileUtils.CLASS_EXTENSION;
-import static com.android.tools.r8.utils.FileUtils.isClassFile;
+import static com.android.tools.r8.utils.internal.FileUtils.CLASS_EXTENSION;
+import static com.android.tools.r8.utils.internal.FileUtils.isClassFile;
 
 import com.android.tools.r8.ProgramResource.Kind;
 import com.android.tools.r8.keepanno.annotations.KeepForApi;

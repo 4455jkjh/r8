@@ -17,7 +17,7 @@ import com.android.tools.r8.TestShrinkerBuilder;
 import com.android.tools.r8.ThrowableConsumer;
 import com.android.tools.r8.transformers.ClassFileTransformer.FieldPredicate;
 import com.android.tools.r8.transformers.ClassFileTransformer.MethodPredicate;
-import com.android.tools.r8.utils.StringUtils;
+import com.android.tools.r8.utils.internal.StringUtils;
 import java.util.List;
 import org.junit.Test;
 import org.junit.runner.RunWith;

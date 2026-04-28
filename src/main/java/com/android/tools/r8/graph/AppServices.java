@@ -19,7 +19,7 @@ import com.android.tools.r8.origin.Origin;
 import com.android.tools.r8.utils.DescriptorUtils;
 import com.android.tools.r8.utils.InternalOptions;
 import com.android.tools.r8.utils.StringDiagnostic;
-import com.android.tools.r8.utils.StringUtils;
+import com.android.tools.r8.utils.internal.StringUtils;
 import com.android.tools.r8.utils.timing.Timing;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;

@@ -12,11 +12,11 @@ import static org.junit.Assert.assertTrue;
 import com.android.tools.r8.NeverInline;
 import com.android.tools.r8.R8TestRunResult;
 import com.android.tools.r8.TestBase;
-import com.android.tools.r8.utils.StringUtils;
 import com.android.tools.r8.utils.codeinspector.ClassSubject;
 import com.android.tools.r8.utils.codeinspector.CodeInspector;
 import com.android.tools.r8.utils.codeinspector.InstructionSubject;
 import com.android.tools.r8.utils.codeinspector.MethodSubject;
+import com.android.tools.r8.utils.internal.StringUtils;
 import org.junit.Test;
 
 public class StaticFieldPropagationTest extends TestBase {

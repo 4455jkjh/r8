@@ -7,8 +7,8 @@ import static org.junit.Assert.assertEquals;
 
 import com.android.tools.r8.ToolHelper.DexVm;
 import com.android.tools.r8.ToolHelper.DexVm.Version;
-import com.android.tools.r8.utils.StringUtils;
 import com.android.tools.r8.utils.TestDescriptionWatcher;
+import com.android.tools.r8.utils.internal.StringUtils;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;

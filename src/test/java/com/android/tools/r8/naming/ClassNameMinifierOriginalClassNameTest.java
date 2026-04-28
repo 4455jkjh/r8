@@ -18,7 +18,7 @@ import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.naming.testclasses.A;
 import com.android.tools.r8.naming.testclasses.B;
-import com.android.tools.r8.utils.FileUtils;
+import com.android.tools.r8.utils.internal.FileUtils;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.concurrent.ExecutionException;

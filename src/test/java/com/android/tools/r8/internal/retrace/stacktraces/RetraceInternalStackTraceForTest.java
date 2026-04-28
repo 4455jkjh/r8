@@ -6,7 +6,7 @@ package com.android.tools.r8.internal.retrace.stacktraces;
 
 import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.retrace.stacktraces.StackTraceForTest;
-import com.android.tools.r8.utils.FileUtils;
+import com.android.tools.r8.utils.internal.FileUtils;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;

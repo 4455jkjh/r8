@@ -19,7 +19,7 @@ import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.origin.Origin;
 import com.android.tools.r8.origin.PathOrigin;
 import com.android.tools.r8.utils.AndroidApiLevel;
-import com.android.tools.r8.utils.StringUtils;
+import com.android.tools.r8.utils.internal.StringUtils;
 import com.google.common.collect.ImmutableList;
 import java.io.IOException;
 import java.nio.file.Files;

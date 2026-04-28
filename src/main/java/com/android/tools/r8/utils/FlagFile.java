@@ -6,6 +6,7 @@ package com.android.tools.r8.utils;
 
 import com.android.tools.r8.Diagnostic;
 import com.android.tools.r8.origin.Origin;
+import com.android.tools.r8.utils.internal.StringUtils;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;

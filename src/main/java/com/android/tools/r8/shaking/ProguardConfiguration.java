@@ -16,7 +16,7 @@ import com.android.tools.r8.shaking.ProguardConfigurationParser.ProguardConfigur
 import com.android.tools.r8.utils.InternalOptions.PackageObfuscationMode;
 import com.android.tools.r8.utils.Reporter;
 import com.android.tools.r8.utils.StringDiagnostic;
-import com.android.tools.r8.utils.StringUtils;
+import com.android.tools.r8.utils.internal.StringUtils;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;

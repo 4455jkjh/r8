@@ -17,7 +17,7 @@ import com.android.tools.r8.references.Reference;
 import com.android.tools.r8.shaking.WhyAreYouKeepingConsumer;
 import com.android.tools.r8.utils.AndroidApiLevel;
 import com.android.tools.r8.utils.ListUtils;
-import com.android.tools.r8.utils.StringUtils;
+import com.android.tools.r8.utils.internal.StringUtils;
 import com.android.tools.r8.utils.internal.exceptions.Unreachable;
 import com.google.common.collect.ImmutableList;
 import java.io.ByteArrayOutputStream;

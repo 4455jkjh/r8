@@ -22,7 +22,7 @@ import com.android.tools.r8.ir.optimize.enums.EnumDataMap.EnumData;
 import com.android.tools.r8.ir.synthetic.EnumUnboxingCfCodeProvider;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
 import com.android.tools.r8.synthesis.SyntheticMethodBuilder.SyntheticCodeGenerator;
-import com.android.tools.r8.utils.StringUtils;
+import com.android.tools.r8.utils.internal.StringUtils;
 
 public class LocalEnumUnboxingUtilityClass extends EnumUnboxingUtilityClass {
 

@@ -14,7 +14,7 @@ import com.android.tools.r8.transformers.ClassFileTransformer.AnnotationBuilder;
 import com.android.tools.r8.transformers.ClassFileTransformer.AnnotationContentBuilder;
 import com.android.tools.r8.transformers.ClassFileTransformer.MethodPredicate;
 import com.android.tools.r8.utils.DescriptorUtils;
-import com.android.tools.r8.utils.StringUtils;
+import com.android.tools.r8.utils.internal.StringUtils;
 import com.google.common.collect.ImmutableList;
 import java.io.IOException;
 import java.nio.file.Path;

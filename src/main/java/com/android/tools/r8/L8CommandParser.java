@@ -10,7 +10,7 @@ import com.android.tools.r8.profile.art.ArtProfileConsumerUtils;
 import com.android.tools.r8.profile.art.ArtProfileProviderUtils;
 import com.android.tools.r8.utils.FlagFile;
 import com.android.tools.r8.utils.StringDiagnostic;
-import com.android.tools.r8.utils.StringUtils;
+import com.android.tools.r8.utils.internal.StringUtils;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import java.nio.file.Path;

@@ -7,6 +7,7 @@ import com.android.tools.r8.DataDirectoryResource;
 import com.android.tools.r8.DataEntryResource;
 import com.android.tools.r8.ProgramResource;
 import com.android.tools.r8.ResourceException;
+import com.android.tools.r8.utils.internal.FileUtils;
 import com.google.common.io.ByteStreams;
 import com.google.common.io.Closer;
 import java.io.BufferedOutputStream;

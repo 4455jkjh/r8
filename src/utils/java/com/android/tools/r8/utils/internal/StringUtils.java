@@ -1,10 +1,8 @@
 // Copyright (c) 2016, the R8 project authors. Please see the AUTHORS file
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
-package com.android.tools.r8.utils;
+package com.android.tools.r8.utils.internal;
 
-import com.android.tools.r8.utils.internal.IntBox;
-import com.android.tools.r8.utils.internal.IterableUtils;
 import com.android.tools.r8.utils.internal.exceptions.Unreachable;
 import java.io.PrintWriter;
 import java.io.StringWriter;
@@ -41,21 +39,31 @@ public class StringUtils {
 
     public String left() {
       switch (this) {
-        case PARENS: return "(";
-        case SQUARE: return "[";
-        case TUBORG: return "{";
-        case NONE: return "";
-        default: throw new Unreachable("Invalid brace type: " + this);
+        case PARENS:
+          return "(";
+        case SQUARE:
+          return "[";
+        case TUBORG:
+          return "{";
+        case NONE:
+          return "";
+        default:
+          throw new Unreachable("Invalid brace type: " + this);
       }
     }
 
     public String right() {
       switch (this) {
-        case PARENS: return ")";
-        case SQUARE: return "]";
-        case TUBORG: return "}";
-        case NONE: return "";
-        default: throw new Unreachable("Invalid brace type: " + this);
+        case PARENS:
+          return ")";
+        case SQUARE:
+          return "]";
+        case TUBORG:
+          return "}";
+        case NONE:
+          return "";
+        default:
+          throw new Unreachable("Invalid brace type: " + this);
       }
     }
   }
@@ -64,7 +72,7 @@ public class StringUtils {
     StringBuilder builder = new StringBuilder();
     for (int i = 0; i < s.length(); i++) {
       char ch = s.charAt(i);
-      if (0x1f < ch && ch < 0x7f) {  // 0 - 0x1f and 0x7f are control characters.
+      if (0x1f < ch && ch < 0x7f) { // 0 - 0x1f and 0x7f are control characters.
         builder.append(ch);
       } else {
         builder.append("\\u").append(StringUtils.hexString(ch, 4, false));
@@ -324,7 +332,7 @@ public class StringUtils {
 
   private static String zeroPrefixString(String s, int width) {
     String prefix = "0000000000000000";
-    assert(width <= prefix.length());
+    assert width <= prefix.length();
     int prefixLength = width - s.length();
     if (prefixLength > 0) {
       StringBuilder builder = new StringBuilder();
@@ -341,14 +349,14 @@ public class StringUtils {
   }
 
   public static String hexString(int value, int width, boolean zeroXPrefix) {
-    assert(0 <= width && width <= 8);
+    assert 0 <= width && width <= 8;
     String prefix = zeroXPrefix ? "0x" : "";
     String hex = Integer.toHexString(value);
     if (value >= 0) {
       return prefix + zeroPrefixString(hex, width);
     } else {
       // Negative ints are always formatted as 8 characters.
-      assert(hex.length() == 8);
+      assert hex.length() == 8;
       return prefix + hex;
     }
   }
@@ -358,14 +366,14 @@ public class StringUtils {
   }
 
   public static String hexString(long value, int width, boolean zeroXPrefix) {
-    assert(0 <= width && width <= 16);
+    assert 0 <= width && width <= 16;
     String prefix = zeroXPrefix ? "0x" : "";
     String hex = Long.toHexString(value);
     if (value >= 0) {
       return prefix + zeroPrefixString(hex, width);
     } else {
       // Negative longs are always formatted as 16 characters.
-      assert(hex.length() == 16);
+      assert hex.length() == 16;
       return prefix + hex;
     }
   }
@@ -383,7 +391,6 @@ public class StringUtils {
     }
     return Arrays.toString(digest);
   }
-
 
   public static String times(String string, int count) {
     StringBuilder builder = new StringBuilder();

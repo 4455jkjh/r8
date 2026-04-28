@@ -11,7 +11,7 @@ import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.desugar.desugaredlibrary.test.CompilationSpecification;
 import com.android.tools.r8.desugar.desugaredlibrary.test.LibraryDesugaringSpecification;
 import com.android.tools.r8.utils.AndroidApiLevel;
-import com.android.tools.r8.utils.StringUtils;
+import com.android.tools.r8.utils.internal.StringUtils;
 import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;

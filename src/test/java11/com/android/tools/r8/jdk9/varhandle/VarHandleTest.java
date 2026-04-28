@@ -16,7 +16,7 @@ import com.android.tools.r8.TestRuntime.CfVm;
 import com.android.tools.r8.ToolHelper.DexVm.Version;
 import com.android.tools.r8.errors.UnsupportedInvokePolymorphicMethodHandleDiagnostic;
 import com.android.tools.r8.utils.AndroidApiLevel;
-import com.android.tools.r8.utils.StringUtils;
+import com.android.tools.r8.utils.internal.StringUtils;
 import com.google.common.collect.ImmutableList;
 import java.util.List;
 import org.junit.Test;

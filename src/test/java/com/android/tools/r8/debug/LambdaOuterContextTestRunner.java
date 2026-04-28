@@ -8,7 +8,7 @@ import static com.android.tools.r8.references.Reference.methodFromMethod;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.debug.LambdaOuterContextTest.Converter;
-import com.android.tools.r8.utils.StringUtils;
+import com.android.tools.r8.utils.internal.StringUtils;
 import org.apache.harmony.jpda.tests.framework.jdwp.Value;
 import org.junit.Test;
 import org.junit.runner.RunWith;

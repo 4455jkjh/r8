@@ -17,7 +17,7 @@ import com.android.tools.r8.retrace.PartitionedToProguardMappingConverter;
 import com.android.tools.r8.retrace.ProguardMapProducer;
 import com.android.tools.r8.retrace.internal.MappingPartitionKeyStrategy;
 import com.android.tools.r8.retrace.internal.ProguardMapPartitionerOnClassNameToText.ProguardMapPartitionerBuilderImplInternal;
-import com.android.tools.r8.utils.StringUtils;
+import com.android.tools.r8.utils.internal.StringUtils;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashMap;

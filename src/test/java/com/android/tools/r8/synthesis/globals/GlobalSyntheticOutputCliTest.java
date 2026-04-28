@@ -17,7 +17,7 @@ import com.android.tools.r8.ToolHelper.ProcessResult;
 import com.android.tools.r8.transformers.ClassFileTransformer.MethodPredicate;
 import com.android.tools.r8.utils.AndroidApiLevel;
 import com.android.tools.r8.utils.ListUtils;
-import com.android.tools.r8.utils.StringUtils;
+import com.android.tools.r8.utils.internal.StringUtils;
 import com.google.common.collect.ImmutableList;
 import java.io.IOException;
 import java.nio.file.Files;

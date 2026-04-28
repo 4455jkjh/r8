@@ -14,9 +14,9 @@ import com.android.tools.r8.tracereferences.TraceReferencesConsumer.TracedRefere
 import com.android.tools.r8.tracereferences.internal.TraceReferencesResult;
 import com.android.tools.r8.utils.ListUtils;
 import com.android.tools.r8.utils.MapUtils;
-import com.android.tools.r8.utils.StringUtils;
-import com.android.tools.r8.utils.StringUtils.BraceType;
 import com.android.tools.r8.utils.internal.IterableUtils;
+import com.android.tools.r8.utils.internal.StringUtils;
+import com.android.tools.r8.utils.internal.StringUtils.BraceType;
 import com.google.common.collect.Streams;
 import java.util.ArrayList;
 import java.util.Collections;

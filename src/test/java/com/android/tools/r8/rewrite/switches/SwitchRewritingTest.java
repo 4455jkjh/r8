@@ -23,7 +23,7 @@ import com.android.tools.r8.smali.SmaliBuilder.MethodSignature;
 import com.android.tools.r8.smali.SmaliTestBase;
 import com.android.tools.r8.utils.AndroidApp;
 import com.android.tools.r8.utils.InternalOptions;
-import com.android.tools.r8.utils.StringUtils;
+import com.android.tools.r8.utils.internal.StringUtils;
 import com.google.common.collect.ImmutableList;
 import java.util.function.Consumer;
 import org.junit.Test;

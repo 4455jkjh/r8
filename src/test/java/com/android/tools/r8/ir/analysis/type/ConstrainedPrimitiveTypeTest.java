@@ -17,7 +17,7 @@ import com.android.tools.r8.ir.analysis.AnalysisTestBase;
 import com.android.tools.r8.ir.code.ConstNumber;
 import com.android.tools.r8.ir.code.IRCode;
 import com.android.tools.r8.ir.code.Instruction;
-import com.android.tools.r8.utils.StringUtils;
+import com.android.tools.r8.utils.internal.StringUtils;
 import com.google.common.collect.Streams;
 import java.util.function.Consumer;
 import org.junit.Test;

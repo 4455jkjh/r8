@@ -5,7 +5,7 @@
 package com.android.tools.r8.bootstrap;
 
 import static com.android.tools.r8.utils.DescriptorUtils.JAVA_PACKAGE_SEPARATOR;
-import static com.android.tools.r8.utils.FileUtils.JAVA_EXTENSION;
+import static com.android.tools.r8.utils.internal.FileUtils.JAVA_EXTENSION;
 import static org.hamcrest.CoreMatchers.startsWith;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertEquals;
@@ -21,11 +21,11 @@ import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.Version;
 import com.android.tools.r8.naming.ClassNameMapper;
-import com.android.tools.r8.utils.internal.BooleanBox;
 import com.android.tools.r8.utils.CfUtils;
-import com.android.tools.r8.utils.FileUtils;
-import com.android.tools.r8.utils.internal.StreamUtils;
 import com.android.tools.r8.utils.ZipUtils;
+import com.android.tools.r8.utils.internal.BooleanBox;
+import com.android.tools.r8.utils.internal.FileUtils;
+import com.android.tools.r8.utils.internal.StreamUtils;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import java.io.IOException;

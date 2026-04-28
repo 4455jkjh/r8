@@ -10,7 +10,7 @@ import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.ToolHelper.TestDataSourceSet;
 import com.android.tools.r8.cfmethodgeneration.MethodGenerationBase;
 import com.android.tools.r8.graph.DexType;
-import com.android.tools.r8.utils.FileUtils;
+import com.android.tools.r8.utils.internal.FileUtils;
 import com.google.common.collect.ImmutableList;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;

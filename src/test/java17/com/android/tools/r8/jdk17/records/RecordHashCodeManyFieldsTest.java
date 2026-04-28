@@ -14,7 +14,7 @@ import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.TestRuntime.CfVm;
 import com.android.tools.r8.utils.AndroidApiLevel;
-import com.android.tools.r8.utils.StringUtils;
+import com.android.tools.r8.utils.internal.StringUtils;
 import java.util.Objects;
 import org.junit.Test;
 import org.junit.runner.RunWith;

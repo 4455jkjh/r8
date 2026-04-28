@@ -6,7 +6,7 @@ package com.android.tools.r8.classmerging.vertical;
 
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.utils.AndroidApiLevel;
-import com.android.tools.r8.utils.StringUtils;
+import com.android.tools.r8.utils.internal.StringUtils;
 import org.junit.Test;
 
 /** Regression test for b/120121170. */

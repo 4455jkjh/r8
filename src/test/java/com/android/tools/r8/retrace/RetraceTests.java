@@ -88,7 +88,7 @@ import com.android.tools.r8.retrace.stacktraces.UnicodeInFileNameStackTrace;
 import com.android.tools.r8.retrace.stacktraces.UnknownSourceStackTrace;
 import com.android.tools.r8.retrace.stacktraces.VerboseUnknownStackTrace;
 import com.android.tools.r8.utils.internal.BooleanUtils;
-import com.android.tools.r8.utils.StringUtils;
+import com.android.tools.r8.utils.internal.StringUtils;
 import com.google.common.collect.ImmutableList;
 import java.io.File;
 import java.nio.charset.StandardCharsets;

@@ -18,8 +18,8 @@ import com.android.tools.r8.keepanno.utils.KeepItemAnnotationGenerator.Generator
 import com.android.tools.r8.keepanno.utils.KeepItemAnnotationGenerator.Group;
 import com.android.tools.r8.keepanno.utils.KeepItemAnnotationGenerator.GroupMember;
 import com.android.tools.r8.references.ClassReference;
-import com.android.tools.r8.utils.FileUtils;
-import com.android.tools.r8.utils.StringUtils;
+import com.android.tools.r8.utils.internal.FileUtils;
+import com.android.tools.r8.utils.internal.StringUtils;
 import com.google.common.collect.ImmutableMap;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;

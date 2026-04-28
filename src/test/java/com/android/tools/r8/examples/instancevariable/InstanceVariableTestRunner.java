@@ -4,10 +4,8 @@
 package com.android.tools.r8.examples.instancevariable;
 
 import com.android.tools.r8.TestParameters;
-import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.examples.ExamplesTestBase;
-import com.android.tools.r8.utils.StringUtils;
-import org.junit.Test;
+import com.android.tools.r8.utils.internal.StringUtils;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 

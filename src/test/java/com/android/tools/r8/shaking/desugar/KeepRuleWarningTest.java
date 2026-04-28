@@ -9,7 +9,7 @@ import com.android.tools.r8.TestDiagnosticMessages;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.utils.AndroidApiLevel;
-import com.android.tools.r8.utils.StringUtils;
+import com.android.tools.r8.utils.internal.StringUtils;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -109,5 +109,4 @@ public class KeepRuleWarningTest extends TestBase {
         .run(parameters.getRuntime(), MAIN)
         .assertSuccessWithOutput(EXPECTED_OUTPUT);
   }
-
 }

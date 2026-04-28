@@ -5,8 +5,8 @@
 package com.android.tools.r8.apimodel;
 
 import com.android.tools.r8.utils.internal.Action;
-import com.android.tools.r8.utils.StringUtils;
-import com.android.tools.r8.utils.StringUtils.BraceType;
+import com.android.tools.r8.utils.internal.StringUtils;
+import com.android.tools.r8.utils.internal.StringUtils.BraceType;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;

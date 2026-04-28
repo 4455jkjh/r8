@@ -11,7 +11,7 @@ import com.android.tools.r8.KotlinCompilerTool.KotlinLambdaGeneration;
 import com.android.tools.r8.KotlinCompilerTool.KotlinTargetVersion;
 import com.android.tools.r8.TestRuntime.CfRuntime;
 import com.android.tools.r8.utils.DescriptorUtils;
-import com.android.tools.r8.utils.FileUtils;
+import com.android.tools.r8.utils.internal.FileUtils;
 import com.android.tools.r8.utils.internal.SemanticVersion;
 import java.io.IOException;
 import java.nio.file.Files;

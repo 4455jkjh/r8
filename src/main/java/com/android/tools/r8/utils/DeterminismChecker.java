@@ -7,6 +7,7 @@ import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.DexEncodedMethod;
 import com.android.tools.r8.graph.DexProgramClass;
 import com.android.tools.r8.graph.ProgramClass;
+import com.android.tools.r8.utils.internal.StringUtils;
 import com.android.tools.r8.utils.internal.ThrowingConsumer;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;

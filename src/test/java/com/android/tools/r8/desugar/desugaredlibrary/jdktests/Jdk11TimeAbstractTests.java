@@ -14,8 +14,8 @@ import static com.android.tools.r8.desugar.desugaredlibrary.test.CompilationSpec
 import static com.android.tools.r8.desugar.desugaredlibrary.test.CompilationSpecification.D8_L8SHRINK;
 import static com.android.tools.r8.desugar.desugaredlibrary.test.LibraryDesugaringSpecification.JDK11_PATH;
 import static com.android.tools.r8.desugar.desugaredlibrary.test.LibraryDesugaringSpecification.JDK8;
-import static com.android.tools.r8.utils.FileUtils.CLASS_EXTENSION;
-import static com.android.tools.r8.utils.FileUtils.JAVA_EXTENSION;
+import static com.android.tools.r8.utils.internal.FileUtils.CLASS_EXTENSION;
+import static com.android.tools.r8.utils.internal.FileUtils.JAVA_EXTENSION;
 import static org.junit.Assert.assertTrue;
 
 import com.android.tools.r8.SingleTestRunResult;
@@ -28,7 +28,7 @@ import com.android.tools.r8.desugar.desugaredlibrary.test.CompilationSpecificati
 import com.android.tools.r8.desugar.desugaredlibrary.test.DesugaredLibraryTestCompileResult;
 import com.android.tools.r8.desugar.desugaredlibrary.test.LibraryDesugaringSpecification;
 import com.android.tools.r8.utils.AndroidApiLevel;
-import com.android.tools.r8.utils.StringUtils;
+import com.android.tools.r8.utils.internal.StringUtils;
 import com.google.common.collect.ImmutableList;
 import java.nio.file.Files;
 import java.nio.file.Path;

@@ -14,7 +14,7 @@ import com.android.tools.r8.desugar.desugaredlibrary.test.CustomLibrarySpecifica
 import com.android.tools.r8.desugar.desugaredlibrary.test.LibraryDesugaringSpecification;
 import com.android.tools.r8.utils.AndroidApiLevel;
 import com.android.tools.r8.utils.internal.BooleanUtils;
-import com.android.tools.r8.utils.StringUtils;
+import com.android.tools.r8.utils.internal.StringUtils;
 import java.time.MonthDay;
 import java.util.List;
 import org.junit.Test;

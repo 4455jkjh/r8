@@ -17,7 +17,7 @@ import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.diagnostic.MissingDefinitionsDiagnostic;
 import com.android.tools.r8.mappingcompose.ComposeTestHelpers;
 import com.android.tools.r8.utils.AndroidApiLevel;
-import com.android.tools.r8.utils.StringUtils;
+import com.android.tools.r8.utils.internal.StringUtils;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;

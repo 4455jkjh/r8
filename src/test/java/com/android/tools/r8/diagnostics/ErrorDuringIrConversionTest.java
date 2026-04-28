@@ -23,7 +23,7 @@ import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.origin.Origin;
 import com.android.tools.r8.utils.Reporter;
 import com.android.tools.r8.utils.StringDiagnostic;
-import com.android.tools.r8.utils.StringUtils;
+import com.android.tools.r8.utils.internal.StringUtils;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.concurrent.atomic.AtomicBoolean;

@@ -18,7 +18,7 @@ import com.android.tools.r8.ir.code.InstructionListIterator;
 import com.android.tools.r8.ir.code.InvokeMethod;
 import com.android.tools.r8.ir.code.Value;
 import com.android.tools.r8.ir.optimize.AffectedValues;
-import com.android.tools.r8.utils.StringUtils;
+import com.android.tools.r8.utils.internal.StringUtils;
 import java.util.Set;
 
 public class BooleanMethodOptimizer extends PrimitiveMethodOptimizer {

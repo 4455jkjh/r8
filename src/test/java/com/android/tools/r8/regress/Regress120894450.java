@@ -6,7 +6,7 @@ package com.android.tools.r8.regress;
 
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.naming.ClassNameMapper;
-import com.android.tools.r8.utils.StringUtils;
+import com.android.tools.r8.utils.internal.StringUtils;
 import org.junit.Test;
 
 public class Regress120894450 extends TestBase {

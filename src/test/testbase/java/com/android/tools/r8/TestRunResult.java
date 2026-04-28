@@ -7,9 +7,9 @@ import static com.android.tools.r8.utils.internal.ConsumerUtils.emptyThrowingCon
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.is;
 
-import com.android.tools.r8.utils.StringUtils;
-import com.android.tools.r8.utils.internal.ThrowingConsumer;
 import com.android.tools.r8.utils.codeinspector.CodeInspector;
+import com.android.tools.r8.utils.internal.StringUtils;
+import com.android.tools.r8.utils.internal.ThrowingConsumer;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;

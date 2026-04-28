@@ -12,7 +12,7 @@ import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.references.ClassReference;
 import com.android.tools.r8.references.Reference;
-import com.android.tools.r8.utils.StringUtils;
+import com.android.tools.r8.utils.internal.StringUtils;
 import java.util.List;
 import java.util.stream.Collectors;
 import org.junit.Test;

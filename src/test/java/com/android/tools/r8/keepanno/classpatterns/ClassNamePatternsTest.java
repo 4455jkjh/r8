@@ -12,7 +12,7 @@ import com.android.tools.r8.keepanno.annotations.KeepTarget;
 import com.android.tools.r8.keepanno.annotations.TypePattern;
 import com.android.tools.r8.keepanno.annotations.UsedByReflection;
 import com.android.tools.r8.keepanno.annotations.UsesReflection;
-import com.android.tools.r8.utils.StringUtils;
+import com.android.tools.r8.utils.internal.StringUtils;
 import com.google.common.collect.ImmutableList;
 import java.lang.reflect.InvocationTargetException;
 import java.util.Arrays;

@@ -6,7 +6,7 @@ package com.android.tools.r8.examples.jumbostring;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.examples.ExamplesTestBase;
-import com.android.tools.r8.utils.StringUtils;
+import com.android.tools.r8.utils.internal.StringUtils;
 import com.google.common.collect.ImmutableList;
 import java.io.IOException;
 import java.io.PrintStream;

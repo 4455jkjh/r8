@@ -16,10 +16,10 @@ import com.android.tools.r8.desugar.desugaredlibrary.test.CompilationSpecificati
 import com.android.tools.r8.desugar.desugaredlibrary.test.CustomLibrarySpecification;
 import com.android.tools.r8.desugar.desugaredlibrary.test.LibraryDesugaringSpecification;
 import com.android.tools.r8.utils.AndroidApiLevel;
-import com.android.tools.r8.utils.internal.BooleanUtils;
-import com.android.tools.r8.utils.StringUtils;
 import com.android.tools.r8.utils.codeinspector.ClassSubject;
 import com.android.tools.r8.utils.codeinspector.CodeInspector;
+import com.android.tools.r8.utils.internal.BooleanUtils;
+import com.android.tools.r8.utils.internal.StringUtils;
 import com.google.common.collect.ImmutableList;
 import java.util.List;
 import java.util.Map;

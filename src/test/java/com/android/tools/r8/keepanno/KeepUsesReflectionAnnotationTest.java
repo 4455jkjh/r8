@@ -11,8 +11,8 @@ import static org.junit.Assume.assumeTrue;
 
 import com.android.tools.r8.keepanno.annotations.KeepTarget;
 import com.android.tools.r8.keepanno.annotations.UsesReflection;
-import com.android.tools.r8.utils.StringUtils;
 import com.android.tools.r8.utils.codeinspector.CodeInspector;
+import com.android.tools.r8.utils.internal.StringUtils;
 import com.google.common.collect.ImmutableList;
 import java.util.List;
 import org.junit.Test;

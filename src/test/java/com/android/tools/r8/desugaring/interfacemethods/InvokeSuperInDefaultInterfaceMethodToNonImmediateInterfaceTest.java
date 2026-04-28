@@ -10,7 +10,7 @@ import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.utils.AndroidApiLevel;
 import com.android.tools.r8.utils.internal.BooleanUtils;
-import com.android.tools.r8.utils.StringUtils;
+import com.android.tools.r8.utils.internal.StringUtils;
 import com.google.common.collect.ImmutableList;
 import java.io.IOException;
 import java.util.List;

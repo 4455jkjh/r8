@@ -53,9 +53,9 @@ import com.android.tools.r8.ir.optimize.staticizer.trivial.SimpleWithThrowingGet
 import com.android.tools.r8.ir.optimize.staticizer.trivial.TrivialTestClass;
 import com.android.tools.r8.naming.MemberNaming.MethodSignature;
 import com.android.tools.r8.utils.InternalOptions;
-import com.android.tools.r8.utils.StringUtils;
 import com.android.tools.r8.utils.codeinspector.ClassSubject;
 import com.android.tools.r8.utils.codeinspector.CodeInspector;
+import com.android.tools.r8.utils.internal.StringUtils;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Streams;
 import java.io.IOException;

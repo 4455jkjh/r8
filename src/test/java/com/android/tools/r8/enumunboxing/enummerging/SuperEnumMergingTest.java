@@ -6,7 +6,7 @@ package com.android.tools.r8.enumunboxing.enummerging;
 import com.android.tools.r8.NeverInline;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.enumunboxing.EnumUnboxingTestBase;
-import com.android.tools.r8.utils.StringUtils;
+import com.android.tools.r8.utils.internal.StringUtils;
 import java.util.List;
 import org.junit.Test;
 import org.junit.runner.RunWith;

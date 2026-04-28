@@ -11,10 +11,10 @@ import com.android.tools.r8.NeverInline;
 import com.android.tools.r8.R8TestCompileResultBase;
 import com.android.tools.r8.references.Reference;
 import com.android.tools.r8.retrace.RetraceMethodElement;
-import com.android.tools.r8.utils.StringUtils;
 import com.android.tools.r8.utils.codeinspector.ClassSubject;
 import com.android.tools.r8.utils.codeinspector.CodeInspector;
 import com.android.tools.r8.utils.codeinspector.MethodSubject;
+import com.android.tools.r8.utils.internal.StringUtils;
 import org.junit.BeforeClass;
 import org.junit.Test;
 

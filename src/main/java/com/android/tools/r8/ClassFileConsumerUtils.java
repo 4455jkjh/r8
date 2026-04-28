@@ -4,8 +4,8 @@
 package com.android.tools.r8;
 
 import com.android.tools.r8.utils.DescriptorUtils;
-import com.android.tools.r8.utils.FileUtils;
 import com.android.tools.r8.utils.ZipUtils;
+import com.android.tools.r8.utils.internal.FileUtils;
 import com.google.common.io.ByteStreams;
 import com.google.common.io.Closer;
 import java.io.BufferedOutputStream;

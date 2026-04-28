@@ -13,7 +13,7 @@ import com.android.tools.r8.references.ClassReference;
 import com.android.tools.r8.references.Reference;
 import com.android.tools.r8.transformers.ClassFileTransformer.MethodInsnTransform;
 import com.android.tools.r8.transformers.ClassFileTransformer.TypeInsnTransform;
-import com.android.tools.r8.utils.StringUtils;
+import com.android.tools.r8.utils.internal.StringUtils;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;

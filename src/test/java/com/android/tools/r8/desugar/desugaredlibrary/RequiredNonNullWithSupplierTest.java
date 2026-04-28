@@ -10,7 +10,7 @@ import static com.android.tools.r8.desugar.desugaredlibrary.test.LibraryDesugari
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.desugar.desugaredlibrary.test.CompilationSpecification;
 import com.android.tools.r8.desugar.desugaredlibrary.test.LibraryDesugaringSpecification;
-import com.android.tools.r8.utils.StringUtils;
+import com.android.tools.r8.utils.internal.StringUtils;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Supplier;

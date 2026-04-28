@@ -4,8 +4,8 @@
 
 package com.android.tools.r8.naming;
 
-import static com.android.tools.r8.utils.StringUtils.UNIX_LINE_SEPARATOR;
 import static com.android.tools.r8.utils.codeinspector.Matchers.isPresent;
+import static com.android.tools.r8.utils.internal.StringUtils.UNIX_LINE_SEPARATOR;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;

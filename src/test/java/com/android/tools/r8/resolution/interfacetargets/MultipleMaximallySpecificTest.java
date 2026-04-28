@@ -28,7 +28,7 @@ import com.android.tools.r8.graph.MethodResolutionResult;
 import com.android.tools.r8.references.MethodReference;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
 import com.android.tools.r8.utils.AndroidApiLevel;
-import com.android.tools.r8.utils.StringUtils;
+import com.android.tools.r8.utils.internal.StringUtils;
 import com.android.tools.r8.utils.timing.Timing;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;

@@ -8,7 +8,7 @@ import com.android.tools.r8.keepanno.annotations.KeepForApi;
 import com.android.tools.r8.origin.ArchiveEntryOrigin;
 import com.android.tools.r8.origin.Origin;
 import com.android.tools.r8.origin.PathOrigin;
-import com.android.tools.r8.utils.FileUtils;
+import com.android.tools.r8.utils.internal.FileUtils;
 import com.google.common.io.ByteStreams;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;

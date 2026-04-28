@@ -12,7 +12,7 @@ import com.android.tools.r8.ir.code.Instruction;
 import com.android.tools.r8.ir.code.InvokeDirect;
 import com.android.tools.r8.ir.optimize.Inliner.Reason;
 import com.android.tools.r8.utils.Reporter;
-import com.android.tools.r8.utils.StringUtils;
+import com.android.tools.r8.utils.internal.StringUtils;
 import java.util.Set;
 
 class WhyAreYouNotInliningReporterImpl extends WhyAreYouNotInliningReporter {

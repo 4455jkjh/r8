@@ -21,7 +21,7 @@ import com.android.tools.r8.retrace.stacktraces.ActualRetraceBotStackTraceWithIn
 import com.android.tools.r8.retrace.stacktraces.FoundMethodVerboseStackTrace;
 import com.android.tools.r8.retrace.stacktraces.PGStackTrace;
 import com.android.tools.r8.utils.internal.BooleanUtils;
-import com.android.tools.r8.utils.StringUtils;
+import com.android.tools.r8.utils.internal.StringUtils;
 import com.android.tools.r8.utils.internal.ThrowingConsumer;
 import com.google.common.base.Charsets;
 import com.google.common.collect.ImmutableList;

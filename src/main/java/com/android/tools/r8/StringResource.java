@@ -5,7 +5,7 @@ package com.android.tools.r8;
 
 import com.android.tools.r8.origin.Origin;
 import com.android.tools.r8.origin.PathOrigin;
-import com.android.tools.r8.utils.FileUtils;
+import com.android.tools.r8.utils.internal.FileUtils;
 import java.io.IOException;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;

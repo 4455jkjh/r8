@@ -17,9 +17,9 @@ import com.android.tools.r8.desugar.desugaredlibrary.test.LibraryDesugaringSpeci
 import com.android.tools.r8.synthesis.SyntheticItemsTestUtils;
 import com.android.tools.r8.testing.AndroidBuildVersion;
 import com.android.tools.r8.utils.AndroidApiLevel;
-import com.android.tools.r8.utils.StringUtils;
 import com.android.tools.r8.utils.codeinspector.CodeInspector;
 import com.android.tools.r8.utils.codeinspector.FoundClassSubject;
+import com.android.tools.r8.utils.internal.StringUtils;
 import com.google.common.collect.ImmutableList;
 import java.nio.file.Path;
 import java.util.Arrays;

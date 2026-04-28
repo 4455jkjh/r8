@@ -5,7 +5,7 @@
 package com.android.tools.r8.jdk9.varhandle;
 
 import com.android.tools.r8.ToolHelper.DexVm.Version;
-import com.android.tools.r8.utils.StringUtils;
+import com.android.tools.r8.utils.internal.StringUtils;
 import com.google.common.collect.ImmutableList;
 import java.util.List;
 import org.junit.runner.RunWith;

@@ -21,7 +21,7 @@ import com.android.tools.r8.cf.methodhandles.MethodHandleTest.F;
 import com.android.tools.r8.cf.methodhandles.MethodHandleTest.I;
 import com.android.tools.r8.cf.methodhandles.MethodHandleTest.Impl;
 import com.android.tools.r8.errors.UnsupportedFeatureDiagnostic;
-import com.android.tools.r8.utils.StringUtils;
+import com.android.tools.r8.utils.internal.StringUtils;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableList.Builder;
 import java.util.List;

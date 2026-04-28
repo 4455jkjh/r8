@@ -17,7 +17,7 @@ import com.android.tools.r8.diagnostic.DefinitionContext;
 import com.android.tools.r8.references.ClassReference;
 import com.android.tools.r8.references.Reference;
 import com.android.tools.r8.utils.AndroidApiLevel;
-import com.android.tools.r8.utils.StringUtils;
+import com.android.tools.r8.utils.internal.StringUtils;
 import com.google.common.collect.ImmutableSet;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;

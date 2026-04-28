@@ -9,7 +9,7 @@ import com.android.tools.r8.graph.CfCode;
 import com.android.tools.r8.graph.DexType;
 import com.android.tools.r8.utils.InternalOptions;
 import com.android.tools.r8.utils.SetUtils;
-import com.android.tools.r8.utils.StringUtils;
+import com.android.tools.r8.utils.internal.StringUtils;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedHashMap;

@@ -13,11 +13,11 @@ import static org.junit.Assume.assumeFalse;
 
 import com.android.tools.r8.NoHorizontalClassMerging;
 import com.android.tools.r8.TestBase;
-import com.android.tools.r8.utils.internal.BooleanUtils;
-import com.android.tools.r8.utils.StringUtils;
 import com.android.tools.r8.utils.codeinspector.ClassSubject;
 import com.android.tools.r8.utils.codeinspector.CodeInspector;
 import com.android.tools.r8.utils.codeinspector.FieldSubject;
+import com.android.tools.r8.utils.internal.BooleanUtils;
+import com.android.tools.r8.utils.internal.StringUtils;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;

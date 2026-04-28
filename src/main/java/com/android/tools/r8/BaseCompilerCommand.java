@@ -21,14 +21,15 @@ import com.android.tools.r8.startup.StartupProfileProvider;
 import com.android.tools.r8.utils.AndroidApiLevel;
 import com.android.tools.r8.utils.AndroidApp;
 import com.android.tools.r8.utils.DumpInputFlags;
-import com.android.tools.r8.utils.FileUtils;
 import com.android.tools.r8.utils.InternalOptions.DesugarState;
 import com.android.tools.r8.utils.ListUtils;
 import com.android.tools.r8.utils.MapConsumerUtils;
 import com.android.tools.r8.utils.PartitionMapZipContainer;
 import com.android.tools.r8.utils.ProgramConsumerUtils;
 import com.android.tools.r8.utils.Reporter;
+import com.android.tools.r8.utils.StringDiagnostic;
 import com.android.tools.r8.utils.ThreadUtils;
+import com.android.tools.r8.utils.internal.FileUtils;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -817,7 +818,8 @@ public abstract class BaseCompilerCommand extends BaseCommand {
       if (mode == null) {
         reporter.error("Expected valid compilation mode, was null");
       }
-      FileUtils.validateOutputFile(outputPath, reporter);
+      FileUtils.validateOutputFile(
+          outputPath, errorMessage -> reporter.error(new StringDiagnostic(errorMessage)));
       if (getProgramConsumer() == null) {
         // This is never the case for a command-line parse, so we report using API references.
         reporter.error("A ProgramConsumer or Output is required for compilation");

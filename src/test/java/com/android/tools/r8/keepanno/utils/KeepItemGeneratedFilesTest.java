@@ -8,7 +8,7 @@ import static org.junit.Assert.assertEquals;
 
 import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.keepanno.utils.KeepItemAnnotationGenerator.Generator;
-import com.android.tools.r8.utils.FileUtils;
+import com.android.tools.r8.utils.internal.FileUtils;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import org.junit.Assume;

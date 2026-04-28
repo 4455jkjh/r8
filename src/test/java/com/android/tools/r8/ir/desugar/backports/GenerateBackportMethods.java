@@ -21,7 +21,7 @@ import com.android.tools.r8.ir.desugar.backports.BackportMethodsStub.LongStub;
 import com.android.tools.r8.ir.desugar.backports.BackportMethodsStub.MathStub;
 import com.android.tools.r8.ir.desugar.backports.BackportMethodsStub.UnsafeStub;
 import com.android.tools.r8.utils.DescriptorUtils;
-import com.android.tools.r8.utils.FileUtils;
+import com.android.tools.r8.utils.internal.FileUtils;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import java.io.IOException;

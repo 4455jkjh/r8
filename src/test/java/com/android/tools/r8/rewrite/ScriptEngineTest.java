@@ -19,7 +19,7 @@ import com.android.tools.r8.TestRuntime.CfVm;
 import com.android.tools.r8.ToolHelper.DexVm.Version;
 import com.android.tools.r8.origin.Origin;
 import com.android.tools.r8.utils.internal.StreamUtils;
-import com.android.tools.r8.utils.StringUtils;
+import com.android.tools.r8.utils.internal.StringUtils;
 import java.io.IOException;
 import java.io.Reader;
 import java.nio.file.Path;

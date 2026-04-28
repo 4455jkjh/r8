@@ -17,7 +17,7 @@ import com.android.tools.r8.TestRunResult;
 import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.desugar.desugaredlibrary.DesugaredLibraryTestBase;
 import com.android.tools.r8.utils.AndroidApiLevel;
-import com.android.tools.r8.utils.StringUtils;
+import com.android.tools.r8.utils.internal.StringUtils;
 import java.util.function.Supplier;
 import org.junit.Test;
 import org.junit.runner.RunWith;

@@ -3,8 +3,6 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8.shaking;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assume.assumeTrue;
 
 import com.android.tools.r8.ByteDataView;
 import com.android.tools.r8.ClassFileConsumer.ArchiveConsumer;
@@ -12,10 +10,8 @@ import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.ToolHelper;
-import com.android.tools.r8.ToolHelper.ProcessResult;
 import com.android.tools.r8.utils.DescriptorUtils;
-import com.android.tools.r8.utils.FileUtils;
-import com.android.tools.r8.utils.StringUtils;
+import com.android.tools.r8.utils.internal.StringUtils;
 import java.io.IOException;
 import java.nio.file.Path;
 import org.junit.Before;

@@ -116,6 +116,7 @@ import com.android.tools.r8.utils.collections.ProgramMethodSet;
 import com.android.tools.r8.utils.internal.AssertionUtils;
 import com.android.tools.r8.utils.internal.ConsumerUtils;
 import com.android.tools.r8.utils.internal.QuadConsumer;
+import com.android.tools.r8.utils.internal.StringUtils;
 import com.android.tools.r8.utils.internal.ThrowingConsumer;
 import com.android.tools.r8.utils.internal.TriConsumer;
 import com.android.tools.r8.utils.internal.TriFunction;

@@ -5,9 +5,9 @@
 package com.android.tools.r8.maindexlist;
 
 import static com.android.tools.r8.synthesis.SyntheticItemsTestUtils.isLambdaMethodAnnotationDescriptor;
-import static com.android.tools.r8.utils.FileUtils.JAR_EXTENSION;
-import static com.android.tools.r8.utils.FileUtils.ZIP_EXTENSION;
-import static com.android.tools.r8.utils.FileUtils.withNativeFileSeparators;
+import static com.android.tools.r8.utils.internal.FileUtils.JAR_EXTENSION;
+import static com.android.tools.r8.utils.internal.FileUtils.ZIP_EXTENSION;
+import static com.android.tools.r8.utils.internal.FileUtils.withNativeFileSeparators;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertArrayEquals;
@@ -28,10 +28,10 @@ import com.android.tools.r8.references.Reference;
 import com.android.tools.r8.shaking.WhyAreYouKeepingConsumer;
 import com.android.tools.r8.synthesis.SyntheticItemsTestUtils;
 import com.android.tools.r8.utils.AndroidApiLevel;
-import com.android.tools.r8.utils.internal.Box;
 import com.android.tools.r8.utils.DescriptorUtils;
-import com.android.tools.r8.utils.FileUtils;
-import com.android.tools.r8.utils.StringUtils;
+import com.android.tools.r8.utils.internal.Box;
+import com.android.tools.r8.utils.internal.FileUtils;
+import com.android.tools.r8.utils.internal.StringUtils;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;

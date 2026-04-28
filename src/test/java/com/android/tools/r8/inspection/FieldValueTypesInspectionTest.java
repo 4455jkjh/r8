@@ -15,7 +15,7 @@ import com.android.tools.r8.references.FieldReference;
 import com.android.tools.r8.references.Reference;
 import com.android.tools.r8.utils.internal.IntUtils;
 import com.android.tools.r8.utils.internal.LongUtils;
-import com.android.tools.r8.utils.StringUtils;
+import com.android.tools.r8.utils.internal.StringUtils;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;

@@ -17,7 +17,7 @@ import com.android.tools.r8.desugar.desugaredlibrary.test.CustomLibrarySpecifica
 import com.android.tools.r8.desugar.desugaredlibrary.test.LibraryDesugaringSpecification;
 import com.android.tools.r8.errors.InvalidLibrarySuperclassDiagnostic;
 import com.android.tools.r8.utils.AndroidApiLevel;
-import com.android.tools.r8.utils.StringUtils;
+import com.android.tools.r8.utils.internal.StringUtils;
 import com.google.common.collect.ImmutableList;
 import java.io.IOException;
 import java.nio.file.Path;

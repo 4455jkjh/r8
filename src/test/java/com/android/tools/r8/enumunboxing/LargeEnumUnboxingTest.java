@@ -6,7 +6,7 @@ package com.android.tools.r8.enumunboxing;
 
 import com.android.tools.r8.NeverClassInline;
 import com.android.tools.r8.TestParameters;
-import com.android.tools.r8.utils.StringUtils;
+import com.android.tools.r8.utils.internal.StringUtils;
 import java.util.List;
 import org.junit.Test;
 import org.junit.runner.RunWith;

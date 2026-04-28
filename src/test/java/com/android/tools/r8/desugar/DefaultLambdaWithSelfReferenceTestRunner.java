@@ -18,7 +18,7 @@ import com.android.tools.r8.debug.DebugTestBase.JUnit3Wrapper.Command;
 import com.android.tools.r8.debug.DebugTestConfig;
 import com.android.tools.r8.references.MethodReference;
 import com.android.tools.r8.references.Reference;
-import com.android.tools.r8.utils.StringUtils;
+import com.android.tools.r8.utils.internal.StringUtils;
 import com.google.common.collect.ImmutableList;
 import java.nio.file.Files;
 import java.nio.file.Path;

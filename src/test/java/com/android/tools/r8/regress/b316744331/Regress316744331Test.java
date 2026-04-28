@@ -14,7 +14,7 @@ import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.debug.DebugTestBase;
 import com.android.tools.r8.references.MethodReference;
 import com.android.tools.r8.references.Reference;
-import com.android.tools.r8.utils.StringUtils;
+import com.android.tools.r8.utils.internal.StringUtils;
 import org.apache.harmony.jpda.tests.framework.jdwp.JDWPConstants.Tag;
 import org.apache.harmony.jpda.tests.framework.jdwp.Value;
 import org.junit.Test;

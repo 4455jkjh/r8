@@ -14,7 +14,7 @@ import com.android.tools.r8.references.Reference;
 import com.android.tools.r8.retrace.ProguardMapProducer;
 import com.android.tools.r8.retrace.ProguardMappingSupplier;
 import com.android.tools.r8.transformers.ClassFileTransformer.MethodPredicate;
-import com.android.tools.r8.utils.FileUtils;
+import com.android.tools.r8.utils.internal.FileUtils;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashSet;

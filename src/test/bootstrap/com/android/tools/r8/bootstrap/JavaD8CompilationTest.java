@@ -4,8 +4,8 @@
 
 package com.android.tools.r8.bootstrap;
 
-import static com.android.tools.r8.utils.FileUtils.CLASS_EXTENSION;
 import static com.android.tools.r8.utils.InternalOptions.ASM_VERSION;
+import static com.android.tools.r8.utils.internal.FileUtils.CLASS_EXTENSION;
 import static junit.framework.TestCase.assertEquals;
 import static junit.framework.TestCase.assertTrue;
 import static junit.framework.TestCase.fail;

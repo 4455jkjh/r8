@@ -12,7 +12,7 @@ import com.android.tools.r8.D8Command;
 import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.utils.AndroidApp;
 import com.android.tools.r8.utils.AndroidAppConsumers;
-import com.android.tools.r8.utils.StringUtils;
+import com.android.tools.r8.utils.internal.StringUtils;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.concurrent.ExecutionException;

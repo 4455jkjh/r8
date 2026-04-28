@@ -9,7 +9,7 @@ import com.android.tools.r8.CompilationFailedException;
 import com.android.tools.r8.keepanno.annotations.KeepItemKind;
 import com.android.tools.r8.keepanno.annotations.KeepTarget;
 import com.android.tools.r8.keepanno.annotations.UsesReflection;
-import com.android.tools.r8.utils.StringUtils;
+import com.android.tools.r8.utils.internal.StringUtils;
 import java.util.List;
 import org.junit.Test;
 import org.junit.runner.RunWith;

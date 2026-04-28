@@ -18,7 +18,7 @@ import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.errors.InterfaceDesugarMissingTypeDiagnostic;
 import com.android.tools.r8.utils.AndroidApiLevel;
 import com.android.tools.r8.utils.StringDiagnostic;
-import com.android.tools.r8.utils.StringUtils;
+import com.android.tools.r8.utils.internal.StringUtils;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;

@@ -4,7 +4,7 @@
 
 package com.android.tools.r8.utils;
 
-import static com.android.tools.r8.utils.StringUtils.UNIX_LINE_SEPARATOR;
+import static com.android.tools.r8.utils.internal.StringUtils.UNIX_LINE_SEPARATOR;
 import static org.junit.Assert.assertFalse;
 
 import com.android.tools.r8.DataDirectoryResource;

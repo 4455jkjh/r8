@@ -14,7 +14,7 @@ import com.android.tools.r8.kotlin.metadata.KotlinMetadataTestBase;
 import com.android.tools.r8.shaking.ProguardKeepAttributes;
 import com.android.tools.r8.utils.AndroidApiLevel;
 import com.android.tools.r8.utils.DescriptorUtils;
-import com.android.tools.r8.utils.FileUtils;
+import com.android.tools.r8.utils.internal.FileUtils;
 import java.nio.file.Paths;
 import java.util.List;
 import org.junit.Test;

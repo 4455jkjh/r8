@@ -3,9 +3,9 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8.utils;
 
-import static com.android.tools.r8.utils.FileUtils.CLASS_EXTENSION;
-import static com.android.tools.r8.utils.FileUtils.DEX_EXTENSION;
-import static com.android.tools.r8.utils.FileUtils.MODULE_INFO_CLASS;
+import static com.android.tools.r8.utils.internal.FileUtils.CLASS_EXTENSION;
+import static com.android.tools.r8.utils.internal.FileUtils.DEX_EXTENSION;
+import static com.android.tools.r8.utils.internal.FileUtils.MODULE_INFO_CLASS;
 
 import com.android.tools.r8.ByteDataView;
 import com.android.tools.r8.DataDirectoryResource;
@@ -17,6 +17,8 @@ import com.android.tools.r8.errors.CompilationError;
 import com.android.tools.r8.references.ClassReference;
 import com.android.tools.r8.references.Reference;
 import com.android.tools.r8.utils.internal.BooleanBox;
+import com.android.tools.r8.utils.internal.FileUtils;
+import com.android.tools.r8.utils.internal.StringUtils;
 import com.google.common.io.ByteStreams;
 import com.google.common.io.Closer;
 import java.io.BufferedOutputStream;

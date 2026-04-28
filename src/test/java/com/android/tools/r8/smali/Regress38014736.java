@@ -6,7 +6,7 @@ package com.android.tools.r8.smali;
 import static org.junit.Assert.assertTrue;
 
 import com.android.tools.r8.utils.AndroidApp;
-import com.android.tools.r8.utils.StringUtils;
+import com.android.tools.r8.utils.internal.StringUtils;
 import org.junit.Test;
 
 public class Regress38014736 extends SmaliTestBase {

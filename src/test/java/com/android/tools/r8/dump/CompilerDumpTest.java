@@ -12,7 +12,7 @@ import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.internal.CompilationTestBase;
 import com.android.tools.r8.utils.DumpInputFlags;
-import com.android.tools.r8.utils.StringUtils;
+import com.android.tools.r8.utils.internal.StringUtils;
 import com.google.common.collect.Lists;
 import java.nio.file.Files;
 import java.nio.file.Path;

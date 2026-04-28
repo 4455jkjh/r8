@@ -12,6 +12,7 @@ import com.android.tools.r8.ProgramResourceProvider;
 import com.android.tools.r8.ResourceException;
 import com.android.tools.r8.Version;
 import com.android.tools.r8.origin.Origin;
+import com.android.tools.r8.utils.internal.FileUtils;
 import com.google.common.io.ByteStreams;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;

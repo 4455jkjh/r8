@@ -13,7 +13,7 @@ import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.naming.ClassNameMapper;
 import com.android.tools.r8.naming.MappingComposeException;
 import com.android.tools.r8.naming.MappingComposer;
-import com.android.tools.r8.utils.StringUtils;
+import com.android.tools.r8.utils.internal.StringUtils;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;

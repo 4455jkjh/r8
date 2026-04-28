@@ -11,8 +11,8 @@ import static com.android.tools.r8.desugar.desugaredlibrary.jdktests.Jdk11TestLi
 import static com.android.tools.r8.desugar.desugaredlibrary.jdktests.Jdk11TestLibraryDesugaringSpecification.JDK11_PATH_JAVA_BASE_EXT;
 import static com.android.tools.r8.desugar.desugaredlibrary.test.CompilationSpecification.D8_L8DEBUG;
 import static com.android.tools.r8.desugar.desugaredlibrary.test.CompilationSpecification.D8_L8SHRINK;
-import static com.android.tools.r8.utils.FileUtils.CLASS_EXTENSION;
-import static com.android.tools.r8.utils.FileUtils.JAVA_EXTENSION;
+import static com.android.tools.r8.utils.internal.FileUtils.CLASS_EXTENSION;
+import static com.android.tools.r8.utils.internal.FileUtils.JAVA_EXTENSION;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -30,7 +30,7 @@ import com.android.tools.r8.desugar.desugaredlibrary.test.LibraryDesugaringSpeci
 import com.android.tools.r8.references.Reference;
 import com.android.tools.r8.transformers.ClassFileTransformer;
 import com.android.tools.r8.utils.AndroidApiLevel;
-import com.android.tools.r8.utils.StringUtils;
+import com.android.tools.r8.utils.internal.StringUtils;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import java.io.IOException;

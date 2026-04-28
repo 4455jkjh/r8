@@ -19,7 +19,7 @@ import com.android.tools.r8.shaking.WhyAreYouNotInliningRule;
 import com.android.tools.r8.shaking.WhyAreYouNotObfuscatingRule;
 import com.android.tools.r8.utils.InternalOptions.PackageObfuscationMode;
 import com.android.tools.r8.utils.Reporter;
-import com.android.tools.r8.utils.StringUtils;
+import com.android.tools.r8.utils.internal.StringUtils;
 import java.nio.file.Path;
 import java.util.List;
 

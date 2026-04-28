@@ -11,7 +11,7 @@ import com.android.tools.r8.references.FieldReference;
 import com.android.tools.r8.references.Reference;
 import com.android.tools.r8.retrace.RetraceFieldResult;
 import com.android.tools.r8.retrace.Retracer;
-import com.android.tools.r8.utils.StringUtils;
+import com.android.tools.r8.utils.internal.StringUtils;
 import com.google.common.collect.ImmutableList;
 import java.util.List;
 import java.util.stream.Collectors;

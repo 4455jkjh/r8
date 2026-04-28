@@ -4,7 +4,6 @@
 package com.android.tools.r8.debuginfo;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 import com.android.tools.r8.TestBase;
@@ -16,7 +15,7 @@ import com.android.tools.r8.graph.DexDebugEntry;
 import com.android.tools.r8.graph.DexDebugEntryBuilder;
 import com.android.tools.r8.graph.DexDebugInfo;
 import com.android.tools.r8.graph.DexEncodedMethod;
-import com.android.tools.r8.utils.StringUtils;
+import com.android.tools.r8.utils.internal.StringUtils;
 import java.nio.file.Path;
 import java.util.Iterator;
 import java.util.List;

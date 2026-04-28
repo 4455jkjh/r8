@@ -6,7 +6,7 @@ package com.android.tools.r8.desugar.desugaredlibrary.jdktests;
 
 import static com.android.tools.r8.desugar.desugaredlibrary.jdktests.Jdk11TestLibraryDesugaringSpecification.EXTENSION_PATH;
 import static com.android.tools.r8.desugar.desugaredlibrary.test.CompilationSpecification.DEFAULT_SPECIFICATIONS;
-import static com.android.tools.r8.utils.FileUtils.CLASS_EXTENSION;
+import static com.android.tools.r8.utils.internal.FileUtils.CLASS_EXTENSION;
 
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestRuntime;

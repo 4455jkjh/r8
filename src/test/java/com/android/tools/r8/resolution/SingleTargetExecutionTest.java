@@ -18,7 +18,7 @@ import com.android.tools.r8.resolution.singletarget.one.SubSubClassOne;
 import com.android.tools.r8.resolution.singletarget.one.SubSubClassThree;
 import com.android.tools.r8.resolution.singletarget.one.SubSubClassTwo;
 import com.android.tools.r8.utils.internal.BooleanUtils;
-import com.android.tools.r8.utils.StringUtils;
+import com.android.tools.r8.utils.internal.StringUtils;
 import com.google.common.collect.ImmutableList;
 import java.util.List;
 import org.junit.Test;

@@ -16,7 +16,7 @@ import com.android.tools.r8.graph.DexCode;
 import com.android.tools.r8.graph.DexEncodedMethod;
 import com.android.tools.r8.smali.SmaliBuilder.MethodSignature;
 import com.android.tools.r8.utils.AndroidApp;
-import com.android.tools.r8.utils.StringUtils;
+import com.android.tools.r8.utils.internal.StringUtils;
 import org.junit.Test;
 
 public class RunArtSmokeTest extends SmaliTestBase {

@@ -3,7 +3,7 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8.utils;
 
-import static com.android.tools.r8.utils.FileUtils.isClassFile;
+import static com.android.tools.r8.utils.internal.FileUtils.isClassFile;
 
 import com.android.tools.r8.DataEntryResource;
 import com.android.tools.r8.DataResourceProvider;

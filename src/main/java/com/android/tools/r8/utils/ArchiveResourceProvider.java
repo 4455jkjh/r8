@@ -3,7 +3,7 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8.utils;
 
-import static com.android.tools.r8.utils.FileUtils.isArchive;
+import static com.android.tools.r8.utils.internal.FileUtils.isArchive;
 import static com.google.common.base.Predicates.alwaysTrue;
 
 import com.android.tools.r8.DataResourceProvider;
@@ -17,6 +17,7 @@ import com.android.tools.r8.origin.ArchiveEntryOrigin;
 import com.android.tools.r8.origin.Origin;
 import com.android.tools.r8.origin.PathOrigin;
 import com.android.tools.r8.shaking.FilteredClassPath;
+import com.android.tools.r8.utils.internal.FileUtils;
 import com.google.common.io.ByteStreams;
 import java.io.IOException;
 import java.io.InputStream;

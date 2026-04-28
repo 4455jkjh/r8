@@ -13,9 +13,9 @@ import com.android.tools.r8.NeverInline;
 import com.android.tools.r8.NeverPropagateValue;
 import com.android.tools.r8.NoVerticalClassMerging;
 import com.android.tools.r8.TestBase;
-import com.android.tools.r8.utils.StringUtils;
 import com.android.tools.r8.utils.codeinspector.CodeInspector;
 import com.android.tools.r8.utils.codeinspector.FieldSubject;
+import com.android.tools.r8.utils.internal.StringUtils;
 import org.junit.Test;
 
 /** Regression test for b/127932803. */

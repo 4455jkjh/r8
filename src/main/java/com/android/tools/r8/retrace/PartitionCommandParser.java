@@ -11,7 +11,7 @@ import com.android.tools.r8.utils.OptionsParsing;
 import com.android.tools.r8.utils.OptionsParsing.ParseContext;
 import com.android.tools.r8.utils.PartitionMapZipContainer;
 import com.android.tools.r8.utils.StringDiagnostic;
-import com.android.tools.r8.utils.StringUtils;
+import com.android.tools.r8.utils.internal.StringUtils;
 import com.google.common.collect.ImmutableList;
 import java.nio.file.Paths;
 import java.util.List;

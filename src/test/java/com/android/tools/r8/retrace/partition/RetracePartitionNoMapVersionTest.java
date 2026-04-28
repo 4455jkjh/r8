@@ -23,7 +23,7 @@ import com.android.tools.r8.retrace.RetracedMethodReference;
 import com.android.tools.r8.retrace.RetracedSingleFrame;
 import com.android.tools.r8.retrace.Retracer;
 import com.android.tools.r8.retrace.internal.MappingPartitionMetadataInternal;
-import com.android.tools.r8.utils.StringUtils;
+import com.android.tools.r8.utils.internal.StringUtils;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;

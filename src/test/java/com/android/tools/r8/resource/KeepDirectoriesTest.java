@@ -22,7 +22,7 @@ import com.android.tools.r8.origin.Origin;
 import com.android.tools.r8.shaking.forceproguardcompatibility.ProguardCompatibilityTestBase;
 import com.android.tools.r8.utils.AndroidApp;
 import com.android.tools.r8.utils.internal.BooleanUtils;
-import com.android.tools.r8.utils.StringUtils;
+import com.android.tools.r8.utils.internal.StringUtils;
 import com.android.tools.r8.utils.internal.exceptions.Unreachable;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;

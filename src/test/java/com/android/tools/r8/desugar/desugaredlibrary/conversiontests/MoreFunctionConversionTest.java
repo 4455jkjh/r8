@@ -16,9 +16,9 @@ import com.android.tools.r8.desugar.desugaredlibrary.test.CustomLibrarySpecifica
 import com.android.tools.r8.desugar.desugaredlibrary.test.DesugaredLibraryTestCompileResult;
 import com.android.tools.r8.desugar.desugaredlibrary.test.LibraryDesugaringSpecification;
 import com.android.tools.r8.utils.AndroidApiLevel;
-import com.android.tools.r8.utils.StringUtils;
 import com.android.tools.r8.utils.codeinspector.CodeInspector;
 import com.android.tools.r8.utils.codeinspector.FoundClassSubject;
+import com.android.tools.r8.utils.internal.StringUtils;
 import com.google.common.collect.Sets;
 import java.util.List;
 import java.util.Set;

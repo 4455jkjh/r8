@@ -4,15 +4,15 @@
 package com.android.tools.r8.optimize.listiteration;
 
 import static com.android.tools.r8.utils.InternalOptions.ASM_VERSION;
-import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.transformers.ClassTransformer;
-import com.android.tools.r8.utils.StringUtils;
+import com.android.tools.r8.utils.internal.StringUtils;
 import java.util.ArrayList;
 import java.util.Iterator;
 import org.junit.Test;

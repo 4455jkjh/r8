@@ -21,7 +21,7 @@ import com.android.tools.r8.retrace.ProguardMapProducer;
 import com.android.tools.r8.retrace.RetraceFrameElement;
 import com.android.tools.r8.retrace.RetraceStackTraceContext;
 import com.android.tools.r8.retrace.Retracer;
-import com.android.tools.r8.utils.StringUtils;
+import com.android.tools.r8.utils.internal.StringUtils;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.HashMap;

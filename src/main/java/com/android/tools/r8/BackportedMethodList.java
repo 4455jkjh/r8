@@ -9,7 +9,7 @@ import com.android.tools.r8.ir.desugar.desugaredlibrary.lint.DesugaredMethodsLis
 import com.android.tools.r8.keepanno.annotations.KeepForApi;
 import com.android.tools.r8.origin.Origin;
 import com.android.tools.r8.utils.ExceptionUtils;
-import com.android.tools.r8.utils.StringUtils;
+import com.android.tools.r8.utils.internal.StringUtils;
 
 /**
  * Tool to extract the list of methods which is backported by the D8 and R8 compilers.

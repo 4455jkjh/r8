@@ -61,7 +61,7 @@ public class DirectoryBuilder implements OutputBuilder {
     Path target = root.resolve(name.replace(NAME_SEPARATOR, File.separatorChar));
     try {
       Files.createDirectories(target.getParent());
-      FileUtils.writeToFile(target, null, content);
+      ByteDataUtils.writeToFile(target, null, content);
     } catch (IOException e) {
       handler.error(new ExceptionDiagnostic(e, new PathOrigin(target)));
     }

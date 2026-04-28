@@ -21,7 +21,7 @@ import com.android.tools.r8.graph.ProgramOrClasspathClass;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
 import com.android.tools.r8.utils.DescriptorUtils;
 import com.android.tools.r8.utils.InternalOptions;
-import com.android.tools.r8.utils.StringUtils;
+import com.android.tools.r8.utils.internal.StringUtils;
 import com.android.tools.r8.utils.timing.Timing;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;

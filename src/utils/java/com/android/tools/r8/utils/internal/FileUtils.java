@@ -1,9 +1,8 @@
 // Copyright (c) 2017, the R8 project authors. Please see the AUTHORS file
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
-package com.android.tools.r8.utils;
+package com.android.tools.r8.utils.internal;
 
-import com.android.tools.r8.ByteDataView;
 import com.google.common.io.Closer;
 import java.io.File;
 import java.io.IOException;
@@ -17,6 +16,7 @@ import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.Arrays;
 import java.util.List;
+import java.util.function.Consumer;
 import java.util.zip.ZipFile;
 
 public class FileUtils {
@@ -149,32 +149,26 @@ public class FileUtils {
     return file;
   }
 
-  public static Path validateOutputFile(Path path, Reporter reporter) {
+  public static Path validateOutputFile(Path path, Consumer<String> errorConsumer) {
     if (path != null) {
       if (!isJarOrZipFile(path) && !(Files.exists(path) && Files.isDirectory(path))) {
-        reporter.error(new StringDiagnostic(
+        errorConsumer.accept(
             "Invalid output: "
                 + path
-                + "\nOutput must be a .zip or .jar archive or an existing directory"));
+                + "\nOutput must be a .zip or .jar archive or an existing directory");
       }
     }
     return path;
   }
 
-  public static OutputStream openPath(
-      Closer closer,
-      Path file,
-      OpenOption... openOptions)
+  public static OutputStream openPath(Closer closer, Path file, OpenOption... openOptions)
       throws IOException {
     assert file != null;
     return openPathWithDefault(closer, file, null, openOptions);
   }
 
   public static OutputStream openPathWithDefault(
-      Closer closer,
-      Path file,
-      OutputStream defaultOutput,
-      OpenOption... openOptions)
+      Closer closer, Path file, OutputStream defaultOutput, OpenOption... openOptions)
       throws IOException {
     OutputStream mapOut;
     if (file == null) {
@@ -214,21 +208,22 @@ public class FileUtils {
 
   public static void writeToFile(Path output, OutputStream defValue, byte[] contents)
       throws IOException {
-    writeToFile(output, defValue, ByteDataView.of(contents));
+    writeToFile(output, defValue, contents, 0, contents.length);
   }
 
-  public static void writeToFile(Path output, OutputStream defValue, ByteDataView contents)
+  public static void writeToFile(
+      Path output, OutputStream defValue, byte[] contents, int offset, int length)
       throws IOException {
     try (Closer closer = Closer.create()) {
       OutputStream outputStream =
-          openPathWithDefault(
+          FileUtils.openPathWithDefault(
               closer,
               output,
               defValue,
               StandardOpenOption.CREATE,
               StandardOpenOption.TRUNCATE_EXISTING,
               StandardOpenOption.WRITE);
-      outputStream.write(contents.getBuffer(), contents.getOffset(), contents.getLength());
+      outputStream.write(contents, offset, length);
     }
   }
 

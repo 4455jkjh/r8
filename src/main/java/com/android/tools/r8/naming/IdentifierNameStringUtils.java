@@ -33,7 +33,7 @@ import com.android.tools.r8.ir.code.NewArrayEmpty;
 import com.android.tools.r8.ir.code.NewArrayFilled;
 import com.android.tools.r8.ir.code.Value;
 import com.android.tools.r8.naming.identifiernamestring.IdentifierNameStringLookupResult;
-import com.android.tools.r8.utils.StringUtils;
+import com.android.tools.r8.utils.internal.StringUtils;
 import com.google.common.collect.Sets;
 import java.util.ArrayList;
 import java.util.List;

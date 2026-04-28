@@ -9,9 +9,9 @@ import com.android.tools.r8.optimize.argumentpropagation.codescanner.AbstractFun
 import com.android.tools.r8.optimize.argumentpropagation.codescanner.ConcreteValueState;
 import com.android.tools.r8.optimize.argumentpropagation.codescanner.FlowGraphStateProvider;
 import com.android.tools.r8.optimize.argumentpropagation.codescanner.ValueState;
-import com.android.tools.r8.utils.StringUtils;
-import com.android.tools.r8.utils.internal.TraversalContinuation;
 import com.android.tools.r8.utils.collections.WorkList;
+import com.android.tools.r8.utils.internal.StringUtils;
+import com.android.tools.r8.utils.internal.TraversalContinuation;
 import java.util.ArrayList;
 import java.util.List;
 

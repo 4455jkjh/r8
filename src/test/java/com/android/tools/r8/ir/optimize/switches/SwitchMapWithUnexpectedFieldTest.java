@@ -11,7 +11,7 @@ import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.references.ClassReference;
 import com.android.tools.r8.references.Reference;
-import com.android.tools.r8.utils.StringUtils;
+import com.android.tools.r8.utils.internal.StringUtils;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;

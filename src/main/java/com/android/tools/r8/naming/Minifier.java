@@ -4,8 +4,8 @@
 package com.android.tools.r8.naming;
 
 import static com.android.tools.r8.graph.DexProgramClass.asProgramClassOrNull;
-import static com.android.tools.r8.utils.StringUtils.EMPTY_CHAR_ARRAY;
 import static com.android.tools.r8.utils.SymbolGenerationUtils.RESERVED_NAMES;
+import static com.android.tools.r8.utils.internal.StringUtils.EMPTY_CHAR_ARRAY;
 
 import com.android.tools.r8.errors.CompilationError;
 import com.android.tools.r8.graph.AppInfoWithClassHierarchy;
@@ -32,9 +32,9 @@ import com.android.tools.r8.naming.ClassNameMinifier.ClassRenaming;
 import com.android.tools.r8.naming.FieldNameMinifier.FieldRenaming;
 import com.android.tools.r8.naming.MethodNameMinifier.MethodRenaming;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
-import com.android.tools.r8.utils.internal.ConsumerUtils;
 import com.android.tools.r8.utils.SymbolGenerationUtils;
 import com.android.tools.r8.utils.SymbolGenerationUtils.MixedCasing;
+import com.android.tools.r8.utils.internal.ConsumerUtils;
 import com.android.tools.r8.utils.timing.Timing;
 import java.util.ArrayList;
 import java.util.HashSet;
