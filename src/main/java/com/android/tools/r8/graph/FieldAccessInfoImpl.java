@@ -8,9 +8,9 @@ import com.android.tools.r8.graph.AbstractAccessContexts.ConcreteAccessContexts;
 import com.android.tools.r8.graph.lens.GraphLens;
 import com.android.tools.r8.shaking.Enqueuer;
 import com.android.tools.r8.shaking.Enqueuer.FieldAccessKind;
+import com.android.tools.r8.utils.collections.ProgramMethodSet;
 import com.android.tools.r8.utils.internal.BitUtils;
 import com.android.tools.r8.utils.internal.ObjectUtils;
-import com.android.tools.r8.utils.collections.ProgramMethodSet;
 import com.android.tools.r8.utils.internal.exceptions.Unreachable;
 import com.google.common.collect.Sets;
 import java.util.Map;
@@ -340,6 +340,7 @@ public class FieldAccessInfoImpl implements MutableFieldAccessInfo {
     return writesWithContexts.isAccessedOutside(method) || isWrittenIndirectly();
   }
 
+  @Override
   public boolean recordRead(DexField access, ProgramMethod context) {
     setReadDirectly();
     if (readsWithContexts.isBottom()) {
@@ -351,6 +352,7 @@ public class FieldAccessInfoImpl implements MutableFieldAccessInfo {
     return false;
   }
 
+  @Override
   public boolean recordWrite(DexField access, ProgramMethod context) {
     setWrittenDirectly();
     updateEffectivelyFinalFlags(context);

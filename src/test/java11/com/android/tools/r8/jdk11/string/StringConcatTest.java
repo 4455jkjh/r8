@@ -10,6 +10,7 @@ import static org.junit.Assert.assertTrue;
 
 import com.android.tools.r8.Jdk9TestUtils;
 import com.android.tools.r8.NeverInline;
+import com.android.tools.r8.ReprocessMethod;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
@@ -116,6 +117,7 @@ public class StringConcatTest extends TestBase {
         .addInnerClassesAndStrippedOuter(getClass())
         .addKeepMainRule(Main.class)
         .enableInliningAnnotations()
+        .enableReprocessMethodAnnotations()
         .addDontObfuscate()
         .run(parameters.getRuntime(), Main.class)
         .assertSuccessWithOutput(EXPECTED_OUTPUT)
@@ -403,6 +405,7 @@ public class StringConcatTest extends TestBase {
     }
 
     @NeverInline
+    @ReprocessMethod
     public static void noOutValues_noSideEffects() {
       try {
         // Values should be removed.

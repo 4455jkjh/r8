@@ -112,13 +112,15 @@ public class ApiModelOutlineInstanceInitializerTest extends TestBase {
   private void inspect(CodeInspector inspector, boolean isR8) throws Exception {
     Method mainMethod = Main.class.getMethod("main", String[].class);
     verifyThat(inspector, parameters, Argument.class.getDeclaredConstructor(String.class))
-        .isOutlinedFromBetween(mainMethod, AndroidApiLevel.L, classApiLevel);
+        .isOutlinedFromBetween(
+            mainMethod, isR8 ? AndroidApiLevel.M : AndroidApiLevel.L, classApiLevel);
     verifyThat(inspector, parameters, LibraryClass.class.getDeclaredConstructor(Argument.class))
-        .isOutlinedFromBetween(mainMethod, AndroidApiLevel.L, classApiLevel);
+        .isOutlinedFromBetween(
+            mainMethod, isR8 ? AndroidApiLevel.M : AndroidApiLevel.L, classApiLevel);
     // For R8 we inline into the method with an instance initializer when we do not outline it.
     verifyThat(inspector, parameters, LibraryClass.class.getMethod("print"))
         .isOutlinedFromBetween(
-            mainMethod, isR8 ? AndroidApiLevel.L : AndroidApiLevel.B, classApiLevel);
+            mainMethod, isR8 ? AndroidApiLevel.M : AndroidApiLevel.B, classApiLevel);
   }
 
   private void checkOutput(SingleTestRunResult<?> runResult) {

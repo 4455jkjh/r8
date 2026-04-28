@@ -15,6 +15,7 @@ import com.android.tools.r8.graph.DexMethodHandle;
 import com.android.tools.r8.graph.DexProgramClass;
 import com.android.tools.r8.graph.DexValue;
 import com.android.tools.r8.graph.FieldResolutionResult;
+import com.android.tools.r8.graph.FieldResolutionResult.SingleFieldResolutionResult;
 import com.android.tools.r8.graph.MethodResolutionResult.SingleResolutionResult;
 import com.android.tools.r8.graph.ProgramField;
 import com.android.tools.r8.graph.ProgramMethod;
@@ -224,8 +225,13 @@ public class ArgumentPropagatorMethodReprocessingEnqueuer {
           if (fieldInstruction == null) {
             continue;
           }
-          ProgramField resolvedField =
-              fieldInstruction.resolveField(appView, method).getProgramField();
+          SingleFieldResolutionResult<?> resolutionResult =
+              fieldInstruction.resolveField(appView, method).asSingleFieldResolutionResult();
+          if (resolutionResult == null
+              || resolutionResult.isAccessibleFrom(method, appView).isFalse()) {
+            continue;
+          }
+          ProgramField resolvedField = resolutionResult.getProgramField();
           if (resolvedField == null || !isDeadFieldAccess(resolvedField)) {
             continue;
           }

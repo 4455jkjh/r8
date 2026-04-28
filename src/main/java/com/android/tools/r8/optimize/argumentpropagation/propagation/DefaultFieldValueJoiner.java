@@ -34,8 +34,8 @@ import com.android.tools.r8.shaking.AppInfoWithLiveness;
 import com.android.tools.r8.utils.InternalOptions;
 import com.android.tools.r8.utils.MapUtils;
 import com.android.tools.r8.utils.ThreadUtils;
-import com.android.tools.r8.utils.internal.collections.Pair;
 import com.android.tools.r8.utils.collections.ProgramFieldSet;
+import com.android.tools.r8.utils.internal.collections.Pair;
 import com.android.tools.r8.utils.internal.exceptions.Unreachable;
 import com.android.tools.r8.utils.timing.Timing;
 import com.google.common.collect.Iterables;
@@ -220,8 +220,8 @@ public class DefaultFieldValueJoiner {
     if (!options.canInitNewInstanceUsingSuperclassConstructor()) {
       return fieldsNotSubjectToInitializerAnalysis;
     }
-    if (classesWithSingleCallerInlinedInstanceInitializers != null
-        && classesWithSingleCallerInlinedInstanceInitializers.isEmpty()) {
+
+    if (!hasFullyInlinedInstanceInitializers()) {
       return fieldsNotSubjectToInitializerAnalysis;
     }
 
@@ -231,8 +231,7 @@ public class DefaultFieldValueJoiner {
     MapUtils.removeIf(
         fieldsSubjectToInitializerAnalysis,
         (holder, fields) -> {
-          if (classesWithSingleCallerInlinedInstanceInitializers != null
-              && !classesWithSingleCallerInlinedInstanceInitializers.contains(holder)) {
+          if (!hasFullyInlinedInstanceInitializers(holder)) {
             return false;
           }
 
@@ -250,6 +249,18 @@ public class DefaultFieldValueJoiner {
           return fields.isEmpty();
         });
     return fieldsNotSubjectToInitializerAnalysis;
+  }
+
+  private boolean hasFullyInlinedInstanceInitializers() {
+    return !classesWithSingleCallerInlinedInstanceInitializers.isEmpty()
+        || (appView.getSmallMethodInlinerResult() != null
+            && appView.getSmallMethodInlinerResult().hasFullyInlinedInstanceInitializers());
+  }
+
+  private boolean hasFullyInlinedInstanceInitializers(DexProgramClass clazz) {
+    return classesWithSingleCallerInlinedInstanceInitializers.contains(clazz)
+        || (appView.getSmallMethodInlinerResult() != null
+            && appView.getSmallMethodInlinerResult().hasFullyInlinedInstanceInitializers(clazz));
   }
 
   private void analyzeInitializers(

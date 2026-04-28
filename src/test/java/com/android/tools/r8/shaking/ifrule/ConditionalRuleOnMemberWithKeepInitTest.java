@@ -52,14 +52,14 @@ public class ConditionalRuleOnMemberWithKeepInitTest extends TestBase {
   @Test
   public void testJustStarConditionalKeepClassMembers() throws Exception {
     String keepRule = "-if class * -keepclasseswithmembers class <1> { <init>(); }";
-    // TODO(b/316100042) We should keep A here
+    // TODO(b/316100042) We should keep A here.
     testKeepRule(keepRule, ImmutableList.of(A.class), ImmutableList.of(TestClass.class));
   }
 
   @Test
   public void testJustStarConditionalKeepClass() throws Exception {
     String keepRule = "-if class * -keep class <1> { <init>(); }";
-    // TODO(b/316100042) We should keep A here
+    // TODO(b/316100042) We should keep A here.
     testKeepRule(keepRule, ImmutableList.of(A.class), ImmutableList.of(TestClass.class));
   }
 

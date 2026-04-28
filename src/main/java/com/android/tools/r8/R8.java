@@ -79,6 +79,7 @@ import com.android.tools.r8.optimize.fields.FieldFinalizer;
 import com.android.tools.r8.optimize.proto.ProtoNormalizer;
 import com.android.tools.r8.optimize.redundantbridgeremoval.RedundantBridgeRemover;
 import com.android.tools.r8.optimize.singlecaller.SingleCallerInliner;
+import com.android.tools.r8.optimize.smallmethodinliner.SmallMethodInliner;
 import com.android.tools.r8.origin.CommandLineOrigin;
 import com.android.tools.r8.origin.Origin;
 import com.android.tools.r8.profile.art.ArtProfileCompletenessChecker;
@@ -535,6 +536,8 @@ public class R8 {
       assert ArtProfileCompletenessChecker.verify(appView);
 
       LirConverter.rewriteLirWithLens(appView, timing, executorService);
+
+      SmallMethodInliner.run(appViewWithLiveness, executorService, timing);
 
       VerticalClassMerger.createForInitialClassMerging(appViewWithLiveness, timing)
           .runIfNecessary(executorService, timing);

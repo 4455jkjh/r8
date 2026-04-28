@@ -8,4 +8,8 @@ public interface MutableFieldAccessInfo extends FieldAccessInfo {
   void clearReads();
 
   void clearWrites();
+
+  boolean recordRead(DexField access, ProgramMethod context);
+
+  boolean recordWrite(DexField access, ProgramMethod context);
 }
