@@ -121,7 +121,7 @@ public class LambdaStaticInstanceFieldDuplicationTest extends TestBase {
                 !intermediate,
                 b ->
                     b.addOptionsModification(
-                        options -> options.emitLambdaMethodAnnotations = false))
+                        options -> options.disableLambdaMethodAnnotations = true))
             .compile()
             .writeToZip();
 
@@ -137,7 +137,7 @@ public class LambdaStaticInstanceFieldDuplicationTest extends TestBase {
                 !intermediate,
                 b ->
                     b.addOptionsModification(
-                        options -> options.emitLambdaMethodAnnotations = false))
+                        options -> options.disableLambdaMethodAnnotations = true))
             .compile()
             .writeToZip();
 

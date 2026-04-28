@@ -10,6 +10,7 @@ import static org.junit.Assert.assertEquals;
 import com.android.tools.r8.D8TestCompileResult;
 import com.android.tools.r8.Disassemble;
 import com.android.tools.r8.Disassemble.DisassembleCommand;
+import com.android.tools.r8.GlobalSyntheticsTestingConsumer;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.ToolHelper;
@@ -118,7 +119,6 @@ public class DefaultLambdaWithSelfReferenceTestRunner extends DebugTestBase {
     testForD8()
         .addProgramClassesAndInnerClasses(CLASS)
         .setMinApi(parameters)
-        .addOptionsModification(options -> options.emitLambdaMethodAnnotations = false)
         .compile()
         .assertNoMessages()
         .writeToZip(out1)
@@ -131,6 +131,7 @@ public class DefaultLambdaWithSelfReferenceTestRunner extends DebugTestBase {
 
     int i = 0;
     List<Path> outs = new ArrayList<>();
+    List<GlobalSyntheticsTestingConsumer> globals = new ArrayList<>();
     {
       Path mainOut = outPerClassDir.resolve("class" + i++ + ".zip");
       outs.add(mainOut);
@@ -145,12 +146,16 @@ public class DefaultLambdaWithSelfReferenceTestRunner extends DebugTestBase {
     }
     for (Path innerClass : innerClasses) {
       Path out = outPerClassDir.resolve("class" + i++ + ".zip");
+      GlobalSyntheticsTestingConsumer global = new GlobalSyntheticsTestingConsumer();
+
       outs.add(out);
+      globals.add(global);
       testForD8()
           .addProgramFiles(innerClass)
           .addClasspathFiles(ToolHelper.getClassPathForTests())
           .setIntermediate(true)
           .setMinApi(parameters)
+          .apply(b -> b.getBuilder().setGlobalSyntheticsConsumer(global))
           .compile()
           .assertNoMessages()
           .writeToZip(out);
@@ -158,7 +163,14 @@ public class DefaultLambdaWithSelfReferenceTestRunner extends DebugTestBase {
 
     Path out2 = temp.newFolder().toPath().resolve("out2.zip");
     D8TestCompileResult compiledResult =
-        testForD8().addProgramFiles(outs).setMinApi(parameters).compile();
+        testForD8()
+            .addProgramFiles(outs)
+            .apply(
+                b ->
+                    globals.forEach(
+                        g -> b.getBuilder().addGlobalSyntheticsResourceProviders(g.getProviders())))
+            .setMinApi(parameters)
+            .compile();
 
     compiledResult
         .assertNoMessages()

@@ -118,7 +118,7 @@ public class LambdaToSysOutPrintlnDuplicationTest extends TestBase {
                 !intermediate,
                 b ->
                     b.addOptionsModification(
-                        options -> options.emitLambdaMethodAnnotations = false))
+                        options -> options.disableLambdaMethodAnnotations = true))
             .compile()
             .writeToZip();
 
@@ -134,7 +134,7 @@ public class LambdaToSysOutPrintlnDuplicationTest extends TestBase {
                 !intermediate,
                 b ->
                     b.addOptionsModification(
-                        options -> options.emitLambdaMethodAnnotations = false))
+                        options -> options.disableLambdaMethodAnnotations = true))
             .compile()
             .writeToZip();
 

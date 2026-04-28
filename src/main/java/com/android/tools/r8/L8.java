@@ -101,7 +101,8 @@ public class L8 {
             options.enableStringSwitchConversion = false;
             assert !options.enableVarHandleDesugaring;
             options.enableVarHandleDesugaring = true;
-            assert !options.emitLambdaMethodAnnotations;
+            assert !options.disableLambdaMethodAnnotations;
+            options.disableLambdaMethodAnnotations = true;
             options.tool = Tool.L8;
 
             desugar(app, options, executorService);
@@ -109,6 +110,7 @@ public class L8 {
             options.enableSwitchRewriting = true;
             options.enableStringSwitchConversion = true;
             options.enableVarHandleDesugaring = false;
+            options.disableLambdaMethodAnnotations = false;
           });
       if (shrink) {
         R8.run(r8Command, executorService);
