@@ -18,7 +18,11 @@ java {
   toolchain { languageVersion = JavaLanguageVersion.of(JvmCompatibility.release) }
 }
 
-val sharedDownloadDepsTask = projectTask("shared", "downloadDeps")
+val sharedDepsScope by configurations.dependencyScope("sharedDepsScope")
+val sharedDepsConfig by
+  configurations.resolvable("sharedDepsConfig") { extendsFrom(sharedDepsScope) }
+
+dependencies { sharedDepsScope(project(":shared", "sharedDepsFiles")) }
 
 dependencies {
   implementation(project(":main", "mainClassesOutput"))
@@ -32,7 +36,7 @@ dependencies {
 val buildExampleJars = buildExampleJars("examplesJava9")
 
 tasks {
-  withType<JavaCompile> { dependsOn(sharedDownloadDepsTask) }
+  withType<JavaCompile> { dependsOn(sharedDepsConfig) }
 
   withType<Test> {
     notCompatibleWithConfigurationCache(

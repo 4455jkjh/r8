@@ -49,8 +49,18 @@ val mainResources = configurations.resolvable("mainResources") { extendsFrom(mai
 val turboClassesScope by configurations.dependencyScope("turboClassesScope")
 val turboClassesOutput =
   configurations.resolvable("turboClassesOutput") { extendsFrom(turboClassesScope) }
-val sharedDownloadDepsTask = projectTask("shared", "downloadDeps")
-val sharedDownloadDepsInternalTask = projectTask("shared", "downloadDepsInternal")
+val sharedDepsScope by configurations.dependencyScope("sharedDepsScope")
+val sharedDepsConfig by
+  configurations.resolvable("sharedDepsConfig") { extendsFrom(sharedDepsScope) }
+
+val sharedDepsInternalScope by configurations.dependencyScope("sharedDepsInternalScope")
+val sharedDepsInternalConfig by
+  configurations.resolvable("sharedDepsInternalConfig") { extendsFrom(sharedDepsInternalScope) }
+
+dependencies {
+  sharedDepsScope(project(":shared", "sharedDepsFiles"))
+  sharedDepsInternalScope(project(":shared", "sharedDepsInternalFiles"))
+}
 
 dependencies {
   keepAnnoClassesScope(project(":keepanno", "keepannoClasses"))
@@ -92,7 +102,7 @@ tasks {
 
   val createArtTests by
     registering(Exec::class) {
-      dependsOn(sharedDownloadDepsTask)
+      dependsOn(sharedDepsConfig)
       dependOnPythonScripts()
       // TODO(b/327315907): Don't generating into the root build dir.
       val outputDir =
@@ -105,12 +115,12 @@ tasks {
       commandLine("python3", createArtTestsScript)
     }
   "compileTestJava" {
-    dependsOn(sharedDownloadDepsTask)
+    dependsOn(sharedDepsConfig)
     dependsOn(":testbase:compileJava")
   }
   withType<JavaCompile> {
     dependsOn(createArtTests)
-    dependsOn(sharedDownloadDepsTask)
+    dependsOn(sharedDepsConfig)
     dependsOn(":testbase:compileJava")
   }
 
@@ -129,9 +139,9 @@ tasks {
   withType<Test> {
     TestingState.setUpTestingState(this)
     dependsOn(distDepsFiles)
-    dependsOn(sharedDownloadDepsTask)
+    dependsOn(sharedDepsConfig)
     if (!project.hasProperty("no_internal")) {
-      dependsOn(sharedDownloadDepsInternalTask)
+      dependsOn(sharedDepsInternalConfig)
     }
     dependsOn(sourceSetDependencyTask)
     systemProperty(

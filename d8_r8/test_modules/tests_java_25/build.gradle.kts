@@ -14,7 +14,11 @@ java {
   toolchain { languageVersion = JavaLanguageVersion.of(25) }
 }
 
-val sharedDownloadDepsTask = projectTask("shared", "downloadDeps")
+val sharedDepsScope by configurations.dependencyScope("sharedDepsScope")
+val sharedDepsConfig by
+  configurations.resolvable("sharedDepsConfig") { extendsFrom(sharedDepsScope) }
+
+dependencies { sharedDepsScope(project(":shared", "sharedDepsFiles")) }
 
 dependencies {
   implementation(project(":main", "mainClassesOutput"))
@@ -26,7 +30,7 @@ dependencies {
 
 tasks {
   withType<JavaCompile> {
-    dependsOn(sharedDownloadDepsTask)
+    dependsOn(sharedDepsConfig)
     options.compilerArgs.add("--enable-preview")
   }
 

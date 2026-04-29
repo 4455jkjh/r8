@@ -201,7 +201,11 @@ java {
   withSourcesJar()
 }
 
-val downloadDepsTask = projectTask("shared", "downloadDeps")
+val sharedDepsScope by configurations.dependencyScope("sharedDepsScope")
+val sharedDepsConfig by
+  configurations.resolvable("sharedDepsConfig") { extendsFrom(sharedDepsScope) }
+
+dependencies { sharedDepsScope(project(":shared", "sharedDepsFiles")) }
 
 fun mainJarDependencies(): FileCollection {
   return sourceSets.main
@@ -285,11 +289,11 @@ tasks {
 }
 
 tasks.withType<JavaCompile> {
-  dependsOn(gradle.includedBuild("shared").task(":downloadDeps"))
+  dependsOn(sharedDepsConfig)
   logger.info("NOTE: Running with JDK: " + org.gradle.internal.jvm.Jvm.current().javaHome)
 }
 
-tasks.withType<ProcessResources> { dependsOn(gradle.includedBuild("shared").task(":downloadDeps")) }
+tasks.withType<ProcessResources> { dependsOn(sharedDepsConfig) }
 
 // Contains both :main jar and :utils jar but not third party dependencies.
 val mainJar by configurations.consumable("mainJar") { extendsFrom(internalJarResolvable) }

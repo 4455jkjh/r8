@@ -63,7 +63,29 @@ val resourceShrinkerSourcesConfig by
     extendsFrom(resourceShrinkerSourcesScope)
   }
 
+val sharedDepsScope by configurations.dependencyScope("sharedDepsScope")
+val sharedDepsConfig by
+  configurations.resolvable("sharedDepsConfig") { extendsFrom(sharedDepsScope) }
+
+val sharedTestDepsScope by configurations.dependencyScope("sharedTestDepsScope")
+val sharedTestDepsConfig by
+  configurations.resolvable("sharedTestDepsConfig") { extendsFrom(sharedTestDepsScope) }
+
+val sharedDepsInternalScope by configurations.dependencyScope("sharedDepsInternalScope")
+val sharedDepsInternalConfig by
+  configurations.resolvable("sharedDepsInternalConfig") { extendsFrom(sharedDepsInternalScope) }
+
+val sharedTestDepsInternalScope by configurations.dependencyScope("sharedTestDepsInternalScope")
+val sharedTestDepsInternalConfig by
+  configurations.resolvable("sharedTestDepsInternalConfig") {
+    extendsFrom(sharedTestDepsInternalScope)
+  }
+
 dependencies {
+  sharedDepsScope(project(":shared", "sharedDepsFiles"))
+  sharedTestDepsScope(project(":shared", "sharedTestDepsFiles"))
+  sharedDepsInternalScope(project(":shared", "sharedDepsInternalFiles"))
+  sharedTestDepsInternalScope(project(":shared", "sharedTestDepsInternalFiles"))
   assistantJarScope(project(":assistant", "assistantJar"))
   blastRadiusSourcesScope(project(":blastradius", "blastradiusSources"))
   keepAnnoAndroidXAnnotationsJarScope(project(":keepanno", "keepannoAndroidXAnnotationsJar"))
@@ -594,11 +616,11 @@ tasks {
     }
 
   test {
-    dependsOn(gradle.includedBuild("shared").task(":downloadDeps"))
-    dependsOn(gradle.includedBuild("shared").task(":downloadTestDeps"))
+    dependsOn(sharedDepsConfig)
+    dependsOn(sharedTestDepsConfig)
     if (!project.hasProperty("no_internal")) {
-      dependsOn(gradle.includedBuild("shared").task(":downloadDepsInternal"))
-      dependsOn(gradle.includedBuild("shared").task(":downloadTestDepsInternal"))
+      dependsOn(sharedDepsInternalConfig)
+      dependsOn(sharedTestDepsInternalConfig)
     }
     // Build processkeepruleslib.jar when running with --only_internal.
     if (project.hasProperty("only_internal")) {

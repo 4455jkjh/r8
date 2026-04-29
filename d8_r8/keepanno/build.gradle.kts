@@ -56,7 +56,12 @@ kotlin {
   }
 }
 
+val sharedDepsScope by configurations.dependencyScope("sharedDepsScope")
+val sharedDepsConfig by
+  configurations.resolvable("sharedDepsConfig") { extendsFrom(sharedDepsScope) }
+
 dependencies {
+  sharedDepsScope(project(":shared", "sharedDepsFiles"))
   compileOnly(Deps.asm)
   compileOnly(Deps.guava)
   compileOnly(Deps.protobuf)
@@ -65,7 +70,7 @@ dependencies {
 tasks {
   val keepAnnoAnnotationsJar by
     registering(Jar::class) {
-      dependsOn(gradle.includedBuild("shared").task(":downloadDeps"))
+      dependsOn(sharedDepsConfig)
       from(sourceSets.main.get().output)
       include("com/android/tools/r8/keepanno/annotations/*")
       destinationDirectory.set(getRoot().resolveAll("build", "libs"))
@@ -74,7 +79,7 @@ tasks {
 
   val keepAnnoLegacyAnnotationsJar by
     registering(Jar::class) {
-      dependsOn(gradle.includedBuild("shared").task(":downloadDeps"))
+      dependsOn(sharedDepsConfig)
       from(sourceSets.main.get().output)
       include("com/android/tools/r8/keepanno/annotations/*")
       destinationDirectory.set(getRoot().resolveAll("build", "libs"))
@@ -83,14 +88,14 @@ tasks {
 
   val keepAnnoAndroidXAnnotationsJar by
     registering(Jar::class) {
-      dependsOn(gradle.includedBuild("shared").task(":downloadDeps"))
+      dependsOn(sharedDepsConfig)
       from(sourceSets.main.get().output)
       include("androidx/annotation/keep/*")
       destinationDirectory.set(getRoot().resolveAll("build", "libs"))
       archiveFileName.set("keepanno-annotations-androidx.jar")
     }
 
-  named<Jar>("jar") { dependsOn(gradle.includedBuild("shared").task(":downloadDeps")) }
+  named<Jar>("jar") { dependsOn(sharedDepsConfig) }
 
   val keepAnnoAnnotationsDoc by
     registering(Javadoc::class) {
@@ -122,7 +127,7 @@ tasks {
 
   val depsJarExceptAsm by
     registering(Jar::class) {
-      dependsOn(gradle.includedBuild("shared").task(":downloadDeps"))
+      dependsOn(sharedDepsConfig)
       from(Callable { dependenciesExceptAsm().map(::zipTree) })
       // TODO(b/428166503): Add license information.
       exclude("META-INF/*.kotlin_module")
@@ -141,7 +146,7 @@ tasks {
 
   val depsJarOnlyAsm by
     registering(Jar::class) {
-      dependsOn(gradle.includedBuild("shared").task(":downloadDeps"))
+      dependsOn(sharedDepsConfig)
       from(Callable { dependenciesOnlyAsm().map(::zipTree) })
       // TODO(b/428166503): Add license information if needed.
       exclude("META-INF/*.kotlin_module")
@@ -160,7 +165,7 @@ tasks {
 
   val toolsJar by
     registering(Jar::class) {
-      dependsOn(gradle.includedBuild("shared").task(":downloadDeps"))
+      dependsOn(sharedDepsConfig)
       from(sourceSets.main.get().output)
       // TODO(b/428166503): Add license information.
       entryCompression = ZipEntryCompression.STORED
