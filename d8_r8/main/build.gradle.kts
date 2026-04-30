@@ -293,6 +293,8 @@ tasks.withType<JavaCompile> {
   logger.info("NOTE: Running with JDK: " + org.gradle.internal.jvm.Jvm.current().javaHome)
 }
 
+tasks.named("sourcesJar") { dependsOn(sharedDepsConfig) }
+
 tasks.withType<ProcessResources> { dependsOn(sharedDepsConfig) }
 
 // Contains both :main jar and :utils jar but not third party dependencies.
