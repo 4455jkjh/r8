@@ -12,10 +12,10 @@ import com.android.tools.r8.graph.DexReference;
 import com.android.tools.r8.graph.DexType;
 import com.android.tools.r8.graph.lens.NestedGraphLens;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
-import com.android.tools.r8.utils.collections.BidirectionalOneToOneHashMap;
-import com.android.tools.r8.utils.collections.BidirectionalOneToOneMap;
-import com.android.tools.r8.utils.collections.MutableBidirectionalOneToOneMap;
 import com.android.tools.r8.utils.internal.IterableUtils;
+import com.android.tools.r8.utils.internal.collections.BidirectionalOneToOneHashMap;
+import com.android.tools.r8.utils.internal.collections.BidirectionalOneToOneMap;
+import com.android.tools.r8.utils.internal.collections.MutableBidirectionalOneToOneMap;
 import java.util.Collections;
 import java.util.Map;
 

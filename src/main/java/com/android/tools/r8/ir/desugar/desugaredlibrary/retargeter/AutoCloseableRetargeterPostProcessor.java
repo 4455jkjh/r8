@@ -21,7 +21,7 @@ import com.android.tools.r8.ir.desugar.CfPostProcessingDesugaring;
 import com.android.tools.r8.ir.desugar.CfPostProcessingDesugaringEventConsumer;
 import com.android.tools.r8.ir.desugar.desugaredlibrary.retargeter.AutoCloseableRetargeterEventConsumer.AutoCloseableRetargeterPostProcessingEventConsumer;
 import com.android.tools.r8.utils.internal.OptionalBool;
-import com.android.tools.r8.utils.collections.WorkList;
+import com.android.tools.r8.utils.internal.collections.WorkList;
 import com.android.tools.r8.utils.timing.Timing;
 import com.google.common.collect.ImmutableSet;
 import java.util.ArrayList;

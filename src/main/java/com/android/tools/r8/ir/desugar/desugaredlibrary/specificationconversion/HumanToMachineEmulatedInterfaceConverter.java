@@ -18,7 +18,7 @@ import com.android.tools.r8.ir.desugar.desugaredlibrary.machinespecification.Emu
 import com.android.tools.r8.ir.desugar.desugaredlibrary.machinespecification.EmulatedInterfaceDescriptor;
 import com.android.tools.r8.ir.desugar.desugaredlibrary.machinespecification.MachineRewritingFlags;
 import com.android.tools.r8.ir.desugar.desugaredlibrary.machinespecification.MachineSyntheticKind;
-import com.android.tools.r8.utils.collections.WorkList;
+import com.android.tools.r8.utils.internal.collections.WorkList;
 import com.google.common.collect.Sets;
 import java.util.ArrayList;
 import java.util.Arrays;

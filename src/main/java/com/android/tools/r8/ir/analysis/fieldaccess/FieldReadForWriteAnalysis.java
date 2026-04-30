@@ -15,7 +15,7 @@ import com.android.tools.r8.ir.code.FieldPut;
 import com.android.tools.r8.ir.code.Instruction;
 import com.android.tools.r8.ir.code.Value;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
-import com.android.tools.r8.utils.collections.WorkList;
+import com.android.tools.r8.utils.internal.collections.WorkList;
 
 public class FieldReadForWriteAnalysis {
 

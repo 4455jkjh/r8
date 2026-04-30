@@ -13,10 +13,10 @@ import com.android.tools.r8.graph.DexMethod;
 import com.android.tools.r8.graph.DexType;
 import com.android.tools.r8.graph.proto.RewrittenPrototypeDescription;
 import com.android.tools.r8.ir.code.InvokeType;
-import com.android.tools.r8.utils.collections.BidirectionalManyToManyRepresentativeMap;
-import com.android.tools.r8.utils.collections.BidirectionalManyToOneRepresentativeMap;
-import com.android.tools.r8.utils.collections.EmptyBidirectionalOneToOneMap;
 import com.android.tools.r8.utils.internal.IterableUtils;
+import com.android.tools.r8.utils.internal.collections.BidirectionalManyToManyRepresentativeMap;
+import com.android.tools.r8.utils.internal.collections.BidirectionalManyToOneRepresentativeMap;
+import com.android.tools.r8.utils.internal.collections.EmptyBidirectionalOneToOneMap;
 import java.util.Map;
 import java.util.function.Function;
 

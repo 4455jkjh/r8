@@ -9,9 +9,9 @@ import static org.junit.Assert.assertTrue;
 
 import com.android.tools.r8.origin.GlobalSyntheticOrigin;
 import com.android.tools.r8.origin.Origin;
-import com.android.tools.r8.utils.collections.WorkList;
 import com.android.tools.r8.utils.internal.StringUtils;
 import com.android.tools.r8.utils.internal.StringUtils.BraceType;
+import com.android.tools.r8.utils.internal.collections.WorkList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;

@@ -2,26 +2,29 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-package com.android.tools.r8.utils.collections;
+package com.android.tools.r8.utils.internal.collections;
 
+import java.util.Map;
 import java.util.Set;
 import java.util.function.BiConsumer;
 
 /**
- * Interface that accommodates many-to-many mappings.
+ * Interface that accommodates many-to-one mappings.
  *
  * <p>This interface inherits from {@link BidirectionalManyToManyMap} to allow implementing
  * many-to-many mappings using many-to-one mappings.
  */
-public interface BidirectionalOneToManyMap<K, V> extends BidirectionalManyToManyMap<K, V> {
+public interface BidirectionalManyToOneMap<K, V> extends BidirectionalManyToManyMap<K, V> {
 
-  void forEachOneToManyMapping(BiConsumer<K, Set<V>> consumer);
+  void forEachManyToOneMapping(BiConsumer<? super Set<K>, V> consumer);
 
-  Set<V> get(Object key);
+  V get(Object key);
 
-  Set<V> getOrDefault(Object key, Set<V> defaultValue);
+  V getOrDefault(Object key, V defaultValue);
 
-  K getKey(V value);
+  Map<K, V> getForwardMap();
 
-  K getKeyOrDefault(V value, K defaultValue);
+  Set<K> keySet();
+
+  Set<V> values();
 }

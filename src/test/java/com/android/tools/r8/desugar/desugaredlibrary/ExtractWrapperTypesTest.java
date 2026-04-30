@@ -38,7 +38,7 @@ import com.android.tools.r8.utils.Reporter;
 import com.android.tools.r8.utils.codeinspector.ClassSubject;
 import com.android.tools.r8.utils.codeinspector.CodeInspector;
 import com.android.tools.r8.utils.codeinspector.FoundMethodSubject;
-import com.android.tools.r8.utils.collections.WorkList;
+import com.android.tools.r8.utils.internal.collections.WorkList;
 import com.android.tools.r8.utils.timing.Timing;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;

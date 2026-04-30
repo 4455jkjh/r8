@@ -27,7 +27,7 @@ import com.android.tools.r8.ir.conversion.passes.result.CodeRewriterResult;
 import com.android.tools.r8.ir.optimize.AffectedValues;
 import com.android.tools.r8.ir.optimize.info.CallSiteOptimizationInfo;
 import com.android.tools.r8.utils.internal.BooleanBox;
-import com.android.tools.r8.utils.collections.WorkList;
+import com.android.tools.r8.utils.internal.collections.WorkList;
 import it.unimi.dsi.fastutil.ints.Int2ReferenceSortedMap;
 import java.util.ArrayList;
 import java.util.BitSet;

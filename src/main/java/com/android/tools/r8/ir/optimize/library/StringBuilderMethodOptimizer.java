@@ -37,7 +37,7 @@ import com.android.tools.r8.ir.optimize.UtilityMethodsForCodeOptimizations.Utili
 import com.android.tools.r8.ir.optimize.library.StringBuilderMethodOptimizer.State;
 import com.android.tools.r8.utils.InternalOptions;
 import com.android.tools.r8.utils.ValueUtils;
-import com.android.tools.r8.utils.collections.WorkList;
+import com.android.tools.r8.utils.internal.collections.WorkList;
 import com.google.common.collect.Sets;
 import it.unimi.dsi.fastutil.objects.Reference2BooleanMap;
 import it.unimi.dsi.fastutil.objects.Reference2BooleanOpenHashMap;

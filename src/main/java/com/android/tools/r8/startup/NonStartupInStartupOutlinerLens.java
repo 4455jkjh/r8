@@ -9,9 +9,9 @@ import com.android.tools.r8.graph.DexMethod;
 import com.android.tools.r8.graph.ProgramMethod;
 import com.android.tools.r8.graph.lens.NestedGraphLens;
 import com.android.tools.r8.ir.code.InvokeType;
-import com.android.tools.r8.utils.collections.BidirectionalOneToOneHashMap;
-import com.android.tools.r8.utils.collections.BidirectionalOneToOneMap;
-import com.android.tools.r8.utils.collections.MutableBidirectionalOneToOneMap;
+import com.android.tools.r8.utils.internal.collections.BidirectionalOneToOneHashMap;
+import com.android.tools.r8.utils.internal.collections.BidirectionalOneToOneMap;
+import com.android.tools.r8.utils.internal.collections.MutableBidirectionalOneToOneMap;
 
 public class NonStartupInStartupOutlinerLens extends NestedGraphLens {
 

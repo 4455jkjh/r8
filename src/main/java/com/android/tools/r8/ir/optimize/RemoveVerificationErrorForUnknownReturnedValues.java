@@ -24,7 +24,7 @@ import com.android.tools.r8.ir.code.Return;
 import com.android.tools.r8.ir.code.Value;
 import com.android.tools.r8.synthesis.SyntheticItems;
 import com.android.tools.r8.utils.AndroidApiLevel;
-import com.android.tools.r8.utils.collections.WorkList;
+import com.android.tools.r8.utils.internal.collections.WorkList;
 import com.android.tools.r8.utils.timing.Timing;
 import com.google.common.collect.Sets;
 import java.util.Collections;

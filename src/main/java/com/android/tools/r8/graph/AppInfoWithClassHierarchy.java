@@ -22,7 +22,7 @@ import com.android.tools.r8.synthesis.SyntheticItems.GlobalSyntheticsStrategy;
 import com.android.tools.r8.utils.internal.TraversalContinuation;
 import com.android.tools.r8.utils.internal.TriFunction;
 import com.android.tools.r8.utils.internal.collections.Pair;
-import com.android.tools.r8.utils.collections.WorkList;
+import com.android.tools.r8.utils.internal.collections.WorkList;
 import com.android.tools.r8.utils.timing.Timing;
 import com.google.common.collect.Sets;
 import java.util.ArrayDeque;

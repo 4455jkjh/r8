@@ -4,8 +4,8 @@
 package com.android.tools.r8.ir.analysis.environmentdependence;
 
 import com.android.tools.r8.ir.code.Value;
-import com.android.tools.r8.utils.collections.WorkList;
 import com.android.tools.r8.utils.internal.SCC;
+import com.android.tools.r8.utils.internal.collections.WorkList;
 import com.google.common.collect.Sets;
 import java.util.Collection;
 import java.util.IdentityHashMap;

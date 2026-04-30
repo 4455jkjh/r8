@@ -8,7 +8,7 @@ import static com.android.tools.r8.ir.analysis.type.ClassTypeElement.computeLeas
 import com.android.tools.r8.graph.AppInfoWithClassHierarchy;
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.DexType;
-import com.android.tools.r8.utils.collections.LRUCacheTable;
+import com.android.tools.r8.utils.internal.collections.LRUCacheTable;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class TypeElementFactory {

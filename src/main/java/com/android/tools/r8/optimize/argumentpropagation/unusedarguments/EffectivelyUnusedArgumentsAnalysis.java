@@ -30,8 +30,8 @@ import com.android.tools.r8.optimize.argumentpropagation.utils.ParameterRemovalU
 import com.android.tools.r8.optimize.compose.ComposeReferences;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
 import com.android.tools.r8.utils.collections.ProgramMethodSet;
-import com.android.tools.r8.utils.collections.WorkList;
 import com.android.tools.r8.utils.internal.ListUtils;
+import com.android.tools.r8.utils.internal.collections.WorkList;
 import com.google.common.collect.Sets;
 import java.util.HashMap;
 import java.util.HashSet;

@@ -8,8 +8,8 @@ import com.android.tools.r8.graph.DexItemFactory;
 import com.android.tools.r8.graph.DexMember;
 import com.android.tools.r8.graph.DexType;
 import com.android.tools.r8.utils.internal.ObjectUtils;
-import com.android.tools.r8.utils.collections.BidirectionalManyToManyRepresentativeMap;
-import com.android.tools.r8.utils.collections.BidirectionalManyToOneRepresentativeMap;
+import com.android.tools.r8.utils.internal.collections.BidirectionalManyToManyRepresentativeMap;
+import com.android.tools.r8.utils.internal.collections.BidirectionalManyToOneRepresentativeMap;
 import java.util.Map;
 import java.util.function.Function;
 

@@ -2,9 +2,8 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-package com.android.tools.r8.utils.collections;
+package com.android.tools.r8.utils.internal.collections;
 
-import com.android.tools.r8.graph.ProgramDerivedContext;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.IdentityHashMap;
@@ -20,10 +19,6 @@ public class IdentityHashSetFromMap<K, V> implements Set<V> {
 
   public IdentityHashSetFromMap(Function<V, K> valueToKeyMapping) {
     this.valueToKeyMapping = valueToKeyMapping;
-  }
-
-  public static Set<ProgramDerivedContext> newProgramDerivedContextSet() {
-    return new IdentityHashSetFromMap<>(context -> context.getContext().getReference());
   }
 
   @Override

@@ -22,7 +22,7 @@ import com.android.tools.r8.shaking.KeepFieldInfo;
 import com.android.tools.r8.shaking.KeepMethodInfo;
 import com.android.tools.r8.shaking.KeepReason;
 import com.android.tools.r8.utils.InternalOptions;
-import com.android.tools.r8.utils.collections.WorkList;
+import com.android.tools.r8.utils.internal.collections.WorkList;
 import java.util.Collection;
 import java.util.Set;
 
