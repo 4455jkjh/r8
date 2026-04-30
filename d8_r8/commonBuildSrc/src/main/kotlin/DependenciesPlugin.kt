@@ -239,6 +239,20 @@ public fun Project.resolve(
   return files(project.getRoot().resolve(thirdPartyDependency.path).resolveAll(*paths))
 }
 
+/**
+ * When using composite builds, referencing tasks in other projects do not give a Task but a
+ * TaskReference. To get outputs from other tasks we need to have a proper task and gradle do not
+ * provide a way of getting a Task from a TaskReference. We use a trick where we create a synthetic
+ * task that depends on the task of interest, allowing us to look at the graph and obtain the actual
+ * reference. Remove this code if gradle starts supporting this natively.
+ */
+public fun Project.projectTask(project: String, taskName: String): Task {
+  val name = "$project-reference-$taskName"
+  val task =
+    tasks.register(name) { dependsOn(gradle.includedBuild(project).task(":$taskName")) }.get()
+  return task.taskDependencies.getDependencies(tasks.getByName(name)).iterator().next()
+}
+
 public fun Task.dependOnPythonScripts() {
   // There is no easy way to track transitive python dependencies, so add all python files.
   val toolsDir = project.fileTree(project.getRoot().resolve("tools"))

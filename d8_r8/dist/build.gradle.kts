@@ -135,18 +135,8 @@ dependencies {
   resourceShrinkerJarScope(project(":resourceshrinker", "resourceshrinkerJar"))
 }
 
-val sharedDepsScope by configurations.dependencyScope("sharedDepsScope")
-val sharedDepsConfig by
-  configurations.resolvable("sharedDepsConfig") { extendsFrom(sharedDepsScope) }
-
-val sharedTestDepsScope by configurations.dependencyScope("sharedTestDepsScope")
-val sharedTestDepsConfig by
-  configurations.resolvable("sharedTestDepsConfig") { extendsFrom(sharedTestDepsScope) }
-
-dependencies {
-  sharedDepsScope(project(":shared", "sharedDepsFiles"))
-  sharedTestDepsScope(project(":shared", "sharedTestDepsFiles"))
-}
+val downloadDepsTask = projectTask("shared", "downloadDeps")
+val downloadTestDepsTask = projectTask("shared", "downloadTestDeps")
 
 fun mainJarDependencies(): FileCollection {
   return project.files(
@@ -261,8 +251,8 @@ tasks {
   }
 
   val consolidatedLicense by registering {
-    dependsOn(sharedDepsConfig)
-    dependsOn(sharedTestDepsConfig)
+    dependsOn(downloadDepsTask)
+    dependsOn(downloadTestDepsTask)
     val root = getRoot()
     val r8License = root.resolve("LICENSE")
     val libraryLicense = root.resolve("LIBRARY-LICENSE")

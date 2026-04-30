@@ -21,18 +21,8 @@ java {
 
 val distR8WithRelocatedDeps = project(":dist").tasks.getByName("r8WithRelocatedDeps")
 val distSwissArmyKnife = project(":dist").tasks.getByName("swissArmyKnife")
-val sharedDepsScope by configurations.dependencyScope("sharedDepsScope")
-val sharedDepsConfig by
-  configurations.resolvable("sharedDepsConfig") { extendsFrom(sharedDepsScope) }
-
-val sharedDepsInternalScope by configurations.dependencyScope("sharedDepsInternalScope")
-val sharedDepsInternalConfig by
-  configurations.resolvable("sharedDepsInternalConfig") { extendsFrom(sharedDepsInternalScope) }
-
-dependencies {
-  sharedDepsScope(project(":shared", "sharedDepsFiles"))
-  sharedDepsInternalScope(project(":shared", "sharedDepsInternalFiles"))
-}
+val sharedDownloadDepsTask = projectTask("shared", "downloadDeps")
+val sharedDownloadDepsInternalTask = projectTask("shared", "downloadDepsInternal")
 
 val keepAnnoClassesScope by configurations.dependencyScope("keepAnnoClassesScope")
 val keepAnnoClassesConfig by
@@ -97,9 +87,9 @@ tasks {
 
   val assembleDepsJar by
     registering(Jar::class) {
-      dependsOn(sharedDepsConfig)
+      dependsOn(sharedDownloadDepsTask)
       if (!project.hasProperty("no_internal")) {
-        dependsOn(sharedDepsInternalConfig)
+        dependsOn(sharedDownloadDepsInternalTask)
       }
       from(Callable { testDependencies().map(::zipTree) })
       duplicatesStrategy = DuplicatesStrategy.EXCLUDE

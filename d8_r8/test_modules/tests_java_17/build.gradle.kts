@@ -17,11 +17,7 @@ java {
   toolchain { languageVersion = JavaLanguageVersion.of(17) }
 }
 
-val sharedDepsScope by configurations.dependencyScope("sharedDepsScope")
-val sharedDepsConfig by
-  configurations.resolvable("sharedDepsConfig") { extendsFrom(sharedDepsScope) }
-
-dependencies { sharedDepsScope(project(":shared", "sharedDepsFiles")) }
+val sharedDownloadDepsTask = projectTask("shared", "downloadDeps")
 
 dependencies {
   implementation(project(":main", "mainClassesOutput"))
@@ -32,7 +28,7 @@ dependencies {
 }
 
 tasks {
-  withType<JavaCompile> { dependsOn(sharedDepsConfig) }
+  withType<JavaCompile> { dependsOn(sharedDownloadDepsTask) }
 
   withType<Test> {
     notCompatibleWithConfigurationCache(

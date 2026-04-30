@@ -49,18 +49,8 @@ val mainResources = configurations.resolvable("mainResources") { extendsFrom(mai
 val turboClassesScope by configurations.dependencyScope("turboClassesScope")
 val turboClassesOutput =
   configurations.resolvable("turboClassesOutput") { extendsFrom(turboClassesScope) }
-val sharedDepsScope by configurations.dependencyScope("sharedDepsScope")
-val sharedDepsConfig by
-  configurations.resolvable("sharedDepsConfig") { extendsFrom(sharedDepsScope) }
-
-val sharedDepsInternalScope by configurations.dependencyScope("sharedDepsInternalScope")
-val sharedDepsInternalConfig by
-  configurations.resolvable("sharedDepsInternalConfig") { extendsFrom(sharedDepsInternalScope) }
-
-dependencies {
-  sharedDepsScope(project(":shared", "sharedDepsFiles"))
-  sharedDepsInternalScope(project(":shared", "sharedDepsInternalFiles"))
-}
+val sharedDownloadDepsTask = projectTask("shared", "downloadDeps")
+val sharedDownloadDepsInternalTask = projectTask("shared", "downloadDepsInternal")
 
 dependencies {
   keepAnnoClassesScope(project(":keepanno", "keepannoClasses"))
@@ -102,7 +92,7 @@ tasks {
 
   val createArtTests by
     registering(Exec::class) {
-      dependsOn(sharedDepsConfig)
+      dependsOn(sharedDownloadDepsTask)
       dependOnPythonScripts()
       // TODO(b/327315907): Don't generating into the root build dir.
       val outputDir =
@@ -115,12 +105,12 @@ tasks {
       commandLine("python3", createArtTestsScript)
     }
   "compileTestJava" {
-    dependsOn(sharedDepsConfig)
+    dependsOn(sharedDownloadDepsTask)
     dependsOn(":testbase:compileJava")
   }
   withType<JavaCompile> {
     dependsOn(createArtTests)
-    dependsOn(sharedDepsConfig)
+    dependsOn(sharedDownloadDepsTask)
     dependsOn(":testbase:compileJava")
   }
 
@@ -139,9 +129,9 @@ tasks {
   withType<Test> {
     TestingState.setUpTestingState(this)
     dependsOn(distDepsFiles)
-    dependsOn(sharedDepsConfig)
+    dependsOn(sharedDownloadDepsTask)
     if (!project.hasProperty("no_internal")) {
-      dependsOn(sharedDepsInternalConfig)
+      dependsOn(sharedDownloadDepsInternalTask)
     }
     dependsOn(sourceSetDependencyTask)
     systemProperty(

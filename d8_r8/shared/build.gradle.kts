@@ -28,33 +28,3 @@ tasks {
       this.setDependencies(getRoot(), allInternalTestDependencies())
     }
 }
-
-val sharedDepsFiles by
-  configurations.consumable("sharedDepsFiles") {
-    outgoing.artifacts(
-      tasks.named<DownloadAllDependenciesTask>("downloadDeps").map { it.getOutputFiles() }
-    )
-  }
-
-val sharedTestDepsFiles by
-  configurations.consumable("sharedTestDepsFiles") {
-    outgoing.artifacts(
-      tasks.named<DownloadAllDependenciesTask>("downloadTestDeps").map { it.getOutputFiles() }
-    )
-  }
-
-val sharedDepsInternalFiles by
-  configurations.consumable("sharedDepsInternalFiles") {
-    outgoing.artifacts(
-      tasks.named<DownloadAllDependenciesTask>("downloadDepsInternal").map { it.getOutputFiles() }
-    )
-  }
-
-val sharedTestDepsInternalFiles by
-  configurations.consumable("sharedTestDepsInternalFiles") {
-    outgoing.artifacts(
-      tasks.named<DownloadAllDependenciesTask>("downloadTestDepsInternal").map {
-        it.getOutputFiles()
-      }
-    )
-  }
