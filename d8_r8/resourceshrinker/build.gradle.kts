@@ -44,7 +44,12 @@ fun jarDependencies(): FileCollection {
     })
 }
 
+val sharedDepsScope by configurations.dependencyScope("sharedDepsScope")
+val sharedDepsConfig by
+  configurations.resolvable("sharedDepsConfig") { extendsFrom(sharedDepsScope) }
+
 dependencies {
+  sharedDepsScope(project(":shared", "sharedDepsFiles"))
   compileOnly(Deps.asm)
   compileOnly(Deps.guava)
   compileOnly(Deps.protobuf)
@@ -57,7 +62,7 @@ dependencies {
 }
 
 tasks {
-  withType<KotlinCompile> { dependsOn(gradle.includedBuild("shared").task(":downloadDeps")) }
+  withType<KotlinCompile> { dependsOn(sharedDepsConfig) }
   val depsJar by
     registering(Jar::class) {
       from(Callable { jarDependencies().map(::zipTree) })

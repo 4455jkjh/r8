@@ -16,7 +16,9 @@ pluginManagement {
 
 dependencyResolutionManagement { repositories { maven { url = uri("third_party/dependencies") } } }
 
-includeBuild(rootProject.projectDir.resolve("d8_r8/shared"))
+include(":shared")
+
+project(":shared").projectDir = file("d8_r8/shared")
 
 include(":assistant")
 

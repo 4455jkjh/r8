@@ -15,6 +15,7 @@ import org.gradle.api.file.RegularFileProperty
 import org.gradle.api.provider.Property
 import org.gradle.api.tasks.InputFiles
 import org.gradle.api.tasks.OutputDirectories
+import org.gradle.api.tasks.OutputFile
 import org.gradle.api.tasks.OutputFiles
 import org.gradle.api.tasks.TaskAction
 import org.gradle.internal.os.OperatingSystem
@@ -23,6 +24,13 @@ import org.gradle.workers.WorkParameters
 import org.gradle.workers.WorkerExecutor
 
 public abstract class DownloadAllDependenciesTask : DefaultTask() {
+
+  // This marker file is used as the configuration tracked output of the task for dependency
+  // purposes.
+  // If the downloaded files every need to be handled through gradle directly, each output file
+  // needs
+  // to be properly routed through the relevant configuration.
+  @get:OutputFile public abstract val markerFile: RegularFileProperty
 
   private var _root: File? = null
   private var _thirdPartyDeps: List<ThirdPartyDependency>? = null
@@ -73,6 +81,7 @@ public abstract class DownloadAllDependenciesTask : DefaultTask() {
         }
       }
     }
+    markerFile.get().asFile.writeText("done")
   }
 
   public interface RunDownloadParameters : WorkParameters {

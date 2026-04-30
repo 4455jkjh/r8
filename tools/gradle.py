@@ -17,7 +17,6 @@ import jdk
 import utils
 
 GRADLE8_SHA1 = os.path.join(utils.THIRD_PARTY, 'gradle.tar.gz.sha1')
-PROTOC_SHA1 = os.path.join(utils.THIRD_PARTY, 'protoc.tar.gz.sha1')
 
 
 def get_gradle_dir():
@@ -101,15 +100,10 @@ def ensure_jdk():
         utils.EnsureDepFromGoogleCloudStorage(jdk_sha1, root)
 
 
-def ensure_protoc():
-    utils.EnsureDepFromGoogleCloudStorage(PROTOC_SHA1, 'Proto Compiler')
-
-
 def ensure_deps():
     ensure_gradle()
     ensure_gradle_repositories()
     ensure_jdk()
-    ensure_protoc()
 
 
 def run_gradle_in(gradle_cmd,

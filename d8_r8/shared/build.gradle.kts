@@ -7,24 +7,46 @@ plugins {
   id("dependencies-plugin")
 }
 
-tasks {
-  val downloadDeps by
-    registering(DownloadAllDependenciesTask::class) {
-      this.setDependencies(getRoot(), allPublicDependencies())
-    }
+val downloadDeps by
+  tasks.registering(DownloadAllDependenciesTask::class) {
+    this.setDependencies(getRoot(), allPublicDependencies())
+    this.markerFile.set(layout.buildDirectory.file("downloadDeps.marker"))
+  }
 
-  val downloadTestDeps by
-    registering(DownloadAllDependenciesTask::class) {
-      this.setDependencies(getRoot(), allPublicTestDependencies())
-    }
+val sharedDepsFiles by
+  configurations.consumable("sharedDepsFiles") {
+    outgoing.artifact(downloadDeps.flatMap { it.markerFile })
+  }
 
-  val downloadDepsInternal by
-    registering(DownloadAllDependenciesTask::class) {
-      this.setDependencies(getRoot(), allInternalDependencies())
-    }
+val downloadTestDeps by
+  tasks.registering(DownloadAllDependenciesTask::class) {
+    this.setDependencies(getRoot(), allPublicTestDependencies())
+    this.markerFile.set(layout.buildDirectory.file("downloadTestDeps.marker"))
+  }
 
-  val downloadTestDepsInternal by
-    registering(DownloadAllDependenciesTask::class) {
-      this.setDependencies(getRoot(), allInternalTestDependencies())
-    }
-}
+val sharedTestDepsFiles by
+  configurations.consumable("sharedTestDepsFiles") {
+    outgoing.artifact(downloadTestDeps.flatMap { it.markerFile })
+  }
+
+val downloadDepsInternal by
+  tasks.registering(DownloadAllDependenciesTask::class) {
+    this.setDependencies(getRoot(), allInternalDependencies())
+    this.markerFile.set(layout.buildDirectory.file("downloadDepsInternal.marker"))
+  }
+
+val sharedDepsInternalFiles by
+  configurations.consumable("sharedDepsInternalFiles") {
+    outgoing.artifact(downloadDepsInternal.flatMap { it.markerFile })
+  }
+
+val downloadTestDepsInternal by
+  tasks.registering(DownloadAllDependenciesTask::class) {
+    this.setDependencies(getRoot(), allInternalTestDependencies())
+    this.markerFile.set(layout.buildDirectory.file("downloadTestDepsInternal.marker"))
+  }
+
+val sharedTestDepsInternalFiles by
+  configurations.consumable("sharedTestDepsInternalFiles") {
+    outgoing.artifact(downloadTestDepsInternal.flatMap { it.markerFile })
+  }

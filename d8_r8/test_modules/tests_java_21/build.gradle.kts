@@ -17,7 +17,12 @@ java {
 val assistantClassesScope by configurations.dependencyScope("assistantClassesScope")
 val assistantClassesOutput =
   configurations.resolvable("assistantClassesOutput") { extendsFrom(assistantClassesScope) }
-val sharedDownloadDepsTask = projectTask("shared", "downloadDeps")
+val sharedDepsScope by configurations.dependencyScope("sharedDepsScope")
+val sharedDepsConfig by
+  configurations.resolvable("sharedDepsConfig") { extendsFrom(sharedDepsScope) }
+
+dependencies { sharedDepsScope(project(":shared", "sharedDepsFiles")) }
+
 val mainClassesScope by configurations.dependencyScope("mainClassesScope")
 val mainClassesOutput =
   configurations.resolvable("mainClassesOutput") { extendsFrom(mainClassesScope) }
@@ -41,7 +46,7 @@ dependencies {
 }
 
 tasks {
-  withType<JavaCompile> { dependsOn(sharedDownloadDepsTask) }
+  withType<JavaCompile> { dependsOn(sharedDepsConfig) }
 
   withType<Test> {
     notCompatibleWithConfigurationCache(

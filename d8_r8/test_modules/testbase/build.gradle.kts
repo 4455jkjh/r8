@@ -28,8 +28,18 @@ val resourceShrinkerDepsJarConfig by
   configurations.resolvable("resourceShrinkerDepsJarConfig") {
     extendsFrom(resourceShrinkerDepsJarScope)
   }
-val sharedDownloadDepsTask = projectTask("shared", "downloadDeps")
-val sharedDownloadTestDepsTask = projectTask("shared", "downloadTestDeps")
+val sharedDepsScope by configurations.dependencyScope("sharedDepsScope")
+val sharedDepsConfig by
+  configurations.resolvable("sharedDepsConfig") { extendsFrom(sharedDepsScope) }
+
+val sharedTestDepsScope by configurations.dependencyScope("sharedTestDepsScope")
+val sharedTestDepsConfig by
+  configurations.resolvable("sharedTestDepsConfig") { extendsFrom(sharedTestDepsScope) }
+
+dependencies {
+  sharedDepsScope(project(":shared", "sharedDepsFiles"))
+  sharedTestDepsScope(project(":shared", "sharedTestDepsFiles"))
+}
 
 dependencies {
   keepAnnoJarScope(project(":keepanno", "keepannoJar"))
@@ -74,8 +84,8 @@ fun testDependencies(): FileCollection {
 
 tasks {
   withType<JavaCompile> {
-    dependsOn(sharedDownloadDepsTask)
-    dependsOn(sharedDownloadTestDepsTask)
+    dependsOn(sharedDepsConfig)
+    dependsOn(sharedTestDepsConfig)
   }
 
   withType<JavaExec> {
@@ -100,8 +110,8 @@ tasks {
     registering(Jar::class) {
       dependsOn(keepAnnoJarConfig)
       dependsOn(resourceShrinkerDepsJarConfig)
-      dependsOn(sharedDownloadDepsTask)
-      dependsOn(sharedDownloadTestDepsTask)
+      dependsOn(sharedDepsConfig)
+      dependsOn(sharedTestDepsConfig)
       from(Callable { testDependencies().map(::zipTree) })
       from(keepAnnoJarConfig.map(::zipTree))
       from(resourceShrinkerDepsJarConfig.map(::zipTree))
