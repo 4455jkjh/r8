@@ -49,6 +49,7 @@ val mainResources = configurations.resolvable("mainResources") { extendsFrom(mai
 val turboClassesScope by configurations.dependencyScope("turboClassesScope")
 val turboClassesOutput =
   configurations.resolvable("turboClassesOutput") { extendsFrom(turboClassesScope) }
+
 val sharedDepsScope by configurations.dependencyScope("sharedDepsScope")
 val sharedDepsConfig by
   configurations.resolvable("sharedDepsConfig") { extendsFrom(sharedDepsScope) }
@@ -67,6 +68,7 @@ dependencies {
   assistantClassesScope(project(":assistant", "assistantJar"))
   distDepsFilesScope(project(":dist", "depsFiles"))
   mainClassesScope(project(":main", "mainClassesOutput"))
+
   mainResourcesScope(project(":main", "mainResources"))
   turboClassesScope(project(":main", "turboClassesOutput"))
   implementation(project(":assistant", "assistantJar"))
@@ -165,19 +167,17 @@ tasks {
     )
     // This path is set when compiling examples jar task in DependenciesPlugin.
     val r8RuntimePath =
-      project.files(mainClassesOutput).asPath.split(File.pathSeparator)[0] +
-        File.pathSeparator +
-        project.files(turboClassesOutput).asPath.split(File.pathSeparator)[0] +
-        File.pathSeparator +
-        distDepsFiles.asPath +
-        File.pathSeparator +
-        project.files(mainResources).asPath.split(File.pathSeparator)[0] +
-        File.pathSeparator +
-        keepAnnoClassesConfig.asPath +
-        File.pathSeparator +
-        project.files(assistantClassesOutput).asPath.split(File.pathSeparator)[0] +
-        File.pathSeparator +
-        resourceShrinkerClassesConfig.asPath
+      project
+        .files(
+          mainClassesOutput,
+          turboClassesOutput,
+          distDepsFiles,
+          mainResources,
+          keepAnnoClassesConfig,
+          assistantClassesOutput,
+          resourceShrinkerClassesConfig,
+        )
+        .asPath
     systemProperty("BUILD_PROP_PROCESS_KEEP_RULES_RUNTIME_PATH", r8RuntimePath)
     systemProperty("BUILD_PROP_R8_RUNTIME_PATH", r8RuntimePath)
     systemProperty("R8_DEPS", distDepsFiles.asPath)
