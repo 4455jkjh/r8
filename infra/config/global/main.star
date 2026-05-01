@@ -190,8 +190,9 @@ luci.cq_group(
     name = "main-cq",
     watch = cq.refset(
         repo = "https://r8.googlesource.com/r8",
-        refs = ["refs/heads/main"],
+        refs = ["refs/heads/.+"]
     ),
+    retry_config = cq.RETRY_ALL_FAILURES,
     acls = [
         acl.entry(acl.CQ_COMMITTER, groups = ["project-r8-committers"]),
         acl.entry(acl.CQ_DRY_RUNNER, groups = ["googlers"]),
