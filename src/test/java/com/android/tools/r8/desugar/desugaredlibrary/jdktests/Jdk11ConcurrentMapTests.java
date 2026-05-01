@@ -63,7 +63,8 @@ public class Jdk11ConcurrentMapTests extends DesugaredLibraryTestBase {
         // TODO(b/134732760): Skip Android 4.4.4 due to missing libjavacrypto.
         getTestParameters()
             .withDexRuntime(Version.V4_0_4)
-            .withDexRuntimesStartingFromIncluding(Version.V5_1_1)
+            // TODO(b/507731439): Test on ART 17.
+            .withDexRuntimesRangeIncluding(Version.V5_1_1, Version.V16_0_0)
             .withAllApiLevels()
             .build(),
         ImmutableList.of(JDK8, JDK11, JDK11_PATH),

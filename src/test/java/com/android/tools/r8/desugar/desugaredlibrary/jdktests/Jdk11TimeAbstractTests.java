@@ -65,7 +65,8 @@ public abstract class Jdk11TimeAbstractTests extends DesugaredLibraryTestBase {
         // TODO(134732760): Support Dalvik VMs, currently fails because libjavacrypto is required
         // and present only in ART runtimes.
         getTestParameters()
-            .withDexRuntimesStartingFromIncluding(Version.V5_1_1)
+            // TODO(b/507731439): Test on ART 17.
+            .withDexRuntimesRangeIncluding(Version.V5_1_1, Version.V16_0_0)
             .withAllApiLevels()
             .withApiLevel(AndroidApiLevel.O)
             .build(),

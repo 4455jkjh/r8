@@ -53,12 +53,19 @@ public class StaticizedMethodStackSampleRetraceTest extends StackSampleRetraceTe
 
   @Override
   String getExpectedMap() {
-    return StringUtils.joinLines(
-        "com.android.tools.r8.retrace.stacksamples.StaticizedMethodStackSampleRetraceTest$Main ->"
-            + " a:",
-        "# {\"id\":\"sourceFile\",\"fileName\":\"StaticizedMethodStackSampleRetraceTest.java\"}",
-        "    1:1:void test():50:50 -> a",
-        "    1:4:void main(java.lang.String[]):45:45 -> main");
+    return canDiscardResidualDebugInfo(parameters)
+        ? StringUtils.joinLines(
+            "com.android.tools.r8.retrace.stacksamples.StaticizedMethodStackSampleRetraceTest$Main"
+                + " -> a:",
+            "# {\"id\":\"sourceFile\",\"fileName\":\"StaticizedMethodStackSampleRetraceTest.java\"}",
+            "    0:7:void test():50:50 -> a",
+            "    0:3:void main(java.lang.String[]):45:45 -> main")
+        : StringUtils.joinLines(
+            "com.android.tools.r8.retrace.stacksamples.StaticizedMethodStackSampleRetraceTest$Main"
+                + " -> a:",
+            "# {\"id\":\"sourceFile\",\"fileName\":\"StaticizedMethodStackSampleRetraceTest.java\"}",
+            "    1:1:void test():50:50 -> a",
+            "    1:4:void main(java.lang.String[]):45:45 -> main");
   }
 
   @Override

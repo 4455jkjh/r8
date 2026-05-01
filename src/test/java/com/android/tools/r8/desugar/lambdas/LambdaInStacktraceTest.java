@@ -94,8 +94,11 @@ public class LambdaInStacktraceTest extends TestBase {
             .allMatch(
                 s -> {
                   if (parameters
-                      .getApiLevel()
-                      .isGreaterThanOrEqualTo(apiLevelWithPcAsLineNumberSupport())) {
+                          .getApiLevel()
+                          .isGreaterThanOrEqualTo(apiLevelWithPcAsLineNumberSupport())
+                      && parameters
+                          .getApiLevel()
+                          .isLessThan(apiLevelWithDiscardResidualDebugInfoSupport())) {
                     return s.contains("(NULL)");
                   } else {
                     return s.contains("(SourceFile)");

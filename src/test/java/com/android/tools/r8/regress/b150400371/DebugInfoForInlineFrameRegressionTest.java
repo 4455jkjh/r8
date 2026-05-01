@@ -50,8 +50,11 @@ public class DebugInfoForInlineFrameRegressionTest extends TestBase {
                   inspector.method(InlineInto.class.getDeclaredMethod("main", String[].class));
               // Method has 2 actual lines for inlining of foo.
               // The pc2pc encoding is larger than normal encoding, so it is just the two lines.
-              IntSet lines = new IntArraySet(main.getLineNumberTable().getLines());
-              assertEquals(ImmutableSet.of(1, 2), lines);
+              assertEquals(!canDiscardResidualDebugInfo(parameters), main.hasLineNumberTable());
+              if (main.hasLineNumberTable()) {
+                IntSet lines = new IntArraySet(main.getLineNumberTable().getLines());
+                assertEquals(ImmutableSet.of(1, 2), lines);
+              }
             });
   }
 

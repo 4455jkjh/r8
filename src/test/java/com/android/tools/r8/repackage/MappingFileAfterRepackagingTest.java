@@ -68,7 +68,8 @@ public class MappingFileAfterRepackagingTest extends TestBase {
                       .filter(line -> line.contains("java.lang.String toString()"))
                       .count();
               assertEquals(
-                  (repackage ? 1 : 2 + BooleanUtils.intValue(parameters.isDexRuntime())),
+                  (repackage ? 1 : 2 + BooleanUtils.intValue(parameters.isDexRuntime()))
+                      + BooleanUtils.intValue(canDiscardResidualDebugInfo(parameters)),
                   unqualifiedMatches);
             });
   }

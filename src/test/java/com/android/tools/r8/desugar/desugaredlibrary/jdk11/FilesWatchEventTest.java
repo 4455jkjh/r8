@@ -51,7 +51,8 @@ public class FilesWatchEventTest extends DesugaredLibraryTestBase {
         getTestParameters()
             .withCfRuntime(CfVm.JDK11)
             .withDexRuntime(Version.V4_0_4)
-            .withDexRuntimesStartingFromIncluding(Version.V5_1_1)
+            // TODO(b/507731439): Test on ART 17.
+            .withDexRuntimesRangeIncluding(Version.V5_1_1, Version.V16_0_0)
             .withAllApiLevels()
             .build(),
         ImmutableList.of(JDK11_PATH),

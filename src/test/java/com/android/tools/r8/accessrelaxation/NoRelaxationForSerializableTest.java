@@ -104,7 +104,9 @@ public class NoRelaxationForSerializableTest extends AccessRelaxationTestBase {
   public static List<Object[]> data() {
     return buildParameters(
         getTestParameters()
-            .withAllRuntimes()
+            // TODO(b/507731439): Also test on ART 17.
+            .withCfRuntimes()
+            .withDexRuntimesEndingAtExcluding(Version.V17_0_0)
             .withApiLevelsStartingAtIncluding(AndroidApiLevel.K)
             .build(),
         BooleanUtils.values());

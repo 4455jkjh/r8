@@ -57,7 +57,7 @@ public class DifferentParameterCountSingleLineCodeTestRunner extends TestBase {
                   // For a custom source file, all debug info must be present.
                   assertEquals("X", line.fileName);
                   assertTrue("Expected line number in: " + line, line.hasLineNumber());
-                } else if (compileApiHasPcSupport()) {
+                } else if (compileApiHasPcSupport() && !canDiscardResidualDebugInfo(parameters)) {
                   assertEquals("Unknown Source", line.fileName);
                   assertTrue("Expected PC in: " + line, line.hasLineNumber());
                 } else {

@@ -165,6 +165,21 @@ public class TestParametersBuilder {
         vm -> vm != startExcluding && startExcluding.isOlderThanOrEqual(vm));
   }
 
+  /** Add all available DEX runtimes ending at and excluding {@param startExcluding}. */
+  public TestParametersBuilder withDexRuntimesEndingAtExcluding(DexVm.Version endExcluding) {
+    return withDexRuntimeFilter(vm -> vm != endExcluding && vm.isOlderThanOrEqual(endExcluding));
+  }
+
+  /**
+   * Add all available DEX runtimes starting from {@param startInclusive} and ending at {@param
+   * endInclusive}. Both inclusive.
+   */
+  public TestParametersBuilder withDexRuntimesRangeIncluding(
+      DexVm.Version startInclusive, DexVm.Version endInclusive) {
+    return withDexRuntimeFilter(
+        vm -> vm.isNewerThanOrEqual(startInclusive) && vm.isOlderThanOrEqual(endInclusive));
+  }
+
   public TestParametersBuilder withPartialCompilation() {
     return withIncludeAllPartialCompilation()
         .withExcludeAllPartialCompilation()

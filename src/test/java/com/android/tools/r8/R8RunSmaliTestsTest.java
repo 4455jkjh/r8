@@ -162,6 +162,8 @@ public class R8RunSmaliTestsTest extends TestBase {
           Version.V15_0_0,
           art13PlusExpectations,
           Version.V16_0_0,
+          art13PlusExpectations,
+          Version.V17_0_0,
           art13PlusExpectations);
 
   // Tests where the input fails with a verification error on Dalvik instead of the

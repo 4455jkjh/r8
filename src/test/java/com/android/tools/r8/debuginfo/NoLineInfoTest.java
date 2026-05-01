@@ -3,6 +3,7 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8.debuginfo;
 
+import static com.android.tools.r8.ToolHelper.DexVm.Version.V17_0_0;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -109,7 +110,8 @@ public class NoLineInfoTest extends TestBase {
                 // If debug info remains it is two canonical items and one null pointer.
                 // The presence of 'null' debug info items is for methods with no actual lines at
                 // all.
-                assertEquals(2, debugInfos.size());
+                assertEquals(canDiscardResidualDebugInfo(parameters) ? 1 : 2, debugInfos.size());
+                assertEquals(canDiscardResidualDebugInfo(parameters), debugInfos.contains(null));
               }
             })
         .inspectOriginalStackTrace(
@@ -157,7 +159,7 @@ public class NoLineInfoTest extends TestBase {
   }
 
   private int getPcEncoding(int pc) {
-    return pc + 1;
+    return pc + (canDiscardResidualDebugInfo(parameters) ? 0 : 1);
   }
 
   // A residual line that is either null debug info or pc2pc mapping.
@@ -189,9 +191,18 @@ public class NoLineInfoTest extends TestBase {
   // printing. Thus, this is the expected stack trace on those VMs.
   private StackTrace getExpectedInputStacktraceOnPcVms() {
     return StackTrace.builder()
-        .add(inputPcLine("foo", 1))
-        .add(inputPcLine("bar", 0))
-        .add(inputPcLine("baz", 0))
+        .add(
+            parameters.getDexRuntimeVersion().isNewerThanOrEqual(V17_0_0)
+                ? inputLine("foo", 1)
+                : inputPcLine("foo", 1))
+        .add(
+            parameters.getDexRuntimeVersion().isNewerThanOrEqual(V17_0_0)
+                ? inputLine("bar", 0)
+                : inputPcLine("bar", 0))
+        .add(
+            parameters.getDexRuntimeVersion().isNewerThanOrEqual(V17_0_0)
+                ? inputLine("baz", 0)
+                : inputPcLine("baz", 0))
         .add(inputLine("main", 200))
         .build();
   }
@@ -199,8 +210,18 @@ public class NoLineInfoTest extends TestBase {
   // TODO(b/232212653): The retraced stack trace should be the same as `getExpectedInputStacktrace`.
   private StackTrace getUnexpectedRetracedStacktrace() {
     assertFalse(parameters.isCfRuntime());
-    StackTraceLine fooLine = inputLine("foo", -1);
-    int position = getPcEncoding(0);
+    StackTraceLine fooLine =
+        inputLine(
+            "foo",
+            canDiscardResidualDebugInfo(parameters)
+                    && parameters.getDexRuntimeVersion().isNewerThanOrEqual(V17_0_0)
+                ? 1
+                : -1);
+    int position =
+        canDiscardResidualDebugInfo(parameters)
+                && parameters.getDexRuntimeVersion().isNewerThanOrEqual(V17_0_0)
+            ? getPcEncoding(-1)
+            : getPcEncoding(0);
     StackTraceLine barLine = inputLine("bar", position);
     StackTraceLine bazLine = inputLine("baz", position);
     return StackTrace.builder()

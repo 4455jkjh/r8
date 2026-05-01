@@ -51,13 +51,21 @@ public class MethodWithRemovedArgumentStackSampleRetraceTest extends StackSample
 
   @Override
   String getExpectedMap() {
-    return StringUtils.joinLines(
-        "com.android.tools.r8.retrace.stacksamples.MethodWithRemovedArgumentStackSampleRetraceTest$Main"
-            + " -> a:",
-        "# {\"id\":\"sourceFile\",\"fileName\":\"MethodWithRemovedArgumentStackSampleRetraceTest.java\"}",
-        "    1:1:void test(java.lang.Object):50:50 -> a",
-        "      # {\"id\":\"com.android.tools.r8.residualsignature\",\"signature\":\"()V\"}",
-        "    1:4:void main(java.lang.String[]):45:45 -> main");
+    return canDiscardResidualDebugInfo(parameters)
+        ? StringUtils.joinLines(
+            "com.android.tools.r8.retrace.stacksamples.MethodWithRemovedArgumentStackSampleRetraceTest$Main"
+                + " -> a:",
+            "# {\"id\":\"sourceFile\",\"fileName\":\"MethodWithRemovedArgumentStackSampleRetraceTest.java\"}",
+            "    0:7:void test(java.lang.Object):50:50 -> a",
+            "      # {\"id\":\"com.android.tools.r8.residualsignature\",\"signature\":\"()V\"}",
+            "    0:3:void main(java.lang.String[]):45:45 -> main")
+        : StringUtils.joinLines(
+            "com.android.tools.r8.retrace.stacksamples.MethodWithRemovedArgumentStackSampleRetraceTest$Main"
+                + " -> a:",
+            "# {\"id\":\"sourceFile\",\"fileName\":\"MethodWithRemovedArgumentStackSampleRetraceTest.java\"}",
+            "    1:1:void test(java.lang.Object):50:50 -> a",
+            "      # {\"id\":\"com.android.tools.r8.residualsignature\",\"signature\":\"()V\"}",
+            "    1:4:void main(java.lang.String[]):45:45 -> main");
   }
 
   @Override

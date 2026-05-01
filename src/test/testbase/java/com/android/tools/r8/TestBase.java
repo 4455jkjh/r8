@@ -1897,6 +1897,17 @@ public class TestBase {
     return AndroidApiLevel.O;
   }
 
+  public static AndroidApiLevel apiLevelWithDiscardResidualDebugInfoSupport() {
+    return AndroidApiLevel.CINNAMON_BUN;
+  }
+
+  public static boolean canDiscardResidualDebugInfo(TestParameters parameters) {
+    return parameters.getApiLevel() != null
+        && parameters
+            .getApiLevel()
+            .isGreaterThanOrEqualTo(apiLevelWithDiscardResidualDebugInfoSupport());
+  }
+
   public static AndroidApiLevel apiLevelWithMethodParametersSupport() {
     return AndroidApiLevel.O;
   }

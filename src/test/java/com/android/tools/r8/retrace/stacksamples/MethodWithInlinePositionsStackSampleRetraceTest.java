@@ -48,20 +48,35 @@ public class MethodWithInlinePositionsStackSampleRetraceTest extends StackSample
 
   @Override
   String getExpectedMap() {
-    return StringUtils.joinLines(
-        "com.android.tools.r8.retrace.stacksamples.MethodWithInlinePositionsStackSampleRetraceTest$Main"
-            + " -> a:",
-        "# {\"id\":\"sourceFile\",\"fileName\":\"MethodWithInlinePositionsStackSampleRetraceTest.java\"}",
-        "    1:1:void foo():54:54 -> a",
-        "    1:1:void test():50 -> a",
-        "    2:2:void bar():59:59 -> a",
-        "    2:2:void foo():55 -> a",
-        "    2:2:void test():50 -> a",
-        "    3:3:void baz():64:64 -> a",
-        "    3:3:void bar():60 -> a",
-        "    3:3:void foo():55 -> a",
-        "    3:3:void test():50 -> a",
-        "    1:4:void main(java.lang.String[]):45:45 -> main");
+    return canDiscardResidualDebugInfo(parameters)
+        ? StringUtils.joinLines(
+            "com.android.tools.r8.retrace.stacksamples.MethodWithInlinePositionsStackSampleRetraceTest$Main"
+                + " -> a:",
+            "# {\"id\":\"sourceFile\",\"fileName\":\"MethodWithInlinePositionsStackSampleRetraceTest.java\"}",
+            "    0:6:void foo():54:54 -> a",
+            "    0:6:void test():50 -> a",
+            "    7:13:void bar():59:59 -> a",
+            "    7:13:void foo():55 -> a",
+            "    7:13:void test():50 -> a",
+            "    14:21:void baz():64:64 -> a",
+            "    14:21:void bar():60 -> a",
+            "    14:21:void foo():55 -> a",
+            "    14:21:void test():50 -> a",
+            "    0:3:void main(java.lang.String[]):45:45 -> main")
+        : StringUtils.joinLines(
+            "com.android.tools.r8.retrace.stacksamples.MethodWithInlinePositionsStackSampleRetraceTest$Main"
+                + " -> a:",
+            "# {\"id\":\"sourceFile\",\"fileName\":\"MethodWithInlinePositionsStackSampleRetraceTest.java\"}",
+            "    1:1:void foo():54:54 -> a",
+            "    1:1:void test():50 -> a",
+            "    2:2:void bar():59:59 -> a",
+            "    2:2:void foo():55 -> a",
+            "    2:2:void test():50 -> a",
+            "    3:3:void baz():64:64 -> a",
+            "    3:3:void bar():60 -> a",
+            "    3:3:void foo():55 -> a",
+            "    3:3:void test():50 -> a",
+            "    1:4:void main(java.lang.String[]):45:45 -> main");
   }
 
   @Override

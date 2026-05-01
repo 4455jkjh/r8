@@ -64,7 +64,7 @@ public class KeepAttributesTest extends TestBase {
   }
 
   private boolean doesNotHavePcSupport() {
-    return true;
+    return !canDiscardResidualDebugInfo(parameters);
   }
 
   @Test

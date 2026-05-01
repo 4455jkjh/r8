@@ -3,6 +3,8 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8.ir.optimize.switches;
 
+import static com.android.tools.r8.ToolHelper.DexVm.Version.V17_0_0;
+
 import com.android.tools.r8.NeverClassInline;
 import com.android.tools.r8.NeverInline;
 import com.android.tools.r8.TestBase;
@@ -34,7 +36,10 @@ public class SwitchMapInvalidOrdinalTest extends TestBase {
         .setMinApi(parameters)
         .addInnerClasses(SwitchMapInvalidOrdinalTest.class)
         .run(parameters.getRuntime(), Main.class)
-        .assertSuccessWithOutputLines("a", "b", "0", "a");
+        .applyIf(
+            parameters.getDexRuntimeVersion().isNewerThanOrEqual(V17_0_0),
+            r -> r.assertFailureWithErrorThatThrows(IllegalAccessException.class),
+            r -> r.assertSuccessWithOutputLines("a", "b", "0", "a"));
   }
 
   @Test
@@ -54,7 +59,10 @@ public class SwitchMapInvalidOrdinalTest extends TestBase {
         // When the code reaches the switch the first time, then the switch map int[] gets
         // initialized based on the values in the enum at this point creating a mapping ordinal to
         // switch map entry. Here D and X have 3 as ordinal.
-        .assertSuccessWithOutputLines("a", "b", "0", "a");
+        .applyIf(
+            parameters.getDexRuntimeVersion().isNewerThanOrEqual(V17_0_0),
+            r -> r.assertFailureWithErrorThatThrows(IllegalAccessException.class),
+            r -> r.assertSuccessWithOutputLines("a", "b", "0", "a"));
   }
 
   @NeverClassInline
@@ -69,12 +77,12 @@ public class SwitchMapInvalidOrdinalTest extends TestBase {
   }
 
   public static class Main {
-    public static void main(String[] args) {
-      try {
-        // Use reflection to instantiate a new enum instance, and set it to A, using getFields
-        // and not getField since A is minified.
-        Constructor<MyEnum> constructor =
-            (Constructor<MyEnum>) MyEnum.class.getDeclaredConstructors()[0];
+    public static void main(String[] args) throws Exception {
+      // try {
+      // Use reflection to instantiate a new enum instance, and set it to A, using getFields
+      // and not getField since A is minified.
+      Constructor<MyEnum> constructor =
+          (Constructor<MyEnum>) MyEnum.class.getDeclaredConstructors()[0];
         constructor.setAccessible(true);
         MyEnum x = constructor.newInstance("X", 3);
         Field f = MyEnum.class.getFields()[0];
@@ -83,9 +91,9 @@ public class SwitchMapInvalidOrdinalTest extends TestBase {
         f.setAccessible(true);
 
         f.set(null, x);
-      } catch (Exception e) {
-        System.out.println("Unexpected: " + e);
-      }
+      // } catch (Exception e) {
+      //  System.out.println("Unexpected: " + e);
+      // }
       print(MyEnum.A);
       print(MyEnum.B);
       print(MyEnum.C);

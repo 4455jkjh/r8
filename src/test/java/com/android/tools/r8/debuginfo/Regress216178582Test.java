@@ -54,9 +54,16 @@ public class Regress216178582Test extends TestBase {
                   DexEncodedMethod method =
                       inspector.clazz(TestClass.class).mainMethod().getMethod();
                   DexCode code = method.getCode().asDexCode();
-                  assertTrue(code.getDebugInfo().isPcBasedInfo());
+                  assertTrue(
+                      canDiscardResidualDebugInfo(parameters)
+                          ? code.getDebugInfo() == null
+                          : code.getDebugInfo().isPcBasedInfo());
                   // Force convert the PC info to events.
-                  code.setDebugInfo(DexDebugInfo.convertToEventBased(code, inspector.getFactory()));
+                  code.setDebugInfo(
+                      code.getDebugInfo() == null
+                          ? DexDebugInfo.createEventBasedDebugInfoForNativePc(
+                              method.getNumberOfArguments(), code, inspector.getFactory())
+                          : DexDebugInfo.convertToEventBased(code, inspector.getFactory()));
                   List<DexDebugEntry> entries =
                       new DexDebugEntryBuilder(method, inspector.getFactory()).build();
                   Iterator<DexDebugEntry> it = entries.iterator();

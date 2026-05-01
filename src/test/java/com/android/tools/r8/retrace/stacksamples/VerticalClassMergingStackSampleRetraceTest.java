@@ -69,33 +69,64 @@ public class VerticalClassMergingStackSampleRetraceTest extends StackSampleRetra
 
   @Override
   String getExpectedMap() {
-    return StringUtils.joinLines(
-        "com.android.tools.r8.retrace.stacksamples.VerticalClassMergingStackSampleRetraceTest$A ->"
-            + " R8$$REMOVED$$CLASS$$0:",
-        "# {\"id\":\"sourceFile\",\"fileName\":\"VerticalClassMergingStackSampleRetraceTest.java\"}",
-        "com.android.tools.r8.retrace.stacksamples.VerticalClassMergingStackSampleRetraceTest$B ->"
-            + " a:",
-        "# {\"id\":\"sourceFile\",\"fileName\":\"VerticalClassMergingStackSampleRetraceTest.java\"}",
-        "    2:5:void <init>():42:42 -> <init>",
-        "    6:6:void"
-            + " com.android.tools.r8.retrace.stacksamples.VerticalClassMergingStackSampleRetraceTest$A.<init>():42:42"
-            + " -> <init>",
-        "      # {\"id\":\"com.android.tools.r8.residualsignature\",\"signature\":\"(I)V\"}",
-        "    1:3:void bar():47:47 -> a",
-        "    4:11:void bar():48:48 -> a",
-        "    1:8:void"
-            + " com.android.tools.r8.retrace.stacksamples.VerticalClassMergingStackSampleRetraceTest$A.bar():52:52"
-            + " -> b",
-        "    1:8:void"
-            + " com.android.tools.r8.retrace.stacksamples.VerticalClassMergingStackSampleRetraceTest$A.baz():57:57"
-            + " -> c",
-        "    1:8:void"
-            + " com.android.tools.r8.retrace.stacksamples.VerticalClassMergingStackSampleRetraceTest$A.foo():47:47"
-            + " -> d",
-        "com.android.tools.r8.retrace.stacksamples.VerticalClassMergingStackSampleRetraceTest$Main"
-            + " -> b:",
-        "# {\"id\":\"sourceFile\",\"fileName\":\"VerticalClassMergingStackSampleRetraceTest.java\"}",
-        "    1:4:void main(java.lang.String[]):45:48 -> main");
+    return canDiscardResidualDebugInfo(parameters)
+        ? StringUtils.joinLines(
+            "com.android.tools.r8.retrace.stacksamples.VerticalClassMergingStackSampleRetraceTest$A"
+                + " -> R8$$REMOVED$$CLASS$$0:",
+            "# {\"id\":\"sourceFile\",\"fileName\":\"VerticalClassMergingStackSampleRetraceTest.java\"}",
+            "com.android.tools.r8.retrace.stacksamples.VerticalClassMergingStackSampleRetraceTest$B"
+                + " -> a:",
+            "# {\"id\":\"sourceFile\",\"fileName\":\"VerticalClassMergingStackSampleRetraceTest.java\"}",
+            "    1:4:void <init>():42:42 -> <init>",
+            "    5:5:void"
+                + " com.android.tools.r8.retrace.stacksamples.VerticalClassMergingStackSampleRetraceTest$A.<init>():42:42"
+                + " -> <init>",
+            "      # {\"id\":\"com.android.tools.r8.residualsignature\",\"signature\":\"(I)V\"}",
+            "    0:2:void bar():47:47 -> a",
+            "    3:10:void bar():48:48 -> a",
+            "    0:7:void"
+                + " com.android.tools.r8.retrace.stacksamples.VerticalClassMergingStackSampleRetraceTest$A.bar():52:52"
+                + " -> b",
+            "    0:7:void"
+                + " com.android.tools.r8.retrace.stacksamples.VerticalClassMergingStackSampleRetraceTest$A.baz():57:57"
+                + " -> c",
+            "    0:7:void"
+                + " com.android.tools.r8.retrace.stacksamples.VerticalClassMergingStackSampleRetraceTest$A.foo():47:47"
+                + " -> d",
+            "com.android.tools.r8.retrace.stacksamples.VerticalClassMergingStackSampleRetraceTest$Main"
+                + " -> b:",
+            "# {\"id\":\"sourceFile\",\"fileName\":\"VerticalClassMergingStackSampleRetraceTest.java\"}",
+            "    0:4:void main(java.lang.String[]):45:45 -> main",
+            "    5:7:void main(java.lang.String[]):46:46 -> main",
+            "    8:10:void main(java.lang.String[]):47:47 -> main",
+            "    11:14:void main(java.lang.String[]):48:48 -> main")
+        : StringUtils.joinLines(
+            "com.android.tools.r8.retrace.stacksamples.VerticalClassMergingStackSampleRetraceTest$A"
+                + " -> R8$$REMOVED$$CLASS$$0:",
+            "# {\"id\":\"sourceFile\",\"fileName\":\"VerticalClassMergingStackSampleRetraceTest.java\"}",
+            "com.android.tools.r8.retrace.stacksamples.VerticalClassMergingStackSampleRetraceTest$B"
+                + " -> a:",
+            "# {\"id\":\"sourceFile\",\"fileName\":\"VerticalClassMergingStackSampleRetraceTest.java\"}",
+            "    2:5:void <init>():42:42 -> <init>",
+            "    6:6:void"
+                + " com.android.tools.r8.retrace.stacksamples.VerticalClassMergingStackSampleRetraceTest$A.<init>():42:42"
+                + " -> <init>",
+            "      # {\"id\":\"com.android.tools.r8.residualsignature\",\"signature\":\"(I)V\"}",
+            "    1:3:void bar():47:47 -> a",
+            "    4:11:void bar():48:48 -> a",
+            "    1:8:void"
+                + " com.android.tools.r8.retrace.stacksamples.VerticalClassMergingStackSampleRetraceTest$A.bar():52:52"
+                + " -> b",
+            "    1:8:void"
+                + " com.android.tools.r8.retrace.stacksamples.VerticalClassMergingStackSampleRetraceTest$A.baz():57:57"
+                + " -> c",
+            "    1:8:void"
+                + " com.android.tools.r8.retrace.stacksamples.VerticalClassMergingStackSampleRetraceTest$A.foo():47:47"
+                + " -> d",
+            "com.android.tools.r8.retrace.stacksamples.VerticalClassMergingStackSampleRetraceTest$Main"
+                + " -> b:",
+            "# {\"id\":\"sourceFile\",\"fileName\":\"VerticalClassMergingStackSampleRetraceTest.java\"}",
+            "    1:4:void main(java.lang.String[]):45:48 -> main");
   }
 
   @Override

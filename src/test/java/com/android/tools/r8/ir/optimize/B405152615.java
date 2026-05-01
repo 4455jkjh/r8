@@ -68,7 +68,8 @@ public class B405152615 extends TestBase {
         .run(parameters.getRuntime(), Main.class)
         // TODO(b/405152615): Investigate change in output.
         .applyIf(
-            parameters.isDexRuntimeVersionNewerThanOrEqual(Version.V13_0_0),
+            parameters.isDexRuntimeVersionNewerThanOrEqual(Version.V13_0_0)
+                && parameters.isDexRuntimeVersionOlderThanOrEqual(Version.V16_0_0),
             rr -> rr.assertSuccessWithOutputThatMatches(not(equalTo(expectedOutput))),
             rr -> rr.assertSuccessWithOutput(expectedOutput));
   }
