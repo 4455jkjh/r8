@@ -63,6 +63,10 @@ dependencies {
   sharedDepsInternalScope(project(":shared", "sharedDepsInternalFiles"))
 }
 
+evaluationDependsOn(":resourceshrinker")
+
+val resourceshrinkerDepsJarTask = project(":resourceshrinker").tasks.named("depsJar")
+
 dependencies {
   keepAnnoClassesScope(project(":keepanno", "keepannoClasses"))
   assistantClassesScope(project(":assistant", "assistantJar"))
@@ -80,7 +84,7 @@ dependencies {
   implementation(project(":main", "turboClassesOutput"))
   resourceShrinkerClassesScope(project(":resourceshrinker", "resourceshrinkerClasses"))
   implementation(project(":resourceshrinker", "resourceshrinkerClasses"))
-  implementation(project(":resourceshrinker", "resourceshrinkerDepsJar"))
+  implementation(files(resourceshrinkerDepsJarTask.map { it.outputs.files }))
   implementation(project(":testbase"))
   implementation(project(":testbase", "depsJar"))
 }
