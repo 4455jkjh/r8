@@ -569,6 +569,7 @@ public object ThirdPartyDeps {
     )
   public val androidJars: List<ThirdPartyDependency> = getThirdPartyAndroidJars()
   public val androidVMs: List<ThirdPartyDependency> = getThirdPartyAndroidVms()
+  public val dex2Oats: List<ThirdPartyDependency> = getThirdPartyDex2Oats()
   public val apiDatabase: ThirdPartyDependency =
     ThirdPartyDependency(
       "apiDatabase",
@@ -1131,6 +1132,18 @@ private fun getThirdPartyAndroidJar(version: String): ThirdPartyDependency {
     version,
     Paths.get("third_party", "android_jar", version).toFile(),
     Paths.get("third_party", "android_jar", "$version.tar.gz.sha1").toFile(),
+  )
+}
+
+private fun getThirdPartyDex2Oats(): List<ThirdPartyDependency> {
+  return listOf("head", "36.0", "35.14", "33.10").map(::getThirdPartyDex2Oat)
+}
+
+private fun getThirdPartyDex2Oat(version: String): ThirdPartyDependency {
+  return ThirdPartyDependency(
+    version,
+    Paths.get("third_party", "dex2oat", version).toFile(),
+    Paths.get("third_party", "dex2oat", "$version.tar.gz.sha1").toFile(),
   )
 }
 
