@@ -3,14 +3,14 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8.utils;
 
-import static com.android.tools.r8.utils.internal.ConsumerUtils.emptyConsumer;
-import static com.android.tools.r8.utils.FileUtils.CLASS_EXTENSION;
-import static com.android.tools.r8.utils.FileUtils.isAarFile;
-import static com.android.tools.r8.utils.FileUtils.isArchive;
-import static com.android.tools.r8.utils.FileUtils.isClassFile;
-import static com.android.tools.r8.utils.FileUtils.isDexFile;
 import static com.android.tools.r8.utils.InternalOptions.ASM_VERSION;
 import static com.android.tools.r8.utils.ZipUtils.writeToZipStream;
+import static com.android.tools.r8.utils.internal.ConsumerUtils.emptyConsumer;
+import static com.android.tools.r8.utils.internal.FileUtils.CLASS_EXTENSION;
+import static com.android.tools.r8.utils.internal.FileUtils.isAarFile;
+import static com.android.tools.r8.utils.internal.FileUtils.isArchive;
+import static com.android.tools.r8.utils.internal.FileUtils.isClassFile;
+import static com.android.tools.r8.utils.internal.FileUtils.isDexFile;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 import com.android.tools.r8.AndroidResourceInput;
@@ -52,6 +52,7 @@ import com.android.tools.r8.startup.StartupProfileProvider;
 import com.android.tools.r8.synthesis.SyntheticItems;
 import com.android.tools.r8.utils.internal.IntBox;
 import com.android.tools.r8.utils.internal.StreamUtils;
+import com.android.tools.r8.utils.internal.StringUtils;
 import com.android.tools.r8.utils.internal.collections.Pair;
 import com.android.tools.r8.utils.internal.exceptions.Unreachable;
 import com.android.tools.r8.utils.timing.Timing;

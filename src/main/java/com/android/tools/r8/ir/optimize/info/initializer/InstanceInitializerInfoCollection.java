@@ -10,7 +10,7 @@ import com.android.tools.r8.graph.lens.GraphLens;
 import com.android.tools.r8.graph.proto.ArgumentInfoCollection;
 import com.android.tools.r8.ir.code.InvokeDirect;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
-import com.android.tools.r8.utils.MapUtils;
+import com.android.tools.r8.utils.internal.MapUtils;
 import com.google.common.collect.ImmutableMap;
 
 public abstract class InstanceInitializerInfoCollection {

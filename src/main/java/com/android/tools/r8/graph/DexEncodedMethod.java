@@ -42,12 +42,12 @@ import com.android.tools.r8.kotlin.KotlinMethodLevelInfo;
 import com.android.tools.r8.lightir.LirCode;
 import com.android.tools.r8.naming.NamingLens;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
+import com.android.tools.r8.utils.RetracerForCodePrinting;
 import com.android.tools.r8.utils.internal.BooleanBox;
 import com.android.tools.r8.utils.internal.BooleanUtils;
 import com.android.tools.r8.utils.internal.ConsumerUtils;
 import com.android.tools.r8.utils.internal.ObjectUtils;
 import com.android.tools.r8.utils.internal.OptionalBool;
-import com.android.tools.r8.utils.RetracerForCodePrinting;
 import com.android.tools.r8.utils.internal.exceptions.Unreachable;
 import com.android.tools.r8.utils.structural.CompareToVisitor;
 import com.android.tools.r8.utils.structural.HashingVisitor;
@@ -833,6 +833,11 @@ public class DexEncodedMethod extends DexEncodedMember<DexEncodedMethod, DexMeth
   public Code getCode() {
     checkIfObsolete();
     return code;
+  }
+
+  public LirCode<?> getLirCode() {
+    checkIfObsolete();
+    return hasLirCode() ? code.asLirCode() : null;
   }
 
   public CfVersion getClassFileVersion() {

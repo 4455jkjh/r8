@@ -17,7 +17,7 @@ import com.android.tools.r8.assistant.runtime.ReflectiveOracle;
 import com.android.tools.r8.cfmethodgeneration.MethodGenerationBase;
 import com.android.tools.r8.graph.DexEncodedMethod;
 import com.android.tools.r8.graph.DexType;
-import com.android.tools.r8.utils.FileUtils;
+import com.android.tools.r8.utils.internal.FileUtils;
 import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
 import java.util.Comparator;

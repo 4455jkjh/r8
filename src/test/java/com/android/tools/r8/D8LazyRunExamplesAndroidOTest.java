@@ -4,14 +4,14 @@
 
 package com.android.tools.r8;
 
-import static com.android.tools.r8.utils.FileUtils.JAR_EXTENSION;
+import static com.android.tools.r8.utils.internal.FileUtils.JAR_EXTENSION;
 import static org.junit.Assert.assertTrue;
 
 import com.android.tools.r8.utils.AndroidApiLevel;
 import com.android.tools.r8.utils.AndroidApp;
-import com.android.tools.r8.utils.FileUtils;
 import com.android.tools.r8.utils.OffOrAuto;
 import com.android.tools.r8.utils.ZipUtils;
+import com.android.tools.r8.utils.internal.FileUtils;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;

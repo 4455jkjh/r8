@@ -11,7 +11,7 @@ import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.shaking.PrintUsageTest.PrintUsageInspector.ClassSubject;
 import com.android.tools.r8.utils.AndroidApiLevel;
-import com.android.tools.r8.utils.ListUtils;
+import com.android.tools.r8.utils.internal.ListUtils;
 import com.google.common.collect.ImmutableList;
 import java.io.File;
 import java.io.IOException;

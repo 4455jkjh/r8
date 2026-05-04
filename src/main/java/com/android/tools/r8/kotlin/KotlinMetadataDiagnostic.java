@@ -9,7 +9,7 @@ import com.android.tools.r8.graph.DexClass;
 import com.android.tools.r8.keepanno.annotations.KeepForApi;
 import com.android.tools.r8.origin.Origin;
 import com.android.tools.r8.position.Position;
-import com.android.tools.r8.utils.StringUtils;
+import com.android.tools.r8.utils.internal.StringUtils;
 
 @KeepForApi
 public class KotlinMetadataDiagnostic implements Diagnostic {

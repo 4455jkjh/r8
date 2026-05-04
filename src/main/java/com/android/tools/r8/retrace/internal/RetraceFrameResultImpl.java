@@ -19,7 +19,7 @@ import com.android.tools.r8.retrace.RetracedClassMemberReference;
 import com.android.tools.r8.retrace.RetracedSingleFrame;
 import com.android.tools.r8.retrace.RetracedSourceFile;
 import com.android.tools.r8.retrace.internal.RetraceClassResultImpl.RetraceClassElementImpl;
-import com.android.tools.r8.utils.ListUtils;
+import com.android.tools.r8.utils.internal.ListUtils;
 import com.android.tools.r8.utils.internal.OptionalBool;
 import com.android.tools.r8.utils.internal.OptionalUtils;
 import com.google.common.collect.ImmutableList;

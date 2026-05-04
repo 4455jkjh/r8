@@ -17,7 +17,7 @@ import com.android.tools.r8.retrace.MappingPartition;
 import com.android.tools.r8.retrace.MappingPartitionMetadata;
 import com.android.tools.r8.utils.AndroidApiLevel;
 import com.android.tools.r8.utils.internal.Box;
-import com.android.tools.r8.utils.StringUtils;
+import com.android.tools.r8.utils.internal.StringUtils;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;

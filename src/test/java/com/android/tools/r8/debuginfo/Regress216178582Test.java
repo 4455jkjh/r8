@@ -4,7 +4,6 @@
 package com.android.tools.r8.debuginfo;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 import com.android.tools.r8.TestBase;
@@ -16,7 +15,7 @@ import com.android.tools.r8.graph.DexDebugEntry;
 import com.android.tools.r8.graph.DexDebugEntryBuilder;
 import com.android.tools.r8.graph.DexDebugInfo;
 import com.android.tools.r8.graph.DexEncodedMethod;
-import com.android.tools.r8.utils.StringUtils;
+import com.android.tools.r8.utils.internal.StringUtils;
 import java.nio.file.Path;
 import java.util.Iterator;
 import java.util.List;
@@ -55,9 +54,16 @@ public class Regress216178582Test extends TestBase {
                   DexEncodedMethod method =
                       inspector.clazz(TestClass.class).mainMethod().getMethod();
                   DexCode code = method.getCode().asDexCode();
-                  assertTrue(code.getDebugInfo().isPcBasedInfo());
+                  assertTrue(
+                      canDiscardResidualDebugInfo(parameters)
+                          ? code.getDebugInfo() == null
+                          : code.getDebugInfo().isPcBasedInfo());
                   // Force convert the PC info to events.
-                  code.setDebugInfo(DexDebugInfo.convertToEventBased(code, inspector.getFactory()));
+                  code.setDebugInfo(
+                      code.getDebugInfo() == null
+                          ? DexDebugInfo.createEventBasedDebugInfoForNativePc(
+                              method.getNumberOfArguments(), code, inspector.getFactory())
+                          : DexDebugInfo.convertToEventBased(code, inspector.getFactory()));
                   List<DexDebugEntry> entries =
                       new DexDebugEntryBuilder(method, inspector.getFactory()).build();
                   Iterator<DexDebugEntry> it = entries.iterator();

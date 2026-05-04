@@ -19,7 +19,7 @@ import com.android.tools.r8.retrace.MappingPartitionMetadata;
 import com.android.tools.r8.retrace.PartitionMappingSupplier;
 import com.android.tools.r8.retrace.PartitionedToProguardMappingConverter;
 import com.android.tools.r8.utils.internal.Box;
-import com.android.tools.r8.utils.FileUtils;
+import com.android.tools.r8.utils.internal.FileUtils;
 import java.nio.file.Path;
 import org.junit.Test;
 import org.junit.runner.RunWith;

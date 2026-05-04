@@ -115,7 +115,10 @@ import com.android.tools.r8.utils.IROrdering.NondeterministicIROrdering;
 import com.android.tools.r8.utils.collections.ProgramMethodSet;
 import com.android.tools.r8.utils.internal.AssertionUtils;
 import com.android.tools.r8.utils.internal.ConsumerUtils;
+import com.android.tools.r8.utils.internal.ListUtils;
 import com.android.tools.r8.utils.internal.QuadConsumer;
+import com.android.tools.r8.utils.internal.SetUtils;
+import com.android.tools.r8.utils.internal.StringUtils;
 import com.android.tools.r8.utils.internal.ThrowingConsumer;
 import com.android.tools.r8.utils.internal.TriConsumer;
 import com.android.tools.r8.utils.internal.TriFunction;
@@ -567,10 +570,6 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
   public boolean emitPermittedSubclassesAnnotationsInDex =
       System.getProperty("com.android.tools.r8.emitPermittedSubclassesAnnotationsInDex") != null;
 
-  // TODO(b/458640215): Remove setting this flag through a system property now it is enabled by
-  //  default in debug mode.
-  public boolean emitLambdaMethodAnnotations =
-      System.getProperty("com.android.tools.r8.emitLambdaMethodAnnotations") != null;
   // TODO(b/464478094): Flag to disable generation of LambdaMethod annotations.
   public boolean disableLambdaMethodAnnotations =
       System.getProperty("com.android.tools.r8.disableLambdaMethodAnnotations") != null;

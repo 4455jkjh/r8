@@ -3,9 +3,9 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8.benchmarks.appdumps;
 
-import com.android.tools.r8.utils.FileUtils;
-import com.android.tools.r8.utils.ListUtils;
 import com.android.tools.r8.utils.ZipUtils;
+import com.android.tools.r8.utils.internal.FileUtils;
+import com.android.tools.r8.utils.internal.ListUtils;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;

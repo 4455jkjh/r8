@@ -7,7 +7,7 @@ import com.android.tools.r8.ir.analysis.type.TypeElement;
 import com.android.tools.r8.ir.code.WideConstant;
 import com.android.tools.r8.ir.conversion.IRBuilder;
 import com.android.tools.r8.utils.RetracerForCodePrinting;
-import com.android.tools.r8.utils.StringUtils;
+import com.android.tools.r8.utils.internal.StringUtils;
 
 public class DexConstWide extends DexFormat51l implements WideConstant {
 

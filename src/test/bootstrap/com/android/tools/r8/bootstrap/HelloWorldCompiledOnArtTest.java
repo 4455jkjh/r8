@@ -4,6 +4,8 @@
 
 package com.android.tools.r8.bootstrap;
 
+import static com.android.tools.r8.ToolHelper.DexVm.Version.V16_0_0;
+import static com.android.tools.r8.ToolHelper.DexVm.Version.V5_1_1;
 import static com.android.tools.r8.desugar.desugaredlibrary.test.CompilationSpecification.D8_L8DEBUG;
 import static com.android.tools.r8.desugar.desugaredlibrary.test.LibraryDesugaringSpecification.JDK11_PATH;
 import static junit.framework.TestCase.assertEquals;
@@ -13,14 +15,13 @@ import com.android.tools.r8.D8;
 import com.android.tools.r8.R8;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.ToolHelper;
-import com.android.tools.r8.ToolHelper.DexVm.Version;
 import com.android.tools.r8.ToolHelper.ProcessResult;
 import com.android.tools.r8.desugar.desugaredlibrary.DesugaredLibraryTestBase;
 import com.android.tools.r8.desugar.desugaredlibrary.test.CompilationSpecification;
 import com.android.tools.r8.desugar.desugaredlibrary.test.DesugaredLibraryTestCompileResult;
 import com.android.tools.r8.desugar.desugaredlibrary.test.LibraryDesugaringSpecification;
 import com.android.tools.r8.utils.AndroidApiLevel;
-import com.android.tools.r8.utils.StringUtils;
+import com.android.tools.r8.utils.internal.StringUtils;
 import com.google.common.collect.ImmutableList;
 import java.io.IOException;
 import java.nio.file.Path;
@@ -52,7 +53,8 @@ public class HelloWorldCompiledOnArtTest extends DesugaredLibraryTestBase {
   public static List<Object[]> data() {
     return buildParameters(
         getTestParameters()
-            .withDexRuntimesStartingFromIncluding(Version.V5_1_1)
+            // TODO(b/507731439): Test on ART 17.
+            .withDexRuntimesRangeIncluding(V5_1_1, V16_0_0)
             .withApiLevelsStartingAtIncluding(AndroidApiLevel.L)
             .build(),
         ImmutableList.of(JDK11_PATH),

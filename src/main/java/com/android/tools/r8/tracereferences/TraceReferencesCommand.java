@@ -3,10 +3,10 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8.tracereferences;
 
-import static com.android.tools.r8.utils.FileUtils.isArchive;
-import static com.android.tools.r8.utils.FileUtils.isClassFile;
-import static com.android.tools.r8.utils.FileUtils.isDexFile;
 import static com.android.tools.r8.utils.InternalOptions.ASM_VERSION;
+import static com.android.tools.r8.utils.internal.FileUtils.isArchive;
+import static com.android.tools.r8.utils.internal.FileUtils.isClassFile;
+import static com.android.tools.r8.utils.internal.FileUtils.isDexFile;
 
 import com.android.tools.r8.ArchiveClassFileProvider;
 import com.android.tools.r8.ClassConflictResolver;
@@ -24,7 +24,6 @@ import com.android.tools.r8.keepanno.annotations.KeepForApi;
 import com.android.tools.r8.origin.Origin;
 import com.android.tools.r8.origin.PathOrigin;
 import com.android.tools.r8.utils.ArchiveResourceProvider;
-import com.android.tools.r8.utils.internal.Box;
 import com.android.tools.r8.utils.ExceptionDiagnostic;
 import com.android.tools.r8.utils.ExceptionUtils;
 import com.android.tools.r8.utils.InternalOptions;
@@ -32,6 +31,7 @@ import com.android.tools.r8.utils.ProgramClassCollection;
 import com.android.tools.r8.utils.ProgramResourceProviderUtils;
 import com.android.tools.r8.utils.Reporter;
 import com.android.tools.r8.utils.StringDiagnostic;
+import com.android.tools.r8.utils.internal.Box;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import java.io.IOException;

@@ -7,6 +7,7 @@ package com.android.tools.r8.ir.analysis.proto;
 import static com.android.tools.r8.graph.DexProgramClass.asProgramClassOrNull;
 
 import com.android.tools.r8.graph.AppView;
+import com.android.tools.r8.graph.DexClass;
 import com.android.tools.r8.graph.DexEncodedField;
 import com.android.tools.r8.graph.DexEncodedMethod;
 import com.android.tools.r8.graph.DexField;
@@ -221,10 +222,15 @@ public class GeneratedExtensionRegistryShrinker {
   }
 
   private void forEachFindLiteExtensionByNumberMethod(Consumer<ProgramMethod> consumer) {
+    DexClass extensionRegistryLiteClass =
+        appView.appInfo().definitionForWithoutExistenceAssert(references.extensionRegistryLiteType);
+    if (extensionRegistryLiteClass == null) {
+      return;
+    }
     appView
         .appInfo()
         .forEachInstantiatedSubType(
-            references.extensionRegistryLiteType,
+            extensionRegistryLiteClass.getType(),
             clazz ->
                 clazz.forEachProgramMethodMatching(
                     definition ->

@@ -5,7 +5,7 @@ package com.android.tools.r8.examples.ifstatements;
 
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.examples.ExamplesTestBase;
-import com.android.tools.r8.utils.StringUtils;
+import com.android.tools.r8.utils.internal.StringUtils;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 

@@ -26,11 +26,11 @@ import com.android.tools.r8.ir.desugar.desugaredlibrary.legacyspecification.Lega
 import com.android.tools.r8.origin.Origin;
 import com.android.tools.r8.utils.AbortException;
 import com.android.tools.r8.utils.AndroidApiLevel;
-import com.android.tools.r8.utils.ListUtils;
 import com.android.tools.r8.utils.Reporter;
+import com.android.tools.r8.utils.internal.ListUtils;
 import com.android.tools.r8.utils.internal.SemanticVersion;
-import com.android.tools.r8.utils.StringUtils;
-import com.android.tools.r8.utils.StringUtils.BraceType;
+import com.android.tools.r8.utils.internal.StringUtils;
+import com.android.tools.r8.utils.internal.StringUtils.BraceType;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import java.util.Collections;

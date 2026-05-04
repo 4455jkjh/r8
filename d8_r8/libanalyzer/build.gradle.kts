@@ -23,6 +23,8 @@ buildscript { dependencies { classpath("com.google.protobuf:protobuf-gradle-plug
 
 apply(plugin = "com.google.protobuf")
 
+tasks.named("generateProto") { dependsOn(":shared:downloadDeps") }
+
 var os = DefaultNativePlatform.getCurrentOperatingSystem()
 var protobuf = project.extensions.getByName("protobuf") as ProtobufExtension
 
@@ -60,7 +62,7 @@ kotlin {
 dependencies {
   compileOnly(Deps.guava)
   compileOnly(Deps.protobuf)
-  compileOnly(":keepanno")
+  compileOnly(project(":keepanno", "keepannoClasses"))
   compileOnly(project(":main", "mainClassesOutput"))
   compileOnly(project(":main", "turboClassesOutput"))
   errorprone(Deps.errorprone)

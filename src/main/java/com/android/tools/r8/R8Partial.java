@@ -24,8 +24,8 @@ import com.android.tools.r8.utils.ForwardingDiagnosticsHandler;
 import com.android.tools.r8.utils.InternalClasspathOrLibraryClassProvider;
 import com.android.tools.r8.utils.InternalOptions;
 import com.android.tools.r8.utils.InternalProgramClassProvider;
-import com.android.tools.r8.utils.ListUtils;
 import com.android.tools.r8.utils.ThreadUtils;
+import com.android.tools.r8.utils.internal.ListUtils;
 import com.android.tools.r8.utils.internal.exceptions.Unreachable;
 import com.android.tools.r8.utils.timing.Timing;
 import java.io.IOException;
@@ -345,7 +345,6 @@ class R8Partial {
         options.emitPermittedSubclassesAnnotationsInDex;
     subCompilationOptions.desugarState = options.desugarState;
     subCompilationOptions.forceNestDesugaring = options.forceNestDesugaring;
-    subCompilationOptions.emitLambdaMethodAnnotations = options.emitLambdaMethodAnnotations;
     subCompilationOptions.disableLambdaMethodAnnotations = options.disableLambdaMethodAnnotations;
     subCompilationOptions.getTestingOptions().forceDexContainerFormat =
         options.getTestingOptions().forceDexContainerFormat;

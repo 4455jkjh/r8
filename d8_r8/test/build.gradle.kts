@@ -39,10 +39,59 @@ val assistantJarConfig by
 val blastRadiusSourcesScope by configurations.dependencyScope("blastRadiusSourcesScope")
 val blastRadiusSourcesConfig by
   configurations.resolvable("blastRadiusSourcesConfig") { extendsFrom(blastRadiusSourcesScope) }
+val keepAnnoAndroidXAnnotationsJarScope by
+  configurations.dependencyScope("keepAnnoAndroidXAnnotationsJarScope")
+val keepAnnoAndroidXAnnotationsJarConfig by
+  configurations.resolvable("keepAnnoAndroidXAnnotationsJarConfig") {
+    extendsFrom(keepAnnoAndroidXAnnotationsJarScope)
+  }
+val keepAnnoDepsJarOnlyAsmScope by configurations.dependencyScope("keepAnnoDepsJarOnlyAsmScope")
+val keepAnnoDepsJarOnlyAsmConfig by
+  configurations.resolvable("keepAnnoDepsJarOnlyAsmConfig") {
+    extendsFrom(keepAnnoDepsJarOnlyAsmScope)
+  }
+val keepAnnoSourcesScope by configurations.dependencyScope("keepAnnoSourcesScope")
+val keepAnnoSourcesConfig by
+  configurations.resolvable("keepAnnoSourcesConfig") { extendsFrom(keepAnnoSourcesScope) }
+val keepAnnoClassesScope by configurations.dependencyScope("keepAnnoClassesScope")
+val keepAnnoClassesConfig by
+  configurations.resolvable("keepAnnoClassesConfig") { extendsFrom(keepAnnoClassesScope) }
+
+val resourceShrinkerSourcesScope by configurations.dependencyScope("resourceShrinkerSourcesScope")
+val resourceShrinkerSourcesConfig by
+  configurations.resolvable("resourceShrinkerSourcesConfig") {
+    extendsFrom(resourceShrinkerSourcesScope)
+  }
+
+val sharedDepsScope by configurations.dependencyScope("sharedDepsScope")
+val sharedDepsConfig by
+  configurations.resolvable("sharedDepsConfig") { extendsFrom(sharedDepsScope) }
+
+val sharedTestDepsScope by configurations.dependencyScope("sharedTestDepsScope")
+val sharedTestDepsConfig by
+  configurations.resolvable("sharedTestDepsConfig") { extendsFrom(sharedTestDepsScope) }
+
+val sharedDepsInternalScope by configurations.dependencyScope("sharedDepsInternalScope")
+val sharedDepsInternalConfig by
+  configurations.resolvable("sharedDepsInternalConfig") { extendsFrom(sharedDepsInternalScope) }
+
+val sharedTestDepsInternalScope by configurations.dependencyScope("sharedTestDepsInternalScope")
+val sharedTestDepsInternalConfig by
+  configurations.resolvable("sharedTestDepsInternalConfig") {
+    extendsFrom(sharedTestDepsInternalScope)
+  }
 
 dependencies {
+  sharedDepsScope(project(":shared", "sharedDepsFiles"))
+  sharedTestDepsScope(project(":shared", "sharedTestDepsFiles"))
+  sharedDepsInternalScope(project(":shared", "sharedDepsInternalFiles"))
+  sharedTestDepsInternalScope(project(":shared", "sharedTestDepsInternalFiles"))
   assistantJarScope(project(":assistant", "assistantJar"))
   blastRadiusSourcesScope(project(":blastradius", "blastradiusSources"))
+  keepAnnoAndroidXAnnotationsJarScope(project(":keepanno", "keepannoAndroidXAnnotationsJar"))
+  keepAnnoDepsJarOnlyAsmScope(project(":keepanno", "keepannoDepsJarOnlyAsm"))
+  keepAnnoSourcesScope(project(":keepanno", "keepannoSources"))
+  keepAnnoClassesScope(project(":keepanno", "keepannoClasses"))
   testJarsScope(project(":tests_java_8", "testJar"))
   testJarsScope(project(":tests_java_9", "testJar"))
   testJarsScope(project(":tests_java_11", "testJar"))
@@ -54,11 +103,8 @@ dependencies {
   testDepsJarsScope(project(":testbase", "depsJar"))
   mainDepsJarFilesScope(project(":dist", "depsJarFiles"))
   mainSourcesScope(project(":main", "mainSources"))
+  resourceShrinkerSourcesScope(project(":resourceshrinker", "resourceshrinkerSources"))
 }
-
-val keepAnnoCompileTask = projectTask("keepanno", "compileJava")
-val keepAnnoCompileKotlinTask = projectTask("keepanno", "compileKotlin")
-val keepAnnoSourcesTask = projectTask("keepanno", "sourcesJar")
 
 val libanalyzerSourcesScope by configurations.dependencyScope("libanalyzerSourcesScope")
 val libanalyzerSourcesConfig by
@@ -72,11 +118,8 @@ val swissArmyKnifeTask = project(":dist").tasks.getByName("swissArmyKnife")
 val processKeepRulesLibWithRelocatedDepsTask =
   project(":dist").tasks.getByName("processKeepRulesLibWithRelocatedDeps")
 val r8WithRelocatedDepsTask = project(":dist").tasks.getByName("r8WithRelocatedDeps")
-val resourceShrinkerSourcesTask = projectTask("resourceshrinker", "sourcesJar")
-val keepAnnoAndroidXAnnotationsJar = projectTask("keepanno", "keepAnnoAndroidXAnnotationsJar")
 val keepAnnoToolsWithRelocatedDepsTask =
   project(":dist").tasks.getByName("keepAnnoToolsWithRelocatedDeps")
-val depsJarOnlyAsmTask = projectTask("keepanno", "depsJarOnlyAsm")
 
 tasks {
   withType<Exec> { doFirst { println("Executing command: ${commandLine.joinToString(" ")}") } }
@@ -102,9 +145,9 @@ tasks {
 
   val packageTestDeps by
     registering(Jar::class) {
-      dependsOn(keepAnnoAndroidXAnnotationsJar)
+      dependsOn(keepAnnoAndroidXAnnotationsJarConfig)
       from(testDepsJars.elements.map { it.map { zipTree(it) } })
-      from(keepAnnoAndroidXAnnotationsJar.outputs.getFiles().map(::zipTree))
+      from(keepAnnoAndroidXAnnotationsJarConfig.map(::zipTree))
       exclude("META-INF/*.kotlin_module", "**/*.kotlin_metadata", "org/jspecify/**", "org/jspecify")
       duplicatesStrategy = DuplicatesStrategy.EXCLUDE
       destinationDirectory.set(getRoot().resolveAll("build", "libs"))
@@ -294,7 +337,7 @@ tasks {
     registering(Exec::class) {
       dependsOn(r8WithRelocatedDepsTask)
       dependsOn(keepAnnoToolsWithRelocatedDepsTask)
-      dependsOn(depsJarOnlyAsmTask)
+      dependsOn(keepAnnoDepsJarOnlyAsmConfig)
       dependOnPythonScripts()
       val inputJar = keepAnnoToolsWithRelocatedDepsTask.getSingleOutputFile()
       val r8WithRelocatedDepsJar = r8WithRelocatedDepsTask.getSingleOutputFile()
@@ -310,7 +353,7 @@ tasks {
           keepRuleFiles,
           excludingDepsVariant = false,
           debugVariant = false,
-          classpath = listOf(depsJarOnlyAsmTask.getSingleOutputFile()),
+          classpath = listOf(keepAnnoDepsJarOnlyAsmConfig.singleFile),
           versionJar = r8WithRelocatedDepsJar,
         )
     }
@@ -532,11 +575,7 @@ tasks {
 
     systemProperty(
       "BUILD_PROP_KEEPANNO_RUNTIME_PATH",
-      extractClassesPaths(
-        "keepanno" + File.separator,
-        keepAnnoCompileTask.outputs.files.asPath,
-        keepAnnoCompileKotlinTask.outputs.files.asPath,
-      ),
+      extractClassesPaths("keepanno" + File.separator, keepAnnoClassesConfig.asPath),
     )
     systemProperty("BUILD_PROP_PROCESS_KEEP_RULES_RUNTIME_PATH", processKeepRulesLibJar)
     systemProperty("BUILD_PROP_R8_RUNTIME_PATH", r8LibJar)
@@ -562,26 +601,26 @@ tasks {
   val packageSources by
     registering(Jar::class) {
       dependsOn(blastRadiusSourcesConfig)
-      dependsOn(keepAnnoSourcesTask)
+      dependsOn(keepAnnoSourcesConfig)
       dependsOn(libanalyzerSourcesConfig)
-      dependsOn(resourceShrinkerSourcesTask)
+      dependsOn(resourceShrinkerSourcesConfig)
       dependsOn(mainSourcesConfig)
       from(blastRadiusSourcesConfig.map(::zipTree))
-      from(keepAnnoSourcesTask.outputs.files.map(::zipTree))
+      from(keepAnnoSourcesConfig.map(::zipTree))
       from(libanalyzerSourcesConfig.map(::zipTree))
       from(mainSourcesConfig.map(::zipTree))
-      from(resourceShrinkerSourcesTask.outputs.files.map(::zipTree))
+      from(resourceShrinkerSourcesConfig.map(::zipTree))
       archiveClassifier.set("sources")
       archiveFileName.set("r8-src.jar")
       destinationDirectory.set(getRoot().resolveAll("build", "libs"))
     }
 
   test {
-    dependsOn(gradle.includedBuild("shared").task(":downloadDeps"))
-    dependsOn(gradle.includedBuild("shared").task(":downloadTestDeps"))
+    dependsOn(sharedDepsConfig)
+    dependsOn(sharedTestDepsConfig)
     if (!project.hasProperty("no_internal")) {
-      dependsOn(gradle.includedBuild("shared").task(":downloadDepsInternal"))
-      dependsOn(gradle.includedBuild("shared").task(":downloadTestDepsInternal"))
+      dependsOn(sharedDepsInternalConfig)
+      dependsOn(sharedTestDepsInternalConfig)
     }
     // Build processkeepruleslib.jar when running with --only_internal.
     if (project.hasProperty("only_internal")) {

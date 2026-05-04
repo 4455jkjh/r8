@@ -201,10 +201,11 @@ java {
   withSourcesJar()
 }
 
-val keepAnnoJarTask = projectTask("keepanno", "jar")
-val keepAnnoToolsJar = projectTask("keepanno", "toolsJar")
-val resourceShrinkerJarTask = projectTask("resourceshrinker", "jar")
-val downloadDepsTask = projectTask("shared", "downloadDeps")
+val sharedDepsScope by configurations.dependencyScope("sharedDepsScope")
+val sharedDepsConfig by
+  configurations.resolvable("sharedDepsConfig") { extendsFrom(sharedDepsScope) }
+
+dependencies { sharedDepsScope(project(":shared", "sharedDepsFiles")) }
 
 fun mainJarDependencies(): FileCollection {
   return sourceSets.main
@@ -229,8 +230,8 @@ dependencies {
   internalClassesScope(project(":utils", "isolatedClasses"))
   implementation(project(":assistant", "assistantJar"))
   implementation(project(":blastradius", "blastradiusJar"))
-  implementation(keepAnnoJarTask.outputs.files)
-  implementation(resourceShrinkerJarTask.outputs.files)
+  implementation(project(":keepanno", "keepannoClasses"))
+  implementation(project(":resourceshrinker", "resourceshrinkerJar"))
   implementation(project(":utils"))
   Deps.compilerDeps.forEach { compileOnly(it) }
   errorprone(Deps.errorprone)
@@ -288,11 +289,13 @@ tasks {
 }
 
 tasks.withType<JavaCompile> {
-  dependsOn(gradle.includedBuild("shared").task(":downloadDeps"))
+  dependsOn(sharedDepsConfig)
   logger.info("NOTE: Running with JDK: " + org.gradle.internal.jvm.Jvm.current().javaHome)
 }
 
-tasks.withType<ProcessResources> { dependsOn(gradle.includedBuild("shared").task(":downloadDeps")) }
+tasks.named("sourcesJar") { dependsOn(sharedDepsConfig) }
+
+tasks.withType<ProcessResources> { dependsOn(sharedDepsConfig) }
 
 // Contains both :main jar and :utils jar but not third party dependencies.
 val mainJar by configurations.consumable("mainJar") { extendsFrom(internalJarResolvable) }

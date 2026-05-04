@@ -30,6 +30,7 @@ public class TestParametersBuilder {
   private Predicate<TestParameters> filter = alwaysFalse();
   private Predicate<TestParameters> partialFilter = alwaysFalse();
   private boolean hasDexRuntimeFilter = false;
+  private boolean hasNoneRuntime = false;
 
   TestParametersBuilder() {}
 
@@ -59,6 +60,7 @@ public class TestParametersBuilder {
   }
 
   public TestParametersBuilder withNoneRuntime() {
+    hasNoneRuntime = true;
     return withFilter(p -> p.getRuntime() == NoneRuntime.getInstance());
   }
 
@@ -163,6 +165,21 @@ public class TestParametersBuilder {
         vm -> vm != startExcluding && startExcluding.isOlderThanOrEqual(vm));
   }
 
+  /** Add all available DEX runtimes ending at and excluding {@param startExcluding}. */
+  public TestParametersBuilder withDexRuntimesEndingAtExcluding(DexVm.Version endExcluding) {
+    return withDexRuntimeFilter(vm -> vm != endExcluding && vm.isOlderThanOrEqual(endExcluding));
+  }
+
+  /**
+   * Add all available DEX runtimes starting from {@param startInclusive} and ending at {@param
+   * endInclusive}. Both inclusive.
+   */
+  public TestParametersBuilder withDexRuntimesRangeIncluding(
+      DexVm.Version startInclusive, DexVm.Version endInclusive) {
+    return withDexRuntimeFilter(
+        vm -> vm.isNewerThanOrEqual(startInclusive) && vm.isOlderThanOrEqual(endInclusive));
+  }
+
   public TestParametersBuilder withPartialCompilation() {
     return withIncludeAllPartialCompilation()
         .withExcludeAllPartialCompilation()
@@ -246,7 +263,7 @@ public class TestParametersBuilder {
   }
 
   public TestParametersCollection build() {
-    assert !enableApiLevels || enableApiLevelsForCf || hasDexRuntimeFilter;
+    assert !enableApiLevels || enableApiLevelsForCf || hasDexRuntimeFilter || hasNoneRuntime;
     List<TestParameters> availableParameters =
         getAvailableRuntimes()
             .flatMap(this::createTestParameters)
@@ -306,6 +323,15 @@ public class TestParametersBuilder {
       return Stream.of();
     }
     if (sortedApiLevels.size() > 1) {
+      if (runtime.isNone()) {
+        return sortedApiLevels.stream()
+            .filter(
+                apiLevel ->
+                    apiLevel != AndroidApiLevel.EXTENSION && apiLevel != AndroidApiLevel.MAIN)
+            .map(
+                api ->
+                    new TestParameters(runtime, api, PartialCompilationTestParameters.NONE, false));
+      }
       for (int i = sortedApiLevels.size() - 1; i >= 0; i--) {
         AndroidApiLevel highestApplicable = sortedApiLevels.get(i);
         if (highestApplicable.isLessThanOrEqualTo(vmLevel)

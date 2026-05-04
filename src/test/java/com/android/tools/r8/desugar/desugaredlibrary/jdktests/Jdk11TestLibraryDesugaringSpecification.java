@@ -9,7 +9,7 @@ import static com.android.tools.r8.desugar.desugaredlibrary.jdktests.Jdk11Suppor
 import static com.android.tools.r8.desugar.desugaredlibrary.test.LibraryDesugaringSpecification.JDK11;
 import static com.android.tools.r8.desugar.desugaredlibrary.test.LibraryDesugaringSpecification.JDK11_PATH;
 import static com.android.tools.r8.desugar.desugaredlibrary.test.LibraryDesugaringSpecification.JDK8;
-import static com.android.tools.r8.utils.FileUtils.JAVA_EXTENSION;
+import static com.android.tools.r8.utils.internal.FileUtils.JAVA_EXTENSION;
 
 import com.android.tools.r8.JavaCompilerTool;
 import com.android.tools.r8.TestRuntime;

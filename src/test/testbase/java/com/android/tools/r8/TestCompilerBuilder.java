@@ -24,8 +24,6 @@ import com.android.tools.r8.utils.AndroidAppConsumers;
 import com.android.tools.r8.utils.DescriptorUtils;
 import com.android.tools.r8.utils.ForwardingOutputStream;
 import com.android.tools.r8.utils.InternalOptions;
-import com.android.tools.r8.utils.internal.OptionalBool;
-import com.android.tools.r8.utils.SetUtils;
 import com.android.tools.r8.utils.ThrowingOutputStream;
 import com.android.tools.r8.utils.codeinspector.ArgumentPropagatorCodeScannerResultInspector;
 import com.android.tools.r8.utils.codeinspector.EnumUnboxingInspector;
@@ -33,6 +31,8 @@ import com.android.tools.r8.utils.codeinspector.HorizontallyMergedClassesInspect
 import com.android.tools.r8.utils.codeinspector.MinificationInspector;
 import com.android.tools.r8.utils.codeinspector.RepackagingInspector;
 import com.android.tools.r8.utils.codeinspector.VerticallyMergedClassesInspector;
+import com.android.tools.r8.utils.internal.OptionalBool;
+import com.android.tools.r8.utils.internal.SetUtils;
 import com.android.tools.r8.utils.internal.exceptions.Unimplemented;
 import com.google.common.base.Suppliers;
 import com.google.common.collect.ImmutableSet;

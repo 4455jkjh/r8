@@ -10,7 +10,7 @@ import com.android.tools.r8.examples.abstractmethodremoval.a.PackageBase;
 import com.android.tools.r8.examples.abstractmethodremoval.a.Public;
 import com.android.tools.r8.examples.abstractmethodremoval.b.Impl1;
 import com.android.tools.r8.examples.abstractmethodremoval.b.Impl2;
-import com.android.tools.r8.utils.StringUtils;
+import com.android.tools.r8.utils.internal.StringUtils;
 import com.google.common.collect.ImmutableList;
 import java.util.List;
 import org.junit.Test;

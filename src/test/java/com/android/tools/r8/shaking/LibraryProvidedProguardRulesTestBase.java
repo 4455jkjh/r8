@@ -5,8 +5,8 @@
 package com.android.tools.r8.shaking;
 
 import com.android.tools.r8.TestBase;
-import com.android.tools.r8.utils.StringUtils;
 import com.android.tools.r8.utils.ZipUtils.ZipBuilder;
+import com.android.tools.r8.utils.internal.StringUtils;
 import java.nio.file.Path;
 import java.util.List;
 

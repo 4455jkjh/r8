@@ -21,9 +21,9 @@ import com.android.tools.r8.jasmin.JasminBuilder;
 import com.android.tools.r8.jasmin.JasminBuilder.ClassBuilder;
 import com.android.tools.r8.jasmin.JasminTestBase;
 import com.android.tools.r8.utils.AndroidApiLevel;
-import com.android.tools.r8.utils.StringUtils;
 import com.android.tools.r8.utils.UnverifiableCfCodeDiagnostic;
 import com.android.tools.r8.utils.internal.BooleanUtils;
+import com.android.tools.r8.utils.internal.StringUtils;
 import com.android.tools.r8.utils.internal.exceptions.Unreachable;
 import com.google.common.collect.ImmutableList;
 import java.nio.file.Path;
@@ -92,6 +92,7 @@ public class InvalidTypesTest extends JasminTestBase {
               case V14_0_0:
               case V15_0_0:
               case V16_0_0:
+              case V17_0_0:
                 return StringUtils.joinLines(
                     "Hello!",
                     "Unexpected outcome of checkcast",

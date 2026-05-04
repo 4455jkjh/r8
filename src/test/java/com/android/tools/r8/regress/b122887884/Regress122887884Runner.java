@@ -4,7 +4,7 @@
 package com.android.tools.r8.regress.b122887884;
 
 import com.android.tools.r8.TestBase;
-import com.android.tools.r8.utils.StringUtils;
+import com.android.tools.r8.utils.internal.StringUtils;
 import org.junit.Test;
 
 public class Regress122887884Runner extends TestBase {

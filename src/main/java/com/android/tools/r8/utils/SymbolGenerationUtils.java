@@ -4,7 +4,7 @@
 
 package com.android.tools.r8.utils;
 
-import static com.android.tools.r8.utils.StringUtils.EMPTY_CHAR_ARRAY;
+import static com.android.tools.r8.utils.internal.StringUtils.EMPTY_CHAR_ARRAY;
 
 import com.google.common.collect.Sets;
 import java.util.Arrays;

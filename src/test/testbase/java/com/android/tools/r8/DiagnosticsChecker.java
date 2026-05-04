@@ -13,7 +13,7 @@ import com.android.tools.r8.origin.PathOrigin;
 import com.android.tools.r8.position.Position;
 import com.android.tools.r8.position.TextPosition;
 import com.android.tools.r8.position.TextRange;
-import com.android.tools.r8.utils.ListUtils;
+import com.android.tools.r8.utils.internal.ListUtils;
 import com.google.common.collect.ImmutableList;
 import java.nio.file.Path;
 import java.util.ArrayList;

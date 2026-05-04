@@ -4,7 +4,7 @@
 package com.android.tools.r8.retrace.stacksamples;
 
 import static com.android.tools.r8.utils.InternalOptions.ASM_VERSION;
-import static com.android.tools.r8.utils.StringUtils.UNIX_LINE_SEPARATOR;
+import static com.android.tools.r8.utils.internal.StringUtils.UNIX_LINE_SEPARATOR;
 import static org.junit.Assert.assertEquals;
 
 import com.android.tools.r8.R8TestBuilder;
@@ -22,11 +22,11 @@ import com.android.tools.r8.retrace.RetraceClassResult;
 import com.android.tools.r8.retrace.RetraceMethodElement;
 import com.android.tools.r8.retrace.RetraceMethodResult;
 import com.android.tools.r8.retrace.Retracer;
-import com.android.tools.r8.utils.internal.BooleanBox;
-import com.android.tools.r8.utils.internal.IntBox;
-import com.android.tools.r8.utils.StringUtils;
 import com.android.tools.r8.utils.codeinspector.CodeInspector;
 import com.android.tools.r8.utils.codeinspector.HorizontallyMergedClassesInspector;
+import com.android.tools.r8.utils.internal.BooleanBox;
+import com.android.tools.r8.utils.internal.IntBox;
+import com.android.tools.r8.utils.internal.StringUtils;
 import java.util.List;
 import java.util.stream.Collectors;
 import org.junit.runner.RunWith;

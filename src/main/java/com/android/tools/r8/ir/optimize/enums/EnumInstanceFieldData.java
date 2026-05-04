@@ -5,7 +5,7 @@
 package com.android.tools.r8.ir.optimize.enums;
 
 import com.android.tools.r8.ir.analysis.value.AbstractValue;
-import com.android.tools.r8.utils.collections.ImmutableInt2ReferenceSortedMap;
+import com.android.tools.r8.utils.internal.collections.ImmutableInt2ReferenceSortedMap;
 import java.util.function.BiConsumer;
 
 /*

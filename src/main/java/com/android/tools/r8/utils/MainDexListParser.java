@@ -4,7 +4,7 @@
 package com.android.tools.r8.utils;
 
 import static com.android.tools.r8.utils.DescriptorUtils.JAVA_PACKAGE_SEPARATOR;
-import static com.android.tools.r8.utils.FileUtils.CLASS_EXTENSION;
+import static com.android.tools.r8.utils.internal.FileUtils.CLASS_EXTENSION;
 
 import com.android.tools.r8.ResourceException;
 import com.android.tools.r8.StringResource;
@@ -12,6 +12,7 @@ import com.android.tools.r8.errors.CompilationError;
 import com.android.tools.r8.graph.DexItemFactory;
 import com.android.tools.r8.graph.DexType;
 import com.android.tools.r8.position.TextPosition;
+import com.android.tools.r8.utils.internal.StringUtils;
 import com.google.common.collect.Sets;
 import java.util.Set;
 

@@ -8,7 +8,7 @@ import com.android.tools.r8.debug.CfDebugTestConfig;
 import com.android.tools.r8.testing.AndroidBuildVersion;
 import com.android.tools.r8.utils.AndroidApiLevel;
 import com.android.tools.r8.utils.AndroidApp;
-import com.android.tools.r8.utils.FileUtils;
+import com.android.tools.r8.utils.internal.FileUtils;
 import com.android.tools.r8.utils.internal.exceptions.Unimplemented;
 import com.google.common.collect.ObjectArrays;
 import java.io.IOException;

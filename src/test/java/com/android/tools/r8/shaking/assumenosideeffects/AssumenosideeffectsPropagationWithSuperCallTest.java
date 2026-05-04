@@ -5,7 +5,7 @@ package com.android.tools.r8.shaking.assumenosideeffects;
 
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
-import com.android.tools.r8.utils.StringUtils;
+import com.android.tools.r8.utils.internal.StringUtils;
 import com.android.tools.r8.utils.internal.exceptions.Unreachable;
 import java.util.Collection;
 import org.junit.Test;

@@ -14,7 +14,7 @@ import com.android.tools.r8.jdk9.twr.twrcloseresource.asm.IfaceDump;
 import com.android.tools.r8.jdk9.twr.twrcloseresource.asm.TwrCloseResourceTestDump;
 import com.android.tools.r8.origin.Origin;
 import com.android.tools.r8.utils.AndroidApiLevel;
-import com.android.tools.r8.utils.StringUtils;
+import com.android.tools.r8.utils.internal.StringUtils;
 import com.google.common.collect.ImmutableList;
 import java.nio.file.Path;
 import java.nio.file.Paths;

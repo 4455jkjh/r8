@@ -12,14 +12,14 @@ import com.android.tools.r8.ToolHelper.DexVm.Version;
 import com.android.tools.r8.VmTestRunner.IgnoreIfVmOlderThan;
 import com.android.tools.r8.synthesis.SyntheticItemsTestUtils;
 import com.android.tools.r8.utils.AndroidApiLevel;
-import com.android.tools.r8.utils.internal.Box;
 import com.android.tools.r8.utils.OffOrAuto;
-import com.android.tools.r8.utils.StringUtils;
 import com.android.tools.r8.utils.codeinspector.ClassSubject;
 import com.android.tools.r8.utils.codeinspector.CodeInspector;
 import com.android.tools.r8.utils.codeinspector.FoundClassSubject;
 import com.android.tools.r8.utils.codeinspector.InstructionSubject;
 import com.android.tools.r8.utils.codeinspector.MethodSubject;
+import com.android.tools.r8.utils.internal.Box;
+import com.android.tools.r8.utils.internal.StringUtils;
 import com.android.tools.r8.utils.internal.exceptions.Unreachable;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -106,6 +106,10 @@ public class R8RunExamplesAndroidOTest extends RunExamplesAndroidOTest<R8Command
               ImmutableList.of("invokecustom-with-shrinking", "invokecustom2-with-shrinking"))
           .put(
               Version.V16_0_0,
+              // TODO(120402963) Triage.
+              ImmutableList.of("invokecustom-with-shrinking", "invokecustom2-with-shrinking"))
+          .put(
+              Version.V17_0_0,
               // TODO(120402963) Triage.
               ImmutableList.of("invokecustom-with-shrinking", "invokecustom2-with-shrinking"))
           .put(Version.DEFAULT, ImmutableList.of())

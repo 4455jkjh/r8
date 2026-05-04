@@ -3,7 +3,7 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8.graph;
 
-import static com.android.tools.r8.utils.StringUtils.LINE_SEPARATOR;
+import static com.android.tools.r8.utils.internal.StringUtils.LINE_SEPARATOR;
 
 import com.android.tools.r8.ClassFileConsumer;
 import com.android.tools.r8.contexts.CompilationContext;
@@ -21,8 +21,8 @@ import com.android.tools.r8.references.MethodReference;
 import com.android.tools.r8.synthesis.SyntheticItems.GlobalSyntheticsStrategy;
 import com.android.tools.r8.utils.InternalOptions;
 import com.android.tools.r8.utils.RetracerForCodePrinting;
-import com.android.tools.r8.utils.StringUtils;
-import com.android.tools.r8.utils.StringUtils.BraceType;
+import com.android.tools.r8.utils.internal.StringUtils;
+import com.android.tools.r8.utils.internal.StringUtils.BraceType;
 import com.android.tools.r8.utils.timing.Timing;
 import java.io.BufferedReader;
 import java.io.PrintStream;

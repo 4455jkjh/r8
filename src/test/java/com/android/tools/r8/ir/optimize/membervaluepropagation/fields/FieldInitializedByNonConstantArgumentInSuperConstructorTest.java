@@ -100,6 +100,8 @@ public class FieldInitializedByNonConstantArgumentInSuperConstructorTest extends
 
     B(int x) {
       super(x);
+      // So that B.<init> is not subject to small method inlining.
+      System.out.print("");
     }
   }
 }

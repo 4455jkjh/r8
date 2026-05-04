@@ -7,7 +7,7 @@ package com.android.tools.r8.optimize.bridgehoisting;
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.DexMethod;
 import com.android.tools.r8.graph.lens.DefaultNonIdentityGraphLens;
-import com.android.tools.r8.utils.collections.BidirectionalManyToOneMap;
+import com.android.tools.r8.utils.internal.collections.BidirectionalManyToOneMap;
 import java.util.Set;
 
 public class BridgeHoistingLens extends DefaultNonIdentityGraphLens {

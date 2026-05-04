@@ -34,7 +34,6 @@ import com.android.tools.r8.utils.AndroidApiLevel;
 import com.android.tools.r8.utils.AndroidApp;
 import com.android.tools.r8.utils.AssertionConfigurationWithDefault;
 import com.android.tools.r8.utils.DumpInputFlags;
-import com.android.tools.r8.utils.FileUtils;
 import com.android.tools.r8.utils.InternalGlobalSyntheticsProgramProvider;
 import com.android.tools.r8.utils.InternalOptions;
 import com.android.tools.r8.utils.InternalOptions.DesugarState;
@@ -46,6 +45,7 @@ import com.android.tools.r8.utils.Reporter;
 import com.android.tools.r8.utils.StringDiagnostic;
 import com.android.tools.r8.utils.ThreadUtils;
 import com.android.tools.r8.utils.ZipUtils;
+import com.android.tools.r8.utils.internal.FileUtils;
 import com.google.common.collect.ImmutableList;
 import com.google.common.io.ByteStreams;
 import java.io.IOException;
@@ -800,11 +800,6 @@ public final class D8Command extends BaseCompilerCommand {
     internal.setSyntheticInfoConsumer(syntheticInfoConsumer);
     internal.desugarGraphConsumer = desugarGraphConsumer;
     internal.mainDexKeepRules = mainDexKeepRules;
-    internal.emitLambdaMethodAnnotations =
-        !internal.disableLambdaMethodAnnotations
-            && (internal.emitLambdaMethodAnnotations
-                || (internal.debug
-                    && (!internal.intermediate || internal.hasGlobalSyntheticsConsumer())));
     InternalMapConsumer mapConsumer =
         wrapExistingInternalMapConsumerIfNotNull(
             internal.mapConsumer, partitionMapConsumer, MapConsumerToPartitionMapConsumer::new);

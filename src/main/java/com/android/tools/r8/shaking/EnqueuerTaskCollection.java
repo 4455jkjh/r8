@@ -55,7 +55,7 @@ public class EnqueuerTaskCollection implements FixpointEnqueuerAnalysis, Finishe
   }
 
   /** Returns true if all Enqueuer dependent tasks were removed due to their completion. */
-  public boolean removeCompletedEnqueuerDependentTasks() {
+  public boolean removeCompletedEnqueuerDependentTasks() throws ExecutionException {
     enqueuerDependentTaskCollection.removeCompletedFutures();
     return enqueuerDependentTaskCollection.isEmpty();
   }

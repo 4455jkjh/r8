@@ -4,7 +4,7 @@
 package com.android.tools.r8.naming;
 
 import static com.android.tools.r8.utils.internal.FunctionUtils.ignoreArgument;
-import static com.android.tools.r8.utils.MapUtils.unmodifiableForTesting;
+import static com.android.tools.r8.utils.internal.MapUtils.unmodifiableForTesting;
 
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.DexClass;
@@ -17,9 +17,9 @@ import com.android.tools.r8.graph.ImmediateAppSubtypingInfo;
 import com.android.tools.r8.graph.TopDownClassHierarchyTraversal;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
 import com.android.tools.r8.utils.InternalOptions;
-import com.android.tools.r8.utils.ListUtils;
 import com.android.tools.r8.utils.collections.DexClassAndMethodSet;
-import com.android.tools.r8.utils.collections.WorkList;
+import com.android.tools.r8.utils.internal.ListUtils;
+import com.android.tools.r8.utils.internal.collections.WorkList;
 import com.android.tools.r8.utils.timing.Timing;
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;

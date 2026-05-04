@@ -20,7 +20,7 @@ import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.Version;
 import com.android.tools.r8.desugar.desugaredlibrary.test.LibraryDesugaringSpecification;
 import com.android.tools.r8.origin.EmbeddedOrigin;
-import com.android.tools.r8.utils.FileUtils;
+import com.android.tools.r8.utils.internal.FileUtils;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.List;

@@ -32,7 +32,7 @@ import com.android.tools.r8.retrace.Retracer;
 import com.android.tools.r8.retrace.StackTraceElementProxy;
 import com.android.tools.r8.retrace.StackTraceLineParser;
 import com.android.tools.r8.utils.internal.BooleanBox;
-import com.android.tools.r8.utils.StringUtils;
+import com.android.tools.r8.utils.internal.StringUtils;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;

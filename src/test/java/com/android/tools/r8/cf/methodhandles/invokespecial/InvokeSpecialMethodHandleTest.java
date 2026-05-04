@@ -17,7 +17,7 @@ import com.android.tools.r8.ToolHelper.DexVm.Version;
 import com.android.tools.r8.apimodel.ApiModelingTestHelper;
 import com.android.tools.r8.errors.UnsupportedFeatureDiagnostic;
 import com.android.tools.r8.transformers.ClassTransformer;
-import com.android.tools.r8.utils.StringUtils;
+import com.android.tools.r8.utils.internal.StringUtils;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;

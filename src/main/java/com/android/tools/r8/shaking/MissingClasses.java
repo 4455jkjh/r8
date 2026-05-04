@@ -5,7 +5,6 @@
 package com.android.tools.r8.shaking;
 
 import static com.android.tools.r8.ir.desugar.desugaredlibrary.apiconversion.VivifiedTypeUtils.DESCRIPTOR_VIVIFIED_PREFIX;
-import static com.android.tools.r8.utils.collections.IdentityHashSetFromMap.newProgramDerivedContextSet;
 
 import com.android.tools.r8.androidapi.CovariantReturnTypeMethods;
 import com.android.tools.r8.diagnostic.MissingDefinitionsDiagnostic;
@@ -23,7 +22,8 @@ import com.android.tools.r8.graph.DexType;
 import com.android.tools.r8.graph.ProgramDerivedContext;
 import com.android.tools.r8.graph.ProgramMethod;
 import com.android.tools.r8.synthesis.SyntheticItems.SynthesizingContextOracle;
-import com.android.tools.r8.utils.SetUtils;
+import com.android.tools.r8.utils.internal.SetUtils;
+import com.android.tools.r8.utils.internal.collections.IdentityHashSetFromMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import java.util.Collection;
@@ -79,7 +79,10 @@ public class MissingClasses {
       assert context.getContext().getContextType() != type;
       if (!alreadyMissingClasses.contains(type)) {
         newMissingClasses
-            .computeIfAbsent(type, ignore -> newProgramDerivedContextSet())
+            .computeIfAbsent(
+                type,
+                ignore ->
+                    new IdentityHashSetFromMap<>(context1 -> context1.getContext().getReference()))
             .add(context);
       }
     }
@@ -98,7 +101,9 @@ public class MissingClasses {
     public void legacyAddNewMissingClass(DexType type) {
       if (!alreadyMissingClasses.contains(type)) {
         // The legacy reporting is context insensitive, so we just use an empty set of contexts.
-        newMissingClasses.computeIfAbsent(type, ignore -> newProgramDerivedContextSet());
+        newMissingClasses.computeIfAbsent(
+            type,
+            ignore -> new IdentityHashSetFromMap<>(context -> context.getContext().getReference()));
       }
     }
 
@@ -189,7 +194,8 @@ public class MissingClasses {
         return contexts;
       }
 
-      Set<ProgramDerivedContext> rewrittenContexts = newProgramDerivedContextSet();
+      Set<ProgramDerivedContext> rewrittenContexts =
+          new IdentityHashSetFromMap<>(context1 -> context1.getContext().getReference());
       for (ProgramDerivedContext context : contexts) {
         if (!context.isProgramContext()) {
           rewrittenContexts.add(context);

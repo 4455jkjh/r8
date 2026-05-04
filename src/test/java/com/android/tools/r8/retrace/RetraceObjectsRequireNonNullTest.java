@@ -4,8 +4,10 @@
 
 package com.android.tools.r8.retrace;
 
+import static com.android.tools.r8.ToolHelper.DexVm.Version.V17_0_0;
 import static com.android.tools.r8.naming.retrace.StackTrace.isSame;
 import static com.android.tools.r8.naming.retrace.StackTrace.isSameExceptForLineNumbers;
+import static com.android.tools.r8.utils.AndroidApiLevel.CINNAMON_BUN;
 import static org.hamcrest.MatcherAssert.assertThat;
 
 import com.android.tools.r8.SingleTestRunResult;
@@ -156,6 +158,17 @@ public class RetraceObjectsRequireNonNullTest extends TestBase {
     if (includeObjectsFrame) {
       ClassReference objects = Reference.classFromClass(Objects.class);
       String objectsFrameFormat = (includeJvmModule ? "java.base/" : "") + objects.getTypeName();
+      if (parameters.isDexRuntimeVersionNewerThanOrEqual(V17_0_0)
+          && parameters.getApiLevel().isGreaterThanOrEqualTo(CINNAMON_BUN)) {
+        // libcore in ART 17 added a frame in this case.
+        builder.add(
+            StackTraceLine.builder()
+                .setFileName("Objects.java")
+                .setClassName(objectsFrameFormat)
+                .setMethodName("throwNullPointerException")
+                .setLineNumber(-1)
+                .build());
+      }
       builder.add(
           StackTraceLine.builder()
               .setFileName("Objects.java")

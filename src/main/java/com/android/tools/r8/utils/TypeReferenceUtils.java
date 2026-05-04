@@ -11,6 +11,7 @@ import com.android.tools.r8.references.ArrayReference;
 import com.android.tools.r8.references.ClassReference;
 import com.android.tools.r8.references.PrimitiveReference;
 import com.android.tools.r8.references.TypeReference;
+import com.android.tools.r8.utils.internal.ListUtils;
 import com.android.tools.r8.utils.internal.exceptions.Unreachable;
 import java.util.Comparator;
 import java.util.List;

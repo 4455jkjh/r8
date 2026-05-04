@@ -23,8 +23,8 @@ import com.android.tools.r8.errors.NonKeptMethodWithCovariantReturnTypeAnnotatio
 import com.android.tools.r8.ir.desugar.annotations.CovariantReturnType.CovariantReturnTypes;
 import com.android.tools.r8.references.MethodReference;
 import com.android.tools.r8.references.Reference;
-import com.android.tools.r8.utils.ListUtils;
 import com.android.tools.r8.utils.MethodReferenceUtils;
+import com.android.tools.r8.utils.internal.ListUtils;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import java.util.List;

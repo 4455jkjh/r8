@@ -23,7 +23,7 @@ import com.android.tools.r8.retrace.StackTraceElementProxy;
 import com.android.tools.r8.retrace.StackTraceElementProxyRetracer;
 import com.android.tools.r8.retrace.StackTraceLineParser;
 import com.android.tools.r8.utils.internal.Box;
-import com.android.tools.r8.utils.ListUtils;
+import com.android.tools.r8.utils.internal.ListUtils;
 import com.android.tools.r8.utils.internal.collections.Pair;
 import com.google.common.base.Equivalence;
 import com.google.common.base.Equivalence.Wrapper;

@@ -19,7 +19,7 @@ import com.android.tools.r8.retrace.RetraceStackTraceContext;
 import com.android.tools.r8.retrace.StringRetrace;
 import com.android.tools.r8.retrace.internal.MappingPartitionKeyStrategy;
 import com.android.tools.r8.retrace.internal.ProguardMapPartitionerOnClassNameToText.ProguardMapPartitionerBuilderImplInternal;
-import com.android.tools.r8.utils.StringUtils;
+import com.android.tools.r8.utils.internal.StringUtils;
 import java.util.HashMap;
 import java.util.Map;
 import org.junit.Test;

@@ -18,7 +18,7 @@ import com.android.tools.r8.ir.optimize.AffectedValues;
 import com.android.tools.r8.ir.optimize.RedundantAssumeRemover;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
 import com.android.tools.r8.utils.internal.ConsumerUtils;
-import com.android.tools.r8.utils.collections.WorkList;
+import com.android.tools.r8.utils.internal.collections.WorkList;
 import com.android.tools.r8.utils.internal.exceptions.Unreachable;
 import com.google.common.collect.Sets;
 import java.util.Set;

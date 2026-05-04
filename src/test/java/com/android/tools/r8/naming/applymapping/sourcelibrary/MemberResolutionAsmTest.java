@@ -22,10 +22,10 @@ import com.android.tools.r8.naming.applymapping.shared.NoMappingDumps.NoMappingM
 import com.android.tools.r8.naming.applymapping.shared.SwappingDump.ADump;
 import com.android.tools.r8.naming.applymapping.shared.SwappingDump.BDump;
 import com.android.tools.r8.naming.applymapping.shared.SwappingDump.MainDump;
-import com.android.tools.r8.utils.StringUtils;
 import com.android.tools.r8.utils.codeinspector.ClassSubject;
 import com.android.tools.r8.utils.codeinspector.CodeInspector;
 import com.android.tools.r8.utils.codeinspector.MethodSubject;
+import com.android.tools.r8.utils.internal.StringUtils;
 import com.google.common.collect.ImmutableList;
 import java.util.List;
 import org.junit.Test;

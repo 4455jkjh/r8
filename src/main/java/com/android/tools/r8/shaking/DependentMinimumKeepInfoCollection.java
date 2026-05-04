@@ -4,7 +4,7 @@
 
 package com.android.tools.r8.shaking;
 
-import static com.android.tools.r8.utils.MapUtils.ignoreKey;
+import static com.android.tools.r8.utils.internal.MapUtils.ignoreKey;
 
 import com.android.tools.r8.graph.DexClass;
 import com.android.tools.r8.graph.DexDefinitionSupplier;
@@ -19,7 +19,7 @@ import com.android.tools.r8.graph.lens.GraphLens;
 import com.android.tools.r8.shaking.EnqueuerEvent.ClassEnqueuerEvent;
 import com.android.tools.r8.shaking.EnqueuerEvent.UnconditionalKeepInfoEvent;
 import com.android.tools.r8.shaking.KeepInfo.Joiner;
-import com.android.tools.r8.utils.MapUtils;
+import com.android.tools.r8.utils.internal.MapUtils;
 import com.android.tools.r8.utils.internal.TriConsumer;
 import com.android.tools.r8.utils.timing.Timing;
 import java.util.HashMap;

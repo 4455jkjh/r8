@@ -46,6 +46,7 @@ import com.android.tools.r8.optimize.MemberRebindingIdentityLensFactory;
 import com.android.tools.r8.optimize.argumentpropagation.ArgumentPropagator;
 import com.android.tools.r8.optimize.compose.ComposeReferences;
 import com.android.tools.r8.optimize.interfaces.collection.OpenClosedInterfacesCollection;
+import com.android.tools.r8.optimize.smallmethodinliner.SmallMethodInlinerResult;
 import com.android.tools.r8.profile.art.ArtProfileCollection;
 import com.android.tools.r8.profile.startup.profile.StartupProfile;
 import com.android.tools.r8.resourceshrinker.r8integration.R8ResourceShrinkerState;
@@ -66,9 +67,9 @@ import com.android.tools.r8.synthesis.SyntheticItems;
 import com.android.tools.r8.synthesis.SyntheticItems.GlobalSyntheticsStrategy;
 import com.android.tools.r8.utils.InternalOptions;
 import com.android.tools.r8.utils.InternalOptions.TestingOptions;
-import com.android.tools.r8.utils.internal.OptionalBool;
 import com.android.tools.r8.utils.Reporter;
 import com.android.tools.r8.utils.ResourceShrinkerUtils;
+import com.android.tools.r8.utils.internal.OptionalBool;
 import com.android.tools.r8.utils.internal.ThrowingConsumer;
 import com.android.tools.r8.utils.threads.ThreadTask;
 import com.android.tools.r8.utils.threads.ThreadTaskUtils;
@@ -152,6 +153,7 @@ public class AppView<T extends AppInfo> implements DexDefinitionSupplier, Librar
   private HorizontallyMergedClasses horizontallyMergedClasses = HorizontallyMergedClasses.empty();
   private VerticallyMergedClasses verticallyMergedClasses;
   private EnumDataMap unboxedEnums = null;
+  private SmallMethodInlinerResult smallMethodInlinerResult = null;
   private OpenClosedInterfacesCollection openClosedInterfacesCollection =
       OpenClosedInterfacesCollection.getDefault();
   // TODO(b/169115389): Remove
@@ -961,6 +963,14 @@ public class AppView<T extends AppInfo> implements DexDefinitionSupplier, Librar
     this.openClosedInterfacesCollection = openClosedInterfacesCollection;
   }
 
+  public SmallMethodInlinerResult getSmallMethodInlinerResult() {
+    return smallMethodInlinerResult;
+  }
+
+  public void setSmallMethodInlinerResult(SmallMethodInlinerResult smallMethodInlinerResult) {
+    this.smallMethodInlinerResult = smallMethodInlinerResult;
+  }
+
   public boolean hasUnboxedEnums() {
     return unboxedEnums != null;
   }
@@ -1348,6 +1358,18 @@ public class AppView<T extends AppInfo> implements DexDefinitionSupplier, Librar
                 @Override
                 public boolean shouldRun() {
                   return appView.getSyntheticUnsafeClass() != null;
+                }
+              },
+              new ThreadTask() {
+                @Override
+                public void run(Timing timing) throws Exception {
+                  appView.setSmallMethodInlinerResult(
+                      appView.getSmallMethodInlinerResult().rewrittenWithLens(lens, appliedLens));
+                }
+
+                @Override
+                public boolean shouldRun() {
+                  return appView.getSmallMethodInlinerResult() != null;
                 }
               });
         });

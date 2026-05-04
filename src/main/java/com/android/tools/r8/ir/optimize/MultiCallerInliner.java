@@ -5,7 +5,7 @@
 package com.android.tools.r8.ir.optimize;
 
 import static com.android.tools.r8.ir.optimize.info.OptimizationFeedback.getSimpleFeedback;
-import static com.android.tools.r8.utils.MapUtils.ignoreKey;
+import static com.android.tools.r8.utils.internal.MapUtils.ignoreKey;
 
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.MethodResolutionResult.SingleResolutionResult;
@@ -24,12 +24,12 @@ import com.android.tools.r8.ir.optimize.inliner.InliningIRProvider;
 import com.android.tools.r8.ir.optimize.inliner.NopWhyAreYouNotInliningReporter;
 import com.android.tools.r8.ir.optimize.inliner.multicallerinliner.MultiCallerInlinerCallGraph;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
-import com.android.tools.r8.utils.internal.IntBox;
-import com.android.tools.r8.utils.internal.LazyBox;
 import com.android.tools.r8.utils.collections.LongLivedProgramMethodSetBuilder;
 import com.android.tools.r8.utils.collections.ProgramMethodMap;
 import com.android.tools.r8.utils.collections.ProgramMethodMultiset;
 import com.android.tools.r8.utils.collections.ProgramMethodSet;
+import com.android.tools.r8.utils.internal.IntBox;
+import com.android.tools.r8.utils.internal.LazyBox;
 import com.android.tools.r8.utils.timing.Timing;
 import java.util.Optional;
 import java.util.concurrent.ExecutionException;

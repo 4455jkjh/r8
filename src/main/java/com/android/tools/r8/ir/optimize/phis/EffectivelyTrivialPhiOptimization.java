@@ -4,7 +4,7 @@
 
 package com.android.tools.r8.ir.optimize.phis;
 
-import static com.android.tools.r8.utils.MapUtils.ignoreKey;
+import static com.android.tools.r8.utils.internal.MapUtils.ignoreKey;
 
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.ir.analysis.type.DynamicType;
@@ -21,8 +21,8 @@ import com.android.tools.r8.ir.code.MaterializingInstructionsInfo;
 import com.android.tools.r8.ir.code.Phi;
 import com.android.tools.r8.ir.code.Value;
 import com.android.tools.r8.ir.optimize.AffectedValues;
-import com.android.tools.r8.utils.collections.WorkList;
 import com.android.tools.r8.utils.internal.ArrayUtils;
+import com.android.tools.r8.utils.internal.collections.WorkList;
 import com.google.common.collect.Sets;
 import java.util.IdentityHashMap;
 import java.util.Map;

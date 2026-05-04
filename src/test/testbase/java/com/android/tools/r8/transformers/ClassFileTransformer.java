@@ -6,7 +6,7 @@ package com.android.tools.r8.transformers;
 import static com.android.tools.r8.references.Reference.classFromTypeName;
 import static com.android.tools.r8.utils.DescriptorUtils.getBinaryNameFromDescriptor;
 import static com.android.tools.r8.utils.InternalOptions.ASM_VERSION;
-import static com.android.tools.r8.utils.StringUtils.replaceAll;
+import static com.android.tools.r8.utils.internal.StringUtils.replaceAll;
 
 import com.android.tools.r8.TestRuntime.CfVm;
 import com.android.tools.r8.ToolHelper;

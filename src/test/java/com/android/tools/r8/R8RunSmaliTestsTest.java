@@ -7,8 +7,8 @@ import static org.junit.Assert.assertEquals;
 
 import com.android.tools.r8.ToolHelper.DexVm;
 import com.android.tools.r8.ToolHelper.DexVm.Version;
-import com.android.tools.r8.utils.StringUtils;
 import com.android.tools.r8.utils.TestDescriptionWatcher;
+import com.android.tools.r8.utils.internal.StringUtils;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
@@ -162,6 +162,8 @@ public class R8RunSmaliTestsTest extends TestBase {
           Version.V15_0_0,
           art13PlusExpectations,
           Version.V16_0_0,
+          art13PlusExpectations,
+          Version.V17_0_0,
           art13PlusExpectations);
 
   // Tests where the input fails with a verification error on Dalvik instead of the

@@ -5,7 +5,7 @@ package com.android.tools.r8.repackaging;
 
 import static com.android.tools.r8.dex.DataResourceWriter.shouldDropDataDirectoryResource;
 import static com.android.tools.r8.dex.DataResourceWriter.shouldDropDataEntryResource;
-import static com.android.tools.r8.utils.MapUtils.ignoreKey;
+import static com.android.tools.r8.utils.internal.MapUtils.ignoreKey;
 
 import com.android.tools.r8.DataDirectoryResource;
 import com.android.tools.r8.DataEntryResource;
@@ -22,7 +22,7 @@ import com.android.tools.r8.shaking.AppInfoWithLiveness;
 import com.android.tools.r8.utils.ExceptionDiagnostic;
 import com.android.tools.r8.utils.InternalOptions;
 import com.android.tools.r8.utils.InternalOptions.PackageObfuscationMode;
-import com.android.tools.r8.utils.MapUtils;
+import com.android.tools.r8.utils.internal.MapUtils;
 import com.google.common.collect.Sets;
 import java.util.Collection;
 import java.util.Collections;

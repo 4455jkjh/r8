@@ -10,7 +10,7 @@ import com.android.tools.r8.retrace.RetraceTypeElement;
 import com.android.tools.r8.retrace.RetraceTypeResult;
 import com.android.tools.r8.retrace.RetracedTypeReference;
 import com.android.tools.r8.retrace.Retracer;
-import com.android.tools.r8.utils.ListUtils;
+import com.android.tools.r8.utils.internal.ListUtils;
 import java.util.Collections;
 import java.util.List;
 import java.util.function.Consumer;

@@ -9,9 +9,9 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertEquals;
 
 import com.android.tools.r8.TestBase;
-import com.android.tools.r8.utils.FileUtils;
 import com.android.tools.r8.utils.codeinspector.CodeInspector;
 import com.android.tools.r8.utils.codeinspector.MethodSubject;
+import com.android.tools.r8.utils.internal.FileUtils;
 import java.nio.file.Path;
 import org.junit.Before;
 import org.junit.Ignore;

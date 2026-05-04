@@ -74,7 +74,7 @@ import com.android.tools.r8.synthesis.SyntheticProgramClassBuilder;
 import com.android.tools.r8.utils.AndroidApiLevel;
 import com.android.tools.r8.utils.AndroidApp;
 import com.android.tools.r8.utils.InternalOptions;
-import com.android.tools.r8.utils.ListUtils;
+import com.android.tools.r8.utils.internal.ListUtils;
 import com.android.tools.r8.utils.internal.exceptions.Unreachable;
 import com.android.tools.r8.utils.timing.Timing;
 import com.google.common.collect.ImmutableList;
@@ -370,6 +370,9 @@ public final class BackportedMethodRewriter implements CfInstructionDesugaring {
       if (options.getMinApiLevel().isLessThan(AndroidApiLevel.BAKLAVA_1)) {
         initializeAndroidBaklava1MethodProviders(factory);
       }
+      if (options.getMinApiLevel().isLessThan(AndroidApiLevel.CINNAMON_BUN)) {
+        initializeCinnamonBunMethodProviders(factory);
+      }
     }
 
     private Map<DexType, AndroidApiLevel> initializeTypeMinApi(DexItemFactory factory) {
@@ -466,6 +469,61 @@ public final class BackportedMethodRewriter implements CfInstructionDesugaring {
 
     public void visitFields(Consumer<DexField> consumer) {
       rewritableFields.keySet().forEach(consumer);
+    }
+
+    private void initializeCinnamonBunMethodProviders(DexItemFactory factory) {
+      // Math
+      for (DexType mathType : new DexType[] {factory.mathType, factory.strictMathType}) {
+        // int Math.unsignedMultiplyExact(int, int)
+        DexString name = factory.createString("unsignedMultiplyExact");
+        DexProto proto = factory.createProto(factory.intType, factory.intType, factory.intType);
+        DexMethod method = factory.createMethod(mathType, proto, name);
+        addProvider(
+            new MethodGenerator(
+                method, BackportedMethods::MathMethods_unsignedMultiplyExactIntInt));
+
+        // long Math.unsignedMultiplyExact(long, int)
+        name = factory.createString("unsignedMultiplyExact");
+        proto = factory.createProto(factory.longType, factory.longType, factory.intType);
+        method = factory.createMethod(mathType, proto, name);
+        addProvider(
+            new MethodGenerator(
+                method, BackportedMethods::MathMethods_unsignedMultiplyExactLongInt));
+
+        // long Math.unsignedMultiplyExact(long, long)
+        name = factory.createString("unsignedMultiplyExact");
+        proto = factory.createProto(factory.longType, factory.longType, factory.longType);
+        method = factory.createMethod(mathType, proto, name);
+        addProvider(
+            new MethodGenerator(
+                method, BackportedMethods::MathMethods_unsignedMultiplyExactLongLong));
+
+        // int Math.unsignedPowExact(int, int)
+        name = factory.createString("unsignedPowExact");
+        proto = factory.createProto(factory.intType, factory.intType, factory.intType);
+        method = factory.createMethod(mathType, proto, name);
+        addProvider(
+            new MethodGenerator(method, BackportedMethods::MathMethods_unsignedPowExactInt));
+
+        // long Math.unsignedPowExact(long, int)
+        name = factory.createString("unsignedPowExact");
+        proto = factory.createProto(factory.longType, factory.longType, factory.intType);
+        method = factory.createMethod(mathType, proto, name);
+        addProvider(
+            new MethodGenerator(method, BackportedMethods::MathMethods_unsignedPowExactLong));
+
+        // Math.powExact(int, int)
+        name = factory.createString("powExact");
+        proto = factory.createProto(factory.intType, factory.intType, factory.intType);
+        method = factory.createMethod(mathType, proto, name);
+        addProvider(new MethodGenerator(method, BackportedMethods::MathMethods_powExactInt));
+
+        // Math.powExact(long, int)
+        name = factory.createString("powExact");
+        proto = factory.createProto(factory.longType, factory.longType, factory.intType);
+        method = factory.createMethod(mathType, proto, name);
+        addProvider(new MethodGenerator(method, BackportedMethods::MathMethods_powExactLong));
+      }
     }
 
     private void initializeAndroidKObjectsMethodProviders(DexItemFactory factory) {

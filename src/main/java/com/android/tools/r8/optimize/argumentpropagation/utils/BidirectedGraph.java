@@ -4,7 +4,7 @@
 
 package com.android.tools.r8.optimize.argumentpropagation.utils;
 
-import com.android.tools.r8.utils.collections.WorkList;
+import com.android.tools.r8.utils.internal.collections.WorkList;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;

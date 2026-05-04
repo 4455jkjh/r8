@@ -5,7 +5,7 @@
 package com.android.tools.r8.ir.optimize.classinliner;
 
 import com.android.tools.r8.ir.code.Value;
-import com.android.tools.r8.utils.SetUtils;
+import com.android.tools.r8.utils.internal.SetUtils;
 import com.google.common.collect.Sets;
 import java.util.ArrayList;
 import java.util.IdentityHashMap;

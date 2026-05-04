@@ -8,7 +8,7 @@ import com.android.tools.r8.DiagnosticsHandler;
 import com.android.tools.r8.keepanno.annotations.KeepForApi;
 import com.android.tools.r8.retrace.internal.RetraceStackFrameResultWithContextImpl;
 import com.android.tools.r8.retrace.internal.StackTraceElementStringProxy;
-import com.android.tools.r8.utils.StringUtils;
+import com.android.tools.r8.utils.internal.StringUtils;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;

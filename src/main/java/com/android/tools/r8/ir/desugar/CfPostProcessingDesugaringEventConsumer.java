@@ -24,9 +24,9 @@ import com.android.tools.r8.ir.desugar.itf.InterfaceProcessingDesugaringEventCon
 import com.android.tools.r8.profile.rewriting.ProfileCollectionAdditions;
 import com.android.tools.r8.profile.rewriting.ProfileRewritingCfPostProcessingDesugaringEventConsumer;
 import com.android.tools.r8.shaking.Enqueuer.SyntheticAdditions;
-import com.android.tools.r8.utils.SetUtils;
 import com.android.tools.r8.utils.collections.ProgramMethodSet;
 import com.android.tools.r8.utils.collections.ProgramMethodSet.ConcurrentProgramMethodSet;
+import com.android.tools.r8.utils.internal.SetUtils;
 import java.util.Collections;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;

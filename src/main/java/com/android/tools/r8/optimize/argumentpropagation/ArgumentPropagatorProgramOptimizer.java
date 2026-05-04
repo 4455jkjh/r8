@@ -5,7 +5,7 @@
 package com.android.tools.r8.optimize.argumentpropagation;
 
 import static com.android.tools.r8.utils.AndroidApiLevelUtils.isApiSafeForValueMaterialization;
-import static com.android.tools.r8.utils.MapUtils.ignoreKey;
+import static com.android.tools.r8.utils.internal.MapUtils.ignoreKey;
 
 import com.android.tools.r8.contexts.CompilationContext.ProcessorContext;
 import com.android.tools.r8.graph.AppView;
@@ -44,18 +44,18 @@ import com.android.tools.r8.shaking.KeepFieldInfo;
 import com.android.tools.r8.shaking.KeepMethodInfo;
 import com.android.tools.r8.utils.AccessUtils;
 import com.android.tools.r8.utils.AndroidApiLevelUtils;
+import com.android.tools.r8.utils.InternalOptions;
+import com.android.tools.r8.utils.InternalOptions.CallSiteOptimizationOptions;
+import com.android.tools.r8.utils.ThreadUtils;
+import com.android.tools.r8.utils.collections.DexMethodSignatureSet;
+import com.android.tools.r8.utils.collections.ProgramMethodMap;
+import com.android.tools.r8.utils.collections.ProgramMethodSet;
 import com.android.tools.r8.utils.internal.BooleanBox;
 import com.android.tools.r8.utils.internal.BooleanUtils;
 import com.android.tools.r8.utils.internal.IntBox;
-import com.android.tools.r8.utils.InternalOptions;
-import com.android.tools.r8.utils.InternalOptions.CallSiteOptimizationOptions;
 import com.android.tools.r8.utils.internal.ObjectUtils;
 import com.android.tools.r8.utils.internal.OptionalBool;
-import com.android.tools.r8.utils.ThreadUtils;
-import com.android.tools.r8.utils.collections.DexMethodSignatureSet;
 import com.android.tools.r8.utils.internal.collections.Pair;
-import com.android.tools.r8.utils.collections.ProgramMethodMap;
-import com.android.tools.r8.utils.collections.ProgramMethodSet;
 import com.android.tools.r8.utils.timing.Timing;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;

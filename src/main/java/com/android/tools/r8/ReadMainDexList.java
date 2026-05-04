@@ -4,8 +4,8 @@
 package com.android.tools.r8;
 
 import com.android.tools.r8.naming.ClassNameMapper;
-import com.android.tools.r8.utils.FileUtils;
-import com.android.tools.r8.utils.StringUtils;
+import com.android.tools.r8.utils.internal.FileUtils;
+import com.android.tools.r8.utils.internal.StringUtils;
 import com.google.common.collect.Iterators;
 import java.nio.file.Path;
 import java.nio.file.Paths;

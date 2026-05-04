@@ -7,16 +7,16 @@ package com.android.tools.r8.apimodel;
 import static com.android.tools.r8.apimodel.ApiModelingTestHelper.setMockApiLevelForMethod;
 import static com.android.tools.r8.apimodel.ApiModelingTestHelper.verifyThat;
 import static com.android.tools.r8.utils.AndroidApiLevel.L_MR1;
+import static com.android.tools.r8.utils.codeinspector.CodeMatchers.invokesMethod;
+import static com.android.tools.r8.utils.codeinspector.CodeMatchers.invokesMethodWithName;
+import static com.android.tools.r8.utils.codeinspector.Matchers.isAbsent;
 import static com.android.tools.r8.utils.codeinspector.Matchers.isPresent;
-import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.MatcherAssert.assertThat;
 
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.utils.AndroidApiLevel;
-import com.android.tools.r8.utils.codeinspector.ClassSubject;
-import com.android.tools.r8.utils.codeinspector.CodeMatchers;
 import com.android.tools.r8.utils.codeinspector.MethodSubject;
 import java.lang.reflect.Method;
 import org.junit.Test;
@@ -57,15 +57,21 @@ public class ApiModelInlineInSameClassTest extends TestBase {
         .compile()
         .inspect(
             inspector -> {
-              // No matter the api level, we should always inline callingApi into notCallingApi.
-              verifyThat(inspector, parameters, notCallingApi).inlinedIntoFromApiLevel(main, L_MR1);
-              assertThat(inspector.method(callingApi), not(isPresent()));
+              MethodSubject callingApiMethod = inspector.method(callingApi);
+              MethodSubject mainMethodSubject = inspector.clazz(Main.class).mainMethod();
               if (parameters.isDexRuntime()
                   && parameters.getApiLevel().isGreaterThanOrEqualTo(L_MR1)) {
-                ClassSubject mainSubject = inspector.clazz(Main.class);
-                MethodSubject mainMethodSubject = mainSubject.uniqueMethodWithOriginalName("main");
-                assertThat(mainMethodSubject, isPresent());
-                assertThat(mainMethodSubject, CodeMatchers.invokesMethodWithName("apiLevel22"));
+                verifyThat(inspector, parameters, notCallingApi)
+                    .inlinedIntoFromApiLevel(main, L_MR1);
+                assertThat(callingApiMethod, isAbsent());
+                assertThat(mainMethodSubject, invokesMethodWithName("apiLevel22"));
+              } else {
+                // Since API outlining happens in the backend, callingApi() is not inlined
+                // notCallingApi(), but notCallingApi() is inlined into main(). As a result, main()
+                // ends up calling callingApi(), which is equally valid.
+                assertThat(callingApiMethod, isPresent());
+                assertThat(callingApiMethod, invokesMethodWithName("apiLevel22"));
+                assertThat(mainMethodSubject, invokesMethod(callingApiMethod));
               }
             })
         .addRunClasspathClasses(Api.class)

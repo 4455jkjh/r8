@@ -7,7 +7,7 @@ import com.android.tools.r8.references.MethodReference;
 import com.android.tools.r8.tracereferences.TraceReferencesConsumer.TracedClass;
 import com.android.tools.r8.tracereferences.TraceReferencesConsumer.TracedField;
 import com.android.tools.r8.tracereferences.TraceReferencesConsumer.TracedMethod;
-import com.android.tools.r8.utils.StringUtils;
+import com.android.tools.r8.utils.internal.StringUtils;
 import java.util.List;
 
 class KeepRuleFormatter extends Formatter {

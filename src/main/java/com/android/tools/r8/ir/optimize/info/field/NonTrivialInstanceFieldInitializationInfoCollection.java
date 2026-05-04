@@ -13,7 +13,7 @@ import com.android.tools.r8.graph.DexField;
 import com.android.tools.r8.graph.lens.GraphLens;
 import com.android.tools.r8.graph.proto.ArgumentInfoCollection;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
-import com.android.tools.r8.utils.StringUtils;
+import com.android.tools.r8.utils.internal.StringUtils;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.TreeMap;

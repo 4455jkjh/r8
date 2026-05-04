@@ -8,7 +8,7 @@ import com.android.tools.r8.graph.DexReference;
 import com.android.tools.r8.graph.ProgramDefinition;
 import com.android.tools.r8.shaking.Enqueuer;
 import com.android.tools.r8.shaking.MinimumKeepInfoCollection;
-import com.android.tools.r8.utils.ListUtils;
+import com.android.tools.r8.utils.internal.ListUtils;
 import java.util.List;
 
 public class PendingInitialConditionalRule extends PendingConditionalRuleBase<ProgramDefinition> {

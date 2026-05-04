@@ -7,7 +7,7 @@ package com.android.tools.r8.naming;
 import com.android.tools.r8.DiagnosticsHandler;
 import com.android.tools.r8.MapConsumer;
 import com.android.tools.r8.utils.internal.ChainableStringConsumer;
-import com.android.tools.r8.utils.StringUtils;
+import com.android.tools.r8.utils.internal.StringUtils;
 
 /***
  * Default implementation of an {@link InternalMapConsumer} that wraps around a {@link

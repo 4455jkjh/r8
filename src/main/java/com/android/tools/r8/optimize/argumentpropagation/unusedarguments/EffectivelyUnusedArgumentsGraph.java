@@ -15,7 +15,7 @@ import com.android.tools.r8.optimize.argumentpropagation.codescanner.MethodParam
 import com.android.tools.r8.optimize.argumentpropagation.computation.ComputationTreeNode;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
 import com.android.tools.r8.utils.collections.ProgramMethodSet;
-import com.android.tools.r8.utils.collections.WorkList;
+import com.android.tools.r8.utils.internal.collections.WorkList;
 import com.android.tools.r8.utils.internal.dfs.DFSStack;
 import com.android.tools.r8.utils.internal.dfs.DFSWorklistItem;
 import com.android.tools.r8.utils.internal.dfs.DFSWorklistItem.NewlyVisitedDFSWorklistItem;

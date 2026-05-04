@@ -13,7 +13,7 @@ import com.android.tools.r8.ToolHelper.DexVm.Version;
 import com.android.tools.r8.desugar.desugaredlibrary.DesugaredLibraryTestBase;
 import com.android.tools.r8.desugar.desugaredlibrary.test.CompilationSpecification;
 import com.android.tools.r8.desugar.desugaredlibrary.test.LibraryDesugaringSpecification;
-import com.android.tools.r8.utils.StringUtils;
+import com.android.tools.r8.utils.internal.StringUtils;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -41,7 +41,8 @@ public class MyMapFileSerializationTest extends DesugaredLibraryTestBase {
         // TODO(b/134732760): Skip Android 4.4.4 due to missing libjavacrypto.
         getTestParameters()
             .withDexRuntime(Version.V4_0_4)
-            .withDexRuntimesStartingFromIncluding(Version.V5_1_1)
+            // TODO(b/507731439): Test on ART 17.
+            .withDexRuntimesRangeIncluding(Version.V5_1_1, Version.V16_0_0)
             .withAllApiLevels()
             .build(),
         getJdk8Jdk11(),

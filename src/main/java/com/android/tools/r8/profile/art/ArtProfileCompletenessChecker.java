@@ -14,7 +14,7 @@ import com.android.tools.r8.graph.DexType;
 import com.android.tools.r8.graph.ProgramDefinition;
 import com.android.tools.r8.graph.ProgramMethod;
 import com.android.tools.r8.synthesis.SyntheticItems;
-import com.android.tools.r8.utils.StringUtils;
+import com.android.tools.r8.utils.internal.StringUtils;
 import com.google.common.collect.Sets;
 import java.util.ArrayList;
 import java.util.List;

@@ -4,7 +4,7 @@
 
 package com.android.tools.r8.profile.rewriting;
 
-import static com.android.tools.r8.utils.MapUtils.ignoreKey;
+import static com.android.tools.r8.utils.internal.MapUtils.ignoreKey;
 
 import com.android.tools.r8.graph.DexClass;
 import com.android.tools.r8.graph.DexClassAndMethod;
@@ -17,8 +17,8 @@ import com.android.tools.r8.profile.AbstractProfile;
 import com.android.tools.r8.profile.AbstractProfileClassRule;
 import com.android.tools.r8.profile.AbstractProfileMethodRule;
 import com.android.tools.r8.profile.AbstractProfileRule;
-import com.android.tools.r8.utils.SetUtils;
-import com.android.tools.r8.utils.collections.WorkList;
+import com.android.tools.r8.utils.internal.SetUtils;
+import com.android.tools.r8.utils.internal.collections.WorkList;
 import com.google.common.collect.Sets;
 import java.util.ArrayList;
 import java.util.Collections;

@@ -33,8 +33,8 @@ import com.android.tools.r8.shaking.reflectiveidentification.ReflectiveIdentific
 import com.android.tools.r8.tracereferences.TraceReferencesConsumer;
 import com.android.tools.r8.tracereferences.UseCollector;
 import com.android.tools.r8.tracereferences.UseCollectorEventConsumer;
-import com.android.tools.r8.utils.ListUtils;
 import com.android.tools.r8.utils.NopDiagnosticsHandler;
+import com.android.tools.r8.utils.internal.ListUtils;
 import com.android.tools.r8.utils.timing.Timing;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;

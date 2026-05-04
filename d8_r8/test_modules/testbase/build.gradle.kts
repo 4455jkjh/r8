@@ -20,25 +20,37 @@ java {
   toolchain { languageVersion = JavaLanguageVersion.of(JvmCompatibility.release) }
 }
 
-// If we depend on keepanno by referencing the project source outputs we get an error regarding
-// incompatible java class file version. By depending on the jar we circumvent that.
-val keepAnnoJarTask = projectTask("keepanno", "jar")
-val keepAnnoCompileJavaTask = projectTask("keepanno", "compileJava")
-val resourceShrinkerCompileJavaTask = projectTask("resourceshrinker", "compileJava")
-val resourceShrinkerCompileKotlinTask = projectTask("resourceshrinker", "compileKotlin")
-val resourceShrinkerDepsJarTask = projectTask("resourceshrinker", "depsJar")
-val sharedDownloadDepsTask = projectTask("shared", "downloadDeps")
-val sharedDownloadTestDepsTask = projectTask("shared", "downloadTestDeps")
+val keepAnnoJarScope by configurations.dependencyScope("keepAnnoJarScope")
+val keepAnnoJarConfig by
+  configurations.resolvable("keepAnnoJarConfig") { extendsFrom(keepAnnoJarScope) }
+val resourceShrinkerDepsJarScope by configurations.dependencyScope("resourceShrinkerDepsJarScope")
+val resourceShrinkerDepsJarConfig by
+  configurations.resolvable("resourceShrinkerDepsJarConfig") {
+    extendsFrom(resourceShrinkerDepsJarScope)
+  }
+val sharedDepsScope by configurations.dependencyScope("sharedDepsScope")
+val sharedDepsConfig by
+  configurations.resolvable("sharedDepsConfig") { extendsFrom(sharedDepsScope) }
+
+val sharedTestDepsScope by configurations.dependencyScope("sharedTestDepsScope")
+val sharedTestDepsConfig by
+  configurations.resolvable("sharedTestDepsConfig") { extendsFrom(sharedTestDepsScope) }
 
 dependencies {
-  implementation(keepAnnoJarTask.outputs.files)
+  sharedDepsScope(project(":shared", "sharedDepsFiles"))
+  sharedTestDepsScope(project(":shared", "sharedTestDepsFiles"))
+}
+
+dependencies {
+  keepAnnoJarScope(project(":keepanno", "keepannoJar"))
+  implementation(project(":keepanno", "keepannoJar"))
   implementation(project(":libanalyzer", "libanalyzer-compile-java"))
   implementation(project(":main", "mainClassesOutput"))
   implementation(project(":main", "mainResources"))
   implementation(project(":main", "turboClassesOutput"))
-  implementation(resourceShrinkerCompileJavaTask.outputs.files)
-  implementation(resourceShrinkerCompileKotlinTask.outputs.files)
-  implementation(resourceShrinkerDepsJarTask.outputs.files)
+  resourceShrinkerDepsJarScope(project(":resourceshrinker", "resourceshrinkerDepsJar"))
+  implementation(project(":resourceshrinker", "resourceshrinkerClasses"))
+  implementation(project(":resourceshrinker", "resourceshrinkerDepsJar"))
   implementation(Deps.androidxCollection)
   implementation(Deps.androidxTracingDriver)
   implementation(Deps.androidxTracingDriverWire)
@@ -72,10 +84,8 @@ fun testDependencies(): FileCollection {
 
 tasks {
   withType<JavaCompile> {
-    dependsOn(keepAnnoCompileJavaTask)
-    dependsOn(resourceShrinkerCompileJavaTask)
-    dependsOn(sharedDownloadDepsTask)
-    dependsOn(sharedDownloadTestDepsTask)
+    dependsOn(sharedDepsConfig)
+    dependsOn(sharedTestDepsConfig)
   }
 
   withType<JavaExec> {
@@ -98,13 +108,13 @@ tasks {
 
   val assembleDepsJar by
     registering(Jar::class) {
-      dependsOn(keepAnnoJarTask)
-      dependsOn(resourceShrinkerDepsJarTask)
-      dependsOn(sharedDownloadDepsTask)
-      dependsOn(sharedDownloadTestDepsTask)
+      dependsOn(keepAnnoJarConfig)
+      dependsOn(resourceShrinkerDepsJarConfig)
+      dependsOn(sharedDepsConfig)
+      dependsOn(sharedTestDepsConfig)
       from(Callable { testDependencies().map(::zipTree) })
-      from(Callable { keepAnnoJarTask.outputs.getFiles().map(::zipTree) })
-      from(Callable { resourceShrinkerDepsJarTask.outputs.getFiles().map(::zipTree) })
+      from(keepAnnoJarConfig.map(::zipTree))
+      from(resourceShrinkerDepsJarConfig.map(::zipTree))
       exclude("com/android/tools/r8/keepanno/annotations/**")
       exclude("androidx/annotation/keep/**")
       duplicatesStrategy = DuplicatesStrategy.EXCLUDE

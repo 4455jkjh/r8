@@ -8,7 +8,7 @@ import static com.android.tools.r8.naming.retraceproguard.StackTrace.TAB_AT_PREF
 import static org.junit.Assert.assertEquals;
 
 import com.android.tools.r8.naming.retraceproguard.StackTrace.StackTraceLine;
-import com.android.tools.r8.utils.StringUtils;
+import com.android.tools.r8.utils.internal.StringUtils;
 import org.junit.Test;
 
 public class StackTraceTest {

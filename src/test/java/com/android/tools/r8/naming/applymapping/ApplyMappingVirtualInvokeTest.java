@@ -15,7 +15,7 @@ import com.android.tools.r8.naming.applymapping.ApplyMappingVirtualInvokeTest.Te
 import com.android.tools.r8.naming.applymapping.ApplyMappingVirtualInvokeTest.TestClasses.LibrarySubclass;
 import com.android.tools.r8.naming.applymapping.ApplyMappingVirtualInvokeTest.TestClasses.ProgramClass;
 import com.android.tools.r8.naming.applymapping.ApplyMappingVirtualInvokeTest.TestClasses.ProgramSubclass;
-import com.android.tools.r8.utils.StringUtils;
+import com.android.tools.r8.utils.internal.StringUtils;
 import java.io.IOException;
 import java.util.concurrent.ExecutionException;
 import java.util.function.Function;

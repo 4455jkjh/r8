@@ -5,8 +5,8 @@ package com.android.tools.r8;
 
 import com.android.tools.r8.utils.AndroidApp;
 import com.android.tools.r8.utils.AndroidAppConsumers;
-import com.android.tools.r8.utils.FileUtils;
 import com.android.tools.r8.utils.InternalOptions;
+import com.android.tools.r8.utils.internal.FileUtils;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 

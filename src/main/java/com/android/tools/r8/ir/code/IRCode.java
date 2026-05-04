@@ -30,17 +30,17 @@ import com.android.tools.r8.ir.conversion.MethodConversionOptions;
 import com.android.tools.r8.ir.conversion.MethodConversionOptions.MutableMethodConversionOptions;
 import com.android.tools.r8.ir.optimize.AffectedValues;
 import com.android.tools.r8.utils.InternalOptions;
-import com.android.tools.r8.utils.ListUtils;
-import com.android.tools.r8.utils.SetUtils;
-import com.android.tools.r8.utils.StringUtils;
-import com.android.tools.r8.utils.collections.WorkList;
 import com.android.tools.r8.utils.internal.BooleanUtils;
 import com.android.tools.r8.utils.internal.DequeUtils;
 import com.android.tools.r8.utils.internal.IteratorUtils;
 import com.android.tools.r8.utils.internal.LinkedHashSetUtils;
+import com.android.tools.r8.utils.internal.ListUtils;
 import com.android.tools.r8.utils.internal.LongUtils;
+import com.android.tools.r8.utils.internal.SetUtils;
+import com.android.tools.r8.utils.internal.StringUtils;
 import com.android.tools.r8.utils.internal.TraversalContinuation;
 import com.android.tools.r8.utils.internal.TriFunction;
+import com.android.tools.r8.utils.internal.collections.WorkList;
 import com.android.tools.r8.utils.internal.exceptions.Unreachable;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
@@ -1573,62 +1573,6 @@ public class IRCode implements IRControlFlowGraph, ValueFactory {
       }
     }
     return traversalContinuation;
-  }
-
-  /**
-   * Visits all instructions between from & to (non-inclusive) and returns whether the predicate
-   * returned true for any of them.
-   *
-   * <p>This assumes that {@code from} dominates {@code to}.
-   */
-  public boolean anyInstructionBetween(
-      Instruction from, Instruction to, Predicate<Instruction> predicate) {
-    BasicBlock fromBlock = from.getBlock();
-    BasicBlock toBlock = to.getBlock();
-    if (fromBlock == toBlock) {
-      assert from.comesBefore(to);
-      for (Instruction cur = from.getNext(); cur != to; cur = cur.getNext()) {
-        if (predicate.test(cur)) {
-          return true;
-        }
-      }
-      return false;
-    }
-
-    for (Instruction cur = from.getNext(); cur != null; cur = cur.getNext()) {
-      if (predicate.test(cur)) {
-        return true;
-      }
-    }
-
-    for (Instruction cur = to.getPrev(); cur != null; cur = cur.getPrev()) {
-      if (predicate.test(cur)) {
-        return true;
-      }
-    }
-
-    int color = reserveMarkingColor();
-    try {
-      fromBlock.mark(color);
-      toBlock.mark(color);
-      Deque<BasicBlock> worklist = new ArrayDeque<>(toBlock.getPredecessors());
-
-      while (!worklist.isEmpty()) {
-        BasicBlock block = worklist.poll();
-        if (block.isMarked(color)) {
-          continue;
-        }
-        for (Instruction unused : block.getInstructions(predicate)) {
-          return true;
-        }
-        block.mark(color);
-        worklist.addAll(block.getPredecessors());
-      }
-    } finally {
-      returnMarkingColor(color);
-    }
-
-    return false;
   }
 
   /**

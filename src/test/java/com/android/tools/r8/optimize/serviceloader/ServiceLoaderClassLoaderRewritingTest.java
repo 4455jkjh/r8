@@ -7,7 +7,7 @@ package com.android.tools.r8.optimize.serviceloader;
 import com.android.tools.r8.NeverInline;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
-import com.android.tools.r8.utils.StringUtils;
+import com.android.tools.r8.utils.internal.StringUtils;
 import java.util.ServiceLoader;
 import org.junit.Test;
 import org.junit.runner.RunWith;

@@ -10,7 +10,7 @@ import static org.junit.Assert.fail;
 import com.android.tools.r8.CompilationFailedException;
 import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.utils.AndroidApiLevel;
-import com.android.tools.r8.utils.StringUtils;
+import com.android.tools.r8.utils.internal.StringUtils;
 import java.nio.file.InvalidPathException;
 import java.util.Arrays;
 import java.util.Collection;

@@ -5,8 +5,8 @@ package com.android.tools.r8.references;
 
 import com.android.tools.r8.keepanno.annotations.KeepForApi;
 import com.android.tools.r8.utils.internal.ObjectUtils;
-import com.android.tools.r8.utils.StringUtils;
-import com.android.tools.r8.utils.StringUtils.BraceType;
+import com.android.tools.r8.utils.internal.StringUtils;
+import com.android.tools.r8.utils.internal.StringUtils.BraceType;
 import java.util.List;
 import java.util.Objects;
 

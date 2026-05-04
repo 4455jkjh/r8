@@ -4,7 +4,7 @@
 package com.android.tools.r8.verticalclassmerging.policies;
 
 import com.android.tools.r8.graph.DexProgramClass;
-import com.android.tools.r8.utils.MapUtils;
+import com.android.tools.r8.utils.internal.MapUtils;
 import com.android.tools.r8.verticalclassmerging.VerticalMergeGroup;
 import java.util.Collection;
 import java.util.Map;

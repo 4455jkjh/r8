@@ -11,7 +11,7 @@ import com.android.tools.r8.assistant.runtime.EmptyReflectiveOperationReceiver;
 import com.android.tools.r8.assistant.runtime.ReflectiveOracle.Stack;
 import com.android.tools.r8.jdk21.assistant.JavaLangTestClass21.Foo;
 import com.android.tools.r8.utils.AndroidApiLevel;
-import com.android.tools.r8.utils.StringUtils;
+import com.android.tools.r8.utils.internal.StringUtils;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;

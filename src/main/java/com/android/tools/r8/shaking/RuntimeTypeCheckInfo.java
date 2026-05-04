@@ -15,7 +15,7 @@ import com.android.tools.r8.graph.analysis.TraceExceptionGuardEnqueuerAnalysis;
 import com.android.tools.r8.graph.analysis.TraceInstanceOfEnqueuerAnalysis;
 import com.android.tools.r8.graph.lens.GraphLens;
 import com.android.tools.r8.graph.lens.NonIdentityGraphLens;
-import com.android.tools.r8.utils.SetUtils;
+import com.android.tools.r8.utils.internal.SetUtils;
 import com.google.common.collect.Sets;
 import java.util.Set;
 import java.util.function.Function;

@@ -9,7 +9,7 @@ import com.android.tools.r8.references.MethodReference;
 import com.android.tools.r8.references.Reference;
 import com.android.tools.r8.rewrite.assertions.assertionhandler.AssertionHandlers;
 import com.android.tools.r8.rewrite.assertions.assertionhandler.AssertionsInClinit;
-import com.android.tools.r8.utils.StringUtils;
+import com.android.tools.r8.utils.internal.StringUtils;
 import com.google.common.collect.ImmutableList;
 import java.util.List;
 import org.junit.runner.RunWith;

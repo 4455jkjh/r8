@@ -5,6 +5,7 @@ package com.android.tools.r8.cf;
 
 import static com.android.tools.r8.DiagnosticsMatcher.diagnosticMessage;
 import static com.android.tools.r8.DiagnosticsMatcher.diagnosticType;
+import static com.android.tools.r8.ToolHelper.DexVm.Version.V17_0_0;
 import static org.hamcrest.CoreMatchers.allOf;
 import static org.hamcrest.CoreMatchers.containsString;
 
@@ -15,8 +16,8 @@ import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.ToolHelper;
-import com.android.tools.r8.utils.StringUtils;
 import com.android.tools.r8.utils.UnverifiableCfCodeDiagnostic;
+import com.android.tools.r8.utils.internal.StringUtils;
 import java.nio.file.Path;
 import java.util.List;
 import org.junit.Test;
@@ -74,7 +75,9 @@ public class MissingClassJoinsToObjectTest extends TestBase {
                                         + ".main(java.lang.String[])`")))))
             .addRunClasspathFiles(getRuntimeClasspath())
             .run(parameters.getRuntime(), TestClass.class);
-    if (parameters.isCfRuntime()) {
+    if (parameters.isCfRuntime()
+        || (parameters.isDexRuntime()
+            && parameters.getDexRuntimeVersion().isNewerThanOrEqual(V17_0_0))) {
       // TODO(b/154792347): The analysis of types in the presence of undefined is incomplete.
       result.assertFailureWithErrorThatThrows(VerifyError.class);
     } else {

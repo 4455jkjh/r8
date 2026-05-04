@@ -202,10 +202,12 @@ public class TaskCollection<T> {
     return filtered;
   }
 
-  public final void removeCompletedFutures() {
+  public final void removeCompletedFutures() throws ExecutionException {
     List<Future<T>> pendingFutures = new ArrayList<>();
     for (Future<T> future : futures) {
-      if (!future.isDone()) {
+      if (future.isDone()) {
+        Futures.getDone(future);
+      } else {
         pendingFutures.add(future);
       }
     }

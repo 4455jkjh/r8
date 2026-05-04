@@ -10,7 +10,7 @@ import com.android.tools.r8.ResourceException;
 import com.android.tools.r8.errors.CompilationError;
 import com.android.tools.r8.origin.Origin;
 import com.android.tools.r8.utils.DexVersion;
-import com.android.tools.r8.utils.StringUtils;
+import com.android.tools.r8.utils.internal.StringUtils;
 import java.io.IOException;
 import java.nio.BufferUnderflowException;
 import java.nio.ByteOrder;

@@ -3,7 +3,7 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8;
 
-import static com.android.tools.r8.utils.StringUtils.UNIX_LINE_SEPARATOR;
+import static com.android.tools.r8.utils.internal.StringUtils.UNIX_LINE_SEPARATOR;
 
 import com.android.tools.r8.keepanno.annotations.KeepForApi;
 import com.android.tools.r8.origin.ArchiveEntryOrigin;

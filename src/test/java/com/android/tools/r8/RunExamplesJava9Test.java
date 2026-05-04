@@ -6,9 +6,9 @@ package com.android.tools.r8;
 
 import static com.android.tools.r8.ir.desugar.itf.InterfaceDesugaringForTesting.getCompanionClassNameSuffix;
 import static com.android.tools.r8.ir.desugar.itf.InterfaceDesugaringForTesting.getPrivateMethodPrefix;
-import static com.android.tools.r8.utils.FileUtils.JAR_EXTENSION;
-import static com.android.tools.r8.utils.FileUtils.ZIP_EXTENSION;
 import static com.android.tools.r8.utils.codeinspector.Matchers.isPresent;
+import static com.android.tools.r8.utils.internal.FileUtils.JAR_EXTENSION;
+import static com.android.tools.r8.utils.internal.FileUtils.ZIP_EXTENSION;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;

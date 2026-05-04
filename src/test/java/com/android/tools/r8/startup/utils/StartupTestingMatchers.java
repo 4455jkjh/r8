@@ -8,7 +8,7 @@ import com.android.tools.r8.graph.DexClass;
 import com.android.tools.r8.graph.DexProgramClass;
 import com.android.tools.r8.references.ClassReference;
 import com.android.tools.r8.references.TypeReference;
-import com.android.tools.r8.utils.StringUtils;
+import com.android.tools.r8.utils.internal.StringUtils;
 import java.util.Collection;
 import java.util.Iterator;
 import org.hamcrest.Description;

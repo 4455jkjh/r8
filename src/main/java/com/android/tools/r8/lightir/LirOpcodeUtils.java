@@ -85,4 +85,8 @@ public class LirOpcodeUtils {
   public static boolean isInvokeVirtual(int opcode) {
     return opcode == INVOKEVIRTUAL;
   }
+
+  public static boolean isReturn(int opcode) {
+    return opcode == LirOpcodes.RETURN || opcode == LirOpcodes.ARETURN;
+  }
 }

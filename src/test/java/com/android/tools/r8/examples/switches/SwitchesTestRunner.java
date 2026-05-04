@@ -5,7 +5,7 @@ package com.android.tools.r8.examples.switches;
 
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.examples.ExamplesTestBase;
-import com.android.tools.r8.utils.StringUtils;
+import com.android.tools.r8.utils.internal.StringUtils;
 import org.apache.harmony.jpda.tests.framework.TestErrorException;
 import org.apache.harmony.jpda.tests.framework.jdwp.exceptions.TimeoutException;
 import org.junit.Test;

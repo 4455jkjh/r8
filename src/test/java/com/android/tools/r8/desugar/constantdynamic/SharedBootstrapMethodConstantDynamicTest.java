@@ -23,7 +23,7 @@ import com.android.tools.r8.errors.ConstantDynamicDesugarDiagnostic;
 import com.android.tools.r8.errors.UnsupportedConstDynamicDiagnostic;
 import com.android.tools.r8.errors.UnsupportedFeatureDiagnostic;
 import com.android.tools.r8.utils.AndroidApiLevel;
-import com.android.tools.r8.utils.StringUtils;
+import com.android.tools.r8.utils.internal.StringUtils;
 import com.google.common.collect.ImmutableList;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;

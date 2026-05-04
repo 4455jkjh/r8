@@ -13,10 +13,10 @@ import com.android.tools.r8.NeverInline;
 import com.android.tools.r8.R8TestCompileResultBase;
 import com.android.tools.r8.references.Reference;
 import com.android.tools.r8.retrace.RetraceMethodElement;
-import com.android.tools.r8.utils.StringUtils;
 import com.android.tools.r8.utils.codeinspector.ClassSubject;
 import com.android.tools.r8.utils.codeinspector.CodeInspector;
 import com.android.tools.r8.utils.codeinspector.MethodSubject;
+import com.android.tools.r8.utils.internal.StringUtils;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -53,12 +53,19 @@ public class StaticizedMethodStackSampleRetraceTest extends StackSampleRetraceTe
 
   @Override
   String getExpectedMap() {
-    return StringUtils.joinLines(
-        "com.android.tools.r8.retrace.stacksamples.StaticizedMethodStackSampleRetraceTest$Main ->"
-            + " a:",
-        "# {\"id\":\"sourceFile\",\"fileName\":\"StaticizedMethodStackSampleRetraceTest.java\"}",
-        "    1:1:void test():50:50 -> a",
-        "    1:4:void main(java.lang.String[]):45:45 -> main");
+    return canDiscardResidualDebugInfo(parameters)
+        ? StringUtils.joinLines(
+            "com.android.tools.r8.retrace.stacksamples.StaticizedMethodStackSampleRetraceTest$Main"
+                + " -> a:",
+            "# {\"id\":\"sourceFile\",\"fileName\":\"StaticizedMethodStackSampleRetraceTest.java\"}",
+            "    0:7:void test():50:50 -> a",
+            "    0:3:void main(java.lang.String[]):45:45 -> main")
+        : StringUtils.joinLines(
+            "com.android.tools.r8.retrace.stacksamples.StaticizedMethodStackSampleRetraceTest$Main"
+                + " -> a:",
+            "# {\"id\":\"sourceFile\",\"fileName\":\"StaticizedMethodStackSampleRetraceTest.java\"}",
+            "    1:1:void test():50:50 -> a",
+            "    1:4:void main(java.lang.String[]):45:45 -> main");
   }
 
   @Override

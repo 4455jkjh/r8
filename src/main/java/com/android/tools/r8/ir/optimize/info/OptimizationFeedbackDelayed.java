@@ -21,8 +21,8 @@ import com.android.tools.r8.optimize.argumentpropagation.codescanner.AbstractFun
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
 import com.android.tools.r8.shaking.AppInfoWithLivenessModifier;
 import com.android.tools.r8.threading.ThreadingModule;
-import com.android.tools.r8.utils.StringUtils;
 import com.android.tools.r8.utils.internal.IteratorUtils;
+import com.android.tools.r8.utils.internal.StringUtils;
 import java.util.BitSet;
 import java.util.IdentityHashMap;
 import java.util.Map;

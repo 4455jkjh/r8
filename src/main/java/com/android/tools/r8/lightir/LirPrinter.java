@@ -23,7 +23,7 @@ import com.android.tools.r8.lightir.LirBuilder.StringSwitchPayload;
 import com.android.tools.r8.naming.dexitembasedstring.NameComputationInfo;
 import com.android.tools.r8.utils.internal.IntUtils;
 import com.android.tools.r8.utils.internal.LongUtils;
-import com.android.tools.r8.utils.StringUtils;
+import com.android.tools.r8.utils.internal.StringUtils;
 import com.android.tools.r8.utils.internal.exceptions.Unimplemented;
 import java.util.Arrays;
 import java.util.List;

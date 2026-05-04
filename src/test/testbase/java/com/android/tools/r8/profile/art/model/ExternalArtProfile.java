@@ -8,7 +8,7 @@ import com.android.tools.r8.profile.art.ArtProfileMethodRuleInfo;
 import com.android.tools.r8.profile.art.ArtProfileMethodRuleInfoImpl;
 import com.android.tools.r8.references.ClassReference;
 import com.android.tools.r8.references.MethodReference;
-import com.android.tools.r8.utils.StringUtils;
+import com.android.tools.r8.utils.internal.StringUtils;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.function.Consumer;

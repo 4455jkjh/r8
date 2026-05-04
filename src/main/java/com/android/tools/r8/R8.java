@@ -79,6 +79,7 @@ import com.android.tools.r8.optimize.fields.FieldFinalizer;
 import com.android.tools.r8.optimize.proto.ProtoNormalizer;
 import com.android.tools.r8.optimize.redundantbridgeremoval.RedundantBridgeRemover;
 import com.android.tools.r8.optimize.singlecaller.SingleCallerInliner;
+import com.android.tools.r8.optimize.smallmethodinliner.SmallMethodInliner;
 import com.android.tools.r8.origin.CommandLineOrigin;
 import com.android.tools.r8.origin.Origin;
 import com.android.tools.r8.profile.art.ArtProfileCompletenessChecker;
@@ -120,9 +121,9 @@ import com.android.tools.r8.utils.InternalOptions;
 import com.android.tools.r8.utils.Reporter;
 import com.android.tools.r8.utils.ResourceShrinkerUtils;
 import com.android.tools.r8.utils.SelfRetraceTest;
-import com.android.tools.r8.utils.StringUtils;
 import com.android.tools.r8.utils.ThreadUtils;
 import com.android.tools.r8.utils.internal.AssertionUtils;
+import com.android.tools.r8.utils.internal.StringUtils;
 import com.android.tools.r8.utils.timing.Timing;
 import com.android.tools.r8.verticalclassmerging.VerticalClassMerger;
 import com.google.common.collect.Iterables;
@@ -535,6 +536,8 @@ public class R8 {
       assert ArtProfileCompletenessChecker.verify(appView);
 
       LirConverter.rewriteLirWithLens(appView, timing, executorService);
+
+      SmallMethodInliner.run(appViewWithLiveness, executorService, timing);
 
       VerticalClassMerger.createForInitialClassMerging(appViewWithLiveness, timing)
           .runIfNecessary(executorService, timing);

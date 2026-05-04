@@ -7,7 +7,7 @@ import com.android.tools.r8.graph.DexMember;
 import com.android.tools.r8.graph.PrunedItems;
 import com.android.tools.r8.graph.lens.GraphLens;
 import com.android.tools.r8.threading.TaskCollection;
-import com.android.tools.r8.utils.SetUtils;
+import com.android.tools.r8.utils.internal.SetUtils;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 

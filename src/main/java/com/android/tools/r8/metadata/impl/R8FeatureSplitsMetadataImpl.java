@@ -17,7 +17,7 @@ import com.android.tools.r8.metadata.R8DexFileMetadata;
 import com.android.tools.r8.metadata.R8FeatureSplitMetadata;
 import com.android.tools.r8.metadata.R8FeatureSplitsMetadata;
 import com.android.tools.r8.utils.InternalOptions;
-import com.android.tools.r8.utils.ListUtils;
+import com.android.tools.r8.utils.internal.ListUtils;
 import com.google.gson.annotations.Expose;
 import com.google.gson.annotations.SerializedName;
 import java.util.ArrayList;

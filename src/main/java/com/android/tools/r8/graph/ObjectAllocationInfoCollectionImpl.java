@@ -5,7 +5,7 @@
 package com.android.tools.r8.graph;
 
 import static com.android.tools.r8.graph.DexProgramClass.asProgramClassOrNull;
-import static com.android.tools.r8.utils.MapUtils.ignoreKey;
+import static com.android.tools.r8.utils.internal.MapUtils.ignoreKey;
 
 import com.android.tools.r8.graph.lens.GraphLens;
 import com.android.tools.r8.ir.conversion.LensCodeRewriterUtils;
@@ -17,7 +17,7 @@ import com.android.tools.r8.shaking.KeepReason;
 import com.android.tools.r8.shaking.MissingClasses;
 import com.android.tools.r8.utils.LensUtils;
 import com.android.tools.r8.utils.internal.TraversalContinuation;
-import com.android.tools.r8.utils.collections.WorkList;
+import com.android.tools.r8.utils.internal.collections.WorkList;
 import com.android.tools.r8.utils.timing.Timing;
 import com.google.common.collect.Sets;
 import java.util.ArrayList;

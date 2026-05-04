@@ -15,7 +15,7 @@ import com.android.tools.r8.utils.internal.BooleanBox;
 import com.android.tools.r8.utils.internal.Box;
 import com.android.tools.r8.utils.internal.ObjectUtils;
 import com.android.tools.r8.utils.internal.OptionalBool;
-import com.android.tools.r8.utils.SetUtils;
+import com.android.tools.r8.utils.internal.SetUtils;
 import com.android.tools.r8.utils.internal.collections.Pair;
 import java.util.ArrayDeque;
 import java.util.ArrayList;

@@ -35,8 +35,8 @@ import com.android.tools.r8.shaking.AppInfoWithLiveness;
 import com.android.tools.r8.shaking.FieldAccessInfoCollectionModifier;
 import com.android.tools.r8.utils.AndroidApiLevel;
 import com.android.tools.r8.utils.InternalOptions;
-import com.android.tools.r8.utils.SetUtils;
 import com.android.tools.r8.utils.ThreadUtils;
+import com.android.tools.r8.utils.internal.SetUtils;
 import com.android.tools.r8.utils.timing.Timing;
 import com.google.common.base.Predicates;
 import com.google.common.collect.ImmutableList;
@@ -251,8 +251,15 @@ public class AtomicFieldUpdaterInstrumentor {
       fieldInfos.put(modifiedField, updaterInfo);
     }
 
-    // All fields should be invalid (removed from initialUpdaterFields) or valid (in fieldInfos)
-    assert fieldInfos.keySet().containsAll(initialUpdaterFields);
+    // The two sets should be equal, but fieldInfos is missing static final fields with no writes.
+    assert initialUpdaterFields.containsAll(fieldInfos.keySet())
+        : fieldInfos.keySet()
+            + "\nis not subset of\n"
+            + initialUpdaterFields
+            + "\nin "
+            + clazz.toSourceString()
+            + "\nwith code\n"
+            + ir;
 
     // Store information in concurrent collection.
     if (!fieldInfos.isEmpty()) {

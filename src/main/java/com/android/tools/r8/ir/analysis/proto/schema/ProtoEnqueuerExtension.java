@@ -5,7 +5,7 @@
 package com.android.tools.r8.ir.analysis.proto.schema;
 
 import static com.android.tools.r8.graph.DexProgramClass.asProgramClassOrNull;
-import static com.android.tools.r8.utils.MapUtils.ignoreKey;
+import static com.android.tools.r8.utils.internal.MapUtils.ignoreKey;
 
 import com.android.tools.r8.graph.AppInfoWithClassHierarchy;
 import com.android.tools.r8.graph.AppView;
@@ -45,11 +45,11 @@ import com.android.tools.r8.shaking.EnqueuerWorklist;
 import com.android.tools.r8.shaking.InstantiationReason;
 import com.android.tools.r8.shaking.KeepMethodInfo;
 import com.android.tools.r8.shaking.KeepReason;
-import com.android.tools.r8.utils.internal.BitUtils;
-import com.android.tools.r8.utils.internal.OptionalBool;
 import com.android.tools.r8.utils.collections.ProgramFieldMap;
 import com.android.tools.r8.utils.collections.ProgramFieldSet;
 import com.android.tools.r8.utils.collections.ProgramMethodSet;
+import com.android.tools.r8.utils.internal.BitUtils;
+import com.android.tools.r8.utils.internal.OptionalBool;
 import com.android.tools.r8.utils.timing.Timing;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;

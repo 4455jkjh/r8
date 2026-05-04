@@ -4,7 +4,7 @@
 
 package com.android.tools.r8.graph;
 
-import com.android.tools.r8.utils.SetUtils;
+import com.android.tools.r8.utils.internal.SetUtils;
 import com.google.common.collect.Sets;
 import java.util.Collection;
 import java.util.IdentityHashMap;

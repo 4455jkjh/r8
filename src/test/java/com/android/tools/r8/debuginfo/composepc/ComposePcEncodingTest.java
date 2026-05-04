@@ -22,8 +22,8 @@ import com.android.tools.r8.retrace.RetraceFrameResult;
 import com.android.tools.r8.retrace.RetraceStackTraceContext;
 import com.android.tools.r8.retrace.RetracedMethodReference;
 import com.android.tools.r8.transformers.ClassFileTransformer.MethodPredicate;
-import com.android.tools.r8.utils.FileUtils;
 import com.android.tools.r8.utils.codeinspector.MethodSubject;
+import com.android.tools.r8.utils.internal.FileUtils;
 import java.nio.file.Path;
 import java.util.OptionalInt;
 import org.junit.Test;
@@ -72,7 +72,8 @@ public class ComposePcEncodingTest extends TestBase {
                   // Check the expected status of the DEX debug info object for the "no lines".
                   MethodSubject methodNoLines = inspector.method(unusedKeptAndNoLineInfo);
                   assertThat(methodNoLines, isPresent());
-                  assertTrue(methodNoLines.hasLineNumberTable());
+                  assertEquals(
+                      !canDiscardResidualDebugInfo(parameters), methodNoLines.hasLineNumberTable());
                   // Check that "retracing" the pinned method with no lines maps to "noline/zero".
                   RetraceFrameResult retraceResult =
                       inspector
@@ -86,7 +87,9 @@ public class ComposePcEncodingTest extends TestBase {
                   assertEquals(0, frameElement.getOuterFrames().size());
                   RetracedMethodReference topFrame = frameElement.getTopFrame();
                   assertTrue(topFrame.isKnown());
-                  assertEquals(0, topFrame.getOriginalPositionOrDefault(-1));
+                  assertEquals(
+                      canDiscardResidualDebugInfo(parameters) ? -1 : 0,
+                      topFrame.getOriginalPositionOrDefault(-1));
                 });
 
     compileResult
@@ -116,8 +119,8 @@ public class ComposePcEncodingTest extends TestBase {
             inspector -> {
               MethodSubject methodNoLines = inspector.method(unusedKeptAndNoLineInfo);
               assertThat(methodNoLines, isPresent());
-              // TODO(b/213411850): This should depend on native pc support.
-              assertTrue(methodNoLines.hasLineNumberTable());
+              assertEquals(
+                  !canDiscardResidualDebugInfo(parameters), methodNoLines.hasLineNumberTable());
             })
         .inspectStackTrace(ComposePcEncodingTest::checkStackTrace);
   }

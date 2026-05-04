@@ -4,6 +4,8 @@
 
 package com.android.tools.r8.utils.codeinspector;
 
+import static junit.framework.TestCase.assertNotNull;
+import static junit.framework.TestCase.assertNull;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
@@ -67,6 +69,14 @@ public class AssertUtils {
       }
     } else {
       action.execute();
+    }
+  }
+
+  public static <E extends Throwable> void assertNullIf(boolean condition, Object o) {
+    if (condition) {
+      assertNull(o);
+    } else {
+      assertNotNull(o);
     }
   }
 

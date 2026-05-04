@@ -44,7 +44,12 @@ fun jarDependencies(): FileCollection {
     })
 }
 
+val sharedDepsScope by configurations.dependencyScope("sharedDepsScope")
+val sharedDepsConfig by
+  configurations.resolvable("sharedDepsConfig") { extendsFrom(sharedDepsScope) }
+
 dependencies {
+  sharedDepsScope(project(":shared", "sharedDepsFiles"))
   compileOnly(Deps.asm)
   compileOnly(Deps.guava)
   compileOnly(Deps.protobuf)
@@ -57,7 +62,7 @@ dependencies {
 }
 
 tasks {
-  withType<KotlinCompile> { dependsOn(gradle.includedBuild("shared").task(":downloadDeps")) }
+  withType<KotlinCompile> { dependsOn(sharedDepsConfig) }
   val depsJar by
     registering(Jar::class) {
       from(Callable { jarDependencies().map(::zipTree) })
@@ -67,3 +72,22 @@ tasks {
       archiveFileName.set("resourceshrinker_deps.jar")
     }
 }
+
+val resourceshrinkerJar by
+  configurations.consumable("resourceshrinkerJar") { outgoing.artifact(tasks.named<Jar>("jar")) }
+
+val resourceshrinkerDepsJar by
+  configurations.consumable("resourceshrinkerDepsJar") {
+    outgoing.artifact(tasks.named<Jar>("depsJar"))
+  }
+
+val resourceshrinkerSources by
+  configurations.consumable("resourceshrinkerSources") {
+    outgoing.artifact(tasks.named<Jar>("sourcesJar"))
+  }
+
+val resourceshrinkerClasses by
+  configurations.consumable("resourceshrinkerClasses") {
+    outgoing.artifact(tasks.named<JavaCompile>("compileJava").map { it.destinationDirectory })
+    outgoing.artifact(tasks.named<KotlinCompile>("compileKotlin").map { it.destinationDirectory })
+  }

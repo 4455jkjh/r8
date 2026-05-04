@@ -57,8 +57,11 @@ public class DifferentParameterCountMultilineCodeTestRunner extends TestBase {
                 if (customSourceFile) {
                   assertEquals("X", line.fileName);
                 } else if (parameters
-                    .getApiLevel()
-                    .isGreaterThanOrEqualTo(apiLevelWithPcAsLineNumberSupport())) {
+                        .getApiLevel()
+                        .isGreaterThanOrEqualTo(apiLevelWithPcAsLineNumberSupport())
+                    && parameters
+                        .getApiLevel()
+                        .isLessThan(apiLevelWithDiscardResidualDebugInfoSupport())) {
                   assertEquals("Unknown Source", line.fileName);
                 } else {
                   assertEquals("SourceFile", line.fileName);

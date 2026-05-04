@@ -82,10 +82,8 @@ import com.android.tools.r8.utils.AndroidApp;
 import com.android.tools.r8.utils.AndroidAppConsumers;
 import com.android.tools.r8.utils.DescriptorUtils;
 import com.android.tools.r8.utils.InternalOptions;
-import com.android.tools.r8.utils.ListUtils;
 import com.android.tools.r8.utils.PreloadedClassFileProvider;
 import com.android.tools.r8.utils.Reporter;
-import com.android.tools.r8.utils.StringUtils;
 import com.android.tools.r8.utils.TestDescriptionWatcher;
 import com.android.tools.r8.utils.ZipUtils.ZipBuilder;
 import com.android.tools.r8.utils.codeinspector.ClassSubject;
@@ -93,6 +91,8 @@ import com.android.tools.r8.utils.codeinspector.CodeInspector;
 import com.android.tools.r8.utils.codeinspector.FoundClassSubject;
 import com.android.tools.r8.utils.codeinspector.FoundMethodSubject;
 import com.android.tools.r8.utils.codeinspector.MethodSubject;
+import com.android.tools.r8.utils.internal.ListUtils;
+import com.android.tools.r8.utils.internal.StringUtils;
 import com.android.tools.r8.utils.internal.collections.Pair;
 import com.android.tools.r8.utils.internal.exceptions.Unreachable;
 import com.android.tools.r8.utils.timing.Timing;
@@ -1897,14 +1897,23 @@ public class TestBase {
     return AndroidApiLevel.O;
   }
 
+  public static AndroidApiLevel apiLevelWithDiscardResidualDebugInfoSupport() {
+    return AndroidApiLevel.CINNAMON_BUN;
+  }
+
+  public static boolean canDiscardResidualDebugInfo(TestParameters parameters) {
+    return parameters.getApiLevel() != null
+        && parameters
+            .getApiLevel()
+            .isGreaterThanOrEqualTo(apiLevelWithDiscardResidualDebugInfoSupport());
+  }
+
   public static AndroidApiLevel apiLevelWithMethodParametersSupport() {
     return AndroidApiLevel.O;
   }
 
   public static AndroidApiLevel apiLevelWithRecordSupport() {
-    // TODO(b/293591931): Return something when records are stable in Platform (expecting Android
-    // V).
-    throw new Unreachable();
+    return AndroidApiLevel.V;
   }
 
   public static AndroidApiLevel apiLevelWithSealedClassesSupport() {
@@ -1913,7 +1922,7 @@ public class TestBase {
 
   public static boolean isRecordsFullyDesugaredForD8(TestParameters parameters) {
     assert parameters.getApiLevel() != null;
-    return parameters.getApiLevel().isLessThan(AndroidApiLevel.V);
+    return parameters.getApiLevel().isLessThan(apiLevelWithRecordSupport());
   }
 
   public static boolean isRecordsFullyDesugaredForR8(TestParameters parameters) {

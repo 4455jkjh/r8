@@ -4,7 +4,7 @@
 
 package com.android.tools.r8.tracereferences;
 
-import static com.android.tools.r8.utils.FileUtils.CLASS_EXTENSION;
+import static com.android.tools.r8.utils.internal.FileUtils.CLASS_EXTENSION;
 import static org.junit.Assert.assertEquals;
 
 import com.android.tools.r8.DiagnosticsChecker;

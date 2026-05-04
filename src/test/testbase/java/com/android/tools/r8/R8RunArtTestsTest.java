@@ -19,12 +19,12 @@ import com.android.tools.r8.origin.Origin;
 import com.android.tools.r8.utils.AndroidApiLevel;
 import com.android.tools.r8.utils.ArtErrorParser;
 import com.android.tools.r8.utils.ArtErrorParser.ArtErrorInfo;
-import com.android.tools.r8.utils.FileUtils;
 import com.android.tools.r8.utils.InternalOptions;
 import com.android.tools.r8.utils.InternalOptions.LineNumberOptimization;
-import com.android.tools.r8.utils.ListUtils;
 import com.android.tools.r8.utils.TestDescriptionWatcher;
 import com.android.tools.r8.utils.codeinspector.CodeInspector;
+import com.android.tools.r8.utils.internal.FileUtils;
+import com.android.tools.r8.utils.internal.ListUtils;
 import com.google.common.base.Charsets;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableListMultimap;
@@ -231,6 +231,9 @@ public abstract class R8RunArtTestsTest extends TestBase {
           // Sometimes fails with out of memory on Dalvik.
           .put(
               "114-ParallelGC",
+              TestCondition.match(TestCondition.runtimesUpTo(DexVm.Version.V4_4_4)))
+          .put(
+              "579-inline-infinite",
               TestCondition.match(TestCondition.runtimesUpTo(DexVm.Version.V4_4_4)))
           // Seen crash: currently no more information
           .put("144-static-field-sigquit", TestCondition.any())

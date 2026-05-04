@@ -8,6 +8,7 @@ import com.android.tools.r8.graph.DexDefinitionSupplier;
 import com.android.tools.r8.graph.DexEncodedMethod;
 import com.android.tools.r8.graph.DexReference;
 import com.android.tools.r8.graph.lens.GraphLens;
+import com.android.tools.r8.utils.internal.MapUtils;
 import com.android.tools.r8.utils.internal.TriFunction;
 import com.google.common.collect.Sets;
 import java.util.ArrayList;

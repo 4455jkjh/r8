@@ -11,7 +11,7 @@ import com.android.tools.r8.horizontalclassmerging.ConditionalMethodRulesAndHori
 import com.android.tools.r8.horizontalclassmerging.ConditionalMethodRulesAndHorizontalMergingTest.Example2.MyFieldValuePrinter;
 import com.android.tools.r8.horizontalclassmerging.ConditionalMethodRulesAndHorizontalMergingTest.Example2.PrintableFieldInterface;
 import com.android.tools.r8.utils.AndroidApiLevel;
-import com.android.tools.r8.utils.StringUtils;
+import com.android.tools.r8.utils.internal.StringUtils;
 import com.google.common.collect.ImmutableList;
 import java.lang.reflect.Field;
 import java.util.List;

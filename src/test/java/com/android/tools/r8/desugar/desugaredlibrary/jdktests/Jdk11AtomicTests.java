@@ -13,8 +13,8 @@ import static com.android.tools.r8.desugar.desugaredlibrary.test.CompilationSpec
 import static com.android.tools.r8.desugar.desugaredlibrary.test.LibraryDesugaringSpecification.JDK11;
 import static com.android.tools.r8.desugar.desugaredlibrary.test.LibraryDesugaringSpecification.JDK11_PATH;
 import static com.android.tools.r8.desugar.desugaredlibrary.test.LibraryDesugaringSpecification.JDK8;
-import static com.android.tools.r8.utils.FileUtils.CLASS_EXTENSION;
-import static com.android.tools.r8.utils.FileUtils.JAVA_EXTENSION;
+import static com.android.tools.r8.utils.internal.FileUtils.CLASS_EXTENSION;
+import static com.android.tools.r8.utils.internal.FileUtils.JAVA_EXTENSION;
 import static org.hamcrest.CoreMatchers.endsWith;
 
 import com.android.tools.r8.TestParameters;
@@ -24,7 +24,7 @@ import com.android.tools.r8.ToolHelper.DexVm.Version;
 import com.android.tools.r8.desugar.desugaredlibrary.DesugaredLibraryTestBase;
 import com.android.tools.r8.desugar.desugaredlibrary.test.CompilationSpecification;
 import com.android.tools.r8.desugar.desugaredlibrary.test.LibraryDesugaringSpecification;
-import com.android.tools.r8.utils.StringUtils;
+import com.android.tools.r8.utils.internal.StringUtils;
 import com.google.common.collect.ImmutableList;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -59,7 +59,8 @@ public class Jdk11AtomicTests extends DesugaredLibraryTestBase {
         // TODO(b/134732760): Skip Android 4.4.4 due to missing libjavacrypto.
         getTestParameters()
             .withDexRuntime(Version.V4_0_4)
-            .withDexRuntimesStartingFromIncluding(Version.V5_1_1)
+            // TODO(b/507731439): Test on ART 17.
+            .withDexRuntimesRangeIncluding(Version.V5_1_1, Version.V16_0_0)
             .withAllApiLevels()
             .build(),
         ImmutableList.of(JDK8, JDK11, JDK11_PATH),

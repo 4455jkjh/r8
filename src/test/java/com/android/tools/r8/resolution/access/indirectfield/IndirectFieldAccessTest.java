@@ -19,7 +19,7 @@ import com.android.tools.r8.references.Reference;
 import com.android.tools.r8.resolution.access.indirectfield.pkg.C;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
 import com.android.tools.r8.utils.internal.OptionalBool;
-import com.android.tools.r8.utils.StringUtils;
+import com.android.tools.r8.utils.internal.StringUtils;
 import com.android.tools.r8.utils.timing.Timing;
 import com.google.common.collect.ImmutableList;
 import java.util.List;

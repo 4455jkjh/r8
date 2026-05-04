@@ -4,7 +4,7 @@
 package com.android.tools.r8.shaking.rootset;
 
 import static com.android.tools.r8.graph.DexProgramClass.asProgramClassOrNull;
-import static com.android.tools.r8.utils.MapUtils.ignoreKey;
+import static com.android.tools.r8.utils.internal.MapUtils.ignoreKey;
 import static com.google.common.base.Predicates.alwaysTrue;
 
 import com.android.tools.r8.dex.Constants;
@@ -120,12 +120,12 @@ import com.android.tools.r8.utils.Reporter;
 import com.android.tools.r8.utils.StringDiagnostic;
 import com.android.tools.r8.utils.collections.DexMethodSignatureSet;
 import com.android.tools.r8.utils.collections.ProgramMethodMap;
-import com.android.tools.r8.utils.collections.WorkList;
 import com.android.tools.r8.utils.internal.Action;
 import com.android.tools.r8.utils.internal.ArrayUtils;
 import com.android.tools.r8.utils.internal.LazyBox;
 import com.android.tools.r8.utils.internal.TraversalContinuation;
 import com.android.tools.r8.utils.internal.collections.PredicateSet;
+import com.android.tools.r8.utils.internal.collections.WorkList;
 import com.android.tools.r8.utils.internal.exceptions.Unreachable;
 import com.android.tools.r8.utils.timing.Timing;
 import com.google.common.base.Equivalence.Wrapper;

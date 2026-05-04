@@ -10,7 +10,6 @@ import static com.android.tools.r8.utils.codeinspector.Matchers.isInlineStack;
 import static com.android.tools.r8.utils.codeinspector.Matchers.isPresent;
 import static com.android.tools.r8.utils.codeinspector.Matchers.isTopOfStackTrace;
 import static junit.framework.TestCase.assertEquals;
-import static junit.framework.TestCase.assertNotNull;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -23,6 +22,7 @@ import com.android.tools.r8.ToolHelper.DexVm.Version;
 import com.android.tools.r8.references.Reference;
 import com.android.tools.r8.retrace.RetraceFrameResult;
 import com.android.tools.r8.utils.AndroidApiLevel;
+import com.android.tools.r8.utils.codeinspector.AssertUtils;
 import com.android.tools.r8.utils.codeinspector.ClassSubject;
 import com.android.tools.r8.utils.codeinspector.CodeInspector;
 import com.android.tools.r8.utils.codeinspector.FoundMethodSubject;
@@ -118,10 +118,14 @@ public class DexPcWithDebugInfoForOverloadedMethodsTestRunner extends TestBase {
     assertEquals(3, clazz.allMethods().size());
     for (FoundMethodSubject method : clazz.allMethods()) {
       if (method.getOriginalMethodName().equals("main")) {
-        assertNotNull(method.getMethod().getCode().asDexCode().getDebugInfo());
+        AssertUtils.assertNullIf(
+            canDiscardResidualDebugInfo(parameters),
+            method.getMethod().getCode().asDexCode().getDebugInfo());
       } else {
         assertEquals("overloaded", method.getOriginalMethodName());
-        assertNotNull(method.getMethod().getCode().asDexCode().getDebugInfo());
+        AssertUtils.assertNullIf(
+            canDiscardResidualDebugInfo(parameters) && method.getParameter(0).is(int.class),
+            method.getMethod().getCode().asDexCode().getDebugInfo());
       }
     }
   }

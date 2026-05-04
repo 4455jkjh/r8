@@ -12,10 +12,10 @@ import com.android.tools.r8.graph.lens.GraphLens;
 import com.android.tools.r8.graph.lens.MethodLookupResult;
 import com.android.tools.r8.ir.code.InvokeType;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
-import com.android.tools.r8.utils.SetUtils;
-import com.android.tools.r8.utils.collections.BidirectionalOneToOneHashMap;
-import com.android.tools.r8.utils.collections.BidirectionalOneToOneMap;
-import com.android.tools.r8.utils.collections.MutableBidirectionalOneToOneMap;
+import com.android.tools.r8.utils.internal.SetUtils;
+import com.android.tools.r8.utils.internal.collections.BidirectionalOneToOneHashMap;
+import com.android.tools.r8.utils.internal.collections.BidirectionalOneToOneMap;
+import com.android.tools.r8.utils.internal.collections.MutableBidirectionalOneToOneMap;
 import java.util.Set;
 
 public class AccessModifierLens extends DefaultNonIdentityGraphLens {

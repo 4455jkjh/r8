@@ -27,8 +27,8 @@ import com.android.tools.r8.utils.AndroidApp;
 import com.android.tools.r8.utils.ExceptionUtils;
 import com.android.tools.r8.utils.InternalOptions;
 import com.android.tools.r8.utils.SelfRetraceTest;
-import com.android.tools.r8.utils.StringUtils;
 import com.android.tools.r8.utils.ThreadUtils;
+import com.android.tools.r8.utils.internal.StringUtils;
 import com.android.tools.r8.utils.timing.Timing;
 import java.io.IOException;
 import java.util.concurrent.ExecutionException;
@@ -101,7 +101,8 @@ public class L8 {
             options.enableStringSwitchConversion = false;
             assert !options.enableVarHandleDesugaring;
             options.enableVarHandleDesugaring = true;
-            assert !options.emitLambdaMethodAnnotations;
+            assert !options.disableLambdaMethodAnnotations;
+            options.disableLambdaMethodAnnotations = true;
             options.tool = Tool.L8;
 
             desugar(app, options, executorService);
@@ -109,6 +110,7 @@ public class L8 {
             options.enableSwitchRewriting = true;
             options.enableStringSwitchConversion = true;
             options.enableVarHandleDesugaring = false;
+            options.disableLambdaMethodAnnotations = false;
           });
       if (shrink) {
         R8.run(r8Command, executorService);

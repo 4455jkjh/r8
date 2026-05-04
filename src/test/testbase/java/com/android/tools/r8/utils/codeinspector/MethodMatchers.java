@@ -6,7 +6,7 @@ package com.android.tools.r8.utils.codeinspector;
 
 import static junit.framework.TestCase.assertEquals;
 
-import com.android.tools.r8.utils.StringUtils;
+import com.android.tools.r8.utils.internal.StringUtils;
 import java.util.Arrays;
 import java.util.List;
 import org.hamcrest.Description;

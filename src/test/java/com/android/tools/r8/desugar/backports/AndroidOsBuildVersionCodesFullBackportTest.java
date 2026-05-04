@@ -106,7 +106,9 @@ public class AndroidOsBuildVersionCodesFullBackportTest extends AbstractBackport
         parameters.frameworkHasBuildVersionCodesFull(), versionCodesFullClass.isPresent());
     if (parameters.frameworkHasBuildVersionCodesFull()) {
       // Update test when more version codes full are added.
-      Assert.assertEquals(36, versionCodesFullClass.allFields().size());
+      Assert.assertEquals(
+          parameters.getApiLevel().isEqualTo(BAKLAVA) ? 36 : 38,
+          versionCodesFullClass.allFields().size());
       // Copied from BackportedMethodRewriter.
       Object[][] versionCodesFull = {
         {"BASE", 100_000},
@@ -145,16 +147,20 @@ public class AndroidOsBuildVersionCodesFullBackportTest extends AbstractBackport
         {"UPSIDE_DOWN_CAKE", 3400_000},
         {"VANILLA_ICE_CREAM", 3500_000},
         {"BAKLAVA", 3600_000},
+        {"BAKLAVA_1", 3600_001},
+        {"CINNAMON_BUN", 3700_000},
       };
       for (Object[] versionCodeFull : versionCodesFull) {
-        Assert.assertEquals(
-            ((Integer) versionCodeFull[1]).intValue(),
-            versionCodesFullClass
-                .field("int", (String) versionCodeFull[0])
-                .getField()
-                .getStaticValue()
-                .asDexValueInt()
-                .value);
+        if ((Integer) versionCodeFull[1] <= parameters.getApiLevel().getLevel() * 100_000) {
+          Assert.assertEquals(
+              ((Integer) versionCodeFull[1]).intValue(),
+              versionCodesFullClass
+                  .field("int", (String) versionCodeFull[0])
+                  .getField()
+                  .getStaticValue()
+                  .asDexValueInt()
+                  .value);
+        }
       }
     }
   }

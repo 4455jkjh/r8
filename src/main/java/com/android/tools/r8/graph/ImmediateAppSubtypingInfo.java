@@ -4,7 +4,7 @@
 package com.android.tools.r8.graph;
 
 import static com.android.tools.r8.graph.DexApplication.classesWithDeterministicOrder;
-import static com.android.tools.r8.utils.MapUtils.ignoreKey;
+import static com.android.tools.r8.utils.internal.MapUtils.ignoreKey;
 
 import com.google.common.collect.Iterables;
 import java.util.ArrayList;

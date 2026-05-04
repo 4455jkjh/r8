@@ -7,7 +7,7 @@ package com.android.tools.r8.shaking.rules;
 import com.android.tools.r8.graph.PrunedItems;
 import com.android.tools.r8.graph.lens.NonIdentityGraphLens;
 import com.android.tools.r8.shaking.MinimumKeepInfoCollection;
-import com.android.tools.r8.utils.ListUtils;
+import com.android.tools.r8.utils.internal.ListUtils;
 import java.util.Collections;
 import java.util.List;
 

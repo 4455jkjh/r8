@@ -6,8 +6,8 @@ package com.android.tools.r8.dump;
 import static com.android.tools.r8.utils.AndroidApp.dumpR8ExcludeFileName;
 import static com.android.tools.r8.utils.AndroidApp.dumpR8IncludeFileName;
 
-import com.android.tools.r8.utils.FileUtils;
 import com.android.tools.r8.utils.ZipUtils;
+import com.android.tools.r8.utils.internal.FileUtils;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.nio.file.Files;

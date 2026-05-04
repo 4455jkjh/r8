@@ -4,14 +4,14 @@
 
 package com.android.tools.r8;
 
-import static com.android.tools.r8.utils.FileUtils.ZIP_EXTENSION;
+import static com.android.tools.r8.utils.internal.FileUtils.ZIP_EXTENSION;
 import static org.junit.Assert.assertEquals;
 
 import com.android.tools.r8.ToolHelper.ProcessResult;
 import com.android.tools.r8.desugar.LibraryFilesHelper;
 import com.android.tools.r8.origin.Origin;
-import com.android.tools.r8.utils.StringUtils;
 import com.android.tools.r8.utils.codeinspector.CodeInspector;
+import com.android.tools.r8.utils.internal.StringUtils;
 import com.google.common.collect.ImmutableList;
 import java.io.IOException;
 import java.nio.file.Path;

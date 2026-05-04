@@ -5,7 +5,7 @@
 package com.android.tools.r8.utils.codeinspector;
 
 import com.android.tools.r8.graph.DexAnnotationElement;
-import com.android.tools.r8.utils.StringUtils;
+import com.android.tools.r8.utils.internal.StringUtils;
 import com.android.tools.r8.utils.internal.collections.Pair;
 import java.util.Arrays;
 import java.util.List;

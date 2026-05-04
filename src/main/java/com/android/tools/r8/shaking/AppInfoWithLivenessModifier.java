@@ -8,7 +8,7 @@ import com.android.tools.r8.graph.DexField;
 import com.android.tools.r8.graph.DexProgramClass;
 import com.android.tools.r8.graph.MutableFieldAccessInfo;
 import com.android.tools.r8.graph.MutableFieldAccessInfoCollection;
-import com.android.tools.r8.utils.SetUtils;
+import com.android.tools.r8.utils.internal.SetUtils;
 import java.util.Set;
 
 /** Used to mutate AppInfoWithLiveness between waves. */

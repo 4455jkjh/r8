@@ -15,9 +15,9 @@ import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.ToolHelper.DexVm.Version;
 import com.android.tools.r8.naming.MemberNaming.MethodSignature;
 import com.android.tools.r8.utils.AndroidApiLevel;
-import com.android.tools.r8.utils.internal.BooleanUtils;
-import com.android.tools.r8.utils.StringUtils;
 import com.android.tools.r8.utils.codeinspector.CodeInspector;
+import com.android.tools.r8.utils.internal.BooleanUtils;
+import com.android.tools.r8.utils.internal.StringUtils;
 import com.google.common.collect.ImmutableList;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -104,7 +104,9 @@ public class NoRelaxationForSerializableTest extends AccessRelaxationTestBase {
   public static List<Object[]> data() {
     return buildParameters(
         getTestParameters()
-            .withAllRuntimes()
+            // TODO(b/507731439): Also test on ART 17.
+            .withCfRuntimes()
+            .withDexRuntimesEndingAtExcluding(Version.V17_0_0)
             .withApiLevelsStartingAtIncluding(AndroidApiLevel.K)
             .build(),
         BooleanUtils.values());

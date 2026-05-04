@@ -4,7 +4,7 @@
 package com.android.tools.r8.utils.structural;
 
 import com.android.tools.r8.graph.DexReference;
-import com.android.tools.r8.utils.ComparatorUtils;
+import com.android.tools.r8.utils.internal.ComparatorUtils;
 import com.android.tools.r8.utils.structural.StructuralItem.CompareToAccept;
 import com.android.tools.r8.utils.structural.StructuralItem.HashingAccept;
 import it.unimi.dsi.fastutil.ints.Int2ReferenceMap;

@@ -16,6 +16,7 @@ import com.android.tools.r8.debug.DebugStreamComparator;
 import com.android.tools.r8.debug.DebugTestBase;
 import com.android.tools.r8.debug.DebugTestConfig;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.function.Consumer;
@@ -63,9 +64,19 @@ public abstract class ExamplesTestBase extends DebugTestBase {
     return Collections.singletonList(getMainClass());
   }
 
+  /**
+   * Returns a list of extra program files (JARs or directories containing class files) to be
+   * included in the test. These files will be added to the program files for compilation (D8/R8)
+   * and to the classpath for JVM execution.
+   */
+  protected List<Path> getExtraProgramFiles() throws Exception {
+    return Collections.emptyList();
+  }
+
   public void runTestDesugaring() throws Exception {
     testForDesugaring(parameters)
         .addProgramClasses(getTestClasses())
+        .addProgramFiles(getExtraProgramFiles())
         .run(parameters.getRuntime(), getMainClass())
         .assertSuccessWithOutput(getExpected());
   }
@@ -81,6 +92,7 @@ public abstract class ExamplesTestBase extends DebugTestBase {
         .addOptionsModification(o -> o.testing.roundtripThroughLir = true)
         .setMinApi(parameters)
         .addProgramClasses(getTestClasses())
+        .addProgramFiles(getExtraProgramFiles())
         .addKeepMainRule(getMainClass())
         .apply(modifier::accept)
         .run(parameters.getRuntime(), getMainClass())
@@ -117,12 +129,16 @@ public abstract class ExamplesTestBase extends DebugTestBase {
         parameters.isCfRuntime() ? parameters.asCfRuntime() : CfRuntime.getDefaultCfRuntime();
     Path jar = temp.newFolder().toPath().resolve("out.jar");
     writeClassesToJar(jar, getTestClasses());
-    return new CfDebugTestConfig(cfRuntime, Collections.singletonList(jar));
+    List<Path> paths = new ArrayList<>();
+    paths.add(jar);
+    paths.addAll(getExtraProgramFiles());
+    return new CfDebugTestConfig(cfRuntime, paths);
   }
 
   private DebugTestConfig getD8Config() throws Exception {
     return testForD8(parameters.getBackend())
         .addProgramClasses(getTestClasses())
+        .addProgramFiles(getExtraProgramFiles())
         .setMinApi(parameters)
         .compile()
         .debugConfig(parameters.getRuntime());
@@ -132,6 +148,7 @@ public abstract class ExamplesTestBase extends DebugTestBase {
     return testForR8(parameters.getBackend())
         .setMinApi(parameters)
         .addProgramClasses(getTestClasses())
+        .addProgramFiles(getExtraProgramFiles())
         .addKeepMainRule(getMainClass())
         .addKeepRules("-keep,allowshrinking class *")
         .addKeepAllAttributes()

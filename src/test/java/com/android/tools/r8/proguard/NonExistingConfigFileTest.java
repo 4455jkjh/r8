@@ -10,8 +10,8 @@ import static org.junit.Assert.fail;
 
 import com.android.tools.r8.CompilationFailedException;
 import com.android.tools.r8.TestBase;
-import com.android.tools.r8.utils.FileUtils;
 import com.android.tools.r8.utils.codeinspector.ClassSubject;
+import com.android.tools.r8.utils.internal.FileUtils;
 import java.nio.file.Path;
 import org.junit.Test;
 

@@ -5,9 +5,9 @@
 package com.android.tools.r8.keepanno;
 
 import static com.android.tools.r8.R8TestBuilder.KeepAnnotationLibrary.ANDROIDX;
-import static com.android.tools.r8.utils.FileUtils.isClassFile;
-import static com.android.tools.r8.utils.FileUtils.isJarFile;
-import static com.android.tools.r8.utils.FileUtils.isZipFile;
+import static com.android.tools.r8.utils.internal.FileUtils.isClassFile;
+import static com.android.tools.r8.utils.internal.FileUtils.isJarFile;
+import static com.android.tools.r8.utils.internal.FileUtils.isZipFile;
 import static org.junit.Assert.assertTrue;
 
 import com.android.tools.r8.ByteDataView;
@@ -19,9 +19,9 @@ import com.android.tools.r8.keepanno.asm.KeepEdgeReader;
 import com.android.tools.r8.keepanno.ast.KeepDeclaration;
 import com.android.tools.r8.keepanno.keeprules.KeepRuleExtractor;
 import com.android.tools.r8.keepanno.keeprules.KeepRuleExtractorOptions;
-import com.android.tools.r8.utils.FileUtils;
-import com.android.tools.r8.utils.ListUtils;
 import com.android.tools.r8.utils.ZipUtils;
+import com.android.tools.r8.utils.internal.FileUtils;
+import com.android.tools.r8.utils.internal.ListUtils;
 import com.google.common.collect.ImmutableList;
 import com.google.common.io.ByteStreams;
 import java.io.IOException;

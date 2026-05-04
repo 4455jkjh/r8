@@ -21,21 +21,29 @@ java {
 
 val distR8WithRelocatedDeps = project(":dist").tasks.getByName("r8WithRelocatedDeps")
 val distSwissArmyKnife = project(":dist").tasks.getByName("swissArmyKnife")
-val keepAnnoCompileJavaTask = projectTask("keepanno", "compileJava")
-val keepAnnoCompileKotlinTask = projectTask("keepanno", "compileKotlin")
-val keepAnnoJarTask = projectTask("keepanno", "jar")
-val resourceShrinkerCompileJavaTask = projectTask("resourceshrinker", "compileJava")
-val resourceShrinkerCompileKotlinTask = projectTask("resourceshrinker", "compileKotlin")
-val resourceShrinkerDepsJarTask = projectTask("resourceshrinker", "depsJar")
-val sharedDownloadDepsTask = projectTask("shared", "downloadDeps")
-val sharedDownloadDepsInternalTask = projectTask("shared", "downloadDepsInternal")
+val sharedDepsScope by configurations.dependencyScope("sharedDepsScope")
+val sharedDepsConfig by
+  configurations.resolvable("sharedDepsConfig") { extendsFrom(sharedDepsScope) }
+
+val sharedDepsInternalScope by configurations.dependencyScope("sharedDepsInternalScope")
+val sharedDepsInternalConfig by
+  configurations.resolvable("sharedDepsInternalConfig") { extendsFrom(sharedDepsInternalScope) }
 
 dependencies {
-  implementation(keepAnnoJarTask.outputs.files)
+  sharedDepsScope(project(":shared", "sharedDepsFiles"))
+  sharedDepsInternalScope(project(":shared", "sharedDepsInternalFiles"))
+}
+
+val keepAnnoClassesScope by configurations.dependencyScope("keepAnnoClassesScope")
+val keepAnnoClassesConfig by
+  configurations.resolvable("keepAnnoClassesConfig") { extendsFrom(keepAnnoClassesScope) }
+
+dependencies {
+  keepAnnoClassesScope(project(":keepanno", "keepannoClasses"))
+  implementation(project(":keepanno", "keepannoClasses"))
   implementation(project(":main", "mainJar"))
-  implementation(resourceShrinkerCompileJavaTask.outputs.files)
-  implementation(resourceShrinkerCompileKotlinTask.outputs.files)
-  implementation(resourceShrinkerDepsJarTask.outputs.files)
+  implementation(project(":resourceshrinker", "resourceshrinkerClasses"))
+  implementation(project(":resourceshrinker", "resourceshrinkerDepsJar"))
   implementation(project(":testbase"))
   implementation(project(":testbase", "depsJar"))
 }
@@ -72,11 +80,7 @@ tasks {
     systemProperty(
       "BUILD_PROP_KEEPANNO_RUNTIME_PATH",
       project.provider {
-        extractClassesPaths(
-          "keepanno" + File.separator,
-          keepAnnoCompileJavaTask.outputs.files.asPath,
-          keepAnnoCompileKotlinTask.outputs.files.asPath,
-        )
+        extractClassesPaths("keepanno" + File.separator, keepAnnoClassesConfig.asPath)
       },
     )
     systemProperty("R8_SWISS_ARMY_KNIFE", distSwissArmyKnife.outputs.files.singleFile)
@@ -93,10 +97,9 @@ tasks {
 
   val assembleDepsJar by
     registering(Jar::class) {
-      dependsOn(keepAnnoJarTask)
-      dependsOn(sharedDownloadDepsTask)
+      dependsOn(sharedDepsConfig)
       if (!project.hasProperty("no_internal")) {
-        dependsOn(sharedDownloadDepsInternalTask)
+        dependsOn(sharedDepsInternalConfig)
       }
       from(Callable { testDependencies().map(::zipTree) })
       duplicatesStrategy = DuplicatesStrategy.EXCLUDE

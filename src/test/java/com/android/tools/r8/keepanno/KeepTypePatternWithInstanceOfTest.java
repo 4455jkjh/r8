@@ -11,7 +11,7 @@ import com.android.tools.r8.keepanno.annotations.InstanceOfPattern;
 import com.android.tools.r8.keepanno.annotations.KeepTarget;
 import com.android.tools.r8.keepanno.annotations.TypePattern;
 import com.android.tools.r8.keepanno.annotations.UsesReflection;
-import com.android.tools.r8.utils.StringUtils;
+import com.android.tools.r8.utils.internal.StringUtils;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.List;

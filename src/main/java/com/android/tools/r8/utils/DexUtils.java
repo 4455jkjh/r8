@@ -4,6 +4,8 @@
 
 package com.android.tools.r8.utils;
 
+import com.android.tools.r8.utils.internal.FileUtils;
+
 public class DexUtils {
   public static String getDefaultDexFileName(int fileIndex) {
     return fileIndex == 0

@@ -19,7 +19,7 @@ import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.compilerapi.CompilerApiTest;
 import com.android.tools.r8.compilerapi.CompilerApiTestRunner;
 import com.android.tools.r8.errors.UnsupportedMainDexListUsageDiagnostic;
-import com.android.tools.r8.utils.FileUtils;
+import com.android.tools.r8.utils.internal.FileUtils;
 import java.nio.file.Path;
 import java.util.Collections;
 import org.junit.Test;

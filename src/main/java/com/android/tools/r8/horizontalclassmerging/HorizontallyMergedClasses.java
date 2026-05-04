@@ -8,10 +8,10 @@ import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.DexType;
 import com.android.tools.r8.graph.classmerging.MergedClasses;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
-import com.android.tools.r8.utils.collections.BidirectionalManyToOneRepresentativeHashMap;
-import com.android.tools.r8.utils.collections.BidirectionalManyToOneRepresentativeMap;
-import com.android.tools.r8.utils.collections.EmptyBidirectionalOneToOneMap;
-import com.android.tools.r8.utils.collections.MutableBidirectionalManyToOneRepresentativeMap;
+import com.android.tools.r8.utils.internal.collections.BidirectionalManyToOneRepresentativeHashMap;
+import com.android.tools.r8.utils.internal.collections.BidirectionalManyToOneRepresentativeMap;
+import com.android.tools.r8.utils.internal.collections.EmptyBidirectionalOneToOneMap;
+import com.android.tools.r8.utils.internal.collections.MutableBidirectionalManyToOneRepresentativeMap;
 import java.util.Set;
 import java.util.function.BiConsumer;
 

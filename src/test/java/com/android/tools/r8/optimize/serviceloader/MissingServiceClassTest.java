@@ -18,7 +18,7 @@ import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.graph.AppServices;
 import com.android.tools.r8.origin.Origin;
 import com.android.tools.r8.utils.DataResourceConsumerForTesting;
-import com.android.tools.r8.utils.StringUtils;
+import com.android.tools.r8.utils.internal.StringUtils;
 import java.util.List;
 import java.util.ServiceLoader;
 import org.junit.Test;

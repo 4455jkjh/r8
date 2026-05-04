@@ -4,21 +4,23 @@
 
 package com.android.tools.r8.jdk11.string;
 
+import static com.android.tools.r8.utils.codeinspector.Matchers.isPresent;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 import com.android.tools.r8.Jdk9TestUtils;
 import com.android.tools.r8.NeverInline;
+import com.android.tools.r8.ReprocessMethod;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.TestRuntime.CfVm;
-import com.android.tools.r8.utils.StringUtils;
 import com.android.tools.r8.utils.codeinspector.ClassSubject;
 import com.android.tools.r8.utils.codeinspector.CodeInspector;
 import com.android.tools.r8.utils.codeinspector.CodeMatchers;
 import com.android.tools.r8.utils.codeinspector.MethodSubject;
+import com.android.tools.r8.utils.internal.StringUtils;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -116,6 +118,7 @@ public class StringConcatTest extends TestBase {
         .addInnerClassesAndStrippedOuter(getClass())
         .addKeepMainRule(Main.class)
         .enableInliningAnnotations()
+        .enableReprocessMethodAnnotations()
         .addDontObfuscate()
         .run(parameters.getRuntime(), Main.class)
         .assertSuccessWithOutput(EXPECTED_OUTPUT)
@@ -188,10 +191,10 @@ public class StringConcatTest extends TestBase {
 
     method = mainClass.uniqueMethodWithOriginalName("mergeStringsWithSideEffects_sameOrder");
     assertTrue(method.isPresent());
-    assertEquals(2, countStringBuilderOrInvokeDynamic(method));
+    assertEquals(3, countStringBuilderOrInvokeDynamic(method));
 
     method = mainClass.uniqueMethodWithOriginalName("noOutValues_noSideEffects");
-    assertFalse("Empty method should be removed.", method.isPresent());
+    assertThat("Empty method should be removed.", method, isPresent());
   }
 
   static class Main {
@@ -403,6 +406,7 @@ public class StringConcatTest extends TestBase {
     }
 
     @NeverInline
+    @ReprocessMethod
     public static void noOutValues_noSideEffects() {
       try {
         // Values should be removed.

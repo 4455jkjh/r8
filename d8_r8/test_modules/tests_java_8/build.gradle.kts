@@ -28,6 +28,14 @@ java {
 
 // If we depend on keepanno by referencing the project source outputs we get an error regarding
 // incompatible java class file version. By depending on the jar we circumvent that.
+val keepAnnoClassesScope by configurations.dependencyScope("keepAnnoClassesScope")
+val keepAnnoClassesConfig by
+  configurations.resolvable("keepAnnoClassesConfig") { extendsFrom(keepAnnoClassesScope) }
+val resourceShrinkerClassesScope by configurations.dependencyScope("resourceShrinkerClassesScope")
+val resourceShrinkerClassesConfig by
+  configurations.resolvable("resourceShrinkerClassesConfig") {
+    extendsFrom(resourceShrinkerClassesScope)
+  }
 val assistantClassesScope by configurations.dependencyScope("assistantClassesScope")
 val assistantClassesOutput =
   configurations.resolvable("assistantClassesOutput") { extendsFrom(assistantClassesScope) }
@@ -41,31 +49,38 @@ val mainResources = configurations.resolvable("mainResources") { extendsFrom(mai
 val turboClassesScope by configurations.dependencyScope("turboClassesScope")
 val turboClassesOutput =
   configurations.resolvable("turboClassesOutput") { extendsFrom(turboClassesScope) }
-val keepAnnoJarTask = projectTask("keepanno", "jar")
-val keepAnnoCompileJavaTask = projectTask("keepanno", "compileJava")
-val keepAnnoCompileKotlinTask = projectTask("keepanno", "compileKotlin")
-val resourceShrinkerCompileJavaTask = projectTask("resourceshrinker", "compileJava")
-val resourceShrinkerCompileKotlinTask = projectTask("resourceshrinker", "compileKotlin")
-val resourceShrinkerDepsJarTask = projectTask("resourceshrinker", "depsJar")
-val sharedDownloadDepsTask = projectTask("shared", "downloadDeps")
-val sharedDownloadDepsInternalTask = projectTask("shared", "downloadDepsInternal")
+
+val sharedDepsScope by configurations.dependencyScope("sharedDepsScope")
+val sharedDepsConfig by
+  configurations.resolvable("sharedDepsConfig") { extendsFrom(sharedDepsScope) }
+
+val sharedDepsInternalScope by configurations.dependencyScope("sharedDepsInternalScope")
+val sharedDepsInternalConfig by
+  configurations.resolvable("sharedDepsInternalConfig") { extendsFrom(sharedDepsInternalScope) }
 
 dependencies {
+  sharedDepsScope(project(":shared", "sharedDepsFiles"))
+  sharedDepsInternalScope(project(":shared", "sharedDepsInternalFiles"))
+}
+
+dependencies {
+  keepAnnoClassesScope(project(":keepanno", "keepannoClasses"))
   assistantClassesScope(project(":assistant", "assistantJar"))
   distDepsFilesScope(project(":dist", "depsFiles"))
   mainClassesScope(project(":main", "mainClassesOutput"))
+
   mainResourcesScope(project(":main", "mainResources"))
   turboClassesScope(project(":main", "turboClassesOutput"))
   implementation(project(":assistant", "assistantJar"))
   implementation(project(":blastradius", "blastradiusJar"))
-  implementation(keepAnnoJarTask.outputs.files)
+  implementation(project(":keepanno", "keepannoClasses"))
   implementation(project(":libanalyzer", "libanalyzer-compile-java"))
   implementation(project(":main", "mainClassesOutput"))
   implementation(project(":main", "mainResources"))
   implementation(project(":main", "turboClassesOutput"))
-  implementation(resourceShrinkerCompileJavaTask.outputs.files)
-  implementation(resourceShrinkerCompileKotlinTask.outputs.files)
-  implementation(resourceShrinkerDepsJarTask.outputs.files)
+  resourceShrinkerClassesScope(project(":resourceshrinker", "resourceshrinkerClasses"))
+  implementation(project(":resourceshrinker", "resourceshrinkerClasses"))
+  implementation(project(":resourceshrinker", "resourceshrinkerDepsJar"))
   implementation(project(":testbase"))
   implementation(project(":testbase", "depsJar"))
 }
@@ -89,7 +104,7 @@ tasks {
 
   val createArtTests by
     registering(Exec::class) {
-      dependsOn(sharedDownloadDepsTask)
+      dependsOn(sharedDepsConfig)
       dependOnPythonScripts()
       // TODO(b/327315907): Don't generating into the root build dir.
       val outputDir =
@@ -102,14 +117,12 @@ tasks {
       commandLine("python3", createArtTestsScript)
     }
   "compileTestJava" {
-    dependsOn(sharedDownloadDepsTask)
+    dependsOn(sharedDepsConfig)
     dependsOn(":testbase:compileJava")
   }
   withType<JavaCompile> {
     dependsOn(createArtTests)
-    dependsOn(keepAnnoCompileJavaTask)
-    dependsOn(resourceShrinkerCompileJavaTask)
-    dependsOn(sharedDownloadDepsTask)
+    dependsOn(sharedDepsConfig)
     dependsOn(":testbase:compileJava")
   }
 
@@ -128,9 +141,9 @@ tasks {
   withType<Test> {
     TestingState.setUpTestingState(this)
     dependsOn(distDepsFiles)
-    dependsOn(sharedDownloadDepsTask)
+    dependsOn(sharedDepsConfig)
     if (!project.hasProperty("no_internal")) {
-      dependsOn(sharedDownloadDepsInternalTask)
+      dependsOn(sharedDepsInternalConfig)
     }
     dependsOn(sourceSetDependencyTask)
     systemProperty(
@@ -150,29 +163,21 @@ tasks {
     )
     systemProperty(
       "BUILD_PROP_KEEPANNO_RUNTIME_PATH",
-      extractClassesPaths(
-        "keepanno" + File.separator,
-        keepAnnoCompileJavaTask.outputs.files.asPath,
-        keepAnnoCompileKotlinTask.outputs.files.asPath,
-      ),
+      extractClassesPaths("keepanno" + File.separator, keepAnnoClassesConfig.asPath),
     )
     // This path is set when compiling examples jar task in DependenciesPlugin.
     val r8RuntimePath =
-      project.files(mainClassesOutput).asPath.split(File.pathSeparator)[0] +
-        File.pathSeparator +
-        project.files(turboClassesOutput).asPath.split(File.pathSeparator)[0] +
-        File.pathSeparator +
-        distDepsFiles.asPath +
-        File.pathSeparator +
-        project.files(mainResources).asPath.split(File.pathSeparator)[0] +
-        File.pathSeparator +
-        keepAnnoCompileJavaTask.outputs.files.getAsPath().split(File.pathSeparator)[0] +
-        File.pathSeparator +
-        project.files(assistantClassesOutput).asPath.split(File.pathSeparator)[0] +
-        File.pathSeparator +
-        resourceShrinkerCompileJavaTask.outputs.files.getAsPath().split(File.pathSeparator)[0] +
-        File.pathSeparator +
-        resourceShrinkerCompileKotlinTask.outputs.files.getAsPath().split(File.pathSeparator)[1]
+      project
+        .files(
+          mainClassesOutput,
+          turboClassesOutput,
+          distDepsFiles,
+          mainResources,
+          keepAnnoClassesConfig,
+          assistantClassesOutput,
+          resourceShrinkerClassesConfig,
+        )
+        .asPath
     systemProperty("BUILD_PROP_PROCESS_KEEP_RULES_RUNTIME_PATH", r8RuntimePath)
     systemProperty("BUILD_PROP_R8_RUNTIME_PATH", r8RuntimePath)
     systemProperty("R8_DEPS", distDepsFiles.asPath)

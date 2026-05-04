@@ -9,8 +9,8 @@ import com.android.tools.r8.graph.DexField;
 import com.android.tools.r8.graph.DexMethod;
 import com.android.tools.r8.graph.DexType;
 import com.android.tools.r8.ir.optimize.CustomLensCodeRewriter;
-import com.android.tools.r8.utils.collections.BidirectionalManyToManyRepresentativeMap;
-import com.android.tools.r8.utils.collections.BidirectionalManyToOneRepresentativeMap;
+import com.android.tools.r8.utils.internal.collections.BidirectionalManyToManyRepresentativeMap;
+import com.android.tools.r8.utils.internal.collections.BidirectionalManyToOneRepresentativeMap;
 import java.util.Map;
 
 public class NestedGraphLensWithCustomLensCodeRewriter extends NestedGraphLens {

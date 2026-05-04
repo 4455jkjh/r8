@@ -21,10 +21,8 @@ import com.android.tools.r8.ir.code.StringConcat;
 import com.android.tools.r8.ir.code.Value;
 import com.android.tools.r8.ir.conversion.MethodProcessor;
 import com.android.tools.r8.ir.conversion.passes.result.CodeRewriterResult;
-import com.android.tools.r8.ir.optimize.library.sideeffects.JavaLangObjectsSideEffectCollection;
 import com.android.tools.r8.utils.ValueUtils;
 import com.android.tools.r8.utils.internal.exceptions.Unreachable;
-import it.unimi.dsi.fastutil.ints.IntArrayList;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -65,10 +63,11 @@ public class StringConcatOptimizer extends CodeRewriterPass<AppInfo> {
       Instruction current = iterator.next();
       StringConcat stringConcat = current.asStringConcat();
       if (stringConcat != null) {
-        if (mergeStringConcats(stringConcat, code)) {
+        if (mergeStringConcats(stringConcat)) {
           hasChanged = true;
         }
         if (!stringConcat.hasUsedOutValue()) {
+          // TODO: Might be worth an option to assume all toString() overloads are side-effect free.
           // TODO: Maybe should replace with directly toString() calls rather than concatenating
           // (concatenation is likely smaller size once outlined).
           removeAllSideEffectFreeInValues(stringConcat, dexItemFactory);
@@ -81,50 +80,33 @@ public class StringConcatOptimizer extends CodeRewriterPass<AppInfo> {
     return CodeRewriterResult.hasChanged(hasChanged);
   }
 
-  private boolean hasAnyStringConcatOperands(StringConcat stringConcat) {
+  private boolean hasMergableStringConcats(StringConcat stringConcat) {
     for (Value value : stringConcat.inValues()) {
       if (value.getAliasedValue().isDefinedByInstructionSatisfying(Instruction::isStringConcat)
           && value.hasSingleUniqueUserAndNoOtherUsers()) {
         return true;
       }
     }
-
     return false;
   }
 
   /**
-   * If any inValue is from a StringConcat, merges it into this instance if its safe to do so.
+   * If any inValue is from a StringConcat, merges it into this instance.
    *
    * @return Whether any instructions were merged.
    */
-  private boolean mergeStringConcats(StringConcat stringConcat, IRCode code) {
-    if (!hasAnyStringConcatOperands(stringConcat)) {
-      return false;
-    }
-    // Since the order of operands does not necessarily align with the order of their defining
-    // instructions, any side effect could impact other values. Rather than trying to check the
-    // order of the operands, just bail out in this case.
-    if (stringConcat.mightCallToStringWithSideEffects(appView)) {
+  public boolean mergeStringConcats(StringConcat stringConcat) {
+    if (!hasMergableStringConcats(stringConcat)) {
       return false;
     }
 
-    IntArrayList indicesToMerge = computeMergableConcats(stringConcat, code);
-    if (indicesToMerge.isEmpty()) {
-      return false;
-    }
-
-    mergeConcats(stringConcat, indicesToMerge);
-    return true;
-  }
-
-  private void mergeConcats(StringConcat stringConcat, IntArrayList toMergeIndices) {
     DexType[] argTypes = stringConcat.getArgTypes();
     List<DexString> argConstants = stringConcat.getArgConstants();
     List<Value> inValues = stringConcat.inValues();
+
     StringConcatBuilder builder = new StringConcatBuilder();
-    int inValueIdx = -1;
-    int numMerged = 0;
-    int nextMergeValueIdx = toMergeIndices.getInt(numMerged);
+
+    int inValueIdx = 0;
     for (int argIdx = 0; argIdx < argTypes.length; ++argIdx) {
       DexString curString = argConstants.get(argIdx);
       if (curString != null) {
@@ -132,12 +114,23 @@ public class StringConcatOptimizer extends CodeRewriterPass<AppInfo> {
         continue;
       }
 
-      Value value = inValues.get(++inValueIdx);
-      if (inValueIdx != nextMergeValueIdx) {
+      Value value = inValues.get(inValueIdx++);
+      boolean safeToMerge =
+          value.isDefinedByInstructionSatisfying(Instruction::isStringConcat)
+              && value.hasSingleUniqueUserAndNoOtherUsers();
+
+      StringConcat otherStringConcat = null;
+      if (safeToMerge) {
+        // TODO(467374229): We could also allow this if we verify that the order of the toString()
+        // calls does not change when merged.
+        otherStringConcat = value.getDefinition().asStringConcat();
+        safeToMerge = !otherStringConcat.mightCallToStringWithSideEffects(appView);
+      }
+
+      if (!safeToMerge) {
         builder.addValue(value, argTypes[argIdx]);
         continue;
       }
-      StringConcat otherStringConcat = value.getDefinition().asStringConcat();
       value.clearUsers();
       DexType[] otherTypes = otherStringConcat.getArgTypes();
       List<DexString> otherConstants = otherStringConcat.getArgConstants();
@@ -156,43 +149,10 @@ public class StringConcatOptimizer extends CodeRewriterPass<AppInfo> {
         }
       }
       otherStringConcat.removeOrReplaceByDebugLocalRead();
-
-      numMerged += 1;
-      if (numMerged < toMergeIndices.size()) {
-        nextMergeValueIdx = toMergeIndices.getInt(numMerged);
-      }
     }
 
     builder.apply(stringConcat);
-  }
-
-  private IntArrayList computeMergableConcats(StringConcat stringConcat, IRCode code) {
-    DexType[] argTypes = stringConcat.getArgTypes();
-    List<DexString> argConstants = stringConcat.getArgConstants();
-    List<Value> inValues = stringConcat.inValues();
-    IntArrayList toMergeIndices = new IntArrayList();
-
-    int inValueIdx = -1;
-    for (int argIdx = 0; argIdx < argTypes.length; ++argIdx) {
-      DexString curString = argConstants.get(argIdx);
-      if (curString != null) {
-        continue;
-      }
-      Value value = inValues.get(++inValueIdx);
-
-      // No need to check getAliasedValue since StringConcat are always @NonNull.
-      if (value.isDefinedByInstructionSatisfying(Instruction::isStringConcat)
-          && value.hasSingleUniqueUserAndNoOtherUsers()) {
-        StringConcat other = value.getDefinition().asStringConcat();
-        if (!code.anyInstructionBetween(
-            other,
-            stringConcat,
-            ins -> ins.instructionMayHaveSideEffects(appView, code.context()))) {
-          toMergeIndices.add(inValueIdx);
-        }
-      }
-    }
-    return toMergeIndices;
+    return true;
   }
 
   private boolean canSimplifyArgs(StringConcat stringConcat) {
@@ -256,16 +216,15 @@ public class StringConcatOptimizer extends CodeRewriterPass<AppInfo> {
         Instruction instruction = aliasedValue.getDefinition();
 
         // Translate foo.toString() -> foo.
+        // Check for non-null since null.toString() throws, but "" + null == "null".
         if (isToStringInvoke(instruction)) {
           Value receiver = instruction.getFirstOperand();
           // TODO(467374229): We could also allow this if we verify that the order of the
           //     toString() call does not change.
           Value aliasedReceiver = receiver.getAliasedValue();
           if (!aliasedReceiver.isPhi()
-              // Check for non-null since null.toString() throws, but "" + null == "null".
               && receiver.isNeverNull()
-              && !JavaLangObjectsSideEffectCollection.toStringMayHaveSideEffects(
-                  appView, receiver)) {
+              && !StringConcat.toStringMayHaveSideEffects(dexItemFactory, receiver.getType())) {
             ValueUtils.removeAliasChain(value, aliasedValue);
             if (!aliasedValue.hasAnyUsers()) {
               // Remove the toString() instruction.
@@ -353,7 +312,7 @@ public class StringConcatOptimizer extends CodeRewriterPass<AppInfo> {
     List<Value> inValues = stringConcat.inValues();
     List<Value> newInValues = new ArrayList<>(inValues.size());
     for (Value value : inValues) {
-      if (JavaLangObjectsSideEffectCollection.toStringMayHaveSideEffects(appView, value)) {
+      if (StringConcat.toStringMayHaveSideEffects(dexItemFactory, value.getType())) {
         newInValues.add(value);
       } else {
         value.removeUser(stringConcat);

@@ -73,7 +73,7 @@ public class SingleLineInfoInlineRemoveTest extends TestBase {
               assertThat(mainSubject.uniqueMethodWithOriginalName("inlinee"), not(isPresent()));
               assertThat(
                   mainSubject.uniqueMethodWithOriginalName("shouldRemoveLineNumberForInline"),
-                  hasLineNumberTable());
+                  notIf(hasLineNumberTable(), canDiscardResidualDebugInfo(parameters)));
             });
   }
 
@@ -145,8 +145,7 @@ public class SingleLineInfoInlineRemoveTest extends TestBase {
               assertThat(mainSubject.uniqueMethodWithOriginalName("inlinee"), not(isPresent()));
               assertThat(
                   mainSubject.uniqueMethodWithOriginalName("shouldRemoveLineNumberForInline"),
-                  // TODO(b/146565491): Update to allow dropping the table once supported by ART.
-                  hasLineNumberTable());
+                  notIf(hasLineNumberTable(), canDiscardResidualDebugInfo(parameters)));
             });
   }
 

@@ -7,6 +7,7 @@ package com.android.tools.r8.startup;
 import static com.android.tools.r8.utils.codeinspector.Matchers.isPresent;
 import static org.hamcrest.MatcherAssert.assertThat;
 
+import com.android.tools.r8.NeverInline;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
@@ -58,6 +59,8 @@ public class SingleCallerBridgeStartupTest extends TestBase {
                 options.inlinerOptions().applyInliningToInlineePredicateForTesting =
                     (appView, inlinee, inliningDepth) ->
                         inlinee.getMethodReference().equals(barMethod))
+        .allowDiagnosticInfoMessages(parameters.canUseNativeMultidex())
+        .enableInliningAnnotations()
         .setMinApi(parameters)
         .compile()
         .inspect(
@@ -85,10 +88,12 @@ public class SingleCallerBridgeStartupTest extends TestBase {
       B.foo();
     }
 
+    @NeverInline
     public static void callBarInStartup() {
       bar();
     }
 
+    @NeverInline
     public static void callBarOutsideStartup() {
       bar();
     }

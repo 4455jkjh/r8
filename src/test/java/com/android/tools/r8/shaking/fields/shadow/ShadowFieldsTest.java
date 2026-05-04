@@ -9,9 +9,9 @@ import static org.hamcrest.MatcherAssert.assertThat;
 
 import com.android.tools.r8.NoVerticalClassMerging;
 import com.android.tools.r8.shaking.fields.FieldsTestBase;
-import com.android.tools.r8.utils.StringUtils;
 import com.android.tools.r8.utils.codeinspector.ClassSubject;
 import com.android.tools.r8.utils.codeinspector.CodeInspector;
+import com.android.tools.r8.utils.internal.StringUtils;
 import com.google.common.collect.ImmutableSet;
 import java.util.Collection;
 import org.junit.Test;

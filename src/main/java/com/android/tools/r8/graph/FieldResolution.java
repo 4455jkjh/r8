@@ -6,7 +6,7 @@ package com.android.tools.r8.graph;
 
 import static com.android.tools.r8.graph.FieldResolutionResult.createSingleFieldResolutionResult;
 
-import com.android.tools.r8.utils.SetUtils;
+import com.android.tools.r8.utils.internal.SetUtils;
 import java.util.Set;
 
 /**

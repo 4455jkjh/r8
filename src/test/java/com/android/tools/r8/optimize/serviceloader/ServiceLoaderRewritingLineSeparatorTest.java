@@ -10,7 +10,7 @@ import com.android.tools.r8.CompilationFailedException;
 import com.android.tools.r8.DataEntryResource;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.origin.Origin;
-import com.android.tools.r8.utils.StringUtils;
+import com.android.tools.r8.utils.internal.StringUtils;
 import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.ExecutionException;

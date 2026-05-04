@@ -4,13 +4,13 @@
 
 package com.android.tools.r8.ir.code;
 
-import static com.android.tools.r8.utils.MapUtils.ignoreKey;
+import static com.android.tools.r8.utils.internal.MapUtils.ignoreKey;
 
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.ir.optimize.DeadCodeRemover.DeadInstructionResult;
 import com.android.tools.r8.utils.internal.BooleanBox;
-import com.android.tools.r8.utils.MapUtils;
-import com.android.tools.r8.utils.collections.WorkList;
+import com.android.tools.r8.utils.internal.MapUtils;
+import com.android.tools.r8.utils.internal.collections.WorkList;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
 import java.util.Collections;

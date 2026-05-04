@@ -4,8 +4,8 @@
 
 package com.android.tools.r8.jdk21.backport;
 
-import static com.android.tools.r8.utils.FileUtils.CLASS_EXTENSION;
-import static com.android.tools.r8.utils.FileUtils.JAVA_EXTENSION;
+import static com.android.tools.r8.utils.internal.FileUtils.CLASS_EXTENSION;
+import static com.android.tools.r8.utils.internal.FileUtils.JAVA_EXTENSION;
 
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;

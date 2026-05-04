@@ -10,7 +10,7 @@ import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestShrinkerBuilder;
 import com.android.tools.r8.utils.internal.BooleanUtils;
-import com.android.tools.r8.utils.StringUtils;
+import com.android.tools.r8.utils.internal.StringUtils;
 import java.util.List;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -68,7 +68,8 @@ public class MappingFileAfterRepackagingTest extends TestBase {
                       .filter(line -> line.contains("java.lang.String toString()"))
                       .count();
               assertEquals(
-                  (repackage ? 1 : 2 + BooleanUtils.intValue(parameters.isDexRuntime())),
+                  (repackage ? 1 : 2 + BooleanUtils.intValue(parameters.isDexRuntime()))
+                      + BooleanUtils.intValue(canDiscardResidualDebugInfo(parameters)),
                   unqualifiedMatches);
             });
   }

@@ -10,9 +10,9 @@ import static org.junit.Assert.assertEquals;
 
 import com.android.tools.r8.NoVerticalClassMerging;
 import com.android.tools.r8.shaking.methods.MethodsTestBase;
-import com.android.tools.r8.utils.StringUtils;
 import com.android.tools.r8.utils.codeinspector.ClassSubject;
 import com.android.tools.r8.utils.codeinspector.CodeInspector;
+import com.android.tools.r8.utils.internal.StringUtils;
 import com.google.common.collect.ImmutableSet;
 import java.util.Collection;
 import java.util.Set;

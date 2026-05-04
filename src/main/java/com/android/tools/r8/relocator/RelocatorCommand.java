@@ -27,16 +27,16 @@ import com.android.tools.r8.shaking.ProguardConfigurationParserOptions;
 import com.android.tools.r8.shaking.ProguardPathList;
 import com.android.tools.r8.utils.AbortException;
 import com.android.tools.r8.utils.AndroidApp;
-import com.android.tools.r8.utils.internal.Box;
 import com.android.tools.r8.utils.DirectoryProgramResourceProvider;
 import com.android.tools.r8.utils.ExceptionDiagnostic;
 import com.android.tools.r8.utils.ExceptionUtils;
-import com.android.tools.r8.utils.FileUtils;
 import com.android.tools.r8.utils.FlagFile;
 import com.android.tools.r8.utils.InternalOptions;
 import com.android.tools.r8.utils.Reporter;
 import com.android.tools.r8.utils.StringDiagnostic;
 import com.android.tools.r8.utils.ThreadUtils;
+import com.android.tools.r8.utils.internal.Box;
+import com.android.tools.r8.utils.internal.FileUtils;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
@@ -229,7 +229,8 @@ public class RelocatorCommand {
         this.consumer = null;
         return this;
       }
-      FileUtils.validateOutputFile(outputPath, reporter);
+      FileUtils.validateOutputFile(
+          outputPath, errorMessage -> reporter.error(new StringDiagnostic(errorMessage)));
       this.consumer = createClassFileProgramOutputConsumer(outputPath, true);
       return this;
     }

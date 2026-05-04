@@ -40,12 +40,12 @@ import com.android.tools.r8.ir.desugar.desugaredlibrary.machinespecification.Der
 import com.android.tools.r8.position.MethodPosition;
 import com.android.tools.r8.utils.MethodSignatureEquivalence;
 import com.android.tools.r8.utils.ThreadUtils;
-import com.android.tools.r8.utils.collections.WorkList;
 import com.android.tools.r8.utils.internal.BooleanBox;
 import com.android.tools.r8.utils.internal.BooleanUtils;
 import com.android.tools.r8.utils.internal.ConsumerUtils;
 import com.android.tools.r8.utils.internal.IterableUtils;
 import com.android.tools.r8.utils.internal.OptionalBool;
+import com.android.tools.r8.utils.internal.collections.WorkList;
 import com.google.common.base.Equivalence.Wrapper;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableList.Builder;

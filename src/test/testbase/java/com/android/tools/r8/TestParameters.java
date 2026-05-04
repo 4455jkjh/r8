@@ -124,7 +124,7 @@ public class TestParameters {
 
   public boolean canUseNestBasedAccesses() {
     // TODO(b/247047415): Update test when a DEX VM natively supporting nests is added.
-    assertFalse(getApiLevel() != null && getApiLevel().getLevel() > 36);
+    assertFalse(getApiLevel() != null && getApiLevel().getLevel() > 37);
     assert isCfRuntime() || isDexRuntime();
     return isCfRuntime() && getRuntime().asCf().isNewerThanOrEqual(CfVm.JDK11);
   }

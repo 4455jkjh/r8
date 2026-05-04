@@ -42,7 +42,7 @@ public class $testClassName extends R8RunArtTestsTest {
 
     @Parameters(name = "{0}")
     public static TestParametersCollection data() {
-      return TestBase.getTestParameters().withDexRuntimes().build();
+      return TestBase.getTestParameters().$testRuntimes.build();
     }
 
     private final TestParameters parameters;
@@ -87,7 +87,12 @@ def create_tests():
         os.makedirs(output_dir)
         for test_case in test_cases:
             class_name = "Art" + test_case.replace("-", "_") + "Test"
-            contents = TEMPLATE.substitute(
+            template = TEMPLATE
+            test_runtimes = "withDexRuntimes()"
+            if (test_case in ["800-smali"]):
+                test_runtimes = "withDexRuntimesEndingAtExcluding(\n          com.android.tools.r8.ToolHelper.DexVm.Version.V17_0_0)"
+            contents = template.substitute(
+                testRuntimes=test_runtimes,
                 name=test_case,
                 compilerUnderTestEnum=tool_enum,
                 compilerUnderTest=tool,

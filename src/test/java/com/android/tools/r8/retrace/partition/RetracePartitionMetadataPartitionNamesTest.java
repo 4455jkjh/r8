@@ -21,7 +21,7 @@ import com.android.tools.r8.retrace.ProguardMapProducer;
 import com.android.tools.r8.retrace.internal.MappingPartitionKeyStrategy;
 import com.android.tools.r8.retrace.internal.MappingPartitionMetadataInternal;
 import com.android.tools.r8.retrace.internal.ProguardMapPartitionerOnClassNameToText.ProguardMapPartitionerBuilderImplInternal;
-import com.android.tools.r8.utils.StringUtils;
+import com.android.tools.r8.utils.internal.StringUtils;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;

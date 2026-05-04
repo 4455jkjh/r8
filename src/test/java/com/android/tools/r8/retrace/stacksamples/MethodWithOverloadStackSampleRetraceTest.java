@@ -15,11 +15,11 @@ import com.android.tools.r8.references.MethodReference;
 import com.android.tools.r8.references.Reference;
 import com.android.tools.r8.retrace.RetraceElement;
 import com.android.tools.r8.retrace.RetraceMethodElement;
-import com.android.tools.r8.utils.internal.BooleanUtils;
-import com.android.tools.r8.utils.StringUtils;
 import com.android.tools.r8.utils.codeinspector.ClassSubject;
 import com.android.tools.r8.utils.codeinspector.CodeInspector;
 import com.android.tools.r8.utils.codeinspector.MethodSubject;
+import com.android.tools.r8.utils.internal.BooleanUtils;
+import com.android.tools.r8.utils.internal.StringUtils;
 import com.google.common.collect.ImmutableSet;
 import java.util.List;
 import java.util.Set;
@@ -83,39 +83,75 @@ public class MethodWithOverloadStackSampleRetraceTest extends StackSampleRetrace
   @Override
   String getExpectedMap() {
     if (keep) {
-      return StringUtils.joinLines(
-          "com.android.tools.r8.retrace.stacksamples.MethodWithOverloadStackSampleRetraceTest$Main"
-              + " -> a:",
-          "# {\"id\":\"sourceFile\",\"fileName\":\"MethodWithOverloadStackSampleRetraceTest.java\"}",
-          "    1:2:void main(java.lang.String[]):45:46 -> main",
-          "com.android.tools.r8.retrace.stacksamples.MethodWithOverloadStackSampleRetraceTest$StringSupplier"
-              + " -> b:",
-          "# {\"id\":\"sourceFile\",\"fileName\":\"MethodWithOverloadStackSampleRetraceTest.java\"}",
-          "    1:4:void <init>():42:42 -> <init>",
-          "    1:5:java.lang.Object get():42:42 -> get",
-          "    6:6:java.lang.String get():46:46 -> get",
-          "com.android.tools.r8.retrace.stacksamples.MethodWithOverloadStackSampleRetraceTest$Supplier"
-              + " -> c:",
-          "# {\"id\":\"sourceFile\",\"fileName\":\"MethodWithOverloadStackSampleRetraceTest.java\"}",
-          "    1:4:void <init>():42:42 -> <init>",
-          "    java.lang.Object get() -> get");
+      return canDiscardResidualDebugInfo(parameters)
+          ? StringUtils.joinLines(
+              "com.android.tools.r8.retrace.stacksamples.MethodWithOverloadStackSampleRetraceTest$Main"
+                  + " -> a:",
+              "# {\"id\":\"sourceFile\",\"fileName\":\"MethodWithOverloadStackSampleRetraceTest.java\"}",
+              "    0:13:void main(java.lang.String[]):45:45 -> main",
+              "    14:28:void main(java.lang.String[]):46:46 -> main",
+              "com.android.tools.r8.retrace.stacksamples.MethodWithOverloadStackSampleRetraceTest$StringSupplier"
+                  + " -> b:",
+              "# {\"id\":\"sourceFile\",\"fileName\":\"MethodWithOverloadStackSampleRetraceTest.java\"}",
+              "    0:3:void <init>():42:42 -> <init>",
+              "    0:4:java.lang.Object get():42:42 -> get",
+              "    5:5:java.lang.String get():46:46 -> get",
+              "com.android.tools.r8.retrace.stacksamples.MethodWithOverloadStackSampleRetraceTest$Supplier"
+                  + " -> c:",
+              "# {\"id\":\"sourceFile\",\"fileName\":\"MethodWithOverloadStackSampleRetraceTest.java\"}",
+              "    0:3:void <init>():42:42 -> <init>",
+              "    java.lang.Object get() -> get")
+          : StringUtils.joinLines(
+              "com.android.tools.r8.retrace.stacksamples.MethodWithOverloadStackSampleRetraceTest$Main"
+                  + " -> a:",
+              "# {\"id\":\"sourceFile\",\"fileName\":\"MethodWithOverloadStackSampleRetraceTest.java\"}",
+              "    1:2:void main(java.lang.String[]):45:46 -> main",
+              "com.android.tools.r8.retrace.stacksamples.MethodWithOverloadStackSampleRetraceTest$StringSupplier"
+                  + " -> b:",
+              "# {\"id\":\"sourceFile\",\"fileName\":\"MethodWithOverloadStackSampleRetraceTest.java\"}",
+              "    1:4:void <init>():42:42 -> <init>",
+              "    1:5:java.lang.Object get():42:42 -> get",
+              "    6:6:java.lang.String get():46:46 -> get",
+              "com.android.tools.r8.retrace.stacksamples.MethodWithOverloadStackSampleRetraceTest$Supplier"
+                  + " -> c:",
+              "# {\"id\":\"sourceFile\",\"fileName\":\"MethodWithOverloadStackSampleRetraceTest.java\"}",
+              "    1:4:void <init>():42:42 -> <init>",
+              "    java.lang.Object get() -> get");
     } else {
-      return StringUtils.joinLines(
-          "com.android.tools.r8.retrace.stacksamples.MethodWithOverloadStackSampleRetraceTest$Main"
-              + " -> a:",
-          "# {\"id\":\"sourceFile\",\"fileName\":\"MethodWithOverloadStackSampleRetraceTest.java\"}",
-          "    1:2:void main(java.lang.String[]):45:46 -> main",
-          "com.android.tools.r8.retrace.stacksamples.MethodWithOverloadStackSampleRetraceTest$StringSupplier"
-              + " -> b:",
-          "# {\"id\":\"sourceFile\",\"fileName\":\"MethodWithOverloadStackSampleRetraceTest.java\"}",
-          "    1:4:void <init>():42:42 -> <init>",
-          "    1:5:java.lang.Object get():42:42 -> a",
-          "    1:3:java.lang.String get():46:46 -> b",
-          "com.android.tools.r8.retrace.stacksamples.MethodWithOverloadStackSampleRetraceTest$Supplier"
-              + " -> c:",
-          "# {\"id\":\"sourceFile\",\"fileName\":\"MethodWithOverloadStackSampleRetraceTest.java\"}",
-          "    1:4:void <init>():42:42 -> <init>",
-          "    java.lang.Object get() -> a");
+      return canDiscardResidualDebugInfo(parameters)
+          ? StringUtils.joinLines(
+              "com.android.tools.r8.retrace.stacksamples.MethodWithOverloadStackSampleRetraceTest$Main"
+                  + " -> a:",
+              "# {\"id\":\"sourceFile\",\"fileName\":\"MethodWithOverloadStackSampleRetraceTest.java\"}",
+              "    0:13:void main(java.lang.String[]):45:45 -> main",
+              "    14:28:void main(java.lang.String[]):46:46 -> main",
+              "com.android.tools.r8.retrace.stacksamples.MethodWithOverloadStackSampleRetraceTest$StringSupplier"
+                  + " -> b:",
+              "# {\"id\":\"sourceFile\",\"fileName\":\"MethodWithOverloadStackSampleRetraceTest.java\"}",
+              "    0:3:void <init>():42:42 -> <init>",
+              "    0:4:java.lang.Object get():42:42 -> a",
+              "    0:2:java.lang.String get():46:46 -> b",
+              "com.android.tools.r8.retrace.stacksamples.MethodWithOverloadStackSampleRetraceTest$Supplier"
+                  + " -> c:",
+              "# {\"id\":\"sourceFile\",\"fileName\":\"MethodWithOverloadStackSampleRetraceTest.java\"}",
+              "    0:3:void <init>():42:42 -> <init>",
+              "    java.lang.Object get() -> a")
+          : StringUtils.joinLines(
+              "com.android.tools.r8.retrace.stacksamples.MethodWithOverloadStackSampleRetraceTest$Main"
+                  + " -> a:",
+              "# {\"id\":\"sourceFile\",\"fileName\":\"MethodWithOverloadStackSampleRetraceTest.java\"}",
+              "    1:2:void main(java.lang.String[]):45:46 -> main",
+              "com.android.tools.r8.retrace.stacksamples.MethodWithOverloadStackSampleRetraceTest$StringSupplier"
+                  + " -> b:",
+              "# {\"id\":\"sourceFile\",\"fileName\":\"MethodWithOverloadStackSampleRetraceTest.java\"}",
+              "    1:4:void <init>():42:42 -> <init>",
+              "    1:5:java.lang.Object get():42:42 -> a",
+              "    1:3:java.lang.String get():46:46 -> b",
+              "com.android.tools.r8.retrace.stacksamples.MethodWithOverloadStackSampleRetraceTest$Supplier"
+                  + " -> c:",
+              "# {\"id\":\"sourceFile\",\"fileName\":\"MethodWithOverloadStackSampleRetraceTest.java\"}",
+              "    1:4:void <init>():42:42 -> <init>",
+              "    java.lang.Object get() -> a");
     }
   }
 

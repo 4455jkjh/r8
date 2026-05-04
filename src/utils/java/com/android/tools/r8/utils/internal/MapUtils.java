@@ -1,0 +1,252 @@
+// Copyright (c) 2019, the R8 project authors. Please see the AUTHORS file
+// for details. All rights reserved. Use of this source code is governed by a
+// BSD-style license that can be found in the LICENSE file.
+
+package com.android.tools.r8.utils.internal;
+
+import com.android.tools.r8.utils.internal.StringUtils.BraceType;
+import com.android.tools.r8.utils.internal.exceptions.Unreachable;
+import com.google.common.collect.HashMultimap;
+import com.google.common.collect.ImmutableMap;
+import it.unimi.dsi.fastutil.ints.Int2ReferenceMap;
+import it.unimi.dsi.fastutil.ints.Int2ReferenceMaps;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.IdentityHashMap;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.function.BiConsumer;
+import java.util.function.BiFunction;
+import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.function.IntFunction;
+import java.util.function.Supplier;
+
+public class MapUtils {
+
+  public static <V> Int2ReferenceMap<V> canonicalizeEmptyMap(Int2ReferenceMap<V> map) {
+    return map.isEmpty() ? Int2ReferenceMaps.emptyMap() : map;
+  }
+
+  public static <K, V> Map<K, V> clone(
+      Map<K, V> mapToClone, Map<K, V> newMap, Function<V, V> valueCloner) {
+    mapToClone.forEach((key, value) -> newMap.put(key, valueCloner.apply(value)));
+    return newMap;
+  }
+
+  public static <K, V> K firstKey(Map<K, V> map) {
+    return map.keySet().iterator().next();
+  }
+
+  public static <K, V> V firstValue(Map<K, V> map) {
+    return map.values().iterator().next();
+  }
+
+  public static <K, V> void forEachUntilExclusive(
+      Map<K, V> map, BiConsumer<K, V> consumer, K stoppingCriterion) {
+    for (Entry<K, V> entry : map.entrySet()) {
+      K key = entry.getKey();
+      if (key.equals(stoppingCriterion)) {
+        break;
+      }
+      consumer.accept(key, entry.getValue());
+    }
+  }
+
+  public static <T, R> Function<T, R> ignoreKey(Supplier<R> supplier) {
+    return ignore -> supplier.get();
+  }
+
+  public static <K, V> IdentityHashMap<K, V> newIdentityHashMap(
+      Consumer<IdentityHashMap<K, V>> builder) {
+    IdentityHashMap<K, V> map = new IdentityHashMap<>();
+    builder.accept(map);
+    return map;
+  }
+
+  public static <K, V> IdentityHashMap<K, V> newIdentityHashMap(
+      BiForEachable<K, V> forEachable, int capacity) {
+    IdentityHashMap<K, V> map = new IdentityHashMap<>(capacity);
+    forEachable.forEach(map::put);
+    return map;
+  }
+
+  public static <T, K, V> IdentityHashMap<K, V> newIdentityHashMapFromCollection(
+      Collection<T> collection, Function<T, K> keyFn, Function<T, V> valueFn) {
+    IdentityHashMap<K, V> map = new IdentityHashMap<>(collection.size());
+    for (T element : collection) {
+      V existingValue = map.put(keyFn.apply(element), valueFn.apply(element));
+      assert existingValue == null;
+    }
+    return map;
+  }
+
+  public static <K, V> ImmutableMap<K, V> newImmutableMap(
+      Consumer<ImmutableMap.Builder<K, V>> consumer) {
+    ImmutableMap.Builder<K, V> builder = ImmutableMap.builder();
+    consumer.accept(builder);
+    return builder.build();
+  }
+
+  public static <T> void removeIdentityMappings(Map<T, T> map) {
+    map.entrySet().removeIf(entry -> entry.getKey() == entry.getValue());
+  }
+
+  public static <K, V, E extends Throwable> void removeIf(
+      Map<K, V> map, ThrowingBiPredicate<K, V, E> predicate) throws E {
+    Iterator<Entry<K, V>> iterator = map.entrySet().iterator();
+    while (iterator.hasNext()) {
+      Entry<K, V> entry = iterator.next();
+      if (predicate.test(entry.getKey(), entry.getValue())) {
+        iterator.remove();
+      }
+    }
+  }
+
+  public static <K, V> V removeOrDefault(Map<K, V> map, K key, V defaultValue) {
+    V value = map.remove(key);
+    return value != null ? value : defaultValue;
+  }
+
+  public static <K, V> V removeOrComputeDefault(Map<K, V> map, K key, Function<K, V> defaultValue) {
+    V value = map.remove(key);
+    return value != null ? value : defaultValue.apply(key);
+  }
+
+  public static String toString(Map<?, ?> map) {
+    return StringUtils.join(
+        ",", map.entrySet(), entry -> entry.getKey() + ":" + entry.getValue(), BraceType.TUBORG);
+  }
+
+  public static <K, V> Map<K, V> transform(
+      Collection<V> collection, IntFunction<Map<K, V>> factory, Function<V, K> keyMapping) {
+    return transform(collection, factory, keyMapping, Function.identity());
+  }
+
+  public static <T, K, V> Map<K, V> transform(
+      Collection<T> collection,
+      IntFunction<Map<K, V>> factory,
+      Function<T, K> keyMapping,
+      Function<T, V> valueMapping) {
+    return transform(
+        collection,
+        factory,
+        keyMapping,
+        valueMapping,
+        (key, existingValue, value) -> {
+          throw new Unreachable();
+        });
+  }
+
+  public static <T, K, V> Map<K, V> transform(
+      Collection<T> collection,
+      IntFunction<Map<K, V>> factory,
+      Function<T, K> keyMapping,
+      Function<T, V> valueMapping,
+      TriFunction<K, V, V, V> valueMerger) {
+    Map<K, V> result = factory.apply(collection.size());
+    for (T element : collection) {
+      K key = keyMapping.apply(element);
+      if (key == null) {
+        continue;
+      }
+      V value = valueMapping.apply(element);
+      if (value == null) {
+        continue;
+      }
+      V existingValue = result.put(key, value);
+      if (existingValue != null) {
+        result.put(key, valueMerger.apply(key, existingValue, value));
+      }
+    }
+    return result;
+  }
+
+  public static <K1, V1, K2, V2> Map<K2, V2> transform(
+      Map<K1, V1> map,
+      IntFunction<Map<K2, V2>> factory,
+      Function<K1, K2> keyMapping,
+      Function<V1, V2> valueMapping,
+      TriFunction<K2, V2, V2, V2> valueMerger) {
+    return transform(
+        map,
+        factory,
+        (key, value) -> keyMapping.apply(key),
+        (key, value) -> valueMapping.apply(value),
+        valueMerger);
+  }
+
+  public static <K1, V1, K2, V2> Map<K2, V2> transform(
+      Map<K1, V1> map,
+      IntFunction<Map<K2, V2>> factory,
+      BiFunction<K1, V1, K2> keyMapping,
+      BiFunction<K1, V1, V2> valueMapping,
+      TriFunction<K2, V2, V2, V2> valueMerger) {
+    Map<K2, V2> result = factory.apply(map.size());
+    map.forEach(
+        (key, value) -> {
+          K2 newKey = keyMapping.apply(key, value);
+          if (newKey == null) {
+            return;
+          }
+          V2 newValue = valueMapping.apply(key, value);
+          if (newValue == null) {
+            return;
+          }
+          V2 existingValue = result.put(newKey, newValue);
+          if (existingValue != null) {
+            result.put(newKey, valueMerger.apply(newKey, existingValue, newValue));
+          }
+        });
+    return result;
+  }
+
+  public static <K, V> boolean equals(Map<K, V> one, Map<K, V> other) {
+    if (one == other) {
+      return true;
+    }
+    if (one.size() != other.size()) {
+      return false;
+    }
+    for (Entry<K, V> firstEntry : one.entrySet()) {
+      if (!firstEntry.getValue().equals(other.get(firstEntry.getKey()))) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  public static <K, V> Map<K, V> trimCapacity(Map<K, V> map, IntFunction<Map<K, V>> mapFactory) {
+    Map<K, V> newMap = mapFactory.apply(map.size());
+    newMap.putAll(map);
+    return newMap;
+  }
+
+  public static <K, V> Map<K, V> trimCapacityIfSizeLessThan(
+      Map<K, V> map, IntFunction<Map<K, V>> mapFactory, int expectedSize) {
+    if (map.size() < expectedSize) {
+      return trimCapacity(map, mapFactory);
+    }
+    return map;
+  }
+
+  public static <K, V> Map<K, V> trimCapacityOfIdentityHashMapIfSizeLessThan(
+      Map<K, V> map, int expectedSize) {
+    if (map.size() < expectedSize) {
+      return trimCapacity(map, IdentityHashMap::new);
+    }
+    return map;
+  }
+
+  public static <K, V> HashMultimap<K, V> convertMapWithCollectionValuesToMultimap(
+      Map<K, Collection<V>> updaterClassesConcurrent) {
+    HashMultimap<K, V> updaterClasses = HashMultimap.create();
+    updaterClassesConcurrent.forEach(updaterClasses::putAll);
+    return updaterClasses;
+  }
+
+  public static <K, V> Map<K, V> unmodifiableForTesting(Map<K, V> map) {
+    return AssertionUtils.assertionsEnabled() ? Collections.unmodifiableMap(map) : map;
+  }
+}

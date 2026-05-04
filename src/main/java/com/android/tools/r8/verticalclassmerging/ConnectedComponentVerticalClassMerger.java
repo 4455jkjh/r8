@@ -6,7 +6,7 @@ package com.android.tools.r8.verticalclassmerging;
 import com.android.tools.r8.classmerging.ClassMergerSharedData;
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
-import com.android.tools.r8.utils.ListUtils;
+import com.android.tools.r8.utils.internal.ListUtils;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;

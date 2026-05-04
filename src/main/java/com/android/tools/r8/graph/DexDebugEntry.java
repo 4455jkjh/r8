@@ -4,7 +4,7 @@
 package com.android.tools.r8.graph;
 
 import com.android.tools.r8.ir.code.Position;
-import com.android.tools.r8.utils.StringUtils;
+import com.android.tools.r8.utils.internal.StringUtils;
 import com.google.common.collect.ImmutableMap;
 import java.util.Map;
 import java.util.SortedSet;

@@ -6,7 +6,7 @@ package com.android.tools.r8.ir.analysis.path.state;
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.ir.analysis.value.AbstractValue;
 import com.android.tools.r8.optimize.argumentpropagation.computation.ComputationTreeNode;
-import com.android.tools.r8.utils.MapUtils;
+import com.android.tools.r8.utils.internal.MapUtils;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.IdentityHashMap;

@@ -5,7 +5,7 @@
 package com.android.tools.r8.graph;
 
 import static com.android.tools.r8.graph.MethodResolution.UniquePathOracle.SplitToken.NO_SPLIT_TOKEN;
-import static com.android.tools.r8.utils.MapUtils.ignoreKey;
+import static com.android.tools.r8.utils.internal.MapUtils.ignoreKey;
 
 import com.android.tools.r8.graph.MethodResolutionResult.ArrayCloneMethodResult;
 import com.android.tools.r8.graph.MethodResolutionResult.ClassNotFoundResult;
@@ -14,8 +14,8 @@ import com.android.tools.r8.graph.MethodResolutionResult.IncompatibleClassResult
 import com.android.tools.r8.graph.MethodResolutionResult.NoSuchMethodResult;
 import com.android.tools.r8.graph.MethodResolutionResult.SingleResolutionResult;
 import com.android.tools.r8.ir.desugar.LambdaDescriptor;
-import com.android.tools.r8.utils.ListUtils;
-import com.android.tools.r8.utils.SetUtils;
+import com.android.tools.r8.utils.internal.ListUtils;
+import com.android.tools.r8.utils.internal.SetUtils;
 import com.google.common.collect.Sets;
 import java.util.ArrayList;
 import java.util.Arrays;

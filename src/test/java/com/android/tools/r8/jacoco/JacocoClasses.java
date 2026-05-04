@@ -5,8 +5,8 @@ package com.android.tools.r8.jacoco;
 
 import static com.android.tools.r8.utils.CfUtils.extractClassName;
 import static com.android.tools.r8.utils.DescriptorUtils.JAVA_PACKAGE_SEPARATOR;
-import static com.android.tools.r8.utils.FileUtils.CLASS_EXTENSION;
-import static com.android.tools.r8.utils.FileUtils.JAR_EXTENSION;
+import static com.android.tools.r8.utils.internal.FileUtils.CLASS_EXTENSION;
+import static com.android.tools.r8.utils.internal.FileUtils.JAR_EXTENSION;
 import static org.junit.Assert.assertEquals;
 
 import com.android.tools.r8.ToolHelper;

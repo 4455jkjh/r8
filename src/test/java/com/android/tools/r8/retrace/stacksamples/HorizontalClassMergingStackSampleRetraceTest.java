@@ -17,11 +17,11 @@ import com.android.tools.r8.references.Reference;
 import com.android.tools.r8.retrace.RetraceElement;
 import com.android.tools.r8.retrace.RetraceMethodElement;
 import com.android.tools.r8.utils.DescriptorUtils;
-import com.android.tools.r8.utils.StringUtils;
 import com.android.tools.r8.utils.codeinspector.ClassSubject;
 import com.android.tools.r8.utils.codeinspector.CodeInspector;
 import com.android.tools.r8.utils.codeinspector.HorizontallyMergedClassesInspector;
 import com.android.tools.r8.utils.codeinspector.MethodSubject;
+import com.android.tools.r8.utils.internal.StringUtils;
 import com.google.common.collect.ImmutableSet;
 import java.util.List;
 import java.util.Set;
@@ -70,30 +70,57 @@ public class HorizontalClassMergingStackSampleRetraceTest extends StackSampleRet
 
   @Override
   String getExpectedMap() {
-    return StringUtils.joinLines(
-        "com.android.tools.r8.retrace.stacksamples.HorizontalClassMergingStackSampleRetraceTest$A"
-            + " -> a:",
-        "# {\"id\":\"sourceFile\",\"fileName\":\"HorizontalClassMergingStackSampleRetraceTest.java\"}",
-        "    int HorizontalClassMergingStackSampleRetraceTest$A.$r8$classId -> a",
-        "      # {\"id\":\"com.android.tools.r8.synthesized\"}",
-        "    1:1:void HorizontalClassMergingStackSampleRetraceTest$A.<init>(int):0:0 -> <init>",
-        "      # {\"id\":\"com.android.tools.r8.synthesized\"}",
-        "    1:1:void"
-            + " com.android.tools.r8.retrace.stacksamples.HorizontalClassMergingStackSampleRetraceTest$B.baz():51:51"
-            + " -> a",
-        "    2:2:void baz():51:51 -> a",
-        "    1:8:void"
-            + " com.android.tools.r8.retrace.stacksamples.HorizontalClassMergingStackSampleRetraceTest$B.bar():46:46"
-            + " -> b",
-        "    1:8:void foo():46:46 -> c",
-        "com.android.tools.r8.retrace.stacksamples.HorizontalClassMergingStackSampleRetraceTest$I"
-            + " -> b:",
-        "# {\"id\":\"sourceFile\",\"fileName\":\"HorizontalClassMergingStackSampleRetraceTest.java\"}",
-        "    void baz() -> a",
-        "com.android.tools.r8.retrace.stacksamples.HorizontalClassMergingStackSampleRetraceTest$Main"
-            + " -> c:",
-        "# {\"id\":\"sourceFile\",\"fileName\":\"HorizontalClassMergingStackSampleRetraceTest.java\"}",
-        "    1:3:void main(java.lang.String[]):45:47 -> main");
+    return canDiscardResidualDebugInfo(parameters)
+        ? StringUtils.joinLines(
+            "com.android.tools.r8.retrace.stacksamples.HorizontalClassMergingStackSampleRetraceTest$A"
+                + " -> a:",
+            "# {\"id\":\"sourceFile\",\"fileName\":\"HorizontalClassMergingStackSampleRetraceTest.java\"}",
+            "    int HorizontalClassMergingStackSampleRetraceTest$A.$r8$classId -> a",
+            "      # {\"id\":\"com.android.tools.r8.synthesized\"}",
+            "    0:5:void HorizontalClassMergingStackSampleRetraceTest$A.<init>(int):0:0 -> <init>",
+            "      # {\"id\":\"com.android.tools.r8.synthesized\"}",
+            "    5:12:void"
+                + " com.android.tools.r8.retrace.stacksamples.HorizontalClassMergingStackSampleRetraceTest$B.baz():51:51"
+                + " -> a",
+            "    13:21:void baz():51:51 -> a",
+            "    0:7:void"
+                + " com.android.tools.r8.retrace.stacksamples.HorizontalClassMergingStackSampleRetraceTest$B.bar():46:46"
+                + " -> b",
+            "    0:7:void foo():46:46 -> c",
+            "com.android.tools.r8.retrace.stacksamples.HorizontalClassMergingStackSampleRetraceTest$I"
+                + " -> b:",
+            "# {\"id\":\"sourceFile\",\"fileName\":\"HorizontalClassMergingStackSampleRetraceTest.java\"}",
+            "    void baz() -> a",
+            "com.android.tools.r8.retrace.stacksamples.HorizontalClassMergingStackSampleRetraceTest$Main"
+                + " -> c:",
+            "# {\"id\":\"sourceFile\",\"fileName\":\"HorizontalClassMergingStackSampleRetraceTest.java\"}",
+            "    0:2:void main(java.lang.String[]):45:45 -> main",
+            "    3:5:void main(java.lang.String[]):46:46 -> main",
+            "    6:32:void main(java.lang.String[]):47:47 -> main")
+        : StringUtils.joinLines(
+            "com.android.tools.r8.retrace.stacksamples.HorizontalClassMergingStackSampleRetraceTest$A"
+                + " -> a:",
+            "# {\"id\":\"sourceFile\",\"fileName\":\"HorizontalClassMergingStackSampleRetraceTest.java\"}",
+            "    int HorizontalClassMergingStackSampleRetraceTest$A.$r8$classId -> a",
+            "      # {\"id\":\"com.android.tools.r8.synthesized\"}",
+            "    1:1:void HorizontalClassMergingStackSampleRetraceTest$A.<init>(int):0:0 -> <init>",
+            "      # {\"id\":\"com.android.tools.r8.synthesized\"}",
+            "    1:1:void"
+                + " com.android.tools.r8.retrace.stacksamples.HorizontalClassMergingStackSampleRetraceTest$B.baz():51:51"
+                + " -> a",
+            "    2:2:void baz():51:51 -> a",
+            "    1:8:void"
+                + " com.android.tools.r8.retrace.stacksamples.HorizontalClassMergingStackSampleRetraceTest$B.bar():46:46"
+                + " -> b",
+            "    1:8:void foo():46:46 -> c",
+            "com.android.tools.r8.retrace.stacksamples.HorizontalClassMergingStackSampleRetraceTest$I"
+                + " -> b:",
+            "# {\"id\":\"sourceFile\",\"fileName\":\"HorizontalClassMergingStackSampleRetraceTest.java\"}",
+            "    void baz() -> a",
+            "com.android.tools.r8.retrace.stacksamples.HorizontalClassMergingStackSampleRetraceTest$Main"
+                + " -> c:",
+            "# {\"id\":\"sourceFile\",\"fileName\":\"HorizontalClassMergingStackSampleRetraceTest.java\"}",
+            "    1:3:void main(java.lang.String[]):45:47 -> main");
   }
 
   @Override

@@ -86,8 +86,9 @@ public class ObjectCloneInStaticInterfaceMethodTest extends TestBase {
   }
 
   private void checkOutput(SingleTestRunResult<?> r) {
-    if (parameters.isDexRuntimeVersion(V16_0_0)) {
-      // TODO(b/454529390): ART 16 does not enforce protected access to Object.clone.
+    if (parameters.isDexRuntimeVersionNewerThanOrEqual(V16_0_0)) {
+      // TODO(b/454529390): ART 16 and above does not enforce protected access to Object.clone.
+      //  As per the references issue this is WAI.
       r.assertSuccessWithOutputLines("0");
     } else {
       r.assertFailureWithErrorThatThrows(IllegalAccessError.class);

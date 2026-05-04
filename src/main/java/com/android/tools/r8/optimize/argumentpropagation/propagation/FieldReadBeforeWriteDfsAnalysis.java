@@ -37,9 +37,9 @@ import com.android.tools.r8.ir.code.Phi;
 import com.android.tools.r8.ir.code.Return;
 import com.android.tools.r8.ir.code.Throw;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
-import com.android.tools.r8.utils.internal.TraversalContinuation;
 import com.android.tools.r8.utils.collections.ProgramFieldSet;
-import com.android.tools.r8.utils.collections.WorkList;
+import com.android.tools.r8.utils.internal.TraversalContinuation;
+import com.android.tools.r8.utils.internal.collections.WorkList;
 
 /**
  * Analysis that is given an allocation site (a {@link NewInstance} instruction) and a set of fields

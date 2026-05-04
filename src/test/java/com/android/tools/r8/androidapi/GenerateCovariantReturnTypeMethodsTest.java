@@ -5,7 +5,7 @@
 package com.android.tools.r8.androidapi;
 
 import static com.android.tools.r8.apimodel.JavaSourceCodePrinter.Type.fromType;
-import static com.android.tools.r8.utils.MapUtils.ignoreKey;
+import static com.android.tools.r8.utils.internal.MapUtils.ignoreKey;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
@@ -30,14 +30,14 @@ import com.android.tools.r8.references.ClassReference;
 import com.android.tools.r8.references.MethodReference;
 import com.android.tools.r8.references.Reference;
 import com.android.tools.r8.references.TypeReference;
-import com.android.tools.r8.utils.internal.Action;
 import com.android.tools.r8.utils.AndroidApiLevel;
 import com.android.tools.r8.utils.ClassReferenceUtils;
-import com.android.tools.r8.utils.internal.EntryUtils;
-import com.android.tools.r8.utils.FileUtils;
 import com.android.tools.r8.utils.MethodReferenceUtils;
 import com.android.tools.r8.utils.codeinspector.CodeInspector;
 import com.android.tools.r8.utils.codeinspector.FoundClassSubject;
+import com.android.tools.r8.utils.internal.Action;
+import com.android.tools.r8.utils.internal.EntryUtils;
+import com.android.tools.r8.utils.internal.FileUtils;
 import com.google.common.collect.ImmutableList;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;

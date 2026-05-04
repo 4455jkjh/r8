@@ -3,7 +3,7 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8.utils;
 
-import static com.android.tools.r8.utils.FileUtils.GLOBAL_SYNTHETIC_EXTENSION;
+import static com.android.tools.r8.utils.internal.FileUtils.GLOBAL_SYNTHETIC_EXTENSION;
 
 import com.android.tools.r8.ByteBufferProvider;
 import com.android.tools.r8.ByteDataView;
@@ -18,6 +18,8 @@ import com.android.tools.r8.dex.Marker.Tool;
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.DexType;
 import com.android.tools.r8.references.Reference;
+import com.android.tools.r8.utils.internal.ListUtils;
+import com.android.tools.r8.utils.internal.SetUtils;
 import com.android.tools.r8.utils.internal.collections.Pair;
 import com.android.tools.r8.utils.internal.exceptions.Unreachable;
 import java.io.ByteArrayOutputStream;

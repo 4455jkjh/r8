@@ -27,10 +27,10 @@ import com.android.tools.r8.ir.optimize.numberunboxer.TransitiveDependency.Metho
 import com.android.tools.r8.ir.optimize.numberunboxer.TransitiveDependency.MethodRet;
 import com.android.tools.r8.optimize.argumentpropagation.utils.ProgramClassesBidirectedGraph;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
-import com.android.tools.r8.utils.internal.BooleanUtils;
-import com.android.tools.r8.utils.MapUtils;
 import com.android.tools.r8.utils.ThreadUtils;
 import com.android.tools.r8.utils.collections.DexMethodSignatureMap;
+import com.android.tools.r8.utils.internal.BooleanUtils;
+import com.android.tools.r8.utils.internal.MapUtils;
 import com.android.tools.r8.utils.internal.exceptions.Unimplemented;
 import com.android.tools.r8.utils.timing.Timing;
 import com.google.common.collect.Iterables;

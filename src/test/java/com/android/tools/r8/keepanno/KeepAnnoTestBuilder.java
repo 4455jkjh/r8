@@ -5,10 +5,10 @@
 package com.android.tools.r8.keepanno;
 
 import static com.android.tools.r8.R8TestBuilder.KeepAnnotationLibrary.ANDROIDX;
-import static com.android.tools.r8.utils.FileUtils.isClassFile;
-import static com.android.tools.r8.utils.FileUtils.isJarFile;
-import static com.android.tools.r8.utils.FileUtils.isKotlinBuiltinsFile;
-import static com.android.tools.r8.utils.FileUtils.isZipFile;
+import static com.android.tools.r8.utils.internal.FileUtils.isClassFile;
+import static com.android.tools.r8.utils.internal.FileUtils.isJarFile;
+import static com.android.tools.r8.utils.internal.FileUtils.isKotlinBuiltinsFile;
+import static com.android.tools.r8.utils.internal.FileUtils.isZipFile;
 
 import com.android.tools.r8.DataEntryResource;
 import com.android.tools.r8.ExternalR8TestBuilder;

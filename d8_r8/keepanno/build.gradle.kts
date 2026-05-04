@@ -22,6 +22,8 @@ buildscript { dependencies { classpath("com.google.protobuf:protobuf-gradle-plug
 
 apply(plugin = "com.google.protobuf")
 
+tasks.named("generateProto") { dependsOn(sharedDepsConfig) }
+
 var os = DefaultNativePlatform.getCurrentOperatingSystem()
 var protobuf = project.extensions.getByName("protobuf") as ProtobufExtension
 
@@ -56,7 +58,12 @@ kotlin {
   }
 }
 
+val sharedDepsScope by configurations.dependencyScope("sharedDepsScope")
+val sharedDepsConfig by
+  configurations.resolvable("sharedDepsConfig") { extendsFrom(sharedDepsScope) }
+
 dependencies {
+  sharedDepsScope(project(":shared", "sharedDepsFiles"))
   compileOnly(Deps.asm)
   compileOnly(Deps.guava)
   compileOnly(Deps.protobuf)
@@ -65,7 +72,7 @@ dependencies {
 tasks {
   val keepAnnoAnnotationsJar by
     registering(Jar::class) {
-      dependsOn(gradle.includedBuild("shared").task(":downloadDeps"))
+      dependsOn(sharedDepsConfig)
       from(sourceSets.main.get().output)
       include("com/android/tools/r8/keepanno/annotations/*")
       destinationDirectory.set(getRoot().resolveAll("build", "libs"))
@@ -74,7 +81,7 @@ tasks {
 
   val keepAnnoLegacyAnnotationsJar by
     registering(Jar::class) {
-      dependsOn(gradle.includedBuild("shared").task(":downloadDeps"))
+      dependsOn(sharedDepsConfig)
       from(sourceSets.main.get().output)
       include("com/android/tools/r8/keepanno/annotations/*")
       destinationDirectory.set(getRoot().resolveAll("build", "libs"))
@@ -83,18 +90,14 @@ tasks {
 
   val keepAnnoAndroidXAnnotationsJar by
     registering(Jar::class) {
-      dependsOn(gradle.includedBuild("shared").task(":downloadDeps"))
+      dependsOn(sharedDepsConfig)
       from(sourceSets.main.get().output)
       include("androidx/annotation/keep/*")
       destinationDirectory.set(getRoot().resolveAll("build", "libs"))
       archiveFileName.set("keepanno-annotations-androidx.jar")
     }
 
-  val keepAnnoJar by
-    registering(Jar::class) {
-      dependsOn(gradle.includedBuild("shared").task(":downloadDeps"))
-      from(sourceSets.main.get().output)
-    }
+  named<Jar>("jar") { dependsOn(sharedDepsConfig) }
 
   val keepAnnoAnnotationsDoc by
     registering(Javadoc::class) {
@@ -126,7 +129,7 @@ tasks {
 
   val depsJarExceptAsm by
     registering(Jar::class) {
-      dependsOn(gradle.includedBuild("shared").task(":downloadDeps"))
+      dependsOn(sharedDepsConfig)
       from(Callable { dependenciesExceptAsm().map(::zipTree) })
       // TODO(b/428166503): Add license information.
       exclude("META-INF/*.kotlin_module")
@@ -145,7 +148,7 @@ tasks {
 
   val depsJarOnlyAsm by
     registering(Jar::class) {
-      dependsOn(gradle.includedBuild("shared").task(":downloadDeps"))
+      dependsOn(sharedDepsConfig)
       from(Callable { dependenciesOnlyAsm().map(::zipTree) })
       // TODO(b/428166503): Add license information if needed.
       exclude("META-INF/*.kotlin_module")
@@ -164,7 +167,7 @@ tasks {
 
   val toolsJar by
     registering(Jar::class) {
-      dependsOn(gradle.includedBuild("shared").task(":downloadDeps"))
+      dependsOn(sharedDepsConfig)
       from(sourceSets.main.get().output)
       // TODO(b/428166503): Add license information.
       entryCompression = ZipEntryCompression.STORED
@@ -176,3 +179,37 @@ tasks {
       archiveFileName.set("keepanno-tools.jar")
     }
 }
+
+val keepannoJar by
+  configurations.consumable("keepannoJar") { outgoing.artifact(tasks.named<Jar>("jar")) }
+
+val keepannoDepsJarExceptAsm by
+  configurations.consumable("keepannoDepsJarExceptAsm") {
+    outgoing.artifact(tasks.named<Jar>("depsJarExceptAsm"))
+  }
+
+val keepannoToolsJar by
+  configurations.consumable("keepannoToolsJar") { outgoing.artifact(tasks.named<Jar>("toolsJar")) }
+
+val keepannoAndroidXAnnotationsJar by
+  configurations.consumable("keepannoAndroidXAnnotationsJar") {
+    outgoing.artifact(tasks.named<Jar>("keepAnnoAndroidXAnnotationsJar"))
+  }
+
+val keepannoDepsJarOnlyAsm by
+  configurations.consumable("keepannoDepsJarOnlyAsm") {
+    outgoing.artifact(tasks.named<Jar>("depsJarOnlyAsm"))
+  }
+
+val keepannoSources by
+  configurations.consumable("keepannoSources") { outgoing.artifact(tasks.named<Jar>("sourcesJar")) }
+
+val keepannoClasses by
+  configurations.consumable("keepannoClasses") {
+    outgoing.artifact(tasks.named<JavaCompile>("compileJava").map { it.destinationDirectory })
+    outgoing.artifact(
+      tasks.named<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>("compileKotlin").map {
+        it.destinationDirectory
+      }
+    )
+  }

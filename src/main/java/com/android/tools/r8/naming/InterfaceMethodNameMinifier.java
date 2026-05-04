@@ -3,7 +3,7 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8.naming;
 
-import static com.android.tools.r8.utils.MapUtils.ignoreKey;
+import static com.android.tools.r8.utils.internal.MapUtils.ignoreKey;
 
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.DexCallSite;
@@ -18,10 +18,10 @@ import com.android.tools.r8.ir.desugar.LambdaDescriptor;
 import com.android.tools.r8.naming.MethodNameMinifier.State;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
 import com.android.tools.r8.utils.MethodJavaSignatureEquivalence;
-import com.android.tools.r8.utils.internal.TraversalContinuation;
 import com.android.tools.r8.utils.collections.DexClassAndMethodMap;
 import com.android.tools.r8.utils.collections.DexClassAndMethodSet;
-import com.android.tools.r8.utils.collections.DisjointSets;
+import com.android.tools.r8.utils.internal.TraversalContinuation;
+import com.android.tools.r8.utils.internal.collections.DisjointSets;
 import com.android.tools.r8.utils.timing.Timing;
 import com.google.common.base.Equivalence;
 import com.google.common.base.Equivalence.Wrapper;

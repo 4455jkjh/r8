@@ -4,8 +4,8 @@
 
 package com.android.tools.r8;
 
-import static com.android.tools.r8.utils.FileUtils.JAR_EXTENSION;
-import static com.android.tools.r8.utils.FileUtils.ZIP_EXTENSION;
+import static com.android.tools.r8.utils.internal.FileUtils.JAR_EXTENSION;
+import static com.android.tools.r8.utils.internal.FileUtils.ZIP_EXTENSION;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
@@ -20,18 +20,18 @@ import com.android.tools.r8.origin.Origin;
 import com.android.tools.r8.synthesis.SyntheticItemsTestUtils;
 import com.android.tools.r8.utils.AndroidApiLevel;
 import com.android.tools.r8.utils.AndroidApp;
-import com.android.tools.r8.utils.internal.Box;
 import com.android.tools.r8.utils.InternalOptions;
-import com.android.tools.r8.utils.ListUtils;
 import com.android.tools.r8.utils.OffOrAuto;
-import com.android.tools.r8.utils.StringUtils;
-import com.android.tools.r8.utils.StringUtils.BraceType;
 import com.android.tools.r8.utils.TestDescriptionWatcher;
 import com.android.tools.r8.utils.codeinspector.CodeInspector;
 import com.android.tools.r8.utils.codeinspector.FoundClassSubject;
 import com.android.tools.r8.utils.codeinspector.FoundMethodSubject;
 import com.android.tools.r8.utils.codeinspector.InstructionSubject;
 import com.android.tools.r8.utils.codeinspector.InvokeInstructionSubject;
+import com.android.tools.r8.utils.internal.Box;
+import com.android.tools.r8.utils.internal.ListUtils;
+import com.android.tools.r8.utils.internal.StringUtils;
+import com.android.tools.r8.utils.internal.StringUtils.BraceType;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
@@ -339,6 +339,11 @@ public abstract class RunExamplesAndroidOTest<
                 "invokecustom", "invokecustom2"))
         .put(
             Version.V16_0_0,
+            ImmutableList.of(
+                // TODO(b/120402963): Triage.
+                "invokecustom", "invokecustom2"))
+        .put(
+            Version.V17_0_0,
             ImmutableList.of(
                 // TODO(b/120402963): Triage.
                 "invokecustom", "invokecustom2"))

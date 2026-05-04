@@ -24,6 +24,7 @@ import com.android.tools.r8.retrace.RetracedMethodReference.KnownRetracedMethodR
 import com.android.tools.r8.retrace.Retracer;
 import com.android.tools.r8.retrace.internal.MappingSupplierInternalImpl;
 import com.android.tools.r8.retrace.internal.RetracerImpl;
+import com.android.tools.r8.utils.internal.StringUtils;
 import java.util.function.Function;
 
 public class RetracerForCodePrinting {

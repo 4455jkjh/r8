@@ -14,8 +14,8 @@ import com.android.tools.r8.naming.mappinginformation.OutlineCallsiteMappingInfo
 import com.android.tools.r8.naming.mappinginformation.OutlineMappingInformation;
 import com.android.tools.r8.naming.mappinginformation.RewriteFrameMappingInformation;
 import com.android.tools.r8.utils.internal.ChainableStringConsumer;
-import com.android.tools.r8.utils.CollectionUtils;
-import com.android.tools.r8.utils.ListUtils;
+import com.android.tools.r8.utils.internal.CollectionUtils;
+import com.android.tools.r8.utils.internal.ListUtils;
 import com.android.tools.r8.utils.internal.ThrowingConsumer;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;

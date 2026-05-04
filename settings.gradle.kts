@@ -16,7 +16,9 @@ pluginManagement {
 
 dependencyResolutionManagement { repositories { maven { url = uri("third_party/dependencies") } } }
 
-includeBuild(rootProject.projectDir.resolve("d8_r8/shared"))
+include(":shared")
+
+project(":shared").projectDir = file("d8_r8/shared")
 
 include(":assistant")
 
@@ -26,13 +28,17 @@ include(":blastradius")
 
 project(":blastradius").projectDir = file("d8_r8/blastradius")
 
-includeBuild(rootProject.projectDir.resolve("d8_r8/keepanno"))
+include(":keepanno")
+
+project(":keepanno").projectDir = file("d8_r8/keepanno")
 
 include(":libanalyzer")
 
 project(":libanalyzer").projectDir = file("d8_r8/libanalyzer")
 
-includeBuild(rootProject.projectDir.resolve("d8_r8/resourceshrinker"))
+include(":resourceshrinker")
+
+project(":resourceshrinker").projectDir = file("d8_r8/resourceshrinker")
 
 include(":main")
 
@@ -46,7 +52,9 @@ include(":dist")
 
 project(":dist").projectDir = file("d8_r8/dist")
 
-includeBuild(rootProject.projectDir.resolve("d8_r8/library_desugar"))
+include(":library_desugar")
+
+project(":library_desugar").projectDir = file("d8_r8/library_desugar")
 
 include(":testbase")
 

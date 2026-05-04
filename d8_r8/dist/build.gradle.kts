@@ -92,9 +92,21 @@ val blastRadiusWithoutProtoJarConfig by
 val blastRadiusProtoJarScope by configurations.dependencyScope("blastRadiusProtoJarScope")
 val blastRadiusProtoJarConfig by
   configurations.resolvable("blastRadiusProtoJarConfig") { extendsFrom(blastRadiusProtoJarScope) }
-val keepAnnoJarTask = projectTask("keepanno", "jar")
-val keepAnnoDepsJarExceptAsm = projectTask("keepanno", "depsJarExceptAsm")
-val keepAnnoToolsJarTask = projectTask("keepanno", "toolsJar")
+val keepAnnoJarScope by configurations.dependencyScope("keepAnnoJarScope")
+val keepAnnoJarConfig by
+  configurations.resolvable("keepAnnoJarConfig") { extendsFrom(keepAnnoJarScope) }
+val keepAnnoDepsJarExceptAsmScope by configurations.dependencyScope("keepAnnoDepsJarExceptAsmScope")
+val keepAnnoDepsJarExceptAsmConfig by
+  configurations.resolvable("keepAnnoDepsJarExceptAsmConfig") {
+    extendsFrom(keepAnnoDepsJarExceptAsmScope)
+  }
+val keepAnnoToolsJarScope by configurations.dependencyScope("keepAnnoToolsJarScope")
+val keepAnnoToolsJarConfig by
+  configurations.resolvable("keepAnnoToolsJarConfig") { extendsFrom(keepAnnoToolsJarScope) }
+
+val resourceShrinkerJarScope by configurations.dependencyScope("resourceShrinkerJarScope")
+val resourceShrinkerJarConfig by
+  configurations.resolvable("resourceShrinkerJarConfig") { extendsFrom(resourceShrinkerJarScope) }
 
 val libanalyzerJarScope by configurations.dependencyScope("libanalyzerJarScope")
 val libanalyzerJarConfig by
@@ -113,16 +125,28 @@ dependencies {
   assistantJarScope(project(":assistant", "assistantJar"))
   blastRadiusWithoutProtoJarScope(project(":blastradius", "blastradiusWithoutProtoJar"))
   blastRadiusProtoJarScope(project(":blastradius", "blastradiusProtoJar"))
+  keepAnnoJarScope(project(":keepanno", "keepannoJar"))
+  keepAnnoDepsJarExceptAsmScope(project(":keepanno", "keepannoDepsJarExceptAsm"))
+  keepAnnoToolsJarScope(project(":keepanno", "keepannoToolsJar"))
   libanalyzerJarScope(project(":libanalyzer", "libanalyzer-jar"))
   libanalyzerProtoJarScope(project(":libanalyzer", "libanalyzer-proto-jar"))
   mainJarScope(project(":main", "mainJar"))
   mainResourcesScope(project(":main", "mainResources"))
+  resourceShrinkerJarScope(project(":resourceshrinker", "resourceshrinkerJar"))
 }
 
-val resourceShrinkerJarTask = projectTask("resourceshrinker", "jar")
-val resourceShrinkerDepsJarTask = projectTask("resourceshrinker", "depsJar")
-val downloadDepsTask = projectTask("shared", "downloadDeps")
-val downloadTestDepsTask = projectTask("shared", "downloadTestDeps")
+val sharedDepsScope by configurations.dependencyScope("sharedDepsScope")
+val sharedDepsConfig by
+  configurations.resolvable("sharedDepsConfig") { extendsFrom(sharedDepsScope) }
+
+val sharedTestDepsScope by configurations.dependencyScope("sharedTestDepsScope")
+val sharedTestDepsConfig by
+  configurations.resolvable("sharedTestDepsConfig") { extendsFrom(sharedTestDepsScope) }
+
+dependencies {
+  sharedDepsScope(project(":shared", "sharedDepsFiles"))
+  sharedTestDepsScope(project(":shared", "sharedTestDepsFiles"))
+}
 
 fun mainJarDependencies(): FileCollection {
   return project.files(
@@ -237,8 +261,8 @@ tasks {
   }
 
   val consolidatedLicense by registering {
-    dependsOn(downloadDepsTask)
-    dependsOn(downloadTestDepsTask)
+    dependsOn(sharedDepsConfig)
+    dependsOn(sharedTestDepsConfig)
     val root = getRoot()
     val r8License = root.resolve("LICENSE")
     val libraryLicense = root.resolve("LIBRARY-LICENSE")
@@ -313,10 +337,10 @@ tasks {
     objects.fileCollection().apply {
       from(assistantJarConfig)
       from(blastRadiusWithoutProtoJarConfig)
-      from(keepAnnoJarTask)
+      from(keepAnnoJarConfig)
       from(libanalyzerJarConfig)
       from(mainJarConfig)
-      from(resourceShrinkerJarTask)
+      from(resourceShrinkerJarConfig)
     }
 
   val swissArmyKnife by
@@ -350,7 +374,7 @@ tasks {
 
   dependencies {
     add(depsJarFilesScope.name, mainJarDependencies())
-    add(depsJarFilesScope.name, files(resourceShrinkerDepsJarTask))
+    add(depsJarFilesScope.name, project(":resourceshrinker", "resourceshrinkerDepsJar"))
     add(depsJarFilesScope.name, files(threadingModuleBlockingJar))
     add(depsJarFilesScope.name, files(threadingModuleSingleThreadedJar))
   }
@@ -457,23 +481,28 @@ tasks {
 
   val keepAnnoToolsWithRelocatedDeps by
     registering(Exec::class) {
-      dependsOn(depsJar, keepAnnoDepsJarExceptAsm, keepAnnoToolsJarTask, swissArmyKnifeJarFiles)
+      dependsOn(
+        depsJar,
+        keepAnnoDepsJarExceptAsmConfig,
+        keepAnnoToolsJarConfig,
+        swissArmyKnifeJarFiles,
+      )
       val output = getRoot().resolveAll("build", "libs", "keepanno-tools.jar")
       outputs.file(output)
       inputs.files(
         Callable {
           listOf(
             depsJar.get().getSingleOutputFile(),
-            keepAnnoDepsJarExceptAsm.getSingleOutputFile(),
-            keepAnnoToolsJarTask.getSingleOutputFile(),
+            keepAnnoDepsJarExceptAsmConfig.singleFile,
+            keepAnnoToolsJarConfig.singleFile,
             swissArmyKnifeJarFiles,
           )
         }
       )
       doFirst {
         val deps = depsJar.get().getSingleOutputFile()
-        val keepAnnoDeps = keepAnnoDepsJarExceptAsm.getSingleOutputFile()
-        val keepAnnoTools = keepAnnoToolsJarTask.getSingleOutputFile()
+        val keepAnnoDeps = keepAnnoDepsJarExceptAsmConfig.singleFile
+        val keepAnnoTools = keepAnnoToolsJarConfig.singleFile
         val pkg = "com.android.tools.r8.keepanno"
         commandLine =
           baseCompilerCommandLine(

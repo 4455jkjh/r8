@@ -20,10 +20,10 @@ import com.android.tools.r8.naming.mappinginformation.ResidualSignatureMappingIn
 import com.android.tools.r8.position.Position;
 import com.android.tools.r8.utils.DescriptorUtils;
 import com.android.tools.r8.utils.IdentifierUtils;
-import com.android.tools.r8.utils.StringUtils;
 import com.android.tools.r8.utils.internal.ArrayUtils;
 import com.android.tools.r8.utils.internal.BooleanBox;
 import com.android.tools.r8.utils.internal.Box;
+import com.android.tools.r8.utils.internal.StringUtils;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import java.io.IOException;

@@ -5,7 +5,7 @@
 package com.android.tools.r8;
 
 import static com.android.tools.r8.ir.desugar.itf.InterfaceDesugaringForTesting.getCompanionClassNameSuffix;
-import static com.android.tools.r8.utils.FileUtils.JAR_EXTENSION;
+import static com.android.tools.r8.utils.internal.FileUtils.JAR_EXTENSION;
 import static org.junit.Assert.assertEquals;
 
 import com.android.tools.r8.Disassemble.DisassembleCommand;
@@ -13,11 +13,11 @@ import com.android.tools.r8.references.ClassReference;
 import com.android.tools.r8.references.Reference;
 import com.android.tools.r8.synthesis.SyntheticItemsTestUtils;
 import com.android.tools.r8.utils.AndroidApiLevel;
-import com.android.tools.r8.utils.internal.Box;
 import com.android.tools.r8.utils.DescriptorUtils;
-import com.android.tools.r8.utils.FileUtils;
 import com.android.tools.r8.utils.OffOrAuto;
-import com.android.tools.r8.utils.StringUtils;
+import com.android.tools.r8.utils.internal.Box;
+import com.android.tools.r8.utils.internal.FileUtils;
+import com.android.tools.r8.utils.internal.StringUtils;
 import com.android.tools.r8.utils.internal.exceptions.Unreachable;
 import com.google.common.collect.Lists;
 import com.google.common.io.ByteStreams;

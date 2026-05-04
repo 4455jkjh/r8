@@ -22,9 +22,9 @@ import com.android.tools.r8.ir.desugar.desugaredlibrary.lint.SupportedClasses.Fi
 import com.android.tools.r8.ir.desugar.desugaredlibrary.lint.SupportedClasses.MethodAnnotation;
 import com.android.tools.r8.ir.desugar.desugaredlibrary.lint.SupportedClasses.SupportedClass;
 import com.android.tools.r8.utils.AndroidApiLevel;
-import com.android.tools.r8.utils.ListUtils;
 import com.android.tools.r8.utils.Reporter;
-import com.android.tools.r8.utils.StringUtils;
+import com.android.tools.r8.utils.internal.ListUtils;
+import com.android.tools.r8.utils.internal.StringUtils;
 import com.google.common.collect.ImmutableList;
 import java.io.PrintStream;
 import java.nio.file.Files;

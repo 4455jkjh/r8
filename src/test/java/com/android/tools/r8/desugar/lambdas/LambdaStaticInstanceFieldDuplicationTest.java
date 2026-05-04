@@ -15,9 +15,9 @@ import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.references.MethodReference;
 import com.android.tools.r8.synthesis.SyntheticItemsTestUtils;
 import com.android.tools.r8.utils.AndroidApiLevel;
-import com.android.tools.r8.utils.StringUtils;
 import com.android.tools.r8.utils.codeinspector.CodeInspector;
 import com.android.tools.r8.utils.codeinspector.InstructionSubject;
+import com.android.tools.r8.utils.internal.StringUtils;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
@@ -121,7 +121,7 @@ public class LambdaStaticInstanceFieldDuplicationTest extends TestBase {
                 !intermediate,
                 b ->
                     b.addOptionsModification(
-                        options -> options.emitLambdaMethodAnnotations = false))
+                        options -> options.disableLambdaMethodAnnotations = true))
             .compile()
             .writeToZip();
 
@@ -137,7 +137,7 @@ public class LambdaStaticInstanceFieldDuplicationTest extends TestBase {
                 !intermediate,
                 b ->
                     b.addOptionsModification(
-                        options -> options.emitLambdaMethodAnnotations = false))
+                        options -> options.disableLambdaMethodAnnotations = true))
             .compile()
             .writeToZip();
 

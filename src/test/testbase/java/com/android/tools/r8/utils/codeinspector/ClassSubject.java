@@ -18,7 +18,7 @@ import com.android.tools.r8.retrace.RetraceClassElement;
 import com.android.tools.r8.retrace.RetraceClassResult;
 import com.android.tools.r8.smali.SmaliBuilder;
 import com.android.tools.r8.synthesis.SyntheticItemsTestUtils;
-import com.android.tools.r8.utils.ListUtils;
+import com.android.tools.r8.utils.internal.ListUtils;
 import com.google.common.collect.ImmutableList;
 import java.lang.reflect.Method;
 import java.util.ArrayList;

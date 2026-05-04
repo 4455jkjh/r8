@@ -4,7 +4,6 @@
 
 package com.android.tools.r8.ir.conversion.passes;
 
-import com.android.tools.r8.algorithms.scc.SCC;
 import com.android.tools.r8.errors.CompilationError;
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.DexItemFactory;
@@ -15,6 +14,7 @@ import com.android.tools.r8.ir.code.InvokeDirect;
 import com.android.tools.r8.ir.code.NewInstance;
 import com.android.tools.r8.ir.code.Phi;
 import com.android.tools.r8.ir.code.Value;
+import com.android.tools.r8.utils.internal.SCC;
 import com.google.common.collect.Sets;
 import java.util.List;
 import java.util.Set;

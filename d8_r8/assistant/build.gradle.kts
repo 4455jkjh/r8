@@ -7,7 +7,7 @@ plugins {
   id("dependencies-plugin")
 }
 
-dependencies { compileOnly(":keepanno") }
+dependencies { compileOnly(project(":keepanno", "keepannoClasses")) }
 
 java {
   sourceSets.main.configure { java.srcDir(getRoot().resolveAll("src", "assistant", "java")) }

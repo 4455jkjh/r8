@@ -5,7 +5,7 @@
 package com.android.tools.r8.verticalclassmerging;
 
 import static com.android.tools.r8.ir.conversion.ExtraUnusedParameter.computeExtraUnusedParameters;
-import static com.android.tools.r8.utils.MapUtils.ignoreKey;
+import static com.android.tools.r8.utils.internal.MapUtils.ignoreKey;
 
 import com.android.tools.r8.classmerging.ClassMergerGraphLens;
 import com.android.tools.r8.graph.AppView;
@@ -27,14 +27,14 @@ import com.android.tools.r8.ir.code.InvokeType;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
 import com.android.tools.r8.shaking.KeepInfoCollection;
 import com.android.tools.r8.utils.InternalOptions;
-import com.android.tools.r8.utils.collections.BidirectionalManyToOneRepresentativeHashMap;
-import com.android.tools.r8.utils.collections.BidirectionalManyToOneRepresentativeMap;
-import com.android.tools.r8.utils.collections.BidirectionalOneToOneHashMap;
-import com.android.tools.r8.utils.collections.BidirectionalOneToOneMap;
-import com.android.tools.r8.utils.collections.MutableBidirectionalManyToOneRepresentativeMap;
-import com.android.tools.r8.utils.collections.MutableBidirectionalOneToOneMap;
 import com.android.tools.r8.utils.internal.IterableUtils;
 import com.android.tools.r8.utils.internal.OptionalBool;
+import com.android.tools.r8.utils.internal.collections.BidirectionalManyToOneRepresentativeHashMap;
+import com.android.tools.r8.utils.internal.collections.BidirectionalManyToOneRepresentativeMap;
+import com.android.tools.r8.utils.internal.collections.BidirectionalOneToOneHashMap;
+import com.android.tools.r8.utils.internal.collections.BidirectionalOneToOneMap;
+import com.android.tools.r8.utils.internal.collections.MutableBidirectionalManyToOneRepresentativeMap;
+import com.android.tools.r8.utils.internal.collections.MutableBidirectionalOneToOneMap;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
 import com.google.common.collect.Streams;

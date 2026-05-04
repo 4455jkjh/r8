@@ -7,7 +7,7 @@ package com.android.tools.r8.utils.collections;
 import com.android.tools.r8.graph.DexClassAndMethod;
 import com.android.tools.r8.graph.DexEncodedMethod;
 import com.android.tools.r8.graph.DexMethod;
-import com.android.tools.r8.utils.SetUtils;
+import com.android.tools.r8.utils.internal.SetUtils;
 import com.google.common.collect.Iterables;
 import java.util.Collection;
 import java.util.IdentityHashMap;

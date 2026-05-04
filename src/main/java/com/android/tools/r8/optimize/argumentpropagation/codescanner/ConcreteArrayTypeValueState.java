@@ -14,7 +14,7 @@ import com.android.tools.r8.ir.analysis.value.AbstractValueJoiner;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
 import com.android.tools.r8.utils.internal.Action;
 import com.android.tools.r8.utils.internal.ObjectUtils;
-import com.android.tools.r8.utils.SetUtils;
+import com.android.tools.r8.utils.internal.SetUtils;
 import java.util.Collections;
 import java.util.Set;
 import java.util.function.Supplier;
