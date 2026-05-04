@@ -109,6 +109,9 @@ public final class InterfaceProcessor {
     if (!method.getHolder().isInterface()) {
       return;
     }
+    if (method.getDefinition().dexCodeOnInput() && appView.options().passthroughDexCode) {
+      return;
+    }
     if (desugaringMode == LIBRARY_DESUGARING_N_PLUS) {
       processEmulatedInterfaceOnly(method, eventConsumer);
       return;

@@ -867,6 +867,10 @@ public class DexEncodedMethod extends DexEncodedMember<DexEncodedMethod, DexMeth
     classFileVersion = Ordered.minIgnoreNull(classFileVersion, version);
   }
 
+  public boolean dexCodeOnInput() {
+    return hasCode() && getCode().isDexCode() && !hasClassFileVersion() && !isD8R8Synthesized();
+  }
+
   public String qualifiedName() {
     checkIfObsolete();
     return getReference().qualifiedName();
