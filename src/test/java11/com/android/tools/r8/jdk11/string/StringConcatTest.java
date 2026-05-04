@@ -4,8 +4,9 @@
 
 package com.android.tools.r8.jdk11.string;
 
+import static com.android.tools.r8.utils.codeinspector.Matchers.isPresent;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 import com.android.tools.r8.Jdk9TestUtils;
@@ -190,10 +191,10 @@ public class StringConcatTest extends TestBase {
 
     method = mainClass.uniqueMethodWithOriginalName("mergeStringsWithSideEffects_sameOrder");
     assertTrue(method.isPresent());
-    assertEquals(2, countStringBuilderOrInvokeDynamic(method));
+    assertEquals(3, countStringBuilderOrInvokeDynamic(method));
 
     method = mainClass.uniqueMethodWithOriginalName("noOutValues_noSideEffects");
-    assertFalse("Empty method should be removed.", method.isPresent());
+    assertThat("Empty method should be removed.", method, isPresent());
   }
 
   static class Main {
