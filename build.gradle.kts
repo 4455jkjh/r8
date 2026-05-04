@@ -4,7 +4,7 @@
 
 plugins {
   // Kotlin version is fixed by create_local_maven_dependencies.py
-  id("org.jetbrains.kotlin.jvm") version "2.2.21" apply false
+  id("org.jetbrains.kotlin.jvm") version "2.0.21" apply false
   id("dependencies-plugin")
 }
 

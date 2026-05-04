@@ -148,6 +148,18 @@ dependencies {
   sharedTestDepsScope(project(":shared", "sharedTestDepsFiles"))
 }
 
+fun mainJarDependencies(): FileCollection {
+  return project.files(
+    Callable {
+      r8Deps.filter({
+        "$it".contains("third_party") &&
+          "$it".contains("dependencies") &&
+          !"$it".contains("errorprone")
+      })
+    }
+  )
+}
+
 val depsJarFilesScope by configurations.dependencyScope("depsJarFilesScope")
 
 val depsJarFiles by configurations.consumable("depsJarFiles") { extendsFrom(depsJarFilesScope) }
@@ -206,22 +218,6 @@ fun relocateDepsExceptAsm(pkg: String): List<String> {
 tasks {
   withType<Exec> { doFirst { println("Executing command: ${commandLine.joinToString(" ")}") } }
 
-  val filterR8Deps by
-    registering(Copy::class) {
-      from(r8Deps)
-      into(layout.buildDirectory.dir("filtered-deps"))
-      eachFile {
-        val path = file.absolutePath
-        if (
-          !(path.contains("third_party") &&
-            path.contains("dependencies") &&
-            !path.contains("errorprone"))
-        ) {
-          exclude()
-        }
-      }
-    }
-
   withType<SpdxSbomTask> {
     taskExtension.set(
       object : DefaultSpdxSbomTaskExtension() {
@@ -267,14 +263,14 @@ tasks {
   val consolidatedLicense by registering {
     dependsOn(sharedDepsConfig)
     dependsOn(sharedTestDepsConfig)
-    dependsOn(filterR8Deps)
     val root = getRoot()
     val r8License = root.resolve("LICENSE")
     val libraryLicense = root.resolve("LIBRARY-LICENSE")
     val libraryLicenseFiles = fileTree(root.resolve("library-licensing"))
     inputs.files(
       Callable {
-        listOf(r8License, libraryLicense, libraryLicenseFiles) + files(filterR8Deps).map(::zipTree)
+        listOf(r8License, libraryLicense, libraryLicenseFiles) +
+          mainJarDependencies().map(::zipTree)
       }
     )
 
@@ -337,25 +333,20 @@ tasks {
     exclude("androidx/annotation/keep/**")
   }
 
-  val configsToMerge =
-    listOf(
-      assistantJarConfig,
-      blastRadiusWithoutProtoJarConfig,
-      keepAnnoJarConfig,
-      libanalyzerJarConfig,
-      mainJarConfig,
-      resourceShrinkerJarConfig,
-    )
-
   val swissArmyKnifeJarFiles =
-    objects.fileCollection().apply { configsToMerge.forEach { from(it) } }
+    objects.fileCollection().apply {
+      from(assistantJarConfig)
+      from(blastRadiusWithoutProtoJarConfig)
+      from(keepAnnoJarConfig)
+      from(libanalyzerJarConfig)
+      from(mainJarConfig)
+      from(resourceShrinkerJarConfig)
+    }
 
   val swissArmyKnife by
     registering(Jar::class) {
-      configsToMerge.forEach { config ->
-        dependsOn(config)
-        from(config.elements.map { it.map { zipTree(it).matching(swissArmyKnifeExcludeRules) } })
-      }
+      dependsOn(swissArmyKnifeJarFiles)
+      from(swissArmyKnifeJarFiles.map { zipTree(it).matching(swissArmyKnifeExcludeRules) })
       from(getRoot().resolve("LICENSE"))
       entryCompression = ZipEntryCompression.STORED
       manifest { attributes["Main-Class"] = "com.android.tools.r8.SwissArmyKnife" }
@@ -382,7 +373,7 @@ tasks {
     }
 
   dependencies {
-    add(depsJarFilesScope.name, fileTree(filterR8Deps.map { it.destinationDir }))
+    add(depsJarFilesScope.name, mainJarDependencies())
     add(depsJarFilesScope.name, project(":resourceshrinker", "resourceshrinkerDepsJar"))
     add(depsJarFilesScope.name, files(threadingModuleBlockingJar))
     add(depsJarFilesScope.name, files(threadingModuleSingleThreadedJar))
@@ -418,8 +409,8 @@ tasks {
   val protoJar by
     registering(Zip::class) {
       dependsOn(blastRadiusProtoJarConfig, libanalyzerProtoJarConfig)
-      from(blastRadiusProtoJarConfig.elements.map { it.map { zipTree(it) } })
-      from(libanalyzerProtoJarConfig.elements.map { it.map { zipTree(it) } })
+      from(blastRadiusProtoJarConfig.map(::zipTree))
+      from(libanalyzerProtoJarConfig.map(::zipTree))
       exclude("META-INF/MANIFEST.MF")
       archiveFileName.set("proto.jar")
       destinationDirectory.set(getRoot().resolveAll("build", "libs"))
