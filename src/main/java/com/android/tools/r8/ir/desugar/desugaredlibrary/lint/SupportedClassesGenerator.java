@@ -36,6 +36,7 @@ import com.android.tools.r8.ir.desugar.desugaredlibrary.DesugaredLibrarySpecific
 import com.android.tools.r8.ir.desugar.desugaredlibrary.lint.SupportedClasses.ClassAnnotation;
 import com.android.tools.r8.ir.desugar.desugaredlibrary.lint.SupportedClasses.FieldAnnotation;
 import com.android.tools.r8.ir.desugar.desugaredlibrary.lint.SupportedClasses.MethodAnnotation;
+import com.android.tools.r8.ir.desugar.desugaredlibrary.machinespecification.EmulatedInterfaceDescriptor;
 import com.android.tools.r8.ir.desugar.desugaredlibrary.machinespecification.MachineDesugaredLibrarySpecification;
 import com.android.tools.r8.synthesis.SyntheticItems.GlobalSyntheticsStrategy;
 import com.android.tools.r8.utils.AndroidApiLevel;
@@ -321,6 +322,8 @@ public class SupportedClassesGenerator {
       // All emulated interfaces static and default methods are supported.
       if (machineSpecification.getEmulatedInterfaces().containsKey(clazz.type)) {
         assert clazz.isInterface();
+        EmulatedInterfaceDescriptor descriptor =
+            machineSpecification.getEmulatedInterfaces().get(clazz.type);
         for (DexEncodedMethod method : clazz.methods()) {
           if (!method.isDefaultMethod() && !method.isStatic()) {
             continue;
@@ -330,15 +333,10 @@ public class SupportedClassesGenerator {
             // We don't care if lambda methods are present or not.
             continue;
           }
-          if (method
-              .getReference()
-              .toSourceString()
-              .equals("void java.util.Collection.forEach(java.util.function.Consumer)")) {
-            // This method is present for binary compatibility. Do not mark as supported (Supported
-            // through Iterable#forEach).
-            continue;
+          if (method.isStatic()
+              || descriptor.getEmulatedMethods().containsKey(method.getReference())) {
+            builder.addSupportedMethod(clazz, method);
           }
-          builder.addSupportedMethod(clazz, method);
         }
         addBackports(clazz, backports);
         builder.annotateClass(clazz.type, ClassAnnotation.getAdditionnalMembersOnClass());

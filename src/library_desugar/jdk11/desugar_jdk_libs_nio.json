@@ -11,6 +11,7 @@
         "public static java.time.LocalDate java.time.LocalDate#EPOCH"
       ],
       "amend_library_method": [
+        "public boolean java.lang.CharSequence#isEmpty()",
         "public int java.time.Duration#toHoursPart()",
         "public int java.time.Duration#toMillisPart()",
         "public int java.time.Duration#toMinutesPart()",
@@ -129,6 +130,17 @@
         "java.util.concurrent.Flow$Subscriber",
         "java.util.concurrent.Flow$Subscription"
       ]
+    },
+    {
+      "api_level_below_or_equal": 34,
+      "emulate_interface": {
+        "java.lang.CharSequence": {
+          "rewrittenType": "j$.lang.CharSequence",
+          "emulatedMethods": [
+            "public boolean java.lang.CharSequence#isEmpty()"
+          ]
+        }
+      }
     },
     {
       "api_level_below_or_equal": 33,

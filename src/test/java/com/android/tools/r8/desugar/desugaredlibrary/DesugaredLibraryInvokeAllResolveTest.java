@@ -50,9 +50,19 @@ import org.junit.runners.Parameterized.Parameters;
 public class DesugaredLibraryInvokeAllResolveTest extends DesugaredLibraryTestBase {
 
   // The class sun.misc.Unsafe is runnable on Android despite not being in android.jar.
-  private static final Set<String> ALLOWED_MISSING_HOLDER = ImmutableSet.of("sun.misc.Unsafe");
+  private static final Set<String> ALLOWED_MISSING_HOLDER =
+      ImmutableSet.of(
+          "sun.misc.Unsafe",
+          // The holder is used in unused methods.
+          "java.lang.CharSequence$1CharIterator",
+          "java.lang.CharSequence$1CodePointIterator");
   private static final Set<String> ALLOWED_MISSING_METHOD =
       ImmutableSet.of(
+          // Unused methods.
+          "java.util.Spliterator$OfInt"
+              + " java.lang.CharSequence.lambda$codePoints$1(java.lang.CharSequence)",
+          "java.util.Spliterator$OfInt"
+              + " java.lang.CharSequence.lambda$chars$0(java.lang.CharSequence)",
           // The takeWhile, dropWhile and toList methods are present in the wrappers and from 34.
           "java.util.stream.IntStream"
               + " java.util.stream.IntStream.dropWhile(java.util.function.IntPredicate)",

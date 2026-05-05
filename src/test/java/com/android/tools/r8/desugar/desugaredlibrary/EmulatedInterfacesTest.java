@@ -6,6 +6,7 @@ package com.android.tools.r8.desugar.desugaredlibrary;
 
 import static com.android.tools.r8.desugar.desugaredlibrary.test.CompilationSpecification.D8_L8DEBUG;
 import static com.android.tools.r8.desugar.desugaredlibrary.test.CompilationSpecification.D8_L8SHRINK;
+import static com.android.tools.r8.desugar.desugaredlibrary.test.LibraryDesugaringSpecification.JDK11;
 import static com.android.tools.r8.desugar.desugaredlibrary.test.LibraryDesugaringSpecification.getJdk8Jdk11;
 import static com.android.tools.r8.ir.desugar.itf.InterfaceDesugaringForTesting.getEmulateLibraryClassNameSuffix;
 import static com.android.tools.r8.utils.codeinspector.Matchers.isPresent;
@@ -74,7 +75,7 @@ public class EmulatedInterfacesTest extends DesugaredLibraryTestBase {
 
   private void assertEmulateInterfaceClassesPresentWithDispatchMethods(CodeInspector inspector) {
     List<FoundClassSubject> emulatedInterfaces = getEmulatedInterfaces(inspector);
-    int numDispatchClasses = 9;
+    int numDispatchClasses = libraryDesugaringSpecification == JDK11 ? 10 : 9;
     assertThat(inspector.clazz("j$.util.Map$Entry$-EL"), not(isPresent()));
     assertEquals(numDispatchClasses, emulatedInterfaces.size());
     for (FoundClassSubject clazz : emulatedInterfaces) {
