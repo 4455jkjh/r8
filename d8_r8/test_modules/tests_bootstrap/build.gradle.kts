@@ -2,7 +2,6 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-import java.util.concurrent.Callable
 import org.gradle.api.JavaVersion
 
 plugins {
@@ -79,9 +78,7 @@ tasks {
     )
     systemProperty(
       "BUILD_PROP_KEEPANNO_RUNTIME_PATH",
-      project.provider {
-        extractClassesPaths("keepanno" + File.separator, keepAnnoClassesConfig.asPath)
-      },
+      extractClassesPaths("keepanno" + File.separator, keepAnnoClassesConfig.asPath),
     )
     systemProperty("R8_SWISS_ARMY_KNIFE", distSwissArmyKnife.outputs.files.singleFile)
     systemProperty("R8_WITH_RELOCATED_DEPS", distR8WithRelocatedDeps.outputs.files.singleFile)
@@ -101,7 +98,7 @@ tasks {
       if (!project.hasProperty("no_internal")) {
         dependsOn(sharedDepsInternalConfig)
       }
-      from(Callable { testDependencies().map(::zipTree) })
+      from(testDependencies().map(::zipTree))
       duplicatesStrategy = DuplicatesStrategy.EXCLUDE
       archiveFileName.set("deps.jar")
     }
