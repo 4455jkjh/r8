@@ -40,6 +40,7 @@ TESTNG_VERSION = '6.10'
 JUNIT_JUPITER_VERSION = '5.14.3'
 JUNIT_PLATFORM_VERSION = '1.14.3'
 ZIPFLINGER_VERSION = '9.0.0'
+DDMLIB_VERSION = '32.2.0'
 
 # keepanno & resource shrinker dependencies
 PROTOBUF_VERSION = '4.33.5'
@@ -99,6 +100,7 @@ BUILD_DEPENDENCIES = [
         version=KOTLIN_VERSION),
     'org.jetbrains.kotlin:kotlin-metadata-jvm:{version}'.format(
         version=KOTLIN_METADATA_VERSION),
+    'com.android.tools.ddms:ddmlib:{version}'.format(version=DDMLIB_VERSION),
 ]
 
 TEST_DEPENDENCIES = [
