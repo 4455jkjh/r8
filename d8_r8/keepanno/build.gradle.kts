@@ -11,7 +11,7 @@ import org.jetbrains.kotlin.gradle.dsl.KotlinVersion
 
 plugins {
   // Kotlin version is fixed by create_local_maven_dependencies.py
-  id("org.jetbrains.kotlin.jvm") version "2.0.21"
+  id("org.jetbrains.kotlin.jvm")
   id("dependencies-plugin")
 }
 
