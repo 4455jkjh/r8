@@ -28,9 +28,13 @@ val sharedDepsInternalScope by configurations.dependencyScope("sharedDepsInterna
 val sharedDepsInternalConfig by
   configurations.resolvable("sharedDepsInternalConfig") { extendsFrom(sharedDepsInternalScope) }
 
+val distDepsFilesScope by configurations.dependencyScope("distDepsFilesScope")
+val distDepsFiles by configurations.resolvable("distDepsFiles") { extendsFrom(distDepsFilesScope) }
+
 dependencies {
   sharedDepsScope(project(":shared", "sharedDepsFiles"))
   sharedDepsInternalScope(project(":shared", "sharedDepsInternalFiles"))
+  distDepsFilesScope(project(":dist", "filteredDepsJarConfig"))
 }
 
 val keepAnnoClassesScope by configurations.dependencyScope("keepAnnoClassesScope")
@@ -58,7 +62,8 @@ fun testDependencies(): FileCollection {
 tasks {
   withType<Test> {
     TestingState.setUpTestingState(this)
-    dependsOn(distR8WithRelocatedDeps, distSwissArmyKnife)
+    dependsOn(distR8WithRelocatedDeps, distSwissArmyKnife, distDepsFiles)
+    systemProperty("R8_DEPS", distDepsFiles.asPath)
     systemProperty(
       "TEST_DATA_LOCATION",
       layout.buildDirectory.dir("classes/java/test").get().toString(),
