@@ -3,14 +3,16 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8.benchmarks.appdumps;
 
-
+import com.android.tools.r8.ByteArrayConsumer;
 import com.android.tools.r8.CompilationFailedException;
 import com.android.tools.r8.CompilationMode;
 import com.android.tools.r8.LibraryDesugaringTestConfiguration;
+import com.android.tools.r8.R8Command;
 import com.android.tools.r8.R8FullTestBuilder;
 import com.android.tools.r8.R8PartialTestBuilder;
 import com.android.tools.r8.R8PartialTestCompileResult;
 import com.android.tools.r8.R8TestBuilder;
+import com.android.tools.r8.StringConsumer;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestBase.Backend;
 import com.android.tools.r8.TestCompilerBuilder;
@@ -377,6 +379,16 @@ public class AppDumpBenchmarkBuilder {
                           testBuilder -> {
                             dump.forEachFeatureArchive(testBuilder::addFeatureSplit);
                             addDesugaredLibrary(testBuilder, dump);
+                          })
+                      .apply(
+                          testBuilder -> {
+                            R8Command.Builder commandBuilder = testBuilder.getBuilder();
+                            Path outdir = environment.getTemp().newFolder().toPath();
+                            commandBuilder
+                                .setConfigurationAnalysisDataConsumer(
+                                    new ByteArrayConsumer.FileConsumer(outdir.resolve("report.pb")))
+                                .setConfigurationAnalysisHtmlReportConsumer(
+                                    new StringConsumer.FileConsumer(outdir.resolve("report.html")));
                           })
                       .apply(configuration)
                       .applyIf(

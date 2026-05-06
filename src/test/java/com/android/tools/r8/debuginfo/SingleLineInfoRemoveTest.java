@@ -19,8 +19,8 @@ import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestRuntime.CfRuntime;
 import com.android.tools.r8.naming.retrace.StackTrace;
 import com.android.tools.r8.naming.retrace.StackTrace.StackTraceLine;
-import com.android.tools.r8.utils.internal.BooleanUtils;
 import com.android.tools.r8.utils.codeinspector.ClassSubject;
+import com.android.tools.r8.utils.internal.BooleanUtils;
 import java.util.List;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -90,13 +90,8 @@ public class SingleLineInfoRemoveTest extends TestBase {
               assertThat(mainSubject, isPresent());
               assertThat(
                   mainSubject.uniqueMethodWithOriginalName("shouldRemoveLineNumber"),
-                  notIf(hasLineNumberTable(), canSingleLineDebugInfoBeDiscarded()));
+                  notIf(hasLineNumberTable(), canDiscardResidualDebugInfo(parameters)));
             });
-  }
-
-  private boolean canSingleLineDebugInfoBeDiscarded() {
-    // We cannot discard the debug info since we need to preserve the source file.
-    return false;
   }
 
   public static class Main {

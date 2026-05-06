@@ -65,7 +65,7 @@ dependencies {
   implementation(Deps.kotlinStdLib)
   implementation(Deps.kotlinReflect)
   implementation(Deps.kotlinMetadata)
-  implementation(resolve(ThirdPartyDeps.ddmLib, "ddmlib.jar"))
+  implementation(Deps.ddmLib)
   implementation(resolve(ThirdPartyDeps.jasmin, "jasmin-2.4.jar"))
   implementation(resolve(ThirdPartyDeps.jdwpTests, "apache-harmony-jdwp-tests-host.jar"))
   implementation(Deps.fastUtil)

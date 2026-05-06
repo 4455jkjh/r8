@@ -1,14 +1,13 @@
 /* ==========================================================================
-   1. VARIABLES & THEME CONFIGURATION
-   ========================================================================== */
-
+1. VARIABLES & THEME CONFIGURATION
+========================================================================== */
 :root {
   /* --- Colors: Backgrounds --- */
   --bg-body: #f8fafc;
   /* --- Colors: Borders --- */
   --border-color: #e2e8f0;
   /* --- Colors: Functional (Status) --- */
-  --text-green-600: #16a34a;
+  --text-green-600: oklch(37.1% 0 0);
   /* --- Colors: Palette (Extended) --- */
   --text-blue-600: #2563eb;
   /* --- Colors: Text --- */
@@ -30,7 +29,7 @@
   --border-interactive: #d1d5db;
   --border-light: #f1f5f9;
   --font-family-mono: "SF Mono", "Consolas", "Liberation Mono", Menlo, monospace;
-  ne Z --text-muted: #94a3b8;
+  --text-muted: #94a3b8;
   --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
   --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1);
   --text-blue-700: #1d4ed8;
@@ -46,9 +45,8 @@
 }
 
 /* ==========================================================================
-   2. RESET & BASE STYLES
-   ========================================================================== */
-
+2. RESET & BASE STYLES
+========================================================================== */
 * {
   box-sizing: border-box;
   margin: 0;
@@ -58,7 +56,6 @@
 }
 
 /* Custom Scrollbar */
-
 ::-webkit-scrollbar {
   height: 8px;
   width: 8px;
@@ -79,8 +76,6 @@
 
 html,
 body {
-  /* Prevent body scroll, use containers */
-  ;
   height: 100%;
   overflow: hidden;
 }
@@ -114,9 +109,8 @@ button {
 }
 
 /* ==========================================================================
-   3. UTILITY CLASSES
-   ========================================================================== */
-
+3. UTILITY CLASSES
+========================================================================== */
 .hidden {
   display: none !important;
 }
@@ -184,7 +178,6 @@ button {
 }
 
 /* Colors */
-
 .text-green-600 {
   color: var(--text-green-600);
 }
@@ -206,7 +199,6 @@ button {
 }
 
 /* Backgrounds & Interaction */
-
 .hover-bg-gray-100:hover {
   background-color: var(--bg-hover) !important;
 }
@@ -218,9 +210,8 @@ button {
 }
 
 /* ==========================================================================
-   4. LAYOUT & CONTAINER
-   ========================================================================== */
-
+4. LAYOUT & CONTAINER
+========================================================================== */
 header {
   background-color: var(--bg-header);
   border-bottom: 1px solid var(--border-color);
@@ -236,7 +227,7 @@ header {
   margin: 0 auto;
   max-width: 1800px;
   min-height: 0;
-  overflow: hidden;
+  overflow: visible;
   padding: 1.5rem;
   width: 100%;
 }
@@ -246,13 +237,12 @@ main {
   flex-direction: column;
   flex: 1;
   min-height: 0;
-  overflow: hidden;
+  overflow: visible;
 }
 
 /* ==========================================================================
-   5. HEADER COMPONENTS
-   ========================================================================== */
-
+5. HEADER COMPONENTS
+========================================================================== */
 .header-top-row {
   align-items: center;
   border-bottom: 1px solid var(--border-light);
@@ -264,7 +254,7 @@ main {
 }
 
 .header-branding {
-  border-right: 1px solid var(--border-color);
+  /* border-right: 1px solid var(--border-color); */
   display: flex;
   flex-direction: column;
   padding-right: 1rem;
@@ -275,6 +265,12 @@ main {
   font-size: 1.25rem;
   font-weight: 700;
   letter-spacing: -0.025em;
+}
+
+p#report-date {
+  font-size: 0.8125rem;
+  color: var(--text-subtle);
+  margin-top: 0.125rem;
 }
 
 #ts-all-state {
@@ -324,13 +320,10 @@ main {
 }
 
 /* ==========================================================================
-   6. INTERACTIVE COMPONENTS (Buttons, Inputs, Chips)
-   ========================================================================== */
-
+6. INTERACTIVE COMPONENTS (Buttons, Inputs, Chips)
+========================================================================== */
 /* Icon Buttons */
-
 .icon-btn {
-  align-items: center;
   background: transparent;
   border-radius: 0.375rem;
   border: 1px solid transparent;
@@ -338,19 +331,21 @@ main {
   cursor: pointer;
   display: flex;
   height: 32px;
+  align-items: center;
   justify-content: center;
   transition: all 0.2s;
   width: 32px;
+  color: var(--text-subtle);
 }
 
+button#group-by-btn:hover,
 .icon-btn:hover,
 .icon-btn.active {
-  background-color: var(--bg-hover);
-  color: var(--text-main);
+  background-color: var(--bg-hover) !important;
+  color: var(--text-main) !important;
 }
 
 /* Filter Chips */
-
 .filter-chip {
   /* blue-50 */
   color: #1e40af;
@@ -401,7 +396,6 @@ main {
 }
 
 /* Add Filter Button */
-
 .add-filter-btn {
   align-items: center;
   background: transparent;
@@ -424,7 +418,6 @@ main {
 }
 
 /* Segmented Controls */
-
 .segmented-control {
   background-color: var(--bg-hover);
   border-radius: 0.375rem;
@@ -440,13 +433,12 @@ main {
   color: var(--text-gray-500);
   cursor: pointer;
   display: flex;
-  font-size: 0.8rem;
+  font-size: 0.8125rem;
   font-weight: 500;
-  height: 28px;
+  height: 24px;
   justify-content: center;
-  padding: 0.32rem;
+  padding: 0 1rem;
   transition: all 0.2s ease;
-  width: 28px;
 }
 
 .segment-btn:hover:not(.active) {
@@ -459,8 +451,59 @@ main {
   color: var(--text-link);
 }
 
-/* Dropdowns */
+/* Search Bar */
+.search-bar-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 0.375rem;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--text-subtle);
+  transition: all 0.2s;
+  cursor: pointer;
+}
 
+.search-bar-container:hover {
+  background-color: var(--bg-hover);
+  color: var(--text-main);
+}
+
+.search-bar-container.active {
+  border-color: var(--border-interactive);
+  background-color: #ffffff;
+  padding: 0.25rem 0.5rem;
+  width: auto;
+  height: auto;
+}
+
+.search-bar-input {
+  border: none;
+  outline: none;
+  padding: 0;
+  font-size: 0.8125rem;
+  width: 0;
+  transition: width 0.2s, padding 0.2s;
+  background: transparent;
+}
+
+.search-bar-container.active .search-bar-input {
+  width: 150px;
+  padding: 0.25rem 0.5rem;
+}
+
+.search-bar-icon {
+  color: var(--text-gray-500);
+  width: 16px;
+  height: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Dropdowns */
 .dropdown-menu {
   /* Changed from hidden to allow submenus */
   animation: fadeIn 0.1s ease-out;
@@ -487,7 +530,6 @@ main {
 }
 
 /* Ensure visibility toggling works */
-
 .dropdown-item {
   color: var(--text-gray-900);
   cursor: pointer;
@@ -502,7 +544,6 @@ main {
 }
 
 /* Popover Content */
-
 .popover-search-container {
   background: var(--bg-card);
   border-bottom: 1px solid var(--border-color);
@@ -559,7 +600,6 @@ main {
 }
 
 /* Action-Based Dropdown Styles */
-
 .dropdown-action-zone {
   align-items: center;
   background-color: var(--bg-subtle);
@@ -594,9 +634,8 @@ main {
 }
 
 /* ==========================================================================
-   7. BREADCRUMBS
-   ========================================================================== */
-
+7. BREADCRUMBS
+========================================================================== */
 .breadcrumb-row {
   align-items: center;
   display: flex;
@@ -633,12 +672,9 @@ div#flat-breadcrumbs .mx-1 {
 }
 
 /* ==========================================================================
-   8. TABLES & DATA GRID
-   ========================================================================== */
-
+8. TABLES & DATA GRID
+========================================================================== */
 .table-container {
-  /* Take remaining height */
-  ;
   background: var(--bg-card);
   border-radius: 0.5rem;
   border: 1px solid var(--border-color);
@@ -691,7 +727,6 @@ tbody tr:hover {
 }
 
 /* Sticky Columns (Name) */
-
 .sticky-name {
   background: inherit;
   border-right: 1px solid var(--border-color);
@@ -726,6 +761,7 @@ td.truncate span {
     opacity: 0;
     transform: translateY(-4px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -736,25 +772,26 @@ td.truncate span {
   0% {
     background-color: rgba(253, 224, 71, 0.5);
   }
+
   50% {
     background-color: rgba(253, 224, 71, 0.1);
   }
+
   100% {
     background-color: transparent;
   }
 }
 
 /* CSS Tooltip */
-
 [data-tooltip] {
   position: relative;
 }
 
 [data-tooltip]:hover::after {
-  animation: fadeIn 0.15s ease-out;
+  animation: 0.15s ease-out;
   background-color: var(--bg-tooltip);
   border-radius: 0.25rem;
-  bottom: 110%;
+  top: 150%;
   box-shadow: var(--shadow-md);
   color: var(--text-inverse);
   content: attr(data-tooltip);
@@ -764,12 +801,15 @@ td.truncate span {
   pointer-events: none;
   position: absolute;
   transform: translateX(-50%);
-  white-space: nowrap;
+  white-space: normal;
   z-index: 1000;
+  width: 260px;
+  text-transform: none;
+  font-size: 12px;
+  font-weight: 300;
 }
 
 /* Impact Tags */
-
 .impact-container {
   display: flex;
   flex-wrap: wrap;
@@ -782,8 +822,236 @@ td.truncate span {
   border: 1px solid var(--border-color);
   color: var(--text-gray-900);
   font-size: 0.7rem;
-  font-weight: 700;
+  font-weight: 600;
   letter-spacing: 0.025em;
   padding: 0.125rem 0.375rem;
   text-transform: uppercase;
+}
+
+#report-view .breadcrumb-row {
+  margin-bottom: 1rem !important;
+}
+
+/* Floating Action Button */
+.fab {
+  position: fixed;
+  bottom: 1.5rem;
+  right: 1.5rem;
+  padding: 0.5rem 1rem;
+  border-radius: 2rem;
+  background-color: #1a202c;
+  color: #ffffff;
+  display: none;
+  align-items: center;
+  gap: 0.5rem;
+  box-shadow: var(--shadow-lg);
+  cursor: pointer;
+  transition: transform 0.2s, background-color 0.2s;
+  z-index: 1000;
+  border: none;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.fab:hover {
+  background-color: #2d3748;
+  transform: scale(1.05);
+}
+
+/* Side Panel */
+.side-panel {
+  position: fixed;
+  top: 0;
+  right: 0;
+  width: 400px;
+  height: 100%;
+  background-color: #ffffff;
+  box-shadow: var(--shadow-lg);
+  z-index: 1001;
+  display: flex;
+  flex-direction: column;
+  transition: transform 0.3s ease-in-out;
+  transform: translateX(100%);
+  border-left: 1px solid var(--border-color);
+}
+
+.side-panel.open {
+  transform: translateX(0);
+}
+
+.side-panel-header {
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid var(--border-color);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.side-panel-header .header-left {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.side-panel-header h2 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #000000;
+}
+
+.side-panel-content {
+  padding: 1.5rem;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.help-section {
+  margin-bottom: 1.5rem;
+}
+
+.help-section-title {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #718096;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 0.75rem;
+}
+
+.help-section p {
+  font-size: 0.875rem;
+  color: #2d3748;
+  line-height: 1.6;
+}
+
+/* Legend Cards (Accordion) */
+.legend-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.legend-item {
+  background-color: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  transition: background-color 0.2s, border-color 0.2s;
+  overflow: hidden;
+}
+
+.legend-item:hover {
+  background-color: #f8fafc;
+  border-color: #cbd5e1;
+}
+
+.legend-item-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem 1rem;
+}
+
+.legend-item-title {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #1a202c;
+}
+
+.legend-item-arrow {
+  color: #a0aec0;
+  transition: transform 0.2s;
+}
+
+.legend-item.open .legend-item-arrow {
+  transform: rotate(90deg);
+}
+
+.legend-item-content {
+  padding: 0 1rem 0.75rem 1rem;
+  font-size: 0.875rem;
+  color: #4a5568;
+  line-height: 1.5;
+  display: none;
+}
+
+.legend-item.open .legend-item-content {
+  display: block;
+}
+
+/* Documentation Links (Cards) */
+.doc-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.doc-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: self-start;
+  padding: 0.75rem 1rem;
+  background-color: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.5rem;
+  text-decoration: none;
+  transition: background-color 0.2s, border-color 0.2s;
+}
+
+.doc-card:hover {
+  background-color: #f8fafc;
+  border-color: #cbd5e1;
+}
+
+.doc-card-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.doc-card-title {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #2563eb;
+}
+
+.doc-card-domain {
+  font-size: 0.75rem;
+  color: #718096;
+}
+
+.doc-card-desc {
+  font-size: 0.75rem;
+  color: #4a5568;
+}
+
+.doc-card-icon {
+  color: #a0aec0;
+}
+
+
+
+/* Tooltip Icon */
+.tooltip-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1rem;
+  height: 1rem;
+  color: #a0aec0;
+  cursor: pointer;
+  margin-left: 0.25rem;
+  vertical-align: middle;
+  border: 1px solid #a0aec0;
+  border-radius: 50%;
+  font-size: 0.75rem;
+}
+
+.tooltip-icon:hover {
+  color: #718096;
+}
+
+.divider {
+  border-top: 1px solid #e2e8f0;
+  margin: 1.5rem 0;
 }

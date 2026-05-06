@@ -48,11 +48,6 @@ public class EnsureNoDebugInfoEmittedForPcOnlyTestRunner extends TestBase {
     this.parameters = parameters;
   }
 
-  private boolean apiLevelSupportsPcAndSourceFileOutput() {
-    // TODO(b/146565491): Update with API level once fixed.
-    return false;
-  }
-
   @Test
   public void testD8Debug() throws Exception {
     testForD8(parameters.getBackend())
@@ -74,7 +69,7 @@ public class EnsureNoDebugInfoEmittedForPcOnlyTestRunner extends TestBase {
         .setMinApi(parameters)
         .internalEnableMappingOutput()
         .applyIf(
-            apiLevelSupportsPcAndSourceFileOutput(),
+            canDiscardResidualDebugInfo(parameters),
             builder ->
                 builder.addOptionsModification(
                     options -> {
@@ -94,7 +89,7 @@ public class EnsureNoDebugInfoEmittedForPcOnlyTestRunner extends TestBase {
         .run(parameters.getRuntime(), MAIN)
         .inspectFailure(
             inspector -> {
-              if (apiLevelSupportsPcAndSourceFileOutput()) {
+              if (canDiscardResidualDebugInfo(parameters)) {
                 checkNoDebugInfo(inspector, 5);
               } else {
                 checkHasLineNumberInfo(inspector);
@@ -118,7 +113,7 @@ public class EnsureNoDebugInfoEmittedForPcOnlyTestRunner extends TestBase {
 
   @Test
   public void testNoEmittedDebugInfoR8() throws Exception {
-    assumeTrue(apiLevelSupportsPcAndSourceFileOutput());
+    assumeTrue(canDiscardResidualDebugInfo(parameters));
     testForR8(parameters.getBackend())
         .addProgramClasses(MAIN)
         .addKeepMainRule(MAIN)

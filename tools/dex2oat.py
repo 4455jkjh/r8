@@ -73,7 +73,6 @@ def ParseOptions():
     parser.add_option('--version',
                       help='Version of dex2oat. (defaults to latest: ' +
                       LATEST + ').',
-                      choices=VERSIONS,
                       default=LATEST)
     parser.add_option(
         '--device',
@@ -91,6 +90,9 @@ def ParseOptions():
                       help='Enable verbose dex2oat logging.',
                       choices=VERBOSE_OPTIONS,
                       default=None)
+    parser.add_option('--dump-cfg',
+                      help='Dump the CFG to this file.',
+                      default=None)
     return parser.parse_args()
 
 
@@ -98,6 +100,15 @@ def Main():
     (options, args) = ParseOptions()
     if len(args) != 1:
         print("Can only take a single dex/zip/jar/apk file as input.")
+        return 1
+    if options.version not in VERSIONS and not os.path.exists(
+            os.path.join(utils.THIRD_PARTY, 'dex2oat', options.version)):
+        print("Unknown version %s" % options.version)
+        return 1
+    if options.dump_cfg and options.version in VERSIONS:
+        print(
+            "--dump-cfg is only supported for standalone dex2oat versions (not host ART)."
+        )
         return 1
     if (options.device):
         return run_device_dex2oat(options, args)
@@ -113,7 +124,10 @@ def run_host_dex2oat(options, args):
     oatfile = options.output
     versions = VERSIONS if options.all else [options.version]
     for version in versions:
-        run(options, dexfile, oatfile, version)
+        if version in VERSIONS:
+            dex2oat_from_host_art(options, dexfile, oatfile, version)
+        else:
+            dex2oat(options, dexfile, oatfile, version)
         print("")
     return 0
 
@@ -159,7 +173,7 @@ def run_device_dex2oat(options, args):
     return 0
 
 
-def run(options, dexfile, oatfile=None, version=None):
+def dex2oat_from_host_art(options, dexfile, oatfile=None, version=None):
     if not version:
         version = LATEST
     # dex2oat accepts non-existent dex files, check here instead
@@ -188,6 +202,57 @@ def run(options, dexfile, oatfile=None, version=None):
         utils.PrintCmd(cmd)
         with utils.ChangedWorkingDirectory(base):
             subprocess.check_call(cmd, env=env)
+
+
+def dex2oat(options, dexfile, oatfile=None, version=None):
+    bootclassjars = [
+        'bootjars/core-oj.jar',
+        'bootjars/core-libart.jar',
+        'bootjars/okhttp.jar',
+        'bootjars/bouncycastle.jar',
+        'bootjars/apache-xml.jar',
+    ]
+
+    dex2oat_dir = os.path.join(utils.THIRD_PARTY, 'dex2oat', version)
+    with utils.TempDir() as temp:
+        if not oatfile:
+            oatfile = os.path.join(temp, "out.oat")
+        appimage = os.path.join(temp, 'classes.art')
+        arch = 'x86_64'
+
+        cmd = [
+            os.path.join(dex2oat_dir, 'x86_64', 'bin', 'dex2oat64'),
+            '--android-root=' + dex2oat_dir,
+            '--generate-debug-info',
+            '--dex-location=/system/framework/classes.dex',
+            '--dex-file=' + dexfile,
+            '--copy-dex-files=always',
+        ]
+        if version != '33.10':
+            cmd.extend(['--runtime-arg', '-Xgc:CMC'])
+
+        cmd.extend([
+            '--runtime-arg',
+            '-Xbootclasspath:' + ':'.join(
+                map(lambda x: os.path.join(dex2oat_dir, x), bootclassjars)),
+            '--runtime-arg',
+            '-Xbootclasspath-locations:/apex/com.android.art/javalib/core-oj.jar'
+            + ':/apex/com.android.art/javalib/core-libart.jar' +
+            ':/apex/com.android.art/javalib/okhttp.jar' +
+            ':/apex/com.android.art/javalib/bouncycastle.jar' +
+            ':/apex/com.android.art/javalib/apache-xml.jar',
+            '--boot-image=' + dex2oat_dir + '/app/system/framework/boot.art',
+            '--oat-file=' + oatfile,
+            '--app-image-file=' + appimage,
+            '--instruction-set=' + arch,
+        ])
+        if version != '33.10':
+            cmd.append('--force-allow-oj-inlines')
+        if options.dump_cfg:
+            cmd.append('--dump-cfg=' + options.dump_cfg)
+        append_dex2oat_verbose_flags(options, cmd)
+        utils.PrintCmd(cmd)
+        subprocess.check_call(cmd)
 
 
 if __name__ == '__main__':

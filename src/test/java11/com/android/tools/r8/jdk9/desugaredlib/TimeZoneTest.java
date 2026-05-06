@@ -80,10 +80,10 @@ public class TimeZoneTest extends DesugaredLibraryTestBase {
       if (parameters.getDexRuntimeVersion() == Version.V4_4_4) {
         return EXPECTED_OUTPUT_NO_TZ_DATA_4_4_4;
       }
-      // VMs newer than 12.0.0, the tz data is missing. The desugared library behavior uses
+      // VMs from 12.0.0 to 16.0.0, the tz data is missing. The desugared library behavior uses
       // emulated tz data and is as if the tz data was present. The non desugared behavior is
       // different since the tz data is missing.
-      if (parameters.getDexRuntimeVersion().isNewerThanOrEqual(Version.V12_0_0)) {
+      if (parameters.getDexRuntimeVersion().isInRangeInclusive(Version.V12_0_0, Version.V16_0_0)) {
         if (!desugaring || !libraryDesugaringSpecification.hasCompleteTimeDesugaring(parameters)) {
           return EXPECTED_OUTPUT_NO_TZ_DATA;
         }

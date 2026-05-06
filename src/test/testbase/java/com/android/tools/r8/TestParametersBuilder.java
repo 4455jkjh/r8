@@ -19,6 +19,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.function.BiPredicate;
+import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -376,6 +377,19 @@ public class TestParametersBuilder {
 
   public static String getRuntimesProperty() {
     return System.getProperty("runtimes");
+  }
+
+  /** Filters the items based on the build-configured runtime filter. */
+  public static <T> List<T> filterByDexVmVersion(
+      List<T> items, Function<T, DexVm.Version> versionExtractor) {
+    Set<DexVm.Version> allowedVersions =
+        getAvailableRuntimes()
+            .filter(TestRuntime::isDex)
+            .map(r -> r.asDex().getVersion())
+            .collect(Collectors.toSet());
+    return items.stream()
+        .filter(item -> allowedVersions.contains(versionExtractor.apply(item)))
+        .collect(Collectors.toList());
   }
 
   private static Stream<TestRuntime> getUnfilteredAvailableRuntimes() {

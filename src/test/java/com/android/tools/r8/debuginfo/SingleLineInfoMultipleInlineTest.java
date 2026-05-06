@@ -67,7 +67,9 @@ public class SingleLineInfoMultipleInlineTest extends TestBase {
               assertThat(mainSubject.uniqueMethodWithOriginalName("inlinee"), not(isPresent()));
               assertThat(
                   mainSubject.uniqueMethodWithOriginalName("shouldNotRemoveLineNumberForInline"),
-                  hasLineNumberTable());
+                  canDiscardResidualDebugInfo(parameters)
+                      ? not(hasLineNumberTable())
+                      : hasLineNumberTable());
             });
   }
 

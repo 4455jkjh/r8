@@ -465,6 +465,7 @@ private object Versions {
   public const val androidxCollectionVersion = "1.6.0"
   public const val androidxTracingVersion = "2.0.0-alpha05"
   public const val asmVersion = "9.9"
+  public const val ddmLibVersion = "32.2.0"
   public const val errorproneVersion = "2.18.0"
   public const val fastUtilVersion = "7.2.1"
   public const val gsonVersion = "2.10.1"
@@ -494,6 +495,7 @@ public object Deps {
   public val asm: String by lazy { "org.ow2.asm:asm:${Versions.asmVersion}" }
   public val asmUtil: String by lazy { "org.ow2.asm:asm-util:${Versions.asmVersion}" }
   public val asmCommons: String by lazy { "org.ow2.asm:asm-commons:${Versions.asmVersion}" }
+  public val ddmLib: String by lazy { "com.android.tools.ddms:ddmlib:${Versions.ddmLibVersion}" }
   public val errorprone: String by lazy {
     "com.google.errorprone:error_prone_core:${Versions.errorproneVersion}"
   }
@@ -569,6 +571,7 @@ public object ThirdPartyDeps {
     )
   public val androidJars: List<ThirdPartyDependency> = getThirdPartyAndroidJars()
   public val androidVMs: List<ThirdPartyDependency> = getThirdPartyAndroidVms()
+  public val dex2Oats: List<ThirdPartyDependency> = getThirdPartyDex2Oats()
   public val apiDatabase: ThirdPartyDependency =
     ThirdPartyDependency(
       "apiDatabase",
@@ -746,12 +749,6 @@ public object ThirdPartyDeps {
       "dart-sdk",
       Paths.get("third_party", "dart-sdk").toFile(),
       Paths.get("third_party", "dart-sdk.tar.gz.sha1").toFile(),
-    )
-  public val ddmLib: ThirdPartyDependency =
-    ThirdPartyDependency(
-      "ddmlib",
-      Paths.get("third_party", "ddmlib").toFile(),
-      Paths.get("third_party", "ddmlib.tar.gz.sha1").toFile(),
     )
   public val examples: ThirdPartyDependency =
     ThirdPartyDependency(
@@ -1131,6 +1128,18 @@ private fun getThirdPartyAndroidJar(version: String): ThirdPartyDependency {
     version,
     Paths.get("third_party", "android_jar", version).toFile(),
     Paths.get("third_party", "android_jar", "$version.tar.gz.sha1").toFile(),
+  )
+}
+
+private fun getThirdPartyDex2Oats(): List<ThirdPartyDependency> {
+  return listOf("head", "36.0", "35.14", "33.10").map(::getThirdPartyDex2Oat)
+}
+
+private fun getThirdPartyDex2Oat(version: String): ThirdPartyDependency {
+  return ThirdPartyDependency(
+    version,
+    Paths.get("third_party", "dex2oat", version).toFile(),
+    Paths.get("third_party", "dex2oat", "$version.tar.gz.sha1").toFile(),
   )
 }
 

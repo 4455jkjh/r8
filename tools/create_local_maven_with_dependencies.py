@@ -28,7 +28,7 @@ KOTLIN_METADATA_VERSION = '2.3.10'
 # This version is both our kotlin compiler and Gradle's (current) kotlin compiler.
 # If Gradle is upgraded, then this version might have to split into two and
 # the dependencies untangled.
-KOTLIN_VERSION = '2.0.21'
+KOTLIN_VERSION = '2.2.21'
 GUAVA_VERSION = '32.1.2-jre'
 GSON_VERSION = '2.10.1'
 JAVASSIST_VERSION = '3.29.2-GA'
@@ -40,6 +40,7 @@ TESTNG_VERSION = '6.10'
 JUNIT_JUPITER_VERSION = '5.14.3'
 JUNIT_PLATFORM_VERSION = '1.14.3'
 ZIPFLINGER_VERSION = '9.0.0'
+DDMLIB_VERSION = '32.2.0'
 
 # keepanno & resource shrinker dependencies
 PROTOBUF_VERSION = '4.33.5'
@@ -99,6 +100,7 @@ BUILD_DEPENDENCIES = [
         version=KOTLIN_VERSION),
     'org.jetbrains.kotlin:kotlin-metadata-jvm:{version}'.format(
         version=KOTLIN_METADATA_VERSION),
+    'com.android.tools.ddms:ddmlib:{version}'.format(version=DDMLIB_VERSION),
 ]
 
 TEST_DEPENDENCIES = [
@@ -121,9 +123,10 @@ TEST_DEPENDENCIES = [
 ]
 
 PLUGIN_DEPENDENCIES = [
-    'org.jetbrains.kotlin.jvm:org.jetbrains.kotlin.jvm.gradle.plugin:pom:2.0.21',
+    'org.jetbrains.kotlin.jvm:org.jetbrains.kotlin.jvm.gradle.plugin:pom:{version}'
+    .format(version=KOTLIN_VERSION),
     'com.google.protobuf:protobuf-gradle-plugin:0.9.4',
-    'org.gradle.kotlin.kotlin-dsl:org.gradle.kotlin.kotlin-dsl.gradle.plugin:pom:5.1.2',
+    'org.gradle.kotlin.kotlin-dsl:org.gradle.kotlin.kotlin-dsl.gradle.plugin:pom:6.4.2',
     'org.jetbrains.kotlin:kotlin-gradle-plugin-api:1.9.10',
     'net.ltgt.errorprone:net.ltgt.errorprone.gradle.plugin:pom:3.0.1',
     'org.spdx.sbom:org.spdx.sbom.gradle.plugin:pom:0.4.0',

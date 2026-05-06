@@ -2,7 +2,6 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-import java.util.concurrent.Callable
 import org.gradle.api.JavaVersion
 
 plugins {
@@ -29,9 +28,13 @@ val sharedDepsInternalScope by configurations.dependencyScope("sharedDepsInterna
 val sharedDepsInternalConfig by
   configurations.resolvable("sharedDepsInternalConfig") { extendsFrom(sharedDepsInternalScope) }
 
+val distDepsFilesScope by configurations.dependencyScope("distDepsFilesScope")
+val distDepsFiles by configurations.resolvable("distDepsFiles") { extendsFrom(distDepsFilesScope) }
+
 dependencies {
   sharedDepsScope(project(":shared", "sharedDepsFiles"))
   sharedDepsInternalScope(project(":shared", "sharedDepsInternalFiles"))
+  distDepsFilesScope(project(":dist", "filteredDepsJarConfig"))
 }
 
 val keepAnnoClassesScope by configurations.dependencyScope("keepAnnoClassesScope")
@@ -59,7 +62,8 @@ fun testDependencies(): FileCollection {
 tasks {
   withType<Test> {
     TestingState.setUpTestingState(this)
-    dependsOn(distR8WithRelocatedDeps, distSwissArmyKnife)
+    dependsOn(distR8WithRelocatedDeps, distSwissArmyKnife, distDepsFiles)
+    systemProperty("R8_DEPS", distDepsFiles.asPath)
     systemProperty(
       "TEST_DATA_LOCATION",
       layout.buildDirectory.dir("classes/java/test").get().toString(),
@@ -79,9 +83,7 @@ tasks {
     )
     systemProperty(
       "BUILD_PROP_KEEPANNO_RUNTIME_PATH",
-      project.provider {
-        extractClassesPaths("keepanno" + File.separator, keepAnnoClassesConfig.asPath)
-      },
+      extractClassesPaths("keepanno" + File.separator, keepAnnoClassesConfig.asPath),
     )
     systemProperty("R8_SWISS_ARMY_KNIFE", distSwissArmyKnife.outputs.files.singleFile)
     systemProperty("R8_WITH_RELOCATED_DEPS", distR8WithRelocatedDeps.outputs.files.singleFile)
@@ -101,7 +103,7 @@ tasks {
       if (!project.hasProperty("no_internal")) {
         dependsOn(sharedDepsInternalConfig)
       }
-      from(Callable { testDependencies().map(::zipTree) })
+      from(testDependencies().map(::zipTree))
       duplicatesStrategy = DuplicatesStrategy.EXCLUDE
       archiveFileName.set("deps.jar")
     }
