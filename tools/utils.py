@@ -386,8 +386,6 @@ def EnsureDepFromGoogleCloudStorage(sha1, msg, dep=None, tgz=None):
         # Update the mtime of the tar file to make sure we do not run again unless
         # there is an update.
         os.utime(tgz, None)
-    else:
-        print('Ensure cloud dependency:', msg, 'present')
 
 
 def DownloadFromX20(sha1_file):
