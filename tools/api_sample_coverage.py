@@ -28,7 +28,7 @@ def main(output_dir=None):
     if output_dir is None:
         output_dir = ''
 
-    java_executable = jdk.GetJavaExecutable()
+    java_executable = jdk.GetJavaExecutable(jdk.GetDefaultJdkHome())
     printseeds_path = os.path.join(output_dir, 'keep-seeds.txt')
     printseeds_args = [
         java_executable,
