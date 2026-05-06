@@ -1,36 +1,29 @@
 // Copyright (c) 2026, the R8 project authors. Please see the AUTHORS file
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
-
 /**
  * Utility functions for analyzing Blast Radius data.
  */
-
 function getDisallowObfuscationCount(data) {
   return getScore(data, 'DONT_OBFUSCATE');
 }
-
 function getDisallowOptimizationCount(data) {
   return getScore(data, 'DONT_OPTIMIZE');
 }
-
 function getDisallowShrinkingCount(data) {
   return getScore(data, 'DONT_SHRINK');
 }
-
 function getLiveItemCount(data) {
   if (!data || !data.buildInfo) return 0;
   return (data.buildInfo.liveClassCount || 0) +
-         (data.buildInfo.liveFieldCount || 0) +
-         (data.buildInfo.liveMethodCount || 0);
+    (data.buildInfo.liveFieldCount || 0) +
+    (data.buildInfo.liveMethodCount || 0);
 }
-
 /**
  * Returns detailed counts for the stats table.
  */
 function getDetailedStats(data) {
   if (!data) return null;
-
   const build = data.buildInfo || {};
   const stats = {
     classes: { total: build.liveClassCount || 0, obfuscation: 0, optimization: 0, shrinking: 0 },
@@ -38,10 +31,8 @@ function getDetailedStats(data) {
     methods: { total: build.liveMethodCount || 0, obfuscation: 0, optimization: 0, shrinking: 0 },
     overall: { total: getLiveItemCount(data), obfuscation: 0, optimization: 0, shrinking: 0 }
   };
-
   const constraintsMap = getConstraintsMap(data);
   const rulesMap = getRulesConstraintsMap(data);
-
   const processTable = (table, key) => {
     if (!table) return;
     table.forEach(item => {
@@ -52,18 +43,14 @@ function getDetailedStats(data) {
       if (constraints.includes('DONT_SHRINK')) stats[key].shrinking++;
     });
   };
-
   processTable(data.keptClassInfoTable, 'classes');
   processTable(data.keptFieldInfoTable, 'fields');
   processTable(data.keptMethodInfoTable, 'methods');
-
   stats.overall.obfuscation = stats.classes.obfuscation + stats.fields.obfuscation + stats.methods.obfuscation;
   stats.overall.optimization = stats.classes.optimization + stats.fields.optimization + stats.methods.optimization;
   stats.overall.shrinking = stats.classes.shrinking + stats.fields.shrinking + stats.methods.shrinking;
-
   return stats;
 }
-
 function getConstraintsMap(data) {
   const constraintsMap = new Map();
   if (data.keepConstraintsTable) {
@@ -73,7 +60,6 @@ function getConstraintsMap(data) {
   }
   return constraintsMap;
 }
-
 function getRulesConstraintsMap(data) {
   const rulesMap = new Map();
   if (data.keepRuleBlastRadiusTable) {
@@ -83,12 +69,10 @@ function getRulesConstraintsMap(data) {
   }
   return rulesMap;
 }
-
 function getImpactArray(constraints) {
   if (!constraints) return [];
   return constraints;
 }
-
 /**
  * Returns formatted rules for the table.
  */
@@ -115,13 +99,11 @@ function getRules(data) {
     };
   });
 }
-
 /**
  * Returns formatted files (origins) for the table.
  */
 function getRuleFiles(data) {
   if (!data || !data.fileOriginTable || !data.keepRuleBlastRadiusTable) return [];
-
   const fileMap = new Map();
   const constraintsMap = getConstraintsMap(data);
   data.fileOriginTable.forEach(f => {
@@ -138,7 +120,6 @@ function getRuleFiles(data) {
       }
     });
   });
-
   data.keepRuleBlastRadiusTable.forEach(rule => {
     const fileId = rule.origin?.fileOriginId;
     const fileEntry = fileMap.get(fileId);
@@ -148,11 +129,9 @@ function getRuleFiles(data) {
       const c = br.classBlastRadius || [];
       const f = br.fieldBlastRadius || [];
       const m = br.methodBlastRadius || [];
-
       c.forEach(id => fileEntry.matches.classes.add(id));
       f.forEach(id => fileEntry.matches.fields.add(id));
       m.forEach(id => fileEntry.matches.methods.add(id));
-
       const constraints = constraintsMap.get(rule.constraintsId) || [];
       if (constraints.includes('DONT_OBFUSCATE')) {
         c.forEach(id => fileEntry.impact.obfuscation.add('c' + id));
@@ -171,7 +150,6 @@ function getRuleFiles(data) {
       }
     }
   });
-
   if (data.globalKeepRuleBlastRadiusTable) {
     data.globalKeepRuleBlastRadiusTable.forEach(rule => {
       const fileId = rule.origin?.fileOriginId;
@@ -181,7 +159,6 @@ function getRuleFiles(data) {
       }
     });
   }
-
   return Array.from(fileMap.values()).map(f => ({
     id: f.id,
     name: f.name,
@@ -199,7 +176,6 @@ function getRuleFiles(data) {
     }
   }));
 }
-
 function formatDescriptor(desc) {
   if (!desc) return "Unknown";
   let dimensions = 0;
@@ -250,11 +226,25 @@ function formatDescriptor(desc) {
   }
   return res;
 }
-
-function formatMethodName(methodRef, data, typeRefMap) {
+function formatMethodName(methodRef, dataOrLookups, typeRefMap) {
   if (!methodRef) return "Unknown method";
-  const className = formatDescriptor(typeRefMap.get(methodRef.classReferenceId));
+  
+  if (dataOrLookups && dataOrLookups.typeReference) {
+    const lookups = dataOrLookups;
+    const className = formatDescriptor(lookups.typeReference.get(methodRef.classReferenceId));
+    const proto = lookups.protoReference.get(methodRef.protoReferenceId);
+    let params = "";
+    if (proto && proto.parametersId) {
+      const list = lookups.typeReferenceList.get(proto.parametersId);
+      if (list && list.typeReferenceIds) {
+        params = list.typeReferenceIds.map(id => formatDescriptor(lookups.typeReference.get(id))).join(', ');
+      }
+    }
+    return `${className}.${methodRef.name}(${params})`;
+  }
 
+  const data = dataOrLookups;
+  const className = formatDescriptor(typeRefMap.get(methodRef.classReferenceId));
   const proto = (data.protoReferenceTable || []).find(p => p.id === methodRef.protoReferenceId);
   let params = "";
   if (proto && proto.parametersId) {
@@ -265,21 +255,25 @@ function formatMethodName(methodRef, data, typeRefMap) {
   }
   return `${className}.${methodRef.name}(${params})`;
 }
-
-function formatFieldName(fieldRef, data, typeRefMap) {
+function formatFieldName(fieldRef, dataOrLookups, typeRefMap) {
   if (!fieldRef) return "Unknown field";
+  
+  if (dataOrLookups && dataOrLookups.typeReference) {
+    const lookups = dataOrLookups;
+    const className = formatDescriptor(lookups.typeReference.get(fieldRef.classReferenceId));
+    return `${className}.${fieldRef.name}`;
+  }
+
   const className = formatDescriptor(typeRefMap.get(fieldRef.classReferenceId));
   return `${className}.${fieldRef.name}`;
 }
-
 function formatMavenCoordinate(m) {
   if (!m || !m.groupId) return null;
   return `${m.groupId}:${m.artifactId}:${m.version}`;
 }
-
 function escapeHTML(str) {
   if (!str) return "";
-  return str.replace(/[&<>"']/g, function(m) {
+  return str.replace(/[&<>"']/g, function (m) {
     return {
       '&': '&amp;',
       '<': '&lt;',
@@ -289,6 +283,16 @@ function escapeHTML(str) {
     }[m];
   });
 }
+function highlightRule(source) {
+  if (!source) return "";
+  const escapedSource = escapeHTML(source);
+  // Highlight semicolon FIRST with negative lookbehind so we don't match inside subsequently inserted HTML tags or existing HTML entities
+  return escapedSource
+    .replace(/(?<!&[a-zA-Z0-9#]+);/g, '<span style="color: #ca8a04;">;</span>')
+    .replace(/([{}*])/g, '<span style="color: #ca8a04;">$1</span>')
+    .replace(/(-keep[a-z]*)/g, '<span style="color: #dc2626;">$1</span>')
+    .replace(/\b(class|interface|enum)\b/g, '<span style="color: #2563eb;">$1</span>');
+}
 
 /**
  * Shared helper to count kept items that have a specific constraint.
@@ -296,17 +300,14 @@ function escapeHTML(str) {
  */
 function getScore(data, constraintName) {
   if (!data) return 0;
-
   const constraintsMap = getConstraintsMap(data);
   const rulesMap = getRulesConstraintsMap(data);
-
   let count = 0;
   const tables = [
     data.keptClassInfoTable,
     data.keptFieldInfoTable,
     data.keptMethodInfoTable
   ];
-
   tables.forEach(table => {
     if (table) {
       table.forEach(item => {
