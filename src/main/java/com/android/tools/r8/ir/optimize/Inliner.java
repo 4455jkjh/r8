@@ -1385,7 +1385,7 @@ public class Inliner {
             appView, ImmutableMap.of(invoke, new InliningInfo(singleTarget)));
   }
 
-  private boolean tryInlineMethodWithoutSideEffects(
+  protected boolean tryInlineMethodWithoutSideEffects(
       IRCode code,
       InstructionListIterator iterator,
       InvokeMethod invoke,

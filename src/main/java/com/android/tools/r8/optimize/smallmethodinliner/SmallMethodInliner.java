@@ -8,6 +8,7 @@ import static com.android.tools.r8.utils.internal.MapUtils.ignoreKey;
 
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.Code;
+import com.android.tools.r8.graph.DexClassAndMethod;
 import com.android.tools.r8.graph.DexEncodedMethod;
 import com.android.tools.r8.graph.DexMethod;
 import com.android.tools.r8.graph.DexProgramClass;
@@ -342,6 +343,20 @@ public class SmallMethodInliner extends Inliner implements InliningReasonStrateg
     }
     super.inlineInvoke(iterator, code, inlinee, blockIterator, blocksToRemove, downcast);
     needsFinalization.add(code.context());
+  }
+
+  @Override
+  protected boolean tryInlineMethodWithoutSideEffects(
+      IRCode code,
+      InstructionListIterator iterator,
+      InvokeMethod invoke,
+      DexClassAndMethod resolvedMethod) {
+    boolean inlined =
+        super.tryInlineMethodWithoutSideEffects(code, iterator, invoke, resolvedMethod);
+    if (inlined) {
+      needsFinalization.add(code.context());
+    }
+    return inlined;
   }
 
   @Override
