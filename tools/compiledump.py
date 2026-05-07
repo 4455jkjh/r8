@@ -622,7 +622,9 @@ def is_hash(version):
     return len(version) == 40
 
 
-def run1(out, args, otherargs, jdkhome=jdk.GetDefaultJdkHome(), worker_id=None):
+def run1(out, args, otherargs, jdkhome=None, worker_id=None):
+    if jdkhome is None:
+        jdkhome = jdk.GetDefaultJdkHome()
     jvmargs = []
     compilerargs = []
     for arg in otherargs:
