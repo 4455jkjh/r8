@@ -54,8 +54,8 @@ def instrument_dex(options, temp_dir, instrumented_dex):
 def export_keep_info(options, temp_dir):
     with utils.TempDir() as compiledump_temp_dir:
         otherargs = [
-            '-Dcom.android.tools.r8.assistant.exportFinalKeepInfoCollection=%s'
-            % os.path.join(temp_dir, 'keepinfo')
+            '-Dcom.android.tools.r8.assistant.exportFinalKeepInfoCollection=%s' %
+            os.path.join(temp_dir, 'keepinfo')
         ]
         args_for_r8 = AttrDict(
             vars(
@@ -118,8 +118,7 @@ def check_reflective_operations(options, temp_dir):
         keep_info_dir = os.path.join(temp_dir, 'keepinfo')
         if os.path.exists(log_file) and os.path.exists(keep_info_dir):
             cmd = [
-                jdk.GetJavaExecutable(jdk.GetDefaultJdkHome()), '-cp',
-                utils.R8_JAR,
+                jdk.GetJavaExecutable(), '-cp', utils.R8_JAR,
                 'com.android.tools.r8.assistant.postprocessing.CheckReflectiveOperations',
                 log_file, keep_info_dir
             ]

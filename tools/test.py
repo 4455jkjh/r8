@@ -713,8 +713,7 @@ def print_jstacks():
             # ricow    184313  2.6  0.0 36839068 31808 ?      Sl   09:53   0:00 /us..
             columns = l.split()
             pid = columns[1]
-            return_value = subprocess.call(
-                [jdk.GetJstackExecutable(jdk.GetDefaultJdkHome()), pid])
+            return_value = subprocess.call([jdk.GetJstackExecutable(), pid])
             if return_value:
                 print('Could not jstack %s' % l)
 

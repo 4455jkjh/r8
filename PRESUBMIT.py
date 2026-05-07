@@ -14,7 +14,7 @@ sys.path.append(path.dirname(inspect.getfile(lambda: None)))
 sys.path.append(
     os.path.join(path.dirname(inspect.getfile(lambda: None)), 'tools'))
 from tools.utils import EnsureDepFromGoogleCloudStorage
-from tools.jdk import GetJavaExecutable, GetDefaultJdkHome
+from tools.jdk import GetJavaExecutable
 
 KOTLIN_FMT_JAR = path.join('third_party', 'google', 'google-kotlin-format',
                            '0.54', 'ktfmt-0.54-jar-with-dependencies.jar')
@@ -126,10 +126,7 @@ def CheckKotlinFormatting(paths, output_api, results):
     }
     needs_formatting_count = 0
     for format in ['--kotlinlang-style', '--google-style']:
-        cmd = [
-            GetJavaExecutable(GetDefaultJdkHome()), '-jar', KOTLIN_FMT_JAR,
-            format, '-n'
-        ]
+        cmd = [GetJavaExecutable(), '-jar', KOTLIN_FMT_JAR, format, '-n']
         to_format = paths_to_format[format]
         if len(to_format) > 0:
             cmd.extend(to_format)
@@ -159,8 +156,7 @@ or fix formatting, commit and upload:
 or bypass the checks with:
 
   git cl upload --bypass-hooks
-    """.format(java=GetJavaExecutable(GetDefaultJdkHome()),
-               fmt_jar=KOTLIN_FMT_JAR)
+    """.format(java=GetJavaExecutable(), fmt_jar=KOTLIN_FMT_JAR)
 
 
 def CheckJavaFormatting(path, branch, output_api, results):

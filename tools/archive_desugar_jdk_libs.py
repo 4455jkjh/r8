@@ -153,9 +153,9 @@ def CloneDesugaredLibrary(github_account, checkout_dir, desugar_jdk_libs_hash):
 
 
 def GetJavaEnv(androidHomeTemp):
-    java_env = dict(os.environ, JAVA_HOME=jdk.GetDefaultJdkHome())
+    java_env = dict(os.environ, JAVA_HOME=jdk.GetJdk17Home())
     java_env['PATH'] = java_env['PATH'] + os.pathsep + os.path.join(
-        jdk.GetDefaultJdkHome(), 'bin')
+        jdk.GetJdk17Home(), 'bin')
     java_env['GRADLE_OPTS'] = '-Xmx1g'
     java_env['ANDROID_HOME'] = androidHomeTemp
     return java_env
@@ -275,7 +275,7 @@ def Undesugar(variant, maven_zip, version, undesugared_maven_zip):
         undesugared_jar = os.path.join(tmp, 'undesugared.jar')
         buildLibs = os.path.join(defines.REPO_ROOT, 'build', 'libs')
         cmd = [
-            jdk.GetJavaExecutable(jdk.GetDefaultJdkHome()), '-cp',
+            jdk.GetJavaExecutable(), '-cp',
             '%s:%s:%s:%s' % (utils.R8_JAR, utils.R8_TESTBASE_JAR,
                              utils.R8_TESTS_JAR, utils.R8_TESTS_DEPS_JAR),
             'com.android.tools.r8.desugar.desugaredlibrary.jdk11.DesugaredLibraryJDK11Undesugarer',
@@ -310,15 +310,14 @@ def MustBeExistingDirectory(path):
 def BuildAndUpload(options, variant):
     desugar_jdk_libs_hash = ''
     with open(DESUGAR_JDK_LIBS_HASH_FILE, 'r') as input_hash:
-        desugar_jdk_libs_hash = input_hash.readline().strip()
+        desugar_jdk_libs_hash = input_hash.readline()
     if options.build_only:
         with utils.TempDir() as checkout_dir:
             CloneDesugaredLibrary(options.github_account, checkout_dir,
                                   desugar_jdk_libs_hash)
-            version = GetVersion(
-                os.path.join(checkout_dir, VERSION_MAP[variant]))
             (library_jar,
-             maven_zip) = BuildDesugaredLibrary(checkout_dir, variant, version)
+             maven_zip) = BuildDesugaredLibrary(checkout_dir, variant,
+                                                desugar_jdk_libs_hash)
             shutil.copyfile(
                 library_jar,
                 os.path.join(options.build_only, os.path.basename(library_jar)))
@@ -386,7 +385,8 @@ def Main(argv):
     utils.EnsureDepFromGoogleCloudStorage(utils.BAZEL_SHA_FILE, 'Bazel tool')
     utils.EnsureDepFromGoogleCloudStorage(utils.JAVA8_SHA_FILE,
                                           'Java 8 runtime')
-    gradle.ensure_deps()
+    utils.EnsureDepFromGoogleCloudStorage(utils.JAVA17_SHA_FILE,
+                                          'Java 17 runtime')
     utils.EnsureDepFromGoogleCloudStorage(utils.DESUGAR_JDK_LIBS_11_SHA_FILE,
                                           'desugar_jdk_libs_11')
 

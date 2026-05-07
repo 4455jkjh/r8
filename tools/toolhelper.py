@@ -41,7 +41,7 @@ def run(tool,
         ])
     if track_memory_file:
         cmd.extend(['tools/track_memory.sh', track_memory_file])
-    cmd.append(jdk.GetJavaExecutable(jdk.GetDefaultJdkHome()))
+    cmd.append(jdk.GetJavaExecutable())
     if extra_args:
         cmd.extend(extra_args)
     if debug_agent is None:

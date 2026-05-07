@@ -19,7 +19,7 @@ ASM_UTIL_JAR = os.path.join(utils.DEPENDENCIES_DIR, 'org', 'ow2', 'asm',
 
 def run(args):
     cmd = []
-    cmd.append(jdk.GetJavaExecutable(jdk.GetDefaultJdkHome()))
+    cmd.append(jdk.GetJavaExecutable())
     cp = ":".join([ASM_JAR, ASM_UTIL_JAR])
     print(cp)
     cmd.extend(['-cp', cp])

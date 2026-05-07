@@ -59,10 +59,7 @@ def getCmd(args, version=DEFAULT, jvmArgs=None):
     cmd = []
     if jvmArgs:
         cmd.extend(jvmArgs)
-    cmd.extend([
-        jdk.GetJavaExecutable(jdk.GetDefaultJdkHome()), '-jar',
-        getJar(version)
-    ])
+    cmd.extend([jdk.GetJavaExecutable(), '-jar', getJar(version)])
     cmd.extend(args)
     return cmd
 

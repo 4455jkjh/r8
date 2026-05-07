@@ -81,15 +81,12 @@ def get_r8_version(r8jar):
         fd = open(name, 'w')
         fd.write(VERSION_EXTRACTOR)
         fd.close()
-        cmd = [
-            jdk.GetJavacExecutable(jdk.GetCompilationJdkHome()), '-cp', r8jar,
-            name
-        ]
+        cmd = [jdk.GetJavacExecutable(), '-cp', r8jar, name]
         print(' '.join(cmd))
         cp_separator = ';' if utils.IsWindows() else ':'
         subprocess.check_call(cmd)
         output = subprocess.check_output([
-            jdk.GetJavaExecutable(jdk.GetDefaultJdkHome()), '-cp',
+            jdk.GetJavaExecutable(), '-cp',
             cp_separator.join([r8jar, os.path.dirname(name)]),
             'VersionExtractor'
         ]).decode('UTF-8').strip()
@@ -142,7 +139,7 @@ def main():
     map_id_template = version + variant
     source_file_template = 'R8_%MAP_ID_%MAP_HASH'
     # TODO(b/139725780): See if we can remove or lower the heap size (-Xmx8g).
-    cmd = [jdk.GetJavaExecutable(jdk.GetDefaultJdkHome()), '-Xmx8g', '-ea']
+    cmd = [jdk.GetJavaExecutable(), '-Xmx8g', '-ea']
     if args.debug_agent:
         cmd.extend([
             '-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=*:5005'
@@ -165,7 +162,7 @@ def main():
     cmd.extend(['--pg-conf-output', args.output + '.config'])
     cmd.extend(['--pg-map-output', args.output + '.map'])
     cmd.extend(['--partition-map-output', args.output + '_map.zip'])
-    cmd.extend(['--lib', jdk.GetCompilationJdkHome()])
+    cmd.extend(['--lib', jdk.GetDefaultJdkHome()])
     if args.pg_conf:
         for pgconf in args.pg_conf:
             cmd.extend(['--pg-conf', pgconf])

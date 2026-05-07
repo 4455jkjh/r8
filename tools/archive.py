@@ -55,8 +55,8 @@ def parse_options():
 
 def get_version():
     output = subprocess.check_output([
-        jdk.GetJavaExecutable(jdk.GetDefaultJdkHome()), '-cp', utils.R8_JAR,
-        'com.android.tools.r8.R8', '--version'
+        jdk.GetJavaExecutable(), '-cp', utils.R8_JAR, 'com.android.tools.r8.R8',
+        '--version'
     ]).decode('utf-8')
     r8_version = output.splitlines()[0].strip()
     return r8_version.split()[1]

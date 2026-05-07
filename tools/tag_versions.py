@@ -69,7 +69,7 @@ def prepare_print_version(dist, temp):
         utils.REPO_ROOT,
         'src/main/java/com/android/tools/r8/utils/PrintR8Version.java')
     cmd = [
-        jdk.GetJavacExecutable(jdk.GetCompilationJdkHome()),
+        jdk.GetJavacExecutable(),
         wrapper_file,
         '-d',
         temp,
@@ -79,7 +79,6 @@ def prepare_print_version(dist, temp):
     utils.PrintCmd(cmd)
     subprocess.check_output(cmd)
     return temp
-
 
 # Testing info: To delete a tag use
 #
@@ -91,11 +90,14 @@ def gerrit_tag(args, tag, hash, description):
         "revision": hash
     })
     cmd = ' '.join([
-        'gob-curl', '--header',
-        '"Content-Type: application/json; charset=UTF-8"', '--request', 'PUT',
-        '--data', "'{data}'".format(data=data),
-        'https://r8-review.git.corp.google.com/a/projects/r8/tags/{tag}'.format(
-            tag=tag)
+        'gob-curl',
+        '--header',
+        '"Content-Type: application/json; charset=UTF-8"',
+        '--request',
+        'PUT',
+        '--data',
+        "'{data}'".format(data=data),
+        'https://r8-review.git.corp.google.com/a/projects/r8/tags/{tag}'.format(tag=tag)
     ])
     result = subprocess.check_output(cmd, stderr=subprocess.STDOUT, shell=True)
     print(result)
@@ -148,7 +150,7 @@ def tag_agp_version(agp_version, args):
             return 1
         print_version_helper = prepare_print_version(utils.R8_JAR, temp)
         output = subprocess.check_output([
-            jdk.GetJavaExecutable(jdk.GetDefaultJdkHome()), '-cp',
+            jdk.GetJavaExecutable(), '-cp',
             ':'.join([jar, print_version_helper]),
             'com.android.tools.r8.utils.PrintR8Version'
         ]).decode('utf-8')
@@ -159,8 +161,7 @@ def tag_agp_version(agp_version, args):
         run(args, ['git', 'tag', '-f', tag, '-m', message, hash])
         if args.use_push:
             run(args, [
-                'git', 'push', '-o', 'push-justification=b/313360935', 'origin',
-                tag
+                'git', 'push', '-o', 'push-justification=b/313360935', 'origin', tag
             ])
         else:
             gerrit_tag(args, tag, hash, message)
@@ -186,8 +187,8 @@ def tag_r8_branch(branch, args):
             run(args, ['git', 'tag', '-a', version, '-m', message, hash])
             if args.use_push:
                 run(args, [
-                    'git', 'push', '-o', 'push-justification=b/313360935',
-                    'origin', version
+                    'git', 'push', '-o', 'push-justification=b/313360935', 'origin',
+                    version
                 ])
             else:
                 gerrit_tag(args, version, hash, message)
