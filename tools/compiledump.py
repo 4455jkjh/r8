@@ -624,7 +624,9 @@ def is_hash(version):
 
 def run1(out, args, otherargs, jdkhome=None, worker_id=None):
     if jdkhome is None:
-        jdkhome = jdk.GetDefaultJdkHome()
+        # TODO(b/510836155): Should use GetDefaultJdkHome but it breaks.
+        jdkhome = jdk.GetJdk11Home()
+    compilation_jdkhome = jdk.GetCompilationJdkHome()
     jvmargs = []
     compilerargs = []
     for arg in otherargs:
@@ -693,7 +695,7 @@ def run1(out, args, otherargs, jdkhome=None, worker_id=None):
         cmd.extend(args.java_opts)
         cmd.extend(['-cp', os.pathsep.join((temp, jar))])
         if compiler == 'd8':
-            prepare_d8_wrapper(jar, temp, jdkhome)
+            prepare_d8_wrapper(jar, temp, compilation_jdkhome)
             cmd.append('com.android.tools.r8.utils.CompileDumpD8')
         if is_l8_compiler(compiler):
             cmd.append('com.android.tools.r8.L8')
@@ -702,10 +704,10 @@ def run1(out, args, otherargs, jdkhome=None, worker_id=None):
             cmd.extend(
                 determine_trace_references_commands(build_properties, out))
         if is_assistant(compiler):
-            prepare_r8assistant_wrapper(jar, temp, jdkhome)
+            prepare_r8assistant_wrapper(jar, temp, compilation_jdkhome)
             cmd.append('com.android.tools.r8.utils.CompileDumpR8Assistant')
         if is_r8_compiler(compiler):
-            prepare_r8_wrapper(jar, temp, jdkhome)
+            prepare_r8_wrapper(jar, temp, compilation_jdkhome)
             cmd.append('com.android.tools.r8.utils.CompileDumpCompatR8')
             if compiler == 'r8':
                 cmd.append('--compat')
