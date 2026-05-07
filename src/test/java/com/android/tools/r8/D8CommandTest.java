@@ -715,6 +715,67 @@ public class D8CommandTest extends CommandTestBase<D8Command> {
   }
 
   @Test
+  public void testReoptimize() throws Throwable {
+    D8Command.builder()
+        .setExperimentalReoptimizeDex(true)
+        .setMinApiLevel(24)
+        .setMode(CompilationMode.RELEASE)
+        .setProgramConsumer(DexIndexedConsumer.emptyConsumer())
+        .build();
+  }
+
+  @Test(expected = CompilationFailedException.class)
+  public void testReoptimizeMissingMinApi() throws Throwable {
+    DiagnosticsChecker.checkErrorsContains(
+        "Option --reoptimize-dex requires --min-api",
+        handler ->
+            D8Command.builder(handler)
+                .setExperimentalReoptimizeDex(true)
+                .setMode(CompilationMode.RELEASE)
+                .setProgramConsumer(DexIndexedConsumer.emptyConsumer())
+                .build());
+  }
+
+  @Test(expected = CompilationFailedException.class)
+  public void testReoptimizeWithIntermediate() throws Throwable {
+    DiagnosticsChecker.checkErrorsContains(
+        "Option --reoptimize-dex cannot be used with --intermediate",
+        handler ->
+            D8Command.builder(handler)
+                .setExperimentalReoptimizeDex(true)
+                .setMinApiLevel(24)
+                .setMode(CompilationMode.RELEASE)
+                .setIntermediate(true)
+                .setProgramConsumer(DexIndexedConsumer.emptyConsumer())
+                .build());
+  }
+
+  @Test(expected = CompilationFailedException.class)
+  public void testReoptimizeWithDebug() throws Throwable {
+    DiagnosticsChecker.checkErrorsContains(
+        "Option --reoptimize-dex requires --release",
+        handler ->
+            D8Command.builder(handler)
+                .setExperimentalReoptimizeDex(true)
+                .setMinApiLevel(24)
+                .setMode(CompilationMode.DEBUG)
+                .setProgramConsumer(DexIndexedConsumer.emptyConsumer())
+                .build());
+  }
+
+  @Test(expected = CompilationFailedException.class)
+  public void testReoptimizeRequiresRelease() throws Throwable {
+    DiagnosticsChecker.checkErrorsContains(
+        "Option --reoptimize-dex requires --release",
+        handler ->
+            D8Command.builder(handler)
+                .setExperimentalReoptimizeDex(true)
+                .setMinApiLevel(24)
+                .setProgramConsumer(DexIndexedConsumer.emptyConsumer())
+                .build());
+  }
+
+  @Test
   public void numThreadsOption() throws Exception {
     assertEquals(ThreadUtils.NOT_SPECIFIED, parse().getThreadCount());
     assertEquals(1, parse("--thread-count", "1").getThreadCount());

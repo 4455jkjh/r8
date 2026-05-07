@@ -114,6 +114,9 @@ public final class D8Command extends BaseCompilerCommand {
     private boolean enableMissingLibraryApiModeling = false;
     private boolean enableRewritingOfArtProfilesIsNopCheck = false;
     private Consumer<? super D8BuildMetadata> buildMetadataConsumer = null;
+    // This flag represents the use case where already compiled code is recompiled via D8 to a
+    // higher API level.
+    private boolean reoptimizeDex = false;
 
     private Builder() {
       this(new DefaultD8DiagnosticsHandler());
@@ -472,6 +475,16 @@ public final class D8Command extends BaseCompilerCommand {
     }
 
     /**
+     * Enable experimental/pre-release support for reoptimizing dex code to a new minimum android
+     * API.
+     */
+    @Deprecated
+    public Builder setExperimentalReoptimizeDex(boolean reoptimizeDex) {
+      this.reoptimizeDex = reoptimizeDex;
+      return self();
+    }
+
+    /**
      * By default, D8 uses the same naming scheme for synthetic classes as javac uses for anonymous
      * inner classes. By enabling verbose synthetic names, the synthetic classes will include a
      * "$$ExternalSynthetic" marker, which includes the synthetic kind (e.g., "Lambda").
@@ -540,6 +553,17 @@ public final class D8Command extends BaseCompilerCommand {
                   + " was provided)");
         }
       }
+      if (reoptimizeDex) {
+        if (!isMinApiLevelSet()) {
+          reporter.error("Option --reoptimize-dex requires --min-api");
+        }
+        if (intermediate) {
+          reporter.error("Option --reoptimize-dex cannot be used with --intermediate");
+        }
+        if (getMode() != CompilationMode.RELEASE) {
+          reporter.error("Option --reoptimize-dex requires --release");
+        }
+      }
       super.validate();
     }
 
@@ -585,6 +609,7 @@ public final class D8Command extends BaseCompilerCommand {
           getReporter(),
           getDesugaringState(),
           intermediate,
+          reoptimizeDex,
           globalConsumer,
           isOptimizeMultidexForLinearAlloc(),
           getIncludeClassesChecksum(),
@@ -617,6 +642,7 @@ public final class D8Command extends BaseCompilerCommand {
   }
 
   private final boolean intermediate;
+  private final boolean reoptimizeDex;
   private final GlobalSyntheticsConsumer globalSyntheticsConsumer;
   private final SyntheticInfoConsumer syntheticInfoConsumer;
   private final DesugarGraphConsumer desugarGraphConsumer;
@@ -686,6 +712,7 @@ public final class D8Command extends BaseCompilerCommand {
       Reporter diagnosticsHandler,
       DesugarState enableDesugaring,
       boolean intermediate,
+      boolean reoptimizeDex,
       GlobalSyntheticsConsumer globalSyntheticsConsumer,
       boolean optimizeMultidexForLinearAlloc,
       boolean encodeChecksum,
@@ -738,6 +765,7 @@ public final class D8Command extends BaseCompilerCommand {
         cancelCompilationChecker,
         enableVerboseSyntheticNames);
     this.intermediate = intermediate;
+    this.reoptimizeDex = reoptimizeDex;
     this.globalSyntheticsConsumer = globalSyntheticsConsumer;
     this.syntheticInfoConsumer = syntheticInfoConsumer;
     this.desugarGraphConsumer = desugarGraphConsumer;
@@ -757,6 +785,7 @@ public final class D8Command extends BaseCompilerCommand {
   private D8Command(boolean printHelp, boolean printVersion) {
     super(printHelp, printVersion);
     intermediate = false;
+    reoptimizeDex = false;
     globalSyntheticsConsumer = null;
     syntheticInfoConsumer = null;
     desugarGraphConsumer = null;
@@ -795,6 +824,9 @@ public final class D8Command extends BaseCompilerCommand {
     internal.enableMainDexListCheck = enableMainDexListCheck;
     internal.setMinApiLevel(AndroidApiLevel.getAndroidApiLevel(getMinApiLevel()));
     internal.intermediate = intermediate;
+    if (reoptimizeDex) { // Respect potential system property.
+      internal.enableDexToDexCodeOptimizations = reoptimizeDex;
+    }
     internal.retainCompileTimeAnnotations = intermediate;
     internal.setGlobalSyntheticsConsumer(globalSyntheticsConsumer);
     internal.setSyntheticInfoConsumer(syntheticInfoConsumer);
