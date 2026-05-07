@@ -122,23 +122,39 @@ public class CliParser<B> {
 
   private void parseInternal(Deque<String> args, B builder, Consumer<String> errorReporter) {
     while (!args.isEmpty()) {
-      String arg = args.removeFirst();
+      String rawArg = args.removeFirst();
+      String arg = rawArg;
+      String eqValue = null;
+
+      if (rawArg.startsWith("-")) {
+        int equalsIndex = rawArg.indexOf('=');
+        if (equalsIndex > 0) {
+          arg = rawArg.substring(0, equalsIndex);
+          eqValue = rawArg.substring(equalsIndex + 1);
+        }
+      }
 
       if (options0.containsKey(arg)) {
-        options0.get(arg).accept(builder);
+        if (eqValue != null) {
+          errorReporter.accept("Option " + arg + " does not take a value.");
+        } else {
+          options0.get(arg).accept(builder);
+        }
       } else if (options1.containsKey(arg)) {
-        if (!args.isEmpty()) {
+        if (eqValue != null) {
+          options1.get(arg).accept(builder, eqValue);
+        } else if (!args.isEmpty()) {
           options1.get(arg).accept(builder, args.removeFirst());
         } else {
           errorReporter.accept("Missing parameter for " + arg + ".");
           break;
         }
-      } else if (arg.startsWith("-")) {
-        errorReporter.accept("Unknown option: " + arg);
+      } else if (rawArg.startsWith("-")) {
+        errorReporter.accept("Unknown option: " + rawArg);
       } else if (positionalHandler != null) {
-        positionalHandler.accept(builder, arg);
+        positionalHandler.accept(builder, rawArg);
       } else {
-        errorReporter.accept("Unexpected argument: " + arg);
+        errorReporter.accept("Unexpected argument: " + rawArg);
       }
     }
   }
@@ -151,6 +167,7 @@ public class CliParser<B> {
 
   private boolean assertValidName(String name) {
     assert name.startsWith("-") : name + " does not start with -";
+    assert !name.contains("=") : name + " contains '='";
     return true;
   }
 
