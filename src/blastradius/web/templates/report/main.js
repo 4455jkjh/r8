@@ -290,6 +290,14 @@ const App = {
     // Load Protobuf Data in the Background
     this.loadProtoData();
 
+    const headerLink = document.getElementById("header-link");
+    if (headerLink) {
+      headerLink.addEventListener("click", (e) => {
+        e.preventDefault();
+        this.showReportView();
+      });
+    }
+
     // Setup Kept Lists Search listeners
     const setupListSearch = (type, stateKey) => {
       const toggleBtn = document.querySelector(`.search-toggle-btn[data-target="${type}"]`);
@@ -353,8 +361,13 @@ const App = {
     const classesContent = document.getElementById("details-classes-content");
     const methodsContent = document.getElementById("details-methods-content");
     const fieldsContent = document.getElementById("details-fields-content");
-    const rule = this.blastRadiusData?.keepRuleBlastRadiusTable.find(r => r
-      .id === parseInt(ruleId));
+    let rule = this.blastRadiusData?.keepRuleBlastRadiusTable.find(r => r.id === parseInt(ruleId));
+    let isGlobal = false;
+    if (!rule) {
+      rule = this.blastRadiusData?.globalKeepRuleBlastRadiusTable.find(r => r.id === parseInt(ruleId));
+      isGlobal = true;
+    }
+
     if (rule) {
       const fileOriginId = rule?.origin?.fileOriginId;
       const fileOrigin = this.blastRadiusData?.fileOriginTable.find(f => f
@@ -368,23 +381,7 @@ const App = {
           originStr += ` (${fileOrigin.filename})`;
         }
       }
-      const constraintsMap = getConstraintsMap(this.blastRadiusData);
-      const constraints = constraintsMap.get(rule.constraintsId) || [];
-      const getTag = (c, label) => {
-        const isRestricted = constraints.includes(c);
-        if (!isRestricted) return "";
-        const color = "oklch(0.446 0.043 257.281)";
-        const bgColor = "oklch(0.984 0.003 247.858)";
-        const borderColor = "oklch(0.929 0.013 255.508)";
-        return `<span class="impact-tag" style="display: inline-block; color: ${color}; background-color: ${bgColor}; border: 1px solid ${borderColor}; border-radius: 4px; padding: 2px 8px; font-size: 10px; font-weight: 400; height: 21px; line-height: 15px; text-transform: uppercase; letter-spacing: 0.25px; box-sizing: border-box; text-align: center;">${label}</span>`;
-      };
-      const impactTagsHtml = `
-        <div class="impact-container">
-          ${getTag('DONT_OBFUSCATE', 'OBFUSCATE')}
-          ${getTag('DONT_OPTIMIZE', 'OPTIMIZE')}
-          ${getTag('DONT_SHRINK', 'SHRINK')}
-        </div>
-      `;
+      
       if (ruleContainer) {
         const highlightedSource = highlightRule(rule.source);
 
@@ -395,237 +392,269 @@ const App = {
       </div>
     `;
       }
-      const br = rule.blastRadius || {};
-      const classIds = br.classBlastRadius || [];
-      const fieldIds = br.fieldBlastRadius || [];
-      const methodIds = br.methodBlastRadius || [];
-      const matchedTotal = classIds.length + fieldIds.length + methodIds
-        .length;
-      const totalLive = getLiveItemCount(this.blastRadiusData);
-      const liveClasses = this.blastRadiusData?.buildInfo?.liveClassCount ||
-        0;
-      const liveFields = this.blastRadiusData?.buildInfo?.liveFieldCount || 0;
-      const liveMethods = this.blastRadiusData?.buildInfo?.liveMethodCount ||
-        0;
-      const renderMatchCell = (count, total, borderLeft = true) => {
-        const perc = total > 0 ? (count / total * 100) : 0;
-        const colorClass = UIUtils.getMatchClass(perc);
-        const bl = borderLeft ? "border-l border-gray-200" : "";
-        return `
-          <td class="text-center ${bl}" style="padding: 1rem; width: 100px; min-width: 100px;">
-            <div style="display: flex; flex-direction: column; align-items: center; justify-content: center;">
-              <span class="font-medium ${colorClass}">${perc.toFixed(1)}%</span>
-              <span class="text-xs text-gray-500 mt-1">${count}</span>
-            </div>
-          </td>
-        `;
-      };
-      if (impactContainer) {
-        const getPerc = (count, total) => total > 0 ? (count / total * 100) : 0;
-        const classPerc = getPerc(classIds.length, liveClasses);
-        const fieldPerc = getPerc(fieldIds.length, liveFields);
-        const methodPerc = getPerc(methodIds.length, liveMethods);
 
-        impactContainer.innerHTML = `
-      <div style="display: grid; grid-template-columns: 1fr 1fr 1fr auto; gap: 2rem; padding: 0; align-items: start;">
-        <!-- Kept Classes -->
-        <div>
-          <div style="color: var(--text-gray-500); font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.5rem;">Kept Classes</div>
-          <div style="display: flex; align-items: baseline; gap: 0.5rem; margin-bottom: 0.5rem;">
-            <span style="color: oklch(0.505 0.213 27.518); font-size: 1.25rem; font-weight: 500;">${classPerc.toFixed(1)}%</span>
-            <span style="color: var(--text-gray-500); font-size: 0.75rem;">${classIds.length} / ${liveClasses}</span>
-          </div>
-          <div style="height: 4px; background-color: var(--bg-hover); border-radius: 2px; width: 100%;">
-            <div style="height: 100%; background-color: oklch(0.505 0.213 27.518); border-radius: 2px; width: ${classPerc}%;"></div>
-          </div>
-        </div>
-        <!-- Kept Fields -->
-        <div>
-          <div style="color: var(--text-gray-500); font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.5rem;">Kept Fields</div>
-          <div style="display: flex; align-items: baseline; gap: 0.5rem; margin-bottom: 0.5rem;">
-            <span style="color: oklch(0.505 0.213 27.518); font-size: 1.25rem; font-weight: 500;">${fieldPerc.toFixed(1)}%</span>
-            <span style="color: var(--text-gray-500); font-size: 0.75rem;">${fieldIds.length} / ${liveFields}</span>
-          </div>
-          <div style="height: 4px; background-color: var(--bg-hover); border-radius: 2px; width: 100%;">
-            <div style="height: 100%; background-color: oklch(0.505 0.213 27.518); border-radius: 2px; width: ${fieldPerc}%;"></div>
-          </div>
-        </div>
-        <!-- Kept Methods -->
-        <div>
-          <div style="color: var(--text-gray-500); font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.5rem;">Kept Methods</div>
-          <div style="display: flex; align-items: baseline; gap: 0.5rem; margin-bottom: 0.5rem;">
-            <span style="color: oklch(0.505 0.213 27.518); font-size: 1.25rem; font-weight: 500;">${methodPerc.toFixed(1)}%</span>
-            <span style="color: var(--text-gray-500); font-size: 0.75rem;">${methodIds.length} / ${liveMethods}</span>
-          </div>
-          <div style="height: 4px; background-color: var(--bg-hover); border-radius: 2px; width: 100%;">
-            <div style="height: 100%; background-color: oklch(0.505 0.213 27.518); border-radius: 2px; width: ${methodPerc}%;"></div>
-          </div>
-        </div>
-        <!-- Blocked by Rule -->
-        <div>
-          <div style="color: var(--text-gray-500); font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: .80rem;">Blocked by Rule</div>
-          <div style="display: flex; align-items: center; gap: 0.5rem;">
-            ${impactTagsHtml}
-          </div>
-        </div>
-      </div>
-    `;
-      }
+      const impactContainer = document.getElementById("details-impact-container");
       const relatedRulesContainer = document.getElementById("related-rules-container");
-      const allRules = this.blastRadiusData?.keepRuleBlastRadiusTable || [];
-      const subsumingIds = br.subsumedBy || [];
-      const identicalRules = [];
-      const subsumedByRules = [];
+      const gridContainer = document.getElementById("details-classes-content")?.parentElement?.parentElement;
 
-      subsumingIds.forEach(id => {
-        const otherRule = allRules.find(r => r.id === id);
-        if (otherRule) {
-          const otherSubsumedBy = otherRule.blastRadius?.subsumedBy || [];
-          if (otherSubsumedBy.includes(rule.id)) {
-            identicalRules.push(otherRule);
-          } else {
-            subsumedByRules.push(otherRule);
-          }
-        }
-      });
+      if (isGlobal) {
+        if (impactContainer) impactContainer.parentElement.style.display = "none";
+        if (relatedRulesContainer) relatedRulesContainer.style.display = "none";
+        if (gridContainer) gridContainer.style.display = "none";
+      } else {
+        if (impactContainer) impactContainer.parentElement.style.display = "";
+        if (relatedRulesContainer) relatedRulesContainer.style.display = "";
+        if (gridContainer) gridContainer.style.display = "";
 
-      if (relatedRulesContainer) {
-        const hasIdentical = identicalRules.length > 0;
-        const hasSubsumed = subsumedByRules.length > 0;
-
-        // Using global highlightRule from utils.js
-
-        const renderDetailRuleRow = (r) => {
-          const rBr = r.blastRadius || {};
-          const rClassIds = rBr.classBlastRadius || [];
-          const rFieldIds = rBr.fieldBlastRadius || [];
-          const rMethodIds = rBr.methodBlastRadius || [];
-
-          const totalLive = getLiveItemCount(this.blastRadiusData);
-          const liveClasses = this.blastRadiusData?.buildInfo?.liveClassCount || 0;
-          const liveFields = this.blastRadiusData?.buildInfo?.liveFieldCount || 0;
-          const liveMethods = this.blastRadiusData?.buildInfo?.liveMethodCount || 0;
-
-          const renderMatchCell = (count, total) => {
-            const perc = total > 0 ? (count / total * 100) : 0;
-            return `
-          <td class="text-center" style="padding: 0.5rem; border-left: 1px solid var(--border-color);">
-            <div style="display: flex; flex-direction: column; align-items: center;">
-              <span style="color: var(--text-red-600); font-weight: 500;">${perc.toFixed(1)}%</span>
-              <span class="text-xs text-gray-500">${count}</span>
-            </div>
-          </td>
-        `;
-          };
-
-          const constraintsMap = getConstraintsMap(this.blastRadiusData);
-          const rConstraints = constraintsMap.get(r.constraintsId) || [];
-
-          const getTag = (c, label) => {
-            const isRestricted = rConstraints.includes(c);
-            const color = isRestricted ? "oklch(0.446 0.043 257.281)" : "#cbd5e1";
-            const bgColor = isRestricted ? "oklch(0.984 0.003 247.858)" : "#f8fafc";
-            const borderColor = isRestricted ? "oklch(0.929 0.013 255.508)" : "#e2e8f0";
-            return `<span class="impact-tag" style="display: inline-block; color: ${color}; background-color: ${bgColor}; border: 1px solid ${borderColor}; border-radius: 4px; padding: 2px 8px; font-size: 10px; font-weight: 400; height: 21px; line-height: 15px; text-transform: uppercase; letter-spacing: 0.25px; box-sizing: border-box; text-align: center;">${label}</span>`;
-          };
-
-          const impactCell = `
-        <td style="padding: 1rem; border-left: 1px solid var(--border-color);">
-          <div class="flex justify-start" style="gap: 0.5rem;">
+        const constraintsMap = getConstraintsMap(this.blastRadiusData);
+        const constraints = constraintsMap.get(rule.constraintsId) || [];
+        const getTag = (c, label) => {
+          const isRestricted = constraints.includes(c);
+          if (!isRestricted) return "";
+          const color = "oklch(0.446 0.043 257.281)";
+          const bgColor = "oklch(0.984 0.003 247.858)";
+          const borderColor = "oklch(0.929 0.013 255.508)";
+          return `<span class="impact-tag" style="display: inline-block; color: ${color}; background-color: ${bgColor}; border: 1px solid ${borderColor}; border-radius: 4px; padding: 2px 8px; font-size: 10px; font-weight: 400; height: 21px; line-height: 15px; text-transform: uppercase; letter-spacing: 0.25px; box-sizing: border-box; text-align: center;">${label}</span>`;
+        };
+        const impactTagsHtml = `
+          <div class="impact-container">
             ${getTag('DONT_OBFUSCATE', 'OBFUSCATE')}
             ${getTag('DONT_OPTIMIZE', 'OPTIMIZE')}
             ${getTag('DONT_SHRINK', 'SHRINK')}
           </div>
-        </td>
-      `;
-
-          return `
-        <tr class="table-row border-t border-gray-200 hover:bg-gray-50 cursor-pointer" onclick="App.showDetailsView('${r.id}')">
-          <td style="padding: 0.5rem; width: 40%;">
-            <pre style="white-space: pre-wrap; font-family: var(--font-family-mono); font-size: 0.8125rem; margin: 0;">${highlightRule(r.source)}</pre>
-          </td>
-          ${renderMatchCell(rClassIds.length + rFieldIds.length + rMethodIds.length, totalLive)}
-          ${renderMatchCell(rClassIds.length, liveClasses)}
-          ${renderMatchCell(rFieldIds.length, liveFields)}
-          ${renderMatchCell(rMethodIds.length, liveMethods)}
-          ${impactCell}
-        </tr>
-      `;
-        };
-
-        const renderSection = (title, rules, explainer) => {
-          const hasRules = rules.length > 0;
-          let sectionHtml = `
-        <div class="table-container" style="display: flex; flex-direction: column;">
-          <div style="padding: 0.75rem 1rem; border-bottom: 1px solid var(--border-color); background-color: var(--bg-subtle); display: flex; justify-content: space-between; align-items: center;">
-            <div>
-              <span style="font-size: 0.875rem; font-weight: 600;">${title}</span>
-              <span style="color: var(--text-gray-500); font-size: 0.75rem; margin-left: 0.25rem;">· ${hasRules ? rules.length : 'None'}</span>
-            </div>
-            ${hasRules ? `<span style="color: var(--text-gray-500); font-size: 0.75rem;">${explainer}</span>` : ''}
-          </div>
-      `;
-
-          if (hasRules) {
-            sectionHtml += `
-          <table style="width: 100%; border-collapse: collapse;">
-            <thead>
-              <tr>
-                <th rowspan="2" class="text-left bg-gray-50" style="padding: 0 1rem; width: 40%;">RULE</th>
-                <th colspan="4" class="text-center bg-gray-50" style="padding: .25rem 1rem; width: 40%; border-left: 1px solid var(--border-color);">KEPT ITEMS <span style="color: var(--text-muted);text-transform: none;font-weight: 500;">Higher is worse</span> <span class="tooltip-icon" data-tooltip="Items retained in the app due to this rule">?</span></th>
-                <th rowspan="2" class="text-left bg-gray-50" style="padding: 0 1rem; width: 20%; border-left: 1px solid var(--border-color);">BLOCKED BY RULE <span class="tooltip-icon" data-tooltip="Specific actions blocked by this rule">?</span></th>
-              </tr>
-              <tr>
-                <th class="text-center text-xs font-medium text-gray-500" style="padding: .15rem 1rem; width: 10%; border-left: 1px solid var(--border-color);">Total</th>
-                <th class="text-center text-xs font-medium text-gray-500" style="padding: .15rem 1rem; width: 10%; border-left: 1px solid var(--border-color);">Classes</th>
-                <th class="text-center text-xs font-medium text-gray-500" style="padding: .15rem 1rem; width: 10%; border-left: 1px solid var(--border-color);">Fields</th>
-                <th class="text-center text-xs font-medium text-gray-500" style="padding: .15rem 1rem; width: 10%; border-left: 1px solid var(--border-color);">Methods</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${rules.map(r => renderDetailRuleRow(r)).join('')}
-            </tbody>
-          </table>
         `;
-          }
 
-          sectionHtml += `</div>`;
-          return sectionHtml;
+        const br = rule.blastRadius || {};
+        const classIds = br.classBlastRadius || [];
+        const fieldIds = br.fieldBlastRadius || [];
+        const methodIds = br.methodBlastRadius || [];
+        const matchedTotal = classIds.length + fieldIds.length + methodIds
+          .length;
+        const totalLive = getLiveItemCount(this.blastRadiusData);
+        const liveClasses = this.blastRadiusData?.buildInfo?.liveClassCount ||
+          0;
+        const liveFields = this.blastRadiusData?.buildInfo?.liveFieldCount || 0;
+        const liveMethods = this.blastRadiusData?.buildInfo?.liveMethodCount ||
+          0;
+        const renderMatchCell = (count, total, borderLeft = true) => {
+          const perc = total > 0 ? (count / total * 100) : 0;
+          const colorClass = UIUtils.getMatchClass(perc);
+          const bl = borderLeft ? "border-l border-gray-200" : "";
+          return `
+            <td class="text-center ${bl}" style="padding: 1rem; width: 100px; min-width: 100px;">
+              <div style="display: flex; flex-direction: column; align-items: center; justify-content: center;">
+                <span class="font-medium ${colorClass}">${perc.toFixed(1)}%</span>
+                <span class="text-xs text-gray-500 mt-1">${count}</span>
+              </div>
+            </td>
+          `;
         };
+        if (impactContainer) {
+          const getPerc = (count, total) => total > 0 ? (count / total * 100) : 0;
+          const classPerc = getPerc(classIds.length, liveClasses);
+          const fieldPerc = getPerc(fieldIds.length, liveFields);
+          const methodPerc = getPerc(methodIds.length, liveMethods);
 
-        if (!hasIdentical && !hasSubsumed) {
-          relatedRulesContainer.innerHTML = `
-        <div class="table-container" style="padding: 0.75rem 1rem; font-size: 0.875rem; display: flex; gap: 2rem; align-items: center;">
-          <span style="font-weight: 600; color: var(--text-gray-900);">Related rules:</span>
-          <span style="color: var(--text-gray-500);">Identical · None</span>
-          <span style="color: var(--text-gray-500);">Subsumed by · None</span>
+          impactContainer.innerHTML = `
+        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr auto; gap: 2rem; padding: 0; align-items: start;">
+          <!-- Kept Classes -->
+          <div>
+            <div style="color: var(--text-gray-500); font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.5rem;">Kept Classes</div>
+            <div style="display: flex; align-items: baseline; gap: 0.5rem; margin-bottom: 0.5rem;">
+              <span style="color: oklch(0.505 0.213 27.518); font-size: 1.25rem; font-weight: 500;">${classPerc.toFixed(1)}%</span>
+              <span style="color: var(--text-gray-500); font-size: 0.75rem;">${classIds.length} / ${liveClasses}</span>
+            </div>
+            <div style="height: 4px; background-color: var(--bg-hover); border-radius: 2px; width: 100%;">
+              <div style="height: 100%; background-color: oklch(0.505 0.213 27.518); border-radius: 2px; width: ${classPerc}%;"></div>
+            </div>
+          </div>
+          <!-- Kept Fields -->
+          <div>
+            <div style="color: var(--text-gray-500); font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.5rem;">Kept Fields</div>
+            <div style="display: flex; align-items: baseline; gap: 0.5rem; margin-bottom: 0.5rem;">
+              <span style="color: oklch(0.505 0.213 27.518); font-size: 1.25rem; font-weight: 500;">${fieldPerc.toFixed(1)}%</span>
+              <span style="color: var(--text-gray-500); font-size: 0.75rem;">${fieldIds.length} / ${liveFields}</span>
+            </div>
+            <div style="height: 4px; background-color: var(--bg-hover); border-radius: 2px; width: 100%;">
+              <div style="height: 100%; background-color: oklch(0.505 0.213 27.518); border-radius: 2px; width: ${fieldPerc}%;"></div>
+            </div>
+          </div>
+          <!-- Kept Methods -->
+          <div>
+            <div style="color: var(--text-gray-500); font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.5rem;">Kept Methods</div>
+            <div style="display: flex; align-items: baseline; gap: 0.5rem; margin-bottom: 0.5rem;">
+              <span style="color: oklch(0.505 0.213 27.518); font-size: 1.25rem; font-weight: 500;">${methodPerc.toFixed(1)}%</span>
+              <span style="color: var(--text-gray-500); font-size: 0.75rem;">${methodIds.length} / ${liveMethods}</span>
+            </div>
+            <div style="height: 4px; background-color: var(--bg-hover); border-radius: 2px; width: 100%;">
+              <div style="height: 100%; background-color: oklch(0.505 0.213 27.518); border-radius: 2px; width: ${methodPerc}%;"></div>
+            </div>
+          </div>
+          <!-- Blocked by Rule -->
+          <div>
+            <div style="color: var(--text-gray-500); font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: .80rem;">Blocked by Rule</div>
+            <div style="display: flex; align-items: center; gap: 0.5rem;">
+              ${impactTagsHtml}
+            </div>
+          </div>
         </div>
       `;
-        } else {
-          let html = '<div style="display: flex; flex-direction: column; gap: 1.5rem;">';
-          html += renderSection("Identical Rules", identicalRules, "Same matchers, can be deduplicated");
-          html += renderSection("Subsumed By", subsumedByRules, "Already covered by a broader rule");
-          html += '</div>';
-          relatedRulesContainer.innerHTML = html;
         }
-      }
-      // Reset search inputs UI
-      const resetSearchUI = (type) => {
-        const container = document.getElementById(`${type}-search-container`);
-        const input = document.getElementById(`${type}-search-input`);
-        const toggleBtn = document.querySelector(`.search-toggle-btn[data-target="${type}"]`);
-        if (container && input && toggleBtn) {
-          container.style.display = "none";
-          input.value = "";
-          toggleBtn.classList.remove("active");
-        }
-      };
-      resetSearchUI("classes");
-      resetSearchUI("fields");
-      resetSearchUI("methods");
+        
+        const allRules = this.blastRadiusData?.keepRuleBlastRadiusTable || [];
+        const subsumingIds = br.subsumedBy || [];
+        const identicalRules = [];
+        const subsumedByRules = [];
 
-      // Initial render of kept lists
-      this.renderKeptLists(rule);
+        subsumingIds.forEach(id => {
+          const otherRule = allRules.find(r => r.id === id);
+          if (otherRule) {
+            const otherSubsumedBy = otherRule.blastRadius?.subsumedBy || [];
+            if (otherSubsumedBy.includes(rule.id)) {
+              identicalRules.push(otherRule);
+            } else {
+              subsumedByRules.push(otherRule);
+            }
+          }
+        });
+
+        if (relatedRulesContainer) {
+          const hasIdentical = identicalRules.length > 0;
+          const hasSubsumed = subsumedByRules.length > 0;
+
+          const renderDetailRuleRow = (r) => {
+            const rBr = r.blastRadius || {};
+            const rClassIds = rBr.classBlastRadius || [];
+            const rFieldIds = rBr.fieldBlastRadius || [];
+            const rMethodIds = rBr.methodBlastRadius || [];
+
+            const totalLive = getLiveItemCount(this.blastRadiusData);
+            const liveClasses = this.blastRadiusData?.buildInfo?.liveClassCount || 0;
+            const liveFields = this.blastRadiusData?.buildInfo?.liveFieldCount || 0;
+            const liveMethods = this.blastRadiusData?.buildInfo?.liveMethodCount || 0;
+
+            const renderMatchCell = (count, total) => {
+              const perc = total > 0 ? (count / total * 100) : 0;
+              return `
+            <td class="text-center" style="padding: 0.5rem; border-left: 1px solid var(--border-color);">
+              <div style="display: flex; flex-direction: column; align-items: center;">
+                <span style="color: var(--text-red-600); font-weight: 500;">${perc.toFixed(1)}%</span>
+                <span class="text-xs text-gray-500">${count}</span>
+              </div>
+            </td>
+          `;
+            };
+
+            const constraintsMap = getConstraintsMap(this.blastRadiusData);
+            const rConstraints = constraintsMap.get(r.constraintsId) || [];
+
+            const getTag = (c, label) => {
+              const isRestricted = rConstraints.includes(c);
+              const color = isRestricted ? "oklch(0.446 0.043 257.281)" : "#cbd5e1";
+              const bgColor = isRestricted ? "oklch(0.984 0.003 247.858)" : "#f8fafc";
+              const borderColor = isRestricted ? "oklch(0.929 0.013 255.508)" : "#e2e8f0";
+              return `<span class="impact-tag" style="display: inline-block; color: ${color}; background-color: ${bgColor}; border: 1px solid ${borderColor}; border-radius: 4px; padding: 2px 8px; font-size: 10px; font-weight: 400; height: 21px; line-height: 15px; text-transform: uppercase; letter-spacing: 0.25px; box-sizing: border-box; text-align: center;">${label}</span>`;
+            };
+
+            const impactCell = `
+          <td style="padding: 1rem; border-left: 1px solid var(--border-color);">
+            <div class="flex justify-start" style="gap: 0.5rem;">
+              ${getTag('DONT_OBFUSCATE', 'OBFUSCATE')}
+              ${getTag('DONT_OPTIMIZE', 'OPTIMIZE')}
+              ${getTag('DONT_SHRINK', 'SHRINK')}
+            </div>
+          </td>
+        `;
+
+            return `
+          <tr class="table-row border-t border-gray-200 hover:bg-gray-50 cursor-pointer" onclick="App.showDetailsView('${r.id}')">
+            <td style="padding: 0.5rem; width: 40%;">
+              <pre style="white-space: pre-wrap; font-family: var(--font-family-mono); font-size: 0.8125rem; margin: 0;">${highlightRule(r.source)}</pre>
+            </td>
+            ${renderMatchCell(rClassIds.length + rFieldIds.length + rMethodIds.length, totalLive)}
+            ${renderMatchCell(rClassIds.length, liveClasses)}
+            ${renderMatchCell(rFieldIds.length, liveFields)}
+            ${renderMatchCell(rMethodIds.length, liveMethods)}
+            ${impactCell}
+          </tr>
+        `;
+          };
+
+          const renderSection = (title, rules, explainer) => {
+            const hasRules = rules.length > 0;
+            let sectionHtml = `
+          <div class="table-container" style="display: flex; flex-direction: column;">
+            <div style="padding: 0.75rem 1rem; border-bottom: 1px solid var(--border-color); background-color: var(--bg-subtle); display: flex; justify-content: space-between; align-items: center;">
+              <div>
+                <span style="font-size: 0.875rem; font-weight: 600;">${title}</span>
+                <span style="color: var(--text-gray-500); font-size: 0.75rem; margin-left: 0.25rem;">· ${hasRules ? rules.length : 'None'}</span>
+              </div>
+              ${hasRules ? `<span style="color: var(--text-gray-500); font-size: 0.75rem;">${explainer}</span>` : ''}
+            </div>
+        `;
+
+            if (hasRules) {
+              sectionHtml += `
+            <table style="width: 100%; border-collapse: collapse;">
+              <thead>
+                <tr>
+                  <th rowspan="2" class="text-left bg-gray-50" style="padding: 0 1rem; width: 40%;">RULE</th>
+                  <th colspan="4" class="text-center bg-gray-50" style="padding: .25rem 1rem; width: 40%; border-left: 1px solid var(--border-color);">KEPT ITEMS <span style="color: var(--text-muted);text-transform: none;font-weight: 500;">Higher is worse</span> <span class="tooltip-icon" data-tooltip="Items retained in the app due to this rule">?</span></th>
+                  <th rowspan="2" class="text-left bg-gray-50" style="padding: 0 1rem; width: 20%; border-left: 1px solid var(--border-color);">BLOCKED BY RULE <span class="tooltip-icon" data-tooltip="Specific actions blocked by this rule">?</span></th>
+                </tr>
+                <tr>
+                  <th class="text-center text-xs font-medium text-gray-500" style="padding: .15rem 1rem; width: 10%; border-left: 1px solid var(--border-color);">Total</th>
+                  <th class="text-center text-xs font-medium text-gray-500" style="padding: .15rem 1rem; width: 10%; border-left: 1px solid var(--border-color);">Classes</th>
+                  <th class="text-center text-xs font-medium text-gray-500" style="padding: .15rem 1rem; width: 10%; border-left: 1px solid var(--border-color);">Fields</th>
+                  <th class="text-center text-xs font-medium text-gray-500" style="padding: .15rem 1rem; width: 10%; border-left: 1px solid var(--border-color);">Methods</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${rules.map(r => renderDetailRuleRow(r)).join('')}
+              </tbody>
+            </table>
+          `;
+            }
+
+            sectionHtml += `</div>`;
+            return sectionHtml;
+          };
+
+          if (!hasIdentical && !hasSubsumed) {
+            relatedRulesContainer.innerHTML = `
+          <div class="table-container" style="padding: 0.75rem 1rem; font-size: 0.875rem; display: flex; gap: 2rem; align-items: center;">
+            <span style="font-weight: 600; color: var(--text-gray-900);">Related rules:</span>
+            <span style="color: var(--text-gray-500);">Identical · None</span>
+            <span style="color: var(--text-gray-500);">Subsumed by · None</span>
+          </div>
+        `;
+          } else {
+            let html = '<div style="display: flex; flex-direction: column; gap: 1.5rem;">';
+            html += renderSection("Identical Rules", identicalRules, "Same matchers, can be deduplicated");
+            html += renderSection("Subsumed By", subsumedByRules, "Already covered by a broader rule");
+            html += '</div>';
+            relatedRulesContainer.innerHTML = html;
+          }
+        }
+        
+        // Reset search inputs UI
+        const resetSearchUI = (type) => {
+          const container = document.getElementById(`${type}-search-container`);
+          const input = document.getElementById(`${type}-search-input`);
+          const toggleBtn = document.querySelector(`.search-toggle-btn[data-target="${type}"]`);
+          if (container && input && toggleBtn) {
+            container.style.display = "none";
+            input.value = "";
+            toggleBtn.classList.remove("active");
+          }
+        };
+        resetSearchUI("classes");
+        resetSearchUI("fields");
+        resetSearchUI("methods");
+
+        // Initial render of kept lists
+        this.renderKeptLists(rule);
+      }
     } else {
       ruleBody.innerHTML =
         '<tr><td colspan="2" style="padding: 1rem;">Rule not found.</td></tr>';
