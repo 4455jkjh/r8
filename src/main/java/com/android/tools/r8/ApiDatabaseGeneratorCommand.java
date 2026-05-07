@@ -113,6 +113,7 @@ public final class ApiDatabaseGeneratorCommand {
       if (outputPath == null) {
         outputPath = Paths.get(".", "api_database.ser");
       }
+      reporter.failIfPendingErrors();
       return new ApiDatabaseGeneratorCommand(inputPaths, outputPath);
     }
 

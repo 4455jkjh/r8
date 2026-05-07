@@ -4,6 +4,7 @@
 package com.android.tools.r8.utils.internal;
 
 import com.android.tools.r8.utils.internal.exceptions.Unreachable;
+import com.google.common.base.Splitter;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.security.MessageDigest;
@@ -398,6 +399,37 @@ public class StringUtils {
       builder.append(string);
     }
     return builder.toString();
+  }
+
+  /**
+   * Inserts string to make content fit to width in best effort attempt.
+   *
+   * <p>It is assumed that the string consist of simple words and single spaces.
+   */
+  public static List<String> wrapToWidth(String string, int width) {
+    assert width >= 1;
+
+    List<String> result = new ArrayList<>();
+    Iterable<String> words = Splitter.on(' ').split(string);
+    StringBuilder currentLine = new StringBuilder();
+
+    for (String word : words) {
+      if (currentLine.length() == 0) {
+        currentLine.append(word);
+      } else if (currentLine.length() + 1 + word.length() <= width) {
+        currentLine.append(" ").append(word);
+      } else {
+        result.add(currentLine.toString());
+        currentLine.setLength(0);
+        currentLine.append(word);
+      }
+    }
+
+    if (currentLine.length() > 0) {
+      result.add(currentLine.toString());
+    }
+
+    return result;
   }
 
   public static boolean isBOM(int codePoint) {
