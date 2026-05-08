@@ -4,8 +4,10 @@
 package com.android.tools.r8.libanalyzer;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 import com.android.tools.r8.libanalyzer.proto.ValidateConsumerKeepRulesResult;
+import com.google.common.collect.Iterables;
 
 public class ValidateConsumerKeepRulesResultInspector
     extends LibraryAnalyzerResultInspector<
@@ -14,6 +16,14 @@ public class ValidateConsumerKeepRulesResultInspector
   public ValidateConsumerKeepRulesResultInspector(
       ValidateConsumerKeepRulesResult validateConsumerKeepRulesResult) {
     super(validateConsumerKeepRulesResult);
+  }
+
+  public ValidateConsumerKeepRulesResultInspector assertContainsBlockedKeepRule(String rule) {
+    assertTrue(
+        Iterables.any(
+            result.getBlockedKeepRulesList(),
+            blockedKeepRule -> blockedKeepRule.getSource().equals(rule)));
+    return this;
   }
 
   public ValidateConsumerKeepRulesResultInspector assertNoBlockedKeepRules() {

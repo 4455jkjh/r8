@@ -45,12 +45,7 @@ public class OverloadAggressivelyTest extends TestBase {
   private AndroidApp runR8(AndroidApp app, Class<?> main, Path out, boolean overloadaggressively)
       throws Exception {
     R8Command command =
-        ToolHelper.addProguardConfigurationConsumer(
-                ToolHelper.prepareR8CommandBuilder(app),
-                pgConfig -> {
-                  Path printMappingFile = out.resolve(ToolHelper.DEFAULT_PROGUARD_MAP_FILE);
-                  pgConfig.enablePrintMapping(printMappingFile, null, null, null);
-                })
+        ToolHelper.prepareR8CommandBuilder(app)
             .addProguardConfiguration(
                 ImmutableList.of(
                     keepMainProguardConfiguration(main),
