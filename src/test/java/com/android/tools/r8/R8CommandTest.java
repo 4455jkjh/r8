@@ -237,6 +237,38 @@ public class R8CommandTest extends CommandTestBase<R8Command> {
   }
 
   @Test
+  public void passResourceOnlyFeature() throws Throwable {
+    Path working = temp.getRoot().toPath();
+    Path input = getJarWithA();
+    Path library = ToolHelper.getDefaultAndroidJar();
+    Path output = working.resolve("classes.dex");
+    Path resourceInput = getTestResources();
+    Path resourceOutput = working.resolve("resources_out.ap_");
+    TemporaryFolder featureSplitTemp = ToolHelper.getTemporaryFolderForTest();
+    featureSplitTemp.create();
+    Path featureReasourceInput = getFeatureTestResources(featureSplitTemp);
+    Path featureResourceOutput = working.resolve("feature_resources_out.ap_");
+    assertFalse(Files.exists(output));
+    String pathSeparator = File.pathSeparator;
+    ProcessResult result =
+        ToolHelper.forkR8(
+            working,
+            input.toAbsolutePath().toString(),
+            "--lib",
+            library.toAbsolutePath().toString(),
+            "--android-resources",
+            resourceInput.toAbsolutePath().toString(),
+            resourceOutput.toAbsolutePath().toString(),
+            "--feature",
+            pathSeparator + featureReasourceInput.toAbsolutePath(),
+            pathSeparator + featureResourceOutput.toAbsolutePath(),
+            "--no-tree-shaking");
+    assertEquals("R8 run failed: " + result.stderr, 0, result.exitCode);
+    assertTrue(Files.exists(output));
+    assertTrue(Files.exists(featureResourceOutput));
+  }
+
+  @Test
   public void featureOnlyOneArgument() throws Throwable {
     Path working = temp.getRoot().toPath();
     Path input = getJarWithA();
