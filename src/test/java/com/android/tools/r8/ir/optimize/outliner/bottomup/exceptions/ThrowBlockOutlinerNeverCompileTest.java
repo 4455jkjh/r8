@@ -3,6 +3,7 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8.ir.optimize.outliner.bottomup.exceptions;
 
+import static com.android.tools.r8.ToolHelper.DexVm.Version.V13_0_0;
 import static com.android.tools.r8.utils.codeinspector.Matchers.isPresent;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertEquals;
@@ -77,8 +78,10 @@ public class ThrowBlockOutlinerNeverCompileTest extends BottomUpOutlinerTestBase
             .runDex2Oat(parameters.getRuntime())
             .getOatSizeOrDefault(-1);
     assertTrue(0 < oatSizeNeverCompile);
-    // TODO(b/434769547): Why is the @NeverCompile version not smaller?
-    assertEquals(oatSize, oatSizeNeverCompile);
+    // Our dex2oat starting from Android 13 honour @NeverCompile.
+    assertEquals(
+        parameters.getDexRuntimeVersion().isNewerThanOrEqual(V13_0_0),
+        oatSizeNeverCompile < oatSize);
   }
 
   @Override

@@ -43,6 +43,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.io.UncheckedIOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -760,7 +761,11 @@ public abstract class TestCompileResult<
     Path dexFile = writeToZip();
     Path oatFile = tmp.resolve("out.oat");
     return new Dex2OatTestRunResult(
-        app, oatFile, runtime, ToolHelper.runDex2OatRaw(dexFile, oatFile, vm), state);
+        app,
+        oatFile,
+        runtime,
+        ToolHelper.runDex2OatRaw(dexFile, oatFile, Files.createDirectory(tmp.resolve("other")), vm),
+        state);
   }
 
   public CR benchmarkCodeSize(BenchmarkResults results) throws IOException, ResourceException {

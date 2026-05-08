@@ -39,7 +39,7 @@ public class UnicodeSetRegressionTest extends TestBase {
     ToolHelper.runR8(builder.build(), options -> options.ignoreMissingClasses = true);
     AndroidApp result = compatSink.build();
     try {
-      ToolHelper.runDex2Oat(combinedInput, oatFile);
+      ToolHelper.runDex2Oat(combinedInput, oatFile, temp.newFolder().toPath());
     } catch (AssertionError e) {
       CodeInspector fromJar = new CodeInspector(result);
       List<ArtErrorInfo> errors;

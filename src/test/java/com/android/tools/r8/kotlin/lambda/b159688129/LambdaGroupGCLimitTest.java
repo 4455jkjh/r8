@@ -82,7 +82,8 @@ public class LambdaGroupGCLimitTest extends TestBase {
         .assertSuccessWithOutputLines("3");
     Path oatFile = temp.newFile("out.oat").toPath();
     ProcessResult processResult =
-        ToolHelper.runDex2OatRaw(path, oatFile, parameters.getRuntime().asDex().getVm());
+        ToolHelper.runDex2OatRaw(
+            path, oatFile, temp.newFolder().toPath(), parameters.getRuntime().asDex().getVm());
     assertEquals(0, processResult.exitCode);
     assertThat(
         processResult.stderr, not(containsString("Method exceeds compiler instruction limit")));

@@ -272,7 +272,7 @@ public class SmaliTestBase extends TestBase {
       Path dexOut = temp.getRoot().toPath().resolve("run-dex2oat-input.zip");
       Path oatFile = temp.getRoot().toPath().resolve("oat-file");
       application.writeToZipForTesting(dexOut, OutputMode.DexIndexed);
-      ToolHelper.runDex2Oat(dexOut, oatFile);
+      ToolHelper.runDex2Oat(dexOut, oatFile, temp.newFolder().toPath());
     } catch (IOException e) {
       throw new RuntimeException(e);
     }

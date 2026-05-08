@@ -6,6 +6,7 @@ package com.android.tools.r8.workaround;
 
 import static com.android.tools.r8.utils.codeinspector.Matchers.isPresent;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 
 import com.android.tools.r8.NeverInline;
@@ -14,7 +15,7 @@ import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.ToolHelper;
-import com.android.tools.r8.utils.codeinspector.CodeInspector;
+import com.android.tools.r8.utils.AndroidApiLevel;
 import com.android.tools.r8.utils.codeinspector.InstructionSubject;
 import com.android.tools.r8.utils.codeinspector.MethodSubject;
 import org.junit.Test;
@@ -36,15 +37,23 @@ public class FilledNewArrayFromSubtypeWithMissingInterfaceWorkaroundTest extends
 
   @Test
   public void testD8() throws Exception {
-    // D8 test always passes since Main#get is not optimized from having return type A to having
-    // return type B.
     parameters.assumeDexRuntime();
     testForD8(parameters.getBackend())
         .addProgramClasses(Main.class, A.class, B.class)
         .release()
         .setMinApi(parameters)
         .compile()
-        .inspect(this::inspect)
+        .inspect(
+            inspector -> {
+              MethodSubject mainMethodSubject = inspector.clazz(Main.class).mainMethod();
+              assertThat(mainMethodSubject, isPresent());
+              // With D8 Main#get is not optimized from having return type A to having return type
+              // B.
+              assertFalse(
+                  mainMethodSubject
+                      .streamInstructions()
+                      .anyMatch(InstructionSubject::isFilledNewArray));
+            })
         .apply(
             compileResult ->
                 compileResult.runDex2Oat(parameters.getRuntime()).assertNoVerificationErrors())
@@ -69,18 +78,21 @@ public class FilledNewArrayFromSubtypeWithMissingInterfaceWorkaroundTest extends
                 && ToolHelper.isDex2OatSupportedForVM(parameters.getRuntime().asDex().getVm()),
             compileResult ->
                 compileResult
-                    .inspect(this::inspect)
+                    .inspect(
+                        inspector -> {
+                          MethodSubject mainMethodSubject =
+                              inspector.clazz(Main.class).mainMethod();
+                          assertThat(mainMethodSubject, isPresent());
+                          assertEquals(
+                              parameters.getApiLevel().isGreaterThan(AndroidApiLevel.U),
+                              mainMethodSubject
+                                  .streamInstructions()
+                                  .anyMatch(InstructionSubject::isFilledNewArray));
+                        })
                     .runDex2Oat(parameters.getRuntime())
                     .assertNoVerificationErrors())
         .run(parameters.getRuntime(), Main.class)
         .assertFailureWithErrorThatThrows(NoClassDefFoundError.class);
-  }
-
-  private void inspect(CodeInspector inspector) {
-    MethodSubject mainMethodSubject = inspector.clazz(Main.class).mainMethod();
-    assertThat(mainMethodSubject, isPresent());
-    assertFalse(
-        mainMethodSubject.streamInstructions().anyMatch(InstructionSubject::isFilledNewArray));
   }
 
   static class Main {
