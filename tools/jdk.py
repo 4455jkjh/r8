@@ -13,7 +13,7 @@ ALL_JDKS = ['openjdk-9.0.4', 'jdk-11', 'jdk-17', 'jdk-21', 'jdk-25']
 
 # This JDK is used for everything except the compilation of the compiler.
 def GetDefaultJdkHome():
-    return GetJdk17Home()
+    return GetJdk21Home()
 
 
 # This JDK is used for compilation and tasks related to compilation of the compiler.
@@ -63,6 +63,10 @@ def GetAllJdkDirs():
         if os.path.exists(root + '.tar.gz.sha1'):
             dirs.append(root)
     return dirs
+
+
+def GetJdk21Home():
+    return GetJdkHome('jdk-21')
 
 
 def GetJdk17Home():
