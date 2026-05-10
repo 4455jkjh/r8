@@ -1641,8 +1641,6 @@ public final class R8Command extends BaseCompilerCommand {
       internal.threadCount = getThreadCount();
     }
 
-    internal.disableLambdaMethodAnnotations = true;
-
     internal.tool = Tool.R8;
 
     internal.setDumpInputFlags(getDumpInputFlags());
