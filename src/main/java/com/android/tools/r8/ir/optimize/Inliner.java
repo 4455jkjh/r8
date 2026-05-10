@@ -1156,6 +1156,7 @@ public class Inliner {
       BasicBlock block = blockIterator.next();
       if (!inlineeStack.isEmpty() && inlineeStack.peekFirst() == block) {
         inlineeStack.pop();
+        exitInlinee(context);
       }
       if (blocksToRemove.contains(block)) {
         continue;
@@ -1344,7 +1345,7 @@ public class Inliner {
 
     if (inlineeMayHaveInvokeMethod) {
       int inliningDepth = inlineeStack.size() + 1;
-      if (shouldApplyInliningToInlinee(appView, singleTarget, inliningDepth)) {
+      if (shouldApplyInliningToInlinee(appView, context, singleTarget, inliningDepth)) {
         // Record that we will be inside the inlinee until the next block.
         BasicBlock inlineeEnd = IteratorUtils.peekNext(blockIterator);
         inlineeStack.push(inlineeEnd);
@@ -1371,10 +1372,14 @@ public class Inliner {
   }
 
   protected boolean shouldApplyInliningToInlinee(
-      AppView<?> appView, ProgramMethod singleTarget, int inliningDepth) {
+      AppView<?> appView, ProgramMethod context, ProgramMethod singleTarget, int inliningDepth) {
     return options
         .inlinerOptions()
         .shouldApplyInliningToInlinee(appView, singleTarget, inliningDepth);
+  }
+
+  protected void exitInlinee(ProgramMethod context) {
+    // Intentionally empty.
   }
 
   private InliningOracle getSingleTargetOracle(
