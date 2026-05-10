@@ -4,9 +4,7 @@
 package com.android.tools.r8.globalsynthetics;
 
 import static com.android.tools.r8.ToolHelper.getAndroidJar;
-import static com.android.tools.r8.utils.codeinspector.Matchers.isAbsentIf;
 import static com.android.tools.r8.utils.codeinspector.Matchers.isPresent;
-import static com.android.tools.r8.utils.codeinspector.Matchers.isPresentIf;
 import static org.hamcrest.MatcherAssert.assertThat;
 
 import com.android.tools.r8.D8;
@@ -16,11 +14,10 @@ import com.android.tools.r8.GlobalSyntheticsGeneratorCommand;
 import com.android.tools.r8.OutputMode;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
+import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.utils.AndroidApiLevel;
 import com.android.tools.r8.utils.codeinspector.CodeInspector;
-import com.android.tools.r8.utils.internal.BooleanUtils;
 import java.nio.file.Path;
-import java.util.List;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -33,17 +30,9 @@ public class GlobalSyntheticGeneratorAGPUseTest extends TestBase {
   @Parameter(0)
   public TestParameters parameters;
 
-  @Parameter(1)
-  public boolean disableDesugaring;
-
-  @Parameters(name = "{0}, disableDesugaring: {1}")
-  public static List<Object[]> data() {
-    return buildParameters(
-        getTestParameters()
-            .withNoneRuntime()
-            .withApiLevelsStartingAtIncluding(AndroidApiLevel.K)
-            .build(),
-        BooleanUtils.values());
+  @Parameters(name = "{0}")
+  public static TestParametersCollection data() {
+    return getTestParameters().withNoneRuntime().build();
   }
 
   @Test
@@ -52,7 +41,6 @@ public class GlobalSyntheticGeneratorAGPUseTest extends TestBase {
     GlobalSyntheticsGenerator.run(
         GlobalSyntheticsGeneratorCommand.builder()
             .addLibraryFiles(getAndroidJar(AndroidApiLevel.LATEST))
-            .setMinApiLevel(parameters.getApiLevel().getLevel())
             .setGlobalSyntheticsOutput(globals)
             .build());
 
@@ -60,31 +48,17 @@ public class GlobalSyntheticGeneratorAGPUseTest extends TestBase {
     D8.run(
         D8Command.builder()
             .addLibraryFiles(getAndroidJar(AndroidApiLevel.LATEST))
-            .setMinApiLevel(parameters.getApiLevel().getLevel())
+            .setMinApiLevel(21)
             .addGlobalSyntheticsFiles(globals)
-            .setDisableDesugaring(disableDesugaring)
             .setOutput(globalsDex, OutputMode.DexIndexed)
             .build());
 
-    CodeInspector inspector =
-        new CodeInspector(
-            globalsDex, options -> options.testing.disableRecordApplicationReaderMap = true);
-    // TODO(b/504996348): Should always be absent.
-    assertThat(
-        inspector.clazz("java.lang.Record"),
-        isAbsentIf(disableDesugaring && isRecordsFullyDesugaredForD8(parameters)));
-    // TODO(b/504996348): Should always be preset until API level 35.
-    assertThat(
-        inspector.clazz("com.android.tools.r8.RecordTag"),
-        isPresentIf(disableDesugaring && isRecordsFullyDesugaredForD8(parameters)));
+    CodeInspector inspector = new CodeInspector(globalsDex);
+    assertThat(inspector.clazz("java.lang.Record"), isPresent());
     // Added in API level 24.
-    assertThat(
-        inspector.clazz("android.os.HardwarePropertiesManager"),
-        isPresentIf(parameters.getApiLevel().isLessThan(AndroidApiLevel.N)));
+    assertThat(inspector.clazz("android.os.HardwarePropertiesManager"), isPresent());
     // Added in API level 36.
-    assertThat(
-        inspector.clazz("android.os.Build$VERSION_CODES_FULL"),
-        isPresentIf(parameters.getApiLevel().isLessThan(AndroidApiLevel.BAKLAVA)));
+    assertThat(inspector.clazz("android.os.Build$VERSION_CODES_FULL"), isPresent());
     // Class com.android.tools.r8.annotations.LambdaMethod is always generated.
     assertThat(inspector.clazz("com.android.tools.r8.annotations.LambdaMethod"), isPresent());
   }
