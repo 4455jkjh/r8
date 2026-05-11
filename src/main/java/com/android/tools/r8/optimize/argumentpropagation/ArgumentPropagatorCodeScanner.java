@@ -26,7 +26,6 @@ import com.android.tools.r8.ir.code.AbstractValueSupplier;
 import com.android.tools.r8.ir.code.AliasedValueConfiguration;
 import com.android.tools.r8.ir.code.Argument;
 import com.android.tools.r8.ir.code.AssumeAndCheckCastAliasedValueConfiguration;
-import com.android.tools.r8.ir.code.CheckCast;
 import com.android.tools.r8.ir.code.FieldGet;
 import com.android.tools.r8.ir.code.FieldPut;
 import com.android.tools.r8.ir.code.IRCode;
@@ -527,17 +526,35 @@ public class ArgumentPropagatorCodeScanner {
               .build());
     }
 
+    // If the given value is defined by a check-cast instruction or is known to be non-null,
+    // then strengthen the in-flow using the cast type and the nullability.
+    //
+    // The improves precision and is also needed to avoid non-determinism that may arise from the
+    // use of `widenBaseInFlow` below.
     private InFlow castBaseInFlow(InFlow inFlow, Value value) {
-      if (inFlow.isUnknown()) {
+      if (value.getType().isPrimitiveType() || inFlow.isUnknown()) {
         return inFlow;
       }
       assert inFlow.isBaseInFlow();
-      Value valueRoot = value.getAliasedValue();
-      if (!valueRoot.isDefinedByInstructionSatisfying(Instruction::isCheckCast)) {
+      DexType castType = null;
+      Nullability nullability = value.getType().nullability();
+      {
+        Value currentValue = value;
+        while (currentValue.isDefinedByInstructionSatisfying(
+            aliasedValueConfiguration::isIntroducingAnAlias)) {
+          Instruction definition = currentValue.getDefinition();
+          if (definition.isCheckCast()) {
+            castType = definition.asCheckCast().getType();
+            break;
+          }
+          currentValue = definition.getFirstOperand();
+        }
+      }
+      // If we don't have any local refinement, then simply return the existing in-flow.
+      if (castType == null && !nullability.isDefinitelyNotNull()) {
         return inFlow;
       }
-      CheckCast checkCast = valueRoot.getDefinition().asCheckCast();
-      return new CastAbstractFunction(inFlow.asBaseInFlow(), checkCast.getType());
+      return new CastAbstractFunction(inFlow.asBaseInFlow(), castType, nullability);
     }
 
     private InFlow widenBaseInFlow(DexType staticType, BaseInFlow inFlow, ProgramMethod context) {
