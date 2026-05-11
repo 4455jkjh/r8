@@ -25,7 +25,7 @@ import java.util.function.Consumer;
 public final class LibraryAnalyzerCommand {
 
   private final AndroidApp app;
-  private final Path blastRadiusDataOutputPath;
+  private final Path keepRadiusDataOutputPath;
   private final AndroidApiLevel minApiLevel;
   private final Consumer<LibraryAnalyzerResult> outputConsumer;
   private final Reporter reporter;
@@ -35,13 +35,13 @@ public final class LibraryAnalyzerCommand {
 
   private LibraryAnalyzerCommand(
       AndroidApp app,
-      Path blastRadiusDataOutputPath,
+      Path keepRadiusDataOutputPath,
       AndroidApiLevel minApiLevel,
       Consumer<LibraryAnalyzerResult> outputConsumer,
       Reporter reporter,
       int threadCount) {
     this.app = app;
-    this.blastRadiusDataOutputPath = blastRadiusDataOutputPath;
+    this.keepRadiusDataOutputPath = keepRadiusDataOutputPath;
     this.minApiLevel = minApiLevel;
     this.outputConsumer = outputConsumer;
     this.reporter = reporter;
@@ -52,7 +52,7 @@ public final class LibraryAnalyzerCommand {
 
   private LibraryAnalyzerCommand(boolean printHelp, boolean printVersion) {
     this.app = null;
-    this.blastRadiusDataOutputPath = null;
+    this.keepRadiusDataOutputPath = null;
     this.minApiLevel = null;
     this.outputConsumer = null;
     this.reporter = new Reporter();
@@ -67,7 +67,7 @@ public final class LibraryAnalyzerCommand {
 
   LibraryAnalyzerOptions getInternalOptions() {
     return new LibraryAnalyzerOptions(
-        blastRadiusDataOutputPath, minApiLevel, outputConsumer, reporter, threadCount);
+        keepRadiusDataOutputPath, minApiLevel, outputConsumer, reporter, threadCount);
   }
 
   boolean isPrintHelp() {
@@ -90,7 +90,7 @@ public final class LibraryAnalyzerCommand {
   public static class Builder {
 
     private final AndroidApp.Builder appBuilder;
-    private Path blastRadiusDataOutputPath;
+    private Path keepRadiusDataOutputPath;
     private AndroidApiLevel minApiLevel = AndroidApiLevel.getDefault();
     private Consumer<LibraryAnalyzerResult> outputConsumer;
     private final Reporter reporter;
@@ -140,8 +140,8 @@ public final class LibraryAnalyzerCommand {
       return this;
     }
 
-    public Builder setBlastRadiusOutputPath(Path blastRadiusDataOutputPath) {
-      this.blastRadiusDataOutputPath = blastRadiusDataOutputPath;
+    public Builder setKeepRadiusOutputPath(Path keepRadiusDataOutputPath) {
+      this.keepRadiusDataOutputPath = keepRadiusDataOutputPath;
       return this;
     }
 
@@ -203,7 +203,7 @@ public final class LibraryAnalyzerCommand {
       validate();
       return new LibraryAnalyzerCommand(
           appBuilder.build(),
-          blastRadiusDataOutputPath,
+          keepRadiusDataOutputPath,
           minApiLevel,
           outputConsumer,
           reporter,

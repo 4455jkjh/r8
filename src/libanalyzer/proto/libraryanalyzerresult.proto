@@ -38,13 +38,13 @@ message R8CompileResult {
 }
 
 message ConfigurationSummary {
-  // Keep rules and their blast radius. Useful for manual inspection.
-  repeated KeepRuleBlastRadiusSummary keep_rules = 1;
-  // Package wide keep rules and their blast radius.
-  repeated KeepRuleBlastRadiusSummary used_package_wide_keep_rules = 2;
-  // Unused package wide keep rules, i.e., rules with zero blast radius.
+  // Keep rules and their keep radius. Useful for manual inspection.
+  repeated KeepRuleKeepRadiusSummary keep_rules = 1;
+  // Package wide keep rules and their keep radius.
+  repeated KeepRuleKeepRadiusSummary used_package_wide_keep_rules = 2;
+  // Unused package wide keep rules, i.e., rules with zero keep radius.
   // These rules likely target packages not part of the current library.
-  repeated KeepRuleBlastRadiusSummary unused_package_wide_keep_rules = 3;
+  repeated KeepRuleKeepRadiusSummary unused_package_wide_keep_rules = 3;
 }
 
 message ItemCollectionSummary {
@@ -60,7 +60,7 @@ message ItemCollectionSummary {
   int32 no_shrinking_count = 5;
 }
 
-message KeepRuleBlastRadiusSummary {
+message KeepRuleKeepRadiusSummary {
   string source = 1;
   int32 kept_item_count = 2;
   bool no_obfuscation = 3;

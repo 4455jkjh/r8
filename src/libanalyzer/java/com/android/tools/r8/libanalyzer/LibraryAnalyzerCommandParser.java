@@ -36,14 +36,14 @@ import java.util.stream.Stream;
 public class LibraryAnalyzerCommandParser {
 
   private static final String AAR_FLAG = "--aar";
-  private static final String BLAST_RADIUS_OUTPUT_FLAG = "--blast-radius-output";
+  private static final String KEEP_RADIUS_OUTPUT_FLAG = "--keep-radius-output";
   private static final String JAR_FLAG = "--jar";
   private static final String REPO_FLAG = "--repo";
 
   private static final Set<String> OPTIONS_WITH_ONE_PARAMETER =
       ImmutableSet.of(
           AAR_FLAG,
-          BLAST_RADIUS_OUTPUT_FLAG,
+          KEEP_RADIUS_OUTPUT_FLAG,
           JAR_FLAG,
           LIB_FLAG,
           MIN_API_FLAG,
@@ -56,7 +56,7 @@ public class LibraryAnalyzerCommandParser {
           "Usage: libanalyzer [options]",
           "where options are:",
           "  --aar <path>                 # Path to Android Archive (AAR) that should be analyzed.",
-          "  --blast-radius-output <path> # Path where to write blast radius result (protobuf).",
+          "  --keep-radius-output <path>  # Path where to write keep radius result (protobuf).",
           "  --jar <path>                 # Path to Java Archive (JAR) that should be analyzed.",
           "  --lib <path>                 # Path to file or JDK home to use as a library resource.",
           "  --maven-coord <x:y:z>        # Set the Maven coordinate of the previous --aar/--jar.",
@@ -112,8 +112,8 @@ public class LibraryAnalyzerCommandParser {
         } else {
           builder.addAarPath(aarPath);
         }
-      } else if (arg.equals(BLAST_RADIUS_OUTPUT_FLAG)) {
-        builder.setBlastRadiusOutputPath(Paths.get(nextArg));
+      } else if (arg.equals(KEEP_RADIUS_OUTPUT_FLAG)) {
+        builder.setKeepRadiusOutputPath(Paths.get(nextArg));
       } else if (arg.equals(JAR_FLAG)) {
         Path jarPath = Paths.get(nextArg);
         if (!FileUtils.isJarFile(jarPath)) {

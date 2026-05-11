@@ -346,8 +346,8 @@ def prepare_google3(args):
             g4_open('desugar_jdk_libs_configuration.jar')
             g4_open('threading-module-blocking.jar')
             g4_open('threading-module-single-threaded.jar')
-            g4_open('proto/blastradius.proto')
-            g4_open('proto/blastradiussummary.proto')
+            g4_open('proto/keepradius.proto')
+            g4_open('proto/keepradiussummary.proto')
             g4_open('proto/libraryanalyzerresult.proto')
             download_file(version, 'r8-full-exclude-deps.jar', 'full.jar')
             download_file(version, 'r8-src.jar', 'src.jar')
@@ -359,10 +359,9 @@ def prepare_google3(args):
                           'threading-module-blocking.jar')
             download_file(version, 'threading-module-single-threaded.jar',
                           'threading-module-single-threaded.jar')
-            download_file(version, 'blastradius.proto',
-                          'proto/blastradius.proto')
-            download_file(version, 'blastradiussummary.proto',
-                          'proto/blastradiussummary.proto')
+            download_file(version, 'keepradius.proto', 'proto/keepradius.proto')
+            download_file(version, 'keepradiussummary.proto',
+                          'proto/keepradiussummary.proto')
             download_file(version, 'libraryanalyzerresult.proto',
                           'proto/libraryanalyzerresult.proto')
             if version != 'main':

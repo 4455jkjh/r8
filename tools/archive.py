@@ -376,8 +376,8 @@ def run(options):
             utils.KEEPANNO_LEGACY_ANNOTATIONS_JAR,
             utils.KEEPANNO_ANDROIDX_ANNOTATIONS_JAR, utils.GENERATED_LICENSE,
             'd8_r8/dist/build/spdx/r8.spdx.json',
-            'src/blastradius/proto/blastradius.proto',
-            'src/blastradius/proto/blastradiussummary.proto',
+            'src/keepradius/proto/keepradius.proto',
+            'src/keepradius/proto/keepradiussummary.proto',
             'src/libanalyzer/proto/libraryanalyzerresult.proto'
         ])
         for file in for_archiving:

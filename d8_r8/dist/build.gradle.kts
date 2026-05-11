@@ -83,15 +83,15 @@ spdxSbom {
 val assistantJarScope by configurations.dependencyScope("assistantJarScope")
 val assistantJarConfig by
   configurations.resolvable("assistantJarConfig") { extendsFrom(assistantJarScope) }
-val blastRadiusWithoutProtoJarScope by
-  configurations.dependencyScope("blastRadiusWithoutProtoJarScope")
-val blastRadiusWithoutProtoJarConfig by
-  configurations.resolvable("blastRadiusWithoutProtoJarConfig") {
-    extendsFrom(blastRadiusWithoutProtoJarScope)
+val keepRadiusWithoutProtoJarScope by
+  configurations.dependencyScope("keepRadiusWithoutProtoJarScope")
+val keepRadiusWithoutProtoJarConfig by
+  configurations.resolvable("keepRadiusWithoutProtoJarConfig") {
+    extendsFrom(keepRadiusWithoutProtoJarScope)
   }
-val blastRadiusProtoJarScope by configurations.dependencyScope("blastRadiusProtoJarScope")
-val blastRadiusProtoJarConfig by
-  configurations.resolvable("blastRadiusProtoJarConfig") { extendsFrom(blastRadiusProtoJarScope) }
+val keepRadiusProtoJarScope by configurations.dependencyScope("keepRadiusProtoJarScope")
+val keepRadiusProtoJarConfig by
+  configurations.resolvable("keepRadiusProtoJarConfig") { extendsFrom(keepRadiusProtoJarScope) }
 val keepAnnoJarScope by configurations.dependencyScope("keepAnnoJarScope")
 val keepAnnoJarConfig by
   configurations.resolvable("keepAnnoJarConfig") { extendsFrom(keepAnnoJarScope) }
@@ -123,8 +123,8 @@ val mainResourcesConfig by
 
 dependencies {
   assistantJarScope(project(":assistant", "assistantJar"))
-  blastRadiusWithoutProtoJarScope(project(":blastradius", "blastradiusWithoutProtoJar"))
-  blastRadiusProtoJarScope(project(":blastradius", "blastradiusProtoJar"))
+  keepRadiusWithoutProtoJarScope(project(":keepradius", "keepradiusWithoutProtoJar"))
+  keepRadiusProtoJarScope(project(":keepradius", "keepradiusProtoJar"))
   keepAnnoJarScope(project(":keepanno", "keepannoJar"))
   keepAnnoDepsJarExceptAsmScope(project(":keepanno", "keepannoDepsJarExceptAsm"))
   keepAnnoToolsJarScope(project(":keepanno", "keepannoToolsJar"))
@@ -334,7 +334,7 @@ tasks {
     exclude("com/android/tools/r8/threading/providers/**")
     exclude("META-INF/*.kotlin_module")
     exclude("**/*.kotlin_metadata")
-    exclude("blastradius.proto")
+    exclude("keepradius.proto")
     exclude("keepspec.proto")
     exclude("LICENSE")
     exclude("androidx/")
@@ -345,7 +345,7 @@ tasks {
   val configsToMerge =
     listOf(
       assistantJarConfig,
-      blastRadiusWithoutProtoJarConfig,
+      keepRadiusWithoutProtoJarConfig,
       keepAnnoJarConfig,
       libanalyzerJarConfig,
       mainJarConfig,
@@ -427,8 +427,8 @@ tasks {
 
   val protoJar by
     registering(Zip::class) {
-      dependsOn(blastRadiusProtoJarConfig, libanalyzerProtoJarConfig)
-      from(blastRadiusProtoJarConfig.elements.map { it.map { zipTree(it) } })
+      dependsOn(keepRadiusProtoJarConfig, libanalyzerProtoJarConfig)
+      from(keepRadiusProtoJarConfig.elements.map { it.map { zipTree(it) } })
       from(libanalyzerProtoJarConfig.elements.map { it.map { zipTree(it) } })
       exclude("META-INF/MANIFEST.MF")
       archiveFileName.set("proto.jar")

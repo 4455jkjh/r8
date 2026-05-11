@@ -408,7 +408,7 @@ public class R8 {
               keepDeclarations);
       timing.end();
 
-      if (options.getBlastRadiusOptions().shouldExitEarly()) {
+      if (options.getKeepRadiusOptions().shouldExitEarly()) {
         if (options.isPrintTimesReportingEnabled()) {
           timing.endAll().report();
         }

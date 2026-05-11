@@ -3,10 +3,10 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8.shaking;
 
-import com.android.tools.r8.blastradius.RootSetBlastRadius;
 import com.android.tools.r8.graph.DexField;
 import com.android.tools.r8.graph.DexMethod;
 import com.android.tools.r8.graph.DexType;
+import com.android.tools.r8.keepradius.RootSetKeepRadius;
 import java.util.function.Consumer;
 
 public interface KeepInfoCollectionEventConsumer {
@@ -18,9 +18,9 @@ public interface KeepInfoCollectionEventConsumer {
   void acceptKeepMethodInfo(
       DexMethod method, Consumer<? super KeepMethodInfo.Joiner> keepInfoEffect);
 
-  static KeepInfoCollectionEventConsumer create(RootSetBlastRadius.Builder blastRadius) {
-    if (blastRadius != null) {
-      return blastRadius;
+  static KeepInfoCollectionEventConsumer create(RootSetKeepRadius.Builder keepRadius) {
+    if (keepRadius != null) {
+      return keepRadius;
     } else {
       return new EmptyKeepInfoCollectionEventConsumer();
     }

@@ -7,7 +7,7 @@ import com.android.tools.r8.libanalyzer.proto.BlockedConsumerKeepRule;
 import com.android.tools.r8.libanalyzer.proto.ConfigurationSummary;
 import com.android.tools.r8.libanalyzer.proto.D8CompileResult;
 import com.android.tools.r8.libanalyzer.proto.ItemCollectionSummary;
-import com.android.tools.r8.libanalyzer.proto.KeepRuleBlastRadiusSummary;
+import com.android.tools.r8.libanalyzer.proto.KeepRuleKeepRadiusSummary;
 import com.android.tools.r8.libanalyzer.proto.LibraryAnalyzerResult;
 import com.android.tools.r8.libanalyzer.proto.R8CompileResult;
 import com.android.tools.r8.libanalyzer.proto.ValidateConsumerKeepRulesResult;
@@ -69,26 +69,26 @@ public class LibraryAnalyzerWriter {
   private static void writeConfigurationSummaryToStdout(
       ConfigurationSummary configurationSummary, String path) {
     for (var element : configurationSummary.getKeepRulesList()) {
-      writeKeepRuleBlastRadiusSummaryToStdout(element, path + ".keep_rules");
+      writeKeepRuleKeepRadiusSummaryToStdout(element, path + ".keep_rules");
     }
     for (var element : configurationSummary.getUsedPackageWideKeepRulesList()) {
-      writeKeepRuleBlastRadiusSummaryToStdout(element, path + ".used_package_wide_keep_rules");
+      writeKeepRuleKeepRadiusSummaryToStdout(element, path + ".used_package_wide_keep_rules");
     }
     for (var element : configurationSummary.getUnusedPackageWideKeepRulesList()) {
-      writeKeepRuleBlastRadiusSummaryToStdout(element, path + ".unused_package_wide_keep_rules");
+      writeKeepRuleKeepRadiusSummaryToStdout(element, path + ".unused_package_wide_keep_rules");
     }
   }
 
-  private static void writeKeepRuleBlastRadiusSummaryToStdout(
-      KeepRuleBlastRadiusSummary keepRuleBlastRadiusSummary, String path) {
-    writeKeyValuePairToStdout(path + ".source", keepRuleBlastRadiusSummary.getSource());
+  private static void writeKeepRuleKeepRadiusSummaryToStdout(
+      KeepRuleKeepRadiusSummary keepRuleKeepRadiusSummary, String path) {
+    writeKeyValuePairToStdout(path + ".source", keepRuleKeepRadiusSummary.getSource());
     writeKeyValuePairToStdout(
-        path + ".kept_item_count", keepRuleBlastRadiusSummary.getKeptItemCount());
+        path + ".kept_item_count", keepRuleKeepRadiusSummary.getKeptItemCount());
     writeKeyValuePairToStdout(
-        path + ".no_obfuscation", keepRuleBlastRadiusSummary.getNoObfuscation());
+        path + ".no_obfuscation", keepRuleKeepRadiusSummary.getNoObfuscation());
     writeKeyValuePairToStdout(
-        path + ".no_optimization", keepRuleBlastRadiusSummary.getNoOptimization());
-    writeKeyValuePairToStdout(path + ".no_shrinking", keepRuleBlastRadiusSummary.getNoShrinking());
+        path + ".no_optimization", keepRuleKeepRadiusSummary.getNoOptimization());
+    writeKeyValuePairToStdout(path + ".no_shrinking", keepRuleKeepRadiusSummary.getNoShrinking());
   }
 
   private static void writeItemCollectionSummaryToStdout(

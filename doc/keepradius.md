@@ -35,54 +35,54 @@ how to update the R8 version in your build.
 ```bash
 ./gradlew assembleRelease \
     --no-daemon \
-    -Dcom.android.tools.r8.dumpkeepradiushtmltodirectory=/tmp/blastradius
+    -Dcom.android.tools.r8.dumpkeepradiushtmltodirectory=/tmp/keepradius
 ```
 
 ### Android Platform
 
-For builds within the Android Platform, set the `R8_DUMP_BLAST_RADIUS` environment variable to `true`.
+For builds within the Android Platform, set the `R8_DUMP_KEEP_RADIUS` environment variable to `true`.
 
 ```bash
-R8_DUMP_BLAST_RADIUS=true m
+R8_DUMP_KEEP_RADIUS=true m
 ```
 
-This will generate an `r8blastradius.pb` file for each R8 build target within
+This will generate an `r8keepradius.pb` file for each R8 build target within
 `out/soong/.intermediates`.
 
 ## Visualizing the Data
 
 The raw `.pb` file can be converted into an interactive HTML report using the
-`BlastRadiusHtmlReportGenerator`.
+`KeepRadiusHtmlReportGenerator`.
 
 ### Converting a single file
 
 Use the following command to convert a specific `.pb` file to HTML:
 
 ```bash
-java -cp r8.jar com.android.tools.r8.blastradius.BlastRadiusHtmlReportGenerator \
+java -cp r8.jar com.android.tools.r8.keepradius.KeepRadiusHtmlReportGenerator \
   <path_to_input_pb> <path_to_output_html>
 ```
 
 **Example**:
 ```bash
-java -cp r8.jar com.android.tools.r8.blastradius.BlastRadiusHtmlReportGenerator \
-  /tmp/blastradius/blastradius.pb /tmp/blastradius/report.html
+java -cp r8.jar com.android.tools.r8.keepradius.KeepRadiusHtmlReportGenerator \
+  /tmp/keepradius/keepradius.pb /tmp/keepradius/report.html
 ```
 
 ### Converting multiple files (Android Platform)
 
-If you have multiple blast radius files (e.g., from an Android Platform build),
+If you have multiple keep radius files (e.g., from an Android Platform build),
 you can generate a summary report for the directory:
 
 ```bash
-java -cp prebuilts/r8/r8.jar com.android.tools.r8.blastradius.BlastRadiusHtmlReportGenerator \
+java -cp prebuilts/r8/r8.jar com.android.tools.r8.keepradius.KeepRadiusHtmlReportGenerator \
   <path_to_input_directory> <path_to_output_directory>
 ```
 
 **Example**:
 ```bash
-java -cp prebuilts/r8/r8.jar com.android.tools.r8.blastradius.BlastRadiusHtmlReportGenerator \
-  out/soong/.intermediates /tmp/blastradiusreport
+java -cp prebuilts/r8/r8.jar com.android.tools.r8.keepradius.KeepRadiusHtmlReportGenerator \
+  out/soong/.intermediates /tmp/keepradiusreport
 ```
 
 This will scan the input directory for `.pb` files and generate an HTML report

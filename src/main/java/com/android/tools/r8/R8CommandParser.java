@@ -164,7 +164,7 @@ public class R8CommandParser extends BaseCompilerCommandParser<R8Command, R8Comm
     CompilationMode mode = null;
     OutputMode outputMode = null;
     Path outputPath = null;
-    boolean hasBlastRadiusOutput = false;
+    boolean hasKeepRadiusOutput = false;
     boolean hasDefinedApiLevel = false;
     private boolean includeDataResources = true;
   }
@@ -203,7 +203,7 @@ public class R8CommandParser extends BaseCompilerCommandParser<R8Command, R8Comm
       builder.setMode(state.mode);
     }
     OutputMode outputMode = state.outputMode != null ? state.outputMode : OutputMode.DexIndexed;
-    if (state.hasBlastRadiusOutput
+    if (state.hasKeepRadiusOutput
         && state.outputPath == null
         && outputMode == OutputMode.DexIndexed) {
       builder.setProgramConsumer(DexIndexedConsumer.emptyConsumer());
@@ -380,7 +380,7 @@ public class R8CommandParser extends BaseCompilerCommandParser<R8Command, R8Comm
           continue;
         }
         configurationAnalysisDataOutputPath = Paths.get(nextArg);
-        state.hasBlastRadiusOutput = true;
+        state.hasKeepRadiusOutput = true;
       } else if (arg.equals(BUILD_METADATA_OUTPUT_FLAG)) {
         if (buildMetadataOutputPath != null) {
           builder.error(
