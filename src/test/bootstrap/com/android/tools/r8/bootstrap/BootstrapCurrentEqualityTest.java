@@ -24,6 +24,7 @@ import com.android.tools.r8.retrace.ProguardMapProducer;
 import com.android.tools.r8.retrace.ProguardMappingSupplier;
 import com.android.tools.r8.retrace.Retrace;
 import com.android.tools.r8.retrace.RetraceCommand;
+import com.android.tools.r8.threading.ThreadingModuleProvider;
 import com.android.tools.r8.utils.internal.FileUtils;
 import com.android.tools.r8.utils.internal.StringUtils;
 import com.android.tools.r8.utils.internal.collections.Pair;
@@ -32,6 +33,7 @@ import com.google.common.collect.Lists;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Collection;
 import java.util.List;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
@@ -58,6 +60,11 @@ public class BootstrapCurrentEqualityTest extends TestBase {
       ImmutableList.of(
           Paths.get(ToolHelper.getProjectRoot(), "src", "main", "keep.txt"),
           Paths.get(ToolHelper.getProjectRoot(), "src", "main", "discard.txt"));
+  private static final Collection<String> KEEP_RULES_THREADING_PROVIDER =
+      ImmutableList.of(
+          "-keep class * implements " + ThreadingModuleProvider.class.getTypeName() + " {",
+          "  <init>();",
+          "}");
 
   private static final Class<?> HELLO_CLASS = HelloWorldProgram.class;
   private static final String HELLO_NAME = typeName(HELLO_CLASS);
@@ -177,9 +184,21 @@ public class BootstrapCurrentEqualityTest extends TestBase {
             .addProgramFiles(ToolHelper.getR8WithRelocatedDeps())
             .addLibraryFiles(parameters.asCfRuntime().getJavaHome())
             .addKeepRuleFiles(KEEP_RULES_FILES)
+            .addKeepRules(KEEP_RULES_THREADING_PROVIDER)
             .setMode(CompilationMode.RELEASE)
             .compile()
             .outputJar();
+    ExternalR8TestCompileResult helloCompileResult =
+        testForExternalR8(newTempFolder(), parameters.getBackend(), parameters.getRuntime())
+            .useProvidedR8(runR81)
+            .addProgramFiles(writeClassesToJar(HELLO_CLASS))
+            .addKeepRules(BootstrapCurrentEqualityTest.KEEP_HELLO)
+            .setMode(CompilationMode.RELEASE)
+            .compile();
+    testForJvm(parameters)
+        .addProgramFiles(helloCompileResult.writeToZip())
+        .run(parameters.getRuntime(), HELLO_NAME)
+        .assertSuccessWithOutput(HELLO_EXPECTED);
     Path runR82 =
         testForExternalR8(parameters.getBackend(), parameters.getRuntime())
             .useProvidedR8(ToolHelper.R8LIB_EXCLUDE_DEPS_JAR)
@@ -187,6 +206,7 @@ public class BootstrapCurrentEqualityTest extends TestBase {
             .addProgramFiles(ToolHelper.getR8WithRelocatedDeps())
             .addLibraryFiles(parameters.asCfRuntime().getJavaHome())
             .addKeepRuleFiles(KEEP_RULES_FILES)
+            .addKeepRules(KEEP_RULES_THREADING_PROVIDER)
             .setMode(CompilationMode.RELEASE)
             .compile()
             .outputJar();

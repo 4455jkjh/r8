@@ -43,6 +43,7 @@ public class B79498926 extends TestBase {
             .setProgramConsumer(consumer)
             .setDisableDesugaring(true)
             .build());
-    ToolHelper.runDex2Oat(outDex, outOat, parameters.getRuntime().asDex().getVm());
+    ToolHelper.runDex2Oat(
+        outDex, outOat, temp.newFolder().toPath(), parameters.getRuntime().asDex().getVm());
   }
 }

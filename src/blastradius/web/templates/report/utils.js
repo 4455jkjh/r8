@@ -4,13 +4,27 @@
 /**
  * Utility functions for analyzing Blast Radius data.
  */
+function hasGlobalRule(data, ruleName) {
+  if (!data || !data.globalKeepRuleBlastRadiusTable) return false;
+  return data.globalKeepRuleBlastRadiusTable.some(r => r.source === ruleName);
+}
+
 function getDisallowObfuscationCount(data) {
+  if (hasGlobalRule(data, '-dontobfuscate')) {
+    return getLiveItemCount(data);
+  }
   return getScore(data, 'DONT_OBFUSCATE');
 }
 function getDisallowOptimizationCount(data) {
+  if (hasGlobalRule(data, '-dontoptimize')) {
+    return getLiveItemCount(data);
+  }
   return getScore(data, 'DONT_OPTIMIZE');
 }
 function getDisallowShrinkingCount(data) {
+  if (hasGlobalRule(data, '-dontshrink')) {
+    return getLiveItemCount(data);
+  }
   return getScore(data, 'DONT_SHRINK');
 }
 function getLiveItemCount(data) {
@@ -31,21 +45,42 @@ function getDetailedStats(data) {
     methods: { total: build.liveMethodCount || 0, obfuscation: 0, optimization: 0, shrinking: 0 },
     overall: { total: getLiveItemCount(data), obfuscation: 0, optimization: 0, shrinking: 0 }
   };
+
   const constraintsMap = getConstraintsMap(data);
   const rulesMap = getRulesConstraintsMap(data);
-  const processTable = (table, key) => {
-    if (!table) return;
-    table.forEach(item => {
-      const keptBy = item.keptBy || [];
-      const constraints = keptBy.flatMap(ruleId => constraintsMap.get(rulesMap.get(ruleId)) || []);
-      if (constraints.includes('DONT_OBFUSCATE')) stats[key].obfuscation++;
-      if (constraints.includes('DONT_OPTIMIZE')) stats[key].optimization++;
-      if (constraints.includes('DONT_SHRINK')) stats[key].shrinking++;
-    });
+
+  const hasObfuscate = hasGlobalRule(data, '-dontobfuscate');
+  const hasOptimize = hasGlobalRule(data, '-dontoptimize');
+  const hasShrink = hasGlobalRule(data, '-dontshrink');
+
+  const processTable = (table, key, forcedObfuscation, forcedOptimization, forcedShrinking) => {
+    if (forcedObfuscation) {
+      stats[key].obfuscation = stats[key].total;
+    }
+    if (forcedOptimization) {
+      stats[key].optimization = stats[key].total;
+    }
+    if (forcedShrinking) {
+      stats[key].shrinking = stats[key].total;
+    }
+
+    if (!forcedObfuscation || !forcedOptimization || !forcedShrinking) {
+      if (!table) return;
+      table.forEach(item => {
+        const keptBy = item.keptBy || [];
+        const constraints = keptBy.flatMap(ruleId => constraintsMap.get(rulesMap.get(ruleId)) || []);
+        
+        if (!forcedObfuscation && constraints.includes('DONT_OBFUSCATE')) stats[key].obfuscation++;
+        if (!forcedOptimization && constraints.includes('DONT_OPTIMIZE')) stats[key].optimization++;
+        if (!forcedShrinking && constraints.includes('DONT_SHRINK')) stats[key].shrinking++;
+      });
+    }
   };
-  processTable(data.keptClassInfoTable, 'classes');
-  processTable(data.keptFieldInfoTable, 'fields');
-  processTable(data.keptMethodInfoTable, 'methods');
+
+  processTable(data.keptClassInfoTable, 'classes', hasObfuscate, hasOptimize, hasShrink);
+  processTable(data.keptFieldInfoTable, 'fields', hasObfuscate, hasOptimize, hasShrink);
+  processTable(data.keptMethodInfoTable, 'methods', hasObfuscate, hasOptimize, hasShrink);
+
   stats.overall.obfuscation = stats.classes.obfuscation + stats.fields.obfuscation + stats.methods.obfuscation;
   stats.overall.optimization = stats.classes.optimization + stats.fields.optimization + stats.methods.optimization;
   stats.overall.shrinking = stats.classes.shrinking + stats.fields.shrinking + stats.methods.shrinking;
@@ -79,7 +114,7 @@ function getImpactArray(constraints) {
 function getRules(data) {
   if (!data || !data.keepRuleBlastRadiusTable) return [];
   const constraintsMap = getConstraintsMap(data);
-  return data.keepRuleBlastRadiusTable.map(rule => {
+  const rules = data.keepRuleBlastRadiusTable.map(rule => {
     const constraints = constraintsMap.get(rule.constraintsId);
     const br = rule.blastRadius || {};
     const classes = (br.classBlastRadius || []).length;
@@ -98,6 +133,41 @@ function getRules(data) {
       subsumedBy: br.subsumedBy || []
     };
   });
+
+  if (data.globalKeepRuleBlastRadiusTable) {
+    const totalClasses = data.buildInfo?.liveClassCount || 0;
+    const totalFields = data.buildInfo?.liveFieldCount || 0;
+    const totalMethods = data.buildInfo?.liveMethodCount || 0;
+    const totalLive = totalClasses + totalFields + totalMethods;
+
+    data.globalKeepRuleBlastRadiusTable.forEach(rule => {
+      if (rule.source === '-dontoptimize' || rule.source === '-dontshrink' || rule.source === '-dontobfuscate') {
+        const constraints = [...(constraintsMap.get(rule.constraintsId) || [])];
+        if (rule.source === '-dontobfuscate' && !constraints.includes('DONT_OBFUSCATE')) {
+          constraints.push('DONT_OBFUSCATE');
+        }
+        if (rule.source === '-dontoptimize' && !constraints.includes('DONT_OPTIMIZE')) {
+          constraints.push('DONT_OPTIMIZE');
+        }
+        if (rule.source === '-dontshrink' && !constraints.includes('DONT_SHRINK')) {
+          constraints.push('DONT_SHRINK');
+        }
+        rules.push({
+          id: rule.id,
+          name: rule.source,
+          impact: getImpactArray(constraints),
+          matches: {
+            classes: totalClasses,
+            fields: totalFields,
+            methods: totalMethods,
+            total: totalLive
+          },
+          subsumedBy: []
+        });
+      }
+    });
+  }
+  return rules;
 }
 /**
  * Returns formatted files (origins) for the table.
@@ -290,7 +360,7 @@ function highlightRule(source) {
   return escapedSource
     .replace(/(?<!&[a-zA-Z0-9#]+);/g, '<span style="color: #ca8a04;">;</span>')
     .replace(/([{}*])/g, '<span style="color: #ca8a04;">$1</span>')
-    .replace(/(-keep[a-z]*)/g, '<span style="color: #dc2626;">$1</span>')
+    .replace(/(-keep[a-z]*|-dontoptimize|-dontshrink|-dontobfuscate)/g, '<span style="color: #dc2626;">$1</span>')
     .replace(/\b(class|interface|enum)\b/g, '<span style="color: #2563eb;">$1</span>');
 }
 

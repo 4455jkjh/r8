@@ -144,7 +144,7 @@ public abstract class CompilationTestBase extends DesugaredLibraryTestBase {
     Path oatFile = temp.getRoot().toPath().resolve("all.oat");
     outputApp.writeToZipForTesting(out, OutputMode.DexIndexed);
     try {
-      ToolHelper.runDex2Oat(out, oatFile);
+      ToolHelper.runDex2Oat(out, oatFile, temp.newFolder().toPath());
       return outputApp;
     } catch (AssertionError e) {
       if (referenceApk == null) {

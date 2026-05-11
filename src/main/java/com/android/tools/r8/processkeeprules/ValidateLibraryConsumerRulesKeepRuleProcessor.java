@@ -218,7 +218,7 @@ public class ValidateLibraryConsumerRulesKeepRuleProcessor
 
   @Override
   public void enablePrintConfiguration(
-      Path printConfigurationFile,
+      String printConfigurationFileNameOrNull,
       ProguardConfigurationSourceParser parser,
       Position position,
       TextPosition positionStart) {
@@ -227,7 +227,7 @@ public class ValidateLibraryConsumerRulesKeepRuleProcessor
 
   @Override
   public void enablePrintMapping(
-      Path printMappingFile,
+      String printMappingFileNameOrNull,
       ProguardConfigurationSourceParser parser,
       Position position,
       TextPosition positionStart) {
@@ -236,7 +236,7 @@ public class ValidateLibraryConsumerRulesKeepRuleProcessor
 
   @Override
   public void enablePrintSeeds(
-      Path printSeedsFile,
+      String printSeedsFileNameOrNull,
       ProguardConfigurationSourceParser parser,
       Position position,
       TextPosition positionStart) {
@@ -245,7 +245,7 @@ public class ValidateLibraryConsumerRulesKeepRuleProcessor
 
   @Override
   public void enablePrintUsage(
-      Path printUsageFile,
+      String printUsageFileNameOrNull,
       ProguardConfigurationSourceParser parser,
       Position position,
       TextPosition positionStart) {

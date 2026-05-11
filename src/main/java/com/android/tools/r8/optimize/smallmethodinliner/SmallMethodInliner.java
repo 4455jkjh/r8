@@ -5,9 +5,11 @@ package com.android.tools.r8.optimize.smallmethodinliner;
 
 import static com.android.tools.r8.graph.DexClassAndMethod.asProgramMethodOrNull;
 import static com.android.tools.r8.utils.internal.MapUtils.ignoreKey;
+import static com.google.common.base.Predicates.alwaysTrue;
 
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.Code;
+import com.android.tools.r8.graph.DexClassAndMethod;
 import com.android.tools.r8.graph.DexEncodedMethod;
 import com.android.tools.r8.graph.DexMethod;
 import com.android.tools.r8.graph.DexProgramClass;
@@ -47,9 +49,14 @@ import com.android.tools.r8.shaking.KeepMethodInfo;
 import com.android.tools.r8.utils.InternalOptions;
 import com.android.tools.r8.utils.ThreadUtils;
 import com.android.tools.r8.utils.collections.DexMethodSignatureSet;
+import com.android.tools.r8.utils.collections.ProgramMethodMap;
 import com.android.tools.r8.utils.collections.ProgramMethodSet;
+import com.android.tools.r8.utils.internal.TraversalContinuation;
 import com.android.tools.r8.utils.timing.Timing;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
+import java.util.ArrayDeque;
+import java.util.Deque;
 import java.util.IdentityHashMap;
 import java.util.ListIterator;
 import java.util.Map;
@@ -57,6 +64,8 @@ import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.function.BiConsumer;
+import java.util.function.Function;
+import java.util.function.Predicate;
 
 /**
  * A simple inliner pass that aggressively inlines small methods such as getters and setters early
@@ -68,6 +77,12 @@ public class SmallMethodInliner extends Inliner implements InliningReasonStrateg
   private final ProgramMethodSet methodsToInline = ProgramMethodSet.createConcurrent();
   private final ProgramMethodSet failedToInline = ProgramMethodSet.createConcurrent();
 
+  // Maps a given method to its current inlining stack. Used to avoid the risk of cyclic inlining.
+  // A given method may only be present as a key during the IR processing of the method.
+  ProgramMethodMap<Deque<ProgramMethod>> inlineStacks = ProgramMethodMap.createConcurrent();
+
+  // Callees that have changed as a result of inlining. These should have their IR finalized back
+  // to LIR, whereas the IR for the remaining methods can simply be discarded.
   private final ProgramMethodSet needsFinalization = ProgramMethodSet.createConcurrent();
 
   private SmallMethodInliner(AppView<AppInfoWithLiveness> appView) {
@@ -173,31 +188,47 @@ public class SmallMethodInliner extends Inliner implements InliningReasonStrateg
           clazz ->
               clazz.forEachProgramMethodMatching(
                   method -> {
-                    if (method.hasLirCode()) {
-                      for (LirConstant constant : method.getCode().asLirCode().getConstantPool()) {
-                        if (constant instanceof DexMethod) {
-                          DexMethod methodConstant = (DexMethod) constant;
-                          if (!methodSignaturesOfInterest.contains(methodConstant)) {
-                            continue;
-                          }
-                          ProgramMethod resolvedMethod =
-                              appView
-                                  .appInfo()
-                                  .unsafeResolveMethodDueToDexFormat(methodConstant)
-                                  .getResolvedProgramMethod();
-                          if (resolvedMethod != null && methodsToInline.contains(resolvedMethod)) {
-                            return true;
-                          }
-                        }
-                      }
-                    }
-                    return false;
+                    TraversalContinuation<?, ?> traversalContinuation =
+                        traverseCallsToMethodsToInline(
+                            method,
+                            methodSignaturesOfInterest::contains,
+                            m -> TraversalContinuation.doBreak());
+                    return traversalContinuation.isBreak();
                   },
                   callers::add),
           options.getThreadingModule(),
           executorService);
+      assert inlineStacks.isEmpty();
       return callers;
     }
+  }
+
+  private <TB, TC> TraversalContinuation<TB, TC> traverseCallsToMethodsToInline(
+      DexEncodedMethod method,
+      Predicate<DexMethod> constantPredicate,
+      Function<ProgramMethod, TraversalContinuation<TB, TC>> fn) {
+    if (method.hasLirCode()) {
+      for (LirConstant constant : method.getCode().asLirCode().getConstantPool()) {
+        if (constant instanceof DexMethod) {
+          DexMethod methodConstant = (DexMethod) constant;
+          if (!constantPredicate.test(methodConstant)) {
+            continue;
+          }
+          ProgramMethod resolvedMethod =
+              appView
+                  .appInfo()
+                  .unsafeResolveMethodDueToDexFormat(methodConstant)
+                  .getResolvedProgramMethod();
+          if (resolvedMethod != null && methodsToInline.contains(resolvedMethod)) {
+            TraversalContinuation<TB, TC> traversalContinuation = fn.apply(resolvedMethod);
+            if (traversalContinuation.isBreak()) {
+              return traversalContinuation;
+            }
+          }
+        }
+      }
+    }
+    return TraversalContinuation.doContinue();
   }
 
   private void processCallers(
@@ -345,6 +376,20 @@ public class SmallMethodInliner extends Inliner implements InliningReasonStrateg
   }
 
   @Override
+  protected boolean tryInlineMethodWithoutSideEffects(
+      IRCode code,
+      InstructionListIterator iterator,
+      InvokeMethod invoke,
+      DexClassAndMethod resolvedMethod) {
+    boolean inlined =
+        super.tryInlineMethodWithoutSideEffects(code, iterator, invoke, resolvedMethod);
+    if (inlined) {
+      needsFinalization.add(code.context());
+    }
+    return inlined;
+  }
+
+  @Override
   protected void notifyInvokeNotInlined(
       InvokeMethod invoke, MethodResolutionResult resolutionResult) {
     if (resolutionResult.isSingleResolution()) {
@@ -357,7 +402,37 @@ public class SmallMethodInliner extends Inliner implements InliningReasonStrateg
 
   @Override
   protected boolean shouldApplyInliningToInlinee(
-      AppView<?> appView, ProgramMethod singleTarget, int inliningDepth) {
-    return true;
+      AppView<?> appView, ProgramMethod context, ProgramMethod singleTarget, int inliningDepth) {
+    Deque<ProgramMethod> inlineStack =
+        inlineStacks.computeIfAbsent(context, ignoreKey(ArrayDeque::new));
+    // Perform a linear scan over the current inline stack to guard against cyclic inlining.
+    // The depth of recursive inlining should generally be quite low, so a linear scan should be OK.
+    if (Iterables.any(inlineStack, m -> m.getDefinition() == singleTarget.getDefinition())) {
+      // Don't apply recursive inlining to the body of `singleTarget` after inlining it into the
+      // current method. To this end, we scan all invokes in the body of `singleTarget` and mark
+      // them as not inlined.
+      traverseCallsToMethodsToInline(
+          singleTarget.getDefinition(),
+          alwaysTrue(),
+          methodToInline -> {
+            failedToInline.add(methodToInline);
+            return TraversalContinuation.doContinue();
+          });
+      return false;
+    } else {
+      inlineStack.addLast(singleTarget);
+      return true;
+    }
+  }
+
+  @Override
+  protected void exitInlinee(ProgramMethod context) {
+    Deque<ProgramMethod> inlineStack = inlineStacks.get(context);
+    assert inlineStack != null;
+    assert !inlineStack.isEmpty();
+    inlineStack.removeLast();
+    if (inlineStack.isEmpty()) {
+      inlineStacks.remove(context);
+    }
   }
 }

@@ -6,43 +6,25 @@ package com.android.tools.r8;
 import com.android.tools.r8.origin.Origin;
 import com.android.tools.r8.utils.FlagFile;
 import com.android.tools.r8.utils.StringDiagnostic;
-import com.android.tools.r8.utils.internal.StringUtils;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
+import com.android.tools.r8.utils.internal.CliParser;
 import java.nio.file.Paths;
-import java.util.List;
-import java.util.Set;
 
 public class ApiDatabaseGeneratorCommandParser {
 
-  private static final String LOWER_CASE_NAME = "apidatabasegenerator";
-  private static final String OUTPUT_FLAG = "--output";
-
-  private static final String USAGE_MESSAGE =
-      StringUtils.lines(
-          "Usage: " + LOWER_CASE_NAME + " [options] <input-files>", " where options are:");
-
-  public static List<ParseFlagInfo> getFlags() {
-    return ImmutableList.<ParseFlagInfo>builder()
-        .add(
-            ParseFlagInfoImpl.flag1(
-                OUTPUT_FLAG,
-                "<database-file>",
-                "Output result in <database-file> (must be a file, not a directory). Defaults to"
-                    + " 'api_database.ser'."))
-        .add(ParseFlagInfoImpl.getVersion(LOWER_CASE_NAME))
-        .add(ParseFlagInfoImpl.getHelp())
-        .build();
+  private static CliParser<ApiDatabaseGeneratorCommand.Builder> createParser() {
+    String usageHeader = "Usage: apidatabasegenerator [options] <input-files>\nwhere options are:";
+    CliParser<ApiDatabaseGeneratorCommand.Builder> parser = new CliParser<>(usageHeader);
+    return parser
+        .option0("--help", "Print help.", builder -> builder.setPrintHelp(true))
+        .option0("--version", "Print version.", builder -> builder.setPrintVersion(true))
+        .option1(
+            "--output",
+            "<database-file>",
+            "Output result in <database-file> (must be a file, not a directory). Defaults to"
+                + " 'api_database.ser'.",
+            (builder, arg) -> builder.setOutputPath(Paths.get(arg)))
+        .positional((builder, arg) -> builder.addInputPath(Paths.get(arg)));
   }
-
-  static String getUsageMessage() {
-    StringBuilder builder = new StringBuilder();
-    StringUtils.appendLines(builder, USAGE_MESSAGE);
-    new ParseFlagPrinter().addFlags(getFlags()).appendLinesToBuilder(builder);
-    return builder.toString();
-  }
-
-  private static final Set<String> OPTIONS_WITH_ONE_PARAMETER = ImmutableSet.of(OUTPUT_FLAG);
 
   public static ApiDatabaseGeneratorCommand.Builder parse(String[] args, Origin origin) {
     return new ApiDatabaseGeneratorCommandParser()
@@ -58,32 +40,12 @@ public class ApiDatabaseGeneratorCommandParser {
   private ApiDatabaseGeneratorCommand.Builder parse(
       String[] args, Origin origin, ApiDatabaseGeneratorCommand.Builder builder) {
     String[] expandedArgs = FlagFile.expandFlagFiles(args, builder::error);
-    for (int i = 0; i < expandedArgs.length; i++) {
-      String arg = expandedArgs[i].trim();
-      String nextArg = null;
-      if (OPTIONS_WITH_ONE_PARAMETER.contains(arg)) {
-        if (++i < expandedArgs.length) {
-          nextArg = expandedArgs[i];
-        } else {
-          builder.error(
-              new StringDiagnostic("Missing parameter for " + expandedArgs[i - 1] + ".", origin));
-          break;
-        }
-      }
-      if (arg.length() == 0) {
-        continue;
-      } else if (arg.equals("--help")) {
-        builder.setPrintHelp(true);
-      } else if (arg.equals("--version")) {
-        builder.setPrintVersion(true);
-      } else if (arg.equals(OUTPUT_FLAG)) {
-        builder.setOutputPath(Paths.get(nextArg));
-      } else if (arg.startsWith("--")) {
-        builder.error(new StringDiagnostic("Unknown option: " + arg, origin));
-      } else {
-        builder.addInputPath(Paths.get(arg));
-      }
-    }
+    createParser()
+        .parse(expandedArgs, builder, error -> builder.error(new StringDiagnostic(error, origin)));
     return builder;
+  }
+
+  static String getUsageMessage() {
+    return createParser().getUsageMessage();
   }
 }

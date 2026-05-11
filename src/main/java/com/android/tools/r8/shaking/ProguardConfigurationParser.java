@@ -449,21 +449,17 @@ public class ProguardConfigurationParser {
       } else if (acceptString("dontshrink")) {
         configurationConsumer.disableShrinking(this, getPosition(optionStart));
       } else if (acceptString("printconfiguration")) {
-        skipWhitespace();
         configurationConsumer.enablePrintConfiguration(
-            parseOptionalFileName(), this, getPosition(optionStart), optionStart);
+            parseOptionalFileNameString(), this, getPosition(optionStart), optionStart);
       } else if (acceptString("printmapping")) {
-        skipWhitespace();
         configurationConsumer.enablePrintMapping(
-            parseOptionalFileName(), this, getPosition(optionStart), optionStart);
+            parseOptionalFileNameString(), this, getPosition(optionStart), optionStart);
       } else if (acceptString("printseeds")) {
-        skipWhitespace();
         configurationConsumer.enablePrintSeeds(
-            parseOptionalFileName(), this, getPosition(optionStart), optionStart);
+            parseOptionalFileNameString(), this, getPosition(optionStart), optionStart);
       } else if (acceptString("printusage")) {
-        skipWhitespace();
         configurationConsumer.enablePrintUsage(
-            parseOptionalFileName(), this, getPosition(optionStart), optionStart);
+            parseOptionalFileNameString(), this, getPosition(optionStart), optionStart);
       } else if (acceptString("shrinkunusedprotofields")) {
         configurationConsumer.enableProtoShrinking(this, optionStart);
       } else if (acceptString("ignorewarnings")) {
@@ -1665,8 +1661,9 @@ public class ProguardConfigurationParser {
       return file;
     }
 
-    private Path parseOptionalFileName() {
-      return isOptionalArgumentGiven() ? parseFileName() : null;
+    private String parseOptionalFileNameString() {
+      skipWhitespace();
+      return isOptionalArgumentGiven() ? parseFileNameString(false) : null;
     }
 
     private Path parseFileName() {
@@ -1675,12 +1672,15 @@ public class ProguardConfigurationParser {
 
     private Path parseFileName(boolean stopAfterPathSeparator) {
       TextPosition start = getPosition();
-      skipWhitespace();
-
       if (baseDirectory == null) {
         throw parseError("Options with file names are not supported", start);
       }
+      return baseDirectory.resolve(parseFileNameString(stopAfterPathSeparator));
+    }
 
+    private String parseFileNameString(boolean stopAfterPathSeparator) {
+      TextPosition start = getPosition();
+      skipWhitespace();
       final char quote = acceptQuoteIfPresent();
       final boolean quoted = isQuote(quote);
       String fileName = acceptString(character ->
@@ -1697,10 +1697,7 @@ public class ProguardConfigurationParser {
         }
         acceptChar(quote);
       }
-
-      fileName = replaceSystemPropertyReferences(fileName);
-
-      return baseDirectory.resolve(fileName);
+      return replaceSystemPropertyReferences(fileName);
     }
 
     private List<FilteredClassPath> parseClassPath(BiConsumer<Origin, Path> dependencyCallback) {
@@ -2448,6 +2445,10 @@ public class ProguardConfigurationParser {
     private void infoIgnoringModifier(String modifier, TextPosition start) {
       reporter.info(new StringDiagnostic(
           "Ignoring modifier: " + modifier, origin, getPosition(start)));
+    }
+
+    Path getBaseDirectory() {
+      return baseDirectory;
     }
 
     int getOffset() {

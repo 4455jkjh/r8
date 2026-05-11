@@ -6,7 +6,6 @@ package com.android.tools.r8;
 import com.android.tools.r8.keepanno.annotations.KeepForApi;
 import com.android.tools.r8.origin.CommandLineOrigin;
 import com.android.tools.r8.utils.ExceptionUtils;
-import com.android.tools.r8.utils.internal.StringUtils;
 
 @KeepForApi
 public class ApiDatabaseGenerator {
@@ -30,11 +29,6 @@ public class ApiDatabaseGenerator {
   }
 
   public static void main(String[] args) {
-    if (args.length == 0) {
-      throw new RuntimeException(
-          StringUtils.joinLines(
-              "Invalid invocation.", ApiDatabaseGeneratorCommandParser.getUsageMessage()));
-    }
     ExceptionUtils.withMainProgramHandler(() -> run(args));
   }
 }

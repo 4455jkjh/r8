@@ -315,7 +315,7 @@ def generate_jar_with_desugar_configuration(configuration, implementation,
         lint_dir = join(configuration_dir, 'lint')
         makedirs(lint_dir)
         cmd = [
-            jdk.GetJavaExecutable(), '-cp', utils.R8_JAR,
+            jdk.GetJavaExecutable(jdk.GetDefaultJdkHome()), '-cp', utils.R8_JAR,
             'com.android.tools.r8.ir.desugar.desugaredlibrary.lint.GenerateDesugaredLibraryLintFiles',
             configuration, implementation, lint_dir,
             utils.get_android_jar(34, 0)
@@ -333,7 +333,7 @@ def generate_jar_with_desugar_configuration(configuration, implementation,
 def convert_desugar_configuration(configuration, conversions, implementation,
                                   machine_configuration):
     cmd = [
-        jdk.GetJavaExecutable(), '-cp', utils.R8_JAR,
+        jdk.GetJavaExecutable(jdk.GetDefaultJdkHome()), '-cp', utils.R8_JAR,
         'com.android.tools.r8.ir.desugar.desugaredlibrary.specificationconversion.DesugaredLibraryConverter',
         configuration, implementation, conversions,
         utils.get_android_jar(33, 0), machine_configuration

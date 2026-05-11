@@ -321,8 +321,7 @@ public final class LambdaClass {
   }
 
   public static boolean isEmitLambdaMethodAnnotations(InternalOptions options) {
-    return !options.disableLambdaMethodAnnotations
-        && (options.debug && (!options.intermediate || options.hasGlobalSyntheticsConsumer()));
+    return options.emitLambdaMethodAnnotations;
   }
 
   private void synthesizeAnnotations(SyntheticProgramClassBuilder builder) {

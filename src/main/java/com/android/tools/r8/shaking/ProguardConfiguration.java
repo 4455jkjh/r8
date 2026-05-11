@@ -247,32 +247,79 @@ public class ProguardConfiguration {
 
     @Override
     public void enablePrintConfiguration(
-        Path printConfigurationFile,
+        String printConfigurationFileNameOrNull,
         ProguardConfigurationSourceParser parser,
         Position position,
         TextPosition positionStart) {
+      if (warnMissingBaseDirectory(printConfigurationFileNameOrNull, parser, positionStart)) {
+        return;
+      }
       this.printConfiguration = true;
-      this.printConfigurationFile = printConfigurationFile;
+      this.printConfigurationFile =
+          printConfigurationFileNameOrNull != null
+              ? parser.getBaseDirectory().resolve(printConfigurationFileNameOrNull)
+              : null;
+    }
+
+    @Override
+    public void enablePrintSeeds(
+        String printSeedsFileNameOrNull,
+        ProguardConfigurationSourceParser parser,
+        Position position,
+        TextPosition positionStart) {
+      if (warnMissingBaseDirectory(printSeedsFileNameOrNull, parser, positionStart)) {
+        return;
+      }
+      this.printSeeds = true;
+      this.printSeedsFile =
+          printSeedsFileNameOrNull != null
+              ? parser.getBaseDirectory().resolve(printSeedsFileNameOrNull)
+              : null;
     }
 
     @Override
     public void enablePrintUsage(
-        Path printUsageFile,
+        String printUsageFileNameOrNull,
         ProguardConfigurationSourceParser parser,
         Position position,
         TextPosition positionStart) {
+      if (warnMissingBaseDirectory(printUsageFileNameOrNull, parser, positionStart)) {
+        return;
+      }
       this.printUsage = true;
-      this.printUsageFile = printUsageFile;
+      this.printUsageFile =
+          printUsageFileNameOrNull != null
+              ? parser.getBaseDirectory().resolve(printUsageFileNameOrNull)
+              : null;
     }
 
     @Override
     public void enablePrintMapping(
-        Path printMappingFile,
+        String printMappingFileNameOrNull,
         ProguardConfigurationSourceParser parser,
         Position position,
         TextPosition positionStart) {
+      if (warnMissingBaseDirectory(printMappingFileNameOrNull, parser, positionStart)) {
+        return;
+      }
       this.printMapping = true;
-      this.printMappingFile = printMappingFile;
+      this.printMappingFile =
+          printMappingFileNameOrNull != null
+              ? parser.getBaseDirectory().resolve(printMappingFileNameOrNull)
+              : null;
+    }
+
+    private boolean warnMissingBaseDirectory(
+        String fileNameOrNull,
+        ProguardConfigurationSourceParser parser,
+        TextPosition positionStart) {
+      if (fileNameOrNull != null && parser.getBaseDirectory() == null) {
+        reporter.warning(
+            new StringDiagnostic(
+                "Options with file names are not supported", parser.getOrigin(), positionStart));
+        return true;
+      }
+      return false;
     }
 
     @Override
@@ -407,16 +454,6 @@ public class ProguardConfiguration {
         ProguardConfigurationSourceParser parser,
         TextPosition positionStart) {
       dontNotePatterns.addPattern(pattern);
-    }
-
-    @Override
-    public void enablePrintSeeds(
-        Path printSeedsFile,
-        ProguardConfigurationSourceParser parser,
-        Position position,
-        TextPosition positionStart) {
-      this.printSeeds = true;
-      this.printSeedsFile = printSeedsFile;
     }
 
     @Override

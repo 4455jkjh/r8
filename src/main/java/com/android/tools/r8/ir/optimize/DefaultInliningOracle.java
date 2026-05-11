@@ -261,7 +261,7 @@ public class DefaultInliningOracle implements InliningOracle {
 
   private int getInliningInstructionLimitIncrement(
       InvokeMethod invoke, ProgramMethod target, Optional<InliningIRProvider> inliningIRProvider) {
-    if (!options.inlinerOptions().enableSimpleInliningInstructionLimitIncrement) {
+    if (!inlinerOptions.enableSimpleInliningInstructionLimitIncrement) {
       return 0;
     }
     return getInliningInstructionLimitIncrementForNonNullParamOrThrow(invoke, target)
@@ -271,7 +271,7 @@ public class DefaultInliningOracle implements InliningOracle {
 
   private int getEstimatedMaxInliningInstructionLimitIncrement(
       InvokeMethod invoke, ProgramMethod target, Optional<InliningIRProvider> inliningIRProvider) {
-    if (!options.inlinerOptions().enableSimpleInliningInstructionLimitIncrement) {
+    if (!inlinerOptions.enableSimpleInliningInstructionLimitIncrement) {
       return 0;
     }
     return getEstimatedMaxInliningInstructionLimitIncrementForNonNullParamOrThrow(invoke, target)

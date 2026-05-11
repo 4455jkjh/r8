@@ -386,8 +386,6 @@ def EnsureDepFromGoogleCloudStorage(sha1, msg, dep=None, tgz=None):
         # Update the mtime of the tar file to make sure we do not run again unless
         # there is an update.
         os.utime(tgz, None)
-    else:
-        print('Ensure cloud dependency:', msg, 'present')
 
 
 def DownloadFromX20(sha1_file):
@@ -711,7 +709,10 @@ def grep_memoryuse(logfile):
 # Return a dictionary: {segment_name -> segments_size}
 def getDexSegmentSizes(dex_files):
     assert len(dex_files) > 0
-    cmd = [jdk.GetJavaExecutable(), '-jar', R8_JAR, 'dexsegments']
+    cmd = [
+        jdk.GetJavaExecutable(jdk.GetDefaultJdkHome()), '-jar', R8_JAR,
+        'dexsegments'
+    ]
     cmd.extend(dex_files)
     PrintCmd(cmd)
     output = subprocess.check_output(cmd).decode('utf-8')
@@ -733,7 +734,7 @@ def getDexSegmentSizes(dex_files):
 # Return a dictionary: {segment_name -> segments_size}
 def getCfSegmentSizes(cfFile):
     cmd = [
-        jdk.GetJavaExecutable(), '-cp', CF_SEGMENTS_TOOL,
+        jdk.GetJavaExecutable(jdk.GetDefaultJdkHome()), '-cp', CF_SEGMENTS_TOOL,
         'com.android.tools.r8.cf_segments.MeasureLib', cfFile
     ]
     PrintCmd(cmd)
@@ -771,7 +772,7 @@ def print_dexsegments(prefix, dex_files, worker_id=None):
 
 # Ensure that we are not benchmarking with a google jvm.
 def check_java_version():
-    cmd = [jdk.GetJavaExecutable(), '-version']
+    cmd = [jdk.GetJavaExecutable(jdk.GetDefaultJdkHome()), '-version']
     output = subprocess.check_output(cmd,
                                      stderr=subprocess.STDOUT).decode('utf-8')
     m = re.search('openjdk version "([^"]*)"', output)

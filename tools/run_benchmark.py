@@ -30,7 +30,7 @@ def get_golem_resource_path(benchmark):
 def get_jdk_home(options, benchmark):
     if options.golem:
         return os.path.join(get_golem_resource_path(benchmark), 'linux')
-    return None
+    return jdk.GetDefaultJdkHome()
 
 
 def parse_options(argv):

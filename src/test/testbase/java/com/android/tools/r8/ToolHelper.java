@@ -4,8 +4,6 @@
 package com.android.tools.r8;
 
 import static com.android.tools.r8.ToolHelper.TestDataSourceSet.computeLegacyOrGradleSpecifiedLocation;
-import static com.android.tools.r8.utils.DexVersion.V39;
-import static com.android.tools.r8.utils.DexVersion.V41;
 import static com.android.tools.r8.utils.internal.FileUtils.CLASS_EXTENSION;
 import static com.android.tools.r8.utils.internal.FileUtils.JAVA_EXTENSION;
 import static com.android.tools.r8.utils.internal.FileUtils.isDexFile;
@@ -2477,12 +2475,13 @@ public class ToolHelper {
     return output;
   }
 
-  public static void runDex2Oat(Path file, Path outFile) throws IOException {
-    runDex2Oat(file, outFile, getDexVm());
+  public static void runDex2Oat(Path dexFile, Path oatFile, Path temp) throws IOException {
+    runDex2Oat(dexFile, oatFile, temp, getDexVm());
   }
 
-  public static void runDex2Oat(Path file, Path outFile, DexVm vm) throws IOException {
-    ProcessResult result = runDex2OatRaw(file, outFile, vm);
+  public static void runDex2Oat(Path dexFile, Path oatFile, Path temp, DexVm vm)
+      throws IOException {
+    ProcessResult result = runDex2OatRaw(dexFile, oatFile, temp, vm);
     if (result.exitCode != 0) {
       fail("dex2oat failed, exit code " + result.exitCode + ", stderr:\n" + result.stderr);
     }
@@ -2493,26 +2492,28 @@ public class ToolHelper {
 
   // Checked in VMs for which dex2oat should work specified in decreasing order.
   private static final List<DexVm> SUPPORTED_DEX2OAT_VMS =
-      ImmutableList.of(DexVm.ART_12_0_0_HOST, DexVm.ART_6_0_1_HOST);
+      ImmutableList.of(
+          DexVm.ART_17_0_0_HOST,
+          DexVm.ART_16_0_0_HOST,
+          DexVm.ART_15_0_0_HOST,
+          DexVm.ART_13_0_0_HOST,
+          DexVm.ART_12_0_0_HOST,
+          DexVm.ART_6_0_1_HOST);
 
   public static boolean isDex2OatSupportedForVM(DexVm vm) {
     return SUPPORTED_DEX2OAT_VMS.contains(vm);
   }
 
-  public static ProcessResult runDex2OatRaw(Path file, Path outFile, DexVm targetVm)
+  public static ProcessResult runDex2OatRaw(Path dexFile, Path oatFile, Path temp, DexVm targetVm)
       throws IOException {
     Assume.assumeTrue(ToolHelper.isDex2OatSupported());
-    assert Files.exists(file);
-    assert ByteStreams.toByteArray(Files.newInputStream(file)).length > 0;
+    assert Files.exists(dexFile);
+    assert ByteStreams.toByteArray(Files.newInputStream(dexFile)).length > 0;
     assert SUPPORTED_DEX2OAT_VMS.stream()
         .sorted(Comparator.comparing(DexVm::getVersion).reversed())
         .collect(Collectors.toList())
         .equals(SUPPORTED_DEX2OAT_VMS);
     DexVersion requiredDexFileVersion = getDexFileVersionForVm(targetVm);
-    // TODO(b/453564724): Get dex2oat supporting V41.
-    if (requiredDexFileVersion.isEqualTo(V41)) {
-      requiredDexFileVersion = V39;
-    }
     DexVm vm = null;
     for (DexVm supported : SUPPORTED_DEX2OAT_VMS) {
       DexVersion supportedDexFileVersion = getDexFileVersionForVm(supported);
@@ -2528,6 +2529,11 @@ public class ToolHelper {
     if (vm == null) {
       throw new Unimplemented("Unable to find a supported dex2oat for VM " + vm);
     }
+
+    if (vm.version.isNewerThanOrEqual(DexVm.Version.V13_0_0)) {
+      return runDex2OatV13AndNewer(dexFile, oatFile, temp, vm);
+    }
+
     List<String> command = new ArrayList<>();
     command.add(getDex2OatPath(vm).toAbsolutePath().toString());
     command.add("--android-root=" + getProductPath(vm).toAbsolutePath() + "/system");
@@ -2535,8 +2541,8 @@ public class ToolHelper {
     command.add("-verbose:verifier");
     command.add("--runtime-arg");
     command.add("-Xnorelocate");
-    command.add("--dex-file=" + file.toAbsolutePath());
-    command.add("--oat-file=" + outFile.toAbsolutePath());
+    command.add("--dex-file=" + dexFile.toAbsolutePath());
+    command.add("--oat-file=" + oatFile.toAbsolutePath());
     command.add("--instruction-set=" + getArchString(vm));
     if (vm.version.equals(DexVm.Version.V12_0_0)) {
       command.add(
@@ -2547,6 +2553,81 @@ public class ToolHelper {
     ProcessBuilder builder = new ProcessBuilder(command);
     builder.directory(getDexVmPath(vm).toFile());
     builder.environment().put("LD_LIBRARY_PATH", getDexVmLibPath(vm).toString());
+    return runProcess(builder);
+  }
+
+  private static ProcessResult runDex2OatV13AndNewer(
+      Path dexFile, Path oatFile, Path temp, DexVm vm) throws IOException {
+    String versionString;
+    if (vm.version == DexVm.Version.V13_0_0) {
+      versionString = "33.10";
+    } else if (vm.version == DexVm.Version.V15_0_0) {
+      versionString = "35.14";
+    } else if (vm.version == DexVm.Version.V16_0_0) {
+      versionString = "36.0";
+    } else if (vm.version == DexVm.Version.V17_0_0) {
+      versionString = "head";
+    } else {
+      throw new Unreachable();
+    }
+
+    Path dex2oatDir = Paths.get(THIRD_PARTY_DIR, "dex2oat", versionString);
+    List<String> command = new ArrayList<>();
+    command.add(
+        dex2oatDir
+            .resolve("x86_64")
+            .resolve("bin")
+            .resolve("dex2oat64")
+            .toAbsolutePath()
+            .toString());
+    command.add("--android-root=" + dex2oatDir.toAbsolutePath());
+    command.add("--generate-debug-info");
+    command.add("--dex-location=/system/framework/classes.dex");
+    command.add("--dex-file=" + dexFile.toAbsolutePath());
+    command.add("--copy-dex-files=always");
+
+    if (!versionString.equals("33.10")) {
+      command.add("--runtime-arg");
+      command.add("-Xgc:CMC");
+    }
+
+    String[] bootJars = {
+      "core-oj.jar", "core-libart.jar", "okhttp.jar", "bouncycastle.jar", "apache-xml.jar"
+    };
+    StringBuilder bootClassPath = new StringBuilder("-Xbootclasspath:");
+    for (int i = 0; i < bootJars.length; i++) {
+      if (i > 0) {
+        bootClassPath.append(":");
+      }
+      bootClassPath.append(dex2oatDir.resolve("bootjars").resolve(bootJars[i]).toAbsolutePath());
+    }
+    command.add("--runtime-arg");
+    command.add(bootClassPath.toString());
+
+    command.add("--runtime-arg");
+    command.add(
+        "-Xbootclasspath-locations:/apex/com.android.art/javalib/core-oj.jar"
+            + ":/apex/com.android.art/javalib/core-libart.jar"
+            + ":/apex/com.android.art/javalib/okhttp.jar"
+            + ":/apex/com.android.art/javalib/bouncycastle.jar"
+            + ":/apex/com.android.art/javalib/apache-xml.jar");
+
+    command.add(
+        "--boot-image="
+            + dex2oatDir
+                .resolve("app")
+                .resolve("system")
+                .resolve("framework")
+                .resolve("boot.art")
+                .toAbsolutePath());
+    command.add("--oat-file=" + oatFile.toAbsolutePath());
+    command.add("--app-image-file=" + temp.resolve("classes.art").toAbsolutePath());
+    if (!versionString.equals("33.10")) {
+      command.add("--force-allow-oj-inlines");
+    }
+    command.add("--instruction-set=x86_64");
+
+    ProcessBuilder builder = new ProcessBuilder(command);
     return runProcess(builder);
   }
 

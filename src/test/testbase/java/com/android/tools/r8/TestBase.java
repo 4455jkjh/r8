@@ -1913,7 +1913,9 @@ public class TestBase {
   }
 
   public static AndroidApiLevel apiLevelWithRecordSupport() {
-    return AndroidApiLevel.V;
+    // TODO(b/293591931): Return something when records are stable in Platform (expecting Android
+    // V).
+    throw new Unreachable();
   }
 
   public static AndroidApiLevel apiLevelWithSealedClassesSupport() {
@@ -1922,7 +1924,7 @@ public class TestBase {
 
   public static boolean isRecordsFullyDesugaredForD8(TestParameters parameters) {
     assert parameters.getApiLevel() != null;
-    return parameters.getApiLevel().isLessThan(apiLevelWithRecordSupport());
+    return parameters.getApiLevel().isLessThan(AndroidApiLevel.V);
   }
 
   public static boolean isRecordsFullyDesugaredForR8(TestParameters parameters) {

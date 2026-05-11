@@ -69,25 +69,25 @@ public interface ProguardConfigurationParserConsumer {
       TextPosition positionStart);
 
   void enablePrintConfiguration(
-      Path printConfigurationFile,
+      String printConfigurationFileNameOrNull,
       ProguardConfigurationSourceParser parser,
       Position position,
       TextPosition positionStart);
 
   void enablePrintMapping(
-      Path printMappingFile,
+      String printMappingFileNameOrNull,
       ProguardConfigurationSourceParser parser,
       Position position,
       TextPosition positionStart);
 
   void enablePrintSeeds(
-      Path printSeedsFile,
+      String printSeedsFileNameOrNull,
       ProguardConfigurationSourceParser parser,
       Position position,
       TextPosition positionStart);
 
   void enablePrintUsage(
-      Path printUsageFile,
+      String printUsageFileNameOrNull,
       ProguardConfigurationSourceParser parser,
       Position position,
       TextPosition positionStart);

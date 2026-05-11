@@ -441,11 +441,11 @@ public class R8CommandParser extends BaseCompilerCommandParser<R8Command, R8Comm
     for (FeatureSplitConfig featureSplitConfig : featureSplitConfigs) {
       builder.addFeatureSplit(
           featureSplitGenerator -> {
-            if (featureSplitConfig.outputJar != null) {
-              featureSplitGenerator.setProgramConsumer(
-                  createProgramOutputConsumer(
-                      featureSplitConfig.outputJar, OutputMode.DexIndexed, includeDataResources));
-            }
+            featureSplitGenerator.setProgramConsumer(
+                featureSplitConfig.outputJar != null
+                    ? createProgramOutputConsumer(
+                        featureSplitConfig.outputJar, OutputMode.DexIndexed, includeDataResources)
+                    : DexIndexedConsumer.emptyConsumer());
             for (Path inputPath : featureSplitConfig.inputJars) {
               featureSplitGenerator.addProgramResourceProvider(
                   ArchiveResourceProvider.fromArchive(inputPath, false));
