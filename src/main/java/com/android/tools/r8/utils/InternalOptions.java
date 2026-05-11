@@ -28,7 +28,6 @@ import com.android.tools.r8.SyntheticInfoConsumer;
 import com.android.tools.r8.Version;
 import com.android.tools.r8.androidapi.AndroidApiModelingOptions;
 import com.android.tools.r8.assistant.AssistantOptions;
-import com.android.tools.r8.blastradius.BlastRadiusOptions;
 import com.android.tools.r8.cf.CfVersion;
 import com.android.tools.r8.classmerging.Policy;
 import com.android.tools.r8.debuginfo.DebugRepresentation;
@@ -76,6 +75,7 @@ import com.android.tools.r8.ir.desugar.nest.Nest;
 import com.android.tools.r8.ir.optimize.Inliner;
 import com.android.tools.r8.ir.optimize.enums.EnumDataMap;
 import com.android.tools.r8.ir.optimize.outliner.bottomup.BottomUpOutlinerOptions;
+import com.android.tools.r8.keepradius.KeepRadiusOptions;
 import com.android.tools.r8.metadata.D8BuildMetadata;
 import com.android.tools.r8.metadata.R8BuildMetadata;
 import com.android.tools.r8.naming.ClassNameMapper;
@@ -1114,7 +1114,7 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
   }
 
   private final AccessModifierOptions accessModifierOptions = new AccessModifierOptions(this);
-  private final BlastRadiusOptions blastRadiusOptions = new BlastRadiusOptions(this);
+  private final KeepRadiusOptions keepRadiusOptions = new KeepRadiusOptions(this);
 
   private final AssistantOptions assistantOptions = new AssistantOptions(this);
 
@@ -1248,8 +1248,8 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
     return accessModifierOptions;
   }
 
-  public BlastRadiusOptions getBlastRadiusOptions() {
-    return blastRadiusOptions;
+  public KeepRadiusOptions getKeepRadiusOptions() {
+    return keepRadiusOptions;
   }
 
   public AssistantOptions getAssistantOptions() {
@@ -2498,8 +2498,8 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
         SystemPropertyUtils.parseSystemPropertyOrDefault(
             "com.android.tools.r8.applyIfRulesToLibrary", false);
     // When disabled, input synthetics will be treated as non-synthetic classes.
-    // The primary use case of this is to make blast radius computation more robust in the presence
-    // of input synthetics (e.g., avoid that blast radius cannot be computed due to errors such as
+    // The primary use case of this is to make keep radius computation more robust in the presence
+    // of input synthetics (e.g., avoid that keep radius cannot be computed due to errors such as
     // "Attempt at compiling intermediate artifact without its context").
     public boolean collectSyntheticInputs =
         SystemPropertyUtils.parseSystemPropertyOrDefault(

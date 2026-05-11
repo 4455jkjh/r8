@@ -229,7 +229,7 @@ dependencies {
   internalJarScope(project(":utils", "isolatedJar"))
   internalClassesScope(project(":utils", "isolatedClasses"))
   implementation(project(":assistant", "assistantJar"))
-  implementation(project(":blastradius", "blastradiusJar"))
+  implementation(project(":keepradius", "keepradiusJar"))
   implementation(project(":keepanno", "keepannoClasses"))
   implementation(project(":resourceshrinker", "resourceshrinkerJar"))
   implementation(project(":utils"))

@@ -36,9 +36,9 @@ val mainSourcesConfig by
 val assistantJarScope by configurations.dependencyScope("assistantJarScope")
 val assistantJarConfig by
   configurations.resolvable("assistantJarConfig") { extendsFrom(assistantJarScope) }
-val blastRadiusSourcesScope by configurations.dependencyScope("blastRadiusSourcesScope")
-val blastRadiusSourcesConfig by
-  configurations.resolvable("blastRadiusSourcesConfig") { extendsFrom(blastRadiusSourcesScope) }
+val keepRadiusSourcesScope by configurations.dependencyScope("keepRadiusSourcesScope")
+val keepRadiusSourcesConfig by
+  configurations.resolvable("keepRadiusSourcesConfig") { extendsFrom(keepRadiusSourcesScope) }
 val keepAnnoAndroidXAnnotationsJarScope by
   configurations.dependencyScope("keepAnnoAndroidXAnnotationsJarScope")
 val keepAnnoAndroidXAnnotationsJarConfig by
@@ -87,7 +87,7 @@ dependencies {
   sharedDepsInternalScope(project(":shared", "sharedDepsInternalFiles"))
   sharedTestDepsInternalScope(project(":shared", "sharedTestDepsInternalFiles"))
   assistantJarScope(project(":assistant", "assistantJar"))
-  blastRadiusSourcesScope(project(":blastradius", "blastradiusSources"))
+  keepRadiusSourcesScope(project(":keepradius", "keepradiusSources"))
   keepAnnoAndroidXAnnotationsJarScope(project(":keepanno", "keepannoAndroidXAnnotationsJar"))
   keepAnnoDepsJarOnlyAsmScope(project(":keepanno", "keepannoDepsJarOnlyAsm"))
   keepAnnoSourcesScope(project(":keepanno", "keepannoSources"))
@@ -600,12 +600,12 @@ tasks {
 
   val packageSources by
     registering(Jar::class) {
-      dependsOn(blastRadiusSourcesConfig)
+      dependsOn(keepRadiusSourcesConfig)
       dependsOn(keepAnnoSourcesConfig)
       dependsOn(libanalyzerSourcesConfig)
       dependsOn(resourceShrinkerSourcesConfig)
       dependsOn(mainSourcesConfig)
-      from(blastRadiusSourcesConfig.map(::zipTree))
+      from(keepRadiusSourcesConfig.map(::zipTree))
       from(keepAnnoSourcesConfig.map(::zipTree))
       from(libanalyzerSourcesConfig.map(::zipTree))
       from(mainSourcesConfig.map(::zipTree))

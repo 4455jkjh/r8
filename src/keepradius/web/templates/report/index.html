@@ -1,0 +1,669 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>R8 Configuration Analyzer</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/protobufjs@7.2.4/dist/protobuf.min.js"></script>
+  </head>
+<body>
+  <header>
+    <div class="header-top-row">
+      <div class="flex items-center" style="display: flex; align-items: center">
+        <div class="header-branding">
+          <h1 class="header-title" id="report-name"><a href="#" id="header-link" style="color: inherit; text-decoration: none;">R8 Configuration Analyzer</a></h1>
+        </div>
+      </div>
+      <div class="header-stats">
+        <div class="stat-item">
+          <span class="stat-label">Shrinking</span><span class="stat-value" id="total-shrinking"></span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-label">Optimization</span><span class="stat-value" id="total-optimization"></span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-label">Obfuscation</span><span class="stat-value" id="total-obfuscation"></span>
+        </div>
+      </div>
+    </div>
+    <div class="header-toolbar">
+      <div id="report-view-controls" class="header-toolbar-inner">
+        <div class="flex-1" style="display: flex; align-items: center; gap: 1rem; justify-content: flex-start">
+          <div class="filter-icon" title="Filter Options">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24"
+              stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M7 12h10M10 18h4" />
+            </svg>
+          </div>
+          <div id="filter-chips-container" style="display: flex; align-items: center; gap: 0.5rem">
+            <div class="segmented-control" id="lens-tabs">
+              <button class="segment-btn active" data-lens="All">All Rules</button>
+              <button class="segment-btn" data-lens="Identical">Identical</button>
+              <button class="segment-btn" data-lens="Subsumed">Subsumed</button>
+              <button class="segment-btn" data-lens="Unused">Unused</button>
+            </div>
+            <span class="tooltip-icon" id="lenses-tooltip-icon" style="cursor: pointer; margin-right: 0.5rem;"
+              data-tooltip="Filter rules to a specific opportunity.">?</span>
+            <div class="relative" id="add-filter-container">
+              <button id="add-filter-btn" class="add-filter-btn">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24"
+                  stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
+                </svg>
+                Add filter
+              </button>
+              <div id="add-filter-dropdown" class="dropdown-menu hidden" style="min-width: 10rem">
+                <div id="add-filter-list"></div>
+              </div>
+            </div>
+            <div class="relative hidden" id="cls-chip-container">
+              <button id="cls-filter-btn" class="filter-chip">
+                <span id="cls-filter-text">Classes: All</span>
+              </button>
+              <div id="cls-dropdown" class="dropdown-menu hidden"></div>
+            </div>
+            <div class="relative hidden" id="field-chip-container">
+              <button id="field-filter-btn" class="filter-chip">
+                <span id="field-filter-text">Fields: All</span>
+              </button>
+              <div id="field-dropdown" class="dropdown-menu hidden"></div>
+            </div>
+            <div class="relative hidden" id="method-chip-container">
+              <button id="method-filter-btn" class="filter-chip">
+                <span id="method-filter-text">Methods: All</span>
+              </button>
+              <div id="method-dropdown" class="dropdown-menu hidden"></div>
+            </div>
+          </div>
+        </div>
+        <div class="flex-1" style="display: flex; align-items: center; gap: 0.75rem; justify-content: flex-end">
+          <div id="search-container" class="search-bar-container relative">
+            <div class="search-bar-icon" id="search-icon-btn">
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24"
+                stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z">
+                </path>
+              </svg>
+            </div>
+            <input type="text" id="search-input" class="search-bar-input" placeholder="Search report...">
+            <button id="clear-search-btn" class="hidden"
+              style="color: var(--text-gray-500); display: flex; align-items: center; justify-content: center;">
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24"
+                stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z">
+                </path>
+              </svg>
+            </button>
+          </div>
+          <div class="relative" id="columns-toggle-container">
+            <button id="toggle-columns-btn" class="icon-btn" title="Toggle Columns">
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24"
+                stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round"
+                  d="M9 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h4m0-18h10a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H9m0-18v18"></path>
+              </svg>
+            </button>
+            <div id="columns-dropdown" class="dropdown-menu right-0 hidden" style="min-width: 150px">
+              <label class="popover-item"
+                style="display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem 0.75rem; cursor: pointer;">
+                <input type="checkbox" class="popover-checkbox" id="toggle-blocked-by-rule-cb" checked>
+                <span style="font-size: 0.75rem; font-weight: 500; color: var(--text-main);">Blocked by Rule</span>
+              </label>
+            </div>
+          </div>
+          <div class="relative" id="group-by-container">
+            <button id="group-by-btn" class="dropdown-btn"
+              style="border: none; background: #f8f8f8; padding: 0.5rem 0.75rem; display: flex; align-items: center; border-radius: 4px;">
+              <span style="font-weight: 500; color: var(--text-gray-400)">Group by:</span>
+              <span id="group-by-text" style="font-weight: 600; color: var(--text-gray-500); margin-left: 0.25rem">Keep
+                Rules</span>
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24"
+                stroke="currentColor"
+                style="margin-left: 0.25rem; color: var(--text-gray-500); width: 16px; height: 16px;">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
+            <div id="group-by-dropdown" class="dropdown-menu right-0 hidden" style="min-width: 150px">
+              <div class="dropdown-item" data-value="modules">Keep Rules</div>
+              <div class="dropdown-item" data-value="packages">Keep Rule Files</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+  <div id="report-view" class="container-custom">
+    <main>
+      <div class="breadcrumb-row" style="margin-bottom: 2rem; height: auto;">
+        <div id="flat-breadcrumbs"></div>
+      </div>
+      <div id="stats-container" style="display: flex; gap: 1rem; padding: 0rem; margin-bottom: 1rem;">
+        <!-- Shrinking Card -->
+        <div class="stat-card"
+          style="background: #ffffff; padding: 1rem; border-radius: 0.5rem; border: 1px solid var(--border-color); flex: 1;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+            <div style="color: var(--text-muted); font-size: 0.75rem; text-transform: uppercase; font-weight: 600; display: flex; align-items: center; gap: 0.25rem;">
+              Shrinking <span class="tooltip-icon" data-tooltip="Shrinking score tracks the percentage of unused code and resources that have been successfully removed from your application. When R8 performs shrinking, it reduces the overall size of your application by identifying and eliminating code and resources that are not actually being used, ensuring your final build is as lean as possible.">?</span></div>
+            <div id="card-total-shrinking" style="font-size: 1rem; font-weight: 700; color: var(--text-yellow-600);">
+              --</div>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+            <!-- Classes -->
+            <div style="display: flex; align-items: center; justify-content: space-between; font-size: 0.75rem;">
+              <span style="color: var(--text-gray-500); width: 60px;">Classes</span>
+              <div style="flex: 1; height: 4px; background: var(--bg-hover); border-radius: 2px; margin: 0 1rem;">
+                <div id="card-shrinking-classes-bar"
+                  style="height: 100%; background: var(--text-yellow-600); border-radius: 2px; width: 0%;"></div>
+              </div>
+              <span id="card-shrinking-classes-val" style="color: var(--text-gray-900); font-weight: 500;">--</span>
+            </div>
+            <!-- Fields -->
+            <div style="display: flex; align-items: center; justify-content: space-between; font-size: 0.75rem;">
+              <span style="color: var(--text-gray-500); width: 60px;">Fields</span>
+              <div style="flex: 1; height: 4px; background: var(--bg-hover); border-radius: 2px; margin: 0 1rem;">
+                <div id="card-shrinking-fields-bar"
+                  style="height: 100%; background: var(--text-yellow-600); border-radius: 2px; width: 0%;"></div>
+              </div>
+              <span id="card-shrinking-fields-val" style="color: var(--text-gray-900); font-weight: 500;">--</span>
+            </div>
+            <!-- Methods -->
+            <div style="display: flex; align-items: center; justify-content: space-between; font-size: 0.75rem;">
+              <span style="color: var(--text-gray-500); width: 60px;">Methods</span>
+              <div style="flex: 1; height: 4px; background: var(--bg-hover); border-radius: 2px; margin: 0 1rem;">
+                <div id="card-shrinking-methods-bar"
+                  style="height: 100%; background: var(--text-yellow-600); border-radius: 2px; width: 0%;"></div>
+              </div>
+              <span id="card-shrinking-methods-val" style="color: var(--text-gray-900); font-weight: 500;">--</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Optimization Card -->
+        <div class="stat-card"
+          style="background: #ffffff; padding: 1rem; border-radius: 0.5rem; border: 1px solid var(--border-color); flex: 1;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+            <div style="color: var(--text-muted); font-size: 0.75rem; text-transform: uppercase; font-weight: 600; display: flex; align-items: center; gap: 0.25rem;">
+              Optimization <span class="tooltip-icon" data-tooltip="Optimization score tracks the number of classes, fields and methods optimized by R8 through techniques such as method inlining, class merging to the total number of classes  in the codebase. These optimizations improve the performance and size of the app.">?</span></div>
+            <div id="card-total-optimization" style="font-size: 1rem; font-weight: 700; color: var(--text-yellow-600);">
+              --</div>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+            <!-- Classes -->
+            <div style="display: flex; align-items: center; justify-content: space-between; font-size: 0.75rem;">
+              <span style="color: var(--text-gray-500); width: 60px;">Classes</span>
+              <div style="flex: 1; height: 4px; background: var(--bg-hover); border-radius: 2px; margin: 0 1rem;">
+                <div id="card-optimization-classes-bar"
+                  style="height: 100%; background: var(--text-yellow-600); border-radius: 2px; width: 0%;"></div>
+              </div>
+              <span id="card-optimization-classes-val" style="color: var(--text-gray-900); font-weight: 500;">--</span>
+            </div>
+            <!-- Fields -->
+            <div style="display: flex; align-items: center; justify-content: space-between; font-size: 0.75rem;">
+              <span style="color: var(--text-gray-500); width: 60px;">Fields</span>
+              <div style="flex: 1; height: 4px; background: var(--bg-hover); border-radius: 2px; margin: 0 1rem;">
+                <div id="card-optimization-fields-bar"
+                  style="height: 100%; background: var(--text-yellow-600); border-radius: 2px; width: 0%;"></div>
+              </div>
+              <span id="card-optimization-fields-val" style="color: var(--text-gray-900); font-weight: 500;">--</span>
+            </div>
+            <!-- Methods -->
+            <div style="display: flex; align-items: center; justify-content: space-between; font-size: 0.75rem;">
+              <span style="color: var(--text-gray-500); width: 60px;">Methods</span>
+              <div style="flex: 1; height: 4px; background: var(--bg-hover); border-radius: 2px; margin: 0 1rem;">
+                <div id="card-optimization-methods-bar"
+                  style="height: 100%; background: var(--text-yellow-600); border-radius: 2px; width: 0%;"></div>
+              </div>
+              <span id="card-optimization-methods-val" style="color: var(--text-gray-900); font-weight: 500;">--</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Obfuscation Card -->
+        <div class="stat-card"
+          style="background: #ffffff; padding: 1rem; border-radius: 0.5rem; border: 1px solid var(--border-color); flex: 1;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+            <div style="color: var(--text-muted); font-size: 0.75rem; text-transform: uppercase; font-weight: 600; display: flex; align-items: center; gap: 0.25rem;">
+              Obfuscation <span class="tooltip-icon" data-tooltip="Obfuscation Score measures the percentage of symbols renamed within your codebase. By tracking this score, you can gauge the effectiveness of R8's obfuscation, which is crucial for reducing your application's metadata footprint to save memory">?</span></div>
+            <div id="card-total-obfuscation" style="font-size: 1rem; font-weight: 700; color: var(--text-yellow-600);">
+              --</div>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+            <!-- Classes -->
+            <div style="display: flex; align-items: center; justify-content: space-between; font-size: 0.75rem;">
+              <span style="color: var(--text-gray-500); width: 60px;">Classes</span>
+              <div style="flex: 1; height: 4px; background: var(--bg-hover); border-radius: 2px; margin: 0 1rem;">
+                <div id="card-obfuscation-classes-bar"
+                  style="height: 100%; background: var(--text-yellow-600); border-radius: 2px; width: 0%;"></div>
+              </div>
+              <span id="card-obfuscation-classes-val" style="color: var(--text-gray-900); font-weight: 500;">--</span>
+            </div>
+            <!-- Fields -->
+            <div style="display: flex; align-items: center; justify-content: space-between; font-size: 0.75rem;">
+              <span style="color: var(--text-gray-500); width: 60px;">Fields</span>
+              <div style="flex: 1; height: 4px; background: var(--bg-hover); border-radius: 2px; margin: 0 1rem;">
+                <div id="card-obfuscation-fields-bar"
+                  style="height: 100%; background: var(--text-yellow-600); border-radius: 2px; width: 0%;"></div>
+              </div>
+              <span id="card-obfuscation-fields-val" style="color: var(--text-gray-900); font-weight: 500;">--</span>
+            </div>
+            <!-- Methods -->
+            <div style="display: flex; align-items: center; justify-content: space-between; font-size: 0.75rem;">
+              <span style="color: var(--text-gray-500); width: 60px;">Methods</span>
+              <div style="flex: 1; height: 4px; background: var(--bg-hover); border-radius: 2px; margin: 0 1rem;">
+                <div id="card-obfuscation-methods-bar"
+                  style="height: 100%; background: var(--text-yellow-600); border-radius: 2px; width: 0%;"></div>
+              </div>
+              <span id="card-obfuscation-methods-val" style="color: var(--text-gray-900); font-weight: 500;">--</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="breadcrumb-row"
+        style="display: flex; flex-direction: column; align-items: start; margin-bottom: 1.5rem; gap: 0.25rem; height: auto;">
+        <span class="breadcrumb-text" style="font-size: 0.875rem; font-weight: 600; color: var(--text-gray-900);">Keep Rule Analysis</span>
+        <div style="font-size: 0.75rem; color: var(--text-gray-500); font-weight: 400; text-transform: none; letter-spacing: normal; line-height: 1.4;     padding: 0rem 0.5rem;">
+          Keep rules prevent R8 from optimizing designated code segments. Review the list below to identify and refine overly broad rules, which will directly improve overall application performance.
+        </div>
+      </div>
+      <div class="table-container">
+        <table id="main-table">
+          <thead id="table-headers"></thead>
+          <tbody id="table-data"></tbody>
+        </table>
+      </div>
+    </main>
+  </div>
+  <div id="details-view" class="container-custom" style="display: none">
+    <main>
+      <div class="breadcrumb-row" style="margin-bottom: 2rem; height: auto;">
+        <div id="details-breadcrumbs"></div>
+      </div>
+      <div
+        style="flex: 1; display: flex; flex-direction: column; gap: 1.5rem; min-height: 0; overflow-y: auto; padding-right: 0.5rem;">
+        <div class="table-container" style="flex: none;">
+          <div
+            style="padding: 0.75rem 1rem; border-bottom: 1px solid var(--border-color); background-color: var(--bg-subtle); display: flex; justify-content: space-between; align-items: center;">
+            <h2 style="font-size: 0.875rem; font-weight: 500; color: var(--text-gray-900);">Keep Rule</h2>
+          </div>
+          <div id="details-rule-container" style="padding: 1rem;">
+            <!-- Content rendered by JS -->
+          </div>
+        </div>
+        <div class="table-container" style="flex: none;">
+          <div
+            style="padding: 0.75rem 1rem; border-bottom: 1px solid var(--border-color); background-color: var(--bg-subtle); display: flex; justify-content: space-between; align-items: center;">
+            <h2 style="font-size: 0.875rem; font-weight: 500; color: var(--text-gray-900);">Impact</h2>
+          </div>
+          <div id="details-impact-container" style="padding: 1rem;">
+            <!-- Content rendered by JS -->
+          </div>
+        </div>
+        <div id="related-rules-container" style="flex: none;">
+          <!-- Content rendered by JS -->
+        </div>
+        <div
+          style="flex: 1; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1.5rem; min-height: 400px; overflow: hidden;">
+          <div class="table-container" style="display: flex; flex-direction: column;">
+            <div
+              style="padding: 0.75rem 1rem; border-bottom: 1px solid var(--border-color); background-color: var(--bg-subtle); display: flex; flex-direction: column; gap: 0.5rem;">
+              <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+                <div>
+                  <span style="font-size: 0.875rem; font-weight: 600; color: var(--text-gray-900);">Kept Classes</span>
+                  <span style="color: var(--text-gray-500); font-size: 0.75rem; margin-left: 0.25rem;"
+                    id="details-classes-count">· 0</span>
+                </div>
+                <button class="icon-btn search-toggle-btn" data-target="classes" style="color: var(--text-muted); padding: 2px;">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                  </svg>
+                </button>
+              </div>
+              <div id="classes-search-container" style="display: none; width: 100%;">
+                <input type="text" id="classes-search-input" placeholder="Search kept classes..." 
+                  style="width: 100%; padding: 0.25rem 0.5rem; border: 1px solid var(--border-color); border-radius: 4px; font-size: 0.75rem; outline: none; background-color: var(--bg-body); color: var(--text-main);">
+              </div>
+            </div>
+            <div id="details-classes-content" style="flex: 1; overflow-y: auto; padding: 0.5rem;"></div>
+          </div>
+          <div class="table-container" style="display: flex; flex-direction: column;">
+            <div
+              style="padding: 0.75rem 1rem; border-bottom: 1px solid var(--border-color); background-color: var(--bg-subtle); display: flex; flex-direction: column; gap: 0.5rem;">
+              <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+                <div>
+                  <span style="font-size: 0.875rem; font-weight: 600; color: var(--text-gray-900);">Kept Fields</span>
+                  <span style="color: var(--text-gray-500); font-size: 0.75rem; margin-left: 0.25rem;"
+                    id="details-fields-count">· 0</span>
+                </div>
+                <button class="icon-btn search-toggle-btn" data-target="fields" style="color: var(--text-muted); padding: 2px;">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                  </svg>
+                </button>
+              </div>
+              <div id="fields-search-container" style="display: none; width: 100%;">
+                <input type="text" id="fields-search-input" placeholder="Search kept fields..." 
+                  style="width: 100%; padding: 0.25rem 0.5rem; border: 1px solid var(--border-color); border-radius: 4px; font-size: 0.75rem; outline: none; background-color: var(--bg-body); color: var(--text-main);">
+              </div>
+            </div>
+            <div id="details-fields-content" style="flex: 1; overflow-y: auto; padding: 0.5rem;"></div>
+          </div>
+          <div class="table-container" style="display: flex; flex-direction: column;">
+            <div
+              style="padding: 0.75rem 1rem; border-bottom: 1px solid var(--border-color); background-color: var(--bg-subtle); display: flex; flex-direction: column; gap: 0.5rem;">
+              <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+                <div>
+                  <span style="font-size: 0.875rem; font-weight: 600; color: var(--text-gray-900);">Kept Methods</span>
+                  <span style="color: var(--text-gray-500); font-size: 0.75rem; margin-left: 0.25rem;"
+                    id="details-methods-count">· 0</span>
+                </div>
+                <button class="icon-btn search-toggle-btn" data-target="methods" style="color: var(--text-muted); padding: 2px;">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                  </svg>
+                </button>
+              </div>
+              <div id="methods-search-container" style="display: none; width: 100%;">
+                <input type="text" id="methods-search-input" placeholder="Search kept methods..." 
+                  style="width: 100%; padding: 0.25rem 0.5rem; border: 1px solid var(--border-color); border-radius: 4px; font-size: 0.75rem; outline: none; background-color: var(--bg-body); color: var(--text-main);">
+              </div>
+            </div>
+            <div id="details-methods-content" style="flex: 1; overflow-y: auto; padding: 0.5rem;"></div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+  <div id="file-details-view" class="container-custom" style="display: none">
+    <main>
+      <div class="breadcrumb-row" style="margin-bottom: 2rem; height: auto;">
+        <div id="file-details-breadcrumbs"></div>
+      </div>
+      <div
+        style="flex: 1; display: flex; flex-direction: column; gap: 1.5rem; min-height: 0; overflow-y: auto; padding-right: 0.5rem;">
+        <div class="table-container" style="flex: none;">
+          <div
+            style="padding: 1rem; border-bottom: 1px solid var(--border-color); background-color: var(--bg-gray-50);">
+            <h2 style="font-size: 1rem; font-weight: 700;">Impact</h2>
+          </div>
+          <table style="width: 100%; border-collapse: collapse;">
+            <thead>
+              <tr>
+                <th class="text-center text-xs font-medium text-gray-500 border-b border-gray-200"
+                  style="padding: 0.75rem 0.5rem; text-transform: uppercase;">
+                  Kept Classes
+                </th>
+                <th class="text-center text-xs font-medium text-gray-500 border-l border-b border-gray-200"
+                  style="padding: 0.75rem 0.5rem; text-transform: uppercase;">
+                  Kept fields
+                </th>
+                <th class="text-center text-xs font-medium text-gray-500 border-l border-b border-gray-200"
+                  style="padding: 0.75rem 0.5rem; text-transform: uppercase;">
+                  Kept methods
+                </th>
+              </tr>
+            </thead>
+            <tbody id="file-details-impact-body"></tbody>
+          </table>
+        </div>
+        <div class="table-container" style="flex: 1; display: flex; flex-direction: column;">
+          <div
+            style="padding: 1rem; border-bottom: 1px solid var(--border-color); background-color: var(--bg-gray-50);">
+            <h2 style="font-size: 1rem; font-weight: 700;">Keep Rules</h2>
+          </div>
+          <div style="flex: 1; overflow-y: auto;">
+            <table style="width: 100%; border-collapse: collapse;">
+              <thead id="file-details-rules-header">
+                <tr>
+                  <th rowspan="2" class="text-left bg-gray-50 z-30"
+                    style="padding: 1rem; width: 600px; min-width: 600px; border-bottom: 1px solid var(--border-color);">
+                    Rule
+                  </th>
+                  <th colspan="4" class="text-center border-l border-gray-200 bg-gray-50"
+                    style="padding: 0.5rem; border-bottom: 1px solid var(--border-color);">
+                    Kept Items <span style="color: var(--text-muted);text-transform: none;font-weight: 500;">Higher is
+                      worse</span>
+                  </th>
+                  <th rowspan="2" colspan="3" class="text-center border-l border-gray-200 bg-gray-50"
+                    style="padding: 0.5rem; width: 150px; min-width: 150px; border-bottom: 1px solid var(--border-color);">
+                    Steps blocked by rule
+                  </th>
+                </tr>
+                <tr>
+                  <th class="text-center text-xs font-medium text-gray-500 border-l border-gray-200"
+                    style="padding: 0.5rem; width: 100px; min-width: 100px; border-bottom: 1px solid var(--border-color);">
+                    Total
+                  </th>
+                  <th class="text-center text-xs font-medium text-gray-500 border-l border-gray-200"
+                    style="padding: 0.5rem; width: 100px; min-width: 100px; border-bottom: 1px solid var(--border-color);">
+                    Classes
+                  </th>
+                  <th class="text-center text-xs font-medium text-gray-500 border-l border-gray-200"
+                    style="padding: 0.5rem; width: 100px; min-width: 100px; border-bottom: 1px solid var(--border-color);">
+                    Fields
+                  </th>
+                  <th class="text-center text-xs font-medium text-gray-500 border-l border-gray-200"
+                    style="padding: 0.5rem; width: 100px; min-width: 100px; border-bottom: 1px solid var(--border-color);">
+                    Methods
+                  </th>
+                </tr>
+              </thead>
+              <tbody id="file-details-rules-body"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script id="keepradius-proto" type="text/plain"></script>
+  <script id="keepradius-data" type="application/octet-stream"></script>
+  <script src="main.js"></script>
+  <script src="utils.js"></script>
+
+  <!-- Help Hub FAB -->
+  <button id="help-hub-fab" class="fab">
+    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24"
+      stroke="currentColor">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+        d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+    </svg>
+    <span>Help</span>
+  </button>
+
+  <!-- Help Hub Side Panel -->
+  <div id="help-hub-panel" class="side-panel">
+    <div class="side-panel-header">
+      <div class="header-left">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24"
+          stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+        <h2>Help</h2>
+      </div>
+      <button id="close-help-hub" class="icon-btn">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24"
+          stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+        </svg>
+      </button>
+    </div>
+    <div class="side-panel-content">
+      <!-- Introduction -->
+      <div class="help-section">
+        <div class="help-section-title">Introduction to Table Data</div>
+        <p>R8 is Android's code shrinker, optimizer, and obfuscator. This report shows how your keep rules constrain R8
+          — every kept item is one R8 couldn't shrink, optimize, or obfuscate. Higher percentages mean more of your app
+          is locked in place.</p>
+      </div>
+
+      <div class="divider"></div>
+      <!-- Legend -->
+      <div class="help-section">
+        <div class="help-section-title">Legend</div>
+        <div class="legend-list">
+          <!-- Obfuscation Score -->
+          <div class="legend-item" data-topic="obfuscation-score">
+            <div class="legend-item-header">
+              <span class="legend-item-title">Obfuscation Score</span>
+              <svg class="legend-item-arrow" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none"
+                viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+              </svg>
+            </div>
+            <div class="legend-item-content">
+              % of classes/fields/methods R8 was free to rename. Higher = better.
+            </div>
+          </div>
+
+          <!-- Optimization Score -->
+          <div class="legend-item" data-topic="optimization-score">
+            <div class="legend-item-header">
+              <span class="legend-item-title">Optimization Score</span>
+              <svg class="legend-item-arrow" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none"
+                viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+              </svg>
+            </div>
+            <div class="legend-item-content">
+              % of classes/fields/methods R8 was free to optimize. Higher = better.
+            </div>
+          </div>
+
+          <!-- Shrinking Score -->
+          <div class="legend-item" data-topic="shrinking-score">
+            <div class="legend-item-header">
+              <span class="legend-item-title">Shrinking Score</span>
+              <svg class="legend-item-arrow" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none"
+                viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+              </svg>
+            </div>
+            <div class="legend-item-content">
+              % of classes/fields/methods R8 was free to remove. Higher = better.
+            </div>
+          </div>
+
+          <!-- Kept Items -->
+          <div class="legend-item" data-topic="kept-items">
+            <div class="legend-item-header">
+              <span class="legend-item-title">Kept Items (higher is worse)</span>
+              <svg class="legend-item-arrow" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none"
+                viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+              </svg>
+            </div>
+            <div class="legend-item-content">
+              Total number of items kept by this rule. Higher numbers indicate a larger impact on APK size.
+            </div>
+          </div>
+
+          <!-- Blocked By Rule -->
+          <div class="legend-item" data-topic="blocked-by-rule">
+            <div class="legend-item-header">
+              <span class="legend-item-title">Blocked By Rule</span>
+              <svg class="legend-item-arrow" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none"
+                viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+              </svg>
+            </div>
+            <div class="legend-item-content">
+              Specific actions blocked by this rule (e.g., Optimization, Shrinking).
+            </div>
+          </div>
+
+          <!-- Identical Rules -->
+          <div class="legend-item" data-topic="identical-rules">
+            <div class="legend-item-header">
+              <span class="legend-item-title">Identical Rules</span>
+              <svg class="legend-item-arrow" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none"
+                viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+              </svg>
+            </div>
+            <div class="legend-item-content">
+              Rules that match the exact same set of items.
+            </div>
+          </div>
+
+          <!-- Subsumed By -->
+          <div class="legend-item" data-topic="subsumed-by">
+            <div class="legend-item-header">
+              <span class="legend-item-title">Subsumed By</span>
+              <svg class="legend-item-arrow" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none"
+                viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+              </svg>
+            </div>
+            <div class="legend-item-content">
+              Rules that are covered by a broader rule.
+            </div>
+          </div>
+
+          <!-- Unused Rules -->
+          <div class="legend-item" data-topic="unused-rules">
+            <div class="legend-item-header">
+              <span class="legend-item-title">Unused Rules</span>
+              <svg class="legend-item-arrow" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none"
+                viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+              </svg>
+            </div>
+            <div class="legend-item-content">
+              Rules that do not match any items in the application.
+            </div>
+          </div>
+
+          <!-- Lenses -->
+          <div class="legend-item" data-topic="lenses">
+            <div class="legend-item-header">
+              <span class="legend-item-title">Lenses (All / Identical / Subsumed / Unused)</span>
+              <svg class="legend-item-arrow" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none"
+                viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+              </svg>
+            </div>
+            <div class="legend-item-content">
+              Different perspectives to view the rules.
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="divider"></div>
+      <!-- Documentation -->
+      <div class="help-section">
+        <div class="help-section-title">Documentation</div>
+        <div class="doc-list">
+          <a href="https://r8.googlesource.com/r8/" target="_blank" class="doc-card">
+            <div class="doc-card-info">
+              <span class="doc-card-title">R8 keep rule reference</span>
+              <span class="doc-card-domain">developer.android.com</span>
+              <span class="doc-card-desc">Official guide to shrinking, obfuscation, and optimization with R8.</span>
+            </div>
+            <svg class="doc-card-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none"
+              viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+            </svg>
+          </a>
+
+          <a href="https://developer.android.com/studio/build/shrink-code" target="_blank" class="doc-card">
+            <div class="doc-card-info">
+              <span class="doc-card-title">Reduce APK size</span>
+              <span class="doc-card-domain">developer.android.com</span>
+              <span class="doc-card-desc">Patterns and tools for minimizing the footprint of your release build.</span>
+            </div>
+            <svg class="doc-card-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none"
+              viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+            </svg>
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

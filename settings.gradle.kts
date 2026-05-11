@@ -24,9 +24,9 @@ include(":assistant")
 
 project(":assistant").projectDir = file("d8_r8/assistant")
 
-include(":blastradius")
+include(":keepradius")
 
-project(":blastradius").projectDir = file("d8_r8/blastradius")
+project(":keepradius").projectDir = file("d8_r8/keepradius")
 
 include(":keepanno")
 

@@ -17,11 +17,6 @@ import static com.android.tools.r8.utils.internal.MapUtils.ignoreKey;
 import static java.util.Collections.emptySet;
 
 import com.android.tools.r8.Diagnostic;
-import com.android.tools.r8.blastradius.BlastRadiusOptions;
-import com.android.tools.r8.blastradius.BlastRadiusOptions.BlastRadiusConsumer;
-import com.android.tools.r8.blastradius.RootSetBlastRadius;
-import com.android.tools.r8.blastradius.RootSetBlastRadiusSerializer;
-import com.android.tools.r8.blastradius.proto.BlastRadiusContainer;
 import com.android.tools.r8.cf.code.CfInstruction;
 import com.android.tools.r8.cf.code.CfInvoke;
 import com.android.tools.r8.contexts.CompilationContext.MethodProcessingContext;
@@ -118,6 +113,11 @@ import com.android.tools.r8.ir.desugar.itf.InterfaceProcessor;
 import com.android.tools.r8.ir.desugar.lambda.SyntheticLambdaAccessorMethodConsumer;
 import com.android.tools.r8.ir.optimize.info.MutableMethodOptimizationInfo;
 import com.android.tools.r8.keepanno.ast.KeepDeclaration;
+import com.android.tools.r8.keepradius.KeepRadiusOptions;
+import com.android.tools.r8.keepradius.KeepRadiusOptions.KeepRadiusConsumer;
+import com.android.tools.r8.keepradius.RootSetKeepRadius;
+import com.android.tools.r8.keepradius.RootSetKeepRadiusSerializer;
+import com.android.tools.r8.keepradius.proto.KeepRadiusContainer;
 import com.android.tools.r8.kotlin.KotlinMetadataEnqueuerExtension;
 import com.android.tools.r8.naming.IdentifierNameStringCollection;
 import com.android.tools.r8.optimize.interfaces.analysis.CfOpenClosedInterfacesAnalysis;
@@ -262,7 +262,7 @@ public class Enqueuer {
   // thread."
   private ReentrantReadWriteLock appReadWriteLock = new ReentrantReadWriteLock(true);
   private final AppView<AppInfoWithClassHierarchy> appView;
-  private final RootSetBlastRadius.Builder blastRadiusBuilder;
+  private final RootSetKeepRadius.Builder keepRadiusBuilder;
   private final EnqueuerDeferredTracing deferredTracing;
   private final EnqueuerDeferredAnnotationTracing deferredAnnotationTracing;
   private final ExecutorService executorService;
@@ -499,7 +499,7 @@ public class Enqueuer {
     InternalOptions options = appView.options();
     this.appInfo = appView.appInfo();
     this.appView = appView.withClassHierarchy();
-    this.blastRadiusBuilder = RootSetBlastRadius.builder(appView, mode);
+    this.keepRadiusBuilder = RootSetKeepRadius.builder(appView, mode);
     this.mode = mode;
     this.profileCollectionAdditions = profileCollectionAdditions;
     this.deferredTracing = EnqueuerDeferredTracing.create(appView, this, mode);
@@ -514,7 +514,7 @@ public class Enqueuer {
         new EnqueuerTaskCollection(this, options.getThreadingModule(), executorService);
     this.keepInfo =
         new MutableKeepInfoCollection(
-            appView, this, KeepInfoCollectionEventConsumer.create(blastRadiusBuilder));
+            appView, this, KeepInfoCollectionEventConsumer.create(keepRadiusBuilder));
     this.reflectiveIdentification = new EnqueuerReflectiveIdentification(appView, this);
     this.useRegistryFactory = createUseRegistryFactory();
     this.worklist = EnqueuerWorklist.createWorklist(this, options.getThreadingModule());
@@ -3997,7 +3997,7 @@ public class Enqueuer {
     }
     timing.begin("Create result");
     EnqueuerResult result = createEnqueuerResult(appInfo, timing);
-    reportBlastRadius(result, timing);
+    reportKeepRadius(result, timing);
     profileCollectionAdditions.commit(appView);
     timing.end();
     return result;
@@ -4625,24 +4625,24 @@ public class Enqueuer {
     return true;
   }
 
-  private void reportBlastRadius(EnqueuerResult result, Timing timing) {
-    if (blastRadiusBuilder == null) {
+  private void reportKeepRadius(EnqueuerResult result, Timing timing) {
+    if (keepRadiusBuilder == null) {
       return;
     }
-    try (Timing t0 = timing.begin("Report blast radius")) {
-      RootSetBlastRadius blastRadius = blastRadiusBuilder.build(appView);
-      BlastRadiusOptions blastRadiusOptions = options.getBlastRadiusOptions();
-      BlastRadiusConsumer blastRadiusConsumer = blastRadiusOptions.getBlastRadiusConsumer();
-      if (blastRadiusConsumer != null) {
-        blastRadiusConsumer.accept(appView, result.getAppInfo(), blastRadius);
+    try (Timing t0 = timing.begin("Report keep radius")) {
+      RootSetKeepRadius keepRadius = keepRadiusBuilder.build(appView);
+      KeepRadiusOptions keepRadiusOptions = options.getKeepRadiusOptions();
+      KeepRadiusConsumer keepRadiusConsumer = keepRadiusOptions.getKeepRadiusConsumer();
+      if (keepRadiusConsumer != null) {
+        keepRadiusConsumer.accept(appView, result.getAppInfo(), keepRadius);
       }
-      Consumer<BlastRadiusContainer> blastRadiusContainerConsumer =
-          blastRadiusOptions.getBlastRadiusContainerConsumer();
-      if (blastRadiusContainerConsumer != null) {
-        BlastRadiusContainer container =
-            new RootSetBlastRadiusSerializer(appView, result)
-                .serialize(blastRadius, appView.options().getBlastRadiusOptions());
-        blastRadiusContainerConsumer.accept(container);
+      Consumer<KeepRadiusContainer> keepRadiusContainerConsumer =
+          keepRadiusOptions.getKeepRadiusContainerConsumer();
+      if (keepRadiusContainerConsumer != null) {
+        KeepRadiusContainer container =
+            new RootSetKeepRadiusSerializer(appView, result)
+                .serialize(keepRadius, appView.options().getKeepRadiusOptions());
+        keepRadiusContainerConsumer.accept(container);
       }
     }
   }

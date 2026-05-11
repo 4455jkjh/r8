@@ -8,7 +8,7 @@ import static org.junit.Assert.assertEquals;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
-import com.android.tools.r8.libanalyzer.proto.KeepRuleBlastRadiusSummary;
+import com.android.tools.r8.libanalyzer.proto.KeepRuleKeepRadiusSummary;
 import com.android.tools.r8.utils.AndroidApiLevel;
 import com.google.common.collect.Sets;
 import java.util.Set;
@@ -55,7 +55,7 @@ public class LibraryAnalyzerPackageWideClassificationTest extends TestBase {
                       .getConfiguration()
                       .getUnusedPackageWideKeepRulesList()
                       .stream()
-                      .map(KeepRuleBlastRadiusSummary::getSource)
+                      .map(KeepRuleKeepRadiusSummary::getSource)
                       .collect(Collectors.toSet());
               assertEquals(packageWideKeepRules, unusedPackageWideKeepRules);
             })

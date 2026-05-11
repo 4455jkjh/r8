@@ -15,18 +15,18 @@ import com.android.tools.r8.R8;
 import com.android.tools.r8.R8Command;
 import com.android.tools.r8.ResourceException;
 import com.android.tools.r8.Version;
-import com.android.tools.r8.blastradius.BlastRadiusKeepRuleClassifier;
-import com.android.tools.r8.blastradius.RootSetBlastRadius;
-import com.android.tools.r8.blastradius.RootSetBlastRadiusForRule;
 import com.android.tools.r8.diagnostic.MissingDefinitionsDiagnostic;
 import com.android.tools.r8.graph.DexItemFactory;
 import com.android.tools.r8.graph.DexProgramClass;
 import com.android.tools.r8.keepanno.annotations.KeepForApi;
+import com.android.tools.r8.keepradius.KeepRadiusKeepRuleClassifier;
+import com.android.tools.r8.keepradius.RootSetKeepRadius;
+import com.android.tools.r8.keepradius.RootSetKeepRadiusForRule;
 import com.android.tools.r8.libanalyzer.proto.BlockedConsumerKeepRule;
 import com.android.tools.r8.libanalyzer.proto.ConfigurationSummary;
 import com.android.tools.r8.libanalyzer.proto.D8CompileResult;
 import com.android.tools.r8.libanalyzer.proto.ItemCollectionSummary;
-import com.android.tools.r8.libanalyzer.proto.KeepRuleBlastRadiusSummary;
+import com.android.tools.r8.libanalyzer.proto.KeepRuleKeepRadiusSummary;
 import com.android.tools.r8.libanalyzer.proto.R8CompileResult;
 import com.android.tools.r8.libanalyzer.proto.ValidateConsumerKeepRulesResult;
 import com.android.tools.r8.libanalyzer.utils.DexIndexedSizeConsumer;
@@ -155,19 +155,19 @@ public class LibraryAnalyzer {
           r8Options -> {
             r8Options.libraryAnalyzerSubCompilation = true;
             r8Options.ignoreUnusedProguardRules = true;
-            if (options.blastRadiusDataOutputPath != null) {
-              r8Options.getBlastRadiusOptions().dataOutputPath = options.blastRadiusDataOutputPath;
+            if (options.keepRadiusDataOutputPath != null) {
+              r8Options.getKeepRadiusOptions().dataOutputPath = options.keepRadiusDataOutputPath;
             }
-            r8Options.getBlastRadiusOptions().blastRadiusConsumer =
-                (appView, appInfo, blastRadius) ->
+            r8Options.getKeepRadiusOptions().keepRadiusConsumer =
+                (appView, appInfo, keepRadius) ->
                     resultBuilder
                         .setConfiguration(
                             ConfigurationSummary.newBuilder()
-                                .addAllKeepRules(getTopBlastRadiusKeepRules(blastRadius))
+                                .addAllKeepRules(getTopKeepRadiusKeepRules(keepRadius))
                                 .addAllUsedPackageWideKeepRules(
-                                    getPackageWideKeepRules(blastRadius, r -> !r.isEmpty()))
+                                    getPackageWideKeepRules(keepRadius, r -> !r.isEmpty()))
                                 .addAllUnusedPackageWideKeepRules(
-                                    getPackageWideKeepRules(blastRadius, r -> r.isEmpty())))
+                                    getPackageWideKeepRules(keepRadius, r -> r.isEmpty())))
                         .setClasses(
                             getItemCollectionSummary(
                                 appInfo,
@@ -282,11 +282,11 @@ public class LibraryAnalyzer {
         .build();
   }
 
-  private static List<KeepRuleBlastRadiusSummary> getTopBlastRadiusKeepRules(
-      RootSetBlastRadius blastRadius) {
-    ArrayList<RootSetBlastRadiusForRule> keepRulesSorted =
+  private static List<KeepRuleKeepRadiusSummary> getTopKeepRadiusKeepRules(
+      RootSetKeepRadius keepRadius) {
+    ArrayList<RootSetKeepRadiusForRule> keepRulesSorted =
         ListUtils.sort(
-            blastRadius.getBlastRadius(),
+            keepRadius.getKeepRadius(),
             (x, y) -> {
               if (x.getNumberOfItems() != y.getNumberOfItems()) {
                 return y.getNumberOfItems() - x.getNumberOfItems();
@@ -304,21 +304,21 @@ public class LibraryAnalyzer {
     return ListUtils.map(
         keepRulesSorted,
         rule ->
-            KeepRuleBlastRadiusSummary.newBuilder()
+            KeepRuleKeepRadiusSummary.newBuilder()
                 .setSource(rule.getSource())
                 .setKeptItemCount(rule.getNumberOfItems())
                 .build());
   }
 
-  private static List<KeepRuleBlastRadiusSummary> getPackageWideKeepRules(
-      RootSetBlastRadius blastRadius, Predicate<RootSetBlastRadiusForRule> predicate) {
-    List<RootSetBlastRadiusForRule> unusedPackageWideKeepRules =
+  private static List<KeepRuleKeepRadiusSummary> getPackageWideKeepRules(
+      RootSetKeepRadius keepRadius, Predicate<RootSetKeepRadiusForRule> predicate) {
+    List<RootSetKeepRadiusForRule> unusedPackageWideKeepRules =
         ListUtils.filter(
-            blastRadius.getBlastRadius(),
+            keepRadius.getKeepRadius(),
             rule ->
-                BlastRadiusKeepRuleClassifier.isPackageWideKeepRule(rule.getRule())
+                KeepRadiusKeepRuleClassifier.isPackageWideKeepRule(rule.getRule())
                     && predicate.test(rule));
-    List<RootSetBlastRadiusForRule> unusedPackageWideKeepRulesSorted =
+    List<RootSetKeepRadiusForRule> unusedPackageWideKeepRulesSorted =
         ListUtils.sort(
             unusedPackageWideKeepRules,
             (x, y) -> {
@@ -332,7 +332,7 @@ public class LibraryAnalyzer {
     return ListUtils.map(
         unusedPackageWideKeepRulesSorted,
         rule ->
-            KeepRuleBlastRadiusSummary.newBuilder()
+            KeepRuleKeepRadiusSummary.newBuilder()
                 .setSource(rule.getSource())
                 .setKeptItemCount(rule.getNumberOfItems())
                 .setNoObfuscation(rule.isNoObfuscationSet())

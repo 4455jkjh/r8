@@ -72,7 +72,7 @@ dependencies {
   mainResourcesScope(project(":main", "mainResources"))
   turboClassesScope(project(":main", "turboClassesOutput"))
   implementation(project(":assistant", "assistantJar"))
-  implementation(project(":blastradius", "blastradiusJar"))
+  implementation(project(":keepradius", "keepradiusJar"))
   implementation(project(":keepanno", "keepannoClasses"))
   implementation(project(":libanalyzer", "libanalyzer-compile-java"))
   implementation(project(":main", "mainClassesOutput"))

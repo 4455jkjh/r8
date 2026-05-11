@@ -7,7 +7,6 @@ import static com.android.tools.r8.utils.InternalOptions.DETERMINISTIC_DEBUGGING
 import static com.android.tools.r8.utils.MapConsumerUtils.wrapExistingInternalMapConsumerIfNotNull;
 
 import com.android.tools.r8.ProgramResource.Kind;
-import com.android.tools.r8.blastradius.BlastRadiusContainerUtils;
 import com.android.tools.r8.dex.Marker.Tool;
 import com.android.tools.r8.dump.DumpOptions;
 import com.android.tools.r8.errors.DexFileOverflowDiagnostic;
@@ -25,6 +24,7 @@ import com.android.tools.r8.keepanno.annotations.KeepForApi;
 import com.android.tools.r8.keepanno.asm.KeepEdgeReader;
 import com.android.tools.r8.keepanno.ast.KeepDeclaration;
 import com.android.tools.r8.keepanno.keeprules.KeepRuleExtractor;
+import com.android.tools.r8.keepradius.KeepRadiusContainerUtils;
 import com.android.tools.r8.metadata.R8BuildMetadata;
 import com.android.tools.r8.naming.ClassNameMapper;
 import com.android.tools.r8.naming.ClassNamingForNameMapper;
@@ -721,7 +721,7 @@ public final class R8Command extends BaseCompilerCommand {
 
     /**
      * API for retrieving the proto message backing the R8 Configuration Analysis HTML Report. The
-     * corresponding schema is defined in src/blastradius/proto/blastradius.proto.
+     * corresponding schema is defined in src/keepradius/proto/keepradius.proto.
      */
     public Builder setConfigurationAnalysisDataConsumer(
         ByteArrayConsumer<?> configurationAnalysisDataConsumer) {
@@ -1623,15 +1623,15 @@ public final class R8Command extends BaseCompilerCommand {
 
     if (configurationAnalysisDataConsumer != null
         || configurationAnalysisHtmlReportConsumer != null) {
-      internal.getBlastRadiusOptions().blastRadiusContainerConsumer =
-          blastRadiusContainer -> {
+      internal.getKeepRadiusOptions().keepRadiusContainerConsumer =
+          keepRadiusContainer -> {
             if (configurationAnalysisDataConsumer != null) {
-              BlastRadiusContainerUtils.writeToConsumer(
-                  blastRadiusContainer, configurationAnalysisDataConsumer, internal.reporter);
+              KeepRadiusContainerUtils.writeToConsumer(
+                  keepRadiusContainer, configurationAnalysisDataConsumer, internal.reporter);
             }
             if (configurationAnalysisHtmlReportConsumer != null) {
-              BlastRadiusContainerUtils.writeHtmlToConsumer(
-                  blastRadiusContainer, configurationAnalysisHtmlReportConsumer, internal.reporter);
+              KeepRadiusContainerUtils.writeHtmlToConsumer(
+                  keepRadiusContainer, configurationAnalysisHtmlReportConsumer, internal.reporter);
             }
           };
     }
