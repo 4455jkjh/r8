@@ -17,13 +17,13 @@
       </div>
       <div class="header-stats">
         <div class="stat-item">
-          <span class="stat-label">Obfuscation</span><span class="stat-value" id="total-obfuscation"></span>
+          <span class="stat-label">Shrinking</span><span class="stat-value" id="total-shrinking"></span>
         </div>
         <div class="stat-item">
           <span class="stat-label">Optimization</span><span class="stat-value" id="total-optimization"></span>
         </div>
         <div class="stat-item">
-          <span class="stat-label">Shrinking</span><span class="stat-value" id="total-shrinking"></span>
+          <span class="stat-label">Obfuscation</span><span class="stat-value" id="total-obfuscation"></span>
         </div>
       </div>
     </div>
@@ -139,13 +139,13 @@
         <div id="flat-breadcrumbs"></div>
       </div>
       <div id="stats-container" style="display: flex; gap: 1rem; padding: 0rem; margin-bottom: 1rem;">
-        <!-- Obfuscation Card -->
+        <!-- Shrinking Card -->
         <div class="stat-card"
           style="background: #ffffff; padding: 1rem; border-radius: 0.5rem; border: 1px solid var(--border-color); flex: 1;">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
             <div style="color: var(--text-muted); font-size: 0.75rem; text-transform: uppercase; font-weight: 600; display: flex; align-items: center; gap: 0.25rem;">
-              Obfuscation <span class="tooltip-icon" data-tooltip="Obfuscation Score measures the percentage of symbols renamed within your codebase. By tracking this score, you can gauge the effectiveness of R8's obfuscation, which is crucial for reducing your application's metadata footprint to save memory">?</span></div>
-            <div id="card-total-obfuscation" style="font-size: 1rem; font-weight: 700; color: var(--text-yellow-600);">
+              Shrinking <span class="tooltip-icon" data-tooltip="Shrinking score tracks the percentage of unused code and resources that have been successfully removed from your application. When R8 performs shrinking, it reduces the overall size of your application by identifying and eliminating code and resources that are not actually being used, ensuring your final build is as lean as possible.">?</span></div>
+            <div id="card-total-shrinking" style="font-size: 1rem; font-weight: 700; color: var(--text-yellow-600);">
               --</div>
           </div>
           <div style="display: flex; flex-direction: column; gap: 0.5rem;">
@@ -153,28 +153,28 @@
             <div style="display: flex; align-items: center; justify-content: space-between; font-size: 0.75rem;">
               <span style="color: var(--text-gray-500); width: 60px;">Classes</span>
               <div style="flex: 1; height: 4px; background: var(--bg-hover); border-radius: 2px; margin: 0 1rem;">
-                <div id="card-obfuscation-classes-bar"
+                <div id="card-shrinking-classes-bar"
                   style="height: 100%; background: var(--text-yellow-600); border-radius: 2px; width: 0%;"></div>
               </div>
-              <span id="card-obfuscation-classes-val" style="color: var(--text-gray-900); font-weight: 500;">--</span>
+              <span id="card-shrinking-classes-val" style="color: var(--text-gray-900); font-weight: 500;">--</span>
             </div>
             <!-- Fields -->
             <div style="display: flex; align-items: center; justify-content: space-between; font-size: 0.75rem;">
               <span style="color: var(--text-gray-500); width: 60px;">Fields</span>
               <div style="flex: 1; height: 4px; background: var(--bg-hover); border-radius: 2px; margin: 0 1rem;">
-                <div id="card-obfuscation-fields-bar"
+                <div id="card-shrinking-fields-bar"
                   style="height: 100%; background: var(--text-yellow-600); border-radius: 2px; width: 0%;"></div>
               </div>
-              <span id="card-obfuscation-fields-val" style="color: var(--text-gray-900); font-weight: 500;">--</span>
+              <span id="card-shrinking-fields-val" style="color: var(--text-gray-900); font-weight: 500;">--</span>
             </div>
             <!-- Methods -->
             <div style="display: flex; align-items: center; justify-content: space-between; font-size: 0.75rem;">
               <span style="color: var(--text-gray-500); width: 60px;">Methods</span>
               <div style="flex: 1; height: 4px; background: var(--bg-hover); border-radius: 2px; margin: 0 1rem;">
-                <div id="card-obfuscation-methods-bar"
+                <div id="card-shrinking-methods-bar"
                   style="height: 100%; background: var(--text-yellow-600); border-radius: 2px; width: 0%;"></div>
               </div>
-              <span id="card-obfuscation-methods-val" style="color: var(--text-gray-900); font-weight: 500;">--</span>
+              <span id="card-shrinking-methods-val" style="color: var(--text-gray-900); font-weight: 500;">--</span>
             </div>
           </div>
         </div>
@@ -219,13 +219,13 @@
           </div>
         </div>
 
-        <!-- Shrinking Card -->
+        <!-- Obfuscation Card -->
         <div class="stat-card"
           style="background: #ffffff; padding: 1rem; border-radius: 0.5rem; border: 1px solid var(--border-color); flex: 1;">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
             <div style="color: var(--text-muted); font-size: 0.75rem; text-transform: uppercase; font-weight: 600; display: flex; align-items: center; gap: 0.25rem;">
-              Shrinking <span class="tooltip-icon" data-tooltip="Shrinking score tracks the percentage of unused code and resources that have been successfully removed from your application. When R8 performs shrinking, it reduces the overall size of your application by identifying and eliminating code and resources that are not actually being used, ensuring your final build is as lean as possible.">?</span></div>
-            <div id="card-total-shrinking" style="font-size: 1rem; font-weight: 700; color: var(--text-yellow-600);">
+              Obfuscation <span class="tooltip-icon" data-tooltip="Obfuscation Score measures the percentage of symbols renamed within your codebase. By tracking this score, you can gauge the effectiveness of R8's obfuscation, which is crucial for reducing your application's metadata footprint to save memory">?</span></div>
+            <div id="card-total-obfuscation" style="font-size: 1rem; font-weight: 700; color: var(--text-yellow-600);">
               --</div>
           </div>
           <div style="display: flex; flex-direction: column; gap: 0.5rem;">
@@ -233,28 +233,28 @@
             <div style="display: flex; align-items: center; justify-content: space-between; font-size: 0.75rem;">
               <span style="color: var(--text-gray-500); width: 60px;">Classes</span>
               <div style="flex: 1; height: 4px; background: var(--bg-hover); border-radius: 2px; margin: 0 1rem;">
-                <div id="card-shrinking-classes-bar"
+                <div id="card-obfuscation-classes-bar"
                   style="height: 100%; background: var(--text-yellow-600); border-radius: 2px; width: 0%;"></div>
               </div>
-              <span id="card-shrinking-classes-val" style="color: var(--text-gray-900); font-weight: 500;">--</span>
+              <span id="card-obfuscation-classes-val" style="color: var(--text-gray-900); font-weight: 500;">--</span>
             </div>
             <!-- Fields -->
             <div style="display: flex; align-items: center; justify-content: space-between; font-size: 0.75rem;">
               <span style="color: var(--text-gray-500); width: 60px;">Fields</span>
               <div style="flex: 1; height: 4px; background: var(--bg-hover); border-radius: 2px; margin: 0 1rem;">
-                <div id="card-shrinking-fields-bar"
+                <div id="card-obfuscation-fields-bar"
                   style="height: 100%; background: var(--text-yellow-600); border-radius: 2px; width: 0%;"></div>
               </div>
-              <span id="card-shrinking-fields-val" style="color: var(--text-gray-900); font-weight: 500;">--</span>
+              <span id="card-obfuscation-fields-val" style="color: var(--text-gray-900); font-weight: 500;">--</span>
             </div>
             <!-- Methods -->
             <div style="display: flex; align-items: center; justify-content: space-between; font-size: 0.75rem;">
               <span style="color: var(--text-gray-500); width: 60px;">Methods</span>
               <div style="flex: 1; height: 4px; background: var(--bg-hover); border-radius: 2px; margin: 0 1rem;">
-                <div id="card-shrinking-methods-bar"
+                <div id="card-obfuscation-methods-bar"
                   style="height: 100%; background: var(--text-yellow-600); border-radius: 2px; width: 0%;"></div>
               </div>
-              <span id="card-shrinking-methods-val" style="color: var(--text-gray-900); font-weight: 500;">--</span>
+              <span id="card-obfuscation-methods-val" style="color: var(--text-gray-900); font-weight: 500;">--</span>
             </div>
           </div>
         </div>

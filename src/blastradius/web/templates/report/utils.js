@@ -360,7 +360,7 @@ function highlightRule(source) {
   return escapedSource
     .replace(/(?<!&[a-zA-Z0-9#]+);/g, '<span style="color: #ca8a04;">;</span>')
     .replace(/([{}*])/g, '<span style="color: #ca8a04;">$1</span>')
-    .replace(/(-keep[a-z]*)/g, '<span style="color: #dc2626;">$1</span>')
+    .replace(/(-keep[a-z]*|-dontoptimize|-dontshrink|-dontobfuscate)/g, '<span style="color: #dc2626;">$1</span>')
     .replace(/\b(class|interface|enum)\b/g, '<span style="color: #2563eb;">$1</span>');
 }
 

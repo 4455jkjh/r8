@@ -404,7 +404,7 @@ const App = {
       } else {
         if (impactContainer) impactContainer.parentElement.style.display = "";
         if (relatedRulesContainer) relatedRulesContainer.style.display = "";
-        if (gridContainer) gridContainer.style.display = "";
+        if (gridContainer) gridContainer.style.display = "grid";
 
         const constraintsMap = getConstraintsMap(this.blastRadiusData);
         const constraints = constraintsMap.get(rule.constraintsId) || [];
@@ -783,8 +783,35 @@ const App = {
     const fileOrigin = this.blastRadiusData?.fileOriginTable.find(f => f
       .id === parseInt(fileOriginId));
     if (!fileOrigin) return;
-    const allRulesForFile = this.blastRadiusData.keepRuleBlastRadiusTable
+    const fileRules = this.blastRadiusData.keepRuleBlastRadiusTable
       .filter(r => r.origin?.fileOriginId === fileOrigin.id);
+      
+    const globalRules = [];
+    if (this.blastRadiusData.globalKeepRuleBlastRadiusTable) {
+      const totalClasses = this.blastRadiusData?.buildInfo?.liveClassCount || 0;
+      const totalFields = this.blastRadiusData?.buildInfo?.liveFieldCount || 0;
+      const totalMethods = this.blastRadiusData?.buildInfo?.liveMethodCount || 0;
+
+      this.blastRadiusData.globalKeepRuleBlastRadiusTable.forEach(rule => {
+        if (rule.source === '-dontoptimize' || rule.source === '-dontshrink' || rule.source === '-dontobfuscate') {
+          if (rule.origin?.fileOriginId === fileOrigin.id) {
+            globalRules.push({
+              id: rule.id,
+              source: rule.source,
+              constraintsId: rule.constraintsId,
+              isGlobal: true,
+              blastRadius: {
+                classBlastRadius: new Array(totalClasses),
+                fieldBlastRadius: new Array(totalFields),
+                methodBlastRadius: new Array(totalMethods),
+              }
+            });
+          }
+        }
+      });
+    }
+    
+    const allRulesForFile = [...globalRules, ...fileRules];
     let rules = allRulesForFile;
     const lens = ReportApp.state.filters.keepRules[0];
     if (lens) {
@@ -871,7 +898,18 @@ const App = {
       const f = (br.fieldBlastRadius || []).length;
       const m = (br.methodBlastRadius || []).length;
       const constraintsMap = getConstraintsMap(this.blastRadiusData);
-      const constraints = constraintsMap.get(rule.constraintsId) || [];
+      let constraints = [...(constraintsMap.get(rule.constraintsId) || [])];
+      if (rule.isGlobal) {
+        if (rule.source === '-dontobfuscate' && !constraints.includes('DONT_OBFUSCATE')) {
+          constraints.push('DONT_OBFUSCATE');
+        }
+        if (rule.source === '-dontoptimize' && !constraints.includes('DONT_OPTIMIZE')) {
+          constraints.push('DONT_OPTIMIZE');
+        }
+        if (rule.source === '-dontshrink' && !constraints.includes('DONT_SHRINK')) {
+          constraints.push('DONT_SHRINK');
+        }
+      }
       const getTag = (c, label) => {
         const isRestricted = constraints.includes(c);
         const color = isRestricted ? "oklch(0.446 0.043 257.281)" : "#cbd5e1";
@@ -1770,15 +1808,15 @@ const ReportApp = {
     if (!brData) return [];
     let data = [];
     if (currentView === CONSTANTS.VIEWS.PACKAGES) {
-      data = getRuleFiles(brData).filter(f => f.keepRules > 0);
+      data = getRuleFiles(brData).filter(f => f.matches.total > 0);
     } else {
       data = getRules(brData);
-      // If lens is 'Residual', show only rules with matches > 0.
+      // If lens is 'Residual', 'All', or default, show only rules with matches > 0.
       // If lens is 'Unused', show only rules with matches === 0.
-      // Otherwise (including 'All' or default), show all rules.
-      if (filters.keepRules[0] === "Residual") {
+      const lens = filters.keepRules[0];
+      if (lens === "Residual" || lens === "All" || !lens) {
         data = data.filter(r => r.matches.total > 0);
-      } else if (filters.keepRules[0] === "Unused") {
+      } else if (lens === "Unused") {
         data = data.filter(r => r.matches.total === 0);
       }
     }
@@ -2079,14 +2117,33 @@ const ReportApp = {
         lens === "Identical";
       const isSubsumedLens = currentView === CONSTANTS.VIEWS.MODULES &&
         lens === "Subsumed";
+      const isUnusedLens = currentView === CONSTANTS.VIEWS.MODULES &&
+        lens === "Unused";
+      if (this.elements.mainTable) {
+        if (isIdenticalLens || isSubsumedLens || isUnusedLens) {
+          this.elements.mainTable.style.tableLayout = "fixed";
+        } else {
+          this.elements.mainTable.style.tableLayout = "";
+        }
+      }
       if (isIdenticalLens || isSubsumedLens) {
         topHeader.innerHTML = `
-          <th rowspan="2" class="text-left sticky-name bg-gray-50 z-30" data-sort-by="name" style="width: 40%; min-width: 300px;">
+          <th rowspan="2" class="text-left sticky-name bg-gray-50 z-30" data-sort-by="name" style="width: 50%; min-width: 300px;">
             <div class="flex items-center cursor-pointer hover:text-blue-600" style="padding: 1rem;">
                 ${title}${ind("name")}
             </div>
           </th>
-          <th rowspan="2" class="text-left bg-gray-50 border-l border-gray-200" style="padding: 1rem; width: 100%;">${isIdenticalLens ? 'Identical Rules' : 'Subsumed By'}</th>
+          <th rowspan="2" class="text-left bg-gray-50 border-l border-gray-200" style="padding: 1rem; width: 50%;">${isIdenticalLens ? 'Identical Rules' : 'Subsumed By'}</th>
+        `;
+        subHeader.innerHTML = '';
+      } else if (isUnusedLens) {
+        topHeader.innerHTML = `
+          <th rowspan="2" class="text-left sticky-name bg-gray-50 z-30" data-sort-by="name" style="width: 50%; min-width: 300px;">
+            <div class="flex items-center cursor-pointer hover:text-blue-600" style="padding: 1rem;">
+                ${title}${ind("name")}
+            </div>
+          </th>
+          <th rowspan="2" class="text-left bg-gray-50 border-l border-gray-200" style="padding: 1rem; width: 50%;">Origin</th>
         `;
         subHeader.innerHTML = '';
       } else {
@@ -2149,7 +2206,7 @@ const ReportApp = {
       `;
     };
     this.elements.tableData.innerHTML = data.map((item) => {
-      const cleanedName = item.name.replace(/\s+/g, ' ').trim();
+      const cleanedName = item.name.trim();
       const escapedName = escapeHTML(cleanedName);
       let nameCell = "";
       if (currentView === CONSTANTS.VIEWS.MODULES) {
@@ -2182,6 +2239,12 @@ const ReportApp = {
           lens === "Identical";
         const isSubsumedLens = currentView === CONSTANTS.VIEWS.MODULES &&
           lens === "Subsumed";
+        const isUnusedLens = currentView === CONSTANTS.VIEWS.MODULES &&
+          lens === "Unused";
+        const customNameCell = `<td class="sticky-name font-medium hover:underline cursor-pointer" title="${escapedName}" style="padding: 1rem; width: 50%; min-width: 300px; font-family: var(--font-family-mono);" data-rule-id="${item.id}">
+            <pre style="white-space: pre-wrap; font-family: var(--font-family-mono); font-size: 0.8125rem; margin: 0; pointer-events: none;">${highlightRule(cleanedName)}</pre>
+          </td>`;
+
         if (isIdenticalLens || isSubsumedLens) {
           const rules = isIdenticalLens ? item.identicalRules : item
             .subsumedByRules;
@@ -2190,7 +2253,17 @@ const ReportApp = {
               <pre style="white-space: pre-wrap; margin: 0; color: var(--text-main);">${highlightRule(r.source)}</pre>
             </div>
           `).join("");
-          return `<tr class="table-row border-b border-gray-200 hover:bg-gray-50">${nameCell}<td class="border-l border-gray-200" style="padding: 1rem; vertical-align: top; width: 100%; font-family: var(--font-family-mono);">${rulesHtml}</td></tr>`;
+          
+          return `<tr class="table-row border-b border-gray-200 hover:bg-gray-50">${customNameCell}<td class="border-l border-gray-200" style="padding: 1rem; vertical-align: top; width: 50%; font-family: var(--font-family-mono);">${rulesHtml}</td></tr>`;
+        } else if (isUnusedLens) {
+          const rule = brData.keepRuleBlastRadiusTable.find(r => r.id === item.id) || brData.globalKeepRuleBlastRadiusTable.find(r => r.id === item.id);
+          const fileOrigin = brData.fileOriginTable.find(f => f.id === rule?.origin?.fileOriginId);
+          let originStr = "Unknown";
+          if (fileOrigin) {
+            const mavenName = formatMavenCoordinate(fileOrigin.mavenCoordinate);
+            originStr = `${mavenName || fileOrigin.filename}:${rule.origin?.lineNumber || 1}`;
+          }
+          return `<tr class="table-row border-b border-gray-200 hover:bg-gray-50">${customNameCell}<td class="border-l border-gray-200" style="padding: 1rem; width: 50%; font-family: var(--font-family-mono);">${escapeHTML(originStr)}</td></tr>`;
         }
         const impact = item.impact || [];
         const getTag = (c, label) => {
