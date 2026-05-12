@@ -4,6 +4,7 @@
 package com.android.tools.r8.utils;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 
 import com.android.tools.r8.TestBase;
@@ -123,5 +124,58 @@ public class CliParserTest extends TestBase {
 
     assertEquals(1, errors.size());
     assertEquals("Unknown option: --unknown=value", errors.get(0));
+  }
+
+  @Test
+  public void testOption0WithAlternative() {
+    CliParser<Builder> parser = new CliParser<>("Usage: test");
+    parser.option0("--help", "Help", builder -> builder.help = true, "-h");
+
+    Builder builder = new Builder();
+    List<String> errors = new ArrayList<>();
+    parser.parse(new String[] {"-h"}, builder, errors::add);
+
+    assertTrue(errors.isEmpty());
+    assertTrue(builder.help);
+  }
+
+  @Test
+  public void testOption1WithAlternative() {
+    CliParser<Builder> parser = new CliParser<>("Usage: test");
+    parser.option1(
+        "--output", "<file>", "Output file", (builder, arg) -> builder.output = arg, "-o");
+
+    Builder builder = new Builder();
+    List<String> errors = new ArrayList<>();
+    parser.parse(new String[] {"-o", "foo.bar"}, builder, errors::add);
+
+    assertTrue(errors.isEmpty());
+    assertEquals("foo.bar", builder.output);
+  }
+
+  @Test
+  public void testUsageMessageWithAlternative() {
+    CliParser<Builder> parser = new CliParser<>("Usage: test");
+    parser.option0("--help", "Help", builder -> builder.help = true, "-h");
+
+    String usage = parser.getUsageMessage();
+    assertTrue(usage.contains("--help"));
+    assertTrue(usage.contains("-h"));
+  }
+
+  @Test
+  public void testInvalidOptionName() {
+    CliParser<Builder> parser = new CliParser<>("Usage: test");
+    assertThrows(
+        AssertionError.class,
+        () -> parser.option0("-invalid", "Help", builder -> builder.help = true));
+  }
+
+  @Test
+  public void testInvalidShorthand() {
+    CliParser<Builder> parser = new CliParser<>("Usage: test");
+    assertThrows(
+        AssertionError.class,
+        () -> parser.option0("--help", "Help", builder -> builder.help = true, "--h"));
   }
 }

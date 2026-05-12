@@ -15,7 +15,7 @@ public class ApiDatabaseGeneratorCommandParser {
     String usageHeader = "Usage: apidatabasegenerator [options] <input-files>\nwhere options are:";
     CliParser<ApiDatabaseGeneratorCommand.Builder> parser = new CliParser<>(usageHeader);
     return parser
-        .option0("--help", "Print help.", builder -> builder.setPrintHelp(true))
+        .option0("--help", "Print help.", builder -> builder.setPrintHelp(true), "-h")
         .option0("--version", "Print version.", builder -> builder.setPrintVersion(true))
         .option1(
             "--output",
