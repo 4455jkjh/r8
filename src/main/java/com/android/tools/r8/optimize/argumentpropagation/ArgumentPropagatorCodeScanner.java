@@ -537,7 +537,6 @@ public class ArgumentPropagatorCodeScanner {
       }
       assert inFlow.isBaseInFlow();
       DexType castType = null;
-      Nullability nullability = value.getType().nullability();
       {
         Value currentValue = value;
         while (currentValue.isDefinedByInstructionSatisfying(
@@ -551,7 +550,12 @@ public class ArgumentPropagatorCodeScanner {
         }
       }
       // If we don't have any local refinement, then simply return the existing in-flow.
-      if (castType == null && !nullability.isDefinitelyNotNull()) {
+      Nullability nullability = value.getType().nullability();
+      Nullability defaultNullability =
+          value.getAliasedValue().isThis()
+              ? Nullability.definitelyNotNull()
+              : Nullability.maybeNull();
+      if (castType == null && nullability.equals(defaultNullability)) {
         return inFlow;
       }
       return new CastAbstractFunction(inFlow.asBaseInFlow(), castType, nullability);

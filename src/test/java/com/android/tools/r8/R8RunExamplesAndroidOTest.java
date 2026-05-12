@@ -323,7 +323,7 @@ public class R8RunExamplesAndroidOTest extends RunExamplesAndroidOTest<R8Command
         .withProguardCompatibilityMode(enableProguardCompatibilityMode)
         .withDexCheck(
             (inspector, syntheticItems) ->
-                checkLambdaCount(inspector, syntheticItems, 2, "lambdadesugaringnplus"))
+                checkLambdaCount(inspector, syntheticItems, 1, "lambdadesugaringnplus"))
         .run();
 
     test("lambdadesugaringnplus", "lambdadesugaringnplus", "LambdasWithStaticAndDefaultMethods")
