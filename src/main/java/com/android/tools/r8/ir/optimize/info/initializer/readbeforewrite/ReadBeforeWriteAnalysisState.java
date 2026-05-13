@@ -28,7 +28,7 @@ public class ReadBeforeWriteAnalysisState extends AbstractState<ReadBeforeWriteA
       new ReadBeforeWriteAnalysisState(
           false, false, Collections.emptySet(), Collections.emptySet(), Collections.emptySet());
 
-  private static final int MAX_SET_SIZE = Integer.MAX_VALUE;
+  private static final int MAX_SET_SIZE = 10;
 
   // Whether at the given program point, is `this` maybe escaped?
   final boolean isThisEscaped;
