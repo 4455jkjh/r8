@@ -4,6 +4,7 @@
 
 package com.android.tools.r8.ir.optimize.info;
 
+import com.android.tools.r8.graph.DexClassAndMethod;
 import com.android.tools.r8.graph.DexType;
 import com.android.tools.r8.ir.analysis.inlining.SimpleInliningConstraint;
 import com.android.tools.r8.ir.analysis.type.DynamicType;
@@ -28,6 +29,13 @@ public abstract class MethodOptimizationInfo
     ForceInline,
     Default,
     SingleCallerInlineIntoSyntheticLambdaAccessor
+  }
+
+  public static MethodOptimizationInfo getMethodOptimizationInfoOrDefault(
+      DexClassAndMethod method) {
+    return method != null
+        ? method.getOptimizationInfo()
+        : DefaultMethodOptimizationInfo.getInstance();
   }
 
   public boolean isDefault() {

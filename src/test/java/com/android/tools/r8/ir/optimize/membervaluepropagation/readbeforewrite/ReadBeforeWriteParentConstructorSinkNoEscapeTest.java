@@ -42,9 +42,7 @@ public class ReadBeforeWriteParentConstructorSinkNoEscapeTest extends TestBase {
             inspector -> {
               ClassSubject bClass = inspector.clazz(B.class);
               assertThat(bClass, isPresent());
-              // TODO(b/500327733): Field should have been removed due to interprocedural constant
-              //  propagation.
-              assertEquals(1, bClass.allFields().size());
+              assertEquals(0, bClass.allFields().size());
             })
         .run(parameters.getRuntime(), Main.class)
         .assertSuccessWithOutputLines("Hello, world!");

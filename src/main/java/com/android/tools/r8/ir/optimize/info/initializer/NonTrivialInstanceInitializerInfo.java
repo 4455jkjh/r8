@@ -26,17 +26,23 @@ public final class NonTrivialInstanceInitializerInfo extends InstanceInitializer
   private final int data;
   private final InstanceFieldInitializationInfoCollection fieldInitializationInfos;
   private final AbstractFieldSet readSet;
+  private final AbstractFieldSet readBeforeWriteSet;
+  private final AbstractFieldSet writtenBeforeReadSet;
   private final DexMethod parent;
 
   private NonTrivialInstanceInitializerInfo(
       int data,
       InstanceFieldInitializationInfoCollection fieldInitializationInfos,
       AbstractFieldSet readSet,
+      AbstractFieldSet readBeforeWriteSet,
+      AbstractFieldSet writtenBeforeReadSet,
       DexMethod parent) {
     assert verifyNoUnknownBits(data);
     this.data = data;
     this.fieldInitializationInfos = fieldInitializationInfos;
     this.readSet = readSet;
+    this.readBeforeWriteSet = readBeforeWriteSet;
+    this.writtenBeforeReadSet = writtenBeforeReadSet;
     this.parent = parent;
   }
 
@@ -85,6 +91,16 @@ public final class NonTrivialInstanceInitializerInfo extends InstanceInitializer
   }
 
   @Override
+  public AbstractFieldSet readBeforeWriteSet() {
+    return readBeforeWriteSet;
+  }
+
+  @Override
+  public AbstractFieldSet writtenBeforeReadSet() {
+    return writtenBeforeReadSet;
+  }
+
+  @Override
   public boolean instanceFieldInitializationMayDependOnEnvironment() {
     return (data & INSTANCE_FIELD_INITIALIZATION_INDEPENDENT_OF_ENVIRONMENT) == 0;
   }
@@ -106,6 +122,8 @@ public final class NonTrivialInstanceInitializerInfo extends InstanceInitializer
         data,
         fieldInitializationInfos.fixupAfterParametersChanged(argumentInfoCollection),
         readSet.fixupReadSetAfterParametersChanged(appView, argumentInfoCollection),
+        readBeforeWriteSet,
+        writtenBeforeReadSet,
         parent);
   }
 
@@ -119,6 +137,8 @@ public final class NonTrivialInstanceInitializerInfo extends InstanceInitializer
         data,
         fieldInitializationInfos.rewrittenWithLens(appView, lens, codeLens),
         readSet.rewrittenWithLens(appView, lens, codeLens, prunedItems),
+        readBeforeWriteSet.rewrittenWithLens(appView, lens, codeLens, prunedItems),
+        writtenBeforeReadSet.rewrittenWithLens(appView, lens, codeLens, prunedItems),
         lens.getRenamedMethodSignature(parent, codeLens));
   }
 
@@ -136,6 +156,8 @@ public final class NonTrivialInstanceInitializerInfo extends InstanceInitializer
             | NO_OTHER_SIDE_EFFECTS_THAN_INSTANCE_FIELD_ASSIGNMENTS
             | RECEIVER_NEVER_ESCAPE_OUTSIDE_CONSTRUCTOR_CHAIN;
     private AbstractFieldSet readSet = EmptyFieldSet.getInstance();
+    private AbstractFieldSet readBeforeWriteSet = EmptyFieldSet.getInstance();
+    private AbstractFieldSet writtenBeforeReadSet = EmptyFieldSet.getInstance();
     private DexMethod parent;
 
     public Builder(InstanceFieldInitializationInfoCollection instanceFieldInitializationInfos) {
@@ -146,6 +168,8 @@ public final class NonTrivialInstanceInitializerInfo extends InstanceInitializer
       return instanceFieldInitializationInfos.isEmpty()
           && data == 0
           && readSet.isTop()
+          && readBeforeWriteSet.isTop()
+          && writtenBeforeReadSet.isEmpty()
           && parent == null;
     }
 
@@ -177,11 +201,30 @@ public final class NonTrivialInstanceInitializerInfo extends InstanceInitializer
       return this;
     }
 
+    public Builder setReadBeforeWriteSet(AbstractFieldSet readBeforeWriteSet) {
+      assert this.readBeforeWriteSet.isEmpty();
+      this.readBeforeWriteSet = readBeforeWriteSet;
+      return this;
+    }
+
+    public Builder setWrittenBeforeReadSet(AbstractFieldSet writtenBeforeReadSet) {
+      assert this.writtenBeforeReadSet.isEmpty();
+      this.writtenBeforeReadSet = writtenBeforeReadSet;
+      return this;
+    }
+
     public Builder markAllFieldsAsRead() {
       readSet = UnknownFieldSet.getInstance();
       return this;
     }
 
+    public Builder markAllFieldsAsReadBeforeWrite() {
+      readBeforeWriteSet = UnknownFieldSet.getInstance();
+      return this;
+    }
+
+    // This intentionally doesn't merge the read-before-write and the written-before-read sets.
+    // A separate analysis is responsible for setting these.
     public Builder merge(InstanceInitializerInfo instanceInitializerInfo) {
       markFieldsAsRead(instanceInitializerInfo.readSet());
       if (instanceInitializerInfo.instanceFieldInitializationMayDependOnEnvironment()) {
@@ -234,7 +277,12 @@ public final class NonTrivialInstanceInitializerInfo extends InstanceInitializer
       return isTrivial()
           ? DefaultInstanceInitializerInfo.getInstance()
           : new NonTrivialInstanceInitializerInfo(
-              data, instanceFieldInitializationInfos, readSet, parent);
+              data,
+              instanceFieldInitializationInfos,
+              readSet,
+              readBeforeWriteSet,
+              writtenBeforeReadSet,
+              parent);
     }
   }
 }
