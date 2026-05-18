@@ -9,7 +9,6 @@ import com.android.tools.r8.ir.desugar.desugaredlibrary.lint.DesugaredMethodsLis
 import com.android.tools.r8.keepanno.annotations.KeepForApi;
 import com.android.tools.r8.origin.Origin;
 import com.android.tools.r8.utils.ExceptionUtils;
-import com.android.tools.r8.utils.internal.StringUtils;
 
 /**
  * Tool to extract the list of methods which is backported by the D8 and R8 compilers.
@@ -48,22 +47,13 @@ import com.android.tools.r8.utils.internal.StringUtils;
 @KeepForApi
 public class BackportedMethodList {
 
-  static final String USAGE_MESSAGE =
-      StringUtils.joinLines(
-          "Usage: BackportedMethodList [options]",
-          " Options are:",
-          "  --output <file>          # Output result in <file>.",
-          "  --min-api <number>       # Minimum Android API level for the application",
-          "  --desugared-lib <file>   # Desugared library configuration (JSON from the",
-          "                           # configuration)",
-          "  --lib <file>             # The compilation SDK library (android.jar)",
-          "  --android-platform-build # Compilation of platform code",
-          "  --version                # Print the version of BackportedMethodList.",
-          "  --help                   # Print this message.");
+  static String usageMessage() {
+    return BackportedMethodListCommand.usageMessage();
+  }
 
   public static void run(BackportedMethodListCommand command) throws CompilationFailedException {
     if (command.isPrintHelp()) {
-      System.out.println(USAGE_MESSAGE);
+      System.out.println(usageMessage());
       return;
     }
     if (command.isPrintVersion()) {
