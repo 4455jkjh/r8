@@ -534,7 +534,7 @@ public class KotlinMetadataWriter {
               sb,
               Objects.toString(syntheticMethodForAnnotations));
           JvmMethodSignature syntheticMethodForDelegate =
-              JvmExtensionsKt.getSyntheticMethodForAnnotations(kmProperty);
+              JvmExtensionsKt.getSyntheticMethodForDelegate(kmProperty);
           appendKeyValue(
               newIndent,
               "syntheticMethodForDelegate",
