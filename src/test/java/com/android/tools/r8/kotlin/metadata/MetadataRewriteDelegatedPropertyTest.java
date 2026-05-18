@@ -15,7 +15,6 @@ import com.android.tools.r8.KotlinCompilerTool.KotlinCompilerVersion;
 import com.android.tools.r8.KotlinTestParameters;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.ToolHelper.ProcessResult;
-import com.android.tools.r8.kotlin.KotlinMetadataWriter;
 import com.android.tools.r8.shaking.ProguardKeepAttributes;
 import com.android.tools.r8.utils.DescriptorUtils;
 import com.android.tools.r8.utils.codeinspector.ClassSubject;
@@ -23,6 +22,10 @@ import com.android.tools.r8.utils.codeinspector.CodeInspector;
 import com.android.tools.r8.utils.internal.StringUtils;
 import java.nio.file.Path;
 import java.util.Collection;
+import kotlin.metadata.KmClass;
+import kotlin.metadata.KmProperty;
+import kotlin.metadata.jvm.JvmExtensionsKt;
+import kotlin.metadata.jvm.JvmMethodSignature;
 import kotlin.metadata.jvm.KotlinClassMetadata;
 import org.junit.Assert;
 import org.junit.Test;
@@ -147,7 +150,18 @@ public class MetadataRewriteDelegatedPropertyTest extends KotlinMetadataTestBase
     assertThat(clazz, isPresent());
     KotlinClassMetadata kotlinClassMetadata = clazz.getKotlinClassMetadata();
     Assert.assertNotNull(kotlinClassMetadata);
-    String metadataAsString = KotlinMetadataWriter.kotlinMetadataToString("", kotlinClassMetadata);
-    assertThat(metadataAsString, containsString("syntheticMethodForDelegate:"));
+    Assert.assertTrue(kotlinClassMetadata instanceof KotlinClassMetadata.Class);
+    KmClass kmClass = ((KotlinClassMetadata.Class) kotlinClassMetadata).getKmClass();
+    KmProperty property =
+        kmClass.getProperties().stream()
+            .filter(p -> p.getName().equals("oldName"))
+            .findFirst()
+            .orElse(null);
+    Assert.assertNotNull(property);
+    JvmMethodSignature delegateSignature = JvmExtensionsKt.getSyntheticMethodForDelegate(property);
+    Assert.assertNotNull(delegateSignature);
+    Assert.assertEquals(
+        "getOldName$delegate(Lcom/android/tools/r8/kotlin/metadata/delegated_property_lib/MyDelegatedProperty;)Ljava/lang/Object;",
+        delegateSignature.toString());
   }
 }

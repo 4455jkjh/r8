@@ -45,5 +45,6 @@ public interface KotlinPropertyInfo extends KotlinFieldLevelInfo, KotlinMethodLe
       DexEncodedMethod getter,
       DexEncodedMethod setter,
       DexEncodedMethod syntheticMethodForAnnotationsMethod,
+      DexEncodedMethod syntheticMethodForDelegateMethod,
       AppView<?> appView);
 }

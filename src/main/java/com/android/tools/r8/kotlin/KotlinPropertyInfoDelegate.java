@@ -34,6 +34,7 @@ public class KotlinPropertyInfoDelegate implements KotlinPropertyInfo {
     SETTER,
     GETTER,
     SYNTHETIC_METHOD_FOR_ANNOTATIONS,
+    SYNTHETIC_METHOD_FOR_DELEGATE,
     UNKNOWN
   }
 
@@ -64,9 +65,16 @@ public class KotlinPropertyInfoDelegate implements KotlinPropertyInfo {
       DexEncodedMethod getter,
       DexEncodedMethod setter,
       DexEncodedMethod syntheticMethodForAnnotationsMethod,
+      DexEncodedMethod syntheticMethodForDelegateMethod,
       AppView<?> appView) {
     return delegate.rewrite(
-        consumer, field, getter, setter, syntheticMethodForAnnotationsMethod, appView);
+        consumer,
+        field,
+        getter,
+        setter,
+        syntheticMethodForAnnotationsMethod,
+        syntheticMethodForDelegateMethod,
+        appView);
   }
 
   @Override
