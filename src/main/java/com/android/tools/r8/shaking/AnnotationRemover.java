@@ -32,8 +32,10 @@ import com.android.tools.r8.shaking.Enqueuer.Mode;
 import com.android.tools.r8.utils.ArrayUtils;
 import com.android.tools.r8.utils.InternalOptions;
 import com.android.tools.r8.utils.ThreadUtils;
+import com.android.tools.r8.utils.SetUtils;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Sets;
+import java.util.Collections;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -478,7 +480,8 @@ public class AnnotationRemover {
      * The set of annotations that were matched by a conditional if rule. These are needed for the
      * interpretation of if rules in the second round of tree shaking.
      */
-    private final Set<DexAnnotation> annotationsToRetain = Sets.newIdentityHashSet();
+    private final Set<DexAnnotation> annotationsToRetain =
+        Collections.synchronizedSet(Sets.newIdentityHashSet());
 
     private final Mode mode;
 
@@ -495,7 +498,7 @@ public class AnnotationRemover {
     }
 
     public AnnotationRemover build(AppView<AppInfoWithLiveness> appView) {
-      return new AnnotationRemover(appView, annotationsToRetain, mode);
+      return new AnnotationRemover(appView, SetUtils.newIdentityHashSet(annotationsToRetain), mode);
     }
   }
 }
