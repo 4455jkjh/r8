@@ -113,7 +113,7 @@ public class ConcreteKotlinPropertyInfo implements KotlinPropertyInfo {
 
   @Override
   public boolean rewriteNoBacking(Consumer<KmProperty> consumer, AppView<?> appView) {
-    return rewrite(consumer, null, null, null, null, appView);
+    return rewrite(consumer, null, null, null, null, null, appView);
   }
 
   @Override
@@ -123,6 +123,7 @@ public class ConcreteKotlinPropertyInfo implements KotlinPropertyInfo {
       DexEncodedMethod getter,
       DexEncodedMethod setter,
       DexEncodedMethod syntheticMethodForAnnotationsMethod,
+      DexEncodedMethod syntheticMethodForDelegateMethod,
       AppView<?> appView) {
     KmProperty rewrittenKmProperty = new KmProperty(kmProperty.getName());
     consumer.accept(rewrittenKmProperty);
@@ -190,13 +191,14 @@ public class ConcreteKotlinPropertyInfo implements KotlinPropertyInfo {
               syntheticMethodForAnnotationsMethod,
               appView);
     }
-    rewritten |=
-        rewriteIfNotNull(
-            appView,
-            syntheticMethodForDelegate,
-            newMethod ->
-                JvmExtensionsKt.setSyntheticMethodForDelegate(rewrittenKmProperty, newMethod),
-            KotlinJvmMethodSignatureInfo::rewriteNoBacking);
+    if (syntheticMethodForDelegate != null) {
+      rewritten |=
+          syntheticMethodForDelegate.rewrite(
+              newSignature ->
+                  JvmExtensionsKt.setSyntheticMethodForDelegate(rewrittenKmProperty, newSignature),
+              syntheticMethodForDelegateMethod,
+              appView);
+    }
     return rewritten;
   }
 
