@@ -145,7 +145,7 @@ public class MetadataRewriteDelegatedPropertyTest extends KotlinMetadataTestBase
                 : "reference to the synthetic extension property"));
   }
 
-  private void inspectMetadata(CodeInspector inspector) {
+  private void inspectMetadata(CodeInspector inspector) throws Exception {
     ClassSubject clazz = inspector.clazz(PKG_LIB + ".MyDelegatedProperty");
     assertThat(clazz, isPresent());
     KotlinClassMetadata kotlinClassMetadata = clazz.getKotlinClassMetadata();
@@ -159,9 +159,29 @@ public class MetadataRewriteDelegatedPropertyTest extends KotlinMetadataTestBase
             .orElse(null);
     Assert.assertNotNull(property);
     JvmMethodSignature delegateSignature = JvmExtensionsKt.getSyntheticMethodForDelegate(property);
-    Assert.assertNotNull(delegateSignature);
-    Assert.assertEquals(
-        "getOldName$delegate(Lcom/android/tools/r8/kotlin/metadata/delegated_property_lib/MyDelegatedProperty;)Ljava/lang/Object;",
-        delegateSignature.toString());
+
+    // Read from original jar to dynamically determine if delegate signature is expected
+    JvmMethodSignature originalSignature = null;
+    Path libJar = libJars.getForConfiguration(kotlinParameters);
+    CodeInspector libInspector = new CodeInspector(libJar);
+    ClassSubject libClazz = libInspector.clazz(PKG_LIB + ".MyDelegatedProperty");
+    KotlinClassMetadata libMetadata = libClazz.getKotlinClassMetadata();
+    KmClass libKmClass = ((KotlinClassMetadata.Class) libMetadata).getKmClass();
+    KmProperty libProperty =
+        libKmClass.getProperties().stream()
+            .filter(p -> p.getName().equals("oldName"))
+            .findFirst()
+            .orElse(null);
+    Assert.assertNotNull(libProperty);
+    originalSignature = JvmExtensionsKt.getSyntheticMethodForDelegate(libProperty);
+
+    // The rewritten metadata should have the delegate signature if and only if the original had it
+    Assert.assertEquals(originalSignature == null, delegateSignature == null);
+
+    if (originalSignature != null) {
+      Assert.assertEquals(
+          "getOldName$delegate(Lcom/android/tools/r8/kotlin/metadata/delegated_property_lib/MyDelegatedProperty;)Ljava/lang/Object;",
+          delegateSignature.toString());
+    }
   }
 }
