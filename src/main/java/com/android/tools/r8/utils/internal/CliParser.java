@@ -202,15 +202,19 @@ public class CliParser<B> {
 
   private boolean assertValidOptionName(String name) {
     assert name.startsWith("--") : name + " does not start with --";
-    assert name.length() > 2 && name.charAt(2) != '-' : name + " must not have third '-'";
+    assert name.length() > 2 : name + " is an empty name";
+    assert name.charAt(2) != '-' : name + " has a third '-'";
     assert !name.contains("=") : name + " contains '='";
     return true;
   }
 
   private boolean assertValidShorthand(String shorthand) {
     assert shorthand.startsWith("-") : shorthand + " does not start with -";
-    assert shorthand.length() > 1 && shorthand.charAt(1) != '-'
-        : shorthand + " must not have second '-'";
+    assert shorthand.length() > 1 : shorthand + " is an empty name";
+    if (shorthand.charAt(1) == '-') {
+      assert shorthand.length() > 2 : shorthand + " is an empty name";
+      assert shorthand.charAt(2) != '-' : shorthand + " has a third '-'";
+    }
     assert !shorthand.contains("=") : shorthand + " contains '='";
     return true;
   }

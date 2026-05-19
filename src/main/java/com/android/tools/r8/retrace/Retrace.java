@@ -9,8 +9,6 @@ import static com.android.tools.r8.utils.ExceptionUtils.failWithFakeEntry;
 import com.android.tools.r8.Diagnostic;
 import com.android.tools.r8.DiagnosticsHandler;
 import com.android.tools.r8.ParseFlagInfo;
-import com.android.tools.r8.ParseFlagInfoImpl;
-import com.android.tools.r8.ParseFlagPrinter;
 import com.android.tools.r8.Version;
 import com.android.tools.r8.keepanno.annotations.KeepForApi;
 import com.android.tools.r8.retrace.internal.RetraceAbortException;
@@ -21,12 +19,9 @@ import com.android.tools.r8.utils.ExceptionDiagnostic;
 import com.android.tools.r8.utils.InternalOptions;
 import com.android.tools.r8.utils.PartitionMapZipContainer;
 import com.android.tools.r8.utils.StringDiagnostic;
-import com.android.tools.r8.utils.internal.OptionsParsing;
-import com.android.tools.r8.utils.internal.OptionsParsing.ParseContext;
-import com.android.tools.r8.utils.internal.StringUtils;
+import com.android.tools.r8.utils.internal.CliParser;
 import com.android.tools.r8.utils.timing.Timing;
 import com.google.common.base.Charsets;
-import com.google.common.collect.ImmutableList;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintStream;
@@ -35,7 +30,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Scanner;
 
@@ -48,103 +42,115 @@ import java.util.Scanner;
 @KeepForApi
 public class Retrace<T, ST extends StackTraceElementProxy<T, ST>> extends RetraceBase<T, ST> {
 
-  private static final String USAGE_MESSAGE =
-      StringUtils.lines(
-          "Usage: retrace [options] <proguard-map> [stack-trace-file] "
-              + "where <proguard-map> is a generated mapping file and options are:");
-
   public static List<ParseFlagInfo> getFlags() {
-    return ImmutableList.<ParseFlagInfo>builder()
-        .add(
-            ParseFlagInfoImpl.flag1(
-                "--regex", "<regexp>", "Regular expression for parsing stack-trace-file as lines"))
-        .add(ParseFlagInfoImpl.flag0("--verbose", "Get verbose retraced output"))
-        .add(ParseFlagInfoImpl.flag0("--info", "Write information messages to stdout"))
-        .add(ParseFlagInfoImpl.flag0("--quiet", "Silence ordinary messages printed to stdout"))
-        .add(ParseFlagInfoImpl.flag0("--verify-mapping-file-hash", "Verify the mapping file hash"))
-        .add(ParseFlagInfoImpl.getHelp())
-        .build();
+    return createParser().getFlagInfos();
+  }
+
+  private static class ParserState {
+
+    final RetraceCommand.Builder builder;
+    final DiagnosticsHandler diagnosticsHandler;
+    boolean hasSetQuiet = false;
+    boolean hasSetStackTrace = false;
+    boolean hasSetProguardMap = false;
+    boolean printHelp = false;
+    boolean printVersion = false;
+
+    public ParserState(RetraceCommand.Builder builder, DiagnosticsHandler diagnosticsHandler) {
+      this.builder = builder;
+      this.diagnosticsHandler = diagnosticsHandler;
+    }
+  }
+
+  private static CliParser<ParserState> createParser() {
+    String header =
+        "Usage: retrace [options] <proguard-map> [stack-trace-file] "
+            + "where <proguard-map> is a generated mapping file and options are:";
+    var parser = new CliParser<ParserState>(header);
+    return parser
+        .option1(
+            "--regex",
+            "<regexp>",
+            "Regular expression for parsing stack-trace-file as lines",
+            (b, arg) -> {
+              if (arg.isEmpty()) {
+                b.diagnosticsHandler.error(new StringDiagnostic("Empty argument for --regex"));
+              } else {
+                b.builder.setRegularExpression(arg);
+              }
+            },
+            "--r")
+        .option0("--verbose", "Get verbose retraced output", b -> b.builder.setVerbose(true))
+        .option0(
+            "--info",
+            "Write information messages to stdout",
+            b -> {
+              /* This is already set in the diagnostics handler. */
+            })
+        .option0(
+            "--quiet", "Silence ordinary messages printed to stdout", b -> b.hasSetQuiet = true)
+        .option0(
+            "--verify-mapping-file-hash",
+            "Verify the mapping file hash",
+            b -> {
+              b.builder.setVerifyMappingFileHash(true);
+              b.hasSetStackTrace = true;
+            })
+        .option1(
+            "--partition-map",
+            "<file>",
+            "Partition map to use",
+            (b, arg) -> {
+              if (arg.isEmpty()) {
+                b.diagnosticsHandler.error(
+                    new StringDiagnostic("Empty argument for --partition-map"));
+              } else {
+                b.builder.setMappingSupplier(
+                    getPartitionMappingSupplier(arg, b.diagnosticsHandler));
+                b.hasSetProguardMap = true;
+              }
+            },
+            "--p")
+        .option0("--help", "Print this message.", b -> b.printHelp = true, "-h")
+        .option0("--version", "Print the version.", b -> b.printVersion = true)
+        .positional(
+            (b, arg) -> {
+              if (!b.hasSetProguardMap) {
+                b.builder.setMappingSupplier(getMappingSupplier(arg, b.diagnosticsHandler));
+                b.hasSetProguardMap = true;
+              } else if (!b.hasSetStackTrace) {
+                b.builder.setStackTrace(getStackTraceFromFile(arg, b.diagnosticsHandler));
+                b.hasSetStackTrace = true;
+              } else {
+                b.diagnosticsHandler.error(
+                    new StringDiagnostic("Too many arguments specified for builder at " + arg));
+                b.diagnosticsHandler.error(new StringDiagnostic(getUsageMessage()));
+                throw new RetraceAbortException();
+              }
+            });
   }
 
   static String getUsageMessage() {
-    StringBuilder builder = new StringBuilder();
-    StringUtils.appendLines(builder, USAGE_MESSAGE);
-    new ParseFlagPrinter().addFlags(getFlags()).appendLinesToBuilder(builder);
-    return builder.toString();
+    return createParser().getUsageMessage();
   }
 
-  private static RetraceCommand.Builder parseArguments(
-      String[] args, DiagnosticsHandler diagnosticsHandler) {
-    ParseContext context = new ParseContext(args);
+  private static ParserState parseArguments(String[] args, DiagnosticsHandler diagnosticsHandler) {
     RetraceCommand.Builder builder = RetraceCommand.builder(diagnosticsHandler);
-    boolean hasSetProguardMap = false;
-    boolean hasSetStackTrace = false;
-    boolean hasSetQuiet = false;
-    while (context.head() != null) {
-      Boolean help = OptionsParsing.tryParseBoolean(context, "--help");
-      if (help != null) {
-        return null;
-      }
-      Boolean version = OptionsParsing.tryParseBoolean(context, "--version");
-      if (version != null) {
-        return null;
-      }
-      Boolean info = OptionsParsing.tryParseBoolean(context, "--info");
-      if (info != null) {
-        // This is already set in the diagnostics handler.
-        continue;
-      }
-      Boolean verbose = OptionsParsing.tryParseBoolean(context, "--verbose");
-      if (verbose != null) {
-        builder.setVerbose(true);
-        continue;
-      }
-      Boolean quiet = OptionsParsing.tryParseBoolean(context, "--quiet");
-      if (quiet != null) {
-        hasSetQuiet = true;
-        continue;
-      }
-      String regex = OptionsParsing.tryParseSingle(context, "--regex", "--r");
-      if (regex != null && !regex.isEmpty()) {
-        builder.setRegularExpression(regex);
-        continue;
-      }
-      Boolean verify = OptionsParsing.tryParseBoolean(context, "--verify-mapping-file-hash");
-      if (verify != null) {
-        builder.setVerifyMappingFileHash(true);
-        hasSetStackTrace = true;
-        continue;
-      }
-      String partitionMap = OptionsParsing.tryParseSingle(context, "--partition-map", "--p");
-      if (partitionMap != null && !partitionMap.isEmpty()) {
-        builder.setMappingSupplier(getPartitionMappingSupplier(partitionMap, diagnosticsHandler));
-        hasSetProguardMap = true;
-        continue;
-      }
-      if (!hasSetProguardMap) {
-        builder.setMappingSupplier(getMappingSupplier(context.head(), diagnosticsHandler));
-        context.next();
-        hasSetProguardMap = true;
-      } else if (!hasSetStackTrace) {
-        builder.setStackTrace(getStackTraceFromFile(context.head(), diagnosticsHandler));
-        context.next();
-        hasSetStackTrace = true;
-      } else {
-        diagnosticsHandler.error(
-            new StringDiagnostic(
-                String.format("Too many arguments specified for builder at '%s'", context.head())));
-        diagnosticsHandler.error(new StringDiagnostic(getUsageMessage()));
-        throw new RetraceAbortException();
-      }
+    ParserState state = new ParserState(builder, diagnosticsHandler);
+    createParser().parse(args, state, err -> diagnosticsHandler.error(new StringDiagnostic(err)));
+
+    if (state.printHelp || state.printVersion) {
+      return state;
     }
-    if (!hasSetProguardMap) {
+
+    if (!state.hasSetProguardMap) {
       diagnosticsHandler.error(new StringDiagnostic("Mapping file not specified"));
       throw new RetraceAbortException();
     }
-    if (!hasSetStackTrace) {
-      builder.setStackTrace(getStackTraceFromStandardInput(hasSetQuiet));
+    if (!state.hasSetStackTrace) {
+      builder.setStackTrace(getStackTraceFromStandardInput(state.hasSetQuiet));
     }
-    return builder;
+    return state;
   }
 
   private static MappingSupplier<?> getPartitionMappingSupplier(
@@ -364,18 +370,17 @@ public class Retrace<T, ST extends StackTraceElementProxy<T, ST>> extends Retrac
   }
 
   private static void run(String[] args, DiagnosticsHandler diagnosticsHandler) {
-    RetraceCommand.Builder builder = parseArguments(args, diagnosticsHandler);
-    if (builder == null) {
-      // --help or --version was an argument to list
-      if (Arrays.asList(args).contains("--version")) {
-        System.out.println("Retrace " + Version.getVersionString());
-        return;
-      }
-      assert Arrays.asList(args).contains("--help");
+    ParserState state = parseArguments(args, diagnosticsHandler);
+    if (state.printHelp) {
       System.out.println("Retrace " + Version.getVersionString());
       System.out.print(getUsageMessage());
       return;
     }
+    if (state.printVersion) {
+      System.out.println("Retrace " + Version.getVersionString());
+      return;
+    }
+    RetraceCommand.Builder builder = state.builder;
     builder.setRetracedStackTraceConsumer(
         retraced -> {
           try (PrintStream printStream = new PrintStream(System.out, true, Charsets.UTF_8.name())) {

@@ -276,7 +276,7 @@ public class RetraceCommandLineTests extends TestBase {
       String mapping, String stackTrace, boolean stacktraceStdIn, String expected, String... args)
       throws IOException {
     ProcessResult result = runRetrace(mapping, stackTrace, stacktraceStdIn, args);
-    assertEquals(0, result.exitCode);
+    assertEquals("Stderr: " + result.stderr, 0, result.exitCode);
     String stdOut = result.stdout;
     if (stacktraceStdIn) {
       assertTrue(result.stdout.startsWith(WAITING_MESSAGE));
@@ -371,6 +371,7 @@ public class RetraceCommandLineTests extends TestBase {
         strArgs = args.toArray(strArgs);
         mainEntryPointInternal.accept(strArgs);
       } catch (Throwable t) {
+        t.printStackTrace();
         exitCode = 1;
       }
       if (originalIn != null) {
