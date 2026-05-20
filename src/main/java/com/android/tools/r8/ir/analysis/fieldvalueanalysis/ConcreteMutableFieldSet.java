@@ -24,11 +24,15 @@ public class ConcreteMutableFieldSet extends AbstractFieldSet implements KnownFi
   private final Set<DexEncodedField> fields;
 
   public ConcreteMutableFieldSet() {
-    fields = Sets.newIdentityHashSet();
+    this(Sets.newIdentityHashSet());
   }
 
   public ConcreteMutableFieldSet(DexEncodedField field) {
-    fields = SetUtils.newIdentityHashSet(field);
+    this(SetUtils.newIdentityHashSet(field));
+  }
+
+  public ConcreteMutableFieldSet(Set<DexEncodedField> fields) {
+    this.fields = fields;
   }
 
   public void add(DexEncodedField field) {

@@ -135,6 +135,7 @@ public class KotlinMetadataUtils {
     // Custom getter via @set:JvmName("..."). Otherwise, null.
     private final JvmMethodSignature setterSignature;
     private final JvmMethodSignature syntheticMethodForAnnotationsSignature;
+    private final JvmMethodSignature syntheticMethodForDelegateSignature;
 
     KmPropertyProcessor(KmProperty kmProperty) {
       fieldSignature = JvmExtensionsKt.getFieldSignature(kmProperty);
@@ -142,6 +143,8 @@ public class KotlinMetadataUtils {
       setterSignature = JvmExtensionsKt.getSetterSignature(kmProperty);
       syntheticMethodForAnnotationsSignature =
           JvmExtensionsKt.getSyntheticMethodForAnnotations(kmProperty);
+      syntheticMethodForDelegateSignature =
+          JvmExtensionsKt.getSyntheticMethodForDelegate(kmProperty);
     }
 
     JvmFieldSignature fieldSignature() {
@@ -158,6 +161,10 @@ public class KotlinMetadataUtils {
 
     public JvmMethodSignature syntheticMethodForAnnotationsSignature() {
       return syntheticMethodForAnnotationsSignature;
+    }
+
+    public JvmMethodSignature syntheticMethodForDelegateSignature() {
+      return syntheticMethodForDelegateSignature;
     }
   }
 

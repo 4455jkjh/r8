@@ -289,6 +289,10 @@ def ParseOptions():
                         help='Only compile project and tests, do not run tests',
                         default=False,
                         action='store_true')
+    result.add_argument(
+        'filter',
+        nargs='*',
+        help='Test filters. They are additive and support wildcards (e.g., *).')
     options, args = result.parse_known_args()
     if options.java_max_memory_size is None:
         # YouTubeV1719Test OOM's with 4G, so raise xmx to 6G when running internal tests.
@@ -359,7 +363,7 @@ def bot_symlinks():
 
 def Main():
     (options, args) = ParseOptions()
-    return_code = test(options, args)
+    return_code = test(options, options.filter)
     if return_code == 0 and options.land:
         land(options)
     return return_code

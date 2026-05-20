@@ -13,16 +13,18 @@ import com.android.tools.r8.keepanno.annotations.KeepForApi;
 import com.android.tools.r8.origin.Origin;
 import com.android.tools.r8.utils.AndroidApiLevel;
 import com.android.tools.r8.utils.AndroidApp;
+import com.android.tools.r8.utils.CliParserUtils;
 import com.android.tools.r8.utils.Reporter;
 import com.android.tools.r8.utils.StringDiagnostic;
-import com.google.common.collect.ImmutableSet;
+import com.android.tools.r8.utils.internal.BooleanBox;
+import com.android.tools.r8.utils.internal.CliParser;
+import com.android.tools.r8.utils.internal.StringUtils;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
-import java.util.Set;
 
 /**
  * Immutable command structure for an invocation of the {@link BackportedMethodList} tool.
@@ -118,61 +120,59 @@ public class BackportedMethodListCommand {
   }
 
   public static Builder parse(String[] args) {
-    final Set<String> OPTIONS_WITH_PARAMETER =
-        ImmutableSet.of("--output", MIN_API_FLAG, "--desugared-lib", LIB_FLAG);
-
-    boolean hasDefinedApiLevel = false;
     Builder builder = builder();
-    for (int i = 0; i < args.length; i++) {
-      String arg = args[i].trim();
-      String nextArg = null;
-      if (OPTIONS_WITH_PARAMETER.contains(arg)) {
-        if (++i < args.length) {
-          nextArg = args[i];
-        } else {
-          builder.error(new StringDiagnostic("Missing parameter for " + args[i - 1] + "."));
-          break;
-        }
-      }
-      if (arg.equals("--help")) {
-        builder.setPrintHelp(true);
-      } else if (arg.equals("--version")) {
-        builder.setPrintVersion(true);
-      } else if (arg.equals("--android-platform-build")) {
-        builder.setAndroidPlatformBuild(true);
-      } else if (arg.equals(MIN_API_FLAG)) {
-        if (hasDefinedApiLevel) {
-          builder.error(new StringDiagnostic("Cannot set multiple --min-api options"));
-        } else {
-          parseMinApi(builder, nextArg);
-          hasDefinedApiLevel = true;
-        }
-      } else if (arg.equals("--desugared-lib")) {
-        builder.addDesugaredLibraryConfiguration(StringResource.fromFile(Paths.get(nextArg)));
-      } else if (arg.equals(LIB_FLAG)) {
-        builder.addLibraryFiles(Paths.get(nextArg));
-      } else if (arg.equals("--output")) {
-        builder.setOutputPath(Paths.get(nextArg));
-      } else {
-        builder.error(new StringDiagnostic("Unknown option: " + arg));
-      }
-    }
+    createParser().parse(args, builder, err -> builder.error(new StringDiagnostic(err)));
     return builder;
   }
 
-  private static void parseMinApi(Builder builder, String minApiString) {
-    int minApi;
-    try {
-      minApi = Integer.parseInt(minApiString);
-    } catch (NumberFormatException e) {
-      builder.error(new StringDiagnostic("Invalid argument to --min-api: " + minApiString));
-      return;
-    }
-    if (minApi < 1) {
-      builder.error(new StringDiagnostic("Invalid argument to --min-api: " + minApiString));
-      return;
-    }
-    builder.setMinApiLevel(minApi);
+  private static CliParser<Builder> createParser() {
+    BooleanBox hasDefinedApiLevel = new BooleanBox(false);
+    var parser =
+        new CliParser<Builder>(
+            StringUtils.lines("Usage: BackportedMethodList [options]", " Options are:"));
+    parser
+        .option1(
+            "--output",
+            "<file>",
+            "Output result in <file>.",
+            (b, arg) -> b.setOutputPath(Paths.get(arg)))
+        .option1(
+            MIN_API_FLAG,
+            "<number>",
+            "Minimum Android API level for the application.",
+            (b, arg) -> {
+              if (hasDefinedApiLevel.get()) {
+                b.error(new StringDiagnostic("Cannot set multiple --min-api options"));
+              } else {
+                CliParserUtils.parsePositiveInt(
+                    arg,
+                    b::setMinApiLevel,
+                    err -> b.error(new StringDiagnostic("Invalid argument to --min-api: " + err)));
+                hasDefinedApiLevel.set(true);
+              }
+            })
+        .option1(
+            "--desugared-lib",
+            "<file>",
+            "Desugared library configuration (JSON from the configuration).",
+            (b, arg) -> b.addDesugaredLibraryConfiguration(StringResource.fromFile(Paths.get(arg))))
+        .option1(
+            LIB_FLAG,
+            "<file>",
+            "The compilation SDK library (android.jar).",
+            (b, arg) -> b.addLibraryFiles(Paths.get(arg)))
+        .option0(
+            "--android-platform-build",
+            "Compilation of platform code.",
+            b -> b.setAndroidPlatformBuild(true))
+        .option0(
+            "--version", "Print the version of BackportedMethodList.", b -> b.setPrintVersion(true))
+        .option0("--help", "Print this message.", b -> b.setPrintHelp(true), "-h");
+    return parser;
+  }
+
+  public static String usageMessage() {
+    return createParser().getUsageMessage();
   }
 
   @KeepForApi

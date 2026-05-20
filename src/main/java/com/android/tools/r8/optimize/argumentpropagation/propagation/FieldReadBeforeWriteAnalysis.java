@@ -20,6 +20,7 @@ import com.android.tools.r8.ir.code.InstancePut;
 import com.android.tools.r8.ir.code.Instruction;
 import com.android.tools.r8.ir.code.InstructionIterator;
 import com.android.tools.r8.ir.code.StaticPut;
+import com.android.tools.r8.ir.optimize.info.initializer.InstanceInitializerInfo;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
 import com.android.tools.r8.utils.internal.DequeUtils;
 import com.android.tools.r8.utils.internal.LazyBox;
@@ -65,10 +66,25 @@ class FieldReadBeforeWriteAnalysis {
         instancePut = candidate;
       }
     }
-    // TODO(b/296030319): Improve precision using escape analysis for receiver.
-    return instancePut != null
-        && !isFieldMaybeReadBeforeInstructionInInitializer(field, instancePut)
+    if (instancePut == null) {
+      return false;
+    }
+    InstanceInitializerInfo instanceInitializerInfo =
+        context.getOptimizationInfo().getContextInsensitiveInstanceInitializerInfo();
+    return !isFieldMaybeReadBeforeInstructionInInitializer(
+            field, instanceInitializerInfo, instancePut)
         && lazyDominatorTree.computeIfAbsent().dominatesAllOf(instancePut.getBlock(), returnBlocks);
+  }
+
+  private boolean isFieldMaybeReadBeforeInstructionInInitializer(
+      ProgramField field,
+      InstanceInitializerInfo instanceInitializerInfo,
+      InstancePut instancePut) {
+    AbstractFieldSet readBeforeWriteSet = instanceInitializerInfo.readBeforeWriteSet();
+    if (!readBeforeWriteSet.isTop() && !readBeforeWriteSet.contains(field)) {
+      return false;
+    }
+    return isFieldMaybeReadBeforeInstructionInInitializer(field, instancePut);
   }
 
   public boolean isStaticFieldNeverReadBeforeWrite(ProgramField field) {

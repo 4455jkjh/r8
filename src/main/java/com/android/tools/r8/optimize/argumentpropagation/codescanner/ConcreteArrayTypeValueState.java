@@ -47,8 +47,17 @@ public class ConcreteArrayTypeValueState extends ConcreteReferenceTypeValueState
   }
 
   @Override
-  public ValueState cast(AppView<AppInfoWithLiveness> appView, DexType type) {
-    return this;
+  public ValueState cast(
+      AppView<AppInfoWithLiveness> appView, DexType castType, Nullability castNullability) {
+    // For array types we currently only track the nullability, thus `type` is intentionally unused.
+    Nullability meetNullability = this.nullability.meet(castNullability);
+    if (meetNullability.equals(this.nullability)) {
+      return this;
+    }
+    if (meetNullability.isBottom()) {
+      return bottomArrayTypeState();
+    }
+    return new ConcreteArrayTypeValueState(meetNullability, copyInFlow());
   }
 
   @Override

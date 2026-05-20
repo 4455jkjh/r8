@@ -37,42 +37,71 @@ public class CliParser<B> {
   private static class HelpInfo {
 
     final String name;
+    final String shorthand;
     final List<String> paramLabels;
     final String description;
 
-    HelpInfo(String name, List<String> paramLabels, String description) {
+    HelpInfo(String name, String shorthand, List<String> paramLabels, String description) {
+      assert name != null;
+      assert paramLabels != null;
+      assert description != null;
       this.name = name;
+      this.shorthand = shorthand;
       this.paramLabels = paramLabels;
       this.description = description;
     }
   }
 
   /**
-   * @param name must start with {@code -} and must be unique
+   * @param name must start with {@code --} and must be unique
    * @param description must not contains line breaks, it is automatically wrapped
    */
   public CliParser<B> option0(String name, String description, Consumer<B> action) {
-    assert assertThatOptionIsNew(name);
-    assert assertValidName(name);
-    assert assertValidDescription(description);
-    options0.put(name, action);
-    helpInfos.add(new HelpInfo(name, emptyList(), description));
+    addOption0(name, action);
+    addHelp(name, null, emptyList(), description);
     return this;
   }
 
   /**
-   * @param name must start with {@code -} and must be unique
+   * @param name must start with {@code --} and must be unique
+   * @param description must not contains line breaks, it is automatically wrapped
+   * @param shorthand must start with {@code -} and must be unique
+   */
+  public CliParser<B> option0(
+      String name, String description, Consumer<B> action, String shorthand) {
+    addOption0(name, action);
+    addOption0(shorthand, action);
+    addHelp(name, shorthand, emptyList(), description);
+    return this;
+  }
+
+  /**
+   * @param name must start with {@code --} and must be unique
    * @param paramLabel must be surrounded by {@code <} and {@code >}
    * @param description must not contains line breaks, it is automatically wrapped
    */
   public CliParser<B> option1(
       String name, String paramLabel, String description, BiConsumer<B, String> action) {
-    assert assertThatOptionIsNew(name);
-    assert assertValidName(name);
-    assert assertValidParam(paramLabel);
-    assert assertValidDescription(description);
-    options1.put(name, action);
-    helpInfos.add(new HelpInfo(name, ImmutableList.of(paramLabel), description));
+    addOption1(name, action);
+    addHelp(name, null, ImmutableList.of(paramLabel), description);
+    return this;
+  }
+
+  /**
+   * @param name must start with {@code --} and must be unique
+   * @param paramLabel must be surrounded by {@code <} and {@code >}
+   * @param description must not contains line breaks, it is automatically wrapped
+   * @param shorthand must start with {@code -} and must be unique
+   */
+  public CliParser<B> option1(
+      String name,
+      String paramLabel,
+      String description,
+      BiConsumer<B, String> action,
+      String shorthand) {
+    addOption1(name, action);
+    addOption1(shorthand, action);
+    addHelp(name, shorthand, ImmutableList.of(paramLabel), description);
     return this;
   }
 
@@ -96,7 +125,13 @@ public class CliParser<B> {
     List<ParseFlagInfo> flags = new ArrayList<>();
     for (HelpInfo info : helpInfos) {
       List<String> helpLines = StringUtils.wrapToWidth(info.description, descriptionWidth);
-      flags.add(new ParseFlagInfoImpl(null, commandString(info), ImmutableList.of(), helpLines));
+      List<String> alternatives =
+          info.shorthand != null
+              ? ImmutableList.of(commandString(info.shorthand, info.paramLabels))
+              : ImmutableList.of();
+      flags.add(
+          new ParseFlagInfoImpl(
+              null, commandString(info.name, info.paramLabels), alternatives, helpLines));
     }
     return flags;
   }
@@ -112,9 +147,9 @@ public class CliParser<B> {
   }
 
   /** Returns a string like {@code --output <file>} */
-  private static String commandString(HelpInfo info) {
-    var sb = new StringBuilder(info.name);
-    for (var label : info.paramLabels) {
+  private static String commandString(String name, List<String> paramLabels) {
+    var sb = new StringBuilder(name);
+    for (var label : paramLabels) {
       sb.append(' ').append(label);
     }
     return sb.toString();
@@ -165,10 +200,43 @@ public class CliParser<B> {
     return true;
   }
 
-  private boolean assertValidName(String name) {
-    assert name.startsWith("-") : name + " does not start with -";
+  private boolean assertValidOptionName(String name) {
+    assert name.startsWith("--") : name + " does not start with --";
+    assert name.length() > 2 && name.charAt(2) != '-' : name + " must not have third '-'";
     assert !name.contains("=") : name + " contains '='";
     return true;
+  }
+
+  private boolean assertValidShorthand(String shorthand) {
+    assert shorthand.startsWith("-") : shorthand + " does not start with -";
+    assert shorthand.length() > 1 && shorthand.charAt(1) != '-'
+        : shorthand + " must not have second '-'";
+    assert !shorthand.contains("=") : shorthand + " contains '='";
+    return true;
+  }
+
+  private void addOption0(String name, Consumer<B> action) {
+    assert assertThatOptionIsNew(name);
+    options0.put(name, action);
+  }
+
+  private void addOption1(String name, BiConsumer<B, String> action) {
+    assert assertThatOptionIsNew(name);
+    options1.put(name, action);
+  }
+
+  private void addHelp(
+      String name, String shorthand, List<String> paramLabels, String description) {
+    assert assertValidOptionName(name);
+    if (shorthand != null) {
+      assert !name.equals(shorthand) : "Shorthand is the same as the main name: " + name;
+      assert assertValidShorthand(shorthand);
+    }
+    for (String paramLabel : paramLabels) {
+      assert assertValidParam(paramLabel);
+    }
+    assert assertValidDescription(description);
+    helpInfos.add(new HelpInfo(name, shorthand, paramLabels, description));
   }
 
   private boolean assertValidParam(String param) {

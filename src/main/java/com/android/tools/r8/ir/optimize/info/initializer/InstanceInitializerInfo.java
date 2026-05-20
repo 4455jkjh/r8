@@ -40,6 +40,16 @@ public abstract class InstanceInitializerInfo {
   public abstract AbstractFieldSet readSet();
 
   /**
+   * Returns an abstraction of the instance fields on `this` that may be read before they are
+   * written. Note that this includes instance fields declared in subclasses of the current instance
+   * initializer, since the instance initializer may downcast `this` and read these fields.
+   */
+  public abstract AbstractFieldSet readBeforeWriteSet();
+
+  /** Returns the instance fields on `this` that are definitely written before they are read. */
+  public abstract AbstractFieldSet writtenBeforeReadSet();
+
+  /**
    * Returns true if one of the instance fields on the enclosing class may be initialized with a
    * value that may depend on the runtime environment by this constructor.
    *

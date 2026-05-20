@@ -9,6 +9,7 @@ import com.android.tools.r8.graph.DexType;
 import com.android.tools.r8.ir.analysis.type.ClassTypeElement;
 import com.android.tools.r8.ir.analysis.type.DynamicType;
 import com.android.tools.r8.ir.analysis.type.DynamicTypeWithUpperBound;
+import com.android.tools.r8.ir.analysis.type.NotNullDynamicType;
 import com.android.tools.r8.ir.analysis.type.Nullability;
 import com.android.tools.r8.ir.analysis.type.TypeElement;
 import com.android.tools.r8.ir.analysis.value.AbstractValueJoiner;
@@ -22,26 +23,36 @@ public abstract class ConcreteReferenceTypeValueState extends ConcreteValueState
     super(inFlow);
   }
 
-  public abstract ValueState cast(AppView<AppInfoWithLiveness> appView, DexType type);
+  public abstract ValueState cast(
+      AppView<AppInfoWithLiveness> appView, DexType castType, Nullability castNullability);
 
   protected static DynamicType cast(
-      AppView<AppInfoWithLiveness> appView, DexType type, DynamicType dynamicType) {
+      AppView<AppInfoWithLiveness> appView,
+      DexType castType,
+      Nullability castNullability,
+      DynamicType dynamicType) {
     if (dynamicType.isBottom()) {
       return dynamicType;
     }
+    Nullability nullability = dynamicType.getNullability();
+    Nullability meetNullability = nullability.meet(castNullability);
+    if (meetNullability.isBottom()) {
+      return DynamicType.bottom();
+    }
+    if (castType == null) {
+      return narrowNullability(castNullability, dynamicType);
+    }
     if (dynamicType.isNotNullType() || dynamicType.isUnknown()) {
-      Nullability nullability =
-          dynamicType.isNotNullType() ? Nullability.definitelyNotNull() : Nullability.maybeNull();
-      return DynamicType.create(appView, type.toTypeElement(appView, nullability));
+      return DynamicType.create(appView, castType.toTypeElement(appView, meetNullability));
     }
     assert dynamicType.isDynamicTypeWithUpperBound();
     DynamicTypeWithUpperBound dynamicTypeWithUpperBound = dynamicType.asDynamicTypeWithUpperBound();
     // If this is an upcast, then return the more precise type.
-    TypeElement typeElement = type.toTypeElement(appView, dynamicType.getNullability());
+    TypeElement typeElement = castType.toTypeElement(appView, meetNullability);
     if (dynamicTypeWithUpperBound
         .getDynamicUpperBoundType()
-        .lessThanOrEqual(typeElement, appView)) {
-      return dynamicType;
+        .lessThanOrEqualUpToNullability(typeElement, appView)) {
+      return dynamicType.withNullability(meetNullability);
     }
     // Otherwise this is a downcast.
     if (dynamicType.hasDynamicLowerBoundType()) {
@@ -51,16 +62,34 @@ public abstract class ConcreteReferenceTypeValueState extends ConcreteValueState
       // (3) the cast type is unrelated to the bounds.
       // In (2) and (3) the cast always fails unless the in-dynamic type can be null.
       ClassTypeElement lowerBound = dynamicTypeWithUpperBound.getDynamicLowerBoundType();
-      if (typeElement.lessThanOrEqual(dynamicTypeWithUpperBound.getDynamicUpperBoundType(), appView)
-          && lowerBound.lessThanOrEqual(typeElement, appView)) {
+      if (typeElement.lessThanOrEqualUpToNullability(
+              dynamicTypeWithUpperBound.getDynamicUpperBoundType(), appView)
+          && lowerBound.lessThanOrEqualUpToNullability(typeElement, appView)) {
         return DynamicType.create(appView, typeElement, lowerBound);
       } else {
-        return dynamicType.getNullability().isMaybeNull()
-            ? DynamicType.definitelyNull()
-            : DynamicType.bottom();
+        return meetNullability.isMaybeNull() ? DynamicType.definitelyNull() : DynamicType.bottom();
       }
     }
     return DynamicType.create(appView, typeElement);
+  }
+
+  private static DynamicType narrowNullability(
+      Nullability castNullability, DynamicType dynamicType) {
+    Nullability nullability = dynamicType.getNullability();
+    // If the existing nullability is stronger than the cast-nullability, then just return the
+    // dynamic type.
+    if (nullability.lessThanOrEqual(castNullability)) {
+      return dynamicType;
+    }
+    // Otherwise, the cast-nullability is stronger.
+    assert castNullability.isDefinitelyNotNull();
+    assert castNullability.strictlyLessThan(nullability);
+    assert !dynamicType.isNotNullType() : "Cast-nullability should be < nullability";
+    if (dynamicType.isUnknown()) {
+      return NotNullDynamicType.get();
+    }
+    assert dynamicType.isDynamicTypeWithUpperBound();
+    return dynamicType.withNullability(castNullability);
   }
 
   public abstract DynamicType getDynamicType();

@@ -47,6 +47,10 @@ public class ObjectStateNewInstanceAnalysis {
     initializationInfos.forEach(
         appView,
         (field, initializationInfo) -> {
+          // If the instance field is no longer written, then ignore.
+          if (!appView.appInfo().isFieldWritten(field)) {
+            return;
+          }
           // If the instance field is not written only in the instance initializer, then we can't
           // conclude that this field will have a constant value.
           //

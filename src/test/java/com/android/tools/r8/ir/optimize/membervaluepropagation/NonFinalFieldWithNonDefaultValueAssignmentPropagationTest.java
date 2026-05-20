@@ -4,9 +4,10 @@
 
 package com.android.tools.r8.ir.optimize.membervaluepropagation;
 
+import static com.android.tools.r8.utils.codeinspector.Matchers.isAbsent;
 import static com.android.tools.r8.utils.codeinspector.Matchers.isPresent;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 import com.android.tools.r8.NeverClassInline;
 import com.android.tools.r8.NeverInline;
@@ -53,16 +54,14 @@ public class NonFinalFieldWithNonDefaultValueAssignmentPropagationTest extends T
   private void inspect(CodeInspector inspector) {
     ClassSubject testClassSubject = inspector.clazz(TestClass.class);
     assertThat(testClassSubject, isPresent());
-    // TODO(b/147799637): Should be absent.
-    assertThat(testClassSubject.uniqueMethodWithOriginalName("dead"), isPresent());
+    assertThat(testClassSubject.uniqueMethodWithOriginalName("dead"), isAbsent());
 
     ClassSubject configClassSubject = inspector.clazz(Config.class);
     assertThat(configClassSubject, isPresent());
 
     MethodSubject configConstructorSubject = configClassSubject.init();
     assertThat(configConstructorSubject, isPresent());
-    // TODO(b/147799637): Should be true.
-    assertFalse(
+    assertTrue(
         configConstructorSubject.streamInstructions().noneMatch(InstructionSubject::isInstancePut));
   }
 

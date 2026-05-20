@@ -56,6 +56,7 @@ import com.android.tools.r8.graph.DexType;
 import com.android.tools.r8.graph.ProgramMethod;
 import com.android.tools.r8.ir.analysis.DeterminismAnalysis;
 import com.android.tools.r8.ir.analysis.InitializedClassesOnNormalExitAnalysis;
+import com.android.tools.r8.ir.analysis.framework.intraprocedural.DataflowAnalysisResult.SuccessfulDataflowAnalysisResult;
 import com.android.tools.r8.ir.analysis.inlining.SimpleInliningConstraint;
 import com.android.tools.r8.ir.analysis.inlining.SimpleInliningConstraintAnalysis;
 import com.android.tools.r8.ir.analysis.inlining.SimpleInliningConstraintWithDepth;
@@ -98,6 +99,8 @@ import com.android.tools.r8.ir.optimize.info.field.InstanceFieldInitializationIn
 import com.android.tools.r8.ir.optimize.info.initializer.InstanceInitializerInfo;
 import com.android.tools.r8.ir.optimize.info.initializer.InstanceInitializerInfoCollection;
 import com.android.tools.r8.ir.optimize.info.initializer.NonTrivialInstanceInitializerInfo;
+import com.android.tools.r8.ir.optimize.info.initializer.readbeforewrite.ReadBeforeWriteAnalysis;
+import com.android.tools.r8.ir.optimize.info.initializer.readbeforewrite.ReadBeforeWriteAnalysisState;
 import com.android.tools.r8.ir.optimize.typechecks.CheckCastAndInstanceOfMethodSpecialization;
 import com.android.tools.r8.kotlin.Kotlin;
 import com.android.tools.r8.kotlin.Kotlin.Intrinsics;
@@ -105,8 +108,8 @@ import com.android.tools.r8.optimize.argumentpropagation.codescanner.MethodParam
 import com.android.tools.r8.optimize.compose.ComposeUtils;
 import com.android.tools.r8.optimize.compose.ComputationTreeUnopUpdateChangedFlagsNode;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
-import com.android.tools.r8.utils.internal.BooleanUtils;
 import com.android.tools.r8.utils.InternalOptions;
+import com.android.tools.r8.utils.internal.BooleanUtils;
 import com.android.tools.r8.utils.timing.Timing;
 import com.google.common.collect.Sets;
 import java.util.ArrayDeque;
@@ -517,8 +520,34 @@ public class MethodOptimizationInfoCollector {
     if (hasCatchHandler && builder.mayHaveOtherSideEffectsThanInstanceFieldAssignments()) {
       builder.setInstanceFieldInitializationMayDependOnEnvironment();
     }
-
+    computeInstanceFieldsMaybeReadBeforeWrite(code, builder, hasCatchHandler);
     return builder.build();
+  }
+
+  private void computeInstanceFieldsMaybeReadBeforeWrite(
+      IRCode code, NonTrivialInstanceInitializerInfo.Builder builder, boolean hasCatchHandler) {
+    if (hasCatchHandler) {
+      // For now, ignore instance initializers with catch handlers since this means that we don't
+      // need to consider intraprocedural exceptional control flow in the transfer function.
+      builder.markAllFieldsAsReadBeforeWrite();
+      return;
+    }
+    ReadBeforeWriteAnalysis readBeforeWriteAnalysis = new ReadBeforeWriteAnalysis(appView, code);
+    SuccessfulDataflowAnalysisResult<BasicBlock, ReadBeforeWriteAnalysisState> result =
+        readBeforeWriteAnalysis.run(code.entryBlock()).asSuccessfulAnalysisResult();
+    if (result == null) {
+      builder.markAllFieldsAsReadBeforeWrite();
+      return;
+    }
+    List<BasicBlock> normalExitBlocks = code.computeNormalExitBlocks();
+    if (normalExitBlocks.isEmpty()) {
+      // Ignore instance initializers that don't have any normal exits.
+      builder.markAllFieldsAsReadBeforeWrite();
+      return;
+    }
+    ReadBeforeWriteAnalysisState state = result.join(appView, normalExitBlocks);
+    builder.setReadBeforeWriteSet(state.getAbstractReadBeforeWriteSet());
+    builder.setWrittenBeforeReadSet(state.getAbstractWrittenBeforeReadSet());
   }
 
   private static boolean couldBeReceiverValue(

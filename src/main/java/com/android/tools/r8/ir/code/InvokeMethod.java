@@ -37,14 +37,15 @@ import com.android.tools.r8.ir.optimize.inliner.WhyAreYouNotInliningReporter;
 import com.android.tools.r8.ir.optimize.library.LibraryOptimizationInfoCollection;
 import com.android.tools.r8.ir.regalloc.RegisterAllocator;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
-import com.android.tools.r8.utils.internal.BooleanUtils;
 import com.android.tools.r8.utils.collections.ProgramMethodSet;
+import com.android.tools.r8.utils.internal.BooleanUtils;
 import com.android.tools.r8.utils.internal.exceptions.Unreachable;
 import com.android.tools.r8.utils.timing.Timing;
 import com.google.common.collect.ImmutableList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.function.Predicate;
 
 public abstract class InvokeMethod extends Invoke {
 
@@ -79,6 +80,33 @@ public abstract class InvokeMethod extends Invoke {
   }
 
   public abstract Builder<? extends Builder, ? extends InvokeMethod> newBuilder();
+
+  public boolean hasArgumentThatMatches(Predicate<Value> predicate) {
+    return getFirstArgumentThatMatches(predicate) != null;
+  }
+
+  public Value getFirstArgumentThatMatches(Predicate<Value> predicate) {
+    for (Value argument : arguments()) {
+      if (predicate.test(argument)) {
+        return argument;
+      }
+    }
+    return null;
+  }
+
+  public final boolean hasNonReceiverArgumentThatMatches(Predicate<Value> predicate) {
+    return getFirstNonReceiverArgumentThatMatches(predicate) != null;
+  }
+
+  public Value getFirstNonReceiverArgumentThatMatches(Predicate<Value> predicate) {
+    for (int i = getFirstNonReceiverArgumentIndex(); i < arguments().size(); i++) {
+      Value argument = getArgument(i);
+      if (predicate.test(argument)) {
+        return argument;
+      }
+    }
+    return null;
+  }
 
   public Value getFirstNonReceiverArgument() {
     return getArgument(getFirstNonReceiverArgumentIndex());

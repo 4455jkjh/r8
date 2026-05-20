@@ -10,6 +10,7 @@ import com.android.tools.r8.graph.PrunedItems;
 import com.android.tools.r8.graph.lens.GraphLens;
 import com.android.tools.r8.graph.proto.ArgumentInfoCollection;
 import com.android.tools.r8.ir.analysis.fieldvalueanalysis.AbstractFieldSet;
+import com.android.tools.r8.ir.analysis.fieldvalueanalysis.EmptyFieldSet;
 import com.android.tools.r8.ir.analysis.fieldvalueanalysis.UnknownFieldSet;
 import com.android.tools.r8.ir.optimize.info.field.EmptyInstanceFieldInitializationInfoCollection;
 import com.android.tools.r8.ir.optimize.info.field.InstanceFieldInitializationInfoCollection;
@@ -49,6 +50,16 @@ public class DefaultInstanceInitializerInfo extends InstanceInitializerInfo {
   @Override
   public AbstractFieldSet readSet() {
     return UnknownFieldSet.getInstance();
+  }
+
+  @Override
+  public AbstractFieldSet readBeforeWriteSet() {
+    return UnknownFieldSet.getInstance();
+  }
+
+  @Override
+  public AbstractFieldSet writtenBeforeReadSet() {
+    return EmptyFieldSet.getInstance();
   }
 
   @Override

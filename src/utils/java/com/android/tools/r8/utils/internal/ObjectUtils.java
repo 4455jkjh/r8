@@ -71,6 +71,16 @@ public class ObjectUtils {
     return result;
   }
 
+  public static int hashZZLLL(boolean b1, boolean b2, Object o3, Object o4, Object o5) {
+    int result = 1;
+    result = 31 * result + Boolean.hashCode(b1);
+    result = 31 * result + Boolean.hashCode(b2);
+    result = 31 * result + Objects.hashCode(o3);
+    result = 31 * result + Objects.hashCode(o4);
+    result = 31 * result + Objects.hashCode(o5);
+    return result;
+  }
+
   public static int hashZZLLLL(boolean b1, boolean b2, Object o3, Object o4, Object o5, Object o6) {
     int result = 1;
     result = 31 * result + Boolean.hashCode(b1);
