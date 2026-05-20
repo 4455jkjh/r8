@@ -24,6 +24,11 @@ def parse_options(argv):
         description='Instrument the dex files of a given apk to print what is '
         'executed.')
     result.add_argument('--apk', help='Path to the .apk', required=True)
+    result.add_argument('--debug-agent',
+                        '--debug_agent',
+                        action='store_true',
+                        default=False,
+                        help='Enable Java debug agent on port 5005 and suspend compilation')
     result.add_argument('--dex-files',
                         action='append',
                         help='Name of dex files to instrument')
@@ -62,33 +67,17 @@ def instrument_dex_file(dex_file, include_instrumentation_server, options,
         'java', '-cp', utils.R8_JAR,
         '-Dcom.android.tools.r8.instrumentation.tag=R8'
     ]
-    if options.print_boxing_unboxing_callsites:
-        callsites = ':'.join([
-                # Boxing
-                "Ljava/lang/Boolean;->valueOf(Z)Ljava/lang/Boolean;",
-                "Ljava/lang/Byte;->valueOf(B)Ljava/lang/Byte;",
-                "Ljava/lang/Character;->valueOf(C)Ljava/lang/Character;",
-                "Ljava/lang/Double;->valueOf(D)Ljava/lang/Double;",
-                "Ljava/lang/Float;->valueOf(F)Ljava/lang/Float;",
-                "Ljava/lang/Integer;->valueOf(I)Ljava/lang/Integer;",
-                "Ljava/lang/Long;->valueOf(J)Ljava/lang/Long;",
-                "Ljava/lang/Short;->valueOf(S)Ljava/lang/Short;",
-                # Unboxing
-                "Ljava/lang/Boolean;->booleanValue()Z",
-                "Ljava/lang/Byte;->byteValue()B",
-                "Ljava/lang/Character;->charValue()C",
-                "Ljava/lang/Double;->doubleValue()D",
-                "Ljava/lang/Float;->floatValue()F",
-                "Ljava/lang/Integer;->intValue()I",
-                "Ljava/lang/Long;->longValue()J",
-                "Ljava/lang/Short;->shortValue()S"
-            ])
+    if options.debug_agent:
         d8_cmd.append(
-            '-Dcom.android.tools.r8.instrumentation.callsites='
-                + callsites)
+            '-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=*:5005'
+        )
+    if options.print_boxing_unboxing_callsites:
+        d8_cmd.append(
+            '-Dcom.android.tools.r8.instrumentation.boxingunboxingcallsites=1')
     if options.print_executed_classes_and_methods:
         d8_cmd.append(
-            '-Dcom.android.tools.r8.instrumentation.executedclassesandmethods=1')
+            '-Dcom.android.tools.r8.instrumentation.executedclassesandmethods=1'
+        )
     if not include_instrumentation_server:
         # We avoid injecting the InstrumentationServer by specifying it should only
         # be added if foo.bar.Baz is in the program.
