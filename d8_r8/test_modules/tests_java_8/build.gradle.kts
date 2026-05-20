@@ -134,10 +134,6 @@ tasks {
     }
   }
 
-  val sourceSetDependencyTask by registering {
-    dependsOn(":tests_java_9:${getExampleJarsTaskName("examplesJava9")}")
-  }
-
   withType<Test> {
     TestingState.setUpTestingState(this)
     dependsOn(distDepsFiles)
@@ -145,7 +141,6 @@ tasks {
     if (!project.hasProperty("no_internal")) {
       dependsOn(sharedDepsInternalConfig)
     }
-    dependsOn(sourceSetDependencyTask)
     systemProperty(
       "TEST_DATA_LOCATION",
       layout.buildDirectory.dir("classes/java/test").get().toString(),

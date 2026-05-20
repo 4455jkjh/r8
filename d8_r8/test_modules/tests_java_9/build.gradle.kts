@@ -12,7 +12,7 @@ plugins {
 val root = getRoot()
 
 java {
-  sourceSets.test.configure { java.srcDir(root.resolveAll("src", "test", "examplesJava9")) }
+  sourceSets.test.configure { java.srcDir(root.resolveAll("src", "test", "java9")) }
   sourceCompatibility = JavaVersion.VERSION_1_9
   targetCompatibility = JavaVersion.VERSION_1_9
   toolchain { languageVersion = JavaLanguageVersion.of(JvmCompatibility.release) }
@@ -32,9 +32,6 @@ dependencies {
   implementation(project(":testbase", "depsJar"))
 }
 
-// We just need to register the examples jars for it to be referenced by other modules.
-val buildExampleJars = buildExampleJars("examplesJava9")
-
 tasks {
   withType<JavaCompile> { dependsOn(sharedDepsConfig) }
 
@@ -45,21 +42,7 @@ tasks {
     TestingState.setUpTestingState(this)
     systemProperty(
       "TEST_DATA_LOCATION",
-      // This should be
-      //   layout.buildDirectory.dir("classes/java/test").get().toString()
-      // once the use of 'buildExampleJars' above is removed.
-      getRoot().resolveAll("build", "test", "examplesJava9", "classes"),
-    )
-    systemProperty(
-      "TESTBASE_DATA_LOCATION",
-      project(":testbase")
-        .tasks
-        .named<JavaCompile>("compileJava")
-        .get()
-        .outputs
-        .files
-        .asPath
-        .split(File.pathSeparator)[0],
+      layout.buildDirectory.dir("classes/java/test").get().toString(),
     )
   }
 

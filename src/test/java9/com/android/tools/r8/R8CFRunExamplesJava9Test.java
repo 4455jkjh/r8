@@ -53,14 +53,17 @@ public class R8CFRunExamplesJava9Test extends RunExamplesJava9Test<R8Command.Bui
       }
       builder.addLibraryFiles(LibraryFilesHelper.getJdk9LibraryFiles(temp));
       R8Command command =
-          builder.addProgramFiles(inputFile).setOutput(out, OutputMode.ClassFile).build();
+          builder
+              .addProgramFiles(ToolHelper.getClassFilesForTestDirectory(inputFile))
+              .setOutput(out, OutputMode.ClassFile)
+              .build();
       ToolHelper.runR8(command, this::combinedOptionConsumer);
     }
 
     @Override
     void run() throws Throwable {
       String qualifiedMainClass = packageName + "." + mainClass;
-      Path inputFile = getInputJar();
+      Path inputFile = getInputPath();
       Path out = temp.getRoot().toPath().resolve(testName + ZIP_EXTENSION);
 
       build(inputFile, out);

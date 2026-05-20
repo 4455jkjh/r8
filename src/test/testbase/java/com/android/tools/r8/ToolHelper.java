@@ -210,8 +210,6 @@ public class ToolHelper {
   public static final String EXAMPLES_ANDROID_N_BUILD_DIR = THIRD_PARTY_DIR + "examplesAndroidN/";
   public static final String EXAMPLES_ANDROID_O_BUILD_DIR = THIRD_PARTY_DIR + "examplesAndroidO/";
   public static final String EXAMPLES_ANDROID_P_BUILD_DIR = THIRD_PARTY_DIR + "examplesAndroidP/";
-  public static final String TESTS_BUILD_DIR = BUILD_DIR + "test/";
-  public static final String EXAMPLES_JAVA9_BUILD_DIR = TESTS_BUILD_DIR + "examplesJava9/";
   public static final String SMALI_BUILD_DIR = THIRD_PARTY_DIR + "smali/";
   public static final String KEEP_RADIUS_PROTO_DIR = getProjectRoot() + "src/keepradius/proto/";
   public static final String KEEP_RADIUS_SOURCE_DIR = getProjectRoot() + "src/keepradius/java/";

@@ -543,7 +543,6 @@ tasks {
       r8WithRelocatedDepsTask,
       swissArmyKnifeTask,
       assembleR8LibNoDeps,
-      ":tests_java_8:sourceSetDependencyTask",
       rewriteTestBaseForR8LibWithRelocatedDeps,
       unzipRewrittenTests,
       unzipTests,

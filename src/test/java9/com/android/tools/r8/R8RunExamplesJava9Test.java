@@ -41,7 +41,10 @@ public class R8RunExamplesJava9Test extends RunExamplesJava9Test<R8Command.Build
       // TODO(mikaelpeltier) Add new android.jar build from aosp and use it
       builder.addLibraryFiles(ToolHelper.getAndroidJar(AndroidApiLevel.P));
       R8Command command =
-          builder.addProgramFiles(inputFile).setOutput(out, OutputMode.DexIndexed).build();
+          builder
+              .addProgramFiles(ToolHelper.getClassFilesForTestDirectory(inputFile))
+              .setOutput(out, OutputMode.DexIndexed)
+              .build();
       ToolHelper.runR8(command, this::combinedOptionConsumer);
     }
 
