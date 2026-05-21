@@ -41,6 +41,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.IdentityHashMap;
@@ -54,6 +55,19 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 public class R8ResourceShrinkerState {
+
+  public static final Comparator<Resource> RESOURCE_COMPARATOR =
+      (r1, r2) -> {
+        int typeCompare = r1.type.compareTo(r2.type);
+        if (typeCompare != 0) {
+          return typeCompare;
+        }
+        int nameCompare = r1.name.compareTo(r2.name);
+        if (nameCompare != 0) {
+          return nameCompare;
+        }
+        return Integer.compare(r1.value, r2.value);
+      };
 
   private final Function<Exception, RuntimeException> errorHandler;
   private final R8ResourceShrinkerModel r8ResourceShrinkerModel;
@@ -271,15 +285,22 @@ public class R8ResourceShrinkerState {
               featureSplit,
               ResourceTableUtilKt.nullOutEntriesWithIds(resourceTable, resourceIdsToRemove, true));
         });
-    for (Map.Entry<Resource, String> resourceStringEntry : reachabilityMap.entrySet()) {
-      shrinkerDebugReporter.debug(
-          () ->
-              resourceStringEntry.getKey().toString()
-                  + " reachable from "
-                  + resourceStringEntry.getValue());
-    }
-    for (Resource resource : resourcesToRemove) {
-      shrinkerDebugReporter.debug(() -> resource.toString() + " is not reachable.");
+    if (shrinkerDebugReporter.isDebugEnabled()) {
+      List<Map.Entry<Resource, String>> sortedReachability =
+          new ArrayList<>(reachabilityMap.entrySet());
+      sortedReachability.sort(Map.Entry.comparingByKey(RESOURCE_COMPARATOR));
+      for (Map.Entry<Resource, String> resourceStringEntry : sortedReachability) {
+        shrinkerDebugReporter.debug(
+            () ->
+                resourceStringEntry.getKey().toString()
+                    + " reachable from "
+                    + resourceStringEntry.getValue());
+      }
+      List<Resource> sortedResourcesToRemove = new ArrayList<>(resourcesToRemove);
+      sortedResourcesToRemove.sort(RESOURCE_COMPARATOR);
+      for (Resource resource : sortedResourcesToRemove) {
+        shrinkerDebugReporter.debug(() -> resource.toString() + " is not reachable.");
+      }
     }
     return new ShrinkerResult(resEntriesToKeep, shrunkenTables, changedXmlFiles);
   }

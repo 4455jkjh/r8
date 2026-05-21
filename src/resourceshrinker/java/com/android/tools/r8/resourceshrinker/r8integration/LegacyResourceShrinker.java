@@ -217,8 +217,12 @@ public class LegacyResourceShrinker {
             ResourcesUtil.findUnusedResources(
                 model.getResourceStore().getResources(),
                 roots -> {
-                  debugReporter.debug(() -> "The root reachable resources are:");
-                  roots.forEach(root -> debugReporter.debug(() -> " " + root));
+                  if (debugReporter.isDebugEnabled()) {
+                    debugReporter.debug(() -> "The root reachable resources are:");
+                    List<Resource> sortedRoots = new ArrayList<>(roots);
+                    sortedRoots.sort(R8ResourceShrinkerState.RESOURCE_COMPARATOR);
+                    sortedRoots.forEach(root -> debugReporter.debug(() -> " " + root));
+                  }
                 }));
     ImmutableSet.Builder<String> resEntriesToKeepBuilder = new ImmutableSet.Builder<>();
     for (PathAndBytes xmlInput : Iterables.concat(xmlInputs, resFolderInputs)) {
@@ -232,8 +236,12 @@ public class LegacyResourceShrinker {
         }
       }
     }
-    debugReporter.debug(() -> "Unused resources are: ");
-    unusedResources.forEach(unused -> debugReporter.debug(() -> " " + unused));
+    if (debugReporter.isDebugEnabled()) {
+      debugReporter.debug(() -> "Unused resources are: ");
+      List<Resource> sortedUnused = new ArrayList<>(unusedResources);
+      sortedUnused.sort(R8ResourceShrinkerState.RESOURCE_COMPARATOR);
+      sortedUnused.forEach(unused -> debugReporter.debug(() -> " " + unused));
+    }
     List<Integer> resourceIdsToRemove = getResourceIdsToRemove(unusedResources);
     Map<FeatureSplit, ResourceTable> shrunkenTables = new HashMap<>();
     for (Entry<PathAndBytes, FeatureSplit> entry : resourceTables.entrySet()) {

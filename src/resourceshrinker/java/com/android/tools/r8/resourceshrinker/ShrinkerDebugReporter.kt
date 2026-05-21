@@ -24,12 +24,16 @@ public interface ShrinkerDebugReporter : AutoCloseable {
   public fun debug(f: Supplier<String>)
 
   public fun info(f: Supplier<String>)
+
+  public fun isDebugEnabled(): Boolean = true
 }
 
 public object NoDebugReporter : ShrinkerDebugReporter {
   override fun debug(f: Supplier<String>): Unit = Unit
 
   override fun info(f: Supplier<String>): Unit = Unit
+
+  override fun isDebugEnabled(): Boolean = false
 
   override fun close(): Unit = Unit
 }

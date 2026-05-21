@@ -20,6 +20,12 @@ import com.android.SdkConstants.DOT_9PNG
 import com.android.SdkConstants.DOT_PNG
 import com.android.SdkConstants.DOT_XML
 import com.android.aapt.Resources
+import com.android.ide.common.resources.findUnusedResources
+import com.android.ide.common.resources.usage.ResourceStore
+import com.android.ide.common.resources.usage.ResourceUsageModel.Resource
+import com.android.resources.FolderTypeRelationship
+import com.android.resources.ResourceFolderType
+import com.android.resources.ResourceType
 import com.android.tools.r8.resourceshrinker.DummyContent.TINY_9PNG
 import com.android.tools.r8.resourceshrinker.DummyContent.TINY_9PNG_CRC
 import com.android.tools.r8.resourceshrinker.DummyContent.TINY_BINARY_XML
@@ -31,13 +37,8 @@ import com.android.tools.r8.resourceshrinker.DummyContent.TINY_PROTO_XML_CRC
 import com.android.tools.r8.resourceshrinker.gatherer.ResourcesGatherer
 import com.android.tools.r8.resourceshrinker.graph.ResourcesGraphBuilder
 import com.android.tools.r8.resourceshrinker.obfuscation.ObfuscationMappingsRecorder
+import com.android.tools.r8.resourceshrinker.r8integration.R8ResourceShrinkerState
 import com.android.tools.r8.resourceshrinker.usages.ResourceUsageRecorder
-import com.android.ide.common.resources.findUnusedResources
-import com.android.ide.common.resources.usage.ResourceStore
-import com.android.ide.common.resources.usage.ResourceUsageModel.Resource
-import com.android.resources.FolderTypeRelationship
-import com.android.resources.ResourceFolderType
-import com.android.resources.ResourceType
 import com.google.common.io.Files
 import java.io.BufferedOutputStream
 import java.io.File
@@ -90,11 +91,17 @@ private class ResourceShrinkerImpl(
 
     unused =
       findUnusedResources(model.resourceStore.resources) { roots ->
-        debugReporter.debug { "The root reachable resources are:" }
-        debugReporter.debug { roots.joinToString("\n", transform = { " $it" }) }
+        if (debugReporter.isDebugEnabled()) {
+          debugReporter.debug { "The root reachable resources are:" }
+          val sortedRoots = roots.sortedWith(R8ResourceShrinkerState.RESOURCE_COMPARATOR)
+          debugReporter.debug { sortedRoots.joinToString("\n", transform = { " $it" }) }
+        }
       }
-    debugReporter.debug { "Unused resources are: " }
-    debugReporter.debug { unused.joinToString("\n", transform = { " $it" }) }
+    if (debugReporter.isDebugEnabled()) {
+      debugReporter.debug { "Unused resources are: " }
+      val sortedUnused = unused.sortedWith(R8ResourceShrinkerState.RESOURCE_COMPARATOR)
+      debugReporter.debug { sortedUnused.joinToString("\n", transform = { " $it" }) }
+    }
   }
 
   override fun close() {

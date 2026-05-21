@@ -94,6 +94,11 @@ public class ResourceShrinkerUtils {
     }
     return new ShrinkerDebugReporter() {
       @Override
+      public boolean isDebugEnabled() {
+        return true;
+      }
+
+      @Override
       public void debug(Supplier<String> logSupplier) {
         // The default usage of shrinkerdebug in the legacy resource shrinker does not add
         // new lines. Add these to make it consistent with the normal usage of StringConsumer.

@@ -53,6 +53,7 @@ public class R8CommandParser extends BaseCompilerCommandParser<R8Command, R8Comm
           "--main-dex-list",
           "--feature",
           "--android-resources",
+          "--android-resources-usage-log",
           "--main-dex-list-output",
           "--pg-conf",
           "--pg-conf-output",
@@ -109,6 +110,11 @@ public class R8CommandParser extends BaseCompilerCommandParser<R8Command, R8Comm
                 "<output>",
                 "Add android resource input and output to be used in resource shrinking. Both ",
                 "input and output must be specified."))
+        .add(
+            flag1(
+                "--android-resources-usage-log",
+                "<file>",
+                "Write the resource shrinking usage log to <file>."))
         .add(
             flag2(
                 "--feature",
@@ -167,6 +173,8 @@ public class R8CommandParser extends BaseCompilerCommandParser<R8Command, R8Comm
     boolean hasKeepRadiusOutput = false;
     boolean hasDefinedApiLevel = false;
     private boolean includeDataResources = true;
+    boolean hasAndroidResources = false;
+    Path androidResourcesUsageLog = null;
   }
 
   /**
@@ -323,8 +331,9 @@ public class R8CommandParser extends BaseCompilerCommandParser<R8Command, R8Comm
         builder.setAndroidResourceProvider(new ArchiveProtoAndroidResourceProvider(inputPath));
         builder.setAndroidResourceConsumer(
             new ArchiveProtoAndroidResourceConsumer(outputPath, inputPath));
-        // In the CLI we default to optimized resource shrinking.
-        builder.setResourceShrinkerConfiguration(b -> b.enableOptimizedShrinkingWithR8().build());
+        state.hasAndroidResources = true;
+      } else if (arg.equals("--android-resources-usage-log")) {
+        state.androidResourcesUsageLog = Paths.get(nextArg);
       } else if (arg.equals("--feature")) {
         featureSplitConfigCollector.addInputOutput(nextArg, nextNextArg);
       } else if (arg.equals(ISOLATED_SPLITS_FLAG)) {
@@ -431,6 +440,20 @@ public class R8CommandParser extends BaseCompilerCommandParser<R8Command, R8Comm
               throw new UncheckedIOException(e);
             }
           });
+    }
+    if (state.hasAndroidResources) {
+      builder.setResourceShrinkerConfiguration(
+          b -> {
+            b.enableOptimizedShrinkingWithR8();
+            if (state.androidResourcesUsageLog != null) {
+              b.setDebugConsumer(new FileConsumer(state.androidResourcesUsageLog));
+            }
+            return b.build();
+          });
+    } else if (state.androidResourcesUsageLog != null) {
+      builder.error(
+          new StringDiagnostic(
+              "--android-resources-usage-log requires --android-resources to be set.", argsOrigin));
     }
   }
 
