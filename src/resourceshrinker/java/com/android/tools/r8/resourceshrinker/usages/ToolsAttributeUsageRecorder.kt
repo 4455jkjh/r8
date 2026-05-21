@@ -18,38 +18,8 @@ package com.android.tools.r8.resourceshrinker.usages
 
 import com.android.SdkConstants.VALUE_STRICT
 import com.android.tools.r8.resourceshrinker.ResourceShrinkerModel
-import com.android.utils.XmlUtils
-import com.google.common.collect.ImmutableMap
-import com.google.common.collect.ImmutableMap.copyOf
 import java.io.Reader
-import java.nio.file.Files
-import java.nio.file.Path
 import javax.xml.stream.XMLInputFactory
-
-/**
- * Records usages of tools:keep, tools:discard and tools:shrinkMode in resources.
- *
- * <p>This unit requires to analyze resources in raw XML format because as said in <a
- * href="https://developer.android.com/studio/write/tool-attributes>documentation</a> these
- * attributes may appear in any &lt;resources&gt; element and some files that contain such element
- * are not compiled to proto. For example raw and values resources like res/raw/keep.xml,
- * res/values/values.xml etc.
- *
- * @param rawResourcesPath path to folder with resources in raw format.
- */
-public class ToolsAttributeUsageRecorder(private val rawResourcesPath: Path) :
-  ResourceUsageRecorder {
-
-  override fun recordUsages(model: ResourceShrinkerModel) {
-    Files.walk(rawResourcesPath)
-      .filter { it.fileName.toString().endsWith(".xml", ignoreCase = true) }
-      .forEach { processRawXml(it, model) }
-  }
-
-  private fun processRawXml(path: Path, model: ResourceShrinkerModel) {
-    processRawXml(XmlUtils.getUtfReader(path.toFile()), model)
-  }
-}
 
 public fun processRawXml(reader: Reader, model: ResourceShrinkerModel) {
   processResourceToolsAttributes(reader).forEach { key, value ->
@@ -64,7 +34,7 @@ public fun processRawXml(reader: Reader, model: ResourceShrinkerModel) {
   }
 }
 
-private fun processResourceToolsAttributes(utfReader: Reader?): ImmutableMap<String, String> {
+private fun processResourceToolsAttributes(utfReader: Reader?): Map<String, String> {
   val toolsAttributes = mutableMapOf<String, String>()
   utfReader.use { reader: Reader? ->
     val factory = XMLInputFactory.newInstance()
@@ -89,5 +59,5 @@ private fun processResourceToolsAttributes(utfReader: Reader?): ImmutableMap<Str
       }
     }
   }
-  return copyOf(toolsAttributes)
+  return toolsAttributes.toMap()
 }

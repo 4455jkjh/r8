@@ -1,9 +1,9 @@
-// Copyright (c) 2023, the R8 project authors. Please see the AUTHORS file
+// Copyright (c) 2026, the R8 project authors. Please see the AUTHORS file
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
-package com.android.tools.r8.resourceshrinker.r8integration;
+package com.android.tools.r8.resourceshrinker;
 
-import static com.android.tools.r8.resourceshrinker.r8integration.LegacyResourceShrinker.getUtfReader;
+import static com.android.tools.r8.resourceshrinker.usages.LegacyResourceShrinker.getUtfReader;
 
 import com.android.aapt.Resources;
 import com.android.aapt.Resources.ConfigValue;
@@ -22,15 +22,7 @@ import com.android.ide.common.resources.usage.ResourceStore;
 import com.android.ide.common.resources.usage.ResourceUsageModel;
 import com.android.ide.common.resources.usage.ResourceUsageModel.Resource;
 import com.android.resources.ResourceType;
-import com.android.tools.r8.FeatureSplit;
-import com.android.tools.r8.origin.Origin;
-import com.android.tools.r8.origin.PathOrigin;
-import com.android.tools.r8.resourceshrinker.ResourceShrinkerImplKt;
-import com.android.tools.r8.resourceshrinker.ResourceShrinkerModel;
-import com.android.tools.r8.resourceshrinker.ResourceTableUtilKt;
-import com.android.tools.r8.resourceshrinker.ShrinkerDebugReporter;
 import com.android.tools.r8.resourceshrinker.graph.ProtoResourcesGraphBuilder;
-import com.android.tools.r8.resourceshrinker.r8integration.LegacyResourceShrinker.ShrinkerResult;
 import com.android.tools.r8.resourceshrinker.usages.ProtoAndroidManifestUsageRecorderKt;
 import com.android.tools.r8.resourceshrinker.usages.ToolsAttributeUsageRecorderKt;
 import com.google.common.collect.ImmutableSet;
@@ -39,7 +31,6 @@ import it.unimi.dsi.fastutil.ints.IntOpenHashSet;
 import it.unimi.dsi.fastutil.ints.IntSet;
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -54,7 +45,7 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
-public class R8ResourceShrinkerState {
+public class ResourceShrinkerState<T> {
 
   public static final Comparator<Resource> RESOURCE_COMPARATOR =
       (r1, r2) -> {
@@ -78,7 +69,7 @@ public class R8ResourceShrinkerState {
 
   private final List<Supplier<InputStream>> manifestProviders = new ArrayList<>();
   private final Map<String, Supplier<InputStream>> resfileProviders = new HashMap<>();
-  private final Map<FeatureSplit, ResourceTable> resourceTables = new HashMap<>();
+  private final Map<T, ResourceTable> resourceTables = new HashMap<>();
   private final ShrinkerDebugReporter shrinkerDebugReporter;
   private final boolean enableXmlInlining;
   private final boolean enableManifestPruning;
@@ -103,15 +94,15 @@ public class R8ResourceShrinkerState {
 
   @FunctionalInterface
   public interface ClassReferenceCallback {
-    boolean tryClass(String possibleClass, Origin xmlFileOrigin, boolean markAsLive);
+    boolean tryClass(String possibleClass, String xmlFilePath, boolean markAsLive);
   }
 
   @FunctionalInterface
   public interface MethodReferenceCallback {
-    void tryMethod(String methodName, Origin xmlFileOrigin);
+    void tryMethod(String methodName, String xmlFilePath);
   }
 
-  public R8ResourceShrinkerState(
+  public ResourceShrinkerState(
       Function<Exception, RuntimeException> errorHandler,
       ShrinkerDebugReporter shrinkerDebugReporter,
       boolean enableXmlInlining,
@@ -218,7 +209,7 @@ public class R8ResourceShrinkerState {
     this.resfileProviders.put(location, inputStreamSupplier);
   }
 
-  public void addResourceTable(InputStream inputStream, FeatureSplit featureSplit) {
+  public void addResourceTable(InputStream inputStream, T featureSplit) {
     this.resourceTables.put(
         featureSplit, r8ResourceShrinkerModel.instantiateFromResourceTable(inputStream, true));
   }
@@ -268,22 +259,22 @@ public class R8ResourceShrinkerState {
     }
   }
 
-  public ShrinkerResult shrinkModel() throws IOException {
+  public ShrinkerResult<T> shrinkModel() throws IOException {
     updateModelWithManifestReferences();
     updateModelWithKeepXmlReferences();
     ResourceStore resourceStore = r8ResourceShrinkerModel.getResourceStore();
     resourceStore.processToolsAttributes();
     ImmutableSet<String> resEntriesToKeep = getResEntriesToKeep(resourceStore);
     List<Resource> resourcesToRemove = getResourcesToRemove();
-    List<Integer> resourceIdsToRemove =
-        resourcesToRemove.stream().map(r -> r.value).collect(Collectors.toList());
+    List<Integer> resourceIdsToRemove = getResourceIdsToRemove();
 
-    Map<FeatureSplit, ResourceTable> shrunkenTables = new IdentityHashMap<>();
+    Map<T, byte[]> shrunkenTables = new IdentityHashMap<>();
     resourceTables.forEach(
         (featureSplit, resourceTable) -> {
           shrunkenTables.put(
               featureSplit,
-              ResourceTableUtilKt.nullOutEntriesWithIds(resourceTable, resourceIdsToRemove, true));
+              ResourceTableUtilKt.nullOutEntriesWithIds(resourceTable, resourceIdsToRemove, true)
+                  .toByteArray());
         });
     if (shrinkerDebugReporter.isDebugEnabled()) {
       List<Map.Entry<Resource, String>> sortedReachability =
@@ -302,13 +293,19 @@ public class R8ResourceShrinkerState {
         shrinkerDebugReporter.debug(() -> resource.toString() + " is not reachable.");
       }
     }
-    return new ShrinkerResult(resEntriesToKeep, shrunkenTables, changedXmlFiles);
+    return new ShrinkerResult<T>(resEntriesToKeep, shrunkenTables, changedXmlFiles);
+  }
+
+  public List<Integer> getResourceIdsToRemove() {
+    return getResourcesToRemove().stream()
+        .map(resource -> resource.value)
+        .collect(Collectors.toList());
   }
 
   private ImmutableSet<String> getResEntriesToKeep(ResourceStore resourceStore) {
     ImmutableSet.Builder<String> resEntriesToKeep = new ImmutableSet.Builder<>();
     for (String path : Iterables.concat(xmlFileProviders.keySet(), resfileProviders.keySet())) {
-      if (ResourceShrinkerImplKt.isJarPathReachable(resourceStore, path)) {
+      if (ResourceStoreUtilsKt.isJarPathReachable(resourceStore, path)) {
         resEntriesToKeep.add(path);
       }
     }
@@ -419,7 +416,7 @@ public class R8ResourceShrinkerState {
     if (seenNoneClassValues.contains(possibleClass)) {
       return;
     }
-    if (!enqueuerCallback.tryClass(possibleClass, new PathOrigin(Paths.get(xmlName)), true)) {
+    if (!enqueuerCallback.tryClass(possibleClass, xmlName, true)) {
       seenNoneClassValues.add(possibleClass);
     }
   }
@@ -446,7 +443,7 @@ public class R8ResourceShrinkerState {
                 .anyMatch(child -> child.getElement().getName().equals("intent-filter"));
         if (isNotExported && !hasFilters) {
           String fullyQualifiedName = getFullyQualifiedName(manifestPackageName, xmlAttribute);
-          enqueuerCallback.tryClass(fullyQualifiedName, new PathOrigin(Paths.get(xmlName)), false);
+          enqueuerCallback.tryClass(fullyQualifiedName, xmlName, false);
           continue;
         }
       }
@@ -462,7 +459,7 @@ public class R8ResourceShrinkerState {
       }
       if (xmlAttribute.getName().equals("onClick")
           && xmlAttribute.getNamespaceUri().equals("http://schemas.android.com/apk/res/android")) {
-        methodCallback.tryMethod(xmlAttribute.getValue(), new PathOrigin(Paths.get(xmlName)));
+        methodCallback.tryMethod(xmlAttribute.getValue(), xmlName);
       }
     }
     for (XmlNode node : element.getChildList()) {
@@ -658,7 +655,8 @@ public class R8ResourceShrinkerState {
     }
 
     // Similar to instantiation in ProtoResourceTableGatherer, but using an inputstream.
-    ResourceTable instantiateFromResourceTable(InputStream inputStream, boolean includeStyleables) {
+    public ResourceTable instantiateFromResourceTable(
+        InputStream inputStream, boolean includeStyleables) {
       try {
         ResourceTable resourceTable = ResourceTable.parseFrom(inputStream);
         instantiateFromResourceTable(resourceTable, includeStyleables);
@@ -668,7 +666,8 @@ public class R8ResourceShrinkerState {
       }
     }
 
-    void instantiateFromResourceTable(ResourceTable resourceTable, boolean includeStyleables) {
+    public void instantiateFromResourceTable(
+        ResourceTable resourceTable, boolean includeStyleables) {
       ResourceTableUtilKt.entriesSequence(resourceTable)
           .iterator()
           .forEachRemaining(
@@ -716,6 +715,37 @@ public class R8ResourceShrinkerState {
           || prim.hasColorRgb8Value()
           || prim.hasColorArgb4Value()
           || prim.hasColorArgb8Value();
+    }
+  }
+
+  public static class ShrinkerResult<T> {
+    private final Set<String> resFolderEntriesToKeep;
+    private final Map<T, byte[]> resourceTableInProtoFormat;
+    private final Map<String, byte[]> customResourceFileBytes;
+
+    public ShrinkerResult(
+        Set<String> resFolderEntriesToKeep,
+        Map<T, byte[]> resourceTableInProtoFormat,
+        Map<String, byte[]> customResourceFileBytes) {
+      this.resFolderEntriesToKeep = resFolderEntriesToKeep;
+      this.resourceTableInProtoFormat = resourceTableInProtoFormat;
+      this.customResourceFileBytes = customResourceFileBytes;
+    }
+
+    public byte[] getResourceTableInProtoFormat(T featureSplit) {
+      return resourceTableInProtoFormat.get(featureSplit);
+    }
+
+    public Set<String> getResFolderEntriesToKeep() {
+      return resFolderEntriesToKeep;
+    }
+
+    public byte[] getBytesFor(String location) {
+      return customResourceFileBytes.get(location);
+    }
+
+    public boolean hasCustomFileFor(String location) {
+      return customResourceFileBytes.containsKey(location);
     }
   }
 }

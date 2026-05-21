@@ -19,7 +19,7 @@ import com.android.tools.r8.ir.code.Instruction;
 import com.android.tools.r8.ir.code.InstructionListIterator;
 import com.android.tools.r8.ir.code.InvokeMethod;
 import com.android.tools.r8.ir.optimize.AffectedValues;
-import com.android.tools.r8.resourceshrinker.r8integration.R8ResourceShrinkerState;
+import com.android.tools.r8.resourceshrinker.ResourceShrinkerState;
 import com.google.common.collect.Iterables;
 import java.util.IdentityHashMap;
 import java.util.Map;
@@ -134,15 +134,15 @@ abstract class ResourceGetOptimizer extends StatelessLibraryMethodModelCollectio
       assert invoke.inValues().size() == 2;
       Instruction valueDefinition = invoke.getLastArgument().definition;
       if (valueDefinition != null && valueDefinition.isResourceConstNumber()) {
-        R8ResourceShrinkerState.SingleValueResource resourceValue =
+        ResourceShrinkerState.SingleValueResource resourceValue =
             appView
                 .getResourceShrinkerState()
                 .getR8ResourceShrinkerModel()
                 .getSingleValueResourceOrNull(valueDefinition.asResourceConstNumber().getValue());
         if (resourceValue != null) {
-          assert resourceValue instanceof R8ResourceShrinkerState.ColorSingleValueResource;
+          assert resourceValue instanceof ResourceShrinkerState.ColorSingleValueResource;
           instructionIterator.replaceCurrentInstructionWithConstInt(
-              code, ((R8ResourceShrinkerState.ColorSingleValueResource) resourceValue).getValue());
+              code, ((ResourceShrinkerState.ColorSingleValueResource) resourceValue).getValue());
         }
       }
     }
@@ -158,13 +158,13 @@ abstract class ResourceGetOptimizer extends StatelessLibraryMethodModelCollectio
       assert invoke.inValues().size() == 2;
       Instruction valueDefinition = invoke.getLastArgument().definition;
       if (valueDefinition != null && valueDefinition.isResourceConstNumber()) {
-        R8ResourceShrinkerState.SingleValueResource resourceValue =
+        ResourceShrinkerState.SingleValueResource resourceValue =
             appView
                 .getResourceShrinkerState()
                 .getR8ResourceShrinkerModel()
                 .getSingleValueResourceOrNull(valueDefinition.asResourceConstNumber().getValue());
         if (resourceValue != null) {
-          assert resourceValue instanceof R8ResourceShrinkerState.StringSingleValueResource;
+          assert resourceValue instanceof ResourceShrinkerState.StringSingleValueResource;
           DexString value = dexItemFactory.createString(resourceValue.getSingleValueLiteral());
           instructionIterator.replaceCurrentInstructionWithConstString(
               appView, code, value, affectedValues);

@@ -113,3 +113,14 @@ private fun packageIdFromIdentifier(identifier: Int): Int = identifier ushr 24
 private fun typeIdFromIdentifier(identifier: Int): Int = (identifier and 0x00FF0000) shr 16
 
 private fun entryIdFromIdentifier(identifier: Int): Int = (identifier and 0x0000FFFF)
+
+@JvmOverloads
+public fun nullOutEntriesWithIds(
+  resourceTableBytes: ByteArray,
+  ids: List<Int>,
+  pruneResourceNames: Boolean = false,
+): ByteArray {
+  val table = Resources.ResourceTable.parseFrom(resourceTableBytes)
+  val shrunkenTable = table.nullOutEntriesWithIds(ids, pruneResourceNames)
+  return shrunkenTable.toByteArray()
+}

@@ -17,6 +17,7 @@ import static com.android.tools.r8.utils.internal.MapUtils.ignoreKey;
 import static java.util.Collections.emptySet;
 
 import com.android.tools.r8.Diagnostic;
+import com.android.tools.r8.FeatureSplit;
 import com.android.tools.r8.cf.code.CfInstruction;
 import com.android.tools.r8.cf.code.CfInvoke;
 import com.android.tools.r8.contexts.CompilationContext.MethodProcessingContext;
@@ -122,8 +123,9 @@ import com.android.tools.r8.kotlin.KotlinMetadataEnqueuerExtension;
 import com.android.tools.r8.naming.IdentifierNameStringCollection;
 import com.android.tools.r8.optimize.interfaces.analysis.CfOpenClosedInterfacesAnalysis;
 import com.android.tools.r8.origin.Origin;
+import com.android.tools.r8.origin.PathOrigin;
 import com.android.tools.r8.profile.rewriting.ProfileCollectionAdditions;
-import com.android.tools.r8.resourceshrinker.r8integration.R8ResourceShrinkerState;
+import com.android.tools.r8.resourceshrinker.ResourceShrinkerState;
 import com.android.tools.r8.shaking.AnnotationMatchResult.MatchedAnnotation;
 import com.android.tools.r8.shaking.EnqueuerEvent.ClassEnqueuerEvent;
 import com.android.tools.r8.shaking.EnqueuerEvent.InstantiatedClassEnqueuerEvent;
@@ -172,6 +174,7 @@ import com.android.tools.r8.utils.timing.Timing;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
+import java.nio.file.Paths;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -526,7 +529,8 @@ public class Enqueuer {
     this.prunedClasspathTypes = prunedClasspathTypes;
 
     if (options.isOptimizedResourceShrinking()) {
-      R8ResourceShrinkerState resourceShrinkerState = appView.getResourceShrinkerState();
+      ResourceShrinkerState<FeatureSplit> resourceShrinkerState =
+          appView.getResourceShrinkerState();
       resourceShrinkerState.setEnqueuerCallback(this::recordReferenceFromResources);
       resourceShrinkerState.setEnqueuerMethodCallback(this::recordMethodReferenceFromResources);
     }
@@ -693,12 +697,13 @@ public class Enqueuer {
 
   private final Map<DexString, Origin> onClickMethodReferences = new HashMap<>();
 
-  private void recordMethodReferenceFromResources(String method, Origin origin) {
+  private void recordMethodReferenceFromResources(String method, String xmlFilePath) {
+    Origin origin = new PathOrigin(Paths.get(xmlFilePath));
     onClickMethodReferences.put(appView.dexItemFactory().createString(method), origin);
   }
 
   private boolean recordReferenceFromResources(
-      String possibleClass, Origin origin, boolean markAsLive) {
+      String possibleClass, String xmlFilePath, boolean markAsLive) {
     if (!DescriptorUtils.isValidJavaType(possibleClass)) {
       return false;
     }
@@ -715,6 +720,7 @@ public class Enqueuer {
       return false;
     }
 
+    Origin origin = new PathOrigin(Paths.get(xmlFilePath));
     ReflectiveUseFromXml reason = KeepReason.reflectiveUseFromXml(origin);
     ensureClassKeptForResourceLookup(clazz, reason, markAsLive);
 

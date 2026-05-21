@@ -19,22 +19,23 @@ package com.android.tools.r8.resourceshrinker.usages
 import com.android.tools.r8.resourceshrinker.obfuscation.ObfuscatedClasses
 import java.util.function.Predicate
 
-internal object AppCompat {
-    // Known AppCompat classes which use Resources.getIdentifier but should not trigger mode that
-    // tries to find used resources based on collected strings.
-    internal val APP_COMPAT_CLASSES_ALLOWED_FOR_GET_IDENTIFIER = setOf(
-        "android.support.v7.widget.SuggestionsAdapter",
-        "android.support.v7.internal.widget.ResourcesWrapper",
-        "android.support.v7.widget.ResourcesWrapper",
-        "android.support.v7.widget.TintContextWrapper\$TintResources"
+public object AppCompat {
+  // Known AppCompat classes which use Resources.getIdentifier but should not trigger mode that
+  // tries to find used resources based on collected strings.
+  internal val APP_COMPAT_CLASSES_ALLOWED_FOR_GET_IDENTIFIER =
+    setOf(
+      "android.support.v7.widget.SuggestionsAdapter",
+      "android.support.v7.internal.widget.ResourcesWrapper",
+      "android.support.v7.widget.ResourcesWrapper",
+      "android.support.v7.widget.TintContextWrapper\$TintResources",
     )
 
-    internal fun isAppCompatClass(name: String, obfuscation: ObfuscatedClasses): Boolean =
-        APP_COMPAT_CLASSES_ALLOWED_FOR_GET_IDENTIFIER.contains(obfuscation.resolveOriginalClass(name))
+  public fun isAppCompatClass(name: String, obfuscation: ObfuscatedClasses): Boolean =
+    APP_COMPAT_CLASSES_ALLOWED_FOR_GET_IDENTIFIER.contains(obfuscation.resolveOriginalClass(name))
 
-    fun getRequiredClassNamesPredicate(): Predicate<String> {
-        return Predicate {
-                className -> APP_COMPAT_CLASSES_ALLOWED_FOR_GET_IDENTIFIER.contains(className)
-        }
+  public fun getRequiredClassNamesPredicate(): Predicate<String> {
+    return Predicate { className ->
+      APP_COMPAT_CLASSES_ALLOWED_FOR_GET_IDENTIFIER.contains(className)
     }
+  }
 }

@@ -26,14 +26,13 @@ import java.nio.file.Path
  *
  * @param mapping file lines or the mapping file path.
  */
-public class ProguardMappingsRecorder(private val mappingLines: List<String>) :
-  ObfuscationMappingsRecorder {
+public class ProguardMappingsRecorder(private val mappingLines: List<String>) {
 
   private constructor(
     mappingsFile: Path
   ) : this(Files.readAllLines(mappingsFile, StandardCharsets.UTF_8))
 
-  override fun recordObfuscationMappings(model: ResourceShrinkerModel) {
+  public fun recordObfuscationMappings(model: ResourceShrinkerModel) {
     model.obfuscatedClasses = extractObfuscatedResourceClasses()
   }
 
