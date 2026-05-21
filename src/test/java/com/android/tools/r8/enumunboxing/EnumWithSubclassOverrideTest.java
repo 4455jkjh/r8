@@ -49,8 +49,7 @@ public class EnumWithSubclassOverrideTest extends EnumUnboxingTestBase {
         .addEnumUnboxingInspector(inspector -> inspector.assertUnboxed(MyEnum.class))
         .compile()
         .run(parameters.getRuntime(), Main.class)
-        // TODO(b/500074331): Should print "Sub B side effect".
-        .assertSuccessWithOutputLines("Base copy A", "Base copy B");
+        .assertSuccessWithOutputLines("Sub B side effect", "Base copy A", "Base copy B");
   }
 
   static class Main {
