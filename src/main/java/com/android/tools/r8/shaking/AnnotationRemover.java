@@ -135,6 +135,9 @@ public class AnnotationRemover {
             && shouldRetainRetentionAnnotationOnAnnotationClass(annotation, dexItemFactory)) {
           return true;
         }
+        if (isKotlinJvmInlineAnnotationToRetain(appView, annotation, kind, mode)) {
+          return true;
+        }
         return shouldKeepNormalAnnotation(
             annotation, isAnnotationTypeLive, kind, keepInfo, options);
 
@@ -374,6 +377,17 @@ public class AnnotationRemover {
         && annotation
             .getAnnotationType()
             .isIdenticalTo(appView.getComposeReferences().composableType);
+  }
+
+  private static boolean isKotlinJvmInlineAnnotationToRetain(
+      AppView<?> appView, DexAnnotation annotation, AnnotatedKind kind, Mode mode) {
+    // Retain kotlin.jvm.JvmInline annotations until the second round of tree shaking.
+    // This makes it possible to identify which classes are Kotlin value classes during the
+    // compilation.
+    DexType kotlinJvmInlineType = appView.dexItemFactory().kotlinJvmInlineType;
+    return mode.isInitialTreeShaking()
+        && kind.isType()
+        && annotation.getAnnotationType().isIdenticalTo(kotlinJvmInlineType);
   }
 
   private static boolean shouldRetainAnnotationDefaultAnnotationOnAnnotationClass(

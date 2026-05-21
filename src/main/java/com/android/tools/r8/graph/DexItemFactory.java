@@ -666,6 +666,7 @@ public class DexItemFactory {
       createInstanceInitializer(javaUtilNoSuchElementExceptionType);
 
   public final DexType kotlinMetadataType = createStaticallyKnownType(kotlinMetadataDescriptor);
+  public final DexType kotlinJvmInlineType = createStaticallyKnownType("Lkotlin/jvm/JvmInline;");
   public final DexType kotlinJvmNameType = createStaticallyKnownType(kotlinJvmNameDescriptor);
   public final DexType kotlinJvmInternalIntrinsicsType =
       createStaticallyKnownType(kotlinJvmInternalIntrinsicsDescriptor);
