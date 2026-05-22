@@ -1,8 +1,8 @@
-// Copyright (c) 2023, the R8 project authors. Please see the AUTHORS file
+// Copyright (c) 2026, the R8 project authors. Please see the AUTHORS file
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-package com.android.tools.r8.resourceshrinker.r8integration;
+package com.android.tools.r8.resourceshrinker.usages;
 
 import static java.nio.charset.StandardCharsets.UTF_16BE;
 import static java.nio.charset.StandardCharsets.UTF_16LE;
@@ -14,19 +14,14 @@ import com.android.ide.common.resources.ResourcesUtil;
 import com.android.ide.common.resources.usage.ResourceStore;
 import com.android.ide.common.resources.usage.ResourceUsageModel.Resource;
 import com.android.resources.ResourceType;
-import com.android.tools.r8.FeatureSplit;
-import com.android.tools.r8.resourceshrinker.ResourceShrinkerImplKt;
+import com.android.tools.r8.resourceshrinker.ResourceShrinkerState;
+import com.android.tools.r8.resourceshrinker.ResourceShrinkerState.R8ResourceShrinkerModel;
+import com.android.tools.r8.resourceshrinker.ResourceShrinkerState.ShrinkerResult;
+import com.android.tools.r8.resourceshrinker.ResourceStoreUtilsKt;
 import com.android.tools.r8.resourceshrinker.ResourceTableUtilKt;
 import com.android.tools.r8.resourceshrinker.ShrinkerDebugReporter;
 import com.android.tools.r8.resourceshrinker.graph.ProtoResourcesGraphBuilder;
 import com.android.tools.r8.resourceshrinker.obfuscation.ProguardMappingsRecorder;
-import com.android.tools.r8.resourceshrinker.r8integration.R8ResourceShrinkerState.R8ResourceShrinkerModel;
-import com.android.tools.r8.resourceshrinker.usages.AppCompat;
-import com.android.tools.r8.resourceshrinker.usages.DexFileAnalysisCallback;
-import com.android.tools.r8.resourceshrinker.usages.DexUsageRecorderKt;
-import com.android.tools.r8.resourceshrinker.usages.ProtoAndroidManifestUsageRecorderKt;
-import com.android.tools.r8.resourceshrinker.usages.R8ResourceShrinker;
-import com.android.tools.r8.resourceshrinker.usages.ToolsAttributeUsageRecorderKt;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
@@ -44,13 +39,12 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Set;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import javax.xml.parsers.ParserConfigurationException;
 import org.xml.sax.SAXException;
 
-public class LegacyResourceShrinker {
+public class LegacyResourceShrinker<T> {
   private final Map<String, byte[]> dexInputs;
   private final Collection<PathAndBytes> resFolderInputs;
   private final Collection<PathAndBytes> xmlInputs;
@@ -58,9 +52,10 @@ public class LegacyResourceShrinker {
   private List<String> proguardMapStrings;
   private final ShrinkerDebugReporter debugReporter;
   private final List<PathAndBytes> manifest;
-  private final Map<PathAndBytes, FeatureSplit> resourceTables;
+  private final Map<PathAndBytes, T> resourceTables;
+  private final DexAnalyser dexAnalyser;
 
-  public static class Builder {
+  public static class Builder<T> {
 
     private final Map<String, byte[]> dexInputs = new HashMap<>();
     private final Map<String, PathAndBytes> resFolderInputs = new HashMap<>();
@@ -68,33 +63,34 @@ public class LegacyResourceShrinker {
     private final List<byte[]> keepRuleInput = new ArrayList<>();
 
     private final List<PathAndBytes> manifests = new ArrayList<>();
-    private final Map<PathAndBytes, FeatureSplit> resourceTables = new HashMap<>();
+    private final Map<PathAndBytes, T> resourceTables = new HashMap<>();
     private List<String> proguardMapStrings;
     private ShrinkerDebugReporter debugReporter;
+    private DexAnalyser dexAnalyser;
 
     private Builder() {}
 
-    public Builder addManifest(String path, byte[] bytes) {
+    public Builder<T> addManifest(String path, byte[] bytes) {
       manifests.add(new PathAndBytes(bytes, path));
       return this;
     }
 
-    public Builder addResourceTable(String path, byte[] bytes, FeatureSplit featureSplit) {
+    public Builder<T> addResourceTable(String path, byte[] bytes, T featureSplit) {
       resourceTables.put(new PathAndBytes(bytes, path), featureSplit);
       return this;
     }
 
-    public Builder addDexInput(String classesLocation, byte[] bytes) {
+    public Builder<T> addDexInput(String classesLocation, byte[] bytes) {
       dexInputs.put(classesLocation, bytes);
       return this;
     }
 
-    public Builder addKeepRuleInput(byte[] bytes) {
+    public Builder<T> addKeepRuleInput(byte[] bytes) {
       keepRuleInput.add(bytes);
       return this;
     }
 
-    public Builder addResFolderInput(String path, byte[] bytes) {
+    public Builder<T> addResFolderInput(String path, byte[] bytes) {
       PathAndBytes existing = resFolderInputs.get(path);
       if (existing != null) {
         existing.setDuplicated(true);
@@ -104,7 +100,7 @@ public class LegacyResourceShrinker {
       return this;
     }
 
-    public Builder addXmlInput(String path, byte[] bytes) {
+    public Builder<T> addXmlInput(String path, byte[] bytes) {
       PathAndBytes existing = xmlInputs.get(path);
       if (existing != null) {
         existing.setDuplicated(true);
@@ -114,9 +110,14 @@ public class LegacyResourceShrinker {
       return this;
     }
 
-    public LegacyResourceShrinker build() {
-      assert manifests != null && resourceTables != null;
-      return new LegacyResourceShrinker(
+    public Builder<T> setDexAnalyser(DexAnalyser dexAnalyser) {
+      this.dexAnalyser = dexAnalyser;
+      return this;
+    }
+
+    public LegacyResourceShrinker<T> build() {
+      assert manifests != null && resourceTables != null && dexAnalyser != null;
+      return new LegacyResourceShrinker<T>(
           dexInputs,
           resFolderInputs.values(),
           manifests,
@@ -124,14 +125,15 @@ public class LegacyResourceShrinker {
           xmlInputs.values(),
           keepRuleInput,
           proguardMapStrings,
-          debugReporter);
+          debugReporter,
+          dexAnalyser);
     }
 
     public void setProguardMapStrings(List<String> proguardMapStrings) {
       this.proguardMapStrings = proguardMapStrings;
     }
 
-    public Builder setShrinkerDebugReporter(ShrinkerDebugReporter debugReporter) {
+    public Builder<T> setShrinkerDebugReporter(ShrinkerDebugReporter debugReporter) {
       this.debugReporter = debugReporter;
       return this;
     }
@@ -141,11 +143,12 @@ public class LegacyResourceShrinker {
       Map<String, byte[]> dexInputs,
       Collection<PathAndBytes> resFolderInputs,
       List<PathAndBytes> manifests,
-      Map<PathAndBytes, FeatureSplit> resourceTables,
+      Map<PathAndBytes, T> resourceTables,
       Collection<PathAndBytes> xmlInputs,
       List<byte[]> additionalRawXmlInputs,
       List<String> proguardMapStrings,
-      ShrinkerDebugReporter debugReporter) {
+      ShrinkerDebugReporter debugReporter,
+      DexAnalyser dexAnalyser) {
     this.dexInputs = dexInputs;
     this.resFolderInputs = resFolderInputs;
     this.manifest = manifests;
@@ -154,19 +157,20 @@ public class LegacyResourceShrinker {
     this.keepRuleInput = additionalRawXmlInputs;
     this.proguardMapStrings = proguardMapStrings;
     this.debugReporter = debugReporter;
+    this.dexAnalyser = dexAnalyser;
   }
 
-  public static Builder builder() {
-    return new Builder();
+  public static <T> Builder<T> builder() {
+    return new Builder<T>();
   }
 
   public static Predicate<String> classNamesNeededForResourceShrinkingPredicate() {
     return AppCompat.INSTANCE
         .getRequiredClassNamesPredicate()
-        .or(DexUsageRecorderKt.getRequiredClassNamesPredicate());
+        .or(DexUsageRecorder.getRequiredClassNamesPredicate());
   }
 
-  public ShrinkerResult run() throws IOException, ParserConfigurationException, SAXException {
+  public ShrinkerResult<T> run() throws IOException, ParserConfigurationException, SAXException {
     R8ResourceShrinkerModel model = new R8ResourceShrinkerModel(debugReporter, true);
     for (PathAndBytes pathAndBytes : resourceTables.keySet()) {
       ResourceTable loadedResourceTable = ResourceTable.parseFrom(pathAndBytes.bytes);
@@ -179,8 +183,10 @@ public class LegacyResourceShrinker {
     for (Entry<String, byte[]> entry : dexInputs.entrySet()) {
       // The analysis needs an origin for the dex files, synthesize an easy recognizable one.
       Path inMemoryR8 = Paths.get("in_memory_r8_" + entry.getKey());
-      R8ResourceShrinker.runResourceShrinkerAnalysis(
-          entry.getValue(), inMemoryR8, new DexFileAnalysisCallback(inMemoryR8, model));
+      dexAnalyser.analyse(
+          entry.getValue(),
+          inMemoryR8.toString(),
+          new DexUsageRecorder.DexFileAnalysisCallback(inMemoryR8, model));
     }
     for (PathAndBytes pathAndBytes : manifest) {
       ProtoAndroidManifestUsageRecorderKt.recordUsagesFromNode(
@@ -217,39 +223,47 @@ public class LegacyResourceShrinker {
             ResourcesUtil.findUnusedResources(
                 model.getResourceStore().getResources(),
                 roots -> {
-                  debugReporter.debug(() -> "The root reachable resources are:");
-                  roots.forEach(root -> debugReporter.debug(() -> " " + root));
+                  if (debugReporter.isDebugEnabled()) {
+                    debugReporter.debug(() -> "The root reachable resources are:");
+                    List<Resource> sortedRoots = new ArrayList<>(roots);
+                    sortedRoots.sort(ResourceShrinkerState.RESOURCE_COMPARATOR);
+                    sortedRoots.forEach(root -> debugReporter.debug(() -> " " + root));
+                  }
                 }));
     ImmutableSet.Builder<String> resEntriesToKeepBuilder = new ImmutableSet.Builder<>();
     for (PathAndBytes xmlInput : Iterables.concat(xmlInputs, resFolderInputs)) {
-      if (ResourceShrinkerImplKt.isJarPathReachable(resourceStore, xmlInput.path.toString())) {
+      if (ResourceStoreUtilsKt.isJarPathReachable(resourceStore, xmlInput.path.toString())) {
         resEntriesToKeepBuilder.add(xmlInput.path.toString());
         if (xmlInput.duplicated) {
           // Ensure that we don't remove references to duplicated res folder entries.
           List<Resource> duplicatedResources =
-              ResourceShrinkerImplKt.getResourcesFor(resourceStore, xmlInput.path.toString());
+              ResourceStoreUtilsKt.getResourcesFor(resourceStore, xmlInput.path.toString());
           unusedResources.removeAll(duplicatedResources);
         }
       }
     }
-    debugReporter.debug(() -> "Unused resources are: ");
-    unusedResources.forEach(unused -> debugReporter.debug(() -> " " + unused));
-    List<Integer> resourceIdsToRemove = getResourceIdsToRemove(unusedResources);
-    Map<FeatureSplit, ResourceTable> shrunkenTables = new HashMap<>();
-    for (Entry<PathAndBytes, FeatureSplit> entry : resourceTables.entrySet()) {
-      ResourceTable shrunkenResourceTable =
-          ResourceTableUtilKt.nullOutEntriesWithIds(
-              ResourceTable.parseFrom(entry.getKey().bytes), resourceIdsToRemove);
-      shrunkenTables.put(entry.getValue(), shrunkenResourceTable);
+    if (debugReporter.isDebugEnabled()) {
+      debugReporter.debug(() -> "Unused resources are: ");
+      List<Resource> sortedUnused = new ArrayList<>(unusedResources);
+      sortedUnused.sort(ResourceShrinkerState.RESOURCE_COMPARATOR);
+      sortedUnused.forEach(unused -> debugReporter.debug(() -> " " + unused));
     }
-    return new ShrinkerResult(resEntriesToKeepBuilder.build(), shrunkenTables);
+    List<Integer> resourceIdsToRemove = getResourceIdsToRemove(unusedResources);
+    Map<T, byte[]> shrunkenTables = new HashMap<>();
+    for (Entry<PathAndBytes, T> entry : resourceTables.entrySet()) {
+      byte[] shrunkenTableBytes =
+          ResourceTableUtilKt.nullOutEntriesWithIds(entry.getKey().bytes, resourceIdsToRemove);
+      shrunkenTables.put(entry.getValue(), shrunkenTableBytes);
+    }
+    return new ShrinkerResult<T>(
+        resEntriesToKeepBuilder.build(), shrunkenTables, Collections.emptyMap());
   }
 
   private static List<Integer> getResourceIdsToRemove(List<Resource> unusedResources) {
-      return unusedResources.stream()
-          .filter(s -> s.type != ResourceType.ID)
-          .map(resource -> resource.value)
-          .collect(Collectors.toList());
+    return unusedResources.stream()
+        .filter(s -> s.type != ResourceType.ID)
+        .map(resource -> resource.value)
+        .collect(Collectors.toList());
   }
 
   // Lifted from com/android/utils/XmlUtils.java which we can't easily update internal dependency
@@ -315,43 +329,6 @@ public class LegacyResourceShrinker {
 
     // No byte order mark: Assume UTF-8 (where the BOM is optional).
     return new InputStreamReader(new ByteArrayInputStream(bytes), UTF_8);
-  }
-
-  public static class ShrinkerResult {
-    private final Set<String> resFolderEntriesToKeep;
-    private final Map<FeatureSplit, ResourceTable> resourceTableInProtoFormat;
-    private final Map<String, byte[]> customResourceFileBytes;
-
-    public ShrinkerResult(
-        Set<String> resFolderEntriesToKeep,
-        Map<FeatureSplit, ResourceTable> resourceTableInProtoFormat) {
-      this(resFolderEntriesToKeep, resourceTableInProtoFormat, Collections.emptyMap());
-    }
-
-    public ShrinkerResult(
-        Set<String> resFolderEntriesToKeep,
-        Map<FeatureSplit, ResourceTable> resourceTableInProtoFormat,
-        Map<String, byte[]> customResourceFileBytes) {
-      this.resFolderEntriesToKeep = resFolderEntriesToKeep;
-      this.resourceTableInProtoFormat = resourceTableInProtoFormat;
-      this.customResourceFileBytes = customResourceFileBytes;
-    }
-
-    public byte[] getResourceTableInProtoFormat(FeatureSplit featureSplit) {
-      return resourceTableInProtoFormat.get(featureSplit).toByteArray();
-    }
-
-    public Set<String> getResFolderEntriesToKeep() {
-      return resFolderEntriesToKeep;
-    }
-
-    public byte[] getBytesFor(String location) {
-      return customResourceFileBytes.get(location);
-    }
-
-    public boolean hasCustomFileFor(String location) {
-      return customResourceFileBytes.containsKey(location);
-    }
   }
 
   private static class PathAndBytes {

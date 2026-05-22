@@ -146,13 +146,24 @@ public class BridgeHoistingToSharedSyntheticSuperClass {
         method -> {
           IRCode code = method.buildIR(appView, MethodConversionOptions.nonConverting());
           BridgeInfo bridgeInfo = BridgeAnalyzer.analyzeMethod(method.getDefinition(), code);
-          if (bridgeInfo != null) {
-            getSimpleFeedback().setBridgeInfo(method, bridgeInfo);
-            if (bridgeInfo.isVirtualBridgeInfo()) {
-              bridgeSpecification.addBridge(
-                  method.getMethodSignature(), bridgeInfo.asVirtualBridgeInfo());
-            }
+          if (bridgeInfo == null) {
+            return;
           }
+          getSimpleFeedback().setBridgeInfo(method, bridgeInfo);
+          if (!bridgeInfo.isVirtualBridgeInfo()) {
+            return;
+          }
+          VirtualBridgeInfo virtualBridgeInfo = bridgeInfo.asVirtualBridgeInfo();
+          boolean isInvokedMethodPresentOnSuper =
+              appView
+                  .appInfo()
+                  .resolveMethodOnClass(clazz.getSuperType(), virtualBridgeInfo.getInvokedMethod())
+                  .isSingleResolution();
+          if (isInvokedMethodPresentOnSuper) {
+            // No need to insert a method on a synthetic super class in this case.
+            return;
+          }
+          bridgeSpecification.addBridge(method.getMethodSignature(), virtualBridgeInfo);
         });
     return bridgeSpecification;
   }

@@ -11,17 +11,18 @@ import com.android.tools.r8.ResourceException;
 import com.android.tools.r8.StringConsumer;
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.resourceshrinker.NoDebugReporter;
+import com.android.tools.r8.resourceshrinker.ResourceShrinkerState;
 import com.android.tools.r8.resourceshrinker.ShrinkerDebugReporter;
-import com.android.tools.r8.resourceshrinker.r8integration.R8ResourceShrinkerState;
 import java.io.InputStream;
 import java.util.function.Supplier;
 
 public class ResourceShrinkerUtils {
 
-  public static R8ResourceShrinkerState createResourceShrinkerState(AppView<?> appView) {
+  public static ResourceShrinkerState<FeatureSplit> createResourceShrinkerState(
+      AppView<?> appView) {
     InternalOptions options = appView.options();
-    R8ResourceShrinkerState state =
-        new R8ResourceShrinkerState(
+    ResourceShrinkerState<FeatureSplit> state =
+        new ResourceShrinkerState<>(
             exception -> appView.reporter().fatalError(new ExceptionDiagnostic(exception)),
             shrinkerDebugReporterFromStringConsumer(
                 options.resourceShrinkerConfiguration.getDebugConsumer(), appView.reporter()),
@@ -48,7 +49,7 @@ public class ResourceShrinkerUtils {
 
   private static void addResources(
       AppView<?> appView,
-      R8ResourceShrinkerState state,
+      ResourceShrinkerState<FeatureSplit> state,
       AndroidResourceProvider androidResourceProvider,
       FeatureSplit featureSplit)
       throws ResourceException {
@@ -93,6 +94,11 @@ public class ResourceShrinkerUtils {
       return NoDebugReporter.INSTANCE;
     }
     return new ShrinkerDebugReporter() {
+      @Override
+      public boolean isDebugEnabled() {
+        return true;
+      }
+
       @Override
       public void debug(Supplier<String> logSupplier) {
         // The default usage of shrinkerdebug in the legacy resource shrinker does not add

@@ -6,6 +6,7 @@ package com.android.tools.r8.graph;
 
 import static com.android.tools.r8.features.ClassToFeatureSplitMap.createEmptyClassToFeatureSplitMap;
 
+import com.android.tools.r8.FeatureSplit;
 import com.android.tools.r8.androidapi.AndroidApiLevelCompute;
 import com.android.tools.r8.androidapi.ComputedApiLevel;
 import com.android.tools.r8.classmerging.ClassMergerMode;
@@ -49,7 +50,7 @@ import com.android.tools.r8.optimize.interfaces.collection.OpenClosedInterfacesC
 import com.android.tools.r8.optimize.smallmethodinliner.SmallMethodInlinerResult;
 import com.android.tools.r8.profile.art.ArtProfileCollection;
 import com.android.tools.r8.profile.startup.profile.StartupProfile;
-import com.android.tools.r8.resourceshrinker.r8integration.R8ResourceShrinkerState;
+import com.android.tools.r8.resourceshrinker.ResourceShrinkerState;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
 import com.android.tools.r8.shaking.KeepClassInfo;
 import com.android.tools.r8.shaking.KeepFieldInfo;
@@ -166,7 +167,7 @@ public class AppView<T extends AppInfo> implements DexDefinitionSupplier, Librar
 
   private SeedMapper applyMappingSeedMapper;
 
-  private R8ResourceShrinkerState resourceShrinkerState = null;
+  private ResourceShrinkerState<FeatureSplit> resourceShrinkerState = null;
 
   // When input has been (partially) desugared these are the classes which has been library
   // desugared. This information is populated in the IR converter.
@@ -985,7 +986,7 @@ public class AppView<T extends AppInfo> implements DexDefinitionSupplier, Librar
     testing().unboxedEnumsConsumer.accept(dexItemFactory(), unboxedEnums);
   }
 
-  public R8ResourceShrinkerState getResourceShrinkerState() {
+  public ResourceShrinkerState<FeatureSplit> getResourceShrinkerState() {
     return resourceShrinkerState;
   }
 

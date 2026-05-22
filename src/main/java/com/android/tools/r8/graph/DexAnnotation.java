@@ -58,6 +58,10 @@ public class DexAnnotation extends DexItem implements StructuralItem<DexAnnotati
     public boolean isParameter() {
       return this == PARAMETER;
     }
+
+    public boolean isType() {
+      return this == TYPE;
+    }
   }
 
   public static final DexAnnotation[] EMPTY_ARRAY = {};

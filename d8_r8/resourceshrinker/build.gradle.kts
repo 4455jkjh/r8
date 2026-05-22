@@ -54,7 +54,6 @@ dependencies {
   compileOnly(Deps.guava)
   compileOnly(Deps.protobuf)
   compileOnly(Deps.fastUtil)
-  compileOnly(files(resolve(ThirdPartyDeps.r8, "r8lib_9.0.32.jar")))
   implementation("com.android.tools.build:aapt2-proto:9.1.0-alpha09-14792394")
   implementation("com.android.tools.layoutlib:layoutlib-api:31.5.0-alpha04")
   implementation("com.android.tools:common:31.5.0-alpha04")

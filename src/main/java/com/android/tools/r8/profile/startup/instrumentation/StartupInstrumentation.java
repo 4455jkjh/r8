@@ -29,9 +29,11 @@ import com.android.tools.r8.graph.bytecodemetadata.BytecodeMetadataProvider;
 import com.android.tools.r8.ir.code.BasicBlockIterator;
 import com.android.tools.r8.ir.code.ConstString;
 import com.android.tools.r8.ir.code.IRCode;
+import com.android.tools.r8.ir.code.InstanceGet;
 import com.android.tools.r8.ir.code.Instruction;
 import com.android.tools.r8.ir.code.InstructionListIterator;
 import com.android.tools.r8.ir.code.InvokeStatic;
+import com.android.tools.r8.ir.code.NewInstance;
 import com.android.tools.r8.ir.code.Position;
 import com.android.tools.r8.ir.code.Value;
 import com.android.tools.r8.ir.conversion.IRConverter;
@@ -46,6 +48,7 @@ import com.android.tools.r8.utils.InternalOptions;
 import com.android.tools.r8.utils.ThreadUtils;
 import com.android.tools.r8.utils.timing.Timing;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Sets;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
@@ -59,6 +62,8 @@ public class StartupInstrumentation {
   private final InternalOptions options;
   private final StartupInstrumentationReferences references;
   private final InstrumentationOptions instrumentationOptions;
+
+  private final Set<DexType> valueClassesToInstrument = Sets.newIdentityHashSet();
 
   private StartupInstrumentation(AppView<AppInfo> appView) {
     this.appView = appView;
@@ -74,6 +79,14 @@ public class StartupInstrumentation {
     if (appView.options().getInstrumentationOptions().isInstrumentationEnabled()
         && appView.options().isGeneratingDex()) {
       StartupInstrumentation startupInstrumentation = new StartupInstrumentation(appView);
+      if (appView.options().getInstrumentationOptions().isBoxingUnboxingInstrumentationEnabled()) {
+        for (DexProgramClass valueClassCandidate : appView.appInfo().classes()) {
+          if (valueClassCandidate.getSuperType().isIdenticalTo(appView.dexItemFactory().objectType)
+              && valueClassCandidate.instanceFields().size() == 1) {
+            startupInstrumentation.valueClassesToInstrument.add(valueClassCandidate.getType());
+          }
+        }
+      }
       startupInstrumentation.instrumentAllClasses(executorService);
       startupInstrumentation.injectStartupRuntimeLibrary(executorService, timing);
     }
@@ -216,38 +229,56 @@ public class StartupInstrumentation {
       }
 
       Set<DexMethod> callSitesToInstrument = instrumentationOptions.getCallSitesToInstrument();
-      if (!callSitesToInstrument.isEmpty()) {
+      if (!callSitesToInstrument.isEmpty() || !valueClassesToInstrument.isEmpty()) {
         do {
           while (instructionIterator.hasNext()) {
             Instruction instruction = instructionIterator.next();
-            if (instruction.isInvokeMethod()) {
-              DexMethod invokedMethod = instruction.asInvokeMethod().getInvokedMethod();
-              if (callSitesToInstrument.contains(invokedMethod)) {
-                instructionIterator.previous();
-                ConstString calleeString =
-                    ConstString.builder()
-                        .setFreshOutValue(
-                            code,
-                            dexItemFactory.stringType.toTypeElement(appView, definitelyNotNull()))
-                        .setPosition(instruction.getPosition())
-                        .setValue(dexItemFactory.createString(invokedMethod.toSmaliString()))
-                        .build();
-                instructionIterator =
-                    instructionIterator.addPossiblyThrowingInstructionsToPossiblyThrowingBlock(
-                        code,
-                        blocks,
-                        ImmutableList.of(
-                            calleeString,
-                            InvokeStatic.builder()
-                                .setMethod(references.addCall)
-                                .setArguments(descriptorValue, calleeString.outValue())
-                                .setPosition(instruction.getPosition())
-                                .build()),
-                        options);
-                Instruction next = instructionIterator.next();
-                assert next == instruction;
+            String targetStringValue;
+            if (instruction.isNewInstance()) {
+              NewInstance newInstance = instruction.asNewInstance();
+              if (!valueClassesToInstrument.contains(newInstance.getType())) {
+                continue;
               }
+              targetStringValue = "box " + newInstance.getType().toDescriptorString();
+            } else if (instruction.isInstanceGet()) {
+              InstanceGet instanceGet = instruction.asInstanceGet();
+              if (!valueClassesToInstrument.contains(instanceGet.getField().getHolderType())) {
+                continue;
+              }
+              targetStringValue =
+                  "unbox " + instanceGet.getField().getHolderType().toDescriptorString();
+            } else if (instruction.isInvokeMethod()) {
+              DexMethod invokedMethod = instruction.asInvokeMethod().getInvokedMethod();
+              if (!callSitesToInstrument.contains(invokedMethod)) {
+                continue;
+              }
+              targetStringValue = invokedMethod.toSmaliString();
+            } else {
+              continue;
             }
+            // Instrument the instruction.
+            instructionIterator.previous();
+            ConstString targetString =
+                ConstString.builder()
+                    .setFreshOutValue(
+                        code, dexItemFactory.stringType.toTypeElement(appView, definitelyNotNull()))
+                    .setPosition(instruction.getPosition())
+                    .setValue(dexItemFactory.createString(targetStringValue))
+                    .build();
+            instructionIterator =
+                instructionIterator.addPossiblyThrowingInstructionsToPossiblyThrowingBlock(
+                    code,
+                    blocks,
+                    ImmutableList.of(
+                        targetString,
+                        InvokeStatic.builder()
+                            .setMethod(references.addCall)
+                            .setArguments(descriptorValue, targetString.outValue())
+                            .setPosition(instruction.getPosition())
+                            .build()),
+                    options);
+            Instruction next = instructionIterator.next();
+            assert next == instruction;
           }
           if (blocks.hasNext()) {
             instructionIterator = blocks.next().listIterator();

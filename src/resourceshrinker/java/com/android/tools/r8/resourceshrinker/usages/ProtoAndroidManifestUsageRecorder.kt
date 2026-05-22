@@ -17,24 +17,9 @@
 package com.android.tools.r8.resourceshrinker.usages
 
 import com.android.aapt.Resources.XmlNode
-import com.android.tools.r8.resourceshrinker.ResourceShrinkerModel
 import com.android.ide.common.resources.usage.ResourceUsageModel
 import com.android.ide.common.resources.usage.ResourceUsageModel.Resource
-import java.nio.file.Files
-import java.nio.file.Path
-
-/**
- * Records resource usages from AndroidManifest.xml in proto compiled format.
- *
- * @param manifest path to AndroidManifest.xml file.
- */
-public class ProtoAndroidManifestUsageRecorder(private val manifest: Path) : ResourceUsageRecorder {
-
-  override fun recordUsages(model: ResourceShrinkerModel) {
-    val root = XmlNode.parseFrom(Files.readAllBytes(manifest))
-    recordUsagesFromNode(root, model)
-  }
-}
+import com.android.tools.r8.resourceshrinker.ResourceShrinkerModel
 
 public fun recordUsagesFromNode(node: XmlNode, model: ResourceShrinkerModel): Sequence<Resource> {
   // Records only resources from element attributes that have reference items with resolved

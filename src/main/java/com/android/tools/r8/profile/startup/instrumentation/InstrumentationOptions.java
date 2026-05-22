@@ -14,6 +14,8 @@ import com.android.tools.r8.utils.InternalOptions;
 import com.android.tools.r8.utils.MethodReferenceUtils;
 import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Sets;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Set;
 
@@ -60,8 +62,12 @@ public class InstrumentationOptions {
     String callSitesToInstrumentString =
         getSystemPropertyForDevelopment("com.android.tools.r8.instrumentation.callsites");
     if (callSitesToInstrumentString != null) {
-      setCallSitesToInstrument(
+      addCallSitesToInstrument(
           parseCallSitesToInstrument(callSitesToInstrumentString, options.dexItemFactory()));
+    }
+    if (isBoxingUnboxingInstrumentationEnabled()) {
+      addCallSitesToInstrument(options.dexItemFactory().boxedValueOfMethods());
+      addCallSitesToInstrument(options.dexItemFactory().unboxPrimitiveMethod.values());
     }
   }
 
@@ -79,15 +85,25 @@ public class InstrumentationOptions {
   }
 
   public boolean isInstrumentationEnabled() {
-    return enableExecutedClassesAndMethodsInstrumentation || !callSitesToInstrument.isEmpty();
+    return enableExecutedClassesAndMethodsInstrumentation
+        || !callSitesToInstrument.isEmpty()
+        || isBoxingUnboxingInstrumentationEnabled();
+  }
+
+  public boolean isBoxingUnboxingInstrumentationEnabled() {
+    return parseSystemPropertyForDevelopmentOrDefault(
+        "com.android.tools.r8.instrumentation.boxingunboxingcallsites", false);
   }
 
   public Set<DexMethod> getCallSitesToInstrument() {
     return callSitesToInstrument;
   }
 
-  public void setCallSitesToInstrument(Set<DexMethod> callSitesToInstrument) {
-    this.callSitesToInstrument = callSitesToInstrument;
+  public void addCallSitesToInstrument(Collection<DexMethod> callSitesToInstrument) {
+    if (this.callSitesToInstrument.isEmpty()) {
+      this.callSitesToInstrument = Sets.newIdentityHashSet();
+    }
+    this.callSitesToInstrument.addAll(callSitesToInstrument);
   }
 
   public boolean isExecutedClassesAndMethodsInstrumentationEnabled() {

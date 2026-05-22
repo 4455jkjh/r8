@@ -35,7 +35,7 @@ import com.android.tools.r8.origin.Origin;
 import com.android.tools.r8.origin.PathOrigin;
 import com.android.tools.r8.partial.R8PartialCompilationConfiguration;
 import com.android.tools.r8.profile.art.ArtProfileForRewriting;
-import com.android.tools.r8.resourceshrinker.r8integration.LegacyResourceShrinker;
+import com.android.tools.r8.resourceshrinker.usages.LegacyResourceShrinker;
 import com.android.tools.r8.shaking.FilteredClassPath;
 import com.android.tools.r8.shaking.KeepSpecificationSource;
 import com.android.tools.r8.shaking.ProguardConfiguration;

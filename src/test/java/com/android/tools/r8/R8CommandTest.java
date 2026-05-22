@@ -1004,6 +1004,38 @@ public class R8CommandTest extends CommandTestBase<R8Command> {
     assertTrue(parse("--android-platform-build").getAndroidPlatformBuild());
   }
 
+  @Test
+  public void androidResourcesUsageLog() throws Throwable {
+    Path resourcesInput = getTestResources();
+    Path resourcesOutput = temp.newFile("resources_out.ap_").toPath();
+    Path logOutput = temp.getRoot().toPath().resolve("usage_log.txt");
+    Path output = temp.newFile("output.zip").toPath();
+    R8Command command =
+        parse(
+            "--android-resources",
+            resourcesInput.toString(),
+            resourcesOutput.toString(),
+            "--android-resources-usage-log",
+            logOutput.toString(),
+            "--output",
+            output.toString());
+
+    R8.run(command);
+
+    assertTrue(Files.exists(logOutput));
+    String logContent = FileUtils.readTextFile(logOutput, StandardCharsets.UTF_8);
+    assertTrue(logContent.contains("string:app_name"));
+    assertTrue(logContent.contains("reachable from AndroidManifest.xml"));
+  }
+
+  @Test(expected = CompilationFailedException.class)
+  public void androidResourcesUsageLogWithoutResourcesError() throws Throwable {
+    Path logOutput = temp.getRoot().toPath().resolve("usage_log.txt");
+    DiagnosticsChecker.checkErrorsContains(
+        "--android-resources-usage-log requires --android-resources to be set.",
+        handler -> parse(handler, "--android-resources-usage-log", logOutput.toString()));
+  }
+
   @Override
   String[] requiredArgsForTest() {
     return new String[0];

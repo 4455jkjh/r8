@@ -85,8 +85,9 @@ import com.android.tools.r8.origin.Origin;
 import com.android.tools.r8.profile.art.ArtProfileCompletenessChecker;
 import com.android.tools.r8.profile.rewriting.ProfileCollectionAdditions;
 import com.android.tools.r8.repackaging.Repackaging;
-import com.android.tools.r8.resourceshrinker.r8integration.LegacyResourceShrinker;
-import com.android.tools.r8.resourceshrinker.r8integration.LegacyResourceShrinker.ShrinkerResult;
+import com.android.tools.r8.resourceshrinker.ResourceShrinkerState.ShrinkerResult;
+import com.android.tools.r8.resourceshrinker.usages.LegacyResourceShrinker;
+import com.android.tools.r8.resourceshrinker.usages.R8ResourceShrinker;
 import com.android.tools.r8.shaking.AbstractMethodRemover;
 import com.android.tools.r8.shaking.AnnotationRemover;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
@@ -1039,12 +1040,14 @@ public class R8 {
       Map<String, byte[]> dexFileContent, AppView<AppInfoWithClassHierarchy> appView) {
     Reporter reporter = options.reporter;
     try {
-      ShrinkerResult shrinkerResult;
+      ShrinkerResult<FeatureSplit> shrinkerResult;
 
       if (appView.options().isOptimizedResourceShrinking()) {
         shrinkerResult = appView.getResourceShrinkerState().shrinkModel();
       } else {
-        LegacyResourceShrinker.Builder resourceShrinkerBuilder = LegacyResourceShrinker.builder();
+        LegacyResourceShrinker.Builder<FeatureSplit> resourceShrinkerBuilder =
+            LegacyResourceShrinker.builder();
+        resourceShrinkerBuilder.setDexAnalyser(new R8ResourceShrinker());
         dexFileContent.forEach(resourceShrinkerBuilder::addDexInput);
         addResourcesToBuilder(
             resourceShrinkerBuilder, reporter, options.androidResourceProvider, FeatureSplit.BASE);
@@ -1066,7 +1069,7 @@ public class R8 {
         resourceShrinkerBuilder.setShrinkerDebugReporter(
             ResourceShrinkerUtils.shrinkerDebugReporterFromStringConsumer(
                 options.resourceShrinkerConfiguration.getDebugConsumer(), reporter));
-        LegacyResourceShrinker shrinker = resourceShrinkerBuilder.build();
+        LegacyResourceShrinker<FeatureSplit> shrinker = resourceShrinkerBuilder.build();
         shrinkerResult = shrinker.run();
       }
       writeResourcesToConsumer(
@@ -1095,7 +1098,7 @@ public class R8 {
 
   private static void writeResourcesToConsumer(
       Reporter reporter,
-      ShrinkerResult shrinkerResult,
+      ShrinkerResult<FeatureSplit> shrinkerResult,
       AndroidResourceProvider androidResourceProvider,
       AndroidResourceConsumer androidResourceConsumer,
       FeatureSplit featureSplit)
@@ -1139,7 +1142,7 @@ public class R8 {
   }
 
   private static void addResourcesToBuilder(
-      LegacyResourceShrinker.Builder resourceShrinkerBuilder,
+      LegacyResourceShrinker.Builder<FeatureSplit> resourceShrinkerBuilder,
       Reporter reporter,
       AndroidResourceProvider androidResourceProvider,
       FeatureSplit featureSplit)
