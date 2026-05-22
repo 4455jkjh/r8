@@ -108,7 +108,10 @@ public class EnumUnboxingLens extends NestedGraphLensWithCustomLensCodeRewriter 
       AbstractValue unboxedEnumValue,
       DexType enumType) {
     DexMethod enumMethod = method.withHolder(enumType, dexItemFactory());
-    DexMethod rewrittenEnumMethod = newMethodSignatures.getRepresentativeValue(enumMethod);
+    DexMethod rewrittenEnumMethod = methodMap.apply(enumMethod);
+    if (rewrittenEnumMethod == null) {
+      rewrittenEnumMethod = newMethodSignatures.getRepresentativeValue(enumMethod);
+    }
     if (!unboxedEnumValue.isSingleNumberValue()) {
       return rewrittenEnumMethod;
     }
