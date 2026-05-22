@@ -95,7 +95,6 @@ import com.android.tools.r8.graph.analysis.EnqueuerAnalysisCollection;
 import com.android.tools.r8.graph.analysis.GetArrayOfMissingTypeVerifyErrorWorkaround;
 import com.android.tools.r8.graph.analysis.InitializedClassesInInstanceMethodsAnalysis;
 import com.android.tools.r8.graph.analysis.InvokeVirtualToInterfaceVerifyErrorWorkaround;
-import com.android.tools.r8.graph.analysis.ResourceAccessAnalysis;
 import com.android.tools.r8.ir.analysis.proto.GeneratedMessageLiteBuilderShrinker;
 import com.android.tools.r8.ir.analysis.proto.ProtoEnqueuerUseRegistry;
 import com.android.tools.r8.ir.analysis.proto.schema.ProtoEnqueuerExtension;
@@ -291,6 +290,7 @@ public class Enqueuer {
    */
   private final Map<DexEncodedMethod, ProgramMethodSet> superInvokeDependencies =
       Maps.newIdentityHashMap();
+
   /** Set of instance fields that can be reached by read/write operations. */
   private final Map<DexProgramClass, ProgramFieldSet> reachableInstanceFields =
       Maps.newIdentityHashMap();
@@ -384,10 +384,10 @@ public class Enqueuer {
    * Set of program methods that are used as the bootstrap method for an invoke-dynamic instruction.
    */
   private final Set<DexMethod> bootstrapMethods = Sets.newIdentityHashSet();
-  /**
-   * Set of virtual methods that are the immediate target of an invoke-direct.
-   */
+
+  /** Set of virtual methods that are the immediate target of an invoke-direct. */
   private final Set<DexMethod> virtualMethodsTargetedByInvokeDirect = Sets.newIdentityHashSet();
+
   /**
    * Set of methods that belong to live classes and can be reached by invokes. These need to be
    * kept.
@@ -552,7 +552,7 @@ public class Enqueuer {
       KotlinMetadataEnqueuerExtension.register(
           appView, enqueuerDefinitionSupplier, initialPrunedTypes, analysesBuilder);
       ProtoEnqueuerExtension.register(appView, this, analysesBuilder);
-      ResourceAccessAnalysis.register(appView, this, analysesBuilder);
+      ResourceShrinkerEnqueuerExtension.register(appView, this, analysesBuilder);
       RuntimeTypeCheckInfo.register(runtimeTypeCheckInfoBuilder, analysesBuilder);
       EnqueuerMockitoAnalysis.register(appView, this, analysesBuilder);
       // Enum reflection tracing is best-effort, but since it is more common for non-Android uses to
@@ -2064,6 +2064,7 @@ public class Enqueuer {
   void traceStaticFieldReadFromMethodHandle(DexField field, ProgramMethod currentMethod) {
     traceStaticFieldRead(field, currentMethod, FieldAccessMetadata.FROM_METHOD_HANDLE);
   }
+
   void traceStaticFieldRead(
       DexField fieldReference, ProgramMethod currentMethod, FieldAccessMetadata metadata) {
     traceStaticFieldAccess(fieldReference, currentMethod, FieldAccessKind.STATIC_READ, metadata);
@@ -3490,9 +3491,7 @@ public class Enqueuer {
     processAnnotations(field);
   }
 
-  private void traceFieldReference(
-      DexField field,
-      ProgramMethod context) {
+  private void traceFieldReference(DexField field, ProgramMethod context) {
     markTypeAsLive(field.getHolderType(), context);
     markTypeAsLive(field.getType(), context);
   }
