@@ -137,7 +137,7 @@ class EnumUnboxingCandidateAnalysis {
     for (DexEncodedMethod method : clazz.virtualMethods()) {
       assert method.getParameters().isEmpty()
           || appView.options().testing.allowInjectedAnnotationMethods;
-      DexType valueType = method.returnType().getBaseType();
+      DexType valueType = method.getReturnType().getBaseType();
       if (enumToUnboxCandidates.isCandidate(valueType)) {
         if (!enumUnboxer.reportFailure(valueType, Reason.ANNOTATION)) {
           enumToUnboxCandidates.removeCandidate(valueType);

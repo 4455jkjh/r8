@@ -456,7 +456,7 @@ public class FoundMethodSubject extends MethodSubject {
                 .map(DexType::toDescriptorString)
                 .collect(Collectors.toList()))
         + ")"
-        + dexMethod.returnType().toDescriptorString();
+        + dexMethod.getReturnType().toDescriptorString();
   }
 
   @Override

@@ -321,10 +321,6 @@ public class DexEncodedMethod extends DexEncodedMember<DexEncodedMethod, DexMeth
     return DexMethodSignature.create(getReference());
   }
 
-  public DexType returnType() {
-    return getReference().proto.returnType;
-  }
-
   public OptionalBool isLibraryMethodOverride() {
     return isNonPrivateVirtualMethod() ? isLibraryMethodOverride : OptionalBool.FALSE;
   }

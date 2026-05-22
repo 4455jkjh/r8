@@ -5417,10 +5417,10 @@ public class Enqueuer {
   }
 
   private void markParameterAndReturnTypesAsLive(ProgramMethod method) {
-    for (DexType parameterType : method.getDefinition().getParameters()) {
+    for (DexType parameterType : method.getParameters()) {
       markTypeAsLive(parameterType, method);
     }
-    markTypeAsLive(method.getDefinition().returnType(), method);
+    markTypeAsLive(method.getReturnType(), method);
   }
 
   public void markClassAsInstantiatedWithReason(DexProgramClass clazz, KeepReason reason) {

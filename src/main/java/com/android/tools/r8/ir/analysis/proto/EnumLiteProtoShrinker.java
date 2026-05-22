@@ -126,13 +126,13 @@ public class EnumLiteProtoShrinker {
       if (!matchesFindValueByNumberMethod(virtualMethod.getReference())) {
         return null;
       }
-      if (virtualMethod.returnType() == references.enumLiteType) {
+      if (virtualMethod.getReturnType() == references.enumLiteType) {
         continue;
       }
       if (enumLiteCandidate != null) {
         return null;
       }
-      enumLiteCandidate = virtualMethod.returnType();
+      enumLiteCandidate = virtualMethod.getReturnType();
     }
     if (enumLiteCandidate == null) {
       return null;

@@ -190,7 +190,7 @@ public class BridgeAnalyzer {
     }
     // It must cast the result to the return type of the enclosing method and return the cast value.
     return uncastValue == returnValue
-        && checkCast.getType() == method.returnType()
+        && checkCast.getType() == method.getReturnType()
         && !castValue.hasDebugUsers()
         && castValue.hasSingleUniqueUser()
         && castValue.singleUniqueUser().isReturn();
