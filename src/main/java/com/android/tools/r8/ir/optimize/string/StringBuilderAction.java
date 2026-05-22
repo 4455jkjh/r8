@@ -34,12 +34,97 @@ public interface StringBuilderAction {
     return false;
   }
 
+  default boolean isReplaceAppendWithInit() {
+    return false;
+  }
+
   default boolean isReplaceArgumentByStringConcat() {
     return false;
   }
 
   default ReplaceArgumentByStringConcat asReplaceArgumentByStringConcat() {
     return null;
+  }
+
+  /**
+   * The RemoveStringBuilderAction removes the <init>() instruction and inserts a new <init>(s)
+   * instruction at the first append(s) instruction.
+   */
+  class ReplaceAppendWithInit implements StringBuilderAction {
+
+    private final Instruction appendInstruction;
+    private final String replacementString;
+    private final Value replacementValue;
+
+    public ReplaceAppendWithInit(Instruction appendInstruction, String replacementString) {
+      this.appendInstruction = appendInstruction;
+      this.replacementString = replacementString;
+      this.replacementValue = null;
+    }
+
+    public ReplaceAppendWithInit(Instruction appendInstruction, Value replacementValue) {
+      this.appendInstruction = appendInstruction;
+      this.replacementString = null;
+      this.replacementValue = replacementValue;
+    }
+
+    @Override
+    public void perform(
+        AppView<?> appView,
+        IRCode code,
+        InstructionListIterator iterator,
+        Instruction instruction,
+        AffectedValues affectedValues,
+        StringBuilderOracle oracle) {
+      InvokeDirect initInstruction = instruction.asInvokeDirect();
+      assert initInstruction != null;
+      assert initInstruction.arguments().size() == 1;
+
+      DexMethod invokedMethod = initInstruction.getInvokedMethod();
+
+      DexItemFactory factory = appView.dexItemFactory();
+      DexMethod initMethod;
+      Value initArgument;
+      if (replacementString != null) {
+        initMethod = getConstructorWithStringParameter(invokedMethod, factory);
+        iterator.previous();
+        initArgument =
+            insertStringConstantInstruction(
+                appView, code, iterator, instruction, replacementString);
+        iterator.next();
+      } else {
+        assert replacementValue != null;
+        initMethod =
+            replacementValue.getType().isClassType(factory.stringType)
+                ? getConstructorWithStringParameter(invokedMethod, factory)
+                : getConstructorWithCharSequenceParameter(invokedMethod, factory);
+        initArgument = replacementValue;
+      }
+
+      // Remove current <init>() call.
+      iterator.removeOrReplaceByDebugLocalRead();
+
+      // Insert new <init>(argument) call at the (to be removed) call to append().
+      appendInstruction
+          .getBlock()
+          .listIterator(appendInstruction)
+          .add(
+              InvokeDirect.builder()
+                  .setArguments(ImmutableList.of(initInstruction.getReceiver(), initArgument))
+                  .setMethod(initMethod)
+                  .setPosition(initInstruction)
+                  .build());
+    }
+
+    @Override
+    public boolean isAllowedToBeOverwrittenByRemoveStringBuilderAction() {
+      return true;
+    }
+
+    @Override
+    public boolean isReplaceAppendWithInit() {
+      return true;
+    }
   }
 
   /** The RemoveStringBuilderAction will simply remove the instruction completely. */
@@ -359,13 +444,22 @@ public interface StringBuilderAction {
     }
   }
 
-  @SuppressWarnings("ReferenceEquality")
+  static DexMethod getConstructorWithCharSequenceParameter(
+      DexMethod invokedMethod, DexItemFactory factory) {
+    if (invokedMethod.getHolderType().isIdenticalTo(factory.stringBufferType)) {
+      return factory.stringBufferMethods.charSequenceConstructor;
+    } else {
+      assert invokedMethod.getHolderType().isIdenticalTo(factory.stringBuilderType);
+      return factory.stringBuilderMethods.charSequenceConstructor;
+    }
+  }
+
   static DexMethod getConstructorWithStringParameter(
       DexMethod invokedMethod, DexItemFactory factory) {
-    if (invokedMethod.getHolderType() == factory.stringBufferType) {
+    if (invokedMethod.getHolderType().isIdenticalTo(factory.stringBufferType)) {
       return factory.stringBufferMethods.stringConstructor;
     } else {
-      assert invokedMethod.getHolderType() == factory.stringBuilderType;
+      assert invokedMethod.getHolderType().isIdenticalTo(factory.stringBuilderType);
       return factory.stringBuilderMethods.stringConstructor;
     }
   }
