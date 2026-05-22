@@ -172,7 +172,8 @@ public class MethodOptimizationInfoCollector {
   private void identifyBridgeInfo(
       ProgramMethod method, IRCode code, OptimizationFeedback feedback, Timing timing) {
     timing.begin("Identify bridge info");
-    feedback.setBridgeInfo(method, BridgeAnalyzer.analyzeMethod(method.getDefinition(), code));
+    feedback.setBridgeInfo(
+        method, BridgeAnalyzer.analyzeMethod(appView, method.getDefinition(), code));
     timing.end();
   }
 

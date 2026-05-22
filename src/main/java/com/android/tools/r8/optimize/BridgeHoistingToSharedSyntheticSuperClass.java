@@ -145,7 +145,8 @@ public class BridgeHoistingToSharedSyntheticSuperClass {
         DexEncodedMethod::hasCode,
         method -> {
           IRCode code = method.buildIR(appView, MethodConversionOptions.nonConverting());
-          BridgeInfo bridgeInfo = BridgeAnalyzer.analyzeMethod(method.getDefinition(), code);
+          BridgeInfo bridgeInfo =
+              BridgeAnalyzer.analyzeMethod(appView, method.getDefinition(), code);
           if (bridgeInfo == null) {
             return;
           }
