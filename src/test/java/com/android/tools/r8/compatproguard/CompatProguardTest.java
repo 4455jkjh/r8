@@ -13,6 +13,9 @@ import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.compatproguard.CompatProguard.CompatProguardOptions;
+import com.android.tools.r8.utils.internal.StringUtils;
+import java.io.ByteArrayOutputStream;
+import java.io.PrintStream;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -32,6 +35,38 @@ public class CompatProguardTest extends TestBase {
 
   private static CompatProguardOptions parseArgs(String... args) {
     return CompatProguard.CompatProguardOptions.parse(args);
+  }
+
+  @Test
+  public void testHelpMessage() throws Exception {
+    ByteArrayOutputStream out = new ByteArrayOutputStream();
+    PrintStream originalOut = System.out;
+    System.setOut(new PrintStream(out));
+    try {
+      CompatProguard.main(new String[] {"--help"});
+    } finally {
+      System.setOut(originalOut);
+    }
+    assertEquals(
+        StringUtils.lines(
+            "",
+            "CompatProguard main (build engineering)",
+            "",
+            "compatproguard [options] --output <dir> <proguard-config>*",
+            "",
+            "Where options are:",
+            "-h/--help            : print this help message",
+            "--release            : compile without debugging information (default).",
+            "--debug              : compile with debugging information.",
+            "--min-api n          : specify the targeted min android api level",
+            "--main-dex-list list : specify main dex list for multi-dexing",
+            "--minimal-main-dex   : ignored (provided for compatibility)",
+            "--multi-dex          : ignored (provided for compatibility)",
+            "--no-locals          : ignored (provided for compatibility)",
+            "--core-library       : ignored (provided for compatibility)",
+            "--force-proguard-compatibility : Proguard compatibility mode",
+            "--no-data-resources  : ignore all data resources"),
+        out.toString());
   }
 
   @Test

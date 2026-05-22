@@ -28,6 +28,7 @@ import com.android.tools.r8.utils.InternalOptions;
 import com.android.tools.r8.utils.ThreadUtils;
 import com.android.tools.r8.utils.ZipUtils;
 import com.android.tools.r8.utils.internal.FileUtils;
+import com.android.tools.r8.utils.internal.StringUtils;
 import com.google.common.collect.ImmutableList;
 import java.io.File;
 import java.io.IOException;
@@ -353,6 +354,118 @@ public class R8CommandTest extends CommandTestBase<R8Command> {
     assertFalse(result.exitCode == 0);
     assertTrue(result.stderr.contains("Usage"));
     assertFalse(result.stderr.contains("R8_foobar")); // Sanity check
+  }
+
+  @Test
+  public void testHelpMessage() {
+    assertEquals(
+        StringUtils.lines(
+            "Usage: r8 [options] [@<argfile>] <input-files>",
+            " where <input-files> are any combination class, zip, or jar files",
+            " and each <argfile> is a file containing additional arguments (one per line)",
+            " and options are:",
+            "  --release               # Compile without debugging information (default).",
+            "  --debug                 # Compile with debugging information.",
+            "  --dex                   # Compile program to DEX file format (default).",
+            "  --classfile             # Compile program to Java classfile format.",
+            "  --output <file>         # Output result in <file>.",
+            "                          # <file> must be an existing directory or a zip file.",
+            "  --lib <file|jdk-home>   # Add <file|jdk-home> as a library resource.",
+            "  --classpath <file>      # Add <file> as a classpath resource.",
+            "  --min-api <number>      # Minimum Android API level compatibility (default: 1).",
+            "  --pg-compat             # Compile with R8 in Proguard compatibility mode.",
+            "  --pg-conf <file>        # Proguard configuration <file>.",
+            "  --pg-conf-output <file> # Output the collective configuration to <file>.",
+            "  --pg-map <file>         # Use <file> as a mapping file for distribution and"
+                + " composition with output mapping file.",
+            "  --pg-map-output <file>  # Output the resulting name and line mapping to <file>.",
+            "  --partition-map-output <file>",
+            "                          # Output the resulting mapping to <file>.",
+            "  --desugared-lib <file>  # Specify desugared library configuration.",
+            "                          # <file> is a desugared library configuration (json).",
+            "  --no-tree-shaking       # Force disable tree shaking of unreachable classes.",
+            "  --no-minification       # Force disable minification of names.",
+            "  --no-data-resources     # Ignore all data resources.",
+            "  --no-desugaring         # Force disable desugaring.",
+            "  --main-dex-rules <file> # Proguard keep rules for classes to place in the",
+            "                          # primary dex file.",
+            "  --main-dex-list <file>  # List of classes to place in the primary dex file.",
+            "  --android-resources <input> <output>",
+            "                          # Add android resource input and output to be used in"
+                + " resource shrinking. Both ",
+            "                          # input and output must be specified.",
+            "  --android-resources-usage-log <file>",
+            "                          # Write the resource shrinking usage log to <file>.",
+            "  --feature <input>[:|;<res-input>] <output>[:|;<res-output>]",
+            "                          # Add feature <input> file to <output> file. Several ",
+            "                          # occurrences can map to the same output. If <res-input> and"
+                + " <res-output> are ",
+            "                          # specified use these as resource shrinker input and output."
+                + " Separator is : on ",
+            "                          # linux/mac, ; on windows. It is possible to supply resource"
+                + " only features by ",
+            "                          #  using an empty string for <input> and <output>, e.g."
+                + " --feature :in.ap_ :out.ap_",
+            "  --isolated-splits       # Specifies that the application is using isolated splits,"
+                + " i.e., if split APKs installed for this application are loaded into their own"
+                + " Context objects.",
+            "  --main-dex-list-output <file>",
+            "                          # Output the full main-dex list in <file>.",
+            "  --force-enable-assertions[:[<class name>|<package name>...]]",
+            "  --force-ea[:[<class name>|<package name>...]]",
+            "                          # Forcefully enable javac generated assertion code.",
+            "  --force-disable-assertions[:[<class name>|<package name>...]]",
+            "  --force-da[:[<class name>|<package name>...]]",
+            "                          # Forcefully disable javac generated assertion code.",
+            "                          # This is the default handling of javac assertion code",
+            "                          # when generating DEX file format.",
+            "  --force-passthrough-assertions[:[<class name>|<package name>...]]",
+            "  --force-pa[:[<class name>|<package name>...]]",
+            "                          # Don't change javac generated assertion code. This",
+            "                          # is the default handling of javac assertion code when",
+            "                          # generating class file format.",
+            "  --force-assertions-handler:<handler method>[:[<class name>|<package name>...]]",
+            "  --force-ah:<handler method>[:[<class name>|<package name>...]]",
+            "                          # Change javac and kotlinc generated assertion code",
+            "                          # to invoke the method <handler method> with each",
+            "                          # assertion error instead of throwing it.",
+            "                          # The <handler method> is specified as a class name",
+            "                          # followed by a dot and the method name.",
+            "                          # The handler method must take a single argument of",
+            "                          # type java.lang.Throwable and have return type void.",
+            "  --thread-count <number> # Use <number> of threads for compilation.",
+            "                          # If not specified the number will be based on",
+            "                          # heuristics taking the number of cores into account.",
+            "  --map-diagnostics[:<type>] <from-level> <to-level>",
+            "                          # Map diagnostics of <type> (default any) reported as",
+            "                          # <from-level> to <to-level> where <from-level> and",
+            "                          # <to-level> are one of 'info', 'warning', or 'error'",
+            "                          # and the optional <type> is either the simple or",
+            "                          # fully qualified Java type name of a diagnostic.",
+            "                          # If <type> is unspecified, all diagnostics at ",
+            "                          # <from-level> will be mapped.",
+            "                          # Note that fatal compiler errors cannot be mapped.",
+            "  --map-id-template <template>",
+            "                          # Set the map-id to <template>.",
+            "                          # The <template> can reference the variables:",
+            "                          #   %MAP_HASH: compiler generated mapping hash.",
+            "  --source-file-template <template>",
+            "                          # Set all source-file attributes to <template>",
+            "                          # The <template> can reference the variables:",
+            "                          #   %MAP_ID: map id (e.g., value of --map-id-template).",
+            "                          #   %MAP_HASH: compiler generated mapping hash.",
+            "  --android-platform-build",
+            "                          # Compile as a platform build where the"
+                + " runtime/bootclasspath",
+            "                          # is assumed to be the version specified by --min-api.",
+            "  --art-profile <input> <output>",
+            "                          # Rewrite human readable ART profile read from <input> and"
+                + " write to <output>.",
+            "  --startup-profile <file>",
+            "                          # Startup profile <file> to use for dex layout.",
+            "  --version               # Print the version of r8.",
+            "  --help                  # Print this message."),
+        R8CommandParser.getUsageMessage());
   }
 
   @Test

@@ -20,6 +20,7 @@ import com.android.tools.r8.utils.InternalOptions;
 import com.android.tools.r8.utils.JoiningStringConsumer;
 import com.android.tools.r8.utils.Reporter;
 import com.android.tools.r8.utils.StringDiagnostic;
+import com.android.tools.r8.utils.internal.StringUtils;
 import com.google.common.collect.ImmutableList;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -131,18 +132,18 @@ public class GenerateMainDexListCommand extends BaseCommand {
     }
   }
 
-  static final String USAGE_MESSAGE = String.join("\n", ImmutableList.of(
-      "Usage: maindex [options] <input-files>",
-      " where <input-files> are JAR files",
-      " and options are:",
-      "  --lib <file>             # Add <file> as a library resource.",
-      "  --main-dex-rules <file>  # Proguard keep rules for classes to place in the",
-      "                           # primary dex file.",
-      "  --main-dex-list <file>   # List of classes to place in the primary dex file.",
-      "  --main-dex-list-output <file>  # Output the full main-dex list in <file>.",
-      "  --version                # Print the version.",
-      "  --help                   # Print this message."));
-
+  static final String USAGE_MESSAGE =
+      StringUtils.joinLines(
+          "Usage: maindex [options] <input-files>",
+          " where <input-files> are JAR files",
+          " and options are:",
+          "  --lib <file>             # Add <file> as a library resource.",
+          "  --main-dex-rules <file>  # Proguard keep rules for classes to place in the",
+          "                           # primary dex file.",
+          "  --main-dex-list <file>   # List of classes to place in the primary dex file.",
+          "  --main-dex-list-output <file>  # Output the full main-dex list in <file>.",
+          "  --version                # Print the version.",
+          "  --help                   # Print this message.");
 
   public static GenerateMainDexListCommand.Builder builder() {
     return new GenerateMainDexListCommand.Builder();

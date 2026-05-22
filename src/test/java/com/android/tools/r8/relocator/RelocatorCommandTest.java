@@ -22,6 +22,7 @@ import com.android.tools.r8.origin.Origin;
 import com.android.tools.r8.references.PackageReference;
 import com.android.tools.r8.references.Reference;
 import com.android.tools.r8.utils.ArchiveResourceProvider;
+import com.android.tools.r8.utils.internal.StringUtils;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.List;
@@ -43,6 +44,26 @@ public class RelocatorCommandTest extends TestBase {
 
   public RelocatorCommandTest(TestParameters parameters) {
     parameters.assertNoneRuntime();
+  }
+
+  @Test
+  public void testHelpMessage() {
+    assertEquals(
+        StringUtils.joinLines(
+            "The Relocator CLI is EXPERIMENTAL and is subject to change",
+            "Usage: relocator [options]",
+            " where options are:",
+            "  --input <file>          # Input file to remap, class, zip or jar.",
+            "  --input-no-res <file>   # Input file to remap, zip or jar.",
+            "                          # Only .class file entries are included.",
+            "  --output <file>         # Output result in <outfile>.",
+            "  --map <from->to>        # Registers a mapping.",
+            "  --map-diagnostics [:<type>] <from-level> <to-level>",
+            "                          # Map diagnostics level.",
+            "  --thread-count <number> # A specified number of threads to run with.",
+            "  --version               # Print the version of d8.",
+            "  --help                  # Print this message."),
+        RelocatorCommand.USAGE_MESSAGE);
   }
 
   @Test

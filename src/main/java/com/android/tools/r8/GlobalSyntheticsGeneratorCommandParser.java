@@ -46,7 +46,7 @@ public class GlobalSyntheticsGeneratorCommandParser {
         .build();
   }
 
-  static String getUsageMessage() {
+  public static String getUsageMessage() {
     StringBuilder builder = new StringBuilder();
     StringUtils.appendLines(builder, USAGE_MESSAGE);
     new ParseFlagPrinter().addFlags(getFlags()).appendLinesToBuilder(builder);

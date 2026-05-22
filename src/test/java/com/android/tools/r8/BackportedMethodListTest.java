@@ -6,14 +6,15 @@ package com.android.tools.r8;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeTrue;
 
 import com.android.tools.r8.desugar.desugaredlibrary.test.LibraryDesugaringSpecification;
 import com.android.tools.r8.utils.AndroidApiLevel;
+import com.android.tools.r8.utils.internal.StringUtils;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
-import org.junit.Assume;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -138,6 +139,27 @@ public class BackportedMethodListTest extends TestBase {
   }
 
   @Test
+  public void testHelpMessage() {
+    assumeTrue(mode == Mode.NO_LIBRARY);
+    assertEquals(
+        StringUtils.lines(
+            "Usage: BackportedMethodList [options]",
+            " Options are:",
+            "",
+            "  --output <file>         # Output result in <file>.",
+            "  --min-api <number>      # Minimum Android API level for the application.",
+            "  --desugared-lib <file>  # Desugared library configuration (JSON from the"
+                + " configuration).",
+            "  --lib <file>            # The compilation SDK library (android.jar).",
+            "  --android-platform-build",
+            "                          # Compilation of platform code.",
+            "  --version               # Print the version of BackportedMethodList.",
+            "  --help",
+            "  -h                      # Print this message."),
+        BackportedMethodListCommand.usageMessage());
+  }
+
+  @Test
   public void testConsumer() throws Exception {
     for (int apiLevel = 1; apiLevel < AndroidApiLevel.LATEST.getLevel(); apiLevel++) {
       ListStringConsumer consumer = new ListStringConsumer();
@@ -172,7 +194,7 @@ public class BackportedMethodListTest extends TestBase {
 
   @Test
   public void testFullList() throws Exception {
-    Assume.assumeTrue(mode == Mode.NO_LIBRARY);
+    assumeTrue(mode == Mode.NO_LIBRARY);
     ListStringConsumer consumer = new ListStringConsumer();
     // Not setting neither min API level not library should produce the full list.
     BackportedMethodList.run(BackportedMethodListCommand.builder().setConsumer(consumer).build());
@@ -182,7 +204,7 @@ public class BackportedMethodListTest extends TestBase {
 
   @Test
   public void requireLibraryForDesugar() {
-    Assume.assumeTrue(mode == Mode.LIBRARY_DESUGAR || mode == Mode.LIBRARY_DESUGAR_11);
+    assumeTrue(mode == Mode.LIBRARY_DESUGAR || mode == Mode.LIBRARY_DESUGAR_11);
     // Require library when a desugar configuration is passed.
     try {
       BackportedMethodList.run(

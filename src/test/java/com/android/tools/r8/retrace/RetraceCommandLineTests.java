@@ -194,6 +194,27 @@ public class RetraceCommandLineTests extends TestBase {
   }
 
   @Test
+  public void testHelpMessage() {
+    assertEquals(
+        StringUtils.lines(
+            "Usage: retrace [options] <proguard-map> [stack-trace-file] where <proguard-map> is a"
+                + " generated mapping file and options are:",
+            "  --regex <regexp>",
+            "  --r <regexp>            # Regular expression for parsing stack-trace-file as lines",
+            "  --verbose               # Get verbose retraced output",
+            "  --info                  # Write information messages to stdout",
+            "  --quiet                 # Silence ordinary messages printed to stdout",
+            "  --verify-mapping-file-hash",
+            "                          # Verify the mapping file hash",
+            "  --partition-map <file>",
+            "  --p <file>              # Partition map to use",
+            "  --help",
+            "  -h                      # Print this message.",
+            "  --version               # Print the version."),
+        Retrace.getUsageMessage());
+  }
+
+  @Test
   public void testVersion() throws Exception {
     ProcessResult processResult = runRetraceCommandLine(null, Arrays.asList("--version"));
     assertEquals(0, processResult.exitCode);

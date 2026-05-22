@@ -18,8 +18,11 @@ import com.android.tools.r8.smali.SmaliBuilder.MethodSignature;
 import com.android.tools.r8.utils.AndroidApp;
 import com.android.tools.r8.utils.InternalOptions;
 import com.android.tools.r8.utils.codeinspector.CodeInspector;
+import com.android.tools.r8.utils.internal.StringUtils;
 import com.android.tools.r8.utils.timing.Timing;
 import com.google.common.collect.ImmutableList;
+import java.io.ByteArrayOutputStream;
+import java.io.PrintStream;
 import java.nio.file.Path;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -34,6 +37,31 @@ public class BisectTest extends TestBase {
   @Parameters(name = "{0}")
   public static TestParametersCollection parameters() {
     return TestParameters.builder().withNoneRuntime().build();
+  }
+
+  @Test
+  public void testHelpMessage() throws Exception {
+    ByteArrayOutputStream out = new ByteArrayOutputStream();
+    PrintStream originalOut = System.out;
+    System.setOut(new PrintStream(out));
+    try {
+      BisectOptions.printHelp();
+    } finally {
+      System.setOut(originalOut);
+    }
+    assertEquals(
+        StringUtils.lines(
+            "--bad <apk>       Known bad APK.",
+            "--command <file>  Command to run after each bisection.",
+            "--good <apk>      Known good APK.",
+            "--help",
+            "--output <dir>    Output directory.",
+            "--result-bad      Bisect again assuming previous run was",
+            "        bad.",
+            "--result-good     Bisect again assuming previous run was",
+            "        good.",
+            "--state <file>    Bisection state."),
+        out.toString());
   }
 
   public BisectTest(TestParameters parameters) {

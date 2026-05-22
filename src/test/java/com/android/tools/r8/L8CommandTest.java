@@ -26,6 +26,7 @@ import com.android.tools.r8.utils.ExtractMarkerUtils;
 import com.android.tools.r8.utils.InternalOptions;
 import com.android.tools.r8.utils.ThreadUtils;
 import com.android.tools.r8.utils.internal.FileUtils;
+import com.android.tools.r8.utils.internal.StringUtils;
 import com.google.common.collect.ImmutableList;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -82,6 +83,68 @@ public class L8CommandTest extends CommandTestBase<L8Command> {
             .setProgramConsumer(DexIndexedConsumer.emptyConsumer())
             .addDesugaredLibraryConfiguration(getDesugaredLibraryConfiguration())
             .build());
+  }
+
+  @Test
+  public void testHelpMessage() {
+    assertEquals(
+        StringUtils.lines(
+            "Usage: l8 [options] <input-files>",
+            " where <input-files> are any combination class, zip, or jar files",
+            " where <input-files> are any combination of dex, class, zip, jar, or apk files",
+            " and options are:",
+            "  --debug                 # Compile with debugging information (default).",
+            "  --release               # Compile without debugging information.",
+            "  --output <file>         # Output result in <file>.",
+            "                          # <file> must be an existing directory or a zip file.",
+            "  --lib <file|jdk-home>   # Add <file|jdk-home> as a library resource.",
+            "  --min-api <number>      # Minimum Android API level compatibility (default: 1).",
+            "  --pg-conf <file>        # Proguard configuration <file>.",
+            "  --pg-map-output <file>  # Output the resulting name and line mapping to <file>.",
+            "  --partition-map-output <file>",
+            "                          # Output the resulting mapping to <file>.",
+            "  --desugared-lib <file>  # Specify desugared library configuration.",
+            "                          # <file> is a desugared library configuration (json).",
+            "  --force-enable-assertions[:[<class name>|<package name>...]]",
+            "  --force-ea[:[<class name>|<package name>...]]",
+            "                          # Forcefully enable javac generated assertion code.",
+            "  --force-disable-assertions[:[<class name>|<package name>...]]",
+            "  --force-da[:[<class name>|<package name>...]]",
+            "                          # Forcefully disable javac generated assertion code.",
+            "                          # This is the default handling of javac assertion code",
+            "                          # when generating DEX file format.",
+            "  --force-passthrough-assertions[:[<class name>|<package name>...]]",
+            "  --force-pa[:[<class name>|<package name>...]]",
+            "                          # Don't change javac generated assertion code. This",
+            "                          # is the default handling of javac assertion code when",
+            "                          # generating class file format.",
+            "  --force-assertions-handler:<handler method>[:[<class name>|<package name>...]]",
+            "  --force-ah:<handler method>[:[<class name>|<package name>...]]",
+            "                          # Change javac and kotlinc generated assertion code",
+            "                          # to invoke the method <handler method> with each",
+            "                          # assertion error instead of throwing it.",
+            "                          # The <handler method> is specified as a class name",
+            "                          # followed by a dot and the method name.",
+            "                          # The handler method must take a single argument of",
+            "                          # type java.lang.Throwable and have return type void.",
+            "  --thread-count <number> # Use <number> of threads for compilation.",
+            "                          # If not specified the number will be based on",
+            "                          # heuristics taking the number of cores into account.",
+            "  --map-diagnostics[:<type>] <from-level> <to-level>",
+            "                          # Map diagnostics of <type> (default any) reported as",
+            "                          # <from-level> to <to-level> where <from-level> and",
+            "                          # <to-level> are one of 'info', 'warning', or 'error'",
+            "                          # and the optional <type> is either the simple or",
+            "                          # fully qualified Java type name of a diagnostic.",
+            "                          # If <type> is unspecified, all diagnostics at ",
+            "                          # <from-level> will be mapped.",
+            "                          # Note that fatal compiler errors cannot be mapped.",
+            "  --art-profile <input> <output>",
+            "                          # Rewrite human readable ART profile read from <input> and"
+                + " write to <output>.",
+            "  --version               # Print the version of l8.",
+            "  --help                  # Print this message."),
+        L8CommandParser.getUsageMessage());
   }
 
   private void verifyEmptyCommand(L8Command command) {

@@ -66,6 +66,44 @@ public class TraceReferencesCommandTest extends TestBase {
     TraceReferencesCommand.builder().build();
   }
 
+  @Test
+  public void testHelpMessage() {
+    assertEquals(
+        StringUtils.lines(
+            "Usage: tracereferences <command> [<options>] [@<argfile>]",
+            " Where <command> is one of:",
+            "  --check                 # Run emitting only diagnostics messages.",
+            "  --keep-rules [<keep-rules-options>]",
+            "                          # Traced references will be output in the keep-rules",
+            "                          # format.",
+            "  --natives               # EXPERIMENTAL.",
+            " and each <argfile> is a file containing additional options (one per line)",
+            " and options are:",
+            "  --lib <file|jdk-home>   # Add <file|jdk-home> runtime library.",
+            "  --source <file>         # Add <file> as a source for tracing references.",
+            "  --target <file>         # Add <file> as a target for tracing references. When",
+            "                          # target is not specified all references from source",
+            "                          # outside of library are treated as a missing",
+            "                          # references.",
+            "  --output <file>         # Output result in <outfile>. If not passed the",
+            "                          # result will go to standard out.",
+            "  --map-diagnostics[:<type>] <from-level> <to-level>",
+            "                          # Map diagnostics of <type> (default any) reported as",
+            "                          # <from-level> to <to-level> where <from-level> and",
+            "                          # <to-level> are one of 'info', 'warning', or 'error'",
+            "                          # and the optional <type> is either the simple or",
+            "                          # fully qualified Java type name of a diagnostic.",
+            "                          # If <type> is unspecified, all diagnostics at ",
+            "                          # <from-level> will be mapped.",
+            "                          # Note that fatal compiler errors cannot be mapped.",
+            "  --version               # Print the version of tracereferences.",
+            "  --help                  # Print this message.",
+            " and <keep-rule-options> are:",
+            "  --allowobfuscation      # Output keep rules with the allowobfuscation",
+            "                          # modifier (defaults to rules without the modifier)"),
+        TraceReferencesCommandParser.getUsageMessage());
+  }
+
   @Test(expected = CompilationFailedException.class)
   public void emptyRun() throws Throwable {
     DiagnosticsChecker.checkErrorsContains(

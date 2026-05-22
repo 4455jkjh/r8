@@ -43,6 +43,17 @@ public class ExtractMarkerTest extends TestBase {
         getTestParameters().withAllRuntimes().withAllApiLevels().build(), BooleanUtils.values());
   }
 
+  @Test
+  public void testHelpMessage() {
+    parameters.assumeIsOrSimulateNoneRuntime();
+    assertEquals(
+        StringUtils.joinLines(
+            "Usage: extractmarker [options] <input-files>",
+            " where <input-files> are D8 supported input/output files and options are:",
+            "  --help                  # Print this message."),
+        ExtractMarkerCommand.USAGE_MESSAGE);
+  }
+
   public ExtractMarkerTest(TestParameters parameters, boolean includeClassesChecksum) {
     this.parameters = parameters;
     this.includeClassesChecksum = includeClassesChecksum;
