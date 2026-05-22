@@ -783,8 +783,15 @@ public class MutableMethodOptimizationInfo extends MethodOptimizationInfo
           dynamicType.getDynamicUpperBoundType(staticReturnType);
       TypeElement newDynamicUpperBoundType =
           newDynamicType.getDynamicUpperBoundType(staticReturnType);
+      // Check that the new dynamic return type is compatible with the old dynamic return type.
+      // It should generally always be stronger, but there are a few cases where this is not
+      // guaranteed, for example, due to the fact that we can reason precisely about virtual
+      // dispatch when we have a specific receiver type, but not about the behavior of _dispatch_
+      // methods inserted by enum unboxing, even when the dispatch argument is constant.
       assert newDynamicUpperBoundType.lessThanOrEqualUpToNullability(
-              previousDynamicUpperBoundType, appView)
+                  previousDynamicUpperBoundType, appView)
+              || previousDynamicUpperBoundType.lessThanOrEqualUpToNullability(
+                  newDynamicUpperBoundType, appView)
           : "upper bound type changed from "
               + previousDynamicUpperBoundType
               + " to "
