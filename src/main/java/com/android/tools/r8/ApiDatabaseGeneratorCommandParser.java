@@ -7,12 +7,15 @@ import com.android.tools.r8.origin.Origin;
 import com.android.tools.r8.utils.FlagFile;
 import com.android.tools.r8.utils.StringDiagnostic;
 import com.android.tools.r8.utils.internal.CliParser;
+import com.android.tools.r8.utils.internal.StringUtils;
 import java.nio.file.Paths;
 
 public class ApiDatabaseGeneratorCommandParser {
 
   private static CliParser<ApiDatabaseGeneratorCommand.Builder> createParser() {
-    String usageHeader = "Usage: apidatabasegenerator [options] <input-files>\nwhere options are:";
+    String usageHeader =
+        StringUtils.joinLines(
+            "Usage: apidatabasegenerator [options] <input-files>", "where options are:");
     CliParser<ApiDatabaseGeneratorCommand.Builder> parser = new CliParser<>(usageHeader);
     return parser
         .option0("--help", "Print help.", builder -> builder.setPrintHelp(true), "-h")
