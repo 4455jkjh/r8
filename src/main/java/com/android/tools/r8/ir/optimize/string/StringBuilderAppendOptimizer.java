@@ -15,6 +15,7 @@ import static com.android.tools.r8.ir.optimize.string.StringBuilderNode.createNe
 import static com.android.tools.r8.ir.optimize.string.StringBuilderNode.createOtherStringBuilderNode;
 import static com.android.tools.r8.ir.optimize.string.StringBuilderNode.createToStringNode;
 import static com.android.tools.r8.utils.internal.FunctionUtils.ignoreArgument;
+import static com.android.tools.r8.utils.internal.PredicateUtils.not;
 
 import com.android.tools.r8.graph.AppInfo;
 import com.android.tools.r8.graph.AppView;
@@ -63,6 +64,7 @@ import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.Predicate;
 
 /**
  * {@link StringBuilderAppendOptimizer} will try to optimize string builders by joining appends with
@@ -111,18 +113,30 @@ public class StringBuilderAppendOptimizer extends CodeRewriterPass<AppInfo> {
       return CodeRewriterResult.NO_CHANGE;
     }
     AffectedValues affectedValues = new AffectedValues();
-    InstructionListIterator it = code.instructionListIterator();
-    while (it.hasNext()) {
-      Instruction instruction = it.next();
-      StringBuilderAction stringBuilderAction = actions.get(instruction);
-      if (stringBuilderAction != null) {
-        stringBuilderAction.perform(appView, code, it, instruction, affectedValues, oracle);
-      }
-    }
+    // Process ReplaceAppendWithInit instructions first, so that the new <init>(s) instructions can
+    // reliably be moved to the position of the removed instructions.
+    processActions(code, actions, affectedValues, StringBuilderAction::isReplaceAppendWithInit);
+    processActions(
+        code, actions, affectedValues, not(StringBuilderAction::isReplaceAppendWithInit));
     affectedValues.narrowingWithAssumeRemoval(appView, code);
     code.removeAllDeadAndTrivialPhis();
     code.removeRedundantBlocks();
     return CodeRewriterResult.HAS_CHANGED;
+  }
+
+  private void processActions(
+      IRCode code,
+      Map<Instruction, StringBuilderAction> actions,
+      AffectedValues affectedValues,
+      Predicate<StringBuilderAction> predicate) {
+    InstructionListIterator it = code.instructionListIterator();
+    while (it.hasNext()) {
+      Instruction instruction = it.next();
+      StringBuilderAction action = actions.get(instruction);
+      if (action != null && predicate.test(action)) {
+        action.perform(appView, code, it, instruction, affectedValues, oracle);
+      }
+    }
   }
 
   private static class StringBuilderGraphState {
@@ -300,12 +314,12 @@ public class StringBuilderAppendOptimizer extends CodeRewriterPass<AppInfo> {
             } else if (instruction.isInvokeMethodWithReceiver()) {
               InvokeMethodWithReceiver invoke = instruction.asInvokeMethodWithReceiver();
               Value receiver = invoke.getReceiver();
-              if (oracle.isInit(instruction)) {
+              if (oracle.isInit(invoke)) {
                 InitNode initNode = createInitNode(instruction.asInvokeDirect());
                 String constantArgument = oracle.getConstantArgument(instruction);
                 initNode.setConstantArgument(constantArgument);
                 if (constantArgument == null
-                    && oracle.isStringConstructor(instruction)
+                    && oracle.isStringConstructor(invoke)
                     && invoke.getFirstNonReceiverArgument().isNeverNull()) {
                   initNode.setNonConstantArgument(invoke.getFirstNonReceiverArgument());
                 }

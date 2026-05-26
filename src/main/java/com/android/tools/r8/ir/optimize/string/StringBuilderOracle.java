@@ -10,8 +10,11 @@ import com.android.tools.r8.graph.DexItemFactory;
 import com.android.tools.r8.graph.DexItemFactory.StringBuildingMethods;
 import com.android.tools.r8.graph.DexMethod;
 import com.android.tools.r8.graph.DexType;
+import com.android.tools.r8.ir.analysis.type.ClassTypeElement;
+import com.android.tools.r8.ir.analysis.type.TypeElement;
 import com.android.tools.r8.ir.code.Instruction;
 import com.android.tools.r8.ir.code.InvokeDirect;
+import com.android.tools.r8.ir.code.InvokeMethodWithReceiver;
 import com.android.tools.r8.ir.code.InvokeVirtual;
 import com.android.tools.r8.ir.code.Value;
 import java.util.List;
@@ -40,13 +43,15 @@ interface StringBuilderOracle {
 
   boolean isAppendWithSubArray(Instruction instruction);
 
+  boolean canAppendArgumentBeUsedForInit(Value value);
+
   boolean canObserveStringBuilderCall(Instruction instruction);
 
   boolean isInit(Instruction instruction);
 
   boolean isAppendString(Instruction instruction);
 
-  boolean isStringConstructor(Instruction instruction);
+  boolean isStringConstructor(InvokeMethodWithReceiver invoke);
 
   boolean isConstructorInvokeSideEffectFree(Instruction instruction);
 
@@ -194,6 +199,17 @@ interface StringBuilderOracle {
     }
 
     @Override
+    public boolean canAppendArgumentBeUsedForInit(Value value) {
+      TypeElement type = value.getType();
+      if (!type.isClassType()) {
+        return false;
+      }
+      ClassTypeElement classType = type.asClassType();
+      return classType.getClassType().isIdenticalTo(factory.stringType)
+          || classType.getInterfaces().containsKnownInterface(factory.charSequenceType);
+    }
+
+    @Override
     public boolean canObserveStringBuilderCall(Instruction instruction) {
       if (!instruction.isInvokeMethod()) {
         assert false : "Expecting a call to string builder";
@@ -236,11 +252,8 @@ interface StringBuilderOracle {
 
     @Override
     @SuppressWarnings("ReferenceEquality")
-    public boolean isStringConstructor(Instruction instruction) {
-      if (!instruction.isInvokeMethod()) {
-        return false;
-      }
-      DexMethod invokedMethod = instruction.asInvokeMethod().getInvokedMethod();
+    public boolean isStringConstructor(InvokeMethodWithReceiver invoke) {
+      DexMethod invokedMethod = invoke.getInvokedMethod();
       return invokedMethod == factory.stringBuilderMethods.stringConstructor
           || invokedMethod == factory.stringBufferMethods.stringConstructor;
     }

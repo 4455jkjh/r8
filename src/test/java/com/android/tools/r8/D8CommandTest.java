@@ -29,6 +29,7 @@ import com.android.tools.r8.utils.InternalOptions;
 import com.android.tools.r8.utils.ThreadUtils;
 import com.android.tools.r8.utils.ZipUtils;
 import com.android.tools.r8.utils.internal.FileUtils;
+import com.android.tools.r8.utils.internal.StringUtils;
 import com.google.common.collect.ImmutableList;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -164,6 +165,95 @@ public class D8CommandTest extends CommandTestBase<D8Command> {
     assertFalse(result.exitCode == 0);
     assertTrue(result.stderr.contains("Usage"));
     assertFalse(result.stderr.contains("D8_foobar")); // Sanity check
+  }
+
+  @Test
+  public void testHelpMessage() {
+    assertEquals(
+        StringUtils.lines(
+            "Usage: d8 [options] [@<argfile>] <input-files>",
+            " where <input-files> are any combination of dex, class, zip, jar, or apk files",
+            " and each <argfile> is a file containing additional arguments (one per line)",
+            " and options are:",
+            "  --debug                 # Compile with debugging information (default).",
+            "  --release               # Compile without debugging information.",
+            "  --output <file>         # Output result in <file>.",
+            "                          # <file> must be an existing directory or a zip file.",
+            "  --globals <file>        # Global synthetics <file> from a previous intermediate"
+                + " compilation.",
+            "                          # The <file> may be either a zip-archive of global"
+                + " synthetics or the",
+            "                          # global-synthetic files directly.",
+            "  --globals-output <file> # Output global synthetics in <file>.",
+            "                          # <file> must be an existing directory or a non-existent zip"
+                + " archive.",
+            "  --lib <file|jdk-home>   # Add <file|jdk-home> as a library resource.",
+            "  --classpath <file>      # Add <file> as a classpath resource.",
+            "  --min-api <number>      # Minimum Android API level compatibility (default: 1).",
+            "  --pg-map <file>         # Use <file> as a mapping file for distribution.",
+            "  --intermediate          # Compile an intermediate result intended for later",
+            "                          # merging.",
+            "  --file-per-class        # Produce a separate dex file per class.",
+            "                          # Synthetic classes are in their own file.",
+            "  --file-per-class-file   # Produce a separate dex file per input .class file.",
+            "                          # Synthetic classes are with their originating class.",
+            "  --no-desugaring         # Force disable desugaring.",
+            "  --desugared-lib <file>  # Specify desugared library configuration.",
+            "                          # <file> is a desugared library configuration (json).",
+            "  --main-dex-rules <file> # Proguard keep rules for classes to place in the",
+            "                          # primary dex file.",
+            "  --main-dex-list <file>  # List of classes to place in the primary dex file.",
+            "  --main-dex-list-output <file>",
+            "                          # Output resulting main dex list in <file>.",
+            "  --force-enable-assertions[:[<class name>|<package name>...]]",
+            "  --force-ea[:[<class name>|<package name>...]]",
+            "                          # Forcefully enable javac generated assertion code.",
+            "  --force-disable-assertions[:[<class name>|<package name>...]]",
+            "  --force-da[:[<class name>|<package name>...]]",
+            "                          # Forcefully disable javac generated assertion code.",
+            "                          # This is the default handling of javac assertion code",
+            "                          # when generating DEX file format.",
+            "  --force-passthrough-assertions[:[<class name>|<package name>...]]",
+            "  --force-pa[:[<class name>|<package name>...]]",
+            "                          # Don't change javac generated assertion code. This",
+            "                          # is the default handling of javac assertion code when",
+            "                          # generating class file format.",
+            "  --force-assertions-handler:<handler method>[:[<class name>|<package name>...]]",
+            "  --force-ah:<handler method>[:[<class name>|<package name>...]]",
+            "                          # Change javac and kotlinc generated assertion code",
+            "                          # to invoke the method <handler method> with each",
+            "                          # assertion error instead of throwing it.",
+            "                          # The <handler method> is specified as a class name",
+            "                          # followed by a dot and the method name.",
+            "                          # The handler method must take a single argument of",
+            "                          # type java.lang.Throwable and have return type void.",
+            "  --thread-count <number> # Use <number> of threads for compilation.",
+            "                          # If not specified the number will be based on",
+            "                          # heuristics taking the number of cores into account.",
+            "  --map-diagnostics[:<type>] <from-level> <to-level>",
+            "                          # Map diagnostics of <type> (default any) reported as",
+            "                          # <from-level> to <to-level> where <from-level> and",
+            "                          # <to-level> are one of 'info', 'warning', or 'error'",
+            "                          # and the optional <type> is either the simple or",
+            "                          # fully qualified Java type name of a diagnostic.",
+            "                          # If <type> is unspecified, all diagnostics at ",
+            "                          # <from-level> will be mapped.",
+            "                          # Note that fatal compiler errors cannot be mapped.",
+            "  --android-platform-build",
+            "                          # Compile as a platform build where the"
+                + " runtime/bootclasspath",
+            "                          # is assumed to be the version specified by --min-api.",
+            "  --art-profile <input> <output>",
+            "                          # Rewrite human readable ART profile read from <input> and"
+                + " write to <output>.",
+            "  --startup-profile <file>",
+            "                          # Startup profile <file> to use for dex layout.",
+            "  --verbose-synthetic-names",
+            "                          # Enable verbose synthetic names that use the"
+                + " `$$ExternalSynthetic` marker.",
+            "  --version               # Print the version of d8.",
+            "  --help                  # Print this message."),
+        D8CommandParser.getUsageMessage());
   }
 
   @Test

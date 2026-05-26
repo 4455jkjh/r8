@@ -7,7 +7,6 @@ package com.android.tools.r8;
 import static com.android.tools.r8.ir.desugar.itf.InterfaceDesugaringForTesting.getCompanionClassNameSuffix;
 import static com.android.tools.r8.ir.desugar.itf.InterfaceDesugaringForTesting.getPrivateMethodPrefix;
 import static com.android.tools.r8.utils.codeinspector.Matchers.isPresent;
-import static com.android.tools.r8.utils.internal.FileUtils.JAR_EXTENSION;
 import static com.android.tools.r8.utils.internal.FileUtils.ZIP_EXTENSION;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertEquals;
@@ -39,8 +38,6 @@ import org.junit.rules.ExpectedException;
 
 public abstract class RunExamplesJava9Test<B extends BaseCommand.Builder<? extends BaseCommand, B>>
     extends TestBase {
-
-  private static final String EXAMPLE_DIR = ToolHelper.EXAMPLES_JAVA9_BUILD_DIR;
 
   abstract class TestRunner<C extends TestRunner<C>> {
     final String testName;
@@ -76,8 +73,9 @@ public abstract class RunExamplesJava9Test<B extends BaseCommand.Builder<? exten
       return self();
     }
 
-    Path getInputJar() {
-      return Paths.get(EXAMPLE_DIR, packageName + JAR_EXTENSION);
+    Path getInputPath() {
+      return ToolHelper.getClassPathForTests()
+          .resolve(packageName.replace('.', java.io.File.separatorChar));
     }
 
     void run() throws Throwable {
@@ -86,7 +84,7 @@ public abstract class RunExamplesJava9Test<B extends BaseCommand.Builder<? exten
       }
 
       String qualifiedMainClass = packageName + "." + mainClass;
-      Path inputFile = getInputJar();
+      Path inputFile = getInputPath();
       Path out = temp.getRoot().toPath().resolve(testName + ZIP_EXTENSION);
 
       build(inputFile, out);
@@ -158,8 +156,10 @@ public abstract class RunExamplesJava9Test<B extends BaseCommand.Builder<? exten
 
   @Test
   public void nativePrivateInterfaceMethods() throws Throwable {
-    test("native-private-interface-methods",
-        "privateinterfacemethods", "PrivateInterfaceMethods")
+    test(
+            "native-private-interface-methods",
+            "com.android.tools.r8.examplesJava9.privateinterfacemethods",
+            "PrivateInterfaceMethods")
         .withMinApiLevel(AndroidApiLevel.N.getLevel())
         .withKeepAll()
         .run();
@@ -168,10 +168,10 @@ public abstract class RunExamplesJava9Test<B extends BaseCommand.Builder<? exten
   @Test
   public void desugaredPrivateInterfaceMethods() throws Throwable {
     assumeFalse("CF backend does not desugar", this instanceof R8CFRunExamplesJava9Test);
-    final String iName = "privateinterfacemethods.I";
+    final String iName = "com.android.tools.r8.examplesJava9.privateinterfacemethods.I";
     test(
             "desugared-private-interface-methods",
-            "privateinterfacemethods",
+            "com.android.tools.r8.examplesJava9.privateinterfacemethods",
             "PrivateInterfaceMethods")
         .withMinApiLevel(AndroidApiLevel.K.getLevel())
         .withKeepAll()

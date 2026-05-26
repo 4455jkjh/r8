@@ -16,13 +16,14 @@ import com.android.tools.r8.references.FieldReference;
 import com.android.tools.r8.references.MethodReference;
 import com.android.tools.r8.references.Reference;
 import com.android.tools.r8.utils.AndroidApp;
-import com.android.tools.r8.utils.internal.ConsumerUtils;
 import com.android.tools.r8.utils.FieldReferenceUtils;
 import com.android.tools.r8.utils.InternalOptions;
 import com.android.tools.r8.utils.MethodReferenceUtils;
 import com.android.tools.r8.utils.ProgramResourceProviderUtils;
 import com.android.tools.r8.utils.StringDiagnostic;
 import com.android.tools.r8.utils.ThreadUtils;
+import com.android.tools.r8.utils.internal.ConsumerUtils;
+import com.android.tools.r8.utils.internal.StringUtils;
 import com.android.tools.r8.utils.timing.Timing;
 import java.io.Closeable;
 import java.io.IOException;
@@ -141,24 +142,25 @@ public class Disassemble {
     }
 
     static final String USAGE_MESSAGE =
-        "Usage: disasm [options] <input-files>\n"
-            + " where <input-files> are dex files\n"
-            + " and options are:\n"
-            + "  --all                       # Include all information in disassembly.\n"
-            + "  --smali                     # Disassemble using smali syntax.\n"
-            + "  --ir                        # Print IR before and after optimization.\n"
-            + "  --nocode                    # No printing of code objects.\n"
-            + "  --pg-map <file>             # Proguard map <file> for mapping names.\n"
-            + "  --pg-map-charset <charset>  # Charset for Proguard map file.\n"
-            + "  --output                    # Specify a file or directory to write to.\n"
-            + "  --class <descriptor>        # Only disassemble the given class "
-            + "(e.g., Lcom/example/Class;).\n"
-            + "  --field <descriptor>        # Only disassemble the given field "
-            + "(e.g., Lcom/example/Class;->method()V).\n"
-            + "  --method <descriptor>       # Only disassemble the given method "
-            + "(e.g., Lcom/example/Class;->field:I).\n"
-            + "  --version                   # Print the version of r8.\n"
-            + "  --help                      # Print this message.";
+        StringUtils.joinLines(
+            "Usage: disasm [options] <input-files>",
+            " where <input-files> are dex files",
+            " and options are:",
+            "  --all                       # Include all information in disassembly.",
+            "  --smali                     # Disassemble using smali syntax.",
+            "  --ir                        # Print IR before and after optimization.",
+            "  --nocode                    # No printing of code objects.",
+            "  --pg-map <file>             # Proguard map <file> for mapping names.",
+            "  --pg-map-charset <charset>  # Charset for Proguard map file.",
+            "  --output                    # Specify a file or directory to write to.",
+            "  --class <descriptor>        # Only disassemble the given class (e.g.,"
+                + " Lcom/example/Class;).",
+            "  --field <descriptor>        # Only disassemble the given field (e.g.,"
+                + " Lcom/example/Class;->method()V).",
+            "  --method <descriptor>       # Only disassemble the given method (e.g.,"
+                + " Lcom/example/Class;->field:I).",
+            "  --version                   # Print the version of r8.",
+            "  --help                      # Print this message.");
 
     private final boolean allInfo;
     private final boolean useSmali;

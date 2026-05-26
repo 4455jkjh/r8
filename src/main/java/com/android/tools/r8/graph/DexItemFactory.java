@@ -1010,6 +1010,11 @@ public class DexItemFactory {
           .put(boxedDoubleType, createUnboxMethod(doubleType, unboxDoubleMethodName))
           .build();
 
+  public final Set<DexMethod> boxPrimitiveMethods =
+      SetUtils.newIdentityHashSet(boxedValueOfMethods());
+  public final Set<DexMethod> unboxPrimitiveMethods =
+      SetUtils.newIdentityHashSet(unboxPrimitiveMethod.values());
+
   private DexMethod createUnboxMethod(DexType primitiveType, DexString unboxMethodName) {
     DexProto proto = createProto(primitiveType);
     return createMethod(primitiveToBoxed.get(primitiveType), proto, unboxMethodName);

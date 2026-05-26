@@ -1,8 +1,8 @@
-// Copyright (c) 2023, the R8 project authors. Please see the AUTHORS file
+// Copyright (c) 2026, the R8 project authors. Please see the AUTHORS file
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-package com.android.tools.r8.graph.analysis;
+package com.android.tools.r8.shaking;
 
 import com.android.tools.r8.FeatureSplit;
 import com.android.tools.r8.errors.FinalRClassEntriesWithOptimizedShrinkingDiagnostic;
@@ -18,6 +18,10 @@ import com.android.tools.r8.graph.FieldResolutionResult.SingleFieldResolutionRes
 import com.android.tools.r8.graph.ProgramDefinition;
 import com.android.tools.r8.graph.ProgramField;
 import com.android.tools.r8.graph.ProgramMethod;
+import com.android.tools.r8.graph.analysis.EnqueuerAnalysisCollection;
+import com.android.tools.r8.graph.analysis.MarkFieldAsKeptEnqueuerAnalysis;
+import com.android.tools.r8.graph.analysis.NewlyLiveFieldEnqueuerAnalysis;
+import com.android.tools.r8.graph.analysis.TraceFieldAccessEnqueuerAnalysis;
 import com.android.tools.r8.ir.code.IRCode;
 import com.android.tools.r8.ir.code.Instruction;
 import com.android.tools.r8.ir.code.NewArrayEmpty;
@@ -25,16 +29,13 @@ import com.android.tools.r8.ir.code.StaticPut;
 import com.android.tools.r8.ir.code.Value;
 import com.android.tools.r8.ir.conversion.MethodConversionOptions;
 import com.android.tools.r8.resourceshrinker.ResourceShrinkerState;
-import com.android.tools.r8.shaking.Enqueuer;
-import com.android.tools.r8.shaking.EnqueuerWorklist;
-import com.android.tools.r8.shaking.KeepReason;
 import com.android.tools.r8.utils.internal.exceptions.Unreachable;
 import it.unimi.dsi.fastutil.ints.IntArrayList;
 import it.unimi.dsi.fastutil.ints.IntList;
 import java.util.IdentityHashMap;
 import java.util.Map;
 
-public class ResourceAccessAnalysis
+public class ResourceShrinkerEnqueuerExtension
     implements TraceFieldAccessEnqueuerAnalysis, MarkFieldAsKeptEnqueuerAnalysis {
 
   private final ResourceShrinkerState<FeatureSplit> resourceShrinkerState;
@@ -42,7 +43,7 @@ public class ResourceAccessAnalysis
   private final AppView<? extends AppInfoWithClassHierarchy> appView;
   private final Enqueuer enqueuer;
 
-  private ResourceAccessAnalysis(
+  private ResourceShrinkerEnqueuerExtension(
       AppView<? extends AppInfoWithClassHierarchy> appView, Enqueuer enqueuer) {
     this.appView = appView;
     this.resourceShrinkerState = appView.getResourceShrinkerState();
@@ -54,7 +55,8 @@ public class ResourceAccessAnalysis
       Enqueuer enqueuer,
       EnqueuerAnalysisCollection.Builder builder) {
     if (fieldAccessAnalysisEnabled(appView, enqueuer)) {
-      ResourceAccessAnalysis analysis = new ResourceAccessAnalysis(appView, enqueuer);
+      ResourceShrinkerEnqueuerExtension analysis =
+          new ResourceShrinkerEnqueuerExtension(appView, enqueuer);
       builder.addTraceFieldAccessAnalysis(analysis);
       builder.addMarkFieldAsKeptAnalysis(analysis);
     }
@@ -209,7 +211,8 @@ public class ResourceAccessAnalysis
           if (valueDefinition.isConstNumber()) {
             values.add(valueDefinition.asConstNumber().getIntValue());
           } else if (valueDefinition.isResourceConstNumber()) {
-            throw new Unreachable("Only running ResourceAccessAnalysis in initial tree shaking");
+            throw new Unreachable(
+                "Only running ResourceShrinkerEnqueuerExtension in initial tree shaking");
           }
         }
       } else {

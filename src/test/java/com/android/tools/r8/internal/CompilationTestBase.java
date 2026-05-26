@@ -46,7 +46,6 @@ import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ExecutionException;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
@@ -66,7 +65,7 @@ public abstract class CompilationTestBase extends DesugaredLibraryTestBase {
   }
 
   public AndroidApp runAndCheckVerification(D8Command.Builder builder, String referenceApk)
-      throws IOException, ExecutionException, CompilationFailedException {
+      throws IOException, CompilationFailedException {
     AndroidAppConsumers appSink = new AndroidAppConsumers(builder);
     D8.run(builder.build());
     AndroidApp result = appSink.build();
@@ -81,7 +80,7 @@ public abstract class CompilationTestBase extends DesugaredLibraryTestBase {
       List<String> pgConfs,
       Consumer<InternalOptions> optionsConsumer,
       List<String> inputs)
-      throws ExecutionException, IOException, CompilationFailedException {
+      throws IOException, CompilationFailedException {
     return runAndCheckVerification(compiler, mode, referenceApk, pgConfs, optionsConsumer,
         DexIndexedConsumer::emptyConsumer, inputs);
   }
@@ -94,7 +93,7 @@ public abstract class CompilationTestBase extends DesugaredLibraryTestBase {
       Consumer<InternalOptions> optionsConsumer,
       Supplier<DexIndexedConsumer> dexIndexedConsumerSupplier,
       List<String> inputs)
-      throws ExecutionException, IOException, CompilationFailedException {
+      throws IOException, CompilationFailedException {
     assertTrue(referenceApk == null || new File(referenceApk).exists());
     AndroidAppConsumers outputApp;
     if (compiler == CompilerUnderTest.R8) {

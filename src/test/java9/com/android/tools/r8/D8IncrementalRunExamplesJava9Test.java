@@ -51,7 +51,7 @@ public class D8IncrementalRunExamplesJava9Test extends RunExamplesJava9Test<D8Co
       Path incrementalOutput = temp.getRoot().toPath().resolve("incremental");
       builder
           .addLibraryFiles(ToolHelper.getAndroidJar(AndroidApiLevel.P))
-          .addProgramFiles(inputFile)
+          .addProgramFiles(ToolHelper.getClassFilesForTestDirectory(inputFile))
           .setOutput(incrementalOutput, OutputMode.DexFilePerClassFile);
       ToolHelper.runD8(builder, this::combinedOptionConsumer);
       return collectDexFiles(incrementalOutput);

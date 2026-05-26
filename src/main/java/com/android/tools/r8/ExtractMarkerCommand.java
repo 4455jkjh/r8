@@ -7,8 +7,8 @@ import com.android.tools.r8.errors.CompilationError;
 import com.android.tools.r8.keepanno.annotations.KeepForApi;
 import com.android.tools.r8.origin.Origin;
 import com.android.tools.r8.origin.PathOrigin;
+import com.android.tools.r8.utils.internal.StringUtils;
 import com.android.tools.r8.utils.internal.collections.Pair;
-import com.google.common.collect.ImmutableList;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -104,12 +104,10 @@ public class ExtractMarkerCommand {
   }
 
   static final String USAGE_MESSAGE =
-      String.join(
-          "\n",
-          ImmutableList.of(
-              "Usage: extractmarker [options] <input-files>",
-              " where <input-files> are D8 supported input/output files and options are:",
-              "  --help                  # Print this message."));
+      StringUtils.joinLines(
+          "Usage: extractmarker [options] <input-files>",
+          " where <input-files> are D8 supported input/output files and options are:",
+          "  --help                  # Print this message.");
 
   public static Builder builder() {
     return builder(new DiagnosticsHandler() {});

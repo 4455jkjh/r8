@@ -211,7 +211,7 @@ public class Inliner {
   }
 
   private boolean returnsIntAsBoolean(IRCode code, ProgramMethod method) {
-    DexType returnType = method.getDefinition().returnType();
+    DexType returnType = method.getReturnType();
     for (BasicBlock basicBlock : code.blocks) {
       InstructionIterator instructionIterator = basicBlock.iterator();
       while (instructionIterator.hasNext()) {

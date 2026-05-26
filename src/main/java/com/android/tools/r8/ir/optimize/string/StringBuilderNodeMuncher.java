@@ -8,6 +8,7 @@ import com.android.tools.r8.ir.code.Instruction;
 import com.android.tools.r8.ir.code.Value;
 import com.android.tools.r8.ir.optimize.string.StringBuilderAction.AppendWithNewConstantString;
 import com.android.tools.r8.ir.optimize.string.StringBuilderAction.RemoveStringBuilderAction;
+import com.android.tools.r8.ir.optimize.string.StringBuilderAction.ReplaceAppendWithInit;
 import com.android.tools.r8.ir.optimize.string.StringBuilderAction.ReplaceArgumentByExistingString;
 import com.android.tools.r8.ir.optimize.string.StringBuilderAction.ReplaceArgumentByStringConcat;
 import com.android.tools.r8.ir.optimize.string.StringBuilderAction.ReplaceByConstantString;
@@ -108,6 +109,11 @@ class StringBuilderNodeMuncher {
    *
    * init("foo") -> append("bar") =>
    * init("foobar")
+   *
+   * or
+   *
+   * init() -> append(s) =>
+   * init(s)
    * </pre>
    */
   private static class MunchAppends implements PeepholePattern {
@@ -119,7 +125,7 @@ class StringBuilderNodeMuncher {
       if (appendNode == null || !appendNode.hasSinglePredecessor()) {
         return false;
       }
-      InitOrAppendNode previous = currentNode.getSinglePredecessor().asInitOrAppend();
+      InitOrAppendNode previous = appendNode.getSinglePredecessor().asInitOrAppend();
       if (previous == null || !previous.hasSingleSuccessor()) {
         return false;
       }
@@ -129,11 +135,11 @@ class StringBuilderNodeMuncher {
       }
       String currentConstantArgument = getConstantArgumentForNode(appendNode, munchingState);
       if (currentConstantArgument == null) {
-        return false;
+        return optimizeAppendOnEmptyStringBuilder(appendNode, previous, munchingState);
       }
       String previousConstantArgument = getConstantArgumentForNode(previous, munchingState);
       if (previousConstantArgument == null) {
-        return false;
+        return optimizeAppendOnEmptyStringBuilder(appendNode, previous, munchingState);
       }
       String newConstant = previousConstantArgument + currentConstantArgument;
       previous.setConstantArgument(newConstant);
@@ -141,7 +147,47 @@ class StringBuilderNodeMuncher {
           previous.getInstruction(), new AppendWithNewConstantString(newConstant));
       munchingState.actions.put(
           appendNode.getInstruction(), RemoveStringBuilderAction.getInstance());
-      currentNode.removeNode();
+      appendNode.removeNode();
+      return true;
+    }
+
+    private boolean optimizeAppendOnEmptyStringBuilder(
+        AppendNode appendNode, InitOrAppendNode previous, MunchingState munchingState) {
+      if (!previous.isInitNode()) {
+        return false;
+      }
+      InitNode initNode = previous.asInitNode();
+      if (!initNode.hasConstantArgument() || !initNode.getConstantArgument().isEmpty()) {
+        return false;
+      }
+      // We are in the case new StringBuilder().append(...).
+      // Check if there is a single CharSequence or String argument.
+      ReplaceAppendWithInit replaceAction;
+      if (appendNode.hasConstantArgument()) {
+        replaceAction =
+            new ReplaceAppendWithInit(
+                appendNode.getInstruction(), appendNode.getConstantArgument());
+      } else if (appendNode.hasNonConstantArgument()) {
+        Value argument = appendNode.getNonConstantArgument();
+        assert munchingState.oracle.canAppendArgumentBeUsedForInit(argument);
+        replaceAction = new ReplaceAppendWithInit(appendNode.getInstruction(), argument);
+      } else {
+        return false;
+      }
+      // Replace the <init>() call by <init>(argument) and remove the append(argument) call.
+      initNode.setConstantArgument(appendNode.getConstantArgument());
+      initNode.setNonConstantArgument(appendNode.getNonConstantArgument());
+      munchingState.actions.put(initNode.getInstruction(), replaceAction);
+      StringBuilderAction currentAction = munchingState.actions.get(appendNode.getInstruction());
+      if (currentAction != null
+          && !currentAction.isAllowedToBeOverwrittenByRemoveStringBuilderAction()) {
+        assert currentAction.isReplaceArgumentByStringConcat();
+        currentAction.asReplaceArgumentByStringConcat().setRemoveInstruction();
+      } else {
+        munchingState.actions.put(
+            appendNode.getInstruction(), RemoveStringBuilderAction.getInstance());
+      }
+      appendNode.removeNode();
       return true;
     }
   }

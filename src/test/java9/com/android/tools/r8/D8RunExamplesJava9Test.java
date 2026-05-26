@@ -30,7 +30,7 @@ public class D8RunExamplesJava9Test extends RunExamplesJava9Test<D8Command.Build
       // TODO(mikaelpeltier) Add new android.jar build from aosp and use it
       builder
           .addLibraryFiles(ToolHelper.getAndroidJar(AndroidApiLevel.P))
-          .addProgramFiles(inputFile)
+          .addProgramFiles(ToolHelper.getClassFilesForTestDirectory(inputFile))
           .setOutput(out, OutputMode.DexIndexed);
       ToolHelper.runD8(builder, this::combinedOptionConsumer);
     }

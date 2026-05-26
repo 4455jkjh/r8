@@ -1834,7 +1834,7 @@ public class IRBuilder {
   }
 
   public void addReturn(int value) {
-    DexType returnType = method.getDefinition().returnType();
+    DexType returnType = method.getReturnType();
     if (returnType.isVoidType()) {
       assert prototypeChanges.hasBeenChangedToReturnVoid();
       addReturn();

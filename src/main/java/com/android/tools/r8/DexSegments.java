@@ -12,7 +12,7 @@ import com.android.tools.r8.origin.CommandLineOrigin;
 import com.android.tools.r8.utils.AndroidApp;
 import com.android.tools.r8.utils.InternalOptions;
 import com.android.tools.r8.utils.StringDiagnostic;
-import com.google.common.collect.ImmutableList;
+import com.android.tools.r8.utils.internal.StringUtils;
 import it.unimi.dsi.fastutil.ints.Int2ReferenceLinkedOpenHashMap;
 import it.unimi.dsi.fastutil.ints.Int2ReferenceMap;
 import java.io.IOException;
@@ -49,11 +49,12 @@ public class DexSegments {
       }
     }
 
-    static final String USAGE_MESSAGE = String.join("\n", ImmutableList.of(
-        "Usage: dexsegments [options] <input-files>",
-        " where <input-files> are dex files",
-        "  --version               # Print the version of r8.",
-        "  --help                  # Print this message."));
+    static final String USAGE_MESSAGE =
+        StringUtils.joinLines(
+            "Usage: dexsegments [options] <input-files>",
+            " where <input-files> are dex files",
+            "  --version               # Print the version of r8.",
+            "  --help                  # Print this message.");
 
     public static Command.Builder builder() {
       return new Command.Builder();

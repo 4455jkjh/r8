@@ -134,10 +134,10 @@ public class BisectOptions {
     System.out.println("--good <apk>      Known good APK.");
     System.out.println("--help");
     System.out.println("--output <dir>    Output directory.");
-    System.out.println(
-        "--result-bad      Bisect again assuming previous run was\n" + "        bad.");
-    System.out.println(
-        "--result-good     Bisect again assuming previous run was\n" + "        good.");
+    System.out.println("--result-bad      Bisect again assuming previous run was");
+    System.out.println("        bad.");
+    System.out.println("--result-good     Bisect again assuming previous run was");
+    System.out.println("        good.");
     System.out.println("--state <file>    Bisection state.");
   }
 }

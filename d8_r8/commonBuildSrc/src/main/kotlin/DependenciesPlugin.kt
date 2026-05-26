@@ -15,20 +15,14 @@ import org.gradle.api.Project
 import org.gradle.api.Task
 import org.gradle.api.file.ConfigurableFileCollection
 import org.gradle.api.file.Directory
-import org.gradle.api.file.DuplicatesStrategy
 import org.gradle.api.file.FileCollection
 import org.gradle.api.file.RegularFile
-import org.gradle.api.plugins.JavaPluginExtension
-import org.gradle.api.tasks.JavaExec
-import org.gradle.api.tasks.SourceSet
 import org.gradle.api.tasks.compile.JavaCompile
 import org.gradle.api.tasks.testing.Test
-import org.gradle.jvm.tasks.Jar
 import org.gradle.jvm.toolchain.JavaInstallationMetadata
 import org.gradle.jvm.toolchain.JavaLanguageVersion
 import org.gradle.jvm.toolchain.JavaLauncher
 import org.gradle.jvm.toolchain.internal.DefaultJavaLanguageVersion
-import org.gradle.kotlin.dsl.register
 import org.gradle.kotlin.dsl.withType
 import org.gradle.nativeplatform.platform.OperatingSystem
 import org.gradle.nativeplatform.platform.internal.DefaultNativePlatform
@@ -137,99 +131,6 @@ private fun toNetworkOrder(data: ByteArray, dataIndex: Int): Long {
 
 private fun fromNetworkByteOrder(value: Long, dest: ByteArray, destIndex: Int) {
   for (i in 0..7) dest[i + destIndex] = (value shr (7 - i) * 8 and 0xffL).toByte()
-}
-
-/**
- * Builds a jar for each sub folder in a test source set.
- *
- * <p> As an example, src/test/examplesJava9 contains subfolders: backport, collectionof, ..., .
- * These are compiled to individual jars and placed in <repo-root>/build/test/examplesJava9/ as:
- * backport.jar, collectionof.jar, ..., .
- *
- * Calling this from a project will amend the task graph with the task named
- * getExamplesJarsTaskName(examplesName) such that it can be referenced from the test runners.
- */
-public fun Project.buildExampleJars(name: String): Task {
-  val jarTasks: MutableList<Task> = mutableListOf()
-  val testSourceSet =
-    extensions
-      .getByType(JavaPluginExtension::class.java)
-      .sourceSets
-      // The TEST_SOURCE_SET_NAME is the source set defined by writing
-      // java { sourcesets.test { ... }}
-      .getByName(SourceSet.TEST_SOURCE_SET_NAME)
-  val destinationDir = getRoot().resolveAll("build", "test", name)
-  val generateDir = getRoot().resolveAll("build", "generated", name)
-  val classesOutput = destinationDir.resolve("classes")
-  testSourceSet.java.destinationDirectory.set(classesOutput)
-  testSourceSet.resources.destinationDirectory.set(destinationDir)
-  testSourceSet.java.sourceDirectories.files.forEach { srcDir ->
-    srcDir.listFiles(File::isDirectory)?.forEach { exampleDir ->
-      arrayOf("compileTestJava", "debuginfo-all", "debuginfo-none").forEach { taskName ->
-        if (!project.getTasksByName(taskName, false).isEmpty()) {
-          var generationTask: Task? = null
-          val compileOutput = getOutputName(classesOutput.toString(), taskName)
-          if (exampleDir.resolve("TestGenerator.java").isFile) {
-            val generatedOutput =
-              Paths.get(getOutputName(generateDir.toString(), taskName), exampleDir.name).toString()
-            generationTask =
-              tasks
-                .register<JavaExec>("generate-$name-${exampleDir.name}-$taskName") {
-                  dependsOn(taskName)
-                  mainClass.set("${exampleDir.name}.TestGenerator")
-                  classpath = files(compileOutput, testSourceSet.compileClasspath)
-                  args(compileOutput, generatedOutput)
-                  outputs.dirs(generatedOutput)
-                }
-                .get()
-          }
-          val jarTask =
-            tasks
-              .register<Jar>("jar-$name-${exampleDir.name}-$taskName") {
-                dependsOn(taskName)
-                archiveFileName.set("${getOutputName(exampleDir.name, taskName)}.jar")
-                destinationDirectory.set(destinationDir)
-                duplicatesStrategy = DuplicatesStrategy.EXCLUDE
-                if (generationTask != null) {
-                  // If a generation task exists, we first take the generated output and add to the
-                  // current jar. Running with DuplicatesStrategy.EXCLUDE ensure that we do not
-                  // overwrite with the non-generated file.
-                  dependsOn(generationTask)
-                  from(generationTask.outputs.files.singleFile.parentFile) {
-                    include("${exampleDir.name}/**/*.class")
-                    exclude("**/TestGenerator*")
-                  }
-                }
-                from(compileOutput) {
-                  include("${exampleDir.name}/**/*.class")
-                  exclude("**/TestGenerator*")
-                  exclude("${exampleDir.name}/twr/**")
-                }
-                // Copy additional resources into the jar.
-                from(exampleDir) {
-                  exclude("**/*.java")
-                  exclude("**/keep-rules*.txt")
-                  into(exampleDir.name)
-                }
-              }
-              .get()
-          jarTasks.add(jarTask)
-        }
-      }
-    }
-  }
-  return tasks.register(getExampleJarsTaskName(name)) { dependsOn(jarTasks.toTypedArray()) }.get()
-}
-
-private fun getOutputName(dest: String, taskName: String): String {
-  if (taskName == "compileTestJava") {
-    return dest
-  }
-  return "${dest}_${taskName.replace('-', '_')}"
-}
-
-public fun getExampleJarsTaskName(name: String): String {
-  return "build-example-jars-$name"
 }
 
 public fun Project.resolve(

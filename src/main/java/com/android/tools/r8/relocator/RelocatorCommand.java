@@ -37,10 +37,10 @@ import com.android.tools.r8.utils.StringDiagnostic;
 import com.android.tools.r8.utils.ThreadUtils;
 import com.android.tools.r8.utils.internal.Box;
 import com.android.tools.r8.utils.internal.FileUtils;
+import com.android.tools.r8.utils.internal.StringUtils;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Iterables;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -57,23 +57,20 @@ public class RelocatorCommand {
       ImmutableSet.of("--output", "--input", "--input-no-res", "--map", THREAD_COUNT_FLAG);
 
   static final String USAGE_MESSAGE =
-      String.join(
-          "\n",
-          Iterables.concat(
-              Arrays.asList(
-                  "The Relocator CLI is EXPERIMENTAL and is subject to change",
-                  "Usage: relocator [options]",
-                  " where options are:",
-                  "  --input <file>          # Input file to remap, class, zip or jar.",
-                  "  --input-no-res <file>   # Input file to remap, zip or jar.",
-                  "                          # Only .class file entries are included.",
-                  "  --output <file>         # Output result in <outfile>.",
-                  "  --map <from->to>        # Registers a mapping.",
-                  "  --map-diagnostics [:<type>] <from-level> <to-level>",
-                  "                          # Map diagnostics level.",
-                  "  --thread-count <number> # A specified number of threads to run with.",
-                  "  --version               # Print the version of d8.",
-                  "  --help                  # Print this message.")));
+      StringUtils.joinLines(
+          "The Relocator CLI is EXPERIMENTAL and is subject to change",
+          "Usage: relocator [options]",
+          " where options are:",
+          "  --input <file>          # Input file to remap, class, zip or jar.",
+          "  --input-no-res <file>   # Input file to remap, zip or jar.",
+          "                          # Only .class file entries are included.",
+          "  --output <file>         # Output result in <outfile>.",
+          "  --map <from->to>        # Registers a mapping.",
+          "  --map-diagnostics [:<type>] <from-level> <to-level>",
+          "                          # Map diagnostics level.",
+          "  --thread-count <number> # A specified number of threads to run with.",
+          "  --version               # Print the version of d8.",
+          "  --help                  # Print this message.");
 
   private final boolean printHelp;
   private final boolean printVersion;
