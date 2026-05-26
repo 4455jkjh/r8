@@ -39,7 +39,9 @@ public class CodeRewriterPassCollection {
 
   public static CodeRewriterPassCollection create(AppView<?> appView) {
     List<CodeRewriterPass<?>> passes = new ArrayList<>();
-    if (!appView.hasClassHierarchy()) {
+    if (appView.hasClassHierarchy()) {
+      passes.add(new KotlinValueClassUnboxBoxOptimizer(appView));
+    } else {
       passes.add(new KotlinInlineMarkerRewriter(appView.withoutClassHierarchy()));
     }
     passes.add(new TrivialCheckCastAndInstanceOfRemover(appView));
