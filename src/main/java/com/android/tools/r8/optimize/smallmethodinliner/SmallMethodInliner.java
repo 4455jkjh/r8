@@ -31,6 +31,8 @@ import com.android.tools.r8.ir.conversion.MethodConversionOptions;
 import com.android.tools.r8.ir.conversion.MethodProcessor;
 import com.android.tools.r8.ir.conversion.MethodProcessorEventConsumer;
 import com.android.tools.r8.ir.conversion.OneTimeMethodProcessor;
+import com.android.tools.r8.ir.conversion.callgraph.CallGraph;
+import com.android.tools.r8.ir.conversion.callgraph.PartialCallGraphBuilder;
 import com.android.tools.r8.ir.optimize.DeadCodeRemover;
 import com.android.tools.r8.ir.optimize.DefaultInliningOracle;
 import com.android.tools.r8.ir.optimize.Inliner;
@@ -236,33 +238,52 @@ public class SmallMethodInliner extends Inliner implements InliningReasonStrateg
       throws ExecutionException {
     try (Timing t0 = timing.begin("Process callers")) {
       MethodProcessor methodProcessor = createMethodProcessor();
+      ProgramMethodSet callGraphSeeds = ProgramMethodSet.createConcurrent();
       ThreadUtils.processItems(
           callers,
-          method -> {
-            IRCode code = method.buildIR(appView);
-            DeadCodeRemover deadCodeRemover = new DeadCodeRemover(appView);
-            Timing threadTiming = Timing.empty();
-            performInlining(
-                method,
-                code,
-                OptimizationFeedbackSimple.getInstance(),
-                methodProcessor,
-                threadTiming,
-                this,
-                this);
-
-            // Only convert IR back to LIR if any methods were inlined.
-            if (needsFinalization.remove(method)) {
-              IRFinalizer<?> finalizer =
-                  code.getConversionOptions().getFinalizer(deadCodeRemover, appView);
-              Code newCode =
-                  finalizer.finalizeCode(code, BytecodeMetadataProvider.empty(), threadTiming);
-              method.setCode(newCode, appView);
+          caller -> {
+            if (methodsToInline.contains(caller)) {
+              callGraphSeeds.add(caller);
+            } else {
+              processCaller(caller, methodProcessor);
             }
           },
           options.getThreadingModule(),
           executorService);
+      if (!callGraphSeeds.isEmpty()) {
+        CallGraph callGraph =
+            new PartialCallGraphBuilder(appView, callGraphSeeds)
+                .buildForSmallMethodInliner(executorService, timing);
+        while (!callGraph.isEmpty()) {
+          ThreadUtils.processItems(
+              callGraph.extractLeaves(),
+              caller -> processCaller(caller, methodProcessor),
+              options.getThreadingModule(),
+              executorService);
+        }
+      }
       assert needsFinalization.isEmpty();
+    }
+  }
+
+  private void processCaller(ProgramMethod method, MethodProcessor methodProcessor) {
+    IRCode code = method.buildIR(appView);
+    DeadCodeRemover deadCodeRemover = new DeadCodeRemover(appView);
+    Timing threadTiming = Timing.empty();
+    performInlining(
+        method,
+        code,
+        OptimizationFeedbackSimple.getInstance(),
+        methodProcessor,
+        threadTiming,
+        this,
+        this);
+
+    // Only convert IR back to LIR if any methods were inlined.
+    if (needsFinalization.remove(method)) {
+      IRFinalizer<?> finalizer = code.getConversionOptions().getFinalizer(deadCodeRemover, appView);
+      Code newCode = finalizer.finalizeCode(code, BytecodeMetadataProvider.empty(), threadTiming);
+      method.setCode(newCode, appView);
     }
   }
 

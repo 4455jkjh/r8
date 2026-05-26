@@ -19,27 +19,37 @@ abstract class IRProcessingCallGraphBuilderBase extends CallGraphBuilderBase<Nod
   }
 
   public CallGraph build(ExecutorService executorService, Timing timing) throws ExecutionException {
-    timing.begin("Build IR processing order constraints");
-    timing.begin("Build call graph");
-    populateGraph(executorService);
-    assert verifyNoRedundantFieldReadEdges();
-    timing.end();
-    assert verifyAllMethodsWithCodeExists();
+    try (Timing t0 = timing.begin("Build IR processing order constraints")) {
+      try (Timing t1 = timing.begin("Build call graph")) {
+        populateGraph(executorService);
+      }
+      assert verifyNoRedundantFieldReadEdges();
+      assert verifyAllMethodsWithCodeExists();
+      appView.withGeneratedMessageLiteBuilderShrinker(
+          shrinker -> shrinker.preprocessCallGraphBeforeCycleElimination(nodes));
+      runCycleEliminator(timing);
+      return new CallGraph(nodes);
+    }
+  }
 
-    appView.withGeneratedMessageLiteBuilderShrinker(
-        shrinker -> shrinker.preprocessCallGraphBeforeCycleElimination(nodes));
+  public CallGraph buildForSmallMethodInliner(ExecutorService executorService, Timing timing)
+      throws ExecutionException {
+    try (Timing t0 = timing.begin("Build call graph")) {
+      populateGraph(executorService);
+      runCycleEliminator(timing);
+      return new CallGraph(nodes);
+    }
+  }
 
+  private void runCycleEliminator(Timing timing) {
     timing.begin("Cycle elimination");
     // Sort the nodes for deterministic cycle elimination.
     Set<Node> nodesWithDeterministicOrder = Sets.newTreeSet(nodes.values());
     CycleEliminator cycleEliminator = new CycleEliminator();
     cycleEliminator.breakCycles(nodesWithDeterministicOrder);
     timing.end();
-    timing.end();
     assert cycleEliminator.breakCycles(nodesWithDeterministicOrder).numberOfRemovedCallEdges()
         == 0; // The cycles should be gone.
-
-    return new CallGraph(nodes);
   }
 
   @Override
