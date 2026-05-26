@@ -9,6 +9,7 @@ import com.android.tools.r8.graph.DexItemFactory;
 import com.android.tools.r8.graph.DexMethod;
 import com.android.tools.r8.graph.DexString;
 import com.android.tools.r8.ir.analysis.type.TypeElement;
+import com.android.tools.r8.ir.code.ConstString;
 import com.android.tools.r8.ir.code.IRCode;
 import com.android.tools.r8.ir.code.Instruction;
 import com.android.tools.r8.ir.code.InstructionListIterator;
@@ -78,6 +79,20 @@ public interface StringBuilderAction {
         StringBuilderOracle oracle) {
       InvokeDirect initInstruction = instruction.asInvokeDirect();
       assert initInstruction != null;
+      if (initInstruction.arguments().size() == 2) {
+        Value receiver = initInstruction.getReceiver();
+        Value argument = initInstruction.getFirstNonReceiverArgument();
+        if (argument.isDefinedByInstructionSatisfying(Instruction::isConstString)) {
+          ConstString constString = argument.getDefinition().asConstString();
+          assert constString.getValue().isEmpty();
+          argument.removeUser(initInstruction);
+          initInstruction.arguments().clear();
+          initInstruction.arguments().add(receiver);
+        } else {
+          assert false;
+        }
+      }
+
       assert initInstruction.arguments().size() == 1;
 
       DexMethod invokedMethod = initInstruction.getInvokedMethod();
