@@ -274,11 +274,11 @@ public class PossibleResourcesMarker {
                         break;
                     case 'x':
                     case 'X':
-                        pattern = "\\p{XDigit}+";
+            pattern = "\\p{XDigit}++";
                         break;
                     case 'd':
                     case 'o':
-                        pattern = "\\p{Digit}+";
+            pattern = "\\p{Digit}++";
                         break;
                     case 'b':
                         pattern = "(true|false)";
@@ -288,26 +288,26 @@ public class PossibleResourcesMarker {
                         break;
                     case 'h':
                     case 'H':
-                        pattern = "(null|\\p{XDigit}+)";
+            pattern = "(?>null|\\p{XDigit}++)";
                         break;
                     case 'f':
-                        pattern = "-?[\\p{XDigit},.]+";
+            pattern = "-?[\\p{XDigit},.]++";
                         break;
                     case 'e':
-                        pattern = "-?\\p{Digit}+[,.]\\p{Digit}+e\\+?\\p{Digit}+";
+            pattern = "-?\\p{Digit}++[,.]\\p{Digit}++e\\+?\\p{Digit}++";
                         break;
                     case 'E':
-                        pattern = "-?\\p{Digit}+[,.]\\p{Digit}+E\\+?\\p{Digit}+";
+            pattern = "-?\\p{Digit}++[,.]\\p{Digit}++E\\+?\\p{Digit}++";
                         break;
                     case 'a':
-                        pattern = "0x[\\p{XDigit},.+p]+";
+            pattern = "0x[\\p{XDigit},.+p]++";
                         break;
                     case 'A':
-                        pattern = "0X[\\p{XDigit},.+P]+";
+            pattern = "0X[\\p{XDigit},.+P]++";
                         break;
                     case 'g':
                     case 'G':
-                        pattern = "-?[\\p{XDigit},.+eE]+";
+            pattern = "-?[\\p{XDigit},.+eE]++";
                         break;
                 }
 
@@ -325,13 +325,16 @@ public class PossibleResourcesMarker {
                     }
                 }
 
-                // If it's a general .* wildcard which follows a previous .* wildcard,
-                // just skip it (e.g. don't convert %s%s into .*.*; .* is enough.)
-                int regexLength = regexp.length();
-                if (!".*".equals(pattern)
-                        || regexLength < 2
-                        || regexp.charAt(regexLength - 1) != '*'
-                        || regexp.charAt(regexLength - 2) != '.') {
+        // Collapse any sub-pattern that immediately repeats (e.g. %s%s -> .*,
+        // %d%d -> \p{Digit}++) - adjacent identical quantified groups give
+        // the regex engine nothing extra to match and only introduce
+        // ambiguity.
+        int regexLength = regexp.length();
+        boolean isQuantified =
+            pattern.equals(".*") || pattern.endsWith("++") || pattern.endsWith("++)");
+        if (!isQuantified
+            || regexLength < pattern.length()
+            || !regexp.substring(regexLength - pattern.length()).equals(pattern)) {
                     regexp.append(pattern);
                 }
             }
