@@ -105,9 +105,9 @@ public class XmlFilesWithClassReferences extends TestBase {
             codeInspector -> {
               ClassSubject barClass = codeInspector.clazz(Bar.class);
               assertThat(barClass, isPresentAndNotRenamed());
-              // We should have two and only two methods, the two constructors.
-              assertEquals(barClass.allMethods(MethodSubject::isInstanceInitializer).size(), 2);
-              if (!parameters.isRandomPartialCompilation()) {
+              if (parameters.getPartialCompilationTestParameters().isNone()) {
+                // We should have two and only two methods, the two constructors.
+                assertEquals(barClass.allMethods(MethodSubject::isInstanceInitializer).size(), 2);
                 assertEquals(barClass.allMethods().size(), 2);
                 assertThat(codeInspector.clazz(BarFoo.class), assertFoo ? isPresent() : isAbsent());
               }
@@ -144,6 +144,68 @@ public class XmlFilesWithClassReferences extends TestBase {
   }
 
   public static class BarFoo {}
+
+  public static class MockContext {}
+
+  public static class MockAttributeSet {}
+
+  public static class MockView {
+    public MockView(MockContext context, MockAttributeSet attrs) {}
+  }
+
+  // Custom View class referenced from XML file
+  public static class BarView extends MockView {
+    public BarView(MockContext context, MockAttributeSet attrs) {
+      super(context, attrs);
+      System.out.println("init view");
+    }
+
+    public BarView(MockContext context, MockAttributeSet attrs, String x) {
+      super(context, attrs);
+      System.out.println("init view with string");
+    }
+  }
+
+  private byte[] getBarViewClassFileData() throws Exception {
+    return transformer(BarView.class)
+        .setSuper("Landroid/view/View;")
+        .replaceClassDescriptorInMembers(descriptor(MockContext.class), "Landroid/content/Context;")
+        .replaceClassDescriptorInMembers(
+            descriptor(MockAttributeSet.class), "Landroid/util/AttributeSet;")
+        .replaceClassDescriptorInMethodInstructions(
+            descriptor(MockView.class), "Landroid/view/View;")
+        .replaceClassDescriptorInMethodInstructions(
+            descriptor(MockContext.class), "Landroid/content/Context;")
+        .replaceClassDescriptorInMethodInstructions(
+            descriptor(MockAttributeSet.class), "Landroid/util/AttributeSet;")
+        .transform();
+  }
+
+  @Test
+  public void testCustomViewConstructorShrinking() throws Exception {
+    String formattedXmlFile =
+        String.format(VIEW_WITH_CLASS_ATTRIBUTE_REFERENCE, BarView.class.getTypeName());
+    testForR8(parameters)
+        .addProgramClasses(TestClass.class, BarFoo.class)
+        .addProgramClassFileData(getBarViewClassFileData())
+        .addAndroidResources(getTestResources(temp, formattedXmlFile))
+        .addKeepMainRule(TestClass.class)
+        .enableOptimizedShrinking()
+        .compile()
+        .run(parameters.getRuntime(), TestClass.class)
+        .inspect(
+            codeInspector -> {
+              ClassSubject barViewClass = codeInspector.clazz(BarView.class);
+              assertThat(barViewClass, isPresentAndNotRenamed());
+              if (parameters.getPartialCompilationTestParameters().isNone()) {
+                // The custom constructor (Context, AttributeSet, String) must be stripped, leaving
+                // only the targeted constructor.
+                assertEquals(
+                    barViewClass.allMethods(MethodSubject::isInstanceInitializer).size(), 1);
+              }
+            })
+        .assertSuccess();
+  }
 
   public static class R {
     public static class xml {

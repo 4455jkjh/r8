@@ -51,6 +51,7 @@ import com.android.tools.r8.graph.DexEncodedField;
 import com.android.tools.r8.graph.DexEncodedMember;
 import com.android.tools.r8.graph.DexEncodedMethod;
 import com.android.tools.r8.graph.DexField;
+import com.android.tools.r8.graph.DexItemFactory;
 import com.android.tools.r8.graph.DexItemFactory.ClassMethods;
 import com.android.tools.r8.graph.DexLibraryClass;
 import com.android.tools.r8.graph.DexMember;
@@ -61,6 +62,7 @@ import com.android.tools.r8.graph.DexProto;
 import com.android.tools.r8.graph.DexReference;
 import com.android.tools.r8.graph.DexString;
 import com.android.tools.r8.graph.DexType;
+import com.android.tools.r8.graph.DexTypeList;
 import com.android.tools.r8.graph.DexValue;
 import com.android.tools.r8.graph.DirectMappedDexApplication;
 import com.android.tools.r8.graph.EnclosingMethodAttribute;
@@ -724,8 +726,22 @@ public class Enqueuer {
     ReflectiveUseFromXml reason = KeepReason.reflectiveUseFromXml(origin);
     ensureClassKeptForResourceLookup(clazz, reason, markAsLive);
 
+    DexItemFactory factory = appView.dexItemFactory();
+    boolean isFrameworkClass =
+        appInfo
+            .traverseSuperClasses(
+                clazz,
+                (supertype, superclass, subclass) ->
+                    TraversalContinuation.breakIf(
+                        supertype.isIdenticalTo(factory.androidViewViewType)
+                            || supertype.isIdenticalTo(factory.androidPreferencePreferenceType)
+                            || supertype.isIdenticalTo(factory.androidTransitionTransitionType)))
+            .isBreak();
+
     for (ProgramMethod programInstanceInitializer : clazz.programInstanceInitializers()) {
-      // TODO(b/325884671): Only keep the actually framework targeted constructors.
+      if (isFrameworkClass && !isFrameworkTargetedConstructor(programInstanceInitializer)) {
+        continue;
+      }
       applyMinimumKeepInfoWhenLiveOrTargeted(
           programInstanceInitializer, KeepMethodInfo.newEmptyJoiner().disallowOptimization());
       if (markAsLive) {
@@ -739,6 +755,25 @@ public class Enqueuer {
       }
     }
     return true;
+  }
+
+  private boolean isFrameworkTargetedConstructor(ProgramMethod programInstanceInitializer) {
+    DexTypeList parameters = programInstanceInitializer.getParameters();
+    int size = parameters.size();
+    if (size == 0) {
+      return true;
+    }
+    DexItemFactory factory = appView.dexItemFactory();
+    DexType contextType = factory.androidContentContextType;
+    if (size == 1) {
+      return parameters.values[0].isIdenticalTo(contextType);
+    }
+    if (size == 2) {
+      DexType attributeSetType = factory.androidUtilAttributeSetType;
+      return parameters.values[0].isIdenticalTo(contextType)
+          && parameters.values[1].isIdenticalTo(attributeSetType);
+    }
+    return false;
   }
 
   private void ensureClassKeptForResourceLookup(

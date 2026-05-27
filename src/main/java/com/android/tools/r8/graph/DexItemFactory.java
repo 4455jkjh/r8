@@ -719,6 +719,12 @@ public class DexItemFactory {
   public final DexType androidUtilPropertyType =
       createStaticallyKnownType("Landroid/util/Property;");
   public final DexType androidViewViewType = createStaticallyKnownType("Landroid/view/View;");
+  public final DexType androidUtilAttributeSetType =
+      createStaticallyKnownType("Landroid/util/AttributeSet;");
+  public final DexType androidPreferencePreferenceType =
+      createStaticallyKnownType("Landroid/preference/Preference;");
+  public final DexType androidTransitionTransitionType =
+      createStaticallyKnownType("Landroid/transition/Transition;");
   public final DexType androidUtilSparseArrayType =
       createStaticallyKnownType(androidUtilSparseArrayDescriptorString);
   public final DexType androidContentResTypedArrayType =
