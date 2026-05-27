@@ -17,7 +17,6 @@ import static com.android.tools.r8.utils.internal.MapUtils.ignoreKey;
 import static java.util.Collections.emptySet;
 
 import com.android.tools.r8.Diagnostic;
-import com.android.tools.r8.FeatureSplit;
 import com.android.tools.r8.cf.code.CfInstruction;
 import com.android.tools.r8.cf.code.CfInvoke;
 import com.android.tools.r8.contexts.CompilationContext.MethodProcessingContext;
@@ -124,9 +123,7 @@ import com.android.tools.r8.kotlin.KotlinMetadataEnqueuerExtension;
 import com.android.tools.r8.naming.IdentifierNameStringCollection;
 import com.android.tools.r8.optimize.interfaces.analysis.CfOpenClosedInterfacesAnalysis;
 import com.android.tools.r8.origin.Origin;
-import com.android.tools.r8.origin.PathOrigin;
 import com.android.tools.r8.profile.rewriting.ProfileCollectionAdditions;
-import com.android.tools.r8.resourceshrinker.ResourceShrinkerState;
 import com.android.tools.r8.shaking.AnnotationMatchResult.MatchedAnnotation;
 import com.android.tools.r8.shaking.EnqueuerEvent.ClassEnqueuerEvent;
 import com.android.tools.r8.shaking.EnqueuerEvent.InstantiatedClassEnqueuerEvent;
@@ -175,7 +172,6 @@ import com.android.tools.r8.utils.timing.Timing;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
-import java.nio.file.Paths;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -303,6 +299,8 @@ public class Enqueuer {
    * desugaring.
    */
   private final Map<DexProgramClass, ProgramMethod> synthesizingContexts = new IdentityHashMap<>();
+
+  private ResourceShrinkerEnqueuerExtension resourceShrinkerExtension = null;
 
   /**
    * Set of types that are mentioned in the program. We at least need an empty abstract class item
@@ -530,13 +528,6 @@ public class Enqueuer {
     this.initialPrunedTypes = initialPrunedTypes;
     this.prunedClasspathTypes = prunedClasspathTypes;
 
-    if (options.isOptimizedResourceShrinking()) {
-      ResourceShrinkerState<FeatureSplit> resourceShrinkerState =
-          appView.getResourceShrinkerState();
-      resourceShrinkerState.setEnqueuerCallback(this::recordReferenceFromResources);
-      resourceShrinkerState.setEnqueuerMethodCallback(this::recordMethodReferenceFromResources);
-    }
-
     EnqueuerAnalysisCollection.Builder analysesBuilder = EnqueuerAnalysisCollection.builder();
     if (mode.isTreeShaking()) {
       EnqueuerDefinitionSupplier enqueuerDefinitionSupplier = new EnqueuerDefinitionSupplier(this);
@@ -554,7 +545,8 @@ public class Enqueuer {
       KotlinMetadataEnqueuerExtension.register(
           appView, enqueuerDefinitionSupplier, initialPrunedTypes, analysesBuilder);
       ProtoEnqueuerExtension.register(appView, this, analysesBuilder);
-      ResourceShrinkerEnqueuerExtension.register(appView, this, analysesBuilder);
+      this.resourceShrinkerExtension =
+          ResourceShrinkerEnqueuerExtension.register(appView, this, analysesBuilder);
       RuntimeTypeCheckInfo.register(runtimeTypeCheckInfoBuilder, analysesBuilder);
       EnqueuerMockitoAnalysis.register(appView, this, analysesBuilder);
       // Enum reflection tracing is best-effort, but since it is more common for non-Android uses to
@@ -697,15 +689,7 @@ public class Enqueuer {
     recordTypeReference(type, context, this::recordNonProgramClass, this::reportMissingClass);
   }
 
-  private final Map<DexString, Origin> onClickMethodReferences = new HashMap<>();
-
-  private void recordMethodReferenceFromResources(String method, String xmlFilePath) {
-    Origin origin = new PathOrigin(Paths.get(xmlFilePath));
-    onClickMethodReferences.put(appView.dexItemFactory().createString(method), origin);
-  }
-
-  private boolean recordReferenceFromResources(
-      String possibleClass, String xmlFilePath, boolean markAsLive) {
+  boolean recordReferenceFromResources(String possibleClass, Origin origin, boolean markAsLive) {
     if (!DescriptorUtils.isValidJavaType(possibleClass)) {
       return false;
     }
@@ -722,7 +706,6 @@ public class Enqueuer {
       return false;
     }
 
-    Origin origin = new PathOrigin(Paths.get(xmlFilePath));
     ReflectiveUseFromXml reason = KeepReason.reflectiveUseFromXml(origin);
     ensureClassKeptForResourceLookup(clazz, reason, markAsLive);
 
@@ -1269,7 +1252,9 @@ public class Enqueuer {
     if (mode.isInitialTreeShaking()) {
       return;
     }
-    appView.getResourceShrinkerState().trace(value, "from dex");
+    if (resourceShrinkerExtension != null) {
+      resourceShrinkerExtension.traceResourceValue(value);
+    }
   }
 
   public void traceReflectiveFieldWrite(ProgramField field, ProgramMethod context) {
@@ -2408,39 +2393,6 @@ public class Enqueuer {
         clazz, rootSet.getDependentKeepClassCompatRule(clazz.getType()));
 
     analyses.processNewlyLiveClass(clazz, worklist);
-  }
-
-  private void processOnClickMethods(Timing timing) {
-    if (onClickMethodReferences.isEmpty()) {
-      return;
-    }
-    timing.begin("Process onclick methods");
-    for (DexProgramClass item : liveTypes.getItems()) {
-      for (ProgramMethod method :
-          item.virtualProgramMethods(
-              p ->
-                  p.getParameters().size() == 1
-                      && p.getParameter(0)
-                          .isIdenticalTo(appInfo.dexItemFactory().androidViewViewType)
-                      && onClickMethodReferences.containsKey(p.getName()))) {
-        KeepMethodInfo methodInfo = getKeepInfo().getMethodInfo(method);
-        if (!methodInfo.isOptimizationAllowed(options)
-            && !methodInfo.isShrinkingAllowed(options)
-            && !methodInfo.isMinificationAllowed(options)) {
-          continue;
-        }
-        ReflectiveUseFromXml reason =
-            KeepReason.reflectiveUseFromXml(onClickMethodReferences.get(method.getName()));
-        Joiner minimumKeepInfo =
-            KeepMethodInfo.newEmptyJoiner()
-                .disallowOptimization()
-                .disallowShrinking()
-                .disallowMinification()
-                .addReason(reason);
-        applyMinimumKeepInfo(method, minimumKeepInfo);
-      }
-    }
-    timing.end();
   }
 
   private void ensureMethodsContinueToWidenAccess(ClassDefinition clazz) {
@@ -3958,6 +3910,7 @@ public class Enqueuer {
     assert analyses.isEmpty();
     assert mode.isMainDexTracing();
     this.rootSet = appView.getMainDexRootSet();
+    analyses.onStarted(this);
     // Translate the result of root-set computation into enqueuer actions.
     includeMinimumKeepInfo(rootSet);
     trace(executorService, timing);
@@ -3979,6 +3932,7 @@ public class Enqueuer {
   public EnqueuerResult traceApplication(
       RootSet rootSet, ExecutorService executorService, Timing timing) throws ExecutionException {
     this.rootSet = rootSet;
+    analyses.onStarted(this);
     rootSet.pendingMethodMoveInverse.forEach(pendingMethodMoveInverse::put);
 
     // Transfer the minimum keep info from the root set into the Enqueuer state.
@@ -4008,7 +3962,6 @@ public class Enqueuer {
     enqueueAllIfNotShrinking();
     timing.end();
     timing.begin("Trace");
-    traceManifestsAndRoots(timing);
     trace(executorService, timing);
     timing.end();
     options.reporter.failIfPendingErrors();
@@ -4018,9 +3971,6 @@ public class Enqueuer {
     timing.begin("Finish analysis");
     taskCollection.awaitEnqueuerIndependentTasks();
     analyses.done(this, executorService);
-    if (appView.options().isOptimizedResourceShrinking()) {
-      appView.getResourceShrinkerState().enqueuerDone(this.mode.isFinalTreeShaking());
-    }
     timing.end();
     assert verifyKeptGraph();
     timing.begin("Finish compat building");
@@ -4041,17 +3991,6 @@ public class Enqueuer {
     profileCollectionAdditions.commit(appView);
     timing.end();
     return result;
-  }
-
-  private void traceManifestsAndRoots(Timing timing) {
-    if (options.isOptimizedResourceShrinking()) {
-      timing.begin("Trace AndroidManifest.xml files");
-      appView.getResourceShrinkerState().traceKeepXmlAndManifest();
-      for (int rootResourceId : appView.rootSet().resourceIds) {
-        appView.getResourceShrinkerState().trace(rootResourceId, "Non shrunken dex code");
-      }
-      timing.end();
-    }
   }
 
   private void includeMinimumKeepInfo(RootSetBase rootSet) {
@@ -5025,12 +4964,6 @@ public class Enqueuer {
             timing.end();
             continue;
           }
-        }
-
-        processOnClickMethods(timing);
-        if (worklist.hasNext()) {
-          timing.end();
-          continue;
         }
 
         // Continue fix-point processing while there are additional work items to ensure items that
