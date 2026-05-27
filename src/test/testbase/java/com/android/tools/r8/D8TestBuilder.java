@@ -14,8 +14,8 @@ import com.android.tools.r8.profile.art.model.ExternalArtProfile;
 import com.android.tools.r8.profile.art.utils.ArtProfileTestingUtils;
 import com.android.tools.r8.startup.StartupProfileProvider;
 import com.android.tools.r8.utils.AndroidApp;
-import com.android.tools.r8.utils.internal.Box;
 import com.android.tools.r8.utils.InternalOptions;
+import com.android.tools.r8.utils.internal.Box;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -124,6 +124,11 @@ public class D8TestBuilder
 
   public D8TestBuilder setIntermediate(boolean intermediate) {
     builder.setIntermediate(intermediate);
+    return self();
+  }
+
+  public D8TestBuilder setExperimentalReoptimizeDex(boolean reoptimizeDex) {
+    builder.setExperimentalReoptimizeDex(reoptimizeDex);
     return self();
   }
 

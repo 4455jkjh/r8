@@ -6,7 +6,7 @@ package com.android.tools.r8.redex;
 import com.android.tools.r8.NeverInline;
 import java.util.Arrays;
 
-public class TestClass {
+public class StacktracePreservationTestClass {
 
   public static void main(String[] args) {
     foo(); // This line must be line 12 for the test to pass.
