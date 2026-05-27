@@ -231,8 +231,6 @@ public class ClassStaticizerTest extends TestBase {
         "SimpleWithLazyInit SimpleWithLazyInit.INSTANCE",
         "SimpleWithLazyInit SimpleWithLazyInit.INSTANCE",
         "SimpleWithLazyInit SimpleWithLazyInit.INSTANCE",
-        "SimpleWithLazyInit SimpleWithLazyInit.INSTANCE",
-        "SimpleWithLazyInit SimpleWithLazyInit.INSTANCE",
         "SimpleWithLazyInit SimpleWithLazyInit.INSTANCE");
     assertEquals(
         expectedReferencesInTestSimpleWithLazyInit,

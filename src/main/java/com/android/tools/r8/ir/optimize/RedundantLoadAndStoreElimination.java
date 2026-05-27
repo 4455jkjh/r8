@@ -45,12 +45,14 @@ import com.android.tools.r8.ir.conversion.MethodProcessor;
 import com.android.tools.r8.ir.conversion.passes.CodeRewriterPass;
 import com.android.tools.r8.ir.conversion.passes.result.CodeRewriterResult;
 import com.android.tools.r8.ir.optimize.RedundantLoadAndStoreElimination.RedundantFieldLoadAndStoreEliminationOnCode.ExistingValue;
+import com.android.tools.r8.ir.optimize.RedundantLoadAndStoreElimination.RedundantFieldLoadAndStoreEliminationOnCode.MaterializablePhi;
 import com.android.tools.r8.ir.optimize.info.field.InstanceFieldInitializationInfoCollection;
 import com.android.tools.r8.ir.optimize.info.initializer.InstanceInitializerInfo;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
 import com.android.tools.r8.utils.internal.ArrayUtils;
 import com.android.tools.r8.utils.internal.ObjectUtils;
 import com.android.tools.r8.utils.internal.exceptions.Unreachable;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import it.unimi.dsi.fastutil.objects.Reference2IntMap;
 import it.unimi.dsi.fastutil.objects.Reference2IntOpenHashMap;
@@ -100,7 +102,23 @@ public class RedundantLoadAndStoreElimination extends CodeRewriterPass<AppInfo> 
 
   private interface ExistingOrMaterializableValue {
 
+    default boolean isExistingValue() {
+      return false;
+    }
+
     default ExistingValue asExistingValue() {
+      return null;
+    }
+
+    default boolean isMaterializablePhiFromBlock(BasicBlock block) {
+      return false;
+    }
+
+    default boolean isMaterializablePhiNotFromBlock(BasicBlock block) {
+      return false;
+    }
+
+    default MaterializablePhi asMaterializablePhi() {
       return null;
     }
 
@@ -242,7 +260,7 @@ public class RedundantLoadAndStoreElimination extends CodeRewriterPass<AppInfo> 
     private final AffectedValues affectedValues = new AffectedValues();
 
     // Maps keeping track of fields that have an already loaded value at basic block entry.
-    private final BlockStates activeStates = new BlockStates();
+    private final BlockStates activeStates = new BlockStates(this);
 
     // Maps keeping track of fields with already loaded values for the current block during
     // elimination.
@@ -260,12 +278,21 @@ public class RedundantLoadAndStoreElimination extends CodeRewriterPass<AppInfo> 
       assert !appView.options().debug;
     }
 
+    private MaterializablePhi createMaterializablePhi(BasicBlock block, Value operand) {
+      return new MaterializablePhi(block, operand);
+    }
+
     class ExistingValue implements ExistingOrMaterializableValue {
 
       private final Value value;
 
       private ExistingValue(Value value) {
         this.value = value;
+      }
+
+      @Override
+      public boolean isExistingValue() {
+        return true;
       }
 
       @Override
@@ -290,8 +317,96 @@ public class RedundantLoadAndStoreElimination extends CodeRewriterPass<AppInfo> 
       }
 
       @Override
+      public boolean equals(Object obj) {
+        if (this == obj) {
+          return true;
+        }
+        if (!(obj instanceof ExistingValue)) {
+          return false;
+        }
+        ExistingValue existingValue = (ExistingValue) obj;
+        return value == existingValue.value;
+      }
+
+      @Override
+      public int hashCode() {
+        return value.hashCode();
+      }
+
+      @Override
       public String toString() {
         return "ExistingValue(v" + value.getNumber() + ")";
+      }
+    }
+
+    class MaterializablePhi implements ExistingOrMaterializableValue {
+
+      private final BasicBlock block;
+      private final List<Value> operands;
+
+      private Phi phi;
+
+      private MaterializablePhi(BasicBlock block, Value operand) {
+        this.block = block;
+        this.operands = Lists.newArrayList(operand);
+      }
+
+      private boolean addOperand(Value operand) {
+        // D8 doesn't use class hierarchy, so restrict operands to have the same type in that case.
+        Value firstOperand = operands.get(0);
+        if (!appView.enableWholeProgramOptimizations()
+            || operand.getType().isBasedOnMissingClass(appView.withClassHierarchy())
+            || (operands.size() == 1
+                && firstOperand.getType().isBasedOnMissingClass(appView.withClassHierarchy()))) {
+          if (!operand.getType().equalUpToNullability(firstOperand.getType())) {
+            return false;
+          }
+        }
+        operands.add(operand);
+        return true;
+      }
+
+      private Phi ensurePhi() {
+        if (phi == null) {
+          assert operands.size() == block.getPredecessors().size();
+          Iterator<Value> operandsIterator = operands.iterator();
+          TypeElement type = operandsIterator.next().getType();
+          while (operandsIterator.hasNext()) {
+            type = type.join(operandsIterator.next().getType(), appView);
+          }
+          phi = code.createPhi(block, type);
+          operands.forEach(phi::appendOperand);
+        }
+        return phi;
+      }
+
+      @Override
+      public void eliminateRedundantRead(InstructionListIterator it, Instruction redundant) {
+        ensurePhi();
+        redundant.outValue().replaceUsers(phi, affectedValues);
+        it.removeOrReplaceByDebugLocalRead();
+        hasChanged = true;
+      }
+
+      @Override
+      public TypeElement getType(AppView<?> appView, TypeElement outType) {
+        ensurePhi();
+        return phi.getType();
+      }
+
+      @Override
+      public boolean isMaterializablePhiFromBlock(BasicBlock block) {
+        return this.block == block;
+      }
+
+      @Override
+      public boolean isMaterializablePhiNotFromBlock(BasicBlock block) {
+        return this.block != block;
+      }
+
+      @Override
+      public MaterializablePhi asMaterializablePhi() {
+        return this;
       }
     }
 
@@ -334,11 +449,28 @@ public class RedundantLoadAndStoreElimination extends CodeRewriterPass<AppInfo> 
         assert outType.isPrimitiveType();
         return outType;
       }
+
+      @Override
+      public boolean equals(Object obj) {
+        if (this == obj) {
+          return true;
+        }
+        if (!(obj instanceof MaterializableValue)) {
+          return false;
+        }
+        MaterializableValue materializableValue = (MaterializableValue) obj;
+        return value.equals(materializableValue.value);
+      }
+
+      @Override
+      public int hashCode() {
+        return value.hashCode();
+      }
     }
 
     private DexClassAndField resolveField(DexField field) {
       if (appView.enableWholeProgramOptimizations()) {
-        SingleFieldResolutionResult resolutionResult =
+        SingleFieldResolutionResult<?> resolutionResult =
             appView.appInfo().withLiveness().resolveField(field).asSingleFieldResolutionResult();
         return resolutionResult != null ? resolutionResult.getResolutionPair() : null;
       }
@@ -479,6 +611,7 @@ public class RedundantLoadAndStoreElimination extends CodeRewriterPass<AppInfo> 
       if (hasChanged) {
         code.removeRedundantBlocks();
       }
+      code.removeAllDeadAndTrivialPhis();
       return CodeRewriterResult.hasChanged(hasChanged);
     }
 
@@ -928,6 +1061,12 @@ public class RedundantLoadAndStoreElimination extends CodeRewriterPass<AppInfo> 
 
   static class BlockStates {
 
+    private final RedundantFieldLoadAndStoreEliminationOnCode elimination;
+
+    BlockStates(RedundantFieldLoadAndStoreEliminationOnCode elimination) {
+      this.elimination = elimination;
+    }
+
     // Maps keeping track of fields that have an already loaded value at basic block entry.
     private final LinkedHashMap<BasicBlock, BlockState> activeStateAtExit = new LinkedHashMap<>();
 
@@ -938,9 +1077,13 @@ public class RedundantLoadAndStoreElimination extends CodeRewriterPass<AppInfo> 
         return new BlockState(maxCapacityPerBlock);
       }
       List<BasicBlock> predecessors = block.getPredecessors();
+      if (predecessors.isEmpty()) {
+        return new BlockState(maxCapacityPerBlock);
+      }
       Iterator<BasicBlock> predecessorIterator = predecessors.iterator();
       BlockState state =
           new BlockState(maxCapacityPerBlock, activeStateAtExit.get(predecessorIterator.next()));
+      int predecessorIndex = 1;
       while (predecessorIterator.hasNext()) {
         BasicBlock predecessor = predecessorIterator.next();
         BlockState predecessorExitState = activeStateAtExit.get(predecessor);
@@ -948,7 +1091,7 @@ public class RedundantLoadAndStoreElimination extends CodeRewriterPass<AppInfo> 
           // Not processed yet.
           return new BlockState(maxCapacityPerBlock);
         }
-        state.intersect(predecessorExitState);
+        state.intersect(predecessorExitState, block, elimination, predecessorIndex++);
       }
       // Allow propagation across exceptional edges, just be careful not to propagate if the
       // throwing instruction is a field instruction.
@@ -1196,7 +1339,11 @@ public class RedundantLoadAndStoreElimination extends CodeRewriterPass<AppInfo> 
       return finalStaticFieldValues != null ? finalStaticFieldValues.get(field) : null;
     }
 
-    public void intersect(BlockState state) {
+    public void intersect(
+        BlockState state,
+        BasicBlock block,
+        RedundantFieldLoadAndStoreEliminationOnCode elimination,
+        int predecessorIndex) {
       if (arraySlotValues != null && state.arraySlotValues != null) {
         intersectFieldValues(arraySlotValues, state.arraySlotValues);
       } else {
@@ -1208,12 +1355,22 @@ public class RedundantLoadAndStoreElimination extends CodeRewriterPass<AppInfo> 
         constClassValues = null;
       }
       if (finalInstanceFieldValues != null && state.finalInstanceFieldValues != null) {
-        intersectFieldValues(finalInstanceFieldValues, state.finalInstanceFieldValues);
+        intersectFieldValues(
+            finalInstanceFieldValues,
+            state.finalInstanceFieldValues,
+            block,
+            elimination,
+            predecessorIndex);
       } else {
         finalInstanceFieldValues = null;
       }
       if (finalStaticFieldValues != null && state.finalStaticFieldValues != null) {
-        intersectFieldValues(finalStaticFieldValues, state.finalStaticFieldValues);
+        intersectFieldValues(
+            finalStaticFieldValues,
+            state.finalStaticFieldValues,
+            block,
+            elimination,
+            predecessorIndex);
       } else {
         finalStaticFieldValues = null;
       }
@@ -1223,12 +1380,22 @@ public class RedundantLoadAndStoreElimination extends CodeRewriterPass<AppInfo> 
         initializedClasses = null;
       }
       if (nonFinalInstanceFieldValues != null && state.nonFinalInstanceFieldValues != null) {
-        intersectFieldValues(nonFinalInstanceFieldValues, state.nonFinalInstanceFieldValues);
+        intersectFieldValues(
+            nonFinalInstanceFieldValues,
+            state.nonFinalInstanceFieldValues,
+            block,
+            elimination,
+            predecessorIndex);
       } else {
         nonFinalInstanceFieldValues = null;
       }
       if (nonFinalStaticFieldValues != null && state.nonFinalStaticFieldValues != null) {
-        intersectFieldValues(nonFinalStaticFieldValues, state.nonFinalStaticFieldValues);
+        intersectFieldValues(
+            nonFinalStaticFieldValues,
+            state.nonFinalStaticFieldValues,
+            block,
+            elimination,
+            predecessorIndex);
       } else {
         nonFinalStaticFieldValues = null;
       }
@@ -1241,6 +1408,59 @@ public class RedundantLoadAndStoreElimination extends CodeRewriterPass<AppInfo> 
         Map<K, ExistingOrMaterializableValue> fieldValues,
         Map<K, ExistingOrMaterializableValue> other) {
       fieldValues.entrySet().removeIf(entry -> other.get(entry.getKey()) != entry.getValue());
+    }
+
+    private <K> void intersectFieldValues(
+        Map<K, ExistingOrMaterializableValue> fieldValues,
+        Map<K, ExistingOrMaterializableValue> other,
+        BasicBlock block,
+        RedundantFieldLoadAndStoreEliminationOnCode elimination,
+        int predecessorIndex) {
+      Iterator<Entry<K, ExistingOrMaterializableValue>> it = fieldValues.entrySet().iterator();
+      while (it.hasNext()) {
+        Entry<K, ExistingOrMaterializableValue> entry = it.next();
+        K key = entry.getKey();
+        ExistingOrMaterializableValue value = entry.getValue();
+        ExistingOrMaterializableValue otherValue = other.get(key);
+        if (otherValue == null) {
+          it.remove();
+        } else if (!value.equals(otherValue)) {
+          if ((value.isExistingValue() || value.isMaterializablePhiNotFromBlock(block))
+              && (otherValue.isExistingValue()
+                  || otherValue.isMaterializablePhiNotFromBlock(block))) {
+            Value existingValue =
+                value.isExistingValue()
+                    ? value.asExistingValue().getValue()
+                    : value.asMaterializablePhi().ensurePhi();
+            Value otherExistingValue =
+                otherValue.isExistingValue()
+                    ? otherValue.asExistingValue().getValue()
+                    : otherValue.asMaterializablePhi().ensurePhi();
+            MaterializablePhi materializablePhi =
+                elimination.createMaterializablePhi(block, existingValue);
+            for (int i = 1; i < predecessorIndex; i++) {
+              materializablePhi.addOperand(existingValue);
+            }
+            if (materializablePhi.addOperand(otherExistingValue)) {
+              entry.setValue(materializablePhi);
+            } else {
+              it.remove();
+            }
+          } else if (value.isMaterializablePhiFromBlock(block)
+              && (otherValue.isExistingValue()
+                  || otherValue.isMaterializablePhiNotFromBlock(block))) {
+            Value operand =
+                otherValue.isExistingValue()
+                    ? otherValue.asExistingValue().getValue()
+                    : otherValue.asMaterializablePhi().ensurePhi();
+            if (!value.asMaterializablePhi().addOperand(operand)) {
+              it.remove();
+            }
+          } else {
+            it.remove();
+          }
+        }
+      }
     }
 
     private static void intersectInitializedClasses(
