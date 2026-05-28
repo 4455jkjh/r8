@@ -5,6 +5,8 @@ package com.android.tools.r8.keepradius;
 
 import com.android.tools.r8.keepanno.annotations.KeepForApi;
 import com.android.tools.r8.keepradius.proto.BuildInfo;
+import com.android.tools.r8.keepradius.proto.GlobalKeepRuleKeepRadius;
+import com.android.tools.r8.keepradius.proto.GlobalKeepRuleKeepRadiusSummary;
 import com.android.tools.r8.keepradius.proto.KeepConstraint;
 import com.android.tools.r8.keepradius.proto.KeepConstraints;
 import com.android.tools.r8.keepradius.proto.KeepInfoCollectionSummary;
@@ -156,9 +158,9 @@ public class KeepRadiusHtmlReportGenerator {
 
     // Info about number of items.
     BuildInfo buildInfo = keepRadius.getBuildInfo();
-    summaryBuilder.setClassCount(buildInfo.getClassCount());
-    summaryBuilder.setFieldCount(buildInfo.getFieldCount());
-    summaryBuilder.setMethodCount(buildInfo.getMethodCount());
+    summaryBuilder.setLiveClassCount(buildInfo.getClassCount());
+    summaryBuilder.setLiveFieldCount(buildInfo.getFieldCount());
+    summaryBuilder.setLiveMethodCount(buildInfo.getMethodCount());
 
     // Info about number of keep rules.
     summaryBuilder.setKeepRuleCount(keepRadius.getKeepRuleKeepRadiusTableCount());
@@ -212,17 +214,20 @@ public class KeepRadiusHtmlReportGenerator {
           return Integer.compare(radiusB, radiusA);
         });
 
-    for (int i = 0; i < Math.min(10, rulesWithRadius.size()); i++) {
+    for (int i = 0; i < rulesWithRadius.size(); i++) {
       KeepRuleKeepRadius rule = rulesWithRadius.get(i);
       int radius =
           rule.getKeepRadius().getClassKeepRadiusCount()
               + rule.getKeepRadius().getFieldKeepRadiusCount()
               + rule.getKeepRadius().getMethodKeepRadiusCount();
-      if (radius == 0) {
-        break;
-      }
       summaryBuilder.addKeepRuleKeepRadius(
           KeepRuleKeepRadiusSummary.newBuilder().setSource(rule.getSource()).setItemCount(radius));
+    }
+
+    // Info about problematic global rules.
+    for (GlobalKeepRuleKeepRadius rule : keepRadius.getGlobalKeepRuleKeepRadiusTableList()) {
+      summaryBuilder.addGlobalKeepRuleKeepRadius(
+          GlobalKeepRuleKeepRadiusSummary.newBuilder().setSource(rule.getSource()).build());
     }
 
     return summaryBuilder.build();

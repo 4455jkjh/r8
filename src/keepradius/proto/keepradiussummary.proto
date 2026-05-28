@@ -21,10 +21,10 @@ message KeepRadiusSummary {
   // Link to the full report.
   string link = 2;
 
-  // Info about number of items.
-  int32 class_count = 3;
-  int32 field_count = 4;
-  int32 method_count = 5;
+  // Info about number of live items.
+  int32 live_class_count = 3;
+  int32 live_field_count = 4;
+  int32 live_method_count = 5;
 
   // Info about number of keep rules.
   int32 keep_rule_count = 6;
@@ -37,6 +37,9 @@ message KeepRadiusSummary {
 
   // Info about problematic rules.
   repeated KeepRuleKeepRadiusSummary keep_rule_keep_radius = 11;
+
+  // Info about problematic global rules.
+  repeated GlobalKeepRuleKeepRadiusSummary global_keep_rule_keep_radius = 12;
 }
 
 message KeepInfoCollectionSummary {
@@ -49,4 +52,8 @@ message KeepInfoCollectionSummary {
 message KeepRuleKeepRadiusSummary {
   string source = 1;
   int32 item_count = 2;
+}
+
+message GlobalKeepRuleKeepRadiusSummary {
+  string source = 1;
 }
