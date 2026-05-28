@@ -4,18 +4,11 @@
 
 package com.android.tools.r8.apimodel;
 
-import static com.android.tools.r8.utils.internal.FunctionUtils.ignoreArgument;
-
 import com.android.tools.r8.references.ClassReference;
 import com.android.tools.r8.references.MethodReference;
 import com.android.tools.r8.utils.AndroidApiLevel;
-import com.android.tools.r8.utils.internal.MapUtils;
-import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
-import java.util.TreeMap;
 import java.util.function.BiConsumer;
 
 public class ParsedApiClass {
@@ -49,11 +42,8 @@ public class ParsedApiClass {
     return supertypes.containsKey(reference);
   }
 
-  public Map<ClassReference, AndroidApiLevel> getSupertypes() {
-    return MapUtils.unmodifiableForTesting(supertypes);
-  }
-
-  public void visitSuperType(BiConsumer<ClassReference, AndroidApiLevel> consumer) {
+  /** Visited in insertion order */
+  public void forEachSupertype(BiConsumer<ClassReference, AndroidApiLevel> consumer) {
     supertypes.forEach(consumer);
   }
 
@@ -66,11 +56,8 @@ public class ParsedApiClass {
     return interfaces.containsKey(reference);
   }
 
-  public Map<ClassReference, AndroidApiLevel> getInterfaces() {
-    return MapUtils.unmodifiableForTesting(interfaces);
-  }
-
-  public void visitInterface(BiConsumer<ClassReference, AndroidApiLevel> consumer) {
+  /** Visited in insertion order. */
+  public void forEachInterface(BiConsumer<ClassReference, AndroidApiLevel> consumer) {
     interfaces.forEach(consumer);
   }
 
@@ -83,22 +70,13 @@ public class ParsedApiClass {
     return methods.containsKey(reference);
   }
 
-  public Map<MethodReference, AndroidApiLevel> getMethods() {
-    return MapUtils.unmodifiableForTesting(methods);
+  public int methodCount() {
+    return methods.size();
   }
 
-  public void visitMethodReferences(BiConsumer<AndroidApiLevel, List<MethodReference>> consumer) {
-    var fixedOrderedMethods = new TreeMap<AndroidApiLevel, List<MethodReference>>();
-    methods.forEach(
-        (reference, apiLevel) ->
-            fixedOrderedMethods
-                .computeIfAbsent(apiLevel, ignoreArgument(ArrayList::new))
-                .add(reference));
-    fixedOrderedMethods.forEach(
-        (apiLevel, references) -> {
-          references.sort(Comparator.comparing(MethodReference::getMethodName));
-          consumer.accept(apiLevel, references);
-        });
+  /** Visited in insertion order. */
+  public void forEachMethod(BiConsumer<MethodReference, AndroidApiLevel> consumer) {
+    methods.forEach(consumer);
   }
 
   public void registerField(FieldTypelessReference reference, AndroidApiLevel introApiLevel) {
@@ -110,22 +88,12 @@ public class ParsedApiClass {
     return fields.containsKey(reference);
   }
 
-  public Map<FieldTypelessReference, AndroidApiLevel> getFields() {
-    return MapUtils.unmodifiableForTesting(fields);
+  public int fieldCount() {
+    return fields.size();
   }
 
-  public void visitFieldReferences(
-      BiConsumer<AndroidApiLevel, List<FieldTypelessReference>> consumer) {
-    var fixedOrderedFields = new TreeMap<AndroidApiLevel, List<FieldTypelessReference>>();
-    fields.forEach(
-        (reference, apiLevel) ->
-            fixedOrderedFields
-                .computeIfAbsent(apiLevel, ignoreArgument(ArrayList::new))
-                .add(reference));
-    fixedOrderedFields.forEach(
-        (apiLevel, references) -> {
-          references.sort(Comparator.comparing(FieldTypelessReference::getFieldName));
-          consumer.accept(apiLevel, references);
-        });
+  /** Visited in insertion order. */
+  public void forEachField(BiConsumer<FieldTypelessReference, AndroidApiLevel> consumer) {
+    fields.forEach(consumer);
   }
 }

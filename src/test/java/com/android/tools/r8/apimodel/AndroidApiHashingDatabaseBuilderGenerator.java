@@ -96,10 +96,8 @@ public class AndroidApiHashingDatabaseBuilderGenerator extends TestBase {
 
     for (ParsedApiClass apiClass : apiClasses) {
       Map<DexMethod, AndroidApiLevel> methodsForApiClass = new HashMap<>();
-      apiClass.visitMethodReferences(
-          (apiLevel, methods) ->
-              methods.forEach(
-                  method -> methodsForApiClass.put(factory.createMethod(method), apiLevel)));
+      apiClass.forEachMethod(
+          (method, apiLevel) -> methodsForApiClass.put(factory.createMethod(method), apiLevel));
       covariantMethodsInJar.visitCovariantMethodsForHolder(
           apiClass.getClassReference(),
           methodReferenceWithApiLevel -> {
@@ -113,10 +111,8 @@ public class AndroidApiHashingDatabaseBuilderGenerator extends TestBase {
             }
           });
       Map<DexField, AndroidApiLevel> fieldsForApiClass = new HashMap<>();
-      apiClass.visitFieldReferences(
-          (apiLevel, fields) ->
-              fields.forEach(
-                  field -> fieldsForApiClass.put(getDexField(inspector, field), apiLevel)));
+      apiClass.forEachField(
+          (field, apiLevel) -> fieldsForApiClass.put(getDexField(inspector, field), apiLevel));
       methodMap.put(apiClass.getClassReference(), methodsForApiClass);
       fieldMap.put(apiClass.getClassReference(), fieldsForApiClass);
       lookupMap.put(apiClass.getClassReference(), apiClass);
@@ -434,50 +430,40 @@ public class AndroidApiHashingDatabaseBuilderGenerator extends TestBase {
       Map<DexReference, AndroidApiLevel> additionMap,
       CodeInspector inspector) {
     if (!apiClass.getClassReference().getDescriptor().equals(factory.objectDescriptor.toString())) {
-      apiClass.visitMethodReferences(
-          (apiLevel, methodReferences) -> {
-            methodReferences.forEach(
-                methodReference -> {
-                  addIfNewOrApiLevelIsLower(
-                      linkLevel,
-                      additionMap,
-                      apiLevel,
-                      factory.createMethod(methodReference).withHolder(holder, factory));
-                });
-          });
-      apiClass.visitFieldReferences(
-          (apiLevel, fieldReferences) -> {
-            fieldReferences.forEach(
-                fieldReference -> {
-                  addIfNewOrApiLevelIsLower(
-                      linkLevel,
-                      additionMap,
-                      apiLevel,
-                      getDexField(inspector, fieldReference).withHolder(holder, factory));
-                });
-          });
-      apiClass.visitSuperType(
-          (superType, apiLevel) -> {
-            computeAllReferencesInHierarchy(
-                lookupMap,
-                factory,
-                holder,
-                lookupMap.get(superType),
-                linkLevel.max(apiLevel),
-                additionMap,
-                inspector);
-          });
-      apiClass.visitInterface(
-          (interfaceReference, apiLevel) -> {
-            computeAllReferencesInHierarchy(
-                lookupMap,
-                factory,
-                holder,
-                lookupMap.get(interfaceReference),
-                linkLevel.max(apiLevel),
-                additionMap,
-                inspector);
-          });
+      apiClass.forEachMethod(
+          (methodReference, apiLevel) ->
+              addIfNewOrApiLevelIsLower(
+                  linkLevel,
+                  additionMap,
+                  apiLevel,
+                  factory.createMethod(methodReference).withHolder(holder, factory)));
+      apiClass.forEachField(
+          (fieldReference, apiLevel) ->
+              addIfNewOrApiLevelIsLower(
+                  linkLevel,
+                  additionMap,
+                  apiLevel,
+                  getDexField(inspector, fieldReference).withHolder(holder, factory)));
+      apiClass.forEachSupertype(
+          (superType, apiLevel) ->
+              computeAllReferencesInHierarchy(
+                  lookupMap,
+                  factory,
+                  holder,
+                  lookupMap.get(superType),
+                  linkLevel.max(apiLevel),
+                  additionMap,
+                  inspector));
+      apiClass.forEachInterface(
+          (interfaceReference, apiLevel) ->
+              computeAllReferencesInHierarchy(
+                  lookupMap,
+                  factory,
+                  holder,
+                  lookupMap.get(interfaceReference),
+                  linkLevel.max(apiLevel),
+                  additionMap,
+                  inspector));
     }
   }
 

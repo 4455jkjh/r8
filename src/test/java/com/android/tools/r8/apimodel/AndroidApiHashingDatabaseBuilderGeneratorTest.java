@@ -128,8 +128,8 @@ public class AndroidApiHashingDatabaseBuilderGeneratorTest extends TestBase {
     IntBox numberOfMethods = new IntBox(0);
     parsedApiClasses.forEach(
         apiClass -> {
-          numberOfFields.increment(apiClass.getFields().size());
-          numberOfMethods.increment(apiClass.getMethods().size());
+          numberOfFields.increment(apiClass.fieldCount());
+          numberOfMethods.increment(apiClass.methodCount());
         });
     // These numbers will change when updating api-versions.xml
     assertEquals(6435, parsedApiClasses.size());
@@ -232,35 +232,32 @@ public class AndroidApiHashingDatabaseBuilderGeneratorTest extends TestBase {
         sdkExtension.getClassReference(),
         Reference.classFromDescriptor("Landroid/os/ext/SdkExtensions;"));
     assertEquals(AndroidApiLevel.R, sdkExtension.getApiLevel());
-    sdkExtension.visitMethodReferences(
-        (apiLevel, methods) -> {
+    sdkExtension.forEachMethod(
+        (method, apiLevel) -> {
           if (apiLevel.equals(AndroidApiLevel.R)) {
             assertEquals(
-                methods,
-                ImmutableList.of(
-                    Reference.methodFromDescriptor(
-                        "Landroid/os/ext/SdkExtensions;", "getExtensionVersion", "(I)I")));
+                method,
+                Reference.methodFromDescriptor(
+                    "Landroid/os/ext/SdkExtensions;", "getExtensionVersion", "(I)I"));
           } else if (apiLevel.equals(AndroidApiLevel.S)) {
             assertEquals(
-                methods,
-                ImmutableList.of(
-                    Reference.methodFromDescriptor(
-                        "Landroid/os/ext/SdkExtensions;",
-                        "getAllExtensionVersions",
-                        "()Ljava/util/Map;")));
+                method,
+                Reference.methodFromDescriptor(
+                    "Landroid/os/ext/SdkExtensions;",
+                    "getAllExtensionVersions",
+                    "()Ljava/util/Map;"));
           } else {
             fail();
           }
         });
-    sdkExtension.visitFieldReferences(
-        (apiLevel, fields) -> {
+    sdkExtension.forEachField(
+        (field, apiLevel) -> {
           if (apiLevel.equals(AndroidApiLevel.U)) {
             assertEquals(
-                fields,
-                ImmutableList.of(
-                    new FieldTypelessReference(
-                        Reference.classFromDescriptor("Landroid/os/ext/SdkExtensions;"),
-                        "AD_SERVICES")));
+                field,
+                new FieldTypelessReference(
+                    Reference.classFromDescriptor("Landroid/os/ext/SdkExtensions;"),
+                    "AD_SERVICES"));
           } else {
             fail();
           }
@@ -275,17 +272,15 @@ public class AndroidApiHashingDatabaseBuilderGeneratorTest extends TestBase {
       ParsedApiClass apiClass, String descriptor, AndroidApiLevel apiLevel) {
     assertEquals(apiClass.getClassReference(), Reference.classFromDescriptor(descriptor));
     assertEquals(apiLevel, apiClass.getApiLevel());
-    apiClass.visitMethodReferences(
-        (level, methods) -> {
+    apiClass.forEachMethod(
+        (method, level) -> {
           if (level.equals(apiLevel)) {
-            assertEquals(
-                methods,
-                ImmutableList.of(Reference.methodFromDescriptor(descriptor, "foo", "(I)V")));
+            assertEquals(method, Reference.methodFromDescriptor(descriptor, "foo", "(I)V"));
           } else {
             fail();
           }
         });
-    assertEquals(1, apiClass.getFields().size() + apiClass.getMethods().size());
+    assertEquals(1, apiClass.fieldCount() + apiClass.methodCount());
   }
 
   @Test
@@ -519,32 +514,26 @@ public class AndroidApiHashingDatabaseBuilderGeneratorTest extends TestBase {
           DexType type = factory.createType(parsedApiClass.getClassReference().getDescriptor());
           AndroidApiLevel apiLevel = androidApiLevelDatabase.getTypeApiLevel(type);
           assertEquals(parsedApiClass.getApiLevel(), apiLevel);
-          parsedApiClass.visitMethodReferences(
-              (methodApiLevel, methodReferences) ->
-                  methodReferences.forEach(
-                      methodReference -> {
-                        DexMethod method = factory.createMethod(methodReference);
-                        AndroidApiLevel androidApiLevel;
-                        if (factory.objectMembers.isObjectMember(method)) {
-                          androidApiLevel = AndroidApiLevel.B;
-                        } else {
-                          androidApiLevel = androidApiLevelDatabase.getMethodApiLevel(method);
-                        }
-                        androidApiLevel.isLessThanOrEqualTo(methodApiLevel);
-                      }));
-          parsedApiClass.visitFieldReferences(
-              (fieldApiLevel, fieldReferences) ->
-                  fieldReferences.forEach(
-                      fieldReference -> {
-                        DexField field =
-                            inspector
-                                .clazz(fieldReference.getHolderClass())
-                                .uniqueFieldWithOriginalName(fieldReference.getFieldName())
-                                .getDexField();
-                        androidApiLevelDatabase
-                            .getFieldApiLevel(field)
-                            .isLessThanOrEqualTo(fieldApiLevel);
-                      }));
+          parsedApiClass.forEachMethod(
+              (methodReference, methodApiLevel) -> {
+                DexMethod method = factory.createMethod(methodReference);
+                AndroidApiLevel androidApiLevel;
+                if (factory.objectMembers.isObjectMember(method)) {
+                  androidApiLevel = AndroidApiLevel.B;
+                } else {
+                  androidApiLevel = androidApiLevelDatabase.getMethodApiLevel(method);
+                }
+                androidApiLevel.isLessThanOrEqualTo(methodApiLevel);
+              });
+          parsedApiClass.forEachField(
+              (fieldReference, fieldApiLevel) -> {
+                DexField field =
+                    inspector
+                        .clazz(fieldReference.getHolderClass())
+                        .uniqueFieldWithOriginalName(fieldReference.getFieldName())
+                        .getDexField();
+                androidApiLevelDatabase.getFieldApiLevel(field).isLessThanOrEqualTo(fieldApiLevel);
+              });
         });
     diagnosticsHandler.assertNoMessages();
   }
