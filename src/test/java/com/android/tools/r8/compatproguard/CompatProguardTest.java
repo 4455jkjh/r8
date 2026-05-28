@@ -50,9 +50,7 @@ public class CompatProguardTest extends TestBase {
     assertEquals(
         StringUtils.lines(
             "",
-            "CompatProguard main (build engineering)",
-            "",
-            "compatproguard [options] --output <dir> <proguard-config>*",
+            "Usage: compatproguard [options] --output <dir> <proguard-config>*",
             "",
             "Where options are:",
             "-h/--help            : print this help message",

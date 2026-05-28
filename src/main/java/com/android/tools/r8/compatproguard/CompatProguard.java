@@ -12,7 +12,6 @@ import com.android.tools.r8.MapIdProvider;
 import com.android.tools.r8.OutputMode;
 import com.android.tools.r8.R8;
 import com.android.tools.r8.SourceFileProvider;
-import com.android.tools.r8.Version;
 import com.android.tools.r8.errors.CompilationError;
 import com.android.tools.r8.origin.CommandLineOrigin;
 import com.android.tools.r8.utils.ExceptionUtils;
@@ -186,14 +185,8 @@ public class CompatProguard {
     }
   }
 
-  private static void printVersion() {
-    System.out.println("CompatProguard " + Version.getVersionString());
-  }
-
   private static void printHelp() {
-    printVersion();
-    System.out.println();
-    System.out.println("compatproguard [options] --output <dir> <proguard-config>*");
+    System.out.println("Usage: compatproguard [options] --output <dir> <proguard-config>*");
     System.out.println();
     System.out.println("Where options are:");
     CompatProguardOptions.print();
