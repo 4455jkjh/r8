@@ -139,7 +139,7 @@ public class AbsentMethodSubject extends MethodSubject {
 
   @Override
   public LineNumberTable getLineNumberTable() {
-    return null;
+    throw new Unreachable("Cannot determine if an absent method has a line number table");
   }
 
   @Override
