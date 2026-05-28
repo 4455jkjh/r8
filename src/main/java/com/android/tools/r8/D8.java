@@ -8,13 +8,18 @@ import static com.android.tools.r8.utils.ExceptionUtils.unwrapExecutionException
 
 import com.android.tools.r8.androidapi.ApiReferenceStubber;
 import com.android.tools.r8.assistant.AssistantInstrumentation;
+import com.android.tools.r8.debuginfo.DebugRepresentation;
 import com.android.tools.r8.dex.ApplicationReader;
 import com.android.tools.r8.dex.ApplicationWriter;
 import com.android.tools.r8.dex.Marker;
+import com.android.tools.r8.dex.code.DexInstruction;
 import com.android.tools.r8.graph.AppInfo;
 import com.android.tools.r8.graph.AppServices;
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.DexApplication;
+import com.android.tools.r8.graph.DexCode;
+import com.android.tools.r8.graph.DexDebugInfo.PcBasedDebugInfo;
+import com.android.tools.r8.graph.DexEncodedMethod;
 import com.android.tools.r8.graph.DexItemFactory;
 import com.android.tools.r8.graph.DexProgramClass;
 import com.android.tools.r8.graph.LazyLoadedDexApplication;
@@ -56,6 +61,8 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.function.Consumer;
@@ -216,6 +223,7 @@ public final class D8 {
       timing.begin("Read input app");
       AppView<AppInfo> appView = readApp(inputApp, options, executor, timing);
       timing.end();
+      materializeMissingDebugInfo(appView, executor, timing);
       timing.begin("Initialize assume info collection");
       initializeAssumeInfoCollection(appView);
       timing.end();
@@ -350,6 +358,46 @@ public final class D8 {
     }
     appView.getSyntheticItems().reportSyntheticsInformation(consumer);
     consumer.finished();
+  }
+
+  private static void materializeMissingDebugInfo(
+      AppView<AppInfo> appView, ExecutorService executor, Timing timing) throws ExecutionException {
+    if (!appView.options().enableDexToDexCodeOptimizations) {
+      return;
+    }
+    timing.time(
+        "Materialize missing debug info",
+        () -> {
+          ConcurrentHashMap<PcBasedDebugInfo, PcBasedDebugInfo> cache = new ConcurrentHashMap<>();
+          // Methods without debug info is assumed to be native pc encoded debug info.
+          // Rematerialize into PcEncodedDebugInfo.
+          ThreadUtils.processItems(
+              appView.appInfo().classes(),
+              clazz -> materializeMissingDebugInfo(clazz, cache),
+              appView.options().getThreadingModule(),
+              executor);
+        });
+  }
+
+  private static void materializeMissingDebugInfo(
+      DexProgramClass clazz, ConcurrentMap<PcBasedDebugInfo, PcBasedDebugInfo> cache) {
+    for (DexEncodedMethod method : clazz.methods()) {
+      if (!method.hasCode() || !method.getCode().isDexCode()) {
+        continue;
+      }
+      DexCode code = method.getCode().asDexCode();
+      if (code.getDebugInfo() != null) {
+        continue;
+      }
+      DexInstruction lastInstruction = DebugRepresentation.getLastExecutableInstruction(code);
+      if (lastInstruction == null) {
+        continue;
+      }
+      int maxPc = lastInstruction.getOffset();
+      int parameterCount = method.getParameters().size();
+      PcBasedDebugInfo debugInfo = new PcBasedDebugInfo(parameterCount, maxPc);
+      code.setDebugInfo(cache.computeIfAbsent(debugInfo, k -> k));
+    }
   }
 
   private static void writeApplication(
