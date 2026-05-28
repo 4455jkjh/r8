@@ -24,8 +24,4 @@ public interface TransferFunctionResult<StateType extends AbstractState<StateTyp
   default boolean isFailedTransferResult() {
     return false;
   }
-
-  default FailedTransferFunctionResult<StateType> asFailedTransferResult() {
-    return null;
-  }
 }
