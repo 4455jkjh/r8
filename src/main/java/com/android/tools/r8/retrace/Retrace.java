@@ -71,7 +71,7 @@ public class Retrace<T, ST extends StackTraceElementProxy<T, ST>> extends Retrac
         .option1(
             "--regex",
             "<regexp>",
-            "Regular expression for parsing stack-trace-file as lines",
+            "Regular expression for parsing stack-trace-file as lines.",
             (b, arg) -> {
               if (arg.isEmpty()) {
                 b.diagnosticsHandler.error(new StringDiagnostic("Empty argument for --regex"));
@@ -80,18 +80,18 @@ public class Retrace<T, ST extends StackTraceElementProxy<T, ST>> extends Retrac
               }
             },
             "--r")
-        .option0("--verbose", "Get verbose retraced output", b -> b.builder.setVerbose(true))
+        .option0("--verbose", "Get verbose retraced output.", b -> b.builder.setVerbose(true))
         .option0(
             "--info",
-            "Write information messages to stdout",
+            "Write information messages to stdout.",
             b -> {
               /* This is already set in the diagnostics handler. */
             })
         .option0(
-            "--quiet", "Silence ordinary messages printed to stdout", b -> b.hasSetQuiet = true)
+            "--quiet", "Silence ordinary messages printed to stdout.", b -> b.hasSetQuiet = true)
         .option0(
             "--verify-mapping-file-hash",
-            "Verify the mapping file hash",
+            "Verify the mapping file hash.",
             b -> {
               b.builder.setVerifyMappingFileHash(true);
               b.hasSetStackTrace = true;
@@ -99,7 +99,7 @@ public class Retrace<T, ST extends StackTraceElementProxy<T, ST>> extends Retrac
         .option1(
             "--partition-map",
             "<file>",
-            "Partition map to use",
+            "Partition map to use.",
             (b, arg) -> {
               if (arg.isEmpty()) {
                 b.diagnosticsHandler.error(

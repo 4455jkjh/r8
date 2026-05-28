@@ -244,13 +244,15 @@ public class CliParser<B> {
   }
 
   private boolean assertValidParam(String param) {
-    assert param.startsWith("<") && param.endsWith(">") : param + " is no surrounded by <>.";
+    assert param.startsWith("<") && param.endsWith(">") : param + " is not surrounded by <>.";
     return true;
   }
 
   private boolean assertValidDescription(String description) {
     assert !description.contains("\n")
         : "descriptions should rely on automatic wrapping: " + description;
+    assert !description.trim().isEmpty() : "description is empty.";
+    assert description.endsWith(".") : "description doesn't end with '.': " + description;
     return true;
   }
 
