@@ -22,7 +22,6 @@ import com.android.tools.r8.androidapi.AndroidApiLevelCompute.DefaultAndroidApiL
 import com.android.tools.r8.androidapi.AndroidApiLevelHashingDatabaseImpl;
 import com.android.tools.r8.androidapi.ComputedApiLevel;
 import com.android.tools.r8.androidapi.SunMiscUnsafeApiTest;
-import com.android.tools.r8.apimodel.AndroidApiVersionsXmlParser.ParsedApiClass;
 import com.android.tools.r8.graph.AppInfoWithClassHierarchy;
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.DexClass;
@@ -39,6 +38,7 @@ import com.android.tools.r8.utils.AndroidApiLevel;
 import com.android.tools.r8.utils.AndroidApp;
 import com.android.tools.r8.utils.InternalOptions;
 import com.android.tools.r8.utils.ZipUtils;
+import com.android.tools.r8.utils.codeinspector.CodeInspector;
 import com.android.tools.r8.utils.internal.FileUtils;
 import com.android.tools.r8.utils.internal.IntBox;
 import com.android.tools.r8.utils.timing.Timing;
@@ -95,22 +95,22 @@ public class AndroidApiHashingDatabaseBuilderGeneratorTest extends TestBase {
   }
 
   private static GenerateDatabaseResourceFilesResult generateResourcesFiles() throws Exception {
+    Path androidJar = ToolHelper.getAndroidJar(API_LEVEL);
     return generateResourcesFiles(
-        AndroidApiVersionsXmlParser.builder()
-            .setApiVersionsXml(ToolHelper.getApiVersionsXmlFile(API_LEVEL))
-            .setAndroidJar(ToolHelper.getAndroidJar(API_LEVEL))
-            .setApiLevel(API_LEVEL)
-            .build()
-            .run(),
+        androidJar,
+        AndroidApiVersionsXmlParserChecked.parse(
+            ToolHelper.getApiVersionsXmlFile(API_LEVEL), androidJar, API_LEVEL, false),
         API_LEVEL);
   }
 
   private static GenerateDatabaseResourceFilesResult generateResourcesFiles(
-      List<ParsedApiClass> apiClasses, AndroidApiLevel androidJarApiLevel) throws Exception {
+      Path androidJar, List<ParsedApiClass> apiClasses, AndroidApiLevel androidJarApiLevel)
+      throws Exception {
     TemporaryFolder temp = new TemporaryFolder();
     temp.create();
     Path apiLevels = temp.newFile("new_api_levels.ser").toPath();
-    AndroidApiHashingDatabaseBuilderGenerator.generate(apiClasses, apiLevels, androidJarApiLevel);
+    AndroidApiHashingDatabaseBuilderGenerator.generate(
+        apiClasses, apiLevels, androidJarApiLevel, new CodeInspector(androidJar));
     return new GenerateDatabaseResourceFilesResult(apiLevels);
   }
 
@@ -119,22 +119,17 @@ public class AndroidApiHashingDatabaseBuilderGeneratorTest extends TestBase {
     // This tests makes a rudimentary check on the number of classes, fields and methods in
     // api-versions.xml to ensure that the runtime tests do not vacuously succeed.
     List<ParsedApiClass> parsedApiClasses =
-        AndroidApiVersionsXmlParser.builder()
-            .setApiVersionsXml(ToolHelper.getApiVersionsXmlFile(API_LEVEL))
-            .setAndroidJar(ToolHelper.getAndroidJar(API_LEVEL))
-            .setApiLevel(API_LEVEL)
-            .build()
-            .run();
+        AndroidApiVersionsXmlParserChecked.parse(
+            ToolHelper.getApiVersionsXmlFile(API_LEVEL),
+            ToolHelper.getAndroidJar(API_LEVEL),
+            API_LEVEL,
+            false);
     IntBox numberOfFields = new IntBox(0);
     IntBox numberOfMethods = new IntBox(0);
     parsedApiClasses.forEach(
         apiClass -> {
-          apiClass.visitFieldReferences(
-              ((apiLevel, fieldReferences) ->
-                  fieldReferences.forEach(field -> numberOfFields.increment())));
-          apiClass.visitMethodReferences(
-              ((AndroidApiLevel apiLevel, List<MethodReference> methodReferences) ->
-                  methodReferences.forEach(field -> numberOfMethods.increment())));
+          numberOfFields.increment(apiClass.getFields().size());
+          numberOfMethods.increment(apiClass.getMethods().size());
         });
     // These numbers will change when updating api-versions.xml
     assertEquals(6435, parsedApiClasses.size());
@@ -142,7 +137,7 @@ public class AndroidApiHashingDatabaseBuilderGeneratorTest extends TestBase {
     assertEquals(49472, numberOfMethods.get());
   }
 
-  private static String sampleVersion4ApiVersionsXml =
+  private static final String sampleVersion4ApiVersionsXml =
       "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n"
           + "<api version=\"4\">\n"
           + "        <sdk id=\"36\" shortname=\"B-ext\" name=\"Baklava Extensions\"\n"
@@ -230,19 +225,13 @@ public class AndroidApiHashingDatabaseBuilderGeneratorTest extends TestBase {
     Path apiLibrary = temp.newFile("android.jar").toPath();
     mockAndroidJarForSampleVersion4ApiVersionsXml(apiLibrary);
     List<ParsedApiClass> parsedApiClasses =
-        AndroidApiVersionsXmlParser.builder()
-            .setApiVersionsXml(apiVersionsXml)
-            .setAndroidJar(apiLibrary)
-            .setApiLevel(API_LEVEL)
-            .setIgnoreExemptionList(true)
-            .build()
-            .run();
+        AndroidApiVersionsXmlParserChecked.parse(apiVersionsXml, apiLibrary, API_LEVEL, true);
     assertEquals(4, parsedApiClasses.size());
     ParsedApiClass sdkExtension = parsedApiClasses.get(0);
     assertEquals(
         sdkExtension.getClassReference(),
         Reference.classFromDescriptor("Landroid/os/ext/SdkExtensions;"));
-    assertEquals(sdkExtension.getApiLevel(), AndroidApiLevel.R);
+    assertEquals(AndroidApiLevel.R, sdkExtension.getApiLevel());
     sdkExtension.visitMethodReferences(
         (apiLevel, methods) -> {
           if (apiLevel.equals(AndroidApiLevel.R)) {
@@ -269,10 +258,9 @@ public class AndroidApiHashingDatabaseBuilderGeneratorTest extends TestBase {
             assertEquals(
                 fields,
                 ImmutableList.of(
-                    Reference.field(
+                    new FieldTypelessReference(
                         Reference.classFromDescriptor("Landroid/os/ext/SdkExtensions;"),
-                        "AD_SERVICES",
-                        Reference.typeFromDescriptor("I"))));
+                        "AD_SERVICES")));
           } else {
             fail();
           }
@@ -297,7 +285,7 @@ public class AndroidApiHashingDatabaseBuilderGeneratorTest extends TestBase {
             fail();
           }
         });
-    assertEquals(1, apiClass.getTotalMemberCount());
+    assertEquals(1, apiClass.getFields().size() + apiClass.getMethods().size());
   }
 
   @Test
@@ -516,13 +504,11 @@ public class AndroidApiHashingDatabaseBuilderGeneratorTest extends TestBase {
 
   @Test
   public void testCanLookUpAllParsedApiClassesAndMembers() throws Exception {
+    Path androidJar = ToolHelper.getAndroidJar(API_LEVEL);
+    CodeInspector inspector = new CodeInspector(androidJar);
     List<ParsedApiClass> parsedApiClasses =
-        AndroidApiVersionsXmlParser.builder()
-            .setApiVersionsXml(ToolHelper.getApiVersionsXmlFile(API_LEVEL))
-            .setAndroidJar(ToolHelper.getAndroidJar(API_LEVEL))
-            .setApiLevel(API_LEVEL)
-            .build()
-            .run();
+        AndroidApiVersionsXmlParserChecked.parse(
+            ToolHelper.getApiVersionsXmlFile(API_LEVEL), androidJar, API_LEVEL, false);
     DexItemFactory factory = new DexItemFactory();
     TestDiagnosticMessagesImpl diagnosticsHandler = new TestDiagnosticMessagesImpl();
     AndroidApiLevelHashingDatabaseImpl androidApiLevelDatabase =
@@ -550,7 +536,11 @@ public class AndroidApiHashingDatabaseBuilderGeneratorTest extends TestBase {
               (fieldApiLevel, fieldReferences) ->
                   fieldReferences.forEach(
                       fieldReference -> {
-                        DexField field = factory.createField(fieldReference);
+                        DexField field =
+                            inspector
+                                .clazz(fieldReference.getHolderClass())
+                                .uniqueFieldWithOriginalName(fieldReference.getFieldName())
+                                .getDexField();
                         androidApiLevelDatabase
                             .getFieldApiLevel(field)
                             .isLessThanOrEqualTo(fieldApiLevel);

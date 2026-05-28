@@ -16,7 +16,6 @@ import com.android.tools.r8.TestBase;
 import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.androidapi.AndroidApiDataAccess;
 import com.android.tools.r8.androidapi.GenerateCovariantReturnTypeMethodsTest.CovariantMethodsInJarResult;
-import com.android.tools.r8.apimodel.AndroidApiVersionsXmlParser.ParsedApiClass;
 import com.android.tools.r8.graph.AppInfoWithClassHierarchy;
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.DexField;
@@ -29,6 +28,7 @@ import com.android.tools.r8.graph.DexType;
 import com.android.tools.r8.references.ClassReference;
 import com.android.tools.r8.utils.AndroidApiLevel;
 import com.android.tools.r8.utils.AndroidApp;
+import com.android.tools.r8.utils.codeinspector.CodeInspector;
 import com.android.tools.r8.utils.internal.IntBox;
 import com.android.tools.r8.utils.internal.ThrowingBiConsumer;
 import com.android.tools.r8.utils.internal.collections.Pair;
@@ -71,7 +71,10 @@ public class AndroidApiHashingDatabaseBuilderGenerator extends TestBase {
    * For hash_definitions and entries see {@code AndroidApiDataAccess}.
    */
   public static void generate(
-      List<ParsedApiClass> apiClasses, Path pathToApiLevels, AndroidApiLevel androidJarApiLevel)
+      List<ParsedApiClass> apiClasses,
+      Path pathToApiLevels,
+      AndroidApiLevel androidJarApiLevel,
+      CodeInspector inspector)
       throws Exception {
     Map<ClassReference, Map<DexMethod, AndroidApiLevel>> methodMap = new HashMap<>();
     Map<ClassReference, Map<DexField, AndroidApiLevel>> fieldMap = new HashMap<>();
@@ -103,7 +106,7 @@ public class AndroidApiHashingDatabaseBuilderGenerator extends TestBase {
             DexMethod method =
                 factory.createMethod(methodReferenceWithApiLevel.getMethodReference());
             if (!methodsForApiClass.containsKey(method)) {
-              apiClass.amendCovariantMethod(
+              apiClass.registerMethod(
                   methodReferenceWithApiLevel.getMethodReference(),
                   methodReferenceWithApiLevel.getApiLevel());
               methodsForApiClass.put(method, methodReferenceWithApiLevel.getApiLevel());
@@ -112,7 +115,8 @@ public class AndroidApiHashingDatabaseBuilderGenerator extends TestBase {
       Map<DexField, AndroidApiLevel> fieldsForApiClass = new HashMap<>();
       apiClass.visitFieldReferences(
           (apiLevel, fields) ->
-              fields.forEach(field -> fieldsForApiClass.put(factory.createField(field), apiLevel)));
+              fields.forEach(
+                  field -> fieldsForApiClass.put(getDexField(inspector, field), apiLevel)));
       methodMap.put(apiClass.getClassReference(), methodsForApiClass);
       fieldMap.put(apiClass.getClassReference(), fieldsForApiClass);
       lookupMap.put(apiClass.getClassReference(), apiClass);
@@ -128,7 +132,8 @@ public class AndroidApiHashingDatabaseBuilderGenerator extends TestBase {
           factory.createType(apiClass.getClassReference().getDescriptor()),
           apiClass,
           AndroidApiLevel.B,
-          referenceMap);
+          referenceMap,
+          inspector);
     }
 
     assert ensureAllPublicMethodsAreMapped(
@@ -138,6 +143,13 @@ public class AndroidApiHashingDatabaseBuilderGenerator extends TestBase {
       DataOutputStream dataOutputStream = new DataOutputStream(fileOutputStream);
       generateDatabase(referenceMap, dataOutputStream);
     }
+  }
+
+  private static DexField getDexField(CodeInspector inspector, FieldTypelessReference field) {
+    return inspector
+        .clazz(field.getHolderClass())
+        .uniqueFieldWithOriginalName(field.getFieldName())
+        .getDexField();
   }
 
   private static boolean ensureAllPublicMethodsAreMapped(
@@ -419,7 +431,8 @@ public class AndroidApiHashingDatabaseBuilderGenerator extends TestBase {
       DexType holder,
       ParsedApiClass apiClass,
       AndroidApiLevel linkLevel,
-      Map<DexReference, AndroidApiLevel> additionMap) {
+      Map<DexReference, AndroidApiLevel> additionMap,
+      CodeInspector inspector) {
     if (!apiClass.getClassReference().getDescriptor().equals(factory.objectDescriptor.toString())) {
       apiClass.visitMethodReferences(
           (apiLevel, methodReferences) -> {
@@ -440,7 +453,7 @@ public class AndroidApiHashingDatabaseBuilderGenerator extends TestBase {
                       linkLevel,
                       additionMap,
                       apiLevel,
-                      factory.createField(fieldReference).withHolder(holder, factory));
+                      getDexField(inspector, fieldReference).withHolder(holder, factory));
                 });
           });
       apiClass.visitSuperType(
@@ -451,17 +464,19 @@ public class AndroidApiHashingDatabaseBuilderGenerator extends TestBase {
                 holder,
                 lookupMap.get(superType),
                 linkLevel.max(apiLevel),
-                additionMap);
+                additionMap,
+                inspector);
           });
       apiClass.visitInterface(
-          (iFace, apiLevel) -> {
+          (interfaceReference, apiLevel) -> {
             computeAllReferencesInHierarchy(
                 lookupMap,
                 factory,
                 holder,
-                lookupMap.get(iFace),
+                lookupMap.get(interfaceReference),
                 linkLevel.max(apiLevel),
-                additionMap);
+                additionMap,
+                inspector);
           });
     }
   }
