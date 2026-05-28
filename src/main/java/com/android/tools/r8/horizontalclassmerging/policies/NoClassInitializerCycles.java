@@ -34,6 +34,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
 import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Deque;
@@ -101,7 +102,8 @@ public class NoClassInitializerCycles extends MultiClassPolicyWithPreprocessing<
   final AppView<AppInfoWithLiveness> appView;
 
   // Mapping from each merge candidate to its merge group.
-  final Map<DexProgramClass, HorizontalMergeGroup> allGroups = new IdentityHashMap<>();
+  final Map<DexProgramClass, Collection<DexProgramClass>> allGroupsWithClassInitializers =
+      new IdentityHashMap<>();
   final Set<HorizontalMergeGroup> finalGroups = ConcurrentHashMap.newKeySet();
 
   private Supplier<SingleCallerInformation> singleCallerInformationSupplier;
@@ -153,15 +155,20 @@ public class NoClassInitializerCycles extends MultiClassPolicyWithPreprocessing<
   }
 
   private void commit(HorizontalMergeGroup oldGroup, List<HorizontalMergeGroup> newGroups) {
-    for (HorizontalMergeGroup newGroup : newGroups) {
-      for (DexProgramClass member : newGroup) {
-        allGroups.put(member, newGroup);
-      }
-    }
     for (DexProgramClass member : oldGroup) {
-      HorizontalMergeGroup newGroup = allGroups.get(member);
-      if (newGroup == oldGroup) {
-        allGroups.remove(member);
+      allGroupsWithClassInitializers.remove(member);
+    }
+    for (HorizontalMergeGroup newGroup : newGroups) {
+      Collection<DexProgramClass> classesWithClassInitializer = new ArrayList<>();
+      for (DexProgramClass member : newGroup) {
+        if (member.hasClassInitializer()) {
+          classesWithClassInitializer.add(member);
+        }
+      }
+      if (!classesWithClassInitializer.isEmpty()) {
+        for (DexProgramClass member : newGroup) {
+          allGroupsWithClassInitializers.put(member, classesWithClassInitializer);
+        }
       }
     }
   }
@@ -263,7 +270,8 @@ public class NoClassInitializerCycles extends MultiClassPolicyWithPreprocessing<
 
   @Override
   public void clear() {
-    allGroups.clear();
+    allGroupsWithClassInitializers.clear();
+    finalGroups.clear();
   }
 
   @Override
@@ -275,8 +283,16 @@ public class NoClassInitializerCycles extends MultiClassPolicyWithPreprocessing<
   public Void preprocess(Collection<HorizontalMergeGroup> groups, ExecutorService executorService)
       throws ExecutionException {
     for (HorizontalMergeGroup group : groups) {
-      for (DexProgramClass clazz : group) {
-        allGroups.put(clazz, group);
+      Collection<DexProgramClass> classesWithClassInitializer = new ArrayList<>();
+      for (DexProgramClass member : group) {
+        if (member.hasClassInitializer()) {
+          classesWithClassInitializer.add(member);
+        }
+      }
+      if (!classesWithClassInitializer.isEmpty()) {
+        for (DexProgramClass clazz : group) {
+          allGroupsWithClassInitializers.put(clazz, classesWithClassInitializer);
+        }
       }
     }
     // Concurrently find groups that are safe to merge. Groups that are not safe to merge must be
@@ -492,6 +508,7 @@ public class NoClassInitializerCycles extends MultiClassPolicyWithPreprocessing<
       }
 
       private void triggerClassInitializer(DexProgramClass root) {
+        Set<DexProgramClass> seenGroupRepresentatives = Sets.newIdentityHashSet();
         WorkList<DexProgramClass> worklist = WorkList.newWorkList(seenClassInitializers);
         worklist.addIfNotSeen(root);
         while (worklist.hasNext()) {
@@ -520,8 +537,8 @@ public class NoClassInitializerCycles extends MultiClassPolicyWithPreprocessing<
             worklist.addIfNotSeen(superClass);
           }
 
-          HorizontalMergeGroup other = allGroups.get(clazz);
-          if (other != null && other != group) {
+          Collection<DexProgramClass> other = allGroupsWithClassInitializers.get(clazz);
+          if (other != null && seenGroupRepresentatives.add(other.iterator().next())) {
             worklist.addIfNotSeen(other);
           }
         }
