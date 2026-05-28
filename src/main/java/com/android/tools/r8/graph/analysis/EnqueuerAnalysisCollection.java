@@ -58,7 +58,8 @@ public final class EnqueuerAnalysisCollection {
   private final NewlyTargetedMethodEnqueuerAnalysis[] newlyTargetedMethodAnalyses;
   private final MarkFieldAsKeptEnqueuerAnalysis[] markFieldAsKeptEnqueuerAnalyses;
 
-  // Tear down events.
+  // Start & Tear down events.
+  private final StartEnqueuerAnalysis[] startAnalyses;
   private final FinishedEnqueuerAnalysis[] finishedAnalyses;
   private final FixpointEnqueuerAnalysis[] fixpointAnalyses;
 
@@ -86,9 +87,11 @@ public final class EnqueuerAnalysisCollection {
       NewlyReferencedFieldEnqueuerAnalysis[] newlyReferencedFieldAnalyses,
       NewlyTargetedMethodEnqueuerAnalysis[] newlyTargetedMethodAnalyses,
       MarkFieldAsKeptEnqueuerAnalysis[] markFieldAsKeptEnqueuerAnalyses,
-      // Tear down events.
+      // Start & Tear down events.
+      StartEnqueuerAnalysis[] startAnalyses,
       FinishedEnqueuerAnalysis[] finishedAnalyses,
       FixpointEnqueuerAnalysis[] fixpointAnalyses) {
+    this.startAnalyses = startAnalyses;
     // Trace events.
     this.checkCastAnalyses = checkCastAnalyses;
     this.constClassAnalyses = constClassAnalyses;
@@ -367,6 +370,12 @@ public final class EnqueuerAnalysisCollection {
     }
   }
 
+  public void onStarted(Enqueuer enqueuer) {
+    for (StartEnqueuerAnalysis analysis : startAnalyses) {
+      analysis.onStarted(enqueuer);
+    }
+  }
+
   // Tear down events.
 
   public void done(Enqueuer enqueuer, ExecutorService executorService) throws ExecutionException {
@@ -430,6 +439,9 @@ public final class EnqueuerAnalysisCollection {
     private final List<NewlyTargetedMethodEnqueuerAnalysis> newlyTargetedMethodAnalyses =
         new ArrayList<>();
     private final List<MarkFieldAsKeptEnqueuerAnalysis> markFieldAsKeptAnalyses = new ArrayList<>();
+
+    // Start events.
+    private final List<StartEnqueuerAnalysis> startAnalyses = new ArrayList<>();
 
     // Tear down events.
     private final List<FinishedEnqueuerAnalysis> finishedAnalyses = new ArrayList<>();
@@ -546,6 +558,11 @@ public final class EnqueuerAnalysisCollection {
       return this;
     }
 
+    public Builder addStartAnalysis(StartEnqueuerAnalysis analysis) {
+      startAnalyses.add(analysis);
+      return this;
+    }
+
     // Tear down events.
 
     public Builder addFinishedAnalysis(FinishedEnqueuerAnalysis analysis) {
@@ -585,6 +602,7 @@ public final class EnqueuerAnalysisCollection {
           newlyTargetedMethodAnalyses.toArray(NewlyTargetedMethodEnqueuerAnalysis[]::new),
           markFieldAsKeptAnalyses.toArray(MarkFieldAsKeptEnqueuerAnalysis[]::new),
           // Tear down events.
+          startAnalyses.toArray(StartEnqueuerAnalysis[]::new),
           finishedAnalyses.toArray(FinishedEnqueuerAnalysis[]::new),
           fixpointAnalyses.toArray(FixpointEnqueuerAnalysis[]::new));
     }

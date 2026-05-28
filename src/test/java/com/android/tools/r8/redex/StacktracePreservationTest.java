@@ -18,7 +18,6 @@ import com.android.tools.r8.ToolHelper.DexVm.Version;
 import com.android.tools.r8.naming.retrace.StackTrace;
 import com.android.tools.r8.naming.retrace.StackTrace.StackTraceLine;
 import com.android.tools.r8.utils.AndroidApiLevel;
-import com.android.tools.r8.utils.InternalOptions.LineNumberOptimization;
 import com.android.tools.r8.utils.codeinspector.ClassSubject;
 import com.android.tools.r8.utils.codeinspector.MethodSubject;
 import com.android.tools.r8.utils.internal.Box;
@@ -35,13 +34,13 @@ import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
 
 @RunWith(Parameterized.class)
-public class RedexRetraceTest extends TestBase {
+public class StacktracePreservationTest extends TestBase {
 
   private final AndroidApiLevel compilationApiLevel;
   private final AndroidApiLevel redexApiLevel;
   private final DexVm.Version runtime;
 
-  public RedexRetraceTest(
+  public StacktracePreservationTest(
       AndroidApiLevel compilationApiLevel, AndroidApiLevel redexApiLevel, Version runtime) {
     this.compilationApiLevel = compilationApiLevel;
     this.redexApiLevel = redexApiLevel;
@@ -84,25 +83,18 @@ public class RedexRetraceTest extends TestBase {
 
   @Test
   public void test() throws Exception {
-    boolean isDirectPcEncodingEnabled =
-        compilationApiLevel.isGreaterThanOrEqualTo(AndroidApiLevel.CINNAMON_BUN);
-
     Box<String> currentFooMethodName = new Box<>("foo");
     R8TestCompileResultBase<?> compileResult =
         testForR8(Backend.DEX)
             .setMinApi(compilationApiLevel)
             .setMode(CompilationMode.RELEASE)
-            .addProgramClasses(TestClass.class)
-            .addKeepMainRule(TestClass.class)
+            .addProgramClasses(StacktracePreservationTestClass.class)
+            .addKeepMainRule(StacktracePreservationTestClass.class)
             .enableInliningAnnotations()
-            .addOptionsModification(
-                options -> {
-                  options.lineNumberOptimization = LineNumberOptimization.ON;
-                })
             .compile()
             .inspect(
                 inspector -> {
-                  ClassSubject clazz = inspector.clazz(TestClass.class);
+                  ClassSubject clazz = inspector.clazz(StacktracePreservationTestClass.class);
                   MethodSubject method =
                       clazz.uniqueMethodWithOriginalName(currentFooMethodName.get());
                   assertTrue(method.isPresent());
@@ -113,7 +105,7 @@ public class RedexRetraceTest extends TestBase {
     String r8Mapping = compileResult.getProguardMap();
 
     compileResult
-        .run(new DexRuntime(runtime), TestClass.class)
+        .run(new DexRuntime(runtime), StacktracePreservationTestClass.class)
         .assertFailureWithErrorThatThrows(RuntimeException.class)
         .inspectOriginalStackTrace(
             stacktrace -> {
@@ -126,46 +118,48 @@ public class RedexRetraceTest extends TestBase {
         .setMinApi(redexApiLevel)
         // Make const-strings instructions larger to "bump" the pc.
         .addOptionsModification(options -> options.testing.forceJumboStringProcessing = true)
+        .setMode(CompilationMode.RELEASE)
+        .setExperimentalReoptimizeDex(true)
         .addProgramFiles(r8Output)
         .compile()
         .inspect(
             inspector -> {
-              ClassSubject clazz = inspector.clazz(TestClass.class);
+              ClassSubject clazz = inspector.clazz(StacktracePreservationTestClass.class);
               MethodSubject method = clazz.uniqueMethodWithOriginalName(currentFooMethodName.get());
               assertTrue(method.isPresent());
             })
-        .run(new DexRuntime(runtime), TestClass.class)
+        .run(new DexRuntime(runtime), StacktracePreservationTestClass.class)
         .assertFailureWithErrorThatThrows(RuntimeException.class)
         .inspectOriginalStackTrace(
             stacktrace -> {
               assertThat(stacktrace, not(StackTrace.isSame(getExpectedStackTrace())));
               StackTrace retracedStackTrace = stacktrace.retrace(r8Mapping);
-              if (isDirectPcEncodingEnabled) {
-                // The original mapping file is invalidated by the jumbo strings since the implicit
-                // debug info is not maintained.
+              if (compilationApiLevel == AndroidApiLevel.CINNAMON_BUN
+                  && redexApiLevel == AndroidApiLevel.CINNAMON_BUN) {
+                // TODO(b/498336713): Fix trace preservation for native pc encoding, removing this
+                // special case.
                 assertThat(retracedStackTrace, not(StackTrace.isSame(getExpectedStackTrace())));
               } else {
-                // The explicit debug info is maintained and preserves the validity of the map.
                 assertThat(retracedStackTrace, StackTrace.isSame(getExpectedStackTrace()));
               }
             });
   }
 
   private StackTrace getExpectedStackTrace() {
-    String className = TestClass.class.getName();
+    String className = StacktracePreservationTestClass.class.getName();
     return StackTrace.builder()
         .add(
             StackTraceLine.builder()
                 .setClassName(className)
                 .setMethodName("foo")
-                .setFileName("TestClass.java")
+                .setFileName("StacktracePreservationTestClass.java")
                 .setLineNumber(19)
                 .build())
         .add(
             StackTraceLine.builder()
                 .setClassName(className)
                 .setMethodName("main")
-                .setFileName("TestClass.java")
+                .setFileName("StacktracePreservationTestClass.java")
                 .setLineNumber(12)
                 .build())
         .build();

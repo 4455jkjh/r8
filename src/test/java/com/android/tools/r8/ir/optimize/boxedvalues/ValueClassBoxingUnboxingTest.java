@@ -10,15 +10,16 @@ import static org.junit.Assert.assertTrue;
 
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
-import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.utils.codeinspector.ClassSubject;
 import com.android.tools.r8.utils.codeinspector.CodeInspector;
 import com.android.tools.r8.utils.codeinspector.InstructionSubject;
 import com.android.tools.r8.utils.codeinspector.MethodSubject;
+import com.android.tools.r8.utils.internal.BooleanUtils;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
+import java.util.List;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -29,11 +30,15 @@ import org.junit.runners.Parameterized.Parameters;
 public class ValueClassBoxingUnboxingTest extends TestBase {
 
   @Parameter(0)
+  public boolean inlineConstructor;
+
+  @Parameter(1)
   public TestParameters parameters;
 
-  @Parameters(name = "{0}")
-  public static TestParametersCollection data() {
-    return getTestParameters().withAllRuntimesAndApiLevels().build();
+  @Parameters(name = "{1}, inline constructor: {0}")
+  public static List<Object[]> data() {
+    return buildParameters(
+        BooleanUtils.values(), getTestParameters().withAllRuntimesAndApiLevels().build());
   }
 
   @Test
@@ -47,6 +52,19 @@ public class ValueClassBoxingUnboxingTest extends TestBase {
                 .transform(),
             transformer(MyJvmInline.class).setClassDescriptor("Lkotlin/jvm/JvmInline;").transform())
         .addKeepClassAndMembersRules(Main.class, Sinks.class)
+        .applyIf(
+            inlineConstructor,
+            b ->
+                b.addKeepRules(
+                    "-alwaysinline class " + ValueClass.class.getTypeName() + " {",
+                    "  void <init>(int);",
+                    "}"),
+            b ->
+                b.addKeepRules(
+                        "-neverinline class " + ValueClass.class.getTypeName() + " {",
+                        "  void <init>(int);",
+                        "}")
+                    .enableProguardTestOptions())
         .compile()
         .inspect(this::inspect)
         .run(parameters.getRuntime(), Main.class)
@@ -64,8 +82,12 @@ public class ValueClassBoxingUnboxingTest extends TestBase {
     MethodSubject testUnboxBoxMethod = classSubject.uniqueMethodWithOriginalName("testUnboxBox");
     assertThat(testUnboxBoxMethod, isPresent());
     assertThat(testUnboxBoxMethod, invokesMethodWithName("getClass"));
-    // TODO(b/309575527): Boxing should have been removed.
-    assertTrue(testUnboxBoxMethod.streamInstructions().anyMatch(InstructionSubject::isNewInstance));
+    // Boxing should have been removed.
+    assertTrue(
+        testUnboxBoxMethod.streamInstructions().noneMatch(InstructionSubject::isNewInstance));
+    // Unboxing should have been removed.
+    assertTrue(
+        testUnboxBoxMethod.streamInstructions().noneMatch(InstructionSubject::isInstanceGet));
   }
 
   public static class Main {

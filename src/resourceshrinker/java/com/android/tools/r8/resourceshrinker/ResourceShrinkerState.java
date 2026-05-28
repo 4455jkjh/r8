@@ -73,8 +73,7 @@ public class ResourceShrinkerState<T> {
   private final ShrinkerDebugReporter shrinkerDebugReporter;
   private final boolean enableXmlInlining;
   private final boolean enableManifestPruning;
-  private ClassReferenceCallback enqueuerCallback;
-  private MethodReferenceCallback methodCallback;
+
   private Map<Integer, Set<String>> resourceIdToXmlFiles;
   private Set<String> packageNames;
   private final Set<String> seenNoneClassValues = new HashSet<>();
@@ -92,13 +91,9 @@ public class ResourceShrinkerState<T> {
   private static final Set<String> SPECIAL_APPLICATION_ATTRIBUTES =
       ImmutableSet.of("backupAgent", "appComponentFactory", "zygotePreloadName");
 
-  @FunctionalInterface
-  public interface ClassReferenceCallback {
+  public interface ResourceShrinkerCallback {
     boolean tryClass(String possibleClass, String xmlFilePath, boolean markAsLive);
-  }
 
-  @FunctionalInterface
-  public interface MethodReferenceCallback {
     void tryMethod(String methodName, String xmlFilePath);
   }
 
@@ -114,7 +109,7 @@ public class ResourceShrinkerState<T> {
     this.enableManifestPruning = enableManifestPruning;
   }
 
-  public void trace(int id, String reachableFrom) {
+  public void trace(int id, String reachableFrom, ResourceShrinkerCallback callback) {
     if (!seenResourceIds.add(id)) {
       return;
     }
@@ -128,11 +123,11 @@ public class ResourceShrinkerState<T> {
     reachabilityMap.compute(
         resource, (r, v) -> v == null || v.compareTo(reachableFrom) > 0 ? reachableFrom : v);
     ResourceUsageModel.markReachable(resource);
-    traceXmlForResourceId(id);
+    traceXmlForResourceId(id, callback);
     if (resource.references != null) {
       for (Resource reference : resource.references) {
         if (!reference.isReachable()) {
-          trace(reference.value, resource.toString());
+          trace(reference.value, resource.toString(), callback);
         }
       }
     }
@@ -142,7 +137,7 @@ public class ResourceShrinkerState<T> {
     return getR8ResourceShrinkerModel().getResourceStore().getResource(resourceId) != null;
   }
 
-  public void traceKeepXmlAndManifest() {
+  public void traceKeepXmlAndManifest(ResourceShrinkerCallback callback) {
     // We start by building the root set of all keep/discard rules to find those pinned resources
     // before marking additional resources in the trace.
     // We then explicitly trace those resources to transitively get the full set of reachable
@@ -156,20 +151,10 @@ public class ResourceShrinkerState<T> {
     r8ResourceShrinkerModel
         .getResourceStore()
         .processToolsAttributes()
-        .forEach(resource -> trace(resource.value, "keep xml file"));
+        .forEach(resource -> trace(resource.value, "keep xml file", callback));
     for (Supplier<InputStream> manifestProvider : manifestProviders) {
-      traceXml("AndroidManifest.xml", manifestProvider.get(), ids -> {});
+      traceXml("AndroidManifest.xml", manifestProvider.get(), ids -> {}, callback);
     }
-  }
-
-  public void setEnqueuerCallback(ClassReferenceCallback enqueuerCallback) {
-    assert this.enqueuerCallback == null;
-    this.enqueuerCallback = enqueuerCallback;
-  }
-
-  public void setEnqueuerMethodCallback(MethodReferenceCallback methodCallback) {
-    assert this.methodCallback == null;
-    this.methodCallback = methodCallback;
   }
 
   private synchronized Set<String> getPackageNames() {
@@ -312,15 +297,15 @@ public class ResourceShrinkerState<T> {
     return resEntriesToKeep.build();
   }
 
-  private void traceXmlForResourceId(int id) {
+  private void traceXmlForResourceId(int id, ResourceShrinkerCallback callback) {
     Set<String> xmlFiles = getResourceIdToXmlFiles().get(id);
     if (xmlFiles != null) {
       for (String xmlFile : xmlFiles) {
         InputStream inputStream = xmlFileProviders.get(xmlFile).get();
         Resource resource = r8ResourceShrinkerModel.getResourceStore().getResource(id);
-        traceXml(xmlFile, inputStream, inlinedIds -> pruneModel(resource, inlinedIds));
+        traceXml(xmlFile, inputStream, inlinedIds -> pruneModel(resource, inlinedIds), callback);
         if (duplicatedResFolderEntries.contains(xmlFile)) {
-          traceDuplicatedXmlFileIds(id, xmlFile);
+          traceDuplicatedXmlFileIds(id, xmlFile, callback);
         }
       }
     }
@@ -333,18 +318,22 @@ public class ResourceShrinkerState<T> {
     }
   }
 
-  private void traceDuplicatedXmlFileIds(int currentId, String xmlFile) {
+  private void traceDuplicatedXmlFileIds(
+      int currentId, String xmlFile, ResourceShrinkerCallback callback) {
     for (Map.Entry<Integer, Set<String>> entry : getResourceIdToXmlFiles().entrySet()) {
       if (entry.getValue().contains(xmlFile)) {
         if (entry.getKey() != currentId) {
-          trace(entry.getKey(), "Duplicated xmlfile " + xmlFile);
+          trace(entry.getKey(), "Duplicated xmlfile " + xmlFile, callback);
         }
       }
     }
   }
 
   private void traceXml(
-      String xmlFile, InputStream inputStream, Consumer<IntSet> inlinedIdsConsumer) {
+      String xmlFile,
+      InputStream inputStream,
+      Consumer<IntSet> inlinedIdsConsumer,
+      ResourceShrinkerCallback callback) {
     try {
       XmlNode xmlNode;
       if (changedXmlFiles.containsKey(xmlFile)) {
@@ -358,12 +347,12 @@ public class ResourceShrinkerState<T> {
           changedXmlFiles.put(xmlFile, xmlNode.toByteArray());
         }
       }
-      visitNode(xmlNode, xmlFile, null);
+      visitNode(xmlNode, xmlFile, null, callback);
       // Ensure that we trace the transitive reachable ids, without us having to iterate all
       // resources for the reachable marker.
       ProtoAndroidManifestUsageRecorderKt.recordUsagesFromNode(xmlNode, r8ResourceShrinkerModel)
           .iterator()
-          .forEachRemaining(resource -> trace(resource.value, xmlFile));
+          .forEachRemaining(resource -> trace(resource.value, xmlFile, callback));
     } catch (IOException e) {
       errorHandler.apply(e);
     }
@@ -410,21 +399,26 @@ public class ResourceShrinkerState<T> {
     return changedChildren;
   }
 
-  private void tryEnqueuerOnString(String possibleClass, String xmlName) {
+  private void tryEnqueuerOnString(
+      String possibleClass, String xmlName, ResourceShrinkerCallback callback) {
     // There are a lot of xml tags and attributes that are evaluated over and over, if it is
     // not a class, ignore it.
     if (seenNoneClassValues.contains(possibleClass)) {
       return;
     }
-    if (!enqueuerCallback.tryClass(possibleClass, xmlName, true)) {
+    if (!callback.tryClass(possibleClass, xmlName, true)) {
       seenNoneClassValues.add(possibleClass);
     }
   }
 
-  private void visitNode(XmlNode xmlNode, String xmlName, String manifestPackageName) {
+  private void visitNode(
+      XmlNode xmlNode,
+      String xmlName,
+      String manifestPackageName,
+      ResourceShrinkerCallback callback) {
     XmlElement element = xmlNode.getElement();
     String xmlElementName = element.getName();
-    tryEnqueuerOnString(xmlElementName, xmlName);
+    tryEnqueuerOnString(xmlElementName, xmlName, callback);
 
     for (XmlAttribute xmlAttribute : element.getAttributeList()) {
       if (xmlAttribute.getName().equals("package") && xmlElementName.equals("manifest")) {
@@ -443,44 +437,48 @@ public class ResourceShrinkerState<T> {
                 .anyMatch(child -> child.getElement().getName().equals("intent-filter"));
         if (isNotExported && !hasFilters) {
           String fullyQualifiedName = getFullyQualifiedName(manifestPackageName, xmlAttribute);
-          enqueuerCallback.tryClass(fullyQualifiedName, xmlName, false);
+          callback.tryClass(fullyQualifiedName, xmlName, false);
           continue;
         }
       }
       String value = xmlAttribute.getValue();
-      tryEnqueuerOnString(value, xmlName);
+      tryEnqueuerOnString(value, xmlName, callback);
       if (value.startsWith(".")) {
         // package specific names, e.g. context
-        getPackageNames().forEach(s -> tryEnqueuerOnString(s + value, xmlName));
+        getPackageNames().forEach(s -> tryEnqueuerOnString(s + value, xmlName, callback));
       }
       if (manifestPackageName != null) {
         // Manifest case
-        traceManifestSpecificValues(xmlName, manifestPackageName, xmlAttribute, element);
+        traceManifestSpecificValues(xmlName, manifestPackageName, xmlAttribute, element, callback);
       }
       if (xmlAttribute.getName().equals("onClick")
           && xmlAttribute.getNamespaceUri().equals("http://schemas.android.com/apk/res/android")) {
-        methodCallback.tryMethod(xmlAttribute.getValue(), xmlName);
+        callback.tryMethod(xmlAttribute.getValue(), xmlName);
       }
     }
     for (XmlNode node : element.getChildList()) {
-      visitNode(node, xmlName, manifestPackageName);
+      visitNode(node, xmlName, manifestPackageName, callback);
     }
   }
 
   private void traceManifestSpecificValues(
-      String xmlName, String packageName, XmlAttribute xmlAttribute, XmlElement element) {
+      String xmlName,
+      String packageName,
+      XmlAttribute xmlAttribute,
+      XmlElement element,
+      ResourceShrinkerCallback callback) {
     if (!SPECIAL_MANIFEST_ELEMENTS.contains(element.getName())) {
       return;
     }
     // All elements can have package specific name attributes pointing at classes.
     if (xmlAttribute.getName().equals("name")) {
-      tryEnqueuerOnString(getFullyQualifiedName(packageName, xmlAttribute), xmlName);
+      tryEnqueuerOnString(getFullyQualifiedName(packageName, xmlAttribute), xmlName, callback);
     }
     // Application elements have multiple special case attributes, where the value is potentially
     // a class name (unqualified).
     if (element.getName().equals("application")) {
       if (SPECIAL_APPLICATION_ATTRIBUTES.contains(xmlAttribute.getName())) {
-        tryEnqueuerOnString(getFullyQualifiedName(packageName, xmlAttribute), xmlName);
+        tryEnqueuerOnString(getFullyQualifiedName(packageName, xmlAttribute), xmlName, callback);
       }
     }
   }
@@ -552,8 +550,6 @@ public class ResourceShrinkerState<T> {
   }
 
   public void enqueuerDone(boolean isFinalTreeshaking) {
-    enqueuerCallback = null;
-    methodCallback = null;
     seenResourceIds.clear();
     if (!isFinalTreeshaking) {
       // After final tree shaking we will need the reachability bits to decide what to write out

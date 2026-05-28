@@ -73,7 +73,7 @@ public class IdenticalBlockSuffixSharingWithArrayTypesTest extends TestBase {
         .addInnerClasses(IdenticalBlockSuffixSharingWithArrayTypesTest.class)
         .setMinApi(parameters)
         .compile()
-        .inspect(this::verifyInstructionCount)
+        .inspect(inspector -> verifyInstructionCount(inspector, false))
         .run(parameters.getRuntime(), clazz)
         .assertSuccessWithOutput(expectedOutput);
   }
@@ -89,12 +89,12 @@ public class IdenticalBlockSuffixSharingWithArrayTypesTest extends TestBase {
         .enableNoHorizontalClassMergingAnnotations()
         .setMinApi(parameters)
         .compile()
-        .inspect(this::verifyInstructionCount)
+        .inspect(inspector -> verifyInstructionCount(inspector, true))
         .run(parameters.getRuntime(), clazz)
         .assertSuccessWithOutput(expectedOutput);
   }
 
-  private void verifyInstructionCount(CodeInspector inspector) {
+  private void verifyInstructionCount(CodeInspector inspector, boolean isR8) {
     ClassSubject classSubject = inspector.clazz(clazz);
     assertThat(classSubject, isPresent());
 
@@ -106,13 +106,15 @@ public class IdenticalBlockSuffixSharingWithArrayTypesTest extends TestBase {
           4, methodSubject.streamInstructions().filter(InstructionSubject::isArrayPut).count());
     } else if (clazz == InstancePutTestClass.class) {
       assertEquals(
-          4, methodSubject.streamInstructions().filter(InstructionSubject::isInstancePut).count());
+          parameters.isCfRuntime() || isR8 ? 0 : 4,
+          methodSubject.streamInstructions().filter(InstructionSubject::isInstancePut).count());
     } else if (clazz == InvokeTestClass.class) {
       assertEquals(
           4, methodSubject.streamInstructions().filter(InstructionSubject::isInvokeStatic).count());
     } else if (clazz == StaticPutTestClass.class) {
       assertEquals(
-          4, methodSubject.streamInstructions().filter(InstructionSubject::isStaticPut).count());
+          parameters.isCfRuntime() || isR8 ? 0 : 4,
+          methodSubject.streamInstructions().filter(InstructionSubject::isStaticPut).count());
     } else {
       fail();
     }
