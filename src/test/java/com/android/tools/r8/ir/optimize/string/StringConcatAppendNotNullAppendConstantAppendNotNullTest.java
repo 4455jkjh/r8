@@ -53,7 +53,7 @@ public class StringConcatAppendNotNullAppendConstantAppendNotNullTest extends Te
               MethodSubject methodSubject = inspect.clazz(Main.class).mainMethod();
               assertThat(methodSubject, isPresent());
               assertEquals(1, countStringBuilderInits(methodSubject.asFoundMethodSubject()));
-              assertEquals(2, countStringBuilderAppends(methodSubject.asFoundMethodSubject()));
+              assertEquals(3, countStringBuilderAppends(methodSubject.asFoundMethodSubject()));
             });
   }
 

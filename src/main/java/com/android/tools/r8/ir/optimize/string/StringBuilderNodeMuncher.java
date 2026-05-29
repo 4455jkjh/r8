@@ -135,11 +135,11 @@ class StringBuilderNodeMuncher {
       }
       String currentConstantArgument = getConstantArgumentForNode(appendNode, munchingState);
       if (currentConstantArgument == null) {
-        return optimizeAppendOnEmptyStringBuilder(appendNode, previous, munchingState);
+        return false; // optimizeAppendOnEmptyStringBuilder(appendNode, previous, munchingState);
       }
       String previousConstantArgument = getConstantArgumentForNode(previous, munchingState);
       if (previousConstantArgument == null) {
-        return optimizeAppendOnEmptyStringBuilder(appendNode, previous, munchingState);
+        return false; // optimizeAppendOnEmptyStringBuilder(appendNode, previous, munchingState);
       }
       String newConstant = previousConstantArgument + currentConstantArgument;
       previous.setConstantArgument(newConstant);
@@ -151,6 +151,7 @@ class StringBuilderNodeMuncher {
       return true;
     }
 
+    @SuppressWarnings("UnusedMethod")
     private boolean optimizeAppendOnEmptyStringBuilder(
         AppendNode appendNode, InitOrAppendNode previous, MunchingState munchingState) {
       if (!previous.isInitNode()) {

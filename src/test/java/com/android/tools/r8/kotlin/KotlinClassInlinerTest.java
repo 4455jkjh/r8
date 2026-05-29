@@ -274,7 +274,7 @@ public class KotlinClassInlinerTest extends AbstractR8KotlinTestBase {
                     isAbsent());
                 assertThat(
                     inspector.clazz("class_inliner_lambda_k_style.MainKt$testBigExtraMethod$1"),
-                    isAbsent());
+                    isPresentIf(testParameters.isCfRuntime()));
               }
             });
   }

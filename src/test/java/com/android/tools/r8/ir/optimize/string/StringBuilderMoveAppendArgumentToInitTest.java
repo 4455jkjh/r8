@@ -36,8 +36,9 @@ public class StringBuilderMoveAppendArgumentToInitTest extends TestBase {
         .inspect(
             inspector -> {
               MethodSubject mainMethod = inspector.clazz(Main.class).mainMethod();
+              // TODO(b/515231400): Should be 1.
               assertEquals(
-                  1,
+                  2,
                   mainMethod
                       .streamInstructions()
                       .filter(

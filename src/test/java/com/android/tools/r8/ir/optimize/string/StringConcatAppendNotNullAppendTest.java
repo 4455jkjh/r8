@@ -54,7 +54,7 @@ public class StringConcatAppendNotNullAppendTest extends TestBase {
               assertThat(methodSubject, isPresent());
               // TODO(b/129200243): See if this can be arg1.concat(String.valueOf(arg2))
               assertEquals(1, countStringBuilderInits(methodSubject.asFoundMethodSubject()));
-              assertEquals(1, countStringBuilderAppends(methodSubject.asFoundMethodSubject()));
+              assertEquals(2, countStringBuilderAppends(methodSubject.asFoundMethodSubject()));
             });
   }
 
