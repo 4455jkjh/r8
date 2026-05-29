@@ -28,11 +28,14 @@ public class ExtractR8RulesCommandTest extends TestBase {
     assertEquals(
         StringUtils.lines(
             "Usage: TBD",
-            "  --rules-output <file>      # Output the extracted keep rules.",
-            "  --compiler-version <version>  # Output the proguard rules extracted.",
-            "  --include-origin-comments  # Include comments with origin for extracted rules.",
-            "  --version                  # Print the version.",
-            "  --help                     # Print this message."),
-        ExtractR8RulesCommand.USAGE_MESSAGE);
+            "  --rules-output <file>   # Output the extracted keep rules.",
+            "  --compiler-version <version>",
+            "                          # Output the proguard rules extracted.",
+            "  --include-origin-comments",
+            "                          # Include comments with origin for extracted rules.",
+            "  --version               # Print the version.",
+            "  --help",
+            "  -h                      # Print this message."),
+        ExtractR8RulesCommand.usageMessage());
   }
 }

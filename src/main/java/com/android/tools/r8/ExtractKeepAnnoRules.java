@@ -81,7 +81,7 @@ public class ExtractKeepAnnoRules {
     ExtractKeepAnnoRulesCommand.Builder builder = ExtractKeepAnnoRulesCommand.parse(args);
     ExtractKeepAnnoRulesCommand command = builder.build();
     if (command.isPrintHelp()) {
-      System.out.println(ExtractR8RulesCommand.USAGE_MESSAGE);
+      System.out.println(ExtractR8RulesCommand.usageMessage());
       return;
     }
     if (command.isPrintVersion()) {

@@ -11,8 +11,8 @@ import com.android.tools.r8.utils.AndroidApp;
 import com.android.tools.r8.utils.InternalOptions;
 import com.android.tools.r8.utils.Reporter;
 import com.android.tools.r8.utils.StringDiagnostic;
+import com.android.tools.r8.utils.internal.CliParser;
 import com.android.tools.r8.utils.internal.SemanticVersion;
-import com.android.tools.r8.utils.internal.StringUtils;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
@@ -86,14 +86,9 @@ public class ExtractR8RulesCommand extends BaseCommand {
     }
   }
 
-  static final String USAGE_MESSAGE =
-      StringUtils.lines(
-          "Usage: TBD",
-          "  --rules-output <file>      # Output the extracted keep rules.",
-          "  --compiler-version <version>  # Output the proguard rules extracted.",
-          "  --include-origin-comments  # Include comments with origin for extracted rules.",
-          "  --version                  # Print the version.",
-          "  --help                     # Print this message.");
+  static String usageMessage() {
+    return createParser().getUsageMessage();
+  }
 
   public static ExtractR8RulesCommand.Builder builder() {
     return new ExtractR8RulesCommand.Builder();
@@ -104,8 +99,15 @@ public class ExtractR8RulesCommand extends BaseCommand {
   }
 
   public static ExtractR8RulesCommand.Builder parse(String[] args) {
-    ExtractR8RulesCommand.Builder builder = builder();
-    parse(args, builder);
+    var builder = builder();
+    createParser()
+        .parse(
+            args,
+            builder,
+            err ->
+                builder
+                    .getReporter()
+                    .fatalError(new StringDiagnostic(err, CommandLineOrigin.INSTANCE)));
     return builder;
   }
 
@@ -125,31 +127,27 @@ public class ExtractR8RulesCommand extends BaseCommand {
     return reporter;
   }
 
-  private static void parse(String[] args, ExtractR8RulesCommand.Builder builder) {
-    for (int i = 0; i < args.length; i++) {
-      String arg = args[i].trim();
-      if (arg.length() == 0) {
-        continue;
-      } else if (arg.equals("--help")) {
-        builder.setPrintHelp(true);
-      } else if (arg.equals("--version")) {
-        builder.setPrintVersion(true);
-      } else if (arg.equals("--rules-output")) {
-        builder.setRulesOutputPath(Paths.get(args[++i]));
-      } else if (arg.equals("--compiler-version")) {
-        builder.setCompilerVersion(SemanticVersion.parse(args[++i]));
-      } else if (arg.equals("--include-origin-comments")) {
-        builder.setIncludeOriginComments(true);
-      } else {
-        if (arg.startsWith("--")) {
-          builder
-              .getReporter()
-              .fatalError(
-                  new StringDiagnostic("Unknown option: " + arg, CommandLineOrigin.INSTANCE));
-        }
-        builder.addProgramFiles(Paths.get(arg));
-      }
-    }
+  private static CliParser<ExtractR8RulesCommand.Builder> createParser() {
+    var header = "Usage: TBD";
+    var parser = new CliParser<ExtractR8RulesCommand.Builder>(header);
+    return parser
+        .option1(
+            "--rules-output",
+            "<file>",
+            "Output the extracted keep rules.",
+            (b, arg) -> b.setRulesOutputPath(Paths.get(arg)))
+        .option1(
+            "--compiler-version",
+            "<version>",
+            "Output the proguard rules extracted.",
+            (b, arg) -> b.setCompilerVersion(SemanticVersion.parse(arg)))
+        .option0(
+            "--include-origin-comments",
+            "Include comments with origin for extracted rules.",
+            b -> b.setIncludeOriginComments(true))
+        .option0("--version", "Print the version.", b -> b.setPrintVersion(true))
+        .option0("--help", "Print this message.", b -> b.setPrintHelp(true), "-h")
+        .positional((b, arg) -> b.addProgramFiles(Paths.get(arg)));
   }
 
   private ExtractR8RulesCommand(
