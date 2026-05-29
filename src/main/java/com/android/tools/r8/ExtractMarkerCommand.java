@@ -7,6 +7,7 @@ import com.android.tools.r8.errors.CompilationError;
 import com.android.tools.r8.keepanno.annotations.KeepForApi;
 import com.android.tools.r8.origin.Origin;
 import com.android.tools.r8.origin.PathOrigin;
+import com.android.tools.r8.utils.internal.CliParser;
 import com.android.tools.r8.utils.internal.StringUtils;
 import com.android.tools.r8.utils.internal.collections.Pair;
 import java.nio.file.Path;
@@ -95,7 +96,7 @@ public class ExtractMarkerCommand {
     }
 
     public ExtractMarkerCommand build() {
-      // If printing versions ignore everything else.
+      // If printing help ignore everything else.
       if (isPrintHelp()) {
         return new ExtractMarkerCommand(isPrintHelp());
       }
@@ -103,11 +104,9 @@ public class ExtractMarkerCommand {
     }
   }
 
-  static final String USAGE_MESSAGE =
-      StringUtils.joinLines(
-          "Usage: extractmarker [options] <input-files>",
-          " where <input-files> are D8 supported input/output files and options are:",
-          "  --help                  # Print this message.");
+  static String usageMessage() {
+    return createParser().getUsageMessage();
+  }
 
   public static Builder builder() {
     return builder(new DiagnosticsHandler() {});
@@ -119,22 +118,25 @@ public class ExtractMarkerCommand {
 
   public static Builder parse(String[] args) {
     Builder builder = builder();
-    parse(args, builder);
+    createParser()
+        .parse(
+            args,
+            builder,
+            err -> {
+              throw new CompilationError(err);
+            });
     return builder;
   }
 
-  private static void parse(String[] args, Builder builder) {
-    for (int i = 0; i < args.length; i++) {
-      String arg = args[i].trim();
-      if (arg.equals("--help")) {
-        builder.setPrintHelp(true);
-      } else {
-        if (arg.startsWith("--")) {
-          throw new CompilationError("Unknown option: " + arg);
-        }
-        builder.addProgramFiles(Paths.get(arg));
-      }
-    }
+  private static CliParser<ExtractMarkerCommand.Builder> createParser() {
+    var header =
+        StringUtils.joinLines(
+            "Usage: extractmarker [options] <input-files>",
+            " where <input-files> are D8 supported input/output files and options are:");
+    var parser = new CliParser<ExtractMarkerCommand.Builder>(header);
+    return parser
+        .option0("--help", "Print this message.", b -> b.setPrintHelp(true), "-h")
+        .positional((b, arg) -> b.addProgramFiles(Paths.get(arg)));
   }
 
   private final boolean printHelp;
