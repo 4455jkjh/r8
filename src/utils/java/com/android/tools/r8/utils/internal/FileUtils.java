@@ -25,7 +25,6 @@ public class FileUtils {
   public static final String APK_EXTENSION = ".apk";
   public static final String CLASS_EXTENSION = ".class";
   public static final String DEX_EXTENSION = ".dex";
-  public static final String VDEX_EXTENSION = ".vdex";
   public static final String JAR_EXTENSION = ".jar";
   public static final String ZIP_EXTENSION = ".zip";
   public static final String JAVA_EXTENSION = ".java";
@@ -43,11 +42,6 @@ public class FileUtils {
   public static boolean isDexFile(Path path) {
     String name = StringUtils.toLowerCase(path.getFileName().toString());
     return name.endsWith(DEX_EXTENSION);
-  }
-
-  public static boolean isVDexFile(Path path) {
-    String name = StringUtils.toLowerCase(path.getFileName().toString());
-    return name.endsWith(VDEX_EXTENSION);
   }
 
   public static boolean isClassFile(String path) {

@@ -12,14 +12,6 @@ public class Constants {
 
   public static final byte DEX_FILE_MAGIC_SUFFIX = '\0';
 
-  @SuppressWarnings("MutablePublicArray")
-  public static final byte[] VDEX_FILE_MAGIC_PREFIX = {'v', 'd', 'e', 'x'};
-
-  public static final int VDEX_FILE_VERSION_LENGTH = 4;
-
-  /** Supported vdex file versions */
-  public static final int MIN_VDEX_VERSION = 10;
-  public static final int MAX_VDEX_VERSION = 11;
 
   // We apply Java 6 class file constraints on DEX files.
   public static final CfVersion CORRESPONDING_CLASS_FILE_VERSION = CfVersion.V1_6;
@@ -103,12 +95,6 @@ public class Constants {
   public static final int DBG_LINE_RANGE = 15;
   public static final int DBG_ADDRESS_RANGE = 16;
 
-  public static final int VDEX_MAGIC_SIZE = 8;
-  public static final int VDEX_MAGIC_OFFSET = 0;
-  public static final int VDEX_HEADER_SIZE = 24;
-  public static final int VDEX_NUMBER_OF_DEX_FILES_OFFSET = VDEX_MAGIC_SIZE;
-  public static final int VDEX_CHECKSUM_SECTION_OFFSET = VDEX_HEADER_SIZE;
-  public static final int VDEX_DEX_CHECKSUM_SIZE = 4;
 
   public static final int NO_OFFSET = 0;
   public static final int NO_INDEX = -1;
