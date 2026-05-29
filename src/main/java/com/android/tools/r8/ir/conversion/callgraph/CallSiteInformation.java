@@ -152,7 +152,7 @@ public abstract class CallSiteInformation {
           if (methodProcessor.isPostMethodProcessor()) {
             SyntheticItems syntheticItems = appView.getSyntheticItems();
             if (syntheticItems.hasKindThatMatches(
-                method.getHolderType(),
+                method.getHolder(),
                 (kind, naming) -> !kind.isSingleCallerInlineableInPostMethodProcessor(naming))) {
               continue;
             }

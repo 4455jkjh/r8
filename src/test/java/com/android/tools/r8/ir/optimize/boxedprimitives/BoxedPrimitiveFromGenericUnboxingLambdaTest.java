@@ -37,9 +37,9 @@ public class BoxedPrimitiveFromGenericUnboxingLambdaTest extends TestBase {
 
   @Test
   public void test() throws Exception {
-    // TODO(b/309575527): Should be optimized if enableBridgeHoistingToSharedSyntheticSuperclass
-    //  && parameters.canHaveNonReboundConstructorInvoke().
-    boolean optimize = false;
+    boolean optimize =
+        enableBridgeHoistingToSharedSyntheticSuperclass
+            && parameters.canHaveNonReboundConstructorInvoke();
     testForR8(parameters.getBackend())
         .addInnerClasses(getClass())
         .addKeepMainRule(Main.class)
