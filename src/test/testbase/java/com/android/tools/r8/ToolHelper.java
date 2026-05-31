@@ -2716,11 +2716,13 @@ public class ToolHelper {
       builder.append("\n");
       builder.append("STDOUT: ");
       builder.append("\n");
-      builder.append(stdout);
+      builder.append(
+          stdout.length() > 50000 ? "<omitted " + stdout.length() + " characters>" : stdout);
       builder.append("\n");
       builder.append("STDERR: ");
       builder.append("\n");
-      builder.append(stderr);
+      builder.append(
+          stderr.length() > 50000 ? "<omitted " + stderr.length() + " characters>" : stderr);
       builder.append("\n");
       return builder.toString();
     }
