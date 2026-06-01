@@ -7,7 +7,6 @@ package com.android.tools.r8.rewrite.assertions;
 import com.android.tools.r8.AssertionsConfiguration;
 import com.android.tools.r8.KotlinTestParameters;
 import com.android.tools.r8.TestParameters;
-import com.android.tools.r8.utils.internal.BooleanUtils;
 import java.util.Collection;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -18,19 +17,17 @@ import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 
 @RunWith(Parameterized.class)
-public class AssertionConfigurationKotlinWithModifiedKotlinAssertionsTest
+public abstract class AssertionConfigurationKotlinWithModifiedKotlinAssertionsTestBase
     extends AssertionConfigurationKotlinTestBase implements Opcodes {
 
-  @Parameterized.Parameters(name = "{0}, {1}, kotlin-stdlib as library: {2}, -Xassertions=jvm: {3}")
+  @Parameterized.Parameters(name = "{0}, {1}")
   public static Collection<Object[]> data() {
     return buildParameters(
         getTestParameters().withDexRuntimesAndAllApiLevels().build(),
-        getKotlinTestParameters().withAllCompilersAndLambdaGenerations().build(),
-        BooleanUtils.values(),
-        BooleanUtils.values());
+        getKotlinTestParameters().withAllCompilersAndLambdaGenerations().build());
   }
 
-  public AssertionConfigurationKotlinWithModifiedKotlinAssertionsTest(
+  public AssertionConfigurationKotlinWithModifiedKotlinAssertionsTestBase(
       TestParameters parameters,
       KotlinTestParameters kotlinParameters,
       boolean kotlinStdlibAsClasspath,
