@@ -6,15 +6,12 @@ package com.android.tools.r8.rewrite.assertions;
 
 import com.android.tools.r8.KotlinTestParameters;
 import com.android.tools.r8.TestParameters;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
 
-@RunWith(Parameterized.class)
-public class AssertionConfigurationKotlinCfStdlibLibraryNoAssertJvmDisableTest
+public class AssertionConfigurationKotlinCfWithKotlinAssertionsEnableAssertionsTest
     extends AssertionConfigurationKotlinCfTestBase {
 
-  public AssertionConfigurationKotlinCfStdlibLibraryNoAssertJvmDisableTest(
+  public AssertionConfigurationKotlinCfWithKotlinAssertionsEnableAssertionsTest(
       TestParameters parameters, KotlinTestParameters kotlinParameters) {
-    super(parameters, kotlinParameters, true, false, false);
+    super(parameters, kotlinParameters, false, false, true);
   }
 }
