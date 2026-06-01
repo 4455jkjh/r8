@@ -160,6 +160,11 @@ class StringBuilderNodeMuncher {
       if (!initNode.hasConstantArgument() || !initNode.getConstantArgument().isEmpty()) {
         return false;
       }
+      if (appendNode.getInstruction().getBlock().hasCatchHandlers()) {
+        // Moving the constructor call to the append block means that the constructor call may no
+        // longer dominate the catch handler.
+        return false;
+      }
       // We are in the case new StringBuilder().append(...).
       // Check if there is a single CharSequence or String argument.
       ReplaceAppendWithInit replaceAction;
