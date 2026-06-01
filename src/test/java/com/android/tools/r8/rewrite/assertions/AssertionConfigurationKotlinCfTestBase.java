@@ -8,7 +8,6 @@ import com.android.tools.r8.AssertionsConfiguration;
 import com.android.tools.r8.KotlinCompilerTool.KotlinTargetVersion;
 import com.android.tools.r8.KotlinTestParameters;
 import com.android.tools.r8.TestParameters;
-import com.android.tools.r8.utils.internal.BooleanUtils;
 import java.util.Collection;
 import org.junit.Assume;
 import org.junit.Test;
@@ -16,24 +15,19 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
 @RunWith(Parameterized.class)
-public class AssertionConfigurationKotlinCfTest extends AssertionConfigurationKotlinTestBase {
+public abstract class AssertionConfigurationKotlinCfTestBase
+    extends AssertionConfigurationKotlinTestBase {
 
-  @Parameterized.Parameters(
-      name =
-          "{0}, {1}, kotlin-stdlib as library: {2}, -Xassertions=jvm: {3}, enableJvmAssertions:"
-              + " {4}")
+  @Parameterized.Parameters(name = "{0}, {1}")
   public static Collection<Object[]> data() {
     return buildParameters(
         getTestParameters().withCfRuntimes().build(),
-        getKotlinTestParameters().withAllCompilersAndLambdaGenerations().build(),
-        BooleanUtils.values(),
-        BooleanUtils.values(),
-        BooleanUtils.values());
+        getKotlinTestParameters().withAllCompilersAndLambdaGenerations().build());
   }
 
-  private final boolean enableJvmAssertions;
+  protected final boolean enableJvmAssertions;
 
-  public AssertionConfigurationKotlinCfTest(
+  public AssertionConfigurationKotlinCfTestBase(
       TestParameters parameters,
       KotlinTestParameters kotlinParameters,
       boolean kotlinStdlibAsClasspath,
