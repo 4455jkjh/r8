@@ -35,6 +35,15 @@ FMT_CMD_JDK17 = path.join('tools', 'google-java-format-diff.py')
 FMT_SHA1 = path.join('third_party', 'google', 'google-java-format',
                      '1.24.0.tar.gz.sha1')
 
+NODE_DIR = path.join('third_party', 'node', '24.16.0')
+NODE_EXEC = path.join(NODE_DIR, 'linux', 'bin', 'node')
+NODE_SHA1 = path.join(NODE_DIR, 'linux.tar.gz.sha1')
+
+PRETTIER_DIR = path.join('third_party', 'prettier')
+PRETTIER_EXEC = path.join(PRETTIER_DIR, '3.8.3', 'node_modules', 'prettier',
+                          'bin', 'prettier.cjs')
+PRETTIER_SHA1 = path.join(PRETTIER_DIR, '3.8.3.tar.gz.sha1')
+
 PYTHON_FMT = path.join('third_party', 'google', 'yapf', '20231013')
 PYTHON_FMT_EXEC = path.join('third_party', 'google', 'yapf', '20231013', 'yapf')
 PYTHON_FMT_SHA1 = path.join('third_party', 'google', 'yapf',
@@ -63,15 +72,24 @@ def is_python_extension(file_path):
     return file_path.endswith('.py')
 
 
+def is_web_extension(file_path):
+    return file_path.endswith(('.js', '.html', '.css'))
+
+
 def CheckFormatting(input_api, output_api, branch):
     seen_kotlin_error = False
     seen_java_error = False
     seen_python_error = False
+    seen_web_error = False
     pending_kotlin_files = []
     EnsureDepFromGoogleCloudStorage(KOTLIN_FMT_SHA1,
                                     'google-kotlin-format',
                                     dep=KOTLIN_FMT_JAR)
     EnsureDepFromGoogleCloudStorage(FMT_SHA1, 'google-java-format', dep=FMT_CMD)
+    EnsureDepFromGoogleCloudStorage(NODE_SHA1, 'prettier', dep=NODE_EXEC)
+    EnsureDepFromGoogleCloudStorage(PRETTIER_SHA1,
+                                    'prettier',
+                                    dep=PRETTIER_EXEC)
     EnsureDepFromGoogleCloudStorage(PYTHON_FMT_SHA1,
                                     'yapf',
                                     dep=PYTHON_FMT_EXEC)
@@ -94,6 +112,9 @@ def CheckFormatting(input_api, output_api, branch):
         elif is_python_extension(file_path):
             seen_python_error = (python_runtime.check_formatting(
                 file_path, output_api, results) or seen_python_error)
+        elif is_web_extension(file_path):
+            seen_web_error = (CheckWebFormatting(file_path, output_api, results)
+                              or seen_web_error)
         else:
             continue
     # Check remaining Kotlin files if any.
@@ -109,6 +130,8 @@ def CheckFormatting(input_api, output_api, branch):
     if seen_python_error:
         results.append(output_api.PresubmitError(
             PythonFormatPresubmitMessage()))
+    if seen_web_error:
+        results.append(output_api.PresubmitError(WebFormatPresubmitMessage()))
 
     # Comment this out to easily fail presubmit changes
     # results.append(output_api.PresubmitError("TESTING"))
@@ -266,6 +289,34 @@ def PythonFormatPresubmitMessage():
 or fix formatting, commit and upload:
 
   tools/fmt-diff.py --no-java --no-kotlin --python && git commit -a --amend --no-edit && git cl upload
+
+or bypass the checks with:
+
+  git cl upload --bypass-hooks
+    """
+
+
+def CheckWebFormatting(file_path, output_api, results):
+    format_cmd = [NODE_EXEC, PRETTIER_EXEC, '--check', file_path]
+    try:
+        check_output(format_cmd, stderr=STDOUT)
+    except CalledProcessError as e:
+        results.append(
+            output_api.PresubmitError(
+                f"Web formatting error in {file_path}:\n" +
+                e.output.decode('utf-8')))
+        return True
+    return False
+
+
+def WebFormatPresubmitMessage():
+    return """Please fix the Web formatting (JS, HTML, CSS) by running:
+
+  tools/fmt-diff.py --web
+
+or fix formatting, commit and upload:
+
+  tools/fmt-diff.py --web && git commit -a --amend --no-edit && git cl upload
 
 or bypass the checks with:
 
