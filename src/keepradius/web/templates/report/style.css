@@ -7,9 +7,9 @@
   /* --- Colors: Borders --- */
   --border-color: #e2e8f0;
   /* --- Colors: Functional (Status) --- */
-  --text-green-600: oklch(37.1% 0 0);
+  --text-green-600: #166534;
   /* --- Colors: Palette (Extended) --- */
-  --text-blue-600: #2563eb;
+  --text-blue-600: #1d4ed8;
   /* --- Colors: Text --- */
   --text-main: #0f172a;
   /* --- Shadows --- */
@@ -29,19 +29,20 @@
   --border-interactive: #d1d5db;
   --border-light: #f1f5f9;
   --font-family-mono: "SF Mono", "Consolas", "Liberation Mono", Menlo, monospace;
-  --text-muted: #94a3b8;
+  --text-muted: #59697c;
   --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
   --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1);
   --text-blue-700: #1d4ed8;
-  --text-gray-500: #6b7280;
+  --text-gray-400: #5F6368;
+  --text-gray-500: #5F6368;
   --text-gray-900: #111827;
   --text-inverse: #ffffff;
-  --text-link-hover: #1d4ed8;
-  --text-link: #2563eb;
-  --text-orange-600: #ea580c;
-  --text-red-600: #dc2626;
-  --text-subtle: #64748b;
-  --text-yellow-600: #ca8a04;
+  --text-link-hover: #1e40af;
+  --text-link: #1d4ed8;
+  --text-orange-600: #c2410c;
+  --text-red-600: #b91c1c;
+  --text-subtle: #475569;
+  --text-yellow-600: #b06000;
 }
 
 /* ==========================================================================
@@ -178,6 +179,10 @@ button {
 }
 
 /* Colors */
+.text-blue-600 {
+  color: var(--text-blue-600);
+}
+
 .text-green-600 {
   color: var(--text-green-600);
 }
@@ -192,6 +197,10 @@ button {
 
 .text-red-600 {
   color: var(--text-red-600);
+}
+
+.text-gray-400 {
+  color: var(--text-gray-400);
 }
 
 .text-gray-500 {
@@ -787,7 +796,9 @@ td.truncate span {
   position: relative;
 }
 
-[data-tooltip]:hover::after {
+[data-tooltip]:hover::after,
+[data-tooltip]:focus::after,
+[data-tooltip]:focus-visible::after {
   animation: 0.15s ease-out;
   background-color: var(--bg-tooltip);
   border-radius: 0.25rem;
@@ -1028,8 +1039,6 @@ td.truncate span {
 .doc-card-icon {
   color: #a0aec0;
 }
-
-
 
 /* Tooltip Icon */
 .tooltip-icon {

@@ -289,7 +289,6 @@ const App = {
     ReportApp.init();
     // Load Protobuf Data in the Background
     this.loadProtoData();
-
     const headerLink = document.getElementById("header-link");
     if (headerLink) {
       headerLink.addEventListener("click", (e) => {
@@ -297,13 +296,11 @@ const App = {
         this.showReportView();
       });
     }
-
     // Setup Kept Lists Search listeners
     const setupListSearch = (type, stateKey) => {
       const toggleBtn = document.querySelector(`.search-toggle-btn[data-target="${type}"]`);
       const container = document.getElementById(`${type}-search-container`);
       const input = document.getElementById(`${type}-search-input`);
-
       if (toggleBtn && container && input) {
         toggleBtn.addEventListener("click", () => {
           const isHidden = container.style.display === "none";
@@ -319,7 +316,6 @@ const App = {
             if (rule) App.renderKeptLists(rule, type);
           }
         });
-
         input.addEventListener("input", (e) => {
           App.detailsState[stateKey] = e.target.value;
           const rule = App.keepRadiusData?.keepRuleKeepRadiusTable.find(r => r.id === parseInt(App.detailsState.ruleId));
@@ -327,7 +323,6 @@ const App = {
         });
       }
     };
-
     setupListSearch("classes", "classQuery");
     setupListSearch("fields", "fieldQuery");
     setupListSearch("methods", "methodQuery");
@@ -367,7 +362,6 @@ const App = {
       rule = this.keepRadiusData?.globalKeepRuleKeepRadiusTable.find(r => r.id === parseInt(ruleId));
       isGlobal = true;
     }
-
     if (rule) {
       const fileOriginId = rule?.origin?.fileOriginId;
       const fileOrigin = this.keepRadiusData?.fileOriginTable.find(f => f
@@ -381,10 +375,9 @@ const App = {
           originStr += ` (${fileOrigin.filename})`;
         }
       }
-      
+
       if (ruleContainer) {
         const highlightedSource = highlightRule(rule.source);
-
         ruleContainer.innerHTML = `
       ${originStr ? `<div style="font-size: 0.75rem; color: var(--text-gray-500); margin-bottom: 0.5rem; font-family: var(--font-family-mono);">${escapeHTML(originStr)}</div>` : ""}
       <div style="background-color: var(--bg-body); border: 1px solid var(--border-color); border-radius: 4px; padding: 0.75rem;">
@@ -392,11 +385,9 @@ const App = {
       </div>
     `;
       }
-
       const impactContainer = document.getElementById("details-impact-container");
       const relatedRulesContainer = document.getElementById("related-rules-container");
       const gridContainer = document.getElementById("details-classes-content")?.parentElement?.parentElement;
-
       if (isGlobal) {
         if (impactContainer) impactContainer.parentElement.style.display = "none";
         if (relatedRulesContainer) relatedRulesContainer.style.display = "none";
@@ -405,7 +396,6 @@ const App = {
         if (impactContainer) impactContainer.parentElement.style.display = "";
         if (relatedRulesContainer) relatedRulesContainer.style.display = "";
         if (gridContainer) gridContainer.style.display = "grid";
-
         const constraintsMap = getConstraintsMap(this.keepRadiusData);
         const constraints = constraintsMap.get(rule.constraintsId) || [];
         const getTag = (c, label) => {
@@ -423,7 +413,6 @@ const App = {
             ${getTag('DONT_SHRINK', 'SHRINK')}
           </div>
         `;
-
         const br = rule.keepRadius || {};
         const classIds = br.classKeepRadius || [];
         const fieldIds = br.fieldKeepRadius || [];
@@ -454,7 +443,6 @@ const App = {
           const classPerc = getPerc(classIds.length, liveClasses);
           const fieldPerc = getPerc(fieldIds.length, liveFields);
           const methodPerc = getPerc(methodIds.length, liveMethods);
-
           impactContainer.innerHTML = `
         <div style="display: grid; grid-template-columns: 1fr 1fr 1fr auto; gap: 2rem; padding: 0; align-items: start;">
           <!-- Kept Classes -->
@@ -500,12 +488,11 @@ const App = {
         </div>
       `;
         }
-        
+
         const allRules = this.keepRadiusData?.keepRuleKeepRadiusTable || [];
         const subsumingIds = br.subsumedBy || [];
         const identicalRules = [];
         const subsumedByRules = [];
-
         subsumingIds.forEach(id => {
           const otherRule = allRules.find(r => r.id === id);
           if (otherRule) {
@@ -517,22 +504,18 @@ const App = {
             }
           }
         });
-
         if (relatedRulesContainer) {
           const hasIdentical = identicalRules.length > 0;
           const hasSubsumed = subsumedByRules.length > 0;
-
           const renderDetailRuleRow = (r) => {
             const rBr = r.keepRadius || {};
             const rClassIds = rBr.classKeepRadius || [];
             const rFieldIds = rBr.fieldKeepRadius || [];
             const rMethodIds = rBr.methodKeepRadius || [];
-
             const totalLive = getLiveItemCount(this.keepRadiusData);
             const liveClasses = this.keepRadiusData?.buildInfo?.liveClassCount || 0;
             const liveFields = this.keepRadiusData?.buildInfo?.liveFieldCount || 0;
             const liveMethods = this.keepRadiusData?.buildInfo?.liveMethodCount || 0;
-
             const renderMatchCell = (count, total) => {
               const perc = total > 0 ? (count / total * 100) : 0;
               return `
@@ -544,10 +527,8 @@ const App = {
             </td>
           `;
             };
-
             const constraintsMap = getConstraintsMap(this.keepRadiusData);
             const rConstraints = constraintsMap.get(r.constraintsId) || [];
-
             const getTag = (c, label) => {
               const isRestricted = rConstraints.includes(c);
               const color = isRestricted ? "oklch(0.446 0.043 257.281)" : "#cbd5e1";
@@ -555,7 +536,6 @@ const App = {
               const borderColor = isRestricted ? "oklch(0.929 0.013 255.508)" : "#e2e8f0";
               return `<span class="impact-tag" style="display: inline-block; color: ${color}; background-color: ${bgColor}; border: 1px solid ${borderColor}; border-radius: 4px; padding: 2px 8px; font-size: 10px; font-weight: 400; height: 21px; line-height: 15px; text-transform: uppercase; letter-spacing: 0.25px; box-sizing: border-box; text-align: center;">${label}</span>`;
             };
-
             const impactCell = `
           <td style="padding: 1rem; border-left: 1px solid var(--border-color);">
             <div class="flex justify-start" style="gap: 0.5rem;">
@@ -565,7 +545,6 @@ const App = {
             </div>
           </td>
         `;
-
             return `
           <tr class="table-row border-t border-gray-200 hover:bg-gray-50 cursor-pointer" onclick="App.showDetailsView('${r.id}')">
             <td style="padding: 0.5rem; width: 40%;">
@@ -579,7 +558,6 @@ const App = {
           </tr>
         `;
           };
-
           const renderSection = (title, rules, explainer) => {
             const hasRules = rules.length > 0;
             let sectionHtml = `
@@ -592,15 +570,14 @@ const App = {
               ${hasRules ? `<span style="color: var(--text-gray-500); font-size: 0.75rem;">${explainer}</span>` : ''}
             </div>
         `;
-
             if (hasRules) {
               sectionHtml += `
             <table style="width: 100%; border-collapse: collapse;">
               <thead>
                 <tr>
                   <th rowspan="2" class="text-left bg-gray-50" style="padding: 0 1rem; width: 40%;">RULE</th>
-                  <th colspan="4" class="text-center bg-gray-50" style="padding: .25rem 1rem; width: 40%; border-left: 1px solid var(--border-color);">KEPT ITEMS <span style="color: var(--text-muted);text-transform: none;font-weight: 500;">Higher is worse</span> <span class="tooltip-icon" data-tooltip="Items retained in the app due to this rule">?</span></th>
-                  <th rowspan="2" class="text-left bg-gray-50" style="padding: 0 1rem; width: 20%; border-left: 1px solid var(--border-color);">BLOCKED BY RULE <span class="tooltip-icon" data-tooltip="Specific actions blocked by this rule">?</span></th>
+                  <th colspan="4" class="text-center bg-gray-50" style="padding: .25rem 1rem; width: 40%; border-left: 1px solid var(--border-color);">KEPT ITEMS <span style="color: var(--text-muted);text-transform: none;font-weight: 500;">Higher is worse</span> <button type="button" class="tooltip-icon" data-tooltip="Items retained in the app due to this rule" aria-label="Items retained in the app due to this rule">?</button></th>
+                  <th rowspan="2" class="text-left bg-gray-50" style="padding: 0 1rem; width: 20%; border-left: 1px solid var(--border-color);">BLOCKED BY RULE <button type="button" class="tooltip-icon" data-tooltip="Specific actions blocked by this rule" aria-label="Specific actions blocked by this rule">?</button></th>
                 </tr>
                 <tr>
                   <th class="text-center text-xs font-medium text-gray-500" style="padding: .15rem 1rem; width: 10%; border-left: 1px solid var(--border-color);">Total</th>
@@ -615,11 +592,9 @@ const App = {
             </table>
           `;
             }
-
             sectionHtml += `</div>`;
             return sectionHtml;
           };
-
           if (!hasIdentical && !hasSubsumed) {
             relatedRulesContainer.innerHTML = `
           <div class="table-container" style="padding: 0.75rem 1rem; font-size: 0.875rem; display: flex; gap: 2rem; align-items: center;">
@@ -636,7 +611,7 @@ const App = {
             relatedRulesContainer.innerHTML = html;
           }
         }
-        
+
         // Reset search inputs UI
         const resetSearchUI = (type) => {
           const container = document.getElementById(`${type}-search-container`);
@@ -651,7 +626,6 @@ const App = {
         resetSearchUI("classes");
         resetSearchUI("fields");
         resetSearchUI("methods");
-
         // Initial render of kept lists
         this.renderKeptLists(rule);
       }
@@ -670,27 +644,22 @@ const App = {
   },
   renderKeptLists(rule, targetType = null) {
     const br = rule.keepRadius || {};
-    
-    const typeRefMap = App.lookups.typeReference;
 
+    const typeRefMap = App.lookups.typeReference;
     const renderList = (ids, getLabel) => {
       if (ids.length === 0)
         return '<div style="padding: 0.5rem; color: var(--text-gray-500); font-size: 0.8125rem;">None</div>';
-
       const formatSleekItem = (fullName) => {
         const firstParen = fullName.indexOf('(');
         const searchString = firstParen === -1 ? fullName : fullName.substring(0, firstParen);
         const lastDot = searchString.lastIndexOf('.');
-
         if (lastDot === -1) {
           return `<span style="color: var(--text-gray-900); font-weight: 500;">${escapeHTML(fullName)}</span>`;
         }
-
         const pkg = fullName.substring(0, lastDot + 1);
         const name = fullName.substring(lastDot + 1);
         return `<span style="color: var(--text-gray-500);">${escapeHTML(pkg)}</span><span style="color: var(--text-gray-900); font-weight: 500;">${escapeHTML(name)}</span>`;
       };
-
       const limit = 1000;
       const toRender = ids.slice(0, limit);
       const listHtml = toRender.map(id => `
@@ -706,7 +675,6 @@ const App = {
       }
       return listHtml;
     };
-
     // 1. CLASSES COLUMN
     if (!targetType || targetType === "classes") {
       const classIds = br.classKeepRadius || [];
@@ -722,7 +690,6 @@ const App = {
         return formatDescriptor(typeRefMap.get(info?.classReferenceId));
       });
     }
-
     // 2. FIELDS COLUMN
     if (!targetType || targetType === "fields") {
       const fieldIds = br.fieldKeepRadius || [];
@@ -740,7 +707,6 @@ const App = {
         return formatFieldName(ref, App.lookups);
       });
     }
-
     // 3. METHODS COLUMN
     if (!targetType || targetType === "methods") {
       const methodIds = br.methodKeepRadius || [];
@@ -785,13 +751,12 @@ const App = {
     if (!fileOrigin) return;
     const fileRules = this.keepRadiusData.keepRuleKeepRadiusTable
       .filter(r => r.origin?.fileOriginId === fileOrigin.id);
-      
+
     const globalRules = [];
     if (this.keepRadiusData.globalKeepRuleKeepRadiusTable) {
       const totalClasses = this.keepRadiusData?.buildInfo?.liveClassCount || 0;
       const totalFields = this.keepRadiusData?.buildInfo?.liveFieldCount || 0;
       const totalMethods = this.keepRadiusData?.buildInfo?.liveMethodCount || 0;
-
       this.keepRadiusData.globalKeepRuleKeepRadiusTable.forEach(rule => {
         if (rule.source === '-dontoptimize' || rule.source === '-dontshrink' || rule.source === '-dontobfuscate') {
           if (rule.origin?.fileOriginId === fileOrigin.id) {
@@ -810,7 +775,7 @@ const App = {
         }
       });
     }
-    
+
     const allRulesForFile = [...globalRules, ...fileRules];
     let rules = allRulesForFile;
     const lens = ReportApp.state.filters.keepRules[0];
@@ -917,7 +882,6 @@ const App = {
         const borderColor = isRestricted ? "oklch(0.929 0.013 255.508)" : "#e2e8f0";
         return `<span class="impact-tag" style="display: inline-block; color: ${color}; background-color: ${bgColor}; border: 1px solid ${borderColor}; border-radius: 4px; padding: 2px 8px; font-size: 10px; font-weight: 400; height: 21px; line-height: 15px; text-transform: uppercase; letter-spacing: 0.25px; box-sizing: border-box; text-align: center;">${label}</span>`;
       };
-
       const impactCell = `
     <td style="padding: 0.5rem; border-left: 1px solid var(--border-color);">
       <div class="flex justify-start" style="gap: 0.5rem;">
@@ -927,7 +891,6 @@ const App = {
       </div>
     </td>
   `;
-
       const renderMatchCell = (count, total, borderLeft = true) => {
         const perc = total > 0 ? (count / total * 100) : 0;
         const colorClass = UIUtils.getMatchClass(perc);
@@ -941,14 +904,11 @@ const App = {
           </td>
         `;
       };
-
       const totalLive = getLiveItemCount(this.keepRadiusData);
       const liveClasses = this.keepRadiusData?.buildInfo?.liveClassCount || 0;
       const liveFields = this.keepRadiusData?.buildInfo?.liveFieldCount || 0;
       const liveMethods = this.keepRadiusData?.buildInfo?.liveMethodCount || 0;
-
       const highlightedSource = highlightRule(rule.source);
-
       return `
         <tr class="border-t border-gray-200 hover:bg-gray-50 cursor-pointer" onclick="App.showDetailsView('${rule.id}')">
           <td style="padding: 0.5rem; width: 40%;">
@@ -1041,7 +1001,6 @@ const App = {
           });
         }
       }
-
       // Build highly optimized O(1) lookup Maps for details and filtering views
       App.lookups = {
         keptClassInfo: new Map((this.keepRadiusData.keptClassInfoTable || []).map(c => [c.id, c])),
@@ -1053,7 +1012,6 @@ const App = {
         typeReferenceList: new Map((this.keepRadiusData.typeReferenceListTable || []).map(l => [l.id, l])),
         typeReference: new Map((this.keepRadiusData.typeReferenceTable || []).map(t => [t.id, t.javaDescriptor]))
       };
-
       console.log("Protobuf data loaded successfully:", this
         .keepRadiusData);
       // Trigger re-render now that data is available
@@ -1100,7 +1058,6 @@ const ReportApp = {
   cacheDOMElements() {
     const getById = (id) => document.getElementById(id);
     this.elements = {
-
       clsChip: getById("cls-chip-container"),
       clsBtn: getById("cls-filter-btn"),
       clsDropdown: getById("cls-dropdown"),
@@ -1117,7 +1074,6 @@ const ReportApp = {
       addFilterBtn: getById("add-filter-btn"),
       addFilterDropdown: getById("add-filter-dropdown"),
       addFilterList: getById("add-filter-list"),
-
       grpBtn: getById("group-by-btn"),
       grpDropdown: getById("group-by-dropdown"),
       grpText: getById("group-by-text"),
@@ -1526,7 +1482,6 @@ const ReportApp = {
         });
       }
     });
-
     // --- Column Toggle ---
     if (this.elements.toggleBlockedByRuleCb) {
       this.elements.toggleBlockedByRuleCb.addEventListener("change", (e) => {
@@ -1545,7 +1500,6 @@ const ReportApp = {
         this.render();
       });
     }
-
     // Global click listener to close dropdowns
     document.addEventListener("click", (e) => {
       let anyClosed = false;
@@ -1673,7 +1627,6 @@ const ReportApp = {
       this.updateBreadcrumbs();
       this.render();
     });
-
     // --- Search Icon Toggle ---
     if (this.elements.searchIconBtn) {
       this.elements.searchIconBtn.addEventListener("click", (e) => {
@@ -1684,7 +1637,6 @@ const ReportApp = {
         }
       });
     }
-
     // --- Search Input ---
     if (this.elements.searchInput) {
       this.elements.searchInput.addEventListener("input", (e) => {
@@ -1705,35 +1657,29 @@ const ReportApp = {
         this.render();
       });
     }
-
     // --- Help Hub Events ---
     const helpHubFab = document.getElementById("help-hub-fab");
     const helpHubPanel = document.getElementById("help-hub-panel");
     const closeHelpHubBtn = document.getElementById("close-help-hub");
     const helpHubSearchInput = document.querySelector("#help-hub-panel .search-input");
-
     if (helpHubFab && helpHubPanel) {
       helpHubFab.addEventListener("click", (e) => {
         e.stopPropagation();
         helpHubPanel.classList.toggle("open");
       });
     }
-
     if (closeHelpHubBtn && helpHubPanel) {
       closeHelpHubBtn.addEventListener("click", (e) => {
         e.stopPropagation();
         helpHubPanel.classList.remove("open");
       });
     }
-
     // Close help hub when clicking outside
     document.addEventListener("click", (e) => {
       if (helpHubPanel && !helpHubPanel.contains(e.target) && !helpHubFab.contains(e.target)) {
         helpHubPanel.classList.remove("open");
       }
     });
-
-
     // Help Hub Accordion
     if (helpHubPanel) {
       const legendItems = helpHubPanel.querySelectorAll(".legend-item");
@@ -1916,13 +1862,12 @@ const ReportApp = {
       // Global View
       html = `<span class="${textClass}">R8 Optimization Levels</span>`;
     }
-    
+
     const subtextHtml = `
       <div style="font-size: 0.75rem; color: var(--text-gray-500); font-weight: 400; margin-top: 0.25rem; text-transform: none; letter-spacing: normal; padding: 0rem 0.5rem;">
         The percentage of your app’s codebase that R8 successfully shrinks, optimizes, and obfuscates. Achieving a higher percentage indicates a leaner, more performant application.
       </div>
     `;
-
     bc.style.display = "flex";
     bc.style.alignItems = "center";
     bc.style.width = "100%";
@@ -2033,10 +1978,8 @@ const ReportApp = {
   renderStatsTable() {
     const brData = App.keepRadiusData;
     if (!brData) return;
-
     const stats = getDetailedStats(brData);
     if (!stats) return;
-
     const updateCard = (key) => {
       const setStat = (id, disallowCount, total) => {
         const el = document.getElementById(id);
@@ -2046,9 +1989,7 @@ const ReportApp = {
         }
         return perc;
       };
-
       const totalPerc = setStat(`card-total-${key}`, stats.overall[key], stats.overall.total);
-
       const updateItem = (type) => {
         const bar = document.getElementById(`card-${key}-${type}-bar`);
         const val = document.getElementById(`card-${key}-${type}-val`);
@@ -2058,7 +1999,6 @@ const ReportApp = {
           const perc = total > 0 ? (100 - (disallow / total * 100)) : 100;
           bar.style.width = `${perc}%`;
           val.textContent = `${perc.toFixed(1)}%`;
-
           const colorClass = UIUtils.getScoreClass(perc);
           if (colorClass.includes('green')) {
             bar.style.background = 'var(--text-green-600)';
@@ -2069,12 +2009,10 @@ const ReportApp = {
           }
         }
       };
-
       updateItem("classes");
       updateItem("fields");
       updateItem("methods");
     };
-
     updateCard("obfuscation");
     updateCard("optimization");
     updateCard("shrinking");
@@ -2153,9 +2091,9 @@ const ReportApp = {
                 ${title}${ind("name")}
             </div>
           </th>
-          <th colspan="4" class="text-center border-l border-gray-200 bg-gray-50" style="padding: 0.5rem; width: 40%;">KEPT ITEMS <span style="color: var(--text-muted);text-transform: none;font-weight: 500;">Higher is worse</span> <span class="tooltip-icon" data-tooltip="Items retained in the app due to this rule">?</span></th>
+          <th colspan="4" class="text-center border-l border-gray-200 bg-gray-50" style="padding: 0.5rem; width: 40%;">KEPT ITEMS <span style="color: var(--text-muted);text-transform: none;font-weight: 500;">Higher is worse</span> <button type="button" class="tooltip-icon" data-tooltip="Items retained in the app due to this rule" aria-label="Items retained in the app due to this rule">?</button></th>
           ${this.state.showBlockedByRule ? `
-          <th rowspan="2" class="text-left bg-gray-50" style="padding: 1rem; width: 20%; border-left: 1px solid var(--border-color);">BLOCKED BY RULE <span class="tooltip-icon" data-tooltip="Specific actions blocked by this rule">?</span></th>
+          <th rowspan="2" class="text-left bg-gray-50" style="padding: 1rem; width: 20%; border-left: 1px solid var(--border-color);">BLOCKED BY RULE <button type="button" class="tooltip-icon" data-tooltip="Specific actions blocked by this rule" aria-label="Specific actions blocked by this rule">?</button></th>
           ` : ''}
         `;
         subHeader.innerHTML = `
@@ -2244,7 +2182,6 @@ const ReportApp = {
         const customNameCell = `<td class="sticky-name font-medium hover:underline cursor-pointer" title="${escapedName}" style="padding: 1rem; width: 50%; min-width: 300px; font-family: var(--font-family-mono);" data-rule-id="${item.id}">
             <pre style="white-space: pre-wrap; font-family: var(--font-family-mono); font-size: 0.8125rem; margin: 0; pointer-events: none;">${highlightRule(cleanedName)}</pre>
           </td>`;
-
         if (isIdenticalLens || isSubsumedLens) {
           const rules = isIdenticalLens ? item.identicalRules : item
             .subsumedByRules;
@@ -2253,7 +2190,7 @@ const ReportApp = {
               <pre style="white-space: pre-wrap; margin: 0; color: var(--text-main);">${highlightRule(r.source)}</pre>
             </div>
           `).join("");
-          
+
           return `<tr class="table-row border-b border-gray-200 hover:bg-gray-50">${customNameCell}<td class="border-l border-gray-200" style="padding: 1rem; vertical-align: top; width: 50%; font-family: var(--font-family-mono);">${rulesHtml}</td></tr>`;
         } else if (isUnusedLens) {
           const rule = brData.keepRuleKeepRadiusTable.find(r => r.id === item.id) || brData.globalKeepRuleKeepRadiusTable.find(r => r.id === item.id);
@@ -2293,7 +2230,6 @@ const ReportApp = {
     }).join("");
   },
 };
-
 document.addEventListener("DOMContentLoaded", () => {
   App.init();
 });

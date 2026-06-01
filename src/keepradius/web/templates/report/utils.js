@@ -8,7 +8,6 @@ function hasGlobalRule(data, ruleName) {
   if (!data || !data.globalKeepRuleKeepRadiusTable) return false;
   return data.globalKeepRuleKeepRadiusTable.some(r => r.source === ruleName);
 }
-
 function getDisallowObfuscationCount(data) {
   if (hasGlobalRule(data, '-dontobfuscate')) {
     return getLiveItemCount(data);
@@ -45,14 +44,11 @@ function getDetailedStats(data) {
     methods: { total: build.liveMethodCount || 0, obfuscation: 0, optimization: 0, shrinking: 0 },
     overall: { total: getLiveItemCount(data), obfuscation: 0, optimization: 0, shrinking: 0 }
   };
-
   const constraintsMap = getConstraintsMap(data);
   const rulesMap = getRulesConstraintsMap(data);
-
   const hasObfuscate = hasGlobalRule(data, '-dontobfuscate');
   const hasOptimize = hasGlobalRule(data, '-dontoptimize');
   const hasShrink = hasGlobalRule(data, '-dontshrink');
-
   const processTable = (table, key, forcedObfuscation, forcedOptimization, forcedShrinking) => {
     if (forcedObfuscation) {
       stats[key].obfuscation = stats[key].total;
@@ -63,24 +59,21 @@ function getDetailedStats(data) {
     if (forcedShrinking) {
       stats[key].shrinking = stats[key].total;
     }
-
     if (!forcedObfuscation || !forcedOptimization || !forcedShrinking) {
       if (!table) return;
       table.forEach(item => {
         const keptBy = item.keptBy || [];
         const constraints = keptBy.flatMap(ruleId => constraintsMap.get(rulesMap.get(ruleId)) || []);
-        
+
         if (!forcedObfuscation && constraints.includes('DONT_OBFUSCATE')) stats[key].obfuscation++;
         if (!forcedOptimization && constraints.includes('DONT_OPTIMIZE')) stats[key].optimization++;
         if (!forcedShrinking && constraints.includes('DONT_SHRINK')) stats[key].shrinking++;
       });
     }
   };
-
   processTable(data.keptClassInfoTable, 'classes', hasObfuscate, hasOptimize, hasShrink);
   processTable(data.keptFieldInfoTable, 'fields', hasObfuscate, hasOptimize, hasShrink);
   processTable(data.keptMethodInfoTable, 'methods', hasObfuscate, hasOptimize, hasShrink);
-
   stats.overall.obfuscation = stats.classes.obfuscation + stats.fields.obfuscation + stats.methods.obfuscation;
   stats.overall.optimization = stats.classes.optimization + stats.fields.optimization + stats.methods.optimization;
   stats.overall.shrinking = stats.classes.shrinking + stats.fields.shrinking + stats.methods.shrinking;
@@ -133,13 +126,11 @@ function getRules(data) {
       subsumedBy: br.subsumedBy || []
     };
   });
-
   if (data.globalKeepRuleKeepRadiusTable) {
     const totalClasses = data.buildInfo?.liveClassCount || 0;
     const totalFields = data.buildInfo?.liveFieldCount || 0;
     const totalMethods = data.buildInfo?.liveMethodCount || 0;
     const totalLive = totalClasses + totalFields + totalMethods;
-
     data.globalKeepRuleKeepRadiusTable.forEach(rule => {
       if (rule.source === '-dontoptimize' || rule.source === '-dontshrink' || rule.source === '-dontobfuscate') {
         const constraints = [...(constraintsMap.get(rule.constraintsId) || [])];
@@ -298,7 +289,7 @@ function formatDescriptor(desc) {
 }
 function formatMethodName(methodRef, dataOrLookups, typeRefMap) {
   if (!methodRef) return "Unknown method";
-  
+
   if (dataOrLookups && dataOrLookups.typeReference) {
     const lookups = dataOrLookups;
     const className = formatDescriptor(lookups.typeReference.get(methodRef.classReferenceId));
@@ -312,7 +303,6 @@ function formatMethodName(methodRef, dataOrLookups, typeRefMap) {
     }
     return `${className}.${methodRef.name}(${params})`;
   }
-
   const data = dataOrLookups;
   const className = formatDescriptor(typeRefMap.get(methodRef.classReferenceId));
   const proto = (data.protoReferenceTable || []).find(p => p.id === methodRef.protoReferenceId);
@@ -327,13 +317,12 @@ function formatMethodName(methodRef, dataOrLookups, typeRefMap) {
 }
 function formatFieldName(fieldRef, dataOrLookups, typeRefMap) {
   if (!fieldRef) return "Unknown field";
-  
+
   if (dataOrLookups && dataOrLookups.typeReference) {
     const lookups = dataOrLookups;
     const className = formatDescriptor(lookups.typeReference.get(fieldRef.classReferenceId));
     return `${className}.${fieldRef.name}`;
   }
-
   const className = formatDescriptor(typeRefMap.get(fieldRef.classReferenceId));
   return `${className}.${fieldRef.name}`;
 }
@@ -358,12 +347,11 @@ function highlightRule(source) {
   const escapedSource = escapeHTML(source);
   // Highlight semicolon FIRST with negative lookbehind so we don't match inside subsequently inserted HTML tags or existing HTML entities
   return escapedSource
-    .replace(/(?<!&[a-zA-Z0-9#]+);/g, '<span style="color: #ca8a04;">;</span>')
-    .replace(/([{}*])/g, '<span style="color: #ca8a04;">$1</span>')
-    .replace(/(-keep[a-z]*|-dontoptimize|-dontshrink|-dontobfuscate)/g, '<span style="color: #dc2626;">$1</span>')
-    .replace(/\b(class|interface|enum)\b/g, '<span style="color: #2563eb;">$1</span>');
+    .replace(/(?<!&[a-zA-Z0-9#]+);/g, '<span style="color: #b06000;">;</span>')
+    .replace(/([{}*])/g, '<span style="color: #b06000;">$1</span>')
+    .replace(/(-keep[a-z]*|-dontoptimize|-dontshrink|-dontobfuscate)/g, '<span style="color: #b91c1c;">$1</span>')
+    .replace(/\b(class|interface|enum)\b/g, '<span style="color: #1d4ed8;">$1</span>');
 }
-
 /**
  * Shared helper to count kept items that have a specific constraint.
  * An item is counted if ANY of the keep rules that keep it has the specified constraint.
