@@ -830,11 +830,23 @@ public object ThirdPartyDeps {
       testOnly = true,
       type = DependencyType.X20,
     )
+  public val node: ThirdPartyDependency =
+    ThirdPartyDependency(
+      "node",
+      Paths.get("third_party", "node", "24.16.0", "linux").toFile(),
+      Paths.get("third_party", "node", "24.16.0", "linux.tar.gz.sha1").toFile(),
+    )
   public val nowinandroid: ThirdPartyDependency =
     ThirdPartyDependency(
       "nowinandroid",
       Paths.get("third_party", "opensource-apps", "android", "nowinandroid").toFile(),
       Paths.get("third_party", "opensource-apps", "android", "nowinandroid.tar.gz.sha1").toFile(),
+    )
+  public val prettier: ThirdPartyDependency =
+    ThirdPartyDependency(
+      "node",
+      Paths.get("third_party", "prettier", "3.8.3").toFile(),
+      Paths.get("third_party", "prettier", "3.8.3.tar.gz.sha1").toFile(),
     )
   public val processKeepRulesBinaryCompatibility: ThirdPartyDependency =
     ThirdPartyDependency(
