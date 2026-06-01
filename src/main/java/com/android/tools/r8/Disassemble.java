@@ -15,6 +15,7 @@ import com.android.tools.r8.references.FieldReference;
 import com.android.tools.r8.references.MethodReference;
 import com.android.tools.r8.references.Reference;
 import com.android.tools.r8.utils.AndroidApp;
+import com.android.tools.r8.utils.CliParserUtils;
 import com.android.tools.r8.utils.FieldReferenceUtils;
 import com.android.tools.r8.utils.InternalOptions;
 import com.android.tools.r8.utils.MethodReferenceUtils;
@@ -140,7 +141,7 @@ public class Disassemble {
     }
 
     static String usageMessage() {
-      return createParser().getUsageMessage();
+      return CliParserUtils.getUsageMessage(createParser());
     }
 
     private final boolean allInfo;

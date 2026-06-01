@@ -4,6 +4,7 @@
 package com.android.tools.r8.retrace;
 
 import com.android.tools.r8.origin.Origin;
+import com.android.tools.r8.utils.CliParserUtils;
 import com.android.tools.r8.utils.PartitionMapZipContainer;
 import com.android.tools.r8.utils.StringDiagnostic;
 import com.android.tools.r8.utils.internal.CliParser;
@@ -60,7 +61,7 @@ public class PartitionCommandParser {
   }
 
   static String getUsageMessage() {
-    return createParser().getUsageMessage();
+    return CliParserUtils.getUsageMessage(createParser());
   }
 
   public static PartitionCommand.Builder parse(String[] args, Origin origin) {

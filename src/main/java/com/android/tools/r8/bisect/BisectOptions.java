@@ -4,6 +4,7 @@
 package com.android.tools.r8.bisect;
 
 import com.android.tools.r8.errors.CompilationError;
+import com.android.tools.r8.utils.CliParserUtils;
 import com.android.tools.r8.utils.internal.BooleanBox;
 import com.android.tools.r8.utils.internal.CliParser;
 import com.android.tools.r8.utils.internal.StringUtils;
@@ -147,6 +148,6 @@ public class BisectOptions {
   }
 
   public static String usageMessage() {
-    return createParser().getUsageMessage();
+    return CliParserUtils.getUsageMessage(createParser());
   }
 }

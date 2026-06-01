@@ -15,6 +15,7 @@ import com.android.tools.r8.retrace.internal.RetraceAbortException;
 import com.android.tools.r8.retrace.internal.RetraceBase;
 import com.android.tools.r8.retrace.internal.StackTraceElementStringProxy;
 import com.android.tools.r8.retrace.internal.StackTraceRegularExpressionParser;
+import com.android.tools.r8.utils.CliParserUtils;
 import com.android.tools.r8.utils.ExceptionDiagnostic;
 import com.android.tools.r8.utils.InternalOptions;
 import com.android.tools.r8.utils.PartitionMapZipContainer;
@@ -43,7 +44,7 @@ import java.util.Scanner;
 public class Retrace<T, ST extends StackTraceElementProxy<T, ST>> extends RetraceBase<T, ST> {
 
   public static List<ParseFlagInfo> getFlags() {
-    return createParser().getFlagInfos();
+    return CliParserUtils.getFlagInfos(createParser());
   }
 
   private static class ParserState {
@@ -131,7 +132,7 @@ public class Retrace<T, ST extends StackTraceElementProxy<T, ST>> extends Retrac
   }
 
   static String getUsageMessage() {
-    return createParser().getUsageMessage();
+    return CliParserUtils.getUsageMessage(createParser());
   }
 
   private static ParserState parseArguments(String[] args, DiagnosticsHandler diagnosticsHandler) {

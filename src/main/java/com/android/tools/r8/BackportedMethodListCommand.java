@@ -172,7 +172,7 @@ public class BackportedMethodListCommand {
   }
 
   public static String usageMessage() {
-    return createParser().getUsageMessage();
+    return CliParserUtils.getUsageMessage(createParser());
   }
 
   @KeepForApi

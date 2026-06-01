@@ -171,7 +171,7 @@ public class CliParserTest extends TestBase {
     CliParser<Builder> parser = new CliParser<>("Usage: test");
     parser.option0("--help", "Help.", builder -> builder.help = true, "-h");
 
-    String usage = parser.getUsageMessage();
+    String usage = CliParserUtils.getUsageMessage(parser);
     assertTrue(usage.contains("--help"));
     assertTrue(usage.contains("-h"));
   }

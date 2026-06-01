@@ -8,6 +8,7 @@ import com.android.tools.r8.graph.DexItemFactory;
 import com.android.tools.r8.keepanno.annotations.KeepForApi;
 import com.android.tools.r8.origin.CommandLineOrigin;
 import com.android.tools.r8.utils.AndroidApp;
+import com.android.tools.r8.utils.CliParserUtils;
 import com.android.tools.r8.utils.InternalOptions;
 import com.android.tools.r8.utils.Reporter;
 import com.android.tools.r8.utils.StringDiagnostic;
@@ -87,7 +88,7 @@ public class ExtractR8RulesCommand extends BaseCommand {
   }
 
   static String usageMessage() {
-    return createParser().getUsageMessage();
+    return CliParserUtils.getUsageMessage(createParser());
   }
 
   public static ExtractR8RulesCommand.Builder builder() {

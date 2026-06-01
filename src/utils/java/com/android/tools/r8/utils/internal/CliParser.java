@@ -1,13 +1,12 @@
 // Copyright (c) 2026, the R8 project authors. Please see the AUTHORS file
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
+
+// Copyright (c) 2026, the R8 project authors. Please see the AUTHORS file
+// for details. All rights reserved. Use of this source code is governed by a
+// BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8.utils.internal;
 
-import static java.util.Collections.*;
-
-import com.android.tools.r8.ParseFlagInfo;
-import com.android.tools.r8.ParseFlagInfoImpl;
-import com.android.tools.r8.ParseFlagPrinter;
 import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
 import java.util.Deque;
@@ -22,10 +21,8 @@ public class CliParser<B> {
   private final Map<String, Consumer<B>> options0 = new HashMap<>();
   private final Map<String, BiConsumer<B, String>> options1 = new HashMap<>();
   private BiConsumer<B, String> positionalHandler;
-  private final List<HelpInfo> helpInfos = new ArrayList<>();
+  private final List<OptionInfo> optionInfos = new ArrayList<>();
   private final String usageHeader;
-
-  private static final int HELP_WIDTH = 25;
 
   /**
    * @param usageHeader can contain line breaks and will not be automatically wrapped.
@@ -34,14 +31,15 @@ public class CliParser<B> {
     this.usageHeader = usageHeader;
   }
 
-  private static class HelpInfo {
+  public static class OptionInfo {
 
-    final String name;
-    final String shorthand;
-    final List<String> paramLabels;
-    final String description;
+    public final String name;
+    public final String shorthand;
+    public final ImmutableList<String> paramLabels;
+    public final String description;
 
-    HelpInfo(String name, String shorthand, List<String> paramLabels, String description) {
+    OptionInfo(
+        String name, String shorthand, ImmutableList<String> paramLabels, String description) {
       assert name != null;
       assert paramLabels != null;
       assert description != null;
@@ -58,7 +56,7 @@ public class CliParser<B> {
    */
   public CliParser<B> option0(String name, String description, Consumer<B> action) {
     addOption0(name, action);
-    addHelp(name, null, emptyList(), description);
+    addHelp(name, null, ImmutableList.of(), description);
     return this;
   }
 
@@ -71,7 +69,7 @@ public class CliParser<B> {
       String name, String description, Consumer<B> action, String shorthand) {
     addOption0(name, action);
     addOption0(shorthand, action);
-    addHelp(name, shorthand, emptyList(), description);
+    addHelp(name, shorthand, ImmutableList.of(), description);
     return this;
   }
 
@@ -118,41 +116,12 @@ public class CliParser<B> {
     parseInternal(DequeUtils.newArrayDeque(args), builder, errorReporter);
   }
 
-  public List<ParseFlagInfo> getFlagInfos() {
-    int idealWidth = 100;
-    int descriptionWidth = idealWidth - HELP_WIDTH;
-
-    List<ParseFlagInfo> flags = new ArrayList<>();
-    for (HelpInfo info : helpInfos) {
-      List<String> helpLines = StringUtils.wrapToWidth(info.description, descriptionWidth);
-      List<String> alternatives =
-          info.shorthand != null
-              ? ImmutableList.of(commandString(info.shorthand, info.paramLabels))
-              : ImmutableList.of();
-      flags.add(
-          new ParseFlagInfoImpl(
-              null, commandString(info.name, info.paramLabels), alternatives, helpLines));
-    }
-    return flags;
+  public String getUsageHeader() {
+    return usageHeader;
   }
 
-  public String getUsageMessage() {
-    StringBuilder builder = new StringBuilder(usageHeader).append(System.lineSeparator());
-
-    new ParseFlagPrinter()
-        .setHelpColumn(HELP_WIDTH)
-        .addFlags(getFlagInfos())
-        .appendLinesToBuilder(builder);
-    return builder.toString();
-  }
-
-  /** Returns a string like {@code --output <file>} */
-  private static String commandString(String name, List<String> paramLabels) {
-    var sb = new StringBuilder(name);
-    for (var label : paramLabels) {
-      sb.append(' ').append(label);
-    }
-    return sb.toString();
+  public List<OptionInfo> getOptionInfo() {
+    return ListUtils.unmodifiableForTesting(optionInfos);
   }
 
   private void parseInternal(Deque<String> args, B builder, Consumer<String> errorReporter) {
@@ -230,7 +199,7 @@ public class CliParser<B> {
   }
 
   private void addHelp(
-      String name, String shorthand, List<String> paramLabels, String description) {
+      String name, String shorthand, ImmutableList<String> paramLabels, String description) {
     assert assertValidOptionName(name);
     if (shorthand != null) {
       assert !name.equals(shorthand) : "Shorthand is the same as the main name: " + name;
@@ -240,7 +209,7 @@ public class CliParser<B> {
       assert assertValidParam(paramLabel);
     }
     assert assertValidDescription(description);
-    helpInfos.add(new HelpInfo(name, shorthand, paramLabels, description));
+    optionInfos.add(new OptionInfo(name, shorthand, paramLabels, description));
   }
 
   private boolean assertValidParam(String param) {

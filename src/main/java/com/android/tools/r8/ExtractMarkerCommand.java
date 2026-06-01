@@ -7,6 +7,7 @@ import com.android.tools.r8.errors.CompilationError;
 import com.android.tools.r8.keepanno.annotations.KeepForApi;
 import com.android.tools.r8.origin.Origin;
 import com.android.tools.r8.origin.PathOrigin;
+import com.android.tools.r8.utils.CliParserUtils;
 import com.android.tools.r8.utils.internal.CliParser;
 import com.android.tools.r8.utils.internal.StringUtils;
 import com.android.tools.r8.utils.internal.collections.Pair;
@@ -105,7 +106,7 @@ public class ExtractMarkerCommand {
   }
 
   static String usageMessage() {
-    return createParser().getUsageMessage();
+    return CliParserUtils.getUsageMessage(createParser());
   }
 
   public static Builder builder() {
