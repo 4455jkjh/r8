@@ -603,7 +603,10 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
 
   public Tool getMarkerTool() {
     assert tool != null;
-    if (partialSubCompilationConfiguration != null && tool == Tool.R8) {
+    if (tool == Tool.D8 && enableDexToDexCodeOptimizations) {
+      return Tool.D8ReOpt;
+    }
+    if (tool == Tool.R8 && partialSubCompilationConfiguration != null) {
       return Tool.R8Partial;
     }
     return tool;

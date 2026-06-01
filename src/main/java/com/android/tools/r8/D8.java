@@ -275,7 +275,8 @@ public final class D8 {
       boolean hasClassResources = appView.appInfo().app().getFlags().hasReadProgramClassFromCf();
       boolean hasDexResources = appView.appInfo().app().getFlags().hasReadProgramClassFromDex();
 
-      Marker marker = hasClassResources ? options.getMarker() : null;
+      Marker marker =
+          hasClassResources || options.enableDexToDexCodeOptimizations ? options.getMarker() : null;
 
       timing.time(
           "Run inspections",
