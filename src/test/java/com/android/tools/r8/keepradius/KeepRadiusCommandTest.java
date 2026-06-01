@@ -65,7 +65,7 @@ public class KeepRadiusCommandTest extends TestBase {
     assertNotNull(container);
 
     // Check that the report consumer received the HTML.
-    assertThat(reportConsumer.value, startsWith("<!DOCTYPE html>"));
+    assertThat(reportConsumer.value, startsWith("<!doctype html>"));
     assertThat(reportConsumer.value, containsString(encodeMessageToStringForTesting(container)));
   }
 

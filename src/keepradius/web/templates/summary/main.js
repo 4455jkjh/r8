@@ -26,9 +26,11 @@
      1. PROTOBUF SCHEMA INITIALIZATION
      ========================================================================== */
 
-  const protoSchema = document.getElementById('keepradius-proto').textContent;
+  const protoSchema = document.getElementById("keepradius-proto").textContent;
   const root = protobuf.parse(protoSchema, { keepCase: true }).root;
-  const KeepRadiusSummary = root.lookupType("com.android.tools.r8.keepradius.proto.KeepRadiusSummary");
+  const KeepRadiusSummary = root.lookupType(
+    "com.android.tools.r8.keepradius.proto.KeepRadiusSummary",
+  );
 
   /**
    * Returns a default empty KeepInfo struct.
@@ -53,7 +55,7 @@
       arrays: true,
       objects: true,
       oneofs: true,
-      keepCase: true
+      keepCase: true,
     });
   };
 
@@ -70,8 +72,6 @@
     }
     return bytes;
   };
-
-
 
   /* ==========================================================================
      2. NUMERIC + DOM HELPERS
@@ -109,13 +109,17 @@
    * @returns {string}
    */
   const escapeHtml = (value) =>
-    String(value).replace(/[&<>"']/g, (ch) => ({
-      "&": "&amp;",
-      "<": "&lt;",
-      ">": "&gt;",
-      '"': "&quot;",
-      "'": "&#39;",
-    })[ch]);
+    String(value).replace(
+      /[&<>"']/g,
+      (ch) =>
+        ({
+          "&": "&amp;",
+          "<": "&lt;",
+          ">": "&gt;",
+          '"': "&quot;",
+          "'": "&#39;",
+        })[ch],
+    );
 
   /**
    * Pick the CSS color token for a health percentage.
@@ -136,24 +140,40 @@
    */
   const buildKeptInfo = (summary) => {
     const globalRules = summary.global_keep_rule_keep_radius || [];
-    const hasGlobalDontOptimize = globalRules.some(r => r.source === "-dontoptimize");
-    const hasGlobalDontShrink = globalRules.some(r => r.source === "-dontshrink");
+    const hasGlobalDontOptimize = globalRules.some(
+      (r) => r.source === "-dontoptimize",
+    );
+    const hasGlobalDontShrink = globalRules.some(
+      (r) => r.source === "-dontshrink",
+    );
 
     const getFacetInfo = (facetKey, facetSrc, totalCount) => {
       const src = facetSrc || emptyKeepInfo();
-      const kept = hasGlobalDontShrink ? totalCount : (src.item_count || 0);
+      const kept = hasGlobalDontShrink ? totalCount : src.item_count || 0;
       return {
         kept: kept,
-        noOpt: hasGlobalDontOptimize ? kept : (src.no_optimization_count || 0),
-        noShr: hasGlobalDontShrink ? totalCount : (src.no_shrinking_count || 0),
+        noOpt: hasGlobalDontOptimize ? kept : src.no_optimization_count || 0,
+        noShr: hasGlobalDontShrink ? totalCount : src.no_shrinking_count || 0,
         noObf: src.no_obfuscation_count || 0,
         total: totalCount,
       };
     };
 
-    const classes = getFacetInfo("classes", summary.kept_classes, summary.live_class_count || 0);
-    const fields = getFacetInfo("fields", summary.kept_fields, summary.live_field_count || 0);
-    const methods = getFacetInfo("methods", summary.kept_methods, summary.live_method_count || 0);
+    const classes = getFacetInfo(
+      "classes",
+      summary.kept_classes,
+      summary.live_class_count || 0,
+    );
+    const fields = getFacetInfo(
+      "fields",
+      summary.kept_fields,
+      summary.live_field_count || 0,
+    );
+    const methods = getFacetInfo(
+      "methods",
+      summary.kept_methods,
+      summary.live_method_count || 0,
+    );
 
     const declaredTotal = classes.total + fields.total + methods.total;
 
@@ -172,11 +192,12 @@
    * @param {object} summary
    * @returns {string}
    */
-  const buildLink = (summary) => summary.link || summary.name.replace(".pb", ".html");
+  const buildLink = (summary) =>
+    summary.link || summary.name.replace(".pb", ".html");
 
   const hasGlobalRule = (summary, ruleName) => {
     const globalRules = summary.global_keep_rule_keep_radius || [];
-    return globalRules.some(r => r.source === ruleName);
+    return globalRules.some((r) => r.source === ruleName);
   };
 
   /* ==========================================================================
@@ -207,18 +228,21 @@
         const info = buildKeptInfo(decoded);
 
         // Combine regular and global rules for sorting
-        const rules = (decoded.keep_rule_keep_radius || []).map(r => ({
+        const rules = (decoded.keep_rule_keep_radius || []).map((r) => ({
           source: r.source,
-          item_count: r.item_count
+          item_count: r.item_count,
         }));
 
         const globalRules = decoded.global_keep_rule_keep_radius || [];
         if (globalRules.length > 0) {
-          const liveTotal = (decoded.live_class_count || 0) + (decoded.live_field_count || 0) + (decoded.live_method_count || 0);
+          const liveTotal =
+            (decoded.live_class_count || 0) +
+            (decoded.live_field_count || 0) +
+            (decoded.live_method_count || 0);
           for (const gr of globalRules) {
             rules.push({
               source: gr.source,
-              item_count: liveTotal
+              item_count: liveTotal,
             });
           }
         }
@@ -231,7 +255,7 @@
           ...decoded,
           nameLower: decoded.name.toLowerCase(),
           calculatedInfo: info,
-          worstRules: worstRules
+          worstRules: worstRules,
         });
       } catch (err) {
         console.error("Failed to decode protobuf entry:", err);
@@ -290,7 +314,7 @@
             total: 0,
             builds: [],
             buildsLower: [],
-            isGlobal: isGlobal
+            isGlobal: isGlobal,
           };
           bySource.set(source, entry);
         }
@@ -300,7 +324,9 @@
         entry.total += itemCount;
         if (!seenInBuild.has(source)) {
           entry.builds.push(summary.name);
-          entry.buildsLower.push(summary.nameLower || summary.name.toLowerCase());
+          entry.buildsLower.push(
+            summary.nameLower || summary.name.toLowerCase(),
+          );
           seenInBuild.add(source);
         }
       };
@@ -316,7 +342,10 @@
       // 2. Global keep rules (implicitly apply to all live items)
       const globalRules = summary.global_keep_rule_keep_radius || [];
       if (globalRules.length > 0) {
-        const liveTotal = (summary.live_class_count || 0) + (summary.live_field_count || 0) + (summary.live_method_count || 0);
+        const liveTotal =
+          (summary.live_class_count || 0) +
+          (summary.live_field_count || 0) +
+          (summary.live_method_count || 0);
         for (const rule of globalRules) {
           if (rule && rule.source) {
             addRule(rule.source, liveTotal, true);
@@ -340,7 +369,9 @@
   };
 
   const rawSummaries = loadSummaries();
-  const testAppBuildsCount = rawSummaries.filter(s => s.name.includes("TestApp")).length;
+  const testAppBuildsCount = rawSummaries.filter((s) =>
+    s.name.includes("TestApp"),
+  ).length;
   let summaries = [];
   let totals = { facets: { classes: {}, fields: {}, methods: {} } };
   let globalRules = [];
@@ -377,7 +408,7 @@
 
   const initialView = () => {
     const hash = location.hash.replace("#", "");
-    return (hash === VIEWS.BUILDS || hash === VIEWS.RULES) ? hash : VIEWS.SYSTEM;
+    return hash === VIEWS.BUILDS || hash === VIEWS.RULES ? hash : VIEWS.SYSTEM;
   };
 
   const state = {
@@ -398,18 +429,24 @@
 
   const updateDerivedState = () => {
     summaries = state.excludeTestApp
-      ? rawSummaries.filter(s => !s.name.includes("TestApp"))
+      ? rawSummaries.filter((s) => !s.name.includes("TestApp"))
       : rawSummaries;
 
     totals = computePlatformTotals(summaries);
     globalRules = computeGlobalRules(summaries);
     sizeFloorCounts = computeSizeFloorCounts(summaries);
     ruleSumAll = globalRules.reduce((acc, r) => acc + r.total, 0);
-    multiBuildRuleCount = globalRules.filter(r => r.builds.length >= 2).length;
-    unusedRuleCount = globalRules.filter(r => r.total === 0).length;
+    multiBuildRuleCount = globalRules.filter(
+      (r) => r.builds.length >= 2,
+    ).length;
+    unusedRuleCount = globalRules.filter((r) => r.total === 0).length;
 
-    dontOptBuildsCount = summaries.filter(s => hasGlobalRule(s, "-dontoptimize")).length;
-    dontShrBuildsCount = summaries.filter(s => hasGlobalRule(s, "-dontshrink")).length;
+    dontOptBuildsCount = summaries.filter((s) =>
+      hasGlobalRule(s, "-dontoptimize"),
+    ).length;
+    dontShrBuildsCount = summaries.filter((s) =>
+      hasGlobalRule(s, "-dontshrink"),
+    ).length;
 
     optimizationPct = pctNum(totals.kept - totals.noOpt, totals.kept);
     shrinkingPct = pctNum(totals.total - totals.noShr, totals.total);
@@ -418,15 +455,24 @@
   };
 
   const updateRulesViewData = () => {
-    const activeSummaries = summaries.filter(s => {
-      if (state.excludeDontOptimize && hasGlobalRule(s, "-dontoptimize")) return false;
-      if (state.excludeDontShrink && hasGlobalRule(s, "-dontshrink")) return false;
+    const activeSummaries = summaries.filter((s) => {
+      if (state.excludeDontOptimize && hasGlobalRule(s, "-dontoptimize"))
+        return false;
+      if (state.excludeDontShrink && hasGlobalRule(s, "-dontshrink"))
+        return false;
       return true;
     });
     rulesForRulesView = computeGlobalRules(activeSummaries);
-    rulesViewRuleSumAll = rulesForRulesView.reduce((acc, r) => acc + r.total, 0);
-    rulesViewMultiBuildRuleCount = rulesForRulesView.filter(r => r.builds.length >= 2).length;
-    rulesViewUnusedRuleCount = rulesForRulesView.filter(r => r.total === 0).length;
+    rulesViewRuleSumAll = rulesForRulesView.reduce(
+      (acc, r) => acc + r.total,
+      0,
+    );
+    rulesViewMultiBuildRuleCount = rulesForRulesView.filter(
+      (r) => r.builds.length >= 2,
+    ).length;
+    rulesViewUnusedRuleCount = rulesForRulesView.filter(
+      (r) => r.total === 0,
+    ).length;
   };
 
   const setState = (patch) => {
@@ -452,7 +498,8 @@
    */
   const handleRouting = () => {
     const hash = location.hash.replace("#", "");
-    const nextView = (hash === VIEWS.BUILDS || hash === VIEWS.RULES) ? hash : VIEWS.SYSTEM;
+    const nextView =
+      hash === VIEWS.BUILDS || hash === VIEWS.RULES ? hash : VIEWS.SYSTEM;
     if (nextView !== state.view) {
       state.query = ""; // Reset search query on view changes
       state.view = nextView;
@@ -474,7 +521,9 @@
       { id: VIEWS.BUILDS, label: "Builds" },
       { id: VIEWS.RULES, label: "Global Keep Rules" },
     ];
-    const tabsHtml = tabs.map(tab => `
+    const tabsHtml = tabs
+      .map(
+        (tab) => `
   <button class="segment-btn ${state.view === tab.id ? "active" : ""}" 
           data-action="view" 
           data-value="${tab.id}"
@@ -482,7 +531,9 @@
           aria-selected="${state.view === tab.id}">
     ${tab.label}
   </button>
-`).join("");
+`,
+      )
+      .join("");
 
     return `
   <header class="report-header">
@@ -524,7 +575,8 @@
   };
 
   const renderBuildsSubToolbar = () => {
-    const floorsHtml = SIZE_FLOORS.map(floor => `
+    const floorsHtml = SIZE_FLOORS.map(
+      (floor) => `
   <button class="segment-btn ${state.sizeFloor === floor.id ? "active" : ""}" 
           data-action="sizefloor" 
           data-value="${floor.id}"
@@ -532,7 +584,8 @@
     ${floor.label}
     <span class="segment-count">${fmt(sizeFloorCounts[floor.id])}</span>
   </button>
-`).join("");
+`,
+    ).join("");
     return `
   <div class="header-subtoolbar">
     <div class="header-subtoolbar-inner">
@@ -546,14 +599,16 @@
   };
 
   const renderRulesSubToolbar = () => {
-    const lensHtml = RULE_LENSES.map(lens => `
+    const lensHtml = RULE_LENSES.map(
+      (lens) => `
   <button class="segment-btn ${state.ruleLens === lens.id ? "active" : ""}" 
           data-action="rulelens" 
           data-value="${lens.id}"
           aria-pressed="${state.ruleLens === lens.id}">
     ${lens.label}
   </button>
-`).join("");
+`,
+    ).join("");
     return `
   <div class="header-subtoolbar">
     <div class="header-subtoolbar-inner">
@@ -598,8 +653,14 @@
     const facets = totals.facets;
     const optOffenders = topOffenders(summaries, "noOpt", 5);
     const shrOffenders = topOffenders(summaries, "noShr", 5);
-    const topGlobalRules = globalRules.filter(r => r.isGlobal).sort((a, b) => b.total - a.total).slice(0, 5);
-    const topRegularRules = globalRules.filter(r => !r.isGlobal).sort((a, b) => b.total - a.total).slice(0, 5);
+    const topGlobalRules = globalRules
+      .filter((r) => r.isGlobal)
+      .sort((a, b) => b.total - a.total)
+      .slice(0, 5);
+    const topRegularRules = globalRules
+      .filter((r) => !r.isGlobal)
+      .sort((a, b) => b.total - a.total)
+      .slice(0, 5);
 
     return `
   <div class="stack">
@@ -617,8 +678,8 @@
 
   const topOffenders = (summaries, key, limit) =>
     summaries
-      .map(s => ({ summary: s, value: s.calculatedInfo[key] }))
-      .filter(entry => entry.value > 0)
+      .map((s) => ({ summary: s, value: s.calculatedInfo[key] }))
+      .filter((entry) => entry.value > 0)
       .sort((a, b) => b.value - a.value)
       .slice(0, limit);
 
@@ -652,24 +713,43 @@
   </div>
   <div class="axis-grid">
     <div class="axis-cell">
-      ${renderAxisPanel("Optimization", optimizationPct,
-    `${fmt(totals.kept - totals.noOpt)} / ${fmt(totals.kept)} kept items free of -dontoptimize`,
-    pctNum(facets.classes.kept - facets.classes.noOpt, facets.classes.kept),
-    pctNum(facets.fields.kept - facets.fields.noOpt, facets.fields.kept),
-    pctNum(facets.methods.kept - facets.methods.noOpt, facets.methods.kept))}
+      ${renderAxisPanel(
+        "Optimization",
+        optimizationPct,
+        `${fmt(totals.kept - totals.noOpt)} / ${fmt(totals.kept)} kept items free of -dontoptimize`,
+        pctNum(facets.classes.kept - facets.classes.noOpt, facets.classes.kept),
+        pctNum(facets.fields.kept - facets.fields.noOpt, facets.fields.kept),
+        pctNum(facets.methods.kept - facets.methods.noOpt, facets.methods.kept),
+      )}
     </div>
     <div class="axis-cell">
-      ${renderAxisPanel("Shrinking", shrinkingPct,
-      `${fmt(totals.total - totals.noShr)} / ${fmt(totals.total)} items free of -dontshrink`,
-      pctNum(facets.classes.total - facets.classes.noShr, facets.classes.total),
-      pctNum(facets.fields.total - facets.fields.noShr, facets.fields.total),
-      pctNum(facets.methods.total - facets.methods.noShr, facets.methods.total))}
+      ${renderAxisPanel(
+        "Shrinking",
+        shrinkingPct,
+        `${fmt(totals.total - totals.noShr)} / ${fmt(totals.total)} items free of -dontshrink`,
+        pctNum(
+          facets.classes.total - facets.classes.noShr,
+          facets.classes.total,
+        ),
+        pctNum(facets.fields.total - facets.fields.noShr, facets.fields.total),
+        pctNum(
+          facets.methods.total - facets.methods.noShr,
+          facets.methods.total,
+        ),
+      )}
     </div>
   </div>
 </section>
 `;
 
-  const renderAxisPanel = (label, percent, detail, classesPct, fieldsPct, methodsPct) => `
+  const renderAxisPanel = (
+    label,
+    percent,
+    detail,
+    classesPct,
+    fieldsPct,
+    methodsPct,
+  ) => `
 <div class="axis-header">
   <div class="axis-title-block">
     <div class="axis-label">${label}</div>
@@ -701,10 +781,20 @@
 </section>
 `;
 
-  const renderOffenderCard = (title, tone, rows, action, metricLabel, allLabel) => {
-    const rowsHtml = rows.length === 0
-      ? '<div class="empty-inline">None.</div>'
-      : rows.map(entry => `
+  const renderOffenderCard = (
+    title,
+    tone,
+    rows,
+    action,
+    metricLabel,
+    allLabel,
+  ) => {
+    const rowsHtml =
+      rows.length === 0
+        ? '<div class="empty-inline">None.</div>'
+        : rows
+            .map(
+              (entry) => `
       <div class="offender-row">
         <a class="offender-link" href="${escapeHtml(buildLink(entry.summary))}" title="${escapeHtml(entry.summary.name)}">
           ${escapeHtml(entry.summary.name)}
@@ -713,7 +803,9 @@
           ${fmt(entry.value)} <span class="label">${metricLabel}</span>
         </div>
       </div>
-    `).join("");
+    `,
+            )
+            .join("");
     return `
   <div class="card">
     <div class="offender-head">
@@ -726,11 +818,13 @@
   };
 
   const renderTopRulesCard = (topRules, title) => {
-    const rowsHtml = topRules.length === 0
-      ? '<div class="empty-inline">No keep rules recorded.</div>'
-      : topRules.map(rule => {
-        const share = ruleSumAll ? (rule.total / ruleSumAll) * 100 : 0;
-        return `
+    const rowsHtml =
+      topRules.length === 0
+        ? '<div class="empty-inline">No keep rules recorded.</div>'
+        : topRules
+            .map((rule) => {
+              const share = ruleSumAll ? (rule.total / ruleSumAll) * 100 : 0;
+              return `
         <div class="sys-rules-row">
           <code class="sys-rule-src" title="${escapeHtml(rule.source)}">${escapeHtml(rule.source)}</code>
           <div class="sys-rule-builds">${fmt(rule.builds.length)} builds</div>
@@ -739,7 +833,8 @@
           </div>
         </div>
       `;
-      }).join("");
+            })
+            .join("");
     return `
   <section class="card">
     <div class="offender-head">
@@ -799,7 +894,7 @@
 
   const filterBuilds = (summaries, query, sizeFloor) => {
     const needle = query.trim().toLowerCase();
-    return summaries.filter(summary => {
+    return summaries.filter((summary) => {
       if (needle && summary.nameLower.indexOf(needle) === -1) return false;
       if (sizeFloor > 0) {
         if (summary.calculatedInfo.kept < sizeFloor) return false;
@@ -811,30 +906,41 @@
   const sortBuilds = (builds, sort) => {
     const value = (summary) => {
       switch (sort.key) {
-        case "name": return summary.nameLower;
-        case "kept": return summary.calculatedInfo.kept;
-        case "classes": return summary.kept_classes?.item_count || 0;
-        case "fields": return summary.kept_fields?.item_count || 0;
-        case "methods": return summary.kept_methods?.item_count || 0;
-        case "noOpt": return summary.calculatedInfo.noOpt;
-        case "noShr": return summary.calculatedInfo.noShr;
-        default: return 0;
+        case "name":
+          return summary.nameLower;
+        case "kept":
+          return summary.calculatedInfo.kept;
+        case "classes":
+          return summary.kept_classes?.item_count || 0;
+        case "fields":
+          return summary.kept_fields?.item_count || 0;
+        case "methods":
+          return summary.kept_methods?.item_count || 0;
+        case "noOpt":
+          return summary.calculatedInfo.noOpt;
+        case "noShr":
+          return summary.calculatedInfo.noShr;
+        default:
+          return 0;
       }
     };
     return builds.slice().sort((a, b) => {
       const va = value(a);
       const vb = value(b);
-      const cmp = (typeof va === "string") ? va.localeCompare(vb) : va - vb;
+      const cmp = typeof va === "string" ? va.localeCompare(vb) : va - vb;
       return sort.desc ? -cmp : cmp;
     });
   };
 
   const computeTop10KeptShare = (sortedBuilds) => {
-    const totalVisible = sortedBuilds.reduce((acc, summary) =>
-      acc + summary.calculatedInfo.kept, 0);
+    const totalVisible = sortedBuilds.reduce(
+      (acc, summary) => acc + summary.calculatedInfo.kept,
+      0,
+    );
     if (!totalVisible) return 0;
-    const top10 = sortedBuilds.slice(0, 10).reduce((acc, summary) =>
-      acc + summary.calculatedInfo.kept, 0);
+    const top10 = sortedBuilds
+      .slice(0, 10)
+      .reduce((acc, summary) => acc + summary.calculatedInfo.kept, 0);
     return (top10 / totalVisible) * 100;
   };
 
@@ -878,12 +984,16 @@
   };
 
   const renderBuildExpansion = (worstRules) => {
-    const linesHtml = worstRules.map(rule => `
+    const linesHtml = worstRules
+      .map(
+        (rule) => `
   <div class="rule-line">
     <span class="count">${fmt(rule.item_count || 0)}</span>
     <code class="src">${escapeHtml(rule.source)}</code>
   </div>
-`).join("");
+`,
+      )
+      .join("");
     return `
   <div class="build-expand" role="row">
     <div role="cell" aria-colspan="7">
@@ -913,7 +1023,11 @@
   const renderSortHeader = (label, key, sort, align) => {
     const isActive = sort.key === key;
     const arrow = isActive ? (sort.desc ? "▼" : "▲") : "▾";
-    const ariaSort = isActive ? (sort.desc ? "descending" : "ascending") : "none";
+    const ariaSort = isActive
+      ? sort.desc
+        ? "descending"
+        : "ascending"
+      : "none";
     return `
   <button class="sort-header ${align === "left" ? "left" : ""} ${isActive ? "active" : ""}" 
           data-action="sort" 
@@ -928,21 +1042,36 @@
   // ---- Rules view ----
 
   const renderRulesView = () => {
-    const filtered = filterRules(rulesForRulesView, state.query, state.ruleLens, state.multiBuildOnly, state.onlyUnused, rulesViewRuleSumAll);
-    if (!filtered.length) return '<div class="empty">No keep rules match.</div>';
+    const filtered = filterRules(
+      rulesForRulesView,
+      state.query,
+      state.ruleLens,
+      state.multiBuildOnly,
+      state.onlyUnused,
+      rulesViewRuleSumAll,
+    );
+    if (!filtered.length)
+      return '<div class="empty">No keep rules match.</div>';
 
     const sorted = sortRules(filtered, state.ruleSort);
-    const maxNonGlobalTotal = filtered.reduce((acc, r) => !r.isGlobal ? Math.max(acc, r.total) : acc, 1);
+    const maxNonGlobalTotal = filtered.reduce(
+      (acc, r) => (!r.isGlobal ? Math.max(acc, r.total) : acc),
+      1,
+    );
     const sumAll = filtered.reduce((acc, r) => acc + r.total, 0);
     const topShare = computeTop10RuleShare(sorted, sumAll);
 
-    const rowsHtml = sorted.slice(0, 500).map((rule, index) =>
-      renderRuleRow(rule, index + 1, maxNonGlobalTotal, sumAll)
-    ).join("");
+    const rowsHtml = sorted
+      .slice(0, 500)
+      .map((rule, index) =>
+        renderRuleRow(rule, index + 1, maxNonGlobalTotal, sumAll),
+      )
+      .join("");
 
-    const overflowHtml = sorted.length > 500
-      ? `<div class="rules-overflow">Showing the first 500 of ${fmt(sorted.length)} unique rules.</div>`
-      : "";
+    const overflowHtml =
+      sorted.length > 500
+        ? `<div class="rules-overflow">Showing the first 500 of ${fmt(sorted.length)} unique rules.</div>`
+        : "";
 
     return `
   <div class="stack-sm">
@@ -967,12 +1096,21 @@
 `;
   };
 
-  const filterRules = (rules, query, lens, multiBuildOnly, onlyUnused, ruleSumAll) => {
+  const filterRules = (
+    rules,
+    query,
+    lens,
+    multiBuildOnly,
+    onlyUnused,
+    ruleSumAll,
+  ) => {
     const needle = query.trim().toLowerCase();
-    return rules.filter(rule => {
-      if (needle &&
+    return rules.filter((rule) => {
+      if (
+        needle &&
         rule.sourceLower.indexOf(needle) === -1 &&
-        !rule.buildsLower.some(b => b.indexOf(needle) !== -1)) {
+        !rule.buildsLower.some((b) => b.indexOf(needle) !== -1)
+      ) {
         return false;
       }
       const share = ruleSumAll ? (rule.total / ruleSumAll) * 100 : 0;
@@ -994,14 +1132,15 @@
     return rules.slice().sort((a, b) => {
       const va = value(a);
       const vb = value(b);
-      const cmp = (typeof va === "string") ? va.localeCompare(vb) : va - vb;
+      const cmp = typeof va === "string" ? va.localeCompare(vb) : va - vb;
       return sort.desc ? -cmp : cmp;
     });
   };
 
   const computeTop10RuleShare = (sortedRules, sumAll) => {
     if (!sumAll) return 0;
-    const top10 = sortedRules.slice()
+    const top10 = sortedRules
+      .slice()
       .sort((a, b) => b.total - a.total)
       .slice(0, 10)
       .reduce((acc, rule) => acc + rule.total, 0);
@@ -1010,23 +1149,33 @@
 
   const renderRuleRow = (rule, rank, maxNonGlobalTotal, sumAll) => {
     const share = sumAll ? (rule.total / sumAll) * 100 : 0;
-    const dotColor = share >= 5 ? "var(--red)"
-      : share >= 1 ? "var(--orange)"
-        : share >= 0.25 ? "var(--yellow)"
-          : "var(--border)";
+    const dotColor =
+      share >= 5
+        ? "var(--red)"
+        : share >= 1
+          ? "var(--orange)"
+          : share >= 0.25
+            ? "var(--yellow)"
+            : "var(--border)";
 
     const isOpen = state.expandedRuleBuildLists.has(rule.source);
     const visibleBuilds = isOpen ? rule.builds : rule.builds.slice(0, 3);
     const hiddenCount = rule.builds.length - visibleBuilds.length;
 
-    const chipsHtml = visibleBuilds.map(buildName => {
-      const label = buildName.split("/").slice(-2).join("/").replace(".pb", "");
-      return `
+    const chipsHtml = visibleBuilds
+      .map((buildName) => {
+        const label = buildName
+          .split("/")
+          .slice(-2)
+          .join("/")
+          .replace(".pb", "");
+        return `
     <a class="rule-build-chip" href="${escapeHtml(buildName.replace(".pb", ".html"))}" title="${escapeHtml(buildName)}">
       ${escapeHtml(label)}
     </a>
   `;
-    }).join("");
+      })
+      .join("");
 
     let toggleHtml = "";
     if (hiddenCount > 0 && !isOpen) {
@@ -1043,7 +1192,9 @@
   `;
     }
 
-    const barWidth = rule.isGlobal ? 100 : pctNum(rule.total, maxNonGlobalTotal);
+    const barWidth = rule.isGlobal
+      ? 100
+      : pctNum(rule.total, maxNonGlobalTotal);
 
     return `
   <div class="rules-row" role="row">
@@ -1085,9 +1236,12 @@
     const mainEl = document.querySelector("main");
     const appEl = document.getElementById("app");
 
-    const body = state.view === VIEWS.SYSTEM ? renderSystemView()
-      : state.view === VIEWS.BUILDS ? renderBuildsView()
-        : renderRulesView();
+    const body =
+      state.view === VIEWS.SYSTEM
+        ? renderSystemView()
+        : state.view === VIEWS.BUILDS
+          ? renderBuildsView()
+          : renderRulesView();
 
     const needsFullRender =
       state.view !== lastView ||
@@ -1132,12 +1286,20 @@
       setState({ ruleLens: target.getAttribute("data-value") });
     } else if (action === "sort") {
       const key = target.getAttribute("data-key");
-      const current = state.view === VIEWS.BUILDS ? state.buildSort : state.ruleSort;
-      const nextDesc = current.key === key ? !current.desc : (key !== "name" && key !== "source");
+      const current =
+        state.view === VIEWS.BUILDS ? state.buildSort : state.ruleSort;
+      const nextDesc =
+        current.key === key
+          ? !current.desc
+          : key !== "name" && key !== "source";
       const next = { key: key, desc: nextDesc };
-      setState(state.view === VIEWS.BUILDS ? { buildSort: next } : { ruleSort: next });
+      setState(
+        state.view === VIEWS.BUILDS ? { buildSort: next } : { ruleSort: next },
+      );
     } else if (action === "toggle-build") {
-      const buildName = target.closest("[data-build]").getAttribute("data-build");
+      const buildName = target
+        .closest("[data-build]")
+        .getAttribute("data-build");
       toggleSetMember(state.expandedBuilds, buildName);
       render();
     } else if (action === "toggle-rule-builds") {

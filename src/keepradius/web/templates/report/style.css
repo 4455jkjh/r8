@@ -15,7 +15,9 @@
   /* --- Shadows --- */
   --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
   /* --- Typography --- */
-  --font-family-base: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --font-family-base:
+    -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial,
+    sans-serif;
   --bg-active: #e5e7eb;
   --bg-card: #ffffff;
   --bg-green-light: #dcfce7;
@@ -28,13 +30,15 @@
   --bg-yellow-light: #fef9c3;
   --border-interactive: #d1d5db;
   --border-light: #f1f5f9;
-  --font-family-mono: "SF Mono", "Consolas", "Liberation Mono", Menlo, monospace;
+  --font-family-mono:
+    "SF Mono", "Consolas", "Liberation Mono", Menlo, monospace;
   --text-muted: #59697c;
-  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+  --shadow-lg:
+    0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
   --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1);
   --text-blue-700: #1d4ed8;
-  --text-gray-400: #5F6368;
-  --text-gray-500: #5F6368;
+  --text-gray-400: #5f6368;
+  --text-gray-500: #5f6368;
   --text-gray-900: #111827;
   --text-inverse: #ffffff;
   --text-link-hover: #1e40af;
@@ -389,7 +393,9 @@ button#group-by-btn:hover,
   margin-left: 0.25rem;
   margin-right: -0.25rem;
   padding: 0.125rem;
-  transition: background-color 0.2s, color 0.2s;
+  transition:
+    background-color 0.2s,
+    color 0.2s;
 }
 
 .chip-close:hover {
@@ -494,7 +500,9 @@ button#group-by-btn:hover,
   padding: 0;
   font-size: 0.8125rem;
   width: 0;
-  transition: width 0.2s, padding 0.2s;
+  transition:
+    width 0.2s,
+    padding 0.2s;
   background: transparent;
 }
 
@@ -677,7 +685,7 @@ button#group-by-btn:hover,
 }
 
 div#flat-breadcrumbs .mx-1 {
-  opacity: .2;
+  opacity: 0.2;
 }
 
 /* ==========================================================================
@@ -857,7 +865,9 @@ td.truncate span {
   gap: 0.5rem;
   box-shadow: var(--shadow-lg);
   cursor: pointer;
-  transition: transform 0.2s, background-color 0.2s;
+  transition:
+    transform 0.2s,
+    background-color 0.2s;
   z-index: 1000;
   border: none;
   font-size: 0.875rem;
@@ -947,7 +957,9 @@ td.truncate span {
   border: 1px solid #e2e8f0;
   border-radius: 0.5rem;
   cursor: pointer;
-  transition: background-color 0.2s, border-color 0.2s;
+  transition:
+    background-color 0.2s,
+    border-color 0.2s;
   overflow: hidden;
 }
 
@@ -1006,7 +1018,9 @@ td.truncate span {
   border: 1px solid #e2e8f0;
   border-radius: 0.5rem;
   text-decoration: none;
-  transition: background-color 0.2s, border-color 0.2s;
+  transition:
+    background-color 0.2s,
+    border-color 0.2s;
 }
 
 .doc-card:hover {

@@ -19,10 +19,10 @@ const CONSTANTS = {
     MODULES: "modules",
     PACKAGES: "packages",
     DETAILS: "details",
-    FILE_DETAILS: "file-details"
+    FILE_DETAILS: "file-details",
   },
   DEFAULTS: {
-    AGGREGATED: "Aggregated"
+    AGGREGATED: "Aggregated",
   },
 };
 /**
@@ -78,9 +78,17 @@ const UIUtils = {
    * @param {boolean} searchable - Whether to include a search box.
    * @param {boolean} multiSelect - Whether to allow multiple selections.
    */
-  buildActionDropdown(containerId, options, selectedStateArr,
-    onSelectionChange, searchable = true, multiSelect = true, totalCount =
-      null, itemName = "items", searchCallback = null) {
+  buildActionDropdown(
+    containerId,
+    options,
+    selectedStateArr,
+    onSelectionChange,
+    searchable = true,
+    multiSelect = true,
+    totalCount = null,
+    itemName = "items",
+    searchCallback = null,
+  ) {
     const container = document.getElementById(containerId);
     if (!container) return;
     // Container config
@@ -111,18 +119,16 @@ const UIUtils = {
     const renderList = (optionsToRender) => {
       listZone.innerHTML = "";
       if (optionsToRender.length === 0) {
-        listZone.innerHTML =
-          `<div class="p-4 text-xs text-gray-400 text-center">No options available</div>`;
+        listZone.innerHTML = `<div class="p-4 text-xs text-gray-400 text-center">No options available</div>`;
         return;
       }
-      optionsToRender.forEach(opt => {
+      optionsToRender.forEach((opt) => {
         // SKIP "All" options if they exist in the passed options list.
         if (opt.value === "all") return;
         const isChecked = selectedStateArr.includes(opt.value);
-        const item = document.createElement(multiSelect ? "label" :
-          "div");
-        item.className = "popover-item" + (isChecked && !multiSelect ?
-          " active-item" : "");
+        const item = document.createElement(multiSelect ? "label" : "div");
+        item.className =
+          "popover-item" + (isChecked && !multiSelect ? " active-item" : "");
         let checkbox = null;
         if (multiSelect) {
           checkbox = document.createElement("input");
@@ -178,8 +184,7 @@ const UIUtils = {
       footer.style.color = "var(--text-gray-400)";
       footer.style.borderTop = "1px solid var(--border-color)";
       footer.style.background = "var(--bg-subtle)";
-      footer.textContent =
-        `Showing ${options.length} out of ${totalCount} ${itemName}`;
+      footer.textContent = `Showing ${options.length} out of ${totalCount} ${itemName}`;
       container.appendChild(footer);
     }
     // --- Search Logic ---
@@ -187,28 +192,23 @@ const UIUtils = {
       searchInput.addEventListener("input", (e) => {
         const term = e.target.value.toLowerCase();
         if (searchCallback) {
-          const {
-            options: filteredOptions,
-            total: mCount
-          } = searchCallback(term);
+          const { options: filteredOptions, total: mCount } =
+            searchCallback(term);
           renderList(filteredOptions);
           if (footer) {
-            footer.textContent =
-              `Showing ${filteredOptions.length} out of ${mCount} ${itemName}`;
+            footer.textContent = `Showing ${filteredOptions.length} out of ${mCount} ${itemName}`;
           }
         } else {
           const items = listZone.querySelectorAll(".popover-item");
           let visibleCount = 0;
-          items.forEach(item => {
-            const label = item.querySelector("span").textContent
-              .toLowerCase();
+          items.forEach((item) => {
+            const label = item.querySelector("span").textContent.toLowerCase();
             const isVisible = label.includes(term);
             item.style.display = isVisible ? "flex" : "none";
             if (isVisible) visibleCount++;
           });
           if (footer && totalCount !== null) {
-            footer.textContent =
-              `Showing ${visibleCount} out of ${totalCount} ${itemName}`;
+            footer.textContent = `Showing ${visibleCount} out of ${totalCount} ${itemName}`;
           }
         }
       });
@@ -235,11 +235,14 @@ const UIUtils = {
     }
   },
   getFilterLabel(prefix, selectedArr, totalCount, options = []) {
-    if (selectedArr.length === 0 || (totalCount > 0 && selectedArr.length ===
-      totalCount)) return `${prefix}: All`;
+    if (
+      selectedArr.length === 0 ||
+      (totalCount > 0 && selectedArr.length === totalCount)
+    )
+      return `${prefix}: All`;
     if (selectedArr.length === 1) {
       const val = selectedArr[0];
-      const opt = options.find(o => String(o.value) === String(val));
+      const opt = options.find((o) => String(o.value) === String(val));
       const name = opt ? opt.name : val;
       // Strip HTML tags if any (like in keepRuleOptions)
       const cleanName = name.replace(/<[^>]*>/g, "");
@@ -265,12 +268,12 @@ const UIUtils = {
       }
     }
     // Ensure we only strip up to the last slash to keep the filename.
-    const lastSlash = prefix.lastIndexOf('/');
+    const lastSlash = prefix.lastIndexOf("/");
     if (lastSlash !== -1) {
       return prefix.substring(0, lastSlash + 1);
     }
     return "";
-  }
+  },
 };
 /* ==========================================================================
    MAIN APP CONTROLLER
@@ -282,7 +285,7 @@ const App = {
     ruleId: null,
     classQuery: "",
     fieldQuery: "",
-    methodQuery: ""
+    methodQuery: "",
   },
   init() {
     // Initialize Report (Main Grid)
@@ -298,7 +301,9 @@ const App = {
     }
     // Setup Kept Lists Search listeners
     const setupListSearch = (type, stateKey) => {
-      const toggleBtn = document.querySelector(`.search-toggle-btn[data-target="${type}"]`);
+      const toggleBtn = document.querySelector(
+        `.search-toggle-btn[data-target="${type}"]`,
+      );
       const container = document.getElementById(`${type}-search-container`);
       const input = document.getElementById(`${type}-search-input`);
       if (toggleBtn && container && input) {
@@ -312,13 +317,17 @@ const App = {
             // Clear query when closing search
             input.value = "";
             App.detailsState[stateKey] = "";
-            const rule = App.keepRadiusData?.keepRuleKeepRadiusTable.find(r => r.id === parseInt(App.detailsState.ruleId));
+            const rule = App.keepRadiusData?.keepRuleKeepRadiusTable.find(
+              (r) => r.id === parseInt(App.detailsState.ruleId),
+            );
             if (rule) App.renderKeptLists(rule, type);
           }
         });
         input.addEventListener("input", (e) => {
           App.detailsState[stateKey] = e.target.value;
-          const rule = App.keepRadiusData?.keepRuleKeepRadiusTable.find(r => r.id === parseInt(App.detailsState.ruleId));
+          const rule = App.keepRadiusData?.keepRuleKeepRadiusTable.find(
+            (r) => r.id === parseInt(App.detailsState.ruleId),
+          );
           if (rule) App.renderKeptLists(rule, type);
         });
       }
@@ -340,37 +349,44 @@ const App = {
     const ruleContainer = document.getElementById("details-rule-container");
     const impactContainer = document.getElementById("details-impact-container");
     const identicalRulesBody = document.getElementById(
-      "details-identical-rules-body");
+      "details-identical-rules-body",
+    );
     const identicalRulesHeader = document.getElementById(
-      "details-identical-rules-header");
+      "details-identical-rules-header",
+    );
     const identicalRulesTitle = document.getElementById(
-      "details-identical-rules-title");
-    const subsumedByBody = document.getElementById(
-      "details-subsumed-by-body");
+      "details-identical-rules-title",
+    );
+    const subsumedByBody = document.getElementById("details-subsumed-by-body");
     const subsumedByHeader = document.getElementById(
-      "details-subsumed-by-header");
+      "details-subsumed-by-header",
+    );
     const subsumedByTitle = document.getElementById(
-      "details-subsumed-by-title");
-    const impactHeader = document.getElementById(
-      "details-rule-impact-header");
+      "details-subsumed-by-title",
+    );
+    const impactHeader = document.getElementById("details-rule-impact-header");
     const classesContent = document.getElementById("details-classes-content");
     const methodsContent = document.getElementById("details-methods-content");
     const fieldsContent = document.getElementById("details-fields-content");
-    let rule = this.keepRadiusData?.keepRuleKeepRadiusTable.find(r => r.id === parseInt(ruleId));
+    let rule = this.keepRadiusData?.keepRuleKeepRadiusTable.find(
+      (r) => r.id === parseInt(ruleId),
+    );
     let isGlobal = false;
     if (!rule) {
-      rule = this.keepRadiusData?.globalKeepRuleKeepRadiusTable.find(r => r.id === parseInt(ruleId));
+      rule = this.keepRadiusData?.globalKeepRuleKeepRadiusTable.find(
+        (r) => r.id === parseInt(ruleId),
+      );
       isGlobal = true;
     }
     if (rule) {
       const fileOriginId = rule?.origin?.fileOriginId;
-      const fileOrigin = this.keepRadiusData?.fileOriginTable.find(f => f
-        .id === fileOriginId);
+      const fileOrigin = this.keepRadiusData?.fileOriginTable.find(
+        (f) => f.id === fileOriginId,
+      );
       let originStr = "";
       if (fileOrigin) {
         const mavenName = formatMavenCoordinate(fileOrigin.mavenCoordinate);
-        originStr =
-          `${mavenName || fileOrigin.filename}:${rule.origin?.lineNumber || 1}`;
+        originStr = `${mavenName || fileOrigin.filename}:${rule.origin?.lineNumber || 1}`;
         if (mavenName) {
           originStr += ` (${fileOrigin.filename})`;
         }
@@ -385,11 +401,17 @@ const App = {
       </div>
     `;
       }
-      const impactContainer = document.getElementById("details-impact-container");
-      const relatedRulesContainer = document.getElementById("related-rules-container");
-      const gridContainer = document.getElementById("details-classes-content")?.parentElement?.parentElement;
+      const impactContainer = document.getElementById(
+        "details-impact-container",
+      );
+      const relatedRulesContainer = document.getElementById(
+        "related-rules-container",
+      );
+      const gridContainer = document.getElementById("details-classes-content")
+        ?.parentElement?.parentElement;
       if (isGlobal) {
-        if (impactContainer) impactContainer.parentElement.style.display = "none";
+        if (impactContainer)
+          impactContainer.parentElement.style.display = "none";
         if (relatedRulesContainer) relatedRulesContainer.style.display = "none";
         if (gridContainer) gridContainer.style.display = "none";
       } else {
@@ -408,25 +430,24 @@ const App = {
         };
         const impactTagsHtml = `
           <div class="impact-container">
-            ${getTag('DONT_OBFUSCATE', 'OBFUSCATE')}
-            ${getTag('DONT_OPTIMIZE', 'OPTIMIZE')}
-            ${getTag('DONT_SHRINK', 'SHRINK')}
+            ${getTag("DONT_OBFUSCATE", "OBFUSCATE")}
+            ${getTag("DONT_OPTIMIZE", "OPTIMIZE")}
+            ${getTag("DONT_SHRINK", "SHRINK")}
           </div>
         `;
         const br = rule.keepRadius || {};
         const classIds = br.classKeepRadius || [];
         const fieldIds = br.fieldKeepRadius || [];
         const methodIds = br.methodKeepRadius || [];
-        const matchedTotal = classIds.length + fieldIds.length + methodIds
-          .length;
+        const matchedTotal =
+          classIds.length + fieldIds.length + methodIds.length;
         const totalLive = getLiveItemCount(this.keepRadiusData);
-        const liveClasses = this.keepRadiusData?.buildInfo?.liveClassCount ||
-          0;
+        const liveClasses = this.keepRadiusData?.buildInfo?.liveClassCount || 0;
         const liveFields = this.keepRadiusData?.buildInfo?.liveFieldCount || 0;
-        const liveMethods = this.keepRadiusData?.buildInfo?.liveMethodCount ||
-          0;
+        const liveMethods =
+          this.keepRadiusData?.buildInfo?.liveMethodCount || 0;
         const renderMatchCell = (count, total, borderLeft = true) => {
-          const perc = total > 0 ? (count / total * 100) : 0;
+          const perc = total > 0 ? (count / total) * 100 : 0;
           const colorClass = UIUtils.getMatchClass(perc);
           const bl = borderLeft ? "border-l border-gray-200" : "";
           return `
@@ -439,7 +460,8 @@ const App = {
           `;
         };
         if (impactContainer) {
-          const getPerc = (count, total) => total > 0 ? (count / total * 100) : 0;
+          const getPerc = (count, total) =>
+            total > 0 ? (count / total) * 100 : 0;
           const classPerc = getPerc(classIds.length, liveClasses);
           const fieldPerc = getPerc(fieldIds.length, liveFields);
           const methodPerc = getPerc(methodIds.length, liveMethods);
@@ -493,8 +515,8 @@ const App = {
         const subsumingIds = br.subsumedBy || [];
         const identicalRules = [];
         const subsumedByRules = [];
-        subsumingIds.forEach(id => {
-          const otherRule = allRules.find(r => r.id === id);
+        subsumingIds.forEach((id) => {
+          const otherRule = allRules.find((r) => r.id === id);
           if (otherRule) {
             const otherSubsumedBy = otherRule.keepRadius?.subsumedBy || [];
             if (otherSubsumedBy.includes(rule.id)) {
@@ -513,11 +535,14 @@ const App = {
             const rFieldIds = rBr.fieldKeepRadius || [];
             const rMethodIds = rBr.methodKeepRadius || [];
             const totalLive = getLiveItemCount(this.keepRadiusData);
-            const liveClasses = this.keepRadiusData?.buildInfo?.liveClassCount || 0;
-            const liveFields = this.keepRadiusData?.buildInfo?.liveFieldCount || 0;
-            const liveMethods = this.keepRadiusData?.buildInfo?.liveMethodCount || 0;
+            const liveClasses =
+              this.keepRadiusData?.buildInfo?.liveClassCount || 0;
+            const liveFields =
+              this.keepRadiusData?.buildInfo?.liveFieldCount || 0;
+            const liveMethods =
+              this.keepRadiusData?.buildInfo?.liveMethodCount || 0;
             const renderMatchCell = (count, total) => {
-              const perc = total > 0 ? (count / total * 100) : 0;
+              const perc = total > 0 ? (count / total) * 100 : 0;
               return `
             <td class="text-center" style="padding: 0.5rem; border-left: 1px solid var(--border-color);">
               <div style="display: flex; flex-direction: column; align-items: center;">
@@ -531,17 +556,23 @@ const App = {
             const rConstraints = constraintsMap.get(r.constraintsId) || [];
             const getTag = (c, label) => {
               const isRestricted = rConstraints.includes(c);
-              const color = isRestricted ? "oklch(0.446 0.043 257.281)" : "#cbd5e1";
-              const bgColor = isRestricted ? "oklch(0.984 0.003 247.858)" : "#f8fafc";
-              const borderColor = isRestricted ? "oklch(0.929 0.013 255.508)" : "#e2e8f0";
+              const color = isRestricted
+                ? "oklch(0.446 0.043 257.281)"
+                : "#cbd5e1";
+              const bgColor = isRestricted
+                ? "oklch(0.984 0.003 247.858)"
+                : "#f8fafc";
+              const borderColor = isRestricted
+                ? "oklch(0.929 0.013 255.508)"
+                : "#e2e8f0";
               return `<span class="impact-tag" style="display: inline-block; color: ${color}; background-color: ${bgColor}; border: 1px solid ${borderColor}; border-radius: 4px; padding: 2px 8px; font-size: 10px; font-weight: 400; height: 21px; line-height: 15px; text-transform: uppercase; letter-spacing: 0.25px; box-sizing: border-box; text-align: center;">${label}</span>`;
             };
             const impactCell = `
           <td style="padding: 1rem; border-left: 1px solid var(--border-color);">
             <div class="flex justify-start" style="gap: 0.5rem;">
-              ${getTag('DONT_OBFUSCATE', 'OBFUSCATE')}
-              ${getTag('DONT_OPTIMIZE', 'OPTIMIZE')}
-              ${getTag('DONT_SHRINK', 'SHRINK')}
+              ${getTag("DONT_OBFUSCATE", "OBFUSCATE")}
+              ${getTag("DONT_OPTIMIZE", "OPTIMIZE")}
+              ${getTag("DONT_SHRINK", "SHRINK")}
             </div>
           </td>
         `;
@@ -565,9 +596,9 @@ const App = {
             <div style="padding: 0.75rem 1rem; border-bottom: 1px solid var(--border-color); background-color: var(--bg-subtle); display: flex; justify-content: space-between; align-items: center;">
               <div>
                 <span style="font-size: 0.875rem; font-weight: 600;">${title}</span>
-                <span style="color: var(--text-gray-500); font-size: 0.75rem; margin-left: 0.25rem;">· ${hasRules ? rules.length : 'None'}</span>
+                <span style="color: var(--text-gray-500); font-size: 0.75rem; margin-left: 0.25rem;">· ${hasRules ? rules.length : "None"}</span>
               </div>
-              ${hasRules ? `<span style="color: var(--text-gray-500); font-size: 0.75rem;">${explainer}</span>` : ''}
+              ${hasRules ? `<span style="color: var(--text-gray-500); font-size: 0.75rem;">${explainer}</span>` : ""}
             </div>
         `;
             if (hasRules) {
@@ -587,7 +618,7 @@ const App = {
                 </tr>
               </thead>
               <tbody>
-                ${rules.map(r => renderDetailRuleRow(r)).join('')}
+                ${rules.map((r) => renderDetailRuleRow(r)).join("")}
               </tbody>
             </table>
           `;
@@ -604,10 +635,19 @@ const App = {
           </div>
         `;
           } else {
-            let html = '<div style="display: flex; flex-direction: column; gap: 1.5rem;">';
-            html += renderSection("Identical Rules", identicalRules, "Same matchers, can be deduplicated");
-            html += renderSection("Subsumed By", subsumedByRules, "Already covered by a broader rule");
-            html += '</div>';
+            let html =
+              '<div style="display: flex; flex-direction: column; gap: 1.5rem;">';
+            html += renderSection(
+              "Identical Rules",
+              identicalRules,
+              "Same matchers, can be deduplicated",
+            );
+            html += renderSection(
+              "Subsumed By",
+              subsumedByRules,
+              "Already covered by a broader rule",
+            );
+            html += "</div>";
             relatedRulesContainer.innerHTML = html;
           }
         }
@@ -616,7 +656,9 @@ const App = {
         const resetSearchUI = (type) => {
           const container = document.getElementById(`${type}-search-container`);
           const input = document.getElementById(`${type}-search-input`);
-          const toggleBtn = document.querySelector(`.search-toggle-btn[data-target="${type}"]`);
+          const toggleBtn = document.querySelector(
+            `.search-toggle-btn[data-target="${type}"]`,
+          );
           if (container && input && toggleBtn) {
             container.style.display = "none";
             input.value = "";
@@ -636,10 +678,12 @@ const App = {
       methodsContent.innerHTML = "";
       fieldsContent.innerHTML = "";
     }
-    const fileOrigin = this.keepRadiusData?.fileOriginTable.find(f => f
-      .id === rule?.origin?.fileOriginId);
-    const fileOriginName = formatMavenCoordinate(fileOrigin
-      ?.mavenCoordinate) || fileOrigin?.filename;
+    const fileOrigin = this.keepRadiusData?.fileOriginTable.find(
+      (f) => f.id === rule?.origin?.fileOriginId,
+    );
+    const fileOriginName =
+      formatMavenCoordinate(fileOrigin?.mavenCoordinate) ||
+      fileOrigin?.filename;
     this.updateDetailsBreadcrumbs(fileOriginName, fileOrigin?.id);
   },
   renderKeptLists(rule, targetType = null) {
@@ -650,9 +694,10 @@ const App = {
       if (ids.length === 0)
         return '<div style="padding: 0.5rem; color: var(--text-gray-500); font-size: 0.8125rem;">None</div>';
       const formatSleekItem = (fullName) => {
-        const firstParen = fullName.indexOf('(');
-        const searchString = firstParen === -1 ? fullName : fullName.substring(0, firstParen);
-        const lastDot = searchString.lastIndexOf('.');
+        const firstParen = fullName.indexOf("(");
+        const searchString =
+          firstParen === -1 ? fullName : fullName.substring(0, firstParen);
+        const lastDot = searchString.lastIndexOf(".");
         if (lastDot === -1) {
           return `<span style="color: var(--text-gray-900); font-weight: 500;">${escapeHTML(fullName)}</span>`;
         }
@@ -662,16 +707,23 @@ const App = {
       };
       const limit = 1000;
       const toRender = ids.slice(0, limit);
-      const listHtml = toRender.map(id => `
+      const listHtml = toRender
+        .map(
+          (id) => `
         <div style="padding: 0.375rem 0.5rem; border-bottom: 1px solid #f1f5f9; font-family: var(--font-family-mono); font-size: 0.8125rem;" class="hover-bg-gray-100">
           ${formatSleekItem(getLabel(id))}
         </div>
-      `).join("");
+      `,
+        )
+        .join("");
       if (ids.length > limit) {
-        return listHtml + `
+        return (
+          listHtml +
+          `
           <div style="padding: 0.5rem; color: var(--text-gray-500); font-size: 0.8125rem; font-style: italic;">
             ... and ${ids.length - limit} more items
-          </div>`;
+          </div>`
+        );
       }
       return listHtml;
     };
@@ -679,12 +731,15 @@ const App = {
     if (!targetType || targetType === "classes") {
       const classIds = br.classKeepRadius || [];
       const classesContent = document.getElementById("details-classes-content");
-      const filteredClassIds = classIds.filter(id => {
+      const filteredClassIds = classIds.filter((id) => {
         const info = App.lookups.keptClassInfo.get(id);
         const name = formatDescriptor(typeRefMap.get(info?.classReferenceId));
-        return name.toLowerCase().includes(this.detailsState.classQuery.toLowerCase());
+        return name
+          .toLowerCase()
+          .includes(this.detailsState.classQuery.toLowerCase());
       });
-      document.getElementById("details-classes-count").textContent = `· ${filteredClassIds.length}`;
+      document.getElementById("details-classes-count").textContent =
+        `· ${filteredClassIds.length}`;
       classesContent.innerHTML = renderList(filteredClassIds, (id) => {
         const info = App.lookups.keptClassInfo.get(id);
         return formatDescriptor(typeRefMap.get(info?.classReferenceId));
@@ -694,13 +749,16 @@ const App = {
     if (!targetType || targetType === "fields") {
       const fieldIds = br.fieldKeepRadius || [];
       const fieldsContent = document.getElementById("details-fields-content");
-      const filteredFieldIds = fieldIds.filter(id => {
+      const filteredFieldIds = fieldIds.filter((id) => {
         const info = App.lookups.keptFieldInfo.get(id);
         const ref = App.lookups.fieldReference.get(info?.fieldReferenceId);
         const name = formatFieldName(ref, App.lookups);
-        return name.toLowerCase().includes(this.detailsState.fieldQuery.toLowerCase());
+        return name
+          .toLowerCase()
+          .includes(this.detailsState.fieldQuery.toLowerCase());
       });
-      document.getElementById("details-fields-count").textContent = `· ${filteredFieldIds.length}`;
+      document.getElementById("details-fields-count").textContent =
+        `· ${filteredFieldIds.length}`;
       fieldsContent.innerHTML = renderList(filteredFieldIds, (id) => {
         const info = App.lookups.keptFieldInfo.get(id);
         const ref = App.lookups.fieldReference.get(info?.fieldReferenceId);
@@ -711,13 +769,16 @@ const App = {
     if (!targetType || targetType === "methods") {
       const methodIds = br.methodKeepRadius || [];
       const methodsContent = document.getElementById("details-methods-content");
-      const filteredMethodIds = methodIds.filter(id => {
+      const filteredMethodIds = methodIds.filter((id) => {
         const info = App.lookups.keptMethodInfo.get(id);
         const ref = App.lookups.methodReference.get(info?.methodReferenceId);
         const name = formatMethodName(ref, App.lookups);
-        return name.toLowerCase().includes(this.detailsState.methodQuery.toLowerCase());
+        return name
+          .toLowerCase()
+          .includes(this.detailsState.methodQuery.toLowerCase());
       });
-      document.getElementById("details-methods-count").textContent = `· ${filteredMethodIds.length}`;
+      document.getElementById("details-methods-count").textContent =
+        `· ${filteredMethodIds.length}`;
       methodsContent.innerHTML = renderList(filteredMethodIds, (id) => {
         const info = App.lookups.keptMethodInfo.get(id);
         const ref = App.lookups.methodReference.get(info?.methodReferenceId);
@@ -746,19 +807,25 @@ const App = {
     const impactBody = document.getElementById("file-details-impact-body");
     const rulesBody = document.getElementById("file-details-rules-body");
     const rulesHeader = document.getElementById("file-details-rules-header");
-    const fileOrigin = this.keepRadiusData?.fileOriginTable.find(f => f
-      .id === parseInt(fileOriginId));
+    const fileOrigin = this.keepRadiusData?.fileOriginTable.find(
+      (f) => f.id === parseInt(fileOriginId),
+    );
     if (!fileOrigin) return;
-    const fileRules = this.keepRadiusData.keepRuleKeepRadiusTable
-      .filter(r => r.origin?.fileOriginId === fileOrigin.id);
+    const fileRules = this.keepRadiusData.keepRuleKeepRadiusTable.filter(
+      (r) => r.origin?.fileOriginId === fileOrigin.id,
+    );
 
     const globalRules = [];
     if (this.keepRadiusData.globalKeepRuleKeepRadiusTable) {
       const totalClasses = this.keepRadiusData?.buildInfo?.liveClassCount || 0;
       const totalFields = this.keepRadiusData?.buildInfo?.liveFieldCount || 0;
       const totalMethods = this.keepRadiusData?.buildInfo?.liveMethodCount || 0;
-      this.keepRadiusData.globalKeepRuleKeepRadiusTable.forEach(rule => {
-        if (rule.source === '-dontoptimize' || rule.source === '-dontshrink' || rule.source === '-dontobfuscate') {
+      this.keepRadiusData.globalKeepRuleKeepRadiusTable.forEach((rule) => {
+        if (
+          rule.source === "-dontoptimize" ||
+          rule.source === "-dontshrink" ||
+          rule.source === "-dontobfuscate"
+        ) {
           if (rule.origin?.fileOriginId === fileOrigin.id) {
             globalRules.push({
               id: rule.id,
@@ -769,7 +836,7 @@ const App = {
                 classKeepRadius: new Array(totalClasses),
                 fieldKeepRadius: new Array(totalFields),
                 methodKeepRadius: new Array(totalMethods),
-              }
+              },
             });
           }
         }
@@ -788,7 +855,7 @@ const App = {
       rulesHeader.innerHTML = `
         <tr>
           <th class="text-left bg-gray-50 z-30" style="padding: 1rem; width: 600px; min-width: 600px; border-bottom: 1px solid var(--border-color);">Rule</th>
-          <th class="text-left bg-gray-50 border-l border-gray-200" style="padding: 1rem; width: 100%; border-bottom: 1px solid var(--border-color);">${isIdenticalLens ? 'Identical Rules' : 'Subsumed By'}</th>
+          <th class="text-left bg-gray-50 border-l border-gray-200" style="padding: 1rem; width: 100%; border-bottom: 1px solid var(--border-color);">${isIdenticalLens ? "Identical Rules" : "Subsumed By"}</th>
         </tr>
       `;
     } else {
@@ -812,14 +879,14 @@ const App = {
     const matchedClasses = new Set();
     const matchedFields = new Set();
     const matchedMethods = new Set();
-    allRulesForFile.forEach(rule => {
+    allRulesForFile.forEach((rule) => {
       const br = rule.keepRadius || {};
-      (br.classKeepRadius || []).forEach(id => matchedClasses.add(id));
-      (br.fieldKeepRadius || []).forEach(id => matchedFields.add(id));
-      (br.methodKeepRadius || []).forEach(id => matchedMethods.add(id));
+      (br.classKeepRadius || []).forEach((id) => matchedClasses.add(id));
+      (br.fieldKeepRadius || []).forEach((id) => matchedFields.add(id));
+      (br.methodKeepRadius || []).forEach((id) => matchedMethods.add(id));
     });
     const renderMatchCell = (count, total, borderLeft = true) => {
-      const perc = total > 0 ? (count / total * 100) : 0;
+      const perc = total > 0 ? (count / total) * 100 : 0;
       const colorClass = UIUtils.getMatchClass(perc);
       const bl = borderLeft ? "border-l border-gray-200" : "";
       return `
@@ -838,16 +905,22 @@ const App = {
         ${renderMatchCell(matchedMethods.size, liveMethods)}
       </tr>
     `;
-    rulesBody.innerHTML = rules.map(rule => {
-      if (isIdenticalLens || isSubsumedLens) {
-        const list = isIdenticalLens ? rule.identicalRules : rule
-          .subsumedByRules;
-        const otherRulesHtml = (list || []).map(other => `
+    rulesBody.innerHTML = rules
+      .map((rule) => {
+        if (isIdenticalLens || isSubsumedLens) {
+          const list = isIdenticalLens
+            ? rule.identicalRules
+            : rule.subsumedByRules;
+          const otherRulesHtml = (list || [])
+            .map(
+              (other) => `
           <div class="text-xs text-blue-600 hover:underline cursor-pointer mb-1" onclick="event.stopPropagation(); App.showDetailsView('${other.id}')">
             <pre style="white-space: pre-wrap; margin: 0; font-family: var(--font-family-mono);">${escapeHTML(other.source)}</pre>
           </div>
-        `).join("");
-        return `
+        `,
+            )
+            .join("");
+          return `
           <tr class="border-t border-gray-200 hover:bg-gray-50 cursor-pointer" onclick="App.showDetailsView('${rule.id}')">
             <td class="sticky-name font-medium text-blue-600 hover:underline" title="${escapeHTML(rule.source)}" style="padding: 1rem; width: 600px; min-width: 600px;">
               <pre style="white-space: pre-wrap; font-family: var(--font-family-mono); font-size: 0.8125rem; margin: 0; pointer-events: none;">${escapeHTML(rule.source)}</pre>
@@ -857,45 +930,60 @@ const App = {
             </td>
           </tr>
         `;
-      }
-      const br = rule.keepRadius || {};
-      const c = (br.classKeepRadius || []).length;
-      const f = (br.fieldKeepRadius || []).length;
-      const m = (br.methodKeepRadius || []).length;
-      const constraintsMap = getConstraintsMap(this.keepRadiusData);
-      let constraints = [...(constraintsMap.get(rule.constraintsId) || [])];
-      if (rule.isGlobal) {
-        if (rule.source === '-dontobfuscate' && !constraints.includes('DONT_OBFUSCATE')) {
-          constraints.push('DONT_OBFUSCATE');
         }
-        if (rule.source === '-dontoptimize' && !constraints.includes('DONT_OPTIMIZE')) {
-          constraints.push('DONT_OPTIMIZE');
+        const br = rule.keepRadius || {};
+        const c = (br.classKeepRadius || []).length;
+        const f = (br.fieldKeepRadius || []).length;
+        const m = (br.methodKeepRadius || []).length;
+        const constraintsMap = getConstraintsMap(this.keepRadiusData);
+        let constraints = [...(constraintsMap.get(rule.constraintsId) || [])];
+        if (rule.isGlobal) {
+          if (
+            rule.source === "-dontobfuscate" &&
+            !constraints.includes("DONT_OBFUSCATE")
+          ) {
+            constraints.push("DONT_OBFUSCATE");
+          }
+          if (
+            rule.source === "-dontoptimize" &&
+            !constraints.includes("DONT_OPTIMIZE")
+          ) {
+            constraints.push("DONT_OPTIMIZE");
+          }
+          if (
+            rule.source === "-dontshrink" &&
+            !constraints.includes("DONT_SHRINK")
+          ) {
+            constraints.push("DONT_SHRINK");
+          }
         }
-        if (rule.source === '-dontshrink' && !constraints.includes('DONT_SHRINK')) {
-          constraints.push('DONT_SHRINK');
-        }
-      }
-      const getTag = (c, label) => {
-        const isRestricted = constraints.includes(c);
-        const color = isRestricted ? "oklch(0.446 0.043 257.281)" : "#cbd5e1";
-        const bgColor = isRestricted ? "oklch(0.984 0.003 247.858)" : "#f8fafc";
-        const borderColor = isRestricted ? "oklch(0.929 0.013 255.508)" : "#e2e8f0";
-        return `<span class="impact-tag" style="display: inline-block; color: ${color}; background-color: ${bgColor}; border: 1px solid ${borderColor}; border-radius: 4px; padding: 2px 8px; font-size: 10px; font-weight: 400; height: 21px; line-height: 15px; text-transform: uppercase; letter-spacing: 0.25px; box-sizing: border-box; text-align: center;">${label}</span>`;
-      };
-      const impactCell = `
+        const getTag = (c, label) => {
+          const isRestricted = constraints.includes(c);
+          const color = isRestricted ? "oklch(0.446 0.043 257.281)" : "#cbd5e1";
+          const bgColor = isRestricted
+            ? "oklch(0.984 0.003 247.858)"
+            : "#f8fafc";
+          const borderColor = isRestricted
+            ? "oklch(0.929 0.013 255.508)"
+            : "#e2e8f0";
+          return `<span class="impact-tag" style="display: inline-block; color: ${color}; background-color: ${bgColor}; border: 1px solid ${borderColor}; border-radius: 4px; padding: 2px 8px; font-size: 10px; font-weight: 400; height: 21px; line-height: 15px; text-transform: uppercase; letter-spacing: 0.25px; box-sizing: border-box; text-align: center;">${label}</span>`;
+        };
+        const impactCell = `
     <td style="padding: 0.5rem; border-left: 1px solid var(--border-color);">
       <div class="flex justify-start" style="gap: 0.5rem;">
-        ${getTag('DONT_OBFUSCATE', 'OBFUSCATE')}
-        ${getTag('DONT_OPTIMIZE', 'OPTIMIZE')}
-        ${getTag('DONT_SHRINK', 'SHRINK')}
+        ${getTag("DONT_OBFUSCATE", "OBFUSCATE")}
+        ${getTag("DONT_OPTIMIZE", "OPTIMIZE")}
+        ${getTag("DONT_SHRINK", "SHRINK")}
       </div>
     </td>
   `;
-      const renderMatchCell = (count, total, borderLeft = true) => {
-        const perc = total > 0 ? (count / total * 100) : 0;
-        const colorClass = UIUtils.getMatchClass(perc);
-        const bl = borderLeft ? "border-left: 1px solid var(--border-color);" : "";
-        return `
+        const renderMatchCell = (count, total, borderLeft = true) => {
+          const perc = total > 0 ? (count / total) * 100 : 0;
+          const colorClass = UIUtils.getMatchClass(perc);
+          const bl = borderLeft
+            ? "border-left: 1px solid var(--border-color);"
+            : "";
+          return `
           <td class="text-center" style="padding: 1rem; ${bl}">
             <div style="display: flex; flex-direction: column; align-items: center; justify-content: center;">
               <span class="font-medium ${colorClass}">${perc.toFixed(1)}%</span>
@@ -903,13 +991,14 @@ const App = {
             </div>
           </td>
         `;
-      };
-      const totalLive = getLiveItemCount(this.keepRadiusData);
-      const liveClasses = this.keepRadiusData?.buildInfo?.liveClassCount || 0;
-      const liveFields = this.keepRadiusData?.buildInfo?.liveFieldCount || 0;
-      const liveMethods = this.keepRadiusData?.buildInfo?.liveMethodCount || 0;
-      const highlightedSource = highlightRule(rule.source);
-      return `
+        };
+        const totalLive = getLiveItemCount(this.keepRadiusData);
+        const liveClasses = this.keepRadiusData?.buildInfo?.liveClassCount || 0;
+        const liveFields = this.keepRadiusData?.buildInfo?.liveFieldCount || 0;
+        const liveMethods =
+          this.keepRadiusData?.buildInfo?.liveMethodCount || 0;
+        const highlightedSource = highlightRule(rule.source);
+        return `
         <tr class="border-t border-gray-200 hover:bg-gray-50 cursor-pointer" onclick="App.showDetailsView('${rule.id}')">
           <td style="padding: 0.5rem; width: 40%;">
             <pre style="white-space: pre-wrap; font-family: var(--font-family-mono); font-size: 0.8125rem; margin: 0;">${highlightedSource}</pre>
@@ -921,9 +1010,10 @@ const App = {
           ${impactCell}
         </tr>
       `;
-    }).join("");
-    const fileOriginName = formatMavenCoordinate(fileOrigin
-      .mavenCoordinate) || fileOrigin.filename;
+      })
+      .join("");
+    const fileOriginName =
+      formatMavenCoordinate(fileOrigin.mavenCoordinate) || fileOrigin.filename;
     this.updateFileDetailsBreadcrumbs(fileOriginName);
   },
   updateFileDetailsBreadcrumbs(filename) {
@@ -937,8 +1027,9 @@ const App = {
       ${sep}
       <span class="${textClass}">${escapeHTML(filename)}</span>
     `;
-    document.getElementById("file-details-back-to-summary").addEventListener(
-      "click", () => {
+    document
+      .getElementById("file-details-back-to-summary")
+      .addEventListener("click", () => {
         this.showReportView();
       });
   },
@@ -958,26 +1049,30 @@ const App = {
     }
     html += `<span class="${textClass}">Keep Rule Details</span>`;
     bc.innerHTML = html;
-    document.getElementById("details-back-to-summary").addEventListener(
-      "click", () => {
+    document
+      .getElementById("details-back-to-summary")
+      .addEventListener("click", () => {
         this.showReportView();
       });
     if (filename && fileOriginId !== undefined) {
-      document.getElementById("details-back-to-file").addEventListener(
-        "click", () => {
+      document
+        .getElementById("details-back-to-file")
+        .addEventListener("click", () => {
           this.showFileDetailsView(fileOriginId);
         });
     }
   },
   async loadProtoData() {
-    const embeddedProtoSchemaSource = document.getElementById('keepradius-proto');
-    const embeddedProtoDataSource = document.getElementById('keepradius-data');
+    const embeddedProtoSchemaSource =
+      document.getElementById("keepradius-proto");
+    const embeddedProtoDataSource = document.getElementById("keepradius-data");
     try {
       const root = protobuf.parse(embeddedProtoSchemaSource.textContent).root;
       const data = embeddedProtoDataSource.textContent.trim();
-      const bytes = Uint8Array.from(atob(data), c => c.charCodeAt(0));
+      const bytes = Uint8Array.from(atob(data), (c) => c.charCodeAt(0));
       const KeepRadiusContainer = root.lookupType(
-        "com.android.tools.r8.keepradius.proto.KeepRadiusContainer");
+        "com.android.tools.r8.keepradius.proto.KeepRadiusContainer",
+      );
       const message = KeepRadiusContainer.decode(bytes);
       this.keepRadiusData = KeepRadiusContainer.toObject(message, {
         longs: String,
@@ -986,15 +1081,16 @@ const App = {
         defaults: true,
         arrays: true,
         objects: true,
-        oneofs: true
+        oneofs: true,
       });
       // Extract and strip common prefix from file names
       if (this.keepRadiusData.fileOriginTable) {
-        const filenames = this.keepRadiusData.fileOriginTable.map(f => f
-          .filename).filter(Boolean);
+        const filenames = this.keepRadiusData.fileOriginTable
+          .map((f) => f.filename)
+          .filter(Boolean);
         const commonPrefix = UIUtils.findCommonPrefix(filenames);
         if (commonPrefix) {
-          this.keepRadiusData.fileOriginTable.forEach(f => {
+          this.keepRadiusData.fileOriginTable.forEach((f) => {
             if (f.filename && f.filename.startsWith(commonPrefix)) {
               f.filename = f.filename.substring(commonPrefix.length);
             }
@@ -1003,17 +1099,41 @@ const App = {
       }
       // Build highly optimized O(1) lookup Maps for details and filtering views
       App.lookups = {
-        keptClassInfo: new Map((this.keepRadiusData.keptClassInfoTable || []).map(c => [c.id, c])),
-        keptFieldInfo: new Map((this.keepRadiusData.keptFieldInfoTable || []).map(f => [f.id, f])),
-        keptMethodInfo: new Map((this.keepRadiusData.keptMethodInfoTable || []).map(m => [m.id, m])),
-        fieldReference: new Map((this.keepRadiusData.fieldReferenceTable || []).map(r => [r.id, r])),
-        methodReference: new Map((this.keepRadiusData.methodReferenceTable || []).map(r => [r.id, r])),
-        protoReference: new Map((this.keepRadiusData.protoReferenceTable || []).map(p => [p.id, p])),
-        typeReferenceList: new Map((this.keepRadiusData.typeReferenceListTable || []).map(l => [l.id, l])),
-        typeReference: new Map((this.keepRadiusData.typeReferenceTable || []).map(t => [t.id, t.javaDescriptor]))
+        keptClassInfo: new Map(
+          (this.keepRadiusData.keptClassInfoTable || []).map((c) => [c.id, c]),
+        ),
+        keptFieldInfo: new Map(
+          (this.keepRadiusData.keptFieldInfoTable || []).map((f) => [f.id, f]),
+        ),
+        keptMethodInfo: new Map(
+          (this.keepRadiusData.keptMethodInfoTable || []).map((m) => [m.id, m]),
+        ),
+        fieldReference: new Map(
+          (this.keepRadiusData.fieldReferenceTable || []).map((r) => [r.id, r]),
+        ),
+        methodReference: new Map(
+          (this.keepRadiusData.methodReferenceTable || []).map((r) => [
+            r.id,
+            r,
+          ]),
+        ),
+        protoReference: new Map(
+          (this.keepRadiusData.protoReferenceTable || []).map((p) => [p.id, p]),
+        ),
+        typeReferenceList: new Map(
+          (this.keepRadiusData.typeReferenceListTable || []).map((l) => [
+            l.id,
+            l,
+          ]),
+        ),
+        typeReference: new Map(
+          (this.keepRadiusData.typeReferenceTable || []).map((t) => [
+            t.id,
+            t.javaDescriptor,
+          ]),
+        ),
       };
-      console.log("Protobuf data loaded successfully:", this
-        .keepRadiusData);
+      console.log("Protobuf data loaded successfully:", this.keepRadiusData);
       // Trigger re-render now that data is available
       ReportApp.render();
     } catch (err) {
@@ -1031,21 +1151,21 @@ const ReportApp = {
       keepRules: [],
       classes: [],
       fields: [],
-      methods: []
+      methods: [],
     },
     activeFilterChips: [],
     sort: {
       by: "matches.total",
-      order: "desc"
+      order: "desc",
     },
     drillContext: {
       module: null,
       pkg: null,
-      fileOriginId: null
+      fileOriginId: null,
     }, // Navigation path
     statsVisible: true,
     searchTerm: "",
-    showBlockedByRule: true
+    showBlockedByRule: true,
   },
   elements: {},
   init() {
@@ -1097,7 +1217,7 @@ const ReportApp = {
       toggleBlockedByRuleCb: getById("toggle-blocked-by-rule-cb"),
     };
   },
-  populateHeaderInfo() { },
+  populateHeaderInfo() {},
   /**
    * Initializes all filters (Variants, Modules, etc.)
    */
@@ -1110,31 +1230,27 @@ const ReportApp = {
    * e.g., Selecting "Module A" filters the Package options to only those in Module A.
    */
   updateDynamicFilters() {
-    const {
-      keepRules,
-      classes,
-      fields,
-      methods
-    } = this.state.filters;
+    const { keepRules, classes, fields, methods } = this.state.filters;
     const chips = this.state.activeFilterChips;
     // --- 1. Keep Rules Lens ---
-    const keepRuleOptions = [{
-      name: "<b>Identical:</b> Show rules that match the same items as other rules",
-      value: "Identical"
-    },
-    {
-      name: "<b>Subsumed:</b> Show rules that match a subset of the items matched by another rule",
-      value: "Subsumed"
-    },
-    {
-      name: "<b>Unused:</b> Show rules that don't match anything",
-      value: "Unused"
-    },
+    const keepRuleOptions = [
+      {
+        name: "<b>Identical:</b> Show rules that match the same items as other rules",
+        value: "Identical",
+      },
+      {
+        name: "<b>Subsumed:</b> Show rules that match a subset of the items matched by another rule",
+        value: "Subsumed",
+      },
+      {
+        name: "<b>Unused:</b> Show rules that don't match anything",
+        value: "Unused",
+      },
     ];
     const lens = this.state.filters.keepRules[0] || "All";
     const tabsContainer = document.getElementById("lens-tabs");
     if (tabsContainer) {
-      tabsContainer.querySelectorAll(".segment-btn").forEach(btn => {
+      tabsContainer.querySelectorAll(".segment-btn").forEach((btn) => {
         if (btn.dataset.lens === lens) {
           btn.classList.add("active");
         } else {
@@ -1143,161 +1259,208 @@ const ReportApp = {
       });
     }
     // --- 2. Classes Filter ---
-    const {
-      options: classOptions,
-      total: totalClasses
-    } = this.getKeptClasses();
-    UIUtils.buildActionDropdown("cls-dropdown", classOptions, classes, () => {
-      this.updateDynamicFilters();
-      this.render();
-    }, true, true, totalClasses, "classes", (term) => {
-      const brData = App.keepRadiusData;
-      if (!brData || !brData.keptClassInfoTable) return {
-        options: [],
-        total: 0
-      };
-      const typeRefMap = new Map();
-      brData.typeReferenceTable.forEach(t => typeRefMap.set(t.id, t
-        .javaDescriptor));
-      const filtered = brData.keptClassInfoTable.filter(c => {
-        const name = formatDescriptor(typeRefMap.get(c
-          .classReferenceId));
-        return name.toLowerCase().includes(term);
-      });
-      const results = filtered.slice(0, 1000).map(c => {
-        const name = escapeHTML(formatDescriptor(typeRefMap.get(c
-          .classReferenceId)));
-        return {
-          name,
-          value: c.id
-        };
-      });
-      return {
-        options: results,
-        total: filtered.length
-      };
-    });
-    UIUtils.renderChipText(this.elements.clsText, UIUtils.getFilterLabel(
-      "Classes", classes, totalClasses, classOptions), "class", true);
-    UIUtils.toggleVisibility(this.elements.clsChip, chips.includes("class"));
-    // --- 3. Fields Filter ---
-    const {
-      options: fieldOptions,
-      total: totalFields
-    } = this.getKeptFields();
-    UIUtils.buildActionDropdown("field-dropdown", fieldOptions, fields,
+    const { options: classOptions, total: totalClasses } =
+      this.getKeptClasses();
+    UIUtils.buildActionDropdown(
+      "cls-dropdown",
+      classOptions,
+      classes,
       () => {
         this.updateDynamicFilters();
         this.render();
-      }, true, true, totalFields, "fields", (term) => {
+      },
+      true,
+      true,
+      totalClasses,
+      "classes",
+      (term) => {
         const brData = App.keepRadiusData;
-        if (!brData || !brData.keptFieldInfoTable) return {
-          options: [],
-          total: 0
-        };
+        if (!brData || !brData.keptClassInfoTable)
+          return {
+            options: [],
+            total: 0,
+          };
         const typeRefMap = new Map();
-        brData.typeReferenceTable.forEach(t => typeRefMap.set(t.id, t
-          .javaDescriptor));
+        brData.typeReferenceTable.forEach((t) =>
+          typeRefMap.set(t.id, t.javaDescriptor),
+        );
+        const filtered = brData.keptClassInfoTable.filter((c) => {
+          const name = formatDescriptor(typeRefMap.get(c.classReferenceId));
+          return name.toLowerCase().includes(term);
+        });
+        const results = filtered.slice(0, 1000).map((c) => {
+          const name = escapeHTML(
+            formatDescriptor(typeRefMap.get(c.classReferenceId)),
+          );
+          return {
+            name,
+            value: c.id,
+          };
+        });
+        return {
+          options: results,
+          total: filtered.length,
+        };
+      },
+    );
+    UIUtils.renderChipText(
+      this.elements.clsText,
+      UIUtils.getFilterLabel("Classes", classes, totalClasses, classOptions),
+      "class",
+      true,
+    );
+    UIUtils.toggleVisibility(this.elements.clsChip, chips.includes("class"));
+    // --- 3. Fields Filter ---
+    const { options: fieldOptions, total: totalFields } = this.getKeptFields();
+    UIUtils.buildActionDropdown(
+      "field-dropdown",
+      fieldOptions,
+      fields,
+      () => {
+        this.updateDynamicFilters();
+        this.render();
+      },
+      true,
+      true,
+      totalFields,
+      "fields",
+      (term) => {
+        const brData = App.keepRadiusData;
+        if (!brData || !brData.keptFieldInfoTable)
+          return {
+            options: [],
+            total: 0,
+          };
+        const typeRefMap = new Map();
+        brData.typeReferenceTable.forEach((t) =>
+          typeRefMap.set(t.id, t.javaDescriptor),
+        );
         const fieldRefMap = new Map();
-        brData.fieldReferenceTable.forEach(f => fieldRefMap.set(f.id, f));
-        const filtered = brData.keptFieldInfoTable.filter(f => {
+        brData.fieldReferenceTable.forEach((f) => fieldRefMap.set(f.id, f));
+        const filtered = brData.keptFieldInfoTable.filter((f) => {
           const fieldRef = fieldRefMap.get(f.fieldReferenceId);
           const name = formatFieldName(fieldRef, brData, typeRefMap);
           return name.toLowerCase().includes(term);
         });
-        const results = filtered.slice(0, 1000).map(f => {
+        const results = filtered.slice(0, 1000).map((f) => {
           const fieldRef = fieldRefMap.get(f.fieldReferenceId);
-          const name = escapeHTML(formatFieldName(fieldRef, brData,
-            typeRefMap));
+          const name = escapeHTML(
+            formatFieldName(fieldRef, brData, typeRefMap),
+          );
           return {
             name,
-            value: f.id
+            value: f.id,
           };
         });
         return {
           options: results,
-          total: filtered.length
+          total: filtered.length,
         };
-      });
-    UIUtils.renderChipText(this.elements.fieldText, UIUtils.getFilterLabel(
-      "Fields", fields, totalFields, fieldOptions), "field", true);
-    UIUtils.toggleVisibility(this.elements.fieldChip, chips.includes(
-      "field"));
+      },
+    );
+    UIUtils.renderChipText(
+      this.elements.fieldText,
+      UIUtils.getFilterLabel("Fields", fields, totalFields, fieldOptions),
+      "field",
+      true,
+    );
+    UIUtils.toggleVisibility(this.elements.fieldChip, chips.includes("field"));
     // --- 4. Methods Filter ---
-    const {
-      options: methodOptions,
-      total: totalMethods
-    } = this.getKeptMethods();
-    UIUtils.buildActionDropdown("method-dropdown", methodOptions, methods,
+    const { options: methodOptions, total: totalMethods } =
+      this.getKeptMethods();
+    UIUtils.buildActionDropdown(
+      "method-dropdown",
+      methodOptions,
+      methods,
       () => {
         this.updateDynamicFilters();
         this.render();
-      }, true, true, totalMethods, "methods", (term) => {
+      },
+      true,
+      true,
+      totalMethods,
+      "methods",
+      (term) => {
         const brData = App.keepRadiusData;
-        if (!brData || !brData.keptMethodInfoTable) return {
-          options: [],
-          total: 0
-        };
+        if (!brData || !brData.keptMethodInfoTable)
+          return {
+            options: [],
+            total: 0,
+          };
         const typeRefMap = new Map();
-        brData.typeReferenceTable.forEach(t => typeRefMap.set(t.id, t
-          .javaDescriptor));
+        brData.typeReferenceTable.forEach((t) =>
+          typeRefMap.set(t.id, t.javaDescriptor),
+        );
         const methodRefMap = new Map();
-        brData.methodReferenceTable.forEach(m => methodRefMap.set(m.id, m));
-        const filtered = brData.keptMethodInfoTable.filter(m => {
+        brData.methodReferenceTable.forEach((m) => methodRefMap.set(m.id, m));
+        const filtered = brData.keptMethodInfoTable.filter((m) => {
           const methodRef = methodRefMap.get(m.methodReferenceId);
           const name = formatMethodName(methodRef, brData, typeRefMap);
           return name.toLowerCase().includes(term);
         });
-        const results = filtered.slice(0, 1000).map(m => {
+        const results = filtered.slice(0, 1000).map((m) => {
           const methodRef = methodRefMap.get(m.methodReferenceId);
-          const name = escapeHTML(formatMethodName(methodRef, brData,
-            typeRefMap));
+          const name = escapeHTML(
+            formatMethodName(methodRef, brData, typeRefMap),
+          );
           return {
             name,
-            value: m.id
+            value: m.id,
           };
         });
         return {
           options: results,
-          total: filtered.length
+          total: filtered.length,
         };
-      });
-    UIUtils.renderChipText(this.elements.methodText, UIUtils.getFilterLabel(
-      "Methods", methods, totalMethods, methodOptions), "method", true);
-    UIUtils.toggleVisibility(this.elements.methodChip, chips.includes(
-      "method"));
+      },
+    );
+    UIUtils.renderChipText(
+      this.elements.methodText,
+      UIUtils.getFilterLabel("Methods", methods, totalMethods, methodOptions),
+      "method",
+      true,
+    );
+    UIUtils.toggleVisibility(
+      this.elements.methodChip,
+      chips.includes("method"),
+    );
     // --- Add Filter Button Logic ---
     const availableFilters = [];
-    if (!chips.includes("class")) availableFilters.push({
-      name: "Classes",
-      value: "class",
-      options: classOptions,
-      total: totalClasses,
-      state: classes
-    });
-    if (!chips.includes("field")) availableFilters.push({
-      name: "Fields",
-      value: "field",
-      options: fieldOptions,
-      total: totalFields,
-      state: fields
-    });
-    if (!chips.includes("method")) availableFilters.push({
-      name: "Methods",
-      value: "method",
-      options: methodOptions,
-      total: totalMethods,
-      state: methods
-    });
+    if (!chips.includes("class"))
+      availableFilters.push({
+        name: "Classes",
+        value: "class",
+        options: classOptions,
+        total: totalClasses,
+        state: classes,
+      });
+    if (!chips.includes("field"))
+      availableFilters.push({
+        name: "Fields",
+        value: "field",
+        options: fieldOptions,
+        total: totalFields,
+        state: fields,
+      });
+    if (!chips.includes("method"))
+      availableFilters.push({
+        name: "Methods",
+        value: "method",
+        options: methodOptions,
+        total: totalMethods,
+        state: methods,
+      });
     if (availableFilters.length > 0) {
       this.elements.addFilterContainer.classList.remove("hidden");
       this.elements.addFilterList.innerHTML = availableFilters
-        .map(f =>
-          `<a href="#" class="dropdown-item add-filter-option" data-value="${f.value}">${f.name}</a>`
+        .map(
+          (f) =>
+            `<a href="#" class="dropdown-item add-filter-option" data-value="${f.value}">${f.name}</a>`,
         )
         .join("");
-      this.elements.addFilterList.querySelectorAll(".add-filter-option")
-        .forEach(item => {
+      this.elements.addFilterList
+        .querySelectorAll(".add-filter-option")
+        .forEach((item) => {
           item.addEventListener("click", (e) => {
             e.preventDefault();
             e.stopPropagation();
@@ -1312,12 +1475,21 @@ const ReportApp = {
             this.render();
             // Auto-open newly added dropdown
             setTimeout(() => {
-              if (val === "class") this.toggleDropdown(this.elements
-                .clsDropdown, this.elements.clsBtn);
-              if (val === "field") this.toggleDropdown(this.elements
-                .fieldDropdown, this.elements.fieldBtn);
-              if (val === "method") this.toggleDropdown(this
-                .elements.methodDropdown, this.elements.methodBtn);
+              if (val === "class")
+                this.toggleDropdown(
+                  this.elements.clsDropdown,
+                  this.elements.clsBtn,
+                );
+              if (val === "field")
+                this.toggleDropdown(
+                  this.elements.fieldDropdown,
+                  this.elements.fieldBtn,
+                );
+              if (val === "method")
+                this.toggleDropdown(
+                  this.elements.methodDropdown,
+                  this.elements.methodBtn,
+                );
             }, 0);
           });
         });
@@ -1327,108 +1499,111 @@ const ReportApp = {
   },
   getKeptClasses() {
     const brData = App.keepRadiusData;
-    if (!brData || !brData.keptClassInfoTable) return {
-      options: [],
-      total: 0
-    };
+    if (!brData || !brData.keptClassInfoTable)
+      return {
+        options: [],
+        total: 0,
+      };
     const typeRefMap = new Map();
-    brData.typeReferenceTable.forEach(t => typeRefMap.set(t.id, t
-      .javaDescriptor));
-    const options = brData.keptClassInfoTable.slice(0, 1000).map(c => {
-      const name = escapeHTML(formatDescriptor(typeRefMap.get(c
-        .classReferenceId)));
+    brData.typeReferenceTable.forEach((t) =>
+      typeRefMap.set(t.id, t.javaDescriptor),
+    );
+    const options = brData.keptClassInfoTable.slice(0, 1000).map((c) => {
+      const name = escapeHTML(
+        formatDescriptor(typeRefMap.get(c.classReferenceId)),
+      );
       return {
         name,
-        value: c.id
+        value: c.id,
       };
     });
     return {
       options,
-      total: brData.keptClassInfoTable.length
+      total: brData.keptClassInfoTable.length,
     };
   },
   getKeptFields() {
     const brData = App.keepRadiusData;
-    if (!brData || !brData.keptFieldInfoTable) return {
-      options: [],
-      total: 0
-    };
+    if (!brData || !brData.keptFieldInfoTable)
+      return {
+        options: [],
+        total: 0,
+      };
     const typeRefMap = new Map();
-    brData.typeReferenceTable.forEach(t => typeRefMap.set(t.id, t
-      .javaDescriptor));
+    brData.typeReferenceTable.forEach((t) =>
+      typeRefMap.set(t.id, t.javaDescriptor),
+    );
     const fieldRefMap = new Map();
-    brData.fieldReferenceTable.forEach(f => fieldRefMap.set(f.id, f));
-    const options = brData.keptFieldInfoTable.slice(0, 1000).map(f => {
+    brData.fieldReferenceTable.forEach((f) => fieldRefMap.set(f.id, f));
+    const options = brData.keptFieldInfoTable.slice(0, 1000).map((f) => {
       const fieldRef = fieldRefMap.get(f.fieldReferenceId);
-      const name = escapeHTML(formatFieldName(fieldRef, brData,
-        typeRefMap));
+      const name = escapeHTML(formatFieldName(fieldRef, brData, typeRefMap));
       return {
         name,
-        value: f.id
+        value: f.id,
       };
     });
     return {
       options,
-      total: brData.keptFieldInfoTable.length
+      total: brData.keptFieldInfoTable.length,
     };
   },
   getKeptMethods() {
     const brData = App.keepRadiusData;
-    if (!brData || !brData.keptMethodInfoTable) return {
-      options: [],
-      total: 0
-    };
+    if (!brData || !brData.keptMethodInfoTable)
+      return {
+        options: [],
+        total: 0,
+      };
     const typeRefMap = new Map();
-    brData.typeReferenceTable.forEach(t => typeRefMap.set(t.id, t
-      .javaDescriptor));
+    brData.typeReferenceTable.forEach((t) =>
+      typeRefMap.set(t.id, t.javaDescriptor),
+    );
     const methodRefMap = new Map();
-    brData.methodReferenceTable.forEach(m => methodRefMap.set(m.id, m));
-    const options = brData.keptMethodInfoTable.slice(0, 1000).map(m => {
+    brData.methodReferenceTable.forEach((m) => methodRefMap.set(m.id, m));
+    const options = brData.keptMethodInfoTable.slice(0, 1000).map((m) => {
       const methodRef = methodRefMap.get(m.methodReferenceId);
-      const name = escapeHTML(formatMethodName(methodRef, brData,
-        typeRefMap));
+      const name = escapeHTML(formatMethodName(methodRef, brData, typeRefMap));
       return {
         name,
-        value: m.id
+        value: m.id,
       };
     });
     return {
       options,
-      total: brData.keptMethodInfoTable.length
+      total: brData.keptMethodInfoTable.length,
     };
   },
   toggleDropdown(dropdown, triggerBtn = null) {
-    const allHelpers = [{
-      dd: this.elements.grpDropdown,
-      btn: this.elements.grpBtn
-    },
-    {
-      dd: this.elements.clsDropdown,
-      btn: this.elements.clsBtn
-    },
-    {
-      dd: this.elements.fieldDropdown,
-      btn: this.elements.fieldBtn
-    },
-    {
-      dd: this.elements.methodDropdown,
-      btn: this.elements.methodBtn
-    },
-    {
-      dd: this.elements.addFilterDropdown,
-      btn: this.elements.addFilterBtn
-    },
-    {
-      dd: this.elements.columnsDropdown,
-      btn: this.elements.toggleColumnsBtn
-    },
+    const allHelpers = [
+      {
+        dd: this.elements.grpDropdown,
+        btn: this.elements.grpBtn,
+      },
+      {
+        dd: this.elements.clsDropdown,
+        btn: this.elements.clsBtn,
+      },
+      {
+        dd: this.elements.fieldDropdown,
+        btn: this.elements.fieldBtn,
+      },
+      {
+        dd: this.elements.methodDropdown,
+        btn: this.elements.methodBtn,
+      },
+      {
+        dd: this.elements.addFilterDropdown,
+        btn: this.elements.addFilterBtn,
+      },
+      {
+        dd: this.elements.columnsDropdown,
+        btn: this.elements.toggleColumnsBtn,
+      },
     ];
     const isOpening = dropdown.classList.contains("hidden");
     // Close all others first
-    allHelpers.forEach(({
-      dd,
-      btn
-    }) => {
+    allHelpers.forEach(({ dd, btn }) => {
       if (dd !== dropdown) {
         if (dd) dd.classList.add("hidden");
         if (btn) btn.classList.remove("bg-gray-200");
@@ -1444,35 +1619,33 @@ const ReportApp = {
   },
   bindEvents() {
     // --- Dropdown Management ---
-    const map = [{
-      btn: this.elements.grpBtn,
-      dd: this.elements.grpDropdown
-    },
-    {
-      btn: this.elements.clsBtn,
-      dd: this.elements.clsDropdown
-    },
-    {
-      btn: this.elements.fieldBtn,
-      dd: this.elements.fieldDropdown
-    },
-    {
-      btn: this.elements.methodBtn,
-      dd: this.elements.methodDropdown
-    },
-    {
-      btn: this.elements.addFilterBtn,
-      dd: this.elements.addFilterDropdown
-    },
-    {
-      btn: this.elements.toggleColumnsBtn,
-      dd: this.elements.columnsDropdown
-    },
+    const map = [
+      {
+        btn: this.elements.grpBtn,
+        dd: this.elements.grpDropdown,
+      },
+      {
+        btn: this.elements.clsBtn,
+        dd: this.elements.clsDropdown,
+      },
+      {
+        btn: this.elements.fieldBtn,
+        dd: this.elements.fieldDropdown,
+      },
+      {
+        btn: this.elements.methodBtn,
+        dd: this.elements.methodDropdown,
+      },
+      {
+        btn: this.elements.addFilterBtn,
+        dd: this.elements.addFilterDropdown,
+      },
+      {
+        btn: this.elements.toggleColumnsBtn,
+        dd: this.elements.columnsDropdown,
+      },
     ];
-    map.forEach(({
-      btn,
-      dd
-    }) => {
+    map.forEach(({ btn, dd }) => {
       if (btn && dd) {
         btn.addEventListener("click", (e) => {
           if (e.target.closest(".chip-close")) return;
@@ -1503,12 +1676,8 @@ const ReportApp = {
     // Global click listener to close dropdowns
     document.addEventListener("click", (e) => {
       let anyClosed = false;
-      map.forEach(({
-        dd,
-        btn
-      }) => {
-        if (dd && !dd.contains(e.target) && (!btn || !btn.contains(e
-          .target))) {
+      map.forEach(({ dd, btn }) => {
+        if (dd && !dd.contains(e.target) && (!btn || !btn.contains(e.target))) {
           if (!dd.classList.contains("hidden")) {
             dd.classList.add("hidden");
             if (btn) btn.classList.remove("bg-gray-200");
@@ -1520,33 +1689,41 @@ const ReportApp = {
         this.updateDynamicFilters();
       }
       // Close search bar if clicked outside
-      if (this.elements.searchContainer && !this.elements.searchContainer.contains(e.target)) {
+      if (
+        this.elements.searchContainer &&
+        !this.elements.searchContainer.contains(e.target)
+      ) {
         this.elements.searchContainer.classList.remove("active");
       }
     });
     // Chip removals
-    document.getElementById("filter-chips-container").addEventListener(
-      "click", (e) => {
+    document
+      .getElementById("filter-chips-container")
+      .addEventListener("click", (e) => {
         const closeBtn = e.target.closest(".chip-close");
         if (closeBtn) {
           e.stopPropagation();
           const type = closeBtn.dataset.clear;
           if (type === "module") {
             this.state.filters.keepRules = [];
-            this.state.activeFilterChips = this.state.activeFilterChips
-              .filter(c => c !== "module");
+            this.state.activeFilterChips = this.state.activeFilterChips.filter(
+              (c) => c !== "module",
+            );
           } else if (type === "class") {
             this.state.filters.classes = [];
-            this.state.activeFilterChips = this.state.activeFilterChips
-              .filter(c => c !== "class");
+            this.state.activeFilterChips = this.state.activeFilterChips.filter(
+              (c) => c !== "class",
+            );
           } else if (type === "field") {
             this.state.filters.fields = [];
-            this.state.activeFilterChips = this.state.activeFilterChips
-              .filter(c => c !== "field");
+            this.state.activeFilterChips = this.state.activeFilterChips.filter(
+              (c) => c !== "field",
+            );
           } else if (type === "method") {
             this.state.filters.methods = [];
-            this.state.activeFilterChips = this.state.activeFilterChips
-              .filter(c => c !== "method");
+            this.state.activeFilterChips = this.state.activeFilterChips.filter(
+              (c) => c !== "method",
+            );
           }
           this.updateDynamicFilters();
           this.render();
@@ -1560,24 +1737,25 @@ const ReportApp = {
       this.state.currentView = item.dataset.value;
       this.state.drillContext = {
         module: null,
-        pkg: null
+        pkg: null,
       }; // Reset Drill-Down
       // Reset default sort based on view
-      if (this.state.currentView === CONSTANTS.VIEWS.CLASSES ||
+      if (
+        this.state.currentView === CONSTANTS.VIEWS.CLASSES ||
         this.state.currentView === CONSTANTS.VIEWS.FIELDS ||
-        this.state.currentView === CONSTANTS.VIEWS.METHODS) {
+        this.state.currentView === CONSTANTS.VIEWS.METHODS
+      ) {
         this.state.sort = {
           by: "name",
-          order: "asc"
+          order: "asc",
         };
       } else {
         this.state.sort = {
           by: "matches.total",
-          order: "desc"
+          order: "desc",
         };
       }
-      this.toggleDropdown(this.elements.grpDropdown, this.elements
-        .grpBtn);
+      this.toggleDropdown(this.elements.grpDropdown, this.elements.grpBtn);
       this.render();
     });
     // --- Table Sorting ---
@@ -1586,8 +1764,8 @@ const ReportApp = {
       if (!th) return;
       const newSortBy = th.dataset.sortBy;
       if (this.state.sort.by === newSortBy)
-        this.state.sort.order = this.state.sort.order === "asc" ? "desc" :
-          "asc";
+        this.state.sort.order =
+          this.state.sort.order === "asc" ? "desc" : "asc";
       else {
         this.state.sort.by = newSortBy;
         this.state.sort.order = "desc";
@@ -1610,18 +1788,14 @@ const ReportApp = {
       }
       const td = e.target.closest("td[data-name]");
       if (!td) return;
-      const {
-        name,
-        type,
-        moduleName
-      } = td.dataset;
+      const { name, type, moduleName } = td.dataset;
       // Update Drill-Context (Silent)
       if (type === "module") {
         this.state.drillContext.module = name;
         this.state.drillContext.pkg = null;
       } else if (type === "package") {
-        this.state.drillContext.module = moduleName || this.state
-          .drillContext.module;
+        this.state.drillContext.module =
+          moduleName || this.state.drillContext.module;
         this.state.drillContext.pkg = name;
       }
       this.updateBreadcrumbs();
@@ -1661,7 +1835,9 @@ const ReportApp = {
     const helpHubFab = document.getElementById("help-hub-fab");
     const helpHubPanel = document.getElementById("help-hub-panel");
     const closeHelpHubBtn = document.getElementById("close-help-hub");
-    const helpHubSearchInput = document.querySelector("#help-hub-panel .search-input");
+    const helpHubSearchInput = document.querySelector(
+      "#help-hub-panel .search-input",
+    );
     if (helpHubFab && helpHubPanel) {
       helpHubFab.addEventListener("click", (e) => {
         e.stopPropagation();
@@ -1676,19 +1852,23 @@ const ReportApp = {
     }
     // Close help hub when clicking outside
     document.addEventListener("click", (e) => {
-      if (helpHubPanel && !helpHubPanel.contains(e.target) && !helpHubFab.contains(e.target)) {
+      if (
+        helpHubPanel &&
+        !helpHubPanel.contains(e.target) &&
+        !helpHubFab.contains(e.target)
+      ) {
         helpHubPanel.classList.remove("open");
       }
     });
     // Help Hub Accordion
     if (helpHubPanel) {
       const legendItems = helpHubPanel.querySelectorAll(".legend-item");
-      legendItems.forEach(item => {
+      legendItems.forEach((item) => {
         const header = item.querySelector(".legend-item-header");
         if (header) {
           header.addEventListener("click", () => {
             // Close all other items
-            legendItems.forEach(other => {
+            legendItems.forEach((other) => {
               if (other !== item) {
                 other.classList.remove("open");
               }
@@ -1707,27 +1887,32 @@ const ReportApp = {
     const brData = App.keepRadiusData;
     if (!lens || !brData) return rules;
     const ruleMap = new Map();
-    brData.keepRuleKeepRadiusTable.forEach(r => {
+    brData.keepRuleKeepRadiusTable.forEach((r) => {
       ruleMap.set(r.id, r);
     });
-    return rules.filter(r => {
-      const getSubsumedBy = (rule) => rule.subsumedBy || (rule
-        .keepRadius && rule.keepRadius.subsumedBy) || [];
+    return rules.filter((r) => {
+      const getSubsumedBy = (rule) =>
+        rule.subsumedBy ||
+        (rule.keepRadius && rule.keepRadius.subsumedBy) ||
+        [];
       const getMatchesTotal = (rule) => {
         if (rule.matches && rule.matches.total !== undefined)
           return rule.matches.total;
         const b = rule.keepRadius || {};
-        return (b.classKeepRadius || []).length + (b
-          .fieldKeepRadius || []).length + (b.methodKeepRadius ||
-            []).length;
+        return (
+          (b.classKeepRadius || []).length +
+          (b.fieldKeepRadius || []).length +
+          (b.methodKeepRadius || []).length
+        );
       };
       const subsumedBy = getSubsumedBy(r);
       if (lens === "Identical") {
-        const identical = subsumedBy.filter(otherId => {
-          const other = ruleMap.get(otherId);
-          return other && (other.keepRadius?.subsumedBy || [])
-            .includes(r.id);
-        }).map(otherId => ruleMap.get(otherId));
+        const identical = subsumedBy
+          .filter((otherId) => {
+            const other = ruleMap.get(otherId);
+            return other && (other.keepRadius?.subsumedBy || []).includes(r.id);
+          })
+          .map((otherId) => ruleMap.get(otherId));
         if (identical.length > 0) {
           r.identicalRules = identical;
           return true;
@@ -1735,7 +1920,7 @@ const ReportApp = {
         return false;
       } else if (lens === "Subsumed") {
         if (subsumedBy.length > 0) {
-          r.subsumedByRules = subsumedBy.map(id => ruleMap.get(id));
+          r.subsumedByRules = subsumedBy.map((id) => ruleMap.get(id));
           return true;
         }
         return false;
@@ -1746,82 +1931,80 @@ const ReportApp = {
     });
   },
   getFilteredData() {
-    const {
-      currentView,
-      filters
-    } = this.state;
+    const { currentView, filters } = this.state;
     const brData = App.keepRadiusData;
     if (!brData) return [];
     let data = [];
     if (currentView === CONSTANTS.VIEWS.PACKAGES) {
-      data = getRuleFiles(brData).filter(f => f.matches.total > 0);
+      data = getRuleFiles(brData).filter((f) => f.matches.total > 0);
     } else {
       data = getRules(brData);
       // If lens is 'Residual', 'All', or default, show only rules with matches > 0.
       // If lens is 'Unused', show only rules with matches === 0.
       const lens = filters.keepRules[0];
       if (lens === "Residual" || lens === "All" || !lens) {
-        data = data.filter(r => r.matches.total > 0);
+        data = data.filter((r) => r.matches.total > 0);
       } else if (lens === "Unused") {
-        data = data.filter(r => r.matches.total === 0);
+        data = data.filter((r) => r.matches.total === 0);
       }
     }
     // Apply Keep Rules Lens (Filtering)
-    if (currentView === CONSTANTS.VIEWS.MODULES && filters.keepRules.length >
-      0) {
+    if (
+      currentView === CONSTANTS.VIEWS.MODULES &&
+      filters.keepRules.length > 0
+    ) {
       data = this.applyKeepRuleLens(data, filters.keepRules[0]);
     }
     // Apply Class/Field/Method filters
-    if (filters.classes.length > 0 || filters.fields.length > 0 || filters
-      .methods.length > 0) {
+    if (
+      filters.classes.length > 0 ||
+      filters.fields.length > 0 ||
+      filters.methods.length > 0
+    ) {
       const matchedRuleIds = new Set();
       if (filters.classes.length > 0) {
-        brData.keptClassInfoTable.forEach(c => {
+        brData.keptClassInfoTable.forEach((c) => {
           if (filters.classes.includes(c.id)) {
-            (c.keptBy || []).forEach(rid => matchedRuleIds.add(rid));
+            (c.keptBy || []).forEach((rid) => matchedRuleIds.add(rid));
           }
         });
       }
       if (filters.fields.length > 0) {
-        brData.keptFieldInfoTable.forEach(f => {
+        brData.keptFieldInfoTable.forEach((f) => {
           if (filters.fields.includes(f.id)) {
-            (f.keptBy || []).forEach(rid => matchedRuleIds.add(rid));
+            (f.keptBy || []).forEach((rid) => matchedRuleIds.add(rid));
           }
         });
       }
       if (filters.methods.length > 0) {
-        brData.keptMethodInfoTable.forEach(m => {
+        brData.keptMethodInfoTable.forEach((m) => {
           if (filters.methods.includes(m.id)) {
-            (m.keptBy || []).forEach(rid => matchedRuleIds.add(rid));
+            (m.keptBy || []).forEach((rid) => matchedRuleIds.add(rid));
           }
         });
       }
-      data = data.filter(r => matchedRuleIds.has(r.id));
+      data = data.filter((r) => matchedRuleIds.has(r.id));
     }
     if (this.state.searchTerm) {
       const term = this.state.searchTerm.toLowerCase();
-      data = data.filter(item => item.name.toLowerCase().includes(term));
+      data = data.filter((item) => item.name.toLowerCase().includes(term));
     }
     return data;
   },
   getSortedData(data) {
-    const {
-      by,
-      order
-    } = this.state.sort;
+    const { by, order } = this.state.sort;
     if (!by) return data;
     const getVal = (obj, path) => {
-      return path.split('.').reduce((o, key) => (o && o[key] !==
-        undefined) ? o[key] : 0, obj);
+      return path
+        .split(".")
+        .reduce((o, key) => (o && o[key] !== undefined ? o[key] : 0), obj);
     };
     return [...data].sort((a, b) => {
       const vA = getVal(a, by);
       const vB = getVal(b, by);
       if (typeof vA === "string")
-        return order === "asc" ? vA.localeCompare(vB) : vB.localeCompare(
-          vA);
-      return order === "asc" ? (vA || 0) - (vB || 0) : (vB || 0) - (vA ||
-        0);
+        return order === "asc" ? vA.localeCompare(vB) : vB.localeCompare(vA);
+      return order === "asc" ? (vA || 0) - (vB || 0) : (vB || 0) - (vA || 0);
     });
   },
   updateBreadcrumbs() {
@@ -1831,17 +2014,13 @@ const ReportApp = {
     const textClass = "breadcrumb-text";
     const sep = '<span class="text-gray-300 mx-1">/</span>';
     let html = "";
-    const {
-      module,
-      pkg: pkg
-    } = this.state.drillContext;
-    const toggleText = this.state.statsVisible ? "Hide" :
-      "Show";
+    const { module, pkg: pkg } = this.state.drillContext;
+    const toggleText = this.state.statsVisible ? "Hide" : "Show";
     const toggleHtml = `
       <button class="dropdown-btn" data-action="toggle-stats" style="border: none; background: transparent; padding: 0.25rem 0.5rem; display: flex; align-items: center; border-radius: 4px; margin-left: auto; cursor: pointer;">
         <span style="font-weight: 500; color: var(--text-gray-400);">${toggleText}</span>
         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24"
-          stroke="currentColor" style="margin-left: 0.25rem; color: var(--text-gray-500); transform: ${this.state.statsVisible ? 'rotate(180deg)' : 'rotate(0deg)'}; transition: transform 0.2s;">
+          stroke="currentColor" style="margin-left: 0.25rem; color: var(--text-gray-500); transform: ${this.state.statsVisible ? "rotate(180deg)" : "rotate(0deg)"}; transition: transform 0.2s;">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
         </svg>
       </button>
@@ -1851,8 +2030,7 @@ const ReportApp = {
       html += `<span class="${linkClass}" data-action="reset">R8 Optimization Levels</span>`;
       html += sep;
       if (pkg) {
-        html +=
-          `<span class="${linkClass}" data-action="module" data-val="${escapeHTML(module)}">${escapeHTML(module)}</span>`;
+        html += `<span class="${linkClass}" data-action="module" data-val="${escapeHTML(module)}">${escapeHTML(module)}</span>`;
         html += sep;
         html += `<span class="${textClass}">${escapeHTML(pkg)}</span>`;
       } else {
@@ -1876,7 +2054,7 @@ const ReportApp = {
         <div style="display: flex; align-items: center;">
           ${html}
         </div>
-        ${this.state.statsVisible ? subtextHtml : ''}
+        ${this.state.statsVisible ? subtextHtml : ""}
       </div>
       ${toggleHtml}
     `;
@@ -1887,7 +2065,7 @@ const ReportApp = {
         if (action === "reset") {
           this.state.drillContext = {
             module: null,
-            pkg: null
+            pkg: null,
           };
           this.render();
         } else if (action === "module") {
@@ -1913,18 +2091,17 @@ const ReportApp = {
     const currentView = this.state.currentView;
     const viewLabels = {
       modules: "Keep Rules",
-      packages: "Keep Rule Files"
+      packages: "Keep Rule Files",
     };
-    this.elements.grpText.textContent = viewLabels[currentView] || (
-      currentView.charAt(0).toUpperCase() + currentView.slice(1));
+    this.elements.grpText.textContent =
+      viewLabels[currentView] ||
+      currentView.charAt(0).toUpperCase() + currentView.slice(1);
     if (this.elements.grpList) {
-      this.elements.grpList.querySelectorAll(".dropdown-item").forEach((
-        el) => {
+      this.elements.grpList.querySelectorAll(".dropdown-item").forEach((el) => {
         if (el.dataset.value === currentView)
-          el.classList.add("bg-gray-100", "text-gray-900",
-            "font-semibold");
-        else el.classList.remove("bg-gray-100", "text-gray-900",
-          "font-semibold");
+          el.classList.add("bg-gray-100", "text-gray-900", "font-semibold");
+        else
+          el.classList.remove("bg-gray-100", "text-gray-900", "font-semibold");
       });
     }
     // Process Data
@@ -1937,39 +2114,50 @@ const ReportApp = {
       relevantClasses = data.flatMap((p) => p.classes || []);
       modCount = new Set(data.map((p) => p.moduleName)).size;
     } else {
-      relevantClasses = data.flatMap((m) => (m.packages || []).flatMap((p) =>
-        p.classes || []));
+      relevantClasses = data.flatMap((m) =>
+        (m.packages || []).flatMap((p) => p.classes || []),
+      );
       modCount = data.length;
     }
     // Stats table visibility
     if (this.elements.statsContainer) {
-      this.elements.statsContainer.style.display = this.state.statsVisible ?
-        "flex" : "none";
-      this.elements.statsContainer.style.marginBottom = this.state
-        .statsVisible ? "2rem" : "0";
+      this.elements.statsContainer.style.display = this.state.statsVisible
+        ? "flex"
+        : "none";
+      this.elements.statsContainer.style.marginBottom = this.state.statsVisible
+        ? "2rem"
+        : "0";
     }
     const brData = App.keepRadiusData;
     const totalLive = getLiveItemCount(brData);
-    const formatPerc = (disallowCount) => totalLive > 0 ? (100 - (
-      disallowCount / totalLive * 100)).toFixed(1) + '%' : '--';
-    const getPerc = (disallowCount) => totalLive > 0 ? (100 - (disallowCount /
-      totalLive * 100)) : '--';
+    const formatPerc = (disallowCount) =>
+      totalLive > 0
+        ? (100 - (disallowCount / totalLive) * 100).toFixed(1) + "%"
+        : "--";
+    const getPerc = (disallowCount) =>
+      totalLive > 0 ? 100 - (disallowCount / totalLive) * 100 : "--";
     const setStatValue = (element, disallowCount) => {
       if (!brData) {
-        element.textContent = '--';
-        element.className = 'stat-value ' + UIUtils.getScoreClass('--');
+        element.textContent = "--";
+        element.className = "stat-value " + UIUtils.getScoreClass("--");
         return;
       }
       const perc = getPerc(disallowCount);
       element.textContent = formatPerc(disallowCount);
-      element.className = 'stat-value ' + UIUtils.getScoreClass(perc);
+      element.className = "stat-value " + UIUtils.getScoreClass(perc);
     };
-    setStatValue(this.elements.totalObfuscation, getDisallowObfuscationCount(
-      brData));
-    setStatValue(this.elements.totalOptimization,
-      getDisallowOptimizationCount(brData));
-    setStatValue(this.elements.totalShrinking, getDisallowShrinkingCount(
-      brData));
+    setStatValue(
+      this.elements.totalObfuscation,
+      getDisallowObfuscationCount(brData),
+    );
+    setStatValue(
+      this.elements.totalOptimization,
+      getDisallowOptimizationCount(brData),
+    );
+    setStatValue(
+      this.elements.totalShrinking,
+      getDisallowShrinkingCount(brData),
+    );
     // Render Tables
     this.renderHeaders();
     this.renderFlatRows(data);
@@ -1983,29 +2171,33 @@ const ReportApp = {
     const updateCard = (key) => {
       const setStat = (id, disallowCount, total) => {
         const el = document.getElementById(id);
-        const perc = total > 0 ? (100 - (disallowCount / total * 100)) : 100;
+        const perc = total > 0 ? 100 - (disallowCount / total) * 100 : 100;
         if (el) {
-          el.textContent = perc.toFixed(1) + '%';
+          el.textContent = perc.toFixed(1) + "%";
         }
         return perc;
       };
-      const totalPerc = setStat(`card-total-${key}`, stats.overall[key], stats.overall.total);
+      const totalPerc = setStat(
+        `card-total-${key}`,
+        stats.overall[key],
+        stats.overall.total,
+      );
       const updateItem = (type) => {
         const bar = document.getElementById(`card-${key}-${type}-bar`);
         const val = document.getElementById(`card-${key}-${type}-val`);
         if (bar && val) {
           const disallow = stats[type][key];
           const total = stats[type].total;
-          const perc = total > 0 ? (100 - (disallow / total * 100)) : 100;
+          const perc = total > 0 ? 100 - (disallow / total) * 100 : 100;
           bar.style.width = `${perc}%`;
           val.textContent = `${perc.toFixed(1)}%`;
           const colorClass = UIUtils.getScoreClass(perc);
-          if (colorClass.includes('green')) {
-            bar.style.background = 'var(--text-green-600)';
-          } else if (colorClass.includes('yellow')) {
-            bar.style.background = 'var(--text-yellow-600)';
-          } else if (colorClass.includes('red')) {
-            bar.style.background = 'var(--text-red-600)';
+          if (colorClass.includes("green")) {
+            bar.style.background = "var(--text-green-600)";
+          } else if (colorClass.includes("yellow")) {
+            bar.style.background = "var(--text-yellow-600)";
+          } else if (colorClass.includes("red")) {
+            bar.style.background = "var(--text-red-600)";
           }
         }
       };
@@ -2018,22 +2210,19 @@ const ReportApp = {
     updateCard("shrinking");
   },
   renderHeaders() {
-    const {
-      currentView,
-      sort
-    } = this.state;
+    const { currentView, sort } = this.state;
     const topHeader = document.createElement("tr");
     const subHeader = document.createElement("tr");
     const viewLabels = {
       modules: "RULE",
-      packages: "KEEP RULE FILES"
+      packages: "KEEP RULE FILES",
     };
     const title = viewLabels[currentView];
     const ind = (key) => {
       if (sort.by !== key) return "";
-      return sort.order === "asc" ?
-        `<span class="sort-icon text-blue-600 ml-1">▲</span>` :
-        `<span class="sort-icon text-blue-600 ml-1">▼</span>`;
+      return sort.order === "asc"
+        ? `<span class="sort-icon text-blue-600 ml-1">▲</span>`
+        : `<span class="sort-icon text-blue-600 ml-1">▼</span>`;
     };
     if (currentView === CONSTANTS.VIEWS.PACKAGES) {
       topHeader.innerHTML = `
@@ -2051,12 +2240,12 @@ const ReportApp = {
       subHeader.innerHTML = ``;
     } else {
       const lens = this.state.filters.keepRules[0];
-      const isIdenticalLens = currentView === CONSTANTS.VIEWS.MODULES &&
-        lens === "Identical";
-      const isSubsumedLens = currentView === CONSTANTS.VIEWS.MODULES &&
-        lens === "Subsumed";
-      const isUnusedLens = currentView === CONSTANTS.VIEWS.MODULES &&
-        lens === "Unused";
+      const isIdenticalLens =
+        currentView === CONSTANTS.VIEWS.MODULES && lens === "Identical";
+      const isSubsumedLens =
+        currentView === CONSTANTS.VIEWS.MODULES && lens === "Subsumed";
+      const isUnusedLens =
+        currentView === CONSTANTS.VIEWS.MODULES && lens === "Unused";
       if (this.elements.mainTable) {
         if (isIdenticalLens || isSubsumedLens || isUnusedLens) {
           this.elements.mainTable.style.tableLayout = "fixed";
@@ -2071,9 +2260,9 @@ const ReportApp = {
                 ${title}${ind("name")}
             </div>
           </th>
-          <th rowspan="2" class="text-left bg-gray-50 border-l border-gray-200" style="padding: 1rem; width: 50%;">${isIdenticalLens ? 'Identical Rules' : 'Subsumed By'}</th>
+          <th rowspan="2" class="text-left bg-gray-50 border-l border-gray-200" style="padding: 1rem; width: 50%;">${isIdenticalLens ? "Identical Rules" : "Subsumed By"}</th>
         `;
-        subHeader.innerHTML = '';
+        subHeader.innerHTML = "";
       } else if (isUnusedLens) {
         topHeader.innerHTML = `
           <th rowspan="2" class="text-left sticky-name bg-gray-50 z-30" data-sort-by="name" style="width: 50%; min-width: 300px;">
@@ -2083,7 +2272,7 @@ const ReportApp = {
           </th>
           <th rowspan="2" class="text-left bg-gray-50 border-l border-gray-200" style="padding: 1rem; width: 50%;">Origin</th>
         `;
-        subHeader.innerHTML = '';
+        subHeader.innerHTML = "";
       } else {
         topHeader.innerHTML = `
           <th rowspan="2" class="text-left sticky-name bg-gray-50 z-30" data-sort-by="name" style="width: 40%; min-width: 300px;">
@@ -2092,9 +2281,13 @@ const ReportApp = {
             </div>
           </th>
           <th colspan="4" class="text-center border-l border-gray-200 bg-gray-50" style="padding: 0.5rem; width: 40%;">KEPT ITEMS <span style="color: var(--text-muted);text-transform: none;font-weight: 500;">Higher is worse</span> <button type="button" class="tooltip-icon" data-tooltip="Items retained in the app due to this rule" aria-label="Items retained in the app due to this rule">?</button></th>
-          ${this.state.showBlockedByRule ? `
+          ${
+            this.state.showBlockedByRule
+              ? `
           <th rowspan="2" class="text-left bg-gray-50" style="padding: 1rem; width: 20%; border-left: 1px solid var(--border-color);">BLOCKED BY RULE <button type="button" class="tooltip-icon" data-tooltip="Specific actions blocked by this rule" aria-label="Specific actions blocked by this rule">?</button></th>
-          ` : ''}
+          `
+              : ""
+          }
         `;
         subHeader.innerHTML = `
           <th class="text-center text-xs font-medium text-gray-500 border-l border-gray-200 cursor-pointer hover:bg-gray-100" data-sort-by="matches.total" style="padding: 0.5rem; width: 100px; min-width: 100px;">Total${ind("matches.total")}</th>
@@ -2108,19 +2301,16 @@ const ReportApp = {
     this.elements.tableHeaders.append(topHeader, subHeader);
   },
   renderFlatRows(data) {
-    const {
-      currentView
-    } = this.state;
+    const { currentView } = this.state;
     if (!data.length) {
-      this.elements.tableData.innerHTML =
-        `<tr><td colspan="10" class="text-center py-8 text-gray-500">No results found.</td></tr>`;
+      this.elements.tableData.innerHTML = `<tr><td colspan="10" class="text-center py-8 text-gray-500">No results found.</td></tr>`;
       return;
     }
     const brData = App.keepRadiusData;
     const build = brData?.buildInfo || {};
     const totalLive = getLiveItemCount(brData);
     const renderMatchCell = (count, total) => {
-      const perc = total > 0 ? (count / total * 100) : 0;
+      const perc = total > 0 ? (count / total) * 100 : 0;
       const colorClass = UIUtils.getMatchClass(perc);
       return `
         <td class="text-center border-l border-gray-200" style="padding: 1rem; width: 12%;">
@@ -2132,7 +2322,7 @@ const ReportApp = {
       `;
     };
     const renderScoreCell = (disallowCount, total) => {
-      const perc = total > 0 ? (100 - (disallowCount / total * 100)) : 100;
+      const perc = total > 0 ? 100 - (disallowCount / total) * 100 : 100;
       const colorClass = UIUtils.getScoreClass(perc);
       return `
         <td class="text-center border-l border-gray-200" style="padding: 1rem; width: 12%;">
@@ -2143,91 +2333,109 @@ const ReportApp = {
         </td>
       `;
     };
-    this.elements.tableData.innerHTML = data.map((item) => {
-      const cleanedName = item.name.trim();
-      const escapedName = escapeHTML(cleanedName);
-      let nameCell = "";
-      if (currentView === CONSTANTS.VIEWS.MODULES) {
-        const highlightedName = highlightRule(cleanedName);
-        nameCell = `<td class="sticky-name font-medium hover:underline cursor-pointer" title="${escapedName}" style="padding: 1rem; width: 40%; min-width: 300px; font-family: var(--font-family-mono);" data-rule-id="${item.id}">
+    this.elements.tableData.innerHTML = data
+      .map((item) => {
+        const cleanedName = item.name.trim();
+        const escapedName = escapeHTML(cleanedName);
+        let nameCell = "";
+        if (currentView === CONSTANTS.VIEWS.MODULES) {
+          const highlightedName = highlightRule(cleanedName);
+          nameCell = `<td class="sticky-name font-medium hover:underline cursor-pointer" title="${escapedName}" style="padding: 1rem; width: 40%; min-width: 300px; font-family: var(--font-family-mono);" data-rule-id="${item.id}">
             <pre style="white-space: pre-wrap; font-family: var(--font-family-mono); font-size: 0.8125rem; margin: 0; pointer-events: none;">${highlightedName}</pre>
           </td>`;
-      } else if (currentView === CONSTANTS.VIEWS.PACKAGES) {
-        nameCell = `<td class="sticky-name font-medium text-blue-600 hover:underline cursor-pointer" title="${escapedName}" style="padding: 1rem; width: 40%; min-width: 300px;" data-file-origin-id="${item.id}">
+        } else if (currentView === CONSTANTS.VIEWS.PACKAGES) {
+          nameCell = `<td class="sticky-name font-medium text-blue-600 hover:underline cursor-pointer" title="${escapedName}" style="padding: 1rem; width: 40%; min-width: 300px;" data-file-origin-id="${item.id}">
             <pre style="white-space: pre-wrap; font-family: var(--font-family-mono); font-size: 0.8125rem; margin: 0; pointer-events: none;">${escapedName}</pre>
           </td>`;
-      } else {
-        nameCell =
-          `<td class="sticky-name font-medium text-gray-900" title="${escapedName}" style="padding: 1rem; width: 40%; min-width: 300px;"><pre style="white-space: pre-wrap; font-family: var(--font-family-mono); font-size: 0.8125rem; margin: 0;">${escapedName}</pre></td>`;
-      }
-      if (currentView === CONSTANTS.VIEWS.PACKAGES) {
-        const keepRulesCell =
-          `<td class="text-center border-l border-gray-200 text-sm font-semibold" style="padding: 1rem; width: 12%;">${item.keepRules}</td>`;
-        const totalKeptCell = renderMatchCell(item.matches.total,
-          totalLive);
-        const impactCells = `
+        } else {
+          nameCell = `<td class="sticky-name font-medium text-gray-900" title="${escapedName}" style="padding: 1rem; width: 40%; min-width: 300px;"><pre style="white-space: pre-wrap; font-family: var(--font-family-mono); font-size: 0.8125rem; margin: 0;">${escapedName}</pre></td>`;
+        }
+        if (currentView === CONSTANTS.VIEWS.PACKAGES) {
+          const keepRulesCell = `<td class="text-center border-l border-gray-200 text-sm font-semibold" style="padding: 1rem; width: 12%;">${item.keepRules}</td>`;
+          const totalKeptCell = renderMatchCell(item.matches.total, totalLive);
+          const impactCells = `
           ${renderScoreCell(item.impact.obfuscation, totalLive)}
           ${renderScoreCell(item.impact.optimization, totalLive)}
           ${renderScoreCell(item.impact.shrinking, totalLive)}
         `;
-        return `<tr class="table-row border-b border-gray-200 hover:bg-gray-50">${nameCell}${keepRulesCell}${totalKeptCell}${impactCells}</tr>`;
-      } else {
-        const lens = this.state.filters.keepRules[0];
-        const isIdenticalLens = currentView === CONSTANTS.VIEWS.MODULES &&
-          lens === "Identical";
-        const isSubsumedLens = currentView === CONSTANTS.VIEWS.MODULES &&
-          lens === "Subsumed";
-        const isUnusedLens = currentView === CONSTANTS.VIEWS.MODULES &&
-          lens === "Unused";
-        const customNameCell = `<td class="sticky-name font-medium hover:underline cursor-pointer" title="${escapedName}" style="padding: 1rem; width: 50%; min-width: 300px; font-family: var(--font-family-mono);" data-rule-id="${item.id}">
+          return `<tr class="table-row border-b border-gray-200 hover:bg-gray-50">${nameCell}${keepRulesCell}${totalKeptCell}${impactCells}</tr>`;
+        } else {
+          const lens = this.state.filters.keepRules[0];
+          const isIdenticalLens =
+            currentView === CONSTANTS.VIEWS.MODULES && lens === "Identical";
+          const isSubsumedLens =
+            currentView === CONSTANTS.VIEWS.MODULES && lens === "Subsumed";
+          const isUnusedLens =
+            currentView === CONSTANTS.VIEWS.MODULES && lens === "Unused";
+          const customNameCell = `<td class="sticky-name font-medium hover:underline cursor-pointer" title="${escapedName}" style="padding: 1rem; width: 50%; min-width: 300px; font-family: var(--font-family-mono);" data-rule-id="${item.id}">
             <pre style="white-space: pre-wrap; font-family: var(--font-family-mono); font-size: 0.8125rem; margin: 0; pointer-events: none;">${highlightRule(cleanedName)}</pre>
           </td>`;
-        if (isIdenticalLens || isSubsumedLens) {
-          const rules = isIdenticalLens ? item.identicalRules : item
-            .subsumedByRules;
-          const rulesHtml = (rules || []).map(r => `
+          if (isIdenticalLens || isSubsumedLens) {
+            const rules = isIdenticalLens
+              ? item.identicalRules
+              : item.subsumedByRules;
+            const rulesHtml = (rules || [])
+              .map(
+                (r) => `
             <div style="font-family: var(--font-family-mono); font-size: 0.8125rem; margin-bottom: 0.25rem;">
               <pre style="white-space: pre-wrap; margin: 0; color: var(--text-main);">${highlightRule(r.source)}</pre>
             </div>
-          `).join("");
+          `,
+              )
+              .join("");
 
-          return `<tr class="table-row border-b border-gray-200 hover:bg-gray-50">${customNameCell}<td class="border-l border-gray-200" style="padding: 1rem; vertical-align: top; width: 50%; font-family: var(--font-family-mono);">${rulesHtml}</td></tr>`;
-        } else if (isUnusedLens) {
-          const rule = brData.keepRuleKeepRadiusTable.find(r => r.id === item.id) || brData.globalKeepRuleKeepRadiusTable.find(r => r.id === item.id);
-          const fileOrigin = brData.fileOriginTable.find(f => f.id === rule?.origin?.fileOriginId);
-          let originStr = "Unknown";
-          if (fileOrigin) {
-            const mavenName = formatMavenCoordinate(fileOrigin.mavenCoordinate);
-            originStr = `${mavenName || fileOrigin.filename}:${rule.origin?.lineNumber || 1}`;
+            return `<tr class="table-row border-b border-gray-200 hover:bg-gray-50">${customNameCell}<td class="border-l border-gray-200" style="padding: 1rem; vertical-align: top; width: 50%; font-family: var(--font-family-mono);">${rulesHtml}</td></tr>`;
+          } else if (isUnusedLens) {
+            const rule =
+              brData.keepRuleKeepRadiusTable.find((r) => r.id === item.id) ||
+              brData.globalKeepRuleKeepRadiusTable.find(
+                (r) => r.id === item.id,
+              );
+            const fileOrigin = brData.fileOriginTable.find(
+              (f) => f.id === rule?.origin?.fileOriginId,
+            );
+            let originStr = "Unknown";
+            if (fileOrigin) {
+              const mavenName = formatMavenCoordinate(
+                fileOrigin.mavenCoordinate,
+              );
+              originStr = `${mavenName || fileOrigin.filename}:${rule.origin?.lineNumber || 1}`;
+            }
+            return `<tr class="table-row border-b border-gray-200 hover:bg-gray-50">${customNameCell}<td class="border-l border-gray-200" style="padding: 1rem; width: 50%; font-family: var(--font-family-mono);">${escapeHTML(originStr)}</td></tr>`;
           }
-          return `<tr class="table-row border-b border-gray-200 hover:bg-gray-50">${customNameCell}<td class="border-l border-gray-200" style="padding: 1rem; width: 50%; font-family: var(--font-family-mono);">${escapeHTML(originStr)}</td></tr>`;
-        }
-        const impact = item.impact || [];
-        const getTag = (c, label) => {
-          const isRestricted = impact.includes(c);
-          const color = isRestricted ? "oklch(0.446 0.043 257.281)" : "#cbd5e1";
-          const bgColor = isRestricted ? "oklch(0.984 0.003 247.858)" : "#f8fafc";
-          const borderColor = isRestricted ? "oklch(0.929 0.013 255.508)" : "#e2e8f0";
-          return `<span class="impact-tag" style="display: inline-block; color: ${color}; background-color: ${bgColor}; border: 1px solid ${borderColor}; border-radius: 4px; padding: 2px 8px; font-size: 10px; font-weight: 400; height: 21px; line-height: 15px; text-transform: uppercase; letter-spacing: 0.25px; box-sizing: border-box; text-align: center;">${label}</span>`;
-        };
-        const impactCell = `
+          const impact = item.impact || [];
+          const getTag = (c, label) => {
+            const isRestricted = impact.includes(c);
+            const color = isRestricted
+              ? "oklch(0.446 0.043 257.281)"
+              : "#cbd5e1";
+            const bgColor = isRestricted
+              ? "oklch(0.984 0.003 247.858)"
+              : "#f8fafc";
+            const borderColor = isRestricted
+              ? "oklch(0.929 0.013 255.508)"
+              : "#e2e8f0";
+            return `<span class="impact-tag" style="display: inline-block; color: ${color}; background-color: ${bgColor}; border: 1px solid ${borderColor}; border-radius: 4px; padding: 2px 8px; font-size: 10px; font-weight: 400; height: 21px; line-height: 15px; text-transform: uppercase; letter-spacing: 0.25px; box-sizing: border-box; text-align: center;">${label}</span>`;
+          };
+          const impactCell = `
           <td style="padding: 1rem; border-left: 1px solid var(--border-color);">
             <div class="flex justify-start" style="gap: 0.5rem;">
-              ${getTag('DONT_OBFUSCATE', 'OBFUSCATE')}
-              ${getTag('DONT_OPTIMIZE', 'OPTIMIZE')}
-              ${getTag('DONT_SHRINK', 'SHRINK')}
+              ${getTag("DONT_OBFUSCATE", "OBFUSCATE")}
+              ${getTag("DONT_OPTIMIZE", "OPTIMIZE")}
+              ${getTag("DONT_SHRINK", "SHRINK")}
             </div>
           </td>
         `;
-        const matchesCells = `
+          const matchesCells = `
           ${renderMatchCell(item.matches.total, totalLive)}
           ${renderMatchCell(item.matches.classes, build.liveClassCount || 0)}
           ${renderMatchCell(item.matches.fields, build.liveFieldCount || 0)}
           ${renderMatchCell(item.matches.methods, build.liveMethodCount || 0)}
         `;
-        return `<tr class="table-row border-b border-gray-200 hover:bg-gray-50">${nameCell}${matchesCells}${this.state.showBlockedByRule ? impactCell : ''}</tr>`;
-      }
-    }).join("");
+          return `<tr class="table-row border-b border-gray-200 hover:bg-gray-50">${nameCell}${matchesCells}${this.state.showBlockedByRule ? impactCell : ""}</tr>`;
+        }
+      })
+      .join("");
   },
 };
 document.addEventListener("DOMContentLoaded", () => {
