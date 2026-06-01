@@ -25,8 +25,11 @@ import com.android.tools.r8.dex.distribution.MonoDexDistributor;
 import com.android.tools.r8.dex.jumbostrings.JumboStringRewriter;
 import com.android.tools.r8.features.FeatureSplitConfiguration.DataResourceProvidersAndConsumer;
 import com.android.tools.r8.graph.AppView;
+import com.android.tools.r8.graph.Code;
 import com.android.tools.r8.graph.DexAnnotation;
 import com.android.tools.r8.graph.DexAnnotationSet;
+import com.android.tools.r8.graph.DexCode;
+import com.android.tools.r8.graph.DexDebugInfo;
 import com.android.tools.r8.graph.DexEncodedField;
 import com.android.tools.r8.graph.DexEncodedMethod;
 import com.android.tools.r8.graph.DexItemFactory;
@@ -357,6 +360,8 @@ public class ApplicationWriter {
         mapSupplierResult =
             runAndWriteMap(
                 inputApp, appView, executorService, timing, originalSourceFiles, representation);
+      } else if (options.enableDexToDexCodeOptimizations) {
+        convertPcBasedDebugInfoToNative(appView, executorService, timing);
       }
 
       // With the mapping id/hash known, it is safe to compute the remaining dex strings.
@@ -391,6 +396,36 @@ public class ApplicationWriter {
     } finally {
       mapSupplierResult.await();
       timing.end();
+    }
+  }
+
+  private void convertPcBasedDebugInfoToNative(
+      AppView<?> appView, ExecutorService executorService, Timing timing)
+      throws ExecutionException {
+    if (!options.isNativePcDebugInfoSupported()) {
+      return;
+    }
+    ThreadUtils.processItemsThatMatches(
+        appView.appInfo().classes(),
+        options::canEncodeDexPcNativelyInsteadOfDebugInfo,
+        (clazz, unusedTiming) -> convertPcBasedDebugInfoToNative(clazz),
+        options,
+        executorService,
+        timing,
+        timing.beginMerger("Convert PcEncodedDebugInfo to native encoding", executorService));
+  }
+
+  private void convertPcBasedDebugInfoToNative(DexProgramClass clazz) {
+    for (DexEncodedMethod method : clazz.methods(DexEncodedMethod::hasCode)) {
+      Code code = method.getCode();
+      if (!code.isDexCode()) {
+        continue;
+      }
+      DexCode dexCode = code.asDexCode();
+      DexDebugInfo debugInfo = dexCode.getDebugInfo();
+      if (debugInfo != null && debugInfo.isPcBasedInfo()) {
+        dexCode.setDebugInfo(null);
+      }
     }
   }
 
