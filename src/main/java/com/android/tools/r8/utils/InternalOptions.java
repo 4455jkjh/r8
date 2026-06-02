@@ -134,6 +134,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -399,12 +400,25 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
     }
   }
 
+  private long heapDumpId = -1;
   public boolean printTimes = System.getProperty("com.android.tools.r8.printtimes") != null;
   public String perfettoTraceDumpDirectory =
       System.getProperty("com.android.tools.r8.dumptracetodirectory");
   public String perfettoTraceDumpFile = System.getProperty("com.android.tools.r8.dumptracetofile");
   // To print memory one also have to enable printtimes.
   public boolean printMemory = System.getProperty("com.android.tools.r8.printmemory") != null;
+
+  public void dumpHeap(String name) {
+    Path heapDir =
+        SystemPropertyUtils.parsePathFromSystemProperty("com.android.tools.r8.dumpheaptodirectory");
+    if (heapDir == null) {
+      return;
+    }
+    if (heapDumpId == -1) {
+      heapDumpId = System.nanoTime();
+    }
+    HeapUtils.dumpHeap(heapDir.resolve("heap" + heapDumpId + "-" + name + ".hprof"));
+  }
 
   public boolean isPrintTimesReportingEnabled() {
     return (printTimes || perfettoTraceDumpDirectory != null || perfettoTraceDumpFile != null)
