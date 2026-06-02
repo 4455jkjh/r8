@@ -111,6 +111,12 @@ public abstract class DownloadAllDependenciesTask : DefaultTask() {
           downloadFromX20(parameters, sha1File)
         }
       }
+      // When the .sha1 file is new but the content is the same (git can cause this) the underlying
+      // download call wont re-download the file and thus not update the timestamp.
+      // This forces the timestamp to reflect that the file is up to date.
+      if (tarGzFile.exists()) {
+        tarGzFile.setLastModified(System.currentTimeMillis())
+      }
     }
 
     @Throws(IOException::class, InterruptedException::class)
