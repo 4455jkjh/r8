@@ -240,9 +240,12 @@ public class BridgeAnalyzer {
       DexEncodedMethod method, Instruction checkCastBoxOrUnbox, InvokeMethod invoke) {
     Value returnValue = invoke.outValue();
     Value uncastValue = checkCastBoxOrUnbox.getFirstOperand().getAliasedValue();
-    Value castValue = checkCastBoxOrUnbox.outValue();
+    Value outValue = checkCastBoxOrUnbox.outValue();
+    if (outValue == null) {
+      return false;
+    }
     // The out value should not have any phi users since we only allow linear control flow.
-    if (castValue.hasPhiUsers()) {
+    if (outValue.hasPhiUsers()) {
       return false;
     }
     // It must cast/box/unbox the result to the return type of the enclosing method.
@@ -258,9 +261,9 @@ public class BridgeAnalyzer {
     }
     // It must return the cast/box/unbox value.
     return uncastValue == returnValue
-        && !castValue.hasDebugUsers()
-        && castValue.hasSingleUniqueUser()
-        && castValue.singleUniqueUser().isReturn();
+        && !outValue.hasDebugUsers()
+        && outValue.hasSingleUniqueUser()
+        && outValue.singleUniqueUser().isReturn();
   }
 
   private static boolean analyzeInvoke(
