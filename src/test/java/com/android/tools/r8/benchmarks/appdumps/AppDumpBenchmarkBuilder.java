@@ -389,6 +389,8 @@ public class AppDumpBenchmarkBuilder {
                                     new ByteArrayConsumer.FileConsumer(outdir.resolve("report.pb")))
                                 .setConfigurationAnalysisHtmlReportConsumer(
                                     new StringConsumer.FileConsumer(outdir.resolve("report.html")));
+                            testBuilder.setProguardMapConsumer(
+                                new StringConsumer.FileConsumer(outdir.resolve("mapping.txt")));
                           })
                       .apply(configuration)
                       .applyIf(
