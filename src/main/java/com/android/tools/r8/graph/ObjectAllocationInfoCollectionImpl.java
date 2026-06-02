@@ -267,6 +267,10 @@ public abstract class ObjectAllocationInfoCollectionImpl implements ObjectAlloca
         });
   }
 
+  public Map<DexType, Set<DexClass>> getInstantiatedHierarchy() {
+    return instantiatedHierarchy;
+  }
+
   public Set<DexType> getInstantiatedLambdaInterfaces() {
     return instantiatedLambdas.keySet();
   }

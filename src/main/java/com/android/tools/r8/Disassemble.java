@@ -10,26 +10,25 @@ import com.android.tools.r8.graph.DexByteCodeWriter.OutputStreamProvider;
 import com.android.tools.r8.graph.LazyLoadedDexApplication;
 import com.android.tools.r8.graph.SmaliWriter;
 import com.android.tools.r8.naming.ClassNameMapper;
-import com.android.tools.r8.origin.CommandLineOrigin;
 import com.android.tools.r8.references.ClassReference;
 import com.android.tools.r8.references.FieldReference;
 import com.android.tools.r8.references.MethodReference;
 import com.android.tools.r8.references.Reference;
 import com.android.tools.r8.utils.AndroidApp;
+import com.android.tools.r8.utils.CliParserUtils;
 import com.android.tools.r8.utils.FieldReferenceUtils;
 import com.android.tools.r8.utils.InternalOptions;
 import com.android.tools.r8.utils.MethodReferenceUtils;
 import com.android.tools.r8.utils.ProgramResourceProviderUtils;
 import com.android.tools.r8.utils.StringDiagnostic;
 import com.android.tools.r8.utils.ThreadUtils;
+import com.android.tools.r8.utils.internal.CliParser;
 import com.android.tools.r8.utils.internal.ConsumerUtils;
 import com.android.tools.r8.utils.internal.StringUtils;
 import com.android.tools.r8.utils.timing.Timing;
 import java.io.Closeable;
 import java.io.IOException;
 import java.io.PrintStream;
-import java.nio.charset.Charset;
-import java.nio.charset.UnsupportedCharsetException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -141,26 +140,9 @@ public class Disassemble {
       }
     }
 
-    static final String USAGE_MESSAGE =
-        StringUtils.joinLines(
-            "Usage: disasm [options] <input-files>",
-            " where <input-files> are dex files",
-            " and options are:",
-            "  --all                       # Include all information in disassembly.",
-            "  --smali                     # Disassemble using smali syntax.",
-            "  --ir                        # Print IR before and after optimization.",
-            "  --nocode                    # No printing of code objects.",
-            "  --pg-map <file>             # Proguard map <file> for mapping names.",
-            "  --pg-map-charset <charset>  # Charset for Proguard map file.",
-            "  --output                    # Specify a file or directory to write to.",
-            "  --class <descriptor>        # Only disassemble the given class (e.g.,"
-                + " Lcom/example/Class;).",
-            "  --field <descriptor>        # Only disassemble the given field (e.g.,"
-                + " Lcom/example/Class;->method()V).",
-            "  --method <descriptor>       # Only disassemble the given method (e.g.,"
-                + " Lcom/example/Class;->field:I).",
-            "  --version                   # Print the version of r8.",
-            "  --help                      # Print this message.");
+    static String usageMessage() {
+      return CliParserUtils.getUsageMessage(createParser());
+    }
 
     private final boolean allInfo;
     private final boolean useSmali;
@@ -176,61 +158,51 @@ public class Disassemble {
 
     public static Builder parse(String[] args) {
       Builder builder = builder();
-      parse(args, builder);
+      createParser()
+          .parse(args, builder, err -> builder.getReporter().error(new StringDiagnostic(err)));
       return builder;
     }
 
-    private static void parse(String[] args, Builder builder) {
-      for (int i = 0; i < args.length; i++) {
-        String arg = args[i].trim();
-        if (arg.length() == 0) {
-          continue;
-        } else if (arg.equals("--help")) {
-          builder.setPrintHelp(true);
-        } else if (arg.equals("--version")) {
-          builder.setPrintVersion(true);
-        } else if (arg.equals("--all")) {
-          builder.setAllInfo(true);
-        } else if (arg.equals("--smali")) {
-          builder.setUseSmali(true);
-        } else if (arg.equals("--ir")) {
-          builder.setUseIr(true);
-        } else if (arg.equals("--nocode")) {
-          builder.setNoCode(true);
-        } else if (arg.equals("--pg-map")) {
-          builder.setProguardMapFile(Paths.get(args[++i]));
-        } else if (arg.equals("--pg-map-charset")) {
-          String charset = args[++i];
-          try {
-            Charset.forName(charset);
-          } catch (UnsupportedCharsetException e) {
-            builder.getReporter().error(
-                new StringDiagnostic(
-                    "Unsupported charset: " + charset + "." + System.lineSeparator()
-                        + "Supported charsets are: "
-                        + String.join(", ", Charset.availableCharsets().keySet()),
-                CommandLineOrigin.INSTANCE));
-          }
-        } else if (arg.equals("--output")) {
-          String outputPath = args[++i];
-          builder.setOutputPath(Paths.get(outputPath));
-        } else if (arg.equals("--class")) {
-          String nextArg = args[++i];
-          builder.addClassReference(Reference.classFromDescriptor(nextArg));
-        } else if (arg.equals("--field")) {
-          String nextArg = args[++i];
-          builder.addFieldReference(FieldReferenceUtils.parseSmaliString(nextArg));
-        } else if (arg.equals("--method")) {
-          String nextArg = args[++i];
-          builder.addMethodReference(MethodReferenceUtils.parseSmaliString(nextArg));
-        } else {
-          if (arg.startsWith("--")) {
-            builder.getReporter().error(new StringDiagnostic("Unknown option: " + arg,
-                CommandLineOrigin.INSTANCE));
-          }
-          builder.addProgramFiles(Paths.get(arg));
-        }
-      }
+    private static CliParser<Builder> createParser() {
+      var header =
+          StringUtils.joinLines(
+              "Usage: disasm [options] <input-files>",
+              " where <input-files> are dex files",
+              " and options are:");
+      var parser = new CliParser<Builder>(header);
+      return parser
+          .option0("--all", "Include all information in disassembly.", b -> b.setAllInfo(true))
+          .option0("--smali", "Disassemble using smali syntax.", b -> b.setUseSmali(true))
+          .option0("--ir", "Print IR before and after optimization.", b -> b.setUseIr(true))
+          .option0("--nocode", "No printing of code objects.", b -> b.setNoCode(true))
+          .option1(
+              "--pg-map",
+              "<file>",
+              "Proguard map <file> for mapping names.",
+              (b, arg) -> b.setProguardMapFile(Paths.get(arg)))
+          .option1(
+              "--output",
+              "<file/dir>",
+              "Specify a file or directory to write to.",
+              (b, arg) -> b.setOutputPath(Paths.get(arg)))
+          .option1(
+              "--class",
+              "<descriptor>",
+              "Only disassemble the given class (e.g., Lcom/example/Class;).",
+              (b, arg) -> b.addClassReference(Reference.classFromDescriptor(arg)))
+          .option1(
+              "--field",
+              "<descriptor>",
+              "Only disassemble the given field (e.g., Lcom/example/Class;->field:I).",
+              (b, arg) -> b.addFieldReference(FieldReferenceUtils.parseSmaliString(arg)))
+          .option1(
+              "--method",
+              "<descriptor>",
+              "Only disassemble the given method (e.g., Lcom/example/Class;->method()V).",
+              (b, arg) -> b.addMethodReference(MethodReferenceUtils.parseSmaliString(arg)))
+          .option0("--version", "Print the version of r8.", b -> b.setPrintVersion(true))
+          .option0("--help", "Print this message.", b -> b.setPrintHelp(true))
+          .positional((b, arg) -> b.addProgramFiles(Paths.get(arg)));
     }
 
     private DisassembleCommand(
@@ -311,7 +283,7 @@ public class Disassemble {
     DisassembleCommand.Builder builder = DisassembleCommand.parse(args);
     DisassembleCommand command = builder.build();
     if (command.isPrintHelp()) {
-      System.out.println(DisassembleCommand.USAGE_MESSAGE);
+      System.out.println(DisassembleCommand.usageMessage());
       return;
     }
     if (command.isPrintVersion()) {

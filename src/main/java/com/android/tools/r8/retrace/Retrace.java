@@ -15,6 +15,7 @@ import com.android.tools.r8.retrace.internal.RetraceAbortException;
 import com.android.tools.r8.retrace.internal.RetraceBase;
 import com.android.tools.r8.retrace.internal.StackTraceElementStringProxy;
 import com.android.tools.r8.retrace.internal.StackTraceRegularExpressionParser;
+import com.android.tools.r8.utils.CliParserUtils;
 import com.android.tools.r8.utils.ExceptionDiagnostic;
 import com.android.tools.r8.utils.InternalOptions;
 import com.android.tools.r8.utils.PartitionMapZipContainer;
@@ -43,7 +44,7 @@ import java.util.Scanner;
 public class Retrace<T, ST extends StackTraceElementProxy<T, ST>> extends RetraceBase<T, ST> {
 
   public static List<ParseFlagInfo> getFlags() {
-    return createParser().getFlagInfos();
+    return CliParserUtils.getFlagInfos(createParser());
   }
 
   private static class ParserState {
@@ -71,7 +72,7 @@ public class Retrace<T, ST extends StackTraceElementProxy<T, ST>> extends Retrac
         .option1(
             "--regex",
             "<regexp>",
-            "Regular expression for parsing stack-trace-file as lines",
+            "Regular expression for parsing stack-trace-file as lines.",
             (b, arg) -> {
               if (arg.isEmpty()) {
                 b.diagnosticsHandler.error(new StringDiagnostic("Empty argument for --regex"));
@@ -80,18 +81,18 @@ public class Retrace<T, ST extends StackTraceElementProxy<T, ST>> extends Retrac
               }
             },
             "--r")
-        .option0("--verbose", "Get verbose retraced output", b -> b.builder.setVerbose(true))
+        .option0("--verbose", "Get verbose retraced output.", b -> b.builder.setVerbose(true))
         .option0(
             "--info",
-            "Write information messages to stdout",
+            "Write information messages to stdout.",
             b -> {
               /* This is already set in the diagnostics handler. */
             })
         .option0(
-            "--quiet", "Silence ordinary messages printed to stdout", b -> b.hasSetQuiet = true)
+            "--quiet", "Silence ordinary messages printed to stdout.", b -> b.hasSetQuiet = true)
         .option0(
             "--verify-mapping-file-hash",
-            "Verify the mapping file hash",
+            "Verify the mapping file hash.",
             b -> {
               b.builder.setVerifyMappingFileHash(true);
               b.hasSetStackTrace = true;
@@ -99,7 +100,7 @@ public class Retrace<T, ST extends StackTraceElementProxy<T, ST>> extends Retrac
         .option1(
             "--partition-map",
             "<file>",
-            "Partition map to use",
+            "Partition map to use.",
             (b, arg) -> {
               if (arg.isEmpty()) {
                 b.diagnosticsHandler.error(
@@ -131,7 +132,7 @@ public class Retrace<T, ST extends StackTraceElementProxy<T, ST>> extends Retrac
   }
 
   static String getUsageMessage() {
-    return createParser().getUsageMessage();
+    return CliParserUtils.getUsageMessage(createParser());
   }
 
   private static ParserState parseArguments(String[] args, DiagnosticsHandler diagnosticsHandler) {

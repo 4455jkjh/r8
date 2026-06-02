@@ -31,6 +31,7 @@ public class Marker {
 
   public enum Tool {
     D8,
+    D8ReOpt,
     GlobalSyntheticsGenerator,
     L8,
     R8,
@@ -52,6 +53,7 @@ public class Marker {
   private static final char PREFIX_CHAR = '~';
   private static final String PREFIX = "~~";
   private static final String D8_PREFIX = PREFIX + Tool.D8 + "{";
+  private static final String D8_RE_OPT_PREFIX = PREFIX + Tool.D8ReOpt + "{";
   private static final String R8_PREFIX = PREFIX + Tool.R8 + "{";
   private static final String R8_PARTIAL_PREFIX = PREFIX + Tool.R8Partial + "{";
   private static final String L8_PREFIX = PREFIX + Tool.L8 + "{";
@@ -288,6 +290,9 @@ public class Marker {
       String str = dexString.toString();
       if (str.startsWith(D8_PREFIX)) {
         return internalParse(Tool.D8, str.substring(D8_PREFIX.length() - 1));
+      }
+      if (str.startsWith(D8_RE_OPT_PREFIX)) {
+        return internalParse(Tool.D8ReOpt, str.substring(D8_RE_OPT_PREFIX.length() - 1));
       }
       if (str.startsWith(R8_PREFIX)) {
         return internalParse(Tool.R8, str.substring(R8_PREFIX.length() - 1));

@@ -26,15 +26,8 @@ import com.android.tools.r8.graph.DexMethod;
  */
 public class VirtualBridgeInfo extends BridgeInfo {
 
-  // The targeted method.
-  private final DexMethod invokedMethod;
-
   public VirtualBridgeInfo(DexMethod invokedMethod) {
-    this.invokedMethod = invokedMethod;
-  }
-
-  public DexMethod getInvokedMethod() {
-    return invokedMethod;
+    super(invokedMethod);
   }
 
   @Override

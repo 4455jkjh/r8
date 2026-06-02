@@ -27,6 +27,11 @@ GOOGLE_YAPF = os.path.join(utils.THIRD_PARTY, 'google/yapf/20231013')
 
 JDK21_JAVA = os.path.join(utils.THIRD_PARTY, 'openjdk/jdk-21/linux/bin/java')
 
+NODE_BIN = os.path.join(utils.THIRD_PARTY, 'node', '24.16.0', 'linux', 'bin',
+                        'node')
+PRETTIER_BIN = os.path.join(utils.THIRD_PARTY, 'prettier', '3.8.3',
+                            'node_modules', 'prettier', 'bin', 'prettier.cjs')
+
 
 def ParseOptions():
     result = argparse.ArgumentParser()
@@ -40,6 +45,10 @@ def ParseOptions():
                         default=False)
     result.add_argument('--python',
                         help='Run YAPF.',
+                        action='store_true',
+                        default=False)
+    result.add_argument('--web',
+                        help='Run Prettier.',
                         action='store_true',
                         default=False)
     return result.parse_known_args()
@@ -57,7 +66,9 @@ def FormatJava(upstream):
 
 
 def FormatKotlin(upstream):
-    changed_files_cmd = ['git', 'diff', '--name-only', upstream, '*.kt', '*.kts']
+    changed_files_cmd = [
+        'git', 'diff', '--name-only', upstream, '*.kt', '*.kts'
+    ]
     changed_files = subprocess.check_output(changed_files_cmd).decode(
         'utf-8').splitlines()
     if not changed_files:
@@ -94,6 +105,22 @@ def FormatPython(upstream):
         raise e
 
 
+def FormatWeb(upstream):
+    changed_files_cmd = ['git', 'diff', '--name-only', upstream]
+    all_changed_files = subprocess.check_output(changed_files_cmd).decode(
+        'utf-8').splitlines()
+    extensions = ('.js', '.html', '.css')
+    changed_files = [
+        f for f in all_changed_files
+        if f.endswith(extensions) and os.path.exists(f)
+    ]
+    if not changed_files:
+        return
+    format_cmd = [NODE_BIN, PRETTIER_BIN, '--write']
+    format_cmd.extend(changed_files)
+    subprocess.check_call(format_cmd)
+
+
 def main():
     (options, args) = ParseOptions()
     upstream = subprocess.check_output(['git', 'cl',
@@ -104,6 +131,8 @@ def main():
         FormatKotlin(upstream)
     if options.python:
         FormatPython(upstream)
+    if options.web:
+        FormatWeb(upstream)
 
 
 if __name__ == '__main__':

@@ -159,18 +159,39 @@ public class DexParser<T extends DexClass> {
     while (offset < dexReader.end()) {
       offsets.add(offset);
       DexReader tmp = new DexReader(Origin.unknown(), dexReader.buffer.array(), offset);
-      assert tmp.getDexVersion() == DexVersion.V41;
-      assert dexReader.getUint(offset + Constants.HEADER_SIZE_OFFSET)
-          == Constants.TYPE_HEADER_ITEM_SIZE_V41;
-      assert dexReader.getUint(offset + Constants.CONTAINER_OFF_OFFSET) == offset;
+      if (tmp.getDexVersion() != DexVersion.V41
+          || dexReader.getUint(offset + Constants.HEADER_SIZE_OFFSET)
+              != Constants.TYPE_HEADER_ITEM_SIZE_V41
+          || dexReader.getUint(offset + Constants.CONTAINER_OFF_OFFSET) != offset) {
+        throw new CompilationError(
+            "Malformed V41 DEX container header at offset " + offset + ".", dexReader.getOrigin());
+      }
       int dataSize = dexReader.getUint(offset + Constants.DATA_SIZE_OFFSET);
       int dataOffset = dexReader.getUint(offset + Constants.DATA_OFF_OFFSET);
       int file_size = dexReader.getUint(offset + Constants.FILE_SIZE_OFFSET);
-      assert dataOffset == 0;
-      assert dataSize == 0;
+      if (dataOffset != 0 || dataSize != 0) {
+        throw new CompilationError(
+            "Malformed V41 DEX container header at offset "
+                + offset
+                + ". Non-zero data section is not supported.",
+            dexReader.getOrigin());
+      }
+      if (file_size < Constants.TYPE_HEADER_ITEM_SIZE_V41 || file_size > dexReader.end() - offset) {
+        throw new CompilationError(
+            "Malformed V41 DEX container. Invalid DEX segment file_size "
+                + file_size
+                + " at offset "
+                + offset
+                + ".",
+            dexReader.getOrigin());
+      }
       offset += file_size;
     }
-    assert offset == dexReader.end();
+    if (offset != dexReader.end()) {
+      throw new CompilationError(
+          "Malformed V41 DEX container. End of container does not match end of file.",
+          dexReader.getOrigin());
+    }
     // Create a parser for the last section with string data.
     DexParser<DexProgramClass> last =
         new DexParser<>(

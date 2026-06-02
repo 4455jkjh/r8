@@ -10,7 +10,6 @@ import com.android.tools.r8.ir.analysis.fieldvalueanalysis.ConcreteMutableFieldS
 import com.android.tools.r8.ir.analysis.fieldvalueanalysis.EmptyFieldSet;
 import com.android.tools.r8.ir.analysis.fieldvalueanalysis.UnknownFieldSet;
 import com.android.tools.r8.ir.analysis.framework.intraprocedural.AbstractState;
-import com.android.tools.r8.ir.analysis.framework.intraprocedural.FailedTransferFunctionResult;
 import com.android.tools.r8.ir.analysis.framework.intraprocedural.TransferFunctionResult;
 import com.android.tools.r8.ir.code.Value;
 import com.android.tools.r8.utils.internal.ObjectUtils;
@@ -27,8 +26,6 @@ public class ReadBeforeWriteAnalysisState extends AbstractState<ReadBeforeWriteA
   private static final ReadBeforeWriteAnalysisState BOTTOM =
       new ReadBeforeWriteAnalysisState(
           false, false, Collections.emptySet(), Collections.emptySet(), Collections.emptySet());
-
-  private static final int MAX_SET_SIZE = 10;
 
   // Whether at the given program point, is `this` maybe escaped?
   final boolean isThisEscaped;
@@ -58,7 +55,7 @@ public class ReadBeforeWriteAnalysisState extends AbstractState<ReadBeforeWriteA
   // values as possible `this` aliases when `isThisEscaped` is set.
   final Set<Value> thisAliases;
 
-  private ReadBeforeWriteAnalysisState(
+  ReadBeforeWriteAnalysisState(
       boolean isThisEscaped,
       boolean isThisInitialized,
       Set<DexEncodedField> readBeforeWriteSet,
@@ -74,26 +71,6 @@ public class ReadBeforeWriteAnalysisState extends AbstractState<ReadBeforeWriteA
 
   public static ReadBeforeWriteAnalysisState bottom() {
     return BOTTOM;
-  }
-
-  /** Creates a ReadBeforeWriteAnalysisState if the state is not too big. */
-  public static TransferFunctionResult<ReadBeforeWriteAnalysisState> create(
-      boolean isThisEscaped,
-      boolean isThisInitialized,
-      Set<DexEncodedField> readBeforeWriteSet,
-      Set<DexEncodedField> writtenBeforeReadSet,
-      Set<Value> thisAliases) {
-    if (readBeforeWriteSet != null && readBeforeWriteSet.size() > MAX_SET_SIZE) {
-      return new FailedTransferFunctionResult<>();
-    }
-    if (writtenBeforeReadSet.size() > MAX_SET_SIZE) {
-      return new FailedTransferFunctionResult<>();
-    }
-    if (thisAliases.size() > MAX_SET_SIZE) {
-      return new FailedTransferFunctionResult<>();
-    }
-    return new ReadBeforeWriteAnalysisState(
-        isThisEscaped, isThisInitialized, readBeforeWriteSet, writtenBeforeReadSet, thisAliases);
   }
 
   public AbstractFieldSet getAbstractReadBeforeWriteSet() {
@@ -120,7 +97,7 @@ public class ReadBeforeWriteAnalysisState extends AbstractState<ReadBeforeWriteA
   }
 
   TransferFunctionResult<ReadBeforeWriteAnalysisState> joinWrittenBeforeRead(
-      DexEncodedField field) {
+      DexEncodedField field, ReadBeforeWriteAnalysisStateFactory stateFactory) {
     if (writtenBeforeReadSet.contains(field)) {
       return this;
     }
@@ -128,11 +105,12 @@ public class ReadBeforeWriteAnalysisState extends AbstractState<ReadBeforeWriteA
         SetUtils.newIdentityHashSet(writtenBeforeReadSet.size() + 1);
     newWrittenBeforeReadSet.addAll(writtenBeforeReadSet);
     newWrittenBeforeReadSet.add(field);
-    return ReadBeforeWriteAnalysisState.create(
+    return stateFactory.create(
         isThisEscaped, isThisInitialized, readBeforeWriteSet, newWrittenBeforeReadSet, thisAliases);
   }
 
-  TransferFunctionResult<ReadBeforeWriteAnalysisState> joinReadBeforeWrite(DexEncodedField field) {
+  TransferFunctionResult<ReadBeforeWriteAnalysisState> joinReadBeforeWrite(
+      DexEncodedField field, ReadBeforeWriteAnalysisStateFactory stateFactory) {
     if (readBeforeWriteSet == null) {
       // The transfer function explicitly handles the `readBeforeWriteSet == null` case,
       // so this should never happen.
@@ -147,60 +125,65 @@ public class ReadBeforeWriteAnalysisState extends AbstractState<ReadBeforeWriteA
         SetUtils.newIdentityHashSet(readBeforeWriteSet.size() + 1);
     newReadBeforeWriteSet.addAll(readBeforeWriteSet);
     newReadBeforeWriteSet.add(field);
-    return ReadBeforeWriteAnalysisState.create(
+    return stateFactory.create(
         isThisEscaped, isThisInitialized, newReadBeforeWriteSet, writtenBeforeReadSet, thisAliases);
   }
 
-  TransferFunctionResult<ReadBeforeWriteAnalysisState> setReadBeforeWriteSetToUnknown() {
+  TransferFunctionResult<ReadBeforeWriteAnalysisState> setReadBeforeWriteSetToUnknown(
+      ReadBeforeWriteAnalysisStateFactory stateFactory) {
     if (readBeforeWriteSet == null) {
       return this;
     }
-    return ReadBeforeWriteAnalysisState.create(
+    return stateFactory.create(
         isThisEscaped, isThisInitialized, null, writtenBeforeReadSet, thisAliases);
   }
 
-  TransferFunctionResult<ReadBeforeWriteAnalysisState> joinThisAlias(Value thisAlias) {
+  TransferFunctionResult<ReadBeforeWriteAnalysisState> joinThisAlias(
+      Value thisAlias, ReadBeforeWriteAnalysisStateFactory stateFactory) {
     if (thisAliases.contains(thisAlias)) {
       return this;
     }
     Set<Value> newThisAliases = SetUtils.newIdentityHashSet(thisAliases.size() + 1);
     newThisAliases.addAll(thisAliases);
     newThisAliases.add(thisAlias);
-    return ReadBeforeWriteAnalysisState.create(
+    return stateFactory.create(
         isThisEscaped, isThisInitialized, readBeforeWriteSet, writtenBeforeReadSet, newThisAliases);
   }
 
   TransferFunctionResult<ReadBeforeWriteAnalysisState> joinThisAliases(
-      Collection<Value> otherThisAliases) {
+      Collection<Value> otherThisAliases, ReadBeforeWriteAnalysisStateFactory stateFactory) {
     if (thisAliases.containsAll(otherThisAliases)) {
       return this;
     }
     Set<Value> newThisAliases = Sets.newIdentityHashSet();
     newThisAliases.addAll(thisAliases);
     newThisAliases.addAll(otherThisAliases);
-    return ReadBeforeWriteAnalysisState.create(
+    return stateFactory.create(
         isThisEscaped, isThisInitialized, readBeforeWriteSet, writtenBeforeReadSet, newThisAliases);
   }
 
-  TransferFunctionResult<ReadBeforeWriteAnalysisState> withEscapedThis() {
+  TransferFunctionResult<ReadBeforeWriteAnalysisState> withEscapedThis(
+      ReadBeforeWriteAnalysisStateFactory stateFactory) {
     // The `this` cannot escape before it is initialized.
     assert isThisInitialized;
-    return ReadBeforeWriteAnalysisState.create(
+    return stateFactory.create(
         true, isThisInitialized, readBeforeWriteSet, writtenBeforeReadSet, thisAliases);
   }
 
-  TransferFunctionResult<ReadBeforeWriteAnalysisState> withEscapedThis(boolean newIsThisEscaped) {
+  TransferFunctionResult<ReadBeforeWriteAnalysisState> withEscapedThis(
+      ReadBeforeWriteAnalysisStateFactory stateFactory, boolean newIsThisEscaped) {
     if (newIsThisEscaped) {
-      return withEscapedThis();
+      return withEscapedThis(stateFactory);
     } else {
       assert !isThisEscaped;
       return this;
     }
   }
 
-  TransferFunctionResult<ReadBeforeWriteAnalysisState> withInitializedThis() {
+  TransferFunctionResult<ReadBeforeWriteAnalysisState> withInitializedThis(
+      ReadBeforeWriteAnalysisStateFactory stateFactory) {
     assert !isThisInitialized;
-    return ReadBeforeWriteAnalysisState.create(
+    return stateFactory.create(
         isThisEscaped, true, readBeforeWriteSet, writtenBeforeReadSet, thisAliases);
   }
 

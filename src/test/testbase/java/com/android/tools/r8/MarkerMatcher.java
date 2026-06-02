@@ -11,7 +11,7 @@ import com.android.tools.r8.dex.Marker;
 import com.android.tools.r8.dex.Marker.Tool;
 import com.android.tools.r8.utils.AndroidApiLevel;
 import com.android.tools.r8.utils.internal.StringUtils;
-import com.google.common.collect.ImmutableList;
+import java.util.Arrays;
 import java.util.Collection;
 import org.hamcrest.Description;
 import org.hamcrest.Matcher;
@@ -19,8 +19,9 @@ import org.hamcrest.TypeSafeMatcher;
 
 public abstract class MarkerMatcher extends TypeSafeMatcher<Marker> {
 
-  public static void assertMarkersMatch(Iterable<Marker> markers, Matcher<Marker> matcher) {
-    assertMarkersMatch(markers, ImmutableList.of(matcher));
+  @SafeVarargs
+  public static void assertMarkersMatch(Iterable<Marker> markers, Matcher<Marker>... matchers) {
+    assertMarkersMatch(markers, Arrays.asList(matchers));
   }
 
   public static void assertMarkersMatch(

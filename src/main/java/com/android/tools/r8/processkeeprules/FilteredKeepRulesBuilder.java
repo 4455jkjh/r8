@@ -23,8 +23,6 @@ import com.android.tools.r8.utils.internal.StringUtils;
 import java.nio.file.Path;
 import java.util.List;
 
-// TODO(b/437139566): This is not yet feature complete. Add support for writing all directives.
-// TODO(b/437139566): Implement filtering by commenting out rules.
 public class FilteredKeepRulesBuilder implements ProguardConfigurationParserConsumer {
 
   private final StringConsumer consumer;

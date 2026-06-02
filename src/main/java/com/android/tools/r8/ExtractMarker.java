@@ -135,7 +135,7 @@ public class ExtractMarker {
     MarkerInfoConsumer consumer = new MarkerInfoPrintConsumer(out);
     ExtractMarkerCommand command = builder.setMarkerInfoConsumer(consumer).build();
     if (command.isPrintHelp()) {
-      System.out.println(ExtractMarkerCommand.USAGE_MESSAGE);
+      System.out.println(ExtractMarkerCommand.usageMessage());
       return;
     }
     run(command);
@@ -144,7 +144,7 @@ public class ExtractMarker {
   /**
    * Command-line entry to the extract marker tool.
    *
-   * <p>See {@link ExtractMarkerCommand#USAGE_MESSAGE} or run with {@code --help} for usage
+   * <p>See {@link ExtractMarkerCommand#usageMessage()} or run with {@code --help} for usage
    * information.
    */
   public static void main(String[] args) throws Exception {

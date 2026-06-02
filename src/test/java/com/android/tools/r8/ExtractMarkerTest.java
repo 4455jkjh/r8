@@ -47,11 +47,12 @@ public class ExtractMarkerTest extends TestBase {
   public void testHelpMessage() {
     parameters.assumeIsOrSimulateNoneRuntime();
     assertEquals(
-        StringUtils.joinLines(
+        StringUtils.lines(
             "Usage: extractmarker [options] <input-files>",
             " where <input-files> are D8 supported input/output files and options are:",
-            "  --help                  # Print this message."),
-        ExtractMarkerCommand.USAGE_MESSAGE);
+            "  --help",
+            "  -h                      # Print this message."),
+        ExtractMarkerCommand.usageMessage());
   }
 
   public ExtractMarkerTest(TestParameters parameters, boolean includeClassesChecksum) {

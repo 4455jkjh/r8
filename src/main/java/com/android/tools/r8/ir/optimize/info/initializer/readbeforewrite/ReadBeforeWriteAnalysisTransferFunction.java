@@ -91,6 +91,7 @@ public class ReadBeforeWriteAnalysisTransferFunction
   private final AppView<? extends AppInfoWithClassHierarchy> appView;
   private final ProgramMethod context;
   private final DexItemFactory factory;
+  private final ReadBeforeWriteAnalysisStateFactory stateFactory;
   private final Value thisValue;
 
   ReadBeforeWriteAnalysisTransferFunction(
@@ -98,6 +99,7 @@ public class ReadBeforeWriteAnalysisTransferFunction
     this.appView = appView;
     this.context = code.context();
     this.factory = appView.dexItemFactory();
+    this.stateFactory = new ReadBeforeWriteAnalysisStateFactory(code);
     this.thisValue = code.entryBlock().entry().outValue();
   }
 
@@ -129,7 +131,7 @@ public class ReadBeforeWriteAnalysisTransferFunction
           }
           ArrayPut arrayPut = instruction.asArrayPut();
           if (state.isMaybeThis(thisValue, arrayPut.value())) {
-            return state.withEscapedThis();
+            return state.withEscapedThis(stateFactory);
           }
           return state;
         }
@@ -144,7 +146,7 @@ public class ReadBeforeWriteAnalysisTransferFunction
           NewArrayFilled newArrayFilled = instruction.asNewArrayFilled();
           for (Value argument : newArrayFilled.arguments()) {
             if (state.isMaybeThis(thisValue, argument)) {
-              return state.withEscapedThis();
+              return state.withEscapedThis(stateFactory);
             }
           }
           return state;
@@ -198,7 +200,7 @@ public class ReadBeforeWriteAnalysisTransferFunction
       case CHECK_CAST:
         {
           if (state.isMaybeThis(thisValue, instruction.getFirstOperand())) {
-            return state.joinThisAlias(instruction.outValue());
+            return state.joinThisAlias(instruction.outValue(), stateFactory);
           }
           return state;
         }
@@ -222,13 +224,13 @@ public class ReadBeforeWriteAnalysisTransferFunction
             return state;
           }
           if (state.isMaybeThis(thisValue, instanceGet.object())) {
-            return state.joinReadBeforeWrite(resolvedField.getDefinition());
+            return state.joinReadBeforeWrite(resolvedField.getDefinition(), stateFactory);
           }
           if (state.isThisEscaped
               && !instanceGet
                   .object()
                   .isDefinedByInstructionSatisfying(Instruction::isNewInstance)) {
-            return state.joinReadBeforeWrite(resolvedField.getDefinition());
+            return state.joinReadBeforeWrite(resolvedField.getDefinition(), stateFactory);
           }
           return state;
         }
@@ -237,7 +239,7 @@ public class ReadBeforeWriteAnalysisTransferFunction
         {
           InstancePut instancePut = instruction.asInstancePut();
           if (state.isThisInitialized && state.isMaybeThis(thisValue, instancePut.value())) {
-            return state.withEscapedThis();
+            return state.withEscapedThis(stateFactory);
           }
           // Check if this is a definite assignment to an instance field on this, which has not
           // previously been read.
@@ -246,7 +248,7 @@ public class ReadBeforeWriteAnalysisTransferFunction
           if (resolvedField != null
               && state.isDefinitelyThis(thisValue, instancePut.object())
               && !state.readBeforeWriteSet.contains(resolvedField.getDefinition())) {
-            return state.joinWrittenBeforeRead(resolvedField.getDefinition());
+            return state.joinWrittenBeforeRead(resolvedField.getDefinition(), stateFactory);
           }
           return state;
         }
@@ -276,7 +278,7 @@ public class ReadBeforeWriteAnalysisTransferFunction
               // read a field on a subclass of `this` before the field has been assigned in the
               // subclass. This is a contrived example so we assume this does not happen by
               // modeling the (currently empty) set of library classes where this does not hold.
-              return state.withInitializedThis();
+              return state.withInitializedThis(stateFactory);
             }
             InstanceInitializerInfo instanceInitializerInfo =
                 singleTarget
@@ -309,7 +311,7 @@ public class ReadBeforeWriteAnalysisTransferFunction
               assert readBeforeWriteSet.isEmpty();
               newReadBeforeWriteSet = state.readBeforeWriteSet;
             }
-            return ReadBeforeWriteAnalysisState.create(
+            return stateFactory.create(
                 newIsThisEscaped,
                 newIsThisInitialized,
                 newReadBeforeWriteSet,
@@ -344,7 +346,7 @@ public class ReadBeforeWriteAnalysisTransferFunction
           if (mayReadAnyField) {
             return preserveWrittenBeforeReadSetOrFail(state);
           }
-          return state.withEscapedThis(true);
+          return state.withEscapedThis(stateFactory, true);
         }
 
       // Instructions that trigger class initializers but don't have any operands + StaticPut.
@@ -365,7 +367,7 @@ public class ReadBeforeWriteAnalysisTransferFunction
           if (!state.isThisEscaped) {
             // Since `this` has not escaped, the <clinit> of the instantiated class cannot read
             // any fields on `this`.
-            return state.withEscapedThis(newIsThisEscaped);
+            return state.withEscapedThis(stateFactory, newIsThisEscaped);
           }
           DexType initializedType;
           if (instruction.isInitClass()) {
@@ -383,12 +385,12 @@ public class ReadBeforeWriteAnalysisTransferFunction
           DexClass initializedClass = appView.definitionFor(initializedType);
           if (initializedClass == null) {
             // Ignore missing classes.
-            return state.withEscapedThis(newIsThisEscaped);
+            return state.withEscapedThis(stateFactory, newIsThisEscaped);
           }
           if (initializedClass.isLibraryClass()) {
             // Assume that the class initialization of classes in the library do not read program
             // instance fields.
-            return state.withEscapedThis(newIsThisEscaped);
+            return state.withEscapedThis(stateFactory, newIsThisEscaped);
           }
           // Look for a <clinit> method on this class or its program superclasses.
           TraversalContinuation<?, ?> traversalContinuation =
@@ -405,7 +407,7 @@ public class ReadBeforeWriteAnalysisTransferFunction
             // The <clinit> of the instantiated class may in principle read any fields on `this`.
             return preserveWrittenBeforeReadSetOrFail(state);
           }
-          return state.withEscapedThis(newIsThisEscaped);
+          return state.withEscapedThis(stateFactory, newIsThisEscaped);
         }
 
       case CMP:
@@ -434,18 +436,18 @@ public class ReadBeforeWriteAnalysisTransferFunction
       }
     }
     if (newThisAliases != null) {
-      return state.joinThisAliases(newThisAliases);
+      return state.joinThisAliases(newThisAliases, stateFactory);
     }
     return state;
   }
 
-  private static TransferFunctionResult<ReadBeforeWriteAnalysisState>
-      preserveWrittenBeforeReadSetOrFail(ReadBeforeWriteAnalysisState state) {
+  private TransferFunctionResult<ReadBeforeWriteAnalysisState> preserveWrittenBeforeReadSetOrFail(
+      ReadBeforeWriteAnalysisState state) {
     if (state.writtenBeforeReadSet.isEmpty()) {
       // No information to preserve, simply bail out.
       return new FailedTransferFunctionResult<>();
     }
-    return state.setReadBeforeWriteSetToUnknown();
+    return state.setReadBeforeWriteSetToUnknown(stateFactory);
   }
 
   @Override

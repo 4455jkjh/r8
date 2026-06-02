@@ -603,7 +603,10 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
 
   public Tool getMarkerTool() {
     assert tool != null;
-    if (partialSubCompilationConfiguration != null && tool == Tool.R8) {
+    if (tool == Tool.D8 && enableDexToDexCodeOptimizations) {
+      return Tool.D8ReOpt;
+    }
+    if (tool == Tool.R8 && partialSubCompilationConfiguration != null) {
       return Tool.R8Partial;
     }
     return tool;
@@ -2871,24 +2874,44 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
     return sourceFileProvider != null && sourceFileProvider.allowDiscardingSourceFile();
   }
 
-  public boolean allowDiscardingResidualDebugInfo(ProgramMethod method) {
+  public boolean allowDiscardingResidualDebugInfo(DexProgramClass clazz) {
     if (isGeneratingDex() && hasMinApi(AndroidApiLevel.CINNAMON_BUN)) {
       return true;
     }
-    DexString sourceFile = method.getHolder().getSourceFile();
+    DexString sourceFile = clazz.getSourceFile();
     return sourceFile == null || sourceFile.equals(itemFactory.defaultSourceFileAttribute);
+  }
+
+  public boolean allowDiscardingResidualDebugInfo(ProgramMethod method) {
+    return allowDiscardingResidualDebugInfo(method.getHolder());
+  }
+
+  /**
+   * Note that pc-based debug info cannot be discarded purely based on this because of differing
+   * behaviour in regards to source files (see {@link #allowDiscardingResidualDebugInfo}).
+   */
+  public boolean isNativePcDebugInfoSupported() {
+    return isGeneratingDex() && hasMinApi(AndroidApiLevel.O);
   }
 
   public boolean canUseNativeDexPcInsteadOfDebugInfo() {
     return canUseDexPc2PcAsDebugInformation()
-        && hasMinApi(AndroidApiLevel.O)
+        && isNativePcDebugInfoSupported()
         && allowDiscardingResidualDebugInfo();
   }
 
   public boolean canUseNativeDexPcInsteadOfDebugInfo(ProgramMethod method) {
     return canUseDexPc2PcAsDebugInformation()
-        && hasMinApi(AndroidApiLevel.O)
+        && isNativePcDebugInfoSupported()
         && allowDiscardingResidualDebugInfo(method);
+  }
+
+  /**
+   * Same as {@link #canUseNativeDexPcInsteadOfDebugInfo()} but it is only about the representation,
+   * not rewriting and is assuming a D8 compilation (no sourceFileProvider).
+   */
+  public boolean canEncodeDexPcNativelyInsteadOfDebugInfo(DexProgramClass clazz) {
+    return isNativePcDebugInfoSupported() && allowDiscardingResidualDebugInfo(clazz);
   }
 
   public boolean shouldMaterializeLineInfoForNativePcEncoding(ProgramMethod method) {

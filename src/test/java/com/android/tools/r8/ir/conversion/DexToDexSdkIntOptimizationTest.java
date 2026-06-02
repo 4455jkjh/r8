@@ -3,16 +3,26 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8.ir.conversion;
 
+import static com.android.tools.r8.MarkerMatcher.assertMarkersMatch;
+import static com.android.tools.r8.MarkerMatcher.markerBackend;
+import static com.android.tools.r8.MarkerMatcher.markerCompilationMode;
+import static com.android.tools.r8.MarkerMatcher.markerMinApi;
+import static com.android.tools.r8.MarkerMatcher.markerTool;
 import static com.android.tools.r8.utils.codeinspector.CodeMatchers.invokesMethod;
 import static com.android.tools.r8.utils.codeinspector.Matchers.notIf;
+import static org.hamcrest.CoreMatchers.allOf;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertFalse;
 
+import com.android.tools.r8.CompilationMode;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
+import com.android.tools.r8.dex.Marker;
+import com.android.tools.r8.dex.Marker.Tool;
 import com.android.tools.r8.graph.AccessFlags;
 import com.android.tools.r8.utils.AndroidApiLevel;
+import com.android.tools.r8.utils.ExtractMarkerUtils;
 import com.android.tools.r8.utils.codeinspector.ClassSubject;
 import com.android.tools.r8.utils.codeinspector.CodeInspector;
 import com.android.tools.r8.utils.codeinspector.MethodSubject;
@@ -38,7 +48,7 @@ public class DexToDexSdkIntOptimizationTest extends TestBase {
 
   @Test
   public void test() throws Exception {
-    Path unoptimizedCompileResult =
+    Path originalCompileResult =
         testForD8()
             .addProgramClassFileData(getProgramClassFileData())
             .release()
@@ -46,27 +56,52 @@ public class DexToDexSdkIntOptimizationTest extends TestBase {
             .compile()
             .inspect(inspector -> inspect(inspector, false))
             .writeToZip();
+    Collection<Marker> originalMarkers =
+        ExtractMarkerUtils.extractMarkersFromFile(originalCompileResult);
+    assertMarkersMatch(
+        originalMarkers,
+        allOf(
+            markerTool(Tool.D8),
+            markerCompilationMode(CompilationMode.RELEASE),
+            markerBackend(Backend.DEX),
+            markerMinApi(AndroidApiLevel.B)));
 
     // Compiling with D8 should normally not perform dex-to-dex optimizations.
     testForD8()
-        .addProgramFiles(unoptimizedCompileResult)
+        .addProgramFiles(originalCompileResult)
         .release()
         .setMinApi(AndroidApiLevel.N)
         .compile()
         .inspect(inspector -> inspect(inspector, false));
 
-    // Dex-dto-dex optimizations should optimize the code.
-    testForD8()
-        .addProgramFiles(unoptimizedCompileResult)
-        .addOptionsModification(
-            options -> {
-              assertFalse(options.enableDexToDexCodeOptimizations);
-              options.enableDexToDexCodeOptimizations = true;
-            })
-        .release()
-        .setMinApi(AndroidApiLevel.N)
-        .compile()
-        .inspect(inspector -> inspect(inspector, true));
+    // Dex-to-dex optimizations should optimize the code.
+    Path reoptimizedCompileResult =
+        testForD8()
+            .addProgramFiles(originalCompileResult)
+            .addOptionsModification(
+                options -> {
+                  assertFalse(options.enableDexToDexCodeOptimizations);
+                  options.enableDexToDexCodeOptimizations = true;
+                })
+            .release()
+            .setMinApi(AndroidApiLevel.N)
+            .compile()
+            .inspect(inspector -> inspect(inspector, true))
+            .writeToZip();
+    Collection<Marker> reoptimizedMarkers =
+        ExtractMarkerUtils.extractMarkersFromFile(reoptimizedCompileResult);
+    assertMarkersMatch(
+        reoptimizedMarkers,
+        allOf(
+            markerTool(Tool.D8),
+            markerCompilationMode(CompilationMode.RELEASE),
+            markerBackend(Backend.DEX),
+            markerMinApi(AndroidApiLevel.B)),
+        allOf(
+            markerTool(Tool.D8ReOpt),
+            markerCompilationMode(CompilationMode.RELEASE),
+            markerBackend(Backend.DEX),
+            markerMinApi(AndroidApiLevel.N)));
   }
 
   private void inspect(CodeInspector inspector, boolean optimized) {

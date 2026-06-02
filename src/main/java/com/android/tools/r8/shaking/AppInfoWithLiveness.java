@@ -729,6 +729,10 @@ public class AppInfoWithLiveness extends AppInfoWithClassHierarchy
     return objectAllocationInfoCollection;
   }
 
+  public ObjectAllocationInfoCollectionImpl getMutableObjectAllocationInfoCollection() {
+    return objectAllocationInfoCollection;
+  }
+
   void removeNoLongerInstantiatedClasses(Set<DexProgramClass> noLongerInstantiatedClasses) {
     objectAllocationInfoCollection.removeNoLongerInstantiatedClasses(
         noLongerInstantiatedClasses, this);

@@ -86,7 +86,7 @@ public class ExtractR8Rules {
     ExtractR8RulesCommand.Builder builder = ExtractR8RulesCommand.parse(args);
     ExtractR8RulesCommand command = builder.build();
     if (command.isPrintHelp()) {
-      System.out.println(ExtractR8RulesCommand.USAGE_MESSAGE);
+      System.out.println(ExtractR8RulesCommand.usageMessage());
       return;
     }
     if (command.isPrintVersion()) {

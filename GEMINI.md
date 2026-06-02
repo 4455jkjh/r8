@@ -16,7 +16,7 @@ The Git project is written in Java and Kotlin and uses Gradle for building. It i
 The primary build script is `tools/gradle.py`. To build the project, run:
 
 ```bash
-tools/gradle.py r8
+tools/gradle.py -q r8
 ```
 
 This will produce a JAR file at `build/libs/r8.jar`.
@@ -24,15 +24,17 @@ This will produce a JAR file at `build/libs/r8.jar`.
 For a lighter target that just compiles the code without building the full R8 JAR, you can use:
 
 ```bash
-tools/gradle.py classes
+tools/gradle.py -q classes
 ```
+
+Only run without `-q` if more information is needed about the build details.
 
 ### Disabling Error Prone
 
 Compilation is usually pretty strict due to Error Prone. You can turn it off for debugging-style edits (e.g., leaving unused imports) by passing the property `-Pdisable_errorprone`:
 
 ```bash
-tools/gradle.py classes -Pdisable_errorprone
+tools/gradle.py -q classes -Pdisable_errorprone
 ```
 
 ### Running D8
@@ -79,7 +81,7 @@ java -cp build/libs/r8.jar com.android.tools.r8.R8 \
 Tests are run using the `tools/test.py` script:
 
 ```bash
-tools/test.py --no-internal
+tools/test.py -q --no-internal
 ```
 
 > [!NOTE]
@@ -88,20 +90,22 @@ tools/test.py --no-internal
 By default, this runs tests using r8lib.jar, which is a bootstrapped R8. It is possible to speed up local testing by running tests with a non-bootstrapped R8:
 
 ```bash
-tools/test.py --no-internal --no-r8lib
+tools/test.py -q --no-internal --no-r8lib
 ```
 
 It is possible to run a single test by passing the name of the test, e.g.,
 
 ```bash
-tools/test.py --no-internal --no-r8lib *ProguardConfigurationParserTest*
+tools/test.py -q --no-internal --no-r8lib *ProguardConfigurationParserTest*
 ```
 
 `tools/test.py` can take multiple additive filters.
 
 ```bash
-tools/test.py --no-internal --no-r8lib *ProguardConfigurationParserTest* *ClassInlinerTest*
+tools/test.py -q --no-internal --no-r8lib *ProguardConfigurationParserTest* *ClassInlinerTest*
 ```
+
+Only run without `-q` if more information is needed about the build details.
 
 ## Development Conventions
 

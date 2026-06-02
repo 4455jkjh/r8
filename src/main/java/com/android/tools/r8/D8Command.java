@@ -563,6 +563,9 @@ public final class D8Command extends BaseCompilerCommand {
         if (getMode() != CompilationMode.RELEASE) {
           reporter.error("Option --reoptimize-dex requires --release");
         }
+        if (proguardMapConsumer != null) {
+          reporter.error("Option --reoptimize-dex cannot be used with an output mapping file");
+        }
       }
       super.validate();
     }

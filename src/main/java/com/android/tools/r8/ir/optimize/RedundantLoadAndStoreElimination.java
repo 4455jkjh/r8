@@ -10,6 +10,7 @@ import static com.android.tools.r8.utils.internal.PredicateUtils.not;
 
 import com.android.tools.r8.graph.AppInfo;
 import com.android.tools.r8.graph.AppView;
+import com.android.tools.r8.graph.DexClass;
 import com.android.tools.r8.graph.DexClassAndField;
 import com.android.tools.r8.graph.DexClassAndMethod;
 import com.android.tools.r8.graph.DexField;
@@ -345,10 +346,12 @@ public class RedundantLoadAndStoreElimination extends CodeRewriterPass<AppInfo> 
       private final List<Value> operands;
 
       private Phi phi;
+      private TypeElement phiType;
 
       private MaterializablePhi(BasicBlock block, Value operand) {
         this.block = block;
         this.operands = Lists.newArrayList(operand);
+        this.phiType = operand.getType();
       }
 
       private boolean addOperand(Value operand) {
@@ -362,19 +365,31 @@ public class RedundantLoadAndStoreElimination extends CodeRewriterPass<AppInfo> 
             return false;
           }
         }
+        // Add operand.
         operands.add(operand);
+        // Update phi type.
+        phiType = phiType.join(operand.getType(), appView);
+        // We need to be careful when two operands join to a less precise type, since the ART
+        // verifier does not see the same bootclasspath. When the resulting phi type is different
+        // from the operand type, we conservatively bail out if phi type is a library type.
+        if (operand.getType().isReferenceType()
+            && !operand.getType().equalUpToNullability(phiType)) {
+          TypeElement baseType =
+              phiType.isArrayType() ? phiType.asArrayType().getBaseType() : phiType;
+          if (baseType.isClassType()) {
+            DexClass baseClass = appView.definitionFor(baseType.toDexType(dexItemFactory));
+            if (baseClass == null || !baseClass.isProgramClass()) {
+              return false;
+            }
+          }
+        }
         return true;
       }
 
       private Phi ensurePhi() {
         if (phi == null) {
           assert operands.size() == block.getPredecessors().size();
-          Iterator<Value> operandsIterator = operands.iterator();
-          TypeElement type = operandsIterator.next().getType();
-          while (operandsIterator.hasNext()) {
-            type = type.join(operandsIterator.next().getType(), appView);
-          }
-          phi = code.createPhi(block, type);
+          phi = code.createPhi(block, phiType);
           operands.forEach(phi::appendOperand);
         }
         return phi;

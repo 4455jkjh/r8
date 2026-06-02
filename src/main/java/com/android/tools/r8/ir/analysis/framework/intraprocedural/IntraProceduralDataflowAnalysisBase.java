@@ -83,7 +83,7 @@ public class IntraProceduralDataflowAnalysisBase<
 
       TransferFunctionResult<StateType> blockResult = transfer.applyBlock(initialBlock, state);
       if (blockResult.isFailedTransferResult()) {
-        return transfer.createFailedAnalysisResult(null, state);
+        return transfer.createFailedAnalysisResult(null, blockResult);
       }
       state = blockResult.asAbstractState();
 

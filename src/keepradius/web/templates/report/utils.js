@@ -6,32 +6,33 @@
  */
 function hasGlobalRule(data, ruleName) {
   if (!data || !data.globalKeepRuleKeepRadiusTable) return false;
-  return data.globalKeepRuleKeepRadiusTable.some(r => r.source === ruleName);
+  return data.globalKeepRuleKeepRadiusTable.some((r) => r.source === ruleName);
 }
-
 function getDisallowObfuscationCount(data) {
-  if (hasGlobalRule(data, '-dontobfuscate')) {
+  if (hasGlobalRule(data, "-dontobfuscate")) {
     return getLiveItemCount(data);
   }
-  return getScore(data, 'DONT_OBFUSCATE');
+  return getScore(data, "DONT_OBFUSCATE");
 }
 function getDisallowOptimizationCount(data) {
-  if (hasGlobalRule(data, '-dontoptimize')) {
+  if (hasGlobalRule(data, "-dontoptimize")) {
     return getLiveItemCount(data);
   }
-  return getScore(data, 'DONT_OPTIMIZE');
+  return getScore(data, "DONT_OPTIMIZE");
 }
 function getDisallowShrinkingCount(data) {
-  if (hasGlobalRule(data, '-dontshrink')) {
+  if (hasGlobalRule(data, "-dontshrink")) {
     return getLiveItemCount(data);
   }
-  return getScore(data, 'DONT_SHRINK');
+  return getScore(data, "DONT_SHRINK");
 }
 function getLiveItemCount(data) {
   if (!data || !data.buildInfo) return 0;
-  return (data.buildInfo.liveClassCount || 0) +
+  return (
+    (data.buildInfo.liveClassCount || 0) +
     (data.buildInfo.liveFieldCount || 0) +
-    (data.buildInfo.liveMethodCount || 0);
+    (data.buildInfo.liveMethodCount || 0)
+  );
 }
 /**
  * Returns detailed counts for the stats table.
@@ -40,20 +41,43 @@ function getDetailedStats(data) {
   if (!data) return null;
   const build = data.buildInfo || {};
   const stats = {
-    classes: { total: build.liveClassCount || 0, obfuscation: 0, optimization: 0, shrinking: 0 },
-    fields: { total: build.liveFieldCount || 0, obfuscation: 0, optimization: 0, shrinking: 0 },
-    methods: { total: build.liveMethodCount || 0, obfuscation: 0, optimization: 0, shrinking: 0 },
-    overall: { total: getLiveItemCount(data), obfuscation: 0, optimization: 0, shrinking: 0 }
+    classes: {
+      total: build.liveClassCount || 0,
+      obfuscation: 0,
+      optimization: 0,
+      shrinking: 0,
+    },
+    fields: {
+      total: build.liveFieldCount || 0,
+      obfuscation: 0,
+      optimization: 0,
+      shrinking: 0,
+    },
+    methods: {
+      total: build.liveMethodCount || 0,
+      obfuscation: 0,
+      optimization: 0,
+      shrinking: 0,
+    },
+    overall: {
+      total: getLiveItemCount(data),
+      obfuscation: 0,
+      optimization: 0,
+      shrinking: 0,
+    },
   };
-
   const constraintsMap = getConstraintsMap(data);
   const rulesMap = getRulesConstraintsMap(data);
-
-  const hasObfuscate = hasGlobalRule(data, '-dontobfuscate');
-  const hasOptimize = hasGlobalRule(data, '-dontoptimize');
-  const hasShrink = hasGlobalRule(data, '-dontshrink');
-
-  const processTable = (table, key, forcedObfuscation, forcedOptimization, forcedShrinking) => {
+  const hasObfuscate = hasGlobalRule(data, "-dontobfuscate");
+  const hasOptimize = hasGlobalRule(data, "-dontoptimize");
+  const hasShrink = hasGlobalRule(data, "-dontshrink");
+  const processTable = (
+    table,
+    key,
+    forcedObfuscation,
+    forcedOptimization,
+    forcedShrinking,
+  ) => {
     if (forcedObfuscation) {
       stats[key].obfuscation = stats[key].total;
     }
@@ -63,33 +87,60 @@ function getDetailedStats(data) {
     if (forcedShrinking) {
       stats[key].shrinking = stats[key].total;
     }
-
     if (!forcedObfuscation || !forcedOptimization || !forcedShrinking) {
       if (!table) return;
-      table.forEach(item => {
+      table.forEach((item) => {
         const keptBy = item.keptBy || [];
-        const constraints = keptBy.flatMap(ruleId => constraintsMap.get(rulesMap.get(ruleId)) || []);
-        
-        if (!forcedObfuscation && constraints.includes('DONT_OBFUSCATE')) stats[key].obfuscation++;
-        if (!forcedOptimization && constraints.includes('DONT_OPTIMIZE')) stats[key].optimization++;
-        if (!forcedShrinking && constraints.includes('DONT_SHRINK')) stats[key].shrinking++;
+        const constraints = keptBy.flatMap(
+          (ruleId) => constraintsMap.get(rulesMap.get(ruleId)) || [],
+        );
+
+        if (!forcedObfuscation && constraints.includes("DONT_OBFUSCATE"))
+          stats[key].obfuscation++;
+        if (!forcedOptimization && constraints.includes("DONT_OPTIMIZE"))
+          stats[key].optimization++;
+        if (!forcedShrinking && constraints.includes("DONT_SHRINK"))
+          stats[key].shrinking++;
       });
     }
   };
-
-  processTable(data.keptClassInfoTable, 'classes', hasObfuscate, hasOptimize, hasShrink);
-  processTable(data.keptFieldInfoTable, 'fields', hasObfuscate, hasOptimize, hasShrink);
-  processTable(data.keptMethodInfoTable, 'methods', hasObfuscate, hasOptimize, hasShrink);
-
-  stats.overall.obfuscation = stats.classes.obfuscation + stats.fields.obfuscation + stats.methods.obfuscation;
-  stats.overall.optimization = stats.classes.optimization + stats.fields.optimization + stats.methods.optimization;
-  stats.overall.shrinking = stats.classes.shrinking + stats.fields.shrinking + stats.methods.shrinking;
+  processTable(
+    data.keptClassInfoTable,
+    "classes",
+    hasObfuscate,
+    hasOptimize,
+    hasShrink,
+  );
+  processTable(
+    data.keptFieldInfoTable,
+    "fields",
+    hasObfuscate,
+    hasOptimize,
+    hasShrink,
+  );
+  processTable(
+    data.keptMethodInfoTable,
+    "methods",
+    hasObfuscate,
+    hasOptimize,
+    hasShrink,
+  );
+  stats.overall.obfuscation =
+    stats.classes.obfuscation +
+    stats.fields.obfuscation +
+    stats.methods.obfuscation;
+  stats.overall.optimization =
+    stats.classes.optimization +
+    stats.fields.optimization +
+    stats.methods.optimization;
+  stats.overall.shrinking =
+    stats.classes.shrinking + stats.fields.shrinking + stats.methods.shrinking;
   return stats;
 }
 function getConstraintsMap(data) {
   const constraintsMap = new Map();
   if (data.keepConstraintsTable) {
-    data.keepConstraintsTable.forEach(c => {
+    data.keepConstraintsTable.forEach((c) => {
       constraintsMap.set(c.id, c.constraints || []);
     });
   }
@@ -98,7 +149,7 @@ function getConstraintsMap(data) {
 function getRulesConstraintsMap(data) {
   const rulesMap = new Map();
   if (data.keepRuleKeepRadiusTable) {
-    data.keepRuleKeepRadiusTable.forEach(r => {
+    data.keepRuleKeepRadiusTable.forEach((r) => {
       rulesMap.set(r.id, r.constraintsId);
     });
   }
@@ -114,7 +165,7 @@ function getImpactArray(constraints) {
 function getRules(data) {
   if (!data || !data.keepRuleKeepRadiusTable) return [];
   const constraintsMap = getConstraintsMap(data);
-  const rules = data.keepRuleKeepRadiusTable.map(rule => {
+  const rules = data.keepRuleKeepRadiusTable.map((rule) => {
     const constraints = constraintsMap.get(rule.constraintsId);
     const br = rule.keepRadius || {};
     const classes = (br.classKeepRadius || []).length;
@@ -128,29 +179,40 @@ function getRules(data) {
         classes,
         fields,
         methods,
-        total: classes + fields + methods
+        total: classes + fields + methods,
       },
-      subsumedBy: br.subsumedBy || []
+      subsumedBy: br.subsumedBy || [],
     };
   });
-
   if (data.globalKeepRuleKeepRadiusTable) {
     const totalClasses = data.buildInfo?.liveClassCount || 0;
     const totalFields = data.buildInfo?.liveFieldCount || 0;
     const totalMethods = data.buildInfo?.liveMethodCount || 0;
     const totalLive = totalClasses + totalFields + totalMethods;
-
-    data.globalKeepRuleKeepRadiusTable.forEach(rule => {
-      if (rule.source === '-dontoptimize' || rule.source === '-dontshrink' || rule.source === '-dontobfuscate') {
+    data.globalKeepRuleKeepRadiusTable.forEach((rule) => {
+      if (
+        rule.source === "-dontoptimize" ||
+        rule.source === "-dontshrink" ||
+        rule.source === "-dontobfuscate"
+      ) {
         const constraints = [...(constraintsMap.get(rule.constraintsId) || [])];
-        if (rule.source === '-dontobfuscate' && !constraints.includes('DONT_OBFUSCATE')) {
-          constraints.push('DONT_OBFUSCATE');
+        if (
+          rule.source === "-dontobfuscate" &&
+          !constraints.includes("DONT_OBFUSCATE")
+        ) {
+          constraints.push("DONT_OBFUSCATE");
         }
-        if (rule.source === '-dontoptimize' && !constraints.includes('DONT_OPTIMIZE')) {
-          constraints.push('DONT_OPTIMIZE');
+        if (
+          rule.source === "-dontoptimize" &&
+          !constraints.includes("DONT_OPTIMIZE")
+        ) {
+          constraints.push("DONT_OPTIMIZE");
         }
-        if (rule.source === '-dontshrink' && !constraints.includes('DONT_SHRINK')) {
-          constraints.push('DONT_SHRINK');
+        if (
+          rule.source === "-dontshrink" &&
+          !constraints.includes("DONT_SHRINK")
+        ) {
+          constraints.push("DONT_SHRINK");
         }
         rules.push({
           id: rule.id,
@@ -160,9 +222,9 @@ function getRules(data) {
             classes: totalClasses,
             fields: totalFields,
             methods: totalMethods,
-            total: totalLive
+            total: totalLive,
           },
-          subsumedBy: []
+          subsumedBy: [],
         });
       }
     });
@@ -173,10 +235,11 @@ function getRules(data) {
  * Returns formatted files (origins) for the table.
  */
 function getRuleFiles(data) {
-  if (!data || !data.fileOriginTable || !data.keepRuleKeepRadiusTable) return [];
+  if (!data || !data.fileOriginTable || !data.keepRuleKeepRadiusTable)
+    return [];
   const fileMap = new Map();
   const constraintsMap = getConstraintsMap(data);
-  data.fileOriginTable.forEach(f => {
+  data.fileOriginTable.forEach((f) => {
     const mavenName = formatMavenCoordinate(f.mavenCoordinate);
     fileMap.set(f.id, {
       id: f.id,
@@ -186,11 +249,11 @@ function getRuleFiles(data) {
       impact: {
         obfuscation: new Set(),
         optimization: new Set(),
-        shrinking: new Set()
-      }
+        shrinking: new Set(),
+      },
     });
   });
-  data.keepRuleKeepRadiusTable.forEach(rule => {
+  data.keepRuleKeepRadiusTable.forEach((rule) => {
     const fileId = rule.origin?.fileOriginId;
     const fileEntry = fileMap.get(fileId);
     if (fileEntry) {
@@ -199,29 +262,29 @@ function getRuleFiles(data) {
       const c = br.classKeepRadius || [];
       const f = br.fieldKeepRadius || [];
       const m = br.methodKeepRadius || [];
-      c.forEach(id => fileEntry.matches.classes.add(id));
-      f.forEach(id => fileEntry.matches.fields.add(id));
-      m.forEach(id => fileEntry.matches.methods.add(id));
+      c.forEach((id) => fileEntry.matches.classes.add(id));
+      f.forEach((id) => fileEntry.matches.fields.add(id));
+      m.forEach((id) => fileEntry.matches.methods.add(id));
       const constraints = constraintsMap.get(rule.constraintsId) || [];
-      if (constraints.includes('DONT_OBFUSCATE')) {
-        c.forEach(id => fileEntry.impact.obfuscation.add('c' + id));
-        f.forEach(id => fileEntry.impact.obfuscation.add('f' + id));
-        m.forEach(id => fileEntry.impact.obfuscation.add('m' + id));
+      if (constraints.includes("DONT_OBFUSCATE")) {
+        c.forEach((id) => fileEntry.impact.obfuscation.add("c" + id));
+        f.forEach((id) => fileEntry.impact.obfuscation.add("f" + id));
+        m.forEach((id) => fileEntry.impact.obfuscation.add("m" + id));
       }
-      if (constraints.includes('DONT_OPTIMIZE')) {
-        c.forEach(id => fileEntry.impact.optimization.add('c' + id));
-        f.forEach(id => fileEntry.impact.optimization.add('f' + id));
-        m.forEach(id => fileEntry.impact.optimization.add('m' + id));
+      if (constraints.includes("DONT_OPTIMIZE")) {
+        c.forEach((id) => fileEntry.impact.optimization.add("c" + id));
+        f.forEach((id) => fileEntry.impact.optimization.add("f" + id));
+        m.forEach((id) => fileEntry.impact.optimization.add("m" + id));
       }
-      if (constraints.includes('DONT_SHRINK')) {
-        c.forEach(id => fileEntry.impact.shrinking.add('c' + id));
-        f.forEach(id => fileEntry.impact.shrinking.add('f' + id));
-        m.forEach(id => fileEntry.impact.shrinking.add('m' + id));
+      if (constraints.includes("DONT_SHRINK")) {
+        c.forEach((id) => fileEntry.impact.shrinking.add("c" + id));
+        f.forEach((id) => fileEntry.impact.shrinking.add("f" + id));
+        m.forEach((id) => fileEntry.impact.shrinking.add("m" + id));
       }
     }
   });
   if (data.globalKeepRuleKeepRadiusTable) {
-    data.globalKeepRuleKeepRadiusTable.forEach(rule => {
+    data.globalKeepRuleKeepRadiusTable.forEach((rule) => {
       const fileId = rule.origin?.fileOriginId;
       const fileEntry = fileMap.get(fileId);
       if (fileEntry) {
@@ -229,7 +292,7 @@ function getRuleFiles(data) {
       }
     });
   }
-  return Array.from(fileMap.values()).map(f => ({
+  return Array.from(fileMap.values()).map((f) => ({
     id: f.id,
     name: f.name,
     keepRules: f.keepRules,
@@ -237,52 +300,53 @@ function getRuleFiles(data) {
       classes: f.matches.classes.size,
       fields: f.matches.fields.size,
       methods: f.matches.methods.size,
-      total: f.matches.classes.size + f.matches.fields.size + f.matches.methods.size
+      total:
+        f.matches.classes.size + f.matches.fields.size + f.matches.methods.size,
     },
     impact: {
       obfuscation: f.impact.obfuscation.size,
       optimization: f.impact.optimization.size,
-      shrinking: f.impact.shrinking.size
-    }
+      shrinking: f.impact.shrinking.size,
+    },
   }));
 }
 function formatDescriptor(desc) {
   if (!desc) return "Unknown";
   let dimensions = 0;
-  while (desc[dimensions] === '[') {
+  while (desc[dimensions] === "[") {
     dimensions++;
   }
   let base = desc.substring(dimensions);
   let res = "";
-  if (base.startsWith('L') && base.endsWith(';')) {
-    res = base.substring(1, base.length - 1).replace(/\//g, '.');
+  if (base.startsWith("L") && base.endsWith(";")) {
+    res = base.substring(1, base.length - 1).replace(/\//g, ".");
   } else if (base.length === 1) {
     switch (base[0]) {
-      case 'V':
+      case "V":
         res = "void";
         break;
-      case 'Z':
+      case "Z":
         res = "boolean";
         break;
-      case 'B':
+      case "B":
         res = "byte";
         break;
-      case 'S':
+      case "S":
         res = "short";
         break;
-      case 'C':
+      case "C":
         res = "char";
         break;
-      case 'I':
+      case "I":
         res = "int";
         break;
-      case 'J':
+      case "J":
         res = "long";
         break;
-      case 'F':
+      case "F":
         res = "float";
         break;
-      case 'D':
+      case "D":
         res = "double";
         break;
       default:
@@ -298,42 +362,54 @@ function formatDescriptor(desc) {
 }
 function formatMethodName(methodRef, dataOrLookups, typeRefMap) {
   if (!methodRef) return "Unknown method";
-  
+
   if (dataOrLookups && dataOrLookups.typeReference) {
     const lookups = dataOrLookups;
-    const className = formatDescriptor(lookups.typeReference.get(methodRef.classReferenceId));
+    const className = formatDescriptor(
+      lookups.typeReference.get(methodRef.classReferenceId),
+    );
     const proto = lookups.protoReference.get(methodRef.protoReferenceId);
     let params = "";
     if (proto && proto.parametersId) {
       const list = lookups.typeReferenceList.get(proto.parametersId);
       if (list && list.typeReferenceIds) {
-        params = list.typeReferenceIds.map(id => formatDescriptor(lookups.typeReference.get(id))).join(', ');
+        params = list.typeReferenceIds
+          .map((id) => formatDescriptor(lookups.typeReference.get(id)))
+          .join(", ");
       }
     }
     return `${className}.${methodRef.name}(${params})`;
   }
-
   const data = dataOrLookups;
-  const className = formatDescriptor(typeRefMap.get(methodRef.classReferenceId));
-  const proto = (data.protoReferenceTable || []).find(p => p.id === methodRef.protoReferenceId);
+  const className = formatDescriptor(
+    typeRefMap.get(methodRef.classReferenceId),
+  );
+  const proto = (data.protoReferenceTable || []).find(
+    (p) => p.id === methodRef.protoReferenceId,
+  );
   let params = "";
   if (proto && proto.parametersId) {
-    const list = (data.typeReferenceListTable || []).find(l => l.id === proto.parametersId);
+    const list = (data.typeReferenceListTable || []).find(
+      (l) => l.id === proto.parametersId,
+    );
     if (list && list.typeReferenceIds) {
-      params = list.typeReferenceIds.map(id => formatDescriptor(typeRefMap.get(id))).join(', ');
+      params = list.typeReferenceIds
+        .map((id) => formatDescriptor(typeRefMap.get(id)))
+        .join(", ");
     }
   }
   return `${className}.${methodRef.name}(${params})`;
 }
 function formatFieldName(fieldRef, dataOrLookups, typeRefMap) {
   if (!fieldRef) return "Unknown field";
-  
+
   if (dataOrLookups && dataOrLookups.typeReference) {
     const lookups = dataOrLookups;
-    const className = formatDescriptor(lookups.typeReference.get(fieldRef.classReferenceId));
+    const className = formatDescriptor(
+      lookups.typeReference.get(fieldRef.classReferenceId),
+    );
     return `${className}.${fieldRef.name}`;
   }
-
   const className = formatDescriptor(typeRefMap.get(fieldRef.classReferenceId));
   return `${className}.${fieldRef.name}`;
 }
@@ -345,11 +421,11 @@ function escapeHTML(str) {
   if (!str) return "";
   return str.replace(/[&<>"']/g, function (m) {
     return {
-      '&': '&amp;',
-      '<': '&lt;',
-      '>': '&gt;',
-      '"': '&quot;',
-      "'": '&#39;'
+      "&": "&amp;",
+      "<": "&lt;",
+      ">": "&gt;",
+      '"': "&quot;",
+      "'": "&#39;",
     }[m];
   });
 }
@@ -358,12 +434,17 @@ function highlightRule(source) {
   const escapedSource = escapeHTML(source);
   // Highlight semicolon FIRST with negative lookbehind so we don't match inside subsequently inserted HTML tags or existing HTML entities
   return escapedSource
-    .replace(/(?<!&[a-zA-Z0-9#]+);/g, '<span style="color: #ca8a04;">;</span>')
-    .replace(/([{}*])/g, '<span style="color: #ca8a04;">$1</span>')
-    .replace(/(-keep[a-z]*|-dontoptimize|-dontshrink|-dontobfuscate)/g, '<span style="color: #dc2626;">$1</span>')
-    .replace(/\b(class|interface|enum)\b/g, '<span style="color: #2563eb;">$1</span>');
+    .replace(/(?<!&[a-zA-Z0-9#]+);/g, '<span style="color: #b06000;">;</span>')
+    .replace(/([{}*])/g, '<span style="color: #b06000;">$1</span>')
+    .replace(
+      /(-keep[a-z]*|-dontoptimize|-dontshrink|-dontobfuscate)/g,
+      '<span style="color: #b91c1c;">$1</span>',
+    )
+    .replace(
+      /\b(class|interface|enum)\b/g,
+      '<span style="color: #1d4ed8;">$1</span>',
+    );
 }
-
 /**
  * Shared helper to count kept items that have a specific constraint.
  * An item is counted if ANY of the keep rules that keep it has the specified constraint.
@@ -376,12 +457,12 @@ function getScore(data, constraintName) {
   const tables = [
     data.keptClassInfoTable,
     data.keptFieldInfoTable,
-    data.keptMethodInfoTable
+    data.keptMethodInfoTable,
   ];
-  tables.forEach(table => {
+  tables.forEach((table) => {
     if (table) {
-      table.forEach(item => {
-        const hasRuleWithConstraint = (item.keptBy || []).some(ruleId => {
+      table.forEach((item) => {
+        const hasRuleWithConstraint = (item.keptBy || []).some((ruleId) => {
           const constraintsId = rulesMap.get(ruleId);
           const constraints = constraintsMap.get(constraintsId);
           return constraints && constraints.includes(constraintName);

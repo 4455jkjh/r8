@@ -40,7 +40,7 @@ public class CliParserTest extends TestBase {
   @Test
   public void testOption1WithEquals() {
     CliParser<Builder> parser = new CliParser<>("Usage: test");
-    parser.option1("--output", "<file>", "Output file", (builder, arg) -> builder.output = arg);
+    parser.option1("--output", "<file>", "Output file.", (builder, arg) -> builder.output = arg);
 
     Builder builder = new Builder();
     List<String> errors = new ArrayList<>();
@@ -53,7 +53,7 @@ public class CliParserTest extends TestBase {
   @Test
   public void testOption1WithSpace() {
     CliParser<Builder> parser = new CliParser<>("Usage: test");
-    parser.option1("--output", "<file>", "Output file", (builder, arg) -> builder.output = arg);
+    parser.option1("--output", "<file>", "Output file.", (builder, arg) -> builder.output = arg);
 
     Builder builder = new Builder();
     List<String> errors = new ArrayList<>();
@@ -66,7 +66,7 @@ public class CliParserTest extends TestBase {
   @Test
   public void testOption0() {
     CliParser<Builder> parser = new CliParser<>("Usage: test");
-    parser.option0("--help", "Help", builder -> builder.help = true);
+    parser.option0("--help", "Help.", builder -> builder.help = true);
 
     Builder builder = new Builder();
     List<String> errors = new ArrayList<>();
@@ -79,7 +79,7 @@ public class CliParserTest extends TestBase {
   @Test
   public void testOption0WithEquals() {
     CliParser<Builder> parser = new CliParser<>("Usage: test");
-    parser.option0("--help", "Help", builder -> builder.help = true);
+    parser.option0("--help", "Help.", builder -> builder.help = true);
 
     Builder builder = new Builder();
     List<String> errors = new ArrayList<>();
@@ -129,7 +129,7 @@ public class CliParserTest extends TestBase {
   @Test
   public void testOption0WithAlternative() {
     CliParser<Builder> parser = new CliParser<>("Usage: test");
-    parser.option0("--help", "Help", builder -> builder.help = true, "-h");
+    parser.option0("--help", "Help.", builder -> builder.help = true, "-h");
 
     Builder builder = new Builder();
     List<String> errors = new ArrayList<>();
@@ -142,7 +142,7 @@ public class CliParserTest extends TestBase {
   @Test
   public void testOption0WithDoubleDashAlternative() {
     CliParser<Builder> parser = new CliParser<>("Usage: test");
-    parser.option0("--help", "Help", builder -> builder.help = true, "--h");
+    parser.option0("--help", "Help.", builder -> builder.help = true, "--h");
 
     Builder builder = new Builder();
     List<String> errors = new ArrayList<>();
@@ -156,7 +156,7 @@ public class CliParserTest extends TestBase {
   public void testOption1WithAlternative() {
     CliParser<Builder> parser = new CliParser<>("Usage: test");
     parser.option1(
-        "--output", "<file>", "Output file", (builder, arg) -> builder.output = arg, "-o");
+        "--output", "<file>", "Output file.", (builder, arg) -> builder.output = arg, "-o");
 
     Builder builder = new Builder();
     List<String> errors = new ArrayList<>();
@@ -169,9 +169,9 @@ public class CliParserTest extends TestBase {
   @Test
   public void testUsageMessageWithAlternative() {
     CliParser<Builder> parser = new CliParser<>("Usage: test");
-    parser.option0("--help", "Help", builder -> builder.help = true, "-h");
+    parser.option0("--help", "Help.", builder -> builder.help = true, "-h");
 
-    String usage = parser.getUsageMessage();
+    String usage = CliParserUtils.getUsageMessage(parser);
     assertTrue(usage.contains("--help"));
     assertTrue(usage.contains("-h"));
   }
@@ -181,7 +181,7 @@ public class CliParserTest extends TestBase {
     CliParser<Builder> parser = new CliParser<>("Usage: test");
     assertThrows(
         AssertionError.class,
-        () -> parser.option0("-invalid", "Help", builder -> builder.help = true));
+        () -> parser.option0("-invalid", "Help.", builder -> builder.help = true));
   }
 
   @Test
@@ -189,6 +189,6 @@ public class CliParserTest extends TestBase {
     CliParser<Builder> parser = new CliParser<>("Usage: test");
     assertThrows(
         AssertionError.class,
-        () -> parser.option0("--help", "Help", builder -> builder.help = true, "---h"));
+        () -> parser.option0("--help", "Help.", builder -> builder.help = true, "---h"));
   }
 }

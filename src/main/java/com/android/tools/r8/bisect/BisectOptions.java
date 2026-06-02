@@ -4,14 +4,16 @@
 package com.android.tools.r8.bisect;
 
 import com.android.tools.r8.errors.CompilationError;
-import java.io.IOException;
+import com.android.tools.r8.utils.CliParserUtils;
+import com.android.tools.r8.utils.internal.BooleanBox;
+import com.android.tools.r8.utils.internal.CliParser;
+import com.android.tools.r8.utils.internal.StringUtils;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
 public class BisectOptions {
 
-  private static final String HELP_FLAG = "--help";
   public static final String BUILD_GOOD_FLAG = "--good";
   public static final String BUILD_BAD_FLAG = "--bad";
   public static final String RESULT_GOOD_FLAG = "--result-good";
@@ -43,60 +45,77 @@ public class BisectOptions {
     this.result = result;
   }
 
-  public static BisectOptions parse(String[] args) throws IOException {
-    Path badBuild = null;
+  private static class ParserState {
+    boolean printHelp = false;
     Path goodBuild = null;
+    Path badBuild = null;
     Path stateFile = null;
     Path command = null;
     Path output = null;
     Result result = Result.UNKNOWN;
-
-    for (int i = 0; i < args.length; i++) {
-      String arg = args[i].trim();
-      if (arg.equals(HELP_FLAG)) {
-        printHelp();
-        return null;
-      } else if (arg.equals(BUILD_BAD_FLAG)) {
-        i = nextArg(i, args, BUILD_BAD_FLAG);
-        badBuild = Paths.get(args[i]);
-      } else if (arg.equals(BUILD_GOOD_FLAG)) {
-        i = nextArg(i, args, BUILD_GOOD_FLAG);
-        goodBuild = Paths.get(args[i]);
-      } else if (arg.equals(COMMAND_FLAG)) {
-        i = nextArg(i, args, COMMAND_FLAG);
-        command = Paths.get(args[i]);
-      } else if (arg.equals(OUTPUT_FLAG)) {
-        i = nextArg(i, args, OUTPUT_FLAG);
-        output = Paths.get(args[i]);
-      } else if (arg.equals(RESULT_BAD_FLAG)) {
-        result = checkSingleResult(result, Result.BAD);
-      } else if (arg.equals(RESULT_GOOD_FLAG)) {
-        result = checkSingleResult(result, Result.GOOD);
-      } else if (arg.equals(STATE_FLAG)) {
-        i = nextArg(i, args, STATE_FLAG);
-        stateFile = Paths.get(args[i]);
-      }
-    }
-    exists(require(badBuild, BUILD_BAD_FLAG), BUILD_BAD_FLAG);
-    exists(require(goodBuild, BUILD_GOOD_FLAG), BUILD_GOOD_FLAG);
-    if (stateFile != null) {
-      exists(stateFile, STATE_FLAG);
-    }
-    if (command != null) {
-      exists(command, COMMAND_FLAG);
-    }
-    if (output != null) {
-      directoryExists(output, OUTPUT_FLAG);
-    }
-
-    return new BisectOptions(goodBuild, badBuild, stateFile, command, output, result);
   }
 
-  private static int nextArg(int index, String[] args, String flag) {
-    if (args.length == index + 1) {
-      throw new CompilationError("Missing argument for: " + flag);
+  private static CliParser<ParserState> createParser() {
+    String header = StringUtils.joinLines("Usage: bisect [options]", "where options are:");
+    var parser = new CliParser<ParserState>(header);
+    return parser
+        .option1(BUILD_BAD_FLAG, "<apk>", "Known bad APK.", (b, arg) -> b.badBuild = Paths.get(arg))
+        .option1(
+            COMMAND_FLAG,
+            "<file>",
+            "Command to run after each bisection.",
+            (b, arg) -> b.command = Paths.get(arg))
+        .option1(
+            BUILD_GOOD_FLAG, "<apk>", "Known good APK.", (b, arg) -> b.goodBuild = Paths.get(arg))
+        .option0("--help", "Print this message.", b -> b.printHelp = true, "-h")
+        .option1(OUTPUT_FLAG, "<dir>", "Output directory.", (b, arg) -> b.output = Paths.get(arg))
+        .option0(
+            RESULT_BAD_FLAG,
+            "Bisect again assuming previous run was bad.",
+            b -> b.result = checkSingleResult(b.result, Result.BAD))
+        .option0(
+            RESULT_GOOD_FLAG,
+            "Bisect again assuming previous run was good.",
+            b -> b.result = checkSingleResult(b.result, Result.GOOD))
+        .option1(
+            STATE_FLAG, "<file>", "Bisection state.", (b, arg) -> b.stateFile = Paths.get(arg));
+  }
+
+  public static BisectOptions parse(String[] args) {
+    var parser = createParser();
+    var state = new ParserState();
+    var hasError = new BooleanBox(false);
+    parser.parse(
+        args,
+        state,
+        err -> {
+          System.err.println(err);
+          hasError.set(true);
+        });
+    if (state.printHelp) {
+      return null;
     }
-    return index + 1;
+    if (hasError.get()) {
+      throw new CompilationError("Failed to parse bisect arguments");
+    }
+    exists(require(state.badBuild, BUILD_BAD_FLAG), BUILD_BAD_FLAG);
+    exists(require(state.goodBuild, BUILD_GOOD_FLAG), BUILD_GOOD_FLAG);
+    if (state.stateFile != null) {
+      exists(state.stateFile, STATE_FLAG);
+    }
+    if (state.command != null) {
+      exists(state.command, COMMAND_FLAG);
+    }
+    if (state.output != null) {
+      directoryExists(state.output, OUTPUT_FLAG);
+    }
+    return new BisectOptions(
+        state.goodBuild,
+        state.badBuild,
+        state.stateFile,
+        state.command,
+        state.output,
+        state.result);
   }
 
   private static Path require(Path value, String flag) {
@@ -128,16 +147,7 @@ public class BisectOptions {
     return result;
   }
 
-  public static void printHelp() throws IOException {
-    System.out.println("--bad <apk>       Known bad APK.");
-    System.out.println("--command <file>  Command to run after each bisection.");
-    System.out.println("--good <apk>      Known good APK.");
-    System.out.println("--help");
-    System.out.println("--output <dir>    Output directory.");
-    System.out.println("--result-bad      Bisect again assuming previous run was");
-    System.out.println("        bad.");
-    System.out.println("--result-good     Bisect again assuming previous run was");
-    System.out.println("        good.");
-    System.out.println("--state <file>    Bisection state.");
+  public static String usageMessage() {
+    return CliParserUtils.getUsageMessage(createParser());
   }
 }

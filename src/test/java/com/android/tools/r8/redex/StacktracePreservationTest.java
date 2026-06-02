@@ -134,14 +134,7 @@ public class StacktracePreservationTest extends TestBase {
             stacktrace -> {
               assertThat(stacktrace, not(StackTrace.isSame(getExpectedStackTrace())));
               StackTrace retracedStackTrace = stacktrace.retrace(r8Mapping);
-              if (compilationApiLevel == AndroidApiLevel.CINNAMON_BUN
-                  && redexApiLevel == AndroidApiLevel.CINNAMON_BUN) {
-                // TODO(b/498336713): Fix trace preservation for native pc encoding, removing this
-                // special case.
-                assertThat(retracedStackTrace, not(StackTrace.isSame(getExpectedStackTrace())));
-              } else {
-                assertThat(retracedStackTrace, StackTrace.isSame(getExpectedStackTrace()));
-              }
+              assertThat(retracedStackTrace, StackTrace.isSame(getExpectedStackTrace()));
             });
   }
 

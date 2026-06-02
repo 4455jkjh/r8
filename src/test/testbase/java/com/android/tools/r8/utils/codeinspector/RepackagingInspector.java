@@ -3,6 +3,8 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8.utils.codeinspector;
 
+import static org.junit.Assert.assertNotEquals;
+
 import com.android.tools.r8.graph.DexItemFactory;
 import com.android.tools.r8.graph.DexType;
 import com.android.tools.r8.references.ClassReference;
@@ -17,6 +19,11 @@ public class RepackagingInspector {
   public RepackagingInspector(DexItemFactory dexItemFactory, RepackagingLens repackagingLens) {
     this.dexItemFactory = dexItemFactory;
     this.repackagingLens = repackagingLens;
+  }
+
+  public RepackagingInspector assertIsRepackaged(ClassReference classReference) {
+    assertNotEquals(classReference, getTarget(classReference));
+    return this;
   }
 
   public ClassReference getSource(ClassReference classReference) {

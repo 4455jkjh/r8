@@ -4,6 +4,7 @@
 package com.android.tools.r8;
 
 import com.android.tools.r8.origin.Origin;
+import com.android.tools.r8.utils.CliParserUtils;
 import com.android.tools.r8.utils.FlagFile;
 import com.android.tools.r8.utils.StringDiagnostic;
 import com.android.tools.r8.utils.internal.CliParser;
@@ -49,6 +50,6 @@ public class ApiDatabaseGeneratorCommandParser {
   }
 
   static String getUsageMessage() {
-    return createParser().getUsageMessage();
+    return CliParserUtils.getUsageMessage(createParser());
   }
 }

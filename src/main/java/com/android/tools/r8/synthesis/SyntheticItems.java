@@ -595,8 +595,9 @@ public class SyntheticItems {
   }
 
   public boolean hasKindThatMatches(
-      DexType type, BiPredicate<? super SyntheticKind, ? super SyntheticNaming> predicate) {
-    return Iterables.any(getSyntheticKinds(type), kind -> predicate.test(kind, naming));
+      DexProgramClass clazz,
+      BiPredicate<? super SyntheticKind, ? super SyntheticNaming> predicate) {
+    return Iterables.any(getSyntheticKinds(clazz.getType()), kind -> predicate.test(kind, naming));
   }
 
   public boolean isSyntheticOfKind(DexType type, SyntheticKindSelector kindSelector) {
