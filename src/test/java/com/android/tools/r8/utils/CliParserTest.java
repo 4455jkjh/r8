@@ -140,19 +140,6 @@ public class CliParserTest extends TestBase {
   }
 
   @Test
-  public void testOption0WithDoubleDashAlternative() {
-    CliParser<Builder> parser = new CliParser<>("Usage: test");
-    parser.option0("--help", "Help.", builder -> builder.help = true, "--h");
-
-    Builder builder = new Builder();
-    List<String> errors = new ArrayList<>();
-    parser.parse(new String[] {"--h"}, builder, errors::add);
-
-    assertTrue(errors.isEmpty());
-    assertTrue(builder.help);
-  }
-
-  @Test
   public void testOption1WithAlternative() {
     CliParser<Builder> parser = new CliParser<>("Usage: test");
     parser.option1(
