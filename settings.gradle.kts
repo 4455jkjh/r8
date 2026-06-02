@@ -16,78 +16,38 @@ pluginManagement {
 
 dependencyResolutionManagement { repositories { maven { url = uri("third_party/dependencies") } } }
 
-include(":shared")
+fun includeProject(path: String) {
+  val name = path.removePrefix(":")
+  val dir = "d8_r8/${name.replace(":", "/")}"
+  include(path)
+  project(path).projectDir = file(dir)
+}
 
-project(":shared").projectDir = file("d8_r8/shared")
+fun includeTestProject(path: String) {
+  val name = path.removePrefix(":")
+  val dir = "d8_r8/test_modules/${name.replace(":", "/")}"
+  include(path)
+  project(path).projectDir = file(dir)
+}
 
-include(":assistant")
+includeProject(":shared")
+includeProject(":assistant")
+includeProject(":keepradius")
+includeProject(":keepanno")
+includeProject(":libanalyzer")
+includeProject(":resourceshrinker")
+includeProject(":main")
+includeProject(":utils")
+includeProject(":dist")
+includeProject(":library_desugar")
+includeProject(":test")
 
-project(":assistant").projectDir = file("d8_r8/assistant")
-
-include(":keepradius")
-
-project(":keepradius").projectDir = file("d8_r8/keepradius")
-
-include(":keepanno")
-
-project(":keepanno").projectDir = file("d8_r8/keepanno")
-
-include(":libanalyzer")
-
-project(":libanalyzer").projectDir = file("d8_r8/libanalyzer")
-
-include(":resourceshrinker")
-
-project(":resourceshrinker").projectDir = file("d8_r8/resourceshrinker")
-
-include(":main")
-
-project(":main").projectDir = file("d8_r8/main")
-
-include(":utils")
-
-project(":utils").projectDir = file("d8_r8/utils")
-
-include(":dist")
-
-project(":dist").projectDir = file("d8_r8/dist")
-
-include(":library_desugar")
-
-project(":library_desugar").projectDir = file("d8_r8/library_desugar")
-
-include(":testbase")
-
-project(":testbase").projectDir = file("d8_r8/test_modules/testbase")
-
-include(":tests_bootstrap")
-
-project(":tests_bootstrap").projectDir = file("d8_r8/test_modules/tests_bootstrap")
-
-include(":tests_java_8")
-
-project(":tests_java_8").projectDir = file("d8_r8/test_modules/tests_java_8")
-
-include(":tests_java_9")
-
-project(":tests_java_9").projectDir = file("d8_r8/test_modules/tests_java_9")
-
-include(":tests_java_11")
-
-project(":tests_java_11").projectDir = file("d8_r8/test_modules/tests_java_11")
-
-include(":tests_java_17")
-
-project(":tests_java_17").projectDir = file("d8_r8/test_modules/tests_java_17")
-
-include(":tests_java_21")
-
-project(":tests_java_21").projectDir = file("d8_r8/test_modules/tests_java_21")
-
-include(":tests_java_25")
-
-project(":tests_java_25").projectDir = file("d8_r8/test_modules/tests_java_25")
-
-include(":test")
-
-project(":test").projectDir = file("d8_r8/test")
+includeTestProject(":testbase")
+includeTestProject(":tests_bootstrap")
+includeTestProject(":tests_java_8")
+includeTestProject(":tests_java_8:ir")
+includeTestProject(":tests_java_9")
+includeTestProject(":tests_java_11")
+includeTestProject(":tests_java_17")
+includeTestProject(":tests_java_21")
+includeTestProject(":tests_java_25")
