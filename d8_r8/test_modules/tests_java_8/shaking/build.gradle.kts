@@ -2,9 +2,17 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+import org.gradle.api.tasks.Copy
+
 // The majority of the build setup is done by tests_java_8.
 java {
-  sourceSets.test.configure {
-    java.srcDir(getRoot().resolveAll("src", "test", "java8", "shaking"))
+  sourceSets.test.configure { java.srcDir(getRoot().resolveAll("src", "test", "java8", "shaking")) }
+}
+
+tasks {
+  named<Copy>("processTestResources") {
+    from(sourceSets.test.get().java) {
+      include("**/shaking/ifrule/StaticFinalFieldInliningSource.java")
+    }
   }
 }

@@ -48,7 +48,8 @@ public class StaticFinalFieldInliningTest extends TestBase {
     Path output =
         JavaCompilerTool.create(parameters.getRuntime().asCf(), temp)
             .addSourceFiles(
-                ToolHelper.getSourceFileForTestClass(StaticFinalFieldInliningSource.class, "test/java8/shaking"))
+                ToolHelper.getSourceFileForTestClassFromResources(
+                    StaticFinalFieldInliningSource.class))
             .compile();
 
     testForJvm(parameters)

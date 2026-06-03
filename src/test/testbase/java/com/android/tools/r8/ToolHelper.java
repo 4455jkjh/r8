@@ -1614,6 +1614,42 @@ public class ToolHelper {
         .resolve(Paths.get("", parts.toArray(StringUtils.EMPTY_ARRAY)));
   }
 
+  /**
+   * Retrieves the source file for a test class from the classpath resources.
+   *
+   * <p>This method copies the resource to a temporary file (preserving the original file name) and
+   * returns its path.
+   *
+   * <p>Note: This only works if the corresponding .java file has been explicitly added as a test
+   * resource in the Gradle build configuration (e.g., via processTestResources).
+   */
+  public static Path getSourceFileForTestClassFromResources(Class<?> clazz) {
+    List<String> parts = getNamePartsForTestClass(clazz);
+    String last = parts.get(parts.size() - 1);
+    assert last.endsWith(CLASS_EXTENSION);
+    String javaFileName =
+        last.substring(0, last.length() - CLASS_EXTENSION.length()) + JAVA_EXTENSION;
+    parts.set(parts.size() - 1, javaFileName);
+    String resourcePath = "/" + clazz.getTypeName().replace('.', '/') + ".java";
+    java.net.URL resourceUrl = clazz.getResource(resourcePath);
+    if (resourceUrl == null) {
+      throw new RuntimeException("Could not find source file resource for " + clazz);
+    }
+    try {
+      Path tempDir = Files.createTempDirectory("source-");
+      tempDir.toFile().deleteOnExit();
+      Path tempFile = tempDir.resolve(javaFileName);
+      tempFile.toFile().deleteOnExit();
+      try (InputStream is = resourceUrl.openStream()) {
+        Files.copy(is, tempFile, StandardCopyOption.REPLACE_EXISTING);
+      }
+      return tempFile;
+    } catch (IOException e) {
+      throw new RuntimeException(
+          "Failed to copy source resource for " + clazz + " to temp file", e);
+    }
+  }
+
   public static Path getClassFileForTestClass(Class<?> clazz) {
     return getClassFileForTestClass(clazz, computeLegacyOrGradleSpecifiedLocation());
   }

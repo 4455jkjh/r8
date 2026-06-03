@@ -54,7 +54,7 @@ public class CheckTwrOutputForJavaCompilersTest extends TestBase {
   public void test() throws Exception {
     Path javacOut =
         javac(parameters.getRuntime().asCf())
-            .addSourceFiles(ToolHelper.getSourceFileForTestClass(TwrTestSource.class))
+            .addSourceFiles(ToolHelper.getSourceFileForTestClassFromResources(TwrTestSource.class))
             .compile();
     testForJvm(parameters)
         .addProgramFiles(javacOut)

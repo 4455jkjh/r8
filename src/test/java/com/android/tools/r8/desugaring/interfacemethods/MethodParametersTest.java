@@ -46,7 +46,7 @@ public class MethodParametersTest extends TestBase {
                         parameters.isCfRuntime()
                             ? getCheckedInJdk(parameters.getRuntime().asCf().getVm())
                             : getCheckedInJdk11())
-                    .addSourceFiles(ToolHelper.getSourceFileForTestClass(I.class))
+                    .addSourceFiles(ToolHelper.getSourceFileForTestClassFromResources(I.class))
                     .addOptions("-parameters")
                     .compile());
   }

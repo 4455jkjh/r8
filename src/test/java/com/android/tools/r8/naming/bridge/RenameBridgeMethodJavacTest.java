@@ -35,11 +35,11 @@ public class RenameBridgeMethodJavacTest extends TestBase {
     Path library =
         javac(parameters.asCfRuntime())
             .addSourceFiles(
-                ToolHelper.getSourceFileForTestClass(Creator.class),
-                ToolHelper.getSourceFileForTestClass(Result.class),
-                ToolHelper.getSourceFileForTestClass(ResultImpl.class),
-                ToolHelper.getSourceFileForTestClass(Tester.class),
-                ToolHelper.getSourceFileForTestClass(TesterImpl.class))
+                ToolHelper.getSourceFileForTestClassFromResources(Creator.class),
+                ToolHelper.getSourceFileForTestClassFromResources(Result.class),
+                ToolHelper.getSourceFileForTestClassFromResources(ResultImpl.class),
+                ToolHelper.getSourceFileForTestClassFromResources(Tester.class),
+                ToolHelper.getSourceFileForTestClassFromResources(TesterImpl.class))
             .compile();
     Path output = temp.newFolder().toPath();
     ProcessResult processResult = compileAgainstLibrary(library, output);
@@ -75,7 +75,7 @@ public class RenameBridgeMethodJavacTest extends TestBase {
 
   private ProcessResult compileAgainstLibrary(Path classPath, Path outputPath) throws Exception {
     return javac(parameters.asCfRuntime())
-        .addSourceFiles(ToolHelper.getSourceFileForTestClass(Main.class))
+        .addSourceFiles(ToolHelper.getSourceFileForTestClassFromResources(Main.class))
         .addClasspathFiles(classPath)
         .setOutputPath(outputPath)
         .compileRaw();

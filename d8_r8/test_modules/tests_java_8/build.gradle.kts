@@ -3,6 +3,7 @@
 // BSD-style license that can be found in the LICENSE file.
 
 import org.gradle.api.JavaVersion
+import org.gradle.api.tasks.Copy
 
 plugins {
   `java-library`
@@ -151,6 +152,21 @@ tasks {
       //  the jar and not show red underlines. However, navigation to base classes will not work.
       archiveFileName.set("not_named_tests_java_8.jar")
     }
+
+  named<Copy>("processTestResources") {
+    dependsOn(createArtTests)
+    from(sourceSets.test.get().java) {
+      include("**/desugar/nestaccesscontrol/methodparameters/Outer.java")
+      include("**/desugar/twr/TwrTestSource.java")
+      include("**/desugaring/interfacemethods/methodparameters/I.java")
+      include("**/naming/bridge/Creator.java")
+      include("**/naming/bridge/Result.java")
+      include("**/naming/bridge/ResultImpl.java")
+      include("**/naming/bridge/Tester.java")
+      include("**/naming/bridge/TesterImpl.java")
+      include("**/naming/bridge/Main.java")
+    }
+  }
 }
 
 val testJar by configurations.consumable("testJar")
@@ -202,18 +218,16 @@ fun Test.setupTestTask() {
   systemProperty("com.android.tools.r8.artprofilerewritingcompletenesscheck", "true")
 }
 
-tasks.withType<Test> {
-  setupTestTask()
-}
+tasks.withType<Test> { setupTestTask() }
 
-val testAll by tasks.registering {
-  // Added child dependencies to Test directly would force all child tests to run before the parent
-  // tests. This task runs all test tasks as siblings, allowing concurrent execution of all tests.
-  dependsOn(tasks.withType<Test>())
-  childProjects.values.forEach { childProject ->
-    dependsOn("${childProject.path}:test")
+val testAll by
+  tasks.registering {
+    // Added child dependencies to Test directly would force all child tests to run before the
+    // parent tests. This task runs all test tasks as siblings, allowing concurrent execution of all
+    // tests.
+    dependsOn(tasks.withType<Test>())
+    childProjects.values.forEach { childProject -> dependsOn("${childProject.path}:test") }
   }
-}
 
 // Setup child-project boilerplate, only requiring them to set their java source set.
 subprojects {
@@ -228,7 +242,7 @@ subprojects {
 
   val sharedDepsScope by configurations.dependencyScope("sharedDepsScope")
   val sharedDepsConfig by
-  configurations.resolvable("sharedDepsConfig") { extendsFrom(sharedDepsScope) }
+    configurations.resolvable("sharedDepsConfig") { extendsFrom(sharedDepsScope) }
 
   dependencies {
     add(sharedDepsScope.name, project(":shared", "sharedDepsFiles"))
@@ -242,15 +256,16 @@ subprojects {
 
   tasks.withType<JavaCompile> { dependsOn(sharedDepsConfig) }
 
-  tasks.withType<Test> {
-    setupTestTask()
-  }
+  tasks.withType<Test> { setupTestTask() }
 
   val partialTestClasses by configurations.consumable("partialTestClasses")
 
   artifacts {
     add(partialTestClasses.name, layout.buildDirectory.dir("classes/java/test")) {
       builtBy(tasks.named("compileTestJava"))
+    }
+    add(partialTestClasses.name, layout.buildDirectory.dir("resources/test")) {
+      builtBy(tasks.named("processTestResources"))
     }
   }
 }

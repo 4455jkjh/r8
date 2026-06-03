@@ -47,7 +47,7 @@ public class MethodParametersTest extends TestBase {
     // Compile with javac from JDK 11 to get a class file using nest access control.
     Path nestCompiledWithParameters =
         javac(getCheckedInJdk11())
-            .addSourceFiles(ToolHelper.getSourceFileForTestClass(Outer.class))
+            .addSourceFiles(ToolHelper.getSourceFileForTestClassFromResources(Outer.class))
             .addOptions("-parameters")
             .compile();
 
