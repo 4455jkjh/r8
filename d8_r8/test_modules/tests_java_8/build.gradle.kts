@@ -11,6 +11,10 @@ plugins {
 
 val root = getRoot()
 
+val partialTestClassesScope by configurations.dependencyScope("partialTestClassesScope")
+val partialTestClassesConfig by
+  configurations.resolvable("partialTestClassesConfig") { extendsFrom(partialTestClassesScope) }
+
 java {
   sourceSets.test.configure {
     java {
@@ -61,9 +65,7 @@ val sharedDepsInternalConfig by
 dependencies {
   sharedDepsScope(project(":shared", "sharedDepsFiles"))
   sharedDepsInternalScope(project(":shared", "sharedDepsInternalFiles"))
-}
 
-dependencies {
   keepAnnoClassesScope(project(":keepanno", "keepannoClasses"))
   assistantClassesScope(project(":assistant", "assistantJar"))
   distDepsFilesScope(project(":dist", "depsFiles"))
@@ -83,6 +85,11 @@ dependencies {
   implementation(project(":resourceshrinker", "resourceshrinkerDepsJar"))
   implementation(project(":testbase"))
   implementation(project(":testbase", "depsJar"))
+
+  // For each child project, add its test classes to the test class configuration.
+  childProjects.values.forEach { childProject ->
+    partialTestClassesScope(project(childProject.path, "partialTestClasses"))
+  }
 }
 
 fun testDependencies(): FileCollection {
@@ -134,54 +141,10 @@ tasks {
     }
   }
 
-  withType<Test> {
-    TestingState.setUpTestingState(this)
-    dependsOn(distDepsFiles)
-    dependsOn(sharedDepsConfig)
-    if (!project.hasProperty("no_internal")) {
-      dependsOn(sharedDepsInternalConfig)
-    }
-    systemProperty(
-      "TEST_DATA_LOCATION",
-      layout.buildDirectory.dir("classes/java/test").get().toString(),
-    )
-    systemProperty(
-      "TESTBASE_DATA_LOCATION",
-      project(":testbase")
-        .tasks
-        .named<JavaCompile>("compileJava")
-        .get()
-        .outputs
-        .files
-        .asPath
-        .split(File.pathSeparator)[0],
-    )
-    systemProperty(
-      "BUILD_PROP_KEEPANNO_RUNTIME_PATH",
-      extractClassesPaths("keepanno" + File.separator, keepAnnoClassesConfig.asPath),
-    )
-    // This path is set when compiling examples jar task in DependenciesPlugin.
-    val r8RuntimePath =
-      project
-        .files(
-          mainClassesOutput,
-          turboClassesOutput,
-          distDepsFiles,
-          mainResources,
-          keepAnnoClassesConfig,
-          assistantClassesOutput,
-          resourceShrinkerClassesConfig,
-        )
-        .asPath
-    systemProperty("BUILD_PROP_PROCESS_KEEP_RULES_RUNTIME_PATH", r8RuntimePath)
-    systemProperty("BUILD_PROP_R8_RUNTIME_PATH", r8RuntimePath)
-    systemProperty("R8_DEPS", distDepsFiles.asPath)
-    systemProperty("com.android.tools.r8.artprofilerewritingcompletenesscheck", "true")
-  }
-
   val assembleTestJar by
     registering(Jar::class) {
       from(sourceSets.test.get().output)
+      from(partialTestClassesConfig)
       // TODO(b/296486206): Seems like IntelliJ has a problem depending on test source sets.
       // Renaming
       //  this from the default name (tests_java_8.jar) will allow IntelliJ to find the resources in
@@ -193,3 +156,101 @@ tasks {
 val testJar by configurations.consumable("testJar")
 
 artifacts { add(testJar.name, tasks.named("assembleTestJar")) }
+
+fun Test.setupTestTask() {
+  TestingState.setUpTestingState(this)
+  systemProperty(
+    "TEST_DATA_LOCATION",
+    project.layout.buildDirectory.dir("classes/java/test").get().toString(),
+  )
+  systemProperty(
+    "TESTBASE_DATA_LOCATION",
+    project(":testbase")
+      .tasks
+      .named<JavaCompile>("compileJava")
+      .get()
+      .outputs
+      .files
+      .asPath
+      .split(File.pathSeparator)[0],
+  )
+  dependsOn(distDepsFiles)
+  dependsOn(sharedDepsConfig)
+  if (!project.hasProperty("no_internal")) {
+    dependsOn(sharedDepsInternalConfig)
+  }
+  systemProperty(
+    "BUILD_PROP_KEEPANNO_RUNTIME_PATH",
+    extractClassesPaths("keepanno" + File.separator, keepAnnoClassesConfig.asPath),
+  )
+  // This path is set when compiling examples jar task in DependenciesPlugin.
+  val r8RuntimePath =
+    project
+      .files(
+        mainClassesOutput,
+        turboClassesOutput,
+        distDepsFiles,
+        mainResources,
+        keepAnnoClassesConfig,
+        assistantClassesOutput,
+        resourceShrinkerClassesConfig,
+      )
+      .asPath
+  systemProperty("BUILD_PROP_PROCESS_KEEP_RULES_RUNTIME_PATH", r8RuntimePath)
+  systemProperty("BUILD_PROP_R8_RUNTIME_PATH", r8RuntimePath)
+  systemProperty("R8_DEPS", distDepsFiles.asPath)
+  systemProperty("com.android.tools.r8.artprofilerewritingcompletenesscheck", "true")
+}
+
+tasks.withType<Test> {
+  setupTestTask()
+}
+
+val testAll by tasks.registering {
+  // Added child dependencies to Test directly would force all child tests to run before the parent
+  // tests. This task runs all test tasks as siblings, allowing concurrent execution of all tests.
+  dependsOn(tasks.withType<Test>())
+  childProjects.values.forEach { childProject ->
+    dependsOn("${childProject.path}:test")
+  }
+}
+
+// Setup child-project boilerplate, only requiring them to set their java source set.
+subprojects {
+  apply(plugin = "java-library")
+  apply(plugin = "dependencies-plugin")
+
+  extensions.configure<JavaPluginExtension> {
+    sourceCompatibility = JavaVersion.VERSION_1_8
+    targetCompatibility = JavaVersion.VERSION_1_8
+    toolchain { languageVersion = JavaLanguageVersion.of(11) }
+  }
+
+  val sharedDepsScope by configurations.dependencyScope("sharedDepsScope")
+  val sharedDepsConfig by
+  configurations.resolvable("sharedDepsConfig") { extendsFrom(sharedDepsScope) }
+
+  dependencies {
+    add(sharedDepsScope.name, project(":shared", "sharedDepsFiles"))
+
+    add("implementation", project(":main", "mainClassesOutput"))
+    add("implementation", project(":main", "mainResources"))
+    add("implementation", project(":main", "turboClassesOutput"))
+    add("implementation", project(":testbase"))
+    add("implementation", project(":testbase", "depsJar"))
+  }
+
+  tasks.withType<JavaCompile> { dependsOn(sharedDepsConfig) }
+
+  tasks.withType<Test> {
+    setupTestTask()
+  }
+
+  val partialTestClasses by configurations.consumable("partialTestClasses")
+
+  artifacts {
+    add(partialTestClasses.name, layout.buildDirectory.dir("classes/java/test")) {
+      builtBy(tasks.named("compileTestJava"))
+    }
+  }
+}

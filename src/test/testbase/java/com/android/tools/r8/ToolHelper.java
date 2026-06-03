@@ -1600,13 +1600,17 @@ public class ToolHelper {
   }
 
   public static Path getSourceFileForTestClass(Class<?> clazz) {
+    return getSourceFileForTestClass(clazz, "test/java");
+  }
+
+  public static Path getSourceFileForTestClass(Class<?> clazz, String moduleRelativePath) {
     List<String> parts = getNamePartsForTestClass(clazz);
     String last = parts.get(parts.size() - 1);
     assert last.endsWith(CLASS_EXTENSION);
     parts.set(
         parts.size() - 1,
         last.substring(0, last.length() - CLASS_EXTENSION.length()) + JAVA_EXTENSION);
-    return Paths.get(TESTS_SOURCE_DIR)
+    return Paths.get(SOURCE_DIR, moduleRelativePath)
         .resolve(Paths.get("", parts.toArray(StringUtils.EMPTY_ARRAY)));
   }
 

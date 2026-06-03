@@ -630,7 +630,7 @@ tasks {
     } else if (project.hasProperty("r8lib_no_deps")) {
       dependsOn(testR8LibNoDeps)
     } else {
-      dependsOn(":tests_java_8:test")
+      dependsOn(":tests_java_8:testAll")
       dependsOn(":tests_java_9:test")
       dependsOn(":tests_java_11:test")
       dependsOn(":tests_java_17:test")
