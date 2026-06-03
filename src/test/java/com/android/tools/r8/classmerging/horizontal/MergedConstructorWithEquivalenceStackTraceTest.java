@@ -14,7 +14,6 @@ import com.android.tools.r8.NeverClassInline;
 import com.android.tools.r8.NeverInline;
 import com.android.tools.r8.NoVerticalClassMerging;
 import com.android.tools.r8.TestParameters;
-import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.naming.retrace.StackTrace;
 import com.android.tools.r8.naming.retrace.StackTrace.StackTraceLine;
 import org.junit.Test;
@@ -25,8 +24,7 @@ public class MergedConstructorWithEquivalenceStackTraceTest extends HorizontalCl
     super(parameters);
   }
 
-  private final String FILE_NAME =
-      ToolHelper.getSourceFileForTestClass(getClass()).getFileName().toString();
+  private final String FILE_NAME = getClass().getSimpleName() + ".java";
 
   private StackTrace getExpectedStackTrace() {
     return StackTrace.builder()
