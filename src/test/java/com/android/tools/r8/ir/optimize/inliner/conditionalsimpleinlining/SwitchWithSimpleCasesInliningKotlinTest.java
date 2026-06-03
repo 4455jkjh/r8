@@ -39,7 +39,7 @@ public class SwitchWithSimpleCasesInliningKotlinTest extends KotlinTestBase {
       getCompileMemoizer(
           Paths.get(
               ToolHelper.TESTS_DIR,
-              "java8/ir",
+              "java",
               DescriptorUtils.getBinaryNameFromJavaType(PKG),
               "SwitchWithSimpleCasesInliningKotlin" + FileUtils.KT_EXTENSION));
 
