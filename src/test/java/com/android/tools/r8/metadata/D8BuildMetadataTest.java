@@ -20,7 +20,13 @@ import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.Version;
 import com.android.tools.r8.desugar.desugaredlibrary.test.LibraryDesugaringSpecification;
 import com.android.tools.r8.origin.EmbeddedOrigin;
+import com.android.tools.r8.references.Reference;
+import com.android.tools.r8.startup.profile.ExternalStartupClass;
+import com.android.tools.r8.startup.profile.ExternalStartupItem;
+import com.android.tools.r8.startup.utils.StartupTestingUtils;
 import com.android.tools.r8.utils.internal.FileUtils;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Lists;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.List;
@@ -33,6 +39,12 @@ import org.junit.runners.Parameterized.Parameters;
 
 @RunWith(Parameterized.class)
 public class D8BuildMetadataTest extends TestBase {
+
+  private static final List<ExternalStartupItem> startupProfile =
+      ImmutableList.of(
+          ExternalStartupClass.builder()
+              .setClassReference(Reference.classFromClass(Main.class))
+              .build());
 
   @Parameter(0)
   public TestParameters parameters;
@@ -48,6 +60,10 @@ public class D8BuildMetadataTest extends TestBase {
         testForD8(parameters.getBackend())
             .addInnerClasses(getClass())
             .addLibraryFiles(ToolHelper.getMostRecentAndroidJar())
+            .applyIf(
+                parameters.canUseNativeMultidex(),
+                testBuilder ->
+                    testBuilder.apply(StartupTestingUtils.addStartupProfile(startupProfile)))
             .collectBuildMetadata()
             .enableCoreLibraryDesugaring(
                 LibraryDesugaringTestConfiguration.forSpecification(
@@ -62,20 +78,25 @@ public class D8BuildMetadataTest extends TestBase {
   @Test
   public void testCli() throws Exception {
     Path buildMetadataOutputPath = temp.newFile("d8.txt").toPath();
-    String[] args =
-        new String[] {
-          "--build-metadata-output",
-          buildMetadataOutputPath.toString(),
-          "--desugared-lib",
-          LibraryDesugaringSpecification.JDK11.getSpecification().toString(),
-          "--lib",
-          ToolHelper.getMostRecentAndroidJar().toString(),
-          "--min-api",
-          Integer.toString(parameters.getApiLevel().getLevel()),
-          "--release",
-          ToolHelper.getClassFileForTestClass(Main.class).toString()
-        };
-    D8.run(D8Command.parse(args, EmbeddedOrigin.INSTANCE).build());
+    List<String> args =
+        Lists.newArrayList(
+            "--build-metadata-output",
+            buildMetadataOutputPath.toString(),
+            "--desugared-lib",
+            LibraryDesugaringSpecification.JDK11.getSpecification().toString(),
+            "--lib",
+            ToolHelper.getMostRecentAndroidJar().toString(),
+            "--min-api",
+            Integer.toString(parameters.getApiLevel().getLevel()),
+            "--release",
+            ToolHelper.getClassFileForTestClass(Main.class).toString());
+    if (parameters.canUseNativeMultidex()) {
+      Path startupProfilePath = temp.newFile("startup.txt").toPath();
+      FileUtils.writeTextFile(startupProfilePath, descriptor(Main.class));
+      args.add("--startup-profile");
+      args.add(startupProfilePath.toString());
+    }
+    D8.run(D8Command.parse(args.toArray(new String[0]), EmbeddedOrigin.INSTANCE).build());
     D8BuildMetadata buildMetadata =
         D8BuildMetadata.fromJson(FileUtils.readTextFile(buildMetadataOutputPath));
     inspect(buildMetadata);
@@ -91,6 +112,22 @@ public class D8BuildMetadataTest extends TestBase {
   }
 
   private void inspectDeserializedBuildMetadata(D8BuildMetadata buildMetadata) {
+    // Dex files metadata.
+    if (parameters.isDexRuntime()) {
+      boolean isDexLayoutOptimizationEnabled = parameters.canUseNativeMultidex();
+      assertEquals(
+          isDexLayoutOptimizationEnabled ? 2 : 1, buildMetadata.getDexFilesMetadata().size());
+      D8DexFileMetadata firstDexFileMetadata = buildMetadata.getDexFilesMetadata().get(0);
+      assertNotNull(firstDexFileMetadata.getChecksum());
+      assertEquals(isDexLayoutOptimizationEnabled, firstDexFileMetadata.isStartup());
+      if (isDexLayoutOptimizationEnabled) {
+        D8DexFileMetadata secondDexFileMetadata = buildMetadata.getDexFilesMetadata().get(1);
+        assertNotNull(secondDexFileMetadata.getChecksum());
+        assertFalse(secondDexFileMetadata.isStartup());
+      }
+    } else {
+      assertNull(buildMetadata.getDexFilesMetadata());
+    }
     // Options metadata.
     assertNotNull(buildMetadata.getOptionsMetadata());
     assertEquals(

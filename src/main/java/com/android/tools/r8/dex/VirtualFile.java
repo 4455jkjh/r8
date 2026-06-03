@@ -102,7 +102,7 @@ public class VirtualFile {
 
   public void recordChecksumAndSizeInBytesForBuildMetadata(
       ByteDataView data, InternalOptions options) {
-    if (options.r8BuildMetadataConsumer != null) {
+    if (options.d8BuildMetadataConsumer != null || options.r8BuildMetadataConsumer != null) {
       checksumForBuildMetadata =
           Hashing.sha256()
               .hashBytes(data.getBuffer(), data.getOffset(), data.getOffset() + data.getLength());

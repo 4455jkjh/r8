@@ -24,16 +24,17 @@ import java.util.Map;
 
 public class BuildMetadataFactory {
 
-  public static D8BuildMetadata create(AppView<AppInfo> appView) {
+  public static D8BuildMetadata createForD8(
+      AppView<AppInfo> appView, List<VirtualFile> virtualFiles) {
     return D8BuildMetadataImpl.builder()
+        .setDexFilesMetadata(virtualFiles)
         .setOptions(new D8OptionsMetadataImpl(appView.options()))
         .setVersion(Version.LABEL)
         .build();
   }
 
-  public static R8BuildMetadata create(
-      AppView<? extends AppInfoWithClassHierarchy> appView,
-      List<VirtualFile> virtualFiles) {
+  public static R8BuildMetadata createForR8(
+      AppView<? extends AppInfoWithClassHierarchy> appView, List<VirtualFile> virtualFiles) {
     Map<FeatureSplit, List<VirtualFile>> virtualFilesForFeatureSplit = new IdentityHashMap<>();
     for (VirtualFile virtualFile : Iterables.filter(virtualFiles, not(VirtualFile::isEmpty))) {
       FeatureSplit featureSplit = virtualFile.getFeatureSplitOrBase();

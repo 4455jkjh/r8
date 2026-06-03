@@ -1,0 +1,28 @@
+// Copyright (c) 2026, the R8 project authors. Please see the AUTHORS file
+// for details. All rights reserved. Use of this source code is governed by a
+// BSD-style license that can be found in the LICENSE file.
+package com.android.tools.r8.metadata.impl;
+
+public interface D8R8DexFileMetadata {
+
+  /**
+   * Returns the SHA-256 checksum of the entire dex file.
+   *
+   * <p>This can be used to check if the given dex file has been tampered with after compilation.
+   *
+   * <p>Note: This differs from the checksum in the dex format, as the checksum embedded in the dex
+   * is the adler32 checksum of the dex file excluding the magic value and the checksum itself. See
+   * also https://source.android.com/docs/core/runtime/dex-format.
+   */
+  String getChecksum();
+
+  /**
+   * Returns the size in bytes of this single dex file.
+   *
+   * <p>Present since R8 9.3.2-dev.
+   */
+  int getSizeInBytes();
+
+  /** Returns true if a startup profile is given and this dex file is a startup dex file. */
+  boolean isStartup();
+}
