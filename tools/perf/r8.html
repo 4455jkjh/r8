@@ -70,6 +70,10 @@
         Runtime: { default: true },
         "Runtime variance": { default: false },
         Warmup: { default: false },
+        "GC old count": { default: false },
+        "GC old time": { default: false },
+        "GC young count": { default: false },
+        "GC young time": { default: false },
       });
       dom.initialize();
       state.initializeZoom();
@@ -89,6 +93,36 @@
         state.forEachSelectedBenchmark((selectedBenchmark) => {
           const codeSizeData = filteredCommits.map((c, i) =>
             getSingleResult(selectedBenchmark, filteredCommits[i], "code_size"),
+          );
+          const gcOldCountData = filteredCommits.map((c, i) =>
+            getSingleResult(
+              selectedBenchmark,
+              filteredCommits[i],
+              "gc_old_count",
+            ),
+          );
+          const gcOldTimeData = filteredCommits.map((c, i) =>
+            getAllResults(
+              selectedBenchmark,
+              filteredCommits[i],
+              "gc_old_time",
+              (results) => dom.transformRuntimeData(results).ns_to_s(),
+            ),
+          );
+          const gcYoungCountData = filteredCommits.map((c, i) =>
+            getSingleResult(
+              selectedBenchmark,
+              filteredCommits[i],
+              "gc_young_count",
+            ),
+          );
+          const gcYoungTimeData = filteredCommits.map((c, i) =>
+            getAllResults(
+              selectedBenchmark,
+              filteredCommits[i],
+              "gc_young_time",
+              (results) => dom.transformRuntimeData(results).ns_to_s(),
+            ),
           );
           const instructionCodeSizeData = filteredCommits.map((c, i) =>
             getSingleResult(
@@ -351,6 +385,104 @@
                 type: "line",
                 label: "Warmup",
                 data: warmupData,
+                datalabels: {
+                  labels: {
+                    value: null,
+                  },
+                },
+                tension: 0.1,
+                yAxisID: "y_runtime",
+                segment: {
+                  borderColor: (ctx) =>
+                    skipped(
+                      ctx,
+                      chart.get()
+                        ? chart.get().data.datasets[ctx.datasetIndex]
+                            .backgroundColor
+                        : undefined,
+                    ),
+                  borderDash: (ctx) => skipped(ctx, [6, 6]),
+                },
+                spanGaps: true,
+              },
+              {
+                benchmark: selectedBenchmark,
+                type: "line",
+                label: "GC old count",
+                data: gcOldCountData,
+                datalabels: {
+                  align: "start",
+                  anchor: "start",
+                },
+                tension: 0.1,
+                yAxisID: "y_gc_count",
+                segment: {
+                  borderColor: (ctx) =>
+                    skipped(
+                      ctx,
+                      chart.get()
+                        ? chart.get().data.datasets[ctx.datasetIndex]
+                            .backgroundColor
+                        : undefined,
+                    ),
+                  borderDash: (ctx) => skipped(ctx, [6, 6]),
+                },
+                spanGaps: true,
+              },
+              {
+                benchmark: selectedBenchmark,
+                type: "line",
+                label: "GC old time",
+                data: gcOldTimeData,
+                datalabels: {
+                  labels: {
+                    value: null,
+                  },
+                },
+                tension: 0.1,
+                yAxisID: "y_runtime",
+                segment: {
+                  borderColor: (ctx) =>
+                    skipped(
+                      ctx,
+                      chart.get()
+                        ? chart.get().data.datasets[ctx.datasetIndex]
+                            .backgroundColor
+                        : undefined,
+                    ),
+                  borderDash: (ctx) => skipped(ctx, [6, 6]),
+                },
+                spanGaps: true,
+              },
+              {
+                benchmark: selectedBenchmark,
+                type: "line",
+                label: "GC young count",
+                data: gcYoungCountData,
+                datalabels: {
+                  align: "start",
+                  anchor: "start",
+                },
+                tension: 0.1,
+                yAxisID: "y_gc_count",
+                segment: {
+                  borderColor: (ctx) =>
+                    skipped(
+                      ctx,
+                      chart.get()
+                        ? chart.get().data.datasets[ctx.datasetIndex]
+                            .backgroundColor
+                        : undefined,
+                    ),
+                  borderDash: (ctx) => skipped(ctx, [6, 6]),
+                },
+                spanGaps: true,
+              },
+              {
+                benchmark: selectedBenchmark,
+                type: "line",
+                label: "GC young time",
+                data: gcYoungTimeData,
                 datalabels: {
                   labels: {
                     value: null,

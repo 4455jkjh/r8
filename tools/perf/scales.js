@@ -41,6 +41,15 @@ function get() {
       text: "Runtime (seconds)",
     },
   };
+  if (state.hasLegend("GC old count") || state.hasLegend("GC young count")) {
+    scales.y_gc_count = {
+      position: "left",
+      title: {
+        display: true,
+        text: "GC count",
+      },
+    };
+  }
   if (
     state.hasLegend("Instruction size") ||
     state.hasLegend("Composable size")
@@ -78,6 +87,11 @@ function update(scales) {
   if (scales.y) {
     scales.y.display = state.isLegendSelected("Dex size");
   }
+  if (scales.y_gc_count) {
+    scales.y_gc_count.display =
+      state.isLegendSelected("GC old count") ||
+      state.isLegendSelected("GC young count");
+  }
   if (scales.y_ins_code_size) {
     scales.y_ins_code_size.display =
       state.isLegendSelected("Instruction size") ||
@@ -93,7 +107,9 @@ function update(scales) {
     scales.y_runtime.display =
       state.isLegendSelected("Runtime") ||
       state.isLegendSelected("Runtime variance") ||
-      state.isLegendSelected("Warmup");
+      state.isLegendSelected("Warmup") ||
+      state.isLegendSelected("GC old time") ||
+      state.isLegendSelected("GC young time");
   }
 }
 
