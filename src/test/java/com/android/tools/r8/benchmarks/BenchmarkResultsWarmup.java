@@ -37,6 +37,30 @@ public class BenchmarkResultsWarmup implements BenchmarkResults {
   }
 
   @Override
+  public void addGcOldGenCountResult(long result) {
+    throw addGcResultError();
+  }
+
+  @Override
+  public void addGcOldGenTimeResult(long result) {
+    throw addGcResultError();
+  }
+
+  @Override
+  public void addGcYoungGenCountResult(long result) {
+    throw addGcResultError();
+  }
+
+  @Override
+  public void addGcYoungGenTimeResult(long result) {
+    throw addGcResultError();
+  }
+
+  private Unreachable addGcResultError() {
+    throw new Unreachable("Unexpected attempt to add gc result for warmup run");
+  }
+
+  @Override
   public void addRuntimeResult(long result) {
     runtimeResults.add(result);
   }

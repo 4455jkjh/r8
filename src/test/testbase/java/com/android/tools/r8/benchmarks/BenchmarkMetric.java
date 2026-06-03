@@ -10,6 +10,10 @@ public enum BenchmarkMetric {
   ComposableInstructionCodeSize,
   DexSegmentsCodeSize,
   Dex2OatCodeSize,
+  GcOldGenCount,
+  GcOldGenTime,
+  GcYoungGenCount,
+  GcYoungGenTime,
   StartupTime,
   ResourceSize;
 

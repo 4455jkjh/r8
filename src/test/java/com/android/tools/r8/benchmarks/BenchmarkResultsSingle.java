@@ -33,6 +33,10 @@ public class BenchmarkResultsSingle implements BenchmarkResults {
 
   // Consider using LongSet to eliminate duplicate results for size.
   private final LongList codeSizeResults = new LongArrayList();
+  private final LongList gcOldGenCountResults = new LongArrayList();
+  private final LongList gcOldGenTimeResults = new LongArrayList();
+  private final LongList gcYoungGenCountResults = new LongArrayList();
+  private final LongList gcYoungGenTimeResults = new LongArrayList();
   private final LongList instructionCodeSizeResults = new LongArrayList();
   private final LongList composableInstructionCodeSizeResults = new LongArrayList();
   private final LongList dex2OatSizeResults = new LongArrayList();
@@ -68,12 +72,56 @@ public class BenchmarkResultsSingle implements BenchmarkResults {
     return dex2OatSizeResults;
   }
 
+  public LongList getGcOldGenCountResults() {
+    return gcOldGenCountResults;
+  }
+
+  public LongList getGcOldGenTimeResults() {
+    return gcOldGenTimeResults;
+  }
+
+  public LongList getGcYoungGenCountResults() {
+    return gcYoungGenCountResults;
+  }
+
+  public LongList getGcYoungGenTimeResults() {
+    return gcYoungGenTimeResults;
+  }
+
   public LongList getRuntimeResults() {
     return runtimeResults;
   }
 
   public LongList getResourceSizeResults() {
     return resourceSizeResults;
+  }
+
+  @Override
+  public void addGcOldGenCountResult(long result) {
+    verifyMetric(
+        BenchmarkMetric.GcOldGenCount, metrics.contains(BenchmarkMetric.GcOldGenCount), true);
+    gcOldGenCountResults.add(result);
+  }
+
+  @Override
+  public void addGcOldGenTimeResult(long result) {
+    verifyMetric(
+        BenchmarkMetric.GcOldGenTime, metrics.contains(BenchmarkMetric.GcOldGenTime), true);
+    gcOldGenTimeResults.add(result);
+  }
+
+  @Override
+  public void addGcYoungGenCountResult(long result) {
+    verifyMetric(
+        BenchmarkMetric.GcYoungGenCount, metrics.contains(BenchmarkMetric.GcYoungGenCount), true);
+    gcYoungGenCountResults.add(result);
+  }
+
+  @Override
+  public void addGcYoungGenTimeResult(long result) {
+    verifyMetric(
+        BenchmarkMetric.GcYoungGenTime, metrics.contains(BenchmarkMetric.GcYoungGenTime), true);
+    gcYoungGenTimeResults.add(result);
   }
 
   @Override
@@ -151,6 +199,17 @@ public class BenchmarkResultsSingle implements BenchmarkResults {
         "Unexpected attempt to get sub-results for benchmark without sub-benchmarks");
   }
 
+  @Override
+  public boolean isBenchmarkingGc() {
+    if (metrics.contains(BenchmarkMetric.GcOldGenCount)) {
+      assert metrics.contains(BenchmarkMetric.GcOldGenTime);
+      assert metrics.contains(BenchmarkMetric.GcYoungGenCount);
+      assert metrics.contains(BenchmarkMetric.GcYoungGenTime);
+      return true;
+    }
+    return false;
+  }
+
   private static void verifyMetric(BenchmarkMetric metric, boolean expected, boolean actual) {
     if (expected != actual) {
       throw new BenchmarkConfigError(
@@ -221,6 +280,24 @@ public class BenchmarkResultsSingle implements BenchmarkResults {
     System.out.println(BenchmarkResults.prettyMetric(name, BenchmarkMetric.Dex2OatCodeSize, bytes));
   }
 
+  private void printGcOldGenCount(long count) {
+    System.out.println(BenchmarkResults.prettyMetric(name, BenchmarkMetric.GcOldGenCount, count));
+  }
+
+  private void printGcOldGenTime(long duration) {
+    String value = BenchmarkResults.prettyTime(duration);
+    System.out.println(BenchmarkResults.prettyMetric(name, BenchmarkMetric.GcOldGenTime, value));
+  }
+
+  private void printGcYoungGenCount(long count) {
+    System.out.println(BenchmarkResults.prettyMetric(name, BenchmarkMetric.GcYoungGenCount, count));
+  }
+
+  private void printGcYoungGenTime(long duration) {
+    String value = BenchmarkResults.prettyTime(duration);
+    System.out.println(BenchmarkResults.prettyMetric(name, BenchmarkMetric.GcYoungGenTime, value));
+  }
+
   private void printResourceSize(long bytes) {
     System.out.println(BenchmarkResults.prettyMetric(name, BenchmarkMetric.ResourceSize, bytes));
   }
@@ -249,12 +326,32 @@ public class BenchmarkResultsSingle implements BenchmarkResults {
     }
     printCodeSizeResults(dex2OatSizeResults, failOnCodeSizeDifferences, this::printDex2OatSize);
     printCodeSizeResults(resourceSizeResults, failOnCodeSizeDifferences, this::printResourceSize);
+    printGcCountResults(gcOldGenCountResults, mode, this::printGcOldGenCount);
+    printGcTimeResults(gcOldGenTimeResults, mode, this::printGcOldGenTime);
+    printGcCountResults(gcYoungGenCountResults, mode, this::printGcYoungGenCount);
+    printGcTimeResults(gcYoungGenTimeResults, mode, this::printGcYoungGenTime);
   }
 
   private static void printCodeSizeResults(
       LongList codeSizeResults, boolean failOnCodeSizeDifferences, LongConsumer printer) {
     printCodeSizeResults(
         codeSizeResults, codeSizeResults::getLong, failOnCodeSizeDifferences, printer);
+  }
+
+  private void printGcCountResults(LongList gcCountResults, ResultMode mode, LongConsumer printer) {
+    if (!gcCountResults.isEmpty()) {
+      long sum = gcCountResults.stream().mapToLong(l -> l).sum();
+      long result = mode == ResultMode.SUM ? sum : sum / gcCountResults.size();
+      printer.accept(result);
+    }
+  }
+
+  private void printGcTimeResults(LongList gcTimeResults, ResultMode mode, LongConsumer printer) {
+    if (!gcTimeResults.isEmpty()) {
+      long sum = gcTimeResults.stream().mapToLong(l -> l).sum();
+      long result = mode == ResultMode.SUM ? sum : sum / gcTimeResults.size();
+      printer.accept(result);
+    }
   }
 
   private static void printCodeSizeResults(

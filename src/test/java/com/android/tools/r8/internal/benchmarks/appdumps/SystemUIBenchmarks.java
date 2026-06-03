@@ -48,6 +48,16 @@ public class SystemUIBenchmarks extends BenchmarkBase {
             .setFromRevision(16457)
             .buildR8(SystemUIBenchmarks::configure),
         AppDumpBenchmarkBuilder.builder()
+            .setName("SystemUIAppGc")
+            .setDumpDependencyPath(dir)
+            .setEnableGcTracking(true)
+            .setEnableResourceShrinking(true)
+            // TODO(b/373550435): Update dex2oat to enable checking absence of verification errors
+            //  on SystemUI.
+            .setEnableDex2OatVerification(false)
+            .setFromRevision(16457)
+            .buildR8(SystemUIBenchmarks::configure),
+        AppDumpBenchmarkBuilder.builder()
             .setName("SystemUIAppPartial")
             .setDumpDependencyPath(dir)
             .setEnableResourceShrinking(true)

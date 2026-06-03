@@ -17,6 +17,7 @@ import com.android.tools.r8.TestBase.Backend;
 import com.android.tools.r8.TestRuntime.CfRuntime;
 import com.android.tools.r8.ToolHelper.DexVm.Kind;
 import com.android.tools.r8.benchmarks.BenchmarkResults;
+import com.android.tools.r8.benchmarks.gc.CaptureGcResult;
 import com.android.tools.r8.cf.CfVersion;
 import com.android.tools.r8.desugar.desugaredlibrary.test.LibraryDesugaringSpecification.CustomConversionVersion;
 import com.android.tools.r8.dex.ApplicationReader;
@@ -1849,7 +1850,15 @@ public class ToolHelper {
       BenchmarkResults benchmarkResults)
       throws CompilationFailedException {
     long start = 0;
+    CaptureGcResult startGcResult = null;
     if (benchmarkResults != null) {
+      if (benchmarkResults.isBenchmarkingGc()) {
+        // Try to run gc before starting the benchmark so that previous benchmark iterations do not
+        // inadvertently impact gc during the current iteration.
+        System.gc();
+        System.gc();
+        startGcResult = CaptureGcResult.capture();
+      }
       start = System.nanoTime();
     }
     R8Command command = commandBuilder.build();
@@ -1860,7 +1869,16 @@ public class ToolHelper {
     } finally {
       if (benchmarkResults != null) {
         long end = System.nanoTime();
-        benchmarkResults.addRuntimeResult(end - start);
+        long runtimeResult = end - start;
+        benchmarkResults.addRuntimeResult(runtimeResult);
+        if (startGcResult != null) {
+          CaptureGcResult endGcResult = CaptureGcResult.capture();
+          CaptureGcResult delta = startGcResult.computeDelta(endGcResult);
+          benchmarkResults.addGcOldGenCountResult(delta.getOldCount());
+          benchmarkResults.addGcOldGenTimeResult(delta.getOldTimeNanos());
+          benchmarkResults.addGcYoungGenCountResult(delta.getYoungCount());
+          benchmarkResults.addGcYoungGenTimeResult(delta.getYoungTimeNanos());
+        }
       }
     }
   }

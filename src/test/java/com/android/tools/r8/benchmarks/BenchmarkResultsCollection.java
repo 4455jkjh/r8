@@ -26,6 +26,26 @@ public class BenchmarkResultsCollection implements BenchmarkResults {
   }
 
   @Override
+  public void addGcOldGenCountResult(long result) {
+    throw error();
+  }
+
+  @Override
+  public void addGcOldGenTimeResult(long result) {
+    throw error();
+  }
+
+  @Override
+  public void addGcYoungGenCountResult(long result) {
+    throw error();
+  }
+
+  @Override
+  public void addGcYoungGenTimeResult(long result) {
+    throw error();
+  }
+
+  @Override
   public void addRuntimeResult(long result) {
     throw error();
   }

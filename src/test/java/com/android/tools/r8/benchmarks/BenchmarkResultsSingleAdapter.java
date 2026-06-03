@@ -29,6 +29,30 @@ public class BenchmarkResultsSingleAdapter extends BenchmarkResultsAdapterBase
           i -> result.getCodeSizeResults().getLong(i));
       addPropertyIfValueDifferentFromRepresentative(
           resultObject,
+          "gc_old_count",
+          iteration,
+          result.getGcOldGenCountResults(),
+          i -> result.getGcOldGenCountResults().getLong(i));
+      addPropertyIfValueDifferentFromRepresentative(
+          resultObject,
+          "gc_old_time",
+          iteration,
+          result.getGcOldGenTimeResults(),
+          i -> result.getGcOldGenTimeResults().getLong(i));
+      addPropertyIfValueDifferentFromRepresentative(
+          resultObject,
+          "gc_young_count",
+          iteration,
+          result.getGcYoungGenCountResults(),
+          i -> result.getGcYoungGenCountResults().getLong(i));
+      addPropertyIfValueDifferentFromRepresentative(
+          resultObject,
+          "gc_young_time",
+          iteration,
+          result.getGcYoungGenTimeResults(),
+          i -> result.getGcYoungGenTimeResults().getLong(i));
+      addPropertyIfValueDifferentFromRepresentative(
+          resultObject,
           "ins_code_size",
           iteration,
           result.getInstructionCodeSizeResults(),

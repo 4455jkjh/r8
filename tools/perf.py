@@ -140,6 +140,9 @@ INTERNAL_BENCHMARKS = {
     'SystemUIApp': {
         'targets': ['r8-full']
     },
+    'SystemUIAppGc': {
+        'targets': ['r8-full']
+    },
     'SystemUIAppPartial': {
         'targets': ['r8-full']
     },

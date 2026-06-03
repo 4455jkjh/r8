@@ -229,6 +229,9 @@ def run(options, r8jar, testjars):
     if 'AGSA' in options.benchmark:
         xms = '32g'
         xmx = '32g'
+    elif options.benchmark == 'SystemUIAppGc':
+        xms = '2g'
+        xmx = '2g'
     if options.heap_size:
         xms = options.heap_size
         xmx = options.heap_size
