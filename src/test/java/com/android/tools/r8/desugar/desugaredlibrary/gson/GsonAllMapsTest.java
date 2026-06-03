@@ -61,7 +61,7 @@ public class GsonAllMapsTest extends DesugaredLibraryTestBase {
         .addProgramClassesAndInnerClasses(AllMapsTestClass.class)
         .addProgramFiles(ToolHelper.GSON)
         .addKeepMainRule(AllMapsTestClass.class)
-        .addKeepRuleFiles(GSON_CONFIGURATION)
+        .addKeepRules(GSON_CONFIGURATION)
         .applyIf(
             compilationSpecification.isProgramShrink(),
             builder ->
