@@ -16,6 +16,7 @@ import com.android.tools.r8.TestRuntime.CfVm;
 import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.utils.codeinspector.CodeInspector;
 import com.android.tools.r8.utils.internal.StringUtils;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -42,6 +43,7 @@ public class DexNumberValueSwitchTest extends TestBase {
           "null", "42", "positif", "negatif", "null", "42", "positif", "negatif", "null", "42",
           "positif", "negatif", "null", "true", "false");
 
+  @Ignore("Re-enable after moving to java26")
   @Test
   public void testJvm() throws Exception {
     assumeTrue(parameters.isCfRuntime());
@@ -56,6 +58,7 @@ public class DexNumberValueSwitchTest extends TestBase {
         .assertSuccessWithOutput(EXPECTED_OUTPUT);
   }
 
+  @Ignore("Re-enable after moving to java26")
   @Test
   public void testD8() throws Exception {
     testForD8(parameters)
@@ -64,6 +67,7 @@ public class DexNumberValueSwitchTest extends TestBase {
         .assertSuccessWithOutput(EXPECTED_OUTPUT);
   }
 
+  @Ignore("Re-enable after moving to java26")
   @Test
   public void testR8() throws Exception {
     parameters.assumeR8TestParameters();
@@ -86,9 +90,10 @@ public class DexNumberValueSwitchTest extends TestBase {
         case null -> {
           System.out.println("null");
         }
-        case true -> {
-          System.out.println("true");
-        }
+        // TODO(sgjesse): Did not make the cut for java 25. Re-enable after moving to java26
+        // case true -> {
+        //  System.out.println("true");
+        // }
         default -> {
           System.out.println("false");
         }
@@ -100,9 +105,10 @@ public class DexNumberValueSwitchTest extends TestBase {
         case null -> {
           System.out.println("null");
         }
-        case 42.0 -> {
-          System.out.println("42");
-        }
+        // TODO(sgjesse): Did not make the cut for java 25. Re-enable after moving to java26
+        // case 42.0 -> {
+        //  System.out.println("42");
+        // }
         case Double f2 when f2 > 0 -> {
           System.out.println("positif");
         }
@@ -117,9 +123,10 @@ public class DexNumberValueSwitchTest extends TestBase {
         case null -> {
           System.out.println("null");
         }
-        case 42.0f -> {
-          System.out.println("42");
-        }
+        // TODO(sgjesse): Did not make the cut for java 25. Re-enable after moving to java26
+        // case 42.0f -> {
+        //  System.out.println("42");
+        // }
         case Float f2 when f2 > 0 -> {
           System.out.println("positif");
         }
@@ -134,9 +141,10 @@ public class DexNumberValueSwitchTest extends TestBase {
         case null -> {
           System.out.println("null");
         }
-        case 42L -> {
-          System.out.println("42");
-        }
+        // TODO(sgjesse): Did not make the cut for java 25. Re-enable after moving to java26
+        // case 42L -> {
+        //  System.out.println("42");
+        // }
         case Long i2 when i2 > 0 -> {
           System.out.println("positif");
         }

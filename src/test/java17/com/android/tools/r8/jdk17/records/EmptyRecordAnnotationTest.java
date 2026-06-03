@@ -65,7 +65,9 @@ public class EmptyRecordAnnotationTest extends TestBase {
   public void testR8() throws Exception {
     parameters.assumeR8TestParameters();
     testForR8(parameters)
-        .addLibraryProvider(JdkClassFileProvider.fromSystemJdk())
+        .applyIf(
+            parameters.isCfRuntime(),
+            b -> b.addLibraryProvider(JdkClassFileProvider.fromSystemJdk()))
         .addInnerClassesAndStrippedOuter(getClass())
         .addKeepClassAndMembersRules(EmptyRecordAnnotationTest.TestClass.class)
         .addKeepRules("-keepattributes *Annotation*")

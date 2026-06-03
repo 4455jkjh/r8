@@ -29,10 +29,7 @@ dependencies {
 }
 
 tasks {
-  withType<JavaCompile> {
-    dependsOn(sharedDepsConfig)
-    options.compilerArgs.add("--enable-preview")
-  }
+  withType<JavaCompile> { dependsOn(sharedDepsConfig) }
 
   withType<Test> {
     notCompatibleWithConfigurationCache(
@@ -56,4 +53,14 @@ tasks {
         .split(File.pathSeparator)[0],
     )
   }
+
+  val assembleTestJar by
+    registering(Jar::class) {
+      from(sourceSets.test.get().output)
+      archiveFileName.set("not_named_tests_java_25.jar")
+    }
 }
+
+val testJar by configurations.consumable("testJar")
+
+artifacts { add(testJar.name, tasks.named("assembleTestJar")) }

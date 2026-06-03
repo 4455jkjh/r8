@@ -96,6 +96,7 @@ dependencies {
   testJarsScope(project(":tests_java_11", "testJar"))
   testJarsScope(project(":tests_java_17", "testJar"))
   testJarsScope(project(":tests_java_21", "testJar"))
+  testJarsScope(project(":tests_java_25", "testJar"))
   testJarsScope(project(":tests_bootstrap", "testJar"))
   testbaseTestJarsScope(project(":testbase", "testJar"))
   testDepsJarsScope(project(":tests_bootstrap", "depsJar"))
@@ -581,7 +582,7 @@ tasks {
     systemProperty("R8_SWISS_ARMY_KNIFE", swissArmyKnifeJar)
     systemProperty("R8_WITH_RELOCATED_DEPS", r8WithRelocatedDepsJar)
 
-    javaLauncher = getJavaLauncher(Jdk.JDK_21)
+    javaLauncher = getJavaLauncher(Jdk.JDK_25)
 
     reports.junitXml.outputLocation.set(getRoot().resolveAll("build", "test-results", "test"))
     reports.html.outputLocation.set(getRoot().resolveAll("build", "reports", "tests", "test"))
@@ -632,6 +633,7 @@ tasks {
       dependsOn(":tests_java_11:test")
       dependsOn(":tests_java_17:test")
       dependsOn(":tests_java_21:test")
+      dependsOn(":tests_java_25:test")
       dependsOn(":tests_bootstrap:test")
     }
   }
