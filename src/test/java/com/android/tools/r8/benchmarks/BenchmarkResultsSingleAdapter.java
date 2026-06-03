@@ -62,7 +62,6 @@ public class BenchmarkResultsSingleAdapter extends BenchmarkResultsAdapterBase
           iteration,
           result.getRuntimeResults(),
           i -> result.getRuntimeResults().getLong(i));
-          resultsArray.add(resultObject);
       addPropertyIfValueDifferentFromRepresentative(
           resultObject,
           "resource_size",
