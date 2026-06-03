@@ -14,6 +14,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.SortedMap;
 import java.util.function.BiFunction;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
@@ -46,6 +47,11 @@ public class FieldMapBacking extends FieldCollectionBacking {
           assert signature.match(field.getReference());
         });
     return true;
+  }
+
+  @Override
+  void forEach(Consumer<DexEncodedField> fn) {
+    fieldMap.values().forEach(fn);
   }
 
   @Override
