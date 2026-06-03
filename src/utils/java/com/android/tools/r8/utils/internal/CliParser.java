@@ -15,29 +15,46 @@ public class CliParser<B> {
   private Consumer<String> currentErrorReporter;
 
   public CliParser(String usageHeader) {
+    this(usageHeader, false);
+  }
+
+  public CliParser(String usageHeader, boolean unknownOptionPassthrough) {
     this.base = new CliParserBase<>(usageHeader);
-    this.base.positional(
-        (b, arg) -> {
-          if (arg.startsWith("-")) {
-            currentErrorReporter.accept("Unknown option: " + arg);
-          } else if (originalPositionalHandler != null) {
-            originalPositionalHandler.accept(b, arg);
-          } else {
-            currentErrorReporter.accept("Unexpected argument: " + arg);
-          }
-        });
+    if (unknownOptionPassthrough) {
+      this.base.positional(
+          (b, arg) -> {
+            if (originalPositionalHandler != null) {
+              originalPositionalHandler.accept(b, arg);
+            }
+          });
+    } else {
+      // Intercept '--<something>' before the positional handler.
+      this.base.positional(
+          (b, arg) -> {
+            if (arg.startsWith("-")) {
+              currentErrorReporter.accept("Unknown option: " + arg);
+            } else if (originalPositionalHandler != null) {
+              originalPositionalHandler.accept(b, arg);
+            } else {
+              // This is CliParserBase behaviour, conceptually it should return "don't handle
+              // anyway" here.
+              currentErrorReporter.accept("Unexpected argument: " + arg);
+            }
+          });
+    }
   }
 
   public CliParserBase<B> baseParser() {
     return base;
   }
 
-  public CliParser<B> withBaseParser(Consumer<CliParserBase<B>> consumer) {
-    consumer.accept(base);
+  public CliParser<B> withBaseParser(Consumer<CliParserBase<B>> action) {
+    action.accept(base);
     return this;
   }
 
   public CliParser<B> positional(BiConsumer<B, String> action) {
+    assert originalPositionalHandler == null : "A positional handler was already bound.";
     this.originalPositionalHandler = action;
     return this;
   }

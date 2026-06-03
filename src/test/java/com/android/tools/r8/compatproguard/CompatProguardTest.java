@@ -14,8 +14,6 @@ import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.compatproguard.CompatProguard.CompatProguardOptions;
 import com.android.tools.r8.utils.internal.StringUtils;
-import java.io.ByteArrayOutputStream;
-import java.io.PrintStream;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -39,32 +37,31 @@ public class CompatProguardTest extends TestBase {
 
   @Test
   public void testHelpMessage() throws Exception {
-    ByteArrayOutputStream out = new ByteArrayOutputStream();
-    PrintStream originalOut = System.out;
-    System.setOut(new PrintStream(out));
-    try {
-      CompatProguard.main(new String[] {"--help"});
-    } finally {
-      System.setOut(originalOut);
-    }
     assertEquals(
         StringUtils.lines(
-            "",
-            "Usage: compatproguard [options] --output <dir> <proguard-config>*",
+            "Usage: compatproguard [options] <proguard-config>*",
             "",
             "Where options are:",
-            "-h/--help            : print this help message",
-            "--release            : compile without debugging information (default).",
-            "--debug              : compile with debugging information.",
-            "--min-api n          : specify the targeted min android api level",
-            "--main-dex-list list : specify main dex list for multi-dexing",
-            "--minimal-main-dex   : ignored (provided for compatibility)",
-            "--multi-dex          : ignored (provided for compatibility)",
-            "--no-locals          : ignored (provided for compatibility)",
-            "--core-library       : ignored (provided for compatibility)",
-            "--force-proguard-compatibility : Proguard compatibility mode",
-            "--no-data-resources  : ignore all data resources"),
-        out.toString());
+            "  --help",
+            "  -h                      # Print this message.",
+            "  --release               # Compile without debugging information (default).",
+            "  --debug                 # Compile with debugging information.",
+            "  --output <dir>          # Output result in <dir>.",
+            "  --min-api <n>           # Specify the targeted min android api level.",
+            "  --main-dex-list <list>  # Specify main dex list for multi-dexing.",
+            "  --map-id-template <template>",
+            "                          # Set the map-id to <template>.",
+            "  --source-file-template <template>",
+            "                          # Set all source-file attributes to <template>.",
+            "  --deps-file <file>      # Set deps file output.",
+            "  --minimal-main-dex      # Ignored (provided for compatibility).",
+            "  --multi-dex             # Ignored (provided for compatibility).",
+            "  --no-locals             # Ignored (provided for compatibility).",
+            "  --core-library          # Ignored (provided for compatibility).",
+            "  --force-proguard-compatibility",
+            "                          # Proguard compatibility mode.",
+            "  --no-data-resources     # Ignore all data resources."),
+        CompatProguardOptions.usageMessage());
   }
 
   @Test

@@ -14,13 +14,17 @@ import com.android.tools.r8.R8;
 import com.android.tools.r8.SourceFileProvider;
 import com.android.tools.r8.errors.CompilationError;
 import com.android.tools.r8.origin.CommandLineOrigin;
+import com.android.tools.r8.utils.CliParserUtils;
 import com.android.tools.r8.utils.ExceptionUtils;
 import com.android.tools.r8.utils.MapIdTemplateProvider;
 import com.android.tools.r8.utils.SourceFileTemplateProvider;
+import com.android.tools.r8.utils.internal.CliParser;
 import com.android.tools.r8.utils.internal.FileUtils;
+import com.android.tools.r8.utils.internal.StringUtils;
 import com.google.common.collect.ImmutableList;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -78,9 +82,8 @@ public class CompatProguard {
       this.printHelpAndExit = printHelpAndExit;
     }
 
-    public static CompatProguardOptions parse(String[] args) {
-      @SuppressWarnings("UnusedVariable")
-      DiagnosticsHandler handler = new DiagnosticsHandler() {};
+    private static class ParserState {
+      DiagnosticsHandler handler;
       String output = null;
       CompilationMode mode = null;
       int minApi = 1;
@@ -92,104 +95,144 @@ public class CompatProguard {
       MapIdProvider mapIdProvider = null;
       SourceFileProvider sourceFileProvider = null;
       String depsFileOutput = null;
+      // Inputs like '-keep a --output tmp/ b' is interpreted as a proguard inputs, "-keep", "a",
+      // and "b" and an output flag "--output tmp/".
+      List<String> proguardInputs = new ArrayList<>();
 
-      ImmutableList.Builder<String> builder = ImmutableList.builder();
-      if (args.length > 0) {
-        StringBuilder currentLine = new StringBuilder();
-        for (int i = 0; i < args.length; i++) {
-          String arg = args[i];
-          if (arg.charAt(0) == '-') {
-            if (arg.equals("-h") || arg.equals("--help")) {
-              printHelpAndExit = true;
-            } else if (arg.equals("--debug")) {
-              if (mode == CompilationMode.RELEASE) {
-                throw new CompilationError("Cannot compile in both --debug and --release mode.");
-              }
-              mode = CompilationMode.DEBUG;
-            } else if (arg.equals("--release")) {
-              if (mode == CompilationMode.DEBUG) {
-                throw new CompilationError("Cannot compile in both --debug and --release mode.");
-              }
-              mode = CompilationMode.RELEASE;
-            } else if (arg.equals("--min-api")) {
-              minApi = Integer.valueOf(args[++i]);
-            } else if (arg.equals("--force-proguard-compatibility")) {
-              forceProguardCompatibility = true;
-            } else if (arg.equals("--no-data-resources")) {
-              includeDataResources = false;
-            } else if (arg.equals("--output")) {
-              output = args[++i];
-            } else if (arg.equals("--multi-dex")) {
-              multiDex = true;
-            } else if (arg.equals("--main-dex-list")) {
-              mainDexList = args[++i];
-            } else if (arg.startsWith("--main-dex-list=")) {
-              mainDexList = arg.substring("--main-dex-list=".length());
-            } else if (arg.equals("--map-id-template")) {
-              mapIdProvider = MapIdTemplateProvider.create(args[++i], handler);
-            } else if (arg.equals("--source-file-template")) {
-              sourceFileProvider = SourceFileTemplateProvider.create(args[++i], handler);
-            } else if (arg.equals("--deps-file")) {
-              depsFileOutput = args[++i];
-            } else if (arg.equals("--core-library")
-                || arg.equals("--minimal-main-dex")
-                || arg.equals("--no-locals")) {
-              // Ignore.
-            } else if (arg.equals("-outjars")) {
-              throw new CompilationError(
-                  "Proguard argument -outjar is not supported. Use R8 compatible --output flag");
-            } else {
-              if (currentLine.length() > 0) {
-                builder.add(currentLine.toString());
-              }
-              currentLine = new StringBuilder(arg);
-            }
-          } else {
-            if (currentLine.length() > 0) {
-              currentLine.append(' ');
-            }
-            currentLine.append(arg);
-          }
-        }
-        if (currentLine.length() > 0) {
-          builder.add(currentLine.toString());
-        }
+      public ParserState(DiagnosticsHandler handler) {
+        this.handler = handler;
       }
+    }
+
+    private static CliParser<ParserState> createParser() {
+      var header =
+          StringUtils.joinLines(
+              "Usage: compatproguard [options] <proguard-config>*", "", "Where options are:");
+      CliParser<ParserState> parser = new CliParser<>(header, true);
+      return parser
+          .option0("--help", "Print this message.", b -> b.printHelpAndExit = true, "-h")
+          .option0(
+              "--release",
+              "Compile without debugging information (default).",
+              b -> {
+                if (b.mode == CompilationMode.DEBUG) {
+                  throw new CompilationError("Cannot compile in both --debug and --release mode.");
+                }
+                b.mode = CompilationMode.RELEASE;
+              })
+          .option0(
+              "--debug",
+              "Compile with debugging information.",
+              b -> {
+                if (b.mode == CompilationMode.RELEASE) {
+                  throw new CompilationError("Cannot compile in both --debug and --release mode.");
+                }
+                b.mode = CompilationMode.DEBUG;
+              })
+          .option1("--output", "<dir>", "Output result in <dir>.", (b, arg) -> b.output = arg)
+          .option1(
+              "--min-api",
+              "<n>",
+              "Specify the targeted min android api level.",
+              (b, arg) -> {
+                CliParserUtils.parsePositiveInt(
+                    arg,
+                    api -> b.minApi = api,
+                    err -> {
+                      throw new CompilationError("Cannot read --min-api: " + err);
+                    });
+              })
+          .option1(
+              "--main-dex-list",
+              "<list>",
+              "Specify main dex list for multi-dexing.",
+              (b, arg) -> b.mainDexList = arg)
+          .option1(
+              "--map-id-template",
+              "<template>",
+              "Set the map-id to <template>.",
+              (b, arg) -> b.mapIdProvider = MapIdTemplateProvider.create(arg, b.handler))
+          .option1(
+              "--source-file-template",
+              "<template>",
+              "Set all source-file attributes to <template>.",
+              (b, arg) -> b.sourceFileProvider = SourceFileTemplateProvider.create(arg, b.handler))
+          .option1(
+              "--deps-file", "<file>", "Set deps file output.", (b, arg) -> b.depsFileOutput = arg)
+          .option0("--minimal-main-dex", "Ignored (provided for compatibility).", b -> {})
+          .option0("--multi-dex", "Ignored (provided for compatibility).", b -> b.multiDex = true)
+          .option0("--no-locals", "Ignored (provided for compatibility).", b -> {})
+          .option0("--core-library", "Ignored (provided for compatibility).", b -> {})
+          .option0(
+              "--force-proguard-compatibility",
+              "Proguard compatibility mode.",
+              b -> b.forceProguardCompatibility = true)
+          .option0(
+              "--no-data-resources",
+              "Ignore all data resources.",
+              b -> b.includeDataResources = false)
+          .positional(
+              (b, arg) -> {
+                if (arg.equals("-outjars")) {
+                  throw new CompilationError(
+                      "Proguard argument -outjar is not supported. Use R8 compatible --output"
+                          + " flag");
+                } else {
+                  b.proguardInputs.add(arg);
+                }
+              });
+    }
+
+    public static CompatProguardOptions parse(String[] args) {
+      ParserState state = new ParserState(new DiagnosticsHandler() {});
+      createParser()
+          .parse(
+              args,
+              state,
+              err -> {
+                throw new CompilationError(err);
+              });
       return new CompatProguardOptions(
-          builder.build(),
-          output,
-          mode,
-          minApi,
-          multiDex,
-          forceProguardCompatibility,
-          includeDataResources,
-          mainDexList,
-          mapIdProvider,
-          sourceFileProvider,
-          depsFileOutput,
-          printHelpAndExit);
+          groupProguardArgs(state.proguardInputs),
+          state.output,
+          state.mode,
+          state.minApi,
+          state.multiDex,
+          state.forceProguardCompatibility,
+          state.includeDataResources,
+          state.mainDexList,
+          state.mapIdProvider,
+          state.sourceFileProvider,
+          state.depsFileOutput,
+          state.printHelpAndExit);
     }
 
-    public static void print() {
-      System.out.println("-h/--help            : print this help message");
-      System.out.println("--release            : compile without debugging information (default).");
-      System.out.println("--debug              : compile with debugging information.");
-      System.out.println("--min-api n          : specify the targeted min android api level");
-      System.out.println("--main-dex-list list : specify main dex list for multi-dexing");
-      System.out.println("--minimal-main-dex   : ignored (provided for compatibility)");
-      System.out.println("--multi-dex          : ignored (provided for compatibility)");
-      System.out.println("--no-locals          : ignored (provided for compatibility)");
-      System.out.println("--core-library       : ignored (provided for compatibility)");
-      System.out.println("--force-proguard-compatibility : Proguard compatibility mode");
-      System.out.println("--no-data-resources  : ignore all data resources");
+    /**
+     * Takes a list like "-keep", "a", "b", "-fun", "c" and returns a list like "-keep a b","-fun
+     * c".
+     */
+    private static ImmutableList<String> groupProguardArgs(List<String> inputs) {
+      ImmutableList.Builder<String> builder = ImmutableList.builder();
+      StringBuilder currentGroup = new StringBuilder();
+      for (String arg : inputs) {
+        if (arg.startsWith("-") && currentGroup.length() != 0) {
+          builder.add(currentGroup.toString());
+          currentGroup.setLength(0);
+        }
+        if (currentGroup.length() != 0) {
+          currentGroup.append(' ');
+        }
+        currentGroup.append(arg);
+      }
+      if (currentGroup.length() != 0) {
+        builder.add(currentGroup.toString());
+      }
+      return builder.build();
     }
-  }
 
-  private static void printHelp() {
-    System.out.println("Usage: compatproguard [options] --output <dir> <proguard-config>*");
-    System.out.println();
-    System.out.println("Where options are:");
-    CompatProguardOptions.print();
+    public static String usageMessage() {
+      return CliParserUtils.getUsageMessage(createParser());
+    }
   }
 
   private static void run(String[] args) throws CompilationFailedException {
@@ -197,7 +240,7 @@ public class CompatProguard {
     CompatProguardOptions options = CompatProguardOptions.parse(args);
     if (options.printHelpAndExit || options.output == null) {
       System.out.println();
-      printHelp();
+      System.out.println(CompatProguardOptions.usageMessage());
       return;
     }
     CompatProguardCommandBuilder builder =
