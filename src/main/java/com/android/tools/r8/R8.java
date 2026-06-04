@@ -216,10 +216,7 @@ public class R8 {
     AndroidApp app = command.getInputApp();
     InternalOptions options = command.getInternalOptions();
     ExceptionUtils.withR8CompilationHandler(
-        command.getReporter(),
-        () -> {
-          runInternal(app, options, executor);
-        });
+        command.getReporter(), () -> runInternal(app, options, executor));
   }
 
   static void writeApplication(
@@ -362,52 +359,41 @@ public class R8 {
         appView.rebuildAppInfo(timing);
       }
       timing.end();
+
       timing.begin("Strip unused code");
-      timing.begin("Before enqueuer");
-      List<ProguardConfigurationRule> synthesizedProguardRules =
-          ProguardConfigurationUtils.synthesizeRules(appView);
-      ProfileCollectionAdditions profileCollectionAdditions =
-          ProfileCollectionAdditions.create(appView);
-      AssumeInfoCollection.Builder assumeInfoCollectionBuilder = AssumeInfoCollection.builder();
-      ImmediateAppSubtypingInfo subtypingInfo = ImmediateAppSubtypingInfo.create(appView);
-      appView.setRootSet(
-          RootSet.builder(
-                  appView,
-                  subtypingInfo,
-                  Iterables.concat(
-                      options.getProguardConfiguration().getRules(), synthesizedProguardRules))
-              .setAssumeInfoCollectionBuilder(assumeInfoCollectionBuilder)
-              .evaluateRules(executorService, timing)
-              .expandAdaptClassStringsPatterns()
-              .tracePartialCompilationDexingOutputClasses(executorService, timing)
-              .build());
-      appView.setAssumeInfoCollection(assumeInfoCollectionBuilder.build(appView));
 
-      // Compute the main dex rootset that will be the base of first and final main dex tracing
-      // before building a new appview with only live classes (and invalidating subtypingInfo).
-      if (!options.mainDexKeepRules.isEmpty()) {
-        assert appView.graphLens().isIdentityLens();
-        // Find classes which may have code executed before secondary dex files installation.
-        MainDexRootSet mainDexRootSet =
-            MainDexRootSet.builder(appView, subtypingInfo, options.mainDexKeepRules)
-                .evaluateRulesAndBuild(executorService, timing);
-        appView.setMainDexRootSet(mainDexRootSet);
-        appView.appInfo().unsetObsolete();
-      }
+      boolean enableListIterationRewriter;
 
+      // Important scope! This ensures that the complete subtyping info for the entire input
+      // including the entire library can be collected after tree shaking.
       AnnotationRemover.Builder annotationRemoverBuilder =
           options.isShrinking() ? AnnotationRemover.builder(Mode.INITIAL_TREE_SHAKING) : null;
-      timing.end();
-      timing.begin("Enqueuer");
-      AppView<AppInfoWithLiveness> appViewWithLiveness =
-          runEnqueuer(
-              annotationRemoverBuilder,
-              executorService,
-              appView,
-              profileCollectionAdditions,
-              subtypingInfo,
-              keepDeclarations);
-      timing.end();
+      List<ProguardConfigurationRule> synthesizedProguardRules =
+          ProguardConfigurationUtils.synthesizeRules(appView);
+      {
+        timing.begin("Before enqueuer");
+        ProfileCollectionAdditions profileCollectionAdditions =
+            ProfileCollectionAdditions.create(appView);
+        ImmediateAppSubtypingInfo subtypingInfo = ImmediateAppSubtypingInfo.create(appView);
+        buildRootSet(appView, subtypingInfo, synthesizedProguardRules, executorService);
+        buildMainDexRootSet(appView, subtypingInfo, executorService);
+        timing.end();
+
+        timing.begin("Enqueuer");
+        runEnqueuer(
+            annotationRemoverBuilder,
+            executorService,
+            appView,
+            profileCollectionAdditions,
+            subtypingInfo,
+            keepDeclarations);
+        timing.end();
+
+        // Compute immediately after tree shaking to (1) not trigger on pruned classes and (2) allow
+        // GC to collect the complete subtyping info for the entire input.
+        enableListIterationRewriter =
+            ListIterationRewriter.shouldEnableForR8(appView, subtypingInfo);
+      }
 
       if (options.getKeepRadiusOptions().shouldExitEarly()) {
         if (options.isPrintTimesReportingEnabled()) {
@@ -415,6 +401,8 @@ public class R8 {
         }
         return;
       }
+
+      AppView<AppInfoWithLiveness> appViewWithLiveness = appView.withLiveness();
 
       timing.begin("After enqueuer");
       assert appView.rootSet().verifyKeptFieldsAreAccessedAndLive(appViewWithLiveness);
@@ -485,10 +473,6 @@ public class R8 {
       } else {
         assert appView.testing().isSupportedLirPhase();
       }
-
-      // Compute after initial round of tree shaking to not trigger on pruned classes.
-      boolean enableListIterationRewriter =
-          ListIterationRewriter.shouldEnableForR8(appView, subtypingInfo);
 
       timing.end();
       timing.end();
@@ -1262,7 +1246,47 @@ public class R8 {
         executorService);
   }
 
-  private AppView<AppInfoWithLiveness> runEnqueuer(
+  private void buildRootSet(
+      AppView<AppInfoWithClassHierarchy> appView,
+      ImmediateAppSubtypingInfo subtypingInfo,
+      List<ProguardConfigurationRule> synthesizedProguardRules,
+      ExecutorService executorService)
+      throws ExecutionException {
+    AssumeInfoCollection.Builder assumeInfoCollectionBuilder = AssumeInfoCollection.builder();
+    appView.setRootSet(
+        RootSet.builder(
+                appView,
+                subtypingInfo,
+                Iterables.concat(
+                    options.getProguardConfiguration().getRules(), synthesizedProguardRules))
+            .setAssumeInfoCollectionBuilder(assumeInfoCollectionBuilder)
+            .evaluateRules(executorService, timing)
+            .expandAdaptClassStringsPatterns()
+            .tracePartialCompilationDexingOutputClasses(executorService, timing)
+            .build());
+    appView.setAssumeInfoCollection(assumeInfoCollectionBuilder.build(appView));
+  }
+
+  private void buildMainDexRootSet(
+      AppView<AppInfoWithClassHierarchy> appView,
+      ImmediateAppSubtypingInfo subtypingInfo,
+      ExecutorService executorService)
+      throws ExecutionException {
+    // Compute the main dex rootset that will be the base of first and final main dex tracing
+    // before building a new appview with only live classes (and invalidating subtypingInfo).
+    if (options.mainDexKeepRules.isEmpty()) {
+      return;
+    }
+    assert appView.graphLens().isIdentityLens();
+    // Find classes which may have code executed before secondary dex files installation.
+    MainDexRootSet mainDexRootSet =
+        MainDexRootSet.builder(appView, subtypingInfo, options.mainDexKeepRules)
+            .evaluateRulesAndBuild(executorService, timing);
+    appView.setMainDexRootSet(mainDexRootSet);
+    appView.appInfo().unsetObsolete();
+  }
+
+  private void runEnqueuer(
       AnnotationRemover.Builder annotationRemoverBuilder,
       ExecutorService executorService,
       AppView<AppInfoWithClassHierarchy> appView,
@@ -1303,7 +1327,6 @@ public class R8 {
             shrinker.rewriteDeadBuilderReferencesFromDynamicMethods(
                 conversionOptions, appViewWithLiveness, executorService, timing));
     timing.end();
-    return appViewWithLiveness;
   }
 
   static void processWhyAreYouKeepingAndCheckDiscarded(

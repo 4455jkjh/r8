@@ -148,6 +148,9 @@ public class ListIterationRewriter extends CodeRewriterPass<AppInfo> {
             subclass ->
                 TraversalContinuation.breakIf(
                     subclass.isProgramClass()
+                        && appView
+                            .appInfoWithLiveness()
+                            .isLiveProgramClass(subclass.asProgramClass())
                         && subclass
                             .getMethodCollection()
                             .hasVirtualMethods(

@@ -493,7 +493,7 @@ public class AnnotationRemover {
      * The set of annotations that were matched by a conditional if rule. These are needed for the
      * interpretation of if rules in the second round of tree shaking.
      */
-    private final Set<DexAnnotation> annotationsToRetain =
+    private Set<DexAnnotation> annotationsToRetain =
         Collections.synchronizedSet(Sets.newIdentityHashSet());
 
     private final Mode mode;
@@ -511,7 +511,10 @@ public class AnnotationRemover {
     }
 
     public AnnotationRemover build(AppView<AppInfoWithLiveness> appView) {
-      return new AnnotationRemover(appView, SetUtils.newIdentityHashSet(annotationsToRetain), mode);
+      AnnotationRemover result =
+          new AnnotationRemover(appView, SetUtils.newIdentityHashSet(annotationsToRetain), mode);
+      annotationsToRetain = null;
+      return result;
     }
   }
 }
