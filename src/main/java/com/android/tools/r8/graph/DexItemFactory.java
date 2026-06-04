@@ -3985,6 +3985,15 @@ public class DexItemFactory {
     commitPendingItems(committedMethods, methods);
   }
 
+  public int getNumberOfUncommittedItems() {
+    return methodHandles.size()
+        + strings.size()
+        + types.size()
+        + fields.size()
+        + protos.size()
+        + methods.size();
+  }
+
   private static <K, V> void commitPendingItems(Map<K, V> committed, Map<K, V> pending) {
     committed.putAll(pending);
     pending.clear();
