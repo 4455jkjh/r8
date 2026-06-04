@@ -155,16 +155,18 @@ tasks {
 
   named<Copy>("processTestResources") {
     dependsOn(createArtTests)
+    val r8 = "com/android/tools/r8"
     from(sourceSets.test.get().java) {
-      include("**/desugar/nestaccesscontrol/methodparameters/Outer.java")
-      include("**/desugar/twr/TwrTestSource.java")
-      include("**/desugaring/interfacemethods/methodparameters/I.java")
-      include("**/naming/bridge/Creator.java")
-      include("**/naming/bridge/Result.java")
-      include("**/naming/bridge/ResultImpl.java")
-      include("**/naming/bridge/Tester.java")
-      include("**/naming/bridge/TesterImpl.java")
-      include("**/naming/bridge/Main.java")
+      include("$r8/desugar/nestaccesscontrol/methodparameters/Outer.java")
+      include("$r8/desugar/twr/TwrTestSource.java")
+      include("$r8/desugaring/interfacemethods/methodparameters/I.java")
+      include("$r8/naming/bridge/Creator.java")
+      include("$r8/naming/bridge/Result.java")
+      include("$r8/naming/bridge/ResultImpl.java")
+      include("$r8/naming/bridge/Tester.java")
+      include("$r8/naming/bridge/TesterImpl.java")
+      include("$r8/naming/bridge/Main.java")
+      include("$r8/keepanno/api/genericsignature/MyValueBoxClient.java")
     }
   }
 }
