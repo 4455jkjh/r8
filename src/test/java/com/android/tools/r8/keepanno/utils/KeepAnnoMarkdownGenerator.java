@@ -7,7 +7,6 @@ package com.android.tools.r8.keepanno.utils;
 import static com.android.tools.r8.keepanno.utils.KeepItemAnnotationGenerator.getUnqualifiedName;
 import static com.android.tools.r8.keepanno.utils.KeepItemAnnotationGenerator.quote;
 
-import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.keepanno.doctests.ForApiDocumentationTest;
 import com.android.tools.r8.keepanno.doctests.GenericSignaturePrinter;
 import com.android.tools.r8.keepanno.doctests.MainMethodsDocumentationTest;
@@ -18,6 +17,7 @@ import com.android.tools.r8.keepanno.utils.KeepItemAnnotationGenerator.Generator
 import com.android.tools.r8.keepanno.utils.KeepItemAnnotationGenerator.Group;
 import com.android.tools.r8.keepanno.utils.KeepItemAnnotationGenerator.GroupMember;
 import com.android.tools.r8.references.ClassReference;
+import com.android.tools.r8.utils.DescriptorUtils;
 import com.android.tools.r8.utils.internal.FileUtils;
 import com.android.tools.r8.utils.internal.StringUtils;
 import com.google.common.collect.ImmutableMap;
@@ -38,7 +38,8 @@ public class KeepAnnoMarkdownGenerator {
 
   public static void generateMarkdownDoc(Generator generator, Path projectRoot) {
     try {
-      new KeepAnnoMarkdownGenerator(generator).internalGenerateMarkdownDoc(projectRoot);
+      new KeepAnnoMarkdownGenerator(generator, projectRoot)
+          .internalGenerateMarkdownDoc(projectRoot);
     } catch (IOException e) {
       throw new RuntimeException(e);
     }
@@ -64,7 +65,7 @@ public class KeepAnnoMarkdownGenerator {
   private Map<String, String> docReplacements = new HashMap<>();
   private Map<String, String> codeReplacements = new HashMap<>();
 
-  public KeepAnnoMarkdownGenerator(Generator generator) {
+  public KeepAnnoMarkdownGenerator(Generator generator, Path projectRoot) {
     this.generator = generator;
     ImmutableMap.Builder<String, String> builder = ImmutableMap.builder();
     // Annotations.
@@ -93,6 +94,7 @@ public class KeepAnnoMarkdownGenerator {
 
     typeLinkReplacements = builder.build();
     populateCodeAndDocReplacements(
+        projectRoot,
         UsesReflectionDocumentationTest.class,
         UsesReflectionAnnotationsDocumentationTest.class,
         ForApiDocumentationTest.class,
@@ -133,9 +135,15 @@ public class KeepAnnoMarkdownGenerator {
     }
   }
 
-  private void populateCodeAndDocReplacements(Class<?>... classes) {
+  private static Path getSourceFileForTestClass(Path projectRoot, Class<?> clazz) {
+    return projectRoot
+        .resolve("src/test/java")
+        .resolve(DescriptorUtils.getClassBinaryName(clazz) + ".java");
+  }
+
+  private void populateCodeAndDocReplacements(Path projectRoot, Class<?>... classes) {
     for (Class<?> clazz : classes) {
-      Path sourceFile = ToolHelper.getSourceFileForTestClass(clazz);
+      Path sourceFile = getSourceFileForTestClass(projectRoot, clazz);
       extractMarkers(sourceFile);
     }
   }
