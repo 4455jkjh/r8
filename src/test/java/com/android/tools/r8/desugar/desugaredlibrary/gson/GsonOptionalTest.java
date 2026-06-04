@@ -58,7 +58,7 @@ public class GsonOptionalTest extends DesugaredLibraryTestBase {
         .addProgramClassesAndInnerClasses(OptionalTestClass.class)
         .addProgramFiles(ToolHelper.GSON)
         .addKeepMainRule(OptionalTestClass.class)
-        .addKeepRuleFiles(GSON_CONFIGURATION)
+        .addKeepRules(GSON_CONFIGURATION)
         .addKeepRules("-ignorewarnings")
         .applyIf(
             compilationSpecification.isProgramShrink(),

@@ -4,19 +4,67 @@
 package com.android.tools.r8.desugar.desugaredlibrary.gson;
 
 import com.android.tools.r8.TestParameters;
-import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.desugar.desugaredlibrary.test.CompilationSpecification;
 import com.android.tools.r8.desugar.desugaredlibrary.test.LibraryDesugaringSpecification;
+import com.android.tools.r8.utils.internal.StringUtils;
 import java.io.IOException;
-import java.nio.file.Path;
 import org.junit.rules.TemporaryFolder;
 
 public abstract class GsonDesugaredLibraryTestUtils {
 
-  static final Path GSON_CONFIGURATION =
-      ToolHelper.getSourceFileForTestClass(GsonDesugaredLibraryTestUtils.class)
-          .getParent()
-          .resolve("gson.cfg");
+  public static final String GSON_CONFIGURATION =
+      StringUtils.lines(
+          // Gson uses generic type information stored in a class file when working with fields.
+          // R8 removes such information by default, so configure it to keep all of it.
+          "-keepattributes Signature",
+          "-keepattributes EnclosingMethod",
+          "-keepattributes InnerClasses",
+          // For using GSON @Expose annotation
+          "-keepattributes AnnotationDefault,RuntimeVisibleAnnotations",
+          // Gson specific classes
+          "-dontwarn sun.misc.Unsafe",
+          // Application classes that will be serialized/deserialized over Gson
+          "-keep class com.android.tools.r8.desugar.desugaredlibrary.gson.AllMapsTestClass$Data {",
+          "  void <init>();",
+          "  <fields>;",
+          "}",
+          "-keep class"
+              + " com.android.tools.r8.desugar.desugaredlibrary.gson.AllMapsTestClass$NullableConcurrentHashMap"
+              + " {",
+          "  void <init>();",
+          "}",
+          "-keep class"
+              + " com.android.tools.r8.desugar.desugaredlibrary.gson.AllMapsTestClass$NullableHashMap"
+              + " {",
+          "  void <init>();",
+          "}",
+          "-keep class"
+              + " com.android.tools.r8.desugar.desugaredlibrary.gson.AllMapsTestClass$NullableMap"
+              + " {",
+          "  void <init>();",
+          "}",
+          "-keep class"
+              + " com.android.tools.r8.desugar.desugaredlibrary.gson.AllMapsTestClass$NullableConcurrentMap"
+              + " {",
+          "  void <init>();",
+          "}",
+          "-keep class com.android.tools.r8.desugar.desugaredlibrary.gson.OptionalTestClass$Data {",
+          "  void <init>();",
+          "  <fields>;",
+          "}",
+          // Prevent R8 from stripping interface information from TypeAdapter, TypeAdapterFactory,
+          // JsonSerializer, JsonDeserializer instances (so they can be used in @JsonAdapter)
+          "-keep class * extends com.google.gson.TypeAdapter",
+          "-keep class * implements com.google.gson.TypeAdapterFactory",
+          "-keep class * implements com.google.gson.JsonSerializer",
+          "-keep class * implements com.google.gson.JsonDeserializer",
+          // Prevent R8 from removing the generic signature of TypeToken
+          "-keep,allowobfuscation class * extends com.google.gson.reflect.TypeToken",
+          "-keep,allowobfuscation class com.google.gson.reflect.TypeToken",
+          // Prevent R8 from leaving Data object members always null
+          "-keepclassmembers,allowobfuscation class * {",
+          "  @com.google.gson.annotations.SerializedName <fields>;",
+          "}");
 
   static String uniqueName(
       TemporaryFolder temp,

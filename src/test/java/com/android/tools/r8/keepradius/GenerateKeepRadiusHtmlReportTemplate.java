@@ -5,6 +5,7 @@ package com.android.tools.r8.keepradius;
 
 import static com.android.tools.r8.cfmethodgeneration.CodeGenerationBase.javaFormatRawOutput;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
 
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
@@ -73,13 +74,15 @@ public class GenerateKeepRadiusHtmlReportTemplate extends TestBase {
 
     // Embed stylesheet.
     html =
-        html.replace(
-            "<link rel=\"stylesheet\" href=\"style.css\">",
+        replace(
+            html,
+            "<link rel=\"stylesheet\" href=\"style.css\" />",
             String.join("", "<style>", FileUtils.readTextFile(getReportCssFile()), "</style>"));
 
     // Embed proto schema.
     html =
-        html.replace(
+        replace(
+            html,
             "<script id=\"keepradius-proto\" type=\"text/plain\"></script>",
             String.join(
                 "",
@@ -89,12 +92,14 @@ public class GenerateKeepRadiusHtmlReportTemplate extends TestBase {
 
     // Embed JavaScript.
     html =
-        html.replace(
+        replace(
+            html,
             "<script src=\"main.js\"></script>",
             String.join(
                 "", "<script>", FileUtils.readTextFile(getReportMainJsFile()), "</script>"));
     html =
-        html.replace(
+        replace(
+            html,
             "<script src=\"utils.js\"></script>",
             String.join(
                 "", "<script>", FileUtils.readTextFile(getReportUtilsJsFile()), "</script>"));
@@ -107,13 +112,15 @@ public class GenerateKeepRadiusHtmlReportTemplate extends TestBase {
 
     // Embed stylesheet.
     html =
-        html.replace(
-            "<link rel=\"stylesheet\" href=\"style.css\">",
+        replace(
+            html,
+            "<link rel=\"stylesheet\" href=\"style.css\" />",
             String.join("", "<style>", FileUtils.readTextFile(getSummaryCssFile()), "</style>"));
 
     // Embed proto schema.
     html =
-        html.replace(
+        replace(
+            html,
             "<script id=\"keepradius-proto\" type=\"text/plain\"></script>",
             String.join(
                 "",
@@ -123,11 +130,18 @@ public class GenerateKeepRadiusHtmlReportTemplate extends TestBase {
 
     // Embed JavaScript.
     html =
-        html.replace(
+        replace(
+            html,
             "<script src=\"main.js\"></script>",
             String.join("", "<script>", FileUtils.readTextFile(getSummaryJsFile()), "</script>"));
 
     return html;
+  }
+
+  private static String replace(String html, String subject, String replacement) {
+    String newHtml = html.replace(subject, replacement);
+    assertNotEquals(html, newHtml);
+    return newHtml;
   }
 
   private static String encodeToString(String string) {

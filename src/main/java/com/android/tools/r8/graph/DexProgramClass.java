@@ -24,6 +24,7 @@ import com.android.tools.r8.synthesis.SyntheticMarker;
 import com.android.tools.r8.utils.InternalOptions;
 import com.android.tools.r8.utils.ReachabilitySensitiveValue;
 import com.android.tools.r8.utils.internal.TraversalContinuation;
+import com.android.tools.r8.utils.structural.HasherWrapper;
 import com.android.tools.r8.utils.structural.Ordered;
 import com.android.tools.r8.utils.structural.StructuralItem;
 import com.android.tools.r8.utils.structural.StructuralMapping;
@@ -46,7 +47,20 @@ public class DexProgramClass extends DexClass
 
   @FunctionalInterface
   public interface ChecksumSupplier {
+
+    ChecksumSupplier SYNTHETIC_CHECKSUM_SUPPLIER =
+        c -> {
+          HasherWrapper hasherWrapper = HasherWrapper.murmur3128Hasher();
+          c.getFieldCollection().forEach(e -> e.hash(hasherWrapper));
+          c.getMethodCollection().forEachMethod(e -> e.hash(hasherWrapper));
+          return hasherWrapper.hash().hashCode();
+        };
+
     long getChecksum(DexProgramClass programClass);
+
+    static ChecksumSupplier getSyntheticChecksumSupplier() {
+      return SYNTHETIC_CHECKSUM_SUPPLIER;
+    }
   }
 
   public static final DexProgramClass[] EMPTY_ARRAY = {};

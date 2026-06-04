@@ -69,6 +69,16 @@ public class FieldArrayBacking extends FieldCollectionBacking {
   }
 
   @Override
+  void forEach(Consumer<DexEncodedField> fn) {
+    for (DexEncodedField field : instanceFields) {
+      fn.accept(field);
+    }
+    for (DexEncodedField field : staticFields) {
+      fn.accept(field);
+    }
+  }
+
+  @Override
   <BT, CT> TraversalContinuation<BT, CT> traverse(
       DexClass holder, Function<? super DexClassAndField, TraversalContinuation<BT, CT>> fn) {
     TraversalContinuation<BT, CT> traversalContinuation = traverseStaticFields(holder, fn);

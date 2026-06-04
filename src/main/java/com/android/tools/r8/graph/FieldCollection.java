@@ -69,6 +69,10 @@ public class FieldCollection {
     return backing.size();
   }
 
+  public void forEach(Consumer<DexEncodedField> fn) {
+    backing.forEach(fn);
+  }
+
   public void forEachField(Consumer<DexClassAndField> fn) {
     traverse(
         field -> {

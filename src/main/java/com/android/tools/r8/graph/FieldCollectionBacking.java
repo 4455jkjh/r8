@@ -7,6 +7,7 @@ import com.android.tools.r8.utils.internal.TraversalContinuation;
 import java.util.Collection;
 import java.util.List;
 import java.util.function.BiFunction;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
@@ -25,6 +26,8 @@ public abstract class FieldCollectionBacking {
   abstract boolean verify();
 
   // Traversal methods.
+
+  abstract void forEach(Consumer<DexEncodedField> fn);
 
   abstract <BT, CT> TraversalContinuation<BT, CT> traverse(
       DexClass holder, Function<? super DexClassAndField, TraversalContinuation<BT, CT>> fn);

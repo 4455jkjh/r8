@@ -14,6 +14,7 @@ import com.android.tools.r8.graph.DexClass;
 import com.android.tools.r8.graph.DexEncodedField;
 import com.android.tools.r8.graph.DexEncodedMethod;
 import com.android.tools.r8.graph.DexItemFactory;
+import com.android.tools.r8.graph.DexProgramClass.ChecksumSupplier;
 import com.android.tools.r8.graph.DexString;
 import com.android.tools.r8.graph.DexType;
 import com.android.tools.r8.graph.DexTypeList;
@@ -27,8 +28,6 @@ import com.android.tools.r8.graph.RecordComponentInfo;
 import com.android.tools.r8.origin.Origin;
 import com.android.tools.r8.synthesis.SyntheticNaming.SyntheticKind;
 import com.android.tools.r8.utils.ReachabilitySensitiveValue;
-import com.android.tools.r8.utils.structural.HasherWrapper;
-import com.android.tools.r8.utils.structural.StructuralItem;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -232,7 +231,7 @@ public abstract class SyntheticClassBuilder<
                 DexEncodedMethod.EMPTY_ARRAY,
                 DexEncodedMethod.EMPTY_ARRAY,
                 factory.getSkipNameValidationForTesting(),
-                c -> getChecksum(),
+                ChecksumSupplier.getSyntheticChecksumSupplier(),
                 null,
                 ReachabilitySensitiveValue.DISABLED);
     if (useSortedMethodBacking) {
@@ -241,19 +240,5 @@ public abstract class SyntheticClassBuilder<
     clazz.setDirectMethods(directMethods.toArray(DexEncodedMethod.EMPTY_ARRAY));
     clazz.setVirtualMethods(virtualMethods.toArray(DexEncodedMethod.EMPTY_ARRAY));
     return clazz;
-  }
-
-  private long getChecksum() {
-    return 7 * hashEntries(virtualMethods, directMethods)
-        + 13 * hashEntries(instanceFields, staticFields);
-  }
-
-  private <S extends StructuralItem<S>> long hashEntries(List<S>... entryLists) {
-    // Use a hasher that is stable across jvm runs.
-    HasherWrapper hasherWrapper = HasherWrapper.murmur3128Hasher();
-    for (List<S> entryList : entryLists) {
-      entryList.stream().sorted().forEach(e -> e.hash(hasherWrapper));
-    }
-    return hasherWrapper.hash().hashCode();
   }
 }
