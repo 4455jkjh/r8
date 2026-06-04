@@ -159,7 +159,7 @@ public class VerticalClassMerger {
     markRewrittenWithLens(executorService, timing);
 
     appView.getTypeElementFactory().clearTypeElementsCache();
-    appView.notifyOptimizationFinishedForTesting();
+    appView.notifyOptimizationFinished();
   }
 
   private VerticalClassMergerResult mergeClassesInConnectedComponents(

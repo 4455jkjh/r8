@@ -99,6 +99,7 @@ public class SmallMethodInliner extends Inliner implements InliningReasonStrateg
       timing.begin("SmallMethodInliner");
       new SmallMethodInliner(appView).runInternal(executorService, timing);
       appView.getTypeElementFactory().clearTypeElementsCache();
+      appView.notifyOptimizationFinished();
       timing.end();
     }
   }

@@ -388,7 +388,7 @@ public class MemberRebindingAnalysis extends MemberRebindingHelper {
     appView.setGraphLens(memberRebindingLens);
     eventConsumer.finished(appView, memberRebindingLens);
     appView.getTypeElementFactory().clearTypeElementsCache();
-    appView.notifyOptimizationFinishedForTesting();
+    appView.notifyOptimizationFinished();
   }
 
   static class NonReboundMethodAccessCollection {

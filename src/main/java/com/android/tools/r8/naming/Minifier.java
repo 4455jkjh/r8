@@ -104,7 +104,7 @@ public class Minifier {
     assert lens.verifyNoCollisions(appView.appInfo(), appView.dexItemFactory());
 
     appView.testing().namingLensConsumer.accept(appView.dexItemFactory(), lens);
-    appView.notifyOptimizationFinishedForTesting();
+    appView.notifyOptimizationFinished();
     appView.setNamingLens(lens);
   }
 

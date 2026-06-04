@@ -754,7 +754,7 @@ public class EnumUnboxerImpl extends EnumUnboxer {
     // Ensure determinism of method-to-reprocess set.
     appView.testing().checkDeterminism(postMethodProcessorBuilder::dump);
 
-    appView.notifyOptimizationFinishedForTesting();
+    appView.notifyOptimizationFinished();
     converter.unsetEnumUnboxer();
     timing.end();
   }

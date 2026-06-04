@@ -1419,7 +1419,7 @@ public class OutlinerImpl extends Outliner {
       outlineMethods.forEach(m -> m.getDefinition().markNotProcessed());
       eventConsumer.finished(appView);
     }
-    appView.notifyOptimizationFinishedForTesting();
+    appView.notifyOptimizationFinished();
     timing.end();
   }
 

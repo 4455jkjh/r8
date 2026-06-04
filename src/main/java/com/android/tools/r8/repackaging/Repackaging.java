@@ -83,7 +83,7 @@ public class Repackaging {
       new GenericSignatureRewriter(appView).run(appView.appInfo().classes(), executorService);
       new IdentifierMinifier(appView).rewriteDexItemBasedConstStringInStaticFields(executorService);
     }
-    appView.notifyOptimizationFinishedForTesting();
+    appView.notifyOptimizationFinished();
     timing.end();
   }
 

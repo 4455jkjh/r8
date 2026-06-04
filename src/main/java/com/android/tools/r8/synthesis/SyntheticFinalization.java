@@ -206,7 +206,7 @@ public class SyntheticFinalization {
       appView.rewriteWithLens(result.lens, executorService, timing);
     }
     appView.pruneItems(result.prunedItems, executorService, timing);
-    appView.notifyOptimizationFinishedForTesting();
+    appView.notifyOptimizationFinished();
   }
 
   public static void finalizeWithLiveness(
@@ -223,7 +223,7 @@ public class SyntheticFinalization {
     }
     appView.setAppInfo(appView.appInfo().rebuildWithCommittedItems(result.commit));
     appView.pruneItems(result.prunedItems, executorService, timing);
-    appView.notifyOptimizationFinishedForTesting();
+    appView.notifyOptimizationFinished();
   }
 
   Result computeFinalSynthetics(AppView<?> appView, Timing timing) {

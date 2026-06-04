@@ -159,7 +159,7 @@ public class ProtoNormalizer {
       appView.rewriteWithLens(protoNormalizerGraphLens, executorService, timing);
       LirConverter.rewriteLirWithLens(appView, timing, executorService);
     }
-    appView.notifyOptimizationFinishedForTesting();
+    appView.notifyOptimizationFinished();
     timing.end();
   }
 

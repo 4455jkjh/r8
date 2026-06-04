@@ -1445,8 +1445,8 @@ public class AppView<T extends AppInfo> implements DexDefinitionSupplier, Librar
    * Called when an optimization that changes the app has finished. This allows easier diagnosing
    * some failures, e.g., finding which optimization pass that adds/removes a given method.
    */
-  public void notifyOptimizationFinishedForTesting() {
-    // Intentionally empty.
+  public void notifyOptimizationFinished() {
+    dexItemFactory().commitPendingItems();
   }
 
   public boolean isAlreadyLibraryDesugared(DexProgramClass clazz) {

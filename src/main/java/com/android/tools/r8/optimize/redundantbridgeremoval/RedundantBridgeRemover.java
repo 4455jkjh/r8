@@ -180,7 +180,7 @@ public class RedundantBridgeRemover extends MemberRebindingHelper {
         }
       }
     }
-    appView.notifyOptimizationFinishedForTesting();
+    appView.notifyOptimizationFinished();
     timing.end();
   }
 

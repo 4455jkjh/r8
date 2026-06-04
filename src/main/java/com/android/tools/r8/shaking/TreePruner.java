@@ -94,7 +94,7 @@ public class TreePruner {
             .addAdditionalPinnedItems(methodsToKeepForConfigurationDebugging)
             .build();
     appView.pruneItems(prunedItems, executorService, timing);
-    appView.notifyOptimizationFinishedForTesting();
+    appView.notifyOptimizationFinished();
     timing.end();
   }
 
