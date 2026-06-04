@@ -2,7 +2,7 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-package com.android.tools.r8;
+package com.android.tools.r8.jdk9.privateitf;
 
 import static com.android.tools.r8.ir.desugar.itf.InterfaceDesugaringForTesting.getCompanionClassNameSuffix;
 import static com.android.tools.r8.ir.desugar.itf.InterfaceDesugaringForTesting.getPrivateMethodPrefix;
@@ -13,6 +13,10 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeFalse;
 
+import com.android.tools.r8.BaseCommand;
+import com.android.tools.r8.CompilationFailedException;
+import com.android.tools.r8.TestBase;
+import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.ToolHelper.DexVm;
 import com.android.tools.r8.utils.AndroidApiLevel;
 import com.android.tools.r8.utils.InternalOptions;
@@ -24,7 +28,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import java.io.IOException;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -158,7 +161,7 @@ public abstract class RunExamplesJava9Test<B extends BaseCommand.Builder<? exten
   public void nativePrivateInterfaceMethods() throws Throwable {
     test(
             "native-private-interface-methods",
-            "com.android.tools.r8.examplesJava9.privateinterfacemethods",
+            "com.android.tools.r8.jdk9.privateitf.privateinterfacemethods",
             "PrivateInterfaceMethods")
         .withMinApiLevel(AndroidApiLevel.N.getLevel())
         .withKeepAll()
@@ -168,10 +171,10 @@ public abstract class RunExamplesJava9Test<B extends BaseCommand.Builder<? exten
   @Test
   public void desugaredPrivateInterfaceMethods() throws Throwable {
     assumeFalse("CF backend does not desugar", this instanceof R8CFRunExamplesJava9Test);
-    final String iName = "com.android.tools.r8.examplesJava9.privateinterfacemethods.I";
+    final String iName = "com.android.tools.r8.jdk9.privateitf.privateinterfacemethods.I";
     test(
             "desugared-private-interface-methods",
-            "com.android.tools.r8.examplesJava9.privateinterfacemethods",
+            "com.android.tools.r8.jdk9.privateitf.privateinterfacemethods",
             "PrivateInterfaceMethods")
         .withMinApiLevel(AndroidApiLevel.K.getLevel())
         .withKeepAll()

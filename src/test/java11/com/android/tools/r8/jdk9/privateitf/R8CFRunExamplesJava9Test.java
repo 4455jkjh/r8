@@ -2,11 +2,15 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-package com.android.tools.r8;
+package com.android.tools.r8.jdk9.privateitf;
 
 import static com.android.tools.r8.utils.internal.FileUtils.ZIP_EXTENSION;
 import static org.junit.Assert.assertEquals;
 
+import com.android.tools.r8.CompilationMode;
+import com.android.tools.r8.OutputMode;
+import com.android.tools.r8.R8Command;
+import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.ToolHelper.ProcessResult;
 import com.android.tools.r8.desugar.LibraryFilesHelper;
 import com.android.tools.r8.origin.Origin;

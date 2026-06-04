@@ -2,9 +2,12 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-package com.android.tools.r8;
+package com.android.tools.r8.jdk9.privateitf;
 
+import com.android.tools.r8.D8Command;
 import com.android.tools.r8.D8Command.Builder;
+import com.android.tools.r8.OutputMode;
+import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.errors.CompilationError;
 import com.android.tools.r8.errors.InternalCompilerError;
 import com.android.tools.r8.utils.AndroidApiLevel;
@@ -22,7 +25,7 @@ import java.util.List;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 
-public class D8IncrementalRunExamplesJava9Test extends RunExamplesJava9Test<D8Command.Builder> {
+public class D8IncrementalRunExamplesJava9Test extends RunExamplesJava9Test<Builder> {
 
   class D8TestRunner extends TestRunner<D8TestRunner> {
 

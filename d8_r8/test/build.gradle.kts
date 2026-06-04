@@ -93,7 +93,6 @@ dependencies {
   keepAnnoSourcesScope(project(":keepanno", "keepannoSources"))
   keepAnnoClassesScope(project(":keepanno", "keepannoClasses"))
   testJarsScope(project(":tests_java_8", "testJar"))
-  testJarsScope(project(":tests_java_9", "testJar"))
   testJarsScope(project(":tests_java_11", "testJar"))
   testJarsScope(project(":tests_java_17", "testJar"))
   testJarsScope(project(":tests_java_21", "testJar"))
@@ -128,7 +127,6 @@ tasks {
     dependsOn(":testbase:clean")
     dependsOn(":tests_bootstrap:clean")
     dependsOn(":tests_java_8:clean")
-    dependsOn(":tests_java_9:clean")
     dependsOn(":tests_java_11:clean")
     dependsOn(":tests_java_17:clean")
     dependsOn(":tests_java_21:clean")
@@ -631,7 +629,6 @@ tasks {
       dependsOn(testR8LibNoDeps)
     } else {
       dependsOn(":tests_java_8:testAll")
-      dependsOn(":tests_java_9:test")
       dependsOn(":tests_java_11:test")
       dependsOn(":tests_java_17:test")
       dependsOn(":tests_java_21:test")
