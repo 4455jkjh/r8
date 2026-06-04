@@ -568,9 +568,13 @@ public class R8 {
       // and thus no profile information yet.
       assert ArtProfileCompletenessChecker.verify(appView, ALLOW_MISSING_UNSAFE_HELPER_METHODS);
 
+      options.dumpHeap("pre-convert");
+
       new PrimaryR8IRConverter(appViewWithLiveness, timing, enableListIterationRewriter)
           .optimize(appViewWithLiveness, executorService);
       assert LirConverter.verifyLirOnly(appView);
+
+      options.dumpHeap("post-convert");
 
       // AtomicFieldUpdaterInstrumentor adds dead code if no optimizations are possible.
       // This dead code is not present in the profile but will be pruned later.
@@ -945,6 +949,8 @@ public class R8 {
         helper.process(appView.appInfo().classes(), executorService);
         options.nativeReferencesConsumer.finished(appView.reporter());
       }
+
+      options.dumpHeap("pre-write");
 
       // Generate the resulting application resources.
       writeKeepDeclarationsToConfigurationConsumer(keepDeclarations);

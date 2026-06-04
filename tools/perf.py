@@ -137,16 +137,22 @@ EXTERNAL_BENCHMARKS = {
 }
 # A collection of internal benchmarks that should be run on the internal bot.
 INTERNAL_BENCHMARKS = {
-    'AGSA': {
+    'SystemUIApp': {
         'targets': ['r8-full']
     },
-    'SystemUIApp': {
+    'SystemUIAppGc': {
         'targets': ['r8-full']
     },
     'SystemUIAppPartial': {
         'targets': ['r8-full']
     },
     'SystemUIAppContainerDex': {
+        'targets': ['r8-full']
+    },
+}
+# A collection of internal benchmarks that should be run on the internal bot.
+INTERNAL_SLOW_BENCHMARKS = {
+    'AGSA': {
         'targets': ['r8-full']
     },
 }
@@ -198,6 +204,7 @@ BUILD_BENCHMARKS = {
 ALL_BENCHMARKS = {}
 ALL_BENCHMARKS.update(EXTERNAL_BENCHMARKS)
 ALL_BENCHMARKS.update(INTERNAL_BENCHMARKS)
+ALL_BENCHMARKS.update(INTERNAL_SLOW_BENCHMARKS)
 ALL_BENCHMARKS.update(LOCAL_BENCHMARKS)
 ALL_BENCHMARKS.update(BUILD_BENCHMARKS)
 BUCKET = "r8-perf-results"
@@ -222,6 +229,10 @@ def ParseOptions():
                         action='append')
     result.add_argument('--internal',
                         help='Run internal benchmarks.',
+                        action='store_true',
+                        default=False)
+    result.add_argument('--internal-slow',
+                        help='Run internal slow benchmarks.',
                         action='store_true',
                         default=False)
     result.add_argument('--iterations',
@@ -263,6 +274,8 @@ def ParseOptions():
         options.benchmarks = options.benchmark
     elif options.internal:
         options.benchmarks = INTERNAL_BENCHMARKS.keys()
+    elif options.internal_slow:
+        options.benchmarks = INTERNAL_SLOW_BENCHMARKS.keys()
     else:
         options.benchmarks = EXTERNAL_BENCHMARKS.keys()
     options.is_try = options.patch_ref is not None

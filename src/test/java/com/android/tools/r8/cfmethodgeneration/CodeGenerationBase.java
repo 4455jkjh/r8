@@ -5,6 +5,7 @@
 package com.android.tools.r8.cfmethodgeneration;
 
 import com.android.tools.r8.TestBase;
+import com.android.tools.r8.TestRuntime;
 import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.ToolHelper.ProcessResult;
 import com.android.tools.r8.graph.DexItemFactory;
@@ -140,7 +141,7 @@ public abstract class CodeGenerationBase extends TestBase {
   }
 
   protected static String getJavaExecutable() {
-    return ToolHelper.getSystemJavaExecutable();
+    return TestRuntime.getCheckedInJdk21().getJavaExecutable().toString();
   }
 
   protected abstract int getYear();

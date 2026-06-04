@@ -74,6 +74,7 @@ public class AppDumpBenchmarkBuilder {
   private boolean enableContainerDex = false;
   private boolean enableDex2Oat = true;
   private boolean enableDex2OatVerification = true;
+  private boolean enableGcTracking = false;
   private boolean runtimeOnly = false;
   private int warmupIterations = 1;
   private final List<String> programPackages = new ArrayList<>();
@@ -122,6 +123,11 @@ public class AppDumpBenchmarkBuilder {
 
   public AppDumpBenchmarkBuilder setEnableDex2OatVerification(boolean enableDex2OatVerification) {
     this.enableDex2OatVerification = enableDex2OatVerification;
+    return this;
+  }
+
+  public AppDumpBenchmarkBuilder setEnableGcTracking(boolean enableGcTracking) {
+    this.enableGcTracking = enableGcTracking;
     return this;
   }
 
@@ -195,6 +201,13 @@ public class AppDumpBenchmarkBuilder {
       if (enableResourceShrinking) {
         builder.measureResourceSize();
       }
+    }
+    if (enableGcTracking) {
+      builder
+          .measureGcOldGenCount()
+          .measureGcOldGenTime()
+          .measureGcYoungGenCount()
+          .measureGcYoungGenTime();
     }
     return builder.build();
   }
@@ -389,6 +402,8 @@ public class AppDumpBenchmarkBuilder {
                                     new ByteArrayConsumer.FileConsumer(outdir.resolve("report.pb")))
                                 .setConfigurationAnalysisHtmlReportConsumer(
                                     new StringConsumer.FileConsumer(outdir.resolve("report.html")));
+                            testBuilder.setProguardMapConsumer(
+                                new StringConsumer.FileConsumer(outdir.resolve("mapping.txt")));
                           })
                       .apply(configuration)
                       .applyIf(

@@ -7,7 +7,8 @@ import com.android.tools.r8.ParseFlagInfo;
 import com.android.tools.r8.ParseFlagInfoImpl;
 import com.android.tools.r8.ParseFlagPrinter;
 import com.android.tools.r8.utils.internal.CliParser;
-import com.android.tools.r8.utils.internal.CliParser.OptionInfo;
+import com.android.tools.r8.utils.internal.CliParserBase;
+import com.android.tools.r8.utils.internal.CliParserBase.OptionInfo;
 import com.android.tools.r8.utils.internal.StringUtils;
 import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
@@ -19,7 +20,7 @@ public class CliParserUtils {
 
   private static final int HELP_WIDTH = 25;
 
-  public static List<ParseFlagInfo> getFlagInfos(CliParser<?> parser) {
+  public static List<ParseFlagInfo> getFlagInfos(CliParserBase<?> parser) {
     int idealWidth = 100;
     int descriptionWidth = idealWidth - HELP_WIDTH;
 
@@ -37,6 +38,10 @@ public class CliParserUtils {
     return flags;
   }
 
+  public static List<ParseFlagInfo> getFlagInfos(CliParser<?> parser) {
+    return getFlagInfos(parser.baseParser());
+  }
+
   /** Returns a string like {@code --output <file>} */
   private static String commandString(String name, List<String> paramLabels) {
     var sb = new StringBuilder(name);
@@ -46,7 +51,7 @@ public class CliParserUtils {
     return sb.toString();
   }
 
-  public static String getUsageMessage(CliParser<?> parser) {
+  public static String getUsageMessage(CliParserBase<?> parser) {
     StringBuilder builder =
         new StringBuilder(parser.getUsageHeader()).append(System.lineSeparator());
 
@@ -55,6 +60,10 @@ public class CliParserUtils {
         .addFlags(getFlagInfos(parser))
         .appendLinesToBuilder(builder);
     return builder.toString();
+  }
+
+  public static String getUsageMessage(CliParser<?> parser) {
+    return getUsageMessage(parser.baseParser());
   }
 
   public static void parsePositiveInt(

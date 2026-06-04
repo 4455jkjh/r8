@@ -17,6 +17,7 @@ import com.android.tools.r8.TestBase.Backend;
 import com.android.tools.r8.TestRuntime.CfRuntime;
 import com.android.tools.r8.ToolHelper.DexVm.Kind;
 import com.android.tools.r8.benchmarks.BenchmarkResults;
+import com.android.tools.r8.benchmarks.gc.CaptureGcResult;
 import com.android.tools.r8.cf.CfVersion;
 import com.android.tools.r8.desugar.desugaredlibrary.test.LibraryDesugaringSpecification.CustomConversionVersion;
 import com.android.tools.r8.dex.ApplicationReader;
@@ -1600,14 +1601,54 @@ public class ToolHelper {
   }
 
   public static Path getSourceFileForTestClass(Class<?> clazz) {
+    return getSourceFileForTestClass(clazz, "test/java");
+  }
+
+  public static Path getSourceFileForTestClass(Class<?> clazz, String moduleRelativePath) {
     List<String> parts = getNamePartsForTestClass(clazz);
     String last = parts.get(parts.size() - 1);
     assert last.endsWith(CLASS_EXTENSION);
     parts.set(
         parts.size() - 1,
         last.substring(0, last.length() - CLASS_EXTENSION.length()) + JAVA_EXTENSION);
-    return Paths.get(TESTS_SOURCE_DIR)
+    return Paths.get(SOURCE_DIR, moduleRelativePath)
         .resolve(Paths.get("", parts.toArray(StringUtils.EMPTY_ARRAY)));
+  }
+
+  /**
+   * Retrieves the source file for a test class from the classpath resources.
+   *
+   * <p>This method copies the resource to a temporary file (preserving the original file name) and
+   * returns its path.
+   *
+   * <p>Note: This only works if the corresponding .java file has been explicitly added as a test
+   * resource in the Gradle build configuration (e.g., via processTestResources).
+   */
+  public static Path getSourceFileForTestClassFromResources(Class<?> clazz) {
+    List<String> parts = getNamePartsForTestClass(clazz);
+    String last = parts.get(parts.size() - 1);
+    assert last.endsWith(CLASS_EXTENSION);
+    String javaFileName =
+        last.substring(0, last.length() - CLASS_EXTENSION.length()) + JAVA_EXTENSION;
+    parts.set(parts.size() - 1, javaFileName);
+    String resourcePath = "/" + clazz.getTypeName().replace('.', '/') + ".java";
+    java.net.URL resourceUrl = clazz.getResource(resourcePath);
+    if (resourceUrl == null) {
+      throw new RuntimeException("Could not find source file resource for " + clazz);
+    }
+    try {
+      Path tempDir = Files.createTempDirectory("source-");
+      tempDir.toFile().deleteOnExit();
+      Path tempFile = tempDir.resolve(javaFileName);
+      tempFile.toFile().deleteOnExit();
+      try (InputStream is = resourceUrl.openStream()) {
+        Files.copy(is, tempFile, StandardCopyOption.REPLACE_EXISTING);
+      }
+      return tempFile;
+    } catch (IOException e) {
+      throw new RuntimeException(
+          "Failed to copy source resource for " + clazz + " to temp file", e);
+    }
   }
 
   public static Path getClassFileForTestClass(Class<?> clazz) {
@@ -1809,7 +1850,15 @@ public class ToolHelper {
       BenchmarkResults benchmarkResults)
       throws CompilationFailedException {
     long start = 0;
+    CaptureGcResult startGcResult = null;
     if (benchmarkResults != null) {
+      if (benchmarkResults.isBenchmarkingGc()) {
+        // Try to run gc before starting the benchmark so that previous benchmark iterations do not
+        // inadvertently impact gc during the current iteration.
+        System.gc();
+        System.gc();
+        startGcResult = CaptureGcResult.capture();
+      }
       start = System.nanoTime();
     }
     R8Command command = commandBuilder.build();
@@ -1820,7 +1869,16 @@ public class ToolHelper {
     } finally {
       if (benchmarkResults != null) {
         long end = System.nanoTime();
-        benchmarkResults.addRuntimeResult(end - start);
+        long runtimeResult = end - start;
+        benchmarkResults.addRuntimeResult(runtimeResult);
+        if (startGcResult != null) {
+          CaptureGcResult endGcResult = CaptureGcResult.capture();
+          CaptureGcResult delta = startGcResult.computeDelta(endGcResult);
+          benchmarkResults.addGcOldGenCountResult(delta.getOldCount());
+          benchmarkResults.addGcOldGenTimeResult(delta.getOldTimeNanos());
+          benchmarkResults.addGcYoungGenCountResult(delta.getYoungCount());
+          benchmarkResults.addGcYoungGenTimeResult(delta.getYoungTimeNanos());
+        }
       }
     }
   }

@@ -6,6 +6,7 @@ package com.android.tools.r8.utils;
 
 import com.sun.management.HotSpotDiagnosticMXBean;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.lang.management.ManagementFactory;
 import java.nio.file.Path;
 import javax.management.MBeanServer;
@@ -31,8 +32,16 @@ public class HeapUtils {
         server, HOTSPOT_MBEAN_NAME, HotSpotDiagnosticMXBean.class);
   }
 
-  public static void dumpHeap(Path fileName, boolean live) throws IOException {
-    initHotSpotMBean();
-    hotSpotDiagnosticMXBean.dumpHeap(fileName.toString(), live);
+  public static void dumpHeap(Path fileName) {
+    dumpHeap(fileName, true);
+  }
+
+  public static void dumpHeap(Path fileName, boolean live) {
+    try {
+      initHotSpotMBean();
+      hotSpotDiagnosticMXBean.dumpHeap(fileName.toString(), live);
+    } catch (IOException e) {
+      throw new UncheckedIOException("Failed to dump heap to: " + fileName, e);
+    }
   }
 }

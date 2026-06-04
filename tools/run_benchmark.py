@@ -55,9 +55,31 @@ def parse_options(argv):
         'Enable Java debug agent and suspend compilation (default disabled)',
         default=False,
         action='store_true')
+    result.add_argument(
+        '--dump-jfr-to-file',
+        '--dump_jfr_to_file',
+        nargs='?',
+        const='profile.jfr',
+        help=
+        'Enable Java Flight Recorder (JFR) and dump to the given file (default: profile.jfr)'
+    )
+    result.add_argument(
+        '--dump-gc-log-to-file',
+        '--dump_gc_log_to_file',
+        nargs='?',
+        const='gc.log',
+        help='Enable GC logging and dump to the given file (default: gc.log)')
+    result.add_argument(
+        '--dump-heap-to-directory',
+        '--dump_heap_to_directory',
+        help='Dump heap(s) to the given directory (default disabled)')
     result.add_argument('--dump-keep-radius-to-directory',
                         '--dump_keep_radius_to_directory',
-                        help='Dump perfetto trace to the given directory')
+                        help='Dump keep radius .pb file to the given directory')
+    result.add_argument(
+        '--dump-keep-radius-html-to-directory',
+        '--dump_keep_radius_html_to_directory',
+        help='Dump keep radius .html file to the given directory')
     result.add_argument('--dump-trace-to-directory',
                         '--dump_trace_to_directory',
                         help='Dump perfetto trace to the given directory')
@@ -78,6 +100,9 @@ def parse_options(argv):
                         help='Enable assertions when running',
                         default=False,
                         action='store_true')
+    result.add_argument('--heap-size',
+                        '--heap_size',
+                        help='Heap size to use for the JVM (e.g. 4g)')
     result.add_argument('--iterations',
                         '-i',
                         help='Number of iterations to run',
@@ -126,9 +151,24 @@ def main(argv, temp):
     if options.output:
         options.output = os.path.abspath(options.output)
 
+    if options.dump_jfr_to_file:
+        options.dump_jfr_to_file = os.path.abspath(options.dump_jfr_to_file)
+
+    if options.dump_gc_log_to_file:
+        options.dump_gc_log_to_file = os.path.abspath(
+            options.dump_gc_log_to_file)
+
+    if options.dump_heap_to_directory:
+        options.dump_heap_to_directory = os.path.abspath(
+            options.dump_heap_to_directory)
+
     if options.dump_keep_radius_to_directory:
         options.dump_keep_radius_to_directory = os.path.abspath(
             options.dump_keep_radius_to_directory)
+
+    if options.dump_keep_radius_html_to_directory:
+        options.dump_keep_radius_html_to_directory = os.path.abspath(
+            options.dump_keep_radius_html_to_directory)
 
     if options.dump_trace_to_directory:
         options.dump_trace_to_directory = os.path.abspath(
@@ -189,6 +229,12 @@ def run(options, r8jar, testjars):
     if 'AGSA' in options.benchmark:
         xms = '32g'
         xmx = '32g'
+    elif options.benchmark == 'SystemUIAppGc':
+        xms = '2g'
+        xmx = '2g'
+    if options.heap_size:
+        xms = options.heap_size
+        xmx = options.heap_size
     jdkhome = get_jdk_home(options, options.benchmark)
     cmd = [
         jdk.GetJavaExecutable(jdkhome),
@@ -203,12 +249,27 @@ def run(options, r8jar, testjars):
     ]
     if options.enable_assertions:
         cmd.append('-ea')
-    if options.dump_keep_radius_to_directory is not None:
+    if options.dump_heap_to_directory:
+        cmd.append(
+            f'-Dcom.android.tools.r8.dumpheaptodirectory={options.dump_heap_to_directory}'
+        )
+    if options.dump_keep_radius_to_directory:
         cmd.append('-Dcom.android.tools.r8.dumpkeepradiustodirectory=' +
                    options.dump_keep_radius_to_directory)
-    if options.dump_trace_to_directory is not None:
+    if options.dump_keep_radius_html_to_directory:
+        cmd.append('-Dcom.android.tools.r8.dumpkeepradiushtmltodirectory=' +
+                   options.dump_keep_radius_html_to_directory)
+    if options.dump_trace_to_directory:
         cmd.append('-Dcom.android.tools.r8.dumptracetodirectory=' +
                    options.dump_trace_to_directory)
+    if options.dump_gc_log_to_file:
+        cmd.append(
+            f'-Xlog:gc*,gc+phases=debug:file={options.dump_gc_log_to_file}:time,uptime,level,tags'
+        )
+    if options.dump_jfr_to_file:
+        cmd.append(
+            f'-XX:StartFlightRecording=disk=true,dumponexit=true,filename={options.dump_jfr_to_file},settings=profile'
+        )
     if options.print_times:
         cmd.append('-Dcom.android.tools.r8.printtimes=1')
     if not options.golem:

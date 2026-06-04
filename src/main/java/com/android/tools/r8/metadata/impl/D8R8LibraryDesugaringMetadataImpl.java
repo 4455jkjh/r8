@@ -25,7 +25,7 @@ abstract class D8R8LibraryDesugaringMetadataImpl implements D8R8LibraryDesugarin
   @SerializedName("identifier")
   private final String identifier;
 
-  public D8R8LibraryDesugaringMetadataImpl(InternalOptions options) {
+  D8R8LibraryDesugaringMetadataImpl(InternalOptions options) {
     this.identifier = options.getLibraryDesugaringOptions().getIdentifier();
   }
 

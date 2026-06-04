@@ -641,13 +641,11 @@ public class ApplicationWriter {
     if (options.d8BuildMetadataConsumer != null) {
       assert !appView.hasClassHierarchy();
       options.d8BuildMetadataConsumer.accept(
-          BuildMetadataFactory.create(appView.withoutClassHierarchy()));
-    }
-
-    if (options.r8BuildMetadataConsumer != null) {
+          BuildMetadataFactory.createForD8(appView.withoutClassHierarchy(), virtualFiles));
+    } else if (options.r8BuildMetadataConsumer != null) {
       assert appView.hasClassHierarchy();
       options.r8BuildMetadataConsumer.accept(
-          BuildMetadataFactory.create(appView.withClassHierarchy(), virtualFiles));
+          BuildMetadataFactory.createForR8(appView.withClassHierarchy(), virtualFiles));
     } else if (appView.hasClassHierarchy()) {
       assert R8StatsMetadataImpl.Counters.create(appView.withClassHierarchy()).validate();
     }

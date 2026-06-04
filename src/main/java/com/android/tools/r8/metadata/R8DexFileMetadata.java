@@ -4,28 +4,7 @@
 package com.android.tools.r8.metadata;
 
 import com.android.tools.r8.keepanno.annotations.KeepForApi;
+import com.android.tools.r8.metadata.impl.D8R8DexFileMetadata;
 
 @KeepForApi
-public interface R8DexFileMetadata {
-
-  /**
-   * Returns the SHA-256 checksum of the entire dex file.
-   *
-   * <p>This can be used to check if the given dex file has been tampered with after compilation.
-   *
-   * <p>Note: This differs from the checksum in the dex format, as the checksum embedded in the dex
-   * is the adler32 checksum of the dex file excluding the magic value and the checksum itself. See
-   * also https://source.android.com/docs/core/runtime/dex-format.
-   */
-  String getChecksum();
-
-  /**
-   * Returns the size in bytes of this single dex file.
-   *
-   * <p>Present since R8 9.3.2-dev.
-   */
-  int getSizeInBytes();
-
-  /** Returns true if a startup profile is given and this dex file is a startup dex file. */
-  boolean isStartup();
-}
+public interface R8DexFileMetadata extends D8R8DexFileMetadata {}

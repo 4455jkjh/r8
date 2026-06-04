@@ -4,62 +4,19 @@
 package com.android.tools.r8.metadata.impl;
 
 import com.android.tools.r8.dex.VirtualFile;
-import com.android.tools.r8.keepanno.annotations.AnnotationPattern;
-import com.android.tools.r8.keepanno.annotations.FieldAccessFlags;
-import com.android.tools.r8.keepanno.annotations.KeepConstraint;
-import com.android.tools.r8.keepanno.annotations.KeepItemKind;
-import com.android.tools.r8.keepanno.annotations.UsedByReflection;
 import com.android.tools.r8.metadata.R8DexFileMetadata;
-import com.google.gson.annotations.Expose;
-import com.google.gson.annotations.SerializedName;
 
-@UsedByReflection(
-    description = "Keep and preserve @SerializedName for correct (de)serialization",
-    constraints = {KeepConstraint.LOOKUP},
-    constrainAnnotations = @AnnotationPattern(constant = SerializedName.class),
-    kind = KeepItemKind.CLASS_AND_FIELDS,
-    fieldAccess = {FieldAccessFlags.PRIVATE},
-    fieldAnnotatedByClassConstant = SerializedName.class)
-public class R8DexFileMetadataImpl implements R8DexFileMetadata {
-
-  @Expose
-  @SerializedName("checksum")
-  private final String checksum;
-
-  @Expose
-  @SerializedName("sizeInBytes")
-  private final int sizeInBytes;
-
-  @Expose
-  @SerializedName("startup")
-  private final boolean startup;
+public class R8DexFileMetadataImpl extends D8R8DexFileMetadataImpl implements R8DexFileMetadata {
 
   private R8DexFileMetadataImpl(String checksum, int sizeInBytes, boolean startup) {
-    this.checksum = checksum;
-    this.sizeInBytes = sizeInBytes;
-    this.startup = startup;
+    super(checksum, sizeInBytes, startup);
   }
 
-  public static R8DexFileMetadataImpl create(VirtualFile virtualFile) {
+  public static R8DexFileMetadata create(VirtualFile virtualFile) {
     assert !virtualFile.isEmpty();
     String checksum = virtualFile.getChecksumForBuildMetadata().toString();
     int sizeInBytes = virtualFile.getSizeInBytesForBuildMetadata();
     boolean startup = virtualFile.isStartup();
     return new R8DexFileMetadataImpl(checksum, sizeInBytes, startup);
-  }
-
-  @Override
-  public String getChecksum() {
-    return checksum;
-  }
-
-  @Override
-  public int getSizeInBytes() {
-    return sizeInBytes;
-  }
-
-  @Override
-  public boolean isStartup() {
-    return startup;
   }
 }

@@ -15,7 +15,6 @@ import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.TestRuntime.CfVm;
-import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.naming.retrace.StackTrace;
 import com.android.tools.r8.naming.retrace.StackTrace.StackTraceLine;
 import com.android.tools.r8.references.ClassReference;
@@ -177,7 +176,7 @@ public class RetraceObjectsRequireNonNullTest extends TestBase {
               .setLineNumber(-1)
               .build());
     }
-    String fileName = ToolHelper.getSourceFileForTestClass(CLASS).getFileName().toString();
+    String fileName = CLASS.getSimpleName() + ".java";
     builder
         .add(
             StackTraceLine.builder()

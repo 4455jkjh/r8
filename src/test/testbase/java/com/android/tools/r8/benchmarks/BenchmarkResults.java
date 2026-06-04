@@ -11,6 +11,14 @@ import java.nio.file.Path;
 
 public interface BenchmarkResults {
 
+  void addGcOldGenCountResult(long result);
+
+  void addGcOldGenTimeResult(long result);
+
+  void addGcYoungGenCountResult(long result);
+
+  void addGcYoungGenTimeResult(long result);
+
   // Append a runtime result. This may be summed or averaged depending on the benchmark set up.
   void addRuntimeResult(long result);
 
@@ -36,6 +44,10 @@ public interface BenchmarkResults {
 
   default boolean isBenchmarkingCodeSize() {
     return true;
+  }
+
+  default boolean isBenchmarkingGc() {
+    return false;
   }
 
   void printResults(ResultMode resultMode, boolean failOnCodeSizeDifferences);

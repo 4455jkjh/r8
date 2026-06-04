@@ -408,17 +408,17 @@ def get_bot_timeout():
 
 
 def get_default_test_commands():
-    return [
-        # Run test.py internal testing.
-        [
-            'tools/test.py', '--only_internal', '--slow_tests',
-            '--java_max_memory_size=8G'
-        ],
-        # Run internal benchmarks.
-        get_perf_test_command(False),
-        # Ensure that all internal apps compile.
-        ['tools/run_on_app.py', '--run-all', '--out=out', '--workers', '3'],
-    ]
+    # Run test.py internal testing.
+    cmds = [[
+        'tools/test.py', '--only_internal', '--slow_tests',
+        '--java_max_memory_size=8G'
+    ]]
+    # Run internal benchmarks.
+    cmds.extend(get_perf_test_commands(False))
+    # Ensure that all internal apps compile.
+    cmds.append(
+        ['tools/run_on_app.py', '--run-all', '--out=out', '--workers', '3'])
+    return cmds
 
 
 def get_test_commands(try_run):
@@ -427,15 +427,23 @@ def get_test_commands(try_run):
         # If we also want to support running a full internal test run,
         # we could pass a property from trigger.py that specifies what
         # the try run should do.
-        return [get_perf_test_command(try_run)]
+        return get_perf_test_commands(try_run)
     test_commands = get_default_test_commands()
     return test_commands
 
 
-def get_perf_test_command(try_run):
+def get_perf_test_commands(try_run):
+    return [
+        get_perf_test_command(3, False, try_run),
+        get_perf_test_command(1, True, try_run)
+    ]
+
+
+def get_perf_test_command(iterations, slow, try_run):
     cmd = [
-        'tools/perf.py', '--internal', '--iterations-inner', '3',
-        '--no-upload-benchmark-data-to-google-storage'
+        'tools/perf.py', '--internal-slow' if slow else '--internal',
+        '--iterations-inner',
+        str(iterations), '--no-upload-benchmark-data-to-google-storage'
     ]
     if try_run:
         # TODO(christofferqa): We don't currently pass the patch ref

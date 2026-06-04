@@ -69,18 +69,21 @@ public class Retrace<T, ST extends StackTraceElementProxy<T, ST>> extends Retrac
             + "where <proguard-map> is a generated mapping file and options are:";
     var parser = new CliParser<ParserState>(header);
     return parser
-        .option1(
-            "--regex",
-            "<regexp>",
-            "Regular expression for parsing stack-trace-file as lines.",
-            (b, arg) -> {
-              if (arg.isEmpty()) {
-                b.diagnosticsHandler.error(new StringDiagnostic("Empty argument for --regex"));
-              } else {
-                b.builder.setRegularExpression(arg);
-              }
-            },
-            "--r")
+        .withBaseParser(
+            baseParser ->
+                baseParser.option1(
+                    "--regex",
+                    "<regexp>",
+                    "Regular expression for parsing stack-trace-file as lines.",
+                    (b, arg) -> {
+                      if (arg.isEmpty()) {
+                        b.diagnosticsHandler.error(
+                            new StringDiagnostic("Empty argument for --regex"));
+                      } else {
+                        b.builder.setRegularExpression(arg);
+                      }
+                    },
+                    "--r"))
         .option0("--verbose", "Get verbose retraced output.", b -> b.builder.setVerbose(true))
         .option0(
             "--info",
@@ -97,21 +100,23 @@ public class Retrace<T, ST extends StackTraceElementProxy<T, ST>> extends Retrac
               b.builder.setVerifyMappingFileHash(true);
               b.hasSetStackTrace = true;
             })
-        .option1(
-            "--partition-map",
-            "<file>",
-            "Partition map to use.",
-            (b, arg) -> {
-              if (arg.isEmpty()) {
-                b.diagnosticsHandler.error(
-                    new StringDiagnostic("Empty argument for --partition-map"));
-              } else {
-                b.builder.setMappingSupplier(
-                    getPartitionMappingSupplier(arg, b.diagnosticsHandler));
-                b.hasSetProguardMap = true;
-              }
-            },
-            "--p")
+        .withBaseParser(
+            baseParser ->
+                baseParser.option1(
+                    "--partition-map",
+                    "<file>",
+                    "Partition map to use.",
+                    (b, arg) -> {
+                      if (arg.isEmpty()) {
+                        b.diagnosticsHandler.error(
+                            new StringDiagnostic("Empty argument for --partition-map"));
+                      } else {
+                        b.builder.setMappingSupplier(
+                            getPartitionMappingSupplier(arg, b.diagnosticsHandler));
+                        b.hasSetProguardMap = true;
+                      }
+                    },
+                    "--p"))
         .option0("--help", "Print this message.", b -> b.printHelp = true, "-h")
         .option0("--version", "Print the version.", b -> b.printVersion = true)
         .positional(

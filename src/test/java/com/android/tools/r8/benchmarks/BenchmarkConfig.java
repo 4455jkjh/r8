@@ -168,6 +168,26 @@ public class BenchmarkConfig {
       return this;
     }
 
+    public Builder measureGcOldGenCount() {
+      metrics.add(BenchmarkMetric.GcOldGenCount);
+      return this;
+    }
+
+    public Builder measureGcOldGenTime() {
+      metrics.add(BenchmarkMetric.GcOldGenTime);
+      return this;
+    }
+
+    public Builder measureGcYoungGenCount() {
+      metrics.add(BenchmarkMetric.GcYoungGenCount);
+      return this;
+    }
+
+    public Builder measureGcYoungGenTime() {
+      metrics.add(BenchmarkMetric.GcYoungGenTime);
+      return this;
+    }
+
     public Builder measureInstructionCodeSize() {
       metrics.add(BenchmarkMetric.InstructionCodeSize);
       return this;

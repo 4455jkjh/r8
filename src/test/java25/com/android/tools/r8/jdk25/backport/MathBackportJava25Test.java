@@ -7,6 +7,7 @@ import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestRuntime.CfVm;
 import com.android.tools.r8.desugar.backports.AbstractBackportTest;
+import com.android.tools.r8.utils.AndroidApiLevel;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
@@ -24,6 +25,7 @@ public final class MathBackportJava25Test extends AbstractBackportTest {
 
   public MathBackportJava25Test(TestParameters parameters) {
     super(parameters, Math.class, MathBackportJava25Main.class);
+    registerTarget(AndroidApiLevel.CINNAMON_BUN, 129);
   }
 
   public static class MathBackportJava25Main {

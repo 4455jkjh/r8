@@ -93,10 +93,10 @@ dependencies {
   keepAnnoSourcesScope(project(":keepanno", "keepannoSources"))
   keepAnnoClassesScope(project(":keepanno", "keepannoClasses"))
   testJarsScope(project(":tests_java_8", "testJar"))
-  testJarsScope(project(":tests_java_9", "testJar"))
   testJarsScope(project(":tests_java_11", "testJar"))
   testJarsScope(project(":tests_java_17", "testJar"))
   testJarsScope(project(":tests_java_21", "testJar"))
+  testJarsScope(project(":tests_java_25", "testJar"))
   testJarsScope(project(":tests_bootstrap", "testJar"))
   testbaseTestJarsScope(project(":testbase", "testJar"))
   testDepsJarsScope(project(":tests_bootstrap", "depsJar"))
@@ -128,7 +128,6 @@ tasks {
     dependsOn(":testbase:clean")
     dependsOn(":tests_bootstrap:clean")
     dependsOn(":tests_java_8:clean")
-    dependsOn(":tests_java_9:clean")
     dependsOn(":tests_java_11:clean")
     dependsOn(":tests_java_17:clean")
     dependsOn(":tests_java_21:clean")
@@ -583,7 +582,7 @@ tasks {
     systemProperty("R8_SWISS_ARMY_KNIFE", swissArmyKnifeJar)
     systemProperty("R8_WITH_RELOCATED_DEPS", r8WithRelocatedDepsJar)
 
-    javaLauncher = getJavaLauncher(Jdk.JDK_21)
+    javaLauncher = getJavaLauncher(Jdk.JDK_25)
 
     reports.junitXml.outputLocation.set(getRoot().resolveAll("build", "test-results", "test"))
     reports.html.outputLocation.set(getRoot().resolveAll("build", "reports", "tests", "test"))
@@ -630,11 +629,11 @@ tasks {
     } else if (project.hasProperty("r8lib_no_deps")) {
       dependsOn(testR8LibNoDeps)
     } else {
-      dependsOn(":tests_java_8:test")
-      dependsOn(":tests_java_9:test")
+      dependsOn(":tests_java_8:testAll")
       dependsOn(":tests_java_11:test")
       dependsOn(":tests_java_17:test")
       dependsOn(":tests_java_21:test")
+      dependsOn(":tests_java_25:test")
       dependsOn(":tests_bootstrap:test")
     }
   }
