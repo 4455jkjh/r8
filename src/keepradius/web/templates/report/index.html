@@ -39,6 +39,16 @@
             <span class="stat-label">Obfuscation</span
             ><span class="stat-value" id="total-obfuscation"></span>
           </div>
+          <button
+            type="button"
+            class="tooltip-icon"
+            id="lenses-tooltip-icon"
+            style="cursor: pointer"
+            data-tooltip="These numbers represent optimization ratios for code before optimization passes have occurred. For final optimization ratios, build your app bundle, and see r8.json."
+            aria-label="These numbers represent optimization ratios for code before optimization passes have occurred. For final optimization ratios, build your app bundle, and see r8.json."
+          >
+            ?
+          </button>
         </div>
       </div>
       <div class="header-toolbar">
@@ -361,8 +371,8 @@
                 <button
                   type="button"
                   class="tooltip-icon"
-                  data-tooltip="Shrinking score tracks the percentage of unused code and resources that have been successfully removed from your application. When R8 performs shrinking, it reduces the overall size of your application by identifying and eliminating code and resources that are not actually being used, ensuring your final build is as lean as possible."
-                  aria-label="Shrinking score tracks the percentage of unused code and resources that have been successfully removed from your application. When R8 performs shrinking, it reduces the overall size of your application by identifying and eliminating code and resources that are not actually being used, ensuring your final build is as lean as possible."
+                  data-tooltip="Percentage of the app's code base that is subject to removal if unused. The reported score is from before optimization passes have occurred. When R8 performs shrinking, it reduces the overall size of your application by identifying and eliminating code and resources that are not actually being used, ensuring your final build is as lean as possible."
+                  aria-label="Percentage of the app's code base that is subject to removal if unused. The reported score is from before optimization passes have occurred. When R8 performs shrinking, it reduces the overall size of your application by identifying and eliminating code and resources that are not actually being used, ensuring your final build is as lean as possible."
                 >
                   ?
                 </button>
@@ -526,8 +536,8 @@
                 <button
                   type="button"
                   class="tooltip-icon"
-                  data-tooltip="Optimization score tracks the number of classes, fields and methods optimized by R8 through techniques such as method inlining, class merging to the total number of classes  in the codebase. These optimizations improve the performance and size of the app."
-                  aria-label="Optimization score tracks the number of classes, fields and methods optimized by R8 through techniques such as method inlining, class merging to the total number of classes  in the codebase. These optimizations improve the performance and size of the app."
+                  data-tooltip="Percentage of the app's code base that is subject to optimization, such as method inlining and class merging. The reported score is from before optimization passes have occurred. Optimizations improve the performance and size of the app."
+                  aria-label="Percentage of the app's code base that is subject to optimization, such as method inlining and class merging. The reported score is from before optimization passes have occurred. Optimizations improve the performance and size of the app."
                 >
                   ?
                 </button>
@@ -691,8 +701,8 @@
                 <button
                   type="button"
                   class="tooltip-icon"
-                  data-tooltip="Obfuscation Score measures the percentage of symbols renamed within your codebase. By tracking this score, you can gauge the effectiveness of R8's obfuscation, which is crucial for reducing your application's metadata footprint to save memory"
-                  aria-label="Obfuscation Score measures the percentage of symbols renamed within your codebase. By tracking this score, you can gauge the effectiveness of R8's obfuscation, which is crucial for reducing your application's metadata footprint to save memory"
+                  data-tooltip="Percentage of the app's code base that is subject to symbol renaming. The reported score is from before optimization passes have occurred. By tracking this score, you can gauge the effectiveness of R8's obfuscation, which reduces your application's metadata footprint to save memory."
+                  aria-label="Percentage of the app's code base that is subject to symbol renaming. The reported score is from before optimization passes have occurred. By tracking this score, you can gauge the effectiveness of R8's obfuscation, which reduces your application's metadata footprint to save memory."
                 >
                   ?
                 </button>
