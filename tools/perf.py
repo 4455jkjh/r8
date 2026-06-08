@@ -143,6 +143,10 @@ INTERNAL_BENCHMARKS = {
     'SystemUIAppGc': {
         'targets': ['r8-full']
     },
+    'SystemUIAppGcNoLib': {
+        'alias': 'SystemUIAppGc',
+        'variant': 'nolib'
+    },
     'SystemUIAppPartial': {
         'targets': ['r8-full']
     },
@@ -287,14 +291,20 @@ def ParseOptions():
 def Build(options):
     utils.Print('Building', quiet=options.quiet)
     target = options.target or 'r8-full'
-    build_cmd = GetRunCmd('N/A', target, options, ['--iterations', '0'])
+    variant = 'lib'
+    build_cmd = GetRunCmd('N/A', target, variant, options,
+                          ['--iterations', '0'])
     subprocess.check_call(build_cmd)
 
 
-def GetRunCmd(benchmark, target, options, args, r8jar=None):
+def GetRunCmd(benchmark, target, variant, options, args, r8jar=None):
     base_cmd = [
         'tools/run_benchmark.py', '--benchmark', benchmark, '--target', target
     ]
+    if variant == 'nolib':
+        base_cmd.append('--nolib')
+    else:
+        assert variant == 'lib'
     if options.verbose:
         base_cmd.append('--verbose')
     if options.version and r8jar is not None:
@@ -404,8 +414,14 @@ def main():
             r8jar = None
         for benchmark in options.benchmarks:
             benchmark_info = ALL_BENCHMARKS[benchmark]
+            benchmark_to_run = benchmark_info.get('alias', benchmark)
+            # If an alias is present, then include all properties from it.
+            if benchmark_to_run != benchmark:
+                benchmark_to_run_info = ALL_BENCHMARKS[benchmark_to_run]
+                benchmark_info = benchmark_to_run_info | benchmark_info
             targets = [options.target
                       ] if options.target else benchmark_info['targets']
+            variant = benchmark_info.get('variant', 'lib')
             for target in targets:
                 sub_benchmarks = benchmark_info.get('subBenchmarks', {})
                 sub_benchmarks_for_target = sub_benchmarks.get(target, [])
@@ -448,11 +464,12 @@ def main():
                     else:
                         benchmark_result_file = os.path.join(
                             temp_benchmark_target, f'result_file_{i}')
-                    iteration_cmd = GetRunCmd(benchmark, target, options, [
-                        '--iterations',
-                        str(options.iterations_inner), '--output',
-                        benchmark_result_file, '--no-build'
-                    ], r8jar)
+                    iteration_cmd = GetRunCmd(
+                        benchmark_to_run, target, variant, options, [
+                            '--iterations',
+                            str(options.iterations_inner), '--output',
+                            benchmark_result_file, '--no-build'
+                        ], r8jar)
                     try:
                         subprocess.check_call(iteration_cmd)
                         if sub_benchmarks_for_target:
