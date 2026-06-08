@@ -145,6 +145,7 @@ INTERNAL_BENCHMARKS = {
     },
     'SystemUIAppGcNoLib': {
         'alias': 'SystemUIAppGc',
+        'targets': ['r8-full'],
         'variant': 'nolib'
     },
     'SystemUIAppPartial': {
@@ -415,10 +416,6 @@ def main():
         for benchmark in options.benchmarks:
             benchmark_info = ALL_BENCHMARKS[benchmark]
             benchmark_to_run = benchmark_info.get('alias', benchmark)
-            # If an alias is present, then include all properties from it.
-            if benchmark_to_run != benchmark:
-                benchmark_to_run_info = ALL_BENCHMARKS[benchmark_to_run]
-                benchmark_info = benchmark_to_run_info | benchmark_info
             targets = [options.target
                       ] if options.target else benchmark_info['targets']
             variant = benchmark_info.get('variant', 'lib')

@@ -106,7 +106,10 @@
               selectedBenchmark,
               filteredCommits[i],
               "gc_old_time",
-              (results) => dom.transformRuntimeData(results).ns_to_s(),
+              (results) => {
+                const result = dom.transformRuntimeData(results);
+                return isNaN(result) ? result : result.ns_to_s();
+              },
             ),
           );
           const gcYoungCountData = filteredCommits.map((c, i) =>
@@ -121,7 +124,10 @@
               selectedBenchmark,
               filteredCommits[i],
               "gc_young_time",
-              (results) => dom.transformRuntimeData(results).ns_to_s(),
+              (results) => {
+                const result = dom.transformRuntimeData(results);
+                return isNaN(result) ? result : result.ns_to_s();
+              },
             ),
           );
           const instructionCodeSizeData = filteredCommits.map((c, i) =>
