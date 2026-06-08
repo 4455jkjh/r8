@@ -158,12 +158,6 @@ tasks {
     val r8 = "com/android/tools/r8"
     from(sourceSets.test.get().java) {
       include("$r8/desugaring/interfacemethods/methodparameters/I.java")
-      include("$r8/naming/bridge/Creator.java")
-      include("$r8/naming/bridge/Result.java")
-      include("$r8/naming/bridge/ResultImpl.java")
-      include("$r8/naming/bridge/Tester.java")
-      include("$r8/naming/bridge/TesterImpl.java")
-      include("$r8/naming/bridge/Main.java")
       include("$r8/keepanno/api/genericsignature/MyValueBoxClient.java")
     }
   }
