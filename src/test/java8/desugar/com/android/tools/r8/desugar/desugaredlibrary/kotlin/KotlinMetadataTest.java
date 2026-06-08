@@ -142,10 +142,8 @@ public class KotlinMetadataTest extends DesugaredLibraryTestBase {
 
   private static KotlinCompileMemoizer compiledJars =
       getCompileMemoizer(
-          Paths.get(
-              ToolHelper.TESTS_DIR,
-              "java",
-              DescriptorUtils.getBinaryNameFromJavaType(PKG),
+          ToolHelper.getResourceAsTempFile(
+              KotlinMetadataTest.class,
               "Main" + FileUtils.KT_EXTENSION));
 
   private void inspectRewrittenMetadata(CodeInspector inspector) {

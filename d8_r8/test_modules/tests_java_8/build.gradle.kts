@@ -157,8 +157,6 @@ tasks {
     dependsOn(createArtTests)
     val r8 = "com/android/tools/r8"
     from(sourceSets.test.get().java) {
-      include("$r8/desugar/nestaccesscontrol/methodparameters/Outer.java")
-      include("$r8/desugar/twr/TwrTestSource.java")
       include("$r8/desugaring/interfacemethods/methodparameters/I.java")
       include("$r8/naming/bridge/Creator.java")
       include("$r8/naming/bridge/Result.java")
@@ -252,6 +250,7 @@ subprojects {
     add("implementation", project(":main", "mainClassesOutput"))
     add("implementation", project(":main", "mainResources"))
     add("implementation", project(":main", "turboClassesOutput"))
+    add("implementation", project(":keepanno", "keepannoClasses"))
     add("implementation", project(":testbase"))
     add("implementation", project(":testbase", "depsJar"))
   }
