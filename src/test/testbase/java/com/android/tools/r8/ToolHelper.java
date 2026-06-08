@@ -1600,21 +1600,6 @@ public class ToolHelper {
         .collect(Collectors.toList());
   }
 
-  public static Path getSourceFileForTestClass(Class<?> clazz) {
-    return getSourceFileForTestClass(clazz, "test/java");
-  }
-
-  public static Path getSourceFileForTestClass(Class<?> clazz, String moduleRelativePath) {
-    List<String> parts = getNamePartsForTestClass(clazz);
-    String last = parts.get(parts.size() - 1);
-    assert last.endsWith(CLASS_EXTENSION);
-    parts.set(
-        parts.size() - 1,
-        last.substring(0, last.length() - CLASS_EXTENSION.length()) + JAVA_EXTENSION);
-    return Paths.get(SOURCE_DIR, moduleRelativePath)
-        .resolve(Paths.get("", parts.toArray(StringUtils.EMPTY_ARRAY)));
-  }
-
   /**
    * Retrieves the source file for a test class from the classpath resources.
    *
@@ -1622,7 +1607,7 @@ public class ToolHelper {
    * returns its path.
    *
    * <p>Note: This only works if the corresponding .java file has been explicitly added as a test
-   * resource in the Gradle build configuration (e.g., via processTestResources).
+   * resource in the Gradle build configuration.
    */
   public static Path getSourceFileForTestClassFromResources(Class<?> clazz) {
     List<String> parts = getNamePartsForTestClass(clazz);
@@ -1630,25 +1615,54 @@ public class ToolHelper {
     assert last.endsWith(CLASS_EXTENSION);
     String javaFileName =
         last.substring(0, last.length() - CLASS_EXTENSION.length()) + JAVA_EXTENSION;
-    parts.set(parts.size() - 1, javaFileName);
-    String resourcePath = "/" + clazz.getTypeName().replace('.', '/') + ".java";
-    java.net.URL resourceUrl = clazz.getResource(resourcePath);
+    return getResourceAsTempFile(clazz, javaFileName);
+  }
+
+  /**
+   * Retrieves a resource from the classpath and copies it to a temporary file (preserving the
+   * original file name).
+   *
+   * <p>Note: This only works if the corresponding file has been explicitly added as a test
+   * resource in the Gradle build configuration.
+   *
+   * <p>If the resource name is absolute (starts with "/") then the given class doesn't matter.
+   * If the resource name is relative then its resolved based on the package of the given class,
+   * e.g. (A.B.C.class, "foo/bar.txt") finds "A/B/foo/bar.txt".
+   */
+  public static Path getResourceAsTempFile(Class<?> clazz, String resourceName) {
+    java.net.URL resourceUrl = clazz.getResource(resourceName);
     if (resourceUrl == null) {
-      throw new RuntimeException("Could not find source file resource for " + clazz);
+      throw new RuntimeException(
+          "Could not find resource " + resourceName + " relative to " + clazz);
+    }
+    String fileName = resourceName;
+    int lastSlash = fileName.lastIndexOf('/');
+    if (lastSlash != -1) {
+      fileName = fileName.substring(lastSlash + 1);
     }
     try {
-      Path tempDir = Files.createTempDirectory("source-");
-      tempDir.toFile().deleteOnExit();
-      Path tempFile = tempDir.resolve(javaFileName);
-      tempFile.toFile().deleteOnExit();
-      try (InputStream is = resourceUrl.openStream()) {
-        Files.copy(is, tempFile, StandardCopyOption.REPLACE_EXISTING);
-      }
-      return tempFile;
+      return copyResourceToTempFile(resourceUrl, fileName);
     } catch (IOException e) {
       throw new RuntimeException(
-          "Failed to copy source resource for " + clazz + " to temp file", e);
+          "Failed to copy resource "
+              + resourceName
+              + " relative to "
+              + clazz
+              + " to temp file",
+          e);
     }
+  }
+
+  private static Path copyResourceToTempFile(java.net.URL resourceUrl, String fileName)
+      throws IOException {
+    Path tempDir = Files.createTempDirectory("source-");
+    tempDir.toFile().deleteOnExit();
+    Path tempFile = tempDir.resolve(fileName);
+    tempFile.toFile().deleteOnExit();
+    try (InputStream is = resourceUrl.openStream()) {
+      Files.copy(is, tempFile, StandardCopyOption.REPLACE_EXISTING);
+    }
+    return tempFile;
   }
 
   public static Path getClassFileForTestClass(Class<?> clazz) {

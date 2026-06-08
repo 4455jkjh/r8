@@ -102,7 +102,7 @@ public class BridgeHoisting {
       appView.rewriteWithLens(lens, executorService, timing);
     }
 
-    appView.notifyOptimizationFinishedForTesting();
+    appView.notifyOptimizationFinished();
     timing.end();
   }
 

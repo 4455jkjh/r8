@@ -73,7 +73,7 @@ public class HorizontalClassMerger {
 
       // Clear type elements cache after IR building.
       appView.getTypeElementFactory().clearTypeElementsCache();
-      appView.notifyOptimizationFinishedForTesting();
+      appView.notifyOptimizationFinished();
     } else {
       appView.setHorizontallyMergedClasses(HorizontallyMergedClasses.empty());
     }

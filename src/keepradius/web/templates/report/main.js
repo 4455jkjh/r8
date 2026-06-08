@@ -2043,7 +2043,7 @@ const ReportApp = {
 
     const subtextHtml = `
       <div style="font-size: 0.75rem; color: var(--text-gray-500); font-weight: 400; margin-top: 0.25rem; text-transform: none; letter-spacing: normal; padding: 0rem 0.5rem;">
-        The percentage of your app’s codebase that R8 successfully shrinks, optimizes, and obfuscates. Achieving a higher percentage indicates a leaner, more performant application.
+        The percentage of your app’s codebase that R8 is allowed to shrink, optimize, and obfuscate. Achieving a higher percentage indicates a leaner, more performant application. The percentage here reflect the initial evaluation of the keep rules before optimizations. Although this percentage will change after further optimization, it is a very good proxy for analyzing the impact of keep rules. For the final percentage after all optimizations, build your app bundle, and see r8.json.
       </div>
     `;
     bc.style.display = "flex";

@@ -6,13 +6,18 @@ import org.gradle.api.tasks.Copy
 
 // The majority of the build setup is done by tests_java_8.
 java {
-  sourceSets.test.configure { java.srcDir(getRoot().resolveAll("src", "test", "java8", "shaking")) }
+  sourceSets.test.configure {
+    java.srcDir(getRoot().resolveAll("src", "test", "java8", "desugar"))
+  }
 }
 
 tasks {
   named<Copy>("processTestResources") {
     from(sourceSets.test.get().java.srcDirs) {
-      include("com/android/tools/r8/shaking/ifrule/StaticFinalFieldInliningSource.java")
+      include("com/android/tools/r8/desugar/nestaccesscontrol/methodparameters/Outer.java")
+      include("com/android/tools/r8/desugar/twr/TwrTestSource.java")
+      include("com/android/tools/r8/desugar/desugaredlibrary/kotlin/Blog.kt")
+      include("com/android/tools/r8/desugar/desugaredlibrary/kotlin/Main.kt")
     }
   }
 }

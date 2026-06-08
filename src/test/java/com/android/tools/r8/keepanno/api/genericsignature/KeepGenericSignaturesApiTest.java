@@ -68,7 +68,8 @@ public class KeepGenericSignaturesApiTest extends KeepAnnoTestBase {
     Path clientOut =
         JavaCompilerTool.create(parameters.parameters().asCfRuntime(), temp)
             .addSourceFiles(
-                ListUtils.map(getClientClasses(), ToolHelper::getSourceFileForTestClass))
+                ListUtils.map(
+                    getClientClasses(), ToolHelper::getSourceFileForTestClassFromResources))
             .addClasspathFiles(lib.get(), KeepAnnoTestUtils.getKeepAnnoLib(temp, LEGACY))
             .compile();
 

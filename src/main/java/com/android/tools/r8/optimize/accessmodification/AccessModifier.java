@@ -66,6 +66,7 @@ public class AccessModifier {
       new AccessModifier(appView)
           .processStronglyConnectedComponents(executorService)
           .installLens(executorService, timing);
+      appView.notifyOptimizationFinished();
     }
     timing.end();
   }

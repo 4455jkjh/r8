@@ -36,6 +36,7 @@ public class PerfettoTiming extends TimingImplBase {
   private CounterTrack memoryTrack;
   private Future<Void> memoryTracker;
   private volatile boolean memoryTrackerActive = true;
+  private CounterTrack uncommittedDexItemsTrack;
 
   public PerfettoTiming(String title, InternalOptions options, ExecutorService executorService) {
     int sequenceId = 1;
@@ -63,6 +64,7 @@ public class PerfettoTiming extends TimingImplBase {
     // Memory tracking requires an executor service.
     if (executorService != null) {
       memoryTrack = processTrack.getOrCreateCounterTrack("Memory");
+      uncommittedDexItemsTrack = processTrack.getOrCreateCounterTrack("Uncommitted dex items");
       memoryTracker =
           executorService.submit(
               () -> {
@@ -77,6 +79,8 @@ public class PerfettoTiming extends TimingImplBase {
                   // Update the memory counter every 1s.
                   memoryTrack.setCounter(
                       Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory());
+                  uncommittedDexItemsTrack.setCounter(
+                      options.dexItemFactory().getNumberOfUncommittedItems());
                 }
               });
     }
@@ -146,6 +150,7 @@ public class PerfettoTiming extends TimingImplBase {
       }
       memoryTrack = null;
       memoryTracker = null;
+      uncommittedDexItemsTrack = null;
     }
   }
 }

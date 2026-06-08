@@ -42,7 +42,7 @@ public class AbstractMethodRemover {
         processClass(clazz);
       }
     }
-    appView.notifyOptimizationFinishedForTesting();
+    appView.notifyOptimizationFinished();
   }
 
   private boolean isRoot(DexProgramClass clazz) {

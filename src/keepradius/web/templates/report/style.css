@@ -294,14 +294,19 @@ p#report-date {
 }
 
 .header-stats {
+  align-items: center;
   display: flex;
-  gap: 2rem;
 }
 
 .stat-item {
   align-items: flex-start;
   display: flex;
   flex-direction: column;
+  margin-right: 2rem;
+}
+
+.header-stats .stat-item:nth-child(3) {
+  margin-right: 0.5rem;
 }
 
 .stat-label {

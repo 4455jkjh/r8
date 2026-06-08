@@ -43,7 +43,7 @@ public class NestReducer {
     } else if (appView.options().enableNestReduction) {
       reduceNests(executorService);
     }
-    appView.notifyOptimizationFinishedForTesting();
+    appView.notifyOptimizationFinished();
     timing.end();
   }
 

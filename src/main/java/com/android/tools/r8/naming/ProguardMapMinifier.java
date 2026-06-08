@@ -160,7 +160,7 @@ public class ProguardMapMinifier {
     NamingLens lens =
         new ProguardMapMinifiedRenaming(
             appView, classRenaming, methodRenaming, fieldRenaming, notMappedReferences);
-    appView.notifyOptimizationFinishedForTesting();
+    appView.notifyOptimizationFinished();
     return lens;
   }
 

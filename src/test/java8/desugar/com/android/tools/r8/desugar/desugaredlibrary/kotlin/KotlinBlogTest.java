@@ -111,9 +111,7 @@ public class KotlinBlogTest extends DesugaredLibraryTestBase {
 
   private static KotlinCompileMemoizer compiledJars =
       getCompileMemoizer(
-          Paths.get(
-              ToolHelper.TESTS_DIR,
-              "java",
-              DescriptorUtils.getBinaryNameFromJavaType(PKG),
+          ToolHelper.getResourceAsTempFile(
+              KotlinBlogTest.class,
               "Blog" + FileUtils.KT_EXTENSION));
 }

@@ -12,13 +12,11 @@ import com.android.tools.r8.KotlinTestBase;
 import com.android.tools.r8.KotlinTestParameters;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.ToolHelper;
-import com.android.tools.r8.utils.DescriptorUtils;
 import com.android.tools.r8.utils.codeinspector.ClassSubject;
 import com.android.tools.r8.utils.codeinspector.InstructionSubject;
 import com.android.tools.r8.utils.codeinspector.MethodSubject;
 import com.android.tools.r8.utils.internal.FileUtils;
 import com.android.tools.r8.utils.internal.StringUtils;
-import java.nio.file.Paths;
 import java.util.List;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -37,10 +35,8 @@ public class SwitchWithSimpleCasesInliningKotlinTest extends KotlinTestBase {
       SwitchWithSimpleCasesInliningKotlinTest.class.getPackage().getName();
   private static final KotlinCompileMemoizer compiledJars =
       getCompileMemoizer(
-          Paths.get(
-              ToolHelper.TESTS_DIR,
-              "java",
-              DescriptorUtils.getBinaryNameFromJavaType(PKG),
+          ToolHelper.getResourceAsTempFile(
+              SwitchWithSimpleCasesInliningKotlinTest.class,
               "SwitchWithSimpleCasesInliningKotlin" + FileUtils.KT_EXTENSION));
 
   @Parameters(name = "{0}, {1}")
