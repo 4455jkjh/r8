@@ -1133,7 +1133,6 @@ const App = {
           ]),
         ),
       };
-      console.log("Protobuf data loaded successfully:", this.keepRadiusData);
       // Trigger re-render now that data is available
       ReportApp.render();
     } catch (err) {

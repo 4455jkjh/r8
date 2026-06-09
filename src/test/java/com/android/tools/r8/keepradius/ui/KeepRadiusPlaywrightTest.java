@@ -3,6 +3,8 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8.keepradius.ui;
 
+import static com.microsoft.playwright.assertions.PlaywrightAssertions.assertThat;
+
 import com.android.tools.r8.PlaywrightTestBase;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
@@ -62,6 +64,28 @@ public class KeepRadiusPlaywrightTest extends PlaywrightTestBase {
                   .clickDetailsBackToSummary()
                   .assertVisible("#report-view")
                   .assertHidden("#details-view");
+            });
+  }
+
+  @Test
+  public void testHtmlReportStylesAndConsoleErrors() throws Exception {
+    testForR8(Backend.DEX)
+        .addProgramClasses(Main.class)
+        .addKeepAllClassesRule()
+        .enableConfigurationAnalysisReport()
+        .compile()
+        .inspectKeepRadiusHtmlReport(
+            this::getPage,
+            inspector -> {
+              // Assert computed styles for key elements
+              // Body styles
+              assertThat(page.locator("body")).hasCSS("background-color", "rgb(248, 250, 252)");
+              assertThat(page.locator("body")).hasCSS("display", "flex");
+
+              // Header styles
+              assertThat(page.locator("header")).hasCSS("background-color", "rgb(255, 255, 255)");
+              assertThat(page.locator("header"))
+                  .hasCSS("border-bottom-color", "rgb(226, 232, 240)");
             });
   }
 

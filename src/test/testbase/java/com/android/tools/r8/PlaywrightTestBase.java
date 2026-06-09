@@ -3,15 +3,22 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8;
 
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
 import com.microsoft.playwright.Browser;
 import com.microsoft.playwright.BrowserType;
+import com.microsoft.playwright.ConsoleMessage;
 import com.microsoft.playwright.Page;
 import com.microsoft.playwright.Playwright;
+import com.microsoft.playwright.Request;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import org.junit.After;
 import org.junit.AfterClass;
@@ -24,7 +31,10 @@ public class PlaywrightTestBase extends TestBase {
 
   private static Playwright playwright;
   private static Browser browser;
-  private Page page;
+  protected Page page;
+  private final List<ConsoleMessage> consoleMessages = new ArrayList<>();
+  private final List<String> pageErrors = new ArrayList<>();
+  private final List<Request> failedRequests = new ArrayList<>();
 
   public Page getPage(boolean headful) {
     if (page == null) {
@@ -69,14 +79,48 @@ public class PlaywrightTestBase extends TestBase {
   private void initPage(boolean headful) {
     initBrowser(headful);
     page = browser.newPage();
+    consoleMessages.clear();
+    pageErrors.clear();
+    failedRequests.clear();
+    page.onConsoleMessage(consoleMessages::add);
+    page.onPageError(pageErrors::add);
+    page.onRequestFailed(failedRequests::add);
   }
 
   @After
   public void tearDownPage() {
     if (page != null) {
-      page.close();
-      page = null;
+      try {
+        verifyNoConsoleOrNetworkErrors();
+      } finally {
+        page.close();
+        page = null;
+      }
     }
+  }
+
+  private void verifyNoConsoleOrNetworkErrors() {
+    // 1. Assert no console messages
+    for (ConsoleMessage message : consoleMessages) {
+      System.err.println("Unexpected console message: [" + message.type() + "] " + message.text());
+      fail("Unexpected console message: [" + message.type() + "] " + message.text());
+    }
+
+    // 2. Assert no page errors (unhandled exceptions)
+    for (String error : pageErrors) {
+      System.err.println("Page error: " + error);
+    }
+    assertTrue(pageErrors.isEmpty());
+
+    // 3. Assert no failed requests (missing assets etc)
+    for (Request request : failedRequests) {
+      System.err.println(
+          "Failed request: "
+              + request.url()
+              + " - "
+              + (request.failure() != null ? request.failure() : "unknown"));
+    }
+    assertTrue(failedRequests.isEmpty());
   }
 
   @AfterClass
