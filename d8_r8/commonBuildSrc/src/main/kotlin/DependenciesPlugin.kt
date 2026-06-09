@@ -365,7 +365,7 @@ public object JvmCompatibility {
 private object Versions {
   public const val androidxCollectionVersion = "1.6.0"
   public const val androidxTracingVersion = "2.0.0-alpha05"
-  public const val asmVersion = "9.9"
+  public const val asmVersion = "9.10.1"
   public const val ddmLibVersion = "32.2.0"
   public const val errorproneVersion = "2.18.0"
   public const val fastUtilVersion = "7.2.1"
