@@ -53,6 +53,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Consumer;
+import java.util.function.Function;
 
 public abstract class R8TestCompileResultBase<CR extends R8TestCompileResultBase<CR>>
     extends TestCompileResult<CR, R8TestRunResult> {
@@ -269,7 +270,9 @@ public abstract class R8TestCompileResultBase<CR extends R8TestCompileResultBase
   }
 
   public <E extends Throwable> CR inspectKeepRadiusHtmlReport(
-      Page page, ThrowingConsumer<KeepRadiusInspector, E> consumer) throws E, IOException {
+      Function<Boolean, Page> pageFactory, ThrowingConsumer<KeepRadiusInspector, E> consumer)
+      throws E, IOException {
+    Page page = pageFactory.apply(state.isHeadful());
     consumer.accept(keepRadiusInspector(page));
     return self();
   }

@@ -31,7 +31,7 @@ public class KeepRadiusPlaywrightTest extends PlaywrightTestBase {
         .enableConfigurationAnalysisReport()
         .compile()
         .inspectKeepRadiusHtmlReport(
-            page,
+            this::getPage,
             inspector -> {
               inspector
                   .assertTitle("R8 Configuration Analyzer")

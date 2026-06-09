@@ -22,6 +22,7 @@ public class TestState {
   private String stderr;
 
   private SyntheticItemsTestUtils syntheticItems;
+  private boolean headful = false;
 
   public TestState(TemporaryFolder temp) {
     this(temp, new TestDiagnosticMessagesImpl());
@@ -95,5 +96,13 @@ public class TestState {
   void setDiagnosticsLevelModifier(
       BiFunction<DiagnosticsLevel, Diagnostic, DiagnosticsLevel> modifier) {
     messages.setDiagnosticsLevelModifier(modifier);
+  }
+
+  public boolean isHeadful() {
+    return headful;
+  }
+
+  public void setHeadful(boolean headful) {
+    this.headful = headful;
   }
 }

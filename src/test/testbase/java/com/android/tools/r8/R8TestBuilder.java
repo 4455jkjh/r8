@@ -494,6 +494,11 @@ public abstract class R8TestBuilder<
     return self();
   }
 
+  public T enableHeadful() {
+    getState().setHeadful(true);
+    return self();
+  }
+
   public T enableAlwaysClassInlineAnnotations() {
     return addAlwaysClassInlineAnnotation()
         .enableAlwaysClassInlineAnnotations(AlwaysClassInline.class.getPackage().getName());

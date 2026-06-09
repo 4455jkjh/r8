@@ -8,7 +8,6 @@ import com.microsoft.playwright.BrowserType;
 import com.microsoft.playwright.Page;
 import com.microsoft.playwright.Playwright;
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -16,8 +15,6 @@ import java.util.HashMap;
 import java.util.Map;
 import org.junit.After;
 import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.rules.TemporaryFolder;
 
@@ -27,30 +24,50 @@ public class PlaywrightTestBase extends TestBase {
 
   private static Playwright playwright;
   private static Browser browser;
-  protected Page page;
+  private Page page;
 
-  @BeforeClass
-  public static void setUpBrowser() {
-    Path chromeExecutable = resolveChromeExecutable();
+  public Page getPage(boolean headful) {
+    if (page == null) {
+      initPage(headful);
+    }
+    return page;
+  }
+
+  private static synchronized void initBrowser(boolean headful) {
+    if (browser != null) {
+      return;
+    }
+    boolean headless = !headful;
+    Path chromeExecutable = headless ? resolveChromeExecutable() : null;
 
     Map<String, String> env = new HashMap<>();
-    env.put("PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD", "1");
+    if (headless) {
+      env.put("PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD", "1");
+    } else {
+      // Allow downloading when headful. We set it to 0 to override any inherited env var.
+      env.put("PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD", "0");
+    }
 
     Playwright.CreateOptions createOptions = new Playwright.CreateOptions().setEnv(env);
     playwright = Playwright.create(createOptions);
 
     BrowserType.LaunchOptions launchOptions = new BrowserType.LaunchOptions();
-    if (chromeExecutable == null) {
-      throw new RuntimeException("chrome-headless-shell binary is missing");
+    if (headless) {
+      if (chromeExecutable == null) {
+        throw new RuntimeException("chrome-headless-shell binary is missing");
+      }
+      launchOptions.setExecutablePath(chromeExecutable);
+      launchOptions.setHeadless(true);
+    } else {
+      launchOptions.setHeadless(false);
+      launchOptions.setSlowMo(50);
     }
-    launchOptions.setExecutablePath(chromeExecutable);
-    launchOptions.setHeadless(true);
 
     browser = playwright.chromium().launch(launchOptions);
   }
 
-  @Before
-  public void setUpPage() {
+  private void initPage(boolean headful) {
+    initBrowser(headful);
     page = browser.newPage();
   }
 
@@ -58,6 +75,7 @@ public class PlaywrightTestBase extends TestBase {
   public void tearDownPage() {
     if (page != null) {
       page.close();
+      page = null;
     }
   }
 
@@ -65,18 +83,14 @@ public class PlaywrightTestBase extends TestBase {
   public static void tearDownBrowser() {
     if (browser != null) {
       browser.close();
+      browser = null;
     }
     if (playwright != null) {
       playwright.close();
+      playwright = null;
     }
   }
 
-  protected Page loadHtml(String html) throws IOException {
-    Path tempFile = tempFolder.newFile("temp_report.html").toPath();
-    Files.write(tempFile, html.getBytes(StandardCharsets.UTF_8));
-    page.navigate(tempFile.toUri().toString());
-    return page;
-  }
 
   private static Path resolveChromeExecutable() {
     Path chromeDir = Paths.get(ToolHelper.THIRD_PARTY_DIR, "chrome_headless");
