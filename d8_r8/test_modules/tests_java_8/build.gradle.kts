@@ -86,11 +86,11 @@ dependencies {
   implementation(project(":resourceshrinker", "resourceshrinkerDepsJar"))
   implementation(project(":testbase"))
   implementation(project(":testbase", "depsJar"))
-
   // For each child project, add its test classes to the test class configuration.
   childProjects.values.forEach { childProject ->
     partialTestClassesScope(project(childProject.path, "partialTestClasses"))
   }
+  implementation(Deps.playwright)
 }
 
 fun testDependencies(): FileCollection {

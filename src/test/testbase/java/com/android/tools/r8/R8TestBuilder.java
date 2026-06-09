@@ -4,6 +4,7 @@
 package com.android.tools.r8;
 
 import static com.android.tools.r8.R8TestBuilder.KeepAnnotationLibrary.ANDROIDX;
+import static org.junit.Assert.assertNull;
 
 import com.android.tools.r8.DexIndexedConsumer.ArchiveConsumer;
 import com.android.tools.r8.R8Command.Builder;
@@ -114,6 +115,7 @@ public abstract class R8TestBuilder<
   Box<R8BuildMetadata> buildMetadata;
   private boolean androidPlatformBuild = false;
   private Box<StringConsumer> proguardMapConsumer = null;
+  Box<String> configurationAnalysisHtmlReport = null;
 
   @Override
   public boolean isR8TestBuilder() {
@@ -184,6 +186,22 @@ public abstract class R8TestBuilder<
     builder.setEnableStartupLayoutOptimization(enableStartupLayoutOptimization);
     if (buildMetadata != null) {
       builder.setBuildMetadataConsumer(buildMetadata::set);
+    }
+    if (configurationAnalysisHtmlReport != null) {
+      builder.setConfigurationAnalysisHtmlReportConsumer(
+          new StringConsumer() {
+            private final StringBuilder sb = new StringBuilder();
+
+            @Override
+            public void accept(String string, DiagnosticsHandler handler) {
+              sb.append(string);
+            }
+
+            @Override
+            public void finished(DiagnosticsHandler handler) {
+              configurationAnalysisHtmlReport.set(sb.toString());
+            }
+          });
     }
     StringBuilder pgConfOutput = wrapProguardConfigConsumer(builder);
     CR compileResult =
@@ -850,6 +868,12 @@ public abstract class R8TestBuilder<
     CollectingGraphConsumer consumer = new CollectingGraphConsumer(subConsumer);
     setKeptGraphConsumer(consumer);
     graphConsumer = consumer;
+    return self();
+  }
+
+  public T enableConfigurationAnalysisReport() {
+    assertNull(this.configurationAnalysisHtmlReport);
+    this.configurationAnalysisHtmlReport = new Box<>();
     return self();
   }
 

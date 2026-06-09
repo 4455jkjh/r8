@@ -30,7 +30,8 @@ KOTLIN_METADATA_VERSION = '2.3.10'
 # the dependencies untangled.
 KOTLIN_VERSION = '2.2.21'
 GUAVA_VERSION = '32.1.2-jre'
-GSON_VERSION = '2.10.1'
+GSON_VERSION = '2.14.0'
+PLAYWRIGHT_VERSION = '1.60.0'
 JAVASSIST_VERSION = '3.29.2-GA'
 MOCKITO_VERSION = '2.10.0'
 TEST_RETRY_VERSION = '1.6.4'
@@ -120,6 +121,8 @@ TEST_DEPENDENCIES = [
         version=JUNIT_JUPITER_VERSION),
     'org.junit.platform:junit-platform-launcher:{version}'.format(
         version=JUNIT_PLATFORM_VERSION),
+    'com.microsoft.playwright:playwright:{version}'.format(
+        version=PLAYWRIGHT_VERSION),
 ]
 
 PLUGIN_DEPENDENCIES = [

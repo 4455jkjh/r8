@@ -369,7 +369,7 @@ private object Versions {
   public const val ddmLibVersion = "32.2.0"
   public const val errorproneVersion = "2.18.0"
   public const val fastUtilVersion = "7.2.1"
-  public const val gsonVersion = "2.10.1"
+  public const val gsonVersion = "2.14.0"
   public const val guavaVersion = "32.1.2-jre"
   public const val javassist = "3.29.2-GA"
   public const val junitJupiterVersion = "5.14.3"
@@ -377,9 +377,10 @@ private object Versions {
   public const val kotlinVersion = "1.9.20"
   public const val kotlinMetadataVersion = "2.3.10"
   public const val mockito = "2.10.0"
-  public const val testRetry = "1.6.4"
-  public const val smaliVersion = "3.0.3"
+  public const val playwrightVersion = "1.60.0"
   public const val protobufVersion = "4.33.5"
+  public const val smaliVersion = "3.0.3"
+  public const val testRetry = "1.6.4"
   public const val zipflingerVersion = "9.0.0"
 }
 
@@ -424,15 +425,18 @@ public object Deps {
     "org.jetbrains.kotlin:kotlin-reflect:${Versions.kotlinVersion}"
   }
   public val mockito: String by lazy { "org.mockito:mockito-core:${Versions.mockito}" }
-  public val testretry: String by lazy {
-    "org.gradle.test-retry-gradle-plugin:${Versions.testRetry}"
+  public val playwright: String by lazy {
+    "com.microsoft.playwright:playwright:${Versions.playwrightVersion}"
+  }
+  public val protobuf: String by lazy {
+    "com.google.protobuf:protobuf-java:${Versions.protobufVersion}"
   }
   public val smali: String by lazy { "com.android.tools.smali:smali:${Versions.smaliVersion}" }
   public val smaliUtil: String by lazy {
     "com.android.tools.smali:smali-util:${Versions.smaliVersion}"
   }
-  public val protobuf: String by lazy {
-    "com.google.protobuf:protobuf-java:${Versions.protobufVersion}"
+  public val testretry: String by lazy {
+    "org.gradle.test-retry-gradle-plugin:${Versions.testRetry}"
   }
   public val zipflinger: String by lazy { "com.android:zipflinger:${Versions.zipflingerVersion}" }
 
@@ -513,6 +517,7 @@ public object ThirdPartyDeps {
       Paths.get("third_party", "opensource-apps", "chrome").toFile(),
       Paths.get("third_party", "opensource-apps", "chrome.tar.gz.sha1").toFile(),
     )
+  public val chromeHeadless: ThirdPartyDependency = getThirdPartyChromeHeadless()
   public val compilerApi: ThirdPartyDependency =
     ThirdPartyDependency(
       "compiler-api",
@@ -1090,6 +1095,25 @@ private fun getThirdPartyAndroidVm(version: List<String>): ThirdPartyDependency 
         "${version.last()}.tar.gz.sha1",
       )
       .toFile(),
+  )
+}
+
+private fun getThirdPartyChromeHeadless(): ThirdPartyDependency {
+  val os: OperatingSystem = DefaultNativePlatform.getCurrentOperatingSystem()
+  val subFolder =
+    when {
+      os.isLinux -> "linux"
+      os.isMacOsX -> "mac"
+      else -> {
+        assert(os.isWindows)
+        "windows"
+      }
+    }
+  return ThirdPartyDependency(
+    "chrome_headless",
+    Paths.get("third_party", "chrome_headless", subFolder).toFile(),
+    Paths.get("third_party", "chrome_headless", "$subFolder.tar.gz.sha1").toFile(),
+    testOnly = true,
   )
 }
 

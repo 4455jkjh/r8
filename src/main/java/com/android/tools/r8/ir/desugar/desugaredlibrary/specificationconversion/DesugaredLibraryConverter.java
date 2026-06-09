@@ -18,10 +18,10 @@ import com.android.tools.r8.ir.desugar.desugaredlibrary.legacyspecification.Mult
 import com.android.tools.r8.ir.desugar.desugaredlibrary.machinespecification.MultiAPILevelMachineDesugaredLibrarySpecification;
 import com.android.tools.r8.ir.desugar.desugaredlibrary.machinespecification.MultiAPILevelMachineDesugaredLibrarySpecificationJsonExporter;
 import com.android.tools.r8.utils.AndroidApp;
-import com.android.tools.r8.utils.internal.Box;
 import com.android.tools.r8.utils.ExceptionDiagnostic;
 import com.android.tools.r8.utils.InternalOptions;
 import com.android.tools.r8.utils.ThreadUtils;
+import com.android.tools.r8.utils.internal.Box;
 import com.android.tools.r8.utils.timing.Timing;
 import com.google.common.collect.ImmutableSet;
 import com.google.gson.JsonObject;
@@ -95,8 +95,7 @@ public class DesugaredLibraryConverter {
     JsonObject jsonConfig;
     try {
       String jsonConfigString = jsonResource.getString();
-      JsonParser parser = new JsonParser();
-      jsonConfig = parser.parse(jsonConfigString).getAsJsonObject();
+      jsonConfig = JsonParser.parseString(jsonConfigString).getAsJsonObject();
     } catch (Exception e) {
       throw options.reporter.fatalError(new ExceptionDiagnostic(e, jsonResource.getOrigin()));
     }

@@ -72,7 +72,6 @@ import java.util.function.Function;
 public class ProguardMapReader implements AutoCloseable {
 
   private final LineReader reader;
-  private final JsonParser jsonParser = new JsonParser();
   private final DiagnosticsHandler diagnosticsHandler;
   private final boolean allowEmptyMappedRanges;
   private final boolean allowExperimentalMapping;
@@ -890,7 +889,7 @@ public class ProguardMapReader implements AutoCloseable {
       while (line.charAt(firstIndex) != '{') {
         firstIndex++;
       }
-      return jsonParser.parse(line.substring(firstIndex)).getAsJsonObject();
+      return JsonParser.parseString(line.substring(firstIndex)).getAsJsonObject();
     } catch (com.google.gson.JsonSyntaxException ex) {
       // An info message is reported in MappingInformation.
       return null;

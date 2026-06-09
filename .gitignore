@@ -83,6 +83,8 @@ third_party/cf_segments
 third_party/cf_segments.tar.gz
 third_party/chrome/*
 third_party/chrome/*.tar.gz
+third_party/chrome_headless/*/
+third_party/chrome_headless/*.tar.gz
 third_party/classlib
 third_party/classlib.tar.gz
 third_party/core-lambda-stubs

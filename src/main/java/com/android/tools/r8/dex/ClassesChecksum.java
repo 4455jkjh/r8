@@ -61,7 +61,7 @@ public class ClassesChecksum {
         && dexString.content[2] == PREFIX_CHAR2) {
       String str = dexString.toString().substring(3);
       try {
-        JsonElement result = new JsonParser().parse(str);
+        JsonElement result = JsonParser.parseString(str);
         if (result.isJsonObject()) {
           append(result.getAsJsonObject());
         }
