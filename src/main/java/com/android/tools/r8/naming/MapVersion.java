@@ -15,6 +15,7 @@ public enum MapVersion implements Ordered<MapVersion> {
   MAP_VERSION_2_0("2.0"),
   MAP_VERSION_2_1("2.1"),
   MAP_VERSION_2_2("2.2"),
+  MAP_VERSION_2_3("2.3"),
   MAP_VERSION_EXPERIMENTAL("experimental");
 
   public static final MapVersion STABLE = MAP_VERSION_2_2;

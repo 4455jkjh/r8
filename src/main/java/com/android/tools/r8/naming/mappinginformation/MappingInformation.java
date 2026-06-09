@@ -66,6 +66,10 @@ public abstract class MappingInformation {
     return false;
   }
 
+  public boolean isMergedClassesInformation() {
+    return false;
+  }
+
   public MapVersionMappingInformation asMapVersionMappingInformation() {
     return null;
   }
@@ -186,6 +190,9 @@ public abstract class MappingInformation {
         return;
       case PartitionFileNameInformation.ID:
         PartitionFileNameInformation.deserialize(object, onMappingInfo);
+        return;
+      case MergedClassesInformation.ID:
+        MergedClassesInformation.deserialize(version, onMappingInfo);
         return;
       default:
         diagnosticsHandler.info(MappingInformationDiagnostics.noHandlerFor(lineNumber, id));
