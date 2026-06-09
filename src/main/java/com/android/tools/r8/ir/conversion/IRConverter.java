@@ -342,7 +342,7 @@ public class IRConverter {
         executorService);
   }
 
-  public void addWaveDoneAction(com.android.tools.r8.utils.internal.Action action) {
+  public void addWaveDoneAction(Action action) {
     if (!appView.enableWholeProgramOptimizations()) {
       throw new Unreachable("addWaveDoneAction() should never be used in D8.");
     }

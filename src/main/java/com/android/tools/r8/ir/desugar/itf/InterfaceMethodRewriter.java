@@ -46,6 +46,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Predicate;
+import org.objectweb.asm.Opcodes;
 
 //
 // Default and static interface method desugaring rewriter (note that lambda
@@ -926,7 +927,7 @@ public abstract class InterfaceMethodRewriter {
                 DexMethod retargetMethod =
                     getRetargetMethod(eventConsumer, methodProcessingContext);
                 return Collections.singletonList(
-                    new CfInvoke(org.objectweb.asm.Opcodes.INVOKESTATIC, retargetMethod, false));
+                    new CfInvoke(Opcodes.INVOKESTATIC, retargetMethod, false));
               })
           .build();
     }

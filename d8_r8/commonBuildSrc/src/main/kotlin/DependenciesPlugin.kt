@@ -1251,6 +1251,7 @@ public fun Project.configureErrorProneForJavaCompile() {
       enableCheck(this, "MissingDefault", treatWarningsAsErrors)
       enableCheck(this, "MultipleTopLevelClasses", treatWarningsAsErrors)
       enableCheck(this, "NarrowingCompoundAssignment", treatWarningsAsErrors)
+      enableCheck(this, "UnnecessarilyFullyQualified", treatWarningsAsErrors)
 
       // Warnings that cause unwanted edits (e.g., inability to write informative asserts).
       options.errorprone.disable("AlreadyChecked")

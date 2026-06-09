@@ -45,6 +45,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.NavigableSet;
+import java.util.Objects;
 import java.util.PriorityQueue;
 import java.util.Set;
 import java.util.TreeSet;
@@ -414,7 +415,7 @@ public class CfRegisterAllocator implements RegisterAllocator {
   @Override
   @SuppressWarnings("ReferenceEquality")
   public boolean hasEqualTypesAtEntry(BasicBlock first, BasicBlock second) {
-    if (!java.util.Objects.equals(first.getLocalsAtEntry(), second.getLocalsAtEntry())) {
+    if (!Objects.equals(first.getLocalsAtEntry(), second.getLocalsAtEntry())) {
       return false;
     }
     // Check that stack at entry is same.

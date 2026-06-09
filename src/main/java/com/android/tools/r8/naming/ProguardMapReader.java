@@ -26,6 +26,7 @@ import com.android.tools.r8.utils.internal.Box;
 import com.android.tools.r8.utils.internal.StringUtils;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import com.google.gson.JsonSyntaxException;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -890,7 +891,7 @@ public class ProguardMapReader implements AutoCloseable {
         firstIndex++;
       }
       return JsonParser.parseString(line.substring(firstIndex)).getAsJsonObject();
-    } catch (com.google.gson.JsonSyntaxException ex) {
+    } catch (JsonSyntaxException ex) {
       // An info message is reported in MappingInformation.
       return null;
     }

@@ -27,6 +27,7 @@ import com.android.tools.r8.ir.analysis.value.objectstate.ObjectState;
 import com.android.tools.r8.ir.code.ArrayGet;
 import com.android.tools.r8.ir.code.ArrayPut;
 import com.android.tools.r8.ir.code.BasicBlock;
+import com.android.tools.r8.ir.code.ConstClass;
 import com.android.tools.r8.ir.code.FieldInstruction;
 import com.android.tools.r8.ir.code.IRCode;
 import com.android.tools.r8.ir.code.InitClass;
@@ -755,8 +756,7 @@ public class RedundantLoadAndStoreElimination extends CodeRewriterPass<AppInfo> 
     }
 
     private void handleConstClass(
-        InstructionListIterator instructionIterator,
-        com.android.tools.r8.ir.code.ConstClass constClass) {
+        InstructionListIterator instructionIterator, ConstClass constClass) {
       if (constClass.outValue().hasLocalInfo()) {
         return;
       }

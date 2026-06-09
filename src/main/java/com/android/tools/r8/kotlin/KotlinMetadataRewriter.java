@@ -26,14 +26,15 @@ import com.android.tools.r8.graph.DexValue.DexValueArray;
 import com.android.tools.r8.graph.DexValue.DexValueInt;
 import com.android.tools.r8.graph.DexValue.DexValueString;
 import com.android.tools.r8.graph.lens.GraphLens;
-import com.android.tools.r8.utils.internal.BooleanBox;
 import com.android.tools.r8.utils.ThreadUtils;
+import com.android.tools.r8.utils.internal.BooleanBox;
 import com.android.tools.r8.utils.internal.collections.Pair;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
+import kotlin.Metadata;
 import kotlin.metadata.jvm.JvmMetadataVersion;
 
 public class KotlinMetadataRewriter {
@@ -234,7 +235,7 @@ public class KotlinMetadataRewriter {
       DexAnnotation oldMeta,
       WriteMetadataFieldInfo writeMetadataFieldInfo) {
     try {
-      Pair<kotlin.Metadata, Boolean> kotlinMetadata = kotlinInfo.rewrite(clazz, appView);
+      Pair<Metadata, Boolean> kotlinMetadata = kotlinInfo.rewrite(clazz, appView);
       // TODO(b/185756596): Remove when special handling is no longer needed.
       if (!kotlinMetadata.getSecond() && appView.options().testing.keepMetadataInR8IfNotRewritten) {
         // No rewrite occurred and the data is the same as before.
@@ -302,7 +303,7 @@ public class KotlinMetadataRewriter {
   }
 
   private DexAnnotation createKotlinMetadataAnnotation(
-      kotlin.Metadata metadata,
+      Metadata metadata,
       String packageName,
       JvmMetadataVersion metadataVersion,
       WriteMetadataFieldInfo writeMetadataFieldInfo) {

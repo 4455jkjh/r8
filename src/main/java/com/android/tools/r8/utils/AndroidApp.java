@@ -921,13 +921,10 @@ public class AndroidApp {
       }
     }
 
-    org.objectweb.asm.ClassReader reader = new org.objectweb.asm.ClassReader(bytes);
+    ClassReader reader = new ClassReader(bytes);
     ClassNameExtractor extractor = new ClassNameExtractor();
     reader.accept(
-        extractor,
-        org.objectweb.asm.ClassReader.SKIP_CODE
-            | org.objectweb.asm.ClassReader.SKIP_DEBUG
-            | org.objectweb.asm.ClassReader.SKIP_FRAMES);
+        extractor, ClassReader.SKIP_CODE | ClassReader.SKIP_DEBUG | ClassReader.SKIP_FRAMES);
     return extractor.getDescriptor();
   }
 

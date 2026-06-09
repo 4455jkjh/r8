@@ -36,6 +36,7 @@ import com.android.tools.r8.ir.optimize.UtilityMethodsForCodeOptimizations.Utili
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.function.IntConsumer;
+import org.objectweb.asm.Opcodes;
 
 public class AlwaysThrowingInstructionDesugaring implements CfInstructionDesugaring {
 
@@ -225,8 +226,7 @@ public class AlwaysThrowingInstructionDesugaring implements CfInstructionDesugar
       }
       // Call throw method and pop exception.
       CfInvoke throwInvoke =
-          new CfInvoke(
-              org.objectweb.asm.Opcodes.INVOKESTATIC, throwProgramMethod.getReference(), false);
+          new CfInvoke(Opcodes.INVOKESTATIC, throwProgramMethod.getReference(), false);
       assert throwInvoke.getMethod().getReturnType().isClassType();
       replacement.add(throwInvoke);
       replacement.add(new CfStackInstruction(CfStackInstruction.Opcode.Pop));
@@ -299,8 +299,7 @@ public class AlwaysThrowingInstructionDesugaring implements CfInstructionDesugar
     }
 
     CfInvoke throwInvoke =
-        new CfInvoke(
-            org.objectweb.asm.Opcodes.INVOKESTATIC, throwProgramMethod.getReference(), false);
+        new CfInvoke(Opcodes.INVOKESTATIC, throwProgramMethod.getReference(), false);
     assert throwInvoke.getMethod().getReturnType().isClassType();
     replacement.add(throwInvoke);
     replacement.add(new CfStackInstruction(CfStackInstruction.Opcode.Pop));

@@ -38,6 +38,7 @@ import com.android.tools.r8.resourceshrinker.ResourceShrinkerState;
 import com.android.tools.r8.resourceshrinker.ResourceShrinkerState.ResourceShrinkerCallback;
 import com.android.tools.r8.utils.collections.ProgramMethodSet;
 import com.android.tools.r8.utils.internal.exceptions.Unreachable;
+import com.android.tools.r8.utils.timing.Timing;
 import com.google.common.collect.Sets;
 import it.unimi.dsi.fastutil.ints.IntArrayList;
 import it.unimi.dsi.fastutil.ints.IntList;
@@ -212,10 +213,7 @@ public class ResourceShrinkerEnqueuerExtension
 
   @Override
   public void notifyFixpoint(
-      Enqueuer enqueuer,
-      EnqueuerWorklist worklist,
-      ExecutorService executorService,
-      com.android.tools.r8.utils.timing.Timing timing)
+      Enqueuer enqueuer, EnqueuerWorklist worklist, ExecutorService executorService, Timing timing)
       throws ExecutionException {
     if (pendingLiveClasses.isEmpty() && pendingOnClickMethodReferences.isEmpty()) {
       return;
