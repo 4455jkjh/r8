@@ -38,7 +38,8 @@ public abstract class TestRuntime {
     JDK11("jdk11", 55),
     JDK17("jdk17", 61),
     JDK21("jdk21", 65),
-    JDK25("jdk25", 69); // Keep JDK-25 (LTS) when adding JDK-26.
+    JDK25("jdk25", 69),
+    JDK27("jdk27", 71);
 
     /** This should generally be the latest checked in CF runtime we fully support. */
     private static final CfVm DEFAULT = JDK11;
@@ -98,6 +99,7 @@ public abstract class TestRuntime {
   private static final Path JDK17_PATH = Paths.get(ToolHelper.THIRD_PARTY_DIR, "openjdk", "jdk-17");
   private static final Path JDK21_PATH = Paths.get(ToolHelper.THIRD_PARTY_DIR, "openjdk", "jdk-21");
   private static final Path JDK25_PATH = Paths.get(ToolHelper.THIRD_PARTY_DIR, "openjdk", "jdk-25");
+  private static final Path JDK27_PATH = Paths.get(ToolHelper.THIRD_PARTY_DIR, "openjdk", "jdk-27");
   private static final Map<CfVm, Path> jdkPaths =
       ImmutableMap.of(
           CfVm.JDK8, JDK8_PATH,
@@ -105,7 +107,8 @@ public abstract class TestRuntime {
           CfVm.JDK11, JDK11_PATH,
           CfVm.JDK17, JDK17_PATH,
           CfVm.JDK21, JDK21_PATH,
-          CfVm.JDK25, JDK25_PATH);
+          CfVm.JDK25, JDK25_PATH,
+          CfVm.JDK27, JDK27_PATH);
 
   public static CfRuntime getCheckedInJdk(CfVm vm) {
     if (vm == CfVm.JDK8) {
@@ -160,6 +163,10 @@ public abstract class TestRuntime {
 
   public static CfRuntime getCheckedInJdk25() {
     return new CfRuntime(CfVm.JDK25, getCheckedInJdkHome(CfVm.JDK25));
+  }
+
+  public static CfRuntime getCheckedInJdk27() {
+    return new CfRuntime(CfVm.JDK27, getCheckedInJdkHome(CfVm.JDK27));
   }
 
   public static List<CfRuntime> getCheckedInCfRuntimes() {

@@ -59,7 +59,8 @@ public enum class Jdk(public val folder: String, public val version: Int) {
   JDK_11("jdk-11", 11),
   JDK_17("jdk-17", 17),
   JDK_21("jdk-21", 21),
-  JDK_25("jdk-25", 25);
+  JDK_25("jdk-25", 25),
+  JDK_27("jdk-27", 27);
 
   public fun isJdk8(): Boolean {
     return this == JDK_8

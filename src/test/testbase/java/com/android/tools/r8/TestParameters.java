@@ -312,6 +312,11 @@ public class TestParameters {
     return this;
   }
 
+  public TestParameters assumeNoneRuntime() {
+    assumeTrue(isNoneRuntime());
+    return this;
+  }
+
   public TestParameters assumeIsOrSimulateNoneRuntime() {
     assumeTrue(isOrSimulateNoneRuntime());
     return this;
