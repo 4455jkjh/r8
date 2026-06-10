@@ -4,19 +4,23 @@
 package com.android.tools.r8.cf;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
-import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.TestRuntime;
+import com.android.tools.r8.TestRuntime.CfVm;
 import com.android.tools.r8.utils.codeinspector.ClassSubject;
 import com.android.tools.r8.utils.codeinspector.CodeInspector;
 import com.android.tools.r8.utils.codeinspector.InstructionSubject;
 import com.android.tools.r8.utils.codeinspector.MethodSubject;
 import com.android.tools.r8.utils.internal.FileUtils;
+import com.google.common.collect.ImmutableList;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -25,22 +29,28 @@ import org.junit.runners.Parameterized.Parameter;
 import org.objectweb.asm.Opcodes;
 
 @RunWith(Parameterized.class)
-public class Jdk27DeserializeLambdaMethodsTest extends TestBase implements Opcodes {
+public class DeserializeLambdaMethodsTest extends TestBase implements Opcodes {
 
   @Parameter(0)
   public TestParameters parameters;
 
-  @Parameterized.Parameters(name = "{0}")
-  public static TestParametersCollection data() {
-    return getTestParameters().withDexRuntimesAndAllApiLevels().withNoneRuntime().build();
+  @Parameter(1)
+  public CfVm cfVm;
+
+  @Parameterized.Parameters(name = "{0}, jdk = {1}")
+  public static List<Object[]> data() {
+    return buildParameters(
+        getTestParameters().withDexRuntimesAndAllApiLevels().withNoneRuntime().build(),
+        cfVmsToTest);
   }
 
-  private static Path TEST_CLASS_FILE;
+  private static final List<CfVm> cfVmsToTest =
+      ImmutableList.of(CfVm.JDK8, CfVm.JDK11, CfVm.JDK17, CfVm.JDK21, CfVm.JDK25, CfVm.JDK27);
+  private static final Map<CfVm, Path> TEST_CLASS_FILES = new HashMap<>();
 
   @BeforeClass
   public static void compileTestClasses() throws Exception {
-    // Build test constants.
-    Path output = getStaticTemp().newFolder("output").toPath();
+    // Build test source code.
     Path testJavaSource =
         FileUtils.writeTextFile(
             getStaticTemp().newFolder("src").toPath().resolve("Test.java"),
@@ -76,26 +86,32 @@ public class Jdk27DeserializeLambdaMethodsTest extends TestBase implements Opcod
             "    System.err.println(\"OK\");",
             "  }",
             "}");
-    javac(TestRuntime.getCheckedInJdk27(), getStaticTemp())
-        .addSourceFiles(testJavaSource)
-        .setOutputPath(output)
-        .compile();
-    TEST_CLASS_FILE = output.resolve("Test.class");
+
+    Path output = getStaticTemp().newFolder("output").toPath();
+    for (CfVm jdk : cfVmsToTest) {
+      Path classes = output.resolve(jdk.toString());
+      Files.createDirectory(classes);
+      javac(TestRuntime.getCheckedInJdk(jdk), getStaticTemp())
+          .addSourceFiles(testJavaSource)
+          .setOutputPath(classes)
+          .compile();
+      TEST_CLASS_FILES.put(jdk, classes.resolve("Test.class"));
+    }
   }
 
   @Test
-  public void testJdk27SerializeLambdaCodeGeneration() throws Exception {
+  public void testJdkSerializeLambdaCodeGeneration() throws Exception {
     parameters.assumeNoneRuntime();
-    CodeInspector inspector = new CodeInspector(TEST_CLASS_FILE);
+    CodeInspector inspector = new CodeInspector(TEST_CLASS_FILES.get(cfVm));
     ClassSubject clazz = inspector.clazz("Test");
     assertTrue(clazz.isPresent());
     assertEquals(
-        3,
+        cfVm.isGreaterThanOrEqualTo(CfVm.JDK27) ? 3 : 1,
         clazz.allMethods().stream()
             .filter(method -> method.getOriginalMethodName().startsWith("$deserializeLambda$"))
             .count());
     assertEquals(
-        2,
+        cfVm.isGreaterThanOrEqualTo(CfVm.JDK27) ? 2 : 0,
         clazz
             .uniqueMethodWithOriginalName("$deserializeLambda$")
             .streamInstructions()
@@ -106,7 +122,7 @@ public class Jdk27DeserializeLambdaMethodsTest extends TestBase implements Opcod
             .filter(name -> name.startsWith("$deserializeLambda$$"))
             .count());
     assertEquals(
-        2,
+        cfVm.isGreaterThanOrEqualTo(CfVm.JDK27) ? 2 : 0,
         clazz.allMethods().stream()
             .flatMap(MethodSubject::streamInstructions)
             .filter(InstructionSubject::isInvokeVirtual)
@@ -119,23 +135,24 @@ public class Jdk27DeserializeLambdaMethodsTest extends TestBase implements Opcod
   public void testD8() throws Exception {
     parameters.assumeDexRuntime();
     testForD8()
-        .addProgramFiles(TEST_CLASS_FILE)
+        .addProgramFiles(TEST_CLASS_FILES.get(cfVm))
         .setMinApi(parameters)
         .compile()
         .inspect(
             inspector -> {
               ClassSubject clazz = inspector.clazz("Test");
               assertTrue(clazz.isPresent());
-              // TODO(b/521062024): Should be 0.
+              // TODO(b/521062024): Should always be 0.
               assertEquals(
-                  2,
+                  cfVm.isGreaterThanOrEqualTo(CfVm.JDK27) ? 2 : 0,
                   clazz.allMethods().stream()
                       .filter(
                           method ->
                               method.getOriginalMethodName().startsWith("$deserializeLambda$"))
                       .count());
-              // TODO(b/521062024): Should be true.
-              assertFalse(
+              // TODO(b/521062024): Should always be true.
+              assertEquals(
+                  cfVm.isLessThan(CfVm.JDK27),
                   clazz.allMethods().stream()
                       .flatMap(MethodSubject::streamInstructions)
                       .filter(InstructionSubject::isInvokeVirtual)
@@ -148,7 +165,7 @@ public class Jdk27DeserializeLambdaMethodsTest extends TestBase implements Opcod
   public void testR8() throws Exception {
     parameters.assumeDexRuntime();
     testForR8(parameters)
-        .addProgramFiles(TEST_CLASS_FILE)
+        .addProgramFiles(TEST_CLASS_FILES.get(cfVm))
         .setMinApi(parameters)
         .addKeepMainRule("Test")
         .compile()
