@@ -36,7 +36,11 @@ public class ClassHierarchyCycleCrossGroupMergingTest extends TestBase {
         .addKeepMainRule(Main.class)
         .addHorizontallyMergedClassesInspector(
             inspector ->
-                inspector.assertIsCompleteMergeGroup(I.class, J.class).assertNoOtherClassesMerged())
+                inspector
+                    .applyIf(
+                        parameters.isDexRuntime(),
+                        i -> i.assertIsCompleteMergeGroup(I.class, J.class))
+                    .assertNoOtherClassesMerged())
         .enableNoHorizontalClassMergingAnnotations()
         .enableNoUnusedInterfaceRemovalAnnotations()
         .enableNoVerticalClassMergingAnnotations()

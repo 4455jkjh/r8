@@ -47,6 +47,7 @@ import com.android.tools.r8.horizontalclassmerging.policies.OnlyDirectlyConnecte
 import com.android.tools.r8.horizontalclassmerging.policies.PreserveInterfaceMethodDispatch;
 import com.android.tools.r8.horizontalclassmerging.policies.PreserveMethodCharacteristics;
 import com.android.tools.r8.horizontalclassmerging.policies.PreventClassMethodAndDefaultMethodCollisions;
+import com.android.tools.r8.horizontalclassmerging.policies.ProtectApiSurface;
 import com.android.tools.r8.horizontalclassmerging.policies.RespectPackageBoundaries;
 import com.android.tools.r8.horizontalclassmerging.policies.SameFeatureSplit;
 import com.android.tools.r8.horizontalclassmerging.policies.SameFilePolicy;
@@ -97,7 +98,7 @@ public class PolicyScheduler {
       RuntimeTypeCheckInfo runtimeTypeCheckInfo) {
     List<Policy> policies =
         ImmutableList.<Policy>builder()
-            .addAll(getSingleClassPolicies(appView, runtimeTypeCheckInfo))
+            .addAll(getSingleClassPolicies(appView, immediateSubtypingInfo, runtimeTypeCheckInfo))
             .addAll(getMultiClassPolicies(appView, immediateSubtypingInfo, runtimeTypeCheckInfo))
             .build();
     policies = appView.options().testing.horizontalClassMergingPolicyRewriter.apply(policies);
@@ -107,10 +108,11 @@ public class PolicyScheduler {
 
   private static List<SingleClassPolicy> getSingleClassPolicies(
       AppView<? extends AppInfoWithClassHierarchy> appView,
+      ImmediateProgramSubtypingInfo immediateSubtypingInfo,
       RuntimeTypeCheckInfo runtimeTypeCheckInfo) {
     ImmutableList.Builder<SingleClassPolicy> builder = ImmutableList.builder();
 
-    addRequiredSingleClassPolicies(appView, builder);
+    addRequiredSingleClassPolicies(appView, immediateSubtypingInfo, builder);
 
     if (appView.options().horizontalClassMergerOptions().isRestrictedToSynthetics()) {
       assert verifySingleClassPoliciesIrrelevantForMergingSynthetics(appView, builder);
@@ -134,12 +136,16 @@ public class PolicyScheduler {
 
   private static void addRequiredSingleClassPolicies(
       AppView<? extends AppInfoWithClassHierarchy> appView,
+      ImmediateProgramSubtypingInfo immediateSubtypingInfo,
       ImmutableList.Builder<SingleClassPolicy> builder) {
     builder.add(
         new CheckSyntheticClasses(appView),
         new NoCheckDiscard(appView),
         new NoKeepRules(appView),
         new NoClassInitializerWithObservableSideEffects());
+    if (appView.options().shouldProtectApiSurface()) {
+      builder.add(new ProtectApiSurface(appView, immediateSubtypingInfo));
+    }
     if (appView.hasLiveness() && appView.options().isGeneratingClassFiles()) {
       builder.add(new NoMethodHandleFromLambda(appView.withLiveness()));
     }
