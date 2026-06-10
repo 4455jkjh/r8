@@ -8,7 +8,6 @@ import static com.android.tools.r8.utils.codeinspector.Matchers.isPresent;
 import static org.hamcrest.MatcherAssert.assertThat;
 
 import com.android.tools.r8.NeverClassInline;
-import com.android.tools.r8.Retryable;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
@@ -26,7 +25,6 @@ import org.junit.runners.Parameterized.Parameter;
 import org.junit.runners.Parameterized.Parameters;
 
 @RunWith(Parameterized.class)
-@Retryable
 public class ForwardingConstructorUsedFromPlatformShakingOnDexTest extends TestBase {
 
   private static final String APPLICATION_INFO_DESCRIPTOR = "Landroid/content/pm/ApplicationInfo;";
