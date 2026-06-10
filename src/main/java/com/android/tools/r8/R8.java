@@ -434,11 +434,12 @@ public class R8 {
 
         // Build enclosing information and type-parameter information before pruning.
         // TODO(b/187922482): Only consider referenced classes.
-        GenericSignatureContextBuilder genericContextBuilder =
+        GenericSignatureContextBuilder genericSignatureContextBuilder =
             GenericSignatureContextBuilder.create(appView);
 
         // Compute if all signatures are valid before modifying them.
-        GenericSignatureCorrectnessHelper.createForInitialCheck(appView, genericContextBuilder)
+        GenericSignatureCorrectnessHelper.createForInitialCheck(
+                appView, genericSignatureContextBuilder)
             .run(appView.appInfo().classes());
 
         // TODO(b/226539525): Implement enum lite proto shrinking as deferred tracing.
@@ -456,7 +457,7 @@ public class R8 {
 
         AnnotationRemover annotationRemover = annotationRemoverBuilder.build(appViewWithLiveness);
         annotationRemover.ensureValid().run(executorService);
-        new GenericSignatureRewriter(appView, genericContextBuilder)
+        new GenericSignatureRewriter(appView, genericSignatureContextBuilder)
             .run(appView.appInfo().classes(), executorService);
 
         assert appView.checkForTesting(() -> allReferencesAssignedApiLevel(appViewWithLiveness));
@@ -623,7 +624,7 @@ public class R8 {
                     shrinker -> shrinker.run(enqueuer.getMode()),
                     DefaultTreePrunerConfiguration.getInstance());
 
-            GenericSignatureContextBuilder genericContextBuilder =
+            GenericSignatureContextBuilder genericSignatureContextBuilder =
                 GenericSignatureContextBuilder.create(appView);
 
             TreePruner pruner = new TreePruner(appViewWithLiveness, treePrunerConfiguration);
@@ -671,7 +672,7 @@ public class R8 {
                 .build(appView.withLiveness())
                 .run(executorService)
                 .runForExcludedClassesInR8Partial(executorService);
-            new GenericSignatureRewriter(appView, genericContextBuilder)
+            new GenericSignatureRewriter(appView, genericSignatureContextBuilder)
                 .run(appView.appInfo().classes(), executorService);
             assert appView.checkForTesting(
                     () ->
@@ -782,8 +783,6 @@ public class R8 {
             appView.withLiveness(), executorService, timing);
       }
 
-      GenericSignatureContextBuilder genericContextBuilderBeforeFinalMerging = null;
-
       // Include the D8 part of R8 partial for lens code rewriting
       // (synthetic finalization and repackaging).
       if (appView.options().partialSubCompilationConfiguration != null) {
@@ -806,87 +805,91 @@ public class R8 {
             .uncommitDexingOutputClasses(appView);
       }
 
-      if (!appView.hasCfByteCodePassThroughMethods()) {
-        assert appView.getTypeElementFactory().verifyNoCachedTypeElements();
-
-        if (appView.hasLiveness()) {
-          VerticalClassMerger.createForIntermediateClassMerging(appView.withLiveness(), timing)
-              .runIfNecessary(executorService, timing);
-          assert appView.getTypeElementFactory().verifyNoCachedTypeElements();
-        }
-
-        genericContextBuilderBeforeFinalMerging = GenericSignatureContextBuilder.create(appView);
-
-        // Run horizontal class merging. This runs even if shrinking is disabled to ensure
-        // synthetics are always merged.
-        HorizontalClassMerger.createForFinalClassMerging(appView)
-            .runIfNecessary(
-                executorService,
-                timing,
-                finalRuntimeTypeCheckInfoBuilder != null
-                    ? finalRuntimeTypeCheckInfoBuilder.build(appView.graphLens())
-                    : null);
-        assert appView.getTypeElementFactory().verifyNoCachedTypeElements();
-
-        if (appView.hasLiveness()) {
-          VerticalClassMerger.createForFinalClassMerging(appView.withLiveness(), timing)
-              .runIfNecessary(executorService, timing);
+      {
+        GenericSignatureContextBuilder genericContextBuilderBeforeFinalMerging = null;
+        if (!appView.hasCfByteCodePassThroughMethods()) {
           assert appView.getTypeElementFactory().verifyNoCachedTypeElements();
 
-          new SingleCallerInliner(appViewWithLiveness).runIfNecessary(executorService, timing);
-          new ProtoNormalizer(appViewWithLiveness).run(executorService, timing);
+          if (appView.hasLiveness()) {
+            VerticalClassMerger.createForIntermediateClassMerging(appView.withLiveness(), timing)
+                .runIfNecessary(executorService, timing);
+            assert appView.getTypeElementFactory().verifyNoCachedTypeElements();
+          }
+
+          genericContextBuilderBeforeFinalMerging = GenericSignatureContextBuilder.create(appView);
+
+          // Run horizontal class merging. This runs even if shrinking is disabled to ensure
+          // synthetics are always merged.
+          HorizontalClassMerger.createForFinalClassMerging(appView)
+              .runIfNecessary(
+                  executorService,
+                  timing,
+                  finalRuntimeTypeCheckInfoBuilder != null
+                      ? finalRuntimeTypeCheckInfoBuilder.build(appView.graphLens())
+                      : null);
+          assert appView.getTypeElementFactory().verifyNoCachedTypeElements();
+
+          if (appView.hasLiveness()) {
+            VerticalClassMerger.createForFinalClassMerging(appView.withLiveness(), timing)
+                .runIfNecessary(executorService, timing);
+            assert appView.getTypeElementFactory().verifyNoCachedTypeElements();
+
+            new SingleCallerInliner(appViewWithLiveness).runIfNecessary(executorService, timing);
+            new ProtoNormalizer(appViewWithLiveness).run(executorService, timing);
+          }
         }
-      }
 
-      // Perform minification.
-      if (options.getProguardConfiguration().hasApplyMappingFile()) {
-        timing.begin("apply-mapping");
-        appView.setNamingLens(
-            new ProguardMapMinifier(appView.withLiveness()).run(executorService, timing));
+        // Perform minification.
+        if (options.getProguardConfiguration().hasApplyMappingFile()) {
+          timing.begin("apply-mapping");
+          appView.setNamingLens(
+              new ProguardMapMinifier(appView.withLiveness()).run(executorService, timing));
+          timing.end();
+          // Clear the applymapping data
+          appView.clearApplyMappingSeedMapper();
+        } else if (options.isMinifying()) {
+          timing.begin("Minification");
+          new Minifier(appView.withLiveness()).run(executorService, timing);
+          timing.end();
+        }
+        appView.appInfo().notifyMinifierFinished();
+
+        timing.begin("MinifyIdentifiers");
+        new IdentifierMinifier(appView).run(executorService);
         timing.end();
-        // Clear the applymapping data
-        appView.clearApplyMappingSeedMapper();
-      } else if (options.isMinifying()) {
-        timing.begin("Minification");
-        new Minifier(appView.withLiveness()).run(executorService, timing);
+
+        // If a method filter is present don't produce output since the application is likely
+        // partial.
+        if (options.hasMethodsFilter()) {
+          System.out.println("Finished compilation with method filter: ");
+          options.methodsFilter.forEach(m -> System.out.println("  - " + m));
+          return;
+        }
+
+        // Validity checks.
+        assert getDirectApp(appView).verifyCodeObjectsOwners();
+        assert appView.appInfo().classes().stream().allMatch(clazz -> clazz.isValid(options));
+        assert verifyMappingToOriginalProgram(appView, inputApp, executorService);
+
+        // Report synthetic rules (only for testing).
+        // TODO(b/120959039): Move this to being reported through the graph consumer.
+        if (options.syntheticProguardRulesConsumer != null) {
+          options.syntheticProguardRulesConsumer.accept(synthesizedProguardRules);
+        }
+
+        PrefixRewritingNamingLens.commitPrefixRewritingNamingLens(appView);
+        RecordRewritingNamingLens.commitRecordRewritingNamingLens(appView);
+
+        new ApiReferenceStubber(appView).run(executorService, timing);
+
+        timing.begin("MinifyKotlinMetadata");
+        new KotlinMetadataRewriter(appView).runForR8(executorService);
         timing.end();
-      }
-      appView.appInfo().notifyMinifierFinished();
 
-      timing.begin("MinifyIdentifiers");
-      new IdentifierMinifier(appView).run(executorService);
-      timing.end();
-
-      // If a method filter is present don't produce output since the application is likely partial.
-      if (options.hasMethodsFilter()) {
-        System.out.println("Finished compilation with method filter: ");
-        options.methodsFilter.forEach(m -> System.out.println("  - " + m));
-        return;
-      }
-
-      // Validity checks.
-      assert getDirectApp(appView).verifyCodeObjectsOwners();
-      assert appView.appInfo().classes().stream().allMatch(clazz -> clazz.isValid(options));
-      assert verifyMappingToOriginalProgram(appView, inputApp, executorService);
-
-      // Report synthetic rules (only for testing).
-      // TODO(b/120959039): Move this to being reported through the graph consumer.
-      if (options.syntheticProguardRulesConsumer != null) {
-        options.syntheticProguardRulesConsumer.accept(synthesizedProguardRules);
-      }
-
-      PrefixRewritingNamingLens.commitPrefixRewritingNamingLens(appView);
-      RecordRewritingNamingLens.commitRecordRewritingNamingLens(appView);
-
-      new ApiReferenceStubber(appView).run(executorService, timing);
-
-      timing.begin("MinifyKotlinMetadata");
-      new KotlinMetadataRewriter(appView).runForR8(executorService);
-      timing.end();
-
-      if (genericContextBuilderBeforeFinalMerging != null) {
-        new GenericSignatureRewriter(appView, genericContextBuilderBeforeFinalMerging)
-            .run(appView.appInfo().classes(), executorService);
+        if (genericContextBuilderBeforeFinalMerging != null) {
+          new GenericSignatureRewriter(appView, genericContextBuilderBeforeFinalMerging)
+              .run(appView.appInfo().classes(), executorService);
+        }
       }
 
       assert appView.checkForTesting(

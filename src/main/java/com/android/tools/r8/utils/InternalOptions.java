@@ -984,26 +984,29 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
   }
 
   public boolean parseSignatureAttribute() {
-    return true;
+    return !hasProguardConfiguration()
+        || getProguardConfiguration().getKeepAttributes().signature
+        || partialCompilationConfiguration != null
+        || getTestingOptions().enableEmbeddedKeepAnnotations;
   }
 
   @Override
   public boolean isForceKeepSignatureAttributeEnabled() {
-    return proguardConfiguration == null
+    return !hasProguardConfiguration()
         || (isForceProguardCompatibilityEnabled()
             && proguardConfiguration.getKeepAttributes().signature);
   }
 
   @Override
   public boolean isForceKeepExceptionsAttributeEnabled() {
-    return proguardConfiguration == null
+    return !hasProguardConfiguration()
         || (isForceProguardCompatibilityEnabled()
             && proguardConfiguration.getKeepAttributes().exceptions);
   }
 
   @Override
   public boolean isForceKeepMethodParametersAttributeEnabled() {
-    return proguardConfiguration == null
+    return !hasProguardConfiguration()
         || (isForceProguardCompatibilityEnabled()
             && proguardConfiguration.getKeepAttributes().methodParameters);
   }

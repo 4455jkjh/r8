@@ -150,19 +150,22 @@ public class GenericSignatureContextBuilder {
           // Build up a map of type variables to bounds for every reference such that we can
           // lookup the information even after we prune the generic signatures.
           if (clazz.getClassSignature().isValid()) {
-            formalsInfo.put(
-                clazz.getReference(),
-                TypeParameterSubstitutions.create(clazz.classSignature.getFormalTypeParameters()));
-            clazz.forEachClassMethod(
+            if (!clazz.getClassSignature().getFormalTypeParameters().isEmpty()) {
+              formalsInfo.put(
+                  clazz.getReference(),
+                  TypeParameterSubstitutions.create(
+                      clazz.getClassSignature().getFormalTypeParameters()));
+            }
+            clazz.forEachClassMethodMatching(
+                method ->
+                    method.getGenericSignature().isValid()
+                        && !method.getGenericSignature().getFormalTypeParameters().isEmpty(),
                 method -> {
                   MethodTypeSignature methodSignature =
                       method.getDefinition().getGenericSignature();
-                  if (methodSignature.isValid()) {
-                    formalsInfo.put(
-                        method.getReference(),
-                        TypeParameterSubstitutions.create(
-                            methodSignature.getFormalTypeParameters()));
-                  }
+                  formalsInfo.put(
+                      method.getReference(),
+                      TypeParameterSubstitutions.create(methodSignature.getFormalTypeParameters()));
                 });
           }
           // Build up an enclosing class context such that the enclosing class can be looked up
