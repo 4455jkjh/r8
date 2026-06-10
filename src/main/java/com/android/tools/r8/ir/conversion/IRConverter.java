@@ -432,8 +432,7 @@ public class IRConverter {
       Timing timing) {
     DexEncodedMethod definition = method.getDefinition();
     Code code = definition.getCode();
-    boolean matchesMethodFilter = options.methodMatchesFilter(definition);
-    if (code != null && matchesMethodFilter) {
+    if (code != null) {
       return rewriteDesugaredCode(
           method, feedback, methodProcessor, methodProcessingContext, conversionOptions, timing);
     } else {

@@ -55,7 +55,6 @@ import com.android.tools.r8.graph.DexClass;
 import com.android.tools.r8.graph.DexClassAndMethod;
 import com.android.tools.r8.graph.DexClasspathClass;
 import com.android.tools.r8.graph.DexDefinitionSupplier;
-import com.android.tools.r8.graph.DexEncodedMethod;
 import com.android.tools.r8.graph.DexItem;
 import com.android.tools.r8.graph.DexItemFactory;
 import com.android.tools.r8.graph.DexLibraryClass;
@@ -827,7 +826,6 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
   public Set<String> extensiveInterfaceMethodMinifierLoggingFilter =
       getExtensiveInterfaceMethodMinifierLoggingFilter();
 
-  public List<String> methodsFilter = ImmutableList.of();
   private AndroidApiLevel minApiLevel = AndroidApiLevel.getDefault();
   // Skipping min_api check and compiling an intermediate result intended for later merging.
   // Intermediate builds also emits or update synthesized classes mapping.
@@ -1709,20 +1707,6 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
                   + " To fix, recompile the source with an updated toolchain."));
     }
     return printed;
-  }
-
-  public boolean hasMethodsFilter() {
-    return methodsFilter.size() > 0;
-  }
-
-  public boolean methodMatchesFilter(DexEncodedMethod method) {
-    // Not specifying a filter matches all methods.
-    if (!hasMethodsFilter()) {
-      return true;
-    }
-    // Currently the filter is simple string equality on the qualified name.
-    String qualifiedName = method.qualifiedName();
-    return methodsFilter.contains(qualifiedName);
   }
 
   public enum PackageObfuscationMode {

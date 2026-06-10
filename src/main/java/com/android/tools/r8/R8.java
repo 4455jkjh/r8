@@ -858,14 +858,6 @@ public class R8 {
         new IdentifierMinifier(appView).run(executorService);
         timing.end();
 
-        // If a method filter is present don't produce output since the application is likely
-        // partial.
-        if (options.hasMethodsFilter()) {
-          System.out.println("Finished compilation with method filter: ");
-          options.methodsFilter.forEach(m -> System.out.println("  - " + m));
-          return;
-        }
-
         // Validity checks.
         assert getDirectApp(appView).verifyCodeObjectsOwners();
         assert appView.appInfo().classes().stream().allMatch(clazz -> clazz.isValid(options));
