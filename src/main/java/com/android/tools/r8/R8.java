@@ -81,13 +81,10 @@ import com.android.tools.r8.optimize.redundantbridgeremoval.RedundantBridgeRemov
 import com.android.tools.r8.optimize.singlecaller.SingleCallerInliner;
 import com.android.tools.r8.optimize.smallmethodinliner.SmallMethodInliner;
 import com.android.tools.r8.origin.CommandLineOrigin;
-import com.android.tools.r8.origin.Origin;
 import com.android.tools.r8.profile.art.ArtProfileCompletenessChecker;
 import com.android.tools.r8.profile.rewriting.ProfileCollectionAdditions;
 import com.android.tools.r8.repackaging.Repackaging;
-import com.android.tools.r8.resourceshrinker.ResourceShrinkerState.ShrinkerResult;
-import com.android.tools.r8.resourceshrinker.usages.LegacyResourceShrinker;
-import com.android.tools.r8.resourceshrinker.usages.R8ResourceShrinker;
+import com.android.tools.r8.resourceshrinker.ResourceWriter;
 import com.android.tools.r8.shaking.AbstractMethodRemover;
 import com.android.tools.r8.shaking.AnnotationRemover;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
@@ -119,8 +116,6 @@ import com.android.tools.r8.utils.AndroidApp;
 import com.android.tools.r8.utils.ExceptionDiagnostic;
 import com.android.tools.r8.utils.ExceptionUtils;
 import com.android.tools.r8.utils.InternalOptions;
-import com.android.tools.r8.utils.Reporter;
-import com.android.tools.r8.utils.ResourceShrinkerUtils;
 import com.android.tools.r8.utils.SelfRetraceTest;
 import com.android.tools.r8.utils.ThreadUtils;
 import com.android.tools.r8.utils.internal.AssertionUtils;
@@ -128,7 +123,6 @@ import com.android.tools.r8.utils.internal.StringUtils;
 import com.android.tools.r8.utils.timing.Timing;
 import com.android.tools.r8.verticalclassmerging.VerticalClassMerger;
 import com.google.common.collect.Iterables;
-import com.google.common.io.ByteStreams;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
@@ -142,8 +136,6 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
-import javax.xml.parsers.ParserConfigurationException;
-import org.xml.sax.SAXException;
 
 /**
  * The R8 compiler.
@@ -641,6 +633,8 @@ public class R8 {
                 .appInfo()
                 .notifyTreePrunerFinished(Enqueuer.Mode.FINAL_TREE_SHAKING);
 
+            ResourceWriter.writeResources(appView);
+
             if (options.usageInformationConsumer != null) {
               ExceptionUtils.withFinishedResourceHandler(
                   options.reporter, options.usageInformationConsumer);
@@ -687,6 +681,8 @@ public class R8 {
 
             // Finalize fields.
             FieldFinalizer.run(appViewWithLiveness, executorService, timing);
+          } else {
+            ResourceWriter.writeResources(appView);
           }
         } finally {
           timing.end();
@@ -713,7 +709,11 @@ public class R8 {
                   shrinker.postOptimizeGeneratedExtensionRegistry(
                       converter, executorService, timing));
         }
+      } else {
+        // If 2nd round of tree shaking is disabled, then write out resources.
+        ResourceWriter.writeResources(appView);
       }
+
       timing.begin("Run postlude");
       performFinalMainDexTracing(appView, executorService);
 
@@ -934,10 +934,8 @@ public class R8 {
       // Generate the resulting application resources.
       writeKeepDeclarationsToConfigurationConsumer(keepDeclarations);
       writeApplication(appView, inputApp, executorService, timing);
+      ResourceWriter.legacyWriteResources(appView, dexFileContent);
 
-      if (options.androidResourceProvider != null && options.androidResourceConsumer != null) {
-        shrinkResources(dexFileContent, appView);
-      }
       assert appView.getDontWarnConfiguration().validate(options);
 
       options.printWarnings();
@@ -1019,146 +1017,6 @@ public class R8 {
         super.accept(fileIndex, data, descriptors, handler);
       }
     };
-  }
-
-  private void shrinkResources(
-      Map<String, byte[]> dexFileContent, AppView<AppInfoWithClassHierarchy> appView) {
-    Reporter reporter = options.reporter;
-    try {
-      ShrinkerResult<FeatureSplit> shrinkerResult;
-
-      if (appView.options().isOptimizedResourceShrinking()) {
-        shrinkerResult = appView.getResourceShrinkerState().shrinkModel();
-      } else {
-        LegacyResourceShrinker.Builder<FeatureSplit> resourceShrinkerBuilder =
-            LegacyResourceShrinker.builder();
-        resourceShrinkerBuilder.setDexAnalyser(new R8ResourceShrinker());
-        dexFileContent.forEach(resourceShrinkerBuilder::addDexInput);
-        addResourcesToBuilder(
-            resourceShrinkerBuilder, reporter, options.androidResourceProvider, FeatureSplit.BASE);
-        if (options.hasFeatureSplitConfiguration()) {
-          for (FeatureSplit featureSplit :
-              options.getFeatureSplitConfiguration().getFeatureSplits()) {
-            if (featureSplit.getAndroidResourceProvider() != null) {
-              addResourcesToBuilder(
-                  resourceShrinkerBuilder,
-                  reporter,
-                  featureSplit.getAndroidResourceProvider(),
-                  featureSplit);
-            }
-          }
-        }
-        if (options.androidResourceProguardMapStrings != null) {
-          resourceShrinkerBuilder.setProguardMapStrings(options.androidResourceProguardMapStrings);
-        }
-        resourceShrinkerBuilder.setShrinkerDebugReporter(
-            ResourceShrinkerUtils.shrinkerDebugReporterFromStringConsumer(
-                options.resourceShrinkerConfiguration.getDebugConsumer(), reporter));
-        LegacyResourceShrinker<FeatureSplit> shrinker = resourceShrinkerBuilder.build();
-        shrinkerResult = shrinker.run();
-      }
-      writeResourcesToConsumer(
-          reporter,
-          shrinkerResult,
-          options.androidResourceProvider,
-          options.androidResourceConsumer,
-          FeatureSplit.BASE);
-      if (options.hasFeatureSplitConfiguration()) {
-        for (FeatureSplit featureSplit :
-            options.getFeatureSplitConfiguration().getFeatureSplits()) {
-          if (featureSplit.getAndroidResourceProvider() != null) {
-            writeResourcesToConsumer(
-                reporter,
-                shrinkerResult,
-                featureSplit.getAndroidResourceProvider(),
-                featureSplit.getAndroidResourceConsumer(),
-                featureSplit);
-          }
-        }
-      }
-    } catch (ParserConfigurationException | SAXException | ResourceException | IOException e) {
-      reporter.error(new ExceptionDiagnostic(e));
-    }
-  }
-
-  private static void writeResourcesToConsumer(
-      Reporter reporter,
-      ShrinkerResult<FeatureSplit> shrinkerResult,
-      AndroidResourceProvider androidResourceProvider,
-      AndroidResourceConsumer androidResourceConsumer,
-      FeatureSplit featureSplit)
-      throws ResourceException {
-    for (AndroidResourceInput androidResource : androidResourceProvider.getAndroidResources()) {
-      switch (androidResource.getKind()) {
-        case MANIFEST:
-        case UNKNOWN:
-          androidResourceConsumer.accept(
-              new R8PassThroughAndroidResource(androidResource, reporter), reporter);
-          break;
-        case RESOURCE_TABLE:
-          androidResourceConsumer.accept(
-              new R8AndroidResourceWithData(
-                  androidResource,
-                  reporter,
-                  shrinkerResult.getResourceTableInProtoFormat(featureSplit)),
-              reporter);
-          break;
-        case KEEP_RULE_FILE:
-          // Intentionally not written
-          break;
-        case RES_FOLDER_FILE:
-        case XML_FILE:
-          String location = androidResource.getPath().location();
-          if (shrinkerResult.getResFolderEntriesToKeep().contains(location)) {
-            if (shrinkerResult.hasCustomFileFor(location)) {
-              androidResourceConsumer.accept(
-                  new R8AndroidResourceWithData(
-                      androidResource, reporter, shrinkerResult.getBytesFor(location)),
-                  reporter);
-            } else {
-              androidResourceConsumer.accept(
-                  new R8PassThroughAndroidResource(androidResource, reporter), reporter);
-            }
-          }
-          break;
-      }
-    }
-    androidResourceConsumer.finished(reporter);
-  }
-
-  private static void addResourcesToBuilder(
-      LegacyResourceShrinker.Builder<FeatureSplit> resourceShrinkerBuilder,
-      Reporter reporter,
-      AndroidResourceProvider androidResourceProvider,
-      FeatureSplit featureSplit)
-      throws ResourceException {
-    for (AndroidResourceInput androidResource : androidResourceProvider.getAndroidResources()) {
-      try {
-        byte[] bytes = androidResource.getByteStream().readAllBytes();
-        String path = androidResource.getPath().location();
-        switch (androidResource.getKind()) {
-          case MANIFEST:
-            resourceShrinkerBuilder.addManifest(path, bytes);
-            break;
-          case RES_FOLDER_FILE:
-            resourceShrinkerBuilder.addResFolderInput(path, bytes);
-            break;
-          case RESOURCE_TABLE:
-            resourceShrinkerBuilder.addResourceTable(path, bytes, featureSplit);
-            break;
-          case XML_FILE:
-            resourceShrinkerBuilder.addXmlInput(path, bytes);
-            break;
-          case KEEP_RULE_FILE:
-            resourceShrinkerBuilder.addKeepRuleInput(bytes);
-            break;
-          case UNKNOWN:
-            break;
-        }
-      } catch (IOException e) {
-        reporter.error(new ExceptionDiagnostic(e, androidResource.getOrigin()));
-      }
-    }
   }
 
   private static boolean allReferencesAssignedApiLevel(
@@ -1422,27 +1280,6 @@ public class R8 {
     ExceptionUtils.withMainProgramHandler(() -> run(args));
   }
 
-  private abstract static class R8AndroidResourceBase implements AndroidResourceOutput {
-
-    protected final AndroidResourceInput androidResource;
-    protected final Reporter reporter;
-
-    public R8AndroidResourceBase(AndroidResourceInput androidResource, Reporter reporter) {
-      this.androidResource = androidResource;
-      this.reporter = reporter;
-    }
-
-    @Override
-    public ResourcePath getPath() {
-      return androidResource.getPath();
-    }
-
-    @Override
-    public Origin getOrigin() {
-      return androidResource.getOrigin();
-    }
-  }
-
   public static class LibraryAnalyzerEntryPoint {
 
     public static void run(
@@ -1458,36 +1295,4 @@ public class R8 {
     }
   }
 
-  private static class R8PassThroughAndroidResource extends R8AndroidResourceBase {
-
-    public R8PassThroughAndroidResource(AndroidResourceInput androidResource, Reporter reporter) {
-      super(androidResource, reporter);
-    }
-
-    @Override
-    public ByteDataView getByteDataView() {
-      try {
-        return ByteDataView.of(ByteStreams.toByteArray(androidResource.getByteStream()));
-      } catch (IOException | ResourceException e) {
-        reporter.error(new ExceptionDiagnostic(e, androidResource.getOrigin()));
-      }
-      return null;
-    }
-  }
-
-  private static class R8AndroidResourceWithData extends R8AndroidResourceBase {
-
-    private final byte[] data;
-
-    public R8AndroidResourceWithData(
-        AndroidResourceInput androidResource, Reporter reporter, byte[] data) {
-      super(androidResource, reporter);
-      this.data = data;
-    }
-
-    @Override
-    public ByteDataView getByteDataView() {
-      return ByteDataView.of(data);
-    }
-  }
 }
