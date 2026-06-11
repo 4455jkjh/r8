@@ -157,6 +157,7 @@ tasks {
     dependsOn(createArtTests)
     val r8 = "com/android/tools/r8"
     from(sourceSets.test.get().java) {
+      include("$r8/cf/KeepDeserializeLambdaMethodTest.java")
       include("$r8/desugaring/interfacemethods/methodparameters/I.java")
       include("$r8/keepanno/api/genericsignature/MyValueBoxClient.java")
     }
