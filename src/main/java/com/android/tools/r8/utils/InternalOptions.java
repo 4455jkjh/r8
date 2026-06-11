@@ -195,7 +195,14 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
     }
   }
 
-  public static final CfVersion SUPPORTED_CF_VERSION = CfVersion.V28;
+  public static final CfVersion SUPPORTED_CF_VERSION = CfVersion.V27;
+
+  public CfVersion getSupportedCfVersion() {
+    if (getTestingOptions().supportedCfVersionForTesting != null) {
+      return getTestingOptions().supportedCfVersionForTesting;
+    }
+    return CfVersion.V27;
+  }
 
   public static final int SUPPORTED_DEX_VERSION =
       AndroidApiLevel.LATEST.getDexVersion().getIntValue();
@@ -2649,6 +2656,12 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
         isSystemPropertySet("com.android.tools.r8.enableListIterationRewriting");
     // Testing flag to always generate D8 lambda accessors.
     public boolean forceLambdaAccessorInD8 = false;
+
+    // Allow testing any class file version (typically requires R8 without relocated dependencies
+    // and a newer version of ASM on classpath).
+    public boolean allowAnyClassFileVersion =
+        isSystemPropertySet("com.android.tools.r8.allowAnyClassFileVersion");
+    public CfVersion supportedCfVersionForTesting = null;
   }
 
   public boolean forTesting(Supplier<Boolean> test) {

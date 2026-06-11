@@ -38,7 +38,7 @@ public class ClassFileVersion72Test extends TestBase {
   @Test(expected = CompilationFailedException.class)
   public void test() throws Exception {
     testForD8(parameters.getBackend())
-        .addProgramClassFileData(transformer(TestClass.class).setVersion(CfVersion.V28).transform())
+        .addProgramClassFileData(transformer(TestClass.class).setVersion(72).transform())
         .setMinApi(parameters)
         .run(parameters.getRuntime(), TestClass.class)
         .assertSuccessWithOutput(EXPECTED);

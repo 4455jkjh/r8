@@ -3,13 +3,17 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8;
 
-import static org.hamcrest.MatcherAssert.assertThat;
+import static com.android.tools.r8.DiagnosticsMatcher.diagnosticException;
+import static com.android.tools.r8.DiagnosticsMatcher.diagnosticMessage;
+import static com.android.tools.r8.DiagnosticsMatcher.diagnosticType;
+import static org.hamcrest.CoreMatchers.allOf;
 import static org.hamcrest.core.StringContains.containsString;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
+import com.android.tools.r8.cf.CfVersion;
+import com.android.tools.r8.utils.ExceptionDiagnostic;
 import com.android.tools.r8.utils.InternalOptions;
-import com.android.tools.r8.utils.internal.StringUtils;
 import java.io.IOException;
 import java.nio.file.Path;
 import org.junit.Test;
@@ -22,7 +26,8 @@ import org.objectweb.asm.Opcodes;
 @RunWith(Parameterized.class)
 public class FailCompilationOnFutureVersionsTest extends TestBase {
 
-  static final int UNSUPPORTED_CF_VERSION = InternalOptions.SUPPORTED_CF_VERSION.major() + 1;
+  static final int UNSUPPORTED_CF_VERSION =
+      new InternalOptions().getSupportedCfVersion().major() + 1;
   static final int UNSUPPORTED_DEX_VERSION = InternalOptions.SUPPORTED_DEX_VERSION + 1;
 
   private final TestParameters parameters;
@@ -57,10 +62,10 @@ public class FailCompilationOnFutureVersionsTest extends TestBase {
           .compileWithExpectedDiagnostics(
               diagnotics -> {
                 diagnotics.assertOnlyErrors();
-                diagnotics.assertErrorsCount(1);
-                assertThat(
-                    diagnotics.getErrors().get(0).getDiagnosticMessage(),
-                    containsString("Unsupported DEX file version: 0" + UNSUPPORTED_DEX_VERSION));
+                diagnotics.assertAllErrorsMatch(
+                    diagnosticMessage(
+                        containsString(
+                            "Unsupported DEX file version: 0" + UNSUPPORTED_DEX_VERSION)));
               });
     } catch (CompilationFailedException e) {
       return;
@@ -69,25 +74,22 @@ public class FailCompilationOnFutureVersionsTest extends TestBase {
   }
 
   @Test
-  public void testCf() {
+  public void testCfVersionUnsupportedByAsm() {
     try {
       testForD8()
-          .addProgramClassFileData(CfDump.dump())
+          .addProgramClassFileData(CfDump.dump(UNSUPPORTED_CF_VERSION))
           .setMinApi(parameters)
           .compileWithExpectedDiagnostics(
               diagnotics -> {
                 diagnotics.assertOnlyErrors();
-                diagnotics.assertErrorsCount(1);
-                assertThat(
-                    diagnotics.getErrors().get(0).getDiagnosticMessage(),
-                    containsString(
-                        "Unsupported class file major version " + UNSUPPORTED_CF_VERSION));
-                assertTrue(
-                    diagnotics.getErrors().stream()
-                        .allMatch(
-                            s ->
-                                StringUtils.toLowerCase(s.getDiagnosticMessage())
-                                    .contains("unsupported class file major version")));
+                diagnotics.assertAllErrorsMatch(
+                    allOf(
+                        diagnosticType(ExceptionDiagnostic.class),
+                        diagnosticException(IllegalArgumentException.class),
+                        diagnosticMessage(
+                            containsString(
+                                "Unsupported class file major version "
+                                    + UNSUPPORTED_CF_VERSION))));
               });
     } catch (CompilationFailedException e) {
       return;
@@ -95,14 +97,48 @@ public class FailCompilationOnFutureVersionsTest extends TestBase {
     fail("Expected compilation error");
   }
 
+  @Test
+  public void testCfUnsupportedByD8() {
+    try {
+      testForD8()
+          .addProgramClassFileData(CfDump.dump(CfVersion.V26.major()))
+          .setMinApi(parameters)
+          .addOptionsModification(
+              options -> options.getTestingOptions().supportedCfVersionForTesting = CfVersion.V25)
+          .compileWithExpectedDiagnostics(
+              diagnotics -> {
+                diagnotics.assertOnlyErrors();
+                diagnotics.assertAllErrorsMatch(
+                    diagnosticMessage(
+                        containsString(
+                            "Unsupported class file version: " + CfVersion.V26.major())));
+              });
+    } catch (CompilationFailedException e) {
+      return;
+    }
+    fail("Expected compilation error");
+  }
+
+  @Test
+  public void testOverrideCfUnsupportedByD8() throws Exception {
+    testForD8()
+        .addProgramClassFileData(CfDump.dump(CfVersion.V26.major()))
+        .setMinApi(parameters)
+        .addOptionsModification(
+            options -> {
+              options.getTestingOptions().supportedCfVersionForTesting = CfVersion.V25;
+              options.getTestingOptions().allowAnyClassFileVersion = true;
+            })
+        .compile();
+  }
+
   public static class CfDump implements Opcodes {
 
-    public static byte[] dump() {
+    public static byte[] dump(int version) {
       // Generate a class file with a version higher than the supported one.
       ClassWriter cw = new ClassWriter(ClassWriter.COMPUTE_FRAMES);
       MethodVisitor mv;
-      cw.visit(
-          UNSUPPORTED_CF_VERSION, ACC_PUBLIC + ACC_SUPER, "Test", null, "java/lang/Object", null);
+      cw.visit(version, ACC_PUBLIC + ACC_SUPER, "Test", null, "java/lang/Object", null);
       {
         mv = cw.visitMethod(ACC_PUBLIC, "<init>", "()V", null, null);
         mv.visitCode();
