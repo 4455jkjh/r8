@@ -2041,12 +2041,15 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
   public class HorizontalClassMergerOptions {
 
     private boolean enable =
-        System.getProperty("com.android.tools.r8.disableHorizontalClassMerging") == null;
+        !SystemPropertyUtils.parseSystemPropertyOrDefault(
+            "com.android.tools.r8.disableHorizontalClassMerging", false);
     private boolean enableClassInitializerDeadlockDetection = true;
     private boolean enableInterfaceMerging =
-        System.getProperty("com.android.tools.r8.enableHorizontalInterfaceMerging") != null;
+        SystemPropertyUtils.parseSystemPropertyOrDefault(
+            "com.android.tools.r8.enableHorizontalInterfaceMerging", false);
     private boolean enableSameFilePolicy =
-        System.getProperty("com.android.tools.r8.enableSameFilePolicy") != null;
+        SystemPropertyUtils.parseSystemPropertyOrDefault(
+            "com.android.tools.r8.enableSameFilePolicy", false);
     private boolean enableSyntheticMerging = true;
     private boolean restrictToSynthetics = false;
 

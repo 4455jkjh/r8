@@ -54,6 +54,13 @@ def parse_options():
         action='store_true',
         default=False,
         help='Exclude api database (resources/new_api_database.ser)')
+    parser.add_argument('--java-opts',
+                        '--java-opts',
+                        '-J',
+                        metavar='<JVM argument(s)>',
+                        default=[],
+                        action='append',
+                        help='Additional options to pass to JVM invocation')
     parser.add_argument(
         '--lib',
         action='append',
@@ -143,6 +150,7 @@ def main():
     source_file_template = 'R8_%MAP_ID_%MAP_HASH'
     # TODO(b/139725780): See if we can remove or lower the heap size (-Xmx8g).
     cmd = [jdk.GetJavaExecutable(jdk.GetDefaultJdkHome()), '-Xmx8g', '-ea']
+    cmd.extend(args.java_opts)
     if args.debug_agent:
         cmd.extend([
             '-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=*:5005'

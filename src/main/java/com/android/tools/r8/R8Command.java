@@ -1566,7 +1566,9 @@ public final class R8Command extends BaseCompilerCommand {
     //  careful when merging a public member 'm' from a class A into another class B, since B could
     //  have a kept subclass, in which case 'm' would leak into the public API.
     if (internal.isGeneratingClassFiles()) {
-      horizontalClassMergerOptions.disable();
+      if (System.getProperty("com.android.tools.r8.disableHorizontalClassMerging") == null) {
+        horizontalClassMergerOptions.disable();
+      }
       // R8 CF output does not support desugaring so disable it.
       internal.desugarState = DesugarState.OFF;
       // TODO(b/333477035): Since D8 dexing now supports outline/stubbing API calls R8/CF should

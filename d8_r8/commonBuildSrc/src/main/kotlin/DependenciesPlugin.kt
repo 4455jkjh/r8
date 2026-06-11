@@ -307,6 +307,7 @@ public fun Project.createR8LibCommandLine(
   pgInputMap: File? = null,
   replaceFromJar: File? = null,
   versionJar: File? = null,
+  enableHorizontalClassMerging: Boolean = false,
   enableKeepAnnotations: Boolean = true,
 ): List<String> {
   return buildList {
@@ -348,10 +349,11 @@ public fun Project.createR8LibCommandLine(
       add("--r8-version-jar")
       add("$versionJar")
     }
-    if (!enableKeepAnnotations) {
-      add("--disable-keep-annotations")
+    if (enableHorizontalClassMerging) {
+      add("--java-opts=-Dcom.android.tools.r8.disableHorizontalClassMerging=0")
     }
     if (!enableKeepAnnotations) {
+      add("--disable-keep-annotations")
       add("--exclude-api-database")
     }
   }

@@ -6,7 +6,10 @@ package com.android.tools.r8.dex;
 import static org.junit.Assert.assertEquals;
 
 import com.android.tools.r8.TestBase;
+import com.android.tools.r8.TestParameters;
+import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.ToolHelper;
+import com.android.tools.r8.dex.code.DexBase2Format;
 import com.android.tools.r8.dex.code.DexConst4;
 import com.android.tools.r8.dex.code.DexConstString;
 import com.android.tools.r8.dex.code.DexConstStringJumbo;
@@ -36,8 +39,21 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameter;
+import org.junit.runners.Parameterized.Parameters;
 
-public class JumboStringProcessing extends TestBase {
+@RunWith(Parameterized.class)
+public class JumboStringProcessingTest extends TestBase {
+
+  @Parameter(0)
+  public TestParameters parameters;
+
+  @Parameters(name = "{0}")
+  public static TestParametersCollection data() {
+    return getTestParameters().withNoneRuntime().build();
+  }
 
   @Test
   public void branching() {
@@ -74,29 +90,28 @@ public class JumboStringProcessing extends TestBase {
   private DexInstruction[] buildInstructions(DexString string, boolean zeroCondition) {
     List<DexInstruction> instructions = new ArrayList<>();
     int offset = 0;
-    DexInstruction instr = new DexConst4(0, 0);
-    instr.setOffset(offset);
-    instructions.add(instr);
-    offset += instr.getSize();
+    DexConst4 zeroInstruction = new DexConst4(0, 0);
+    zeroInstruction.setOffset(offset);
+    instructions.add(zeroInstruction);
+    offset += zeroInstruction.getSize();
     int lastInstructionOffset = 15000 * 2 + 2 + offset;
-    if (zeroCondition) {
-      instr = new DexIfNez(0, lastInstructionOffset - offset);
-    } else {
-      instr = new DexIfNe(0, 0, lastInstructionOffset - offset);
-    }
-    instr.setOffset(offset);
-    instructions.add(instr);
-    offset += instr.getSize();
+    DexBase2Format ifInstruction =
+        zeroCondition
+            ? new DexIfNez(0, lastInstructionOffset - offset)
+            : new DexIfNe(0, 0, lastInstructionOffset - offset);
+    ifInstruction.setOffset(offset);
+    instructions.add(ifInstruction);
+    offset += ifInstruction.getSize();
     for (int i = 0; i < 15000; i++) {
-      instr = new DexConstString(0, string);
-      instr.setOffset(offset);
-      instructions.add(instr);
-      offset += instr.getSize();
+      DexConstString stringInstruction = new DexConstString(0, string);
+      stringInstruction.setOffset(offset);
+      instructions.add(stringInstruction);
+      offset += stringInstruction.getSize();
     }
-    instr = new DexReturnVoid();
-    instr.setOffset(offset);
-    instructions.add(instr);
-    assert instr.getOffset() == lastInstructionOffset;
+    DexReturnVoid returnInstruction = new DexReturnVoid();
+    returnInstruction.setOffset(offset);
+    instructions.add(returnInstruction);
+    assert returnInstruction.getOffset() == lastInstructionOffset;
     return instructions.toArray(DexInstruction.EMPTY_ARRAY);
   }
 
