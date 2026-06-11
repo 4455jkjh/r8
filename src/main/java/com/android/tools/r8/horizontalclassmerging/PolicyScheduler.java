@@ -114,7 +114,7 @@ public class PolicyScheduler {
 
     addRequiredSingleClassPolicies(appView, immediateSubtypingInfo, builder);
 
-    if (appView.options().horizontalClassMergerOptions().isRestrictedToSynthetics()) {
+    if (appView.options().horizontalClassMergerOptions().isRestrictedToSynthetics(appView)) {
       assert verifySingleClassPoliciesIrrelevantForMergingSynthetics(appView, builder);
     } else {
       AppView<AppInfoWithLiveness> appViewWithLiveness = appView.withLiveness();
@@ -215,7 +215,7 @@ public class PolicyScheduler {
       RuntimeTypeCheckInfo runtimeTypeCheckInfo) {
     ImmutableList.Builder<Policy> builder = ImmutableList.builder();
     addRequiredMultiClassPolicies(appView, runtimeTypeCheckInfo, builder);
-    if (!appView.options().horizontalClassMergerOptions().isRestrictedToSynthetics()) {
+    if (!appView.options().horizontalClassMergerOptions().isRestrictedToSynthetics(appView)) {
       AppView<AppInfoWithLiveness> appViewWithLiveness = appView.withLiveness();
       addMultiClassPoliciesForMergingNonSyntheticClasses(appViewWithLiveness, builder);
     }

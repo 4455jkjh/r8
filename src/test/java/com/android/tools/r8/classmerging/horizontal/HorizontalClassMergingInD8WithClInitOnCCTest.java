@@ -31,11 +31,6 @@ public class HorizontalClassMergingInD8WithClInitOnCCTest extends TestBase {
         .addInnerClasses(getClass())
         .setMode(CompilationMode.RELEASE)
         .setMinApi(parameters)
-        .addOptionsModification(
-            options -> {
-              options.horizontalClassMergerOptions().enable();
-              options.horizontalClassMergerOptions().setRestrictToSynthetics();
-            })
         .run(parameters.getRuntime(), Main.class)
         .assertSuccessWithOutputLines("0", "1");
   }

@@ -638,7 +638,7 @@ public abstract class R8TestBuilder<
 
   public T noHorizontalClassMergingOfSynthetics() {
     return addOptionsModification(
-        options -> options.horizontalClassMergerOptions().disableSyntheticMerging());
+        options -> options.horizontalClassMergerOptions().disableSyntheticMergingForTesting());
   }
 
   public T noInliningOfSynthetics() {

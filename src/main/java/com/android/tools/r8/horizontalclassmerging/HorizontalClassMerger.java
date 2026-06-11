@@ -55,7 +55,7 @@ public class HorizontalClassMerger {
   }
 
   public static HorizontalClassMerger createForD8ClassMerging(AppView<?> appView) {
-    assert appView.options().horizontalClassMergerOptions().isRestrictedToSynthetics();
+    assert appView.options().horizontalClassMergerOptions().isRestrictedToSynthetics(appView);
     return new HorizontalClassMerger(appView);
   }
 

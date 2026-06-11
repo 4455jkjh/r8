@@ -152,8 +152,11 @@ public class AssumenosideeffectsPropagationTest extends TestBase {
         .addKeepMainRule(MAIN)
         .addKeepRules(config.getKeepRules())
         .addOptionsModification(
-            options ->
-                options.horizontalClassMergerOptions().enableIf(enableHorizontalClassMerging))
+            options -> {
+              if (!enableHorizontalClassMerging) {
+                options.horizontalClassMergerOptions().disableForTesting();
+              }
+            })
         .enableInliningAnnotations()
         .addDontObfuscate()
         .setMinApi(parameters)

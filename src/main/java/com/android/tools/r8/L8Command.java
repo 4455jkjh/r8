@@ -201,8 +201,6 @@ public final class L8Command extends BaseCompilerCommand {
     assert !internal.outline.enabled;
     assert !internal.enableTreeShakingOfLibraryMethodOverrides;
 
-    internal.horizontalClassMergerOptions().disable();
-
     assert internal.desugarState == DesugarState.ON;
     assert internal.enableInheritanceClassInDexDistributor;
     internal.enableInheritanceClassInDexDistributor = false;

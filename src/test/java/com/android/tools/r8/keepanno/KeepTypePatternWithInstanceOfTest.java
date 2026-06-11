@@ -76,7 +76,7 @@ public class KeepTypePatternWithInstanceOfTest extends KeepAnnoTestBase {
   private void clearClassMerging(TestShrinkerBuilder<?, ?, ?, ?, ?> sb) {
     sb.addOptionsModification(
         opt -> {
-          opt.horizontalClassMergerOptions().disable();
+          opt.horizontalClassMergerOptions().disableForTesting();
           opt.getVerticalClassMergerOptions().disable();
         });
   }

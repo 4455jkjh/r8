@@ -47,7 +47,9 @@ public class HorizontalClassMergingOfInitArgumentTypesTest extends TestBase {
                   options
                       .callSiteOptimizationOptions()
                       .setForceSyntheticsForInstanceInitializers(true);
-                  options.horizontalClassMergerOptions().enableIf(enableHorizontalClassMerging);
+                  if (!enableHorizontalClassMerging) {
+                    options.horizontalClassMergerOptions().disableForTesting();
+                  }
                 })
             .collectSyntheticItems()
             .enableInliningAnnotations()

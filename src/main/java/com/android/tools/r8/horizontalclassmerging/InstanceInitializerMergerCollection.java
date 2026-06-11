@@ -44,7 +44,7 @@ public class InstanceInitializerMergerCollection {
       HorizontalMergeGroup group,
       HorizontalClassMergerGraphLens.Builder lensBuilder) {
     if (!appView.hasClassHierarchy()) {
-      assert appView.options().horizontalClassMergerOptions().isRestrictedToSynthetics();
+      assert appView.options().horizontalClassMergerOptions().isRestrictedToSynthetics(appView);
       assert verifyNoInstanceInitializers(group);
       return new InstanceInitializerMergerCollection(
           Collections.emptyList(), Collections.emptyMap());

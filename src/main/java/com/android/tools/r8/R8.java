@@ -583,7 +583,7 @@ public class R8 {
             }
           }
 
-          if (options.isClassMergingExtensionRequired()) {
+          if (options.isClassMergingExtensionRequired(appView)) {
             finalRuntimeTypeCheckInfoBuilder = new RuntimeTypeCheckInfo.Builder(appView);
           }
           Enqueuer enqueuer =

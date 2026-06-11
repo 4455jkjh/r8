@@ -115,6 +115,7 @@ import com.android.tools.r8.utils.collections.ProgramMethodSet;
 import com.android.tools.r8.utils.internal.AssertionUtils;
 import com.android.tools.r8.utils.internal.ConsumerUtils;
 import com.android.tools.r8.utils.internal.ListUtils;
+import com.android.tools.r8.utils.internal.OptionalBool;
 import com.android.tools.r8.utils.internal.QuadConsumer;
 import com.android.tools.r8.utils.internal.SetUtils;
 import com.android.tools.r8.utils.internal.StringUtils;
@@ -383,7 +384,6 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
     enableTreeShakingOfLibraryMethodOverrides = false;
     enableInitializedClassesAnalysis = false;
     callSiteOptimizationOptions.disableOptimization();
-    horizontalClassMergerOptions.setRestrictToSynthetics();
     verticalClassMergerOptions.disable();
   }
 
@@ -1059,10 +1059,10 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
    * If any non-static class merging is enabled, information about types referred to by instanceOf
    * and check cast instructions needs to be collected.
    */
-  public boolean isClassMergingExtensionRequired() {
+  public boolean isClassMergingExtensionRequired(AppView<?> appView) {
     WholeProgramOptimizations wholeProgramOptimizations = WholeProgramOptimizations.ON;
     return horizontalClassMergerOptions.isEnabled(wholeProgramOptimizations)
-        && !horizontalClassMergerOptions.isRestrictedToSynthetics();
+        && !horizontalClassMergerOptions.isRestrictedToSynthetics(appView);
   }
 
   @Override
@@ -2040,9 +2040,9 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
 
   public class HorizontalClassMergerOptions {
 
-    private boolean enable =
-        !SystemPropertyUtils.parseSystemPropertyOrDefault(
-            "com.android.tools.r8.disableHorizontalClassMerging", false);
+    private OptionalBool disable =
+        SystemPropertyUtils.parseSystemPropertyOrDefault(
+            "com.android.tools.r8.disableHorizontalClassMerging", OptionalBool.UNKNOWN);
     private boolean enableClassInitializerDeadlockDetection = true;
     private boolean enableInterfaceMerging =
         SystemPropertyUtils.parseSystemPropertyOrDefault(
@@ -2051,22 +2051,18 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
         SystemPropertyUtils.parseSystemPropertyOrDefault(
             "com.android.tools.r8.enableSameFilePolicy", false);
     private boolean enableSyntheticMerging = true;
-    private boolean restrictToSynthetics = false;
 
-    public void disable() {
-      enable = false;
+    // Used in tests to enable horizontal class merging when compiling to class files.
+    public void enableForTesting() {
+      disable = OptionalBool.FALSE;
     }
 
-    public void disableSyntheticMerging() {
+    public void disableForTesting() {
+      disable = OptionalBool.TRUE;
+    }
+
+    public void disableSyntheticMergingForTesting() {
       enableSyntheticMerging = false;
-    }
-
-    public void enable() {
-      enable = true;
-    }
-
-    public void enableIf(boolean enable) {
-      this.enable = enable;
     }
 
     public int getMaxClassGroupSizeInR8() {
@@ -2086,7 +2082,12 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
     }
 
     public boolean isEnabled(WholeProgramOptimizations wholeProgramOptimizations) {
-      if (!enable || debug || intermediate) {
+      if (disable.isTrue() || debug || intermediate) {
+        return false;
+      }
+      // Disable horizontal class merging when compiling to class files, unless it has been
+      // explicitly enabled or disabled.
+      if (isGeneratingClassFiles() && disable.isUnknown()) {
         return false;
       }
       if (wholeProgramOptimizations.isOn()) {
@@ -2109,8 +2110,8 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
       return enableInterfaceMerging;
     }
 
-    public boolean isRestrictedToSynthetics() {
-      return restrictToSynthetics || !isOptimizing() || !isShrinking();
+    public boolean isRestrictedToSynthetics(AppView<?> appView) {
+      return !appView.enableWholeProgramOptimizations() || !isOptimizing() || !isShrinking();
     }
 
     public void setEnableClassInitializerDeadlockDetection() {
@@ -2127,10 +2128,6 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
 
     public void setEnableSameFilePolicy(boolean enableSameFilePolicy) {
       this.enableSameFilePolicy = enableSameFilePolicy;
-    }
-
-    public void setRestrictToSynthetics() {
-      restrictToSynthetics = true;
     }
   }
 

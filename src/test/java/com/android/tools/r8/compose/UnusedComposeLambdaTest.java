@@ -31,7 +31,8 @@ public class UnusedComposeLambdaTest extends TestBase {
   public void testR8() throws Exception {
     testForR8(parameters)
         .addInnerClasses(getClass())
-        .addOptionsModification(options -> options.horizontalClassMergerOptions().disable())
+        .addOptionsModification(
+            options -> options.horizontalClassMergerOptions().disableForTesting())
         .addKeepMainRule(TestClass.class)
         .compile()
         .inspect(

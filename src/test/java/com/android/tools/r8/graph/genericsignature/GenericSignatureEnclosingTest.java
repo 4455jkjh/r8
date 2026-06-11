@@ -14,9 +14,9 @@ import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.graph.genericsignature.GenericSignatureEnclosingTest.Bar.Inner;
 import com.android.tools.r8.graph.genericsignature.GenericSignatureEnclosingTest.Bar.SubInner;
-import com.android.tools.r8.utils.internal.BooleanUtils;
 import com.android.tools.r8.utils.codeinspector.ClassSubject;
 import com.android.tools.r8.utils.codeinspector.CodeInspector;
+import com.android.tools.r8.utils.internal.BooleanUtils;
 import java.util.List;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -52,7 +52,7 @@ public class GenericSignatureEnclosingTest extends TestBase {
         .setMinApi(parameters)
         .addOptionsModification(
             options -> {
-              options.horizontalClassMergerOptions().disable();
+              options.horizontalClassMergerOptions().disableForTesting();
             })
         .run(parameters.getRuntime(), Main.class)
         .assertSuccessWithOutputLines(
