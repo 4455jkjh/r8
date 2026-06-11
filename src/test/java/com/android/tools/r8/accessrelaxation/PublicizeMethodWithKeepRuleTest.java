@@ -80,6 +80,20 @@ public class PublicizeMethodWithKeepRuleTest extends TestBase {
         false);
   }
 
+  @Test
+  public void testNotPublicizedWithProtectApiSurface() throws Exception {
+    runTest(
+        builder ->
+            builder
+                .addKeepRules("-keepclassmembers class * { <methods>; }")
+                .addOptionsModification(
+                    options -> options.testing.allowAccessModificationInKeepRule = true)
+                .apply(b -> b.getBuilder().setProtectApiSurface(true)),
+        // When ,allowaccessmodification is implicitly enabled, the method should not be publicized
+        // when protect api surface is enabled.
+        false);
+  }
+
   private void runTest(
       ThrowableConsumer<R8TestBuilder<?, ?, ?>> configuration, boolean expectPublic)
       throws Exception {
