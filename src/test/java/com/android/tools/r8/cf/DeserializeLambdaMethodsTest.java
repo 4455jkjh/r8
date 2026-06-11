@@ -10,6 +10,7 @@ import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestRuntime;
 import com.android.tools.r8.TestRuntime.CfVm;
+import com.android.tools.r8.utils.AndroidApiLevel;
 import com.android.tools.r8.utils.codeinspector.ClassSubject;
 import com.android.tools.r8.utils.codeinspector.CodeInspector;
 import com.android.tools.r8.utils.codeinspector.InstructionSubject;
@@ -40,7 +41,13 @@ public class DeserializeLambdaMethodsTest extends TestBase implements Opcodes {
   @Parameterized.Parameters(name = "{0}, jdk = {1}")
   public static List<Object[]> data() {
     return buildParameters(
-        getTestParameters().withDexRuntimesAndAllApiLevels().withNoneRuntime().build(),
+        getTestParameters()
+            .withDexRuntimes()
+            // Test is using java.util.function.Supplier.
+            .withApiLevelsStartingAtIncluding(AndroidApiLevel.N)
+            .withNoneRuntime()
+            .withIncludeAllPartialCompilation()
+            .build(),
         cfVmsToTest);
   }
 
@@ -80,10 +87,14 @@ public class DeserializeLambdaMethodsTest extends TestBase implements Opcodes {
             "      }",
             "    }",
             "  }",
-            "  public static void main() throws Exception {",
-            "    runTest(0, create0());",
-            "    runTest(1, create1());",
-            "    System.err.println(\"OK\");",
+            "  public static void main(String[] args) throws Exception {",
+            "    // Don't actually run the lambda deserialization code, as it is not supported",
+            "    // on Android",
+            "    if (args.length > 0) {",
+            "      runTest(0, create0());",
+            "      runTest(1, create1());",
+            "    }",
+            "    System.out.println(\"OK\");",
             "  }",
             "}");
 
@@ -131,34 +142,43 @@ public class DeserializeLambdaMethodsTest extends TestBase implements Opcodes {
             .count());
   }
 
+  private static void expectedCodeAfterLambdaDeserializationMethodsRemoval(
+      CodeInspector inspector) {
+    ClassSubject clazz = inspector.clazz("Test");
+    assertTrue(clazz.isPresent());
+    assertEquals(
+        0,
+        clazz.allMethods().stream()
+            .filter(method -> method.getOriginalMethodName().startsWith("$deserializeLambda$"))
+            .count());
+    assertTrue(
+        clazz.allMethods().stream()
+            .flatMap(MethodSubject::streamInstructions)
+            .filter(InstructionSubject::isInvokeVirtual)
+            .map(instructionSubject -> instructionSubject.getMethod().getName())
+            .noneMatch(name -> name.isEqualTo("getInstantiatedMethodType")));
+  }
+
+  @Test
+  public void testDesugaring() throws Exception {
+    parameters.assumeDexRuntime();
+    testForDesugaring(parameters)
+        .addProgramFiles(TEST_CLASS_FILES.get(cfVm))
+        .run(parameters.getRuntime(), "Test")
+        .inspect(DeserializeLambdaMethodsTest::expectedCodeAfterLambdaDeserializationMethodsRemoval)
+        .assertSuccessWithOutputLines("OK");
+  }
+
   @Test
   public void testD8() throws Exception {
     parameters.assumeDexRuntime();
+    parameters.assumeNoPartialCompilation();
     testForD8()
         .addProgramFiles(TEST_CLASS_FILES.get(cfVm))
         .setMinApi(parameters)
         .compile()
         .inspect(
-            inspector -> {
-              ClassSubject clazz = inspector.clazz("Test");
-              assertTrue(clazz.isPresent());
-              // TODO(b/521062024): Should always be 0.
-              assertEquals(
-                  cfVm.isGreaterThanOrEqualTo(CfVm.JDK27) ? 2 : 0,
-                  clazz.allMethods().stream()
-                      .filter(
-                          method ->
-                              method.getOriginalMethodName().startsWith("$deserializeLambda$"))
-                      .count());
-              // TODO(b/521062024): Should always be true.
-              assertEquals(
-                  cfVm.isLessThan(CfVm.JDK27),
-                  clazz.allMethods().stream()
-                      .flatMap(MethodSubject::streamInstructions)
-                      .filter(InstructionSubject::isInvokeVirtual)
-                      .map(instruction -> instruction.getMethod().getName())
-                      .noneMatch(name -> name.isEqualTo("getInstantiatedMethodType")));
-            });
+            DeserializeLambdaMethodsTest::expectedCodeAfterLambdaDeserializationMethodsRemoval);
   }
 
   @Test
@@ -170,22 +190,6 @@ public class DeserializeLambdaMethodsTest extends TestBase implements Opcodes {
         .addKeepMainRule("Test")
         .compile()
         .inspect(
-            inspector -> {
-              ClassSubject clazz = inspector.clazz("Test");
-              assertTrue(clazz.isPresent());
-              assertEquals(
-                  0,
-                  clazz.allMethods().stream()
-                      .filter(
-                          method ->
-                              method.getOriginalMethodName().startsWith("$deserializeLambda$"))
-                      .count());
-              assertTrue(
-                  clazz.allMethods().stream()
-                      .flatMap(MethodSubject::streamInstructions)
-                      .filter(InstructionSubject::isInvokeVirtual)
-                      .map(instruction -> instruction.getMethod().getName())
-                      .noneMatch(name -> name.isEqualTo("getInstantiatedMethodType")));
-            });
+            DeserializeLambdaMethodsTest::expectedCodeAfterLambdaDeserializationMethodsRemoval);
   }
 }
