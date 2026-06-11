@@ -34,7 +34,9 @@ import com.android.tools.r8.ir.code.Value;
 import com.android.tools.r8.ir.conversion.MethodConversionOptions;
 import com.android.tools.r8.origin.Origin;
 import com.android.tools.r8.origin.PathOrigin;
+import com.android.tools.r8.partial.R8PartialResourceUseCollector;
 import com.android.tools.r8.resourceshrinker.ResourceShrinkerState;
+import com.android.tools.r8.resourceshrinker.ResourceShrinkerState.R8ResourceShrinkerModel;
 import com.android.tools.r8.resourceshrinker.ResourceShrinkerState.ResourceShrinkerCallback;
 import com.android.tools.r8.utils.collections.ProgramMethodSet;
 import com.android.tools.r8.utils.internal.exceptions.Unreachable;
@@ -42,6 +44,7 @@ import com.android.tools.r8.utils.timing.Timing;
 import com.google.common.collect.Sets;
 import it.unimi.dsi.fastutil.ints.IntArrayList;
 import it.unimi.dsi.fastutil.ints.IntList;
+import it.unimi.dsi.fastutil.ints.IntSet;
 import java.nio.file.Paths;
 import java.util.IdentityHashMap;
 import java.util.Map;
@@ -76,7 +79,10 @@ public class ResourceShrinkerEnqueuerExtension
       AppView<? extends AppInfoWithClassHierarchy> appView, Enqueuer enqueuer) {
     this.appView = appView;
     this.enqueuer = enqueuer;
-    this.resourceShrinkerState = appView.getResourceShrinkerState();
+    this.resourceShrinkerState =
+        enqueuer.getMode().isInitialTreeShaking()
+            ? appView.initResourceShrinkerState()
+            : appView.getResourceShrinkerState();
   }
 
   public static ResourceShrinkerEnqueuerExtension register(
@@ -206,7 +212,27 @@ public class ResourceShrinkerEnqueuerExtension
       return;
     }
     resourceShrinkerState.traceKeepXmlAndManifest(this);
-    for (int rootResourceId : appView.rootSet().resourceIds) {
+
+    // Trace resources.
+    IntSet resourceRootIds = appView.rootSet().resourceIds;
+    if (enqueuer.getMode().isInitialTreeShaking()
+        && appView.options().partialSubCompilationConfiguration != null) {
+      R8PartialResourceUseCollector resourceUseCollector =
+          new R8PartialResourceUseCollector(appView) {
+
+            private final R8ResourceShrinkerModel model =
+                appView.getResourceShrinkerState().getR8ResourceShrinkerModel();
+
+            @Override
+            protected void keep(int resourceId) {
+              if (model.hasResourceId(resourceId)) {
+                resourceRootIds.add(resourceId);
+              }
+            }
+          };
+      resourceUseCollector.run();
+    }
+    for (int rootResourceId : resourceRootIds) {
       resourceShrinkerState.trace(rootResourceId, "Non shrunken dex code", this);
     }
   }

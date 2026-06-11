@@ -134,7 +134,7 @@ public class ResourceShrinkerState<T> {
   }
 
   public boolean hasResourceId(int resourceId) {
-    return getR8ResourceShrinkerModel().getResourceStore().getResource(resourceId) != null;
+    return r8ResourceShrinkerModel.hasResourceId(resourceId);
   }
 
   public void traceKeepXmlAndManifest(ResourceShrinkerCallback callback) {
