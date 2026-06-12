@@ -10,6 +10,7 @@ import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestRuntime;
 import com.android.tools.r8.TestRuntime.CfVm;
+import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.utils.AndroidApiLevel;
 import com.android.tools.r8.utils.codeinspector.ClassSubject;
 import com.android.tools.r8.utils.codeinspector.CodeInspector;
@@ -19,6 +20,7 @@ import com.android.tools.r8.utils.internal.FileUtils;
 import com.google.common.collect.ImmutableList;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -51,8 +53,17 @@ public class DeserializeLambdaMethodsTest extends TestBase implements Opcodes {
         cfVmsToTest);
   }
 
-  private static final List<CfVm> cfVmsToTest =
-      ImmutableList.of(CfVm.JDK8, CfVm.JDK11, CfVm.JDK17, CfVm.JDK21, CfVm.JDK25, CfVm.JDK27);
+  private static final List<CfVm> cfVmsToTest = new ArrayList<>();
+
+  static {
+    // JDK 8 is not supported for testing on Windows.
+    if (!ToolHelper.isWindows()) {
+      cfVmsToTest.add(CfVm.JDK8);
+    }
+    cfVmsToTest.addAll(
+        ImmutableList.of(CfVm.JDK11, CfVm.JDK17, CfVm.JDK21, CfVm.JDK25, CfVm.JDK27));
+  }
+
   private static final Map<CfVm, Path> TEST_CLASS_FILES = new HashMap<>();
 
   @BeforeClass

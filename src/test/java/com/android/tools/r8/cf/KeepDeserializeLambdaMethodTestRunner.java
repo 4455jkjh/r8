@@ -24,6 +24,7 @@ import com.google.common.collect.ImmutableList;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -57,8 +58,17 @@ public class KeepDeserializeLambdaMethodTestRunner extends TestBase {
         getTestParameters().withAllRuntimesAndApiLevels().withNoneRuntime().build(), cfVmsToTest);
   }
 
-  private static final List<CfVm> cfVmsToTest =
-      ImmutableList.of(CfVm.JDK8, CfVm.JDK11, CfVm.JDK17, CfVm.JDK21, CfVm.JDK25, CfVm.JDK27);
+  private static final List<CfVm> cfVmsToTest = new ArrayList<>();
+
+  static {
+    // JDK 8 is not supported for testing on Windows.
+    if (!ToolHelper.isWindows()) {
+      cfVmsToTest.add(CfVm.JDK8);
+    }
+    cfVmsToTest.addAll(
+        ImmutableList.of(CfVm.JDK11, CfVm.JDK17, CfVm.JDK21, CfVm.JDK25, CfVm.JDK27));
+  }
+
   private static final Map<CfVm, Path> TEST_CLASS_FILES_SHARED = new HashMap<>();
   private static final Map<CfVm, Path> TEST_CLASS_FILES_DEX = new HashMap<>();
   private static final Map<CfVm, Path> TEST_CLASS_FILES_CF = new HashMap<>();
