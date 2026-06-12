@@ -36,11 +36,11 @@ function getCommit(index, zoom) {
 function getCommitFromContext(context) {
   const elementInfo = context[0];
   var commit;
-  if (elementInfo.dataset.type == 'line') {
+  if (elementInfo.dataset.type == "line") {
     commit = getCommit(elementInfo.dataIndex, zoom);
   } else {
-    console.assert(elementInfo.dataset.type == 'scatter');
-    commit = getCommit(elementInfo.raw.x, null);
+    console.assert(elementInfo.dataset.type == "scatter");
+    commit = getCommit(elementInfo.raw.x, zoom);
   }
   return commit;
 }
@@ -49,15 +49,19 @@ function getCommitDescriptionFromContext(context) {
   const commit = getCommitFromContext(context);
   const elementInfo = context[0];
   const dataset = chart.get().data.datasets[elementInfo.datasetIndex];
-  return `App: ${dataset.benchmark}\n`
-      + `Author: ${commit.author}\n`
-      + `Submitted: ${new Date(commit.submitted * 1000).toLocaleString()}\n`
-      + `Hash: ${commit.hash}\n`
-      + `Index: ${commit.index}`;
+  return (
+    `App: ${dataset.benchmark}\n` +
+    `Author: ${commit.author}\n` +
+    `Submitted: ${new Date(commit.submitted * 1000).toLocaleString()}\n` +
+    `Hash: ${commit.hash}\n` +
+    `Index: ${commit.index}`
+  );
 }
 
 function getCommits(zoom) {
-  const commitsForSelectedBranch = commits.filter(commit => dom.isCommitSelected(commit));
+  const commitsForSelectedBranch = commits.filter((commit) =>
+    dom.isCommitSelected(commit),
+  );
   if (zoom) {
     return commitsForSelectedBranch.slice(zoom.left, zoom.right);
   }
@@ -83,19 +87,19 @@ function hasLegend(legend) {
 }
 
 function importCommits(url, tryUrl = null) {
-  const promises = [import(url, { with: { type: "json" }})];
+  const promises = [import(url, { with: { type: "json" } })];
   if (tryUrl !== null) {
-    promises.push(import(tryUrl, { with: { type: "json" }}));
+    promises.push(import(tryUrl, { with: { type: "json" } }));
   }
-  return Promise.all(promises).then(values => {
+  return Promise.all(promises).then((values) => {
     const loadedCommits = values[0].default;
     const loadedTryCommits = values.length > 1 ? values[1].default : [];
     const loadedTryCommitsByParentHash =
-        getTryCommitsByParentHash(loadedTryCommits);
+      getTryCommitsByParentHash(loadedTryCommits);
     // Amend the commits with their unique index.
     var mainIndex = 0;
     var releaseIndex = 0;
-    const processedCommits = []
+    const processedCommits = [];
     for (var i = loadedCommits.length - 1; i >= 0; i--) {
       const commit = loadedCommits[i];
       commit.index = commit.version ? releaseIndex++ : mainIndex++;
@@ -112,7 +116,6 @@ function importCommits(url, tryUrl = null) {
         }
         processedCommits.push(...tryCommitsForCurrentCommit);
       }
-
     }
     commits = processedCommits;
     return processedCommits;
@@ -122,7 +125,7 @@ function importCommits(url, tryUrl = null) {
 function initializeBenchmarks() {
   for (const commit of commits.values()) {
     for (const benchmark in commit.benchmarks) {
-        benchmarks.add(benchmark);
+      benchmarks.add(benchmark);
     }
   }
   for (const benchmark of benchmarks.values()) {
@@ -156,7 +159,7 @@ function initializeLegends(legendsInfo) {
 function initializeZoom() {
   const filteredCommits = resetZoom();
   for (const urlOption of url.values()) {
-    if (urlOption.startsWith('L')) {
+    if (urlOption.startsWith("L")) {
       var left = parseInt(urlOption.substring(1));
       if (isNaN(left)) {
         continue;
@@ -189,10 +192,13 @@ function handleKeyDownEvent(e, callback) {
   var previousBenchmark = null;
   for (const benchmark of benchmarks.values()) {
     if (previousBenchmark != null) {
-      if (e.key == 'ArrowLeft' && benchmark == selectedBenchmark) {
+      if (e.key == "ArrowLeft" && benchmark == selectedBenchmark) {
         benchmarkToSelect = previousBenchmark;
         break;
-      } else if (e.key === 'ArrowRight' && previousBenchmark == selectedBenchmark) {
+      } else if (
+        e.key === "ArrowRight" &&
+        previousBenchmark == selectedBenchmark
+      ) {
         benchmarkToSelect = benchmark;
         break;
       }
@@ -231,5 +237,5 @@ export default {
   importCommits: importCommits,
   isLegendSelected: isLegendSelected,
   resetZoom: resetZoom,
-  zoom: zoom
+  zoom: zoom,
 };
