@@ -59,9 +59,11 @@ public class AlwaysKeepIDsInLegacyMode extends TestBase {
         .inspectShrunkenResources(
             resourceTableInspector -> {
               resourceTableInspector.assertContainsResourceWithName("string", "foo");
-              // The id resource should not be removed in any mode, even though there are no
-              // references to it.
-              resourceTableInspector.assertContainsResourceWithName("id", "the_id");
+              if (!optimized) {
+                resourceTableInspector.assertContainsResourceWithName("id", "the_id");
+              } else {
+                resourceTableInspector.assertDoesNotContainResourceWithName("id", "the_id");
+              }
             })
         .run(parameters.getRuntime(), FooBar.class)
         .assertSuccess();

@@ -61,14 +61,15 @@ public class ResourceIdentifierTest extends TestBase {
         .inspectShrunkenResources(
             resourceTableInspector -> {
               resourceTableInspector.assertContainsResourceWithName("id", "id_in_live_xml");
-              // We should probably remove this id in optimized:
-              resourceTableInspector.assertContainsResourceWithName("id", "id_in_dead_xml");
-              // We should remove this id in optimized
-              resourceTableInspector.assertContainsResourceWithName("id", "reflectively_used_id");
               if (optimized) {
                 resourceTableInspector.assertDoesNotContainResourceWithName("string", "foobar");
+                resourceTableInspector.assertDoesNotContainResourceWithName("id", "id_in_dead_xml");
+                resourceTableInspector.assertDoesNotContainResourceWithName(
+                    "id", "reflectively_used_id");
               } else {
                 resourceTableInspector.assertContainsResourceWithName("string", "foobar");
+                resourceTableInspector.assertContainsResourceWithName("id", "id_in_dead_xml");
+                resourceTableInspector.assertContainsResourceWithName("id", "reflectively_used_id");
               }
             })
         .run(parameters.getRuntime(), FooBar.class)
