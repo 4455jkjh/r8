@@ -76,6 +76,14 @@ public class DesugaredLibraryTestCompileResult<T extends DesugaredLibraryTestBas
     }
   }
 
+  public String getProguardMap() {
+    return compileResult.asR8CompileResult().getProguardMap();
+  }
+
+  public String getL8ProguardMap() throws IOException {
+    return l8Compile.getProguardMap();
+  }
+
   public SyntheticItemsTestUtils getSyntheticItems() {
     return compileResult.getSyntheticItems();
   }

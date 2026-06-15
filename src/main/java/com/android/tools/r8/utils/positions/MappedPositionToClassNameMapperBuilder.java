@@ -69,7 +69,8 @@ import java.util.function.Function;
 public class MappedPositionToClassNameMapperBuilder {
 
   private static final int MAX_LINE_NUMBER = 65535;
-  private static final String PRUNED_INLINED_CLASS_OBFUSCATED_PREFIX = "R8$$REMOVED$$CLASS$$";
+  public static final String PRUNED_INLINED_CLASS_OBFUSCATED_PREFIX = "R8$$REMOVED$$CLASS$$";
+  public static final String L8_PRUNED_INLINED_CLASS_OBFUSCATED_PREFIX = "L8$$REMOVED$$CLASS$$";
 
   private final OriginalSourceFiles originalSourceFiles;
   private final AppView<?> appView;
@@ -94,10 +95,6 @@ public class MappedPositionToClassNameMapperBuilder {
     maxGap = appView.options().lineNumberOptimization.isOn() ? 1000 : 0;
   }
 
-  public static String getPrunedInlinedClassObfuscatedPrefix() {
-    return PRUNED_INLINED_CLASS_OBFUSCATED_PREFIX;
-  }
-
   public static int getMaxLineNumber() {
     return MAX_LINE_NUMBER;
   }
@@ -117,6 +114,10 @@ public class MappedPositionToClassNameMapperBuilder {
   private void addSourceFileLinesForPrunedClasses() {
     // Add all pruned inline classes to the mapping to recover source files.
     List<Entry<DexType, String>> prunedEntries = new ArrayList<>(prunedInlinedClasses.entrySet());
+    String prunedInlinedClassObfuscatedPrefix =
+        appView.options().getLibraryDesugaringOptions().isL8()
+            ? L8_PRUNED_INLINED_CLASS_OBFUSCATED_PREFIX
+            : PRUNED_INLINED_CLASS_OBFUSCATED_PREFIX;
     IntBox counter = new IntBox();
     prunedEntries.sort(Entry.comparingByKey());
     prunedEntries.forEach(
@@ -128,7 +129,7 @@ public class MappedPositionToClassNameMapperBuilder {
           // mapping.
           String renamedName;
           do {
-            renamedName = PRUNED_INLINED_CLASS_OBFUSCATED_PREFIX + counter.getAndIncrement();
+            renamedName = prunedInlinedClassObfuscatedPrefix + counter.getAndIncrement();
           } while (classNameMapperBuilder.hasMapping(renamedName));
           classNameMapperBuilder
               .classNamingBuilder(
