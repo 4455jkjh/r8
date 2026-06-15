@@ -6,7 +6,8 @@ package com.android.tools.r8.naming;
 import static com.android.tools.r8.utils.DescriptorUtils.descriptorToInternalName;
 import static com.android.tools.r8.utils.DescriptorUtils.descriptorToJavaType;
 import static com.android.tools.r8.utils.DescriptorUtils.javaTypeToDescriptor;
-import static com.android.tools.r8.utils.positions.MappedPositionToClassNameMapperBuilder.getPrunedInlinedClassObfuscatedPrefix;
+import static com.android.tools.r8.utils.positions.MappedPositionToClassNameMapperBuilder.L8_PRUNED_INLINED_CLASS_OBFUSCATED_PREFIX;
+import static com.android.tools.r8.utils.positions.MappedPositionToClassNameMapperBuilder.PRUNED_INLINED_CLASS_OBFUSCATED_PREFIX;
 
 import com.android.tools.r8.graph.DexType;
 import com.android.tools.r8.naming.MemberNaming.Signature;
@@ -58,7 +59,8 @@ public class SeedMapper implements ProguardMap {
           ClassNamingForMapApplier.builder(
               renamedDescriptorName, originalDescriptor, position, reporter);
       // Disallow renaming to a synthetic chosen name for pruned classes.
-      if (!renamedName.startsWith(getPrunedInlinedClassObfuscatedPrefix())) {
+      if (!renamedName.startsWith(PRUNED_INLINED_CLASS_OBFUSCATED_PREFIX)
+          && !renamedName.startsWith(L8_PRUNED_INLINED_CLASS_OBFUSCATED_PREFIX)) {
         if (map.put(originalDescriptor, classNamingBuilder) != null) {
           reporter.error(ProguardMapError.duplicateSourceClass(originalDescriptor, position));
         }
