@@ -88,6 +88,11 @@ public class L8TestCompileResult extends TestCompileResult<L8TestCompileResult, 
     return self();
   }
 
+  public String getProguardMap() throws IOException {
+    assertNotNull(mapping);
+    return FileUtils.readTextFile(mapping);
+  }
+
   public L8TestCompileResult writeProguardMap(Path path) throws IOException {
     assertNotNull(mapping);
     Files.copy(mapping, path);
