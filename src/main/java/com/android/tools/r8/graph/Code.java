@@ -241,6 +241,21 @@ public abstract class Code extends CachedHashValueDexItem {
           translatedPosition = result;
         }
       }
+      // Translation can fail for non-throwing outline instructions. In this case, pick the best
+      // position.
+      if (translatedPosition == null) {
+        int bestLine = Integer.MAX_VALUE;
+        Position bestPosition = null;
+        for (int i = 0; i < translation.size(); i++) {
+          int currentLine = translation.getKey(i);
+          Position currentPosition = translation.getValue(i);
+          if (outlineLine < currentLine && currentLine < bestLine && currentPosition != null) {
+            bestLine = currentLine;
+            bestPosition = currentPosition;
+          }
+        }
+        translatedPosition = bestPosition;
+      }
       assert translatedPosition != null;
       // If the caller has outer frames compose them with the translated position.
       if (callerPosition.hasCallerPosition()) {
