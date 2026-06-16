@@ -59,10 +59,12 @@ public class AlwaysKeepIDsInLegacyMode extends TestBase {
         .inspectShrunkenResources(
             resourceTableInspector -> {
               resourceTableInspector.assertContainsResourceWithName("string", "foo");
-              if (!optimized) {
-                resourceTableInspector.assertContainsResourceWithName("id", "the_id");
+              if (optimized) {
+                if (!parameters.isRandomPartialCompilation()) {
+                  resourceTableInspector.assertDoesNotContainResourceWithName("id", "the_id");
+                }
               } else {
-                resourceTableInspector.assertDoesNotContainResourceWithName("id", "the_id");
+                resourceTableInspector.assertContainsResourceWithName("id", "the_id");
               }
             })
         .run(parameters.getRuntime(), FooBar.class)
