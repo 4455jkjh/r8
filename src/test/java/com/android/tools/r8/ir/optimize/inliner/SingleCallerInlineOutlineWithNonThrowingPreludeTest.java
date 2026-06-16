@@ -11,7 +11,6 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import com.android.tools.r8.NeverInline;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
-import com.android.tools.r8.utils.codeinspector.AssertUtils;
 import com.android.tools.r8.utils.codeinspector.ClassSubject;
 import com.android.tools.r8.utils.codeinspector.MethodSubject;
 import com.android.tools.r8.utils.BooleanUtils;
@@ -39,62 +38,57 @@ public class SingleCallerInlineOutlineWithNonThrowingPreludeTest extends TestBas
 
   @Test
   public void test() throws Exception {
-    AssertUtils.assertFailsCompilationIf(
-        allowInliningOfOutlines,
-        () ->
-            testForR8(parameters)
-                .addInnerClasses(getClass())
-                .addKeepMainRule(Main.class)
-                .addOptionsModification(
-                    options -> {
-                      options.outline.threshold = 2;
-                      options.outline.minSize = 2;
-                      options.getTestingOptions().allowInliningOfOutlines = allowInliningOfOutlines;
-                    })
-                .collectSyntheticItems()
-                .enableInliningAnnotations()
-                .compile()
-                .inspectWithSyntheticItems(
-                    (inspector, syntheticItems) -> {
-                      ClassSubject printerClassSubject = inspector.clazz(Printer.class);
-                      assertThat(printerClassSubject, isPresent());
+    testForR8(parameters)
+        .addInnerClasses(getClass())
+        .addKeepMainRule(Main.class)
+        .addOptionsModification(
+            options -> {
+              options.outline.threshold = 2;
+              options.outline.minSize = 2;
+              options.getTestingOptions().allowInliningOfOutlines = allowInliningOfOutlines;
+            })
+        .collectSyntheticItems()
+        .enableInliningAnnotations()
+        .compile()
+        .inspectWithSyntheticItems(
+            (inspector, syntheticItems) -> {
+              ClassSubject printerClassSubject = inspector.clazz(Printer.class);
+              assertThat(printerClassSubject, isPresent());
 
-                      MethodSubject helloMethodSubject =
-                          printerClassSubject.uniqueMethodWithOriginalName("hello");
-                      assertThat(helloMethodSubject, isPresent());
+              MethodSubject helloMethodSubject =
+                  printerClassSubject.uniqueMethodWithOriginalName("hello");
+              assertThat(helloMethodSubject, isPresent());
 
-                      MethodSubject worldMethodSubject =
-                          printerClassSubject.uniqueMethodWithOriginalName("world");
-                      assertThat(worldMethodSubject, isPresent());
+              MethodSubject worldMethodSubject =
+                  printerClassSubject.uniqueMethodWithOriginalName("world");
+              assertThat(worldMethodSubject, isPresent());
 
-                      ClassSubject mainClassSubject = inspector.clazz(Main.class);
-                      assertThat(mainClassSubject, isPresent());
+              ClassSubject mainClassSubject = inspector.clazz(Main.class);
+              assertThat(mainClassSubject, isPresent());
 
-                      MethodSubject outlineCandidateMethodSubject =
-                          mainClassSubject.uniqueMethodWithOriginalName("outlineCandidate");
-                      assertThat(outlineCandidateMethodSubject, isPresent());
+              MethodSubject outlineCandidateMethodSubject =
+                  mainClassSubject.uniqueMethodWithOriginalName("outlineCandidate");
+              assertThat(outlineCandidateMethodSubject, isPresent());
 
-                      ClassSubject outlineClassSubject =
-                          inspector.clazz(syntheticItems.syntheticOutlineClass(Main.class, 0));
-                      // Note that the outline class is present even when `allowInliningOfOutlines`
-                      // is true, since we do not run another round of tree shaking after the single
-                      // caller inliner pass.
-                      assertThat(outlineClassSubject, isPresent());
+              ClassSubject outlineClassSubject =
+                  inspector.clazz(syntheticItems.syntheticOutlineClass(Main.class, 0));
+              // Note that the outline class is present even when `allowInliningOfOutlines`
+              // is true, since we do not run another round of tree shaking after the single
+              // caller inliner pass.
+              assertThat(outlineClassSubject, isPresent());
 
-                      if (allowInliningOfOutlines) {
-                        assertThat(
-                            outlineCandidateMethodSubject,
-                            allOf(
-                                invokesMethod(helloMethodSubject),
-                                invokesMethod(worldMethodSubject)));
-                      } else {
-                        assertThat(
-                            outlineCandidateMethodSubject,
-                            invokesMethod(outlineClassSubject.uniqueMethod()));
-                      }
-                    })
-                .run(parameters.getRuntime(), Main.class)
-                .assertSuccessWithOutputLines("Hello 3.0, world!"));
+              if (allowInliningOfOutlines) {
+                assertThat(
+                    outlineCandidateMethodSubject,
+                    allOf(invokesMethod(helloMethodSubject), invokesMethod(worldMethodSubject)));
+              } else {
+                assertThat(
+                    outlineCandidateMethodSubject,
+                    invokesMethod(outlineClassSubject.uniqueMethod()));
+              }
+            })
+        .run(parameters.getRuntime(), Main.class)
+        .assertSuccessWithOutputLines("Hello 3.0, world!");
   }
 
   static class Main {

@@ -32,6 +32,14 @@ public class Int2StructuralItemArrayMap<T extends StructuralItem<T>>
     return this;
   }
 
+  public int getKey(int index) {
+    return keys[index];
+  }
+
+  public T getValue(int index) {
+    return values.get(index);
+  }
+
   @Override
   public StructuralMapping<Int2StructuralItemArrayMap<T>> getStructuralMapping() {
     return Int2StructuralItemArrayMap::specify;
@@ -55,6 +63,10 @@ public class Int2StructuralItemArrayMap<T extends StructuralItem<T>>
     for (int i = 0; i < keys.length; i++) {
       visitor.accept(keys[i], values.get(i));
     }
+  }
+
+  public int size() {
+    return keys.length;
   }
 
   @SuppressWarnings("unchecked")
