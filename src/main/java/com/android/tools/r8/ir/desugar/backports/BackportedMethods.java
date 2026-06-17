@@ -90,6 +90,7 @@ public final class BackportedMethods {
     factory.createSynthesizedType("Ljava/math/BigDecimal;");
     factory.createSynthesizedType("Ljava/math/BigInteger;");
     factory.createSynthesizedType("Ljava/time/Duration;");
+    factory.createSynthesizedType("Ljava/time/temporal/Temporal;");
     factory.createSynthesizedType("Ljava/util/AbstractMap$SimpleImmutableEntry;");
     factory.createSynthesizedType("Ljava/util/ArrayList;");
     factory.createSynthesizedType("Ljava/util/Arrays;");
@@ -5959,6 +5960,33 @@ public final class BackportedMethods {
                 new ArrayDeque<>(Arrays.asList(FrameType.intType()))),
             new CfReturn(ValueType.INT),
             label3),
+        ImmutableList.of(),
+        ImmutableList.of());
+  }
+
+  public static CfCode InstantMethods_until(DexItemFactory factory, DexMethod method) {
+    CfLabel label0 = new CfLabel();
+    CfLabel label1 = new CfLabel();
+    return new CfCode(
+        method.holder,
+        2,
+        2,
+        ImmutableList.of(
+            label0,
+            new CfLoad(ValueType.OBJECT, 0),
+            new CfLoad(ValueType.OBJECT, 1),
+            new CfInvoke(
+                184,
+                factory.createMethod(
+                    factory.createType("Ljava/time/Duration;"),
+                    factory.createProto(
+                        factory.createType("Ljava/time/Duration;"),
+                        factory.createType("Ljava/time/temporal/Temporal;"),
+                        factory.createType("Ljava/time/temporal/Temporal;")),
+                    factory.createString("between")),
+                false),
+            new CfReturn(ValueType.OBJECT),
+            label1),
         ImmutableList.of(),
         ImmutableList.of());
   }
