@@ -4,7 +4,6 @@
 
 package com.android.tools.r8.ir.desugar.lambda;
 
-import com.android.tools.r8.cf.CfVersion;
 import com.android.tools.r8.graph.AppInfo;
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.DexEncodedMethod;
@@ -32,28 +31,27 @@ public class LambdaDeserializationMethodRemover {
       if (method != null && method.getAccessFlags().isPrivate()) {
         // From JDK 27 the synthetic $deserializeLambda$ method is split into multiple methods.
         // These are all outlined from $deserializeLambda$, and prefixed by the same name.
-        // See https://bugs.openjdk.org/browse/JDK-8381812.
-        if (clazz.getInitialClassFileVersion().isGreaterThanOrEqualTo(CfVersion.V27)) {
-          method
-              .getCode()
-              .asCfCode()
-              .getInstructions()
-              .forEach(
-                  instruction -> {
-                    if (instruction.isInvokeStatic()) {
-                      DexMethod invokedMethod = instruction.asInvoke().getMethod();
-                      if (invokedMethod.getHolderType().isIdenticalTo(clazz.getType())
-                          && invokedMethod.getName().startsWith(factory.deserializeLambdaMethodName)
-                          && invokedMethod
-                              .getProto()
-                              .isIdenticalTo(factory.deserializeLambdaMethodProto)) {
-                        clazz.removeMethod(invokedMethod);
-                      }
+        // See https://bugs.openjdk.org/browse/JDK-8381812. This happens independent of the
+        // --release argument passed to javac from JDK-27.
+        method
+            .getCode()
+            .asCfCode()
+            .getInstructions()
+            .forEach(
+                instruction -> {
+                  if (instruction.isInvokeStatic()) {
+                    DexMethod invokedMethod = instruction.asInvoke().getMethod();
+                    if (invokedMethod.getHolderType().isIdenticalTo(clazz.getType())
+                        && invokedMethod.getName().startsWith(factory.deserializeLambdaMethodName)
+                        && invokedMethod
+                            .getProto()
+                            .isIdenticalTo(factory.deserializeLambdaMethodProto)) {
+                      clazz.removeMethod(invokedMethod);
                     }
-                  });
-        }
-        clazz.removeMethod(reference);
+                  }
+                });
       }
+      clazz.removeMethod(reference);
     }
   }
 }

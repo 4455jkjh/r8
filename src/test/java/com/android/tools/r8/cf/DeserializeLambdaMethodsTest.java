@@ -193,17 +193,6 @@ public class DeserializeLambdaMethodsTest extends TestBase implements Opcodes {
             .noneMatch(name -> name.isEqualTo("getInstantiatedMethodType")));
   }
 
-  private static void unexpectedCodeAfterLambdaDeserializationMethodsRemoval(
-      CodeInspector inspector) {
-    ClassSubject clazz = inspector.clazz("Test");
-    assertTrue(clazz.isPresent());
-    assertEquals(
-        2,
-        clazz.allMethods().stream()
-            .filter(method -> method.getOriginalMethodName().startsWith("$deserializeLambda$"))
-            .count());
-  }
-
   @Test
   public void testDesugaring() throws Exception {
     parameters.assumeDexRuntime();
@@ -221,8 +210,7 @@ public class DeserializeLambdaMethodsTest extends TestBase implements Opcodes {
     testForDesugaring(parameters)
         .addProgramFiles(TEST_CLASS_FILE_JDK_27_RELEASE_25)
         .run(parameters.getRuntime(), "Test")
-        .inspect(
-            DeserializeLambdaMethodsTest::unexpectedCodeAfterLambdaDeserializationMethodsRemoval)
+        .inspect(DeserializeLambdaMethodsTest::expectedCodeAfterLambdaDeserializationMethodsRemoval)
         .assertSuccessWithOutputLines("OK");
   }
 
@@ -248,7 +236,7 @@ public class DeserializeLambdaMethodsTest extends TestBase implements Opcodes {
         .setMinApi(parameters)
         .compile()
         .inspect(
-            DeserializeLambdaMethodsTest::unexpectedCodeAfterLambdaDeserializationMethodsRemoval);
+            DeserializeLambdaMethodsTest::expectedCodeAfterLambdaDeserializationMethodsRemoval);
   }
 
   @Test
