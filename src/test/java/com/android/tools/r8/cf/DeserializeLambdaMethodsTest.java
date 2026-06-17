@@ -5,6 +5,7 @@ package com.android.tools.r8.cf;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assume.assumeTrue;
 
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
@@ -64,12 +65,14 @@ public class DeserializeLambdaMethodsTest extends TestBase implements Opcodes {
         ImmutableList.of(CfVm.JDK11, CfVm.JDK17, CfVm.JDK21, CfVm.JDK25, CfVm.JDK27));
   }
 
+  private static Path testJavaSource;
   private static final Map<CfVm, Path> TEST_CLASS_FILES = new HashMap<>();
+  public static Path TEST_CLASS_FILE_JDK_27_RELEASE_25;
 
   @BeforeClass
   public static void compileTestClasses() throws Exception {
     // Build test source code.
-    Path testJavaSource =
+    testJavaSource =
         FileUtils.writeTextFile(
             getStaticTemp().newFolder("src").toPath().resolve("Test.java"),
             "import java.io.*;",
@@ -108,7 +111,6 @@ public class DeserializeLambdaMethodsTest extends TestBase implements Opcodes {
             "    System.out.println(\"OK\");",
             "  }",
             "}");
-
     Path output = getStaticTemp().newFolder("output").toPath();
     for (CfVm jdk : cfVmsToTest) {
       Path classes = output.resolve(jdk.toString());
@@ -119,12 +121,19 @@ public class DeserializeLambdaMethodsTest extends TestBase implements Opcodes {
           .compile();
       TEST_CLASS_FILES.put(jdk, classes.resolve("Test.class"));
     }
+    Path classes = output.resolve("classes");
+    Files.createDirectory(classes);
+    javac(TestRuntime.getCheckedInJdk(CfVm.JDK27), getStaticTemp())
+        .addSourceFiles(testJavaSource)
+        .setOutputPath(classes)
+        .setRelease("25")
+        .compile();
+    TEST_CLASS_FILE_JDK_27_RELEASE_25 = classes.resolve("Test.class");
   }
 
-  @Test
-  public void testJdkSerializeLambdaCodeGeneration() throws Exception {
+  private void checkJdkSerializeLambdaCodeGeneration(Path classFile) throws Exception {
     parameters.assumeNoneRuntime();
-    CodeInspector inspector = new CodeInspector(TEST_CLASS_FILES.get(cfVm));
+    CodeInspector inspector = new CodeInspector(classFile);
     ClassSubject clazz = inspector.clazz("Test");
     assertTrue(clazz.isPresent());
     assertEquals(
@@ -153,6 +162,20 @@ public class DeserializeLambdaMethodsTest extends TestBase implements Opcodes {
             .count());
   }
 
+  @Test
+  public void testJdkSerializeLambdaCodeGeneration() throws Exception {
+    parameters.assumeNoneRuntime();
+    checkJdkSerializeLambdaCodeGeneration(TEST_CLASS_FILES.get(cfVm));
+  }
+
+  @Test
+  public void testJdkSerializeLambdaCodeGenerationJdk27Release25() throws Exception {
+    parameters.assumeNoneRuntime();
+    parameters.assumeNoPartialCompilation();
+    assumeTrue(cfVm.isEqualTo(CfVm.JDK27));
+    checkJdkSerializeLambdaCodeGeneration(TEST_CLASS_FILE_JDK_27_RELEASE_25);
+  }
+
   private static void expectedCodeAfterLambdaDeserializationMethodsRemoval(
       CodeInspector inspector) {
     ClassSubject clazz = inspector.clazz("Test");
@@ -170,6 +193,17 @@ public class DeserializeLambdaMethodsTest extends TestBase implements Opcodes {
             .noneMatch(name -> name.isEqualTo("getInstantiatedMethodType")));
   }
 
+  private static void unexpectedCodeAfterLambdaDeserializationMethodsRemoval(
+      CodeInspector inspector) {
+    ClassSubject clazz = inspector.clazz("Test");
+    assertTrue(clazz.isPresent());
+    assertEquals(
+        2,
+        clazz.allMethods().stream()
+            .filter(method -> method.getOriginalMethodName().startsWith("$deserializeLambda$"))
+            .count());
+  }
+
   @Test
   public void testDesugaring() throws Exception {
     parameters.assumeDexRuntime();
@@ -177,6 +211,18 @@ public class DeserializeLambdaMethodsTest extends TestBase implements Opcodes {
         .addProgramFiles(TEST_CLASS_FILES.get(cfVm))
         .run(parameters.getRuntime(), "Test")
         .inspect(DeserializeLambdaMethodsTest::expectedCodeAfterLambdaDeserializationMethodsRemoval)
+        .assertSuccessWithOutputLines("OK");
+  }
+
+  @Test
+  public void testDesugaringJdk27Release25() throws Exception {
+    parameters.assumeDexRuntime();
+    assumeTrue(cfVm.isEqualTo(CfVm.JDK27));
+    testForDesugaring(parameters)
+        .addProgramFiles(TEST_CLASS_FILE_JDK_27_RELEASE_25)
+        .run(parameters.getRuntime(), "Test")
+        .inspect(
+            DeserializeLambdaMethodsTest::unexpectedCodeAfterLambdaDeserializationMethodsRemoval)
         .assertSuccessWithOutputLines("OK");
   }
 
@@ -193,10 +239,36 @@ public class DeserializeLambdaMethodsTest extends TestBase implements Opcodes {
   }
 
   @Test
+  public void testD8Jdk27Release25() throws Exception {
+    parameters.assumeDexRuntime();
+    parameters.assumeNoPartialCompilation();
+    assumeTrue(cfVm.isEqualTo(CfVm.JDK27));
+    testForD8()
+        .addProgramFiles(TEST_CLASS_FILE_JDK_27_RELEASE_25)
+        .setMinApi(parameters)
+        .compile()
+        .inspect(
+            DeserializeLambdaMethodsTest::unexpectedCodeAfterLambdaDeserializationMethodsRemoval);
+  }
+
+  @Test
   public void testR8() throws Exception {
     parameters.assumeDexRuntime();
     testForR8(parameters)
         .addProgramFiles(TEST_CLASS_FILES.get(cfVm))
+        .setMinApi(parameters)
+        .addKeepMainRule("Test")
+        .compile()
+        .inspect(
+            DeserializeLambdaMethodsTest::expectedCodeAfterLambdaDeserializationMethodsRemoval);
+  }
+
+  @Test
+  public void testR8Jdk27Release25() throws Exception {
+    parameters.assumeDexRuntime();
+    assumeTrue(cfVm.isEqualTo(CfVm.JDK27));
+    testForR8(parameters)
+        .addProgramFiles(TEST_CLASS_FILE_JDK_27_RELEASE_25)
         .setMinApi(parameters)
         .addKeepMainRule("Test")
         .compile()

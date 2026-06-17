@@ -27,6 +27,7 @@ public class JavaCompilerTool {
   private final TestState state;
   private String source = null;
   private String target = null;
+  private String release = null;
   private final List<Path> sources = new ArrayList<>();
   private final List<String> classNames = new ArrayList<>();
   private final List<Path> classpath = new ArrayList<>();
@@ -66,6 +67,11 @@ public class JavaCompilerTool {
 
   public JavaCompilerTool setTarget(String target) {
     this.target = target;
+    return this;
+  }
+
+  public JavaCompilerTool setRelease(String release) {
+    this.release = release;
     return this;
   }
 
@@ -178,6 +184,10 @@ public class JavaCompilerTool {
     if (target != null) {
       cmdline.add("-target");
       cmdline.add(target);
+    }
+    if (release != null) {
+      cmdline.add("--release");
+      cmdline.add(release);
     }
     cmdline.add("-d");
     cmdline.add(outdir.toString());
