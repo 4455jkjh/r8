@@ -9,6 +9,7 @@ import com.android.tools.r8.profile.art.model.ExternalArtProfile;
 import com.android.tools.r8.shaking.CollectingGraphConsumer;
 import com.android.tools.r8.shaking.ProguardConfigurationRule;
 import com.android.tools.r8.utils.AndroidApp;
+import com.android.tools.r8.utils.internal.Box;
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.List;
@@ -30,7 +31,8 @@ public class R8TestCompileResult extends R8TestCompileResultBase<R8TestCompileRe
       Path resourceShrinkerOutput,
       HashMap<String, Path> resourceShrinkerOutputForFeatures,
       TestDebugConsumer resourceShrinkerLogConsumer,
-      R8BuildMetadata buildMetadata) {
+      R8BuildMetadata buildMetadata,
+      Box<String> configurationAnalysisHtmlReport) {
     super(
         state,
         outputMode,
@@ -46,7 +48,8 @@ public class R8TestCompileResult extends R8TestCompileResultBase<R8TestCompileRe
         resourceShrinkerOutput,
         resourceShrinkerOutputForFeatures,
         resourceShrinkerLogConsumer,
-        buildMetadata);
+        buildMetadata,
+        configurationAnalysisHtmlReport);
   }
 
   @Override

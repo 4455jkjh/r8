@@ -86,11 +86,11 @@ dependencies {
   implementation(project(":resourceshrinker", "resourceshrinkerDepsJar"))
   implementation(project(":testbase"))
   implementation(project(":testbase", "depsJar"))
-
   // For each child project, add its test classes to the test class configuration.
   childProjects.values.forEach { childProject ->
     partialTestClassesScope(project(childProject.path, "partialTestClasses"))
   }
+  implementation(Deps.playwright)
 }
 
 fun testDependencies(): FileCollection {
@@ -157,13 +157,8 @@ tasks {
     dependsOn(createArtTests)
     val r8 = "com/android/tools/r8"
     from(sourceSets.test.get().java) {
+      include("$r8/cf/KeepDeserializeLambdaMethodTest.java")
       include("$r8/desugaring/interfacemethods/methodparameters/I.java")
-      include("$r8/naming/bridge/Creator.java")
-      include("$r8/naming/bridge/Result.java")
-      include("$r8/naming/bridge/ResultImpl.java")
-      include("$r8/naming/bridge/Tester.java")
-      include("$r8/naming/bridge/TesterImpl.java")
-      include("$r8/naming/bridge/Main.java")
       include("$r8/keepanno/api/genericsignature/MyValueBoxClient.java")
     }
   }

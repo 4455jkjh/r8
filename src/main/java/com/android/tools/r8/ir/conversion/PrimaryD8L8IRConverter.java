@@ -144,9 +144,6 @@ public class PrimaryD8L8IRConverter extends IRConverter {
     if (definition.getCode() == null) {
       return;
     }
-    if (!options.methodMatchesFilter(definition)) {
-      return;
-    }
     checkPrefixMerging(method);
     if (needsConversion(method)) {
       // We do not process in call graph order, so anything could be a leaf.

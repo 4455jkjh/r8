@@ -4,7 +4,7 @@
 
 package com.android.tools.r8.bridgeremoval;
 
-import static com.android.tools.r8.utils.codeinspector.Matchers.isAbsent;
+import static com.android.tools.r8.utils.codeinspector.Matchers.isAbsentIf;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertTrue;
 
@@ -60,7 +60,7 @@ public class BridgeWithInvokeSuperOnInterfaceTest extends TestBase {
               // Check that we are removing the bridge if we support default methods.
               if (parameters.canUseDefaultAndStaticInterfaceMethods()) {
                 ClassSubject J = inspector.clazz(J.class);
-                assertThat(J, isAbsent());
+                assertThat(J, isAbsentIf(parameters.isDexRuntime()));
                 assertTrue(
                     inspector.allClasses().stream()
                         .allMatch(

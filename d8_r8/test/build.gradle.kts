@@ -306,6 +306,7 @@ tasks {
         debugVariant = false,
         classpath = classpath,
         replaceFromJar = assistantJar,
+        enableHorizontalClassMerging = true,
       )
   }
 

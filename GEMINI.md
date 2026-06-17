@@ -21,10 +21,16 @@ tools/gradle.py -q r8
 
 This will produce a JAR file at `build/libs/r8.jar`.
 
-For a lighter target that just compiles the code without building the full R8 JAR, you can use:
+For a lighter target that just compiles the production code without building the full R8 JAR or test modules, you can use:
 
 ```bash
 tools/gradle.py -q classes
+```
+
+To compile both production code and test modules (without running the tests), use:
+
+```bash
+tools/gradle.py -q testClasses
 ```
 
 Only run without `-q` if more information is needed about the build details.

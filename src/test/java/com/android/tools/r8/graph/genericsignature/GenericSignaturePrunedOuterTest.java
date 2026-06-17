@@ -10,9 +10,9 @@ import static org.junit.Assert.assertEquals;
 
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
-import com.android.tools.r8.utils.internal.BooleanUtils;
 import com.android.tools.r8.utils.codeinspector.ClassSubject;
 import com.android.tools.r8.utils.codeinspector.CodeInspector;
+import com.android.tools.r8.utils.internal.BooleanUtils;
 import java.util.List;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -45,7 +45,8 @@ public class GenericSignaturePrunedOuterTest extends TestBase {
         .addKeepAttributeSignature()
         .addKeepAttributeInnerClassesAndEnclosingMethod()
         .setMinApi(parameters)
-        .addOptionsModification(options -> options.horizontalClassMergerOptions().disable())
+        .addOptionsModification(
+            options -> options.horizontalClassMergerOptions().disableForTesting())
         .run(parameters.getRuntime(), Main.class)
         .assertSuccessWithOutputLines(
             "Bar::enclosingMethod", "Hello World", "Bar::enclosingMethod2", "Hello World")

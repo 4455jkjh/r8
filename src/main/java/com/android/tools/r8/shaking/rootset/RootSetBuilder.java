@@ -47,7 +47,6 @@ import com.android.tools.r8.ir.analysis.type.DynamicType;
 import com.android.tools.r8.ir.analysis.value.AbstractValue;
 import com.android.tools.r8.ir.optimize.info.OptimizationFeedbackSimple;
 import com.android.tools.r8.ir.optimize.membervaluepropagation.assume.AssumeInfo;
-import com.android.tools.r8.partial.R8PartialResourceUseCollector;
 import com.android.tools.r8.partial.R8PartialUseCollector;
 import com.android.tools.r8.position.ClassPosition;
 import com.android.tools.r8.position.FieldPosition;
@@ -344,20 +343,6 @@ public class RootSetBuilder {
           }
         };
     useCollector.run(executorService, timing);
-
-    // Trace resources.
-    if (options.androidResourceProvider != null) {
-      R8PartialResourceUseCollector resourceUseCollector =
-          new R8PartialResourceUseCollector(appView) {
-            @Override
-            protected void keep(int resourceId) {
-              if (appView.getResourceShrinkerState().hasResourceId(resourceId)) {
-                resourceRootIds.add(resourceId);
-              }
-            }
-          };
-      resourceUseCollector.run();
-    }
     return this;
   }
 

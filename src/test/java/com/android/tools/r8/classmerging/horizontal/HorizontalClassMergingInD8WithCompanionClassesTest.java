@@ -46,11 +46,6 @@ public class HorizontalClassMergingInD8WithCompanionClassesTest extends TestBase
         .addInnerClasses(getClass())
         .setMode(CompilationMode.RELEASE)
         .setMinApi(parameters)
-        .addOptionsModification(
-            options -> {
-              options.horizontalClassMergerOptions().enable();
-              options.horizontalClassMergerOptions().setRestrictToSynthetics();
-            })
         .run(parameters.getRuntime(), Main.class)
         .assertSuccessWithOutputLines("I::foo", "J::bar")
         .inspect(

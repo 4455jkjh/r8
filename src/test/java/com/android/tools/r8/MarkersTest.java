@@ -93,8 +93,7 @@ public class MarkersTest extends DesugaredLibraryTestBase {
     L8.run(builder.build());
     Collection<Marker> markers = ExtractMarkerUtils.extractMarkersFromFile(output);
     JsonObject jsonObject =
-        new JsonParser()
-            .parse(
+        JsonParser.parseString(
                 FileUtils.readTextFile(
                     libraryDesugaringSpecification.getSpecification(), Charsets.UTF_8))
             .getAsJsonObject();

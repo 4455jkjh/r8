@@ -29,6 +29,7 @@ class KeepDeserializeLambdaMethodTest {
 
 class KeepDeserializeLambdaMethodTestDex extends KeepDeserializeLambdaMethodTest {
   public static void main(String[] args) throws Exception {
+    // For DEX call the lambdas directly, as lambda serialization is currently not supported.
     invokeLambda(getLambda());
     invokeLambda(
         (Runnable & Serializable)
@@ -39,6 +40,7 @@ class KeepDeserializeLambdaMethodTestDex extends KeepDeserializeLambdaMethodTest
 class KeepDeserializeLambdaMethodTestCf extends KeepDeserializeLambdaMethodTest {
 
   public static void main(String[] args) throws Exception {
+    // For CF call the lambdas after serializing and deserializing.
     invokeLambda(roundtrip(getLambda()));
     invokeLambda(roundtrip((Runnable & Serializable) () -> System.out.println(LAMBDA_MESSAGE)));
   }

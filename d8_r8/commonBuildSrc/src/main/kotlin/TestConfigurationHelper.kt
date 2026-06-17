@@ -465,7 +465,6 @@ public class TestConfigurationHelper {
         retry.maxRetries.set(2)
         // High maxFailures so parameterized tests aren't aborted from retries.
         retry.maxFailures.set(200)
-        retry.filter { includeAnnotationClasses.add("com.android.tools.r8.Retryable") }
       }
       retry.failOnPassedAfterRetry.set(false)
       retry.failOnSkippedAfterRetry.set(false)

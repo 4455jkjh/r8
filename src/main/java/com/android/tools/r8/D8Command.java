@@ -37,7 +37,6 @@ import com.android.tools.r8.utils.DumpInputFlags;
 import com.android.tools.r8.utils.InternalGlobalSyntheticsProgramProvider;
 import com.android.tools.r8.utils.InternalOptions;
 import com.android.tools.r8.utils.InternalOptions.DesugarState;
-import com.android.tools.r8.utils.InternalOptions.HorizontalClassMergerOptions;
 import com.android.tools.r8.utils.InternalOptions.LineNumberOptimization;
 import com.android.tools.r8.utils.InternalOptions.MappingComposeOptions;
 import com.android.tools.r8.utils.ProgramClassCollection;
@@ -906,15 +905,6 @@ public final class D8Command extends BaseCompilerCommand {
 
     // Disable global optimizations.
     internal.disableGlobalOptimizations();
-
-    HorizontalClassMergerOptions horizontalClassMergerOptions =
-        internal.horizontalClassMergerOptions();
-    if (internal.isGeneratingDex()) {
-      horizontalClassMergerOptions.setRestrictToSynthetics();
-    } else {
-      assert internal.isGeneratingClassFiles();
-      horizontalClassMergerOptions.disable();
-    }
 
     internal.configureAndroidPlatformBuild(getAndroidPlatformBuild());
 

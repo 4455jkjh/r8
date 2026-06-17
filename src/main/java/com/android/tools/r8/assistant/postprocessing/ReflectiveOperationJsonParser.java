@@ -32,7 +32,7 @@ public class ReflectiveOperationJsonParser {
       if (line.trim().isEmpty()) {
         continue;
       }
-      JsonObject event = new JsonParser().parse(line).getAsJsonObject();
+      JsonObject event = JsonParser.parseString(line).getAsJsonObject();
       if (event.isEmpty()) {
         continue;
       }

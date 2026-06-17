@@ -75,6 +75,7 @@ public class ResourceShrinkerState<T> {
   private final boolean enableManifestPruning;
 
   private Map<Integer, Set<String>> resourceIdToXmlFiles;
+  private final IntSet seenAndroidIds = new IntOpenHashSet();
   private Set<String> packageNames;
   private final Set<String> seenNoneClassValues = new HashSet<>();
   private final Set<Integer> seenResourceIds = new HashSet<>();
@@ -90,6 +91,8 @@ public class ResourceShrinkerState<T> {
 
   private static final Set<String> SPECIAL_APPLICATION_ATTRIBUTES =
       ImmutableSet.of("backupAgent", "appComponentFactory", "zygotePreloadName");
+
+
 
   public interface ResourceShrinkerCallback {
     boolean tryClass(String possibleClass, String xmlFilePath, boolean markAsLive);
@@ -134,7 +137,7 @@ public class ResourceShrinkerState<T> {
   }
 
   public boolean hasResourceId(int resourceId) {
-    return getR8ResourceShrinkerModel().getResourceStore().getResource(resourceId) != null;
+    return r8ResourceShrinkerModel.hasResourceId(resourceId);
   }
 
   public void traceKeepXmlAndManifest(ResourceShrinkerCallback callback) {
@@ -252,6 +255,11 @@ public class ResourceShrinkerState<T> {
     ImmutableSet<String> resEntriesToKeep = getResEntriesToKeep(resourceStore);
     List<Resource> resourcesToRemove = getResourcesToRemove();
     List<Integer> resourceIdsToRemove = getResourceIdsToRemove();
+    for (Resource resource : r8ResourceShrinkerModel.getResourceStore().getResources()) {
+      if (resource.type == ResourceType.ID && !seenAndroidIds.contains(resource.value)) {
+        resourceIdsToRemove.add(resource.value);
+      }
+    }
 
     Map<T, byte[]> shrunkenTables = new IdentityHashMap<>();
     resourceTables.forEach(
@@ -454,6 +462,13 @@ public class ResourceShrinkerState<T> {
       if (xmlAttribute.getName().equals("onClick")
           && xmlAttribute.getNamespaceUri().equals("http://schemas.android.com/apk/res/android")) {
         callback.tryMethod(xmlAttribute.getValue(), xmlName);
+      }
+      if (xmlAttribute.getName().equals("id")
+          && xmlAttribute.getNamespaceUri().equals("http://schemas.android.com/apk/res/android")
+          && xmlAttribute.hasCompiledItem()
+          && xmlAttribute.getCompiledItem().hasRef()) {
+        int id = xmlAttribute.getCompiledItem().getRef().getId();
+        seenAndroidIds.add(id);
       }
     }
     for (XmlNode node : element.getChildList()) {

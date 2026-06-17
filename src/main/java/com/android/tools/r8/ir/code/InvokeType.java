@@ -73,13 +73,13 @@ public enum InvokeType {
       GraphLens codeLens,
       boolean isDesugared) {
     switch (opcode) {
-      case org.objectweb.asm.Opcodes.INVOKEINTERFACE:
+      case Opcodes.INVOKEINTERFACE:
         return InvokeType.INTERFACE;
-      case org.objectweb.asm.Opcodes.INVOKESPECIAL:
+      case Opcodes.INVOKESPECIAL:
         return fromInvokeSpecial(invokedMethod, context, appView, codeLens, isDesugared);
-      case org.objectweb.asm.Opcodes.INVOKESTATIC:
+      case Opcodes.INVOKESTATIC:
         return InvokeType.STATIC;
-      case org.objectweb.asm.Opcodes.INVOKEVIRTUAL:
+      case Opcodes.INVOKEVIRTUAL:
         return appView.dexItemFactory().polymorphicMethods.isPolymorphicInvoke(invokedMethod)
                 && !appView.options().shouldDesugarVarHandle()
             ? InvokeType.POLYMORPHIC
@@ -178,15 +178,15 @@ public enum InvokeType {
   public int getCfOpcode() {
     switch (this) {
       case DIRECT:
-        return org.objectweb.asm.Opcodes.INVOKESPECIAL;
+        return Opcodes.INVOKESPECIAL;
       case INTERFACE:
-        return org.objectweb.asm.Opcodes.INVOKEINTERFACE;
+        return Opcodes.INVOKEINTERFACE;
       case POLYMORPHIC:
-        return org.objectweb.asm.Opcodes.INVOKEVIRTUAL;
+        return Opcodes.INVOKEVIRTUAL;
       case STATIC:
-        return org.objectweb.asm.Opcodes.INVOKESTATIC;
+        return Opcodes.INVOKESTATIC;
       case SUPER:
-        return org.objectweb.asm.Opcodes.INVOKESPECIAL;
+        return Opcodes.INVOKESPECIAL;
       case VIRTUAL:
         return Opcodes.INVOKEVIRTUAL;
       case NEW_ARRAY:

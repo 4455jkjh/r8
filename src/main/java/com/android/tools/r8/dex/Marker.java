@@ -319,7 +319,7 @@ public class Marker {
 
   private static Marker internalParse(Tool tool, String str) {
     try {
-      JsonElement result = new JsonParser().parse(str);
+      JsonElement result = JsonParser.parseString(str);
       if (result.isJsonObject()) {
         return new Marker(tool, result.getAsJsonObject());
       }

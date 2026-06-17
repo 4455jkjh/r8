@@ -59,7 +59,8 @@ public enum class Jdk(public val folder: String, public val version: Int) {
   JDK_11("jdk-11", 11),
   JDK_17("jdk-17", 17),
   JDK_21("jdk-21", 21),
-  JDK_25("jdk-25", 25);
+  JDK_25("jdk-25", 25),
+  JDK_27("jdk-27", 27);
 
   public fun isJdk8(): Boolean {
     return this == JDK_8
@@ -306,6 +307,7 @@ public fun Project.createR8LibCommandLine(
   pgInputMap: File? = null,
   replaceFromJar: File? = null,
   versionJar: File? = null,
+  enableHorizontalClassMerging: Boolean = false,
   enableKeepAnnotations: Boolean = true,
 ): List<String> {
   return buildList {
@@ -347,10 +349,11 @@ public fun Project.createR8LibCommandLine(
       add("--r8-version-jar")
       add("$versionJar")
     }
-    if (!enableKeepAnnotations) {
-      add("--disable-keep-annotations")
+    if (enableHorizontalClassMerging) {
+      add("--java-opts=-Dcom.android.tools.r8.disableHorizontalClassMerging=0")
     }
     if (!enableKeepAnnotations) {
+      add("--disable-keep-annotations")
       add("--exclude-api-database")
     }
   }
@@ -365,11 +368,11 @@ public object JvmCompatibility {
 private object Versions {
   public const val androidxCollectionVersion = "1.6.0"
   public const val androidxTracingVersion = "2.0.0-alpha05"
-  public const val asmVersion = "9.9"
+  public const val asmVersion = "9.10.1"
   public const val ddmLibVersion = "32.2.0"
   public const val errorproneVersion = "2.18.0"
   public const val fastUtilVersion = "7.2.1"
-  public const val gsonVersion = "2.10.1"
+  public const val gsonVersion = "2.14.0"
   public const val guavaVersion = "32.1.2-jre"
   public const val javassist = "3.29.2-GA"
   public const val junitJupiterVersion = "5.14.3"
@@ -377,9 +380,10 @@ private object Versions {
   public const val kotlinVersion = "1.9.20"
   public const val kotlinMetadataVersion = "2.3.10"
   public const val mockito = "2.10.0"
-  public const val testRetry = "1.6.4"
-  public const val smaliVersion = "3.0.3"
+  public const val playwrightVersion = "1.60.0"
   public const val protobufVersion = "4.33.5"
+  public const val smaliVersion = "3.0.3"
+  public const val testRetry = "1.6.4"
   public const val zipflingerVersion = "9.0.0"
 }
 
@@ -424,15 +428,18 @@ public object Deps {
     "org.jetbrains.kotlin:kotlin-reflect:${Versions.kotlinVersion}"
   }
   public val mockito: String by lazy { "org.mockito:mockito-core:${Versions.mockito}" }
-  public val testretry: String by lazy {
-    "org.gradle.test-retry-gradle-plugin:${Versions.testRetry}"
+  public val playwright: String by lazy {
+    "com.microsoft.playwright:playwright:${Versions.playwrightVersion}"
+  }
+  public val protobuf: String by lazy {
+    "com.google.protobuf:protobuf-java:${Versions.protobufVersion}"
   }
   public val smali: String by lazy { "com.android.tools.smali:smali:${Versions.smaliVersion}" }
   public val smaliUtil: String by lazy {
     "com.android.tools.smali:smali-util:${Versions.smaliVersion}"
   }
-  public val protobuf: String by lazy {
-    "com.google.protobuf:protobuf-java:${Versions.protobufVersion}"
+  public val testretry: String by lazy {
+    "org.gradle.test-retry-gradle-plugin:${Versions.testRetry}"
   }
   public val zipflinger: String by lazy { "com.android:zipflinger:${Versions.zipflingerVersion}" }
 
@@ -513,6 +520,7 @@ public object ThirdPartyDeps {
       Paths.get("third_party", "opensource-apps", "chrome").toFile(),
       Paths.get("third_party", "opensource-apps", "chrome.tar.gz.sha1").toFile(),
     )
+  public val chromeHeadless: ThirdPartyDependency = getThirdPartyChromeHeadless()
   public val compilerApi: ThirdPartyDependency =
     ThirdPartyDependency(
       "compiler-api",
@@ -1093,6 +1101,25 @@ private fun getThirdPartyAndroidVm(version: List<String>): ThirdPartyDependency 
   )
 }
 
+private fun getThirdPartyChromeHeadless(): ThirdPartyDependency {
+  val os: OperatingSystem = DefaultNativePlatform.getCurrentOperatingSystem()
+  val subFolder =
+    when {
+      os.isLinux -> "linux"
+      os.isMacOsX -> "mac"
+      else -> {
+        assert(os.isWindows)
+        "windows"
+      }
+    }
+  return ThirdPartyDependency(
+    "chrome_headless",
+    Paths.get("third_party", "chrome_headless", subFolder).toFile(),
+    Paths.get("third_party", "chrome_headless", "$subFolder.tar.gz.sha1").toFile(),
+    testOnly = true,
+  )
+}
+
 private fun getJdks(): List<ThirdPartyDependency> {
   val os: OperatingSystem = DefaultNativePlatform.getCurrentOperatingSystem()
   if (os.isLinux || os.isMacOsX) {
@@ -1227,6 +1254,7 @@ public fun Project.configureErrorProneForJavaCompile() {
       enableCheck(this, "MissingDefault", treatWarningsAsErrors)
       enableCheck(this, "MultipleTopLevelClasses", treatWarningsAsErrors)
       enableCheck(this, "NarrowingCompoundAssignment", treatWarningsAsErrors)
+      enableCheck(this, "UnnecessarilyFullyQualified", treatWarningsAsErrors)
 
       // Warnings that cause unwanted edits (e.g., inability to write informative asserts).
       options.errorprone.disable("AlreadyChecked")

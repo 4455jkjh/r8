@@ -224,9 +224,6 @@ public class AppView<T extends AppInfo> implements DexDefinitionSupplier, Librar
     this.initClassLens = timing.time("Init class lens", InitClassLens::getThrowingInstance);
     timing.begin("Create argument propagator");
     this.argumentPropagator = ArgumentPropagator.create(withLiveness());
-    if (enableWholeProgramOptimizations() && options().isOptimizedResourceShrinking()) {
-      resourceShrinkerState = ResourceShrinkerUtils.createResourceShrinkerState(this);
-    }
     this.bottomUpOutliner = BottomUpOutliner.create(this);
     timing.end();
     this.libraryMethodSideEffectModelCollection =
@@ -986,8 +983,21 @@ public class AppView<T extends AppInfo> implements DexDefinitionSupplier, Librar
     testing().unboxedEnumsConsumer.accept(dexItemFactory(), unboxedEnums);
   }
 
+  public ResourceShrinkerState<FeatureSplit> initResourceShrinkerState() {
+    assert enableWholeProgramOptimizations();
+    assert options().isOptimizedResourceShrinking();
+    resourceShrinkerState = ResourceShrinkerUtils.createResourceShrinkerState(this);
+    return resourceShrinkerState;
+  }
+
   public ResourceShrinkerState<FeatureSplit> getResourceShrinkerState() {
     return resourceShrinkerState;
+  }
+
+  public ResourceShrinkerState<FeatureSplit> unsetResourceShrinkerState() {
+    ResourceShrinkerState<FeatureSplit> result = resourceShrinkerState;
+    resourceShrinkerState = null;
+    return result;
   }
 
   public boolean validateUnboxedEnumsHaveBeenPruned() {

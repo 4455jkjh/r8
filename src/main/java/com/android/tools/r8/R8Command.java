@@ -56,7 +56,6 @@ import com.android.tools.r8.utils.EmbeddedRulesExtractor;
 import com.android.tools.r8.utils.ExceptionDiagnostic;
 import com.android.tools.r8.utils.InternalOptions;
 import com.android.tools.r8.utils.InternalOptions.DesugarState;
-import com.android.tools.r8.utils.InternalOptions.HorizontalClassMergerOptions;
 import com.android.tools.r8.utils.InternalOptions.LineNumberOptimization;
 import com.android.tools.r8.utils.InternalOptions.MappingComposeOptions;
 import com.android.tools.r8.utils.InternalProgramClassProvider;
@@ -1480,10 +1479,6 @@ public final class R8Command extends BaseCompilerCommand {
     MappingComposeOptions mappingComposeOptions = internal.mappingComposeOptions();
     mappingComposeOptions.enableExperimentalMappingComposition = true;
 
-    HorizontalClassMergerOptions horizontalClassMergerOptions =
-        internal.horizontalClassMergerOptions();
-    assert internal.isOptimizing() || horizontalClassMergerOptions.isRestrictedToSynthetics();
-
     assert !internal.enableTreeShakingOfLibraryMethodOverrides;
 
     if (!internal.isShrinking()) {
@@ -1566,7 +1561,6 @@ public final class R8Command extends BaseCompilerCommand {
     //  careful when merging a public member 'm' from a class A into another class B, since B could
     //  have a kept subclass, in which case 'm' would leak into the public API.
     if (internal.isGeneratingClassFiles()) {
-      horizontalClassMergerOptions.disable();
       // R8 CF output does not support desugaring so disable it.
       internal.desugarState = DesugarState.OFF;
       // TODO(b/333477035): Since D8 dexing now supports outline/stubbing API calls R8/CF should

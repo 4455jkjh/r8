@@ -88,6 +88,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
+import java.util.Objects;
 import java.util.PriorityQueue;
 import java.util.Set;
 import java.util.function.Predicate;
@@ -4004,7 +4005,7 @@ public class LinearScanRegisterAllocator implements RegisterAllocator {
 
   @Override
   public boolean hasEqualTypesAtEntry(BasicBlock first, BasicBlock second) {
-    return java.util.Objects.equals(first.getLocalsAtEntry(), second.getLocalsAtEntry());
+    return Objects.equals(first.getLocalsAtEntry(), second.getLocalsAtEntry());
   }
 
   @Override

@@ -160,9 +160,9 @@
             ),
           );
           const codeSizeScatterData = [];
-          for (const commit of filteredCommits.values()) {
+          filteredCommits.forEach((commit, index) => {
             if (!(selectedBenchmark in commit.benchmarks)) {
-              continue;
+              return;
             }
             const seen = new Set();
             seen.add(getSingleResult(selectedBenchmark, commit, "code_size"));
@@ -173,11 +173,11 @@
             );
             for (const codeSize of codeSizes.values()) {
               if (!seen.has(codeSize)) {
-                codeSizeScatterData.push({ x: commit.index, y: codeSize });
+                codeSizeScatterData.push({ x: index, y: codeSize });
                 seen.add(codeSize);
               }
             }
-          }
+          });
           const runtimeData = filteredCommits.map((c, i) =>
             getAllResults(
               selectedBenchmark,
@@ -187,9 +187,9 @@
             ),
           );
           const runtimeScatterData = [];
-          for (const commit of filteredCommits.values()) {
+          filteredCommits.forEach((commit, index) => {
             if (!(selectedBenchmark in commit.benchmarks)) {
-              continue;
+              return;
             }
             const runtimes = getAllResults(
               selectedBenchmark,
@@ -198,11 +198,11 @@
             );
             for (const runtime of runtimes.values()) {
               runtimeScatterData.push({
-                x: commit.index,
+                x: index,
                 y: runtime.ns_to_s(),
               });
             }
-          }
+          });
           const warmupData = filteredCommits.map((c, i) =>
             getAllWarmupResults(
               selectedBenchmark,

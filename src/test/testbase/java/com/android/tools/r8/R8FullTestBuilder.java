@@ -8,8 +8,8 @@ import com.android.tools.r8.TestBase.Backend;
 import com.android.tools.r8.benchmarks.BenchmarkResults;
 import com.android.tools.r8.shaking.ProguardConfigurationRule;
 import com.android.tools.r8.utils.AndroidApp;
-import com.android.tools.r8.utils.internal.Box;
 import com.android.tools.r8.utils.InternalOptions;
+import com.android.tools.r8.utils.internal.Box;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
@@ -61,6 +61,7 @@ public class R8FullTestBuilder
         resourceShrinkerOutput,
         resourceShrinkerOutputForFeatures,
         resourceShrinkerLogConsumer,
-        buildMetadata != null ? buildMetadata.get() : null);
+        buildMetadata != null ? buildMetadata.get() : null,
+        configurationAnalysisHtmlReport);
   }
 }

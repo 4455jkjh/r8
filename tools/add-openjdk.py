@@ -71,6 +71,20 @@ def main():
                   'jdk-%s.jdk' % jdk_version),
                  ('windows', 'windows-x64_bin.zip', 'jdk-%s' % jdk_version)]
 
+    # Check that all archives are present in ~/Downloads before processing
+    missing_archives = []
+    for platform, suffix, extract_dir in platforms:
+        archive_name = 'openjdk-%s_%s' % (jdk_version_full, suffix)
+        archive_path = os.path.join(downloads, archive_name)
+        if not os.path.exists(archive_path):
+            missing_archives.append(archive_path)
+
+    if missing_archives:
+        print('Download OpenJDK for all required platforms')
+        for path in missing_archives:
+            print('Error: Archive not found: %s' % path)
+        return 1
+
     for platform, suffix, extract_dir in platforms:
         print('Processing %s...' % platform)
 
@@ -85,9 +99,6 @@ def main():
         # Extract
         archive_name = 'openjdk-%s_%s' % (jdk_version_full, suffix)
         archive_path = os.path.join(downloads, archive_name)
-        if not os.path.exists(archive_path):
-            print('Error: Archive not found: %s' % archive_path)
-            return 1
 
         print('Extracting %s' % archive_path)
         if archive_path.endswith('.tar.gz'):

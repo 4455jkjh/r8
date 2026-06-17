@@ -382,6 +382,17 @@ def CheckForAddedPartialDebug(input_api, output_api):
     return results
 
 
+def CheckForAddedHeadful(input_api, output_api):
+    results = []
+    for (file, line_nr, line) in input_api.RightHandSideLines():
+        if IsTestFile(file) and '.enableHeadful()' in line:
+            results.append(
+                output_api.PresubmitError(
+                    'Test call to enableHeadful\n%s:%s %s' %
+                    (file.LocalPath(), line_nr, line)))
+    return results
+
+
 def CheckForCopyright(input_api, output_api, branch):
     results = []
     for f in input_api.AffectedSourceFiles(None):
@@ -439,6 +450,7 @@ def CheckChange(input_api, output_api):
     results.extend(CheckForAddedDisassemble(input_api, output_api))
     results.extend(CheckForAddedAllowXxxxxxMessages(input_api, output_api))
     results.extend(CheckForAddedPartialDebug(input_api, output_api))
+    results.extend(CheckForAddedHeadful(input_api, output_api))
     results.extend(CheckForCopyright(input_api, output_api, branch))
     results.extend(CheckLucicfg(input_api, output_api))
     return results

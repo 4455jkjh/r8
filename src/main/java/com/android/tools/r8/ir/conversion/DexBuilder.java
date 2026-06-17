@@ -52,9 +52,11 @@ import com.android.tools.r8.ir.code.BasicBlock;
 import com.android.tools.r8.ir.code.BasicBlockInstructionListIterator;
 import com.android.tools.r8.ir.code.CatchHandlers;
 import com.android.tools.r8.ir.code.DebugPosition;
+import com.android.tools.r8.ir.code.Goto;
 import com.android.tools.r8.ir.code.IRCode;
 import com.android.tools.r8.ir.code.IRCode.BasicBlockIteratorCallback;
 import com.android.tools.r8.ir.code.If;
+import com.android.tools.r8.ir.code.InstanceOf;
 import com.android.tools.r8.ir.code.Instruction;
 import com.android.tools.r8.ir.code.InstructionIterator;
 import com.android.tools.r8.ir.code.InstructionList;
@@ -168,8 +170,8 @@ public class DexBuilder {
   }
 
   public static boolean identicalInstructionsAfterBuildingDexCode(
-      com.android.tools.r8.ir.code.Instruction a,
-      com.android.tools.r8.ir.code.Instruction b,
+      Instruction a,
+      Instruction b,
       RegisterAllocator allocator,
       MethodConversionOptions conversionOptions) {
     DexBuilder builder =
@@ -184,8 +186,7 @@ public class DexBuilder {
     return infoA.identicalInstructions(infoB, builder);
   }
 
-  private static Info buildInfoForComparison(
-      com.android.tools.r8.ir.code.Instruction instruction, DexBuilder builder) {
+  private static Info buildInfoForComparison(Instruction instruction, DexBuilder builder) {
     instruction.buildDex(builder);
     assert builder.instructionToInfo.length == 1;
     return builder.instructionToInfo[0];
@@ -246,7 +247,7 @@ public class DexBuilder {
 
       // Compute offsets.
       offset = 0;
-      for (com.android.tools.r8.ir.code.Instruction instruction : ir.instructions()) {
+      for (Instruction instruction : ir.instructions()) {
         Info info = getInfo(instruction);
         info.setOffset(offset);
         offset += info.computeSize(this);
@@ -258,7 +259,7 @@ public class DexBuilder {
     DexDebugEventBuilder debugEventBuilder = new DexDebugEventBuilder(appView, ir);
     List<DexInstruction> dexInstructions = new ArrayList<>(numberOfInstructions);
     int instructionOffset = 0;
-    for (com.android.tools.r8.ir.code.Instruction irInstruction : ir.instructions()) {
+    for (Instruction irInstruction : ir.instructions()) {
       Info info = getInfo(irInstruction);
       int previousInstructionCount = dexInstructions.size();
       info.addInstructions(this, dexInstructions);
@@ -380,7 +381,7 @@ public class DexBuilder {
         continue;
       }
       DebugPosition debugPosition = currentBlock.entry().asDebugPosition();
-      com.android.tools.r8.ir.code.Goto exit = currentBlock.exit().asGoto();
+      Goto exit = currentBlock.exit().asGoto();
       if (debugPosition == null || exit == null || debugPosition.getPosition().isNone()) {
         continue;
       }
@@ -519,8 +520,7 @@ public class DexBuilder {
                     ? new Int2ReferenceOpenHashMap<>(currentBlock.getLocalsAtEntry())
                     : new Int2ReferenceOpenHashMap<>();
 
-            for (com.android.tools.r8.ir.code.Instruction instruction :
-                currentBlock.getInstructions()) {
+            for (Instruction instruction : currentBlock.getInstructions()) {
               if (instruction.isDebugPosition()) {
                 if (unresolvedPosition == null
                     && currentMaterializedPosition == instruction.getPosition()) {
@@ -669,7 +669,7 @@ public class DexBuilder {
     return registerAllocator.getArgumentRegisterForValue(value);
   }
 
-  public void addGoto(com.android.tools.r8.ir.code.Goto jump) {
+  public void addGoto(Goto jump) {
     if (jump.getTarget() != nextBlock) {
       add(jump, new GotoInfo(jump));
     } else {
@@ -701,7 +701,7 @@ public class DexBuilder {
     return false;
   }
 
-  public void addInstanceOf(com.android.tools.r8.ir.code.InstanceOf ir, DexInstanceOf instanceOf) {
+  public void addInstanceOf(InstanceOf ir, DexInstanceOf instanceOf) {
     if (needsNopBetweenMoveAndInstanceOf(instanceOf)) {
       add(ir, new DexNop(), instanceOf);
     } else {
@@ -719,12 +719,11 @@ public class DexBuilder {
     add(move, new MoveInfo(move));
   }
 
-  public void addNothing(com.android.tools.r8.ir.code.Instruction instruction) {
+  public void addNothing(Instruction instruction) {
     add(instruction, new FallThroughInfo(instruction));
   }
 
-  private static boolean isNopInstruction(
-      com.android.tools.r8.ir.code.Instruction instruction, BasicBlock nextBlock) {
+  private static boolean isNopInstruction(Instruction instruction, BasicBlock nextBlock) {
     return instruction.isArgument()
         || instruction.isDebugLocalsChange()
         || isNonMaterializingConstNumber(instruction)
@@ -732,14 +731,13 @@ public class DexBuilder {
   }
 
   @SuppressWarnings("UnnecessaryParentheses")
-  private static boolean isNonMaterializingConstNumber(
-      com.android.tools.r8.ir.code.Instruction instruction) {
+  private static boolean isNonMaterializingConstNumber(Instruction instruction) {
     return instruction.isConstNumber()
         && !(instruction.outValue().isValueOnStack())
         && !(instruction.outValue().needsRegister());
   }
 
-  public void addNop(com.android.tools.r8.ir.code.Instruction ir) {
+  public void addNop(Instruction ir) {
     add(ir, new FixedSizeInfo(ir, new DexNop()));
   }
 
@@ -749,13 +747,13 @@ public class DexBuilder {
     addNop(position);
   }
 
-  public void add(com.android.tools.r8.ir.code.Instruction instr, DexInstruction dex) {
+  public void add(Instruction instr, DexInstruction dex) {
     assert !instr.isGoto();
     add(instr, new FixedSizeInfo(instr, dex));
     bytecodeMetadataBuilder.setMetadata(instr, dex);
   }
 
-  public void add(com.android.tools.r8.ir.code.Instruction ir, DexInstruction... dex) {
+  public void add(Instruction ir, DexInstruction... dex) {
     assert !ir.isGoto();
     add(ir, new MultiFixedSizeInfo(ir, dex));
   }
@@ -786,7 +784,7 @@ public class DexBuilder {
     }
   }
 
-  private void add(com.android.tools.r8.ir.code.Instruction ir, Info info) {
+  private void add(Instruction ir, Info info) {
     if (isBuildingForComparison()) {
       // We are building for instruction comparison, so just set the info.
       setSingleInfo(info);
@@ -807,12 +805,12 @@ public class DexBuilder {
   }
 
   // Helper used by the info objects.
-  private Info getInfo(com.android.tools.r8.ir.code.Instruction instruction) {
+  private Info getInfo(Instruction instruction) {
     assert instruction.getNumber() >= 0;
     return instructionToInfo[instructionNumberToIndex(instruction.getNumber())];
   }
 
-  private void setInfo(com.android.tools.r8.ir.code.Instruction instruction, Info info) {
+  private void setInfo(Instruction instruction, Info info) {
     assert instruction.getNumber() >= 0;
     if (!(info instanceof FallThroughInfo)) {
       previousNonFallthroughInfo = info;
@@ -827,7 +825,7 @@ public class DexBuilder {
 
   private Info getTargetInfo(BasicBlock block) {
     InstructionIterator iterator = block.iterator();
-    com.android.tools.r8.ir.code.Instruction instruction = null;
+    Instruction instruction = null;
     while (iterator.hasNext()) {
       instruction = iterator.next();
       Info info = getInfo(instruction);
@@ -865,12 +863,11 @@ public class DexBuilder {
     int[] targets = new int[targetBlockIndices.length];
     for (int i = 0; i < targetBlockIndices.length; i++) {
       BasicBlock targetBlock = ir.targetBlock(i);
-      com.android.tools.r8.ir.code.Instruction targetInstruction = targetBlock.entry();
+      Instruction targetInstruction = targetBlock.entry();
       targets[i] = getInfo(targetInstruction).getOffset() - getInfo(ir).getOffset();
     }
     BasicBlock fallthroughBlock = ir.fallthroughBlock();
-    com.android.tools.r8.ir.code.Instruction fallthroughTargetInstruction =
-        fallthroughBlock.entry();
+    Instruction fallthroughTargetInstruction = fallthroughBlock.entry();
     int fallthroughTarget =
         getInfo(fallthroughTargetInstruction).getOffset() - getInfo(ir).getOffset();
 
@@ -948,7 +945,7 @@ public class DexBuilder {
       coalescedTryItems.add(item);
       // Trim the range start for non-throwing instructions when starting a new range.
       InstructionList instructions = blocksWithHandlers.get(i).getInstructions();
-      for (com.android.tools.r8.ir.code.Instruction insn : instructions) {
+      for (Instruction insn : instructions) {
         if (insn.instructionTypeCanThrow()) {
           item.start = getInfo(insn).getOffset();
           break;
@@ -1092,14 +1089,14 @@ public class DexBuilder {
   // Dex instruction wrapper with information to compute instruction sizes and offsets for jumps.
   private static abstract class Info {
 
-    private final com.android.tools.r8.ir.code.Instruction ir;
+    private final Instruction ir;
     // Concrete final offset of the instruction.
     private int offset = -1;
     // Lower and upper bound of the final offset.
     private int minOffset = -1;
     private int maxOffset = -1;
 
-    public Info(com.android.tools.r8.ir.code.Instruction ir) {
+    public Info(Instruction ir) {
       assert ir != null;
       this.ir = ir;
     }
@@ -1150,7 +1147,7 @@ public class DexBuilder {
       this.maxOffset = maxOffset;
     }
 
-    public com.android.tools.r8.ir.code.Instruction getIR() {
+    public Instruction getIR() {
       return ir;
     }
 
@@ -1161,7 +1158,7 @@ public class DexBuilder {
 
     private final DexInstruction instruction;
 
-    public FixedSizeInfo(com.android.tools.r8.ir.code.Instruction ir, DexInstruction instruction) {
+    public FixedSizeInfo(Instruction ir, DexInstruction instruction) {
       super(ir);
       this.instruction = instruction;
     }
@@ -1204,8 +1201,7 @@ public class DexBuilder {
     private final DexInstruction[] instructions;
     private final int size;
 
-    public MultiFixedSizeInfo(
-        com.android.tools.r8.ir.code.Instruction ir, DexInstruction[] instructions) {
+    public MultiFixedSizeInfo(Instruction ir, DexInstruction[] instructions) {
       super(ir);
       this.instructions = instructions;
       int size = 0;
@@ -1254,7 +1250,7 @@ public class DexBuilder {
 
   private static class FallThroughInfo extends Info {
 
-    public FallThroughInfo(com.android.tools.r8.ir.code.Instruction ir) {
+    public FallThroughInfo(Instruction ir) {
       super(ir);
     }
 
@@ -1291,12 +1287,12 @@ public class DexBuilder {
 
     private int size = -1;
 
-    public GotoInfo(com.android.tools.r8.ir.code.Goto jump) {
+    public GotoInfo(Goto jump) {
       super(jump);
     }
 
-    private com.android.tools.r8.ir.code.Goto getJump() {
-      return (com.android.tools.r8.ir.code.Goto) getIR();
+    private Goto getJump() {
+      return (Goto) getIR();
     }
 
     @Override
@@ -1320,7 +1316,7 @@ public class DexBuilder {
     @Override
     public int computeSize(DexBuilder builder) {
       assert size < 0;
-      com.android.tools.r8.ir.code.Goto jump = getJump();
+      Goto jump = getJump();
       Info targetInfo = builder.getTargetInfo(jump.getTarget());
       // Trivial loop will be emitted as: nop & goto -1
       if (jump == targetInfo.getIR()) {
@@ -1360,7 +1356,7 @@ public class DexBuilder {
 
     @Override
     public void addInstructions(DexBuilder builder, List<DexInstruction> instructions) {
-      com.android.tools.r8.ir.code.Goto jump = getJump();
+      Goto jump = getJump();
       int source = builder.getInfo(jump).getOffset();
       Info targetInfo = builder.getTargetInfo(jump.getTarget());
       int relativeOffset = targetInfo.getOffset() - source;

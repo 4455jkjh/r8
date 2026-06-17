@@ -12,6 +12,7 @@ import com.android.tools.r8.graph.DexType;
 import com.android.tools.r8.graph.ProgramDefinition;
 import com.android.tools.r8.ir.conversion.PrimaryD8L8IRConverter;
 import com.android.tools.r8.synthesis.SyntheticItems;
+import com.android.tools.r8.synthesis.SyntheticProgramClassBuilder;
 import com.android.tools.r8.utils.timing.Timing;
 import java.util.Collection;
 import java.util.Collections;
@@ -123,7 +124,7 @@ public class AssistantInstrumentation {
       SyntheticItems.SyntheticKindSelector kindSelector,
       DexType type,
       Collection<? extends ProgramDefinition> contexts,
-      Consumer<com.android.tools.r8.synthesis.SyntheticProgramClassBuilder> fn) {
+      Consumer<SyntheticProgramClassBuilder> fn) {
     appView
         .getSyntheticItems()
         .ensureGlobalClass(

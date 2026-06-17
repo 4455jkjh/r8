@@ -46,8 +46,7 @@ public class DesugaredLibrarySpecificationParser {
     JsonObject jsonConfig;
     try {
       jsonConfigString = stringResource.getString();
-      JsonParser parser = new JsonParser();
-      jsonConfig = parser.parse(jsonConfigString).getAsJsonObject();
+      jsonConfig = JsonParser.parseString(jsonConfigString).getAsJsonObject();
     } catch (Exception e) {
       throw reporter.fatalError(new ExceptionDiagnostic(e, origin));
     }

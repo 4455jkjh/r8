@@ -10,12 +10,12 @@ import com.android.tools.r8.dump.CompilerDump;
 import com.android.tools.r8.partial.R8PartialCompilationConfiguration;
 import com.android.tools.r8.shaking.ProguardConfigurationRule;
 import com.android.tools.r8.utils.AndroidApp;
-import com.android.tools.r8.utils.internal.Box;
 import com.android.tools.r8.utils.InternalOptions;
 import com.android.tools.r8.utils.codeinspector.EnumUnboxingInspector;
 import com.android.tools.r8.utils.codeinspector.HorizontallyMergedClassesInspector;
 import com.android.tools.r8.utils.codeinspector.RepackagingInspector;
 import com.android.tools.r8.utils.codeinspector.VerticallyMergedClassesInspector;
+import com.android.tools.r8.utils.internal.Box;
 import com.android.tools.r8.utils.internal.exceptions.Unreachable;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -157,7 +157,8 @@ public class R8PartialTestBuilder
         resourceShrinkerOutput,
         resourceShrinkerOutputForFeatures,
         resourceShrinkerLogConsumer,
-        buildMetadata != null ? buildMetadata.get() : null);
+        buildMetadata != null ? buildMetadata.get() : null,
+        configurationAnalysisHtmlReport);
   }
 
   @Override

@@ -194,7 +194,7 @@ public class D8TestBuilder
 
   public D8TestBuilder noHorizontalClassMergingOfSynthetics() {
     return addOptionsModification(
-        options -> options.horizontalClassMergerOptions().disableSyntheticMerging());
+        options -> options.horizontalClassMergerOptions().disableSyntheticMergingForTesting());
   }
 
   public D8TestBuilder collectBuildMetadata() {

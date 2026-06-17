@@ -17,7 +17,7 @@ import kotlin.metadata.jvm.KotlinClassMetadata;
  * Additionally, it is also used for passing in an instance of kotlin.Metadata which cannot be
  * instantiated from Java.
  */
-public class KotlinMetadataAnnotationWrapper implements kotlin.Metadata {
+public class KotlinMetadataAnnotationWrapper implements Metadata {
 
   private static final String[] NULL_STRING_ARRAY = new String[0];
   private static final int[] NULL_INT_ARRAY = new int[0];

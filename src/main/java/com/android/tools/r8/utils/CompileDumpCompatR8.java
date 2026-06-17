@@ -7,10 +7,12 @@ import com.android.tools.r8.CompatProguardCommandBuilder;
 import com.android.tools.r8.CompilationFailedException;
 import com.android.tools.r8.CompilationMode;
 import com.android.tools.r8.DexIndexedConsumer.ArchiveConsumer;
+import com.android.tools.r8.DiagnosticsHandler;
 import com.android.tools.r8.FeatureSplit;
 import com.android.tools.r8.OutputMode;
 import com.android.tools.r8.R8;
 import com.android.tools.r8.R8Command;
+import com.android.tools.r8.StringConsumer;
 import com.android.tools.r8.utils.compiledump.CompilerCommandDumpUtils;
 import com.android.tools.r8.utils.compiledump.R8PartialDumpUtils;
 import com.android.tools.r8.utils.compiledump.ResourceShrinkerDumpUtils;
@@ -69,7 +71,8 @@ public class CompileDumpCompatR8 extends CompileDumpBase {
           "--partial-include",
           "--partial-exclude",
           "--threads",
-          "--startup-profile");
+          "--startup-profile",
+          "--android-resources-usage-log");
 
   private static final List<String> VALID_OPTIONS_WITH_TWO_OPERANDS =
       Arrays.asList("--art-profile", "--feature-jar", "--android-resources");
@@ -121,6 +124,7 @@ public class CompileDumpCompatR8 extends CompileDumpBase {
     List<Path> startupProfileFiles = new ArrayList<>();
     Path androidResourcesInput = null;
     Path androidResourcesOutput = null;
+    StringConsumer androidResourcesUsageLogConsumer = null;
     int minApi = 1;
     int threads = -1;
     BooleanBox enableMissingLibraryApiModeling = new BooleanBox(false);
@@ -229,6 +233,22 @@ public class CompileDumpCompatR8 extends CompileDumpBase {
               startupProfileFiles.add(Paths.get(operand));
               break;
             }
+          case "--android-resources-usage-log":
+            {
+              if (operand.equals("-") || operand.equals("stdout")) {
+                androidResourcesUsageLogConsumer =
+                    new StringConsumer() {
+                      @Override
+                      public void accept(String string, DiagnosticsHandler handler) {
+                        System.out.print(string);
+                      }
+                    };
+              } else {
+                androidResourcesUsageLogConsumer =
+                    new StringConsumer.FileConsumer(Paths.get(operand));
+              }
+              break;
+            }
           default:
             throw new IllegalArgumentException("Unimplemented option: " + option);
         }
@@ -321,6 +341,15 @@ public class CompileDumpCompatR8 extends CompileDumpBase {
               ResourceShrinkerDumpUtils.setOptimziedResourceShrinking(
                   optimizedResourceShrinking.get(), commandBuilder),
           "Failed setting optimized resource shrinking flag.");
+      if (optimizedResourceShrinking.get() && androidResourcesUsageLogConsumer != null) {
+        StringConsumer finalConsumer = androidResourcesUsageLogConsumer;
+        runIgnoreMissing(
+            () ->
+                commandBuilder.setResourceShrinkerConfiguration(
+                    b ->
+                        b.enableOptimizedShrinkingWithR8().setDebugConsumer(finalConsumer).build()),
+            "Failed setting optimized resource shrinking log consumer.");
+      }
     }
     if (outputMode != OutputMode.ClassFile) {
       commandBuilder.setMinApiLevel(minApi);

@@ -161,6 +161,12 @@ def make_parser():
                         help='Use optimized resource shrinking',
                         default=False,
                         action='store_true')
+    parser.add_argument(
+        '--android-resources-usage-log',
+        '--android_resources_usage_log',
+        help=
+        'File to write resources usage log to (or "-" / "stdout" for stdout)',
+        default=None)
     parser.add_argument('--compilation-mode',
                         '--compilation_mode',
                         help='Run compilation in specified mode',
@@ -797,6 +803,11 @@ def run1(out, args, otherargs, jdkhome=None, worker_id=None):
                 raise Exception("Proguard map input only supported for D8 dump")
         if is_r8_compiler(compiler) and optimized_resource_shrinking:
             cmd.extend(['--optimized-resource-shrinking'])
+        if is_r8_compiler(compiler) and args.android_resources_usage_log:
+            cmd.extend([
+                '--android-resources-usage-log',
+                args.android_resources_usage_log
+            ])
         if enable_missing_library_api_modeling:
             cmd.extend(['--enable-missing-library-api-modeling'])
         if args.threads:

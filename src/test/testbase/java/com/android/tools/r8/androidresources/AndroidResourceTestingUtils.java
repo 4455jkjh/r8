@@ -501,7 +501,7 @@ public class AndroidResourceTestingUtils {
     }
 
     AndroidTestResourceBuilder addIdValue(String name) {
-      xmlFiles.put(name + ".xml", String.format(XML_FILE_WITH_ID, name));
+      xmlFiles.put("file_" + name + ".xml", String.format(XML_FILE_WITH_ID, name));
       return this;
     }
 

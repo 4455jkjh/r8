@@ -55,7 +55,6 @@ import com.android.tools.r8.graph.DexClass;
 import com.android.tools.r8.graph.DexClassAndMethod;
 import com.android.tools.r8.graph.DexClasspathClass;
 import com.android.tools.r8.graph.DexDefinitionSupplier;
-import com.android.tools.r8.graph.DexEncodedMethod;
 import com.android.tools.r8.graph.DexItem;
 import com.android.tools.r8.graph.DexItemFactory;
 import com.android.tools.r8.graph.DexLibraryClass;
@@ -116,6 +115,7 @@ import com.android.tools.r8.utils.collections.ProgramMethodSet;
 import com.android.tools.r8.utils.internal.AssertionUtils;
 import com.android.tools.r8.utils.internal.ConsumerUtils;
 import com.android.tools.r8.utils.internal.ListUtils;
+import com.android.tools.r8.utils.internal.OptionalBool;
 import com.android.tools.r8.utils.internal.QuadConsumer;
 import com.android.tools.r8.utils.internal.SetUtils;
 import com.android.tools.r8.utils.internal.StringUtils;
@@ -195,7 +195,7 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
     }
   }
 
-  public static final CfVersion SUPPORTED_CF_VERSION = CfVersion.V27;
+  public static final CfVersion SUPPORTED_CF_VERSION = CfVersion.V28;
 
   public static final int SUPPORTED_DEX_VERSION =
       AndroidApiLevel.LATEST.getDexVersion().getIntValue();
@@ -384,7 +384,6 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
     enableTreeShakingOfLibraryMethodOverrides = false;
     enableInitializedClassesAnalysis = false;
     callSiteOptimizationOptions.disableOptimization();
-    horizontalClassMergerOptions.setRestrictToSynthetics();
     verticalClassMergerOptions.disable();
   }
 
@@ -827,7 +826,6 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
   public Set<String> extensiveInterfaceMethodMinifierLoggingFilter =
       getExtensiveInterfaceMethodMinifierLoggingFilter();
 
-  public List<String> methodsFilter = ImmutableList.of();
   private AndroidApiLevel minApiLevel = AndroidApiLevel.getDefault();
   // Skipping min_api check and compiling an intermediate result intended for later merging.
   // Intermediate builds also emits or update synthesized classes mapping.
@@ -984,26 +982,29 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
   }
 
   public boolean parseSignatureAttribute() {
-    return true;
+    return !hasProguardConfiguration()
+        || getProguardConfiguration().getKeepAttributes().signature
+        || partialCompilationConfiguration != null
+        || getTestingOptions().enableEmbeddedKeepAnnotations;
   }
 
   @Override
   public boolean isForceKeepSignatureAttributeEnabled() {
-    return proguardConfiguration == null
+    return !hasProguardConfiguration()
         || (isForceProguardCompatibilityEnabled()
             && proguardConfiguration.getKeepAttributes().signature);
   }
 
   @Override
   public boolean isForceKeepExceptionsAttributeEnabled() {
-    return proguardConfiguration == null
+    return !hasProguardConfiguration()
         || (isForceProguardCompatibilityEnabled()
             && proguardConfiguration.getKeepAttributes().exceptions);
   }
 
   @Override
   public boolean isForceKeepMethodParametersAttributeEnabled() {
-    return proguardConfiguration == null
+    return !hasProguardConfiguration()
         || (isForceProguardCompatibilityEnabled()
             && proguardConfiguration.getKeepAttributes().methodParameters);
   }
@@ -1058,10 +1059,10 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
    * If any non-static class merging is enabled, information about types referred to by instanceOf
    * and check cast instructions needs to be collected.
    */
-  public boolean isClassMergingExtensionRequired() {
+  public boolean isClassMergingExtensionRequired(AppView<?> appView) {
     WholeProgramOptimizations wholeProgramOptimizations = WholeProgramOptimizations.ON;
     return horizontalClassMergerOptions.isEnabled(wholeProgramOptimizations)
-        && !horizontalClassMergerOptions.isRestrictedToSynthetics();
+        && !horizontalClassMergerOptions.isRestrictedToSynthetics(appView);
   }
 
   @Override
@@ -1708,20 +1709,6 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
     return printed;
   }
 
-  public boolean hasMethodsFilter() {
-    return methodsFilter.size() > 0;
-  }
-
-  public boolean methodMatchesFilter(DexEncodedMethod method) {
-    // Not specifying a filter matches all methods.
-    if (!hasMethodsFilter()) {
-      return true;
-    }
-    // Currently the filter is simple string equality on the qualified name.
-    String qualifiedName = method.qualifiedName();
-    return methodsFilter.contains(qualifiedName);
-  }
-
   public enum PackageObfuscationMode {
     // Default.
     DEFAULT,
@@ -2053,30 +2040,29 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
 
   public class HorizontalClassMergerOptions {
 
-    private boolean enable =
-        System.getProperty("com.android.tools.r8.disableHorizontalClassMerging") == null;
+    private OptionalBool disable =
+        SystemPropertyUtils.parseSystemPropertyOrDefault(
+            "com.android.tools.r8.disableHorizontalClassMerging", OptionalBool.UNKNOWN);
     private boolean enableClassInitializerDeadlockDetection = true;
     private boolean enableInterfaceMerging =
-        System.getProperty("com.android.tools.r8.enableHorizontalInterfaceMerging") != null;
+        SystemPropertyUtils.parseSystemPropertyOrDefault(
+            "com.android.tools.r8.enableHorizontalInterfaceMerging", false);
     private boolean enableSameFilePolicy =
-        System.getProperty("com.android.tools.r8.enableSameFilePolicy") != null;
+        SystemPropertyUtils.parseSystemPropertyOrDefault(
+            "com.android.tools.r8.enableSameFilePolicy", false);
     private boolean enableSyntheticMerging = true;
-    private boolean restrictToSynthetics = false;
 
-    public void disable() {
-      enable = false;
+    // Used in tests to enable horizontal class merging when compiling to class files.
+    public void enableForTesting() {
+      disable = OptionalBool.FALSE;
     }
 
-    public void disableSyntheticMerging() {
+    public void disableForTesting() {
+      disable = OptionalBool.TRUE;
+    }
+
+    public void disableSyntheticMergingForTesting() {
       enableSyntheticMerging = false;
-    }
-
-    public void enable() {
-      enable = true;
-    }
-
-    public void enableIf(boolean enable) {
-      this.enable = enable;
     }
 
     public int getMaxClassGroupSizeInR8() {
@@ -2096,7 +2082,12 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
     }
 
     public boolean isEnabled(WholeProgramOptimizations wholeProgramOptimizations) {
-      if (!enable || debug || intermediate) {
+      if (disable.isTrue() || debug || intermediate) {
+        return false;
+      }
+      // Disable horizontal class merging when compiling to class files, unless it has been
+      // explicitly enabled or disabled.
+      if (isGeneratingClassFiles() && disable.isUnknown()) {
         return false;
       }
       if (wholeProgramOptimizations.isOn()) {
@@ -2119,8 +2110,8 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
       return enableInterfaceMerging;
     }
 
-    public boolean isRestrictedToSynthetics() {
-      return restrictToSynthetics || !isOptimizing() || !isShrinking();
+    public boolean isRestrictedToSynthetics(AppView<?> appView) {
+      return !appView.enableWholeProgramOptimizations() || !isOptimizing() || !isShrinking();
     }
 
     public void setEnableClassInitializerDeadlockDetection() {
@@ -2137,10 +2128,6 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
 
     public void setEnableSameFilePolicy(boolean enableSameFilePolicy) {
       this.enableSameFilePolicy = enableSameFilePolicy;
-    }
-
-    public void setRestrictToSynthetics() {
-      restrictToSynthetics = true;
     }
   }
 

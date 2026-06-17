@@ -342,7 +342,7 @@ public class IRConverter {
         executorService);
   }
 
-  public void addWaveDoneAction(com.android.tools.r8.utils.internal.Action action) {
+  public void addWaveDoneAction(Action action) {
     if (!appView.enableWholeProgramOptimizations()) {
       throw new Unreachable("addWaveDoneAction() should never be used in D8.");
     }
@@ -432,8 +432,7 @@ public class IRConverter {
       Timing timing) {
     DexEncodedMethod definition = method.getDefinition();
     Code code = definition.getCode();
-    boolean matchesMethodFilter = options.methodMatchesFilter(definition);
-    if (code != null && matchesMethodFilter) {
+    if (code != null) {
       return rewriteDesugaredCode(
           method, feedback, methodProcessor, methodProcessingContext, conversionOptions, timing);
     } else {

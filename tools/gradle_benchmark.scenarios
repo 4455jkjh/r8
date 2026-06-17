@@ -95,6 +95,6 @@ assemble_tests_abi_change_LambdaFactoryTest = ${base_config} {
         "-I", "tools/gradle_benchmark_test_skipper.gradle.kts",
         "-Pno_internal"
     ]
-    apply-abi-change-to = ["src/test/java/com/android/tools/r8/desugar/lambdas/LambdaFactoryTest.java"]
+    apply-abi-change-to = ["src/test/java8/desugar/com/android/tools/r8/desugar/lambdas/LambdaFactoryTest.java"]
     iterations = 2
 }

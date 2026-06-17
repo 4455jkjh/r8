@@ -40,7 +40,7 @@ public interface ClassInstanceFieldsMerger {
       return new ClassInstanceFieldsMergerImpl(appView.withClassHierarchy(), lensBuilder, group);
     } else {
       assert group.getInstanceFieldMap().isEmpty();
-      assert appView.options().horizontalClassMergerOptions().isRestrictedToSynthetics();
+      assert appView.options().horizontalClassMergerOptions().isRestrictedToSynthetics(appView);
       return new ClassInstanceFieldsMerger() {
         @Override
         public void setClassIdField(DexEncodedField classIdField) {

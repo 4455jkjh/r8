@@ -33,6 +33,7 @@ import com.android.tools.r8.ir.optimize.info.bridge.VirtualBridgeInfo;
 import com.android.tools.r8.optimize.bridgehoisting.BridgeHoisting;
 import com.android.tools.r8.profile.rewriting.ProfileCollectionAdditions;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
+import com.android.tools.r8.shaking.KeepMethodInfo;
 import com.android.tools.r8.synthesis.SyntheticItems;
 import com.android.tools.r8.utils.InternalOptions;
 import com.android.tools.r8.utils.InternalOptions.TestingOptions;
@@ -166,6 +167,11 @@ public class BridgeHoistingToSharedSyntheticSuperClass {
     clazz.forEachProgramVirtualMethodMatching(
         DexEncodedMethod::hasCode,
         method -> {
+          KeepMethodInfo keepInfo = appView.getKeepInfo(method);
+          if (keepInfo.isCodeReplacementAllowed(appView.options())) {
+            return;
+          }
+
           IRCode code = method.buildIR(appView);
           BridgeInfo bridgeInfo =
               BridgeAnalyzer.analyzeMethod(appView, method.getDefinition(), code);
@@ -244,7 +250,12 @@ public class BridgeHoistingToSharedSyntheticSuperClass {
     // TODO(b/309575527): Consider only materializing this method later if this actually leads to
     //  any sharing.
     DexEncodedMethod bridgeMethod =
-        method.getDefinition().toTypeSubstitutedMethodAsInlining(bridgeMethodReference, factory);
+        method
+            .getDefinition()
+            .toTypeSubstitutedMethodAsInlining(
+                bridgeMethodReference,
+                factory,
+                builder -> builder.setIsLibraryMethodOverride(OptionalBool.FALSE));
     pendingMethods.add(bridgeMethod);
     profileCollectionAdditions.addMethodIfContextIsInProfile(
         bridgeMethod.asProgramMethod(clazz), method);

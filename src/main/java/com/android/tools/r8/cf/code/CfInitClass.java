@@ -25,10 +25,11 @@ import com.android.tools.r8.utils.structural.CompareToVisitor;
 import com.android.tools.r8.utils.structural.HashingVisitor;
 import java.util.ListIterator;
 import org.objectweb.asm.MethodVisitor;
+import org.objectweb.asm.Opcodes;
 
 public class CfInitClass extends CfInstruction {
 
-  private static final int OPCODE = org.objectweb.asm.Opcodes.GETSTATIC;
+  private static final int OPCODE = Opcodes.GETSTATIC;
 
   private final DexType clazz;
 

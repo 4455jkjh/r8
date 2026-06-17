@@ -90,7 +90,7 @@ public abstract class TestCompilerBuilder<
             options.testing.enableRepackagingByDefault = true;
             options.testing.enableRepackagingByDefaultForCf = true;
             options.testing.forcePruneMetaInfManifestMf = true;
-            options.horizontalClassMergerOptions().enable();
+            options.horizontalClassMergerOptions().enableForTesting();
             options.horizontalClassMergerOptions().setEnableInterfaceMerging();
             options
                 .getCfCodeAnalysisOptions()

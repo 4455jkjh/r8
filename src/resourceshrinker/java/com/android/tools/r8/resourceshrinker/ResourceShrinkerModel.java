@@ -78,6 +78,10 @@ public class ResourceShrinkerModel {
         this.obfuscatedClasses = obfuscatedClasses;
     }
 
+  public boolean hasResourceId(int resourceId) {
+    return resourceStore.getResource(resourceId) != null;
+  }
+
     /** Adds a new gathered resource to model. */
     @NonNull
     public Resource addResource(
@@ -147,16 +151,21 @@ public class ResourceShrinkerModel {
             return;
         }
 
-        debugReporter.debug(() -> ""
-                        + "android.content.res.Resources#getIdentifier present: " + foundGetIdentifier + "\n"
-                        + "Web content present: " + foundWebContent + "\n"
-                        + "Referenced Strings:\n"
-                        + strings.stream()
-                            .map(s -> s.trim().replace("\n", "\\n"))
-                            .filter(s -> !s.isEmpty())
-                            .map(s -> s.length() > 40 ? s.substring(0, 37) + "..." : s)
-                            .collect(Collectors.joining("\n"))
-        );
+    debugReporter.debug(
+        () ->
+            ""
+                + "android.content.res.Resources#getIdentifier present: "
+                + foundGetIdentifier
+                + "\n"
+                + "Web content present: "
+                + foundWebContent
+                + "\n"
+                + "Referenced Strings:\n"
+                + strings.stream()
+                    .map(s -> s.trim().replace("\n", "\\n"))
+                    .filter(s -> !s.isEmpty())
+                    .map(s -> s.length() > 40 ? s.substring(0, 37) + "..." : s)
+                    .collect(Collectors.joining("\n")));
 
         new PossibleResourcesMarker(debugReporter, resourceStore, strings, foundWebContent)
                 .markPossibleResourcesReachable();

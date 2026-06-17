@@ -12,10 +12,12 @@ import com.android.tools.r8.utils.InternalOptions.HorizontalClassMergerOptions;
 
 public class CheckSyntheticClasses extends SingleClassPolicy {
 
+  private final AppView<?> appView;
   private final HorizontalClassMergerOptions options;
   private final SyntheticItems syntheticItems;
 
   public CheckSyntheticClasses(AppView<?> appView) {
+    this.appView = appView;
     this.options = appView.options().horizontalClassMergerOptions();
     this.syntheticItems = appView.getSyntheticItems();
   }
@@ -25,7 +27,7 @@ public class CheckSyntheticClasses extends SingleClassPolicy {
     if (!options.isSyntheticMergingEnabled() && syntheticItems.isSyntheticClass(clazz)) {
       return false;
     }
-    if (options.isRestrictedToSynthetics()
+    if (options.isRestrictedToSynthetics(appView)
         && !syntheticItems.isSyntheticClassEligibleForMerging(clazz)) {
       return false;
     }

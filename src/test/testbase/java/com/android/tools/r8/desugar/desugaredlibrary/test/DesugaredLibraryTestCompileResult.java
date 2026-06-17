@@ -19,9 +19,9 @@ import com.android.tools.r8.desugar.desugaredlibrary.DesugaredLibraryTestBase;
 import com.android.tools.r8.profile.art.model.ExternalArtProfile;
 import com.android.tools.r8.profile.art.utils.ArtProfileInspector;
 import com.android.tools.r8.synthesis.SyntheticItemsTestUtils;
+import com.android.tools.r8.utils.codeinspector.CodeInspector;
 import com.android.tools.r8.utils.internal.ThrowingBiConsumer;
 import com.android.tools.r8.utils.internal.ThrowingConsumer;
-import com.android.tools.r8.utils.codeinspector.CodeInspector;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.List;
@@ -74,6 +74,14 @@ public class DesugaredLibraryTestCompileResult<T extends DesugaredLibraryTestBas
       fail();
       return null;
     }
+  }
+
+  public String getProguardMap() {
+    return compileResult.asR8CompileResult().getProguardMap();
+  }
+
+  public String getL8ProguardMap() throws IOException {
+    return l8Compile.getProguardMap();
   }
 
   public SyntheticItemsTestUtils getSyntheticItems() {

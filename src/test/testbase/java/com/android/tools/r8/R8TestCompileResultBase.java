@@ -7,6 +7,7 @@ import static com.android.tools.r8.utils.codeinspector.Matchers.isPresent;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 import com.android.tools.r8.DexSegments.SegmentInfo;
 import com.android.tools.r8.TestRuntime.DexRuntime;
@@ -22,6 +23,7 @@ import com.android.tools.r8.dexsplitter.SplitterTestBase.SplitRunner;
 import com.android.tools.r8.graph.DexEncodedMethod;
 import com.android.tools.r8.graph.DexProgramClass;
 import com.android.tools.r8.graph.DexType;
+import com.android.tools.r8.keepradius.ui.KeepRadiusInspector;
 import com.android.tools.r8.metadata.R8BuildMetadata;
 import com.android.tools.r8.profile.art.model.ExternalArtProfile;
 import com.android.tools.r8.profile.art.utils.ArtProfileInspector;
@@ -35,9 +37,11 @@ import com.android.tools.r8.utils.codeinspector.ClassSubject;
 import com.android.tools.r8.utils.codeinspector.CodeInspector;
 import com.android.tools.r8.utils.codeinspector.FoundClassSubject;
 import com.android.tools.r8.utils.graphinspector.GraphInspector;
+import com.android.tools.r8.utils.internal.Box;
 import com.android.tools.r8.utils.internal.FileUtils;
 import com.android.tools.r8.utils.internal.ThrowingBiConsumer;
 import com.android.tools.r8.utils.internal.ThrowingConsumer;
+import com.microsoft.playwright.Page;
 import it.unimi.dsi.fastutil.ints.Int2ReferenceLinkedOpenHashMap;
 import it.unimi.dsi.fastutil.ints.Int2ReferenceMap;
 import java.io.IOException;
@@ -49,6 +53,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Consumer;
+import java.util.function.Function;
 
 public abstract class R8TestCompileResultBase<CR extends R8TestCompileResultBase<CR>>
     extends TestCompileResult<CR, R8TestRunResult> {
@@ -63,6 +68,7 @@ public abstract class R8TestCompileResultBase<CR extends R8TestCompileResultBase
   private final Map<String, Path> resourceShrinkerOutputForFeatures;
   private final TestDebugConsumer resourceShrinkerLogConsumer;
   private final R8BuildMetadata buildMetadata;
+  private final Box<String> configurationAnalysisHtmlReport;
 
   R8TestCompileResultBase(
       TestState state,
@@ -79,7 +85,8 @@ public abstract class R8TestCompileResultBase<CR extends R8TestCompileResultBase
       Path resourceShrinkerOutput,
       HashMap<String, Path> resourceShrinkerOutputForFeatures,
       TestDebugConsumer resourceShrinkerLogConsumer,
-      R8BuildMetadata buildMetadata) {
+      R8BuildMetadata buildMetadata,
+      Box<String> configurationAnalysisHtmlReport) {
     super(state, app, minApiLevel, outputMode, libraryDesugaringTestConfiguration);
     this.proguardConfiguration = proguardConfiguration;
     this.syntheticProguardRules = syntheticProguardRules;
@@ -91,6 +98,7 @@ public abstract class R8TestCompileResultBase<CR extends R8TestCompileResultBase
     this.resourceShrinkerOutputForFeatures = resourceShrinkerOutputForFeatures;
     this.resourceShrinkerLogConsumer = resourceShrinkerLogConsumer;
     this.buildMetadata = buildMetadata;
+    this.configurationAnalysisHtmlReport = configurationAnalysisHtmlReport;
   }
 
   public CR benchmarkResourceSize(BenchmarkResults results) throws IOException {
@@ -250,6 +258,23 @@ public abstract class R8TestCompileResultBase<CR extends R8TestCompileResultBase
   public GraphInspector graphInspector() throws IOException {
     assert graphConsumer != null;
     return new GraphInspector(graphConsumer, inspector());
+  }
+
+  public KeepRadiusInspector keepRadiusInspector(Page page) throws IOException {
+    assertNotNull(configurationAnalysisHtmlReport);
+    assertTrue(configurationAnalysisHtmlReport.isSet());
+    Path tempFile = state.getNewTempFolder().resolve("report.html");
+    FileUtils.writeTextFile(tempFile, configurationAnalysisHtmlReport.get());
+    page.navigate(tempFile.toUri().toString());
+    return new KeepRadiusInspector(page);
+  }
+
+  public <E extends Throwable> CR inspectKeepRadiusHtmlReport(
+      Function<Boolean, Page> pageFactory, ThrowingConsumer<KeepRadiusInspector, E> consumer)
+      throws E, IOException {
+    Page page = pageFactory.apply(state.isHeadful());
+    consumer.accept(keepRadiusInspector(page));
+    return self();
   }
 
   public String getProguardConfiguration() {

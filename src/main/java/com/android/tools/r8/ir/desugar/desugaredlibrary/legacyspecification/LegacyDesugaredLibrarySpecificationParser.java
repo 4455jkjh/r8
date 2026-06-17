@@ -15,8 +15,8 @@ import com.android.tools.r8.origin.Origin;
 import com.android.tools.r8.utils.AndroidApiLevel;
 import com.android.tools.r8.utils.ExceptionDiagnostic;
 import com.android.tools.r8.utils.Reporter;
-import com.android.tools.r8.utils.internal.SemanticVersion;
 import com.android.tools.r8.utils.StringDiagnostic;
+import com.android.tools.r8.utils.internal.SemanticVersion;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -137,8 +137,7 @@ public class LegacyDesugaredLibrarySpecificationParser {
     String jsonConfigString;
     try {
       jsonConfigString = stringResource.getString();
-      JsonParser parser = new JsonParser();
-      jsonConfig = parser.parse(jsonConfigString).getAsJsonObject();
+      jsonConfig = JsonParser.parseString(jsonConfigString).getAsJsonObject();
     } catch (Exception e) {
       throw reporter.fatalError(new ExceptionDiagnostic(e, origin));
     }
