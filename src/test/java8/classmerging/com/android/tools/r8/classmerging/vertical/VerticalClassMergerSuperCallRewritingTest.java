@@ -6,7 +6,6 @@ package com.android.tools.r8.classmerging.vertical;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
-import com.android.tools.r8.TestRunResult;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -45,11 +44,7 @@ public class VerticalClassMergerSuperCallRewritingTest extends TestBase {
                     .assertMergedIntoSubtype(GenericTarget.class)
                     .assertNoOtherClassesMerged())
         .run(parameters.getRuntime(), Main.class)
-        // TODO(b/524864608): Should succeed with "Hello, world!".
-        .applyIf(
-            parameters.canUseDefaultAndStaticInterfaceMethods(),
-            TestRunResult::assertSuccessWithEmptyOutput,
-            rr -> rr.assertSuccessWithOutputLines("Hello, world!"));
+        .assertSuccessWithOutputLines("Hello, world!");
   }
 
   public static class Main {
