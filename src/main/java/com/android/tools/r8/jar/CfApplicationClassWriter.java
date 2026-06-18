@@ -528,11 +528,11 @@ public class CfApplicationClassWriter {
               || options.isDesugaring()
           : "Expected class file version for " + method.getReference().toSourceString();
       assert MIN_VERSION_FOR_COMPILER_GENERATED_CODE.isLessThan(
-          options.classFileVersionAfterDesugaring(InternalOptions.SUPPORTED_CF_VERSION));
+          options.classFileVersionAfterDesugaring(options.getSupportedCfVersion()));
       // Any desugaring rewrites which cannot meet the default class file version after
       // desugaring must upgrade the class file version during desugaring.
       return options.isDesugaring()
-          ? options.classFileVersionAfterDesugaring(InternalOptions.SUPPORTED_CF_VERSION)
+          ? options.classFileVersionAfterDesugaring(options.getSupportedCfVersion())
           : MIN_VERSION_FOR_COMPILER_GENERATED_CODE;
     }
     return method.getClassFileVersion();

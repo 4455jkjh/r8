@@ -374,7 +374,8 @@ public class JarClassFileReader<T extends DexClass> {
         String superName,
         String[] interfaces) {
       version = CfVersion.fromRaw(rawVersion);
-      if (InternalOptions.SUPPORTED_CF_VERSION.isLessThan(version)) {
+      if (application.options.getSupportedCfVersion().isLessThan(version)
+          && !application.options.getTestingOptions().allowAnyClassFileVersion) {
         throw new CompilationError("Unsupported class file version: " + version, origin);
       }
       this.deprecated = AsmUtils.isDeprecated(access);
