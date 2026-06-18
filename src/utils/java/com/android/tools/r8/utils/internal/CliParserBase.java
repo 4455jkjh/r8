@@ -3,6 +3,7 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8.utils.internal;
 
+import com.android.tools.r8.utils.internal.collections.Pair;
 import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
 import java.util.Deque;
@@ -16,6 +17,8 @@ public class CliParserBase<B> {
 
   private final Map<String, Consumer<B>> options0 = new HashMap<>();
   private final Map<String, BiConsumer<B, String>> options1 = new HashMap<>();
+  private final Map<String, BiConsumer<B, String>> prefix0 = new HashMap<>();
+  private final Map<String, TriConsumer<B, String, String>> prefix1 = new HashMap<>();
   private BiConsumer<B, String> positionalHandler;
   private final List<OptionInfo> optionInfos = new ArrayList<>();
   private final String usageHeader;
@@ -31,55 +34,61 @@ public class CliParserBase<B> {
 
     public final String name;
     public final String shorthand;
+    public final String suffixLabel;
     public final ImmutableList<String> paramLabels;
     public final String description;
 
     OptionInfo(
-        String name, String shorthand, ImmutableList<String> paramLabels, String description) {
+        String name,
+        String shorthand,
+        String suffixLabel,
+        ImmutableList<String> paramLabels,
+        String description) {
       assert name != null;
       assert paramLabels != null;
       assert description != null;
       this.name = name;
       this.shorthand = shorthand;
+      this.suffixLabel = suffixLabel;
       this.paramLabels = paramLabels;
       this.description = description;
     }
   }
 
   /**
-   * @param name must be unique
+   * @param name must be unique and non-overlapping
    */
   public CliParserBase<B> option0(String name, String description, Consumer<B> action) {
     addOption0(name, action);
-    addHelp(name, null, ImmutableList.of(), description);
+    addHelp(name, null, null, ImmutableList.of(), description);
     return this;
   }
 
   /**
-   * @param name must be unique
-   * @param shorthand must be unique
+   * @param name must be unique and non-overlapping
+   * @param shorthand must be unique and non-overlapping
    */
   public CliParserBase<B> option0(
       String name, String description, Consumer<B> action, String shorthand) {
     addOption0(name, action);
     addOption0(shorthand, action);
-    addHelp(name, shorthand, ImmutableList.of(), description);
+    addHelp(name, shorthand, null, ImmutableList.of(), description);
     return this;
   }
 
   /**
-   * @param name must be unique
+   * @param name must be unique and non-overlapping
    */
   public CliParserBase<B> option1(
       String name, String paramLabel, String description, BiConsumer<B, String> action) {
     addOption1(name, action);
-    addHelp(name, null, ImmutableList.of(paramLabel), description);
+    addHelp(name, null, null, ImmutableList.of(paramLabel), description);
     return this;
   }
 
   /**
-   * @param name must be unique
-   * @param shorthand must be unique
+   * @param name must be unique and non-overlapping
+   * @param shorthand must be unique and non-overlapping
    */
   public CliParserBase<B> option1(
       String name,
@@ -89,7 +98,31 @@ public class CliParserBase<B> {
       String shorthand) {
     addOption1(name, action);
     addOption1(shorthand, action);
-    addHelp(name, shorthand, ImmutableList.of(paramLabel), description);
+    addHelp(name, shorthand, null, ImmutableList.of(paramLabel), description);
+    return this;
+  }
+
+  /**
+   * @param prefix must start with {@code --} and must be unique and non-overlapping
+   */
+  public CliParserBase<B> prefix0(
+      String prefix, String suffixLabel, String description, BiConsumer<B, String> action) {
+    addPrefix0(prefix, action);
+    addHelp(prefix, null, suffixLabel, ImmutableList.of(), description);
+    return this;
+  }
+
+  /**
+   * @param prefix must start with {@code --} and must be unique and non-overlapping
+   */
+  public CliParserBase<B> prefix1(
+      String prefix,
+      String suffixLabel,
+      String paramLabel,
+      String description,
+      TriConsumer<B, String, String> action) {
+    addPrefix1(prefix, action);
+    addHelp(prefix, null, suffixLabel, ImmutableList.of(paramLabel), description);
     return this;
   }
 
@@ -114,6 +147,7 @@ public class CliParserBase<B> {
     return ListUtils.unmodifiableForTesting(optionInfos);
   }
 
+  @SuppressWarnings("StatementWithEmptyBody")
   private void parseInternal(Deque<String> args, B builder, Consumer<String> errorReporter) {
     while (!args.isEmpty()) {
       String rawArg = args.removeFirst();
@@ -128,33 +162,99 @@ public class CliParserBase<B> {
         }
       }
 
-      if (options0.containsKey(arg)) {
-        if (eqValue != null) {
-          errorReporter.accept("Option " + arg + " does not take a value.");
-        } else {
-          options0.get(arg).accept(builder);
-        }
-      } else if (options1.containsKey(arg)) {
-        if (eqValue != null) {
-          options1.get(arg).accept(builder, eqValue);
-        } else if (!args.isEmpty()) {
-          options1.get(arg).accept(builder, args.removeFirst());
-        } else {
-          errorReporter.accept("Missing parameter for " + arg + ".");
-          break;
-        }
-      } else if (positionalHandler != null) {
-        positionalHandler.accept(builder, rawArg);
+      if (tryParseOption0(arg, eqValue, builder, errorReporter)) {
+        // Matched.
+      } else if (tryParseOption1(arg, eqValue, args, builder, errorReporter)) {
+        // Matched.
+      } else if (tryParsePrefix0(arg, eqValue, builder, errorReporter)) {
+        // Matched.
+      } else if (tryParsePrefix1(arg, eqValue, args, builder, errorReporter)) {
+        // Matched.
+      } else if (tryParsePositional(rawArg, builder)) {
+        // Matched.
       } else {
         errorReporter.accept("Unexpected argument: " + rawArg);
       }
     }
   }
 
-  private boolean assertThatOptionIsNew(String name) {
-    assert !options0.containsKey(name) && !options1.containsKey(name)
-        : name + " is already an option";
+  private boolean tryParseOption0(
+      String arg, String eqValue, B builder, Consumer<String> errorReporter) {
+    if (!options0.containsKey(arg)) {
+      return false;
+    }
+    if (eqValue != null) {
+      errorReporter.accept("Option " + arg + " does not take a value.");
+    } else {
+      options0.get(arg).accept(builder);
+    }
     return true;
+  }
+
+  private boolean tryParseOption1(
+      String arg, String eqValue, Deque<String> args, B builder, Consumer<String> errorReporter) {
+    if (!options1.containsKey(arg)) {
+      return false;
+    }
+    if (eqValue != null) {
+      options1.get(arg).accept(builder, eqValue);
+    } else if (!args.isEmpty()) {
+      options1.get(arg).accept(builder, args.removeFirst());
+    } else {
+      errorReporter.accept("Missing parameter for " + arg + ".");
+      args.clear();
+    }
+    return true;
+  }
+
+  private boolean tryParsePrefix0(
+      String arg, String eqValue, B builder, Consumer<String> errorReporter) {
+    Pair<String, BiConsumer<B, String>> match = findMatchedPrefix(arg, prefix0);
+    if (match == null) {
+      return false;
+    }
+    if (eqValue != null) {
+      errorReporter.accept("Option " + arg + " does not take a value.");
+    } else {
+      match.getSecond().accept(builder, match.getFirst());
+    }
+    return true;
+  }
+
+  private boolean tryParsePrefix1(
+      String arg, String eqValue, Deque<String> args, B builder, Consumer<String> errorReporter) {
+    Pair<String, TriConsumer<B, String, String>> match = findMatchedPrefix(arg, prefix1);
+    if (match == null) {
+      return false;
+    }
+    if (eqValue != null) {
+      match.getSecond().accept(builder, match.getFirst(), eqValue);
+    } else if (!args.isEmpty()) {
+      match.getSecond().accept(builder, match.getFirst(), args.removeFirst());
+    } else {
+      errorReporter.accept("Missing parameter for " + arg + ".");
+      args.clear();
+    }
+    return true;
+  }
+
+  private boolean tryParsePositional(String rawArg, B builder) {
+    if (positionalHandler == null) {
+      return false;
+    }
+    positionalHandler.accept(builder, rawArg);
+    return true;
+  }
+
+  /** The returned string in the pair is the suffix part of arg. */
+  private <V> Pair<String, V> findMatchedPrefix(String arg, Map<String, V> prefixMap) {
+    for (String prefix : prefixMap.keySet()) {
+      if (arg.startsWith(prefix)) {
+        String suffix = arg.substring(prefix.length());
+        return Pair.create(suffix, prefixMap.get(prefix));
+      }
+    }
+    return null;
   }
 
   private void addOption0(String name, Consumer<B> action) {
@@ -167,14 +267,66 @@ public class CliParserBase<B> {
     options1.put(name, action);
   }
 
+  private void addPrefix0(String prefix, BiConsumer<B, String> action) {
+    assert assertThatPrefixIsNew(prefix);
+    prefix0.put(prefix, action);
+  }
+
+  private void addPrefix1(String prefix, TriConsumer<B, String, String> action) {
+    assert assertThatPrefixIsNew(prefix);
+    prefix1.put(prefix, action);
+  }
+
   private void addHelp(
-      String name, String shorthand, ImmutableList<String> paramLabels, String description) {
+      String name,
+      String shorthand,
+      String suffixLabel,
+      ImmutableList<String> paramLabels,
+      String description) {
     assert !name.contains("=") : name + " contains '='";
     if (shorthand != null) {
       assert !name.equals(shorthand) : "Shorthand is the same as the main name: " + name;
       assert !shorthand.contains("=") : shorthand + " contains '='";
     }
-    optionInfos.add(new OptionInfo(name, shorthand, paramLabels, description));
+    optionInfos.add(new OptionInfo(name, shorthand, suffixLabel, paramLabels, description));
+  }
+
+  private void forEachOption(Consumer<String> action) {
+    options0.keySet().forEach(action);
+    options1.keySet().forEach(action);
+  }
+
+  private void forEachPrefix(Consumer<String> action) {
+    prefix0.keySet().forEach(action);
+    prefix1.keySet().forEach(action);
+  }
+
+  private boolean assertThatOptionIsNew(String name) {
+    forEachOption(
+        existing -> {
+          assert !name.equals(existing)
+              : "Overlap detected: Option " + name + " and option " + existing;
+        });
+    forEachPrefix(
+        existing -> {
+          assert !name.startsWith(existing)
+              : "Overlap detected: Option " + name + " and prefix " + existing;
+        });
+    return true;
+  }
+
+  private boolean assertThatPrefixIsNew(String name) {
+    forEachOption(
+        existing -> {
+          assert !existing.startsWith(name)
+              : "Overlap detected: Prefix " + name + " and option " + existing;
+        });
+    forEachPrefix(
+        existing -> {
+          assert !name.startsWith(existing) && !existing.startsWith(name)
+              : "Overlap detected: Prefix " + name + " and prefix " + existing;
+        });
+    return true;
   }
 
   private boolean assertValidPositional() {

@@ -27,13 +27,19 @@ public class CliParserUtils {
     List<ParseFlagInfo> flags = new ArrayList<>();
     for (OptionInfo info : parser.getOptionInfo()) {
       List<String> helpLines = StringUtils.wrapToWidth(info.description, descriptionWidth);
-      List<String> alternatives =
-          info.shorthand != null
-              ? ImmutableList.of(commandString(info.shorthand, info.paramLabels))
-              : ImmutableList.of();
+      List<String> alternatives;
+      if (info.shorthand != null) {
+        assert info.suffixLabel == null : "shorthands and prefixes cannot be combined.";
+        alternatives = ImmutableList.of(commandString(info.shorthand, null, info.paramLabels));
+      } else {
+        alternatives = ImmutableList.of();
+      }
       flags.add(
           new ParseFlagInfoImpl(
-              null, commandString(info.name, info.paramLabels), alternatives, helpLines));
+              null,
+              commandString(info.name, info.suffixLabel, info.paramLabels),
+              alternatives,
+              helpLines));
     }
     return flags;
   }
@@ -43,8 +49,11 @@ public class CliParserUtils {
   }
 
   /** Returns a string like {@code --output <file>} */
-  private static String commandString(String name, List<String> paramLabels) {
+  private static String commandString(String name, String suffixLabel, List<String> paramLabels) {
     var sb = new StringBuilder(name);
+    if (suffixLabel != null) {
+      sb.append(suffixLabel);
+    }
     for (var label : paramLabels) {
       sb.append(' ').append(label);
     }
