@@ -55,6 +55,13 @@ public class AlwaysKeepIDsInLegacyMode extends TestBase {
         .addAndroidResources(getTestResources(temp))
         .addKeepMainRule(FooBar.class)
         .applyIf(optimized, R8TestBuilder::enableOptimizedShrinking)
+        .applyIf(
+            optimized && parameters.getPartialCompilationTestParameters().isSome(),
+            rr -> rr.addR8PartialR8OptionsModification(o -> o.enableResourceIdPruning = true),
+            rr ->
+                rr.applyIf(
+                    optimized,
+                    r -> r.addOptionsModification(o -> o.enableResourceIdPruning = true)))
         .compile()
         .inspectShrunkenResources(
             resourceTableInspector -> {
