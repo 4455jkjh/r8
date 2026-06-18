@@ -994,9 +994,9 @@ public class KeepEdgeReader implements Opcodes {
       this.parent = parent;
       addContext.accept(metaInfoBuilder);
       // The class context/holder is the annotated class.
-      visit(Item.className, className);
+      classDeclaration.tryParse(Item.className, className);
       // The default kind is to target the class and its members.
-      visitEnum(null, Kind.getDescriptor(), Kind.CLASS_AND_MEMBERS);
+      setKind(ItemKind.CLASS_AND_MEMBERS);
     }
 
     @Override
@@ -1252,7 +1252,7 @@ public class KeepEdgeReader implements Opcodes {
       addContext.accept(metaInfoBuilder);
       constraintsParser = new ConstraintDeclarationParser(parsingContext);
       // The class context/holder is the annotated class.
-      visit(Item.className, className);
+      classDeclaration.tryParse(Item.className, className);
     }
 
     @Override
@@ -2752,7 +2752,7 @@ public class KeepEdgeReader implements Opcodes {
     private final ParsingContext parsingContext;
     private String memberBindingReference = null;
     private ItemKind kind = null;
-    private final ClassDeclarationParser classDeclaration;
+    protected final ClassDeclarationParser classDeclaration;
     private final MemberDeclarationParser memberDeclaration;
 
     public abstract UserBindingsHelper getBindingsHelper();
@@ -2792,6 +2792,11 @@ public class KeepEdgeReader implements Opcodes {
       return kind;
     }
 
+    void setKind(ItemKind kind) {
+      assert kind != null;
+      this.kind = kind;
+    }
+
     public boolean isDefaultMemberDeclaration() {
       return memberDeclaration.isDefault();
     }
@@ -2803,9 +2808,7 @@ public class KeepEdgeReader implements Opcodes {
       }
       ItemKind kind = ItemKind.fromString(value);
       if (kind != null) {
-        this.kind = kind;
-      } else {
-        super.visitEnum(name, descriptor, value);
+        setKind(kind);
       }
     }
 
