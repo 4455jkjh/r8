@@ -19,6 +19,7 @@ import com.android.tools.r8.shaking.rootset.ConsequentRootSetBuilder;
 import com.android.tools.r8.shaking.rootset.RootSetBuilder;
 import com.android.tools.r8.shaking.rootset.RootSetBuilderAnnotationIndex;
 import com.android.tools.r8.threading.TaskCollection;
+import com.android.tools.r8.utils.collections.DexClassAndFieldSet;
 import com.android.tools.r8.utils.collections.DexClassAndMethodSet;
 import com.android.tools.r8.utils.internal.MapUtils;
 import com.android.tools.r8.utils.internal.collections.Pair;
@@ -374,11 +375,15 @@ public class IfRuleEvaluator {
       // Member rules are combined as AND logic: if found unsatisfied member rule, this
       // combination of live members is not a good fit.
       DexClassAndMethodSet methodsSatisfyingRule = DexClassAndMethodSet.create();
+      DexClassAndFieldSet fieldsSatisfyingRule = DexClassAndFieldSet.create();
       boolean satisfied =
           memberKeepRules.stream()
               .allMatch(
                   memberRule -> {
-                    if (rootSetBuilder.ruleSatisfiedByFields(memberRule, fieldsInCombination)) {
+                    DexClassAndField fieldSatisfiedByRule =
+                        rootSetBuilder.getFieldSatisfiedByRule(memberRule, fieldsInCombination);
+                    if (fieldSatisfiedByRule != null) {
+                      fieldsSatisfyingRule.add(fieldSatisfiedByRule);
                       return true;
                     }
                     DexClassAndMethod methodSatisfyingRule =
@@ -391,7 +396,8 @@ public class IfRuleEvaluator {
                   });
       if (satisfied) {
         ProguardIfRulePreconditionMatch ifRulePreconditionMatch =
-            new ProguardIfRulePreconditionMatch(rule, clazz, methodsSatisfyingRule);
+            new ProguardIfRulePreconditionMatch(
+                rule, clazz, methodsSatisfyingRule, fieldsSatisfyingRule);
         ifRulePreconditionMatch.disallowOptimizationsForReevaluation(enqueuer, rootSetBuilder);
         ProguardKeepRule materializedSubsequentRule = rule.materialize(factory);
         if (materializedIfRuleConsumer.test(ifRulePreconditionMatch, materializedSubsequentRule)) {
