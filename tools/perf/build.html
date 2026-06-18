@@ -84,15 +84,15 @@
                           selectedBenchmark, filteredCommits[i], "runtime",
                           results => dom.transformRuntimeData(results).ns_to_s()));
           const runtimeScatterData = [];
-          for (const commit of filteredCommits.values()) {
+          filteredCommits.forEach((commit, index) => {
             if (!(selectedBenchmark in commit.benchmarks)) {
-              continue;
+              return;
             }
             const runtimes = getAllResults(selectedBenchmark, commit, "runtime")
             for (const runtime of runtimes.values()) {
-              runtimeScatterData.push({ x: commit.index, y: runtime.ns_to_s() });
+              runtimeScatterData.push({ x: index, y: runtime.ns_to_s() });
             }
-          }
+          });
           const warmupData =
               filteredCommits.map(
                   (c, i) =>

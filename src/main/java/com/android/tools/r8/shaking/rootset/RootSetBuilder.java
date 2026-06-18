@@ -1245,15 +1245,20 @@ public class RootSetBuilder {
     return null;
   }
 
-  public boolean ruleSatisfiedByFields(ProguardMemberRule rule, Iterable<DexClassAndField> fields) {
+  public DexClassAndField getFieldSatisfiedByRule(
+      ProguardMemberRule rule, Iterable<DexClassAndField> fields) {
     if (rule.getRuleType().includesFields()) {
       for (DexClassAndField field : fields) {
         if (rule.matches(field, appView, this::handleMatchedAnnotation, dexStringCache)) {
-          return true;
+          return field;
         }
       }
     }
-    return false;
+    return null;
+  }
+
+  public boolean ruleSatisfiedByFields(ProguardMemberRule rule, Iterable<DexClassAndField> fields) {
+    return getFieldSatisfiedByRule(rule, fields) != null;
   }
 
   public boolean sideEffectFreeIsRuleSatisfiedByField(

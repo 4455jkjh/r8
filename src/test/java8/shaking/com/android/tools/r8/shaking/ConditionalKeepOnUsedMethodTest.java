@@ -4,7 +4,7 @@
 
 package com.android.tools.r8.shaking;
 
-import static com.android.tools.r8.utils.codeinspector.Matchers.isAbsent;
+import static com.android.tools.r8.utils.codeinspector.Matchers.isPresent;
 import static org.hamcrest.MatcherAssert.assertThat;
 
 import com.android.tools.r8.TestBase;
@@ -42,10 +42,7 @@ public class ConditionalKeepOnUsedMethodTest extends TestBase {
         .assertSuccessWithOutput(EXPECTED)
         .inspect(
             inspector ->
-                assertThat(
-                    inspector.clazz(A.class).uniqueFieldWithOriginalName("x"),
-                    // TODO(b/322910135): The conditional rule should have kept x.
-                    isAbsent()));
+                assertThat(inspector.clazz(A.class).uniqueFieldWithOriginalName("x"), isPresent()));
   }
 
   static class A {

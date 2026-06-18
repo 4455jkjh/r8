@@ -373,6 +373,9 @@ public final class BackportedMethodRewriter implements CfInstructionDesugaring {
       if (options.getMinApiLevel().isLessThan(AndroidApiLevel.CINNAMON_BUN)) {
         initializeCinnamonBunMethodProviders(factory);
       }
+      if (options.getMinApiLevel().isLessThan(AndroidApiLevel.MAIN)) {
+        initializeNextMethodProviders(factory);
+      }
     }
 
     private Map<DexType, AndroidApiLevel> initializeTypeMinApi(DexItemFactory factory) {
@@ -524,6 +527,25 @@ public final class BackportedMethodRewriter implements CfInstructionDesugaring {
         method = factory.createMethod(mathType, proto, name);
         addProvider(new MethodGenerator(method, BackportedMethods::MathMethods_powExactLong));
       }
+    }
+
+    private void initializeNextMethodProviders(DexItemFactory factory) {
+      DexType type;
+      DexString name;
+      DexProto proto;
+      DexMethod method;
+
+      // java.time.Instant
+      type = factory.createType("Ljava/time/Instant;");
+
+      // java.time.Duration java.time.Instant.until(
+      //   java.time.Instant endExclusive)
+      name = factory.createString("until");
+      proto = factory.createProto(factory.durationType, type);
+      method = factory.createMethod(type, proto, name);
+      addProvider(
+          new StatifyingMethodGenerator(
+              method, BackportedMethods::InstantMethods_until, "untilInstant", type));
     }
 
     private void initializeAndroidKObjectsMethodProviders(DexItemFactory factory) {

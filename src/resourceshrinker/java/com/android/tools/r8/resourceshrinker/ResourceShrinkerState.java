@@ -73,6 +73,7 @@ public class ResourceShrinkerState<T> {
   private final ShrinkerDebugReporter shrinkerDebugReporter;
   private final boolean enableXmlInlining;
   private final boolean enableManifestPruning;
+  private final boolean enableResourceIdPruning;
 
   private Map<Integer, Set<String>> resourceIdToXmlFiles;
   private final IntSet seenAndroidIds = new IntOpenHashSet();
@@ -104,12 +105,14 @@ public class ResourceShrinkerState<T> {
       Function<Exception, RuntimeException> errorHandler,
       ShrinkerDebugReporter shrinkerDebugReporter,
       boolean enableXmlInlining,
-      boolean enableManifestPruning) {
+      boolean enableManifestPruning,
+      boolean enableResourceIdPruning) {
     r8ResourceShrinkerModel = new R8ResourceShrinkerModel(shrinkerDebugReporter, true);
     this.shrinkerDebugReporter = shrinkerDebugReporter;
     this.errorHandler = errorHandler;
     this.enableXmlInlining = enableXmlInlining;
     this.enableManifestPruning = enableManifestPruning;
+    this.enableResourceIdPruning = enableResourceIdPruning;
   }
 
   public void trace(int id, String reachableFrom, ResourceShrinkerCallback callback) {
@@ -255,9 +258,11 @@ public class ResourceShrinkerState<T> {
     ImmutableSet<String> resEntriesToKeep = getResEntriesToKeep(resourceStore);
     List<Resource> resourcesToRemove = getResourcesToRemove();
     List<Integer> resourceIdsToRemove = getResourceIdsToRemove();
-    for (Resource resource : r8ResourceShrinkerModel.getResourceStore().getResources()) {
-      if (resource.type == ResourceType.ID && !seenAndroidIds.contains(resource.value)) {
-        resourceIdsToRemove.add(resource.value);
+    if (enableResourceIdPruning) {
+      for (Resource resource : r8ResourceShrinkerModel.getResourceStore().getResources()) {
+        if (resource.type == ResourceType.ID && !seenAndroidIds.contains(resource.value)) {
+          resourceIdsToRemove.add(resource.value);
+        }
       }
     }
 

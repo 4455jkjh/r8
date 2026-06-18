@@ -27,7 +27,8 @@ public class ResourceShrinkerUtils {
             shrinkerDebugReporterFromStringConsumer(
                 options.resourceShrinkerConfiguration.getDebugConsumer(), appView.reporter()),
             options.enableXmlInlining,
-            options.enableManifestPruning);
+            options.enableManifestPruning,
+            options.enableResourceIdPruning);
     if (options.isOptimizedResourceShrinking()) {
       try {
         addResources(appView, state, options.androidResourceProvider, FeatureSplit.BASE);

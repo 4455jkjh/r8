@@ -27,10 +27,14 @@ public class ResourceIdentifierTest extends TestBase {
   @Parameter(1)
   public boolean optimized;
 
-  @Parameters(name = "{0}, optimized: {1}")
+  @Parameter(2)
+  public boolean enableResourceIdPruning;
+
+  @Parameters(name = "{0}, optimized: {1}, enableResourceIdPruning: {2}")
   public static List<Object[]> data() {
     return buildParameters(
         getTestParameters().withDefaultDexRuntime().withAllApiLevels().build(),
+        BooleanUtils.values(),
         BooleanUtils.values());
   }
 
@@ -57,15 +61,27 @@ public class ResourceIdentifierTest extends TestBase {
         .addAndroidResources(testResources)
         .addKeepMainRule(FooBar.class)
         .applyIf(optimized, R8TestBuilder::enableOptimizedShrinking)
+        .applyIf(
+            optimized,
+            builder ->
+                builder.addOptionsModification(
+                    options -> options.enableResourceIdPruning = enableResourceIdPruning))
         .compile()
         .inspectShrunkenResources(
             resourceTableInspector -> {
               resourceTableInspector.assertContainsResourceWithName("id", "id_in_live_xml");
               if (optimized) {
                 resourceTableInspector.assertDoesNotContainResourceWithName("string", "foobar");
-                resourceTableInspector.assertDoesNotContainResourceWithName("id", "id_in_dead_xml");
-                resourceTableInspector.assertDoesNotContainResourceWithName(
-                    "id", "reflectively_used_id");
+                if (enableResourceIdPruning) {
+                  resourceTableInspector.assertDoesNotContainResourceWithName(
+                      "id", "reflectively_used_id");
+                  resourceTableInspector.assertDoesNotContainResourceWithName(
+                      "id", "id_in_dead_xml");
+                } else {
+                  resourceTableInspector.assertContainsResourceWithName(
+                      "id", "reflectively_used_id");
+                  resourceTableInspector.assertContainsResourceWithName("id", "id_in_dead_xml");
+                }
               } else {
                 resourceTableInspector.assertContainsResourceWithName("string", "foobar");
                 resourceTableInspector.assertContainsResourceWithName("id", "id_in_dead_xml");
