@@ -2910,10 +2910,22 @@ public class ToolHelper {
   }
 
   public static Path getTestFolderForClass(Class<?> clazz) {
-    return Paths.get(ToolHelper.TESTS_DIR)
-        .resolve("java")
-        .resolve(ToolHelper.getFileNameForTestClass(clazz))
-        .getParent();
+    Path file = ToolHelper.getFileNameForTestClass(clazz);
+    Path javaDir = Paths.get(ToolHelper.TESTS_DIR).resolve("java").resolve(file).getParent();
+    if (Files.exists(javaDir)) {
+      return javaDir;
+    }
+    Path java8KeepAnnoDir =
+        Paths.get(ToolHelper.TESTS_DIR).resolve("java8/keepanno").resolve(file).getParent();
+    if (Files.exists(java8KeepAnnoDir)) {
+      return java8KeepAnnoDir;
+    }
+    Path java8KotlinDir =
+        Paths.get(ToolHelper.TESTS_DIR).resolve("java8/kotlin").resolve(file).getParent();
+    if (Files.exists(java8KotlinDir)) {
+      return java8KotlinDir;
+    }
+    return javaDir;
   }
 
   public static Collection<Path> getFilesInTestFolderRelativeToClass(

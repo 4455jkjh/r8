@@ -16,8 +16,8 @@ import com.android.tools.r8.keepanno.utils.KeepItemAnnotationGenerator.EnumRefer
 import com.android.tools.r8.keepanno.utils.KeepItemAnnotationGenerator.Generator;
 import com.android.tools.r8.keepanno.utils.KeepItemAnnotationGenerator.Group;
 import com.android.tools.r8.keepanno.utils.KeepItemAnnotationGenerator.GroupMember;
+import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.references.ClassReference;
-import com.android.tools.r8.utils.DescriptorUtils;
 import com.android.tools.r8.utils.internal.FileUtils;
 import com.android.tools.r8.utils.internal.StringUtils;
 import com.google.common.collect.ImmutableMap;
@@ -38,7 +38,7 @@ public class KeepAnnoMarkdownGenerator {
 
   public static void generateMarkdownDoc(Generator generator, Path projectRoot) {
     try {
-      new KeepAnnoMarkdownGenerator(generator, projectRoot)
+      new KeepAnnoMarkdownGenerator(generator)
           .internalGenerateMarkdownDoc(projectRoot);
     } catch (IOException e) {
       throw new RuntimeException(e);
@@ -65,7 +65,7 @@ public class KeepAnnoMarkdownGenerator {
   private Map<String, String> docReplacements = new HashMap<>();
   private Map<String, String> codeReplacements = new HashMap<>();
 
-  public KeepAnnoMarkdownGenerator(Generator generator, Path projectRoot) {
+  public KeepAnnoMarkdownGenerator(Generator generator) {
     this.generator = generator;
     ImmutableMap.Builder<String, String> builder = ImmutableMap.builder();
     // Annotations.
@@ -94,7 +94,6 @@ public class KeepAnnoMarkdownGenerator {
 
     typeLinkReplacements = builder.build();
     populateCodeAndDocReplacements(
-        projectRoot,
         UsesReflectionDocumentationTest.class,
         UsesReflectionAnnotationsDocumentationTest.class,
         ForApiDocumentationTest.class,
@@ -135,15 +134,9 @@ public class KeepAnnoMarkdownGenerator {
     }
   }
 
-  private static Path getSourceFileForTestClass(Path projectRoot, Class<?> clazz) {
-    return projectRoot
-        .resolve("src/test/java")
-        .resolve(DescriptorUtils.getClassBinaryName(clazz) + ".java");
-  }
-
-  private void populateCodeAndDocReplacements(Path projectRoot, Class<?>... classes) {
+  private void populateCodeAndDocReplacements(Class<?>... classes) {
     for (Class<?> clazz : classes) {
-      Path sourceFile = getSourceFileForTestClass(projectRoot, clazz);
+      Path sourceFile = ToolHelper.getSourceFileForTestClassFromResources(clazz);
       extractMarkers(sourceFile);
     }
   }

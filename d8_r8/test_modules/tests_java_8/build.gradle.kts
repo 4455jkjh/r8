@@ -159,7 +159,6 @@ tasks {
     from(sourceSets.test.get().java) {
       include("$r8/cf/KeepDeserializeLambdaMethodTest.java")
       include("$r8/desugaring/interfacemethods/methodparameters/I.java")
-      include("$r8/keepanno/api/genericsignature/MyValueBoxClient.java")
     }
   }
 }

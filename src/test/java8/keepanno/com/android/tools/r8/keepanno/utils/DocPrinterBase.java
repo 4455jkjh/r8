@@ -4,7 +4,7 @@
 
 package com.android.tools.r8.keepanno.utils;
 
-import com.android.tools.r8.examples.sync.Sync.Consumer;
+import java.util.function.Consumer;
 import com.google.common.html.HtmlEscapers;
 import java.util.ArrayList;
 import java.util.Arrays;
