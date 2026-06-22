@@ -8,10 +8,14 @@ import static com.android.tools.r8.ir.code.Opcodes.ARGUMENT;
 import static com.android.tools.r8.ir.code.Opcodes.ASSUME;
 import static com.android.tools.r8.ir.code.Opcodes.CONST_NUMBER;
 import static com.android.tools.r8.ir.code.Opcodes.CONST_STRING;
+import static com.android.tools.r8.ir.code.Opcodes.GOTO;
+import static com.android.tools.r8.ir.code.Opcodes.IF;
+import static com.android.tools.r8.ir.code.Opcodes.INT_SWITCH;
 import static com.android.tools.r8.ir.code.Opcodes.RETURN;
+import static com.android.tools.r8.ir.code.Opcodes.STRING_SWITCH;
+import static com.android.tools.r8.ir.code.Opcodes.THROW;
 import static com.android.tools.r8.utils.internal.MapUtils.ignoreKey;
 
-import com.android.tools.r8.graph.AccessFlags;
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.DexClass;
 import com.android.tools.r8.graph.DexEncodedMethod;
@@ -258,25 +262,40 @@ public class VirtualMethodHoister {
       IRCode code = candidate.buildIR(appView);
       for (Instruction instruction : code.instructions()) {
         int opcode = instruction.opcode();
-        if (opcode == ARGUMENT
-            || opcode == ASSUME
-            || opcode == CONST_NUMBER
-            || opcode == CONST_STRING) {
-          // Safe
-        } else if (opcode == RETURN) {
-          Return returnInstruction = instruction.asReturn();
-          if (!returnInstruction.isReturnVoid()) {
-            Value returnValue = returnInstruction.returnValue();
-            if (returnValue.getAliasedValue().isThis()) {
-              DexType returnType = targetMethod.getReturnType();
-              DexClass targetClass = targetMethod.getHolder();
-              if (!appView.appInfo().isSubtype(targetClass.getType(), returnType)) {
-                return false;
+        switch (opcode) {
+          case ARGUMENT:
+          case ASSUME:
+          case CONST_NUMBER:
+          case CONST_STRING:
+          case GOTO:
+          case IF:
+          case INT_SWITCH:
+          case STRING_SWITCH:
+          case THROW:
+            // Safe.
+            break;
+
+          case RETURN:
+            {
+              // If this returns `this`, then check that the code still type checks after hoisting
+              // the method.
+              Return returnInstruction = instruction.asReturn();
+              if (!returnInstruction.isReturnVoid()) {
+                Value returnValue = returnInstruction.returnValue();
+                if (returnValue.getAliasedValue().isThis()) {
+                  DexType returnType = targetMethod.getReturnType();
+                  DexClass targetClass = targetMethod.getHolder();
+                  if (!appView.appInfo().isSubtype(targetClass.getType(), returnType)) {
+                    return false;
+                  }
+                }
               }
+              // Safe.
+              break;
             }
-          }
-        } else {
-          return false;
+
+          default:
+            return false;
         }
       }
       return true;
@@ -295,7 +314,9 @@ public class VirtualMethodHoister {
                       .toTypeSubstitutedMethodAsInlining(
                           t.getReference(),
                           factory,
-                          builder -> builder.modifyAccessFlags(AccessFlags::demoteFromFinal)));
+                          builder ->
+                              builder.modifyAccessFlags(
+                                  f -> f.demoteFromFinal().setAbstract().demoteFromAbstract())));
 
       // Record for lens and pruning.
       if (canRetargetInvokesToTargetMethod(sourceMethod, targetMethod)) {
