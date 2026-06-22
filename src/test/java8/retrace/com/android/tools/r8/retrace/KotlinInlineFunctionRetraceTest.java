@@ -4,7 +4,6 @@
 
 package com.android.tools.r8.retrace;
 
-import static com.android.tools.r8.ToolHelper.getFilesInTestFolderRelativeToClass;
 import static com.android.tools.r8.utils.codeinspector.Matchers.containsLinePositions;
 import static com.android.tools.r8.utils.codeinspector.Matchers.isInlineFrame;
 import static com.android.tools.r8.utils.codeinspector.Matchers.isInlineStack;
@@ -24,7 +23,6 @@ import com.android.tools.r8.utils.codeinspector.InstructionSubject;
 import com.android.tools.r8.utils.codeinspector.Matchers.LinePosition;
 import com.android.tools.r8.utils.codeinspector.MethodSubject;
 import com.android.tools.r8.utils.internal.ListUtils;
-import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Collection;
 import java.util.List;
@@ -76,7 +74,7 @@ public class KotlinInlineFunctionRetraceTest extends KotlinTestBase {
     return ListUtils.map(
         files,
         name ->
-            com.android.tools.r8.ToolHelper.getResourceAsTempFile(
+            com.android.tools.r8.ToolHelper.getResourceAsReadOnlyFile(
                 KotlinInlineFunctionRetraceTest.class, "kt/" + name));
   }
 
