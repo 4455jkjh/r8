@@ -105,7 +105,7 @@ public class RuntimeWorkaroundCodeRewriter {
         if (appView.enableWholeProgramOptimizations()
             && valueType.isClassType(t -> t.getClassType().isNotIdenticalTo(objectType))) {
           TypeElement instanceOfType =
-              instanceOf.type().toTypeElement(appView, valueType.nullability());
+              instanceOf.getType().toTypeElement(appView, valueType.nullability());
           if (instanceOfType.isClassType(t -> t.getClassType().isNotIdenticalTo(objectType))
               && !instanceOfType.lessThanOrEqual(valueType, appView)
               && !valueType.lessThanOrEqual(instanceOfType, appView)

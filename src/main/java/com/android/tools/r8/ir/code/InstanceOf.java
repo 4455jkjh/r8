@@ -23,7 +23,7 @@ import com.android.tools.r8.ir.optimize.InliningConstraints;
 import com.android.tools.r8.lightir.LirBuilder;
 import java.util.Set;
 
-public class InstanceOf extends Instruction {
+public class InstanceOf extends Instruction implements TypeInstruction {
 
   private final DexType type;
 
@@ -42,7 +42,8 @@ public class InstanceOf extends Instruction {
     return visitor.visit(this);
   }
 
-  public DexType type() {
+  @Override
+  public DexType getType() {
     return type;
   }
 
@@ -89,6 +90,16 @@ public class InstanceOf extends Instruction {
 
   @Override
   public InstanceOf asInstanceOf() {
+    return this;
+  }
+
+  @Override
+  public boolean isTypeInstruction() {
+    return true;
+  }
+
+  @Override
+  public TypeInstruction asTypeInstruction() {
     return this;
   }
 

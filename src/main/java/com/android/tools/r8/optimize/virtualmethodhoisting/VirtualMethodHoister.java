@@ -18,6 +18,7 @@ import static com.android.tools.r8.ir.code.Opcodes.GOTO;
 import static com.android.tools.r8.ir.code.Opcodes.IF;
 import static com.android.tools.r8.ir.code.Opcodes.INC;
 import static com.android.tools.r8.ir.code.Opcodes.INIT_CLASS;
+import static com.android.tools.r8.ir.code.Opcodes.INSTANCE_OF;
 import static com.android.tools.r8.ir.code.Opcodes.INT_SWITCH;
 import static com.android.tools.r8.ir.code.Opcodes.MONITOR;
 import static com.android.tools.r8.ir.code.Opcodes.MUL;
@@ -303,6 +304,7 @@ public class VirtualMethodHoister {
           case CHECK_CAST:
           case CONST_CLASS:
           case INIT_CLASS:
+          case INSTANCE_OF:
           case NEW_ARRAY_EMPTY:
           case NEW_INSTANCE:
             {

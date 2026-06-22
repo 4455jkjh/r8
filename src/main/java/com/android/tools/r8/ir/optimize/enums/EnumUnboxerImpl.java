@@ -441,7 +441,7 @@ public class EnumUnboxerImpl extends EnumUnboxer {
   }
 
   private void analyzeInstanceOf(InstanceOf instanceOf) {
-    DexType baseType = instanceOf.type().getBaseType();
+    DexType baseType = instanceOf.getType().getBaseType();
     DexProgramClass enumClass = getEnumUnboxingCandidateOrNull(baseType);
     if (enumClass != null) {
       markEnumAsUnboxable(Reason.INSTANCE_OF, enumClass);

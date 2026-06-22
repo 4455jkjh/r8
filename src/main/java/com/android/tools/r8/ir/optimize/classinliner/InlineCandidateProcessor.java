@@ -657,7 +657,7 @@ final class InlineCandidateProcessor {
         InstructionListIterator instructionIterator =
             user.getBlock().listIterator(instanceOf.getNext());
         instructionIterator.replaceCurrentInstructionWithConstBoolean(
-            code, appView.appInfo().isSubtype(eligibleClass.getType(), instanceOf.type()));
+            code, appView.appInfo().isSubtype(eligibleClass.getType(), instanceOf.getType()));
         continue;
       }
 

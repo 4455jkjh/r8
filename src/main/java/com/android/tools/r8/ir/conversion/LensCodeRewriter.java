@@ -802,7 +802,7 @@ public class LensCodeRewriter {
               InstanceOf instanceOf = current.asInstanceOf();
               new InstructionReplacer(code, current, iterator, affectedPhis, affectedValues)
                   .replaceInstructionIfTypeChanged(
-                      instanceOf.type(),
+                      instanceOf.getType(),
                       (t, v) -> new InstanceOf(v, instanceOf.value(), t),
                       graphLens,
                       codeLens);
