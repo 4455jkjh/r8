@@ -1615,25 +1615,34 @@ public class ToolHelper {
     assert last.endsWith(CLASS_EXTENSION);
     String javaFileName =
         last.substring(0, last.length() - CLASS_EXTENSION.length()) + JAVA_EXTENSION;
-    return getResourceAsTempFile(clazz, javaFileName);
+    return getResourceAsReadOnlyFile(clazz, javaFileName);
   }
 
   /**
-   * Retrieves a resource from the classpath and copies it to a temporary file (preserving the
-   * original file name).
+   * Retrieves a resource from the classpath as a {@link Path}.
    *
-   * <p>Note: This only works if the corresponding file has been explicitly added as a test
-   * resource in the Gradle build configuration.
+   * <p>If the resource is a file on the local filesystem, the path to the resource is returned
+   * directly to avoid copying. Otherwise, the resource is copied to a temporary file.
    *
-   * <p>If the resource name is absolute (starts with "/") then the given class doesn't matter.
-   * If the resource name is relative then its resolved based on the package of the given class,
-   * e.g. (A.B.C.class, "foo/bar.txt") finds "A/B/foo/bar.txt".
+   * <p>Note: This only works if the corresponding file has been explicitly added as a test resource
+   * in the Gradle build configuration.
+   *
+   * <p>If the resource name is absolute (starts with "/") then the given class doesn't matter. If
+   * the resource name is relative then its resolved based on the package of the given class, e.g.
+   * (A.B.C.class, "foo/bar.txt") finds "A/B/foo/bar.txt".
    */
-  public static Path getResourceAsTempFile(Class<?> clazz, String resourceName) {
+  public static Path getResourceAsReadOnlyFile(Class<?> clazz, String resourceName) {
     java.net.URL resourceUrl = clazz.getResource(resourceName);
     if (resourceUrl == null) {
       throw new RuntimeException(
           "Could not find resource " + resourceName + " relative to " + clazz);
+    }
+    if ("file".equals(resourceUrl.getProtocol())) {
+      try {
+        return Paths.get(resourceUrl.toURI());
+      } catch (java.net.URISyntaxException e) {
+        // Fallback to copying
+      }
     }
     String fileName = resourceName;
     int lastSlash = fileName.lastIndexOf('/');

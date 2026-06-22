@@ -35,10 +35,10 @@ public class MetadataRewriteContextParametersTest extends KotlinMetadataTestBase
   private static final String PKG_LIB = PKG + ".context_parameters_lib";
   private static final String PKG_APP = PKG + ".context_parameters_app";
   private static final Path LIB_FILE =
-      ToolHelper.getResourceAsTempFile(
+      ToolHelper.getResourceAsReadOnlyFile(
           KotlinTestBase.class, "/" + PKG_PREFIX + "/context_parameters_lib/lib.txt");
   private static final Path MAIN_FILE =
-      ToolHelper.getResourceAsTempFile(
+      ToolHelper.getResourceAsReadOnlyFile(
           KotlinTestBase.class, "/" + PKG_PREFIX + "/context_parameters_app/main.txt");
   private static final String MAIN = PKG_APP + ".MainKt";
   private final TestParameters parameters;

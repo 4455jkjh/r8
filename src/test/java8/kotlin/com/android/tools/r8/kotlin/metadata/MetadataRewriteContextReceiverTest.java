@@ -38,10 +38,10 @@ public class MetadataRewriteContextReceiverTest extends KotlinMetadataTestBase {
   private static final String PKG_LIB = PKG + ".context_receiver_lib";
   private static final String PKG_APP = PKG + ".context_receiver_app";
   private static final Path LIB_FILE =
-      ToolHelper.getResourceAsTempFile(
+      ToolHelper.getResourceAsReadOnlyFile(
           KotlinTestBase.class, "/" + PKG_PREFIX + "/context_receiver_lib/lib.txt");
   private static final Path MAIN_FILE =
-      ToolHelper.getResourceAsTempFile(
+      ToolHelper.getResourceAsReadOnlyFile(
           KotlinTestBase.class, "/" + PKG_PREFIX + "/context_receiver_app/main.txt");
   private static final String MAIN = PKG_APP + ".MainKt";
   private final TestParameters parameters;

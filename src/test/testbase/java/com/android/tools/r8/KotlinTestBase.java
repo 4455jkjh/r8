@@ -77,16 +77,16 @@ public abstract class KotlinTestBase extends TestBase {
 
   protected static Path getKotlinSourceFileFromResources(String folder, String fileName) {
     String resourceName = "/" + folder + "/" + fileName + FileUtils.KT_EXTENSION;
-    return ToolHelper.getResourceAsTempFile(KotlinTestBase.class, resourceName);
+    return ToolHelper.getResourceAsReadOnlyFile(KotlinTestBase.class, resourceName);
   }
 
   protected static Path getKotlinSourceFileFromResources(Class<?> clazz, String relativePath) {
-    return ToolHelper.getResourceAsTempFile(clazz, relativePath + FileUtils.KT_EXTENSION);
+    return ToolHelper.getResourceAsReadOnlyFile(clazz, relativePath + FileUtils.KT_EXTENSION);
   }
 
   protected static Path getKotlinSourceFileFromResources(Package pkg, String fileName) {
     String path = pkg.getName().replace('.', '/') + "/" + fileName + FileUtils.KT_EXTENSION;
-    return ToolHelper.getResourceAsTempFile(KotlinTestBase.class, "/" + path);
+    return ToolHelper.getResourceAsReadOnlyFile(KotlinTestBase.class, "/" + path);
   }
 
   public static Path getKotlinFileInResource(String folder, String fileName) {

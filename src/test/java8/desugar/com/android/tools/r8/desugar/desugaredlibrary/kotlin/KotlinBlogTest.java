@@ -19,11 +19,9 @@ import com.android.tools.r8.desugar.desugaredlibrary.test.CompilationSpecificati
 import com.android.tools.r8.desugar.desugaredlibrary.test.DesugaredLibraryTestBuilder;
 import com.android.tools.r8.desugar.desugaredlibrary.test.LibraryDesugaringSpecification;
 import com.android.tools.r8.shaking.ProguardKeepAttributes;
-import com.android.tools.r8.utils.DescriptorUtils;
 import com.android.tools.r8.utils.internal.FileUtils;
 import com.android.tools.r8.utils.internal.StringUtils;
 import com.google.common.collect.ImmutableList;
-import java.nio.file.Paths;
 import java.util.List;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -111,7 +109,6 @@ public class KotlinBlogTest extends DesugaredLibraryTestBase {
 
   private static KotlinCompileMemoizer compiledJars =
       getCompileMemoizer(
-          ToolHelper.getResourceAsTempFile(
-              KotlinBlogTest.class,
-              "Blog" + FileUtils.KT_EXTENSION));
+          ToolHelper.getResourceAsReadOnlyFile(
+              KotlinBlogTest.class, "Blog" + FileUtils.KT_EXTENSION));
 }
