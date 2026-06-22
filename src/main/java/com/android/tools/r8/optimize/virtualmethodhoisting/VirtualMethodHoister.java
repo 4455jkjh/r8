@@ -271,6 +271,10 @@ public class VirtualMethodHoister {
       if (appView.getKeepInfo(candidate).isPinned(appView.options())) {
         return false;
       }
+      if (candidate.getAccessFlags().getVisibilityOrdinal()
+          != targetMethod.getAccessFlags().getVisibilityOrdinal()) {
+        return false;
+      }
       IRCode code = candidate.buildIR(appView);
       for (Instruction instruction : code.instructions()) {
         int opcode = instruction.opcode();
