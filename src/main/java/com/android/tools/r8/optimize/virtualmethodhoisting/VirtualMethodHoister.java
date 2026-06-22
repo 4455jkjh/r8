@@ -4,24 +4,42 @@
 package com.android.tools.r8.optimize.virtualmethodhoisting;
 
 import static com.android.tools.r8.graph.DexProgramClass.asProgramClassOrNull;
+import static com.android.tools.r8.ir.code.Opcodes.ADD;
+import static com.android.tools.r8.ir.code.Opcodes.AND;
 import static com.android.tools.r8.ir.code.Opcodes.ARGUMENT;
 import static com.android.tools.r8.ir.code.Opcodes.ASSUME;
 import static com.android.tools.r8.ir.code.Opcodes.CHECK_CAST;
+import static com.android.tools.r8.ir.code.Opcodes.CMP;
 import static com.android.tools.r8.ir.code.Opcodes.CONST_CLASS;
 import static com.android.tools.r8.ir.code.Opcodes.CONST_NUMBER;
 import static com.android.tools.r8.ir.code.Opcodes.CONST_STRING;
+import static com.android.tools.r8.ir.code.Opcodes.DIV;
 import static com.android.tools.r8.ir.code.Opcodes.GOTO;
 import static com.android.tools.r8.ir.code.Opcodes.IF;
+import static com.android.tools.r8.ir.code.Opcodes.INC;
 import static com.android.tools.r8.ir.code.Opcodes.INIT_CLASS;
 import static com.android.tools.r8.ir.code.Opcodes.INT_SWITCH;
+import static com.android.tools.r8.ir.code.Opcodes.MONITOR;
+import static com.android.tools.r8.ir.code.Opcodes.MUL;
+import static com.android.tools.r8.ir.code.Opcodes.NEG;
 import static com.android.tools.r8.ir.code.Opcodes.NEW_ARRAY_EMPTY;
 import static com.android.tools.r8.ir.code.Opcodes.NEW_ARRAY_FILLED;
 import static com.android.tools.r8.ir.code.Opcodes.NEW_INSTANCE;
+import static com.android.tools.r8.ir.code.Opcodes.NOT;
+import static com.android.tools.r8.ir.code.Opcodes.NUMBER_CONVERSION;
+import static com.android.tools.r8.ir.code.Opcodes.OR;
+import static com.android.tools.r8.ir.code.Opcodes.REM;
+import static com.android.tools.r8.ir.code.Opcodes.RESOURCE_CONST_NUMBER;
 import static com.android.tools.r8.ir.code.Opcodes.RETURN;
+import static com.android.tools.r8.ir.code.Opcodes.SHL;
+import static com.android.tools.r8.ir.code.Opcodes.SHR;
 import static com.android.tools.r8.ir.code.Opcodes.STATIC_GET;
 import static com.android.tools.r8.ir.code.Opcodes.STATIC_PUT;
 import static com.android.tools.r8.ir.code.Opcodes.STRING_SWITCH;
+import static com.android.tools.r8.ir.code.Opcodes.SUB;
 import static com.android.tools.r8.ir.code.Opcodes.THROW;
+import static com.android.tools.r8.ir.code.Opcodes.USHR;
+import static com.android.tools.r8.ir.code.Opcodes.XOR;
 import static com.android.tools.r8.utils.internal.MapUtils.ignoreKey;
 
 import com.android.tools.r8.graph.AccessControl;
@@ -277,20 +295,11 @@ public class VirtualMethodHoister {
       }
       IRCode code = candidate.buildIR(appView);
       for (Instruction instruction : code.instructions()) {
+        if (isInstructionContextIndependent(instruction)) {
+          continue;
+        }
         int opcode = instruction.opcode();
         switch (opcode) {
-          case ARGUMENT:
-          case ASSUME:
-          case CONST_NUMBER:
-          case CONST_STRING:
-          case GOTO:
-          case IF:
-          case INT_SWITCH:
-          case STRING_SWITCH:
-          case THROW:
-            // Safe.
-            break;
-
           case CHECK_CAST:
           case CONST_CLASS:
           case INIT_CLASS:
@@ -376,6 +385,46 @@ public class VirtualMethodHoister {
         }
       }
       return true;
+    }
+
+    // Used to identify instructions that don't require any handling since the semantics of the
+    // instructions do not depend on the context that they live in, i.e., these instructions
+    // continue to behave the same when moved to another class.
+    private boolean isInstructionContextIndependent(Instruction instruction) {
+      int opcode = instruction.opcode();
+      switch (opcode) {
+        case ADD:
+        case AND:
+        case ARGUMENT:
+        case ASSUME:
+        case CMP:
+        case CONST_NUMBER:
+        case CONST_STRING:
+        case DIV:
+        case GOTO:
+        case IF:
+        case INC:
+        case INT_SWITCH:
+        case MONITOR:
+        case MUL:
+        case NEG:
+        case NOT:
+        case NUMBER_CONVERSION:
+        case OR:
+        case REM:
+        case RESOURCE_CONST_NUMBER:
+        case SHL:
+        case SHR:
+        case STRING_SWITCH:
+        case SUB:
+        case THROW:
+        case USHR:
+        case XOR:
+          // Safe.
+          return true;
+        default:
+          return false;
+      }
     }
 
     private boolean isThis(Value value) {
