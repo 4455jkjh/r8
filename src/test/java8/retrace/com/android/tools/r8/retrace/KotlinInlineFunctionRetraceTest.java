@@ -62,13 +62,22 @@ public class KotlinInlineFunctionRetraceTest extends KotlinTestBase {
   private static final KotlinCompileMemoizer compilationResults =
       getCompileMemoizer(getKotlinSources());
 
-  private static Collection<Path> getKotlinSources() {
-    try {
-      return getFilesInTestFolderRelativeToClass(
-          KotlinInlineFunctionRetraceTest.class, "kt", ".kt");
-    } catch (IOException e) {
-      throw new RuntimeException(e);
-    }
+  public static Collection<Path> getKotlinSources() {
+    List<String> files =
+        com.google.common.collect.ImmutableList.of(
+            "InlineFunction.kt",
+            "InlineFunctionsInSameFile.kt",
+            "Main.kt",
+            "MainInstance.kt",
+            "MainNested.kt",
+            "MainNestedFirstLine.kt",
+            "MainWithMultipleInlines.kt",
+            "NestedInlineFunction.kt");
+    return ListUtils.map(
+        files,
+        name ->
+            com.android.tools.r8.ToolHelper.getResourceAsTempFile(
+                KotlinInlineFunctionRetraceTest.class, "kt/" + name));
   }
 
   private FoundMethodSubject inlineExceptionStatic(CodeInspector kotlinInspector) {

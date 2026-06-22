@@ -57,9 +57,7 @@ public class SourceDebugExtensionTest extends TestBase {
                 kotlinc,
                 kotlinTestParameters.getTargetVersion(),
                 kotlinTestParameters.getLambdaGeneration())
-            .addSourceFiles(
-                getFilesInTestFolderRelativeToClass(
-                    KotlinInlineFunctionRetraceTest.class, "kt", ".kt"))
+            .addSourceFiles(KotlinInlineFunctionRetraceTest.getKotlinSources())
             .compile();
     CodeInspector kotlinInspector = new CodeInspector(kotlinSources);
     inspectSourceDebugExtension(kotlinInspector);

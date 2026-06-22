@@ -63,12 +63,7 @@ public class KotlinInlineFunctionInSameFileRetraceTests extends KotlinTestBase {
       getCompileMemoizer(getKotlinSources());
 
   private static Collection<Path> getKotlinSources() {
-    try {
-      return getFilesInTestFolderRelativeToClass(
-          KotlinInlineFunctionRetraceTest.class, "kt", ".kt");
-    } catch (IOException e) {
-      throw new RuntimeException(e);
-    }
+    return KotlinInlineFunctionRetraceTest.getKotlinSources();
   }
 
   private int getObfuscatedLinePosition() {
