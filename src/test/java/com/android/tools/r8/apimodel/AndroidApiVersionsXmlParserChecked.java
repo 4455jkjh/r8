@@ -62,16 +62,13 @@ public class AndroidApiVersionsXmlParserChecked {
   private AndroidApiVersionsXmlParser.ParsingListener createListener() {
     return new ParsingListener() {
       @Override
-      public ProcessingEvent startedProcessingClass(ClassReference reference) {
+      public void startedProcessingClass(ClassReference reference) {
         ClassSubject clazz = inspector.clazz(reference);
         String className = clazz.getOriginalTypeName();
-        if (clazz.isPresent()) {
-          return ProcessingEvent.CONTINUE;
-        } else {
+        if (!clazz.isPresent()) {
           assertTrue(
               className + " should either be present in jar or marked as an exemption",
               isKnownMissingInJar(className));
-          return ProcessingEvent.SKIP;
         }
       }
 
@@ -84,20 +81,17 @@ public class AndroidApiVersionsXmlParserChecked {
       }
 
       @Override
-      public ProcessingEvent startedProcessingField(FieldTypelessReference reference) {
+      public void startedProcessingField(FieldTypelessReference reference) {
         ClassReference classReference = reference.getHolderClass();
         ClassSubject clazz = inspector.clazz(classReference);
         String className = clazz.getOriginalTypeName();
         if (clazz.isPresent()) {
           FieldSubject field = clazz.uniqueFieldWithOriginalName(reference.getFieldName());
           assertTrue(field + " should be present", field.isPresent());
-          return ProcessingEvent.CONTINUE;
         } else {
           assertTrue(
               className + " should either be present in jar or marked as an exemption",
               isKnownMissingInJar(className));
-          // Class is exempted and therefore fields of it is too.
-          return ProcessingEvent.SKIP;
         }
       }
 

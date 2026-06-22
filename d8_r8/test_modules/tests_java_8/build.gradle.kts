@@ -156,9 +156,11 @@ tasks {
   named<Copy>("processTestResources") {
     dependsOn(createArtTests)
     val r8 = "com/android/tools/r8"
-    from(sourceSets.test.get().java) {
+    from(sourceSets.test.get().java.srcDirs) {
       include("$r8/cf/KeepDeserializeLambdaMethodTest.java")
       include("$r8/desugaring/interfacemethods/methodparameters/I.java")
+      include("$r8/apimodel/missing_classes.txt")
+      include("$r8/apimodel/missing_methods.txt")
     }
   }
 }

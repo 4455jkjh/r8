@@ -4,7 +4,6 @@
 
 package com.android.tools.r8.apimodel;
 
-import com.android.tools.r8.apimodel.AndroidApiVersionsXmlParser.ParsingListener.ProcessingEvent;
 import com.android.tools.r8.errors.InvalidDescriptorException;
 import com.android.tools.r8.references.ClassReference;
 import com.android.tools.r8.references.MethodReference;
@@ -72,9 +71,7 @@ public class AndroidApiVersionsXmlParser {
           classReference, parseAndroidApiLevel(versionsVersion, removedItem.getNodeValue()));
       return;
     }
-    if (listener.startedProcessingClass(classReference) == ProcessingEvent.SKIP) {
-      return;
-    }
+    listener.startedProcessingClass(classReference);
     var parsedApiClass = register(classReference, introApiLevel);
     var classEntries = node.getChildNodes();
     for (int j = 0; j < classEntries.getLength(); j++) {
@@ -163,9 +160,7 @@ public class AndroidApiVersionsXmlParser {
           fieldReference, parseAndroidApiLevel(versionsVersion, removedItem.getNodeValue()));
       return;
     }
-    if (listener.startedProcessingField(fieldReference) == ProcessingEvent.SKIP) {
-      return;
-    }
+    listener.startedProcessingField(fieldReference);
     if (apiClass.hasField(fieldReference)) {
       throw new ParsingException("Duplicate entries for " + fieldReference);
     }
@@ -288,33 +283,24 @@ public class AndroidApiVersionsXmlParser {
   }
 
   public interface ParsingListener {
-    ProcessingEvent startedProcessingClass(ClassReference reference);
+    void startedProcessingClass(ClassReference reference);
 
     void skippingRemovedClass(ClassReference reference, AndroidApiLevel removedAt);
 
-    ProcessingEvent startedProcessingField(FieldTypelessReference reference);
+    void startedProcessingField(FieldTypelessReference reference);
 
     void skippingRemovedField(FieldTypelessReference reference, AndroidApiLevel removedAt);
-
-    enum ProcessingEvent {
-      CONTINUE,
-      SKIP
-    }
   }
 
   private static class EmptyParsingListener implements ParsingListener {
     @Override
-    public ProcessingEvent startedProcessingClass(ClassReference reference) {
-      return ProcessingEvent.CONTINUE;
-    }
+    public void startedProcessingClass(ClassReference reference) {}
 
     @Override
     public void skippingRemovedClass(ClassReference reference, AndroidApiLevel removedAt) {}
 
     @Override
-    public ProcessingEvent startedProcessingField(FieldTypelessReference reference) {
-      return ProcessingEvent.CONTINUE;
-    }
+    public void startedProcessingField(FieldTypelessReference reference) {}
 
     @Override
     public void skippingRemovedField(FieldTypelessReference reference, AndroidApiLevel removedAt) {}
