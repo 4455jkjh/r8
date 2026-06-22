@@ -192,7 +192,7 @@ public class EnumUnboxingRewriter implements CustomLensCodeRewriter {
           }
         } else if (instruction.isInitClass()) {
           InitClass initClass = instruction.asInitClass();
-          DexType enumType = getEnumClassTypeOrNull(initClass.getClassValue());
+          DexType enumType = getEnumClassTypeOrNull(initClass.getType());
           if (enumType != null) {
             iterator.removeOrReplaceByDebugLocalRead();
           }

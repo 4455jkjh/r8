@@ -449,7 +449,7 @@ public class EnumUnboxerImpl extends EnumUnboxer {
   }
 
   private void analyzeInitClass(InitClass initClass, Set<DexType> eligibleEnums) {
-    DexProgramClass enumClass = getEnumUnboxingCandidateOrNull(initClass.getClassValue());
+    DexProgramClass enumClass = getEnumUnboxingCandidateOrNull(initClass.getType());
     if (enumClass != null) {
       eligibleEnums.add(enumClass.getType());
     }

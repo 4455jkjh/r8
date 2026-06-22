@@ -371,7 +371,7 @@ public class ReadBeforeWriteAnalysisTransferFunction
           }
           DexType initializedType;
           if (instruction.isInitClass()) {
-            initializedType = instruction.asInitClass().getClassValue();
+            initializedType = instruction.asInitClass().getType();
           } else if (instruction.isNewInstance()) {
             initializedType = instruction.asNewInstance().getType();
           } else {

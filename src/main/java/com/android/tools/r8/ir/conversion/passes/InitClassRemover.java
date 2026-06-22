@@ -36,7 +36,7 @@ public class InitClassRemover extends CodeRewriterPass<AppInfoWithClassHierarchy
     while (iterator.hasNext()) {
       InitClass instruction = iterator.next().asInitClass();
       if (instruction != null) {
-        DexField field = appView.initClassLens().getInitClassField(instruction.getClassValue());
+        DexField field = appView.initClassLens().getInitClassField(instruction.getType());
         StaticGet replacement =
             StaticGet.builder()
                 .setField(field)

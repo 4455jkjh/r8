@@ -12,6 +12,7 @@ import static com.android.tools.r8.ir.code.Opcodes.CONST_NUMBER;
 import static com.android.tools.r8.ir.code.Opcodes.CONST_STRING;
 import static com.android.tools.r8.ir.code.Opcodes.GOTO;
 import static com.android.tools.r8.ir.code.Opcodes.IF;
+import static com.android.tools.r8.ir.code.Opcodes.INIT_CLASS;
 import static com.android.tools.r8.ir.code.Opcodes.INT_SWITCH;
 import static com.android.tools.r8.ir.code.Opcodes.NEW_ARRAY_EMPTY;
 import static com.android.tools.r8.ir.code.Opcodes.NEW_ARRAY_FILLED;
@@ -288,6 +289,7 @@ public class VirtualMethodHoister {
 
           case CHECK_CAST:
           case CONST_CLASS:
+          case INIT_CLASS:
           case NEW_ARRAY_EMPTY:
           case NEW_INSTANCE:
             {

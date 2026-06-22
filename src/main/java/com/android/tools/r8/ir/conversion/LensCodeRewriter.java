@@ -362,10 +362,7 @@ public class LensCodeRewriter {
               InitClass initClass = current.asInitClass();
               new InstructionReplacer(code, current, iterator, affectedPhis, affectedValues)
                   .replaceInstructionIfTypeChanged(
-                      initClass.getClassValue(),
-                      (t, v) -> new InitClass(v, t),
-                      graphLens,
-                      codeLens);
+                      initClass.getType(), (t, v) -> new InitClass(v, t), graphLens, codeLens);
             }
             break;
 

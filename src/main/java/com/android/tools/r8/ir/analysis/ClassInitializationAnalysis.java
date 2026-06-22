@@ -250,7 +250,7 @@ public class ClassInitializationAnalysis {
         // Class initialization may fail with ExceptionInInitializerError.
         return false;
       }
-      DexClass clazz = appView.definitionFor(instruction.getClassValue());
+      DexClass clazz = appView.definitionFor(instruction.getType());
       return clazz != null && isTypeInitializedBy(instruction, type, clazz, appView, mode);
     }
 
