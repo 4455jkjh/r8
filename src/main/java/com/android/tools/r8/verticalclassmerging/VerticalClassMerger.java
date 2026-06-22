@@ -5,7 +5,6 @@ package com.android.tools.r8.verticalclassmerging;
 
 import static com.android.tools.r8.graph.DexClassAndMethod.asProgramMethodOrNull;
 
-import com.android.tools.r8.classmerging.ClassMergerMode;
 import com.android.tools.r8.classmerging.ClassMergerSharedData;
 import com.android.tools.r8.classmerging.Policy;
 import com.android.tools.r8.graph.AppView;
@@ -72,7 +71,7 @@ public class VerticalClassMerger {
   public static VerticalClassMerger createForIntermediateClassMerging(
       AppView<AppInfoWithLiveness> appView, Timing timing) {
     timing.begin("VerticalClassMerger (2/3)");
-    return new VerticalClassMerger(appView, ClassMergerMode.FINAL);
+    return new VerticalClassMerger(appView, ClassMergerMode.INTERMEDIATE);
   }
 
   public static VerticalClassMerger createForFinalClassMerging(

@@ -9,7 +9,6 @@ import static com.android.tools.r8.features.ClassToFeatureSplitMap.createEmptyCl
 import com.android.tools.r8.FeatureSplit;
 import com.android.tools.r8.androidapi.AndroidApiLevelCompute;
 import com.android.tools.r8.androidapi.ComputedApiLevel;
-import com.android.tools.r8.classmerging.ClassMergerMode;
 import com.android.tools.r8.contexts.CompilationContext;
 import com.android.tools.r8.contexts.CompilationContext.ProcessorContext;
 import com.android.tools.r8.errors.dontwarn.DontWarnConfiguration;
@@ -75,6 +74,7 @@ import com.android.tools.r8.utils.internal.ThrowingConsumer;
 import com.android.tools.r8.utils.threads.ThreadTask;
 import com.android.tools.r8.utils.threads.ThreadTaskUtils;
 import com.android.tools.r8.utils.timing.Timing;
+import com.android.tools.r8.verticalclassmerging.ClassMergerMode;
 import com.android.tools.r8.verticalclassmerging.VerticallyMergedClasses;
 import com.google.common.base.Predicates;
 import com.google.common.collect.ImmutableSet;

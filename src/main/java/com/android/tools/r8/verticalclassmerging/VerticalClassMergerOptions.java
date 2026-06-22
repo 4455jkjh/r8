@@ -3,16 +3,17 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8.verticalclassmerging;
 
-import com.android.tools.r8.classmerging.ClassMergerMode;
 import com.android.tools.r8.utils.InternalOptions;
+import java.util.function.Predicate;
 
 public class VerticalClassMergerOptions {
 
   private final InternalOptions options;
 
   private boolean enabled = true;
-  private boolean enableInitial = true;
   private boolean enableBridgeAnalysis = true;
+
+  private Predicate<ClassMergerMode> modePredicate = null;
 
   public VerticalClassMergerOptions(InternalOptions options) {
     this.options = options;
@@ -23,7 +24,11 @@ public class VerticalClassMergerOptions {
   }
 
   public void disableInitial() {
-    enableInitial = false;
+    if (modePredicate == null) {
+      modePredicate = mode -> mode != ClassMergerMode.INITIAL;
+    } else {
+      modePredicate = modePredicate.and(mode -> mode != ClassMergerMode.INITIAL);
+    }
   }
 
   public boolean isEnabled(ClassMergerMode mode) {
@@ -34,7 +39,7 @@ public class VerticalClassMergerOptions {
         || !options.isShrinking()) {
       return false;
     }
-    if (mode.isInitial() && !enableInitial) {
+    if (modePredicate != null && !modePredicate.test(mode)) {
       return false;
     }
     return true;
@@ -50,5 +55,9 @@ public class VerticalClassMergerOptions {
 
   public void setEnableBridgeAnalysis(boolean enableBridgeAnalysis) {
     this.enableBridgeAnalysis = enableBridgeAnalysis;
+  }
+
+  public void setModePredicate(Predicate<ClassMergerMode> modePredicate) {
+    this.modePredicate = modePredicate;
   }
 }
