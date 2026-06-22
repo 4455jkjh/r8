@@ -66,8 +66,11 @@ public class MethodReturnTypeParser
 
   @Override
   AnnotationVisitor tryPropertyArray(
-      TypeProperty property, String name, Consumer<KeepMethodReturnTypePattern> setValue) {
-    return typeParser.tryPropertyArray(property, name, wrap(setValue));
+      TypeProperty property,
+      String name,
+      Consumer<KeepMethodReturnTypePattern> setValue,
+      AnnotationVisitor annotationVisitor) {
+    return typeParser.tryPropertyArray(property, name, wrap(setValue), annotationVisitor);
   }
 
   @Override
@@ -75,7 +78,9 @@ public class MethodReturnTypeParser
       TypeProperty property,
       String name,
       String descriptor,
-      Consumer<KeepMethodReturnTypePattern> setValue) {
-    return typeParser.tryPropertyAnnotation(property, name, descriptor, wrap(setValue));
+      Consumer<KeepMethodReturnTypePattern> setValue,
+      AnnotationVisitor annotationVisitor) {
+    return typeParser.tryPropertyAnnotation(
+        property, name, descriptor, wrap(setValue), annotationVisitor);
   }
 }

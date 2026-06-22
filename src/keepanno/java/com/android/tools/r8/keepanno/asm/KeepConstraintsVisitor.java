@@ -10,21 +10,27 @@ import com.android.tools.r8.keepanno.ast.AnnotationConstants.Constraints;
 import com.android.tools.r8.keepanno.ast.KeepConstraint;
 import com.android.tools.r8.keepanno.ast.KeepConstraints;
 import com.android.tools.r8.keepanno.ast.ParsingContext;
+import org.objectweb.asm.AnnotationVisitor;
 
 public class KeepConstraintsVisitor extends AnnotationVisitorBase {
 
   private final Parent<KeepConstraints> parent;
   private final KeepConstraints.Builder builder = KeepConstraints.builder();
 
-  public KeepConstraintsVisitor(ParsingContext parsingContext, Parent<KeepConstraints> parent) {
-    super(parsingContext);
+  public KeepConstraintsVisitor(
+      ParsingContext parsingContext,
+      Parent<KeepConstraints> parent,
+      AnnotationVisitor annotationVisitor) {
+    super(parsingContext, annotationVisitor);
     this.parent = parent;
   }
 
   @Override
   public void visitEnum(String ignore, String descriptor, String value) {
+    super.visitEnum(ignore, descriptor, value);
     if (!AnnotationConstants.Constraints.isDescriptor(descriptor)) {
-      super.visitEnum(ignore, descriptor, value);
+      unhandledEnum(ignore, descriptor, value);
+      return;
     }
     switch (value) {
       case Constraints.LOOKUP:
@@ -71,7 +77,7 @@ public class KeepConstraintsVisitor extends AnnotationVisitorBase {
         builder.add(KeepConstraint.genericSignature());
         break;
       default:
-        super.visitEnum(ignore, descriptor, value);
+        unhandledEnum(ignore, descriptor, value);
     }
   }
 

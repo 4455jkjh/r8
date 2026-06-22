@@ -43,7 +43,8 @@ public class StringPatternParser extends PropertyParserBase<KeepStringPattern, S
       StringProperty property,
       String name,
       String descriptor,
-      Consumer<KeepStringPattern> setValue) {
+      Consumer<KeepStringPattern> setValue,
+      AnnotationVisitor annotationVisitor) {
     switch (property) {
       case PATTERN:
         {
@@ -74,7 +75,8 @@ public class StringPatternParser extends PropertyParserBase<KeepStringPattern, S
                           .setSuffix(suffixParser.getValueOrDefault(null))
                           .build());
                 }
-              });
+              },
+              annotationVisitor);
         }
       default:
         return null;

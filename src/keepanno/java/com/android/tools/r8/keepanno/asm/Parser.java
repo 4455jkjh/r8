@@ -19,7 +19,9 @@ interface Parser<T> {
 
   boolean tryParseEnum(String name, String descriptor, String value, Consumer<T> setValue);
 
-  AnnotationVisitor tryParseArray(String name, Consumer<T> setValue);
+  AnnotationVisitor tryParseArray(
+      String name, Consumer<T> setValue, AnnotationVisitor annotationVisitor);
 
-  AnnotationVisitor tryParseAnnotation(String name, String descriptor, Consumer<T> setValue);
+  AnnotationVisitor tryParseAnnotation(
+      String name, String descriptor, Consumer<T> setValue, AnnotationVisitor annotationVisitor);
 }

@@ -49,7 +49,11 @@ public class TypeParser extends PropertyParserBase<KeepTypePattern, TypeProperty
 
   @Override
   public AnnotationVisitor tryPropertyAnnotation(
-      TypeProperty property, String name, String descriptor, Consumer<KeepTypePattern> setValue) {
+      TypeProperty property,
+      String name,
+      String descriptor,
+      Consumer<KeepTypePattern> setValue,
+      AnnotationVisitor annotationVisitor) {
     switch (property) {
       case TYPE_PATTERN:
         {
@@ -63,7 +67,8 @@ public class TypeParser extends PropertyParserBase<KeepTypePattern, TypeProperty
           return new ParserVisitor(
               context,
               typeParser,
-              () -> setValue.accept(typeParser.getValueOrDefault(KeepTypePattern.any())));
+              () -> setValue.accept(typeParser.getValueOrDefault(KeepTypePattern.any())),
+              annotationVisitor);
         }
       case CLASS_NAME_PATTERN:
         {
@@ -72,8 +77,8 @@ public class TypeParser extends PropertyParserBase<KeepTypePattern, TypeProperty
               ClassNameProperty.PATTERN,
               name,
               descriptor,
-              value ->
-                  setValue.accept(KeepTypePattern.fromClass(KeepClassPattern.fromName(value))));
+              value -> setValue.accept(KeepTypePattern.fromClass(KeepClassPattern.fromName(value))),
+              annotationVisitor);
         }
       case INSTANCE_OF_PATTERN:
         {
@@ -85,7 +90,8 @@ public class TypeParser extends PropertyParserBase<KeepTypePattern, TypeProperty
               value ->
                   setValue.accept(
                       KeepTypePattern.fromClass(
-                          KeepClassPattern.builder().setInstanceOfPattern(value).build())));
+                          KeepClassPattern.builder().setInstanceOfPattern(value).build())),
+              annotationVisitor);
         }
       default:
         return null;

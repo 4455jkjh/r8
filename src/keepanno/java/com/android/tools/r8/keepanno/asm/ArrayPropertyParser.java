@@ -23,12 +23,13 @@ public class ArrayPropertyParser<T, P> extends PropertyParserBase<List<T>, P> {
   }
 
   @Override
-  AnnotationVisitor tryPropertyArray(P property, String name, Consumer<List<T>> setValue) {
+  AnnotationVisitor tryPropertyArray(
+      P property, String name, Consumer<List<T>> setValue, AnnotationVisitor annotationVisitor) {
     // The property name and type is forwarded to the element parser.
     values = new ArrayList<>();
     // The context is explicitly *not* extended with the property name here as it is forwarded.
     ParsingContext parsingContext = getParsingContext();
-    return new AnnotationVisitorBase(parsingContext) {
+    return new AnnotationVisitorBase(parsingContext, annotationVisitor) {
 
       private PropertyParser<T, P> getParser() {
         PropertyParser<T, P> parser = elementParser.apply(parsingContext);
@@ -43,34 +44,39 @@ public class ArrayPropertyParser<T, P> extends PropertyParserBase<List<T>, P> {
 
       @Override
       public void visit(String unusedName, Object value) {
+        super.visit(unusedName, value);
         if (!getParser().tryParse(name, value, values::add)) {
-          super.visit(name, value);
+          unhandledValue(unusedName, value);
         }
       }
 
       @Override
       public AnnotationVisitor visitAnnotation(String unusedName, String descriptor) {
-        AnnotationVisitor visitor = getParser().tryParseAnnotation(name, descriptor, values::add);
+        AnnotationVisitor annotationVisitor = super.visitAnnotation(unusedName, descriptor);
+        AnnotationVisitor visitor =
+            getParser().tryParseAnnotation(name, descriptor, values::add, annotationVisitor);
         if (visitor != null) {
           return visitor;
         }
-        return super.visitAnnotation(name, descriptor);
+        return annotationVisitor;
       }
 
       @Override
       public void visitEnum(String unusedName, String descriptor, String value) {
+        super.visitEnum(unusedName, descriptor, value);
         if (!getParser().tryParseEnum(name, descriptor, value, values::add)) {
-          super.visitEnum(name, descriptor, value);
+          unhandledEnum(unusedName, descriptor, value);
         }
       }
 
       @Override
       public AnnotationVisitor visitArray(String unusedName) {
-        AnnotationVisitor visitor = getParser().tryParseArray(name, values::add);
+        AnnotationVisitor annotationVisitor = super.visitArray(unusedName);
+        AnnotationVisitor visitor = getParser().tryParseArray(name, values::add, annotationVisitor);
         if (visitor != null) {
           return visitor;
         }
-        return super.visitArray(name);
+        return annotationVisitor;
       }
     };
   }

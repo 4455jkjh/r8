@@ -42,13 +42,18 @@ public abstract class PropertyParserBase<T, P> implements PropertyParser<T, P> {
     return false;
   }
 
-  AnnotationVisitor tryPropertyArray(P property, String name, Consumer<T> setValue) {
-    return null;
+  AnnotationVisitor tryPropertyArray(
+      P property, String name, Consumer<T> setValue, AnnotationVisitor annotationVisitor) {
+    return annotationVisitor;
   }
 
   AnnotationVisitor tryPropertyAnnotation(
-      P property, String name, String descriptor, Consumer<T> setValue) {
-    return null;
+      P property,
+      String name,
+      String descriptor,
+      Consumer<T> setValue,
+      AnnotationVisitor annotationVisitor) {
+    return annotationVisitor;
   }
 
   private Consumer<T> wrap(String propertyName, Consumer<T> setValue) {
@@ -124,30 +129,32 @@ public abstract class PropertyParserBase<T, P> implements PropertyParser<T, P> {
   }
 
   @Override
-  public final AnnotationVisitor tryParseArray(String name, Consumer<T> setValue) {
+  public final AnnotationVisitor tryParseArray(
+      String name, Consumer<T> setValue, AnnotationVisitor annotationVisitor) {
     P prop = mapping.get(name);
     if (prop != null) {
       try {
-        return tryPropertyArray(prop, name, wrap(name, setValue));
+        return tryPropertyArray(prop, name, wrap(name, setValue), annotationVisitor);
       } catch (RuntimeException e) {
         throw parsingContext.rethrow(e);
       }
     }
-    return null;
+    return annotationVisitor;
   }
 
   @Override
   public final AnnotationVisitor tryParseAnnotation(
-      String name, String descriptor, Consumer<T> setValue) {
+      String name, String descriptor, Consumer<T> setValue, AnnotationVisitor annotationVisitor) {
     P prop = mapping.get(name);
     if (prop != null) {
       try {
-        return tryPropertyAnnotation(prop, name, descriptor, wrap(name, setValue));
+        return tryPropertyAnnotation(
+            prop, name, descriptor, wrap(name, setValue), annotationVisitor);
       } catch (RuntimeException e) {
         throw parsingContext.rethrow(e);
       }
     }
-    return null;
+    return annotationVisitor;
   }
 
   public void setValueCheck(BiConsumer<T, ParsingContext> check) {

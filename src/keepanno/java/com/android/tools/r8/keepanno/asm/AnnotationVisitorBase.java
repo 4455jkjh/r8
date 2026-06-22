@@ -12,8 +12,8 @@ public abstract class AnnotationVisitorBase extends AnnotationVisitor {
 
   private final ParsingContext parsingContext;
 
-  AnnotationVisitorBase(ParsingContext parsingContext) {
-    super(KeepEdgeReader.ASM_VERSION);
+  AnnotationVisitorBase(ParsingContext parsingContext, AnnotationVisitor annotationVisitor) {
+    super(KeepEdgeReader.ASM_VERSION, annotationVisitor);
     this.parsingContext = parsingContext;
   }
 
@@ -27,11 +27,19 @@ public abstract class AnnotationVisitorBase extends AnnotationVisitor {
 
   @Override
   public void visit(String name, Object value) {
+    super.visit(name, value);
+  }
+
+  protected void unhandledValue(String name, Object value) {
     throw parsingContext.error("Unexpected value for property " + name + " with value " + value);
   }
 
   @Override
   public AnnotationVisitor visitAnnotation(String name, String descriptor) {
+    return super.visitAnnotation(name, descriptor);
+  }
+
+  protected AnnotationVisitor unhandledAnnotation(String name, String descriptor) {
     throw parsingContext.error(
         "Unexpected annotation for property "
             + name
@@ -41,6 +49,10 @@ public abstract class AnnotationVisitorBase extends AnnotationVisitor {
 
   @Override
   public void visitEnum(String name, String descriptor, String value) {
+    super.visitEnum(name, descriptor, value);
+  }
+
+  protected void unhandledEnum(String name, String descriptor, String value) {
     throw parsingContext.error(
         "Unexpected enum for property "
             + name
@@ -52,6 +64,10 @@ public abstract class AnnotationVisitorBase extends AnnotationVisitor {
 
   @Override
   public AnnotationVisitor visitArray(String name) {
+    return super.visitArray(name);
+  }
+
+  protected AnnotationVisitor unhandledArray(String name) {
     throw parsingContext.error("Unexpected array for property " + name);
   }
 }

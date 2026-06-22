@@ -16,64 +16,75 @@ public class ParserVisitor extends AnnotationVisitorBase {
   private final Runnable onVisitEnd;
 
   public ParserVisitor(
-      AnnotationParsingContext parsingContext, List<Parser<?>> parsers, Runnable onVisitEnd) {
-    super(parsingContext);
+      AnnotationParsingContext parsingContext,
+      List<Parser<?>> parsers,
+      Runnable onVisitEnd,
+      AnnotationVisitor annotationVisitor) {
+    super(parsingContext, annotationVisitor);
     this.parsers = parsers;
     this.onVisitEnd = onVisitEnd;
   }
 
   public ParserVisitor(
-      AnnotationParsingContext parsingContext, Parser<?> parser, Runnable onVisitEnd) {
-    this(parsingContext, Collections.singletonList(parser), onVisitEnd);
+      AnnotationParsingContext parsingContext,
+      Parser<?> parser,
+      Runnable onVisitEnd,
+      AnnotationVisitor annotationVisitor) {
+    this(parsingContext, Collections.singletonList(parser), onVisitEnd, annotationVisitor);
   }
 
   private <T> void ignore(T unused) {}
 
   @Override
   public void visit(String name, Object value) {
+    super.visit(name, value);
     for (Parser<?> parser : parsers) {
       if (parser.tryParse(name, value, this::ignore)) {
         return;
       }
     }
-    super.visit(name, value);
+    unhandledValue(name, value);
   }
 
   @Override
   public AnnotationVisitor visitArray(String name) {
+    AnnotationVisitor annotationVisitor = super.visitArray(name);
     for (Parser<?> parser : parsers) {
-      AnnotationVisitor visitor = parser.tryParseArray(name, this::ignore);
+      AnnotationVisitor visitor = parser.tryParseArray(name, this::ignore, annotationVisitor);
       if (visitor != null) {
         return visitor;
       }
     }
-    return super.visitArray(name);
+    return unhandledArray(name);
   }
 
   @Override
   public void visitEnum(String name, String descriptor, String value) {
+    super.visitEnum(name, descriptor, value);
     for (Parser<?> parser : parsers) {
       if (parser.tryParseEnum(name, descriptor, value, this::ignore)) {
         return;
       }
     }
-    super.visitEnum(name, descriptor, value);
+    unhandledEnum(name, descriptor, value);
   }
 
   @Override
   public AnnotationVisitor visitAnnotation(String name, String descriptor) {
+    AnnotationVisitor annotationVisitor = super.visitAnnotation(name, descriptor);
     for (Parser<?> parser : parsers) {
-      AnnotationVisitor visitor = parser.tryParseAnnotation(name, descriptor, this::ignore);
+      AnnotationVisitor visitor =
+          parser.tryParseAnnotation(name, descriptor, this::ignore, annotationVisitor);
       if (visitor != null) {
         return visitor;
       }
     }
-    return super.visitAnnotation(name, descriptor);
+    return unhandledAnnotation(name, descriptor);
   }
 
   @Override
   public void visitEnd() {
-    onVisitEnd.run();
     super.visitEnd();
+    onVisitEnd.run();
   }
 }

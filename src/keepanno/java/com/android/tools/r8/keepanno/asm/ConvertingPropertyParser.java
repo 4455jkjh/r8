@@ -55,13 +55,14 @@ public abstract class ConvertingPropertyParser<T1, T2, P> implements PropertyPar
   }
 
   @Override
-  public AnnotationVisitor tryParseArray(String name, Consumer<T2> setValue) {
-    return parser.tryParseArray(name, wrap(setValue));
+  public AnnotationVisitor tryParseArray(
+      String name, Consumer<T2> setValue, AnnotationVisitor annotationVisitor) {
+    return parser.tryParseArray(name, wrap(setValue), annotationVisitor);
   }
 
   @Override
   public AnnotationVisitor tryParseAnnotation(
-      String name, String descriptor, Consumer<T2> setValue) {
-    return parser.tryParseAnnotation(name, descriptor, wrap(setValue));
+      String name, String descriptor, Consumer<T2> setValue, AnnotationVisitor annotationVisitor) {
+    return parser.tryParseAnnotation(name, descriptor, wrap(setValue), annotationVisitor);
   }
 }
