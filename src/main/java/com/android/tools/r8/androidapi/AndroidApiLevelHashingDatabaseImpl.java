@@ -4,8 +4,6 @@
 
 package com.android.tools.r8.androidapi;
 
-import static com.android.tools.r8.lightir.ByteUtils.isU2;
-
 import com.android.tools.r8.DiagnosticsHandler;
 import com.android.tools.r8.graph.DexField;
 import com.android.tools.r8.graph.DexMethod;
@@ -16,11 +14,8 @@ import com.android.tools.r8.utils.AndroidApiLevel;
 import com.android.tools.r8.utils.DescriptorUtils;
 import com.android.tools.r8.utils.InternalOptions;
 import com.android.tools.r8.utils.internal.ThrowingCharIterator;
-import com.android.tools.r8.utils.internal.ThrowingFunction;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
 import java.io.UTFDataFormatException;
 import java.util.List;
 import java.util.Map;
@@ -29,114 +24,13 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class AndroidApiLevelHashingDatabaseImpl implements AndroidApiLevelDatabase {
-
-  private static final byte TYPE_IDENTIFIER = 0;
-  private static final byte FIELD_IDENTIFIER = 1;
-  private static final byte METHOD_IDENTIFIER = 2;
-
-  private static final byte[] NON_EXISTING_DESCRIPTOR = new byte[0];
-
   private final List<DexString> androidApiExtensionPackages;
   private final Set<DexType> androidApiExtensionClasses;
 
-  public static byte[] getNonExistingDescriptor() {
-    return NON_EXISTING_DESCRIPTOR;
-  }
-
-  public static byte[] getUniqueDescriptorForReference(
-      DexReference reference, ThrowingFunction<DexString, Integer, IOException> constantPoolLookup)
-      throws IOException {
-    if (reference.isDexType()) {
-      return typeToBytes(constantPoolLookup.apply(reference.asDexType().getDescriptor()));
-    }
-    int holderId =
-        constantPoolLookup.apply(reference.asDexMember().getHolderType().getDescriptor());
-    if (holderId < 0) {
-      return NON_EXISTING_DESCRIPTOR;
-    }
-    int nameId = constantPoolLookup.apply(reference.asDexMember().getName());
-    if (nameId < 0) {
-      return NON_EXISTING_DESCRIPTOR;
-    }
-    if (reference.isDexField()) {
-      return fieldToBytes(
-          holderId,
-          nameId,
-          constantPoolLookup.apply(reference.asDexField().getType().getDescriptor()));
-    }
-    assert reference.isDexMethod();
-    return methodToBytes(holderId, nameId, reference.asDexMethod(), constantPoolLookup);
-  }
-
-  private static byte[] typeToBytes(int typeId) {
-    if (typeId < 0) {
-      return NON_EXISTING_DESCRIPTOR;
-    }
-    return new byte[] {
-      TYPE_IDENTIFIER, getFirstByteFromShort(typeId), getSecondByteFromShort(typeId)
-    };
-  }
-
-  private static byte[] fieldToBytes(int holderId, int nameId, int typeId) {
-    if (holderId < 0 || nameId < 0 || typeId < 0) {
-      return NON_EXISTING_DESCRIPTOR;
-    }
-    return new byte[] {
-      FIELD_IDENTIFIER,
-      getFirstByteFromShort(holderId),
-      getSecondByteFromShort(holderId),
-      getFirstByteFromShort(nameId),
-      getSecondByteFromShort(nameId),
-      getFirstByteFromShort(typeId),
-      getSecondByteFromShort(typeId)
-    };
-  }
-
-  private static byte[] methodToBytes(
-      int holderId,
-      int nameId,
-      DexMethod method,
-      ThrowingFunction<DexString, Integer, IOException> constantPoolLookup)
-      throws IOException {
-    if (holderId < 0 || nameId < 0) {
-      return NON_EXISTING_DESCRIPTOR;
-    }
-    ByteArrayOutputStream baos = new ByteArrayOutputStream();
-    baos.write(METHOD_IDENTIFIER);
-    baos.write(getFirstByteFromShort(holderId));
-    baos.write(getSecondByteFromShort(holderId));
-    baos.write(getFirstByteFromShort(nameId));
-    baos.write(getSecondByteFromShort(nameId));
-    for (DexType parameter : method.proto.parameters) {
-      int parameterId = constantPoolLookup.apply(parameter.getDescriptor());
-      if (parameterId < 0) {
-        return NON_EXISTING_DESCRIPTOR;
-      }
-      baos.write(getFirstByteFromShort(parameterId));
-      baos.write(getSecondByteFromShort(parameterId));
-    }
-    int returnTypeId = constantPoolLookup.apply(method.getReturnType().getDescriptor());
-    if (returnTypeId < 0) {
-      return NON_EXISTING_DESCRIPTOR;
-    }
-    baos.write(getFirstByteFromShort(returnTypeId));
-    baos.write(getSecondByteFromShort(returnTypeId));
-    return baos.toByteArray();
-  }
-
-  private static byte getFirstByteFromShort(int value) {
-    assert isU2(value);
-    return (byte) (value >> 8);
-  }
-
-  private static byte getSecondByteFromShort(int value) {
-    assert isU2(value);
-    return (byte) value;
-  }
-
   private final Map<DexReference, Optional<AndroidApiLevel>> lookupCache =
       new ConcurrentHashMap<>();
-  private final Map<DexString, Integer> constantPoolCache = new ConcurrentHashMap<>();
+  private final Map<ApiDatabaseEntry.ConstantPoolEntry, Integer> constantPoolCache =
+      new ConcurrentHashMap<>();
   private final InternalOptions options;
   private final DiagnosticsHandler diagnosticsHandler;
   private static volatile AndroidApiDataAccess dataAccess;
@@ -262,22 +156,22 @@ public class AndroidApiLevelHashingDatabaseImpl implements AndroidApiLevelDataba
               if (dataAccess.isNoBacking()) {
                 return Optional.empty();
               }
+              ApiDatabaseEntry entry = ApiDatabaseEntry.of(ref);
               byte[] uniqueDescriptorForReference;
               try {
                 uniqueDescriptorForReference =
-                    getUniqueDescriptorForReference(
-                        ref,
-                        string ->
+                    entry.getUniqueDescriptor(
+                        cpEntry ->
                             constantPoolCache.computeIfAbsent(
-                                string, key -> dataAccess.getConstantPoolIndex(string)));
+                                cpEntry, dataAccess::getConstantPoolIndex));
               } catch (Exception e) {
-                uniqueDescriptorForReference = getNonExistingDescriptor();
+                uniqueDescriptorForReference = ApiDatabaseEntry.getNonExistingDescriptor();
               }
-              if (uniqueDescriptorForReference == getNonExistingDescriptor()) {
+              if (uniqueDescriptorForReference == ApiDatabaseEntry.getNonExistingDescriptor()) {
                 return Optional.empty();
               } else {
                 AndroidApiLevel apiLevelForReference =
-                    dataAccess.getApiLevelForReference(uniqueDescriptorForReference, ref);
+                    dataAccess.getApiLevelForReference(uniqueDescriptorForReference, entry);
                 return Optional.ofNullable(apiLevelForReference);
               }
             });

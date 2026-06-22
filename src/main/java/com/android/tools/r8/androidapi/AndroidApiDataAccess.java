@@ -8,8 +8,6 @@ import static com.android.tools.r8.lightir.ByteUtils.unsetBitAtIndex;
 
 import com.android.tools.r8.DiagnosticsHandler;
 import com.android.tools.r8.dex.CompatByteBuffer;
-import com.android.tools.r8.graph.DexReference;
-import com.android.tools.r8.graph.DexString;
 import com.android.tools.r8.utils.AndroidApiLevel;
 import com.android.tools.r8.utils.ExceptionDiagnostic;
 import com.android.tools.r8.utils.InternalOptions;
@@ -173,16 +171,16 @@ public abstract class AndroidApiDataAccess {
     return ENTRY_SIZE_IN_BITS_FOR_API_MAP;
   }
 
-  public static int apiLevelHash(DexReference reference) {
+  public static int apiLevelHash(ApiDatabaseEntry reference) {
     int entrySize = entrySizeInBitsForApiLevelMap();
     int size = 1 << (entrySize - 1);
-    return (reference.hashCode() % size) + size;
+    return (reference.apiDatabaseHashCode() % size) + size;
   }
 
-  public static int constantPoolHash(DexString string) {
+  public static int constantPoolHash(ApiDatabaseEntry.ConstantPoolEntry entry) {
     int entrySize = entrySizeInBitsForConstantPoolMap();
     int size = 1 << (entrySize - 1);
-    return (string.hashCode() % size) + size;
+    return (entry.hashCode() % size) + size;
   }
 
   static int constantPoolEntrySize() {
@@ -277,17 +275,18 @@ public abstract class AndroidApiDataAccess {
     return unsetBitAtIndex(position, 32);
   }
 
-  public int getConstantPoolIndex(DexString string) {
+  public int getConstantPoolIndex(ApiDatabaseEntry.ConstantPoolEntry entry) {
     PositionAndLength constantPoolIndex =
-        readPositionAndLength(constantPoolHashMapIndexOffset(constantPoolHash(string)));
+        readPositionAndLength(constantPoolHashMapIndexOffset(constantPoolHash(entry)));
     if (constantPoolIndex.isEmpty()) {
       return -1;
     }
     int position = constantPoolIndex.getPosition();
     int length = constantPoolIndex.getLength();
+    byte[] bytes = entry.getBytes();
     if (isUniqueConstantPoolEntry(position)) {
       int nonTaggedPosition = getConstantPoolIndexFromUniqueConstantPoolEntry(position);
-      if (isConstantPoolEntry(nonTaggedPosition, string.content)) {
+      if (isConstantPoolEntry(nonTaggedPosition, bytes)) {
         return nonTaggedPosition;
       }
     } else {
@@ -295,7 +294,7 @@ public abstract class AndroidApiDataAccess {
       return payloadContainsConstantPoolValue(
           payloadOffset(getConstantPoolSize()) + position,
           length,
-          string.content,
+          bytes,
           this::isConstantPoolEntry);
     }
     return -1;
@@ -316,7 +315,7 @@ public abstract class AndroidApiDataAccess {
         value);
   }
 
-  public AndroidApiLevel getApiLevelForReference(byte[] serialized, DexReference reference) {
+  public AndroidApiLevel getApiLevelForReference(byte[] serialized, ApiDatabaseEntry reference) {
     PositionAndLength apiLevelPayloadOffset =
         readPositionAndLength(apiLevelHashMapIndexOffset(apiLevelHash(reference)));
     if (apiLevelPayloadOffset.isEmpty()) {

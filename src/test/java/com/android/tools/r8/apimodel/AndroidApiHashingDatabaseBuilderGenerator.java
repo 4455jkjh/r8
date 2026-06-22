@@ -5,8 +5,6 @@
 package com.android.tools.r8.apimodel;
 
 import static com.android.tools.r8.androidapi.AndroidApiDataAccess.constantPoolHash;
-import static com.android.tools.r8.androidapi.AndroidApiLevelHashingDatabaseImpl.getNonExistingDescriptor;
-import static com.android.tools.r8.androidapi.AndroidApiLevelHashingDatabaseImpl.getUniqueDescriptorForReference;
 import static com.android.tools.r8.lightir.ByteUtils.isU2;
 import static com.android.tools.r8.lightir.ByteUtils.setBitAtIndex;
 import static com.android.tools.r8.utils.internal.MapUtils.ignoreKey;
@@ -15,20 +13,18 @@ import static org.junit.Assert.assertEquals;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.androidapi.AndroidApiDataAccess;
+import com.android.tools.r8.androidapi.ApiDatabaseEntry;
+import com.android.tools.r8.androidapi.ApiDatabaseEntry.ConstantPoolEntry;
 import com.android.tools.r8.androidapi.GenerateCovariantReturnTypeMethodsTest.CovariantMethodsInJarResult;
 import com.android.tools.r8.graph.AppInfoWithClassHierarchy;
 import com.android.tools.r8.graph.AppView;
-import com.android.tools.r8.graph.DexField;
 import com.android.tools.r8.graph.DexItemFactory;
 import com.android.tools.r8.graph.DexLibraryClass;
 import com.android.tools.r8.graph.DexMethod;
-import com.android.tools.r8.graph.DexReference;
-import com.android.tools.r8.graph.DexString;
 import com.android.tools.r8.graph.DexType;
 import com.android.tools.r8.references.ClassReference;
 import com.android.tools.r8.utils.AndroidApiLevel;
 import com.android.tools.r8.utils.AndroidApp;
-import com.android.tools.r8.utils.codeinspector.CodeInspector;
 import com.android.tools.r8.utils.internal.IntBox;
 import com.android.tools.r8.utils.internal.ThrowingBiConsumer;
 import com.android.tools.r8.utils.internal.collections.Pair;
@@ -44,7 +40,6 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.IdentityHashMap;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -61,26 +56,23 @@ public class AndroidApiHashingDatabaseBuilderGenerator extends TestBase {
    * <pre>
    * constant_pool_size: u4
    * constant_pool:      [constant_pool_size * payload_entry]
-   * constant_pool_map:  [0..max_hash(DexString) * payload_entry]
-   * api_map:            [0..max_hash(DexReference) * payload_entry]
+   * constant_pool_map:  [0..max_hash(ConstantPoolEntry) * payload_entry]
+   * api_map:            [0..max_hash(ApiDatabaseEntry) * payload_entry]
    * payload             raw data.
    *
-   * payload_entry: u4:relative_offset_from_payload_start + u2:length
+   * payload_entry: u4:relative_offset_from_payload_start_or_tagged_value + u2:length
    * </pre>
    *
    * For hash_definitions and entries see {@code AndroidApiDataAccess}.
    */
   public static void generate(
-      List<ParsedApiClass> apiClasses,
-      Path pathToApiLevels,
-      AndroidApiLevel androidJarApiLevel,
-      CodeInspector inspector)
+      List<ParsedApiClass> apiClasses, Path pathToApiLevels, AndroidApiLevel androidJarApiLevel)
       throws Exception {
     Map<ClassReference, Map<DexMethod, AndroidApiLevel>> methodMap = new HashMap<>();
-    Map<ClassReference, Map<DexField, AndroidApiLevel>> fieldMap = new HashMap<>();
+    Map<ClassReference, Map<FieldTypelessReference, AndroidApiLevel>> fieldMap = new HashMap<>();
     Map<ClassReference, ParsedApiClass> lookupMap = new HashMap<>();
 
-    Map<DexReference, AndroidApiLevel> referenceMap = new HashMap<>();
+    Map<ApiDatabaseEntry, AndroidApiLevel> databaseEntries = new HashMap<>();
 
     Path androidJar = ToolHelper.getAndroidJar(androidJarApiLevel);
     AndroidApp androidApp =
@@ -110,15 +102,15 @@ public class AndroidApiHashingDatabaseBuilderGenerator extends TestBase {
               methodsForApiClass.put(method, methodReferenceWithApiLevel.getApiLevel());
             }
           });
-      Map<DexField, AndroidApiLevel> fieldsForApiClass = new HashMap<>();
-      apiClass.forEachField(
-          (field, apiLevel) -> fieldsForApiClass.put(getDexField(inspector, field), apiLevel));
+      Map<FieldTypelessReference, AndroidApiLevel> fieldsForApiClass = new HashMap<>();
+      apiClass.forEachField(fieldsForApiClass::put);
       methodMap.put(apiClass.getClassReference(), methodsForApiClass);
       fieldMap.put(apiClass.getClassReference(), fieldsForApiClass);
       lookupMap.put(apiClass.getClassReference(), apiClass);
 
-      referenceMap.put(
-          factory.createType(apiClass.getClassReference().getDescriptor()), apiClass.getApiLevel());
+      databaseEntries.put(
+          ApiDatabaseEntry.of(factory.createType(apiClass.getClassReference().getDescriptor())),
+          apiClass.getApiLevel());
     }
 
     for (ParsedApiClass apiClass : apiClasses) {
@@ -128,32 +120,24 @@ public class AndroidApiHashingDatabaseBuilderGenerator extends TestBase {
           factory.createType(apiClass.getClassReference().getDescriptor()),
           apiClass,
           AndroidApiLevel.B,
-          referenceMap,
-          inspector);
+          databaseEntries);
     }
 
     assert ensureAllPublicMethodsAreMapped(
-        appView, lookupMap, methodMap, fieldMap, referenceMap, androidJarApiLevel, androidJar);
+        appView, lookupMap, methodMap, fieldMap, databaseEntries, androidJarApiLevel, androidJar);
 
     try (FileOutputStream fileOutputStream = new FileOutputStream(pathToApiLevels.toFile())) {
       DataOutputStream dataOutputStream = new DataOutputStream(fileOutputStream);
-      generateDatabase(referenceMap, dataOutputStream);
+      generateDatabase(databaseEntries, dataOutputStream);
     }
-  }
-
-  private static DexField getDexField(CodeInspector inspector, FieldTypelessReference field) {
-    return inspector
-        .clazz(field.getHolderClass())
-        .uniqueFieldWithOriginalName(field.getFieldName())
-        .getDexField();
   }
 
   private static boolean ensureAllPublicMethodsAreMapped(
       AppView<AppInfoWithClassHierarchy> appView,
       Map<ClassReference, ParsedApiClass> lookupMap,
       Map<ClassReference, Map<DexMethod, AndroidApiLevel>> methodMap,
-      Map<ClassReference, Map<DexField, AndroidApiLevel>> fieldMap,
-      Map<DexReference, AndroidApiLevel> referenceMap,
+      Map<ClassReference, Map<FieldTypelessReference, AndroidApiLevel>> fieldMap,
+      Map<ApiDatabaseEntry, AndroidApiLevel> databaseEntries,
       AndroidApiLevel apiLevel,
       Path androidJar) {
     Map<DexType, String> missingMemberInformation = new IdentityHashMap<>();
@@ -167,12 +151,13 @@ public class AndroidApiHashingDatabaseBuilderGenerator extends TestBase {
         continue;
       }
       StringBuilder classBuilder = new StringBuilder();
-      Map<DexField, AndroidApiLevel> fieldMapForClass = fieldMap.get(clazz.getClassReference());
+      Map<FieldTypelessReference, AndroidApiLevel> fieldMapForClass =
+          fieldMap.get(clazz.getClassReference());
       assert fieldMapForClass != null;
       clazz.forEachClassField(
           field -> {
             if (field.getAccessFlags().isPublic()
-                && referenceMap.get(field.getReference()) == null
+                && databaseEntries.get(ApiDatabaseEntry.of(field.getReference())) == null
                 && !field.toSourceString().contains("this$0")) {
               classBuilder.append("  ").append(field).append(" is missing\n");
             }
@@ -182,7 +167,7 @@ public class AndroidApiHashingDatabaseBuilderGenerator extends TestBase {
       clazz.forEachClassMethod(
           method -> {
             if (method.getAccessFlags().isPublic()
-                && referenceMap.get(method.getReference()) == null
+                && databaseEntries.get(ApiDatabaseEntry.of(method.getReference())) == null
                 && !factory.objectMembers.isObjectMember(method.getReference())) {
               classBuilder.append("  ").append(method).append(" is missing\n");
             }
@@ -263,15 +248,15 @@ public class AndroidApiHashingDatabaseBuilderGenerator extends TestBase {
   private static class ConstantPool {
 
     private final IntBox intBox = new IntBox(0);
-    private final Map<DexString, Integer> pool = new LinkedHashMap<>();
+    private final Map<ConstantPoolEntry, Integer> pool = new java.util.LinkedHashMap<>();
 
-    public int getOrAdd(DexString string) {
-      return pool.computeIfAbsent(string, ignored -> intBox.getAndIncrement());
+    public int getOrAdd(ConstantPoolEntry entry) {
+      return pool.computeIfAbsent(entry, ignored -> intBox.getAndIncrement());
     }
 
-    public void forEach(ThrowingBiConsumer<DexString, Integer, IOException> consumer)
+    public void forEach(ThrowingBiConsumer<ConstantPoolEntry, Integer, IOException> consumer)
         throws IOException {
-      for (Entry<DexString, Integer> entry : pool.entrySet()) {
+      for (Entry<ConstantPoolEntry, Integer> entry : pool.entrySet()) {
         consumer.accept(entry.getKey(), entry.getValue());
       }
     }
@@ -286,15 +271,15 @@ public class AndroidApiHashingDatabaseBuilderGenerator extends TestBase {
   }
 
   public static void generateDatabase(
-      Map<DexReference, AndroidApiLevel> referenceMap, DataOutputStream outputStream)
+      Map<ApiDatabaseEntry, AndroidApiLevel> databaseEntries, DataOutputStream outputStream)
       throws Exception {
-    Map<Integer, List<Pair<DexReference, AndroidApiLevel>>> generationMap = new HashMap<>();
+    Map<Integer, List<Pair<ApiDatabaseEntry, AndroidApiLevel>>> generationMap = new HashMap<>();
     ConstantPool constantPool = new ConstantPool();
 
     int constantPoolHashMapSize = 1 << AndroidApiDataAccess.entrySizeInBitsForConstantPoolMap();
     int apiHashMapSize = 1 << AndroidApiDataAccess.entrySizeInBitsForApiLevelMap();
 
-    for (Entry<DexReference, AndroidApiLevel> entry : referenceMap.entrySet()) {
+    for (Entry<ApiDatabaseEntry, AndroidApiLevel> entry : databaseEntries.entrySet()) {
       int newCode = AndroidApiDataAccess.apiLevelHash(entry.getKey());
       assert newCode >= 0 && newCode <= apiHashMapSize;
       generationMap
@@ -307,7 +292,7 @@ public class AndroidApiHashingDatabaseBuilderGenerator extends TestBase {
     ByteArrayOutputStream payload = new ByteArrayOutputStream();
 
     // Serialize api map into payload. This will also generate the entire needed constant pool.
-    for (Entry<Integer, List<Pair<DexReference, AndroidApiLevel>>> entry :
+    for (Entry<Integer, List<Pair<ApiDatabaseEntry, AndroidApiLevel>>> entry :
         generationMap.entrySet()) {
       int startingOffset = payload.size();
       int length = serializeIntoPayload(entry.getValue(), payload, constantPool, uniqueHashes);
@@ -321,18 +306,18 @@ public class AndroidApiHashingDatabaseBuilderGenerator extends TestBase {
     assertEquals(AndroidApiDataAccess.constantPoolOffset(), outputStream.size());
     IntBox lastReadIndex = new IntBox(-1);
     constantPool.forEach(
-        (string, id) -> {
+        (entry, id) -> {
           assert id > lastReadIndex.getAndIncrement();
           outputStream.writeInt(payload.size());
-          outputStream.writeShort(string.content.length);
-          payload.write(string.content);
+          outputStream.writeShort(entry.getLength());
+          entry.writeTo(payload);
         });
 
     // Serialize hash lookup table for constant pool.
     Map<Integer, List<Integer>> constantPoolLookupTable = new HashMap<>();
     constantPool.forEach(
-        (string, id) -> {
-          int constantPoolHash = constantPoolHash(string);
+        (entry, id) -> {
+          int constantPoolHash = constantPoolHash(entry);
           assert constantPoolHash >= 0 && constantPoolHash <= constantPoolHashMapSize;
           constantPoolLookupTable
               .computeIfAbsent(constantPoolHash, ignoreKey(ArrayList::new))
@@ -389,16 +374,16 @@ public class AndroidApiHashingDatabaseBuilderGenerator extends TestBase {
 
   /** This will serialize a collection of DexReferences and apis into a byte stream. */
   private static int serializeIntoPayload(
-      List<Pair<DexReference, AndroidApiLevel>> pairs,
+      List<Pair<ApiDatabaseEntry, AndroidApiLevel>> pairs,
       ByteArrayOutputStream payload,
       ConstantPool constantPool,
       Set<String> seen)
       throws IOException {
     ByteArrayOutputStream temp = new ByteArrayOutputStream();
-    for (Pair<DexReference, AndroidApiLevel> pair : pairs) {
+    for (Pair<ApiDatabaseEntry, AndroidApiLevel> pair : pairs) {
       byte[] uniqueDescriptorForReference =
-          getUniqueDescriptorForReference(pair.getFirst(), constantPool::getOrAdd);
-      assert uniqueDescriptorForReference != getNonExistingDescriptor();
+          pair.getFirst().getUniqueDescriptor(constantPool::getOrAdd);
+      assert uniqueDescriptorForReference != ApiDatabaseEntry.getNonExistingDescriptor();
       if (!seen.add(Arrays.toString(uniqueDescriptorForReference))) {
         throw new Unreachable("Hash is not unique");
       }
@@ -427,23 +412,23 @@ public class AndroidApiHashingDatabaseBuilderGenerator extends TestBase {
       DexType holder,
       ParsedApiClass apiClass,
       AndroidApiLevel linkLevel,
-      Map<DexReference, AndroidApiLevel> additionMap,
-      CodeInspector inspector) {
+      Map<ApiDatabaseEntry, AndroidApiLevel> databaseEntries) {
     if (!apiClass.getClassReference().getDescriptor().equals(factory.objectDescriptor.toString())) {
       apiClass.forEachMethod(
           (methodReference, apiLevel) ->
               addIfNewOrApiLevelIsLower(
                   linkLevel,
-                  additionMap,
+                  databaseEntries,
                   apiLevel,
-                  factory.createMethod(methodReference).withHolder(holder, factory)));
+                  ApiDatabaseEntry.of(
+                      factory.createMethod(methodReference).withHolder(holder, factory))));
       apiClass.forEachField(
           (fieldReference, apiLevel) ->
               addIfNewOrApiLevelIsLower(
                   linkLevel,
-                  additionMap,
+                  databaseEntries,
                   apiLevel,
-                  getDexField(inspector, fieldReference).withHolder(holder, factory)));
+                  ApiDatabaseEntry.of(fieldReference).withHolder(holder)));
       apiClass.forEachSupertype(
           (superType, apiLevel) ->
               computeAllReferencesInHierarchy(
@@ -452,8 +437,7 @@ public class AndroidApiHashingDatabaseBuilderGenerator extends TestBase {
                   holder,
                   lookupMap.get(superType),
                   linkLevel.max(apiLevel),
-                  additionMap,
-                  inspector));
+                  databaseEntries));
       apiClass.forEachInterface(
           (interfaceReference, apiLevel) ->
               computeAllReferencesInHierarchy(
@@ -462,16 +446,15 @@ public class AndroidApiHashingDatabaseBuilderGenerator extends TestBase {
                   holder,
                   lookupMap.get(interfaceReference),
                   linkLevel.max(apiLevel),
-                  additionMap,
-                  inspector));
+                  databaseEntries));
     }
   }
 
   private static void addIfNewOrApiLevelIsLower(
       AndroidApiLevel linkLevel,
-      Map<DexReference, AndroidApiLevel> additionMap,
+      Map<ApiDatabaseEntry, AndroidApiLevel> additionMap,
       AndroidApiLevel apiLevel,
-      DexReference member) {
+      ApiDatabaseEntry member) {
     AndroidApiLevel currentApiLevel = apiLevel.max(linkLevel);
     AndroidApiLevel existingApiLevel = additionMap.get(member);
     if (existingApiLevel == null || currentApiLevel.isLessThanOrEqualTo(existingApiLevel)) {

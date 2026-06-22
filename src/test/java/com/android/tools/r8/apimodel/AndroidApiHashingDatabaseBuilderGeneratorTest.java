@@ -109,8 +109,7 @@ public class AndroidApiHashingDatabaseBuilderGeneratorTest extends TestBase {
     TemporaryFolder temp = new TemporaryFolder();
     temp.create();
     Path apiLevels = temp.newFile("new_api_levels.ser").toPath();
-    AndroidApiHashingDatabaseBuilderGenerator.generate(
-        apiClasses, apiLevels, androidJarApiLevel, new CodeInspector(androidJar));
+    AndroidApiHashingDatabaseBuilderGenerator.generate(apiClasses, apiLevels, androidJarApiLevel);
     return new GenerateDatabaseResourceFilesResult(apiLevels);
   }
 
