@@ -6,16 +6,22 @@ package com.android.tools.r8.optimize.virtualmethodhoisting;
 import static com.android.tools.r8.graph.DexProgramClass.asProgramClassOrNull;
 import static com.android.tools.r8.ir.code.Opcodes.ARGUMENT;
 import static com.android.tools.r8.ir.code.Opcodes.ASSUME;
+import static com.android.tools.r8.ir.code.Opcodes.CHECK_CAST;
+import static com.android.tools.r8.ir.code.Opcodes.CONST_CLASS;
 import static com.android.tools.r8.ir.code.Opcodes.CONST_NUMBER;
 import static com.android.tools.r8.ir.code.Opcodes.CONST_STRING;
 import static com.android.tools.r8.ir.code.Opcodes.GOTO;
 import static com.android.tools.r8.ir.code.Opcodes.IF;
 import static com.android.tools.r8.ir.code.Opcodes.INT_SWITCH;
+import static com.android.tools.r8.ir.code.Opcodes.NEW_ARRAY_EMPTY;
+import static com.android.tools.r8.ir.code.Opcodes.NEW_ARRAY_FILLED;
+import static com.android.tools.r8.ir.code.Opcodes.NEW_INSTANCE;
 import static com.android.tools.r8.ir.code.Opcodes.RETURN;
 import static com.android.tools.r8.ir.code.Opcodes.STRING_SWITCH;
 import static com.android.tools.r8.ir.code.Opcodes.THROW;
 import static com.android.tools.r8.utils.internal.MapUtils.ignoreKey;
 
+import com.android.tools.r8.graph.AccessControl;
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.DexClass;
 import com.android.tools.r8.graph.DexEncodedMethod;
@@ -29,6 +35,7 @@ import com.android.tools.r8.graph.ProgramMethod;
 import com.android.tools.r8.graph.PrunedItems;
 import com.android.tools.r8.ir.code.IRCode;
 import com.android.tools.r8.ir.code.Instruction;
+import com.android.tools.r8.ir.code.NewArrayFilled;
 import com.android.tools.r8.ir.code.Return;
 import com.android.tools.r8.ir.code.Value;
 import com.android.tools.r8.ir.conversion.LirConverter;
@@ -275,6 +282,47 @@ public class VirtualMethodHoister {
             // Safe.
             break;
 
+          case CHECK_CAST:
+          case CONST_CLASS:
+          case NEW_ARRAY_EMPTY:
+          case NEW_INSTANCE:
+            {
+              DexType type = instruction.asTypeInstruction().getType();
+              if (isTypeInaccessibleInTargetClass(type, targetMethod)) {
+                return false;
+              }
+              // Safe.
+              break;
+            }
+
+          case NEW_ARRAY_FILLED:
+            {
+              NewArrayFilled newArrayFilled = instruction.asNewArrayFilled();
+              DexType type = newArrayFilled.getArrayType();
+              if (isTypeInaccessibleInTargetClass(type, targetMethod)) {
+                return false;
+              }
+              if (!type.isArrayType()) {
+                // Should never happen.
+                return false;
+              }
+              // If any of the array elements are `this`, then check the code still type checks
+              // after hoisting.
+              DexType elementType = type.asArrayType().getArrayElementType();
+              for (Value argument : newArrayFilled.arguments()) {
+                if (isThis(argument)) {
+                  if (isInvalidUseOfThis(argument, elementType, targetMethod)) {
+                    return false;
+                  } else {
+                    // The rest are also safe.
+                    break;
+                  }
+                }
+              }
+              // Safe.
+              break;
+            }
+
           case RETURN:
             {
               // If this returns `this`, then check that the code still type checks after hoisting
@@ -282,12 +330,8 @@ public class VirtualMethodHoister {
               Return returnInstruction = instruction.asReturn();
               if (!returnInstruction.isReturnVoid()) {
                 Value returnValue = returnInstruction.returnValue();
-                if (returnValue.getAliasedValue().isThis()) {
-                  DexType returnType = targetMethod.getReturnType();
-                  DexClass targetClass = targetMethod.getHolder();
-                  if (!appView.appInfo().isSubtype(targetClass.getType(), returnType)) {
-                    return false;
-                  }
+                if (isInvalidUseOfThis(returnValue, targetMethod.getReturnType(), targetMethod)) {
+                  return false;
                 }
               }
               // Safe.
@@ -299,6 +343,24 @@ public class VirtualMethodHoister {
         }
       }
       return true;
+    }
+
+    private boolean isThis(Value value) {
+      return value.getAliasedValue().isThis();
+    }
+
+    private boolean isInvalidUseOfThis(Value value, DexType type, ProgramMethod targetMethod) {
+      return isThis(value) && !appView.appInfo().isSubtype(targetMethod.getHolderType(), type);
+    }
+
+    private boolean isTypeInaccessibleInTargetClass(DexType type, ProgramMethod targetMethod) {
+      DexType baseType = type.getBaseType();
+      if (baseType.isClassType()) {
+        DexClass clazz = appView.definitionFor(baseType);
+        return clazz == null
+            || AccessControl.isClassAccessible(clazz, targetMethod, appView).isPossiblyFalse();
+      }
+      return false;
     }
 
     private void applyHoist(ProgramMethod sourceMethod, ProgramMethod targetMethod) {

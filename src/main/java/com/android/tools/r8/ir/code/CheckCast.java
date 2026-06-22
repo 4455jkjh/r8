@@ -31,7 +31,7 @@ import com.android.tools.r8.lightir.LirBuilder;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
 import com.android.tools.r8.utils.InternalOptions;
 
-public class CheckCast extends Instruction {
+public class CheckCast extends Instruction implements TypeInstruction {
 
   private final DexType type;
   private final boolean ignoreCompatRules;
@@ -91,6 +91,7 @@ public class CheckCast extends Instruction {
     return visitor.visit(this);
   }
 
+  @Override
   public DexType getType() {
     return type;
   }
@@ -196,6 +197,16 @@ public class CheckCast extends Instruction {
 
   @Override
   public CheckCast asCheckCast() {
+    return this;
+  }
+
+  @Override
+  public boolean isTypeInstruction() {
+    return true;
+  }
+
+  @Override
+  public TypeInstruction asTypeInstruction() {
     return this;
   }
 

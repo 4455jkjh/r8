@@ -27,7 +27,7 @@ import com.android.tools.r8.ir.optimize.InliningConstraints;
 import com.android.tools.r8.lightir.LirBuilder;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
 
-public class NewArrayEmpty extends Instruction {
+public class NewArrayEmpty extends Instruction implements TypeInstruction {
 
   public final DexType type;
 
@@ -36,7 +36,8 @@ public class NewArrayEmpty extends Instruction {
     this.type = type;
   }
 
-  public DexType getArrayType() {
+  @Override
+  public DexType getType() {
     return type;
   }
 
@@ -149,6 +150,16 @@ public class NewArrayEmpty extends Instruction {
 
   @Override
   public NewArrayEmpty asNewArrayEmpty() {
+    return this;
+  }
+
+  @Override
+  public boolean isTypeInstruction() {
+    return true;
+  }
+
+  @Override
+  public TypeInstruction asTypeInstruction() {
     return this;
   }
 

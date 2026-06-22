@@ -34,7 +34,7 @@ import com.android.tools.r8.ir.optimize.InliningConstraints;
 import com.android.tools.r8.lightir.LirBuilder;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
 
-public class NewInstance extends Instruction {
+public class NewInstance extends Instruction implements TypeInstruction {
 
   public final DexType clazz;
   private boolean allowSpilling = true;
@@ -49,6 +49,7 @@ public class NewInstance extends Instruction {
     return new Builder();
   }
 
+  @Override
   public DexType getType() {
     return clazz;
   }
@@ -112,6 +113,16 @@ public class NewInstance extends Instruction {
 
   @Override
   public NewInstance asNewInstance() {
+    return this;
+  }
+
+  @Override
+  public boolean isTypeInstruction() {
+    return true;
+  }
+
+  @Override
+  public TypeInstruction asTypeInstruction() {
     return this;
   }
 

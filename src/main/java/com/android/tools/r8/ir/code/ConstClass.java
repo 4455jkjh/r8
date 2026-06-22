@@ -28,7 +28,7 @@ import com.android.tools.r8.ir.optimize.InliningConstraints;
 import com.android.tools.r8.lightir.LirBuilder;
 import com.android.tools.r8.utils.AndroidApiLevelUtils;
 
-public class ConstClass extends ConstInstruction {
+public class ConstClass extends ConstInstruction implements TypeInstruction {
 
   private final DexType clazz;
   private final boolean ignoreCompatRules;
@@ -48,6 +48,7 @@ public class ConstClass extends ConstInstruction {
     return new Builder();
   }
 
+  @Override
   public DexType getType() {
     return clazz;
   }
@@ -169,6 +170,16 @@ public class ConstClass extends ConstInstruction {
 
   @Override
   public ConstClass asConstClass() {
+    return this;
+  }
+
+  @Override
+  public boolean isTypeInstruction() {
+    return true;
+  }
+
+  @Override
+  public TypeInstruction asTypeInstruction() {
     return this;
   }
 
