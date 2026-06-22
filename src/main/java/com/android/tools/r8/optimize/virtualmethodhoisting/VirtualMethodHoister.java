@@ -17,6 +17,8 @@ import static com.android.tools.r8.ir.code.Opcodes.NEW_ARRAY_EMPTY;
 import static com.android.tools.r8.ir.code.Opcodes.NEW_ARRAY_FILLED;
 import static com.android.tools.r8.ir.code.Opcodes.NEW_INSTANCE;
 import static com.android.tools.r8.ir.code.Opcodes.RETURN;
+import static com.android.tools.r8.ir.code.Opcodes.STATIC_GET;
+import static com.android.tools.r8.ir.code.Opcodes.STATIC_PUT;
 import static com.android.tools.r8.ir.code.Opcodes.STRING_SWITCH;
 import static com.android.tools.r8.ir.code.Opcodes.THROW;
 import static com.android.tools.r8.utils.internal.MapUtils.ignoreKey;
@@ -29,10 +31,12 @@ import com.android.tools.r8.graph.DexItemFactory;
 import com.android.tools.r8.graph.DexMethod;
 import com.android.tools.r8.graph.DexProgramClass;
 import com.android.tools.r8.graph.DexType;
+import com.android.tools.r8.graph.FieldResolutionResult.SingleFieldResolutionResult;
 import com.android.tools.r8.graph.ImmediateProgramSubtypingInfo;
 import com.android.tools.r8.graph.MethodAccessFlags;
 import com.android.tools.r8.graph.ProgramMethod;
 import com.android.tools.r8.graph.PrunedItems;
+import com.android.tools.r8.ir.code.FieldInstruction;
 import com.android.tools.r8.ir.code.IRCode;
 import com.android.tools.r8.ir.code.Instruction;
 import com.android.tools.r8.ir.code.NewArrayFilled;
@@ -319,6 +323,29 @@ public class VirtualMethodHoister {
                   }
                 }
               }
+              // Safe.
+              break;
+            }
+
+          case STATIC_GET:
+          case STATIC_PUT:
+            {
+              FieldInstruction fieldInstruction = instruction.asFieldInstruction();
+              SingleFieldResolutionResult<?> resolutionResult =
+                  fieldInstruction.resolveField(appView, candidate).asSingleFieldResolutionResult();
+              if (resolutionResult == null
+                  || resolutionResult.isAccessibleFrom(targetMethod, appView).isPossiblyFalse()) {
+                return false;
+              }
+
+              if (fieldInstruction.isStaticPut()) {
+                Value value = fieldInstruction.asStaticPut().value();
+                DexType fieldType = fieldInstruction.getField().getType();
+                if (isInvalidUseOfThis(value, fieldType, targetMethod)) {
+                  return false;
+                }
+              }
+
               // Safe.
               break;
             }
