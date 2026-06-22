@@ -33,6 +33,7 @@ import com.android.tools.r8.optimize.argumentpropagation.utils.ProgramClassesBid
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
 import com.android.tools.r8.utils.ThreadUtils;
 import com.android.tools.r8.utils.collections.DexMethodSignatureMap;
+import com.android.tools.r8.utils.collections.DexMethodSignatureSet;
 import com.android.tools.r8.utils.internal.ListUtils;
 import com.android.tools.r8.utils.internal.ThrowingAction;
 import com.android.tools.r8.utils.timing.Timing;
@@ -133,7 +134,7 @@ public class VirtualMethodHoister {
     private final Map<DexProgramClass, Set<DexEncodedMethod>> hoistedMethods =
         new IdentityHashMap<>();
 
-    private final Map<DexProgramClass, BottomUpTraversalState> states = new IdentityHashMap<>();
+    private final Map<DexProgramClass, TraversalState> states = new IdentityHashMap<>();
 
     VirtualMethodHoisterTraversal(
         AppView<AppInfoWithLiveness> appView,
@@ -141,8 +142,8 @@ public class VirtualMethodHoister {
       super(appView, immediateSubtypingInfo);
     }
 
-    private BottomUpTraversalState getOrCreateState(DexProgramClass clazz) {
-      return states.computeIfAbsent(clazz, ignoreKey(BottomUpTraversalState::new));
+    private TraversalState getOrCreateState(DexProgramClass clazz) {
+      return states.computeIfAbsent(clazz, ignoreKey(TraversalState::new));
     }
 
     public Set<DexMethod> removeAndGetHoistedMethods() {
@@ -159,9 +160,30 @@ public class VirtualMethodHoister {
 
     @Override
     public void visit(DexProgramClass clazz) {
-      // Top-down pass, not used.
-      // TODO(b/241190995): Accumulate abstract methods in the top-down traversal so that we only
-      //  carry up virtual methods that override abstract methods in the bottom-up traversal.
+      if (clazz.isInterface()) {
+        return;
+      }
+
+      TraversalState state = getOrCreateState(clazz);
+      if (clazz.hasSuperType()) {
+        DexProgramClass superClass =
+            asProgramClassOrNull(appView.definitionFor(clazz.getSuperType()));
+        if (superClass != null) {
+          TraversalState superClassState = states.get(superClass);
+          if (superClassState != null) {
+            state.addAbstractMethods(superClassState);
+          }
+        }
+      }
+
+      clazz.forEachProgramVirtualMethod(
+          method -> {
+            if (method.getAccessFlags().isAbstract()) {
+              state.abstractMethods.add(method);
+            } else {
+              state.abstractMethods.remove(method);
+            }
+          });
     }
 
     @Override
@@ -171,7 +193,7 @@ public class VirtualMethodHoister {
         return;
       }
 
-      BottomUpTraversalState state = getOrCreateState(clazz);
+      TraversalState state = getOrCreateState(clazz);
       clazz.forEachProgramVirtualMethod(
           method -> {
             ProgramMethod sourceMethod = findHoistCandidate(method, state);
@@ -186,7 +208,9 @@ public class VirtualMethodHoister {
               applyHoist(sourceMethod, method);
             } else if (!method.getAccessFlags().isAbstract()) {
               // Add method as a candidate for hoisting.
-              state.addCandidate(method);
+              if (isHoistable(method, clazz)) {
+                state.addCandidate(method);
+              }
             }
           });
 
@@ -202,8 +226,20 @@ public class VirtualMethodHoister {
       states.remove(clazz);
     }
 
-    private ProgramMethod findHoistCandidate(
-        ProgramMethod targetMethod, BottomUpTraversalState state) {
+    private boolean isHoistable(ProgramMethod method, DexProgramClass clazz) {
+      if (!clazz.hasSuperType()) {
+        return false;
+      }
+      DexProgramClass superClass =
+          asProgramClassOrNull(appView.definitionFor(clazz.getSuperType()));
+      if (superClass == null) {
+        return false;
+      }
+      TraversalState superClassState = states.get(superClass);
+      return superClassState != null && superClassState.containsAbstractMethod(method);
+    }
+
+    private ProgramMethod findHoistCandidate(ProgramMethod targetMethod, TraversalState state) {
       if (targetMethod.getAccessFlags().isAbstract()
           && !appView.getKeepInfo(targetMethod).isPinned(appView.options())) {
         for (ProgramMethod candidate : state.getCandidates(targetMethod)) {
@@ -296,16 +332,22 @@ public class VirtualMethodHoister {
     }
   }
 
-  private static class BottomUpTraversalState {
+  private static class TraversalState {
 
     private final DexMethodSignatureMap<List<ProgramMethod>> candidates =
         DexMethodSignatureMap.create();
+
+    private final DexMethodSignatureSet abstractMethods = DexMethodSignatureSet.create();
+
+    void addAbstractMethods(TraversalState other) {
+      abstractMethods.addAll(other.abstractMethods);
+    }
 
     void addCandidate(ProgramMethod method) {
       candidates.computeIfAbsent(method, ignoreKey(ArrayList::new)).add(method);
     }
 
-    void addAll(BottomUpTraversalState other) {
+    void addAll(TraversalState other) {
       other.candidates.forEach(
           (signature, methods) ->
               candidates.computeIfAbsent(signature, ignoreKey(ArrayList::new)).addAll(methods));
@@ -317,6 +359,10 @@ public class VirtualMethodHoister {
 
     void clearCandidates(ProgramMethod method) {
       candidates.remove(method);
+    }
+
+    boolean containsAbstractMethod(ProgramMethod method) {
+      return abstractMethods.contains(method);
     }
 
     boolean isEmpty() {

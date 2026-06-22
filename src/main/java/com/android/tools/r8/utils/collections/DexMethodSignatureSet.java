@@ -152,6 +152,10 @@ public class DexMethodSignatureSet implements Collection<DexMethodSignature> {
     return remove(method.getSignature());
   }
 
+  public boolean remove(DexClassAndMethod method) {
+    return remove(method.getMethodSignature());
+  }
+
   @Override
   public boolean removeAll(Collection<?> collection) {
     return backing.removeAll(collection);
