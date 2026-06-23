@@ -4,11 +4,16 @@
 
 package com.android.tools.r8.ir.code;
 
+import com.android.tools.r8.graph.AppInfoWithClassHierarchy;
 import com.android.tools.r8.graph.AppView;
+import com.android.tools.r8.graph.DexField;
+import com.android.tools.r8.graph.FieldResolutionResult;
 import com.android.tools.r8.graph.ProgramMethod;
 import com.android.tools.r8.ir.code.Instruction.SideEffectAssumption;
 
 public interface InstanceFieldInstruction {
+
+  DexField getField();
 
   boolean hasOutValue();
 
@@ -33,4 +38,7 @@ public interface InstanceFieldInstruction {
   boolean isInstancePut();
 
   InstancePut asInstancePut();
+
+  FieldResolutionResult resolveField(
+      AppView<? extends AppInfoWithClassHierarchy> appView, ProgramMethod context);
 }

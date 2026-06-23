@@ -18,7 +18,9 @@ import static com.android.tools.r8.ir.code.Opcodes.GOTO;
 import static com.android.tools.r8.ir.code.Opcodes.IF;
 import static com.android.tools.r8.ir.code.Opcodes.INC;
 import static com.android.tools.r8.ir.code.Opcodes.INIT_CLASS;
+import static com.android.tools.r8.ir.code.Opcodes.INSTANCE_GET;
 import static com.android.tools.r8.ir.code.Opcodes.INSTANCE_OF;
+import static com.android.tools.r8.ir.code.Opcodes.INSTANCE_PUT;
 import static com.android.tools.r8.ir.code.Opcodes.INT_SWITCH;
 import static com.android.tools.r8.ir.code.Opcodes.MONITOR;
 import static com.android.tools.r8.ir.code.Opcodes.MUL;
@@ -47,6 +49,7 @@ import com.android.tools.r8.graph.AccessControl;
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.DexClass;
 import com.android.tools.r8.graph.DexEncodedMethod;
+import com.android.tools.r8.graph.DexField;
 import com.android.tools.r8.graph.DexItemFactory;
 import com.android.tools.r8.graph.DexMethod;
 import com.android.tools.r8.graph.DexProgramClass;
@@ -349,6 +352,8 @@ public class VirtualMethodHoister {
               break;
             }
 
+          case INSTANCE_GET:
+          case INSTANCE_PUT:
           case STATIC_GET:
           case STATIC_PUT:
             {
@@ -360,10 +365,17 @@ public class VirtualMethodHoister {
                 return false;
               }
 
-              if (fieldInstruction.isStaticPut()) {
-                Value value = fieldInstruction.asStaticPut().value();
-                DexType fieldType = fieldInstruction.getField().getType();
-                if (isInvalidUseOfThis(value, fieldType, targetMethod)) {
+              DexField field = fieldInstruction.getField();
+              if (fieldInstruction.isInstanceFieldInstruction()) {
+                Value object = fieldInstruction.asInstanceFieldInstruction().object();
+                if (isInvalidUseOfThis(object, field.getHolderType(), targetMethod)) {
+                  return false;
+                }
+              }
+
+              if (fieldInstruction.isFieldPut()) {
+                Value value = fieldInstruction.asFieldPut().value();
+                if (isInvalidUseOfThis(value, field.getType(), targetMethod)) {
                   return false;
                 }
               }
