@@ -20,16 +20,14 @@ def get_profiler_executable():
         return os.path.join(GRADLE_PROFILER_BIN, 'gradle-profiler')
 
 
-GRADLE_PROFILER_DIR = os.path.join(utils.THIRD_PARTY, 'gradle-profiler')
-GRADLE_PROFILER_SHA1 = os.path.join(GRADLE_PROFILER_DIR,
-                                    'gradle-profiler-0.24.0.tar.gz.sha1')
-GRADLE_PROFILER_BIN = os.path.join(GRADLE_PROFILER_DIR,
-                                   'gradle-profiler-0.24.0', 'bin')
+GRADLE_PROFILER_DIR = os.path.join(utils.THIRD_PARTY, 'gradle-profiler',
+                                   'gradle-profiler-0.24.0')
+GRADLE_PROFILER_BIN = os.path.join(GRADLE_PROFILER_DIR, 'bin')
 
 
 def ensure_deps():
     gradle.ensure_deps()
-    utils.EnsureDepFromGoogleCloudStorage(GRADLE_PROFILER_SHA1,
+    utils.EnsureDepFromGoogleCloudStorage(GRADLE_PROFILER_DIR,
                                           'Gradle binary',
                                           dep=get_profiler_executable())
 

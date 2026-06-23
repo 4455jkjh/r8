@@ -7,7 +7,6 @@ import java.io.File
 import java.io.IOException
 import java.io.InputStreamReader
 import java.nio.charset.StandardCharsets
-import java.util.Arrays
 import java.util.stream.Collectors
 import javax.inject.Inject
 import org.gradle.api.DefaultTask
@@ -26,10 +25,8 @@ import org.gradle.workers.WorkerExecutor
 public abstract class DownloadAllDependenciesTask : DefaultTask() {
 
   // This marker file is used as the configuration tracked output of the task for dependency
-  // purposes.
-  // If the downloaded files every need to be handled through gradle directly, each output file
-  // needs
-  // to be properly routed through the relevant configuration.
+  // purposes. If the downloaded files ever need to be handled through gradle directly, each output
+  // file needs to be properly routed through the relevant configuration.
   @get:OutputFile public abstract val markerFile: RegularFileProperty
 
   private var _root: File? = null
@@ -47,9 +44,7 @@ public abstract class DownloadAllDependenciesTask : DefaultTask() {
 
   @OutputFiles
   public fun getOutputFiles(): List<File> {
-    return _thirdPartyDeps!!.map {
-      _root!!.resolve(it.sha1File.resolveSibling(it.sha1File.name.replace(".sha1", "")))
-    }
+    return _thirdPartyDeps!!.map { _root!!.resolve(it.tarGzFile) }
   }
 
   @Inject protected abstract fun getWorkerExecutor(): WorkerExecutor?
@@ -65,17 +60,21 @@ public abstract class DownloadAllDependenciesTask : DefaultTask() {
     _thirdPartyDeps?.forEach {
       val root = _root!!
       val sha1File = root.resolve(it.sha1File)
-      val tarGzFile = sha1File.resolveSibling(sha1File.name.replace(".sha1", ""))
-      val outputDir = root.resolve(it.path)
       if (!sha1File.exists()) {
         throw RuntimeException("Missing sha1 file: $sha1File")
       }
-      if (shouldExecute(outputDir, tarGzFile, sha1File)) {
-        println("Downloading ${it}")
+
+      val tarGzFile = root.resolve(it.tarGzFile)
+      val outputDir = root.resolve(it.path)
+      val successFile = root.resolve(it.successFile)
+
+      if (shouldDownload(outputDir, tarGzFile, sha1File, successFile)) {
+        println("Downloading $it")
         noIsolation.submit(RunDownload::class.java) {
           type.set(it.type)
           this.sha1File.set(sha1File)
           this.outputDir.set(outputDir)
+          this.successFile.set(successFile)
           this.tarGzFile.set(tarGzFile)
           this.root.set(root)
         }
@@ -88,6 +87,7 @@ public abstract class DownloadAllDependenciesTask : DefaultTask() {
     public val type: Property<DependencyType>
     public val sha1File: RegularFileProperty
     public val outputDir: RegularFileProperty
+    public val successFile: RegularFileProperty
     public val tarGzFile: RegularFileProperty
     public val root: RegularFileProperty
   }
@@ -96,13 +96,28 @@ public abstract class DownloadAllDependenciesTask : DefaultTask() {
     override fun execute() {
       val sha1File = parameters.sha1File.asFile.get()
       val outputDir = parameters.outputDir.asFile.get()
-      val tarGzFile = parameters.tarGzFile.asFile.get()
-      if (!shouldExecute(outputDir, tarGzFile, sha1File)) {
-        return
+      val successFile = parameters.successFile.asFile.get()
+
+      if (successFile.exists()) {
+        if (!successFile.delete()) {
+          throw IOException("Failed to delete old success marker file: ${successFile.absolutePath}")
+        }
       }
-      if (outputDir.exists() && outputDir.isDirectory) {
-        outputDir.delete()
+
+      if (outputDir.exists()) {
+        if (!outputDir.deleteRecursively()) {
+          throw IOException("Failed to delete old dependency directory: ${outputDir.absolutePath}")
+        }
       }
+
+      downloadDependency(parameters, sha1File)
+
+      if (!successFile.createNewFile()) {
+        throw IOException("Failed to create success marker file: ${successFile.absolutePath}")
+      }
+    }
+
+    private fun downloadDependency(parameters: RunDownloadParameters, sha1File: File) {
       when (parameters.type.get()) {
         DependencyType.GOOGLE_STORAGE -> {
           downloadFromGoogleStorage(parameters, sha1File)
@@ -111,17 +126,11 @@ public abstract class DownloadAllDependenciesTask : DefaultTask() {
           downloadFromX20(parameters, sha1File)
         }
       }
-      // When the .sha1 file is new but the content is the same (git can cause this) the underlying
-      // download call wont re-download the file and thus not update the timestamp.
-      // This forces the timestamp to reflect that the file is up to date.
-      if (tarGzFile.exists()) {
-        tarGzFile.setLastModified(System.currentTimeMillis())
-      }
     }
 
     @Throws(IOException::class, InterruptedException::class)
     private fun downloadFromGoogleStorage(parameters: RunDownloadParameters, sha1File: File) {
-      val args = Arrays.asList("-n", "-b", "r8-deps", "-s", "-u", sha1File.toString())
+      val args = listOf("-n", "-b", "r8-deps", "-s", "-u", sha1File.toString())
       if (OperatingSystem.current().isWindows) {
         val command: MutableList<String> = ArrayList()
         command.add("download_from_google_storage.bat")
@@ -169,15 +178,18 @@ public abstract class DownloadAllDependenciesTask : DefaultTask() {
   }
 
   private companion object {
-    private fun shouldExecute(outputDir: File, tarGzFile: File, sha1File: File): Boolean {
-      // First run will write the tar.gz file, causing the second run to still be out-of-date.
-      // Check if the modification time of the tar is newer than the sha in which case we are done.
+    private fun shouldDownload(
+      outputDir: File,
+      tgzFile: File,
+      sha1File: File,
+      successFile: File,
+    ): Boolean {
       if (
         outputDir.exists() &&
           outputDir.isDirectory &&
-          outputDir.list()!!.isNotEmpty() &&
-          tarGzFile.exists() &&
-          sha1File.lastModified() <= tarGzFile.lastModified()
+          successFile.exists() &&
+          tgzFile.exists() &&
+          sha1File.lastModified() <= successFile.lastModified()
       ) {
         return false
       }

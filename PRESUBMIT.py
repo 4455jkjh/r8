@@ -16,40 +16,32 @@ sys.path.append(
 from tools.utils import EnsureDepFromGoogleCloudStorage
 from tools.jdk import GetJavaExecutable, GetDefaultJdkHome
 
-KOTLIN_FMT_JAR = path.join('third_party', 'google', 'google-kotlin-format',
-                           '0.54', 'ktfmt-0.54-jar-with-dependencies.jar')
-
-KOTLIN_FMT_SHA1 = path.join('third_party', 'google', 'google-kotlin-format',
-                            '0.54.tar.gz.sha1')
+KOTLIN_FMT_DIR = path.join('third_party', 'google', 'google-kotlin-format',
+                           '0.54')
+KOTLIN_FMT_JAR = path.join(KOTLIN_FMT_DIR,
+                           'ktfmt-0.54-jar-with-dependencies.jar')
 
 KOTLIN_FMT_IGNORE = {
     'src/test/java/com/android/tools/r8/kotlin/metadata/inline_class_fun_descriptor_classes_app/main.kt'
 }
 KOTLIN_FMT_BATCH_SIZE = 100
 
-FMT_CMD = path.join('third_party', 'google', 'google-java-format', '1.24.0',
-                    'google-java-format-1.24.0', 'scripts',
+FMT_CMD_JDK17 = path.join('tools', 'google-java-format-diff.py')
+FMT_DIR = path.join('third_party', 'google', 'google-java-format', '1.24.0')
+FMT_CMD = path.join(FMT_DIR, 'google-java-format-1.24.0', 'scripts',
                     'google-java-format-diff.py')
 
-FMT_CMD_JDK17 = path.join('tools', 'google-java-format-diff.py')
-FMT_SHA1 = path.join('third_party', 'google', 'google-java-format',
-                     '1.24.0.tar.gz.sha1')
+NODE_DIR = path.join('third_party', 'node', '24.16.0', 'linux')
+NODE_EXEC = path.join(NODE_DIR, 'bin', 'node')
 
-NODE_DIR = path.join('third_party', 'node', '24.16.0')
-NODE_EXEC = path.join(NODE_DIR, 'linux', 'bin', 'node')
-NODE_SHA1 = path.join(NODE_DIR, 'linux.tar.gz.sha1')
+PRETTIER_DIR = path.join('third_party', 'prettier', '3.8.3')
+PRETTIER_EXEC = path.join(PRETTIER_DIR, 'node_modules', 'prettier', 'bin',
+                          'prettier.cjs')
 
-PRETTIER_DIR = path.join('third_party', 'prettier')
-PRETTIER_EXEC = path.join(PRETTIER_DIR, '3.8.3', 'node_modules', 'prettier',
-                          'bin', 'prettier.cjs')
-PRETTIER_SHA1 = path.join(PRETTIER_DIR, '3.8.3.tar.gz.sha1')
+PYTHON_FMT_DIR = path.join('third_party', 'google', 'yapf', '20231013')
+PYTHON_FMT_EXEC = path.join(PYTHON_FMT_DIR, 'yapf')
 
-PYTHON_FMT = path.join('third_party', 'google', 'yapf', '20231013')
-PYTHON_FMT_EXEC = path.join('third_party', 'google', 'yapf', '20231013', 'yapf')
-PYTHON_FMT_SHA1 = path.join('third_party', 'google', 'yapf',
-                            '20231013.tar.gz.sha1')
-
-YAPF_PYTHON_PATH = [PYTHON_FMT, os.path.join(PYTHON_FMT, 'third_party')]
+YAPF_PYTHON_PATH = [PYTHON_FMT_DIR, os.path.join(PYTHON_FMT_DIR, 'third_party')]
 
 
 def CheckDoNotMerge(input_api, output_api):
@@ -82,17 +74,11 @@ def CheckFormatting(input_api, output_api, branch):
     seen_python_error = False
     seen_web_error = False
     pending_kotlin_files = []
-    EnsureDepFromGoogleCloudStorage(KOTLIN_FMT_SHA1,
-                                    'google-kotlin-format',
-                                    dep=KOTLIN_FMT_JAR)
-    EnsureDepFromGoogleCloudStorage(FMT_SHA1, 'google-java-format', dep=FMT_CMD)
-    EnsureDepFromGoogleCloudStorage(NODE_SHA1, 'prettier', dep=NODE_EXEC)
-    EnsureDepFromGoogleCloudStorage(PRETTIER_SHA1,
-                                    'prettier',
-                                    dep=PRETTIER_EXEC)
-    EnsureDepFromGoogleCloudStorage(PYTHON_FMT_SHA1,
-                                    'yapf',
-                                    dep=PYTHON_FMT_EXEC)
+    EnsureDepFromGoogleCloudStorage(KOTLIN_FMT_DIR, 'google-kotlin-format')
+    EnsureDepFromGoogleCloudStorage(FMT_DIR, 'google-java-format')
+    EnsureDepFromGoogleCloudStorage(NODE_DIR, 'prettier')
+    EnsureDepFromGoogleCloudStorage(PRETTIER_DIR, 'prettier')
+    EnsureDepFromGoogleCloudStorage(PYTHON_FMT_DIR, 'yapf')
     results = []
     python_runtime = PythonRuntime()
     for f in input_api.AffectedFiles():

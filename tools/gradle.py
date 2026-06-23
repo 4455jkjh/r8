@@ -16,7 +16,7 @@ import sys
 import jdk
 import utils
 
-GRADLE8_SHA1 = os.path.join(utils.THIRD_PARTY, 'gradle.tar.gz.sha1')
+GRADLE8_DIR = os.path.join(utils.THIRD_PARTY, 'gradle')
 
 
 def get_gradle_dir():
@@ -76,19 +76,16 @@ def print_cmd(s):
 
 
 def ensure_gradle():
-    utils.EnsureDepFromGoogleCloudStorage(GRADLE8_SHA1,
-                                          'Gradle binary',
-                                          dep=get_gradle_executable())
+    utils.EnsureDepFromGoogleCloudStorage(GRADLE8_DIR, 'Gradle binary')
 
 
 def ensure_gradle_repositories():
-    dependencies_sha1 = os.path.join(utils.THIRD_PARTY,
-                                     'dependencies.tar.gz.sha1')
-    utils.EnsureDepFromGoogleCloudStorage(dependencies_sha1,
+    dependencies_dir = os.path.join(utils.THIRD_PARTY, 'dependencies')
+    utils.EnsureDepFromGoogleCloudStorage(dependencies_dir,
                                           'Gradle dependencies')
-    dependencies_plugin_sha1 = os.path.join(utils.THIRD_PARTY,
-                                            'dependencies_plugin.tar.gz.sha1')
-    utils.EnsureDepFromGoogleCloudStorage(dependencies_plugin_sha1,
+    dependencies_plugin_dir = os.path.join(utils.THIRD_PARTY,
+                                           'dependencies_plugin')
+    utils.EnsureDepFromGoogleCloudStorage(dependencies_plugin_dir,
                                           'Gradle plugin dependencies')
 
 
@@ -96,8 +93,7 @@ def ensure_jdk():
     # Gradle in the new setup will use the jdks in the evaluation - fetch
     # all beforehand.
     for root in jdk.GetAllJdkDirs():
-        jdk_sha1 = root + '.tar.gz.sha1'
-        utils.EnsureDepFromGoogleCloudStorage(jdk_sha1, root)
+        utils.EnsureDepFromGoogleCloudStorage(root, root)
 
 
 def ensure_deps():

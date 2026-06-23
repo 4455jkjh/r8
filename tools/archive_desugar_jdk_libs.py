@@ -198,7 +198,7 @@ def BuildDesugaredLibrary(checkout_dir, variant, version=None):
         with utils.TempDir() as androidHomeTemp:
             setUpFakeAndroidHome(androidHomeTemp)
             javaEnv = GetJavaEnv(androidHomeTemp)
-            bazel = os.path.join(utils.BAZEL_TOOL, 'lib', 'bazel', 'bin',
+            bazel = os.path.join(utils.BAZEL_DIR, 'lib', 'bazel', 'bin',
                                  'bazel')
             cmd = [
                 bazel, '--bazelrc=/dev/null', 'build', '--spawn_strategy=local',
@@ -383,11 +383,10 @@ def Main(argv):
         archive.set_r_limit_to_max()
 
     # Make sure bazel is extracted in third_party.
-    utils.EnsureDepFromGoogleCloudStorage(utils.BAZEL_SHA_FILE, 'Bazel tool')
-    utils.EnsureDepFromGoogleCloudStorage(utils.JAVA8_SHA_FILE,
-                                          'Java 8 runtime')
+    utils.EnsureDepFromGoogleCloudStorage(utils.BAZEL_DIR, 'Bazel tool')
+    utils.EnsureDepFromGoogleCloudStorage(utils.JAVA8_DIR, 'Java 8 runtime')
     gradle.ensure_deps()
-    utils.EnsureDepFromGoogleCloudStorage(utils.DESUGAR_JDK_LIBS_11_SHA_FILE,
+    utils.EnsureDepFromGoogleCloudStorage(utils.DESUGAR_JDK_LIBS_11_DIR,
                                           'desugar_jdk_libs_11')
 
     for v in options.variant:

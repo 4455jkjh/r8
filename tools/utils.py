@@ -147,18 +147,15 @@ PINNED_PGR8_JAR = os.path.join(REPO_ROOT, 'third_party/r8/r8-pg6.0.1.jar')
 
 OPENSOURCE_DUMPS_DIR = os.path.join(THIRD_PARTY, 'opensource-apps')
 INTERNAL_DUMPS_DIR = os.path.join(THIRD_PARTY, 'internal-apps')
-BAZEL_SHA_FILE = os.path.join(THIRD_PARTY, 'bazel.tar.gz.sha1')
-BAZEL_TOOL = os.path.join(THIRD_PARTY, 'bazel')
-JAVA8_SHA_FILE = os.path.join(THIRD_PARTY, 'openjdk', 'jdk8',
-                              'linux-x86.tar.gz.sha1')
-JAVA11_SHA_FILE = os.path.join(THIRD_PARTY, 'openjdk', 'jdk-11',
-                               'linux.tar.gz.sha1')
+BAZEL_DIR = os.path.join(THIRD_PARTY, 'bazel')
+JAVA8_DIR = os.path.join(THIRD_PARTY, 'openjdk', 'jdk8', 'linux-x86')
+JAVA11_DIR = os.path.join(THIRD_PARTY, 'openjdk', 'jdk-11', 'linux')
 JAVA17_SHA_FILE = os.path.join(THIRD_PARTY, 'openjdk', 'jdk-17',
                                'linux.tar.gz.sha1')
 JAVA21_SHA_FILE = os.path.join(THIRD_PARTY, 'openjdk', 'jdk-21',
                                'linux.tar.gz.sha1')
-DESUGAR_JDK_LIBS_11_SHA_FILE = os.path.join(THIRD_PARTY, 'openjdk',
-                                            'desugar_jdk_libs_11.tar.gz.sha1')
+DESUGAR_JDK_LIBS_11_DIR = os.path.join(THIRD_PARTY, 'openjdk',
+                                       'desugar_jdk_libs_11')
 IGNORE_WARNINGS_RULES = os.path.join(REPO_ROOT, 'src', 'test',
                                      'ignorewarnings.rules')
 ANDROID_HOME_ENVIROMENT_NAME = "ANDROID_HOME"
@@ -351,43 +348,37 @@ def IsWindows():
     return defines.IsWindows()
 
 
-def EnsureDepFromGoogleCloudStorage(sha1, msg, dep=None, tgz=None):
-    """Ensures that a dependency is downloaded from Google Cloud Storage and extracted.
+def should_download(output_dir, tgz_file, sha1, success_file):
+    if (os.path.exists(output_dir) and os.path.exists(tgz_file) and
+            os.path.exists(success_file) and
+            os.path.getmtime(sha1) <= os.path.getmtime(success_file)):
+        return False
+    return True
 
-    Downloads are reused (skipped) if:
-    1. The dependency directory or file `dep` exists.
-    2. The tarball `tgz` exists.
-    3. The tarball `tgz` is not older than the `.sha1` file. This ensures that if
-       the `.sha1` file is updated (e.g. by pulling a new version), a re-download
-       is triggered.
 
-    Args:
-      sha1: Path to the .sha1 file for the dependency.
-      msg: A message to print when the dependency is present.
-      dep: The directory or file that should exist if the dependency is present.
-        If None, it is derived from sha1 by removing '.tar.gz.sha1'.
-      tgz: The tarball file path. If None, it is derived from sha1 by removing
-        '.sha1'.
-    """
-    if tgz is None:
-        assert sha1.endswith('.sha1')
-        tgz = sha1[:-5]
-    if dep is None:
-        assert sha1.endswith('.tar.gz.sha1')
-        dep = sha1[:-12]
-    if (not os.path.exists(dep) or not os.path.exists(tgz) or
-            os.path.getmtime(tgz) < os.path.getmtime(sha1)):
-        if os.path.exists(dep):
-            if os.path.isdir(dep):
-                shutil.rmtree(dep)
-            else:
-                os.remove(dep)
-        if os.path.exists(tgz):
-            os.remove(tgz)
-        DownloadFromGoogleCloudStorage(sha1)
-        # Update the mtime of the tar file to make sure we do not run again unless
-        # there is an update.
-        os.utime(tgz, None)
+def run_download(sha1, output_dir, success_file):
+    if os.path.exists(success_file):
+        os.remove(success_file)
+
+    if os.path.exists(output_dir):
+        shutil.rmtree(output_dir)
+
+    DownloadFromGoogleCloudStorage(sha1)
+
+    with open(success_file, 'w') as _:
+        pass
+
+
+def EnsureDepFromGoogleCloudStorage(path, msg):
+    output_dir = path
+    tar_gz_file = path + '.tar.gz'
+    sha1_file = tar_gz_file + '.sha1'
+    success_file = path + '.success'
+    if not os.path.exists(sha1_file):
+        raise Exception(f"Missing sha1 file: {sha1_file}")
+
+    if should_download(output_dir, tar_gz_file, sha1_file, success_file):
+        run_download(sha1_file, output_dir, success_file)
 
 
 def DownloadFromX20(sha1_file):

@@ -12,7 +12,10 @@ public enum class DependencyType {
 public data class ThirdPartyDependency(
   val packageName: String,
   val path: File,
-  val sha1File: File,
   val testOnly: Boolean = false,
   val type: DependencyType = DependencyType.GOOGLE_STORAGE,
-)
+) {
+  val tarGzFile: File = path.resolveSibling("${path.name}.tar.gz")
+  val sha1File: File = path.resolveSibling("${path.name}.tar.gz.sha1")
+  val successFile: File = path.resolveSibling("${path.name}.success")
+}
