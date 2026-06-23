@@ -150,10 +150,8 @@ INTERNAL_DUMPS_DIR = os.path.join(THIRD_PARTY, 'internal-apps')
 BAZEL_DIR = os.path.join(THIRD_PARTY, 'bazel')
 JAVA8_DIR = os.path.join(THIRD_PARTY, 'openjdk', 'jdk8', 'linux-x86')
 JAVA11_DIR = os.path.join(THIRD_PARTY, 'openjdk', 'jdk-11', 'linux')
-JAVA17_SHA_FILE = os.path.join(THIRD_PARTY, 'openjdk', 'jdk-17',
-                               'linux.tar.gz.sha1')
-JAVA21_SHA_FILE = os.path.join(THIRD_PARTY, 'openjdk', 'jdk-21',
-                               'linux.tar.gz.sha1')
+JAVA17_DIR = os.path.join(THIRD_PARTY, 'openjdk', 'jdk-17', 'linux')
+JAVA21_DIR = os.path.join(THIRD_PARTY, 'openjdk', 'jdk-21', 'linux')
 DESUGAR_JDK_LIBS_11_DIR = os.path.join(THIRD_PARTY, 'openjdk',
                                        'desugar_jdk_libs_11')
 IGNORE_WARNINGS_RULES = os.path.join(REPO_ROOT, 'src', 'test',

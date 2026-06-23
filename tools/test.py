@@ -420,9 +420,9 @@ def test(options, args):
                                                   'Java 8 runtime')
             utils.EnsureDepFromGoogleCloudStorage(utils.JAVA11_DIR,
                                                   'Java 11 runtime')
-            utils.EnsureDepFromGoogleCloudStorage(utils.JAVA17_SHA_FILE,
+            utils.EnsureDepFromGoogleCloudStorage(utils.JAVA17_DIR,
                                                   'Java 17 runtime')
-            utils.EnsureDepFromGoogleCloudStorage(utils.JAVA21_SHA_FILE,
+            utils.EnsureDepFromGoogleCloudStorage(utils.JAVA21_DIR,
                                                   'Java 21 runtime')
             (library_jar,
              maven_zip) = archive_desugar_jdk_libs.BuildDesugaredLibrary(
