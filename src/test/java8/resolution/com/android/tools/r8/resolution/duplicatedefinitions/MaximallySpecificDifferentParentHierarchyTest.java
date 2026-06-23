@@ -6,8 +6,10 @@ package com.android.tools.r8.resolution.duplicatedefinitions;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeTrue;
 
+import com.android.tools.r8.R8FullTestBuilder;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestCompilerBuilder;
 import com.android.tools.r8.TestParameters;
@@ -38,14 +40,13 @@ import org.junit.runners.Parameterized.Parameters;
  *
  * <pre>
  * I: I_L { f }
- * J: J_L extends I { f }
- * K: K_L extends J { }, K_P extends J { }
- * class Main implements I,K
+ * J: J_L extends I { }, J_P { f }
+ * class Main implements I, J
  * </pre>
  */
-public class MaximallySpecificSingleDominatingAfterJoinTest extends TestBase {
+public class MaximallySpecificDifferentParentHierarchyTest extends TestBase {
 
-  private static final String EXPECTED = "J::foo";
+  private static final String EXPECTED = "I::foo";
 
   @Parameter() public TestParameters parameters;
 
@@ -59,22 +60,19 @@ public class MaximallySpecificSingleDominatingAfterJoinTest extends TestBase {
   @Before
   public void setup() throws Exception {
     libraryClasses = temp.newFile("lib.jar").toPath();
-    ZipBuilder.builder(libraryClasses)
-        .addFilesRelative(
-            ToolHelper.getClassPathForTests(),
-            ToolHelper.getClassFileForTestClass(K.class),
-            ToolHelper.getClassFileForTestClass(J.class),
-            ToolHelper.getClassFileForTestClass(I.class))
-        .build();
+    ZipBuilder builder = ZipBuilder.builder(libraryClasses);
+    ToolHelper.addClassToZipBuilder(builder, I.class);
+    ToolHelper.addClassToZipBuilder(builder, J.class);
+    builder.build();
   }
 
   @Test
   public void testResolution() throws Exception {
     assumeTrue(parameters.isOrSimulateNoneRuntime());
     AndroidApp.Builder builder = AndroidApp.builder();
-    builder.addProgramFiles(
-        ToolHelper.getClassFileForTestClass(K.class),
-        ToolHelper.getClassFileForTestClass(Main.class));
+    builder
+        .addProgramFiles(ToolHelper.getClassFileForTestClassFromResources(Main.class))
+        .addClassProgramData(getJProgram());
     builder.addLibraryFiles(parameters.getDefaultRuntimeLibrary(), libraryClasses);
     AppView<AppInfoWithClassHierarchy> appView =
         computeAppViewWithClassHierarchy(
@@ -86,17 +84,30 @@ public class MaximallySpecificSingleDominatingAfterJoinTest extends TestBase {
     DexMethod method = buildNullaryVoidMethod(Main.class, "foo", appInfo.dexItemFactory());
     MethodResolutionResult methodResolutionResult =
         appInfo.unsafeResolveMethodDueToDexFormat(method);
-    assertTrue(methodResolutionResult.isSingleResolution());
+    assertTrue(methodResolutionResult.isMultiMethodResolutionResult());
     Set<String> methodResults = new HashSet<>();
+    Set<String> failedTypes = new HashSet<>();
     methodResolutionResult.forEachMethodResolutionResult(
         result -> {
-          assertTrue(result.isSingleResolution());
-          SingleResolutionResult<?> resolution = result.asSingleResolution();
-          methodResults.add(
-              (resolution.getResolvedHolder().isProgramClass() ? "Program: " : "Library: ")
-                  + resolution.getResolvedMethod().getReference().toString());
+          if (result.isSingleResolution()) {
+            SingleResolutionResult<?> resolution = result.asSingleResolution();
+            methodResults.add(
+                (resolution.getResolvedHolder().isProgramClass() ? "Program: " : "Library: ")
+                    + resolution.getResolvedMethod().getReference().toString());
+          } else {
+            assertTrue(result.isFailedResolution());
+            result
+                .asFailedResolution()
+                .forEachFailureDependency(
+                    type -> failedTypes.add(type.toDescriptorString()), m -> fail());
+          }
         });
-    assertEquals(ImmutableSet.of("Library: void " + typeName(J.class) + ".foo()"), methodResults);
+    assertEquals(
+        ImmutableSet.of(
+            "Library: void " + typeName(I.class) + ".foo()",
+            "Program: void " + typeName(J.class) + ".foo()"),
+        methodResults);
+    assertEquals(ImmutableSet.of(descriptor(J.class)), failedTypes);
   }
 
   @Test
@@ -104,7 +115,8 @@ public class MaximallySpecificSingleDominatingAfterJoinTest extends TestBase {
     parameters.assumeJvmTestParameters();
     testForJvm(parameters)
         .addRunClasspathFiles(libraryClasses)
-        .addProgramClasses(K.class, Main.class)
+        .addProgramClasses(Main.class)
+        .addProgramClassFileData(getJProgram())
         .run(parameters.getRuntime(), Main.class)
         .assertSuccessWithOutputLines(EXPECTED);
   }
@@ -112,39 +124,43 @@ public class MaximallySpecificSingleDominatingAfterJoinTest extends TestBase {
   @Test
   public void testD8() throws Exception {
     parameters.assumeDexRuntime();
-    runTest(
-        testForD8(parameters.getBackend()),
-        parameters.getDexRuntimeVersion().isDalvik()
-            ? VerifyError.class
-            // TODO(b/214382176): Extend resolution to support multiple definition results.
-            : AbstractMethodError.class);
+    testForD8()
+        .apply(this::setupTestBuilder)
+        .compile()
+        .addBootClasspathFiles(buildOnDexRuntime(parameters, libraryClasses))
+        .run(parameters.getRuntime(), Main.class)
+        // TODO(b/230289235): Extend to support multiple definition results.
+        .assertFailureWithErrorThatThrowsIf(
+            !parameters.canUseDefaultAndStaticInterfaceMethods(),
+            IncompatibleClassChangeError.class)
+        .assertSuccessWithOutputLinesIf(
+            parameters.canUseDefaultAndStaticInterfaceMethods(), EXPECTED);
   }
 
   @Test
   public void testR8() throws Exception {
-    runTest(
-        testForR8(parameters.getBackend()).addKeepMainRule(Main.class), AbstractMethodError.class);
-  }
-
-  private void runTest(
-      TestCompilerBuilder<?, ?, ?, ?, ?> testBuilder,
-      Class<? extends Throwable> errorIfNotSupportingDefaultMethods)
-      throws Exception {
+    // TODO(b/230289235): Extend to support multiple definition results.
+    R8FullTestBuilder testBuilder = testForR8(parameters.getBackend()).addKeepMainRule(Main.class);
     testBuilder
-        .addProgramClasses(K.class, Main.class)
-        .addDefaultRuntimeLibrary(parameters)
-        .addLibraryFiles(libraryClasses)
-        .setMinApi(parameters)
-        .addOptionsModification(options -> options.loadAllClassDefinitions = true)
+        .apply(this::setupTestBuilder)
         .compile()
         .addBootClasspathFiles(buildOnDexRuntime(parameters, libraryClasses))
         .run(parameters.getRuntime(), Main.class)
-        .assertSuccessWithOutputLinesIf(
-            parameters.canUseDefaultAndStaticInterfaceMethods(), EXPECTED)
-        // TODO(b/230289235): Extend to support multiple definition results.
-        .assertFailureWithErrorThatThrowsIf(
-            !parameters.canUseDefaultAndStaticInterfaceMethods(),
-            errorIfNotSupportingDefaultMethods);
+        .assertFailureWithErrorThatThrows(IncompatibleClassChangeError.class);
+  }
+
+  private void setupTestBuilder(TestCompilerBuilder<?, ?, ?, ?, ?> testBuilder) throws Exception {
+    testBuilder
+        .addProgramClasses(Main.class)
+        .addProgramClassFileData(getJProgram())
+        .addDefaultRuntimeLibrary(parameters)
+        .addLibraryFiles(libraryClasses)
+        .setMinApi(parameters)
+        .addOptionsModification(options -> options.loadAllClassDefinitions = true);
+  }
+
+  private byte[] getJProgram() throws Exception {
+    return transformer(JProgram.class).setClassDescriptor(descriptor(J.class)).transform();
   }
 
   public interface I {
@@ -153,17 +169,15 @@ public class MaximallySpecificSingleDominatingAfterJoinTest extends TestBase {
     }
   }
 
-  public interface J extends I {
-    @Override
+  public interface JProgram {
     default void foo() {
-      System.out.println("J::foo");
+      System.out.println("J_Program::foo");
     }
   }
 
-  /* Present on both library and program */
-  public interface K extends J {}
+  public interface J extends I {}
 
-  public static class Main implements I, K {
+  public static class Main implements I, J {
 
     public static void main(String[] args) {
       new Main().foo();

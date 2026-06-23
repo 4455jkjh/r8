@@ -17,7 +17,10 @@ import com.android.tools.r8.TestRunResult;
 import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.graph.AppInfoWithClassHierarchy;
 import com.android.tools.r8.graph.AppView;
+import com.android.tools.r8.graph.DexClass;
+import com.android.tools.r8.graph.DexItemFactory;
 import com.android.tools.r8.graph.DexMethod;
+import com.android.tools.r8.graph.DexType;
 import com.android.tools.r8.graph.MethodResolutionResult;
 import com.android.tools.r8.graph.MethodResolutionResult.SingleResolutionResult;
 import com.android.tools.r8.utils.AndroidApp;
@@ -39,12 +42,13 @@ import org.junit.runners.Parameterized.Parameters;
  * This is testing resolving Main.f for:
  *
  * <pre>
- * I: I_L { f }, I_P { f }
- * J: J_L { f }, J_P { f }
- * class Main implements I,J
+ * I: I_L { f }, I_P { }
+ * class Main implements I
  * </pre>
  */
-public class MaximallySpecificMultiplePathsICCETest extends TestBase {
+public class MaximallySpecificSingleLibraryPartialTest extends TestBase {
+
+  private static final String EXPECTED = "I::foo";
 
   @Parameter() public TestParameters parameters;
 
@@ -58,12 +62,9 @@ public class MaximallySpecificMultiplePathsICCETest extends TestBase {
   @Before
   public void setup() throws Exception {
     libraryClasses = temp.newFile("lib.jar").toPath();
-    ZipBuilder.builder(libraryClasses)
-        .addFilesRelative(
-            ToolHelper.getClassPathForTests(),
-            ToolHelper.getClassFileForTestClass(J.class),
-            ToolHelper.getClassFileForTestClass(I.class))
-        .build();
+    ZipBuilder builder = ZipBuilder.builder(libraryClasses);
+    ToolHelper.addClassToZipBuilder(builder, I.class);
+    builder.build();
   }
 
   @Test
@@ -71,10 +72,8 @@ public class MaximallySpecificMultiplePathsICCETest extends TestBase {
     assumeTrue(parameters.isOrSimulateNoneRuntime());
     AndroidApp.Builder builder = AndroidApp.builder();
     builder
-        .addProgramFiles(
-            ToolHelper.getClassFileForTestClass(I.class),
-            ToolHelper.getClassFileForTestClass(J.class))
-        .addClassProgramData(getMainWithInterfacesIAndJ());
+        .addProgramFiles(ToolHelper.getClassFileForTestClassFromResources(Main.class))
+        .addClassProgramData(getIProgram());
     builder.addLibraryFiles(parameters.getDefaultRuntimeLibrary(), libraryClasses);
     AppView<AppInfoWithClassHierarchy> appView =
         computeAppViewWithClassHierarchy(
@@ -83,12 +82,14 @@ public class MaximallySpecificMultiplePathsICCETest extends TestBase {
             null,
             options -> options.loadAllClassDefinitions = true);
     AppInfoWithClassHierarchy appInfo = appView.appInfo();
-    DexMethod method = buildNullaryVoidMethod(Main.class, "foo", appInfo.dexItemFactory());
+    DexItemFactory factory = appInfo.dexItemFactory();
+    DexMethod method = buildNullaryVoidMethod(Main.class, "foo", factory);
+    DexClass mainClass = appInfo.definitionFor(factory.createType(descriptor(Main.class)));
     MethodResolutionResult methodResolutionResult =
         appInfo.unsafeResolveMethodDueToDexFormat(method);
     assertTrue(methodResolutionResult.isMultiMethodResolutionResult());
     Set<String> methodResults = new HashSet<>();
-    Set<String> failedTypes = new HashSet<>();
+    Set<DexType> failingTypesResult = new HashSet<>();
     methodResolutionResult.forEachMethodResolutionResult(
         result -> {
           if (result.isSingleResolution()) {
@@ -97,21 +98,18 @@ public class MaximallySpecificMultiplePathsICCETest extends TestBase {
                 (resolution.getResolvedHolder().isProgramClass() ? "Program: " : "Library: ")
                     + resolution.getResolvedMethod().getReference().toString());
           } else {
-            assertTrue(result.isFailedResolution());
+            assertTrue(result.isNoSuchMethodErrorResult(mainClass, appView));
+            methodResults.add(typeName(NoSuchMethodError.class));
             result
                 .asFailedResolution()
-                .forEachFailureDependency(
-                    type -> failedTypes.add(type.toDescriptorString()), m -> fail());
+                .forEachFailureDependency(failingTypesResult::add, failingMethod -> fail());
           }
         });
     assertEquals(
         ImmutableSet.of(
-            "Library: void " + typeName(I.class) + ".foo()",
-            "Program: void " + typeName(I.class) + ".foo()",
-            "Library: void " + typeName(J.class) + ".foo()",
-            "Program: void " + typeName(J.class) + ".foo()"),
+            "Library: void " + typeName(I.class) + ".foo()", typeName(NoSuchMethodError.class)),
         methodResults);
-    assertEquals(ImmutableSet.of(descriptor(J.class), descriptor(I.class)), failedTypes);
+    assertEquals(ImmutableSet.of(factory.createType(descriptor(I.class))), failingTypesResult);
   }
 
   @Test
@@ -119,30 +117,45 @@ public class MaximallySpecificMultiplePathsICCETest extends TestBase {
     parameters.assumeJvmTestParameters();
     testForJvm(parameters)
         .addRunClasspathFiles(libraryClasses)
-        .addProgramClasses(I.class, J.class)
-        .addProgramClassFileData(getMainWithInterfacesIAndJ())
+        .addProgramClasses(Main.class)
+        .addProgramClassFileData(getIProgram())
         .run(parameters.getRuntime(), Main.class)
-        .assertFailureWithErrorThatThrows(IncompatibleClassChangeError.class);
+        .assertSuccessWithOutputLines(EXPECTED);
   }
 
   @Test
   public void testD8() throws Exception {
     parameters.assumeDexRuntime();
+    // TODO(b/230289235): Extend resolution to support multiple definition results.
     runTest(testForD8(parameters.getBackend()))
-        .assertFailureWithErrorThatThrows(IncompatibleClassChangeError.class);
+        .assertFailureWithErrorThatThrowsIf(
+            !parameters.canUseDefaultAndStaticInterfaceMethods(),
+            parameters.getDexRuntimeVersion().isDalvik()
+                ? VerifyError.class
+                : AbstractMethodError.class)
+        .assertSuccessWithOutputLinesIf(
+            parameters.canUseDefaultAndStaticInterfaceMethods(), EXPECTED);
   }
 
   @Test
   public void testR8() throws Exception {
+    // TODO(b/230289235): Extend resolution to support multiple definition results.
     runTest(testForR8(parameters.getBackend()).addKeepMainRule(Main.class))
-        .assertFailureWithErrorThatThrows(IncompatibleClassChangeError.class);
+        .applyIf(
+            parameters.canUseDefaultAndStaticInterfaceMethods(),
+            rr -> rr.assertSuccessWithOutputLines(EXPECTED),
+            rr ->
+                rr.assertFailureWithErrorThatThrows(
+                    parameters.getDexRuntimeVersion().isDalvik()
+                        ? VerifyError.class
+                        : AbstractMethodError.class));
   }
 
   private TestRunResult<?> runTest(TestCompilerBuilder<?, ?, ?, ?, ?> testBuilder)
       throws Exception {
     return testBuilder
-        .addProgramClasses(I.class, J.class)
-        .addProgramClassFileData(getMainWithInterfacesIAndJ())
+        .addProgramClasses(Main.class)
+        .addProgramClassFileData(getIProgram())
         .addDefaultRuntimeLibrary(parameters)
         .addLibraryFiles(libraryClasses)
         .setMinApi(parameters)
@@ -152,8 +165,8 @@ public class MaximallySpecificMultiplePathsICCETest extends TestBase {
         .run(parameters.getRuntime(), Main.class);
   }
 
-  private byte[] getMainWithInterfacesIAndJ() throws Exception {
-    return transformer(Main.class).setImplements(I.class, J.class).transform();
+  private byte[] getIProgram() throws Exception {
+    return transformer(IProgram.class).setClassDescriptor(descriptor(I.class)).transform();
   }
 
   public interface I {
@@ -162,13 +175,9 @@ public class MaximallySpecificMultiplePathsICCETest extends TestBase {
     }
   }
 
-  public interface J {
-    default void foo() {
-      System.out.println("J::foo");
-    }
-  }
+  public interface IProgram {}
 
-  public static class Main implements I /*, J */ {
+  public static class Main implements I {
 
     public static void main(String[] args) {
       new Main().foo();

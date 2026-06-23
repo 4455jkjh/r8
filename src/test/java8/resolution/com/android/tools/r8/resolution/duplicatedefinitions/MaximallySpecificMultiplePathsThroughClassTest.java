@@ -6,10 +6,8 @@ package com.android.tools.r8.resolution.duplicatedefinitions;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeTrue;
 
-import com.android.tools.r8.R8FullTestBuilder;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestCompilerBuilder;
 import com.android.tools.r8.TestParameters;
@@ -39,14 +37,13 @@ import org.junit.runners.Parameterized.Parameters;
  * This is testing resolving Main.f for:
  *
  * <pre>
- * I: I_L { f }
- * J: J_L extends I { }, J_P { f }
- * class Main implements I, J
+ * I: I_L { f }, I_P { f }
+ * A: A_P implements I { }
+ * J: J_P { f }
+ * class Main extends A implements J
  * </pre>
  */
-public class MaximallySpecificDifferentParentHierarchyTest extends TestBase {
-
-  private static final String EXPECTED = "I::foo";
+public class MaximallySpecificMultiplePathsThroughClassTest extends TestBase {
 
   @Parameter() public TestParameters parameters;
 
@@ -60,12 +57,9 @@ public class MaximallySpecificDifferentParentHierarchyTest extends TestBase {
   @Before
   public void setup() throws Exception {
     libraryClasses = temp.newFile("lib.jar").toPath();
-    ZipBuilder.builder(libraryClasses)
-        .addFilesRelative(
-            ToolHelper.getClassPathForTests(),
-            ToolHelper.getClassFileForTestClass(I.class),
-            ToolHelper.getClassFileForTestClass(J.class))
-        .build();
+    ZipBuilder builder = ZipBuilder.builder(libraryClasses);
+    ToolHelper.addClassToZipBuilder(builder, I.class);
+    builder.build();
   }
 
   @Test
@@ -73,8 +67,11 @@ public class MaximallySpecificDifferentParentHierarchyTest extends TestBase {
     assumeTrue(parameters.isOrSimulateNoneRuntime());
     AndroidApp.Builder builder = AndroidApp.builder();
     builder
-        .addProgramFiles(ToolHelper.getClassFileForTestClass(Main.class))
-        .addClassProgramData(getJProgram());
+        .addProgramFiles(
+            ToolHelper.getClassFileForTestClassFromResources(Main.class),
+            ToolHelper.getClassFileForTestClassFromResources(J.class))
+        .addClassProgramData(getAWithImplementsI())
+        .addClassProgramData(getIProgram());
     builder.addLibraryFiles(parameters.getDefaultRuntimeLibrary(), libraryClasses);
     AppView<AppInfoWithClassHierarchy> appView =
         computeAppViewWithClassHierarchy(
@@ -88,28 +85,20 @@ public class MaximallySpecificDifferentParentHierarchyTest extends TestBase {
         appInfo.unsafeResolveMethodDueToDexFormat(method);
     assertTrue(methodResolutionResult.isMultiMethodResolutionResult());
     Set<String> methodResults = new HashSet<>();
-    Set<String> failedTypes = new HashSet<>();
     methodResolutionResult.forEachMethodResolutionResult(
         result -> {
-          if (result.isSingleResolution()) {
-            SingleResolutionResult<?> resolution = result.asSingleResolution();
-            methodResults.add(
-                (resolution.getResolvedHolder().isProgramClass() ? "Program: " : "Library: ")
-                    + resolution.getResolvedMethod().getReference().toString());
-          } else {
-            assertTrue(result.isFailedResolution());
-            result
-                .asFailedResolution()
-                .forEachFailureDependency(
-                    type -> failedTypes.add(type.toDescriptorString()), m -> fail());
-          }
+          assertTrue(result.isSingleResolution());
+          SingleResolutionResult<?> resolution = result.asSingleResolution();
+          methodResults.add(
+              (resolution.getResolvedHolder().isProgramClass() ? "Program: " : "Library: ")
+                  + resolution.getResolvedMethod().getReference().toString());
         });
     assertEquals(
         ImmutableSet.of(
             "Library: void " + typeName(I.class) + ".foo()",
+            "Program: void " + typeName(I.class) + ".foo()",
             "Program: void " + typeName(J.class) + ".foo()"),
         methodResults);
-    assertEquals(ImmutableSet.of(descriptor(J.class)), failedTypes);
   }
 
   @Test
@@ -117,52 +106,48 @@ public class MaximallySpecificDifferentParentHierarchyTest extends TestBase {
     parameters.assumeJvmTestParameters();
     testForJvm(parameters)
         .addRunClasspathFiles(libraryClasses)
-        .addProgramClasses(Main.class)
-        .addProgramClassFileData(getJProgram())
+        .addProgramClasses(J.class, Main.class)
+        .addProgramClassFileData(getAWithImplementsI(), getIProgram())
         .run(parameters.getRuntime(), Main.class)
-        .assertSuccessWithOutputLines(EXPECTED);
+        .assertFailureWithErrorThatThrows(IncompatibleClassChangeError.class);
   }
 
   @Test
   public void testD8() throws Exception {
     parameters.assumeDexRuntime();
-    testForD8()
-        .apply(this::setupTestBuilder)
-        .compile()
-        .addBootClasspathFiles(buildOnDexRuntime(parameters, libraryClasses))
-        .run(parameters.getRuntime(), Main.class)
-        // TODO(b/230289235): Extend to support multiple definition results.
-        .assertFailureWithErrorThatThrowsIf(
-            !parameters.canUseDefaultAndStaticInterfaceMethods(),
-            IncompatibleClassChangeError.class)
-        .assertSuccessWithOutputLinesIf(
-            parameters.canUseDefaultAndStaticInterfaceMethods(), EXPECTED);
+    runTest(testForD8(parameters.getBackend()), IncompatibleClassChangeError.class);
   }
 
   @Test
   public void testR8() throws Exception {
     // TODO(b/230289235): Extend to support multiple definition results.
-    R8FullTestBuilder testBuilder = testForR8(parameters.getBackend()).addKeepMainRule(Main.class);
-    testBuilder
-        .apply(this::setupTestBuilder)
-        .compile()
-        .addBootClasspathFiles(buildOnDexRuntime(parameters, libraryClasses))
-        .run(parameters.getRuntime(), Main.class)
-        .assertFailureWithErrorThatThrows(IncompatibleClassChangeError.class);
+    runTest(
+        testForR8(parameters.getBackend()).addKeepMainRule(Main.class),
+        IncompatibleClassChangeError.class);
   }
 
-  private void setupTestBuilder(TestCompilerBuilder<?, ?, ?, ?, ?> testBuilder) throws Exception {
+  private void runTest(
+      TestCompilerBuilder<?, ?, ?, ?, ?> testBuilder, Class<? extends Throwable> errorClass)
+      throws Exception {
     testBuilder
-        .addProgramClasses(Main.class)
-        .addProgramClassFileData(getJProgram())
+        .addProgramClasses(J.class, Main.class)
+        .addProgramClassFileData(getAWithImplementsI(), getIProgram())
         .addDefaultRuntimeLibrary(parameters)
         .addLibraryFiles(libraryClasses)
         .setMinApi(parameters)
-        .addOptionsModification(options -> options.loadAllClassDefinitions = true);
+        .addOptionsModification(options -> options.loadAllClassDefinitions = true)
+        .compile()
+        .addBootClasspathFiles(buildOnDexRuntime(parameters, libraryClasses))
+        .run(parameters.getRuntime(), Main.class)
+        .assertFailureWithErrorThatThrows(errorClass);
   }
 
-  private byte[] getJProgram() throws Exception {
-    return transformer(JProgram.class).setClassDescriptor(descriptor(J.class)).transform();
+  private byte[] getAWithImplementsI() throws Exception {
+    return transformer(A.class).setImplements(I.class).transform();
+  }
+
+  private byte[] getIProgram() throws Exception {
+    return transformer(IProgram.class).setClassDescriptor(descriptor(I.class)).transform();
   }
 
   public interface I {
@@ -171,15 +156,21 @@ public class MaximallySpecificDifferentParentHierarchyTest extends TestBase {
     }
   }
 
-  public interface JProgram {
+  public interface IProgram {
     default void foo() {
-      System.out.println("J_Program::foo");
+      System.out.println("I_Program::foo");
     }
   }
 
-  public interface J extends I {}
+  public interface J {
+    default void foo() {
+      System.out.println("J::foo");
+    }
+  }
 
-  public static class Main implements I, J {
+  public static class A /* implements I */ {}
+
+  public static class Main extends A implements J {
 
     public static void main(String[] args) {
       new Main().foo();

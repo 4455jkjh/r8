@@ -48,7 +48,7 @@ public class ArrayTargetLookupTest extends TestBase {
     AndroidApp app =
         AndroidApp.builder()
             .addLibraryFile(ToolHelper.getDefaultAndroidJar())
-            .addProgramFiles(ToolHelper.getClassFileForTestClass(Foo.class))
+            .addProgramFiles(ToolHelper.getClassFileForTestClassFromResources(Foo.class))
             .build();
     DirectMappedDexApplication application =
         new ApplicationReader(app, options, timing).readDirectSingleThreaded();

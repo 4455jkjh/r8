@@ -1625,7 +1625,7 @@ public class ToolHelper {
    * directly to avoid copying. Otherwise, the resource is copied to a temporary file.
    *
    * <p>Note: This only works if the corresponding file has been explicitly added as a test resource
-   * in the Gradle build configuration.
+   * in the Gradle build configuration. '.class' files are always available but might be obfuscated.
    *
    * <p>If the resource name is absolute (starts with "/") then the given class doesn't matter. If
    * the resource name is relative then its resolved based on the package of the given class, e.g.
@@ -1672,6 +1672,28 @@ public class ToolHelper {
       Files.copy(is, tempFile, StandardCopyOption.REPLACE_EXISTING);
     }
     return tempFile;
+  }
+
+  public static Path getClassFileForTestClassFromResources(Class<?> clazz) {
+    String binaryName = clazz.getName();
+    int lastDot = binaryName.lastIndexOf('.');
+    String classNameWithOuter = lastDot == -1 ? binaryName : binaryName.substring(lastDot + 1);
+    String resourceName = classNameWithOuter + ".class";
+    return getResourceAsReadOnlyFile(clazz, resourceName);
+  }
+
+  public static ZipUtils.ZipBuilder addClassToZipBuilder(ZipUtils.ZipBuilder builder, Class<?> clazz) throws IOException {
+    String entryName = ZipUtils.zipEntryNameForClass(clazz);
+    Path path = getClassFileForTestClassFromResources(clazz);
+    return builder.addFile(entryName, path);
+  }
+
+  public static ZipUtils.ZipBuilder addClassToZipBuilder(ZipUtils.ZipBuilder builder, Class<?> anchor, String relativeClassName) throws IOException {
+    String packagePath = anchor.getPackage().getName().replace('.', '/');
+    String entryName = packagePath + "/" + relativeClassName + CLASS_EXTENSION;
+    Path path = getResourceAsReadOnlyFile(anchor, relativeClassName + CLASS_EXTENSION);
+    builder.addFile(entryName, path);
+    return builder;
   }
 
   public static Path getClassFileForTestClass(Class<?> clazz) {

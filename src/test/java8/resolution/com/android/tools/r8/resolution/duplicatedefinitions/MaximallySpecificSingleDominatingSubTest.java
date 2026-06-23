@@ -21,6 +21,7 @@ import com.android.tools.r8.graph.MethodResolutionResult.SingleResolutionResult;
 import com.android.tools.r8.utils.AndroidApp;
 import com.android.tools.r8.utils.ZipUtils.ZipBuilder;
 import com.android.tools.r8.utils.timing.Timing;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import java.nio.file.Path;
 import java.util.HashSet;
@@ -37,13 +38,15 @@ import org.junit.runners.Parameterized.Parameters;
  * This is testing resolving Main.f for:
  *
  * <pre>
- * I: I_L { f }, I_P { f }
- * A: A_P implements I { }
- * J: J_P { f }
- * class Main extends A implements J
+ * I: I_L { f }
+ * J: J_L extends I { f }, J_P extends I { f }
+ * K: K_P extends J { f }
+ * class Main implements I,J,K
  * </pre>
  */
-public class MaximallySpecificMultiplePathsThroughClassTest extends TestBase {
+public class MaximallySpecificSingleDominatingSubTest extends TestBase {
+
+  private static final String EXPECTED = "K::foo";
 
   @Parameter() public TestParameters parameters;
 
@@ -57,10 +60,10 @@ public class MaximallySpecificMultiplePathsThroughClassTest extends TestBase {
   @Before
   public void setup() throws Exception {
     libraryClasses = temp.newFile("lib.jar").toPath();
-    ZipBuilder.builder(libraryClasses)
-        .addFilesRelative(
-            ToolHelper.getClassPathForTests(), ToolHelper.getClassFileForTestClass(I.class))
-        .build();
+    ZipBuilder builder = ZipBuilder.builder(libraryClasses);
+    ToolHelper.addClassToZipBuilder(builder, J.class);
+    ToolHelper.addClassToZipBuilder(builder, I.class);
+    builder.build();
   }
 
   @Test
@@ -69,10 +72,9 @@ public class MaximallySpecificMultiplePathsThroughClassTest extends TestBase {
     AndroidApp.Builder builder = AndroidApp.builder();
     builder
         .addProgramFiles(
-            ToolHelper.getClassFileForTestClass(Main.class),
-            ToolHelper.getClassFileForTestClass(J.class))
-        .addClassProgramData(getAWithImplementsI())
-        .addClassProgramData(getIProgram());
+            ToolHelper.getClassFileForTestClassFromResources(K.class),
+            ToolHelper.getClassFileForTestClassFromResources(Main.class))
+        .addClassProgramData(ImmutableList.of(getJOnProgram()));
     builder.addLibraryFiles(parameters.getDefaultRuntimeLibrary(), libraryClasses);
     AppView<AppInfoWithClassHierarchy> appView =
         computeAppViewWithClassHierarchy(
@@ -84,7 +86,7 @@ public class MaximallySpecificMultiplePathsThroughClassTest extends TestBase {
     DexMethod method = buildNullaryVoidMethod(Main.class, "foo", appInfo.dexItemFactory());
     MethodResolutionResult methodResolutionResult =
         appInfo.unsafeResolveMethodDueToDexFormat(method);
-    assertTrue(methodResolutionResult.isMultiMethodResolutionResult());
+    assertTrue(methodResolutionResult.isSingleResolution());
     Set<String> methodResults = new HashSet<>();
     methodResolutionResult.forEachMethodResolutionResult(
         result -> {
@@ -94,12 +96,7 @@ public class MaximallySpecificMultiplePathsThroughClassTest extends TestBase {
               (resolution.getResolvedHolder().isProgramClass() ? "Program: " : "Library: ")
                   + resolution.getResolvedMethod().getReference().toString());
         });
-    assertEquals(
-        ImmutableSet.of(
-            "Library: void " + typeName(I.class) + ".foo()",
-            "Program: void " + typeName(I.class) + ".foo()",
-            "Program: void " + typeName(J.class) + ".foo()"),
-        methodResults);
+    assertEquals(ImmutableSet.of("Program: void " + typeName(K.class) + ".foo()"), methodResults);
   }
 
   @Test
@@ -107,32 +104,27 @@ public class MaximallySpecificMultiplePathsThroughClassTest extends TestBase {
     parameters.assumeJvmTestParameters();
     testForJvm(parameters)
         .addRunClasspathFiles(libraryClasses)
-        .addProgramClasses(J.class, Main.class)
-        .addProgramClassFileData(getAWithImplementsI(), getIProgram())
+        .addProgramClasses(K.class, Main.class)
+        .addProgramClassFileData(getJOnProgram())
         .run(parameters.getRuntime(), Main.class)
-        .assertFailureWithErrorThatThrows(IncompatibleClassChangeError.class);
+        .assertSuccessWithOutputLines(EXPECTED);
   }
 
   @Test
   public void testD8() throws Exception {
     parameters.assumeDexRuntime();
-    runTest(testForD8(parameters.getBackend()), IncompatibleClassChangeError.class);
+    runTest(testForD8(parameters.getBackend()));
   }
 
   @Test
   public void testR8() throws Exception {
-    // TODO(b/230289235): Extend to support multiple definition results.
-    runTest(
-        testForR8(parameters.getBackend()).addKeepMainRule(Main.class),
-        IncompatibleClassChangeError.class);
+    runTest(testForR8(parameters.getBackend()).addKeepMainRule(Main.class));
   }
 
-  private void runTest(
-      TestCompilerBuilder<?, ?, ?, ?, ?> testBuilder, Class<? extends Throwable> errorClass)
-      throws Exception {
+  private void runTest(TestCompilerBuilder<?, ?, ?, ?, ?> testBuilder) throws Exception {
     testBuilder
-        .addProgramClasses(J.class, Main.class)
-        .addProgramClassFileData(getAWithImplementsI(), getIProgram())
+        .addProgramClasses(K.class, Main.class)
+        .addProgramClassFileData(getJOnProgram())
         .addDefaultRuntimeLibrary(parameters)
         .addLibraryFiles(libraryClasses)
         .setMinApi(parameters)
@@ -140,15 +132,11 @@ public class MaximallySpecificMultiplePathsThroughClassTest extends TestBase {
         .compile()
         .addBootClasspathFiles(buildOnDexRuntime(parameters, libraryClasses))
         .run(parameters.getRuntime(), Main.class)
-        .assertFailureWithErrorThatThrows(errorClass);
+        .assertSuccessWithOutputLines(EXPECTED);
   }
 
-  private byte[] getAWithImplementsI() throws Exception {
-    return transformer(A.class).setImplements(I.class).transform();
-  }
-
-  private byte[] getIProgram() throws Exception {
-    return transformer(IProgram.class).setClassDescriptor(descriptor(I.class)).transform();
+  private byte[] getJOnProgram() throws Exception {
+    return transformer(JProgram.class).setClassDescriptor(descriptor(J.class)).transform();
   }
 
   public interface I {
@@ -157,21 +145,32 @@ public class MaximallySpecificMultiplePathsThroughClassTest extends TestBase {
     }
   }
 
-  public interface IProgram {
+  /* Present on both library and program */
+  public interface JProgram extends I {
+    @Override
     default void foo() {
-      System.out.println("I_Program::foo");
+      System.out.println("J_Program::foo");
+      ;
     }
   }
 
-  public interface J {
+  public interface J extends I {
+    @Override
     default void foo() {
-      System.out.println("J::foo");
+      System.out.println("J_Library::foo");
+      ;
     }
   }
 
-  public static class A /* implements I */ {}
+  public interface K extends J {
 
-  public static class Main extends A implements J {
+    @Override
+    default void foo() {
+      System.out.println("K::foo");
+    }
+  }
+
+  public static class Main implements I, J, K {
 
     public static void main(String[] args) {
       new Main().foo();

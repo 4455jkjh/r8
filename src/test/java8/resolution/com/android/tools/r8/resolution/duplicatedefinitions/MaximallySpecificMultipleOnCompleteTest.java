@@ -55,14 +55,12 @@ public class MaximallySpecificMultipleOnCompleteTest extends TestBase {
   @Before
   public void setup() throws Exception {
     libraryClasses = temp.newFile("lib.jar").toPath();
-    ZipBuilder.builder(libraryClasses)
-        .addFilesRelative(
-            ToolHelper.getClassPathForTests(),
-            ToolHelper.getClassFileForTestClass(J.class),
-            ToolHelper.getClassFileForTestClass(I.class),
-            ToolHelper.getClassFileForTestClass(L.class),
-            ToolHelper.getClassFileForTestClass(M.class))
-        .build();
+    ZipBuilder builder = ZipBuilder.builder(libraryClasses);
+    ToolHelper.addClassToZipBuilder(builder, J.class);
+    ToolHelper.addClassToZipBuilder(builder, I.class);
+    ToolHelper.addClassToZipBuilder(builder, L.class);
+    ToolHelper.addClassToZipBuilder(builder, M.class);
+    builder.build();
   }
 
   @Test
@@ -71,8 +69,8 @@ public class MaximallySpecificMultipleOnCompleteTest extends TestBase {
     AndroidApp.Builder builder = AndroidApp.builder();
     builder
         .addProgramFiles(
-            ToolHelper.getClassFileForTestClass(K.class),
-            ToolHelper.getClassFileForTestClass(M.class))
+            ToolHelper.getClassFileForTestClassFromResources(K.class),
+            ToolHelper.getClassFileForTestClassFromResources(M.class))
         .addClassProgramData(ImmutableList.of(getJOnProgram(), getMainWithAllImplements()));
     builder.addLibraryFiles(parameters.getDefaultRuntimeLibrary(), libraryClasses);
     AppView<AppInfoWithClassHierarchy> appView =

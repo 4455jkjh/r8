@@ -17,10 +17,7 @@ import com.android.tools.r8.TestRunResult;
 import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.graph.AppInfoWithClassHierarchy;
 import com.android.tools.r8.graph.AppView;
-import com.android.tools.r8.graph.DexClass;
-import com.android.tools.r8.graph.DexItemFactory;
 import com.android.tools.r8.graph.DexMethod;
-import com.android.tools.r8.graph.DexType;
 import com.android.tools.r8.graph.MethodResolutionResult;
 import com.android.tools.r8.graph.MethodResolutionResult.SingleResolutionResult;
 import com.android.tools.r8.utils.AndroidApp;
@@ -43,12 +40,15 @@ import org.junit.runners.Parameterized.Parameters;
  *
  * <pre>
  * I: I_L { f }, I_P { }
- * class Main implements I
+ * J: J_L { }, J_P { f }
+ * class Main implements I,J
  * </pre>
  */
-public class MaximallySpecificSingleLibraryPartialTest extends TestBase {
+public class MaximallySpecificMultiplePathsSuccessTest extends TestBase {
 
   private static final String EXPECTED = "I::foo";
+  // TODO(b/230289235): Extend resolution to support multiple definition results.
+  private static final String D8_R8_RESULT = "J::foo";
 
   @Parameter() public TestParameters parameters;
 
@@ -62,10 +62,10 @@ public class MaximallySpecificSingleLibraryPartialTest extends TestBase {
   @Before
   public void setup() throws Exception {
     libraryClasses = temp.newFile("lib.jar").toPath();
-    ZipBuilder.builder(libraryClasses)
-        .addFilesRelative(
-            ToolHelper.getClassPathForTests(), ToolHelper.getClassFileForTestClass(I.class))
-        .build();
+    ZipBuilder builder = ZipBuilder.builder(libraryClasses);
+    ToolHelper.addClassToZipBuilder(builder, J.class);
+    ToolHelper.addClassToZipBuilder(builder, I.class);
+    builder.build();
   }
 
   @Test
@@ -73,8 +73,9 @@ public class MaximallySpecificSingleLibraryPartialTest extends TestBase {
     assumeTrue(parameters.isOrSimulateNoneRuntime());
     AndroidApp.Builder builder = AndroidApp.builder();
     builder
-        .addProgramFiles(ToolHelper.getClassFileForTestClass(Main.class))
-        .addClassProgramData(getIProgram());
+        .addProgramFiles(ToolHelper.getClassFileForTestClassFromResources(Main.class))
+        .addClassProgramData(getIProgram())
+        .addClassProgramData(getJProgram());
     builder.addLibraryFiles(parameters.getDefaultRuntimeLibrary(), libraryClasses);
     AppView<AppInfoWithClassHierarchy> appView =
         computeAppViewWithClassHierarchy(
@@ -83,14 +84,12 @@ public class MaximallySpecificSingleLibraryPartialTest extends TestBase {
             null,
             options -> options.loadAllClassDefinitions = true);
     AppInfoWithClassHierarchy appInfo = appView.appInfo();
-    DexItemFactory factory = appInfo.dexItemFactory();
-    DexMethod method = buildNullaryVoidMethod(Main.class, "foo", factory);
-    DexClass mainClass = appInfo.definitionFor(factory.createType(descriptor(Main.class)));
+    DexMethod method = buildNullaryVoidMethod(Main.class, "foo", appInfo.dexItemFactory());
     MethodResolutionResult methodResolutionResult =
         appInfo.unsafeResolveMethodDueToDexFormat(method);
     assertTrue(methodResolutionResult.isMultiMethodResolutionResult());
     Set<String> methodResults = new HashSet<>();
-    Set<DexType> failingTypesResult = new HashSet<>();
+    Set<String> failedTypes = new HashSet<>();
     methodResolutionResult.forEachMethodResolutionResult(
         result -> {
           if (result.isSingleResolution()) {
@@ -99,18 +98,19 @@ public class MaximallySpecificSingleLibraryPartialTest extends TestBase {
                 (resolution.getResolvedHolder().isProgramClass() ? "Program: " : "Library: ")
                     + resolution.getResolvedMethod().getReference().toString());
           } else {
-            assertTrue(result.isNoSuchMethodErrorResult(mainClass, appView));
-            methodResults.add(typeName(NoSuchMethodError.class));
+            assertTrue(result.isFailedResolution());
             result
                 .asFailedResolution()
-                .forEachFailureDependency(failingTypesResult::add, failingMethod -> fail());
+                .forEachFailureDependency(
+                    type -> failedTypes.add(type.toDescriptorString()), m -> fail());
           }
         });
     assertEquals(
         ImmutableSet.of(
-            "Library: void " + typeName(I.class) + ".foo()", typeName(NoSuchMethodError.class)),
+            "Library: void " + typeName(I.class) + ".foo()",
+            "Program: void " + typeName(J.class) + ".foo()"),
         methodResults);
-    assertEquals(ImmutableSet.of(factory.createType(descriptor(I.class))), failingTypesResult);
+    assertEquals(ImmutableSet.of(descriptor(J.class), descriptor(I.class)), failedTypes);
   }
 
   @Test
@@ -119,7 +119,8 @@ public class MaximallySpecificSingleLibraryPartialTest extends TestBase {
     testForJvm(parameters)
         .addRunClasspathFiles(libraryClasses)
         .addProgramClasses(Main.class)
-        .addProgramClassFileData(getIProgram())
+        .addProgramClassFileData(getIProgram(), getJProgram())
+        .addDefaultRuntimeLibrary(parameters)
         .run(parameters.getRuntime(), Main.class)
         .assertSuccessWithOutputLines(EXPECTED);
   }
@@ -127,36 +128,32 @@ public class MaximallySpecificSingleLibraryPartialTest extends TestBase {
   @Test
   public void testD8() throws Exception {
     parameters.assumeDexRuntime();
-    // TODO(b/230289235): Extend resolution to support multiple definition results.
     runTest(testForD8(parameters.getBackend()))
-        .assertFailureWithErrorThatThrowsIf(
-            !parameters.canUseDefaultAndStaticInterfaceMethods(),
-            parameters.getDexRuntimeVersion().isDalvik()
-                ? VerifyError.class
-                : AbstractMethodError.class)
-        .assertSuccessWithOutputLinesIf(
-            parameters.canUseDefaultAndStaticInterfaceMethods(), EXPECTED);
+        .applyIf(
+            parameters.canUseDefaultAndStaticInterfaceMethods(),
+            rr -> rr.assertSuccessWithOutputLines(EXPECTED),
+            // TODO(b/230289235): Extend resolution to support multiple definition results.
+            rr -> rr.assertSuccessWithOutputLines(D8_R8_RESULT));
   }
 
   @Test
   public void testR8() throws Exception {
-    // TODO(b/230289235): Extend resolution to support multiple definition results.
-    runTest(testForR8(parameters.getBackend()).addKeepMainRule(Main.class))
+    runTest(
+            testForR8(parameters.getBackend())
+                .addKeepAttributeSourceFile()
+                .addKeepMainRule(Main.class))
         .applyIf(
             parameters.canUseDefaultAndStaticInterfaceMethods(),
             rr -> rr.assertSuccessWithOutputLines(EXPECTED),
-            rr ->
-                rr.assertFailureWithErrorThatThrows(
-                    parameters.getDexRuntimeVersion().isDalvik()
-                        ? VerifyError.class
-                        : AbstractMethodError.class));
+            // TODO(b/230289235): Extend resolution to support multiple definition results.
+            rr -> rr.assertSuccessWithOutputLines(D8_R8_RESULT));
   }
 
   private TestRunResult<?> runTest(TestCompilerBuilder<?, ?, ?, ?, ?> testBuilder)
       throws Exception {
     return testBuilder
         .addProgramClasses(Main.class)
-        .addProgramClassFileData(getIProgram())
+        .addProgramClassFileData(getIProgram(), getJProgram())
         .addDefaultRuntimeLibrary(parameters)
         .addLibraryFiles(libraryClasses)
         .setMinApi(parameters)
@@ -164,6 +161,10 @@ public class MaximallySpecificSingleLibraryPartialTest extends TestBase {
         .compile()
         .addBootClasspathFiles(buildOnDexRuntime(parameters, libraryClasses))
         .run(parameters.getRuntime(), Main.class);
+  }
+
+  private byte[] getJProgram() throws Exception {
+    return transformer(JProgram.class).setClassDescriptor(descriptor(J.class)).transform();
   }
 
   private byte[] getIProgram() throws Exception {
@@ -176,9 +177,17 @@ public class MaximallySpecificSingleLibraryPartialTest extends TestBase {
     }
   }
 
+  public interface J {}
+
   public interface IProgram {}
 
-  public static class Main implements I {
+  public interface JProgram {
+    default void foo() {
+      System.out.println("J::foo");
+    }
+  }
+
+  public static class Main implements I, J {
 
     public static void main(String[] args) {
       new Main().foo();

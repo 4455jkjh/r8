@@ -3,6 +3,10 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8.resolution.b123730538;
 
+
+
+import com.android.tools.r8.resolution.b123730538.sub.AnotherPublicClass;
+
 import static com.android.tools.r8.utils.codeinspector.Matchers.isPresent;
 import static com.android.tools.r8.utils.codeinspector.Matchers.isPresentAndRenamed;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -54,10 +58,15 @@ public class B123730538 extends TestBase {
   }
 
   @BeforeClass
-  public static void setUpClass() throws Exception {
+  public static void setUpClass() {
     CLASSES = ImmutableList.<Path>builder()
-        .addAll(ToolHelper.getClassFilesForTestPackage(MAIN.getPackage()))
-        .addAll(ToolHelper.getClassFilesForTestPackage(PublicClass.class.getPackage()))
+        .add(ToolHelper.getClassFileForTestClassFromResources(Runner.class))
+        .add(ToolHelper.getClassFileForTestClassFromResources(PublicClassExtender.class))
+        // To access package-private classes, string lookups are used.
+        .add(ToolHelper.getResourceAsReadOnlyFile(Runner.class, "AnotherPublicClassExtender.class"))
+        .add(ToolHelper.getClassFileForTestClassFromResources(PublicClass.class))
+        .add(ToolHelper.getResourceAsReadOnlyFile(PublicClass.class, "AbstractClass.class"))
+        .add(ToolHelper.getClassFileForTestClassFromResources(AnotherPublicClass.class))
         .build();
   }
 

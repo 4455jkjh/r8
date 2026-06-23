@@ -6,14 +6,12 @@ package com.android.tools.r8.resolution.duplicatedefinitions;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeTrue;
 
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestCompilerBuilder;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
-import com.android.tools.r8.TestRunResult;
 import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.graph.AppInfoWithClassHierarchy;
 import com.android.tools.r8.graph.AppView;
@@ -39,16 +37,15 @@ import org.junit.runners.Parameterized.Parameters;
  * This is testing resolving Main.f for:
  *
  * <pre>
- * I: I_L { f }, I_P { }
- * J: J_L { }, J_P { f }
- * class Main implements I,J
+ * I: I_L { f }
+ * J: J_L extends I { f }
+ * K: K_L extends J { }, K_P extends J { }
+ * class Main implements I,K
  * </pre>
  */
-public class MaximallySpecificMultiplePathsSuccessTest extends TestBase {
+public class MaximallySpecificSingleDominatingAfterJoinTest extends TestBase {
 
-  private static final String EXPECTED = "I::foo";
-  // TODO(b/230289235): Extend resolution to support multiple definition results.
-  private static final String D8_R8_RESULT = "J::foo";
+  private static final String EXPECTED = "J::foo";
 
   @Parameter() public TestParameters parameters;
 
@@ -62,22 +59,20 @@ public class MaximallySpecificMultiplePathsSuccessTest extends TestBase {
   @Before
   public void setup() throws Exception {
     libraryClasses = temp.newFile("lib.jar").toPath();
-    ZipBuilder.builder(libraryClasses)
-        .addFilesRelative(
-            ToolHelper.getClassPathForTests(),
-            ToolHelper.getClassFileForTestClass(J.class),
-            ToolHelper.getClassFileForTestClass(I.class))
-        .build();
+    ZipBuilder builder = ZipBuilder.builder(libraryClasses);
+    ToolHelper.addClassToZipBuilder(builder, K.class);
+    ToolHelper.addClassToZipBuilder(builder, J.class);
+    ToolHelper.addClassToZipBuilder(builder, I.class);
+    builder.build();
   }
 
   @Test
   public void testResolution() throws Exception {
     assumeTrue(parameters.isOrSimulateNoneRuntime());
     AndroidApp.Builder builder = AndroidApp.builder();
-    builder
-        .addProgramFiles(ToolHelper.getClassFileForTestClass(Main.class))
-        .addClassProgramData(getIProgram())
-        .addClassProgramData(getJProgram());
+    builder.addProgramFiles(
+        ToolHelper.getClassFileForTestClassFromResources(K.class),
+        ToolHelper.getClassFileForTestClassFromResources(Main.class));
     builder.addLibraryFiles(parameters.getDefaultRuntimeLibrary(), libraryClasses);
     AppView<AppInfoWithClassHierarchy> appView =
         computeAppViewWithClassHierarchy(
@@ -89,30 +84,17 @@ public class MaximallySpecificMultiplePathsSuccessTest extends TestBase {
     DexMethod method = buildNullaryVoidMethod(Main.class, "foo", appInfo.dexItemFactory());
     MethodResolutionResult methodResolutionResult =
         appInfo.unsafeResolveMethodDueToDexFormat(method);
-    assertTrue(methodResolutionResult.isMultiMethodResolutionResult());
+    assertTrue(methodResolutionResult.isSingleResolution());
     Set<String> methodResults = new HashSet<>();
-    Set<String> failedTypes = new HashSet<>();
     methodResolutionResult.forEachMethodResolutionResult(
         result -> {
-          if (result.isSingleResolution()) {
-            SingleResolutionResult<?> resolution = result.asSingleResolution();
-            methodResults.add(
-                (resolution.getResolvedHolder().isProgramClass() ? "Program: " : "Library: ")
-                    + resolution.getResolvedMethod().getReference().toString());
-          } else {
-            assertTrue(result.isFailedResolution());
-            result
-                .asFailedResolution()
-                .forEachFailureDependency(
-                    type -> failedTypes.add(type.toDescriptorString()), m -> fail());
-          }
+          assertTrue(result.isSingleResolution());
+          SingleResolutionResult<?> resolution = result.asSingleResolution();
+          methodResults.add(
+              (resolution.getResolvedHolder().isProgramClass() ? "Program: " : "Library: ")
+                  + resolution.getResolvedMethod().getReference().toString());
         });
-    assertEquals(
-        ImmutableSet.of(
-            "Library: void " + typeName(I.class) + ".foo()",
-            "Program: void " + typeName(J.class) + ".foo()"),
-        methodResults);
-    assertEquals(ImmutableSet.of(descriptor(J.class), descriptor(I.class)), failedTypes);
+    assertEquals(ImmutableSet.of("Library: void " + typeName(J.class) + ".foo()"), methodResults);
   }
 
   @Test
@@ -120,9 +102,7 @@ public class MaximallySpecificMultiplePathsSuccessTest extends TestBase {
     parameters.assumeJvmTestParameters();
     testForJvm(parameters)
         .addRunClasspathFiles(libraryClasses)
-        .addProgramClasses(Main.class)
-        .addProgramClassFileData(getIProgram(), getJProgram())
-        .addDefaultRuntimeLibrary(parameters)
+        .addProgramClasses(K.class, Main.class)
         .run(parameters.getRuntime(), Main.class)
         .assertSuccessWithOutputLines(EXPECTED);
   }
@@ -130,47 +110,39 @@ public class MaximallySpecificMultiplePathsSuccessTest extends TestBase {
   @Test
   public void testD8() throws Exception {
     parameters.assumeDexRuntime();
-    runTest(testForD8(parameters.getBackend()))
-        .applyIf(
-            parameters.canUseDefaultAndStaticInterfaceMethods(),
-            rr -> rr.assertSuccessWithOutputLines(EXPECTED),
-            // TODO(b/230289235): Extend resolution to support multiple definition results.
-            rr -> rr.assertSuccessWithOutputLines(D8_R8_RESULT));
+    runTest(
+        testForD8(parameters.getBackend()),
+        parameters.getDexRuntimeVersion().isDalvik()
+            ? VerifyError.class
+            // TODO(b/214382176): Extend resolution to support multiple definition results.
+            : AbstractMethodError.class);
   }
 
   @Test
   public void testR8() throws Exception {
     runTest(
-            testForR8(parameters.getBackend())
-                .addKeepAttributeSourceFile()
-                .addKeepMainRule(Main.class))
-        .applyIf(
-            parameters.canUseDefaultAndStaticInterfaceMethods(),
-            rr -> rr.assertSuccessWithOutputLines(EXPECTED),
-            // TODO(b/230289235): Extend resolution to support multiple definition results.
-            rr -> rr.assertSuccessWithOutputLines(D8_R8_RESULT));
+        testForR8(parameters.getBackend()).addKeepMainRule(Main.class), AbstractMethodError.class);
   }
 
-  private TestRunResult<?> runTest(TestCompilerBuilder<?, ?, ?, ?, ?> testBuilder)
+  private void runTest(
+      TestCompilerBuilder<?, ?, ?, ?, ?> testBuilder,
+      Class<? extends Throwable> errorIfNotSupportingDefaultMethods)
       throws Exception {
-    return testBuilder
-        .addProgramClasses(Main.class)
-        .addProgramClassFileData(getIProgram(), getJProgram())
+    testBuilder
+        .addProgramClasses(K.class, Main.class)
         .addDefaultRuntimeLibrary(parameters)
         .addLibraryFiles(libraryClasses)
         .setMinApi(parameters)
         .addOptionsModification(options -> options.loadAllClassDefinitions = true)
         .compile()
         .addBootClasspathFiles(buildOnDexRuntime(parameters, libraryClasses))
-        .run(parameters.getRuntime(), Main.class);
-  }
-
-  private byte[] getJProgram() throws Exception {
-    return transformer(JProgram.class).setClassDescriptor(descriptor(J.class)).transform();
-  }
-
-  private byte[] getIProgram() throws Exception {
-    return transformer(IProgram.class).setClassDescriptor(descriptor(I.class)).transform();
+        .run(parameters.getRuntime(), Main.class)
+        .assertSuccessWithOutputLinesIf(
+            parameters.canUseDefaultAndStaticInterfaceMethods(), EXPECTED)
+        // TODO(b/230289235): Extend to support multiple definition results.
+        .assertFailureWithErrorThatThrowsIf(
+            !parameters.canUseDefaultAndStaticInterfaceMethods(),
+            errorIfNotSupportingDefaultMethods);
   }
 
   public interface I {
@@ -179,17 +151,17 @@ public class MaximallySpecificMultiplePathsSuccessTest extends TestBase {
     }
   }
 
-  public interface J {}
-
-  public interface IProgram {}
-
-  public interface JProgram {
+  public interface J extends I {
+    @Override
     default void foo() {
       System.out.println("J::foo");
     }
   }
 
-  public static class Main implements I, J {
+  /* Present on both library and program */
+  public interface K extends J {}
+
+  public static class Main implements I, K {
 
     public static void main(String[] args) {
       new Main().foo();
