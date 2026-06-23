@@ -7,6 +7,9 @@ import static com.android.tools.r8.graph.DexProgramClass.asProgramClassOrNull;
 import static com.android.tools.r8.ir.code.Opcodes.ADD;
 import static com.android.tools.r8.ir.code.Opcodes.AND;
 import static com.android.tools.r8.ir.code.Opcodes.ARGUMENT;
+import static com.android.tools.r8.ir.code.Opcodes.ARRAY_GET;
+import static com.android.tools.r8.ir.code.Opcodes.ARRAY_LENGTH;
+import static com.android.tools.r8.ir.code.Opcodes.ARRAY_PUT;
 import static com.android.tools.r8.ir.code.Opcodes.ASSUME;
 import static com.android.tools.r8.ir.code.Opcodes.CHECK_CAST;
 import static com.android.tools.r8.ir.code.Opcodes.CMP;
@@ -28,6 +31,7 @@ import static com.android.tools.r8.ir.code.Opcodes.INVOKE_STATIC;
 import static com.android.tools.r8.ir.code.Opcodes.INVOKE_SUPER;
 import static com.android.tools.r8.ir.code.Opcodes.INVOKE_VIRTUAL;
 import static com.android.tools.r8.ir.code.Opcodes.MONITOR;
+import static com.android.tools.r8.ir.code.Opcodes.MOVE_EXCEPTION;
 import static com.android.tools.r8.ir.code.Opcodes.MUL;
 import static com.android.tools.r8.ir.code.Opcodes.NEG;
 import static com.android.tools.r8.ir.code.Opcodes.NEW_ARRAY_EMPTY;
@@ -43,6 +47,7 @@ import static com.android.tools.r8.ir.code.Opcodes.SHL;
 import static com.android.tools.r8.ir.code.Opcodes.SHR;
 import static com.android.tools.r8.ir.code.Opcodes.STATIC_GET;
 import static com.android.tools.r8.ir.code.Opcodes.STATIC_PUT;
+import static com.android.tools.r8.ir.code.Opcodes.STORE_STORE_FENCE;
 import static com.android.tools.r8.ir.code.Opcodes.STRING_SWITCH;
 import static com.android.tools.r8.ir.code.Opcodes.SUB;
 import static com.android.tools.r8.ir.code.Opcodes.THROW;
@@ -65,6 +70,7 @@ import com.android.tools.r8.graph.MethodAccessFlags;
 import com.android.tools.r8.graph.MethodResolutionResult.SingleResolutionResult;
 import com.android.tools.r8.graph.ProgramMethod;
 import com.android.tools.r8.graph.PrunedItems;
+import com.android.tools.r8.ir.code.ArrayPut;
 import com.android.tools.r8.ir.code.FieldInstruction;
 import com.android.tools.r8.ir.code.IRCode;
 import com.android.tools.r8.ir.code.Instruction;
@@ -316,6 +322,19 @@ public class VirtualMethodHoister {
         }
         int opcode = instruction.opcode();
         switch (opcode) {
+          case ARRAY_PUT:
+            {
+              ArrayPut arrayPut = instruction.asArrayPut();
+              if (isThis(arrayPut.value())) {
+                // We would need to check the array type, which is not embedded in the array-put.
+                // For now simply bail-out conservatively.
+                return false;
+              }
+
+              // Safe.
+              break;
+            }
+
           case CHECK_CAST:
           case CONST_CLASS:
           case INIT_CLASS:
@@ -455,6 +474,8 @@ public class VirtualMethodHoister {
       switch (opcode) {
         case ADD:
         case AND:
+        case ARRAY_GET:
+        case ARRAY_LENGTH:
         case ARGUMENT:
         case ASSUME:
         case CMP:
@@ -466,6 +487,7 @@ public class VirtualMethodHoister {
         case INC:
         case INT_SWITCH:
         case MONITOR:
+        case MOVE_EXCEPTION:
         case MUL:
         case NEG:
         case NOT:
@@ -475,6 +497,7 @@ public class VirtualMethodHoister {
         case RESOURCE_CONST_NUMBER:
         case SHL:
         case SHR:
+        case STORE_STORE_FENCE:
         case STRING_SWITCH:
         case SUB:
         case THROW:
