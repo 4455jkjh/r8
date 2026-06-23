@@ -825,6 +825,7 @@ public class DexItemFactory {
   public final JavaIoFileMembers javaIoFileMembers = new JavaIoFileMembers();
   public final JavaMathBigIntegerMembers javaMathBigIntegerMembers =
       new JavaMathBigIntegerMembers();
+  public final MathMembers mathMembers = new MathMembers();
   public final JavaNioByteOrderMembers javaNioByteOrderMembers = new JavaNioByteOrderMembers();
   public final JavaUtilArraysMethods javaUtilArraysMethods = new JavaUtilArraysMethods();
   public final JavaUtilCollectionsMembers javaUtilCollectionsMembers =
@@ -856,6 +857,7 @@ public class DexItemFactory {
           enumMembers,
           javaIoFileMembers,
           javaMathBigIntegerMembers,
+          mathMembers,
           javaNioByteOrderMembers,
           javaUtilCollectionsMembers,
           javaUtilConcurrentTimeUnitMembers,
@@ -1641,6 +1643,29 @@ public class DexItemFactory {
       consumer.accept(ONE);
       consumer.accept(ZERO);
     }
+  }
+
+  public class MathMembers extends LibraryMembers {
+
+    public final DexMethod minInt =
+        createMethod(mathType, createProto(intType, intType, intType), "min");
+    public final DexMethod minLong =
+        createMethod(mathType, createProto(longType, longType, longType), "min");
+    public final DexMethod minFloat =
+        createMethod(mathType, createProto(floatType, floatType, floatType), "min");
+    public final DexMethod minDouble =
+        createMethod(mathType, createProto(doubleType, doubleType, doubleType), "min");
+
+    public final DexMethod maxInt =
+        createMethod(mathType, createProto(intType, intType, intType), "max");
+    public final DexMethod maxLong =
+        createMethod(mathType, createProto(longType, longType, longType), "max");
+    public final DexMethod maxFloat =
+        createMethod(mathType, createProto(floatType, floatType, floatType), "max");
+    public final DexMethod maxDouble =
+        createMethod(mathType, createProto(doubleType, doubleType, doubleType), "max");
+
+    private MathMembers() {}
   }
 
   public class JavaNioByteOrderMembers extends LibraryMembers {
