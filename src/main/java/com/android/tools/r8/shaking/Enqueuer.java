@@ -3986,6 +3986,7 @@ public class Enqueuer {
     } else {
       assert proguardCompatibilityActionsBuilder == null;
     }
+    options.dumpHeap(mode.toString().toLowerCase());
     timing.end();
     if (mode.isWhyAreYouKeeping()) {
       // For why are you keeping the information is reported through the kept graph callbacks and
