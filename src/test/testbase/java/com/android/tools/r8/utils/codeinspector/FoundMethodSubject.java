@@ -94,7 +94,7 @@ public class FoundMethodSubject extends MethodSubject {
   @Override
   public boolean isRenamed() {
     return clazz.getNaming() != null
-        && !getFinalSignature().name.equals(getOriginalSignature().name);
+        && !getFinalSignature().getName().equals(getOriginalMethodName());
   }
 
   @Override

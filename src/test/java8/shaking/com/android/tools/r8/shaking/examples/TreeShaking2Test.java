@@ -4,6 +4,8 @@
 package com.android.tools.r8.shaking.examples;
 
 import static com.android.tools.r8.utils.codeinspector.Matchers.isAbsent;
+import static com.android.tools.r8.utils.codeinspector.Matchers.isAbstract;
+import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertTrue;
 
@@ -44,7 +46,7 @@ public class TreeShaking2Test extends TreeShakingTest {
   @Test
   public void testKeeprules() throws Exception {
     runTest(
-        TreeShaking2Test::shaking2SuperClassIsRemoved,
+        this::shaking2SuperClassIsRemoved,
         null,
         null,
         ImmutableList.of("src/test/examples/shaking2/keep-rules.txt"));
@@ -65,10 +67,14 @@ public class TreeShaking2Test extends TreeShakingTest {
         null, null, null, ImmutableList.of("src/test/examples/shaking2/keep-rules-printusage.txt"));
   }
 
-  private static void shaking2SuperClassIsRemoved(CodeInspector inspector) {
+  private void shaking2SuperClassIsRemoved(CodeInspector inspector) {
     ClassSubject clazz = inspector.clazz("shaking2.SuperClass");
     assertTrue(clazz.isAbstract());
-    assertTrue(clazz.method("void", "virtualMethod", Collections.emptyList()).isAbstract());
+    if (getMinify().isMinify()) {
+      assertThat(clazz.method("void", "virtualMethod", Collections.emptyList()), isAbsent());
+    } else {
+      assertThat(clazz.method("void", "virtualMethod", Collections.emptyList()), not(isAbstract()));
+    }
     assertThat(
         clazz.method(
             "void",

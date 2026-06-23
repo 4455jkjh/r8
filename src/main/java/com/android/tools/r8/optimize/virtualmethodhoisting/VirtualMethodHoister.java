@@ -22,6 +22,11 @@ import static com.android.tools.r8.ir.code.Opcodes.INSTANCE_GET;
 import static com.android.tools.r8.ir.code.Opcodes.INSTANCE_OF;
 import static com.android.tools.r8.ir.code.Opcodes.INSTANCE_PUT;
 import static com.android.tools.r8.ir.code.Opcodes.INT_SWITCH;
+import static com.android.tools.r8.ir.code.Opcodes.INVOKE_DIRECT;
+import static com.android.tools.r8.ir.code.Opcodes.INVOKE_INTERFACE;
+import static com.android.tools.r8.ir.code.Opcodes.INVOKE_STATIC;
+import static com.android.tools.r8.ir.code.Opcodes.INVOKE_SUPER;
+import static com.android.tools.r8.ir.code.Opcodes.INVOKE_VIRTUAL;
 import static com.android.tools.r8.ir.code.Opcodes.MONITOR;
 import static com.android.tools.r8.ir.code.Opcodes.MUL;
 import static com.android.tools.r8.ir.code.Opcodes.NEG;
@@ -57,11 +62,13 @@ import com.android.tools.r8.graph.DexType;
 import com.android.tools.r8.graph.FieldResolutionResult.SingleFieldResolutionResult;
 import com.android.tools.r8.graph.ImmediateProgramSubtypingInfo;
 import com.android.tools.r8.graph.MethodAccessFlags;
+import com.android.tools.r8.graph.MethodResolutionResult.SingleResolutionResult;
 import com.android.tools.r8.graph.ProgramMethod;
 import com.android.tools.r8.graph.PrunedItems;
 import com.android.tools.r8.ir.code.FieldInstruction;
 import com.android.tools.r8.ir.code.IRCode;
 import com.android.tools.r8.ir.code.Instruction;
+import com.android.tools.r8.ir.code.InvokeMethod;
 import com.android.tools.r8.ir.code.NewArrayFilled;
 import com.android.tools.r8.ir.code.Return;
 import com.android.tools.r8.ir.code.Value;
@@ -383,6 +390,40 @@ public class VirtualMethodHoister {
               // Safe.
               break;
             }
+
+          case INVOKE_DIRECT:
+          case INVOKE_INTERFACE:
+          case INVOKE_VIRTUAL:
+          case INVOKE_STATIC:
+            {
+              InvokeMethod invoke = instruction.asInvokeMethod();
+              SingleResolutionResult<?> resolutionResult =
+                  invoke.resolveMethod(appView, candidate).asSingleResolution();
+              if (resolutionResult == null
+                  || resolutionResult.isAccessibleFrom(targetMethod, appView).isPossiblyFalse()) {
+                return false;
+              }
+
+              boolean isStatic = invoke.isInvokeStatic();
+              DexMethod invokedMethod = invoke.getInvokedMethod();
+              for (int argumentIndex = 0;
+                  argumentIndex < invoke.arguments().size();
+                  argumentIndex++) {
+                Value argument = invoke.getArgument(argumentIndex);
+                DexType argumentType = invokedMethod.getArgumentType(argumentIndex, isStatic);
+                if (isInvalidUseOfThis(argument, argumentType, targetMethod)) {
+                  return false;
+                }
+              }
+
+              // Safe.
+              break;
+            }
+
+          case INVOKE_SUPER:
+            // Conservatively return false here. In principle this may be OK to hoist if this is an
+            // invoke-super to a method higher up in the class hierarchy than the target class.
+            return false;
 
           case RETURN:
             {
