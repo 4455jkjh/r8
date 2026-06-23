@@ -3742,13 +3742,20 @@ public class Enqueuer {
   private void markVirtualDispatchMethodTargetAsLive(
       LookupMethodTarget target, Function<ProgramMethod, KeepReasonWitness> reason) {
     ProgramMethod programMethod = target.getTarget().asProgramMethod();
-    if (programMethod != null && !programMethod.getDefinition().isAbstract()) {
-      KeepReasonWitness appliedReason = reason.apply(programMethod);
-      markVirtualMethodAsLive(programMethod, appliedReason);
-      DexClassAndMethod accessOverride = target.getAccessOverride();
-      if (accessOverride != null && accessOverride.isProgramMethod()) {
-        markMethodAsTargeted(accessOverride.asProgramMethod(), appliedReason);
-      }
+    if (programMethod == null) {
+      return;
+    }
+    if (programMethod.getDefinition().isAbstract()) {
+      applyMinimumKeepInfoWhenLiveOrTargeted(
+          programMethod,
+          KeepMethodInfo.newEmptyJoiner().disallowAbstractToNonAbstractOptimization());
+      return;
+    }
+    KeepReasonWitness appliedReason = reason.apply(programMethod);
+    markVirtualMethodAsLive(programMethod, appliedReason);
+    DexClassAndMethod accessOverride = target.getAccessOverride();
+    if (accessOverride != null && accessOverride.isProgramMethod()) {
+      markMethodAsTargeted(accessOverride.asProgramMethod(), appliedReason);
     }
   }
 

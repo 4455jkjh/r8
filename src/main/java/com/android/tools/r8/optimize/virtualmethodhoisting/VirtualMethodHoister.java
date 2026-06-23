@@ -66,6 +66,7 @@ import com.android.tools.r8.ir.conversion.LirConverter;
 import com.android.tools.r8.optimize.argumentpropagation.utils.DepthFirstTopDownClassHierarchyTraversal;
 import com.android.tools.r8.optimize.argumentpropagation.utils.ProgramClassesBidirectedGraph;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
+import com.android.tools.r8.shaking.KeepMethodInfo;
 import com.android.tools.r8.utils.ThreadUtils;
 import com.android.tools.r8.utils.collections.DexMethodSignatureMap;
 import com.android.tools.r8.utils.collections.DexMethodSignatureSet;
@@ -275,12 +276,16 @@ public class VirtualMethodHoister {
     }
 
     private ProgramMethod findHoistCandidate(ProgramMethod targetMethod, TraversalState state) {
-      if (targetMethod.getAccessFlags().isAbstract()
-          && !appView.getKeepInfo(targetMethod).isPinned(appView.options())) {
-        for (ProgramMethod candidate : state.getCandidates(targetMethod)) {
-          if (isSafeToHoist(candidate, targetMethod)) {
-            return candidate;
-          }
+      if (!targetMethod.getAccessFlags().isAbstract()) {
+        return null;
+      }
+      KeepMethodInfo keepInfo = appView.getKeepInfo(targetMethod);
+      if (!keepInfo.isAbstractToNonAbstractOptimizationAllowed(appView.options())) {
+        return null;
+      }
+      for (ProgramMethod candidate : state.getCandidates(targetMethod)) {
+        if (isSafeToHoist(candidate, targetMethod)) {
+          return candidate;
         }
       }
       return null;
