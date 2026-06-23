@@ -11,6 +11,7 @@ import com.android.tools.r8.ToolHelper.DexVm.Version;
 import com.android.tools.r8.references.Reference;
 import com.android.tools.r8.transformers.ClassFileTransformer.AnnotationBuilder;
 import com.android.tools.r8.transformers.ClassFileTransformer.AnnotationContentBuilder;
+import com.android.tools.r8.transformers.ClassFileTransformer.FieldPredicate;
 import com.android.tools.r8.transformers.ClassFileTransformer.MethodPredicate;
 import com.android.tools.r8.utils.DescriptorUtils;
 import com.android.tools.r8.utils.internal.StringUtils;
@@ -265,6 +266,28 @@ public class KeepUsesReflectionToAccessMethodTest extends KeepAnnoTestExtractedR
   }
 
   @Test
+  public void testAnyReturnTypeAndMultipleParameterListsAnnotatedOnField() throws Exception {
+    testExtractedRulesAndRunJava(
+        ClassWithAnnotation.class,
+        ImmutableList.of(KeptClass.class),
+        ImmutableList.of(
+            setAnnotationOnField(
+                ClassWithAnnotation.class,
+                FieldPredicate.onName("bar"),
+                builder -> buildUsesReflectionToAccessMethodMultiple(builder, KeptClass.class))),
+        getExpectedRulesJava(
+            ClassWithAnnotation.class,
+            "{ int bar; }",
+            false,
+            ImmutableList.of(
+                "{ *** m(int); }",
+                "{ *** m(int, long); }",
+                "{ *** m(java.lang.String, java.lang.String, java.lang.String); }",
+                "{ *** m$default(...); }")),
+        parameters.isReference() ? StringUtils.lines("4") : StringUtils.lines("3"));
+  }
+
+  @Test
   public void testIncludeSubclasses() throws Exception {
     testExtractedRules(
         ImmutableList.of(
@@ -474,14 +497,18 @@ public class KeepUsesReflectionToAccessMethodTest extends KeepAnnoTestExtractedR
   // transformer.
   static class ClassWithAnnotation {
 
+    public int bar;
+
     public void foo(Class<KeptClass> clazz) throws Exception {
       if (clazz != null) {
-        System.out.println(clazz.getDeclaredMethods().length);
+        System.out.println(clazz.getDeclaredMethods().length + bar);
       }
     }
 
     public static void main(String[] args) throws Exception {
-      new ClassWithAnnotation().foo(System.nanoTime() > 0 ? KeptClass.class : null);
+      ClassWithAnnotation instance = new ClassWithAnnotation();
+      instance.bar = args.length == 0 ? 0 : 1;
+      instance.foo(System.nanoTime() > 0 ? KeptClass.class : null);
     }
   }
 

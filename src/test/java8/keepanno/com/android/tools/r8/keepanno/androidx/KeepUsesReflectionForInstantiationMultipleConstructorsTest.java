@@ -9,6 +9,7 @@ import static org.junit.Assert.assertEquals;
 import androidx.annotation.keep.UsesReflectionToConstruct;
 import com.android.tools.r8.ToolHelper.DexVm.Version;
 import com.android.tools.r8.references.Reference;
+import com.android.tools.r8.transformers.ClassFileTransformer.FieldPredicate;
 import com.android.tools.r8.transformers.ClassFileTransformer.MethodPredicate;
 import com.android.tools.r8.utils.internal.StringUtils;
 import com.google.common.collect.ImmutableList;
@@ -268,6 +269,45 @@ public class KeepUsesReflectionForInstantiationMultipleConstructorsTest
         expectedRulesJava(ClassWithAnnotation.class, "{ void foo(java.lang.Class); }"));
   }
 
+  @Test
+  public void testPrimitiveTypesAsTypeNameOnField() throws Exception {
+    testExtractedRules(
+        ImmutableList.of(
+            setAnnotationOnField(
+                ClassWithAnnotation.class,
+                FieldPredicate.onName("bar"),
+                builder ->
+                    builder
+                        .setAnnotationClass(
+                            Reference.classFromBinaryName(
+                                Reference.classFromClass(UsesReflectionToConstruct.class)
+                                        .getBinaryName()
+                                    + "$Container"))
+                        .buildArray(
+                            "value",
+                            builder1 ->
+                                builder1
+                                    .setAnnotationField(
+                                        null,
+                                        builder2 ->
+                                            builder2
+                                                .setAnnotationClass(
+                                                    Reference.classFromClass(
+                                                        UsesReflectionToConstruct.class))
+                                                .setField("classConstant", KeptClass.class)
+                                                .setArray("parameterTypeNames", "Int"))
+                                    .setAnnotationField(
+                                        null,
+                                        builder3 ->
+                                            builder3
+                                                .setAnnotationClass(
+                                                    Reference.classFromClass(
+                                                        UsesReflectionToConstruct.class))
+                                                .setField("classConstant", KeptClass.class)
+                                                .setArray("parameterTypeNames", "Long"))))),
+        expectedRulesJava(ClassWithAnnotation.class, "{ int bar; }"));
+  }
+
   static class IntAndLongConstructorsClassName {
 
     @UsesReflectionToConstruct(
@@ -310,14 +350,18 @@ public class KeepUsesReflectionForInstantiationMultipleConstructorsTest
   // transformer.
   static class ClassWithAnnotation {
 
+    public int bar;
+
     public void foo(Class<KeptClass> clazz) throws Exception {
       if (clazz != null) {
-        System.out.println(clazz.getDeclaredMethods().length);
+        System.out.println(clazz.getDeclaredMethods().length + bar);
       }
     }
 
     public static void main(String[] args) throws Exception {
-      new ClassWithAnnotation().foo(System.nanoTime() > 0 ? KeptClass.class : null);
+      ClassWithAnnotation instance = new ClassWithAnnotation();
+      instance.bar = args.length == 0 ? 0 : 1;
+      instance.foo(System.nanoTime() > 0 ? KeptClass.class : null);
     }
   }
 

@@ -760,7 +760,7 @@ public class KeepEdgeReader implements Opcodes {
   }
 
   private static class KeepEdgeFieldVisitor extends FieldVisitor {
-    private final Parent<KeepEdge> parent;
+    private final Parent<KeepDeclaration> parent;
     private final String className;
     private final String fieldName;
     private final String fieldTypeDescriptor;
@@ -768,7 +768,7 @@ public class KeepEdgeReader implements Opcodes {
 
     KeepEdgeFieldVisitor(
         ClassParsingContext classParsingContext,
-        Parent<KeepEdge> parent,
+        Parent<KeepDeclaration> parent,
         String className,
         String fieldName,
         String fieldTypeDescriptor,
@@ -828,7 +828,7 @@ public class KeepEdgeReader implements Opcodes {
         String descriptor,
         boolean visible,
         boolean readEmbedded,
-        Consumer<KeepEdge> parent,
+        Consumer<KeepDeclaration> parent,
         AnnotationParsingContext parsingContext,
         String className,
         String fieldName,
@@ -881,6 +881,83 @@ public class KeepEdgeReader implements Opcodes {
             setContext,
             bindingsHelper ->
                 createMemberItemContext(className, fieldName, fieldTypeDescriptor, bindingsHelper),
+            annotationVisitor);
+      }
+      if (AnnotationConstants.UsesReflectionToConstruct.isDescriptor(descriptor)) {
+        return new UsesReflectionToConstructVisitor(
+            parsingContext,
+            parent::accept,
+            setContext,
+            bindingsHelper ->
+                createMemberItemContext(className, fieldName, fieldTypeDescriptor, bindingsHelper),
+            annotationVisitor);
+      }
+      if (AnnotationConstants.UsesReflectionToConstruct.isKotlinRepeatableContainerDescriptor(
+          descriptor)) {
+        return new UsesReflectionToConstructContainerVisitor(
+            parsingContext,
+            parent::accept,
+            setContext,
+            bindingsHelper ->
+                createMemberItemContext(className, fieldName, fieldTypeDescriptor, bindingsHelper),
+            annotationVisitor);
+      }
+      if (AnnotationConstants.UsesReflectionToAccessMethod.isDescriptor(descriptor)) {
+        return new UsesReflectionToAccessMethodVisitor(
+            parsingContext,
+            parent::accept,
+            setContext,
+            bindingsHelper ->
+                createMemberItemContext(className, fieldName, fieldTypeDescriptor, bindingsHelper),
+            annotationVisitor);
+      }
+      if (AnnotationConstants.UsesReflectionToAccessMethod.isKotlinRepeatableContainerDescriptor(
+          descriptor)) {
+        return new UsesReflectionToAccessMethodContainerVisitor(
+            parsingContext,
+            parent::accept,
+            setContext,
+            bindingsHelper ->
+                createMemberItemContext(className, fieldName, fieldTypeDescriptor, bindingsHelper),
+            annotationVisitor);
+      }
+      if (AnnotationConstants.UsesReflectionToAccessField.isDescriptor(descriptor)) {
+        return new UsesReflectionToAccessFieldVisitor(
+            parsingContext,
+            parent::accept,
+            setContext,
+            bindingsHelper ->
+                createMemberItemContext(className, fieldName, fieldTypeDescriptor, bindingsHelper),
+            annotationVisitor);
+      }
+      if (AnnotationConstants.UsesReflectionToAccessField.isKotlinRepeatableContainerDescriptor(
+          descriptor)) {
+        return new UsesReflectionToAccessFieldContainerVisitor(
+            parsingContext,
+            parent::accept,
+            setContext,
+            bindingsHelper ->
+                createMemberItemContext(className, fieldName, fieldTypeDescriptor, bindingsHelper),
+            annotationVisitor);
+      }
+      if (AnnotationConstants.CheckRemoved.isDescriptor(descriptor)) {
+        return new CheckRemovedMemberVisitor(
+            parsingContext,
+            parent::accept,
+            setContext,
+            bindingsHelper ->
+                createMemberItemContext(className, fieldName, fieldTypeDescriptor, bindingsHelper),
+            KeepCheckKind.REMOVED,
+            annotationVisitor);
+      }
+      if (AnnotationConstants.CheckOptimizedOut.isDescriptor(descriptor)) {
+        return new CheckRemovedMemberVisitor(
+            parsingContext,
+            parent::accept,
+            setContext,
+            bindingsHelper ->
+                createMemberItemContext(className, fieldName, fieldTypeDescriptor, bindingsHelper),
+            KeepCheckKind.OPTIMIZED_OUT,
             annotationVisitor);
       }
       return annotationVisitor;
@@ -2244,7 +2321,6 @@ public class KeepEdgeReader implements Opcodes {
       KeepConsequences.Builder consequencesBuilder =
           KeepConsequences.builder()
               .addTarget(KeepTarget.builder().setItemReference(classBinding).build())
-              .addTarget(KeepTarget.builder().setItemReference(memberBinding).build())
               .addTarget(KeepTarget.builder().setItemReference(memberBinding).build());
 
       parent.accept(

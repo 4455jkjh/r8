@@ -11,6 +11,7 @@ import com.android.tools.r8.ToolHelper.DexVm.Version;
 import com.android.tools.r8.references.Reference;
 import com.android.tools.r8.transformers.ClassFileTransformer.AnnotationBuilder;
 import com.android.tools.r8.transformers.ClassFileTransformer.AnnotationContentBuilder;
+import com.android.tools.r8.transformers.ClassFileTransformer.FieldPredicate;
 import com.android.tools.r8.transformers.ClassFileTransformer.MethodPredicate;
 import com.android.tools.r8.utils.DescriptorUtils;
 import com.android.tools.r8.utils.internal.StringUtils;
@@ -165,6 +166,19 @@ public class KeepUsesReflectionForInstantiationAnyArgsConstructorTest
   }
 
   @Test
+  public void testAnyConstructorAnnotateField() throws Exception {
+    testExtractedRulesAndRunJava(
+        AnyConstructor.class,
+        ImmutableList.of(KeptClass.class),
+        ImmutableList.of(
+            setAnnotationOnField(
+                AnyConstructor.class,
+                FieldPredicate.onName("bar"),
+                builder -> buildAnyConstructor(builder, KeptClass.class))),
+        getExpectedRulesJava(AnyConstructor.class, "{ int bar; }"));
+  }
+
+  @Test
   public void testIncludeSubclasses() throws Exception {
     testExtractedRules(
         ImmutableList.of(
@@ -235,14 +249,18 @@ public class KeepUsesReflectionForInstantiationAnyArgsConstructorTest
   // transformer.
   static class AnyConstructor {
 
+    public int bar;
+
     public void foo(Class<KeptClass> clazz) throws Exception {
       if (clazz != null) {
-        System.out.println(clazz.getDeclaredConstructors().length);
+        System.out.println(clazz.getDeclaredConstructors().length + bar);
       }
     }
 
     public static void main(String[] args) throws Exception {
-      new AnyConstructor().foo(System.nanoTime() > 0 ? KeptClass.class : null);
+      AnyConstructor instance = new AnyConstructor();
+      instance.bar = args.length == 0 ? 0 : 1;
+      instance.foo(System.nanoTime() > 0 ? KeptClass.class : null);
     }
   }
 

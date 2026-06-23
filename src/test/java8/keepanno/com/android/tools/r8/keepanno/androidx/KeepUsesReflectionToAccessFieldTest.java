@@ -12,6 +12,7 @@ import com.android.tools.r8.ToolHelper.DexVm.Version;
 import com.android.tools.r8.references.Reference;
 import com.android.tools.r8.transformers.ClassFileTransformer.AnnotationBuilder;
 import com.android.tools.r8.transformers.ClassFileTransformer.AnnotationContentBuilder;
+import com.android.tools.r8.transformers.ClassFileTransformer.FieldPredicate;
 import com.android.tools.r8.transformers.ClassFileTransformer.MethodPredicate;
 import com.android.tools.r8.utils.DescriptorUtils;
 import com.android.tools.r8.utils.internal.StringUtils;
@@ -204,6 +205,21 @@ public class KeepUsesReflectionToAccessFieldTest extends KeepAnnoTestExtractedRu
   }
 
   @Test
+  public void testAnyFieldTypeAnnotatedOnField() throws Exception {
+    testExtractedRulesAndRunJava(
+        ClassWithAnnotation.class,
+        ImmutableList.of(KeptClass.class),
+        ImmutableList.of(
+            setAnnotationOnField(
+                ClassWithAnnotation.class,
+                FieldPredicate.onName("bar"),
+                builder -> buildUsesReflectionToAccessField(builder, KeptClass.class, "x"))),
+        getExpectedRulesJava(
+            ClassWithAnnotation.class, "{ int bar; }", false, ImmutableList.of("{ *** x; }")),
+        parameters.isReference() ? StringUtils.lines("3") : StringUtils.lines("1"));
+  }
+
+  @Test
   public void testIntFieldTypeAnnotatedOnMethod() throws Exception {
     testExtractedRulesAndRunJava(
         ClassWithAnnotation.class,
@@ -250,6 +266,24 @@ public class KeepUsesReflectionToAccessFieldTest extends KeepAnnoTestExtractedRu
         getExpectedRulesJava(
             ClassWithAnnotation.class,
             "{ void foo(java.lang.Class); }",
+            false,
+            ImmutableList.of("{ int x; }", "{ long y; }", "{ java.lang.String s; }")),
+        StringUtils.lines("3"));
+  }
+
+  @Test
+  public void testMultipleFieldTypesAnnotatedOnField() throws Exception {
+    testExtractedRulesAndRunJava(
+        ClassWithAnnotation.class,
+        ImmutableList.of(KeptClass.class),
+        ImmutableList.of(
+            setAnnotationOnField(
+                ClassWithAnnotation.class,
+                FieldPredicate.onName("bar"),
+                builder -> buildUsesReflectionToAccessFieldMultiple(builder, KeptClass.class))),
+        getExpectedRulesJava(
+            ClassWithAnnotation.class,
+            "{ int bar; }",
             false,
             ImmutableList.of("{ int x; }", "{ long y; }", "{ java.lang.String s; }")),
         StringUtils.lines("3"));
@@ -397,14 +431,18 @@ public class KeepUsesReflectionToAccessFieldTest extends KeepAnnoTestExtractedRu
   // transformer.
   static class ClassWithAnnotation {
 
+    public int bar;
+
     public void foo(Class<KeptClass> clazz) throws Exception {
       if (clazz != null) {
-        System.out.println(clazz.getDeclaredFields().length);
+        System.out.println(clazz.getDeclaredFields().length + bar);
       }
     }
 
     public static void main(String[] args) throws Exception {
-      new ClassWithAnnotation().foo(System.nanoTime() > 0 ? KeptClass.class : null);
+      ClassWithAnnotation instance = new ClassWithAnnotation();
+      instance.bar = args.length == 0 ? 0 : 1;
+      instance.foo(System.nanoTime() > 0 ? KeptClass.class : null);
     }
   }
 
