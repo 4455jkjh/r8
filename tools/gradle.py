@@ -132,6 +132,7 @@ def run_gradle_in(gradle_cmd,
         if not quiet:
             utils.PrintCmd(cmd)
         return_value = subprocess.call(cmd, env=get_java_env(env))
+        utils.GRADLE_STOPPED = False
         if throw_on_failure and return_value != 0:
             raise Exception('Failed to execute gradle')
         return return_value

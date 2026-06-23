@@ -346,6 +346,45 @@ def IsWindows():
     return defines.IsWindows()
 
 
+GRADLE_STOPPED = False
+
+
+def stop_gradle():
+    global GRADLE_STOPPED
+    if GRADLE_STOPPED:
+        return
+
+    java_home = jdk.GetDefaultJdkHome()
+    if not os.path.exists(java_home):
+        return
+
+    gradle_dir = os.path.join(THIRD_PARTY, 'gradle')
+    if IsWindows():
+        gradle = os.path.join(gradle_dir, 'bin', 'gradle.bat')
+    else:
+        gradle = os.path.join(gradle_dir, 'bin', 'gradle')
+
+    if not os.path.exists(gradle):
+        return
+
+    try:
+        env = os.environ.copy()
+        env['JAVA_HOME'] = java_home
+        env['PATH'] = env['PATH'] + os.pathsep + os.path.join(java_home, 'bin')
+        env['GRADLE_OPTS'] = '-Xmx1g'
+
+        cmd = [gradle, '--stop']
+        PrintCmd(cmd)
+        subprocess.call(cmd, env=env)
+        GRADLE_STOPPED = True
+    except Exception as e:
+        if "No JDKs found" in str(e) or "No platform JDK found" in str(e):
+            pass
+        else:
+            Warn(f"Warning: Failed to stop gradle daemon: {e}")
+        GRADLE_STOPPED = True
+
+
 def should_download(output_dir, tgz_file, sha1, success_file):
     if (os.path.exists(output_dir) and os.path.exists(tgz_file) and
             os.path.exists(success_file) and
@@ -359,6 +398,7 @@ def run_download(sha1, output_dir, success_file):
         os.remove(success_file)
 
     if os.path.exists(output_dir):
+        stop_gradle()
         shutil.rmtree(output_dir)
 
     DownloadFromGoogleCloudStorage(sha1)
@@ -572,6 +612,7 @@ def unpack_archive(filename):
     dest_dir = extract_dir(filename)
     if os.path.exists(dest_dir):
         print('Deleting existing dir %s' % dest_dir)
+        stop_gradle()
         shutil.rmtree(dest_dir)
     dirname = os.path.dirname(os.path.abspath(filename))
     with tarfile.open(filename, 'r:gz') as tar:
