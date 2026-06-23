@@ -292,15 +292,26 @@ public class GraphReporter {
     return KeepReasonWitness.INSTANCE;
   }
 
-  @SuppressWarnings("ReferenceEquality")
   public KeepReasonWitness reportReachableMethodAsLive(
       DexMethod overriddenMethod, ProgramMethod derivedMethod) {
     if (keptGraphConsumer != null
-        && overriddenMethod != derivedMethod.getDefinition().getReference()) {
+        && overriddenMethod.isNotIdenticalTo(derivedMethod.getDefinition().getReference())) {
       return reportEdge(
           getMethodGraphNode(overriddenMethod),
           getMethodGraphNode(derivedMethod.getDefinition().getReference()),
           EdgeKind.OverridingMethod);
+    }
+    return KeepReasonWitness.INSTANCE;
+  }
+
+  public KeepReasonWitness reportFailureDependencyAsTargeted(
+      DexMethod resolvedMethod, ProgramMethod failureDependency) {
+    if (keptGraphConsumer != null
+        && resolvedMethod.isNotIdenticalTo(failureDependency.getDefinition().getReference())) {
+      return reportEdge(
+          getMethodGraphNode(resolvedMethod),
+          getMethodGraphNode(failureDependency.getDefinition().getReference()),
+          EdgeKind.FailureDependency);
     }
     return KeepReasonWitness.INSTANCE;
   }
