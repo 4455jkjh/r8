@@ -26,17 +26,18 @@ public class GenerateMainDexListCommandParserTest extends TestBase {
   @Test
   public void testHelpMessage() {
     assertEquals(
-        StringUtils.joinLines(
+        StringUtils.lines(
             "Usage: maindex [options] <input-files>",
             " where <input-files> are JAR files",
             " and options are:",
-            "  --lib <file>             # Add <file> as a library resource.",
-            "  --main-dex-rules <file>  # Proguard keep rules for classes to place in the",
-            "                           # primary dex file.",
-            "  --main-dex-list <file>   # List of classes to place in the primary dex file.",
-            "  --main-dex-list-output <file>  # Output the full main-dex list in <file>.",
-            "  --version                # Print the version.",
-            "  --help                   # Print this message."),
-        GenerateMainDexListCommand.USAGE_MESSAGE);
+            "  --lib <file>            # Add <file> as a library resource.",
+            "  --main-dex-rules <file> # Proguard keep rules for classes to place in the primary"
+                + " dex file.",
+            "  --main-dex-list <file>  # List of classes to place in the primary dex file.",
+            "  --main-dex-list-output <file>",
+            "                          # Output the full main-dex list in <file>.",
+            "  --version               # Print the version.",
+            "  --help                  # Print this message."),
+        GenerateMainDexListCommand.usageMessage());
   }
 }

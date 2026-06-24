@@ -3,8 +3,6 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8;
 
-import static com.android.tools.r8.BaseCompilerCommandParser.LIB_FLAG;
-
 import com.android.tools.r8.experimental.graphinfo.GraphConsumer;
 import com.android.tools.r8.graph.DexItemFactory;
 import com.android.tools.r8.keepanno.annotations.KeepForApi;
@@ -16,10 +14,12 @@ import com.android.tools.r8.shaking.ProguardConfigurationSource;
 import com.android.tools.r8.shaking.ProguardConfigurationSourceFile;
 import com.android.tools.r8.shaking.ProguardConfigurationSourceStrings;
 import com.android.tools.r8.utils.AndroidApp;
+import com.android.tools.r8.utils.CliParserUtils;
 import com.android.tools.r8.utils.InternalOptions;
 import com.android.tools.r8.utils.JoiningStringConsumer;
 import com.android.tools.r8.utils.Reporter;
 import com.android.tools.r8.utils.StringDiagnostic;
+import com.android.tools.r8.utils.internal.CliParser;
 import com.android.tools.r8.utils.internal.StringUtils;
 import com.google.common.collect.ImmutableList;
 import java.nio.file.Path;
@@ -132,18 +132,9 @@ public class GenerateMainDexListCommand extends BaseCommand {
     }
   }
 
-  static final String USAGE_MESSAGE =
-      StringUtils.joinLines(
-          "Usage: maindex [options] <input-files>",
-          " where <input-files> are JAR files",
-          " and options are:",
-          "  --lib <file>             # Add <file> as a library resource.",
-          "  --main-dex-rules <file>  # Proguard keep rules for classes to place in the",
-          "                           # primary dex file.",
-          "  --main-dex-list <file>   # List of classes to place in the primary dex file.",
-          "  --main-dex-list-output <file>  # Output the full main-dex list in <file>.",
-          "  --version                # Print the version.",
-          "  --help                   # Print this message.");
+  static String usageMessage() {
+    return CliParserUtils.getUsageMessage(createParser());
+  }
 
   public static GenerateMainDexListCommand.Builder builder() {
     return new GenerateMainDexListCommand.Builder();
@@ -155,7 +146,12 @@ public class GenerateMainDexListCommand extends BaseCommand {
 
   public static GenerateMainDexListCommand.Builder parse(String[] args) {
     GenerateMainDexListCommand.Builder builder = builder();
-    parse(args, builder);
+    createParser()
+        .parse(
+            args,
+            builder,
+            err ->
+                builder.getReporter().error(new StringDiagnostic(err, CommandLineOrigin.INSTANCE)));
     return builder;
   }
 
@@ -167,31 +163,37 @@ public class GenerateMainDexListCommand extends BaseCommand {
     return reporter;
   }
 
-  private static void parse(String[] args, GenerateMainDexListCommand.Builder builder) {
-    for (int i = 0; i < args.length; i++) {
-      String arg = args[i].trim();
-      if (arg.length() == 0) {
-        continue;
-      } else if (arg.equals("--help")) {
-        builder.setPrintHelp(true);
-      } else if (arg.equals("--version")) {
-        builder.setPrintVersion(true);
-      } else if (arg.equals(LIB_FLAG)) {
-        builder.addLibraryFiles(Paths.get(args[++i]));
-      } else if (arg.equals("--main-dex-rules")) {
-        builder.addMainDexRulesFiles(Paths.get(args[++i]));
-      } else if (arg.equals("--main-dex-list")) {
-        builder.addMainDexListFiles(Paths.get(args[++i]));
-      } else if (arg.equals("--main-dex-list-output")) {
-        builder.setMainDexListOutputPath(Paths.get(args[++i]));
-      } else {
-        if (arg.startsWith("--")) {
-          builder.getReporter().error(new StringDiagnostic("Unknown option: " + arg,
-              CommandLineOrigin.INSTANCE));
-        }
-        builder.addProgramFiles(Paths.get(arg));
-      }
-    }
+  private static CliParser<GenerateMainDexListCommand.Builder> createParser() {
+    var header =
+        StringUtils.joinLines(
+            "Usage: maindex [options] <input-files>",
+            " where <input-files> are JAR files",
+            " and options are:");
+    var parser = new CliParser<GenerateMainDexListCommand.Builder>(header);
+    return parser
+        .option1(
+            "--lib",
+            "<file>",
+            "Add <file> as a library resource.",
+            (b, arg) -> b.addLibraryFiles(Paths.get(arg)))
+        .option1(
+            "--main-dex-rules",
+            "<file>",
+            "Proguard keep rules for classes to place in the primary dex file.",
+            (b, arg) -> b.addMainDexRulesFiles(Paths.get(arg)))
+        .option1(
+            "--main-dex-list",
+            "<file>",
+            "List of classes to place in the primary dex file.",
+            (b, arg) -> b.addMainDexListFiles(Paths.get(arg)))
+        .option1(
+            "--main-dex-list-output",
+            "<file>",
+            "Output the full main-dex list in <file>.",
+            (b, arg) -> b.setMainDexListOutputPath(Paths.get(arg)))
+        .option0("--version", "Print the version.", b -> b.setPrintVersion(true))
+        .option0("--help", "Print this message.", b -> b.setPrintHelp(true))
+        .positional((b, arg) -> b.addProgramFiles(Paths.get(arg)));
   }
 
   private GenerateMainDexListCommand(
