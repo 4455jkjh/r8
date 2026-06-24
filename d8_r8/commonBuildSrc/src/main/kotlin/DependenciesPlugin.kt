@@ -142,7 +142,7 @@ public fun Project.resolve(
 
 public fun Task.dependOnPythonScripts() {
   // There is no easy way to track transitive python dependencies, so add all python files.
-  val toolsDir = project.fileTree(project.getRoot().resolve("tools"))
+  val toolsDir = project.fileTree(project.getRoot().resolve("tools")).exclude("linux/**")
   inputs.files(toolsDir.include("**/*.py"))
 }
 
@@ -694,10 +694,10 @@ public object ThirdPartyDeps {
       Paths.get("third_party", "opensource-apps", "android", "nowinandroid").toFile(),
     )
   public val prettier: ThirdPartyDependency =
-    ThirdPartyDependency("node", Paths.get("third_party", "prettier", "3.8.3").toFile())
+    ThirdPartyDependency("prettier", Paths.get("third_party", "prettier", "3.8.3").toFile())
   public val processKeepRulesBinaryCompatibility: ThirdPartyDependency =
     ThirdPartyDependency(
-      "retrace-binary-compatibility",
+      "processkeeprules-binary-compatibility",
       Paths.get("third_party", "processkeeprules", "binary_compatibility").toFile(),
     )
   public val proguards: List<ThirdPartyDependency> = getThirdPartyProguards()

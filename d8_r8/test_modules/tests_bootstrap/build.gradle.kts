@@ -32,8 +32,8 @@ val distDepsFilesScope by configurations.dependencyScope("distDepsFilesScope")
 val distDepsFiles by configurations.resolvable("distDepsFiles") { extendsFrom(distDepsFilesScope) }
 
 dependencies {
-  sharedDepsScope(project(":shared", "sharedDepsFiles"))
-  sharedDepsInternalScope(project(":shared", "sharedDepsInternalFiles"))
+  sharedDepsScope(project(":third_party", "sharedDepsFiles"))
+  sharedDepsInternalScope(project(":third_party", "sharedDepsInternalFiles"))
   distDepsFilesScope(project(":dist", "filteredDepsJarConfig"))
 }
 

@@ -49,7 +49,7 @@ val sharedDepsConfig by
   configurations.resolvable("sharedDepsConfig") { extendsFrom(sharedDepsScope) }
 
 dependencies {
-  sharedDepsScope(project(":shared", "sharedDepsFiles"))
+  sharedDepsScope(project(":third_party", "sharedDepsFiles"))
   compileOnly(Deps.asm)
   compileOnly(Deps.guava)
   compileOnly(Deps.protobuf)

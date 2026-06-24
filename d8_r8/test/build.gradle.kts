@@ -82,10 +82,10 @@ val sharedTestDepsInternalConfig by
   }
 
 dependencies {
-  sharedDepsScope(project(":shared", "sharedDepsFiles"))
-  sharedTestDepsScope(project(":shared", "sharedTestDepsFiles"))
-  sharedDepsInternalScope(project(":shared", "sharedDepsInternalFiles"))
-  sharedTestDepsInternalScope(project(":shared", "sharedTestDepsInternalFiles"))
+  sharedDepsScope(project(":third_party", "sharedDepsFiles"))
+  sharedTestDepsScope(project(":third_party", "sharedTestDepsFiles"))
+  sharedDepsInternalScope(project(":third_party", "sharedDepsInternalFiles"))
+  sharedTestDepsInternalScope(project(":third_party", "sharedTestDepsInternalFiles"))
   assistantJarScope(project(":assistant", "assistantJar"))
   keepRadiusSourcesScope(project(":keepradius", "keepradiusSources"))
   keepAnnoAndroidXAnnotationsJarScope(project(":keepanno", "keepannoAndroidXAnnotationsJar"))

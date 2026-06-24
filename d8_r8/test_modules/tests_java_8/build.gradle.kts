@@ -64,8 +64,8 @@ val sharedDepsInternalConfig by
   configurations.resolvable("sharedDepsInternalConfig") { extendsFrom(sharedDepsInternalScope) }
 
 dependencies {
-  sharedDepsScope(project(":shared", "sharedDepsFiles"))
-  sharedDepsInternalScope(project(":shared", "sharedDepsInternalFiles"))
+  sharedDepsScope(project(":third_party", "sharedDepsFiles"))
+  sharedDepsInternalScope(project(":third_party", "sharedDepsInternalFiles"))
 
   keepAnnoClassesScope(project(":keepanno", "keepannoClasses"))
   assistantClassesScope(project(":assistant", "assistantJar"))
@@ -241,7 +241,7 @@ subprojects {
     configurations.resolvable("sharedDepsConfig") { extendsFrom(sharedDepsScope) }
 
   dependencies {
-    add(sharedDepsScope.name, project(":shared", "sharedDepsFiles"))
+    add(sharedDepsScope.name, project(":third_party", "sharedDepsFiles"))
 
     add("implementation", project(":main", "mainClassesOutput"))
     add("implementation", project(":main", "mainResources"))
