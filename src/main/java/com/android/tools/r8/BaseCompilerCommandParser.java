@@ -6,6 +6,7 @@ package com.android.tools.r8;
 import com.android.tools.r8.origin.Origin;
 import com.android.tools.r8.references.MethodReference;
 import com.android.tools.r8.references.Reference;
+import com.android.tools.r8.utils.CliParserUtils;
 import com.android.tools.r8.utils.DescriptorUtils;
 import com.android.tools.r8.utils.Reporter;
 import com.android.tools.r8.utils.StringDiagnostic;
@@ -206,30 +207,6 @@ public class BaseCompilerCommandParser<
         builder::error, builder.getReporter(), arg, args, argsIndex, origin);
   }
 
-  private static DiagnosticsLevel tryParseLevel(
-      Consumer<Diagnostic> errorHandler, String arg, Origin origin) {
-    if (arg.equals("error")) {
-      return DiagnosticsLevel.ERROR;
-    }
-    if (arg.equals("warning")) {
-      return DiagnosticsLevel.WARNING;
-    }
-    if (arg.equals("info")) {
-      return DiagnosticsLevel.INFO;
-    }
-    if (arg.equals("none")) {
-      return DiagnosticsLevel.NONE;
-    }
-    errorHandler.accept(
-        new StringDiagnostic(
-            "Invalid diagnostics level '"
-                + arg
-                + "'. Valid levels are 'error', 'warning', 'info' and 'none'.",
-            origin));
-
-    return null;
-  }
-
   public static int tryParseMapDiagnostics(
       Consumer<Diagnostic> errorHandler,
       Reporter reporter,
@@ -245,20 +222,15 @@ public class BaseCompilerCommandParser<
       return args.length - argsIndex;
     }
     String remaining = arg.substring(MAP_DIAGNOSTICS.length());
-    String diagnosticsClassName = "";
-    if (remaining.length() > 0) {
-      if (remaining.length() == 1 || remaining.charAt(0) != ':') {
-        errorHandler.accept(
-            new StringDiagnostic("Invalid diagnostics type specification " + arg + ".", origin));
-        return 0;
-      }
-      diagnosticsClassName = remaining.substring(1);
-    }
-    DiagnosticsLevel from = tryParseLevel(errorHandler, args[argsIndex + 1], origin);
-    DiagnosticsLevel to = tryParseLevel(errorHandler, args[argsIndex + 2], origin);
-    if (from != null && to != null) {
-      reporter.addDiagnosticsLevelMapping(from, diagnosticsClassName, to);
-    }
+
+    CliParserUtils.parseDiagnosticsMapping(
+        remaining,
+        args[argsIndex + 1],
+        args[argsIndex + 2],
+        mapping ->
+            reporter.addDiagnosticsLevelMapping(mapping.from, mapping.diagnosticType, mapping.to),
+        errorHandler,
+        origin);
     return 2;
   }
 

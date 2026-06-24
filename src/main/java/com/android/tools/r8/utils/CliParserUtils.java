@@ -3,9 +3,12 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8.utils;
 
+import com.android.tools.r8.Diagnostic;
+import com.android.tools.r8.DiagnosticsLevel;
 import com.android.tools.r8.ParseFlagInfo;
 import com.android.tools.r8.ParseFlagInfoImpl;
 import com.android.tools.r8.ParseFlagPrinter;
+import com.android.tools.r8.origin.Origin;
 import com.android.tools.r8.utils.internal.CliParser;
 import com.android.tools.r8.utils.internal.CliParserBase;
 import com.android.tools.r8.utils.internal.CliParserBase.OptionInfo;
@@ -86,6 +89,73 @@ public class CliParserUtils {
       }
     } catch (NumberFormatException e) {
       errorConsumer.accept(arg + " is not an integer");
+    }
+  }
+
+  public static DiagnosticsLevel parseDiagnosticsLevel(
+      String level, Consumer<Diagnostic> errorHandler, Origin origin) {
+    switch (level) {
+      case "error":
+        return DiagnosticsLevel.ERROR;
+      case "warning":
+        return DiagnosticsLevel.WARNING;
+      case "info":
+        return DiagnosticsLevel.INFO;
+      case "none":
+        return DiagnosticsLevel.NONE;
+      default:
+        errorHandler.accept(
+            new StringDiagnostic(
+                "Invalid diagnostics level '"
+                    + level
+                    + "'. Valid levels are 'error', 'warning', 'info' and 'none'.",
+                origin));
+        return null;
+    }
+  }
+
+  /**
+   * @param diagnosticType either an empty string or a {@code :<class>} string.
+   * @param from the diagnostics level mapped from (see {@link #parseDiagnosticsLevel})
+   * @param to the diagnostics level mapped to (see {@link #parseDiagnosticsLevel})
+   * @param handler receives {@code diagnosticType} stripped of {@code :} and the two levels if
+   *     parsable.
+   */
+  public static void parseDiagnosticsMapping(
+      String diagnosticType,
+      String from,
+      String to,
+      Consumer<DiagnosticsMapping> handler,
+      Consumer<Diagnostic> errorHandler,
+      Origin origin) {
+    String diagnosticsClassName = "";
+    if (!diagnosticType.isEmpty()) {
+      if (diagnosticType.length() == 1 || diagnosticType.charAt(0) != ':') {
+        errorHandler.accept(
+            new StringDiagnostic(
+                "Invalid diagnostics type specification --map-diagnostics" + diagnosticType + ".",
+                origin));
+        return;
+      }
+      diagnosticsClassName = diagnosticType.substring(1);
+    }
+    DiagnosticsLevel fromLevel = parseDiagnosticsLevel(from, errorHandler, origin);
+    DiagnosticsLevel toLevel = parseDiagnosticsLevel(to, errorHandler, origin);
+    if (fromLevel != null && toLevel != null) {
+      handler.accept(new DiagnosticsMapping(diagnosticsClassName, fromLevel, toLevel));
+    }
+    // parseDiagnosticsLevel reports its own errors, so no reporting necessary.
+  }
+
+  public static class DiagnosticsMapping {
+    public final String diagnosticType;
+    public final DiagnosticsLevel from;
+    public final DiagnosticsLevel to;
+
+    public DiagnosticsMapping(String diagnosticType, DiagnosticsLevel from, DiagnosticsLevel to) {
+      this.diagnosticType = diagnosticType;
+      this.from = from;
+      this.to = to;
     }
   }
 }

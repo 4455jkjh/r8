@@ -54,16 +54,17 @@ public class RelocatorCommandTest extends TestBase {
             "Usage: relocator [options]",
             " where options are:",
             "  --input <file>          # Input file to remap, class, zip or jar.",
-            "  --input-no-res <file>   # Input file to remap, zip or jar.",
-            "                          # Only .class file entries are included.",
+            "  --input-no-res <file>   # Input file to remap, zip or jar. Only .class file entries"
+                + " are included.",
             "  --output <file>         # Output result in <outfile>.",
             "  --map <from->to>        # Registers a mapping.",
-            "  --map-diagnostics [:<type>] <from-level> <to-level>",
+            "  --map-diagnostics[:<type>] <from-level> <to-level>",
             "                          # Map diagnostics level.",
             "  --thread-count <number> # A specified number of threads to run with.",
-            "  --version               # Print the version of d8.",
-            "  --help                  # Print this message."),
-        RelocatorCommand.USAGE_MESSAGE);
+            "  --version               # Print the version.",
+            "  --help                  # Print this message.",
+            ""),
+        RelocatorCommand.getUsageMessage());
   }
 
   @Test
@@ -130,7 +131,7 @@ public class RelocatorCommandTest extends TestBase {
                 RelocatorCommand.parse(new String[] {"--unknown-argument"}, Origin.unknown())
                     .build());
     assertThat(
-        exception.getCause().getMessage(), containsString("Unknown argument: --unknown-argument"));
+        exception.getCause().getMessage(), containsString("Unknown option: --unknown-argument"));
   }
 
   @Test
@@ -212,5 +213,105 @@ public class RelocatorCommandTest extends TestBase {
             });
     assertThat(
         exception.getMessage(), containsString("Package name 'invalid;package-name' is not valid"));
+  }
+
+  @Test
+  public void testMapDiagnostics() throws CompilationFailedException, IOException {
+    Path input = temp.newFile("in.jar").toPath();
+    Path output = temp.newFile("out.jar").toPath();
+    RelocatorCommand command =
+        RelocatorCommand.parse(
+                new String[] {
+                  "--output",
+                  output.toString(),
+                  "--input",
+                  input.toString(),
+                  "--map",
+                  "foo->bar",
+                  "--map-diagnostics",
+                  "info",
+                  "warning"
+                },
+                Origin.unknown())
+            .build();
+    assertNotNull(command);
+  }
+
+  @Test
+  public void testMapDiagnosticsWithType() throws CompilationFailedException, IOException {
+    Path input = temp.newFile("in.jar").toPath();
+    Path output = temp.newFile("out.jar").toPath();
+    RelocatorCommand command =
+        RelocatorCommand.parse(
+                new String[] {
+                  "--output",
+                  output.toString(),
+                  "--input",
+                  input.toString(),
+                  "--map",
+                  "foo->bar",
+                  "--map-diagnostics:com.android.tools.r8.utils.StringDiagnostic",
+                  "info",
+                  "warning"
+                },
+                Origin.unknown())
+            .build();
+    assertNotNull(command);
+  }
+
+  @Test
+  public void testMapDiagnosticsInvalidLevel() throws IOException {
+    Path input = temp.newFile("in.jar").toPath();
+    Path output = temp.newFile("out.jar").toPath();
+    CompilationFailedException exception =
+        assertThrows(
+            CompilationFailedException.class,
+            () -> {
+              RelocatorCommand.parse(
+                      new String[] {
+                        "--output",
+                        output.toString(),
+                        "--input",
+                        input.toString(),
+                        "--map",
+                        "foo->bar",
+                        "--map-diagnostics",
+                        "invalid-level",
+                        "warning"
+                      },
+                      Origin.unknown())
+                  .build();
+            });
+    assertThat(
+        exception.getCause().getMessage(),
+        containsString("Invalid diagnostics level 'invalid-level'"));
+  }
+
+  @Test
+  public void testMapDiagnosticsEmptyType() throws IOException {
+    Path input = temp.newFile("in.jar").toPath();
+    Path output = temp.newFile("out.jar").toPath();
+    CompilationFailedException exception =
+        assertThrows(
+            CompilationFailedException.class,
+            () -> {
+              RelocatorCommand.parse(
+                      new String[] {
+                        "--output",
+                        output.toString(),
+                        "--input",
+                        input.toString(),
+                        "--map",
+                        "foo->bar",
+                        "--map-diagnostics:",
+                        "info",
+                        "warning"
+                      },
+                      Origin.unknown())
+                  .build();
+            });
+    assertThat(
+        exception.getCause().getMessage(),
+        containsString("Invalid diagnostics type specification --map-diagnostics:"));
   }
 }

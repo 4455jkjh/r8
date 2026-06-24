@@ -19,6 +19,7 @@ public class CliParserBase<B> {
   private final Map<String, BiConsumer<B, String>> options1 = new HashMap<>();
   private final Map<String, BiConsumer<B, String>> prefix0 = new HashMap<>();
   private final Map<String, TriConsumer<B, String, String>> prefix1 = new HashMap<>();
+  private final Map<String, QuadConsumer<B, String, String, String>> prefix2 = new HashMap<>();
   private BiConsumer<B, String> positionalHandler;
   private final List<OptionInfo> optionInfos = new ArrayList<>();
   private final String usageHeader;
@@ -127,6 +128,21 @@ public class CliParserBase<B> {
   }
 
   /**
+   * @param prefix must start with {@code --} and must be unique and non-overlapping
+   */
+  public CliParserBase<B> prefix2(
+      String prefix,
+      String suffixLabel,
+      String paramLabel1,
+      String paramLabel2,
+      String description,
+      QuadConsumer<B, String, String, String> action) {
+    addPrefix2(prefix, action);
+    addHelp(prefix, null, suffixLabel, ImmutableList.of(paramLabel1, paramLabel2), description);
+    return this;
+  }
+
+  /**
    * @param action only one positional handler can be bound
    */
   public CliParserBase<B> positional(BiConsumer<B, String> action) {
@@ -169,6 +185,8 @@ public class CliParserBase<B> {
       } else if (tryParsePrefix0(arg, eqValue, builder, errorReporter)) {
         // Matched.
       } else if (tryParsePrefix1(arg, eqValue, args, builder, errorReporter)) {
+        // Matched.
+      } else if (tryParsePrefix2(arg, eqValue, args, builder, errorReporter)) {
         // Matched.
       } else if (tryParsePositional(rawArg, builder)) {
         // Matched.
@@ -238,6 +256,37 @@ public class CliParserBase<B> {
     return true;
   }
 
+  private boolean tryParsePrefix2(
+      String arg, String eqValue, Deque<String> args, B builder, Consumer<String> errorReporter) {
+    Pair<String, QuadConsumer<B, String, String, String>> match = findMatchedPrefix(arg, prefix2);
+    if (match == null) {
+      return false;
+    }
+    String arg1;
+    String arg2;
+    if (eqValue != null) {
+      arg1 = eqValue;
+      if (!args.isEmpty()) {
+        arg2 = args.removeFirst();
+      } else {
+        errorReporter.accept("Missing parameter for " + arg + ".");
+        args.clear();
+        return true;
+      }
+    } else {
+      if (args.size() >= 2) {
+        arg1 = args.removeFirst();
+        arg2 = args.removeFirst();
+      } else {
+        errorReporter.accept("Missing parameter for " + arg + ".");
+        args.clear();
+        return true;
+      }
+    }
+    match.getSecond().accept(builder, match.getFirst(), arg1, arg2);
+    return true;
+  }
+
   private boolean tryParsePositional(String rawArg, B builder) {
     if (positionalHandler == null) {
       return false;
@@ -277,6 +326,11 @@ public class CliParserBase<B> {
     prefix1.put(prefix, action);
   }
 
+  private void addPrefix2(String prefix, QuadConsumer<B, String, String, String> action) {
+    assert assertThatPrefixIsNew(prefix);
+    prefix2.put(prefix, action);
+  }
+
   private void addHelp(
       String name,
       String shorthand,
@@ -299,6 +353,7 @@ public class CliParserBase<B> {
   private void forEachPrefix(Consumer<String> action) {
     prefix0.keySet().forEach(action);
     prefix1.keySet().forEach(action);
+    prefix2.keySet().forEach(action);
   }
 
   private boolean assertThatOptionIsNew(String name) {
