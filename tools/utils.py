@@ -354,8 +354,10 @@ def stop_gradle():
     if GRADLE_STOPPED:
         return
 
-    java_home = jdk.GetDefaultJdkHome()
-    if not os.path.exists(java_home):
+    try:
+        java_home = jdk.GetDefaultJdkHome()
+    except Exception as _:
+        # No Gradle daemon is running if the JDK home can't be found.
         return
 
     gradle_dir = os.path.join(THIRD_PARTY, 'gradle')
@@ -365,6 +367,7 @@ def stop_gradle():
         gradle = os.path.join(gradle_dir, 'bin', 'gradle')
 
     if not os.path.exists(gradle):
+        # No Gradle daemon is running if the Gradle executable can't be found.
         return
 
     try:
@@ -378,10 +381,7 @@ def stop_gradle():
         subprocess.call(cmd, env=env)
         GRADLE_STOPPED = True
     except Exception as e:
-        if "No JDKs found" in str(e) or "No platform JDK found" in str(e):
-            pass
-        else:
-            Warn(f"Warning: Failed to stop gradle daemon: {e}")
+        Warn(f"Warning: Failed to stop gradle daemon: {e}")
         GRADLE_STOPPED = True
 
 
