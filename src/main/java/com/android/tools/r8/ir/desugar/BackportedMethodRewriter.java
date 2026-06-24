@@ -546,6 +546,15 @@ public final class BackportedMethodRewriter implements CfInstructionDesugaring {
       addProvider(
           new StatifyingMethodGenerator(
               method, BackportedMethods::InstantMethods_until, "untilInstant", type));
+
+      // java.io.Reader
+      type = factory.createType("Ljava/io/Reader;");
+
+      // java.io.Reader java.io.Reader.of(CharSequence cs)
+      name = factory.ofMethodName;
+      proto = factory.createProto(type, factory.charSequenceType);
+      method = factory.createMethod(type, proto, name);
+      addProvider(new MethodGenerator(method, BackportedMethods::ReaderMethods_of));
     }
 
     private void initializeAndroidKObjectsMethodProviders(DexItemFactory factory) {
