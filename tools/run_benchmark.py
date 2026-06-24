@@ -230,8 +230,8 @@ def run(options, r8jar, testjars):
         xms = '32g'
         xmx = '32g'
     elif options.benchmark == 'SystemUIAppGc':
-        xms = '1720m'
-        xmx = '1720m'
+        xms = '1760m'
+        xmx = '1760m'
     if options.heap_size:
         xms = options.heap_size
         xmx = options.heap_size
