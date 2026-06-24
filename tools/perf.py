@@ -350,7 +350,10 @@ def GetArtifactLocation(benchmark,
                         is_try=False):
     if version:
         if is_try:
-            assert branch is None
+            assert branch is None, (
+                f"Expected branch to be None for try commit, "
+                f"but got '{branch}' (version: {version}, benchmark: {benchmark})"
+            )
             return f'try/{benchmark}/{target}/{version}/{filename}'
         if branch and branch != 'main':
             return f'branches/{branch}/{benchmark}/{target}/{version}/{filename}'
@@ -359,7 +362,10 @@ def GetArtifactLocation(benchmark,
         commit = utils.get_HEAD_commit()
         branch = commit.branch()
         if is_try:
-            assert branch is None
+            assert branch is None, (
+                f"Expected branch to be None for try commit, "
+                f"but got '{branch}' (commit: {commit.hash()}, benchmark: {benchmark})"
+            )
             return f'try/{benchmark}/{target}/{commit.hash()}/{filename}'
         if branch and branch != 'main':
             return f'branches/{branch}/{benchmark}/{target}/{commit.hash()}/{filename}'
