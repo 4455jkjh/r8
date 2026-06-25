@@ -11,9 +11,10 @@ import com.android.tools.r8.graph.DexField;
 import com.android.tools.r8.graph.DexMethod;
 import com.android.tools.r8.graph.DexReference;
 import com.android.tools.r8.graph.DexString;
-import com.android.tools.r8.graph.DexType;
+import com.android.tools.r8.references.ClassReference;
+import com.android.tools.r8.references.FieldReference;
+import com.android.tools.r8.references.MethodReference;
 import com.android.tools.r8.utils.internal.ThrowingFunction;
-import com.android.tools.r8.utils.internal.exceptions.Unreachable;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -26,7 +27,7 @@ import java.util.Arrays;
  * pooled in a constant pool (see {@link ConstantPoolEntry}).
  *
  * <p>Each entry can be serialized into a "unique descriptor" which is a compact byte array
- * containing identifiers and constant pool indices. See {@code
+ * containing identifiers and constant pool indices. See {@link
  * com.android.tools.r8.apimodel.AndroidApiHashingDatabaseBuilderGenerator} for the serialization
  * format.
  */
@@ -47,8 +48,6 @@ public abstract class ApiDatabaseEntry {
   public abstract byte[] getUniqueDescriptor(
       ThrowingFunction<ConstantPoolEntry, Integer, IOException> constantPoolLookup)
       throws IOException;
-
-  public abstract ApiDatabaseEntry withHolder(DexType newHolder);
 
   @Override
   public final int hashCode() {
@@ -80,6 +79,29 @@ public abstract class ApiDatabaseEntry {
   }
 
   public static ApiDatabaseEntry of(FieldTypelessReference reference) {
+    return new FieldEntry(
+        DexString.encodeToMutf8(reference.getHolderClass().getDescriptor()),
+        DexString.encodeToMutf8(reference.getFieldName()));
+  }
+
+  public static ApiDatabaseEntry of(ClassReference reference) {
+    return new TypeEntry(DexString.encodeToMutf8(reference.getDescriptor()));
+  }
+
+  public static ApiDatabaseEntry of(MethodReference reference) {
+    byte[][] parameters = new byte[reference.getFormalTypes().size()][];
+    for (int i = 0; i < parameters.length; i++) {
+      parameters[i] = DexString.encodeToMutf8(reference.getFormalTypes().get(i).getDescriptor());
+    }
+    return new MethodEntry(
+        DexString.encodeToMutf8(reference.getHolderClass().getDescriptor()),
+        DexString.encodeToMutf8(reference.getMethodName()),
+        parameters,
+        DexString.encodeToMutf8(
+            reference.getReturnType() == null ? "V" : reference.getReturnType().getDescriptor()));
+  }
+
+  public static ApiDatabaseEntry of(FieldReference reference) {
     return new FieldEntry(
         DexString.encodeToMutf8(reference.getHolderClass().getDescriptor()),
         DexString.encodeToMutf8(reference.getFieldName()));
@@ -159,10 +181,6 @@ public abstract class ApiDatabaseEntry {
       };
     }
 
-    @Override
-    public ApiDatabaseEntry withHolder(DexType newHolder) {
-      throw new Unreachable();
-    }
 
     @Override
     public boolean equals(Object obj) {
@@ -223,10 +241,6 @@ public abstract class ApiDatabaseEntry {
       return baos.toByteArray();
     }
 
-    @Override
-    public ApiDatabaseEntry withHolder(DexType newHolder) {
-      throw new Unreachable();
-    }
 
     @Override
     public boolean equals(Object obj) {
@@ -279,10 +293,6 @@ public abstract class ApiDatabaseEntry {
       };
     }
 
-    @Override
-    public ApiDatabaseEntry withHolder(DexType newHolder) {
-      return new FieldEntry(newHolder.getDescriptor().content, this.name);
-    }
 
     @Override
     public boolean equals(Object obj) {

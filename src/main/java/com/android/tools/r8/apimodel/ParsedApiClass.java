@@ -7,6 +7,7 @@ package com.android.tools.r8.apimodel;
 import com.android.tools.r8.references.ClassReference;
 import com.android.tools.r8.references.MethodReference;
 import com.android.tools.r8.utils.AndroidApiLevel;
+import com.android.tools.r8.utils.internal.ThrowingBiConsumer;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.function.BiConsumer;
@@ -47,6 +48,14 @@ public class ParsedApiClass {
     supertypes.forEach(consumer);
   }
 
+  /** Visited in insertion order. */
+  public <E extends Throwable> void forEachSupertypeThrowing(
+      ThrowingBiConsumer<ClassReference, AndroidApiLevel, E> consumer) throws E {
+    for (Map.Entry<ClassReference, AndroidApiLevel> entry : supertypes.entrySet()) {
+      consumer.accept(entry.getKey(), entry.getValue());
+    }
+  }
+
   public void registerInterface(ClassReference reference, AndroidApiLevel introApiLevel) {
     assert !interfaces.containsKey(reference) : reference + " is already registered";
     interfaces.put(reference, introApiLevel);
@@ -59,6 +68,14 @@ public class ParsedApiClass {
   /** Visited in insertion order. */
   public void forEachInterface(BiConsumer<ClassReference, AndroidApiLevel> consumer) {
     interfaces.forEach(consumer);
+  }
+
+  /** Visited in insertion order. */
+  public <E extends Throwable> void forEachInterfaceThrowing(
+      ThrowingBiConsumer<ClassReference, AndroidApiLevel, E> consumer) throws E {
+    for (Map.Entry<ClassReference, AndroidApiLevel> entry : interfaces.entrySet()) {
+      consumer.accept(entry.getKey(), entry.getValue());
+    }
   }
 
   public void registerMethod(MethodReference reference, AndroidApiLevel introApiLevel) {
