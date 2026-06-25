@@ -146,6 +146,9 @@ def record_benchmark_result(commit, benchmark, benchmark_info,
 
 def record_single_benchmark_result(commit, benchmark, local_bucket_dict, target,
                                    benchmarks, is_try):
+    if is_try and commit.branch() is not None:
+        # Try job has landed on main.
+        return
     filename = perf.GetArtifactLocation(benchmark,
                                         target,
                                         commit.hash(),
@@ -293,8 +296,8 @@ def process_commits(commits, local_bucket_dict, temp, outdir, is_try=False):
         retrace_benchmarks = {}
         for benchmark, benchmark_info in perf.ALL_BENCHMARKS.items():
             record_benchmark_result(commit, benchmark, benchmark_info,
-                                    local_bucket_dict, 'build', build_benchmarks,
-                                    is_try)
+                                    local_bucket_dict, 'build',
+                                    build_benchmarks, is_try)
             record_benchmark_result(commit, benchmark, benchmark_info,
                                     local_bucket_dict, 'd8', d8_benchmarks,
                                     is_try)
