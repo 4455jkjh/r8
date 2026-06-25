@@ -13,7 +13,7 @@ import sys
 sys.path.append(path.dirname(inspect.getfile(lambda: None)))
 sys.path.append(
     os.path.join(path.dirname(inspect.getfile(lambda: None)), 'tools'))
-from tools.utils import EnsureDepFromGoogleCloudStorage
+from tools.utils import ensure_google_download
 from tools.jdk import GetJavaExecutable, GetDefaultJdkHome
 
 KOTLIN_FMT_DIR = path.join('third_party', 'google', 'google-kotlin-format',
@@ -74,11 +74,11 @@ def CheckFormatting(input_api, output_api, branch):
     seen_python_error = False
     seen_web_error = False
     pending_kotlin_files = []
-    EnsureDepFromGoogleCloudStorage(KOTLIN_FMT_DIR, 'google-kotlin-format')
-    EnsureDepFromGoogleCloudStorage(FMT_DIR, 'google-java-format')
-    EnsureDepFromGoogleCloudStorage(NODE_DIR, 'prettier')
-    EnsureDepFromGoogleCloudStorage(PRETTIER_DIR, 'prettier')
-    EnsureDepFromGoogleCloudStorage(PYTHON_FMT_DIR, 'yapf')
+    ensure_google_download(KOTLIN_FMT_DIR)
+    ensure_google_download(FMT_DIR)
+    ensure_google_download(NODE_DIR)
+    ensure_google_download(PRETTIER_DIR)
+    ensure_google_download(PYTHON_FMT_DIR)
     results = []
     python_runtime = PythonRuntime()
     for f in input_api.AffectedFiles():

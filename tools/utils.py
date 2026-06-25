@@ -393,7 +393,7 @@ def should_download(output_dir, tgz_file, sha1, success_file):
     return True
 
 
-def run_download(sha1, output_dir, success_file):
+def run_download(sha1, output_dir, success_file, internal, quiet=False):
     if os.path.exists(success_file):
         os.remove(success_file)
 
@@ -401,13 +401,27 @@ def run_download(sha1, output_dir, success_file):
         stop_gradle()
         shutil.rmtree(output_dir)
 
-    DownloadFromGoogleCloudStorage(sha1)
+    if internal:
+        download_script = os.path.join(REPO_ROOT, 'tools',
+                                       'download_from_x20.py')
+        cmd = [download_script, sha1]
+    else:
+        suffix = '.bat' if IsWindows() else ''
+        script = 'download_from_google_storage%s' % suffix
+        cmd = [script]
+        cmd.extend(['-b', 'r8-deps', '-u', '-s', sha1])
+
+    if not quiet:
+        PrintCmd(cmd)
+        subprocess.check_call(cmd)
+    else:
+        subprocess.check_call(cmd, stdout=subprocess.DEVNULL)
 
     with open(success_file, 'w') as _:
         pass
 
 
-def EnsureDepFromGoogleCloudStorage(path, msg):
+def ensure_download(path, internal, quiet=False):
     output_dir = path
     tar_gz_file = path + '.tar.gz'
     sha1_file = tar_gz_file + '.sha1'
@@ -416,31 +430,15 @@ def EnsureDepFromGoogleCloudStorage(path, msg):
         raise Exception(f"Missing sha1 file: {sha1_file}")
 
     if should_download(output_dir, tar_gz_file, sha1_file, success_file):
-        run_download(sha1_file, output_dir, success_file)
+        run_download(sha1_file, output_dir, success_file, internal, quiet)
 
 
-def DownloadFromX20(sha1_file):
-    download_script = os.path.join(REPO_ROOT, 'tools', 'download_from_x20.py')
-    cmd = [download_script, sha1_file]
-    PrintCmd(cmd)
-    subprocess.check_call(cmd)
+def ensure_google_download(path, quiet=False):
+    ensure_download(path, False, quiet=quiet)
 
 
-def DownloadFromGoogleCloudStorage(sha1_file,
-                                   bucket='r8-deps',
-                                   auth=False,
-                                   quiet=False):
-    suffix = '.bat' if IsWindows() else ''
-    download_script = 'download_from_google_storage%s' % suffix
-    cmd = [download_script]
-    if not auth:
-        cmd.append('-n')
-    cmd.extend(['-b', bucket, '-u', '-s', sha1_file])
-    if not quiet:
-        PrintCmd(cmd)
-        subprocess.check_call(cmd)
-    else:
-        subprocess.check_output(cmd)
+def ensure_x20_download(path, quiet=False):
+    ensure_download(path, True, quiet=quiet)
 
 
 def get_nth_sha1_from_revision(n, revision):

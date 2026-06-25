@@ -27,8 +27,7 @@ GRADLE_PROFILER_BIN = os.path.join(GRADLE_PROFILER_DIR, 'bin')
 
 def ensure_deps():
     gradle.ensure_deps()
-    utils.EnsureDepFromGoogleCloudStorage(GRADLE_PROFILER_DIR,
-                                          'Gradle profiler')
+    utils.ensure_google_download(GRADLE_PROFILER_DIR)
 
 
 def run_gradle_profiler(cwd, benchmark_name, scenario_file, local_output_dir,

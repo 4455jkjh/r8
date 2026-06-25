@@ -76,24 +76,22 @@ def print_cmd(s):
 
 
 def ensure_gradle():
-    utils.EnsureDepFromGoogleCloudStorage(GRADLE8_DIR, 'Gradle binary')
+    utils.ensure_google_download(GRADLE8_DIR)
 
 
 def ensure_gradle_repositories():
     dependencies_dir = os.path.join(utils.THIRD_PARTY, 'dependencies')
-    utils.EnsureDepFromGoogleCloudStorage(dependencies_dir,
-                                          'Gradle dependencies')
+    utils.ensure_google_download(dependencies_dir)
     dependencies_plugin_dir = os.path.join(utils.THIRD_PARTY,
                                            'dependencies_plugin')
-    utils.EnsureDepFromGoogleCloudStorage(dependencies_plugin_dir,
-                                          'Gradle plugin dependencies')
+    utils.ensure_google_download(dependencies_plugin_dir)
 
 
 def ensure_jdk():
     # Gradle in the new setup will use the jdks in the evaluation - fetch
     # all beforehand.
     for root in jdk.GetAllJdkDirs():
-        utils.EnsureDepFromGoogleCloudStorage(root, root)
+        utils.ensure_google_download(root)
 
 
 def ensure_deps():

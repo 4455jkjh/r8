@@ -180,8 +180,8 @@ def setUpFakeAndroidHome(androidHomeTemp):
     cmd = ["mkdir", subpath]
     subprocess.check_call(cmd)
     dest = os.path.join(subpath, "android.jar")
-    sha = os.path.join(utils.THIRD_PARTY, "android_jar", "lib-v32.tar.gz.sha1")
-    utils.DownloadFromGoogleCloudStorage(sha)
+    lib_dir = os.path.join(utils.THIRD_PARTY, "android_jar", "lib-v32")
+    utils.ensure_google_download(lib_dir)
     src = os.path.join(utils.THIRD_PARTY, "android_jar", "lib-v32",
                        "android.jar")
     cmd = ["cp", src, dest]
@@ -383,11 +383,10 @@ def Main(argv):
         archive.set_r_limit_to_max()
 
     # Make sure bazel is extracted in third_party.
-    utils.EnsureDepFromGoogleCloudStorage(utils.BAZEL_DIR, 'Bazel tool')
-    utils.EnsureDepFromGoogleCloudStorage(utils.JAVA8_DIR, 'Java 8 runtime')
+    utils.ensure_google_download(utils.BAZEL_DIR)
+    utils.ensure_google_download(utils.JAVA8_DIR)
     gradle.ensure_deps()
-    utils.EnsureDepFromGoogleCloudStorage(utils.DESUGAR_JDK_LIBS_11_DIR,
-                                          'desugar_jdk_libs_11')
+    utils.ensure_google_download(utils.DESUGAR_JDK_LIBS_11_DIR)
 
     for v in options.variant:
         BuildAndUpload(options, v)

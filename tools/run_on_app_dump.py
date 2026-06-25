@@ -383,13 +383,6 @@ def remove_print_lines(file):
                 f.write(line)
 
 
-def download_sha(app_sha, internal, quiet=False):
-    if internal:
-        utils.DownloadFromX20(app_sha)
-    else:
-        utils.DownloadFromGoogleCloudStorage(app_sha, quiet=quiet)
-
-
 def is_logging_enabled_for(app, options):
     if options.no_logging:
         return False
@@ -445,8 +438,8 @@ def get_results_for_app(app, options, temp_dir, worker_id):
     app_dir = (os.path.join(utils.INTERNAL_DUMPS_DIR, app_location) if
                app.internal else os.path.join(opensource_basedir, app_location))
     if not os.path.exists(app_dir) and not options.golem:
-        # Download the app from google storage.
-        download_sha(app_dir + ".tar.gz.sha1", app.internal)
+        # Download the app.
+        utils.ensure_download(app_dir, app.internal)
 
     # Ensure that the dumps are in place
     assert os.path.isfile(dump_for_app(app_dir, app)), "Could not find dump " \
@@ -1062,8 +1055,7 @@ def print_golem_config(options):
     print_indented('final targetsCompat = ["R8"];', 2)
     print_indented('final targetsFull = ["R8-full-minify-optimize-shrink"];', 2)
     # Avoid calculating this for every app
-    jdk_gz = jdk.GetJdkHome() + '.tar.gz'
-    add_golem_resource(2, jdk_gz, 'openjdk')
+    add_golem_resource(2, jdk.GetJdk21Home(), 'openjdk')
     for app in options.apps:
         if app.folder and not app.internal:
             indentation = 2
@@ -1081,10 +1073,9 @@ def print_golem_config(options):
                 print_indented(
                     'ExecutionManagement.addTimeoutConstraint'
                     '(timeout, benchmark: benchmark);', indentation)
-            app_gz = os.path.join(utils.OPENSOURCE_DUMPS_DIR,
-                                  app.folder + '.tar.gz')
+            app_dir = os.path.join(utils.OPENSOURCE_DUMPS_DIR, app.folder)
             name = 'appResource'
-            add_golem_resource(indentation, app_gz, name)
+            add_golem_resource(indentation, app_dir, name)
             print_golem_config_target('Compat', 'r8', app, indentation)
             print_golem_config_target('Full',
                                       'r8-full',
@@ -1125,11 +1116,12 @@ def print_golem_config_target(target,
     print_indented('%s.resources.add(openjdk);' % options, indentation)
 
 
-def add_golem_resource(indentation, gz, name, sha256=None):
+def add_golem_resource(indentation, path, name, sha256=None):
+    gz = path + '.tar.gz'
     sha = gz + '.sha1'
     if not sha256:
         # Golem uses a sha256 of the file in the cache, and you need to specify that.
-        download_sha(sha, False, quiet=True)
+        utils.ensure_google_download(path, quiet=True)
         sha256 = get_sha256(gz)
     sha = get_sha_from_file(sha)
     print_indented('final %s = BenchmarkResource("",' % name, indentation)

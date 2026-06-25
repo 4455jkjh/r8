@@ -100,7 +100,7 @@ def download_newest():
     # relying on overlaying and reusing some jars.
     kotlin_dir = os.path.join(utils.THIRD_PARTY, "kotlin",
                               "kotlin-compiler-dev")
-    utils.EnsureDepFromGoogleCloudStorage(kotlin_dir, 'Kotlin dev compiler')
+    utils.ensure_google_download(kotlin_dir)
 
     # Check POM for expected dependencies.
     check_pom(top_most_version_and_build)
