@@ -26,6 +26,10 @@ def parse_options(argv):
                         help='Run without building first (default false)',
                         default=False,
                         action='store_true')
+    parser.add_argument('--csv',
+                        help='Output in CSV format (default false)',
+                        default=False,
+                        action='store_true')
     return parser.parse_args(argv)
 
 
@@ -54,6 +58,8 @@ def main(argv):
         os.pathsep.join(classpath),
         'com.android.tools.r8.tools.apkanalyzer.ApkAnalyzer', options.apk
     ]
+    if options.csv:
+        cmd.append('--csv')
 
     res = subprocess.run(cmd)
     return res.returncode

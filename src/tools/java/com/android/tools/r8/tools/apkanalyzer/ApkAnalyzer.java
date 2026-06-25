@@ -46,18 +46,39 @@ public class ApkAnalyzer {
 
   public static void main(String[] args) throws IOException {
     if (args.length < 1) {
-      System.err.println("Usage: ApkAnalyzer <apk-path>");
+      System.err.println("Usage: ApkAnalyzer <apk-path> [--csv]");
       System.exit(1);
     }
 
-    String arg = args[0];
-    Path apkPath = Paths.get(arg);
+    String apkPathString = null;
+    boolean csv = false;
+    for (String arg : args) {
+      if (arg.equals("--csv")) {
+        csv = true;
+      } else if (apkPathString == null) {
+        apkPathString = arg;
+      } else {
+        System.err.println("Unexpected argument: " + arg);
+        System.exit(1);
+      }
+    }
+
+    if (apkPathString == null) {
+      System.err.println("Usage: ApkAnalyzer <apk-path> [--csv]");
+      System.exit(1);
+    }
+
+    Path apkPath = Paths.get(apkPathString);
     if (!Files.exists(apkPath)) {
-      throw new NoSuchFileException(arg);
+      throw new NoSuchFileException(apkPathString);
     }
 
     ApkAnalyzerResult result = analyzeApk(apkPath);
-    printResult(result);
+    if (csv) {
+      printCsv(result);
+    } else {
+      printResult(result);
+    }
   }
 
   private static void printResult(ApkAnalyzerResult result) {
@@ -98,6 +119,57 @@ public class ApkAnalyzer {
       System.out.println("class_depth_" + d + "_count=" + result.classDepthCounts[d]);
     }
     System.out.println("class_depth_10_or_higher_count=" + result.classDepthCounts[10]);
+  }
+
+  private static void printCsv(ApkAnalyzerResult result) {
+    StringBuilder sb = new StringBuilder();
+    sb.append(result.dexSize.count).append(';');
+    sb.append(result.dexCompressedCount).append(';');
+    sb.append(result.dexSize.min).append(';');
+    sb.append(result.dexSize.max).append(';');
+    sb.append(result.dexSize.total).append(';');
+    sb.append(result.types.min).append(';');
+    sb.append(result.types.max).append(';');
+    sb.append(result.types.total).append(';');
+    sb.append(result.fields.min).append(';');
+    sb.append(result.fields.max).append(';');
+    sb.append(result.fields.total).append(';');
+    sb.append(result.methods.min).append(';');
+    sb.append(result.methods.max).append(';');
+    sb.append(result.methods.total).append(';');
+    sb.append(result.debugInfoNone).append(';');
+    sb.append(result.debugInfoEmbeddedPc).append(';');
+    sb.append(result.debugInfoEventBased).append(';');
+    if (result.desugaredLibraryInfo != null) {
+      sb.append(result.desugaredLibraryInfo.index).append(';');
+      sb.append(result.desugaredLibraryInfo.size).append(';');
+    } else {
+      sb.append(';');
+      sb.append(';');
+    }
+    Long minApi = getMinApi(result.markers);
+    if (minApi != null) {
+      sb.append(minApi).append(';');
+    } else {
+      sb.append(';');
+    }
+    if (result.mostOccurringSourceFile != null) {
+      sb.append(result.mostOccurringSourceFile).append(';');
+      sb.append(result.mostOccurringSourceFileCount).append(';');
+    } else {
+      sb.append(';');
+      sb.append(';');
+    }
+    sb.append(result.runtimeInvisibleAnnotations).append(';');
+    for (int d = 0; d < 10; d++) {
+      sb.append(result.classDepthCounts[d]).append(';');
+    }
+    sb.append(result.classDepthCounts[10]);
+    sb.append(';');
+    for (Marker marker : result.markers) {
+      sb.append(marker);
+    }
+    System.out.println(sb);
   }
 
   private static ApkAnalyzerResult analyzeApk(Path apkPath) throws IOException {
