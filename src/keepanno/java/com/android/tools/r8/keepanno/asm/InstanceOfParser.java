@@ -77,7 +77,8 @@ public class InstanceOfParser
       InstanceOfProperties property,
       String name,
       String descriptor,
-      Consumer<KeepInstanceOfPattern> setValue) {
+      Consumer<KeepInstanceOfPattern> setValue,
+      AnnotationVisitor annotationVisitor) {
     if (property.equals(InstanceOfProperties.PATTERN)) {
       AnnotationParsingContext parsingContext =
           getParsingContext().property(name).annotation(descriptor);
@@ -94,8 +95,9 @@ public class InstanceOfParser
                       .setInclusive(inclusiveParser.getValueOrDefault(true))
                       .classPattern(
                           classNameParser.getValueOrDefault(KeepQualifiedClassNamePattern.any()))
-                      .build()));
+                      .build()),
+          annotationVisitor);
     }
-    return super.tryPropertyAnnotation(property, name, descriptor, setValue);
+    return super.tryPropertyAnnotation(property, name, descriptor, setValue, annotationVisitor);
   }
 }

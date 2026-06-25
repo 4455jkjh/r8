@@ -4,8 +4,6 @@
 
 package com.android.tools.r8.relocator;
 
-import static com.android.tools.r8.relocator.RelocatorCommand.USAGE_MESSAGE;
-
 import com.android.tools.r8.CompilationFailedException;
 import com.android.tools.r8.Version;
 import com.android.tools.r8.origin.CommandLineOrigin;
@@ -17,12 +15,13 @@ public class RelocatorCommandLine {
   /**
    * EXPERIMENTAL - The CLI is subject to change. Command-line entry to Relocator.
    *
-   * <p>See {@link RelocatorCommand#USAGE_MESSAGE} or run {@code relocator --help} for usage
+   * <p>See {@link RelocatorCommand#getUsageMessage()} or run {@code relocator --help} for usage
    * information.
    */
   public static void main(String[] args) {
     if (args.length == 0) {
-      throw new RuntimeException(StringUtils.joinLines("Invalid invocation.", USAGE_MESSAGE));
+      throw new RuntimeException(
+          StringUtils.joinLines("Invalid invocation.", RelocatorCommand.getUsageMessage()));
     }
     ExceptionUtils.withMainProgramHandler(() -> run(args));
   }
@@ -31,7 +30,7 @@ public class RelocatorCommandLine {
     RelocatorCommand command =
         RelocatorCommand.Builder.parse(args, CommandLineOrigin.INSTANCE).build();
     if (command.isPrintHelp()) {
-      System.out.println(USAGE_MESSAGE);
+      System.out.println(RelocatorCommand.getUsageMessage());
       return;
     }
     if (command.isPrintVersion()) {

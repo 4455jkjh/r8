@@ -80,6 +80,7 @@ import com.android.tools.r8.optimize.proto.ProtoNormalizer;
 import com.android.tools.r8.optimize.redundantbridgeremoval.RedundantBridgeRemover;
 import com.android.tools.r8.optimize.singlecaller.SingleCallerInliner;
 import com.android.tools.r8.optimize.smallmethodinliner.SmallMethodInliner;
+import com.android.tools.r8.optimize.virtualmethodhoisting.VirtualMethodHoister;
 import com.android.tools.r8.origin.CommandLineOrigin;
 import com.android.tools.r8.profile.art.ArtProfileCompletenessChecker;
 import com.android.tools.r8.profile.rewriting.ProfileCollectionAdditions;
@@ -834,6 +835,7 @@ public class R8 {
                 .runIfNecessary(executorService, timing);
             assert appView.getTypeElementFactory().verifyNoCachedTypeElements();
 
+            new VirtualMethodHoister(appView.withLiveness()).run(executorService, timing);
             new SingleCallerInliner(appViewWithLiveness).runIfNecessary(executorService, timing);
             new ProtoNormalizer(appViewWithLiveness).run(executorService, timing);
           }

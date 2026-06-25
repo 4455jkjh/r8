@@ -242,7 +242,8 @@ public class VerticalClassMergerGraphLens extends ClassMergerGraphLens {
       // method through one of the immediate supertypes of the source class. See also
       // RedundantInterfaceBridgeMethodRemovalTest.
       if (previous.getType().isSuper()
-          && newReference.getHolderType().isNotIdenticalTo(previousReference.getHolderType())) {
+          && newReference.getHolderType().isNotIdenticalTo(previousReference.getHolderType())
+          && !newMethodSignatures.containsKey(previous.getReboundReference())) {
         newReference =
             indirectInvokeSuperRewriteCache
                 .computeIfAbsent(

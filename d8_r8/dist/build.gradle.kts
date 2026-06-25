@@ -144,8 +144,8 @@ val sharedTestDepsConfig by
   configurations.resolvable("sharedTestDepsConfig") { extendsFrom(sharedTestDepsScope) }
 
 dependencies {
-  sharedDepsScope(project(":shared", "sharedDepsFiles"))
-  sharedTestDepsScope(project(":shared", "sharedTestDepsFiles"))
+  sharedDepsScope(project(":third_party", "sharedDepsFiles"))
+  sharedTestDepsScope(project(":third_party", "sharedTestDepsFiles"))
 }
 
 val depsJarFilesScope by configurations.dependencyScope("depsJarFilesScope")

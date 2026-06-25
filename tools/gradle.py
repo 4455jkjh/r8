@@ -16,7 +16,7 @@ import sys
 import jdk
 import utils
 
-GRADLE8_SHA1 = os.path.join(utils.THIRD_PARTY, 'gradle.tar.gz.sha1')
+GRADLE8_DIR = os.path.join(utils.THIRD_PARTY, 'gradle')
 
 
 def get_gradle_dir():
@@ -76,28 +76,22 @@ def print_cmd(s):
 
 
 def ensure_gradle():
-    utils.EnsureDepFromGoogleCloudStorage(GRADLE8_SHA1,
-                                          'Gradle binary',
-                                          dep=get_gradle_executable())
+    utils.ensure_google_download(GRADLE8_DIR)
 
 
 def ensure_gradle_repositories():
-    dependencies_sha1 = os.path.join(utils.THIRD_PARTY,
-                                     'dependencies.tar.gz.sha1')
-    utils.EnsureDepFromGoogleCloudStorage(dependencies_sha1,
-                                          'Gradle dependencies')
-    dependencies_plugin_sha1 = os.path.join(utils.THIRD_PARTY,
-                                            'dependencies_plugin.tar.gz.sha1')
-    utils.EnsureDepFromGoogleCloudStorage(dependencies_plugin_sha1,
-                                          'Gradle plugin dependencies')
+    dependencies_dir = os.path.join(utils.THIRD_PARTY, 'dependencies')
+    utils.ensure_google_download(dependencies_dir)
+    dependencies_plugin_dir = os.path.join(utils.THIRD_PARTY,
+                                           'dependencies_plugin')
+    utils.ensure_google_download(dependencies_plugin_dir)
 
 
 def ensure_jdk():
     # Gradle in the new setup will use the jdks in the evaluation - fetch
     # all beforehand.
     for root in jdk.GetAllJdkDirs():
-        jdk_sha1 = root + '.tar.gz.sha1'
-        utils.EnsureDepFromGoogleCloudStorage(jdk_sha1, root)
+        utils.ensure_google_download(root)
 
 
 def ensure_deps():
@@ -136,6 +130,7 @@ def run_gradle_in(gradle_cmd,
         if not quiet:
             utils.PrintCmd(cmd)
         return_value = subprocess.call(cmd, env=get_java_env(env))
+        utils.GRADLE_STOPPED = False
         if throw_on_failure and return_value != 0:
             raise Exception('Failed to execute gradle')
         return return_value

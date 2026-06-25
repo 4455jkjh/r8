@@ -87,7 +87,6 @@ public abstract class TestCompilerBuilder<
           options -> {
             options.testing.allowUnusedDontWarnRules = false;
             options.testing.allowUnnecessaryDontWarnWildcards = false;
-            options.testing.enableRepackagingByDefault = true;
             options.testing.enableRepackagingByDefaultForCf = true;
             options.testing.forcePruneMetaInfManifestMf = true;
             options.horizontalClassMergerOptions().enableForTesting();

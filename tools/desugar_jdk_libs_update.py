@@ -46,7 +46,7 @@ def run(args):
                     args.desugar_jdk_libs_revision
                 ])
         print("Building desugared library")
-        bazel = os.path.join(utils.BAZEL_TOOL, 'lib', 'bazel', 'bin', 'bazel')
+        bazel = os.path.join(utils.BAZEL_DIR, 'lib', 'bazel', 'bin', 'bazel')
         with utils.ChangedWorkingDirectory(checkout_dir):
             subprocess.check_call([
                 bazel, '--bazelrc=/dev/null', 'build', '--spawn_strategy=local',

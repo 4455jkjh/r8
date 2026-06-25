@@ -23,7 +23,7 @@ buildscript { dependencies { classpath("com.google.protobuf:protobuf-gradle-plug
 
 apply(plugin = "com.google.protobuf")
 
-tasks.named("generateProto") { dependsOn(":shared:downloadDeps") }
+tasks.named("generateProto") { dependsOn(":third_party:downloadDeps") }
 
 var os = DefaultNativePlatform.getCurrentOperatingSystem()
 var protobuf = project.extensions.getByName("protobuf") as ProtobufExtension

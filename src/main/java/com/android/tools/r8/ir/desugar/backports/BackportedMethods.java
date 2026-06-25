@@ -60,6 +60,7 @@ public final class BackportedMethods {
     factory.createSynthesizedType("Landroid/os/Build$VERSION;");
     factory.createSynthesizedType("Landroid/os/Build;");
     factory.createSynthesizedType("Lcom/android/tools/r8/ir/desugar/backports/ArraysMethods;");
+    factory.createSynthesizedType("Ljava/io/StringReader;");
     factory.createSynthesizedType("Ljava/lang/ArithmeticException;");
     factory.createSynthesizedType("Ljava/lang/ArrayIndexOutOfBoundsException;");
     factory.createSynthesizedType("Ljava/lang/AssertionError;");
@@ -15046,6 +15047,38 @@ public final class BackportedMethods {
                     factory.createProto(factory.createType("Ljava/util/function/Predicate;")),
                     factory.createString("negate")),
                 true),
+            new CfReturn(ValueType.OBJECT),
+            label1),
+        ImmutableList.of(),
+        ImmutableList.of());
+  }
+
+  public static CfCode ReaderMethods_of(DexItemFactory factory, DexMethod method) {
+    CfLabel label0 = new CfLabel();
+    CfLabel label1 = new CfLabel();
+    return new CfCode(
+        method.holder,
+        3,
+        1,
+        ImmutableList.of(
+            label0,
+            new CfNew(factory.createType("Ljava/io/StringReader;")),
+            new CfStackInstruction(CfStackInstruction.Opcode.Dup),
+            new CfLoad(ValueType.OBJECT, 0),
+            new CfInvoke(
+                185,
+                factory.createMethod(
+                    factory.charSequenceType,
+                    factory.createProto(factory.stringType),
+                    factory.createString("toString")),
+                true),
+            new CfInvoke(
+                183,
+                factory.createMethod(
+                    factory.createType("Ljava/io/StringReader;"),
+                    factory.createProto(factory.voidType, factory.stringType),
+                    factory.createString("<init>")),
+                false),
             new CfReturn(ValueType.OBJECT),
             label1),
         ImmutableList.of(),

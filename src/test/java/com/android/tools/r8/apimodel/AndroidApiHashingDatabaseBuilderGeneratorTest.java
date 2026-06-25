@@ -4,10 +4,12 @@
 
 package com.android.tools.r8.apimodel;
 
+import static com.android.tools.r8.UnorderedCollectionMatcher.matchesItemsOneToOne;
 import static com.android.tools.r8.androidapi.AndroidApiLevelDatabaseHelper.notModeledFields;
 import static com.android.tools.r8.androidapi.AndroidApiLevelDatabaseHelper.notModeledMethods;
 import static com.android.tools.r8.androidapi.AndroidApiLevelDatabaseHelper.notModeledTypes;
 import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
@@ -38,11 +40,15 @@ import com.android.tools.r8.utils.AndroidApiLevel;
 import com.android.tools.r8.utils.AndroidApp;
 import com.android.tools.r8.utils.InternalOptions;
 import com.android.tools.r8.utils.ZipUtils;
+import com.android.tools.r8.utils.codeinspector.ClassSubject;
 import com.android.tools.r8.utils.codeinspector.CodeInspector;
+import com.android.tools.r8.utils.codeinspector.FieldSubject;
+import com.android.tools.r8.utils.codeinspector.MethodSubject;
 import com.android.tools.r8.utils.internal.FileUtils;
 import com.android.tools.r8.utils.internal.IntBox;
 import com.android.tools.r8.utils.timing.Timing;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -97,20 +103,17 @@ public class AndroidApiHashingDatabaseBuilderGeneratorTest extends TestBase {
   private static GenerateDatabaseResourceFilesResult generateResourcesFiles() throws Exception {
     Path androidJar = ToolHelper.getAndroidJar(API_LEVEL);
     return generateResourcesFiles(
-        androidJar,
         AndroidApiVersionsXmlParserChecked.parse(
             ToolHelper.getApiVersionsXmlFile(API_LEVEL), androidJar, API_LEVEL, false),
         API_LEVEL);
   }
 
   private static GenerateDatabaseResourceFilesResult generateResourcesFiles(
-      Path androidJar, List<ParsedApiClass> apiClasses, AndroidApiLevel androidJarApiLevel)
-      throws Exception {
+      List<ParsedApiClass> apiClasses, AndroidApiLevel androidJarApiLevel) throws Exception {
     TemporaryFolder temp = new TemporaryFolder();
     temp.create();
     Path apiLevels = temp.newFile("new_api_levels.ser").toPath();
-    AndroidApiHashingDatabaseBuilderGenerator.generate(
-        apiClasses, apiLevels, androidJarApiLevel, new CodeInspector(androidJar));
+    AndroidApiHashingDatabaseBuilderGenerator.generate(apiClasses, apiLevels, androidJarApiLevel);
     return new GenerateDatabaseResourceFilesResult(apiLevels);
   }
 
@@ -131,10 +134,10 @@ public class AndroidApiHashingDatabaseBuilderGeneratorTest extends TestBase {
           numberOfFields.increment(apiClass.fieldCount());
           numberOfMethods.increment(apiClass.methodCount());
         });
-    // These numbers will change when updating api-versions.xml
-    assertEquals(6435, parsedApiClasses.size());
-    assertEquals(32798, numberOfFields.get());
-    assertEquals(49472, numberOfMethods.get());
+    // These numbers will change when updating api-versions.xml.
+    assertEquals(6498, parsedApiClasses.size());
+    assertEquals(32818, numberOfFields.get());
+    assertEquals(49867, numberOfMethods.get());
   }
 
   private static final String sampleVersion4ApiVersionsXml =
@@ -497,8 +500,19 @@ public class AndroidApiHashingDatabaseBuilderGeneratorTest extends TestBase {
         notModeledMethods.isEmpty());
   }
 
+  private Set<String> loadMissingApis(String resourceName) throws Exception {
+    return Files.readAllLines(ToolHelper.getResourceAsReadOnlyFile(getClass(), resourceName))
+        .stream()
+        .map(String::trim)
+        .filter(line -> !line.isEmpty())
+        .collect(Collectors.toSet());
+  }
+
   @Test
   public void testCanLookUpAllParsedApiClassesAndMembers() throws Exception {
+    Set<String> knownMissingClasses = loadMissingApis("missing_classes.txt");
+    Set<String> knownMissingFields = ImmutableSet.of();
+    Set<String> knownMissingMethods = loadMissingApis("missing_methods.txt");
     Path androidJar = ToolHelper.getAndroidJar(API_LEVEL);
     CodeInspector inspector = new CodeInspector(androidJar);
     List<ParsedApiClass> parsedApiClasses =
@@ -509,13 +523,29 @@ public class AndroidApiHashingDatabaseBuilderGeneratorTest extends TestBase {
     AndroidApiLevelHashingDatabaseImpl androidApiLevelDatabase =
         new AndroidApiLevelHashingDatabaseImpl(
             ImmutableList.of(), new InternalOptions(), diagnosticsHandler);
+
+    Set<String> missingClasses = new HashSet<>();
+    Set<String> missingFields = new HashSet<>();
+    Set<String> missingMethods = new HashSet<>();
+
     parsedApiClasses.forEach(
         parsedApiClass -> {
-          DexType type = factory.createType(parsedApiClass.getClassReference().getDescriptor());
+          ClassReference classReference = parsedApiClass.getClassReference();
+          ClassSubject clazz = inspector.clazz(classReference);
+          if (!clazz.isPresent()) {
+            missingClasses.add(classReference.getTypeName());
+            return;
+          }
+          DexType type = factory.createType(classReference.getDescriptor());
           AndroidApiLevel apiLevel = androidApiLevelDatabase.getTypeApiLevel(type);
           assertEquals(parsedApiClass.getApiLevel(), apiLevel);
           parsedApiClass.forEachMethod(
               (methodReference, methodApiLevel) -> {
+                MethodSubject methodSubject = clazz.method(methodReference);
+                if (!methodSubject.isPresent()) {
+                  missingMethods.add(methodReference.toSourceString());
+                  return;
+                }
                 DexMethod method = factory.createMethod(methodReference);
                 AndroidApiLevel androidApiLevel;
                 if (factory.objectMembers.isObjectMember(method)) {
@@ -523,18 +553,28 @@ public class AndroidApiHashingDatabaseBuilderGeneratorTest extends TestBase {
                 } else {
                   androidApiLevel = androidApiLevelDatabase.getMethodApiLevel(method);
                 }
-                androidApiLevel.isLessThanOrEqualTo(methodApiLevel);
+                assertTrue(androidApiLevel.isLessThanOrEqualTo(methodApiLevel));
               });
           parsedApiClass.forEachField(
               (fieldReference, fieldApiLevel) -> {
-                DexField field =
-                    inspector
-                        .clazz(fieldReference.getHolderClass())
-                        .uniqueFieldWithOriginalName(fieldReference.getFieldName())
-                        .getDexField();
-                androidApiLevelDatabase.getFieldApiLevel(field).isLessThanOrEqualTo(fieldApiLevel);
+                FieldSubject fieldSubject =
+                    clazz.uniqueFieldWithOriginalName(fieldReference.getFieldName());
+                if (!fieldSubject.isPresent()) {
+                  missingFields.add(fieldReference.toSourceString());
+                  return;
+                }
+                DexField field = fieldSubject.getDexField();
+                assertTrue(
+                    androidApiLevelDatabase
+                        .getFieldApiLevel(field)
+                        .isLessThanOrEqualTo(fieldApiLevel));
               });
         });
+
+    assertThat(missingClasses, matchesItemsOneToOne(knownMissingClasses));
+    assertThat(missingMethods, matchesItemsOneToOne(knownMissingMethods));
+    assertThat(missingFields, matchesItemsOneToOne(knownMissingFields));
+
     diagnosticsHandler.assertNoMessages();
   }
 

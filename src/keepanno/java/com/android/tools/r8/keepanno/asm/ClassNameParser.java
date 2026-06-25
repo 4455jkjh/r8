@@ -80,7 +80,8 @@ public class ClassNameParser
       ClassNameProperty property,
       String name,
       String descriptor,
-      Consumer<KeepQualifiedClassNamePattern> setValue) {
+      Consumer<KeepQualifiedClassNamePattern> setValue,
+      AnnotationVisitor annotationVisitor) {
     switch (property) {
       case PATTERN:
         {
@@ -121,7 +122,8 @@ public class ClassNameParser
                             unqualifiedNameParser.getValueOrDefault(
                                 KeepUnqualfiedClassNamePattern.any()))
                         .build());
-              });
+              },
+              annotationVisitor);
         }
       default:
         return null;

@@ -47,7 +47,7 @@ REPO_SOURCE = 'https://r8.googlesource.com/r8'
 
 GRADLE_TASK_CLEAN_TEST = ':test:cleanTest'
 GRADLE_TASK_CONSOLIDATED_LICENSE = ':dist:consolidatedLicense'
-GRADLE_TASK_DOWNLOAD_DEPS = ':shared:downloadDeps'
+GRADLE_TASK_DOWNLOAD_DEPS = ':third_party:downloadDeps'
 GRADLE_TASK_KEEP_ANNO_JAR = ':keepanno:keepAnnoAnnotationsJar'
 GRADLE_TASK_KEEP_ANNO_LEGACY_JAR = ':keepanno:keepAnnoLegacyAnnotationsJar'
 GRADLE_TASK_KEEP_ANNO_ANDROIDX_JAR = ':keepanno:keepAnnoAndroidXAnnotationsJar'
@@ -147,18 +147,13 @@ PINNED_PGR8_JAR = os.path.join(REPO_ROOT, 'third_party/r8/r8-pg6.0.1.jar')
 
 OPENSOURCE_DUMPS_DIR = os.path.join(THIRD_PARTY, 'opensource-apps')
 INTERNAL_DUMPS_DIR = os.path.join(THIRD_PARTY, 'internal-apps')
-BAZEL_SHA_FILE = os.path.join(THIRD_PARTY, 'bazel.tar.gz.sha1')
-BAZEL_TOOL = os.path.join(THIRD_PARTY, 'bazel')
-JAVA8_SHA_FILE = os.path.join(THIRD_PARTY, 'openjdk', 'jdk8',
-                              'linux-x86.tar.gz.sha1')
-JAVA11_SHA_FILE = os.path.join(THIRD_PARTY, 'openjdk', 'jdk-11',
-                               'linux.tar.gz.sha1')
-JAVA17_SHA_FILE = os.path.join(THIRD_PARTY, 'openjdk', 'jdk-17',
-                               'linux.tar.gz.sha1')
-JAVA21_SHA_FILE = os.path.join(THIRD_PARTY, 'openjdk', 'jdk-21',
-                               'linux.tar.gz.sha1')
-DESUGAR_JDK_LIBS_11_SHA_FILE = os.path.join(THIRD_PARTY, 'openjdk',
-                                            'desugar_jdk_libs_11.tar.gz.sha1')
+BAZEL_DIR = os.path.join(THIRD_PARTY, 'bazel')
+JAVA8_DIR = os.path.join(THIRD_PARTY, 'openjdk', 'jdk8', 'linux-x86')
+JAVA11_DIR = os.path.join(THIRD_PARTY, 'openjdk', 'jdk-11', 'linux')
+JAVA17_DIR = os.path.join(THIRD_PARTY, 'openjdk', 'jdk-17', 'linux')
+JAVA21_DIR = os.path.join(THIRD_PARTY, 'openjdk', 'jdk-21', 'linux')
+DESUGAR_JDK_LIBS_11_DIR = os.path.join(THIRD_PARTY, 'openjdk',
+                                       'desugar_jdk_libs_11')
 IGNORE_WARNINGS_RULES = os.path.join(REPO_ROOT, 'src', 'test',
                                      'ignorewarnings.rules')
 ANDROID_HOME_ENVIROMENT_NAME = "ANDROID_HOME"
@@ -351,67 +346,99 @@ def IsWindows():
     return defines.IsWindows()
 
 
-def EnsureDepFromGoogleCloudStorage(sha1, msg, dep=None, tgz=None):
-    """Ensures that a dependency is downloaded from Google Cloud Storage and extracted.
-
-    Downloads are reused (skipped) if:
-    1. The dependency directory or file `dep` exists.
-    2. The tarball `tgz` exists.
-    3. The tarball `tgz` is not older than the `.sha1` file. This ensures that if
-       the `.sha1` file is updated (e.g. by pulling a new version), a re-download
-       is triggered.
-
-    Args:
-      sha1: Path to the .sha1 file for the dependency.
-      msg: A message to print when the dependency is present.
-      dep: The directory or file that should exist if the dependency is present.
-        If None, it is derived from sha1 by removing '.tar.gz.sha1'.
-      tgz: The tarball file path. If None, it is derived from sha1 by removing
-        '.sha1'.
-    """
-    if tgz is None:
-        assert sha1.endswith('.sha1')
-        tgz = sha1[:-5]
-    if dep is None:
-        assert sha1.endswith('.tar.gz.sha1')
-        dep = sha1[:-12]
-    if (not os.path.exists(dep) or not os.path.exists(tgz) or
-            os.path.getmtime(tgz) < os.path.getmtime(sha1)):
-        if os.path.exists(dep):
-            if os.path.isdir(dep):
-                shutil.rmtree(dep)
-            else:
-                os.remove(dep)
-        if os.path.exists(tgz):
-            os.remove(tgz)
-        DownloadFromGoogleCloudStorage(sha1)
-        # Update the mtime of the tar file to make sure we do not run again unless
-        # there is an update.
-        os.utime(tgz, None)
+GRADLE_STOPPED = False
 
 
-def DownloadFromX20(sha1_file):
-    download_script = os.path.join(REPO_ROOT, 'tools', 'download_from_x20.py')
-    cmd = [download_script, sha1_file]
-    PrintCmd(cmd)
-    subprocess.check_call(cmd)
+def stop_gradle():
+    global GRADLE_STOPPED
+    if GRADLE_STOPPED:
+        return
+
+    try:
+        java_home = jdk.GetDefaultJdkHome()
+    except Exception as _:
+        # No Gradle daemon is running if the JDK home can't be found.
+        return
+
+    gradle_dir = os.path.join(THIRD_PARTY, 'gradle')
+    if IsWindows():
+        gradle = os.path.join(gradle_dir, 'bin', 'gradle.bat')
+    else:
+        gradle = os.path.join(gradle_dir, 'bin', 'gradle')
+
+    if not os.path.exists(gradle):
+        # No Gradle daemon is running if the Gradle executable can't be found.
+        return
+
+    try:
+        env = os.environ.copy()
+        env['JAVA_HOME'] = java_home
+        env['PATH'] = env['PATH'] + os.pathsep + os.path.join(java_home, 'bin')
+        env['GRADLE_OPTS'] = '-Xmx1g'
+
+        cmd = [gradle, '--stop']
+        PrintCmd(cmd)
+        subprocess.call(cmd, env=env)
+        GRADLE_STOPPED = True
+    except Exception as e:
+        Warn(f"Warning: Failed to stop gradle daemon: {e}")
+        GRADLE_STOPPED = True
 
 
-def DownloadFromGoogleCloudStorage(sha1_file,
-                                   bucket='r8-deps',
-                                   auth=False,
-                                   quiet=False):
-    suffix = '.bat' if IsWindows() else ''
-    download_script = 'download_from_google_storage%s' % suffix
-    cmd = [download_script]
-    if not auth:
-        cmd.append('-n')
-    cmd.extend(['-b', bucket, '-u', '-s', sha1_file])
+def should_download(output_dir, tgz_file, sha1, success_file):
+    if (os.path.exists(output_dir) and os.path.exists(tgz_file) and
+            os.path.exists(success_file) and
+            os.path.getmtime(sha1) <= os.path.getmtime(success_file)):
+        return False
+    return True
+
+
+def run_download(sha1, output_dir, success_file, internal, quiet=False):
+    if os.path.exists(success_file):
+        os.remove(success_file)
+
+    if os.path.exists(output_dir):
+        stop_gradle()
+        shutil.rmtree(output_dir)
+
+    if internal:
+        download_script = os.path.join(REPO_ROOT, 'tools',
+                                       'download_from_x20.py')
+        cmd = [download_script, sha1]
+    else:
+        suffix = '.bat' if IsWindows() else ''
+        script = 'download_from_google_storage%s' % suffix
+        cmd = [script]
+        cmd.extend(['-b', 'r8-deps', '-u', '-s', sha1])
+
     if not quiet:
         PrintCmd(cmd)
         subprocess.check_call(cmd)
     else:
-        subprocess.check_output(cmd)
+        subprocess.check_call(cmd, stdout=subprocess.DEVNULL)
+
+    with open(success_file, 'w') as _:
+        pass
+
+
+def ensure_download(path, internal, quiet=False):
+    output_dir = path
+    tar_gz_file = path + '.tar.gz'
+    sha1_file = tar_gz_file + '.sha1'
+    success_file = path + '.success'
+    if not os.path.exists(sha1_file):
+        raise Exception(f"Missing sha1 file: {sha1_file}")
+
+    if should_download(output_dir, tar_gz_file, sha1_file, success_file):
+        run_download(sha1_file, output_dir, success_file, internal, quiet)
+
+
+def ensure_google_download(path, quiet=False):
+    ensure_download(path, False, quiet=quiet)
+
+
+def ensure_x20_download(path, quiet=False):
+    ensure_download(path, True, quiet=quiet)
 
 
 def get_nth_sha1_from_revision(n, revision):
@@ -583,6 +610,7 @@ def unpack_archive(filename):
     dest_dir = extract_dir(filename)
     if os.path.exists(dest_dir):
         print('Deleting existing dir %s' % dest_dir)
+        stop_gradle()
         shutil.rmtree(dest_dir)
     dirname = os.path.dirname(os.path.abspath(filename))
     with tarfile.open(filename, 'r:gz') as tar:

@@ -94,6 +94,10 @@ public class DexMethodSignatureMap<T> implements Map<DexMethodSignature, T> {
     return getOrDefault(method.getSignature(), defaultValue);
   }
 
+  public T getOrDefault(DexClassAndMethod method, T defaultValue) {
+    return getOrDefault(method.getMethodSignature(), defaultValue);
+  }
+
   @Override
   public void forEach(BiConsumer<? super DexMethodSignature, ? super T> action) {
     backing.forEach(action);
@@ -261,6 +265,10 @@ public class DexMethodSignatureMap<T> implements Map<DexMethodSignature, T> {
 
   public T remove(DexEncodedMethod method) {
     return remove(method.getSignature());
+  }
+
+  public T remove(DexClassAndMethod method) {
+    return remove(method.getMethodSignature());
   }
 
   public boolean removeIf(BiPredicate<DexMethodSignature, T> predicate) {

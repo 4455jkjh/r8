@@ -21,7 +21,7 @@ val sharedDepsScope by configurations.dependencyScope("sharedDepsScope")
 val sharedDepsConfig by
   configurations.resolvable("sharedDepsConfig") { extendsFrom(sharedDepsScope) }
 
-dependencies { sharedDepsScope(project(":shared", "sharedDepsFiles")) }
+dependencies { sharedDepsScope(project(":third_party", "sharedDepsFiles")) }
 
 dependencies {
   implementation(project(":main", "mainClassesOutput"))

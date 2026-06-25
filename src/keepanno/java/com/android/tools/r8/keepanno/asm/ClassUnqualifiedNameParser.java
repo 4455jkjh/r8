@@ -50,7 +50,8 @@ public class ClassUnqualifiedNameParser
       ClassUnqualifiedNameProperty property,
       String name,
       String descriptor,
-      Consumer<KeepUnqualfiedClassNamePattern> setValue) {
+      Consumer<KeepUnqualfiedClassNamePattern> setValue,
+      AnnotationVisitor annotationVisitor) {
     switch (property) {
       case PATTERN:
         return parser.tryPropertyAnnotation(
@@ -58,9 +59,10 @@ public class ClassUnqualifiedNameParser
             name,
             descriptor,
             stringPattern ->
-                setValue.accept(KeepUnqualfiedClassNamePattern.fromStringPattern(stringPattern)));
+                setValue.accept(KeepUnqualfiedClassNamePattern.fromStringPattern(stringPattern)),
+            annotationVisitor);
       default:
-        return super.tryPropertyAnnotation(property, name, descriptor, setValue);
+        return super.tryPropertyAnnotation(property, name, descriptor, setValue, annotationVisitor);
     }
   }
 }

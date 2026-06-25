@@ -25,15 +25,19 @@ public class ConstraintPropertiesParser
 
   @Override
   AnnotationVisitor tryPropertyArray(
-      ConstraintsProperty property, String name, Consumer<KeepConstraints> setValue) {
+      ConstraintsProperty property,
+      String name,
+      Consumer<KeepConstraints> setValue,
+      AnnotationVisitor annotationVisitor) {
     ParsingContext parsingContext = getParsingContext().property(name);
     switch (property) {
       case ADDITIONS:
         return new KeepConstraintsVisitor(
             parsingContext,
-            constraints -> setValue.accept(KeepConstraints.defaultAdditions(constraints)));
+            constraints -> setValue.accept(KeepConstraints.defaultAdditions(constraints)),
+            annotationVisitor);
       case CONSTRAINTS:
-        return new KeepConstraintsVisitor(parsingContext, setValue::accept);
+        return new KeepConstraintsVisitor(parsingContext, setValue::accept, annotationVisitor);
       default:
         return null;
     }

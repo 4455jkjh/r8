@@ -283,7 +283,7 @@ public abstract class AccessFlags<T extends AccessFlags<T>> implements Structura
     return self();
   }
 
-  private boolean wasSet(int flag) {
+  boolean wasSet(int flag) {
     return isSet(originalFlags, flag);
   }
 

@@ -36,14 +36,15 @@ public abstract class DeclarationParser<T> implements Parser<T> {
   }
 
   @Override
-  public AnnotationVisitor tryParseArray(String name, Consumer<T> setValue) {
-    return tryParseArray(name);
+  public AnnotationVisitor tryParseArray(
+      String name, Consumer<T> setValue, AnnotationVisitor annotationVisitor) {
+    return tryParseArray(name, annotationVisitor);
   }
 
   @Override
   public AnnotationVisitor tryParseAnnotation(
-      String name, String descriptor, Consumer<T> setValue) {
-    return tryParseAnnotation(name, descriptor);
+      String name, String descriptor, Consumer<T> setValue, AnnotationVisitor annotationVisitor) {
+    return tryParseAnnotation(name, descriptor, annotationVisitor);
   }
 
   public boolean tryParse(String name, Object value) {
@@ -64,23 +65,25 @@ public abstract class DeclarationParser<T> implements Parser<T> {
     return false;
   }
 
-  public AnnotationVisitor tryParseArray(String name) {
+  public AnnotationVisitor tryParseArray(String name, AnnotationVisitor annotationVisitor) {
     for (Parser<?> parser : parsers()) {
-      AnnotationVisitor visitor = parser.tryParseArray(name, this::ignore);
+      AnnotationVisitor visitor = parser.tryParseArray(name, this::ignore, annotationVisitor);
       if (visitor != null) {
         return visitor;
       }
     }
-    return null;
+    return annotationVisitor;
   }
 
-  public AnnotationVisitor tryParseAnnotation(String name, String descriptor) {
+  public AnnotationVisitor tryParseAnnotation(
+      String name, String descriptor, AnnotationVisitor annotationVisitor) {
     for (Parser<?> parser : parsers()) {
-      AnnotationVisitor visitor = parser.tryParseAnnotation(name, descriptor, this::ignore);
+      AnnotationVisitor visitor =
+          parser.tryParseAnnotation(name, descriptor, this::ignore, annotationVisitor);
       if (visitor != null) {
         return visitor;
       }
     }
-    return null;
+    return annotationVisitor;
   }
 }

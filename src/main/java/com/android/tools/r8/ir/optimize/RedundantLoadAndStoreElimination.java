@@ -744,7 +744,7 @@ public class RedundantLoadAndStoreElimination extends CodeRewriterPass<AppInfo> 
         activeState.clearMostRecentFieldWrites();
       }
 
-      DexType clazz = initClass.getClassValue();
+      DexType clazz = initClass.getType();
       if (markClassAsInitialized(clazz)) {
         if (release) {
           activeState.setMostRecentInitClass(initClass);
@@ -778,7 +778,7 @@ public class RedundantLoadAndStoreElimination extends CodeRewriterPass<AppInfo> 
     private void markMostRecentInitClassForRemoval(DexType initializedType) {
       InitClass mostRecentInitClass = activeState.getMostRecentInitClass();
       if (mostRecentInitClass != null
-          && mostRecentInitClass.getClassValue().isIdenticalTo(initializedType)) {
+          && mostRecentInitClass.getType().isIdenticalTo(initializedType)) {
         instructionsToRemove
             .computeIfAbsent(mostRecentInitClass.getBlock(), ignoreKey(Sets::newIdentityHashSet))
             .add(mostRecentInitClass);
@@ -1518,7 +1518,7 @@ public class RedundantLoadAndStoreElimination extends CodeRewriterPass<AppInfo> 
 
     private void killActiveInitializedClassesForExceptionalExit(InitClass instruction) {
       if (initializedClasses != null) {
-        initializedClasses.remove(instruction.getClassValue());
+        initializedClasses.remove(instruction.getType());
       }
     }
 

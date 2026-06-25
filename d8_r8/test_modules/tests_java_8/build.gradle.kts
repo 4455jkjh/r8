@@ -64,8 +64,8 @@ val sharedDepsInternalConfig by
   configurations.resolvable("sharedDepsInternalConfig") { extendsFrom(sharedDepsInternalScope) }
 
 dependencies {
-  sharedDepsScope(project(":shared", "sharedDepsFiles"))
-  sharedDepsInternalScope(project(":shared", "sharedDepsInternalFiles"))
+  sharedDepsScope(project(":third_party", "sharedDepsFiles"))
+  sharedDepsInternalScope(project(":third_party", "sharedDepsInternalFiles"))
 
   keepAnnoClassesScope(project(":keepanno", "keepannoClasses"))
   assistantClassesScope(project(":assistant", "assistantJar"))
@@ -156,10 +156,11 @@ tasks {
   named<Copy>("processTestResources") {
     dependsOn(createArtTests)
     val r8 = "com/android/tools/r8"
-    from(sourceSets.test.get().java) {
+    from(sourceSets.test.get().java.srcDirs) {
       include("$r8/cf/KeepDeserializeLambdaMethodTest.java")
       include("$r8/desugaring/interfacemethods/methodparameters/I.java")
-      include("$r8/keepanno/api/genericsignature/MyValueBoxClient.java")
+      include("$r8/apimodel/missing_classes.txt")
+      include("$r8/apimodel/missing_methods.txt")
     }
   }
 }
@@ -240,7 +241,7 @@ subprojects {
     configurations.resolvable("sharedDepsConfig") { extendsFrom(sharedDepsScope) }
 
   dependencies {
-    add(sharedDepsScope.name, project(":shared", "sharedDepsFiles"))
+    add(sharedDepsScope.name, project(":third_party", "sharedDepsFiles"))
 
     add("implementation", project(":main", "mainClassesOutput"))
     add("implementation", project(":main", "mainResources"))

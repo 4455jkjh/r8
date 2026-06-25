@@ -63,8 +63,7 @@ def Main():
     if utils.is_bot() and not utils.IsWindows():
         set_rlimit_to_max()
 
-    utils.EnsureDepFromGoogleCloudStorage(utils.JAVA11_SHA_FILE,
-                                          'Java 11 runtime')
+    utils.ensure_google_download(utils.JAVA11_DIR)
     with utils.TempDir() as temp:
         # Resolve dry run location to support relative directories.
         dry_run_output = None

@@ -33,7 +33,8 @@ public class AnnotationPatternParser
       AnnotationProperty property,
       String name,
       String descriptor,
-      Consumer<KeepAnnotationPattern> setValue) {
+      Consumer<KeepAnnotationPattern> setValue,
+      AnnotationVisitor annotationVisitor) {
     switch (property) {
       case PATTERN:
         AnnotationParsingContext parsingContext =
@@ -46,9 +47,10 @@ public class AnnotationPatternParser
                 setValue.accept(
                     parser.isDeclared()
                         ? parser.getValue()
-                        : KeepAnnotationPattern.anyWithRuntimeRetention()));
+                        : KeepAnnotationPattern.anyWithRuntimeRetention()),
+            annotationVisitor);
       default:
-        return super.tryPropertyAnnotation(property, name, descriptor, setValue);
+        return super.tryPropertyAnnotation(property, name, descriptor, setValue, annotationVisitor);
     }
   }
 

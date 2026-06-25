@@ -70,6 +70,7 @@ public class GenerateBackportMethods extends MethodGenerationBase {
           ObjectsMethods.class,
           OptionalMethods.class,
           PredicateMethods.class,
+          ReaderMethods.class,
           ShortMethods.class,
           StreamMethods.class,
           StringMethods.class,

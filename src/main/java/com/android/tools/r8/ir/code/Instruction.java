@@ -1223,6 +1223,14 @@ public abstract class Instruction
     return null;
   }
 
+  public boolean isTypeInstruction() {
+    return false;
+  }
+
+  public TypeInstruction asTypeInstruction() {
+    return null;
+  }
+
   public boolean isOutlineMarker() {
     return false;
   }

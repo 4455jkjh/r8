@@ -19,12 +19,28 @@ public class KeepAnno {
    * code visited.
    *
    * <p>Each created {@code ClassVisitor} is independent and share no state (except for the {@code
-   * consumer} if the same is used for creating multiple {@code ClassVisitors}) and they can be used
-   * concurrently visiting different classes. If the same {@code consumer} is used for creating
+   * consumer}. If the same is used for creating multiple {@code ClassVisitors}) and they can be
+   * used concurrently visiting different classes. If the same {@code consumer} is used for creating
    * multiple {@code ClassVisitors}, it must be thread safe.
    */
   public static ClassVisitor createClassVisitorForKeepRulesExtraction(Consumer<String> consumer) {
+    return createClassVisitorForKeepRulesExtraction(consumer, null);
+  }
+
+  /**
+   * Experimental API to extract keep rules from keep annotations.
+   *
+   * <p>Create a {@code ClassVisitor} to extract keep rules from keep annotations present in the
+   * code visited.
+   *
+   * <p>Each created {@code ClassVisitor} is independent and share no state (except for the {@code
+   * consumer} and {@code classVisitor}). If the same is used for creating multiple {@code
+   * ClassVisitors}) and they can be used concurrently visiting different classes. If the same
+   * {@code consumer} is used for creating multiple {@code ClassVisitors}, it must be thread safe.
+   */
+  public static ClassVisitor createClassVisitorForKeepRulesExtraction(
+      Consumer<String> consumer, ClassVisitor classVisitor) {
     KeepRuleExtractor extractor = new KeepRuleExtractor(consumer, getR8Options());
-    return KeepEdgeReader.getClassVisitor(extractor::extract);
+    return KeepEdgeReader.getClassVisitor(extractor::extract, classVisitor);
   }
 }

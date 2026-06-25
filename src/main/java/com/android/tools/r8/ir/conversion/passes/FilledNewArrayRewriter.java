@@ -555,7 +555,7 @@ public class FilledNewArrayRewriter extends CodeRewriterPass<AppInfo> {
       instructionIterator.add(constNumber);
 
       // Add the ArrayPut instruction.
-      DexType arrayElementType = newArrayEmpty.getArrayType().getArrayElementType();
+      DexType arrayElementType = newArrayEmpty.getType().getArrayElementType();
       MemberType memberType = MemberType.fromDexType(arrayElementType);
       ArrayPut arrayPut =
           ArrayPut.create(

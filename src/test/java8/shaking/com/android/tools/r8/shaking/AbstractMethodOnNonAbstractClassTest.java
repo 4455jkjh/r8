@@ -4,6 +4,7 @@
 
 package com.android.tools.r8.shaking;
 
+import static com.android.tools.r8.utils.codeinspector.Matchers.isAbstract;
 import static com.android.tools.r8.utils.codeinspector.Matchers.isPresent;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.not;
@@ -21,6 +22,8 @@ import com.android.tools.r8.utils.codeinspector.MethodSubject;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameter;
+import org.junit.runners.Parameterized.Parameters;
 
 @RunWith(Parameterized.class)
 public class AbstractMethodOnNonAbstractClassTest extends TestBase {
@@ -28,15 +31,12 @@ public class AbstractMethodOnNonAbstractClassTest extends TestBase {
   private static final String DEX2OAT_WARNING =
       "is abstract, but the declaring class is neither abstract nor an interface";
 
-  private final TestParameters parameters;
+  @Parameter(0)
+  public TestParameters parameters;
 
-  @Parameterized.Parameters(name = "{0}")
+  @Parameters(name = "{0}")
   public static TestParametersCollection data() {
     return getTestParameters().withAllRuntimesAndApiLevels().build();
-  }
-
-  public AbstractMethodOnNonAbstractClassTest(TestParameters parameters) {
-    this.parameters = parameters;
   }
 
   @Test
@@ -67,7 +67,7 @@ public class AbstractMethodOnNonAbstractClassTest extends TestBase {
 
     compileResult
         .run(parameters.getRuntime(), TestClass.class)
-        .assertSuccessWithOutputLines("Hello world!");
+        .assertSuccessWithOutputLines("Hello, world!");
   }
 
   @Test
@@ -85,10 +85,11 @@ public class AbstractMethodOnNonAbstractClassTest extends TestBase {
     assertThat(classSubject, isPresent());
     assertTrue(classSubject.isAbstract());
 
-    // A.m() is also made abstract in full mode.
+    // A.m() is also made abstract in full mode and then B.m() is hoisted.
     MethodSubject methodSubject = classSubject.uniqueMethodWithOriginalName("m");
     assertThat(methodSubject, isPresent());
-    assertTrue(methodSubject.isAbstract());
+    assertThat(methodSubject, not(isAbstract()));
+    assertTrue(methodSubject.streamInstructions().anyMatch(i -> i.isConstString("Hello, world!")));
 
     if (parameters.isDexRuntime()) {
       // There is no warning due to both A and A.m() being abstract.
@@ -99,7 +100,7 @@ public class AbstractMethodOnNonAbstractClassTest extends TestBase {
 
     compileResult
         .run(parameters.getRuntime(), TestClass.class)
-        .assertSuccessWithOutputLines("Hello world!");
+        .assertSuccessWithOutputLines("Hello, world!");
   }
 
   static class TestClass {
@@ -121,7 +122,7 @@ public class AbstractMethodOnNonAbstractClassTest extends TestBase {
 
     @Override
     void m() {
-      System.out.println("Hello world!");
+      System.out.println("Hello, world!");
     }
   }
 

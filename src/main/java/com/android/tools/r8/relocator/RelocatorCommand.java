@@ -7,7 +7,6 @@ package com.android.tools.r8.relocator;
 import static com.android.tools.r8.BaseCompilerCommandUtils.createClassFileProgramOutputConsumer;
 
 import com.android.tools.r8.ArchiveProgramResourceProvider;
-import com.android.tools.r8.BaseCompilerCommandParser;
 import com.android.tools.r8.ClassFileConsumer;
 import com.android.tools.r8.CompilationFailedException;
 import com.android.tools.r8.CompilationMode;
@@ -27,6 +26,7 @@ import com.android.tools.r8.shaking.ProguardConfigurationParserOptions;
 import com.android.tools.r8.shaking.ProguardPathList;
 import com.android.tools.r8.utils.AbortException;
 import com.android.tools.r8.utils.AndroidApp;
+import com.android.tools.r8.utils.CliParserUtils;
 import com.android.tools.r8.utils.DirectoryProgramResourceProvider;
 import com.android.tools.r8.utils.ExceptionDiagnostic;
 import com.android.tools.r8.utils.ExceptionUtils;
@@ -36,41 +36,23 @@ import com.android.tools.r8.utils.Reporter;
 import com.android.tools.r8.utils.StringDiagnostic;
 import com.android.tools.r8.utils.ThreadUtils;
 import com.android.tools.r8.utils.internal.Box;
+import com.android.tools.r8.utils.internal.CliParser;
 import com.android.tools.r8.utils.internal.FileUtils;
 import com.android.tools.r8.utils.internal.StringUtils;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Set;
 
 @KeepForApi
 public class RelocatorCommand {
 
-  private static final String THREAD_COUNT_FLAG = "--thread-count";
-
-  private static final Set<String> OPTIONS_WITH_PARAMETER =
-      ImmutableSet.of("--output", "--input", "--input-no-res", "--map", THREAD_COUNT_FLAG);
-
-  static final String USAGE_MESSAGE =
-      StringUtils.joinLines(
-          "The Relocator CLI is EXPERIMENTAL and is subject to change",
-          "Usage: relocator [options]",
-          " where options are:",
-          "  --input <file>          # Input file to remap, class, zip or jar.",
-          "  --input-no-res <file>   # Input file to remap, zip or jar.",
-          "                          # Only .class file entries are included.",
-          "  --output <file>         # Output result in <outfile>.",
-          "  --map <from->to>        # Registers a mapping.",
-          "  --map-diagnostics [:<type>] <from-level> <to-level>",
-          "                          # Map diagnostics level.",
-          "  --thread-count <number> # A specified number of threads to run with.",
-          "  --version               # Print the version of d8.",
-          "  --help                  # Print this message.");
+  static String getUsageMessage() {
+    return CliParserUtils.getUsageMessage(Builder.createParser());
+  }
 
   private final boolean printHelp;
   private final boolean printVersion;
@@ -400,98 +382,130 @@ public class RelocatorCommand {
       return parse(args, origin, RelocatorCommand.builder(handler));
     }
 
+    private static class ParserState {
+      final Builder builder;
+      final Origin origin;
+      Path outputPath = null;
+
+      ParserState(Builder builder, Origin origin) {
+        this.builder = builder;
+        this.origin = origin;
+      }
+    }
+
+    private static CliParser<ParserState> createParser() {
+      String header =
+          StringUtils.joinLines(
+              "The Relocator CLI is EXPERIMENTAL and is subject to change",
+              "Usage: relocator [options]",
+              " where options are:");
+      CliParser<ParserState> parser = new CliParser<>(header);
+      parser
+          .option1(
+              "--input",
+              "<file>",
+              "Input file to remap, class, zip or jar.",
+              (s, arg) -> {
+                Path path = Paths.get(arg);
+                if (Files.isDirectory(path)) {
+                  s.builder.addProgramResourceProvider(
+                      DirectoryProgramResourceProvider.fromDirectory(path));
+                } else {
+                  s.builder.addProgramFile(path);
+                }
+              })
+          .option1(
+              "--input-no-res",
+              "<file>",
+              "Input file to remap, zip or jar. Only .class file entries are included.",
+              (s, arg) -> {
+                Path path = Paths.get(arg);
+                if (FileUtils.isJarOrZipFile(path)) {
+                  s.builder.addProgramResourceProvider(
+                      ArchiveProgramResourceProvider.fromArchive(path));
+                } else {
+                  s.builder.error(
+                      new StringDiagnostic(
+                          "Unsupported argument: --input-no-res only supports .jar and .zip files",
+                          s.origin));
+                }
+              })
+          .option1(
+              "--output",
+              "<file>",
+              "Output result in <outfile>.",
+              (s, arg) -> {
+                if (s.outputPath != null) {
+                  s.builder.error(
+                      new StringDiagnostic(
+                          "Cannot output both to '" + s.outputPath + "' and '" + arg + "'",
+                          s.origin));
+                } else {
+                  s.outputPath = Paths.get(arg);
+                }
+              })
+          .option1(
+              "--map",
+              "<from->to>",
+              "Registers a mapping.",
+              (s, arg) -> {
+                int separator = arg.indexOf("->");
+                if (separator < 0) {
+                  s.builder.error(
+                      new StringDiagnostic(
+                          "--map " + arg + " is not on the form from->to", s.origin));
+                  return;
+                }
+                String source = arg.substring(0, separator);
+                String destination = arg.substring(separator + 2);
+                addMapping(source, destination, s.builder);
+              })
+          .prefix2(
+              "--map-diagnostics",
+              "[:<type>]",
+              "<from-level>",
+              "<to-level>",
+              "Map diagnostics level.",
+              (s, suffix, fromLevel, toLevel) -> {
+                CliParserUtils.parseDiagnosticsMapping(
+                    suffix,
+                    fromLevel,
+                    toLevel,
+                    m ->
+                        s.builder
+                            .getReporter()
+                            .addDiagnosticsLevelMapping(m.from, m.diagnosticType, m.to),
+                    s.builder::error,
+                    s.origin);
+              })
+          .option1(
+              "--thread-count",
+              "<number>",
+              "A specified number of threads to run with.",
+              (s, arg) -> {
+                CliParserUtils.parsePositiveInt(
+                    arg,
+                    s.builder::setThreadCount,
+                    error -> s.builder.error(new StringDiagnostic(error, s.origin)));
+              })
+          .option0("--version", "Print the version.", s -> s.builder.setPrintVersion(true))
+          .option0("--help", "Print this message.", s -> s.builder.setPrintHelp(true));
+      return parser;
+    }
+
     private static Builder parse(String[] args, Origin origin, Builder builder) {
       String[] expandedArgs = FlagFile.expandFlagFiles(args, builder::error);
-      Path outputPath = null;
-      for (int i = 0; i < expandedArgs.length; i++) {
-        String arg = expandedArgs[i].trim();
-        String nextArg = null;
-        if (OPTIONS_WITH_PARAMETER.contains(arg)) {
-          if (++i < expandedArgs.length) {
-            nextArg = expandedArgs[i];
-          } else {
-            builder.error(
-                new StringDiagnostic("Missing parameter for " + expandedArgs[i - 1] + ".", origin));
-            break;
-          }
-        }
-        if (arg.isEmpty()) {
-          continue;
-        }
-        switch (arg) {
-          case "--help":
-            builder.setPrintHelp(true);
-            break;
-          case "--version":
-            builder.setPrintVersion(true);
-            break;
-          case "--output":
-            assert nextArg != null;
-            if (outputPath != null) {
-              builder.error(
-                  new StringDiagnostic(
-                      "Cannot output both to '" + outputPath + "' and '" + nextArg + "'", origin));
-              continue;
-            }
-            outputPath = Paths.get(nextArg);
-            break;
-          case "--input":
-            {
-              assert nextArg != null;
-              Path path = Paths.get(nextArg);
-              if (Files.isDirectory(path)) {
-                builder.addProgramResourceProvider(
-                    DirectoryProgramResourceProvider.fromDirectory(path));
-              } else {
-                builder.addProgramFile(path);
-              }
-            }
-            break;
-          case "--input-no-res":
-            {
-              assert nextArg != null;
-              Path path = Paths.get(nextArg);
-              if (FileUtils.isJarOrZipFile(path)) {
-                builder.addProgramResourceProvider(
-                    ArchiveProgramResourceProvider.fromArchive(path));
-              } else {
-                builder.error(
-                    new StringDiagnostic(
-                        "Unsupported argument: --input-no-res only supports .jar and .zip files"));
-              }
-            }
-            break;
-          case THREAD_COUNT_FLAG:
-            BaseCompilerCommandParser.parsePositiveIntArgument(
-                builder::error, arg, nextArg, origin, builder::setThreadCount);
-            break;
-          case "--map":
-            assert nextArg != null;
-            int separator = nextArg.indexOf("->");
-            if (separator < 0) {
-              builder.error(
-                  new StringDiagnostic("--map " + nextArg + " is not on the form from->to"));
-              continue;
-            }
-            String source = nextArg.substring(0, separator);
-            String destination = nextArg.substring(separator + 2);
-            addMapping(source, destination, builder);
-            break;
-          default:
-            int argsConsumed =
-                BaseCompilerCommandParser.tryParseMapDiagnostics(
-                    builder::error, builder.getReporter(), arg, expandedArgs, i, origin);
-            if (argsConsumed >= 0) {
-              i += argsConsumed;
-              continue;
-            }
-            builder.error(new StringDiagnostic("Unknown argument: " + arg, origin));
-        }
+
+      ParserState state = new ParserState(builder, origin);
+      CliParser<ParserState> parser = createParser();
+      parser.parse(
+          expandedArgs, state, error -> builder.error(new StringDiagnostic(error, origin)));
+
+      if (state.outputPath == null) {
+        state.outputPath = Paths.get(".");
       }
-      if (outputPath == null) {
-        outputPath = Paths.get(".");
-      }
-      builder.setOutputPath(outputPath);
+      builder.setOutputPath(state.outputPath);
+
       return builder;
     }
 

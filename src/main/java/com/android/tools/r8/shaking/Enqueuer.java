@@ -3742,13 +3742,20 @@ public class Enqueuer {
   private void markVirtualDispatchMethodTargetAsLive(
       LookupMethodTarget target, Function<ProgramMethod, KeepReasonWitness> reason) {
     ProgramMethod programMethod = target.getTarget().asProgramMethod();
-    if (programMethod != null && !programMethod.getDefinition().isAbstract()) {
-      KeepReasonWitness appliedReason = reason.apply(programMethod);
-      markVirtualMethodAsLive(programMethod, appliedReason);
-      DexClassAndMethod accessOverride = target.getAccessOverride();
-      if (accessOverride != null && accessOverride.isProgramMethod()) {
-        markMethodAsTargeted(accessOverride.asProgramMethod(), appliedReason);
-      }
+    if (programMethod == null) {
+      return;
+    }
+    if (programMethod.getDefinition().isAbstract()) {
+      applyMinimumKeepInfoWhenLiveOrTargeted(
+          programMethod,
+          KeepMethodInfo.newEmptyJoiner().disallowAbstractToNonAbstractOptimization());
+      return;
+    }
+    KeepReasonWitness appliedReason = reason.apply(programMethod);
+    markVirtualMethodAsLive(programMethod, appliedReason);
+    DexClassAndMethod accessOverride = target.getAccessOverride();
+    if (accessOverride != null && accessOverride.isProgramMethod()) {
+      markMethodAsTargeted(accessOverride.asProgramMethod(), appliedReason);
     }
   }
 
@@ -3979,6 +3986,7 @@ public class Enqueuer {
     } else {
       assert proguardCompatibilityActionsBuilder == null;
     }
+    options.dumpHeap(mode.toString().toLowerCase());
     timing.end();
     if (mode.isWhyAreYouKeeping()) {
       // For why are you keeping the information is reported through the kept graph callbacks and

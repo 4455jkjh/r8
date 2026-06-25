@@ -1615,25 +1615,34 @@ public class ToolHelper {
     assert last.endsWith(CLASS_EXTENSION);
     String javaFileName =
         last.substring(0, last.length() - CLASS_EXTENSION.length()) + JAVA_EXTENSION;
-    return getResourceAsTempFile(clazz, javaFileName);
+    return getResourceAsReadOnlyFile(clazz, javaFileName);
   }
 
   /**
-   * Retrieves a resource from the classpath and copies it to a temporary file (preserving the
-   * original file name).
+   * Retrieves a resource from the classpath as a {@link Path}.
    *
-   * <p>Note: This only works if the corresponding file has been explicitly added as a test
-   * resource in the Gradle build configuration.
+   * <p>If the resource is a file on the local filesystem, the path to the resource is returned
+   * directly to avoid copying. Otherwise, the resource is copied to a temporary file.
    *
-   * <p>If the resource name is absolute (starts with "/") then the given class doesn't matter.
-   * If the resource name is relative then its resolved based on the package of the given class,
-   * e.g. (A.B.C.class, "foo/bar.txt") finds "A/B/foo/bar.txt".
+   * <p>Note: This only works if the corresponding file has been explicitly added as a test resource
+   * in the Gradle build configuration. '.class' files are always available but might be obfuscated.
+   *
+   * <p>If the resource name is absolute (starts with "/") then the given class doesn't matter. If
+   * the resource name is relative then its resolved based on the package of the given class, e.g.
+   * (A.B.C.class, "foo/bar.txt") finds "A/B/foo/bar.txt".
    */
-  public static Path getResourceAsTempFile(Class<?> clazz, String resourceName) {
+  public static Path getResourceAsReadOnlyFile(Class<?> clazz, String resourceName) {
     java.net.URL resourceUrl = clazz.getResource(resourceName);
     if (resourceUrl == null) {
       throw new RuntimeException(
           "Could not find resource " + resourceName + " relative to " + clazz);
+    }
+    if ("file".equals(resourceUrl.getProtocol())) {
+      try {
+        return Paths.get(resourceUrl.toURI());
+      } catch (java.net.URISyntaxException e) {
+        // Fallback to copying
+      }
     }
     String fileName = resourceName;
     int lastSlash = fileName.lastIndexOf('/');
@@ -1663,6 +1672,28 @@ public class ToolHelper {
       Files.copy(is, tempFile, StandardCopyOption.REPLACE_EXISTING);
     }
     return tempFile;
+  }
+
+  public static Path getClassFileForTestClassFromResources(Class<?> clazz) {
+    String binaryName = clazz.getName();
+    int lastDot = binaryName.lastIndexOf('.');
+    String classNameWithOuter = lastDot == -1 ? binaryName : binaryName.substring(lastDot + 1);
+    String resourceName = classNameWithOuter + ".class";
+    return getResourceAsReadOnlyFile(clazz, resourceName);
+  }
+
+  public static ZipUtils.ZipBuilder addClassToZipBuilder(ZipUtils.ZipBuilder builder, Class<?> clazz) throws IOException {
+    String entryName = ZipUtils.zipEntryNameForClass(clazz);
+    Path path = getClassFileForTestClassFromResources(clazz);
+    return builder.addFile(entryName, path);
+  }
+
+  public static ZipUtils.ZipBuilder addClassToZipBuilder(ZipUtils.ZipBuilder builder, Class<?> anchor, String relativeClassName) throws IOException {
+    String packagePath = anchor.getPackage().getName().replace('.', '/');
+    String entryName = packagePath + "/" + relativeClassName + CLASS_EXTENSION;
+    Path path = getResourceAsReadOnlyFile(anchor, relativeClassName + CLASS_EXTENSION);
+    builder.addFile(entryName, path);
+    return builder;
   }
 
   public static Path getClassFileForTestClass(Class<?> clazz) {
@@ -2910,10 +2941,22 @@ public class ToolHelper {
   }
 
   public static Path getTestFolderForClass(Class<?> clazz) {
-    return Paths.get(ToolHelper.TESTS_DIR)
-        .resolve("java")
-        .resolve(ToolHelper.getFileNameForTestClass(clazz))
-        .getParent();
+    Path file = ToolHelper.getFileNameForTestClass(clazz);
+    Path javaDir = Paths.get(ToolHelper.TESTS_DIR).resolve("java").resolve(file).getParent();
+    if (Files.exists(javaDir)) {
+      return javaDir;
+    }
+    Path java8KeepAnnoDir =
+        Paths.get(ToolHelper.TESTS_DIR).resolve("java8/keepanno").resolve(file).getParent();
+    if (Files.exists(java8KeepAnnoDir)) {
+      return java8KeepAnnoDir;
+    }
+    Path java8KotlinDir =
+        Paths.get(ToolHelper.TESTS_DIR).resolve("java8/kotlin").resolve(file).getParent();
+    if (Files.exists(java8KotlinDir)) {
+      return java8KotlinDir;
+    }
+    return javaDir;
   }
 
   public static Collection<Path> getFilesInTestFolderRelativeToClass(

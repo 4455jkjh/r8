@@ -35,7 +35,7 @@ public class SwitchWithSimpleCasesInliningKotlinTest extends KotlinTestBase {
       SwitchWithSimpleCasesInliningKotlinTest.class.getPackage().getName();
   private static final KotlinCompileMemoizer compiledJars =
       getCompileMemoizer(
-          ToolHelper.getResourceAsTempFile(
+          ToolHelper.getResourceAsReadOnlyFile(
               SwitchWithSimpleCasesInliningKotlinTest.class,
               "SwitchWithSimpleCasesInliningKotlin" + FileUtils.KT_EXTENSION));
 

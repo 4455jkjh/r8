@@ -56,6 +56,7 @@ public abstract class KotlinTestBase extends TestBase {
     return runtime.isCf() ? runtime.asCf() : TestRuntime.getCheckedInJdk9();
   }
 
+  @Deprecated
   protected static List<Path> getKotlinFilesInTestPackage(Package pkg) throws IOException {
     String folder = DescriptorUtils.getBinaryNameFromJavaType(pkg.getName());
     return Files.walk(Paths.get(ToolHelper.TESTS_DIR, "java", folder))
@@ -63,13 +64,29 @@ public abstract class KotlinTestBase extends TestBase {
         .collect(Collectors.toList());
   }
 
+  @Deprecated
   protected static Path getKotlinFileInTestPackage(Package pkg, String fileName) {
     String folder = DescriptorUtils.getBinaryNameFromJavaType(pkg.getName());
     return getKotlinFileInTest(folder, fileName);
   }
 
+  @Deprecated
   protected static Path getKotlinFileInTest(String folder, String fileName) {
     return Paths.get(ToolHelper.TESTS_DIR, "java", folder, fileName + FileUtils.KT_EXTENSION);
+  }
+
+  protected static Path getKotlinSourceFileFromResources(String folder, String fileName) {
+    String resourceName = "/" + folder + "/" + fileName + FileUtils.KT_EXTENSION;
+    return ToolHelper.getResourceAsReadOnlyFile(KotlinTestBase.class, resourceName);
+  }
+
+  protected static Path getKotlinSourceFileFromResources(Class<?> clazz, String relativePath) {
+    return ToolHelper.getResourceAsReadOnlyFile(clazz, relativePath + FileUtils.KT_EXTENSION);
+  }
+
+  protected static Path getKotlinSourceFileFromResources(Package pkg, String fileName) {
+    String path = pkg.getName().replace('.', '/') + "/" + fileName + FileUtils.KT_EXTENSION;
+    return ToolHelper.getResourceAsReadOnlyFile(KotlinTestBase.class, "/" + path);
   }
 
   public static Path getKotlinFileInResource(String folder, String fileName) {

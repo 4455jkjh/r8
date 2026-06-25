@@ -25,13 +25,11 @@ import com.android.tools.r8.desugar.desugaredlibrary.test.DesugaredLibraryTestBu
 import com.android.tools.r8.desugar.desugaredlibrary.test.LibraryDesugaringSpecification;
 import com.android.tools.r8.kotlin.KotlinMetadataWriter;
 import com.android.tools.r8.shaking.ProguardKeepAttributes;
-import com.android.tools.r8.utils.DescriptorUtils;
 import com.android.tools.r8.utils.codeinspector.ClassSubject;
 import com.android.tools.r8.utils.codeinspector.CodeInspector;
 import com.android.tools.r8.utils.internal.ConsumerUtils;
 import com.android.tools.r8.utils.internal.FileUtils;
 import com.google.common.collect.ImmutableList;
-import java.nio.file.Paths;
 import java.util.List;
 import java.util.function.Consumer;
 import kotlin.metadata.jvm.KotlinClassMetadata;
@@ -142,9 +140,8 @@ public class KotlinMetadataTest extends DesugaredLibraryTestBase {
 
   private static KotlinCompileMemoizer compiledJars =
       getCompileMemoizer(
-          ToolHelper.getResourceAsTempFile(
-              KotlinMetadataTest.class,
-              "Main" + FileUtils.KT_EXTENSION));
+          ToolHelper.getResourceAsReadOnlyFile(
+              KotlinMetadataTest.class, "Main" + FileUtils.KT_EXTENSION));
 
   private void inspectRewrittenMetadata(CodeInspector inspector) {
     ClassSubject clazz =

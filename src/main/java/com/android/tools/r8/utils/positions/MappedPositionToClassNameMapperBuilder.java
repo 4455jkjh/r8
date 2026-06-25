@@ -467,7 +467,8 @@ public class MappedPositionToClassNameMapperBuilder {
           || appView
               .getSyntheticItems()
               .isSyntheticOfKind(
-                  method.getHolderType(), kinds -> kinds.NON_STARTUP_IN_STARTUP_OUTLINE);
+                  method.getHolderType(), kinds -> kinds.NON_STARTUP_IN_STARTUP_OUTLINE)
+          || (method.getAccessFlags().wasAbstract() && !method.getAccessFlags().isAbstract());
       return true;
     }
 

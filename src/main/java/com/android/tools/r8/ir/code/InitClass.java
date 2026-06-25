@@ -25,7 +25,7 @@ import com.android.tools.r8.lightir.LirBuilder;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
 import com.android.tools.r8.utils.internal.exceptions.Unreachable;
 
-public class InitClass extends Instruction {
+public class InitClass extends Instruction implements TypeInstruction {
 
   private final DexType clazz;
 
@@ -41,7 +41,8 @@ public class InitClass extends Instruction {
     return new Builder();
   }
 
-  public DexType getClassValue() {
+  @Override
+  public DexType getType() {
     return clazz;
   }
 
@@ -52,6 +53,16 @@ public class InitClass extends Instruction {
 
   @Override
   public InitClass asInitClass() {
+    return this;
+  }
+
+  @Override
+  public boolean isTypeInstruction() {
+    return true;
+  }
+
+  @Override
+  public TypeInstruction asTypeInstruction() {
     return this;
   }
 

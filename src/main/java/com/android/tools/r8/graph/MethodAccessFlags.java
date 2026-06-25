@@ -193,8 +193,13 @@ public class MethodAccessFlags extends AccessFlags<MethodAccessFlags> {
     return isSet(Constants.ACC_ABSTRACT);
   }
 
-  public void setAbstract() {
+  public boolean wasAbstract() {
+    return wasSet(Constants.ACC_ABSTRACT);
+  }
+
+  public MethodAccessFlags setAbstract() {
     set(Constants.ACC_ABSTRACT);
+    return this;
   }
 
   public void demoteFromAbstract() {

@@ -164,6 +164,17 @@ public class CliParserTest extends TestBase {
   }
 
   @Test
+  public void testUsageMessageWithPrefix() {
+    CliParser<Builder> parser = new CliParser<>("Usage: test");
+    parser.prefix0("--flag", "[prop]", "Flag.", (b, s) -> {});
+    parser.prefix1("--mapping", "[key]", "<value>", "Mapping.", (b, s, v) -> {});
+
+    String usage = CliParserUtils.getUsageMessage(parser);
+    assertTrue(usage.contains("--flag[prop]"));
+    assertTrue(usage.contains("--mapping[key] <value>"));
+  }
+
+  @Test
   public void testInvalidOptionName() {
     CliParser<Builder> parser = new CliParser<>("Usage: test");
     assertThrows(
@@ -177,5 +188,126 @@ public class CliParserTest extends TestBase {
     assertThrows(
         AssertionError.class,
         () -> parser.option0("--help", "Help.", builder -> builder.help = true, "---h"));
+  }
+
+  @Test
+  public void testPrefix1WithSpace() {
+    CliParser<Builder> parser = new CliParser<>("Usage: test");
+    List<String> mappings = new ArrayList<>();
+    parser.prefix1(
+        "--mapping",
+        "[key]",
+        "<value>",
+        "Mapping.",
+        (builder, suffix, value) -> {
+          mappings.add(suffix);
+          mappings.add(value);
+        });
+
+    Builder builder = new Builder();
+    List<String> errors = new ArrayList<>();
+    parser.parse(new String[] {"--mapping:fun", "a"}, builder, errors::add);
+
+    assertTrue(errors.isEmpty());
+    assertEquals(2, mappings.size());
+    assertEquals(":fun", mappings.get(0));
+    assertEquals("a", mappings.get(1));
+  }
+
+  @Test
+  public void testPrefix1WithEquals() {
+    CliParser<Builder> parser = new CliParser<>("Usage: test");
+    List<String> mappings = new ArrayList<>();
+    parser.prefix1(
+        "--mapping",
+        "[key]",
+        "<value>",
+        "Mapping.",
+        (builder, suffix, value) -> {
+          mappings.add(suffix);
+          mappings.add(value);
+        });
+
+    Builder builder = new Builder();
+    List<String> errors = new ArrayList<>();
+    parser.parse(new String[] {"--mapping:fun=a"}, builder, errors::add);
+
+    assertTrue(errors.isEmpty());
+    assertEquals(2, mappings.size());
+    assertEquals(":fun", mappings.get(0));
+    assertEquals("a", mappings.get(1));
+  }
+
+  @Test
+  public void testOverlapPrefixAndOption() {
+    CliParser<Builder> parser = new CliParser<>("Usage: test");
+    parser.prefix1("--test", "[key]", "<val>", "Prefix.", (b, s, v) -> {});
+    assertThrows(AssertionError.class, () -> parser.option0("--test-now", "Option.", b -> {}));
+  }
+
+  @Test
+  public void testOverlapOptionAndPrefix() {
+    CliParser<Builder> parser = new CliParser<>("Usage: test");
+    parser.option0("--test-now", "Option.", b -> {});
+    assertThrows(
+        AssertionError.class,
+        () -> parser.prefix1("--test", "[key]", "<val>", "Prefix.", (b, s, v) -> {}));
+  }
+
+  @Test
+  public void testOverlapPrefixAndPrefix() {
+    CliParser<Builder> parser = new CliParser<>("Usage: test");
+    parser.prefix1("--test", "[key]", "<val>", "Prefix.", (b, s, v) -> {});
+    assertThrows(
+        AssertionError.class,
+        () -> parser.prefix1("--test-now", "[key]", "<val>", "Prefix.", (b, s, v) -> {}));
+  }
+
+  @Test
+  public void testNoOverlapOptionAndPrefix() {
+    CliParser<Builder> parser = new CliParser<>("Usage: test");
+    parser.option0("--test", "Option.", b -> {});
+    parser.prefix1("--test-now", "[key]", "<val>", "Prefix.", (b, s, v) -> {});
+  }
+
+  @Test
+  public void testPrefix0() {
+    CliParser<Builder> parser = new CliParser<>("Usage: test");
+    List<String> suffixes = new ArrayList<>();
+    parser.prefix0(
+        "--flag", "[prop]", "Flag with suffix.", (builder, suffix) -> suffixes.add(suffix));
+
+    Builder builder = new Builder();
+    List<String> errors = new ArrayList<>();
+    parser.parse(new String[] {"--flag:foo"}, builder, errors::add);
+
+    assertTrue(errors.isEmpty());
+    assertEquals(1, suffixes.size());
+    assertEquals(":foo", suffixes.get(0));
+  }
+
+  @Test
+  public void testPrefix0WithEquals() {
+    CliParser<Builder> parser = new CliParser<>("Usage: test");
+    List<String> suffixes = new ArrayList<>();
+    parser.prefix0(
+        "--flag", "[prop]", "Flag with suffix.", (builder, suffix) -> suffixes.add(suffix));
+
+    Builder builder = new Builder();
+    List<String> errors = new ArrayList<>();
+    parser.parse(new String[] {"--flag:foo=bar"}, builder, errors::add);
+
+    assertEquals(1, errors.size());
+    assertEquals("Option --flag:foo does not take a value.", errors.get(0));
+    assertTrue(suffixes.isEmpty());
+  }
+
+  @Test
+  public void testOverlapPrefix0AndPrefix1() {
+    CliParser<Builder> parser = new CliParser<>("Usage: test");
+    parser.prefix0("--test", "[prop]", "Prefix 0.", (b, s) -> {});
+    assertThrows(
+        AssertionError.class,
+        () -> parser.prefix1("--test-now", "[key]", "<val>", "Prefix 1.", (b, s, v) -> {}));
   }
 }

@@ -65,7 +65,7 @@ public class CliParser<B> {
   }
 
   /**
-   * @param name must start with {@code --} and must be unique
+   * @param name must start with {@code --} and must be unique and non-overlapping
    * @param description must not contains line breaks, must end with {@code .}, and is automatically
    *     wrapped
    */
@@ -77,10 +77,10 @@ public class CliParser<B> {
   }
 
   /**
-   * @param name must start with {@code --} and must be unique
+   * @param name must start with {@code --} and must be unique and non-overlapping
    * @param description must not contains line breaks, must end with {@code .}, and is automatically
    *     wrapped
-   * @param shorthand must start with {@code -} and must be unique
+   * @param shorthand must start with {@code -} and must be unique and non-overlapping
    */
   public CliParser<B> option0(
       String name, String description, Consumer<B> action, String shorthand) {
@@ -92,7 +92,7 @@ public class CliParser<B> {
   }
 
   /**
-   * @param name must start with {@code --} and must be unique
+   * @param name must start with {@code --} and must be unique and non-overlapping
    * @param paramLabel must be surrounded by {@code <} and {@code >}
    * @param description must not contains line breaks, must end with {@code .}, and is automatically
    *     wrapped
@@ -107,11 +107,11 @@ public class CliParser<B> {
   }
 
   /**
-   * @param name must start with {@code --} and must be unique
+   * @param name must start with {@code --} and must be unique and non-overlapping
    * @param paramLabel must be surrounded by {@code <} and {@code >}
    * @param description must not contains line breaks, must end with {@code .}, and is automatically
    *     wrapped
-   * @param shorthand must start with {@code -} and must be unique
+   * @param shorthand must start with {@code -} and must be unique and non-overlapping
    */
   public CliParser<B> option1(
       String name,
@@ -124,6 +124,72 @@ public class CliParser<B> {
     checkParam(paramLabel);
     checkDescription(description);
     base.option1(name, paramLabel, description, action, shorthand);
+    return this;
+  }
+
+  /**
+   * It is assumed that the suffix is optional.
+   *
+   * @param prefix must start with {@code --} and must be unique and non-overlapping
+   * @param suffixLabel must be surrounded by {@code [} and {@code ]}
+   * @param description must not contains line breaks, must end with {@code .}, and is automatically
+   *     wrapped
+   */
+  public CliParser<B> prefix0(
+      String prefix, String suffixLabel, String description, BiConsumer<B, String> action) {
+    checkOptionName(prefix);
+    checkOptionalParam(suffixLabel);
+    checkDescription(description);
+    base.prefix0(prefix, suffixLabel, description, action);
+    return this;
+  }
+
+  /**
+   * It is assumed that the suffix is optional.
+   *
+   * @param prefix must start with {@code --} and must be unique and non-overlapping
+   * @param suffixLabel must be surrounded by {@code [} and {@code ]}
+   * @param paramLabel must be surrounded by {@code <} and {@code >}
+   * @param description must not contains line breaks, must end with {@code .}, and is automatically
+   *     wrapped
+   */
+  public CliParser<B> prefix1(
+      String prefix,
+      String suffixLabel,
+      String paramLabel,
+      String description,
+      TriConsumer<B, String, String> action) {
+    checkOptionName(prefix);
+    checkOptionalParam(suffixLabel);
+    checkParam(paramLabel);
+    checkDescription(description);
+    base.prefix1(prefix, suffixLabel, paramLabel, description, action);
+    return this;
+  }
+
+  /**
+   * It is assumed that the suffix is optional.
+   *
+   * @param prefix must start with {@code --} and must be unique and non-overlapping
+   * @param suffixLabel must be surrounded by {@code [} and {@code ]}
+   * @param paramLabel1 must be surrounded by {@code <} and {@code >}
+   * @param paramLabel2 must be surrounded by {@code <} and {@code >}
+   * @param description must not contains line breaks, must end with {@code .}, and is automatically
+   *     wrapped
+   */
+  public CliParser<B> prefix2(
+      String prefix,
+      String suffixLabel,
+      String paramLabel1,
+      String paramLabel2,
+      String description,
+      QuadConsumer<B, String, String, String> action) {
+    checkOptionName(prefix);
+    checkOptionalParam(suffixLabel);
+    checkParam(paramLabel1);
+    checkParam(paramLabel2);
+    checkDescription(description);
+    base.prefix2(prefix, suffixLabel, paramLabel1, paramLabel2, description, action);
     return this;
   }
 
@@ -141,6 +207,12 @@ public class CliParser<B> {
 
   private void checkParam(String param) {
     assert param.startsWith("<") && param.endsWith(">") : param + " is not surrounded by <>.";
+    assert param.length() > 2 : "parameter label content is empty: " + param;
+  }
+
+  private void checkOptionalParam(String param) {
+    assert param.startsWith("[") && param.endsWith("]") : param + " is not surrounded by [].";
+    assert param.length() > 2 : "optional parameter label content is empty: " + param;
   }
 
   private void checkDescription(String description) {

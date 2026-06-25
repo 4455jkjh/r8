@@ -326,7 +326,7 @@ public class TrivialCheckCastAndInstanceOfRemover extends CodeRewriterPass<AppIn
 
     // If the instance-of type is not accessible in the current context, we should not remove the
     // instance-of instruction in order to preserve IllegalAccessError.
-    DexType instanceOfBaseType = instanceOf.type().getBaseType();
+    DexType instanceOfBaseType = instanceOf.getType().getBaseType();
     if (instanceOfBaseType.isClassType()) {
       DexClass instanceOfClass = appView.definitionFor(instanceOfBaseType);
       if (instanceOfClass == null
@@ -352,7 +352,7 @@ public class TrivialCheckCastAndInstanceOfRemover extends CodeRewriterPass<AppIn
 
     TypeElement inType = inValue.getType();
     TypeElement instanceOfType =
-        TypeElement.fromDexType(instanceOf.type(), inType.nullability(), appView);
+        TypeElement.fromDexType(instanceOf.getType(), inType.nullability(), appView);
     Value aliasValue = inValue.getAliasedValue();
     if (inType.lessThanOrEqual(instanceOfType, appView)) {
       if (inType.isDefinitelyNull()) {
@@ -370,8 +370,8 @@ public class TrivialCheckCastAndInstanceOfRemover extends CodeRewriterPass<AppIn
         && instanceOfType.strictlyLessThan(inType, appView)) {
       return replaceInstanceOfByFalse(code, it);
     }
-    if (instanceOf.type().isClassType()
-        && isNeverInstantiatedDirectlyOrIndirectly(instanceOf.type())) {
+    if (instanceOf.getType().isClassType()
+        && isNeverInstantiatedDirectlyOrIndirectly(instanceOf.getType())) {
       // The type of the instance-of instruction is a program class, and is never instantiated
       // directly or indirectly. Thus, the in-value must be null, meaning that the instance-of
       // instruction will always evaluate to false.
