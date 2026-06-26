@@ -954,6 +954,7 @@ public final class R8Command extends BaseCompilerCommand {
               keepSpecifications,
               buildMetadataConsumer,
               partialCompilationConfiguration,
+              getApiDatabasePath(),
               created);
 
       if (inputDependencyGraphConsumer != null) {
@@ -1336,6 +1337,7 @@ public final class R8Command extends BaseCompilerCommand {
       List<KeepSpecificationSource> keepSpecifications,
       Consumer<? super R8BuildMetadata> buildMetadataConsumer,
       R8PartialCompilationConfiguration partialCompilationConfiguration,
+      Path apiDatabasePath,
       long created) {
     super(
         inputApp,
@@ -1359,7 +1361,8 @@ public final class R8Command extends BaseCompilerCommand {
         startupProfileProviders,
         classConflictResolver,
         cancelCompilationChecker,
-        enableVerboseSyntheticNames);
+        enableVerboseSyntheticNames,
+        apiDatabasePath);
     assert proguardConfiguration != null;
     assert mainDexKeepRules != null;
     this.mainDexKeepRules = mainDexKeepRules;
@@ -1454,6 +1457,7 @@ public final class R8Command extends BaseCompilerCommand {
     assert !internal.testing.allowOutlinerInterfaceArrayArguments;  // Only allow in tests.
     internal.programConsumer = getProgramConsumer();
     internal.setMinApiLevel(AndroidApiLevel.getAndroidApiLevel(getMinApiLevel()));
+    internal.apiModelingOptions().apiDatabasePath = getApiDatabasePath();
     internal.desugarState = getDesugarState();
     internal.desugarSpecificOptions().enableVerboseSyntheticNames = enableVerboseSyntheticNames;
     assert internal.isShrinking() == getEnableTreeShaking();

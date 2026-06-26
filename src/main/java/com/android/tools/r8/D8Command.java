@@ -640,6 +640,7 @@ public final class D8Command extends BaseCompilerCommand {
           getStartupProfileProviders(),
           getClassConflictResolver(),
           getCancelCompilationChecker(),
+          getApiDatabasePath(),
           factory);
     }
   }
@@ -743,6 +744,7 @@ public final class D8Command extends BaseCompilerCommand {
       List<StartupProfileProvider> startupProfileProviders,
       ClassConflictResolver classConflictResolver,
       CancelCompilationChecker cancelCompilationChecker,
+      Path apiDatabasePath,
       DexItemFactory factory) {
     super(
         inputApp,
@@ -766,7 +768,8 @@ public final class D8Command extends BaseCompilerCommand {
         startupProfileProviders,
         classConflictResolver,
         cancelCompilationChecker,
-        enableVerboseSyntheticNames);
+        enableVerboseSyntheticNames,
+        apiDatabasePath);
     this.intermediate = intermediate;
     this.reoptimizeDex = reoptimizeDex;
     this.globalSyntheticsConsumer = globalSyntheticsConsumer;
@@ -826,6 +829,7 @@ public final class D8Command extends BaseCompilerCommand {
     internal.minimalMainDex = internal.debug || minimalMainDex;
     internal.enableMainDexListCheck = enableMainDexListCheck;
     internal.setMinApiLevel(AndroidApiLevel.getAndroidApiLevel(getMinApiLevel()));
+    internal.apiModelingOptions().apiDatabasePath = getApiDatabasePath();
     internal.intermediate = intermediate;
     if (reoptimizeDex) { // Respect potential system property.
       internal.enableDexToDexCodeOptimizations = reoptimizeDex;

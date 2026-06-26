@@ -91,12 +91,29 @@ public abstract class AndroidApiDataAccess {
 
   public static AndroidApiDataAccess create(
       InternalOptions options, DiagnosticsHandler diagnosticsHandler) {
-    URL resource = AndroidApiDataAccess.class.getClassLoader().getResource(RESOURCE_NAME);
-    if (resource == null) {
-      diagnosticsHandler.warning(
-          new StringDiagnostic("Could not find the api database at " + RESOURCE_NAME));
-      return new AndroidApiDataAccessNoBacking();
+    URL resource;
+    Path apiDatabasePath = options.apiModelingOptions().apiDatabasePath;
+    if (apiDatabasePath != null) {
+      if (!Files.exists(apiDatabasePath)) {
+        diagnosticsHandler.error(
+            new StringDiagnostic("API database file does not exist: " + apiDatabasePath));
+        return new AndroidApiDataAccessNoBacking();
+      }
+      try {
+        resource = apiDatabasePath.toUri().toURL();
+      } catch (IOException e) {
+        throw new Unreachable(e);
+      }
+    } else {
+      URL resourceUrl = AndroidApiDataAccess.class.getClassLoader().getResource(RESOURCE_NAME);
+      if (resourceUrl == null) {
+        diagnosticsHandler.warning(
+            new StringDiagnostic("Could not find the api database at " + RESOURCE_NAME));
+        return new AndroidApiDataAccessNoBacking();
+      }
+      resource = resourceUrl;
     }
+
     if (options.apiModelingOptions().useMemoryMappedByteBuffer) {
       try {
         // The resource is encoded as protocol and a path, where we should have one of either:
@@ -132,8 +149,7 @@ public abstract class AndroidApiDataAccess {
               "Unable to use a memory mapped byte buffer to access the api database. Falling back"
                   + " to loading the database into program which requires more memory"));
     }
-    try (InputStream apiInputStream =
-        AndroidApiDataAccess.class.getClassLoader().getResourceAsStream(RESOURCE_NAME)) {
+    try (InputStream apiInputStream = resource.openStream()) {
       if (apiInputStream == null) {
         diagnosticsHandler.warning(
             new StringDiagnostic("Could not open the api database at " + RESOURCE_NAME));

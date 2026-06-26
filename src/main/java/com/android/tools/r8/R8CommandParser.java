@@ -47,6 +47,7 @@ public class R8CommandParser extends BaseCompilerCommandParser<R8Command, R8Comm
       ImmutableSet.of(
           "--output",
           LIB_FLAG,
+          API_DATABASE_FLAG,
           "--classpath",
           MIN_API_FLAG,
           "--main-dex-rules",
@@ -85,6 +86,7 @@ public class R8CommandParser extends BaseCompilerCommandParser<R8Command, R8Comm
         .add(ParseFlagInfoImpl.getLib())
         .add(ParseFlagInfoImpl.getClasspath())
         .add(ParseFlagInfoImpl.getMinApi())
+        .add(ParseFlagInfoImpl.getApiDatabase())
         .add(flag0("--pg-compat", "Compile with R8 in Proguard compatibility mode."))
         .add(ParseFlagInfoImpl.getPgConf())
         .add(flag1("--pg-conf-output", "<file>", "Output the collective configuration to <file>."))
@@ -313,6 +315,14 @@ public class R8CommandParser extends BaseCompilerCommandParser<R8Command, R8Comm
           parsePositiveIntArgument(
               builder::error, MIN_API_FLAG, nextArg, argsOrigin, builder::setMinApiLevel);
           state.hasDefinedApiLevel = true;
+        }
+      } else if (arg.equals(API_DATABASE_FLAG)) {
+        if (builder.getApiDatabasePath() != null) {
+          builder.error(
+              new StringDiagnostic(
+                  "Cannot set multiple " + API_DATABASE_FLAG + " options", argsOrigin));
+        } else {
+          builder.setApiDatabasePath(Paths.get(nextArg));
         }
       } else if (arg.equals(THREAD_COUNT_FLAG)) {
         parsePositiveIntArgument(

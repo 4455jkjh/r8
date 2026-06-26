@@ -28,6 +28,7 @@ public class BaseCompilerCommandParser<
   protected static final String DUMP_INPUT_TO_FILE = "--dumpinputtofile";
   protected static final String DUMP_INPUT_TO_DIRECTORY = "--dumpinputtodirectory";
   protected static final String VERBOSE_SYNTHETIC_NAMES = "--verbose-synthetic-names";
+  public static final String API_DATABASE_FLAG = "--api-database";
 
   public static void parsePositiveIntArgument(
       Consumer<Diagnostic> errorConsumer,

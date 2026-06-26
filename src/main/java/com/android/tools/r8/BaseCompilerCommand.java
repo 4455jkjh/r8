@@ -72,6 +72,7 @@ public abstract class BaseCompilerCommand extends BaseCommand {
   private final ClassConflictResolver classConflictResolver;
   private final CancelCompilationChecker cancelCompilationChecker;
   final boolean enableVerboseSyntheticNames;
+  private final Path apiDatabasePath;
 
   BaseCompilerCommand(boolean printHelp, boolean printVersion) {
     super(printHelp, printVersion);
@@ -96,6 +97,7 @@ public abstract class BaseCompilerCommand extends BaseCommand {
     classConflictResolver = null;
     cancelCompilationChecker = null;
     enableVerboseSyntheticNames = false;
+    apiDatabasePath = null;
   }
 
   BaseCompilerCommand(
@@ -120,7 +122,8 @@ public abstract class BaseCompilerCommand extends BaseCommand {
       List<StartupProfileProvider> startupProfileProviders,
       ClassConflictResolver classConflictResolver,
       CancelCompilationChecker cancelCompilationChecker,
-      boolean enableVerboseSyntheticNames) {
+      boolean enableVerboseSyntheticNames,
+      Path apiDatabasePath) {
     super(app);
     assert minApiLevel > 0;
     assert mode != null;
@@ -145,6 +148,7 @@ public abstract class BaseCompilerCommand extends BaseCommand {
     this.classConflictResolver = classConflictResolver;
     this.cancelCompilationChecker = cancelCompilationChecker;
     this.enableVerboseSyntheticNames = enableVerboseSyntheticNames;
+    this.apiDatabasePath = apiDatabasePath;
   }
 
   /**
@@ -261,6 +265,11 @@ public abstract class BaseCompilerCommand extends BaseCommand {
     return cancelCompilationChecker;
   }
 
+  /** Get the API database path. The default database will be used if null. */
+  public Path getApiDatabasePath() {
+    return apiDatabasePath;
+  }
+
   DumpInputFlags getDumpInputFlags() {
     return dumpInputFlags;
   }
@@ -311,6 +320,7 @@ public abstract class BaseCompilerCommand extends BaseCommand {
     private final List<StartupProfileProvider> startupProfileProviders = new ArrayList<>();
     private ClassConflictResolver classConflictResolver = null;
     private CancelCompilationChecker cancelCompilationChecker = null;
+    private Path apiDatabasePath = null;
 
     abstract CompilationMode defaultCompilationMode();
 
@@ -787,6 +797,21 @@ public abstract class BaseCompilerCommand extends BaseCommand {
 
     public CancelCompilationChecker getCancelCompilationChecker() {
       return cancelCompilationChecker;
+    }
+
+    /**
+     * Set the API database path. The default database will be used if null.
+     *
+     * <p>This overrides any existing path set.
+     */
+    public B setApiDatabasePath(Path apiDatabasePath) {
+      this.apiDatabasePath = apiDatabasePath;
+      return self();
+    }
+
+    /** Get the API database path. The default database will be used if null. */
+    public Path getApiDatabasePath() {
+      return apiDatabasePath;
     }
 
     /**
