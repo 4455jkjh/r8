@@ -70,10 +70,6 @@ public enum DexVersion implements Ordered<DexVersion> {
     return getDexVersion(androidApiLevel).dexVersion >= dexVersion;
   }
 
-  static {
-    assert InternalOptions.containerDexApiLevel().isEqualTo(AndroidApiLevel.BAKLAVA);
-  }
-
   static final Map<AndroidApiLevel, DexVersion> apiLevelToDexVersion =
       new ImmutableMap.Builder<AndroidApiLevel, DexVersion>()
           // MAIN is an unknown higher api version we therefore choose the highest known version.
@@ -96,6 +92,10 @@ public enum DexVersion implements Ordered<DexVersion> {
           .put(AndroidApiLevel.N, DexVersion.V37)
           .put(AndroidApiLevel.M, DexVersion.V37)
           .build();
+
+  static {
+    assert InternalOptions.containerDexApiLevel().isEqualTo(AndroidApiLevel.BAKLAVA);
+  }
 
   public static DexVersion getDexVersion(AndroidApiLevel androidApiLevel) {
     if (androidApiLevel.isLessThan(AndroidApiLevel.N)) {
