@@ -151,6 +151,10 @@ public abstract class TestCompileResult<
     return app;
   }
 
+  public List<ProgramResourceProvider> getOutputProgramResourceProviders() {
+    return getApp().getProgramResourceProviders();
+  }
+
   public final Backend getBackend() {
     if (outputMode == OutputMode.ClassFile) {
       return Backend.CF;
