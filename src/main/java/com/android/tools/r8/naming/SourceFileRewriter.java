@@ -51,7 +51,8 @@ public class SourceFileRewriter {
 
   public static boolean isDefaultOrEmpty(String sourceFile, InternalOptions options) {
     return sourceFile.isEmpty()
-        || options.dexItemFactory().defaultSourceFileAttributeString.equals(sourceFile);
+        || options.dexItemFactory().defaultSourceFileAttributeString.equals(sourceFile)
+        || options.dexItemFactory().pgSourceFileAttributeString.equals(sourceFile);
   }
 
   private static SourceFileProvider rewriteToDefaultSourceFile(DexItemFactory factory) {

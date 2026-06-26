@@ -445,6 +445,13 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
       SystemPropertyUtils.parseSystemPropertyOrDefault(
           "com.android.tools.r8.enableDexToDexCodeOptimizations", false);
 
+  // Flag to toggle the conversion of PC based debug info to native debug info. This should only
+  // make a difference in D8 when the input contains DEX and the line number optimization does not
+  // run (i.e., when the compilation does not have a map output).
+  public boolean convertPcBasedDebugInfoToNative =
+      SystemPropertyUtils.parseSystemPropertyOrDefault(
+          "com.android.tools.r8.convertPcBasedDebugInfoToNative", false);
+
   public static class NeverMergeGroup<T> {
     private final List<T> prefixes;
     private final List<T> exceptionPrefixes;
@@ -2897,7 +2904,9 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
       return true;
     }
     DexString sourceFile = clazz.getSourceFile();
-    return sourceFile == null || sourceFile.equals(itemFactory.defaultSourceFileAttribute);
+    return sourceFile == null
+        || sourceFile.isIdenticalTo(itemFactory.defaultSourceFileAttribute)
+        || sourceFile.isIdenticalTo(itemFactory.pgSourceFileAttribute);
   }
 
   public boolean allowDiscardingResidualDebugInfo(ProgramMethod method) {
