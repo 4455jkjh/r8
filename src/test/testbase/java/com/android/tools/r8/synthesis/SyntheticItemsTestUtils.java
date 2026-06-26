@@ -131,6 +131,12 @@ public abstract class SyntheticItemsTestUtils {
 
   public abstract ClassReference syntheticLambdaClass(ClassReference clazz, int id);
 
+  public final ClassReference syntheticSharedSuperClass(Class<?> clazz, int id) {
+    return syntheticSharedSuperClass(Reference.classFromClass(clazz), id);
+  }
+
+  public abstract ClassReference syntheticSharedSuperClass(ClassReference classReference, int id);
+
   public final ClassReference syntheticApiConversionClass(Class<?> clazz, int id) {
     return syntheticApiConversionClass(Reference.classFromClass(clazz), id);
   }
@@ -521,6 +527,11 @@ public abstract class SyntheticItemsTestUtils {
     @Override
     public ClassReference syntheticLambdaClass(ClassReference classReference, int id) {
       return lookupClass(classReference, id, naming.LAMBDA);
+    }
+
+    @Override
+    public ClassReference syntheticSharedSuperClass(ClassReference classReference, int id) {
+      return lookupClass(classReference, id, naming.SHARED_SUPER_CLASS);
     }
 
     @Override

@@ -2523,6 +2523,7 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
     public boolean enableUseLastLocalRegisterAsMoveExceptionRegister = false;
     public boolean enableKeepInfoCanonicalizer = true;
     public boolean enableBridgeHoistingToSharedSyntheticSuperclass = false;
+    public boolean enableBridgeHoistingToSharedSyntheticSuperclassReturnSpecialization = true;
     public boolean enableCheckCastAndInstanceOfRemoval = true;
     public boolean enableDeadSwitchCaseElimination = true;
     public boolean disableEnqueuerDeferredTracingForWrittenReferenceFields =

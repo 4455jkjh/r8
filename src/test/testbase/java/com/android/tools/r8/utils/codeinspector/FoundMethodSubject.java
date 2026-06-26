@@ -160,6 +160,11 @@ public class FoundMethodSubject extends MethodSubject {
   }
 
   @Override
+  public TypeSubject getReturnType() {
+    return new TypeSubject(codeInspector, getMethod().getReturnType());
+  }
+
+  @Override
   public List<FoundAnnotationSubject> getParameterAnnotations(int index) {
     return FoundAnnotationSubject.listFromDex(
         getMethod().getParameterAnnotation(index), codeInspector);

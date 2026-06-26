@@ -171,6 +171,10 @@ public class DexProto extends IndexedDexItem
     acceptHashing(visitor);
   }
 
+  public DexProto withParameters(DexTypeList parameters, DexItemFactory factory) {
+    return factory.createProto(returnType, parameters);
+  }
+
   public DexProto withoutParameters(IntObjPredicate<DexType> predicate, DexItemFactory factory) {
     if (parameters.isEmpty()) {
       return this;
