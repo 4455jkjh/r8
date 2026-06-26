@@ -13,21 +13,51 @@ import java.nio.file.Paths;
 
 public class ApiDatabaseGeneratorCommandParser {
 
-  private static CliParser<ApiDatabaseGeneratorCommand.Builder> createParser() {
+  private static class ParserState {
+    final ApiDatabaseGeneratorCommand.Builder builder;
+    final Origin origin;
+
+    ParserState(ApiDatabaseGeneratorCommand.Builder builder, Origin origin) {
+      this.builder = builder;
+      this.origin = origin;
+    }
+  }
+
+  private static CliParser<ParserState> createParser() {
     String usageHeader =
         StringUtils.joinLines(
-            "Usage: apidatabasegenerator [options] <input-files>", "where options are:");
-    CliParser<ApiDatabaseGeneratorCommand.Builder> parser = new CliParser<>(usageHeader);
+            "Usage: apidatabasegenerator [options] <input-files>",
+            "where <input-files> are Android API XML files (e.g., api-versions.xml) to merge,",
+            "and options are:");
+    CliParser<ParserState> parser = new CliParser<>(usageHeader);
     return parser
-        .option0("--help", "Print help.", builder -> builder.setPrintHelp(true), "-h")
-        .option0("--version", "Print version.", builder -> builder.setPrintVersion(true))
+        .option0("--help", "Print help.", state -> state.builder.setPrintHelp(true), "-h")
+        .option0("--version", "Print version.", state -> state.builder.setPrintVersion(true))
         .option1(
             "--output",
             "<database-file>",
             "Output result in <database-file> (must be a file, not a directory). Defaults to"
                 + " 'api_database.ser'.",
-            (builder, arg) -> builder.setOutputPath(Paths.get(arg)))
-        .positional((builder, arg) -> builder.addInputPath(Paths.get(arg)));
+            (state, arg) -> state.builder.setOutputPath(Paths.get(arg)))
+        .prefix2(
+            "--map-diagnostics",
+            "[:<type>]",
+            "<from-level>",
+            "<to-level>",
+            "Map diagnostics of <type> (default any) reported as <from-level> to <to-level> where"
+                + " <from-level> and <to-level> are one of 'none', 'info', 'warning', or 'error',"
+                + " and the optional <type> is either the simple or fully qualified Java type name"
+                + " of a diagnostic. If <type> is unspecified, all diagnostics at <from-level> will"
+                + " be mapped. Note that fatal compiler errors cannot be mapped.",
+            (state, suffix, fromLevel, toLevel) ->
+                CliParserUtils.parseDiagnosticsMapping(
+                    suffix,
+                    fromLevel,
+                    toLevel,
+                    m -> state.builder.addDiagnosticsLevelMapping(m.from, m.diagnosticType, m.to),
+                    state.builder::error,
+                    state.origin))
+        .positional((state, arg) -> state.builder.addInputPath(Paths.get(arg)));
   }
 
   public static ApiDatabaseGeneratorCommand.Builder parse(String[] args, Origin origin) {
@@ -44,8 +74,9 @@ public class ApiDatabaseGeneratorCommandParser {
   private ApiDatabaseGeneratorCommand.Builder parse(
       String[] args, Origin origin, ApiDatabaseGeneratorCommand.Builder builder) {
     String[] expandedArgs = FlagFile.expandFlagFiles(args, builder::error);
+    ParserState state = new ParserState(builder, origin);
     createParser()
-        .parse(expandedArgs, builder, error -> builder.error(new StringDiagnostic(error, origin)));
+        .parse(expandedArgs, state, error -> builder.error(new StringDiagnostic(error, origin)));
     return builder;
   }
 

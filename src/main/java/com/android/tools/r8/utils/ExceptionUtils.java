@@ -77,21 +77,24 @@ public abstract class ExceptionUtils {
 
   public static void withCompilationHandler(Reporter reporter, CompileAction action)
       throws CompilationFailedException {
+    withDiagnosticsHandler(reporter, action::run, InternalCompilationFailedExceptionUtils::create);
+  }
+
+  public interface DiagnosticsAction<E extends Exception> {
+    void run() throws E, IOException, CompilationError, ResourceException;
+  }
+
+  public static <E extends Exception> void withDiagnosticsHandler(
+      Reporter reporter,
+      DiagnosticsAction<E> action,
+      TriFunction<String, Throwable, Boolean, E> newException)
+      throws E {
     try {
       action.run();
       reporter.failIfPendingErrors();
     } catch (Throwable e) {
-      throw failCompilation(reporter, e);
+      throw failWithFakeEntry(reporter, e, newException, AbortException.class);
     }
-  }
-
-  private static CompilationFailedException failCompilation(
-      Reporter reporter, Throwable topMostException) {
-    return failWithFakeEntry(
-        reporter,
-        topMostException,
-        InternalCompilationFailedExceptionUtils::create,
-        AbortException.class);
   }
 
   @SuppressWarnings("ReferenceEquality")

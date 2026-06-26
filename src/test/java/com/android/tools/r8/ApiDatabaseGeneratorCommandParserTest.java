@@ -28,14 +28,27 @@ public class ApiDatabaseGeneratorCommandParserTest extends TestBase {
     assertEquals(
         StringUtils.lines(
             "Usage: apidatabasegenerator [options] <input-files>",
-            "where options are:",
+            "where <input-files> are Android API XML files (e.g., api-versions.xml) to merge,",
+            "and options are:",
             "  --help",
             "  -h                      # Print help.",
             "  --version               # Print version.",
             "  --output <database-file>",
             "                          # Output result in <database-file> (must be a file, not a"
                 + " directory).",
-            "                          # Defaults to 'api_database.ser'."),
+            "                          # Defaults to 'api_database.ser'.",
+            "  --map-diagnostics[:<type>] <from-level> <to-level>",
+            "                          # Map diagnostics of <type> (default any) reported as"
+                + " <from-level> to",
+            "                          # <to-level> where <from-level> and <to-level> are one of"
+                + " 'none', 'info',",
+            "                          # 'warning', or 'error', and the optional <type> is either"
+                + " the simple or",
+            "                          # fully qualified Java type name of a diagnostic. If <type>"
+                + " is unspecified,",
+            "                          # all diagnostics at <from-level> will be mapped. Note that"
+                + " fatal compiler",
+            "                          # errors cannot be mapped."),
         ApiDatabaseGeneratorCommandParser.getUsageMessage());
   }
 }
