@@ -281,7 +281,7 @@ tasks {
   jar {
     from(sourceSets["turbo"].output)
     doLast {
-      enforceUncompressedEntries(archiveFile.get().asFile, setOf("resources/new_api_database.ser"))
+      enforceUncompressedEntries(archiveFile.get().asFile, setOf("resources/api_database.ser"))
     }
   }
 

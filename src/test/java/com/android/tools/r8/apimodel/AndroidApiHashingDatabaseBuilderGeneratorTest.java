@@ -77,10 +77,7 @@ public class AndroidApiHashingDatabaseBuilderGeneratorTest extends TestBase {
   private static final Path API_DATABASE_FOLDER =
       Paths.get(ToolHelper.THIRD_PARTY_DIR, "api_database");
   private static final Path API_DATABASE =
-      API_DATABASE_FOLDER
-          .resolve("api_database")
-          .resolve("resources")
-          .resolve("new_api_database.ser");
+      API_DATABASE_FOLDER.resolve("api_database").resolve("resources").resolve("api_database.ser");
 
   // Update the API_LEVEL below to have the database generated for a new api level.
   private static final AndroidApiLevel API_LEVEL = AndroidApiLevel.API_DATABASE_LEVEL;
@@ -115,7 +112,7 @@ public class AndroidApiHashingDatabaseBuilderGeneratorTest extends TestBase {
       List<ParsedApiClass> apiClasses, AndroidApiLevel androidJarApiLevel) throws Exception {
     TemporaryFolder temp = new TemporaryFolder();
     temp.create();
-    Path apiLevels = temp.newFile("new_api_levels.ser").toPath();
+    Path apiLevels = temp.newFile("api_levels.ser").toPath();
     DexItemFactory factory = new DexItemFactory();
     mergeCovariantMethods(apiClasses, factory);
 
@@ -745,7 +742,7 @@ public class AndroidApiHashingDatabaseBuilderGeneratorTest extends TestBase {
    * <p>The generated jar depends on r8NoManifestWithoutDeps.
    *
    * <p>If the generated jar passes tests it will be moved and overwrite
-   * third_party/api_database/new_api_database.ser.
+   * third_party/api_database/api_database.ser.
    */
   public static void main(String[] args) throws Exception {
     GenerateDatabaseResourceFilesResult result = generateResourcesFiles();

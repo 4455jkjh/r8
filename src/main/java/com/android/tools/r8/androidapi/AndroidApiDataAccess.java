@@ -37,7 +37,7 @@ import java.util.function.BiPredicate;
  */
 public abstract class AndroidApiDataAccess {
 
-  private static final String RESOURCE_NAME = "resources/new_api_database.ser";
+  private static final String RESOURCE_NAME = "resources/api_database.ser";
   private static final int ENTRY_SIZE_IN_BITS_FOR_CONSTANT_POOL_MAP = 17;
   private static final int ENTRY_SIZE_IN_BITS_FOR_API_MAP = 18;
   // The payload offset is an offset into the payload defined by an integer and a length defined by

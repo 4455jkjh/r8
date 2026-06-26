@@ -53,7 +53,7 @@ def parse_options():
         '--exclude-api-database',
         action='store_true',
         default=False,
-        help='Exclude api database (resources/new_api_database.ser)')
+        help='Exclude api database (resources/api_database.ser)')
     parser.add_argument('--java-opts',
                         '--java-opts',
                         '-J',
@@ -109,7 +109,7 @@ def get_r8_version(r8jar):
 
 # Used to delete the API database when building processkeeprules.jar.
 def exclude_api_database(r8jar):
-    zip_utils.remove_files_from_zip(['resources/new_api_database.ser'], r8jar)
+    zip_utils.remove_files_from_zip(['resources/api_database.ser'], r8jar)
 
 
 # Used to move r8 assistant runtime files into r8.jar.
