@@ -450,7 +450,7 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
   // run (i.e., when the compilation does not have a map output).
   public boolean convertPcBasedDebugInfoToNative =
       SystemPropertyUtils.parseSystemPropertyOrDefault(
-          "com.android.tools.r8.convertPcBasedDebugInfoToNative", false);
+          "com.android.tools.r8.convertPcBasedDebugInfoToNative", true);
 
   public static class NeverMergeGroup<T> {
     private final List<T> prefixes;

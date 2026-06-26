@@ -52,11 +52,6 @@ public class NativeDebugPreservationTest extends TestBase {
             .writeToZip();
 
     testForD8(Backend.DEX)
-        .addOptionsModification(
-            options -> {
-              assertFalse(options.convertPcBasedDebugInfoToNative);
-              options.convertPcBasedDebugInfoToNative = true;
-            })
         .setMinApi(reoptimizationMinApi)
         .setExperimentalReoptimizeDex(true)
         .setMode(CompilationMode.RELEASE)
