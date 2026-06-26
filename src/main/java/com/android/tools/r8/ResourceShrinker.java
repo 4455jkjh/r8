@@ -53,6 +53,7 @@ import com.android.tools.r8.lightir.LirParsedInstructionCallback;
 import com.android.tools.r8.references.ClassReference;
 import com.android.tools.r8.references.MethodReference;
 import com.android.tools.r8.utils.AndroidApp;
+import com.android.tools.r8.utils.DescriptorUtils;
 import com.android.tools.r8.utils.InternalOptions;
 import com.android.tools.r8.utils.internal.exceptions.Unreachable;
 import com.android.tools.r8.utils.timing.Timing;
@@ -65,6 +66,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
+import java.util.function.Consumer;
 import java.util.function.IntConsumer;
 import java.util.stream.Stream;
 
@@ -503,21 +505,32 @@ final public class ResourceShrinker {
   public static class LirResourceShrinker {
 
     public static void runOnLir(
-        Collection<DexProgramClass> programClasses, IntConsumer resourceValueCallback) {
+        Collection<DexProgramClass> programClasses,
+        InternalOptions options,
+        IntConsumer resourceValueCallback,
+        Consumer<DexField> fieldAccessCallback) {
       for (DexProgramClass programClass : programClasses) {
+        if (options.removeUnreadKeptRClassResources
+            && DescriptorUtils.isRClassDescriptor(programClass.getType().toDescriptorString())) {
+          continue;
+        }
         for (DexEncodedMethod method : programClass.methods()) {
           if (method.hasCode()) {
             Code code = method.getCode();
             assert code.isLirCode();
             LirResourceShrinkerCallbacks lirResourceShrinkerCallbacks =
-                new LirResourceShrinkerCallbacks(code.asLirCode(), resourceValueCallback);
+                new LirResourceShrinkerCallbacks(
+                    code.asLirCode(), resourceValueCallback, fieldAccessCallback);
             code.asLirCode().forEach(lirResourceShrinkerCallbacks::onInstructionView);
           }
         }
-        for (DexEncodedField field : programClass.fields()) {
-          if (field.isStatic() && field.hasExplicitStaticValue()) {
-            if (field.getType().isIntType()) {
-              resourceValueCallback.accept(field.getStaticValue().asDexValueInt().value);
+        for (DexEncodedField field : programClass.staticFields()) {
+          if (field.hasExplicitStaticValue()) {
+            DexValue staticValue = field.getStaticValue();
+            if (staticValue.isDexValueInt()) {
+              resourceValueCallback.accept(staticValue.asDexValueInt().value);
+            } else if (staticValue.isDexValueResourceNumber()) {
+              resourceValueCallback.accept(staticValue.asDexValueResourceNumber().getValue());
             }
           }
         }
@@ -527,10 +540,13 @@ final public class ResourceShrinker {
     public static class LirResourceShrinkerCallbacks extends LirParsedInstructionCallback {
 
       private final IntConsumer resourceValueCallback;
+      private final Consumer<DexField> fieldAccessCallback;
 
-      public LirResourceShrinkerCallbacks(LirCode code, IntConsumer resourceValueCallback) {
+      public LirResourceShrinkerCallbacks(
+          LirCode code, IntConsumer resourceValueCallback, Consumer<DexField> fieldAccessCallback) {
         super(code);
         this.resourceValueCallback = resourceValueCallback;
+        this.fieldAccessCallback = fieldAccessCallback;
       }
 
       @Override
@@ -546,6 +562,11 @@ final public class ResourceShrinker {
       @Override
       public void onConstResourceNumber(int value) {
         throw new Unreachable("Got a const resource number in resource parsing");
+      }
+
+      @Override
+      public void onStaticGet(DexField field) {
+        fieldAccessCallback.accept(field);
       }
     }
   }

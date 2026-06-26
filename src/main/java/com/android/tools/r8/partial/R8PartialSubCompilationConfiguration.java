@@ -253,6 +253,11 @@ public abstract class R8PartialSubCompilationConfiguration {
       return dexingOutputClasses.values();
     }
 
+    public DexProgramClass getDexingOutputClass(DexType type) {
+      assert dexingOutputClasses != null;
+      return dexingOutputClasses.get(type);
+    }
+
     public List<KeepDeclaration> getAndClearKeepDeclarations() {
       List<KeepDeclaration> result = keepDeclarations;
       assert result != null;

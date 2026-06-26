@@ -225,6 +225,9 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
 
   public ResourceShrinkerConfiguration resourceShrinkerConfiguration =
       ResourceShrinkerConfiguration.DEFAULT_CONFIGURATION;
+  public boolean removeUnreadKeptRClassResources =
+      SystemPropertyUtils.parseSystemPropertyOrDefault(
+          "com.android.tools.r8.removeUnreadKeptRClassResources", false);
 
   public boolean checkIfCancelled() {
     if (cancelCompilationChecker == null) {

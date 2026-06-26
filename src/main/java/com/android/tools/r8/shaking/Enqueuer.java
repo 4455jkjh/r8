@@ -1248,7 +1248,10 @@ public class Enqueuer {
     }
   }
 
-  public void traceResourceValue(int value) {
+  public void traceResourceValue(int value, ProgramMethod context) {
+    if (appView.options().removeUnreadKeptRClassResources && isRClass(context.getHolder())) {
+      return;
+    }
     if (mode.isInitialTreeShaking()) {
       return;
     }

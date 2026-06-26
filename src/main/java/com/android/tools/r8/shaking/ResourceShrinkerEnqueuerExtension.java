@@ -8,6 +8,8 @@ import com.android.tools.r8.FeatureSplit;
 import com.android.tools.r8.errors.FinalRClassEntriesWithOptimizedShrinkingDiagnostic;
 import com.android.tools.r8.graph.AppInfoWithClassHierarchy;
 import com.android.tools.r8.graph.AppView;
+import com.android.tools.r8.graph.DexClass;
+import com.android.tools.r8.graph.DexClassAndField;
 import com.android.tools.r8.graph.DexEncodedField;
 import com.android.tools.r8.graph.DexField;
 import com.android.tools.r8.graph.DexProgramClass;
@@ -35,11 +37,11 @@ import com.android.tools.r8.ir.conversion.MethodConversionOptions;
 import com.android.tools.r8.origin.Origin;
 import com.android.tools.r8.origin.PathOrigin;
 import com.android.tools.r8.partial.R8PartialResourceUseCollector;
+import com.android.tools.r8.partial.R8PartialSubCompilationConfiguration.R8PartialR8SubCompilationConfiguration;
 import com.android.tools.r8.resourceshrinker.ResourceShrinkerState;
 import com.android.tools.r8.resourceshrinker.ResourceShrinkerState.R8ResourceShrinkerModel;
 import com.android.tools.r8.resourceshrinker.ResourceShrinkerState.ResourceShrinkerCallback;
 import com.android.tools.r8.utils.collections.ProgramMethodSet;
-import com.android.tools.r8.utils.internal.exceptions.Unreachable;
 import com.android.tools.r8.utils.timing.Timing;
 import com.google.common.collect.Sets;
 import it.unimi.dsi.fastutil.ints.IntArrayList;
@@ -65,7 +67,7 @@ public class ResourceShrinkerEnqueuerExtension
   private final AppView<? extends AppInfoWithClassHierarchy> appView;
   private final Enqueuer enqueuer;
   private final ResourceShrinkerState<FeatureSplit> resourceShrinkerState;
-  private final Map<DexType, RClassFieldToValueStore> fieldToValueMapping = new IdentityHashMap<>();
+  private final Map<DexType, Map<DexField, Object>> fieldToValueMapping = new IdentityHashMap<>();
 
   // Deferred state
   private final Map<DexString, Origin> onClickMethodReferences = new IdentityHashMap<>();
@@ -99,7 +101,7 @@ public class ResourceShrinkerEnqueuerExtension
       builder.addFinishedAnalysis(extension);
       builder.addNewlyLiveClassAnalysis(extension);
 
-      if (fieldAccessAnalysisEnabled(enqueuer)) {
+      if (fieldAccessAnalysisEnabled(appView, enqueuer)) {
         builder.addTraceFieldAccessAnalysis(extension);
         builder.addMarkFieldAsKeptAnalysis(extension);
       }
@@ -117,8 +119,14 @@ public class ResourceShrinkerEnqueuerExtension
         && enqueuer.getMode().isFinalTreeShaking();
   }
 
-  private static boolean fieldAccessAnalysisEnabled(Enqueuer enqueuer) {
-    return enqueuer.getMode().isInitialTreeShaking();
+  private static boolean fieldAccessAnalysisEnabled(
+      AppView<? extends AppInfoWithClassHierarchy> appView, Enqueuer enqueuer) {
+    if (!appView.options().removeUnreadKeptRClassResources) {
+      // When R class filtering is not enabled, we only trace field accesses during the initial tree
+      // shaking pass. Otherwise, we need to trace field accesses in all tree shaking passes.
+      return enqueuer.getMode().isInitialTreeShaking();
+    }
+    return enqueuer.getMode().isTreeShaking();
   }
 
   // ClassReferenceCallback (called from ResourceShrinkerState during trace)
@@ -142,6 +150,12 @@ public class ResourceShrinkerEnqueuerExtension
   @Override
   public void processNewlyKeptField(
       ProgramField field, KeepReason keepReason, EnqueuerWorklist worklist) {
+    if (appView.options().removeUnreadKeptRClassResources) {
+      // When R class filtering is enabled, we only care about static field accesses to R class
+      // fields, which is handled by traceStaticFieldRead. Simply keeping an R class field does not
+      // imply the resource is used.
+      return;
+    }
     processField(field);
   }
 
@@ -151,26 +165,56 @@ public class ResourceShrinkerEnqueuerExtension
       SingleFieldResolutionResult<?> resolutionResult,
       ProgramMethod context,
       EnqueuerWorklist worklist) {
-    processField(resolutionResult.getProgramField());
+    DexClassAndField resolvedField = resolutionResult.getResolutionPair();
+    if (resolvedField != null) {
+      processField(resolvedField);
+    }
   }
 
-  private void processField(ProgramField resolvedField) {
-    if (resolvedField == null) {
-      return;
-    }
-    if (enqueuer.isRClass(resolvedField.getHolder())) {
-      DexType holderType = resolvedField.getHolderType();
-      if (!fieldToValueMapping.containsKey(holderType)) {
-        populateRClassValues(resolvedField.getHolder());
+  private DexProgramClass resolveRClass(DexClassAndField field) {
+    DexClass holder = field.getHolder();
+    if (holder.isProgramClass()) {
+      DexProgramClass programClass = holder.asProgramClass();
+      if (enqueuer.isRClass(programClass)) {
+        return programClass;
       }
-      RClassFieldToValueStore rClassFieldToValueStore = fieldToValueMapping.get(holderType);
-      IntList integers = rClassFieldToValueStore.valueMapping.get(resolvedField.getReference());
-      // The R class can have fields injected, e.g., by jacoco, we don't have resource values for
-      // these.
-      if (integers != null) {
-        for (int id : integers) {
-          resourceShrinkerState.trace(id, resolvedField.getReference().toString(), this);
-        }
+    } else if (holder.isClasspathClass()
+        && appView.options().partialSubCompilationConfiguration != null) {
+      R8PartialR8SubCompilationConfiguration partialConfig =
+          appView.options().partialSubCompilationConfiguration.asR8();
+      DexProgramClass dexingClass = partialConfig.getDexingOutputClass(holder.getType());
+      if (dexingClass != null && enqueuer.isRClass(dexingClass)) {
+        return dexingClass;
+      }
+    }
+    return null;
+  }
+
+  private void processField(DexClassAndField field) {
+    DexProgramClass rClass = resolveRClass(field);
+    if (rClass != null) {
+      processRClassField(field, rClass);
+    }
+  }
+
+  private void processRClassField(DexClassAndField field, DexProgramClass rClass) {
+    DexType holderType = rClass.getType();
+    if (!fieldToValueMapping.containsKey(holderType)) {
+      populateRClassValues(rClass);
+    }
+    Map<DexField, Object> store = fieldToValueMapping.get(holderType);
+    Object value = store.get(field.getReference());
+    if (value != null) {
+      traceMappedValue(value, field.getReference().toSourceString());
+    }
+  }
+
+  private void traceMappedValue(Object value, String context) {
+    if (value instanceof Integer) {
+      resourceShrinkerState.trace((Integer) value, context, this);
+    } else if (value instanceof IntList) {
+      for (int id : (IntList) value) {
+        resourceShrinkerState.trace(id, context, this);
       }
     }
   }
@@ -195,6 +239,12 @@ public class ResourceShrinkerEnqueuerExtension
   @Override
   public void processNewlyLiveField(
       ProgramField field, ProgramDefinition context, EnqueuerWorklist worklist) {
+    if (appView.options().removeUnreadKeptRClassResources && enqueuer.isRClass(field.getHolder())) {
+      // We only trace resource values when they are read in the code (via traceStaticFieldRead).
+      // Writes to R class fields (such as their initialization inside <clinit> of the R class)
+      // do not constitute a read of the resource and should be ignored.
+      return;
+    }
     DexEncodedField definition = field.getDefinition();
     if (field.getAccessFlags().isStatic()
         && definition.hasExplicitStaticValue()
@@ -227,6 +277,37 @@ public class ResourceShrinkerEnqueuerExtension
             protected void keep(int resourceId) {
               if (model.hasResourceId(resourceId)) {
                 resourceRootIds.add(resourceId);
+              }
+            }
+
+            @Override
+            protected void keepField(DexClassAndField field) {
+              // When partial compilation is enabled, the excluded (D8) part of the app is compiled
+              // separately and can contain references to R class fields. Since we cannot analyze
+              // the D8 code in this compilation run, we must keep all resources referenced by kept
+              // fields of the D8 part, unlike in full R8 where we can skip them.
+              DexProgramClass rClass = resolveRClass(field);
+              if (rClass != null) {
+                DexType holderType = rClass.getType();
+                if (!fieldToValueMapping.containsKey(holderType)) {
+                  populateRClassValues(rClass);
+                }
+                Map<DexField, Object> store = fieldToValueMapping.get(holderType);
+                Object value = store.get(field.getReference());
+                if (value != null) {
+                  if (value instanceof Integer) {
+                    int id = (Integer) value;
+                    if (model.hasResourceId(id)) {
+                      resourceRootIds.add(id);
+                    }
+                  } else if (value instanceof IntList) {
+                    for (int id : (IntList) value) {
+                      if (model.hasResourceId(id)) {
+                        resourceRootIds.add(id);
+                      }
+                    }
+                  }
+                }
               }
             }
           };
@@ -298,17 +379,17 @@ public class ResourceShrinkerEnqueuerExtension
   }
 
   private void populateRClassValues(DexProgramClass programClass) {
-    RClassFieldToValueStore.Builder rClassValueBuilder = new RClassFieldToValueStore.Builder();
-    analyzeStaticFields(programClass, rClassValueBuilder);
+    Map<DexField, Object> valueMapping = new IdentityHashMap<>();
+    analyzeStaticFields(programClass, valueMapping);
     ProgramMethod programClassInitializer = programClass.getProgramClassInitializer();
     if (programClassInitializer != null) {
-      analyzeClassInitializer(rClassValueBuilder, programClassInitializer);
+      analyzeClassInitializer(valueMapping, programClassInitializer);
     }
-    fieldToValueMapping.put(programClass.getType(), rClassValueBuilder.build());
+    fieldToValueMapping.put(programClass.getType(), valueMapping);
   }
 
   private void analyzeClassInitializer(
-      RClassFieldToValueStore.Builder rClassValueBuilder, ProgramMethod programClassInitializer) {
+      Map<DexField, Object> valueMapping, ProgramMethod programClassInitializer) {
     IRCode code = programClassInitializer.buildIR(appView, MethodConversionOptions.nonConverting());
 
     for (StaticPut staticPut : code.<StaticPut>instructions(Instruction::isStaticPut)) {
@@ -316,17 +397,15 @@ public class ResourceShrinkerEnqueuerExtension
       if (value.isPhi()) {
         continue;
       }
-      IntList values;
+      Object mappedValue;
       Instruction definition = staticPut.value().definition;
       if (definition.isConstNumber()) {
-        values = new IntArrayList(1);
-        values.add(definition.asConstNumber().getIntValue());
+        mappedValue = definition.asConstNumber().getIntValue();
       } else if (definition.isResourceConstNumber()) {
-        values = new IntArrayList(1);
-        values.add(definition.asResourceConstNumber().getValue());
+        mappedValue = definition.asResourceConstNumber().getValue();
       } else if (definition.isNewArrayEmpty()) {
         NewArrayEmpty newArrayEmpty = definition.asNewArrayEmpty();
-        values = new IntArrayList();
+        IntList values = new IntArrayList();
         for (Instruction uniqueUser : newArrayEmpty.outValue().uniqueUsers()) {
           if (uniqueUser.isArrayPut()) {
             Value constValue = uniqueUser.asArrayPut().value();
@@ -339,8 +418,9 @@ public class ResourceShrinkerEnqueuerExtension
             assert uniqueUser == staticPut;
           }
         }
+        mappedValue = values;
       } else if (definition.isNewArrayFilled()) {
-        values = new IntArrayList();
+        IntList values = new IntArrayList();
         for (Value inValue : definition.asNewArrayFilled().inValues()) {
           if (inValue.isPhi()) {
             continue;
@@ -349,50 +429,35 @@ public class ResourceShrinkerEnqueuerExtension
           if (valueDefinition.isConstNumber()) {
             values.add(valueDefinition.asConstNumber().getIntValue());
           } else if (valueDefinition.isResourceConstNumber()) {
-            throw new Unreachable(
-                "Only running ResourceShrinkerEnqueuerExtension in initial tree shaking");
+            values.add(valueDefinition.asResourceConstNumber().getValue());
           }
         }
+        mappedValue = values;
       } else {
         continue;
       }
-      rClassValueBuilder.addMapping(staticPut.getField(), values);
+      assert !valueMapping.containsKey(staticPut.getField());
+      valueMapping.put(staticPut.getField(), mappedValue);
     }
   }
 
   private void analyzeStaticFields(
-      DexProgramClass programClass, RClassFieldToValueStore.Builder rClassValueBuilder) {
+      DexProgramClass programClass, Map<DexField, Object> valueMapping) {
     for (DexEncodedField staticField :
         programClass.staticFields(DexEncodedField::hasExplicitStaticValue)) {
       DexValue staticValue = staticField.getStaticValue();
       if (staticValue.isDexValueInt()) {
-        IntList values = new IntArrayList(1);
-        values.add(staticValue.asDexValueInt().getValue());
+        Integer value = staticValue.asDexValueInt().getValue();
         staticField.setStaticValue(
             DexValue.DexValueResourceNumber.create(staticValue.asDexValueInt().value));
-        rClassValueBuilder.addMapping(staticField.getReference(), values);
+        assert !valueMapping.containsKey(staticField.getReference());
+        valueMapping.put(staticField.getReference(), value);
+      } else if (staticValue.isDexValueResourceNumber()) {
+        Integer value = staticValue.asDexValueResourceNumber().getValue();
+        assert !valueMapping.containsKey(staticField.getReference());
+        valueMapping.put(staticField.getReference(), value);
       }
     }
   }
 
-  private static class RClassFieldToValueStore {
-    private final Map<DexField, IntList> valueMapping;
-
-    private RClassFieldToValueStore(Map<DexField, IntList> valueMapping) {
-      this.valueMapping = valueMapping;
-    }
-
-    public static class Builder {
-      private final Map<DexField, IntList> valueMapping = new IdentityHashMap<>();
-
-      public void addMapping(DexField field, IntList values) {
-        assert !valueMapping.containsKey(field);
-        valueMapping.put(field, values);
-      }
-
-      public RClassFieldToValueStore build() {
-        return new RClassFieldToValueStore(valueMapping);
-      }
-    }
-  }
 }
