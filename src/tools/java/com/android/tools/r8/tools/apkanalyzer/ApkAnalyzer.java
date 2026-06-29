@@ -142,6 +142,12 @@ public class ApkAnalyzer {
           "rebuild_dex_opt_size_improvement="
               + getImprovementString(result.dexSize.total, result.rebuildDexOptSize));
     }
+    if (result.rebuildReuseDistSize != null) {
+      System.out.println("rebuild_reuse_dist_size=" + result.rebuildReuseDistSize);
+      System.out.println(
+          "rebuild_reuse_dist_size_improvement="
+              + getImprovementString(result.dexSize.total, result.rebuildReuseDistSize));
+    }
     if (result.rebuildNoRefinementSize != null) {
       System.out.println("rebuild_no_refinement_size=" + result.rebuildNoRefinementSize);
       System.out.println(
@@ -211,6 +217,13 @@ public class ApkAnalyzer {
     if (result.rebuildDexOptSize != null) {
       sb.append(result.rebuildDexOptSize).append(';');
       sb.append(getImprovementString(result.dexSize.total, result.rebuildDexOptSize)).append(';');
+    } else {
+      sb.append(';').append(';');
+    }
+    if (result.rebuildReuseDistSize != null) {
+      sb.append(result.rebuildReuseDistSize).append(';');
+      sb.append(getImprovementString(result.dexSize.total, result.rebuildReuseDistSize))
+          .append(';');
     } else {
       sb.append(';').append(';');
     }
@@ -299,6 +312,7 @@ public class ApkAnalyzer {
       DesugaredLibraryInfo desugaredLibraryInfo = findDesugaredLibrary(application, zipFile);
       Integer rebuildSize = null;
       Integer rebuildDexOptSize = null;
+      Integer rebuildReuseDistSize = null;
       Integer rebuildNoRefinementSize = null;
       Integer rebuildContainerSize = null;
       Integer rebuildContainerDexOptSize = null;
@@ -317,6 +331,16 @@ public class ApkAnalyzer {
                   desugaredLibraryInfo,
                   AndroidApiLevel.CINNAMON_BUN,
                   options -> options.enableDexToDexCodeOptimizations = true);
+        } catch (Throwable t) {
+          // Intentionally empty.
+        }
+        try {
+          rebuildReuseDistSize =
+              rebuildApk(
+                  apkPath,
+                  desugaredLibraryInfo,
+                  AndroidApiLevel.CINNAMON_BUN,
+                  options -> options.enablePreserveExistingClassToDexDistributor = true);
         } catch (Throwable t) {
           // Intentionally empty.
         }
@@ -456,6 +480,7 @@ public class ApkAnalyzer {
           depthCounts,
           rebuildSize,
           rebuildDexOptSize,
+          rebuildReuseDistSize,
           rebuildNoRefinementSize,
           rebuildContainerSize,
           rebuildContainerDexOptSize);

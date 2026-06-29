@@ -43,6 +43,7 @@ class ApkAnalyzerResult {
   // Rebuilt size using D8.
   final Integer rebuildSize;
   final Integer rebuildDexOptSize;
+  final Integer rebuildReuseDistSize;
   final Integer rebuildNoRefinementSize;
   final Integer rebuildContainerSize;
   final Integer rebuildContainerDexOptSize;
@@ -64,6 +65,7 @@ class ApkAnalyzerResult {
       int[] classDepthCounts,
       Integer rebuildSize,
       Integer rebuildDexOptSize,
+      Integer rebuildReuseDistSize,
       Integer rebuildNoRefinementSize,
       Integer rebuildContainerSize,
       Integer rebuildContainerDexOptSize) {
@@ -83,6 +85,7 @@ class ApkAnalyzerResult {
     this.classDepthCounts = classDepthCounts;
     this.rebuildSize = rebuildSize;
     this.rebuildDexOptSize = rebuildDexOptSize;
+    this.rebuildReuseDistSize = rebuildReuseDistSize;
     this.rebuildNoRefinementSize = rebuildNoRefinementSize;
     this.rebuildContainerSize = rebuildContainerSize;
     this.rebuildContainerDexOptSize = rebuildContainerDexOptSize;
