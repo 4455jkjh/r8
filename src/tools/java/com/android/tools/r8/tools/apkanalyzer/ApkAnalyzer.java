@@ -99,14 +99,14 @@ public class ApkAnalyzer {
     System.out.println("dex_debug_info_none=" + result.debugInfoNone);
     System.out.println("dex_debug_info_embedded_pc=" + result.debugInfoEmbeddedPc);
     System.out.println("dex_debug_info_event_based=" + result.debugInfoEventBased);
-    for (int markerIndex = 0; markerIndex < result.markers.size(); markerIndex++) {
-      System.out.println("marker_" + markerIndex + "=" + result.markers.get(markerIndex));
+    for (int markerIndex = 0; markerIndex < result.dexMarkers.size(); markerIndex++) {
+      System.out.println("marker_" + markerIndex + "=" + result.dexMarkers.get(markerIndex));
     }
     if (result.desugaredLibraryInfo != null) {
       System.out.println("dex_file_desugared_library_index=" + result.desugaredLibraryInfo.index);
       System.out.println("dex_file_desugared_library_size=" + result.desugaredLibraryInfo.size);
     }
-    Long minApi = getMinApi(result.markers);
+    Long minApi = getMinApi(result.dexMarkers);
     if (minApi != null) {
       System.out.println("min_api=" + minApi);
     }
@@ -127,15 +127,19 @@ public class ApkAnalyzer {
     sb.append(result.dexCompressedCount).append(';');
     sb.append(result.dexSize.min).append(';');
     sb.append(result.dexSize.max).append(';');
+    sb.append(result.dexSize.avg()).append(';');
     sb.append(result.dexSize.total).append(';');
     sb.append(result.types.min).append(';');
     sb.append(result.types.max).append(';');
+    sb.append(result.types.avg()).append(';');
     sb.append(result.types.total).append(';');
     sb.append(result.fields.min).append(';');
     sb.append(result.fields.max).append(';');
+    sb.append(result.fields.avg()).append(';');
     sb.append(result.fields.total).append(';');
     sb.append(result.methods.min).append(';');
     sb.append(result.methods.max).append(';');
+    sb.append(result.methods.avg()).append(';');
     sb.append(result.methods.total).append(';');
     sb.append(result.debugInfoNone).append(';');
     sb.append(result.debugInfoEmbeddedPc).append(';');
@@ -147,9 +151,15 @@ public class ApkAnalyzer {
       sb.append(';');
       sb.append(';');
     }
-    Long minApi = getMinApi(result.markers);
+    Long minApi = getMinApi(result.dexMarkers);
     if (minApi != null) {
       sb.append(minApi).append(';');
+    } else {
+      sb.append(';');
+    }
+    String r8Version = getR8Version(result.dexMarkers);
+    if (r8Version != null) {
+      sb.append(r8Version).append(';');
     } else {
       sb.append(';');
     }
@@ -166,7 +176,7 @@ public class ApkAnalyzer {
     }
     sb.append(result.classDepthCounts[10]);
     sb.append(';');
-    for (Marker marker : result.markers) {
+    for (Marker marker : result.dexMarkers) {
       sb.append(marker);
     }
     System.out.println(sb);
@@ -271,7 +281,7 @@ public class ApkAnalyzer {
           types.finish(),
           fields.finish(),
           methods.finish(),
-          new ArrayList<>(application.dexItemFactory.extractMarkers()),
+          getDexMarkers(application),
           desugaredLibraryInfo,
           debugInfoNone,
           debugInfoEmbeddedPc,
@@ -344,9 +354,19 @@ public class ApkAnalyzer {
     return -1;
   }
 
-  private static Long getMinApi(List<Marker> markers) {
+  private static List<Marker> getDexMarkers(DexApplication application) {
+    List<Marker> dexMarkers = new ArrayList<>();
+    for (Marker marker : application.dexItemFactory.extractMarkers()) {
+      if (marker.hasBackend() && marker.getBackend().equals("dex")) {
+        dexMarkers.add(marker);
+      }
+    }
+    return dexMarkers;
+  }
+
+  private static Long getMinApi(List<Marker> dexMarkers) {
     Long commonMinApi = null;
-    for (Marker marker : markers) {
+    for (Marker marker : dexMarkers) {
       if (!marker.hasMinApi()) {
         return null;
       }
@@ -358,6 +378,21 @@ public class ApkAnalyzer {
       }
     }
     return commonMinApi;
+  }
+
+  private static String getR8Version(List<Marker> dexMarkers) {
+    String r8Version = null;
+    for (Marker marker : dexMarkers) {
+      if (!marker.hasVersion()) {
+        return null;
+      }
+      if (r8Version == null) {
+        r8Version = marker.getVersion();
+      } else if (!r8Version.equals(marker.getVersion())) {
+        return null;
+      }
+    }
+    return r8Version;
   }
 
   private static int countRuntimeInvisibleAnnotations(DexAnnotationSet set) {

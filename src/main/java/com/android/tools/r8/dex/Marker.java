@@ -92,6 +92,10 @@ public class Marker {
     return tool == Tool.Relocator;
   }
 
+  public boolean hasVersion() {
+    return jsonObject.has(VERSION);
+  }
+
   public String getVersion() {
     return jsonObject.get(VERSION).getAsString();
   }

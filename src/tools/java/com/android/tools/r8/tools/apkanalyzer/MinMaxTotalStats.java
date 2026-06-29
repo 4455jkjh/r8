@@ -17,6 +17,10 @@ class MinMaxTotalStats {
     total += number;
   }
 
+  long avg() {
+    return count > 0 ? total / count : 0;
+  }
+
   MinMaxTotalStats finish() {
     if (count == 0) {
       min = 0;

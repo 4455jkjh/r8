@@ -28,7 +28,7 @@ class ApkAnalyzerResult {
   final DesugaredLibraryInfo desugaredLibraryInfo;
 
   // Marker stats.
-  final List<Marker> markers;
+  final List<Marker> dexMarkers;
 
   // Source file stats.
   final String mostOccurringSourceFile;
@@ -46,7 +46,7 @@ class ApkAnalyzerResult {
       MinMaxTotalStats types,
       MinMaxTotalStats fields,
       MinMaxTotalStats methods,
-      List<Marker> markers,
+      List<Marker> dexMarkers,
       DesugaredLibraryInfo desugaredLibInfo,
       int debugInfoNone,
       int debugInfoEmbeddedPc,
@@ -60,7 +60,7 @@ class ApkAnalyzerResult {
     this.types = types;
     this.fields = fields;
     this.methods = methods;
-    this.markers = markers;
+    this.dexMarkers = dexMarkers;
     this.desugaredLibraryInfo = desugaredLibInfo;
     this.debugInfoNone = debugInfoNone;
     this.debugInfoEmbeddedPc = debugInfoEmbeddedPc;
