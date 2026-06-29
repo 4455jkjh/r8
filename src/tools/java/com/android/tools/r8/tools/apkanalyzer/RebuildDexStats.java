@@ -12,22 +12,26 @@ class RebuildDexStats {
   final int size;
   final DebugInfoStats debugInfoStats;
   final DexSegments.Result dexSegments;
+  final int jumboStrings;
 
-  RebuildDexStats(int size, DebugInfoStats debugInfoStats, DexSegments.Result dexSegments) {
+  RebuildDexStats(
+      int size, DebugInfoStats debugInfoStats, DexSegments.Result dexSegments, int jumboStrings) {
     this.size = size;
     this.debugInfoStats = debugInfoStats;
     this.dexSegments = dexSegments;
+    this.jumboStrings = jumboStrings;
   }
 
   void printCsv(StringBuilder sb, ApkAnalyzerResult result) {
     sb.append(size).append(';');
     sb.append(getImprovementString(result.dexSize.total, size)).append(';');
     sb.append(dexSegments.getCode().getSegmentSize()).append(';');
+    sb.append(jumboStrings).append(';');
     debugInfoStats.printCsv(sb, dexSegments);
   }
 
   static void printEmptyCsv(StringBuilder sb) {
-    sb.append(";;;");
+    sb.append(";;;;");
     DebugInfoStats.printEmptyCsv(sb);
   }
 
@@ -36,6 +40,7 @@ class RebuildDexStats {
     System.out.println(
         prefix + "_size_improvement=" + getImprovementString(result.dexSize.total, size));
     System.out.println(prefix + "_dex_code_size=" + dexSegments.getCode().getSegmentSize());
+    System.out.println(prefix + "_jumbo_strings=" + jumboStrings);
     debugInfoStats.printToStdout(prefix, dexSegments);
   }
 }

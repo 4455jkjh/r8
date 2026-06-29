@@ -15,9 +15,11 @@ import com.android.tools.r8.dex.Constants;
 import com.android.tools.r8.dex.DexParser;
 import com.android.tools.r8.dex.DexSection;
 import com.android.tools.r8.dex.Marker;
+import com.android.tools.r8.dex.code.DexInstruction;
 import com.android.tools.r8.graph.DexAnnotation;
 import com.android.tools.r8.graph.DexAnnotationSet;
 import com.android.tools.r8.graph.DexApplication;
+import com.android.tools.r8.graph.DexCode;
 import com.android.tools.r8.graph.DexEncodedField;
 import com.android.tools.r8.graph.DexEncodedMethod;
 import com.android.tools.r8.graph.DexProgramClass;
@@ -126,10 +128,12 @@ public class ApkAnalyzer {
     }
     D8.ApkAnalyzerEntryPoint.run(builder.build(), optionsModification);
     AndroidApp output = sink.build();
+    DexApplication application = readApplication(output);
     return new RebuildDexStats(
         output.applicationSize(),
-        DebugInfoStats.create(readApplication(output)),
-        DexSegments.run(output));
+        DebugInfoStats.create(application),
+        DexSegments.run(output),
+        getJumboStringCount(application));
   }
 
   private static void printResult(ApkAnalyzerResult result) {
@@ -143,6 +147,7 @@ public class ApkAnalyzer {
     System.out.println("res_file_size_max=" + result.resSize.max);
     System.out.println("res_file_size_total=" + result.resSize.total);
     System.out.println("base_dex_code_size=" + result.dexSegments.getCode().getSegmentSize());
+    System.out.println("base_jumbo_strings=" + result.jumboStrings);
     result.debugInfoStats.printToStdout("base", result.dexSegments);
     if (result.rebuildResult != null) {
       result.rebuildResult.printToStdout("rebuild", result);
@@ -164,6 +169,10 @@ public class ApkAnalyzer {
     }
     if (result.rebuildContainerDexOptResult != null) {
       result.rebuildContainerDexOptResult.printToStdout("rebuild_container_dex_opt", result);
+    }
+    if (result.rebuildContainerDexOptMapOutSize != null) {
+      result.rebuildContainerDexOptMapOutSize.printToStdout(
+          "rebuild_container_dex_opt_map_out", result);
     }
     System.out.println("dex_file_types_min=" + result.types.min);
     System.out.println("dex_file_types_max=" + result.types.max);
@@ -210,6 +219,7 @@ public class ApkAnalyzer {
     sb.append(result.resSize.avg()).append(';');
     sb.append(result.resSize.total).append(';');
     sb.append(result.dexSegments.getCode().getSegmentSize()).append(';');
+    sb.append(result.jumboStrings).append(';');
     result.debugInfoStats.printCsv(sb, result.dexSegments);
     if (result.rebuildResult != null) {
       result.rebuildResult.printCsv(sb, result);
@@ -243,6 +253,11 @@ public class ApkAnalyzer {
     }
     if (result.rebuildContainerDexOptResult != null) {
       result.rebuildContainerDexOptResult.printCsv(sb, result);
+    } else {
+      RebuildDexStats.printEmptyCsv(sb);
+    }
+    if (result.rebuildContainerDexOptMapOutSize != null) {
+      result.rebuildContainerDexOptMapOutSize.printCsv(sb, result);
     } else {
       RebuildDexStats.printEmptyCsv(sb);
     }
@@ -314,6 +329,7 @@ public class ApkAnalyzer {
       RebuildDexStats rebuildNoRefinementSize = null;
       RebuildDexStats rebuildContainerSize = null;
       RebuildDexStats rebuildContainerDexOptSize = null;
+      RebuildDexStats rebuildContainerDexOptMapOutSize = null;
       if (rebuild) {
         try {
           rebuildSize =
@@ -384,6 +400,20 @@ public class ApkAnalyzer {
                   apkPath,
                   desugaredLibraryInfo,
                   null,
+                  AndroidApiLevel.CINNAMON_BUN,
+                  options -> {
+                    options.getTestingOptions().forceDexContainerFormat = true;
+                    options.enableDexToDexCodeOptimizations = true;
+                  });
+        } catch (Throwable t) {
+          // Intentionally empty.
+        }
+        try {
+          rebuildContainerDexOptMapOutSize =
+              rebuildDex(
+                  apkPath,
+                  desugaredLibraryInfo,
+                  StringConsumer.emptyConsumer(),
                   AndroidApiLevel.CINNAMON_BUN,
                   options -> {
                     options.getTestingOptions().forceDexContainerFormat = true;
@@ -481,6 +511,7 @@ public class ApkAnalyzer {
           desugaredLibraryInfo,
           DebugInfoStats.create(application),
           DexSegments.run(AndroidApp.builder().addProgramFile(apkPath).build()),
+          getJumboStringCount(application),
           mostOccurringSourceFile,
           mostOccurringSourceFileCount,
           runtimeInvisibleAnnotations,
@@ -491,7 +522,8 @@ public class ApkAnalyzer {
           rebuildReuseDistSize,
           rebuildNoRefinementSize,
           rebuildContainerSize,
-          rebuildContainerDexOptSize);
+          rebuildContainerDexOptSize,
+          rebuildContainerDexOptMapOutSize);
     }
   }
 
@@ -584,6 +616,23 @@ public class ApkAnalyzer {
       }
     }
     return commonMinApi;
+  }
+
+  private static int getJumboStringCount(DexApplication application) {
+    int jumboStrings = 0;
+    for (DexProgramClass clazz : application.classes()) {
+      for (DexEncodedMethod method : clazz.methods(DexEncodedMethod::hasCode)) {
+        if (method.getCode().isDexCode()) {
+          DexCode code = method.getCode().asDexCode();
+          for (DexInstruction instruction : code.getInstructions()) {
+            if (instruction.isConstStringJumbo()) {
+              jumboStrings++;
+            }
+          }
+        }
+      }
+    }
+    return jumboStrings;
   }
 
   private static String getR8Version(List<Marker> dexMarkers) {

@@ -14,6 +14,7 @@ class ApkAnalyzerResult {
 
   // Dex size stats.
   final MinMaxTotalStats dexSize;
+  final int jumboStrings;
 
   // Resource size stats.
   final MinMaxTotalStats resSize;
@@ -51,6 +52,7 @@ class ApkAnalyzerResult {
   final RebuildDexStats rebuildNoRefinementResult;
   final RebuildDexStats rebuildContainerResult;
   final RebuildDexStats rebuildContainerDexOptResult;
+  final RebuildDexStats rebuildContainerDexOptMapOutSize;
 
   ApkAnalyzerResult(
       int dexCountCompressed,
@@ -63,6 +65,7 @@ class ApkAnalyzerResult {
       DesugaredLibraryInfo desugaredLibInfo,
       DebugInfoStats debugInfoStats,
       DexSegments.Result dexSegments,
+      int jumboStrings,
       String mostOccurringSourceFile,
       int mostOccurringSourceFileCount,
       int runtimeInvisibleAnnotations,
@@ -73,7 +76,8 @@ class ApkAnalyzerResult {
       RebuildDexStats rebuildReuseDistResult,
       RebuildDexStats rebuildNoRefinementResult,
       RebuildDexStats rebuildContainerResult,
-      RebuildDexStats rebuildContainerDexOptResult) {
+      RebuildDexStats rebuildContainerDexOptResult,
+      RebuildDexStats rebuildContainerDexOptMapOutSize) {
     this.dexCompressedCount = dexCountCompressed;
     this.dexSize = dexSize;
     this.resSize = resSize;
@@ -84,6 +88,7 @@ class ApkAnalyzerResult {
     this.desugaredLibraryInfo = desugaredLibInfo;
     this.debugInfoStats = debugInfoStats;
     this.dexSegments = dexSegments;
+    this.jumboStrings = jumboStrings;
     this.mostOccurringSourceFile = mostOccurringSourceFile;
     this.mostOccurringSourceFileCount = mostOccurringSourceFileCount;
     this.runtimeInvisibleAnnotations = runtimeInvisibleAnnotations;
@@ -95,5 +100,6 @@ class ApkAnalyzerResult {
     this.rebuildNoRefinementResult = rebuildNoRefinementResult;
     this.rebuildContainerResult = rebuildContainerResult;
     this.rebuildContainerDexOptResult = rebuildContainerDexOptResult;
+    this.rebuildContainerDexOptMapOutSize = rebuildContainerDexOptMapOutSize;
   }
 }
