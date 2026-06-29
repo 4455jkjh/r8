@@ -24,9 +24,8 @@ public class ExtraConstantIntParameter extends ExtraConstantParameter {
   }
 
   @Override
-  @SuppressWarnings("ReferenceEquality")
   public TypeElement getTypeElement(AppView<?> appView, DexType argType) {
-    assert argType == appView.dexItemFactory().intType;
+    assert argType.isIdenticalTo(appView.dexItemFactory().intType);
     return TypeElement.getInt();
   }
 
