@@ -98,6 +98,11 @@ public class AbsentMethodSubject extends MethodSubject {
   }
 
   @Override
+  public TypeSubject getReturnType() {
+    throw new Unreachable("Cannot get the return type for an absent method");
+  }
+
+  @Override
   public List<List<FoundAnnotationSubject>> getParameterAnnotations() {
     throw new Unreachable("Cannot get the parameter annotations for an absent method");
   }

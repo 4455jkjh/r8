@@ -11,8 +11,10 @@ import com.android.tools.r8.graph.DexMethod;
 import com.android.tools.r8.references.ClassReference;
 import com.android.tools.r8.references.FieldReference;
 import com.android.tools.r8.references.MethodReference;
+import com.android.tools.r8.references.Reference;
 import com.android.tools.r8.utils.MethodReferenceUtils;
 import com.android.tools.r8.utils.codeinspector.InstructionSubject.JumboStringMode;
+import com.android.tools.r8.utils.internal.exceptions.Unimplemented;
 import java.util.Arrays;
 import java.util.List;
 import java.util.function.Predicate;
@@ -322,6 +324,30 @@ public class CodeMatchers {
 
   public static Matcher<MethodSubject> invokesMethodWithName(String name) {
     return invokesMethod(null, null, name, null);
+  }
+
+  public static Matcher<MethodSubject> invokesBoxMethod(Class<?> primitiveClass)
+      throws NoSuchMethodException {
+    if (primitiveClass.equals(int.class)) {
+      return invokesMethod(
+          Reference.methodFromMethod(Integer.class.getDeclaredMethod("valueOf", int.class)));
+    } else if (primitiveClass.equals(long.class)) {
+      return invokesMethod(
+          Reference.methodFromMethod(Long.class.getDeclaredMethod("valueOf", long.class)));
+    } else {
+      throw new Unimplemented();
+    }
+  }
+
+  public static Matcher<MethodSubject> invokesUnboxMethod(Class<?> primitiveClass)
+      throws NoSuchMethodException {
+    if (primitiveClass.equals(int.class)) {
+      return invokesMethod(Reference.methodFromMethod(Integer.class.getDeclaredMethod("intValue")));
+    } else if (primitiveClass.equals(long.class)) {
+      return invokesMethod(Reference.methodFromMethod(Long.class.getDeclaredMethod("longValue")));
+    } else {
+      throw new Unimplemented();
+    }
   }
 
   public static Predicate<InstructionSubject> isInvokeWithTarget(MethodReference target) {

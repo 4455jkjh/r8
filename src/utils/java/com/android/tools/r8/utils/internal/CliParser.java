@@ -23,6 +23,9 @@ public class CliParser<B> {
     if (unknownOptionPassthrough) {
       this.base.positional(
           (b, arg) -> {
+            if (arg.trim().isEmpty()) {
+              return;
+            }
             if (originalPositionalHandler != null) {
               originalPositionalHandler.accept(b, arg);
             }
@@ -31,6 +34,9 @@ public class CliParser<B> {
       // Intercept '--<something>' before the positional handler.
       this.base.positional(
           (b, arg) -> {
+            if (arg.trim().isEmpty()) {
+              return;
+            }
             if (arg.startsWith("-")) {
               currentErrorReporter.accept("Unknown option: " + arg);
             } else if (originalPositionalHandler != null) {

@@ -16,6 +16,7 @@ import com.android.tools.r8.utils.AndroidApiLevel;
 import com.android.tools.r8.utils.InternalOptions;
 import com.android.tools.r8.utils.ZipUtils;
 import com.android.tools.r8.utils.internal.StringUtils;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Map;
@@ -58,6 +59,9 @@ public class AndroidApiModelingOptions {
 
   // TODO(b/232823652): Enable when we can compute the offset correctly.
   public boolean useMemoryMappedByteBuffer = false;
+
+  // The default database will be used if null.
+  public Path apiDatabasePath = null;
 
   // A mapping from references to the api-level introducing them.
   public Map<MethodReference, AndroidApiLevel> methodApiMapping = new HashMap<>();

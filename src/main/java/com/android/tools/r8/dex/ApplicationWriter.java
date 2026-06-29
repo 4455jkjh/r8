@@ -360,7 +360,7 @@ public class ApplicationWriter {
         mapSupplierResult =
             runAndWriteMap(
                 inputApp, appView, executorService, timing, originalSourceFiles, representation);
-      } else if (options.enableDexToDexCodeOptimizations) {
+      } else if (options.convertPcBasedDebugInfoToNative) {
         convertPcBasedDebugInfoToNative(appView, executorService, timing);
       }
 

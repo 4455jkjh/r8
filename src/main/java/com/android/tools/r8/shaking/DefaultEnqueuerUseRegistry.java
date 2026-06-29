@@ -135,7 +135,7 @@ public class DefaultEnqueuerUseRegistry extends ComputeApiLevelUseRegistry {
   @Override
   public void registerConstResourceNumber(int value) {
     super.registerConstResourceNumber(value);
-    enqueuer.traceResourceValue(value);
+    enqueuer.traceResourceValue(value, getContext());
   }
 
   @Override

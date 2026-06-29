@@ -74,7 +74,7 @@ public class ProcessKeepRulesSanityCheckTest extends TestBase {
             manifestSeen.set();
           } else if (name.equals("LICENSE")) {
             licenseSeen.set();
-          } else if (name.equals("resources/new_api_database.ser")) {
+          } else if (name.equals("resources/api_database.ser")) {
             apiDatabaseSeen.set();
           } else if (name.endsWith("/")) {
             fail("Unexpected directory entry '" + name + "'");

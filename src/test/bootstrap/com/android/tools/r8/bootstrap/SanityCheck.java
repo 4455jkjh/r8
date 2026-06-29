@@ -64,7 +64,7 @@ public class SanityCheck extends TestBase {
       throws Exception {
     BooleanBox licenseSeen = new BooleanBox();
     BooleanBox manifestSeen = new BooleanBox();
-    Set<String> apiDatabaseFiles = Sets.newHashSet("resources/new_api_database.ser");
+    Set<String> apiDatabaseFiles = Sets.newHashSet("resources/api_database.ser");
     Set<String> r8AssistantRuntime =
         ImmutableSet.of(
             "ReflectiveEventType.java",

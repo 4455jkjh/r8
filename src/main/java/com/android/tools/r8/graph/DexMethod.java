@@ -360,6 +360,11 @@ public class DexMethod extends DexMember<DexEncodedMethod, DexMethod> {
     return dexItemFactory.createMethod(holder, proto, name);
   }
 
+  public DexMethod withParameters(DexTypeList parameters, DexItemFactory dexItemFactory) {
+    return dexItemFactory.createMethod(
+        holder, proto.withParameters(parameters, dexItemFactory), name);
+  }
+
   public DexMethod withProto(DexProto proto, DexItemFactory dexItemFactory) {
     return dexItemFactory.createMethod(holder, proto, name);
   }

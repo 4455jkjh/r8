@@ -239,7 +239,9 @@ public class BridgeHoistingToSharedSyntheticSuperClass {
     // lambda class. First check that this method signature does not already exist in the hierarchy.
     DexMethod bridgeTarget = bridgeInfo.getInvokedMethod();
     DexMethod bridgeMethodReference =
-        method.getReference().withProto(bridgeTarget.getProto(), factory);
+        appView.testing().enableBridgeHoistingToSharedSyntheticSuperclassReturnSpecialization
+            ? method.getReference().withProto(bridgeTarget.getProto(), factory)
+            : method.getReference().withParameters(bridgeTarget.getParameters(), factory);
     MethodResolutionResult resolutionResult =
         appView.appInfo().resolveMethodOn(clazz, bridgeMethodReference);
     if (resolutionResult.isSingleResolution()) {

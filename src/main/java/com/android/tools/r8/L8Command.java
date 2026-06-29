@@ -104,6 +104,7 @@ public final class L8Command extends BaseCompilerCommand {
       ClassConflictResolver classConflictResolver,
       CancelCompilationChecker cancelCompilationChecker,
       DexItemFactory factory,
+      Path apiDatabasePath,
       boolean enableVerboseSyntheticNames) {
     super(
         inputApp,
@@ -127,7 +128,8 @@ public final class L8Command extends BaseCompilerCommand {
         Collections.emptyList(),
         classConflictResolver,
         cancelCompilationChecker,
-        enableVerboseSyntheticNames);
+        enableVerboseSyntheticNames,
+        apiDatabasePath);
     this.d8Command = d8Command;
     this.r8Command = r8Command;
     this.desugaredLibrarySpecification = desugaredLibrarySpecification;
@@ -411,6 +413,7 @@ public final class L8Command extends BaseCompilerCommand {
                 .setIncludeClassesChecksum(getIncludeClassesChecksum())
                 .setDexClassChecksumFilter(getDexClassChecksumFilter())
                 .setProgramConsumer(getProgramConsumer())
+                .setApiDatabasePath(getApiDatabasePath())
                 .setEnableVerboseSyntheticNames(enableVerboseSyntheticNames);
         for (ArtProfileForRewriting artProfileForRewriting : getArtProfilesForRewriting()) {
           r8Builder.addArtProfileForRewriting(artProfileForRewriting);
@@ -451,6 +454,7 @@ public final class L8Command extends BaseCompilerCommand {
                 .setIncludeClassesChecksum(getIncludeClassesChecksum())
                 .setDexClassChecksumFilter(getDexClassChecksumFilter())
                 .setProgramConsumer(getProgramConsumer())
+                .setApiDatabasePath(getApiDatabasePath())
                 .setEnableRewritingOfArtProfilesIsNopCheck()
                 .setEnableVerboseSyntheticNames(enableVerboseSyntheticNames);
         for (ClassFileResourceProvider libraryResourceProvider :
@@ -485,6 +489,7 @@ public final class L8Command extends BaseCompilerCommand {
           getClassConflictResolver(),
           getCancelCompilationChecker(),
           factory,
+          getApiDatabasePath(),
           enableVerboseSyntheticNames);
     }
   }

@@ -197,7 +197,7 @@ public class GenerateMainDexList {
     GenerateMainDexListCommand.Builder builder = GenerateMainDexListCommand.parse(args);
     GenerateMainDexListCommand command = builder.build();
     if (command.isPrintHelp()) {
-      System.out.println(GenerateMainDexListCommand.USAGE_MESSAGE);
+      System.out.println(GenerateMainDexListCommand.usageMessage());
       return;
     }
     if (command.isPrintVersion()) {

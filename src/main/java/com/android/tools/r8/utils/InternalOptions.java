@@ -225,6 +225,9 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
 
   public ResourceShrinkerConfiguration resourceShrinkerConfiguration =
       ResourceShrinkerConfiguration.DEFAULT_CONFIGURATION;
+  public boolean removeUnreadKeptRClassResources =
+      SystemPropertyUtils.parseSystemPropertyOrDefault(
+          "com.android.tools.r8.removeUnreadKeptRClassResources", false);
 
   public boolean checkIfCancelled() {
     if (cancelCompilationChecker == null) {
@@ -441,6 +444,13 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
   public boolean enableDexToDexCodeOptimizations =
       SystemPropertyUtils.parseSystemPropertyOrDefault(
           "com.android.tools.r8.enableDexToDexCodeOptimizations", false);
+
+  // Flag to toggle the conversion of PC based debug info to native debug info. This should only
+  // make a difference in D8 when the input contains DEX and the line number optimization does not
+  // run (i.e., when the compilation does not have a map output).
+  public boolean convertPcBasedDebugInfoToNative =
+      SystemPropertyUtils.parseSystemPropertyOrDefault(
+          "com.android.tools.r8.convertPcBasedDebugInfoToNative", true);
 
   public static class NeverMergeGroup<T> {
     private final List<T> prefixes;
@@ -2520,6 +2530,7 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
     public boolean enableUseLastLocalRegisterAsMoveExceptionRegister = false;
     public boolean enableKeepInfoCanonicalizer = true;
     public boolean enableBridgeHoistingToSharedSyntheticSuperclass = false;
+    public boolean enableBridgeHoistingToSharedSyntheticSuperclassReturnSpecialization = true;
     public boolean enableCheckCastAndInstanceOfRemoval = true;
     public boolean enableDeadSwitchCaseElimination = true;
     public boolean disableEnqueuerDeferredTracingForWrittenReferenceFields =
@@ -2893,7 +2904,9 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
       return true;
     }
     DexString sourceFile = clazz.getSourceFile();
-    return sourceFile == null || sourceFile.equals(itemFactory.defaultSourceFileAttribute);
+    return sourceFile == null
+        || sourceFile.isIdenticalTo(itemFactory.defaultSourceFileAttribute)
+        || sourceFile.isIdenticalTo(itemFactory.pgSourceFileAttribute);
   }
 
   public boolean allowDiscardingResidualDebugInfo(ProgramMethod method) {

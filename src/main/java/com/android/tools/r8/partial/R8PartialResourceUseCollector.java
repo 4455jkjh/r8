@@ -7,6 +7,8 @@ import com.android.tools.r8.ResourceShrinker.LirResourceShrinker;
 import com.android.tools.r8.ResourceShrinker.ReferenceChecker;
 import com.android.tools.r8.graph.AppInfoWithClassHierarchy;
 import com.android.tools.r8.graph.AppView;
+import com.android.tools.r8.graph.DexClassAndField;
+import com.android.tools.r8.graph.FieldResolutionResult;
 import com.android.tools.r8.partial.R8PartialSubCompilationConfiguration.R8PartialR8SubCompilationConfiguration;
 import com.android.tools.r8.utils.DescriptorUtils;
 
@@ -23,10 +25,20 @@ public abstract class R8PartialResourceUseCollector implements ReferenceChecker 
         appView.options().partialSubCompilationConfiguration.asR8();
 
     LirResourceShrinker.runOnLir(
-        r8SubCompilationConfiguration.getDexingOutputClasses(), this::referencedInt);
+        r8SubCompilationConfiguration.getDexingOutputClasses(),
+        appView.options(),
+        this::referencedInt,
+        field -> {
+          FieldResolutionResult resolutionResult = appView.appInfo().resolveField(field);
+          if (resolutionResult.isSingleFieldResolutionResult()) {
+            keepField(resolutionResult.getResolutionPair());
+          }
+        });
   }
 
   protected abstract void keep(int resourceId);
+
+  protected abstract void keepField(DexClassAndField field);
 
   @Override
   public boolean shouldProcess(String internalName) {

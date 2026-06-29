@@ -3,13 +3,14 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8.androidresources;
 
+import com.android.tools.r8.R8TestBuilder;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
-import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.androidresources.AndroidResourceTestingUtils.AndroidTestResource;
 import com.android.tools.r8.androidresources.AndroidResourceTestingUtils.AndroidTestResourceBuilder;
 import com.android.tools.r8.utils.DescriptorUtils;
 import java.io.IOException;
+import java.util.List;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.junit.runner.RunWith;
@@ -20,16 +21,25 @@ import org.junit.runners.Parameterized.Parameters;
 @RunWith(Parameterized.class)
 public class RClassStaticValuesIgnoreTest extends TestBase {
 
-  @Parameter(0)
-  public TestParameters parameters;
+  enum Config {
+    LEGACY,
+    OPTIMIZED,
+    OPTIMIZED_REMOVE_KEPT_RCLASS_RESOURCES;
+  }
+
+  @Parameter() public TestParameters parameters;
+
+  @Parameter(1)
+  public Config config;
 
   private static final String RClassDescriptor =
       descriptor(RClassStaticValuesIgnoreTest.class)
           .replace(RClassStaticValuesIgnoreTest.class.getSimpleName(), "R$string");
 
-  @Parameters(name = "{0}")
-  public static TestParametersCollection parameters() {
-    return getTestParameters().withDefaultDexRuntime().withAllApiLevels().build();
+  @Parameters(name = "{0}, config: {1}")
+  public static List<Object[]> data() {
+    return buildParameters(
+        getTestParameters().withDefaultDexRuntime().withAllApiLevels().build(), Config.values());
   }
 
   public static AndroidTestResource getTestResources(TemporaryFolder temp) throws Exception {
@@ -56,12 +66,27 @@ public class RClassStaticValuesIgnoreTest extends TestBase {
             DescriptorUtils.descriptorToJavaType(RClassDescriptor))
         .addAndroidResources(testResources)
         .addKeepMainRule(FooBar.class)
+        .applyIf(config != Config.LEGACY, R8TestBuilder::enableOptimizedShrinking)
+        .applyIf(
+            config == Config.OPTIMIZED_REMOVE_KEPT_RCLASS_RESOURCES,
+            b -> {
+              b.applyIf(
+                  b.isR8PartialTestBuilder(),
+                  r8pb ->
+                      r8pb.addR8PartialR8OptionsModification(
+                          o -> o.removeUnreadKeptRClassResources = true),
+                  r8b -> r8b.addOptionsModification(o -> o.removeUnreadKeptRClassResources = true));
+            })
         .compile()
         .inspectShrunkenResources(
             resourceTableInspector -> {
               resourceTableInspector.assertContainsResourceWithName("string", "bar");
-              resourceTableInspector.assertDoesNotContainResourceWithName(
-                  "string", "unused_string");
+              if (config == Config.OPTIMIZED) {
+                resourceTableInspector.assertContainsResourceWithName("string", "unused_string");
+              } else {
+                resourceTableInspector.assertDoesNotContainResourceWithName(
+                    "string", "unused_string");
+              }
             })
         .run(parameters.getRuntime(), FooBar.class)
         .assertSuccess();

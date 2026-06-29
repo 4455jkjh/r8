@@ -57,6 +57,8 @@ includeProject(":library_desugar")
 
 includeProject(":test")
 
+includeProject(":tools")
+
 includeTestProject(":testbase")
 
 includeTestProject(":tests_bootstrap")

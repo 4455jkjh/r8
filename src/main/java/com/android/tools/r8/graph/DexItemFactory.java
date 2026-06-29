@@ -877,6 +877,8 @@ public class DexItemFactory {
   public final String defaultSourceFileAttributeString = "SourceFile";
   public final DexString defaultSourceFileAttribute =
       createString(defaultSourceFileAttributeString);
+  public final String pgSourceFileAttributeString = "PG";
+  public final DexString pgSourceFileAttribute = createString(pgSourceFileAttributeString);
 
   // Dex system annotations.
   // See https://source.android.com/devices/tech/dalvik/dex-format.html#system-annotation

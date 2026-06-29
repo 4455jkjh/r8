@@ -42,6 +42,7 @@ import com.android.tools.r8.utils.InternalOptions.MappingComposeOptions;
 import com.android.tools.r8.utils.ProgramClassCollection;
 import com.android.tools.r8.utils.Reporter;
 import com.android.tools.r8.utils.StringDiagnostic;
+import com.android.tools.r8.utils.SystemPropertyUtils;
 import com.android.tools.r8.utils.ThreadUtils;
 import com.android.tools.r8.utils.ZipUtils;
 import com.android.tools.r8.utils.internal.FileUtils;
@@ -639,6 +640,7 @@ public final class D8Command extends BaseCompilerCommand {
           getStartupProfileProviders(),
           getClassConflictResolver(),
           getCancelCompilationChecker(),
+          getApiDatabasePath(),
           factory);
     }
   }
@@ -742,6 +744,7 @@ public final class D8Command extends BaseCompilerCommand {
       List<StartupProfileProvider> startupProfileProviders,
       ClassConflictResolver classConflictResolver,
       CancelCompilationChecker cancelCompilationChecker,
+      Path apiDatabasePath,
       DexItemFactory factory) {
     super(
         inputApp,
@@ -765,7 +768,8 @@ public final class D8Command extends BaseCompilerCommand {
         startupProfileProviders,
         classConflictResolver,
         cancelCompilationChecker,
-        enableVerboseSyntheticNames);
+        enableVerboseSyntheticNames,
+        apiDatabasePath);
     this.intermediate = intermediate;
     this.reoptimizeDex = reoptimizeDex;
     this.globalSyntheticsConsumer = globalSyntheticsConsumer;
@@ -825,11 +829,15 @@ public final class D8Command extends BaseCompilerCommand {
     internal.minimalMainDex = internal.debug || minimalMainDex;
     internal.enableMainDexListCheck = enableMainDexListCheck;
     internal.setMinApiLevel(AndroidApiLevel.getAndroidApiLevel(getMinApiLevel()));
+    internal.apiModelingOptions().apiDatabasePath = getApiDatabasePath();
     internal.intermediate = intermediate;
     if (reoptimizeDex) { // Respect potential system property.
       internal.enableDexToDexCodeOptimizations = reoptimizeDex;
     }
-    internal.retainCompileTimeAnnotations = intermediate;
+    internal.retainCompileTimeAnnotations =
+        intermediate
+            || SystemPropertyUtils.parseSystemPropertyOrDefault(
+                "com.android.tools.r8.retainCompileTimeAnnotations", false);
     internal.setGlobalSyntheticsConsumer(globalSyntheticsConsumer);
     internal.setSyntheticInfoConsumer(syntheticInfoConsumer);
     internal.desugarGraphConsumer = desugarGraphConsumer;

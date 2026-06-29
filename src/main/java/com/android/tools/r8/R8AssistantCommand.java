@@ -25,6 +25,7 @@ import com.android.tools.r8.utils.InternalOptions;
 import com.android.tools.r8.utils.InternalOptions.DesugarState;
 import com.android.tools.r8.utils.Reporter;
 import com.android.tools.r8.utils.ThreadUtils;
+import java.nio.file.Path;
 import java.util.Collections;
 
 /**
@@ -42,7 +43,8 @@ public class R8AssistantCommand extends BaseCompilerCommand {
       ProgramConsumer programConsumer,
       int minApiLevel,
       Reporter reporter,
-      String reflectiveReceiverDescriptor) {
+      String reflectiveReceiverDescriptor,
+      Path apiDatabasePath) {
     super(
         app,
         mode,
@@ -65,7 +67,8 @@ public class R8AssistantCommand extends BaseCompilerCommand {
         Collections.emptyList(),
         null,
         null,
-        false);
+        false,
+        apiDatabasePath);
     this.reflectiveReceiverDescriptor = reflectiveReceiverDescriptor;
   }
 
@@ -82,6 +85,7 @@ public class R8AssistantCommand extends BaseCompilerCommand {
     DexItemFactory factory = new DexItemFactory();
     InternalOptions options = new InternalOptions(factory, getReporter());
     options.setMinApiLevel(AndroidApiLevel.getAndroidApiLevel(getMinApiLevel()));
+    options.apiModelingOptions().apiDatabasePath = getApiDatabasePath();
     options.passthroughDexCode = true;
     options.tool = Tool.R8Assistant;
     Marker marker = new Marker(Tool.R8Assistant);
@@ -169,7 +173,8 @@ public class R8AssistantCommand extends BaseCompilerCommand {
           getProgramConsumer(),
           getMinApiLevel(),
           getReporter(),
-          reflectiveReceiverDescriptor);
+          reflectiveReceiverDescriptor,
+          getApiDatabasePath());
     }
 
     private void injectClasses(Class<?>... classes) {

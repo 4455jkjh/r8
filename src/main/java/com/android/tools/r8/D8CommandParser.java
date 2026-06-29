@@ -33,6 +33,7 @@ public class D8CommandParser extends BaseCompilerCommandParser<D8Command, D8Comm
           "--globals",
           "--globals-output",
           LIB_FLAG,
+          API_DATABASE_FLAG,
           "--classpath",
           "--pg-map",
           "--pg-map-output",
@@ -60,6 +61,7 @@ public class D8CommandParser extends BaseCompilerCommandParser<D8Command, D8Comm
         .add(ParseFlagInfoImpl.getLib())
         .add(ParseFlagInfoImpl.getClasspath())
         .add(ParseFlagInfoImpl.getMinApi())
+        .add(ParseFlagInfoImpl.getApiDatabase())
         .add(
             ParseFlagInfoImpl.flag1(
                 "--pg-map", "<file>", "Use <file> as a mapping file for distribution."))
@@ -332,6 +334,14 @@ public class D8CommandParser extends BaseCompilerCommandParser<D8Command, D8Comm
           parsePositiveIntArgument(
               builder::error, MIN_API_FLAG, nextArg, origin, builder::setMinApiLevel);
           hasDefinedApiLevel = true;
+        }
+      } else if (arg.equals(API_DATABASE_FLAG)) {
+        if (builder.getApiDatabasePath() != null) {
+          builder.error(
+              new StringDiagnostic(
+                  "Cannot set multiple " + API_DATABASE_FLAG + " options", origin));
+        } else {
+          builder.setApiDatabasePath(Paths.get(nextArg));
         }
       } else if (arg.equals(THREAD_COUNT_FLAG)) {
         parsePositiveIntArgument(

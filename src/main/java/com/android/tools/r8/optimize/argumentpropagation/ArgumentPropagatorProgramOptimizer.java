@@ -574,6 +574,9 @@ public class ArgumentPropagatorProgramOptimizer {
       DexType newParameterType = null;
       for (ProgramMethod method : methods) {
         if (method.getAccessFlags().isAbstract()) {
+          if (!appView.getKeepInfo(method).isParameterTypeStrengtheningAllowed(options)) {
+            return null;
+          }
           // OK, this parameter can have any type.
           continue;
         }
