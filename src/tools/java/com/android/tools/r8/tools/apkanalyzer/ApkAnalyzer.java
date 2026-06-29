@@ -130,6 +130,10 @@ public class ApkAnalyzer {
     System.out.println("dex_file_size_min=" + result.dexSize.min);
     System.out.println("dex_file_size_max=" + result.dexSize.max);
     System.out.println("dex_file_size_total=" + result.dexSize.total);
+    System.out.println("res_files=" + result.resSize.count);
+    System.out.println("res_file_size_min=" + result.resSize.min);
+    System.out.println("res_file_size_max=" + result.resSize.max);
+    System.out.println("res_file_size_total=" + result.resSize.total);
     if (result.rebuildSize != null) {
       System.out.println("rebuild_size=" + result.rebuildSize);
       System.out.println(
@@ -208,6 +212,11 @@ public class ApkAnalyzer {
     sb.append(result.dexSize.max).append(';');
     sb.append(result.dexSize.avg()).append(';');
     sb.append(result.dexSize.total).append(';');
+    sb.append(result.resSize.count).append(';');
+    sb.append(result.resSize.min).append(';');
+    sb.append(result.resSize.max).append(';');
+    sb.append(result.resSize.avg()).append(';');
+    sb.append(result.resSize.total).append(';');
     if (result.rebuildSize != null) {
       sb.append(result.rebuildSize).append(';');
       sb.append(getImprovementString(result.dexSize.total, result.rebuildSize)).append(';');
@@ -305,6 +314,7 @@ public class ApkAnalyzer {
     DexApplication application = readApplication(apkPath);
     int dexCompressedCount = 0;
     MinMaxTotalStats dexSize = new MinMaxTotalStats();
+    MinMaxTotalStats resSize = new MinMaxTotalStats();
     MinMaxTotalStats fields = new MinMaxTotalStats();
     MinMaxTotalStats methods = new MinMaxTotalStats();
     MinMaxTotalStats types = new MinMaxTotalStats();
@@ -383,20 +393,33 @@ public class ApkAnalyzer {
       while (entries.hasMoreElements()) {
         ZipEntry entry = entries.nextElement();
         String entryName = entry.getName();
-        if (!isStandardDexFile(entryName)) {
+        if (entry.isDirectory()) {
           continue;
         }
-        if (desugaredLibraryInfo != null && getDexIndex(entryName) == desugaredLibraryInfo.index) {
-          continue;
-        }
-        dexCompressedCount += BooleanUtils.intValue(entry.getMethod() != ZipEntry.STORED);
-        long size = entry.getSize();
-        if (size < 0) {
-          throw new RuntimeException("Unknown size");
-        }
-        dexSize.add(size);
-        try (InputStream is = zipFile.getInputStream(entry)) {
-          parseDexStats(is, fields, methods, types);
+        if (isStandardDexFile(entryName)) {
+          if (desugaredLibraryInfo != null
+              && getDexIndex(entryName) == desugaredLibraryInfo.index) {
+            long size = entry.getCompressedSize();
+            if (size < 0) {
+              throw new RuntimeException("Unknown size");
+            }
+            continue;
+          }
+          dexCompressedCount += BooleanUtils.intValue(entry.getMethod() != ZipEntry.STORED);
+          long uncompressedSize = entry.getSize();
+          if (uncompressedSize < 0) {
+            throw new RuntimeException("Unknown uncompressed size");
+          }
+          dexSize.add(uncompressedSize);
+          try (InputStream is = zipFile.getInputStream(entry)) {
+            parseDexStats(is, fields, methods, types);
+          }
+        } else if (!entryName.endsWith(".dex")) {
+          long compressedSize = entry.getCompressedSize();
+          if (compressedSize < 0) {
+            throw new RuntimeException("Unknown compressed size");
+          }
+          resSize.add(compressedSize);
         }
       }
 
@@ -466,6 +489,7 @@ public class ApkAnalyzer {
       return new ApkAnalyzerResult(
           dexCompressedCount,
           dexSize.finish(),
+          resSize.finish(),
           types.finish(),
           fields.finish(),
           methods.finish(),

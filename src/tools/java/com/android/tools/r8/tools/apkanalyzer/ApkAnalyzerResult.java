@@ -14,6 +14,9 @@ class ApkAnalyzerResult {
   // Dex size stats.
   final MinMaxTotalStats dexSize;
 
+  // Resource size stats.
+  final MinMaxTotalStats resSize;
+
   // Constant pool stats.
   final MinMaxTotalStats fields;
   final MinMaxTotalStats methods;
@@ -51,6 +54,7 @@ class ApkAnalyzerResult {
   ApkAnalyzerResult(
       int dexCountCompressed,
       MinMaxTotalStats dexSize,
+      MinMaxTotalStats resSize,
       MinMaxTotalStats types,
       MinMaxTotalStats fields,
       MinMaxTotalStats methods,
@@ -71,6 +75,7 @@ class ApkAnalyzerResult {
       Integer rebuildContainerDexOptSize) {
     this.dexCompressedCount = dexCountCompressed;
     this.dexSize = dexSize;
+    this.resSize = resSize;
     this.types = types;
     this.fields = fields;
     this.methods = methods;
