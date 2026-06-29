@@ -6,6 +6,10 @@ package com.android.tools.r8.tools.apkanalyzer;
 import com.android.tools.r8.CompilationMode;
 import com.android.tools.r8.D8;
 import com.android.tools.r8.D8Command;
+import com.android.tools.r8.DexIndexedConsumer;
+import com.android.tools.r8.DexSegments;
+import com.android.tools.r8.ResourceException;
+import com.android.tools.r8.StringConsumer;
 import com.android.tools.r8.dex.ApplicationReader;
 import com.android.tools.r8.dex.Constants;
 import com.android.tools.r8.dex.DexParser;
@@ -14,8 +18,6 @@ import com.android.tools.r8.dex.Marker;
 import com.android.tools.r8.graph.DexAnnotation;
 import com.android.tools.r8.graph.DexAnnotationSet;
 import com.android.tools.r8.graph.DexApplication;
-import com.android.tools.r8.graph.DexCode;
-import com.android.tools.r8.graph.DexDebugInfo;
 import com.android.tools.r8.graph.DexEncodedField;
 import com.android.tools.r8.graph.DexEncodedMethod;
 import com.android.tools.r8.graph.DexProgramClass;
@@ -27,7 +29,7 @@ import com.android.tools.r8.position.Position;
 import com.android.tools.r8.shaking.FilteredClassPath;
 import com.android.tools.r8.utils.AndroidApiLevel;
 import com.android.tools.r8.utils.AndroidApp;
-import com.android.tools.r8.utils.DexIndexedSizeConsumer;
+import com.android.tools.r8.utils.AndroidAppConsumers;
 import com.android.tools.r8.utils.InternalOptions;
 import com.android.tools.r8.utils.internal.BooleanUtils;
 import com.android.tools.r8.utils.timing.Timing;
@@ -50,7 +52,7 @@ import java.util.zip.ZipFile;
 
 public class ApkAnalyzer {
 
-  public static void main(String[] args) throws IOException {
+  public static void main(String[] args) throws IOException, ResourceException {
     if (args.length < 1) {
       System.err.println("Usage: ApkAnalyzer <apk-path> [--csv]");
       System.exit(1);
@@ -90,19 +92,21 @@ public class ApkAnalyzer {
     }
   }
 
-  private static Integer rebuildApk(
+  private static RebuildDexStats rebuildDex(
       Path apkPath,
       DesugaredLibraryInfo desugaredLibraryInfo,
+      StringConsumer mapConsumer,
       AndroidApiLevel minApiLevel,
       Consumer<InternalOptions> optionsModification)
       throws Exception {
-    DexIndexedSizeConsumer sizeConsumer = new DexIndexedSizeConsumer();
+    AndroidAppConsumers sink = new AndroidAppConsumers();
     D8Command.Builder builder =
         D8Command.builder()
             .setDisableDesugaring(true)
             .setMinApiLevel(minApiLevel.getLevel(), minApiLevel.getMinor())
             .setMode(CompilationMode.RELEASE)
-            .setProgramConsumer(sizeConsumer);
+            .setProgramConsumer(sink.wrapDexIndexedConsumer(DexIndexedConsumer.emptyConsumer()))
+            .setProguardMapConsumer(mapConsumer);
     try (ZipFile zipFile = new ZipFile(apkPath.toFile())) {
       Enumeration<? extends ZipEntry> entries = zipFile.entries();
       while (entries.hasMoreElements()) {
@@ -121,7 +125,11 @@ public class ApkAnalyzer {
       }
     }
     D8.ApkAnalyzerEntryPoint.run(builder.build(), optionsModification);
-    return sizeConsumer.size();
+    AndroidApp output = sink.build();
+    return new RebuildDexStats(
+        output.applicationSize(),
+        DebugInfoStats.create(readApplication(output)),
+        DexSegments.run(output));
   }
 
   private static void printResult(ApkAnalyzerResult result) {
@@ -134,41 +142,27 @@ public class ApkAnalyzer {
     System.out.println("res_file_size_min=" + result.resSize.min);
     System.out.println("res_file_size_max=" + result.resSize.max);
     System.out.println("res_file_size_total=" + result.resSize.total);
-    if (result.rebuildSize != null) {
-      System.out.println("rebuild_size=" + result.rebuildSize);
-      System.out.println(
-          "rebuild_size_improvement="
-              + getImprovementString(result.dexSize.total, result.rebuildSize));
+    result.debugInfoStats.printToStdout("base", result.dexSegments);
+    if (result.rebuildResult != null) {
+      result.rebuildResult.printToStdout("rebuild", result);
     }
-    if (result.rebuildDexOptSize != null) {
-      System.out.println("rebuild_dex_opt_size=" + result.rebuildDexOptSize);
-      System.out.println(
-          "rebuild_dex_opt_size_improvement="
-              + getImprovementString(result.dexSize.total, result.rebuildDexOptSize));
+    if (result.rebuildDexOptResult != null) {
+      result.rebuildDexOptResult.printToStdout("rebuild_dex_opt", result);
     }
-    if (result.rebuildReuseDistSize != null) {
-      System.out.println("rebuild_reuse_dist_size=" + result.rebuildReuseDistSize);
-      System.out.println(
-          "rebuild_reuse_dist_size_improvement="
-              + getImprovementString(result.dexSize.total, result.rebuildReuseDistSize));
+    if (result.rebuildMapOutResult != null) {
+      result.rebuildMapOutResult.printToStdout("rebuild_map_out", result);
     }
-    if (result.rebuildNoRefinementSize != null) {
-      System.out.println("rebuild_no_refinement_size=" + result.rebuildNoRefinementSize);
-      System.out.println(
-          "rebuild_no_refinement_size_improvement="
-              + getImprovementString(result.dexSize.total, result.rebuildNoRefinementSize));
+    if (result.rebuildReuseDistResult != null) {
+      result.rebuildReuseDistResult.printToStdout("rebuild_reuse_dist", result);
     }
-    if (result.rebuildContainerSize != null) {
-      System.out.println("rebuild_container_size=" + result.rebuildContainerSize);
-      System.out.println(
-          "rebuild_container_size_improvement="
-              + getImprovementString(result.dexSize.total, result.rebuildContainerSize));
+    if (result.rebuildNoRefinementResult != null) {
+      result.rebuildNoRefinementResult.printToStdout("rebuild_no_refinement", result);
     }
-    if (result.rebuildContainerDexOptSize != null) {
-      System.out.println("rebuild_container_dex_opt_size=" + result.rebuildContainerDexOptSize);
-      System.out.println(
-          "rebuild_container_dex_opt_size_improvement="
-              + getImprovementString(result.dexSize.total, result.rebuildContainerDexOptSize));
+    if (result.rebuildContainerResult != null) {
+      result.rebuildContainerResult.printToStdout("rebuild_container", result);
+    }
+    if (result.rebuildContainerDexOptResult != null) {
+      result.rebuildContainerDexOptResult.printToStdout("rebuild_container_dex_opt", result);
     }
     System.out.println("dex_file_types_min=" + result.types.min);
     System.out.println("dex_file_types_max=" + result.types.max);
@@ -179,9 +173,6 @@ public class ApkAnalyzer {
     System.out.println("dex_file_methods_min=" + result.methods.min);
     System.out.println("dex_file_methods_max=" + result.methods.max);
     System.out.println("dex_file_methods_total=" + result.methods.total);
-    System.out.println("dex_debug_info_none=" + result.debugInfoNone);
-    System.out.println("dex_debug_info_embedded_pc=" + result.debugInfoEmbeddedPc);
-    System.out.println("dex_debug_info_event_based=" + result.debugInfoEventBased);
     for (int markerIndex = 0; markerIndex < result.dexMarkers.size(); markerIndex++) {
       System.out.println("marker_" + markerIndex + "=" + result.dexMarkers.get(markerIndex));
     }
@@ -217,45 +208,41 @@ public class ApkAnalyzer {
     sb.append(result.resSize.max).append(';');
     sb.append(result.resSize.avg()).append(';');
     sb.append(result.resSize.total).append(';');
-    if (result.rebuildSize != null) {
-      sb.append(result.rebuildSize).append(';');
-      sb.append(getImprovementString(result.dexSize.total, result.rebuildSize)).append(';');
+    result.debugInfoStats.printCsv(sb, result.dexSegments);
+    if (result.rebuildResult != null) {
+      result.rebuildResult.printCsv(sb, result);
     } else {
-      sb.append(';').append(';');
+      RebuildDexStats.printEmptyCsv(sb);
     }
-    if (result.rebuildDexOptSize != null) {
-      sb.append(result.rebuildDexOptSize).append(';');
-      sb.append(getImprovementString(result.dexSize.total, result.rebuildDexOptSize)).append(';');
+    if (result.rebuildDexOptResult != null) {
+      result.rebuildDexOptResult.printCsv(sb, result);
     } else {
-      sb.append(';').append(';');
+      RebuildDexStats.printEmptyCsv(sb);
     }
-    if (result.rebuildReuseDistSize != null) {
-      sb.append(result.rebuildReuseDistSize).append(';');
-      sb.append(getImprovementString(result.dexSize.total, result.rebuildReuseDistSize))
-          .append(';');
+    if (result.rebuildMapOutResult != null) {
+      result.rebuildMapOutResult.printCsv(sb, result);
     } else {
-      sb.append(';').append(';');
+      RebuildDexStats.printEmptyCsv(sb);
     }
-    if (result.rebuildNoRefinementSize != null) {
-      sb.append(result.rebuildNoRefinementSize).append(';');
-      sb.append(getImprovementString(result.dexSize.total, result.rebuildNoRefinementSize))
-          .append(';');
+    if (result.rebuildReuseDistResult != null) {
+      result.rebuildReuseDistResult.printCsv(sb, result);
     } else {
-      sb.append(';').append(';');
+      RebuildDexStats.printEmptyCsv(sb);
     }
-    if (result.rebuildContainerSize != null) {
-      sb.append(result.rebuildContainerSize).append(';');
-      sb.append(getImprovementString(result.dexSize.total, result.rebuildContainerSize))
-          .append(';');
+    if (result.rebuildNoRefinementResult != null) {
+      result.rebuildNoRefinementResult.printCsv(sb, result);
     } else {
-      sb.append(';').append(';');
+      RebuildDexStats.printEmptyCsv(sb);
     }
-    if (result.rebuildContainerDexOptSize != null) {
-      sb.append(result.rebuildContainerDexOptSize).append(';');
-      sb.append(getImprovementString(result.dexSize.total, result.rebuildContainerDexOptSize))
-          .append(';');
+    if (result.rebuildContainerResult != null) {
+      result.rebuildContainerResult.printCsv(sb, result);
     } else {
-      sb.append(';').append(';');
+      RebuildDexStats.printEmptyCsv(sb);
+    }
+    if (result.rebuildContainerDexOptResult != null) {
+      result.rebuildContainerDexOptResult.printCsv(sb, result);
+    } else {
+      RebuildDexStats.printEmptyCsv(sb);
     }
     sb.append(result.types.min).append(';');
     sb.append(result.types.max).append(';');
@@ -269,9 +256,6 @@ public class ApkAnalyzer {
     sb.append(result.methods.max).append(';');
     sb.append(result.methods.avg()).append(';');
     sb.append(result.methods.total).append(';');
-    sb.append(result.debugInfoNone).append(';');
-    sb.append(result.debugInfoEmbeddedPc).append(';');
-    sb.append(result.debugInfoEventBased).append(';');
     if (result.desugaredLibraryInfo != null) {
       sb.append(result.desugaredLibraryInfo.index).append(';');
       sb.append(result.desugaredLibraryInfo.size).append(';');
@@ -310,7 +294,8 @@ public class ApkAnalyzer {
     System.out.println(sb);
   }
 
-  private static ApkAnalyzerResult analyzeApk(Path apkPath, boolean rebuild) throws IOException {
+  private static ApkAnalyzerResult analyzeApk(Path apkPath, boolean rebuild)
+      throws IOException, ResourceException {
     DexApplication application = readApplication(apkPath);
     int dexCompressedCount = 0;
     MinMaxTotalStats dexSize = new MinMaxTotalStats();
@@ -320,35 +305,49 @@ public class ApkAnalyzer {
     MinMaxTotalStats types = new MinMaxTotalStats();
     try (ZipFile zipFile = new ZipFile(apkPath.toFile())) {
       DesugaredLibraryInfo desugaredLibraryInfo = findDesugaredLibrary(application, zipFile);
-      Integer rebuildSize = null;
-      Integer rebuildDexOptSize = null;
-      Integer rebuildReuseDistSize = null;
-      Integer rebuildNoRefinementSize = null;
-      Integer rebuildContainerSize = null;
-      Integer rebuildContainerDexOptSize = null;
+      RebuildDexStats rebuildSize = null;
+      RebuildDexStats rebuildDexOptSize = null;
+      RebuildDexStats rebuildMapOutSize = null;
+      RebuildDexStats rebuildReuseDistSize = null;
+      RebuildDexStats rebuildNoRefinementSize = null;
+      RebuildDexStats rebuildContainerSize = null;
+      RebuildDexStats rebuildContainerDexOptSize = null;
       if (rebuild) {
         try {
           rebuildSize =
-              rebuildApk(
-                  apkPath, desugaredLibraryInfo, AndroidApiLevel.CINNAMON_BUN, options -> {});
+              rebuildDex(
+                  apkPath, desugaredLibraryInfo, null, AndroidApiLevel.CINNAMON_BUN, options -> {});
         } catch (Throwable t) {
           // Intentionally empty.
         }
         try {
           rebuildDexOptSize =
-              rebuildApk(
+              rebuildDex(
                   apkPath,
                   desugaredLibraryInfo,
+                  null,
                   AndroidApiLevel.CINNAMON_BUN,
                   options -> options.enableDexToDexCodeOptimizations = true);
         } catch (Throwable t) {
           // Intentionally empty.
         }
         try {
-          rebuildReuseDistSize =
-              rebuildApk(
+          rebuildMapOutSize =
+              rebuildDex(
                   apkPath,
                   desugaredLibraryInfo,
+                  StringConsumer.emptyConsumer(),
+                  AndroidApiLevel.CINNAMON_BUN,
+                  options -> {});
+        } catch (Throwable t) {
+          // Intentionally empty.
+        }
+        try {
+          rebuildReuseDistSize =
+              rebuildDex(
+                  apkPath,
+                  desugaredLibraryInfo,
+                  null,
                   AndroidApiLevel.CINNAMON_BUN,
                   options -> options.enablePreserveExistingClassToDexDistributor = true);
         } catch (Throwable t) {
@@ -356,9 +355,10 @@ public class ApkAnalyzer {
         }
         try {
           rebuildNoRefinementSize =
-              rebuildApk(
+              rebuildDex(
                   apkPath,
                   desugaredLibraryInfo,
+                  null,
                   AndroidApiLevel.CINNAMON_BUN,
                   options ->
                       options.getTestingOptions().classToDexDistributionRefinementPasses = 0);
@@ -367,9 +367,10 @@ public class ApkAnalyzer {
         }
         try {
           rebuildContainerSize =
-              rebuildApk(
+              rebuildDex(
                   apkPath,
                   desugaredLibraryInfo,
+                  null,
                   AndroidApiLevel.CINNAMON_BUN,
                   options -> options.getTestingOptions().forceDexContainerFormat = true);
         } catch (Throwable t) {
@@ -377,9 +378,10 @@ public class ApkAnalyzer {
         }
         try {
           rebuildContainerDexOptSize =
-              rebuildApk(
+              rebuildDex(
                   apkPath,
                   desugaredLibraryInfo,
+                  null,
                   AndroidApiLevel.CINNAMON_BUN,
                   options -> {
                     options.getTestingOptions().forceDexContainerFormat = true;
@@ -420,26 +422,6 @@ public class ApkAnalyzer {
             throw new RuntimeException("Unknown compressed size");
           }
           resSize.add(compressedSize);
-        }
-      }
-
-      int debugInfoNone = 0;
-      int debugInfoEmbeddedPc = 0;
-      int debugInfoEventBased = 0;
-
-      for (DexProgramClass clazz : application.classes()) {
-        for (DexEncodedMethod method : clazz.methods()) {
-          if (!method.isAbstract() && method.hasCode() && method.getCode().isDexCode()) {
-            DexCode code = method.getCode().asDexCode();
-            DexDebugInfo debugInfo = code.getDebugInfo();
-            if (debugInfo == null) {
-              debugInfoNone++;
-            } else if (debugInfo.isPcBasedInfo()) {
-              debugInfoEmbeddedPc++;
-            } else if (debugInfo.isEventBasedInfo()) {
-              debugInfoEventBased++;
-            }
-          }
         }
       }
 
@@ -495,15 +477,15 @@ public class ApkAnalyzer {
           methods.finish(),
           getDexMarkers(application),
           desugaredLibraryInfo,
-          debugInfoNone,
-          debugInfoEmbeddedPc,
-          debugInfoEventBased,
+          DebugInfoStats.create(application),
+          DexSegments.run(AndroidApp.builder().addProgramFile(apkPath).build()),
           mostOccurringSourceFile,
           mostOccurringSourceFileCount,
           runtimeInvisibleAnnotations,
           depthCounts,
           rebuildSize,
           rebuildDexOptSize,
+          rebuildMapOutSize,
           rebuildReuseDistSize,
           rebuildNoRefinementSize,
           rebuildContainerSize,
@@ -532,10 +514,14 @@ public class ApkAnalyzer {
     FilteredClassPath filteredPath =
         new FilteredClassPath(apkPath, filters, new PathOrigin(apkPath), Position.UNKNOWN);
     builder.createAndAddProvider(filteredPath);
+    return readApplication(builder.build());
+  }
+
+  private static DexApplication readApplication(AndroidApp app) throws IOException {
     InternalOptions options = new InternalOptions();
     options.skipReadingDexCode = false;
     options.setMinApiLevel(AndroidApiLevel.P);
-    return new ApplicationReader(builder.build(), options, Timing.empty()).read();
+    return new ApplicationReader(app, options, Timing.empty()).read();
   }
 
   private static DesugaredLibraryInfo findDesugaredLibrary(
@@ -652,7 +638,7 @@ public class ApkAnalyzer {
     return false;
   }
 
-  private static String getImprovementString(long baseline, long current) {
+  static String getImprovementString(long baseline, long current) {
     if (baseline == 0) {
       return "0.00%";
     }

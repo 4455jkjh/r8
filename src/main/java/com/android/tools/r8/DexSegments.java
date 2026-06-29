@@ -17,7 +17,7 @@ import it.unimi.dsi.fastutil.ints.Int2ReferenceLinkedOpenHashMap;
 import it.unimi.dsi.fastutil.ints.Int2ReferenceMap;
 import java.io.IOException;
 import java.nio.file.Paths;
-import java.util.Map;
+import java.util.function.BiConsumer;
 
 public class DexSegments {
   public static class Command extends BaseCommand {
@@ -105,7 +105,7 @@ public class DexSegments {
       throws IOException, CompilationFailedException, ResourceException {
     Command.Builder builder = Command.parse(args);
     Command cmd = builder.build();
-    Map<Integer, SegmentInfo> result = run(cmd);
+    Result result = run(cmd);
     if (result == null) {
       return;
     }
@@ -141,13 +141,11 @@ public class DexSegments {
     }
   }
 
-  public static Map<Integer, SegmentInfo> runForTesting(Command command)
-      throws IOException, ResourceException {
+  public static Result runForTesting(Command command) throws IOException, ResourceException {
     return run(command);
   }
 
-  public static Int2ReferenceMap<SegmentInfo> run(Command command)
-      throws IOException, ResourceException {
+  public static Result run(Command command) throws IOException, ResourceException {
     if (command.isPrintHelp()) {
       System.out.println(Command.USAGE_MESSAGE);
       return null;
@@ -155,13 +153,11 @@ public class DexSegments {
     return run(command.getInputApp());
   }
 
-  public static Map<Integer, SegmentInfo> runForTesting(AndroidApp app)
-      throws IOException, ResourceException {
+  public static Result runForTesting(AndroidApp app) throws IOException, ResourceException {
     return run(app);
   }
 
-  public static Int2ReferenceMap<SegmentInfo> run(AndroidApp app)
-      throws IOException, ResourceException {
+  public static Result run(AndroidApp app) throws IOException, ResourceException {
     Int2ReferenceMap<SegmentInfo> result = new Int2ReferenceLinkedOpenHashMap<>();
     for (int benchmark : DexSection.getConstants()) {
       result.put(benchmark, new SegmentInfo());
@@ -176,7 +172,28 @@ public class DexSegments {
         }
       }
     }
-    return result;
+    return new Result(result);
+  }
+
+  public static class Result {
+
+    Int2ReferenceMap<SegmentInfo> segments;
+
+    Result(Int2ReferenceMap<SegmentInfo> segments) {
+      this.segments = segments;
+    }
+
+    public SegmentInfo get(int segment) {
+      return segments.get(segment);
+    }
+
+    public SegmentInfo getDebugInfo() {
+      return segments.get(Constants.TYPE_DEBUG_INFO_ITEM);
+    }
+
+    public void forEach(BiConsumer<? super Integer, ? super SegmentInfo> fn) {
+      segments.forEach(fn);
+    }
   }
 
   public static class SegmentInfo {

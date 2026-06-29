@@ -25,7 +25,6 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import java.util.Map;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -238,7 +237,7 @@ public class DexCodeDeduppingTest extends TestBase {
   public SegmentInfo getCodeSegmentInfo(Path path)
       throws CompilationFailedException, ResourceException, IOException {
     Command.Builder builder = Command.builder().addProgramFiles(path);
-    Map<Integer, SegmentInfo> segmentInfoMap = DexSegments.runForTesting(builder.build());
+    DexSegments.Result segmentInfoMap = DexSegments.runForTesting(builder.build());
     return segmentInfoMap.get(Constants.TYPE_CODE_ITEM);
   }
 

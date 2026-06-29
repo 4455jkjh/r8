@@ -9,7 +9,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
-import com.android.tools.r8.DexSegments.SegmentInfo;
 import com.android.tools.r8.TestRuntime.DexRuntime;
 import com.android.tools.r8.ToolHelper.DexVm;
 import com.android.tools.r8.ToolHelper.ProcessResult;
@@ -42,8 +41,6 @@ import com.android.tools.r8.utils.internal.FileUtils;
 import com.android.tools.r8.utils.internal.ThrowingBiConsumer;
 import com.android.tools.r8.utils.internal.ThrowingConsumer;
 import com.microsoft.playwright.Page;
-import it.unimi.dsi.fastutil.ints.Int2ReferenceLinkedOpenHashMap;
-import it.unimi.dsi.fastutil.ints.Int2ReferenceMap;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
@@ -426,12 +423,8 @@ public abstract class R8TestCompileResultBase<CR extends R8TestCompileResultBase
     return self();
   }
 
-  private Int2ReferenceMap<SegmentInfo> runDexSegments(AndroidApp app)
-      throws IOException, ResourceException {
-    Map<Integer, SegmentInfo> result = DexSegments.runForTesting(app);
-    Int2ReferenceMap<SegmentInfo> rewrittenResult = new Int2ReferenceLinkedOpenHashMap<>();
-    rewrittenResult.putAll(result);
-    return rewrittenResult;
+  private DexSegments.Result runDexSegments(AndroidApp app) throws IOException, ResourceException {
+    return DexSegments.runForTesting(app);
   }
 
   @Override
