@@ -2674,6 +2674,8 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
     public boolean allowAnyClassFileVersion =
         isSystemPropertySet("com.android.tools.r8.allowAnyClassFileVersion");
     public CfVersion supportedCfVersionForTesting = null;
+
+    public boolean forceIntTypeForClassIdField = false;
   }
 
   public boolean forTesting(Supplier<Boolean> test) {

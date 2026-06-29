@@ -60,7 +60,7 @@ public class UndoConstructorInliningProfileFlagsTest extends TestBase {
               ClassSubject classSubject = inspector.clazz(A.class);
               assertThat(classSubject, isPresent());
 
-              MethodSubject initializerSubject = classSubject.init("int");
+              MethodSubject initializerSubject = classSubject.init("byte");
               assertThat(initializerSubject, isPresent());
 
               profile

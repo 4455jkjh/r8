@@ -19,7 +19,7 @@ import com.android.tools.r8.graph.lens.GraphLens;
 import com.android.tools.r8.graph.lens.MethodLookupResult;
 import com.android.tools.r8.graph.proto.RewrittenPrototypeDescription;
 import com.android.tools.r8.ir.code.InvokeType;
-import com.android.tools.r8.ir.conversion.ExtraConstantIntParameter;
+import com.android.tools.r8.ir.conversion.ExtraConstantParameter;
 import com.android.tools.r8.ir.conversion.ExtraParameter;
 import com.android.tools.r8.utils.internal.IterableUtils;
 import com.android.tools.r8.utils.internal.OptionalBool;
@@ -38,13 +38,13 @@ import java.util.Set;
 
 public class HorizontalClassMergerGraphLens extends ClassMergerGraphLens {
 
-  private final Map<DexMethod, ExtraConstantIntParameter> methodExtraParameters;
+  private final Map<DexMethod, ExtraConstantParameter> methodExtraParameters;
   private final HorizontallyMergedClasses mergedClasses;
 
   private HorizontalClassMergerGraphLens(
       AppView<?> appView,
       HorizontallyMergedClasses mergedClasses,
-      Map<DexMethod, ExtraConstantIntParameter> methodExtraParameters,
+      Map<DexMethod, ExtraConstantParameter> methodExtraParameters,
       BidirectionalManyToOneRepresentativeMap<DexField, DexField> fieldMap,
       BidirectionalManyToOneMap<DexMethod, DexMethod> methodMap,
       BidirectionalManyToOneRepresentativeMap<DexMethod, DexMethod> newMethodSignatures) {
@@ -152,7 +152,7 @@ public class HorizontalClassMergerGraphLens extends ClassMergerGraphLens {
       RewrittenPrototypeDescription collisionResolution =
           RewrittenPrototypeDescription.createForExtraParameters(
               computeExtraUnusedParameters(previousMethod, newMethod));
-      ExtraConstantIntParameter extraParameter = methodExtraParameters.get(previousMethod);
+      ExtraConstantParameter extraParameter = methodExtraParameters.get(previousMethod);
       if (extraParameter != null) {
         List<ExtraParameter> extraParameters =
             (List<ExtraParameter>) collisionResolution.getExtraParameters();
@@ -192,7 +192,7 @@ public class HorizontalClassMergerGraphLens extends ClassMergerGraphLens {
         BidirectionalManyToOneHashMap.newIdentityHashMap();
     private final MutableBidirectionalManyToOneRepresentativeMap<DexMethod, DexMethod>
         newMethodSignatures = BidirectionalManyToOneRepresentativeHashMap.newIdentityHashMap();
-    private final Map<DexMethod, ExtraConstantIntParameter> methodExtraParameters =
+    private final Map<DexMethod, ExtraConstantParameter> methodExtraParameters =
         new IdentityHashMap<>();
 
     private final MutableBidirectionalManyToOneMap<DexMethod, DexMethod> pendingMethodMapUpdates =
@@ -365,8 +365,7 @@ public class HorizontalClassMergerGraphLens extends ClassMergerGraphLens {
      * where many constructors are merged into a single constructor. The synthesized constructor
      * therefore does not have a unique reverse constructor.
      */
-    void mapMergedConstructor(
-        DexMethod from, DexMethod to, ExtraConstantIntParameter extraParameter) {
+    void mapMergedConstructor(DexMethod from, DexMethod to, ExtraConstantParameter extraParameter) {
       mapMethod(from, to);
       if (extraParameter != null) {
         methodExtraParameters.put(from, extraParameter);

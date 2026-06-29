@@ -45,11 +45,11 @@ public class MergedConstructorForwardingTest extends HorizontalClassMergingTestB
               FieldSubject classIdFieldSubject = classMergerClassIdField(aClassSubject);
               assertThat(classIdFieldSubject, isPresent());
 
-              MethodSubject firstInitSubject = aClassSubject.init("int");
+              MethodSubject firstInitSubject = aClassSubject.init("byte");
               assertThat(firstInitSubject, isPresent());
               assertThat(firstInitSubject, writesInstanceField(classIdFieldSubject.getDexField()));
 
-              MethodSubject otherInitSubject = aClassSubject.init("long", "int");
+              MethodSubject otherInitSubject = aClassSubject.init("long", "byte");
               assertThat(otherInitSubject, isPresent());
               assertThat(otherInitSubject, writesInstanceField(classIdFieldSubject.getDexField()));
 

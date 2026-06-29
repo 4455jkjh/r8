@@ -85,7 +85,7 @@ public class ClInitMergeSuperTypeApiLevelTest extends TestBase {
                   canUseExecutable() ? 1 : 2,
                   clazz.allMethods(MethodSubject::isInstanceInitializer).size());
               if (canUseExecutable()) {
-                MethodSubject constructorInit = clazz.init(Executable.class.getTypeName(), "int");
+                MethodSubject constructorInit = clazz.init(Executable.class.getTypeName(), "byte");
                 assertThat(
                     constructorInit,
                     isAbsentIf(parameters.canUseJavaLangInvokeVarHandleStoreStoreFence()));

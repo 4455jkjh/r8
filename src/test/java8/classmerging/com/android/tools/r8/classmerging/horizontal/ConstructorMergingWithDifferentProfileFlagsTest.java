@@ -11,7 +11,6 @@ import com.android.tools.r8.NeverClassInline;
 import com.android.tools.r8.NeverInline;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
-import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.profile.art.ArtProfileMethodRuleInfoImpl;
 import com.android.tools.r8.profile.art.model.ExternalArtProfile;
 import com.android.tools.r8.references.Reference;
@@ -19,6 +18,8 @@ import com.android.tools.r8.utils.MethodReferenceUtils;
 import com.android.tools.r8.utils.codeinspector.ClassSubject;
 import com.android.tools.r8.utils.codeinspector.InstructionSubject;
 import com.android.tools.r8.utils.codeinspector.MethodSubject;
+import com.android.tools.r8.utils.internal.BooleanUtils;
+import java.util.List;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -31,9 +32,13 @@ public class ConstructorMergingWithDifferentProfileFlagsTest extends TestBase {
   @Parameter(0)
   public TestParameters parameters;
 
-  @Parameters(name = "{0}")
-  public static TestParametersCollection data() {
-    return getTestParameters().withAllRuntimesAndApiLevels().build();
+  @Parameter(1)
+  public boolean forceIntTypeForClassIdField;
+
+  @Parameters(name = "{0}, forceIntTypeForClassIdField = {1}")
+  public static List<Object[]> data() {
+    return buildParameters(
+        getTestParameters().withAllRuntimesAndApiLevels().build(), BooleanUtils.values());
   }
 
   @Test
@@ -63,13 +68,18 @@ public class ConstructorMergingWithDifferentProfileFlagsTest extends TestBase {
                     .assertNoOtherClassesMerged())
         .enableInliningAnnotations()
         .enableNeverClassInliningAnnotations()
+        .addOptionsModification(
+            options ->
+                options.getTestingOptions().forceIntTypeForClassIdField =
+                    forceIntTypeForClassIdField)
         .compile()
         .inspectResidualArtProfile(
             (profile, inspector) -> {
               ClassSubject classSubject = inspector.clazz(A.class);
               assertThat(classSubject, isPresent());
 
-              MethodSubject switchInitializerSubject = classSubject.init("int", "int");
+              MethodSubject switchInitializerSubject =
+                  classSubject.init("int", forceIntTypeForClassIdField ? "int" : "byte");
               assertThat(switchInitializerSubject, isPresent());
               assertTrue(
                   switchInitializerSubject

@@ -1,4 +1,4 @@
-// Copyright (c) 2020, the R8 project authors. Please see the AUTHORS file
+// Copyright (c) 2026, the R8 project authors. Please see the AUTHORS file
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
@@ -10,23 +10,22 @@ import com.android.tools.r8.graph.DexType;
 import com.android.tools.r8.ir.analysis.type.TypeElement;
 import com.android.tools.r8.ir.analysis.value.SingleNumberValue;
 
-public class ExtraConstantIntParameter extends ExtraConstantParameter {
+public class ExtraConstantByteParameter extends ExtraConstantParameter {
 
   private final long value;
 
-  public ExtraConstantIntParameter(long value) {
+  public ExtraConstantByteParameter(long value) {
     this.value = value;
   }
 
   @Override
   public DexType getType(DexItemFactory dexItemFactory) {
-    return dexItemFactory.intType;
+    return dexItemFactory.byteType;
   }
 
   @Override
-  @SuppressWarnings("ReferenceEquality")
   public TypeElement getTypeElement(AppView<?> appView, DexType argType) {
-    assert argType == appView.dexItemFactory().intType;
+    assert argType.isIdenticalTo(appView.dexItemFactory().byteType);
     return TypeElement.getInt();
   }
 
@@ -46,7 +45,7 @@ public class ExtraConstantIntParameter extends ExtraConstantParameter {
     if (obj == null || getClass() != obj.getClass()) {
       return false;
     }
-    ExtraConstantIntParameter other = (ExtraConstantIntParameter) obj;
+    ExtraConstantByteParameter other = (ExtraConstantByteParameter) obj;
     return value == other.value;
   }
 
