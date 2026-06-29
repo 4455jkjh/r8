@@ -22,6 +22,7 @@ class RebuildDexStats {
   void printCsv(StringBuilder sb, ApkAnalyzerResult result) {
     sb.append(size).append(';');
     sb.append(getImprovementString(result.dexSize.total, size)).append(';');
+    sb.append(dexSegments.getCode().getSegmentSize()).append(';');
     debugInfoStats.printCsv(sb, dexSegments);
   }
 
@@ -34,6 +35,7 @@ class RebuildDexStats {
     System.out.println(prefix + "_size=" + size);
     System.out.println(
         prefix + "_size_improvement=" + getImprovementString(result.dexSize.total, size));
+    System.out.println(prefix + "_dex_code_size=" + dexSegments.getCode().getSegmentSize());
     debugInfoStats.printToStdout(prefix, dexSegments);
   }
 }

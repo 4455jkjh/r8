@@ -187,6 +187,10 @@ public class DexSegments {
       return segments.get(segment);
     }
 
+    public SegmentInfo getCode() {
+      return segments.get(Constants.TYPE_CODE_ITEM);
+    }
+
     public SegmentInfo getDebugInfo() {
       return segments.get(Constants.TYPE_DEBUG_INFO_ITEM);
     }

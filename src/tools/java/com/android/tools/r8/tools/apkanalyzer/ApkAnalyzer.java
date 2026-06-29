@@ -142,6 +142,7 @@ public class ApkAnalyzer {
     System.out.println("res_file_size_min=" + result.resSize.min);
     System.out.println("res_file_size_max=" + result.resSize.max);
     System.out.println("res_file_size_total=" + result.resSize.total);
+    System.out.println("base_dex_code_size=" + result.dexSegments.getCode().getSegmentSize());
     result.debugInfoStats.printToStdout("base", result.dexSegments);
     if (result.rebuildResult != null) {
       result.rebuildResult.printToStdout("rebuild", result);
@@ -208,6 +209,7 @@ public class ApkAnalyzer {
     sb.append(result.resSize.max).append(';');
     sb.append(result.resSize.avg()).append(';');
     sb.append(result.resSize.total).append(';');
+    sb.append(result.dexSegments.getCode().getSegmentSize()).append(';');
     result.debugInfoStats.printCsv(sb, result.dexSegments);
     if (result.rebuildResult != null) {
       result.rebuildResult.printCsv(sb, result);
