@@ -40,6 +40,13 @@ class ApkAnalyzerResult {
   // Class depth stats.
   final int[] classDepthCounts;
 
+  // Rebuilt size using D8.
+  final Integer rebuildSize;
+  final Integer rebuildDexOptSize;
+  final Integer rebuildNoRefinementSize;
+  final Integer rebuildContainerSize;
+  final Integer rebuildContainerDexOptSize;
+
   ApkAnalyzerResult(
       int dexCountCompressed,
       MinMaxTotalStats dexSize,
@@ -54,7 +61,12 @@ class ApkAnalyzerResult {
       String mostOccurringSourceFile,
       int mostOccurringSourceFileCount,
       int runtimeInvisibleAnnotations,
-      int[] classDepthCounts) {
+      int[] classDepthCounts,
+      Integer rebuildSize,
+      Integer rebuildDexOptSize,
+      Integer rebuildNoRefinementSize,
+      Integer rebuildContainerSize,
+      Integer rebuildContainerDexOptSize) {
     this.dexCompressedCount = dexCountCompressed;
     this.dexSize = dexSize;
     this.types = types;
@@ -69,5 +81,10 @@ class ApkAnalyzerResult {
     this.mostOccurringSourceFileCount = mostOccurringSourceFileCount;
     this.runtimeInvisibleAnnotations = runtimeInvisibleAnnotations;
     this.classDepthCounts = classDepthCounts;
+    this.rebuildSize = rebuildSize;
+    this.rebuildDexOptSize = rebuildDexOptSize;
+    this.rebuildNoRefinementSize = rebuildNoRefinementSize;
+    this.rebuildContainerSize = rebuildContainerSize;
+    this.rebuildContainerDexOptSize = rebuildContainerDexOptSize;
   }
 }

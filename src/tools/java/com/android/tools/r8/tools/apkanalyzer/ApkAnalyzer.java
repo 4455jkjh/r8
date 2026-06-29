@@ -3,6 +3,9 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8.tools.apkanalyzer;
 
+import com.android.tools.r8.CompilationMode;
+import com.android.tools.r8.D8;
+import com.android.tools.r8.D8Command;
 import com.android.tools.r8.dex.ApplicationReader;
 import com.android.tools.r8.dex.Constants;
 import com.android.tools.r8.dex.DexParser;
@@ -24,6 +27,7 @@ import com.android.tools.r8.position.Position;
 import com.android.tools.r8.shaking.FilteredClassPath;
 import com.android.tools.r8.utils.AndroidApiLevel;
 import com.android.tools.r8.utils.AndroidApp;
+import com.android.tools.r8.utils.DexIndexedSizeConsumer;
 import com.android.tools.r8.utils.InternalOptions;
 import com.android.tools.r8.utils.internal.BooleanUtils;
 import com.android.tools.r8.utils.timing.Timing;
@@ -38,7 +42,9 @@ import java.util.Collections;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
+import java.util.function.Consumer;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
@@ -52,9 +58,12 @@ public class ApkAnalyzer {
 
     String apkPathString = null;
     boolean csv = false;
+    boolean rebuild = false;
     for (String arg : args) {
       if (arg.equals("--csv")) {
         csv = true;
+      } else if (arg.equals("--rebuild")) {
+        rebuild = true;
       } else if (apkPathString == null) {
         apkPathString = arg;
       } else {
@@ -64,7 +73,7 @@ public class ApkAnalyzer {
     }
 
     if (apkPathString == null) {
-      System.err.println("Usage: ApkAnalyzer <apk-path> [--csv]");
+      System.err.println("Usage: ApkAnalyzer <apk-path> [--csv] [--rebuild]");
       System.exit(1);
     }
 
@@ -73,12 +82,46 @@ public class ApkAnalyzer {
       throw new NoSuchFileException(apkPathString);
     }
 
-    ApkAnalyzerResult result = analyzeApk(apkPath);
+    ApkAnalyzerResult result = analyzeApk(apkPath, rebuild);
     if (csv) {
       printCsv(result);
     } else {
       printResult(result);
     }
+  }
+
+  private static Integer rebuildApk(
+      Path apkPath,
+      DesugaredLibraryInfo desugaredLibraryInfo,
+      AndroidApiLevel minApiLevel,
+      Consumer<InternalOptions> optionsModification)
+      throws Exception {
+    DexIndexedSizeConsumer sizeConsumer = new DexIndexedSizeConsumer();
+    D8Command.Builder builder =
+        D8Command.builder()
+            .setDisableDesugaring(true)
+            .setMinApiLevel(minApiLevel.getLevel(), minApiLevel.getMinor())
+            .setMode(CompilationMode.RELEASE)
+            .setProgramConsumer(sizeConsumer);
+    try (ZipFile zipFile = new ZipFile(apkPath.toFile())) {
+      Enumeration<? extends ZipEntry> entries = zipFile.entries();
+      while (entries.hasMoreElements()) {
+        ZipEntry entry = entries.nextElement();
+        String entryName = entry.getName();
+        if (!isStandardDexFile(entryName)) {
+          continue;
+        }
+        if (desugaredLibraryInfo != null && getDexIndex(entryName) == desugaredLibraryInfo.index) {
+          continue;
+        }
+        try (InputStream is = zipFile.getInputStream(entry)) {
+          builder.addDexProgramData(
+              is.readAllBytes(), new ArchiveEntryOrigin(entryName, new PathOrigin(apkPath)));
+        }
+      }
+    }
+    D8.ApkAnalyzerEntryPoint.run(builder.build(), optionsModification);
+    return sizeConsumer.size();
   }
 
   private static void printResult(ApkAnalyzerResult result) {
@@ -87,6 +130,36 @@ public class ApkAnalyzer {
     System.out.println("dex_file_size_min=" + result.dexSize.min);
     System.out.println("dex_file_size_max=" + result.dexSize.max);
     System.out.println("dex_file_size_total=" + result.dexSize.total);
+    if (result.rebuildSize != null) {
+      System.out.println("rebuild_size=" + result.rebuildSize);
+      System.out.println(
+          "rebuild_size_improvement="
+              + getImprovementString(result.dexSize.total, result.rebuildSize));
+    }
+    if (result.rebuildDexOptSize != null) {
+      System.out.println("rebuild_dex_opt_size=" + result.rebuildDexOptSize);
+      System.out.println(
+          "rebuild_dex_opt_size_improvement="
+              + getImprovementString(result.dexSize.total, result.rebuildDexOptSize));
+    }
+    if (result.rebuildNoRefinementSize != null) {
+      System.out.println("rebuild_no_refinement_size=" + result.rebuildNoRefinementSize);
+      System.out.println(
+          "rebuild_no_refinement_size_improvement="
+              + getImprovementString(result.dexSize.total, result.rebuildNoRefinementSize));
+    }
+    if (result.rebuildContainerSize != null) {
+      System.out.println("rebuild_container_size=" + result.rebuildContainerSize);
+      System.out.println(
+          "rebuild_container_size_improvement="
+              + getImprovementString(result.dexSize.total, result.rebuildContainerSize));
+    }
+    if (result.rebuildContainerDexOptSize != null) {
+      System.out.println("rebuild_container_dex_opt_size=" + result.rebuildContainerDexOptSize);
+      System.out.println(
+          "rebuild_container_dex_opt_size_improvement="
+              + getImprovementString(result.dexSize.total, result.rebuildContainerDexOptSize));
+    }
     System.out.println("dex_file_types_min=" + result.types.min);
     System.out.println("dex_file_types_max=" + result.types.max);
     System.out.println("dex_file_types_total=" + result.types.total);
@@ -129,6 +202,39 @@ public class ApkAnalyzer {
     sb.append(result.dexSize.max).append(';');
     sb.append(result.dexSize.avg()).append(';');
     sb.append(result.dexSize.total).append(';');
+    if (result.rebuildSize != null) {
+      sb.append(result.rebuildSize).append(';');
+      sb.append(getImprovementString(result.dexSize.total, result.rebuildSize)).append(';');
+    } else {
+      sb.append(';').append(';');
+    }
+    if (result.rebuildDexOptSize != null) {
+      sb.append(result.rebuildDexOptSize).append(';');
+      sb.append(getImprovementString(result.dexSize.total, result.rebuildDexOptSize)).append(';');
+    } else {
+      sb.append(';').append(';');
+    }
+    if (result.rebuildNoRefinementSize != null) {
+      sb.append(result.rebuildNoRefinementSize).append(';');
+      sb.append(getImprovementString(result.dexSize.total, result.rebuildNoRefinementSize))
+          .append(';');
+    } else {
+      sb.append(';').append(';');
+    }
+    if (result.rebuildContainerSize != null) {
+      sb.append(result.rebuildContainerSize).append(';');
+      sb.append(getImprovementString(result.dexSize.total, result.rebuildContainerSize))
+          .append(';');
+    } else {
+      sb.append(';').append(';');
+    }
+    if (result.rebuildContainerDexOptSize != null) {
+      sb.append(result.rebuildContainerDexOptSize).append(';');
+      sb.append(getImprovementString(result.dexSize.total, result.rebuildContainerDexOptSize))
+          .append(';');
+    } else {
+      sb.append(';').append(';');
+    }
     sb.append(result.types.min).append(';');
     sb.append(result.types.max).append(';');
     sb.append(result.types.avg()).append(';');
@@ -182,7 +288,7 @@ public class ApkAnalyzer {
     System.out.println(sb);
   }
 
-  private static ApkAnalyzerResult analyzeApk(Path apkPath) throws IOException {
+  private static ApkAnalyzerResult analyzeApk(Path apkPath, boolean rebuild) throws IOException {
     DexApplication application = readApplication(apkPath);
     int dexCompressedCount = 0;
     MinMaxTotalStats dexSize = new MinMaxTotalStats();
@@ -191,6 +297,64 @@ public class ApkAnalyzer {
     MinMaxTotalStats types = new MinMaxTotalStats();
     try (ZipFile zipFile = new ZipFile(apkPath.toFile())) {
       DesugaredLibraryInfo desugaredLibraryInfo = findDesugaredLibrary(application, zipFile);
+      Integer rebuildSize = null;
+      Integer rebuildDexOptSize = null;
+      Integer rebuildNoRefinementSize = null;
+      Integer rebuildContainerSize = null;
+      Integer rebuildContainerDexOptSize = null;
+      if (rebuild) {
+        try {
+          rebuildSize =
+              rebuildApk(
+                  apkPath, desugaredLibraryInfo, AndroidApiLevel.CINNAMON_BUN, options -> {});
+        } catch (Throwable t) {
+          // Intentionally empty.
+        }
+        try {
+          rebuildDexOptSize =
+              rebuildApk(
+                  apkPath,
+                  desugaredLibraryInfo,
+                  AndroidApiLevel.CINNAMON_BUN,
+                  options -> options.enableDexToDexCodeOptimizations = true);
+        } catch (Throwable t) {
+          // Intentionally empty.
+        }
+        try {
+          rebuildNoRefinementSize =
+              rebuildApk(
+                  apkPath,
+                  desugaredLibraryInfo,
+                  AndroidApiLevel.CINNAMON_BUN,
+                  options ->
+                      options.getTestingOptions().classToDexDistributionRefinementPasses = 0);
+        } catch (Throwable t) {
+          // Intentionally empty.
+        }
+        try {
+          rebuildContainerSize =
+              rebuildApk(
+                  apkPath,
+                  desugaredLibraryInfo,
+                  AndroidApiLevel.CINNAMON_BUN,
+                  options -> options.getTestingOptions().forceDexContainerFormat = true);
+        } catch (Throwable t) {
+          // Intentionally empty.
+        }
+        try {
+          rebuildContainerDexOptSize =
+              rebuildApk(
+                  apkPath,
+                  desugaredLibraryInfo,
+                  AndroidApiLevel.CINNAMON_BUN,
+                  options -> {
+                    options.getTestingOptions().forceDexContainerFormat = true;
+                    options.enableDexToDexCodeOptimizations = true;
+                  });
+        } catch (Throwable t) {
+          // Intentionally empty.
+        }
+      }
       Enumeration<? extends ZipEntry> entries = zipFile.entries();
       while (entries.hasMoreElements()) {
         ZipEntry entry = entries.nextElement();
@@ -289,7 +453,12 @@ public class ApkAnalyzer {
           mostOccurringSourceFile,
           mostOccurringSourceFileCount,
           runtimeInvisibleAnnotations,
-          depthCounts);
+          depthCounts,
+          rebuildSize,
+          rebuildDexOptSize,
+          rebuildNoRefinementSize,
+          rebuildContainerSize,
+          rebuildContainerDexOptSize);
     }
   }
 
@@ -432,5 +601,13 @@ public class ApkAnalyzer {
       }
     }
     return false;
+  }
+
+  private static String getImprovementString(long baseline, long current) {
+    if (baseline == 0) {
+      return "0.00%";
+    }
+    double improvement = (double) (baseline - current) / baseline * 100;
+    return String.format(Locale.US, "%.2f%%", improvement);
   }
 }

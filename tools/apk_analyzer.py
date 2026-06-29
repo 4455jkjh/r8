@@ -30,6 +30,11 @@ def parse_options(argv):
                         help='Output in CSV format (default false)',
                         default=False,
                         action='store_true')
+    parser.add_argument(
+        '--rebuild',
+        help='Rebuild the APK using D8 and print the size (default false)',
+        default=False,
+        action='store_true')
     return parser.parse_args(argv)
 
 
@@ -60,6 +65,8 @@ def main(argv):
     ]
     if options.csv:
         cmd.append('--csv')
+    if options.rebuild:
+        cmd.append('--rebuild')
 
     res = subprocess.run(cmd)
     return res.returncode
