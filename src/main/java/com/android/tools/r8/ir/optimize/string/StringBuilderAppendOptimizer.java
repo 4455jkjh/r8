@@ -325,7 +325,7 @@ public class StringBuilderAppendOptimizer extends CodeRewriterPass<AppInfo> {
                 }
                 if (invoke.arguments().size() == 2) {
                   Value arg = invoke.getOperand(1);
-                  if (oracle.hasStringBuilderType(arg)) {
+                  if (oracle.hasStringBuilderType(arg) && escapeState.isLiveStringBuilder(arg)) {
                     insertImplicitToStringNode(
                         arg, instruction, initNode, escapeState, nodeConsumer);
                   }
@@ -345,7 +345,8 @@ public class StringBuilderAppendOptimizer extends CodeRewriterPass<AppInfo> {
                     && arg.isNeverNull()) {
                   appendNode.setNonConstantArgument(arg);
                 }
-                if (oracle.hasStringBuilderType(arg.getAliasedValue())) {
+                if (oracle.hasStringBuilderType(arg.getAliasedValue())
+                    && escapeState.isLiveStringBuilder(arg.getAliasedValue())) {
                   insertImplicitToStringNode(
                       arg, instruction, appendNode, escapeState, nodeConsumer);
                 }
