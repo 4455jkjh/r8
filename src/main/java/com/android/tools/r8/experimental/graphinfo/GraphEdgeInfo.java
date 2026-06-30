@@ -17,6 +17,7 @@ public class GraphEdgeInfo {
     KeepRule,
     CompatibilityRule,
     ConditionalKeepRule,
+    FailureDependency,
     KeepRulePrecondition,
     InstantiatedIn,
     InvokedViaSuper,
@@ -54,6 +55,8 @@ public class GraphEdgeInfo {
       case CompatibilityRule:
       case ConditionalKeepRule:
         return "referenced in keep rule";
+      case FailureDependency:
+        return "failure dependency for";
       case KeepRulePrecondition:
         return "satisfied with precondition";
       case InstantiatedIn:

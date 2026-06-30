@@ -3,9 +3,8 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8.benchmarks;
 
-import com.android.tools.r8.DexSegments.SegmentInfo;
+import com.android.tools.r8.DexSegments;
 import com.android.tools.r8.utils.internal.exceptions.Unimplemented;
-import it.unimi.dsi.fastutil.ints.Int2ReferenceMap;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -66,7 +65,7 @@ public class BenchmarkResultsCollection implements BenchmarkResults {
   }
 
   @Override
-  public void addDexSegmentsSizeResult(Int2ReferenceMap<SegmentInfo> result) {
+  public void addDexSegmentsSizeResult(DexSegments.Result result) {
     throw error();
   }
 

@@ -19,7 +19,6 @@ import com.google.common.collect.ImmutableList;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.List;
-import java.util.Map;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -98,7 +97,7 @@ public class DexCodeInvokeSuperDeduppingTest extends TestBase {
   public SegmentInfo getCodeSegmentInfo(Path path)
       throws CompilationFailedException, ResourceException, IOException {
     DexSegments.Command command = DexSegments.Command.builder().addProgramFiles(path).build();
-    Map<Integer, SegmentInfo> segmentInfoMap = DexSegments.runForTesting(command);
+    DexSegments.Result segmentInfoMap = DexSegments.runForTesting(command);
     return segmentInfoMap.get(Constants.TYPE_CODE_ITEM);
   }
 

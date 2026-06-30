@@ -20,7 +20,6 @@ import com.android.tools.r8.desugar.desugaredlibrary.test.LibraryDesugaringSpeci
 import com.android.tools.r8.ir.desugar.desugaredlibrary.lint.DesugaredMethodsListCommand;
 import com.android.tools.r8.utils.Reporter;
 import com.google.common.collect.ImmutableList;
-import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
@@ -49,7 +48,7 @@ public class DesugaredMethodListCommandTest extends DesugaredLibraryTestBase {
   }
 
   @Test
-  public void testErrorPlatformDesugaredLibrary() throws IOException {
+  public void testErrorPlatformDesugaredLibrary() {
     TestDiagnosticMessagesImpl diagnosticMessages = new TestDiagnosticMessagesImpl();
     DesugaredMethodsListCommand.parse(
         new String[] {
@@ -68,7 +67,7 @@ public class DesugaredMethodListCommandTest extends DesugaredLibraryTestBase {
   }
 
   @Test
-  public void testErrorDesugaredLibraryNoLib() throws IOException {
+  public void testErrorDesugaredLibraryNoLib() {
     TestDiagnosticMessagesImpl diagnosticMessages = new TestDiagnosticMessagesImpl();
     DesugaredMethodsListCommand.parse(
         new String[] {
@@ -81,7 +80,7 @@ public class DesugaredMethodListCommandTest extends DesugaredLibraryTestBase {
   }
 
   @Test
-  public void testErrorDesugaredLibraryImplementationNoSpec() throws IOException {
+  public void testErrorDesugaredLibraryImplementationNoSpec() {
     TestDiagnosticMessagesImpl diagnosticMessages = new TestDiagnosticMessagesImpl();
     DesugaredMethodsListCommand.parse(
         new String[] {
@@ -97,13 +96,13 @@ public class DesugaredMethodListCommandTest extends DesugaredLibraryTestBase {
   }
 
   @Test
-  public void testMissingArg() throws IOException {
+  public void testMissingArg() {
     TestDiagnosticMessagesImpl diagnosticMessages = new TestDiagnosticMessagesImpl();
     DesugaredMethodsListCommand.parse(
         new String[] {"--desugared-lib"}, new Reporter(diagnosticMessages));
     diagnosticMessages.assertOnlyErrors();
     diagnosticMessages.assertErrorMessageThatMatches(
-        containsString("Missing value for arg --desugared-lib"));
+        containsString("Missing parameter for --desugared-lib"));
   }
 
   @Test

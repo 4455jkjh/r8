@@ -1202,6 +1202,10 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
    */
   public boolean enableInheritanceClassInDexDistributor = true;
 
+  public boolean enablePreserveExistingClassToDexDistributor =
+      SystemPropertyUtils.parseSystemPropertyOrDefault(
+          "com.android.tools.r8.enablePreserveExistingClassToDexDistributor", false);
+
   public LineNumberOptimization lineNumberOptimization = LineNumberOptimization.ON;
 
   public RewriteArrayOptions rewriteArrayOptions() {

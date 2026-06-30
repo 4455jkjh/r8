@@ -5,10 +5,9 @@ package com.android.tools.r8.benchmarks;
 
 import static org.junit.Assert.assertFalse;
 
-import com.android.tools.r8.DexSegments.SegmentInfo;
+import com.android.tools.r8.DexSegments;
 import com.android.tools.r8.utils.internal.exceptions.Unimplemented;
 import com.android.tools.r8.utils.internal.exceptions.Unreachable;
-import it.unimi.dsi.fastutil.ints.Int2ReferenceMap;
 import it.unimi.dsi.fastutil.longs.LongArrayList;
 import it.unimi.dsi.fastutil.longs.LongList;
 import java.nio.file.Path;
@@ -87,7 +86,7 @@ public class BenchmarkResultsWarmup implements BenchmarkResults {
   }
 
   @Override
-  public void addDexSegmentsSizeResult(Int2ReferenceMap<SegmentInfo> result) {
+  public void addDexSegmentsSizeResult(DexSegments.Result result) {
     throw addSizeResultError();
   }
 

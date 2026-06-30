@@ -162,7 +162,6 @@ import com.android.tools.r8.utils.internal.BooleanUtils;
 import com.android.tools.r8.utils.internal.Box;
 import com.android.tools.r8.utils.internal.CollectionUtils;
 import com.android.tools.r8.utils.internal.IteratorUtils;
-import com.android.tools.r8.utils.internal.ListUtils;
 import com.android.tools.r8.utils.internal.OptionalBool;
 import com.android.tools.r8.utils.internal.SetUtils;
 import com.android.tools.r8.utils.internal.TraversalContinuation;
@@ -177,7 +176,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Deque;
-import java.util.HashMap;
+import java.util.HashSet;
 import java.util.IdentityHashMap;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
@@ -407,9 +406,9 @@ public class Enqueuer {
   /** Tracing of reflection. */
   private final EnqueuerReflectiveIdentification reflectiveIdentification;
 
-  /** Mapping of types to the resolved methods for that type along with the context. */
-  private final Map<DexProgramClass, Map<ResolutionSearchKey, ProgramMethodSet>>
-      reachableVirtualTargets = new IdentityHashMap<>();
+  /** Mapping of types to the resolved methods for that type. */
+  private final Map<DexProgramClass, Set<ResolutionSearchKey>> reachableVirtualTargets =
+      new IdentityHashMap<>();
 
   /** Collection of keep requirements for the program. Must only be accessed through its getters. */
   private final MutableKeepInfoCollection keepInfo;
@@ -3126,9 +3125,8 @@ public class Enqueuer {
     }
   }
 
-  private Map<ResolutionSearchKey, ProgramMethodSet> getReachableVirtualTargets(
-      DexProgramClass clazz) {
-    return reachableVirtualTargets.getOrDefault(clazz, Collections.emptyMap());
+  private Set<ResolutionSearchKey> getReachableVirtualTargets(DexProgramClass clazz) {
+    return reachableVirtualTargets.getOrDefault(clazz, Collections.emptySet());
   }
 
   private void markProgramMethodOverridesAsLive(
@@ -3136,7 +3134,7 @@ public class Enqueuer {
     assert instantiation.isLambda() || appInfo.isSubtype(instantiation.asClass(), currentClass);
     getReachableVirtualTargets(currentClass)
         .forEach(
-            (resolutionSearchKey, contexts) ->
+            resolutionSearchKey ->
                 resolutionSearchKey
                     .resolve(appInfo)
                     .forEachMethodResolutionResult(
@@ -3148,29 +3146,22 @@ public class Enqueuer {
                             return;
                           }
                           // Lookup virtual dispatch targets only uses the given context to judge
-                          // accessibility. Therefore, we simply find the first successful
-                          // resolution result and then disregard all other contextual lookups.
-                          LookupResultSuccess lookupResultSuccess = null;
-                          for (ProgramMethod context : contexts) {
-                            LookupResult lookupResult =
-                                singleResolution.lookupVirtualDispatchTargets(
-                                    context,
-                                    appView,
-                                    instantiation,
-                                    definition ->
-                                        getKeepInfo().isPinned(definition, options, appInfo));
-                            if (lookupResult.isLookupResultSuccess()) {
-                              lookupResultSuccess = lookupResult.asLookupResultSuccess();
-                              break;
-                            } else {
-                              assert lookupResult.isLookupResultFailure();
-                              assert !lookupResult.hasFailureDependencies();
-                            }
-                          }
-                          if (lookupResultSuccess != null) {
-                            handleVirtualDispatchTargets(lookupResultSuccess, singleResolution);
-                            handleVirtualDispatchFailureDependencies(lookupResultSuccess, contexts);
-                          }
+                          // accessibility. Since we've already evaluated accessibility upon adding
+                          // this to reachableVirtualTargets, we use context=null to bypass the
+                          // access check here.
+                          ProgramMethod context = null;
+                          LookupResultSuccess lookupResult =
+                              singleResolution
+                                  .lookupVirtualDispatchTargets(
+                                      context,
+                                      appView,
+                                      instantiation,
+                                      definition ->
+                                          getKeepInfo().isPinned(definition, options, appInfo))
+                                  .asLookupResultSuccess();
+                          assert lookupResult != null;
+                          handleVirtualDispatchTargets(lookupResult, singleResolution);
+                          handleVirtualDispatchFailureDependencies(lookupResult, singleResolution);
                         }));
   }
 
@@ -3186,27 +3177,19 @@ public class Enqueuer {
   }
 
   private void handleVirtualDispatchFailureDependencies(
-      LookupResultSuccess lookupResult, ProgramMethodSet contexts) {
+      LookupResultSuccess lookupResult, SingleResolutionResult<?> singleResolution) {
     if (!lookupResult.hasFailureDependencies()) {
       return;
     }
-    Map<DexProgramClass, List<ProgramMethod>> contextsByClass = new IdentityHashMap<>();
-    for (ProgramMethod context : contexts) {
-      contextsByClass.computeIfAbsent(context.getHolder(), ignoreKey(ArrayList::new)).add(context);
-    }
     lookupResult.forEachFailureDependency(
         method -> {
-          for (List<ProgramMethod> contextsWithSameHolder : contextsByClass.values()) {
-            ProgramMethod representativeContext = ListUtils.first(contextsWithSameHolder);
-            DexProgramClass clazz =
-                getProgramClassOrNull(method.getHolderType(), representativeContext);
-            if (clazz != null) {
-              failedMethodResolutionTargets.add(method.getReference());
-              for (ProgramMethod context : contextsWithSameHolder) {
-                markMethodAsTargeted(
-                    new ProgramMethod(clazz, method), KeepReason.invokedFrom(context));
-              }
-            }
+          ProgramMethod programMethod = method.asProgramMethod(appInfo);
+          if (programMethod != null) {
+            markMethodAsTargeted(
+                programMethod,
+                graphReporter.reportFailureDependencyAsTargeted(
+                    singleResolution.getResolvedMethod().getReference(), programMethod));
+            failedMethodResolutionTargets.add(method.getReference());
           }
         });
   }
@@ -3700,10 +3683,8 @@ public class Enqueuer {
           // target and save the context to ensure correct lookup of virtual dispatch targets.
           ResolutionSearchKey resolutionSearchKey =
               new ResolutionSearchKey(method, interfaceInvoke);
-          ProgramMethodSet seenContexts =
-              getReachableVirtualTargets(initialProgramResolutionHolder).get(resolutionSearchKey);
-          if (seenContexts != null) {
-            seenContexts.add(context);
+          if (getReachableVirtualTargets(initialProgramResolutionHolder)
+              .contains(resolutionSearchKey)) {
             graphReporter.registerMethod(resolution.getResolvedMethod(), reason);
             return;
           }
@@ -3716,15 +3697,18 @@ public class Enqueuer {
             return;
           }
 
+          if (resolution.isAccessibleFrom(context, appView).isFalse()) {
+            return;
+          }
+
           // The method resolved and is accessible, so currently live overrides become live.
           reachableVirtualTargets
-              .computeIfAbsent(initialProgramResolutionHolder, ignoreArgument(HashMap::new))
-              .computeIfAbsent(resolutionSearchKey, ignoreArgument(ProgramMethodSet::create))
-              .add(context);
+              .computeIfAbsent(initialProgramResolutionHolder, ignoreArgument(HashSet::new))
+              .add(resolutionSearchKey);
 
           LookupResult lookupResult =
               resolution.lookupVirtualDispatchTargets(
-                  context,
+                  null,
                   appView,
                   (type, subTypeConsumer, lambdaConsumer) ->
                       objectAllocationInfoCollection.forEachInstantiatedSubType(

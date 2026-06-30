@@ -43,6 +43,10 @@ public class ParsedApiClass {
     return supertypes.containsKey(reference);
   }
 
+  public AndroidApiLevel getSupertypeApiLevel(ClassReference reference) {
+    return supertypes.get(reference);
+  }
+
   /** Visited in insertion order */
   public void forEachSupertype(BiConsumer<ClassReference, AndroidApiLevel> consumer) {
     supertypes.forEach(consumer);
@@ -63,6 +67,10 @@ public class ParsedApiClass {
 
   public boolean hasInterface(ClassReference reference) {
     return interfaces.containsKey(reference);
+  }
+
+  public AndroidApiLevel getInterfaceApiLevel(ClassReference reference) {
+    return interfaces.get(reference);
   }
 
   /** Visited in insertion order. */
@@ -87,6 +95,10 @@ public class ParsedApiClass {
     return methods.containsKey(reference);
   }
 
+  public AndroidApiLevel getMethodApiLevel(MethodReference reference) {
+    return methods.get(reference);
+  }
+
   public int methodCount() {
     return methods.size();
   }
@@ -103,6 +115,10 @@ public class ParsedApiClass {
 
   public boolean hasField(FieldTypelessReference reference) {
     return fields.containsKey(reference);
+  }
+
+  public AndroidApiLevel getFieldApiLevel(FieldTypelessReference reference) {
+    return fields.get(reference);
   }
 
   public int fieldCount() {

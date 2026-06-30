@@ -82,6 +82,16 @@ java -cp build/libs/r8.jar com.android.tools.r8.R8 \
        input.jar
 ```
 
+### Updating third party dependencies
+
+The R8 project is configured as a hermetic build with all third party dependencies in a local Maven repositorry under `third_party/dependencies`
+and `third_party/dependencies_plugin`.
+
+The versions of these dependencies are in both `tools/create_local_maven_with_dependencies.py` and `d8_r8/commonBuildSrc/src/main/kotlin/DependenciesPlugin.kt`.
+
+To update the local Maven repository run `tools/create_local_maven_with_dependencies.py --studio <path>`, where `<path>` is the path to an Android Studio
+checkout. This is typically in `$HOME/studio` or `$HOME/studio-main`.
+
 ### Testing
 
 Tests are run using the `tools/test.py` script:

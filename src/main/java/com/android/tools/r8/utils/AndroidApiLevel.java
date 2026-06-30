@@ -155,6 +155,10 @@ public class AndroidApiLevel implements Ordered<AndroidApiLevel> {
     return Ordered.max(this, other);
   }
 
+  public AndroidApiLevel min(AndroidApiLevel other) {
+    return Ordered.min(this, other);
+  }
+
   public DexVersion getDexVersion() {
     return DexVersion.getDexVersion(this);
   }

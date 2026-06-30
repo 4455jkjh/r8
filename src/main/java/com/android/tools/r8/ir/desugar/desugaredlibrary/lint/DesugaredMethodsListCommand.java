@@ -4,31 +4,27 @@
 
 package com.android.tools.r8.ir.desugar.desugaredlibrary.lint;
 
-import static com.android.tools.r8.BaseCompilerCommandParser.LIB_FLAG;
-
 import com.android.tools.r8.ArchiveClassFileProvider;
 import com.android.tools.r8.ArchiveProgramResourceProvider;
 import com.android.tools.r8.ClassFileResourceProvider;
 import com.android.tools.r8.DiagnosticsHandler;
-import com.android.tools.r8.ParseFlagInfo;
-import com.android.tools.r8.ParseFlagInfoImpl;
-import com.android.tools.r8.ParseFlagPrinter;
 import com.android.tools.r8.ProgramResourceProvider;
 import com.android.tools.r8.StringConsumer;
 import com.android.tools.r8.StringResource;
 import com.android.tools.r8.keepanno.annotations.KeepForApi;
+import com.android.tools.r8.origin.PathOrigin;
 import com.android.tools.r8.utils.AndroidApiLevel;
+import com.android.tools.r8.utils.CliParserUtils;
+import com.android.tools.r8.utils.ExceptionDiagnostic;
 import com.android.tools.r8.utils.Reporter;
 import com.android.tools.r8.utils.StringDiagnostic;
-import com.android.tools.r8.utils.internal.StringUtils;
-import com.android.tools.r8.utils.internal.exceptions.Unreachable;
-import com.google.common.collect.ImmutableList;
+import com.android.tools.r8.utils.internal.CliParser;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.List;
 
 @KeepForApi
 public class DesugaredMethodsListCommand {
@@ -81,12 +77,11 @@ public class DesugaredMethodsListCommand {
     this.androidPlatformBuild = false;
   }
 
-  public static DesugaredMethodsListCommand parse(String[] args) throws IOException {
+  public static DesugaredMethodsListCommand parse(String[] args) {
     return parse(args, new Reporter());
   }
 
-  public static DesugaredMethodsListCommand parse(String[] args, Reporter reporter)
-      throws IOException {
+  public static DesugaredMethodsListCommand parse(String[] args, Reporter reporter) {
     return new DesugaredMethodsListCommandParser().parse(args, reporter);
   }
 
@@ -123,12 +118,7 @@ public class DesugaredMethodsListCommand {
   }
 
   public static String getUsageMessage() {
-    StringBuilder builder = new StringBuilder();
-    StringUtils.appendLines(builder, "Usage: desugaredmethods [options] where  options are:");
-    new ParseFlagPrinter()
-        .addFlags(ImmutableList.copyOf(DesugaredMethodsListCommandParser.getFlags()))
-        .appendLinesToBuilder(builder);
-    return builder.toString();
+    return CliParserUtils.getUsageMessage(DesugaredMethodsListCommandParser.createParser());
   }
 
   public Reporter getReporter() {
@@ -265,59 +255,65 @@ public class DesugaredMethodsListCommand {
 
   public static class DesugaredMethodsListCommandParser {
 
-    static List<ParseFlagInfo> getFlags() {
-      return ImmutableList.<ParseFlagInfo>builder()
-          .add(ParseFlagInfoImpl.getOutput())
-          .add(ParseFlagInfoImpl.getLib())
-          .add(ParseFlagInfoImpl.getMinApi())
-          .add(ParseFlagInfoImpl.getVersion("DesugaredMethods"))
-          .add(ParseFlagInfoImpl.getHelp())
-          .add(ParseFlagInfoImpl.getDesugaredLib())
-          .add(ParseFlagInfoImpl.getAndroidPlatformBuild())
-          .add(
-              ParseFlagInfoImpl.flag1(
-                  "--desugared-lib-jar", "<file>", "Specify desugared library jar."))
-          .build();
+    private static CliParser<DesugaredMethodsListCommand.Builder> createParser() {
+      var header = "Usage: desugaredmethods [options] where  options are:";
+      var parser = new CliParser<DesugaredMethodsListCommand.Builder>(header);
+      return parser
+          .option1(
+              "--output",
+              "<file>",
+              "Output result in <file>. <file> must be an existing directory or a zip file.",
+              (b, arg) -> b.setOutputPath(Paths.get(arg)))
+          .option1(
+              "--lib",
+              "<file|jdk-home>",
+              "Add <file|jdk-home> as a library resource.",
+              (b, arg) -> {
+                try {
+                  b.addLibrary(new ArchiveClassFileProvider(Paths.get(arg)));
+                } catch (IOException e) {
+                  b.reporter.error(new ExceptionDiagnostic(e, new PathOrigin(Paths.get(arg))));
+                } catch (UncheckedIOException e) {
+                  b.reporter.error(
+                      new ExceptionDiagnostic(e.getCause(), new PathOrigin(Paths.get(arg))));
+                }
+              })
+          .option1(
+              "--min-api",
+              "<number>",
+              "Minimum Android API level compatibility (default: "
+                  + AndroidApiLevel.getDefault().getLevel()
+                  + ").",
+              (b, arg) ->
+                  CliParserUtils.parsePositiveInt(
+                      arg,
+                      b::setMinApi,
+                      err -> b.reporter.error(new StringDiagnostic("Invalid min-api: " + err))))
+          .option0("--version", "Print the version of DesugaredMethods.", Builder::setVersion)
+          .option0("--help", "Print this message.", Builder::setHelp)
+          .option1(
+              "--desugared-lib",
+              "<file>",
+              "Specify desugared library configuration. <file> is a desugared library configuration"
+                  + " (json).",
+              (b, arg) -> b.setDesugarLibrarySpecification(StringResource.fromFile(Paths.get(arg))))
+          .option0(
+              "--android-platform-build",
+              "Compile as a platform build where the runtime/bootclasspath is assumed to be the"
+                  + " version specified by --min-api.",
+              Builder::setAndroidPlatformBuild)
+          .option1(
+              "--desugared-lib-jar",
+              "<file>",
+              "Specify desugared library jar.",
+              (b, arg) ->
+                  b.addDesugarLibraryImplementation(
+                      ArchiveProgramResourceProvider.fromArchive(Paths.get(arg))));
     }
 
-    public DesugaredMethodsListCommand parse(String[] args, DiagnosticsHandler handler)
-        throws IOException {
+    public DesugaredMethodsListCommand parse(String[] args, DiagnosticsHandler handler) {
       DesugaredMethodsListCommand.Builder builder = DesugaredMethodsListCommand.builder(handler);
-      for (int i = 0; i < args.length; i++) {
-        String arg = args[i].trim();
-        if (arg.length() == 0) {
-          continue;
-        } else if (arg.equals("--help")) {
-          builder.setHelp();
-          continue;
-        } else if (arg.equals("--version")) {
-          builder.setVersion();
-          continue;
-        } else if (arg.equals("--android-platform-build")) {
-          builder.setAndroidPlatformBuild();
-          continue;
-        }
-        if (++i >= args.length) {
-          handler.error(new StringDiagnostic("Missing value for arg " + arg));
-          break;
-        }
-        String argValue = args[i].trim();
-        if (arg.equals("--min-api")) {
-          builder.setMinApi(Integer.parseInt(argValue));
-        } else if (arg.equals("--desugared-lib")) {
-          builder.setDesugarLibrarySpecification(StringResource.fromFile(Paths.get(argValue)));
-        } else if (arg.equals("--desugared-lib-jar")) {
-          builder.addDesugarLibraryImplementation(
-              ArchiveProgramResourceProvider.fromArchive(Paths.get(argValue)));
-        } else if (arg.equals("--output")) {
-          builder.setOutputPath(Paths.get(argValue));
-        } else if (arg.equals(LIB_FLAG)) {
-          builder.addLibrary(new ArchiveClassFileProvider(Paths.get(argValue)));
-        } else {
-          throw new Unreachable("Unsupported argument " + arg);
-        }
-      }
-
+      createParser().parse(args, builder, err -> builder.reporter.error(new StringDiagnostic(err)));
       return builder.build();
     }
   }

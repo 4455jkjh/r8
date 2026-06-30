@@ -6,12 +6,11 @@ package com.android.tools.r8.benchmarks;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
-import com.android.tools.r8.DexSegments.SegmentInfo;
+import com.android.tools.r8.DexSegments;
 import com.android.tools.r8.dex.DexSection;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonObject;
-import it.unimi.dsi.fastutil.ints.Int2ReferenceMap;
 import it.unimi.dsi.fastutil.longs.LongArrayList;
 import it.unimi.dsi.fastutil.longs.LongList;
 import java.io.IOException;
@@ -40,7 +39,7 @@ public class BenchmarkResultsSingle implements BenchmarkResults {
   private final LongList instructionCodeSizeResults = new LongArrayList();
   private final LongList composableInstructionCodeSizeResults = new LongArrayList();
   private final LongList dex2OatSizeResults = new LongArrayList();
-  private final List<Int2ReferenceMap<SegmentInfo>> dexSegmentsSizeResults = new ArrayList<>();
+  private final List<DexSegments.Result> dexSegmentsSizeResults = new ArrayList<>();
   private final LongList resourceSizeResults = new LongArrayList();
 
   public BenchmarkResultsSingle(String name, Set<BenchmarkMetric> metrics) {
@@ -64,7 +63,7 @@ public class BenchmarkResultsSingle implements BenchmarkResults {
     return composableInstructionCodeSizeResults;
   }
 
-  public List<Int2ReferenceMap<SegmentInfo>> getDexSegmentsSizeResults() {
+  public List<DexSegments.Result> getDexSegmentsSizeResults() {
     return dexSegmentsSizeResults;
   }
 
@@ -155,7 +154,7 @@ public class BenchmarkResultsSingle implements BenchmarkResults {
   }
 
   @Override
-  public void addDexSegmentsSizeResult(Int2ReferenceMap<SegmentInfo> result) {
+  public void addDexSegmentsSizeResult(DexSegments.Result result) {
     verifyMetric(
         BenchmarkMetric.DexSegmentsCodeSize,
         metrics.contains(BenchmarkMetric.DexSegmentsCodeSize),

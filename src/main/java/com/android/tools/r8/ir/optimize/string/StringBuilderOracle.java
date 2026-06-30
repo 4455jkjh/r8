@@ -71,13 +71,12 @@ interface StringBuilderOracle {
         return isStringBuilderType(instruction.asNewInstance().getType());
       } else if (instruction.isInvokeMethod()) {
         DexMethod invokedMethod = instruction.asInvokeMethod().getInvokedMethod();
-        if (isStringBuildingMethod(factory.stringBuilderMethods, invokedMethod)
-            || isStringBuildingMethod(factory.stringBufferMethods, invokedMethod)) {
-          return true;
-        }
-        return (invokedMethod == factory.objectMembers.toString
-                || invokedMethod == factory.objectsMethods.toStringWithObject)
-            && isLiveStringBuilder.test(instruction.getFirstOperand());
+        boolean isStringBuilding =
+            isStringBuildingMethod(factory.stringBuilderMethods, invokedMethod)
+                || isStringBuildingMethod(factory.stringBufferMethods, invokedMethod)
+                || invokedMethod == factory.objectMembers.toString
+                || invokedMethod == factory.objectsMethods.toStringWithObject;
+        return isStringBuilding && isLiveStringBuilder.test(instruction.getFirstOperand());
       }
       return false;
     }

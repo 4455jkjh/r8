@@ -3,6 +3,7 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8.tools.apkanalyzer;
 
+import com.android.tools.r8.DexSegments;
 import com.android.tools.r8.dex.Marker;
 import java.util.List;
 
@@ -13,6 +14,10 @@ class ApkAnalyzerResult {
 
   // Dex size stats.
   final MinMaxTotalStats dexSize;
+  final int jumboStrings;
+
+  // Resource size stats.
+  final MinMaxTotalStats resSize;
 
   // Constant pool stats.
   final MinMaxTotalStats fields;
@@ -20,15 +25,14 @@ class ApkAnalyzerResult {
   final MinMaxTotalStats types;
 
   // Debug info stats.
-  final int debugInfoNone;
-  final int debugInfoEmbeddedPc;
-  final int debugInfoEventBased;
+  final DebugInfoStats debugInfoStats;
+  final DexSegments.Result dexSegments;
 
   // Desugared library info.
   final DesugaredLibraryInfo desugaredLibraryInfo;
 
   // Marker stats.
-  final List<Marker> markers;
+  final List<Marker> dexMarkers;
 
   // Source file stats.
   final String mostOccurringSourceFile;
@@ -40,34 +44,62 @@ class ApkAnalyzerResult {
   // Class depth stats.
   final int[] classDepthCounts;
 
+  // Rebuilt size using D8.
+  final RebuildDexStats rebuildResult;
+  final RebuildDexStats rebuildDexOptResult;
+  final RebuildDexStats rebuildMapOutResult;
+  final RebuildDexStats rebuildReuseDistResult;
+  final RebuildDexStats rebuildNoRefinementResult;
+  final RebuildDexStats rebuildContainerResult;
+  final RebuildDexStats rebuildContainerDexOptResult;
+  final RebuildDexStats rebuildContainerDexOptMapOutSize;
+
   ApkAnalyzerResult(
       int dexCountCompressed,
       MinMaxTotalStats dexSize,
+      MinMaxTotalStats resSize,
       MinMaxTotalStats types,
       MinMaxTotalStats fields,
       MinMaxTotalStats methods,
-      List<Marker> markers,
+      List<Marker> dexMarkers,
       DesugaredLibraryInfo desugaredLibInfo,
-      int debugInfoNone,
-      int debugInfoEmbeddedPc,
-      int debugInfoEventBased,
+      DebugInfoStats debugInfoStats,
+      DexSegments.Result dexSegments,
+      int jumboStrings,
       String mostOccurringSourceFile,
       int mostOccurringSourceFileCount,
       int runtimeInvisibleAnnotations,
-      int[] classDepthCounts) {
+      int[] classDepthCounts,
+      RebuildDexStats rebuildResult,
+      RebuildDexStats rebuildDexOptResult,
+      RebuildDexStats rebuildMapOutResult,
+      RebuildDexStats rebuildReuseDistResult,
+      RebuildDexStats rebuildNoRefinementResult,
+      RebuildDexStats rebuildContainerResult,
+      RebuildDexStats rebuildContainerDexOptResult,
+      RebuildDexStats rebuildContainerDexOptMapOutSize) {
     this.dexCompressedCount = dexCountCompressed;
     this.dexSize = dexSize;
+    this.resSize = resSize;
     this.types = types;
     this.fields = fields;
     this.methods = methods;
-    this.markers = markers;
+    this.dexMarkers = dexMarkers;
     this.desugaredLibraryInfo = desugaredLibInfo;
-    this.debugInfoNone = debugInfoNone;
-    this.debugInfoEmbeddedPc = debugInfoEmbeddedPc;
-    this.debugInfoEventBased = debugInfoEventBased;
+    this.debugInfoStats = debugInfoStats;
+    this.dexSegments = dexSegments;
+    this.jumboStrings = jumboStrings;
     this.mostOccurringSourceFile = mostOccurringSourceFile;
     this.mostOccurringSourceFileCount = mostOccurringSourceFileCount;
     this.runtimeInvisibleAnnotations = runtimeInvisibleAnnotations;
     this.classDepthCounts = classDepthCounts;
+    this.rebuildResult = rebuildResult;
+    this.rebuildDexOptResult = rebuildDexOptResult;
+    this.rebuildMapOutResult = rebuildMapOutResult;
+    this.rebuildReuseDistResult = rebuildReuseDistResult;
+    this.rebuildNoRefinementResult = rebuildNoRefinementResult;
+    this.rebuildContainerResult = rebuildContainerResult;
+    this.rebuildContainerDexOptResult = rebuildContainerDexOptResult;
+    this.rebuildContainerDexOptMapOutSize = rebuildContainerDexOptMapOutSize;
   }
 }

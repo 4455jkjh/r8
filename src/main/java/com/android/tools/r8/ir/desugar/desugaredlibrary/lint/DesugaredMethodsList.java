@@ -10,7 +10,6 @@ import com.android.tools.r8.ProgramResourceProvider;
 import com.android.tools.r8.StringConsumer;
 import com.android.tools.r8.StringResource;
 import com.android.tools.r8.Version;
-import com.android.tools.r8.errors.CompilationError;
 import com.android.tools.r8.keepanno.annotations.KeepForApi;
 import com.android.tools.r8.utils.AndroidApiLevel;
 import com.android.tools.r8.utils.ExceptionUtils;
@@ -85,18 +84,11 @@ public class DesugaredMethodsList extends GenerateDesugaredLibraryLintFiles {
     outputConsumer.finished(options.reporter);
   }
 
-  public static void run(String[] args) throws CompilationFailedException, IOException {
+  public static void run(String[] args) throws CompilationFailedException {
     run(DesugaredMethodsListCommand.parse(args));
   }
 
   public static void main(String[] args) {
-    ExceptionUtils.withMainProgramHandler(
-        () -> {
-          try {
-            run(args);
-          } catch (IOException e) {
-            throw new CompilationError(e.getMessage(), e);
-          }
-        });
+    ExceptionUtils.withMainProgramHandler(() -> run(args));
   }
 }
