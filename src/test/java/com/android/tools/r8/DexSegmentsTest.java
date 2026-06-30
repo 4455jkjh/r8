@@ -4,6 +4,8 @@
 package com.android.tools.r8;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 
 import com.android.tools.r8.utils.internal.StringUtils;
 import org.junit.Test;
@@ -26,11 +28,20 @@ public class DexSegmentsTest extends TestBase {
   @Test
   public void testHelpMessage() {
     assertEquals(
-        StringUtils.joinLines(
+        StringUtils.lines(
             "Usage: dexsegments [options] <input-files>",
             " where <input-files> are dex files",
             "  --version               # Print the version of r8.",
-            "  --help                  # Print this message."),
-        DexSegments.Command.USAGE_MESSAGE);
+            "  --help",
+            "  -h                      # Print this message.",
+            "  --csv                   # Print segments in csv format."),
+        DexSegments.Command.usageMessage());
+  }
+
+  @Test
+  public void testVersion() throws Exception {
+    DexSegments.Command command = DexSegments.Command.parse(new String[] {"--version"}).build();
+    assertTrue(command.isPrintVersion());
+    assertNull(DexSegments.run(command));
   }
 }
