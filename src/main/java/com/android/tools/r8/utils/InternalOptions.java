@@ -2372,6 +2372,7 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
         System.getProperty("com.android.tools.r8.dexVersion40ForApiLevel30") != null;
     public boolean forceDexContainerFormat =
         System.getProperty("com.android.tools.r8.dexContainerExperiment") != null;
+    public boolean enableExperimentalConstString16 = false;
     public boolean nullOutDebugInfo =
         System.getProperty("com.android.tools.r8.nullOutDebugInfo") != null;
 

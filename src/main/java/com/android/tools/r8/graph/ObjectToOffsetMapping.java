@@ -13,6 +13,7 @@ import com.android.tools.r8.ir.conversion.LensCodeRewriterUtils;
 import com.android.tools.r8.naming.NamingLens;
 import com.android.tools.r8.profile.startup.profile.StartupProfile;
 import com.android.tools.r8.utils.internal.Box;
+import com.android.tools.r8.utils.internal.ConsumerUtils;
 import com.android.tools.r8.utils.structural.CompareToVisitor;
 import com.android.tools.r8.utils.structural.CompareToVisitorWithStringTable;
 import com.android.tools.r8.utils.structural.CompareToVisitorWithTypeTable;
@@ -55,7 +56,8 @@ public class ObjectToOffsetMapping {
   private final Reference2IntLinkedOpenHashMap<DexCallSite> callSites;
   private final Reference2IntLinkedOpenHashMap<DexMethodHandle> methodHandles;
 
-  private DexString firstJumboString;
+  private DexString firstConstString16;
+  private DexString firstConstString17;
 
   private final CompareToVisitor compareToVisitor;
 
@@ -95,10 +97,15 @@ public class ObjectToOffsetMapping {
     if (sharedMapping == null) {
       this.strings =
           createSortedMap(
-              strings, DexString::compareTo, this::setFirstJumboString, lazyDexStringsCount);
+              strings,
+              DexString::compareTo,
+              this::setFirstConstString16,
+              this::setFirstConstString17,
+              lazyDexStringsCount);
     } else {
       this.strings = sharedMapping.strings;
-      this.firstJumboString = sharedMapping.firstJumboString;
+      this.firstConstString16 = sharedMapping.firstConstString16;
+      this.firstConstString17 = sharedMapping.firstConstString17;
     }
     CompareToVisitor visitor =
         new CompareToVisitorWithStringTable(namingLens, this.strings::getInt);
@@ -160,12 +167,23 @@ public class ObjectToOffsetMapping {
         strings.put(forcedString, -1);
       }
     }
-    Box<DexString> newJumboString = new Box<>();
-    strings = createSortedMap(strings.keySet(), DexString::compareTo, newJumboString::set);
-    // After reindexing it must hold that the new jumbo start is on the same or a larger string.
-    // The new jumbo string is not set as the first determined string is still the cut-off point
-    // where JumboString instructions are used.
-    assert !hasJumboStrings() || newJumboString.get().isGreaterThanOrEqualTo(getFirstJumboString());
+    Box<DexString> newConstString16 = new Box<>();
+    Box<DexString> newConstStringJumbo = new Box<>();
+    strings =
+        createSortedMap(
+            strings.keySet(),
+            DexString::compareTo,
+            newConstString16::set,
+            newConstStringJumbo::set,
+            0);
+    // After reindexing it must hold that the new const-string/16 and const-string/jumbo start is on
+    // the same or a larger string. The new string cut-offs are not set as the first determined
+    // strings are still the cut-off point where const-string/16 and const-string/jumbo instructions
+    // are used.
+    assert getFirstConstString16() == null
+        || newConstString16.get().isGreaterThanOrEqualTo(getFirstConstString16());
+    assert getFirstConstString17() == null
+        || newConstStringJumbo.get().isGreaterThanOrEqualTo(getFirstConstString17());
   }
 
   public CompareToVisitor getCompareToVisitor() {
@@ -176,24 +194,20 @@ public class ObjectToOffsetMapping {
     return (a, b) -> a.acceptCompareTo(b, visitor);
   }
 
-  private void setFirstJumboString(DexString string) {
-    assert firstJumboString == null;
-    firstJumboString = string;
-  }
-
   private void failOnOverflow(DexItem item) {
     throw new CompilationError("Index overflow for " + item.getClass());
   }
 
   private <T> Reference2IntLinkedOpenHashMap<T> createSortedMap(
       Collection<T> items, Comparator<T> comparator, Consumer<T> onUInt16Overflow) {
-    return createSortedMap(items, comparator, onUInt16Overflow, 0);
+    return createSortedMap(items, comparator, onUInt16Overflow, ConsumerUtils.emptyConsumer(), 0);
   }
 
   private <T> Reference2IntLinkedOpenHashMap<T> createSortedMap(
       Collection<T> items,
       Comparator<T> comparator,
       Consumer<T> onUInt16Overflow,
+      Consumer<T> onUInt17Overflow,
       int reservedIndicesBeforeOverflow) {
     if (items.isEmpty()) {
       return new Reference2IntLinkedOpenHashMap<>();
@@ -205,8 +219,11 @@ public class ObjectToOffsetMapping {
     map.defaultReturnValue(NOT_FOUND);
     int index = 0;
     for (T item : sorted) {
-      if (index + reservedIndicesBeforeOverflow == Constants.U16BIT_MAX + 1) {
+      int offsetIndex = index + reservedIndicesBeforeOverflow;
+      if (offsetIndex == Constants.U16BIT_MAX + 1) {
         onUInt16Overflow.accept(item);
+      } else if (offsetIndex == Constants.U17BIT_MAX + 1) {
+        onUInt17Overflow.accept(item);
       }
       map.put(item, index++);
     }
@@ -400,12 +417,22 @@ public class ObjectToOffsetMapping {
     return shortyCache.computeIfAbsent(shorty, appView.dexItemFactory()::createString);
   }
 
-  public boolean hasJumboStrings() {
-    return firstJumboString != null;
+  public DexString getFirstConstString16() {
+    return firstConstString16;
   }
 
-  public DexString getFirstJumboString() {
-    return firstJumboString;
+  private void setFirstConstString16(DexString string) {
+    assert firstConstString16 == null;
+    firstConstString16 = string;
+  }
+
+  public DexString getFirstConstString17() {
+    return firstConstString17;
+  }
+
+  private void setFirstConstString17(DexString string) {
+    assert firstConstString17 == null;
+    firstConstString17 = string;
   }
 
   public DexString getFirstString() {

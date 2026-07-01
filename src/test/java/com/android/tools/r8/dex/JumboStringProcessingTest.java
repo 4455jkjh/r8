@@ -174,6 +174,7 @@ public class JumboStringProcessingTest extends TestBase {
             .disableMethodNotNullCheck()
             .disableAndroidApiLevelCheck()
             .build();
-    return new JumboStringCodeRewriter(method, string, () -> false, factory).rewrite();
+    return new JumboStringCodeRewriter(method, string, string, () -> false, factory, false)
+        .rewrite();
   }
 }

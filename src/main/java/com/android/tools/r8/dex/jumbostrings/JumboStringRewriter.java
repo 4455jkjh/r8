@@ -86,12 +86,11 @@ public class JumboStringRewriter {
    */
   protected final void rewriteCodeWithJumboStrings(
       ObjectToOffsetMapping mapping, Collection<DexProgramClass> classes) {
-    // Do not bail out early if forcing jumbo string processing.
-    if (!options.getTestingOptions().forceJumboStringProcessing) {
-      // If there are no strings with jumbo indices at all this is a no-op.
-      if (!mapping.hasJumboStrings()) {
-        return;
-      }
+    // If there are no strings with jumbo indices at all this is a no-op. Do not bail out early if
+    // forcing jumbo string processing.
+    if (mapping.getFirstConstString16() == null
+        && !options.getTestingOptions().forceJumboStringProcessing) {
+      return;
     }
     for (DexProgramClass clazz : classes) {
       clazz.forEachProgramMethodMatching(
@@ -99,11 +98,7 @@ public class JumboStringRewriter {
           method -> {
             DexWritableCode code = method.getDefinition().getCode().asDexWritableCode();
             DexWritableCode rewrittenCode =
-                code.rewriteCodeWithJumboStrings(
-                    method,
-                    mapping,
-                    appView,
-                    options.getTestingOptions().forceJumboStringProcessing);
+                code.rewriteCodeWithJumboStrings(appView, method, mapping);
             method.setCode(rewrittenCode.asCode(), appView);
           });
     }

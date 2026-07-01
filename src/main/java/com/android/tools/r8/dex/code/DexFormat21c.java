@@ -23,6 +23,12 @@ abstract class DexFormat21c<T extends IndexedDexItem> extends DexBase2Format {
     BBBB = map[read16BitValue(stream)];
   }
 
+  DexFormat21c(int high, BytecodeStream stream, T[] map, int offset) {
+    super(stream);
+    AA = (short) high;
+    BBBB = map[read16BitValue(stream) + offset];
+  }
+
   protected DexFormat21c(int AA, T BBBB) {
     assert 0 <= AA && AA <= Constants.U8BIT_MAX;
     this.AA = (short) AA;
