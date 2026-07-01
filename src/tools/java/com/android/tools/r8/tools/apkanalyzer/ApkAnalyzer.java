@@ -146,6 +146,12 @@ public class ApkAnalyzer {
     System.out.println("res_file_size_min=" + result.resSize.min);
     System.out.println("res_file_size_max=" + result.resSize.max);
     System.out.println("res_file_size_total=" + result.resSize.total);
+    if (result.resTableCompressedSize != null) {
+      System.out.println("res_table_size_compressed=" + result.resTableCompressedSize);
+    }
+    if (result.resTableUncompressedSize != null) {
+      System.out.println("res_table_size_uncompressed=" + result.resTableUncompressedSize);
+    }
     System.out.println("base_dex_code_size=" + result.dexSegments.getCode().getSegmentSize());
     System.out.println("base_jumbo_strings=" + result.jumboStrings);
     result.debugInfoStats.printToStdout("base", result.dexSegments);
@@ -218,6 +224,14 @@ public class ApkAnalyzer {
     sb.append(result.resSize.max).append(';');
     sb.append(result.resSize.avg()).append(';');
     sb.append(result.resSize.total).append(';');
+    if (result.resTableCompressedSize != null) {
+      sb.append(result.resTableCompressedSize);
+    }
+    sb.append(';');
+    if (result.resTableUncompressedSize != null) {
+      sb.append(result.resTableUncompressedSize);
+    }
+    sb.append(';');
     sb.append(result.dexSegments.getCode().getSegmentSize()).append(';');
     sb.append(result.jumboStrings).append(';');
     result.debugInfoStats.printCsv(sb, result.dexSegments);
@@ -317,6 +331,8 @@ public class ApkAnalyzer {
     int dexCompressedCount = 0;
     MinMaxTotalStats dexSize = new MinMaxTotalStats();
     MinMaxTotalStats resSize = new MinMaxTotalStats();
+    Long resTableCompressedSize = null;
+    Long resTableUncompressedSize = null;
     MinMaxTotalStats fields = new MinMaxTotalStats();
     MinMaxTotalStats methods = new MinMaxTotalStats();
     MinMaxTotalStats types = new MinMaxTotalStats();
@@ -454,6 +470,10 @@ public class ApkAnalyzer {
             throw new RuntimeException("Unknown compressed size");
           }
           resSize.add(compressedSize);
+          if (entryName.equals("resources.arsc")) {
+            resTableCompressedSize = compressedSize;
+            resTableUncompressedSize = entry.getSize();
+          }
         }
       }
 
@@ -504,6 +524,8 @@ public class ApkAnalyzer {
           dexCompressedCount,
           dexSize.finish(),
           resSize.finish(),
+          resTableCompressedSize,
+          resTableUncompressedSize,
           types.finish(),
           fields.finish(),
           methods.finish(),
