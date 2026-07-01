@@ -201,6 +201,14 @@ public class DexSegments {
       return segments.get(Constants.TYPE_DEBUG_INFO_ITEM);
     }
 
+    public SegmentInfo getStrings() {
+      return segments.get(Constants.TYPE_STRING_ID_ITEM);
+    }
+
+    public SegmentInfo getStringData() {
+      return segments.get(Constants.TYPE_STRING_DATA_ITEM);
+    }
+
     public void forEach(BiConsumer<? super Integer, ? super SegmentInfo> fn) {
       segments.forEach(fn);
     }
