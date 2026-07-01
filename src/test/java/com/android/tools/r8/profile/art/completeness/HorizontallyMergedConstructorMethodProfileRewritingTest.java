@@ -57,7 +57,7 @@ public class HorizontallyMergedConstructorMethodProfileRewritingTest extends Tes
       assertThat(syntheticConstructorSubject, isPresent());
       assertEquals(2, syntheticConstructorSubject.getParameters().size());
       assertEquals(aClassSubject.asTypeSubject(), syntheticConstructorSubject.getParameter(0));
-      assertEquals("int", syntheticConstructorSubject.getParameter(1).getTypeName());
+      assertEquals("byte", syntheticConstructorSubject.getParameter(1).getTypeName());
 
       MethodSubject aConstructorSubject =
           aClassSubject.uniqueMethodThatMatches(

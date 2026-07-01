@@ -1,4 +1,4 @@
-// Copyright (c) 2021, the R8 project authors. Please see the AUTHORS file
+// Copyright (c) 2026, the R8 project authors. Please see the AUTHORS file
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
@@ -23,7 +23,7 @@ import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
 
 @RunWith(Parameterized.class)
-public class EquivalentConstructorsWithClassIdAndExtraNullsMergingTest extends TestBase {
+public class EquivalentConstructorsWithClassIdAndExtraNullsMergingIntClassIdTest extends TestBase {
 
   private final TestParameters parameters;
 
@@ -32,7 +32,8 @@ public class EquivalentConstructorsWithClassIdAndExtraNullsMergingTest extends T
     return getTestParameters().withAllRuntimesAndApiLevels().build();
   }
 
-  public EquivalentConstructorsWithClassIdAndExtraNullsMergingTest(TestParameters parameters) {
+  public EquivalentConstructorsWithClassIdAndExtraNullsMergingIntClassIdTest(
+      TestParameters parameters) {
     this.parameters = parameters;
   }
 
@@ -49,6 +50,8 @@ public class EquivalentConstructorsWithClassIdAndExtraNullsMergingTest extends T
         .enableNoAccessModificationAnnotationsForMembers()
         .enableNoHorizontalClassMergingAnnotations()
         .setMinApi(parameters)
+        .addOptionsModification(
+            options -> options.getTestingOptions().forceIntTypeForClassIdField = true)
         .compile()
         .inspect(
             inspector -> {
@@ -56,8 +59,8 @@ public class EquivalentConstructorsWithClassIdAndExtraNullsMergingTest extends T
               assertThat(aClassSubject, isPresent());
               assertEquals(
                   2, aClassSubject.allMethods(FoundMethodSubject::isInstanceInitializer).size());
-              assertThat(aClassSubject.init("java.lang.Object", "byte"), isPresent());
-              assertThat(aClassSubject.init("java.lang.Object", "byte", "byte"), isPresent());
+              assertThat(aClassSubject.init("java.lang.Object", "int"), isPresent());
+              assertThat(aClassSubject.init("java.lang.Object", "int", "byte"), isPresent());
             })
         .run(parameters.getRuntime(), Main.class)
         .assertSuccessWithOutputLines("C", "0", "C", "D");
@@ -81,7 +84,7 @@ public class EquivalentConstructorsWithClassIdAndExtraNullsMergingTest extends T
       this.c = c;
     }
 
-    A(Object c, byte i) {
+    A(Object c, int i) {
       this.c = c;
       System.out.println(i);
     }

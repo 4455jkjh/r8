@@ -10,8 +10,10 @@ import com.android.tools.r8.dex.DexReader;
 import com.android.tools.r8.dex.DexSection;
 import com.android.tools.r8.origin.CommandLineOrigin;
 import com.android.tools.r8.utils.AndroidApp;
+import com.android.tools.r8.utils.CliParserUtils;
 import com.android.tools.r8.utils.InternalOptions;
 import com.android.tools.r8.utils.StringDiagnostic;
+import com.android.tools.r8.utils.internal.CliParser;
 import com.android.tools.r8.utils.internal.StringUtils;
 import it.unimi.dsi.fastutil.ints.Int2ReferenceLinkedOpenHashMap;
 import it.unimi.dsi.fastutil.ints.Int2ReferenceMap;
@@ -41,20 +43,20 @@ public class DexSegments {
 
       @Override
       protected Command makeCommand() {
-        // If printing versions ignore everything else.
+        // If printing, ignore everything else.
         if (isPrintHelp()) {
-          return new Command(isPrintHelp());
+          return new Command(true, false);
+        }
+        if (isPrintVersion()) {
+          return new Command(false, true);
         }
         return new Command(getAppBuilder().build(), csv);
       }
     }
 
-    static final String USAGE_MESSAGE =
-        StringUtils.joinLines(
-            "Usage: dexsegments [options] <input-files>",
-            " where <input-files> are dex files",
-            "  --version               # Print the version of r8.",
-            "  --help                  # Print this message.");
+    static String usageMessage() {
+      return CliParserUtils.getUsageMessage(createParser());
+    }
 
     public static Command.Builder builder() {
       return new Command.Builder();
@@ -62,27 +64,27 @@ public class DexSegments {
 
     public static Command.Builder parse(String[] args) {
       Command.Builder builder = builder();
-      parse(args, builder);
+      createParser()
+          .parse(
+              args,
+              builder,
+              err ->
+                  builder
+                      .getReporter()
+                      .error(new StringDiagnostic(err, CommandLineOrigin.INSTANCE)));
       return builder;
     }
 
-    private static void parse(String[] args, Command.Builder builder) {
-      for (int i = 0; i < args.length; i++) {
-        String arg = args[i].trim();
-        if (arg.length() == 0) {
-          continue;
-        } else if (arg.equals("--help")) {
-          builder.setPrintHelp(true);
-        } else if (arg.equals("--csv")) {
-          builder.setCsv(true);
-        } else {
-          if (arg.startsWith("--")) {
-            builder.getReporter().error(new StringDiagnostic("Unknown option: " + arg,
-                CommandLineOrigin.INSTANCE));
-          }
-          builder.addProgramFiles(Paths.get(arg));
-        }
-      }
+    private static CliParser<Command.Builder> createParser() {
+      var header =
+          StringUtils.joinLines(
+              "Usage: dexsegments [options] <input-files>", " where <input-files> are dex files");
+      var parser = new CliParser<Command.Builder>(header);
+      return parser
+          .option0("--version", "Print the version of r8.", b -> b.setPrintVersion(true))
+          .option0("--help", "Print this message.", b -> b.setPrintHelp(true), "-h")
+          .option0("--csv", "Print segments in csv format.", b -> b.setCsv(true))
+          .positional((b, arg) -> b.addProgramFiles(Paths.get(arg)));
     }
 
     private Command(AndroidApp inputApp, boolean csv) {
@@ -90,8 +92,8 @@ public class DexSegments {
       this.csv = csv;
     }
 
-    private Command(boolean printHelp) {
-      super(printHelp, false);
+    private Command(boolean printHelp, boolean printVersion) {
+      super(printHelp, printVersion);
       this.csv = false;
     }
 
@@ -147,7 +149,11 @@ public class DexSegments {
 
   public static Result run(Command command) throws IOException, ResourceException {
     if (command.isPrintHelp()) {
-      System.out.println(Command.USAGE_MESSAGE);
+      System.out.println(Command.usageMessage());
+      return null;
+    }
+    if (command.isPrintVersion()) {
+      System.out.println("DexSegments (R8) " + Version.LABEL);
       return null;
     }
     return run(command.getInputApp());

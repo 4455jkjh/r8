@@ -221,6 +221,14 @@ public abstract class DexInstruction implements CfOrDexInstruction, StructuralIt
     return false;
   }
 
+  public DexConstString16 asConstString16() {
+    return null;
+  }
+
+  public boolean isConstString16() {
+    return false;
+  }
+
   public boolean isInvokeMethodOrInvokeMethodRange() {
     return false;
   }

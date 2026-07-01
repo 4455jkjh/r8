@@ -2372,6 +2372,7 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
         System.getProperty("com.android.tools.r8.dexVersion40ForApiLevel30") != null;
     public boolean forceDexContainerFormat =
         System.getProperty("com.android.tools.r8.dexContainerExperiment") != null;
+    public boolean enableExperimentalConstString16 = false;
     public boolean nullOutDebugInfo =
         System.getProperty("com.android.tools.r8.nullOutDebugInfo") != null;
 
@@ -2673,6 +2674,8 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
     public boolean allowAnyClassFileVersion =
         isSystemPropertySet("com.android.tools.r8.allowAnyClassFileVersion");
     public CfVersion supportedCfVersionForTesting = null;
+
+    public boolean forceIntTypeForClassIdField = false;
   }
 
   public boolean forTesting(Supplier<Boolean> test) {

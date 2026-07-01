@@ -236,7 +236,7 @@ public class ThrowNullCode extends Code implements CfWritableCode, DexWritableCo
 
   @Override
   public DexWritableCode rewriteCodeWithJumboStrings(
-      ProgramMethod method, ObjectToOffsetMapping mapping, AppView<?> appView, boolean force) {
+      AppView<?> appView, ProgramMethod method, ObjectToOffsetMapping mapping) {
     // Intentionally empty. This piece of code does not have any const-string instructions.
     return this;
   }

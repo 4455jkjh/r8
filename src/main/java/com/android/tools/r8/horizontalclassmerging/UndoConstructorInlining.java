@@ -255,7 +255,7 @@ public class UndoConstructorInlining {
         int constantIndex =
             methodIndices.computeIfAbsent(
                 newInvokedMethod.getReference(),
-                (DexMethod ref) -> {
+                ref -> {
                   methodsToAppend.add(ref);
                   return code.getConstantPool().length + methodsToAppend.size() - 1;
                 });

@@ -449,7 +449,7 @@ public class ClassMerger {
               .dexItemFactory()
               .createFreshFieldNameWithoutHolder(
                   group.getTarget().getType(),
-                  appView.dexItemFactory().intType,
+                  classIdType(group, appView),
                   CLASS_ID_FIELD_PREFIX,
                   f ->
                       Iterables.all(
@@ -462,5 +462,15 @@ public class ClassMerger {
         HorizontalClassMergerGraphLens.Builder lensBuilder) {
       return new ClassMerger(appView, lensBuilder, group, virtualMethodMergers);
     }
+  }
+
+  public static DexType classIdType(HorizontalMergeGroup group, AppView<?> appView) {
+    DexType classIdType =
+        group.size() <= Byte.MAX_VALUE
+                && !appView.options().getTestingOptions().forceIntTypeForClassIdField
+            ? appView.dexItemFactory().byteType
+            : appView.dexItemFactory().intType;
+    assert !group.hasClassIdField() || group.getClassIdField().getType().isIdenticalTo(classIdType);
+    return classIdType;
   }
 }

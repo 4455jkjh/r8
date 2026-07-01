@@ -1,0 +1,115 @@
+// Copyright (c) 2026, the R8 project authors. Please see the AUTHORS file
+// for details. All rights reserved. Use of this source code is governed by a
+// BSD-style license that can be found in the LICENSE file.
+package com.android.tools.r8.dex.code;
+
+import com.android.tools.r8.dex.IndexedItemCollection;
+import com.android.tools.r8.errors.InternalCompilerError;
+import com.android.tools.r8.graph.AppView;
+import com.android.tools.r8.graph.DexString;
+import com.android.tools.r8.graph.ObjectToOffsetMapping;
+import com.android.tools.r8.graph.OffsetToObjectMapping;
+import com.android.tools.r8.graph.ProgramMethod;
+import com.android.tools.r8.graph.lens.GraphLens;
+import com.android.tools.r8.ir.conversion.IRBuilder;
+import com.android.tools.r8.ir.conversion.LensCodeRewriterUtils;
+import com.android.tools.r8.utils.RetracerForCodePrinting;
+import com.android.tools.r8.utils.structural.StructuralSpecification;
+import java.nio.ShortBuffer;
+
+public class DexConstString16 extends DexFormat21c<DexString> {
+
+  // TODO(b/529315183): This opcode does not exist in DEX.
+  public static final int OPCODE = 0x3e;
+  public static final String NAME = "ConstString16";
+  public static final String SMALI_NAME = "const-string/16";
+
+  DexConstString16(int high, BytecodeStream stream, OffsetToObjectMapping mapping) {
+    super(high, stream, mapping.getStringMap(), 65536);
+  }
+
+  public DexConstString16(int register, DexString string) {
+    super(register, string);
+  }
+
+  public DexString getString() {
+    return BBBB;
+  }
+
+  @Override
+  void internalSubSpecify(StructuralSpecification<DexFormat21c<DexString>, ?> spec) {
+    spec.withItem(i -> i.BBBB);
+  }
+
+  @Override
+  public void collectIndexedItems(
+      AppView<?> appView,
+      GraphLens codeLens,
+      IndexedItemCollection indexedItems,
+      ProgramMethod context,
+      LensCodeRewriterUtils rewriter) {
+    getString().collectIndexedItems(indexedItems);
+  }
+
+  @Override
+  public String getName() {
+    return NAME;
+  }
+
+  @Override
+  public String getSmaliName() {
+    return SMALI_NAME;
+  }
+
+  @Override
+  public int getOpcode() {
+    return OPCODE;
+  }
+
+  @Override
+  public DexConstString16 asConstString16() {
+    return this;
+  }
+
+  @Override
+  public boolean isConstString16() {
+    return true;
+  }
+
+  @Override
+  public String toString(RetracerForCodePrinting retracer) {
+    return formatString("v" + AA + ", \"" + BBBB.toString() + "\"");
+  }
+
+  @Override
+  public String toSmaliString(RetracerForCodePrinting retracer) {
+    return formatSmaliString("v" + AA + ", \"" + BBBB.toString() + "\"");
+  }
+
+  @Override
+  public void write(
+      ShortBuffer dest,
+      ProgramMethod context,
+      GraphLens graphLens,
+      GraphLens codeLens,
+      ObjectToOffsetMapping mapping,
+      LensCodeRewriterUtils rewriter) {
+    int index = BBBB.getOffset(mapping);
+    int offsetIndex = index - 65536;
+    if (offsetIndex != (offsetIndex & 0xffff)) {
+      throw new InternalCompilerError("String-index overflow for const-string/16: " + index);
+    }
+    writeFirst(AA, dest);
+    write16BitValue(offsetIndex, dest);
+  }
+
+  @Override
+  public void buildIR(IRBuilder builder) {
+    builder.addConstString(AA, BBBB);
+  }
+
+  @Override
+  public boolean canThrow() {
+    return true;
+  }
+}

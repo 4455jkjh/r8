@@ -7,6 +7,7 @@ import static com.android.tools.r8.graph.DexCode.TryHandler.NO_HANDLER;
 import static com.android.tools.r8.graph.DexDebugEventBuilder.addDefaultEventWithAdvancePcIfNecessary;
 
 import com.android.tools.r8.dex.code.DexConstString;
+import com.android.tools.r8.dex.code.DexConstString16;
 import com.android.tools.r8.dex.code.DexConstStringJumbo;
 import com.android.tools.r8.dex.code.DexFormat21t;
 import com.android.tools.r8.dex.code.DexFormat22t;
@@ -95,9 +96,11 @@ public class JumboStringCodeRewriter {
   }
 
   private final DexEncodedMethod method;
-  private final DexString firstJumboString;
+  private final DexString firstConstString16;
+  private final DexString firstConstStringJumbo;
   private final BooleanSupplier materializeInfoForNativePc;
   private final DexItemFactory factory;
+
   private final Map<DexInstruction, List<DexInstruction>> instructionTargets =
       new IdentityHashMap<>();
   private EventBasedDebugInfo debugEventBasedInfo = null;
@@ -111,11 +114,15 @@ public class JumboStringCodeRewriter {
 
   public JumboStringCodeRewriter(
       DexEncodedMethod method,
-      DexString firstJumboString,
+      DexString firstConstString16,
+      DexString firstConstString17,
       BooleanSupplier materializeInfoForNativePc,
-      DexItemFactory factory) {
+      DexItemFactory factory,
+      boolean enableExperimentalConstString16) {
     this.method = method;
-    this.firstJumboString = firstJumboString;
+    this.firstConstString16 = enableExperimentalConstString16 ? firstConstString16 : null;
+    this.firstConstStringJumbo =
+        enableExperimentalConstString16 ? firstConstString17 : firstConstString16;
     this.materializeInfoForNativePc = materializeInfoForNativePc;
     this.factory = factory;
   }
@@ -148,8 +155,8 @@ public class JumboStringCodeRewriter {
             newHandlers,
             newDebugInfo);
     // As we have rewritten the code, we now know that its highest string index that is not
-    // a jumbo-string is firstJumboString (actually the previous string, but we do not have that).
-    newCode.setHighestSortingStringForJumboProcessedCode(firstJumboString);
+    // a jumbo-string is firstConstString16 (actually the previous string, but we do not have that).
+    newCode.setHighestSortingStringForJumboProcessedCode(firstConstString16);
     return newCode;
   }
 
@@ -324,13 +331,20 @@ public class JumboStringCodeRewriter {
         instruction.setOffset(orignalOffset + offsetDelta);
         if (instruction instanceof DexConstString) {
           DexConstString string = (DexConstString) instruction;
-          if (string.getString().compareTo(firstJumboString) >= 0) {
+          if (firstConstStringJumbo != null
+              && string.getString().compareTo(firstConstStringJumbo) >= 0) {
             DexConstStringJumbo jumboString =
                 new DexConstStringJumbo(string.AA, string.getString());
             jumboString.setOffset(string.getOffset());
             offsetDelta++;
             it.set(jumboString);
             replaceTarget(instruction, jumboString);
+          } else if (firstConstString16 != null
+              && string.getString().compareTo(firstConstString16) >= 0) {
+            DexConstString16 string16 = new DexConstString16(string.AA, string.getString());
+            string16.setOffset(string.getOffset());
+            it.set(string16);
+            replaceTarget(instruction, string16);
           }
         } else if (instruction instanceof DexFormat22t) { // IfEq, IfGe, IfGt, IfLe, IfLt, IfNe
           DexFormat22t condition = (DexFormat22t) instruction;

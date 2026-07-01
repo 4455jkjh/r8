@@ -441,12 +441,9 @@ public class LirBuilder<V, EV> {
   }
 
   private int getConstantIndex(LirConstant item) {
-    if (constants.containsKey(item)) {
-      return constants.getInt(item);
-    }
     int nextIndex = constants.size();
-    constants.put(item, nextIndex);
-    return nextIndex;
+    Integer oldIndex = constants.putIfAbsent(item, nextIndex);
+    return oldIndex != null ? oldIndex : nextIndex;
   }
 
   @SuppressWarnings("UnusedVariable")

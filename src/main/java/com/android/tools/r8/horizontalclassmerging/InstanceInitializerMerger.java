@@ -20,7 +20,9 @@ import com.android.tools.r8.graph.DexTypeUtils;
 import com.android.tools.r8.graph.MethodAccessFlags;
 import com.android.tools.r8.graph.ProgramMethod;
 import com.android.tools.r8.horizontalclassmerging.code.ConstructorEntryPointSynthesizedCode;
+import com.android.tools.r8.ir.conversion.ExtraConstantByteParameter;
 import com.android.tools.r8.ir.conversion.ExtraConstantIntParameter;
+import com.android.tools.r8.ir.conversion.ExtraConstantParameter;
 import com.android.tools.r8.ir.conversion.ExtraUnusedParameter;
 import com.android.tools.r8.profile.rewriting.ProfileCollectionAdditions;
 import com.android.tools.r8.utils.internal.ArrayUtils;
@@ -111,7 +113,8 @@ public class InstanceInitializerMerger {
     }
     if (needsClassId) {
       assert ArrayUtils.last(newParameters) == null;
-      newParameters[newParameters.length - 1] = dexItemFactory.intType;
+      DexType classIdType = ClassMerger.classIdType(group, appView);
+      newParameters[newParameters.length - 1] = classIdType;
     }
     return dexItemFactory.createInstanceInitializer(group.getTarget().getType(), newParameters);
   }
@@ -363,11 +366,16 @@ public class InstanceInitializerMerger {
 
     // Map each of the instance initializers to the new instance initializer in the graph lens.
     for (ProgramMethod instanceInitializer : instanceInitializers) {
-      ExtraConstantIntParameter extraParameter =
-          needsClassId
-              ? new ExtraConstantIntParameter(
-                  classIdentifiers.getInt(instanceInitializer.getHolderType()))
-              : null;
+      ExtraConstantParameter extraParameter = null;
+      if (needsClassId) {
+        DexType classIdType = ClassMerger.classIdType(group, appView);
+        extraParameter =
+            classIdType.isIntType()
+                ? new ExtraConstantIntParameter(
+                    classIdentifiers.getInt(instanceInitializer.getHolderType()))
+                : new ExtraConstantByteParameter(
+                    classIdentifiers.getInt(instanceInitializer.getHolderType()));
+      }
       lensBuilder.mapMergedConstructor(
           instanceInitializer.getReference(), newMethodReference, extraParameter);
     }

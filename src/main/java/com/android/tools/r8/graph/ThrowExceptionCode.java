@@ -18,8 +18,8 @@ import com.android.tools.r8.ir.code.NumberGenerator;
 import com.android.tools.r8.ir.code.Position;
 import com.android.tools.r8.ir.conversion.LensCodeRewriterUtils;
 import com.android.tools.r8.ir.conversion.MethodConversionOptions.MutableMethodConversionOptions;
-import com.android.tools.r8.utils.internal.ObjectUtils;
 import com.android.tools.r8.utils.RetracerForCodePrinting;
+import com.android.tools.r8.utils.internal.ObjectUtils;
 import com.android.tools.r8.utils.internal.exceptions.Unreachable;
 import com.android.tools.r8.utils.structural.HashingVisitor;
 import java.nio.ShortBuffer;
@@ -216,7 +216,7 @@ public class ThrowExceptionCode extends Code implements DexWritableCode {
 
   @Override
   public DexWritableCode rewriteCodeWithJumboStrings(
-      ProgramMethod method, ObjectToOffsetMapping mapping, AppView<?> appView, boolean force) {
+      AppView<?> appView, ProgramMethod method, ObjectToOffsetMapping mapping) {
     // Intentionally empty. This piece of code does not have any const-string instructions.
     return this;
   }

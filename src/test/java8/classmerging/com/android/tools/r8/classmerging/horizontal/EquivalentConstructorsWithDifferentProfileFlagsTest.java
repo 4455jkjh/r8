@@ -65,7 +65,7 @@ public class EquivalentConstructorsWithDifferentProfileFlagsTest extends TestBas
               ClassSubject classSubject = inspector.clazz(A.class);
               assertThat(classSubject, isPresent());
 
-              MethodSubject initializerSubject = classSubject.init("int", "int");
+              MethodSubject initializerSubject = classSubject.init("int", "byte");
               assertThat(initializerSubject, isPresent());
 
               profile

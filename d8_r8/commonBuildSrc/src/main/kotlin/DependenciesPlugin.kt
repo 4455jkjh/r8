@@ -370,7 +370,7 @@ private object Versions {
   public const val asmVersion = "9.10.1"
   public const val ddmLibVersion = "32.2.0"
   public const val errorproneVersion = "2.18.0"
-  public const val fastUtilVersion = "8.5.18"
+  public const val fastUtilVersion = "7.2.1"
   public const val gsonVersion = "2.14.0"
   public const val guavaVersion = "32.1.2-jre"
   public const val javassist = "3.29.2-GA"

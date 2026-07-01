@@ -46,11 +46,11 @@ public class ConstructorMergingTrivialOverlapTest extends HorizontalClassMerging
               FieldSubject classIdFieldSubject = classMergerClassIdField(aClassSubject);
               assertThat(classIdFieldSubject, isPresent());
 
-              MethodSubject firstInitSubject = aClassSubject.init("int");
+              MethodSubject firstInitSubject = aClassSubject.init("byte");
               assertThat(firstInitSubject, isPresent());
               assertThat(firstInitSubject, writesInstanceField(classIdFieldSubject.getDexField()));
 
-              MethodSubject otherInitSubject = aClassSubject.init("int", "byte");
+              MethodSubject otherInitSubject = aClassSubject.init("byte", "byte");
               assertThat(otherInitSubject, isPresent());
               assertThat(otherInitSubject, writesInstanceField(classIdFieldSubject.getDexField()));
 
@@ -82,11 +82,11 @@ public class ConstructorMergingTrivialOverlapTest extends HorizontalClassMerging
 
     @NeverInline
     public B() {
-      this(42);
+      this((byte) 42);
     }
 
     @NeverInline
-    public B(int x) {
+    public B(byte x) {
       System.out.println(x);
     }
 
@@ -101,7 +101,7 @@ public class ConstructorMergingTrivialOverlapTest extends HorizontalClassMerging
     public static void main(String[] args) {
       A a = new A();
       B b = new B();
-      b = new B(13);
+      b = new B((byte) 13);
       a.print();
       b.print();
     }

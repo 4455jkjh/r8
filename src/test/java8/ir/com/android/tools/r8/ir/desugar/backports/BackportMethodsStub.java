@@ -5,6 +5,15 @@
 package com.android.tools.r8.ir.desugar.backports;
 
 public class BackportMethodsStub {
+
+  static class IOStub {
+    public static void print(Object obj) {}
+
+    public static String readln() {
+      return null;
+    }
+  }
+
   // Stub out android.os.Build$VERSION as it does not exist when building R8.
   static class AndroidOsBuildStub {
     public static int getMajorSdkVersion(int sdkIntFull) {

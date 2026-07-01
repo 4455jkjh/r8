@@ -4,57 +4,25 @@
 
 package com.android.tools.r8;
 
-import static com.android.tools.r8.BaseCompilerCommandParser.LIB_FLAG;
-import static com.android.tools.r8.BaseCompilerCommandParser.VERBOSE_SYNTHETIC_NAMES;
-import static com.android.tools.r8.BaseCompilerCommandParser.parsePositiveIntArgument;
-
 import com.android.tools.r8.origin.Origin;
+import com.android.tools.r8.utils.AndroidApiLevel;
+import com.android.tools.r8.utils.CliParserUtils;
 import com.android.tools.r8.utils.FlagFile;
 import com.android.tools.r8.utils.StringDiagnostic;
-import com.android.tools.r8.utils.internal.StringUtils;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
+import com.android.tools.r8.utils.internal.CliParser;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
-import java.util.Set;
 
 public class GlobalSyntheticsGeneratorCommandParser {
 
-  private static final String LOWER_CASE_NAME = "globalsyntheticsgenerator";
-  private static final String MIN_API_FLAG = "--min-api";
-  private static final String CLASSFILE_DESUGARING_MODE = "--classfile";
-
-  private static final String USAGE_MESSAGE =
-      StringUtils.lines("Usage: " + LOWER_CASE_NAME + " [options] " + "where options are:");
-
   public static List<ParseFlagInfo> getFlags() {
-    return ImmutableList.<ParseFlagInfo>builder()
-        .add(ParseFlagInfoImpl.getMinApi())
-        .add(ParseFlagInfoImpl.getLib())
-        .add(
-            ParseFlagInfoImpl.flag1(
-                "--output", "<globals-file>", "Output result in <globals-file>."))
-        .add(
-            ParseFlagInfoImpl.flag0(
-                "--classfile",
-                "Generate globals for only classfile to classfile desugaring.",
-                "(By default globals for both classfile and dex desugaring are generated)."))
-        .add(ParseFlagInfoImpl.getVerboseSyntheticNames())
-        .add(ParseFlagInfoImpl.getVersion(LOWER_CASE_NAME))
-        .add(ParseFlagInfoImpl.getHelp())
-        .build();
+    return CliParserUtils.getFlagInfos(createParser());
   }
 
   public static String getUsageMessage() {
-    StringBuilder builder = new StringBuilder();
-    StringUtils.appendLines(builder, USAGE_MESSAGE);
-    new ParseFlagPrinter().addFlags(getFlags()).appendLinesToBuilder(builder);
-    return builder.toString();
+    return CliParserUtils.getUsageMessage(createParser());
   }
-
-  private static final Set<String> OPTIONS_WITH_ONE_PARAMETER =
-      ImmutableSet.of("--output", LIB_FLAG, MIN_API_FLAG);
 
   public static GlobalSyntheticsGeneratorCommand.Builder parse(String[] args, Origin origin) {
     return new GlobalSyntheticsGeneratorCommandParser()
@@ -67,59 +35,95 @@ public class GlobalSyntheticsGeneratorCommandParser {
         .parse(args, origin, GlobalSyntheticsGeneratorCommand.builder(handler));
   }
 
-  private GlobalSyntheticsGeneratorCommand.Builder parse(
-      String[] args, Origin origin, GlobalSyntheticsGeneratorCommand.Builder builder) {
+  private static class ParserState {
+    final GlobalSyntheticsGeneratorCommand.Builder builder;
+    final Origin origin;
     Path outputPath = null;
     boolean hasDefinedApiLevel = false;
+
+    private ParserState(GlobalSyntheticsGeneratorCommand.Builder builder, Origin origin) {
+      this.builder = builder;
+      this.origin = origin;
+    }
+  }
+
+  private static CliParser<ParserState> createParser() {
+    var toolName = "globalsyntheticsgenerator";
+    int defaultApi = AndroidApiLevel.getDefault().getLevel();
+    String minApiFlag = "--min-api";
+
+    var header = "Usage: " + toolName + " [options] where options are:";
+    var parser = new CliParser<ParserState>(header);
+    return parser
+        .option1(
+            minApiFlag,
+            "<number>",
+            "Minimum Android API level compatibility (default: " + defaultApi + ").",
+            (b, arg) -> {
+              if (b.hasDefinedApiLevel) {
+                StringDiagnostic diagnostic =
+                    new StringDiagnostic(
+                        "Cannot set multiple " + minApiFlag + " options", b.origin);
+                b.builder.error(diagnostic);
+              } else {
+                CliParserUtils.parsePositiveInt(
+                    arg,
+                    i -> {
+                      b.builder.setMinApiLevel(i);
+                      b.hasDefinedApiLevel = true;
+                    },
+                    err -> {
+                      StringDiagnostic diagnostic =
+                          new StringDiagnostic(
+                              "Invalid argument to " + minApiFlag + ": " + err, b.origin);
+                      b.builder.error(diagnostic);
+                    });
+              }
+            })
+        .option1(
+            "--lib",
+            "<file|jdk-home>",
+            "Add <file|jdk-home> as a library resource.",
+            (b, arg) -> b.builder.addLibraryFiles(Paths.get(arg)))
+        .option1(
+            "--output",
+            "<globals-file>",
+            "Output result in <globals-file>.",
+            (b, arg) -> {
+              if (b.outputPath != null) {
+                StringDiagnostic diagnostic =
+                    new StringDiagnostic(
+                        "Cannot output both to '" + b.outputPath + "' and '" + arg + "'", b.origin);
+                b.builder.error(diagnostic);
+              } else {
+                b.outputPath = Paths.get(arg);
+              }
+            })
+        .option0(
+            "--classfile",
+            "Generate globals for only classfile to classfile desugaring. (By default globals for"
+                + " both classfile and dex desugaring are generated).",
+            b -> b.builder.setClassfileDesugaringOnly(true))
+        .option0(
+            "--verbose-synthetic-names",
+            "Enable verbose synthetic names that use the `$$ExternalSynthetic` marker.",
+            b -> b.builder.setEnableVerboseSyntheticNames(true))
+        .option0(
+            "--version",
+            "Print the version of " + toolName + ".",
+            b -> b.builder.setPrintVersion(true))
+        .option0("--help", "Print this message.", b -> b.builder.setPrintHelp(true));
+  }
+
+  private GlobalSyntheticsGeneratorCommand.Builder parse(
+      String[] args, Origin origin, GlobalSyntheticsGeneratorCommand.Builder builder) {
     String[] expandedArgs = FlagFile.expandFlagFiles(args, builder::error);
-    for (int i = 0; i < expandedArgs.length; i++) {
-      String arg = expandedArgs[i].trim();
-      String nextArg = null;
-      if (OPTIONS_WITH_ONE_PARAMETER.contains(arg)) {
-        if (++i < expandedArgs.length) {
-          nextArg = expandedArgs[i];
-        } else {
-          builder.error(
-              new StringDiagnostic("Missing parameter for " + expandedArgs[i - 1] + ".", origin));
-          break;
-        }
-      }
-      if (arg.length() == 0) {
-        continue;
-      } else if (arg.equals("--help")) {
-        builder.setPrintHelp(true);
-      } else if (arg.equals("--version")) {
-        builder.setPrintVersion(true);
-      } else if (arg.equals("--output")) {
-        if (outputPath != null) {
-          builder.error(
-              new StringDiagnostic(
-                  "Cannot output both to '" + outputPath + "' and '" + nextArg + "'", origin));
-          continue;
-        }
-        outputPath = Paths.get(nextArg);
-      } else if (arg.equals(MIN_API_FLAG)) {
-        if (hasDefinedApiLevel) {
-          builder.error(
-              new StringDiagnostic("Cannot set multiple " + MIN_API_FLAG + " options", origin));
-        } else {
-          parsePositiveIntArgument(
-              builder::error, MIN_API_FLAG, nextArg, origin, builder::setMinApiLevel);
-          hasDefinedApiLevel = true;
-        }
-      } else if (arg.equals(LIB_FLAG)) {
-        builder.addLibraryFiles(Paths.get(nextArg));
-      } else if (arg.equals(CLASSFILE_DESUGARING_MODE)) {
-        builder.setClassfileDesugaringOnly(true);
-      } else if (arg.equals(VERBOSE_SYNTHETIC_NAMES)) {
-        builder.setEnableVerboseSyntheticNames(true);
-      } else if (arg.startsWith("--")) {
-        builder.error(new StringDiagnostic("Unknown option: " + arg, origin));
-      }
+    var state = new ParserState(builder, origin);
+    createParser()
+        .parse(expandedArgs, state, err -> builder.error(new StringDiagnostic(err, origin)));
+    if (state.outputPath == null) {
+      state.outputPath = Paths.get(".");
     }
-    if (outputPath == null) {
-      outputPath = Paths.get(".");
-    }
-    return builder.setGlobalSyntheticsOutput(outputPath);
+    return builder.setGlobalSyntheticsOutput(state.outputPath);
   }
 }

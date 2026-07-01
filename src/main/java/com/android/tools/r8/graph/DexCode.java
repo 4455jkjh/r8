@@ -232,25 +232,30 @@ public class DexCode extends Code
 
   @Override
   public DexWritableCode rewriteCodeWithJumboStrings(
-      ProgramMethod method, ObjectToOffsetMapping mapping, AppView<?> appView, boolean force) {
-    DexString firstJumboString = null;
-    if (force) {
-      firstJumboString = mapping.getFirstString();
+      AppView<?> appView, ProgramMethod method, ObjectToOffsetMapping mapping) {
+    DexString firstConstString16 = null;
+    DexString firstConstString17 = null;
+    if (appView.testing().forceJumboStringProcessing) {
+      firstConstString16 = mapping.getFirstString();
+      firstConstString17 = mapping.getFirstString();
     } else {
       assert highestSortingString != null
           || Arrays.stream(instructions).noneMatch(DexInstruction::isConstString);
       assert Arrays.stream(instructions).noneMatch(DexInstruction::isDexItemBasedConstString);
       if (highestSortingString != null
-          && highestSortingString.isGreaterThanOrEqualTo(mapping.getFirstJumboString())) {
-        firstJumboString = mapping.getFirstJumboString();
+          && highestSortingString.isGreaterThanOrEqualTo(mapping.getFirstConstString16())) {
+        firstConstString16 = mapping.getFirstConstString16();
+        firstConstString17 = mapping.getFirstConstString17();
       }
     }
-    return firstJumboString != null
+    return firstConstString16 != null
         ? new JumboStringCodeRewriter(
                 method.getDefinition(),
-                firstJumboString,
+                firstConstString16,
+                firstConstString17,
                 () -> appView.options().shouldMaterializeLineInfoForNativePcEncoding(method),
-                appView.dexItemFactory())
+                appView.dexItemFactory(),
+                appView.testing().enableExperimentalConstString16)
             .rewrite()
         : this;
   }
