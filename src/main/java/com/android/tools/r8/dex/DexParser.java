@@ -132,7 +132,8 @@ public class DexParser<T extends DexClass> {
         getDexParsersForContainerFormat(dexReader, new InternalOptions());
     List<DexSection> allSections = new ArrayList<>();
     boolean addedStrings = false;
-    for (DexParser<DexProgramClass> dexProgramClassDexParser : dexParsersForContainerFormat) {
+    for (int i = dexParsersForContainerFormat.size() - 1; i >= 0; i--) {
+      DexParser<DexProgramClass> dexProgramClassDexParser = dexParsersForContainerFormat.get(i);
       // Only add the string section once, they are all pointing at the same offset.
       if (!addedStrings) {
         allSections.addAll(dexProgramClassDexParser.dexSections);
