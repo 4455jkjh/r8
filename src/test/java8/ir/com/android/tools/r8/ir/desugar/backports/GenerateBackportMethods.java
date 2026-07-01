@@ -17,6 +17,7 @@ import com.android.tools.r8.graph.CfCode;
 import com.android.tools.r8.graph.DexType;
 import com.android.tools.r8.ir.desugar.backports.BackportMethodsStub.AndroidOsBuildStub;
 import com.android.tools.r8.ir.desugar.backports.BackportMethodsStub.AndroidOsBuildVersionStub;
+import com.android.tools.r8.ir.desugar.backports.BackportMethodsStub.IOStub;
 import com.android.tools.r8.ir.desugar.backports.BackportMethodsStub.LongStub;
 import com.android.tools.r8.ir.desugar.backports.BackportMethodsStub.MathStub;
 import com.android.tools.r8.ir.desugar.backports.BackportMethodsStub.UnsafeStub;
@@ -62,6 +63,7 @@ public class GenerateBackportMethods extends MethodGenerationBase {
           DurationMethods.class,
           ExecutorServiceMethods.class,
           FloatMethods.class,
+          IOMethods.class,
           InstantMethods.class,
           IntegerMethods.class,
           LongMethods.class,
@@ -109,6 +111,8 @@ public class GenerateBackportMethods extends MethodGenerationBase {
   protected String generateMethods() throws IOException {
     stubMap =
         ImmutableMap.of(
+            classToType(IOStub.class),
+            factory.createType("Ljava/lang/IO;"),
             classToType(LongStub.class),
             factory.boxedLongType,
             classToType(MathStub.class),

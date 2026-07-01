@@ -60,6 +60,13 @@ public final class BackportedMethods {
     factory.createSynthesizedType("Landroid/os/Build$VERSION;");
     factory.createSynthesizedType("Landroid/os/Build;");
     factory.createSynthesizedType("Lcom/android/tools/r8/ir/desugar/backports/ArraysMethods;");
+    factory.createSynthesizedType("Ljava/io/BufferedReader;");
+    factory.createSynthesizedType("Ljava/io/IOError;");
+    factory.createSynthesizedType("Ljava/io/IOException;");
+    factory.createSynthesizedType("Ljava/io/InputStream;");
+    factory.createSynthesizedType("Ljava/io/InputStreamReader;");
+    factory.createSynthesizedType("Ljava/io/PrintStream;");
+    factory.createSynthesizedType("Ljava/io/Reader;");
     factory.createSynthesizedType("Ljava/io/StringReader;");
     factory.createSynthesizedType("Ljava/lang/ArithmeticException;");
     factory.createSynthesizedType("Ljava/lang/ArrayIndexOutOfBoundsException;");
@@ -68,6 +75,7 @@ public final class BackportedMethods {
     factory.createSynthesizedType("Ljava/lang/Exception;");
     factory.createSynthesizedType("Ljava/lang/ExceptionInInitializerError;");
     factory.createSynthesizedType("Ljava/lang/Float;");
+    factory.createSynthesizedType("Ljava/lang/IO;");
     factory.createSynthesizedType("Ljava/lang/IllegalAccessException;");
     factory.createSynthesizedType("Ljava/lang/IllegalArgumentException;");
     factory.createSynthesizedType("Ljava/lang/IndexOutOfBoundsException;");
@@ -90,6 +98,8 @@ public final class BackportedMethods {
     factory.createSynthesizedType("Ljava/lang/reflect/Method;");
     factory.createSynthesizedType("Ljava/math/BigDecimal;");
     factory.createSynthesizedType("Ljava/math/BigInteger;");
+    factory.createSynthesizedType("Ljava/nio/charset/Charset;");
+    factory.createSynthesizedType("Ljava/nio/charset/StandardCharsets;");
     factory.createSynthesizedType("Ljava/time/Duration;");
     factory.createSynthesizedType("Ljava/time/temporal/Temporal;");
     factory.createSynthesizedType("Ljava/util/AbstractMap$SimpleImmutableEntry;");
@@ -5961,6 +5971,273 @@ public final class BackportedMethods {
                 new ArrayDeque<>(Arrays.asList(FrameType.intType()))),
             new CfReturn(ValueType.INT),
             label3),
+        ImmutableList.of(),
+        ImmutableList.of());
+  }
+
+  public static CfCode IOMethods_print(DexItemFactory factory, DexMethod method) {
+    CfLabel label0 = new CfLabel();
+    CfLabel label1 = new CfLabel();
+    CfLabel label2 = new CfLabel();
+    CfLabel label3 = new CfLabel();
+    return new CfCode(
+        method.holder,
+        2,
+        1,
+        ImmutableList.of(
+            label0,
+            new CfStaticFieldRead(
+                factory.createField(
+                    factory.createType("Ljava/lang/System;"),
+                    factory.createType("Ljava/io/PrintStream;"),
+                    factory.createString("out"))),
+            new CfLoad(ValueType.OBJECT, 0),
+            new CfInvoke(
+                182,
+                factory.createMethod(
+                    factory.createType("Ljava/io/PrintStream;"),
+                    factory.createProto(factory.voidType, factory.objectType),
+                    factory.createString("print")),
+                false),
+            label1,
+            new CfStaticFieldRead(
+                factory.createField(
+                    factory.createType("Ljava/lang/System;"),
+                    factory.createType("Ljava/io/PrintStream;"),
+                    factory.createString("out"))),
+            new CfInvoke(
+                182,
+                factory.createMethod(
+                    factory.createType("Ljava/io/PrintStream;"),
+                    factory.createProto(factory.voidType),
+                    factory.createString("flush")),
+                false),
+            label2,
+            new CfReturnVoid(),
+            label3),
+        ImmutableList.of(),
+        ImmutableList.of());
+  }
+
+  public static CfCode IOMethods_println(DexItemFactory factory, DexMethod method) {
+    CfLabel label0 = new CfLabel();
+    CfLabel label1 = new CfLabel();
+    return new CfCode(
+        method.holder,
+        1,
+        0,
+        ImmutableList.of(
+            label0,
+            new CfStaticFieldRead(
+                factory.createField(
+                    factory.createType("Ljava/lang/System;"),
+                    factory.createType("Ljava/io/PrintStream;"),
+                    factory.createString("out"))),
+            new CfInvoke(
+                182,
+                factory.createMethod(
+                    factory.createType("Ljava/io/PrintStream;"),
+                    factory.createProto(factory.voidType),
+                    factory.createString("println")),
+                false),
+            label1,
+            new CfReturnVoid()),
+        ImmutableList.of(),
+        ImmutableList.of());
+  }
+
+  public static CfCode IOMethods_printlnObject(DexItemFactory factory, DexMethod method) {
+    CfLabel label0 = new CfLabel();
+    CfLabel label1 = new CfLabel();
+    CfLabel label2 = new CfLabel();
+    return new CfCode(
+        method.holder,
+        2,
+        1,
+        ImmutableList.of(
+            label0,
+            new CfStaticFieldRead(
+                factory.createField(
+                    factory.createType("Ljava/lang/System;"),
+                    factory.createType("Ljava/io/PrintStream;"),
+                    factory.createString("out"))),
+            new CfLoad(ValueType.OBJECT, 0),
+            new CfInvoke(
+                182,
+                factory.createMethod(
+                    factory.createType("Ljava/io/PrintStream;"),
+                    factory.createProto(factory.voidType, factory.objectType),
+                    factory.createString("println")),
+                false),
+            label1,
+            new CfReturnVoid(),
+            label2),
+        ImmutableList.of(),
+        ImmutableList.of());
+  }
+
+  public static CfCode IOMethods_readln(DexItemFactory factory, DexMethod method) {
+    CfLabel label0 = new CfLabel();
+    CfLabel label1 = new CfLabel();
+    CfLabel label2 = new CfLabel();
+    CfLabel label3 = new CfLabel();
+    CfLabel label4 = new CfLabel();
+    CfLabel label5 = new CfLabel();
+    CfLabel label6 = new CfLabel();
+    CfLabel label7 = new CfLabel();
+    CfLabel label8 = new CfLabel();
+    return new CfCode(
+        method.holder,
+        6,
+        2,
+        ImmutableList.of(
+            label0,
+            new CfConstString(factory.createString("stdin.encoding")),
+            new CfConstNull(),
+            new CfInvoke(
+                184,
+                factory.createMethod(
+                    factory.createType("Ljava/lang/System;"),
+                    factory.createProto(factory.stringType, factory.stringType, factory.stringType),
+                    factory.createString("getProperty")),
+                false),
+            new CfStore(ValueType.OBJECT, 0),
+            label1,
+            new CfLoad(ValueType.OBJECT, 0),
+            new CfIf(IfType.EQ, ValueType.OBJECT, label2),
+            new CfLoad(ValueType.OBJECT, 0),
+            new CfInvoke(
+                184,
+                factory.createMethod(
+                    factory.createType("Ljava/nio/charset/Charset;"),
+                    factory.createProto(factory.booleanType, factory.stringType),
+                    factory.createString("isSupported")),
+                false),
+            new CfIf(IfType.EQ, ValueType.INT, label2),
+            new CfLoad(ValueType.OBJECT, 0),
+            new CfInvoke(
+                184,
+                factory.createMethod(
+                    factory.createType("Ljava/nio/charset/Charset;"),
+                    factory.createProto(
+                        factory.createType("Ljava/nio/charset/Charset;"), factory.stringType),
+                    factory.createString("forName")),
+                false),
+            new CfGoto(label3),
+            label2,
+            new CfFrame(
+                new Int2ObjectAVLTreeMap<>(
+                    new int[] {0},
+                    new FrameType[] {FrameType.initializedNonNullReference(factory.stringType)})),
+            new CfStaticFieldRead(
+                factory.createField(
+                    factory.createType("Ljava/nio/charset/StandardCharsets;"),
+                    factory.createType("Ljava/nio/charset/Charset;"),
+                    factory.createString("UTF_8"))),
+            label3,
+            new CfFrame(
+                new Int2ObjectAVLTreeMap<>(
+                    new int[] {0},
+                    new FrameType[] {FrameType.initializedNonNullReference(factory.stringType)}),
+                new ArrayDeque<>(
+                    Arrays.asList(
+                        FrameType.initializedNonNullReference(
+                            factory.createType("Ljava/nio/charset/Charset;"))))),
+            new CfStore(ValueType.OBJECT, 1),
+            label4,
+            new CfNew(factory.createType("Ljava/io/BufferedReader;")),
+            new CfStackInstruction(CfStackInstruction.Opcode.Dup),
+            new CfNew(factory.createType("Ljava/io/InputStreamReader;")),
+            new CfStackInstruction(CfStackInstruction.Opcode.Dup),
+            new CfStaticFieldRead(
+                factory.createField(
+                    factory.createType("Ljava/lang/System;"),
+                    factory.createType("Ljava/io/InputStream;"),
+                    factory.createString("in"))),
+            new CfLoad(ValueType.OBJECT, 1),
+            new CfInvoke(
+                183,
+                factory.createMethod(
+                    factory.createType("Ljava/io/InputStreamReader;"),
+                    factory.createProto(
+                        factory.voidType,
+                        factory.createType("Ljava/io/InputStream;"),
+                        factory.createType("Ljava/nio/charset/Charset;")),
+                    factory.createString("<init>")),
+                false),
+            new CfInvoke(
+                183,
+                factory.createMethod(
+                    factory.createType("Ljava/io/BufferedReader;"),
+                    factory.createProto(factory.voidType, factory.createType("Ljava/io/Reader;")),
+                    factory.createString("<init>")),
+                false),
+            new CfInvoke(
+                182,
+                factory.createMethod(
+                    factory.createType("Ljava/io/BufferedReader;"),
+                    factory.createProto(factory.stringType),
+                    factory.createString("readLine")),
+                false),
+            label5,
+            new CfReturn(ValueType.OBJECT),
+            label6,
+            new CfFrame(
+                new ArrayDeque<>(
+                    Arrays.asList(
+                        FrameType.initializedNonNullReference(
+                            factory.createType("Ljava/io/IOException;"))))),
+            new CfStore(ValueType.OBJECT, 0),
+            label7,
+            new CfNew(factory.createType("Ljava/io/IOError;")),
+            new CfStackInstruction(CfStackInstruction.Opcode.Dup),
+            new CfLoad(ValueType.OBJECT, 0),
+            new CfInvoke(
+                183,
+                factory.createMethod(
+                    factory.createType("Ljava/io/IOError;"),
+                    factory.createProto(factory.voidType, factory.throwableType),
+                    factory.createString("<init>")),
+                false),
+            new CfThrow(),
+            label8),
+        ImmutableList.of(
+            new CfTryCatch(
+                label0,
+                label5,
+                ImmutableList.of(factory.createType("Ljava/io/IOException;")),
+                ImmutableList.of(label6))),
+        ImmutableList.of());
+  }
+
+  public static CfCode IOMethods_readlnString(DexItemFactory factory, DexMethod method) {
+    CfLabel label0 = new CfLabel();
+    CfLabel label1 = new CfLabel();
+    CfLabel label2 = new CfLabel();
+    return new CfCode(
+        method.holder,
+        1,
+        1,
+        ImmutableList.of(
+            label0,
+            new CfLoad(ValueType.OBJECT, 0),
+            new CfInvoke(
+                184,
+                factory.createMethod(
+                    factory.createType("Ljava/lang/IO;"),
+                    factory.createProto(factory.voidType, factory.objectType),
+                    factory.createString("print")),
+                false),
+            label1,
+            new CfInvoke(
+                184,
+                factory.createMethod(
+                    factory.createType("Ljava/lang/IO;"),
+                    factory.createProto(factory.stringType),
+                    factory.createString("readln")),
+                false),
+            new CfReturn(ValueType.OBJECT),
+            label2),
         ImmutableList.of(),
         ImmutableList.of());
   }

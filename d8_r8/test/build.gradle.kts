@@ -418,7 +418,7 @@ tasks {
         "--classfile",
         "--debug",
         "--lib",
-        "${getJavaHome(Jdk.JDK_21)}",
+        "${getJavaHome(Jdk.JDK_25)}",
         "--classpath",
         "$r8Jar",
         "--classpath",

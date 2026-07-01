@@ -555,6 +555,33 @@ public final class BackportedMethodRewriter implements CfInstructionDesugaring {
       proto = factory.createProto(type, factory.charSequenceType);
       method = factory.createMethod(type, proto, name);
       addProvider(new MethodGenerator(method, BackportedMethods::ReaderMethods_of));
+
+      type = factory.createType("Ljava/lang/IO;");
+      // static void IO.print(Object obj)
+      name = factory.createString("print");
+      proto = factory.createProto(factory.voidType, factory.objectType);
+      method = factory.createMethod(type, proto, name);
+      addProvider(new MethodGenerator(method, BackportedMethods::IOMethods_print));
+      // static void IO.println()
+      name = factory.createString("println");
+      proto = factory.createProto(factory.voidType);
+      method = factory.createMethod(type, proto, name);
+      addProvider(new MethodGenerator(method, BackportedMethods::IOMethods_println));
+      // static void IO.println(Object obj)
+      name = factory.createString("println");
+      proto = factory.createProto(factory.voidType, factory.objectType);
+      method = factory.createMethod(type, proto, name);
+      addProvider(new MethodGenerator(method, BackportedMethods::IOMethods_printlnObject));
+      // static String IO.readln()
+      name = factory.createString("readln");
+      proto = factory.createProto(factory.stringType);
+      method = factory.createMethod(type, proto, name);
+      addProvider(new MethodGenerator(method, BackportedMethods::IOMethods_readln));
+      // static String IO.readln(String prompt)
+      name = factory.createString("readln");
+      proto = factory.createProto(factory.stringType, factory.stringType);
+      method = factory.createMethod(type, proto, name);
+      addProvider(new MethodGenerator(method, BackportedMethods::IOMethods_readlnString));
     }
 
     private void initializeAndroidKObjectsMethodProviders(DexItemFactory factory) {
