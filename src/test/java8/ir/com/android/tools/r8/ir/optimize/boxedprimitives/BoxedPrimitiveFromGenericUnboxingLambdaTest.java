@@ -7,7 +7,11 @@ import static com.android.tools.r8.utils.codeinspector.Matchers.isAbsentIf;
 import static com.android.tools.r8.utils.codeinspector.Matchers.isPresent;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
+import com.android.tools.r8.NeverInline;
+import com.android.tools.r8.NoParameterTypeStrengthening;
+import com.android.tools.r8.NoReturnTypeStrengthening;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.utils.codeinspector.ClassSubject;
@@ -48,58 +52,46 @@ public class BoxedPrimitiveFromGenericUnboxingLambdaTest extends TestBase {
                 options.testing.enableBridgeHoistingToSharedSyntheticSuperclass =
                     enableBridgeHoistingToSharedSyntheticSuperclass)
         .collectSyntheticItems()
+        .enableInliningAnnotations()
+        .enableNoParameterTypeStrengtheningAnnotations()
+        .enableNoReturnTypeStrengtheningAnnotations()
         .noHorizontalClassMergingOfSynthetics()
         .setMinApi(parameters)
         .compile()
         .inspectWithSyntheticItems(
             (inspector, syntheticItems) -> {
               // Function should be removed as a result of bridge hoisting + inlining when adding a
-              // shared superclass to Increment and Decrement, and another shared superclass to
-              // StdoutPrinter and StderrPrinter.
-              ClassSubject functionClassSubject = inspector.clazz(Function.class);
-              assertThat(functionClassSubject, isAbsentIf(optimize));
+              // shared superclass to Increment and Decrement.
+              ClassSubject functionClass = inspector.clazz(Function.class);
+              assertThat(functionClass, isAbsentIf(optimize));
+
+              if (!optimize) {
+                // Check that the Function#apply method signature is unchanged.
+                MethodSubject functionClassApplyMethod =
+                    functionClass.uniqueMethodWithOriginalName("apply");
+                assertThat(functionClassApplyMethod, isPresent());
+                assertTrue(functionClassApplyMethod.getParameter(0).is(Object.class));
+                assertTrue(functionClassApplyMethod.getReturnType().is(Object.class));
+              }
 
               // Check that the cast to java.lang.Integer in Increment.apply has been removed as a
               // result of devirtualization.
-              ClassSubject incrementClassSubject =
+              ClassSubject incrementClass =
                   inspector.clazz(syntheticItems.syntheticLambdaClass(Increment.class, 0));
-              assertThat(incrementClassSubject, isPresent());
+              assertThat(incrementClass, isPresent());
 
-              MethodSubject incrementApplyMethodSubject =
-                  incrementClassSubject.uniqueMethodThatMatches(m -> !m.isInstanceInitializer());
-              assertThat(incrementApplyMethodSubject, isPresent());
+              MethodSubject incrementClassApplyMethod =
+                  incrementClass.uniqueMethodThatMatches(m -> !m.isInstanceInitializer());
+              assertThat(incrementClassApplyMethod, isPresent());
               assertEquals(
                   optimize,
-                  incrementApplyMethodSubject
+                  incrementClassApplyMethod
                       .streamInstructions()
                       .noneMatch(
                           instruction -> instruction.isCheckCast(Integer.class.getTypeName())));
-
-              // Check that the cast to java.lang.String in StdoutPrinter.apply has been removed as
-              // result of devirtualization (in fact the `Void apply(String)` method has been
-              // optimized to `void apply()` as a result of constant propagation).
-              ClassSubject stdoutPrinterClassSubject =
-                  inspector.clazz(syntheticItems.syntheticLambdaClass(StdoutPrinter.class, 0));
-              assertThat(stdoutPrinterClassSubject, isPresent());
-
-              MethodSubject stdoutPrinterApplyMethodSubject =
-                  stdoutPrinterClassSubject.uniqueMethodThatMatches(
-                      m -> !m.isInstanceInitializer());
-              assertThat(stdoutPrinterApplyMethodSubject, isPresent());
-              assertEquals(
-                  optimize,
-                  stdoutPrinterApplyMethodSubject.getProgramMethod().getReturnType().isVoidType());
-              assertEquals(
-                  optimize ? 0 : 1, stdoutPrinterApplyMethodSubject.getParameters().size());
-              assertEquals(
-                  optimize,
-                  stdoutPrinterApplyMethodSubject
-                      .streamInstructions()
-                      .noneMatch(
-                          instruction -> instruction.isCheckCast(String.class.getTypeName())));
             })
         .run(parameters.getRuntime(), Main.class)
-        .assertSuccessWithOutputLines("42", "42", "42");
+        .assertSuccessWithOutputLines("42", "42");
   }
 
   static class Main {
@@ -109,16 +101,20 @@ public class BoxedPrimitiveFromGenericUnboxingLambdaTest extends TestBase {
           System.currentTimeMillis() > 0 ? Increment.get() : Decrement.get();
       Function<Integer, Integer> dec =
           System.currentTimeMillis() > 0 ? Decrement.get() : Increment.get();
-      Function<String, Void> printer =
-          System.currentTimeMillis() > 0 ? StdoutPrinter.get() : StderrPrinter.get();
-      System.out.println(inc.apply(41));
-      System.out.println(dec.apply(43));
-      printer.apply("42");
+      System.out.println(apply(inc, 41));
+      System.out.println(apply(dec, 43));
+    }
+
+    @NeverInline
+    private static Integer apply(Function<Integer, Integer> fn, int arg) {
+      return fn.apply(arg);
     }
   }
 
   interface Function<S, T> {
 
+    @NoParameterTypeStrengthening
+    @NoReturnTypeStrengthening
     T apply(S s);
   }
 
@@ -133,26 +129,6 @@ public class BoxedPrimitiveFromGenericUnboxingLambdaTest extends TestBase {
 
     static Function<Integer, Integer> get() {
       return i -> i - 1;
-    }
-  }
-
-  static class StdoutPrinter {
-
-    static Function<String, Void> get() {
-      return obj -> {
-        System.out.println(obj);
-        return null;
-      };
-    }
-  }
-
-  static class StderrPrinter {
-
-    static Function<String, Void> get() {
-      return obj -> {
-        System.err.println(obj);
-        return null;
-      };
     }
   }
 }

@@ -544,6 +544,9 @@ public class ArgumentPropagatorProgramOptimizer {
       DexType newReturnType = null;
       for (ProgramMethod method : methods) {
         if (method.getDefinition().isAbstract()) {
+          if (!appView.getKeepInfo(method).isReturnTypeStrengtheningAllowed(options)) {
+            return null;
+          }
           // OK, this method can have any return type.
           continue;
         }
