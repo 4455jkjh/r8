@@ -9,10 +9,11 @@ import com.android.tools.r8.keepanno.annotations.KeepForApi;
 import com.android.tools.r8.keepanno.keeprules.KeepRuleExtractorOptions;
 import com.android.tools.r8.origin.CommandLineOrigin;
 import com.android.tools.r8.utils.AndroidApp;
+import com.android.tools.r8.utils.CliParserUtils;
 import com.android.tools.r8.utils.InternalOptions;
 import com.android.tools.r8.utils.Reporter;
 import com.android.tools.r8.utils.StringDiagnostic;
-import com.android.tools.r8.utils.internal.StringUtils;
+import com.android.tools.r8.utils.internal.CliParser;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
@@ -76,15 +77,9 @@ public class ExtractKeepAnnoRulesCommand extends BaseCommand {
     }
   }
 
-  static final String USAGE_MESSAGE =
-      // TODO(b/425263915): Need to support more, including extracting for different versions and
-      //  keepedge AST proto.
-      StringUtils.lines(
-          "Usage: EXPERIMENTAL tool to extract keep rules from keep annotations",
-          "  --rules-output <file>      # Output the extracted keep rules.",
-          "  --rules-target r8|pg       # Optimizer rules are for (default r8).",
-          "  --version                  # Print the version.",
-          "  --help                     # Print this message.");
+  static String usageMessage() {
+    return CliParserUtils.getUsageMessage(createParser());
+  }
 
   public static Builder builder() {
     return new Builder();
@@ -96,7 +91,11 @@ public class ExtractKeepAnnoRulesCommand extends BaseCommand {
 
   public static Builder parse(String[] args) {
     Builder builder = builder();
-    parse(args, builder);
+    createParser()
+        .parse(
+            args,
+            builder,
+            err -> builder.error(new StringDiagnostic(err, CommandLineOrigin.INSTANCE)));
     return builder;
   }
 
@@ -112,56 +111,37 @@ public class ExtractKeepAnnoRulesCommand extends BaseCommand {
     return reporter;
   }
 
-  private static void parse(String[] args, Builder builder) {
-    for (int i = 0; i < args.length; i++) {
-      String arg = args[i].trim();
-      if (arg.length() == 0) {
-        continue;
-      } else if (arg.equals("--help")) {
-        builder.setPrintHelp(true);
-      } else if (arg.equals("--version")) {
-        builder.setPrintVersion(true);
-      } else if (arg.equals("--rules-target")) {
-        i++;
-        if (args.length == i) {
-          builder
-              .getReporter()
-              .fatalError(
-                  new StringDiagnostic(
-                      "Missing argument to --rules-target", CommandLineOrigin.INSTANCE));
-        }
-        String target = args[i].trim();
-        if (target.equals("r8")) {
-          builder.setExtractorOptions(KeepRuleExtractorOptions.getR8Options());
-        } else if (target.equals("pg")) {
-          builder.setExtractorOptions(KeepRuleExtractorOptions.getPgOptions());
-        } else {
-          builder
-              .getReporter()
-              .fatalError(
-                  new StringDiagnostic(
-                      "Unsupported argument '" + target + "' to --rules-target",
-                      CommandLineOrigin.INSTANCE));
-        }
-      } else if (arg.equals("--rules-output")) {
-        if (args.length == i) {
-          builder
-              .getReporter()
-              .fatalError(
-                  new StringDiagnostic(
-                      "Missing argument to --rules-output", CommandLineOrigin.INSTANCE));
-        }
-        builder.setRulesOutputPath(Paths.get(args[++i]));
-      } else {
-        if (arg.startsWith("--")) {
-          builder
-              .getReporter()
-              .fatalError(
-                  new StringDiagnostic("Unknown option: " + arg, CommandLineOrigin.INSTANCE));
-        }
-        builder.addProgramFiles(Paths.get(arg));
-      }
-    }
+  private static CliParser<Builder> createParser() {
+    var header = "Usage: EXPERIMENTAL tool to extract keep rules from keep annotations";
+    var parser = new CliParser<Builder>(header);
+    // TODO(b/425263915): Need to support more, including extracting for different versions and
+    //  keepedge AST proto.
+    return parser
+        .option1(
+            "--rules-output",
+            "<file>",
+            "Output the extracted keep rules.",
+            (b, arg) -> b.setRulesOutputPath(Paths.get(arg)))
+        .option1(
+            "--rules-target",
+            "<r8|pg>",
+            "Optimizer rules are for (default 'r8').",
+            (b, arg) -> {
+              if (arg.equals("r8")) {
+                b.setExtractorOptions(KeepRuleExtractorOptions.getR8Options());
+              } else if (arg.equals("pg")) {
+                b.setExtractorOptions(KeepRuleExtractorOptions.getPgOptions());
+              } else {
+                b.getReporter()
+                    .fatalError(
+                        new StringDiagnostic(
+                            "Unsupported argument '" + arg + "' to --rules-target",
+                            CommandLineOrigin.INSTANCE));
+              }
+            })
+        .option0("--version", "Print the version.", b -> b.setPrintVersion(true))
+        .option0("--help", "Print this message.", b -> b.setPrintHelp(true), "-h")
+        .positional((b, arg) -> b.addProgramFiles(Paths.get(arg)));
   }
 
   private ExtractKeepAnnoRulesCommand(
