@@ -238,10 +238,22 @@ public class BridgeHoistingToSharedSyntheticSuperClass {
     // `Integer lambda$0(Integer)`, we want to introduce a method `Integer apply(Integer)` on the
     // lambda class. First check that this method signature does not already exist in the hierarchy.
     DexMethod bridgeTarget = bridgeInfo.getInvokedMethod();
+    DexMethod bridgeTargetWithoutCaptures;
+    if (bridgeInfo.getCaptures() == 0) {
+      bridgeTargetWithoutCaptures = bridgeTarget;
+    } else {
+      bridgeTargetWithoutCaptures =
+          bridgeTarget.withParameters(
+              bridgeTarget.getParameters().subParameters(bridgeInfo.getCaptures()), factory);
+    }
+    assert bridgeTargetWithoutCaptures.getArity() == method.getArity();
+
     DexMethod bridgeMethodReference =
         appView.testing().enableBridgeHoistingToSharedSyntheticSuperclassReturnSpecialization
-            ? method.getReference().withProto(bridgeTarget.getProto(), factory)
-            : method.getReference().withParameters(bridgeTarget.getParameters(), factory);
+            ? method.getReference().withProto(bridgeTargetWithoutCaptures.getProto(), factory)
+            : method
+                .getReference()
+                .withParameters(bridgeTargetWithoutCaptures.getParameters(), factory);
     MethodResolutionResult resolutionResult =
         appView.appInfo().resolveMethodOn(clazz, bridgeMethodReference);
     if (resolutionResult.isSingleResolution()) {
@@ -275,7 +287,10 @@ public class BridgeHoistingToSharedSyntheticSuperClass {
             .setArguments(
                 ImmutableList.<Value>builder()
                     .add(code.getThis())
-                    .addAll(invoke.arguments())
+                    .addAll(
+                        invoke
+                            .arguments()
+                            .subList(bridgeInfo.getCaptures(), invoke.arguments().size()))
                     .build())
             .setIsInterface(clazz.isInterface())
             .setMethod(bridgeMethodReference)
