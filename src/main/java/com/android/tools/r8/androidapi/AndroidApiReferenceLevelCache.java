@@ -48,8 +48,6 @@ public class AndroidApiReferenceLevelCache {
     ImmutableList.Builder<AndroidApiForHashingReference> builder = ImmutableList.builder();
     BiConsumer<DexReference, AndroidApiLevel> addItemToList =
         ConsumerUtils.andThen(AndroidApiForHashingReference::create, builder::add);
-    AndroidApiLevelDatabaseHelper.visitAdditionalKnownApiReferences(
-        appView.dexItemFactory(), addItemToList);
     appView
         .options()
         .apiModelingOptions()

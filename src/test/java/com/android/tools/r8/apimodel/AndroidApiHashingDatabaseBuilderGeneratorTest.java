@@ -5,9 +5,9 @@
 package com.android.tools.r8.apimodel;
 
 import static com.android.tools.r8.UnorderedCollectionMatcher.matchesItemsOneToOne;
-import static com.android.tools.r8.androidapi.AndroidApiLevelDatabaseHelper.notModeledFields;
-import static com.android.tools.r8.androidapi.AndroidApiLevelDatabaseHelper.notModeledMethods;
 import static com.android.tools.r8.androidapi.AndroidApiLevelDatabaseHelper.notModeledTypes;
+import static com.android.tools.r8.androidapi.AndroidApiLevelDatabaseTestHelper.notModeledFields;
+import static com.android.tools.r8.androidapi.AndroidApiLevelDatabaseTestHelper.notModeledMethods;
 import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertEquals;
@@ -21,6 +21,7 @@ import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.androidapi.AndroidApiLevelCompute;
 import com.android.tools.r8.androidapi.AndroidApiLevelCompute.DefaultAndroidApiLevelCompute;
+import com.android.tools.r8.androidapi.AndroidApiLevelDatabaseTestHelper;
 import com.android.tools.r8.androidapi.AndroidApiLevelHashingDatabaseImpl;
 import com.android.tools.r8.androidapi.ApiDatabaseEntry;
 import com.android.tools.r8.androidapi.ComputedApiLevel;
@@ -100,25 +101,34 @@ public class AndroidApiHashingDatabaseBuilderGeneratorTest extends TestBase {
     }
   }
 
-  private static GenerateDatabaseResourceFilesResult generateResourcesFiles() throws Exception {
-    Path androidJar = ToolHelper.getAndroidJar(API_LEVEL);
-    return generateResourcesFiles(
-        AndroidApiVersionsXmlParserChecked.parse(
-            ToolHelper.getApiVersionsXmlFile(API_LEVEL), androidJar, API_LEVEL, false),
-        API_LEVEL);
+  private static GenerateDatabaseResourceFilesResult generateResourcesFiles(
+      Map<ApiDatabaseEntry, AndroidApiLevel> databaseEntries) throws Exception {
+    TemporaryFolder temp1 = new TemporaryFolder();
+    temp1.create();
+    Path apiLevels = temp1.newFile("api_levels.ser").toPath();
+    AndroidApiHashingDatabaseBuilderGenerator.writeEntries(databaseEntries, apiLevels);
+    return new GenerateDatabaseResourceFilesResult(apiLevels);
   }
 
-  private static GenerateDatabaseResourceFilesResult generateResourcesFiles(
-      List<ParsedApiClass> apiClasses, AndroidApiLevel androidJarApiLevel) throws Exception {
-    TemporaryFolder temp = new TemporaryFolder();
-    temp.create();
-    Path apiLevels = temp.newFile("api_levels.ser").toPath();
+  private static Map<ApiDatabaseEntry, AndroidApiLevel> loadDatabaseEntries() throws Exception {
+    Path androidJar = ToolHelper.getAndroidJar(API_LEVEL);
+    List<ParsedApiClass> apiClasses =
+        AndroidApiVersionsXmlParserChecked.parse(
+            ToolHelper.getApiVersionsXmlFile(API_LEVEL), androidJar, API_LEVEL, false);
     DexItemFactory factory = new DexItemFactory();
-    mergeCovariantMethods(apiClasses, factory);
-
+    addCovariantMethods(apiClasses, factory);
+    addAdditionalKnownApiReferences(apiClasses, factory);
     Map<ApiDatabaseEntry, AndroidApiLevel> databaseEntries =
         AndroidApiHashingDatabaseBuilderGenerator.generateEntries(apiClasses);
+    verifyAgainstJar(apiClasses, databaseEntries, API_LEVEL);
+    return databaseEntries;
+  }
 
+  private static void verifyAgainstJar(
+      List<ParsedApiClass> apiClasses,
+      Map<ApiDatabaseEntry, AndroidApiLevel> databaseEntries,
+      AndroidApiLevel androidJarApiLevel)
+      throws Exception {
     Path androidJar = ToolHelper.getAndroidJar(androidJarApiLevel);
     AndroidApp androidApp =
         AndroidApp.builder()
@@ -130,10 +140,6 @@ public class AndroidApiHashingDatabaseBuilderGeneratorTest extends TestBase {
 
     ensureAllPublicMethodsAreMapped(
         appView, apiClasses, databaseEntries, androidJarApiLevel, androidJar);
-
-    AndroidApiHashingDatabaseBuilderGenerator.writeEntries(databaseEntries, apiLevels);
-
-    return new GenerateDatabaseResourceFilesResult(apiLevels);
   }
 
   private static void ensureAllPublicMethodsAreMapped(
@@ -196,28 +202,6 @@ public class AndroidApiHashingDatabaseBuilderGeneratorTest extends TestBase {
     }
 
     Set<DexType> expectedMissingMembers = new HashSet<>();
-    // api-versions.xml do not encode all members of StringBuffers and StringBuilders, check that we
-    // only have missing definitions for those two classes.
-    expectedMissingMembers.add(factory.stringBufferType);
-    expectedMissingMembers.add(factory.stringBuilderType);
-    // TODO(b/231126636): api-versions.xml has missing definitions for the below classes.
-    expectedMissingMembers.add(
-        factory.createType("Ljava/util/concurrent/ConcurrentHashMap$KeySetView;"));
-    expectedMissingMembers.add(factory.createType("Ljava/time/chrono/ThaiBuddhistDate;"));
-    expectedMissingMembers.add(factory.createType("Ljava/time/chrono/HijrahDate;"));
-    expectedMissingMembers.add(factory.createType("Ljava/time/chrono/JapaneseDate;"));
-    expectedMissingMembers.add(factory.createType("Ljava/time/chrono/MinguoDate;"));
-    expectedMissingMembers.add(factory.createType("Landroid/nfc/tech/NfcV;"));
-    expectedMissingMembers.add(factory.createType("Landroid/nfc/tech/IsoDep;"));
-    expectedMissingMembers.add(factory.createType("Landroid/nfc/tech/MifareUltralight;"));
-    expectedMissingMembers.add(factory.createType("Landroid/nfc/tech/MifareClassic;"));
-    expectedMissingMembers.add(factory.createType("Landroid/nfc/tech/NdefFormatable;"));
-    expectedMissingMembers.add(factory.createType("Landroid/nfc/tech/NfcA;"));
-    expectedMissingMembers.add(factory.createType("Landroid/nfc/tech/NfcBarcode;"));
-    expectedMissingMembers.add(factory.createType("Landroid/nfc/tech/NfcF;"));
-    expectedMissingMembers.add(factory.createType("Landroid/nfc/tech/NfcB;"));
-    expectedMissingMembers.add(factory.createType("Landroid/nfc/tech/Ndef;"));
-    expectedMissingMembers.add(factory.createType("Landroid/webkit/CookieSyncManager;"));
     if (apiLevel.isLessThan(AndroidApiLevel.BAKLAVA_1)) {
       expectedMissingMembers.add(
           factory.createType("Landroid/adservices/adselection/AdSelectionOutcome;"));
@@ -251,7 +235,7 @@ public class AndroidApiHashingDatabaseBuilderGeneratorTest extends TestBase {
     assertThat(missingMemberInformation.keySet(), matchesItemsOneToOne(expectedMissingMembers));
   }
 
-  private static void mergeCovariantMethods(List<ParsedApiClass> apiClasses, DexItemFactory factory)
+  private static void addCovariantMethods(List<ParsedApiClass> apiClasses, DexItemFactory factory)
       throws Exception {
     CovariantMethodsInJarResult covariantMethodsInJar = CovariantMethodsInJarResult.create();
     for (ParsedApiClass apiClass : apiClasses) {
@@ -273,8 +257,48 @@ public class AndroidApiHashingDatabaseBuilderGeneratorTest extends TestBase {
     }
   }
 
+  private static void addAdditionalKnownApiReferences(
+      List<ParsedApiClass> apiClasses, DexItemFactory factory) {
+    Map<ClassReference, ParsedApiClass> lookupMap = new HashMap<>();
+    for (ParsedApiClass apiClass : apiClasses) {
+      lookupMap.put(apiClass.getClassReference(), apiClass);
+    }
+    AndroidApiLevelDatabaseTestHelper.visitAdditionalKnownApiReferences(
+        factory,
+        (reference, apiLevel) -> {
+          if (reference.isDexType()) {
+            ClassReference classRef = reference.asDexType().asClassReference();
+            assert !lookupMap.containsKey(classRef) : classRef + " is already registered";
+            ParsedApiClass apiClass = new ParsedApiClass(classRef, apiLevel);
+            lookupMap.put(classRef, apiClass);
+            apiClasses.add(apiClass);
+          } else if (reference.isDexMethod()) {
+            MethodReference methodRef = reference.asDexMethod().asMethodReference();
+            ClassReference holderRef = methodRef.getHolderClass();
+            ParsedApiClass apiClass = lookupMap.get(holderRef);
+            if (apiClass == null) {
+              apiClass = new ParsedApiClass(holderRef, apiLevel);
+              lookupMap.put(holderRef, apiClass);
+              apiClasses.add(apiClass);
+            }
+            apiClass.registerMethod(methodRef, apiLevel);
+          } else if (reference.isDexField()) {
+            ClassReference holderRef = reference.asDexField().getHolderType().asClassReference();
+            FieldTypelessReference fieldRef =
+                new FieldTypelessReference(holderRef, reference.asDexField().getName().toString());
+            ParsedApiClass apiClass = lookupMap.get(holderRef);
+            if (apiClass == null) {
+              apiClass = new ParsedApiClass(holderRef, apiLevel);
+              lookupMap.put(holderRef, apiClass);
+              apiClasses.add(apiClass);
+            }
+            apiClass.registerField(fieldRef, apiLevel);
+          }
+        });
+  }
+
   @Test
-  public void testCanParseApiVersionsXml() throws Exception {
+  public void testParsedApiVersionsXmlSize() throws Exception {
     // This tests makes a rudimentary check on the number of classes, fields and methods in
     // api-versions.xml to ensure that the runtime tests do not vacuously succeed.
     List<ParsedApiClass> parsedApiClasses =
@@ -291,9 +315,15 @@ public class AndroidApiHashingDatabaseBuilderGeneratorTest extends TestBase {
           numberOfMethods.increment(apiClass.methodCount());
         });
     // These numbers will change when updating api-versions.xml.
-    assertEquals(6498, parsedApiClasses.size());
-    assertEquals(32818, numberOfFields.get());
-    assertEquals(49867, numberOfMethods.get());
+    assertEquals(6_498, parsedApiClasses.size());
+    assertEquals(32_818, numberOfFields.get());
+    assertEquals(49_867, numberOfMethods.get());
+  }
+
+  @Test
+  public void testEntrySize() throws Exception {
+    Map<ApiDatabaseEntry, AndroidApiLevel> databaseEntries = loadDatabaseEntries();
+    assertEquals(252_214, databaseEntries.size());
   }
 
   private static final String sampleVersion4ApiVersionsXml =
@@ -337,7 +367,8 @@ public class AndroidApiHashingDatabaseBuilderGeneratorTest extends TestBase {
           + "        </class>\n"
           + "</api>\n";
 
-  static class SdkExtensions {
+  static class SdkExtensionsStub {
+    @SuppressWarnings("unused")
     int AD_SERVICES;
   }
 
@@ -349,7 +380,7 @@ public class AndroidApiHashingDatabaseBuilderGeneratorTest extends TestBase {
       ZipUtils.writeToZipStream(
           out,
           "android/os/ext/SdkExtensions.class",
-          transformer(SdkExtensions.class)
+          transformer(SdkExtensionsStub.class)
               .setClassDescriptor("Landroid/os/ext/SdkExtensions;")
               .transform(),
           ZipEntry.STORED);
@@ -444,7 +475,7 @@ public class AndroidApiHashingDatabaseBuilderGeneratorTest extends TestBase {
 
   @Test
   public void testDatabaseGenerationUpToDate() throws Exception {
-    GenerateDatabaseResourceFilesResult result = generateResourcesFiles();
+    GenerateDatabaseResourceFilesResult result = generateResourcesFiles(loadDatabaseEntries());
     assertTrue(TestBase.filesAreEqual(result.apiLevels, API_DATABASE));
   }
 
@@ -745,7 +776,7 @@ public class AndroidApiHashingDatabaseBuilderGeneratorTest extends TestBase {
    * third_party/api_database/api_database.ser.
    */
   public static void main(String[] args) throws Exception {
-    GenerateDatabaseResourceFilesResult result = generateResourcesFiles();
+    GenerateDatabaseResourceFilesResult result = generateResourcesFiles(loadDatabaseEntries());
     API_DATABASE.toFile().mkdirs();
     Files.move(result.apiLevels, API_DATABASE, REPLACE_EXISTING);
     System.out.println(

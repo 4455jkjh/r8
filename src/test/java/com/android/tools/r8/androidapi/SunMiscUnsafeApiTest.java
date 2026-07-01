@@ -89,7 +89,7 @@ public class SunMiscUnsafeApiTest extends TestBase {
       Map<ClassReference, AndroidApiLevel> classApis,
       Map<FieldReference, AndroidApiLevel> fieldApis,
       Map<MethodReference, AndroidApiLevel> methodApis) {
-    AndroidApiLevelDatabaseHelper.addUnsafeMethods(
+    AndroidApiLevelDatabaseTestHelper.addUnsafeMethods(
         // A short-lived item factory only used to extract non-canonical Reference-types.
         new DexItemFactory(),
         (reference, apiLevel) -> {
