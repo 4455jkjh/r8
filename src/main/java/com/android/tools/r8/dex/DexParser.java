@@ -254,6 +254,10 @@ public class DexParser<T extends DexClass> {
     this.options = options;
   }
 
+  public OffsetToObjectMapping getIndexedItems() {
+    return indexedItems;
+  }
+
   // We explicitly reread the code objects even if they are deduplicated in the input (i.e., two
   // methods point to the same code object) to allow us to change code objects in our pipeline.
   private DexCode readCodeObject(int offset) {
@@ -1123,7 +1127,7 @@ public class DexParser<T extends DexClass> {
     return new DexCode(registerSize, insSize, outsSize, instructions, tries, handlers, debugInfo);
   }
 
-  void populateIndexTables() {
+  public void populateIndexTables() {
     // Populate structures that are already sorted upon read.
     populateStrings(); // Depends on nothing.
     populateChecksums(); // Depends on Strings.
