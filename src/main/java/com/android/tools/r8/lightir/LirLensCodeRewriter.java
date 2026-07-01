@@ -691,7 +691,7 @@ public class LirLensCodeRewriter<EV> extends LirParsedInstructionCallback<EV> {
         constantIndex =
             methodIndices.computeIfAbsent(
                 result.getReference(),
-                (DexMethod ref) -> {
+                ref -> {
                   methodsToAppend.add(ref);
                   return rewrittenConstants.length + methodsToAppend.size() - 1;
                 });

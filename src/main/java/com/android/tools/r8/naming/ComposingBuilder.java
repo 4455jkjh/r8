@@ -38,8 +38,6 @@ import it.unimi.dsi.fastutil.ints.Int2IntLinkedOpenHashMap;
 import it.unimi.dsi.fastutil.ints.Int2IntSortedMap;
 import it.unimi.dsi.fastutil.ints.Int2ReferenceMap;
 import it.unimi.dsi.fastutil.ints.Int2ReferenceOpenHashMap;
-import it.unimi.dsi.fastutil.ints.IntArrayList;
-import it.unimi.dsi.fastutil.ints.IntList;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -52,7 +50,6 @@ import java.util.Map.Entry;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.function.Consumer;
-import java.util.function.IntConsumer;
 
 public class ComposingBuilder {
 
@@ -403,29 +400,29 @@ public class ComposingBuilder {
 
   private static class MappedRangeOriginalToMinifiedMap {
 
-    private final Int2ReferenceMap<IntList> originalToMinified;
+    private final Int2ReferenceMap<List<Integer>> originalToMinified;
 
-    private MappedRangeOriginalToMinifiedMap(Int2ReferenceMap<IntList> originalToMinified) {
+    private MappedRangeOriginalToMinifiedMap(Int2ReferenceMap<List<Integer>> originalToMinified) {
       this.originalToMinified = originalToMinified;
     }
 
     private static MappedRangeOriginalToMinifiedMap build(List<MappedRange> mappedRanges) {
-      Int2ReferenceMap<IntList> positionMap = new Int2ReferenceOpenHashMap<>();
+      Int2ReferenceMap<List<Integer>> positionMap = new Int2ReferenceOpenHashMap<>();
       for (MappedRange mappedRange : mappedRanges) {
         Range originalRange = mappedRange.getOriginalRangeOrIdentity();
         for (int position = originalRange.from; position <= originalRange.to; position++) {
           // It is perfectly fine to have multiple minified ranges mapping to the same source, we
           // just need to keep the additional information.
           positionMap
-              .computeIfAbsent(position, ignoreArgument(IntArrayList::new))
+              .computeIfAbsent(position, ignoreArgument(ArrayList::new))
               .add(mappedRange.minifiedRange.from + (position - originalRange.from));
         }
       }
       return new MappedRangeOriginalToMinifiedMap(positionMap);
     }
 
-    public void visitMinified(int originalPosition, IntConsumer consumer) {
-      IntList minifiedPositions = originalToMinified.get(originalPosition);
+    public void visitMinified(int originalPosition, Consumer<Integer> consumer) {
+      List<Integer> minifiedPositions = originalToMinified.get(originalPosition);
       if (minifiedPositions != null) {
         minifiedPositions.forEach(consumer);
       }

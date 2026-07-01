@@ -511,13 +511,8 @@ public class KeepAnnotationMatcher {
     }
 
     private int defineBindingReference(KeepBindingReference reference) {
-      KeepBindingSymbol name = reference.getName();
-      if (symbolToKey.containsKey(name)) {
-        return symbolToKey.getInt(name);
-      }
-      int value = defineItemPattern(getItemForBinding(name));
-      symbolToKey.put(name, value);
-      return value;
+      return symbolToKey.computeIfAbsent(
+          reference.getName(), symbol -> defineItemPattern(getItemForBinding(symbol)));
     }
 
     private int defineItemPattern(KeepItemPattern item) {
