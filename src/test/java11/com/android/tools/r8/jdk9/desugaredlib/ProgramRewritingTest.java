@@ -68,7 +68,7 @@ public class ProgramRewritingTest extends DesugaredLibraryTestBase {
                 ToolHelper.getDesugarLibConversions(LEGACY),
                 ToolHelper.getCoreLambdaStubs()),
             JDK8.getSpecification(),
-            ImmutableSet.of(ToolHelper.getAndroidJar(AndroidApiLevel.O)),
+            JDK8.getLibraryFiles(),
             LibraryDesugaringSpecification.JDK8_DESCRIPTOR,
             "");
     LibraryDesugaringSpecification jdk11CoreLambdaStubs =
@@ -79,7 +79,7 @@ public class ProgramRewritingTest extends DesugaredLibraryTestBase {
                 ToolHelper.getDesugarLibConversions(LATEST),
                 ToolHelper.getCoreLambdaStubs()),
             JDK11.getSpecification(),
-            ImmutableSet.of(ToolHelper.getAndroidJar(AndroidApiLevel.U)),
+            JDK11.getLibraryFiles(),
             LibraryDesugaringSpecification.JDK11_DESCRIPTOR,
             "");
     return buildParameters(
@@ -109,7 +109,7 @@ public class ProgramRewritingTest extends DesugaredLibraryTestBase {
             .inspect(this::checkRewrittenInvokes)
             .inspectKeepRules(
                 kr -> {
-                  if (parameters.getApiLevel().getLevel() < AndroidApiLevel.N.getLevel()) {
+                  if (libraryDesugaringSpecification.hasStreamDesugaring(parameters)) {
                     keepRules.set(String.join("\n", kr));
                   } else {
                     assert kr == null || kr.isEmpty();

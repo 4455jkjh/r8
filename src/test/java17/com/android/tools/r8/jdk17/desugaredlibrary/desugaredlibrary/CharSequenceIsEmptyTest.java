@@ -73,8 +73,6 @@ public class CharSequenceIsEmptyTest extends DesugaredLibraryTestBase {
         .addInnerClassesAndStrippedOuter(getClass())
         .addKeepMainRule(Main.class)
         .noMinification()
-        // Need CharSequence#isEmpty in library.
-        .overrideLibraryFiles(ToolHelper.getAndroidJar(AndroidApiLevel.BAKLAVA))
         .run(parameters.getRuntime(), Main.class)
         .assertSuccessWithOutput(EXPECTED_OUTPUT);
   }

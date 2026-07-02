@@ -36,7 +36,7 @@ public class PartialCompilationInlineAfterSyntheticSharingTest extends TestBase 
         .addR8ExcludedClasses(ExcludedClass.class)
         .addR8IncludedClasses(IncludedClass.class)
         .addLibraryClasses(Foo.class)
-        .addLibraryFiles(ToolHelper.getMostRecentAndroidJar())
+        .addLibraryFiles(ToolHelper.getLatestAndroidJar())
         .apply(setMockApiLevelForClass(Foo.class, AndroidApiLevel.LATEST))
         // Enable library desugaring so that API outlining is run lir-to-lir in R8 of R8 partial.
         .enableCoreLibraryDesugaring(

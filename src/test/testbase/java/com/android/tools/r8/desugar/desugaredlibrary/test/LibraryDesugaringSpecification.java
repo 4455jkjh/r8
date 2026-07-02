@@ -9,6 +9,8 @@ import static com.android.tools.r8.ToolHelper.DESUGARED_LIB_RELEASES_DIR;
 import static com.android.tools.r8.desugar.desugaredlibrary.test.LibraryDesugaringSpecification.CustomConversionVersion.LATEST;
 import static com.android.tools.r8.desugar.desugaredlibrary.test.LibraryDesugaringSpecification.CustomConversionVersion.LEGACY;
 
+import com.android.tools.r8.ArchiveClassFileProvider;
+import com.android.tools.r8.ClassFileResourceProvider;
 import com.android.tools.r8.L8TestBuilder;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
@@ -21,6 +23,7 @@ import com.android.tools.r8.utils.AndroidApiLevel;
 import com.android.tools.r8.utils.AndroidApp;
 import com.android.tools.r8.utils.InternalOptions;
 import com.android.tools.r8.utils.ThreadUtils;
+import com.android.tools.r8.utils.internal.SetUtils;
 import com.android.tools.r8.utils.timing.Timing;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
@@ -144,7 +147,9 @@ public class LibraryDesugaringSpecification {
           "JDK11",
           LibraryDesugaringSpecification::ensureUndesugaredJdk11LibJarForTesting,
           "jdk11/desugar_jdk_libs.json",
-          AndroidApiLevel.U,
+          // TODO(b/518618585): Change to AndroidApiLevel.BAKLAVA_1 once desugared library supports
+          //  minor api levels.
+          AndroidApiLevel.CINNAMON_BUN,
           JDK11_DESCRIPTOR,
           LATEST);
   public static LibraryDesugaringSpecification JDK11_MINIMAL =
@@ -160,7 +165,9 @@ public class LibraryDesugaringSpecification {
           "JDK11_PATH",
           LibraryDesugaringSpecification::ensureUndesugaredJdk11LibJarForTesting,
           "jdk11/desugar_jdk_libs_nio.json",
-          AndroidApiLevel.U,
+          // TODO(b/518618585): Change to AndroidApiLevel.BAKLAVA_1 once desugared library supports
+          //  minor api levels.
+          AndroidApiLevel.CINNAMON_BUN,
           JDK11_PATH_DESCRIPTOR,
           LATEST);
 
@@ -171,7 +178,7 @@ public class LibraryDesugaringSpecification {
           // The legacy specification is not using the undesugared JAR.
           DESUGARED_JDK_11_LIB_JAR,
           "jdk11/desugar_jdk_libs_legacy.json",
-          AndroidApiLevel.T,
+          AndroidApiLevel.CINNAMON_BUN,
           JDK11_LEGACY_DESCRIPTOR,
           LEGACY);
   public static final LibraryDesugaringSpecification RELEASED_1_0_9 =
@@ -290,6 +297,18 @@ public class LibraryDesugaringSpecification {
     return libraryFiles;
   }
 
+  public Set<ClassFileResourceProvider> getLibraryClassFileResourceProviders() {
+    return SetUtils.mapIdentityHashSet(
+        libraryFiles,
+        path -> {
+          try {
+            return new ArchiveClassFileProvider(path);
+          } catch (IOException e) {
+            throw new RuntimeException(e);
+          }
+        });
+  }
+
   public Descriptor getDescriptor() {
     return descriptor;
   }
@@ -368,6 +387,18 @@ public class LibraryDesugaringSpecification {
   public boolean hasInstantSourceDesugaring(TestParameters parameters) {
     return (this == JDK11 || this == JDK11_PATH)
         && parameters.getApiLevel().isLessThan(AndroidApiLevel.U);
+  }
+
+  public boolean hasStreamDesugaring(TestParameters parameters) {
+    if (this == JDK11_MINIMAL) {
+      return false;
+    }
+    if (this == JDK8 || this == JDK11_LEGACY) {
+      return parameters.getApiLevel().isLessThan(AndroidApiLevel.N);
+    }
+    // TODO(b/518618585): Change to AndroidApiLevel.BAKLAVA_1 once desugared library supports
+    //  minor api levels.
+    return parameters.getApiLevel().isLessThan(AndroidApiLevel.CINNAMON_BUN);
   }
 
   public boolean hasNioFileDesugaring(TestParameters parameters) {

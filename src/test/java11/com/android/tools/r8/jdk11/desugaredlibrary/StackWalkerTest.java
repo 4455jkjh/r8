@@ -77,7 +77,6 @@ public class StackWalkerTest extends DesugaredLibraryTestBase {
     testForDesugaredLibrary(parameters, libraryDesugaringSpecification, compilationSpecification)
         .addInnerClassesAndStrippedOuter(getClass())
         .addKeepMainRule(Example.class)
-        .overrideLibraryFiles(ToolHelper.getAndroidJar(AndroidApiLevel.MAIN))
         .run(parameters.getRuntime(), Example.class)
         .assertSuccessWithOutput(
             compilationSpecification.isProgramShrink() ? EXPECTED_OUTPUT_R8 : EXPECTED_OUTPUT);

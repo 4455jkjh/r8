@@ -111,7 +111,6 @@ public class Java21CollectionTest extends DesugaredLibraryTestBase {
         .addInnerClassesAndStrippedOuter(getClass())
         .enableInliningAnnotations()
         .allowDiagnosticWarningMessages(parameters.getApiLevel().equals(AndroidApiLevel.MAIN))
-        .overrideLibraryFiles(ToolHelper.getAndroidJar(AndroidApiLevel.MAIN))
         .addKeepMainRule(Executor.class)
         .run(parameters.getRuntime(), Executor.class)
         .assertSuccessWithOutputLines(getExpectedResult());

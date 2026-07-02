@@ -130,7 +130,7 @@ public class R8BuildMetadataTest extends TestBase {
             parameters.isDexRuntime(),
             testBuilder ->
                 testBuilder
-                    .addLibraryFiles(ToolHelper.getMostRecentAndroidJar())
+                    .addLibraryFiles(ToolHelper.getLatestAndroidJar())
                     .addAndroidResources(getTestResources())
                     .addFeatureSplit(FeatureSplitMain.class)
                     .apply(StartupTestingUtils.addStartupProfile(startupProfile))
@@ -209,7 +209,7 @@ public class R8BuildMetadataTest extends TestBase {
     if (parameters.isDexRuntime()) {
       assertNotNull(libraryDesugaringMetadata);
       assertEquals(
-          "com.tools.android:desugar_jdk_libs_configuration:2.1.6",
+          "com.tools.android:desugar_jdk_libs_configuration:2.2.0",
           libraryDesugaringMetadata.getIdentifier());
     } else {
       assertNull(libraryDesugaringMetadata);
