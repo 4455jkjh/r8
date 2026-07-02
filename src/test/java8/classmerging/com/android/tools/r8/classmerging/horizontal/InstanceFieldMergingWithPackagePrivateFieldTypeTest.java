@@ -8,6 +8,7 @@ import com.android.tools.r8.NeverInline;
 import com.android.tools.r8.NoHorizontalClassMerging;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.references.Reference;
+import com.android.tools.r8.utils.codeinspector.HorizontallyMergedClassesInspector;
 import org.junit.Test;
 
 public class InstanceFieldMergingWithPackagePrivateFieldTypeTest
@@ -24,8 +25,7 @@ public class InstanceFieldMergingWithPackagePrivateFieldTypeTest
         .addKeepMainRule(Main.class)
         .addKeepClassAndMembersRules(PublicClass.class, PackagePrivateClass.class)
         .addHorizontallyMergedClassesInspector(
-            inspector ->
-                inspector.assertIsCompleteMergeGroup(A.class, B.class).assertNoOtherClassesMerged())
+            HorizontallyMergedClassesInspector::assertNoClassesMerged)
         .addRepackagingInspector(
             inspector -> inspector.assertIsRepackaged(Reference.classFromClass(Consumer.class)))
         .enableInliningAnnotations()
@@ -34,7 +34,7 @@ public class InstanceFieldMergingWithPackagePrivateFieldTypeTest
         .setMinApi(parameters)
         .compile()
         .run(parameters.getRuntime(), Main.class)
-        .assertFailureWithErrorThatThrows(IllegalAccessError.class);
+        .assertSuccess();
   }
 
   static class Main {

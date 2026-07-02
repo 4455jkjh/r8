@@ -4,6 +4,7 @@
 
 package com.android.tools.r8.lightir;
 
+import com.android.tools.r8.graph.DexField;
 import com.android.tools.r8.utils.structural.CompareToVisitor;
 import com.android.tools.r8.utils.structural.HashingVisitor;
 import com.android.tools.r8.utils.structural.StructuralAcceptor;
@@ -71,4 +72,12 @@ public interface LirConstant {
 
   /** Implementation of hashing on the actual subtypes. */
   void internalLirConstantAcceptHashing(HashingVisitor visitor);
+
+  default boolean isDexField() {
+    return false;
+  }
+
+  default DexField asDexField() {
+    return null;
+  }
 }
