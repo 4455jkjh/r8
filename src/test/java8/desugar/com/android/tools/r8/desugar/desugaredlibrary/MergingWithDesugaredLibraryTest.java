@@ -25,6 +25,7 @@ import com.android.tools.r8.ToolHelper.DexVm.Version;
 import com.android.tools.r8.desugar.desugaredlibrary.test.LibraryDesugaringSpecification;
 import com.android.tools.r8.dex.Marker;
 import com.android.tools.r8.dex.Marker.Tool;
+import com.android.tools.r8.utils.AndroidApiLevel;
 import com.android.tools.r8.utils.ExtractMarkerUtils;
 import com.google.common.collect.ImmutableList;
 import java.nio.file.Path;
@@ -85,7 +86,11 @@ public class MergingWithDesugaredLibraryTest extends DesugaredLibraryTestBase {
   }
 
   private String getExpected() {
-    return libraryDesugaringSpecification.hasStreamDesugaring(parameters) ? J$_RESULT : JAVA_RESULT;
+    if (parameters.getApiLevel().getLevel() >= AndroidApiLevel.N.getLevel()) {
+      return JAVA_RESULT;
+    } else {
+      return J$_RESULT;
+    }
   }
 
   @Test

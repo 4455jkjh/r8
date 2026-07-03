@@ -2,8 +2,8 @@
   "configuration_format_version": 5,
   "group_id": "com.tools.android",
   "artifact_id": "desugar_jdk_libs",
-  "version": "1.2.4",
-  "required_compilation_api_level": 37,
+  "version": "1.2.3",
+  "required_compilation_api_level": 33,
   "synthesized_library_classes_package_prefix": "j$.",
   "support_all_callbacks_from_library": true,
   "common_flags": [
@@ -165,10 +165,7 @@
         "java.util.function.DoubleToLongFunction",
         "java.util.function.LongUnaryOperator",
         "java.util.stream.BaseStream",
-        "java.util.function.DoublePredicate",
-        "java.util.stream.Gatherer",
-        "java.util.stream.Gatherer$Integrator",
-        "java.util.stream.Gatherer$Downstream"
+        "java.util.function.DoublePredicate"
       ],
       "custom_conversion": {
         "java.util.DoubleSummaryStatistics": "java.util.DoubleSummaryStatisticsConversions",

@@ -76,7 +76,7 @@ public class NewCollectorsTest extends DesugaredLibraryTestBase {
   private void assertCollectors(CodeInspector inspector) {
     MethodSubject methodSubject = inspector.clazz(Main.class).mainMethod();
     assertTrue(methodSubject.isPresent());
-    if (libraryDesugaringSpecification.hasStreamDesugaring(parameters)) {
+    if (libraryDesugaringSpecification.hasEmulatedInterfaceDesugaring(parameters)) {
       // Collectors is not present, all calls to the j$ version.
       assertTrue(anyStaticInvokeToHolder(methodSubject, "j$.util.stream.Collectors"));
       // In JDK11_LEGACY DesugarCollectors is used whenever possible, in other specifications,
@@ -87,8 +87,7 @@ public class NewCollectorsTest extends DesugaredLibraryTestBase {
       assertFalse(anyStaticInvokeToHolder(methodSubject, "java.util.stream.Collectors"));
       return;
     }
-    if (libraryDesugaringSpecification == JDK11_LEGACY
-        && parameters.getApiLevel().isLessThan(NEW_COLLECTORS_LEVEL)) {
+    if (parameters.getApiLevel().isLessThan(NEW_COLLECTORS_LEVEL)) {
       // Collectors is present, but partially, calls to java Collectors and DesugarCollectors.
       assertFalse(anyStaticInvokeToHolder(methodSubject, "j$.util.stream.Collectors"));
       // TODO(b/410532595): We should not outline these calls in D8 in R8 partial.

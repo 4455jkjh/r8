@@ -32,10 +32,6 @@ public class LibraryValidator {
       levelType = app.dexItemFactory.createType("Ljava/lang/invoke/VarHandle;");
     } else if (requiredCompilationAPILevel.isEqualTo(AndroidApiLevel.U)) {
       levelType = app.dexItemFactory.createType("Ljava/lang/Record;");
-    } else if (requiredCompilationAPILevel.isEqualTo(AndroidApiLevel.BAKLAVA_1)) {
-      levelType = app.dexItemFactory.createType("Ljava/util/stream/Gatherers;");
-    } else if (requiredCompilationAPILevel.isEqualTo(AndroidApiLevel.CINNAMON_BUN)) {
-      levelType = app.dexItemFactory.createType("Ljava/lang/IllegalCallerException;");
     } else {
       app.options.reporter.warning(
           "Unsupported requiredCompilationAPILevel: " + requiredCompilationAPILevel);

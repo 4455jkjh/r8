@@ -11,6 +11,7 @@ import static com.android.tools.r8.desugar.desugaredlibrary.test.LibraryDesugari
 
 import com.android.tools.r8.NeverInline;
 import com.android.tools.r8.TestParameters;
+import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.ToolHelper.DexVm.Version;
 import com.android.tools.r8.desugar.desugaredlibrary.DesugaredLibraryTestBase;
 import com.android.tools.r8.desugar.desugaredlibrary.test.CompilationSpecification;
@@ -57,7 +58,7 @@ public class MapMultiTest extends DesugaredLibraryTestBase {
 
   public String[] getExpectedResult(boolean desugLib) {
     if (parameters.getDexRuntimeVersion().isNewerThanOrEqual(Version.V14_0_0)) {
-      if (desugLib && libraryDesugaringSpecification.hasStreamDesugaring(parameters)) {
+      if (desugLib && parameters.getApiLevel().isLessThanOrEqualTo(AndroidApiLevel.N)) {
         // Unfortunately these methods are in android.jar from 14 but not in desugared library
         // and are not supported.
         return INVALID_EXPECTED_RESULT;
@@ -85,6 +86,7 @@ public class MapMultiTest extends DesugaredLibraryTestBase {
         .addInnerClassesAndStrippedOuter(getClass())
         .enableInliningAnnotations()
         .allowDiagnosticWarningMessages(parameters.getApiLevel().equals(AndroidApiLevel.MAIN))
+        .overrideLibraryFiles(ToolHelper.getAndroidJar(AndroidApiLevel.MAIN))
         .addKeepMainRule(Executor.class)
         .run(parameters.getRuntime(), Executor.class)
         .assertSuccessWithOutputLines(getExpectedResult(true));

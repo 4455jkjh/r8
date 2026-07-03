@@ -108,30 +108,11 @@ public class ExtractWrapperTypesTest extends DesugaredLibraryTestBase {
           "java.util.Locale$FilteringMode",
           "java.util.SplittableRandom");
 
-  private static final Set<String> MISSING_GENERIC_TYPE_CONVERSION =
-      ImmutableSet.of(
-          "java.time.temporal.TemporalAccessor"
-              + " java.time.temporal.TemporalField.resolve(java.util.Map,"
-              + " java.time.temporal.TemporalAccessor, java.time.format.ResolverStyle)",
-          "java.util.function.BiConsumer java.util.stream.Gatherer.finisher()",
-          "java.util.List java.time.temporal.TemporalAmount.getUnits()");
+  private static final Set<String> MISSING_GENERIC_TYPE_CONVERSION = ImmutableSet.of();
 
   // Missing conversions in JDK8 and JDK11_LEGACY desugared library that are fixed in JDK11.
   private static final Set<String> MISSING_GENERIC_TYPE_CONVERSION_8 =
       ImmutableSet.of(
-          "java.util.stream.Gatherer"
-              + " java.util.stream.Gatherer.ofSequential(java.util.function.Supplier,"
-              + " java.util.stream.Gatherer$Integrator, java.util.function.BiConsumer)",
-          "java.util.stream.Gatherer"
-              + " java.util.stream.Gatherer.of(java.util.stream.Gatherer$Integrator,"
-              + " java.util.function.BiConsumer)",
-          "java.util.stream.Gatherer"
-              + " java.util.stream.Gatherer.ofSequential(java.util.stream.Gatherer$Integrator,"
-              + " java.util.function.BiConsumer)",
-          "java.util.stream.Gatherer java.util.stream.Gatherer.of(java.util.function.Supplier,"
-              + " java.util.stream.Gatherer$Integrator, java.util.function.BinaryOperator,"
-              + " java.util.function.BiConsumer)",
-          "java.util.function.BiConsumer java.util.stream.Gatherer.defaultFinisher()",
           "java.util.Set java.util.stream.Collector.characteristics()",
           "java.util.stream.Stream java.util.stream.Stream.flatMap(java.util.function.Function)",
           "java.util.stream.DoubleStream"
@@ -179,15 +160,8 @@ public class ExtractWrapperTypesTest extends DesugaredLibraryTestBase {
   // java.util.stream.Collector$Characteristics is required for api generic type conversion
   // on JDK8, but that is not supported on legacy specification used for JDK8 and on old
   // R8 compiler versions.
-  private static final Set<String> EXPECTED_MISSING_INDIRECT_WRAPPERS_JDK8 =
+  private static final Set<String> EXPECTED_MISSING_WRAPPERS_JDK8 =
       ImmutableSet.of("java.util.stream.Collector$Characteristics");
-
-  private static final Set<String> EXPECTED_MISSING_DIRECT_WRAPPERS_JDK8 =
-      ImmutableSet.of(
-          "java.util.stream.Gatherer",
-          "java.util.stream.Gatherer$Downstream",
-          "java.util.stream.Gatherer$Integrator",
-          "java.util.stream.Gatherer$Integrator$Greedy");
 
   // The mapMulti methods don't work with desugared library, wrapper or not.
   private static final Set<String> EXPECTED_MISSING_WRAPPERS_ANDROID_V =
@@ -195,18 +169,6 @@ public class ExtractWrapperTypesTest extends DesugaredLibraryTestBase {
           "java.util.stream.DoubleStream$DoubleMapMultiConsumer",
           "java.util.stream.IntStream$IntMapMultiConsumer",
           "java.util.stream.LongStream$LongMapMultiConsumer");
-  private static final Set<String> EXPECTED_MISSING_DIRECT_WRAPPERS_ANDROID_CINNAMON_BUN =
-      ImmutableSet.of("java.time.temporal.Temporal");
-  private static final Set<String> EXPECTED_MISSING_INDIRECT_WRAPPERS_ANDROID_CINNAMON_BUN =
-      ImmutableSet.of(
-          "java.time.format.ResolverStyle",
-          "java.time.temporal.TemporalAccessor",
-          "java.time.temporal.TemporalAdjuster",
-          "java.time.temporal.TemporalAmount",
-          "java.time.temporal.TemporalField",
-          "java.time.temporal.TemporalQuery",
-          "java.time.temporal.TemporalUnit",
-          "java.time.temporal.ValueRange");
 
   // Acl types appear unusable on Android anyway.
   private static final Set<String> EXPECTED_MISSING_WRAPPERS_PATH =
@@ -232,7 +194,7 @@ public class ExtractWrapperTypesTest extends DesugaredLibraryTestBase {
 
   // TODO: parameterize to check both api<=23 as well as 23<api<26 for which the spec differs.
   private final AndroidApiLevel minApi = AndroidApiLevel.B;
-  private final AndroidApiLevel targetApi = AndroidApiLevel.CINNAMON_BUN;
+  private final AndroidApiLevel targetApi = AndroidApiLevel.MAIN;
 
   private Set<String> getMissingGenericTypeConversions() {
     HashSet<String> missing = new HashSet<>(MISSING_GENERIC_TYPE_CONVERSION);
@@ -248,19 +210,10 @@ public class ExtractWrapperTypesTest extends DesugaredLibraryTestBase {
     return missing;
   }
 
-  private Set<String> getMissingDirectWrappers() {
-    HashSet<String> missing = new HashSet<>(EXPECTED_MISSING_DIRECT_WRAPPERS_ANDROID_CINNAMON_BUN);
-    if (libraryDesugaringSpecification == JDK8) {
-      missing.addAll(EXPECTED_MISSING_DIRECT_WRAPPERS_JDK8);
-    }
-    return missing;
-  }
-
   private Set<String> getMissingIndirectWrappers() {
     HashSet<String> missing = new HashSet<>(EXPECTED_MISSING_WRAPPERS_ANDROID_V);
-    missing.addAll(EXPECTED_MISSING_INDIRECT_WRAPPERS_ANDROID_CINNAMON_BUN);
     if (libraryDesugaringSpecification == JDK8) {
-      missing.addAll(EXPECTED_MISSING_INDIRECT_WRAPPERS_JDK8);
+      missing.addAll(EXPECTED_MISSING_WRAPPERS_JDK8);
     }
     if (libraryDesugaringSpecification == JDK11_PATH) {
       missing.addAll(EXPECTED_MISSING_WRAPPERS_PATH);
@@ -375,23 +328,20 @@ public class ExtractWrapperTypesTest extends DesugaredLibraryTestBase {
             genericConversionsInSpec,
             genericDependencies);
 
-    int expectedMissingDirectWrappers = getMissingDirectWrappers().size();
-
     {
       Set<String> missingWrappers = getMissingWrappers(directWrappers, wrappersInSpec);
-      assertEquals(
+      assertTrue(
           "Missing direct wrappers:\n" + String.join("\n", missingWrappers),
-          expectedMissingDirectWrappers,
-          missingWrappers.size());
+          missingWrappers.isEmpty());
     }
 
-    int expectedMissingIndirectWrappers = getMissingIndirectWrappers().size();
+    int expectedMissingWrappers = getMissingIndirectWrappers().size();
 
     {
       Set<String> missingWrappers = getMissingWrappers(indirectWrappers, wrappersInSpec);
       assertEquals(
           "Missing indirect wrappers:\n" + String.join("\n", missingWrappers),
-          expectedMissingIndirectWrappers,
+          expectedMissingWrappers,
           missingWrappers.size());
     }
 
@@ -429,7 +379,7 @@ public class ExtractWrapperTypesTest extends DesugaredLibraryTestBase {
 
     assertEquals(
         directWrappers.size() + indirectWrappers.size() + ADDITIONAL_WRAPPERS.size(),
-        wrappersInSpec.size() + expectedMissingIndirectWrappers + expectedMissingDirectWrappers);
+        wrappersInSpec.size() + expectedMissingWrappers);
   }
 
   private static <T> Set<String> getMissingWrappers(

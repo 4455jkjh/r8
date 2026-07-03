@@ -21,6 +21,7 @@ import com.android.tools.r8.ToolHelper.ProcessResult;
 import com.android.tools.r8.desugar.desugaredlibrary.test.CompilationSpecification;
 import com.android.tools.r8.desugar.desugaredlibrary.test.DesugaredLibraryTestCompileResult;
 import com.android.tools.r8.desugar.desugaredlibrary.test.LibraryDesugaringSpecification;
+import com.android.tools.r8.utils.AndroidApiLevel;
 import com.android.tools.r8.utils.codeinspector.CodeInspector;
 import com.android.tools.r8.utils.internal.StringUtils;
 import com.google.common.collect.ImmutableList;
@@ -79,7 +80,8 @@ public class FeatureSplitTest extends DesugaredLibraryTestBase {
   }
 
   private void assertKeepThe3StreamMethods(String keepRules) {
-    if (!libraryDesugaringSpecification.hasStreamDesugaring(parameters)) {
+    // Stream desugaring is not needed >= N.
+    if (parameters.getApiLevel().getLevel() >= AndroidApiLevel.N.getLevel()) {
       return;
     }
     if (!compilationSpecification.isL8Shrink()) {
@@ -87,15 +89,13 @@ public class FeatureSplitTest extends DesugaredLibraryTestBase {
     }
     // Ensure count, toArray and forEach are kept.
     String prefix = libraryDesugaringSpecification.functionPrefix(parameters);
-    if (libraryDesugaringSpecification.hasEmulatedInterfaceDesugaring(parameters)) {
-      assertThat(
-          keepRules,
-          containsString(
-              "-keep class j$.lang.Iterable$-EL {\n"
-                  + "  public static void forEach(java.lang.Iterable, "
-                  + prefix
-                  + ".util.function.Consumer);"));
-    }
+    assertThat(
+        keepRules,
+        containsString(
+            "-keep class j$.lang.Iterable$-EL {\n"
+                + "  public static void forEach(java.lang.Iterable, "
+                + prefix
+                + ".util.function.Consumer);"));
     assertThat(
         keepRules,
         containsString(
@@ -260,7 +260,8 @@ public class FeatureSplitTest extends DesugaredLibraryTestBase {
       feature1Path = compileResult.getFeature(0);
       feature2Path = compileResult.getFeature(1);
 
-      if (!libraryDesugaringSpecification.hasStreamDesugaring(parameters)) {
+      // Stream desugaring is not needed >= N.
+      if (parameters.getApiLevel().getLevel() >= AndroidApiLevel.N.getLevel()) {
         return this;
       }
 

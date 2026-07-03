@@ -95,7 +95,7 @@ public class CustomCollectionTest extends DesugaredLibraryTestBase {
                     || instr.toString().contains("Stream$-CC"))
             : (instr ->
                 instr.toString().contains("$-EL") || instr.toString().contains("Comparator"));
-    if (libraryDesugaringSpecification.hasStreamDesugaring(parameters)) {
+    if (libraryDesugaringSpecification.hasEmulatedInterfaceDesugaring(parameters)) {
       assertTrue(
           direct.streamInstructions().filter(InstructionSubject::isInvokeStatic).allMatch(matcher));
     } else {
@@ -103,7 +103,7 @@ public class CustomCollectionTest extends DesugaredLibraryTestBase {
     }
     MethodSubject inherited =
         inspector.clazz(Executor.class).uniqueMethodWithOriginalName("inheritedTypes");
-    if (!libraryDesugaringSpecification.hasStreamDesugaring(parameters)) {
+    if (!libraryDesugaringSpecification.hasEmulatedInterfaceDesugaring(parameters)) {
       assertTrue(
           inherited.streamInstructions().noneMatch(instr -> instr.toString().contains("$-EL")));
       return;
@@ -118,11 +118,7 @@ public class CustomCollectionTest extends DesugaredLibraryTestBase {
 
   private void assertInheritedDispatchCorrect(InstructionSubject instructionSubject) {
     if (!instructionSubject.isConstString(JumboStringMode.ALLOW)) {
-      String[] selectors =
-          libraryDesugaringSpecification.hasEmulatedInterfaceDesugaring(parameters)
-              ? new String[] {">stream", "spliterator", "sort"}
-              : new String[] {">stream"};
-      for (String s : selectors) {
+      for (String s : new String[] {">stream", "spliterator", "sort"}) {
         if (instructionSubject.toString().contains(s)) {
           assertTrue(instructionSubject.isInvokeStatic());
           assertTrue(

@@ -1318,11 +1318,6 @@ public class ToolHelper {
     return path;
   }
 
-  public static Path getLatestAndroidJar() {
-    assert hasAndroidJar(AndroidApiLevel.LATEST);
-    return getAndroidJar(AndroidApiLevel.LATEST);
-  }
-
   public static Path getMostRecentAndroidJar() {
     List<AndroidApiLevel> apiLevels = AndroidApiLevel.getAndroidApiLevelsSorted();
     ListIterator<AndroidApiLevel> iterator = apiLevels.listIterator(apiLevels.size());

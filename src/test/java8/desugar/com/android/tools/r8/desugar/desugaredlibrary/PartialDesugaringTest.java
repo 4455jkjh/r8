@@ -69,13 +69,29 @@ public class PartialDesugaringTest extends DesugaredLibraryTestBase {
         AndroidApiLevel.S,
         AndroidApiLevel.T,
         AndroidApiLevel.U,
-        AndroidApiLevel.V,
-        AndroidApiLevel.BAKLAVA,
-        AndroidApiLevel.BAKLAVA_1,
-        AndroidApiLevel.CINNAMON_BUN);
+        AndroidApiLevel.MAIN);
   }
 
   // TODO(b/268425188): Fix remaining failures.
+  private static final Set<String> FAILURES_STREAM =
+      ImmutableSet.of(
+          "java.util.stream.Stream java.util.stream.Stream.takeWhile(java.util.function.Predicate)",
+          "java.util.stream.Stream"
+              + " java.util.stream.Stream.dropWhile(java.util.function.Predicate)");
+  private static final Set<String> FAILURES_NUMBER_STREAM =
+      ImmutableSet.of(
+          "java.util.stream.IntStream"
+              + " java.util.stream.IntStream.dropWhile(java.util.function.IntPredicate)",
+          "java.util.stream.LongStream"
+              + " java.util.stream.LongStream.dropWhile(java.util.function.LongPredicate)",
+          "java.util.stream.DoubleStream"
+              + " java.util.stream.DoubleStream.takeWhile(java.util.function.DoublePredicate)",
+          "java.util.stream.IntStream"
+              + " java.util.stream.IntStream.takeWhile(java.util.function.IntPredicate)",
+          "java.util.stream.LongStream"
+              + " java.util.stream.LongStream.takeWhile(java.util.function.LongPredicate)",
+          "java.util.stream.DoubleStream"
+              + " java.util.stream.DoubleStream.dropWhile(java.util.function.DoublePredicate)");
   private static final Set<String> FAILURES_FILE_STORE =
       ImmutableSet.of(
           // FileStore.getBlockSize() was added in 33.
@@ -128,10 +144,8 @@ public class PartialDesugaringTest extends DesugaredLibraryTestBase {
     SupportedClasses supportedClasses =
         new SupportedClassesGenerator(
                 options,
-                librarySpecification == JDK8
-                    ? ImmutableList.of(
-                        new ArchiveClassFileProvider(ToolHelper.getAndroidJar(AndroidApiLevel.U)))
-                    : librarySpecification.getLibraryClassFileResourceProviders(),
+                ImmutableList.of(
+                    new ArchiveClassFileProvider(ToolHelper.getAndroidJar(AndroidApiLevel.U))),
                 false)
             .run(
                 programResources, StringResource.fromFile(librarySpecification.getSpecification()));
@@ -190,7 +204,11 @@ public class PartialDesugaringTest extends DesugaredLibraryTestBase {
     Set<String> expectedFailures = new HashSet<>();
     boolean jdk11NonMinimal = librarySpecification != JDK8 && librarySpecification != JDK11_MINIMAL;
     if (jdk11NonMinimal && api.isGreaterThanOrEqualTo(AndroidApiLevel.N)) {
+      if (api.isLessThan(AndroidApiLevel.MAIN)) {
+        expectedFailures.addAll(FAILURES_NUMBER_STREAM);
+      }
       if (api.isLessThan(AndroidApiLevel.U)) {
+        expectedFailures.addAll(FAILURES_STREAM);
         expectedFailures.addAll(FAILURES_DOUBLE_SUMMARY_STATISTICS);
       }
       if (api.isLessThan(AndroidApiLevel.T)) {
