@@ -360,7 +360,9 @@ public class R8 {
       // Important scope! This ensures that the complete subtyping info for the entire input
       // including the entire library can be collected after tree shaking.
       AnnotationRemover.Builder annotationRemoverBuilder =
-          options.isShrinking() ? AnnotationRemover.builder(Mode.INITIAL_TREE_SHAKING) : null;
+          options.isFullMode() || options.isShrinking()
+              ? AnnotationRemover.builder(Mode.INITIAL_TREE_SHAKING)
+              : null;
       List<ProguardConfigurationRule> synthesizedProguardRules =
           ProguardConfigurationUtils.synthesizeRules(appView);
       {
@@ -460,6 +462,13 @@ public class R8 {
         TreePruner pruner = new TreePruner(appViewWithLiveness);
         pruner.run(executorService, timing, PrunedItems.builder());
         appViewWithLiveness.appInfo().notifyTreePrunerFinished(Enqueuer.Mode.INITIAL_TREE_SHAKING);
+
+        if (annotationRemoverBuilder != null) {
+          AnnotationRemover annotationRemover = annotationRemoverBuilder.build(appViewWithLiveness);
+          annotationRemover.ensureValid().run(executorService);
+        } else {
+          assert options.isForceProguardCompatibilityEnabled();
+        }
       }
 
       if (options.isGeneratingClassFiles()) {
