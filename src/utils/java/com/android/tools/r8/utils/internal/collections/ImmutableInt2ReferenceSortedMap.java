@@ -10,7 +10,9 @@ import it.unimi.dsi.fastutil.ints.Int2ReferenceSortedMap;
 import it.unimi.dsi.fastutil.ints.Int2ReferenceSortedMaps;
 import it.unimi.dsi.fastutil.ints.IntSortedSet;
 import it.unimi.dsi.fastutil.objects.ObjectSortedSet;
+import it.unimi.dsi.fastutil.objects.ReferenceCollection;
 import java.util.Map;
+import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
@@ -68,11 +70,35 @@ public class ImmutableInt2ReferenceSortedMap<V> extends Int2ReferenceSortedMaps.
   }
 
   @Override
+  public boolean containsKey(int k) {
+    return sortedMap.containsKey(k);
+  }
+
+  @Override
+  public boolean containsKey(Object ok) {
+    return sortedMap.containsKey(ok);
+  }
+
+  @Override
+  public boolean containsValue(Object ov) {
+    return sortedMap.containsValue(ov);
+  }
+
+  @Override
+  public void forEach(BiConsumer<? super Integer, ? super V> action) {
+    sortedMap.forEach(action);
+  }
+
+  @Override
+  public ReferenceCollection<V> values() {
+    return sortedMap.values();
+  }
+
+  @Override
   public int size() {
     return sortedMap.size();
   }
 
-  @SuppressWarnings("unchecked")
   @Override
   public ObjectSortedSet<Entry<V>> int2ReferenceEntrySet() {
     return sortedMap.int2ReferenceEntrySet();
@@ -80,7 +106,6 @@ public class ImmutableInt2ReferenceSortedMap<V> extends Int2ReferenceSortedMaps.
 
   @Deprecated
   @Override
-  @SuppressWarnings("unchecked")
   public ObjectSortedSet<Map.Entry<Integer, V>> entrySet() {
     return sortedMap.entrySet();
   }
@@ -90,19 +115,16 @@ public class ImmutableInt2ReferenceSortedMap<V> extends Int2ReferenceSortedMaps.
     return sortedMap.keySet();
   }
 
-  @SuppressWarnings("unchecked")
   @Override
   public Int2ReferenceSortedMap<V> subMap(final int from, final int to) {
     return sortedMap.subMap(from, to);
   }
 
-  @SuppressWarnings("unchecked")
   @Override
   public Int2ReferenceSortedMap<V> headMap(final int to) {
     return sortedMap.headMap(to);
   }
 
-  @SuppressWarnings("unchecked")
   @Override
   public Int2ReferenceSortedMap<V> tailMap(final int from) {
     return sortedMap.tailMap(from);
