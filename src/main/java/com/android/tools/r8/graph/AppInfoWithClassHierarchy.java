@@ -387,7 +387,7 @@ public class AppInfoWithClassHierarchy extends AppInfo {
       DexClass optionalSuperclass,
       ImmediateProgramSubtypingInfo optionalImmediateSubtypingInfo) {
     assert subtype.isClassType();
-    assert supertype.isClassType();
+    assert supertype.isClassType() : supertype.toSourceString();
     return subtype.isIdenticalTo(supertype)
         || isStrictSubtypeOf(
             subtype,

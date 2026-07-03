@@ -325,7 +325,7 @@ public class VirtualMethodHoister {
           case ARRAY_PUT:
             {
               ArrayPut arrayPut = instruction.asArrayPut();
-              if (isThis(arrayPut.value())) {
+              if (mightBeThis(arrayPut.value())) {
                 // We would need to check the array type, which is not embedded in the array-put.
                 // For now simply bail-out conservatively.
                 return false;
@@ -365,7 +365,7 @@ public class VirtualMethodHoister {
               // after hoisting.
               DexType elementType = type.asArrayType().getArrayElementType();
               for (Value argument : newArrayFilled.arguments()) {
-                if (isThis(argument)) {
+                if (mightBeThis(argument)) {
                   if (isInvalidUseOfThis(argument, elementType, targetMethod)) {
                     return false;
                   } else {
@@ -510,12 +510,14 @@ public class VirtualMethodHoister {
       }
     }
 
-    private boolean isThis(Value value) {
-      return value.getAliasedValue().isThis();
+    private boolean mightBeThis(Value value) {
+      return value.getAliasedValue().isThis() || value.getAliasedValue().isPhi();
     }
 
     private boolean isInvalidUseOfThis(Value value, DexType type, ProgramMethod targetMethod) {
-      return isThis(value) && !appView.appInfo().isSubtype(targetMethod.getHolderType(), type);
+      return mightBeThis(value)
+          && type.isClassType()
+          && !appView.appInfo().isSubtype(targetMethod.getHolderType(), type);
     }
 
     private boolean isTypeInaccessibleInTargetClass(DexType type, ProgramMethod targetMethod) {

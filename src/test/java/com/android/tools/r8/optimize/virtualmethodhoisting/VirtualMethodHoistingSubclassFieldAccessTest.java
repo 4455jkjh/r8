@@ -11,7 +11,6 @@ import com.android.tools.r8.NoVerticalClassMerging;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
-import com.android.tools.r8.ToolHelper.DexVm.Version;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -51,14 +50,7 @@ public class VirtualMethodHoistingSubclassFieldAccessTest extends TestBase {
         .addDontObfuscate()
         .compile()
         .run(parameters.getRuntime(), Main.class)
-        .applyIf(
-            parameters.isCfRuntime()
-                || parameters.isDexRuntimeVersionNewerThanOrEqual(Version.V7_0_0),
-            r -> r.assertFailureWithErrorThatThrows(VerifyError.class),
-            parameters.isDexRuntimeVersion(Version.V5_1_1)
-                || parameters.isDexRuntimeVersion(Version.V6_0_1),
-            r -> r.assertSuccessWithOutputLines("1", "2"),
-            r -> r.assertFailureWithErrorThatThrows(NoSuchFieldError.class));
+        .assertSuccessWithOutputLines("1", "2");
   }
 
   public static class Main {
