@@ -112,6 +112,8 @@ public class JumboStringCodeRewriter {
       new Int2ReferenceOpenHashMap<>();
   private final Map<TryHandler, List<DexInstruction>> handlerTargets = new IdentityHashMap<>();
 
+  private boolean hasInstructionWithChangedOffset = false;
+
   public JumboStringCodeRewriter(
       DexEncodedMethod method,
       DexString firstConstString16,
@@ -137,23 +139,28 @@ public class JumboStringCodeRewriter {
     recordTargets();
     // Expand the code by rewriting jumbo strings and branching instructions.
     List<DexInstruction> newInstructions = expandCode();
-    // Commit to the new instruction offsets and update instructions, try-catch structures
-    // and debug info with the new offsets.
-    rewriteInstructionOffsets(newInstructions);
-    Try[] newTries = rewriteTryOffsets();
-    TryHandler[] newHandlers = rewriteHandlerOffsets();
-    DexDebugInfo newDebugInfo = rewriteDebugInfoOffsets();
     // Set the new code on the method.
     DexCode oldCode = getCode();
-    DexCode newCode =
-        new DexCode(
-            oldCode.registerSize,
-            oldCode.incomingRegisterSize,
-            oldCode.outgoingRegisterSize,
-            newInstructions.toArray(DexInstruction.EMPTY_ARRAY),
-            newTries,
-            newHandlers,
-            newDebugInfo);
+    DexCode newCode;
+    if (hasInstructionWithChangedOffset) {
+      // Commit to the new instruction offsets and update instructions, try-catch structures
+      // and debug info with the new offsets.
+      rewriteInstructionOffsets(newInstructions);
+      Try[] newTries = rewriteTryOffsets();
+      TryHandler[] newHandlers = rewriteHandlerOffsets();
+      DexDebugInfo newDebugInfo = rewriteDebugInfoOffsets();
+      newCode =
+          new DexCode(
+              oldCode.registerSize,
+              oldCode.incomingRegisterSize,
+              oldCode.outgoingRegisterSize,
+              newInstructions.toArray(DexInstruction.EMPTY_ARRAY),
+              newTries,
+              newHandlers,
+              newDebugInfo);
+    } else {
+      newCode = oldCode.withNewInstructions(newInstructions.toArray(DexInstruction.EMPTY_ARRAY));
+    }
     // As we have rewritten the code, we now know that its highest string index that is not
     // a jumbo-string is firstConstString16 (actually the previous string, but we do not have that).
     newCode.setHighestSortingStringForJumboProcessedCode(firstConstString16);
@@ -339,6 +346,7 @@ public class JumboStringCodeRewriter {
             offsetDelta++;
             it.set(jumboString);
             replaceTarget(instruction, jumboString);
+            hasInstructionWithChangedOffset = true;
           } else if (firstConstString16 != null
               && string.getString().compareTo(firstConstString16) >= 0) {
             DexConstString16 string16 = new DexConstString16(string.AA, string.getString());
@@ -373,6 +381,7 @@ public class JumboStringCodeRewriter {
                 break;
             }
             offsetDelta = rewriteIfToIfAndGoto(offsetDelta, it, condition, newCondition);
+            hasInstructionWithChangedOffset = true;
           }
         } else if (instruction
             instanceof DexFormat21t) { // IfEqz, IfGez, IfGtz, IfLez, IfLtz, IfNez
@@ -402,6 +411,7 @@ public class JumboStringCodeRewriter {
                 break;
             }
             offsetDelta = rewriteIfToIfAndGoto(offsetDelta, it, condition, newCondition);
+            hasInstructionWithChangedOffset = true;
           }
         } else if (instruction instanceof DexGoto) {
           DexGoto jump = (DexGoto) instruction;
@@ -419,6 +429,7 @@ public class JumboStringCodeRewriter {
             replaceTarget(jump, newJump);
             List<DexInstruction> targets = instructionTargets.remove(jump);
             instructionTargets.put(newJump, targets);
+            hasInstructionWithChangedOffset = true;
           }
         } else if (instruction instanceof DexGoto16) {
           DexGoto16 jump = (DexGoto16) instruction;
@@ -431,6 +442,7 @@ public class JumboStringCodeRewriter {
             replaceTarget(jump, newJump);
             List<DexInstruction> targets = instructionTargets.remove(jump);
             instructionTargets.put(newJump, targets);
+            hasInstructionWithChangedOffset = true;
           }
         } else if (instruction instanceof DexGoto32) {
           // Instruction big enough for any offset.
@@ -461,6 +473,7 @@ public class JumboStringCodeRewriter {
             }
             instruction.setOffset(orignalOffset + offsetDelta);
             it.next();
+            hasInstructionWithChangedOffset = true;
           }
           // Instruction big enough for any offset.
         }

@@ -14,7 +14,7 @@ class ApkAnalyzerResult {
 
   // Dex size stats.
   final MinMaxTotalStats dexSize;
-  final int jumboStrings;
+  final StringStats stringStats;
 
   // Resource size stats.
   final MinMaxTotalStats resSize;
@@ -69,7 +69,7 @@ class ApkAnalyzerResult {
       DesugaredLibraryInfo desugaredLibInfo,
       DebugInfoStats debugInfoStats,
       DexSegments.Result dexSegments,
-      int jumboStrings,
+      StringStats stringStats,
       String mostOccurringSourceFile,
       int mostOccurringSourceFileCount,
       int runtimeInvisibleAnnotations,
@@ -94,7 +94,7 @@ class ApkAnalyzerResult {
     this.desugaredLibraryInfo = desugaredLibInfo;
     this.debugInfoStats = debugInfoStats;
     this.dexSegments = dexSegments;
-    this.jumboStrings = jumboStrings;
+    this.stringStats = stringStats;
     this.mostOccurringSourceFile = mostOccurringSourceFile;
     this.mostOccurringSourceFileCount = mostOccurringSourceFileCount;
     this.runtimeInvisibleAnnotations = runtimeInvisibleAnnotations;

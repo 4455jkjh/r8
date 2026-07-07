@@ -3,8 +3,6 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8.ir.optimize.info.bridge;
 
-import static com.android.tools.r8.ir.code.Opcodes.ARGUMENT;
-import static com.android.tools.r8.ir.code.Opcodes.ASSUME;
 import static com.android.tools.r8.ir.code.Opcodes.CHECK_CAST;
 import static com.android.tools.r8.ir.code.Opcodes.GOTO;
 import static com.android.tools.r8.ir.code.Opcodes.INVOKE_DIRECT;
@@ -20,6 +18,7 @@ import com.android.tools.r8.ir.code.AliasedValueConfiguration;
 import com.android.tools.r8.ir.code.BasicBlock;
 import com.android.tools.r8.ir.code.Goto;
 import com.android.tools.r8.ir.code.IRCode;
+import com.android.tools.r8.ir.code.InstanceGet;
 import com.android.tools.r8.ir.code.Instruction;
 import com.android.tools.r8.ir.code.InstructionListIterator;
 import com.android.tools.r8.ir.code.InvokeMethod;
@@ -28,6 +27,8 @@ import com.android.tools.r8.ir.code.Value;
 import com.android.tools.r8.utils.internal.BooleanUtils;
 import com.android.tools.r8.utils.internal.SetUtils;
 import com.android.tools.r8.utils.internal.exceptions.Unreachable;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Set;
 
 public class BridgeAnalyzer {
@@ -35,26 +36,24 @@ public class BridgeAnalyzer {
   /** Returns a {@link BridgeInfo} object describing this method if it is recognized as a bridge. */
   public static BridgeInfo analyzeMethod(AppView<?> appView, DexEncodedMethod method, IRCode code) {
     DexItemFactory factory = appView.dexItemFactory();
-    // The main method of lambda classes forward all arguments except the receiver (i.e., the lambda
-    // instance) to the synthetic javac lambda$ method using an invoke-static. If the receiver is
-    // unused, we require that argument i is passed as argument i-1 to the invoke-static for i>0.
-    int forwardArgumentOffset = method.isInstance() && code.getThis().isUnused() ? -1 : 0;
-    // Scan through the instructions one-by-one. We expect a sequence of Argument instructions,
-    // followed by a (possibly empty) sequence of CheckCast/Box/Unbox operations followed by a
-    // single InvokeMethod instruction, followed by an optional CheckCast/Box/Unbox instruction,
-    // followed by a Return instruction.
+    InstructionListIterator instructionIterator = code.entryBlock().listIterator();
+    skipArgumentAndAssumeInstructions(instructionIterator);
+    List<Value> captures = new ArrayList<>();
+    if (!processInstanceGetInstructions(method, code, instructionIterator, captures)) {
+      return failure();
+    }
+    int forwardArgumentOffset = getForwardArgumentOffset(method, code, captures.size());
+
+    // Scan through the instructions one-by-one. We expect a sequence of CheckCast/Box/Unbox
+    // operations followed by a single InvokeMethod instruction, followed by an optional
+    // CheckCast/Box/Unbox instruction, followed by a Return instruction.
     InvokeMethod uniqueInvoke = null;
     // The unique cast, box, or unbox operation prior to the return instruction.
     Instruction uniqueReturnCheckCastBoxOrUnbox = null;
-    InstructionListIterator instructionIterator = code.entryBlock().listIterator();
     Set<BasicBlock> seenBlocks = null;
     while (instructionIterator.hasNext()) {
       Instruction instruction = instructionIterator.next();
       switch (instruction.opcode()) {
-        case ARGUMENT:
-        case ASSUME:
-          break;
-
         case CHECK_CAST:
           {
             if (!analyzeCheckCastBoxOrUnbox(
@@ -103,7 +102,7 @@ public class BridgeAnalyzer {
               return failure();
             }
             InvokeMethod invoke = instruction.asInvokeMethod();
-            if (!analyzeInvoke(invoke, factory, forwardArgumentOffset)) {
+            if (!analyzeInvoke(invoke, factory, forwardArgumentOffset, captures)) {
               return failure();
             }
             // Record that we have seen the single invoke instruction.
@@ -146,30 +145,85 @@ public class BridgeAnalyzer {
         || uniqueInvoke.isInvokeStatic()
         || uniqueInvoke.isInvokeSuper()
         || uniqueInvoke.isInvokeVirtual();
+
     switch (uniqueInvoke.getType()) {
       case DIRECT:
-        if (forwardArgumentOffset != 0) {
+        if (!captures.isEmpty() || forwardArgumentOffset != 0) {
           return null;
         }
         return new DirectBridgeInfo(uniqueInvoke.getInvokedMethod());
       case STATIC:
-        return forwardArgumentOffset == 0
+        return captures.isEmpty() && forwardArgumentOffset == 0
             ? new StaticBridgeInfo(uniqueInvoke.getInvokedMethod())
             : new StaticBridgeExcludingReceiverInfo(
-                uniqueInvoke.getInvokedMethod(), uniqueInvoke.getInterfaceBit());
+                uniqueInvoke.getInvokedMethod(), uniqueInvoke.getInterfaceBit(), captures.size());
       case SUPER:
-        if (forwardArgumentOffset != 0) {
+        if (!captures.isEmpty() || forwardArgumentOffset != 0) {
           return null;
         }
         return new SuperBridgeInfo(uniqueInvoke.getInvokedMethod());
       case VIRTUAL:
-        if (forwardArgumentOffset != 0) {
+        if (!captures.isEmpty() || forwardArgumentOffset != 0) {
           return null;
         }
         return new VirtualBridgeInfo(uniqueInvoke.getInvokedMethod());
       default:
         throw new Unreachable();
     }
+  }
+
+  private static int getForwardArgumentOffset(
+      DexEncodedMethod method, IRCode code, int captureCount) {
+    if (captureCount > 0) {
+      return captureCount - 1;
+    }
+    return method.isInstance() && code.getThis().isUnused() ? -1 : 0;
+  }
+
+  private static void skipArgumentAndAssumeInstructions(InstructionListIterator iterator) {
+    while (iterator.hasNext()) {
+      Instruction next = iterator.next();
+      if (next.isArgument() || next.isAssume()) {
+        continue;
+      }
+      iterator.previous();
+      break;
+    }
+  }
+
+  private static boolean processInstanceGetInstructions(
+      DexEncodedMethod method,
+      IRCode code,
+      InstructionListIterator iterator,
+      List<Value> captures) {
+    while (iterator.hasNext()) {
+      Instruction next = iterator.next();
+      if (next.isInstanceGet()) {
+        if (!method.isInstance()) {
+          return false;
+        }
+        InstanceGet instanceGet = next.asInstanceGet();
+        if (instanceGet.object() != code.getThis()) {
+          return false;
+        }
+        Value outValue = instanceGet.outValue();
+        if (outValue.hasPhiUsers()) {
+          return false;
+        }
+        if (outValue.hasDebugUsers() || !outValue.hasSingleUniqueUser()) {
+          return false;
+        }
+        Instruction user = outValue.singleUniqueUser();
+        if (!user.isInvokeMethod()) {
+          return false;
+        }
+        captures.add(outValue);
+      } else {
+        iterator.previous();
+        break;
+      }
+    }
+    return true;
   }
 
   private static boolean analyzeCheckCastBoxOrUnbox(
@@ -267,9 +321,24 @@ public class BridgeAnalyzer {
   }
 
   private static boolean analyzeInvoke(
-      InvokeMethod invoke, DexItemFactory factory, int forwardArgumentOffset) {
+      InvokeMethod invoke,
+      DexItemFactory factory,
+      int forwardArgumentOffset,
+      List<Value> captures) {
+    int captureCount = captures.size();
+    if (invoke.arguments().size() < captureCount) {
+      return false;
+    }
+    for (int i = 0; i < captureCount; i++) {
+      Value argument = invoke.getArgument(i).getAliasedValue();
+      if (argument != captures.get(i).getAliasedValue()) {
+        return false;
+      }
+    }
     // All of the forwarded arguments of the enclosing method must be in the same argument position.
-    for (int argumentIndex = 0; argumentIndex < invoke.arguments().size(); argumentIndex++) {
+    for (int argumentIndex = captureCount;
+        argumentIndex < invoke.arguments().size();
+        argumentIndex++) {
       Value argument = invoke.getArgument(argumentIndex).getAliasedValue();
       if (argument.isPhi()) {
         return false;
@@ -290,6 +359,8 @@ public class BridgeAnalyzer {
         if (argumentIndex != incomingArgumentIndex + forwardArgumentOffset) {
           return false;
         }
+      } else {
+        return false;
       }
       // Validate that besides argument values only check-cast of argument values are allowed at
       // their argument position.

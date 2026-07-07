@@ -75,14 +75,6 @@ public abstract class DexReference extends IndexedDexItem implements LirConstant
     return null;
   }
 
-  public boolean isDexField() {
-    return false;
-  }
-
-  public DexField asDexField() {
-    return null;
-  }
-
   public boolean isDexMethod() {
     return false;
   }

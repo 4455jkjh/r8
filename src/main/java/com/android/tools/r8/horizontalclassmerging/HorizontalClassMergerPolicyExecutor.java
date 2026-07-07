@@ -16,21 +16,24 @@ public class HorizontalClassMergerPolicyExecutor extends PolicyExecutor<Horizont
 
   @Override
   protected LinkedList<HorizontalMergeGroup> apply(
-      Policy policy, LinkedList<HorizontalMergeGroup> linkedGroups, ExecutorService executorService)
+      Policy policy, LinkedList<HorizontalMergeGroup> groups, ExecutorService executorService)
       throws ExecutionException {
     if (policy.isSingleClassPolicy()) {
-      applySingleClassPolicy(policy.asSingleClassPolicy(), linkedGroups);
+      if (policy.isSingleClassPolicyWithPreprocessing()) {
+        policy.asSingleClassPolicyWithPreprocessing().preprocess(groups, executorService);
+      }
+      applySingleClassPolicy(policy.asSingleClassPolicy(), groups);
     } else {
       if (policy.isMultiClassPolicy()) {
-        linkedGroups = applyMultiClassPolicy(policy.asMultiClassPolicy(), linkedGroups);
+        groups = applyMultiClassPolicy(policy.asMultiClassPolicy(), groups);
       } else {
         assert policy.isMultiClassPolicyWithPreprocessing();
-        linkedGroups =
+        groups =
             applyMultiClassPolicyWithPreprocessing(
-                policy.asMultiClassPolicyWithPreprocessing(), linkedGroups, executorService);
+                policy.asMultiClassPolicyWithPreprocessing(), groups, executorService);
       }
     }
-    return linkedGroups;
+    return groups;
   }
 
   void applySingleClassPolicy(SingleClassPolicy policy, LinkedList<HorizontalMergeGroup> groups) {

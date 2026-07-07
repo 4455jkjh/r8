@@ -23,7 +23,7 @@ REPOSITORIES = [
 ANDROIDX_COLLECTION_VERSION = '1.6.0'
 ANDROIDX_TRACING_VERSION = '2.0.0-alpha05'
 ASM_VERSION = '9.10.1'  # When updating update tools/asmifier.py and Toolhelper as well.
-FASTUTIL_VERSION = '7.2.1'
+FASTUTIL_VERSION = '8.5.12'
 KOTLIN_METADATA_VERSION = '2.3.10'
 # This version is both our kotlin compiler and Gradle's (current) kotlin compiler.
 # If Gradle is upgraded, then this version might have to split into two and

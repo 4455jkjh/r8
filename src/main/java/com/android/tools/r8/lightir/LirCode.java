@@ -504,6 +504,16 @@ public class LirCode<EV> extends Code
     return constants;
   }
 
+  @SuppressWarnings("unchecked")
+  public <T extends LirConstant> void forEachConstantPoolItemThatMatches(
+      Predicate<LirConstant> predicate, Consumer<T> fn) {
+    for (LirConstant constant : constants) {
+      if (predicate.test(constant)) {
+        fn.accept((T) constant);
+      }
+    }
+  }
+
   public boolean hasPositionTable() {
     return positionTable.length > 0;
   }

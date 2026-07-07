@@ -28,10 +28,11 @@ public class ExtractKeepAnnoRulesCommandTest extends TestBase {
     assertEquals(
         StringUtils.lines(
             "Usage: EXPERIMENTAL tool to extract keep rules from keep annotations",
-            "  --rules-output <file>      # Output the extracted keep rules.",
-            "  --rules-target r8|pg       # Optimizer rules are for (default r8).",
-            "  --version                  # Print the version.",
-            "  --help                     # Print this message."),
-        ExtractKeepAnnoRulesCommand.USAGE_MESSAGE);
+            "  --rules-output <file>   # Output the extracted keep rules.",
+            "  --rules-target <r8|pg>  # Optimizer rules are for (default 'r8').",
+            "  --version               # Print the version.",
+            "  --help",
+            "  -h                      # Print this message."),
+        ExtractKeepAnnoRulesCommand.usageMessage());
   }
 }

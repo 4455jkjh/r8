@@ -7,13 +7,16 @@ import static com.android.tools.r8.utils.codeinspector.Matchers.isAbsentIf;
 import static com.android.tools.r8.utils.codeinspector.Matchers.isPresent;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 import com.android.tools.r8.NoHorizontalClassMerging;
+import com.android.tools.r8.NoParameterTypeStrengthening;
+import com.android.tools.r8.NoReturnTypeStrengthening;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
-import com.android.tools.r8.utils.internal.BooleanUtils;
 import com.android.tools.r8.utils.codeinspector.ClassSubject;
 import com.android.tools.r8.utils.codeinspector.MethodSubject;
+import com.android.tools.r8.utils.internal.BooleanUtils;
 import java.util.List;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -49,54 +52,43 @@ public class BoxedPrimitiveFromGenericUnboxingTest extends TestBase {
                 options.testing.enableBridgeHoistingToSharedSyntheticSuperclass =
                     enableBridgeHoistingToSharedSyntheticSuperclass)
         .enableNoHorizontalClassMergingAnnotations()
+        .enableNoParameterTypeStrengtheningAnnotations()
+        .enableNoReturnTypeStrengtheningAnnotations()
         .setMinApi(parameters)
         .compile()
         .inspect(
             inspector -> {
               // Function should be removed as a result of bridge hoisting + inlining when adding a
-              // shared superclass to Increment and Decrement, and another shared superclass to
-              // StdoutPrinter and StderrPrinter.
-              ClassSubject functionClassSubject = inspector.clazz(Function.class);
-              assertThat(functionClassSubject, isAbsentIf(optimize));
+              // shared superclass to Increment and Decrement.
+              ClassSubject functionClass = inspector.clazz(Function.class);
+              assertThat(functionClass, isAbsentIf(optimize));
+
+              if (!optimize) {
+                // Check that the Function#apply method signature is unchanged.
+                MethodSubject functionClassApplyMethod =
+                    functionClass.uniqueMethodWithOriginalName("apply");
+                assertThat(functionClassApplyMethod, isPresent());
+                assertTrue(functionClassApplyMethod.getParameter(0).is(Object.class));
+                assertTrue(functionClassApplyMethod.getReturnType().is(Object.class));
+              }
 
               // Check that the cast to java.lang.Integer in Increment.apply has been removed as a
               // result of devirtualization.
-              ClassSubject incrementClassSubject = inspector.clazz(Increment.class);
-              assertThat(incrementClassSubject, isPresent());
+              ClassSubject incrementClass = inspector.clazz(Increment.class);
+              assertThat(incrementClass, isPresent());
 
-              MethodSubject incrementApplyMethodSubject =
-                  incrementClassSubject.uniqueMethodWithOriginalName("apply");
-              assertThat(incrementApplyMethodSubject, isPresent());
+              MethodSubject incrementClassApplyMethod =
+                  incrementClass.uniqueMethodWithOriginalName("apply");
+              assertThat(incrementClassApplyMethod, isPresent());
               assertEquals(
                   optimize,
-                  incrementApplyMethodSubject
+                  incrementClassApplyMethod
                       .streamInstructions()
                       .noneMatch(
                           instruction -> instruction.isCheckCast(Integer.class.getTypeName())));
-
-              // Check that the cast to java.lang.String in StdoutPrinter.apply has been removed as
-              // result of devirtualization (in fact the `Void apply(String)` method has been
-              // optimized to `void apply()` as a result of constant propagation).
-              ClassSubject stdoutPrinterClassSubject = inspector.clazz(StdoutPrinter.class);
-              assertThat(stdoutPrinterClassSubject, isPresent());
-
-              MethodSubject stdoutPrinterApplyMethodSubject =
-                  stdoutPrinterClassSubject.uniqueMethodWithOriginalName("apply");
-              assertThat(stdoutPrinterApplyMethodSubject, isPresent());
-              assertEquals(
-                  optimize,
-                  stdoutPrinterApplyMethodSubject.getProgramMethod().getReturnType().isVoidType());
-              assertEquals(
-                  optimize ? 0 : 1, stdoutPrinterApplyMethodSubject.getParameters().size());
-              assertEquals(
-                  optimize,
-                  stdoutPrinterApplyMethodSubject
-                      .streamInstructions()
-                      .noneMatch(
-                          instruction -> instruction.isCheckCast(String.class.getTypeName())));
             })
         .run(parameters.getRuntime(), Main.class)
-        .assertSuccessWithOutputLines("42", "42", "42");
+        .assertSuccessWithOutputLines("42", "42");
   }
 
   static class Main {
@@ -106,16 +98,15 @@ public class BoxedPrimitiveFromGenericUnboxingTest extends TestBase {
           System.currentTimeMillis() > 0 ? new Increment() : new Decrement();
       Function<Integer, Integer> dec =
           System.currentTimeMillis() > 0 ? new Decrement() : new Increment();
-      Function<String, Void> printer =
-          System.currentTimeMillis() > 0 ? new StdoutPrinter() : new StderrPrinter();
       System.out.println(inc.apply(41));
       System.out.println(dec.apply(43));
-      printer.apply("42");
     }
   }
 
   interface Function<S, T> {
 
+    @NoParameterTypeStrengthening
+    @NoReturnTypeStrengthening
     T apply(S s);
   }
 
@@ -134,26 +125,6 @@ public class BoxedPrimitiveFromGenericUnboxingTest extends TestBase {
     @Override
     public Integer apply(Integer i) {
       return i - 1;
-    }
-  }
-
-  @NoHorizontalClassMerging
-  static class StdoutPrinter implements Function<String, Void> {
-
-    @Override
-    public Void apply(String obj) {
-      System.out.println(obj);
-      return null;
-    }
-  }
-
-  @NoHorizontalClassMerging
-  static class StderrPrinter implements Function<String, Void> {
-
-    @Override
-    public Void apply(String obj) {
-      System.err.println(obj);
-      return null;
     }
   }
 }

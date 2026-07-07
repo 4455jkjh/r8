@@ -133,12 +133,15 @@ public class HelloWorldCompiledOnArtTest extends DesugaredLibraryTestBase {
         .setTrackDesugaredApiConversions()
         .compile()
         .inspectDiagnosticMessages(
-            diagnosticMessages -> {
-              assertTrue(
-                  diagnosticMessages.getWarnings().isEmpty()
-                      || diagnosticMessages.getWarnings().stream()
-                          .noneMatch(x -> x.getDiagnosticMessage().contains("andThen")));
-            })
+            diagnosticMessages ->
+                assertTrue(
+                    diagnosticMessages.getWarnings().isEmpty()
+                        || diagnosticMessages.getWarnings().stream()
+                            .noneMatch(
+                                x ->
+                                    x.getDiagnosticMessage().contains("andThen")
+                                        && !x.getDiagnosticMessage()
+                                            .contains("it.unimi.dsi.fastutil"))))
         .withArt6Plus64BitsLib();
   }
 }

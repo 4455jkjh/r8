@@ -15,10 +15,17 @@ import com.android.tools.r8.graph.DexMethod;
 public class StaticBridgeExcludingReceiverInfo extends BridgeInfo {
 
   private final boolean isInterface;
+  private final int captures;
 
-  public StaticBridgeExcludingReceiverInfo(DexMethod invokedMethod, boolean isInterface) {
+  public StaticBridgeExcludingReceiverInfo(
+      DexMethod invokedMethod, boolean isInterface, int captures) {
     super(invokedMethod);
     this.isInterface = isInterface;
+    this.captures = captures;
+  }
+
+  public int getCaptures() {
+    return captures;
   }
 
   public boolean getInterfaceBit() {

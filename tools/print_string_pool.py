@@ -14,24 +14,14 @@ import utils
 
 
 def parse_options(argv):
-    parser = argparse.ArgumentParser(description='Analyze APK.')
-    parser.add_argument('--apk',
-                        help='Path to the APK to analyze',
-                        required=True)
+    parser = argparse.ArgumentParser(
+        description='Print unique strings in APK string pools.')
+    parser.add_argument('apk', help='Path to the APK to analyze')
     parser.add_argument('--no-build',
                         '--no_build',
                         help='Run without building first (default false)',
                         default=False,
                         action='store_true')
-    parser.add_argument('--csv',
-                        help='Output in CSV format (default false)',
-                        default=False,
-                        action='store_true')
-    parser.add_argument(
-        '--rebuild',
-        help='Rebuild the APK using D8 and print the size (default false)',
-        default=False,
-        action='store_true')
     return parser.parse_args(argv)
 
 
@@ -58,12 +48,8 @@ def main(argv):
     cmd = [
         java, '-cp',
         os.pathsep.join(classpath),
-        'com.android.tools.r8.tools.apkanalyzer.ApkAnalyzer', options.apk
+        'com.android.tools.r8.tools.dex.StringConstantPoolPrinter', options.apk
     ]
-    if options.csv:
-        cmd.append('--csv')
-    if options.rebuild:
-        cmd.append('--rebuild')
 
     res = subprocess.run(cmd)
     return res.returncode

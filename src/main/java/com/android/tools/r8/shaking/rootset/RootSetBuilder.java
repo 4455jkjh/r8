@@ -1982,9 +1982,7 @@ public class RootSetBuilder {
     }
 
     // In compatibility mode the keep-info predicates will disable removal for keep attributes.
-    if (!options.isForceProguardCompatibilityEnabled()
-        && options.isShrinking()
-        && !modifiers.allowsAnnotationRemoval) {
+    if (options.isFullMode() && options.isShrinking() && !modifiers.allowsAnnotationRemoval) {
       if (!annotationRetention.isNone()) {
         itemJoiner.computeIfAbsent().disallowAnnotationRemoval(annotationRetention);
       }

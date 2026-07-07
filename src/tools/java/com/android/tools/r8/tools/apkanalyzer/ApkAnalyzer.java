@@ -15,11 +15,9 @@ import com.android.tools.r8.dex.Constants;
 import com.android.tools.r8.dex.DexParser;
 import com.android.tools.r8.dex.DexSection;
 import com.android.tools.r8.dex.Marker;
-import com.android.tools.r8.dex.code.DexInstruction;
 import com.android.tools.r8.graph.DexAnnotation;
 import com.android.tools.r8.graph.DexAnnotationSet;
 import com.android.tools.r8.graph.DexApplication;
-import com.android.tools.r8.graph.DexCode;
 import com.android.tools.r8.graph.DexEncodedField;
 import com.android.tools.r8.graph.DexEncodedMethod;
 import com.android.tools.r8.graph.DexProgramClass;
@@ -133,7 +131,7 @@ public class ApkAnalyzer {
         output.applicationSize(),
         DebugInfoStats.create(application),
         DexSegments.run(output),
-        getJumboStringCount(application));
+        StringStats.create(application));
   }
 
   private static void printResult(ApkAnalyzerResult result) {
@@ -153,7 +151,14 @@ public class ApkAnalyzer {
       System.out.println("res_table_size_uncompressed=" + result.resTableUncompressedSize);
     }
     System.out.println("base_dex_code_size=" + result.dexSegments.getCode().getSegmentSize());
-    System.out.println("base_jumbo_strings=" + result.jumboStrings);
+    System.out.println("base_dex_string_ids_len=" + result.dexSegments.getStrings().getItemCount());
+    System.out.println(
+        "base_dex_string_ids_size=" + result.dexSegments.getStrings().getSegmentSize());
+    System.out.println(
+        "base_dex_string_data_size=" + result.dexSegments.getStringData().getSegmentSize());
+    System.out.println("base_dex_string_jumbo_count=" + result.stringStats.jumboStrings);
+    System.out.println("base_dex_string_unique_count=" + result.stringStats.uniqueConstStrings);
+    System.out.println("base_dex_string_single_ref_ints=" + result.stringStats.singleRefIntegers);
     result.debugInfoStats.printToStdout("base", result.dexSegments);
     if (result.rebuildResult != null) {
       result.rebuildResult.printToStdout("rebuild", result);
@@ -233,7 +238,12 @@ public class ApkAnalyzer {
     }
     sb.append(';');
     sb.append(result.dexSegments.getCode().getSegmentSize()).append(';');
-    sb.append(result.jumboStrings).append(';');
+    sb.append(result.dexSegments.getStrings().getItemCount()).append(';');
+    sb.append(result.dexSegments.getStrings().getSegmentSize()).append(';');
+    sb.append(result.dexSegments.getStringData().getSegmentSize()).append(';');
+    sb.append(result.stringStats.jumboStrings).append(';');
+    sb.append(result.stringStats.uniqueConstStrings).append(';');
+    sb.append(result.stringStats.singleRefIntegers).append(';');
     result.debugInfoStats.printCsv(sb, result.dexSegments);
     if (result.rebuildResult != null) {
       result.rebuildResult.printCsv(sb, result);
@@ -533,7 +543,7 @@ public class ApkAnalyzer {
           desugaredLibraryInfo,
           DebugInfoStats.create(application),
           DexSegments.run(AndroidApp.builder().addProgramFile(apkPath).build()),
-          getJumboStringCount(application),
+          StringStats.create(application),
           mostOccurringSourceFile,
           mostOccurringSourceFileCount,
           runtimeInvisibleAnnotations,
@@ -638,23 +648,6 @@ public class ApkAnalyzer {
       }
     }
     return commonMinApi;
-  }
-
-  private static int getJumboStringCount(DexApplication application) {
-    int jumboStrings = 0;
-    for (DexProgramClass clazz : application.classes()) {
-      for (DexEncodedMethod method : clazz.methods(DexEncodedMethod::hasCode)) {
-        if (method.getCode().isDexCode()) {
-          DexCode code = method.getCode().asDexCode();
-          for (DexInstruction instruction : code.getInstructions()) {
-            if (instruction.isConstStringJumbo()) {
-              jumboStrings++;
-            }
-          }
-        }
-      }
-    }
-    return jumboStrings;
   }
 
   private static String getR8Version(List<Marker> dexMarkers) {

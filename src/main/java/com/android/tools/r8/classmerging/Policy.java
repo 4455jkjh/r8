@@ -8,6 +8,7 @@ import com.android.tools.r8.horizontalclassmerging.HorizontalMergeGroup;
 import com.android.tools.r8.horizontalclassmerging.MultiClassPolicy;
 import com.android.tools.r8.horizontalclassmerging.MultiClassPolicyWithPreprocessing;
 import com.android.tools.r8.horizontalclassmerging.SingleClassPolicy;
+import com.android.tools.r8.horizontalclassmerging.SingleClassPolicyWithPreprocessing;
 import com.android.tools.r8.verticalclassmerging.policies.VerticalClassMergerPolicyWithPreprocessing;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -36,6 +37,14 @@ public abstract class Policy {
   }
 
   public SingleClassPolicy asSingleClassPolicy() {
+    return null;
+  }
+
+  public boolean isSingleClassPolicyWithPreprocessing() {
+    return false;
+  }
+
+  public SingleClassPolicyWithPreprocessing asSingleClassPolicyWithPreprocessing() {
     return null;
   }
 
