@@ -28,7 +28,10 @@ public class ApiDatabaseGeneratorCommandParser {
         StringUtils.joinLines(
             "Usage: apidatabasegenerator [options] <input-files>",
             "where <input-files> are Android API XML files (e.g., api-versions.xml) to merge,",
-            "and options are:");
+            "OR Android SDK Jar files (e.g., android.jar).",
+            "The XML lack sufficient information so the Jar files are used to add information to"
+                + " entries.",
+            "The options are:");
     CliParser<ParserState> parser = new CliParser<>(usageHeader);
     return parser
         .option0("--help", "Print help.", state -> state.builder.setPrintHelp(true), "-h")

@@ -84,10 +84,10 @@ public class ApiDatabaseGenerator {
   private static List<ParsedApiClassWithSource> extractSourcedClasses(
       ApiDatabaseGeneratorCommand command) throws ParsingException {
     List<ParsedApiClassWithSource> allParsed = new ArrayList<>();
-    for (Path inputPath : command.getInputPaths()) {
-      List<ParsedApiClass> parsed = AndroidApiVersionsXmlParser.parse(inputPath, null);
+    for (Path xmlPath : command.getXmlPaths()) {
+      List<ParsedApiClass> parsed = AndroidApiVersionsXmlParser.parse(xmlPath, null);
       for (ParsedApiClass apiClass : parsed) {
-        allParsed.add(new ParsedApiClassWithSource(apiClass, inputPath));
+        allParsed.add(new ParsedApiClassWithSource(apiClass, xmlPath));
       }
     }
     return allParsed;

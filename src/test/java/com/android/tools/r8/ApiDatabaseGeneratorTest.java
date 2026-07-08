@@ -43,12 +43,14 @@ public class ApiDatabaseGeneratorTest extends TestBase {
             "    <extends name=\"java/lang/Object\"/>",
             "    <method name=\"bar()V\" since=\"31\"/>",
             "  </class>");
+    Path dummyJar = temp.newFile("dummy.jar").toPath();
 
     Path outputDb = temp.newFile("api_database.ser").toPath();
 
     ApiDatabaseGeneratorCommand command =
         ApiDatabaseGeneratorCommand.builder()
             .addInputPath(apiVersionsXml)
+            .addInputPath(dummyJar)
             .setOutputPath(outputDb)
             .build();
 
@@ -76,6 +78,7 @@ public class ApiDatabaseGeneratorTest extends TestBase {
             "    <method name=\"bar()V\" since=\"30\"/>",
             "    <field name=\"baz\" since=\"33\"/>",
             "  </class>");
+    Path dummyJar = temp.newFile("dummy.jar").toPath();
 
     Path outputDb = temp.newFile("api_database.ser").toPath();
 
@@ -84,6 +87,7 @@ public class ApiDatabaseGeneratorTest extends TestBase {
         ApiDatabaseGeneratorCommand.builder(diagnosticsHandler)
             .addInputPath(apiVersionsXml1)
             .addInputPath(apiVersionsXml2)
+            .addInputPath(dummyJar)
             .setOutputPath(outputDb)
             .build();
 
@@ -128,6 +132,7 @@ public class ApiDatabaseGeneratorTest extends TestBase {
             "    <extends name=\"java/lang/Object\"/>",
             "    <method name=\"bar()V\" since=\"33\"/>",
             "  </class>");
+    Path dummyJar = temp.newFile("dummy.jar").toPath();
 
     Path outputDb = temp.newFile("api_database.ser").toPath();
 
@@ -137,6 +142,7 @@ public class ApiDatabaseGeneratorTest extends TestBase {
             .addInputPath(apiVersionsXml1)
             .addInputPath(apiVersionsXml2)
             .addInputPath(apiVersionsXml3)
+            .addInputPath(dummyJar)
             .setOutputPath(outputDb)
             .build();
 
@@ -183,6 +189,7 @@ public class ApiDatabaseGeneratorTest extends TestBase {
             "    <method name=\"bar()V\" since=\"30\"/>",
             "    <field name=\"baz\" since=\"33\"/>",
             "  </class>");
+    Path dummyJar = temp.newFile("dummy.jar").toPath();
 
     Path outputDb = temp.newFile("api_database.ser").toPath();
 
@@ -194,7 +201,8 @@ public class ApiDatabaseGeneratorTest extends TestBase {
       "error",
       "info",
       apiVersionsXml1.toString(),
-      apiVersionsXml2.toString()
+      apiVersionsXml2.toString(),
+      dummyJar.toString()
     };
 
     ApiDatabaseGeneratorCommand command =
@@ -242,6 +250,7 @@ public class ApiDatabaseGeneratorTest extends TestBase {
             "    <method name=\"bar()V\" since=\"30\"/>",
             "    <field name=\"baz\" since=\"33\"/>",
             "  </class>");
+    Path dummyJar = temp.newFile("dummy.jar").toPath();
 
     Path outputDb = temp.newFile("api_database.ser").toPath();
 
@@ -253,7 +262,8 @@ public class ApiDatabaseGeneratorTest extends TestBase {
       "error",
       "none",
       apiVersionsXml1.toString(),
-      apiVersionsXml2.toString()
+      apiVersionsXml2.toString(),
+      dummyJar.toString()
     };
 
     ApiDatabaseGeneratorCommand command =
@@ -292,6 +302,7 @@ public class ApiDatabaseGeneratorTest extends TestBase {
             "  <class name=\"android/Foo\" since=\"30\">",
             "    <extends name=\"android/Bar\"/>",
             "  </class>");
+    Path dummyJar = temp.newFile("dummy.jar").toPath();
 
     Path outputDb = temp.newFile("api_database.ser").toPath();
 
@@ -300,6 +311,7 @@ public class ApiDatabaseGeneratorTest extends TestBase {
         ApiDatabaseGeneratorCommand.builder(diagnosticsHandler)
             .addInputPath(apiVersionsXml1)
             .addInputPath(apiVersionsXml2)
+            .addInputPath(dummyJar)
             .setOutputPath(outputDb)
             .build();
 
@@ -313,6 +325,39 @@ public class ApiDatabaseGeneratorTest extends TestBase {
               .getMessage()
               .contains("has conflicting supertypes: java.lang.Object, android.Bar"));
     }
+  }
+
+  @Test
+  public void testJarAndXmlInputs() throws Exception {
+    Path xmlFile = temp.newFile("api-versions.xml").toPath();
+    Path jarFile = temp.newFile("android.jar").toPath();
+
+    ApiDatabaseGeneratorCommand command =
+        ApiDatabaseGeneratorCommand.builder().addInputPath(xmlFile).addInputPath(jarFile).build();
+
+    assertEquals(1, command.getXmlPaths().size());
+    assertEquals(xmlFile, command.getXmlPaths().get(0));
+    assertEquals(1, command.getJarPaths().size());
+    assertEquals(jarFile, command.getJarPaths().get(0));
+  }
+
+  @Test
+  public void testInvalidInputExtension() throws Exception {
+    Path txtFile = temp.newFile("invalid.txt").toPath();
+
+    TestDiagnosticMessagesImpl diagnosticsHandler = new TestDiagnosticMessagesImpl();
+    try {
+      ApiDatabaseGeneratorCommand.builder(diagnosticsHandler).addInputPath(txtFile).build();
+      fail("Expected Command to fail building due to invalid input extension");
+    } catch (ApiDatabaseGeneratorException e) {
+      // Expected.
+    }
+
+    List<Diagnostic> errors = diagnosticsHandler.getErrors();
+    assertEquals(3, errors.size());
+    assertTrue(errors.get(0).getDiagnosticMessage().contains("Unsupported input file extension"));
+    assertTrue(errors.get(1).getDiagnosticMessage().contains("At least one SDK JAR"));
+    assertTrue(errors.get(2).getDiagnosticMessage().contains("At least one API XML"));
   }
 
   private Path writeApiXml(String filename, String... contentLines) throws Exception {
