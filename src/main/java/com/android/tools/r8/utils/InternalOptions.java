@@ -2459,6 +2459,9 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
     public TriFunction<AppView<?>, Iterable<DexProgramClass>, DexProgramClass, DexProgramClass>
         horizontalClassMergingTarget = (appView, candidates, target) -> target;
 
+    public TriConsumer<AppView<?>, Set<DexMethod>, Set<DexMethod>> virtualMethodHoisterConsumer =
+        null;
+
     public BiConsumer<DexItemFactory, NamingLens> namingLensConsumer =
         ConsumerUtils.emptyBiConsumer();
 

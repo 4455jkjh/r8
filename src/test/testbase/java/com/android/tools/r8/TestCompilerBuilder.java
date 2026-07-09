@@ -31,6 +31,7 @@ import com.android.tools.r8.utils.codeinspector.HorizontallyMergedClassesInspect
 import com.android.tools.r8.utils.codeinspector.MinificationInspector;
 import com.android.tools.r8.utils.codeinspector.RepackagingInspector;
 import com.android.tools.r8.utils.codeinspector.VerticallyMergedClassesInspector;
+import com.android.tools.r8.utils.codeinspector.VirtualMethodHoisterInspector;
 import com.android.tools.r8.utils.internal.OptionalBool;
 import com.android.tools.r8.utils.internal.SetUtils;
 import com.android.tools.r8.utils.internal.exceptions.Unimplemented;
@@ -271,6 +272,16 @@ public abstract class TestCompilerBuilder<
                     inspector.acceptWithRuntimeException(
                         new HorizontallyMergedClassesInspector(
                             appView, horizontallyMergedClasses)));
+  }
+
+  public T addVirtualMethodHoisterInspector(
+      ThrowableConsumer<VirtualMethodHoisterInspector> inspector) {
+    return addOptionsModification(
+        options ->
+            options.testing.virtualMethodHoisterConsumer =
+                (appView, hoisted, candidatesNotHoisted) ->
+                    inspector.acceptWithRuntimeException(
+                        new VirtualMethodHoisterInspector(appView, hoisted, candidatesNotHoisted)));
   }
 
   public T addHorizontallyMergedClassesInspectorIf(
