@@ -27,7 +27,7 @@ import org.junit.runners.Parameterized.Parameter;
 import org.junit.runners.Parameterized.Parameters;
 
 @RunWith(Parameterized.class)
-public class VirtualMethodHoistingSubclassFieldAccessTest extends TestBase {
+public class VirtualMethodHoistingSubclassFieldAccessThroughThisTest extends TestBase {
 
   @Parameter(0)
   public TestParameters parameters;
