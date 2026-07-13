@@ -145,11 +145,8 @@ public class ReservedVirtualMethodNamesFromUnresolvedReferencesTest extends Test
               ClassSubject runtimeSuperClass = inspector.clazz(RuntimeSuperClass.class);
               MethodSubject existingMethod =
                   runtimeSuperClass.uniqueMethodWithOriginalName("existingMethod");
-              // TODO(b/533167364): Renaming existingMethod to a makes the unresolved method a
-              //  in the input resolve.
-              assertEquals("a", existingMethod.getFinalName());
+              assertEquals("b", existingMethod.getFinalName());
             })
-        // Should be assertSuccessWithOutputLines("Could not call callA()", "2")
-        .assertSuccessWithOutputLines("2", "2");
+        .assertSuccessWithOutputLines("Could not call callA()", "2");
   }
 }

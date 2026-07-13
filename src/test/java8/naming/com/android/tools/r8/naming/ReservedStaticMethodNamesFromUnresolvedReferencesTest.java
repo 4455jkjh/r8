@@ -4,12 +4,10 @@
 package com.android.tools.r8.naming;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThrows;
 
 import com.android.tools.r8.NeverInline;
 import com.android.tools.r8.NoMethodStaticizing;
 import com.android.tools.r8.TestBase;
-import com.android.tools.r8.TestCompileResult;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.references.Reference;
@@ -109,40 +107,26 @@ public class ReservedStaticMethodNamesFromUnresolvedReferencesTest extends TestB
                 })
             .transform();
 
-    TestCompileResult<?, ?> result =
-        testForR8(parameters.getBackend())
-            .addProgramClasses(Main.class, RuntimeClass.class)
-            .addProgramClassFileData(classWithUnresolvedReferenceToMethodNamedABytes)
-            .addKeepMainRule(Main.class)
-            .addKeepClassAndMembersRules(ClassWithUnresolvedReferenceToMethodNamedA.class)
-            .addKeepRules(
-                "-keepclassmembers,allowobfuscation class "
-                    + RuntimeClass.class.getTypeName()
-                    + " { *; }")
-            .enableInliningAnnotations()
-            .enableNoMethodStaticizingAnnotations()
-            .setMinApi(parameters)
-            .compile()
-            // Can't inspect on DEX, as the generated DEX is invalid.
-            .inspectIf(
-                parameters.isCfRuntime(),
-                inspector -> {
-                  ClassSubject runtimeClass = inspector.clazz(RuntimeClass.class);
-                  MethodSubject existingMethod =
-                      runtimeClass.uniqueMethodWithOriginalName("existingMethod");
-                  // TODO(b/533167364): Renaming existingMethod to a makes the unresolved method a
-                  //  in the input resolve.
-                  assertEquals("a", existingMethod.getFinalName());
-                });
-    if (parameters.isCfRuntime()) {
-      result
-          .run(parameters.getRuntime(), Main.class)
-          // Should be assertSuccessWithOutputLines("Could not call callA()", "2")
-          .assertSuccessWithOutputLines("2", "2");
-    } else {
-      // Running on Art hits an AssertionError when loading the DEX into the inspector to
-      // check for the final name of the main class.
-      assertThrows(AssertionError.class, () -> result.run(parameters.getRuntime(), Main.class));
-    }
+    testForR8(parameters.getBackend())
+        .addProgramClasses(Main.class, RuntimeClass.class)
+        .addProgramClassFileData(classWithUnresolvedReferenceToMethodNamedABytes)
+        .addKeepMainRule(Main.class)
+        .addKeepClassAndMembersRules(ClassWithUnresolvedReferenceToMethodNamedA.class)
+        .addKeepRules(
+            "-keepclassmembers,allowobfuscation class "
+                + RuntimeClass.class.getTypeName()
+                + " { *; }")
+        .enableInliningAnnotations()
+        .enableNoMethodStaticizingAnnotations()
+        .setMinApi(parameters)
+        .run(parameters.getRuntime(), Main.class)
+        .inspect(
+            inspector -> {
+              ClassSubject runtimeClass = inspector.clazz(RuntimeClass.class);
+              MethodSubject existingMethod =
+                  runtimeClass.uniqueMethodWithOriginalName("existingMethod");
+              assertEquals("b", existingMethod.getFinalName());
+            })
+        .assertSuccessWithOutputLines("Could not call callA()", "2");
   }
 }
