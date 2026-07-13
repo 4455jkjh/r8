@@ -4,12 +4,10 @@
 package com.android.tools.r8.naming;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThrows;
 
 import com.android.tools.r8.NeverInline;
 import com.android.tools.r8.NoMethodStaticizing;
 import com.android.tools.r8.TestBase;
-import com.android.tools.r8.TestCompileResult;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.references.Reference;
@@ -85,40 +83,26 @@ public class ReservedFieldNamesFromUnresolvedReferencesTest extends TestBase {
             .remapField((name, descriptor) -> name.equals("dummy"), "a")
             .transform();
 
-    TestCompileResult<?, ?> result =
-        testForR8(parameters.getBackend())
-            .addProgramClasses(Main.class, RuntimeClass.class)
-            .addProgramClassFileData(classWithUnresolvedReferenceToFieldNamedABytes)
-            .addKeepMainRule(Main.class)
-            .addKeepClassAndMembersRules(ClassWithUnresolvedReferenceToFieldNamedA.class)
-            .addKeepRules(
-                "-keepclassmembers,allowobfuscation class "
-                    + RuntimeClass.class.getTypeName()
-                    + " { *; }")
-            .enableInliningAnnotations()
-            .enableNoMethodStaticizingAnnotations()
-            .setMinApi(parameters)
-            .compile()
-            // Can't inspect on DEX, as the generated DEX is invalid.
-            .inspectIf(
-                parameters.isCfRuntime(),
-                inspector -> {
-                  ClassSubject brClass = inspector.clazz(RuntimeClass.class);
-                  FieldSubject myRealPropertyField =
-                      brClass.uniqueFieldWithOriginalName("existingProperty");
-                  // TODO(b/533167364): Renaming existingProperty to a makes the unresolved field a
-                  //  in the input resolve.
-                  assertEquals("a", myRealPropertyField.getFinalName());
-                });
-    if (parameters.isCfRuntime()) {
-      result
-          .run(parameters.getRuntime(), Main.class)
-          // Should be assertSuccessWithOutputLines("Could not call getA()", "2")
-          .assertSuccessWithOutputLines("2", "2");
-    } else {
-      // Running on Art hits an AssertionError when loading the DEX into the inspector to
-      // check for the final name of the main class.
-      assertThrows(AssertionError.class, () -> result.run(parameters.getRuntime(), Main.class));
-    }
+    testForR8(parameters.getBackend())
+        .addProgramClasses(Main.class, RuntimeClass.class)
+        .addProgramClassFileData(classWithUnresolvedReferenceToFieldNamedABytes)
+        .addKeepMainRule(Main.class)
+        .addKeepClassAndMembersRules(ClassWithUnresolvedReferenceToFieldNamedA.class)
+        .addKeepRules(
+            "-keepclassmembers,allowobfuscation class "
+                + RuntimeClass.class.getTypeName()
+                + " { *; }")
+        .enableInliningAnnotations()
+        .enableNoMethodStaticizingAnnotations()
+        .setMinApi(parameters)
+        .run(parameters.getRuntime(), Main.class)
+        .inspect(
+            inspector -> {
+              ClassSubject runtimeClass = inspector.clazz(RuntimeClass.class);
+              FieldSubject myRealPropertyField =
+                  runtimeClass.uniqueFieldWithOriginalName("existingProperty");
+              assertEquals("b", myRealPropertyField.getFinalName());
+            })
+        .assertSuccessWithOutputLines("Could not call getA()", "2");
   }
 }

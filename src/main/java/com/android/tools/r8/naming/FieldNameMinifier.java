@@ -156,6 +156,12 @@ class FieldNameMinifier {
                     clazz.asProgramClass(), reservationState);
               }
             });
+    for (DexField field : appView.appInfo().getFailedFieldResolutionTargets()) {
+      DexType holder = field.holder;
+      DexType frontier = frontiers.getOrDefault(holder, holder);
+      ReservedFieldNamingState reservationState = getOrCreateReservedFieldNamingState(frontier);
+      reservationState.markReserved(field.name, field);
+    }
   }
 
   private void patchUpAllIndirectlyImplementingInterfacesFromLibraryAndClassPath(
