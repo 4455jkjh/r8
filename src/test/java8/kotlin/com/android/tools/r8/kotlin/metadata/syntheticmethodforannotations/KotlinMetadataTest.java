@@ -133,7 +133,7 @@ public class KotlinMetadataTest extends KotlinTestBase {
       KmPropertySubject kmPropertySubject = properties.get(i1);
       assertTrue(kmPropertySubject.name().equals("All") || kmPropertySubject.name().equals("All2"));
       List<KmPropertyExtension> extensions =
-          kmPropertySubject.getKmProperty().getExtensions$kotlin_metadata();
+          kmPropertySubject.getKmProperty().getExtensions$org_jetbrains_kotlin_kotlin_metadata();
       assertEquals(1, extensions.size());
       JvmMethodSignature syntheticMethodForAnnotations =
           ((JvmPropertyExtension) extensions.get(0)).getSyntheticMethodForAnnotations();

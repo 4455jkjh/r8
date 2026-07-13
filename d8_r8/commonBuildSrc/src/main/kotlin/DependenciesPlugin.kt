@@ -377,7 +377,7 @@ private object Versions {
   public const val junitJupiterVersion = "5.14.3"
   public const val junitPlatformVersion = "1.14.3"
   public const val kotlinVersion = "1.9.20"
-  public const val kotlinMetadataVersion = "2.3.10"
+  public const val kotlinMetadataVersion = "2.4.0"
   public const val mockito = "2.10.0"
   public const val playwrightVersion = "1.60.0"
   public const val protobufVersion = "4.33.5"
