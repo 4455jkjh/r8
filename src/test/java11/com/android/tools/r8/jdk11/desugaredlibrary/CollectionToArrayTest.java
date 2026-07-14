@@ -42,7 +42,33 @@ public class CollectionToArrayTest extends DesugaredLibraryTestBase {
 
   private static final String EXPECTED_OUTPUT =
       StringUtils.lines(
-          "[one, two]", "Override", "[three, four]", "Override", "[five, six]", "[seven, eight]");
+          "[one, two]",
+          "Override",
+          "[three, four]",
+          "Override",
+          "[five, six]",
+          "Override",
+          "p: [five, six]",
+          "Override",
+          "s: [five, six]",
+          "[seven, eight]",
+          "p: [seven, eight]",
+          "s: [seven, eight]",
+          "Override2",
+          "ItfOverride",
+          "[a, b]",
+          "Override2",
+          "ItfOverride",
+          "p: [a, b]",
+          "Override2",
+          "ItfOverride",
+          "s: [a, b]",
+          "ItfOverride",
+          "[c, d]",
+          "ItfOverride",
+          "p: [c, d]",
+          "ItfOverride",
+          "s: [c, d]");
 
   @Parameters(name = "{0}, spec: {1}, {2}")
   public static List<Object[]> data() {
@@ -78,6 +104,70 @@ public class CollectionToArrayTest extends DesugaredLibraryTestBase {
 
   public static class Main {
     public static void main(String[] args) {
+      listTest();
+      noOverrideItfTest();
+      overrideItfTest();
+    }
+
+    private static void printS(MyCollectionNoOverride<String> col) {
+      System.out.println("s: " + Arrays.toString(col.toArray(String[]::new)));
+    }
+
+    private static void printS(MyCollectionOverride<String> col) {
+      System.out.println("s: " + Arrays.toString(col.toArray(String[]::new)));
+    }
+
+    private static void print(Collection<String> col) {
+      System.out.println("p: " + Arrays.toString(col.toArray(String[]::new)));
+    }
+
+    private static void overrideItfTest() {
+      try {
+        MyCollectionOverrideImplWithToArrayOverride<String> myCollectionImplWithToArrayOverride =
+            new MyCollectionOverrideImplWithToArrayOverride<>();
+        // This default method was added in Android T.
+        String[] toArray3 = myCollectionImplWithToArrayOverride.toArray(String[]::new);
+        System.out.println(Arrays.toString(toArray3));
+        print(myCollectionImplWithToArrayOverride);
+        printS(myCollectionImplWithToArrayOverride);
+      } catch (NoSuchMethodError e) {
+        System.out.println("NoSuchMethodError");
+      }
+
+      MyCollectionOverrideImplWithoutToArrayOverride<String>
+          myCollectionImplWithoutToArrayOverride =
+              new MyCollectionOverrideImplWithoutToArrayOverride<>();
+      // This default method was added in Android T.
+      String[] toArray4 = myCollectionImplWithoutToArrayOverride.toArray(String[]::new);
+      System.out.println(Arrays.toString(toArray4));
+      print(myCollectionImplWithoutToArrayOverride);
+      printS(myCollectionImplWithoutToArrayOverride);
+    }
+
+    private static void noOverrideItfTest() {
+      try {
+        MyCollectionNoOverrideImplWithToArrayOverride<String> myCollectionImplWithToArrayOverride =
+            new MyCollectionNoOverrideImplWithToArrayOverride<>();
+        // This default method was added in Android T.
+        String[] toArray3 = myCollectionImplWithToArrayOverride.toArray(String[]::new);
+        System.out.println(Arrays.toString(toArray3));
+        print(myCollectionImplWithToArrayOverride);
+        printS(myCollectionImplWithToArrayOverride);
+      } catch (NoSuchMethodError e) {
+        System.out.println("NoSuchMethodError");
+      }
+
+      MyCollectionNoOverrideImplWithoutToArrayOverride<String>
+          myCollectionImplWithoutToArrayOverride =
+              new MyCollectionNoOverrideImplWithoutToArrayOverride<>();
+      // This default method was added in Android T.
+      String[] toArray4 = myCollectionImplWithoutToArrayOverride.toArray(String[]::new);
+      System.out.println(Arrays.toString(toArray4));
+      print(myCollectionImplWithoutToArrayOverride);
+      printS(myCollectionImplWithoutToArrayOverride);
+    }
+
+    private static void listTest() {
       List<String> list = new ArrayList<>();
       list.add("one");
       list.add("two");
@@ -91,22 +181,6 @@ public class CollectionToArrayTest extends DesugaredLibraryTestBase {
       // This default method was added in Android T.
       String[] toArray2 = myList.toArray(String[]::new);
       System.out.println(Arrays.toString(toArray2));
-
-      try {
-        MyCollectionImplWithToArrayOverride<String> myCollectionImplWithToArrayOverride =
-            new MyCollectionImplWithToArrayOverride<>();
-        // This default method was added in Android T.
-        String[] toArray3 = myCollectionImplWithToArrayOverride.toArray(String[]::new);
-        System.out.println(Arrays.toString(toArray3));
-      } catch (NoSuchMethodError e) {
-        System.out.println("NoSuchMethodError");
-      }
-
-      MyCollectionImplWithoutToArrayOverride<String> myCollectionImplWithoutToArrayOverride =
-          new MyCollectionImplWithoutToArrayOverride<>();
-      // This default method was added in Android T.
-      String[] toArray4 = myCollectionImplWithoutToArrayOverride.toArray(String[]::new);
-      System.out.println(Arrays.toString(toArray4));
     }
   }
 
@@ -119,14 +193,15 @@ public class CollectionToArrayTest extends DesugaredLibraryTestBase {
     }
   }
 
-  public interface MyCollection<T> extends Collection<T> {}
+  public interface MyCollectionNoOverride<T> extends Collection<T> {}
 
-  public static class MyCollectionImplWithToArrayOverride<T> implements MyCollection<T> {
+  public static class MyCollectionNoOverrideImplWithToArrayOverride<T>
+      implements MyCollectionNoOverride<T> {
 
     @Override
     public <T1> T1[] toArray(IntFunction<T1[]> generator) {
       System.out.println("Override");
-      return MyCollection.super.toArray(generator);
+      return MyCollectionNoOverride.super.toArray(generator);
     }
 
     @SuppressWarnings("unchecked")
@@ -196,7 +271,8 @@ public class CollectionToArrayTest extends DesugaredLibraryTestBase {
     }
   }
 
-  public static class MyCollectionImplWithoutToArrayOverride<T> implements MyCollection<T> {
+  public static class MyCollectionNoOverrideImplWithoutToArrayOverride<T>
+      implements MyCollectionNoOverride<T> {
 
     @SuppressWarnings("unchecked")
     @Override
@@ -263,5 +339,155 @@ public class CollectionToArrayTest extends DesugaredLibraryTestBase {
     public void clear() {
       throw new RuntimeException();
     }
+  }
+
+  public interface MyCollectionOverride<T> extends Collection<T> {
+    @Override
+    default <T1> T1[] toArray(IntFunction<T1[]> generator) {
+      System.out.println("ItfOverride");
+      return Collection.super.toArray(generator);
+    }
+  }
+
+  public static class MyCollectionOverrideImplWithToArrayOverride<T>
+      implements MyCollectionOverride<T> {
+
+    @Override
+    public <T1> T1[] toArray(IntFunction<T1[]> generator) {
+      System.out.println("Override2");
+      return MyCollectionOverride.super.toArray(generator);
+    }
+
+    @SuppressWarnings("unchecked")
+    @Override
+    public <T1> T1[] toArray(T1[] ignore) {
+      return (T1[]) new String[] {"a", "b"};
+    }
+
+    @Override
+    public int size() {
+      return 0;
+    }
+
+    @Override
+    public boolean isEmpty() {
+      return false;
+    }
+
+    @Override
+    public boolean contains(Object o) {
+      return false;
+    }
+
+    @Override
+    public Iterator<T> iterator() {
+      return null;
+    }
+
+    @Override
+    public Object[] toArray() {
+      return new Object[0];
+    }
+
+    @Override
+    public boolean add(T t) {
+      return false;
+    }
+
+    @Override
+    public boolean remove(Object o) {
+      return false;
+    }
+
+    @Override
+    public boolean containsAll(Collection<?> c) {
+      return false;
+    }
+
+    @Override
+    public boolean addAll(Collection<? extends T> c) {
+      return false;
+    }
+
+    @Override
+    public boolean removeAll(Collection<?> c) {
+      return false;
+    }
+
+    @Override
+    public boolean retainAll(Collection<?> c) {
+      return false;
+    }
+
+    @Override
+    public void clear() {}
+  }
+
+  public static class MyCollectionOverrideImplWithoutToArrayOverride<T>
+      implements MyCollectionOverride<T> {
+
+    @SuppressWarnings("unchecked")
+    @Override
+    public <T1> T1[] toArray(T1[] ignore) {
+      return (T1[]) new String[] {"c", "d"};
+    }
+
+    @Override
+    public int size() {
+      return 0;
+    }
+
+    @Override
+    public boolean isEmpty() {
+      return false;
+    }
+
+    @Override
+    public boolean contains(Object o) {
+      return false;
+    }
+
+    @Override
+    public Iterator<T> iterator() {
+      return null;
+    }
+
+    @Override
+    public Object[] toArray() {
+      return new Object[0];
+    }
+
+    @Override
+    public boolean add(T t) {
+      return false;
+    }
+
+    @Override
+    public boolean remove(Object o) {
+      return false;
+    }
+
+    @Override
+    public boolean containsAll(Collection<?> c) {
+      return false;
+    }
+
+    @Override
+    public boolean addAll(Collection<? extends T> c) {
+      return false;
+    }
+
+    @Override
+    public boolean removeAll(Collection<?> c) {
+      return false;
+    }
+
+    @Override
+    public boolean retainAll(Collection<?> c) {
+      return false;
+    }
+
+    @Override
+    public void clear() {}
   }
 }
