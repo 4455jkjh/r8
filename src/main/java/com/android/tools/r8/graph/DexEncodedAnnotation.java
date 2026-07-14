@@ -25,6 +25,15 @@ public class DexEncodedAnnotation extends DexItem implements StructuralItem<DexE
     spec.withItem(a -> a.type).withItemArray(a -> a.elements);
   }
 
+  @SuppressWarnings("ReferenceEquality")
+  public static boolean identical(DexEncodedAnnotation ea1, DexEncodedAnnotation ea2) {
+    return ea1 == ea2;
+  }
+
+  public final boolean isIdenticalTo(DexEncodedAnnotation other) {
+    return identical(this, other);
+  }
+
   public DexEncodedAnnotation(DexType type, DexAnnotationElement[] elements) {
     this.type = type;
     this.elements = elements;

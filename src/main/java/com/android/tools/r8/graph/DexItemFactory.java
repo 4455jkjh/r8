@@ -241,7 +241,7 @@ public class DexItemFactory {
   public final DexString getClassMethodName = createString("getClass");
   public final DexString finalizeMethodName = createString("finalize");
   public final DexString ordinalMethodName = createString("ordinal");
-  public final DexString nameMethodName = createString("name");
+  public final DexString nameString = createString("name");
   public final DexString closeMethodName = createString("close");
   public final DexString desiredAssertionStatusMethodName = createString("desiredAssertionStatus");
   public final DexString forNameMethodName = createString("forName");
@@ -379,6 +379,8 @@ public class DexItemFactory {
   public final DexString kindString = createString("kind");
   public final DexString versionHashString = createString("versionHash");
   public final DexString apiLevelString = createString("apiLevel");
+  public final DexString namesString = createString("names");
+  public final DexString accessFlagsString = createString("accessFlags");
 
   // Prefix for runtime affecting yet potential class-retained annotations.
   public final DexString dalvikAnnotationPrefix = createString("Ldalvik/annotation/");
@@ -2500,7 +2502,7 @@ public class DexItemFactory {
       ordinalMethod =
           createMethod(enumDescriptor, ordinalMethodName, intDescriptor, DexString.EMPTY_ARRAY);
       nameMethod =
-          createMethod(enumDescriptor, nameMethodName, stringDescriptor, DexString.EMPTY_ARRAY);
+          createMethod(enumDescriptor, nameString, stringDescriptor, DexString.EMPTY_ARRAY);
       toString =
           createMethod(
               enumDescriptor,

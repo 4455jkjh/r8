@@ -106,7 +106,7 @@ public class AnnotationRemover {
         assert !DexAnnotation.isEnclosingClassAnnotation(annotation, dexItemFactory);
         assert options.passthroughDexCode
             || !DexAnnotation.isSignatureAnnotation(annotation, dexItemFactory);
-        if (DexAnnotation.isThrowingAnnotation(annotation, dexItemFactory)) {
+        if (DexAnnotation.isThrowsAnnotation(annotation, dexItemFactory)) {
           KeepMethodInfo methodInfo = keepInfo.asMethodInfo();
           return methodInfo != null && !methodInfo.isThrowsRemovalAllowed(options);
         }
