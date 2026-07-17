@@ -111,7 +111,9 @@ public class ResourceShrinkerUtils {
       public void info(Supplier<String> logProducer) {
         // The default usage of shrinkerdebug in the legacy resource shrinker does not add
         // new lines. Add these to make it consistent with the normal usage of StringConsumer.
-        consumer.accept(logProducer.get() + "\n", diagnosticsHandler);
+        String message = logProducer.get();
+        consumer.accept(message + "\n", diagnosticsHandler);
+        diagnosticsHandler.info(new StringDiagnostic(message));
       }
 
       @Override
