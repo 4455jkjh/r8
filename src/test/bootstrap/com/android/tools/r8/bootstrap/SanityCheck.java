@@ -49,6 +49,8 @@ public class SanityCheck extends TestBase {
   private static final String EXT_IN_SRV = SRV_PREFIX + METADATA_EXTENSION;
   private static final String THREADING_MODULE_SERVICE_FILE =
       "META-INF/services/com.android.tools.r8.threading.ThreadingModuleProvider";
+  private static final String RESOURCE_SHRINKER_KOTLIN_MODULE =
+      "META-INF/resourceshrinker.kotlin_module";
 
   @Parameters
   public static TestParametersCollection data() {
@@ -121,6 +123,8 @@ public class SanityCheck extends TestBase {
             } else if (name.equals("LICENSE")) {
               licenseSeen.set();
             } else if (name.equals(THREADING_MODULE_SERVICE_FILE)) {
+              // Allow.
+            } else if (name.equals(RESOURCE_SHRINKER_KOTLIN_MODULE)) {
               // Allow.
             } else if (entryTester.test(name)) {
               // Allow.
