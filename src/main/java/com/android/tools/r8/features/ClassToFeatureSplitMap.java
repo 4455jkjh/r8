@@ -176,7 +176,8 @@ public class ClassToFeatureSplitMap {
     FeatureSplit feature;
     boolean isSynthetic = syntheticItems.isSyntheticClass(type);
     if (isSynthetic) {
-      if (syntheticItems.isSyntheticOfKind(type, k -> k.ENUM_UNBOXING_SHARED_UTILITY_CLASS)) {
+      if (syntheticItems.isSyntheticOfKind(type, k -> k.ENUM_UNBOXING_SHARED_UTILITY_CLASS)
+          || syntheticItems.isSyntheticOfKind(type, k -> k.UNSAFE_HELPER)) {
         return FeatureSplit.BASE;
       }
       feature = syntheticItems.getContextualFeatureSplitOrDefault(type, FeatureSplit.BASE);

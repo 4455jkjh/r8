@@ -20,6 +20,7 @@ import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameter;
 import org.junit.runners.Parameterized.Parameters;
 
+// This is a regression test for b/537973315.
 @RunWith(Parameterized.class)
 public class AtomicFieldUpdaterFeatureSplitTest extends SplitterTestBase {
 
@@ -43,16 +44,16 @@ public class AtomicFieldUpdaterFeatureSplitTest extends SplitterTestBase {
         .addKeepClassRules(AFeatureClass.class)
         .setMinApi(parameters)
         .compile()
-        // TODO(b/537973315): Unsafe synthetic class is incorrectly placed in feature split.
         .inspect(
-            ConsumerUtils.emptyThrowingConsumer(),
-            featureInspector ->
+            // The context for the Unsafe synthetic is the feature class, but it is in the base.
+            baseInspector ->
                 assertThat(
-                    featureInspector.clazz(
+                    baseInspector.clazz(
                         SyntheticItemsTestUtils.syntheticUnsafeClass(AFeatureClass.class)),
-                    isPresent()))
+                    isPresent()),
+            ConsumerUtils.emptyThrowingConsumer())
         .run(parameters.getRuntime(), BBaseClass.class)
-        .assertFailureWithErrorThatThrows(NoClassDefFoundError.class);
+        .assertSuccessWithOutputLines("World!");
   }
 
   public static class AFeatureClass {}
