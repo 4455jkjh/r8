@@ -3,6 +3,13 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8.optimize.virtualmethodhoisting;
 
+import static com.android.tools.r8.utils.codeinspector.Matchers.isAbsent;
+import static com.android.tools.r8.utils.codeinspector.Matchers.isAbstract;
+import static com.android.tools.r8.utils.codeinspector.Matchers.isPresent;
+import static org.hamcrest.CoreMatchers.not;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.Assert.assertTrue;
+
 import com.android.tools.r8.NeverClassInline;
 import com.android.tools.r8.NeverInline;
 import com.android.tools.r8.NeverPropagateValue;
@@ -11,6 +18,8 @@ import com.android.tools.r8.NoVerticalClassMerging;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
+import com.android.tools.r8.utils.codeinspector.ClassSubject;
+import com.android.tools.r8.utils.codeinspector.MethodSubject;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -18,7 +27,7 @@ import org.junit.runners.Parameterized.Parameter;
 import org.junit.runners.Parameterized.Parameters;
 
 @RunWith(Parameterized.class)
-public class VirtualMethodHoistingSubclassFieldAccessTest extends TestBase {
+public class VirtualMethodHoistingSubclassFieldAccessThroughThisTest extends TestBase {
 
   @Parameter(0)
   public TestParameters parameters;
@@ -47,10 +56,37 @@ public class VirtualMethodHoistingSubclassFieldAccessTest extends TestBase {
         .enableMemberValuePropagationAnnotations()
         .enableNoHorizontalClassMergingAnnotations()
         .enableNoVerticalClassMergingAnnotations()
-        .addDontObfuscate()
-        .compile()
+        .addVirtualMethodHoisterInspector(
+            inspector ->
+                inspector
+                    .assertHoisted(B.class.getMethod("method"))
+                    .assertMethodCheckedButNotHoisted(A.class.getMethod("method")))
         .run(parameters.getRuntime(), Main.class)
-        .assertSuccessWithOutputLines("1", "2");
+        .assertSuccessWithOutputLines("1", "2")
+        .inspect(
+            inspector -> {
+              ClassSubject baseClass = inspector.clazz(Base.class);
+              assertThat(baseClass, isPresent());
+
+              // Base#method should no longer be abstract (it should have hoisted B#method).
+              MethodSubject baseMethod = baseClass.uniqueMethodWithOriginalName("method");
+              assertThat(baseMethod, isPresent());
+              assertThat(baseMethod, not(isAbstract()));
+              assertTrue(
+                  baseMethod
+                      .streamInstructions()
+                      .anyMatch(instruction -> instruction.isConstNumber(2)));
+
+              // B should not have the method (it inherits from Base).
+              ClassSubject bClass = inspector.clazz(B.class);
+              assertThat(bClass, isPresent());
+              assertThat(bClass.uniqueMethodWithOriginalName("method"), isAbsent());
+
+              // A#method should still be present.
+              ClassSubject aClass = inspector.clazz(A.class);
+              assertThat(aClass, isPresent());
+              assertThat(aClass.uniqueMethodWithOriginalName("method"), isPresent());
+            });
   }
 
   public static class Main {

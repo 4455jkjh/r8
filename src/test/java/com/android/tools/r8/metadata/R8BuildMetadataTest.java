@@ -121,6 +121,13 @@ public class R8BuildMetadataTest extends TestBase {
     inspectDeserializedBuildMetadata(buildMetadata, true);
   }
 
+  @Test
+  public void testNullJson() {
+    assertNull(R8BuildMetadata.fromJson(null));
+    assertNull(R8BuildMetadata.fromJson(""));
+    assertNull(R8BuildMetadata.fromJson("null"));
+  }
+
   private void configure(R8TestBuilder<?, ?, ?> builder) {
     builder
         .addProgramClasses(Main.class, PostStartup.class)

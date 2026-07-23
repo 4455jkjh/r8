@@ -40,11 +40,12 @@ public class StringBuilderEscapeTransferFunction
         .forEach(
             phi -> {
               if (oracle.hasStringBuilderType(phi)) {
-                for (Value operand : phi.getOperands()) {
-                  if (isLiveStringBuilder(builder, operand)) {
-                    builder.addLiveStringBuilder(phi);
-                    builder.addAlias(phi, operand);
-                  }
+                builder.addLiveStringBuilder(phi);
+              }
+              for (Value operand : phi.getOperands()) {
+                if (isLiveStringBuilder(builder, operand)) {
+                  builder.addLiveStringBuilder(phi);
+                  builder.addAlias(phi, operand);
                 }
               }
             });
@@ -70,7 +71,13 @@ public class StringBuilderEscapeTransferFunction
     if (isStringBuilderInstruction) {
       if (instruction.isInvokeMethod()) {
         assert !instruction.inValues().isEmpty();
-        assert builder.getLiveStringBuilders().contains(instruction.getFirstOperand());
+        Value firstOperand = instruction.getFirstOperand();
+        if (!builder.getLiveStringBuilders().contains(firstOperand)) {
+          // We can have constant NULL being the first operand, which we have not marked as
+          // a live string builder.
+          assert firstOperand.getAliasedValue().isConstZero();
+          builder.addLiveStringBuilder(firstOperand);
+        }
       } else {
         assert instruction.isNewInstance();
       }
@@ -85,9 +92,7 @@ public class StringBuilderEscapeTransferFunction
         builder.addLiveStringBuilder(outValue);
         builder.addAlias(outValue, instruction.getFirstOperand());
       } else if (oracle.hasStringBuilderType(outValue)) {
-        if (instruction.isNewInstance() || instruction.isArgument()) {
-          builder.addLiveStringBuilder(outValue);
-        }
+        builder.addLiveStringBuilder(outValue);
       }
       if (!isStringBuilderInstruction
           && isLiveStringBuilder(builder, instruction.outValue())

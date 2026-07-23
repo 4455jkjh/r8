@@ -88,11 +88,13 @@ import com.android.tools.r8.utils.collections.DexMethodSignatureMap;
 import com.android.tools.r8.utils.collections.DexMethodSignatureSet;
 import com.android.tools.r8.utils.internal.ListUtils;
 import com.android.tools.r8.utils.internal.ThrowingAction;
+import com.android.tools.r8.utils.internal.TriConsumer;
 import com.android.tools.r8.utils.timing.Timing;
 import com.google.common.collect.Sets;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
@@ -110,6 +112,10 @@ public class VirtualMethodHoister {
 
   private final AppView<AppInfoWithLiveness> appView;
   private final DexItemFactory factory;
+  Set<DexMethod> hoisted = null;
+  Set<DexMethod> candidatesNotHoisted = null;
+  private TriConsumer<DexMethod, DexMethod, Boolean> inspectionConsumer =
+      (candidate, target, result) -> {};
 
   private final VirtualMethodHoisterLens.Builder lensBuilder =
       new VirtualMethodHoisterLens.Builder();
@@ -120,6 +126,7 @@ public class VirtualMethodHoister {
   }
 
   public void run(ExecutorService executorService, Timing timing) throws ExecutionException {
+    setupTestingInspection();
     if (shouldRun()) {
       try (Timing t0 = timing.begin("VirtualMethodHoister")) {
         internalRun(executorService, timing);
@@ -127,10 +134,30 @@ public class VirtualMethodHoister {
         appView.notifyOptimizationFinished();
       }
     }
+    invokeTestingInspection();
   }
 
   private boolean shouldRun() {
     return appView.options().isOptimizing() && appView.options().isShrinking();
+  }
+
+  private void setupTestingInspection() {
+    if (appView.options().getTestingOptions().virtualMethodHoisterConsumer != null) {
+      hoisted = new HashSet<>();
+      candidatesNotHoisted = new HashSet<>();
+      inspectionConsumer =
+          (candidate, target, result) -> (result ? hoisted : candidatesNotHoisted).add(candidate);
+    }
+  }
+
+  private void invokeTestingInspection() {
+    if (appView.options().getTestingOptions().virtualMethodHoisterConsumer != null) {
+      appView
+          .options()
+          .getTestingOptions()
+          .virtualMethodHoisterConsumer
+          .accept(appView, hoisted, candidatesNotHoisted);
+    }
   }
 
   private void internalRun(ExecutorService executorService, Timing timing)
@@ -302,6 +329,9 @@ public class VirtualMethodHoister {
       for (ProgramMethod candidate : state.getCandidates(targetMethod)) {
         if (isSafeToHoist(candidate, targetMethod)) {
           return candidate;
+        } else {
+          inspectionConsumer.accept(
+              candidate.getReference(), targetMethod.getReference(), Boolean.FALSE);
         }
       }
       return null;
@@ -551,6 +581,9 @@ public class VirtualMethodHoister {
       if (canRetargetInvokesToTargetMethod(sourceMethod, targetMethod)) {
         lensBuilder.map(sourceMethod, targetMethod);
       }
+
+      inspectionConsumer.accept(
+          sourceMethod.getReference(), targetMethod.getReference(), Boolean.TRUE);
 
       hoistedMethods
           .computeIfAbsent(sourceMethod.getHolder(), ignoreKey(Sets::newIdentityHashSet))

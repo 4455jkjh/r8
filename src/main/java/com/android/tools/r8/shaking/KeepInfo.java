@@ -90,8 +90,8 @@ public abstract class KeepInfo<B extends Builder<B, K>, K extends KeepInfo<B, K>
       DexAnnotation annotation,
       boolean isAnnotationTypeLive,
       KeepAnnotationCollectionInfo keepAnnotationInfo,
-      boolean keepVisible,
-      boolean keepInvisible) {
+      boolean compatKeepVisible,
+      boolean compatKeepInvisible) {
     // In all cases the annotation type must be live for references to it to be kept.
     if (!isAnnotationTypeLive) {
       return true;
@@ -101,13 +101,12 @@ public abstract class KeepInfo<B extends Builder<B, K>, K extends KeepInfo<B, K>
       return false;
     }
     // In compatibility mode, annotations are globally kept if live and the attribute is kept.
-    if (configuration.isForceProguardCompatibilityEnabled()
-        || !configuration.isTreeShakingEnabled()) {
+    if (configuration.isForceProguardCompatibilityEnabled()) {
       if (annotation.getVisibility() == DexAnnotation.VISIBILITY_RUNTIME) {
-        return !keepVisible;
+        return !compatKeepVisible;
       }
       if (annotation.getVisibility() == DexAnnotation.VISIBILITY_BUILD) {
-        return !keepInvisible;
+        return !compatKeepInvisible;
       }
     }
     return true;

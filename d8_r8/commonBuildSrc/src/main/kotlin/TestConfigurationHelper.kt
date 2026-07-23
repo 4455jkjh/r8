@@ -9,7 +9,7 @@ import java.io.ByteArrayOutputStream
 import java.io.File
 import java.io.PrintStream
 import java.net.HttpURLConnection
-import java.net.URL
+import java.net.URI
 import java.nio.charset.StandardCharsets
 import java.util.Date
 import java.util.concurrent.TimeUnit
@@ -197,7 +197,8 @@ public class TestConfigurationHelper {
         JsonObject().apply { add("testResults", JsonArray().apply { add(testResultObj) }) }
 
       try {
-        val url = URL("http://${info.address}/prpc/luci.resultsink.v1.Sink/ReportTestResults")
+        val url =
+          URI("http://${info.address}/prpc/luci.resultsink.v1.Sink/ReportTestResults").toURL()
         val conn = url.openConnection() as HttpURLConnection
         conn.requestMethod = "POST"
         conn.doOutput = true

@@ -550,7 +550,12 @@ final class ClassProcessor {
     assert dexItemFactory.objectType.isIdenticalTo(iface.getSuperType());
     assert !helper.isEmulatedInterface(iface.type);
     if (desugaringMode == LIBRARY_DESUGARING_N_PLUS) {
-      return SignaturesInfo.EMPTY;
+      if (shouldResolveForwardingMethodsForEmulatedInterfaces(
+          iface, interfaceInfo.emulatedInterfaceInfo)) {
+        duplicateEmulatedInterfaces(iface, interfaceInfo.emulatedInterfaceInfo.emulatedInterfaces);
+        return SignaturesInfo.EMPTY;
+      }
+      return interfaceInfo;
     } else if (desugaringMode == LIBRARY_DESUGARING_M_MINUS) {
       // Add non-library default methods as well as those for desugared library classes.
       if (iface.isLibraryClass() && needsLibraryInfo() && helper.isInDesugaredLibrary(iface)) {
@@ -800,7 +805,9 @@ final class ClassProcessor {
     AppInfoWithClassHierarchy appInfo = appView.appInfoForDesugaring();
     for (Wrapper<DexMethod> signature : emulatedInterfaceInfo.signatures.signatures) {
       MethodResolutionResult resolutionResult =
-          appInfo.resolveMethodOnClassLegacy(clazz, signature.get());
+          clazz.isInterface()
+              ? appInfo.resolveMethodOnInterfaceLegacy(clazz, signature.get())
+              : appInfo.resolveMethodOnClassLegacy(clazz, signature.get());
       if (resolutionResult.isFailedResolution()) {
         return true;
       }

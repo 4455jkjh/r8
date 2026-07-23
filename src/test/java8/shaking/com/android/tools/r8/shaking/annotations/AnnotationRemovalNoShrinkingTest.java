@@ -4,7 +4,6 @@
 package com.android.tools.r8.shaking.annotations;
 
 import static com.android.tools.r8.utils.codeinspector.Matchers.isPresent;
-import static com.android.tools.r8.utils.codeinspector.Matchers.isPresentIf;
 import static org.hamcrest.MatcherAssert.assertThat;
 
 import com.android.tools.r8.TestBase;
@@ -55,22 +54,10 @@ public class AnnotationRemovalNoShrinkingTest extends TestBase {
         .inspect(
             inspector -> {
               ClassSubject mainClass = inspector.clazz(Main.class);
-              if (keepRuntimeVisibleAnnotations) {
-                // The runtime invisible annotation should be stripped in full mode.
-                assertThat(
-                    mainClass.annotation(RuntimeInvisibleAnnotation.class),
-                    isPresentIf(enableProGuardCompatibilityMode));
-                assertThat(mainClass.annotation(RuntimeVisibleAnnotation.class), isPresent());
-              } else {
-                // When tree shaking is disabled, annotations are stripped in full mode if the
-                // annotation attribute is not kept.
-                assertThat(
-                    mainClass.annotation(RuntimeInvisibleAnnotation.class),
-                    isPresentIf(enableProGuardCompatibilityMode));
-                assertThat(
-                    mainClass.annotation(RuntimeVisibleAnnotation.class),
-                    isPresentIf(enableProGuardCompatibilityMode));
-              }
+              // TODO(b/530133774): The runtime invisible annotation should be stripped in full
+              //  mode.
+              assertThat(mainClass.annotation(RuntimeInvisibleAnnotation.class), isPresent());
+              assertThat(mainClass.annotation(RuntimeVisibleAnnotation.class), isPresent());
             });
   }
 

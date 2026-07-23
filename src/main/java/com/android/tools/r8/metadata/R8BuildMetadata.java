@@ -68,6 +68,11 @@ public interface R8BuildMetadata {
             .serializeNulls()
             .create()
             .fromJson(json, R8BuildMetadataImpl.class);
+
+    if (buildMetadata == null) {
+      return null;
+    }
+
     if (canHaveOverflowInStatsMetadata(buildMetadata.getVersion())) {
       // Recreate the build metadata using the constructor to apply workaround.
       return new R8BuildMetadataImpl(
