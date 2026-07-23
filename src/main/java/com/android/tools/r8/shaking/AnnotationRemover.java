@@ -82,16 +82,14 @@ public class AnnotationRemover {
     // If we cannot run the AnnotationRemover we are keeping the annotation.
     InternalOptions options = appView.options();
     if (!options.isShrinking()) {
-      if (options.isForceProguardCompatibilityEnabled() || mode.isMainDexTracing()) {
-        return true;
-      }
+      return true;
     }
 
     boolean isAnnotationOnAnnotationClass =
         holder.isProgramClass() && holder.asProgramClass().isAnnotation();
 
     ProguardKeepAttributes config =
-        options.hasProguardConfiguration()
+        options.getProguardConfiguration() != null
             ? options.getProguardConfiguration().getKeepAttributes()
             : ProguardKeepAttributes.empty();
 
@@ -236,26 +234,20 @@ public class AnnotationRemover {
   private void run(DexProgramClass clazz) {
     KeepClassInfo keepInfo = appView.getKeepInfo().getClassInfo(clazz);
     removeAnnotations(clazz, keepInfo);
-
-    if (options.isShrinking()) {
-      stripAttributes(clazz, keepInfo);
-      // Kotlin metadata for classes are removed in the KotlinMetadataEnqueuerExtension. Kotlin
-      // properties are split over fields and methods. Check if any is pinned before pruning the
-      // information.
-      Set<KotlinPropertyInfo> pinnedKotlinProperties = Sets.newIdentityHashSet();
-      clazz.forEachProgramMember(member -> processMember(member, clazz, pinnedKotlinProperties));
-      clazz.forEachProgramMember(
-          member -> {
-            KotlinMemberLevelInfo kotlinInfo = member.getKotlinInfo();
-            if (kotlinInfo.isProperty()
-                && !pinnedKotlinProperties.contains(kotlinInfo.asProperty().getReference())) {
-              member.clearKotlinInfo();
-            }
-          });
-    } else {
-      clazz.forEachProgramMember(
-          member -> removeAnnotations(member, appView.getKeepInfo().getMemberInfo(member)));
-    }
+    stripAttributes(clazz, keepInfo);
+    // Kotlin metadata for classes are removed in the KotlinMetadataEnqueuerExtension. Kotlin
+    // properties are split over fields and methods. Check if any is pinned before pruning the
+    // information.
+    Set<KotlinPropertyInfo> pinnedKotlinProperties = Sets.newIdentityHashSet();
+    clazz.forEachProgramMember(member -> processMember(member, clazz, pinnedKotlinProperties));
+    clazz.forEachProgramMember(
+        member -> {
+          KotlinMemberLevelInfo kotlinInfo = member.getKotlinInfo();
+          if (kotlinInfo.isProperty()
+              && !pinnedKotlinProperties.contains(kotlinInfo.asProperty().getReference())) {
+            member.clearKotlinInfo();
+          }
+        });
   }
 
   private boolean verifyNoKeptKotlinMembersForClassesWithNoKotlinInfo() {

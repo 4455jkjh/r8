@@ -52,7 +52,6 @@ public class MissingClassReferencedFromThrowsClauseWithNoShrinkingTest
           b.enableInliningAnnotations();
           b.addKeepClassAndMembersRules(DescriptorUtils.descriptorToJavaType(NEW_A_DESCRIPTOR));
           b.addDontShrink();
-          b.addKeepAttributeExceptions();
         });
   }
 
