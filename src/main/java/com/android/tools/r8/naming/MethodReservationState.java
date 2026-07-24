@@ -37,12 +37,16 @@ class MethodReservationState<KeyType>
     return new MethodReservationState<>(this, this.keyTransform);
   }
 
-  void reserveName(DexString reservedName, DexMethod method) {
-    getOrCreateInternalState(method).reserveName(method, reservedName);
-  }
-
   void reserveName(DexString reservedName, DexClassAndMethod method) {
-    reserveName(reservedName, method.getReference());
+    try {
+      getOrCreateInternalState(method.getReference()).reserveName(method, reservedName);
+    } catch (AssertionError err) {
+      throw new RuntimeException(
+          String.format(
+              "Assertion error when trying to reserve name '%s' for method '%s'",
+              reservedName, method),
+          err);
+    }
   }
 
   boolean isReserved(DexString name, DexMethod method) {
@@ -88,19 +92,15 @@ class MethodReservationState<KeyType>
       return originalToReservedNames.get(MethodSignatureEquivalence.get().wrap(method));
     }
 
-    void reserveName(DexMethod method, DexString name) {
+    void reserveName(DexClassAndMethod method, DexString name) {
       if (reservedNames == null) {
         assert originalToReservedNames == null;
         originalToReservedNames = new HashMap<>();
         reservedNames = new HashSet<>();
       }
-      Wrapper<DexMethod> wrapped = MethodSignatureEquivalence.get().wrap(method);
+      Wrapper<DexMethod> wrapped = MethodSignatureEquivalence.get().wrap(method.getReference());
       originalToReservedNames.computeIfAbsent(wrapped, ignore -> new HashSet<>()).add(name);
       reservedNames.add(name);
-    }
-
-    void reserveName(DexClassAndMethod method, DexString name) {
-      reserveName(method.getReference(), name);
     }
   }
 }
