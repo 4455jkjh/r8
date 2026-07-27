@@ -3,7 +3,9 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8.ir.optimize.string;
 
+import static com.android.tools.r8.utils.codeinspector.CodeMatchers.invokesMethodWithName;
 import static com.android.tools.r8.utils.codeinspector.Matchers.isPresent;
+import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertTrue;
 
@@ -59,6 +61,7 @@ public class StringConcatOptimizationTest extends TestBase {
         mainMethod
             .streamInstructions()
             .anyMatch(instruction -> instruction.isConstString("ab", JumboStringMode.ALLOW)));
+    assertThat(mainMethod, not(invokesMethodWithName("concat")));
   }
 
   public static class Main {
