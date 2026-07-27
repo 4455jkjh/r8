@@ -123,6 +123,19 @@ tools/test.py -q --no-internal --no-r8lib *ProguardConfigurationParserTest* *Cla
 
 Only run without `-q` if more information is needed about the build details.
 
+### Testing with Kotlin developer compiler versions
+
+To run tests with the latest Kotlin developer version first download it by running
+
+```bash
+tools/download_kotlin.py --version dev
+```
+
+To run tests with this downloaded compiler pass `--kotlin-compiler-dev` to
+`tools/test.py` (or alternatively set `withDevCompiler` to `true` in the class
+`com.android.tools.r8.KotlinTestParameters.Builder` either using the system property
+`com.android.tools.r8.kotlincompilerdev` or by temporarily editing the file).
+
 ## Development Conventions
 
 ### Code Formatting

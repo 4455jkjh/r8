@@ -11,6 +11,7 @@ fun main() {
   var lib = Lib()
   lib::class
     .declaredFunctions
+    .sortedBy { it.name }
     .forEach({
       println(it)
       var msg = it.call(lib)
