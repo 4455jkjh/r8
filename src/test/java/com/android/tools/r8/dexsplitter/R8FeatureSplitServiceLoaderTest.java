@@ -4,7 +4,7 @@
 
 package com.android.tools.r8.dexsplitter;
 
-import static com.android.tools.r8.optimize.serviceloader.ServiceLoaderTestBase.getServiceLoaderLoads;
+import static com.android.tools.r8.utils.codeinspector.CodeMatchers.getServiceLoaderLoads;
 import static com.android.tools.r8.utils.codeinspector.Matchers.isPresent;
 import static org.hamcrest.CoreMatchers.anyOf;
 import static org.hamcrest.CoreMatchers.equalTo;

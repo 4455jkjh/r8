@@ -411,4 +411,17 @@ public class CodeMatchers {
     return instruction ->
         instruction.isFieldAccess() && instruction.getField().asFieldReference().equals(target);
   }
+
+  public static boolean isServiceLoaderLoad(InstructionSubject instruction) {
+    return instruction.isInvokeStatic()
+        && instruction.getMethod().qualifiedName().contains("ServiceLoader.load");
+  }
+
+  public static long getServiceLoaderLoads(CodeInspector inspector) {
+    return inspector
+        .streamInstructions()
+        .filter(CodeMatchers::isServiceLoaderLoad)
+        .count();
+  }
 }
+

@@ -4,6 +4,7 @@
 
 package com.android.tools.r8.optimize.serviceloader;
 
+import static com.android.tools.r8.utils.codeinspector.CodeMatchers.getServiceLoaderLoads;
 import static com.android.tools.r8.ToolHelper.DexVm.Version.V7_0_0;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
