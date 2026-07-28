@@ -45,6 +45,7 @@ import com.android.tools.r8.ir.optimize.string.StringBuilderNode.NewInstanceNode
 import com.android.tools.r8.ir.optimize.string.StringBuilderNode.SplitReferenceNode;
 import com.android.tools.r8.ir.optimize.string.StringBuilderNodeMuncher.MunchingState;
 import com.android.tools.r8.ir.optimize.string.StringBuilderOracle.DefaultStringBuilderOracle;
+import com.android.tools.r8.utils.internal.BooleanBox;
 import com.android.tools.r8.utils.internal.TraversalContinuation;
 import com.android.tools.r8.utils.internal.collections.WorkList;
 import com.android.tools.r8.utils.internal.dfs.DepthFirstSearchWorkListBase.DepthFirstSearchWorkList;
@@ -62,6 +63,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.BiConsumer;
+import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -282,20 +284,26 @@ public class StringBuilderAppendOptimizer extends CodeRewriterPass<AppInfo> {
                 instruction, escapeState::isLiveStringBuilder)) {
               createNodesForStringBuilderInstruction(instruction, escapeState, nodeConsumer);
             } else {
-              for (Value newEscapedValue : escapeState.getNewlyEscaped()) {
-                visitStringBuilderValues(
-                    newEscapedValue,
-                    escapeState,
-                    nonAlias -> nodeConsumer.accept(nonAlias, createEscapeNode()),
-                    alias -> nodeConsumer.accept(alias, createEscapeNode()));
+              {
+                BooleanBox processEscaping = new BooleanBox(true);
+                for (Value newEscapedValue : escapeState.getNewlyEscaped()) {
+                  visitStringBuilderValues(
+                      newEscapedValue,
+                      escapeState,
+                      nonAlias -> nodeConsumer.accept(nonAlias, createEscapeNode()),
+                      alias -> nodeConsumer.accept(alias, createEscapeNode()),
+                      processEscaping::getAndUnset);
+                }
               }
               if (canMutate(instruction)) {
+                BooleanBox processEscaping = new BooleanBox(true);
                 for (Value escapedStringBuilder : escapeState.getEscaping()) {
                   visitStringBuilderValues(
                       escapedStringBuilder,
                       escapeState,
                       nonAlias -> nodeConsumer.accept(nonAlias, createMutateNode()),
-                      alias -> nodeConsumer.accept(alias, createMutateNode()));
+                      alias -> nodeConsumer.accept(alias, createMutateNode()),
+                      processEscaping::getAndUnset);
                 }
               }
             }
@@ -414,6 +422,16 @@ public class StringBuilderAppendOptimizer extends CodeRewriterPass<AppInfo> {
               StringBuilderEscapeState state,
               Consumer<Value> actualConsumer,
               Consumer<Value> aliasAndEscapedConsumer) {
+            visitStringBuilderValues(
+                value, state, actualConsumer, aliasAndEscapedConsumer, () -> true);
+          }
+
+          private void visitStringBuilderValues(
+              Value value,
+              StringBuilderEscapeState state,
+              Consumer<Value> actualConsumer,
+              Consumer<Value> aliasAndEscapedConsumer,
+              BooleanSupplier processEscaping) {
             if (state.isUnreachable()) {
               return;
             }
@@ -421,7 +439,7 @@ public class StringBuilderAppendOptimizer extends CodeRewriterPass<AppInfo> {
             boolean seenEscaped =
                 visitAllAliasing(value, state, actualConsumer, aliasAndEscapedConsumer);
             seenEscaped |= visitAllAliases(value, state, aliasAndEscapedConsumer);
-            if (seenEscaped) {
+            if (seenEscaped && processEscaping.getAsBoolean()) {
               for (Value escapingValue : state.getEscaping()) {
                 aliasAndEscapedConsumer.accept(escapingValue);
               }
