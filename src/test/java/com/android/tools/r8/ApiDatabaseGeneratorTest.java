@@ -7,26 +7,32 @@ import static com.android.tools.r8.DiagnosticsMatcher.diagnosticMessage;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
+import com.android.tools.r8.apimodel.ApiJarInfo;
+import com.android.tools.r8.apimodel.ApiJarReader;
+import com.android.tools.r8.apimodel.FieldTypelessReference;
 import com.android.tools.r8.origin.CommandLineOrigin;
+import com.android.tools.r8.references.ClassReference;
+import com.android.tools.r8.references.MethodReference;
+import com.android.tools.r8.references.Reference;
+import com.android.tools.r8.references.TypeReference;
 import com.android.tools.r8.utils.internal.FileUtils;
 import com.android.tools.r8.utils.internal.StringUtils;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import org.junit.Rule;
+import java.util.Collections;
+import java.util.List;
 import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
 
 @RunWith(Parameterized.class)
 public class ApiDatabaseGeneratorTest extends TestBase {
-
-  @Rule public TemporaryFolder temp = new TemporaryFolder();
 
   @Parameters(name = "{0}")
   public static TestParametersCollection data() {
@@ -336,5 +342,71 @@ public class ApiDatabaseGeneratorTest extends TestBase {
             "</api>");
     FileUtils.writeTextFile(file, xml);
     return file;
+  }
+
+  interface TestInterface {
+    void instanceMethod();
+
+    static void staticMethod() {}
+  }
+
+  static class TestClass {
+    int field = 0;
+
+    void instanceMethod() {}
+
+    static void staticMethod() {}
+  }
+
+  @Test
+  public void testExtractJarInfo() throws Exception {
+    Path jar = temp.newFile("test.jar").toPath();
+    testForR8(Backend.CF)
+        .addProgramClasses(TestInterface.class, TestClass.class)
+        .addKeepAllClassesRule()
+        .compile()
+        .writeToZip(jar);
+
+    ApiDatabaseGeneratorCommand command =
+        ApiDatabaseGeneratorCommand.builder()
+            .addInputPath(jar)
+            .addInputPath(writeApiXml("dummy.xml")) // Need at least one XML
+            .build();
+
+    ApiJarInfo jarInfo = ApiJarReader.extractJarInfo(command);
+
+    ClassReference interfaceRef = Reference.classFromClass(TestInterface.class);
+    assertTrue(jarInfo.isClassDefined(interfaceRef));
+    assertTrue(jarInfo.isInterface(interfaceRef));
+
+    ClassReference classRef = Reference.classFromClass(TestClass.class);
+    assertTrue(jarInfo.isClassDefined(classRef));
+    assertFalse(jarInfo.isInterface(classRef));
+
+    TypeReference voidType = Reference.returnTypeFromDescriptor("V");
+    List<TypeReference> noArgs = Collections.emptyList();
+
+    MethodReference interfaceInstanceMethod =
+        Reference.method(interfaceRef, "instanceMethod", noArgs, voidType);
+    assertTrue(jarInfo.isMethodDefined(interfaceInstanceMethod));
+    assertFalse(jarInfo.isStatic(interfaceInstanceMethod));
+
+    MethodReference interfaceStaticMethod =
+        Reference.method(interfaceRef, "staticMethod", noArgs, voidType);
+    assertTrue(jarInfo.isMethodDefined(interfaceStaticMethod));
+    assertTrue(jarInfo.isStatic(interfaceStaticMethod));
+
+    MethodReference classInstanceMethod =
+        Reference.method(classRef, "instanceMethod", noArgs, voidType);
+    assertTrue(jarInfo.isMethodDefined(classInstanceMethod));
+    assertFalse(jarInfo.isStatic(classInstanceMethod));
+
+    MethodReference classStaticMethod =
+        Reference.method(classRef, "staticMethod", noArgs, voidType);
+    assertTrue(jarInfo.isMethodDefined(classStaticMethod));
+    assertTrue(jarInfo.isStatic(classStaticMethod));
+
+    FieldTypelessReference field = new FieldTypelessReference(classRef, "field");
+    assertTrue(jarInfo.isFieldDefined(field));
   }
 }
