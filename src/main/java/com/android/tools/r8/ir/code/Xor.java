@@ -108,6 +108,11 @@ public class Xor extends LogicalBinop {
   }
 
   @Override
+  AbstractValue foldLongs(AbstractValue left, AbstractValue right, AppView<?> appView) {
+    return AbstractCalculator.xorLongs(appView, left, right);
+  }
+
+  @Override
   CfLogicalBinop.Opcode getCfOpcode() {
     return CfLogicalBinop.Opcode.Xor;
   }

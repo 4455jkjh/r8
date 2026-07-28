@@ -150,9 +150,14 @@ public class AssociativeLongTest extends TestBase {
   private void inspect(CodeInspector inspector) {
     ClassSubject clazz = inspector.clazz(Main.class);
     for (FoundMethodSubject method :
-        clazz.allMethods(m -> m.getParameters().size() > 0 && m.getParameter(0).is("long"))) {
+        clazz.allMethods(m -> !m.getParameters().isEmpty() && m.getParameter(0).is("long"))) {
+      boolean optimized =
+          method.getOriginalMethodName().equals("andDouble")
+              || method.getOriginalMethodName().equals("shrDouble")
+              || method.getOriginalMethodName().equals("ushrDouble");
       assertEquals(
-          1,
+          method.getOriginalMethodName(),
+          optimized ? 0 : 1,
           method
               .streamInstructions()
               .filter(i -> i.isLongArithmeticBinop() || i.isLongLogicalBinop())

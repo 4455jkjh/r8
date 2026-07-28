@@ -16,6 +16,9 @@ import com.android.tools.r8.dex.code.DexMulIntLit16;
 import com.android.tools.r8.dex.code.DexMulIntLit8;
 import com.android.tools.r8.dex.code.DexMulLong;
 import com.android.tools.r8.dex.code.DexMulLong2Addr;
+import com.android.tools.r8.graph.AppView;
+import com.android.tools.r8.ir.analysis.value.AbstractValue;
+import com.android.tools.r8.ir.analysis.value.arithmetic.AbstractCalculator;
 
 public class Mul extends ArithmeticBinop {
 
@@ -123,8 +126,18 @@ public class Mul extends ArithmeticBinop {
   }
 
   @Override
+  AbstractValue foldIntegers(AbstractValue left, AbstractValue right, AppView<?> appView) {
+    return AbstractCalculator.mulIntegers(appView, left, right);
+  }
+
+  @Override
   long foldLongs(long left, long right) {
     return left * right;
+  }
+
+  @Override
+  AbstractValue foldLongs(AbstractValue left, AbstractValue right, AppView<?> appView) {
+    return AbstractCalculator.mulLongs(appView, left, right);
   }
 
   @Override

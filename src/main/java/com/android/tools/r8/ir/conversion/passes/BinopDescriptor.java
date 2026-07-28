@@ -4,7 +4,7 @@
 
 package com.android.tools.r8.ir.conversion.passes;
 
-import static com.android.tools.r8.utils.internal.BitUtils.ALL_BITS_SET_MASK;
+import static com.android.tools.r8.utils.internal.BitUtils.ALL_BITS_SET_INTEGER_MASK;
 
 import com.android.tools.r8.ir.code.Add;
 import com.android.tools.r8.ir.code.And;
@@ -295,7 +295,7 @@ enum BinopDescriptor {
   }
 
   Integer allBitsSet(boolean isBooleanValue) {
-    return isBooleanValue ? 1 : ALL_BITS_SET_MASK;
+    return isBooleanValue ? 1 : ALL_BITS_SET_INTEGER_MASK;
   }
 
   Integer leftIdentity(boolean isBooleanValue) {

@@ -112,6 +112,10 @@ public abstract class Binop extends Instruction {
     throw new Unreachable("Unsupported long folding for " + this);
   }
 
+  AbstractValue foldLongs(AbstractValue left, AbstractValue right, AppView<?> appView) {
+    return AbstractValue.unknown();
+  }
+
   float foldFloat(float left, float right) {
     throw new Unreachable("Unsupported float folding for " + this);
   }

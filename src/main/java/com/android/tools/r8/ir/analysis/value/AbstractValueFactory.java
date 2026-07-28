@@ -4,7 +4,8 @@
 
 package com.android.tools.r8.ir.analysis.value;
 
-import static com.android.tools.r8.utils.internal.BitUtils.ALL_BITS_SET_MASK;
+import static com.android.tools.r8.utils.internal.BitUtils.ALL_BITS_SET_INTEGER_MASK;
+import static com.android.tools.r8.utils.internal.BitUtils.ALL_BITS_SET_LONG_MASK;
 
 import com.android.tools.r8.graph.DexField;
 import com.android.tools.r8.graph.DexReference;
@@ -75,11 +76,24 @@ public class AbstractValueFactory {
       int definitelySetBits, int definitelyUnsetBits) {
     if (definitelySetBits != 0 || definitelyUnsetBits != 0) {
       // If all bits are known, then create a single number value.
-      boolean allBitsSet = (definitelySetBits | definitelyUnsetBits) == ALL_BITS_SET_MASK;
+      boolean allBitsSet = (definitelySetBits | definitelyUnsetBits) == ALL_BITS_SET_INTEGER_MASK;
       if (allBitsSet) {
         return createUncheckedSingleNumberValue(definitelySetBits);
       }
       return new DefiniteBitsNumberValue(definitelySetBits, definitelyUnsetBits);
+    }
+    return AbstractValue.unknown();
+  }
+
+  public AbstractValue createDefiniteBitsLongNumberValue(
+      long definitelySetBits, long definitelyUnsetBits) {
+    if (definitelySetBits != 0 || definitelyUnsetBits != 0) {
+      // If all bits are known, then create a single number value.
+      boolean allBitsSet = (definitelySetBits | definitelyUnsetBits) == ALL_BITS_SET_LONG_MASK;
+      if (allBitsSet) {
+        return createUncheckedSingleNumberValue(definitelySetBits);
+      }
+      return new DefiniteBitsLongNumberValue(definitelySetBits, definitelyUnsetBits);
     }
     return AbstractValue.unknown();
   }

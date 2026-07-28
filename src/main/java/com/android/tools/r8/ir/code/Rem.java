@@ -18,6 +18,7 @@ import com.android.tools.r8.dex.code.DexRemLong2Addr;
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.ProgramMethod;
 import com.android.tools.r8.ir.analysis.value.AbstractValue;
+import com.android.tools.r8.ir.analysis.value.arithmetic.AbstractCalculator;
 
 public class Rem extends ArithmeticBinop {
 
@@ -116,8 +117,18 @@ public class Rem extends ArithmeticBinop {
   }
 
   @Override
+  AbstractValue foldIntegers(AbstractValue left, AbstractValue right, AppView<?> appView) {
+    return AbstractCalculator.remIntegers(appView, left, right);
+  }
+
+  @Override
   long foldLongs(long left, long right) {
     return left % right;
+  }
+
+  @Override
+  AbstractValue foldLongs(AbstractValue left, AbstractValue right, AppView<?> appView) {
+    return AbstractCalculator.remLongs(appView, left, right);
   }
 
   @Override

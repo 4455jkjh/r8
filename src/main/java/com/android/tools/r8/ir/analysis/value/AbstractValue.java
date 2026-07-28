@@ -134,6 +134,14 @@ public abstract class AbstractValue implements ComputationTreeNode {
     throw new Unreachable();
   }
 
+  public long getDefinitelySetLongBits() {
+    throw new Unreachable();
+  }
+
+  public long getDefinitelyUnsetLongBits() {
+    throw new Unreachable();
+  }
+
   public boolean hasKnownArrayLength() {
     return false;
   }
@@ -341,6 +349,14 @@ public abstract class AbstractValue implements ComputationTreeNode {
   }
 
   public DefiniteBitsNumberValue asDefiniteBitsNumberValue() {
+    return null;
+  }
+
+  public boolean isDefiniteBitsLongNumberValue() {
+    return false;
+  }
+
+  public DefiniteBitsLongNumberValue asDefiniteBitsLongNumberValue() {
     return null;
   }
 

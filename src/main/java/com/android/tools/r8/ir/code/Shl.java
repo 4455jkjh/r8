@@ -108,6 +108,11 @@ public class Shl extends LogicalBinop {
   }
 
   @Override
+  AbstractValue foldLongs(AbstractValue left, AbstractValue right, AppView<?> appView) {
+    return AbstractCalculator.shlLongs(appView, left, right);
+  }
+
+  @Override
   CfLogicalBinop.Opcode getCfOpcode() {
     return CfLogicalBinop.Opcode.Shl;
   }

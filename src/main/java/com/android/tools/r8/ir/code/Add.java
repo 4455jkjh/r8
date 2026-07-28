@@ -16,6 +16,9 @@ import com.android.tools.r8.dex.code.DexAddIntLit8;
 import com.android.tools.r8.dex.code.DexAddLong;
 import com.android.tools.r8.dex.code.DexAddLong2Addr;
 import com.android.tools.r8.dex.code.DexInstruction;
+import com.android.tools.r8.graph.AppView;
+import com.android.tools.r8.ir.analysis.value.AbstractValue;
+import com.android.tools.r8.ir.analysis.value.arithmetic.AbstractCalculator;
 
 public class Add extends ArithmeticBinop {
 
@@ -109,8 +112,18 @@ public class Add extends ArithmeticBinop {
   }
 
   @Override
+  AbstractValue foldIntegers(AbstractValue left, AbstractValue right, AppView<?> appView) {
+    return AbstractCalculator.addIntegers(appView, left, right);
+  }
+
+  @Override
   long foldLongs(long left, long right) {
     return left + right;
+  }
+
+  @Override
+  AbstractValue foldLongs(AbstractValue left, AbstractValue right, AppView<?> appView) {
+    return AbstractCalculator.addLongs(appView, left, right);
   }
 
   @Override

@@ -20,6 +20,10 @@ public interface ConstantOrNonConstantNumberValue {
 
   DefiniteBitsNumberValue asDefiniteBitsNumberValue();
 
+  boolean isDefiniteBitsLongNumberValue();
+
+  DefiniteBitsLongNumberValue asDefiniteBitsLongNumberValue();
+
   boolean isSingleNumberValue();
 
   SingleNumberValue asSingleNumberValue();
