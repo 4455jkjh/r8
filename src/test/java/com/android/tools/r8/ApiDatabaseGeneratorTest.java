@@ -3,7 +3,11 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8;
 
+import static com.android.tools.r8.DiagnosticsMatcher.diagnosticMessage;
+import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
@@ -12,7 +16,6 @@ import com.android.tools.r8.utils.internal.FileUtils;
 import com.android.tools.r8.utils.internal.StringUtils;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.List;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
@@ -98,13 +101,8 @@ public class ApiDatabaseGeneratorTest extends TestBase {
       // Expected.
     }
 
-    List<Diagnostic> errors = diagnosticsHandler.getErrors();
-    assertEquals(1, errors.size());
-    Diagnostic error = errors.get(0);
-    String msg = error.getDiagnosticMessage();
-    assertTrue(msg.contains("Duplicate class android.Foo"));
-    assertTrue(msg.contains("api-versions-1.xml"));
-    assertTrue(msg.contains("api-versions-2.xml"));
+    diagnosticsHandler.assertErrorsMatch(
+        diagnosticMessage(containsString("Duplicate class android.Foo")));
   }
 
   @Test
@@ -153,22 +151,9 @@ public class ApiDatabaseGeneratorTest extends TestBase {
       // Expected.
     }
 
-    List<Diagnostic> errors = diagnosticsHandler.getErrors();
-    assertEquals(2, errors.size());
-
-    // Verify class errors show the clean chain.
-    assertTrue(
-        hasError(
-            errors,
-            "Duplicate class android.Foo found in",
-            "api-versions-1.xml",
-            "api-versions-2.xml"));
-    assertTrue(
-        hasError(
-            errors,
-            "Duplicate class android.Foo found in",
-            "api-versions-2.xml",
-            "api-versions-3.xml"));
+    diagnosticsHandler.assertErrorsMatch(
+        diagnosticMessage(equalTo("Duplicate class android.Foo found when merging .xml files.")),
+        diagnosticMessage(equalTo("Duplicate class android.Foo found when merging .xml files.")));
   }
 
   @Test
@@ -215,21 +200,11 @@ public class ApiDatabaseGeneratorTest extends TestBase {
     assertTrue(Files.size(outputDb) > 0);
 
     // Errors and Warnings should be empty because they were mapped to info.
-    assertTrue(
-        "Expected 0 errors, got: " + diagnosticsHandler.getErrors().size(),
-        diagnosticsHandler.getErrors().isEmpty());
-    assertTrue(
-        "Expected 0 warnings, got: " + diagnosticsHandler.getWarnings().size(),
-        diagnosticsHandler.getWarnings().isEmpty());
-
-    // Instead, they should be in the info list.
-    List<Diagnostic> infos = diagnosticsHandler.getInfos();
-    assertEquals(1, infos.size());
-    Diagnostic info = infos.get(0);
-    String msg = info.getDiagnosticMessage();
-    assertTrue(msg.contains("Duplicate class android.Foo"));
-    assertTrue(msg.contains("api-versions-1.xml"));
-    assertTrue(msg.contains("api-versions-2.xml"));
+    diagnosticsHandler
+        .assertNoErrors()
+        .assertNoWarnings()
+        // Instead, they should be in the info list.
+        .assertInfosMatch(diagnosticMessage(containsString("Duplicate class android.Foo")));
   }
 
   @Test
@@ -276,15 +251,7 @@ public class ApiDatabaseGeneratorTest extends TestBase {
     assertTrue(Files.size(outputDb) > 0);
 
     // Errors, Warnings, and Infos should all be empty because they were mapped to none.
-    assertTrue(
-        "Expected 0 errors, got: " + diagnosticsHandler.getErrors().size(),
-        diagnosticsHandler.getErrors().isEmpty());
-    assertTrue(
-        "Expected 0 warnings, got: " + diagnosticsHandler.getWarnings().size(),
-        diagnosticsHandler.getWarnings().isEmpty());
-    assertTrue(
-        "Expected 0 infos, got: " + diagnosticsHandler.getInfos().size(),
-        diagnosticsHandler.getInfos().isEmpty());
+    diagnosticsHandler.assertNoMessages();
   }
 
   @Test
@@ -319,7 +286,7 @@ public class ApiDatabaseGeneratorTest extends TestBase {
       ApiDatabaseGenerator.run(command);
       fail("Expected API database generation to fail due to conflicting supertypes");
     } catch (ApiDatabaseGeneratorException e) {
-      assertTrue(e.getCause() != null);
+      assertNotNull(e.getCause());
       assertTrue(
           e.getCause()
               .getMessage()
@@ -353,11 +320,10 @@ public class ApiDatabaseGeneratorTest extends TestBase {
       // Expected.
     }
 
-    List<Diagnostic> errors = diagnosticsHandler.getErrors();
-    assertEquals(3, errors.size());
-    assertTrue(errors.get(0).getDiagnosticMessage().contains("Unsupported input file extension"));
-    assertTrue(errors.get(1).getDiagnosticMessage().contains("At least one SDK JAR"));
-    assertTrue(errors.get(2).getDiagnosticMessage().contains("At least one API XML"));
+    diagnosticsHandler.assertErrorsMatch(
+        diagnosticMessage(containsString("Unsupported input file extension")),
+        diagnosticMessage(containsString("At least one SDK JAR")),
+        diagnosticMessage(containsString("At least one API XML")));
   }
 
   private Path writeApiXml(String filename, String... contentLines) throws Exception {
@@ -370,24 +336,5 @@ public class ApiDatabaseGeneratorTest extends TestBase {
             "</api>");
     FileUtils.writeTextFile(file, xml);
     return file;
-  }
-
-  private boolean hasError(List<Diagnostic> errors, String prefix, String... sources) {
-    for (Diagnostic error : errors) {
-      String msg = error.getDiagnosticMessage();
-      if (msg.startsWith(prefix)) {
-        boolean allMatch = true;
-        for (String source : sources) {
-          if (!msg.contains(source)) {
-            allMatch = false;
-            break;
-          }
-        }
-        if (allMatch) {
-          return true;
-        }
-      }
-    }
-    return false;
   }
 }

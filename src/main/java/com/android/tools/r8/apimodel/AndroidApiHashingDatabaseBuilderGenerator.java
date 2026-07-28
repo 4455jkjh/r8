@@ -30,6 +30,7 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -52,7 +53,7 @@ public class AndroidApiHashingDatabaseBuilderGenerator {
 
   /** The returned map has hash-independent iteration. */
   public static Map<ApiDatabaseEntry, AndroidApiLevel> generateEntries(
-      List<ParsedApiClass> apiClasses) throws GenerationException {
+      Collection<ParsedApiClass> apiClasses) throws GenerationException {
     Map<ClassReference, ParsedApiClass> lookupMap = new HashMap<>();
     Map<ApiDatabaseEntry, AndroidApiLevel> databaseEntries = new LinkedHashMap<>();
 
