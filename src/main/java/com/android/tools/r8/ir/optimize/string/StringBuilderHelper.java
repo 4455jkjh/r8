@@ -32,8 +32,8 @@ public class StringBuilderHelper {
 
   static boolean canMutate(Instruction instruction) {
     return instruction.isInvoke()
-        || instruction.isFieldInstruction()
-        || instruction.isNewInstance();
+        || instruction.isNewInstance()
+        || instruction.isStaticFieldInstruction();
   }
 
   static boolean isInstructionThatIntroducesDefiniteAlias(
