@@ -45,6 +45,7 @@ import com.android.tools.r8.shaking.EnqueuerWorklist;
 import com.android.tools.r8.shaking.InstantiationReason;
 import com.android.tools.r8.shaking.KeepMethodInfo;
 import com.android.tools.r8.shaking.KeepReason;
+import com.android.tools.r8.utils.StringDiagnostic;
 import com.android.tools.r8.utils.collections.ProgramFieldMap;
 import com.android.tools.r8.utils.collections.ProgramFieldSet;
 import com.android.tools.r8.utils.collections.ProgramMethodSet;
@@ -57,6 +58,7 @@ import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.function.Predicate;
 
@@ -101,6 +103,12 @@ public class ProtoEnqueuerExtension
 
   // Mapping from extension container types to the extensions for that type.
   private final Map<DexType, Set<DexType>> extensionGraph = new IdentityHashMap<>();
+
+  // Keeps track of proto types for which a decoding warning has already been reported.
+  private final Set<DexType> reportedUndecodableProtoTypes = ConcurrentHashMap.newKeySet();
+
+  // Keeps track of extension types for which a missing extension warning has already been reported.
+  private final Set<DexType> reportedMissingExtensionTypes = ConcurrentHashMap.newKeySet();
 
   public ProtoEnqueuerExtension(
       AppView<? extends AppInfoWithClassHierarchy> appView, Enqueuer enqueuer) {
@@ -150,7 +158,7 @@ public class ProtoEnqueuerExtension
           KeepReason.reflectiveUseIn(dynamicMethod));
     } else {
       assert false
-          : "Expected class `" + clazz.type.toSourceString() + "` to declare a dynamicMethod()";
+          : "Expected class `" + clazz.type.getTypeName() + "` to declare a dynamicMethod()";
     }
   }
 
@@ -195,6 +203,15 @@ public class ProtoEnqueuerExtension
         GeneratedMessageLiteShrinker.getNewMessageInfoInvoke(code, references);
     ProtoMessageInfo protoMessageInfo =
         newMessageInfoInvoke != null ? decoder.run(dynamicMethod, newMessageInfoInvoke) : null;
+    if (newMessageInfoInvoke != null && protoMessageInfo == null) {
+      if (enqueuer.getMode().isInitialTreeShaking() && reportedUndecodableProtoTypes.add(holder)) {
+        appView
+            .reporter()
+            .warning(
+                new StringDiagnostic(
+                    "Unable to decode proto message info for `" + holder.getTypeName() + "`"));
+      }
+    }
     protos.put(holder, protoMessageInfo);
   }
 
@@ -684,8 +701,18 @@ public class ProtoEnqueuerExtension
         extensionGraph.getOrDefault(protoMessageInfo.getType(), ImmutableSet.of());
     for (DexType extensionType : extensionTypes) {
       ProtoMessageInfo protoExtensionMessageInfo = getOrCreateProtoMessageInfo(extensionType);
-      assert protoExtensionMessageInfo != null;
-      if (reachesMapOrRequiredField(protoExtensionMessageInfo)) {
+      if (protoExtensionMessageInfo == null) {
+        if (enqueuer.getMode().isInitialTreeShaking()
+            && reportedMissingExtensionTypes.add(extensionType)) {
+          appView
+              .reporter()
+              .warning(
+                  new StringDiagnostic(
+                      "Unable to find proto message info for extension `"
+                          + extensionType.getTypeName()
+                          + "`"));
+        }
+      } else if (reachesMapOrRequiredField(protoExtensionMessageInfo)) {
         reachesMapOrRequiredFieldFromMessageCache.put(protoMessageInfo, OptionalBool.of(true));
         return true;
       }
