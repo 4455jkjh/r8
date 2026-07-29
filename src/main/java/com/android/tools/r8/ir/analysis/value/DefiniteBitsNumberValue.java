@@ -32,7 +32,7 @@ public class DefiniteBitsNumberValue extends NonConstantNumberValue {
     if ((definitelyUnsetBits & value) != 0) {
       return false;
     }
-    return true;
+    return getMinInclusiveInt() <= value && value <= getMaxInclusiveInt();
   }
 
   @Override
@@ -52,7 +52,15 @@ public class DefiniteBitsNumberValue extends NonConstantNumberValue {
 
   @Override
   public long getMinInclusive() {
-    return Integer.MIN_VALUE;
+    return getMinInclusiveInt();
+  }
+
+  public int getMinInclusiveInt() {
+    return (definitelySetBits & 0x7FFFFFFF) | (~definitelyUnsetBits & 0x80000000);
+  }
+
+  public int getMaxInclusiveInt() {
+    return (~definitelyUnsetBits & 0x7FFFFFFF) | (definitelySetBits & 0x80000000);
   }
 
   @Override

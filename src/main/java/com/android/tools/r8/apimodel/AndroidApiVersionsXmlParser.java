@@ -15,6 +15,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import javax.xml.XMLConstants;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 import org.w3c.dom.Document;
@@ -214,6 +215,8 @@ public class AndroidApiVersionsXmlParser {
     var factory = DocumentBuilderFactory.newInstance();
     Document xml;
     try {
+      factory.setFeature(XMLConstants.FEATURE_SECURE_PROCESSING, true);
+      factory.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);
       xml = factory.newDocumentBuilder().parse(xmlPath.toFile());
     } catch (SAXException | IOException | ParserConfigurationException e) {
       throw new ParsingException("XML parsing failed", e);

@@ -138,6 +138,8 @@ public abstract class LogicalBinop extends Binop {
     } else {
       if (type == NumericType.INT) {
         return foldIntegers(leftAbstractValue, rightAbstractValue, appView);
+      } else if (type == NumericType.LONG) {
+        return foldLongs(leftAbstractValue, rightAbstractValue, appView);
       }
     }
     return AbstractValue.unknown();

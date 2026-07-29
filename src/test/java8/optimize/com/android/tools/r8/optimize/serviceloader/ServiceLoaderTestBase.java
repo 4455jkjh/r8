@@ -3,7 +3,9 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8.optimize.serviceloader;
 
+import static com.android.tools.r8.utils.codeinspector.CodeMatchers.getServiceLoaderLoads;
 import static com.android.tools.r8.utils.codeinspector.CodeMatchers.invokesMethodWithName;
+
 import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertEquals;
@@ -58,17 +60,7 @@ public class ServiceLoaderTestBase extends TestBase {
     }
   }
 
-  public static long getServiceLoaderLoads(CodeInspector inspector) {
-    return inspector
-        .streamInstructions()
-        .filter(ServiceLoaderTestBase::isServiceLoaderLoad)
-        .count();
-  }
 
-  private static boolean isServiceLoaderLoad(InstructionSubject instruction) {
-    return instruction.isInvokeStatic()
-        && instruction.getMethod().qualifiedName().contains("ServiceLoader.load");
-  }
 
   public static void verifyNoClassLoaders(CodeInspector inspector) {
     inspector.allClasses().forEach(ServiceLoaderTestBase::verifyNoClassLoaders);

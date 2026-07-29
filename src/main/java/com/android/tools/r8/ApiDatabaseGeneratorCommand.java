@@ -5,9 +5,10 @@ package com.android.tools.r8;
 
 import com.android.tools.r8.keepanno.annotations.KeepForApi;
 import com.android.tools.r8.origin.Origin;
-import com.android.tools.r8.utils.AbortException;
+import com.android.tools.r8.utils.ExceptionUtils;
 import com.android.tools.r8.utils.Reporter;
 import com.android.tools.r8.utils.StringDiagnostic;
+import com.android.tools.r8.utils.internal.Box;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -17,14 +18,17 @@ import java.util.List;
 @KeepForApi
 public final class ApiDatabaseGeneratorCommand {
 
-  private final List<Path> inputPaths;
+  private final List<Path> jarPaths;
+  private final List<Path> xmlPaths;
   private final Path outputPath;
   private final Reporter reporter;
   private final boolean printHelp;
   private final boolean printVersion;
 
-  private ApiDatabaseGeneratorCommand(List<Path> inputPaths, Path outputPath, Reporter reporter) {
-    this.inputPaths = inputPaths;
+  private ApiDatabaseGeneratorCommand(
+      List<Path> jarPaths, List<Path> xmlPaths, Path outputPath, Reporter reporter) {
+    this.jarPaths = jarPaths;
+    this.xmlPaths = xmlPaths;
     this.outputPath = outputPath;
     this.reporter = reporter;
     this.printHelp = false;
@@ -32,7 +36,8 @@ public final class ApiDatabaseGeneratorCommand {
   }
 
   private ApiDatabaseGeneratorCommand(boolean printHelp, boolean printVersion) {
-    this.inputPaths = Collections.emptyList();
+    this.jarPaths = Collections.emptyList();
+    this.xmlPaths = Collections.emptyList();
     this.outputPath = null;
     this.reporter = new Reporter();
     this.printHelp = printHelp;
@@ -47,8 +52,12 @@ public final class ApiDatabaseGeneratorCommand {
     return reporter;
   }
 
-  public List<Path> getInputPaths() {
-    return inputPaths;
+  public List<Path> getJarPaths() {
+    return jarPaths;
+  }
+
+  public List<Path> getXmlPaths() {
+    return xmlPaths;
   }
 
   public Path getOutputPath() {
@@ -119,19 +128,39 @@ public final class ApiDatabaseGeneratorCommand {
       if (printHelp || printVersion) {
         return new ApiDatabaseGeneratorCommand(printHelp, printVersion);
       }
-      try {
-        if (inputPaths.isEmpty()) {
-          error(new StringDiagnostic("At least one input path must be specified"));
-        }
-        if (outputPath == null) {
-          outputPath = Paths.get(".", "api_database.ser");
-        }
-        reporter.failIfPendingErrors();
-        return new ApiDatabaseGeneratorCommand(inputPaths, outputPath, reporter);
-      } catch (AbortException e) {
-        throw new ApiDatabaseGeneratorException(
-            "Failed to build command due to parsing/validation errors", e);
-      }
+      Box<ApiDatabaseGeneratorCommand> box = new Box<>(null);
+      ExceptionUtils.withDiagnosticsHandler(
+          reporter,
+          () -> {
+            List<Path> jarPaths = new ArrayList<>();
+            List<Path> xmlPaths = new ArrayList<>();
+            for (Path path : inputPaths) {
+              String name = path.getFileName().toString().toLowerCase();
+              if (name.endsWith(".jar")) {
+                jarPaths.add(path);
+              } else if (name.endsWith(".xml")) {
+                xmlPaths.add(path);
+              } else {
+                error(
+                    new StringDiagnostic(
+                        "Unsupported input file extension: "
+                            + path
+                            + ". Must be either .jar or .xml"));
+              }
+            }
+            if (jarPaths.isEmpty()) {
+              error(new StringDiagnostic("At least one SDK JAR input path must be specified"));
+            }
+            if (xmlPaths.isEmpty()) {
+              error(new StringDiagnostic("At least one API XML input path must be specified"));
+            }
+            if (outputPath == null) {
+              outputPath = Paths.get(".", "api_database.ser");
+            }
+            box.set(new ApiDatabaseGeneratorCommand(jarPaths, xmlPaths, outputPath, reporter));
+          },
+          (message, cause, cancelled) -> new ApiDatabaseGeneratorException(message, cause));
+      return box.get();
     }
 
     public void error(Diagnostic diagnostic) {

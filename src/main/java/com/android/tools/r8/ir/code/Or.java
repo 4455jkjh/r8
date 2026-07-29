@@ -113,6 +113,11 @@ public class Or extends LogicalBinop {
   }
 
   @Override
+  AbstractValue foldLongs(AbstractValue left, AbstractValue right, AppView<?> appView) {
+    return AbstractCalculator.orLongs(appView, left, right);
+  }
+
+  @Override
   CfLogicalBinop.Opcode getCfOpcode() {
     return CfLogicalBinop.Opcode.Or;
   }

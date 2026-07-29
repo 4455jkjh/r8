@@ -119,6 +119,13 @@ public class StringMethodOptimizer extends StatelessLibraryMethodModelCollection
         } else if (singleTargetReference.isIdenticalTo(stringMembers.compareToIgnoreCase)) {
           optimizeStringStringToIntFunction(
               code, instructionIterator, invoke, DexString::compareToIgnoreCase);
+        } else if (singleTargetReference.isIdenticalTo(stringMembers.concat)) {
+          optimizeStringStringToStringFunction(
+              code,
+              instructionIterator,
+              invoke,
+              affectedValues,
+              (s1, s2) -> s1.append(s2, dexItemFactory));
         } else if (singleTargetReference.isIdenticalTo(stringMembers.contains)) {
           optimizeStringStringToBooleanFunction(
               code, instructionIterator, invoke, DexString::contains);
@@ -403,6 +410,26 @@ public class StringMethodOptimizer extends StatelessLibraryMethodModelCollection
     if (firstArg != null && secondArg != null) {
       int replacement = fn.apply(firstArg, secondArg);
       instructionIterator.replaceCurrentInstructionWithConstInt(code, replacement);
+    }
+  }
+
+  private interface StringStringToStringFunction {
+
+    DexString apply(DexString s1, DexString s2);
+  }
+
+  private void optimizeStringStringToStringFunction(
+      IRCode code,
+      InstructionListIterator instructionIterator,
+      InvokeMethod invoke,
+      AffectedValues affectedValues,
+      StringStringToStringFunction fn) {
+    DexString firstArg = invoke.getFirstArgument().getConstStringOrNull();
+    DexString secondArg = invoke.getSecondArgument().getConstStringOrNull();
+    if (firstArg != null && secondArg != null) {
+      DexString replacement = fn.apply(firstArg, secondArg);
+      replaceCurrentInstructionWithConstString(
+          code, instructionIterator, invoke, affectedValues, replacement);
     }
   }
 

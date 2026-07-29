@@ -51,7 +51,6 @@ public class CodeRewriterPassCollection {
     passes.add(new CommonSubexpressionElimination(appView));
     passes.add(new ArrayConstructionSimplifier(appView));
     passes.add(new MoveResultRewriter(appView));
-    passes.add(new StringBuilderAppendOptimizer(appView));
     passes.add(new SplitIntSwitch(appView));
     passes.add(new SparseConditionalConstantPropagation(appView));
     passes.add(new ThrowCatchOptimizer(appView));
@@ -61,6 +60,8 @@ public class CodeRewriterPassCollection {
     if (appView.options().isRelease()) {
       passes.add(new RedundantLoadAndStoreElimination(appView));
     }
+    // Run after RedundantLoadAndStoreElimination so that there are fewer StringBuilder SSA values.
+    passes.add(new StringBuilderAppendOptimizer(appView));
     passes.add(new BinopRewriter(appView));
     passes.add(new ServiceLoaderRewriter(appView));
     if (appView.options().isRelease()) {

@@ -629,7 +629,8 @@ public class SyntheticItems {
 
   public FeatureSplit getContextualFeatureSplitOrDefault(DexType type, FeatureSplit defaultValue) {
     assert isSyntheticClass(type);
-    if (isSyntheticOfKind(type, kinds -> kinds.ENUM_UNBOXING_SHARED_UTILITY_CLASS)) {
+    if (isSyntheticOfKind(type, kinds -> kinds.ENUM_UNBOXING_SHARED_UTILITY_CLASS)
+        || isSyntheticOfKind(type, kinds -> kinds.UNSAFE_HELPER)) {
       return FeatureSplit.BASE;
     }
     List<SynthesizingContext> contexts = getSynthesizingContexts(type);

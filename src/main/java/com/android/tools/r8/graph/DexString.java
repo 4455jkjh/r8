@@ -619,6 +619,10 @@ public class DexString extends IndexedDexItem
     return '0' <= element && element <= '9';
   }
 
+  public DexString append(DexString suffix, DexItemFactory dexItemFactory) {
+    return suffix.prepend(this, dexItemFactory);
+  }
+
   public DexString prepend(String prefix, DexItemFactory dexItemFactory) {
     return prepend(dexItemFactory.createString(prefix), dexItemFactory);
   }

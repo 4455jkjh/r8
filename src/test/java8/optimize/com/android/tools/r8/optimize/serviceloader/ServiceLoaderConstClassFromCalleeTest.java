@@ -3,6 +3,7 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8.optimize.serviceloader;
 
+import static com.android.tools.r8.utils.codeinspector.CodeMatchers.getServiceLoaderLoads;
 import static junit.framework.TestCase.assertEquals;
 
 import com.android.tools.r8.TestParameters;

@@ -108,6 +108,16 @@ public class SingleNumberValue extends SingleConstValue
     return ~getDefinitelySetIntBits();
   }
 
+  @Override
+  public long getDefinitelySetLongBits() {
+    return getLongValue();
+  }
+
+  @Override
+  public long getDefinitelyUnsetLongBits() {
+    return ~getDefinitelySetLongBits();
+  }
+
   public double getDoubleValue() {
     return LongUtils.decodeDouble(value);
   }
@@ -131,6 +141,9 @@ public class SingleNumberValue extends SingleConstValue
   @Override
   public boolean mayOverlapWith(ConstantOrNonConstantNumberValue other) {
     if (other.isDefiniteBitsNumberValue()) {
+      return true;
+    }
+    if (other.isDefiniteBitsLongNumberValue()) {
       return true;
     }
     if (other.isSingleNumberValue()) {

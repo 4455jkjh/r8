@@ -176,7 +176,7 @@ public class StringConcatenationTest extends TestBase {
 
     method = mainClass.uniqueMethodWithOriginalName("conditionalPhiWithoutAppend");
     assertThat(method, isPresent());
-    assertEquals(isReleaseMode ? 2 : 3, countConstString(method));
+    assertEquals(isReleaseMode ? 1 : 3, countConstString(method));
 
     method = mainClass.uniqueMethodWithOriginalName("loop");
     assertThat(method, isPresent());

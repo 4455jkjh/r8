@@ -158,6 +158,12 @@ public abstract class ArithmeticBinop extends Binop {
         newConst = LongUtils.encodeDouble(result);
       }
       return appView.abstractValueFactory().createSingleNumberValue(newConst, getOutType());
+    } else {
+      if (type == NumericType.INT) {
+        return foldIntegers(leftAbstractValue, rightAbstractValue, appView);
+      } else if (type == NumericType.LONG) {
+        return foldLongs(leftAbstractValue, rightAbstractValue, appView);
+      }
     }
     return AbstractValue.unknown();
   }

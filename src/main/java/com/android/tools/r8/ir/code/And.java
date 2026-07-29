@@ -114,6 +114,11 @@ public class And extends LogicalBinop {
   }
 
   @Override
+  AbstractValue foldLongs(AbstractValue left, AbstractValue right, AppView<?> appView) {
+    return AbstractCalculator.andLongs(appView, left, right);
+  }
+
+  @Override
   CfLogicalBinop.Opcode getCfOpcode() {
     return CfLogicalBinop.Opcode.And;
   }

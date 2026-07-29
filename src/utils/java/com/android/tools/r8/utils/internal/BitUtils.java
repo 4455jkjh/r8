@@ -6,9 +6,12 @@ package com.android.tools.r8.utils.internal;
 
 public class BitUtils {
 
-  public static final int ALL_BITS_SET_MASK = -1;
-  public static final int ONLY_SIGN_BIT_SET_MASK = Integer.MIN_VALUE;
+  public static final int ALL_BITS_SET_INTEGER_MASK = -1;
+  public static final long ALL_BITS_SET_LONG_MASK = -1;
+  public static final int ONLY_SIGN_BIT_SET_INTEGER_MASK = Integer.MIN_VALUE;
+  public static final long ONLY_SIGN_BIT_SET_LONG_MASK = Long.MIN_VALUE;
   public static final int INTEGER_SHIFT_MASK = 0x1f;
+  public static final int LONG_SHIFT_MASK = 0x3f;
 
   public static boolean isBitSet(int value, int which) {
     return isBitInMaskSet(value, 1 << (which - 1));

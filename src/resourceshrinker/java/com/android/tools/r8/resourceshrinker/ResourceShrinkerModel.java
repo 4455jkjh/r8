@@ -184,4 +184,8 @@ public class ResourceShrinkerModel {
             }
         });
     }
+
+  public boolean isSafeMode() {
+    return getResourceStore().getSafeMode();
+  }
 }

@@ -81,6 +81,8 @@ includeTestProject(":tests_java_8:keepanno")
 
 includeTestProject(":tests_java_8:retrace")
 
+includeTestProject(":tests_java_8:optimize")
+
 includeTestProject(":tests_java_8:resolution")
 
 includeTestProject(":tests_java_11")

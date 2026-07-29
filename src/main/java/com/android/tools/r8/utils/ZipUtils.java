@@ -99,12 +99,12 @@ public class ZipUtils {
     void onEntry(ZipFile zip, ZipEntry entry) throws IOException;
   }
 
-  public interface OnEntryHandlerWithZipFileAndInputStream {
-    void onEntry(ZipFile zip, ZipEntry entry, InputStream input) throws IOException;
+  public interface OnEntryHandlerWithZipFileAndInputStream<E extends Throwable> {
+    void onEntry(ZipFile zip, ZipEntry entry, InputStream input) throws IOException, E;
   }
 
-  public static void iterWithZipFileAndInputStream(
-      Path zipFilePath, OnEntryHandlerWithZipFileAndInputStream handler) throws IOException {
+  public static <E extends Throwable> void iterWithZipFileAndInputStream(
+      Path zipFilePath, OnEntryHandlerWithZipFileAndInputStream<E> handler) throws IOException, E {
     try (ZipFile zipFile = new ZipFile(zipFilePath.toFile(), StandardCharsets.UTF_8)) {
       final Enumeration<? extends ZipEntry> entries = zipFile.entries();
       while (entries.hasMoreElements()) {

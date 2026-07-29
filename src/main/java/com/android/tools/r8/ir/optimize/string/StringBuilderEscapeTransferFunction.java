@@ -72,12 +72,11 @@ public class StringBuilderEscapeTransferFunction
       if (instruction.isInvokeMethod()) {
         assert !instruction.inValues().isEmpty();
         Value firstOperand = instruction.getFirstOperand();
-        if (!builder.getLiveStringBuilders().contains(firstOperand)) {
-          // We can have constant NULL being the first operand, which we have not marked as
-          // a live string builder.
-          assert firstOperand.getAliasedValue().isConstZero();
-          builder.addLiveStringBuilder(firstOperand);
-        }
+        // We can have constant NULL being the first operand, which we have not marked as
+        // a live string builder.
+        assert builder.getLiveStringBuilders().contains(firstOperand)
+            || firstOperand.getAliasedValue().isConstZero();
+        builder.addLiveStringBuilder(firstOperand);
       } else {
         assert instruction.isNewInstance();
       }

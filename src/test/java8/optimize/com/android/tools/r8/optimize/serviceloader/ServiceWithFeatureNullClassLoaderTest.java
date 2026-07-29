@@ -4,6 +4,7 @@
 
 package com.android.tools.r8.optimize.serviceloader;
 
+import static com.android.tools.r8.utils.codeinspector.CodeMatchers.getServiceLoaderLoads;
 import static org.junit.Assert.assertEquals;
 
 import com.android.tools.r8.NeverInline;

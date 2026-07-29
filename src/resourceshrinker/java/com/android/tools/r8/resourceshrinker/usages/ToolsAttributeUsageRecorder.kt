@@ -21,8 +21,9 @@ import com.android.tools.r8.resourceshrinker.ResourceShrinkerModel
 import java.io.Reader
 import javax.xml.stream.XMLInputFactory
 
-public fun processRawXml(reader: Reader, model: ResourceShrinkerModel) {
-  processResourceToolsAttributes(reader).forEach { key, value ->
+@JvmOverloads
+public fun processRawXml(reader: Reader, model: ResourceShrinkerModel, location: String = "") {
+  processResourceToolsAttributes(reader, model, location).forEach { key, value ->
     when (key) {
       "keep" -> model.resourceStore.recordKeepToolAttribute(value)
       "discard" -> model.resourceStore.recordDiscardToolAttribute(value)
@@ -34,30 +35,46 @@ public fun processRawXml(reader: Reader, model: ResourceShrinkerModel) {
   }
 }
 
-private fun processResourceToolsAttributes(utfReader: Reader?): Map<String, String> {
+private fun processResourceToolsAttributes(
+  utfReader: Reader?,
+  model: ResourceShrinkerModel,
+  location: String,
+): Map<String, String> {
   val toolsAttributes = mutableMapOf<String, String>()
-  utfReader.use { reader: Reader? ->
-    val factory = XMLInputFactory.newInstance()
-    val xmlStreamReader = factory.createXMLStreamReader(reader)
+  runCatching {
+      utfReader.use { reader: Reader? ->
+        val factory =
+          XMLInputFactory.newInstance().apply {
+            setProperty(XMLInputFactory.IS_SUPPORTING_EXTERNAL_ENTITIES, false)
+            setProperty(XMLInputFactory.SUPPORT_DTD, false)
+          }
+        val xmlStreamReader = factory.createXMLStreamReader(reader)
 
-    var rootElementProcessed = false
-    while (!rootElementProcessed && xmlStreamReader.hasNext()) {
-      xmlStreamReader.next()
-      if (xmlStreamReader.isStartElement) {
-        if (xmlStreamReader.localName == "resources") {
-          for (i in 0 until xmlStreamReader.attributeCount) {
-            val namespace = "http://schemas.android.com/tools"
-            if (xmlStreamReader.getAttributeNamespace(i) == namespace) {
-              toolsAttributes.put(
-                xmlStreamReader.getAttributeLocalName(i),
-                xmlStreamReader.getAttributeValue(i),
-              )
+        var rootElementProcessed = false
+        while (!rootElementProcessed && xmlStreamReader.hasNext()) {
+          xmlStreamReader.next()
+          if (xmlStreamReader.isStartElement) {
+            if (xmlStreamReader.localName == "resources") {
+              for (i in 0 until xmlStreamReader.attributeCount) {
+                val namespace = "http://schemas.android.com/tools"
+                if (xmlStreamReader.getAttributeNamespace(i) == namespace) {
+                  toolsAttributes.put(
+                    xmlStreamReader.getAttributeLocalName(i),
+                    xmlStreamReader.getAttributeValue(i),
+                  )
+                }
+              }
             }
+            rootElementProcessed = true
           }
         }
-        rootElementProcessed = true
       }
     }
-  }
+    .onFailure { e ->
+      val originMsg = if (location.isNotEmpty()) " from $location" else ""
+      model.debugReporter.info {
+        "Failed to parse XML keep rules$originMsg: ${e.message}. External DTD / entity references are unsupported and ignored."
+      }
+    }
   return toolsAttributes.toMap()
 }

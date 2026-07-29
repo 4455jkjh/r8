@@ -108,6 +108,11 @@ public class Shr extends LogicalBinop {
   }
 
   @Override
+  AbstractValue foldLongs(AbstractValue left, AbstractValue right, AppView<?> appView) {
+    return AbstractCalculator.shrLongs(appView, left, right);
+  }
+
+  @Override
   CfLogicalBinop.Opcode getCfOpcode() {
     return CfLogicalBinop.Opcode.Shr;
   }

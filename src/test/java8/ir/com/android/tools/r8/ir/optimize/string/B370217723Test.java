@@ -49,8 +49,7 @@ public class B370217723Test extends TestBase {
         .addKeepMainRule(TestClass.class)
         .setMinApi(parameters)
         .run(parameters.getRuntime(), TestClass.class)
-        // TODO(b/370217723): Should throw NullPointerException.
-        .assertSuccess();
+        .assertFailureWithErrorThatThrows(NullPointerException.class);
   }
 
   static class TestClass {

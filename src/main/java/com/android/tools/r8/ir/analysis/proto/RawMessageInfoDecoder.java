@@ -189,8 +189,6 @@ public class RawMessageInfoDecoder {
 
       return builder.build();
     } catch (InvalidRawMessageInfoException | ProtoMessageInfoBuilderException e) {
-      // This should generally not happen, so leave an assert here just in case.
-      assert false;
       return null;
     }
   }
