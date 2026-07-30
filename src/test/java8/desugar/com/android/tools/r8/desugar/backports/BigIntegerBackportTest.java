@@ -20,7 +20,7 @@ public final class BigIntegerBackportTest extends AbstractBackportTest {
 
   public BigIntegerBackportTest(TestParameters parameters) {
     super(parameters, BigInteger.class, Main.class);
-    registerTarget(AndroidApiLevel.S, 21);
+    registerTarget(AndroidApiLevel.S, 28);
     ignoreInvokes("valueOf");
     ignoreInvokes("add");
     ignoreInvokes("subtract");
@@ -28,9 +28,30 @@ public final class BigIntegerBackportTest extends AbstractBackportTest {
 
   static final class Main extends MiniAssert {
     public static void main(String[] args) {
+      testByteValueExact();
       testIntValueExact();
       testLongValueExact();
       testShortValueExact();
+    }
+
+    private static void testByteValueExact() {
+      assertEquals((byte) 0, BigInteger.valueOf(0).byteValueExact());
+      assertEquals((byte) 1, BigInteger.valueOf(1).byteValueExact());
+      assertEquals((byte) -1, BigInteger.valueOf(-1).byteValueExact());
+      assertEquals(Byte.MAX_VALUE, BigInteger.valueOf(Byte.MAX_VALUE).byteValueExact());
+      assertEquals(Byte.MIN_VALUE, BigInteger.valueOf(Byte.MIN_VALUE).byteValueExact());
+
+      try {
+        BigInteger.valueOf(Byte.MAX_VALUE).add(BigInteger.valueOf(1)).byteValueExact();
+        fail("Expected ArithmeticException");
+      } catch (ArithmeticException expected) {
+      }
+
+      try {
+        BigInteger.valueOf(Byte.MIN_VALUE).subtract(BigInteger.valueOf(1)).byteValueExact();
+        fail("Expected ArithmeticException");
+      } catch (ArithmeticException expected) {
+      }
     }
 
     private static void testIntValueExact() {

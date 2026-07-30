@@ -8,6 +8,13 @@ import java.math.BigInteger;
 
 public final class BigIntegerMethods {
 
+  public static byte byteValueExact(BigInteger value) {
+    if (value.bitLength() <= 7) {
+      return value.byteValue();
+    }
+    throw new ArithmeticException("BigInteger out of byte range");
+  }
+
   public static int intValueExact(BigInteger value) {
     if (value.bitLength() <= 31) {
       return value.intValue();
