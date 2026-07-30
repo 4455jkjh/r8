@@ -62,14 +62,13 @@ dependencies {
 
 tasks {
   withType<KotlinCompile> { dependsOn(sharedDepsConfig) }
-  val depsJar by
-    registering(Jar::class) {
-      from(Callable { jarDependencies().map(::zipTree) })
-      exclude("**/*.proto")
-      exclude("versions-offline/**")
-      duplicatesStrategy = DuplicatesStrategy.EXCLUDE
-      archiveFileName.set("resourceshrinker_deps.jar")
-    }
+  register<Jar>("depsJar") {
+    from(Callable { jarDependencies().map(::zipTree) })
+    exclude("**/*.proto")
+    exclude("versions-offline/**")
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+    archiveFileName.set("resourceshrinker_deps.jar")
+  }
 }
 
 val resourceshrinkerJar by

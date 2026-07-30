@@ -110,8 +110,8 @@ tasks {
     )
   }
 
-  val createArtTests by
-    registering(Exec::class) {
+  val createArtTests =
+    register<Exec>("createArtTests") {
       dependsOn(sharedDepsConfig)
       dependOnPythonScripts()
       // TODO(b/327315907): Don't generating into the root build dir.
@@ -142,16 +142,15 @@ tasks {
     }
   }
 
-  val assembleTestJar by
-    registering(Jar::class) {
-      from(sourceSets.test.get().output)
-      from(partialTestClassesConfig)
-      // TODO(b/296486206): Seems like IntelliJ has a problem depending on test source sets.
-      // Renaming
-      //  this from the default name (tests_java_8.jar) will allow IntelliJ to find the resources in
-      //  the jar and not show red underlines. However, navigation to base classes will not work.
-      archiveFileName.set("not_named_tests_java_8.jar")
-    }
+  register<Jar>("assembleTestJar") {
+    from(sourceSets.test.get().output)
+    from(partialTestClassesConfig)
+    // TODO(b/296486206): Seems like IntelliJ has a problem depending on test source sets.
+    // Renaming
+    //  this from the default name (tests_java_8.jar) will allow IntelliJ to find the resources in
+    //  the jar and not show red underlines. However, navigation to base classes will not work.
+    archiveFileName.set("not_named_tests_java_8.jar")
+  }
 
   named<Copy>("processTestResources") {
     dependsOn(createArtTests)
@@ -217,7 +216,7 @@ fun Test.setupTestTask() {
 tasks.withType<Test> { setupTestTask() }
 
 val testAll by
-  tasks.registering {
+  tasks.register("testAll") {
     // Added child dependencies to Test directly would force all child tests to run before the
     // parent tests. This task runs all test tasks as siblings, allowing concurrent execution of all
     // tests.

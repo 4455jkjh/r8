@@ -70,40 +70,36 @@ dependencies {
 }
 
 tasks {
-  val keepAnnoAnnotationsJar by
-    registering(Jar::class) {
-      dependsOn(sharedDepsConfig)
-      from(sourceSets.main.get().output)
-      include("com/android/tools/r8/keepanno/annotations/*")
-      destinationDirectory.set(getRoot().resolveAll("build", "libs"))
-      archiveFileName.set("keepanno-annotations.jar")
-    }
+  register<Jar>("keepAnnoAnnotationsJar") {
+    dependsOn(sharedDepsConfig)
+    from(sourceSets.main.get().output)
+    include("com/android/tools/r8/keepanno/annotations/*")
+    destinationDirectory.set(getRoot().resolveAll("build", "libs"))
+    archiveFileName.set("keepanno-annotations.jar")
+  }
 
-  val keepAnnoLegacyAnnotationsJar by
-    registering(Jar::class) {
-      dependsOn(sharedDepsConfig)
-      from(sourceSets.main.get().output)
-      include("com/android/tools/r8/keepanno/annotations/*")
-      destinationDirectory.set(getRoot().resolveAll("build", "libs"))
-      archiveFileName.set("keepanno-annotations-legacy.jar")
-    }
+  register<Jar>("keepAnnoLegacyAnnotationsJar") {
+    dependsOn(sharedDepsConfig)
+    from(sourceSets.main.get().output)
+    include("com/android/tools/r8/keepanno/annotations/*")
+    destinationDirectory.set(getRoot().resolveAll("build", "libs"))
+    archiveFileName.set("keepanno-annotations-legacy.jar")
+  }
 
-  val keepAnnoAndroidXAnnotationsJar by
-    registering(Jar::class) {
-      dependsOn(sharedDepsConfig)
-      from(sourceSets.main.get().output)
-      include("androidx/annotation/keep/*")
-      destinationDirectory.set(getRoot().resolveAll("build", "libs"))
-      archiveFileName.set("keepanno-annotations-androidx.jar")
-    }
+  register<Jar>("keepAnnoAndroidXAnnotationsJar") {
+    dependsOn(sharedDepsConfig)
+    from(sourceSets.main.get().output)
+    include("androidx/annotation/keep/*")
+    destinationDirectory.set(getRoot().resolveAll("build", "libs"))
+    archiveFileName.set("keepanno-annotations-androidx.jar")
+  }
 
   named<Jar>("jar") { dependsOn(sharedDepsConfig) }
 
-  val keepAnnoAnnotationsDoc by
-    registering(Javadoc::class) {
-      source = sourceSets.main.get().allJava
-      include("com/android/tools/r8/keepanno/annotations/*")
-    }
+  register<Javadoc>("keepAnnoAnnotationsDoc") {
+    source = sourceSets.main.get().allJava
+    include("com/android/tools/r8/keepanno/annotations/*")
+  }
 
   fun dependenciesExceptAsm(): FileCollection {
     return sourceSets.main
@@ -127,57 +123,54 @@ tasks {
       })
   }
 
-  val depsJarExceptAsm by
-    registering(Jar::class) {
-      dependsOn(sharedDepsConfig)
-      from(Callable { dependenciesExceptAsm().map(::zipTree) })
-      // TODO(b/428166503): Add license information.
-      exclude("META-INF/*.kotlin_module")
-      exclude("META-INF/com.android.tools/**")
-      exclude("META-INF/LICENSE*")
-      exclude("META-INF/MANIFEST.MF")
-      exclude("META-INF/maven/**")
-      exclude("META-INF/proguard/**")
-      exclude("META-INF/versions/**")
-      exclude("META-INF/services/kotlin.reflect.**")
-      exclude("javax/annotation/**")
-      exclude("google/protobuf/**")
-      duplicatesStrategy = DuplicatesStrategy.FAIL
-      archiveFileName.set("keepanno-deps-except-asm.jar")
-    }
+  register<Jar>("depsJarExceptAsm") {
+    dependsOn(sharedDepsConfig)
+    from(Callable { dependenciesExceptAsm().map(::zipTree) })
+    // TODO(b/428166503): Add license information.
+    exclude("META-INF/*.kotlin_module")
+    exclude("META-INF/com.android.tools/**")
+    exclude("META-INF/LICENSE*")
+    exclude("META-INF/MANIFEST.MF")
+    exclude("META-INF/maven/**")
+    exclude("META-INF/proguard/**")
+    exclude("META-INF/versions/**")
+    exclude("META-INF/services/kotlin.reflect.**")
+    exclude("javax/annotation/**")
+    exclude("google/protobuf/**")
+    duplicatesStrategy = DuplicatesStrategy.FAIL
+    archiveFileName.set("keepanno-deps-except-asm.jar")
+  }
 
-  val depsJarOnlyAsm by
-    registering(Jar::class) {
-      dependsOn(sharedDepsConfig)
-      from(Callable { dependenciesOnlyAsm().map(::zipTree) })
-      // TODO(b/428166503): Add license information if needed.
-      exclude("META-INF/*.kotlin_module")
-      exclude("META-INF/com.android.tools/**")
-      exclude("META-INF/LICENSE*")
-      exclude("META-INF/MANIFEST.MF")
-      exclude("META-INF/maven/**")
-      exclude("META-INF/proguard/**")
-      exclude("META-INF/versions/**")
-      exclude("META-INF/services/kotlin.reflect.**")
-      exclude("javax/annotation/**")
-      exclude("google/protobuf/**")
-      duplicatesStrategy = DuplicatesStrategy.FAIL
-      archiveFileName.set("keepanno-deps-only-asm.jar")
-    }
+  register<Jar>("depsJarOnlyAsm") {
+    dependsOn(sharedDepsConfig)
+    from(Callable { dependenciesOnlyAsm().map(::zipTree) })
+    // TODO(b/428166503): Add license information if needed.
+    exclude("META-INF/*.kotlin_module")
+    exclude("META-INF/com.android.tools/**")
+    exclude("META-INF/LICENSE*")
+    exclude("META-INF/MANIFEST.MF")
+    exclude("META-INF/maven/**")
+    exclude("META-INF/proguard/**")
+    exclude("META-INF/versions/**")
+    exclude("META-INF/services/kotlin.reflect.**")
+    exclude("javax/annotation/**")
+    exclude("google/protobuf/**")
+    duplicatesStrategy = DuplicatesStrategy.FAIL
+    archiveFileName.set("keepanno-deps-only-asm.jar")
+  }
 
-  val toolsJar by
-    registering(Jar::class) {
-      dependsOn(sharedDepsConfig)
-      from(sourceSets.main.get().output)
-      // TODO(b/428166503): Add license information.
-      entryCompression = ZipEntryCompression.STORED
-      exclude("META-INF/*.kotlin_module")
-      exclude("**/*.kotlin_metadata")
-      exclude("keepspec.proto")
-      exclude("com/android/tools/r8/keepanno/annotations/**")
-      exclude("androidx/**")
-      archiveFileName.set("keepanno-tools.jar")
-    }
+  register<Jar>("toolsJar") {
+    dependsOn(sharedDepsConfig)
+    from(sourceSets.main.get().output)
+    // TODO(b/428166503): Add license information.
+    entryCompression = ZipEntryCompression.STORED
+    exclude("META-INF/*.kotlin_module")
+    exclude("**/*.kotlin_metadata")
+    exclude("keepspec.proto")
+    exclude("com/android/tools/r8/keepanno/annotations/**")
+    exclude("androidx/**")
+    archiveFileName.set("keepanno-tools.jar")
+  }
 }
 
 val keepannoJar by

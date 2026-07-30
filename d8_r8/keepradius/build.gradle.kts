@@ -62,12 +62,11 @@ tasks {
     archiveFileName.set("keepradius-exclude-deps.jar")
   }
 
-  val protoJar by
-    registering(Jar::class) {
-      from(sourceSets.main.get().output)
-      include("com/android/tools/r8/keepradius/proto/**")
-      archiveFileName.set("keepradius-proto.jar")
-    }
+  register<Jar>("protoJar") {
+    from(sourceSets.main.get().output)
+    include("com/android/tools/r8/keepradius/proto/**")
+    archiveFileName.set("keepradius-proto.jar")
+  }
 }
 
 tasks.withType<JavaCompile> {

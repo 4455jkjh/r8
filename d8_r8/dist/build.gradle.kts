@@ -211,8 +211,8 @@ interface InjectedArcOps {
 tasks {
   withType<Exec> { doFirst { println("Executing command: ${commandLine.joinToString(" ")}") } }
 
-  val filteredDepsJar by
-    registering(Jar::class) {
+  val filteredDepsJar =
+    register<Jar>("filteredDepsJar") {
       val injected = project.objects.newInstance<InjectedArcOps>()
       from(
         Callable {
@@ -274,8 +274,8 @@ tasks {
     )
   }
 
-  val consolidatedLicense by
-    registering(ConsolidatedLicenseTask::class) {
+  val consolidatedLicense =
+    register<ConsolidatedLicenseTask>("consolidatedLicense") {
       r8License = File(getRootDir(), "LICENSE")
       libraryLicenseMap = File(getRootDir(), "LIBRARY-LICENSE")
       libraryLicenses = File(getRootDir(), "library-licensing")
@@ -313,8 +313,8 @@ tasks {
       resourceShrinkerJarConfig,
     )
 
-  val swissArmyKnife by
-    registering(Jar::class) {
+  val swissArmyKnife =
+    register<Jar>("swissArmyKnife") {
       val injected = project.objects.newInstance<InjectedArcOps>()
       configsToMerge.forEach { config ->
         dependsOn(config)
@@ -331,8 +331,8 @@ tasks {
       archiveFileName.set("r8-full-exclude-deps.jar")
     }
 
-  val threadingModuleBlockingJar by
-    registering(Zip::class) {
+  val threadingModuleBlockingJar =
+    register<Zip>("threadingModuleBlockingJar") {
       val injected = project.objects.newInstance<InjectedArcOps>()
       dependsOn(mainJarConfig)
       from(mainJarConfig.elements.map { it.map { injected.arcOps.zipTree(it) } })
@@ -341,8 +341,8 @@ tasks {
       archiveFileName.set("threading-module-blocking.jar")
     }
 
-  val threadingModuleSingleThreadedJar by
-    registering(Zip::class) {
+  val threadingModuleSingleThreadedJar =
+    register<Zip>("threadingModuleSingleThreadedJar") {
       val injected = project.objects.newInstance<InjectedArcOps>()
       dependsOn(mainJarConfig)
       from(mainJarConfig.elements.map { it.map { injected.arcOps.zipTree(it) } })
@@ -369,8 +369,8 @@ tasks {
     configurations.resolvable("depsJarFilesConfig") { extendsFrom(depsJarFilesScope) }
 
   // Jar containing all 3p deps, plus R8 threading modules.
-  val depsJar by
-    registering(Zip::class) {
+  val depsJar =
+    register<Zip>("depsJar") {
       dependsOn(depsJarFilesConfig)
       from(Callable { depsJarFilesConfig.files.map(::zipTree) })
       from(consolidatedLicense)
@@ -390,8 +390,8 @@ tasks {
       archiveFileName.set("deps.jar")
     }
 
-  val protoJar by
-    registering(Zip::class) {
+  val protoJar =
+    register<Zip>("protoJar") {
       val injected = project.objects.newInstance<InjectedArcOps>()
       dependsOn(keepRadiusProtoJarConfig, libanalyzerProtoJarConfig)
       from(keepRadiusProtoJarConfig.elements.map { it.map { injected.arcOps.zipTree(it) } })
@@ -401,14 +401,14 @@ tasks {
       destinationDirectory.set(File(getRootDir(), "build/libs"))
     }
 
-  val r8WithRelocatedDepsManifest by
-    registering(Jar::class) {
+  val r8WithRelocatedDepsManifest =
+    register<Jar>("r8WithRelocatedDepsManifest") {
       manifest { attributes["Main-Class"] = "com.android.tools.r8.SwissArmyKnife" }
       archiveFileName.set("r8-manifest.jar")
     }
 
-  val r8WithRelocatedDeps by
-    registering(SwissArmyKnifeTask::class) {
+  val r8WithRelocatedDeps =
+    register<SwissArmyKnifeTask>("r8WithRelocatedDeps") {
       swissArmyKnifeClasspath.from(swissArmyKnife, depsJar)
       compiler = "relocator"
       inputFiles.from(depsJar)
@@ -431,45 +431,43 @@ tasks {
       outputFile = File(getRootDir(), "build/libs/r8.jar")
     }
 
-  val keepAnnoToolsWithRelocatedDeps by
-    registering(SwissArmyKnifeTask::class) {
-      swissArmyKnifeClasspath.from(swissArmyKnife, depsJar)
-      compiler = "relocator"
-      inputNoResFiles.from(keepAnnoDepsJarExceptAsmConfig)
-      inputNoResFiles.from(keepAnnoToolsJarConfig)
-      val pkg = "com.android.tools.r8.keepanno"
-      extraArgs =
-        listOf("--map", "com.android.tools.r8.keepanno.**->${pkg}") +
-          relocateDepsExceptAsm(pkg) +
-          listOf("--map-diagnostics", "warning", "error")
-      outputFile = File(getRootDir(), "build/libs/keepanno-tools.jar")
-    }
+  register<SwissArmyKnifeTask>("keepAnnoToolsWithRelocatedDeps") {
+    swissArmyKnifeClasspath.from(swissArmyKnife, depsJar)
+    compiler = "relocator"
+    inputNoResFiles.from(keepAnnoDepsJarExceptAsmConfig)
+    inputNoResFiles.from(keepAnnoToolsJarConfig)
+    val pkg = "com.android.tools.r8.keepanno"
+    extraArgs =
+      listOf("--map", "com.android.tools.r8.keepanno.**->${pkg}") +
+        relocateDepsExceptAsm(pkg) +
+        listOf("--map-diagnostics", "warning", "error")
+    outputFile = File(getRootDir(), "build/libs/keepanno-tools.jar")
+  }
 
-  val processKeepRulesLibWithRelocatedDeps by
-    registering(Exec::class) {
-      dependsOn(r8WithRelocatedDeps)
-      dependOnPythonScripts()
-      val keepRulesFile = getRoot().resolveAll("src", "main", "keep_processkeeprules.txt")
-      val outputJar = getRoot().resolveAll("build", "libs", "processkeepruleslib.jar")
-      outputs.file(outputJar)
-      inputs.files(
-        Callable { listOf(keepRulesFile, r8WithRelocatedDeps.get().getSingleOutputFile()) }
-      )
-      doFirst {
-        val r8WithRelocatedDepsJar = r8WithRelocatedDeps.get().getSingleOutputFile()
-        commandLine =
-          createR8LibCommandLine(
-            r8WithRelocatedDepsJar,
-            r8WithRelocatedDepsJar,
-            outputJar,
-            listOf(keepRulesFile),
-            excludingDepsVariant = false,
-            debugVariant = false,
-            classpath = listOf(),
-            enableKeepAnnotations = false,
-          )
-      }
+  register<Exec>("processKeepRulesLibWithRelocatedDeps") {
+    dependsOn(r8WithRelocatedDeps)
+    dependOnPythonScripts()
+    val keepRulesFile = getRoot().resolveAll("src", "main", "keep_processkeeprules.txt")
+    val outputJar = getRoot().resolveAll("build", "libs", "processkeepruleslib.jar")
+    outputs.file(outputJar)
+    inputs.files(
+      Callable { listOf(keepRulesFile, r8WithRelocatedDeps.get().getSingleOutputFile()) }
+    )
+    doFirst {
+      val r8WithRelocatedDepsJar = r8WithRelocatedDeps.get().getSingleOutputFile()
+      commandLine =
+        createR8LibCommandLine(
+          r8WithRelocatedDepsJar,
+          r8WithRelocatedDepsJar,
+          outputJar,
+          listOf(keepRulesFile),
+          excludingDepsVariant = false,
+          debugVariant = false,
+          classpath = listOf(),
+          enableKeepAnnotations = false,
+        )
     }
+  }
 }
 
 fun Task.getSingleOutputFile(): File = outputs.files.singleFile
