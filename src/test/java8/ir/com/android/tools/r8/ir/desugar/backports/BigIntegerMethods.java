@@ -21,4 +21,11 @@ public final class BigIntegerMethods {
     }
     throw new ArithmeticException("BigInteger out of long range");
   }
+
+  public static short shortValueExact(BigInteger value) {
+    if (value.bitLength() <= 15) {
+      return value.shortValue();
+    }
+    throw new ArithmeticException("BigInteger out of short range");
+  }
 }
