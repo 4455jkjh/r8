@@ -20,7 +20,7 @@ public final class BigIntegerBackportTest extends AbstractBackportTest {
 
   public BigIntegerBackportTest(TestParameters parameters) {
     super(parameters, BigInteger.class, Main.class);
-    registerTarget(AndroidApiLevel.S, 7);
+    registerTarget(AndroidApiLevel.S, 14);
     ignoreInvokes("valueOf");
     ignoreInvokes("add");
     ignoreInvokes("subtract");
@@ -29,6 +29,7 @@ public final class BigIntegerBackportTest extends AbstractBackportTest {
   static final class Main extends MiniAssert {
     public static void main(String[] args) {
       testIntValueExact();
+      testLongValueExact();
     }
 
     private static void testIntValueExact() {
@@ -46,6 +47,26 @@ public final class BigIntegerBackportTest extends AbstractBackportTest {
 
       try {
         BigInteger.valueOf(Integer.MIN_VALUE).subtract(BigInteger.valueOf(1)).intValueExact();
+        fail("Expected ArithmeticException");
+      } catch (ArithmeticException expected) {
+      }
+    }
+
+    private static void testLongValueExact() {
+      assertEquals(0L, BigInteger.valueOf(0L).longValueExact());
+      assertEquals(1L, BigInteger.valueOf(1L).longValueExact());
+      assertEquals(-1L, BigInteger.valueOf(-1L).longValueExact());
+      assertEquals(Long.MAX_VALUE, BigInteger.valueOf(Long.MAX_VALUE).longValueExact());
+      assertEquals(Long.MIN_VALUE, BigInteger.valueOf(Long.MIN_VALUE).longValueExact());
+
+      try {
+        BigInteger.valueOf(Long.MAX_VALUE).add(BigInteger.valueOf(1L)).longValueExact();
+        fail("Expected ArithmeticException");
+      } catch (ArithmeticException expected) {
+      }
+
+      try {
+        BigInteger.valueOf(Long.MIN_VALUE).subtract(BigInteger.valueOf(1L)).longValueExact();
         fail("Expected ArithmeticException");
       } catch (ArithmeticException expected) {
       }

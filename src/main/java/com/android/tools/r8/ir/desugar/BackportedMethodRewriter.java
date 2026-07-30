@@ -1502,6 +1502,14 @@ public final class BackportedMethodRewriter implements CfInstructionDesugaring {
           new StatifyingMethodGenerator(
               method, BackportedMethods::BigIntegerMethods_intValueExact, "intValueExact", type));
 
+      // long BigInteger.longValueExact()
+      name = factory.createString("longValueExact");
+      proto = factory.createProto(factory.longType);
+      method = factory.createMethod(type, proto, name);
+      addProvider(
+          new StatifyingMethodGenerator(
+              method, BackportedMethods::BigIntegerMethods_longValueExact, "longValueExact", type));
+
       // Byte
       type = factory.boxedByteType;
 
