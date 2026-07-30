@@ -3,7 +3,6 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8.redex;
 
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 import com.android.tools.r8.CompilationMode;
@@ -69,7 +68,7 @@ public class ReoptimizeToNativePcTest extends TestBase {
             inspector -> {
               ClassSubject clazz = inspector.clazz(TestClass.class);
               MethodSubject method = clazz.uniqueMethodWithOriginalName(currentAMethodName.get());
-              assertFalse("Expected no debug info", method.hasLineNumberTable());
+              assertTrue(method.getMethod().getCode().asDexCode().getDebugInfo().isPcBasedInfo());
             });
   }
 

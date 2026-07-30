@@ -3,6 +3,7 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8.debuginfo;
 
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
@@ -60,7 +61,7 @@ public class PGSourceFileStripEmbeddedPcDebugInfoTest extends TestBase {
         .addProgramResourceProviders(r8CompileResult.getOutputProgramResourceProviders())
         .addOptionsModification(
             options -> {
-              assertTrue(options.convertPcBasedDebugInfoToNative);
+              assertFalse(options.convertPcBasedDebugInfoToNative);
               options.convertPcBasedDebugInfoToNative = convertPcBasedDebugInfoToNative;
             })
         .release()
