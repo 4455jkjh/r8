@@ -13,8 +13,8 @@ import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestDiagnosticMessages;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
+import com.android.tools.r8.errors.UnsupportedFileNameInPrintRuleDiagnostic;
 import com.android.tools.r8.utils.AndroidApiLevel;
-import com.android.tools.r8.utils.StringDiagnostic;
 import org.hamcrest.Matcher;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -69,7 +69,7 @@ public class LibraryAnalyzerPrintMappingTest extends TestBase {
 
   private static Matcher<Diagnostic> getExpectedDiagnosticMatcher() {
     return allOf(
-        diagnosticType(StringDiagnostic.class),
+        diagnosticType(UnsupportedFileNameInPrintRuleDiagnostic.class),
         diagnosticMessage(containsString("Options with file names are not supported")));
   }
 
