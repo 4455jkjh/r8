@@ -7,10 +7,11 @@ package com.android.tools.r8.ir.analysis.proto.schema;
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.ir.code.IRCode;
 import com.android.tools.r8.ir.code.Instruction;
+import java.util.List;
 
 public abstract class ProtoObject {
 
-  public abstract Instruction buildIR(AppView<?> appView, IRCode code);
+  public abstract List<Instruction> buildIR(AppView<?> appView, IRCode code);
 
   public boolean isProtoFieldObject() {
     return false;
@@ -40,11 +41,43 @@ public abstract class ProtoObject {
     return null;
   }
 
+  public boolean isProtoObjectFromInvokeStatic() {
+    return false;
+  }
+
+  public ProtoObjectFromInvokeStatic asProtoObjectFromInvokeStatic() {
+    return null;
+  }
+
   public boolean isProtoTypeObject() {
     return false;
   }
 
   public ProtoTypeObject asProtoTypeObject() {
+    return null;
+  }
+
+  public boolean isProtoMapEntryLiteObject() {
+    return false;
+  }
+
+  public ProtoMapEntryLiteObject asProtoMapEntryLiteObject() {
+    return null;
+  }
+
+  public boolean isProtoStringObject() {
+    return false;
+  }
+
+  public ProtoStringObject asProtoStringObject() {
+    return null;
+  }
+
+  public boolean isProtoBoxedIntObject() {
+    return false;
+  }
+
+  public ProtoBoxedIntObject asProtoBoxedIntObject() {
     return null;
   }
 }

@@ -553,16 +553,33 @@ public class ProtoEnqueuerExtension
         ProgramField valueStorage = protoFieldInfo.getValueStorage(appView, protoMessageInfo);
         if (valueStorage != null && enqueuer.isFieldReferenced(valueStorage)) {
           for (ProtoObject object : objects) {
-            if (object.isProtoObjectFromStaticGet()) {
-              worklist.enqueueTraceStaticFieldRead(
-                  object.asProtoObjectFromStaticGet().getField(), dynamicMethod);
-            } else if (object.isProtoTypeObject()) {
-              worklist.enqueueTraceConstClassAction(
-                  object.asProtoTypeObject().getType(), dynamicMethod, false);
-            }
+            traceProtoObject(object, dynamicMethod, worklist);
           }
         }
       }
+    }
+  }
+
+  private void traceProtoObject(
+      ProtoObject object, ProgramMethod dynamicMethod, EnqueuerWorklist worklist) {
+    if (object.isProtoObjectFromStaticGet()) {
+      worklist.enqueueTraceStaticFieldRead(
+          object.asProtoObjectFromStaticGet().getField(), dynamicMethod);
+    } else if (object.isProtoTypeObject()) {
+      worklist.enqueueTraceConstClassAction(
+          object.asProtoTypeObject().getType(), dynamicMethod, false);
+    } else if (object.isProtoObjectFromInvokeStatic()) {
+      worklist.enqueueTraceInvokeStaticAction(
+          object.asProtoObjectFromInvokeStatic().getMethod(), dynamicMethod, null);
+    } else if (object.isProtoBoxedIntObject()) {
+      // The is always calling Integer.valueOf(), so no tracing needed.
+    } else if (object.isProtoMapEntryLiteObject()) {
+      ProtoMapEntryLiteObject mapEntry = object.asProtoMapEntryLiteObject();
+      worklist.enqueueTraceInvokeStaticAction(mapEntry.getMethod(), dynamicMethod, null);
+      traceProtoObject(mapEntry.getKeyType(), dynamicMethod, worklist);
+      traceProtoObject(mapEntry.getDefaultKey(), dynamicMethod, worklist);
+      traceProtoObject(mapEntry.getValueType(), dynamicMethod, worklist);
+      traceProtoObject(mapEntry.getDefaultValue(), dynamicMethod, worklist);
     }
   }
 
@@ -743,7 +760,6 @@ public class ProtoEnqueuerExtension
     }
 
     createProtoMessageInfoFromDynamicMethod(dynamicMethod, seenButNotLiveProtos);
-
     return seenButNotLiveProtos.get(type);
   }
 }

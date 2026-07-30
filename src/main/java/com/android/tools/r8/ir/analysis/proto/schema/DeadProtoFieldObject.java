@@ -10,6 +10,7 @@ import com.android.tools.r8.graph.DexType;
 import com.android.tools.r8.ir.code.IRCode;
 import com.android.tools.r8.ir.code.Instruction;
 import com.android.tools.r8.utils.internal.exceptions.Unreachable;
+import java.util.List;
 
 public class DeadProtoFieldObject extends ProtoFieldObject {
 
@@ -23,7 +24,7 @@ public class DeadProtoFieldObject extends ProtoFieldObject {
   }
 
   @Override
-  public Instruction buildIR(AppView<?> appView, IRCode code) {
+  public List<Instruction> buildIR(AppView<?> appView, IRCode code) {
     throw new Unreachable();
   }
 

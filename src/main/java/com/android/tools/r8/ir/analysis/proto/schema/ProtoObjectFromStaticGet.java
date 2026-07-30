@@ -12,6 +12,8 @@ import com.android.tools.r8.ir.code.IRCode;
 import com.android.tools.r8.ir.code.Instruction;
 import com.android.tools.r8.ir.code.StaticGet;
 import com.android.tools.r8.ir.code.Value;
+import com.google.common.collect.ImmutableList;
+import java.util.List;
 
 public class ProtoObjectFromStaticGet extends ProtoObject {
 
@@ -26,10 +28,10 @@ public class ProtoObjectFromStaticGet extends ProtoObject {
   }
 
   @Override
-  public Instruction buildIR(AppView<?> appView, IRCode code) {
+  public List<Instruction> buildIR(AppView<?> appView, IRCode code) {
     Value value =
         code.createValue(TypeElement.fromDexType(field.type, Nullability.maybeNull(), appView));
-    return new StaticGet(value, field);
+    return ImmutableList.of(new StaticGet(value, field));
   }
 
   @Override

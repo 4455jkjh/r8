@@ -8,6 +8,8 @@ import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.DexType;
 import com.android.tools.r8.ir.code.IRCode;
 import com.android.tools.r8.ir.code.Instruction;
+import com.google.common.collect.ImmutableList;
+import java.util.List;
 
 public class ProtoTypeObject extends ProtoObject {
 
@@ -22,8 +24,8 @@ public class ProtoTypeObject extends ProtoObject {
   }
 
   @Override
-  public Instruction buildIR(AppView<?> appView, IRCode code) {
-    return code.createConstClass(appView, type);
+  public List<Instruction> buildIR(AppView<?> appView, IRCode code) {
+    return ImmutableList.of(code.createConstClass(appView, type));
   }
 
   @Override

@@ -360,9 +360,10 @@ public class GeneratedMessageLiteShrinker {
         && objects.size() < rewriteOptions.maxSizeForFilledNewArrayOfReferences) {
       List<Value> arrayValues = new ArrayList<>(objects.size());
       for (int i = 0; i < objects.size(); i++) {
-        Instruction materializingInstruction = objects.get(i).buildIR(appView, code);
-        instructionIterator.add(materializingInstruction);
-        arrayValues.add(materializingInstruction.outValue());
+        List<Instruction> materializingInstructions = objects.get(i).buildIR(appView, code);
+        instructionIterator.addAll(materializingInstructions);
+        arrayValues.add(
+            materializingInstructions.get(materializingInstructions.size() - 1).outValue());
       }
       instructionIterator.add(
           new NewArrayFilled(
@@ -374,14 +375,14 @@ public class GeneratedMessageLiteShrinker {
       for (int i = 0; i < objects.size(); i++) {
         Value indexValue =
             instructionIterator.insertConstIntInstruction(code, appView.options(), i);
-        Instruction materializingInstruction = objects.get(i).buildIR(appView, code);
-        instructionIterator.add(materializingInstruction);
+        List<Instruction> materializingInstructions = objects.get(i).buildIR(appView, code);
+        instructionIterator.addAll(materializingInstructions);
         instructionIterator.add(
             ArrayPut.create(
                 MemberType.OBJECT,
                 newObjectsValue,
                 indexValue,
-                materializingInstruction.outValue()));
+                materializingInstructions.get(materializingInstructions.size() - 1).outValue()));
       }
     }
 

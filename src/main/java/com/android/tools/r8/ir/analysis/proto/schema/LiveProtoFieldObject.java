@@ -14,6 +14,8 @@ import com.android.tools.r8.ir.code.IRCode;
 import com.android.tools.r8.ir.code.Instruction;
 import com.android.tools.r8.ir.code.Value;
 import com.android.tools.r8.naming.dexitembasedstring.FieldNameComputationInfo;
+import com.google.common.collect.ImmutableList;
+import java.util.List;
 
 public class LiveProtoFieldObject extends ProtoFieldObject {
 
@@ -28,13 +30,14 @@ public class LiveProtoFieldObject extends ProtoFieldObject {
   }
 
   @Override
-  public Instruction buildIR(AppView<?> appView, IRCode code) {
+  public List<Instruction> buildIR(AppView<?> appView, IRCode code) {
     Value value =
         code.createValue(TypeElement.stringClassType(appView, Nullability.definitelyNotNull()));
     if (appView.options().isMinifying()) {
-      return new DexItemBasedConstString(value, field, FieldNameComputationInfo.forFieldName());
+      return ImmutableList.of(
+          new DexItemBasedConstString(value, field, FieldNameComputationInfo.forFieldName()));
     }
-    return new ConstString(value, field.name);
+    return ImmutableList.of(new ConstString(value, field.name));
   }
 
   @Override
