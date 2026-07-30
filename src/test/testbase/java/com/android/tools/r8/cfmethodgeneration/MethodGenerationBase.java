@@ -4,6 +4,8 @@
 
 package com.android.tools.r8.cfmethodgeneration;
 
+import static org.junit.Assert.assertEquals;
+
 import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.ToolHelper.TestDataSourceSet;
 import com.android.tools.r8.cf.CfCodePrinter;
@@ -21,6 +23,7 @@ import com.android.tools.r8.origin.Origin;
 import com.android.tools.r8.references.Reference;
 import com.android.tools.r8.utils.InternalOptions;
 import com.android.tools.r8.utils.Reporter;
+import com.android.tools.r8.utils.SystemPropertyUtils;
 import com.android.tools.r8.utils.internal.BooleanBox;
 import com.android.tools.r8.utils.internal.FileUtils;
 import com.android.tools.r8.utils.internal.ListUtils;
@@ -73,6 +76,15 @@ public abstract class MethodGenerationBase extends CodeGenerationBase {
   // Running this method will regenerate / overwrite the content of the generated class.
   protected void generateMethodsAndWriteThemToFile() throws IOException {
     FileUtils.writeToFile(getGeneratedFile(), null, generateMethods().getBytes());
+  }
+
+  public void checkOrGenerateMethods() throws IOException {
+    if (SystemPropertyUtils.parseSystemPropertyOrDefault(
+        "com.android.tools.r8.generate_methods", false)) {
+      generateMethodsAndWriteThemToFile();
+    }
+    assertEquals(
+        FileUtils.readTextFile(getGeneratedFile(), StandardCharsets.UTF_8), generateMethods());
   }
 
   // Running this method generate the content of the generated class but does not overwrite it.

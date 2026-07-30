@@ -257,6 +257,10 @@ public class TestConfigurationHelper {
         test.systemProperty("com.android.tools.r8.kotlincompilerold", "1")
       }
 
+      if (project.hasProperty("generate_methods")) {
+        test.systemProperty("com.android.tools.r8.generate_methods", "1")
+      }
+
       if (project.hasProperty("dex_vm") && project.property("dex_vm") != "default") {
         project.logger.info("NOTE: Running with non default vm: " + project.property("dex_vm"))
         test.systemProperty("dex_vm", project.property("dex_vm")!!)

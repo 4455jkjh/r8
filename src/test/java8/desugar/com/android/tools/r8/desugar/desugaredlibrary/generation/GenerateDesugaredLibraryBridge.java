@@ -15,10 +15,8 @@ import com.android.tools.r8.desugar.desugaredlibrary.generation.DesugaredLibrary
 import com.android.tools.r8.graph.CfCode;
 import com.android.tools.r8.graph.DexType;
 import com.android.tools.r8.utils.DescriptorUtils;
-import com.android.tools.r8.utils.internal.FileUtils;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -69,8 +67,7 @@ public class GenerateDesugaredLibraryBridge extends MethodGenerationBase {
     ArrayList<Class<?>> sorted = new ArrayList<>(getMethodTemplateClasses());
     sorted.sort(Comparator.comparing(Class::getTypeName));
     assertEquals("Classes should be listed in sorted order", sorted, getMethodTemplateClasses());
-    assertEquals(
-        FileUtils.readTextFile(getGeneratedFile(), StandardCharsets.UTF_8), generateMethods());
+    checkOrGenerateMethods();
   }
 
   @Override

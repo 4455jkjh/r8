@@ -17,11 +17,9 @@ import com.android.tools.r8.graph.DexEncodedMethod;
 import com.android.tools.r8.graph.DexProto;
 import com.android.tools.r8.graph.DexType;
 import com.android.tools.r8.utils.DescriptorUtils;
-import com.android.tools.r8.utils.internal.FileUtils;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -183,8 +181,7 @@ public class GenerateVarHandleMethods extends MethodGenerationBase {
     ArrayList<Class<?>> sorted = new ArrayList<>(getMethodTemplateClasses());
     sorted.sort(Comparator.comparing(Class::getTypeName));
     assertEquals("Classes should be listed in sorted order", sorted, getMethodTemplateClasses());
-    assertEquals(
-        FileUtils.readTextFile(getGeneratedFile(), StandardCharsets.UTF_8), generateMethods());
+    checkOrGenerateMethods();
   }
 
   public static void main(String[] args) throws Exception {

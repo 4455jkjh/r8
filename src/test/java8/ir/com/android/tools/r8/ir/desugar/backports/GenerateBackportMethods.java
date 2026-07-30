@@ -22,11 +22,9 @@ import com.android.tools.r8.ir.desugar.backports.BackportMethodsStub.LongStub;
 import com.android.tools.r8.ir.desugar.backports.BackportMethodsStub.MathStub;
 import com.android.tools.r8.ir.desugar.backports.BackportMethodsStub.UnsafeStub;
 import com.android.tools.r8.utils.DescriptorUtils;
-import com.android.tools.r8.utils.internal.FileUtils;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -173,8 +171,7 @@ public class GenerateBackportMethods extends MethodGenerationBase {
     ArrayList<Class<?>> sorted = new ArrayList<>(getMethodTemplateClasses());
     sorted.sort(Comparator.comparing(Class::getTypeName));
     assertEquals("Classes should be listed in sorted order", sorted, getMethodTemplateClasses());
-    assertEquals(
-        FileUtils.readTextFile(getGeneratedFile(), StandardCharsets.UTF_8), generateMethods());
+    checkOrGenerateMethods();
   }
 
   public static void main(String[] args) throws Exception {
