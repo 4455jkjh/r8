@@ -50,6 +50,7 @@ public class GenerateBackportMethods extends MethodGenerationBase {
           AtomicReferenceFieldUpdaterMethods.class,
           AtomicReferenceMethods.class,
           BigDecimalMethods.class,
+          BigIntegerMethods.class,
           BooleanMethods.class,
           ByteMethods.class,
           CharSequenceMethods.class,

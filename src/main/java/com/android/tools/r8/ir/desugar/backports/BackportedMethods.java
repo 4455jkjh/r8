@@ -3003,6 +3003,61 @@ public final class BackportedMethods {
         ImmutableList.of());
   }
 
+  public static CfCode BigIntegerMethods_intValueExact(DexItemFactory factory, DexMethod method) {
+    CfLabel label0 = new CfLabel();
+    CfLabel label1 = new CfLabel();
+    CfLabel label2 = new CfLabel();
+    CfLabel label3 = new CfLabel();
+    return new CfCode(
+        method.holder,
+        3,
+        1,
+        ImmutableList.of(
+            label0,
+            new CfLoad(ValueType.OBJECT, 0),
+            new CfInvoke(
+                182,
+                factory.createMethod(
+                    factory.createType("Ljava/math/BigInteger;"),
+                    factory.createProto(factory.intType),
+                    factory.createString("bitLength")),
+                false),
+            new CfConstNumber(31, ValueType.INT),
+            new CfIfCmp(IfType.GT, ValueType.INT, label2),
+            label1,
+            new CfLoad(ValueType.OBJECT, 0),
+            new CfInvoke(
+                182,
+                factory.createMethod(
+                    factory.createType("Ljava/math/BigInteger;"),
+                    factory.createProto(factory.intType),
+                    factory.createString("intValue")),
+                false),
+            new CfReturn(ValueType.INT),
+            label2,
+            new CfFrame(
+                new Int2ObjectAVLTreeMap<>(
+                    new int[] {0},
+                    new FrameType[] {
+                      FrameType.initializedNonNullReference(
+                          factory.createType("Ljava/math/BigInteger;"))
+                    })),
+            new CfNew(factory.createType("Ljava/lang/ArithmeticException;")),
+            new CfStackInstruction(CfStackInstruction.Opcode.Dup),
+            new CfConstString(factory.createString("BigInteger out of int range")),
+            new CfInvoke(
+                183,
+                factory.createMethod(
+                    factory.createType("Ljava/lang/ArithmeticException;"),
+                    factory.createProto(factory.voidType, factory.stringType),
+                    factory.createString("<init>")),
+                false),
+            new CfThrow(),
+            label3),
+        ImmutableList.of(),
+        ImmutableList.of());
+  }
+
   public static CfCode BooleanMethods_compare(DexItemFactory factory, DexMethod method) {
     CfLabel label0 = new CfLabel();
     CfLabel label1 = new CfLabel();
