@@ -6,8 +6,6 @@ import com.google.protobuf.gradle.proto
 import net.ltgt.gradle.errorprone.errorprone
 import org.gradle.api.tasks.bundling.Jar
 import org.gradle.nativeplatform.platform.internal.DefaultNativePlatform
-import org.jetbrains.kotlin.gradle.dsl.JvmTarget
-import org.jetbrains.kotlin.gradle.dsl.KotlinVersion
 
 plugins {
   id("org.jetbrains.kotlin.jvm")
@@ -36,15 +34,6 @@ java {
   sourceSets.main.configure {
     java.srcDir(getRoot().resolveAll("src", "libanalyzer", "java"))
     proto { srcDir(getRoot().resolveAll("src", "libanalyzer", "proto")) }
-  }
-}
-
-kotlin {
-  explicitApi()
-  compilerOptions {
-    jvmTarget.set(JvmTarget.fromTarget(JvmCompatibility.release.toString()))
-    languageVersion.set(KotlinVersion.KOTLIN_1_8)
-    apiVersion.set(KotlinVersion.KOTLIN_1_8)
   }
 }
 

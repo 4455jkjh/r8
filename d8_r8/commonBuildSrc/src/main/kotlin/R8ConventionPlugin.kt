@@ -6,6 +6,10 @@ import org.gradle.api.tasks.compile.JavaCompile
 import org.gradle.jvm.toolchain.JavaLanguageVersion
 import org.gradle.kotlin.dsl.getByType
 import org.gradle.kotlin.dsl.withType
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+import org.jetbrains.kotlin.gradle.dsl.KotlinJvmProjectExtension
+import org.jetbrains.kotlin.gradle.dsl.KotlinVersion
+import org.jetbrains.kotlin.gradle.plugin.KotlinBasePluginWrapper
 
 public class R8ConventionPlugin : Plugin<Project> {
   override fun apply(target: Project) {
@@ -20,6 +24,16 @@ public class R8ConventionPlugin : Plugin<Project> {
           }
           target.tasks.withType<JavaCompile>().configureEach {
             options.release.set(JvmCompatibility.release)
+          }
+        }
+        is KotlinBasePluginWrapper -> {
+          target.extensions.getByType<KotlinJvmProjectExtension>().apply {
+            explicitApi()
+            compilerOptions {
+              jvmTarget.set(JvmTarget.fromTarget(JvmCompatibility.release.toString()))
+              languageVersion.set(KotlinVersion.KOTLIN_1_8)
+              apiVersion.set(KotlinVersion.KOTLIN_1_8)
+            }
           }
         }
       }

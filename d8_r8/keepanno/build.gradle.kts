@@ -5,8 +5,6 @@
 import com.google.protobuf.gradle.proto
 import java.util.concurrent.Callable
 import org.gradle.nativeplatform.platform.internal.DefaultNativePlatform
-import org.jetbrains.kotlin.gradle.dsl.JvmTarget
-import org.jetbrains.kotlin.gradle.dsl.KotlinVersion
 
 plugins {
   // Kotlin version is fixed by create_local_maven_dependencies.py
@@ -35,15 +33,6 @@ java {
   sourceSets.main.configure {
     java.srcDir(getRoot().resolveAll("src", "keepanno", "java"))
     proto { srcDir(getRoot().resolveAll("src", "keepanno", "proto")) }
-  }
-}
-
-kotlin {
-  explicitApi()
-  compilerOptions {
-    jvmTarget.set(JvmTarget.fromTarget(JvmCompatibility.release.toString()))
-    languageVersion.set(KotlinVersion.KOTLIN_1_8)
-    apiVersion.set(KotlinVersion.KOTLIN_1_8)
   }
 }
 

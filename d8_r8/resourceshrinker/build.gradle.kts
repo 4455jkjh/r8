@@ -3,8 +3,6 @@
 // BSD-style license that can be found in the LICENSE file.
 
 import java.util.concurrent.Callable
-import org.jetbrains.kotlin.gradle.dsl.JvmTarget
-import org.jetbrains.kotlin.gradle.dsl.KotlinVersion
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
@@ -18,15 +16,6 @@ java {
   sourceSets.main.configure {
     kotlin.srcDir(getRoot().resolveAll("src", "resourceshrinker", "java"))
     java.srcDir(getRoot().resolveAll("src", "resourceshrinker", "java"))
-  }
-}
-
-kotlin {
-  explicitApi()
-  compilerOptions {
-    jvmTarget.set(JvmTarget.fromTarget(JvmCompatibility.release.toString()))
-    languageVersion.set(KotlinVersion.KOTLIN_1_8)
-    apiVersion.set(KotlinVersion.KOTLIN_1_8)
   }
 }
 
