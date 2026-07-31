@@ -2,7 +2,6 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-import com.google.protobuf.gradle.ProtobufExtension
 import com.google.protobuf.gradle.proto
 import java.util.concurrent.Callable
 import org.gradle.nativeplatform.platform.internal.DefaultNativePlatform
@@ -13,19 +12,12 @@ plugins {
   // Kotlin version is fixed by create_local_maven_dependencies.py
   id("org.jetbrains.kotlin.jvm")
   id("dependencies-plugin")
+  id("com.google.protobuf")
 }
-
-// It seems like the use of a local maven repo does not allow adding the plugin with the id+version
-// syntax. Also, for some reason the 'protobuf' extension object cannot be directly referenced.
-// This configures the plugin "old style" and pulls out the extension object manually.
-buildscript { dependencies { classpath("com.google.protobuf:protobuf-gradle-plugin:0.9.4") } }
-
-apply(plugin = "com.google.protobuf")
 
 tasks.named("generateProto") { dependsOn(sharedDepsConfig) }
 
 var os = DefaultNativePlatform.getCurrentOperatingSystem()
-var protobuf = project.extensions.getByName("protobuf") as ProtobufExtension
 
 protobuf.protoc {
   if (os.isLinux) {
