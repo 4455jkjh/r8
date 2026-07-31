@@ -9,6 +9,7 @@ import org.gradle.nativeplatform.platform.internal.DefaultNativePlatform
 
 plugins {
   `java-library`
+  id("r8-conventions")
   id("dependencies-plugin")
   id("net.ltgt.errorprone")
   id("com.google.protobuf")
@@ -34,10 +35,6 @@ java {
     java.srcDir(getRoot().resolveAll("src", "keepradius", "java"))
     proto { srcDir(getRoot().resolveAll("src", "keepradius", "proto")) }
   }
-  sourceCompatibility = JvmCompatibility.sourceCompatibility
-  targetCompatibility = JvmCompatibility.targetCompatibility
-  toolchain { languageVersion = JavaLanguageVersion.of(JvmCompatibility.release) }
-  withSourcesJar()
 }
 
 dependencies {

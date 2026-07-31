@@ -4,6 +4,7 @@
 
 plugins {
   `java-library`
+  id("r8-conventions")
   id("dependencies-plugin")
   id("net.ltgt.errorprone")
 }
@@ -18,12 +19,7 @@ dependencies {
 
 configureErrorProneForJavaCompile()
 
-java {
-  sourceSets.main.configure { java.srcDir(getRoot().resolveAll("src", "utils", "java")) }
-  sourceCompatibility = JvmCompatibility.sourceCompatibility
-  targetCompatibility = JvmCompatibility.targetCompatibility
-  toolchain { languageVersion = JavaLanguageVersion.of(JvmCompatibility.release) }
-}
+java { sourceSets.main.configure { java.srcDir(getRoot().resolveAll("src", "utils", "java")) } }
 
 val isolatedJar by configurations.consumable("isolatedJar")
 val isolatedClasses by configurations.consumable("isolatedClasses")

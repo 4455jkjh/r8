@@ -11,6 +11,7 @@ import org.jetbrains.kotlin.gradle.dsl.KotlinVersion
 plugins {
   // Kotlin version is fixed by create_local_maven_dependencies.py
   id("org.jetbrains.kotlin.jvm")
+  id("r8-conventions")
   id("dependencies-plugin")
   id("com.google.protobuf")
 }
@@ -35,10 +36,6 @@ java {
     java.srcDir(getRoot().resolveAll("src", "keepanno", "java"))
     proto { srcDir(getRoot().resolveAll("src", "keepanno", "proto")) }
   }
-  sourceCompatibility = JvmCompatibility.sourceCompatibility
-  targetCompatibility = JvmCompatibility.targetCompatibility
-  toolchain { languageVersion = JavaLanguageVersion.of(JvmCompatibility.release) }
-  withSourcesJar()
 }
 
 kotlin {

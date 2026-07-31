@@ -11,6 +11,7 @@ import org.jetbrains.kotlin.gradle.dsl.KotlinVersion
 
 plugins {
   id("org.jetbrains.kotlin.jvm")
+  id("r8-conventions")
   id("dependencies-plugin")
   id("net.ltgt.errorprone")
   id("com.google.protobuf")
@@ -36,10 +37,6 @@ java {
     java.srcDir(getRoot().resolveAll("src", "libanalyzer", "java"))
     proto { srcDir(getRoot().resolveAll("src", "libanalyzer", "proto")) }
   }
-  sourceCompatibility = JvmCompatibility.sourceCompatibility
-  targetCompatibility = JvmCompatibility.targetCompatibility
-  toolchain { languageVersion = JavaLanguageVersion.of(JvmCompatibility.release) }
-  withSourcesJar()
 }
 
 kotlin {

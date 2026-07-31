@@ -7,13 +7,8 @@ import org.gradle.kotlin.dsl.register
 
 plugins {
   `java-library`
+  id("r8-conventions")
   id("dependencies-plugin")
-}
-
-java {
-  sourceCompatibility = JvmCompatibility.sourceCompatibility
-  targetCompatibility = JvmCompatibility.targetCompatibility
-  toolchain { languageVersion = JavaLanguageVersion.of(JvmCompatibility.release) }
 }
 
 val testJarsScope by configurations.dependencyScope("testJarsScope")

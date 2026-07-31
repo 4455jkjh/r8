@@ -18,6 +18,10 @@ gradlePlugin {
     id = "dependencies-plugin"
     implementationClass = "DependenciesPlugin"
   }
+  plugins.register("r8-conventions") {
+    id = "r8-conventions"
+    implementationClass = "R8ConventionPlugin"
+  }
 }
 
 kotlin { explicitApi() }

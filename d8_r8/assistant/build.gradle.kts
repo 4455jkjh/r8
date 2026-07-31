@@ -4,18 +4,13 @@
 
 plugins {
   `java-library`
+  id("r8-conventions")
   id("dependencies-plugin")
 }
 
 dependencies { compileOnly(project(":keepanno", "keepannoClasses")) }
 
-java {
-  sourceSets.main.configure { java.srcDir(getRoot().resolveAll("src", "assistant", "java")) }
-  sourceCompatibility = JvmCompatibility.sourceCompatibility
-  targetCompatibility = JvmCompatibility.targetCompatibility
-  toolchain { languageVersion = JavaLanguageVersion.of(JvmCompatibility.release) }
-  withSourcesJar()
-}
+java { sourceSets.main.configure { java.srcDir(getRoot().resolveAll("src", "assistant", "java")) } }
 
 val jarTask =
   tasks.named<Jar>("jar") {

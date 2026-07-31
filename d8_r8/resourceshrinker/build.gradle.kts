@@ -10,6 +10,7 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 plugins {
   // Kotlin version is fixed by create_local_maven_dependencies.py
   id("org.jetbrains.kotlin.jvm")
+  id("r8-conventions")
   id("dependencies-plugin")
 }
 
@@ -18,10 +19,6 @@ java {
     kotlin.srcDir(getRoot().resolveAll("src", "resourceshrinker", "java"))
     java.srcDir(getRoot().resolveAll("src", "resourceshrinker", "java"))
   }
-  sourceCompatibility = JvmCompatibility.sourceCompatibility
-  targetCompatibility = JvmCompatibility.targetCompatibility
-  toolchain { languageVersion = JavaLanguageVersion.of(JvmCompatibility.release) }
-  withSourcesJar()
 }
 
 kotlin {
