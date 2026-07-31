@@ -155,8 +155,8 @@ public class Rem extends ArithmeticBinop {
     if (rightAbstractValue.isSingleNumberValue() && !rightAbstractValue.isZero()) {
       return false;
     }
-    if (rightAbstractValue.isDefiniteBitsNumberValue()
-        && rightAbstractValue.asDefiniteBitsNumberValue().getDefinitelySetIntBits() != 0) {
+    if (rightAbstractValue.isDefiniteBitsIntNumberValue()
+        && rightAbstractValue.asDefiniteBitsIntNumberValue().getDefinitelySetIntBits() != 0) {
       return false;
     }
     return true;

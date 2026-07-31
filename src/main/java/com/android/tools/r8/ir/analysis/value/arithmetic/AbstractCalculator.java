@@ -43,16 +43,16 @@ public class AbstractCalculator {
     }
     if (left.hasDefinitelySetAndUnsetBitsInformation()
         && right.hasDefinitelySetAndUnsetBitsInformation()) {
-      return abstractValueFactory.createDefiniteBitsNumberValue(
+      return abstractValueFactory.createDefiniteBitsIntNumberValue(
           left.getDefinitelySetIntBits() & right.getDefinitelySetIntBits(),
           left.getDefinitelyUnsetIntBits() | right.getDefinitelyUnsetIntBits());
     }
     if (left.hasDefinitelySetAndUnsetBitsInformation()) {
-      return abstractValueFactory.createDefiniteBitsNumberValue(
+      return abstractValueFactory.createDefiniteBitsIntNumberValue(
           0, left.getDefinitelyUnsetIntBits());
     }
     if (right.hasDefinitelySetAndUnsetBitsInformation()) {
-      return abstractValueFactory.createDefiniteBitsNumberValue(
+      return abstractValueFactory.createDefiniteBitsIntNumberValue(
           0, right.getDefinitelyUnsetIntBits());
     }
     return AbstractValue.unknown();
@@ -130,19 +130,19 @@ public class AbstractCalculator {
         && right.hasDefinitelySetAndUnsetBitsInformation()) {
       return appView
           .abstractValueFactory()
-          .createDefiniteBitsNumberValue(
+          .createDefiniteBitsIntNumberValue(
               left.getDefinitelySetIntBits() | right.getDefinitelySetIntBits(),
               left.getDefinitelyUnsetIntBits() & right.getDefinitelyUnsetIntBits());
     }
     if (left.hasDefinitelySetAndUnsetBitsInformation()) {
       return appView
           .abstractValueFactory()
-          .createDefiniteBitsNumberValue(left.getDefinitelySetIntBits(), 0);
+          .createDefiniteBitsIntNumberValue(left.getDefinitelySetIntBits(), 0);
     }
     if (right.hasDefinitelySetAndUnsetBitsInformation()) {
       return appView
           .abstractValueFactory()
-          .createDefiniteBitsNumberValue(right.getDefinitelySetIntBits(), 0);
+          .createDefiniteBitsIntNumberValue(right.getDefinitelySetIntBits(), 0);
     }
     return AbstractValue.unknown();
   }
@@ -224,7 +224,7 @@ public class AbstractCalculator {
       // subtracting 1 we overflow and get 0111...111, as desired.
       return appView
           .abstractValueFactory()
-          .createDefiniteBitsNumberValue(
+          .createDefiniteBitsIntNumberValue(
               left.getDefinitelySetIntBits() << rightConst,
               (left.getDefinitelyUnsetIntBits() << rightConst) | ((1 << rightConst) - 1));
     }
@@ -283,7 +283,7 @@ public class AbstractCalculator {
     if (left.hasDefinitelySetAndUnsetBitsInformation()) {
       return appView
           .abstractValueFactory()
-          .createDefiniteBitsNumberValue(
+          .createDefiniteBitsIntNumberValue(
               left.getDefinitelySetIntBits() >> rightConst,
               left.getDefinitelyUnsetIntBits() >> rightConst);
     }
@@ -346,7 +346,7 @@ public class AbstractCalculator {
       // definitely unset.
       return appView
           .abstractValueFactory()
-          .createDefiniteBitsNumberValue(
+          .createDefiniteBitsIntNumberValue(
               left.getDefinitelySetIntBits() >>> rightConst,
               (left.getDefinitelyUnsetIntBits() >>> rightConst)
                   | (BitUtils.ONLY_SIGN_BIT_SET_INTEGER_MASK >> (rightConst - 1)));
@@ -391,7 +391,7 @@ public class AbstractCalculator {
         && right.hasDefinitelySetAndUnsetBitsInformation()) {
       return appView
           .abstractValueFactory()
-          .createDefiniteBitsNumberValue(
+          .createDefiniteBitsIntNumberValue(
               (left.getDefinitelySetIntBits() & right.getDefinitelyUnsetIntBits())
                   | (left.getDefinitelyUnsetIntBits() & right.getDefinitelySetIntBits()),
               (left.getDefinitelySetIntBits() & right.getDefinitelySetIntBits())

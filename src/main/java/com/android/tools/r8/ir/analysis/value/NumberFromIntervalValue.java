@@ -64,7 +64,7 @@ public class NumberFromIntervalValue extends NonConstantNumberValue {
 
   @Override
   public boolean mayOverlapWith(ConstantOrNonConstantNumberValue other) {
-    if (other.isDefiniteBitsNumberValue()) {
+    if (other.isDefiniteBitsIntNumberValue()) {
       // Conservatively return true.
       return true;
     }

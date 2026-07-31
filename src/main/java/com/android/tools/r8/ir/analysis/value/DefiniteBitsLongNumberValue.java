@@ -89,11 +89,11 @@ public class DefiniteBitsLongNumberValue extends NonConstantNumberValue {
 
   public AbstractValue join(
       AbstractValueFactory abstractValueFactory,
-      DefiniteBitsLongNumberValue definiteBitsNumberValue) {
+      DefiniteBitsLongNumberValue definiteBitsLongNumberValue) {
     return join(
         abstractValueFactory,
-        definiteBitsNumberValue.definitelySetBits,
-        definiteBitsNumberValue.definitelyUnsetBits);
+        definiteBitsLongNumberValue.definitelySetBits,
+        definiteBitsLongNumberValue.definitelyUnsetBits);
   }
 
   public AbstractValue join(
@@ -132,7 +132,7 @@ public class DefiniteBitsLongNumberValue extends NonConstantNumberValue {
           || newType.isIntType();
       return appView
           .abstractValueFactory()
-          .createDefiniteBitsNumberValue((int) definitelySetBits, (int) definitelyUnsetBits);
+          .createDefiniteBitsIntNumberValue((int) definitelySetBits, (int) definitelyUnsetBits);
     }
     return this;
   }
@@ -146,9 +146,9 @@ public class DefiniteBitsLongNumberValue extends NonConstantNumberValue {
     if (o == null || o.getClass() != getClass()) {
       return false;
     }
-    DefiniteBitsLongNumberValue definiteBitsNumberValue = (DefiniteBitsLongNumberValue) o;
-    return definitelySetBits == definiteBitsNumberValue.definitelySetBits
-        && definitelyUnsetBits == definiteBitsNumberValue.definitelyUnsetBits;
+    DefiniteBitsLongNumberValue definiteBitsLongNumberValue = (DefiniteBitsLongNumberValue) o;
+    return definitelySetBits == definiteBitsLongNumberValue.definitelySetBits
+        && definitelyUnsetBits == definiteBitsLongNumberValue.definitelyUnsetBits;
   }
 
   @Override

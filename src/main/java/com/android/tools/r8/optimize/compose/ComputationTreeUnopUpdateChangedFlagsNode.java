@@ -6,7 +6,7 @@ package com.android.tools.r8.optimize.compose;
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.ir.analysis.value.AbstractValue;
 import com.android.tools.r8.ir.analysis.value.AbstractValueFactory;
-import com.android.tools.r8.ir.analysis.value.DefiniteBitsNumberValue;
+import com.android.tools.r8.ir.analysis.value.DefiniteBitsIntNumberValue;
 import com.android.tools.r8.ir.analysis.value.SingleNumberValue;
 import com.android.tools.r8.ir.analysis.value.arithmetic.AbstractCalculator;
 import com.android.tools.r8.optimize.argumentpropagation.codescanner.BaseInFlow;
@@ -49,8 +49,8 @@ public class ComputationTreeUnopUpdateChangedFlagsNode extends ComputationTreeUn
       return operandValue;
     } else if (operandValue.isSingleNumberValue()) {
       return evaluateConcrete(appView, operandValue.asSingleNumberValue().getIntValue());
-    } else if (operandValue.isDefiniteBitsNumberValue()) {
-      return evaluateAbstract(appView, operandValue.asDefiniteBitsNumberValue());
+    } else if (operandValue.isDefiniteBitsIntNumberValue()) {
+      return evaluateAbstract(appView, operandValue.asDefiniteBitsIntNumberValue());
     } else {
       assert !operandValue.hasDefinitelySetAndUnsetBitsInformation();
       return AbstractValue.unknown();
@@ -74,7 +74,7 @@ public class ComputationTreeUnopUpdateChangedFlagsNode extends ComputationTreeUn
    * </pre>
    */
   private AbstractValue evaluateAbstract(
-      AppView<AppInfoWithLiveness> appView, DefiniteBitsNumberValue flags) {
+      AppView<AppInfoWithLiveness> appView, DefiniteBitsIntNumberValue flags) {
     AbstractValueFactory factory = appView.abstractValueFactory();
     // Load constants.
     AbstractValue changedLowBitMaskValue =

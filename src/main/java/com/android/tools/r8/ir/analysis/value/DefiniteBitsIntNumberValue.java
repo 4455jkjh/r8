@@ -11,12 +11,12 @@ import com.android.tools.r8.shaking.AppInfoWithLiveness;
 import com.android.tools.r8.utils.internal.ObjectUtils;
 import com.android.tools.r8.utils.internal.OptionalBool;
 
-public class DefiniteBitsNumberValue extends NonConstantNumberValue {
+public class DefiniteBitsIntNumberValue extends NonConstantNumberValue {
 
   private final int definitelySetBits;
   private final int definitelyUnsetBits;
 
-  public DefiniteBitsNumberValue(int definitelySetBits, int definitelyUnsetBits) {
+  public DefiniteBitsIntNumberValue(int definitelySetBits, int definitelyUnsetBits) {
     assert (definitelySetBits & definitelyUnsetBits) == 0;
     this.definitelySetBits = definitelySetBits;
     this.definitelyUnsetBits = definitelyUnsetBits;
@@ -69,12 +69,12 @@ public class DefiniteBitsNumberValue extends NonConstantNumberValue {
   }
 
   @Override
-  public boolean isDefiniteBitsNumberValue() {
+  public boolean isDefiniteBitsIntNumberValue() {
     return true;
   }
 
   @Override
-  public DefiniteBitsNumberValue asDefiniteBitsNumberValue() {
+  public DefiniteBitsIntNumberValue asDefiniteBitsIntNumberValue() {
     return this;
   }
 
@@ -89,11 +89,12 @@ public class DefiniteBitsNumberValue extends NonConstantNumberValue {
   }
 
   public AbstractValue join(
-      AbstractValueFactory abstractValueFactory, DefiniteBitsNumberValue definiteBitsNumberValue) {
+      AbstractValueFactory abstractValueFactory,
+      DefiniteBitsIntNumberValue definiteBitsIntNumberValue) {
     return join(
         abstractValueFactory,
-        definiteBitsNumberValue.definitelySetBits,
-        definiteBitsNumberValue.definitelyUnsetBits);
+        definiteBitsIntNumberValue.definitelySetBits,
+        definiteBitsIntNumberValue.definitelyUnsetBits);
   }
 
   public AbstractValue join(
@@ -112,7 +113,7 @@ public class DefiniteBitsNumberValue extends NonConstantNumberValue {
         && definitelyUnsetBits == otherDefinitelyUnsetBits) {
       return this;
     }
-    return abstractValueFactory.createDefiniteBitsNumberValue(
+    return abstractValueFactory.createDefiniteBitsIntNumberValue(
         definitelySetBits & otherDefinitelySetBits, definitelyUnsetBits & otherDefinitelyUnsetBits);
   }
 
@@ -136,9 +137,9 @@ public class DefiniteBitsNumberValue extends NonConstantNumberValue {
     if (o == null || o.getClass() != getClass()) {
       return false;
     }
-    DefiniteBitsNumberValue definiteBitsNumberValue = (DefiniteBitsNumberValue) o;
-    return definitelySetBits == definiteBitsNumberValue.definitelySetBits
-        && definitelyUnsetBits == definiteBitsNumberValue.definitelyUnsetBits;
+    DefiniteBitsIntNumberValue definiteBitsIntNumberValue = (DefiniteBitsIntNumberValue) o;
+    return definitelySetBits == definiteBitsIntNumberValue.definitelySetBits
+        && definitelyUnsetBits == definiteBitsIntNumberValue.definitelyUnsetBits;
   }
 
   @Override
@@ -148,7 +149,7 @@ public class DefiniteBitsNumberValue extends NonConstantNumberValue {
 
   @Override
   public String toString() {
-    return "DefiniteBitsNumberValue(set: "
+    return "DefiniteBitsIntNumberValue(set: "
         + Integer.toBinaryString(definitelySetBits)
         + "; unset: "
         + Integer.toBinaryString(definitelyUnsetBits)

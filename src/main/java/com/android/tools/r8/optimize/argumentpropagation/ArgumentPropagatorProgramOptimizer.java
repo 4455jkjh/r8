@@ -30,8 +30,8 @@ import com.android.tools.r8.ir.analysis.type.DynamicType;
 import com.android.tools.r8.ir.analysis.type.DynamicTypeWithUpperBound;
 import com.android.tools.r8.ir.analysis.type.TypeElement;
 import com.android.tools.r8.ir.analysis.value.AbstractValue;
+import com.android.tools.r8.ir.analysis.value.DefiniteBitsIntNumberValue;
 import com.android.tools.r8.ir.analysis.value.DefiniteBitsLongNumberValue;
-import com.android.tools.r8.ir.analysis.value.DefiniteBitsNumberValue;
 import com.android.tools.r8.ir.analysis.value.SingleValue;
 import com.android.tools.r8.ir.conversion.ExtraUnusedIntParameter;
 import com.android.tools.r8.ir.conversion.ExtraUnusedNullParameter;
@@ -684,8 +684,8 @@ public class ArgumentPropagatorProgramOptimizer {
 
       if (staticType.isPrimitiveType()) {
         AbstractValue abstractValue = field.getOptimizationInfo().getAbstractValue();
-        if (abstractValue.isDefiniteBitsNumberValue()) {
-          DefiniteBitsNumberValue value = abstractValue.asDefiniteBitsNumberValue();
+        if (abstractValue.isDefiniteBitsIntNumberValue()) {
+          DefiniteBitsIntNumberValue value = abstractValue.asDefiniteBitsIntNumberValue();
           return getSmallerPrimitiveType(
               staticType, value.getMinInclusiveInt(), value.getMaxInclusiveInt());
         } else if (abstractValue.isDefiniteBitsLongNumberValue()) {
