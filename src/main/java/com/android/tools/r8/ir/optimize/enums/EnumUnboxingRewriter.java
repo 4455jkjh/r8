@@ -187,7 +187,7 @@ public class EnumUnboxingRewriter implements CustomLensCodeRewriter {
           CheckCast checkCast = instruction.asCheckCast();
           DexType enumType = getEnumClassTypeOrNull(checkCast.getType());
           if (enumType != null) {
-            checkCast.outValue().replaceUsers(checkCast.object());
+            checkCast.outValue().replaceUsers(checkCast.object(), affectedValues);
             iterator.removeOrReplaceByDebugLocalRead();
           }
         } else if (instruction.isInitClass()) {

@@ -7,6 +7,7 @@ package com.android.tools.r8.optimize.argumentpropagation;
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.DexField;
 import com.android.tools.r8.graph.DexMethod;
+import com.android.tools.r8.graph.DexType;
 import com.android.tools.r8.graph.lens.FieldLookupResult;
 import com.android.tools.r8.graph.lens.NestedGraphLens;
 import com.android.tools.r8.graph.proto.RewrittenPrototypeDescription;
@@ -60,10 +61,14 @@ public class ArgumentPropagatorGraphLens extends NestedGraphLens {
   protected FieldLookupResult internalDescribeLookupField(FieldLookupResult previous) {
     FieldLookupResult lookupResult = super.internalDescribeLookupField(previous);
     if (lookupResult.getReference().getType().isNotIdenticalTo(previous.getReference().getType())) {
+      DexType readCastType = previous.getReadCastType();
+      if (readCastType == null && previous.getReference().getType().isPrimitiveType()) {
+        readCastType = previous.getReference().getType();
+      }
       return FieldLookupResult.builder(this)
           .setReboundReference(lookupResult.getReboundReference())
           .setReference(lookupResult.getReference())
-          .setReadCastType(lookupResult.getReadCastType())
+          .setReadCastType(readCastType)
           .setWriteCastType(lookupResult.getReference().getType())
           .build();
     }

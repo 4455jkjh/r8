@@ -160,6 +160,7 @@ public class PrimaryR8IRConverter extends IRConverter {
           .run(executorService, feedback, timing);
     }
 
+    enumUnboxer.rewriteWithLens();
     numberUnboxer.rewriteWithLens();
     outliner.rewriteWithLens();
     enumUnboxer.unboxEnums(

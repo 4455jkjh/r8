@@ -124,6 +124,16 @@ public class DefiniteBitsLongNumberValue extends NonConstantNumberValue {
   @Override
   public AbstractValue rewrittenWithLens(
       AppView<AppInfoWithLiveness> appView, DexType newType, GraphLens lens, GraphLens codeLens) {
+    if (!newType.isLongType()) {
+      assert newType.isBooleanType()
+          || newType.isByteType()
+          || newType.isCharType()
+          || newType.isShortType()
+          || newType.isIntType();
+      return appView
+          .abstractValueFactory()
+          .createDefiniteBitsNumberValue((int) definitelySetBits, (int) definitelyUnsetBits);
+    }
     return this;
   }
 

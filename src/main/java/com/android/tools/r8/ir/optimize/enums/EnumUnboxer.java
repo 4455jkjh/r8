@@ -33,6 +33,8 @@ public abstract class EnumUnboxer {
   public abstract void prepareForPrimaryOptimizationPass(
       GraphLens graphLensForPrimaryOptimizationPass);
 
+  public abstract void rewriteWithLens();
+
   public abstract void analyzeEnums(IRCode code, MethodProcessor methodProcessor);
 
   public abstract void onMethodPruned(ProgramMethod method);

@@ -30,6 +30,8 @@ import com.android.tools.r8.ir.analysis.type.DynamicType;
 import com.android.tools.r8.ir.analysis.type.DynamicTypeWithUpperBound;
 import com.android.tools.r8.ir.analysis.type.TypeElement;
 import com.android.tools.r8.ir.analysis.value.AbstractValue;
+import com.android.tools.r8.ir.analysis.value.DefiniteBitsLongNumberValue;
+import com.android.tools.r8.ir.analysis.value.DefiniteBitsNumberValue;
 import com.android.tools.r8.ir.analysis.value.SingleValue;
 import com.android.tools.r8.ir.conversion.ExtraUnusedIntParameter;
 import com.android.tools.r8.ir.conversion.ExtraUnusedNullParameter;
@@ -605,7 +607,7 @@ public class ArgumentPropagatorProgramOptimizer {
       Set<DexField> newFieldSignatures = Sets.newIdentityHashSet();
       Map<DexField, DexType> newFieldTypes = new IdentityHashMap<>();
       clazz.forEachProgramFieldMatching(
-          field -> field.getType().isClassType(),
+          field -> field.getType().isClassType() || field.getType().isPrimitiveType(),
           field -> {
             DexType newFieldType = getNewFieldType(field);
             if (newFieldType != field.getType()) {
@@ -616,7 +618,7 @@ public class ArgumentPropagatorProgramOptimizer {
             }
           });
       clazz.forEachProgramFieldMatching(
-          field -> field.getType().isClassType(),
+          field -> field.getType().isClassType() || field.getType().isPrimitiveType(),
           field -> {
             DexField newFieldSignature =
                 getNewFieldSignature(field, newFieldSignatures, newFieldTypes);
@@ -674,22 +676,35 @@ public class ArgumentPropagatorProgramOptimizer {
 
     @SuppressWarnings("ReferenceEquality")
     private DexType getNewFieldType(ProgramField field) {
-      DynamicType dynamicType = field.getOptimizationInfo().getDynamicType();
       DexType staticType = field.getType();
-      if (dynamicType.isUnknown()) {
+      KeepFieldInfo keepInfo = appView.getKeepInfo(field);
+      if (!keepInfo.isFieldTypeStrengtheningAllowed(options)) {
         return staticType;
       }
 
-      KeepFieldInfo keepInfo = appView.getKeepInfo(field);
+      if (staticType.isPrimitiveType()) {
+        AbstractValue abstractValue = field.getOptimizationInfo().getAbstractValue();
+        if (abstractValue.isDefiniteBitsNumberValue()) {
+          DefiniteBitsNumberValue value = abstractValue.asDefiniteBitsNumberValue();
+          return getSmallerPrimitiveType(
+              staticType, value.getMinInclusiveInt(), value.getMaxInclusiveInt());
+        } else if (abstractValue.isDefiniteBitsLongNumberValue()) {
+          DefiniteBitsLongNumberValue value = abstractValue.asDefiniteBitsLongNumberValue();
+          return getSmallerPrimitiveType(
+              staticType, value.getMinInclusiveLong(), value.getMaxInclusiveLong());
+        }
+        return staticType;
+      }
+
+      DynamicType dynamicType = field.getOptimizationInfo().getDynamicType();
+      if (dynamicType.isUnknown()) {
+        return staticType;
+      }
 
       // We don't have dynamic type information for fields that are kept, unless the static type of
       // the field is guaranteed to be null.
       assert !keepInfo.isPinned(options)
           || (field.getType().isAlwaysNull(appView) && dynamicType.isNullType());
-
-      if (!keepInfo.isFieldTypeStrengtheningAllowed(options)) {
-        return staticType;
-      }
 
       if (dynamicType.isNullType()) {
         // Don't optimize always null fields; these will be optimized anyway.
@@ -740,6 +755,37 @@ public class ArgumentPropagatorProgramOptimizer {
       }
 
       return newStaticFieldType;
+    }
+
+    private DexType getSmallerPrimitiveType(
+        DexType staticType, long minInclusive, long maxInclusive) {
+      // Don't change fields typed as boolean, double, or float.
+      if (staticType.isBooleanType() || staticType.isDoubleType() || staticType.isFloatType()) {
+        return staticType;
+      }
+      // Due to stricter verification on Dalvik we only allow long -> int in that case.
+      if (!options.canHaveDalvikIntUsedAsNonIntPrimitiveTypeBug()) {
+        if (0 <= minInclusive && maxInclusive <= 1) {
+          return dexItemFactory.booleanType;
+        }
+        if (Byte.MIN_VALUE <= minInclusive && maxInclusive <= Byte.MAX_VALUE) {
+          return dexItemFactory.byteType;
+        }
+        if (Short.MIN_VALUE <= minInclusive
+            && maxInclusive <= Short.MAX_VALUE
+            && !staticType.isCharType()) {
+          return dexItemFactory.shortType;
+        }
+        if (Character.MIN_VALUE <= minInclusive && maxInclusive <= Character.MAX_VALUE) {
+          return dexItemFactory.charType;
+        }
+      }
+      if (Integer.MIN_VALUE <= minInclusive
+          && maxInclusive <= Integer.MAX_VALUE
+          && staticType.isLongType()) {
+        return dexItemFactory.intType;
+      }
+      return staticType;
     }
 
     @SuppressWarnings("ReferenceEquality")

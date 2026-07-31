@@ -275,13 +275,20 @@ public class DexEncodedField extends DexEncodedMember<DexEncodedField, DexField>
     if (this.getReference() == field) {
       return this;
     }
-    return builder(this)
-        .setField(field)
-        .disableAndroidApiLevelCheckIf(
-            !appView.options().apiModelingOptions().isApiCallerIdentificationEnabled()
-                || !appView.enableWholeProgramOptimizations())
-        .apply(consumer)
-        .build();
+    Builder builder =
+        builder(this)
+            .setField(field)
+            .disableAndroidApiLevelCheckIf(
+                !appView.options().apiModelingOptions().isApiCallerIdentificationEnabled()
+                    || !appView.enableWholeProgramOptimizations())
+            .apply(consumer);
+    if (isStatic()
+        && hasExplicitStaticValue()
+        && getType().isPrimitiveType()
+        && getType().isNotIdenticalTo(field.getType())) {
+      builder.setStaticValue(getStaticValue().asDexValueNumber().toType(field.getType()));
+    }
+    return builder.build();
   }
 
   @SuppressWarnings("ReferenceEquality")

@@ -95,6 +95,8 @@ import com.android.tools.r8.ir.code.MoveException;
 import com.android.tools.r8.ir.code.NewArrayEmpty;
 import com.android.tools.r8.ir.code.NewArrayFilled;
 import com.android.tools.r8.ir.code.NewInstance;
+import com.android.tools.r8.ir.code.NumberConversion;
+import com.android.tools.r8.ir.code.NumberConversionType;
 import com.android.tools.r8.ir.code.Phi;
 import com.android.tools.r8.ir.code.Position;
 import com.android.tools.r8.ir.code.Return;
@@ -961,21 +963,32 @@ public class LensCodeRewriter {
       Value newOutValue,
       Set<Phi> affectedPhis,
       AffectedValues affectedValues) {
-    TypeElement castTypeElement =
-        TypeElement.fromDexType(
-            lookup.getReadCastType(), newOutValue.getType().nullability(), appView);
-    Value castOutValue = code.createValue(castTypeElement);
-    newOutValue.replaceUsers(castOutValue, affectedValues);
-    CheckCast checkCast =
-        SafeCheckCast.builder()
-            .setCastType(lookup.getReadCastType())
-            .setObject(newOutValue)
-            .setOutValue(castOutValue)
-            .setPosition(fieldGet.asFieldInstruction())
-            .build();
-    iterator.addPossiblyThrowingInstructionsToPossiblyThrowingBlock(
-        code, blocks, ImmutableList.of(checkCast), options);
-    affectedPhis.addAll(checkCast.outValue().uniquePhiUsers());
+    DexType readCastType = lookup.getReadCastType();
+    if (readCastType.isReferenceType()) {
+      TypeElement castTypeElement =
+          TypeElement.fromDexType(readCastType, newOutValue.getType().nullability(), appView);
+      Value castOutValue = code.createValue(castTypeElement);
+      newOutValue.replaceUsers(castOutValue, affectedValues);
+      CheckCast checkCast =
+          SafeCheckCast.builder()
+              .setCastType(readCastType)
+              .setObject(newOutValue)
+              .setOutValue(castOutValue)
+              .setPosition(fieldGet.asFieldInstruction())
+              .build();
+      iterator.addPossiblyThrowingInstructionsToPossiblyThrowingBlock(
+          code, blocks, ImmutableList.of(checkCast), options);
+      affectedPhis.addAll(checkCast.outValue().uniquePhiUsers());
+    } else if (readCastType.isLongType() && newOutValue.getType().isInt()) {
+      Value castOutValue = code.createValue(TypeElement.getLong());
+      newOutValue.replaceUsers(castOutValue, affectedValues);
+      NumberConversion conversion =
+          new NumberConversion(NumberConversionType.INT_TO_LONG, castOutValue, newOutValue);
+      conversion.setPosition(fieldGet.asFieldInstruction().getPosition());
+      iterator.addPossiblyThrowingInstructionsToPossiblyThrowingBlock(
+          code, blocks, ImmutableList.of(conversion), options);
+      affectedPhis.addAll(conversion.outValue().uniquePhiUsers());
+    }
   }
 
   private void removeUnusedArguments(IRCode code, Set<UnusedArgument> unusedArguments) {
@@ -1042,32 +1055,43 @@ public class LensCodeRewriter {
       FieldPut fieldPut,
       FieldLookupResult lookup) {
     if (lookup.hasWriteCastType()) {
-      iterator.previous();
-      CheckCast checkCast =
-          SafeCheckCast.builder()
-              .setObject(fieldPut.value())
-              .setFreshOutValue(
-                  code,
-                  lookup
-                      .getWriteCastType()
-                      .toTypeElement(appView, fieldPut.value().getType().nullability()))
-              .setCastType(lookup.getWriteCastType())
-              .setPosition(fieldPut.getPosition())
-              .build();
-      iterator.add(checkCast);
-      fieldPut.setValue(checkCast.outValue());
+      DexType writeCastType = lookup.getWriteCastType();
+      if (writeCastType.isReferenceType()) {
+        iterator.previous();
+        CheckCast checkCast =
+            SafeCheckCast.builder()
+                .setObject(fieldPut.value())
+                .setFreshOutValue(
+                    code,
+                    writeCastType.toTypeElement(appView, fieldPut.value().getType().nullability()))
+                .setCastType(writeCastType)
+                .setPosition(fieldPut.getPosition())
+                .build();
+        iterator.add(checkCast);
+        fieldPut.setValue(checkCast.outValue());
 
-      if (checkCast.getBlock().hasCatchHandlers()) {
-        // Split the block and reset the block iterator.
-        BasicBlock splitBlock = iterator.splitCopyCatchHandlers(code, blocks, appView.options());
-        BasicBlock previousBlock = blocks.previousUntil(block -> block == splitBlock);
-        assert previousBlock == splitBlock;
-        blocks.next();
-        iterator = splitBlock.listIterator();
+        if (checkCast.getBlock().hasCatchHandlers()) {
+          // Split the block and reset the block iterator.
+          BasicBlock splitBlock = iterator.splitCopyCatchHandlers(code, blocks, appView.options());
+          BasicBlock previousBlock = blocks.previousUntil(block -> block == splitBlock);
+          assert previousBlock == splitBlock;
+          blocks.next();
+          iterator = splitBlock.listIterator();
+        }
+
+        Instruction next = iterator.next();
+        assert next == fieldPut;
+      } else if (fieldPut.value().getType().isLong()) {
+        iterator.previous();
+        Value castOutValue = code.createValue(TypeElement.getInt());
+        NumberConversion conversion =
+            new NumberConversion(NumberConversionType.LONG_TO_INT, castOutValue, fieldPut.value());
+        conversion.setPosition(fieldPut.getPosition());
+        iterator.add(conversion);
+        fieldPut.setValue(castOutValue);
+        Instruction next = iterator.next();
+        assert next == fieldPut;
       }
-
-      Instruction next = iterator.next();
-      assert next == fieldPut;
     }
     return iterator;
   }
