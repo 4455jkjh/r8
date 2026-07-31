@@ -39,6 +39,7 @@ import com.android.tools.r8.utils.internal.Action;
 import com.android.tools.r8.utils.internal.EntryUtils;
 import com.android.tools.r8.utils.internal.FileUtils;
 import com.google.common.collect.ImmutableList;
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -50,7 +51,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.function.Consumer;
+import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -103,7 +104,7 @@ public class GenerateCovariantReturnTypeMethodsTest extends TestBase {
     assertEquals(FileUtils.readTextFile(DESTINATION_FILE, StandardCharsets.UTF_8), generateCode());
   }
 
-  public static String generateCode() throws Exception {
+  public static String generateCode() throws IOException {
     CovariantMethodsInJarResult covariantMethodsInJar = CovariantMethodsInJarResult.create();
     List<Entry<ClassReference, List<MethodReferenceWithApiLevel>>> entries =
         new ArrayList<>(covariantMethodsInJar.methodReferenceMap.entrySet());
@@ -200,7 +201,7 @@ public class GenerateCovariantReturnTypeMethodsTest extends TestBase {
       this.methodReferenceMap = methodReferenceMap;
     }
 
-    public static CovariantMethodsInJarResult create() throws Exception {
+    public static CovariantMethodsInJarResult create() throws IOException {
       Map<ClassReference, List<MethodReferenceWithApiLevel>> methodReferenceMap = new HashMap<>();
       CodeInspector inspector = new CodeInspector(PATH_TO_CORE_JAR);
       for (FoundClassSubject clazz : inspector.allClasses()) {
@@ -279,8 +280,15 @@ public class GenerateCovariantReturnTypeMethodsTest extends TestBase {
       }
     }
 
+    /** Iteration is stable based on the references. */
+    public Collection<ClassReference> getClasses() {
+      return methodReferenceMap.keySet().stream()
+          .sorted(Comparator.comparing(ClassReference::getDescriptor))
+          .collect(Collectors.toList());
+    }
+
     public void visitCovariantMethodsForHolder(
-        ClassReference reference, Consumer<MethodReferenceWithApiLevel> consumer) {
+        ClassReference reference, BiConsumer<MethodReference, AndroidApiLevel> consumer) {
       List<MethodReferenceWithApiLevel> methodReferences = methodReferenceMap.get(reference);
       if (methodReferences != null) {
         methodReferences.stream()
@@ -288,12 +296,12 @@ public class GenerateCovariantReturnTypeMethodsTest extends TestBase {
                 Comparator.comparing(
                     MethodReferenceWithApiLevel::getMethodReference,
                     MethodReferenceUtils.getMethodReferenceComparator()))
-            .forEach(consumer);
+            .forEach(pair -> consumer.accept(pair.methodReference, pair.apiLevel));
       }
     }
   }
 
-  public static class MethodReferenceWithApiLevel {
+  private static class MethodReferenceWithApiLevel {
 
     private final MethodReference methodReference;
     private final AndroidApiLevel apiLevel;

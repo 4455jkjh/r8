@@ -244,14 +244,11 @@ public class AndroidApiHashingDatabaseBuilderGeneratorTest extends TestBase {
           (method, apiLevel) -> methodsForApiClass.put(factory.createMethod(method), apiLevel));
       covariantMethodsInJar.visitCovariantMethodsForHolder(
           apiClass.getClassReference(),
-          methodReferenceWithApiLevel -> {
-            DexMethod method =
-                factory.createMethod(methodReferenceWithApiLevel.getMethodReference());
+          (methodReference, apiLevel) -> {
+            DexMethod method = factory.createMethod(methodReference);
             if (!methodsForApiClass.containsKey(method)) {
-              apiClass.registerMethod(
-                  methodReferenceWithApiLevel.getMethodReference(),
-                  methodReferenceWithApiLevel.getApiLevel());
-              methodsForApiClass.put(method, methodReferenceWithApiLevel.getApiLevel());
+              apiClass.registerMethod(methodReference, apiLevel);
+              methodsForApiClass.put(method, apiLevel);
             }
           });
     }
@@ -263,37 +260,34 @@ public class AndroidApiHashingDatabaseBuilderGeneratorTest extends TestBase {
     for (ParsedApiClass apiClass : apiClasses) {
       lookupMap.put(apiClass.getClassReference(), apiClass);
     }
-    AndroidApiLevelDatabaseTestHelper.visitAdditionalKnownApiReferences(
-        factory,
-        (reference, apiLevel) -> {
-          if (reference.isDexType()) {
-            ClassReference classRef = reference.asDexType().asClassReference();
-            assert !lookupMap.containsKey(classRef) : classRef + " is already registered";
-            ParsedApiClass apiClass = new ParsedApiClass(classRef, apiLevel);
-            lookupMap.put(classRef, apiClass);
+    AndroidApiLevelDatabaseTestHelper.visitAllAdditionalAndHiddenReferences(
+        (classRef, superRef, apiLevel) -> {
+          assert !lookupMap.containsKey(classRef) : classRef + " is already registered";
+          ParsedApiClass apiClass = new ParsedApiClass(classRef, apiLevel);
+          lookupMap.put(classRef, apiClass);
+          apiClasses.add(apiClass);
+        },
+        (methodRef, isStatic, apiLevel) -> {
+          ClassReference holderRef = methodRef.getHolderClass();
+          ParsedApiClass apiClass = lookupMap.get(holderRef);
+          if (apiClass == null) {
+            apiClass = new ParsedApiClass(holderRef, apiLevel);
+            lookupMap.put(holderRef, apiClass);
             apiClasses.add(apiClass);
-          } else if (reference.isDexMethod()) {
-            MethodReference methodRef = reference.asDexMethod().asMethodReference();
-            ClassReference holderRef = methodRef.getHolderClass();
-            ParsedApiClass apiClass = lookupMap.get(holderRef);
-            if (apiClass == null) {
-              apiClass = new ParsedApiClass(holderRef, apiLevel);
-              lookupMap.put(holderRef, apiClass);
-              apiClasses.add(apiClass);
-            }
-            apiClass.registerMethod(methodRef, apiLevel);
-          } else if (reference.isDexField()) {
-            ClassReference holderRef = reference.asDexField().getHolderType().asClassReference();
-            FieldTypelessReference fieldRef =
-                new FieldTypelessReference(holderRef, reference.asDexField().getName().toString());
-            ParsedApiClass apiClass = lookupMap.get(holderRef);
-            if (apiClass == null) {
-              apiClass = new ParsedApiClass(holderRef, apiLevel);
-              lookupMap.put(holderRef, apiClass);
-              apiClasses.add(apiClass);
-            }
-            apiClass.registerField(fieldRef, apiLevel);
           }
+          apiClass.registerMethod(methodRef, apiLevel);
+        },
+        (fieldRef, apiLevel) -> {
+          ClassReference holderRef = fieldRef.getHolderClass();
+          FieldTypelessReference fieldTypelessRef =
+              new FieldTypelessReference(holderRef, fieldRef.getFieldName());
+          ParsedApiClass apiClass = lookupMap.get(holderRef);
+          if (apiClass == null) {
+            apiClass = new ParsedApiClass(holderRef, apiLevel);
+            lookupMap.put(holderRef, apiClass);
+            apiClasses.add(apiClass);
+          }
+          apiClass.registerField(fieldTypelessRef, apiLevel);
         });
   }
 

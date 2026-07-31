@@ -9,17 +9,10 @@ import static org.hamcrest.CoreMatchers.equalTo;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
-import com.android.tools.r8.graph.DexField;
-import com.android.tools.r8.graph.DexItemFactory;
-import com.android.tools.r8.graph.DexMethod;
-import com.android.tools.r8.graph.DexType;
 import com.android.tools.r8.references.ClassReference;
 import com.android.tools.r8.references.FieldReference;
 import com.android.tools.r8.references.MethodReference;
-import com.android.tools.r8.references.Reference;
-import com.android.tools.r8.references.TypeReference;
 import com.android.tools.r8.utils.AndroidApiLevel;
-import com.android.tools.r8.utils.internal.ListUtils;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
@@ -90,30 +83,9 @@ public class SunMiscUnsafeApiTest extends TestBase {
       Map<FieldReference, AndroidApiLevel> fieldApis,
       Map<MethodReference, AndroidApiLevel> methodApis) {
     AndroidApiLevelDatabaseTestHelper.addUnsafeMethods(
-        // A short-lived item factory only used to extract non-canonical Reference-types.
-        new DexItemFactory(),
-        (reference, apiLevel) -> {
-          if (reference.isDexType()) {
-            ClassReference holder = reference.asDexType().asClassReference();
-            classApis.put(holder, apiLevel);
-          } else if (reference.isDexField()) {
-            DexField field = reference.asDexField();
-            ClassReference holder = field.getHolderType().asClassReference();
-            TypeReference fieldType = field.type.asTypeReference();
-            String name = field.name.toString();
-            fieldApis.put(Reference.field(holder, name, fieldType), apiLevel);
-          } else if (reference.isDexMethod()) {
-            DexMethod method = reference.asDexMethod();
-            ClassReference holder = method.getHolderType().asClassReference();
-            TypeReference returnType = method.getReturnType().asTypeReference();
-            List<TypeReference> parameters =
-                ListUtils.map(method.getParameters().values, DexType::asTypeReference);
-            String name = method.name.toString();
-            methodApis.put(Reference.method(holder, name, parameters, returnType), apiLevel);
-          } else {
-            throw new RuntimeException("Unexpected API entry: " + reference);
-          }
-        });
+        (classReference, superReference, apiLevel) -> classApis.put(classReference, apiLevel),
+        (methodReference, isStatic, apiLevel) -> methodApis.put(methodReference, apiLevel),
+        fieldApis::put);
   }
 
   static class TestClass {

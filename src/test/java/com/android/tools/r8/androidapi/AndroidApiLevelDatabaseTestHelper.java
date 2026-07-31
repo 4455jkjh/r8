@@ -4,13 +4,19 @@
 
 package com.android.tools.r8.androidapi;
 
-import com.android.tools.r8.graph.DexItemFactory;
-import com.android.tools.r8.graph.DexProto;
-import com.android.tools.r8.graph.DexReference;
-import com.android.tools.r8.graph.DexType;
+import com.android.tools.r8.references.ClassReference;
+import com.android.tools.r8.references.FieldReference;
+import com.android.tools.r8.references.MethodReference;
+import com.android.tools.r8.references.PrimitiveReference;
+import com.android.tools.r8.references.Reference;
+import com.android.tools.r8.references.TypeReference;
 import com.android.tools.r8.utils.AndroidApiLevel;
+import com.android.tools.r8.utils.internal.TriConsumer;
+import com.google.common.collect.ImmutableList;
+import java.lang.reflect.Field;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiConsumer;
 
 public class AndroidApiLevelDatabaseTestHelper {
@@ -67,118 +73,122 @@ public class AndroidApiLevelDatabaseTestHelper {
     return notModelledMethods;
   }
 
+  /** These methods are missing from api-versions.xml but present in android.jar. */
   public static void visitAdditionalKnownApiReferences(
-      DexItemFactory factory, BiConsumer<DexReference, AndroidApiLevel> apiLevelConsumer) {
-    addStringBuilderAndBufferMethods(factory, apiLevelConsumer);
-    addConcurrentKeySetViewMethods(factory, apiLevelConsumer);
-    addNfcMethods(factory, apiLevelConsumer);
-    addWebkitCookieSyncManagerMethods(factory, apiLevelConsumer);
-    addChronoTimeMethods(factory, apiLevelConsumer);
-    addUnsafeMethods(factory, apiLevelConsumer);
+      BiConsumer<MethodReference, AndroidApiLevel> methodConsumer) {
+    addStringBuilderAndBufferMethods(methodConsumer);
+    addConcurrentKeySetViewMethods(methodConsumer);
+    addNfcMethods(methodConsumer);
+    addWebkitCookieSyncManagerMethods(methodConsumer);
+    addChronoTimeMethods(methodConsumer);
+  }
+
+  /**
+   * These entries are present at runtime but absent from api-versions.xml and android.jar.
+   *
+   * <p>It is assumed that
+   *
+   * <ul>
+   *   <li>No class implements an interface.
+   *   <li>No class is an interface.
+   * </ul>
+   */
+  public static void visitHiddenReferences(
+      TriConsumer<ClassReference, ClassReference, AndroidApiLevel> classConsumer,
+      TriConsumer<MethodReference, Boolean, AndroidApiLevel> methodConsumer,
+      BiConsumer<FieldReference, AndroidApiLevel> fieldConsumer) {
+    addUnsafeMethods(classConsumer, methodConsumer, fieldConsumer);
+  }
+
+  public static void visitAllAdditionalAndHiddenReferences(
+      TriConsumer<ClassReference, ClassReference, AndroidApiLevel> classConsumer,
+      TriConsumer<MethodReference, Boolean, AndroidApiLevel> methodConsumer,
+      BiConsumer<FieldReference, AndroidApiLevel> fieldConsumer) {
+    visitHiddenReferences(classConsumer, methodConsumer, fieldConsumer);
+    visitAdditionalKnownApiReferences(
+        (methodRef, apiLevel) -> methodConsumer.accept(methodRef, false, apiLevel));
   }
 
   private static void addStringBuilderAndBufferMethods(
-      DexItemFactory factory, BiConsumer<DexReference, AndroidApiLevel> apiLevelConsumer) {
+      BiConsumer<MethodReference, AndroidApiLevel> methodConsumer) {
+    TypeReference intType = Reference.primitiveFromDescriptor("I");
+    TypeReference charType = Reference.primitiveFromDescriptor("C");
+    TypeReference voidType = Reference.returnTypeFromDescriptor("V");
+    TypeReference stringType =
+        Reference.typeFromClassReference(Reference.classFromClass(String.class));
+    TypeReference charArrayType = Reference.typeFromDescriptor("[C");
     // StringBuilder and StringBuffer lack api definitions for the exact same methods in
     // api-versions.xml. See b/216587554 for related error.
-    for (DexType type : new DexType[] {factory.stringBuilderType, factory.stringBufferType}) {
-      apiLevelConsumer.accept(
-          factory.createMethod(type, factory.createProto(factory.intType), "capacity"),
+    ClassReference[] classes = {
+      Reference.classFromClass(StringBuilder.class), Reference.classFromClass(StringBuffer.class)
+    };
+    for (ClassReference type : classes) {
+      methodConsumer.accept(
+          Reference.method(type, "capacity", ImmutableList.of(), intType), AndroidApiLevel.B);
+      methodConsumer.accept(
+          Reference.method(type, "codePointAt", ImmutableList.of(intType), intType),
           AndroidApiLevel.B);
-      apiLevelConsumer.accept(
-          factory.createMethod(
-              type, factory.createProto(factory.intType, factory.intType), "codePointAt"),
+      methodConsumer.accept(
+          Reference.method(type, "codePointBefore", ImmutableList.of(intType), intType),
           AndroidApiLevel.B);
-      apiLevelConsumer.accept(
-          factory.createMethod(
-              type, factory.createProto(factory.intType, factory.intType), "codePointBefore"),
+      methodConsumer.accept(
+          Reference.method(type, "codePointCount", ImmutableList.of(intType, intType), intType),
           AndroidApiLevel.B);
-      apiLevelConsumer.accept(
-          factory.createMethod(
+      methodConsumer.accept(
+          Reference.method(type, "ensureCapacity", ImmutableList.of(intType), voidType),
+          AndroidApiLevel.B);
+      methodConsumer.accept(
+          Reference.method(
               type,
-              factory.createProto(factory.intType, factory.intType, factory.intType),
-              "codePointCount"),
+              "getChars",
+              ImmutableList.of(intType, intType, charArrayType, intType),
+              voidType),
           AndroidApiLevel.B);
-      apiLevelConsumer.accept(
-          factory.createMethod(
-              type, factory.createProto(factory.voidType, factory.intType), "ensureCapacity"),
+      methodConsumer.accept(
+          Reference.method(type, "indexOf", ImmutableList.of(stringType), intType),
           AndroidApiLevel.B);
-      apiLevelConsumer.accept(
-          factory.createMethod(
-              type,
-              factory.createProto(
-                  factory.voidType,
-                  factory.intType,
-                  factory.intType,
-                  factory.charArrayType,
-                  factory.intType),
-              "getChars"),
+      methodConsumer.accept(
+          Reference.method(type, "indexOf", ImmutableList.of(stringType, intType), intType),
           AndroidApiLevel.B);
-      apiLevelConsumer.accept(
-          factory.createMethod(
-              type, factory.createProto(factory.intType, factory.stringType), "indexOf"),
+      methodConsumer.accept(
+          Reference.method(type, "lastIndexOf", ImmutableList.of(stringType), intType),
           AndroidApiLevel.B);
-      apiLevelConsumer.accept(
-          factory.createMethod(
-              type,
-              factory.createProto(factory.intType, factory.stringType, factory.intType),
-              "indexOf"),
+      methodConsumer.accept(
+          Reference.method(type, "lastIndexOf", ImmutableList.of(stringType, intType), intType),
           AndroidApiLevel.B);
-      apiLevelConsumer.accept(
-          factory.createMethod(
-              type, factory.createProto(factory.intType, factory.stringType), "lastIndexOf"),
+      methodConsumer.accept(
+          Reference.method(type, "offsetByCodePoints", ImmutableList.of(intType, intType), intType),
           AndroidApiLevel.B);
-      apiLevelConsumer.accept(
-          factory.createMethod(
-              type,
-              factory.createProto(factory.intType, factory.stringType, factory.intType),
-              "lastIndexOf"),
+      methodConsumer.accept(
+          Reference.method(type, "setCharAt", ImmutableList.of(intType, charType), voidType),
           AndroidApiLevel.B);
-      apiLevelConsumer.accept(
-          factory.createMethod(
-              type,
-              factory.createProto(factory.intType, factory.intType, factory.intType),
-              "offsetByCodePoints"),
+      methodConsumer.accept(
+          Reference.method(type, "setLength", ImmutableList.of(intType), voidType),
           AndroidApiLevel.B);
-      apiLevelConsumer.accept(
-          factory.createMethod(
-              type,
-              factory.createProto(factory.voidType, factory.intType, factory.charType),
-              "setCharAt"),
+      methodConsumer.accept(
+          Reference.method(type, "substring", ImmutableList.of(intType), stringType),
           AndroidApiLevel.B);
-      apiLevelConsumer.accept(
-          factory.createMethod(
-              type, factory.createProto(factory.voidType, factory.intType), "setLength"),
+      methodConsumer.accept(
+          Reference.method(type, "substring", ImmutableList.of(intType, intType), stringType),
           AndroidApiLevel.B);
-      apiLevelConsumer.accept(
-          factory.createMethod(
-              type, factory.createProto(factory.stringType, factory.intType), "substring"),
-          AndroidApiLevel.B);
-      apiLevelConsumer.accept(
-          factory.createMethod(
-              type,
-              factory.createProto(factory.stringType, factory.intType, factory.intType),
-              "substring"),
-          AndroidApiLevel.B);
-      apiLevelConsumer.accept(
-          factory.createMethod(type, factory.createProto(factory.voidType), "trimToSize"),
-          AndroidApiLevel.B);
+      methodConsumer.accept(
+          Reference.method(type, "trimToSize", ImmutableList.of(), voidType), AndroidApiLevel.B);
     }
   }
 
   private static void addConcurrentKeySetViewMethods(
-      DexItemFactory factory, BiConsumer<DexReference, AndroidApiLevel> apiLevelConsumer) {
+      BiConsumer<MethodReference, AndroidApiLevel> methodConsumer) {
     // KeysetView.getMap was also added in N (24).
-    apiLevelConsumer.accept(
-        factory.createMethod(
-            factory.concurrentHashMapKeySetViewType,
-            factory.createProto(factory.concurrentHashMapType),
-            "getMap"),
+    methodConsumer.accept(
+        Reference.method(
+            Reference.classFromDescriptor("Ljava/util/concurrent/ConcurrentHashMap$KeySetView;"),
+            "getMap",
+            ImmutableList.of(),
+            Reference.typeFromClassReference(Reference.classFromClass(ConcurrentHashMap.class))),
         AndroidApiLevel.N);
   }
 
-  private static void addNfcMethods(
-      DexItemFactory factory, BiConsumer<DexReference, AndroidApiLevel> apiLevelConsumer) {
+  private static void addNfcMethods(BiConsumer<MethodReference, AndroidApiLevel> methodConsumer) {
     String[] nfcClasses =
         new String[] {
           "Landroid/nfc/tech/Ndef;",
@@ -192,47 +202,56 @@ public class AndroidApiLevelDatabaseTestHelper {
           "Landroid/nfc/tech/MifareUltralight;",
           "Landroid/nfc/tech/NfcV;"
         };
-    DexType tagType = factory.createType("Landroid/nfc/Tag;");
+    TypeReference tagType = Reference.typeFromDescriptor("Landroid/nfc/Tag;");
+    PrimitiveReference boolType = Reference.primitiveFromDescriptor("Z");
+    TypeReference voidType = Reference.returnTypeFromDescriptor("V");
     // Seems like all methods are available from api level G_MR1 but we choose K since some of these
     // classes are introduced at 17.
     for (String nfcClass : nfcClasses) {
-      DexType nfcClassType = factory.createType(nfcClass);
-      apiLevelConsumer.accept(
-          factory.createMethod(
-              nfcClassType, factory.createProto(factory.booleanType), "isConnected"),
+      ClassReference nfcClassType = Reference.classFromDescriptor(nfcClass);
+      methodConsumer.accept(
+          Reference.method(nfcClassType, "isConnected", ImmutableList.of(), boolType),
           AndroidApiLevel.K);
-      apiLevelConsumer.accept(
-          factory.createMethod(nfcClassType, factory.createProto(tagType), "getTag"),
-          AndroidApiLevel.K);
-      apiLevelConsumer.accept(
-          factory.createMethod(nfcClassType, factory.createProto(factory.voidType), "close"),
-          AndroidApiLevel.K);
-      apiLevelConsumer.accept(
-          factory.createMethod(nfcClassType, factory.createProto(factory.voidType), "connect"),
+      methodConsumer.accept(
+          Reference.method(nfcClassType, "getTag", ImmutableList.of(), tagType), AndroidApiLevel.K);
+      methodConsumer.accept(
+          Reference.method(nfcClassType, "close", ImmutableList.of(), voidType), AndroidApiLevel.K);
+      methodConsumer.accept(
+          Reference.method(nfcClassType, "connect", ImmutableList.of(), voidType),
           AndroidApiLevel.K);
     }
   }
 
   private static void addWebkitCookieSyncManagerMethods(
-      DexItemFactory factory, BiConsumer<DexReference, AndroidApiLevel> apiLevelConsumer) {
+      BiConsumer<MethodReference, AndroidApiLevel> methodConsumer) {
+    TypeReference voidType = Reference.returnTypeFromDescriptor("V");
     // All of these are added in android.jar from at least 14.
-    DexType cookieSyncManager = factory.createType("Landroid/webkit/CookieSyncManager;");
-    DexProto voidProto = factory.createProto(factory.voidType);
+    ClassReference cookieSyncManager =
+        Reference.classFromDescriptor("Landroid/webkit/CookieSyncManager;");
     for (String methodName : new String[] {"sync", "resetSync", "startSync", "stopSync", "run"}) {
-      apiLevelConsumer.accept(
-          factory.createMethod(cookieSyncManager, voidProto, methodName), AndroidApiLevel.I);
+      methodConsumer.accept(
+          Reference.method(cookieSyncManager, methodName, ImmutableList.of(), voidType),
+          AndroidApiLevel.I);
     }
   }
 
   private static void addChronoTimeMethods(
-      DexItemFactory factory, BiConsumer<DexReference, AndroidApiLevel> apiLevelConsumer) {
-    DexType valueRangeType = factory.createType("Ljava/time/temporal/ValueRange;");
-    DexType chronoLocalDateType = factory.createType("Ljava/time/chrono/ChronoLocalDate;");
-    DexType temporalType = factory.createType("Ljava/time/temporal/Temporal;");
-    DexType temporalFieldType = factory.createType("Ljava/time/temporal/TemporalField;");
-    DexType temporalUnitType = factory.createType("Ljava/time/temporal/TemporalUnit;");
-    DexType temporalAmountType = factory.createType("Ljava/time/temporal/TemporalAmount;");
-    DexType temporalAdjusterType = factory.createType("Ljava/time/temporal/TemporalAdjuster;");
+      BiConsumer<MethodReference, AndroidApiLevel> methodConsumer) {
+    TypeReference valueRangeType = Reference.typeFromDescriptor("Ljava/time/temporal/ValueRange;");
+    TypeReference chronoLocalDateType =
+        Reference.typeFromDescriptor("Ljava/time/chrono/ChronoLocalDate;");
+    TypeReference temporalType = Reference.typeFromDescriptor("Ljava/time/temporal/Temporal;");
+    TypeReference temporalFieldType =
+        Reference.typeFromDescriptor("Ljava/time/temporal/TemporalField;");
+    TypeReference temporalUnitType =
+        Reference.typeFromDescriptor("Ljava/time/temporal/TemporalUnit;");
+    TypeReference temporalAmountType =
+        Reference.typeFromDescriptor("Ljava/time/temporal/TemporalAmount;");
+    TypeReference temporalAdjusterType =
+        Reference.typeFromDescriptor("Ljava/time/temporal/TemporalAdjuster;");
+    TypeReference intType = Reference.primitiveFromDescriptor("I");
+    TypeReference booleanType = Reference.primitiveFromDescriptor("Z");
+    TypeReference longType = Reference.primitiveFromDescriptor("J");
 
     // All of these classes was added in 26.
     String[] timeClasses =
@@ -243,126 +262,117 @@ public class AndroidApiLevelDatabaseTestHelper {
           "Ljava/time/chrono/ThaiBuddhistDate;"
         };
     for (String timeClass : timeClasses) {
-      DexType timeType = factory.createType(timeClass);
+      ClassReference timeType = Reference.classFromDescriptor(timeClass);
       // int lengthOfMonth()
-      apiLevelConsumer.accept(
-          factory.createMethod(timeType, factory.createProto(factory.intType), "lengthOfMonth"),
+      methodConsumer.accept(
+          Reference.method(timeType, "lengthOfMonth", ImmutableList.of(), intType),
           AndroidApiLevel.O);
       // int lengthOfYear()
-      apiLevelConsumer.accept(
-          factory.createMethod(timeType, factory.createProto(factory.intType), "lengthOfYear"),
+      methodConsumer.accept(
+          Reference.method(timeType, "lengthOfYear", ImmutableList.of(), intType),
           AndroidApiLevel.O);
       // boolean isSupported(java.time.temporal.TemporalField)
-      apiLevelConsumer.accept(
-          factory.createMethod(
-              timeType, factory.createProto(factory.booleanType, temporalFieldType), "isSupported"),
+      methodConsumer.accept(
+          Reference.method(
+              timeType, "isSupported", ImmutableList.of(temporalFieldType), booleanType),
           AndroidApiLevel.O);
       // java.time.temporal.ValueRange range(java.time.temporal.TemporalField)
-      apiLevelConsumer.accept(
-          factory.createMethod(
-              timeType, factory.createProto(valueRangeType, temporalFieldType), "range"),
+      methodConsumer.accept(
+          Reference.method(timeType, "range", ImmutableList.of(temporalFieldType), valueRangeType),
           AndroidApiLevel.O);
       // long getLong(java.time.temporal.TemporalField)
-      apiLevelConsumer.accept(
-          factory.createMethod(
-              timeType, factory.createProto(factory.longType, temporalFieldType), "getLong"),
+      methodConsumer.accept(
+          Reference.method(timeType, "getLong", ImmutableList.of(temporalFieldType), longType),
           AndroidApiLevel.O);
       // java.time.chrono.ChronoLocalDateTime atTime(java.time.LocalTime)
-      apiLevelConsumer.accept(
-          factory.createMethod(
+      methodConsumer.accept(
+          Reference.method(
               timeType,
-              factory.createProto(
-                  factory.createType("Ljava/time/chrono/ChronoLocalDateTime;"),
-                  factory.createType("Ljava/time/LocalTime;")),
-              "atTime"),
+              "atTime",
+              ImmutableList.of(Reference.typeFromDescriptor("Ljava/time/LocalTime;")),
+              Reference.typeFromDescriptor("Ljava/time/chrono/ChronoLocalDateTime;")),
           AndroidApiLevel.O);
       // java.time.chrono.ChronoPeriod
       // java.time.chrono.JapaneseDate.until(java.time.chrono.ChronoLocalDate)
-      apiLevelConsumer.accept(
-          factory.createMethod(
+      methodConsumer.accept(
+          Reference.method(
               timeType,
-              factory.createProto(
-                  factory.createType("Ljava/time/chrono/ChronoPeriod;"), chronoLocalDateType),
-              "until"),
+              "until",
+              ImmutableList.of(chronoLocalDateType),
+              Reference.typeFromDescriptor("Ljava/time/chrono/ChronoPeriod;")),
           AndroidApiLevel.O);
       // long toEpochDay()
-      apiLevelConsumer.accept(
-          factory.createMethod(timeType, factory.createProto(factory.longType), "toEpochDay"),
+      methodConsumer.accept(
+          Reference.method(timeType, "toEpochDay", ImmutableList.of(), longType),
           AndroidApiLevel.O);
       // long until(java.time.temporal.Temporal, java.time.temporal.TemporalUnit)
-      apiLevelConsumer.accept(
-          factory.createMethod(
-              timeType,
-              factory.createProto(factory.longType, temporalType, temporalUnitType),
-              "until"),
+      methodConsumer.accept(
+          Reference.method(
+              timeType, "until", ImmutableList.of(temporalType, temporalUnitType), longType),
           AndroidApiLevel.O);
 
       // java.time.chrono.Era getEra()
-      apiLevelConsumer.accept(
-          factory.createMethod(
+      methodConsumer.accept(
+          Reference.method(
               timeType,
-              factory.createProto(factory.createType("Ljava/time/chrono/Era;")),
-              "getEra"),
+              "getEra",
+              ImmutableList.of(),
+              Reference.typeFromDescriptor("Ljava/time/chrono/Era;")),
           AndroidApiLevel.O);
       // java.time.chrono.Chronology getChronology()
-      apiLevelConsumer.accept(
-          factory.createMethod(
+      methodConsumer.accept(
+          Reference.method(
               timeType,
-              factory.createProto(factory.createType("Ljava/time/chrono/Chronology;")),
-              "getChronology"),
+              "getChronology",
+              ImmutableList.of(),
+              Reference.typeFromDescriptor("Ljava/time/chrono/Chronology;")),
           AndroidApiLevel.O);
-      DexType[] returnTypesForModificationMethods =
-          new DexType[] {chronoLocalDateType, temporalType};
-      for (DexType returnType : returnTypesForModificationMethods) {
+      TypeReference[] returnTypesForModificationMethods =
+          new TypeReference[] {chronoLocalDateType, temporalType};
+      for (TypeReference returnType : returnTypesForModificationMethods) {
         // [returnType] minus(long, java.time.temporal.TemporalUnit)
-        apiLevelConsumer.accept(
-            factory.createMethod(
-                timeType,
-                factory.createProto(returnType, factory.longType, temporalUnitType),
-                "minus"),
+        methodConsumer.accept(
+            Reference.method(
+                timeType, "minus", ImmutableList.of(longType, temporalUnitType), returnType),
             AndroidApiLevel.O);
         // [returnType] minus(java.time.temporal.TemporalAmount)
-        apiLevelConsumer.accept(
-            factory.createMethod(
-                timeType, factory.createProto(returnType, temporalAmountType), "minus"),
+        methodConsumer.accept(
+            Reference.method(timeType, "minus", ImmutableList.of(temporalAmountType), returnType),
             AndroidApiLevel.O);
         // [returnType] plus(long, java.time.temporal.TemporalUnit)
-        apiLevelConsumer.accept(
-            factory.createMethod(
-                timeType,
-                factory.createProto(returnType, factory.longType, temporalUnitType),
-                "plus"),
+        methodConsumer.accept(
+            Reference.method(
+                timeType, "plus", ImmutableList.of(longType, temporalUnitType), returnType),
             AndroidApiLevel.O);
         // [returnType] plus(java.time.temporal.TemporalAmount)
-        apiLevelConsumer.accept(
-            factory.createMethod(
-                timeType, factory.createProto(returnType, temporalAmountType), "plus"),
+        methodConsumer.accept(
+            Reference.method(timeType, "plus", ImmutableList.of(temporalAmountType), returnType),
             AndroidApiLevel.O);
         // [returnType] with(java.time.temporal.TemporalField, long)
-        apiLevelConsumer.accept(
-            factory.createMethod(
-                timeType,
-                factory.createProto(returnType, temporalFieldType, factory.longType),
-                "with"),
+        methodConsumer.accept(
+            Reference.method(
+                timeType, "with", ImmutableList.of(temporalFieldType, longType), returnType),
             AndroidApiLevel.O);
         // [returnType] with(java.time.temporal.TemporalAdjuster)
-        apiLevelConsumer.accept(
-            factory.createMethod(
-                timeType, factory.createProto(returnType, temporalAdjusterType), "with"),
+        methodConsumer.accept(
+            Reference.method(timeType, "with", ImmutableList.of(temporalAdjusterType), returnType),
             AndroidApiLevel.O);
       }
     }
     // boolean java.time.chrono.HijrahDate.isLeapYear()
-    apiLevelConsumer.accept(
-        factory.createMethod(
-            factory.createType("Ljava/time/chrono/HijrahDate;"),
-            factory.createProto(factory.booleanType),
-            "isLeapYear"),
+    methodConsumer.accept(
+        Reference.method(
+            Reference.classFromDescriptor("Ljava/time/chrono/HijrahDate;"),
+            "isLeapYear",
+            ImmutableList.of(),
+            booleanType),
         AndroidApiLevel.O);
   }
 
   public static void addUnsafeMethods(
-      DexItemFactory factory, BiConsumer<DexReference, AndroidApiLevel> apiLevelConsumer) {
+      TriConsumer<ClassReference, ClassReference, AndroidApiLevel> classConsumer,
+      TriConsumer<MethodReference, Boolean, AndroidApiLevel> methodConsumer,
+      BiConsumer<FieldReference, AndroidApiLevel> fieldConsumer) {
     // If this assert fails then check these things before updating the assert:
     //   * Check if libcore/ojluni/src/main/java/sun/misc/Unsafe.java has new public methods,
     //     including new overloads.
@@ -371,384 +381,431 @@ public class AndroidApiLevelDatabaseTestHelper {
     //   * Verify that no existing methods have been removed.
     assert AndroidApiLevel.LATEST.isEqualTo(AndroidApiLevel.CINNAMON_BUN);
 
-    AndroidApiLevel always = AndroidApiLevel.B;
+    TypeReference intType = Reference.primitiveFromDescriptor("I");
+    TypeReference longType = Reference.primitiveFromDescriptor("J");
+    TypeReference doubleType = Reference.primitiveFromDescriptor("D");
+    TypeReference floatType = Reference.primitiveFromDescriptor("F");
+    TypeReference byteType = Reference.primitiveFromDescriptor("B");
+    TypeReference shortType = Reference.primitiveFromDescriptor("S");
+    TypeReference charType = Reference.primitiveFromDescriptor("C");
+    TypeReference booleanType = Reference.primitiveFromDescriptor("Z");
+    TypeReference voidType = Reference.returnTypeFromDescriptor("V");
+    TypeReference objectType =
+        Reference.typeFromClassReference(Reference.classFromClass(Object.class));
+    TypeReference classType =
+        Reference.typeFromClassReference(Reference.classFromClass(Class.class));
+    TypeReference fieldType =
+        Reference.typeFromClassReference(Reference.classFromClass(Field.class));
 
-    apiLevelConsumer.accept(factory.sunMiscUnsafeType, always);
+    AndroidApiLevel always = AndroidApiLevel.B;
+    ClassReference sunMiscUnsafeType = Reference.classFromDescriptor("Lsun/misc/Unsafe;");
+
+    classConsumer.accept(sunMiscUnsafeType, Reference.classFromClass(Object.class), always);
 
     // Fields
-    apiLevelConsumer.accept(
-        factory.createField(factory.sunMiscUnsafeType, factory.intType, "INVALID_FIELD_OFFSET"),
-        AndroidApiLevel.N);
+    fieldConsumer.accept(
+        Reference.field(sunMiscUnsafeType, "INVALID_FIELD_OFFSET", intType), AndroidApiLevel.N);
 
     // Methods
-    apiLevelConsumer.accept(
-        factory.createMethod(
-            factory.sunMiscUnsafeType, factory.createProto(factory.intType), "addressSize"),
+    methodConsumer.accept(
+        Reference.method(sunMiscUnsafeType, "addressSize", ImmutableList.of(), intType),
+        false,
         AndroidApiLevel.N);
-    apiLevelConsumer.accept(
-        factory.createMethod(
-            factory.sunMiscUnsafeType,
-            factory.createProto(factory.objectType, factory.classType),
-            "allocateInstance"),
+    methodConsumer.accept(
+        Reference.method(
+            sunMiscUnsafeType, "allocateInstance", ImmutableList.of(classType), objectType),
+        false,
         AndroidApiLevel.J);
-    apiLevelConsumer.accept(
-        factory.createMethod(
-            factory.sunMiscUnsafeType,
-            factory.createProto(factory.longType, factory.longType),
-            "allocateMemory"),
+    methodConsumer.accept(
+        Reference.method(sunMiscUnsafeType, "allocateMemory", ImmutableList.of(longType), longType),
+        false,
         AndroidApiLevel.N);
-    apiLevelConsumer.accept(
-        factory.createMethod(
-            factory.sunMiscUnsafeType,
-            factory.createProto(factory.intType, factory.classType),
-            "arrayBaseOffset"),
+    methodConsumer.accept(
+        Reference.method(
+            sunMiscUnsafeType, "arrayBaseOffset", ImmutableList.of(classType), intType),
+        false,
         always);
-    apiLevelConsumer.accept(
-        factory.createMethod(
-            factory.sunMiscUnsafeType,
-            factory.createProto(factory.intType, factory.classType),
-            "arrayIndexScale"),
+    methodConsumer.accept(
+        Reference.method(
+            sunMiscUnsafeType, "arrayIndexScale", ImmutableList.of(classType), intType),
+        false,
         always);
-    apiLevelConsumer.accept(factory.sunMiscUnsafeMethods.compareAndSwapInt, always);
-    apiLevelConsumer.accept(factory.sunMiscUnsafeMethods.compareAndSwapLong, always);
-    apiLevelConsumer.accept(factory.sunMiscUnsafeMethods.compareAndSwapObject, always);
-    apiLevelConsumer.accept(
-        factory.createMethod(
-            factory.sunMiscUnsafeType,
-            factory.createProto(
-                factory.voidType, factory.longType, factory.longType, factory.longType),
-            "copyMemory"),
-        AndroidApiLevel.N);
-    apiLevelConsumer.accept(
-        factory.createMethod(
-            factory.sunMiscUnsafeType,
-            factory.createProto(
-                factory.voidType,
-                factory.objectType,
-                factory.longType,
-                factory.longType,
-                factory.longType),
-            "copyMemoryFromPrimitiveArray"),
-        AndroidApiLevel.N);
-    apiLevelConsumer.accept(
-        factory.createMethod(
-            factory.sunMiscUnsafeType,
-            factory.createProto(
-                factory.voidType,
-                factory.longType,
-                factory.objectType,
-                factory.longType,
-                factory.longType),
-            "copyMemoryToPrimitiveArray"),
-        AndroidApiLevel.N);
-    apiLevelConsumer.accept(
-        factory.createMethod(
-            factory.sunMiscUnsafeType,
-            factory.createProto(factory.voidType, factory.longType),
-            "freeMemory"),
-        AndroidApiLevel.N);
-    apiLevelConsumer.accept(
-        factory.createMethod(
-            factory.sunMiscUnsafeType, factory.createProto(factory.voidType), "fullFence"),
-        AndroidApiLevel.N);
-    apiLevelConsumer.accept(
-        factory.createMethod(
-            factory.sunMiscUnsafeType,
-            factory.createProto(
-                factory.intType, factory.objectType, factory.longType, factory.intType),
-            "getAndAddInt"),
-        AndroidApiLevel.N);
-    apiLevelConsumer.accept(
-        factory.createMethod(
-            factory.sunMiscUnsafeType,
-            factory.createProto(
-                factory.longType, factory.objectType, factory.longType, factory.longType),
-            "getAndAddLong"),
-        AndroidApiLevel.N);
-    apiLevelConsumer.accept(
-        factory.createMethod(
-            factory.sunMiscUnsafeType,
-            factory.createProto(
-                factory.intType, factory.objectType, factory.longType, factory.intType),
-            "getAndSetInt"),
-        AndroidApiLevel.N);
-    apiLevelConsumer.accept(
-        factory.createMethod(
-            factory.sunMiscUnsafeType,
-            factory.createProto(
-                factory.longType, factory.objectType, factory.longType, factory.longType),
-            "getAndSetLong"),
-        AndroidApiLevel.N);
-    apiLevelConsumer.accept(
-        factory.createMethod(
-            factory.sunMiscUnsafeType,
-            factory.createProto(
-                factory.objectType, factory.objectType, factory.longType, factory.objectType),
-            "getAndSetObject"),
-        AndroidApiLevel.N);
-    apiLevelConsumer.accept(
-        factory.createMethod(
-            factory.sunMiscUnsafeType,
-            factory.createProto(factory.booleanType, factory.objectType, factory.longType),
-            "getBoolean"),
-        AndroidApiLevel.N);
-    apiLevelConsumer.accept(
-        factory.createMethod(
-            factory.sunMiscUnsafeType,
-            factory.createProto(factory.byteType, factory.longType),
-            "getByte"),
-        AndroidApiLevel.N);
-    apiLevelConsumer.accept(
-        factory.createMethod(
-            factory.sunMiscUnsafeType,
-            factory.createProto(factory.byteType, factory.objectType, factory.longType),
-            "getByte"),
-        AndroidApiLevel.N);
-    apiLevelConsumer.accept(
-        factory.createMethod(
-            factory.sunMiscUnsafeType,
-            factory.createProto(factory.charType, factory.longType),
-            "getChar"),
-        AndroidApiLevel.N);
-    apiLevelConsumer.accept(
-        factory.createMethod(
-            factory.sunMiscUnsafeType,
-            factory.createProto(factory.charType, factory.objectType, factory.longType),
-            "getChar"),
-        AndroidApiLevel.N);
-    apiLevelConsumer.accept(
-        factory.createMethod(
-            factory.sunMiscUnsafeType,
-            factory.createProto(factory.doubleType, factory.longType),
-            "getDouble"),
-        AndroidApiLevel.N);
-    apiLevelConsumer.accept(
-        factory.createMethod(
-            factory.sunMiscUnsafeType,
-            factory.createProto(factory.doubleType, factory.objectType, factory.longType),
-            "getDouble"),
-        AndroidApiLevel.N);
-    apiLevelConsumer.accept(
-        factory.createMethod(
-            factory.sunMiscUnsafeType,
-            factory.createProto(factory.floatType, factory.longType),
-            "getFloat"),
-        AndroidApiLevel.N);
-    apiLevelConsumer.accept(
-        factory.createMethod(
-            factory.sunMiscUnsafeType,
-            factory.createProto(factory.floatType, factory.objectType, factory.longType),
-            "getFloat"),
-        AndroidApiLevel.N);
-    apiLevelConsumer.accept(
-        factory.createMethod(
-            factory.sunMiscUnsafeType,
-            factory.createProto(factory.intType, factory.longType),
-            "getInt"),
-        AndroidApiLevel.N);
-    apiLevelConsumer.accept(
-        factory.createMethod(
-            factory.sunMiscUnsafeType,
-            factory.createProto(factory.intType, factory.objectType, factory.longType),
-            "getInt"),
+    methodConsumer.accept(
+        Reference.method(
+            sunMiscUnsafeType,
+            "compareAndSwapInt",
+            ImmutableList.of(objectType, longType, intType, intType),
+            booleanType),
+        false,
         always);
-    apiLevelConsumer.accept(factory.sunMiscUnsafeMethods.getIntVolatile, always);
-    apiLevelConsumer.accept(
-        factory.createMethod(
-            factory.sunMiscUnsafeType,
-            factory.createProto(factory.longType, factory.longType),
-            "getLong"),
-        AndroidApiLevel.N);
-    apiLevelConsumer.accept(
-        factory.createMethod(
-            factory.sunMiscUnsafeType,
-            factory.createProto(factory.longType, factory.objectType, factory.longType),
-            "getLong"),
+    methodConsumer.accept(
+        Reference.method(
+            sunMiscUnsafeType,
+            "compareAndSwapLong",
+            ImmutableList.of(objectType, longType, longType, longType),
+            booleanType),
+        false,
         always);
-    apiLevelConsumer.accept(factory.sunMiscUnsafeMethods.getLongVolatile, always);
-    apiLevelConsumer.accept(
-        factory.createMethod(
-            factory.sunMiscUnsafeType,
-            factory.createProto(factory.objectType, factory.objectType, factory.longType),
-            "getObject"),
+    methodConsumer.accept(
+        Reference.method(
+            sunMiscUnsafeType,
+            "compareAndSwapObject",
+            ImmutableList.of(objectType, longType, objectType, objectType),
+            booleanType),
+        false,
         always);
-    apiLevelConsumer.accept(factory.sunMiscUnsafeMethods.getObjectVolatile, always);
-    apiLevelConsumer.accept(
-        factory.createMethod(
-            factory.sunMiscUnsafeType,
-            factory.createProto(factory.shortType, factory.longType),
-            "getShort"),
+    methodConsumer.accept(
+        Reference.method(
+            sunMiscUnsafeType,
+            "copyMemory",
+            ImmutableList.of(longType, longType, longType),
+            voidType),
+        false,
         AndroidApiLevel.N);
-    apiLevelConsumer.accept(
-        factory.createMethod(
-            factory.sunMiscUnsafeType,
-            factory.createProto(factory.shortType, factory.objectType, factory.longType),
-            "getShort"),
+    methodConsumer.accept(
+        Reference.method(
+            sunMiscUnsafeType,
+            "copyMemoryFromPrimitiveArray",
+            ImmutableList.of(objectType, longType, longType, longType),
+            voidType),
+        false,
         AndroidApiLevel.N);
-    apiLevelConsumer.accept(
-        factory.createMethod(
-            factory.sunMiscUnsafeType, factory.createProto(factory.sunMiscUnsafeType), "getUnsafe"),
+    methodConsumer.accept(
+        Reference.method(
+            sunMiscUnsafeType,
+            "copyMemoryToPrimitiveArray",
+            ImmutableList.of(longType, objectType, longType, longType),
+            voidType),
+        false,
+        AndroidApiLevel.N);
+    methodConsumer.accept(
+        Reference.method(sunMiscUnsafeType, "freeMemory", ImmutableList.of(longType), voidType),
+        false,
+        AndroidApiLevel.N);
+    methodConsumer.accept(
+        Reference.method(sunMiscUnsafeType, "fullFence", ImmutableList.of(), voidType),
+        false,
+        AndroidApiLevel.N);
+    methodConsumer.accept(
+        Reference.method(
+            sunMiscUnsafeType,
+            "getAndAddInt",
+            ImmutableList.of(objectType, longType, intType),
+            intType),
+        false,
+        AndroidApiLevel.N);
+    methodConsumer.accept(
+        Reference.method(
+            sunMiscUnsafeType,
+            "getAndAddLong",
+            ImmutableList.of(objectType, longType, longType),
+            longType),
+        false,
+        AndroidApiLevel.N);
+    methodConsumer.accept(
+        Reference.method(
+            sunMiscUnsafeType,
+            "getAndSetInt",
+            ImmutableList.of(objectType, longType, intType),
+            intType),
+        false,
+        AndroidApiLevel.N);
+    methodConsumer.accept(
+        Reference.method(
+            sunMiscUnsafeType,
+            "getAndSetLong",
+            ImmutableList.of(objectType, longType, longType),
+            longType),
+        false,
+        AndroidApiLevel.N);
+    methodConsumer.accept(
+        Reference.method(
+            sunMiscUnsafeType,
+            "getAndSetObject",
+            ImmutableList.of(objectType, longType, objectType),
+            objectType),
+        false,
+        AndroidApiLevel.N);
+    methodConsumer.accept(
+        Reference.method(
+            sunMiscUnsafeType, "getBoolean", ImmutableList.of(objectType, longType), booleanType),
+        false,
+        AndroidApiLevel.N);
+    methodConsumer.accept(
+        Reference.method(sunMiscUnsafeType, "getByte", ImmutableList.of(longType), byteType),
+        false,
+        AndroidApiLevel.N);
+    methodConsumer.accept(
+        Reference.method(
+            sunMiscUnsafeType, "getByte", ImmutableList.of(objectType, longType), byteType),
+        false,
+        AndroidApiLevel.N);
+    methodConsumer.accept(
+        Reference.method(sunMiscUnsafeType, "getChar", ImmutableList.of(longType), charType),
+        false,
+        AndroidApiLevel.N);
+    methodConsumer.accept(
+        Reference.method(
+            sunMiscUnsafeType, "getChar", ImmutableList.of(objectType, longType), charType),
+        false,
+        AndroidApiLevel.N);
+    methodConsumer.accept(
+        Reference.method(sunMiscUnsafeType, "getDouble", ImmutableList.of(longType), doubleType),
+        false,
+        AndroidApiLevel.N);
+    methodConsumer.accept(
+        Reference.method(
+            sunMiscUnsafeType, "getDouble", ImmutableList.of(objectType, longType), doubleType),
+        false,
+        AndroidApiLevel.N);
+    methodConsumer.accept(
+        Reference.method(sunMiscUnsafeType, "getFloat", ImmutableList.of(longType), floatType),
+        false,
+        AndroidApiLevel.N);
+    methodConsumer.accept(
+        Reference.method(
+            sunMiscUnsafeType, "getFloat", ImmutableList.of(objectType, longType), floatType),
+        false,
+        AndroidApiLevel.N);
+    methodConsumer.accept(
+        Reference.method(sunMiscUnsafeType, "getInt", ImmutableList.of(longType), intType),
+        false,
+        AndroidApiLevel.N);
+    methodConsumer.accept(
+        Reference.method(
+            sunMiscUnsafeType, "getInt", ImmutableList.of(objectType, longType), intType),
+        false,
         always);
-    apiLevelConsumer.accept(
-        factory.createMethod(
-            factory.sunMiscUnsafeType, factory.createProto(factory.voidType), "loadFence"),
-        AndroidApiLevel.N);
-    apiLevelConsumer.accept(factory.sunMiscUnsafeMethods.objectFieldOffset, always);
-    apiLevelConsumer.accept(
-        factory.createMethod(
-            factory.sunMiscUnsafeType, factory.createProto(factory.intType), "pageSize"),
-        AndroidApiLevel.N);
-    apiLevelConsumer.accept(
-        factory.createMethod(
-            factory.sunMiscUnsafeType,
-            factory.createProto(factory.voidType, factory.booleanType, factory.longType),
-            "park"),
+    methodConsumer.accept(
+        Reference.method(
+            sunMiscUnsafeType, "getIntVolatile", ImmutableList.of(objectType, longType), intType),
+        false,
         always);
-    apiLevelConsumer.accept(
-        factory.createMethod(
-            factory.sunMiscUnsafeType,
-            factory.createProto(
-                factory.voidType, factory.objectType, factory.longType, factory.booleanType),
-            "putBoolean"),
+    methodConsumer.accept(
+        Reference.method(sunMiscUnsafeType, "getLong", ImmutableList.of(longType), longType),
+        false,
         AndroidApiLevel.N);
-    apiLevelConsumer.accept(
-        factory.createMethod(
-            factory.sunMiscUnsafeType,
-            factory.createProto(factory.voidType, factory.longType, factory.byteType),
-            "putByte"),
-        AndroidApiLevel.N);
-    apiLevelConsumer.accept(
-        factory.createMethod(
-            factory.sunMiscUnsafeType,
-            factory.createProto(
-                factory.voidType, factory.objectType, factory.longType, factory.byteType),
-            "putByte"),
-        AndroidApiLevel.N);
-    apiLevelConsumer.accept(
-        factory.createMethod(
-            factory.sunMiscUnsafeType,
-            factory.createProto(factory.voidType, factory.longType, factory.charType),
-            "putChar"),
-        AndroidApiLevel.N);
-    apiLevelConsumer.accept(
-        factory.createMethod(
-            factory.sunMiscUnsafeType,
-            factory.createProto(
-                factory.voidType, factory.objectType, factory.longType, factory.charType),
-            "putChar"),
-        AndroidApiLevel.N);
-    apiLevelConsumer.accept(
-        factory.createMethod(
-            factory.sunMiscUnsafeType,
-            factory.createProto(factory.voidType, factory.longType, factory.doubleType),
-            "putDouble"),
-        AndroidApiLevel.N);
-    apiLevelConsumer.accept(
-        factory.createMethod(
-            factory.sunMiscUnsafeType,
-            factory.createProto(
-                factory.voidType, factory.objectType, factory.longType, factory.doubleType),
-            "putDouble"),
-        AndroidApiLevel.N);
-    apiLevelConsumer.accept(
-        factory.createMethod(
-            factory.sunMiscUnsafeType,
-            factory.createProto(factory.voidType, factory.longType, factory.floatType),
-            "putFloat"),
-        AndroidApiLevel.N);
-    apiLevelConsumer.accept(
-        factory.createMethod(
-            factory.sunMiscUnsafeType,
-            factory.createProto(
-                factory.voidType, factory.objectType, factory.longType, factory.floatType),
-            "putFloat"),
-        AndroidApiLevel.N);
-    apiLevelConsumer.accept(
-        factory.createMethod(
-            factory.sunMiscUnsafeType,
-            factory.createProto(factory.voidType, factory.longType, factory.intType),
-            "putInt"),
-        AndroidApiLevel.N);
-    apiLevelConsumer.accept(
-        factory.createMethod(
-            factory.sunMiscUnsafeType,
-            factory.createProto(
-                factory.voidType, factory.objectType, factory.longType, factory.intType),
-            "putInt"),
+    methodConsumer.accept(
+        Reference.method(
+            sunMiscUnsafeType, "getLong", ImmutableList.of(objectType, longType), longType),
+        false,
         always);
-    apiLevelConsumer.accept(factory.sunMiscUnsafeMethods.putIntVolatile, always);
-    apiLevelConsumer.accept(
-        factory.createMethod(
-            factory.sunMiscUnsafeType,
-            factory.createProto(factory.voidType, factory.longType, factory.longType),
-            "putLong"),
-        AndroidApiLevel.N);
-    apiLevelConsumer.accept(
-        factory.createMethod(
-            factory.sunMiscUnsafeType,
-            factory.createProto(
-                factory.voidType, factory.objectType, factory.longType, factory.longType),
-            "putLong"),
+    methodConsumer.accept(
+        Reference.method(
+            sunMiscUnsafeType, "getLongVolatile", ImmutableList.of(objectType, longType), longType),
+        false,
         always);
-    apiLevelConsumer.accept(factory.sunMiscUnsafeMethods.putLongVolatile, always);
-    apiLevelConsumer.accept(
-        factory.createMethod(
-            factory.sunMiscUnsafeType,
-            factory.createProto(
-                factory.voidType, factory.objectType, factory.longType, factory.objectType),
-            "putObject"),
+    methodConsumer.accept(
+        Reference.method(
+            sunMiscUnsafeType, "getObject", ImmutableList.of(objectType, longType), objectType),
+        false,
         always);
-    apiLevelConsumer.accept(factory.sunMiscUnsafeMethods.putObjectVolatile, always);
-    apiLevelConsumer.accept(
-        factory.createMethod(
-            factory.sunMiscUnsafeType,
-            factory.createProto(
-                factory.voidType, factory.objectType, factory.longType, factory.intType),
-            "putOrderedInt"),
+    methodConsumer.accept(
+        Reference.method(
+            sunMiscUnsafeType,
+            "getObjectVolatile",
+            ImmutableList.of(objectType, longType),
+            objectType),
+        false,
         always);
-    apiLevelConsumer.accept(
-        factory.createMethod(
-            factory.sunMiscUnsafeType,
-            factory.createProto(
-                factory.voidType, factory.objectType, factory.longType, factory.longType),
-            "putOrderedLong"),
+    methodConsumer.accept(
+        Reference.method(sunMiscUnsafeType, "getShort", ImmutableList.of(longType), shortType),
+        false,
+        AndroidApiLevel.N);
+    methodConsumer.accept(
+        Reference.method(
+            sunMiscUnsafeType, "getShort", ImmutableList.of(objectType, longType), shortType),
+        false,
+        AndroidApiLevel.N);
+    methodConsumer.accept(
+        Reference.method(sunMiscUnsafeType, "getUnsafe", ImmutableList.of(), sunMiscUnsafeType),
+        false,
         always);
-    apiLevelConsumer.accept(
-        factory.createMethod(
-            factory.sunMiscUnsafeType,
-            factory.createProto(
-                factory.voidType, factory.objectType, factory.longType, factory.objectType),
-            "putOrderedObject"),
+    methodConsumer.accept(
+        Reference.method(sunMiscUnsafeType, "loadFence", ImmutableList.of(), voidType),
+        false,
+        AndroidApiLevel.N);
+    methodConsumer.accept(
+        Reference.method(
+            sunMiscUnsafeType, "objectFieldOffset", ImmutableList.of(fieldType), longType),
+        false,
         always);
-    apiLevelConsumer.accept(
-        factory.createMethod(
-            factory.sunMiscUnsafeType,
-            factory.createProto(factory.voidType, factory.longType, factory.shortType),
-            "putShort"),
+    methodConsumer.accept(
+        Reference.method(sunMiscUnsafeType, "pageSize", ImmutableList.of(), intType),
+        false,
         AndroidApiLevel.N);
-    apiLevelConsumer.accept(
-        factory.createMethod(
-            factory.sunMiscUnsafeType,
-            factory.createProto(
-                factory.voidType, factory.objectType, factory.longType, factory.shortType),
-            "putShort"),
+    methodConsumer.accept(
+        Reference.method(
+            sunMiscUnsafeType, "park", ImmutableList.of(booleanType, longType), voidType),
+        false,
+        always);
+    methodConsumer.accept(
+        Reference.method(
+            sunMiscUnsafeType,
+            "putBoolean",
+            ImmutableList.of(objectType, longType, booleanType),
+            voidType),
+        false,
         AndroidApiLevel.N);
-    apiLevelConsumer.accept(
-        factory.createMethod(
-            factory.sunMiscUnsafeType,
-            factory.createProto(
-                factory.voidType, factory.longType, factory.longType, factory.byteType),
-            "setMemory"),
+    methodConsumer.accept(
+        Reference.method(
+            sunMiscUnsafeType, "putByte", ImmutableList.of(longType, byteType), voidType),
+        false,
         AndroidApiLevel.N);
-    apiLevelConsumer.accept(
-        factory.createMethod(
-            factory.sunMiscUnsafeType, factory.createProto(factory.voidType), "storeFence"),
+    methodConsumer.accept(
+        Reference.method(
+            sunMiscUnsafeType,
+            "putByte",
+            ImmutableList.of(objectType, longType, byteType),
+            voidType),
+        false,
         AndroidApiLevel.N);
-    apiLevelConsumer.accept(
-        factory.createMethod(
-            factory.sunMiscUnsafeType,
-            factory.createProto(factory.voidType, factory.objectType),
-            "unpark"),
+    methodConsumer.accept(
+        Reference.method(
+            sunMiscUnsafeType, "putChar", ImmutableList.of(longType, charType), voidType),
+        false,
+        AndroidApiLevel.N);
+    methodConsumer.accept(
+        Reference.method(
+            sunMiscUnsafeType,
+            "putChar",
+            ImmutableList.of(objectType, longType, charType),
+            voidType),
+        false,
+        AndroidApiLevel.N);
+    methodConsumer.accept(
+        Reference.method(
+            sunMiscUnsafeType, "putDouble", ImmutableList.of(longType, doubleType), voidType),
+        false,
+        AndroidApiLevel.N);
+    methodConsumer.accept(
+        Reference.method(
+            sunMiscUnsafeType,
+            "putDouble",
+            ImmutableList.of(objectType, longType, doubleType),
+            voidType),
+        false,
+        AndroidApiLevel.N);
+    methodConsumer.accept(
+        Reference.method(
+            sunMiscUnsafeType, "putFloat", ImmutableList.of(longType, floatType), voidType),
+        false,
+        AndroidApiLevel.N);
+    methodConsumer.accept(
+        Reference.method(
+            sunMiscUnsafeType,
+            "putFloat",
+            ImmutableList.of(objectType, longType, floatType),
+            voidType),
+        false,
+        AndroidApiLevel.N);
+    methodConsumer.accept(
+        Reference.method(
+            sunMiscUnsafeType, "putInt", ImmutableList.of(longType, intType), voidType),
+        false,
+        AndroidApiLevel.N);
+    methodConsumer.accept(
+        Reference.method(
+            sunMiscUnsafeType, "putInt", ImmutableList.of(objectType, longType, intType), voidType),
+        false,
+        always);
+    methodConsumer.accept(
+        Reference.method(
+            sunMiscUnsafeType,
+            "putIntVolatile",
+            ImmutableList.of(objectType, longType, intType),
+            voidType),
+        false,
+        always);
+    methodConsumer.accept(
+        Reference.method(
+            sunMiscUnsafeType, "putLong", ImmutableList.of(longType, longType), voidType),
+        false,
+        AndroidApiLevel.N);
+    methodConsumer.accept(
+        Reference.method(
+            sunMiscUnsafeType,
+            "putLong",
+            ImmutableList.of(objectType, longType, longType),
+            voidType),
+        false,
+        always);
+    methodConsumer.accept(
+        Reference.method(
+            sunMiscUnsafeType,
+            "putLongVolatile",
+            ImmutableList.of(objectType, longType, longType),
+            voidType),
+        false,
+        always);
+    methodConsumer.accept(
+        Reference.method(
+            sunMiscUnsafeType,
+            "putObject",
+            ImmutableList.of(objectType, longType, objectType),
+            voidType),
+        false,
+        always);
+    methodConsumer.accept(
+        Reference.method(
+            sunMiscUnsafeType,
+            "putObjectVolatile",
+            ImmutableList.of(objectType, longType, objectType),
+            voidType),
+        false,
+        always);
+    methodConsumer.accept(
+        Reference.method(
+            sunMiscUnsafeType,
+            "putOrderedInt",
+            ImmutableList.of(objectType, longType, intType),
+            voidType),
+        false,
+        always);
+    methodConsumer.accept(
+        Reference.method(
+            sunMiscUnsafeType,
+            "putOrderedLong",
+            ImmutableList.of(objectType, longType, longType),
+            voidType),
+        false,
+        always);
+    methodConsumer.accept(
+        Reference.method(
+            sunMiscUnsafeType,
+            "putOrderedObject",
+            ImmutableList.of(objectType, longType, objectType),
+            voidType),
+        false,
+        always);
+    methodConsumer.accept(
+        Reference.method(
+            sunMiscUnsafeType, "putShort", ImmutableList.of(longType, shortType), voidType),
+        false,
+        AndroidApiLevel.N);
+    methodConsumer.accept(
+        Reference.method(
+            sunMiscUnsafeType,
+            "putShort",
+            ImmutableList.of(objectType, longType, shortType),
+            voidType),
+        false,
+        AndroidApiLevel.N);
+    methodConsumer.accept(
+        Reference.method(
+            sunMiscUnsafeType,
+            "setMemory",
+            ImmutableList.of(longType, longType, byteType),
+            voidType),
+        false,
+        AndroidApiLevel.N);
+    methodConsumer.accept(
+        Reference.method(sunMiscUnsafeType, "storeFence", ImmutableList.of(), voidType),
+        false,
+        AndroidApiLevel.N);
+    methodConsumer.accept(
+        Reference.method(sunMiscUnsafeType, "unpark", ImmutableList.of(objectType), voidType),
+        false,
         always);
   }
 }
