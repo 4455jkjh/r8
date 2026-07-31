@@ -197,6 +197,10 @@ public abstract class AbstractBackportTest extends TestBase {
     } else {
       builder.addProgramFiles(testJar);
     }
+    // Keep annotations, specifically @IgnoreInvokes, which is used in assertDesugaring.
+    if (builder.isR8TestBuilder()) {
+      builder.asR8TestBuilder().addKeepRuntimeVisibleAnnotations();
+    }
   }
 
   protected void configureOptions(InternalOptions options) {
