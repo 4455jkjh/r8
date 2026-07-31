@@ -448,9 +448,11 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
   // Flag to toggle the conversion of PC based debug info to native debug info. This should only
   // make a difference in D8 when the input contains DEX and the line number optimization does not
   // run (i.e., when the compilation does not have a map output).
+  //
+  // This is disabled since embedded PC uses DEX PC + 1 as line number for each instruction.
   public boolean convertPcBasedDebugInfoToNative =
       SystemPropertyUtils.parseSystemPropertyOrDefault(
-          "com.android.tools.r8.convertPcBasedDebugInfoToNative", true);
+          "com.android.tools.r8.convertPcBasedDebugInfoToNative", false);
 
   public static class NeverMergeGroup<T> {
     private final List<T> prefixes;

@@ -15,14 +15,17 @@ import com.android.tools.r8.graph.DexString;
 import com.android.tools.r8.graph.ProgramMethod;
 import com.android.tools.r8.ir.analysis.proto.schema.DeadProtoFieldObject;
 import com.android.tools.r8.ir.analysis.proto.schema.LiveProtoFieldObject;
+import com.android.tools.r8.ir.analysis.proto.schema.ProtoBoxedIntObject;
 import com.android.tools.r8.ir.analysis.proto.schema.ProtoFieldInfo;
 import com.android.tools.r8.ir.analysis.proto.schema.ProtoFieldType;
 import com.android.tools.r8.ir.analysis.proto.schema.ProtoFieldTypeFactory;
+import com.android.tools.r8.ir.analysis.proto.schema.ProtoMapEntryLiteObject;
 import com.android.tools.r8.ir.analysis.proto.schema.ProtoMessageInfo;
 import com.android.tools.r8.ir.analysis.proto.schema.ProtoMessageInfo.ProtoMessageInfoBuilderException;
 import com.android.tools.r8.ir.analysis.proto.schema.ProtoObject;
 import com.android.tools.r8.ir.analysis.proto.schema.ProtoObjectFromInvokeStatic;
 import com.android.tools.r8.ir.analysis.proto.schema.ProtoObjectFromStaticGet;
+import com.android.tools.r8.ir.analysis.proto.schema.ProtoStringObject;
 import com.android.tools.r8.ir.analysis.proto.schema.ProtoTypeObject;
 import com.android.tools.r8.ir.code.ConstClass;
 import com.android.tools.r8.ir.code.ConstString;
@@ -33,10 +36,10 @@ import com.android.tools.r8.ir.code.InvokeStatic;
 import com.android.tools.r8.ir.code.StaticGet;
 import com.android.tools.r8.ir.code.Value;
 import com.android.tools.r8.naming.dexitembasedstring.NameComputationInfo;
+import com.android.tools.r8.utils.ValueUtils.ArrayValues;
 import com.android.tools.r8.utils.internal.ThrowingCharIterator;
 import com.android.tools.r8.utils.internal.ThrowingIntIterator;
 import com.android.tools.r8.utils.internal.ThrowingIterator;
-import com.android.tools.r8.utils.ValueUtils.ArrayValues;
 import java.io.UTFDataFormatException;
 import java.util.ArrayList;
 import java.util.List;
@@ -229,10 +232,147 @@ public class RawMessageInfoDecoder {
         InvokeStatic invoke = definition.asInvokeStatic();
         if (invoke.arguments().isEmpty()) {
           return new ProtoObjectFromInvokeStatic(invoke.getInvokedMethod());
+        } else if (invoke
+            .getInvokedMethod()
+            .isIdenticalTo(references.mapEntryLiteNewDefaultInstance)) {
+          if (!isSupportedMapEntryLiteNewDefaultInstanceCreation(invoke)) {
+            throw new InvalidRawMessageInfoException();
+          }
+          // newDefaultInstance has the signature below, and is used to initialize a singleton
+          // "default instance" for a specific map entry type.
+          //
+          // public static <K, V> MapEntryLite<K, V> newDefaultInstance(
+          //     WireFormat.FieldType keyType,
+          //     K defaultKey,
+          //     WireFormat.FieldType valueType,
+          //     V defaultValue)
+          Instruction keyTypeInstruction = invoke.getArgument(0).getAliasedValue().getDefinition();
+          Instruction defaultKeyInstruction =
+              invoke.getArgument(1).getAliasedValue().getDefinition();
+          Instruction valueTypeInstruction =
+              invoke.getArgument(2).getAliasedValue().getDefinition();
+          Instruction defaultValueInstruction =
+              invoke.getArgument(3).getAliasedValue().getDefinition();
+
+          ProtoObject keyType = decodeMapEntryKeyOrValueType(keyTypeInstruction);
+          ProtoObject defaultKey = decodeMapEntryDefaultKey(defaultKeyInstruction);
+          ProtoObject valueType = decodeMapEntryKeyOrValueType(valueTypeInstruction);
+          ProtoObject defaultValue = decodeMapEntryDefaultValue(defaultValueInstruction);
+
+          return new ProtoMapEntryLiteObject(
+              invoke.getInvokedMethod(), keyType, defaultKey, valueType, defaultValue);
         }
       } else if (definition.isStaticGet()) {
         StaticGet staticGet = definition.asStaticGet();
         return new ProtoObjectFromStaticGet(staticGet.getField());
+      }
+    }
+    throw new InvalidRawMessageInfoException();
+  }
+
+  private boolean isSupportedMapEntryLiteNewDefaultInstanceCreation(InvokeStatic invoke) {
+    if (invoke.arguments().size() != 4) {
+      return false;
+    }
+    return isSupportedMapEntryLiteKeyOrValueType(invoke.getArgument(0).getAliasedValue())
+        && isSupportedMapEntryLiteDefaultKeyCreation(invoke.getArgument(1).getAliasedValue())
+        && isSupportedMapEntryLiteKeyOrValueType(invoke.getArgument(2).getAliasedValue())
+        && isSupportedMapEntryLiteDefaultValueCreation(invoke.getArgument(3).getAliasedValue());
+  }
+
+  private boolean isSupportedMapEntryLiteKeyOrValueType(Value value) {
+    return !value.isPhi() && value.getDefinition().isStaticGet();
+  }
+
+  private boolean isSupportedMapEntryLiteDefaultKeyCreation(Value value) {
+    if (value.isPhi()) {
+      return false;
+    }
+    Instruction instruction = value.getDefinition();
+    if (instruction.isConstString()) {
+      return true;
+    }
+    if (instruction.isInvokeStatic()) {
+      InvokeStatic invoke = instruction.asInvokeStatic();
+      return invoke
+              .getInvokedMethod()
+              .isIdenticalTo(references.dexItemFactory().integerMembers.valueOf)
+          && !invoke.arguments().isEmpty()
+          && invoke.getFirstArgument().isConstNumber();
+    }
+    return false;
+  }
+
+  private boolean isSupportedMapEntryLiteDefaultValueCreation(Value value) {
+    if (value.isPhi()) {
+      return false;
+    }
+    Instruction instruction = value.getDefinition();
+    if (instruction.isConstString() || instruction.isStaticGet()) {
+      return true;
+    }
+    if (instruction.isInvokeStatic()) {
+      InvokeStatic invoke = instruction.asInvokeStatic();
+      if (invoke.arguments().isEmpty()) {
+        return true;
+      }
+      return invoke
+              .getInvokedMethod()
+              .isIdenticalTo(references.dexItemFactory().integerMembers.valueOf)
+          && invoke.getArgument(0).getAliasedValue().getDefinition().isConstNumber();
+    }
+    return false;
+  }
+
+  private ProtoObject decodeMapEntryKeyOrValueType(Instruction instruction)
+      throws InvalidRawMessageInfoException {
+    if (instruction.isStaticGet()) {
+      return new ProtoObjectFromStaticGet(instruction.asStaticGet().getField());
+    }
+    throw new InvalidRawMessageInfoException();
+  }
+
+  private ProtoObject decodeMapEntryDefaultKey(Instruction instruction)
+      throws InvalidRawMessageInfoException {
+    if (instruction.isConstString()) {
+      return new ProtoStringObject(instruction.asConstString().getValue());
+    } else if (instruction.isInvokeStatic()) {
+      InvokeStatic invoke = instruction.asInvokeStatic();
+      if (invoke
+              .getInvokedMethod()
+              .isIdenticalTo(references.dexItemFactory().integerMembers.valueOf)
+          && !invoke.arguments().isEmpty()
+          && invoke.getArgument(0).getAliasedValue().getDefinition().isConstNumber()) {
+        int intValue =
+            invoke
+                .arguments()
+                .get(0)
+                .getAliasedValue()
+                .getDefinition()
+                .asConstNumber()
+                .getIntValue();
+        return new ProtoBoxedIntObject(intValue);
+      }
+    }
+    throw new InvalidRawMessageInfoException();
+  }
+
+  private ProtoObject decodeMapEntryDefaultValue(Instruction instruction)
+      throws InvalidRawMessageInfoException {
+    if (instruction.isConstString()) {
+      return new ProtoStringObject(instruction.asConstString().getValue());
+    } else if (instruction.isStaticGet()) {
+      return new ProtoObjectFromStaticGet(instruction.asStaticGet().getField());
+    } else if (instruction.isInvokeStatic()) {
+      InvokeStatic invoke = instruction.asInvokeStatic();
+      if (invoke.arguments().isEmpty()) {
+        return new ProtoObjectFromInvokeStatic(invoke.getInvokedMethod());
+      } else if (invoke
+              .getInvokedMethod()
+              .isIdenticalTo(references.dexItemFactory().integerMembers.valueOf)
+          && invoke.getArgument(0).getAliasedValue().getDefinition().isConstNumber()) {
+        int intValue = invoke.getFirstArgument().getDefinition().asConstNumber().getIntValue();
+        return new ProtoBoxedIntObject(intValue);
       }
     }
     throw new InvalidRawMessageInfoException();

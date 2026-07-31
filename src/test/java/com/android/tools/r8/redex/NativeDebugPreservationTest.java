@@ -3,7 +3,8 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8.redex;
 
-import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 
 import com.android.tools.r8.CompilationMode;
 import com.android.tools.r8.TestBase;
@@ -47,7 +48,9 @@ public class NativeDebugPreservationTest extends TestBase {
                 inspector -> {
                   ClassSubject clazz = inspector.clazz(TestClass.class);
                   MethodSubject method = clazz.uniqueMethodWithOriginalName("main");
-                  assertFalse("Expected no debug info", method.hasLineNumberTable());
+                  assertNull(
+                      "Expected no debug info",
+                      method.getMethod().getCode().asDexCode().getDebugInfo());
                 })
             .writeToZip();
 
@@ -61,7 +64,8 @@ public class NativeDebugPreservationTest extends TestBase {
             inspector -> {
               ClassSubject clazz = inspector.clazz(TestClass.class);
               MethodSubject method = clazz.uniqueMethodWithOriginalName("main");
-              assertFalse("Expected no debug info", method.hasLineNumberTable());
+              // TODO(b/540612508): Invalid conversion from no debug info to PC based debug info.
+              assertTrue(method.getMethod().getCode().asDexCode().getDebugInfo().isPcBasedInfo());
             });
   }
 

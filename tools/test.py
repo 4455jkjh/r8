@@ -290,6 +290,14 @@ def ParseOptions():
                         default=False,
                         action='store_true')
     result.add_argument(
+        '--generate-methods',
+        '--generate_methods',
+        help=
+        'Generate method code templates in tests extending CodeGenerationBase '
+        'instead of testing that the code has already been corectly generated',
+        default=False,
+        action='store_true')
+    result.add_argument(
         'filter',
         nargs='*',
         help='Test filters. They are additive and support wildcards (e.g., *).')
@@ -478,6 +486,8 @@ def test(options, args):
     if options.kotlin_compiler_dev:
         gradle_args.append('-Pkotlin_compiler_dev')
         download_kotlin.download_newest()
+    if options.generate_methods:
+        gradle_args.append('-Pgenerate_methods')
     if os.name == 'nt':
         gradle_args.append('-Pno_internal')
     if options.test_dir:

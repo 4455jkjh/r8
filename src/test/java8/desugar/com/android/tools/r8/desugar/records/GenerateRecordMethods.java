@@ -10,9 +10,7 @@ import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.ToolHelper.TestDataSourceSet;
 import com.android.tools.r8.cfmethodgeneration.MethodGenerationBase;
 import com.android.tools.r8.graph.DexType;
-import com.android.tools.r8.utils.internal.FileUtils;
 import com.google.common.collect.ImmutableList;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -58,8 +56,7 @@ public class GenerateRecordMethods extends MethodGenerationBase {
     ArrayList<Class<?>> sorted = new ArrayList<>(getMethodTemplateClasses());
     sorted.sort(Comparator.comparing(Class::getTypeName));
     assertEquals("Classes should be listed in sorted order", sorted, getMethodTemplateClasses());
-    assertEquals(
-        FileUtils.readTextFile(getGeneratedFile(), StandardCharsets.UTF_8), generateMethods());
+    checkOrGenerateMethods();
   }
 
   public static void main(String[] args) throws Exception {

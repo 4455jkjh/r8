@@ -13,6 +13,7 @@ import com.android.tools.r8.ir.code.Instruction;
 import com.android.tools.r8.ir.code.InvokeStatic;
 import com.android.tools.r8.ir.code.Value;
 import com.google.common.collect.ImmutableList;
+import java.util.List;
 
 public class ProtoObjectFromInvokeStatic extends ProtoObject {
 
@@ -22,11 +23,25 @@ public class ProtoObjectFromInvokeStatic extends ProtoObject {
     this.method = method;
   }
 
+  public DexMethod getMethod() {
+    return method;
+  }
+
   @Override
-  public Instruction buildIR(AppView<?> appView, IRCode code) {
+  public List<Instruction> buildIR(AppView<?> appView, IRCode code) {
     Value value =
         code.createValue(
             TypeElement.fromDexType(method.proto.returnType, Nullability.maybeNull(), appView));
-    return new InvokeStatic(method, value, ImmutableList.of());
+    return ImmutableList.of(new InvokeStatic(method, value, ImmutableList.of()));
+  }
+
+  @Override
+  public boolean isProtoObjectFromInvokeStatic() {
+    return true;
+  }
+
+  @Override
+  public ProtoObjectFromInvokeStatic asProtoObjectFromInvokeStatic() {
+    return this;
   }
 }

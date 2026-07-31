@@ -1491,6 +1491,44 @@ public final class BackportedMethodRewriter implements CfInstructionDesugaring {
       DexProto proto;
       DexMethod method;
 
+      // BigInteger
+      type = factory.javaMathBigIntegerType;
+
+      // byte BigInteger.byteValueExact()
+      name = factory.createString("byteValueExact");
+      proto = factory.createProto(factory.byteType);
+      method = factory.createMethod(type, proto, name);
+      addProvider(
+          new StatifyingMethodGenerator(
+              method, BackportedMethods::BigIntegerMethods_byteValueExact, "byteValueExact", type));
+
+      // int BigInteger.intValueExact()
+      name = factory.createString("intValueExact");
+      proto = factory.createProto(factory.intType);
+      method = factory.createMethod(type, proto, name);
+      addProvider(
+          new StatifyingMethodGenerator(
+              method, BackportedMethods::BigIntegerMethods_intValueExact, "intValueExact", type));
+
+      // long BigInteger.longValueExact()
+      name = factory.createString("longValueExact");
+      proto = factory.createProto(factory.longType);
+      method = factory.createMethod(type, proto, name);
+      addProvider(
+          new StatifyingMethodGenerator(
+              method, BackportedMethods::BigIntegerMethods_longValueExact, "longValueExact", type));
+
+      // short BigInteger.shortValueExact()
+      name = factory.createString("shortValueExact");
+      proto = factory.createProto(factory.shortType);
+      method = factory.createMethod(type, proto, name);
+      addProvider(
+          new StatifyingMethodGenerator(
+              method,
+              BackportedMethods::BigIntegerMethods_shortValueExact,
+              "shortValueExact",
+              type));
+
       // Byte
       type = factory.boxedByteType;
 

@@ -38,6 +38,7 @@ public class ProtoReferences {
   public final DexType messageLiteType;
   public final DexType methodToInvokeType;
   public final DexType wireFormatFieldType;
+  public final DexType mapEntryLite;
 
   public final GeneratedExtensionMethods generatedExtensionMethods;
   public final GeneratedMessageLiteMethods generatedMessageLiteMethods;
@@ -62,6 +63,7 @@ public class ProtoReferences {
   public final DexMethod dynamicMethod;
   public final DexMethod newMessageInfoMethod;
   public final DexMethod rawMessageInfoConstructor;
+  public final DexMethod mapEntryLiteNewDefaultInstance;
   public final DexField rawMessageInfoInfoField;
   public final DexField rawMessageInfoObjectsField;
 
@@ -91,6 +93,7 @@ public class ProtoReferences {
     methodToInvokeType =
         factory.createType("Lcom/google/protobuf/GeneratedMessageLite$MethodToInvoke;");
     wireFormatFieldType = factory.createType("Lcom/google/protobuf/WireFormat$FieldType;");
+    mapEntryLite = factory.createType("Lcom/google/protobuf/MapEntryLite;");
 
     // Names.
     defaultInstanceFieldName = factory.createString("DEFAULT_INSTANCE");
@@ -126,6 +129,16 @@ public class ProtoReferences {
             factory.createProto(
                 factory.voidType, messageLiteType, factory.stringType, factory.objectArrayType),
             factory.constructorMethodName);
+    mapEntryLiteNewDefaultInstance =
+        factory.createMethod(
+            mapEntryLite,
+            factory.createProto(
+                mapEntryLite,
+                wireFormatFieldType,
+                factory.objectType,
+                wireFormatFieldType,
+                factory.objectType),
+            factory.createString("newDefaultInstance"));
 
     // Fields.
     rawMessageInfoInfoField = factory.createField(rawMessageInfoType, factory.stringType, "info");

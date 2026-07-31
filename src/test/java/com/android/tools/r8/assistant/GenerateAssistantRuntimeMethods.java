@@ -17,7 +17,6 @@ import com.android.tools.r8.assistant.runtime.ReflectiveOracle;
 import com.android.tools.r8.cfmethodgeneration.MethodGenerationBase;
 import com.android.tools.r8.graph.DexEncodedMethod;
 import com.android.tools.r8.graph.DexType;
-import com.android.tools.r8.utils.internal.FileUtils;
 import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -83,10 +82,7 @@ public class GenerateAssistantRuntimeMethods extends MethodGenerationBase {
     ArrayList<Class<?>> sorted = new ArrayList<>(getMethodTemplateClasses());
     sorted.sort(Comparator.comparing(Class::getTypeName));
     assertEquals("Classes should be listed in sorted order", sorted, getMethodTemplateClasses());
-    assertEquals(
-        "Generated file is not up-to-date. Run GenerateAssistantRuntimeMethods to update.",
-        generateMethods(),
-        FileUtils.readTextFile(getGeneratedFile(), java.nio.charset.StandardCharsets.UTF_8));
+    checkOrGenerateMethods();
   }
 
   public static void main(String[] args) throws Exception {

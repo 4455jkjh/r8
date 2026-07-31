@@ -5,6 +5,7 @@ package com.android.tools.r8.shaking;
 
 import static com.android.tools.r8.shaking.ProguardKeepAttributes.RUNTIME_VISIBLE_ANNOTATIONS;
 
+import com.android.tools.r8.errors.UnsupportedFileNameInPrintRuleDiagnostic;
 import com.android.tools.r8.errors.dontwarn.DontWarnConfiguration;
 import com.android.tools.r8.graph.DexItemFactory;
 import com.android.tools.r8.naming.DictionaryReader;
@@ -251,7 +252,8 @@ public class ProguardConfiguration {
         ProguardConfigurationSourceParser parser,
         Position position,
         TextPosition positionStart) {
-      if (warnMissingBaseDirectory(printConfigurationFileNameOrNull, parser, positionStart)) {
+      if (warnMissingBaseDirectoryInPrintRule(
+          printConfigurationFileNameOrNull, parser, positionStart)) {
         return;
       }
       this.printConfiguration = true;
@@ -267,7 +269,7 @@ public class ProguardConfiguration {
         ProguardConfigurationSourceParser parser,
         Position position,
         TextPosition positionStart) {
-      if (warnMissingBaseDirectory(printSeedsFileNameOrNull, parser, positionStart)) {
+      if (warnMissingBaseDirectoryInPrintRule(printSeedsFileNameOrNull, parser, positionStart)) {
         return;
       }
       this.printSeeds = true;
@@ -283,7 +285,7 @@ public class ProguardConfiguration {
         ProguardConfigurationSourceParser parser,
         Position position,
         TextPosition positionStart) {
-      if (warnMissingBaseDirectory(printUsageFileNameOrNull, parser, positionStart)) {
+      if (warnMissingBaseDirectoryInPrintRule(printUsageFileNameOrNull, parser, positionStart)) {
         return;
       }
       this.printUsage = true;
@@ -299,7 +301,7 @@ public class ProguardConfiguration {
         ProguardConfigurationSourceParser parser,
         Position position,
         TextPosition positionStart) {
-      if (warnMissingBaseDirectory(printMappingFileNameOrNull, parser, positionStart)) {
+      if (warnMissingBaseDirectoryInPrintRule(printMappingFileNameOrNull, parser, positionStart)) {
         return;
       }
       this.printMapping = true;
@@ -309,14 +311,14 @@ public class ProguardConfiguration {
               : null;
     }
 
-    private boolean warnMissingBaseDirectory(
+    private boolean warnMissingBaseDirectoryInPrintRule(
         String fileNameOrNull,
         ProguardConfigurationSourceParser parser,
         TextPosition positionStart) {
       if (fileNameOrNull != null && parser.getBaseDirectory() == null) {
         reporter.warning(
-            new StringDiagnostic(
-                "Options with file names are not supported", parser.getOrigin(), positionStart));
+            UnsupportedFileNameInPrintRuleDiagnostic.Factory.create(
+                parser.getOrigin(), positionStart));
         return true;
       }
       return false;

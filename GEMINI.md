@@ -123,6 +123,14 @@ tools/test.py -q --no-internal --no-r8lib *ProguardConfigurationParserTest* *Cla
 
 Only run without `-q` if more information is needed about the build details.
 
+### Updating code for tests extending `com.android.tools.r8.cfmethodgeneration.CodeGenerationBase`
+
+Subclasses of `com.android.tools.r8.cfmethodgeneration.CodeGenerationBase` have tests to check that code templates have been generated. E.g.
+`com.android.tools.r8.ir.desugar.backports.GenerateBackportMethods` has the test `testBackportsGenerated()`. When these test fails due to
+changes requiring regenerating code the option `--generate-methods` can be passed to `tools/test.py` when running the test to generate the
+code instead of just checking what was previously generated.
+
+
 ### Testing with Kotlin developer compiler versions
 
 To run tests with the latest Kotlin developer version first download it by running
