@@ -36,7 +36,6 @@ import com.android.tools.r8.utils.MethodReferenceUtils;
 import com.android.tools.r8.utils.codeinspector.CodeInspector;
 import com.android.tools.r8.utils.codeinspector.FoundClassSubject;
 import com.android.tools.r8.utils.internal.Action;
-import com.android.tools.r8.utils.internal.EntryUtils;
 import com.android.tools.r8.utils.internal.FileUtils;
 import com.google.common.collect.ImmutableList;
 import java.io.IOException;
@@ -94,9 +93,9 @@ public class GenerateCovariantReturnTypeMethodsTest extends TestBase {
   public void testCanFindAnnotatedMethodsInJar() throws Exception {
     CovariantMethodsInJarResult covariantMethodsInJar = CovariantMethodsInJarResult.create();
     // These assertions are here to ensure we produce a sane result.
-    assertEquals(11, covariantMethodsInJar.methodReferenceMap.keySet().size());
+    assertEquals(11, covariantMethodsInJar.methodReferenceMap.size());
     assertEquals(
-        71, covariantMethodsInJar.methodReferenceMap.values().stream().mapToLong(List::size).sum());
+        69, covariantMethodsInJar.methodReferenceMap.values().stream().mapToLong(Map::size).sum());
   }
 
   @Test
@@ -106,9 +105,9 @@ public class GenerateCovariantReturnTypeMethodsTest extends TestBase {
 
   public static String generateCode() throws IOException {
     CovariantMethodsInJarResult covariantMethodsInJar = CovariantMethodsInJarResult.create();
-    List<Entry<ClassReference, List<MethodReferenceWithApiLevel>>> entries =
-        new ArrayList<>(covariantMethodsInJar.methodReferenceMap.entrySet());
-    entries.sort(Entry.comparingByKey(ClassReferenceUtils.getClassReferenceComparator()));
+    List<ClassReference> sortedClasses =
+        new ArrayList<>(covariantMethodsInJar.methodReferenceMap.keySet());
+    sortedClasses.sort(ClassReferenceUtils.getClassReferenceComparator());
     JavaSourceCodePrinter printer =
         JavaSourceCodePrinter.builder()
             .setHeader(
@@ -129,19 +128,17 @@ public class GenerateCovariantReturnTypeMethodsTest extends TestBase {
                         ParameterizedType.fromType(
                             KnownType.Consumer, fromType(KnownType.DexMethod)),
                         "consumer")),
-                methodPrinter ->
-                    entries.forEach(
-                        EntryUtils.accept(
-                            (ignored, covariations) -> {
-                              covariations.sort(
-                                  Comparator.comparing(
-                                      MethodReferenceWithApiLevel::getMethodReference,
-                                      MethodReferenceUtils.getMethodReferenceComparator()));
-                              covariations.forEach(
-                                  covariant ->
-                                      registerCovariantMethod(
-                                          methodPrinter, covariant.methodReference));
-                            })))
+                methodPrinter -> {
+                  for (ClassReference classRef : sortedClasses) {
+                    List<MethodReference> sortedMethods =
+                        new ArrayList<>(
+                            covariantMethodsInJar.methodReferenceMap.get(classRef).keySet());
+                    sortedMethods.sort(MethodReferenceUtils.getMethodReferenceComparator());
+                    for (MethodReference methodRef : sortedMethods) {
+                      registerCovariantMethod(methodPrinter, methodRef);
+                    }
+                  }
+                })
             .toString();
     Path tempFile = Files.createTempFile("output-", ".java");
     Files.write(tempFile, javaSourceCode.getBytes(StandardCharsets.UTF_8));
@@ -194,16 +191,19 @@ public class GenerateCovariantReturnTypeMethodsTest extends TestBase {
   }
 
   public static class CovariantMethodsInJarResult {
-    private final Map<ClassReference, List<MethodReferenceWithApiLevel>> methodReferenceMap;
+    private final Map<ClassReference, Map<MethodReference, AndroidApiLevel>> methodReferenceMap;
 
     private CovariantMethodsInJarResult(
-        Map<ClassReference, List<MethodReferenceWithApiLevel>> methodReferenceMap) {
+        Map<ClassReference, Map<MethodReference, AndroidApiLevel>> methodReferenceMap) {
       this.methodReferenceMap = methodReferenceMap;
     }
 
     public static CovariantMethodsInJarResult create() throws IOException {
-      Map<ClassReference, List<MethodReferenceWithApiLevel>> methodReferenceMap = new HashMap<>();
+      Map<ClassReference, Map<MethodReference, AndroidApiLevel>> methodReferenceMap =
+          new HashMap<>();
       CodeInspector inspector = new CodeInspector(PATH_TO_CORE_JAR);
+      // Some covariant-annotated methods have generated bridge methods which share the annotation.
+      // This causes duplicate methods once the covariant signature has been added.
       for (FoundClassSubject clazz : inspector.allClasses()) {
         clazz.forAllMethods(
             method -> {
@@ -230,7 +230,7 @@ public class GenerateCovariantReturnTypeMethodsTest extends TestBase {
     private static void createCovariantMethodReference(
         MethodReference methodReference,
         DexEncodedAnnotation covariantAnnotation,
-        Map<ClassReference, List<MethodReferenceWithApiLevel>> methodReferenceMap) {
+        Map<ClassReference, Map<MethodReference, AndroidApiLevel>> methodReferenceMap) {
       if (covariantAnnotation
           .getType()
           .getTypeName()
@@ -244,15 +244,14 @@ public class GenerateCovariantReturnTypeMethodsTest extends TestBase {
             AndroidApiLevel.getAndroidApiLevel(
                 presentAfterElement.getValue().asDexValueInt().getValue());
         methodReferenceMap
-            .computeIfAbsent(methodReference.getHolderClass(), ignoreKey(ArrayList::new))
-            .add(
-                new MethodReferenceWithApiLevel(
-                    Reference.method(
-                        methodReference.getHolderClass(),
-                        methodReference.getMethodName(),
-                        methodReference.getFormalTypes(),
-                        newReturnType.getValue().asClassReference()),
-                    apiLevel));
+            .computeIfAbsent(methodReference.getHolderClass(), ignoreKey(HashMap::new))
+            .putIfAbsent(
+                Reference.method(
+                    methodReference.getHolderClass(),
+                    methodReference.getMethodName(),
+                    methodReference.getFormalTypes(),
+                    newReturnType.getValue().asClassReference()),
+                apiLevel);
       } else {
         assert covariantAnnotation
             .getType()
@@ -289,14 +288,11 @@ public class GenerateCovariantReturnTypeMethodsTest extends TestBase {
 
     public void visitCovariantMethodsForHolder(
         ClassReference reference, BiConsumer<MethodReference, AndroidApiLevel> consumer) {
-      List<MethodReferenceWithApiLevel> methodReferences = methodReferenceMap.get(reference);
+      Map<MethodReference, AndroidApiLevel> methodReferences = methodReferenceMap.get(reference);
       if (methodReferences != null) {
-        methodReferences.stream()
-            .sorted(
-                Comparator.comparing(
-                    MethodReferenceWithApiLevel::getMethodReference,
-                    MethodReferenceUtils.getMethodReferenceComparator()))
-            .forEach(pair -> consumer.accept(pair.methodReference, pair.apiLevel));
+        methodReferences.entrySet().stream()
+            .sorted(Entry.comparingByKey(MethodReferenceUtils.getMethodReferenceComparator()))
+            .forEach(entry -> consumer.accept(entry.getKey(), entry.getValue()));
       }
     }
   }
