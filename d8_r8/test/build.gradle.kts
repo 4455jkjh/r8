@@ -112,7 +112,7 @@ val mainProtoJarTask = project(":dist").tasks.getByName("protoJar")
 val mainDepsJarTask = project(":dist").tasks.getByName("depsJar")
 val swissArmyKnifeTask = project(":dist").tasks.getByName("swissArmyKnife")
 val processKeepRulesLibWithRelocatedDepsTask =
-  project(":dist").tasks.getByName("processKeepRulesLibWithRelocatedDeps")
+  project(":dist").tasks.named<CreateR8LibraryTask>("processKeepRulesLibWithRelocatedDeps")
 val r8WithRelocatedDepsTask = project(":dist").tasks.getByName("r8WithRelocatedDeps")
 val keepAnnoToolsWithRelocatedDepsTask =
   project(":dist").tasks.getByName("keepAnnoToolsWithRelocatedDeps")
@@ -535,11 +535,14 @@ tasks {
     }
 
   fun Test.testR8Lib(r8Lib: TaskProvider<Exec>, unzipRewrittenTests: TaskProvider<Copy>) {
+    fun Test.addAsInputAvailableViaSystemProperty(name: String, jarFile: Provider<RegularFile>) {
+      inputs.file(jarFile).withPropertyName(name).withNormalizer(ClasspathNormalizer::class.java)
+      systemProperty(name, jarFile.get().asFile.absolutePath)
+    }
     logger.info("NOTE: Number of processors " + Runtime.getRuntime().availableProcessors())
     logger.info("NOTE: Max parallel forks " + maxParallelForks)
     dependsOn(
       packageTestDeps,
-      processKeepRulesLibWithRelocatedDepsTask,
       r8Lib,
       r8WithRelocatedDepsTask,
       swissArmyKnifeTask,
@@ -549,7 +552,10 @@ tasks {
       unzipTests,
       unzipTestBase,
     )
-    val processKeepRulesLibJar = processKeepRulesLibWithRelocatedDepsTask.getSingleOutputFile()
+    addAsInputAvailableViaSystemProperty(
+      "BUILD_PROP_PROCESS_KEEP_RULES_RUNTIME_PATH",
+      processKeepRulesLibWithRelocatedDepsTask.flatMap { it.outputJar },
+    )
     val r8LibJar = r8Lib.getSingleOutputFile()
     val r8LibPartitionMapFile = file(r8LibJar.toString() + "_map.zip")
     val r8WithRelocatedDepsJar = r8WithRelocatedDepsTask.getSingleOutputFile()
@@ -577,7 +583,6 @@ tasks {
       "BUILD_PROP_KEEPANNO_RUNTIME_PATH",
       extractClassesPaths("keepanno" + File.separator, keepAnnoClassesConfig.asPath),
     )
-    systemProperty("BUILD_PROP_PROCESS_KEEP_RULES_RUNTIME_PATH", processKeepRulesLibJar)
     systemProperty("BUILD_PROP_R8_RUNTIME_PATH", r8LibJar)
     systemProperty("R8_DEPS", mainDepsJarFilesConfig.asPath)
     systemProperty("com.android.tools.r8.artprofilerewritingcompletenesscheck", "true")
