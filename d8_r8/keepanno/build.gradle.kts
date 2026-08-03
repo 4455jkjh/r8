@@ -4,7 +4,6 @@
 
 import com.google.protobuf.gradle.proto
 import java.util.concurrent.Callable
-import org.gradle.nativeplatform.platform.internal.DefaultNativePlatform
 
 plugins {
   // Kotlin version is fixed by create_local_maven_dependencies.py
@@ -15,19 +14,6 @@ plugins {
 }
 
 tasks.named("generateProto") { dependsOn(sharedDepsConfig) }
-
-var os = DefaultNativePlatform.getCurrentOperatingSystem()
-
-protobuf.protoc {
-  if (os.isLinux) {
-    path = getRoot().resolveAll("third_party", "protoc", "linux-x86_64", "bin", "protoc").path
-  } else if (os.isMacOsX) {
-    path = getRoot().resolveAll("third_party", "protoc", "osx-x86_64", "bin", "protoc").path
-  } else {
-    assert(os.isWindows)
-    path = getRoot().resolveAll("third_party", "protoc", "win64", "bin", "protoc.exe").path
-  }
-}
 
 java {
   sourceSets.main.configure {

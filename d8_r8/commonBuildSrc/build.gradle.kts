@@ -13,6 +13,7 @@ dependencies {
   implementation("com.google.code.gson:gson:2.10.1")
   // Kotlin version is fixed by create_local_maven_dependencies.py
   implementation("org.jetbrains.kotlin:kotlin-gradle-plugin:2.2.21")
+  implementation("com.google.protobuf:protobuf-gradle-plugin:0.9.4")
 }
 
 gradlePlugin {
