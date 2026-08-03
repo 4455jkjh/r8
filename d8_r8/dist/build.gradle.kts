@@ -433,7 +433,7 @@ tasks {
   register<CreateR8LibraryTask>("processKeepRulesLibWithRelocatedDeps") {
     r8compilerClasspath.from(r8WithRelocatedDeps.flatMap { it.outputFile })
     inputJar = r8WithRelocatedDeps.flatMap { it.outputFile }
-    pgConfig = File(rootDir, "src/main/keep_processkeeprules.txt")
+    pgConfigs.from(File(rootDir, "src/main/keep_processkeeprules.txt"))
     enableKeepAnnotations = false
 
     setOutputJarFile(File(rootDir, "build/libs/processkeepruleslib.jar"))

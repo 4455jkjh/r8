@@ -84,10 +84,11 @@ dependencies {
 
 val mainProtoJarTask = project(":dist").tasks.getByName("protoJar")
 val mainDepsJarTask = project(":dist").tasks.getByName("depsJar")
-val swissArmyKnifeTask = project(":dist").tasks.getByName("swissArmyKnife")
+val swissArmyKnifeTask = project(":dist").tasks.getByName<Jar>("swissArmyKnife")
 val processKeepRulesLibWithRelocatedDepsTask =
   project(":dist").tasks.named<CreateR8LibraryTask>("processKeepRulesLibWithRelocatedDeps")
-val r8WithRelocatedDepsTask = project(":dist").tasks.getByName("r8WithRelocatedDeps")
+val r8WithRelocatedDepsTask =
+  project(":dist").tasks.getByName<SwissArmyKnifeTask>("r8WithRelocatedDeps")
 val keepAnnoToolsWithRelocatedDepsTask =
   project(":dist").tasks.getByName("keepAnnoToolsWithRelocatedDeps")
 
@@ -247,101 +248,66 @@ tasks {
       )
     }
 
-  fun Exec.assembleR8Lib(
-    inputJarProvider: Task,
+  fun CreateR8LibraryTask.assembleR8Lib(
+    inputJarProvider: Provider<RegularFile>,
     generatedKeepRulesProvider: TaskProvider<Exec>,
-    classpath: List<File>,
+    classpath: List<Task>,
     artifactName: String,
   ) {
-    dependsOn(
+    r8compilerClasspath.from(r8WithRelocatedDepsTask)
+    inputJar = inputJarProvider
+    inputClasspath.from(classpath)
+    replaceInOutputJar = assistantJarConfig.elements.map { it.single().asFile }
+    pgConfigs.from(
+      File(rootDir, "src/main/keep.txt"),
+      File(rootDir, "src/main/discard.txt"),
       generatedKeepRulesProvider,
-      inputJarProvider,
-      r8WithRelocatedDepsTask,
-      assistantJarConfig,
+      // TODO(b/294351878): Remove once enum issue is fixed
+      File(rootDir, "src/main/keep_r8resourceshrinker.txt"),
     )
-    dependOnPythonScripts()
-    val inputJar = inputJarProvider.getSingleOutputFile()
-    val r8WithRelocatedDepsJar = r8WithRelocatedDepsTask.getSingleOutputFile()
-    val assistantJar = assistantJarConfig.singleFile
-    val keepRuleFiles =
-      listOf(
-        getRoot().resolveAll("src", "main", "keep.txt"),
-        getRoot().resolveAll("src", "main", "discard.txt"),
-        generatedKeepRulesProvider.getSingleOutputFile(),
-        // TODO(b/294351878): Remove once enum issue is fixed
-        getRoot().resolveAll("src", "main", "keep_r8resourceshrinker.txt"),
-      )
-    inputs.files(listOf(r8WithRelocatedDepsJar, inputJar).union(keepRuleFiles).union(classpath))
-    val outputJar = getRoot().resolveAll("build", "libs", artifactName)
-    outputs.file(outputJar)
-    commandLine =
-      createR8LibCommandLine(
-        r8WithRelocatedDepsJar,
-        inputJar,
-        outputJar,
-        keepRuleFiles,
-        excludingDepsVariant = classpath.isNotEmpty(),
-        debugVariant = false,
-        classpath = classpath,
-        replaceFromJar = assistantJar,
-        enableHorizontalClassMerging = true,
-      )
+    enableKeepAnnotations = true
+    enableHorizontalClassMerging = true
+    if (classpath.isNotEmpty()) excludingDepsVariant = true
+
+    setOutputJarFile(File(rootDir, "build/libs/$artifactName"))
   }
 
   val assembleR8LibNoDeps =
-    register<Exec>("assembleR8LibNoDeps") {
-      dependsOn(mainDepsJarTask, mainProtoJarTask)
-      val mainDepsJar = mainDepsJarTask.getSingleOutputFile()
-      val mainProtoJar = mainProtoJarTask.getSingleOutputFile()
+    register<CreateR8LibraryTask>("assembleR8LibNoDeps") {
       assembleR8Lib(
-        swissArmyKnifeTask,
-        generateKeepRulesForR8LibNoDeps,
-        listOf(mainDepsJar, mainProtoJar),
-        "r8lib-exclude-deps.jar",
+        inputJarProvider = swissArmyKnifeTask.archiveFile,
+        generatedKeepRulesProvider = generateKeepRulesForR8LibNoDeps,
+        classpath = listOf(mainDepsJarTask, mainProtoJarTask),
+        artifactName = "r8lib-exclude-deps.jar",
       )
+      // TODO: remove when swissArmyKnifeTask is accessed via a TaskProvider
+      dependsOn(swissArmyKnifeTask)
     }
 
   val assembleR8LibWithRelocatedDeps =
-    register<Exec>("assembleR8LibWithRelocatedDeps") {
+    register<CreateR8LibraryTask>("assembleR8LibWithRelocatedDeps") {
       assembleR8Lib(
-        r8WithRelocatedDepsTask,
-        generateKeepRulesForR8LibWithRelocatedDeps,
-        listOf(),
-        "r8lib.jar",
+        inputJarProvider = r8WithRelocatedDepsTask.outputFile,
+        generatedKeepRulesProvider = generateKeepRulesForR8LibWithRelocatedDeps,
+        classpath = listOf(),
+        artifactName = "r8lib.jar",
       )
+      // TODO: remove when r8WithRelocatedDepsTask is accessed via a TaskProvider
+      dependsOn(r8WithRelocatedDepsTask)
     }
 
-  register<Exec>("keepAnnoToolsLib") {
-    dependsOn(r8WithRelocatedDepsTask)
-    dependsOn(keepAnnoToolsWithRelocatedDepsTask)
-    dependsOn(keepAnnoDepsJarOnlyAsmConfig)
-    dependOnPythonScripts()
-    val inputJar = keepAnnoToolsWithRelocatedDepsTask.getSingleOutputFile()
-    val r8WithRelocatedDepsJar = r8WithRelocatedDepsTask.getSingleOutputFile()
-    val keepRuleFiles = listOf(getRoot().resolveAll("src", "keepanno", "keep.txt"))
-    inputs.files(listOf(r8WithRelocatedDepsJar, inputJar).union(keepRuleFiles))
-    val outputJar = getRoot().resolveAll("build", "libs", "keepanno-toolslib.jar")
-    outputs.file(outputJar)
-    commandLine =
-      createR8LibCommandLine(
-        r8WithRelocatedDepsJar,
-        inputJar,
-        outputJar,
-        keepRuleFiles,
-        excludingDepsVariant = false,
-        debugVariant = false,
-        classpath = listOf(keepAnnoDepsJarOnlyAsmConfig.singleFile),
-        versionJar = r8WithRelocatedDepsJar,
-      )
+  register<CreateR8LibraryTask>("keepAnnoToolsLib") {
+    r8compilerClasspath.from(r8WithRelocatedDepsTask)
+    inputJar = keepAnnoToolsWithRelocatedDepsTask.getSingleOutputFile()
+    pgConfigs.from(File(rootDir, "src/keepanno/keep.txt"))
+    inputClasspath.from(keepAnnoDepsJarOnlyAsmConfig)
+    enableKeepAnnotations = true
+
+    setOutputJarFile(File(rootDir, "build/libs/keepanno-toolslib.jar"))
   }
 
-  fun Task.generateTestKeepRulesForR8Lib(
-    r8LibJarProvider: TaskProvider<Exec>,
-    artifactName: String,
-  ) {
-    dependsOn(r8LibJarProvider)
-    val r8LibJar = r8LibJarProvider.getSingleOutputFile()
-    inputs.files(r8LibJar)
+  fun Task.generateTestKeepRulesForR8Lib(r8LibJarMap: Provider<RegularFile>, artifactName: String) {
+    inputs.files(r8LibJarMap)
     val output = rootProject.layout.buildDirectory.get().asFile.resolveAll("libs", artifactName)
     outputs.files(output)
     doLast {
@@ -351,7 +317,7 @@ tasks {
 -dontshrink
 -dontoptimize
 -keepattributes *
--applymapping $r8LibJar.map
+-applymapping ${r8LibJarMap.get().asFile.absolutePath}
 """
       )
     }
@@ -359,12 +325,18 @@ tasks {
 
   val generateTestKeepRulesR8LibWithRelocatedDeps =
     register("generateTestKeepRulesR8LibWithRelocatedDeps") {
-      generateTestKeepRulesForR8Lib(assembleR8LibWithRelocatedDeps, "r8lib-tests-keep.txt")
+      generateTestKeepRulesForR8Lib(
+        assembleR8LibWithRelocatedDeps.flatMap { it.outputPgMap },
+        "r8lib-tests-keep.txt",
+      )
     }
 
   val generateTestKeepRulesR8LibNoDeps =
     register("generateTestKeepRulesR8LibNoDeps") {
-      generateTestKeepRulesForR8Lib(assembleR8LibNoDeps, "r8lib-exclude-deps-tests-keep.txt")
+      generateTestKeepRulesForR8Lib(
+        assembleR8LibNoDeps.flatMap { it.outputPgMap },
+        "r8lib-exclude-deps-tests-keep.txt",
+      )
     }
 
   fun Exec.rewriteTestsForR8Lib(
@@ -512,7 +484,10 @@ tasks {
       unzipRewrittenTestsForR8Lib(rewriteTestsForR8LibNoDeps, "rewrittentests-r8lib-exclude-deps")
     }
 
-  fun Test.testR8Lib(r8Lib: TaskProvider<Exec>, unzipRewrittenTests: TaskProvider<Copy>) {
+  fun Test.testR8Lib(
+    r8Lib: TaskProvider<CreateR8LibraryTask>,
+    unzipRewrittenTests: TaskProvider<Copy>,
+  ) {
     fun Test.addAsInputAvailableViaSystemProperty(name: String, jarFile: Provider<RegularFile>) {
       inputs.file(jarFile).withPropertyName(name).withNormalizer(ClasspathNormalizer::class.java)
       systemProperty(name, jarFile.get().asFile.absolutePath)
@@ -534,15 +509,16 @@ tasks {
       "BUILD_PROP_PROCESS_KEEP_RULES_RUNTIME_PATH",
       processKeepRulesLibWithRelocatedDepsTask.flatMap { it.outputJar },
     )
-    val r8LibJar = r8Lib.getSingleOutputFile()
-    val r8LibPartitionMapFile = file(r8LibJar.toString() + "_map.zip")
+    val r8LibJar = r8Lib.flatMap { it.outputJar }
+    val r8LibPartitionMapFile = r8Lib.flatMap { it.outputPartitionMap }
     val r8WithRelocatedDepsJar = r8WithRelocatedDepsTask.getSingleOutputFile()
     val swissArmyKnifeJar = swissArmyKnifeTask.getSingleOutputFile()
     configure(
       isR8Lib = true,
       r8Jar = r8WithRelocatedDepsJar,
-      r8LibPartitionMapFile = r8LibPartitionMapFile,
+      r8LibPartitionMapFile = r8LibPartitionMapFile.get().asFile,
     )
+    addAsInputAvailableViaSystemProperty("BUILD_PROP_R8_RUNTIME_PATH", r8LibJar)
 
     // R8lib should be used instead of the main output and all the tests in r8 should be mapped and
     // exists in r8LibTestPath.
@@ -561,7 +537,6 @@ tasks {
       "BUILD_PROP_KEEPANNO_RUNTIME_PATH",
       extractClassesPaths("keepanno" + File.separator, keepAnnoClassesConfig.asPath),
     )
-    systemProperty("BUILD_PROP_R8_RUNTIME_PATH", r8LibJar)
     systemProperty("R8_DEPS", mainDepsJarFilesConfig.asPath)
     systemProperty("com.android.tools.r8.artprofilerewritingcompletenesscheck", "true")
     systemProperty("R8_SWISS_ARMY_KNIFE", swissArmyKnifeJar)
