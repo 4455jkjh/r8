@@ -6,7 +6,6 @@ package com.android.tools.r8.apimodel;
 
 import com.android.tools.r8.references.ClassReference;
 import com.android.tools.r8.references.MethodReference;
-import com.android.tools.r8.utils.AndroidApiLevel;
 import com.android.tools.r8.utils.internal.ThrowingBiConsumer;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -15,87 +14,89 @@ import java.util.function.BiConsumer;
 public class ParsedApiClass {
 
   private final ClassReference apiClassReference;
-  private final AndroidApiLevel introApiLevel;
-  private final Map<ClassReference, AndroidApiLevel> supertypes = new LinkedHashMap<>();
-  private final Map<ClassReference, AndroidApiLevel> interfaces = new LinkedHashMap<>();
-  private final Map<MethodReference, AndroidApiLevel> methods = new LinkedHashMap<>();
-  private final Map<FieldTypelessReference, AndroidApiLevel> fields = new LinkedHashMap<>();
+  private final ApiRange apiRange;
+  private final Map<ClassReference, ApiRange> supertypes = new LinkedHashMap<>();
+  private final Map<ClassReference, ApiRange> interfaces = new LinkedHashMap<>();
+  private final Map<MethodReference, ApiRange> methods = new LinkedHashMap<>();
+  private final Map<FieldTypelessReference, ApiRange> fields = new LinkedHashMap<>();
 
-  public ParsedApiClass(ClassReference apiClassReference, AndroidApiLevel introApiLevel) {
+  public ParsedApiClass(ClassReference apiClassReference, ApiRange apiRange) {
+    assert apiClassReference != null;
+    assert apiRange != null : "null api range for " + apiClassReference;
     this.apiClassReference = apiClassReference;
-    this.introApiLevel = introApiLevel;
+    this.apiRange = apiRange;
   }
 
   public ClassReference getClassReference() {
     return apiClassReference;
   }
 
-  public AndroidApiLevel getApiLevel() {
-    return introApiLevel;
+  public ApiRange getRange() {
+    return apiRange;
   }
 
-  public void registerSupertype(ClassReference reference, AndroidApiLevel introApiLevel) {
+  public void registerSupertype(ClassReference reference, ApiRange apiRange) {
     assert !supertypes.containsKey(reference) : reference + " is already registered";
-    supertypes.put(reference, introApiLevel);
+    supertypes.put(reference, apiRange);
   }
 
   public boolean hasSupertype(ClassReference reference) {
     return supertypes.containsKey(reference);
   }
 
-  public AndroidApiLevel getSupertypeApiLevel(ClassReference reference) {
+  public ApiRange getSupertypeRange(ClassReference reference) {
     return supertypes.get(reference);
   }
 
   /** Visited in insertion order */
-  public void forEachSupertype(BiConsumer<ClassReference, AndroidApiLevel> consumer) {
+  public void forEachSupertype(BiConsumer<ClassReference, ApiRange> consumer) {
     supertypes.forEach(consumer);
   }
 
   /** Visited in insertion order. */
   public <E extends Throwable> void forEachSupertypeThrowing(
-      ThrowingBiConsumer<ClassReference, AndroidApiLevel, E> consumer) throws E {
-    for (Map.Entry<ClassReference, AndroidApiLevel> entry : supertypes.entrySet()) {
+      ThrowingBiConsumer<ClassReference, ApiRange, E> consumer) throws E {
+    for (Map.Entry<ClassReference, ApiRange> entry : supertypes.entrySet()) {
       consumer.accept(entry.getKey(), entry.getValue());
     }
   }
 
-  public void registerInterface(ClassReference reference, AndroidApiLevel introApiLevel) {
+  public void registerInterface(ClassReference reference, ApiRange apiRange) {
     assert !interfaces.containsKey(reference) : reference + " is already registered";
-    interfaces.put(reference, introApiLevel);
+    interfaces.put(reference, apiRange);
   }
 
   public boolean hasInterface(ClassReference reference) {
     return interfaces.containsKey(reference);
   }
 
-  public AndroidApiLevel getInterfaceApiLevel(ClassReference reference) {
+  public ApiRange getInterfaceRange(ClassReference reference) {
     return interfaces.get(reference);
   }
 
   /** Visited in insertion order. */
-  public void forEachInterface(BiConsumer<ClassReference, AndroidApiLevel> consumer) {
+  public void forEachInterface(BiConsumer<ClassReference, ApiRange> consumer) {
     interfaces.forEach(consumer);
   }
 
   /** Visited in insertion order. */
   public <E extends Throwable> void forEachInterfaceThrowing(
-      ThrowingBiConsumer<ClassReference, AndroidApiLevel, E> consumer) throws E {
-    for (Map.Entry<ClassReference, AndroidApiLevel> entry : interfaces.entrySet()) {
+      ThrowingBiConsumer<ClassReference, ApiRange, E> consumer) throws E {
+    for (Map.Entry<ClassReference, ApiRange> entry : interfaces.entrySet()) {
       consumer.accept(entry.getKey(), entry.getValue());
     }
   }
 
-  public void registerMethod(MethodReference reference, AndroidApiLevel introApiLevel) {
+  public void registerMethod(MethodReference reference, ApiRange apiRange) {
     assert !methods.containsKey(reference) : reference + " is already registered";
-    methods.put(reference, introApiLevel);
+    methods.put(reference, apiRange);
   }
 
   public boolean hasMethod(MethodReference reference) {
     return methods.containsKey(reference);
   }
 
-  public AndroidApiLevel getMethodApiLevel(MethodReference reference) {
+  public ApiRange getMethodRange(MethodReference reference) {
     return methods.get(reference);
   }
 
@@ -104,20 +105,28 @@ public class ParsedApiClass {
   }
 
   /** Visited in insertion order. */
-  public void forEachMethod(BiConsumer<MethodReference, AndroidApiLevel> consumer) {
+  public void forEachMethod(BiConsumer<MethodReference, ApiRange> consumer) {
     methods.forEach(consumer);
   }
 
-  public void registerField(FieldTypelessReference reference, AndroidApiLevel introApiLevel) {
+  /** Visited in insertion order. */
+  public <E extends Throwable> void forEachMethodThrowing(
+      ThrowingBiConsumer<MethodReference, ApiRange, E> consumer) throws E {
+    for (Map.Entry<MethodReference, ApiRange> entry : methods.entrySet()) {
+      consumer.accept(entry.getKey(), entry.getValue());
+    }
+  }
+
+  public void registerField(FieldTypelessReference reference, ApiRange apiRange) {
     assert !fields.containsKey(reference) : reference + " is already registered";
-    fields.put(reference, introApiLevel);
+    fields.put(reference, apiRange);
   }
 
   public boolean hasField(FieldTypelessReference reference) {
     return fields.containsKey(reference);
   }
 
-  public AndroidApiLevel getFieldApiLevel(FieldTypelessReference reference) {
+  public ApiRange getFieldRange(FieldTypelessReference reference) {
     return fields.get(reference);
   }
 
@@ -126,7 +135,15 @@ public class ParsedApiClass {
   }
 
   /** Visited in insertion order. */
-  public void forEachField(BiConsumer<FieldTypelessReference, AndroidApiLevel> consumer) {
+  public void forEachField(BiConsumer<FieldTypelessReference, ApiRange> consumer) {
     fields.forEach(consumer);
+  }
+
+  /** Visited in insertion order. */
+  public <E extends Throwable> void forEachFieldThrowing(
+      ThrowingBiConsumer<FieldTypelessReference, ApiRange, E> consumer) throws E {
+    for (Map.Entry<FieldTypelessReference, ApiRange> entry : fields.entrySet()) {
+      consumer.accept(entry.getKey(), entry.getValue());
+    }
   }
 }

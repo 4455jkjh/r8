@@ -117,13 +117,14 @@ public class AndroidApiHashingDatabaseBuilderGeneratorTest extends TestBase {
             ToolHelper.getApiVersionsXmlFile(API_LEVEL), androidJar, API_LEVEL, false);
     DexItemFactory factory = new DexItemFactory();
     addCovariantMethods(apiClasses, factory);
-    addAdditionalKnownApiReferences(apiClasses, factory);
+    addAdditionalKnownApiReferences(apiClasses);
     Map<ApiDatabaseEntry, AndroidApiLevel> databaseEntries =
         AndroidApiHashingDatabaseBuilderGenerator.generateEntries(apiClasses);
     verifyAgainstJar(apiClasses, databaseEntries, API_LEVEL);
     return databaseEntries;
   }
 
+  @SuppressWarnings("SameParameterValue")
   private static void verifyAgainstJar(
       List<ParsedApiClass> apiClasses,
       Map<ApiDatabaseEntry, AndroidApiLevel> databaseEntries,
@@ -157,11 +158,13 @@ public class AndroidApiHashingDatabaseBuilderGeneratorTest extends TestBase {
       lookupMap.put(apiClass.getClassReference(), apiClass);
       Map<DexMethod, AndroidApiLevel> methodsForApiClass = new HashMap<>();
       apiClass.forEachMethod(
-          (method, lvl) -> methodsForApiClass.put(factory.createMethod(method), lvl));
+          (method, apiRange) ->
+              methodsForApiClass.put(factory.createMethod(method), apiRange.intro));
       methodMap.put(apiClass.getClassReference(), methodsForApiClass);
 
       Map<FieldTypelessReference, AndroidApiLevel> fieldsForApiClass = new HashMap<>();
-      apiClass.forEachField(fieldsForApiClass::put);
+      apiClass.forEachField(
+          (fieldReference, apiRange) -> fieldsForApiClass.put(fieldReference, apiRange.intro));
       fieldMap.put(apiClass.getClassReference(), fieldsForApiClass);
     }
 
@@ -241,21 +244,21 @@ public class AndroidApiHashingDatabaseBuilderGeneratorTest extends TestBase {
     for (ParsedApiClass apiClass : apiClasses) {
       Map<DexMethod, AndroidApiLevel> methodsForApiClass = new HashMap<>();
       apiClass.forEachMethod(
-          (method, apiLevel) -> methodsForApiClass.put(factory.createMethod(method), apiLevel));
+          (method, apiRange) ->
+              methodsForApiClass.put(factory.createMethod(method), apiRange.intro));
       covariantMethodsInJar.visitCovariantMethodsForHolder(
           apiClass.getClassReference(),
           (methodReference, apiLevel) -> {
             DexMethod method = factory.createMethod(methodReference);
             if (!methodsForApiClass.containsKey(method)) {
-              apiClass.registerMethod(methodReference, apiLevel);
+              apiClass.registerMethod(methodReference, new ApiRange(apiLevel));
               methodsForApiClass.put(method, apiLevel);
             }
           });
     }
   }
 
-  private static void addAdditionalKnownApiReferences(
-      List<ParsedApiClass> apiClasses, DexItemFactory factory) {
+  private static void addAdditionalKnownApiReferences(List<ParsedApiClass> apiClasses) {
     Map<ClassReference, ParsedApiClass> lookupMap = new HashMap<>();
     for (ParsedApiClass apiClass : apiClasses) {
       lookupMap.put(apiClass.getClassReference(), apiClass);
@@ -263,7 +266,7 @@ public class AndroidApiHashingDatabaseBuilderGeneratorTest extends TestBase {
     AndroidApiLevelDatabaseTestHelper.visitAllAdditionalAndHiddenReferences(
         (classRef, superRef, apiLevel) -> {
           assert !lookupMap.containsKey(classRef) : classRef + " is already registered";
-          ParsedApiClass apiClass = new ParsedApiClass(classRef, apiLevel);
+          ParsedApiClass apiClass = new ParsedApiClass(classRef, new ApiRange(apiLevel));
           lookupMap.put(classRef, apiClass);
           apiClasses.add(apiClass);
         },
@@ -271,11 +274,11 @@ public class AndroidApiHashingDatabaseBuilderGeneratorTest extends TestBase {
           ClassReference holderRef = methodRef.getHolderClass();
           ParsedApiClass apiClass = lookupMap.get(holderRef);
           if (apiClass == null) {
-            apiClass = new ParsedApiClass(holderRef, apiLevel);
+            apiClass = new ParsedApiClass(holderRef, new ApiRange(apiLevel));
             lookupMap.put(holderRef, apiClass);
             apiClasses.add(apiClass);
           }
-          apiClass.registerMethod(methodRef, apiLevel);
+          apiClass.registerMethod(methodRef, new ApiRange(apiLevel));
         },
         (fieldRef, apiLevel) -> {
           ClassReference holderRef = fieldRef.getHolderClass();
@@ -283,11 +286,11 @@ public class AndroidApiHashingDatabaseBuilderGeneratorTest extends TestBase {
               new FieldTypelessReference(holderRef, fieldRef.getFieldName());
           ParsedApiClass apiClass = lookupMap.get(holderRef);
           if (apiClass == null) {
-            apiClass = new ParsedApiClass(holderRef, apiLevel);
+            apiClass = new ParsedApiClass(holderRef, new ApiRange(apiLevel));
             lookupMap.put(holderRef, apiClass);
             apiClasses.add(apiClass);
           }
-          apiClass.registerField(fieldTypelessRef, apiLevel);
+          apiClass.registerField(fieldTypelessRef, new ApiRange(apiLevel));
         });
   }
 
@@ -415,15 +418,15 @@ public class AndroidApiHashingDatabaseBuilderGeneratorTest extends TestBase {
     assertEquals(
         sdkExtension.getClassReference(),
         Reference.classFromDescriptor("Landroid/os/ext/SdkExtensions;"));
-    assertEquals(AndroidApiLevel.R, sdkExtension.getApiLevel());
+    assertEquals(AndroidApiLevel.R, sdkExtension.getRange().intro);
     sdkExtension.forEachMethod(
-        (method, apiLevel) -> {
-          if (apiLevel.equals(AndroidApiLevel.R)) {
+        (method, apiRange) -> {
+          if (apiRange.intro.equals(AndroidApiLevel.R)) {
             assertEquals(
                 method,
                 Reference.methodFromDescriptor(
                     "Landroid/os/ext/SdkExtensions;", "getExtensionVersion", "(I)I"));
-          } else if (apiLevel.equals(AndroidApiLevel.S)) {
+          } else if (apiRange.intro.equals(AndroidApiLevel.S)) {
             assertEquals(
                 method,
                 Reference.methodFromDescriptor(
@@ -435,8 +438,8 @@ public class AndroidApiHashingDatabaseBuilderGeneratorTest extends TestBase {
           }
         });
     sdkExtension.forEachField(
-        (field, apiLevel) -> {
-          if (apiLevel.equals(AndroidApiLevel.U)) {
+        (field, apiRange) -> {
+          if (apiRange.intro.equals(AndroidApiLevel.U)) {
             assertEquals(
                 field,
                 new FieldTypelessReference(
@@ -455,10 +458,10 @@ public class AndroidApiHashingDatabaseBuilderGeneratorTest extends TestBase {
   private static void checkMockClass(
       ParsedApiClass apiClass, String descriptor, AndroidApiLevel apiLevel) {
     assertEquals(apiClass.getClassReference(), Reference.classFromDescriptor(descriptor));
-    assertEquals(apiLevel, apiClass.getApiLevel());
+    assertEquals(apiLevel, apiClass.getRange().intro);
     apiClass.forEachMethod(
-        (method, level) -> {
-          if (level.equals(apiLevel)) {
+        (method, apiRange) -> {
+          if (apiRange.intro.equals(apiLevel)) {
             assertEquals(method, Reference.methodFromDescriptor(descriptor, "foo", "(I)V"));
           } else {
             fail();
@@ -719,9 +722,9 @@ public class AndroidApiHashingDatabaseBuilderGeneratorTest extends TestBase {
           }
           DexType type = factory.createType(classReference.getDescriptor());
           AndroidApiLevel apiLevel = androidApiLevelDatabase.getTypeApiLevel(type);
-          assertEquals(parsedApiClass.getApiLevel(), apiLevel);
+          assertEquals(parsedApiClass.getRange().intro, apiLevel);
           parsedApiClass.forEachMethod(
-              (methodReference, methodApiLevel) -> {
+              (methodReference, methodApiRange) -> {
                 MethodSubject methodSubject = clazz.method(methodReference);
                 if (!methodSubject.isPresent()) {
                   missingMethods.add(methodReference.toSourceString());
@@ -734,10 +737,10 @@ public class AndroidApiHashingDatabaseBuilderGeneratorTest extends TestBase {
                 } else {
                   androidApiLevel = androidApiLevelDatabase.getMethodApiLevel(method);
                 }
-                assertTrue(androidApiLevel.isLessThanOrEqualTo(methodApiLevel));
+                assertTrue(androidApiLevel.isLessThanOrEqualTo(methodApiRange.intro));
               });
           parsedApiClass.forEachField(
-              (fieldReference, fieldApiLevel) -> {
+              (fieldReference, fieldApiRange) -> {
                 FieldSubject fieldSubject =
                     clazz.uniqueFieldWithOriginalName(fieldReference.getFieldName());
                 if (!fieldSubject.isPresent()) {
@@ -748,7 +751,7 @@ public class AndroidApiHashingDatabaseBuilderGeneratorTest extends TestBase {
                 assertTrue(
                     androidApiLevelDatabase
                         .getFieldApiLevel(field)
-                        .isLessThanOrEqualTo(fieldApiLevel));
+                        .isLessThanOrEqualTo(fieldApiRange.intro));
               });
         });
 

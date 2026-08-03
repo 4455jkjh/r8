@@ -8,16 +8,10 @@ import com.android.tools.r8.ApiDatabaseGeneratorException;
 import com.android.tools.r8.DiagnosticsHandler;
 import com.android.tools.r8.androidapi.DuplicateApiDatabaseEntryDiagnostic;
 import com.android.tools.r8.references.ClassReference;
-import com.android.tools.r8.utils.AndroidApiLevel;
-import com.android.tools.r8.utils.internal.StringUtils;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.function.BiConsumer;
-import java.util.function.Consumer;
-import java.util.function.Function;
 
 public class ParsedApiClassMerging {
 
@@ -57,36 +51,94 @@ public class ParsedApiClassMerging {
     assert a.getClassReference().equals(b.getClassReference());
     diagnosticsHandler.error(duplicateClassError(a));
 
-    AndroidApiLevel mergedIntro = a.getApiLevel().min(b.getApiLevel());
-    ParsedApiClass mergedClass = new ParsedApiClass(a.getClassReference(), mergedIntro);
+    if (!a.getRange().equals(b.getRange())) {
+      throw new ApiDatabaseGeneratorException(
+          "Trying to merge "
+              + a.getClassReference()
+              + " with incompatible ranges "
+              + a.getRange()
+              + " and "
+              + b.getRange());
+    }
+    ParsedApiClass mergedClass = new ParsedApiClass(a.getClassReference(), a.getRange());
 
-    mergeMembers(
-        a::forEachSupertype,
-        b::forEachSupertype,
-        a::getSupertypeApiLevel,
-        b::getSupertypeApiLevel,
-        mergedClass::registerSupertype);
+    a.forEachSupertype(mergedClass::registerSupertype);
+    b.forEachSupertypeThrowing(
+        (classReference, apiRange) -> {
+          if (!mergedClass.hasSupertype(classReference)) {
+            mergedClass.registerSupertype(classReference, apiRange);
+          } else {
+            ApiRange mergedRange = mergedClass.getSupertypeRange(classReference);
+            if (!mergedRange.equals(apiRange)) {
+              throw new ApiDatabaseGeneratorException(
+                  "Cannot merge incompatible ranges for extends "
+                      + classReference
+                      + " in class "
+                      + mergedClass.getClassReference()
+                      + ". "
+                      + mergedRange
+                      + " and "
+                      + apiRange);
+            }
+          }
+        });
 
-    checkSupertypeConflict(mergedClass);
-
-    mergeMembers(
-        a::forEachInterface,
-        b::forEachInterface,
-        a::getInterfaceApiLevel,
-        b::getInterfaceApiLevel,
-        mergedClass::registerInterface);
-    mergeMembers(
-        a::forEachMethod,
-        b::forEachMethod,
-        a::getMethodApiLevel,
-        b::getMethodApiLevel,
-        mergedClass::registerMethod);
-    mergeMembers(
-        a::forEachField,
-        b::forEachField,
-        a::getFieldApiLevel,
-        b::getFieldApiLevel,
-        mergedClass::registerField);
+    a.forEachInterface(mergedClass::registerInterface);
+    b.forEachInterfaceThrowing(
+        (classReference, apiRange) -> {
+          if (!mergedClass.hasInterface(classReference)) {
+            mergedClass.registerInterface(classReference, apiRange);
+          } else {
+            ApiRange mergedRange = mergedClass.getInterfaceRange(classReference);
+            if (!mergedRange.equals(apiRange)) {
+              throw new ApiDatabaseGeneratorException(
+                  "Cannot merge incompatible ranges for implements "
+                      + classReference
+                      + " in class "
+                      + mergedClass.getClassReference()
+                      + ". "
+                      + mergedRange
+                      + " and "
+                      + apiRange);
+            }
+          }
+        });
+    a.forEachMethod(mergedClass::registerMethod);
+    b.forEachMethodThrowing(
+        (methodReference, apiRange) -> {
+          if (!mergedClass.hasMethod(methodReference)) {
+            mergedClass.registerMethod(methodReference, apiRange);
+          } else {
+            ApiRange mergedRange = mergedClass.getMethodRange(methodReference);
+            if (!mergedRange.equals(apiRange)) {
+              throw new ApiDatabaseGeneratorException(
+                  "Cannot merge incompatible ranges for "
+                      + methodReference
+                      + ". "
+                      + mergedRange
+                      + " and "
+                      + apiRange);
+            }
+          }
+        });
+    a.forEachField(mergedClass::registerField);
+    b.forEachFieldThrowing(
+        (fieldReference, apiRange) -> {
+          if (!mergedClass.hasField(fieldReference)) {
+            mergedClass.registerField(fieldReference, apiRange);
+          } else {
+            ApiRange mergedRange = mergedClass.getFieldRange(fieldReference);
+            if (!mergedRange.equals(apiRange)) {
+              throw new ApiDatabaseGeneratorException(
+                  "Cannot merge incompatible ranges for "
+                      + fieldReference
+                      + ". "
+                      + mergedRange
+                      + " and "
+                      + apiRange);
+            }
+          }
+        });
 
     return mergedClass;
   }
@@ -96,39 +148,5 @@ public class ParsedApiClassMerging {
     String key = duplicateClass.getClassReference().getTypeName();
     String message = "Duplicate class " + key + " found when merging .xml files.";
     return new DuplicateApiDatabaseEntryDiagnostic(message);
-  }
-
-  private static <T> void mergeMembers(
-      Consumer<BiConsumer<T, AndroidApiLevel>> forEachA,
-      Consumer<BiConsumer<T, AndroidApiLevel>> forEachB,
-      Function<T, AndroidApiLevel> lookupA,
-      Function<T, AndroidApiLevel> lookupB,
-      BiConsumer<T, AndroidApiLevel> register) {
-    forEachA.accept(
-        (member, lvlA) -> {
-          AndroidApiLevel lvlB = lookupB.apply(member);
-          register.accept(member, lvlB != null ? lvlA.min(lvlB) : lvlA);
-        });
-    forEachB.accept(
-        (member, lvlB) -> {
-          if (lookupA.apply(member) == null) {
-            register.accept(member, lvlB);
-          }
-        });
-  }
-
-  private static void checkSupertypeConflict(ParsedApiClass mergedClass)
-      throws ApiDatabaseGeneratorException {
-    List<ClassReference> mergedSupertypes = new ArrayList<>();
-    mergedClass.forEachSupertype((ref, lvl) -> mergedSupertypes.add(ref));
-    if (mergedSupertypes.size() > 1) {
-      String supertypesString =
-          StringUtils.join(", ", mergedSupertypes, ClassReference::getTypeName);
-      throw new ApiDatabaseGeneratorException(
-          "Class "
-              + mergedClass.getClassReference().getTypeName()
-              + " has conflicting supertypes: "
-              + supertypesString);
-    }
   }
 }
