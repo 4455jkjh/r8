@@ -296,23 +296,4 @@ public class GenerateCovariantReturnTypeMethodsTest extends TestBase {
       }
     }
   }
-
-  private static class MethodReferenceWithApiLevel {
-
-    private final MethodReference methodReference;
-    private final AndroidApiLevel apiLevel;
-
-    private MethodReferenceWithApiLevel(MethodReference methodReference, AndroidApiLevel apiLevel) {
-      this.methodReference = methodReference;
-      this.apiLevel = apiLevel;
-    }
-
-    public MethodReference getMethodReference() {
-      return methodReference;
-    }
-
-    public AndroidApiLevel getApiLevel() {
-      return apiLevel;
-    }
-  }
 }
