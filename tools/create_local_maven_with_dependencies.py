@@ -8,6 +8,7 @@ import os.path
 import shutil
 import subprocess
 import sys
+from pathlib import Path
 
 import utils
 
@@ -172,11 +173,29 @@ def create_local_maven_repository(args, dependencies_path, repositories,
         for dependency in dependencies:
             cmd.append(dependency)
         subprocess.check_call(cmd)
+        clean_remote_repositories_files(dependencies_path)
+
+
+def clean_remote_repositories_files(directory_path):
+    """
+    Recursively finds and deletes all '_remote.repositories' files
+    in the specified directory. These files include timestamps making
+    the dependencies archive creation non-reproducible.
+    """
+    # rglob performs a recursive search for the given pattern
+    for file_path in Path(directory_path).rglob("_remote.repositories"):
+        if file_path.is_file():
+            try:
+                file_path.unlink()
+            except PermissionError:
+                print(f"Permission denied: {file_path}")
+            except Exception as e:
+                print(f"Error deleting {file_path}: {e}")
 
 
 def parse_options():
     result = argparse.ArgumentParser(
-        description='Create local Maven repository woth dependencies')
+        description='Create local Maven repository with dependencies')
     result.add_argument(
         '--studio',
         metavar=('<path>'),
