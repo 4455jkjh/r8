@@ -33,6 +33,12 @@ public class StringBuilderOutlinerCharTypeTest extends BottomUpOutlinerTestBase 
       throws Exception {
     testBuilder
         .addInnerClasses(getClass())
+        .addOptionsModification(
+            options -> {
+              // Disable StringBuilder optimization so that new StringBuilder().append(c).toString()
+              // is not optimized into String.valueOf(c).
+              options.enableStringConcatenationOptimization = false;
+            })
         .apply(this::configure)
         .compile()
         .run(parameters.getRuntime(), Main.class)

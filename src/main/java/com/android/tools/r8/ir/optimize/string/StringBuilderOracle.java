@@ -49,6 +49,10 @@ interface StringBuilderOracle {
 
   boolean isInit(Instruction instruction);
 
+  boolean isAppendPrimitive(Instruction instruction);
+
+  boolean isAppendObject(Instruction instruction);
+
   boolean isAppendString(Instruction instruction);
 
   boolean isStringConstructor(InvokeMethodWithReceiver invoke);
@@ -241,11 +245,31 @@ interface StringBuilderOracle {
     }
 
     @Override
-    public boolean isAppendString(Instruction instruction) {
-      if (!instruction.isInvokeMethod()) {
+    public boolean isAppendPrimitive(Instruction instruction) {
+      if (!instruction.isInvokeVirtual()) {
         return false;
       }
-      DexMethod invokedMethod = instruction.asInvokeMethod().getInvokedMethod();
+      DexMethod invokedMethod = instruction.asInvokeVirtual().getInvokedMethod();
+      return factory.stringBuilderMethods.isAppendPrimitiveMethod(invokedMethod)
+          || factory.stringBufferMethods.isAppendPrimitiveMethod(invokedMethod);
+    }
+
+    @Override
+    public boolean isAppendObject(Instruction instruction) {
+      if (!instruction.isInvokeVirtual()) {
+        return false;
+      }
+      DexMethod invokedMethod = instruction.asInvokeVirtual().getInvokedMethod();
+      return factory.stringBuilderMethods.isAppendObjectMethod(invokedMethod)
+          || factory.stringBufferMethods.isAppendObjectMethod(invokedMethod);
+    }
+
+    @Override
+    public boolean isAppendString(Instruction instruction) {
+      if (!instruction.isInvokeVirtual()) {
+        return false;
+      }
+      DexMethod invokedMethod = instruction.asInvokeVirtual().getInvokedMethod();
       return factory.stringBuilderMethods.isAppendStringMethod(invokedMethod)
           || factory.stringBufferMethods.isAppendStringMethod(invokedMethod);
     }

@@ -401,13 +401,13 @@ class StringBuilderNode {
   static class AppendNode extends StringBuilderNode
       implements InitOrAppendNode, StringBuilderInstruction {
 
-    private final InvokeVirtual instruction;
+    private final InvokeVirtual invoke;
     private ImplicitToStringNode implicitToStringNode;
     private String constantArgument;
     private Value nonConstantArgument;
 
-    private AppendNode(InvokeVirtual instruction) {
-      this.instruction = instruction;
+    private AppendNode(InvokeVirtual invoke) {
+      this.invoke = invoke;
     }
 
     @Override
@@ -431,8 +431,8 @@ class StringBuilderNode {
     }
 
     @Override
-    public Instruction getInstruction() {
-      return instruction;
+    public InvokeVirtual getInstruction() {
+      return invoke;
     }
 
     @Override
@@ -491,10 +491,10 @@ class StringBuilderNode {
    */
   static class ToStringNode extends StringBuilderNode implements StringBuilderInstruction {
 
-    private final InvokeMethod instruction;
+    private final InvokeMethod invoke;
 
-    private ToStringNode(InvokeMethod instruction) {
-      this.instruction = instruction;
+    private ToStringNode(InvokeMethod invoke) {
+      this.invoke = invoke;
     }
 
     @Override
@@ -508,8 +508,8 @@ class StringBuilderNode {
     }
 
     @Override
-    public Instruction getInstruction() {
-      return instruction;
+    public InvokeMethod getInstruction() {
+      return invoke;
     }
 
     @Override

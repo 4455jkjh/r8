@@ -5,9 +5,11 @@
 package com.android.tools.r8.ir.optimize.string;
 
 import com.android.tools.r8.ir.code.Instruction;
+import com.android.tools.r8.ir.code.InvokeVirtual;
 import com.android.tools.r8.ir.code.Value;
 import com.android.tools.r8.ir.optimize.string.StringBuilderAction.AppendWithNewConstantString;
 import com.android.tools.r8.ir.optimize.string.StringBuilderAction.RemoveStringBuilderAction;
+import com.android.tools.r8.ir.optimize.string.StringBuilderAction.ReplaceAppendByStringValueOfAction;
 import com.android.tools.r8.ir.optimize.string.StringBuilderAction.ReplaceAppendWithInit;
 import com.android.tools.r8.ir.optimize.string.StringBuilderAction.ReplaceArgumentByExistingString;
 import com.android.tools.r8.ir.optimize.string.StringBuilderAction.ReplaceArgumentByStringConcat;
@@ -296,8 +298,7 @@ class StringBuilderNodeMuncher {
         return false;
       }
       if (firstNode.asInitNode().isConstructorInvokeSideEffectFree(munchingState.oracle)
-          && "".equals(firstNode.getConstantArgument())
-          && firstNode.hasSingleSuccessor()) {
+          && "".equals(firstNode.getConstantArgument())) {
         firstNode = firstNode.getSingleSuccessor().asAppendNode();
         if (firstNode == null
             || !firstNode.hasSinglePredecessor()
@@ -386,6 +387,56 @@ class StringBuilderNodeMuncher {
       }
       munchingState.materializingInstructions.get(originalRoot).remove(currentNode);
       currentNode.removeNode();
+      return true;
+    }
+  }
+
+  private static class MunchSingleAppendStringBuilderToStringValueOf implements PeepholePattern {
+
+    @Override
+    public boolean optimize(
+        StringBuilderNode originalRoot,
+        StringBuilderNode currentNode,
+        MunchingState munchingState) {
+      if (munchingState.isEscaping(originalRoot)
+          || munchingState.isInspecting(originalRoot)
+          || !currentNode.isAppendNode()
+          || !currentNode.hasSinglePredecessor()) {
+        return false;
+      }
+      AppendNode appendNode = currentNode.asAppendNode();
+      NewInstanceNode newInstanceNode = munchingState.getNewInstanceNode(originalRoot);
+      if (newInstanceNode == null || !newInstanceNode.hasSingleSuccessor()) {
+        return false;
+      }
+      InitNode initNode = newInstanceNode.getSingleSuccessor().asInitNode();
+      if (initNode == null
+          || !initNode.hasSingleSuccessor()
+          || initNode.getSingleSuccessor() != appendNode
+          || !initNode.isConstructorInvokeSideEffectFree(munchingState.oracle)
+          || !"".equals(initNode.getConstantArgument())) {
+        return false;
+      }
+      if (!appendNode.hasSinglePredecessor() || !appendNode.hasSingleSuccessor()) {
+        return false;
+      }
+      InvokeVirtual appendInstruction = appendNode.getInstruction();
+      if (!munchingState.oracle.isAppendPrimitive(appendInstruction)
+          && !munchingState.oracle.isAppendObject(appendInstruction)
+          && !munchingState.oracle.isAppendString(appendInstruction)) {
+        return false;
+      }
+      ToStringNode toStringNode = appendNode.getSingleSuccessor().asToStringNode();
+      if (toStringNode == null || !toStringNode.hasSinglePredecessor()) {
+        return false;
+      }
+      // Replace the append instruction by a call to String#valueOf to make sure that any observable
+      // side effects from calling Object#toString will materialize in the same place as before.
+      // Then replace all uses of the out-value of the call to StringBuilder#toString by the new
+      // out-value of String#valueOf.
+      munchingState.actions.put(
+          appendNode.getInstruction(),
+          new ReplaceAppendByStringValueOfAction(toStringNode.asToStringNode().getInstruction()));
       return true;
     }
   }
@@ -510,7 +561,8 @@ class StringBuilderNodeMuncher {
         new MunchAppends(),
         new MunchToString(),
         new MunchToStringIntoStringConcat(),
-        new MunchNonMaterializing()
+        new MunchNonMaterializing(),
+        new MunchSingleAppendStringBuilderToStringValueOf()
       };
 
   static boolean optimize(
