@@ -15,6 +15,7 @@ import com.android.tools.r8.graph.DexString;
 import com.android.tools.r8.graph.ProgramMethod;
 import com.android.tools.r8.ir.analysis.proto.schema.DeadProtoFieldObject;
 import com.android.tools.r8.ir.analysis.proto.schema.LiveProtoFieldObject;
+import com.android.tools.r8.ir.analysis.proto.schema.ProtoBoxedBooleanObject;
 import com.android.tools.r8.ir.analysis.proto.schema.ProtoBoxedIntObject;
 import com.android.tools.r8.ir.analysis.proto.schema.ProtoFieldInfo;
 import com.android.tools.r8.ir.analysis.proto.schema.ProtoFieldType;
@@ -316,10 +317,13 @@ public class RawMessageInfoDecoder {
       if (invoke.arguments().isEmpty()) {
         return true;
       }
-      return invoke
-              .getInvokedMethod()
-              .isIdenticalTo(references.dexItemFactory().integerMembers.valueOf)
-          && invoke.getArgument(0).getAliasedValue().getDefinition().isConstNumber();
+      return (invoke
+                  .getInvokedMethod()
+                  .isIdenticalTo(references.dexItemFactory().integerMembers.valueOf)
+              || invoke
+                  .getInvokedMethod()
+                  .isIdenticalTo(references.dexItemFactory().booleanMembers.valueOf))
+          && invoke.getFirstArgument().getDefinition().isConstNumber();
     }
     return false;
   }
@@ -342,16 +346,8 @@ public class RawMessageInfoDecoder {
               .getInvokedMethod()
               .isIdenticalTo(references.dexItemFactory().integerMembers.valueOf)
           && !invoke.arguments().isEmpty()
-          && invoke.getArgument(0).getAliasedValue().getDefinition().isConstNumber()) {
-        int intValue =
-            invoke
-                .arguments()
-                .get(0)
-                .getAliasedValue()
-                .getDefinition()
-                .asConstNumber()
-                .getIntValue();
-        return new ProtoBoxedIntObject(intValue);
+          && invoke.getFirstArgument().getDefinition().isConstNumber()) {
+        return new ProtoBoxedIntObject(invoke.getFirstArgument().getConstInt());
       }
     }
     throw new InvalidRawMessageInfoException();
@@ -370,9 +366,14 @@ public class RawMessageInfoDecoder {
       } else if (invoke
               .getInvokedMethod()
               .isIdenticalTo(references.dexItemFactory().integerMembers.valueOf)
-          && invoke.getArgument(0).getAliasedValue().getDefinition().isConstNumber()) {
-        int intValue = invoke.getFirstArgument().getDefinition().asConstNumber().getIntValue();
-        return new ProtoBoxedIntObject(intValue);
+          && invoke.getFirstArgument().getDefinition().isConstNumber()) {
+        return new ProtoBoxedIntObject(invoke.getFirstArgument().getConstInt());
+      } else if (invoke
+              .getInvokedMethod()
+              .isIdenticalTo(references.dexItemFactory().booleanMembers.valueOf)
+          && invoke.getFirstArgument().getDefinition().isConstNumber()) {
+        return new ProtoBoxedBooleanObject(
+            invoke.getFirstArgument().getConstBoolean(), references.dexItemFactory());
       }
     }
     throw new InvalidRawMessageInfoException();
