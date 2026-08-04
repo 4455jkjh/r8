@@ -648,6 +648,11 @@ public class EnumUnboxerImpl extends EnumUnboxer {
     initializeEnumUnboxingCandidates(graphLensForPrimaryOptimizationPass);
   }
 
+  @Override
+  public void rewriteWithLens() {
+    enumUnboxingCandidatesInfo.rewriteWithLens(appView.graphLens(), appView.codeLens());
+  }
+
   private void initializeCheckNotNullMethods(GraphLens graphLensForPrimaryOptimizationPass) {
     assert checkNotNullMethodsBuilder == null;
     checkNotNullMethodsBuilder =

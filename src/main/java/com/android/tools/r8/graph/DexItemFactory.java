@@ -773,6 +773,7 @@ public class DexItemFactory {
   public final ShortMembers shortMembers = new ShortMembers();
   public final StringMembers stringMembers = new StringMembers();
   public final SupplierMembers supplierMembers = new SupplierMembers();
+  public final ThreadLocalMembers threadLocalMembers = new ThreadLocalMembers();
   public final DoubleMembers doubleMembers = new DoubleMembers();
   public final ThrowableMethods throwableMethods = new ThrowableMethods();
   public final AssertionErrorMethods assertionErrorMethods = new AssertionErrorMethods();
@@ -3187,6 +3188,13 @@ public class DexItemFactory {
     public final DexMethod get = createMethod(supplierType, createProto(objectType), getString);
 
     private SupplierMembers() {}
+  }
+
+  public class ThreadLocalMembers extends LibraryMembers {
+
+    public final DexMethod constructor = createInstanceInitializer(threadLocalType);
+
+    private ThreadLocalMembers() {}
   }
 
   public class PolymorphicMethods {

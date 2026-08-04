@@ -90,23 +90,21 @@ tasks {
     systemProperty("BUILD_PROP_R8_RUNTIME_PATH", distR8WithRelocatedDeps.outputs.files.singleFile)
   }
 
-  val assembleTestJar by
-    registering(Jar::class) {
-      from(sourceSets.test.get().output)
-      // TODO(b/296486206): Seems like IntelliJ has a problem depending on test source sets.
-      archiveFileName.set("not_named_tests_bootstrap.jar")
-    }
+  register<Jar>("assembleTestJar") {
+    from(sourceSets.test.get().output)
+    // TODO(b/296486206): Seems like IntelliJ has a problem depending on test source sets.
+    archiveFileName.set("not_named_tests_bootstrap.jar")
+  }
 
-  val assembleDepsJar by
-    registering(Jar::class) {
-      dependsOn(sharedDepsConfig)
-      if (!project.hasProperty("no_internal")) {
-        dependsOn(sharedDepsInternalConfig)
-      }
-      from(testDependencies().map(::zipTree))
-      duplicatesStrategy = DuplicatesStrategy.EXCLUDE
-      archiveFileName.set("deps.jar")
+  register<Jar>("assembleDepsJar") {
+    dependsOn(sharedDepsConfig)
+    if (!project.hasProperty("no_internal")) {
+      dependsOn(sharedDepsInternalConfig)
     }
+    from(testDependencies().map(::zipTree))
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+    archiveFileName.set("deps.jar")
+  }
 }
 
 val testJar by configurations.consumable("testJar")

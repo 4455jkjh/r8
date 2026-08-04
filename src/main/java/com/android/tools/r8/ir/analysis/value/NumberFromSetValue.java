@@ -87,7 +87,7 @@ public class NumberFromSetValue extends NonConstantNumberValue {
 
   @Override
   public boolean mayOverlapWith(ConstantOrNonConstantNumberValue other) {
-    if (other.isDefiniteBitsNumberValue()) {
+    if (other.isDefiniteBitsIntNumberValue()) {
       return true;
     }
     if (other.isSingleNumberValue()) {

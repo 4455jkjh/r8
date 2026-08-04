@@ -92,6 +92,10 @@ public class InstanceInitializerOutliner extends CodeRewriterPass<AppInfo> {
         // constructor call to the super class.
         continue;
       }
+      // If the new instance is used by multiple <init> calls skip outlining.
+      if (newInstance.getUniqueConstructorInvoke(factory) == null) {
+        continue;
+      }
       ComputedApiLevel apiReferenceLevel =
           appView
               .apiLevelCompute()

@@ -344,11 +344,11 @@ public abstract class AbstractValue implements ComputationTreeNode {
     return null;
   }
 
-  public boolean isDefiniteBitsNumberValue() {
+  public boolean isDefiniteBitsIntNumberValue() {
     return false;
   }
 
-  public DefiniteBitsNumberValue asDefiniteBitsNumberValue() {
+  public DefiniteBitsIntNumberValue asDefiniteBitsIntNumberValue() {
     return null;
   }
 

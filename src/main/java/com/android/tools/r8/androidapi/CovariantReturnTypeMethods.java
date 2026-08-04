@@ -265,11 +265,6 @@ public class CovariantReturnTypeMethods {
     consumer.accept(
         factory.createMethod(
             factory.createType("Ljava/nio/MappedByteBuffer;"),
-            factory.createProto(factory.createType("Ljava/nio/MappedByteBuffer;")),
-            "duplicate"));
-    consumer.accept(
-        factory.createMethod(
-            factory.createType("Ljava/nio/MappedByteBuffer;"),
             factory.createProto(factory.createType("Ljava/nio/ByteBuffer;")),
             "flip"));
     consumer.accept(
@@ -331,11 +326,6 @@ public class CovariantReturnTypeMethods {
             factory.createType("Ljava/nio/MappedByteBuffer;"),
             factory.createProto(factory.createType("Ljava/nio/MappedByteBuffer;")),
             "rewind"));
-    consumer.accept(
-        factory.createMethod(
-            factory.createType("Ljava/nio/MappedByteBuffer;"),
-            factory.createProto(factory.createType("Ljava/nio/MappedByteBuffer;")),
-            "slice"));
     consumer.accept(
         factory.createMethod(
             factory.createType("Ljava/nio/MappedByteBuffer;"),

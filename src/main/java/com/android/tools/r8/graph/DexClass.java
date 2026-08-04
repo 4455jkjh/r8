@@ -1210,6 +1210,10 @@ public abstract class DexClass extends DexDefinition
     return recordComponents;
   }
 
+  public void setRecordComponents(List<RecordComponentInfo> recordComponents) {
+    this.recordComponents = recordComponents;
+  }
+
   public void clearRecordComponents() {
     recordComponents.clear();
   }

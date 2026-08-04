@@ -16,9 +16,9 @@ public interface ConstantOrNonConstantNumberValue {
 
   ConstantOrNonConstantNumberValue asConstantOrNonConstantNumberValue();
 
-  boolean isDefiniteBitsNumberValue();
+  boolean isDefiniteBitsIntNumberValue();
 
-  DefiniteBitsNumberValue asDefiniteBitsNumberValue();
+  DefiniteBitsIntNumberValue asDefiniteBitsIntNumberValue();
 
   boolean isDefiniteBitsLongNumberValue();
 

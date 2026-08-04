@@ -80,4 +80,12 @@ public abstract class ProtoObject {
   public ProtoBoxedIntObject asProtoBoxedIntObject() {
     return null;
   }
+
+  public boolean isProtoBoxedBooleanObject() {
+    return false;
+  }
+
+  public ProtoBoxedBooleanObject asProtoBoxedBooleanObject() {
+    return null;
+  }
 }

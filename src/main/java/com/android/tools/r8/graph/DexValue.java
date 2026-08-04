@@ -21,8 +21,8 @@ import com.android.tools.r8.ir.code.IRCode;
 import com.android.tools.r8.ir.code.Value;
 import com.android.tools.r8.ir.desugar.constantdynamic.ConstantDynamicReference;
 import com.android.tools.r8.naming.dexitembasedstring.NameComputationInfo;
-import com.android.tools.r8.utils.internal.BooleanUtils;
 import com.android.tools.r8.utils.EncodedValueUtils;
+import com.android.tools.r8.utils.internal.BooleanUtils;
 import com.android.tools.r8.utils.internal.LongUtils;
 import com.android.tools.r8.utils.internal.ObjectUtils;
 import com.android.tools.r8.utils.internal.exceptions.Unreachable;
@@ -503,6 +503,8 @@ public abstract class DexValue extends DexItem implements StructuralItem<DexValu
     public DexValueNumber asDexValueNumber() {
       return this;
     }
+
+    public abstract DexValueNumber toType(DexType type);
   }
 
   public static class DexValueByte extends DexValueNumber {
@@ -577,6 +579,13 @@ public abstract class DexValue extends DexItem implements StructuralItem<DexValu
     @Override
     public AbstractValue toAbstractValue(AbstractValueFactory factory) {
       return factory.createSingleNumberValue(getRawValue(), TypeElement.getByte());
+    }
+
+    @Override
+    public DexValueNumber toType(DexType type) {
+      assert type.isBooleanType();
+      assert value == 0 || value == 1;
+      return new DexValueBoolean(value == 1);
     }
 
     @Override
@@ -677,6 +686,19 @@ public abstract class DexValue extends DexItem implements StructuralItem<DexValu
     }
 
     @Override
+    public DexValueNumber toType(DexType type) {
+      assert type.isBooleanType() || type.isByteType();
+      if (type.isBooleanType()) {
+        assert value == 0 || value == 1;
+        return new DexValueBoolean(value == 1);
+      } else {
+        assert Byte.MIN_VALUE <= value;
+        assert value <= Byte.MAX_VALUE;
+        return new DexValueByte((byte) value);
+      }
+    }
+
+    @Override
     public int hashCode() {
       return value * 7;
     }
@@ -761,6 +783,19 @@ public abstract class DexValue extends DexItem implements StructuralItem<DexValu
     @Override
     public AbstractValue toAbstractValue(AbstractValueFactory factory) {
       return factory.createSingleNumberValue(getRawValue(), TypeElement.getChar());
+    }
+
+    @Override
+    public DexValueNumber toType(DexType type) {
+      assert type.isBooleanType() || type.isByteType();
+      if (type.isBooleanType()) {
+        assert value == 0 || value == 1;
+        return new DexValueBoolean(value == 1);
+      } else {
+        assert Byte.MIN_VALUE <= value;
+        assert value <= Byte.MAX_VALUE;
+        return new DexValueByte((byte) value);
+      }
     }
 
     @Override
@@ -875,6 +910,27 @@ public abstract class DexValue extends DexItem implements StructuralItem<DexValu
     }
 
     @Override
+    public DexValueNumber toType(DexType type) {
+      assert type.isBooleanType() || type.isByteType() || type.isCharType() || type.isShortType();
+      if (type.isBooleanType()) {
+        assert value == 0 || value == 1;
+        return new DexValueBoolean(value == 1);
+      } else if (type.isByteType()) {
+        assert Byte.MIN_VALUE <= value;
+        assert value <= Byte.MAX_VALUE;
+        return new DexValueByte((byte) value);
+      } else if (type.isCharType()) {
+        assert Character.MIN_VALUE <= value;
+        assert value <= Character.MAX_VALUE;
+        return new DexValueChar((char) value);
+      } else {
+        assert Short.MIN_VALUE <= value;
+        assert value <= Short.MAX_VALUE;
+        return new DexValueShort((short) value);
+      }
+    }
+
+    @Override
     public int hashCode() {
       return value * 11;
     }
@@ -917,6 +973,27 @@ public abstract class DexValue extends DexItem implements StructuralItem<DexValu
     @Override
     public AbstractValue toAbstractValue(AbstractValueFactory factory) {
       return factory.createSingleResourceNumberValue(getValue());
+    }
+
+    @Override
+    public DexValueNumber toType(DexType type) {
+      assert type.isBooleanType() || type.isByteType() || type.isCharType() || type.isShortType();
+      if (type.isBooleanType()) {
+        assert value == 0 || value == 1;
+        return new DexValueBoolean(value == 1);
+      } else if (type.isByteType()) {
+        assert Byte.MIN_VALUE <= value;
+        assert value <= Byte.MAX_VALUE;
+        return new DexValueByte((byte) value);
+      } else if (type.isCharType()) {
+        assert Character.MIN_VALUE <= value;
+        assert value <= Character.MAX_VALUE;
+        return new DexValueChar((char) value);
+      } else {
+        assert Short.MIN_VALUE <= value;
+        assert value <= Short.MAX_VALUE;
+        return new DexValueShort((short) value);
+      }
     }
 
     @Override
@@ -1062,6 +1139,35 @@ public abstract class DexValue extends DexItem implements StructuralItem<DexValu
     }
 
     @Override
+    public DexValueNumber toType(DexType type) {
+      assert type.isBooleanType()
+          || type.isByteType()
+          || type.isCharType()
+          || type.isShortType()
+          || type.isIntType();
+      if (type.isBooleanType()) {
+        assert value == 0 || value == 1;
+        return new DexValueBoolean(value == 1);
+      } else if (type.isByteType()) {
+        assert Byte.MIN_VALUE <= value;
+        assert value <= Byte.MAX_VALUE;
+        return new DexValueByte((byte) value);
+      } else if (type.isCharType()) {
+        assert Character.MIN_VALUE <= value;
+        assert value <= Character.MAX_VALUE;
+        return new DexValueChar((char) value);
+      } else if (type.isShortType()) {
+        assert Short.MIN_VALUE <= value;
+        assert value <= Short.MAX_VALUE;
+        return new DexValueShort((short) value);
+      } else {
+        assert Integer.MIN_VALUE <= value;
+        assert value <= Integer.MAX_VALUE;
+        return new DexValueInt((int) value);
+      }
+    }
+
+    @Override
     public int hashCode() {
       return (int) value * 13;
     }
@@ -1169,6 +1275,12 @@ public abstract class DexValue extends DexItem implements StructuralItem<DexValu
     }
 
     @Override
+    public DexValueNumber toType(DexType type) {
+      assert false;
+      return this;
+    }
+
+    @Override
     public int hashCode() {
       return (int) (value * 19);
     }
@@ -1269,6 +1381,12 @@ public abstract class DexValue extends DexItem implements StructuralItem<DexValu
     @Override
     public AbstractValue toAbstractValue(AbstractValueFactory factory) {
       return factory.createSingleNumberValue(getRawValue(), TypeElement.getDouble());
+    }
+
+    @Override
+    public DexValueNumber toType(DexType type) {
+      assert false;
+      return this;
     }
 
     @Override
@@ -2021,6 +2139,12 @@ public abstract class DexValue extends DexItem implements StructuralItem<DexValu
     }
 
     @Override
+    public DexValueNumber toType(DexType type) {
+      assert false;
+      return this;
+    }
+
+    @Override
     public int hashCode() {
       return 42;
     }
@@ -2119,6 +2243,12 @@ public abstract class DexValue extends DexItem implements StructuralItem<DexValu
     @Override
     public AbstractValue toAbstractValue(AbstractValueFactory factory) {
       return factory.createSingleNumberValue(getRawValue(), TypeElement.getBoolean());
+    }
+
+    @Override
+    public DexValueNumber toType(DexType type) {
+      assert false;
+      return this;
     }
 
     @Override

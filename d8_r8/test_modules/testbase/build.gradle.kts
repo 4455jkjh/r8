@@ -97,30 +97,28 @@ tasks {
     }
   }
 
-  val assembleTestJar by
-    registering(Jar::class) {
-      from(sourceSets.main.get().output)
-      // TODO(b/296486206): Seems like IntelliJ has a problem depending on test source sets.
-      // Renaming
-      //  this from the default name (testbase.jar) will allow IntelliJ to find the resources in
-      //  the jar and not show red underlines. However, navigation to base classes will not work.
-      archiveFileName.set("not_named_testbase.jar")
-    }
+  register<Jar>("assembleTestJar") {
+    from(sourceSets.main.get().output)
+    // TODO(b/296486206): Seems like IntelliJ has a problem depending on test source sets.
+    // Renaming
+    //  this from the default name (testbase.jar) will allow IntelliJ to find the resources in
+    //  the jar and not show red underlines. However, navigation to base classes will not work.
+    archiveFileName.set("not_named_testbase.jar")
+  }
 
-  val assembleDepsJar by
-    registering(Jar::class) {
-      dependsOn(keepAnnoJarConfig)
-      dependsOn(resourceShrinkerDepsJarConfig)
-      dependsOn(sharedDepsConfig)
-      dependsOn(sharedTestDepsConfig)
-      from(Callable { testDependencies().map(::zipTree) })
-      from(keepAnnoJarConfig.map(::zipTree))
-      from(resourceShrinkerDepsJarConfig.map(::zipTree))
-      exclude("com/android/tools/r8/keepanno/annotations/**")
-      exclude("androidx/annotation/keep/**")
-      duplicatesStrategy = DuplicatesStrategy.EXCLUDE
-      archiveFileName.set("deps.jar")
-    }
+  register<Jar>("assembleDepsJar") {
+    dependsOn(keepAnnoJarConfig)
+    dependsOn(resourceShrinkerDepsJarConfig)
+    dependsOn(sharedDepsConfig)
+    dependsOn(sharedTestDepsConfig)
+    from(Callable { testDependencies().map(::zipTree) })
+    from(keepAnnoJarConfig.map(::zipTree))
+    from(resourceShrinkerDepsJarConfig.map(::zipTree))
+    exclude("com/android/tools/r8/keepanno/annotations/**")
+    exclude("androidx/annotation/keep/**")
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+    archiveFileName.set("deps.jar")
+  }
 }
 
 val testJar by configurations.consumable("testJar")

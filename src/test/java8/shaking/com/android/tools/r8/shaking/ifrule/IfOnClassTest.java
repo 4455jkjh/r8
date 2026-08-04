@@ -172,7 +172,7 @@ public class IfOnClassTest extends ProguardCompatibilityTestBase {
     assertThat(clazz, isPresentAndRenamed());
     m = clazz.method("java.lang.String", "foo", ImmutableList.of());
     assertThat(m, isPresentAndRenamed());
-    f = clazz.field("int", "intField");
+    f = clazz.uniqueFieldWithOriginalName("intField");
     assertThat(f, isPresentAndRenamed());
   }
 
@@ -288,7 +288,7 @@ public class IfOnClassTest extends ProguardCompatibilityTestBase {
     assertThat(clazz, keepPrecondition ? isPresentAndNotRenamed() : isPresentAndRenamed());
     MethodSubject m = clazz.method("java.lang.String", "foo", ImmutableList.of());
     assertThat(m, isPresentAndRenamed());
-    FieldSubject f = clazz.field("int", "intField");
+    FieldSubject f = clazz.uniqueFieldWithOriginalName("intField");
     assertThat(f, isPresentAndRenamed());
   }
 
@@ -317,7 +317,7 @@ public class IfOnClassTest extends ProguardCompatibilityTestBase {
     MethodSubject m = clazz.method("java.lang.String", "foo", ImmutableList.of());
     // Method name is not renamed either, if triggered.
     assertThat(m, keepPrecondition ? isPresentAndNotRenamed() : isPresentAndRenamed());
-    FieldSubject f = clazz.field("int", "intField");
+    FieldSubject f = clazz.uniqueFieldWithOriginalName("intField");
     assertThat(f, isPresentAndRenamed());
   }
 
@@ -345,7 +345,7 @@ public class IfOnClassTest extends ProguardCompatibilityTestBase {
     MethodSubject m = clazz.method("java.lang.String", "foo", ImmutableList.of());
     // Only method name is not renamed, if triggered.
     assertThat(m, keepPrecondition ? isPresentAndNotRenamed() : isPresentAndRenamed());
-    FieldSubject f = clazz.field("int", "intField");
+    FieldSubject f = clazz.uniqueFieldWithOriginalName("intField");
     assertThat(f, isPresentAndRenamed());
   }
 }

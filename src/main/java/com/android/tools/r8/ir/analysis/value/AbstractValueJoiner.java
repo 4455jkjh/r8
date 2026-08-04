@@ -95,7 +95,7 @@ public class AbstractValueJoiner {
 
     if (config.canUseDefiniteBitsAbstraction()) {
       if (type.isInt()) {
-        return joinPrimitiveToDefiniteBitsNumberValue(abstractValue, otherAbstractValue);
+        return joinPrimitiveToDefiniteBitsIntNumberValue(abstractValue, otherAbstractValue);
       } else if (type.isLong()) {
         return joinPrimitiveToDefiniteBitsLongNumberValue(abstractValue, otherAbstractValue);
       }
@@ -104,7 +104,7 @@ public class AbstractValueJoiner {
     return unknown();
   }
 
-  private AbstractValue joinPrimitiveToDefiniteBitsNumberValue(
+  private AbstractValue joinPrimitiveToDefiniteBitsIntNumberValue(
       AbstractValue abstractValue, AbstractValue otherAbstractValue) {
     if (!abstractValue.hasDefinitelySetAndUnsetBitsInformation()
         || !otherAbstractValue.hasDefinitelySetAndUnsetBitsInformation()) {
@@ -121,25 +121,26 @@ public class AbstractValueJoiner {
       if (otherAbstractValue.isSingleNumberValue()) {
         SingleNumberValue otherSingleNumberValue = otherAbstractValue.asSingleNumberValue();
         return factory()
-            .createDefiniteBitsNumberValue(
+            .createDefiniteBitsIntNumberValue(
                 singleNumberValue.getDefinitelySetIntBits()
                     & otherSingleNumberValue.getDefinitelySetIntBits(),
                 singleNumberValue.getDefinitelyUnsetIntBits()
                     & otherSingleNumberValue.getDefinitelyUnsetIntBits());
       } else {
-        assert otherAbstractValue.isDefiniteBitsNumberValue();
-        DefiniteBitsNumberValue otherDefiniteBitsNumberValue =
-            otherAbstractValue.asDefiniteBitsNumberValue();
-        return otherDefiniteBitsNumberValue.join(factory(), singleNumberValue);
+        assert otherAbstractValue.isDefiniteBitsIntNumberValue();
+        DefiniteBitsIntNumberValue otherDefiniteBitsIntNumberValue =
+            otherAbstractValue.asDefiniteBitsIntNumberValue();
+        return otherDefiniteBitsIntNumberValue.join(factory(), singleNumberValue);
       }
     } else {
       // Both are guaranteed to be non-const due to normalization.
-      assert abstractValue.isDefiniteBitsNumberValue();
-      assert otherAbstractValue.isDefiniteBitsNumberValue();
-      DefiniteBitsNumberValue definiteBitsNumberValue = abstractValue.asDefiniteBitsNumberValue();
-      DefiniteBitsNumberValue otherDefiniteBitsNumberValue =
-          otherAbstractValue.asDefiniteBitsNumberValue();
-      return definiteBitsNumberValue.join(factory(), otherDefiniteBitsNumberValue);
+      assert abstractValue.isDefiniteBitsIntNumberValue();
+      assert otherAbstractValue.isDefiniteBitsIntNumberValue();
+      DefiniteBitsIntNumberValue definiteBitsIntNumberValue =
+          abstractValue.asDefiniteBitsIntNumberValue();
+      DefiniteBitsIntNumberValue otherDefiniteBitsIntNumberValue =
+          otherAbstractValue.asDefiniteBitsIntNumberValue();
+      return definiteBitsIntNumberValue.join(factory(), otherDefiniteBitsIntNumberValue);
     }
   }
 
@@ -167,19 +168,19 @@ public class AbstractValueJoiner {
                     & otherSingleNumberValue.getDefinitelyUnsetLongBits());
       } else {
         assert otherAbstractValue.isDefiniteBitsLongNumberValue();
-        DefiniteBitsLongNumberValue otherDefiniteBitsNumberValue =
+        DefiniteBitsLongNumberValue otherDefiniteBitsLongNumberValue =
             otherAbstractValue.asDefiniteBitsLongNumberValue();
-        return otherDefiniteBitsNumberValue.join(factory(), singleNumberValue);
+        return otherDefiniteBitsLongNumberValue.join(factory(), singleNumberValue);
       }
     } else {
       // Both are guaranteed to be non-const due to normalization.
       assert abstractValue.isDefiniteBitsLongNumberValue();
       assert otherAbstractValue.isDefiniteBitsLongNumberValue();
-      DefiniteBitsLongNumberValue definiteBitsNumberValue =
+      DefiniteBitsLongNumberValue definiteBitsLongNumberValue =
           abstractValue.asDefiniteBitsLongNumberValue();
-      DefiniteBitsLongNumberValue otherDefiniteBitsNumberValue =
+      DefiniteBitsLongNumberValue otherDefiniteBitsLongNumberValue =
           otherAbstractValue.asDefiniteBitsLongNumberValue();
-      return definiteBitsNumberValue.join(factory(), otherDefiniteBitsNumberValue);
+      return definiteBitsLongNumberValue.join(factory(), otherDefiniteBitsLongNumberValue);
     }
   }
 

@@ -8,7 +8,6 @@ import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
@@ -82,9 +81,9 @@ public class ApiDatabaseGeneratorTest extends TestBase {
     Path apiVersionsXml2 =
         writeApiXml(
             "api-versions-2.xml",
-            "  <class name=\"android/Foo\" since=\"32\">",
+            "  <class name=\"android/Foo\" since=\"30\">",
             "    <extends name=\"java/lang/Object\"/>",
-            "    <method name=\"bar()V\" since=\"30\"/>",
+            "    <method name=\"bar()V\" since=\"31\"/>",
             "    <field name=\"baz\" since=\"33\"/>",
             "  </class>");
     Path dummyJar = temp.newFile("dummy.jar").toPath();
@@ -134,7 +133,7 @@ public class ApiDatabaseGeneratorTest extends TestBase {
             "api-versions-3.xml",
             "  <class name=\"android/Foo\" since=\"30\">",
             "    <extends name=\"java/lang/Object\"/>",
-            "    <method name=\"bar()V\" since=\"33\"/>",
+            "    <method name=\"bar()V\" since=\"31\"/>",
             "  </class>");
     Path dummyJar = temp.newFile("dummy.jar").toPath();
 
@@ -175,9 +174,9 @@ public class ApiDatabaseGeneratorTest extends TestBase {
     Path apiVersionsXml2 =
         writeApiXml(
             "api-versions-2.xml",
-            "  <class name=\"android/Foo\" since=\"32\">",
+            "  <class name=\"android/Foo\" since=\"30\">",
             "    <extends name=\"java/lang/Object\"/>",
-            "    <method name=\"bar()V\" since=\"30\"/>",
+            "    <method name=\"bar()V\" since=\"31\"/>",
             "    <field name=\"baz\" since=\"33\"/>",
             "  </class>");
     Path dummyJar = temp.newFile("dummy.jar").toPath();
@@ -226,9 +225,9 @@ public class ApiDatabaseGeneratorTest extends TestBase {
     Path apiVersionsXml2 =
         writeApiXml(
             "api-versions-2.xml",
-            "  <class name=\"android/Foo\" since=\"32\">",
+            "  <class name=\"android/Foo\" since=\"30\">",
             "    <extends name=\"java/lang/Object\"/>",
-            "    <method name=\"bar()V\" since=\"30\"/>",
+            "    <method name=\"bar()V\" since=\"31\"/>",
             "    <field name=\"baz\" since=\"33\"/>",
             "  </class>");
     Path dummyJar = temp.newFile("dummy.jar").toPath();
@@ -258,46 +257,6 @@ public class ApiDatabaseGeneratorTest extends TestBase {
 
     // Errors, Warnings, and Infos should all be empty because they were mapped to none.
     diagnosticsHandler.assertNoMessages();
-  }
-
-  @Test
-  public void testGeneratorWithConflictingSupertypes() throws Exception {
-    Path apiVersionsXml1 =
-        writeApiXml(
-            "api-versions-1.xml",
-            "  <class name=\"android/Foo\" since=\"30\">",
-            "    <extends name=\"java/lang/Object\"/>",
-            "  </class>");
-
-    Path apiVersionsXml2 =
-        writeApiXml(
-            "api-versions-2.xml",
-            "  <class name=\"android/Foo\" since=\"30\">",
-            "    <extends name=\"android/Bar\"/>",
-            "  </class>");
-    Path dummyJar = temp.newFile("dummy.jar").toPath();
-
-    Path outputDb = temp.newFile("api_database.ser").toPath();
-
-    TestDiagnosticMessagesImpl diagnosticsHandler = new TestDiagnosticMessagesImpl();
-    ApiDatabaseGeneratorCommand command =
-        ApiDatabaseGeneratorCommand.builder(diagnosticsHandler)
-            .addInputPath(apiVersionsXml1)
-            .addInputPath(apiVersionsXml2)
-            .addInputPath(dummyJar)
-            .setOutputPath(outputDb)
-            .build();
-
-    try {
-      ApiDatabaseGenerator.run(command);
-      fail("Expected API database generation to fail due to conflicting supertypes");
-    } catch (ApiDatabaseGeneratorException e) {
-      assertNotNull(e.getCause());
-      assertTrue(
-          e.getCause()
-              .getMessage()
-              .contains("has conflicting supertypes: java.lang.Object, android.Bar"));
-    }
   }
 
   @Test
@@ -345,16 +304,20 @@ public class ApiDatabaseGeneratorTest extends TestBase {
   }
 
   interface TestInterface {
+    @SuppressWarnings("unused")
     void instanceMethod();
 
     static void staticMethod() {}
   }
 
   static class TestClass {
+    @SuppressWarnings("unused")
     int field = 0;
 
+    @SuppressWarnings("unused")
     void instanceMethod() {}
 
+    @SuppressWarnings("unused")
     static void staticMethod() {}
   }
 

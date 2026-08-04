@@ -42,6 +42,7 @@ import java.util.concurrent.ExecutorService;
 public class AnnotationRemover {
 
   private final AppView<AppInfoWithLiveness> appView;
+  private final DexItemFactory factory;
   private final Mode mode;
   private final InternalOptions options;
   private final Set<DexAnnotation> annotationsToRetain;
@@ -50,6 +51,7 @@ public class AnnotationRemover {
   private AnnotationRemover(
       AppView<AppInfoWithLiveness> appView, Set<DexAnnotation> annotationsToRetain, Mode mode) {
     this.appView = appView;
+    this.factory = appView.dexItemFactory();
     this.mode = mode;
     this.options = appView.options();
     this.annotationsToRetain = annotationsToRetain;
@@ -82,14 +84,16 @@ public class AnnotationRemover {
     // If we cannot run the AnnotationRemover we are keeping the annotation.
     InternalOptions options = appView.options();
     if (!options.isShrinking()) {
-      return true;
+      if (options.isForceProguardCompatibilityEnabled() || mode.isMainDexTracing()) {
+        return true;
+      }
     }
 
     boolean isAnnotationOnAnnotationClass =
         holder.isProgramClass() && holder.asProgramClass().isAnnotation();
 
     ProguardKeepAttributes config =
-        options.getProguardConfiguration() != null
+        options.hasProguardConfiguration()
             ? options.getProguardConfiguration().getKeepAttributes()
             : ProguardKeepAttributes.empty();
 
@@ -234,20 +238,26 @@ public class AnnotationRemover {
   private void run(DexProgramClass clazz) {
     KeepClassInfo keepInfo = appView.getKeepInfo().getClassInfo(clazz);
     removeAnnotations(clazz, keepInfo);
-    stripAttributes(clazz, keepInfo);
-    // Kotlin metadata for classes are removed in the KotlinMetadataEnqueuerExtension. Kotlin
-    // properties are split over fields and methods. Check if any is pinned before pruning the
-    // information.
-    Set<KotlinPropertyInfo> pinnedKotlinProperties = Sets.newIdentityHashSet();
-    clazz.forEachProgramMember(member -> processMember(member, clazz, pinnedKotlinProperties));
-    clazz.forEachProgramMember(
-        member -> {
-          KotlinMemberLevelInfo kotlinInfo = member.getKotlinInfo();
-          if (kotlinInfo.isProperty()
-              && !pinnedKotlinProperties.contains(kotlinInfo.asProperty().getReference())) {
-            member.clearKotlinInfo();
-          }
-        });
+
+    if (options.isShrinking()) {
+      stripAttributes(clazz, keepInfo);
+      // Kotlin metadata for classes are removed in the KotlinMetadataEnqueuerExtension. Kotlin
+      // properties are split over fields and methods. Check if any is pinned before pruning the
+      // information.
+      Set<KotlinPropertyInfo> pinnedKotlinProperties = Sets.newIdentityHashSet();
+      clazz.forEachProgramMember(member -> processMember(member, clazz, pinnedKotlinProperties));
+      clazz.forEachProgramMember(
+          member -> {
+            KotlinMemberLevelInfo kotlinInfo = member.getKotlinInfo();
+            if (kotlinInfo.isProperty()
+                && !pinnedKotlinProperties.contains(kotlinInfo.asProperty().getReference())) {
+              member.clearKotlinInfo();
+            }
+          });
+    } else {
+      clazz.forEachProgramMember(
+          member -> removeAnnotations(member, appView.getKeepInfo().getMemberInfo(member)));
+    }
   }
 
   private boolean verifyNoKeptKotlinMembersForClassesWithNoKotlinInfo() {
@@ -308,7 +318,7 @@ public class AnnotationRemover {
     assert rewrite != null;
     assert appView.appInfo().definitionFor(rewrittenType) == null
         || appView.appInfo().isNonProgramTypeOrLiveProgramType(rewrittenType);
-    if (rewrite.getType().isIdenticalTo(appView.dexItemFactory().annotationDefault)
+    if (rewrite.getType().isIdenticalTo(factory.annotationDefault)
         && rewrite.getNumberOfElements() == 0) {
       return null;
     }
@@ -349,6 +359,20 @@ public class AnnotationRemover {
               name,
               new DexValueAnnotation(
                   new DexEncodedAnnotation(annotationValue.getType(), rewrittenElements)));
+    }
+    // Similarly for dalvik.annotation.MethodParameters:
+    // https://source.android.com/docs/core/runtime/dex-format#dalvik-annotation-method-parameters.
+    if (appView.dexItemFactory().annotationMethodParameters.isIdenticalTo(annotationType)) {
+      if (appView.dexItemFactory().accessFlagsString.isIdenticalTo(name)
+          || appView.dexItemFactory().namesString.isIdenticalTo(name)) {
+        return original;
+      }
+    }
+    // Similarly for dalvik.annotation.Throws:
+    // https://source.android.com/docs/core/runtime/dex-format#dalvik-throws.
+    if (appView.dexItemFactory().annotationThrows.isIdenticalTo(annotationType)
+        && appView.dexItemFactory().valueString.isIdenticalTo(name)) {
+      return original;
     }
     // We cannot strip annotations where we cannot look up the definition, because this will break
     // apps that rely on the annotation to exist. See b/134766810 for more information.

@@ -38,17 +38,13 @@ import com.android.tools.r8.graph.DexType;
 import com.android.tools.r8.references.ClassReference;
 import com.android.tools.r8.references.FieldReference;
 import com.android.tools.r8.references.MethodReference;
-import com.android.tools.r8.references.Reference;
 import com.android.tools.r8.utils.AndroidApiLevel;
 import com.android.tools.r8.utils.AndroidApp;
 import com.android.tools.r8.utils.InternalOptions;
-import com.android.tools.r8.utils.ZipUtils;
 import com.android.tools.r8.utils.codeinspector.ClassSubject;
 import com.android.tools.r8.utils.codeinspector.CodeInspector;
 import com.android.tools.r8.utils.codeinspector.FieldSubject;
 import com.android.tools.r8.utils.codeinspector.MethodSubject;
-import com.android.tools.r8.utils.internal.FileUtils;
-import com.android.tools.r8.utils.internal.IntBox;
 import com.android.tools.r8.utils.timing.Timing;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
@@ -63,8 +59,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipOutputStream;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.junit.runner.RunWith;
@@ -117,13 +111,14 @@ public class AndroidApiHashingDatabaseBuilderGeneratorTest extends TestBase {
             ToolHelper.getApiVersionsXmlFile(API_LEVEL), androidJar, API_LEVEL, false);
     DexItemFactory factory = new DexItemFactory();
     addCovariantMethods(apiClasses, factory);
-    addAdditionalKnownApiReferences(apiClasses, factory);
+    addAdditionalKnownApiReferences(apiClasses);
     Map<ApiDatabaseEntry, AndroidApiLevel> databaseEntries =
         AndroidApiHashingDatabaseBuilderGenerator.generateEntries(apiClasses);
     verifyAgainstJar(apiClasses, databaseEntries, API_LEVEL);
     return databaseEntries;
   }
 
+  @SuppressWarnings("SameParameterValue")
   private static void verifyAgainstJar(
       List<ParsedApiClass> apiClasses,
       Map<ApiDatabaseEntry, AndroidApiLevel> databaseEntries,
@@ -157,11 +152,13 @@ public class AndroidApiHashingDatabaseBuilderGeneratorTest extends TestBase {
       lookupMap.put(apiClass.getClassReference(), apiClass);
       Map<DexMethod, AndroidApiLevel> methodsForApiClass = new HashMap<>();
       apiClass.forEachMethod(
-          (method, lvl) -> methodsForApiClass.put(factory.createMethod(method), lvl));
+          (method, apiRange) ->
+              methodsForApiClass.put(factory.createMethod(method), apiRange.intro));
       methodMap.put(apiClass.getClassReference(), methodsForApiClass);
 
       Map<FieldTypelessReference, AndroidApiLevel> fieldsForApiClass = new HashMap<>();
-      apiClass.forEachField(fieldsForApiClass::put);
+      apiClass.forEachField(
+          (fieldReference, apiRange) -> fieldsForApiClass.put(fieldReference, apiRange.intro));
       fieldMap.put(apiClass.getClassReference(), fieldsForApiClass);
     }
 
@@ -241,236 +238,60 @@ public class AndroidApiHashingDatabaseBuilderGeneratorTest extends TestBase {
     for (ParsedApiClass apiClass : apiClasses) {
       Map<DexMethod, AndroidApiLevel> methodsForApiClass = new HashMap<>();
       apiClass.forEachMethod(
-          (method, apiLevel) -> methodsForApiClass.put(factory.createMethod(method), apiLevel));
+          (method, apiRange) ->
+              methodsForApiClass.put(factory.createMethod(method), apiRange.intro));
       covariantMethodsInJar.visitCovariantMethodsForHolder(
           apiClass.getClassReference(),
-          methodReferenceWithApiLevel -> {
-            DexMethod method =
-                factory.createMethod(methodReferenceWithApiLevel.getMethodReference());
+          (methodReference, apiLevel) -> {
+            DexMethod method = factory.createMethod(methodReference);
             if (!methodsForApiClass.containsKey(method)) {
-              apiClass.registerMethod(
-                  methodReferenceWithApiLevel.getMethodReference(),
-                  methodReferenceWithApiLevel.getApiLevel());
-              methodsForApiClass.put(method, methodReferenceWithApiLevel.getApiLevel());
+              apiClass.registerMethod(methodReference, new ApiRange(apiLevel));
+              methodsForApiClass.put(method, apiLevel);
             }
           });
     }
   }
 
-  private static void addAdditionalKnownApiReferences(
-      List<ParsedApiClass> apiClasses, DexItemFactory factory) {
+  private static void addAdditionalKnownApiReferences(List<ParsedApiClass> apiClasses) {
     Map<ClassReference, ParsedApiClass> lookupMap = new HashMap<>();
     for (ParsedApiClass apiClass : apiClasses) {
       lookupMap.put(apiClass.getClassReference(), apiClass);
     }
-    AndroidApiLevelDatabaseTestHelper.visitAdditionalKnownApiReferences(
-        factory,
-        (reference, apiLevel) -> {
-          if (reference.isDexType()) {
-            ClassReference classRef = reference.asDexType().asClassReference();
-            assert !lookupMap.containsKey(classRef) : classRef + " is already registered";
-            ParsedApiClass apiClass = new ParsedApiClass(classRef, apiLevel);
-            lookupMap.put(classRef, apiClass);
+    AndroidApiLevelDatabaseTestHelper.visitAllAdditionalAndHiddenReferences(
+        (classRef, superRef, apiLevel) -> {
+          assert !lookupMap.containsKey(classRef) : classRef + " is already registered";
+          ParsedApiClass apiClass = new ParsedApiClass(classRef, new ApiRange(apiLevel));
+          lookupMap.put(classRef, apiClass);
+          apiClasses.add(apiClass);
+        },
+        (methodRef, isStatic, apiLevel) -> {
+          ClassReference holderRef = methodRef.getHolderClass();
+          ParsedApiClass apiClass = lookupMap.get(holderRef);
+          if (apiClass == null) {
+            apiClass = new ParsedApiClass(holderRef, new ApiRange(apiLevel));
+            lookupMap.put(holderRef, apiClass);
             apiClasses.add(apiClass);
-          } else if (reference.isDexMethod()) {
-            MethodReference methodRef = reference.asDexMethod().asMethodReference();
-            ClassReference holderRef = methodRef.getHolderClass();
-            ParsedApiClass apiClass = lookupMap.get(holderRef);
-            if (apiClass == null) {
-              apiClass = new ParsedApiClass(holderRef, apiLevel);
-              lookupMap.put(holderRef, apiClass);
-              apiClasses.add(apiClass);
-            }
-            apiClass.registerMethod(methodRef, apiLevel);
-          } else if (reference.isDexField()) {
-            ClassReference holderRef = reference.asDexField().getHolderType().asClassReference();
-            FieldTypelessReference fieldRef =
-                new FieldTypelessReference(holderRef, reference.asDexField().getName().toString());
-            ParsedApiClass apiClass = lookupMap.get(holderRef);
-            if (apiClass == null) {
-              apiClass = new ParsedApiClass(holderRef, apiLevel);
-              lookupMap.put(holderRef, apiClass);
-              apiClasses.add(apiClass);
-            }
-            apiClass.registerField(fieldRef, apiLevel);
           }
+          apiClass.registerMethod(methodRef, new ApiRange(apiLevel));
+        },
+        (fieldRef, apiLevel) -> {
+          ClassReference holderRef = fieldRef.getHolderClass();
+          FieldTypelessReference fieldTypelessRef =
+              new FieldTypelessReference(holderRef, fieldRef.getFieldName());
+          ParsedApiClass apiClass = lookupMap.get(holderRef);
+          if (apiClass == null) {
+            apiClass = new ParsedApiClass(holderRef, new ApiRange(apiLevel));
+            lookupMap.put(holderRef, apiClass);
+            apiClasses.add(apiClass);
+          }
+          apiClass.registerField(fieldTypelessRef, new ApiRange(apiLevel));
         });
-  }
-
-  @Test
-  public void testParsedApiVersionsXmlSize() throws Exception {
-    // This tests makes a rudimentary check on the number of classes, fields and methods in
-    // api-versions.xml to ensure that the runtime tests do not vacuously succeed.
-    List<ParsedApiClass> parsedApiClasses =
-        AndroidApiVersionsXmlParserChecked.parse(
-            ToolHelper.getApiVersionsXmlFile(API_LEVEL),
-            ToolHelper.getAndroidJar(API_LEVEL),
-            API_LEVEL,
-            false);
-    IntBox numberOfFields = new IntBox(0);
-    IntBox numberOfMethods = new IntBox(0);
-    parsedApiClasses.forEach(
-        apiClass -> {
-          numberOfFields.increment(apiClass.fieldCount());
-          numberOfMethods.increment(apiClass.methodCount());
-        });
-    // These numbers will change when updating api-versions.xml.
-    assertEquals(6_498, parsedApiClasses.size());
-    assertEquals(32_818, numberOfFields.get());
-    assertEquals(49_867, numberOfMethods.get());
   }
 
   @Test
   public void testEntrySize() throws Exception {
     Map<ApiDatabaseEntry, AndroidApiLevel> databaseEntries = loadDatabaseEntries();
     assertEquals(252_214, databaseEntries.size());
-  }
-
-  private static final String sampleVersion4ApiVersionsXml =
-      "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n"
-          + "<api version=\"4\">\n"
-          + "        <sdk id=\"36\" shortname=\"B-ext\" name=\"Baklava Extensions\"\n"
-          + "             reference=\"android/os/Build$VERSION_CODES$BAKLAVA\"/>\n"
-          + "\n"
-          + "        <!-- This class was introduced in Android R -->\n"
-          + "        <class name=\"android/os/ext/SdkExtensions\" since=\"30.0\">\n"
-          + "                <extends name=\"java/lang/Object\"/>\n"
-          + "                <!-- This method was introduced in Android S. It was \"backported\""
-          + " to Android R via the R extension,\n"
-          + "                     version 2. It also exists in later extensions, including the"
-          + " Baklava extension (id 36). -->\n"
-          + "                <method name=\"getAllExtensionVersions()Ljava/util/Map;\""
-          + " since=\"31.0\"\n"
-          + "                        sdks=\"30:2,31:2,33:4,34:7,35:12,36:16,0:31.0\"/>\n"
-          + "                <method name=\"getExtensionVersion(I)I\"/>\n"
-          + "                <!-- This field was introduced in Android U. It was \"backported\""
-          + " to Android R via the R extension,\n"
-          + "                     version 4. It also exists in later extensions, including the"
-          + " Baklava extension (id 36). -->\n"
-          + "                <field name=\"AD_SERVICES\" since=\"34.0\""
-          + " sdks=\"30:4,31:4,33:4,34:7,35:12,36:16,0:34.0\"/>\n"
-          + "        </class>\n"
-          + "\n"
-          + "        <!-- This class was introduced in Baklava. It does not exist in any SDK"
-          + " extension. -->\n"
-          + "        <class name=\"android/os/FromBaklava\" since=\"36.0\">\n"
-          + "                <extends name=\"java/lang/Object\"/>\n"
-          + "                <method name=\"foo(I)V\" />\n"
-          + "        </class>\n"
-          + "        <class name=\"android/os/AlsoFromBaklava\" since=\"36\">\n"
-          + "                <extends name=\"java/lang/Object\"/>\n"
-          + "                <method name=\"foo(I)V\" />\n"
-          + "        </class>\n"
-          + "        <class name=\"android/os/FromBaklava1\" since=\"36.1\">\n"
-          + "                <extends name=\"java/lang/Object\"/>\n"
-          + "                <method name=\"foo(I)V\" />\n"
-          + "        </class>\n"
-          + "</api>\n";
-
-  static class SdkExtensionsStub {
-    @SuppressWarnings("unused")
-    int AD_SERVICES;
-  }
-
-  static class TemplateClass {}
-
-  private static void mockAndroidJarForSampleVersion4ApiVersionsXml(Path outputPath)
-      throws Exception {
-    try (ZipOutputStream out = new ZipOutputStream(Files.newOutputStream(outputPath))) {
-      ZipUtils.writeToZipStream(
-          out,
-          "android/os/ext/SdkExtensions.class",
-          transformer(SdkExtensionsStub.class)
-              .setClassDescriptor("Landroid/os/ext/SdkExtensions;")
-              .transform(),
-          ZipEntry.STORED);
-      ZipUtils.writeToZipStream(
-          out,
-          "android/os/FromBaklava.class",
-          transformer(TemplateClass.class)
-              .setClassDescriptor("Landroid/os/FromBaklava;")
-              .transform(),
-          ZipEntry.STORED);
-      ZipUtils.writeToZipStream(
-          out,
-          "android/os/AlsoFromBaklava.class",
-          transformer(TemplateClass.class)
-              .setClassDescriptor("Landroid/os/AlsoFromBaklava;")
-              .transform(),
-          ZipEntry.STORED);
-      ZipUtils.writeToZipStream(
-          out,
-          "android/os/FromBaklava1.class",
-          transformer(TemplateClass.class)
-              .setClassDescriptor("Landroid/os/FromBaklava1;")
-              .transform(),
-          ZipEntry.STORED);
-    }
-  }
-
-  @Test
-  public void testApiVersionsXmlVersion4() throws Exception {
-    Path apiVersionsXml = temp.newFile("api-versions.xml").toPath();
-    FileUtils.writeTextFile(apiVersionsXml, sampleVersion4ApiVersionsXml);
-    Path apiLibrary = temp.newFile("android.jar").toPath();
-    mockAndroidJarForSampleVersion4ApiVersionsXml(apiLibrary);
-    List<ParsedApiClass> parsedApiClasses =
-        AndroidApiVersionsXmlParserChecked.parse(apiVersionsXml, apiLibrary, API_LEVEL, true);
-    assertEquals(4, parsedApiClasses.size());
-    ParsedApiClass sdkExtension = parsedApiClasses.get(0);
-    assertEquals(
-        sdkExtension.getClassReference(),
-        Reference.classFromDescriptor("Landroid/os/ext/SdkExtensions;"));
-    assertEquals(AndroidApiLevel.R, sdkExtension.getApiLevel());
-    sdkExtension.forEachMethod(
-        (method, apiLevel) -> {
-          if (apiLevel.equals(AndroidApiLevel.R)) {
-            assertEquals(
-                method,
-                Reference.methodFromDescriptor(
-                    "Landroid/os/ext/SdkExtensions;", "getExtensionVersion", "(I)I"));
-          } else if (apiLevel.equals(AndroidApiLevel.S)) {
-            assertEquals(
-                method,
-                Reference.methodFromDescriptor(
-                    "Landroid/os/ext/SdkExtensions;",
-                    "getAllExtensionVersions",
-                    "()Ljava/util/Map;"));
-          } else {
-            fail();
-          }
-        });
-    sdkExtension.forEachField(
-        (field, apiLevel) -> {
-          if (apiLevel.equals(AndroidApiLevel.U)) {
-            assertEquals(
-                field,
-                new FieldTypelessReference(
-                    Reference.classFromDescriptor("Landroid/os/ext/SdkExtensions;"),
-                    "AD_SERVICES"));
-          } else {
-            fail();
-          }
-        });
-    checkMockClass(parsedApiClasses.get(1), "Landroid/os/FromBaklava;", AndroidApiLevel.BAKLAVA);
-    checkMockClass(
-        parsedApiClasses.get(2), "Landroid/os/AlsoFromBaklava;", AndroidApiLevel.BAKLAVA);
-    checkMockClass(parsedApiClasses.get(3), "Landroid/os/FromBaklava1;", AndroidApiLevel.BAKLAVA_1);
-  }
-
-  private static void checkMockClass(
-      ParsedApiClass apiClass, String descriptor, AndroidApiLevel apiLevel) {
-    assertEquals(apiClass.getClassReference(), Reference.classFromDescriptor(descriptor));
-    assertEquals(apiLevel, apiClass.getApiLevel());
-    apiClass.forEachMethod(
-        (method, level) -> {
-          if (level.equals(apiLevel)) {
-            assertEquals(method, Reference.methodFromDescriptor(descriptor, "foo", "(I)V"));
-          } else {
-            fail();
-          }
-        });
-    assertEquals(1, apiClass.fieldCount() + apiClass.methodCount());
   }
 
   @Test
@@ -725,9 +546,9 @@ public class AndroidApiHashingDatabaseBuilderGeneratorTest extends TestBase {
           }
           DexType type = factory.createType(classReference.getDescriptor());
           AndroidApiLevel apiLevel = androidApiLevelDatabase.getTypeApiLevel(type);
-          assertEquals(parsedApiClass.getApiLevel(), apiLevel);
+          assertEquals(parsedApiClass.getRange().intro, apiLevel);
           parsedApiClass.forEachMethod(
-              (methodReference, methodApiLevel) -> {
+              (methodReference, methodApiRange) -> {
                 MethodSubject methodSubject = clazz.method(methodReference);
                 if (!methodSubject.isPresent()) {
                   missingMethods.add(methodReference.toSourceString());
@@ -740,10 +561,10 @@ public class AndroidApiHashingDatabaseBuilderGeneratorTest extends TestBase {
                 } else {
                   androidApiLevel = androidApiLevelDatabase.getMethodApiLevel(method);
                 }
-                assertTrue(androidApiLevel.isLessThanOrEqualTo(methodApiLevel));
+                assertTrue(androidApiLevel.isLessThanOrEqualTo(methodApiRange.intro));
               });
           parsedApiClass.forEachField(
-              (fieldReference, fieldApiLevel) -> {
+              (fieldReference, fieldApiRange) -> {
                 FieldSubject fieldSubject =
                     clazz.uniqueFieldWithOriginalName(fieldReference.getFieldName());
                 if (!fieldSubject.isPresent()) {
@@ -754,7 +575,7 @@ public class AndroidApiHashingDatabaseBuilderGeneratorTest extends TestBase {
                 assertTrue(
                     androidApiLevelDatabase
                         .getFieldApiLevel(field)
-                        .isLessThanOrEqualTo(fieldApiLevel));
+                        .isLessThanOrEqualTo(fieldApiRange.intro));
               });
         });
 

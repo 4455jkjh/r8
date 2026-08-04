@@ -54,11 +54,10 @@ tasks {
     )
   }
 
-  val assembleTestJar by
-    registering(Jar::class) {
-      from(sourceSets.test.get().output)
-      archiveFileName.set("not_named_tests_java_25.jar")
-    }
+  register<Jar>("assembleTestJar") {
+    from(sourceSets.test.get().output)
+    archiveFileName.set("not_named_tests_java_25.jar")
+  }
 }
 
 val testJar by configurations.consumable("testJar")

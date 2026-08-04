@@ -47,14 +47,14 @@ val internalTestTasks =
     emptyList()
   }
 
-val downloadDeps by tasks.registering { dependsOn(publicTasks) }
+tasks.register("downloadDeps") { dependsOn(publicTasks) }
 
 val sharedDepsFiles by
   configurations.consumable("sharedDepsFiles") {
     publicTasks.forEach { taskProvider -> outgoing.artifact(taskProvider.flatMap { it.outputDir }) }
   }
 
-val downloadTestDeps by tasks.registering { dependsOn(publicTestTasks) }
+tasks.register("downloadTestDeps") { dependsOn(publicTestTasks) }
 
 val sharedTestDepsFiles by
   configurations.consumable("sharedTestDepsFiles") {
@@ -63,7 +63,7 @@ val sharedTestDepsFiles by
     }
   }
 
-val downloadDepsInternal by tasks.registering { dependsOn(internalTasks) }
+tasks.register("downloadDepsInternal") { dependsOn(internalTasks) }
 
 val sharedDepsInternalFiles by
   configurations.consumable("sharedDepsInternalFiles") {
@@ -72,7 +72,7 @@ val sharedDepsInternalFiles by
     }
   }
 
-val downloadTestDepsInternal by tasks.registering { dependsOn(internalTestTasks) }
+tasks.register("downloadTestDepsInternal") { dependsOn(internalTestTasks) }
 
 val sharedTestDepsInternalFiles by
   configurations.consumable("sharedTestDepsInternalFiles") {

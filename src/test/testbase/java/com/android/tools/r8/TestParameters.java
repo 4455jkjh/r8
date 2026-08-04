@@ -56,6 +56,10 @@ public class TestParameters {
     return builder().withNoneRuntime().build();
   }
 
+  public boolean canHaveDalvikIntUsedAsNonIntPrimitiveTypeBug() {
+    return isCfRuntime() || getApiLevel().isLessThan(AndroidApiLevel.L);
+  }
+
   public boolean canHaveIssueWithInlinedMonitors() {
     return isCfRuntime() || getApiLevel().isLessThanOrEqualTo(AndroidApiLevel.M);
   }

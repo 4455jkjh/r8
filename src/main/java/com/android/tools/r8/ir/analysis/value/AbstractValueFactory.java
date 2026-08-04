@@ -72,7 +72,7 @@ public class AbstractValueFactory {
     return type.isPrimitiveType() ? createZeroValue() : createNullValue(type);
   }
 
-  public AbstractValue createDefiniteBitsNumberValue(
+  public AbstractValue createDefiniteBitsIntNumberValue(
       int definitelySetBits, int definitelyUnsetBits) {
     if (definitelySetBits != 0 || definitelyUnsetBits != 0) {
       // If all bits are known, then create a single number value.
@@ -80,7 +80,7 @@ public class AbstractValueFactory {
       if (allBitsSet) {
         return createUncheckedSingleNumberValue(definitelySetBits);
       }
-      return new DefiniteBitsNumberValue(definitelySetBits, definitelyUnsetBits);
+      return new DefiniteBitsIntNumberValue(definitelySetBits, definitelyUnsetBits);
     }
     return AbstractValue.unknown();
   }

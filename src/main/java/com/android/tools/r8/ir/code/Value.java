@@ -859,6 +859,14 @@ public class Value implements Comparable<Value>, InstructionOrValue {
     return definition.getOutConstantConstInstruction();
   }
 
+  public boolean isConstBoolean() {
+    assert type.isInt();
+    return !hasLocalInfo()
+        && isDefinedByInstructionSatisfying(Instruction::isConstNumber)
+        && (getConstInstruction().asConstNumber().getRawValue() == 0
+            || getConstInstruction().asConstNumber().getRawValue() == 1);
+  }
+
   public boolean isConstInt() {
     assert type.isInt();
     return !hasLocalInfo() && isDefinedByInstructionSatisfying(Instruction::isConstNumber);
@@ -867,6 +875,11 @@ public class Value implements Comparable<Value>, InstructionOrValue {
   public boolean isConstLong() {
     assert type.isLong();
     return !hasLocalInfo() && isDefinedByInstructionSatisfying(Instruction::isConstNumber);
+  }
+
+  public boolean getConstBoolean() {
+    assert isConstBoolean();
+    return definition.asConstNumber().getBooleanValue();
   }
 
   public int getConstInt() {

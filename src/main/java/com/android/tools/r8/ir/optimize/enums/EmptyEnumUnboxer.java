@@ -34,6 +34,11 @@ public class EmptyEnumUnboxer extends EnumUnboxer {
   }
 
   @Override
+  public void rewriteWithLens() {
+    // Intentionally empty.
+  }
+
+  @Override
   public void analyzeEnums(IRCode code, MethodProcessor methodProcessor) {
     // Intentionally empty.
   }

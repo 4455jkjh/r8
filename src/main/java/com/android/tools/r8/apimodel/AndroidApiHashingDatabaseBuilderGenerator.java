@@ -60,7 +60,7 @@ public class AndroidApiHashingDatabaseBuilderGenerator {
     for (ParsedApiClass apiClass : apiClasses) {
       lookupMap.put(apiClass.getClassReference(), apiClass);
       databaseEntries.put(
-          ApiDatabaseEntry.of(apiClass.getClassReference()), apiClass.getApiLevel());
+          ApiDatabaseEntry.of(apiClass.getClassReference()), apiClass.getRange().intro);
     }
 
     for (ParsedApiClass apiClass : apiClasses) {
@@ -293,7 +293,7 @@ public class AndroidApiHashingDatabaseBuilderGenerator {
       throws GenerationException {
     if (!apiClass.getClassReference().getDescriptor().equals(OBJECT_DESCRIPTOR)) {
       apiClass.forEachMethod(
-          (methodReference, apiLevel) -> {
+          (methodReference, apiRange) -> {
             MethodReference methodWithNewHolder =
                 Reference.method(
                     holder,
@@ -301,18 +301,24 @@ public class AndroidApiHashingDatabaseBuilderGenerator {
                     methodReference.getFormalTypes(),
                     methodReference.getReturnType());
             addIfNewOrApiLevelIsLower(
-                linkLevel, databaseEntries, apiLevel, ApiDatabaseEntry.of(methodWithNewHolder));
+                linkLevel,
+                databaseEntries,
+                apiRange.intro,
+                ApiDatabaseEntry.of(methodWithNewHolder));
           });
       apiClass.forEachField(
-          (fieldReference, apiLevel) -> {
+          (fieldReference, apiRange) -> {
             FieldTypelessReference fieldWithNewHolder =
                 new FieldTypelessReference(holder, fieldReference.getFieldName());
             addIfNewOrApiLevelIsLower(
-                linkLevel, databaseEntries, apiLevel, ApiDatabaseEntry.of(fieldWithNewHolder));
+                linkLevel,
+                databaseEntries,
+                apiRange.intro,
+                ApiDatabaseEntry.of(fieldWithNewHolder));
           });
 
       apiClass.forEachSupertypeThrowing(
-          (superType, apiLevel) -> {
+          (superType, apiRange) -> {
             ParsedApiClass superApiClass = lookupMap.get(superType);
             if (superApiClass == null) {
               if (!superType.getDescriptor().equals(OBJECT_DESCRIPTOR)) {
@@ -325,12 +331,12 @@ public class AndroidApiHashingDatabaseBuilderGenerator {
               }
             } else {
               computeAllReferencesInHierarchy(
-                  lookupMap, holder, superApiClass, linkLevel.max(apiLevel), databaseEntries);
+                  lookupMap, holder, superApiClass, linkLevel.max(apiRange.intro), databaseEntries);
             }
           });
 
       apiClass.forEachInterfaceThrowing(
-          (interfaceReference, apiLevel) -> {
+          (interfaceReference, apiRange) -> {
             ParsedApiClass interfaceApiClass = lookupMap.get(interfaceReference);
             if (interfaceApiClass == null) {
               throw new GenerationException(
@@ -341,7 +347,11 @@ public class AndroidApiHashingDatabaseBuilderGenerator {
                       + " is missing from the parsed API classes.");
             }
             computeAllReferencesInHierarchy(
-                lookupMap, holder, interfaceApiClass, linkLevel.max(apiLevel), databaseEntries);
+                lookupMap,
+                holder,
+                interfaceApiClass,
+                linkLevel.max(apiRange.intro),
+                databaseEntries);
           });
     }
   }

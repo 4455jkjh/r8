@@ -128,7 +128,7 @@ TEST_DEPENDENCIES = [
 PLUGIN_DEPENDENCIES = [
     'org.jetbrains.kotlin.jvm:org.jetbrains.kotlin.jvm.gradle.plugin:pom:{version}'
     .format(version=KOTLIN_VERSION),
-    'com.google.protobuf:protobuf-gradle-plugin:0.9.4',
+    'com.google.protobuf:com.google.protobuf.gradle.plugin:pom:0.9.4',
     'org.gradle.kotlin.kotlin-dsl:org.gradle.kotlin.kotlin-dsl.gradle.plugin:pom:6.4.2',
     'org.jetbrains.kotlin:kotlin-gradle-plugin-api:1.9.10',
     'net.ltgt.errorprone:net.ltgt.errorprone.gradle.plugin:pom:3.0.1',

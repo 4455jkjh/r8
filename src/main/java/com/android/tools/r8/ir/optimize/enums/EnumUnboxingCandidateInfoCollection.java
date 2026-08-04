@@ -18,6 +18,7 @@ import com.android.tools.r8.utils.collections.ProgramMethodSet;
 import com.android.tools.r8.utils.internal.SetUtils;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Sets;
 import java.util.IdentityHashMap;
 import java.util.Iterator;
 import java.util.Map;
@@ -149,6 +150,12 @@ public class EnumUnboxingCandidateInfoCollection {
     enumTypeToInfo.clear();
   }
 
+  public void rewriteWithLens(GraphLens graphLens, GraphLens appliedLens) {
+    for (EnumUnboxingCandidateInfo info : enumTypeToInfo.values()) {
+      info.rewriteWithLens(graphLens, appliedLens);
+    }
+  }
+
   public boolean verifyAllSubtypesAreSet() {
     for (EnumUnboxingCandidateInfo value : enumTypeToInfo.values()) {
       assert value.subclasses != null;
@@ -202,6 +209,25 @@ public class EnumUnboxingCandidateInfoCollection {
 
     public Set<DexField> getRequiredInstanceFieldData() {
       return requiredInstanceFieldData;
+    }
+
+    public void rewriteWithLens(GraphLens graphLens, GraphLens appliedLens) {
+      Set<DexField> pendingAdditions = null;
+      Iterator<DexField> iterator = requiredInstanceFieldData.iterator();
+      while (iterator.hasNext()) {
+        DexField field = iterator.next();
+        DexField rewrittenField = graphLens.getRenamedFieldSignature(field, appliedLens);
+        if (rewrittenField.isNotIdenticalTo(field)) {
+          if (pendingAdditions == null) {
+            pendingAdditions = Sets.newIdentityHashSet();
+          }
+          pendingAdditions.add(rewrittenField);
+          iterator.remove();
+        }
+      }
+      if (pendingAdditions != null) {
+        requiredInstanceFieldData.addAll(pendingAdditions);
+      }
     }
   }
 }

@@ -76,6 +76,7 @@ public class ArgumentPropagatorApplicationFixer extends TreeFixerBase {
   private void fixupClass(DexProgramClass clazz) {
     fixupFields(clazz);
     fixupMethods(clazz);
+    fixupRecordComponents(clazz);
   }
 
   private void fixupFields(DexProgramClass clazz) {
@@ -162,6 +163,10 @@ public class ArgumentPropagatorApplicationFixer extends TreeFixerBase {
                 }
               }
             });
+  }
+
+  private void fixupRecordComponents(DexProgramClass clazz) {
+    clazz.setRecordComponents(fixupRecordComponents(clazz.getRecordComponents()));
   }
 
   @Override

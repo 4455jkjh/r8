@@ -117,6 +117,7 @@ public class LibraryMethodSideEffectModelCollection {
         .add(dexItemFactory.stringMembers.isEmpty)
         .add(dexItemFactory.stringMembers.toString)
         .add(dexItemFactory.stringMembers.trim)
+        .add(dexItemFactory.threadLocalMembers.constructor)
         .addAll(dexItemFactory.classMethods.getNames)
         // Required to unbox recent Kotlin enums (See b/268005228).
         .add(dexItemFactory.kotlinEnumEntriesListInit)
