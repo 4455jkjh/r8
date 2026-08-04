@@ -19,10 +19,12 @@ import java.nio.file.Path;
 
 public class DirectoryBuilder implements OutputBuilder {
   private final Path root;
+  private final Path normalizedRoot;
   private final Origin origin;
 
   public DirectoryBuilder(Path root) {
     this.root = root;
+    this.normalizedRoot = root.toAbsolutePath().normalize();
     origin = new PathOrigin(root);
   }
 
@@ -36,7 +38,8 @@ public class DirectoryBuilder implements OutputBuilder {
 
   @Override
   public void addDirectory(String name, DiagnosticsHandler handler) {
-    Path target = root.resolve(name.replace(NAME_SEPARATOR, File.separatorChar));
+    Path target = safeResolve(name, handler);
+    if (target == null) return;
     try {
       Files.createDirectories(target);
     } catch (IOException e) {
@@ -58,13 +61,26 @@ public class DirectoryBuilder implements OutputBuilder {
 
   @Override
   public synchronized void addFile(String name, ByteDataView content, DiagnosticsHandler handler) {
-    Path target = root.resolve(name.replace(NAME_SEPARATOR, File.separatorChar));
+    Path target = safeResolve(name, handler);
+    if (target == null) return;
     try {
       Files.createDirectories(target.getParent());
       ByteDataUtils.writeToFile(target, null, content);
     } catch (IOException e) {
       handler.error(new ExceptionDiagnostic(e, new PathOrigin(target)));
     }
+  }
+
+  private Path safeResolve(String name, DiagnosticsHandler handler) {
+    String fixedName = name.replace(NAME_SEPARATOR, File.separatorChar);
+    Path resolved = root.resolve(fixedName).toAbsolutePath().normalize();
+    if (!resolved.startsWith(normalizedRoot)) {
+      handler.error(
+          new StringDiagnostic(
+              "Refusing to write output entry outside of output directory: " + name, origin));
+      return null;
+    }
+    return resolved;
   }
 
   @Override
