@@ -158,10 +158,6 @@ public class InvokeStatic extends InvokeMethod {
       ProgramMethod context,
       AbstractValueSupplier abstractValueSupplier,
       SideEffectAssumption assumption) {
-    if (!appView.enableWholeProgramOptimizations()) {
-      return true;
-    }
-
     if (appView.options().debug) {
       return true;
     }
@@ -171,6 +167,10 @@ public class InvokeStatic extends InvokeMethod {
         .getLibraryMethodSideEffectModelCollection()
         .isCallToSideEffectFreeFinalMethod(this)) {
       return false;
+    }
+
+    if (!appView.enableWholeProgramOptimizations()) {
+      return true;
     }
 
     // Find the target and check if the invoke may have side effects.

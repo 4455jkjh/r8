@@ -58,7 +58,7 @@ public class ObjectsMethodOptimizer extends StatelessLibraryMethodModelCollectio
       AffectedValues affectedValues,
       Set<BasicBlock> blocksToRemove) {
     DexMethod singleTargetReference = singleTarget.getReference();
-    switch (singleTargetReference.getName().byteAt(0)) {
+    switch (singleTargetReference.getName().getFirstByteAsChar()) {
       case 'e':
         if (singleTargetReference == objectsMethods.equals) {
           return optimizeEquals(

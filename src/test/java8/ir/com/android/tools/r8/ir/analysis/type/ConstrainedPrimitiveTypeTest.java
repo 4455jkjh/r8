@@ -155,7 +155,7 @@ public class ConstrainedPrimitiveTypeTest extends AnalysisTestBase {
     @NeverInline
     public static void floatWithInvokeUserTest() {
       float x = 1f;
-      System.out.println(Float.toString(x));
+      System.out.println(x);
     }
 
     @NeverInline

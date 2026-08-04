@@ -4,6 +4,8 @@
 
 package com.android.tools.r8.desugar.backports;
 
+import com.android.tools.r8.R8TestBuilder;
+import com.android.tools.r8.TestBuilder;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.utils.AndroidApiLevel;
 import org.junit.runner.RunWith;
@@ -21,6 +23,15 @@ public final class FloatBackportTest extends AbstractBackportTest {
     super(parameters, Float.class, Main.class);
     registerTarget(AndroidApiLevel.N, 10);
     ignoreInvokes("floatToIntBits"); // Available in API 1, used to backport hashCode.
+  }
+
+  @Override
+  protected void configureProgram(TestBuilder<?, ?> builder) throws Exception {
+    super.configureProgram(builder);
+    if (builder.isR8TestBuilder()) {
+      R8TestBuilder<?, ?, ?> r8Builder = builder.asR8TestBuilder();
+      r8Builder.addKeepRules("-keepclassmembers class * { float disguise(float); }");
+    }
   }
 
   static final class Main extends MiniAssert {
@@ -51,12 +62,16 @@ public final class FloatBackportTest extends AbstractBackportTest {
     }
 
     private static void testIsFinite() {
-      assertTrue(Float.isFinite(0f));
-      assertTrue(Float.isFinite(Float.MIN_VALUE));
-      assertTrue(Float.isFinite(Float.MAX_VALUE));
-      assertFalse(Float.isFinite(Float.NaN));
-      assertFalse(Float.isFinite(Float.POSITIVE_INFINITY));
-      assertFalse(Float.isFinite(Float.NEGATIVE_INFINITY));
+      assertTrue(Float.isFinite(disguise(0f)));
+      assertTrue(Float.isFinite(disguise(Float.MIN_VALUE)));
+      assertTrue(Float.isFinite(disguise(Float.MAX_VALUE)));
+      assertFalse(Float.isFinite(disguise(Float.NaN)));
+      assertFalse(Float.isFinite(disguise(Float.POSITIVE_INFINITY)));
+      assertFalse(Float.isFinite(disguise(Float.NEGATIVE_INFINITY)));
+    }
+
+    private static float disguise(float f) {
+      return f;
     }
 
     private static void testMax() {
