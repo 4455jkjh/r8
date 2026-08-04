@@ -7,11 +7,7 @@ package com.android.tools.r8.apimodel;
 import static com.android.tools.r8.apimodel.ApiModelingTestHelper.setMockApiLevelForClass;
 import static com.android.tools.r8.apimodel.ApiModelingTestHelper.setMockApiLevelForDefaultInstanceInitializer;
 import static com.android.tools.r8.apimodel.ApiModelingTestHelper.setMockApiLevelForMethod;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 
-import com.android.tools.r8.CompilationFailedException;
 import com.android.tools.r8.CompilationMode;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestCompilerBuilder;
@@ -19,7 +15,6 @@ import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.testing.AndroidBuildVersion;
 import com.android.tools.r8.utils.AndroidApiLevel;
-import org.hamcrest.CoreMatchers;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -62,7 +57,6 @@ public class ApiModelOutlineInstanceInitializerMultipleConstructorsTest extends 
   @Test
   public void testD8Debug() throws Exception {
     parameters.assumeDexRuntime();
-    try {
       testForD8()
           .setMode(CompilationMode.DEBUG)
           .apply(this::setupTestBuilder)
@@ -70,55 +64,29 @@ public class ApiModelOutlineInstanceInitializerMultipleConstructorsTest extends 
           .addBootClasspathClasses(LibraryClass.class)
           .run(parameters.getRuntime(), Main.class)
           .assertSuccessWithOutputLines("Hello World!");
-    } catch (CompilationFailedException e) {
-      assertTrue(
-          parameters.getApiLevel().isBetweenBothIncluded(AndroidApiLevel.L, AndroidApiLevel.T));
-      assertEquals(AssertionError.class, e.getCause().getClass());
-      assertThat(
-          e.getCause().getMessage(),
-          CoreMatchers.containsString("Unexpected values live at entry"));
-    }
   }
 
   @Test
   public void testD8Release() throws Exception {
     parameters.assumeDexRuntime();
-    try {
-      testForD8()
-          .setMode(CompilationMode.RELEASE)
-          .apply(this::setupTestBuilder)
-          .compile()
-          .addBootClasspathClasses(LibraryClass.class)
-          .run(parameters.getRuntime(), Main.class)
-          .assertSuccessWithOutputLines("Hello World!");
-    } catch (CompilationFailedException e) {
-      assertTrue(
-          parameters.getApiLevel().isBetweenBothIncluded(AndroidApiLevel.L, AndroidApiLevel.T));
-      assertEquals(AssertionError.class, e.getCause().getClass());
-      assertThat(
-          e.getCause().getMessage(),
-          CoreMatchers.containsString("Unexpected values live at entry"));
-    }
+    testForD8()
+        .setMode(CompilationMode.RELEASE)
+        .apply(this::setupTestBuilder)
+        .compile()
+        .addBootClasspathClasses(LibraryClass.class)
+        .run(parameters.getRuntime(), Main.class)
+        .assertSuccessWithOutputLines("Hello World!");
   }
 
   @Test
   public void testR8() throws Exception {
-    try {
-      testForR8(parameters.getBackend())
-          .apply(this::setupTestBuilder)
-          .addKeepMainRule(Main.class)
-          .compile()
-          .addBootClasspathClasses(LibraryClass.class)
-          .run(parameters.getRuntime(), Main.class)
-          .assertSuccessWithOutputLines("Hello World!");
-    } catch (CompilationFailedException e) {
-      assertTrue(
-          parameters.getApiLevel().isBetweenBothIncluded(AndroidApiLevel.L, AndroidApiLevel.T));
-      assertEquals(AssertionError.class, e.getCause().getClass());
-      assertThat(
-          e.getCause().getMessage(),
-          CoreMatchers.containsString("Unexpected values live at entry"));
-    }
+    testForR8(parameters.getBackend())
+        .apply(this::setupTestBuilder)
+        .addKeepMainRule(Main.class)
+        .compile()
+        .addBootClasspathClasses(LibraryClass.class)
+        .run(parameters.getRuntime(), Main.class)
+        .assertSuccessWithOutputLines("Hello World!");
   }
 
   public static class LibraryClass {
