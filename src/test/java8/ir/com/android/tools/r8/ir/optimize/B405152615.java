@@ -3,14 +3,10 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8.ir.optimize;
 
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.CoreMatchers.not;
-
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.TestRuntime;
-import com.android.tools.r8.ToolHelper.DexVm.Version;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -66,12 +62,7 @@ public class B405152615 extends TestBase {
         .addKeepMainRule(Main.class)
         .compile()
         .run(parameters.getRuntime(), Main.class)
-        // TODO(b/405152615): Investigate change in output.
-        .applyIf(
-            parameters.isDexRuntimeVersionNewerThanOrEqual(Version.V13_0_0)
-                && parameters.isDexRuntimeVersionOlderThanOrEqual(Version.V16_0_0),
-            rr -> rr.assertSuccessWithOutputThatMatches(not(equalTo(expectedOutput))),
-            rr -> rr.assertSuccessWithOutput(expectedOutput));
+        .assertSuccessWithOutput(expectedOutput);
   }
 
   static class Main {
