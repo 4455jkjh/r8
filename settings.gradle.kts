@@ -83,6 +83,8 @@ includeTestProject(":tests_java_8:retrace")
 
 includeTestProject(":tests_java_8:optimize")
 
+includeTestProject(":tests_java_8:regress")
+
 includeTestProject(":tests_java_8:resolution")
 
 includeTestProject(":tests_java_11")

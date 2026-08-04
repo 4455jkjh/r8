@@ -36,9 +36,10 @@ public class B113347830 extends TestBase {
   public void test() throws Exception {
     ClassFile jasminFile = new ClassFile();
     jasminFile.readJasmin(
-        Files.newBufferedReader(
-            Paths.get(
-                ToolHelper.TESTS_DIR, "java", CLASS.getCanonicalName().replace('.', '/') + ".j")),
+        new java.io.BufferedReader(
+            new java.io.InputStreamReader(
+                CLASS.getResourceAsStream(NAME + ".j"),
+                java.nio.charset.StandardCharsets.UTF_8)),
         "Test",
         false);
     ByteArrayOutputStream out = new ByteArrayOutputStream();

@@ -49,7 +49,7 @@ public class Regress191296688 extends KotlinTestBase {
     CfRuntime cfRuntime = TestRuntime.getCheckedInJdk9();
     Path ktClasses =
         kotlinc(cfRuntime, kotlinParameters)
-            .addSourceFiles(getKotlinFileInTest(folder, "B"))
+            .addSourceFiles(getKotlinSourceFileFromResources(folder, "B"))
             .addClasspathFiles(aLib)
             .compile();
     Path desugaredJar =
