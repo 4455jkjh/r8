@@ -759,8 +759,11 @@ public class ArgumentPropagatorProgramOptimizer {
 
     private DexType getSmallerPrimitiveType(
         DexType staticType, long minInclusive, long maxInclusive) {
-      // Don't change fields typed as boolean, double, or float.
-      if (staticType.isBooleanType() || staticType.isDoubleType() || staticType.isFloatType()) {
+      // Don't change fields typed as boolean, char, double, or float.
+      if (staticType.isBooleanType()
+          || staticType.isCharType()
+          || staticType.isDoubleType()
+          || staticType.isFloatType()) {
         return staticType;
       }
       // Due to stricter verification on Dalvik we only allow long -> int in that case.

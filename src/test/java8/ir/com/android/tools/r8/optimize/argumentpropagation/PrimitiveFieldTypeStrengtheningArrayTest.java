@@ -43,8 +43,8 @@ public class PrimitiveFieldTypeStrengtheningArrayTest extends TestBase {
             "[1]",
             "[\u0001, \u007F]",
             "[1, 127]",
-            "[1, 127, 32767]",
-            "[1, 127, 32767, 2147483647]");
+            "[1, 127, 32767, 65535]",
+            "[1, 127, 32767, 65535, 2147483647]");
   }
 
   @Test
@@ -53,6 +53,8 @@ public class PrimitiveFieldTypeStrengtheningArrayTest extends TestBase {
     testForR8(parameters)
         .addInnerClasses(getClass())
         .addKeepMainRule(Main.class)
+        .addKeepRules("-keepclassmembers class * { static *** return*(); }")
+        .addKeepClassAndMembersRules(Sinks.class)
         .enableInliningAnnotations()
         .compile()
         .inspect(
@@ -72,15 +74,12 @@ public class PrimitiveFieldTypeStrengtheningArrayTest extends TestBase {
               FieldSubject charToBooleanField =
                   mainClass.uniqueFieldWithOriginalName("charToBooleanField");
               assertThat(charToBooleanField, isPresent());
-              assertEquals(
-                  optimize ? "boolean" : "char",
-                  charToBooleanField.getField().getType().getTypeName());
+              assertEquals("char", charToBooleanField.getField().getType().getTypeName());
 
               FieldSubject charToByteField =
                   mainClass.uniqueFieldWithOriginalName("charToByteField");
               assertThat(charToByteField, isPresent());
-              assertEquals(
-                  optimize ? "byte" : "char", charToByteField.getField().getType().getTypeName());
+              assertEquals("char", charToByteField.getField().getType().getTypeName());
 
               // Short fields.
               FieldSubject shortToBooleanField =
@@ -115,6 +114,11 @@ public class PrimitiveFieldTypeStrengtheningArrayTest extends TestBase {
               assertEquals(
                   optimize ? "short" : "int", intToShortField.getField().getType().getTypeName());
 
+              FieldSubject intToCharField = mainClass.uniqueFieldWithOriginalName("intToCharField");
+              assertThat(intToCharField, isPresent());
+              assertEquals(
+                  optimize ? "char" : "int", intToCharField.getField().getType().getTypeName());
+
               // Long fields.
               FieldSubject longToBooleanField =
                   mainClass.uniqueFieldWithOriginalName("longToBooleanField");
@@ -135,6 +139,12 @@ public class PrimitiveFieldTypeStrengtheningArrayTest extends TestBase {
               assertEquals(
                   optimize ? "short" : "int", longToShortField.getField().getType().getTypeName());
 
+              FieldSubject longToCharField =
+                  mainClass.uniqueFieldWithOriginalName("longToCharField");
+              assertThat(longToCharField, isPresent());
+              assertEquals(
+                  optimize ? "char" : "int", longToCharField.getField().getType().getTypeName());
+
               FieldSubject longToIntField = mainClass.uniqueFieldWithOriginalName("longToIntField");
               assertThat(longToIntField, isPresent());
               assertEquals("int", longToIntField.getField().getType().getTypeName());
@@ -144,8 +154,8 @@ public class PrimitiveFieldTypeStrengtheningArrayTest extends TestBase {
             "[1]",
             "[\u0001, \u007F]",
             "[1, 127]",
-            "[1, 127, 32767]",
-            "[1, 127, 32767, 2147483647]");
+            "[1, 127, 32767, 65535]",
+            "[1, 127, 32767, 65535, 2147483647]");
   }
 
   static class Main {
@@ -165,12 +175,14 @@ public class PrimitiveFieldTypeStrengtheningArrayTest extends TestBase {
     static int intToBooleanField;
     static int intToByteField;
     static int intToShortField;
+    static int intToCharField;
 
     // Long fields.
     static long longToBooleanField;
     static long longToByteField;
-    static long longToIntField;
     static long longToShortField;
+    static long longToCharField;
+    static long longToIntField;
 
     public static void main(String[] args) {
       // Byte field.
@@ -188,15 +200,19 @@ public class PrimitiveFieldTypeStrengtheningArrayTest extends TestBase {
       intToBooleanField = 1;
       intToByteField = Byte.MAX_VALUE;
       intToShortField = Short.MAX_VALUE;
+      intToCharField = Character.MAX_VALUE;
 
       // Long fields.
       longToBooleanField = 1;
       longToByteField = Byte.MAX_VALUE;
       longToShortField = Short.MAX_VALUE;
+      longToCharField = Character.MAX_VALUE;
       longToIntField = Integer.MAX_VALUE;
 
       // Use fields.
       readFieldsIntoArrays();
+      readFieldsIntoInvokes();
+      readFieldsIntoReturns();
     }
 
     @NeverInline
@@ -212,12 +228,124 @@ public class PrimitiveFieldTypeStrengtheningArrayTest extends TestBase {
 
       // Int fields.
       System.out.println(
-          Arrays.toString(new int[] {intToBooleanField, intToByteField, intToShortField}));
+          Arrays.toString(
+              new int[] {intToBooleanField, intToByteField, intToShortField, intToCharField}));
 
       // Long fields.
       System.out.println(
           Arrays.toString(
-              new long[] {longToBooleanField, longToByteField, longToShortField, longToIntField}));
+              new long[] {
+                longToBooleanField,
+                longToByteField,
+                longToShortField,
+                longToCharField,
+                longToIntField
+              }));
     }
+
+    @NeverInline
+    static void readFieldsIntoInvokes() {
+      Sinks.byteSink(byteToBooleanField);
+      Sinks.charSink(charToBooleanField);
+      Sinks.charSink(charToByteField);
+      Sinks.shortSink(shortToBooleanField);
+      Sinks.shortSink(shortToByteField);
+      Sinks.intSink(intToBooleanField);
+      Sinks.intSink(intToByteField);
+      Sinks.intSink(intToShortField);
+      Sinks.intSink(intToCharField);
+      Sinks.longSink(longToBooleanField);
+      Sinks.longSink(longToByteField);
+      Sinks.longSink(longToShortField);
+      Sinks.longSink(longToCharField);
+      Sinks.longSink(longToIntField);
+    }
+
+    @NeverInline
+    static void readFieldsIntoReturns() {
+      Sinks.byteSink(returnByteToBooleanField());
+      Sinks.charSink(returnCharToBooleanField());
+      Sinks.charSink(returnCharToByteField());
+      Sinks.shortSink(returnShortToBooleanField());
+      Sinks.shortSink(returnShortToByteField());
+      Sinks.intSink(returnIntToBooleanField());
+      Sinks.intSink(returnIntToByteField());
+      Sinks.intSink(returnIntToShortField());
+      Sinks.intSink(returnIntToCharField());
+      Sinks.longSink(returnLongToBooleanField());
+      Sinks.longSink(returnLongToByteField());
+      Sinks.longSink(returnLongToShortField());
+      Sinks.longSink(returnLongToCharField());
+      Sinks.longSink(returnLongToIntField());
+    }
+
+    static byte returnByteToBooleanField() {
+      return byteToBooleanField;
+    }
+
+    static char returnCharToBooleanField() {
+      return charToBooleanField;
+    }
+
+    static char returnCharToByteField() {
+      return charToByteField;
+    }
+
+    static short returnShortToBooleanField() {
+      return shortToBooleanField;
+    }
+
+    static short returnShortToByteField() {
+      return shortToByteField;
+    }
+
+    static int returnIntToBooleanField() {
+      return intToBooleanField;
+    }
+
+    static int returnIntToByteField() {
+      return intToByteField;
+    }
+
+    static int returnIntToShortField() {
+      return intToShortField;
+    }
+
+    static int returnIntToCharField() {
+      return intToCharField;
+    }
+
+    static long returnLongToBooleanField() {
+      return longToBooleanField;
+    }
+
+    static long returnLongToByteField() {
+      return longToByteField;
+    }
+
+    static long returnLongToShortField() {
+      return longToShortField;
+    }
+
+    static long returnLongToCharField() {
+      return longToCharField;
+    }
+
+    static long returnLongToIntField() {
+      return longToIntField;
+    }
+  }
+
+  static class Sinks {
+
+    static void byteSink(byte b) {}
+
+    static void charSink(char c) {}
+
+    static void shortSink(short s) {}
+
+    static void intSink(int i) {}
+
+    static void longSink(long l) {}
   }
 }
