@@ -24,12 +24,12 @@ java {
 }
 
 dependencies {
-  compileOnly(Deps.guava)
-  compileOnly(Deps.protobuf)
+  compileOnly(libs.guava)
+  compileOnly(libs.protobuf)
   compileOnly(project(":keepanno", "keepannoClasses"))
   compileOnly(project(":main", "mainClassesOutput"))
   compileOnly(project(":main", "turboClassesOutput"))
-  errorprone(Deps.errorprone)
+  errorprone(libs.errorprone)
 }
 
 val jarTask =

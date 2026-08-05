@@ -36,14 +36,14 @@ val sharedDepsConfig by
 
 dependencies {
   sharedDepsScope(project(":third_party", "sharedDepsFiles"))
-  compileOnly(Deps.asm)
-  compileOnly(Deps.guava)
-  compileOnly(Deps.protobuf)
-  compileOnly(Deps.fastUtil)
-  implementation("com.android.tools.build:aapt2-proto:9.1.0-alpha09-14792394")
-  implementation("com.android.tools.layoutlib:layoutlib-api:31.5.0-alpha04")
-  implementation("com.android.tools:common:31.5.0-alpha04")
-  implementation("com.android.tools:sdk-common:31.5.0-alpha04")
+  compileOnly(libs.asm)
+  compileOnly(libs.guava)
+  compileOnly(libs.protobuf)
+  compileOnly(libs.fastUtil)
+  implementation(libs.toolsAapt2Proto)
+  implementation(libs.toolsLayoutlibApi)
+  implementation(libs.toolsCommon)
+  implementation(libs.toolsSdkCommon)
 }
 
 tasks {

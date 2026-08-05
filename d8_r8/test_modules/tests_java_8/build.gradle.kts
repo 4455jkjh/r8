@@ -90,7 +90,7 @@ dependencies {
   childProjects.values.forEach { childProject ->
     partialTestClassesScope(project(childProject.path, "partialTestClasses"))
   }
-  implementation(Deps.playwright)
+  implementation(libs.playwright)
 }
 
 fun testDependencies(): FileCollection {

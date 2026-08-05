@@ -229,8 +229,8 @@ dependencies {
   implementation(project(":keepanno", "keepannoClasses"))
   implementation(project(":resourceshrinker", "resourceshrinkerJar"))
   implementation(project(":utils"))
-  Deps.compilerDeps.forEach { compileOnly(it) }
-  errorprone(Deps.errorprone)
+  compileOnly(libs.bundles.compilerDeps)
+  errorprone(libs.errorprone)
 }
 
 if (enableTurboBuilds) {

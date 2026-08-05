@@ -25,8 +25,8 @@ java {
 
 dependencies {
   compileOnly(project(":keepanno", "keepannoClasses"))
-  compileOnly(Deps.protobuf)
-  errorprone(Deps.errorprone)
+  compileOnly(libs.protobuf)
+  errorprone(libs.errorprone)
 }
 
 tasks {

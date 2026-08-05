@@ -28,9 +28,9 @@ val sharedDepsConfig by
 
 dependencies {
   sharedDepsScope(project(":third_party", "sharedDepsFiles"))
-  compileOnly(Deps.asm)
-  compileOnly(Deps.guava)
-  compileOnly(Deps.protobuf)
+  compileOnly(libs.asm)
+  compileOnly(libs.guava)
+  compileOnly(libs.protobuf)
 }
 
 tasks {

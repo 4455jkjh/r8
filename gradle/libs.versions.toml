@@ -1,0 +1,63 @@
+[versions]
+androidxCollection = "1.6.0"
+androidxTracing = "2.0.0-alpha05"
+asm = "9.10.1"
+ddmLib = "32.2.0"
+errorprone = "2.18.0"
+fastUtil = "8.5.12"
+gson = "2.14.0"
+guava = "32.1.2-jre"
+javassist = "3.29.2-GA"
+junitJupiter = "5.14.3"
+junitPlatform = "1.14.3"
+kotlin = "1.9.20"
+kotlinMetadata = "2.4.0"
+playwright = "1.60.0"
+protobuf = "4.33.5"
+smali = "3.0.3"
+toolsAapt2 = "9.1.0-alpha09-14792394"
+tools = "31.5.0-alpha04"
+zipflinger = "9.0.0"
+
+[libraries]
+androidxCollection = { module = "androidx.collection:collection", version.ref = "androidxCollection" }
+androidxTracingDriver = { module = "androidx.tracing:tracing", version.ref = "androidxTracing" }
+androidxTracingDriverWire = { module = "androidx.tracing:tracing-wire", version.ref = "androidxTracing" }
+asm = { module = "org.ow2.asm:asm", version.ref = "asm" }
+asmUtil = { module = "org.ow2.asm:asm-util", version.ref = "asm" }
+asmCommons = { module = "org.ow2.asm:asm-commons", version.ref = "asm" }
+ddmLib = { module = "com.android.tools.ddms:ddmlib", version.ref = "ddmLib" }
+errorprone = { module = "com.google.errorprone:error_prone_core", version.ref = "errorprone" }
+fastUtil  = { module = "it.unimi.dsi:fastutil", version.ref = "fastUtil" }
+gson = { module = "com.google.code.gson:gson", version.ref = "gson" }
+guava  = { module = "com.google.guava:guava", version.ref = "guava" }
+javassist = { module = "org.javassist:javassist", version.ref = "javassist" }
+junitJupiter = { module = "org.junit.jupiter:junit-jupiter", version.ref = "junitJupiter" }
+junitVintageEngine = { module = "org.junit.vintage:junit-vintage-engine", version.ref = "junitJupiter" }
+junitPlatform = { module = "org.junit.platform:junit-platform-launcher", version.ref = "junitPlatform" }
+kotlinMetadata = { module = "org.jetbrains.kotlin:kotlin-metadata-jvm", version.ref = "kotlinMetadata" }
+kotlinStdLib = { module = "org.jetbrains.kotlin:kotlin-stdlib", version.ref = "kotlin" }
+kotlinReflect = { module = "org.jetbrains.kotlin:kotlin-reflect", version.ref = "kotlin" }
+playwright = { module = "com.microsoft.playwright:playwright", version.ref = "playwright" }
+protobuf = { module = "com.google.protobuf:protobuf-java", version.ref = "protobuf" }
+smali = { module = "com.android.tools.smali:smali", version.ref = "smali" }
+smaliUtil = { module = "com.android.tools.smali:smali-util", version.ref = "smali" }
+toolsAapt2Proto = { module = "com.android.tools.build:aapt2-proto", version.ref = "toolsAapt2" }
+toolsLayoutlibApi = { module = "com.android.tools.layoutlib:layoutlib-api", version.ref = "tools" }
+toolsCommon = { module = "com.android.tools:common", version.ref = "tools" }
+toolsSdkCommon = { module = "com.android.tools:sdk-common", version.ref = "tools" }
+zipflinger = { module = "com.android:zipflinger", version.ref = "zipflinger" }
+
+[bundles]
+compilerDeps = ["androidxCollection",
+    "androidxTracingDriver",
+    "androidxTracingDriverWire",
+    "asm",
+    "asmCommons",
+    "asmUtil",
+    "fastUtil",
+    "gson",
+    "guava",
+    "kotlinMetadata",
+    "protobuf",
+    "zipflinger"]

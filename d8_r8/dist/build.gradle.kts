@@ -32,10 +32,8 @@ val r8Deps by
   }
 
 dependencies {
-  Deps.compilerDeps.forEach {
-    compileOnly(it)
-    r8Deps(it)
-  }
+  compileOnly(libs.bundles.compilerDeps)
+  r8Deps(libs.bundles.compilerDeps)
 }
 
 spdxSbom {
