@@ -230,7 +230,6 @@ dependencies {
   implementation(project(":resourceshrinker", "resourceshrinkerJar"))
   implementation(project(":utils"))
   compileOnly(libs.bundles.compilerDeps)
-  errorprone(libs.errorprone)
 }
 
 if (enableTurboBuilds) {
@@ -320,5 +319,3 @@ artifacts {
   )
   add(mainSources.name, tasks.named("sourcesJar"))
 }
-
-configureErrorProneForJavaCompile()

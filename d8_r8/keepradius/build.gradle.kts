@@ -3,7 +3,6 @@
 // BSD-style license that can be found in the LICENSE file.
 
 import com.google.protobuf.gradle.proto
-import net.ltgt.gradle.errorprone.errorprone
 import org.gradle.api.tasks.bundling.Jar
 
 plugins {
@@ -26,7 +25,6 @@ java {
 dependencies {
   compileOnly(project(":keepanno", "keepannoClasses"))
   compileOnly(libs.protobuf)
-  errorprone(libs.errorprone)
 }
 
 tasks {
@@ -43,12 +41,6 @@ tasks {
     archiveFileName.set("keepradius-proto.jar")
   }
 }
-
-tasks.withType<JavaCompile> {
-  options.errorprone.excludedPaths.set(".*/build/generated/source/proto/main/java/.*")
-}
-
-configureErrorProneForJavaCompile()
 
 val keepradiusWithoutProtoJar by
   configurations.consumable("keepradiusWithoutProtoJar") {

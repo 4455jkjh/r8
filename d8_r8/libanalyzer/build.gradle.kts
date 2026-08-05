@@ -3,7 +3,6 @@
 // BSD-style license that can be found in the LICENSE file.
 
 import com.google.protobuf.gradle.proto
-import net.ltgt.gradle.errorprone.errorprone
 import org.gradle.api.tasks.bundling.Jar
 
 plugins {
@@ -29,7 +28,6 @@ dependencies {
   compileOnly(project(":keepanno", "keepannoClasses"))
   compileOnly(project(":main", "mainClassesOutput"))
   compileOnly(project(":main", "turboClassesOutput"))
-  errorprone(libs.errorprone)
 }
 
 val jarTask =
@@ -67,9 +65,3 @@ val compileJavaJarTask =
 
 val libanalyzerCompileJava by
   configurations.consumable("libanalyzer-compile-java") { outgoing.artifact(compileJavaJarTask) }
-
-tasks.withType<JavaCompile> {
-  options.errorprone.excludedPaths.set(".*/build/generated/source/proto/main/java/.*")
-}
-
-configureErrorProneForJavaCompile()
