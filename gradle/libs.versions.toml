@@ -4,6 +4,7 @@ androidxTracing = "2.0.0-alpha05"
 asm = "9.10.1"
 ddmLib = "32.2.0"
 errorprone = "2.18.0"
+errorproneGradlePlugin = "3.0.1"
 fastUtil = "8.5.12"
 gson = "2.14.0"
 guava = "32.1.2-jre"
@@ -11,10 +12,14 @@ javassist = "3.29.2-GA"
 junitJupiter = "5.14.3"
 junitPlatform = "1.14.3"
 kotlin = "1.9.20"
+kotlinGradlePlugin = "2.2.21"
 kotlinMetadata = "2.4.0"
 playwright = "1.60.0"
 protobuf = "4.33.5"
+protobufGradlePlugin = "0.9.4"
+retryGradlePlugin = "1.6.4"
 smali = "3.0.3"
+spdxGradlePlugin = "0.4.0"
 toolsAapt2 = "9.1.0-alpha09-14792394"
 tools = "31.5.0-alpha04"
 zipflinger = "9.0.0"
@@ -28,6 +33,7 @@ asmUtil = { module = "org.ow2.asm:asm-util", version.ref = "asm" }
 asmCommons = { module = "org.ow2.asm:asm-commons", version.ref = "asm" }
 ddmLib = { module = "com.android.tools.ddms:ddmlib", version.ref = "ddmLib" }
 errorprone = { module = "com.google.errorprone:error_prone_core", version.ref = "errorprone" }
+errorproneGradlePlugin = { module = "net.ltgt.gradle:gradle-errorprone-plugin", version.ref = "errorproneGradlePlugin" }
 fastUtil  = { module = "it.unimi.dsi:fastutil", version.ref = "fastUtil" }
 gson = { module = "com.google.code.gson:gson", version.ref = "gson" }
 guava  = { module = "com.google.guava:guava", version.ref = "guava" }
@@ -35,13 +41,17 @@ javassist = { module = "org.javassist:javassist", version.ref = "javassist" }
 junitJupiter = { module = "org.junit.jupiter:junit-jupiter", version.ref = "junitJupiter" }
 junitVintageEngine = { module = "org.junit.vintage:junit-vintage-engine", version.ref = "junitJupiter" }
 junitPlatform = { module = "org.junit.platform:junit-platform-launcher", version.ref = "junitPlatform" }
+kotlinGradlePlugin = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", version.ref = "kotlinGradlePlugin" }
 kotlinMetadata = { module = "org.jetbrains.kotlin:kotlin-metadata-jvm", version.ref = "kotlinMetadata" }
 kotlinStdLib = { module = "org.jetbrains.kotlin:kotlin-stdlib", version.ref = "kotlin" }
 kotlinReflect = { module = "org.jetbrains.kotlin:kotlin-reflect", version.ref = "kotlin" }
 playwright = { module = "com.microsoft.playwright:playwright", version.ref = "playwright" }
 protobuf = { module = "com.google.protobuf:protobuf-java", version.ref = "protobuf" }
+protobufGradlePlugin = { module = "com.google.protobuf:protobuf-gradle-plugin", version.ref = "protobufGradlePlugin" }
+retryGradlePlugin = { module = "org.gradle:test-retry-gradle-plugin", version.ref = "retryGradlePlugin" }
 smali = { module = "com.android.tools.smali:smali", version.ref = "smali" }
 smaliUtil = { module = "com.android.tools.smali:smali-util", version.ref = "smali" }
+spdxGradlePlugin = { module = "org.spdx:spdx-gradle-plugin", version.ref = "spdxGradlePlugin" }
 toolsAapt2Proto = { module = "com.android.tools.build:aapt2-proto", version.ref = "toolsAapt2" }
 toolsLayoutlibApi = { module = "com.android.tools.layoutlib:layoutlib-api", version.ref = "tools" }
 toolsCommon = { module = "com.android.tools:common", version.ref = "tools" }
