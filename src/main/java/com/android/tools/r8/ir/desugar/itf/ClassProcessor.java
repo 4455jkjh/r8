@@ -550,12 +550,8 @@ final class ClassProcessor {
     assert dexItemFactory.objectType.isIdenticalTo(iface.getSuperType());
     assert !helper.isEmulatedInterface(iface.type);
     if (desugaringMode == LIBRARY_DESUGARING_N_PLUS) {
-      if (shouldResolveForwardingMethodsForEmulatedInterfaces(
-          iface, interfaceInfo.emulatedInterfaceInfo)) {
-        duplicateEmulatedInterfaces(iface, interfaceInfo.emulatedInterfaceInfo.emulatedInterfaces);
-        return SignaturesInfo.EMPTY;
-      }
-      return interfaceInfo;
+      duplicateEmulatedInterfaces(iface, interfaceInfo.emulatedInterfaceInfo.emulatedInterfaces);
+      return SignaturesInfo.EMPTY;
     } else if (desugaringMode == LIBRARY_DESUGARING_M_MINUS) {
       // Add non-library default methods as well as those for desugared library classes.
       if (iface.isLibraryClass() && needsLibraryInfo() && helper.isInDesugaredLibrary(iface)) {
@@ -628,6 +624,10 @@ final class ClassProcessor {
       ClassInfo superInfo,
       SignaturesInfo signatureInfo,
       InterfaceProcessingDesugaringEventConsumer eventConsumer) {
+    if (desugaringMode == LIBRARY_DESUGARING_N_PLUS) {
+      duplicateEmulatedInterfaces(clazz, signatureInfo.emulatedInterfaceInfo.emulatedInterfaces);
+      return ClassInfo.EMPTY;
+    }
     ImmutableList.Builder<DexClassAndMethod> additionalForwards = ImmutableList.builder();
     // First we deal with non-emulated interface desugaring.
     resolveForwardingMethods(
@@ -655,7 +655,7 @@ final class ClassProcessor {
   // The class signature won't include the correct type parameters for the duplicated interfaces,
   // i.e., there will be foo.A instead of foo.A<K,V>, but such parameters are unused.
   private void duplicateEmulatedInterfaces(DexClass clazz, EmulatedInterfaces emulatedInterfaces) {
-    if (clazz.isNotProgramClass()) {
+    if (clazz.isNotProgramClass() || emulatedInterfaces.isEmpty()) {
       return;
     }
     Set<DexType> filtered = new HashSet<>(emulatedInterfaces.getEmulatedInterfaces());

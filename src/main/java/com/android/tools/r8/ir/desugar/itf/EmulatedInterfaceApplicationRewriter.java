@@ -12,6 +12,8 @@ import com.android.tools.r8.graph.DexTypeList;
 import com.android.tools.r8.graph.FieldCollection.FieldCollectionFactory;
 import com.android.tools.r8.graph.GenericSignature;
 import com.android.tools.r8.graph.GenericSignature.ClassSignature;
+import com.android.tools.r8.graph.GenericSignature.ClassTypeSignature;
+import com.android.tools.r8.graph.GenericSignature.FormalTypeParameter;
 import com.android.tools.r8.graph.MethodCollection.MethodCollectionFactory;
 import com.android.tools.r8.graph.ProgramMethod;
 import com.android.tools.r8.utils.ReachabilitySensitiveValue;
@@ -114,6 +116,33 @@ public final class EmulatedInterfaceApplicationRewriter {
         newInterfaces.add(
             new GenericSignature.ClassTypeSignature(emulatedInterfaces.get(itf), typeArguments));
       }
+    }
+    if (appView.options().canUseDefaultAndStaticInterfaceMethods()) {
+      // Implements itself to resolve multiple default methods.
+      // This is missing the correct typeArguments.
+      List<GenericSignature.FieldTypeSignature> typeArguments = new ArrayList<>();
+      for (FormalTypeParameter formal :
+          emulatedInterface.getClassSignature().getFormalTypeParameters()) {
+        // Only basic conversion of formal types into TypeVariableSignature are supported,
+        // since they're the only ones needed. Further conversions are possible, but need to be
+        // implemented once needed.
+        if (formal.getInterfaceBounds().isEmpty()
+            && formal.getClassBound().isObject(appView.dexItemFactory())) {
+          typeArguments.add(
+              GenericSignature.TypeVariableSignature
+                  .createTypeVariableForEmulatedInterfaceDesugaring(formal.getName()));
+        } else {
+          appView
+              .reporter()
+              .warning(
+                  "Unsupported type variable for emulated interface leading to invalid annotation"
+                      + " in "
+                      + emulatedInterface.getTypeName()
+                      + " "
+                      + formal);
+        }
+      }
+      newInterfaces.add(new ClassTypeSignature(emulatedInterface.getType(), typeArguments));
     }
     return newInterfaces;
   }

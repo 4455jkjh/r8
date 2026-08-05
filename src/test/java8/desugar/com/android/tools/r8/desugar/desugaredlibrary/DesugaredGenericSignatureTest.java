@@ -5,6 +5,7 @@
 package com.android.tools.r8.desugar.desugaredlibrary;
 
 import static com.android.tools.r8.desugar.desugaredlibrary.test.CompilationSpecification.SPECIFICATIONS_WITH_CF2CF;
+import static com.android.tools.r8.desugar.desugaredlibrary.test.LibraryDesugaringSpecification.JDK11;
 import static com.android.tools.r8.desugar.desugaredlibrary.test.LibraryDesugaringSpecification.getJdk8Jdk11;
 import static com.android.tools.r8.utils.codeinspector.Matchers.isPresent;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -71,7 +72,12 @@ public class DesugaredGenericSignatureTest extends DesugaredLibraryTestBase {
         .compile()
         .inspect(this::checkRewrittenSignature)
         .run(parameters.getRuntime(), Main.class)
-        .assertSuccessWithOutput(expected(parameters, compilationSpecification.isCfToCf()));
+        .assertSuccessWithOutput(
+            expected(
+                parameters,
+                compilationSpecification.isCfToCf(),
+                libraryDesugaringSpecification,
+                compilationSpecification));
   }
 
   private void checkRewrittenSignature(CodeInspector inspector) {
@@ -105,7 +111,10 @@ public class DesugaredGenericSignatureTest extends DesugaredLibraryTestBase {
   }
 
   private static String expected(
-      TestParameters parameters, boolean genericSignaturesOnEmulatedInterfaces) {
+      TestParameters parameters,
+      boolean genericSignaturesOnEmulatedInterfaces,
+      LibraryDesugaringSpecification libraryDesugaringSpecification,
+      CompilationSpecification compilationSpecification) {
     final String EXPECTED = StringUtils.lines("Box", "1970", "1", "2");
     final String STRING_KEY_HASH_MAP_EXPECTED =
         StringUtils.lines(
@@ -131,6 +140,24 @@ public class DesugaredGenericSignatureTest extends DesugaredLibraryTestBase {
             "TransformingSequentialList",
             "2",
             "interface j$.util.List");
+    final String EXPECTED_WITHOUT_EMULATED_INTERFACE_JVM_AND_ART_FROM_O_BEFORE_T =
+        StringUtils.lines(
+            "StringKeyHashMap",
+            "0",
+            "SameKeyAndValueTypeHashMap",
+            "0",
+            "TransformingSequentialList",
+            "2",
+            "interface j$.util.Collection");
+    final String EXPECTED_WITHOUT_EMULATED_INTERFACE_JVM_AND_ART_FROM_O_BEFORE_T_CF2CF =
+        StringUtils.lines(
+            "StringKeyHashMap",
+            "0",
+            "SameKeyAndValueTypeHashMap",
+            "0",
+            "TransformingSequentialList",
+            "2",
+            "j$.util.Collection<T>");
     final String EXPECTED_WITHOUT_EMULATED_INTERFACE_JVM_AND_ART_FROM_O =
         StringUtils.lines(
             "StringKeyHashMap",
@@ -156,7 +183,12 @@ public class DesugaredGenericSignatureTest extends DesugaredLibraryTestBase {
                             .getApiLevel()
                             .isLessThan(TestBase.apiLevelWithDefaultInterfaceMethodsSupport())))
                 ? EXPECTED_WITHOUT_EMULATED_INTERFACE_ART_BEFORE_O
-                : EXPECTED_WITHOUT_EMULATED_INTERFACE_JVM_AND_ART_FROM_O);
+                : ((parameters.getApiLevel().isLessThan(AndroidApiLevel.T)
+                        && libraryDesugaringSpecification == JDK11)
+                    ? (compilationSpecification.isCfToCf()
+                        ? EXPECTED_WITHOUT_EMULATED_INTERFACE_JVM_AND_ART_FROM_O_BEFORE_T_CF2CF
+                        : EXPECTED_WITHOUT_EMULATED_INTERFACE_JVM_AND_ART_FROM_O_BEFORE_T)
+                    : EXPECTED_WITHOUT_EMULATED_INTERFACE_JVM_AND_ART_FROM_O));
   }
 
   public static class Main {

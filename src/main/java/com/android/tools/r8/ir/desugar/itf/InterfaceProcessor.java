@@ -28,6 +28,7 @@ import com.android.tools.r8.graph.ProgramMethod;
 import com.android.tools.r8.graph.lens.GraphLens;
 import com.android.tools.r8.graph.lens.NestedGraphLens;
 import com.android.tools.r8.ir.desugar.desugaredlibrary.machinespecification.EmulatedDispatchMethodDescriptor;
+import com.android.tools.r8.ir.synthetic.ForwardMethodBuilder;
 import com.android.tools.r8.lightir.LirInstructionView;
 import com.android.tools.r8.lightir.LirOpcodeUtils;
 import com.android.tools.r8.synthesis.SyntheticMethodBuilder;
@@ -240,7 +241,16 @@ public final class InterfaceProcessor {
               code, companion.getReference().getArity(), appView);
     }
     companion.setCode(code, appView);
-    method.setCode(InvalidCode.getInstance(), appView);
+    if (desugaringMode == LIBRARY_DESUGARING_N_PLUS) {
+      method.setCode(
+          ForwardMethodBuilder.builder(appView.dexItemFactory())
+              .setStaticTarget(companion.getReference(), false)
+              .setNonStaticSource(method.getReference())
+              .buildCf(),
+          appView);
+    } else {
+      method.setCode(InvalidCode.getInstance(), appView);
+    }
   }
 
   private void clearDirectMethods(DexProgramClass iface) {
@@ -336,10 +346,14 @@ public final class InterfaceProcessor {
             info.getDefaultMethodsToImplementation()
                 .forEach(
                     (defaultMethod, companionMethod) -> {
-                      assert InvalidCode.isInvalidCode(defaultMethod.getCode());
                       assert !InvalidCode.isInvalidCode(companionMethod.getCode());
-                      defaultMethod.accessFlags.setAbstract();
-                      defaultMethod.unsetCode();
+                      if (desugaringMode == LIBRARY_DESUGARING_N_PLUS) {
+                        assert !InvalidCode.isInvalidCode(defaultMethod.getCode());
+                      } else {
+                        assert InvalidCode.isInvalidCode(defaultMethod.getCode());
+                        defaultMethod.accessFlags.setAbstract();
+                        defaultMethod.unsetCode();
+                      }
                       graphLensBuilder.recordCodeMovedToCompanionClass(
                           defaultMethod.getReference(), companionMethod.getReference());
                     });

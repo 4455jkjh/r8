@@ -7,6 +7,8 @@ import static com.android.tools.r8.desugar.desugaredlibrary.test.CompilationSpec
 import static com.android.tools.r8.desugar.desugaredlibrary.test.CompilationSpecification.SPECIFICATIONS_WITH_CF2CF;
 import static com.android.tools.r8.desugar.desugaredlibrary.test.LibraryDesugaringSpecification.JDK11;
 import static com.android.tools.r8.desugar.desugaredlibrary.test.LibraryDesugaringSpecification.JDK11_PATH;
+import static junit.framework.TestCase.assertEquals;
+import static junit.framework.TestCase.assertTrue;
 import static org.junit.Assume.assumeTrue;
 
 import com.android.tools.r8.TestParameters;
@@ -14,6 +16,9 @@ import com.android.tools.r8.TestRuntime.CfVm;
 import com.android.tools.r8.desugar.desugaredlibrary.DesugaredLibraryTestBase;
 import com.android.tools.r8.desugar.desugaredlibrary.test.CompilationSpecification;
 import com.android.tools.r8.desugar.desugaredlibrary.test.LibraryDesugaringSpecification;
+import com.android.tools.r8.graph.DexType;
+import com.android.tools.r8.utils.AndroidApiLevel;
+import com.android.tools.r8.utils.codeinspector.CodeInspector;
 import com.android.tools.r8.utils.internal.StringUtils;
 import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
@@ -98,8 +103,34 @@ public class CollectionToArrayTest extends DesugaredLibraryTestBase {
     testForDesugaredLibrary(parameters, libraryDesugaringSpecification, compilationSpecification)
         .addInnerClassesAndStrippedOuter(getClass())
         .addKeepMainRule(Main.class)
+        .compile()
+        .inspect(this::assertJ$CollAboveN)
+        .inspectL8(this::assertForwardMethodsAboveN)
         .run(parameters.getRuntime(), Main.class)
         .assertSuccessWithOutput(EXPECTED_OUTPUT);
+  }
+
+  private void assertForwardMethodsAboveN(CodeInspector i) {
+    if (parameters.getApiLevel().isGreaterThanOrEqualTo(AndroidApiLevel.N)
+        && parameters.getApiLevel().isLessThan(AndroidApiLevel.T)) {
+      i.clazz("j$.util.Collection")
+          .getDexProgramClass()
+          .forEachProgramMethod(
+              m -> {
+                assert !m.getAccessFlags().isAbstract();
+              });
+    }
+  }
+
+  private void assertJ$CollAboveN(CodeInspector i) {
+    if (parameters.getApiLevel().isGreaterThanOrEqualTo(AndroidApiLevel.N)
+        && parameters.getApiLevel().isLessThan(AndroidApiLevel.T)) {
+      DexType col = i.getFactory().createType("Lj$/util/Collection;");
+      assertEquals(1, i.clazz(MyList.class).getDexProgramClass().interfaces.size());
+      assertTrue(
+          i.clazz(MyCollectionNoOverride.class).getDexProgramClass().interfaces.contains(col));
+      assertTrue(i.clazz(MyCollectionOverride.class).getDexProgramClass().interfaces.contains(col));
+    }
   }
 
   public static class Main {
