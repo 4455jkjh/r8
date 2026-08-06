@@ -584,6 +584,12 @@ public class ProguardConfigurationParser {
       } else if (acceptString(CheckEnumUnboxedRule.RULE_NAME)) {
         configurationConsumer.addRule(parseCheckEnumUnboxedRule(optionStart), this, optionStart);
         return true;
+      } else if (acceptString(CheckKotlinMetadataDiscardedRule.RULE_NAME)) {
+        ProguardConfigurationRule rule = parseCheckKotlinMetadataDiscardedRule(optionStart);
+        if (rule != null) {
+          configurationConsumer.addRule(rule, this, optionStart);
+        }
+        return true;
       } else if (acceptString(ConvertCheckNotNullRule.RULE_NAME)) {
         configurationConsumer.addRule(parseConvertCheckNotNullRule(optionStart), this, optionStart);
         return true;
@@ -1799,6 +1805,27 @@ public class ProguardConfigurationParser {
       builder.setSource(getSourceSnippet(contents, start, end));
       builder.setEnd(end);
       return builder.build();
+    }
+
+    private ProguardConfigurationRule parseCheckKotlinMetadataDiscardedRule(
+        TextPosition optionStart) {
+      CheckKotlinMetadataDiscardedRule.Builder builder =
+          CheckKotlinMetadataDiscardedRule.builder().setOrigin(origin).setStart(optionStart);
+      if (parseClassAnnotationsAndFlags(builder)) {
+        parseClassSpecFromClassTypeInclusive(builder, false);
+      } else {
+        parseClassType(
+            builder,
+            () -> parseClassSpecFromClassNameInclusive(builder, false),
+            expectedClassTypeStart -> position = expectedClassTypeStart.getOffsetAsInt());
+      }
+      if (builder.hasClassType()) {
+        Position end = getPosition();
+        return builder.setEnd(end).setSource(getSourceSnippet(contents, optionStart, end)).build();
+      } else {
+        configurationConsumer.setCheckKotlinMetadataDiscarded(this, optionStart);
+        return null;
+      }
     }
 
     private boolean skipWhitespace() {

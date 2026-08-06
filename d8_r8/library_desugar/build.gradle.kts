@@ -4,6 +4,7 @@
 
 plugins {
   `java-library`
+  id("r8-conventions")
   id("dependencies-plugin")
 }
 
@@ -14,5 +15,5 @@ java {
   }
   sourceCompatibility = JavaVersion.VERSION_1_8
   targetCompatibility = JavaVersion.VERSION_1_8
-  toolchain { languageVersion = JavaLanguageVersion.of(JvmCompatibility.release) }
+  tasks.withType<JavaCompile>().configureEach { options.release.set(8) }
 }

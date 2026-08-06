@@ -4,26 +4,22 @@
 
 plugins {
   `java-library`
+  id("r8-conventions")
   id("dependencies-plugin")
   id("net.ltgt.errorprone")
 }
 
 // :utils is assumed to use a subset of :main's dependencies.
 dependencies {
-  compileOnly(Deps.guava)
-  compileOnly(Deps.fastUtil)
+  compileOnly(libs.guava)
+  compileOnly(libs.fastUtil)
 
-  errorprone(Deps.errorprone)
+  errorprone(libs.errorprone)
 }
 
 configureErrorProneForJavaCompile()
 
-java {
-  sourceSets.main.configure { java.srcDir(getRoot().resolveAll("src", "utils", "java")) }
-  sourceCompatibility = JvmCompatibility.sourceCompatibility
-  targetCompatibility = JvmCompatibility.targetCompatibility
-  toolchain { languageVersion = JavaLanguageVersion.of(JvmCompatibility.release) }
-}
+java { sourceSets.main.configure { java.srcDir(getRoot().resolveAll("src", "utils", "java")) } }
 
 val isolatedJar by configurations.consumable("isolatedJar")
 val isolatedClasses by configurations.consumable("isolatedClasses")

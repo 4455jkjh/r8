@@ -23,9 +23,8 @@ import org.junit.runners.Parameterized.Parameters;
 @RunWith(Parameterized.class)
 public class StringConcatAppendTest extends TestBase {
 
-  private static final String EXPECTED = "o";
-
-  @Parameter() public TestParameters parameters;
+  @Parameter(0)
+  public TestParameters parameters;
 
   @Parameters(name = "{0}")
   public static TestParametersCollection data() {
@@ -35,33 +34,49 @@ public class StringConcatAppendTest extends TestBase {
   @Test
   public void testRuntime() throws Exception {
     testForRuntime(parameters)
-        .addProgramClasses(Main.class)
+        .addInnerClasses(getClass())
         .run(parameters.getRuntime(), Main.class)
-        .assertSuccessWithOutputLines(EXPECTED);
+        .assertSuccessWithOutputLines("Hello, world!");
   }
 
   @Test
   public void testR8() throws Exception {
-    testForR8(parameters.getBackend())
-        .addProgramClasses(Main.class)
-        .setMinApi(parameters)
+    testForR8(parameters)
+        .addInnerClasses(getClass())
         .addKeepMainRule(Main.class)
         .run(parameters.getRuntime(), Main.class)
-        .assertSuccessWithOutputLines(EXPECTED)
+        .assertSuccessWithOutputLines("Hello, world!")
         .inspect(
             inspect -> {
               MethodSubject methodSubject = inspect.clazz(Main.class).mainMethod();
               assertThat(methodSubject, isPresent());
-              assertEquals(1, countStringBuilderInits(methodSubject.asFoundMethodSubject()));
-              assertEquals(1, countStringBuilderAppends(methodSubject.asFoundMethodSubject()));
+              assertEquals(0, countStringBuilderInits(methodSubject.asFoundMethodSubject()));
+              assertEquals(0, countStringBuilderAppends(methodSubject.asFoundMethodSubject()));
             });
   }
 
   public static class Main {
 
     public static void main(String[] args) {
-      String arg = System.currentTimeMillis() > 0 ? "o" : null;
-      System.out.println(new StringBuilder().append(arg).toString());
+      StringBuilder sb = new StringBuilder();
+      System.out.print("Hel");
+      sb.append(System.currentTimeMillis() > 0 ? new Greeting() : null);
+      System.out.print(", ");
+      System.out.println(sb.toString());
+    }
+  }
+
+  static class Greeting {
+
+    int x = 0;
+
+    @Override
+    public String toString() {
+      System.out.print("lo");
+      if (x == 0) {
+        return "world!";
+      }
+      return "";
     }
   }
 }

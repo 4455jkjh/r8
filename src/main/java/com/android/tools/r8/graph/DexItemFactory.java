@@ -1603,20 +1603,92 @@ public class DexItemFactory {
 
     public final DexField TYPE = createField(boxedFloatType, classType, "TYPE");
 
+    public final DexMethod byteValue =
+        createMethod(boxedFloatType, createProto(byteType), "byteValue");
+    public final DexMethod compare =
+        createMethod(boxedFloatType, createProto(intType, floatType, floatType), "compare");
+    public final DexMethod compareTo =
+        createMethod(boxedFloatType, createProto(intType, boxedFloatType), "compareTo");
+    public final DexMethod doubleValue =
+        createMethod(boxedFloatType, createProto(doubleType), "doubleValue");
+    public final DexMethod floatToIntBits =
+        createMethod(boxedFloatType, createProto(intType, floatType), "floatToIntBits");
+    public final DexMethod floatToRawIntBits =
+        createMethod(boxedFloatType, createProto(intType, floatType), "floatToRawIntBits");
     public final DexMethod floatValue =
         createMethod(boxedFloatType, createProto(floatType), "floatValue");
-    public final DexMethod toString =
-        createMethod(boxedFloatType, createProto(stringType), "toString");
-    public final DexMethod valueOf =
-        createMethod(boxedFloatType, createProto(boxedFloatType, floatType), "valueOf");
+    public final DexMethod hashCode =
+        createMethod(boxedFloatType, createProto(intType), "hashCode");
     public final DexMethod staticHashCode =
         createMethod(boxedFloatType, createProto(intType, floatType), "hashCode");
+    public final DexMethod intBitsToFloat =
+        createMethod(boxedFloatType, createProto(floatType, intType), "intBitsToFloat");
+    public final DexMethod intValue =
+        createMethod(boxedFloatType, createProto(intType), "intValue");
+    public final DexMethod isFinite =
+        createMethod(boxedFloatType, createProto(booleanType, floatType), "isFinite");
+    public final DexMethod isInfinite =
+        createMethod(boxedFloatType, createProto(booleanType), "isInfinite");
+    public final DexMethod staticIsInfinite =
+        createMethod(boxedFloatType, createProto(booleanType, floatType), "isInfinite");
+    public final DexMethod isNaN = createMethod(boxedFloatType, createProto(booleanType), "isNaN");
+    public final DexMethod staticIsNaN =
+        createMethod(boxedFloatType, createProto(booleanType, floatType), "isNaN");
+    public final DexMethod longValue =
+        createMethod(boxedFloatType, createProto(longType), "longValue");
+    public final DexMethod max =
+        createMethod(boxedFloatType, createProto(floatType, floatType, floatType), "max");
+    public final DexMethod min =
+        createMethod(boxedFloatType, createProto(floatType, floatType, floatType), "min");
+    public final DexMethod parseFloat =
+        createMethod(boxedFloatType, createProto(floatType, stringType), "parseFloat");
+    public final DexMethod shortValue =
+        createMethod(boxedFloatType, createProto(shortType), "shortValue");
+    public final DexMethod sum =
+        createMethod(boxedFloatType, createProto(floatType, floatType, floatType), "sum");
+    public final DexMethod toHexString =
+        createMethod(boxedFloatType, createProto(stringType, floatType), "toHexString");
+    public final DexMethod toString =
+        createMethod(boxedFloatType, createProto(stringType), "toString");
+    public final DexMethod staticToString =
+        createMethod(boxedFloatType, createProto(stringType, floatType), "toString");
+    public final DexMethod valueOf =
+        createMethod(boxedFloatType, createProto(boxedFloatType, floatType), "valueOf");
+    public final DexMethod valueOfString =
+        createMethod(boxedFloatType, createProto(boxedFloatType, stringType), "valueOf");
 
     private FloatMembers() {}
 
     @Override
     public void forEachFinalField(Consumer<DexField> consumer) {
       consumer.accept(TYPE);
+    }
+
+    public void forEachUnconditionalFinalMethodWithoutSideEffects(Consumer<DexMethod> consumer) {
+      consumer.accept(byteValue);
+      consumer.accept(compare);
+      consumer.accept(doubleValue);
+      consumer.accept(floatToIntBits);
+      consumer.accept(floatToRawIntBits);
+      consumer.accept(floatValue);
+      consumer.accept(hashCode);
+      consumer.accept(staticHashCode);
+      consumer.accept(intBitsToFloat);
+      consumer.accept(intValue);
+      consumer.accept(isFinite);
+      consumer.accept(isInfinite);
+      consumer.accept(staticIsInfinite);
+      consumer.accept(isNaN);
+      consumer.accept(staticIsNaN);
+      consumer.accept(longValue);
+      consumer.accept(min);
+      consumer.accept(max);
+      consumer.accept(shortValue);
+      consumer.accept(sum);
+      consumer.accept(toHexString);
+      consumer.accept(toString);
+      consumer.accept(staticToString);
+      consumer.accept(valueOf);
     }
 
     @Override

@@ -8,6 +8,7 @@ import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.DexClass;
 import com.android.tools.r8.graph.DexClassAndMethod;
 import com.android.tools.r8.graph.DexEncodedMethod;
+import com.android.tools.r8.graph.DexItemFactory;
 import com.android.tools.r8.graph.DexMethod;
 import com.android.tools.r8.graph.DexProgramClass;
 import com.android.tools.r8.graph.DexType;
@@ -209,7 +210,7 @@ public abstract class InvokeMethodWithReceiver extends InvokeMethod {
       return true;
     }
 
-    if (getInvokedMethod().holder.isArrayType()
+    if (getInvokedMethod().getHolderType().isArrayType()
         && getInvokedMethod().match(appView.dexItemFactory().objectMembers.clone)) {
       return !isInvokeVirtual();
     }
@@ -253,8 +254,20 @@ public abstract class InvokeMethodWithReceiver extends InvokeMethod {
             .getAssumeInfoCollection()
             .getMethod(resolvedMethod, this, context)
             .isSideEffectFree()) {
+      return false;
+    }
+
+    // Model no-args constructors in the library as being side effect free.
+    // If there are any such constructors, we should model the ones that have side effects here
+    // instead of the ones that do not have side effects.
+    DexItemFactory factory = appView.dexItemFactory();
+    if (isInvokeConstructor(factory)
+        && arguments().size() == 1
+        && resolvedMethod.isLibraryMethod()) {
+      if (resolvedMethod.getHolderType().isNotIdenticalTo(factory.androidOsHandlerType)) {
         return false;
       }
+    }
 
     // Find the target and check if the invoke may have side effects.
     DexClassAndMethod singleTarget = lookupSingleTarget(appView, context);

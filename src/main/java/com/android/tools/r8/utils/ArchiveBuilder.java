@@ -12,6 +12,7 @@ import com.android.tools.r8.ResourceException;
 import com.android.tools.r8.androidapi.AndroidApiDataAccess;
 import com.android.tools.r8.origin.Origin;
 import com.android.tools.r8.origin.PathOrigin;
+import com.google.common.base.Splitter;
 import com.google.common.io.ByteStreams;
 import java.io.BufferedOutputStream;
 import java.io.IOException;
@@ -114,7 +115,31 @@ public class ArchiveBuilder implements OutputBuilder {
     }
   }
 
+  private boolean isSafeEntryName(String name, DiagnosticsHandler handler) {
+    if (name.startsWith("/") || name.startsWith("\\")) {
+      handler.error(
+          new StringDiagnostic(
+              "Refusing to write archive entry with absolute path: " + name, origin));
+      return false;
+    }
+    // Avoid marking files like example..file as illegal.
+    Iterable<String> segments = Splitter.onPattern("[/\\\\]").split(name);
+    for (String segment : segments) {
+      if (segment.equals("..")) {
+        handler.error(
+            new StringDiagnostic(
+                "Refusing to write archive entry with relative path containing '..': " + name,
+                origin));
+        return false;
+      }
+    }
+    return true;
+  }
+
   private void writeDirectoryNow(String name, DiagnosticsHandler handler) {
+    if (!isSafeEntryName(name, handler)) {
+      return;
+    }
     if (name.charAt(name.length() - 1) != DataResource.SEPARATOR) {
       name += DataResource.SEPARATOR;
     }
@@ -164,6 +189,9 @@ public class ArchiveBuilder implements OutputBuilder {
 
   public void writeFileNow(
       String name, ByteDataView content, DiagnosticsHandler handler, boolean compressed) {
+    if (!isSafeEntryName(name, handler)) {
+      return;
+    }
     try {
       ZipUtils.writeToZipStream(
           getStream(),

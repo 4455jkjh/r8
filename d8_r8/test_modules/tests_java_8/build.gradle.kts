@@ -90,7 +90,7 @@ dependencies {
   childProjects.values.forEach { childProject ->
     partialTestClassesScope(project(childProject.path, "partialTestClasses"))
   }
-  implementation(Deps.playwright)
+  implementation(libs.playwright)
 }
 
 fun testDependencies(): FileCollection {
@@ -158,8 +158,6 @@ tasks {
     from(sourceSets.test.get().java.srcDirs) {
       include("$r8/cf/KeepDeserializeLambdaMethodTest.java")
       include("$r8/desugaring/interfacemethods/methodparameters/I.java")
-      include("$r8/apimodel/missing_classes.txt")
-      include("$r8/apimodel/missing_methods.txt")
     }
   }
 }

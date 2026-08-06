@@ -48,6 +48,7 @@ public class KeepClassInfo extends KeepInfo<KeepClassInfo.Builder, KeepClassInfo
   private final boolean allowUnusedInterfaceRemoval;
   private final boolean allowVerticalClassMerging;
   private final boolean checkEnumUnboxed;
+  private final boolean checkKotlinMetadataDiscarded;
 
   KeepClassInfo(Builder builder) {
     super(builder);
@@ -60,6 +61,7 @@ public class KeepClassInfo extends KeepInfo<KeepClassInfo.Builder, KeepClassInfo
     this.allowUnusedInterfaceRemoval = builder.isUnusedInterfaceRemovalAllowed();
     this.allowVerticalClassMerging = builder.isVerticalClassMergingAllowed();
     this.checkEnumUnboxed = builder.isCheckEnumUnboxedEnabled();
+    this.checkKotlinMetadataDiscarded = builder.isCheckKotlinMetadataDiscardedEnabled();
   }
 
   @Override
@@ -81,6 +83,15 @@ public class KeepClassInfo extends KeepInfo<KeepClassInfo.Builder, KeepClassInfo
 
   boolean internalIsCheckEnumUnboxedEnabled() {
     return checkEnumUnboxed;
+  }
+
+  public boolean isCheckKotlinMetadataDiscardedEnabled(GlobalKeepInfoConfiguration configuration) {
+    return configuration.isCheckKotlinMetadataDiscardedEnabled()
+        || internalIsCheckKotlinMetadataDiscardedEnabled();
+  }
+
+  boolean internalIsCheckKotlinMetadataDiscardedEnabled() {
+    return checkKotlinMetadataDiscarded;
   }
 
   public boolean isClassInliningAllowed(GlobalKeepInfoConfiguration configuration) {
@@ -195,7 +206,8 @@ public class KeepClassInfo extends KeepInfo<KeepClassInfo.Builder, KeepClassInfo
         && allowSyntheticSharing == other.internalIsSyntheticSharingAllowed()
         && allowUnusedInterfaceRemoval == other.internalIsUnusedInterfaceRemovalAllowed()
         && allowVerticalClassMerging == other.internalIsVerticalClassMergingAllowed()
-        && checkEnumUnboxed == other.internalIsCheckEnumUnboxedEnabled();
+        && checkEnumUnboxed == other.internalIsCheckEnumUnboxedEnabled()
+        && checkKotlinMetadataDiscarded == other.internalIsCheckKotlinMetadataDiscardedEnabled();
   }
 
   @Override
@@ -220,7 +232,8 @@ public class KeepClassInfo extends KeepInfo<KeepClassInfo.Builder, KeepClassInfo
     hash += bit(allowSyntheticSharing, index++);
     hash += bit(allowUnusedInterfaceRemoval, index++);
     hash += bit(allowVerticalClassMerging, index++);
-    hash += bit(checkEnumUnboxed, index);
+    hash += bit(checkEnumUnboxed, index++);
+    hash += bit(checkKotlinMetadataDiscarded, index);
     return hash;
   }
 
@@ -266,6 +279,9 @@ public class KeepClassInfo extends KeepInfo<KeepClassInfo.Builder, KeepClassInfo
         case "checkEnumUnboxed":
           builder.setCheckEnumUnboxed(Boolean.parseBoolean(value));
           break;
+        case "checkKotlinMetadataDiscarded":
+          builder.setCheckKotlinMetadataDiscarded(Boolean.parseBoolean(value));
+          break;
         default:
           assert false;
           break;
@@ -304,6 +320,9 @@ public class KeepClassInfo extends KeepInfo<KeepClassInfo.Builder, KeepClassInfo
     if (bottom().checkEnumUnboxed != checkEnumUnboxed) {
       lines.add("checkEnumUnboxed: " + checkEnumUnboxed);
     }
+    if (bottom().checkKotlinMetadataDiscarded != checkKotlinMetadataDiscarded) {
+      lines.add("checkKotlinMetadataDiscarded: " + checkKotlinMetadataDiscarded);
+    }
     return lines;
   }
 
@@ -318,6 +337,7 @@ public class KeepClassInfo extends KeepInfo<KeepClassInfo.Builder, KeepClassInfo
     private boolean allowUnusedInterfaceRemoval;
     private boolean allowVerticalClassMerging;
     private boolean checkEnumUnboxed;
+    private boolean checkKotlinMetadataDiscarded;
 
     Builder() {
       super();
@@ -334,6 +354,7 @@ public class KeepClassInfo extends KeepInfo<KeepClassInfo.Builder, KeepClassInfo
       allowUnusedInterfaceRemoval = original.internalIsUnusedInterfaceRemovalAllowed();
       allowVerticalClassMerging = original.internalIsVerticalClassMergingAllowed();
       checkEnumUnboxed = original.internalIsCheckEnumUnboxedEnabled();
+      checkKotlinMetadataDiscarded = original.internalIsCheckKotlinMetadataDiscardedEnabled();
     }
 
     // Adapt class strings.
@@ -372,6 +393,25 @@ public class KeepClassInfo extends KeepInfo<KeepClassInfo.Builder, KeepClassInfo
 
     public Builder unsetCheckEnumUnboxed() {
       return setCheckEnumUnboxed(false);
+    }
+
+    // Check kotlin metadata discarded.
+
+    public boolean isCheckKotlinMetadataDiscardedEnabled() {
+      return checkKotlinMetadataDiscarded;
+    }
+
+    public Builder setCheckKotlinMetadataDiscarded(boolean checkKotlinMetadataDiscarded) {
+      this.checkKotlinMetadataDiscarded = checkKotlinMetadataDiscarded;
+      return self();
+    }
+
+    public Builder setCheckKotlinMetadataDiscarded() {
+      return setCheckKotlinMetadataDiscarded(true);
+    }
+
+    public Builder unsetCheckKotlinMetadataDiscarded() {
+      return setCheckKotlinMetadataDiscarded(false);
     }
 
     // Class inlining.
@@ -531,7 +571,9 @@ public class KeepClassInfo extends KeepInfo<KeepClassInfo.Builder, KeepClassInfo
           && isRepackagingAllowed() == other.internalIsRepackagingAllowed()
           && isSyntheticSharingAllowed() == other.internalIsSyntheticSharingAllowed()
           && isUnusedInterfaceRemovalAllowed() == other.internalIsUnusedInterfaceRemovalAllowed()
-          && isVerticalClassMergingAllowed() == other.internalIsVerticalClassMergingAllowed();
+          && isVerticalClassMergingAllowed() == other.internalIsVerticalClassMergingAllowed()
+          && isCheckKotlinMetadataDiscardedEnabled()
+              == other.internalIsCheckKotlinMetadataDiscardedEnabled();
     }
 
     @Override
@@ -541,31 +583,33 @@ public class KeepClassInfo extends KeepInfo<KeepClassInfo.Builder, KeepClassInfo
 
     @Override
     public Builder makeTop() {
-      return super.makeTop()
-          .disallowClassInlining()
-          .disallowHorizontalClassMerging()
-          .disallowPermittedSubclassesRemoval()
-          .disallowRepackaging()
-          // Synthetic sharing is always allowed, unless explicitly set to false.
-          .setAllowSyntheticSharing(true)
-          .disallowUnusedInterfaceRemoval()
-          .disallowVerticalClassMerging()
-          .unsetAdaptClassStrings()
-          .unsetCheckEnumUnboxed();
+      disallowClassInlining();
+      disallowHorizontalClassMerging();
+      disallowPermittedSubclassesRemoval();
+      disallowRepackaging();
+      // Synthetic sharing is always allowed, unless explicitly set to false.
+      setAllowSyntheticSharing(true);
+      disallowUnusedInterfaceRemoval();
+      disallowVerticalClassMerging();
+      unsetAdaptClassStrings();
+      unsetCheckEnumUnboxed();
+      unsetCheckKotlinMetadataDiscarded();
+      return super.makeTop();
     }
 
     @Override
     public Builder makeBottom() {
-      return super.makeBottom()
-          .allowClassInlining()
-          .allowHorizontalClassMerging()
-          .allowPermittedSubclassesRemoval()
-          .allowRepackaging()
-          .setAllowSyntheticSharing(true)
-          .allowUnusedInterfaceRemoval()
-          .allowVerticalClassMerging()
-          .unsetAdaptClassStrings()
-          .unsetCheckEnumUnboxed();
+      allowClassInlining();
+      allowHorizontalClassMerging();
+      allowPermittedSubclassesRemoval();
+      allowRepackaging();
+      setAllowSyntheticSharing(true);
+      allowUnusedInterfaceRemoval();
+      allowVerticalClassMerging();
+      unsetAdaptClassStrings();
+      unsetCheckEnumUnboxed();
+      unsetCheckKotlinMetadataDiscarded();
+      return super.makeBottom();
     }
   }
 
@@ -628,6 +672,11 @@ public class KeepClassInfo extends KeepInfo<KeepClassInfo.Builder, KeepClassInfo
       return self();
     }
 
+    public Joiner setCheckKotlinMetadataDiscarded() {
+      builder.setCheckKotlinMetadataDiscarded();
+      return self();
+    }
+
     @Override
     public Joiner asClassJoiner() {
       return this;
@@ -639,6 +688,9 @@ public class KeepClassInfo extends KeepInfo<KeepClassInfo.Builder, KeepClassInfo
       return super.merge(joiner)
           .applyIf(joiner.builder.isAdaptClassStringsEnabled(), Joiner::setAdaptClassStrings)
           .applyIf(joiner.builder.isCheckEnumUnboxedEnabled(), Joiner::setCheckEnumUnboxed)
+          .applyIf(
+              joiner.builder.isCheckKotlinMetadataDiscardedEnabled(),
+              Joiner::setCheckKotlinMetadataDiscarded)
           .applyIf(!joiner.builder.isClassInliningAllowed(), Joiner::disallowClassInlining)
           .applyIf(
               !joiner.builder.isHorizontalClassMergingAllowed(),

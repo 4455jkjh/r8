@@ -43,6 +43,9 @@ public interface ProguardConfigurationParserConsumer {
   void addKeepKotlinMetadata(
       ProguardConfigurationSourceParser parser, Position position, TextPosition positionStart);
 
+  default void setCheckKotlinMetadataDiscarded(
+      ProguardConfigurationSourceParser parser, TextPosition positionStart) {}
+
   void addProcessKotlinNullChecks(
       ProcessKotlinNullChecks value,
       ProguardConfigurationSourceParser parser,

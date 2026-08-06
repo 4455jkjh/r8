@@ -49,4 +49,8 @@ public interface GlobalKeepInfoConfiguration {
   boolean isKeepRuntimeInvisibleTypeAnnotationsEnabled();
 
   boolean isKeepPermittedSubclassesEnabled();
+
+  default boolean isCheckKotlinMetadataDiscardedEnabled() {
+    return false;
+  }
 }

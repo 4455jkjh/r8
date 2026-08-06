@@ -37,6 +37,8 @@ import com.android.tools.r8.utils.codeinspector.CodeInspector;
 import com.android.tools.r8.utils.codeinspector.FoundClassSubject;
 import com.android.tools.r8.utils.internal.Action;
 import com.android.tools.r8.utils.internal.FileUtils;
+import com.android.tools.r8.utils.internal.TriConsumer;
+import com.android.tools.r8.utils.internal.collections.Pair;
 import com.google.common.collect.ImmutableList;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -50,7 +52,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -191,15 +192,17 @@ public class GenerateCovariantReturnTypeMethodsTest extends TestBase {
   }
 
   public static class CovariantMethodsInJarResult {
-    private final Map<ClassReference, Map<MethodReference, AndroidApiLevel>> methodReferenceMap;
+    private final Map<ClassReference, Map<MethodReference, Pair<AndroidApiLevel, Boolean>>>
+        methodReferenceMap;
 
     private CovariantMethodsInJarResult(
-        Map<ClassReference, Map<MethodReference, AndroidApiLevel>> methodReferenceMap) {
+        Map<ClassReference, Map<MethodReference, Pair<AndroidApiLevel, Boolean>>>
+            methodReferenceMap) {
       this.methodReferenceMap = methodReferenceMap;
     }
 
     public static CovariantMethodsInJarResult create() throws IOException {
-      Map<ClassReference, Map<MethodReference, AndroidApiLevel>> methodReferenceMap =
+      Map<ClassReference, Map<MethodReference, Pair<AndroidApiLevel, Boolean>>> methodReferenceMap =
           new HashMap<>();
       CodeInspector inspector = new CodeInspector(PATH_TO_CORE_JAR);
       // Some covariant-annotated methods have generated bridge methods which share the annotation.
@@ -219,7 +222,10 @@ public class GenerateCovariantReturnTypeMethodsTest extends TestBase {
                 MethodReference methodReference = method.asMethodReference();
                 for (DexAnnotation covariantAnnotation : covariantAnnotations) {
                   createCovariantMethodReference(
-                      methodReference, covariantAnnotation.annotation, methodReferenceMap);
+                      methodReference,
+                      method.isStatic(),
+                      covariantAnnotation.annotation,
+                      methodReferenceMap);
                 }
               }
             });
@@ -229,8 +235,10 @@ public class GenerateCovariantReturnTypeMethodsTest extends TestBase {
 
     private static void createCovariantMethodReference(
         MethodReference methodReference,
+        boolean isStatic,
         DexEncodedAnnotation covariantAnnotation,
-        Map<ClassReference, Map<MethodReference, AndroidApiLevel>> methodReferenceMap) {
+        Map<ClassReference, Map<MethodReference, Pair<AndroidApiLevel, Boolean>>>
+            methodReferenceMap) {
       if (covariantAnnotation
           .getType()
           .getTypeName()
@@ -251,7 +259,7 @@ public class GenerateCovariantReturnTypeMethodsTest extends TestBase {
                     methodReference.getMethodName(),
                     methodReference.getFormalTypes(),
                     newReturnType.getValue().asClassReference()),
-                apiLevel);
+                Pair.create(apiLevel, isStatic));
       } else {
         assert covariantAnnotation
             .getType()
@@ -274,7 +282,7 @@ public class GenerateCovariantReturnTypeMethodsTest extends TestBase {
           assert value.isDexValueAnnotation();
           DexValueAnnotation innerAnnotation = value.asDexValueAnnotation();
           createCovariantMethodReference(
-              methodReference, innerAnnotation.value, methodReferenceMap);
+              methodReference, isStatic, innerAnnotation.value, methodReferenceMap);
         }
       }
     }
@@ -286,13 +294,19 @@ public class GenerateCovariantReturnTypeMethodsTest extends TestBase {
           .collect(Collectors.toList());
     }
 
+    /** The boolean value informs whether the method is static. */
     public void visitCovariantMethodsForHolder(
-        ClassReference reference, BiConsumer<MethodReference, AndroidApiLevel> consumer) {
-      Map<MethodReference, AndroidApiLevel> methodReferences = methodReferenceMap.get(reference);
+        ClassReference reference, TriConsumer<MethodReference, Boolean, AndroidApiLevel> consumer) {
+      Map<MethodReference, Pair<AndroidApiLevel, Boolean>> methodReferences =
+          methodReferenceMap.get(reference);
       if (methodReferences != null) {
         methodReferences.entrySet().stream()
             .sorted(Entry.comparingByKey(MethodReferenceUtils.getMethodReferenceComparator()))
-            .forEach(entry -> consumer.accept(entry.getKey(), entry.getValue()));
+            .forEach(
+                entry -> {
+                  Pair<AndroidApiLevel, Boolean> pair = entry.getValue();
+                  consumer.accept(entry.getKey(), pair.getSecond(), pair.getFirst());
+                });
       }
     }
   }

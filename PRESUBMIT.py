@@ -381,7 +381,14 @@ def CheckForAddedHeadful(input_api, output_api):
 
 def CheckForCopyright(input_api, output_api, branch):
     results = []
-    for f in input_api.AffectedSourceFiles(None):
+    # Include .gradle and .kts files in the copyright check.
+    files_to_check = input_api.DEFAULT_FILES_TO_CHECK + (
+        r'.*\.gradle$',
+        r'.*\.kts$',
+    )
+    file_filter = lambda f: input_api.FilterSourceFile(
+        f, files_to_check=files_to_check)
+    for f in input_api.AffectedSourceFiles(file_filter):
         # Check if it is a new file.
         if f.OldContents():
             continue

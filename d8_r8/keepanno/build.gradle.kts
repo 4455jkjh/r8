@@ -4,49 +4,21 @@
 
 import com.google.protobuf.gradle.proto
 import java.util.concurrent.Callable
-import org.gradle.nativeplatform.platform.internal.DefaultNativePlatform
-import org.jetbrains.kotlin.gradle.dsl.JvmTarget
-import org.jetbrains.kotlin.gradle.dsl.KotlinVersion
 
 plugins {
   // Kotlin version is fixed by create_local_maven_dependencies.py
   id("org.jetbrains.kotlin.jvm")
+  id("r8-conventions")
   id("dependencies-plugin")
   id("com.google.protobuf")
 }
 
 tasks.named("generateProto") { dependsOn(sharedDepsConfig) }
 
-var os = DefaultNativePlatform.getCurrentOperatingSystem()
-
-protobuf.protoc {
-  if (os.isLinux) {
-    path = getRoot().resolveAll("third_party", "protoc", "linux-x86_64", "bin", "protoc").path
-  } else if (os.isMacOsX) {
-    path = getRoot().resolveAll("third_party", "protoc", "osx-x86_64", "bin", "protoc").path
-  } else {
-    assert(os.isWindows)
-    path = getRoot().resolveAll("third_party", "protoc", "win64", "bin", "protoc.exe").path
-  }
-}
-
 java {
   sourceSets.main.configure {
     java.srcDir(getRoot().resolveAll("src", "keepanno", "java"))
     proto { srcDir(getRoot().resolveAll("src", "keepanno", "proto")) }
-  }
-  sourceCompatibility = JvmCompatibility.sourceCompatibility
-  targetCompatibility = JvmCompatibility.targetCompatibility
-  toolchain { languageVersion = JavaLanguageVersion.of(JvmCompatibility.release) }
-  withSourcesJar()
-}
-
-kotlin {
-  explicitApi()
-  compilerOptions {
-    jvmTarget.set(JvmTarget.fromTarget(JvmCompatibility.release.toString()))
-    languageVersion.set(KotlinVersion.KOTLIN_1_8)
-    apiVersion.set(KotlinVersion.KOTLIN_1_8)
   }
 }
 
@@ -56,9 +28,9 @@ val sharedDepsConfig by
 
 dependencies {
   sharedDepsScope(project(":third_party", "sharedDepsFiles"))
-  compileOnly(Deps.asm)
-  compileOnly(Deps.guava)
-  compileOnly(Deps.protobuf)
+  compileOnly(libs.asm)
+  compileOnly(libs.guava)
+  compileOnly(libs.protobuf)
 }
 
 tasks {

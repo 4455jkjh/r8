@@ -17,6 +17,7 @@ src/*/out
 d8_r8/*/out
 gradle-app.setting
 gradle/*
+!gradle/libs.versions.toml
 gradlew
 gradlew.bat
 d8_r8/gradle*

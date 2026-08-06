@@ -116,6 +116,14 @@ public abstract class ProguardConfigurationRule extends ProguardClassSpecificati
     return null;
   }
 
+  public boolean isCheckKotlinMetadataDiscardedRule() {
+    return false;
+  }
+
+  public CheckKotlinMetadataDiscardedRule asCheckKotlinMetadataDiscardedRule() {
+    return null;
+  }
+
   public boolean isProguardKeepRule() {
     return false;
   }

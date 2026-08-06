@@ -2,10 +2,9 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-import net.ltgt.gradle.errorprone.errorprone
-
 plugins {
   `java-library`
+  id("r8-conventions")
   id("dependencies-plugin")
   id("net.ltgt.errorprone")
 }
@@ -13,14 +12,9 @@ plugins {
 dependencies {
   compileOnly(project(":main", "mainClassesOutput"))
   compileOnly(project(":main", "turboClassesOutput"))
-  errorprone(Deps.errorprone)
+  errorprone(libs.errorprone)
 }
 
-java {
-  sourceSets.main.configure { java.srcDir(getRoot().resolveAll("src", "tools", "java")) }
-  sourceCompatibility = JvmCompatibility.sourceCompatibility
-  targetCompatibility = JvmCompatibility.targetCompatibility
-  toolchain { languageVersion = JavaLanguageVersion.of(JvmCompatibility.release) }
-}
+java { sourceSets.main.configure { java.srcDir(getRoot().resolveAll("src", "tools", "java")) } }
 
 configureErrorProneForJavaCompile()

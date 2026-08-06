@@ -233,6 +233,33 @@ def upload_dir(src_dir, version_or_path, dst_dir, is_main, options):
         )
 
 
+def get_luci_invocation_id(options, temp):
+    if not os.environ.get('LUCI_CONTEXT') and not options.dry_run:
+        raise Exception('Environment variable LUCI_CONTEXT not set')
+    if options.dry_run:
+        luci_context_path = os.path.join(temp, 'luci_context')
+        with open(luci_context_path, 'w') as version_writer:
+            version_writer.write(
+                '{"resultdb": {"current_invocation": {"name": "invocations/fake-12345678"}}}'
+            )
+    else:
+        luci_context_path = os.environ.get('LUCI_CONTEXT')
+
+    with open(luci_context_path, 'r') as f:
+        json_string = f.read()
+        luci_context = json.loads(json_string)
+        # The structure is typically:
+        # {"resultdb": {"current_invocation": {"name": "invocations/build-123..."}}}
+        luci_invocation_id = luci_context.get('resultdb',
+                                              {}).get('current_invocation',
+                                                      {}).get('name')
+        if not luci_invocation_id:
+            raise Exception(
+                'LUCI invocation_id not found through environment variable LUCI_CONTEXT: '
+                + luci_context_path + " with content '" + json_string + "'")
+        return luci_invocation_id
+
+
 def main():
     (options, args) = parse_options()
     run(options)
@@ -264,6 +291,9 @@ def run(options):
         version = get_git_hash()
 
     with utils.TempDir() as temp:
+        # Extract the LUCI invocation_id.
+        luci_invocation_id = get_luci_invocation_id(options, temp)
+
         timing.begin("Generate r8 maven zip")
         version_file = os.path.join(temp, 'r8-version.properties')
         with open(version_file, 'w') as version_writer:
@@ -277,7 +307,12 @@ def run(options):
                   else 'releaser=go/r8bot ('
                       + (os.environ.get('SWARMING_BOT_ID') or 'foo') + ')\n')
             version_writer.write(releaser)
+            version_writer.write('luci_invocation_id=' + luci_invocation_id +
+                                 '\n')
             version_writer.write('version-file.version.code=1\n')
+        luci_invocation_id_file = os.path.join('luci_invocation_id')
+        with open(luci_invocation_id_file, 'w') as luci_invocation_id_writer:
+            luci_invocation_id_writer.write(luci_invocation_id + '\n')
 
         create_maven_release.generate_r8_maven_zip(
             utils.MAVEN_ZIP_LIB,
@@ -378,7 +413,8 @@ def run(options):
             'd8_r8/dist/build/spdx/r8.spdx.json',
             'src/keepradius/proto/keepradius.proto',
             'src/keepradius/proto/keepradiussummary.proto',
-            'src/libanalyzer/proto/libraryanalyzerresult.proto'
+            'src/libanalyzer/proto/libraryanalyzerresult.proto',
+            'luci_invocation_id'
         ])
         for file in for_archiving:
             file_name = os.path.basename(file)
@@ -511,11 +547,14 @@ def run(options):
             'is_main': is_main,
             'version': version,
             'bucket': ARCHIVE_BUCKET,
-            'bucket_path': get_storage_path(version, is_main)
+            'bucket_path': get_storage_path(version, is_main),
+            'luci_invocation_id': luci_invocation_id
         }
         with open(options.archive_details, "w") as f:
             json.dump(archive_details, f, indent=4)
 
+        # Cleanup.
+        os.remove('luci_invocation_id')
         timing.end()
         timing.report()
 

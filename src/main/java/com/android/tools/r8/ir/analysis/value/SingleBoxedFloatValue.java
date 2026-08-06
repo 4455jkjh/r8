@@ -55,6 +55,10 @@ public class SingleBoxedFloatValue extends SingleBoxedPrimitiveValue {
     return TypeElement.getFloat();
   }
 
+  public float getFloatValue() {
+    return Float.intBitsToFloat(value);
+  }
+
   @Override
   public long getRawValue() {
     return value;

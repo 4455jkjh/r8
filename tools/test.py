@@ -347,25 +347,51 @@ def archive_failures(options):
     print('Test results available at: %s' % url)
 
 
-def bot_symlinks():
+def art_7_0_0_symlinks():
     art7 = os.path.join(utils.TOOLS_DIR, "linux", "art-7.0.0")
     utils.ensure_google_download(art7)
-    if not os.path.exists("tools/linux/art-7.0.0/lib/libncurses.so.5"):
-        os.symlink("/usr/lib/i386-linux-gnu/libncurses.so.6",
-                   art7 + "/lib/libncurses.so.5")
-    if not os.path.exists("tools/linux/art-7.0.0/lib/libtinfo.so.5"):
-        # We don't have libtinfo, but this is never used, so we just need
-        # a valid 32bit library file.
-        os.symlink("/usr/lib/i386-linux-gnu/libncurses.so.6",
-                   art7 + "/lib/libtinfo.so.5")
-    if not os.path.exists("tools/linux/art-7.0.0/lib64/libncurses.so.5"):
-        os.symlink("/usr/lib/x86_64-linux-gnu/libncurses.so.6",
-                   art7 + "/lib64/libncurses.so.5")
-    if not os.path.exists("tools/linux/art-7.0.0/lib64/libtinfo.so.5"):
-        # We don't have libtinfo, but this is never used, so we just need
-        # a valid 64bit library file.
-        os.symlink("/usr/lib/x86_64-linux-gnu/libncurses.so.6",
-                   art7 + "/lib64/libtinfo.so.5")
+
+    def create_symlink_if_missing(link_path, candidates):
+        if os.path.exists(link_path):
+            return
+        if os.path.lexists(link_path):
+            os.unlink(link_path)
+        for candidate in candidates:
+            if os.path.exists(candidate):
+                os.symlink(candidate, link_path)
+                return
+
+    lib32_candidates = [
+        "/usr/lib/i386-linux-gnu/libncurses.so.6",
+        "/usr/lib/i386-linux-gnu/libncurses.so.5",
+        "/usr/lib32/libncurses.so.6",
+        "/usr/lib32/libncurses.so.5",
+        "/usr/lib/i386-linux-gnu/libc.so.6",
+        "/usr/lib32/libc.so.6",
+        "/lib/ld-linux.so.2",
+    ]
+    lib64_ncurses_candidates = [
+        "/usr/lib/x86_64-linux-gnu/libncurses.so.6",
+        "/usr/lib/x86_64-linux-gnu/libncurses.so.5",
+        "/usr/lib64/libncurses.so.6",
+        "/usr/lib64/libncurses.so.5",
+        "/usr/lib/x86_64-linux-gnu/libc.so.6",
+    ]
+    lib64_tinfo_candidates = [
+        "/usr/lib/x86_64-linux-gnu/libtinfo.so.6",
+        "/usr/lib/x86_64-linux-gnu/libtinfo.so.5",
+        "/usr/lib/x86_64-linux-gnu/libncurses.so.6",
+        "/usr/lib/x86_64-linux-gnu/libc.so.6",
+    ]
+
+    create_symlink_if_missing(os.path.join(art7, "lib", "libncurses.so.5"),
+                              lib32_candidates)
+    create_symlink_if_missing(os.path.join(art7, "lib", "libtinfo.so.5"),
+                              lib32_candidates)
+    create_symlink_if_missing(os.path.join(art7, "lib64", "libncurses.so.5"),
+                              lib64_ncurses_candidates)
+    create_symlink_if_missing(os.path.join(art7, "lib64", "libtinfo.so.5"),
+                              lib64_tinfo_candidates)
 
 
 def Main():
@@ -399,8 +425,11 @@ def test(options, args):
         print('Running with python ' + str(sys.version_info))
         # Always print stats on bots if command cache is enabled
         options.command_cache_stats = options.command_cache_dir is not None
-        if options.dex_vm == '7.0.0':
-            bot_symlinks()
+
+    if options.dex_vm == '7.0.0' or (options.runtimes and
+                                     ('7.0.0' in options.runtimes or
+                                      options.runtimes == 'all')):
+        art_7_0_0_symlinks()
 
     desugar_jdk_json_dir = None
     if options.desugared_library_configuration:

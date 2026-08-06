@@ -653,7 +653,7 @@ public abstract class KeepInfoCollection {
 
     @Override
     public boolean isKotlinMetadataRemovalAllowed(GlobalKeepInfoConfiguration configuration) {
-      return allowKotlinMetadataRemoval && configuration.isTreeShakingEnabled();
+      return allowKotlinMetadataRemoval;
     }
 
     @Override

@@ -10,7 +10,6 @@ import com.android.tools.r8.androidapi.DuplicateApiDatabaseEntryDiagnostic;
 import com.android.tools.r8.references.ClassReference;
 import java.util.Collection;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
 
 public class ParsedApiClassMerging {
@@ -24,14 +23,14 @@ public class ParsedApiClassMerging {
 
   /** The returned collection has hash-independent iteration. */
   public static Collection<ParsedApiClass> merge(
-      List<ParsedApiClass> parsedClasses, DiagnosticsHandler diagnosticsHandler)
+      Iterable<ParsedApiClass> parsedClasses, DiagnosticsHandler diagnosticsHandler)
       throws ApiDatabaseGeneratorException {
     ParsedApiClassMerging merger = new ParsedApiClassMerging(diagnosticsHandler);
     merger.merge(parsedClasses);
     return merger.merged.values();
   }
 
-  private void merge(List<ParsedApiClass> classes) throws ApiDatabaseGeneratorException {
+  private void merge(Iterable<ParsedApiClass> classes) throws ApiDatabaseGeneratorException {
     for (ParsedApiClass apiClass : classes) {
       merge(apiClass);
     }

@@ -15,6 +15,7 @@ import org.gradle.api.file.RegularFileProperty
 import org.gradle.api.provider.Property
 import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.InputFile
+import org.gradle.api.tasks.Internal
 import org.gradle.api.tasks.OutputDirectory
 import org.gradle.api.tasks.OutputFile
 import org.gradle.api.tasks.TaskAction
@@ -113,6 +114,8 @@ public abstract class DownloadDependency : DefaultTask() {
 
   @get:OutputFile public abstract val successFile: RegularFileProperty
 
+  @get:Internal public val rootDir: File = project.rootDir
+
   @get:Input public abstract val dependencyType: Property<DependencyType>
 
   @get:Inject public abstract val workerExecutor: WorkerExecutor
@@ -136,7 +139,7 @@ public abstract class DownloadDependency : DefaultTask() {
       this.outputDir.set(this@DownloadDependency.outputDir)
       this.successFile.set(this@DownloadDependency.successFile)
       this.dependencyType.set(this@DownloadDependency.dependencyType)
-      this.rootDir.set(project.getRoot())
+      this.rootDir.set(this@DownloadDependency.rootDir)
     }
   }
 }

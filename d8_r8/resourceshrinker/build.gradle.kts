@@ -3,13 +3,12 @@
 // BSD-style license that can be found in the LICENSE file.
 
 import java.util.concurrent.Callable
-import org.jetbrains.kotlin.gradle.dsl.JvmTarget
-import org.jetbrains.kotlin.gradle.dsl.KotlinVersion
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
   // Kotlin version is fixed by create_local_maven_dependencies.py
   id("org.jetbrains.kotlin.jvm")
+  id("r8-conventions")
   id("dependencies-plugin")
 }
 
@@ -17,19 +16,6 @@ java {
   sourceSets.main.configure {
     kotlin.srcDir(getRoot().resolveAll("src", "resourceshrinker", "java"))
     java.srcDir(getRoot().resolveAll("src", "resourceshrinker", "java"))
-  }
-  sourceCompatibility = JvmCompatibility.sourceCompatibility
-  targetCompatibility = JvmCompatibility.targetCompatibility
-  toolchain { languageVersion = JavaLanguageVersion.of(JvmCompatibility.release) }
-  withSourcesJar()
-}
-
-kotlin {
-  explicitApi()
-  compilerOptions {
-    jvmTarget.set(JvmTarget.fromTarget(JvmCompatibility.release.toString()))
-    languageVersion.set(KotlinVersion.KOTLIN_1_8)
-    apiVersion.set(KotlinVersion.KOTLIN_1_8)
   }
 }
 
@@ -50,14 +36,14 @@ val sharedDepsConfig by
 
 dependencies {
   sharedDepsScope(project(":third_party", "sharedDepsFiles"))
-  compileOnly(Deps.asm)
-  compileOnly(Deps.guava)
-  compileOnly(Deps.protobuf)
-  compileOnly(Deps.fastUtil)
-  implementation("com.android.tools.build:aapt2-proto:9.1.0-alpha09-14792394")
-  implementation("com.android.tools.layoutlib:layoutlib-api:31.5.0-alpha04")
-  implementation("com.android.tools:common:31.5.0-alpha04")
-  implementation("com.android.tools:sdk-common:31.5.0-alpha04")
+  compileOnly(libs.asm)
+  compileOnly(libs.guava)
+  compileOnly(libs.protobuf)
+  compileOnly(libs.fastUtil)
+  implementation(libs.toolsAapt2Proto)
+  implementation(libs.toolsLayoutlibApi)
+  implementation(libs.toolsCommon)
+  implementation(libs.toolsSdkCommon)
 }
 
 tasks {

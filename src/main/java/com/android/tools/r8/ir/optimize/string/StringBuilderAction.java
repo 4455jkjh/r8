@@ -14,10 +14,13 @@ import com.android.tools.r8.ir.code.IRCode;
 import com.android.tools.r8.ir.code.Instruction;
 import com.android.tools.r8.ir.code.InstructionListIterator;
 import com.android.tools.r8.ir.code.InvokeDirect;
+import com.android.tools.r8.ir.code.InvokeMethod;
 import com.android.tools.r8.ir.code.InvokeMethodWithReceiver;
+import com.android.tools.r8.ir.code.InvokeStatic;
 import com.android.tools.r8.ir.code.InvokeVirtual;
 import com.android.tools.r8.ir.code.Value;
 import com.android.tools.r8.ir.optimize.AffectedValues;
+import com.android.tools.r8.utils.internal.exceptions.Unreachable;
 import com.google.common.collect.ImmutableList;
 
 /** StringBuilderAction defines an interface for updating the IR code based on optimizations. */
@@ -165,6 +168,78 @@ public interface StringBuilderAction {
     @Override
     public boolean isAllowedToBeOverwrittenByRemoveStringBuilderAction() {
       return true;
+    }
+  }
+
+  /**
+   * Used to optimize StringBuilders on the form new StringBuilder().append(o).toString(). This
+   * action replaces the call to StringBuilder#append with a call to String#valueOf. All uses of the
+   * out-value from the call to StringBuilder#toString is then replaced by the new out-value
+   * produced by the call to String#valueOf.
+   */
+  class ReplaceAppendByStringValueOfAction implements StringBuilderAction {
+
+    private final InvokeMethod toStringInstruction;
+
+    ReplaceAppendByStringValueOfAction(InvokeMethod toStringInstruction) {
+      this.toStringInstruction = toStringInstruction;
+    }
+
+    @Override
+    public void perform(
+        AppView<?> appView,
+        IRCode code,
+        InstructionListIterator iterator,
+        Instruction instruction,
+        AffectedValues affectedValues,
+        StringBuilderOracle oracle) {
+      assert oracle.isAppend(instruction);
+      if (instruction.hasOutValue()) {
+        instruction.outValue().replaceUsers(instruction.getFirstOperand(), affectedValues);
+      }
+      InvokeStatic valueOfInvoke =
+          InvokeStatic.builder()
+              .setMethod(getValueOfMethod(instruction.asInvokeMethod(), appView.dexItemFactory()))
+              .setSingleArgument(instruction.getOperand(1))
+              .setFreshOutValue(code, TypeElement.stringClassType(appView))
+              .setPosition(instruction)
+              .build();
+      iterator.replaceCurrentInstruction(valueOfInvoke);
+      if (toStringInstruction.hasOutValue()) {
+        toStringInstruction.outValue().replaceUsers(valueOfInvoke.outValue());
+      }
+    }
+
+    private static DexMethod getValueOfMethod(InvokeMethod invoke, DexItemFactory factory) {
+      DexMethod invokedMethod = invoke.getInvokedMethod();
+      assert invokedMethod.getParameters().size() == 1;
+      switch (invokedMethod.getParameter(0).getDescriptor().getFirstByteAsChar()) {
+        case 'B':
+          return factory.stringMembers.valueOfInt;
+        case 'C':
+          return factory.stringMembers.valueOfChar;
+        case 'D':
+          return factory.stringMembers.valueOfDouble;
+        case 'F':
+          return factory.stringMembers.valueOfFloat;
+        case 'I':
+          return factory.stringMembers.valueOfInt;
+        case 'J':
+          return factory.stringMembers.valueOfLong;
+        case 'L':
+          return factory.stringMembers.valueOfObject;
+        case 'S':
+          return factory.stringMembers.valueOfInt;
+        case 'Z':
+          return factory.stringMembers.valueOfBoolean;
+        default:
+          throw new Unreachable();
+      }
+    }
+
+    @Override
+    public boolean isAllowedToBeOverwrittenByRemoveStringBuilderAction() {
+      return false;
     }
   }
 

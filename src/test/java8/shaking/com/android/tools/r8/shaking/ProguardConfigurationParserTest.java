@@ -860,6 +860,24 @@ public class ProguardConfigurationParserTest extends TestBase {
   }
 
   @Test
+  public void parseCheckKotlinMetadataDiscarded() {
+    parser.parse(createConfigurationForTesting("-checkkotlinmetadatadiscarded class *"));
+    verifyParserEndsCleanly();
+    ProguardConfiguration config = builder.buildForTesting();
+    assertEquals(1, config.getRules().size());
+    assertTrue(config.getRules().get(0) instanceof CheckKotlinMetadataDiscardedRule);
+  }
+
+  @Test
+  public void parseCheckKotlinMetadataDiscardedGlobal() {
+    parser.parse(createConfigurationForTesting("-checkkotlinmetadatadiscarded"));
+    verifyParserEndsCleanly();
+    ProguardConfiguration config = builder.buildForTesting();
+    assertTrue(config.isCheckKotlinMetadataDiscardedEnabled());
+    assertEquals(0, config.getRules().size());
+  }
+
+  @Test
   public void parseIncluding() {
     parser.parse(Paths.get(INCLUDING));
     verifyParserEndsCleanly();

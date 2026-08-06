@@ -11,12 +11,19 @@ dependencies {
   implementation("net.ltgt.gradle:gradle-errorprone-plugin:3.0.1")
   implementation("org.gradle:test-retry-gradle-plugin:1.6.4")
   implementation("com.google.code.gson:gson:2.10.1")
+  // Kotlin version is fixed by create_local_maven_dependencies.py
+  implementation("org.jetbrains.kotlin:kotlin-gradle-plugin:2.2.21")
+  implementation("com.google.protobuf:protobuf-gradle-plugin:0.9.4")
 }
 
 gradlePlugin {
   plugins.register("dependencies-plugin") {
     id = "dependencies-plugin"
     implementationClass = "DependenciesPlugin"
+  }
+  plugins.register("r8-conventions") {
+    id = "r8-conventions"
+    implementationClass = "R8ConventionPlugin"
   }
 }
 

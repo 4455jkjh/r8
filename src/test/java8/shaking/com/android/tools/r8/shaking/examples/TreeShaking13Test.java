@@ -3,6 +3,9 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8.shaking.examples;
 
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.shaking.TreeShakingTest;
 import com.android.tools.r8.utils.codeinspector.ClassSubject;
@@ -13,7 +16,6 @@ import com.android.tools.r8.utils.codeinspector.MethodSubject;
 import com.google.common.collect.ImmutableList;
 import java.util.Iterator;
 import java.util.List;
-import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -53,11 +55,10 @@ public class TreeShaking13Test extends TreeShakingTest {
   private static void shaking13EnsureFieldWritesCorrect(CodeInspector inspector) {
     ClassSubject mainClass = inspector.clazz("shaking13.Shaking");
     MethodSubject testMethod = mainClass.uniqueMethodWithOriginalName("fieldTest");
-    Assert.assertTrue(testMethod.isPresent());
+    assertTrue(testMethod.isPresent());
     Iterator<FieldAccessInstructionSubject> iterator =
         testMethod.iterateInstructions(InstructionSubject::isFieldAccess);
-    Assert.assertTrue(iterator.hasNext() && iterator.next().holder().is("shakinglib.LibraryClass"));
-    Assert.assertTrue(iterator.hasNext() && iterator.next().holder().is("shakinglib.LibraryClass"));
-    Assert.assertFalse(iterator.hasNext());
+    assertTrue(iterator.hasNext() && iterator.next().holder().is("shakinglib.LibraryClass"));
+    assertFalse(iterator.hasNext());
   }
 }

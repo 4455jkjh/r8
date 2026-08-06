@@ -5,6 +5,7 @@
 
 import argparse
 import datetime
+import json
 import os.path
 import re
 import shutil
@@ -18,7 +19,7 @@ import zipfile
 import git_utils
 import utils
 
-R8_DEV_BRANCH = '9.4'
+R8_DEV_BRANCH = '9.5'
 R8_VERSION_FILE = os.path.join('src', 'main', 'java', 'com', 'android', 'tools',
                                'r8', 'Version.java')
 THIS_FILE_RELATIVE = os.path.join('tools', 'r8_release.py')
@@ -799,6 +800,21 @@ def prepare_branch(args):
               '"')
         sys.exit(1)
 
+    def gerrit_create_branch(branch_name, hash):
+        data = json.dumps({"revision": hash})
+        cmd = ' '.join([
+            'gob-curl', '--header',
+            '"Content-Type: application/json; charset=UTF-8"', '--request',
+            'PUT', '--data', "'{data}'".format(data=data),
+            'https://r8-review.git.corp.google.com/a/projects/r8/branches/{branch_name}'
+            .format(branch_name=branch_name)
+        ])
+        print(cmd)
+        result = subprocess.check_output(cmd,
+                                         stderr=subprocess.STDOUT,
+                                         shell=True)
+        print(result)
+
     def make_branch(options):
         with utils.TempDir() as temp:
             subprocess.check_call(['git', 'clone', utils.REPO_SOURCE, temp])
@@ -831,15 +847,12 @@ def prepare_branch(args):
                     print()
                     print('Using explicit branch hash %s' % commithash)
                 print()
-                print(
-                    'Use the Gerrit admin UI at'
-                    ' https://r8-review.googlesource.com/admin/repos/r8,branches'
-                    ' to create the %s branch from %s.' %
-                    (branch_version, commithash))
-                answer = input("Branch created in Gerrit UI? [y/N]:")
+                answer = input('Create new branch %s branch from %s [y/N]:' %
+                               (branch_version, commithash))
                 if answer != 'y':
                     print('Aborting preparing branch for %s' % branch_version)
                     sys.exit(1)
+                gerrit_create_branch(branch_version, commithash)
 
                 # Fetch and checkout the new branch created through the Gerrit UI.
                 subprocess.check_call(

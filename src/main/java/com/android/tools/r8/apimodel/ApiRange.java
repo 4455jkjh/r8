@@ -5,6 +5,7 @@
 package com.android.tools.r8.apimodel;
 
 import com.android.tools.r8.utils.AndroidApiLevel;
+import com.android.tools.r8.utils.structural.Ordered;
 import java.util.Objects;
 
 /**
@@ -70,5 +71,66 @@ public class ApiRange {
   private static String formatted(AndroidApiLevel intro, AndroidApiLevel removed) {
     String formattedRemoved = removed != null ? removed.toString() : "infinity";
     return "[" + intro + ", " + formattedRemoved + "[";
+  }
+
+  public boolean isWithin(ApiRange other) {
+    return !this.startsBeforeStartOf(other) && !this.endsAfterEndOf(other);
+  }
+
+  /** Strictly before. */
+  public boolean startsBeforeStartOf(ApiRange other) {
+    return this.intro.isLessThan(other.intro);
+  }
+
+  /** Strictly after. */
+  public boolean endsAfterEndOf(ApiRange other) {
+    if (other.removed == null) {
+      return false;
+    }
+    if (this.removed == null) {
+      return true;
+    }
+    return this.removed.isGreaterThan(other.removed);
+  }
+
+  public boolean isOverlappingWith(ApiRange other) {
+    return !this.startsAfterEndOf(other) && !this.endsBeforeStartOf(other);
+  }
+
+  public boolean endsBeforeStartOf(ApiRange other) {
+    return this.isRemoved() && other.intro.isGreaterThanOrEqualTo(this.removed);
+  }
+
+  public boolean startsAfterEndOf(ApiRange other) {
+    return other.isRemoved() && this.intro.isGreaterThanOrEqualTo(other.removed);
+  }
+
+  /** Returns null if the intersection is empty. */
+  public ApiRange intersect(ApiRange other) {
+    AndroidApiLevel intro = this.intro.max(other.intro);
+    AndroidApiLevel removed = Ordered.minIgnoreNull(this.removed, other.removed);
+    boolean isEmpty = removed != null && intro.isGreaterThanOrEqualTo(removed);
+    if (isEmpty) {
+      return null;
+    }
+    return new ApiRange(intro, removed);
+  }
+
+  /** Returns null if the union is not expressible as a continuous range. */
+  public ApiRange union(ApiRange other) {
+    boolean aIsFirst = this.intro.isLessThanOrEqualTo(other.intro);
+    ApiRange first = aIsFirst ? this : other;
+    ApiRange second = aIsFirst ? other : this;
+    if (first.removed != null && first.removed.isLessThan(second.intro)) {
+      return null;
+    }
+    AndroidApiLevel intro = first.intro;
+    AndroidApiLevel removed;
+    if (this.removed == null || other.removed == null) {
+      removed = null;
+    } else {
+      removed = this.removed.max(other.removed);
+    }
+    return new ApiRange(intro, removed);
   }
 }

@@ -109,6 +109,7 @@ public class AssumenosideeffectsWithoutMatchingDefinitionTest extends TestBase {
         .addProgramClasses(MAIN)
         .addKeepMainRule(MAIN)
         .addKeepRules(config.getKeepRule())
+        .addKeepRules("-keepclassmembers class * { java.lang.String disguise(java.lang.String); }")
         .addDontObfuscate()
         .enableInliningAnnotations()
         .setMinApi(parameters)
@@ -133,10 +134,14 @@ public class AssumenosideeffectsWithoutMatchingDefinitionTest extends TestBase {
     @NeverInline
     private ProgramClass() {
       if (isInEditMode()) {
-        test = "test";
+        test = disguise("test");
       } else {
-        test = "production";
+        test = disguise("production");
       }
+    }
+
+    private static String disguise(String str) {
+      return str;
     }
 
     public static void main(String... args) {

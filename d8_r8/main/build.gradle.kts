@@ -12,6 +12,7 @@ import org.gradle.process.ExecOperations
 
 plugins {
   `java-library`
+  id("r8-conventions")
   id("dependencies-plugin")
   id("net.ltgt.errorprone")
 }
@@ -194,11 +195,6 @@ java {
       }
     }
   }
-
-  sourceCompatibility = JvmCompatibility.sourceCompatibility
-  targetCompatibility = JvmCompatibility.targetCompatibility
-  toolchain { languageVersion = JavaLanguageVersion.of(JvmCompatibility.release) }
-  withSourcesJar()
 }
 
 val sharedDepsScope by configurations.dependencyScope("sharedDepsScope")
@@ -233,8 +229,8 @@ dependencies {
   implementation(project(":keepanno", "keepannoClasses"))
   implementation(project(":resourceshrinker", "resourceshrinkerJar"))
   implementation(project(":utils"))
-  Deps.compilerDeps.forEach { compileOnly(it) }
-  errorprone(Deps.errorprone)
+  compileOnly(libs.bundles.compilerDeps)
+  errorprone(libs.errorprone)
 }
 
 if (enableTurboBuilds) {

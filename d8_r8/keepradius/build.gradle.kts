@@ -5,10 +5,10 @@
 import com.google.protobuf.gradle.proto
 import net.ltgt.gradle.errorprone.errorprone
 import org.gradle.api.tasks.bundling.Jar
-import org.gradle.nativeplatform.platform.internal.DefaultNativePlatform
 
 plugins {
   `java-library`
+  id("r8-conventions")
   id("dependencies-plugin")
   id("net.ltgt.errorprone")
   id("com.google.protobuf")
@@ -16,34 +16,17 @@ plugins {
 
 tasks.named("generateProto") { dependsOn(":third_party:downloadDeps") }
 
-var os = DefaultNativePlatform.getCurrentOperatingSystem()
-
-protobuf.protoc {
-  if (os.isLinux) {
-    path = getRoot().resolveAll("third_party", "protoc", "linux-x86_64", "bin", "protoc").path
-  } else if (os.isMacOsX) {
-    path = getRoot().resolveAll("third_party", "protoc", "osx-x86_64", "bin", "protoc").path
-  } else {
-    assert(os.isWindows)
-    path = getRoot().resolveAll("third_party", "protoc", "win64", "bin", "protoc.exe").path
-  }
-}
-
 java {
   sourceSets.main.configure {
     java.srcDir(getRoot().resolveAll("src", "keepradius", "java"))
     proto { srcDir(getRoot().resolveAll("src", "keepradius", "proto")) }
   }
-  sourceCompatibility = JvmCompatibility.sourceCompatibility
-  targetCompatibility = JvmCompatibility.targetCompatibility
-  toolchain { languageVersion = JavaLanguageVersion.of(JvmCompatibility.release) }
-  withSourcesJar()
 }
 
 dependencies {
   compileOnly(project(":keepanno", "keepannoClasses"))
-  compileOnly(Deps.protobuf)
-  errorprone(Deps.errorprone)
+  compileOnly(libs.protobuf)
+  errorprone(libs.errorprone)
 }
 
 tasks {
