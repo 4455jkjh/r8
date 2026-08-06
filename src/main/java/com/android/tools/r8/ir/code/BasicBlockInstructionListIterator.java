@@ -442,6 +442,30 @@ public class BasicBlockInstructionListIterator implements InstructionListIterato
   }
 
   @Override
+  public void replaceCurrentInstructionWithConstDouble(IRCode code, double value) {
+    if (current == null) {
+      throw new IllegalStateException();
+    }
+
+    assert !current.hasOutValue() || current.getOutType().isDouble();
+
+    ConstNumber constNumber = code.createDoubleConstant(value, current.getLocalInfo());
+    replaceCurrentInstruction(constNumber);
+  }
+
+  @Override
+  public void replaceCurrentInstructionWithConstFloat(IRCode code, float value) {
+    if (current == null) {
+      throw new IllegalStateException();
+    }
+
+    assert !current.hasOutValue() || current.getOutType().isFloat();
+
+    ConstNumber constNumber = code.createFloatConstant(value, current.getLocalInfo());
+    replaceCurrentInstruction(constNumber);
+  }
+
+  @Override
   public void replaceCurrentInstructionWithConstInt(IRCode code, int value) {
     if (current == null) {
       throw new IllegalStateException();
@@ -449,8 +473,31 @@ public class BasicBlockInstructionListIterator implements InstructionListIterato
 
     assert !current.hasOutValue() || current.getOutType().isInt();
 
-    // Replace the instruction by const-number.
     ConstNumber constNumber = code.createIntConstant(value, current.getLocalInfo());
+    replaceCurrentInstruction(constNumber);
+  }
+
+  @Override
+  public void replaceCurrentInstructionWithConstLong(IRCode code, long value) {
+    if (current == null) {
+      throw new IllegalStateException();
+    }
+
+    assert !current.hasOutValue() || current.getOutType().isLong();
+
+    ConstNumber constNumber = code.createLongConstant(value, current.getLocalInfo());
+    replaceCurrentInstruction(constNumber);
+  }
+
+  @Override
+  public void replaceCurrentInstructionWithConstNull(IRCode code) {
+    if (current == null) {
+      throw new IllegalStateException();
+    }
+
+    assert !current.hasOutValue() || current.getOutType().isReferenceType();
+
+    ConstNumber constNumber = code.createConstNull(current.getLocalInfo());
     replaceCurrentInstruction(constNumber);
   }
 
@@ -461,7 +508,8 @@ public class BasicBlockInstructionListIterator implements InstructionListIterato
       throw new IllegalStateException();
     }
 
-    // Replace the instruction by const-string.
+    assert !current.hasOutValue() || current.getOutType().isReferenceType();
+
     ConstString constString = code.createStringConstant(appView, value, current.getLocalInfo());
     replaceCurrentInstruction(constString, affectedValues);
   }

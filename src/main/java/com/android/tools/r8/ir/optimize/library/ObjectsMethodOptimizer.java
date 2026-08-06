@@ -118,10 +118,10 @@ public class ObjectsMethodOptimizer extends StatelessLibraryMethodModelCollectio
     // Objects.isNull(b) otherwise.
     if (aValue.isAlwaysNull(appView)) {
       if (bValue.isAlwaysNull(appView)) {
-        instructionIterator.replaceCurrentInstructionWithConstTrue(code);
+        instructionIterator.replaceCurrentInstructionWithConstBooleanTrue(code);
         return instructionIterator;
       } else if (bValue.isNeverNull()) {
-        instructionIterator.replaceCurrentInstructionWithConstFalse(code);
+        instructionIterator.replaceCurrentInstructionWithConstBooleanFalse(code);
         return instructionIterator;
       } else if (options.canUseJavaUtilObjectsIsNull()) {
         // This will be rewritten to use if-nez by BranchSimplifier.
@@ -195,10 +195,10 @@ public class ObjectsMethodOptimizer extends StatelessLibraryMethodModelCollectio
     Value inValue = invoke.getFirstArgument();
     if (inValue.isAlwaysNull(appView)) {
       // Optimize Objects.isNull(null) into true.
-      instructionIterator.replaceCurrentInstructionWithConstTrue(code);
+      instructionIterator.replaceCurrentInstructionWithConstBooleanTrue(code);
     } else if (inValue.isNeverNull()) {
       // Optimize Objects.isNull(nonNull) into false.
-      instructionIterator.replaceCurrentInstructionWithConstFalse(code);
+      instructionIterator.replaceCurrentInstructionWithConstBooleanFalse(code);
     }
   }
 
@@ -207,10 +207,10 @@ public class ObjectsMethodOptimizer extends StatelessLibraryMethodModelCollectio
     Value inValue = invoke.getFirstArgument();
     if (inValue.isAlwaysNull(appView)) {
       // Optimize Objects.nonNull(null) into false.
-      instructionIterator.replaceCurrentInstructionWithConstFalse(code);
+      instructionIterator.replaceCurrentInstructionWithConstBooleanFalse(code);
     } else if (inValue.isNeverNull()) {
       // Optimize Objects.nonNull(nonNull) into true.
-      instructionIterator.replaceCurrentInstructionWithConstTrue(code);
+      instructionIterator.replaceCurrentInstructionWithConstBooleanTrue(code);
     }
   }
 

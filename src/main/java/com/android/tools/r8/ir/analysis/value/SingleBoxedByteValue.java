@@ -15,9 +15,9 @@ import com.android.tools.r8.ir.code.ValueFactory;
 
 public class SingleBoxedByteValue extends SingleBoxedPrimitiveValue {
 
-  private final int value;
+  private final byte value;
 
-  SingleBoxedByteValue(int value) {
+  SingleBoxedByteValue(byte value) {
     this.value = value;
   }
 
@@ -47,6 +47,10 @@ public class SingleBoxedByteValue extends SingleBoxedPrimitiveValue {
   @Override
   public TypeElement getBoxedPrimitiveType(AppView<?> appView) {
     return appView.dexItemFactory().boxedByteType.toTypeElement(appView);
+  }
+
+  public byte getByteValue() {
+    return value;
   }
 
   @Override

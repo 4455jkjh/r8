@@ -1537,14 +1537,37 @@ public class DexItemFactory {
 
     public final DexMethod booleanValue =
         createMethod(boxedBooleanType, createProto(booleanType), "booleanValue");
-    public final DexMethod parseBoolean =
-        createMethod(boxedBooleanType, createProto(booleanType, stringType), "parseBoolean");
-    public final DexMethod valueOf =
-        createMethod(boxedBooleanType, createProto(boxedBooleanType, booleanType), "valueOf");
-    public final DexMethod toString =
-        createMethod(boxedBooleanType, createProto(stringType), "toString");
+    public final DexMethod compare =
+        createMethod(boxedBooleanType, createProto(intType, booleanType, booleanType), "compare");
+    public final DexMethod compareTo =
+        createMethod(boxedBooleanType, createProto(intType, boxedBooleanType), "compareTo");
+    public final DexMethod equals =
+        createMethod(boxedBooleanType, createProto(booleanType, objectType), "equals");
+    public final DexMethod getBoolean =
+        createMethod(boxedBooleanType, createProto(booleanType, stringType), "getBoolean");
+    public final DexMethod hashCode =
+        createMethod(boxedBooleanType, createProto(intType), "hashCode");
     public final DexMethod staticHashCode =
         createMethod(boxedBooleanType, createProto(intType, booleanType), "hashCode");
+    public final DexMethod logicalAnd =
+        createMethod(
+            boxedBooleanType, createProto(booleanType, booleanType, booleanType), "logicalAnd");
+    public final DexMethod logicalOr =
+        createMethod(
+            boxedBooleanType, createProto(booleanType, booleanType, booleanType), "logicalOr");
+    public final DexMethod logicalXor =
+        createMethod(
+            boxedBooleanType, createProto(booleanType, booleanType, booleanType), "logicalXor");
+    public final DexMethod parseBoolean =
+        createMethod(boxedBooleanType, createProto(booleanType, stringType), "parseBoolean");
+    public final DexMethod toString =
+        createMethod(boxedBooleanType, createProto(stringType), "toString");
+    public final DexMethod staticToString =
+        createMethod(boxedBooleanType, createProto(stringType, booleanType), "toString");
+    public final DexMethod valueOf =
+        createMethod(boxedBooleanType, createProto(boxedBooleanType, booleanType), "valueOf");
+    public final DexMethod valueOfString =
+        createMethod(boxedBooleanType, createProto(boxedBooleanType, stringType), "valueOf");
 
     private BooleanMembers() {}
 
@@ -1553,6 +1576,20 @@ public class DexItemFactory {
       consumer.accept(FALSE);
       consumer.accept(TRUE);
       consumer.accept(TYPE);
+    }
+
+    public void forEachUnconditionalFinalMethodWithoutSideEffects(Consumer<DexMethod> consumer) {
+      consumer.accept(booleanValue);
+      consumer.accept(compare);
+      consumer.accept(hashCode);
+      consumer.accept(staticHashCode);
+      consumer.accept(logicalAnd);
+      consumer.accept(logicalOr);
+      consumer.accept(logicalXor);
+      consumer.accept(parseBoolean);
+      consumer.accept(toString);
+      consumer.accept(staticToString);
+      consumer.accept(valueOf);
     }
 
     @Override
@@ -1567,12 +1604,68 @@ public class DexItemFactory {
 
     public final DexMethod byteValue =
         createMethod(boxedByteType, createProto(byteType), "byteValue");
+    public final DexMethod compare =
+        createMethod(boxedByteType, createProto(intType, byteType, byteType), "compare");
+    public final DexMethod compareTo =
+        createMethod(boxedByteType, createProto(intType, boxedByteType), "compareTo");
+    public final DexMethod decode =
+        createMethod(boxedByteType, createProto(boxedByteType, stringType), "decode");
+    public final DexMethod doubleValue =
+        createMethod(boxedByteType, createProto(doubleType), "doubleValue");
+    public final DexMethod equals =
+        createMethod(boxedByteType, createProto(booleanType, objectType), "equals");
+    public final DexMethod floatValue =
+        createMethod(boxedByteType, createProto(floatType), "floatValue");
+    public final DexMethod hashCode = createMethod(boxedByteType, createProto(intType), "hashCode");
+    public final DexMethod staticHashCode =
+        createMethod(boxedByteType, createProto(intType, byteType), "hashCode");
+    public final DexMethod intValue = createMethod(boxedByteType, createProto(intType), "intValue");
+    public final DexMethod longValue =
+        createMethod(boxedByteType, createProto(longType), "longValue");
+    public final DexMethod parseByte =
+        createMethod(boxedByteType, createProto(byteType, stringType), "parseByte");
+    public final DexMethod parseByteWithRadix =
+        createMethod(boxedByteType, createProto(byteType, stringType, intType), "parseByte");
+    public final DexMethod shortValue =
+        createMethod(boxedByteType, createProto(shortType), "shortValue");
     public final DexMethod toString =
         createMethod(boxedByteType, createProto(stringType), "toString");
+    public final DexMethod staticToString =
+        createMethod(boxedByteType, createProto(stringType, byteType), "toString");
+    public final DexMethod toUnsignedInt =
+        createMethod(boxedByteType, createProto(intType, byteType), "toUnsignedInt");
+    public final DexMethod toUnsignedLong =
+        createMethod(boxedByteType, createProto(longType, byteType), "toUnsignedLong");
     public final DexMethod valueOf =
         createMethod(boxedByteType, createProto(boxedByteType, byteType), "valueOf");
+    public final DexMethod valueOfString =
+        createMethod(boxedByteType, createProto(boxedByteType, stringType), "valueOf");
+    public final DexMethod valueOfStringWithRadix =
+        createMethod(boxedByteType, createProto(boxedByteType, stringType, intType), "valueOf");
 
     private ByteMembers() {}
+
+    @Override
+    public void forEachFinalField(Consumer<DexField> consumer) {
+      consumer.accept(TYPE);
+    }
+
+    public void forEachUnconditionalFinalMethodWithoutSideEffects(Consumer<DexMethod> consumer) {
+      consumer.accept(byteValue);
+      consumer.accept(compare);
+      consumer.accept(doubleValue);
+      consumer.accept(floatValue);
+      consumer.accept(hashCode);
+      consumer.accept(staticHashCode);
+      consumer.accept(intValue);
+      consumer.accept(longValue);
+      consumer.accept(shortValue);
+      consumer.accept(toString);
+      consumer.accept(staticToString);
+      consumer.accept(toUnsignedInt);
+      consumer.accept(toUnsignedLong);
+      consumer.accept(valueOf);
+    }
 
     @Override
     public DexField getTypeField() {
@@ -1584,14 +1677,251 @@ public class DexItemFactory {
 
     public final DexField TYPE = createField(boxedCharType, classType, "TYPE");
 
+    public final DexMethod charCount =
+        createMethod(boxedCharType, createProto(intType, intType), "charCount");
     public final DexMethod charValue =
         createMethod(boxedCharType, createProto(charType), "charValue");
+    public final DexMethod codePointAt =
+        createMethod(boxedCharType, createProto(intType, charSequenceType, intType), "codePointAt");
+    public final DexMethod codePointBefore =
+        createMethod(
+            boxedCharType, createProto(intType, charSequenceType, intType), "codePointBefore");
+    public final DexMethod codePointCount =
+        createMethod(
+            boxedCharType,
+            createProto(intType, charSequenceType, intType, intType),
+            "codePointCount");
+    public final DexMethod compare =
+        createMethod(boxedCharType, createProto(intType, charType, charType), "compare");
+    public final DexMethod compareTo =
+        createMethod(boxedCharType, createProto(intType, boxedCharType), "compareTo");
+    public final DexMethod digitWithChar =
+        createMethod(boxedCharType, createProto(intType, charType, intType), "digit");
+    public final DexMethod digitWithInt =
+        createMethod(boxedCharType, createProto(intType, intType, intType), "digit");
+    public final DexMethod equals =
+        createMethod(boxedCharType, createProto(booleanType, objectType), "equals");
+    public final DexMethod forDigit =
+        createMethod(boxedCharType, createProto(charType, intType, intType), "forDigit");
+    public final DexMethod getDirectionalityWithChar =
+        createMethod(boxedCharType, createProto(byteType, charType), "getDirectionality");
+    public final DexMethod getDirectionalityWithInt =
+        createMethod(boxedCharType, createProto(byteType, intType), "getDirectionality");
+    public final DexMethod getName =
+        createMethod(boxedCharType, createProto(stringType, intType), "getName");
+    public final DexMethod getNumericValueWithChar =
+        createMethod(boxedCharType, createProto(intType, charType), "getNumericValue");
+    public final DexMethod getNumericValueWithInt =
+        createMethod(boxedCharType, createProto(intType, intType), "getNumericValue");
+    public final DexMethod getTypeWithChar =
+        createMethod(boxedCharType, createProto(intType, charType), "getType");
+    public final DexMethod getTypeWithInt =
+        createMethod(boxedCharType, createProto(intType, intType), "getType");
+    public final DexMethod hashCode = createMethod(boxedCharType, createProto(intType), "hashCode");
+    public final DexMethod staticHashCode =
+        createMethod(boxedCharType, createProto(intType, charType), "hashCode");
+    public final DexMethod highSurrogate =
+        createMethod(boxedCharType, createProto(charType, intType), "highSurrogate");
+    public final DexMethod isAlphabetic =
+        createMethod(boxedCharType, createProto(booleanType, intType), "isAlphabetic");
+    public final DexMethod isBmpCodePoint =
+        createMethod(boxedCharType, createProto(booleanType, intType), "isBmpCodePoint");
+    public final DexMethod isDefinedWithChar =
+        createMethod(boxedCharType, createProto(booleanType, charType), "isDefined");
+    public final DexMethod isDefinedWithInt =
+        createMethod(boxedCharType, createProto(booleanType, intType), "isDefined");
+    public final DexMethod isDigitWithChar =
+        createMethod(boxedCharType, createProto(booleanType, charType), "isDigit");
+    public final DexMethod isDigitWithInt =
+        createMethod(boxedCharType, createProto(booleanType, intType), "isDigit");
+    public final DexMethod isHighSurrogate =
+        createMethod(boxedCharType, createProto(booleanType, charType), "isHighSurrogate");
+    public final DexMethod isIdentifierIgnorableWithChar =
+        createMethod(boxedCharType, createProto(booleanType, charType), "isIdentifierIgnorable");
+    public final DexMethod isIdentifierIgnorableWithInt =
+        createMethod(boxedCharType, createProto(booleanType, intType), "isIdentifierIgnorable");
+    public final DexMethod isIdeographic =
+        createMethod(boxedCharType, createProto(booleanType, intType), "isIdeographic");
+    public final DexMethod isISOControlWithChar =
+        createMethod(boxedCharType, createProto(booleanType, charType), "isISOControl");
+    public final DexMethod isISOControlWithInt =
+        createMethod(boxedCharType, createProto(booleanType, intType), "isISOControl");
+    public final DexMethod isJavaIdentifierPartWithChar =
+        createMethod(boxedCharType, createProto(booleanType, charType), "isJavaIdentifierPart");
+    public final DexMethod isJavaIdentifierPartWithInt =
+        createMethod(boxedCharType, createProto(booleanType, intType), "isJavaIdentifierPart");
+    public final DexMethod isJavaIdentifierStartWithChar =
+        createMethod(boxedCharType, createProto(booleanType, charType), "isJavaIdentifierStart");
+    public final DexMethod isJavaIdentifierStartWithInt =
+        createMethod(boxedCharType, createProto(booleanType, intType), "isJavaIdentifierStart");
+    public final DexMethod isJavaLetter =
+        createMethod(boxedCharType, createProto(booleanType, charType), "isJavaLetter");
+    public final DexMethod isJavaLetterOrDigit =
+        createMethod(boxedCharType, createProto(booleanType, charType), "isJavaLetterOrDigit");
+    public final DexMethod isLetterWithChar =
+        createMethod(boxedCharType, createProto(booleanType, charType), "isLetter");
+    public final DexMethod isLetterWithInt =
+        createMethod(boxedCharType, createProto(booleanType, intType), "isLetter");
+    public final DexMethod isLetterOrDigitWithChar =
+        createMethod(boxedCharType, createProto(booleanType, charType), "isLetterOrDigit");
+    public final DexMethod isLetterOrDigitWithInt =
+        createMethod(boxedCharType, createProto(booleanType, intType), "isLetterOrDigit");
+    public final DexMethod isLowerCaseWithChar =
+        createMethod(boxedCharType, createProto(booleanType, charType), "isLowerCase");
+    public final DexMethod isLowerCaseWithInt =
+        createMethod(boxedCharType, createProto(booleanType, intType), "isLowerCase");
+    public final DexMethod isLowSurrogate =
+        createMethod(boxedCharType, createProto(booleanType, charType), "isLowSurrogate");
+    public final DexMethod isMirroredWithChar =
+        createMethod(boxedCharType, createProto(booleanType, charType), "isMirrored");
+    public final DexMethod isMirroredWithInt =
+        createMethod(boxedCharType, createProto(booleanType, intType), "isMirrored");
+    public final DexMethod isSpace =
+        createMethod(boxedCharType, createProto(booleanType, charType), "isSpace");
+    public final DexMethod isSpaceCharWithChar =
+        createMethod(boxedCharType, createProto(booleanType, charType), "isSpaceChar");
+    public final DexMethod isSpaceCharWithInt =
+        createMethod(boxedCharType, createProto(booleanType, intType), "isSpaceChar");
+    public final DexMethod isSupplementaryCodePoint =
+        createMethod(boxedCharType, createProto(booleanType, intType), "isSupplementaryCodePoint");
+    public final DexMethod isSurrogate =
+        createMethod(boxedCharType, createProto(booleanType, charType), "isSurrogate");
+    public final DexMethod isSurrogatePair =
+        createMethod(
+            boxedCharType, createProto(booleanType, charType, charType), "isSurrogatePair");
+    public final DexMethod isTitleCaseWithChar =
+        createMethod(boxedCharType, createProto(booleanType, charType), "isTitleCase");
+    public final DexMethod isTitleCaseWithInt =
+        createMethod(boxedCharType, createProto(booleanType, intType), "isTitleCase");
+    public final DexMethod isUnicodeIdentifierPartWithChar =
+        createMethod(boxedCharType, createProto(booleanType, charType), "isUnicodeIdentifierPart");
+    public final DexMethod isUnicodeIdentifierPartWithInt =
+        createMethod(boxedCharType, createProto(booleanType, intType), "isUnicodeIdentifierPart");
+    public final DexMethod isUnicodeIdentifierStartWithChar =
+        createMethod(boxedCharType, createProto(booleanType, charType), "isUnicodeIdentifierStart");
+    public final DexMethod isUnicodeIdentifierStartWithInt =
+        createMethod(boxedCharType, createProto(booleanType, intType), "isUnicodeIdentifierStart");
+    public final DexMethod isUpperCaseWithChar =
+        createMethod(boxedCharType, createProto(booleanType, charType), "isUpperCase");
+    public final DexMethod isUpperCaseWithInt =
+        createMethod(boxedCharType, createProto(booleanType, intType), "isUpperCase");
+    public final DexMethod isValidCodePoint =
+        createMethod(boxedCharType, createProto(booleanType, intType), "isValidCodePoint");
+    public final DexMethod isWhitespaceWithChar =
+        createMethod(boxedCharType, createProto(booleanType, charType), "isWhitespace");
+    public final DexMethod isWhitespaceWithInt =
+        createMethod(boxedCharType, createProto(booleanType, intType), "isWhitespace");
+    public final DexMethod lowSurrogate =
+        createMethod(boxedCharType, createProto(charType, intType), "lowSurrogate");
+    public final DexMethod offsetByCodePoints =
+        createMethod(
+            boxedCharType,
+            createProto(intType, charSequenceType, intType, intType),
+            "offsetByCodePoints");
+    public final DexMethod reverseBytes =
+        createMethod(boxedCharType, createProto(charType, charType), "reverseBytes");
+    public final DexMethod toCodePoint =
+        createMethod(boxedCharType, createProto(intType, charType, charType), "toCodePoint");
+    public final DexMethod toLowerCaseWithChar =
+        createMethod(boxedCharType, createProto(charType, charType), "toLowerCase");
+    public final DexMethod toLowerCaseWithInt =
+        createMethod(boxedCharType, createProto(intType, intType), "toLowerCase");
     public final DexMethod toString =
         createMethod(boxedCharType, createProto(stringType), "toString");
+    public final DexMethod staticToString =
+        createMethod(boxedCharType, createProto(stringType, charType), "toString");
+    public final DexMethod toTitleCaseWithChar =
+        createMethod(boxedCharType, createProto(charType, charType), "toTitleCase");
+    public final DexMethod toTitleCaseWithInt =
+        createMethod(boxedCharType, createProto(intType, intType), "toTitleCase");
+    public final DexMethod toUpperCaseWithChar =
+        createMethod(boxedCharType, createProto(charType, charType), "toUpperCase");
+    public final DexMethod toUpperCaseWithInt =
+        createMethod(boxedCharType, createProto(intType, intType), "toUpperCase");
     public final DexMethod valueOf =
         createMethod(boxedCharType, createProto(boxedCharType, charType), "valueOf");
 
     private CharMembers() {}
+
+    @Override
+    public void forEachFinalField(Consumer<DexField> consumer) {
+      consumer.accept(TYPE);
+    }
+
+    public void forEachUnconditionalFinalMethodWithoutSideEffects(Consumer<DexMethod> consumer) {
+      consumer.accept(charCount);
+      consumer.accept(charValue);
+      consumer.accept(compare);
+      consumer.accept(digitWithChar);
+      consumer.accept(digitWithInt);
+      consumer.accept(forDigit);
+      consumer.accept(getDirectionalityWithChar);
+      consumer.accept(getDirectionalityWithInt);
+      consumer.accept(getName);
+      consumer.accept(getNumericValueWithChar);
+      consumer.accept(getNumericValueWithInt);
+      consumer.accept(getTypeWithChar);
+      consumer.accept(getTypeWithInt);
+      consumer.accept(hashCode);
+      consumer.accept(staticHashCode);
+      consumer.accept(highSurrogate);
+      consumer.accept(isAlphabetic);
+      consumer.accept(isBmpCodePoint);
+      consumer.accept(isDefinedWithChar);
+      consumer.accept(isDefinedWithInt);
+      consumer.accept(isDigitWithChar);
+      consumer.accept(isDigitWithInt);
+      consumer.accept(isHighSurrogate);
+      consumer.accept(isIdentifierIgnorableWithChar);
+      consumer.accept(isIdentifierIgnorableWithInt);
+      consumer.accept(isIdeographic);
+      consumer.accept(isISOControlWithChar);
+      consumer.accept(isISOControlWithInt);
+      consumer.accept(isJavaIdentifierPartWithChar);
+      consumer.accept(isJavaIdentifierPartWithInt);
+      consumer.accept(isJavaIdentifierStartWithChar);
+      consumer.accept(isJavaIdentifierStartWithInt);
+      consumer.accept(isJavaLetter);
+      consumer.accept(isJavaLetterOrDigit);
+      consumer.accept(isLetterWithChar);
+      consumer.accept(isLetterWithInt);
+      consumer.accept(isLetterOrDigitWithChar);
+      consumer.accept(isLetterOrDigitWithInt);
+      consumer.accept(isLowerCaseWithChar);
+      consumer.accept(isLowerCaseWithInt);
+      consumer.accept(isLowSurrogate);
+      consumer.accept(isMirroredWithChar);
+      consumer.accept(isMirroredWithInt);
+      consumer.accept(isSpace);
+      consumer.accept(isSpaceCharWithChar);
+      consumer.accept(isSpaceCharWithInt);
+      consumer.accept(isSupplementaryCodePoint);
+      consumer.accept(isSurrogate);
+      consumer.accept(isSurrogatePair);
+      consumer.accept(isTitleCaseWithChar);
+      consumer.accept(isTitleCaseWithInt);
+      consumer.accept(isUnicodeIdentifierPartWithChar);
+      consumer.accept(isUnicodeIdentifierPartWithInt);
+      consumer.accept(isUnicodeIdentifierStartWithChar);
+      consumer.accept(isUnicodeIdentifierStartWithInt);
+      consumer.accept(isUpperCaseWithChar);
+      consumer.accept(isUpperCaseWithInt);
+      consumer.accept(isValidCodePoint);
+      consumer.accept(isWhitespaceWithChar);
+      consumer.accept(isWhitespaceWithInt);
+      consumer.accept(lowSurrogate);
+      consumer.accept(reverseBytes);
+      consumer.accept(toCodePoint);
+      consumer.accept(toLowerCaseWithChar);
+      consumer.accept(toLowerCaseWithInt);
+      consumer.accept(toString);
+      consumer.accept(staticToString);
+      consumer.accept(toTitleCaseWithChar);
+      consumer.accept(toTitleCaseWithInt);
+      consumer.accept(toUpperCaseWithChar);
+      consumer.accept(toUpperCaseWithInt);
+      consumer.accept(valueOf);
+    }
 
     @Override
     public DexField getTypeField() {
@@ -1969,24 +2299,139 @@ public class DexItemFactory {
 
     public final DexField TYPE = createField(boxedLongType, classType, "TYPE");
 
+    public final DexMethod bitCount =
+        createMethod(boxedLongType, createProto(intType, longType), "bitCount");
+    public final DexMethod byteValue =
+        createMethod(boxedLongType, createProto(byteType), "byteValue");
     public final DexMethod compare =
         createMethod(boxedLongType, createProto(intType, longType, longType), "compare");
-    public final DexMethod longValue =
-        createMethod(boxedLongType, createProto(longType), "longValue");
-    public final DexMethod toString =
-        createMethod(boxedLongType, createProto(stringType), "toString");
-    public final DexMethod valueOf =
-        createMethod(boxedLongType, createProto(boxedLongType, longType), "valueOf");
-    public final DexMethod staticHashCode =
-        createMethod(boxedLongType, createProto(intType, longType), "hashCode");
+    public final DexMethod compareTo =
+        createMethod(boxedLongType, createProto(intType, boxedLongType), "compareTo");
+    public final DexMethod compareUnsigned =
+        createMethod(boxedLongType, createProto(intType, longType, longType), "compareUnsigned");
+    public final DexMethod decode =
+        createMethod(boxedLongType, createProto(boxedLongType, stringType), "decode");
     public final DexMethod divideUnsigned =
         createMethod(boxedLongType, createProto(longType, longType, longType), "divideUnsigned");
+    public final DexMethod doubleValue =
+        createMethod(boxedLongType, createProto(doubleType), "doubleValue");
+    public final DexMethod equals =
+        createMethod(boxedLongType, createProto(booleanType, objectType), "equals");
+    public final DexMethod floatValue =
+        createMethod(boxedLongType, createProto(floatType), "floatValue");
+    public final DexMethod getLong =
+        createMethod(boxedLongType, createProto(boxedLongType, stringType), "getLong");
+    public final DexMethod getLongWithLong =
+        createMethod(boxedLongType, createProto(boxedLongType, stringType, longType), "getLong");
+    public final DexMethod getLongWithBoxedLong =
+        createMethod(
+            boxedLongType, createProto(boxedLongType, stringType, boxedLongType), "getLong");
+    public final DexMethod hashCode = createMethod(boxedLongType, createProto(intType), "hashCode");
+    public final DexMethod staticHashCode =
+        createMethod(boxedLongType, createProto(intType, longType), "hashCode");
+    public final DexMethod highestOneBit =
+        createMethod(boxedLongType, createProto(longType, longType), "highestOneBit");
+    public final DexMethod intValue = createMethod(boxedLongType, createProto(intType), "intValue");
+    public final DexMethod longValue =
+        createMethod(boxedLongType, createProto(longType), "longValue");
+    public final DexMethod lowestOneBit =
+        createMethod(boxedLongType, createProto(longType, longType), "lowestOneBit");
+    public final DexMethod max =
+        createMethod(boxedLongType, createProto(longType, longType, longType), "max");
+    public final DexMethod min =
+        createMethod(boxedLongType, createProto(longType, longType, longType), "min");
+    public final DexMethod numberOfLeadingZeros =
+        createMethod(boxedLongType, createProto(intType, longType), "numberOfLeadingZeros");
+    public final DexMethod numberOfTrailingZeros =
+        createMethod(boxedLongType, createProto(intType, longType), "numberOfTrailingZeros");
+    public final DexMethod parseLong =
+        createMethod(boxedLongType, createProto(longType, stringType), "parseLong");
+    public final DexMethod parseLongWithRadix =
+        createMethod(boxedLongType, createProto(longType, stringType, intType), "parseLong");
+    public final DexMethod parseUnsignedLong =
+        createMethod(boxedLongType, createProto(longType, stringType), "parseUnsignedLong");
+    public final DexMethod parseUnsignedLongWithRadix =
+        createMethod(
+            boxedLongType, createProto(longType, stringType, intType), "parseUnsignedLong");
+    public final DexMethod remainderUnsigned =
+        createMethod(boxedLongType, createProto(longType, longType, longType), "remainderUnsigned");
+    public final DexMethod reverse =
+        createMethod(boxedLongType, createProto(longType, longType), "reverse");
+    public final DexMethod reverseBytes =
+        createMethod(boxedLongType, createProto(longType, longType), "reverseBytes");
+    public final DexMethod rotateLeft =
+        createMethod(boxedLongType, createProto(longType, longType, intType), "rotateLeft");
+    public final DexMethod rotateRight =
+        createMethod(boxedLongType, createProto(longType, longType, intType), "rotateRight");
+    public final DexMethod shortValue =
+        createMethod(boxedLongType, createProto(shortType), "shortValue");
+    public final DexMethod signum =
+        createMethod(boxedLongType, createProto(intType, longType), "signum");
+    public final DexMethod sum =
+        createMethod(boxedLongType, createProto(longType, longType, longType), "sum");
+    public final DexMethod toBinaryString =
+        createMethod(boxedLongType, createProto(stringType, longType), "toBinaryString");
+    public final DexMethod toHexString =
+        createMethod(boxedLongType, createProto(stringType, longType), "toHexString");
+    public final DexMethod toOctalString =
+        createMethod(boxedLongType, createProto(stringType, longType), "toOctalString");
+    public final DexMethod toString =
+        createMethod(boxedLongType, createProto(stringType), "toString");
+    public final DexMethod staticToString =
+        createMethod(boxedLongType, createProto(stringType, longType), "toString");
+    public final DexMethod toStringWithRadix =
+        createMethod(boxedLongType, createProto(stringType, longType, intType), "toString");
+    public final DexMethod toUnsignedString =
+        createMethod(boxedLongType, createProto(stringType, longType), "toUnsignedString");
+    public final DexMethod toUnsignedStringWithRadix =
+        createMethod(boxedLongType, createProto(stringType, longType, intType), "toUnsignedString");
+    public final DexMethod valueOf =
+        createMethod(boxedLongType, createProto(boxedLongType, longType), "valueOf");
+    public final DexMethod valueOfString =
+        createMethod(boxedLongType, createProto(boxedLongType, stringType), "valueOf");
+    public final DexMethod valueOfStringWithRadix =
+        createMethod(boxedLongType, createProto(boxedLongType, stringType, intType), "valueOf");
 
     private LongMembers() {}
 
     @Override
     public void forEachFinalField(Consumer<DexField> consumer) {
       consumer.accept(TYPE);
+    }
+
+    public void forEachUnconditionalFinalMethodWithoutSideEffects(Consumer<DexMethod> consumer) {
+      consumer.accept(bitCount);
+      consumer.accept(byteValue);
+      consumer.accept(compare);
+      consumer.accept(compareUnsigned);
+      consumer.accept(doubleValue);
+      consumer.accept(floatValue);
+      consumer.accept(hashCode);
+      consumer.accept(staticHashCode);
+      consumer.accept(highestOneBit);
+      consumer.accept(intValue);
+      consumer.accept(longValue);
+      consumer.accept(lowestOneBit);
+      consumer.accept(max);
+      consumer.accept(min);
+      consumer.accept(numberOfLeadingZeros);
+      consumer.accept(numberOfTrailingZeros);
+      consumer.accept(reverse);
+      consumer.accept(reverseBytes);
+      consumer.accept(rotateLeft);
+      consumer.accept(rotateRight);
+      consumer.accept(shortValue);
+      // consumer.accept(signum);
+      consumer.accept(sum);
+      consumer.accept(toBinaryString);
+      consumer.accept(toHexString);
+      consumer.accept(toOctalString);
+      consumer.accept(toString);
+      consumer.accept(staticToString);
+      consumer.accept(toStringWithRadix);
+      consumer.accept(toUnsignedString);
+      consumer.accept(toUnsignedStringWithRadix);
+      consumer.accept(valueOf);
     }
 
     @Override
@@ -1999,18 +2444,95 @@ public class DexItemFactory {
 
     public final DexField TYPE = createField(boxedDoubleType, classType, "TYPE");
 
+    public final DexMethod byteValue =
+        createMethod(boxedDoubleType, createProto(byteType), "byteValue");
+    public final DexMethod compare =
+        createMethod(boxedDoubleType, createProto(intType, doubleType, doubleType), "compare");
+    public final DexMethod compareTo =
+        createMethod(boxedDoubleType, createProto(intType, boxedDoubleType), "compareTo");
+    public final DexMethod doubleToLongBits =
+        createMethod(boxedDoubleType, createProto(longType, doubleType), "doubleToLongBits");
+    public final DexMethod doubleToRawLongBits =
+        createMethod(boxedDoubleType, createProto(longType, doubleType), "doubleToRawLongBits");
     public final DexMethod doubleValue =
         createMethod(boxedDoubleType, createProto(doubleType), "doubleValue");
-    public final DexMethod isNaN =
-        createMethod(boxedDoubleType, createProto(booleanType, doubleType), "isNaN");
-    public final DexMethod toString =
-        createMethod(boxedDoubleType, createProto(stringType), "toString");
-    public final DexMethod valueOf =
-        createMethod(boxedDoubleType, createProto(boxedDoubleType, doubleType), "valueOf");
+    public final DexMethod equals =
+        createMethod(boxedDoubleType, createProto(booleanType, objectType), "equals");
+    public final DexMethod floatValue =
+        createMethod(boxedDoubleType, createProto(floatType), "floatValue");
+    public final DexMethod hashCode =
+        createMethod(boxedDoubleType, createProto(intType), "hashCode");
     public final DexMethod staticHashCode =
         createMethod(boxedDoubleType, createProto(intType, doubleType), "hashCode");
+    public final DexMethod intValue =
+        createMethod(boxedDoubleType, createProto(intType), "intValue");
+    public final DexMethod isFinite =
+        createMethod(boxedDoubleType, createProto(booleanType, doubleType), "isFinite");
+    public final DexMethod isInfinite =
+        createMethod(boxedDoubleType, createProto(booleanType), "isInfinite");
+    public final DexMethod staticIsInfinite =
+        createMethod(boxedDoubleType, createProto(booleanType, doubleType), "isInfinite");
+    public final DexMethod isNaN = createMethod(boxedDoubleType, createProto(booleanType), "isNaN");
+    public final DexMethod staticIsNaN =
+        createMethod(boxedDoubleType, createProto(booleanType, doubleType), "isNaN");
+    public final DexMethod longBitsToDouble =
+        createMethod(boxedDoubleType, createProto(doubleType, longType), "longBitsToDouble");
+    public final DexMethod longValue =
+        createMethod(boxedDoubleType, createProto(longType), "longValue");
+    public final DexMethod max =
+        createMethod(boxedDoubleType, createProto(doubleType, doubleType, doubleType), "max");
+    public final DexMethod min =
+        createMethod(boxedDoubleType, createProto(doubleType, doubleType, doubleType), "min");
+    public final DexMethod parseDouble =
+        createMethod(boxedDoubleType, createProto(doubleType, stringType), "parseDouble");
+    public final DexMethod shortValue =
+        createMethod(boxedDoubleType, createProto(shortType), "shortValue");
+    public final DexMethod sum =
+        createMethod(boxedDoubleType, createProto(doubleType, doubleType, doubleType), "sum");
+    public final DexMethod toHexString =
+        createMethod(boxedDoubleType, createProto(stringType, doubleType), "toHexString");
+    public final DexMethod toString =
+        createMethod(boxedDoubleType, createProto(stringType), "toString");
+    public final DexMethod staticToString =
+        createMethod(boxedDoubleType, createProto(stringType, doubleType), "toString");
+    public final DexMethod valueOf =
+        createMethod(boxedDoubleType, createProto(boxedDoubleType, doubleType), "valueOf");
+    public final DexMethod valueOfString =
+        createMethod(boxedDoubleType, createProto(boxedDoubleType, stringType), "valueOf");
 
     private DoubleMembers() {}
+
+    @Override
+    public void forEachFinalField(Consumer<DexField> consumer) {
+      consumer.accept(TYPE);
+    }
+
+    public void forEachUnconditionalFinalMethodWithoutSideEffects(Consumer<DexMethod> consumer) {
+      consumer.accept(byteValue);
+      consumer.accept(compare);
+      consumer.accept(doubleToLongBits);
+      consumer.accept(doubleToRawLongBits);
+      consumer.accept(doubleValue);
+      consumer.accept(floatValue);
+      consumer.accept(hashCode);
+      consumer.accept(staticHashCode);
+      consumer.accept(intValue);
+      consumer.accept(isFinite);
+      consumer.accept(isInfinite);
+      consumer.accept(staticIsInfinite);
+      consumer.accept(isNaN);
+      // consumer.accept(staticIsNaN);
+      consumer.accept(longBitsToDouble);
+      consumer.accept(longValue);
+      consumer.accept(min);
+      consumer.accept(max);
+      consumer.accept(shortValue);
+      consumer.accept(sum);
+      consumer.accept(toHexString);
+      consumer.accept(toString);
+      consumer.accept(staticToString);
+      consumer.accept(valueOf);
+    }
 
     @Override
     public DexField getTypeField() {
@@ -2022,17 +2544,141 @@ public class DexItemFactory {
 
     public final DexField TYPE = createField(boxedIntType, classType, "TYPE");
 
-    public final DexMethod intValue = createMethod(boxedIntType, createProto(intType), "intValue");
-    public final DexMethod toString =
-        createMethod(boxedIntType, createProto(stringType), "toString");
-    public final DexMethod valueOf =
-        createMethod(boxedIntType, createProto(boxedIntType, intType), "valueOf");
+    public final DexMethod bitCount =
+        createMethod(boxedIntType, createProto(intType, intType), "bitCount");
+    public final DexMethod byteValue =
+        createMethod(boxedIntType, createProto(byteType), "byteValue");
+    public final DexMethod compare =
+        createMethod(boxedIntType, createProto(intType, intType, intType), "compare");
+    public final DexMethod compareTo =
+        createMethod(boxedIntType, createProto(intType, boxedIntType), "compareTo");
+    public final DexMethod compareUnsigned =
+        createMethod(boxedIntType, createProto(intType, intType, intType), "compareUnsigned");
+    public final DexMethod decode =
+        createMethod(boxedIntType, createProto(boxedIntType, stringType), "decode");
     public final DexMethod divideUnsigned =
         createMethod(boxedIntType, createProto(intType, intType, intType), "divideUnsigned");
+    public final DexMethod doubleValue =
+        createMethod(boxedIntType, createProto(doubleType), "doubleValue");
+    public final DexMethod equals =
+        createMethod(boxedIntType, createProto(booleanType, objectType), "equals");
+    public final DexMethod floatValue =
+        createMethod(boxedIntType, createProto(floatType), "floatValue");
+    public final DexMethod getInteger =
+        createMethod(boxedIntType, createProto(boxedIntType, stringType), "getInteger");
+    public final DexMethod getIntegerWithInt =
+        createMethod(boxedIntType, createProto(boxedIntType, stringType, intType), "getInteger");
+    public final DexMethod getIntegerWithInteger =
+        createMethod(
+            boxedIntType, createProto(boxedIntType, stringType, boxedIntType), "getInteger");
+    public final DexMethod hashCode = createMethod(boxedIntType, createProto(intType), "hashCode");
+    public final DexMethod staticHashCode =
+        createMethod(boxedIntType, createProto(intType, intType), "hashCode");
+    public final DexMethod highestOneBit =
+        createMethod(boxedIntType, createProto(intType, intType), "highestOneBit");
+    public final DexMethod intValue = createMethod(boxedIntType, createProto(intType), "intValue");
+    public final DexMethod longValue =
+        createMethod(boxedIntType, createProto(longType), "longValue");
+    public final DexMethod lowestOneBit =
+        createMethod(boxedIntType, createProto(intType, intType), "lowestOneBit");
+    public final DexMethod max =
+        createMethod(boxedIntType, createProto(intType, intType, intType), "max");
+    public final DexMethod min =
+        createMethod(boxedIntType, createProto(intType, intType, intType), "min");
+    public final DexMethod numberOfLeadingZeros =
+        createMethod(boxedIntType, createProto(intType, intType), "numberOfLeadingZeros");
+    public final DexMethod numberOfTrailingZeros =
+        createMethod(boxedIntType, createProto(intType, intType), "numberOfTrailingZeros");
+    public final DexMethod parseInt =
+        createMethod(boxedIntType, createProto(intType, stringType), "parseInt");
+    public final DexMethod parseIntWithRadix =
+        createMethod(boxedIntType, createProto(intType, stringType, intType), "parseInt");
+    public final DexMethod parseUnsignedInt =
+        createMethod(boxedIntType, createProto(intType, stringType), "parseUnsignedInt");
+    public final DexMethod parseUnsignedIntWithRadix =
+        createMethod(boxedIntType, createProto(intType, stringType, intType), "parseUnsignedInt");
+    public final DexMethod remainderUnsigned =
+        createMethod(boxedIntType, createProto(intType, intType, intType), "remainderUnsigned");
+    public final DexMethod reverse =
+        createMethod(boxedIntType, createProto(intType, intType), "reverse");
+    public final DexMethod reverseBytes =
+        createMethod(boxedIntType, createProto(intType, intType), "reverseBytes");
+    public final DexMethod rotateLeft =
+        createMethod(boxedIntType, createProto(intType, intType, intType), "rotateLeft");
+    public final DexMethod rotateRight =
+        createMethod(boxedIntType, createProto(intType, intType, intType), "rotateRight");
+    public final DexMethod shortValue =
+        createMethod(boxedIntType, createProto(shortType), "shortValue");
+    public final DexMethod signum =
+        createMethod(boxedIntType, createProto(intType, intType), "signum");
+    public final DexMethod sum =
+        createMethod(boxedIntType, createProto(intType, intType, intType), "sum");
+    public final DexMethod toBinaryString =
+        createMethod(boxedIntType, createProto(stringType, intType), "toBinaryString");
+    public final DexMethod toHexString =
+        createMethod(boxedIntType, createProto(stringType, intType), "toHexString");
+    public final DexMethod toOctalString =
+        createMethod(boxedIntType, createProto(stringType, intType), "toOctalString");
+    public final DexMethod toString =
+        createMethod(boxedIntType, createProto(stringType), "toString");
+    public final DexMethod staticToString =
+        createMethod(boxedIntType, createProto(stringType, intType), "toString");
+    public final DexMethod toStringWithRadix =
+        createMethod(boxedIntType, createProto(stringType, intType, intType), "toString");
+    public final DexMethod toUnsignedLong =
+        createMethod(boxedIntType, createProto(longType, intType), "toUnsignedLong");
+    public final DexMethod toUnsignedString =
+        createMethod(boxedIntType, createProto(stringType, intType), "toUnsignedString");
+    public final DexMethod toUnsignedStringWithRadix =
+        createMethod(boxedIntType, createProto(stringType, intType, intType), "toUnsignedString");
+    public final DexMethod valueOf =
+        createMethod(boxedIntType, createProto(boxedIntType, intType), "valueOf");
+    public final DexMethod valueOfString =
+        createMethod(boxedIntType, createProto(boxedIntType, stringType), "valueOf");
+    public final DexMethod valueOfStringWithRadix =
+        createMethod(boxedIntType, createProto(boxedIntType, stringType, intType), "valueOf");
+
+    private IntegerMembers() {}
 
     @Override
     public void forEachFinalField(Consumer<DexField> consumer) {
       consumer.accept(TYPE);
+    }
+
+    public void forEachUnconditionalFinalMethodWithoutSideEffects(Consumer<DexMethod> consumer) {
+      consumer.accept(bitCount);
+      consumer.accept(byteValue);
+      consumer.accept(compare);
+      consumer.accept(compareUnsigned);
+      consumer.accept(doubleValue);
+      consumer.accept(floatValue);
+      consumer.accept(hashCode);
+      consumer.accept(staticHashCode);
+      consumer.accept(highestOneBit);
+      consumer.accept(intValue);
+      consumer.accept(longValue);
+      consumer.accept(lowestOneBit);
+      consumer.accept(max);
+      consumer.accept(min);
+      consumer.accept(numberOfLeadingZeros);
+      consumer.accept(numberOfTrailingZeros);
+      consumer.accept(reverse);
+      consumer.accept(reverseBytes);
+      consumer.accept(rotateLeft);
+      consumer.accept(rotateRight);
+      consumer.accept(shortValue);
+      consumer.accept(signum);
+      consumer.accept(sum);
+      consumer.accept(toBinaryString);
+      consumer.accept(toHexString);
+      consumer.accept(toOctalString);
+      consumer.accept(toString);
+      consumer.accept(staticToString);
+      consumer.accept(toStringWithRadix);
+      consumer.accept(toUnsignedLong);
+      consumer.accept(toUnsignedString);
+      consumer.accept(toUnsignedStringWithRadix);
+      consumer.accept(valueOf);
     }
 
     @Override
@@ -2883,14 +3529,75 @@ public class DexItemFactory {
 
     public final DexField TYPE = createField(boxedShortType, classType, "TYPE");
 
+    public final DexMethod byteValue =
+        createMethod(boxedShortType, createProto(byteType), "byteValue");
+    public final DexMethod compare =
+        createMethod(boxedShortType, createProto(intType, shortType, shortType), "compare");
+    public final DexMethod compareTo =
+        createMethod(boxedShortType, createProto(intType, boxedShortType), "compareTo");
+    public final DexMethod decode =
+        createMethod(boxedShortType, createProto(boxedShortType, stringType), "decode");
+    public final DexMethod doubleValue =
+        createMethod(boxedShortType, createProto(doubleType), "doubleValue");
+    public final DexMethod equals =
+        createMethod(boxedShortType, createProto(booleanType, objectType), "equals");
+    public final DexMethod floatValue =
+        createMethod(boxedShortType, createProto(floatType), "floatValue");
+    public final DexMethod hashCode =
+        createMethod(boxedShortType, createProto(intType), "hashCode");
+    public final DexMethod staticHashCode =
+        createMethod(boxedShortType, createProto(intType, shortType), "hashCode");
+    public final DexMethod intValue =
+        createMethod(boxedShortType, createProto(intType), "intValue");
+    public final DexMethod longValue =
+        createMethod(boxedShortType, createProto(longType), "longValue");
+    public final DexMethod parseShort =
+        createMethod(boxedShortType, createProto(shortType, stringType), "parseShort");
+    public final DexMethod parseShortWithRadix =
+        createMethod(boxedShortType, createProto(shortType, stringType, intType), "parseShort");
+    public final DexMethod reverseBytes =
+        createMethod(boxedShortType, createProto(shortType, shortType), "reverseBytes");
     public final DexMethod shortValue =
         createMethod(boxedShortType, createProto(shortType), "shortValue");
     public final DexMethod toString =
         createMethod(boxedShortType, createProto(stringType), "toString");
+    public final DexMethod staticToString =
+        createMethod(boxedShortType, createProto(stringType, shortType), "toString");
+    public final DexMethod toUnsignedInt =
+        createMethod(boxedShortType, createProto(intType, shortType), "toUnsignedInt");
+    public final DexMethod toUnsignedLong =
+        createMethod(boxedShortType, createProto(longType, shortType), "toUnsignedLong");
     public final DexMethod valueOf =
         createMethod(boxedShortType, createProto(boxedShortType, shortType), "valueOf");
+    public final DexMethod valueOfString =
+        createMethod(boxedShortType, createProto(boxedShortType, stringType), "valueOf");
+    public final DexMethod valueOfStringWithRadix =
+        createMethod(boxedShortType, createProto(boxedShortType, stringType, intType), "valueOf");
 
     private ShortMembers() {}
+
+    @Override
+    public void forEachFinalField(Consumer<DexField> consumer) {
+      consumer.accept(TYPE);
+    }
+
+    public void forEachUnconditionalFinalMethodWithoutSideEffects(Consumer<DexMethod> consumer) {
+      consumer.accept(byteValue);
+      consumer.accept(compare);
+      consumer.accept(doubleValue);
+      consumer.accept(floatValue);
+      consumer.accept(hashCode);
+      consumer.accept(staticHashCode);
+      consumer.accept(intValue);
+      consumer.accept(longValue);
+      consumer.accept(reverseBytes);
+      consumer.accept(shortValue);
+      consumer.accept(toString);
+      consumer.accept(staticToString);
+      consumer.accept(toUnsignedInt);
+      consumer.accept(toUnsignedLong);
+      consumer.accept(valueOf);
+    }
 
     @Override
     public DexField getTypeField() {

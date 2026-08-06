@@ -98,6 +98,12 @@ public class SingleNumberValue extends SingleConstValue
     return value != 0;
   }
 
+  public byte getByteValue() {
+    assert Byte.MIN_VALUE <= value;
+    assert value <= Byte.MAX_VALUE;
+    return (byte) value;
+  }
+
   @Override
   public int getDefinitelySetIntBits() {
     return getIntValue();

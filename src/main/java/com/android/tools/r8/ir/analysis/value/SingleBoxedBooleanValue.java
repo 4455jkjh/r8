@@ -59,6 +59,10 @@ public class SingleBoxedBooleanValue extends SingleBoxedPrimitiveValue {
     return TypeElement.getInt();
   }
 
+  public boolean getBooleanValue() {
+    return value;
+  }
+
   public int getIntValue() {
     return BooleanUtils.intValue(value);
   }

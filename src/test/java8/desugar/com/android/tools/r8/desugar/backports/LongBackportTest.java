@@ -4,6 +4,8 @@
 
 package com.android.tools.r8.desugar.backports;
 
+import com.android.tools.r8.R8TestBuilder;
+import com.android.tools.r8.TestBuilder;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.utils.AndroidApiLevel;
 import java.math.BigInteger;
@@ -23,6 +25,15 @@ public final class LongBackportTest extends AbstractBackportTest {
     registerTarget(AndroidApiLevel.O, 47);
     registerTarget(AndroidApiLevel.N, 11);
     registerTarget(AndroidApiLevel.K, 7);
+  }
+
+  @Override
+  protected void configureProgram(TestBuilder<?, ?> builder) throws Exception {
+    super.configureProgram(builder);
+    if (builder.isR8TestBuilder()) {
+      R8TestBuilder<?, ?, ?> r8Builder = builder.asR8TestBuilder();
+      r8Builder.addKeepRules("-keepclassmembers class * { long disguise(long); }");
+    }
   }
 
   static final class Main extends MiniAssert {
@@ -51,6 +62,10 @@ public final class LongBackportTest extends AbstractBackportTest {
       testToUnsignedStringWithRadix();
     }
 
+    private static long disguise(long l) {
+      return l;
+    }
+
     private static void testHashCode() {
       for (long value : interestingValues) {
         assertEquals(expectedHashCode(value), Long.hashCode(value));
@@ -58,13 +73,13 @@ public final class LongBackportTest extends AbstractBackportTest {
     }
 
     private static void testCompare() {
-      assertTrue(Long.compare(1, 0) > 0);
-      assertTrue(Long.compare(0, 0) == 0);
-      assertTrue(Long.compare(0, 1) < 0);
-      assertTrue(Long.compare(Long.MIN_VALUE, Long.MAX_VALUE) < 0);
-      assertTrue(Long.compare(Long.MAX_VALUE, Long.MIN_VALUE) > 0);
-      assertTrue(Long.compare(Long.MIN_VALUE, Long.MIN_VALUE) == 0);
-      assertTrue(Long.compare(Long.MAX_VALUE, Long.MAX_VALUE) == 0);
+      assertTrue(Long.compare(disguise(1), disguise(0)) > 0);
+      assertTrue(Long.compare(disguise(0), disguise(0)) == 0);
+      assertTrue(Long.compare(disguise(0), disguise(1)) < 0);
+      assertTrue(Long.compare(disguise(Long.MIN_VALUE), disguise(Long.MAX_VALUE)) < 0);
+      assertTrue(Long.compare(disguise(Long.MAX_VALUE), disguise(Long.MIN_VALUE)) > 0);
+      assertTrue(Long.compare(disguise(Long.MIN_VALUE), disguise(Long.MIN_VALUE)) == 0);
+      assertTrue(Long.compare(disguise(Long.MAX_VALUE), disguise(Long.MAX_VALUE)) == 0);
     }
 
     private static void testMax() {
@@ -92,25 +107,27 @@ public final class LongBackportTest extends AbstractBackportTest {
     }
 
     private static void testCompareUnsigned() {
-      assertTrue(Long.compareUnsigned(0, 0) == 0);
-      assertTrue(Long.compareUnsigned(0, Long.MAX_VALUE) < 0);
-      assertTrue(Long.compareUnsigned(0, Long.MIN_VALUE) < 0);
-      assertTrue(Long.compareUnsigned(0, -1) < 0);
+      assertTrue(Long.compareUnsigned(disguise(0), disguise(0)) == 0);
+      assertTrue(Long.compareUnsigned(disguise(0), disguise(Long.MAX_VALUE)) < 0);
+      assertTrue(Long.compareUnsigned(disguise(0), disguise(Long.MIN_VALUE)) < 0);
+      assertTrue(Long.compareUnsigned(disguise(0), disguise(-1)) < 0);
 
-      assertTrue(Long.compareUnsigned(Long.MAX_VALUE, 0) > 0);
-      assertTrue(Long.compareUnsigned(Long.MAX_VALUE, Long.MAX_VALUE) == 0);
-      assertTrue(Long.compareUnsigned(Long.MAX_VALUE, Long.MIN_VALUE) < 0);
-      assertTrue(Long.compareUnsigned(Long.MAX_VALUE, -1) < 0);
+      assertTrue(Long.compareUnsigned(disguise(disguise(Long.MAX_VALUE)), disguise(0)) > 0);
+      assertTrue(
+          Long.compareUnsigned(disguise(disguise(Long.MAX_VALUE)), disguise(Long.MAX_VALUE)) == 0);
+      assertTrue(
+          Long.compareUnsigned(disguise(disguise(Long.MAX_VALUE)), disguise(Long.MIN_VALUE)) < 0);
+      assertTrue(Long.compareUnsigned(disguise(disguise(Long.MAX_VALUE)), disguise(-1)) < 0);
 
-      assertTrue(Long.compareUnsigned(Long.MIN_VALUE, 0) > 0);
-      assertTrue(Long.compareUnsigned(Long.MIN_VALUE, Long.MAX_VALUE) > 0);
-      assertTrue(Long.compareUnsigned(Long.MIN_VALUE, Long.MIN_VALUE) == 0);
-      assertTrue(Long.compareUnsigned(Long.MIN_VALUE, -1) < 0);
+      assertTrue(Long.compareUnsigned(disguise(Long.MIN_VALUE), disguise(0)) > 0);
+      assertTrue(Long.compareUnsigned(disguise(Long.MIN_VALUE), disguise(Long.MAX_VALUE)) > 0);
+      assertTrue(Long.compareUnsigned(disguise(Long.MIN_VALUE), disguise(Long.MIN_VALUE)) == 0);
+      assertTrue(Long.compareUnsigned(disguise(Long.MIN_VALUE), disguise(-1)) < 0);
 
-      assertTrue(Long.compareUnsigned(-1, 0) > 0);
-      assertTrue(Long.compareUnsigned(-1, Long.MAX_VALUE) > 0);
-      assertTrue(Long.compareUnsigned(-1, Long.MIN_VALUE) > 0);
-      assertTrue(Long.compareUnsigned(-1, -1) == 0);
+      assertTrue(Long.compareUnsigned(disguise(-1), disguise(0)) > 0);
+      assertTrue(Long.compareUnsigned(disguise(-1), disguise(Long.MAX_VALUE)) > 0);
+      assertTrue(Long.compareUnsigned(disguise(-1), disguise(Long.MIN_VALUE)) > 0);
+      assertTrue(Long.compareUnsigned(disguise(-1), disguise(-1)) == 0);
     }
 
     private static void testDivideUnsigned() {

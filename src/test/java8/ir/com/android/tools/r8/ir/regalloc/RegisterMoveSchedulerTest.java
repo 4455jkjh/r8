@@ -118,7 +118,27 @@ public class RegisterMoveSchedulerTest extends TestBase {
     }
 
     @Override
+    public void replaceCurrentInstructionWithConstDouble(IRCode code, double value) {
+      throw new Unimplemented();
+    }
+
+    @Override
+    public void replaceCurrentInstructionWithConstFloat(IRCode code, float value) {
+      throw new Unimplemented();
+    }
+
+    @Override
     public void replaceCurrentInstructionWithConstInt(IRCode code, int value) {
+      throw new Unimplemented();
+    }
+
+    @Override
+    public void replaceCurrentInstructionWithConstLong(IRCode code, long value) {
+      throw new Unimplemented();
+    }
+
+    @Override
+    public void replaceCurrentInstructionWithConstNull(IRCode code) {
       throw new Unimplemented();
     }
 

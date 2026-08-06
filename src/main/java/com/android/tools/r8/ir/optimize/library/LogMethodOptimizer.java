@@ -121,7 +121,7 @@ public class LogMethodOptimizer extends StatelessLibraryMethodModelCollection {
     int logLevel = getLogLevel(invoke, singleTarget);
     int maxRemovedAndroidLogLevel = getMaxRemovedAndroidLogLevel(code.context());
     if (VERBOSE <= logLevel && logLevel <= maxRemovedAndroidLogLevel) {
-      instructionIterator.replaceCurrentInstructionWithConstFalse(code);
+      instructionIterator.replaceCurrentInstructionWithConstBooleanFalse(code);
     }
     return instructionIterator;
   }

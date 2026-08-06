@@ -17,18 +17,23 @@ import com.android.tools.r8.ir.code.InstructionListIterator;
 import com.android.tools.r8.ir.code.InvokeMethod;
 import com.android.tools.r8.ir.code.Value;
 import com.android.tools.r8.ir.optimize.AffectedValues;
+import com.android.tools.r8.ir.optimize.library.MethodOptimizerCapabilities;
 import com.android.tools.r8.ir.optimize.library.StatelessLibraryMethodModelCollection;
+import com.android.tools.r8.utils.InternalOptions;
 import java.util.Set;
 import java.util.function.Consumer;
 
-public abstract class PrimitiveMethodOptimizer extends StatelessLibraryMethodModelCollection {
+public abstract class PrimitiveMethodOptimizer extends StatelessLibraryMethodModelCollection
+    implements MethodOptimizerCapabilities {
 
   final AppView<?> appView;
-  final DexItemFactory dexItemFactory;
+  final DexItemFactory factory;
+  final InternalOptions options;
 
   PrimitiveMethodOptimizer(AppView<?> appView) {
     this.appView = appView;
-    this.dexItemFactory = appView.dexItemFactory();
+    this.factory = appView.dexItemFactory();
+    this.options = appView.options();
   }
 
   public static void forEachPrimitiveOptimizer(
@@ -41,6 +46,11 @@ public abstract class PrimitiveMethodOptimizer extends StatelessLibraryMethodMod
     register.accept(new IntegerMethodOptimizer(appView));
     register.accept(new LongMethodOptimizer(appView));
     register.accept(new ShortMethodOptimizer(appView));
+  }
+
+  @Override
+  public AppView<?> getAppView() {
+    return appView;
   }
 
   abstract DexMethod getBoxMethod();

@@ -4,6 +4,8 @@
 
 package com.android.tools.r8.desugar.backports;
 
+import com.android.tools.r8.R8TestBuilder;
+import com.android.tools.r8.TestBuilder;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.utils.AndroidApiLevel;
 import org.junit.runner.RunWith;
@@ -20,6 +22,15 @@ public final class DoubleBackportTest extends AbstractBackportTest {
   public DoubleBackportTest(TestParameters parameters) {
     super(parameters, Double.class, Main.class);
     registerTarget(AndroidApiLevel.N, 10);
+  }
+
+  @Override
+  protected void configureProgram(TestBuilder<?, ?> builder) throws Exception {
+    super.configureProgram(builder);
+    if (builder.isR8TestBuilder()) {
+      R8TestBuilder<?, ?, ?> r8Builder = builder.asR8TestBuilder();
+      r8Builder.addKeepRules("-keepclassmembers class * { double disguise(double); }");
+    }
   }
 
   static final class Main extends MiniAssert {
@@ -43,6 +54,10 @@ public final class DoubleBackportTest extends AbstractBackportTest {
       testSum();
     }
 
+    private static double disguise(double d) {
+      return d;
+    }
+
     private static void testHashCode() {
       for (double value : interestingValues) {
         assertEquals(expectedHashCode(value), Double.hashCode(value));
@@ -50,12 +65,12 @@ public final class DoubleBackportTest extends AbstractBackportTest {
     }
 
     private static void isFinite() {
-      assertTrue(Double.isFinite(0d));
-      assertTrue(Double.isFinite(Double.MIN_VALUE));
-      assertTrue(Double.isFinite(Double.MAX_VALUE));
-      assertFalse(Double.isFinite(Double.NaN));
-      assertFalse(Double.isFinite(Double.POSITIVE_INFINITY));
-      assertFalse(Double.isFinite(Double.NEGATIVE_INFINITY));
+      assertTrue(Double.isFinite(disguise(0d)));
+      assertTrue(Double.isFinite(disguise(Double.MIN_VALUE)));
+      assertTrue(Double.isFinite(disguise(Double.MAX_VALUE)));
+      assertFalse(Double.isFinite(disguise(Double.NaN)));
+      assertFalse(Double.isFinite(disguise(Double.POSITIVE_INFINITY)));
+      assertFalse(Double.isFinite(disguise(Double.NEGATIVE_INFINITY)));
     }
 
     private static void testMax() {

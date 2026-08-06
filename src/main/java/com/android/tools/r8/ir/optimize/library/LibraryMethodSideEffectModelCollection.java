@@ -70,26 +70,8 @@ public class LibraryMethodSideEffectModelCollection {
       DexItemFactory dexItemFactory) {
     ImmutableSet.Builder<DexMethod> builder =
         ImmutableSet.<DexMethod>builder()
-            .add(dexItemFactory.booleanMembers.booleanValue)
-            .add(dexItemFactory.booleanMembers.toString)
-            .add(dexItemFactory.booleanMembers.valueOf)
-            .add(dexItemFactory.byteMembers.byteValue)
-            .add(dexItemFactory.byteMembers.toString)
-            .add(dexItemFactory.byteMembers.valueOf)
             .add(dexItemFactory.classMethods.desiredAssertionStatus)
-            .add(dexItemFactory.charMembers.charValue)
-            .add(dexItemFactory.charMembers.toString)
-            .add(dexItemFactory.charMembers.valueOf)
-            .add(dexItemFactory.doubleMembers.doubleValue)
-            .add(dexItemFactory.doubleMembers.toString)
-            .add(dexItemFactory.doubleMembers.valueOf)
             .add(dexItemFactory.enumMembers.constructor)
-            .add(dexItemFactory.integerMembers.intValue)
-            .add(dexItemFactory.integerMembers.toString)
-            .add(dexItemFactory.integerMembers.valueOf)
-            .add(dexItemFactory.longMembers.longValue)
-            .add(dexItemFactory.longMembers.toString)
-            .add(dexItemFactory.longMembers.valueOf)
             .add(dexItemFactory.mathMembers.minInt)
             .add(dexItemFactory.mathMembers.minLong)
             .add(dexItemFactory.mathMembers.minFloat)
@@ -105,9 +87,6 @@ public class LibraryMethodSideEffectModelCollection {
             .add(dexItemFactory.objectMembers.getClass)
             .add(dexItemFactory.objectsMethods.isNull)
             .add(dexItemFactory.objectsMethods.nonNull)
-            .add(dexItemFactory.shortMembers.shortValue)
-            .add(dexItemFactory.shortMembers.toString)
-            .add(dexItemFactory.shortMembers.valueOf)
             .add(dexItemFactory.stringBufferMethods.toString)
             .add(dexItemFactory.stringBuilderMethods.toString)
             .add(dexItemFactory.stringMembers.length)
@@ -119,7 +98,14 @@ public class LibraryMethodSideEffectModelCollection {
             .addAll(dexItemFactory.classMethods.getNames)
             // Required to unbox recent Kotlin enums (See b/268005228).
             .add(dexItemFactory.kotlinEnumEntriesListInit);
+    dexItemFactory.booleanMembers.forEachUnconditionalFinalMethodWithoutSideEffects(builder::add);
+    dexItemFactory.byteMembers.forEachUnconditionalFinalMethodWithoutSideEffects(builder::add);
+    dexItemFactory.charMembers.forEachUnconditionalFinalMethodWithoutSideEffects(builder::add);
+    dexItemFactory.doubleMembers.forEachUnconditionalFinalMethodWithoutSideEffects(builder::add);
     dexItemFactory.floatMembers.forEachUnconditionalFinalMethodWithoutSideEffects(builder::add);
+    dexItemFactory.integerMembers.forEachUnconditionalFinalMethodWithoutSideEffects(builder::add);
+    dexItemFactory.longMembers.forEachUnconditionalFinalMethodWithoutSideEffects(builder::add);
+    dexItemFactory.shortMembers.forEachUnconditionalFinalMethodWithoutSideEffects(builder::add);
     return builder.build();
   }
 

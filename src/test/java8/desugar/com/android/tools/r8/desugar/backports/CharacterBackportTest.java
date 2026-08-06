@@ -4,6 +4,8 @@
 
 package com.android.tools.r8.desugar.backports;
 
+import com.android.tools.r8.R8TestBuilder;
+import com.android.tools.r8.TestBuilder;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.desugar.backports.CharacterBackportTest.Main.MockCharacter;
 import com.android.tools.r8.utils.AndroidApiLevel;
@@ -33,10 +35,23 @@ public final class CharacterBackportTest extends AbstractBackportTest {
     registerTarget(AndroidApiLevel.K, 7);
   }
 
+  @Override
+  protected void configureProgram(TestBuilder<?, ?> builder) throws Exception {
+    super.configureProgram(builder);
+    if (builder.isR8TestBuilder()) {
+      R8TestBuilder<?, ?, ?> r8Builder = builder.asR8TestBuilder();
+      r8Builder.addKeepRules("-keepclassmembers class * { char disguise(char); }");
+    }
+  }
+
   static final class Main extends MiniAssert {
     public static void main(String[] args) {
       testHashCode();
       testCompare();
+    }
+
+    private static char disguise(char c) {
+      return c;
     }
 
     private static void testHashCode() {
@@ -46,13 +61,17 @@ public final class CharacterBackportTest extends AbstractBackportTest {
     }
 
     private static void testCompare() {
-      assertTrue(Character.compare('b', 'a') > 0);
-      assertTrue(Character.compare('a', 'a') == 0);
-      assertTrue(Character.compare('a', 'b') < 0);
-      assertTrue(Character.compare(Character.MIN_VALUE, Character.MAX_VALUE) < 0);
-      assertTrue(Character.compare(Character.MAX_VALUE, Character.MIN_VALUE) > 0);
-      assertTrue(Character.compare(Character.MIN_VALUE, Character.MIN_VALUE) == 0);
-      assertTrue(Character.compare(Character.MAX_VALUE, Character.MAX_VALUE) == 0);
+      assertTrue(Character.compare(disguise('b'), disguise('a')) > 0);
+      assertTrue(Character.compare(disguise('a'), disguise('a')) == 0);
+      assertTrue(Character.compare(disguise('a'), disguise('b')) < 0);
+      assertTrue(
+          Character.compare(disguise(Character.MIN_VALUE), disguise(Character.MAX_VALUE)) < 0);
+      assertTrue(
+          Character.compare(disguise(Character.MAX_VALUE), disguise(Character.MIN_VALUE)) > 0);
+      assertTrue(
+          Character.compare(disguise(Character.MIN_VALUE), disguise(Character.MIN_VALUE)) == 0);
+      assertTrue(
+          Character.compare(disguise(Character.MAX_VALUE), disguise(Character.MAX_VALUE)) == 0);
     }
 
     // Character.toString(int) added in JDK-11. Use MockCharacter and transformer to compile test

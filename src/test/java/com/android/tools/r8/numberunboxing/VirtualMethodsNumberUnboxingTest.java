@@ -97,10 +97,10 @@ public class VirtualMethodsNumberUnboxingTest extends TestBase {
       MAIN.forwardToPrint(42);
 
       // The number unboxer should find this method is *not* worth unboxing.
-      Integer decode1 = Integer.decode("51");
+      Integer decode1 = Integer.decode(System.currentTimeMillis() > 0 ? "51" : "52");
       Objects.requireNonNull(decode1);
       MAIN.directPrintNotUnbox(decode1);
-      Integer decode2 = Integer.decode("52");
+      Integer decode2 = Integer.decode(System.currentTimeMillis() > 0 ? "52" : "51");
       Objects.requireNonNull(decode2);
       MAIN.directPrintNotUnbox(decode2);
 

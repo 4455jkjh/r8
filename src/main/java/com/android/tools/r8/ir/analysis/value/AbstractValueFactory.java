@@ -39,7 +39,7 @@ public class AbstractValueFactory {
     return SingleBoxedBooleanValue.getTrueInstance();
   }
 
-  public SingleBoxedByteValue createBoxedByte(int value) {
+  public SingleBoxedByteValue createBoxedByte(byte value) {
     return new SingleBoxedByteValue(value);
   }
 

@@ -17,6 +17,7 @@ import com.android.tools.r8.graph.AppInfoWithClassHierarchy;
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.DebugLocalInfo;
 import com.android.tools.r8.graph.DexClass;
+import com.android.tools.r8.graph.DexItemFactory;
 import com.android.tools.r8.graph.DexString;
 import com.android.tools.r8.graph.DexType;
 import com.android.tools.r8.graph.ProgramMethod;
@@ -859,27 +860,13 @@ public class Value implements Comparable<Value>, InstructionOrValue {
     return definition.getOutConstantConstInstruction();
   }
 
+  // Boolean.
+
   public boolean isConstBoolean() {
     assert type.isInt();
     return !hasLocalInfo()
         && isDefinedByInstructionSatisfying(Instruction::isConstNumber)
-        && (getConstInstruction().asConstNumber().getRawValue() == 0
-            || getConstInstruction().asConstNumber().getRawValue() == 1);
-  }
-
-  public boolean isConstFloat() {
-    assert type.isFloat();
-    return !hasLocalInfo() && isDefinedByInstructionSatisfying(Instruction::isConstNumber);
-  }
-
-  public boolean isConstInt() {
-    assert type.isInt();
-    return !hasLocalInfo() && isDefinedByInstructionSatisfying(Instruction::isConstNumber);
-  }
-
-  public boolean isConstLong() {
-    assert type.isLong();
-    return !hasLocalInfo() && isDefinedByInstructionSatisfying(Instruction::isConstNumber);
+        && definition.asConstNumber().isBoolean();
   }
 
   public boolean getConstBoolean() {
@@ -887,9 +874,330 @@ public class Value implements Comparable<Value>, InstructionOrValue {
     return definition.asConstNumber().getBooleanValue();
   }
 
+  public Boolean getConstBooleanOrNull(AppView<?> appView, IRCode code) {
+    return getConstBooleanOrNull(appView, code.context());
+  }
+
+  public Boolean getConstBooleanOrNull(AppView<?> appView, ProgramMethod context) {
+    if (hasLocalInfo()) {
+      return null;
+    }
+    Value aliased = getAliasedValue();
+    if (aliased.isConstBoolean()) {
+      return aliased.getConstBoolean();
+    }
+    AbstractValue abstractValue = aliased.getAbstractValue(appView, context);
+    if (abstractValue.isSingleNumberValue()) {
+      return abstractValue.asSingleNumberValue().getBooleanValue();
+    }
+    return null;
+  }
+
+  public Boolean getConstBoxedBooleanOrNull(AppView<?> appView, IRCode code) {
+    return getConstBoxedBooleanOrNull(appView, code.context());
+  }
+
+  public Boolean getConstBoxedBooleanOrNull(AppView<?> appView, ProgramMethod context) {
+    Value aliased = getAliasedValue();
+    if (aliased.isDefinedByInstructionSatisfying(Instruction::isInvokeStatic)) {
+      InvokeStatic invoke = aliased.getDefinition().asInvokeStatic();
+      DexItemFactory factory = appView.dexItemFactory();
+      if (invoke.getInvokedMethod().isIdenticalTo(factory.booleanMembers.valueOf)) {
+        return invoke.getFirstArgument().getConstBooleanOrNull(appView, context);
+      }
+      if (invoke.getInvokedMethod().isIdenticalTo(factory.booleanMembers.valueOfString)) {
+        DexString str = invoke.getFirstArgument().getConstStringOrNull(appView, context);
+        if (str != null) {
+          return Boolean.parseBoolean(str.toString());
+        }
+      }
+    } else if (aliased.isDefinedByInstructionSatisfying(Instruction::isStaticGet)) {
+      StaticGet staticGet = aliased.getDefinition().asStaticGet();
+      DexItemFactory factory = appView.dexItemFactory();
+      if (staticGet.getField().isIdenticalTo(factory.booleanMembers.TRUE)) {
+        return Boolean.TRUE;
+      }
+      if (staticGet.getField().isIdenticalTo(factory.booleanMembers.FALSE)) {
+        return Boolean.FALSE;
+      }
+    }
+    AbstractValue abstractValue = aliased.getAbstractValue(appView, context);
+    if (abstractValue.isSingleBoxedBoolean()) {
+      return abstractValue.asSingleBoxedBoolean().getBooleanValue();
+    }
+    return null;
+  }
+
+  // Byte.
+
+  public boolean isConstByte() {
+    assert type.isInt();
+    return !hasLocalInfo()
+        && isDefinedByInstructionSatisfying(Instruction::isConstNumber)
+        && definition.asConstNumber().isByte();
+  }
+
+  public byte getConstByte() {
+    assert isConstByte();
+    return definition.asConstNumber().getByteValue();
+  }
+
+  public Byte getConstByteOrNull(AppView<?> appView, IRCode code) {
+    return getConstByteOrNull(appView, code.context());
+  }
+
+  public Byte getConstByteOrNull(AppView<?> appView, ProgramMethod context) {
+    if (hasLocalInfo()) {
+      return null;
+    }
+    Value aliased = getAliasedValue();
+    if (aliased.isConstByte()) {
+      return aliased.getConstByte();
+    }
+    AbstractValue abstractValue = aliased.getAbstractValue(appView, context);
+    if (abstractValue.isSingleNumberValue()) {
+      int val = abstractValue.asSingleNumberValue().getIntValue();
+      if (Byte.MIN_VALUE <= val && val <= Byte.MAX_VALUE) {
+        return (byte) val;
+      }
+    }
+    return null;
+  }
+
+  public Byte getConstBoxedByteOrNull(AppView<?> appView, IRCode code) {
+    return getConstBoxedByteOrNull(appView, code.context());
+  }
+
+  public Byte getConstBoxedByteOrNull(AppView<?> appView, ProgramMethod context) {
+    Value aliased = getAliasedValue();
+    if (aliased.isDefinedByInstructionSatisfying(Instruction::isInvokeStatic)) {
+      InvokeStatic invoke = aliased.getDefinition().asInvokeStatic();
+      DexItemFactory factory = appView.dexItemFactory();
+      if (invoke.getInvokedMethod().isIdenticalTo(factory.byteMembers.valueOf)) {
+        return invoke.getFirstArgument().getConstByteOrNull(appView, context);
+      }
+      if (invoke.getInvokedMethod().isIdenticalTo(factory.byteMembers.valueOfString)) {
+        DexString str = invoke.getFirstArgument().getConstStringOrNull(appView, context);
+        if (str != null) {
+          try {
+            return Byte.parseByte(str.toString());
+          } catch (NumberFormatException ignored) {
+            return null;
+          }
+        }
+      }
+      if (invoke.getInvokedMethod().isIdenticalTo(factory.byteMembers.valueOfStringWithRadix)) {
+        DexString str = invoke.getFirstArgument().getConstStringOrNull(appView, context);
+        Integer radix = invoke.getSecondArgument().getConstIntOrNull(appView, context);
+        if (str != null && radix != null) {
+          try {
+            return Byte.parseByte(str.toString(), radix);
+          } catch (NumberFormatException ignored) {
+            return null;
+          }
+        }
+      }
+      if (invoke.getInvokedMethod().isIdenticalTo(factory.byteMembers.decode)) {
+        DexString str = invoke.getFirstArgument().getConstStringOrNull(appView, context);
+        if (str != null) {
+          try {
+            return Byte.decode(str.toString());
+          } catch (NumberFormatException ignored) {
+            return null;
+          }
+        }
+      }
+    }
+    AbstractValue abstractValue = aliased.getAbstractValue(appView, context);
+    if (abstractValue.isSingleBoxedByte()) {
+      return abstractValue.asSingleBoxedByte().getByteValue();
+    }
+    return null;
+  }
+
+  // Char.
+
+  public boolean isConstChar() {
+    assert type.isInt();
+    return !hasLocalInfo()
+        && isDefinedByInstructionSatisfying(Instruction::isConstNumber)
+        && definition.asConstNumber().isChar();
+  }
+
+  public char getConstChar() {
+    assert isConstChar();
+    return definition.asConstNumber().getCharValue();
+  }
+
+  public Character getConstCharOrNull(AppView<?> appView, IRCode code) {
+    return getConstCharOrNull(appView, code.context());
+  }
+
+  public Character getConstCharOrNull(AppView<?> appView, ProgramMethod context) {
+    if (hasLocalInfo()) {
+      return null;
+    }
+    Value aliased = getAliasedValue();
+    if (aliased.isConstChar()) {
+      return aliased.getConstChar();
+    }
+    AbstractValue abstractValue = aliased.getAbstractValue(appView, context);
+    if (abstractValue.isSingleNumberValue()) {
+      int val = abstractValue.asSingleNumberValue().getIntValue();
+      if (Character.MIN_VALUE <= val && val <= Character.MAX_VALUE) {
+        return (char) val;
+      }
+    }
+    return null;
+  }
+
+  public Character getConstBoxedCharOrNull(AppView<?> appView, IRCode code) {
+    return getConstBoxedCharOrNull(appView, code.context());
+  }
+
+  public Character getConstBoxedCharOrNull(AppView<?> appView, ProgramMethod context) {
+    Value aliased = getAliasedValue();
+    if (aliased.isDefinedByInstructionSatisfying(Instruction::isInvokeStatic)) {
+      InvokeStatic invoke = aliased.getDefinition().asInvokeStatic();
+      DexItemFactory factory = appView.dexItemFactory();
+      if (invoke.getInvokedMethod().isIdenticalTo(factory.charMembers.valueOf)) {
+        return invoke.getFirstArgument().getConstCharOrNull(appView, context);
+      }
+    }
+    AbstractValue abstractValue = aliased.getAbstractValue(appView, context);
+    if (abstractValue.isSingleBoxedChar()) {
+      return (char) abstractValue.asSingleBoxedChar().getRawValue();
+    }
+    return null;
+  }
+
+  // Double.
+
+  public boolean isConstDouble() {
+    assert type.isDouble();
+    return !hasLocalInfo() && isDefinedByInstructionSatisfying(Instruction::isConstNumber);
+  }
+
+  public double getConstDouble() {
+    assert isConstDouble();
+    return definition.asConstNumber().getDoubleValue();
+  }
+
+  public Double getConstDoubleOrNull(AppView<?> appView, IRCode code) {
+    return getConstDoubleOrNull(appView, code.context());
+  }
+
+  public Double getConstDoubleOrNull(AppView<?> appView, ProgramMethod context) {
+    if (hasLocalInfo()) {
+      return null;
+    }
+    Value aliased = getAliasedValue();
+    if (aliased.isConstDouble()) {
+      return aliased.getConstDouble();
+    }
+    AbstractValue abstractValue = aliased.getAbstractValue(appView, context);
+    if (abstractValue.isSingleNumberValue()) {
+      return abstractValue.asSingleNumberValue().getDoubleValue();
+    }
+    return null;
+  }
+
+  public Double getConstBoxedDoubleOrNull(AppView<?> appView, IRCode code) {
+    return getConstBoxedDoubleOrNull(appView, code.context());
+  }
+
+  public Double getConstBoxedDoubleOrNull(AppView<?> appView, ProgramMethod context) {
+    Value aliased = getAliasedValue();
+    if (aliased.isDefinedByInstructionSatisfying(Instruction::isInvokeStatic)) {
+      InvokeStatic invoke = aliased.getDefinition().asInvokeStatic();
+      DexItemFactory factory = appView.dexItemFactory();
+      if (invoke.getInvokedMethod().isIdenticalTo(factory.doubleMembers.valueOf)) {
+        return invoke.getFirstArgument().getConstDoubleOrNull(appView, context);
+      }
+      if (invoke.getInvokedMethod().isIdenticalTo(factory.doubleMembers.valueOfString)) {
+        DexString str = invoke.getFirstArgument().getConstStringOrNull(appView, context);
+        if (str != null) {
+          try {
+            return Double.parseDouble(str.toString());
+          } catch (NumberFormatException ignored) {
+            return null;
+          }
+        }
+      }
+    }
+    AbstractValue abstractValue = aliased.getAbstractValue(appView, context);
+    if (abstractValue.isSingleBoxedDouble()) {
+      return Double.longBitsToDouble(abstractValue.asSingleBoxedDouble().getRawValue());
+    }
+    return null;
+  }
+
+  // Float.
+
+  public boolean isConstFloat() {
+    assert type.isFloat();
+    return !hasLocalInfo() && isDefinedByInstructionSatisfying(Instruction::isConstNumber);
+  }
+
   public float getConstFloat() {
     assert isConstFloat();
     return definition.asConstNumber().getFloatValue();
+  }
+
+  public Float getConstFloatOrNull(AppView<?> appView, IRCode code) {
+    return getConstFloatOrNull(appView, code.context());
+  }
+
+  public Float getConstFloatOrNull(AppView<?> appView, ProgramMethod context) {
+    if (hasLocalInfo()) {
+      return null;
+    }
+    Value aliased = getAliasedValue();
+    if (aliased.isConstFloat()) {
+      return aliased.getConstFloat();
+    }
+    AbstractValue abstractValue = aliased.getAbstractValue(appView, context);
+    if (abstractValue.isSingleNumberValue()) {
+      return abstractValue.asSingleNumberValue().getFloatValue();
+    }
+    return null;
+  }
+
+  public Float getConstBoxedFloatOrNull(AppView<?> appView, IRCode code) {
+    return getConstBoxedFloatOrNull(appView, code.context());
+  }
+
+  public Float getConstBoxedFloatOrNull(AppView<?> appView, ProgramMethod context) {
+    Value aliased = getAliasedValue();
+    if (aliased.isDefinedByInstructionSatisfying(Instruction::isInvokeStatic)) {
+      InvokeStatic invoke = aliased.getDefinition().asInvokeStatic();
+      DexItemFactory factory = appView.dexItemFactory();
+      if (invoke.getInvokedMethod().isIdenticalTo(factory.floatMembers.valueOf)) {
+        return invoke.getFirstArgument().getConstFloatOrNull(appView, context);
+      }
+      if (invoke.getInvokedMethod().isIdenticalTo(factory.floatMembers.valueOfString)) {
+        DexString str = invoke.getFirstArgument().getConstStringOrNull(appView, context);
+        if (str != null) {
+          try {
+            return Float.parseFloat(str.toString());
+          } catch (NumberFormatException ignored) {
+            return null;
+          }
+        }
+      }
+    }
+    AbstractValue abstractValue = aliased.getAbstractValue(appView, context);
+    if (abstractValue.isSingleBoxedFloat()) {
+      return abstractValue.asSingleBoxedFloat().getFloatValue();
+    }
+    return null;
+  }
+
+  // Int.
+
+  public boolean isConstInt() {
+    assert type.isInt();
+    return !hasLocalInfo() && isDefinedByInstructionSatisfying(Instruction::isConstNumber);
   }
 
   public int getConstInt() {
@@ -897,9 +1205,254 @@ public class Value implements Comparable<Value>, InstructionOrValue {
     return definition.asConstNumber().getIntValue();
   }
 
+  public Integer getConstIntOrNull(AppView<?> appView, IRCode code) {
+    return getConstIntOrNull(appView, code.context());
+  }
+
+  public Integer getConstIntOrNull(AppView<?> appView, ProgramMethod context) {
+    if (hasLocalInfo()) {
+      return null;
+    }
+    Value aliased = getAliasedValue();
+    if (aliased.isConstInt()) {
+      return aliased.getConstInt();
+    }
+    AbstractValue abstractValue = aliased.getAbstractValue(appView, context);
+    if (abstractValue.isSingleNumberValue()) {
+      return abstractValue.asSingleNumberValue().getIntValue();
+    }
+    return null;
+  }
+
+  public Integer getConstBoxedIntOrNull(AppView<?> appView, IRCode code) {
+    return getConstBoxedIntOrNull(appView, code.context());
+  }
+
+  public Integer getConstBoxedIntOrNull(AppView<?> appView, ProgramMethod context) {
+    Value aliased = getAliasedValue();
+    if (aliased.isDefinedByInstructionSatisfying(Instruction::isInvokeStatic)) {
+      InvokeStatic invoke = aliased.getDefinition().asInvokeStatic();
+      DexItemFactory factory = appView.dexItemFactory();
+      if (invoke.getInvokedMethod().isIdenticalTo(factory.integerMembers.valueOf)) {
+        return invoke.getFirstArgument().getConstIntOrNull(appView, context);
+      }
+      if (invoke.getInvokedMethod().isIdenticalTo(factory.integerMembers.valueOfString)) {
+        DexString str = invoke.getFirstArgument().getConstStringOrNull(appView, context);
+        if (str != null) {
+          try {
+            return Integer.parseInt(str.toString());
+          } catch (NumberFormatException ignored) {
+            return null;
+          }
+        }
+      }
+      if (invoke.getInvokedMethod().isIdenticalTo(factory.integerMembers.valueOfStringWithRadix)) {
+        DexString str = invoke.getFirstArgument().getConstStringOrNull(appView, context);
+        Integer radix = invoke.getSecondArgument().getConstIntOrNull(appView, context);
+        if (str != null && radix != null) {
+          try {
+            return Integer.parseInt(str.toString(), radix);
+          } catch (NumberFormatException ignored) {
+            return null;
+          }
+        }
+      }
+      if (invoke.getInvokedMethod().isIdenticalTo(factory.integerMembers.decode)) {
+        DexString str = invoke.getFirstArgument().getConstStringOrNull(appView, context);
+        if (str != null) {
+          try {
+            return Integer.decode(str.toString());
+          } catch (NumberFormatException ignored) {
+            return null;
+          }
+        }
+      }
+    }
+    AbstractValue abstractValue = aliased.getAbstractValue(appView, context);
+    if (abstractValue.isSingleBoxedInteger()) {
+      return (int) abstractValue.asSingleBoxedInteger().getRawValue();
+    }
+    return null;
+  }
+
+  // Long.
+
+  public boolean isConstLong() {
+    assert type.isLong();
+    return !hasLocalInfo() && isDefinedByInstructionSatisfying(Instruction::isConstNumber);
+  }
+
   public long getConstLong() {
     assert isConstLong();
     return definition.asConstNumber().getLongValue();
+  }
+
+  public Long getConstLongOrNull(AppView<?> appView, IRCode code) {
+    return getConstLongOrNull(appView, code.context());
+  }
+
+  public Long getConstLongOrNull(AppView<?> appView, ProgramMethod context) {
+    if (hasLocalInfo()) {
+      return null;
+    }
+    Value aliased = getAliasedValue();
+    if (aliased.isConstLong()) {
+      return aliased.getConstLong();
+    }
+    AbstractValue abstractValue = aliased.getAbstractValue(appView, context);
+    if (abstractValue.isSingleNumberValue()) {
+      return abstractValue.asSingleNumberValue().getValue();
+    }
+    return null;
+  }
+
+  public Long getConstBoxedLongOrNull(AppView<?> appView, IRCode code) {
+    return getConstBoxedLongOrNull(appView, code.context());
+  }
+
+  public Long getConstBoxedLongOrNull(AppView<?> appView, ProgramMethod context) {
+    Value aliased = getAliasedValue();
+    if (aliased.isDefinedByInstructionSatisfying(Instruction::isInvokeStatic)) {
+      InvokeStatic invoke = aliased.getDefinition().asInvokeStatic();
+      DexItemFactory factory = appView.dexItemFactory();
+      if (invoke.getInvokedMethod().isIdenticalTo(factory.longMembers.valueOf)) {
+        return invoke.getFirstArgument().getConstLongOrNull(appView, context);
+      }
+      if (invoke.getInvokedMethod().isIdenticalTo(factory.longMembers.valueOfString)) {
+        DexString str = invoke.getFirstArgument().getConstStringOrNull(appView, context);
+        if (str != null) {
+          try {
+            return Long.parseLong(str.toString());
+          } catch (NumberFormatException ignored) {
+            return null;
+          }
+        }
+      }
+      if (invoke.getInvokedMethod().isIdenticalTo(factory.longMembers.valueOfStringWithRadix)) {
+        DexString str = invoke.getFirstArgument().getConstStringOrNull(appView, context);
+        Integer radix = invoke.getSecondArgument().getConstIntOrNull(appView, context);
+        if (str != null && radix != null) {
+          try {
+            return Long.parseLong(str.toString(), radix);
+          } catch (NumberFormatException ignored) {
+            return null;
+          }
+        }
+      }
+      if (invoke.getInvokedMethod().isIdenticalTo(factory.longMembers.decode)) {
+        DexString str = invoke.getFirstArgument().getConstStringOrNull(appView, context);
+        if (str != null) {
+          try {
+            return Long.decode(str.toString());
+          } catch (NumberFormatException ignored) {
+            return null;
+          }
+        }
+      }
+    }
+    AbstractValue abstractValue = aliased.getAbstractValue(appView, context);
+    if (abstractValue.isSingleBoxedLong()) {
+      return abstractValue.asSingleBoxedLong().getRawValue();
+    }
+    return null;
+  }
+
+  // Short.
+
+  public boolean isConstShort() {
+    assert type.isInt();
+    return !hasLocalInfo()
+        && isDefinedByInstructionSatisfying(Instruction::isConstNumber)
+        && definition.asConstNumber().isShort();
+  }
+
+  public short getConstShort() {
+    assert isConstShort();
+    return definition.asConstNumber().getShortValue();
+  }
+
+  public Short getConstShortOrNull(AppView<?> appView, IRCode code) {
+    return getConstShortOrNull(appView, code.context());
+  }
+
+  public Short getConstShortOrNull(AppView<?> appView, ProgramMethod context) {
+    if (hasLocalInfo()) {
+      return null;
+    }
+    Value aliased = getAliasedValue();
+    if (aliased.isConstShort()) {
+      return aliased.getConstShort();
+    }
+    AbstractValue abstractValue = aliased.getAbstractValue(appView, context);
+    if (abstractValue.isSingleNumberValue()) {
+      int val = abstractValue.asSingleNumberValue().getIntValue();
+      if (Short.MIN_VALUE <= val && val <= Short.MAX_VALUE) {
+        return (short) val;
+      }
+    }
+    return null;
+  }
+
+  public Short getConstBoxedShortOrNull(AppView<?> appView, IRCode code) {
+    return getConstBoxedShortOrNull(appView, code.context());
+  }
+
+  public Short getConstBoxedShortOrNull(AppView<?> appView, ProgramMethod context) {
+    Value aliased = getAliasedValue();
+    if (aliased.isDefinedByInstructionSatisfying(Instruction::isInvokeStatic)) {
+      InvokeStatic invoke = aliased.getDefinition().asInvokeStatic();
+      DexItemFactory factory = appView.dexItemFactory();
+      if (invoke.getInvokedMethod().isIdenticalTo(factory.shortMembers.valueOf)) {
+        return invoke.getFirstArgument().getConstShortOrNull(appView, context);
+      }
+      if (invoke.getInvokedMethod().isIdenticalTo(factory.shortMembers.valueOfString)) {
+        DexString str = invoke.getFirstArgument().getConstStringOrNull(appView, context);
+        if (str != null) {
+          try {
+            return Short.parseShort(str.toString());
+          } catch (NumberFormatException ignored) {
+            return null;
+          }
+        }
+      }
+      if (invoke.getInvokedMethod().isIdenticalTo(factory.shortMembers.valueOfStringWithRadix)) {
+        DexString str = invoke.getFirstArgument().getConstStringOrNull(appView, context);
+        Integer radix = invoke.getSecondArgument().getConstIntOrNull(appView, context);
+        if (str != null && radix != null) {
+          try {
+            return Short.parseShort(str.toString(), radix);
+          } catch (NumberFormatException ignored) {
+            return null;
+          }
+        }
+      }
+      if (invoke.getInvokedMethod().isIdenticalTo(factory.shortMembers.decode)) {
+        DexString str = invoke.getFirstArgument().getConstStringOrNull(appView, context);
+        if (str != null) {
+          try {
+            return Short.decode(str.toString());
+          } catch (NumberFormatException ignored) {
+            return null;
+          }
+        }
+      }
+    }
+    AbstractValue abstractValue = aliased.getAbstractValue(appView, context);
+    if (abstractValue.isSingleBoxedShort()) {
+      return (short) abstractValue.asSingleBoxedShort().getRawValue();
+    }
+    return null;
+  }
+
+  // String.
+
+  public boolean isConstString() {
+    return isConstant() && getConstInstruction().isConstString();
+  }
+
+  public boolean isConstString(DexString string) {
+    return isConstString()
+        && getConstInstruction().asConstString().getValue().isIdenticalTo(string);
   }
 
   public DexString getConstString() {
@@ -911,6 +1464,25 @@ public class Value implements Comparable<Value>, InstructionOrValue {
     return hasLocalInfo() || !isDefinedByInstructionSatisfying(Instruction::isConstString)
         ? null
         : definition.asConstString().getValue();
+  }
+
+  public DexString getConstStringOrNull(AppView<?> appView, IRCode code) {
+    return getConstStringOrNull(appView, code.context());
+  }
+
+  public DexString getConstStringOrNull(AppView<?> appView, ProgramMethod context) {
+    if (hasLocalInfo()) {
+      return null;
+    }
+    Value aliased = getAliasedValue();
+    if (aliased.isConstString()) {
+      return aliased.getConstString();
+    }
+    AbstractValue abstractValue = aliased.getAbstractValue(appView, context);
+    if (abstractValue.isSingleStringValue()) {
+      return abstractValue.asSingleStringValue().getDexString();
+    }
+    return null;
   }
 
   public boolean isConstNumber() {
@@ -927,15 +1499,6 @@ public class Value implements Comparable<Value>, InstructionOrValue {
 
   public boolean isConstZero() {
     return isConstNumber() && definition.asConstNumber().isZero();
-  }
-
-  public boolean isConstString() {
-    return isConstant() && getConstInstruction().isConstString();
-  }
-
-  public boolean isConstString(DexString string) {
-    return isConstString()
-        && getConstInstruction().asConstString().getValue().isIdenticalTo(string);
   }
 
   public boolean isDexItemBasedConstString() {
