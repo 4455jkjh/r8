@@ -4,8 +4,6 @@
 package com.android.tools.r8.kotlin.metadata;
 
 import static com.android.tools.r8.KotlinCompilerTool.KotlinCompilerVersion.MIN_SUPPORTED_VERSION;
-import static org.hamcrest.CoreMatchers.containsString;
-import static org.hamcrest.MatcherAssert.assertThat;
 
 import com.android.tools.r8.KotlinCompileMemoizer;
 import com.android.tools.r8.KotlinTestParameters;
@@ -18,6 +16,7 @@ import java.util.Collection;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameters;
 
 @RunWith(Parameterized.class)
 public class MetadataRewriteInNamedArgumentsTest extends KotlinMetadataTestBase {
@@ -28,7 +27,7 @@ public class MetadataRewriteInNamedArgumentsTest extends KotlinMetadataTestBase 
 
   private final TestParameters parameters;
 
-  @Parameterized.Parameters(name = "{0}, {1}")
+  @Parameters(name = "{0}, {1}")
   public static Collection<Object[]> data() {
     return buildParameters(
         getTestParameters().withCfRuntimes().build(),
@@ -92,19 +91,7 @@ public class MetadataRewriteInNamedArgumentsTest extends KotlinMetadataTestBase 
             .addClasspathFiles(libJar)
             .addSourceFiles(getKotlinSourceFileFromResources(APP_LOCATION, "main"))
             .setOutputPath(temp.newFolder().toPath())
-            // TODO(b/426163872): -dontshrink should not remove metadata.
-            .compile(
-                dontShrink,
-                result -> {
-                  if (dontShrink) {
-                    assertThat(
-                        result.stderr,
-                        containsString("named arguments are prohibited for non-Kotlin functions"));
-                  }
-                });
-    if (dontShrink) {
-      return;
-    }
+            .compile();
 
     testForJvm(parameters)
         .addRunClasspathFiles(kotlinc.getKotlinStdlibJar(), libJar)

@@ -59,6 +59,7 @@ import com.android.tools.r8.shaking.AnnotationMatchResult.ConcreteAnnotationMatc
 import com.android.tools.r8.shaking.AnnotationMatchResult.MatchedAnnotation;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
 import com.android.tools.r8.shaking.CheckEnumUnboxedRule;
+import com.android.tools.r8.shaking.CheckKotlinMetadataDiscardedRule;
 import com.android.tools.r8.shaking.ClassInlineRule;
 import com.android.tools.r8.shaking.ConvertCheckNotNullRule;
 import com.android.tools.r8.shaking.DependentMinimumKeepInfoCollection;
@@ -451,6 +452,8 @@ public class RootSetBuilder {
       evaluateCheckDiscardRule(clazz, rule.asProguardCheckDiscardRule());
     } else if (rule instanceof CheckEnumUnboxedRule) {
       evaluateCheckEnumUnboxedRule(clazz, (CheckEnumUnboxedRule) rule);
+    } else if (rule instanceof CheckKotlinMetadataDiscardedRule) {
+      evaluateCheckKotlinMetadataDiscardedRule(clazz, (CheckKotlinMetadataDiscardedRule) rule);
     } else if (rule instanceof NoAccessModificationRule || rule instanceof WhyAreYouKeepingRule) {
       markClass(clazz, rule, ifRulePreconditionMatch);
       markMatchingVisibleMethods(
@@ -1871,6 +1874,23 @@ public class RootSetBuilder {
     }
   }
 
+  private void evaluateCheckKotlinMetadataDiscardedRule(
+      DexClass clazz, CheckKotlinMetadataDiscardedRule rule) {
+    if (clazz.isProgramClass()) {
+      dependentMinimumKeepInfo
+          .getOrCreateUnconditionalMinimumKeepInfo()
+          .getOrCreateMinimumKeepInfoFor(clazz.getType())
+          .asClassJoiner()
+          .setCheckKotlinMetadataDiscarded();
+      rule.markAsUsed();
+    } else {
+      StringDiagnostic warning =
+          new StringDiagnostic(
+              "The rule `" + rule + "` matches the non-program class " + clazz.getTypeName() + ".");
+      appView.reporter().warning(warning);
+    }
+  }
+
   private void evaluateKeepRule(
       ProgramDefinition item,
       ProguardKeepRule context,
@@ -1982,7 +2002,7 @@ public class RootSetBuilder {
     }
 
     // In compatibility mode the keep-info predicates will disable removal for keep attributes.
-    if (options.isFullMode() && options.isShrinking() && !modifiers.allowsAnnotationRemoval) {
+    if (options.isFullMode() && !modifiers.allowsAnnotationRemoval) {
       if (!annotationRetention.isNone()) {
         itemJoiner.computeIfAbsent().disallowAnnotationRemoval(annotationRetention);
       }
@@ -2031,9 +2051,18 @@ public class RootSetBuilder {
       markAsUsed.execute();
     }
 
-    if ((options.isShrinking() || isMainDexRootSetBuilder()) && !modifiers.allowsShrinking) {
-      itemJoiner.computeIfAbsent().disallowShrinking();
-      markAsUsed.execute();
+    // Always track the shrinking bit for the kotlin.Metadata class so that we can tell if it has
+    // been explicitly kept or not.
+    if (options.isShrinking()
+        || isMainDexRootSetBuilder()
+        || (item.isProgramClass()
+            && item.asProgramClass()
+                .getType()
+                .isIdenticalTo(appView.dexItemFactory().kotlinMetadataType))) {
+      if (!modifiers.allowsShrinking) {
+        itemJoiner.computeIfAbsent().disallowShrinking();
+        markAsUsed.execute();
+      }
     }
 
     if (modifiers.includeDescriptorClasses) {

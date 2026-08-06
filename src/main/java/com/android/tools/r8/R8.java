@@ -15,6 +15,7 @@ import com.android.tools.r8.dex.ApplicationWriter;
 import com.android.tools.r8.dex.Marker;
 import com.android.tools.r8.diagnostic.R8VersionDiagnostic;
 import com.android.tools.r8.errors.CheckDiscardDiagnostic;
+import com.android.tools.r8.errors.KotlinMetadataDiscardedDiagnostic;
 import com.android.tools.r8.experimental.graphinfo.GraphConsumer;
 import com.android.tools.r8.graph.AppInfoWithClassHierarchy;
 import com.android.tools.r8.graph.AppServices;
@@ -97,6 +98,7 @@ import com.android.tools.r8.shaking.Enqueuer.Mode;
 import com.android.tools.r8.shaking.EnqueuerFactory;
 import com.android.tools.r8.shaking.EnqueuerResult;
 import com.android.tools.r8.shaking.KeepSpecificationSource;
+import com.android.tools.r8.shaking.KotlinMetadataDiscardedChecker;
 import com.android.tools.r8.shaking.MainDexInfo;
 import com.android.tools.r8.shaking.MainDexListBuilder;
 import com.android.tools.r8.shaking.ProguardConfigurationRule;
@@ -724,6 +726,9 @@ public class R8 {
         ResourceWriter.writeResources(appView);
       }
 
+      // -checkkotlinmetadatadiscarded is also relevant with -dontshrink.
+      processCheckKotlinMetadataDiscarded(appView, executorService);
+
       timing.begin("Run postlude");
       performFinalMainDexTracing(appView, executorService);
 
@@ -1244,6 +1249,24 @@ public class R8 {
             .addFailedItems(failed, enqueuer.getGraphReporter(), whyAreYouKeepingConsumer)
             .build());
     options.reporter.failIfPendingErrors();
+  }
+
+  private static void processCheckKotlinMetadataDiscarded(
+      AppView<? extends AppInfoWithClassHierarchy> appView, ExecutorService executorService)
+      throws ExecutionException {
+    List<DexProgramClass> failedKotlinMetadataDiscarded =
+        KotlinMetadataDiscardedChecker.create(appView).run(executorService);
+    if (failedKotlinMetadataDiscarded.isEmpty()) {
+      return;
+    }
+
+    appView
+        .reporter()
+        .error(
+            KotlinMetadataDiscardedDiagnostic.builder()
+                .addFailedClasses(failedKotlinMetadataDiscarded)
+                .build());
+    appView.reporter().failIfPendingErrors();
   }
 
   private static boolean verifyNoJarApplicationReaders(Collection<DexProgramClass> classes) {

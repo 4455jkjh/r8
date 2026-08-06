@@ -1083,6 +1083,12 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
         || proguardConfiguration.getKeepAttributes().permittedSubclasses;
   }
 
+  @Override
+  public boolean isCheckKotlinMetadataDiscardedEnabled() {
+    return proguardConfiguration != null
+        && proguardConfiguration.isCheckKotlinMetadataDiscardedEnabled();
+  }
+
   /**
    * If any non-static class merging is enabled, information about types referred to by instanceOf
    * and check cast instructions needs to be collected.

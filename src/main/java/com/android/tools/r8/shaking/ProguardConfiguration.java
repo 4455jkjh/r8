@@ -96,6 +96,7 @@ public class ProguardConfiguration {
         ProguardPathFilter.builder().disable();
     private boolean forceProguardCompatibility = false;
     private boolean protoShrinking = false;
+    private boolean checkKotlinMetadataDiscarded = false;
     private int maxRemovedAndroidLogLevel = MaximumRemovedAndroidLogLevelRule.NOT_SET;
     private ProcessKotlinNullChecks processKotlinNullChecks = ProcessKotlinNullChecks.DEFAULT;
     PackageObfuscationMode packageObfuscationMode = PackageObfuscationMode.DEFAULT;
@@ -381,6 +382,21 @@ public class ProguardConfiguration {
       processKotlinNullChecks = processKotlinNullChecks.meet(value);
     }
 
+    public boolean isCheckKotlinMetadataDiscardedEnabled() {
+      return checkKotlinMetadataDiscarded;
+    }
+
+    public Builder setCheckKotlinMetadataDiscarded(boolean checkKotlinMetadataDiscarded) {
+      this.checkKotlinMetadataDiscarded = checkKotlinMetadataDiscarded;
+      return this;
+    }
+
+    @Override
+    public void setCheckKotlinMetadataDiscarded(
+        ProguardConfigurationSourceParser parser, TextPosition positionStart) {
+      setCheckKotlinMetadataDiscarded(true);
+    }
+
     @Override
     public void addRule(
         ProguardConfigurationRule rule,
@@ -598,6 +614,7 @@ public class ProguardConfiguration {
               adaptResourceFileContents.build(),
               keepDirectories.build(),
               protoShrinking,
+              checkKotlinMetadataDiscarded,
               getMaxRemovedAndroidLogLevel(),
               processKotlinNullChecks);
       reporter.failIfPendingErrors();
@@ -641,6 +658,7 @@ public class ProguardConfiguration {
   private final ProguardPathFilter adaptResourceFileContents;
   private final ProguardPathFilter keepDirectories;
   private final boolean protoShrinking;
+  private final boolean checkKotlinMetadataDiscarded;
   private final int maxRemovedAndroidLogLevel;
   private final boolean hasWhyAreYouNotInliningRule;
   private final boolean hasWhyAreYouNotObfuscatingRule;
@@ -683,6 +701,7 @@ public class ProguardConfiguration {
       ProguardPathFilter adaptResourceFileContents,
       ProguardPathFilter keepDirectories,
       boolean protoShrinking,
+      boolean checkKotlinMetadataDiscarded,
       int maxRemovedAndroidLogLevel,
       ProcessKotlinNullChecks processKotlinNullChecks) {
     this.parsedConfiguration = parsedConfiguration;
@@ -721,6 +740,7 @@ public class ProguardConfiguration {
     this.adaptResourceFileContents = adaptResourceFileContents;
     this.keepDirectories = keepDirectories;
     this.protoShrinking = protoShrinking;
+    this.checkKotlinMetadataDiscarded = checkKotlinMetadataDiscarded;
     this.maxRemovedAndroidLogLevel = maxRemovedAndroidLogLevel;
     this.hasWhyAreYouNotInliningRule =
         Iterables.any(rules, rule -> rule instanceof WhyAreYouNotInliningRule);
@@ -893,6 +913,10 @@ public class ProguardConfiguration {
 
   public boolean isProtoShrinkingEnabled() {
     return protoShrinking;
+  }
+
+  public boolean isCheckKotlinMetadataDiscardedEnabled() {
+    return checkKotlinMetadataDiscarded;
   }
 
   public int getMaxRemovedAndroidLogLevel() {
