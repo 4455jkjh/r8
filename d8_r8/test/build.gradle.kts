@@ -145,26 +145,15 @@ tasks {
       archiveFileName.set("r8test_base_no_keep.jar")
     }
 
-  fun Exec.executeRelocator(jarProvider: TaskProvider<*>, artifactName: String) {
-    dependsOn(r8WithRelocatedDepsTask, jarProvider)
-    val outputJar = file(Paths.get("build", "libs", artifactName))
-    outputs.file(outputJar)
-    val r8WithRelocatedDepsJar = r8WithRelocatedDepsTask.getSingleOutputFile()
-    val testJar = jarProvider.getSingleOutputFile()
-    inputs.files(r8WithRelocatedDepsJar, testJar)
-    commandLine =
-      baseCompilerCommandLine(
-        r8WithRelocatedDepsJar,
-        "relocator",
-        listOf(
-          "--input",
-          "$testJar",
-          "--output",
-          "$outputJar",
-          "--map",
-          "kotlin.metadata.**->com.android.tools.r8.jetbrains.kotlin.metadata",
-        ),
-      )
+  fun SwissArmyKnifeTask.executeRelocator(jarProvider: TaskProvider<Jar>, artifactName: String) {
+    // TODO: convert r8WithRelocatedDepsTask usage to flatMap and remove dependsOn
+    dependsOn(r8WithRelocatedDepsTask)
+    swissArmyKnifeClasspath.from(r8WithRelocatedDepsTask.getSingleOutputFile())
+    compiler = "relocator"
+    inputFiles.from(jarProvider)
+    outputFile = layout.buildDirectory.file("libs/$artifactName")
+    extraArgs =
+      listOf("--map", "kotlin.metadata.**->com.android.tools.r8.jetbrains.kotlin.metadata")
   }
 
   // When testing R8 lib with relocated deps we must relocate kotlin.metadata in the tests, since
@@ -173,12 +162,12 @@ tasks {
   // This is not needed when testing R8 lib excluding deps since we simply include the deps on the
   // classpath at runtime.
   val relocateTestsForR8LibWithRelocatedDeps =
-    register<Exec>("relocateTestsForR8LibWithRelocatedDeps") {
+    register<SwissArmyKnifeTask>("relocateTestsForR8LibWithRelocatedDeps") {
       executeRelocator(packageTests, "r8tests-relocated.jar")
     }
 
   val relocateTestBaseForR8LibWithRelocatedDeps =
-    register<Exec>("relocateTestBaseForR8LibWithRelocatedDeps") {
+    register<SwissArmyKnifeTask>("relocateTestBaseForR8LibWithRelocatedDeps") {
       executeRelocator(packageTestBase, "r8testbase-relocated.jar")
     }
 
