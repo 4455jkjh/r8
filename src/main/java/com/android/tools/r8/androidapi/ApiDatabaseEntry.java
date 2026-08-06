@@ -18,6 +18,7 @@ import com.android.tools.r8.utils.internal.ThrowingFunction;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 
 /**
@@ -107,6 +108,11 @@ public abstract class ApiDatabaseEntry {
         DexString.encodeToMutf8(reference.getFieldName()));
   }
 
+  private static String UTF8ToString(byte[] bytes) {
+    assert bytes[bytes.length - 1] == 0;
+    return new String(bytes, 0, bytes.length - 1, StandardCharsets.UTF_8);
+  }
+
   private static byte getFirstByteFromShort(int value) {
     assert isU2(value);
     return (byte) (value >> 8);
@@ -181,6 +187,10 @@ public abstract class ApiDatabaseEntry {
       };
     }
 
+    @Override
+    public String toString() {
+      return UTF8ToString(type);
+    }
 
     @Override
     public boolean equals(Object obj) {
@@ -241,6 +251,16 @@ public abstract class ApiDatabaseEntry {
       return baos.toByteArray();
     }
 
+    @Override
+    public String toString() {
+      StringBuilder sb = new StringBuilder();
+      sb.append(UTF8ToString(holder)).append("->").append(UTF8ToString(name)).append("(");
+      for (byte[] parameter : parameters) {
+        sb.append(UTF8ToString(parameter));
+      }
+      sb.append(")").append(UTF8ToString(returnType));
+      return sb.toString();
+    }
 
     @Override
     public boolean equals(Object obj) {
@@ -293,6 +313,10 @@ public abstract class ApiDatabaseEntry {
       };
     }
 
+    @Override
+    public String toString() {
+      return UTF8ToString(holder) + "->" + UTF8ToString(name);
+    }
 
     @Override
     public boolean equals(Object obj) {

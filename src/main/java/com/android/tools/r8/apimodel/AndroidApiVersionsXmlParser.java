@@ -29,25 +29,18 @@ public class AndroidApiVersionsXmlParser {
    *
    * @param xmlPath the XML file to parse.
    */
-  public static List<ParsedApiClass> parse(Path xmlPath, ParsingListener listener)
-      throws ParsingException {
-    if (listener == null) {
-      listener = new EmptyParsingListener();
-    }
-    return new AndroidApiVersionsXmlParser(xmlPath, listener).parse();
+  public static List<ParsedApiClass> parse(Path xmlPath) throws ParsingException {
+    return new AndroidApiVersionsXmlParser(xmlPath).parse();
   }
 
   private static final AndroidApiLevel FIRST_API_LEVEL = AndroidApiLevel.B;
 
   private final Path xmlPath;
-  private final ParsingListener listener;
   private final Map<ClassReference, ParsedApiClass> parsedClasses = new LinkedHashMap<>();
 
-  private AndroidApiVersionsXmlParser(Path xmlPath, ParsingListener listener) {
+  private AndroidApiVersionsXmlParser(Path xmlPath) {
     assert xmlPath != null;
-    assert listener != null;
     this.xmlPath = xmlPath;
-    this.listener = listener;
   }
 
   private List<ParsedApiClass> parse() throws ParsingException {
@@ -64,13 +57,7 @@ public class AndroidApiVersionsXmlParser {
 
   private void parseClass(Node node, int versionsVersion) throws ParsingException {
     ClassReference classReference = Reference.classFromBinaryName(parseNameAttribute(node));
-    var apiRange = parseApiRange(node, versionsVersion, FIRST_API_LEVEL);
-    if (apiRange.isRemoved()) {
-      // Removed classes are treated as non-existent.
-      listener.skippingRemovedClass(classReference, apiRange.removed);
-      return;
-    }
-    listener.startedProcessingClass(classReference);
+    var apiRange = parseApiRange(node, versionsVersion, FIRST_API_LEVEL, null);
     var parsedApiClass = register(classReference, apiRange);
     var classEntries = node.getChildNodes();
     for (int j = 0; j < classEntries.getLength(); j++) {
@@ -105,7 +92,6 @@ public class AndroidApiVersionsXmlParser {
 
   private void parseExtendsEntry(Node node, int versionsVersion, ParsedApiClass apiClass)
       throws ParsingException {
-    // TODO(jonathanlist): Check for "removed".
     ClassReference classReference = Reference.classFromBinaryName(parseNameAttribute(node));
     if (apiClass.hasSupertype(classReference)) {
       throw new ParsingException(
@@ -114,13 +100,14 @@ public class AndroidApiVersionsXmlParser {
               + " in "
               + apiClass.getClassReference());
     }
-    ApiRange apiRange = parseApiRange(node, versionsVersion, apiClass.getRange().intro);
+    ApiRange apiRange =
+        parseApiRange(
+            node, versionsVersion, apiClass.getRange().intro, apiClass.getRange().removed);
     apiClass.registerSupertype(classReference, apiRange);
   }
 
   private void parseImplementsEntry(Node node, int versionsVersion, ParsedApiClass apiClass)
       throws ParsingException {
-    // TODO(jonathanlist): Check for "removed".
     ClassReference interfaceReference = Reference.classFromBinaryName(parseNameAttribute(node));
     if (apiClass.hasInterface(interfaceReference)) {
       throw new ParsingException(
@@ -129,16 +116,19 @@ public class AndroidApiVersionsXmlParser {
               + " in "
               + apiClass.getClassReference());
     }
-    ApiRange apiRange = parseApiRange(node, versionsVersion, apiClass.getRange().intro);
+    ApiRange apiRange =
+        parseApiRange(
+            node, versionsVersion, apiClass.getRange().intro, apiClass.getRange().removed);
     apiClass.registerInterface(interfaceReference, apiRange);
   }
 
   private void parseMethodEntry(Node node, int versionsVersion, ParsedApiClass apiClass)
       throws ParsingException {
-    // TODO(jonathanlist): Check for "removed".
     MethodReference methodReference =
         parseMethodReference(apiClass.getClassReference(), parseNameAttribute(node));
-    ApiRange apiRange = parseApiRange(node, versionsVersion, apiClass.getRange().intro);
+    ApiRange apiRange =
+        parseApiRange(
+            node, versionsVersion, apiClass.getRange().intro, apiClass.getRange().removed);
     if (apiClass.hasMethod(methodReference)) {
       throw new ParsingException("Duplicate entries for " + methodReference);
     }
@@ -149,13 +139,9 @@ public class AndroidApiVersionsXmlParser {
       throws ParsingException {
     FieldTypelessReference fieldReference =
         parseFieldReference(apiClass.getClassReference(), parseNameAttribute(node));
-    ApiRange apiRange = parseApiRange(node, versionsVersion, apiClass.getRange().intro);
-    if (apiRange.isRemoved()) {
-      // Removed fields are treated as non-existent.
-      listener.skippingRemovedField(fieldReference, apiRange.removed);
-      return;
-    }
-    listener.startedProcessingField(fieldReference);
+    ApiRange apiRange =
+        parseApiRange(
+            node, versionsVersion, apiClass.getRange().intro, apiClass.getRange().removed);
     if (apiClass.hasField(fieldReference)) {
       throw new ParsingException("Duplicate entries for " + fieldReference);
     }
@@ -260,6 +246,16 @@ public class AndroidApiVersionsXmlParser {
     return parseAndroidApiLevel(versionsVersion, sinceVersionString);
   }
 
+  private AndroidApiLevel parseRemovedAttributeWithDefault(
+      Node node, int versionsVersion, AndroidApiLevel defaultValue) throws ParsingException {
+    AndroidApiLevel since = parseRemovedAttribute(node, versionsVersion);
+    if (since == null) {
+      return defaultValue;
+    } else {
+      return since;
+    }
+  }
+
   private AndroidApiLevel parseRemovedAttribute(Node node, int versionsVersion)
       throws ParsingException {
     Node removed = node.getAttributes().getNamedItem("removed");
@@ -280,10 +276,12 @@ public class AndroidApiVersionsXmlParser {
     }
   }
 
-  private ApiRange parseApiRange(Node node, int versionsVersion, AndroidApiLevel defaultIntro)
+  private ApiRange parseApiRange(
+      Node node, int versionsVersion, AndroidApiLevel defaultIntro, AndroidApiLevel defaultRemoved)
       throws ParsingException {
     AndroidApiLevel since = parseSinceAttributeWithDefault(node, versionsVersion, defaultIntro);
-    AndroidApiLevel removed = parseRemovedAttribute(node, versionsVersion);
+    AndroidApiLevel removed =
+        parseRemovedAttributeWithDefault(node, versionsVersion, defaultRemoved);
     if (removed != null && since.isGreaterThanOrEqualTo(removed)) {
       throw new ParsingException("Invalid API range. since: " + since + ". removed: " + removed);
     }
@@ -296,30 +294,6 @@ public class AndroidApiVersionsXmlParser {
       throw new ParsingException("Class node is missing a 'name' attribute");
     }
     return nameNode.getNodeValue();
-  }
-
-  public interface ParsingListener {
-    void startedProcessingClass(ClassReference reference);
-
-    void skippingRemovedClass(ClassReference reference, AndroidApiLevel removedAt);
-
-    void startedProcessingField(FieldTypelessReference reference);
-
-    void skippingRemovedField(FieldTypelessReference reference, AndroidApiLevel removedAt);
-  }
-
-  private static class EmptyParsingListener implements ParsingListener {
-    @Override
-    public void startedProcessingClass(ClassReference reference) {}
-
-    @Override
-    public void skippingRemovedClass(ClassReference reference, AndroidApiLevel removedAt) {}
-
-    @Override
-    public void startedProcessingField(FieldTypelessReference reference) {}
-
-    @Override
-    public void skippingRemovedField(FieldTypelessReference reference, AndroidApiLevel removedAt) {}
   }
 
   public static class ParsingException extends Exception {

@@ -49,6 +49,7 @@ import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 import java.util.zip.CRC32;
 import java.util.zip.ZipEntry;
+import java.util.zip.ZipException;
 import java.util.zip.ZipFile;
 import java.util.zip.ZipOutputStream;
 
@@ -113,6 +114,9 @@ public class ZipUtils {
           handler.onEntry(zipFile, entry, entryStream);
         }
       }
+    } catch (ZipException e) {
+      // ZipException doesn't list its source.
+      throw new IOException("Cannot read " + zipFilePath, e);
     }
   }
 
