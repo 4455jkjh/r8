@@ -33,6 +33,10 @@ import com.android.tools.r8.utils.internal.DoubleToIntFunction;
 import com.android.tools.r8.utils.internal.DoubleToLongFunction;
 import com.android.tools.r8.utils.internal.DoubleToObjFunction;
 import com.android.tools.r8.utils.internal.FloatDoubleToFloatFunction;
+import com.android.tools.r8.utils.internal.FloatFloatFloatFloatToIntFunction;
+import com.android.tools.r8.utils.internal.FloatFloatFloatFloatToLongFunction;
+import com.android.tools.r8.utils.internal.FloatFloatFloatToIntFunction;
+import com.android.tools.r8.utils.internal.FloatFloatFloatToLongFunction;
 import com.android.tools.r8.utils.internal.FloatFloatToBooleanFunction;
 import com.android.tools.r8.utils.internal.FloatFloatToFloatFunction;
 import com.android.tools.r8.utils.internal.FloatFloatToIntFunction;
@@ -41,6 +45,8 @@ import com.android.tools.r8.utils.internal.FloatToBooleanFunction;
 import com.android.tools.r8.utils.internal.FloatToFloatFunction;
 import com.android.tools.r8.utils.internal.FloatToIntFunction;
 import com.android.tools.r8.utils.internal.FloatToObjFunction;
+import com.android.tools.r8.utils.internal.IntIntIntIntToIntFunction;
+import com.android.tools.r8.utils.internal.IntIntIntToIntFunction;
 import com.android.tools.r8.utils.internal.IntIntToBooleanFunction;
 import com.android.tools.r8.utils.internal.IntIntToIntFunction;
 import com.android.tools.r8.utils.internal.IntIntToObjFunction;
@@ -53,7 +59,9 @@ import com.android.tools.r8.utils.internal.LongIntToLongFunction;
 import com.android.tools.r8.utils.internal.LongIntToObjFunction;
 import com.android.tools.r8.utils.internal.LongLongToIntFunction;
 import com.android.tools.r8.utils.internal.LongLongToLongFunction;
+import com.android.tools.r8.utils.internal.LongToBooleanFunction;
 import com.android.tools.r8.utils.internal.LongToDoubleFunction;
+import com.android.tools.r8.utils.internal.LongToFloatFunction;
 import com.android.tools.r8.utils.internal.LongToIntFunction;
 import com.android.tools.r8.utils.internal.LongToLongFunction;
 import com.android.tools.r8.utils.internal.LongToObjFunction;
@@ -781,6 +789,62 @@ public interface MethodOptimizerCapabilities {
     instructionIterator.replaceCurrentInstructionWithConstInt(code, replacement);
   }
 
+  default void optimizeIntIntIntToIntFunction(
+      IRCode code,
+      InstructionListIterator instructionIterator,
+      InvokeMethod invoke,
+      IntIntIntToIntFunction fn) {
+    Integer i1 = invoke.getArgument(0).getConstIntOrNull(getAppView(), code);
+    if (i1 == null) {
+      return;
+    }
+    Integer i2 = invoke.getArgument(1).getConstIntOrNull(getAppView(), code);
+    if (i2 == null) {
+      return;
+    }
+    Integer i3 = invoke.getArgument(2).getConstIntOrNull(getAppView(), code);
+    if (i3 == null) {
+      return;
+    }
+    int replacement;
+    try {
+      replacement = fn.apply(i1, i2, i3);
+    } catch (RuntimeException e) {
+      return;
+    }
+    instructionIterator.replaceCurrentInstructionWithConstInt(code, replacement);
+  }
+
+  default void optimizeIntIntIntIntToIntFunction(
+      IRCode code,
+      InstructionListIterator instructionIterator,
+      InvokeMethod invoke,
+      IntIntIntIntToIntFunction fn) {
+    Integer i1 = invoke.getArgument(0).getConstIntOrNull(getAppView(), code);
+    if (i1 == null) {
+      return;
+    }
+    Integer i2 = invoke.getArgument(1).getConstIntOrNull(getAppView(), code);
+    if (i2 == null) {
+      return;
+    }
+    Integer i3 = invoke.getArgument(2).getConstIntOrNull(getAppView(), code);
+    if (i3 == null) {
+      return;
+    }
+    Integer i4 = invoke.getArgument(3).getConstIntOrNull(getAppView(), code);
+    if (i4 == null) {
+      return;
+    }
+    int replacement;
+    try {
+      replacement = fn.apply(i1, i2, i3, i4);
+    } catch (RuntimeException e) {
+      return;
+    }
+    instructionIterator.replaceCurrentInstructionWithConstInt(code, replacement);
+  }
+
   default void optimizeIntIntToStringFunction(
       IRCode code,
       InstructionListIterator instructionIterator,
@@ -977,6 +1041,24 @@ public interface MethodOptimizerCapabilities {
     instructionIterator.replaceCurrentInstructionWithConstLong(code, replacement);
   }
 
+  default void optimizeLongToBooleanFunction(
+      IRCode code,
+      InstructionListIterator instructionIterator,
+      InvokeMethod invoke,
+      LongToBooleanFunction fn) {
+    Long l = invoke.getFirstArgument().getConstLongOrNull(getAppView(), code);
+    if (l == null) {
+      return;
+    }
+    boolean replacement;
+    try {
+      replacement = fn.apply(l);
+    } catch (RuntimeException e) {
+      return;
+    }
+    instructionIterator.replaceCurrentInstructionWithConstBoolean(code, replacement);
+  }
+
   default void optimizeLongToDoubleFunction(
       IRCode code,
       InstructionListIterator instructionIterator,
@@ -993,6 +1075,24 @@ public interface MethodOptimizerCapabilities {
       return;
     }
     instructionIterator.replaceCurrentInstructionWithConstDouble(code, replacement);
+  }
+
+  default void optimizeLongToFloatFunction(
+      IRCode code,
+      InstructionListIterator instructionIterator,
+      InvokeMethod invoke,
+      LongToFloatFunction fn) {
+    Long l = invoke.getFirstArgument().getConstLongOrNull(getAppView(), code);
+    if (l == null) {
+      return;
+    }
+    float replacement;
+    try {
+      replacement = fn.apply(l);
+    } catch (RuntimeException e) {
+      return;
+    }
+    instructionIterator.replaceCurrentInstructionWithConstFloat(code, replacement);
   }
 
   default void optimizeLongToStringFunction(
@@ -1321,6 +1421,118 @@ public interface MethodOptimizerCapabilities {
       return;
     }
     instructionIterator.replaceCurrentInstructionWithConstInt(code, replacement);
+  }
+
+  default void optimizeFloatFloatFloatToIntFunction(
+      IRCode code,
+      InstructionListIterator instructionIterator,
+      InvokeMethod invoke,
+      FloatFloatFloatToIntFunction fn) {
+    Float f1 = invoke.getArgument(0).getConstFloatOrNull(getAppView(), code);
+    if (f1 == null) {
+      return;
+    }
+    Float f2 = invoke.getArgument(1).getConstFloatOrNull(getAppView(), code);
+    if (f2 == null) {
+      return;
+    }
+    Float f3 = invoke.getArgument(2).getConstFloatOrNull(getAppView(), code);
+    if (f3 == null) {
+      return;
+    }
+    int replacement;
+    try {
+      replacement = fn.apply(f1, f2, f3);
+    } catch (RuntimeException e) {
+      return;
+    }
+    instructionIterator.replaceCurrentInstructionWithConstInt(code, replacement);
+  }
+
+  default void optimizeFloatFloatFloatFloatToIntFunction(
+      IRCode code,
+      InstructionListIterator instructionIterator,
+      InvokeMethod invoke,
+      FloatFloatFloatFloatToIntFunction fn) {
+    Float f1 = invoke.getArgument(0).getConstFloatOrNull(getAppView(), code);
+    if (f1 == null) {
+      return;
+    }
+    Float f2 = invoke.getArgument(1).getConstFloatOrNull(getAppView(), code);
+    if (f2 == null) {
+      return;
+    }
+    Float f3 = invoke.getArgument(2).getConstFloatOrNull(getAppView(), code);
+    if (f3 == null) {
+      return;
+    }
+    Float f4 = invoke.getArgument(3).getConstFloatOrNull(getAppView(), code);
+    if (f4 == null) {
+      return;
+    }
+    int replacement;
+    try {
+      replacement = fn.apply(f1, f2, f3, f4);
+    } catch (RuntimeException e) {
+      return;
+    }
+    instructionIterator.replaceCurrentInstructionWithConstInt(code, replacement);
+  }
+
+  default void optimizeFloatFloatFloatFloatToLongFunction(
+      IRCode code,
+      InstructionListIterator instructionIterator,
+      InvokeMethod invoke,
+      FloatFloatFloatFloatToLongFunction fn) {
+    Float f1 = invoke.getArgument(0).getConstFloatOrNull(getAppView(), code);
+    if (f1 == null) {
+      return;
+    }
+    Float f2 = invoke.getArgument(1).getConstFloatOrNull(getAppView(), code);
+    if (f2 == null) {
+      return;
+    }
+    Float f3 = invoke.getArgument(2).getConstFloatOrNull(getAppView(), code);
+    if (f3 == null) {
+      return;
+    }
+    Float f4 = invoke.getArgument(3).getConstFloatOrNull(getAppView(), code);
+    if (f4 == null) {
+      return;
+    }
+    long replacement;
+    try {
+      replacement = fn.apply(f1, f2, f3, f4);
+    } catch (RuntimeException e) {
+      return;
+    }
+    instructionIterator.replaceCurrentInstructionWithConstLong(code, replacement);
+  }
+
+  default void optimizeFloatFloatFloatToLongFunction(
+      IRCode code,
+      InstructionListIterator instructionIterator,
+      InvokeMethod invoke,
+      FloatFloatFloatToLongFunction fn) {
+    Float f1 = invoke.getArgument(0).getConstFloatOrNull(getAppView(), code);
+    if (f1 == null) {
+      return;
+    }
+    Float f2 = invoke.getArgument(1).getConstFloatOrNull(getAppView(), code);
+    if (f2 == null) {
+      return;
+    }
+    Float f3 = invoke.getArgument(2).getConstFloatOrNull(getAppView(), code);
+    if (f3 == null) {
+      return;
+    }
+    long replacement;
+    try {
+      replacement = fn.apply(f1, f2, f3);
+    } catch (RuntimeException e) {
+      return;
+    }
+    instructionIterator.replaceCurrentInstructionWithConstLong(code, replacement);
   }
 
   default void optimizeFloatFloatToFloatFunction(

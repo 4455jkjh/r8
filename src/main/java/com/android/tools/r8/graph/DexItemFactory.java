@@ -708,6 +708,8 @@ public class DexItemFactory {
   public final DexType androidAppFragment = createStaticallyKnownType("Landroid/app/Fragment;");
   public final DexType androidAppZygotePreload =
       createStaticallyKnownType("Landroid/app/ZygotePreload;");
+  public final DexType androidGraphicsColorType =
+      createStaticallyKnownType("Landroid/graphics/Color;");
   public final DexType androidOsBuildType = createStaticallyKnownType("Landroid/os/Build;");
   public final DexType androidOsBuildVersionType =
       createStaticallyKnownType("Landroid/os/Build$VERSION;");
@@ -804,6 +806,8 @@ public class DexItemFactory {
   public final ProxyMethods proxyMethods = new ProxyMethods();
 
   // android.**
+  public final AndroidGraphicsColorMembers androidGraphicsColorMembers =
+      new AndroidGraphicsColorMembers();
   public final AndroidOsBuildMembers androidOsBuildMembers = new AndroidOsBuildMembers();
   public final AndroidOsBuildVersionMembers androidOsBuildVersionMembers =
       new AndroidOsBuildVersionMembers();
@@ -851,6 +855,7 @@ public class DexItemFactory {
           longMembers,
           stringMembers,
           // android.**
+          androidGraphicsColorMembers,
           androidOsBuildMembers,
           androidOsBuildVersionMembers,
           androidOsBundleMembers,
@@ -1361,6 +1366,87 @@ public class DexItemFactory {
   public abstract static class BoxedPrimitiveMembers extends LibraryMembers {
 
     public abstract DexField getTypeField();
+  }
+
+  public class AndroidGraphicsColorMembers extends LibraryMembers {
+
+    public final DexMethod alphaInt =
+        createMethod(androidGraphicsColorType, createProto(intType, intType), "alpha");
+    public final DexMethod alphaLong =
+        createMethod(androidGraphicsColorType, createProto(floatType, longType), "alpha");
+    public final DexMethod argbInt =
+        createMethod(
+            androidGraphicsColorType,
+            createProto(intType, intType, intType, intType, intType),
+            "argb");
+    public final DexMethod argbFloat =
+        createMethod(
+            androidGraphicsColorType,
+            createProto(intType, floatType, floatType, floatType, floatType),
+            "argb");
+    public final DexMethod blueInt =
+        createMethod(androidGraphicsColorType, createProto(intType, intType), "blue");
+    public final DexMethod blueLong =
+        createMethod(androidGraphicsColorType, createProto(floatType, longType), "blue");
+    public final DexMethod greenInt =
+        createMethod(androidGraphicsColorType, createProto(intType, intType), "green");
+    public final DexMethod greenLong =
+        createMethod(androidGraphicsColorType, createProto(floatType, longType), "green");
+    public final DexMethod isSrgb =
+        createMethod(androidGraphicsColorType, createProto(booleanType, longType), "isSrgb");
+    public final DexMethod isWideGamut =
+        createMethod(androidGraphicsColorType, createProto(booleanType, longType), "isWideGamut");
+    public final DexMethod luminanceInt =
+        createMethod(androidGraphicsColorType, createProto(floatType, intType), "luminance");
+    public final DexMethod luminanceLong =
+        createMethod(androidGraphicsColorType, createProto(floatType, longType), "luminance");
+    public final DexMethod packInt =
+        createMethod(androidGraphicsColorType, createProto(longType, intType), "pack");
+    public final DexMethod packFloat4 =
+        createMethod(
+            androidGraphicsColorType,
+            createProto(longType, floatType, floatType, floatType, floatType),
+            "pack");
+    public final DexMethod packFloat3 =
+        createMethod(
+            androidGraphicsColorType,
+            createProto(longType, floatType, floatType, floatType),
+            "pack");
+    public final DexMethod parseColor =
+        createMethod(androidGraphicsColorType, createProto(intType, stringType), "parseColor");
+    public final DexMethod redInt =
+        createMethod(androidGraphicsColorType, createProto(intType, intType), "red");
+    public final DexMethod redLong =
+        createMethod(androidGraphicsColorType, createProto(floatType, longType), "red");
+    public final DexMethod rgbInt =
+        createMethod(
+            androidGraphicsColorType, createProto(intType, intType, intType, intType), "rgb");
+    public final DexMethod rgbFloat =
+        createMethod(
+            androidGraphicsColorType, createProto(intType, floatType, floatType, floatType), "rgb");
+    public final DexMethod toArgb =
+        createMethod(androidGraphicsColorType, createProto(intType, longType), "toArgb");
+
+    private AndroidGraphicsColorMembers() {}
+
+    public void forEachUnconditionalFinalMethodWithoutSideEffects(Consumer<DexMethod> consumer) {
+      consumer.accept(alphaInt);
+      consumer.accept(alphaLong);
+      consumer.accept(argbInt);
+      consumer.accept(argbFloat);
+      consumer.accept(blueInt);
+      consumer.accept(blueLong);
+      consumer.accept(greenInt);
+      consumer.accept(greenLong);
+      consumer.accept(luminanceInt);
+      consumer.accept(packInt);
+      consumer.accept(packFloat4);
+      consumer.accept(packFloat3);
+      consumer.accept(redInt);
+      consumer.accept(redLong);
+      consumer.accept(rgbInt);
+      consumer.accept(rgbFloat);
+    }
   }
 
   public class AndroidOsBuildMembers extends LibraryMembers {

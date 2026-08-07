@@ -90,6 +90,8 @@ public class LibraryMethodSideEffectModelCollection {
             .addAll(dexItemFactory.classMethods.getNames)
             // Required to unbox recent Kotlin enums (See b/268005228).
             .add(dexItemFactory.kotlinEnumEntriesListInit);
+    dexItemFactory.androidGraphicsColorMembers.forEachUnconditionalFinalMethodWithoutSideEffects(
+        builder::add);
     dexItemFactory.booleanMembers.forEachUnconditionalFinalMethodWithoutSideEffects(builder::add);
     dexItemFactory.byteMembers.forEachUnconditionalFinalMethodWithoutSideEffects(builder::add);
     dexItemFactory.charMembers.forEachUnconditionalFinalMethodWithoutSideEffects(builder::add);
