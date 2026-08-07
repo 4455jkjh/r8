@@ -4,6 +4,8 @@
 
 package com.android.tools.r8.desugar.backports;
 
+import com.android.tools.r8.R8TestBuilder;
+import com.android.tools.r8.TestBuilder;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.utils.AndroidApiLevel;
 import org.junit.runner.RunWith;
@@ -21,6 +23,15 @@ public final class MathBackportTest extends AbstractBackportTest {
     super(parameters, Math.class, Main.class);
     registerTarget(AndroidApiLevel.N, 97);
     ignoreInvokes("nextAfter");  // Available in API 9, used to test nextDown.
+  }
+
+  @Override
+  protected void configureProgram(TestBuilder<?, ?> builder) throws Exception {
+    super.configureProgram(builder);
+    if (builder.isR8TestBuilder()) {
+      R8TestBuilder<?, ?, ?> r8Builder = builder.asR8TestBuilder();
+      r8Builder.addKeepRules("-keepclassmembers class * { *** disguise(***); }");
+    }
   }
 
   static final class Main extends MiniAssert {
@@ -46,184 +57,192 @@ public final class MathBackportTest extends AbstractBackportTest {
       testToIntExact();
     }
 
-    private static void testAddExactInteger() {
-      assertEquals(2, Math.addExact(1, 1));
-      assertEquals(-2, Math.addExact(-1, -1));
+    private static int disguise(int i) {
+      return i;
+    }
 
-      assertEquals(Integer.MAX_VALUE, Math.addExact(Integer.MAX_VALUE, 0));
-      assertEquals(Integer.MIN_VALUE, Math.addExact(Integer.MIN_VALUE, 0));
+    private static long disguise(long l) {
+      return l;
+    }
+
+    private static void testAddExactInteger() {
+      assertEquals(2, Math.addExact(disguise(1), 1));
+      assertEquals(-2, Math.addExact(disguise(-1), -1));
+
+      assertEquals(Integer.MAX_VALUE, Math.addExact(disguise(Integer.MAX_VALUE), 0));
+      assertEquals(Integer.MIN_VALUE, Math.addExact(disguise(Integer.MIN_VALUE), 0));
 
       try {
-        throw new AssertionError(Math.addExact(1, Integer.MAX_VALUE));
+        throw new AssertionError(Math.addExact(disguise(1), Integer.MAX_VALUE));
       } catch (ArithmeticException expected) {
       }
       try {
-        throw new AssertionError(Math.addExact(-1, Integer.MIN_VALUE));
+        throw new AssertionError(Math.addExact(disguise(-1), Integer.MIN_VALUE));
       } catch (ArithmeticException expected) {
       }
     }
 
     private static void testAddExactLong() {
-      assertEquals(2L, Math.addExact(1L, 1L));
-      assertEquals(-2L, Math.addExact(-1L, -1L));
+      assertEquals(2L, Math.addExact(disguise(1L), 1L));
+      assertEquals(-2L, Math.addExact(disguise(-1L), -1L));
 
-      assertEquals(Long.MAX_VALUE, Math.addExact(Long.MAX_VALUE, 0L));
-      assertEquals(Long.MIN_VALUE, Math.addExact(Long.MIN_VALUE, 0L));
+      assertEquals(Long.MAX_VALUE, Math.addExact(disguise(Long.MAX_VALUE), 0L));
+      assertEquals(Long.MIN_VALUE, Math.addExact(disguise(Long.MIN_VALUE), 0L));
 
       try {
-        throw new AssertionError(Math.addExact(1L, Long.MAX_VALUE));
+        throw new AssertionError(Math.addExact(disguise(1L), Long.MAX_VALUE));
       } catch (ArithmeticException expected) {
       }
       try {
-        throw new AssertionError(Math.addExact(-1L, Long.MIN_VALUE));
+        throw new AssertionError(Math.addExact(disguise(-1L), Long.MIN_VALUE));
       } catch (ArithmeticException expected) {
       }
     }
 
     private static void testDecrementExactInteger() {
-      assertEquals(-1, Math.decrementExact(0));
-      assertEquals(Integer.MIN_VALUE, Math.decrementExact(Integer.MIN_VALUE + 1));
+      assertEquals(-1, Math.decrementExact(disguise(0)));
+      assertEquals(Integer.MIN_VALUE, Math.decrementExact(disguise(Integer.MIN_VALUE + 1)));
 
       try {
-        throw new AssertionError(Math.decrementExact(Integer.MIN_VALUE));
+        throw new AssertionError(Math.decrementExact(disguise(Integer.MIN_VALUE)));
       } catch (ArithmeticException expected) {
       }
     }
 
     private static void testDecrementExactLong() {
-      assertEquals(-1L, Math.decrementExact(0L));
-      assertEquals(Long.MIN_VALUE, Math.decrementExact(Long.MIN_VALUE + 1L));
+      assertEquals(-1L, Math.decrementExact(disguise(0L)));
+      assertEquals(Long.MIN_VALUE, Math.decrementExact(disguise(Long.MIN_VALUE + 1L)));
 
       try {
-        throw new AssertionError(Math.decrementExact(Long.MIN_VALUE));
+        throw new AssertionError(Math.decrementExact(disguise(Long.MIN_VALUE)));
       } catch (ArithmeticException expected) {
       }
     }
 
     private static void testFloorDivInteger() {
-      assertEquals(1, Math.floorDiv(4, 4));
-      assertEquals(1, Math.floorDiv(-4, -4));
-      assertEquals(-1, Math.floorDiv(-4, 4));
-      assertEquals(-1, Math.floorDiv(4, -4));
+      assertEquals(1, Math.floorDiv(disguise(4), 4));
+      assertEquals(1, Math.floorDiv(disguise(-4), -4));
+      assertEquals(-1, Math.floorDiv(disguise(-4), 4));
+      assertEquals(-1, Math.floorDiv(disguise(4), -4));
 
-      assertEquals(1, Math.floorDiv(4, 3));
-      assertEquals(1, Math.floorDiv(-4, -3));
-      assertEquals(-2, Math.floorDiv(-4, 3));
-      assertEquals(-2, Math.floorDiv(4, -3));
+      assertEquals(1, Math.floorDiv(disguise(4), 3));
+      assertEquals(1, Math.floorDiv(disguise(-4), -3));
+      assertEquals(-2, Math.floorDiv(disguise(-4), 3));
+      assertEquals(-2, Math.floorDiv(disguise(4), -3));
 
       // Spec edge case: result is actually MAX_VALUE+1 which becomes MIN_VALUE.
-      assertEquals(Integer.MIN_VALUE, Math.floorDiv(Integer.MIN_VALUE, -1));
+      assertEquals(Integer.MIN_VALUE, Math.floorDiv(disguise(Integer.MIN_VALUE), -1));
     }
 
     private static void testFloorDivLong() {
-      assertEquals(1L, Math.floorDiv(4L, 4L));
-      assertEquals(1L, Math.floorDiv(-4L, -4L));
-      assertEquals(-1L, Math.floorDiv(-4L, 4L));
-      assertEquals(-1L, Math.floorDiv(4L, -4L));
+      assertEquals(1L, Math.floorDiv(disguise(4L), 4L));
+      assertEquals(1L, Math.floorDiv(disguise(-4L), -4L));
+      assertEquals(-1L, Math.floorDiv(disguise(-4L), 4L));
+      assertEquals(-1L, Math.floorDiv(disguise(4L), -4L));
 
-      assertEquals(1L, Math.floorDiv(4L, 3L));
-      assertEquals(1L, Math.floorDiv(-4L, -3L));
-      assertEquals(-2L, Math.floorDiv(-4L, 3L));
-      assertEquals(-2L, Math.floorDiv(4L, -3L));
+      assertEquals(1L, Math.floorDiv(disguise(4L), 3L));
+      assertEquals(1L, Math.floorDiv(disguise(-4L), -3L));
+      assertEquals(-2L, Math.floorDiv(disguise(-4L), 3L));
+      assertEquals(-2L, Math.floorDiv(disguise(4L), -3L));
 
       // Spec edge case: result is actually MAX_VALUE+1 which becomes MIN_VALUE.
-      assertEquals(Long.MIN_VALUE, Math.floorDiv(Long.MIN_VALUE, -1L));
+      assertEquals(Long.MIN_VALUE, Math.floorDiv(disguise(Long.MIN_VALUE), -1L));
     }
 
     private static void testFloorModInteger() {
-      assertEquals(0, Math.floorMod(4, 4));
-      assertEquals(0, Math.floorMod(-4, -4));
-      assertEquals(0, Math.floorMod(-4, 4));
-      assertEquals(0, Math.floorMod(4, -4));
+      assertEquals(0, Math.floorMod(disguise(4), 4));
+      assertEquals(0, Math.floorMod(disguise(-4), -4));
+      assertEquals(0, Math.floorMod(disguise(-4), 4));
+      assertEquals(0, Math.floorMod(disguise(4), -4));
 
-      assertEquals(1L, Math.floorMod(4L, 3L));
-      assertEquals(-1L, Math.floorMod(-4L, -3L));
-      assertEquals(2L, Math.floorMod(-4L, 3L));
-      assertEquals(-2L, Math.floorMod(4L, -3L));
+      assertEquals(1L, Math.floorMod(disguise(4L), 3L));
+      assertEquals(-1L, Math.floorMod(disguise(-4L), -3L));
+      assertEquals(2L, Math.floorMod(disguise(-4L), 3L));
+      assertEquals(-2L, Math.floorMod(disguise(4L), -3L));
     }
 
     private static void testFloorModLong() {
-      assertEquals(0L, Math.floorMod(4L, 4L));
-      assertEquals(0L, Math.floorMod(-4L, -4L));
-      assertEquals(0L, Math.floorMod(-4L, 4L));
-      assertEquals(0L, Math.floorMod(4L, -4L));
+      assertEquals(0L, Math.floorMod(disguise(4L), 4L));
+      assertEquals(0L, Math.floorMod(disguise(-4L), -4L));
+      assertEquals(0L, Math.floorMod(disguise(-4L), 4L));
+      assertEquals(0L, Math.floorMod(disguise(4L), -4L));
 
-      assertEquals(1L, Math.floorMod(4L, 3L));
-      assertEquals(-1L, Math.floorMod(-4L, -3L));
-      assertEquals(2L, Math.floorMod(-4L, 3L));
-      assertEquals(-2L, Math.floorMod(4L, -3L));
+      assertEquals(1L, Math.floorMod(disguise(4L), 3L));
+      assertEquals(-1L, Math.floorMod(disguise(-4L), -3L));
+      assertEquals(2L, Math.floorMod(disguise(-4L), 3L));
+      assertEquals(-2L, Math.floorMod(disguise(4L), -3L));
     }
 
     private static void testIncrementExactInteger() {
-      assertEquals(1, Math.incrementExact(0));
-      assertEquals(Integer.MAX_VALUE, Math.incrementExact(Integer.MAX_VALUE - 1));
+      assertEquals(1, Math.incrementExact(disguise(0)));
+      assertEquals(Integer.MAX_VALUE, Math.incrementExact(disguise(Integer.MAX_VALUE - 1)));
 
       try {
-        throw new AssertionError(Math.incrementExact(Integer.MAX_VALUE));
+        throw new AssertionError(Math.incrementExact(disguise(Integer.MAX_VALUE)));
       } catch (ArithmeticException expected) {
       }
     }
 
     private static void testIncrementExactLong() {
-      assertEquals(1L, Math.incrementExact(0L));
-      assertEquals(Long.MAX_VALUE, Math.incrementExact(Long.MAX_VALUE - 1L));
+      assertEquals(1L, Math.incrementExact(disguise(0L)));
+      assertEquals(Long.MAX_VALUE, Math.incrementExact(disguise(Long.MAX_VALUE - 1L)));
 
       try {
-        throw new AssertionError(Math.incrementExact(Long.MAX_VALUE));
+        throw new AssertionError(Math.incrementExact(disguise(Long.MAX_VALUE)));
       } catch (ArithmeticException expected) {
       }
     }
 
     private static void testMultiplyExactInteger() {
-      assertEquals(8, Math.multiplyExact(2, 4));
-      assertEquals(Integer.MAX_VALUE, Math.multiplyExact(Integer.MAX_VALUE, 1));
-      assertEquals(Integer.MIN_VALUE, Math.multiplyExact(Integer.MIN_VALUE / 2, 2));
+      assertEquals(8, Math.multiplyExact(disguise(2), 4));
+      assertEquals(Integer.MAX_VALUE, Math.multiplyExact(disguise(Integer.MAX_VALUE), 1));
+      assertEquals(Integer.MIN_VALUE, Math.multiplyExact(disguise(Integer.MIN_VALUE / 2), 2));
 
       try {
-        throw new AssertionError(Math.multiplyExact(Integer.MAX_VALUE, 2));
+        throw new AssertionError(Math.multiplyExact(disguise(Integer.MAX_VALUE), 2));
       } catch (ArithmeticException expected) {
       }
       try {
-        throw new AssertionError(Math.multiplyExact(Integer.MIN_VALUE, 2));
+        throw new AssertionError(Math.multiplyExact(disguise(Integer.MIN_VALUE), 2));
       } catch (ArithmeticException expected) {
       }
     }
 
     private static void testMultiplyExactLong() {
-      assertEquals(8L, Math.multiplyExact(2L, 4L));
-      assertEquals(Long.MAX_VALUE, Math.multiplyExact(Long.MAX_VALUE, 1L));
-      assertEquals(Long.MIN_VALUE, Math.multiplyExact(Long.MIN_VALUE / 2L, 2L));
+      assertEquals(8L, Math.multiplyExact(disguise(2L), 4L));
+      assertEquals(Long.MAX_VALUE, Math.multiplyExact(disguise(Long.MAX_VALUE), 1L));
+      assertEquals(Long.MIN_VALUE, Math.multiplyExact(disguise(Long.MIN_VALUE / 2L), 2L));
 
       try {
-        throw new AssertionError(Math.multiplyExact(Long.MAX_VALUE, 2L));
+        throw new AssertionError(Math.multiplyExact(disguise(Long.MAX_VALUE), 2L));
       } catch (ArithmeticException expected) {
       }
       try {
-        throw new AssertionError(Math.multiplyExact(Long.MIN_VALUE, 2L));
+        throw new AssertionError(Math.multiplyExact(disguise(Long.MIN_VALUE), 2L));
       } catch (ArithmeticException expected) {
       }
     }
 
     private static void testNegateExactInteger() {
-      assertEquals(0, Math.negateExact(0));
-      assertEquals(-1, Math.negateExact(1));
-      assertEquals(1, Math.negateExact(-1));
-      assertEquals(-2_147_483_647, Math.negateExact(Integer.MAX_VALUE));
+      assertEquals(0, Math.negateExact(disguise(0)));
+      assertEquals(-1, Math.negateExact(disguise(1)));
+      assertEquals(1, Math.negateExact(disguise(-1)));
+      assertEquals(-2_147_483_647, Math.negateExact(disguise(Integer.MAX_VALUE)));
 
       try {
-        throw new AssertionError(Math.negateExact(Integer.MIN_VALUE));
+        throw new AssertionError(Math.negateExact(disguise(Integer.MIN_VALUE)));
       } catch (ArithmeticException expected) {
       }
     }
 
     private static void testNegateExactLong() {
-      assertEquals(0L, Math.negateExact(0L));
-      assertEquals(-1L, Math.negateExact(1L));
-      assertEquals(1L, Math.negateExact(-1L));
-      assertEquals(-9_223_372_036_854_775_807L, Math.negateExact(Long.MAX_VALUE));
+      assertEquals(0L, Math.negateExact(disguise(0L)));
+      assertEquals(-1L, Math.negateExact(disguise(1L)));
+      assertEquals(1L, Math.negateExact(disguise(-1L)));
+      assertEquals(-9_223_372_036_854_775_807L, Math.negateExact(disguise(Long.MAX_VALUE)));
 
       try {
-        throw new AssertionError(Math.negateExact(Long.MIN_VALUE));
+        throw new AssertionError(Math.negateExact(disguise(Long.MIN_VALUE)));
       } catch (ArithmeticException expected) {
       }
     }
@@ -265,50 +284,50 @@ public final class MathBackportTest extends AbstractBackportTest {
     }
 
     private static void testSubtractExactInteger() {
-      assertEquals(-1, Math.subtractExact(0, 1));
-      assertEquals(1, Math.subtractExact(0, -1));
+      assertEquals(-1, Math.subtractExact(disguise(0), 1));
+      assertEquals(1, Math.subtractExact(disguise(0), -1));
 
-      assertEquals(Integer.MAX_VALUE, Math.subtractExact(Integer.MAX_VALUE, 0));
-      assertEquals(Integer.MIN_VALUE, Math.subtractExact(Integer.MIN_VALUE, 0));
+      assertEquals(Integer.MAX_VALUE, Math.subtractExact(disguise(Integer.MAX_VALUE), 0));
+      assertEquals(Integer.MIN_VALUE, Math.subtractExact(disguise(Integer.MIN_VALUE), 0));
 
       try {
-        throw new AssertionError(Math.subtractExact(Integer.MIN_VALUE, 1));
+        throw new AssertionError(Math.subtractExact(disguise(Integer.MIN_VALUE), 1));
       } catch (ArithmeticException expected) {
       }
       try {
-        throw new AssertionError(Math.subtractExact(Integer.MAX_VALUE, -1));
+        throw new AssertionError(Math.subtractExact(disguise(Integer.MAX_VALUE), -1));
       } catch (ArithmeticException expected) {
       }
     }
 
     private static void testSubtractExactLong() {
-      assertEquals(-1L, Math.subtractExact(0L, 1L));
-      assertEquals(1L, Math.subtractExact(0L, -1L));
+      assertEquals(-1L, Math.subtractExact(disguise(0L), 1L));
+      assertEquals(1L, Math.subtractExact(disguise(0L), -1L));
 
-      assertEquals(Long.MAX_VALUE, Math.subtractExact(Long.MAX_VALUE, 0L));
-      assertEquals(Long.MIN_VALUE, Math.subtractExact(Long.MIN_VALUE, 0L));
+      assertEquals(Long.MAX_VALUE, Math.subtractExact(disguise(Long.MAX_VALUE), 0L));
+      assertEquals(Long.MIN_VALUE, Math.subtractExact(disguise(Long.MIN_VALUE), 0L));
 
       try {
-        throw new AssertionError(Math.subtractExact(Long.MIN_VALUE, 1L));
+        throw new AssertionError(Math.subtractExact(disguise(Long.MIN_VALUE), 1L));
       } catch (ArithmeticException expected) {
       }
       try {
-        throw new AssertionError(Math.subtractExact(Long.MAX_VALUE, -1L));
+        throw new AssertionError(Math.subtractExact(disguise(Long.MAX_VALUE), -1L));
       } catch (ArithmeticException expected) {
       }
     }
 
     private static void testToIntExact() {
-      assertEquals(0, Math.toIntExact(0L));
-      assertEquals(Integer.MAX_VALUE, Math.toIntExact(Integer.MAX_VALUE));
-      assertEquals(Integer.MIN_VALUE, Math.toIntExact(Integer.MIN_VALUE));
+      assertEquals(0, Math.toIntExact(disguise(0L)));
+      assertEquals(Integer.MAX_VALUE, Math.toIntExact(disguise(Integer.MAX_VALUE)));
+      assertEquals(Integer.MIN_VALUE, Math.toIntExact(disguise(Integer.MIN_VALUE)));
 
       try {
-        throw new AssertionError(Math.toIntExact(Integer.MAX_VALUE + 1L));
+        throw new AssertionError(Math.toIntExact(disguise(Integer.MAX_VALUE + 1L)));
       } catch (ArithmeticException expected) {
       }
       try {
-        throw new AssertionError(Math.toIntExact(Integer.MIN_VALUE - 1L));
+        throw new AssertionError(Math.toIntExact(disguise(Integer.MIN_VALUE - 1L)));
       } catch (ArithmeticException expected) {
       }
     }

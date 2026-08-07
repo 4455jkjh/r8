@@ -2054,25 +2054,204 @@ public class DexItemFactory {
 
   public class MathMembers extends LibraryMembers {
 
-    public final DexMethod minInt =
-        createMethod(mathType, createProto(intType, intType, intType), "min");
-    public final DexMethod minLong =
-        createMethod(mathType, createProto(longType, longType, longType), "min");
-    public final DexMethod minFloat =
-        createMethod(mathType, createProto(floatType, floatType, floatType), "min");
-    public final DexMethod minDouble =
-        createMethod(mathType, createProto(doubleType, doubleType, doubleType), "min");
-
+    public final DexMethod absDouble =
+        createMethod(mathType, createProto(doubleType, doubleType), "abs");
+    public final DexMethod absFloat =
+        createMethod(mathType, createProto(floatType, floatType), "abs");
+    public final DexMethod absInt = createMethod(mathType, createProto(intType, intType), "abs");
+    public final DexMethod absLong = createMethod(mathType, createProto(longType, longType), "abs");
+    public final DexMethod acos =
+        createMethod(mathType, createProto(doubleType, doubleType), "acos");
+    public final DexMethod addExactInt =
+        createMethod(mathType, createProto(intType, intType, intType), "addExact");
+    public final DexMethod addExactLong =
+        createMethod(mathType, createProto(longType, longType, longType), "addExact");
+    public final DexMethod asin =
+        createMethod(mathType, createProto(doubleType, doubleType), "asin");
+    public final DexMethod atan =
+        createMethod(mathType, createProto(doubleType, doubleType), "atan");
+    public final DexMethod atan2 =
+        createMethod(mathType, createProto(doubleType, doubleType, doubleType), "atan2");
+    public final DexMethod cbrt =
+        createMethod(mathType, createProto(doubleType, doubleType), "cbrt");
+    public final DexMethod ceil =
+        createMethod(mathType, createProto(doubleType, doubleType), "ceil");
+    public final DexMethod copySignDouble =
+        createMethod(mathType, createProto(doubleType, doubleType, doubleType), "copySign");
+    public final DexMethod copySignFloat =
+        createMethod(mathType, createProto(floatType, floatType, floatType), "copySign");
+    public final DexMethod cos = createMethod(mathType, createProto(doubleType, doubleType), "cos");
+    public final DexMethod cosh =
+        createMethod(mathType, createProto(doubleType, doubleType), "cosh");
+    public final DexMethod decrementExactInt =
+        createMethod(mathType, createProto(intType, intType), "decrementExact");
+    public final DexMethod decrementExactLong =
+        createMethod(mathType, createProto(longType, longType), "decrementExact");
+    public final DexMethod exp = createMethod(mathType, createProto(doubleType, doubleType), "exp");
+    public final DexMethod expm1 =
+        createMethod(mathType, createProto(doubleType, doubleType), "expm1");
+    public final DexMethod floor =
+        createMethod(mathType, createProto(doubleType, doubleType), "floor");
+    public final DexMethod floorDivInt =
+        createMethod(mathType, createProto(intType, intType, intType), "floorDiv");
+    public final DexMethod floorDivLong =
+        createMethod(mathType, createProto(longType, longType, longType), "floorDiv");
+    public final DexMethod floorModInt =
+        createMethod(mathType, createProto(intType, intType, intType), "floorMod");
+    public final DexMethod floorModLong =
+        createMethod(mathType, createProto(longType, longType, longType), "floorMod");
+    public final DexMethod getExponentDouble =
+        createMethod(mathType, createProto(intType, doubleType), "getExponent");
+    public final DexMethod getExponentFloat =
+        createMethod(mathType, createProto(intType, floatType), "getExponent");
+    public final DexMethod hypot =
+        createMethod(mathType, createProto(doubleType, doubleType, doubleType), "hypot");
+    public final DexMethod IEEEremainder =
+        createMethod(mathType, createProto(doubleType, doubleType, doubleType), "IEEEremainder");
+    public final DexMethod incrementExactInt =
+        createMethod(mathType, createProto(intType, intType), "incrementExact");
+    public final DexMethod incrementExactLong =
+        createMethod(mathType, createProto(longType, longType), "incrementExact");
+    public final DexMethod log = createMethod(mathType, createProto(doubleType, doubleType), "log");
+    public final DexMethod log10 =
+        createMethod(mathType, createProto(doubleType, doubleType), "log10");
+    public final DexMethod log1p =
+        createMethod(mathType, createProto(doubleType, doubleType), "log1p");
+    public final DexMethod maxDouble =
+        createMethod(mathType, createProto(doubleType, doubleType, doubleType), "max");
+    public final DexMethod maxFloat =
+        createMethod(mathType, createProto(floatType, floatType, floatType), "max");
     public final DexMethod maxInt =
         createMethod(mathType, createProto(intType, intType, intType), "max");
     public final DexMethod maxLong =
         createMethod(mathType, createProto(longType, longType, longType), "max");
-    public final DexMethod maxFloat =
-        createMethod(mathType, createProto(floatType, floatType, floatType), "max");
-    public final DexMethod maxDouble =
-        createMethod(mathType, createProto(doubleType, doubleType, doubleType), "max");
+    public final DexMethod minDouble =
+        createMethod(mathType, createProto(doubleType, doubleType, doubleType), "min");
+    public final DexMethod minFloat =
+        createMethod(mathType, createProto(floatType, floatType, floatType), "min");
+    public final DexMethod minInt =
+        createMethod(mathType, createProto(intType, intType, intType), "min");
+    public final DexMethod minLong =
+        createMethod(mathType, createProto(longType, longType, longType), "min");
+    public final DexMethod multiplyExactInt =
+        createMethod(mathType, createProto(intType, intType, intType), "multiplyExact");
+    public final DexMethod multiplyExactLong =
+        createMethod(mathType, createProto(longType, longType, longType), "multiplyExact");
+    public final DexMethod negateExactInt =
+        createMethod(mathType, createProto(intType, intType), "negateExact");
+    public final DexMethod negateExactLong =
+        createMethod(mathType, createProto(longType, longType), "negateExact");
+    public final DexMethod nextAfterDouble =
+        createMethod(mathType, createProto(doubleType, doubleType, doubleType), "nextAfter");
+    public final DexMethod nextAfterFloat =
+        createMethod(mathType, createProto(floatType, floatType, doubleType), "nextAfter");
+    public final DexMethod nextDownDouble =
+        createMethod(mathType, createProto(doubleType, doubleType), "nextDown");
+    public final DexMethod nextDownFloat =
+        createMethod(mathType, createProto(floatType, floatType), "nextDown");
+    public final DexMethod nextUpDouble =
+        createMethod(mathType, createProto(doubleType, doubleType), "nextUp");
+    public final DexMethod nextUpFloat =
+        createMethod(mathType, createProto(floatType, floatType), "nextUp");
+    public final DexMethod pow =
+        createMethod(mathType, createProto(doubleType, doubleType, doubleType), "pow");
+    public final DexMethod random = createMethod(mathType, createProto(doubleType), "random");
+    public final DexMethod rint =
+        createMethod(mathType, createProto(doubleType, doubleType), "rint");
+    public final DexMethod roundDouble =
+        createMethod(mathType, createProto(longType, doubleType), "round");
+    public final DexMethod roundFloat =
+        createMethod(mathType, createProto(intType, floatType), "round");
+    public final DexMethod scalbDouble =
+        createMethod(mathType, createProto(doubleType, doubleType, intType), "scalb");
+    public final DexMethod scalbFloat =
+        createMethod(mathType, createProto(floatType, floatType, intType), "scalb");
+    public final DexMethod signumDouble =
+        createMethod(mathType, createProto(doubleType, doubleType), "signum");
+    public final DexMethod signumFloat =
+        createMethod(mathType, createProto(floatType, floatType), "signum");
+    public final DexMethod sin = createMethod(mathType, createProto(doubleType, doubleType), "sin");
+    public final DexMethod sinh =
+        createMethod(mathType, createProto(doubleType, doubleType), "sinh");
+    public final DexMethod sqrt =
+        createMethod(mathType, createProto(doubleType, doubleType), "sqrt");
+    public final DexMethod subtractExactInt =
+        createMethod(mathType, createProto(intType, intType, intType), "subtractExact");
+    public final DexMethod subtractExactLong =
+        createMethod(mathType, createProto(longType, longType, longType), "subtractExact");
+    public final DexMethod tan = createMethod(mathType, createProto(doubleType, doubleType), "tan");
+    public final DexMethod tanh =
+        createMethod(mathType, createProto(doubleType, doubleType), "tanh");
+    public final DexMethod toDegrees =
+        createMethod(mathType, createProto(doubleType, doubleType), "toDegrees");
+    public final DexMethod toIntExact =
+        createMethod(mathType, createProto(intType, longType), "toIntExact");
+    public final DexMethod toRadians =
+        createMethod(mathType, createProto(doubleType, doubleType), "toRadians");
+    public final DexMethod ulpDouble =
+        createMethod(mathType, createProto(doubleType, doubleType), "ulp");
+    public final DexMethod ulpFloat =
+        createMethod(mathType, createProto(floatType, floatType), "ulp");
 
     private MathMembers() {}
+
+    public void forEachUnconditionalFinalMethodWithoutSideEffects(Consumer<DexMethod> consumer) {
+      consumer.accept(absDouble);
+      consumer.accept(absFloat);
+      consumer.accept(absInt);
+      consumer.accept(absLong);
+      consumer.accept(acos);
+      consumer.accept(asin);
+      consumer.accept(atan);
+      consumer.accept(atan2);
+      consumer.accept(cbrt);
+      consumer.accept(ceil);
+      consumer.accept(copySignDouble);
+      consumer.accept(copySignFloat);
+      consumer.accept(cos);
+      consumer.accept(cosh);
+      consumer.accept(exp);
+      consumer.accept(expm1);
+      consumer.accept(floor);
+      consumer.accept(getExponentDouble);
+      consumer.accept(getExponentFloat);
+      consumer.accept(hypot);
+      consumer.accept(IEEEremainder);
+      consumer.accept(log);
+      consumer.accept(log10);
+      consumer.accept(log1p);
+      consumer.accept(maxDouble);
+      consumer.accept(maxFloat);
+      consumer.accept(maxInt);
+      consumer.accept(maxLong);
+      consumer.accept(minDouble);
+      consumer.accept(minFloat);
+      consumer.accept(minInt);
+      consumer.accept(minLong);
+      consumer.accept(nextAfterDouble);
+      consumer.accept(nextAfterFloat);
+      consumer.accept(nextDownDouble);
+      consumer.accept(nextDownFloat);
+      consumer.accept(nextUpDouble);
+      consumer.accept(nextUpFloat);
+      consumer.accept(pow);
+      consumer.accept(rint);
+      consumer.accept(roundDouble);
+      consumer.accept(roundFloat);
+      consumer.accept(scalbDouble);
+      consumer.accept(scalbFloat);
+      consumer.accept(signumDouble);
+      consumer.accept(signumFloat);
+      consumer.accept(sin);
+      consumer.accept(sinh);
+      consumer.accept(sqrt);
+      consumer.accept(tan);
+      consumer.accept(tanh);
+      consumer.accept(toDegrees);
+      consumer.accept(toRadians);
+      consumer.accept(ulpDouble);
+      consumer.accept(ulpFloat);
+    }
   }
 
   public class JavaNioByteOrderMembers extends LibraryMembers {

@@ -44,6 +44,7 @@ public class LibraryMemberOptimizer implements CodeOptimization {
     register(new ClassOptimizer(appView));
     register(new CollectionsOptimizer(appView));
     register(new ConstructorOptimizer(appView));
+    register(new JavaLangMathMethodOptimizer(appView));
     register(new ListOptimizer(appView));
     register(new MapOptimizer(appView));
     register(new MethodOptimizer(appView));

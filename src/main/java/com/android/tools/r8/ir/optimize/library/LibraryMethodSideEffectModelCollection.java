@@ -72,14 +72,6 @@ public class LibraryMethodSideEffectModelCollection {
         ImmutableSet.<DexMethod>builder()
             .add(dexItemFactory.classMethods.desiredAssertionStatus)
             .add(dexItemFactory.enumMembers.constructor)
-            .add(dexItemFactory.mathMembers.minInt)
-            .add(dexItemFactory.mathMembers.minLong)
-            .add(dexItemFactory.mathMembers.minFloat)
-            .add(dexItemFactory.mathMembers.minDouble)
-            .add(dexItemFactory.mathMembers.maxInt)
-            .add(dexItemFactory.mathMembers.maxLong)
-            .add(dexItemFactory.mathMembers.maxFloat)
-            .add(dexItemFactory.mathMembers.maxDouble)
             .add(dexItemFactory.npeMethods.init)
             .add(dexItemFactory.npeMethods.initWithMessage)
             .add(dexItemFactory.recordMembers.constructor)
@@ -105,6 +97,7 @@ public class LibraryMethodSideEffectModelCollection {
     dexItemFactory.floatMembers.forEachUnconditionalFinalMethodWithoutSideEffects(builder::add);
     dexItemFactory.integerMembers.forEachUnconditionalFinalMethodWithoutSideEffects(builder::add);
     dexItemFactory.longMembers.forEachUnconditionalFinalMethodWithoutSideEffects(builder::add);
+    dexItemFactory.mathMembers.forEachUnconditionalFinalMethodWithoutSideEffects(builder::add);
     dexItemFactory.shortMembers.forEachUnconditionalFinalMethodWithoutSideEffects(builder::add);
     return builder.build();
   }
