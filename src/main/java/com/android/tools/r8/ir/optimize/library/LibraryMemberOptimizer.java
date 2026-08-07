@@ -42,6 +42,13 @@ public class LibraryMemberOptimizer implements CodeOptimization {
     timing.begin("Register optimizers");
     PrimitiveMethodOptimizer.forEachPrimitiveOptimizer(appView, this::register);
     register(new AndroidGraphicsColorMethodOptimizer(appView));
+    register(new AndroidGraphicsImageFormatMethodOptimizer(appView));
+    register(new AndroidNetUriMethodOptimizer(appView));
+    register(new AndroidTextTextUtilsMethodOptimizer(appView));
+    register(new AndroidViewViewMeasureSpecMethodOptimizer(appView));
+    register(new JavaLangSystemMethodOptimizer(appView));
+    register(new JavaUtilArraysMethodOptimizer(appView));
+    register(new JavaUtilRegexPatternMethodOptimizer(appView));
     register(new ClassOptimizer(appView));
     register(new CollectionsOptimizer(appView));
     register(new ConstructorOptimizer(appView));

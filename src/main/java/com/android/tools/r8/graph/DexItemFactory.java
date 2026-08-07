@@ -710,6 +710,15 @@ public class DexItemFactory {
       createStaticallyKnownType("Landroid/app/ZygotePreload;");
   public final DexType androidGraphicsColorType =
       createStaticallyKnownType("Landroid/graphics/Color;");
+  public final DexType androidGraphicsImageFormatType =
+      createStaticallyKnownType("Landroid/graphics/ImageFormat;");
+  public final DexType androidNetUriType = createStaticallyKnownType("Landroid/net/Uri;");
+  public final DexType androidTextTextUtilsType =
+      createStaticallyKnownType("Landroid/text/TextUtils;");
+  public final DexType androidViewViewMeasureSpecType =
+      createStaticallyKnownType("Landroid/view/View$MeasureSpec;");
+  public final DexType javaUtilRegexPatternType =
+      createStaticallyKnownType("Ljava/util/regex/Pattern;");
   public final DexType androidOsBuildType = createStaticallyKnownType("Landroid/os/Build;");
   public final DexType androidOsBuildVersionType =
       createStaticallyKnownType("Landroid/os/Build$VERSION;");
@@ -808,6 +817,15 @@ public class DexItemFactory {
   // android.**
   public final AndroidGraphicsColorMembers androidGraphicsColorMembers =
       new AndroidGraphicsColorMembers();
+  public final AndroidGraphicsImageFormatMembers androidGraphicsImageFormatMembers =
+      new AndroidGraphicsImageFormatMembers();
+  public final AndroidNetUriMembers androidNetUriMembers = new AndroidNetUriMembers();
+  public final AndroidTextTextUtilsMembers androidTextTextUtilsMembers =
+      new AndroidTextTextUtilsMembers();
+  public final AndroidViewViewMeasureSpecMembers androidViewViewMeasureSpecMembers =
+      new AndroidViewViewMeasureSpecMembers();
+  public final JavaUtilRegexPatternMembers javaUtilRegexPatternMembers =
+      new JavaUtilRegexPatternMembers();
   public final AndroidOsBuildMembers androidOsBuildMembers = new AndroidOsBuildMembers();
   public final AndroidOsBuildVersionMembers androidOsBuildVersionMembers =
       new AndroidOsBuildVersionMembers();
@@ -856,12 +874,17 @@ public class DexItemFactory {
           stringMembers,
           // android.**
           androidGraphicsColorMembers,
+          androidGraphicsImageFormatMembers,
+          androidNetUriMembers,
           androidOsBuildMembers,
           androidOsBuildVersionMembers,
           androidOsBundleMembers,
           androidSystemOsConstantsMembers,
+          androidTextTextUtilsMembers,
+          androidViewViewMeasureSpecMembers,
           androidViewViewMembers,
           // java.**
+          javaUtilRegexPatternMembers,
           enumMembers,
           javaIoFileMembers,
           javaMathBigIntegerMembers,
@@ -1446,6 +1469,77 @@ public class DexItemFactory {
       consumer.accept(redLong);
       consumer.accept(rgbInt);
       consumer.accept(rgbFloat);
+    }
+  }
+
+  public class AndroidGraphicsImageFormatMembers extends LibraryMembers {
+
+    public final DexMethod getBitsPerPixel =
+        createMethod(
+            androidGraphicsImageFormatType, createProto(intType, intType), "getBitsPerPixel");
+
+    private AndroidGraphicsImageFormatMembers() {}
+
+    public void forEachUnconditionalFinalMethodWithoutSideEffects(Consumer<DexMethod> consumer) {
+      consumer.accept(getBitsPerPixel);
+    }
+  }
+
+  public class AndroidNetUriMembers extends LibraryMembers {
+
+    public final DexMethod encode =
+        createMethod(androidNetUriType, createProto(stringType, stringType), "encode");
+    public final DexMethod encodeWithAllow =
+        createMethod(androidNetUriType, createProto(stringType, stringType, stringType), "encode");
+
+    private AndroidNetUriMembers() {}
+
+    public void forEachUnconditionalFinalMethodWithoutSideEffects(Consumer<DexMethod> consumer) {
+      consumer.accept(encode);
+      consumer.accept(encodeWithAllow);
+    }
+  }
+
+  public class AndroidTextTextUtilsMembers extends LibraryMembers {
+
+    public final DexMethod equals =
+        createMethod(
+            androidTextTextUtilsType,
+            createProto(booleanType, charSequenceType, charSequenceType),
+            "equals");
+    public final DexMethod isEmpty =
+        createMethod(
+            androidTextTextUtilsType, createProto(booleanType, charSequenceType), "isEmpty");
+
+    private AndroidTextTextUtilsMembers() {}
+
+    public void forEachUnconditionalFinalMethodWithoutSideEffects(Consumer<DexMethod> consumer) {}
+  }
+
+  public class AndroidViewViewMeasureSpecMembers extends LibraryMembers {
+
+    public final DexMethod makeMeasureSpec =
+        createMethod(
+            androidViewViewMeasureSpecType,
+            createProto(intType, intType, intType),
+            "makeMeasureSpec");
+
+    private AndroidViewViewMeasureSpecMembers() {}
+
+    public void forEachUnconditionalFinalMethodWithoutSideEffects(Consumer<DexMethod> consumer) {
+      consumer.accept(makeMeasureSpec);
+    }
+  }
+
+  public class JavaUtilRegexPatternMembers extends LibraryMembers {
+
+    public final DexMethod quote =
+        createMethod(javaUtilRegexPatternType, createProto(stringType, stringType), "quote");
+
+    private JavaUtilRegexPatternMembers() {}
+
+    public void forEachUnconditionalFinalMethodWithoutSideEffects(Consumer<DexMethod> consumer) {
+      consumer.accept(quote);
     }
   }
 
@@ -2359,7 +2453,10 @@ public class DexItemFactory {
     public final DexMethod asList;
     public final DexMethod hashCode =
         createMethod(arraysType, createProto(intType, objectArrayType), "hashCode");
+    public final DexMethod hashCodeIntArray =
+        createMethod(arraysType, createProto(intType, intArrayType), "hashCode");
     public final DexMethod equalsObjectArray;
+    public final DexMethod equalsByteArray;
     public final Set<DexMethod> copyOfMethods;
 
     private JavaUtilArraysMethods() {
@@ -2371,6 +2468,9 @@ public class DexItemFactory {
               arraysType,
               createProto(booleanType, objectArrayType, objectArrayType),
               equalsMethodName);
+      equalsByteArray =
+          createMethod(
+              arraysType, createProto(booleanType, byteArrayType, byteArrayType), equalsMethodName);
       DexString copyOfMethodName = createString("copyOf");
       DexMethod copyOfBoolean =
           createMethod(

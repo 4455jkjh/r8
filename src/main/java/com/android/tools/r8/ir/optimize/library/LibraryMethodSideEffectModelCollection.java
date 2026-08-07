@@ -92,6 +92,16 @@ public class LibraryMethodSideEffectModelCollection {
             .add(dexItemFactory.kotlinEnumEntriesListInit);
     dexItemFactory.androidGraphicsColorMembers.forEachUnconditionalFinalMethodWithoutSideEffects(
         builder::add);
+    dexItemFactory.androidGraphicsImageFormatMembers
+        .forEachUnconditionalFinalMethodWithoutSideEffects(builder::add);
+    dexItemFactory.androidNetUriMembers.forEachUnconditionalFinalMethodWithoutSideEffects(
+        builder::add);
+    dexItemFactory.androidTextTextUtilsMembers.forEachUnconditionalFinalMethodWithoutSideEffects(
+        builder::add);
+    dexItemFactory.androidViewViewMeasureSpecMembers
+        .forEachUnconditionalFinalMethodWithoutSideEffects(builder::add);
+    dexItemFactory.javaUtilRegexPatternMembers.forEachUnconditionalFinalMethodWithoutSideEffects(
+        builder::add);
     dexItemFactory.booleanMembers.forEachUnconditionalFinalMethodWithoutSideEffects(builder::add);
     dexItemFactory.byteMembers.forEachUnconditionalFinalMethodWithoutSideEffects(builder::add);
     dexItemFactory.charMembers.forEachUnconditionalFinalMethodWithoutSideEffects(builder::add);
