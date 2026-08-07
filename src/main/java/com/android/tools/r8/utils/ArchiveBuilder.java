@@ -115,29 +115,31 @@ public class ArchiveBuilder implements OutputBuilder {
     }
   }
 
-  private boolean isSafeEntryName(String name, DiagnosticsHandler handler) {
+  private static final Splitter PATH_SEGMENT_SPLITTER = Splitter.onPattern("[/\\\\]");
+
+  private boolean isUnsafeEntryName(String name, DiagnosticsHandler handler) {
     if (name.startsWith("/") || name.startsWith("\\")) {
       handler.error(
           new StringDiagnostic(
               "Refusing to write archive entry with absolute path: " + name, origin));
-      return false;
+      return true;
     }
     // Avoid marking files like example..file as illegal.
-    Iterable<String> segments = Splitter.onPattern("[/\\\\]").split(name);
+    Iterable<String> segments = PATH_SEGMENT_SPLITTER.split(name);
     for (String segment : segments) {
       if (segment.equals("..")) {
         handler.error(
             new StringDiagnostic(
                 "Refusing to write archive entry with relative path containing '..': " + name,
                 origin));
-        return false;
+        return true;
       }
     }
-    return true;
+    return false;
   }
 
   private void writeDirectoryNow(String name, DiagnosticsHandler handler) {
-    if (!isSafeEntryName(name, handler)) {
+    if (isUnsafeEntryName(name, handler)) {
       return;
     }
     if (name.charAt(name.length() - 1) != DataResource.SEPARATOR) {
@@ -189,7 +191,7 @@ public class ArchiveBuilder implements OutputBuilder {
 
   public void writeFileNow(
       String name, ByteDataView content, DiagnosticsHandler handler, boolean compressed) {
-    if (!isSafeEntryName(name, handler)) {
+    if (isUnsafeEntryName(name, handler)) {
       return;
     }
     try {
