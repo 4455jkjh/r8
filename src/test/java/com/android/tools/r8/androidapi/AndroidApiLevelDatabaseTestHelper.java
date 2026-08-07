@@ -4,6 +4,7 @@
 
 package com.android.tools.r8.androidapi;
 
+import com.android.tools.r8.androidapi.GenerateCovariantReturnTypeMethodsTest.CovariantMethodsInJarResult;
 import com.android.tools.r8.references.ClassReference;
 import com.android.tools.r8.references.FieldReference;
 import com.android.tools.r8.references.MethodReference;
@@ -13,8 +14,10 @@ import com.android.tools.r8.references.TypeReference;
 import com.android.tools.r8.utils.AndroidApiLevel;
 import com.android.tools.r8.utils.internal.TriConsumer;
 import com.google.common.collect.ImmutableList;
+import java.io.IOException;
 import java.lang.reflect.Field;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiConsumer;
@@ -83,30 +86,24 @@ public class AndroidApiLevelDatabaseTestHelper {
     addChronoTimeMethods(methodConsumer);
   }
 
-  /**
-   * These entries are present at runtime but absent from api-versions.xml and android.jar.
-   *
-   * <p>It is assumed that
-   *
-   * <ul>
-   *   <li>No class implements an interface.
-   *   <li>No class is an interface.
-   * </ul>
-   */
-  public static void visitHiddenReferences(
-      TriConsumer<ClassReference, ClassReference, AndroidApiLevel> classConsumer,
-      TriConsumer<MethodReference, Boolean, AndroidApiLevel> methodConsumer,
-      BiConsumer<FieldReference, AndroidApiLevel> fieldConsumer) {
-    addUnsafeMethods(classConsumer, methodConsumer, fieldConsumer);
+  @FunctionalInterface
+  public interface ClassConsumer {
+    /** If {@code superReference} is null, the class is an interface. */
+    void accept(
+        ClassReference classReference,
+        ClassReference superReference,
+        List<ClassReference> interfaces,
+        AndroidApiLevel apiLevel);
   }
 
-  public static void visitAllAdditionalAndHiddenReferences(
-      TriConsumer<ClassReference, ClassReference, AndroidApiLevel> classConsumer,
+  /** These entries are present at runtime but absent from api-versions.xml and android.jar. */
+  public static void visitHiddenReferences(
+      ClassConsumer classConsumer,
       TriConsumer<MethodReference, Boolean, AndroidApiLevel> methodConsumer,
-      BiConsumer<FieldReference, AndroidApiLevel> fieldConsumer) {
-    visitHiddenReferences(classConsumer, methodConsumer, fieldConsumer);
-    visitAdditionalKnownApiReferences(
-        (methodRef, apiLevel) -> methodConsumer.accept(methodRef, false, apiLevel));
+      BiConsumer<FieldReference, AndroidApiLevel> fieldConsumer)
+      throws IOException {
+    addUnsafeMethods(classConsumer, methodConsumer, fieldConsumer);
+    addCovariantMethods(methodConsumer);
   }
 
   private static void addStringBuilderAndBufferMethods(
@@ -370,7 +367,7 @@ public class AndroidApiLevelDatabaseTestHelper {
   }
 
   public static void addUnsafeMethods(
-      TriConsumer<ClassReference, ClassReference, AndroidApiLevel> classConsumer,
+      ClassConsumer classConsumer,
       TriConsumer<MethodReference, Boolean, AndroidApiLevel> methodConsumer,
       BiConsumer<FieldReference, AndroidApiLevel> fieldConsumer) {
     // If this assert fails then check these things before updating the assert:
@@ -400,7 +397,8 @@ public class AndroidApiLevelDatabaseTestHelper {
     AndroidApiLevel always = AndroidApiLevel.B;
     ClassReference sunMiscUnsafeType = Reference.classFromDescriptor("Lsun/misc/Unsafe;");
 
-    classConsumer.accept(sunMiscUnsafeType, Reference.classFromClass(Object.class), always);
+    classConsumer.accept(
+        sunMiscUnsafeType, Reference.classFromClass(Object.class), ImmutableList.of(), always);
 
     // Fields
     fieldConsumer.accept(
@@ -807,5 +805,17 @@ public class AndroidApiLevelDatabaseTestHelper {
         Reference.method(sunMiscUnsafeType, "unpark", ImmutableList.of(objectType), voidType),
         false,
         always);
+  }
+
+  private static CovariantMethodsInJarResult covariantResult = null;
+
+  public static void addCovariantMethods(
+      TriConsumer<MethodReference, Boolean, AndroidApiLevel> methodConsumer) throws IOException {
+    if (covariantResult == null) {
+      covariantResult = CovariantMethodsInJarResult.create();
+    }
+    for (ClassReference classReference : covariantResult.getClasses()) {
+      covariantResult.visitCovariantMethodsForHolder(classReference, methodConsumer);
+    }
   }
 }

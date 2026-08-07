@@ -11,16 +11,13 @@ import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.ToolHelper;
+import com.android.tools.r8.apimodel.AndroidApiVersionsXmlParser.ParsingException;
 import com.android.tools.r8.references.Reference;
 import com.android.tools.r8.utils.AndroidApiLevel;
-import com.android.tools.r8.utils.ZipUtils;
 import com.android.tools.r8.utils.internal.FileUtils;
 import com.android.tools.r8.utils.internal.IntBox;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipOutputStream;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -28,8 +25,6 @@ import org.junit.runners.Parameterized.Parameters;
 
 @RunWith(Parameterized.class)
 public class AndroidApiVersionsXmlParserTest extends TestBase {
-
-  private static final AndroidApiLevel API_LEVEL = AndroidApiLevel.API_DATABASE_LEVEL;
 
   @Parameters(name = "{0}")
   public static TestParametersCollection data() {
@@ -40,119 +35,87 @@ public class AndroidApiVersionsXmlParserTest extends TestBase {
     parameters.assertNoneRuntime();
   }
 
+  private static List<ParsedApiClass> apiVersionsXml = null;
+
+  private static List<ParsedApiClass> getApiVersionsXml() throws ParsingException {
+    if (apiVersionsXml == null) {
+      apiVersionsXml =
+          AndroidApiVersionsXmlParser.parse(
+              ToolHelper.getApiVersionsXmlFile(AndroidApiLevel.API_DATABASE_LEVEL));
+    }
+    return apiVersionsXml;
+  }
+
   @Test
   public void testParsedApiVersionsXmlSize() throws Exception {
     // This tests makes a rudimentary check on the number of classes, fields and methods in
     // api-versions.xml to ensure that the runtime tests do not vacuously succeed.
-    List<ParsedApiClass> parsedApiClasses =
-        AndroidApiVersionsXmlParserChecked.parse(
-            ToolHelper.getApiVersionsXmlFile(API_LEVEL),
-            ToolHelper.getAndroidJar(API_LEVEL),
-            API_LEVEL,
-            false);
+    List<ParsedApiClass> parsedClasses = getApiVersionsXml();
     IntBox numberOfFields = new IntBox(0);
     IntBox numberOfMethods = new IntBox(0);
-    parsedApiClasses.forEach(
+    parsedClasses.forEach(
         apiClass -> {
           numberOfFields.increment(apiClass.fieldCount());
           numberOfMethods.increment(apiClass.methodCount());
         });
     // These numbers will change when updating api-versions.xml.
-    assertEquals(6_498, parsedApiClasses.size());
-    assertEquals(32_818, numberOfFields.get());
-    assertEquals(49_867, numberOfMethods.get());
+    assertEquals(6_952, parsedClasses.size());
+    assertEquals(33_574, numberOfFields.get());
+    assertEquals(51_590, numberOfMethods.get());
   }
 
-  private static final String sampleVersion4ApiVersionsXml =
-      "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n"
-          + "<api version=\"4\">\n"
-          + "        <sdk id=\"36\" shortname=\"B-ext\" name=\"Baklava Extensions\"\n"
-          + "             reference=\"android/os/Build$VERSION_CODES$BAKLAVA\"/>\n"
-          + "\n"
-          + "        <!-- This class was introduced in Android R -->\n"
-          + "        <class name=\"android/os/ext/SdkExtensions\" since=\"30.0\">\n"
-          + "                <extends name=\"java/lang/Object\"/>\n"
-          + "                <!-- This method was introduced in Android S. It was \"backported\""
-          + " to Android R via the R extension,\n"
-          + "                     version 2. It also exists in later extensions, including the"
-          + " Baklava extension (id 36). -->\n"
-          + "                <method name=\"getAllExtensionVersions()Ljava/util/Map;\""
-          + " since=\"31.0\"\n"
-          + "                        sdks=\"30:2,31:2,33:4,34:7,35:12,36:16,0:31.0\"/>\n"
-          + "                <method name=\"getExtensionVersion(I)I\"/>\n"
-          + "                <!-- This field was introduced in Android U. It was \"backported\""
-          + " to Android R via the R extension,\n"
-          + "                     version 4. It also exists in later extensions, including the"
-          + " Baklava extension (id 36). -->\n"
-          + "                <field name=\"AD_SERVICES\" since=\"34.0\""
-          + " sdks=\"30:4,31:4,33:4,34:7,35:12,36:16,0:34.0\"/>\n"
-          + "        </class>\n"
-          + "\n"
-          + "        <!-- This class was introduced in Baklava. It does not exist in any SDK"
-          + " extension. -->\n"
-          + "        <class name=\"android/os/FromBaklava\" since=\"36.0\">\n"
-          + "                <extends name=\"java/lang/Object\"/>\n"
-          + "                <method name=\"foo(I)V\" />\n"
-          + "        </class>\n"
-          + "        <class name=\"android/os/AlsoFromBaklava\" since=\"36\">\n"
-          + "                <extends name=\"java/lang/Object\"/>\n"
-          + "                <method name=\"foo(I)V\" />\n"
-          + "        </class>\n"
-          + "        <class name=\"android/os/FromBaklava1\" since=\"36.1\">\n"
-          + "                <extends name=\"java/lang/Object\"/>\n"
-          + "                <method name=\"foo(I)V\" />\n"
-          + "        </class>\n"
-          + "</api>\n";
-
-  static class SdkExtensionsStub {
-    @SuppressWarnings("unused")
-    int AD_SERVICES;
+  @Test
+  public void testVerifierParsing() throws Exception {
+    ParsedApiClassVerifier.verify(getApiVersionsXml());
   }
 
-  static class TemplateClass {}
-
-  private static void mockAndroidJarForSampleVersion4ApiVersionsXml(Path outputPath)
-      throws Exception {
-    try (ZipOutputStream out = new ZipOutputStream(Files.newOutputStream(outputPath))) {
-      ZipUtils.writeToZipStream(
-          out,
-          "android/os/ext/SdkExtensions.class",
-          transformer(SdkExtensionsStub.class)
-              .setClassDescriptor("Landroid/os/ext/SdkExtensions;")
-              .transform(),
-          ZipEntry.STORED);
-      ZipUtils.writeToZipStream(
-          out,
-          "android/os/FromBaklava.class",
-          transformer(TemplateClass.class)
-              .setClassDescriptor("Landroid/os/FromBaklava;")
-              .transform(),
-          ZipEntry.STORED);
-      ZipUtils.writeToZipStream(
-          out,
-          "android/os/AlsoFromBaklava.class",
-          transformer(TemplateClass.class)
-              .setClassDescriptor("Landroid/os/AlsoFromBaklava;")
-              .transform(),
-          ZipEntry.STORED);
-      ZipUtils.writeToZipStream(
-          out,
-          "android/os/FromBaklava1.class",
-          transformer(TemplateClass.class)
-              .setClassDescriptor("Landroid/os/FromBaklava1;")
-              .transform(),
-          ZipEntry.STORED);
-    }
+  private static String sampleVersion4ApiVersionsXml() {
+    return "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n"
+        + "<api version=\"4\">\n"
+        + "        <sdk id=\"36\" shortname=\"B-ext\" name=\"Baklava Extensions\"\n"
+        + "             reference=\"android/os/Build$VERSION_CODES$BAKLAVA\"/>\n"
+        + "\n"
+        + "        <!-- This class was introduced in Android R -->\n"
+        + "        <class name=\"android/os/ext/SdkExtensions\" since=\"30.0\">\n"
+        + "                <extends name=\"java/lang/Object\"/>\n"
+        + "                <!-- This method was introduced in Android S. It was \"backported\""
+        + " to Android R via the R extension,\n"
+        + "                     version 2. It also exists in later extensions, including the"
+        + " Baklava extension (id 36). -->\n"
+        + "                <method name=\"getAllExtensionVersions()Ljava/util/Map;\""
+        + " since=\"31.0\"\n"
+        + "                        sdks=\"30:2,31:2,33:4,34:7,35:12,36:16,0:31.0\"/>\n"
+        + "                <method name=\"getExtensionVersion(I)I\"/>\n"
+        + "                <!-- This field was introduced in Android U. It was \"backported\""
+        + " to Android R via the R extension,\n"
+        + "                     version 4. It also exists in later extensions, including the"
+        + " Baklava extension (id 36). -->\n"
+        + "                <field name=\"AD_SERVICES\" since=\"34.0\""
+        + " sdks=\"30:4,31:4,33:4,34:7,35:12,36:16,0:34.0\"/>\n"
+        + "        </class>\n"
+        + "\n"
+        + "        <!-- This class was introduced in Baklava. It does not exist in any SDK"
+        + " extension. -->\n"
+        + "        <class name=\"android/os/FromBaklava\" since=\"36.0\">\n"
+        + "                <extends name=\"java/lang/Object\"/>\n"
+        + "                <method name=\"foo(I)V\" />\n"
+        + "        </class>\n"
+        + "        <class name=\"android/os/AlsoFromBaklava\" since=\"36\">\n"
+        + "                <extends name=\"java/lang/Object\"/>\n"
+        + "                <method name=\"foo(I)V\" />\n"
+        + "        </class>\n"
+        + "        <class name=\"android/os/FromBaklava1\" since=\"36.1\">\n"
+        + "                <extends name=\"java/lang/Object\"/>\n"
+        + "                <method name=\"foo(I)V\" />\n"
+        + "        </class>\n"
+        + "</api>\n";
   }
 
   @Test
   public void testApiVersionsXmlVersion4() throws Exception {
     Path apiVersionsXml = temp.newFile("api-versions.xml").toPath();
-    FileUtils.writeTextFile(apiVersionsXml, sampleVersion4ApiVersionsXml);
-    Path apiLibrary = temp.newFile("android.jar").toPath();
-    mockAndroidJarForSampleVersion4ApiVersionsXml(apiLibrary);
-    List<ParsedApiClass> parsedApiClasses =
-        AndroidApiVersionsXmlParserChecked.parse(apiVersionsXml, apiLibrary, API_LEVEL, true);
+    FileUtils.writeTextFile(apiVersionsXml, sampleVersion4ApiVersionsXml());
+    List<ParsedApiClass> parsedApiClasses = AndroidApiVersionsXmlParser.parse(apiVersionsXml);
     assertEquals(4, parsedApiClasses.size());
     ParsedApiClass sdkExtension = parsedApiClasses.get(0);
     assertEquals(

@@ -9,11 +9,19 @@ import com.android.tools.r8.apimodel.AndroidApiHashingDatabaseBuilderGenerator.G
 import com.android.tools.r8.apimodel.AndroidApiVersionsXmlParser;
 import com.android.tools.r8.apimodel.AndroidApiVersionsXmlParser.ParsingException;
 import com.android.tools.r8.apimodel.ParsedApiClass;
+import com.android.tools.r8.apimodel.ParsedApiClassFlattening;
 import com.android.tools.r8.apimodel.ParsedApiClassMerging;
+import com.android.tools.r8.apimodel.ParsedApiClassTrimming;
+import com.android.tools.r8.apimodel.ParsedApiClassTrimming.JarTrimmer;
+import com.android.tools.r8.apimodel.ParsedApiClassTrimming.RemovedTrimmer;
+import com.android.tools.r8.apimodel.ParsedApiClassVerifier;
+import com.android.tools.r8.apimodel.jar.ApiJarInfo;
+import com.android.tools.r8.apimodel.jar.ApiJarReader;
 import com.android.tools.r8.keepanno.annotations.KeepForApi;
 import com.android.tools.r8.origin.CommandLineOrigin;
 import com.android.tools.r8.utils.AndroidApiLevel;
 import com.android.tools.r8.utils.ExceptionUtils;
+import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -41,14 +49,18 @@ public class ApiDatabaseGenerator {
   private static void runInternal(ApiDatabaseGeneratorCommand command)
       throws ApiDatabaseGeneratorException {
     try {
-      List<ParsedApiClass> classes = extractClasses(command);
-      Collection<ParsedApiClass> mergedClasses =
-          ParsedApiClassMerging.merge(classes, command.getDiagnosticsHandler());
+      Collection<ParsedApiClass> classes = extractClasses(command);
+      ApiJarInfo jarInfo = ApiJarReader.read(command.getJarPaths());
+      classes = ParsedApiClassMerging.merge(classes, command.getDiagnosticsHandler());
+      classes = ParsedApiClassFlattening.flatten(classes);
+      classes = ParsedApiClassTrimming.trim(classes, new RemovedTrimmer());
+      classes = ParsedApiClassTrimming.trim(classes, new JarTrimmer(jarInfo));
+      ParsedApiClassVerifier.verify(classes);
       Map<ApiDatabaseEntry, AndroidApiLevel> databaseEntries =
-          AndroidApiHashingDatabaseBuilderGenerator.generateEntries(mergedClasses);
+          AndroidApiHashingDatabaseBuilderGenerator.generateEntries(classes);
       AndroidApiHashingDatabaseBuilderGenerator.writeEntries(
           databaseEntries, command.getOutputPath());
-    } catch (ParsingException | GenerationException e) {
+    } catch (ParsingException | GenerationException | IOException e) {
       throw new ApiDatabaseGeneratorException("Failed to generate API database", e);
     }
   }
@@ -57,7 +69,7 @@ public class ApiDatabaseGenerator {
       throws ParsingException {
     List<ParsedApiClass> allParsed = new ArrayList<>();
     for (Path xmlPath : command.getXmlPaths()) {
-      List<ParsedApiClass> parsed = AndroidApiVersionsXmlParser.parse(xmlPath, null);
+      List<ParsedApiClass> parsed = AndroidApiVersionsXmlParser.parse(xmlPath);
       allParsed.addAll(parsed);
     }
     return allParsed;

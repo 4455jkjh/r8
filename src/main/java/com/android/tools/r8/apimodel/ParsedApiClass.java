@@ -117,6 +117,15 @@ public class ParsedApiClass {
     }
   }
 
+  public boolean hasConstructor() {
+    for (var method : methods.keySet()) {
+      if (method.getMethodName().equals("<init>")) {
+        return true;
+      }
+    }
+    return false;
+  }
+
   public void registerField(FieldTypelessReference reference, ApiRange apiRange) {
     assert !fields.containsKey(reference) : reference + " is already registered";
     fields.put(reference, apiRange);

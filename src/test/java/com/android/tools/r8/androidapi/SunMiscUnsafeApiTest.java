@@ -83,7 +83,8 @@ public class SunMiscUnsafeApiTest extends TestBase {
       Map<FieldReference, AndroidApiLevel> fieldApis,
       Map<MethodReference, AndroidApiLevel> methodApis) {
     AndroidApiLevelDatabaseTestHelper.addUnsafeMethods(
-        (classReference, superReference, apiLevel) -> classApis.put(classReference, apiLevel),
+        (classReference, superReference, interfaces, apiLevel) ->
+            classApis.put(classReference, apiLevel),
         (methodReference, isStatic, apiLevel) -> methodApis.put(methodReference, apiLevel),
         fieldApis::put);
   }

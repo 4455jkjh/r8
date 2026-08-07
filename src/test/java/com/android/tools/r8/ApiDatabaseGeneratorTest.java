@@ -7,28 +7,26 @@ import static com.android.tools.r8.DiagnosticsMatcher.diagnosticMessage;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
-import com.android.tools.r8.apimodel.ApiJarInfo;
-import com.android.tools.r8.apimodel.ApiJarReader;
-import com.android.tools.r8.apimodel.FieldTypelessReference;
 import com.android.tools.r8.origin.CommandLineOrigin;
-import com.android.tools.r8.references.ClassReference;
-import com.android.tools.r8.references.MethodReference;
-import com.android.tools.r8.references.Reference;
-import com.android.tools.r8.references.TypeReference;
 import com.android.tools.r8.utils.internal.FileUtils;
 import com.android.tools.r8.utils.internal.StringUtils;
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Collections;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
+import org.objectweb.asm.ClassWriter;
+import org.objectweb.asm.MethodVisitor;
+import org.objectweb.asm.Opcodes;
 
 @RunWith(Parameterized.class)
 public class ApiDatabaseGeneratorTest extends TestBase {
@@ -45,13 +43,16 @@ public class ApiDatabaseGeneratorTest extends TestBase {
   @Test
   public void testGenerator() throws Exception {
     Path apiVersionsXml =
-        writeApiXml(
+        writeApiXmlWithObject(
             "api-versions.xml",
             "  <class name=\"android/Foo\" since=\"30\">",
             "    <extends name=\"java/lang/Object\"/>",
             "    <method name=\"bar()V\" since=\"31\"/>",
             "  </class>");
-    Path dummyJar = temp.newFile("dummy.jar").toPath();
+    Path dummyJar =
+        writeJar(
+            "dummy.jar",
+            new JarClassBuilder("android/Foo", "java/lang/Object").addMethod("bar()V"));
 
     Path outputDb = temp.newFile("api_database.ser").toPath();
 
@@ -71,7 +72,7 @@ public class ApiDatabaseGeneratorTest extends TestBase {
   @Test
   public void testGeneratorWithMergeAndErrors() throws Exception {
     Path apiVersionsXml1 =
-        writeApiXml(
+        writeApiXmlWithObject(
             "api-versions-1.xml",
             "  <class name=\"android/Foo\" since=\"30\">",
             "    <extends name=\"java/lang/Object\"/>",
@@ -86,7 +87,12 @@ public class ApiDatabaseGeneratorTest extends TestBase {
             "    <method name=\"bar()V\" since=\"31\"/>",
             "    <field name=\"baz\" since=\"33\"/>",
             "  </class>");
-    Path dummyJar = temp.newFile("dummy.jar").toPath();
+    Path dummyJar =
+        writeJar(
+            "dummy.jar",
+            new JarClassBuilder("android/Foo", "java/lang/Object")
+                .addMethod("bar()V")
+                .addField("baz"));
 
     Path outputDb = temp.newFile("api_database.ser").toPath();
 
@@ -113,11 +119,11 @@ public class ApiDatabaseGeneratorTest extends TestBase {
   @Test
   public void testGeneratorWithThreeInputsAndErrors() throws Exception {
     Path apiVersionsXml1 =
-        writeApiXml(
+        writeApiXmlWithObject(
             "api-versions-1.xml",
             "  <class name=\"android/Foo\" since=\"30\">",
             "    <extends name=\"java/lang/Object\"/>",
-            "    <method name=\"bar()V\" since=\"31\"/>",
+            "    <method name=\"bar()V\" since=\"33\"/>",
             "  </class>");
 
     Path apiVersionsXml2 =
@@ -133,9 +139,14 @@ public class ApiDatabaseGeneratorTest extends TestBase {
             "api-versions-3.xml",
             "  <class name=\"android/Foo\" since=\"30\">",
             "    <extends name=\"java/lang/Object\"/>",
-            "    <method name=\"bar()V\" since=\"31\"/>",
+            "    <method name=\"bar()V\" since=\"33\"/>",
             "  </class>");
-    Path dummyJar = temp.newFile("dummy.jar").toPath();
+    Path dummyJar =
+        writeJar(
+            "dummy.jar",
+            new JarClassBuilder("android/Foo", "java/lang/Object")
+                .addMethod("bar()V")
+                .addMethod("baz()V"));
 
     Path outputDb = temp.newFile("api_database.ser").toPath();
 
@@ -164,11 +175,11 @@ public class ApiDatabaseGeneratorTest extends TestBase {
   @Test
   public void testGeneratorWithMergeAndSuppressedWarnings() throws Exception {
     Path apiVersionsXml1 =
-        writeApiXml(
+        writeApiXmlWithObject(
             "api-versions-1.xml",
             "  <class name=\"android/Foo\" since=\"30\">",
             "    <extends name=\"java/lang/Object\"/>",
-            "    <method name=\"bar()V\" since=\"31\"/>",
+            "    <method name=\"bar()V\" since=\"30\"/>",
             "  </class>");
 
     Path apiVersionsXml2 =
@@ -176,10 +187,15 @@ public class ApiDatabaseGeneratorTest extends TestBase {
             "api-versions-2.xml",
             "  <class name=\"android/Foo\" since=\"30\">",
             "    <extends name=\"java/lang/Object\"/>",
-            "    <method name=\"bar()V\" since=\"31\"/>",
+            "    <method name=\"bar()V\" since=\"30\"/>",
             "    <field name=\"baz\" since=\"33\"/>",
             "  </class>");
-    Path dummyJar = temp.newFile("dummy.jar").toPath();
+    Path dummyJar =
+        writeJar(
+            "dummy.jar",
+            new JarClassBuilder("android/Foo", "java/lang/Object")
+                .addMethod("bar()V")
+                .addField("baz"));
 
     Path outputDb = temp.newFile("api_database.ser").toPath();
 
@@ -215,11 +231,11 @@ public class ApiDatabaseGeneratorTest extends TestBase {
   @Test
   public void testGeneratorWithMergeAndNoneWarnings() throws Exception {
     Path apiVersionsXml1 =
-        writeApiXml(
+        writeApiXmlWithObject(
             "api-versions-1.xml",
             "  <class name=\"android/Foo\" since=\"30\">",
             "    <extends name=\"java/lang/Object\"/>",
-            "    <method name=\"bar()V\" since=\"31\"/>",
+            "    <method name=\"bar()V\" since=\"30\"/>",
             "  </class>");
 
     Path apiVersionsXml2 =
@@ -227,10 +243,15 @@ public class ApiDatabaseGeneratorTest extends TestBase {
             "api-versions-2.xml",
             "  <class name=\"android/Foo\" since=\"30\">",
             "    <extends name=\"java/lang/Object\"/>",
-            "    <method name=\"bar()V\" since=\"31\"/>",
+            "    <method name=\"bar()V\" since=\"30\"/>",
             "    <field name=\"baz\" since=\"33\"/>",
             "  </class>");
-    Path dummyJar = temp.newFile("dummy.jar").toPath();
+    Path dummyJar =
+        writeJar(
+            "dummy.jar",
+            new JarClassBuilder("android/Foo", "java/lang/Object")
+                .addMethod("bar()V")
+                .addField("baz"));
 
     Path outputDb = temp.newFile("api_database.ser").toPath();
 
@@ -303,73 +324,93 @@ public class ApiDatabaseGeneratorTest extends TestBase {
     return file;
   }
 
-  interface TestInterface {
-    @SuppressWarnings("unused")
-    void instanceMethod();
-
-    static void staticMethod() {}
+  private Path writeApiXmlWithObject(String filename, String... contentLines) throws Exception {
+    String[] newContentLines = new String[contentLines.length + 3];
+    // Only the class definition is needed for tests, not the class members.
+    newContentLines[0] = "  <class name=\"java/lang/Object\" since=\"1\">";
+    newContentLines[1] = "    <method name=\"&lt;init&gt;()V\"/>";
+    newContentLines[2] = "  </class>";
+    System.arraycopy(contentLines, 0, newContentLines, 3, contentLines.length);
+    return writeApiXml(filename, newContentLines);
   }
 
-  static class TestClass {
-    @SuppressWarnings("unused")
-    int field = 0;
-
-    @SuppressWarnings("unused")
-    void instanceMethod() {}
-
-    @SuppressWarnings("unused")
-    static void staticMethod() {}
+  private Path writeJar(String filename, JarClassBuilder... classes) throws Exception {
+    Path file = temp.newFile(filename).toPath();
+    try (ZipOutputStream out = new ZipOutputStream(Files.newOutputStream(file.toFile().toPath()))) {
+      boolean hasObject = false;
+      for (JarClassBuilder clazz : classes) {
+        if (clazz.name.equals("java/lang/Object")) {
+          hasObject = true;
+        }
+        clazz.write(out);
+      }
+      if (!hasObject) {
+        new JarClassBuilder("java/lang/Object", null).write(out);
+      }
+    }
+    return file;
   }
 
-  @Test
-  public void testExtractJarInfo() throws Exception {
-    Path jar = temp.newFile("test.jar").toPath();
-    testForR8(Backend.CF)
-        .addProgramClasses(TestInterface.class, TestClass.class)
-        .addKeepAllClassesRule()
-        .compile()
-        .writeToZip(jar);
+  public static class JarClassBuilder {
+    private final String name;
+    private final String superName;
+    private final List<String> methods = new ArrayList<>();
+    private final List<String> fields = new ArrayList<>();
 
-    ApiDatabaseGeneratorCommand command =
-        ApiDatabaseGeneratorCommand.builder()
-            .addInputPath(jar)
-            .addInputPath(writeApiXml("dummy.xml")) // Need at least one XML
-            .build();
+    public JarClassBuilder(String name, String superName) {
+      this.name = name;
+      this.superName = superName;
+    }
 
-    ApiJarInfo jarInfo = ApiJarReader.extractJarInfo(command);
+    public JarClassBuilder addMethod(String method) {
+      methods.add(method);
+      return this;
+    }
 
-    ClassReference interfaceRef = Reference.classFromClass(TestInterface.class);
-    assertTrue(jarInfo.isClassDefined(interfaceRef));
-    assertTrue(jarInfo.isInterface(interfaceRef));
+    public JarClassBuilder addField(String field) {
+      fields.add(field);
+      return this;
+    }
 
-    ClassReference classRef = Reference.classFromClass(TestClass.class);
-    assertTrue(jarInfo.isClassDefined(classRef));
-    assertFalse(jarInfo.isInterface(classRef));
+    void write(ZipOutputStream out) throws IOException {
+      ClassWriter cw = new ClassWriter(ClassWriter.COMPUTE_MAXS);
+      cw.visit(Opcodes.V1_8, Opcodes.ACC_PUBLIC, name, null, superName, null);
 
-    TypeReference voidType = Reference.returnTypeFromDescriptor("V");
-    List<TypeReference> noArgs = Collections.emptyList();
+      if (superName != null) {
+        MethodVisitor mv = cw.visitMethod(Opcodes.ACC_PUBLIC, "<init>", "()V", null, null);
+        mv.visitCode();
+        mv.visitVarInsn(Opcodes.ALOAD, 0);
+        mv.visitMethodInsn(Opcodes.INVOKESPECIAL, superName, "<init>", "()V", false);
+        mv.visitInsn(Opcodes.RETURN);
+        mv.visitMaxs(0, 0);
+        mv.visitEnd();
+      } else if (name.equals("java/lang/Object")) {
+        MethodVisitor mv = cw.visitMethod(Opcodes.ACC_PUBLIC, "<init>", "()V", null, null);
+        mv.visitCode();
+        mv.visitInsn(Opcodes.RETURN);
+        mv.visitMaxs(0, 0);
+        mv.visitEnd();
+      }
 
-    MethodReference interfaceInstanceMethod =
-        Reference.method(interfaceRef, "instanceMethod", noArgs, voidType);
-    assertTrue(jarInfo.isMethodDefined(interfaceInstanceMethod));
-    assertFalse(jarInfo.isStatic(interfaceInstanceMethod));
+      for (String method : methods) {
+        int index = method.indexOf('(');
+        String methodName = method.substring(0, index);
+        String methodDesc = method.substring(index);
+        MethodVisitor mv = cw.visitMethod(Opcodes.ACC_PUBLIC, methodName, methodDesc, null, null);
+        mv.visitCode();
+        mv.visitInsn(Opcodes.RETURN);
+        mv.visitMaxs(0, 0);
+        mv.visitEnd();
+      }
 
-    MethodReference interfaceStaticMethod =
-        Reference.method(interfaceRef, "staticMethod", noArgs, voidType);
-    assertTrue(jarInfo.isMethodDefined(interfaceStaticMethod));
-    assertTrue(jarInfo.isStatic(interfaceStaticMethod));
+      for (String field : fields) {
+        cw.visitField(Opcodes.ACC_PUBLIC, field, "Ljava/lang/Object;", null, null).visitEnd();
+      }
 
-    MethodReference classInstanceMethod =
-        Reference.method(classRef, "instanceMethod", noArgs, voidType);
-    assertTrue(jarInfo.isMethodDefined(classInstanceMethod));
-    assertFalse(jarInfo.isStatic(classInstanceMethod));
-
-    MethodReference classStaticMethod =
-        Reference.method(classRef, "staticMethod", noArgs, voidType);
-    assertTrue(jarInfo.isMethodDefined(classStaticMethod));
-    assertTrue(jarInfo.isStatic(classStaticMethod));
-
-    FieldTypelessReference field = new FieldTypelessReference(classRef, "field");
-    assertTrue(jarInfo.isFieldDefined(field));
+      cw.visitEnd();
+      out.putNextEntry(new ZipEntry(name + ".class"));
+      out.write(cw.toByteArray());
+      out.closeEntry();
+    }
   }
 }
