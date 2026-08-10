@@ -40,7 +40,9 @@ import java.util.Set;
 public class VirtualFile {
 
   public static final int MAX_ENTRIES = Constants.U16BIT_MAX + 1;
+  public static final int MAX_ENTRIES_ONLY_32K = Constants.U15BIT_MAX + 1;
 
+  private final AppView<?> appView;
   private int id;
   public final VirtualFileIndexedItemCollection indexedItems;
   private final IndexedItemTransaction transaction;
@@ -71,6 +73,7 @@ public class VirtualFile {
       DexProgramClass primaryClass,
       FeatureSplit featureSplit,
       StartupProfile startupProfile) {
+    this.appView = appView;
     this.id = id;
     this.indexedItems = new VirtualFileIndexedItemCollection();
     this.transaction = IndexedItemTransaction.create(indexedItems, appView);
@@ -194,10 +197,7 @@ public class VirtualFile {
     return objectMapping;
   }
 
-  public void computeMapping(
-      AppView<?> appView,
-      int lazyDexStringsCount,
-      Timing timing) {
+  public void computeMapping(AppView<?> appView, int lazyDexStringsCount, Timing timing) {
     computeMapping(appView, lazyDexStringsCount, timing, null);
   }
 
@@ -232,14 +232,22 @@ public class VirtualFile {
     transaction.addClassAndDependencies(clazz);
   }
 
-  public boolean isFull(int maxEntries) {
+  public static int getMaxNumberOfTypes(InternalOptions options) {
+    return options.canHaveTypeIdOver32KIssue() ? MAX_ENTRIES_ONLY_32K : MAX_ENTRIES;
+  }
+
+  public int getMaxNumberOfTypes() {
+    return getMaxNumberOfTypes(appView.options());
+  }
+
+  public boolean isFull(int maxEntries, int maxTypeEntries) {
     return transaction.getNumberOfMethods() > maxEntries
         || transaction.getNumberOfFields() > maxEntries
-        || transaction.getNumberOfTypes() > maxEntries;
+        || transaction.getNumberOfTypes() > maxTypeEntries;
   }
 
   public boolean isFull() {
-    return isFull(MAX_ENTRIES);
+    return isFull(MAX_ENTRIES, getMaxNumberOfTypes());
   }
 
   public int getNumberOfMethods() {
@@ -248,6 +256,10 @@ public class VirtualFile {
 
   public int getNumberOfFields() {
     return transaction.getNumberOfFields();
+  }
+
+  public int getNumberOfTypes() {
+    return transaction.getNumberOfTypes();
   }
 
   public int getNumberOfClasses() {
@@ -260,7 +272,11 @@ public class VirtualFile {
     }
     throw reporter.fatalError(
         new DexFileOverflowDiagnostic(
-            hasMainDexList, transaction.getNumberOfMethods(), transaction.getNumberOfFields()));
+            hasMainDexList,
+            transaction.getNumberOfMethods(),
+            transaction.getNumberOfFields(),
+            transaction.getNumberOfTypes(),
+            getMaxNumberOfTypes()));
   }
 
   public void abortTransaction() {

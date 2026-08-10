@@ -111,7 +111,12 @@ public class ObjectToOffsetMapping {
         new CompareToVisitorWithStringTable(namingLens, this.strings::getInt);
     timing.end();
     timing.begin("Sort types");
-    this.types = createSortedMap(types, compare(visitor), this::failOnOverflow);
+    this.types =
+        createSortedMap(
+            types,
+            compare(visitor),
+            VirtualFile.getMaxNumberOfTypes(appView.options()),
+            this::failOnOverflow);
     visitor =
         new CompareToVisitorWithTypeTable(namingLens, this.strings::getInt, this.types::getInt);
     timing.end();
@@ -200,13 +205,41 @@ public class ObjectToOffsetMapping {
 
   private <T> Reference2IntLinkedOpenHashMap<T> createSortedMap(
       Collection<T> items, Comparator<T> comparator, Consumer<T> onUInt16Overflow) {
-    return createSortedMap(items, comparator, onUInt16Overflow, ConsumerUtils.emptyConsumer(), 0);
+    return createSortedMap(
+        items,
+        comparator,
+        VirtualFile.MAX_ENTRIES,
+        onUInt16Overflow,
+        ConsumerUtils.emptyConsumer(),
+        0);
+  }
+
+  private <T> Reference2IntLinkedOpenHashMap<T> createSortedMap(
+      Collection<T> items, Comparator<T> comparator, int maxEntries, Consumer<T> onOverflow) {
+    return createSortedMap(
+        items, comparator, maxEntries, onOverflow, ConsumerUtils.emptyConsumer(), 0);
   }
 
   private <T> Reference2IntLinkedOpenHashMap<T> createSortedMap(
       Collection<T> items,
       Comparator<T> comparator,
       Consumer<T> onUInt16Overflow,
+      Consumer<T> onUInt17Overflow,
+      int reservedIndicesBeforeOverflow) {
+    return createSortedMap(
+        items,
+        comparator,
+        VirtualFile.MAX_ENTRIES,
+        onUInt16Overflow,
+        onUInt17Overflow,
+        reservedIndicesBeforeOverflow);
+  }
+
+  private <T> Reference2IntLinkedOpenHashMap<T> createSortedMap(
+      Collection<T> items,
+      Comparator<T> comparator,
+      int maxEntries,
+      Consumer<T> onOverflow,
       Consumer<T> onUInt17Overflow,
       int reservedIndicesBeforeOverflow) {
     if (items.isEmpty()) {
@@ -220,8 +253,8 @@ public class ObjectToOffsetMapping {
     int index = 0;
     for (T item : sorted) {
       int offsetIndex = index + reservedIndicesBeforeOverflow;
-      if (offsetIndex == Constants.U16BIT_MAX + 1) {
-        onUInt16Overflow.accept(item);
+      if (offsetIndex == maxEntries) {
+        onOverflow.accept(item);
       } else if (offsetIndex == Constants.U17BIT_MAX + 1) {
         onUInt17Overflow.accept(item);
       }

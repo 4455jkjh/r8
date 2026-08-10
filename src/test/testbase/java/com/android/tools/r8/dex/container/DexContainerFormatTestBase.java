@@ -187,7 +187,7 @@ public class DexContainerFormatTestBase extends TestBase {
     assertEquals((int) adler.getValue(), buffer.getInt(offset + CHECKSUM_OFFSET));
   }
 
-  static int getSizeFromMap(int type, CompatByteBuffer buffer, int offset) {
+  public static int getSizeFromMap(int type, CompatByteBuffer buffer, int offset) {
     int mapOffset = buffer.getInt(offset + MAP_OFF_OFFSET);
     buffer.position(mapOffset);
     int mapSize = buffer.getInt();
@@ -219,7 +219,7 @@ public class DexContainerFormatTestBase extends TestBase {
     throw new RuntimeException("Not found");
   }
 
-  static void setByteOrder(CompatByteBuffer buffer) {
+  public static void setByteOrder(CompatByteBuffer buffer) {
     // Make sure we set the right endian for reading.
     buffer.order(ByteOrder.LITTLE_ENDIAN);
     int endian = buffer.getInt(Constants.ENDIAN_TAG_OFFSET);

@@ -272,7 +272,7 @@ public class DexDistributionRefinement {
     }
     return file.getTransaction().getNumberOfFields() + newFields > VirtualFile.MAX_ENTRIES
         || file.getTransaction().getNumberOfMethods() + newMethods > VirtualFile.MAX_ENTRIES
-        || file.getTransaction().getNumberOfTypes() + newTypes > VirtualFile.MAX_ENTRIES;
+        || file.getTransaction().getNumberOfTypes() + newTypes > file.getMaxNumberOfTypes();
   }
 
   private boolean moveClass(
