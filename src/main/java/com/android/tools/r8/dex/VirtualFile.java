@@ -197,12 +197,11 @@ public class VirtualFile {
     return objectMapping;
   }
 
-  public void computeMapping(AppView<?> appView, int lazyDexStringsCount, Timing timing) {
-    computeMapping(appView, lazyDexStringsCount, timing, null);
+  public void computeMapping(int lazyDexStringsCount, Timing timing) {
+    computeMapping(lazyDexStringsCount, timing, null);
   }
 
   public void computeMapping(
-      AppView<?> appView,
       int lazyDexStringsCount,
       Timing timing,
       ObjectToOffsetMapping sharedMapping) {

@@ -65,7 +65,7 @@ public class ContainerJumboStringRewriter extends JumboStringRewriter {
       return;
     }
     timing.begin("Compute object offset mapping");
-    virtualFile.computeMapping(appView, lazyDexStrings.size(), timing, mapping);
+    virtualFile.computeMapping(lazyDexStrings.size(), timing, mapping);
     timing.end();
     timing.begin("Rewrite jumbo strings");
     rewriteCodeWithJumboStrings(virtualFile.getObjectMapping(), virtualFile.classes());
