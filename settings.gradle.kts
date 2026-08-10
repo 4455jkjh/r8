@@ -65,6 +65,8 @@ includeTestProject(":tests_bootstrap")
 
 includeTestProject(":tests_java_8")
 
+includeTestProject(":tests_java_8:apimodel")
+
 includeTestProject(":tests_java_8:classmerging")
 
 includeTestProject(":tests_java_8:ir")

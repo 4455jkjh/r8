@@ -53,6 +53,7 @@ public class InheritanceClassInDexDistributor {
     public final Set<DexProgramClass> members;
     public int numberOfFieldIds = -1;
     public int numberOfMethodIds = -1;
+    public int numberOfTypeIds = -1;
     public boolean dependsOnMainDexClasses = false;
 
     public ClassGroup() {
@@ -73,11 +74,13 @@ public class InheritanceClassInDexDistributor {
       }
       numberOfFieldIds = virtualFile.getNumberOfFields();
       numberOfMethodIds = virtualFile.getNumberOfMethods();
+      numberOfTypeIds = virtualFile.getNumberOfTypes();
     }
 
     public boolean canFitInOneDex() {
       return numberOfFieldIds < VirtualFile.MAX_ENTRIES
-          && numberOfMethodIds < VirtualFile.MAX_ENTRIES;
+          && numberOfMethodIds < VirtualFile.MAX_ENTRIES
+          && numberOfTypeIds < VirtualFile.getMaxNumberOfTypes(appView.options());
     }
 
     // This is used for sorting. Compared groups must be disjoint.
@@ -441,7 +444,7 @@ public class InheritanceClassInDexDistributor {
                       + dexProgramClass.getOrigin().toString()
                       + " is too big to fit in a dex.");
             }
-            if (dexForLayer.isFull(DEX_FULL_ENOUGH_THRESHOLD)) {
+            if (isFull(dexForLayer, DEX_FULL_ENOUGH_THRESHOLD)) {
               markDexFull(dexForLayer);
             }
             // Current dex is too full, continue to next dex.
@@ -596,7 +599,7 @@ public class InheritanceClassInDexDistributor {
       assignedClasses++;
       if (dex.isFull()) {
         dex.abortTransaction();
-        if (dex.isFull(DEX_FULL_ENOUGH_THRESHOLD)) {
+        if (isFull(dex, DEX_FULL_ENOUGH_THRESHOLD)) {
           markDexFull(dex);
         }
         assert dexInitialSize == dex.classes().size();
@@ -644,7 +647,7 @@ public class InheritanceClassInDexDistributor {
             }
             isLayerFullyAssigned = false;
             remaining.add(clazz);
-            if (dex.isFull(DEX_FULL_ENOUGH_THRESHOLD)) {
+            if (isFull(dex, DEX_FULL_ENOUGH_THRESHOLD)) {
               markDexFull(dex);
               currentDexIsTooFull = true;
             }
@@ -713,5 +716,14 @@ public class InheritanceClassInDexDistributor {
 
   private boolean isDexFull(VirtualFile dex) {
     return fullDex.get(dex.getId());
+  }
+
+  public boolean isFull(VirtualFile virtualFile, int maxEntries) {
+    int maxTypeEntries =
+        virtualFile.getMaxNumberOfTypes() == VirtualFile.MAX_ENTRIES
+            ? maxEntries
+            : Math.max(
+                0, virtualFile.getMaxNumberOfTypes() - (VirtualFile.MAX_ENTRIES - maxEntries));
+    return virtualFile.isFull(maxEntries, maxTypeEntries);
   }
 }

@@ -3231,6 +3231,14 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
     return canHaveBugPresentUntilExclusive(AndroidApiLevel.N);
   }
 
+  // Some Android 7.0 and 7.1 devices have a bug in the dex optimizer (dex2oat) that causes a
+  // crash if the number of type-ids exceeds 32768.
+  //
+  // See b/542922150.
+  public boolean canHaveTypeIdOver32KIssue() {
+    return canHaveBugPresentUntilInclusive(AndroidApiLevel.N_MR1);
+  }
+
   // Art 7.0.0 and later Art JIT may perform an invalid optimization if a string new-instance does
   // not flow directly to the init call.
   //

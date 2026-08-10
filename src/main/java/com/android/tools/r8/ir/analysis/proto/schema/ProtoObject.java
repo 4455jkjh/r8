@@ -73,6 +73,14 @@ public abstract class ProtoObject {
     return null;
   }
 
+  public boolean isProtoConstIntObject() {
+    return false;
+  }
+
+  public ProtoConstIntObject asProtoConstIntObject() {
+    return null;
+  }
+
   public boolean isProtoBoxedIntObject() {
     return false;
   }
@@ -86,6 +94,14 @@ public abstract class ProtoObject {
   }
 
   public ProtoBoxedBooleanObject asProtoBoxedBooleanObject() {
+    return null;
+  }
+
+  public boolean isProtoObjectFromInvokeVirtual() {
+    return false;
+  }
+
+  public ProtoObjectFromInvokeVirtual asProtoObjectFromInvokeVirtual() {
     return null;
   }
 }

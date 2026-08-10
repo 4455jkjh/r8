@@ -571,6 +571,9 @@ public class ProtoEnqueuerExtension
     } else if (object.isProtoObjectFromInvokeStatic()) {
       worklist.enqueueTraceInvokeStaticAction(
           object.asProtoObjectFromInvokeStatic().getMethod(), dynamicMethod, null);
+    } else if (object.isProtoObjectFromInvokeVirtual()) {
+      worklist.enqueueTraceInvokeVirtualAction(
+          object.asProtoObjectFromInvokeVirtual().getMethod(), dynamicMethod, null);
     } else if (object.isProtoBoxedBooleanObject() || object.isProtoBoxedIntObject()) {
       // This is always calling <library box type>.valueOf(), so no tracing needed.
     } else if (object.isProtoMapEntryLiteObject()) {

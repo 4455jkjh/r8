@@ -10,41 +10,45 @@ import com.android.tools.r8.ir.analysis.type.Nullability;
 import com.android.tools.r8.ir.analysis.type.TypeElement;
 import com.android.tools.r8.ir.code.IRCode;
 import com.android.tools.r8.ir.code.Instruction;
-import com.android.tools.r8.ir.code.InvokeStatic;
+import com.android.tools.r8.ir.code.InvokeVirtual;
 import com.android.tools.r8.ir.code.Value;
 import com.google.common.collect.ImmutableList;
 import java.util.List;
 
-public class ProtoBoxedIntObject extends ProtoObject {
+public class ProtoObjectFromInvokeVirtual extends ProtoObject {
 
-  private final ProtoObject object;
+  private final ProtoObject receiver;
+  private final DexMethod method;
 
-  public ProtoBoxedIntObject(ProtoObject object) {
-    this.object = object;
+  public ProtoObjectFromInvokeVirtual(ProtoObject receiver, DexMethod method) {
+    this.receiver = receiver;
+    this.method = method;
+  }
+
+  public DexMethod getMethod() {
+    return method;
   }
 
   @Override
   public List<Instruction> buildIR(AppView<?> appView, IRCode code) {
-    DexMethod valueOfMethod = appView.dexItemFactory().integerMembers.valueOf;
-    Value outValue =
+    List<Instruction> instructions = receiver.buildIR(appView, code);
+    Value value =
         code.createValue(
-            TypeElement.fromDexType(
-                valueOfMethod.getReturnType(), Nullability.maybeNull(), appView));
-    List<Instruction> instructions = object.buildIR(appView, code);
+            TypeElement.fromDexType(method.getReturnType(), Nullability.maybeNull(), appView));
     ImmutableList.Builder<Instruction> builder = ImmutableList.builder();
     builder.addAll(instructions);
-    Value integerValue = instructions.get(instructions.size() - 1).outValue();
-    builder.add(new InvokeStatic(valueOfMethod, outValue, ImmutableList.of(integerValue)));
+    Value receiverValue = instructions.get(instructions.size() - 1).outValue();
+    builder.add(new InvokeVirtual(method, value, ImmutableList.of(receiverValue)));
     return builder.build();
   }
 
   @Override
-  public boolean isProtoBoxedIntObject() {
+  public boolean isProtoObjectFromInvokeVirtual() {
     return true;
   }
 
   @Override
-  public ProtoBoxedIntObject asProtoBoxedIntObject() {
+  public ProtoObjectFromInvokeVirtual asProtoObjectFromInvokeVirtual() {
     return this;
   }
 }

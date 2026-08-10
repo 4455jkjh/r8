@@ -21,12 +21,25 @@ public class DexFileOverflowDiagnostic implements Diagnostic {
   private final boolean hasMainDexSpecification;
   private final long numOfMethods;
   private final long numOfFields;
+  private final long numOfTypes;
+  private final long maxNumOfTypes;
 
   public DexFileOverflowDiagnostic(
       boolean hasMainDexSpecification, long numOfMethods, long numOfFields) {
+    this(hasMainDexSpecification, numOfMethods, numOfFields, 0, VirtualFile.MAX_ENTRIES);
+  }
+
+  public DexFileOverflowDiagnostic(
+      boolean hasMainDexSpecification,
+      long numOfMethods,
+      long numOfFields,
+      long numOfTypes,
+      long maxNumOfTypes) {
     this.hasMainDexSpecification = hasMainDexSpecification;
     this.numOfMethods = numOfMethods;
     this.numOfFields = numOfFields;
+    this.numOfTypes = numOfTypes;
+    this.maxNumOfTypes = maxNumOfTypes;
   }
 
   /** The number of fields that the application needs to include in the main DEX file. */
@@ -39,6 +52,11 @@ public class DexFileOverflowDiagnostic implements Diagnostic {
     return numOfMethods;
   }
 
+  /** The number of types that the application needs to include in the main DEX file. */
+  public long getNumberOfTypes() {
+    return numOfTypes;
+  }
+
   /** The maximum number of fields that can be included in a DEX file. */
   public long getMaximumNumberOfFields() {
     return VirtualFile.MAX_ENTRIES;
@@ -47,6 +65,11 @@ public class DexFileOverflowDiagnostic implements Diagnostic {
   /** The maximum number of methods that can be included in a DEX file. */
   public long getMaximumNumberOfMethods() {
     return VirtualFile.MAX_ENTRIES;
+  }
+
+  /** The maximum number of types that can be included in a DEX file. */
+  public long getMaximumNumberOfTypes() {
+    return maxNumOfTypes;
   }
 
   /** True if the application has specified lists and/or rules for computing the main DEX file. */
@@ -75,23 +98,36 @@ public class DexFileOverflowDiagnostic implements Diagnostic {
         .append(hasMainDexSpecification() ? "the main-" : "a single ")
         .append("dex file")
         .append(" (");
-    // Show the numbers of methods and/or fields that exceed the limit.
+    // Show the numbers of methods and/or fields and/or types that exceed the limit.
+    boolean hasItem = false;
     if (getNumberOfMethods() > getMaximumNumberOfMethods()) {
       builder
           .append("# methods: ")
           .append(getNumberOfMethods())
           .append(" > ")
           .append(getMaximumNumberOfMethods());
-      if (getNumberOfFields() > getMaximumNumberOfFields()) {
-        builder.append(" ; ");
-      }
+      hasItem = true;
     }
     if (getNumberOfFields() > getMaximumNumberOfFields()) {
+      if (hasItem) {
+        builder.append(" ; ");
+      }
       builder
           .append("# fields: ")
           .append(getNumberOfFields())
           .append(" > ")
           .append(getMaximumNumberOfFields());
+      hasItem = true;
+    }
+    if (getNumberOfTypes() > getMaximumNumberOfTypes()) {
+      if (hasItem) {
+        builder.append(" ; ");
+      }
+      builder
+          .append("# types: ")
+          .append(getNumberOfTypes())
+          .append(" > ")
+          .append(getMaximumNumberOfTypes());
     }
     return builder.append(")").toString();
   }
