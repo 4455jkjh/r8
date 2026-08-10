@@ -4,6 +4,8 @@
 
 package com.android.tools.r8.desugar.backports;
 
+import com.android.tools.r8.R8TestBuilder;
+import com.android.tools.r8.TestBuilder;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.utils.AndroidApiLevel;
 import org.junit.runner.RunWith;
@@ -28,11 +30,28 @@ public final class LongBackportSingleMethodTest extends AbstractBackportTest {
     registerTarget(AndroidApiLevel.O, 2);
   }
 
+  @Override
+  protected void configureProgram(TestBuilder<?, ?> builder) throws Exception {
+    super.configureProgram(builder);
+    if (builder.isR8TestBuilder()) {
+      R8TestBuilder<?, ?, ?> r8Builder = builder.asR8TestBuilder();
+      r8Builder.addKeepRules("-keepclassmembers class * { *** disguise(***); }");
+    }
+  }
+
   static final class Main extends MiniAssert {
 
     public static void main(String[] args) {
-      assertTrue(Long.parseUnsignedLong("1234", 8) == 668);
-      assertTrue(Long.toUnsignedString(1234L, 8).equals("2322"));
+      assertTrue(Long.parseUnsignedLong(disguise("1234"), 8) == 668);
+      assertTrue(Long.toUnsignedString(disguise(1234L), 8).equals("2322"));
+    }
+
+    private static long disguise(long l) {
+      return l;
+    }
+
+    private static String disguise(String s) {
+      return s;
     }
   }
 }

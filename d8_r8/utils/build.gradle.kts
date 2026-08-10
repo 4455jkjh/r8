@@ -13,11 +13,7 @@ plugins {
 dependencies {
   compileOnly(libs.guava)
   compileOnly(libs.fastUtil)
-
-  errorprone(libs.errorprone)
 }
-
-configureErrorProneForJavaCompile()
 
 java { sourceSets.main.configure { java.srcDir(getRoot().resolveAll("src", "utils", "java")) } }
 

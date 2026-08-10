@@ -14,6 +14,7 @@ dependencyResolutionManagement {
     maven { url = uri("../../third_party/dependencies") }
     maven { url = uri("../../third_party/dependencies_plugin") }
   }
+  versionCatalogs { create("libs") { from(files("../../gradle/libs.versions.toml")) } }
 }
 
 rootProject.name = "common-build-src"

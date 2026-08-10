@@ -17,7 +17,7 @@ plugins {
   id("org.jetbrains.kotlin.jvm")
   id("r8-conventions")
   id("dependencies-plugin")
-  id("org.spdx.sbom") version "0.4.0"
+  id("org.spdx.sbom")
 }
 
 if (project.hasProperty("spdxVersion")) {

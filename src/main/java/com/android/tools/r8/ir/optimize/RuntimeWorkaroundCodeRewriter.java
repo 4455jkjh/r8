@@ -96,7 +96,7 @@ public class RuntimeWorkaroundCodeRewriter {
 
         // Workaround b/288273207.
         if (valueType.isNullType()) {
-          instructionIterator.replaceCurrentInstructionWithConstFalse(code);
+          instructionIterator.replaceCurrentInstructionWithConstBooleanFalse(code);
           didReplaceInstructions = true;
           continue;
         }
@@ -110,7 +110,7 @@ public class RuntimeWorkaroundCodeRewriter {
               && !instanceOfType.lessThanOrEqual(valueType, appView)
               && !valueType.lessThanOrEqual(instanceOfType, appView)
               && !valueType.isBasedOnMissingClass(appView.withClassHierarchy())) {
-            instructionIterator.replaceCurrentInstructionWithConstFalse(code);
+            instructionIterator.replaceCurrentInstructionWithConstBooleanFalse(code);
             didReplaceInstructions = true;
           }
         }
@@ -318,7 +318,7 @@ public class RuntimeWorkaroundCodeRewriter {
                 && value.definition.asNumberConversion().getType().getTo() == NumericType.DOUBLE) {
               InvokeStatic invokeIsNaN =
                   new InvokeStatic(
-                      dexItemFactory.doubleMembers.isNaN, null, ImmutableList.of(value));
+                      dexItemFactory.doubleMembers.staticIsNaN, null, ImmutableList.of(value));
               invokeIsNaN.setPosition(instruction.getPosition());
 
               // Insert the invoke before the current instruction.

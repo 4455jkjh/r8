@@ -111,8 +111,28 @@ public class LinearFlowInstructionListIterator implements InstructionListIterato
   }
 
   @Override
+  public void replaceCurrentInstructionWithConstDouble(IRCode code, double value) {
+    currentBlockIterator.replaceCurrentInstructionWithConstDouble(code, value);
+  }
+
+  @Override
+  public void replaceCurrentInstructionWithConstFloat(IRCode code, float value) {
+    currentBlockIterator.replaceCurrentInstructionWithConstFloat(code, value);
+  }
+
+  @Override
   public void replaceCurrentInstructionWithConstInt(IRCode code, int value) {
     currentBlockIterator.replaceCurrentInstructionWithConstInt(code, value);
+  }
+
+  @Override
+  public void replaceCurrentInstructionWithConstLong(IRCode code, long value) {
+    currentBlockIterator.replaceCurrentInstructionWithConstLong(code, value);
+  }
+
+  @Override
+  public void replaceCurrentInstructionWithConstNull(IRCode code) {
+    currentBlockIterator.replaceCurrentInstructionWithConstNull(code);
   }
 
   @Override

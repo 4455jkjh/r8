@@ -4,6 +4,8 @@
 
 package com.android.tools.r8.desugar.backports;
 
+import com.android.tools.r8.R8TestBuilder;
+import com.android.tools.r8.TestBuilder;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.utils.AndroidApiLevel;
 import java.math.BigInteger;
@@ -20,9 +22,35 @@ public final class IntegerBackportTest extends AbstractBackportTest {
 
   public IntegerBackportTest(TestParameters parameters) {
     super(parameters, Integer.class, Main.class);
-    registerTarget(AndroidApiLevel.O, 51);
     registerTarget(AndroidApiLevel.N, 11);
     registerTarget(AndroidApiLevel.K, 7);
+  }
+
+  @Override
+  protected void configureProgram(TestBuilder<?, ?> builder) throws Exception {
+    super.configureProgram(builder);
+    if (builder.isR8TestBuilder()) {
+      R8TestBuilder<?, ?, ?> r8Builder = builder.asR8TestBuilder();
+      r8Builder.addKeepRules("-keepclassmembers class * { int disguise(int); }");
+    }
+  }
+
+  @Override
+  public void testD8() throws Exception {
+    registerTarget(AndroidApiLevel.O, 51);
+    super.testD8();
+  }
+
+  @Override
+  public void testD8Cf() throws Exception {
+    registerTarget(AndroidApiLevel.O, 51);
+    super.testD8Cf();
+  }
+
+  @Override
+  public void testR8() throws Exception {
+    registerTarget(AndroidApiLevel.O, 50);
+    super.testR8();
   }
 
   static final class Main extends MiniAssert {
@@ -51,6 +79,10 @@ public final class IntegerBackportTest extends AbstractBackportTest {
       testToUnsignedStringWithRadix();
     }
 
+    private static int disguise(int i) {
+      return i;
+    }
+
     private static void testHashCode() {
       for (int value : interestingValues) {
         assertEquals(value, Integer.hashCode(value));
@@ -59,19 +91,19 @@ public final class IntegerBackportTest extends AbstractBackportTest {
 
     private static void testToUnsignedLong() {
       assertEquals(0L, Integer.toUnsignedLong(0));
-      assertEquals(2_147_483_647L, Integer.toUnsignedLong(Integer.MAX_VALUE));
-      assertEquals(2_147_483_648L, Integer.toUnsignedLong(Integer.MIN_VALUE));
-      assertEquals(4_294_967_295L, Integer.toUnsignedLong(-1));
+      assertEquals(2_147_483_647L, Integer.toUnsignedLong(disguise(Integer.MAX_VALUE)));
+      assertEquals(2_147_483_648L, Integer.toUnsignedLong(disguise(Integer.MIN_VALUE)));
+      assertEquals(4_294_967_295L, Integer.toUnsignedLong(disguise(-1)));
     }
 
     private static void testCompare() {
-      assertTrue(Integer.compare(1, 0) > 0);
-      assertTrue(Integer.compare(0, 0) == 0);
-      assertTrue(Integer.compare(0, 1) < 0);
-      assertTrue(Integer.compare(Integer.MIN_VALUE, Integer.MAX_VALUE) < 0);
-      assertTrue(Integer.compare(Integer.MAX_VALUE, Integer.MIN_VALUE) > 0);
-      assertTrue(Integer.compare(Integer.MIN_VALUE, Integer.MIN_VALUE) == 0);
-      assertTrue(Integer.compare(Integer.MAX_VALUE, Integer.MAX_VALUE) == 0);
+      assertTrue(Integer.compare(disguise(1), disguise(0)) > 0);
+      assertTrue(Integer.compare(disguise(0), disguise(0)) == 0);
+      assertTrue(Integer.compare(disguise(0), disguise(1)) < 0);
+      assertTrue(Integer.compare(disguise(Integer.MIN_VALUE), disguise(Integer.MAX_VALUE)) < 0);
+      assertTrue(Integer.compare(disguise(Integer.MAX_VALUE), disguise(Integer.MIN_VALUE)) > 0);
+      assertTrue(Integer.compare(disguise(Integer.MIN_VALUE), disguise(Integer.MIN_VALUE)) == 0);
+      assertTrue(Integer.compare(disguise(Integer.MAX_VALUE), disguise(Integer.MAX_VALUE)) == 0);
     }
 
     private static void testMax() {
@@ -99,25 +131,29 @@ public final class IntegerBackportTest extends AbstractBackportTest {
     }
 
     private static void testCompareUnsigned() {
-      assertTrue(Integer.compareUnsigned(0, 0) == 0);
-      assertTrue(Integer.compareUnsigned(0, Integer.MAX_VALUE) < 0);
-      assertTrue(Integer.compareUnsigned(0, Integer.MIN_VALUE) < 0);
-      assertTrue(Integer.compareUnsigned(0, -1) < 0);
+      assertTrue(Integer.compareUnsigned(disguise(0), disguise(0)) == 0);
+      assertTrue(Integer.compareUnsigned(disguise(0), disguise(Integer.MAX_VALUE)) < 0);
+      assertTrue(Integer.compareUnsigned(disguise(0), disguise(Integer.MIN_VALUE)) < 0);
+      assertTrue(Integer.compareUnsigned(disguise(0), disguise(-1)) < 0);
 
-      assertTrue(Integer.compareUnsigned(Integer.MAX_VALUE, 0) > 0);
-      assertTrue(Integer.compareUnsigned(Integer.MAX_VALUE, Integer.MAX_VALUE) == 0);
-      assertTrue(Integer.compareUnsigned(Integer.MAX_VALUE, Integer.MIN_VALUE) < 0);
-      assertTrue(Integer.compareUnsigned(Integer.MAX_VALUE, -1) < 0);
+      assertTrue(Integer.compareUnsigned(disguise(Integer.MAX_VALUE), disguise(0)) > 0);
+      assertTrue(
+          Integer.compareUnsigned(disguise(Integer.MAX_VALUE), disguise(Integer.MAX_VALUE)) == 0);
+      assertTrue(
+          Integer.compareUnsigned(disguise(Integer.MAX_VALUE), disguise(Integer.MIN_VALUE)) < 0);
+      assertTrue(Integer.compareUnsigned(disguise(Integer.MAX_VALUE), disguise(-1)) < 0);
 
-      assertTrue(Integer.compareUnsigned(Integer.MIN_VALUE, 0) > 0);
-      assertTrue(Integer.compareUnsigned(Integer.MIN_VALUE, Integer.MAX_VALUE) > 0);
-      assertTrue(Integer.compareUnsigned(Integer.MIN_VALUE, Integer.MIN_VALUE) == 0);
-      assertTrue(Integer.compareUnsigned(Integer.MIN_VALUE, -1) < 0);
+      assertTrue(Integer.compareUnsigned(disguise(Integer.MIN_VALUE), disguise(0)) > 0);
+      assertTrue(
+          Integer.compareUnsigned(disguise(Integer.MIN_VALUE), disguise(Integer.MAX_VALUE)) > 0);
+      assertTrue(
+          Integer.compareUnsigned(disguise(Integer.MIN_VALUE), disguise(Integer.MIN_VALUE)) == 0);
+      assertTrue(Integer.compareUnsigned(disguise(Integer.MIN_VALUE), disguise(-1)) < 0);
 
-      assertTrue(Integer.compareUnsigned(-1, 0) > 0);
-      assertTrue(Integer.compareUnsigned(-1, Integer.MAX_VALUE) > 0);
-      assertTrue(Integer.compareUnsigned(-1, Integer.MIN_VALUE) > 0);
-      assertTrue(Integer.compareUnsigned(-1, -1) == 0);
+      assertTrue(Integer.compareUnsigned(disguise(-1), disguise(0)) > 0);
+      assertTrue(Integer.compareUnsigned(disguise(-1), disguise(Integer.MAX_VALUE)) > 0);
+      assertTrue(Integer.compareUnsigned(disguise(-1), disguise(Integer.MIN_VALUE)) > 0);
+      assertTrue(Integer.compareUnsigned(disguise(-1), disguise(-1)) == 0);
     }
 
     private static void testDivideUnsigned() {

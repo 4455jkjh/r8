@@ -96,10 +96,10 @@ public class StaticMethodsWideUnboxingNumberUnboxingTest extends TestBase {
       forwardToPrint(shift, 42L);
 
       // The number unboxer should find this method is *not* worth unboxing.
-      Long decode1 = Long.decode("51");
+      Long decode1 = Long.decode(System.currentTimeMillis() > 0 ? "51" : "52");
       Objects.requireNonNull(decode1);
       directPrintNotUnbox(shift, decode1);
-      Long decode2 = Long.decode("52");
+      Long decode2 = Long.decode(System.currentTimeMillis() > 0 ? "52" : "51");
       Objects.requireNonNull(decode2);
       directPrintNotUnbox(shift, decode2);
 

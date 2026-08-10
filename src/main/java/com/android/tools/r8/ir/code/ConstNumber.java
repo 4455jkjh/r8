@@ -27,8 +27,8 @@ import com.android.tools.r8.ir.conversion.CfBuilder;
 import com.android.tools.r8.ir.conversion.DexBuilder;
 import com.android.tools.r8.lightir.LirBuilder;
 import com.android.tools.r8.utils.InternalOutputMode;
-import com.android.tools.r8.utils.internal.LongUtils;
 import com.android.tools.r8.utils.NumberUtils;
+import com.android.tools.r8.utils.internal.LongUtils;
 import java.util.Set;
 
 public class ConstNumber extends ConstInstruction {
@@ -88,6 +88,21 @@ public class ConstNumber extends ConstInstruction {
     return (byte) value;
   }
 
+  public char getCharValue() {
+    assert outType() == ValueType.INT;
+    return (char) value;
+  }
+
+  public double getDoubleValue() {
+    assert outType() == ValueType.DOUBLE;
+    return LongUtils.decodeDouble(value);
+  }
+
+  public float getFloatValue() {
+    assert outType() == ValueType.FLOAT;
+    return LongUtils.decodeFloat(value);
+  }
+
   public int getIntValue() {
     assert outType() == ValueType.INT
         || outType() == ValueType.OBJECT; // Used for is-null conditionals.
@@ -99,18 +114,29 @@ public class ConstNumber extends ConstInstruction {
     return value;
   }
 
-  public float getFloatValue() {
-    assert outType() == ValueType.FLOAT;
-    return LongUtils.decodeFloat(value);
-  }
-
-  public double getDoubleValue() {
-    assert outType() == ValueType.DOUBLE;
-    return LongUtils.decodeDouble(value);
+  public short getShortValue() {
+    assert outType() == ValueType.INT;
+    return (short) value;
   }
 
   public long getRawValue() {
     return value;
+  }
+
+  public boolean isBoolean() {
+    return value == 0 || value == 1;
+  }
+
+  public boolean isByte() {
+    return Byte.MIN_VALUE <= value && value <= Byte.MAX_VALUE;
+  }
+
+  public boolean isChar() {
+    return Character.MIN_VALUE <= value && value <= Character.MAX_VALUE;
+  }
+
+  public boolean isShort() {
+    return Short.MIN_VALUE <= value && value <= Short.MAX_VALUE;
   }
 
   public boolean isZero() {

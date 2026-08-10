@@ -28,7 +28,7 @@ public class ComputedByteMethodOptimizationInfoCollection
           invoke.getFirstOperand().getAbstractValue(appView, context, abstractValueSupplier);
       if (operandValue.isSingleNumberValue()) {
         return abstractValueFactory.createBoxedByte(
-            operandValue.asSingleNumberValue().getIntValue());
+            operandValue.asSingleNumberValue().getByteValue());
       }
     }
     return AbstractValue.unknown();

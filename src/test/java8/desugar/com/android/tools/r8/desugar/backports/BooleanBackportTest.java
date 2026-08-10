@@ -24,6 +24,10 @@ public final class BooleanBackportTest extends AbstractBackportTest {
   }
 
   static final class Main extends MiniAssert {
+
+    private static boolean True = System.currentTimeMillis() > 0;
+    private static boolean False = System.currentTimeMillis() == 0;
+
     public static void main(String[] args) {
       testHashCode();
       testCompare();
@@ -33,22 +37,22 @@ public final class BooleanBackportTest extends AbstractBackportTest {
     }
 
     private static void testHashCode() {
-      assertEquals(1231, Boolean.hashCode(true));
-      assertEquals(1237, Boolean.hashCode(false));
+      assertEquals(1231, Boolean.hashCode(True));
+      assertEquals(1237, Boolean.hashCode(False));
     }
 
     private static void testCompare() {
-      assertTrue(Boolean.compare(true, false) > 0);
-      assertTrue(Boolean.compare(true, true) == 0);
-      assertTrue(Boolean.compare(false, false) == 0);
-      assertTrue(Boolean.compare(false, true) < 0);
+      assertTrue(Boolean.compare(True, False) > 0);
+      assertTrue(Boolean.compare(True, True) == 0);
+      assertTrue(Boolean.compare(False, False) == 0);
+      assertTrue(Boolean.compare(False, True) < 0);
     }
 
     private static void testLogicalAnd() {
-      assertTrue(Boolean.logicalAnd(true, true));
-      assertFalse(Boolean.logicalAnd(true, false));
-      assertFalse(Boolean.logicalAnd(false, true));
-      assertFalse(Boolean.logicalAnd(false, false));
+      assertTrue(Boolean.logicalAnd(True, True));
+      assertFalse(Boolean.logicalAnd(True, False));
+      assertFalse(Boolean.logicalAnd(False, True));
+      assertFalse(Boolean.logicalAnd(False, False));
 
       // Ensure optimization does not short-circuit path to second boolean.
       sideEffectCount = 0;
@@ -57,10 +61,10 @@ public final class BooleanBackportTest extends AbstractBackportTest {
     }
 
     private static void testLogicalOr() {
-      assertTrue(Boolean.logicalOr(true, true));
-      assertTrue(Boolean.logicalOr(true, false));
-      assertTrue(Boolean.logicalOr(false, true));
-      assertFalse(Boolean.logicalOr(false, false));
+      assertTrue(Boolean.logicalOr(True, True));
+      assertTrue(Boolean.logicalOr(True, False));
+      assertTrue(Boolean.logicalOr(False, True));
+      assertFalse(Boolean.logicalOr(False, False));
 
       // Ensure optimization does not short-circuit path to second boolean.
       sideEffectCount = 0;
@@ -69,10 +73,10 @@ public final class BooleanBackportTest extends AbstractBackportTest {
     }
 
     private static void testLogicalXor() {
-      assertFalse(Boolean.logicalXor(true, true));
-      assertTrue(Boolean.logicalXor(true, false));
-      assertTrue(Boolean.logicalXor(false, true));
-      assertFalse(Boolean.logicalXor(false, false));
+      assertFalse(Boolean.logicalXor(True, True));
+      assertTrue(Boolean.logicalXor(True, False));
+      assertTrue(Boolean.logicalXor(False, True));
+      assertFalse(Boolean.logicalXor(False, False));
     }
 
     private static int sideEffectCount;

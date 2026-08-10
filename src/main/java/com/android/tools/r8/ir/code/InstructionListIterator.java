@@ -13,9 +13,9 @@ import com.android.tools.r8.graph.DexType;
 import com.android.tools.r8.graph.ProgramMethod;
 import com.android.tools.r8.ir.analysis.type.TypeElement;
 import com.android.tools.r8.ir.optimize.AffectedValues;
+import com.android.tools.r8.utils.InternalOptions;
 import com.android.tools.r8.utils.internal.BooleanUtils;
 import com.android.tools.r8.utils.internal.ConsumerUtils;
-import com.android.tools.r8.utils.InternalOptions;
 import com.android.tools.r8.utils.internal.exceptions.Unimplemented;
 import com.google.common.collect.Sets;
 import java.util.Arrays;
@@ -206,6 +206,14 @@ public interface InstructionListIterator
     replaceCurrentInstructionWithConstInt(code, BooleanUtils.intValue(value));
   }
 
+  default void replaceCurrentInstructionWithConstBooleanFalse(IRCode code) {
+    replaceCurrentInstructionWithConstInt(code, 0);
+  }
+
+  default void replaceCurrentInstructionWithConstBooleanTrue(IRCode code) {
+    replaceCurrentInstructionWithConstInt(code, 1);
+  }
+
   void replaceCurrentInstructionWithConstClass(
       AppView<?> appView,
       IRCode code,
@@ -213,17 +221,33 @@ public interface InstructionListIterator
       DebugLocalInfo localInfo,
       AffectedValues affectedValues);
 
-  default void replaceCurrentInstructionWithConstFalse(IRCode code) {
-    replaceCurrentInstructionWithConstInt(code, 0);
-  }
+  void replaceCurrentInstructionWithConstDouble(IRCode code, double value);
+
+  void replaceCurrentInstructionWithConstFloat(IRCode code, float value);
 
   void replaceCurrentInstructionWithConstInt(IRCode code, int value);
+
+  void replaceCurrentInstructionWithConstLong(IRCode code, long value);
+
+  void replaceCurrentInstructionWithConstNull(IRCode code);
 
   void replaceCurrentInstructionWithConstString(
       AppView<?> appView, IRCode code, DexString value, AffectedValues affectedValues);
 
-  default void replaceCurrentInstructionWithConstTrue(IRCode code) {
-    replaceCurrentInstructionWithConstInt(code, 1);
+  default void replaceCurrentInstructionWithConstString(
+      AppView<?> appView, IRCode code, DexString value) {
+    replaceCurrentInstructionWithConstString(appView, code, value, null);
+  }
+
+  default void replaceCurrentInstructionWithConstString(
+      AppView<?> appView, IRCode code, String value, AffectedValues affectedValues) {
+    replaceCurrentInstructionWithConstString(
+        appView, code, appView.dexItemFactory().createString(value), affectedValues);
+  }
+
+  default void replaceCurrentInstructionWithConstString(
+      AppView<?> appView, IRCode code, String value) {
+    replaceCurrentInstructionWithConstString(appView, code, value, null);
   }
 
   void replaceCurrentInstructionWithNullCheck(AppView<?> appView, Value object);

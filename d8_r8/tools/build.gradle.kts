@@ -12,9 +12,6 @@ plugins {
 dependencies {
   compileOnly(project(":main", "mainClassesOutput"))
   compileOnly(project(":main", "turboClassesOutput"))
-  errorprone(libs.errorprone)
 }
 
 java { sourceSets.main.configure { java.srcDir(getRoot().resolveAll("src", "tools", "java")) } }
-
-configureErrorProneForJavaCompile()

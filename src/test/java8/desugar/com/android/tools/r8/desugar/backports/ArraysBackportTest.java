@@ -31,6 +31,17 @@ public final class ArraysBackportTest extends AbstractBackportTest {
   }
 
   static final class Main extends MiniAssert {
+
+    private static int[] nullIntArray = System.currentTimeMillis() > 0 ? null : new int[0];
+    private static long[] nullLongArray = System.currentTimeMillis() > 0 ? null : new long[0];
+    private static short[] nullShortArray = System.currentTimeMillis() > 0 ? null : new short[0];
+    private static byte[] nullByteArray = System.currentTimeMillis() > 0 ? null : new byte[0];
+    private static char[] nullCharArray = System.currentTimeMillis() > 0 ? null : new char[0];
+    private static boolean[] nullBooleanArray =
+        System.currentTimeMillis() > 0 ? null : new boolean[0];
+    private static float[] nullFloatArray = System.currentTimeMillis() > 0 ? null : new float[0];
+    private static double[] nullDoubleArray = System.currentTimeMillis() > 0 ? null : new double[0];
+
     public static void main(String[] args) {
       testEqualsInt();
       testEqualsLong();
@@ -52,8 +63,8 @@ public final class ArraysBackportTest extends AbstractBackportTest {
 
       assertFalse(Arrays.equals(a, b));
       assertFalse(Arrays.equals(a, new int[] {-1, 0, 1}));
-      assertFalse(Arrays.equals(null, b));
-      assertFalse(Arrays.equals(a, null));
+      assertFalse(Arrays.equals(nullIntArray, b));
+      assertFalse(Arrays.equals(a, nullIntArray));
     }
 
     private static void testEqualsLong() {
@@ -66,8 +77,8 @@ public final class ArraysBackportTest extends AbstractBackportTest {
 
       assertFalse(Arrays.equals(a, b));
       assertFalse(Arrays.equals(a, new long[] {-1, 0, 1}));
-      assertFalse(Arrays.equals(null, b));
-      assertFalse(Arrays.equals(a, null));
+      assertFalse(Arrays.equals(nullLongArray, b));
+      assertFalse(Arrays.equals(a, nullLongArray));
     }
 
     private static void testEqualsShort() {
@@ -80,8 +91,8 @@ public final class ArraysBackportTest extends AbstractBackportTest {
 
       assertFalse(Arrays.equals(a, b));
       assertFalse(Arrays.equals(a, new short[] {-1, 0, 1}));
-      assertFalse(Arrays.equals(null, b));
-      assertFalse(Arrays.equals(a, null));
+      assertFalse(Arrays.equals(nullShortArray, b));
+      assertFalse(Arrays.equals(a, nullShortArray));
     }
 
     private static void testEqualsByte() {
@@ -94,8 +105,8 @@ public final class ArraysBackportTest extends AbstractBackportTest {
 
       assertFalse(Arrays.equals(a, b));
       assertFalse(Arrays.equals(a, new byte[] {-1, 0, 1}));
-      assertFalse(Arrays.equals(null, b));
-      assertFalse(Arrays.equals(a, null));
+      assertFalse(Arrays.equals(nullByteArray, b));
+      assertFalse(Arrays.equals(a, nullByteArray));
     }
 
     private static void testEqualsChar() {
@@ -108,8 +119,8 @@ public final class ArraysBackportTest extends AbstractBackportTest {
 
       assertFalse(Arrays.equals(a, b));
       assertFalse(Arrays.equals(a, new char[] {1, 2, 3}));
-      assertFalse(Arrays.equals(null, b));
-      assertFalse(Arrays.equals(a, null));
+      assertFalse(Arrays.equals(nullCharArray, b));
+      assertFalse(Arrays.equals(a, nullCharArray));
     }
 
     private static void testEqualsBoolean() {
@@ -122,8 +133,8 @@ public final class ArraysBackportTest extends AbstractBackportTest {
 
       assertFalse(Arrays.equals(a, b));
       assertFalse(Arrays.equals(a, new boolean[] {false, true}));
-      assertFalse(Arrays.equals(null, b));
-      assertFalse(Arrays.equals(a, null));
+      assertFalse(Arrays.equals(nullBooleanArray, b));
+      assertFalse(Arrays.equals(a, nullBooleanArray));
     }
 
     private static void testEqualsFloat() {
@@ -137,8 +148,8 @@ public final class ArraysBackportTest extends AbstractBackportTest {
 
       assertFalse(Arrays.equals(a, b));
       assertFalse(Arrays.equals(a, new float[] {-1, 0, 1}));
-      assertFalse(Arrays.equals(null, b));
-      assertFalse(Arrays.equals(a, null));
+      assertFalse(Arrays.equals(nullFloatArray, b));
+      assertFalse(Arrays.equals(a, nullFloatArray));
       assertFalse(Arrays.equals(new float[] {-0f}, new float[] {0f}));
     }
 
@@ -153,8 +164,8 @@ public final class ArraysBackportTest extends AbstractBackportTest {
 
       assertFalse(Arrays.equals(a, b));
       assertFalse(Arrays.equals(a, new double[] {-1, 0, 1}));
-      assertFalse(Arrays.equals(null, b));
-      assertFalse(Arrays.equals(a, null));
+      assertFalse(Arrays.equals(nullDoubleArray, b));
+      assertFalse(Arrays.equals(a, nullDoubleArray));
       assertFalse(Arrays.equals(new double[] {-0d}, new double[] {0d}));
     }
   }

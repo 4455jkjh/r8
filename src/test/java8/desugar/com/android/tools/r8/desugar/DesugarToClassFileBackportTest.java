@@ -109,6 +109,10 @@ public class DesugarToClassFileBackportTest extends TestBase {
 
   static class TestClass {
 
+    private static double getOneAsDouble() {
+      return 1.0;
+    }
+
     private static long getOne() {
       return 1L;
     }
@@ -119,7 +123,7 @@ public class DesugarToClassFileBackportTest extends TestBase {
 
     public static void main(String[] args) {
       System.out.println(Long.sum(getOne(), getTwo()));
-      System.out.println(Double.isFinite(1.0));
+      System.out.println(Double.isFinite(getOneAsDouble()));
     }
   }
 }

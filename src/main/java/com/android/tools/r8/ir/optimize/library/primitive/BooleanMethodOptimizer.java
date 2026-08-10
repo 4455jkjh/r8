@@ -6,35 +6,36 @@ package com.android.tools.r8.ir.optimize.library.primitive;
 
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.DexClassAndMethod;
+import com.android.tools.r8.graph.DexItemFactory.BooleanMembers;
 import com.android.tools.r8.graph.DexMethod;
+import com.android.tools.r8.graph.DexString;
 import com.android.tools.r8.graph.DexType;
 import com.android.tools.r8.ir.analysis.value.AbstractValue;
 import com.android.tools.r8.ir.code.BasicBlock;
 import com.android.tools.r8.ir.code.BasicBlockIterator;
-import com.android.tools.r8.ir.code.ConstString;
 import com.android.tools.r8.ir.code.IRCode;
-import com.android.tools.r8.ir.code.Instruction;
 import com.android.tools.r8.ir.code.InstructionListIterator;
 import com.android.tools.r8.ir.code.InvokeMethod;
-import com.android.tools.r8.ir.code.Value;
 import com.android.tools.r8.ir.optimize.AffectedValues;
-import com.android.tools.r8.utils.internal.StringUtils;
 import java.util.Set;
 
 public class BooleanMethodOptimizer extends PrimitiveMethodOptimizer {
 
+  private final BooleanMembers booleanMembers;
+
   BooleanMethodOptimizer(AppView<?> appView) {
     super(appView);
+    this.booleanMembers = factory.booleanMembers;
   }
 
   @Override
   DexMethod getBoxMethod() {
-    return dexItemFactory.booleanMembers.valueOf;
+    return booleanMembers.valueOf;
   }
 
   @Override
   DexMethod getUnboxMethod() {
-    return dexItemFactory.booleanMembers.booleanValue;
+    return booleanMembers.booleanValue;
   }
 
   @Override
@@ -44,7 +45,7 @@ public class BooleanMethodOptimizer extends PrimitiveMethodOptimizer {
 
   @Override
   public DexType getType() {
-    return dexItemFactory.boxedBooleanType;
+    return factory.boxedBooleanType;
   }
 
   @Override
@@ -56,26 +57,95 @@ public class BooleanMethodOptimizer extends PrimitiveMethodOptimizer {
       DexClassAndMethod singleTarget,
       AffectedValues affectedValues,
       Set<BasicBlock> blocksToRemove) {
-    if (singleTarget.getReference().isIdenticalTo(dexItemFactory.booleanMembers.parseBoolean)) {
-      optimizeParseBoolean(code, instructionIterator, invoke);
-    } else {
-      optimizeBoxingMethods(code, instructionIterator, invoke, singleTarget, affectedValues);
+    DexMethod singleTargetReference = singleTarget.getReference();
+    switch (singleTargetReference.getName().getFirstByteAsChar()) {
+      case 'b':
+        if (singleTargetReference.isIdenticalTo(booleanMembers.booleanValue)) {
+          optimizeUnboxMethod(code, instructionIterator, invoke);
+        }
+        break;
+      case 'c':
+        if (singleTargetReference.isIdenticalTo(booleanMembers.compare)) {
+          optimizeBooleanBooleanToIntFunction(code, instructionIterator, invoke, Boolean::compare);
+        } else if (singleTargetReference.isIdenticalTo(booleanMembers.compareTo)) {
+          optimizeBoxedBooleanBoxedBooleanToIntFunction(
+              code, instructionIterator, invoke, Boolean::compareTo);
+        }
+        break;
+      case 'e':
+        if (singleTargetReference.isIdenticalTo(booleanMembers.equals)) {
+          optimizeBoxedBooleanBoxedBooleanToBooleanFunction(
+              code, instructionIterator, invoke, Boolean::equals);
+        }
+        break;
+      case 'h':
+        if (singleTargetReference.isIdenticalTo(booleanMembers.hashCode)) {
+          optimizeBoxedBooleanToIntFunction(code, instructionIterator, invoke, Object::hashCode);
+        } else if (singleTargetReference.isIdenticalTo(booleanMembers.staticHashCode)) {
+          optimizeBooleanToIntFunction(code, instructionIterator, invoke, Boolean::hashCode);
+        }
+        break;
+      case 'l':
+        if (singleTargetReference.isIdenticalTo(booleanMembers.logicalAnd)) {
+          optimizeBooleanBooleanToBooleanFunction(
+              code, instructionIterator, invoke, Boolean::logicalAnd);
+        } else if (singleTargetReference.isIdenticalTo(booleanMembers.logicalOr)) {
+          optimizeBooleanBooleanToBooleanFunction(
+              code, instructionIterator, invoke, Boolean::logicalOr);
+        } else if (singleTargetReference.isIdenticalTo(booleanMembers.logicalXor)) {
+          optimizeBooleanBooleanToBooleanFunction(
+              code, instructionIterator, invoke, Boolean::logicalXor);
+        }
+        break;
+      case 'p':
+        if (singleTargetReference.isIdenticalTo(booleanMembers.parseBoolean)) {
+          optimizeStringToBooleanFunction(
+              code, instructionIterator, invoke, s -> Boolean.parseBoolean(s.toString()));
+        }
+        break;
+      case 't':
+        if (singleTargetReference.isIdenticalTo(booleanMembers.toString)) {
+          optimizeBoxedBooleanToStringFunction(
+              code,
+              instructionIterator,
+              invoke,
+              affectedValues,
+              b -> factory.createString(b.toString()));
+        } else if (singleTargetReference.isIdenticalTo(booleanMembers.staticToString)) {
+          optimizeBooleanToStringFunction(
+              code,
+              instructionIterator,
+              invoke,
+              affectedValues,
+              b -> factory.createString(Boolean.toString(b)));
+        }
+        break;
+      case 'v':
+        if (singleTargetReference.isIdenticalTo(booleanMembers.valueOf)) {
+          optimizeBoxMethod(code, instructionIterator, invoke, affectedValues);
+        } else if (singleTargetReference.isIdenticalTo(booleanMembers.valueOfString)) {
+          optimizeValueOfString(code, instructionIterator, invoke, affectedValues);
+        }
+        break;
+      default:
+        break;
     }
     return instructionIterator;
   }
 
-  private void optimizeParseBoolean(
-      IRCode code, InstructionListIterator instructionIterator, InvokeMethod invoke) {
-    Value argument = invoke.getFirstArgument().getAliasedValue();
-    if (argument.isDefinedByInstructionSatisfying(Instruction::isConstString)) {
-      ConstString constString = argument.getDefinition().asConstString();
-      if (!constString.instructionInstanceCanThrow(appView, code.context())) {
-        String value = StringUtils.toLowerCase(constString.getValue().toString());
-        if (value.equals("true")) {
-          instructionIterator.replaceCurrentInstructionWithConstInt(code, 1);
-        } else if (value.equals("false")) {
-          instructionIterator.replaceCurrentInstructionWithConstInt(code, 0);
-        }
+  private void optimizeValueOfString(
+      IRCode code,
+      InstructionListIterator instructionIterator,
+      InvokeMethod invoke,
+      AffectedValues affectedValues) {
+    DexString s = invoke.getFirstArgument().getConstStringOrNull(appView, code);
+    if (s != null) {
+      boolean result = Boolean.parseBoolean(s.toString());
+      if (invoke.hasUnusedOutValue()) {
+        instructionIterator.removeOrReplaceByDebugLocalRead();
+      } else {
+        instructionIterator.replaceCurrentInstructionWithStaticGet(
+            appView, code, result ? booleanMembers.TRUE : booleanMembers.FALSE, affectedValues);
       }
     }
   }
@@ -87,16 +157,10 @@ public class BooleanMethodOptimizer extends PrimitiveMethodOptimizer {
       InvokeMethod boxInvoke,
       AffectedValues affectedValues) {
     // Optimize Boolean.valueOf(b) into Boolean.FALSE or Boolean.TRUE.
-    Value argument = boxInvoke.getFirstOperand();
-    AbstractValue abstractValue = argument.getAbstractValue(appView, code.context());
-    if (abstractValue.isSingleNumberValue()) {
+    Boolean b = boxInvoke.getFirstArgument().getConstBooleanOrNull(appView, code);
+    if (b != null) {
       instructionIterator.replaceCurrentInstructionWithStaticGet(
-          appView,
-          code,
-          abstractValue.asSingleNumberValue().getBooleanValue()
-              ? dexItemFactory.booleanMembers.TRUE
-              : dexItemFactory.booleanMembers.FALSE,
-          affectedValues);
+          appView, code, b ? booleanMembers.TRUE : booleanMembers.FALSE, affectedValues);
       return;
     }
     super.optimizeBoxMethod(code, instructionIterator, boxInvoke, affectedValues);

@@ -138,7 +138,7 @@ public class ConstrainedPrimitiveTypeTest extends AnalysisTestBase {
     @NeverInline
     public static void intWithInvokeUserTest() {
       int x = 1;
-      System.out.println(Integer.toString(x));
+      System.out.println(x);
     }
 
     @NeverInline
@@ -149,7 +149,7 @@ public class ConstrainedPrimitiveTypeTest extends AnalysisTestBase {
       } else {
         x = 3;
       }
-      System.out.println(Integer.toString(x));
+      System.out.println(x);
     }
 
     @NeverInline
@@ -166,13 +166,13 @@ public class ConstrainedPrimitiveTypeTest extends AnalysisTestBase {
       } else {
         x = 2f;
       }
-      System.out.println(Float.toString(x));
+      System.out.println(x);
     }
 
     @NeverInline
     public static void longWithInvokeUserTest() {
       long x = 1L;
-      System.out.println(Long.toString(x));
+      System.out.println(x);
     }
 
     @NeverInline
@@ -183,13 +183,13 @@ public class ConstrainedPrimitiveTypeTest extends AnalysisTestBase {
       } else {
         x = 2L;
       }
-      System.out.println(Long.toString(x));
+      System.out.println(x);
     }
 
     @NeverInline
     public static void doubleWithInvokeUserTest() {
       double x = 1.0;
-      System.out.println(Double.toString(x));
+      System.out.println(x);
     }
 
     @NeverInline
@@ -200,7 +200,7 @@ public class ConstrainedPrimitiveTypeTest extends AnalysisTestBase {
       } else {
         x = 2f;
       }
-      System.out.println(Double.toString(x));
+      System.out.println(x);
     }
   }
 }

@@ -87,8 +87,28 @@ public class IRCodeInstructionListIterator implements InstructionListIterator {
   }
 
   @Override
+  public void replaceCurrentInstructionWithConstDouble(IRCode code, double value) {
+    instructionIterator.replaceCurrentInstructionWithConstDouble(code, value);
+  }
+
+  @Override
+  public void replaceCurrentInstructionWithConstFloat(IRCode code, float value) {
+    instructionIterator.replaceCurrentInstructionWithConstFloat(code, value);
+  }
+
+  @Override
   public void replaceCurrentInstructionWithConstInt(IRCode code, int value) {
     instructionIterator.replaceCurrentInstructionWithConstInt(code, value);
+  }
+
+  @Override
+  public void replaceCurrentInstructionWithConstLong(IRCode code, long value) {
+    instructionIterator.replaceCurrentInstructionWithConstLong(code, value);
+  }
+
+  @Override
+  public void replaceCurrentInstructionWithConstNull(IRCode code) {
+    instructionIterator.replaceCurrentInstructionWithConstNull(code);
   }
 
   @Override
