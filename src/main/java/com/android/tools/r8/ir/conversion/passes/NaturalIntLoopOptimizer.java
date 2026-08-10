@@ -4,13 +4,23 @@
 
 package com.android.tools.r8.ir.conversion.passes;
 
+import static com.android.tools.r8.graph.DexProgramClass.asProgramClassOrNull;
+
 import com.android.tools.r8.graph.AppInfo;
 import com.android.tools.r8.graph.AppView;
+import com.android.tools.r8.graph.DexMethod;
+import com.android.tools.r8.graph.DexProgramClass;
+import com.android.tools.r8.ir.analysis.type.TypeElement;
+import com.android.tools.r8.ir.code.ArithmeticBinop;
+import com.android.tools.r8.ir.code.ArrayGet;
 import com.android.tools.r8.ir.code.BasicBlock;
+import com.android.tools.r8.ir.code.ConstNumber;
 import com.android.tools.r8.ir.code.Goto;
 import com.android.tools.r8.ir.code.IRCode;
 import com.android.tools.r8.ir.code.If;
+import com.android.tools.r8.ir.code.IfType;
 import com.android.tools.r8.ir.code.Instruction;
+import com.android.tools.r8.ir.code.InvokeStatic;
 import com.android.tools.r8.ir.code.Phi;
 import com.android.tools.r8.ir.code.Sub;
 import com.android.tools.r8.ir.code.Value;
@@ -31,9 +41,9 @@ import java.util.Set;
  * pattern match fori and for loops with any initial value and increment, but this should be
  * extended for while loop support.
  */
-public class NaturalIntLoopRemover extends CodeRewriterPass<AppInfo> {
+public class NaturalIntLoopOptimizer extends CodeRewriterPass<AppInfo> {
 
-  public NaturalIntLoopRemover(AppView<?> appView) {
+  public NaturalIntLoopOptimizer(AppView<?> appView) {
     super(appView);
   }
 
@@ -48,7 +58,7 @@ public class NaturalIntLoopRemover extends CodeRewriterPass<AppInfo> {
     AffectedValues affectedValues = new AffectedValues();
     for (BasicBlock comparisonBlockCandidate : code.blocks) {
       if (isComparisonBlock(comparisonBlockCandidate)) {
-        loopRemoved |= tryRemoveLoop(comparisonBlockCandidate.exit().asIf(), affectedValues);
+        loopRemoved |= tryRemoveLoop(code, comparisonBlockCandidate.exit().asIf(), affectedValues);
       }
     }
     if (loopRemoved) {
@@ -84,14 +94,14 @@ public class NaturalIntLoopRemover extends CodeRewriterPass<AppInfo> {
     throw new Unreachable();
   }
 
-  private boolean tryRemoveLoop(If comparison, AffectedValues affectedValues) {
+  private boolean tryRemoveLoop(IRCode code, If comparison, AffectedValues affectedValues) {
     Phi loopPhi = computeLoopPhi(comparison);
     if (loopPhi == null) {
       return false;
     }
 
     NaturalIntLoopWithKnowIterations.Builder builder =
-        NaturalIntLoopWithKnowIterations.builder(comparison);
+        NaturalIntLoopWithKnowIterations.builder(comparison, loopPhi);
 
     if (!analyzeLoopIterator(comparison, loopPhi, builder)) {
       return false;
@@ -120,7 +130,138 @@ public class NaturalIntLoopRemover extends CodeRewriterPass<AppInfo> {
       loop.remove1IterationLoop(affectedValues);
       return true;
     }
+    if (tryOptimizeUnboxedEnumValuesLoop(code, loop)) {
+      return true;
+    }
     return false;
+  }
+
+  /**
+   * Looks for loops on the form `for (int i = 0; i < N; i++) { int j = values[i]; ... }`, where
+   * `values` is the unboxed $VALUES array that results from calling the helper method `int[]
+   * EnumUnboxingSharedUtility.values(int size)`.
+   *
+   * <p>Since this $VALUES array is defined as [1, 2, 3, 4, ..., N-1], such loops can be optimized
+   * into: `for (int j = 1; j < N + 1, j++) { ... }`. This avoids the need for calling
+   * EnumUnboxingSharedUtility#values, which saves an array allocation.
+   */
+  private boolean tryOptimizeUnboxedEnumValuesLoop(
+      IRCode code, NaturalIntLoopWithKnowIterations loop) {
+    // Check that the loop has `int i = 0` and `i++`.
+    if (loop.initCounter.getIntValue() != 0 || loop.counterIncrement != 1) {
+      return false;
+    }
+    // Check that the back edge goes to the loop body entry.
+    if (loop.loopBodyEntry != loop.backPredecessor) {
+      return false;
+    }
+    // Check that the If isntruction is on the form `ifge <phi>, <const>`.
+    if (loop.comparison.getType() != IfType.GE
+        || loop.comparison.rhs().getConstIntValueIfNonNegative() < 0) {
+      return false;
+    }
+    // Check if the loop phi is only used by an ArrayGet instruction (other than the known If and
+    // and Add users).
+    Value loopIndexValue = loop.comparison.lhs();
+    if (loopIndexValue.hasDebugUsers() || loopIndexValue.hasPhiUsers()) {
+      return false;
+    }
+    Instruction singleLoopIndexUser = null;
+    for (Instruction loopIndexUser : loopIndexValue.uniqueUsers()) {
+      if (loopIndexUser == loop.comparison || loopIndexUser == loop.counterIncrementInstruction) {
+        continue;
+      }
+      if (singleLoopIndexUser == null) {
+        singleLoopIndexUser = loopIndexUser;
+      } else {
+        return false;
+      }
+    }
+    if (singleLoopIndexUser == null || !singleLoopIndexUser.isArrayGet()) {
+      return false;
+    }
+    // Check if the array is defined by a call to EnumUnboxingSharedUtility#values.
+    ArrayGet arrayGet = singleLoopIndexUser.asArrayGet();
+    Value array = arrayGet.array().getAliasedValue();
+    if (!array.isDefinedByInstructionSatisfying(Instruction::isInvokeStatic)) {
+      return false;
+    }
+    InvokeStatic arrayDefinition = array.getDefinition().asInvokeStatic();
+    DexMethod invokedMethod = arrayDefinition.getInvokedMethod();
+    if (!invokedMethod.getHolderType().isClassType()) {
+      return false;
+    }
+    DexProgramClass holderClass =
+        asProgramClassOrNull(appView.definitionFor(invokedMethod.getHolderType()));
+    if (holderClass == null
+        || !holderClass.getAccessFlags().isSynthetic()
+        || !appView.getSyntheticItems().isSynthetic(holderClass)
+        || !appView
+            .getSyntheticItems()
+            .hasKindThatMatches(
+                holderClass,
+                (kind, naming) -> kind.equals(naming.ENUM_UNBOXING_SHARED_UTILITY_CLASS))
+        || !invokedMethod.match(
+            dexItemFactory.enumUnboxingSharedUtilityMembers.valuesMethodSignature)) {
+      return false;
+    }
+    int size = arrayDefinition.getFirstOperand().getConstIntValueIfNonNegative();
+    if (size < 0) {
+      return false;
+    }
+    // Optimize the loop.
+    optimizeUnboxedEnumValuesLoop(code, loop, arrayGet, arrayDefinition, size);
+    return true;
+  }
+
+  private void optimizeUnboxedEnumValuesLoop(
+      IRCode code,
+      NaturalIntLoopWithKnowIterations loop,
+      ArrayGet arrayGet,
+      InvokeStatic invokeValues,
+      int size) {
+    assert loop != null;
+    assert size >= 0;
+    // Optimize the loop from `for (int i = 0; i < N; i++) { int j = values[i]; ... }` to
+    // `for (int j = 1; j <= N; j++) { ... }`.
+    //
+    // First update the loop index initialization value from 0 to 1.
+    ConstNumber newInitCounter =
+        ConstNumber.builder()
+            .setValue(1)
+            .setFreshOutValue(code, TypeElement.getInt())
+            .setPosition(loop.initCounter)
+            .build();
+    loop.initCounter.getBlock().listIterator(loop.initCounter).add(newInitCounter);
+    loop.loopPhi.replaceOperand(loop.initCounter.outValue(), newInitCounter.outValue());
+    loop.initCounter.outValue().removePhiUser(loop.loopPhi);
+
+    // Update the loop index end value from N to N+1.
+    Value loopEndValue = loop.comparison.rhs();
+    int loopEnd = loopEndValue.getConstIntValueIfNonNegative();
+    ConstNumber newLoopEnd =
+        ConstNumber.builder()
+            .setValue(loopEnd + 1)
+            .setFreshOutValue(code, TypeElement.getInt())
+            .setPosition(loop.comparison)
+            .build();
+    loop.comparison.getBlock().listIterator().add(newLoopEnd);
+    loop.comparison.replaceValue(loopEndValue, newLoopEnd.outValue());
+
+    // Replace the ArrayGet instruction by the new loop index value.
+    arrayGet.outValue().replaceUsers(loop.loopPhi);
+    arrayGet.removeOrReplaceByDebugLocalRead();
+
+    // Remove the call to EnumUnboxingSharedUtility.values(size) if it is no longer used.
+    if (invokeValues.outValue().hasSingleUniqueUserAndNoOtherUsers()) {
+      Instruction invokeValuesUser = invokeValues.outValue().singleUniqueUser();
+      if (invokeValuesUser.isAssume() && invokeValuesUser.outValue().isUnused()) {
+        invokeValuesUser.removeOrReplaceByDebugLocalRead();
+      }
+    }
+    if (invokeValues.hasUnusedOutValue()) {
+      invokeValues.removeOrReplaceByDebugLocalRead();
+    }
   }
 
   /**
@@ -198,7 +339,7 @@ public class NaturalIntLoopRemover extends CodeRewriterPass<AppInfo> {
           return false;
         }
         builder.setLoopEntry(predecessor);
-        builder.setInitCounter(operand.definition.asConstNumber().getIntValue());
+        builder.setInitCounter(operand.definition.asConstNumber());
       } else if (operand.definition.isAdd()) {
         // Increment of the int iterator of type i + cst or cst + i.
         if (builder.getBackPredecessor() != null) {
@@ -212,7 +353,7 @@ public class NaturalIntLoopRemover extends CodeRewriterPass<AppInfo> {
             if (counterIncrement == 0 || builder.getCounterIncrement() != 0) {
               return false;
             }
-            builder.setCounterIncrement(counterIncrement);
+            builder.setCounterIncrement(counterIncrement, operand.definition.asAdd());
           } else if (inValue == loopPhi) {
             if (metPhiOperand) {
               return false;
@@ -239,7 +380,7 @@ public class NaturalIntLoopRemover extends CodeRewriterPass<AppInfo> {
           if (counterIncrement == 0) {
             return false;
           }
-          builder.setCounterIncrement(counterIncrement);
+          builder.setCounterIncrement(counterIncrement, sub);
         } else {
           return false;
         }
@@ -294,47 +435,57 @@ public class NaturalIntLoopRemover extends CodeRewriterPass<AppInfo> {
    */
   static class NaturalIntLoopWithKnowIterations {
 
-    private final int initCounter;
+    private final ConstNumber initCounter;
     private final int counterIncrement;
+    private final ArithmeticBinop counterIncrementInstruction;
     private final If comparison;
     private final BasicBlock loopExit;
     private final BasicBlock loopBodyEntry;
     private final BasicBlock backPredecessor;
     private final Set<BasicBlock> loopBody;
+    private final Phi loopPhi;
 
     NaturalIntLoopWithKnowIterations(
-        int initCounter,
+        ConstNumber initCounter,
         int counterIncrement,
+        ArithmeticBinop counterIncrementInstruction,
         If comparison,
         BasicBlock loopExit,
         BasicBlock loopBodyEntry,
         BasicBlock backPredecessor,
-        Set<BasicBlock> loopBody) {
+        Set<BasicBlock> loopBody,
+        Phi loopPhi) {
       this.initCounter = initCounter;
       this.counterIncrement = counterIncrement;
+      this.counterIncrementInstruction = counterIncrementInstruction;
       this.comparison = comparison;
       this.loopExit = loopExit;
       this.loopBodyEntry = loopBodyEntry;
       this.backPredecessor = backPredecessor;
       this.loopBody = loopBody;
+      this.loopPhi = loopPhi;
     }
 
     static class Builder {
 
-      private int initCounter;
-      private int counterIncrement;
       private final If comparison;
+      private final Phi loopPhi;
+
+      private ConstNumber initCounter;
+      private int counterIncrement;
+      private ArithmeticBinop counterIncrementInstruction;
       private BasicBlock loopExit;
       private BasicBlock loopBodyEntry;
       private BasicBlock loopEntry;
       private BasicBlock backPredecessor;
       private Set<BasicBlock> loopBody;
 
-      Builder(If comparison) {
+      Builder(If comparison, Phi loopPhi) {
         this.comparison = comparison;
+        this.loopPhi = loopPhi;
       }
 
-      public void setInitCounter(int initCounter) {
+      public void setInitCounter(ConstNumber initCounter) {
         this.initCounter = initCounter;
       }
 
@@ -342,8 +493,10 @@ public class NaturalIntLoopRemover extends CodeRewriterPass<AppInfo> {
         return counterIncrement;
       }
 
-      public void setCounterIncrement(int counterIncrement) {
+      public void setCounterIncrement(
+          int counterIncrement, ArithmeticBinop counterIncrementInstruction) {
         this.counterIncrement = counterIncrement;
+        this.counterIncrementInstruction = counterIncrementInstruction;
       }
 
       public BasicBlock getLoopEntry() {
@@ -379,16 +532,18 @@ public class NaturalIntLoopRemover extends CodeRewriterPass<AppInfo> {
         return new NaturalIntLoopWithKnowIterations(
             initCounter,
             counterIncrement,
+            counterIncrementInstruction,
             comparison,
             loopExit,
             loopBodyEntry,
             backPredecessor,
-            loopBody);
+            loopBody,
+            loopPhi);
       }
     }
 
-    static Builder builder(If comparison) {
-      return new Builder(comparison);
+    static Builder builder(If comparison, Phi loopPhi) {
+      return new Builder(comparison, loopPhi);
     }
 
     private BasicBlock target(int phiValue) {
@@ -401,8 +556,8 @@ public class NaturalIntLoopRemover extends CodeRewriterPass<AppInfo> {
     }
 
     public boolean has1Iteration() {
-      return target(initCounter) == loopBodyEntry
-          && target(initCounter + counterIncrement) == loopExit;
+      return target(initCounter.getIntValue()) == loopBodyEntry
+          && target(initCounter.getIntValue() + counterIncrement) == loopExit;
     }
 
     private void remove1IterationLoop(AffectedValues affectedValues) {

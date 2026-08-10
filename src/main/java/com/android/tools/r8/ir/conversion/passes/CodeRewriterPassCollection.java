@@ -47,7 +47,7 @@ public class CodeRewriterPassCollection {
     passes.add(new TrivialCheckCastAndInstanceOfRemover(appView));
     passes.add(new EnumValueOptimizer(appView));
     passes.add(new KnownArrayLengthRewriter(appView));
-    passes.add(new NaturalIntLoopRemover(appView));
+    passes.add(new NaturalIntLoopOptimizer(appView));
     passes.add(new CommonSubexpressionElimination(appView));
     passes.add(new ArrayConstructionSimplifier(appView));
     passes.add(new MoveResultRewriter(appView));

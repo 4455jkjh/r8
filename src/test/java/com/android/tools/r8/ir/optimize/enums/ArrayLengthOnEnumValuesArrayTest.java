@@ -55,6 +55,10 @@ public class ArrayLengthOnEnumValuesArrayTest extends TestBase {
                   testMyUnboxedEnumMethod
                       .streamInstructions()
                       .noneMatch(InstructionSubject::isArrayLength));
+              assertTrue(
+                  testMyUnboxedEnumMethod
+                      .streamInstructions()
+                      .noneMatch(InstructionSubject::isInvokeStatic));
             })
         .run(parameters.getRuntime(), Main.class)
         .assertSuccessWithOutputLines("A", "B", "0", "1");
