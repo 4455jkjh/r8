@@ -17,6 +17,7 @@ import com.android.tools.r8.ir.analysis.proto.schema.DeadProtoFieldObject;
 import com.android.tools.r8.ir.analysis.proto.schema.LiveProtoFieldObject;
 import com.android.tools.r8.ir.analysis.proto.schema.ProtoBoxedBooleanObject;
 import com.android.tools.r8.ir.analysis.proto.schema.ProtoBoxedIntObject;
+import com.android.tools.r8.ir.analysis.proto.schema.ProtoConstIntObject;
 import com.android.tools.r8.ir.analysis.proto.schema.ProtoFieldInfo;
 import com.android.tools.r8.ir.analysis.proto.schema.ProtoFieldType;
 import com.android.tools.r8.ir.analysis.proto.schema.ProtoFieldTypeFactory;
@@ -25,6 +26,7 @@ import com.android.tools.r8.ir.analysis.proto.schema.ProtoMessageInfo;
 import com.android.tools.r8.ir.analysis.proto.schema.ProtoMessageInfo.ProtoMessageInfoBuilderException;
 import com.android.tools.r8.ir.analysis.proto.schema.ProtoObject;
 import com.android.tools.r8.ir.analysis.proto.schema.ProtoObjectFromInvokeStatic;
+import com.android.tools.r8.ir.analysis.proto.schema.ProtoObjectFromInvokeVirtual;
 import com.android.tools.r8.ir.analysis.proto.schema.ProtoObjectFromStaticGet;
 import com.android.tools.r8.ir.analysis.proto.schema.ProtoStringObject;
 import com.android.tools.r8.ir.analysis.proto.schema.ProtoTypeObject;
@@ -34,6 +36,7 @@ import com.android.tools.r8.ir.code.DexItemBasedConstString;
 import com.android.tools.r8.ir.code.Instruction;
 import com.android.tools.r8.ir.code.InvokeMethod;
 import com.android.tools.r8.ir.code.InvokeStatic;
+import com.android.tools.r8.ir.code.InvokeVirtual;
 import com.android.tools.r8.ir.code.StaticGet;
 import com.android.tools.r8.ir.code.Value;
 import com.android.tools.r8.naming.dexitembasedstring.NameComputationInfo;
@@ -310,20 +313,43 @@ public class RawMessageInfoDecoder {
     }
     Instruction instruction = value.getDefinition();
     if (instruction.isConstString() || instruction.isStaticGet()) {
+      // Allow all const string and values from any static get.
       return true;
     }
     if (instruction.isInvokeStatic()) {
       InvokeStatic invoke = instruction.asInvokeStatic();
       if (invoke.arguments().isEmpty()) {
+        // Allow any static invokes not taking any arguments.
         return true;
       }
-      return (invoke
-                  .getInvokedMethod()
-                  .isIdenticalTo(references.dexItemFactory().integerMembers.valueOf)
-              || invoke
-                  .getInvokedMethod()
-                  .isIdenticalTo(references.dexItemFactory().booleanMembers.valueOf))
-          && invoke.getFirstArgument().getDefinition().isConstNumber();
+      if (invoke.getFirstArgument().isPhi()) {
+        return false;
+      }
+      if (invoke
+          .getInvokedMethod()
+          .isIdenticalTo(references.dexItemFactory().integerMembers.valueOf)) {
+        // Allow boxed integer from const
+        if (invoke.getFirstArgument().getDefinition().isConstNumber()) {
+          return true;
+        }
+        // Allow any single argument invoke virtual on any object returned by a static get.
+        Instruction definition = invoke.getFirstArgument().getAliasedValue().getDefinition();
+        return definition.isInvokeVirtual()
+            && definition.asInvokeVirtual().arguments().size() == 1
+            && !definition.asInvokeVirtual().getFirstArgument().isPhi()
+            && definition
+                .asInvokeVirtual()
+                .getFirstArgument()
+                .getAliasedValue()
+                .getDefinition()
+                .isStaticGet();
+      }
+      if (invoke
+          .getInvokedMethod()
+          .isIdenticalTo(references.dexItemFactory().booleanMembers.valueOf)) {
+        // Allow boxed integer from const.
+        return invoke.getFirstArgument().getDefinition().isConstNumber();
+      }
     }
     return false;
   }
@@ -347,7 +373,8 @@ public class RawMessageInfoDecoder {
               .isIdenticalTo(references.dexItemFactory().integerMembers.valueOf)
           && !invoke.arguments().isEmpty()
           && invoke.getFirstArgument().getDefinition().isConstNumber()) {
-        return new ProtoBoxedIntObject(invoke.getFirstArgument().getConstInt());
+        return new ProtoBoxedIntObject(
+            new ProtoConstIntObject(invoke.getFirstArgument().getConstInt()));
       }
     }
     throw new InvalidRawMessageInfoException();
@@ -364,10 +391,22 @@ public class RawMessageInfoDecoder {
       if (invoke.arguments().isEmpty()) {
         return new ProtoObjectFromInvokeStatic(invoke.getInvokedMethod());
       } else if (invoke
-              .getInvokedMethod()
-              .isIdenticalTo(references.dexItemFactory().integerMembers.valueOf)
-          && invoke.getFirstArgument().getDefinition().isConstNumber()) {
-        return new ProtoBoxedIntObject(invoke.getFirstArgument().getConstInt());
+          .getInvokedMethod()
+          .isIdenticalTo(references.dexItemFactory().integerMembers.valueOf)) {
+        if (invoke.getFirstArgument().getDefinition().isConstNumber()) {
+          return new ProtoBoxedIntObject(
+              new ProtoConstIntObject(invoke.getFirstArgument().getConstInt()));
+        } else {
+          InvokeVirtual invokeVirtual =
+              invoke.getFirstArgument().getAliasedValue().getDefinition().asInvokeVirtual();
+          StaticGet staticGet =
+              invokeVirtual.getFirstArgument().getAliasedValue().getDefinition().asStaticGet();
+          ProtoObject protoObjectFromStaticGet = new ProtoObjectFromStaticGet(staticGet.getField());
+          ProtoObject protoObjectFromInvokeVirtual =
+              new ProtoObjectFromInvokeVirtual(
+                  protoObjectFromStaticGet, invokeVirtual.getInvokedMethod());
+          return new ProtoBoxedIntObject(protoObjectFromInvokeVirtual);
+        }
       } else if (invoke
               .getInvokedMethod()
               .isIdenticalTo(references.dexItemFactory().booleanMembers.valueOf)

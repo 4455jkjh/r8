@@ -419,6 +419,25 @@ public abstract class EnqueuerWorklist {
     }
   }
 
+  static class TraceInvokeVirtualAction extends EnqueuerAction {
+    private final DexMethod invokedMethod;
+    // TODO(b/175854431): Avoid pushing context on worklist.
+    private final ProgramMethod context;
+    private final DefaultEnqueuerUseRegistry registry;
+
+    TraceInvokeVirtualAction(
+        DexMethod invokedMethod, ProgramMethod context, DefaultEnqueuerUseRegistry registry) {
+      this.invokedMethod = invokedMethod;
+      this.context = context;
+      this.registry = registry;
+    }
+
+    @Override
+    public void run(Enqueuer enqueuer) {
+      enqueuer.traceInvokeVirtual(invokedMethod, context, registry);
+    }
+  }
+
   static class TraceMethodDefinitionExcludingCodeAction extends EnqueuerAction {
     private final ProgramMethod method;
 
@@ -773,6 +792,9 @@ public abstract class EnqueuerWorklist {
   public abstract void enqueueTraceInvokeStaticAction(
       DexMethod invokedMethod, ProgramMethod context, DefaultEnqueuerUseRegistry registry);
 
+  public abstract void enqueueTraceInvokeVirtualAction(
+      DexMethod invokedMethod, ProgramMethod context, DefaultEnqueuerUseRegistry registry);
+
   public abstract void enqueueTraceNewInstanceAction(DexType type, ProgramMethod context);
 
   public abstract void enqueueTraceReflectiveFieldAccessAction(
@@ -935,6 +957,12 @@ public abstract class EnqueuerWorklist {
     public void enqueueTraceInvokeStaticAction(
         DexMethod invokedMethod, ProgramMethod context, DefaultEnqueuerUseRegistry registry) {
       queue.add(new TraceInvokeStaticAction(invokedMethod, context, registry));
+    }
+
+    @Override
+    public void enqueueTraceInvokeVirtualAction(
+        DexMethod invokedMethod, ProgramMethod context, DefaultEnqueuerUseRegistry registry) {
+      queue.add(new TraceInvokeVirtualAction(invokedMethod, context, registry));
     }
 
     @Override
@@ -1131,6 +1159,12 @@ public abstract class EnqueuerWorklist {
     public void enqueueTraceInvokeStaticAction(
         DexMethod invokedMethod, ProgramMethod context, DefaultEnqueuerUseRegistry registry) {
       throw attemptToEnqueue("TraceInvokeStaticAction " + invokedMethod + " from " + context);
+    }
+
+    @Override
+    public void enqueueTraceInvokeVirtualAction(
+        DexMethod invokedMethod, ProgramMethod context, DefaultEnqueuerUseRegistry registry) {
+      throw attemptToEnqueue("TraceInvokeVirtualAction " + invokedMethod + " from " + context);
     }
 
     @Override

@@ -8,15 +8,8 @@ import com.android.tools.r8.graph.DexItemFactory;
 
 public class ProtoBoxedBooleanObject extends ProtoObjectFromStaticGet {
 
-  private final boolean value;
-
   public ProtoBoxedBooleanObject(boolean value, DexItemFactory factory) {
     super(value ? factory.booleanMembers.TRUE : factory.booleanMembers.FALSE);
-    this.value = value;
-  }
-
-  public boolean getValue() {
-    return value;
   }
 
   @Override
