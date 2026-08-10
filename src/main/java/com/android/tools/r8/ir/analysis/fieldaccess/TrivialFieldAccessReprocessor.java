@@ -159,9 +159,10 @@ public final class TrivialFieldAccessReprocessor {
           FieldClassification fieldClassification = classifyField(field, appView);
           if (fieldClassification == FieldClassification.CONSTANT) {
             constantFields.add(field);
+          } else if (fieldClassification == FieldClassification.NON_CONSTANT) {
+            nonConstantFields.add(field);
           } else {
-            assert fieldClassification == FieldClassification.NON_CONSTANT
-                || fieldClassification == FieldClassification.UNKNOWN;
+            assert fieldClassification == FieldClassification.UNKNOWN;
           }
         }
       }
@@ -230,9 +231,12 @@ public final class TrivialFieldAccessReprocessor {
       if (singleValue.isSingleFieldValue()) {
         SingleFieldValue singleFieldValue = singleValue.asSingleFieldValue();
         DexField singleField = singleFieldValue.getField();
-        if (singleField != field.getReference()
+        if (singleField.isNotIdenticalTo(field.getReference())
             && !singleFieldValue.mayHaveFinalizeMethodDirectlyOrIndirectly(appView)) {
           return FieldClassification.CONSTANT;
+        }
+        if (singleFieldValue.hasKnownArrayLength()) {
+          return FieldClassification.NON_CONSTANT;
         }
       }
       return FieldClassification.UNKNOWN;

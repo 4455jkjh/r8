@@ -6,6 +6,7 @@ package com.android.tools.r8.ir.conversion.passes;
 
 import com.android.tools.r8.graph.AppInfo;
 import com.android.tools.r8.graph.AppView;
+import com.android.tools.r8.graph.ProgramMethod;
 import com.android.tools.r8.ir.analysis.value.AbstractValue;
 import com.android.tools.r8.ir.code.ArrayLength;
 import com.android.tools.r8.ir.code.IRCode;
@@ -38,28 +39,21 @@ public class KnownArrayLengthRewriter extends CodeRewriterPass<AppInfo> {
     boolean hasChanged = false;
     InstructionListIterator iterator = code.instructionListIterator();
     while (iterator.hasNext()) {
-      Instruction current = iterator.next();
-      if (!current.isArrayLength()) {
+      ArrayLength arrayLength = iterator.next().asArrayLength();
+      if (arrayLength == null) {
         continue;
       }
-
-      ArrayLength arrayLength = current.asArrayLength();
       if (arrayLength.hasOutValue() && arrayLength.outValue().hasLocalInfo()) {
         continue;
       }
 
-      Value array = arrayLength.array().getAliasedValue();
-      if (array.isPhi() || !arrayLength.array().isNeverNull() || array.hasLocalInfo()) {
+      Value array = arrayLength.array();
+      Value arrayRoot = array.getAliasedValue();
+      if (arrayRoot.isPhi() || arrayRoot.hasLocalInfo()) {
         continue;
       }
 
-      AbstractValue abstractValue = array.getAbstractValue(appView, code.context());
-      if (!abstractValue.hasKnownArrayLength() && !array.isNeverNull()) {
-        continue;
-      }
-      Instruction arrayDefinition = array.getDefinition();
-      assert arrayDefinition != null;
-
+      Instruction arrayDefinition = arrayRoot.getDefinition();
       Set<Phi> phiUsers = arrayLength.outValue().uniquePhiUsers();
       if (arrayDefinition.isNewArrayEmpty()) {
         Value size = arrayDefinition.asNewArrayEmpty().size();
@@ -73,11 +67,14 @@ public class KnownArrayLengthRewriter extends CodeRewriterPass<AppInfo> {
         }
         iterator.replaceCurrentInstructionWithConstInt(code, (int) size);
         hasChanged = true;
-      } else if (abstractValue.hasKnownArrayLength()) {
-        iterator.replaceCurrentInstructionWithConstInt(code, abstractValue.getKnownArrayLength());
-        hasChanged = true;
       } else {
-        continue;
+        int knownArrayLength = getKnownArrayLength(arrayRoot, code.context());
+        if (knownArrayLength >= 0 && array.isNeverNull()) {
+          iterator.replaceCurrentInstructionWithConstInt(code, knownArrayLength);
+          hasChanged = true;
+        } else {
+          continue;
+        }
       }
 
       phiUsers.forEach(Phi::removeTrivialPhi);
@@ -86,5 +83,26 @@ public class KnownArrayLengthRewriter extends CodeRewriterPass<AppInfo> {
       code.removeRedundantBlocks();
     }
     return CodeRewriterResult.hasChanged(hasChanged);
+  }
+
+  private int getKnownArrayLength(Value value, ProgramMethod context) {
+    if (value.isPhi()) {
+      return -1;
+    }
+    AbstractValue abstractValue = value.getAbstractValue(appView, context);
+    if (abstractValue.hasKnownArrayLength()) {
+      return abstractValue.getKnownArrayLength();
+    }
+    Instruction definition = value.getDefinition();
+    if (definition.isAssume()
+        || definition.isCheckCast()
+        || (definition.isInvokeVirtual()
+            && definition
+                .asInvokeVirtual()
+                .getInvokedMethod()
+                .match(dexItemFactory.objectMembers.clone))) {
+      return getKnownArrayLength(definition.getFirstOperand(), context);
+    }
+    return -1;
   }
 }
