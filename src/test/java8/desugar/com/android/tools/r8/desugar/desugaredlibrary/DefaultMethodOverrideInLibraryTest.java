@@ -4,11 +4,13 @@
 package com.android.tools.r8.desugar.desugaredlibrary;
 
 import static com.android.tools.r8.desugar.desugaredlibrary.test.CompilationSpecification.D8_L8DEBUG;
+import static com.android.tools.r8.desugar.desugaredlibrary.test.LibraryDesugaringSpecification.JDK11;
+import static com.android.tools.r8.desugar.desugaredlibrary.test.LibraryDesugaringSpecification.JDK8;
 import static com.android.tools.r8.desugar.desugaredlibrary.test.LibraryDesugaringSpecification.getJdk8Jdk11;
+import static junit.framework.TestCase.assertTrue;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 
-import com.android.tools.r8.SingleTestRunResult;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestRuntime;
 import com.android.tools.r8.TestRuntime.CfVm;
@@ -23,6 +25,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Spliterator;
 import java.util.function.Consumer;
+import org.junit.Assume;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -41,6 +44,7 @@ import org.junit.runners.Parameterized.Parameters;
 public class DefaultMethodOverrideInLibraryTest extends DesugaredLibraryTestBase {
 
   static final String EXPECTED = StringUtils.lines("0", "42", "0", "0", "42", "42");
+  static final String ALT_EXPECTED = StringUtils.lines("42", "42", "0", "0", "42", "42");
 
   private final TestParameters parameters;
   private final CompilationSpecification compilationSpecification;
@@ -64,7 +68,27 @@ public class DefaultMethodOverrideInLibraryTest extends DesugaredLibraryTestBase
   }
 
   @Test
-  public void test() throws Exception {
+  public void testRef() throws Exception {
+    Assume.assumeTrue(
+        "Run only once",
+        libraryDesugaringSpecification == JDK8 && compilationSpecification == D8_L8DEBUG);
+    sanityAssertion();
+    if (parameters.isCfRuntime()) {
+      testForJvm(parameters)
+          .addInnerClasses(DefaultMethodOverrideInLibraryTest.class)
+          .run(parameters.getRuntime(), Main.class)
+          .assertSuccessWithOutput(EXPECTED);
+    } else {
+      // The test requires desugared library below Android 7 to run.
+      Assume.assumeTrue(parameters.getDexRuntimeVersion().isNewerThanOrEqual(Version.V7_0_0));
+      testForD8(parameters)
+          .addInnerClasses(getClass())
+          .run(parameters.getRuntime(), Main.class)
+          .assertSuccessWithOutput(getResult(false));
+    }
+  }
+
+  private static void sanityAssertion() throws NoSuchMethodException {
     TestRuntime systemRuntime = TestRuntime.getSystemRuntime();
     if (systemRuntime.isCf() && systemRuntime.asCf().isNewerThanOrEqual(CfVm.JDK8)) {
       // This test assumes that the library defines an ArrayList class with a declared spliterator.
@@ -73,29 +97,32 @@ public class DefaultMethodOverrideInLibraryTest extends DesugaredLibraryTestBase
       assertNotNull(spliterator);
       assertFalse(spliterator.isDefault());
     }
-    if (parameters.isCfRuntime()) {
-      testForJvm(parameters)
-          .addInnerClasses(DefaultMethodOverrideInLibraryTest.class)
-          .run(parameters.getRuntime(), Main.class)
-          .assertSuccessWithOutput(EXPECTED);
-    } else {
-      testForDesugaredLibrary(parameters, libraryDesugaringSpecification, compilationSpecification)
-          .addInnerClasses(getClass())
-          .addKeepMainRule(Main.class)
-          .run(parameters.getRuntime(), Main.class)
-          .apply(this::checkResult);
-    }
   }
 
-  private void checkResult(SingleTestRunResult<?> result) {
-    // TODO(b/145504401): Execution on Art 7.0.0 has the wrong runtime behavior (non-desugared).
-    if (parameters.isDexRuntime()
-        && parameters.getApiLevel().isGreaterThanOrEqualTo(AndroidApiLevel.N)
-        && parameters.getRuntime().asDex().getVm().getVersion().equals(Version.V7_0_0)) {
-      result.assertSuccessWithOutputLines("42", "42", "0", "0", "42", "42");
-      return;
+  @Test
+  public void testDesugaring() throws Exception {
+    Assume.assumeTrue(parameters.isDexRuntime());
+    testForDesugaredLibrary(parameters, libraryDesugaringSpecification, compilationSpecification)
+        .addInnerClasses(getClass())
+        .addKeepMainRule(Main.class)
+        .run(parameters.getRuntime(), Main.class)
+        .assertSuccessWithOutput(getResult(true));
+  }
+
+  private String getResult(boolean libraryDesugaring) {
+    assertTrue(parameters.isDexRuntime());
+    if (parameters.getApiLevel().isLessThan(AndroidApiLevel.N)) {
+      return libraryDesugaring ? EXPECTED : ALT_EXPECTED;
     }
-    result.assertSuccessWithOutput(EXPECTED);
+    // TODO(b/145504401): Execution on Art 7.0.0 has the wrong runtime behavior (non-desugared).
+    if (parameters.getRuntime().asDex().getVm().getVersion().equals(Version.V7_0_0)) {
+      return ALT_EXPECTED;
+    }
+    if (libraryDesugaringSpecification == JDK11
+        && parameters.getApiLevel().isLessThan(AndroidApiLevel.CINNAMON_BUN)) {
+      return ALT_EXPECTED;
+    }
+    return EXPECTED;
   }
 
   // Custom spliterator, just returns 42 in estimateSize, otherwise unused.

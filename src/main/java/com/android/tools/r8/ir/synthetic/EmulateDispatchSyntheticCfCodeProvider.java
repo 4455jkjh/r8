@@ -4,8 +4,8 @@
 
 package com.android.tools.r8.ir.synthetic;
 
-import static com.android.tools.r8.ir.synthetic.EmulateDispatchSyntheticCfCodeProvider.EmulateDispatchType.ALL_STATIC;
 import static com.android.tools.r8.ir.synthetic.EmulateDispatchSyntheticCfCodeProvider.EmulateDispatchType.AUTO_CLOSEABLE;
+import static com.android.tools.r8.ir.synthetic.EmulateDispatchSyntheticCfCodeProvider.EmulateDispatchType.FORWARDING_BRIDGE;
 
 import com.android.tools.r8.cf.code.CfCheckCast;
 import com.android.tools.r8.cf.code.CfFrame;
@@ -36,7 +36,8 @@ public class EmulateDispatchSyntheticCfCodeProvider extends SyntheticCfCodeProvi
 
   public enum EmulateDispatchType {
     ALL_STATIC,
-    AUTO_CLOSEABLE
+    AUTO_CLOSEABLE,
+    FORWARDING_BRIDGE
   }
 
   private final DexMethod forwardingMethod;
@@ -79,22 +80,27 @@ public class EmulateDispatchSyntheticCfCodeProvider extends SyntheticCfCodeProvi
                 })
             .build();
 
-    instructions.add(new CfLoad(ValueType.fromDexType(receiverType), 0));
-    instructions.add(new CfInstanceOf(interfaceMethod.holder));
-    instructions.add(new CfIf(IfType.EQ, ValueType.INT, labels[nextLabel]));
+    if (dispatchType != FORWARDING_BRIDGE) {
+      instructions.add(new CfLoad(ValueType.fromDexType(receiverType), 0));
+      instructions.add(new CfInstanceOf(interfaceMethod.holder));
+      instructions.add(new CfIf(IfType.EQ, ValueType.INT, labels[nextLabel]));
 
-    // Branch with library call.
-    instructions.add(new CfLoad(ValueType.fromDexType(receiverType), 0));
-    instructions.add(new CfCheckCast(interfaceMethod.holder));
-    loadExtraParameters(instructions);
-    instructions.add(new CfInvoke(Opcodes.INVOKEINTERFACE, interfaceMethod, true));
-    addReturn(instructions);
+      // Branch with library call.
+      instructions.add(new CfLoad(ValueType.fromDexType(receiverType), 0));
+      instructions.add(new CfCheckCast(interfaceMethod.holder));
+      loadExtraParameters(instructions);
+      instructions.add(new CfInvoke(Opcodes.INVOKEINTERFACE, interfaceMethod, true));
+      addReturn(instructions);
+    }
 
     // SubInterface dispatch (subInterfaces are ordered).
     for (Map.Entry<DexType, DexMethod> dispatch : extraDispatchCases.entrySet()) {
       // Type check basic block.
-      instructions.add(labels[nextLabel++]);
-      instructions.add(frame);
+      CfLabel label = labels[nextLabel++];
+      if (label != null) {
+        instructions.add(label);
+        instructions.add(frame);
+      }
       instructions.add(new CfLoad(ValueType.fromDexType(receiverType), 0));
       instructions.add(new CfInstanceOf(dispatch.getKey()));
       instructions.add(new CfIf(IfType.EQ, ValueType.INT, labels[nextLabel]));
@@ -120,11 +126,10 @@ public class EmulateDispatchSyntheticCfCodeProvider extends SyntheticCfCodeProvi
       instructions.add(new CfCheckCast(checkCastType));
     }
     loadExtraParameters(instructions);
-    if (dispatchType == ALL_STATIC
+    if (dispatchType != AUTO_CLOSEABLE
         || appView.getSyntheticItems().isSynthetic(method.getHolderType())) {
       instructions.add(new CfInvoke(Opcodes.INVOKESTATIC, method, false));
     } else {
-      assert dispatchType == AUTO_CLOSEABLE;
       // The type method.getHolderType() may not resolve if compiled without android library, for
       // example, with the jdk as android.jar.
       if (method

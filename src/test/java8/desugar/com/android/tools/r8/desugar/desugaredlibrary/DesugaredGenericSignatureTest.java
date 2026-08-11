@@ -140,7 +140,7 @@ public class DesugaredGenericSignatureTest extends DesugaredLibraryTestBase {
             "TransformingSequentialList",
             "2",
             "interface j$.util.List");
-    final String EXPECTED_WITHOUT_EMULATED_INTERFACE_JVM_AND_ART_FROM_O_BEFORE_T =
+    final String EXPECTED_WITHOUT_EMULATED_INTERFACE_JVM_AND_ART_FROM_O_BEFORE_CIN =
         StringUtils.lines(
             "StringKeyHashMap",
             "0",
@@ -148,8 +148,8 @@ public class DesugaredGenericSignatureTest extends DesugaredLibraryTestBase {
             "0",
             "TransformingSequentialList",
             "2",
-            "interface j$.util.Collection");
-    final String EXPECTED_WITHOUT_EMULATED_INTERFACE_JVM_AND_ART_FROM_O_BEFORE_T_CF2CF =
+            "interface j$.util.List");
+    final String EXPECTED_WITHOUT_EMULATED_INTERFACE_JVM_AND_ART_FROM_O_BEFORE_CIN_CF2CF =
         StringUtils.lines(
             "StringKeyHashMap",
             "0",
@@ -157,7 +157,7 @@ public class DesugaredGenericSignatureTest extends DesugaredLibraryTestBase {
             "0",
             "TransformingSequentialList",
             "2",
-            "j$.util.Collection<T>");
+            "j$.util.List<T>");
     final String EXPECTED_WITHOUT_EMULATED_INTERFACE_JVM_AND_ART_FROM_O =
         StringUtils.lines(
             "StringKeyHashMap",
@@ -183,11 +183,11 @@ public class DesugaredGenericSignatureTest extends DesugaredLibraryTestBase {
                             .getApiLevel()
                             .isLessThan(TestBase.apiLevelWithDefaultInterfaceMethodsSupport())))
                 ? EXPECTED_WITHOUT_EMULATED_INTERFACE_ART_BEFORE_O
-                : ((parameters.getApiLevel().isLessThan(AndroidApiLevel.T)
+                : ((parameters.getApiLevel().isLessThan(AndroidApiLevel.CINNAMON_BUN)
                         && libraryDesugaringSpecification == JDK11)
                     ? (compilationSpecification.isCfToCf()
-                        ? EXPECTED_WITHOUT_EMULATED_INTERFACE_JVM_AND_ART_FROM_O_BEFORE_T_CF2CF
-                        : EXPECTED_WITHOUT_EMULATED_INTERFACE_JVM_AND_ART_FROM_O_BEFORE_T)
+                        ? EXPECTED_WITHOUT_EMULATED_INTERFACE_JVM_AND_ART_FROM_O_BEFORE_CIN_CF2CF
+                        : EXPECTED_WITHOUT_EMULATED_INTERFACE_JVM_AND_ART_FROM_O_BEFORE_CIN)
                     : EXPECTED_WITHOUT_EMULATED_INTERFACE_JVM_AND_ART_FROM_O));
   }
 

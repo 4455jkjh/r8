@@ -27,7 +27,10 @@ import com.android.tools.r8.graph.MethodCollection;
 import com.android.tools.r8.graph.ProgramMethod;
 import com.android.tools.r8.graph.lens.GraphLens;
 import com.android.tools.r8.graph.lens.NestedGraphLens;
+import com.android.tools.r8.ir.desugar.desugaredlibrary.machinespecification.DerivedMethod;
 import com.android.tools.r8.ir.desugar.desugaredlibrary.machinespecification.EmulatedDispatchMethodDescriptor;
+import com.android.tools.r8.ir.synthetic.EmulateDispatchSyntheticCfCodeProvider;
+import com.android.tools.r8.ir.synthetic.EmulateDispatchSyntheticCfCodeProvider.EmulateDispatchType;
 import com.android.tools.r8.ir.synthetic.ForwardMethodBuilder;
 import com.android.tools.r8.lightir.LirInstructionView;
 import com.android.tools.r8.lightir.LirOpcodeUtils;
@@ -43,8 +46,10 @@ import java.util.ArrayList;
 import java.util.Deque;
 import java.util.HashSet;
 import java.util.IdentityHashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiConsumer;
@@ -242,15 +247,47 @@ public final class InterfaceProcessor {
     }
     companion.setCode(code, appView);
     if (desugaringMode == LIBRARY_DESUGARING_N_PLUS) {
-      method.setCode(
-          ForwardMethodBuilder.builder(appView.dexItemFactory())
-              .setStaticTarget(companion.getReference(), false)
-              .setNonStaticSource(method.getReference())
-              .buildCf(),
-          appView);
+      LinkedHashMap<DexType, DexMethod> cases =
+          computeNonCompanionDispatchCases(method.getReference());
+      if (!cases.isEmpty()) {
+        // R8 needs to dispatch on the non companion classes.
+        method.setCode(
+            new EmulateDispatchSyntheticCfCodeProvider(
+                    method.getHolderType(),
+                    companion.getReference(),
+                    method.getReference(),
+                    cases,
+                    EmulateDispatchType.FORWARDING_BRIDGE,
+                    appView)
+                .generateCfCode(),
+            appView);
+      } else {
+        method.setCode(
+            ForwardMethodBuilder.builder(appView.dexItemFactory())
+                .setStaticTarget(companion.getReference(), false)
+                .setNonStaticSource(method.getReference())
+                .buildCf(),
+            appView);
+      }
     } else {
       method.setCode(InvalidCode.getInstance(), appView);
     }
+  }
+
+  private LinkedHashMap<DexType, DexMethod> computeNonCompanionDispatchCases(DexMethod reference) {
+    EmulatedDispatchMethodDescriptor descriptor =
+        appView
+            .options()
+            .getLibraryDesugaringOptions()
+            .getMachineDesugaredLibrarySpecification()
+            .getEmulatedInterfaceEmulatedDispatchMethodDescriptor(reference);
+    LinkedHashMap<DexType, DexMethod> newCases = new LinkedHashMap<>();
+    for (Entry<DexType, DerivedMethod> entry : descriptor.getDispatchCases().entrySet()) {
+      if (entry.getValue().getHolderKind(appView) == null) {
+        newCases.put(entry.getKey(), entry.getValue().getMethod());
+      }
+    }
+    return newCases;
   }
 
   private void clearDirectMethods(DexProgramClass iface) {
