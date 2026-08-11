@@ -279,8 +279,6 @@ tasks {
       enforceUncompressedEntries(archiveFile.get().asFile, setOf("resources/api_database.ser"))
     }
   }
-
-  withType<Exec> { doFirst { println("Executing command: ${commandLine.joinToString(" ")}") } }
 }
 
 tasks.withType<JavaCompile> {

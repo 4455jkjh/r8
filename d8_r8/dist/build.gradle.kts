@@ -197,8 +197,6 @@ interface InjectedArcOps {
 }
 
 tasks {
-  withType<Exec> { doFirst { println("Executing command: ${commandLine.joinToString(" ")}") } }
-
   val filteredDepsJar =
     register<Jar>("filteredDepsJar") {
       val injected = project.objects.newInstance<InjectedArcOps>()
