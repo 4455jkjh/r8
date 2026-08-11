@@ -107,7 +107,7 @@ public class InvokeVirtualOnInterfaceTest extends TestBase {
   }
 
   private static byte[] transformMain() throws Exception {
-    String binaryNameForI = DescriptorUtils.getBinaryNameFromJavaType(I.class.getTypeName());
+    String binaryNameForI = DescriptorUtils.getInternalNameFromJavaType(I.class.getTypeName());
     return transformer(Main.class)
         .transformMethodInsnInMethod(
             "main",

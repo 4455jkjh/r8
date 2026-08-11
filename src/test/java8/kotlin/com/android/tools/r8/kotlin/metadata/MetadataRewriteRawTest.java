@@ -5,7 +5,7 @@
 package com.android.tools.r8.kotlin.metadata;
 
 import static com.android.tools.r8.KotlinCompilerTool.KotlinCompilerVersion.MIN_SUPPORTED_VERSION;
-import static com.android.tools.r8.utils.DescriptorUtils.getBinaryNameFromJavaType;
+import static com.android.tools.r8.utils.DescriptorUtils.getInternalNameFromJavaType;
 
 import com.android.tools.r8.KotlinCompileMemoizer;
 import com.android.tools.r8.KotlinTestParameters;
@@ -62,7 +62,8 @@ public class MetadataRewriteRawTest extends KotlinMetadataTestBase {
   }
 
   private static final KotlinCompileMemoizer libJars =
-      getCompileMemoizer(getKotlinSourceFileFromResources(getBinaryNameFromJavaType(PKG_LIB), "lib"))
+      getCompileMemoizer(
+              getKotlinSourceFileFromResources(getInternalNameFromJavaType(PKG_LIB), "lib"))
           .configure(kotlinCompilerTool -> kotlinCompilerTool.addClasspathFiles(javaLibZip));
   private final TestParameters parameters;
 
@@ -72,7 +73,8 @@ public class MetadataRewriteRawTest extends KotlinMetadataTestBase {
     Path output =
         kotlinc(parameters.getRuntime().asCf(), kotlinParameters)
             .addClasspathFiles(libJar, javaLibZip)
-            .addSourceFiles(getKotlinSourceFileFromResources(getBinaryNameFromJavaType(PKG_APP), "main"))
+            .addSourceFiles(
+                getKotlinSourceFileFromResources(getInternalNameFromJavaType(PKG_APP), "main"))
             .setOutputPath(temp.newFolder().toPath())
             .compile();
     testForJvm(parameters)
@@ -106,7 +108,8 @@ public class MetadataRewriteRawTest extends KotlinMetadataTestBase {
     Path main =
         kotlinc(parameters.getRuntime().asCf(), kotlinParameters)
             .addClasspathFiles(libJar, javaLibZip)
-            .addSourceFiles(getKotlinSourceFileFromResources(getBinaryNameFromJavaType(PKG_APP), "main"))
+            .addSourceFiles(
+                getKotlinSourceFileFromResources(getInternalNameFromJavaType(PKG_APP), "main"))
             .setOutputPath(temp.newFolder().toPath())
             .compile();
     testForJvm(parameters)

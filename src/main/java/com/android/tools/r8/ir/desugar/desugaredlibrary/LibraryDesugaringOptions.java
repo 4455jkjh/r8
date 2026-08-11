@@ -165,7 +165,8 @@ public class LibraryDesugaringOptions {
     String postPrefix = System.getProperty("com.android.tools.r8.desugaredLibraryPostPrefix", null);
     setDesugaredLibrarySpecification(desugaredLibrarySpecification, postPrefix);
     if (!synthesizedClassPrefix.isEmpty()) {
-      String post = postPrefix == null ? "" : DescriptorUtils.getBinaryNameFromJavaName(postPrefix);
+      String post =
+          postPrefix == null ? "" : DescriptorUtils.getInternalNameFromJavaName(postPrefix);
       this.synthesizedClassPrefix = synthesizedClassPrefix + post;
     }
   }

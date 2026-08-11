@@ -51,7 +51,7 @@ public class GenerateAvailableApiExceptions {
         continue;
       }
       String name = node.getAttributes().getNamedItem("name").getNodeValue();
-      String type = DescriptorUtils.getJavaTypeFromBinaryName(name);
+      String type = DescriptorUtils.getJavaTypeFromInternalName(name);
       ClassSubject clazz = inspector.clazz(type);
       if (isThrowable(clazz, isExceptionCache, inspector)) {
         exceptionsMap.computeIfAbsent(since, k -> new TreeSet<>()).add(name);
@@ -71,7 +71,7 @@ public class GenerateAvailableApiExceptions {
       }
       builder.append("if (minApiLevel >= " + api + ") {");
       for (String name : names) {
-        String desc = DescriptorUtils.getDescriptorFromClassBinaryName(name);
+        String desc = DescriptorUtils.getDescriptorFromClassInternalName(name);
         builder.append("  types.add(factory.createType(\"" + desc + "\"));");
       }
       builder.append("}");

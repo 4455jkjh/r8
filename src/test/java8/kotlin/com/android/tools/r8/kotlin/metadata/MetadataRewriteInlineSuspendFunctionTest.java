@@ -50,7 +50,8 @@ public class MetadataRewriteInlineSuspendFunctionTest extends KotlinMetadataTest
 
   private static final KotlinCompileMemoizer libJars =
       getCompileMemoizer(
-              getKotlinSourceFileFromResources(DescriptorUtils.getBinaryNameFromJavaType(PKG_LIB), "lib"))
+              getKotlinSourceFileFromResources(
+                  DescriptorUtils.getInternalNameFromJavaType(PKG_LIB), "lib"))
           .configure(
               tool -> tool.addClasspathFiles(tool.getCompiler().getKotlinxCoroutinesCoreJar()));
 
@@ -63,7 +64,8 @@ public class MetadataRewriteInlineSuspendFunctionTest extends KotlinMetadataTest
         kotlinc(parameters.getRuntime().asCf(), kotlinc, targetVersion, lambdaGeneration)
             .addClasspathFiles(kotlinc.getKotlinxCoroutinesCoreJar(), libJar)
             .addSourceFiles(
-                getKotlinSourceFileFromResources(DescriptorUtils.getBinaryNameFromJavaType(PKG_APP), "main"))
+                getKotlinSourceFileFromResources(
+                    DescriptorUtils.getInternalNameFromJavaType(PKG_APP), "main"))
             .setOutputPath(temp.newFolder().toPath())
             .compile();
     testForJvm(parameters)
@@ -94,7 +96,8 @@ public class MetadataRewriteInlineSuspendFunctionTest extends KotlinMetadataTest
         kotlinc(parameters.getRuntime().asCf(), kotlinc, targetVersion, lambdaGeneration)
             .addClasspathFiles(libJar)
             .addSourceFiles(
-                getKotlinSourceFileFromResources(DescriptorUtils.getBinaryNameFromJavaType(PKG_APP), "main"))
+                getKotlinSourceFileFromResources(
+                    DescriptorUtils.getInternalNameFromJavaType(PKG_APP), "main"))
             .setOutputPath(temp.newFolder().toPath())
             .compile();
     testForJvm(parameters)

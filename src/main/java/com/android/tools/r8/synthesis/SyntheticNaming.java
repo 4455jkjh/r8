@@ -529,7 +529,7 @@ public class SyntheticNaming {
           EXTERNAL_SYNTHETIC_CLASS_SEPARATOR, kind, externalSyntheticTypePrefix, id, factory);
     } else {
       return factory.createType(
-          DescriptorUtils.getDescriptorFromClassBinaryName(
+          DescriptorUtils.getDescriptorFromClassInternalName(
               externalSyntheticTypePrefix
                   + options.getSyntheticItemsOptions().syntheticSeparator
                   + id));
@@ -552,7 +552,7 @@ public class SyntheticNaming {
 
   public static String createDescriptor(
       String separator, SyntheticKind kind, String externalSyntheticTypePrefix, String id) {
-    return DescriptorUtils.getDescriptorFromClassBinaryName(
+    return DescriptorUtils.getDescriptorFromClassInternalName(
         externalSyntheticTypePrefix + separator + (kind != null ? kind.descriptor : "") + id);
   }
 

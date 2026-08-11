@@ -21,7 +21,7 @@ public final class ClassReference implements TypeReference {
   }
 
   public String getBinaryName() {
-    return DescriptorUtils.getBinaryNameFromDescriptor(descriptor);
+    return DescriptorUtils.getInternalNameFromDescriptor(descriptor);
   }
 
   @Override

@@ -161,7 +161,7 @@ public abstract class BinaryCompatibilityTestCollection<T> {
           ClassFileTransformer.create(test, testDataSourceSet)
               .removeInnerClasses(
                   InnerClassPredicate.onName(
-                      DescriptorUtils.getBinaryNameFromJavaType(test.getTypeName())))
+                      DescriptorUtils.getInternalNameFromJavaType(test.getTypeName())))
               .transform());
     }
     zipBuilder.addFilesRelative(

@@ -45,7 +45,7 @@ public class PreserveIllegalAccessErrorCheckCastTest extends TestBase {
                     (opcode, descriptor, visitor) -> {
                       assertEquals(Opcodes.CHECKCAST, opcode);
                       visitor.visitTypeInsn(
-                          opcode, DescriptorUtils.getBinaryNameFromDescriptor(NEW_A_DESCRIPTOR));
+                          opcode, DescriptorUtils.getInternalNameFromDescriptor(NEW_A_DESCRIPTOR));
                     })
                 .transform(),
             transformer(A.class).setClassDescriptor(NEW_A_DESCRIPTOR).transform());

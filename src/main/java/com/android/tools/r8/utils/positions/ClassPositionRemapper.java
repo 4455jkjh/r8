@@ -184,7 +184,7 @@ public interface ClassPositionRemapper {
             if (nameAndDescriptor == null) {
               return baseRemapper.createRemappedPosition(position);
             }
-            String clazzDescriptor = DescriptorUtils.getDescriptorFromClassBinaryName(binaryName);
+            String clazzDescriptor = DescriptorUtils.getDescriptorFromClassInternalName(binaryName);
             String methodName = CfLineToMethodMapper.getName(nameAndDescriptor);
             String methodDescriptor = CfLineToMethodMapper.getDescriptor(nameAndDescriptor);
             String returnTypeDescriptor = DescriptorUtils.getReturnTypeDescriptor(methodDescriptor);

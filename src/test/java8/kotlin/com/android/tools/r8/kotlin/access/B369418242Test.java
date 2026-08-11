@@ -14,9 +14,7 @@ import com.android.tools.r8.kotlin.access.b369418242.pkg.B;
 import com.android.tools.r8.kotlin.access.b369418242.pkg.Helper;
 import com.android.tools.r8.utils.DescriptorUtils;
 import com.android.tools.r8.utils.ZipUtils.ZipBuilder;
-import com.android.tools.r8.utils.internal.FileUtils;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.List;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -46,7 +44,8 @@ public class B369418242Test extends KotlinTestBase {
         .build();
     compiledJars =
         getCompileMemoizer(
-            getKotlinSourceFileFromResources(DescriptorUtils.getBinaryNameFromJavaType(PKG), KOTLIN_FILE))
+                getKotlinSourceFileFromResources(
+                    DescriptorUtils.getInternalNameFromJavaType(PKG), KOTLIN_FILE))
             .configure(x -> x.addClasspathFiles(classpath));
   }
 

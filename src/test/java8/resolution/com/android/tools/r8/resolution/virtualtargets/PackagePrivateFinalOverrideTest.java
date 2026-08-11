@@ -225,7 +225,7 @@ public class PackagePrivateFinalOverrideTest extends TestBase {
               if (name.equals("clear")) {
                 continuation.visitMethodInsn(
                     opcode,
-                    DescriptorUtils.getBinaryNameFromJavaType(ViewModel.class.getTypeName()),
+                    DescriptorUtils.getInternalNameFromJavaType(ViewModel.class.getTypeName()),
                     name,
                     descriptor,
                     isInterface);

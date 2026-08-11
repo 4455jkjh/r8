@@ -26,10 +26,10 @@ import com.android.tools.r8.references.Reference;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
 import com.android.tools.r8.synthesis.SyntheticItemsTestUtils;
 import com.android.tools.r8.transformers.ClassFileTransformer;
-import com.android.tools.r8.utils.internal.BooleanUtils;
 import com.android.tools.r8.utils.DescriptorUtils;
 import com.android.tools.r8.utils.codeinspector.CodeInspector;
 import com.android.tools.r8.utils.codeinspector.MethodSubject;
+import com.android.tools.r8.utils.internal.BooleanUtils;
 import com.android.tools.r8.utils.timing.Timing;
 import com.google.common.collect.ImmutableList;
 import java.util.Collection;
@@ -84,11 +84,12 @@ public class NestInvokeSpecialInterfaceMethodAccessWithIntermediateTest extends 
                 "foo",
                 (opcode, owner, name, descriptor, isInterface, continuation) -> {
                   assertEquals(Opcodes.INVOKEVIRTUAL, opcode);
-                  assertEquals(DescriptorUtils.getBinaryNameFromJavaType(A.class.getName()), owner);
+                  assertEquals(
+                      DescriptorUtils.getInternalNameFromJavaType(A.class.getName()), owner);
                   String newOwner =
                       symbolicReferenceIsDefiningType
-                          ? DescriptorUtils.getBinaryNameFromJavaType(I.class.getName())
-                          : DescriptorUtils.getBinaryNameFromJavaType(J.class.getName());
+                          ? DescriptorUtils.getInternalNameFromJavaType(I.class.getName())
+                          : DescriptorUtils.getInternalNameFromJavaType(J.class.getName());
                   continuation.visitMethodInsn(
                       Opcodes.INVOKESPECIAL, newOwner, name, descriptor, true);
                 })

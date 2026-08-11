@@ -87,7 +87,7 @@ public class AssertionsConfigurationJacocoTest extends TestBase implements Opcod
               assertEquals("getProbes", name);
               continuation.visitMethodInsn(
                   INVOKESTATIC,
-                  DescriptorUtils.getClassBinaryName(MockJacocoInit.class),
+                  DescriptorUtils.getClassInternalName(MockJacocoInit.class),
                   "getProbes",
                   descriptor,
                   isInterface);

@@ -70,7 +70,7 @@ public class GenerateDesugaredLibraryLintFiles extends AbstractGenerateFiles {
     supportedClasses.forEachClass(
         (supportedClass) -> {
           String classBinaryName =
-              DescriptorUtils.getClassBinaryNameFromDescriptor(
+              DescriptorUtils.getClassInternalNameFromDescriptor(
                   supportedClass.getType().descriptor.toString());
           if (!supportedClass.getClassAnnotation().isFullySupported()) {
             supportedClass.forEachMethodAndAnnotation(
@@ -103,7 +103,7 @@ public class GenerateDesugaredLibraryLintFiles extends AbstractGenerateFiles {
 
     for (DexMethod extraMethod : supportedClasses.getExtraMethods()) {
       String classBinaryName =
-          DescriptorUtils.getClassBinaryNameFromDescriptor(
+          DescriptorUtils.getClassInternalNameFromDescriptor(
               extraMethod.getHolderType().descriptor.toString());
       desugaredApisSignatures.add(
           classBinaryName + '#' + extraMethod.name + extraMethod.proto.toDescriptorString());
@@ -111,7 +111,7 @@ public class GenerateDesugaredLibraryLintFiles extends AbstractGenerateFiles {
     if (FORMAT_WITH_FIELD) {
       for (DexField extraField : supportedClasses.getExtraFields()) {
         String classBinaryName =
-            DescriptorUtils.getClassBinaryNameFromDescriptor(
+            DescriptorUtils.getClassInternalNameFromDescriptor(
                 extraField.getHolderType().descriptor.toString());
         desugaredApisSignatures.add(classBinaryName + '#' + extraField.name);
       }

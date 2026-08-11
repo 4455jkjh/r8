@@ -39,7 +39,8 @@ public class MetadataFirstToLatestTest extends KotlinMetadataTestBase {
 
   private static final KotlinCompileMemoizer libJars =
       getCompileMemoizer(
-          getKotlinSourceFileFromResources(DescriptorUtils.getBinaryNameFromJavaType(PKG_LIB), "lib"));
+          getKotlinSourceFileFromResources(
+              DescriptorUtils.getInternalNameFromJavaType(PKG_LIB), "lib"));
 
   @Parameterized.Parameters(name = "{0}, {1}")
   public static Collection<Object[]> data() {
@@ -145,7 +146,8 @@ public class MetadataFirstToLatestTest extends KotlinMetadataTestBase {
                 lambdaGeneration)
             .addClasspathFiles(libJar, stdLibJar)
             .addSourceFiles(
-                getKotlinSourceFileFromResources(DescriptorUtils.getBinaryNameFromJavaType(PKG_APP), "main"))
+                getKotlinSourceFileFromResources(
+                    DescriptorUtils.getInternalNameFromJavaType(PKG_APP), "main"))
             .setOutputPath(temp.newFolder().toPath())
             .noStdLib()
             .compile();

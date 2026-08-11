@@ -60,7 +60,7 @@ public class ApiModelMockExceptionAndroidApiTest extends TestBase {
                             start,
                             end,
                             handler,
-                            DescriptorUtils.getBinaryNameFromJavaType(illFormedLocaleException));
+                            DescriptorUtils.getInternalNameFromJavaType(illFormedLocaleException));
                       } else {
                         visitor.visitTryCatchBlock(start, end, handler, type);
                       }

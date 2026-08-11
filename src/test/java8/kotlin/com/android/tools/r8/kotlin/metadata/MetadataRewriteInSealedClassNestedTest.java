@@ -50,7 +50,8 @@ public class MetadataRewriteInSealedClassNestedTest extends KotlinMetadataTestBa
 
   private static final KotlinCompileMemoizer sealedLibJarMap =
       getCompileMemoizer(
-          getKotlinSourceFileFromResources(DescriptorUtils.getBinaryNameFromJavaType(PKG_LIB), "nested"));
+          getKotlinSourceFileFromResources(
+              DescriptorUtils.getInternalNameFromJavaType(PKG_LIB), "nested"));
 
   @Test
   public void smokeTest() throws Exception {
@@ -59,7 +60,8 @@ public class MetadataRewriteInSealedClassNestedTest extends KotlinMetadataTestBa
         kotlinc(parameters.getRuntime().asCf(), kotlinParameters)
             .addClasspathFiles(libJar)
             .addSourceFiles(
-                getKotlinSourceFileFromResources(DescriptorUtils.getBinaryNameFromJavaType(PKG_APP), "main"))
+                getKotlinSourceFileFromResources(
+                    DescriptorUtils.getInternalNameFromJavaType(PKG_APP), "main"))
             .setOutputPath(temp.newFolder().toPath())
             .compile();
     testForJvm(parameters)
@@ -85,7 +87,8 @@ public class MetadataRewriteInSealedClassNestedTest extends KotlinMetadataTestBa
         kotlinc(parameters.getRuntime().asCf(), kotlinParameters)
             .addClasspathFiles(libJar)
             .addSourceFiles(
-                getKotlinSourceFileFromResources(DescriptorUtils.getBinaryNameFromJavaType(PKG_APP), "main"))
+                getKotlinSourceFileFromResources(
+                    DescriptorUtils.getInternalNameFromJavaType(PKG_APP), "main"))
             .setOutputPath(temp.newFolder().toPath())
             .compile();
     testForJvm(parameters)

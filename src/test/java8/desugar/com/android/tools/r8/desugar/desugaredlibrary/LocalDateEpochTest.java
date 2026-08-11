@@ -87,7 +87,7 @@ public class LocalDateEpochTest extends DesugaredLibraryTestBase {
     DexType desugarDate =
         options
             .dexItemFactory()
-            .createType("L" + DescriptorUtils.getClassBinaryName(DesugarLocalDate.class) + ";");
+            .createType("L" + DescriptorUtils.getClassInternalName(DesugarLocalDate.class) + ";");
     DexString epoch = options.dexItemFactory().createString("EPOCH");
     DexField src = options.dexItemFactory().createField(date, date, epoch);
     HumanRewritingFlags rewritingFlags =

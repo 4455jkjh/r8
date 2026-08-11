@@ -85,7 +85,7 @@ public class Jdk8272564InvalidCodeTest extends TestBase {
               continuation.visitMethodInsn(
                   name.equals("hashCode") ? Opcodes.INVOKEINTERFACE : opcode,
                   // javac generates java.lang.object as holder, change it to A.
-                  name.equals("hashCode") ? DescriptorUtils.getClassBinaryName(A.class) : owner,
+                  name.equals("hashCode") ? DescriptorUtils.getClassInternalName(A.class) : owner,
                   name,
                   descriptor,
                   name.equals("hashCode") || isInterface);

@@ -342,7 +342,7 @@ public class SyntheticFinalization {
           DexType context =
               appView
                   .dexItemFactory()
-                  .createType(DescriptorUtils.getDescriptorFromClassBinaryName(prefix));
+                  .createType(DescriptorUtils.getDescriptorFromClassInternalName(prefix));
           assert isNotSyntheticType(context)
               || item.getContext().isSyntheticInputClass()
               || synthetics.isGlobalSyntheticClass(context);

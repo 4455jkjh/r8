@@ -23,7 +23,7 @@ public class UnboundedFormalTypeGenericSignatureTest extends TestBase {
 
   private final TestParameters parameters;
   private final String SUPER_BINARY_NAME =
-      DescriptorUtils.getBinaryNameFromJavaType(Super.class.getTypeName());
+      DescriptorUtils.getInternalNameFromJavaType(Super.class.getTypeName());
 
   @Parameters(name = "{0}")
   public static TestParametersCollection data() {

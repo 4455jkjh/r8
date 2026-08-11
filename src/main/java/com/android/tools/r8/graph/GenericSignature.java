@@ -3,8 +3,8 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8.graph;
 
-import static com.android.tools.r8.utils.DescriptorUtils.getClassBinaryNameFromDescriptor;
-import static com.android.tools.r8.utils.DescriptorUtils.getDescriptorFromClassBinaryName;
+import static com.android.tools.r8.utils.DescriptorUtils.getClassInternalNameFromDescriptor;
+import static com.android.tools.r8.utils.DescriptorUtils.getDescriptorFromClassInternalName;
 import static com.google.common.base.Predicates.alwaysTrue;
 
 import com.android.tools.r8.DiagnosticsHandler;
@@ -1182,7 +1182,7 @@ public class GenericSignature {
     private final DexItemFactory factory;
 
     private DexType parsedTypeName(String name) {
-      String originalDescriptor = getDescriptorFromClassBinaryName(name);
+      String originalDescriptor = getDescriptorFromClassInternalName(name);
       return factory.createType(originalDescriptor);
     }
 
@@ -1194,8 +1194,8 @@ public class GenericSignature {
       assert enclosingType.isClassType();
       String enclosingDescriptor = enclosingType.toDescriptorString();
       return factory.createType(
-          getDescriptorFromClassBinaryName(
-              getClassBinaryNameFromDescriptor(enclosingDescriptor)
+          getDescriptorFromClassInternalName(
+              getClassInternalNameFromDescriptor(enclosingDescriptor)
                   + DescriptorUtils.INNER_CLASS_SEPARATOR
                   + name));
     }

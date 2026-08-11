@@ -36,7 +36,7 @@ public class CfUtils {
   }
 
   public static String extractClassName(byte[] ccc) {
-    return DescriptorUtils.getJavaTypeFromBinaryName(
+    return DescriptorUtils.getJavaTypeFromInternalName(
         extractClassInternalType(new ClassReader(ccc)));
   }
 
@@ -45,7 +45,7 @@ public class CfUtils {
   }
 
   public static String extractClassDescriptor(InputStream input) throws IOException {
-    return DescriptorUtils.getDescriptorFromClassBinaryName(
+    return DescriptorUtils.getDescriptorFromClassInternalName(
         extractClassInternalType(new ClassReader(input)));
   }
 

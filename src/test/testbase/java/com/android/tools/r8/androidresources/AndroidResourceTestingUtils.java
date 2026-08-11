@@ -644,7 +644,7 @@ public class AndroidResourceTestingUtils {
               .collect(
                   Collectors.toMap(
                       AndroidResourceTestingUtils::rClassWithoutNamespaceAndOuter,
-                      DescriptorUtils::getClassBinaryName));
+                      DescriptorUtils::getClassInternalName));
       Map<String, byte[]> rewrittenRClassFiles = new HashMap<>();
       ZipUtils.iter(
           rClassClassFileOutput,

@@ -25,10 +25,10 @@ public class ApiClassInfo {
       Collection<ApiMethodInfo> methods,
       Collection<String> fields) {
     assert binaryName != null;
-    assert DescriptorUtils.isValidBinaryName(binaryName);
-    assert superClass == null || DescriptorUtils.isValidBinaryName(superClass);
+    assert DescriptorUtils.isValidInternalName(binaryName);
+    assert superClass == null || DescriptorUtils.isValidInternalName(superClass);
     assert interfaces != null;
-    assert interfaces.stream().allMatch(DescriptorUtils::isValidBinaryName);
+    assert interfaces.stream().allMatch(DescriptorUtils::isValidInternalName);
     assert methods != null;
     assert fields != null;
     this.binaryName = binaryName;

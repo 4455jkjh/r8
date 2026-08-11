@@ -4,8 +4,8 @@
 package com.android.tools.r8.kotlin.metadata;
 
 import static com.android.tools.r8.KotlinCompilerTool.KotlinCompilerVersion.KOTLINC_2_0_20;
-import static com.android.tools.r8.utils.internal.FunctionUtils.ignoreArgument;
 import static com.android.tools.r8.utils.codeinspector.Matchers.isPresent;
+import static com.android.tools.r8.utils.internal.FunctionUtils.ignoreArgument;
 import static junit.framework.TestCase.assertNotNull;
 import static org.hamcrest.CoreMatchers.anyOf;
 import static org.hamcrest.CoreMatchers.containsString;
@@ -20,10 +20,10 @@ import com.android.tools.r8.TestCompileResult;
 import com.android.tools.r8.kotlin.KotlinMetadataAnnotationWrapper;
 import com.android.tools.r8.kotlin.KotlinMetadataWriter;
 import com.android.tools.r8.utils.DescriptorUtils;
-import com.android.tools.r8.utils.internal.IntBox;
 import com.android.tools.r8.utils.codeinspector.ClassSubject;
 import com.android.tools.r8.utils.codeinspector.CodeInspector;
 import com.android.tools.r8.utils.codeinspector.FoundClassSubject;
+import com.android.tools.r8.utils.internal.IntBox;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
@@ -44,7 +44,7 @@ public abstract class KotlinMetadataTestBase extends KotlinTestBase {
   }
 
   static final String PKG = KotlinMetadataTestBase.class.getPackage().getName();
-  static final String PKG_PREFIX = DescriptorUtils.getBinaryNameFromJavaType(PKG);
+  static final String PKG_PREFIX = DescriptorUtils.getInternalNameFromJavaType(PKG);
 
   static final String KT_ARRAY = "Lkotlin/Array;";
   static final String KT_CHAR_SEQUENCE = "Lkotlin/CharSequence;";

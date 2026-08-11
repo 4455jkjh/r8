@@ -388,7 +388,7 @@ public class Repackaging {
         PackageObfuscationMode packageObfuscationMode,
         Set<String> seenPackageDescriptors) {
       String newPackageDescriptor =
-          DescriptorUtils.getBinaryNameFromJavaType(proguardConfiguration.getPackagePrefix());
+          DescriptorUtils.getInternalNameFromJavaType(proguardConfiguration.getPackagePrefix());
       if (!appView.options().isMinifying()) {
         // Preserve full package name under destination package when not minifying
         // (no matter which package obfuscation mode is used).
@@ -421,7 +421,7 @@ public class Repackaging {
     public boolean isPackageInTargetLocation(
         ProgramPackage pkg, PackageObfuscationMode packageObfuscationMode) {
       String newPackageDescriptor =
-          DescriptorUtils.getBinaryNameFromJavaType(proguardConfiguration.getPackagePrefix());
+          DescriptorUtils.getInternalNameFromJavaType(proguardConfiguration.getPackagePrefix());
       if (packageObfuscationMode.isRepackageClasses()) {
         return pkg.getPackageDescriptor().equals(newPackageDescriptor);
       } else if (packageObfuscationMode.isMinification()) {

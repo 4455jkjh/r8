@@ -66,7 +66,7 @@ public class DefaultInterfaceMethodDesugaringWithPrivateStaticResolutionInvokeVi
                     assertEquals("m", name);
                     continuation.visitMethodInsn(
                         opcode,
-                        DescriptorUtils.getBinaryNameFromJavaType(C.class.getTypeName()),
+                        DescriptorUtils.getInternalNameFromJavaType(C.class.getTypeName()),
                         name,
                         descriptor,
                         isInterface);

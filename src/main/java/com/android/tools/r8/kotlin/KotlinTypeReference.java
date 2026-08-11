@@ -56,13 +56,13 @@ class KotlinTypeReference implements EnqueuerMetadataTraceable {
   static KotlinTypeReference fromBinaryNameOrKotlinClassifier(
       String binaryNameOrKotlinClassifier, DexItemFactory factory, String originalName) {
     // Kotlin classifiers are valid binary names.
-    if (DescriptorUtils.isValidBinaryName(binaryNameOrKotlinClassifier)) {
+    if (DescriptorUtils.isValidInternalName(binaryNameOrKotlinClassifier)) {
       boolean interpretAsKotlinClassifier =
           shouldBeInterpretedAsKotlinClassifier(binaryNameOrKotlinClassifier);
       return fromDescriptor(
           interpretAsKotlinClassifier
               ? DescriptorUtils.getDescriptorFromKotlinClassifier(binaryNameOrKotlinClassifier)
-              : DescriptorUtils.getDescriptorFromClassBinaryName(binaryNameOrKotlinClassifier),
+              : DescriptorUtils.getDescriptorFromClassInternalName(binaryNameOrKotlinClassifier),
           factory,
           originalName,
           interpretAsKotlinClassifier);
@@ -143,7 +143,7 @@ class KotlinTypeReference implements EnqueuerMetadataTraceable {
             String rewritten =
                 exportAsKotlinClassifier
                     ? DescriptorUtils.descriptorToKotlinClassifier(descriptor)
-                    : DescriptorUtils.getBinaryNameFromDescriptor(descriptor);
+                    : DescriptorUtils.getInternalNameFromDescriptor(descriptor);
             rewrittenConsumer.accept(rewritten);
           }
         },

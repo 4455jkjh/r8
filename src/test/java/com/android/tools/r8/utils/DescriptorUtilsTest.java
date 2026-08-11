@@ -50,7 +50,7 @@ public class DescriptorUtilsTest {
     assertEquals("Object", DescriptorUtils.getUnqualifiedClassNameFromDescriptor(obj));
     assertEquals("java.lang.Object", DescriptorUtils.getClassNameFromDescriptor(obj));
     assertEquals("java.lang", DescriptorUtils.getPackageNameFromDescriptor(obj));
-    assertEquals("java/lang/Object", DescriptorUtils.getClassBinaryNameFromDescriptor(obj));
+    assertEquals("java/lang/Object", DescriptorUtils.getClassInternalNameFromDescriptor(obj));
   }
 
   @Test

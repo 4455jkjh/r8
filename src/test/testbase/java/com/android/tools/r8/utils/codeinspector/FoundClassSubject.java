@@ -412,7 +412,7 @@ public class FoundClassSubject extends ClassSubject {
 
   @Override
   public String getOriginalBinaryName() {
-    return DescriptorUtils.getBinaryNameFromDescriptor(getOriginalDescriptor());
+    return DescriptorUtils.getInternalNameFromDescriptor(getOriginalDescriptor());
   }
 
   public DexType getOriginalDexType(DexItemFactory dexItemFactory) {
@@ -441,7 +441,7 @@ public class FoundClassSubject extends ClassSubject {
 
   @Override
   public String getFinalBinaryName() {
-    return DescriptorUtils.getBinaryNameFromDescriptor(getFinalDescriptor());
+    return DescriptorUtils.getInternalNameFromDescriptor(getFinalDescriptor());
   }
 
   @Override

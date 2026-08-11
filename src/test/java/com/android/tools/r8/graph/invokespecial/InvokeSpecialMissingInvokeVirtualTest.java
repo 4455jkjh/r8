@@ -63,7 +63,7 @@ public class InvokeSpecialMissingInvokeVirtualTest extends TestBase {
               assertEquals("notify", name);
               continuation.visitMethodInsn(
                   INVOKESPECIAL,
-                  DescriptorUtils.getBinaryNameFromJavaType(A.class.getTypeName()),
+                  DescriptorUtils.getInternalNameFromJavaType(A.class.getTypeName()),
                   "foo",
                   descriptor,
                   isInterface);

@@ -268,7 +268,7 @@ public class MachineDesugaredLibrarySpecification implements DesugaredLibrarySpe
   public MachineDesugaredLibrarySpecification withPostPrefix(
       DexItemFactory factory, String postPrefix) {
     String oldPrefix = topLevelFlags.getSynthesizedLibraryClassesPackagePrefix();
-    String newPrefix = oldPrefix + DescriptorUtils.getBinaryNameFromJavaName(postPrefix);
+    String newPrefix = oldPrefix + DescriptorUtils.getInternalNameFromJavaName(postPrefix);
     return new MachineDesugaredLibrarySpecification(
         libraryCompilation,
         topLevelFlags.withPostPrefix(postPrefix),

@@ -104,7 +104,7 @@ public class VerticalClassMergerSuperToLibraryTest extends TestBase {
               if (name.equals("foo")) {
                 continuation.visitMethodInsn(
                     INVOKESPECIAL,
-                    DescriptorUtils.getBinaryNameFromJavaType(A.class.getTypeName()),
+                    DescriptorUtils.getInternalNameFromJavaType(A.class.getTypeName()),
                     name,
                     descriptor,
                     false);

@@ -137,8 +137,8 @@ public class EnumUnboxingUtilityClasses {
     static DexType getUtilityClassType(
         DexProgramClass context, String suffix, DexItemFactory dexItemFactory) {
       return dexItemFactory.createType(
-          DescriptorUtils.getDescriptorFromClassBinaryName(
-              DescriptorUtils.getBinaryNameFromDescriptor(context.getType().toDescriptorString())
+          DescriptorUtils.getDescriptorFromClassInternalName(
+              DescriptorUtils.getInternalNameFromDescriptor(context.getType().toDescriptorString())
                   + suffix));
     }
   }

@@ -93,7 +93,7 @@ public class HumanToMachinePrefixConverter {
   }
 
   public DexType convertJavaNameToDesugaredLibrary(DexType type) {
-    String convertedPrefix = DescriptorUtils.getJavaTypeFromBinaryName(synthesizedPrefix);
+    String convertedPrefix = DescriptorUtils.getJavaTypeFromInternalName(synthesizedPrefix);
     String interfaceType = type.toString();
     int firstPackage = interfaceType.indexOf('.');
     return appInfo
@@ -253,6 +253,6 @@ public class HumanToMachinePrefixConverter {
   private DexString toDescriptorPrefix(String prefix) {
     return appInfo
         .dexItemFactory()
-        .createString("L" + DescriptorUtils.getBinaryNameFromJavaType(prefix));
+        .createString("L" + DescriptorUtils.getInternalNameFromJavaType(prefix));
   }
 }

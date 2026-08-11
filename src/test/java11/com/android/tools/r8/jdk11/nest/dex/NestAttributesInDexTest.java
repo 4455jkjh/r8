@@ -240,7 +240,8 @@ public class NestAttributesInDexTest extends NestAttributesInDexTestBase {
             .transformMethodInsnInMethod(
                 "main",
                 ((opcode, owner, name, descriptor, isInterface, continuation) -> {
-                  if (owner.equals(DescriptorUtils.getClassBinaryName(AdditionalClassAPIs.class))) {
+                  if (owner.equals(
+                      DescriptorUtils.getClassInternalName(AdditionalClassAPIs.class))) {
                     if (name.equals("getNestMembers")) {
                       continuation.visitMethodInsn(
                           Opcodes.INVOKEVIRTUAL,

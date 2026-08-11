@@ -310,7 +310,7 @@ public abstract class AbstractR8KotlinTestBase extends KotlinTestBase {
   protected String addMainToClasspath(String methodClass, String methodName) throws Exception {
     JasminBuilder builder = new JasminBuilder();
     ClassBuilder mainClassBuilder =
-        builder.addClass(DescriptorUtils.getBinaryNameFromJavaType(JASMIN_MAIN_CLASS));
+        builder.addClass(DescriptorUtils.getInternalNameFromJavaType(JASMIN_MAIN_CLASS));
     mainClassBuilder.addMainMethod(
         "invokestatic " + methodClass + "/" + methodName + "()V",
         "return"

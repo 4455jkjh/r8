@@ -116,7 +116,7 @@ public abstract class D8IncrementalRunExamplesAndroidOTest
                   || descriptor.equals(mainClassDescriptor));
         }
         String classDescriptor =
-            DescriptorUtils.getClassBinaryNameFromDescriptor(mainClassDescriptor);
+            DescriptorUtils.getClassInternalNameFromDescriptor(mainClassDescriptor);
         String classFilePath = classDescriptor + ".class";
         if (File.separatorChar != '/') {
           classFilePath = classFilePath.replace('/', File.separatorChar);

@@ -90,7 +90,7 @@ public abstract class InternalGlobalSyntheticsProgramConsumer
 
     private static String getGlobalSyntheticFileName(String descriptor) {
       assert descriptor != null && DescriptorUtils.isClassDescriptor(descriptor);
-      return DescriptorUtils.getClassBinaryNameFromDescriptor(descriptor)
+      return DescriptorUtils.getClassInternalNameFromDescriptor(descriptor)
           + GLOBAL_SYNTHETIC_EXTENSION;
     }
   }

@@ -1841,7 +1841,7 @@ public class TestBase {
   }
 
   public static String binaryName(Class<?> clazz) {
-    return DescriptorUtils.getBinaryNameFromJavaType(typeName(clazz));
+    return DescriptorUtils.getInternalNameFromJavaType(typeName(clazz));
   }
 
   public static String descriptor(Class<?> clazz) {

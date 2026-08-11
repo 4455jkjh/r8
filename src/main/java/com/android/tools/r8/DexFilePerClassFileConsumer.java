@@ -203,7 +203,7 @@ public interface DexFilePerClassFileConsumer extends ProgramConsumer, ByteBuffer
 
     private static String getDexFileName(String classDescriptor) {
       assert classDescriptor != null && DescriptorUtils.isClassDescriptor(classDescriptor);
-      return DescriptorUtils.getClassBinaryNameFromDescriptor(classDescriptor) + DEX_EXTENSION;
+      return DescriptorUtils.getClassInternalNameFromDescriptor(classDescriptor) + DEX_EXTENSION;
     }
 
     public DirectoryConsumer(Path directory) {

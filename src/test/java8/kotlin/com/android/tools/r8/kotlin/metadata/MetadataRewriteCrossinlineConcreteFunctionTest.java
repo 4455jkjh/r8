@@ -44,7 +44,8 @@ public class MetadataRewriteCrossinlineConcreteFunctionTest extends KotlinMetada
 
   private static final KotlinCompileMemoizer libJars =
       getCompileMemoizer(
-          getKotlinSourceFileFromResources(DescriptorUtils.getBinaryNameFromJavaType(PKG_LIB), "lib"));
+          getKotlinSourceFileFromResources(
+              DescriptorUtils.getInternalNameFromJavaType(PKG_LIB), "lib"));
   private final TestParameters parameters;
 
   @Test
@@ -54,7 +55,8 @@ public class MetadataRewriteCrossinlineConcreteFunctionTest extends KotlinMetada
         kotlinc(parameters.getRuntime().asCf(), kotlinc, targetVersion, lambdaGeneration)
             .addClasspathFiles(libJar)
             .addSourceFiles(
-                getKotlinSourceFileFromResources(DescriptorUtils.getBinaryNameFromJavaType(PKG_APP), "main"))
+                getKotlinSourceFileFromResources(
+                    DescriptorUtils.getInternalNameFromJavaType(PKG_APP), "main"))
             .setOutputPath(temp.newFolder().toPath())
             .compile();
     testForJvm(parameters)
@@ -78,7 +80,8 @@ public class MetadataRewriteCrossinlineConcreteFunctionTest extends KotlinMetada
         kotlinc(parameters.getRuntime().asCf(), kotlinc, targetVersion, lambdaGeneration)
             .addClasspathFiles(libJar)
             .addSourceFiles(
-                getKotlinSourceFileFromResources(DescriptorUtils.getBinaryNameFromJavaType(PKG_APP), "main"))
+                getKotlinSourceFileFromResources(
+                    DescriptorUtils.getInternalNameFromJavaType(PKG_APP), "main"))
             .setOutputPath(temp.newFolder().toPath())
             .compile();
     testForJvm(parameters)

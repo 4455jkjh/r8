@@ -6,7 +6,7 @@ package com.android.tools.r8.graph.invokespecial;
 
 import static com.android.tools.r8.DiagnosticsMatcher.diagnosticMessage;
 import static com.android.tools.r8.DiagnosticsMatcher.diagnosticType;
-import static com.android.tools.r8.utils.DescriptorUtils.getBinaryNameFromJavaType;
+import static com.android.tools.r8.utils.DescriptorUtils.getInternalNameFromJavaType;
 import static org.hamcrest.CoreMatchers.allOf;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.junit.Assert.assertEquals;
@@ -107,10 +107,10 @@ public class InvokeSpecialToSubclassTest extends TestBase {
             (opcode, owner, name, descriptor, isInterface, continuation) -> {
               if (name.equals("replace")) {
                 assertEquals(INVOKEVIRTUAL, opcode);
-                assertEquals(getBinaryNameFromJavaType(C.class.getTypeName()), owner);
+                assertEquals(getInternalNameFromJavaType(C.class.getTypeName()), owner);
                 continuation.visitMethodInsn(
                     opcode,
-                    getBinaryNameFromJavaType(holder.getTypeName()),
+                    getInternalNameFromJavaType(holder.getTypeName()),
                     "print",
                     descriptor,
                     isInterface);

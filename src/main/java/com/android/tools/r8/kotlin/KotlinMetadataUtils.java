@@ -234,7 +234,7 @@ public class KotlinMetadataUtils {
     } else {
       // We no longer have an innerclass relationship to maintain and we therefore return a binary
       // name.
-      return DescriptorUtils.getBinaryNameFromDescriptor(descriptor);
+      return DescriptorUtils.getInternalNameFromDescriptor(descriptor);
     }
   }
 
@@ -243,7 +243,7 @@ public class KotlinMetadataUtils {
     // For local or anonymous classes, the classifier is prefixed with '.' and inner classes
     // are separated with '$'.
     if (isLocalOrAnonymous) {
-      return "." + DescriptorUtils.getBinaryNameFromDescriptor(descriptor);
+      return "." + DescriptorUtils.getInternalNameFromDescriptor(descriptor);
     }
     return DescriptorUtils.descriptorToKotlinClassifier(descriptor);
   }

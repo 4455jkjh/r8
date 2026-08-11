@@ -3,7 +3,7 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8.graph.invokespecial;
 
-import static com.android.tools.r8.utils.DescriptorUtils.getBinaryNameFromJavaType;
+import static com.android.tools.r8.utils.DescriptorUtils.getInternalNameFromJavaType;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.junit.Assert.assertEquals;
 import static org.objectweb.asm.Opcodes.INVOKESPECIAL;
@@ -93,10 +93,10 @@ public class InvokeSpecialToImmediateInterfaceTest extends TestBase {
             "bar",
             (opcode, owner, name, descriptor, isInterface, continuation) -> {
               assertEquals(INVOKEVIRTUAL, opcode);
-              assertEquals(owner, getBinaryNameFromJavaType(A.class.getTypeName()));
+              assertEquals(owner, getInternalNameFromJavaType(A.class.getTypeName()));
               continuation.visitMethodInsn(
                   INVOKESPECIAL,
-                  getBinaryNameFromJavaType(A.class.getTypeName()),
+                  getInternalNameFromJavaType(A.class.getTypeName()),
                   name,
                   descriptor,
                   isInterface);

@@ -503,7 +503,7 @@ public class DexType extends DexReference implements NamingLensComparable<DexTyp
   }
 
   public String getPackageName() {
-    return DescriptorUtils.getPackageNameFromBinaryName(toBinaryName());
+    return DescriptorUtils.getPackageNameFromInternalName(toBinaryName());
   }
 
   // Array methods.

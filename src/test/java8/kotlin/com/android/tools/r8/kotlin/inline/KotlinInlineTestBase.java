@@ -27,7 +27,7 @@ public abstract class KotlinInlineTestBase extends KotlinTestBase {
 
   static final String PKG =
       com.android.tools.r8.kotlin.inline.KotlinInlineTestBase.class.getPackage().getName();
-  static final String PKG_PREFIX = DescriptorUtils.getBinaryNameFromJavaType(PKG);
+  static final String PKG_PREFIX = DescriptorUtils.getInternalNameFromJavaType(PKG);
 
   protected String subPackage;
   protected KotlinCompileMemoizer jarMap;

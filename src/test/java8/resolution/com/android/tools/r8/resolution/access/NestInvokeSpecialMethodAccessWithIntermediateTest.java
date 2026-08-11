@@ -82,11 +82,12 @@ public class NestInvokeSpecialMethodAccessWithIntermediateTest extends TestBase 
                 "foo",
                 (opcode, owner, name, descriptor, isInterface, continuation) -> {
                   assertEquals(Opcodes.INVOKESPECIAL, opcode);
-                  assertEquals(DescriptorUtils.getBinaryNameFromJavaType(B.class.getName()), owner);
+                  assertEquals(
+                      DescriptorUtils.getInternalNameFromJavaType(B.class.getName()), owner);
                   String newOwner =
                       symbolicReferenceIsDefiningType
-                          ? DescriptorUtils.getBinaryNameFromJavaType(A.class.getName())
-                          : DescriptorUtils.getBinaryNameFromJavaType(B.class.getName());
+                          ? DescriptorUtils.getInternalNameFromJavaType(A.class.getName())
+                          : DescriptorUtils.getInternalNameFromJavaType(B.class.getName());
                   continuation.visitMethodInsn(opcode, newOwner, name, descriptor, isInterface);
                 })
             .transform());

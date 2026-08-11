@@ -20,8 +20,8 @@ import com.android.tools.r8.graph.LookupResult;
 import com.android.tools.r8.graph.MethodResolutionResult;
 import com.android.tools.r8.resolution.virtualtargets.package_a.A;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
-import com.android.tools.r8.utils.internal.Box;
 import com.android.tools.r8.utils.DescriptorUtils;
+import com.android.tools.r8.utils.internal.Box;
 import com.android.tools.r8.utils.timing.Timing;
 import com.google.common.collect.ImmutableSet;
 import java.io.IOException;
@@ -111,7 +111,7 @@ public class PrivateOverrideOfVirtualTargetTest extends TestBase {
               if (modifyOwner.get()) {
                 continuation.visitMethodInsn(
                     Opcodes.INVOKEVIRTUAL,
-                    DescriptorUtils.getBinaryNameFromJavaType(A.class.getTypeName()),
+                    DescriptorUtils.getInternalNameFromJavaType(A.class.getTypeName()),
                     name,
                     descriptor,
                     isInterface);
