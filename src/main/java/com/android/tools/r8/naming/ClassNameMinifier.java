@@ -6,8 +6,8 @@ package com.android.tools.r8.naming;
 import static com.android.tools.r8.utils.DescriptorUtils.DESCRIPTOR_PACKAGE_SEPARATOR;
 import static com.android.tools.r8.utils.DescriptorUtils.INNER_CLASS_SEPARATOR;
 import static com.android.tools.r8.utils.DescriptorUtils.computeInnerClassSeparator;
+import static com.android.tools.r8.utils.DescriptorUtils.getBinaryNameFromJavaName;
 import static com.android.tools.r8.utils.DescriptorUtils.getClassBinaryNameFromDescriptor;
-import static com.android.tools.r8.utils.DescriptorUtils.getPackageBinaryNameFromJavaType;
 
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.DexClass;
@@ -239,7 +239,7 @@ class ClassNameMinifier {
   }
 
   private Namespace getStateForClass(DexType type) {
-    String packageName = getPackageBinaryNameFromJavaType(type.getPackageDescriptor());
+    String packageName = getBinaryNameFromJavaName(type.getPackageDescriptor());
     // Packages are repackaged and obfuscated when doing repackaging.
     return states.computeIfAbsent(packageName, Namespace::new);
   }

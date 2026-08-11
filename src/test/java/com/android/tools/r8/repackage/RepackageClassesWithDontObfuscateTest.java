@@ -49,10 +49,10 @@ public class RepackageClassesWithDontObfuscateTest extends RepackageTestBase {
               assertThat(clazz, isPresent());
               assertThat(clazz.getFinalName(), startsWith(DESTINATION_PACKAGE + "."));
               String relocatedPackageSuffix =
-                  DescriptorUtils.getPackageBinaryNameFromJavaType(
+                  DescriptorUtils.getBinaryNameFromJavaName(
                       clazz.getFinalName().substring(DESTINATION_PACKAGE.length() + 1));
               String originalPackage =
-                  DescriptorUtils.getPackageBinaryNameFromJavaType(clazz.getOriginalTypeName());
+                  DescriptorUtils.getBinaryNameFromJavaName(clazz.getOriginalTypeName());
               assertEquals(relocatedPackageSuffix, originalPackage);
             });
   }

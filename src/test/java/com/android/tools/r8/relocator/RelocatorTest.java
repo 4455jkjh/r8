@@ -17,10 +17,11 @@ import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestRuntime.CfRuntime;
 import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.ToolHelper.ProcessResult;
+import com.android.tools.r8.UnorderedCollectionMatcher;
 import com.android.tools.r8.graph.DexClass;
 import com.android.tools.r8.references.PackageReference;
 import com.android.tools.r8.references.Reference;
-import com.android.tools.r8.utils.internal.BooleanUtils;
+import com.android.tools.r8.utils.ZipUtils;
 import com.android.tools.r8.utils.codeinspector.ClassSubject;
 import com.android.tools.r8.utils.codeinspector.CodeInspector;
 import com.android.tools.r8.utils.codeinspector.FoundClassSubject;
@@ -28,16 +29,28 @@ import com.android.tools.r8.utils.codeinspector.FoundMethodSubject;
 import com.android.tools.r8.utils.codeinspector.LocalVariableTable;
 import com.android.tools.r8.utils.codeinspector.LocalVariableTable.LocalVariableTableEntry;
 import com.android.tools.r8.utils.codeinspector.MethodSubject;
+import com.android.tools.r8.utils.internal.BooleanUtils;
 import com.android.tools.r8.utils.internal.collections.Pair;
+import java.nio.file.Files;
+import java.nio.file.OpenOption;
 import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipFile;
+import java.util.zip.ZipOutputStream;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
+import org.objectweb.asm.ClassWriter;
+import org.objectweb.asm.Opcodes;
 
 @RunWith(Parameterized.class)
 public class RelocatorTest extends TestBase {
@@ -298,5 +311,44 @@ public class RelocatorTest extends TestBase {
                 }
               }
             });
+  }
+
+  @Test
+  public void testSubpackageResourceRelocation() throws Exception {
+    Path testJar = temp.newFolder().toPath().resolve("test_sub.jar");
+    OpenOption[] options =
+        new OpenOption[] {StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING};
+    try (ZipOutputStream out = new ZipOutputStream(Files.newOutputStream(testJar, options))) {
+      ZipUtils.writeToZipStream(out, "foo/bar/resource.txt", "test".getBytes(), ZipEntry.STORED);
+
+      ClassWriter cw = new ClassWriter(0);
+      cw.visit(
+          Opcodes.V1_8,
+          Opcodes.ACC_PUBLIC + Opcodes.ACC_SUPER,
+          "foo/bar/MyClass",
+          null,
+          "java/lang/Object",
+          null);
+      cw.visitEnd();
+      ZipUtils.writeToZipStream(out, "foo/bar/MyClass.class", cw.toByteArray(), ZipEntry.STORED);
+    }
+
+    Path relocatedJar =
+        testForRelocator(external)
+            .addProgramFiles(testJar)
+            .addPackageAndAllSubPackagesMapping("foo.bar", "baz.qux")
+            .run()
+            .getOutput();
+
+    try (ZipFile zip = new ZipFile(relocatedJar.toFile())) {
+      List<String> entries =
+          Collections.list(zip.entries()).stream()
+              .map(ZipEntry::getName)
+              .collect(Collectors.toList());
+      assertThat(
+          entries,
+          UnorderedCollectionMatcher.matchesItemsOneToOne(
+              Arrays.asList("baz/qux/MyClass.class", "baz/qux/resource.txt")));
+    }
   }
 }

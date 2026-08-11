@@ -80,7 +80,7 @@ public class MachineTopLevelFlags {
         DescriptorUtils.getJavaTypeFromBinaryName(synthesizedLibraryClassesPackagePrefix);
     String cleanPostPrefix = DescriptorUtils.getJavaTypeFromBinaryName(postPrefix);
     String newPrefix = prefix + cleanPostPrefix;
-    String newPrefixWithSlash = DescriptorUtils.getPackageBinaryNameFromJavaType(newPrefix);
+    String newPrefixWithSlash = DescriptorUtils.getBinaryNameFromJavaName(newPrefix);
     List<String> newKeepRules = new ArrayList<>(extraKeepRules.size());
     for (String kr : extraKeepRules) {
       // TODO(b/278046666): Consider changing the ProguardRuleParser to avoid invalid replacements.
