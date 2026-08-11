@@ -266,7 +266,23 @@ public class ResourceAdapter {
       }
     }
 
-    // Returns true if the Java type in the range [from; toExclusive[ was renamed.
+    /** Returns true if the type is live, was merged/renamed, or is a known missing class. */
+    private boolean typeExists(DexType type) {
+      return appView.hasDefinitionFor(type)
+          || appView.graphLens().lookupType(type, getIdentityLens()).isNotIdenticalTo(type)
+          || (appView.hasClassHierarchy()
+              && appView.appInfoWithClassHierarchy().getMissingClasses().contains(type));
+    }
+
+    /**
+     * Matches and optionally renames the Java type in the range [from; toExclusive[.
+     *
+     * <p>Returns true if a type exists for the given range, signaling to stop backtracking. If the
+     * type was renamed, the renamed type is written to the output.
+     *
+     * <p>Returns false if no type exists, allowing backtracking to shorter prefixes (e.g.
+     * packages).
+     */
     protected boolean renameJavaTypeInRange(int from, int toExclusive) {
       String javaType = contents.substring(from, toExclusive);
       if (getClassNameSeparator() != '.') {
@@ -276,7 +292,7 @@ public class ResourceAdapter {
           dexItemFactory.lookupString(
               DescriptorUtils.javaTypeToDescriptorIgnorePrimitives(javaType));
       DexType dexType = descriptor != null ? dexItemFactory.lookupType(descriptor) : null;
-      if (dexType != null) {
+      if (dexType != null && typeExists(dexType)) {
         DexString renamedDescriptor = adaptType(dexType);
         if (!descriptor.equals(renamedDescriptor)) {
           String renamedJavaType =
@@ -290,8 +306,8 @@ public class ResourceAdapter {
                   : renamedJavaType);
           outputFrom = toExclusive;
           changed = true;
-          return true;
         }
+        return true;
       }
       return false;
     }
