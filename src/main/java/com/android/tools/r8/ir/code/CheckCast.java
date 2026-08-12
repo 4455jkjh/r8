@@ -22,6 +22,7 @@ import com.android.tools.r8.graph.ProgramMethod;
 import com.android.tools.r8.graph.UseRegistry;
 import com.android.tools.r8.ir.analysis.VerifyTypesHelper;
 import com.android.tools.r8.ir.analysis.type.ClassTypeElement;
+import com.android.tools.r8.ir.analysis.type.PrimitiveTypeElement;
 import com.android.tools.r8.ir.analysis.type.TypeElement;
 import com.android.tools.r8.ir.conversion.CfBuilder;
 import com.android.tools.r8.ir.conversion.DexBuilder;
@@ -54,26 +55,40 @@ public class CheckCast extends Instruction implements TypeInstruction {
     return new Builder();
   }
 
-  @SuppressWarnings("ReferenceEquality")
   public boolean isRefiningStaticType(InternalOptions options) {
-    TypeElement inType = object().getType();
+    return internalIsRefiningStaticType(options, type, object().getType());
+  }
+
+  static boolean internalIsRefiningStaticType(
+      InternalOptions options, DexType castType, TypeElement inType) {
     if (inType.isNullType()) {
       // If the in-value is `null` and the cast-type is a float-array type, then trivial check-cast
       // elimination may lead to verification errors. See b/123269162.
-      if (options.canHaveArtCheckCastVerifierBug()
-          && getType().isArrayType()
-          && getType().getBaseType().isFloatType()) {
-        return true;
-      }
-      return false;
+      return options.canHaveArtCheckCastVerifierBug()
+          && castType.isArrayType()
+          && castType.getBaseType().isFloatType();
     }
-    if (!inType.isClassType()) {
-      // Conservatively return true.
-      assert inType.isArrayType();
+    if (inType.isArrayType()) {
+      if (castType.isArrayType()) {
+        return internalIsRefiningStaticType(
+            options,
+            castType.asArrayType().getArrayElementType(),
+            inType.asArrayType().getMemberType());
+      }
       return true;
     }
-    ClassTypeElement inClassType = inType.asClassType();
-    return type != inClassType.getClassType();
+    if (inType.isClassType()) {
+      ClassTypeElement inClassType = inType.asClassType();
+      return castType.isNotIdenticalTo(inClassType.getClassType());
+    }
+    if (inType.isPrimitiveType()) {
+      if (castType.isPrimitiveType()) {
+        boolean asArrayElementType = true;
+        return !inType.equals(PrimitiveTypeElement.fromDexType(castType, asArrayElementType));
+      }
+      return true;
+    }
+    return true;
   }
 
   @Override

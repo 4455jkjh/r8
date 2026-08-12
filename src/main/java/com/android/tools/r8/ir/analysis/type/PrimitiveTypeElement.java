@@ -31,7 +31,7 @@ public abstract class PrimitiveTypeElement extends TypeElement {
     return this;
   }
 
-  static PrimitiveTypeElement fromDexType(DexType type, boolean asArrayElementType) {
+  public static PrimitiveTypeElement fromDexType(DexType type, boolean asArrayElementType) {
     assert type.isPrimitiveType();
     return fromTypeDescriptorChar((char) type.descriptor.content[0], asArrayElementType);
   }

@@ -3,7 +3,9 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8.ir.optimize.enums;
 
+import static com.android.tools.r8.utils.codeinspector.CodeMatchers.invokesMethodWithName;
 import static com.android.tools.r8.utils.codeinspector.Matchers.isPresent;
+import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertTrue;
 
@@ -48,6 +50,7 @@ public class ArrayLengthOnEnumValuesArrayTest extends TestBase {
                   testMyEnumMethod
                       .streamInstructions()
                       .noneMatch(InstructionSubject::isArrayLength));
+              assertThat(testMyEnumMethod, not(invokesMethodWithName("clone")));
 
               MethodSubject testMyUnboxedEnumMethod =
                   inspector.clazz(Main.class).uniqueMethodWithOriginalName("testMyUnboxedEnum");
