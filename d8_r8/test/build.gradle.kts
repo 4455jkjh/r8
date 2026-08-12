@@ -25,16 +25,9 @@ val mainDepsJarFilesScope by configurations.dependencyScope("mainDepsJarFilesSco
 val mainDepsJarFilesConfig by
   configurations.resolvable("mainDepsJarFilesConfig") { extendsFrom(mainDepsJarFilesScope) }
 
-val mainSourcesScope by configurations.dependencyScope("mainSourcesScope")
-val mainSourcesConfig by
-  configurations.resolvable("mainSourcesConfig") { extendsFrom(mainSourcesScope) }
-
 val assistantJarScope by configurations.dependencyScope("assistantJarScope")
 val assistantJarConfig by
   configurations.resolvable("assistantJarConfig") { extendsFrom(assistantJarScope) }
-val keepRadiusSourcesScope by configurations.dependencyScope("keepRadiusSourcesScope")
-val keepRadiusSourcesConfig by
-  configurations.resolvable("keepRadiusSourcesConfig") { extendsFrom(keepRadiusSourcesScope) }
 val keepAnnoAndroidXAnnotationsJarScope by
   configurations.dependencyScope("keepAnnoAndroidXAnnotationsJarScope")
 val keepAnnoAndroidXAnnotationsJarConfig by
@@ -46,18 +39,9 @@ val keepAnnoDepsJarOnlyAsmConfig by
   configurations.resolvable("keepAnnoDepsJarOnlyAsmConfig") {
     extendsFrom(keepAnnoDepsJarOnlyAsmScope)
   }
-val keepAnnoSourcesScope by configurations.dependencyScope("keepAnnoSourcesScope")
-val keepAnnoSourcesConfig by
-  configurations.resolvable("keepAnnoSourcesConfig") { extendsFrom(keepAnnoSourcesScope) }
 val keepAnnoClassesScope by configurations.dependencyScope("keepAnnoClassesScope")
 val keepAnnoClassesConfig by
   configurations.resolvable("keepAnnoClassesConfig") { extendsFrom(keepAnnoClassesScope) }
-
-val resourceShrinkerSourcesScope by configurations.dependencyScope("resourceShrinkerSourcesScope")
-val resourceShrinkerSourcesConfig by
-  configurations.resolvable("resourceShrinkerSourcesConfig") {
-    extendsFrom(resourceShrinkerSourcesScope)
-  }
 
 val sharedDepsScope by configurations.dependencyScope("sharedDepsScope")
 val sharedDepsConfig by
@@ -83,10 +67,8 @@ dependencies {
   sharedDepsInternalScope(project(":third_party", "sharedDepsInternalFiles"))
   sharedTestDepsInternalScope(project(":third_party", "sharedTestDepsInternalFiles"))
   assistantJarScope(project(":assistant", "assistantJar"))
-  keepRadiusSourcesScope(project(":keepradius", "keepradiusSources"))
   keepAnnoAndroidXAnnotationsJarScope(project(":keepanno", "keepannoAndroidXAnnotationsJar"))
   keepAnnoDepsJarOnlyAsmScope(project(":keepanno", "keepannoDepsJarOnlyAsm"))
-  keepAnnoSourcesScope(project(":keepanno", "keepannoSources"))
   keepAnnoClassesScope(project(":keepanno", "keepannoClasses"))
   testJarsScope(project(":tests_java_8", "testJar"))
   testJarsScope(project(":tests_java_11", "testJar"))
@@ -98,15 +80,7 @@ dependencies {
   testDepsJarsScope(project(":tests_bootstrap", "depsJar"))
   testDepsJarsScope(project(":testbase", "depsJar"))
   mainDepsJarFilesScope(project(":dist", "depsJarFiles"))
-  mainSourcesScope(project(":main", "mainSources"))
-  resourceShrinkerSourcesScope(project(":resourceshrinker", "resourceshrinkerSources"))
 }
-
-val libanalyzerSourcesScope by configurations.dependencyScope("libanalyzerSourcesScope")
-val libanalyzerSourcesConfig by
-  configurations.resolvable("libanalyzerSourcesConfig") { extendsFrom(libanalyzerSourcesScope) }
-
-dependencies { libanalyzerSourcesScope(project(":libanalyzer", "libanalyzer-sources-jar")) }
 
 val mainProtoJarTask = project(":dist").tasks.getByName("protoJar")
 val mainDepsJarTask = project(":dist").tasks.getByName("depsJar")
@@ -116,6 +90,10 @@ val processKeepRulesLibWithRelocatedDepsTask =
 val r8WithRelocatedDepsTask = project(":dist").tasks.getByName("r8WithRelocatedDeps")
 val keepAnnoToolsWithRelocatedDepsTask =
   project(":dist").tasks.getByName("keepAnnoToolsWithRelocatedDeps")
+
+interface InjectedArcOps {
+  @get:Inject val arcOps: ArchiveOperations
+}
 
 tasks {
   withType<Exec> { doFirst { println("Executing command: ${commandLine.joinToString(" ")}") } }
@@ -605,17 +583,29 @@ tasks {
       testR8Lib(assembleR8LibNoDeps, unzipRewrittenTestsForR8LibNoDeps)
     }
 
+  val sourceConfiguration =
+    configurations.create("sourceConfiguration") {
+      attributes {
+        attribute(Category.CATEGORY_ATTRIBUTE, objects.named(Category.DOCUMENTATION))
+        attribute(DocsType.DOCS_TYPE_ATTRIBUTE, objects.named(DocsType.SOURCES))
+      }
+      isTransitive = false
+    }
+  dependencies {
+    sourceConfiguration(project(":assistant"))
+    sourceConfiguration(project(":keepradius"))
+    sourceConfiguration(project(":keepanno"))
+    sourceConfiguration(project(":libanalyzer"))
+    sourceConfiguration(project(":resourceshrinker"))
+    sourceConfiguration(project(":main"))
+  }
   register<Jar>("packageSources") {
-    dependsOn(keepRadiusSourcesConfig)
-    dependsOn(keepAnnoSourcesConfig)
-    dependsOn(libanalyzerSourcesConfig)
-    dependsOn(resourceShrinkerSourcesConfig)
-    dependsOn(mainSourcesConfig)
-    from(keepRadiusSourcesConfig.map(::zipTree))
-    from(keepAnnoSourcesConfig.map(::zipTree))
-    from(libanalyzerSourcesConfig.map(::zipTree))
-    from(mainSourcesConfig.map(::zipTree))
-    from(resourceShrinkerSourcesConfig.map(::zipTree))
+    val injected = project.objects.newInstance<InjectedArcOps>()
+    from(
+      sourceConfiguration.elements.map { element ->
+        element.map { injected.arcOps.zipTree(it.asFile) }
+      }
+    )
     archiveClassifier.set("sources")
     archiveFileName.set("r8-src.jar")
     destinationDirectory.set(getRoot().resolveAll("build", "libs"))

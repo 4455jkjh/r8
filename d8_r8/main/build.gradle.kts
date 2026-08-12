@@ -299,7 +299,6 @@ val mainClassesOutput by
 // Contains partial class files of :main but not :utils nor third party dependencies.
 val turboClassesOutput by configurations.consumable("turboClassesOutput")
 val mainResources by configurations.consumable("mainResources")
-val mainSources by configurations.consumable("mainSources")
 
 artifacts {
   add(mainJar.name, tasks.named("jar"))
@@ -315,5 +314,4 @@ artifacts {
     mainResources.name,
     tasks.named<ProcessResources>("processResources").map { it.destinationDir },
   )
-  add(mainSources.name, tasks.named("sourcesJar"))
 }

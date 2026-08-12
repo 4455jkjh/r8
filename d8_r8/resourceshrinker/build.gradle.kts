@@ -65,11 +65,6 @@ val resourceshrinkerDepsJar by
     outgoing.artifact(tasks.named<Jar>("depsJar"))
   }
 
-val resourceshrinkerSources by
-  configurations.consumable("resourceshrinkerSources") {
-    outgoing.artifact(tasks.named<Jar>("sourcesJar"))
-  }
-
 val resourceshrinkerClasses by
   configurations.consumable("resourceshrinkerClasses") {
     outgoing.artifact(tasks.named<JavaCompile>("compileJava").map { it.destinationDirectory })
