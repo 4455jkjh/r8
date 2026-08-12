@@ -13,20 +13,19 @@ class PerfettoThreadTiming extends TimingImplBase {
   // The API now allows you to specify the category and in the future let you conditionally turn on
   // categories.
   private static final String TRACE_CATEGORY = "R8";
+  private final PerfettoTiming parent;
   private final ThreadTrack threadTrack;
 
   private int depth = 0;
 
-  PerfettoThreadTiming(ThreadTrack threadTrack) {
+  PerfettoThreadTiming(PerfettoTiming parent, ThreadTrack threadTrack) {
+    this.parent = parent;
     this.threadTrack = threadTrack;
   }
 
   @Override
   public Timing createThreadTiming(String title, InternalOptions options) {
-    int threadId = (int) Thread.currentThread().getId();
-    ThreadTrack newThreadTrack =
-        threadTrack.getProcess().getOrCreateThreadTrack(threadId, "Worker");
-    return new PerfettoThreadTiming(newThreadTrack).begin(title);
+    return parent.createThreadTiming(title, options);
   }
 
   @Override

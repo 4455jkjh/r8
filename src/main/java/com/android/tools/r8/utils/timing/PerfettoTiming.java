@@ -18,6 +18,8 @@ import com.android.tools.r8.utils.InternalOptions;
 import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
@@ -29,14 +31,18 @@ public class PerfettoTiming extends TimingImplBase {
   // The API now allows you to specify the category and in the future let you conditionally turn on
   // categories.
   private static final String TRACE_CATEGORY = "R8";
+
   private final TraceDriver traceDriver;
   private final ProcessTrack processTrack;
   private final ThreadTrack threadTrack;
+  private final int mainThreadId;
   private int depth = 0;
   private CounterTrack memoryTrack;
   private Future<Void> memoryTracker;
   private volatile boolean memoryTrackerActive = true;
   private CounterTrack uncommittedDexItemsTrack;
+
+  private final Set<Integer> tracedWorkerThreadIds = ConcurrentHashMap.newKeySet();
 
   public PerfettoTiming(String title, InternalOptions options, ExecutorService executorService) {
     int sequenceId = 1;
@@ -58,7 +64,7 @@ public class PerfettoTiming extends TimingImplBase {
     traceDriver = new TraceDriver(sink);
     TraceContext traceContext = traceDriver.getContext();
     processTrack = traceContext.getProcess();
-    int mainThreadId = (int) Thread.currentThread().getId();
+    mainThreadId = (int) Thread.currentThread().getId();
     threadTrack = processTrack.getOrCreateThreadTrack(mainThreadId, "Main thread");
     begin(title);
     // Memory tracking requires an executor service.
@@ -89,8 +95,21 @@ public class PerfettoTiming extends TimingImplBase {
   @Override
   public Timing createThreadTiming(String title, InternalOptions options) {
     int threadId = (int) Thread.currentThread().getId();
-    ThreadTrack threadTrack = processTrack.getOrCreateThreadTrack(threadId, "Worker");
-    return new PerfettoThreadTiming(threadTrack).begin(title);
+    if (options.perfettoTraceThreads >= 0 && threadId != mainThreadId) {
+      // Check if tracing should be enabled for the current thread.
+      if (tracedWorkerThreadIds.size() < options.perfettoTraceThreads) {
+        synchronized (tracedWorkerThreadIds) {
+          if (tracedWorkerThreadIds.size() < options.perfettoTraceThreads) {
+            tracedWorkerThreadIds.add(threadId);
+          }
+        }
+      }
+      if (!tracedWorkerThreadIds.contains(threadId)) {
+        return Timing.empty();
+      }
+    }
+    ThreadTrack newThreadTrack = processTrack.getOrCreateThreadTrack(threadId, "Worker");
+    return new PerfettoThreadTiming(this, newThreadTrack).begin(title);
   }
 
   @Override

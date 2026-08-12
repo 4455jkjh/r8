@@ -414,6 +414,8 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
   public String perfettoTraceDumpDirectory =
       System.getProperty("com.android.tools.r8.dumptracetodirectory");
   public String perfettoTraceDumpFile = System.getProperty("com.android.tools.r8.dumptracetofile");
+  public final int perfettoTraceThreads =
+      SystemPropertyUtils.parseSystemPropertyOrDefault("com.android.tools.r8.trace.threads", -1);
   // To print memory one also have to enable printtimes.
   public boolean printMemory = System.getProperty("com.android.tools.r8.printmemory") != null;
 
