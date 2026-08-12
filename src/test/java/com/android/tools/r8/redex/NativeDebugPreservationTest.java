@@ -4,7 +4,6 @@
 package com.android.tools.r8.redex;
 
 import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
 
 import com.android.tools.r8.CompilationMode;
 import com.android.tools.r8.TestBase;
@@ -64,8 +63,7 @@ public class NativeDebugPreservationTest extends TestBase {
             inspector -> {
               ClassSubject clazz = inspector.clazz(TestClass.class);
               MethodSubject method = clazz.uniqueMethodWithOriginalName("main");
-              // TODO(b/540612508): Invalid conversion from no debug info to PC based debug info.
-              assertTrue(method.getMethod().getCode().asDexCode().getDebugInfo().isPcBasedInfo());
+              assertNull(method.getMethod().getCode().asDexCode().getDebugInfo());
             });
   }
 
