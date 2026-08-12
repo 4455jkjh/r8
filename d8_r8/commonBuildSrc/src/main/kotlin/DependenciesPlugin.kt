@@ -8,7 +8,6 @@ import java.nio.file.Paths
 import java.security.MessageDigest
 import java.util.UUID
 import kotlin.reflect.full.declaredMemberProperties
-import org.gradle.api.JavaVersion
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.Task
@@ -356,8 +355,6 @@ public fun Project.createR8LibCommandLine(
 }
 
 public object JvmCompatibility {
-  public val sourceCompatibility: JavaVersion = JavaVersion.VERSION_11
-  public val targetCompatibility: JavaVersion = JavaVersion.VERSION_11
   public const val release: Int = 11
 }
 

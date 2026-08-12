@@ -12,7 +12,7 @@ public fun Project.configureErrorProneForJavaCompile() {
   val enableErrorProne = !project.hasProperty("disable_errorprone")
   dependencies.add("errorprone", getLibraryByName("errorprone"))
   tasks.withType<JavaCompile>().configureEach {
-    options.errorprone.isEnabled.set(enableErrorProne)
+    options.errorprone.enabled.set(enableErrorProne)
     options.errorprone.excludedPaths.set(".*/build/generated/source/proto/main/java/.*")
     if (enableErrorProne) {
       // Non-default / Experimental checks - explicitly enforced.

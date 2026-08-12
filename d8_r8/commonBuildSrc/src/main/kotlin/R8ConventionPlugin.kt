@@ -26,9 +26,8 @@ public class R8ConventionPlugin : Plugin<Project> {
       when (this) {
         is JavaPlugin -> {
           target.extensions.getByType<JavaPluginExtension>().apply {
-            sourceCompatibility = JvmCompatibility.sourceCompatibility
-            targetCompatibility = JvmCompatibility.targetCompatibility
-            toolchain { languageVersion.set(JavaLanguageVersion.of(JvmCompatibility.release)) }
+            // Compile using newer compiler for performance and other improvements
+            toolchain { languageVersion.set(JavaLanguageVersion.of(21)) }
             withSourcesJar()
           }
           target.tasks.withType<JavaCompile>().configureEach {

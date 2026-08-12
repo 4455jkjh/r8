@@ -983,6 +983,14 @@ public final class AssistantRuntimeMethods {
                 .disableAndroidApiLevelCheck()
                 .build()));
     builder.setInstanceFields(ImmutableList.of());
+    DexMethod $values =
+        factory.createMethod(
+            builder.getType(),
+            factory.createProto(
+                factory.createType(
+                    factory.createString(
+                        "[Lcom/android/tools/r8/assistant/runtime/ReflectiveEventType;"))),
+            factory.createString("$values"));
     DexMethod clinit =
         factory.createMethod(
             builder.getType(),
@@ -1016,6 +1024,15 @@ public final class AssistantRuntimeMethods {
     builder.setSuperType(factory.createType(factory.createString("Ljava/lang/Enum;")));
     builder.setDirectMethods(
         ImmutableList.of(
+            DexEncodedMethod.syntheticBuilder()
+                .setMethod($values)
+                .setAccessFlags(
+                    MethodAccessFlags.fromSharedAccessFlags(
+                        Constants.ACC_PUBLIC | Constants.ACC_STATIC | Constants.ACC_SYNTHETIC,
+                        false))
+                .setCode(ReflectiveEventType_$values(factory, $values))
+                .disableAndroidApiLevelCheck()
+                .build(),
             DexEncodedMethod.syntheticBuilder()
                 .setMethod(clinit)
                 .setAccessFlags(MethodAccessFlags.createForClassInitializer())
@@ -2481,6 +2498,14 @@ public final class AssistantRuntimeMethods {
                 .disableAndroidApiLevelCheck()
                 .build()));
     builder.setInstanceFields(ImmutableList.of());
+    DexMethod $values =
+        factory.createMethod(
+            builder.getType(),
+            factory.createProto(
+                factory.createType(
+                    factory.createString(
+                        "[Lcom/android/tools/r8/assistant/runtime/ReflectiveOperationReceiver$ClassFlag;"))),
+            factory.createString("$values"));
     DexMethod clinit =
         factory.createMethod(
             builder.getType(),
@@ -2514,6 +2539,15 @@ public final class AssistantRuntimeMethods {
     builder.setSuperType(factory.createType(factory.createString("Ljava/lang/Enum;")));
     builder.setDirectMethods(
         ImmutableList.of(
+            DexEncodedMethod.syntheticBuilder()
+                .setMethod($values)
+                .setAccessFlags(
+                    MethodAccessFlags.fromSharedAccessFlags(
+                        Constants.ACC_PUBLIC | Constants.ACC_STATIC | Constants.ACC_SYNTHETIC,
+                        false))
+                .setCode(ReflectiveOperationReceiver$ClassFlag_$values(factory, $values))
+                .disableAndroidApiLevelCheck()
+                .build(),
             DexEncodedMethod.syntheticBuilder()
                 .setMethod(clinit)
                 .setAccessFlags(MethodAccessFlags.createForClassInitializer())
@@ -2610,6 +2644,14 @@ public final class AssistantRuntimeMethods {
                 .disableAndroidApiLevelCheck()
                 .build()));
     builder.setInstanceFields(ImmutableList.of());
+    DexMethod $values =
+        factory.createMethod(
+            builder.getType(),
+            factory.createProto(
+                factory.createType(
+                    factory.createString(
+                        "[Lcom/android/tools/r8/assistant/runtime/ReflectiveOperationReceiver$NameLookupType;"))),
+            factory.createString("$values"));
     DexMethod clinit =
         factory.createMethod(
             builder.getType(),
@@ -2643,6 +2685,15 @@ public final class AssistantRuntimeMethods {
     builder.setSuperType(factory.createType(factory.createString("Ljava/lang/Enum;")));
     builder.setDirectMethods(
         ImmutableList.of(
+            DexEncodedMethod.syntheticBuilder()
+                .setMethod($values)
+                .setAccessFlags(
+                    MethodAccessFlags.fromSharedAccessFlags(
+                        Constants.ACC_PUBLIC | Constants.ACC_STATIC | Constants.ACC_SYNTHETIC,
+                        false))
+                .setCode(ReflectiveOperationReceiver$NameLookupType_$values(factory, $values))
+                .disableAndroidApiLevelCheck()
+                .build(),
             DexEncodedMethod.syntheticBuilder()
                 .setMethod(clinit)
                 .setAccessFlags(MethodAccessFlags.createForClassInitializer())
@@ -3991,6 +4042,283 @@ public final class AssistantRuntimeMethods {
         ImmutableList.of());
   }
 
+  public static CfCode ReflectiveEventType_$values(DexItemFactory factory, DexMethod method) {
+    CfLabel label0 = new CfLabel();
+    return new CfCode(
+        method.holder,
+        4,
+        0,
+        ImmutableList.of(
+            label0,
+            new CfConstNumber(26, ValueType.INT),
+            new CfNewArray(
+                factory.createType(
+                    "[Lcom/android/tools/r8/assistant/runtime/ReflectiveEventType;")),
+            new CfStackInstruction(CfStackInstruction.Opcode.Dup),
+            new CfConstNumber(0, ValueType.INT),
+            new CfStaticFieldRead(
+                factory.createField(
+                    factory.createType(
+                        "Lcom/android/tools/r8/assistant/runtime/ReflectiveEventType;"),
+                    factory.createType(
+                        "Lcom/android/tools/r8/assistant/runtime/ReflectiveEventType;"),
+                    factory.createString("CLASS_NEW_INSTANCE"))),
+            new CfArrayStore(MemberType.OBJECT),
+            new CfStackInstruction(CfStackInstruction.Opcode.Dup),
+            new CfConstNumber(1, ValueType.INT),
+            new CfStaticFieldRead(
+                factory.createField(
+                    factory.createType(
+                        "Lcom/android/tools/r8/assistant/runtime/ReflectiveEventType;"),
+                    factory.createType(
+                        "Lcom/android/tools/r8/assistant/runtime/ReflectiveEventType;"),
+                    factory.createString("CLASS_GET_DECLARED_METHOD"))),
+            new CfArrayStore(MemberType.OBJECT),
+            new CfStackInstruction(CfStackInstruction.Opcode.Dup),
+            new CfConstNumber(2, ValueType.INT),
+            new CfStaticFieldRead(
+                factory.createField(
+                    factory.createType(
+                        "Lcom/android/tools/r8/assistant/runtime/ReflectiveEventType;"),
+                    factory.createType(
+                        "Lcom/android/tools/r8/assistant/runtime/ReflectiveEventType;"),
+                    factory.createString("CLASS_GET_DECLARED_METHODS"))),
+            new CfArrayStore(MemberType.OBJECT),
+            new CfStackInstruction(CfStackInstruction.Opcode.Dup),
+            new CfConstNumber(3, ValueType.INT),
+            new CfStaticFieldRead(
+                factory.createField(
+                    factory.createType(
+                        "Lcom/android/tools/r8/assistant/runtime/ReflectiveEventType;"),
+                    factory.createType(
+                        "Lcom/android/tools/r8/assistant/runtime/ReflectiveEventType;"),
+                    factory.createString("CLASS_GET_DECLARED_FIELD"))),
+            new CfArrayStore(MemberType.OBJECT),
+            new CfStackInstruction(CfStackInstruction.Opcode.Dup),
+            new CfConstNumber(4, ValueType.INT),
+            new CfStaticFieldRead(
+                factory.createField(
+                    factory.createType(
+                        "Lcom/android/tools/r8/assistant/runtime/ReflectiveEventType;"),
+                    factory.createType(
+                        "Lcom/android/tools/r8/assistant/runtime/ReflectiveEventType;"),
+                    factory.createString("CLASS_GET_DECLARED_FIELDS"))),
+            new CfArrayStore(MemberType.OBJECT),
+            new CfStackInstruction(CfStackInstruction.Opcode.Dup),
+            new CfConstNumber(5, ValueType.INT),
+            new CfStaticFieldRead(
+                factory.createField(
+                    factory.createType(
+                        "Lcom/android/tools/r8/assistant/runtime/ReflectiveEventType;"),
+                    factory.createType(
+                        "Lcom/android/tools/r8/assistant/runtime/ReflectiveEventType;"),
+                    factory.createString("CLASS_GET_DECLARED_CONSTRUCTOR"))),
+            new CfArrayStore(MemberType.OBJECT),
+            new CfStackInstruction(CfStackInstruction.Opcode.Dup),
+            new CfConstNumber(6, ValueType.INT),
+            new CfStaticFieldRead(
+                factory.createField(
+                    factory.createType(
+                        "Lcom/android/tools/r8/assistant/runtime/ReflectiveEventType;"),
+                    factory.createType(
+                        "Lcom/android/tools/r8/assistant/runtime/ReflectiveEventType;"),
+                    factory.createString("CLASS_GET_DECLARED_CONSTRUCTORS"))),
+            new CfArrayStore(MemberType.OBJECT),
+            new CfStackInstruction(CfStackInstruction.Opcode.Dup),
+            new CfConstNumber(7, ValueType.INT),
+            new CfStaticFieldRead(
+                factory.createField(
+                    factory.createType(
+                        "Lcom/android/tools/r8/assistant/runtime/ReflectiveEventType;"),
+                    factory.createType(
+                        "Lcom/android/tools/r8/assistant/runtime/ReflectiveEventType;"),
+                    factory.createString("CLASS_GET_METHOD"))),
+            new CfArrayStore(MemberType.OBJECT),
+            new CfStackInstruction(CfStackInstruction.Opcode.Dup),
+            new CfConstNumber(8, ValueType.INT),
+            new CfStaticFieldRead(
+                factory.createField(
+                    factory.createType(
+                        "Lcom/android/tools/r8/assistant/runtime/ReflectiveEventType;"),
+                    factory.createType(
+                        "Lcom/android/tools/r8/assistant/runtime/ReflectiveEventType;"),
+                    factory.createString("CLASS_GET_METHODS"))),
+            new CfArrayStore(MemberType.OBJECT),
+            new CfStackInstruction(CfStackInstruction.Opcode.Dup),
+            new CfConstNumber(9, ValueType.INT),
+            new CfStaticFieldRead(
+                factory.createField(
+                    factory.createType(
+                        "Lcom/android/tools/r8/assistant/runtime/ReflectiveEventType;"),
+                    factory.createType(
+                        "Lcom/android/tools/r8/assistant/runtime/ReflectiveEventType;"),
+                    factory.createString("CLASS_GET_FIELD"))),
+            new CfArrayStore(MemberType.OBJECT),
+            new CfStackInstruction(CfStackInstruction.Opcode.Dup),
+            new CfConstNumber(10, ValueType.INT),
+            new CfStaticFieldRead(
+                factory.createField(
+                    factory.createType(
+                        "Lcom/android/tools/r8/assistant/runtime/ReflectiveEventType;"),
+                    factory.createType(
+                        "Lcom/android/tools/r8/assistant/runtime/ReflectiveEventType;"),
+                    factory.createString("CLASS_GET_FIELDS"))),
+            new CfArrayStore(MemberType.OBJECT),
+            new CfStackInstruction(CfStackInstruction.Opcode.Dup),
+            new CfConstNumber(11, ValueType.INT),
+            new CfStaticFieldRead(
+                factory.createField(
+                    factory.createType(
+                        "Lcom/android/tools/r8/assistant/runtime/ReflectiveEventType;"),
+                    factory.createType(
+                        "Lcom/android/tools/r8/assistant/runtime/ReflectiveEventType;"),
+                    factory.createString("CLASS_GET_CONSTRUCTOR"))),
+            new CfArrayStore(MemberType.OBJECT),
+            new CfStackInstruction(CfStackInstruction.Opcode.Dup),
+            new CfConstNumber(12, ValueType.INT),
+            new CfStaticFieldRead(
+                factory.createField(
+                    factory.createType(
+                        "Lcom/android/tools/r8/assistant/runtime/ReflectiveEventType;"),
+                    factory.createType(
+                        "Lcom/android/tools/r8/assistant/runtime/ReflectiveEventType;"),
+                    factory.createString("CLASS_GET_CONSTRUCTORS"))),
+            new CfArrayStore(MemberType.OBJECT),
+            new CfStackInstruction(CfStackInstruction.Opcode.Dup),
+            new CfConstNumber(13, ValueType.INT),
+            new CfStaticFieldRead(
+                factory.createField(
+                    factory.createType(
+                        "Lcom/android/tools/r8/assistant/runtime/ReflectiveEventType;"),
+                    factory.createType(
+                        "Lcom/android/tools/r8/assistant/runtime/ReflectiveEventType;"),
+                    factory.createString("CLASS_GET_NAME"))),
+            new CfArrayStore(MemberType.OBJECT),
+            new CfStackInstruction(CfStackInstruction.Opcode.Dup),
+            new CfConstNumber(14, ValueType.INT),
+            new CfStaticFieldRead(
+                factory.createField(
+                    factory.createType(
+                        "Lcom/android/tools/r8/assistant/runtime/ReflectiveEventType;"),
+                    factory.createType(
+                        "Lcom/android/tools/r8/assistant/runtime/ReflectiveEventType;"),
+                    factory.createString("CLASS_FOR_NAME"))),
+            new CfArrayStore(MemberType.OBJECT),
+            new CfStackInstruction(CfStackInstruction.Opcode.Dup),
+            new CfConstNumber(15, ValueType.INT),
+            new CfStaticFieldRead(
+                factory.createField(
+                    factory.createType(
+                        "Lcom/android/tools/r8/assistant/runtime/ReflectiveEventType;"),
+                    factory.createType(
+                        "Lcom/android/tools/r8/assistant/runtime/ReflectiveEventType;"),
+                    factory.createString("CLASS_GET_COMPONENT_TYPE"))),
+            new CfArrayStore(MemberType.OBJECT),
+            new CfStackInstruction(CfStackInstruction.Opcode.Dup),
+            new CfConstNumber(16, ValueType.INT),
+            new CfStaticFieldRead(
+                factory.createField(
+                    factory.createType(
+                        "Lcom/android/tools/r8/assistant/runtime/ReflectiveEventType;"),
+                    factory.createType(
+                        "Lcom/android/tools/r8/assistant/runtime/ReflectiveEventType;"),
+                    factory.createString("CLASS_GET_PACKAGE"))),
+            new CfArrayStore(MemberType.OBJECT),
+            new CfStackInstruction(CfStackInstruction.Opcode.Dup),
+            new CfConstNumber(17, ValueType.INT),
+            new CfStaticFieldRead(
+                factory.createField(
+                    factory.createType(
+                        "Lcom/android/tools/r8/assistant/runtime/ReflectiveEventType;"),
+                    factory.createType(
+                        "Lcom/android/tools/r8/assistant/runtime/ReflectiveEventType;"),
+                    factory.createString("CLASS_IS_ASSIGNABLE_FROM"))),
+            new CfArrayStore(MemberType.OBJECT),
+            new CfStackInstruction(CfStackInstruction.Opcode.Dup),
+            new CfConstNumber(18, ValueType.INT),
+            new CfStaticFieldRead(
+                factory.createField(
+                    factory.createType(
+                        "Lcom/android/tools/r8/assistant/runtime/ReflectiveEventType;"),
+                    factory.createType(
+                        "Lcom/android/tools/r8/assistant/runtime/ReflectiveEventType;"),
+                    factory.createString("CLASS_GET_SUPERCLASS"))),
+            new CfArrayStore(MemberType.OBJECT),
+            new CfStackInstruction(CfStackInstruction.Opcode.Dup),
+            new CfConstNumber(19, ValueType.INT),
+            new CfStaticFieldRead(
+                factory.createField(
+                    factory.createType(
+                        "Lcom/android/tools/r8/assistant/runtime/ReflectiveEventType;"),
+                    factory.createType(
+                        "Lcom/android/tools/r8/assistant/runtime/ReflectiveEventType;"),
+                    factory.createString("CLASS_AS_SUBCLASS"))),
+            new CfArrayStore(MemberType.OBJECT),
+            new CfStackInstruction(CfStackInstruction.Opcode.Dup),
+            new CfConstNumber(20, ValueType.INT),
+            new CfStaticFieldRead(
+                factory.createField(
+                    factory.createType(
+                        "Lcom/android/tools/r8/assistant/runtime/ReflectiveEventType;"),
+                    factory.createType(
+                        "Lcom/android/tools/r8/assistant/runtime/ReflectiveEventType;"),
+                    factory.createString("CLASS_IS_INSTANCE"))),
+            new CfArrayStore(MemberType.OBJECT),
+            new CfStackInstruction(CfStackInstruction.Opcode.Dup),
+            new CfConstNumber(21, ValueType.INT),
+            new CfStaticFieldRead(
+                factory.createField(
+                    factory.createType(
+                        "Lcom/android/tools/r8/assistant/runtime/ReflectiveEventType;"),
+                    factory.createType(
+                        "Lcom/android/tools/r8/assistant/runtime/ReflectiveEventType;"),
+                    factory.createString("CLASS_CAST"))),
+            new CfArrayStore(MemberType.OBJECT),
+            new CfStackInstruction(CfStackInstruction.Opcode.Dup),
+            new CfConstNumber(22, ValueType.INT),
+            new CfStaticFieldRead(
+                factory.createField(
+                    factory.createType(
+                        "Lcom/android/tools/r8/assistant/runtime/ReflectiveEventType;"),
+                    factory.createType(
+                        "Lcom/android/tools/r8/assistant/runtime/ReflectiveEventType;"),
+                    factory.createString("CLASS_FLAG"))),
+            new CfArrayStore(MemberType.OBJECT),
+            new CfStackInstruction(CfStackInstruction.Opcode.Dup),
+            new CfConstNumber(23, ValueType.INT),
+            new CfStaticFieldRead(
+                factory.createField(
+                    factory.createType(
+                        "Lcom/android/tools/r8/assistant/runtime/ReflectiveEventType;"),
+                    factory.createType(
+                        "Lcom/android/tools/r8/assistant/runtime/ReflectiveEventType;"),
+                    factory.createString("ATOMIC_FIELD_UPDATER_NEW_UPDATER"))),
+            new CfArrayStore(MemberType.OBJECT),
+            new CfStackInstruction(CfStackInstruction.Opcode.Dup),
+            new CfConstNumber(24, ValueType.INT),
+            new CfStaticFieldRead(
+                factory.createField(
+                    factory.createType(
+                        "Lcom/android/tools/r8/assistant/runtime/ReflectiveEventType;"),
+                    factory.createType(
+                        "Lcom/android/tools/r8/assistant/runtime/ReflectiveEventType;"),
+                    factory.createString("SERVICE_LOADER_LOAD"))),
+            new CfArrayStore(MemberType.OBJECT),
+            new CfStackInstruction(CfStackInstruction.Opcode.Dup),
+            new CfConstNumber(25, ValueType.INT),
+            new CfStaticFieldRead(
+                factory.createField(
+                    factory.createType(
+                        "Lcom/android/tools/r8/assistant/runtime/ReflectiveEventType;"),
+                    factory.createType(
+                        "Lcom/android/tools/r8/assistant/runtime/ReflectiveEventType;"),
+                    factory.createString("PROXY_NEW_PROXY_INSTANCE"))),
+            new CfArrayStore(MemberType.OBJECT),
+            new CfReturn(ValueType.OBJECT)),
+        ImmutableList.of(),
+        ImmutableList.of());
+  }
+
   public static CfCode ReflectiveEventType_clinit(DexItemFactory factory, DexMethod method) {
     CfLabel label0 = new CfLabel();
     CfLabel label1 = new CfLabel();
@@ -4571,270 +4899,16 @@ public final class AssistantRuntimeMethods {
                         "Lcom/android/tools/r8/assistant/runtime/ReflectiveEventType;"),
                     factory.createString("PROXY_NEW_PROXY_INSTANCE"))),
             label26,
-            new CfConstNumber(26, ValueType.INT),
-            new CfNewArray(
-                factory.createType(
-                    "[Lcom/android/tools/r8/assistant/runtime/ReflectiveEventType;")),
-            new CfStackInstruction(CfStackInstruction.Opcode.Dup),
-            new CfConstNumber(0, ValueType.INT),
-            new CfStaticFieldRead(
-                factory.createField(
+            new CfInvoke(
+                184,
+                factory.createMethod(
                     factory.createType(
                         "Lcom/android/tools/r8/assistant/runtime/ReflectiveEventType;"),
-                    factory.createType(
-                        "Lcom/android/tools/r8/assistant/runtime/ReflectiveEventType;"),
-                    factory.createString("CLASS_NEW_INSTANCE"))),
-            new CfArrayStore(MemberType.OBJECT),
-            new CfStackInstruction(CfStackInstruction.Opcode.Dup),
-            new CfConstNumber(1, ValueType.INT),
-            new CfStaticFieldRead(
-                factory.createField(
-                    factory.createType(
-                        "Lcom/android/tools/r8/assistant/runtime/ReflectiveEventType;"),
-                    factory.createType(
-                        "Lcom/android/tools/r8/assistant/runtime/ReflectiveEventType;"),
-                    factory.createString("CLASS_GET_DECLARED_METHOD"))),
-            new CfArrayStore(MemberType.OBJECT),
-            new CfStackInstruction(CfStackInstruction.Opcode.Dup),
-            new CfConstNumber(2, ValueType.INT),
-            new CfStaticFieldRead(
-                factory.createField(
-                    factory.createType(
-                        "Lcom/android/tools/r8/assistant/runtime/ReflectiveEventType;"),
-                    factory.createType(
-                        "Lcom/android/tools/r8/assistant/runtime/ReflectiveEventType;"),
-                    factory.createString("CLASS_GET_DECLARED_METHODS"))),
-            new CfArrayStore(MemberType.OBJECT),
-            new CfStackInstruction(CfStackInstruction.Opcode.Dup),
-            new CfConstNumber(3, ValueType.INT),
-            new CfStaticFieldRead(
-                factory.createField(
-                    factory.createType(
-                        "Lcom/android/tools/r8/assistant/runtime/ReflectiveEventType;"),
-                    factory.createType(
-                        "Lcom/android/tools/r8/assistant/runtime/ReflectiveEventType;"),
-                    factory.createString("CLASS_GET_DECLARED_FIELD"))),
-            new CfArrayStore(MemberType.OBJECT),
-            new CfStackInstruction(CfStackInstruction.Opcode.Dup),
-            new CfConstNumber(4, ValueType.INT),
-            new CfStaticFieldRead(
-                factory.createField(
-                    factory.createType(
-                        "Lcom/android/tools/r8/assistant/runtime/ReflectiveEventType;"),
-                    factory.createType(
-                        "Lcom/android/tools/r8/assistant/runtime/ReflectiveEventType;"),
-                    factory.createString("CLASS_GET_DECLARED_FIELDS"))),
-            new CfArrayStore(MemberType.OBJECT),
-            new CfStackInstruction(CfStackInstruction.Opcode.Dup),
-            new CfConstNumber(5, ValueType.INT),
-            new CfStaticFieldRead(
-                factory.createField(
-                    factory.createType(
-                        "Lcom/android/tools/r8/assistant/runtime/ReflectiveEventType;"),
-                    factory.createType(
-                        "Lcom/android/tools/r8/assistant/runtime/ReflectiveEventType;"),
-                    factory.createString("CLASS_GET_DECLARED_CONSTRUCTOR"))),
-            new CfArrayStore(MemberType.OBJECT),
-            new CfStackInstruction(CfStackInstruction.Opcode.Dup),
-            new CfConstNumber(6, ValueType.INT),
-            new CfStaticFieldRead(
-                factory.createField(
-                    factory.createType(
-                        "Lcom/android/tools/r8/assistant/runtime/ReflectiveEventType;"),
-                    factory.createType(
-                        "Lcom/android/tools/r8/assistant/runtime/ReflectiveEventType;"),
-                    factory.createString("CLASS_GET_DECLARED_CONSTRUCTORS"))),
-            new CfArrayStore(MemberType.OBJECT),
-            new CfStackInstruction(CfStackInstruction.Opcode.Dup),
-            new CfConstNumber(7, ValueType.INT),
-            new CfStaticFieldRead(
-                factory.createField(
-                    factory.createType(
-                        "Lcom/android/tools/r8/assistant/runtime/ReflectiveEventType;"),
-                    factory.createType(
-                        "Lcom/android/tools/r8/assistant/runtime/ReflectiveEventType;"),
-                    factory.createString("CLASS_GET_METHOD"))),
-            new CfArrayStore(MemberType.OBJECT),
-            new CfStackInstruction(CfStackInstruction.Opcode.Dup),
-            new CfConstNumber(8, ValueType.INT),
-            new CfStaticFieldRead(
-                factory.createField(
-                    factory.createType(
-                        "Lcom/android/tools/r8/assistant/runtime/ReflectiveEventType;"),
-                    factory.createType(
-                        "Lcom/android/tools/r8/assistant/runtime/ReflectiveEventType;"),
-                    factory.createString("CLASS_GET_METHODS"))),
-            new CfArrayStore(MemberType.OBJECT),
-            new CfStackInstruction(CfStackInstruction.Opcode.Dup),
-            new CfConstNumber(9, ValueType.INT),
-            new CfStaticFieldRead(
-                factory.createField(
-                    factory.createType(
-                        "Lcom/android/tools/r8/assistant/runtime/ReflectiveEventType;"),
-                    factory.createType(
-                        "Lcom/android/tools/r8/assistant/runtime/ReflectiveEventType;"),
-                    factory.createString("CLASS_GET_FIELD"))),
-            new CfArrayStore(MemberType.OBJECT),
-            new CfStackInstruction(CfStackInstruction.Opcode.Dup),
-            new CfConstNumber(10, ValueType.INT),
-            new CfStaticFieldRead(
-                factory.createField(
-                    factory.createType(
-                        "Lcom/android/tools/r8/assistant/runtime/ReflectiveEventType;"),
-                    factory.createType(
-                        "Lcom/android/tools/r8/assistant/runtime/ReflectiveEventType;"),
-                    factory.createString("CLASS_GET_FIELDS"))),
-            new CfArrayStore(MemberType.OBJECT),
-            new CfStackInstruction(CfStackInstruction.Opcode.Dup),
-            new CfConstNumber(11, ValueType.INT),
-            new CfStaticFieldRead(
-                factory.createField(
-                    factory.createType(
-                        "Lcom/android/tools/r8/assistant/runtime/ReflectiveEventType;"),
-                    factory.createType(
-                        "Lcom/android/tools/r8/assistant/runtime/ReflectiveEventType;"),
-                    factory.createString("CLASS_GET_CONSTRUCTOR"))),
-            new CfArrayStore(MemberType.OBJECT),
-            new CfStackInstruction(CfStackInstruction.Opcode.Dup),
-            new CfConstNumber(12, ValueType.INT),
-            new CfStaticFieldRead(
-                factory.createField(
-                    factory.createType(
-                        "Lcom/android/tools/r8/assistant/runtime/ReflectiveEventType;"),
-                    factory.createType(
-                        "Lcom/android/tools/r8/assistant/runtime/ReflectiveEventType;"),
-                    factory.createString("CLASS_GET_CONSTRUCTORS"))),
-            new CfArrayStore(MemberType.OBJECT),
-            new CfStackInstruction(CfStackInstruction.Opcode.Dup),
-            new CfConstNumber(13, ValueType.INT),
-            new CfStaticFieldRead(
-                factory.createField(
-                    factory.createType(
-                        "Lcom/android/tools/r8/assistant/runtime/ReflectiveEventType;"),
-                    factory.createType(
-                        "Lcom/android/tools/r8/assistant/runtime/ReflectiveEventType;"),
-                    factory.createString("CLASS_GET_NAME"))),
-            new CfArrayStore(MemberType.OBJECT),
-            new CfStackInstruction(CfStackInstruction.Opcode.Dup),
-            new CfConstNumber(14, ValueType.INT),
-            new CfStaticFieldRead(
-                factory.createField(
-                    factory.createType(
-                        "Lcom/android/tools/r8/assistant/runtime/ReflectiveEventType;"),
-                    factory.createType(
-                        "Lcom/android/tools/r8/assistant/runtime/ReflectiveEventType;"),
-                    factory.createString("CLASS_FOR_NAME"))),
-            new CfArrayStore(MemberType.OBJECT),
-            new CfStackInstruction(CfStackInstruction.Opcode.Dup),
-            new CfConstNumber(15, ValueType.INT),
-            new CfStaticFieldRead(
-                factory.createField(
-                    factory.createType(
-                        "Lcom/android/tools/r8/assistant/runtime/ReflectiveEventType;"),
-                    factory.createType(
-                        "Lcom/android/tools/r8/assistant/runtime/ReflectiveEventType;"),
-                    factory.createString("CLASS_GET_COMPONENT_TYPE"))),
-            new CfArrayStore(MemberType.OBJECT),
-            new CfStackInstruction(CfStackInstruction.Opcode.Dup),
-            new CfConstNumber(16, ValueType.INT),
-            new CfStaticFieldRead(
-                factory.createField(
-                    factory.createType(
-                        "Lcom/android/tools/r8/assistant/runtime/ReflectiveEventType;"),
-                    factory.createType(
-                        "Lcom/android/tools/r8/assistant/runtime/ReflectiveEventType;"),
-                    factory.createString("CLASS_GET_PACKAGE"))),
-            new CfArrayStore(MemberType.OBJECT),
-            new CfStackInstruction(CfStackInstruction.Opcode.Dup),
-            new CfConstNumber(17, ValueType.INT),
-            new CfStaticFieldRead(
-                factory.createField(
-                    factory.createType(
-                        "Lcom/android/tools/r8/assistant/runtime/ReflectiveEventType;"),
-                    factory.createType(
-                        "Lcom/android/tools/r8/assistant/runtime/ReflectiveEventType;"),
-                    factory.createString("CLASS_IS_ASSIGNABLE_FROM"))),
-            new CfArrayStore(MemberType.OBJECT),
-            new CfStackInstruction(CfStackInstruction.Opcode.Dup),
-            new CfConstNumber(18, ValueType.INT),
-            new CfStaticFieldRead(
-                factory.createField(
-                    factory.createType(
-                        "Lcom/android/tools/r8/assistant/runtime/ReflectiveEventType;"),
-                    factory.createType(
-                        "Lcom/android/tools/r8/assistant/runtime/ReflectiveEventType;"),
-                    factory.createString("CLASS_GET_SUPERCLASS"))),
-            new CfArrayStore(MemberType.OBJECT),
-            new CfStackInstruction(CfStackInstruction.Opcode.Dup),
-            new CfConstNumber(19, ValueType.INT),
-            new CfStaticFieldRead(
-                factory.createField(
-                    factory.createType(
-                        "Lcom/android/tools/r8/assistant/runtime/ReflectiveEventType;"),
-                    factory.createType(
-                        "Lcom/android/tools/r8/assistant/runtime/ReflectiveEventType;"),
-                    factory.createString("CLASS_AS_SUBCLASS"))),
-            new CfArrayStore(MemberType.OBJECT),
-            new CfStackInstruction(CfStackInstruction.Opcode.Dup),
-            new CfConstNumber(20, ValueType.INT),
-            new CfStaticFieldRead(
-                factory.createField(
-                    factory.createType(
-                        "Lcom/android/tools/r8/assistant/runtime/ReflectiveEventType;"),
-                    factory.createType(
-                        "Lcom/android/tools/r8/assistant/runtime/ReflectiveEventType;"),
-                    factory.createString("CLASS_IS_INSTANCE"))),
-            new CfArrayStore(MemberType.OBJECT),
-            new CfStackInstruction(CfStackInstruction.Opcode.Dup),
-            new CfConstNumber(21, ValueType.INT),
-            new CfStaticFieldRead(
-                factory.createField(
-                    factory.createType(
-                        "Lcom/android/tools/r8/assistant/runtime/ReflectiveEventType;"),
-                    factory.createType(
-                        "Lcom/android/tools/r8/assistant/runtime/ReflectiveEventType;"),
-                    factory.createString("CLASS_CAST"))),
-            new CfArrayStore(MemberType.OBJECT),
-            new CfStackInstruction(CfStackInstruction.Opcode.Dup),
-            new CfConstNumber(22, ValueType.INT),
-            new CfStaticFieldRead(
-                factory.createField(
-                    factory.createType(
-                        "Lcom/android/tools/r8/assistant/runtime/ReflectiveEventType;"),
-                    factory.createType(
-                        "Lcom/android/tools/r8/assistant/runtime/ReflectiveEventType;"),
-                    factory.createString("CLASS_FLAG"))),
-            new CfArrayStore(MemberType.OBJECT),
-            new CfStackInstruction(CfStackInstruction.Opcode.Dup),
-            new CfConstNumber(23, ValueType.INT),
-            new CfStaticFieldRead(
-                factory.createField(
-                    factory.createType(
-                        "Lcom/android/tools/r8/assistant/runtime/ReflectiveEventType;"),
-                    factory.createType(
-                        "Lcom/android/tools/r8/assistant/runtime/ReflectiveEventType;"),
-                    factory.createString("ATOMIC_FIELD_UPDATER_NEW_UPDATER"))),
-            new CfArrayStore(MemberType.OBJECT),
-            new CfStackInstruction(CfStackInstruction.Opcode.Dup),
-            new CfConstNumber(24, ValueType.INT),
-            new CfStaticFieldRead(
-                factory.createField(
-                    factory.createType(
-                        "Lcom/android/tools/r8/assistant/runtime/ReflectiveEventType;"),
-                    factory.createType(
-                        "Lcom/android/tools/r8/assistant/runtime/ReflectiveEventType;"),
-                    factory.createString("SERVICE_LOADER_LOAD"))),
-            new CfArrayStore(MemberType.OBJECT),
-            new CfStackInstruction(CfStackInstruction.Opcode.Dup),
-            new CfConstNumber(25, ValueType.INT),
-            new CfStaticFieldRead(
-                factory.createField(
-                    factory.createType(
-                        "Lcom/android/tools/r8/assistant/runtime/ReflectiveEventType;"),
-                    factory.createType(
-                        "Lcom/android/tools/r8/assistant/runtime/ReflectiveEventType;"),
-                    factory.createString("PROXY_NEW_PROXY_INSTANCE"))),
-            new CfArrayStore(MemberType.OBJECT),
+                    factory.createProto(
+                        factory.createType(
+                            "[Lcom/android/tools/r8/assistant/runtime/ReflectiveEventType;")),
+                    factory.createString("$values")),
+                false),
             new CfStaticFieldWrite(
                 factory.createField(
                     factory.createType(
@@ -9000,12 +9074,12 @@ public final class AssistantRuntimeMethods {
             new CfConstNumber(1, ValueType.INT),
             new CfLoad(ValueType.OBJECT, 4),
             new CfInvoke(
-                182,
+                185,
                 factory.createMethod(
-                    factory.objectType,
+                    factory.createType("Ljava/lang/reflect/InvocationHandler;"),
                     factory.createProto(factory.stringType),
                     factory.createString("toString")),
-                false),
+                true),
             new CfArrayStore(MemberType.OBJECT),
             label12,
             new CfConstNumber(0, ValueType.INT),
@@ -9856,6 +9930,144 @@ public final class AssistantRuntimeMethods {
         ImmutableList.of());
   }
 
+  public static CfCode ReflectiveOperationReceiver$ClassFlag_$values(
+      DexItemFactory factory, DexMethod method) {
+    CfLabel label0 = new CfLabel();
+    return new CfCode(
+        method.holder,
+        4,
+        0,
+        ImmutableList.of(
+            label0,
+            new CfConstNumber(12, ValueType.INT),
+            new CfNewArray(
+                factory.createType(
+                    "[Lcom/android/tools/r8/assistant/runtime/ReflectiveOperationReceiver$ClassFlag;")),
+            new CfStackInstruction(CfStackInstruction.Opcode.Dup),
+            new CfConstNumber(0, ValueType.INT),
+            new CfStaticFieldRead(
+                factory.createField(
+                    factory.createType(
+                        "Lcom/android/tools/r8/assistant/runtime/ReflectiveOperationReceiver$ClassFlag;"),
+                    factory.createType(
+                        "Lcom/android/tools/r8/assistant/runtime/ReflectiveOperationReceiver$ClassFlag;"),
+                    factory.createString("ANNOTATION"))),
+            new CfArrayStore(MemberType.OBJECT),
+            new CfStackInstruction(CfStackInstruction.Opcode.Dup),
+            new CfConstNumber(1, ValueType.INT),
+            new CfStaticFieldRead(
+                factory.createField(
+                    factory.createType(
+                        "Lcom/android/tools/r8/assistant/runtime/ReflectiveOperationReceiver$ClassFlag;"),
+                    factory.createType(
+                        "Lcom/android/tools/r8/assistant/runtime/ReflectiveOperationReceiver$ClassFlag;"),
+                    factory.createString("ANONYMOUS_CLASS"))),
+            new CfArrayStore(MemberType.OBJECT),
+            new CfStackInstruction(CfStackInstruction.Opcode.Dup),
+            new CfConstNumber(2, ValueType.INT),
+            new CfStaticFieldRead(
+                factory.createField(
+                    factory.createType(
+                        "Lcom/android/tools/r8/assistant/runtime/ReflectiveOperationReceiver$ClassFlag;"),
+                    factory.createType(
+                        "Lcom/android/tools/r8/assistant/runtime/ReflectiveOperationReceiver$ClassFlag;"),
+                    factory.createString("ARRAY"))),
+            new CfArrayStore(MemberType.OBJECT),
+            new CfStackInstruction(CfStackInstruction.Opcode.Dup),
+            new CfConstNumber(3, ValueType.INT),
+            new CfStaticFieldRead(
+                factory.createField(
+                    factory.createType(
+                        "Lcom/android/tools/r8/assistant/runtime/ReflectiveOperationReceiver$ClassFlag;"),
+                    factory.createType(
+                        "Lcom/android/tools/r8/assistant/runtime/ReflectiveOperationReceiver$ClassFlag;"),
+                    factory.createString("ENUM"))),
+            new CfArrayStore(MemberType.OBJECT),
+            new CfStackInstruction(CfStackInstruction.Opcode.Dup),
+            new CfConstNumber(4, ValueType.INT),
+            new CfStaticFieldRead(
+                factory.createField(
+                    factory.createType(
+                        "Lcom/android/tools/r8/assistant/runtime/ReflectiveOperationReceiver$ClassFlag;"),
+                    factory.createType(
+                        "Lcom/android/tools/r8/assistant/runtime/ReflectiveOperationReceiver$ClassFlag;"),
+                    factory.createString("HIDDEN"))),
+            new CfArrayStore(MemberType.OBJECT),
+            new CfStackInstruction(CfStackInstruction.Opcode.Dup),
+            new CfConstNumber(5, ValueType.INT),
+            new CfStaticFieldRead(
+                factory.createField(
+                    factory.createType(
+                        "Lcom/android/tools/r8/assistant/runtime/ReflectiveOperationReceiver$ClassFlag;"),
+                    factory.createType(
+                        "Lcom/android/tools/r8/assistant/runtime/ReflectiveOperationReceiver$ClassFlag;"),
+                    factory.createString("INTERFACE"))),
+            new CfArrayStore(MemberType.OBJECT),
+            new CfStackInstruction(CfStackInstruction.Opcode.Dup),
+            new CfConstNumber(6, ValueType.INT),
+            new CfStaticFieldRead(
+                factory.createField(
+                    factory.createType(
+                        "Lcom/android/tools/r8/assistant/runtime/ReflectiveOperationReceiver$ClassFlag;"),
+                    factory.createType(
+                        "Lcom/android/tools/r8/assistant/runtime/ReflectiveOperationReceiver$ClassFlag;"),
+                    factory.createString("LOCAL_CLASS"))),
+            new CfArrayStore(MemberType.OBJECT),
+            new CfStackInstruction(CfStackInstruction.Opcode.Dup),
+            new CfConstNumber(7, ValueType.INT),
+            new CfStaticFieldRead(
+                factory.createField(
+                    factory.createType(
+                        "Lcom/android/tools/r8/assistant/runtime/ReflectiveOperationReceiver$ClassFlag;"),
+                    factory.createType(
+                        "Lcom/android/tools/r8/assistant/runtime/ReflectiveOperationReceiver$ClassFlag;"),
+                    factory.createString("MEMBER_CLASS"))),
+            new CfArrayStore(MemberType.OBJECT),
+            new CfStackInstruction(CfStackInstruction.Opcode.Dup),
+            new CfConstNumber(8, ValueType.INT),
+            new CfStaticFieldRead(
+                factory.createField(
+                    factory.createType(
+                        "Lcom/android/tools/r8/assistant/runtime/ReflectiveOperationReceiver$ClassFlag;"),
+                    factory.createType(
+                        "Lcom/android/tools/r8/assistant/runtime/ReflectiveOperationReceiver$ClassFlag;"),
+                    factory.createString("PRIMITIVE"))),
+            new CfArrayStore(MemberType.OBJECT),
+            new CfStackInstruction(CfStackInstruction.Opcode.Dup),
+            new CfConstNumber(9, ValueType.INT),
+            new CfStaticFieldRead(
+                factory.createField(
+                    factory.createType(
+                        "Lcom/android/tools/r8/assistant/runtime/ReflectiveOperationReceiver$ClassFlag;"),
+                    factory.createType(
+                        "Lcom/android/tools/r8/assistant/runtime/ReflectiveOperationReceiver$ClassFlag;"),
+                    factory.createString("RECORD"))),
+            new CfArrayStore(MemberType.OBJECT),
+            new CfStackInstruction(CfStackInstruction.Opcode.Dup),
+            new CfConstNumber(10, ValueType.INT),
+            new CfStaticFieldRead(
+                factory.createField(
+                    factory.createType(
+                        "Lcom/android/tools/r8/assistant/runtime/ReflectiveOperationReceiver$ClassFlag;"),
+                    factory.createType(
+                        "Lcom/android/tools/r8/assistant/runtime/ReflectiveOperationReceiver$ClassFlag;"),
+                    factory.createString("SEALED"))),
+            new CfArrayStore(MemberType.OBJECT),
+            new CfStackInstruction(CfStackInstruction.Opcode.Dup),
+            new CfConstNumber(11, ValueType.INT),
+            new CfStaticFieldRead(
+                factory.createField(
+                    factory.createType(
+                        "Lcom/android/tools/r8/assistant/runtime/ReflectiveOperationReceiver$ClassFlag;"),
+                    factory.createType(
+                        "Lcom/android/tools/r8/assistant/runtime/ReflectiveOperationReceiver$ClassFlag;"),
+                    factory.createString("SYNTHETIC"))),
+            new CfArrayStore(MemberType.OBJECT),
+            new CfReturn(ValueType.OBJECT)),
+        ImmutableList.of(),
+        ImmutableList.of());
+  }
+
   public static CfCode ReflectiveOperationReceiver$ClassFlag_clinit(
       DexItemFactory factory, DexMethod method) {
     CfLabel label0 = new CfLabel();
@@ -10141,130 +10353,16 @@ public final class AssistantRuntimeMethods {
                         "Lcom/android/tools/r8/assistant/runtime/ReflectiveOperationReceiver$ClassFlag;"),
                     factory.createString("SYNTHETIC"))),
             label12,
-            new CfConstNumber(12, ValueType.INT),
-            new CfNewArray(
-                factory.createType(
-                    "[Lcom/android/tools/r8/assistant/runtime/ReflectiveOperationReceiver$ClassFlag;")),
-            new CfStackInstruction(CfStackInstruction.Opcode.Dup),
-            new CfConstNumber(0, ValueType.INT),
-            new CfStaticFieldRead(
-                factory.createField(
+            new CfInvoke(
+                184,
+                factory.createMethod(
                     factory.createType(
                         "Lcom/android/tools/r8/assistant/runtime/ReflectiveOperationReceiver$ClassFlag;"),
-                    factory.createType(
-                        "Lcom/android/tools/r8/assistant/runtime/ReflectiveOperationReceiver$ClassFlag;"),
-                    factory.createString("ANNOTATION"))),
-            new CfArrayStore(MemberType.OBJECT),
-            new CfStackInstruction(CfStackInstruction.Opcode.Dup),
-            new CfConstNumber(1, ValueType.INT),
-            new CfStaticFieldRead(
-                factory.createField(
-                    factory.createType(
-                        "Lcom/android/tools/r8/assistant/runtime/ReflectiveOperationReceiver$ClassFlag;"),
-                    factory.createType(
-                        "Lcom/android/tools/r8/assistant/runtime/ReflectiveOperationReceiver$ClassFlag;"),
-                    factory.createString("ANONYMOUS_CLASS"))),
-            new CfArrayStore(MemberType.OBJECT),
-            new CfStackInstruction(CfStackInstruction.Opcode.Dup),
-            new CfConstNumber(2, ValueType.INT),
-            new CfStaticFieldRead(
-                factory.createField(
-                    factory.createType(
-                        "Lcom/android/tools/r8/assistant/runtime/ReflectiveOperationReceiver$ClassFlag;"),
-                    factory.createType(
-                        "Lcom/android/tools/r8/assistant/runtime/ReflectiveOperationReceiver$ClassFlag;"),
-                    factory.createString("ARRAY"))),
-            new CfArrayStore(MemberType.OBJECT),
-            new CfStackInstruction(CfStackInstruction.Opcode.Dup),
-            new CfConstNumber(3, ValueType.INT),
-            new CfStaticFieldRead(
-                factory.createField(
-                    factory.createType(
-                        "Lcom/android/tools/r8/assistant/runtime/ReflectiveOperationReceiver$ClassFlag;"),
-                    factory.createType(
-                        "Lcom/android/tools/r8/assistant/runtime/ReflectiveOperationReceiver$ClassFlag;"),
-                    factory.createString("ENUM"))),
-            new CfArrayStore(MemberType.OBJECT),
-            new CfStackInstruction(CfStackInstruction.Opcode.Dup),
-            new CfConstNumber(4, ValueType.INT),
-            new CfStaticFieldRead(
-                factory.createField(
-                    factory.createType(
-                        "Lcom/android/tools/r8/assistant/runtime/ReflectiveOperationReceiver$ClassFlag;"),
-                    factory.createType(
-                        "Lcom/android/tools/r8/assistant/runtime/ReflectiveOperationReceiver$ClassFlag;"),
-                    factory.createString("HIDDEN"))),
-            new CfArrayStore(MemberType.OBJECT),
-            new CfStackInstruction(CfStackInstruction.Opcode.Dup),
-            new CfConstNumber(5, ValueType.INT),
-            new CfStaticFieldRead(
-                factory.createField(
-                    factory.createType(
-                        "Lcom/android/tools/r8/assistant/runtime/ReflectiveOperationReceiver$ClassFlag;"),
-                    factory.createType(
-                        "Lcom/android/tools/r8/assistant/runtime/ReflectiveOperationReceiver$ClassFlag;"),
-                    factory.createString("INTERFACE"))),
-            new CfArrayStore(MemberType.OBJECT),
-            new CfStackInstruction(CfStackInstruction.Opcode.Dup),
-            new CfConstNumber(6, ValueType.INT),
-            new CfStaticFieldRead(
-                factory.createField(
-                    factory.createType(
-                        "Lcom/android/tools/r8/assistant/runtime/ReflectiveOperationReceiver$ClassFlag;"),
-                    factory.createType(
-                        "Lcom/android/tools/r8/assistant/runtime/ReflectiveOperationReceiver$ClassFlag;"),
-                    factory.createString("LOCAL_CLASS"))),
-            new CfArrayStore(MemberType.OBJECT),
-            new CfStackInstruction(CfStackInstruction.Opcode.Dup),
-            new CfConstNumber(7, ValueType.INT),
-            new CfStaticFieldRead(
-                factory.createField(
-                    factory.createType(
-                        "Lcom/android/tools/r8/assistant/runtime/ReflectiveOperationReceiver$ClassFlag;"),
-                    factory.createType(
-                        "Lcom/android/tools/r8/assistant/runtime/ReflectiveOperationReceiver$ClassFlag;"),
-                    factory.createString("MEMBER_CLASS"))),
-            new CfArrayStore(MemberType.OBJECT),
-            new CfStackInstruction(CfStackInstruction.Opcode.Dup),
-            new CfConstNumber(8, ValueType.INT),
-            new CfStaticFieldRead(
-                factory.createField(
-                    factory.createType(
-                        "Lcom/android/tools/r8/assistant/runtime/ReflectiveOperationReceiver$ClassFlag;"),
-                    factory.createType(
-                        "Lcom/android/tools/r8/assistant/runtime/ReflectiveOperationReceiver$ClassFlag;"),
-                    factory.createString("PRIMITIVE"))),
-            new CfArrayStore(MemberType.OBJECT),
-            new CfStackInstruction(CfStackInstruction.Opcode.Dup),
-            new CfConstNumber(9, ValueType.INT),
-            new CfStaticFieldRead(
-                factory.createField(
-                    factory.createType(
-                        "Lcom/android/tools/r8/assistant/runtime/ReflectiveOperationReceiver$ClassFlag;"),
-                    factory.createType(
-                        "Lcom/android/tools/r8/assistant/runtime/ReflectiveOperationReceiver$ClassFlag;"),
-                    factory.createString("RECORD"))),
-            new CfArrayStore(MemberType.OBJECT),
-            new CfStackInstruction(CfStackInstruction.Opcode.Dup),
-            new CfConstNumber(10, ValueType.INT),
-            new CfStaticFieldRead(
-                factory.createField(
-                    factory.createType(
-                        "Lcom/android/tools/r8/assistant/runtime/ReflectiveOperationReceiver$ClassFlag;"),
-                    factory.createType(
-                        "Lcom/android/tools/r8/assistant/runtime/ReflectiveOperationReceiver$ClassFlag;"),
-                    factory.createString("SEALED"))),
-            new CfArrayStore(MemberType.OBJECT),
-            new CfStackInstruction(CfStackInstruction.Opcode.Dup),
-            new CfConstNumber(11, ValueType.INT),
-            new CfStaticFieldRead(
-                factory.createField(
-                    factory.createType(
-                        "Lcom/android/tools/r8/assistant/runtime/ReflectiveOperationReceiver$ClassFlag;"),
-                    factory.createType(
-                        "Lcom/android/tools/r8/assistant/runtime/ReflectiveOperationReceiver$ClassFlag;"),
-                    factory.createString("SYNTHETIC"))),
-            new CfArrayStore(MemberType.OBJECT),
+                    factory.createProto(
+                        factory.createType(
+                            "[Lcom/android/tools/r8/assistant/runtime/ReflectiveOperationReceiver$ClassFlag;")),
+                    factory.createString("$values")),
+                false),
             new CfStaticFieldWrite(
                 factory.createField(
                     factory.createType(
@@ -10363,6 +10461,64 @@ public final class AssistantRuntimeMethods {
             new CfCheckCast(
                 factory.createType(
                     "[Lcom/android/tools/r8/assistant/runtime/ReflectiveOperationReceiver$ClassFlag;")),
+            new CfReturn(ValueType.OBJECT)),
+        ImmutableList.of(),
+        ImmutableList.of());
+  }
+
+  public static CfCode ReflectiveOperationReceiver$NameLookupType_$values(
+      DexItemFactory factory, DexMethod method) {
+    CfLabel label0 = new CfLabel();
+    return new CfCode(
+        method.holder,
+        4,
+        0,
+        ImmutableList.of(
+            label0,
+            new CfConstNumber(4, ValueType.INT),
+            new CfNewArray(
+                factory.createType(
+                    "[Lcom/android/tools/r8/assistant/runtime/ReflectiveOperationReceiver$NameLookupType;")),
+            new CfStackInstruction(CfStackInstruction.Opcode.Dup),
+            new CfConstNumber(0, ValueType.INT),
+            new CfStaticFieldRead(
+                factory.createField(
+                    factory.createType(
+                        "Lcom/android/tools/r8/assistant/runtime/ReflectiveOperationReceiver$NameLookupType;"),
+                    factory.createType(
+                        "Lcom/android/tools/r8/assistant/runtime/ReflectiveOperationReceiver$NameLookupType;"),
+                    factory.createString("NAME"))),
+            new CfArrayStore(MemberType.OBJECT),
+            new CfStackInstruction(CfStackInstruction.Opcode.Dup),
+            new CfConstNumber(1, ValueType.INT),
+            new CfStaticFieldRead(
+                factory.createField(
+                    factory.createType(
+                        "Lcom/android/tools/r8/assistant/runtime/ReflectiveOperationReceiver$NameLookupType;"),
+                    factory.createType(
+                        "Lcom/android/tools/r8/assistant/runtime/ReflectiveOperationReceiver$NameLookupType;"),
+                    factory.createString("SIMPLE_NAME"))),
+            new CfArrayStore(MemberType.OBJECT),
+            new CfStackInstruction(CfStackInstruction.Opcode.Dup),
+            new CfConstNumber(2, ValueType.INT),
+            new CfStaticFieldRead(
+                factory.createField(
+                    factory.createType(
+                        "Lcom/android/tools/r8/assistant/runtime/ReflectiveOperationReceiver$NameLookupType;"),
+                    factory.createType(
+                        "Lcom/android/tools/r8/assistant/runtime/ReflectiveOperationReceiver$NameLookupType;"),
+                    factory.createString("CANONICAL_NAME"))),
+            new CfArrayStore(MemberType.OBJECT),
+            new CfStackInstruction(CfStackInstruction.Opcode.Dup),
+            new CfConstNumber(3, ValueType.INT),
+            new CfStaticFieldRead(
+                factory.createField(
+                    factory.createType(
+                        "Lcom/android/tools/r8/assistant/runtime/ReflectiveOperationReceiver$NameLookupType;"),
+                    factory.createType(
+                        "Lcom/android/tools/r8/assistant/runtime/ReflectiveOperationReceiver$NameLookupType;"),
+                    factory.createString("TYPE_NAME"))),
+            new CfArrayStore(MemberType.OBJECT),
             new CfReturn(ValueType.OBJECT)),
         ImmutableList.of(),
         ImmutableList.of());
@@ -10469,50 +10625,16 @@ public final class AssistantRuntimeMethods {
                         "Lcom/android/tools/r8/assistant/runtime/ReflectiveOperationReceiver$NameLookupType;"),
                     factory.createString("TYPE_NAME"))),
             label4,
-            new CfConstNumber(4, ValueType.INT),
-            new CfNewArray(
-                factory.createType(
-                    "[Lcom/android/tools/r8/assistant/runtime/ReflectiveOperationReceiver$NameLookupType;")),
-            new CfStackInstruction(CfStackInstruction.Opcode.Dup),
-            new CfConstNumber(0, ValueType.INT),
-            new CfStaticFieldRead(
-                factory.createField(
+            new CfInvoke(
+                184,
+                factory.createMethod(
                     factory.createType(
                         "Lcom/android/tools/r8/assistant/runtime/ReflectiveOperationReceiver$NameLookupType;"),
-                    factory.createType(
-                        "Lcom/android/tools/r8/assistant/runtime/ReflectiveOperationReceiver$NameLookupType;"),
-                    factory.createString("NAME"))),
-            new CfArrayStore(MemberType.OBJECT),
-            new CfStackInstruction(CfStackInstruction.Opcode.Dup),
-            new CfConstNumber(1, ValueType.INT),
-            new CfStaticFieldRead(
-                factory.createField(
-                    factory.createType(
-                        "Lcom/android/tools/r8/assistant/runtime/ReflectiveOperationReceiver$NameLookupType;"),
-                    factory.createType(
-                        "Lcom/android/tools/r8/assistant/runtime/ReflectiveOperationReceiver$NameLookupType;"),
-                    factory.createString("SIMPLE_NAME"))),
-            new CfArrayStore(MemberType.OBJECT),
-            new CfStackInstruction(CfStackInstruction.Opcode.Dup),
-            new CfConstNumber(2, ValueType.INT),
-            new CfStaticFieldRead(
-                factory.createField(
-                    factory.createType(
-                        "Lcom/android/tools/r8/assistant/runtime/ReflectiveOperationReceiver$NameLookupType;"),
-                    factory.createType(
-                        "Lcom/android/tools/r8/assistant/runtime/ReflectiveOperationReceiver$NameLookupType;"),
-                    factory.createString("CANONICAL_NAME"))),
-            new CfArrayStore(MemberType.OBJECT),
-            new CfStackInstruction(CfStackInstruction.Opcode.Dup),
-            new CfConstNumber(3, ValueType.INT),
-            new CfStaticFieldRead(
-                factory.createField(
-                    factory.createType(
-                        "Lcom/android/tools/r8/assistant/runtime/ReflectiveOperationReceiver$NameLookupType;"),
-                    factory.createType(
-                        "Lcom/android/tools/r8/assistant/runtime/ReflectiveOperationReceiver$NameLookupType;"),
-                    factory.createString("TYPE_NAME"))),
-            new CfArrayStore(MemberType.OBJECT),
+                    factory.createProto(
+                        factory.createType(
+                            "[Lcom/android/tools/r8/assistant/runtime/ReflectiveOperationReceiver$NameLookupType;")),
+                    factory.createString("$values")),
+                false),
             new CfStaticFieldWrite(
                 factory.createField(
                     factory.createType(
