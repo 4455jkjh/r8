@@ -371,7 +371,12 @@ public class ResourceAdapter {
             getClassNameSeparator() != '/'
                 ? minifiedJavaPackage.replace('/', getClassNameSeparator())
                 : minifiedJavaPackage);
-        outputFrom = toExclusive;
+        // Avoid an "a/b" -> "" renaming causing "a/b/C" being renamed to "/C".
+        boolean leadingSlash =
+            minifiedJavaPackage.isEmpty()
+                && !eof(toExclusive)
+                && contents.charAt(toExclusive) == getClassNameSeparator();
+        outputFrom = leadingSlash ? toExclusive + 1 : toExclusive;
         changed = true;
         return true;
       }
