@@ -176,6 +176,7 @@ public final class R8Command extends BaseCompilerCommand {
 
     private final ProguardConfigurationParserOptions.Builder parserOptionsBuilder =
         ProguardConfigurationParserOptions.builder().readEnvironment();
+
     private final boolean allowDexInputToR8 =
         System.getProperty("com.android.tools.r8.allowDexInputToR8") != null;
 
@@ -496,6 +497,8 @@ public final class R8Command extends BaseCompilerCommand {
         assert verifyNonDexProgramResourceProvider(internalProgramProvider);
         assert internalProgramProvider.getDataResourceProvider() == null;
         return super.addProgramResourceProvider(internalProgramProvider);
+      } else if (allowDexInputToR8) {
+        return super.addProgramResourceProvider(programProvider);
       } else {
         return super.addProgramResourceProvider(
             new EnsureNonDexProgramResourceProvider(programProvider));

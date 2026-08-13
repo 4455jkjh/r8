@@ -406,16 +406,18 @@ public class ResourceShrinkerEnqueuerExtension
       } else if (definition.isNewArrayEmpty()) {
         NewArrayEmpty newArrayEmpty = definition.asNewArrayEmpty();
         IntList values = new IntArrayList();
-        for (Instruction uniqueUser : newArrayEmpty.outValue().uniqueUsers()) {
-          if (uniqueUser.isArrayPut()) {
-            Value constValue = uniqueUser.asArrayPut().value();
+        for (Instruction user : newArrayEmpty.outValue().uniqueUsers()) {
+          if (user.isArrayPut()) {
+            Value constValue = user.asArrayPut().value();
             if (constValue.isConstNumber()) {
               values.add(constValue.getDefinition().asConstNumber().getIntValue());
             } else if (constValue.isConstResourceNumber()) {
               values.add(constValue.getDefinition().asResourceConstNumber().getValue());
             }
+          } else if (user.isNewArrayFilledData()) {
+            user.asNewArrayFilledData().forEachInt(values::add);
           } else {
-            assert uniqueUser == staticPut;
+            assert user == staticPut;
           }
         }
         mappedValue = values;
