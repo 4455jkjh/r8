@@ -48,6 +48,54 @@ public class ResourceAdapter {
     this.options = appView.options();
   }
 
+  /**
+   * {@code -adaptresourcefilenames} allows resources to be moved and renamed based on code
+   * obfuscation.
+   *
+   * <h2>Filtering</h2>
+   *
+   * <p>A resource is only considered if it is covered by the filter given to the flag. No filter
+   * means that everything is considered.
+   *
+   * <h2>Finding a corresponding class</h2>
+   *
+   * <p>A resource is renamed according to its longest corresponding class, if found. When finding a
+   * corresponding class, first the resource path is stripped to its longest prefix containing only
+   * Java identifier characters and {@code /} (stopping before characters like {@code .}). The
+   * search for corresponding classes is then done in a sequence of shrinking prefixes delimited by
+   * any non-letter, non-digit character (e.g., {@code _} or {@code $}). When a candidate is the
+   * entire resource path (i.e., has no extension), it is skipped in the class search for ProGuard
+   * compatibility (e.g., {@code a/b/C} will not match {@code a/b/C.class}).
+   *
+   * <p>For {@code a/b/A$B_data.txt}, this means that these classes are checked in order:
+   *
+   * <ul>
+   *   <li>If {@code a/b/A$B_data.class} exists and is renamed(*) to {@code q/Z.class}, the resource
+   *       is moved to {@code q/Z.txt}.
+   *   <li>If {@code a/b/A$B.class} exists and is renamed(*) to {@code q/Z.class}, the resource is
+   *       moved to {@code q/Z_data.txt}.
+   *   <li>If {@code a/b/A.class} exists and is renamed(*) to {@code q/Z.class}, the resource is
+   *       moved to {@code q/Z$B_data.txt}.
+   * </ul>
+   *
+   * (*): For class matching, a non-renamed class counts as a renaming to itself.
+   *
+   * <h2>Finding a corresponding package</h2>
+   *
+   * <p>If a resource does not correspond to a class, it is renamed according to the longest
+   * matching package.
+   *
+   * <p>For {@code a/b/A$B_data.txt}, this means that these packages are checked in order:
+   *
+   * <ul>
+   *   <li>If {@code a/b} exists(**) and is renamed to {@code q}, the resource is moved to {@code
+   *       q/A$B_data.txt}.
+   *   <li>If {@code a} exists(**) and is renamed to {@code q}, the resource is moved to {@code
+   *       q/b/A$B_data.txt}.
+   * </ul>
+   *
+   * (**): For a package to exist, it has to contain code.
+   */
   public String adaptFileNameIfNeeded(DataEntryResource file) {
     return shouldAdapt(file, options, ProguardConfiguration::getAdaptResourceFilenames)
         ? adaptFileName(file)
@@ -125,8 +173,12 @@ public class ResourceAdapter {
     return namingLens.lookupDescriptor(graphLens.lookupType(type, getIdentityLens()));
   }
 
-  // According to the Proguard documentation, the resource files should be parsed and written using
-  // the platform's default character set.
+  /**
+   * According to the Proguard documentation, the resource files should be parsed and written using
+   * the platform's default character set.
+   *
+   * <p>Note that there is no backtracking for -adaptresourcefilecontents.
+   */
   private byte[] adaptFileContents(DataEntryResource file) {
     try (InputStream in = file.getByteStream()) {
       byte[] bytes = ByteStreams.toByteArray(in);
@@ -152,22 +204,16 @@ public class ResourceAdapter {
     protected final String contents;
     private final StringBuilder result = new StringBuilder();
 
-    // If any type names in `contents` have been updated. If this flag is still true in the end,
+    // If any type names in `contents` have been updated. If this flag is unchanged in the end,
     // then we can simply use the resource as it was.
     private boolean changed = false;
     private int outputFrom = 0;
     private int position = 0;
 
-    // When renaming Java type names, the adapter always looks for the longest name to rewrite.
-    // For example, if there is a resource with the name "foo/bar/C$X$Y.txt", then the adapter will
-    // check if there is a renaming for the type "foo.bar.C$X$Y". If there is no such renaming, then
-    // -adaptresourcefilenames works in such a way that "foo/bar/C$X" should be rewritten if there
-    // is a renaming for the type "foo.bar.C$X". Therefore, when scanning forwards to read the
+    // When scanning forwards to read the
     // substring "foo/bar/C$X$Y", this adapter records the positions of the two '$' characters in
     // the stack `prefixEndPositionsExclusive`, such that it can easily backtrack to the previously
     // valid, but shorter Java type name.
-    //
-    // Note that there is no backtracking for -adaptresourcefilecontents.
     private final IntStack prefixEndPositionsExclusive;
 
     public StringAdapter(String contents) {
@@ -435,6 +481,8 @@ public class ResourceAdapter {
 
     @Override
     public boolean isRenamingCandidate(int from, int toExclusive) {
+      // The EOF check stops 'a/b/C' from being associated with 'a/b/C.class' (ProGuard
+      // compatibility).
       return from == 0 && !eof(toExclusive);
     }
   }
