@@ -69,21 +69,9 @@ spdxSbom {
   }
 }
 
-val assistantJarScope by configurations.dependencyScope("assistantJarScope")
-val assistantJarConfig by
-  configurations.resolvable("assistantJarConfig") { extendsFrom(assistantJarScope) }
-val keepRadiusWithoutProtoJarScope by
-  configurations.dependencyScope("keepRadiusWithoutProtoJarScope")
-val keepRadiusWithoutProtoJarConfig by
-  configurations.resolvable("keepRadiusWithoutProtoJarConfig") {
-    extendsFrom(keepRadiusWithoutProtoJarScope)
-  }
 val keepRadiusProtoJarScope by configurations.dependencyScope("keepRadiusProtoJarScope")
 val keepRadiusProtoJarConfig by
   configurations.resolvable("keepRadiusProtoJarConfig") { extendsFrom(keepRadiusProtoJarScope) }
-val keepAnnoJarScope by configurations.dependencyScope("keepAnnoJarScope")
-val keepAnnoJarConfig by
-  configurations.resolvable("keepAnnoJarConfig") { extendsFrom(keepAnnoJarScope) }
 val keepAnnoDepsJarExceptAsmScope by configurations.dependencyScope("keepAnnoDepsJarExceptAsmScope")
 val keepAnnoDepsJarExceptAsmConfig by
   configurations.resolvable("keepAnnoDepsJarExceptAsmConfig") {
@@ -93,13 +81,6 @@ val keepAnnoToolsJarScope by configurations.dependencyScope("keepAnnoToolsJarSco
 val keepAnnoToolsJarConfig by
   configurations.resolvable("keepAnnoToolsJarConfig") { extendsFrom(keepAnnoToolsJarScope) }
 
-val resourceShrinkerJarScope by configurations.dependencyScope("resourceShrinkerJarScope")
-val resourceShrinkerJarConfig by
-  configurations.resolvable("resourceShrinkerJarConfig") { extendsFrom(resourceShrinkerJarScope) }
-
-val libanalyzerJarScope by configurations.dependencyScope("libanalyzerJarScope")
-val libanalyzerJarConfig by
-  configurations.resolvable("libanalyzerJarConfig") { extendsFrom(libanalyzerJarScope) }
 val libanalyzerProtoJarScope by configurations.dependencyScope("libanalyzerProtoJarScope")
 val libanalyzerProtoJarConfig by
   configurations.resolvable("libanalyzerProtoJarConfig") { extendsFrom(libanalyzerProtoJarScope) }
@@ -109,19 +90,21 @@ val mainJarConfig by configurations.resolvable("mainJarConfig") { extendsFrom(ma
 val mainResourcesScope by configurations.dependencyScope("mainResourcesScope")
 val mainResourcesConfig by
   configurations.resolvable("mainResourcesConfig") { extendsFrom(mainResourcesScope) }
+val swissArmyKnifeScope by configurations.dependencyScope("swissArmyKnifeScope")
+val swissArmyKnifeConfig by
+  configurations.resolvable("swissArmyKnifeConfig") {
+    extendsFrom(swissArmyKnifeScope)
+    isTransitive = false
+  }
 
 dependencies {
-  assistantJarScope(project(":assistant", "assistantJar"))
-  keepRadiusWithoutProtoJarScope(project(":keepradius", "keepradiusWithoutProtoJar"))
   keepRadiusProtoJarScope(project(":keepradius", "keepradiusProtoJar"))
-  keepAnnoJarScope(project(":keepanno", "keepannoJar"))
   keepAnnoDepsJarExceptAsmScope(project(":keepanno", "keepannoDepsJarExceptAsm"))
   keepAnnoToolsJarScope(project(":keepanno", "keepannoToolsJar"))
-  libanalyzerJarScope(project(":libanalyzer", "libanalyzer-jar"))
   libanalyzerProtoJarScope(project(":libanalyzer", "libanalyzer-proto-jar"))
   mainJarScope(project(":main", "mainJar"))
   mainResourcesScope(project(":main", "mainResources"))
-  resourceShrinkerJarScope(project(":resourceshrinker", "resourceshrinkerJar"))
+  swissArmyKnifeScope(project(":swissarmyknife"))
 }
 
 val sharedDepsScope by configurations.dependencyScope("sharedDepsScope")
@@ -277,46 +260,6 @@ tasks {
       consolidatedOutputFile = File(getRootDir(), "build/generatedLicense/LICENSE")
     }
 
-  val swissArmyKnifeExcludeRules: PatternFilterable.() -> Unit = {
-    exclude("com/android/tools/r8/threading/providers/**")
-    exclude("META-INF/*.kotlin_module")
-    exclude("**/*.kotlin_metadata")
-    exclude("keepradius.proto")
-    exclude("keepspec.proto")
-    exclude("LICENSE")
-    exclude("androidx/")
-    exclude("androidx/annotation/")
-    exclude("androidx/annotation/keep/**")
-  }
-
-  val configsToMerge =
-    listOf(
-      assistantJarConfig,
-      keepRadiusWithoutProtoJarConfig,
-      keepAnnoJarConfig,
-      libanalyzerJarConfig,
-      mainJarConfig,
-      resourceShrinkerJarConfig,
-    )
-
-  val swissArmyKnife =
-    register<Jar>("swissArmyKnife") {
-      val injected = project.objects.newInstance<InjectedArcOps>()
-      configsToMerge.forEach { config ->
-        dependsOn(config)
-        from(
-          config.elements.map {
-            it.map { injected.arcOps.zipTree(it).matching(swissArmyKnifeExcludeRules) }
-          }
-        )
-      }
-      from(File(getRootDir(), "LICENSE"))
-      entryCompression = ZipEntryCompression.STORED
-      manifest { attributes["Main-Class"] = "com.android.tools.r8.SwissArmyKnife" }
-      destinationDirectory.set(File(getRootDir(), "build/libs"))
-      archiveFileName.set("r8-full-exclude-deps.jar")
-    }
-
   val threadingModuleBlockingJar =
     register<Zip>("threadingModuleBlockingJar") {
       val injected = project.objects.newInstance<InjectedArcOps>()
@@ -395,13 +338,13 @@ tasks {
 
   val r8WithRelocatedDeps =
     register<SwissArmyKnifeTask>("r8WithRelocatedDeps") {
-      swissArmyKnifeClasspath.from(swissArmyKnife, depsJar)
+      swissArmyKnifeClasspath.from(swissArmyKnifeConfig, depsJar)
       compiler = "relocator"
       inputFiles.from(depsJar)
       inputFiles.from(protoJar)
       inputFiles.from(mainResourcesConfig)
       inputFiles.from(r8WithRelocatedDepsManifest)
-      inputNoResFiles.from(swissArmyKnife)
+      inputNoResFiles.from(swissArmyKnifeConfig)
       val pkg = "com.android.tools.r8"
       extraArgs =
         listOf(
@@ -418,7 +361,7 @@ tasks {
     }
 
   register<SwissArmyKnifeTask>("keepAnnoToolsWithRelocatedDeps") {
-    swissArmyKnifeClasspath.from(swissArmyKnife, depsJar)
+    swissArmyKnifeClasspath.from(swissArmyKnifeConfig, depsJar)
     compiler = "relocator"
     inputNoResFiles.from(keepAnnoDepsJarExceptAsmConfig)
     inputNoResFiles.from(keepAnnoToolsJarConfig)

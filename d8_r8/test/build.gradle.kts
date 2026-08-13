@@ -84,7 +84,7 @@ dependencies {
 
 val mainProtoJarTask = project(":dist").tasks.getByName("protoJar")
 val mainDepsJarTask = project(":dist").tasks.getByName("depsJar")
-val swissArmyKnifeTask = project(":dist").tasks.getByName<Jar>("swissArmyKnife")
+val swissArmyKnifeTask = project(":swissarmyknife").tasks.getByName<Jar>("jar")
 val processKeepRulesLibWithRelocatedDepsTask =
   project(":dist").tasks.named<CreateR8LibraryTask>("processKeepRulesLibWithRelocatedDeps")
 val r8WithRelocatedDepsTask =
