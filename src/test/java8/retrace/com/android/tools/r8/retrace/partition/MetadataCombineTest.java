@@ -9,8 +9,10 @@ import static org.junit.Assert.assertThrows;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.retrace.RetracePartitionException;
 import com.android.tools.r8.retrace.internal.MetadataAdditionalInfo;
+import com.google.common.collect.ImmutableList;
 import com.google.common.hash.Hashing;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -45,42 +47,60 @@ public class MetadataCombineTest extends TestBase {
           "# {\"id\":\"com.android.tools.r8.mapping\",\"version\":\"2.2\"}");
 
   public void testCombineSuccess(List<String> valid_header) {
-    List<String> preamble1 = new java.util.ArrayList<>(valid_header);
-    preamble1.add("# pg_map_id: id1");
-    preamble1.add("# pg_map_hash: SHA-256 hash1");
+    for (int insertPosition : new int[] {valid_header.size(), 0, 2}) {
+      List<String> preamble1 = new java.util.ArrayList<>(valid_header);
+      preamble1.add(insertPosition, "# pg_map_hash: SHA-256 hash1");
+      preamble1.add(insertPosition, "# pg_map_id: id1");
 
-    List<String> preamble2 = new java.util.ArrayList<>(valid_header);
-    preamble2.add("# pg_map_id: id2");
-    preamble2.add("# pg_map_hash: SHA-256 hash2");
+      List<String> preamble2 = new java.util.ArrayList<>(valid_header);
+      preamble2.add(insertPosition, "# pg_map_id: id2");
+      preamble2.add(insertPosition, "# pg_map_hash: SHA-256 hash2");
 
-    MetadataAdditionalInfo info1 = MetadataAdditionalInfo.create(preamble1, Collections.emptySet());
-    MetadataAdditionalInfo info2 = MetadataAdditionalInfo.create(preamble2, Collections.emptySet());
+      MetadataAdditionalInfo info1 =
+          MetadataAdditionalInfo.create(preamble1, Collections.emptySet());
+      MetadataAdditionalInfo info2 =
+          MetadataAdditionalInfo.create(preamble2, Collections.emptySet());
 
-    MetadataAdditionalInfo combined = info1.combine(info2, "new_id");
+      MetadataAdditionalInfo combined = info1.combine(info2, "new_id");
 
-    List<String> combinedPreamble = new java.util.ArrayList<>(combined.getPreamble());
-    assertEquals(preamble1.size(), combinedPreamble.size());
-    for (int i = 0; i < valid_header.size(); i++) {
-      assertEquals(valid_header.get(i), combinedPreamble.get(i));
+      List<String> combinedPreamble = new java.util.ArrayList<>(combined.getPreamble());
+      assertEquals(preamble1.size(), combinedPreamble.size());
+      for (int i = 0; i < preamble1.size(); i++) {
+        if (i != insertPosition && i != insertPosition + 1) {
+          assertEquals(preamble1.get(i), combinedPreamble.get(i));
+        }
+      }
+      assertEquals("# pg_map_id: new_id", combinedPreamble.get(insertPosition));
+
+      String expectedHash =
+          Hashing.sha256()
+              .newHasher()
+              .putString("hash1", StandardCharsets.UTF_8)
+              .putString("hash2", StandardCharsets.UTF_8)
+              .hash()
+              .toString();
+      assertEquals(
+          "# pg_map_hash: SHA-256 " + expectedHash, combinedPreamble.get(insertPosition + 1));
     }
-    assertEquals("# pg_map_id: new_id", combinedPreamble.get(preamble1.size() - 2));
-
-    String expectedHash =
-        Hashing.sha256()
-            .newHasher()
-            .putString("hash1", StandardCharsets.UTF_8)
-            .putString("hash2", StandardCharsets.UTF_8)
-            .hash()
-            .toString();
-    assertEquals(
-        "# pg_map_hash: SHA-256 " + expectedHash, combinedPreamble.get(preamble1.size() - 1));
   }
 
   @Test
   public void testCombineSuccess() {
-    testCombineSuccess(VALID_HEADER_MAIN);
-    testCombineSuccess(VALID_HEADER_DEV);
-    testCombineSuccess(VALID_HEADER_STABLE);
+    for (List<String> testData :
+        ImmutableList.of(VALID_HEADER_MAIN, VALID_HEADER_DEV, VALID_HEADER_STABLE)) {
+      testCombineSuccess(testData);
+      List<String> mutableTestData = new ArrayList<>(testData);
+      for (int i = 1; i < 10; i++) {
+        Collections.shuffle(mutableTestData);
+        testCombineSuccess(mutableTestData);
+      }
+      for (int i = 1; i < 10; i++) {
+        mutableTestData.add("# new-key-" + i + ": value_" + i);
+        testCombineSuccess(mutableTestData);
+        Collections.shuffle(mutableTestData);
+        testCombineSuccess(mutableTestData);
+      }
+    }
   }
 
   @Test
