@@ -158,7 +158,9 @@ public class ArtProfileOptions {
     for (DexProgramClass clazz : appInfo.classesWithDeterministicOrder()) {
       hasher.putString(clazz.getType().toDescriptorString(), StandardCharsets.UTF_8);
       for (DexEncodedMethod method : clazz.methods()) {
-        hasher.putString(method.getReference().toSmaliString(), StandardCharsets.UTF_8);
+        if (!method.isClassInitializer()) {
+          hasher.putString(method.getReference().toSmaliString(), StandardCharsets.UTF_8);
+        }
       }
     }
     return hasher.hash().toString();
