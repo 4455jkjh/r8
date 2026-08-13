@@ -111,7 +111,8 @@ tasks {
 
   val packageTests =
     register<Jar>("packageTests") {
-      from(testJars.elements.map { it.map { zipTree(it) } })
+      val injected = project.objects.newInstance<InjectedArcOps>()
+      from(testJars.elements.map { it.map { injected.arcOps.zipTree(it) } })
       exclude("META-INF/*.kotlin_module", "**/*.kotlin_metadata")
       destinationDirectory.set(getRoot().resolveAll("build", "libs"))
       archiveFileName.set("r8tests.jar")
@@ -119,8 +120,9 @@ tasks {
 
   val packageTestDeps =
     register<Jar>("packageTestDeps") {
+      val injected = project.objects.newInstance<InjectedArcOps>()
       dependsOn(keepAnnoAndroidXAnnotationsJarConfig)
-      from(testDepsJars.elements.map { it.map { zipTree(it) } })
+      from(testDepsJars.elements.map { it.map { injected.arcOps.zipTree(it) } })
       from(keepAnnoAndroidXAnnotationsJarConfig.map(::zipTree))
       exclude("META-INF/*.kotlin_module", "**/*.kotlin_metadata", "org/jspecify/**", "org/jspecify")
       duplicatesStrategy = DuplicatesStrategy.EXCLUDE
@@ -130,7 +132,8 @@ tasks {
 
   val packageTestBase =
     register<Jar>("packageTestBase") {
-      from(testbaseTestJars.elements.map { it.map { zipTree(it) } })
+      val injected = project.objects.newInstance<InjectedArcOps>()
+      from(testbaseTestJars.elements.map { it.map { injected.arcOps.zipTree(it) } })
       exclude("META-INF/*.kotlin_module", "**/*.kotlin_metadata")
       destinationDirectory.set(getRoot().resolveAll("build", "libs"))
       archiveFileName.set("r8test_base.jar")
