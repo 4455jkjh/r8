@@ -7,7 +7,6 @@ import com.android.tools.r8.graph.AppInfoWithClassHierarchy;
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.DexMethod;
 import com.android.tools.r8.graph.DexType;
-import com.android.tools.r8.ir.code.Assume;
 import com.android.tools.r8.ir.code.BasicBlock;
 import com.android.tools.r8.ir.code.IRCode;
 import com.android.tools.r8.ir.code.Instruction;
@@ -97,7 +96,7 @@ public class TypeAnalysis {
   }
 
   public void narrowingWithAssumeRemoval(
-      Iterable<? extends Value> values, Consumer<Assume> redundantAssumeConsumer) {
+      Iterable<? extends Value> values, Consumer<Instruction> redundantAssumeConsumer) {
     narrowing(values);
     removeRedundantAssumeInstructions(redundantAssumeConsumer);
   }
@@ -111,12 +110,12 @@ public class TypeAnalysis {
   }
 
   public void propagateWithAssumeRemoval(
-      Iterable<? extends Value> values, Consumer<Assume> redundantAssumeConsumer) {
+      Iterable<? extends Value> values, Consumer<Instruction> redundantAssumeConsumer) {
     propagate(values);
     removeRedundantAssumeInstructions(redundantAssumeConsumer);
   }
 
-  private void removeRedundantAssumeInstructions(Consumer<Assume> redundantAssumeConsumer) {
+  private void removeRedundantAssumeInstructions(Consumer<Instruction> redundantAssumeConsumer) {
     Set<Value> affectedValuesFromAssumeRemoval = Sets.newIdentityHashSet();
     while (assumeRemover.removeRedundantAssumeInstructions(
         affectedValuesFromAssumeRemoval, redundantAssumeConsumer)) {
@@ -194,8 +193,8 @@ public class TypeAnalysis {
   private void updateTypeOfValue(Value value, TypeElement type) {
     assert mode != Mode.UNSET;
 
-    if (value.isDefinedByInstructionSatisfying(Instruction::isAssume)) {
-      assumeRemover.addAffectedAssumeInstruction(value.getDefinition().asAssume());
+    if (value.isDefinedByInstructionSatisfying(i -> i.isAssume() || i.isAssumeIntRange())) {
+      assumeRemover.addAffectedAssumeInstruction(value.getDefinition());
     }
 
     TypeElement current = value.getType();

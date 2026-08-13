@@ -287,7 +287,7 @@ public class ArrayGet extends ArrayAccess {
       AbstractValueSupplier abstractValueSupplier,
       SideEffectAssumption assumption) {
     // TODO(b/203731608): Move to instructionInstanceCanThrow and remove the method.
-    if (array().isPhi() || !index().isConstant()) {
+    if (array().isPhi()) {
       return true;
     }
     AbstractValue abstractValue = array().getAliasedValue().getAbstractValue(appView, context);
@@ -295,8 +295,24 @@ public class ArrayGet extends ArrayAccess {
       return true;
     }
     int newArraySize = abstractValue.getKnownArrayLength();
-    int index = index().getConstInstruction().asConstNumber().getIntValue();
-    return newArraySize <= 0 || index < 0 || newArraySize <= index;
+    if (newArraySize <= 0) {
+      return true;
+    }
+    Value indexValue = index().getAliasedValue();
+    if (indexValue.isConstant()) {
+      int index = indexValue.getConstInstruction().asConstNumber().getIntValue();
+      if (index < 0 || index >= newArraySize) {
+        return true;
+      }
+    } else if (index().isDefinedByInstructionSatisfying(Instruction::isAssumeIntRange)) {
+      AssumeIntRange range = index().getDefinition().asAssumeIntRange();
+      if (range.getMinInclusive() < 0 || range.getMaxInclusive() >= newArraySize) {
+        return true;
+      }
+    } else {
+      return true;
+    }
+    return false;
   }
 
   @Override

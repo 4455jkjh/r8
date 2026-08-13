@@ -82,4 +82,5 @@ public interface Opcodes {
   int STORE_STORE_FENCE = 73;
   int OUTLINE_MARKER = 74;
   int STRING_CONCAT = 75;
+  int ASSUME_INT_RANGE = 76;
 }

@@ -7,6 +7,7 @@ import com.android.tools.r8.contexts.CompilationContext.MethodProcessingContext;
 import com.android.tools.r8.graph.AppInfo;
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.ir.code.Assume;
+import com.android.tools.r8.ir.code.AssumeIntRange;
 import com.android.tools.r8.ir.code.BasicBlock;
 import com.android.tools.r8.ir.code.IRCode;
 import com.android.tools.r8.ir.code.Instruction;
@@ -17,15 +18,15 @@ import com.android.tools.r8.ir.optimize.AffectedValues;
 
 public class AssumeRemover extends CodeRewriterPass<AppInfo> {
 
-  private final boolean keepAssumeNonNull;
+  private final boolean isLirLowering;
 
   public AssumeRemover(AppView<?> appView) {
     this(appView, false);
   }
 
-  public AssumeRemover(AppView<?> appView, boolean keepAssumeNonNull) {
+  public AssumeRemover(AppView<?> appView, boolean isLirLowering) {
     super(appView);
-    this.keepAssumeNonNull = keepAssumeNonNull;
+    this.isLirLowering = isLirLowering;
   }
 
   @Override
@@ -49,33 +50,41 @@ public class AssumeRemover extends CodeRewriterPass<AppInfo> {
       for (Instruction instruction = block.entry();
           instruction != null;
           instruction = instruction.getNext()) {
-        Assume assumeInstruction = instruction.asAssume();
-        if (assumeInstruction == null) {
-          continue;
-        }
+        if (instruction.isAssume()) {
+          Assume assumeInstruction = instruction.asAssume();
+          Value src = assumeInstruction.src();
+          Value dest = assumeInstruction.outValue();
+          if (src.getType().isNullable() && assumeInstruction.hasNonNullAssumption()) {
+            if (isLirLowering) {
+              assumeInstruction.clearDynamicTypeAssumption();
+              continue;
+            }
+            valuesThatRequireWidening.addAll(dest.affectedValues());
+          }
 
-        Value src = assumeInstruction.src();
-        Value dest = assumeInstruction.outValue();
-        if (src.getType().isNullable() && assumeInstruction.hasNonNullAssumption()) {
-          if (keepAssumeNonNull) {
-            assumeInstruction.clearDynamicTypeAssumption();
+          // Delete the Assume instruction and replace uses of the out-value by the in-value:
+          //   y <- Assume(x)
+          //   ...
+          //   y.foo()
+          //
+          // becomes:
+          //
+          //   x.foo()
+          needToCheckTrivialPhis |= dest.numberOfPhiUsers() > 0;
+          dest.replaceUsers(src);
+          assumeInstruction.remove();
+          changed = true;
+        } else if (instruction.isAssumeIntRange()) {
+          if (isLirLowering) {
             continue;
           }
-          valuesThatRequireWidening.addAll(dest.affectedValues());
+          AssumeIntRange assumeInstruction = instruction.asAssumeIntRange();
+          Value src = assumeInstruction.getFirstOperand();
+          Value dest = assumeInstruction.outValue();
+          dest.replaceUsers(src);
+          assumeInstruction.remove();
+          changed = true;
         }
-
-        // Delete the Assume instruction and replace uses of the out-value by the in-value:
-        //   y <- Assume(x)
-        //   ...
-        //   y.foo()
-        //
-        // becomes:
-        //
-        //   x.foo()
-        needToCheckTrivialPhis |= dest.numberOfPhiUsers() > 0;
-        dest.replaceUsers(src);
-        assumeInstruction.remove();
-        changed = true;
       }
     }
 
@@ -98,7 +107,7 @@ public class AssumeRemover extends CodeRewriterPass<AppInfo> {
 
   @Override
   protected boolean shouldRewriteCode(IRCode code, MethodProcessor methodProcessor) {
-    return code.metadata().mayHaveAssume();
+    return code.metadata().mayHaveAssume() || code.metadata().mayHaveAssumeIntRange();
   }
 
   @Override

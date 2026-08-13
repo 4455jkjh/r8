@@ -318,7 +318,9 @@ public class IRCode implements IRControlFlowGraph, ValueFactory {
     }
     assert liveAtEntrySets.get(entryBlock()).isEmpty()
         : "Unexpected values live at entry to first block: "
-            + liveAtEntrySets.get(entryBlock()).liveValues;
+            + liveAtEntrySets.get(entryBlock()).liveValues
+            + " in "
+            + method;
     return liveAtEntrySets;
   }
 

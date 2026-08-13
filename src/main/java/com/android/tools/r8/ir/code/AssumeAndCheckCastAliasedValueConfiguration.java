@@ -4,8 +4,6 @@
 
 package com.android.tools.r8.ir.code;
 
-import com.android.tools.r8.utils.internal.ListUtils;
-
 public class AssumeAndCheckCastAliasedValueConfiguration implements AliasedValueConfiguration {
 
   private static final AssumeAndCheckCastAliasedValueConfiguration INSTANCE =
@@ -19,12 +17,12 @@ public class AssumeAndCheckCastAliasedValueConfiguration implements AliasedValue
 
   @Override
   public boolean isIntroducingAnAlias(Instruction instruction) {
-    return instruction.isAssume() || instruction.isCheckCast();
+    return instruction.isAssume() || instruction.isAssumeIntRange() || instruction.isCheckCast();
   }
 
   @Override
   public Value getAliasForOutValue(Instruction instruction) {
-    assert instruction.isAssume() || instruction.isCheckCast();
-    return ListUtils.first(instruction.inValues());
+    assert instruction.isAssume() || instruction.isAssumeIntRange() || instruction.isCheckCast();
+    return instruction.getFirstOperand();
   }
 }

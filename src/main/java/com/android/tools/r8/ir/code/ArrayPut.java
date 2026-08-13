@@ -164,15 +164,18 @@ public class ArrayPut extends ArrayAccess {
       size = arrayDefinition.asNewArrayFilled().size();
     }
 
-    int index;
     Value indexValue = index().getAliasedValue();
     if (indexValue.isConstant()) {
-      index = indexValue.getConstInstruction().asConstNumber().getIntValue();
+      int index = indexValue.getConstInstruction().asConstNumber().getIntValue();
+      if (index < 0 || index >= size) {
+        return true;
+      }
+    } else if (index().isDefinedByInstructionSatisfying(Instruction::isAssumeIntRange)) {
+      AssumeIntRange range = index().getDefinition().asAssumeIntRange();
+      if (range.getMinInclusive() < 0 || range.getMaxInclusive() >= size) {
+        return true;
+      }
     } else {
-      return true;
-    }
-
-    if (index < 0 || index >= size) {
       return true;
     }
 

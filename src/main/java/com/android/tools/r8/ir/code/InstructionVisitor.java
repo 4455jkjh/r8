@@ -26,6 +26,8 @@ public interface InstructionVisitor<T> {
 
   T visit(Assume instruction);
 
+  T visit(AssumeIntRange instruction);
+
   T visit(CheckCast instruction);
 
   T visit(Cmp instruction);

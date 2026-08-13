@@ -35,6 +35,7 @@ public class ArrayLengthOnEnumValuesArrayTest extends TestBase {
     testForR8(parameters)
         .addInnerClasses(getClass())
         .addKeepMainRule(Main.class)
+        .addDontObfuscate()
         .addEnumUnboxingInspector(inspector -> inspector.assertUnboxed(MyUnboxedEnum.class))
         .enableInliningAnnotations()
         .compile()

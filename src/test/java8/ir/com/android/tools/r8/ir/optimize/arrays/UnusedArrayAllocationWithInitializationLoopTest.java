@@ -5,6 +5,7 @@ package com.android.tools.r8.ir.optimize.arrays;
 
 import static org.junit.Assert.assertTrue;
 
+import com.android.tools.r8.NeverInline;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
@@ -33,23 +34,130 @@ public class UnusedArrayAllocationWithInitializationLoopTest extends TestBase {
     testForR8(parameters)
         .addInnerClasses(getClass())
         .addKeepMainRule(Main.class)
+        .enableInliningAnnotations()
         .compile()
         .inspect(this::inspect);
   }
 
   private void inspect(CodeInspector inspector) {
-    MethodSubject mainMethod = inspector.clazz(Main.class).mainMethod();
-    // TODO(b/541236096): Array allocation should be dead code eliminated.
-    assertTrue(mainMethod.streamInstructions().anyMatch(InstructionSubject::isNewArray));
+    MethodSubject testLeMethod = inspector.clazz(Main.class).uniqueMethodWithOriginalName("testLe");
+    assertTrue(testLeMethod.streamInstructions().noneMatch(InstructionSubject::isNewArray));
+
+    MethodSubject testLtMethod = inspector.clazz(Main.class).uniqueMethodWithOriginalName("testLt");
+    assertTrue(testLtMethod.streamInstructions().noneMatch(InstructionSubject::isNewArray));
+
+    MethodSubject testNeMethod = inspector.clazz(Main.class).uniqueMethodWithOriginalName("testNe");
+    assertTrue(testNeMethod.streamInstructions().noneMatch(InstructionSubject::isNewArray));
+
+    MethodSubject testBackwardsGeMethod =
+        inspector.clazz(Main.class).uniqueMethodWithOriginalName("testBackwardsGe");
+    assertTrue(
+        testBackwardsGeMethod.streamInstructions().noneMatch(InstructionSubject::isNewArray));
+
+    MethodSubject testBackwardsGtMethod =
+        inspector.clazz(Main.class).uniqueMethodWithOriginalName("testBackwardsGt");
+    assertTrue(
+        testBackwardsGtMethod.streamInstructions().noneMatch(InstructionSubject::isNewArray));
+
+    MethodSubject testBackwardsNezMethod =
+        inspector.clazz(Main.class).uniqueMethodWithOriginalName("testBackwardsNez");
+    assertTrue(
+        testBackwardsNezMethod.streamInstructions().noneMatch(InstructionSubject::isNewArray));
+
+    MethodSubject testOneIterationLeMethod =
+        inspector.clazz(Main.class).uniqueMethodWithOriginalName("testOneIterationLe");
+    assertTrue(
+        testOneIterationLeMethod.streamInstructions().noneMatch(InstructionSubject::isNewArray));
+
+    MethodSubject testOneIterationLtMethod =
+        inspector.clazz(Main.class).uniqueMethodWithOriginalName("testOneIterationLt");
+    assertTrue(
+        testOneIterationLtMethod.streamInstructions().noneMatch(InstructionSubject::isNewArray));
   }
 
   static class Main {
 
     public static void main(String[] args) {
-      int[] unusedArray = new int[4];
+      testLe();
+      testLt();
+      testNe();
+      testBackwardsGe();
+      testBackwardsGt();
+      testBackwardsNez();
+      testOneIterationLe();
+      testOneIterationLt();
+    }
+
+    @NeverInline
+    private static void testLe() {
+      int[] unusedArray = new int[3];
+      for (int i = 0; i <= unusedArray.length - 1; i++) {
+        unusedArray[i] = i;
+      }
+      System.out.print("");
+    }
+
+    @NeverInline
+    private static void testLt() {
+      int[] unusedArray = new int[3];
       for (int i = 0; i < unusedArray.length; i++) {
         unusedArray[i] = i;
       }
+      System.out.print("");
+    }
+
+    @NeverInline
+    private static void testNe() {
+      int[] unusedArray = new int[3];
+      for (int i = 0; i != unusedArray.length; i++) {
+        unusedArray[i] = i;
+      }
+      System.out.print("");
+    }
+
+    @NeverInline
+    private static void testBackwardsGe() {
+      int[] unusedArray = new int[3];
+      for (int i = unusedArray.length - 1; i >= 0; i--) {
+        unusedArray[i] = i;
+      }
+      System.out.print("");
+    }
+
+    @NeverInline
+    private static void testBackwardsGt() {
+      int[] unusedArray = new int[3];
+      for (int i = unusedArray.length - 1; i > 0; i--) {
+        unusedArray[i] = i;
+      }
+      System.out.print("");
+    }
+
+    @NeverInline
+    private static void testBackwardsNez() {
+      int[] unusedArray = new int[3];
+      for (int i = unusedArray.length - 1; i != 0; i--) {
+        unusedArray[i] = i;
+      }
+      System.out.print("");
+    }
+
+    @NeverInline
+    private static void testOneIterationLe() {
+      int[] unusedArray = new int[1];
+      for (int i = 0; i <= unusedArray.length - 1; i++) {
+        unusedArray[i] = i;
+      }
+      System.out.print("");
+    }
+
+    @NeverInline
+    private static void testOneIterationLt() {
+      int[] unusedArray = new int[1];
+      for (int i = 0; i < unusedArray.length; i++) {
+        unusedArray[i] = i;
+      }
+      System.out.print("");
     }
   }
 }

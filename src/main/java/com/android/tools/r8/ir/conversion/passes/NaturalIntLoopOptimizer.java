@@ -5,6 +5,7 @@
 package com.android.tools.r8.ir.conversion.passes;
 
 import static com.android.tools.r8.graph.DexProgramClass.asProgramClassOrNull;
+import static com.android.tools.r8.ir.optimize.AssumeInserter.findDominatedPredecessorIndexesInPhi;
 
 import com.android.tools.r8.graph.AppInfo;
 import com.android.tools.r8.graph.AppView;
@@ -13,8 +14,10 @@ import com.android.tools.r8.graph.DexProgramClass;
 import com.android.tools.r8.ir.analysis.type.TypeElement;
 import com.android.tools.r8.ir.code.ArithmeticBinop;
 import com.android.tools.r8.ir.code.ArrayGet;
+import com.android.tools.r8.ir.code.AssumeIntRange;
 import com.android.tools.r8.ir.code.BasicBlock;
 import com.android.tools.r8.ir.code.ConstNumber;
+import com.android.tools.r8.ir.code.DominatorTree;
 import com.android.tools.r8.ir.code.Goto;
 import com.android.tools.r8.ir.code.IRCode;
 import com.android.tools.r8.ir.code.If;
@@ -30,6 +33,9 @@ import com.android.tools.r8.ir.optimize.AffectedValues;
 import com.android.tools.r8.utils.internal.collections.WorkList;
 import com.android.tools.r8.utils.internal.exceptions.Unreachable;
 import com.google.common.collect.Sets;
+import it.unimi.dsi.fastutil.ints.IntList;
+import java.util.IdentityHashMap;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -56,10 +62,16 @@ public class NaturalIntLoopOptimizer extends CodeRewriterPass<AppInfo> {
   protected CodeRewriterResult rewriteCode(IRCode code) {
     boolean loopRemoved = false;
     AffectedValues affectedValues = new AffectedValues();
+    Map<Value, Value> replacements = new IdentityHashMap<>();
     for (BasicBlock comparisonBlockCandidate : code.blocks) {
       if (isComparisonBlock(comparisonBlockCandidate)) {
-        loopRemoved |= tryRemoveLoop(code, comparisonBlockCandidate.exit().asIf(), affectedValues);
+        loopRemoved |=
+            tryRemoveLoop(
+                code, comparisonBlockCandidate.exit().asIf(), affectedValues, replacements);
       }
+    }
+    if (!replacements.isEmpty()) {
+      updateDominatedUsers(code, replacements);
     }
     if (loopRemoved) {
       code.removeAllDeadAndTrivialPhis(affectedValues);
@@ -67,6 +79,31 @@ public class NaturalIntLoopOptimizer extends CodeRewriterPass<AppInfo> {
       code.removeRedundantBlocks();
     }
     return CodeRewriterResult.hasChanged(loopRemoved);
+  }
+
+  private void updateDominatedUsers(IRCode code, Map<Value, Value> replacements) {
+    DominatorTree dominatorTree = new DominatorTree(code);
+    replacements.forEach(
+        (loopPhi, assumedValue) -> {
+          BasicBlock insertionBlock = assumedValue.getBlock();
+          Set<Instruction> dominatedUsers = Sets.newIdentityHashSet();
+          Map<Phi, IntList> dominatedPhiUsers = new IdentityHashMap<>();
+          for (Instruction user : loopPhi.uniqueUsers()) {
+            if (user != assumedValue.getDefinition()
+                && dominatorTree.dominatedBy(user.getBlock(), insertionBlock)) {
+              dominatedUsers.add(user);
+            }
+          }
+          for (Phi user : loopPhi.uniquePhiUsers()) {
+            IntList dominatedPredecessorIndices =
+                findDominatedPredecessorIndexesInPhi(
+                    user, loopPhi, block -> dominatorTree.dominatedBy(block, insertionBlock));
+            if (!dominatedPredecessorIndices.isEmpty()) {
+              dominatedPhiUsers.put(user, dominatedPredecessorIndices);
+            }
+          }
+          loopPhi.replaceSelectiveUsers(assumedValue, dominatedUsers, dominatedPhiUsers);
+        });
   }
 
   @Override
@@ -79,30 +116,39 @@ public class NaturalIntLoopOptimizer extends CodeRewriterPass<AppInfo> {
 
   @SuppressWarnings("UnnecessaryParentheses")
   private boolean isComparisonBlock(BasicBlock comparisonBlockCandidate) {
-    if (!comparisonBlockCandidate.exit().isIf()
-        || comparisonBlockCandidate.exit().asIf().isZeroTest()) {
+    if (!comparisonBlockCandidate.exit().isIf()) {
       return false;
     }
     for (Instruction instruction : comparisonBlockCandidate.getInstructions()) {
       if (instruction.isIf()) {
         return true;
       }
-      if (!(instruction.isConstNumber())) {
+      if (!instruction.isConstNumber()) {
         return false;
       }
     }
     throw new Unreachable();
   }
 
-  private boolean tryRemoveLoop(IRCode code, If comparison, AffectedValues affectedValues) {
+  private boolean tryRemoveLoop(
+      IRCode code, If comparison, AffectedValues affectedValues, Map<Value, Value> replacements) {
     Phi loopPhi = computeLoopPhi(comparison);
     if (loopPhi == null) {
       return false;
     }
 
-    NaturalIntLoopWithKnowIterations.Builder builder =
-        NaturalIntLoopWithKnowIterations.builder(comparison, loopPhi);
+    ConstNumber comparisonValue = null;
+    if (!comparison.isZeroTest()) {
+      comparisonValue =
+          comparison
+              .getOperand(1 - comparison.inValues().indexOf(loopPhi))
+              .getDefinition()
+              .asConstNumber();
+      assert comparisonValue != null;
+    }
 
+    NaturalIntLoopWithKnowIterations.Builder builder =
+        NaturalIntLoopWithKnowIterations.builder(comparison, comparisonValue, loopPhi);
     if (!analyzeLoopIterator(comparison, loopPhi, builder)) {
       return false;
     }
@@ -132,6 +178,9 @@ public class NaturalIntLoopOptimizer extends CodeRewriterPass<AppInfo> {
     }
     if (tryOptimizeUnboxedEnumValuesLoop(code, loop)) {
       return true;
+    }
+    if (appView.hasClassHierarchy()) {
+      tryInsertAssumeRangeInstruction(code, loop, replacements);
     }
     return false;
   }
@@ -167,8 +216,15 @@ public class NaturalIntLoopOptimizer extends CodeRewriterPass<AppInfo> {
       return false;
     }
     Instruction singleLoopIndexUser = null;
-    for (Instruction loopIndexUser : loopIndexValue.uniqueUsers()) {
-      if (loopIndexUser == loop.comparison || loopIndexUser == loop.counterIncrementInstruction) {
+    for (Instruction loopIndexUser : loopIndexValue.aliasedUsers()) {
+      if (loopIndexUser.isAssumeIntRange()) {
+        if (loopIndexUser.outValue().hasDebugUsers() || loopIndexUser.outValue().hasPhiUsers()) {
+          return false;
+        } else {
+          continue;
+        }
+      } else if (loopIndexUser == loop.comparison
+          || loopIndexUser == loop.counterIncrementInstruction) {
         continue;
       }
       if (singleLoopIndexUser == null) {
@@ -264,6 +320,42 @@ public class NaturalIntLoopOptimizer extends CodeRewriterPass<AppInfo> {
     }
   }
 
+  private void tryInsertAssumeRangeInstruction(
+      IRCode code, NaturalIntLoopWithKnowIterations loop, Map<Value, Value> replacements) {
+    long loopStart = loop.initCounter.getIntValue();
+    int loopDelta = loop.counterIncrement;
+    if (loopDelta == 0) {
+      return;
+    }
+    long bound = loop.comparison.isZeroTest() ? 0 : loop.comparisonValue.getIntValue();
+    if (loop.target(loopStart) == loop.loopExit) {
+      return;
+    }
+    // This intentionally uses long to correctly handle loops where the loop index overflows,
+    // such as: for (int i = 2147483645; i < 5; i++).
+    long minInclusive = loopStart;
+    long maxInclusive =
+        loop.target(bound) != loop.loopExit
+            ? loopStart + ((bound - loopStart) / loopDelta) * loopDelta
+            : loopStart + ((bound - loopStart - Integer.signum(loopDelta)) / loopDelta) * loopDelta;
+    if (loopDelta < 0) {
+      minInclusive = maxInclusive;
+      maxInclusive = loopStart;
+    }
+    if (minInclusive > maxInclusive
+        || minInclusive < Integer.MIN_VALUE
+        || maxInclusive > Integer.MAX_VALUE) {
+      return;
+    }
+
+    Value assumedValue = code.createValue(TypeElement.getInt());
+    replacements.put(loop.loopPhi, assumedValue);
+    AssumeIntRange assumeIntRange =
+        new AssumeIntRange(assumedValue, loop.loopPhi, (int) minInclusive, (int) maxInclusive);
+    assumeIntRange.setPosition(loop.comparison.getPosition());
+    loop.loopBodyEntry.listIterator().add(assumeIntRange);
+  }
+
   /**
    * The loop unroller removes phis corresponding to the loop backjump. There are three scenarios:
    * (1) The loop has a single exit point analyzed, phis used outside the loop are replaced by the
@@ -354,7 +446,7 @@ public class NaturalIntLoopOptimizer extends CodeRewriterPass<AppInfo> {
               return false;
             }
             builder.setCounterIncrement(counterIncrement, operand.definition.asAdd());
-          } else if (inValue == loopPhi) {
+          } else if (inValue.getAliasedValue() == loopPhi) {
             if (metPhiOperand) {
               return false;
             }
@@ -370,7 +462,7 @@ public class NaturalIntLoopOptimizer extends CodeRewriterPass<AppInfo> {
         }
         builder.setBackPredecessor(predecessor);
         Sub sub = operand.definition.asSub();
-        if (sub.leftValue() != loopPhi) {
+        if (sub.leftValue().getAliasedValue() != loopPhi) {
           return false;
         }
         Value subValue = sub.rightValue();
@@ -401,9 +493,13 @@ public class NaturalIntLoopOptimizer extends CodeRewriterPass<AppInfo> {
    */
   private Phi computeLoopPhi(If comparison) {
     Phi loopPhi = null;
-    if (comparison.rhs().isConstant() && comparison.lhs().isPhi()) {
+    if (comparison.isZeroTest()) {
+      if (comparison.lhs().isPhi()) {
+        loopPhi = comparison.lhs().asPhi();
+      }
+    } else if (comparison.rhs().isConstNumber() && comparison.lhs().isPhi()) {
       loopPhi = comparison.lhs().asPhi();
-    } else if (comparison.lhs().isConstant() && comparison.rhs().isPhi()) {
+    } else if (comparison.lhs().isConstNumber() && comparison.rhs().isPhi()) {
       loopPhi = comparison.rhs().asPhi();
     }
     if (loopPhi == null) {
@@ -439,6 +535,7 @@ public class NaturalIntLoopOptimizer extends CodeRewriterPass<AppInfo> {
     private final int counterIncrement;
     private final ArithmeticBinop counterIncrementInstruction;
     private final If comparison;
+    private final ConstNumber comparisonValue;
     private final BasicBlock loopExit;
     private final BasicBlock loopBodyEntry;
     private final BasicBlock backPredecessor;
@@ -450,6 +547,7 @@ public class NaturalIntLoopOptimizer extends CodeRewriterPass<AppInfo> {
         int counterIncrement,
         ArithmeticBinop counterIncrementInstruction,
         If comparison,
+        ConstNumber comparisonValue,
         BasicBlock loopExit,
         BasicBlock loopBodyEntry,
         BasicBlock backPredecessor,
@@ -459,6 +557,7 @@ public class NaturalIntLoopOptimizer extends CodeRewriterPass<AppInfo> {
       this.counterIncrement = counterIncrement;
       this.counterIncrementInstruction = counterIncrementInstruction;
       this.comparison = comparison;
+      this.comparisonValue = comparisonValue;
       this.loopExit = loopExit;
       this.loopBodyEntry = loopBodyEntry;
       this.backPredecessor = backPredecessor;
@@ -469,6 +568,7 @@ public class NaturalIntLoopOptimizer extends CodeRewriterPass<AppInfo> {
     static class Builder {
 
       private final If comparison;
+      private final ConstNumber comparisonValue;
       private final Phi loopPhi;
 
       private ConstNumber initCounter;
@@ -480,8 +580,9 @@ public class NaturalIntLoopOptimizer extends CodeRewriterPass<AppInfo> {
       private BasicBlock backPredecessor;
       private Set<BasicBlock> loopBody;
 
-      Builder(If comparison, Phi loopPhi) {
+      Builder(If comparison, ConstNumber comparisonValue, Phi loopPhi) {
         this.comparison = comparison;
+        this.comparisonValue = comparisonValue;
         this.loopPhi = loopPhi;
       }
 
@@ -534,6 +635,7 @@ public class NaturalIntLoopOptimizer extends CodeRewriterPass<AppInfo> {
             counterIncrement,
             counterIncrementInstruction,
             comparison,
+            comparisonValue,
             loopExit,
             loopBodyEntry,
             backPredecessor,
@@ -542,11 +644,18 @@ public class NaturalIntLoopOptimizer extends CodeRewriterPass<AppInfo> {
       }
     }
 
-    static Builder builder(If comparison, Phi loopPhi) {
-      return new Builder(comparison, loopPhi);
+    static Builder builder(If comparison, ConstNumber comparisonValue, Phi loopPhi) {
+      return new Builder(comparison, comparisonValue, loopPhi);
+    }
+
+    private BasicBlock target(long phiValue) {
+      return target((int) phiValue);
     }
 
     private BasicBlock target(int phiValue) {
+      if (comparison.isZeroTest()) {
+        return comparison.targetFromCondition(Integer.signum(phiValue));
+      }
       if (comparison.rhs().isConstNumber()) {
         int comp = comparison.rhs().getDefinition().asConstNumber().getIntValue();
         return comparison.targetFromCondition(Integer.signum(phiValue - comp));

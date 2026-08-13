@@ -289,6 +289,7 @@ public class LirSizeEstimation<EV> extends LirParsedInstructionCallback<EV> impl
         return DexNewArray.SIZE;
       case ARRAYLENGTH:
         return DexArrayLength.SIZE;
+      case ASSUMEINTRANGE:
       case ASSUMENONNULL:
         return 0;
       case ATHROW:

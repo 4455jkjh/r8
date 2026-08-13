@@ -31,6 +31,7 @@ import com.android.tools.r8.ir.code.ArrayGet;
 import com.android.tools.r8.ir.code.ArrayLength;
 import com.android.tools.r8.ir.code.ArrayPut;
 import com.android.tools.r8.ir.code.Assume;
+import com.android.tools.r8.ir.code.AssumeIntRange;
 import com.android.tools.r8.ir.code.BasicBlock;
 import com.android.tools.r8.ir.code.CatchHandlers;
 import com.android.tools.r8.ir.code.CheckCast;
@@ -914,6 +915,13 @@ public class Lir2IRConverter {
       Value dest = getOutValueForNextInstruction(TypeElement.getInt());
       Value arrayValue = getValue(arrayValueIndex);
       addInstruction(new ArrayLength(dest, arrayValue));
+    }
+
+    @Override
+    public void onAssumeIntRange(EV value, int minInclusive, int maxInclusive) {
+      Value src = getValue(value);
+      Value dest = getOutValueForNextInstruction(TypeElement.getInt());
+      addInstruction(new AssumeIntRange(dest, src, minInclusive, maxInclusive));
     }
 
     @Override

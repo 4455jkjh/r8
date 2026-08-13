@@ -750,6 +750,21 @@ public class LirBuilder<V, EV> {
     return addOneValueInstruction(LirOpcodes.ARRAYLENGTH, array);
   }
 
+  public LirBuilder<V, EV> addAssumeIntRange(V value, int minInclusive, int maxInclusive) {
+    int instructionIndex = advanceInstructionState();
+    EV encodedValue = getEncodedValue(value);
+    int encodedValueIndex = getEncodedValueIndex(encodedValue, instructionIndex);
+    int operandSize =
+        encodedValueIndexSize(encodedValueIndex)
+            + ByteUtils.intEncodingSize(minInclusive)
+            + ByteUtils.intEncodingSize(maxInclusive);
+    writer.writeInstruction(LirOpcodes.ASSUMEINTRANGE, operandSize);
+    writeEncodedValueIndex(encodedValueIndex);
+    ByteUtils.writeEncodedInt(minInclusive, writer::writeOperand);
+    ByteUtils.writeEncodedInt(maxInclusive, writer::writeOperand);
+    return this;
+  }
+
   public LirBuilder<V, EV> addAssumeNonNull(V value) {
     return addOneValueInstruction(LirOpcodes.ASSUMENONNULL, value);
   }

@@ -5,6 +5,7 @@ package com.android.tools.r8.ir.optimize;
 
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.ir.code.Assume;
+import com.android.tools.r8.ir.code.AssumeIntRange;
 import com.android.tools.r8.ir.code.BasicBlock;
 import com.android.tools.r8.ir.code.IRCode;
 import com.android.tools.r8.ir.code.Instruction;
@@ -31,14 +32,14 @@ public class RedundantAssumeRemover {
   private final AppView<?> appView;
   private final IRCode code;
 
-  private final Set<Assume> affectedAssumeInstructions = Sets.newIdentityHashSet();
+  private final Set<Instruction> affectedAssumeInstructions = Sets.newIdentityHashSet();
 
   public RedundantAssumeRemover(AppView<?> appView, IRCode code) {
     this.appView = appView;
     this.code = code;
   }
 
-  public void addAffectedAssumeInstruction(Assume assumeInstruction) {
+  public void addAffectedAssumeInstruction(Instruction assumeInstruction) {
     affectedAssumeInstructions.add(assumeInstruction);
   }
 
@@ -50,7 +51,7 @@ public class RedundantAssumeRemover {
       Assume assumeInstruction,
       InstructionListIterator instructionIterator,
       Set<Value> newAffectedValues,
-      Consumer<Assume> redundantAssumeConsumer) {
+      Consumer<Instruction> redundantAssumeConsumer) {
     if (!affectedAssumeInstructions.remove(assumeInstruction)) {
       return false;
     }
@@ -84,11 +85,11 @@ public class RedundantAssumeRemover {
   }
 
   private void removeRedundantAssumeInstruction(
-      Assume assumeInstruction,
+      Instruction assumeInstruction,
       InstructionListIterator instructionIterator,
       Set<Value> newAffectedValues,
-      Consumer<Assume> redundantAssumeConsumer) {
-    Value inValue = assumeInstruction.src();
+      Consumer<Instruction> redundantAssumeConsumer) {
+    Value inValue = assumeInstruction.getFirstOperand();
     Value outValue = assumeInstruction.outValue();
     if (outValue == null) {
       // Already removed.
@@ -96,17 +97,29 @@ public class RedundantAssumeRemover {
     }
 
     // Check if we need to run the type analysis for the affected values of the out-value.
-    if (!outValue.getType().equals(inValue.getType())) {
-      newAffectedValues.addAll(outValue.affectedValues());
-    }
-
-    outValue.replaceUsers(inValue);
+    outValue.replaceUsers(inValue, newAffectedValues);
     redundantAssumeConsumer.accept(assumeInstruction);
     instructionIterator.removeOrReplaceByDebugLocalRead();
   }
 
+  private boolean removeAssumeIntRangeInstructionIfRedundant(
+      AssumeIntRange assumeInstruction,
+      InstructionListIterator instructionIterator,
+      Set<Value> newAffectedValues,
+      Consumer<Instruction> redundantAssumeConsumer) {
+    if (!affectedAssumeInstructions.remove(assumeInstruction)) {
+      return false;
+    }
+    if (assumeInstruction.getFirstOperand().isConstant()) {
+      removeRedundantAssumeInstruction(
+          assumeInstruction, instructionIterator, newAffectedValues, redundantAssumeConsumer);
+      return true;
+    }
+    return false;
+  }
+
   public boolean removeRedundantAssumeInstructions(
-      Set<Value> newAffectedValues, Consumer<Assume> redundantAssumeConsumer) {
+      Set<Value> newAffectedValues, Consumer<Instruction> redundantAssumeConsumer) {
     if (affectedAssumeInstructions.isEmpty()) {
       return false;
     }
@@ -119,6 +132,13 @@ public class RedundantAssumeRemover {
           changed |=
               removeAssumeInstructionIfRedundant(
                   instruction.asAssume(),
+                  instructionIterator,
+                  newAffectedValues,
+                  redundantAssumeConsumer);
+        } else if (instruction.isAssumeIntRange()) {
+          changed |=
+              removeAssumeIntRangeInstructionIfRedundant(
+                  instruction.asAssumeIntRange(),
                   instructionIterator,
                   newAffectedValues,
                   redundantAssumeConsumer);

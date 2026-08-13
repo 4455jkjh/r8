@@ -61,6 +61,7 @@ public class DeterminismAnalysis {
       // isArrayPut and isFieldPut are missed as they don't have out value.
       assert instr.isArgument()
               || instr.isAssume()
+              || instr.isAssumeIntRange()
               || instr.isBinop()
               || instr.isInitClass()
               || instr.isUnop()

@@ -871,6 +871,14 @@ public abstract class Instruction
     return null;
   }
 
+  public boolean isAssumeIntRange() {
+    return false;
+  }
+
+  public AssumeIntRange asAssumeIntRange() {
+    return null;
+  }
+
   public final boolean isAssumeWithDynamicTypeAssumption() {
     return isAssume() && asAssume().hasDynamicTypeIgnoringNullability();
   }
