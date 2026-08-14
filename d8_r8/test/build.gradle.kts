@@ -328,58 +328,88 @@ tasks {
       )
     }
 
-  fun SwissArmyKnifeTask.rewriteTestsForR8Lib(
+  fun Exec.rewriteTestsForR8Lib(
     keepRulesFileProvider: TaskProvider<Task>,
     r8JarProvider: Task,
-    testJarProvider: Provider<RegularFile>,
+    testJarProvider: TaskProvider<*>,
     artifactName: String,
     addTestBaseClasspath: Boolean,
   ) {
-    swissArmyKnifeClasspath.from(r8WithRelocatedDepsTask.getSingleOutputFile())
-    compiler = "r8"
-    libs.from(getJavaHome(Jdk.JDK_25))
-    // TODO: use r8JarProvider, keepRulesFileProvider, and r8WithRelocatedDepsTask flatMap and
-    // remove dependsOn
-    dependsOn(r8JarProvider, keepRulesFileProvider, r8WithRelocatedDepsTask)
-    classpath.from(r8JarProvider.getSingleOutputFile(), packageTestDeps)
+    dependsOn(
+      keepRulesFileProvider,
+      packageTestDeps,
+      relocateTestsForR8LibWithRelocatedDeps,
+      r8JarProvider,
+      r8WithRelocatedDepsTask,
+      testJarProvider,
+      packageTestBaseExcludeKeep,
+    )
+    val keepRulesFile = keepRulesFileProvider.getSingleOutputFile()
+    val r8Jar = r8JarProvider.getSingleOutputFile()
+    val r8WithRelocatedDepsJar = r8WithRelocatedDepsTask.getSingleOutputFile()
+    val testBaseJar = packageTestBaseExcludeKeep.getSingleOutputFile()
+    val testDepsJar = packageTestDeps.getSingleOutputFile()
+    val testJar = testJarProvider.getSingleOutputFile()
+    inputs.files(keepRulesFile, r8Jar, r8WithRelocatedDepsJar, testDepsJar, testJar)
+    val outputJar = getRoot().resolveAll("build", "libs", artifactName)
+    outputs.file(outputJar)
+    val args =
+      mutableListOf(
+        "--classfile",
+        "--debug",
+        "--lib",
+        "${getJavaHome(Jdk.JDK_25)}",
+        "--classpath",
+        "$r8Jar",
+        "--classpath",
+        "$testDepsJar",
+        "--output",
+        "$outputJar",
+        "--pg-conf",
+        "$keepRulesFile",
+        "$testJar",
+      )
     if (addTestBaseClasspath) {
-      classpath.from(packageTestBaseExcludeKeep)
+      args.add("--classpath")
+      args.add("$testBaseJar")
     }
-    pgConfigs.from(keepRulesFileProvider.getSingleOutputFile())
-    outputFile = File(rootDir, "build/libs/$artifactName")
-    extraArgs = listOf("--classfile", "--debug")
-    jar = testJarProvider
-    obfuscateAllEnums = true
+    commandLine =
+      baseCompilerCommandLine(
+        listOf("-Dcom.android.tools.r8.tracereferences.obfuscateAllEnums"),
+        r8WithRelocatedDepsJar,
+        "r8",
+        args,
+      )
   }
 
   val rewriteTestsForR8LibWithRelocatedDeps =
-    register<SwissArmyKnifeTask>("rewriteTestsForR8LibWithRelocatedDeps") {
+    register<Exec>("rewriteTestsForR8LibWithRelocatedDeps") {
       rewriteTestsForR8Lib(
         generateTestKeepRulesR8LibWithRelocatedDeps,
         r8WithRelocatedDepsTask,
-        relocateTestsForR8LibWithRelocatedDeps.flatMap { it.outputFile },
+        relocateTestsForR8LibWithRelocatedDeps,
         "r8libtestdeps-cf.jar",
         true,
       )
     }
 
   val rewriteTestBaseForR8LibWithRelocatedDeps =
-    register<SwissArmyKnifeTask>("rewriteTestBaseForR8LibWithRelocatedDeps") {
+    register<Exec>("rewriteTestBaseForR8LibWithRelocatedDeps") {
       rewriteTestsForR8Lib(
         generateTestKeepRulesR8LibWithRelocatedDeps,
         r8WithRelocatedDepsTask,
-        relocateTestBaseForR8LibWithRelocatedDeps.flatMap { it.outputFile },
+        relocateTestBaseForR8LibWithRelocatedDeps,
         "r8libtestbase-cf.jar",
         false,
       )
     }
 
   val rewriteTestsForR8LibNoDeps =
-    register<SwissArmyKnifeTask>("rewriteTestsForR8LibNoDeps") {
+    register<Exec>("rewriteTestsForR8LibNoDeps") {
       rewriteTestsForR8Lib(
         generateTestKeepRulesR8LibNoDeps,
         swissArmyKnifeTask,
-        packageTests.flatMap { it.archiveFile },
+        packageTests,
         "r8lib-exclude-deps-testdeps-cf.jar",
         true,
       )
@@ -409,7 +439,7 @@ tasks {
     }
 
   fun Copy.unzipRewrittenTestsForR8Lib(
-    rewrittenTestJarProvider: TaskProvider<SwissArmyKnifeTask>,
+    rewrittenTestJarProvider: TaskProvider<Exec>,
     outDirName: String,
   ) {
     dependsOn(rewrittenTestJarProvider)
