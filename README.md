@@ -6,47 +6,60 @@ The R8 repo contains two tools:
 - R8 is a java program shrinking and minification tool that converts java byte
   code to optimized dex code.
 
-D8 is a replacement for the DX dexer and R8 is an alternative to
-the [ProGuard](https://www.guardsquare.com/en/proguard) shrinking and
-minification tool.
-
 ## Obtaining prebuilts
 
 There are several places to obtain a prebuilt version without building it
 yourself.
 
-The stable release versions shipped with Android Studio are available from
-the Google Maven repository, see
-https://maven.google.com/web/index.html#com.android.tools:r8.
+### Google Maven (preferred)
+
+Stable release versions and `-dev` versions are available from the Google Maven
+repository. See https://maven.google.com/web/index.html#com.android.tools:r8.
+
+Stable and `-dev` releases have been processed with R8. The corresponding
+mapping file can be obtained through the following URL:
+
+https://storage.googleapis.com/r8-releases/raw/<version>/r8lib.jar.map
+
+### CI Archive
 
 Our [CI](https://ci.chromium.org/p/r8/g/main/console) builds for each commit and
-stores all build artifacts in Google Cloud Storage in the bucket r8-releases.
+stores all build artifacts in Google Cloud Storage in the `r8-releases` bucket.
 
-To obtain a prebuild from the CI for a specifc version (including both
-stable and `-dev` versions), download from the following URL:
+To obtain a prebuild from the CI for a specific stable or `-dev` version,
+download it from the following URL:
 
     https://storage.googleapis.com/r8-releases/raw/<version>/r8lib.jar
 
-To obtain a prebuild from the CI for a specifc main branch hash, download from the
-following URL:
+To obtain a prebuild from the CI for a specific main branch hash, download it
+from the following URL:
 
     https://storage.googleapis.com/r8-releases/raw/main/<hash>/r8lib.jar
 
-The prebuilt JARs have been processed by R8, and for each build the corresponding
-mapping file is located together with the prebuild under the name `r8lib.jar.map`.
+The prebuilt JARs have been processed by R8, and for each build, the
+corresponding mapping file is located together with the prebuild under the name
+`r8lib.jar.map`.
 
-To get prebuilds which has not been processed by R8 replace `r8lib.jar` with `r8.jar`
-in the URLs above.
+To get prebuilds that have not been processed by R8, replace `r8lib.jar`
+with `r8.jar` in the URLs above.
 
-The Google Cloud Storage bucket r8-releases can also be used as a simple
-Maven repository using the following in a Gradle build file:
+The Google Cloud Storage bucket `r8-releases` can also be used as a simple
+Maven repository by using the following configuration for stable and `-dev`
+versions:
 
     maven {
         url = uri("https://storage.googleapis.com/r8-releases/raw")
     }
 
-See [Running D8](#running-d8) and [Running R8](#running-r8) below on how to invoke
-D8 and R8 using the obtained `r8lib.jar` in place of `build/libs/r8.jar`.
+and the following configuration for main branch builds:
+
+    maven {
+        url = uri("https://storage.googleapis.com/r8-releases/raw/main")
+    }
+
+See [Running D8](#running-d8) and [Running R8](#running-r8) below for
+instructions on how to invoke D8 and R8 using the obtained `r8lib.jar` in
+place of `build/libs/r8.jar`.
 
 ## Downloading source and building
 
@@ -170,16 +183,14 @@ on the command line, but have to be passed in a file using the `--pg-conf` optio
 Android Gradle plugin (AGP) ships with R8 embedded (as part of the `builder.jar` from
 `com.android.tools.build:builder:<agp version>` on https://maven.google.com).
 
-To override the embedded version with a prebuilt R8 with version `<version>`, merge
+To override the embedded version with a prebuilt R8 stable or `-dev` version, merge
 the following into the top level `settings.gradle` or `settings.gradle.kts`:
 ```
 pluginManagement {
     buildscript {
         repositories {
+            google()
             mavenCentral()
-            maven {
-                url = uri("https://storage.googleapis.com/r8-releases/raw")
-            }
         }
         dependencies {
             classpath("com.android.tools:r8:<version>")
@@ -194,6 +205,24 @@ pluginManagement {
     buildscript {
         dependencies {
             classpath(files("<path>/r8.jar"))
+        }
+    }
+}
+```
+To override the embedded version with a version built from a specific hash on
+the main branch merge the following into the top level `settings.gradle` or
+`settings.gradle.kts`:
+```
+pluginManagement {
+    buildscript {
+        repositories {
+            mavenCentral()
+            maven {
+                url = uri("https://storage.googleapis.com/r8-releases/raw/main")
+            }
+        }
+        dependencies {
+            classpath("com.android.tools:r8:<hash>")
         }
     }
 }

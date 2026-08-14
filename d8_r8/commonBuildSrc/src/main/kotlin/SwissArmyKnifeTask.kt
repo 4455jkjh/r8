@@ -11,11 +11,8 @@ import org.gradle.api.provider.Property
 import org.gradle.api.tasks.CacheableTask
 import org.gradle.api.tasks.Classpath
 import org.gradle.api.tasks.Input
-import org.gradle.api.tasks.InputFiles
 import org.gradle.api.tasks.Optional
 import org.gradle.api.tasks.OutputFile
-import org.gradle.api.tasks.PathSensitive
-import org.gradle.api.tasks.PathSensitivity
 import org.gradle.api.tasks.TaskAction
 import org.gradle.process.ExecOperations
 
@@ -33,22 +30,6 @@ public abstract class SwissArmyKnifeTask : DefaultTask() {
   @get:[Optional Classpath]
   public abstract val inputNoResFiles: ConfigurableFileCollection
 
-  @get:[Optional Classpath]
-  public abstract val libs: ConfigurableFileCollection
-
-  @get:[Optional Classpath]
-  public abstract val classpath: ConfigurableFileCollection
-
-  @get:[Optional InputFiles PathSensitive(PathSensitivity.NONE)]
-  public abstract val pgConfigs: ConfigurableFileCollection
-
-  @get:[Optional Classpath]
-  public abstract val jar: RegularFileProperty
-
-  @get:Input
-  public val obfuscateAllEnums: Property<Boolean> =
-    project.objects.property(Boolean::class.java).convention(false)
-
   @get:OutputFile public abstract val outputFile: RegularFileProperty
 
   @get:Input public abstract val extraArgs: ListProperty<String>
@@ -59,23 +40,12 @@ public abstract class SwissArmyKnifeTask : DefaultTask() {
       classpath = swissArmyKnifeClasspath
       jvmArgs = listOf("-Xmx8g", "-ea")
       mainClass.set("com.android.tools.r8.SwissArmyKnife")
-      if (obfuscateAllEnums.get()) {
-        systemProperty("com.android.tools.r8.tracereferences.obfuscateAllEnums", true)
-      }
       val myArgs = mutableListOf(compiler.get())
       myArgs.addAll(inputFiles.flatMap { listOf("--input", it.absolutePath) })
       myArgs.addAll(inputNoResFiles.flatMap { listOf("--input-no-res", it.absolutePath) })
-      myArgs.addAll(libs.flatMap { listOf("--lib", it.absolutePath) })
-      myArgs.addAll(
-        this@SwissArmyKnifeTask.classpath.flatMap { listOf("--classpath", it.absolutePath) }
-      )
-      myArgs.addAll(pgConfigs.flatMap { listOf("--pg-conf", it.absolutePath) })
       myArgs.add("--output")
       myArgs.add(outputFile.get().asFile.absolutePath)
       myArgs.addAll(extraArgs.get())
-      if (jar.isPresent) {
-        myArgs.add(jar.get().asFile.absolutePath)
-      }
       args = myArgs
     }
   }
