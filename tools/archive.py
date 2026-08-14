@@ -17,6 +17,7 @@ except ImportError:
     # Not a Unix system. Do what Gandalf tells you not to.
     pass
 import json
+import luci_utils
 import shutil
 import subprocess
 import sys
@@ -233,33 +234,6 @@ def upload_dir(src_dir, version_or_path, dst_dir, is_main, options):
         )
 
 
-def get_luci_invocation_id(options, temp):
-    if not os.environ.get('LUCI_CONTEXT') and not options.dry_run:
-        raise Exception('Environment variable LUCI_CONTEXT not set')
-    if options.dry_run:
-        luci_context_path = os.path.join(temp, 'luci_context')
-        with open(luci_context_path, 'w') as version_writer:
-            version_writer.write(
-                '{"resultdb": {"current_invocation": {"name": "invocations/fake-12345678"}}}'
-            )
-    else:
-        luci_context_path = os.environ.get('LUCI_CONTEXT')
-
-    with open(luci_context_path, 'r') as f:
-        json_string = f.read()
-        luci_context = json.loads(json_string)
-        # The structure is typically:
-        # {"resultdb": {"current_invocation": {"name": "invocations/build-123..."}}}
-        luci_invocation_id = luci_context.get('resultdb',
-                                              {}).get('current_invocation',
-                                                      {}).get('name')
-        if not luci_invocation_id:
-            raise Exception(
-                'LUCI invocation_id not found through environment variable LUCI_CONTEXT: '
-                + luci_context_path + " with content '" + json_string + "'")
-        return luci_invocation_id
-
-
 def main():
     (options, args) = parse_options()
     run(options)
@@ -292,7 +266,9 @@ def run(options):
 
     with utils.TempDir() as temp:
         # Extract the LUCI invocation_id.
-        luci_invocation_id = get_luci_invocation_id(options, temp)
+        luci_invocation_id = luci_utils.get_luci_invocation_id(
+            force_invocation_id='invocations/fake-12345678' if options.
+            dry_run else None)
 
         timing.begin("Generate r8 maven zip")
         version_file = os.path.join(temp, 'r8-version.properties')

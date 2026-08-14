@@ -24,6 +24,7 @@ import git_utils
 import gradle
 import hashlib
 import jdk
+import luci_utils
 import optparse
 import os
 import shutil
@@ -116,14 +117,15 @@ def GetVersion(version_file_name):
         return version
 
 
-def Upload(options, file_name, storage_path, destination, is_main):
+def Upload(options, file_name, destination, is_main):
     print('Uploading %s to %s' % (file_name, destination))
     if options.dry_run:
         if options.dry_run_output:
             dry_run_destination = \
-                os.path.join(options.dry_run_output, os.path.basename(file_name))
-            print('Dry run, not actually uploading. Copying to ' +
-                  dry_run_destination)
+                os.path.join(options.dry_run_output, '/'.join(destination.split('/')[-3:]))
+            print('Dry run, not actually uploading to ' + destination +
+                  '. Copying to ' + dry_run_destination)
+            os.makedirs(os.path.dirname(dry_run_destination), exist_ok=True)
             shutil.copyfile(file_name, dry_run_destination)
         else:
             print('Dry run, not actually uploading')
@@ -326,13 +328,16 @@ def BuildAndUpload(options, variant):
         # Upload the jar file with the library.
         destination = archive.get_upload_destination(
             storage_path, LIBRARY_NAME_MAP[variant] + '.jar', is_main)
-        Upload(options, library_jar, storage_path, destination, is_main)
+        Upload(options, library_jar, destination, is_main)
 
         # Upload the maven zip file with the library.
         destination = archive.get_upload_destination(storage_path,
                                                      MAVEN_RELEASE_ZIP[variant],
                                                      is_main)
-        Upload(options, maven_zip, storage_path, destination, is_main)
+        Upload(options, maven_zip, destination, is_main)
+
+        # Copy the maven zip file with the library to bot cwd for upload to ResultDB.
+        shutil.copyfile(maven_zip, MAVEN_RELEASE_ZIP[variant])
 
         # Upload the jar file for accessing GCS as a maven repro.
         maven_destination = archive.get_upload_destination(
@@ -344,6 +349,18 @@ def BuildAndUpload(options, variant):
             utils.upload_file_to_cloud_storage(library_jar, maven_destination)
             print('Maven repo root available at: %s' %
                   archive.get_maven_url(is_main))
+
+        # Upload the LUCI invocation_id to reference ResultDB archived artifacts.
+        luci_invocation_id = luci_utils.get_luci_invocation_id(
+            force_invocation_id='invocations/fake-87654321' if options.
+            dry_run else None)
+        luci_invocation_id_file = os.path.join('luci_invocation_id')
+        with open(luci_invocation_id_file, 'w') as luci_invocation_id_writer:
+            luci_invocation_id_writer.write(luci_invocation_id + '\n')
+        destination = archive.get_upload_destination(storage_path,
+                                                     'luci_invocation_id',
+                                                     is_main)
+        Upload(options, luci_invocation_id_file, destination, is_main)
 
 
 def Main(argv):
