@@ -13,6 +13,7 @@ import org.gradle.api.Project
 import org.gradle.api.Task
 import org.gradle.api.file.ConfigurableFileCollection
 import org.gradle.api.file.Directory
+import org.gradle.api.file.FileCollection
 import org.gradle.api.file.RegularFile
 import org.gradle.api.tasks.testing.Test
 import org.gradle.jvm.toolchain.JavaInstallationMetadata
@@ -211,6 +212,51 @@ public fun Project.getJavaLauncher(jdk: Jdk): JavaLauncher {
   }
 }
 
+private fun getClasspath(vararg paths: File): String {
+  val os: OperatingSystem = DefaultNativePlatform.getCurrentOperatingSystem()
+  assert(!paths.isEmpty())
+  val separator = if (os.isWindows) ";" else ":"
+  return paths.joinToString(separator = separator) { it.toString() }
+}
+
+public fun Project.baseCompilerCommandLine(
+  jars: FileCollection,
+  deps: File,
+  compiler: String,
+  args: List<String> = listOf(),
+): List<String> {
+  // Execute r8 commands against a stable r8 with dependencies.
+  // TODO(b/139725780): See if we can remove or lower the heap size (-Xmx8g).
+  return listOf(
+    getJavaPath(Jdk.JDK_17),
+    "-Xmx8g",
+    "-ea",
+    "-cp",
+    getClasspath(*(jars.toList().toTypedArray() + deps)),
+    "com.android.tools.r8.SwissArmyKnife",
+    compiler,
+  ) + args
+}
+
+public fun Project.baseCompilerCommandLine(
+  jar: File,
+  deps: File,
+  compiler: String,
+  args: List<String> = listOf(),
+): List<String> {
+  // Execute r8 commands against a stable r8 with dependencies.
+  // TODO(b/139725780): See if we can remove or lower the heap size (-Xmx8g).
+  return listOf(
+    getJavaPath(Jdk.JDK_17),
+    "-Xmx8g",
+    "-ea",
+    "-cp",
+    getClasspath(jar, deps),
+    "com.android.tools.r8.SwissArmyKnife",
+    compiler,
+  ) + args
+}
+
 public fun Project.baseCompilerCommandLine(
   jvmArgs: List<String> = listOf(),
   jar: File,
@@ -223,6 +269,24 @@ public fun Project.baseCompilerCommandLine(
     jvmArgs +
     listOf("-cp", "$jar", "com.android.tools.r8.SwissArmyKnife", compiler) +
     args
+}
+
+public fun Project.baseCompilerCommandLine(
+  jar: File,
+  compiler: String,
+  args: List<String> = listOf(),
+): List<String> {
+  // Execute r8 commands against a stable r8 with dependencies.
+  // TODO(b/139725780): See if we can remove or lower the heap size (-Xmx8g).
+  return listOf(
+    getJavaPath(Jdk.JDK_17),
+    "-Xmx8g",
+    "-ea",
+    "-cp",
+    "$jar",
+    "com.android.tools.r8.SwissArmyKnife",
+    compiler,
+  ) + args
 }
 
 public object JvmCompatibility {
