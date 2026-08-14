@@ -64,6 +64,8 @@ public class GenerateInstrumentationServerClassesTest extends TestBase {
 
     @Override
     protected DexType getGeneratedType() {
+      // Generated types normally have to be hardcoded (not computed via reflection) to avoid
+      // compiler renaming, but since these are test references, no renaming will happen.
       return factory.createType(
           "Lcom/android/tools/r8/startup/generated/" + clazz.getSimpleName() + "Factory;");
     }

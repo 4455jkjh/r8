@@ -38,6 +38,7 @@ import org.junit.runners.Parameterized.Parameters;
 @RunWith(Parameterized.class)
 public class GenerateBackportMethods extends MethodGenerationBase {
 
+  // GENERATED_TYPE has to be hardcoded (not computed via reflection) to avoid compiler renaming.
   private final DexType GENERATED_TYPE =
       factory.createType("Lcom/android/tools/r8/ir/desugar/backports/BackportedMethods;");
   private final List<Class<?>> METHOD_TEMPLATE_CLASSES =

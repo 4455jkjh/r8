@@ -21,6 +21,8 @@ import org.junit.runners.Parameterized.Parameters;
 
 @RunWith(Parameterized.class)
 public class GenerateRecordMethods extends MethodGenerationBase {
+
+  // GENERATED_TYPE has to be hardcoded (not computed via reflection) to avoid compiler renaming.
   private final DexType GENERATED_TYPE =
       factory.createType("Lcom/android/tools/r8/ir/desugar/records/RecordCfMethods;");
   private final List<Class<?>> METHOD_TEMPLATE_CLASSES = ImmutableList.of(RecordMethods.class);

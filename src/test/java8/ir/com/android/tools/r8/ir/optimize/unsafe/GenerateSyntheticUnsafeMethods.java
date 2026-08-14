@@ -35,8 +35,9 @@ import org.junit.runners.Parameterized.Parameters;
 @RunWith(Parameterized.class)
 public class GenerateSyntheticUnsafeMethods extends MethodGenerationBase {
 
+  // GENERATED_TYPE has to be hardcoded (not computed via reflection) to avoid compiler renaming.
   private final DexType GENERATED_TYPE =
-      factory.createType(DescriptorUtils.javaClassToDescriptor(SyntheticUnsafeMethods.class));
+      factory.createType("Lcom/android/tools/r8/ir/optimize/unsafe/SyntheticUnsafeMethods;");
 
   private final List<Class<?>> METHOD_TEMPLATE_CLASSES =
       ImmutableList.of(SyntheticUnsafeMethodTemplates.class);

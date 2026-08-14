@@ -62,13 +62,16 @@ import org.junit.runners.Parameterized.Parameters;
 @RunWith(Parameterized.class)
 public class GenerateCovariantReturnTypeMethodsTest extends TestBase {
 
+  // CLASS_NAME and PACKAGE_NAME has to be hardcoded (not computed via reflection) to avoid compiler
+  // renaming.
+  private static final String CLASS_NAME = "CovariantReturnTypeMethods";
+  private static final String PACKAGE_NAME = "com.android.tools.r8.androidapi";
+
   private static final String COVARIANT_RETURN_TYPE_ANNOTATION_NAME =
       "dalvik.annotation.codegen.CovariantReturnType";
   private static final String COVARIANT_RETURN_TYPES_ANNOTATION_NAME =
       "dalvik.annotation.codegen.CovariantReturnType$CovariantReturnTypes";
 
-  private static final String CLASS_NAME = "CovariantReturnTypeMethods";
-  private static final String PACKAGE_NAME = "com.android.tools.r8.androidapi";
   // When updating to support a new api level build libcore in aosp and update the cloud dependency.
   private static final Path PATH_TO_CORE_JAR =
       Paths.get(ToolHelper.THIRD_PARTY_DIR, "android_jar", "libcore_latest", "core-oj.jar");
