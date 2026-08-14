@@ -1121,10 +1121,6 @@ public class DexParser<T extends DexClass> {
     int saved = dexReader.position();
     DexDebugInfo debugInfo = debugInfoAt(debugInfoOff, instructions);
     dexReader.position(saved);
-    if (options.testing.nullOutDebugInfo) {
-      debugInfo = null;
-    }
-
     return new DexCode(registerSize, insSize, outsSize, instructions, tries, handlers, debugInfo);
   }
 

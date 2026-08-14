@@ -819,7 +819,7 @@ public abstract class TestCompilerBuilder<
                     assert line.endsWith(".class");
                     return line.substring(0, line.length() - ".class".length());
                   })
-              .map(DescriptorUtils::getJavaTypeFromBinaryName)
+              .map(DescriptorUtils::getJavaTypeFromInternalName)
               .collect(Collectors.toSet());
       builder = null;
     }

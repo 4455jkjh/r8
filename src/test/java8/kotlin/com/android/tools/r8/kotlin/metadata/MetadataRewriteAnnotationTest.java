@@ -79,7 +79,8 @@ public class MetadataRewriteAnnotationTest extends KotlinMetadataTestBase {
 
   private static final KotlinCompileMemoizer libJars =
       getCompileMemoizer(
-          getKotlinSourceFileFromResources(DescriptorUtils.getBinaryNameFromJavaType(PKG_LIB), "lib"));
+          getKotlinSourceFileFromResources(
+              DescriptorUtils.getInternalNameFromJavaType(PKG_LIB), "lib"));
   private final TestParameters parameters;
 
   @Test
@@ -89,7 +90,8 @@ public class MetadataRewriteAnnotationTest extends KotlinMetadataTestBase {
         kotlinc(parameters.getRuntime().asCf(), kotlinParameters)
             .addClasspathFiles(libJar)
             .addSourceFiles(
-                getKotlinSourceFileFromResources(DescriptorUtils.getBinaryNameFromJavaType(PKG_APP), "main"))
+                getKotlinSourceFileFromResources(
+                    DescriptorUtils.getInternalNameFromJavaType(PKG_APP), "main"))
             .setOutputPath(temp.newFolder().toPath())
             .compile();
     testForJvm(parameters)
@@ -134,7 +136,8 @@ public class MetadataRewriteAnnotationTest extends KotlinMetadataTestBase {
         kotlinc(parameters.getRuntime().asCf(), kotlinParameters)
             .addClasspathFiles(libJar)
             .addSourceFiles(
-                getKotlinSourceFileFromResources(DescriptorUtils.getBinaryNameFromJavaType(PKG_APP), "main"))
+                getKotlinSourceFileFromResources(
+                    DescriptorUtils.getInternalNameFromJavaType(PKG_APP), "main"))
             .compile(kotlinParameters.isOlderThan(KOTLINC_1_4_20));
     if (kotlinParameters.isOlderThan(KOTLINC_1_4_20)) {
       return;
@@ -168,7 +171,7 @@ public class MetadataRewriteAnnotationTest extends KotlinMetadataTestBase {
     assertEquals(1, qux.annotations().size());
     KmAnnotation annotation = qux.annotations().get(0);
     assertEquals(
-        DescriptorUtils.getBinaryNameFromJavaType(PKG_LIB) + "/AnnoWithClassArr",
+        DescriptorUtils.getInternalNameFromJavaType(PKG_LIB) + "/AnnoWithClassArr",
         annotation.getClassName());
     Map<String, KmAnnotationArgument> arguments = annotation.getArguments();
     assertEquals(1, arguments.size());

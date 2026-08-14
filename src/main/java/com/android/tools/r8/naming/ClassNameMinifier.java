@@ -6,8 +6,8 @@ package com.android.tools.r8.naming;
 import static com.android.tools.r8.utils.DescriptorUtils.DESCRIPTOR_PACKAGE_SEPARATOR;
 import static com.android.tools.r8.utils.DescriptorUtils.INNER_CLASS_SEPARATOR;
 import static com.android.tools.r8.utils.DescriptorUtils.computeInnerClassSeparator;
-import static com.android.tools.r8.utils.DescriptorUtils.getClassBinaryNameFromDescriptor;
-import static com.android.tools.r8.utils.DescriptorUtils.getPackageBinaryNameFromJavaType;
+import static com.android.tools.r8.utils.DescriptorUtils.getClassInternalNameFromDescriptor;
+import static com.android.tools.r8.utils.DescriptorUtils.getInternalNameFromJavaName;
 
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.DexClass;
@@ -239,13 +239,13 @@ class ClassNameMinifier {
   }
 
   private Namespace getStateForClass(DexType type) {
-    String packageName = getPackageBinaryNameFromJavaType(type.getPackageDescriptor());
+    String packageName = getInternalNameFromJavaName(type.getPackageDescriptor());
     // Packages are repackaged and obfuscated when doing repackaging.
     return states.computeIfAbsent(packageName, Namespace::new);
   }
 
   private Namespace getStateForOuterClass(DexType outer, String innerClassSeparator) {
-    String prefix = getClassBinaryNameFromDescriptor(outer.toDescriptorString());
+    String prefix = getClassInternalNameFromDescriptor(outer.toDescriptorString());
     Namespace state = states.get(prefix);
     if (state == null) {
       // Create a naming state with this classes renaming as prefix.
@@ -259,7 +259,7 @@ class ClassNameMinifier {
         renamed = computeName(outer);
         renaming.put(outer, renamed);
       }
-      String binaryName = getClassBinaryNameFromDescriptor(renamed.toString());
+      String binaryName = getClassInternalNameFromDescriptor(renamed.toString());
       state = new Namespace(binaryName, innerClassSeparator);
       states.put(prefix, state);
     }

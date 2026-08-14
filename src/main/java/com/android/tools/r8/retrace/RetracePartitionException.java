@@ -5,12 +5,21 @@
 package com.android.tools.r8.retrace;
 
 import com.android.tools.r8.keepanno.annotations.KeepForApi;
+import java.util.List;
 
 @KeepForApi
 public class RetracePartitionException extends RuntimeException {
 
   public RetracePartitionException(String message) {
     super(message);
+  }
+
+  public RetracePartitionException(String message, List<String> auxInfo) {
+    super(message + "\n\n" + String.join("\n", auxInfo));
+  }
+
+  public RetracePartitionException(String message, List<String> auxInfo1, List<String> auxInfo2) {
+    super(message + "\n\n" + String.join("\n", auxInfo1) + "\n\n" + String.join("\n", auxInfo2));
   }
 
   public RetracePartitionException(Exception e) {

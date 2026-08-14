@@ -39,7 +39,7 @@ public class KotlinLambdaMergerValidationTest extends KotlinTestBase {
     assumeTrue(parameters.isCfRuntime());
 
     String pkg = getClass().getPackage().getName();
-    String folder = DescriptorUtils.getBinaryNameFromJavaType(pkg);
+    String folder = DescriptorUtils.getInternalNameFromJavaType(pkg);
     Path ktClasses =
         kotlinc(
                 getKotlincHostRuntime(parameters.getRuntime()),
@@ -65,7 +65,7 @@ public class KotlinLambdaMergerValidationTest extends KotlinTestBase {
     parameters.assumeDexRuntime();
 
     String pkg = getClass().getPackage().getName();
-    String folder = DescriptorUtils.getBinaryNameFromJavaType(pkg);
+    String folder = DescriptorUtils.getInternalNameFromJavaType(pkg);
     Path ktClasses =
         kotlinc(
                 getKotlincHostRuntime(parameters.getRuntime()),

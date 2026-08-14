@@ -32,7 +32,8 @@ public abstract class DexDebugInfo extends CachedHashValueDexItem
 
   private enum DebugInfoKind {
     EVENT_BASED,
-    PC_BASED
+    PC_BASED,
+    NATIVE_PC_BASED
   }
 
   abstract DebugInfoKind getKind();
@@ -47,8 +48,16 @@ public abstract class DexDebugInfo extends CachedHashValueDexItem
     return getKind() == DebugInfoKind.EVENT_BASED;
   }
 
+  public boolean isAnyPcBasedInfo() {
+    return isPcBasedInfo() || isNativePcBasedInfo();
+  }
+
   public boolean isPcBasedInfo() {
     return getKind() == DebugInfoKind.PC_BASED;
+  }
+
+  public boolean isNativePcBasedInfo() {
+    return getKind() == DebugInfoKind.NATIVE_PC_BASED;
   }
 
   public EventBasedDebugInfo asEventBasedInfo() {
@@ -56,6 +65,10 @@ public abstract class DexDebugInfo extends CachedHashValueDexItem
   }
 
   public PcBasedDebugInfo asPcBasedInfo() {
+    return null;
+  }
+
+  public NativePcBasedDebugInfo asNativePcBasedInfo() {
     return null;
   }
 
@@ -177,7 +190,7 @@ public abstract class DexDebugInfo extends CachedHashValueDexItem
         ObjectToOffsetMapping mapping,
         GraphLens graphLens,
         GraphLens codeLens) {
-      writer.putUleb128(START_LINE);
+      writer.putUleb128(getStartLine());
       writer.putUleb128(parameterCount);
       for (int i = 0; i < parameterCount; i++) {
         writer.putString(null);
@@ -199,6 +212,87 @@ public abstract class DexDebugInfo extends CachedHashValueDexItem
           + ", max-pc: "
           + StringUtils.hexString(maxPc, 2)
           + ")";
+    }
+  }
+
+  public static class NativePcBasedDebugInfo extends DexDebugInfo
+      implements DexDebugInfoForWriting {
+
+    private final int parameterCount;
+
+    public NativePcBasedDebugInfo(int parameterCount) {
+      this.parameterCount = parameterCount;
+    }
+
+    private static void specify(StructuralSpecification<NativePcBasedDebugInfo, ?> spec) {
+      spec.withInt(d -> d.parameterCount);
+    }
+
+    @Override
+    public void acceptHashing(HashingVisitor visitor) {
+      visitor.visit(this, NativePcBasedDebugInfo::specify);
+    }
+
+    @Override
+    public NativePcBasedDebugInfo asNativePcBasedInfo() {
+      return this;
+    }
+
+    @Override
+    public int getParameterCount() {
+      return parameterCount;
+    }
+
+    @Override
+    public int getStartLine() {
+      return 0;
+    }
+
+    @Override
+    DebugInfoKind getKind() {
+      return DebugInfoKind.NATIVE_PC_BASED;
+    }
+
+    @Override
+    int internalAcceptCompareTo(DexDebugInfo other, CompareToVisitor visitor) {
+      assert other.isNativePcBasedInfo();
+      return visitor.visit(this, other.asNativePcBasedInfo(), NativePcBasedDebugInfo::specify);
+    }
+
+    @Override
+    public void collectIndexedItems(
+        AppView<?> appView, GraphLens codeLens, IndexedItemCollection indexedItems) {}
+
+    @Override
+    public void collectMixedSectionItems(MixedSectionCollection collection) {}
+
+    @Override
+    protected int computeHashCode() {
+      return getParameterCount();
+    }
+
+    @Override
+    public int estimatedWriteSize() {
+      return 0;
+    }
+
+    @Override
+    public NativePcBasedDebugInfo self() {
+      return this;
+    }
+
+    @Override
+    public String toString() {
+      return "PcBasedDebugInfoStartingFromZero (params: " + getParameterCount() + ")";
+    }
+
+    @Override
+    public void write(
+        DebugBytecodeWriter writer,
+        ObjectToOffsetMapping mapping,
+        GraphLens graphLens,
+        GraphLens codeLens) {
+      throw new Unreachable();
     }
   }
 
@@ -310,20 +404,20 @@ public abstract class DexDebugInfo extends CachedHashValueDexItem
   }
 
   public static EventBasedDebugInfo convertToEventBased(DexCode code, DexItemFactory factory) {
-    if (code.getDebugInfo() == null) {
+    DexDebugInfo debugInfo = code.getDebugInfo();
+    if (debugInfo == null) {
       return null;
     }
-    if (code.getDebugInfo().isEventBasedInfo()) {
-      return code.getDebugInfo().asEventBasedInfo();
+    if (debugInfo.isEventBasedInfo()) {
+      return debugInfo.asEventBasedInfo();
     }
-    assert code.getDebugInfo().isPcBasedInfo();
-    PcBasedDebugInfo pcBasedDebugInfo = code.getDebugInfo().asPcBasedInfo();
-    assert DebugRepresentation.verifyLastExecutableInstructionWithinBound(
-        code, pcBasedDebugInfo.maxPc);
+    assert debugInfo.isPcBasedInfo() || debugInfo.isNativePcBasedInfo();
+    assert !debugInfo.isPcBasedInfo()
+        || DebugRepresentation.verifyLastExecutableInstructionWithinBound(
+            code, debugInfo.asPcBasedInfo().getMaxPc());
     // Generate a line event at each throwing instruction.
-    DexInstruction[] instructions = code.instructions;
     return forceConvertToEventBasedDebugInfo(
-        PcBasedDebugInfo.START_LINE, pcBasedDebugInfo.getParameterCount(), instructions, factory);
+        debugInfo.getStartLine(), debugInfo.getParameterCount(), code.getInstructions(), factory);
   }
 
   public static EventBasedDebugInfo createEventBasedDebugInfoForNativePc(
@@ -348,7 +442,7 @@ public abstract class DexDebugInfo extends CachedHashValueDexItem
   }
 
   public static DexDebugInfoForWriting convertToWritable(DexDebugInfo debugInfo) {
-    if (debugInfo == null) {
+    if (debugInfo == null || debugInfo.isNativePcBasedInfo()) {
       return null;
     }
     if (debugInfo.isPcBasedInfo()) {

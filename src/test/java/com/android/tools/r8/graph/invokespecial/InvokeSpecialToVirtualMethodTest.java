@@ -3,7 +3,7 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8.graph.invokespecial;
 
-import static com.android.tools.r8.utils.DescriptorUtils.getBinaryNameFromJavaType;
+import static com.android.tools.r8.utils.DescriptorUtils.getInternalNameFromJavaType;
 import static org.junit.Assert.assertEquals;
 
 import com.android.tools.r8.TestBase;
@@ -78,11 +78,11 @@ public class InvokeSpecialToVirtualMethodTest extends TestBase {
             "foo",
             (opcode, owner, name, descriptor, isInterface, visitor) -> {
               if (Opcodes.INVOKESPECIAL == opcode) {
-                assertEquals(getBinaryNameFromJavaType(Base.class.getName()), owner);
+                assertEquals(getInternalNameFromJavaType(Base.class.getName()), owner);
                 assertEquals("foo", name);
                 visitor.visitMethodInsn(
                     opcode,
-                    getBinaryNameFromJavaType(Foo.class.getName()),
+                    getInternalNameFromJavaType(Foo.class.getName()),
                     name,
                     descriptor,
                     isInterface);

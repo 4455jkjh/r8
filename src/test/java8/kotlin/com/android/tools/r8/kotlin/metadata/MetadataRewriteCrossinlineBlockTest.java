@@ -48,7 +48,8 @@ public class MetadataRewriteCrossinlineBlockTest extends KotlinMetadataTestBase 
 
   private static final KotlinCompileMemoizer libJars =
       getCompileMemoizer(
-          getKotlinSourceFileFromResources(DescriptorUtils.getBinaryNameFromJavaType(PKG_LIB), "lib"));
+          getKotlinSourceFileFromResources(
+              DescriptorUtils.getInternalNameFromJavaType(PKG_LIB), "lib"));
   private final TestParameters parameters;
 
   @Test
@@ -58,7 +59,8 @@ public class MetadataRewriteCrossinlineBlockTest extends KotlinMetadataTestBase 
         kotlinc(parameters.getRuntime().asCf(), kotlinParameters)
             .addClasspathFiles(libJar)
             .addSourceFiles(
-                getKotlinSourceFileFromResources(DescriptorUtils.getBinaryNameFromJavaType(PKG_APP), "main"))
+                getKotlinSourceFileFromResources(
+                    DescriptorUtils.getInternalNameFromJavaType(PKG_APP), "main"))
             .setOutputPath(temp.newFolder().toPath())
             .compile();
     testForJvm(parameters)
@@ -82,7 +84,8 @@ public class MetadataRewriteCrossinlineBlockTest extends KotlinMetadataTestBase 
         kotlinc(parameters.getRuntime().asCf(), kotlinParameters)
             .addClasspathFiles(libJar)
             .addSourceFiles(
-                getKotlinSourceFileFromResources(DescriptorUtils.getBinaryNameFromJavaType(PKG_APP), "main"))
+                getKotlinSourceFileFromResources(
+                    DescriptorUtils.getInternalNameFromJavaType(PKG_APP), "main"))
             .setOutputPath(temp.newFolder().toPath())
             .compile();
     testForJvm(parameters)

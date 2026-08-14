@@ -20,6 +20,7 @@ import com.android.tools.r8.ir.desugar.CfInstructionDesugaringEventConsumer;
 import com.android.tools.r8.ir.desugar.desugaredlibrary.DesugaredLibraryTypeRewriter;
 import com.android.tools.r8.ir.desugar.desugaredlibrary.LibraryDesugaringOptions;
 import com.android.tools.r8.ir.desugar.desugaredlibrary.apiconversion.DesugaredLibraryWrapperSynthesizerEventConsumer.DesugaredLibraryAPIConverterEventConsumer;
+import com.android.tools.r8.ir.desugar.desugaredlibrary.machinespecification.EmulatedInterfaceDescriptor;
 import com.android.tools.r8.ir.desugar.desugaredlibrary.machinespecification.MachineDesugaredLibrarySpecification;
 import com.android.tools.r8.ir.desugar.itf.InterfaceMethodRewriter;
 import com.android.tools.r8.utils.StringDiagnostic;
@@ -151,10 +152,15 @@ public abstract class DesugaredLibraryAPIConverter {
         appView
             .appInfoForDesugaring()
             .lookupMaximallySpecificMethod(invokedMethod.getHolder(), invokedMethod.getReference());
-    return interfaceResult != null
-        && libraryDesugaringSpecification
-            .getEmulatedInterfaces()
-            .containsKey(interfaceResult.getHolderType());
+    if (interfaceResult == null) {
+      return false;
+    }
+    EmulatedInterfaceDescriptor emulatedInterfaceDescriptor =
+        libraryDesugaringSpecification.getEmulatedInterfaces().get(interfaceResult.getHolderType());
+    return emulatedInterfaceDescriptor != null
+        && emulatedInterfaceDescriptor
+            .getEmulatedMethods()
+            .containsKey(interfaceResult.getReference());
   }
 
   public void generateTrackingWarnings() {

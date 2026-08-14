@@ -792,6 +792,8 @@ public class DexItemFactory {
   public final ConstructorMethods constructorMethods = new ConstructorMethods();
   public final MethodMethods methodMethods = new MethodMethods();
   public final EnumMembers enumMembers = new EnumMembers();
+  public final EnumUnboxingSharedUtilityMembers enumUnboxingSharedUtilityMembers =
+      new EnumUnboxingSharedUtilityMembers();
   public final AndroidUtilLogMembers androidUtilLogMembers = new AndroidUtilLogMembers();
   public final JavaLangReflectArrayMembers javaLangReflectArrayMembers =
       new JavaLangReflectArrayMembers();
@@ -3647,6 +3649,12 @@ public class DexItemFactory {
           && accessFlags.isSynthetic()
           && accessFlags.isFinal();
     }
+  }
+
+  public class EnumUnboxingSharedUtilityMembers {
+
+    public DexMethodSignature valuesMethodSignature =
+        DexMethodSignature.create(valuesMethodName, createProto(intArrayType, intType));
   }
 
   public class NullPointerExceptionMethods {

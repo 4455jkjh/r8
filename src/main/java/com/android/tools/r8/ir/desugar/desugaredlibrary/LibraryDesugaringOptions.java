@@ -166,7 +166,7 @@ public class LibraryDesugaringOptions {
     setDesugaredLibrarySpecification(desugaredLibrarySpecification, postPrefix);
     if (!synthesizedClassPrefix.isEmpty()) {
       String post =
-          postPrefix == null ? "" : DescriptorUtils.getPackageBinaryNameFromJavaType(postPrefix);
+          postPrefix == null ? "" : DescriptorUtils.getInternalNameFromJavaName(postPrefix);
       this.synthesizedClassPrefix = synthesizedClassPrefix + post;
     }
   }

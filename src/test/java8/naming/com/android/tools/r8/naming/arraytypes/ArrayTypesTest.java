@@ -46,9 +46,8 @@ public class ArrayTypesTest extends TestBase {
   public static void setup() {
     packageName = ArrayTypesTest.class.getPackage().getName();
     arrayBaseTypeDescriptor =
-        DescriptorUtils.getDescriptorFromClassBinaryName(
-            DescriptorUtils.getBinaryNameFromJavaType(
-                A.class.getTypeName()));
+        DescriptorUtils.getDescriptorFromClassInternalName(
+            DescriptorUtils.getInternalNameFromJavaType(A.class.getTypeName()));
     arrayTypeDescriptor = "[" + arrayBaseTypeDescriptor;
     generatedTestClassName = packageName + "." + "GeneratedTestClass";
     expectedOutput = StringUtils.lines(
@@ -126,7 +125,7 @@ public class ArrayTypesTest extends TestBase {
     classWriter.visit(
         Opcodes.V1_6,
         Opcodes.ACC_PUBLIC | Opcodes.ACC_FINAL | Opcodes.ACC_SUPER | Opcodes.ACC_ENUM,
-        DescriptorUtils.getBinaryNameFromJavaType(generatedTestClassName),
+        DescriptorUtils.getInternalNameFromJavaType(generatedTestClassName),
         null,
         "java/lang/Object",
         null);

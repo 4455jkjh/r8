@@ -48,7 +48,7 @@ public class ProgramPackage implements Iterable<DexProgramClass> {
   }
 
   public String getPackageName() {
-    return DescriptorUtils.getJavaTypeFromBinaryName(packageDescriptor);
+    return DescriptorUtils.getJavaTypeFromInternalName(packageDescriptor);
   }
 
   public void forEachClass(Consumer<DexProgramClass> consumer) {

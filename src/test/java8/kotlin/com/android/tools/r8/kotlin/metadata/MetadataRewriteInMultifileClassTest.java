@@ -72,7 +72,8 @@ public class MetadataRewriteInMultifileClassTest extends KotlinMetadataTestBase 
     Path output =
         kotlinc(parameters.getRuntime().asCf(), kotlinParameters)
             .addClasspathFiles(libJar)
-            .addSourceFiles(getKotlinSourceFileFromResources(PKG_PREFIX + "/multifileclass_app", "main"))
+            .addSourceFiles(
+                getKotlinSourceFileFromResources(PKG_PREFIX + "/multifileclass_app", "main"))
             .setOutputPath(temp.newFolder().toPath())
             .compile();
 
@@ -100,7 +101,8 @@ public class MetadataRewriteInMultifileClassTest extends KotlinMetadataTestBase 
     ProcessResult kotlinTestCompileResult =
         kotlinc(parameters.getRuntime().asCf(), kotlinParameters)
             .addClasspathFiles(libJar)
-            .addSourceFiles(getKotlinSourceFileFromResources(PKG_PREFIX + "/multifileclass_app", "main"))
+            .addSourceFiles(
+                getKotlinSourceFileFromResources(PKG_PREFIX + "/multifileclass_app", "main"))
             .setOutputPath(temp.newFolder().toPath())
             .compileRaw();
     assertNotEquals(0, kotlinTestCompileResult.exitCode);
@@ -144,7 +146,8 @@ public class MetadataRewriteInMultifileClassTest extends KotlinMetadataTestBase 
     Path output =
         kotlinc(parameters.getRuntime().asCf(), kotlinParameters)
             .addClasspathFiles(libJar)
-            .addSourceFiles(getKotlinSourceFileFromResources(PKG_PREFIX + "/multifileclass_app", "main"))
+            .addSourceFiles(
+                getKotlinSourceFileFromResources(PKG_PREFIX + "/multifileclass_app", "main"))
             .setOutputPath(temp.newFolder().toPath())
             .compile();
 
@@ -183,7 +186,7 @@ public class MetadataRewriteInMultifileClassTest extends KotlinMetadataTestBase 
     assertEquals(2, partClassNames.size());
     for (String partClassName : partClassNames) {
       ClassSubject partClass =
-          inspector.clazz(DescriptorUtils.getJavaTypeFromBinaryName(partClassName));
+          inspector.clazz(DescriptorUtils.getJavaTypeFromInternalName(partClassName));
       assertThat(partClass, isPresentAndRenamed());
     }
   }

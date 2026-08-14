@@ -3,8 +3,8 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8.synthesis;
 
-import static com.android.tools.r8.utils.DescriptorUtils.getBinaryNameFromDescriptor;
-import static com.android.tools.r8.utils.DescriptorUtils.getDescriptorFromClassBinaryName;
+import static com.android.tools.r8.utils.DescriptorUtils.getDescriptorFromClassInternalName;
+import static com.android.tools.r8.utils.DescriptorUtils.getInternalNameFromDescriptor;
 
 import com.android.tools.r8.FeatureSplit;
 import com.android.tools.r8.graph.AppInfoWithClassHierarchy;
@@ -159,15 +159,15 @@ class SynthesizingContext implements Comparable<SynthesizingContext> {
       return;
     }
     String contextPrefix =
-        getBinaryNameFromDescriptor(synthesizingContextType.toDescriptorString());
-    String rewrittenPrefix = getBinaryNameFromDescriptor(rewrittenContext.toDescriptorString());
+        getInternalNameFromDescriptor(synthesizingContextType.toDescriptorString());
+    String rewrittenPrefix = getInternalNameFromDescriptor(rewrittenContext.toDescriptorString());
     String suffix =
-        getBinaryNameFromDescriptor(hygienicType.toDescriptorString())
+        getInternalNameFromDescriptor(hygienicType.toDescriptorString())
             .substring(contextPrefix.length());
     DexType rewrittenType =
         appView
             .dexItemFactory()
-            .createType(getDescriptorFromClassBinaryName(rewrittenPrefix + suffix));
+            .createType(getDescriptorFromClassInternalName(rewrittenPrefix + suffix));
     appView
         .options()
         .getLibraryDesugaringOptions()

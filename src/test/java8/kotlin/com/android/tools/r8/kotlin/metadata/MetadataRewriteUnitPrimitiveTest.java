@@ -60,7 +60,8 @@ public class MetadataRewriteUnitPrimitiveTest extends KotlinMetadataTestBase {
 
   private static final KotlinCompileMemoizer kotlincLibJar =
       getCompileMemoizer(
-          getKotlinSourceFileFromResources(DescriptorUtils.getBinaryNameFromJavaType(PKG_LIB), "lib"));
+          getKotlinSourceFileFromResources(
+              DescriptorUtils.getInternalNameFromJavaType(PKG_LIB), "lib"));
 
   @Test
   public void smokeTest() throws Exception {
@@ -68,7 +69,8 @@ public class MetadataRewriteUnitPrimitiveTest extends KotlinMetadataTestBase {
         kotlinc(parameters.getRuntime().asCf(), kotlinParameters)
             .addClasspathFiles(kotlincLibJar.getForConfiguration(kotlinParameters))
             .addSourceFiles(
-                getKotlinSourceFileFromResources(DescriptorUtils.getBinaryNameFromJavaType(PKG_APP), "main"))
+                getKotlinSourceFileFromResources(
+                    DescriptorUtils.getInternalNameFromJavaType(PKG_APP), "main"))
             .setOutputPath(temp.newFolder().toPath())
             .compile();
     testForJvm(parameters)
@@ -105,7 +107,8 @@ public class MetadataRewriteUnitPrimitiveTest extends KotlinMetadataTestBase {
         kotlinc(parameters.getRuntime().asCf(), kotlinParameters)
             .addClasspathFiles(libJar)
             .addSourceFiles(
-                getKotlinSourceFileFromResources(DescriptorUtils.getBinaryNameFromJavaType(PKG_APP), "main"))
+                getKotlinSourceFileFromResources(
+                    DescriptorUtils.getInternalNameFromJavaType(PKG_APP), "main"))
             .setOutputPath(temp.newFolder().toPath())
             .compile();
     testForJvm(parameters)

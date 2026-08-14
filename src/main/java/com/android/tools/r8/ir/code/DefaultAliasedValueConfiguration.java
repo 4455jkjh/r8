@@ -17,12 +17,12 @@ public class DefaultAliasedValueConfiguration implements AliasedValueConfigurati
 
   @Override
   public boolean isIntroducingAnAlias(Instruction instruction) {
-    return instruction.isAssume();
+    return instruction.isAssume() || instruction.isAssumeIntRange();
   }
 
   @Override
   public Value getAliasForOutValue(Instruction instruction) {
-    assert instruction.isAssume();
-    return instruction.asAssume().src();
+    assert instruction.isAssume() || instruction.isAssumeIntRange();
+    return instruction.getFirstOperand();
   }
 }

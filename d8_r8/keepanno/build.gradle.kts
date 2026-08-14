@@ -158,9 +158,6 @@ val keepannoDepsJarOnlyAsm by
     outgoing.artifact(tasks.named<Jar>("depsJarOnlyAsm"))
   }
 
-val keepannoSources by
-  configurations.consumable("keepannoSources") { outgoing.artifact(tasks.named<Jar>("sourcesJar")) }
-
 val keepannoClasses by
   configurations.consumable("keepannoClasses") {
     outgoing.artifact(tasks.named<JavaCompile>("compileJava").map { it.destinationDirectory })

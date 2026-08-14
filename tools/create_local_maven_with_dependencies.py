@@ -132,7 +132,7 @@ PLUGIN_DEPENDENCIES = [
     'com.google.protobuf:com.google.protobuf.gradle.plugin:pom:0.9.4',
     'org.gradle.kotlin.kotlin-dsl:org.gradle.kotlin.kotlin-dsl.gradle.plugin:pom:6.4.2',
     'org.jetbrains.kotlin:kotlin-gradle-plugin-api:1.9.10',
-    'net.ltgt.errorprone:net.ltgt.errorprone.gradle.plugin:pom:3.0.1',
+    'net.ltgt.errorprone:net.ltgt.errorprone.gradle.plugin:pom:5.1.0',
     'org.spdx.sbom:org.spdx.sbom.gradle.plugin:pom:0.4.0',
     # See https://github.com/FasterXML/jackson-core/issues/999.
     'ch.randelshofer:fastdoubleparser:0.8.0',

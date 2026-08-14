@@ -487,6 +487,10 @@ public abstract class LirParsedInstructionCallback<EV> implements LirInstruction
     onInstruction();
   }
 
+  public void onAssumeIntRange(EV value, int minInclusive, int maxInclusive) {
+    onInstruction();
+  }
+
   public void onAssumeNonNull(EV value) {
     onInstruction();
   }
@@ -1223,6 +1227,14 @@ public abstract class LirParsedInstructionCallback<EV> implements LirInstruction
       case LirOpcodes.ARRAYLENGTH:
         {
           onArrayLength(getNextValueOperand(view));
+          return;
+        }
+      case LirOpcodes.ASSUMEINTRANGE:
+        {
+          onAssumeIntRange(
+              getNextValueOperand(view),
+              view.getNextIntegerOperand(),
+              view.getNextIntegerOperand());
           return;
         }
       case LirOpcodes.ASSUMENONNULL:

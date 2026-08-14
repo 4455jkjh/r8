@@ -143,32 +143,38 @@ public class MetadataAdditionalInfo {
     return create(combinePreambles(getPreamble(), other.getPreamble(), newMapId), combinedPackages);
   }
 
+  private static String extractLine(String prefix, List<String> preamble) {
+    String matchedLine = null;
+    for (String line : preamble) {
+      if (line.startsWith(prefix)) {
+        if (matchedLine != null) {
+          throw new RetracePartitionException(prefix + " seen twice", preamble);
+        }
+        matchedLine = line;
+      }
+    }
+    return matchedLine;
+  }
+
   private static List<String> combinePreambles(
       List<String> preamble, List<String> otherPreamble, String newMapId) {
     if (preamble == null || otherPreamble == null) {
       throw new RetracePartitionException("Preamble is missing");
     }
-    if (preamble.size() < 8 || otherPreamble.size() < 8) {
-      throw new RetracePartitionException("Preamble is too short to be combined");
+    if (preamble.size() != otherPreamble.size()) {
+      throw new RetracePartitionException(
+          "Preambles have different sizes", preamble, otherPreamble);
     }
-
-    // Build up the new preamble with the new map id.
-    List<String> combinedPreamble = new ArrayList<>();
-    for (int i = 0; i <= 5; i++) {
-      if (!Objects.equals(preamble.get(i), otherPreamble.get(i))) {
-        throw new RetracePartitionException("Preamble lines 0-5 are not identical");
-      }
-      combinedPreamble.add(preamble.get(i));
-    }
-    combinedPreamble.add("# pg_map_id: " + newMapId);
 
     // Create a new hash.
-    String pgMapHashLine = preamble.get(7);
-    String otherPgMapHashLine = otherPreamble.get(7);
-    if (!pgMapHashLine.startsWith("# pg_map_hash: SHA-256 ")
+    String pgMapHashLine = extractLine("# pg_map_hash:", preamble);
+    String otherPgMapHashLine = extractLine("# pg_map_hash:", otherPreamble);
+    if (pgMapHashLine == null
+        || otherPgMapHashLine == null
+        || !pgMapHashLine.startsWith("# pg_map_hash: SHA-256 ")
         || !otherPgMapHashLine.startsWith("# pg_map_hash: SHA-256 ")) {
       throw new RetracePartitionException(
-          "Expected last preamble line to start with '# pg_map_hash: SHA-256 '");
+          "Expected preamble line with prefix '# pg_map_hash: SHA-256 '", preamble, otherPreamble);
     }
 
     String pgMapHash = pgMapHashLine.substring("# pg_map_hash: SHA-256 ".length());
@@ -180,7 +186,24 @@ public class MetadataAdditionalInfo {
             .putString(otherPgMapHash, StandardCharsets.UTF_8)
             .hash()
             .toString();
-    combinedPreamble.add("# pg_map_hash: SHA-256 " + combinedPgMapHash);
+
+    // Build up the new preamble with the new map id and map hash. All remaining lines have to be
+    // the same as both maps are expected to be built by the same compiler.
+    List<String> combinedPreamble = new ArrayList<>();
+    for (int i = 0; i < preamble.size(); i++) {
+      String line = preamble.get(i);
+      if (line.startsWith("# pg_map_id:")) {
+        combinedPreamble.add("# pg_map_id: " + newMapId);
+      } else if (line.startsWith("# pg_map_hash:")) {
+        combinedPreamble.add("# pg_map_hash: SHA-256 " + combinedPgMapHash);
+      } else {
+        if (!Objects.equals(line, otherPreamble.get(i))) {
+          throw new RetracePartitionException(
+              "Preamble lines 1-" + i + " are not identical", preamble, otherPreamble);
+        }
+        combinedPreamble.add(line);
+      }
+    }
     return combinedPreamble;
   }
 

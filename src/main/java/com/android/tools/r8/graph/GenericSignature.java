@@ -3,8 +3,8 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8.graph;
 
-import static com.android.tools.r8.utils.DescriptorUtils.getClassBinaryNameFromDescriptor;
-import static com.android.tools.r8.utils.DescriptorUtils.getDescriptorFromClassBinaryName;
+import static com.android.tools.r8.utils.DescriptorUtils.getClassInternalNameFromDescriptor;
+import static com.android.tools.r8.utils.DescriptorUtils.getDescriptorFromClassInternalName;
 import static com.google.common.base.Predicates.alwaysTrue;
 
 import com.android.tools.r8.DiagnosticsHandler;
@@ -526,6 +526,10 @@ public class GenericSignature {
       return false;
     }
 
+    public boolean isObject(DexItemFactory factory) {
+      return false;
+    }
+
     public String toRenamedString(NamingLens namingLens, Predicate<DexType> isTypeMissing) {
       if (hasNoSignature()) {
         return null;
@@ -687,6 +691,14 @@ public class GenericSignature {
     }
 
     @Override
+    public boolean isObject(DexItemFactory factory) {
+      return getWildcardIndicator() == WildcardIndicator.NOT_AN_ARGUMENT
+          && enclosingTypeSignature == null
+          && type.isIdenticalTo(factory.objectType)
+          && typeArguments.isEmpty();
+    }
+
+    @Override
     public ClassTypeSignature asArgument(WildcardIndicator indicator) {
       assert indicator != WildcardIndicator.NOT_AN_ARGUMENT;
       assert hasSignature();
@@ -788,6 +800,11 @@ public class GenericSignature {
   public static class TypeVariableSignature extends FieldTypeSignature {
 
     final String typeVariable;
+
+    public static TypeVariableSignature createTypeVariableForEmulatedInterfaceDesugaring(
+        String name) {
+      return new TypeVariableSignature(name, WildcardIndicator.NONE);
+    }
 
     private TypeVariableSignature(String typeVariable) {
       this(typeVariable, WildcardIndicator.NOT_AN_ARGUMENT);
@@ -1165,7 +1182,7 @@ public class GenericSignature {
     private final DexItemFactory factory;
 
     private DexType parsedTypeName(String name) {
-      String originalDescriptor = getDescriptorFromClassBinaryName(name);
+      String originalDescriptor = getDescriptorFromClassInternalName(name);
       return factory.createType(originalDescriptor);
     }
 
@@ -1177,8 +1194,8 @@ public class GenericSignature {
       assert enclosingType.isClassType();
       String enclosingDescriptor = enclosingType.toDescriptorString();
       return factory.createType(
-          getDescriptorFromClassBinaryName(
-              getClassBinaryNameFromDescriptor(enclosingDescriptor)
+          getDescriptorFromClassInternalName(
+              getClassInternalNameFromDescriptor(enclosingDescriptor)
                   + DescriptorUtils.INNER_CLASS_SEPARATOR
                   + name));
     }

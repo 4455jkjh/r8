@@ -497,7 +497,7 @@ public class MainDexTracingTest extends TestBase {
 
   private String mainDexStringToDescriptor(String mainDexString) {
     assertTrue(mainDexString.endsWith(FileUtils.CLASS_EXTENSION));
-    return DescriptorUtils.getDescriptorFromClassBinaryName(
+    return DescriptorUtils.getDescriptorFromClassInternalName(
         mainDexString.substring(0, mainDexString.length() - FileUtils.CLASS_EXTENSION.length()));
   }
 

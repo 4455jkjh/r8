@@ -386,6 +386,16 @@ public class LirPrinter<EV> extends LirParsedInstructionCallback<EV> {
   }
 
   @Override
+  public void onAssumeIntRange(EV value, int minInclusive, int maxInclusive) {
+    appendOutValue()
+        .append(" [")
+        .append(minInclusive)
+        .append("; ")
+        .append(maxInclusive)
+        .append("]");
+  }
+
+  @Override
   public void onAssumeNonNull(EV value) {
     appendOutValue().append(fmtValueIndex(value));
   }

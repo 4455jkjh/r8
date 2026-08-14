@@ -40,6 +40,11 @@ public abstract class DefaultInstructionVisitor<T> implements InstructionVisitor
   }
 
   @Override
+  public T visit(AssumeIntRange instruction) {
+    return null;
+  }
+
+  @Override
   public T visit(And instruction) {
     return null;
   }

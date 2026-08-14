@@ -67,7 +67,8 @@ public abstract class CodeRewriterPass<T extends AppInfo> {
 
   protected boolean verifyConsistentCode(IRCode code, boolean ssa, String preposition) {
     boolean result;
-    String message = "Invalid code " + preposition + " " + getRewriterId();
+    String message =
+        "Invalid code " + preposition + " " + getRewriterId() + " in " + code.context();
     try {
       result = ssa ? code.isConsistentSSA(appView) : code.isConsistentGraph(appView, false);
     } catch (AssertionError ae) {

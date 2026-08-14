@@ -70,7 +70,7 @@ public class InlineCatchHandlerWithLibraryTypeTest extends TestBase {
   }
 
   private String getExceptionBinaryName() {
-    return DescriptorUtils.getBinaryNameFromJavaType(exception);
+    return DescriptorUtils.getInternalNameFromJavaType(exception);
   }
 
   private byte[] getClassWithCatchHandler() throws IOException {

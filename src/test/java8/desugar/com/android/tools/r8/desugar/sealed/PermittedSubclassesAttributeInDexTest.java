@@ -117,7 +117,8 @@ public class PermittedSubclassesAttributeInDexTest extends TestBase {
             .transformMethodInsnInMethod(
                 "main",
                 ((opcode, owner, name, descriptor, isInterface, continuation) -> {
-                  if (owner.equals(DescriptorUtils.getClassBinaryName(AdditionalClassAPIs.class))) {
+                  if (owner.equals(
+                      DescriptorUtils.getClassInternalName(AdditionalClassAPIs.class))) {
                     if (name.equals("getPermittedSubclasses")) {
                       continuation.visitMethodInsn(
                           Opcodes.INVOKEVIRTUAL,

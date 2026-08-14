@@ -4,7 +4,7 @@
 
 package com.android.tools.r8.softverification;
 
-import static com.android.tools.r8.utils.DescriptorUtils.getDescriptorFromClassBinaryName;
+import static com.android.tools.r8.utils.DescriptorUtils.getDescriptorFromClassInternalName;
 
 import com.android.tools.r8.D8TestCompileResult;
 import com.android.tools.r8.Dex2OatTestRunResult;
@@ -113,7 +113,7 @@ public class TestRunnerBuilder extends TestBase {
         for (int i = 0; i < classCounter; i++) {
           String binaryName = binaryName(clazz) + "_" + i;
           ClassFileTransformer transformer =
-              transformer(clazz).setClassDescriptor(getDescriptorFromClassBinaryName(binaryName));
+              transformer(clazz).setClassDescriptor(getDescriptorFromClassInternalName(binaryName));
           if (clazz == MissingMember.class) {
             transformer.removeMethods(MethodPredicate.all()).removeFields(FieldPredicate.all());
           }
@@ -124,7 +124,7 @@ public class TestRunnerBuilder extends TestBase {
       builder.addBytes(
           runnerClass + ".class",
           transformer(TestRunner.class)
-              .setClassDescriptor(getDescriptorFromClassBinaryName(runnerClass))
+              .setClassDescriptor(getDescriptorFromClassInternalName(runnerClass))
               .addMethodTransformer(
                   new MethodTransformer() {
 
@@ -168,13 +168,13 @@ public class TestRunnerBuilder extends TestBase {
     builder.addBytes(
         binaryName + ".class",
         transformer(clazz)
-            .setClassDescriptor(getDescriptorFromClassBinaryName(binaryName))
+            .setClassDescriptor(getDescriptorFromClassInternalName(binaryName))
             .replaceClassDescriptorInMembers(
                 descriptor(MissingClass.class),
-                getDescriptorFromClassBinaryName(referenceBinaryName))
+                getDescriptorFromClassInternalName(referenceBinaryName))
             .replaceClassDescriptorInMethodInstructions(
                 descriptor(MissingClass.class),
-                getDescriptorFromClassBinaryName(referenceBinaryName))
+                getDescriptorFromClassInternalName(referenceBinaryName))
             .transformTryCatchBlock(
                 "run",
                 (start, end, handler, type, visitor) -> {

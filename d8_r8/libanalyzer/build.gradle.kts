@@ -51,11 +51,6 @@ val libanalyzerJar by configurations.consumable("libanalyzer-jar") { outgoing.ar
 val libanalyzerProtoJar by
   configurations.consumable("libanalyzer-proto-jar") { outgoing.artifact(protoJarTask) }
 
-val libanalyzerSourcesJar by
-  configurations.consumable("libanalyzer-sources-jar") {
-    outgoing.artifact(tasks.named<Jar>("sourcesJar"))
-  }
-
 val compileJavaJarTask =
   tasks.register<Jar>("compileJavaJar") {
     from(tasks.named("compileJava"))

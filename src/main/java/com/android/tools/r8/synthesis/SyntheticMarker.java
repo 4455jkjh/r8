@@ -193,7 +193,7 @@ public class SyntheticMarker {
         SyntheticNaming.getOuterContextFromExternalSyntheticType(kind, type, appView.options());
     return appView
         .dexItemFactory()
-        .createType(DescriptorUtils.getDescriptorFromClassBinaryName(prefix));
+        .createType(DescriptorUtils.getDescriptorFromClassInternalName(prefix));
   }
 
   private static final SyntheticMarker NO_MARKER = new SyntheticMarker(null, null);

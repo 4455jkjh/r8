@@ -218,6 +218,10 @@ public class InliningConstraints {
     return ConstraintWithTarget.ALWAYS;
   }
 
+  public ConstraintWithTarget forAssumeIntRange() {
+    return ConstraintWithTarget.ALWAYS;
+  }
+
   public ConstraintWithTarget forPop() {
     return ConstraintWithTarget.ALWAYS;
   }

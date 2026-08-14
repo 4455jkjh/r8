@@ -21,9 +21,7 @@ import com.android.tools.r8.kotlin.metadata.KotlinMetadataTestBase;
 import com.android.tools.r8.shaking.ProguardKeepAttributes;
 import com.android.tools.r8.utils.AndroidApiLevel;
 import com.android.tools.r8.utils.DescriptorUtils;
-import com.android.tools.r8.utils.internal.FileUtils;
 import java.io.File;
-import java.nio.file.Paths;
 import java.util.List;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -39,7 +37,7 @@ public class KotlinReflectTest extends KotlinTestBase {
   private static final KotlinCompileMemoizer compiledJars =
       getCompileMemoizer(
           getKotlinSourceFileFromResources(
-              DescriptorUtils.getBinaryNameFromJavaType(PKG), "SimpleReflect"));
+              DescriptorUtils.getInternalNameFromJavaType(PKG), "SimpleReflect"));
 
   @Parameters(name = "{0}, {1}")
   public static List<Object[]> data() {

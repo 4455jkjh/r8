@@ -5,7 +5,7 @@
 package com.android.tools.r8.utils.codeinspector;
 
 import static com.android.tools.r8.utils.DescriptorUtils.DESCRIPTOR_PACKAGE_SEPARATOR;
-import static com.android.tools.r8.utils.DescriptorUtils.getBinaryNameFromJavaType;
+import static com.android.tools.r8.utils.DescriptorUtils.getInternalNameFromJavaType;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -51,7 +51,7 @@ public class FoundKmTypeAliasSubject extends KmTypeAliasSubject {
 
   @Override
   public String descriptor(String pkg) {
-    return "L" + getBinaryNameFromJavaType(pkg) + DESCRIPTOR_PACKAGE_SEPARATOR + name() + ";";
+    return "L" + getInternalNameFromJavaType(pkg) + DESCRIPTOR_PACKAGE_SEPARATOR + name() + ";";
   }
 
   @Override

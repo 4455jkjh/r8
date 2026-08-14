@@ -196,7 +196,7 @@ public class GenericSignaturePrinter implements GenericSignatureVisitor {
       }
       String renamedString = namingLens.lookupDescriptor(classTypeSignature.type).toString();
       if (classTypeSignature.enclosingTypeSignature == null) {
-        sb.append("L").append(DescriptorUtils.getBinaryNameFromDescriptor(renamedString));
+        sb.append("L").append(DescriptorUtils.getInternalNameFromDescriptor(renamedString));
       } else {
         DexType enclosingType = classTypeSignature.enclosingTypeSignature.type;
         String outerDescriptor = namingLens.lookupDescriptor(enclosingType).toString();

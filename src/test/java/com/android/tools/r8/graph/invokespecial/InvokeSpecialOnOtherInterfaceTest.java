@@ -4,7 +4,7 @@
 
 package com.android.tools.r8.graph.invokespecial;
 
-import static com.android.tools.r8.utils.DescriptorUtils.getBinaryNameFromJavaType;
+import static com.android.tools.r8.utils.DescriptorUtils.getInternalNameFromJavaType;
 import static org.junit.Assert.assertEquals;
 import static org.objectweb.asm.Opcodes.INVOKESPECIAL;
 
@@ -83,7 +83,7 @@ public class InvokeSpecialOnOtherInterfaceTest extends TestBase {
         .transformMethodInsnInMethod(
             "bar",
             (opcode, owner, name, descriptor, isInterface, continuation) -> {
-              assertEquals(getBinaryNameFromJavaType(I.class.getTypeName()), owner);
+              assertEquals(getInternalNameFromJavaType(I.class.getTypeName()), owner);
               continuation.visitMethodInsn(INVOKESPECIAL, owner, name, descriptor, isInterface);
             })
         .transform();

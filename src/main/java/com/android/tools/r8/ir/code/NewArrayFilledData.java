@@ -20,6 +20,7 @@ import com.android.tools.r8.lightir.LirBuilder;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
 import com.android.tools.r8.utils.internal.exceptions.Unreachable;
 import java.util.Arrays;
+import java.util.function.IntConsumer;
 
 public class NewArrayFilledData extends Instruction {
   private static final String ERROR_MESSAGE =
@@ -35,6 +36,14 @@ public class NewArrayFilledData extends Instruction {
     this.element_width = element_width;
     this.size = size;
     this.data = data;
+  }
+
+  public void forEachInt(IntConsumer consumer) {
+    assert element_width == 4;
+    for (int i = 0; i < size; i++) {
+      int elementValue = (data[2 * i + 1] << 16) | Short.toUnsignedInt(data[2 * i]);
+      consumer.accept(elementValue);
+    }
   }
 
   @Override

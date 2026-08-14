@@ -164,8 +164,8 @@ public class RelocatorMapping {
       assert isClassDescriptor(relocatedDescriptor.toString());
       typeMappings.put(type, relocatedDescriptor);
       String packageNameFromDescriptor =
-          DescriptorUtils.getPackageBinaryNameFromJavaType(
-              DescriptorUtils.descriptorToJavaType(relocatedDescriptor.toString()));
+          DescriptorUtils.getInternalNameFromJavaName(
+              DescriptorUtils.getPackageNameFromDescriptor(relocatedDescriptor.toString()));
       rewritePackageMappings.putIfAbsent(type.getPackageDescriptor(), packageNameFromDescriptor);
     } else if (!currentPackageName.isEmpty()) {
       int lastIndexOfSeparator = currentPackageName.lastIndexOf('.');

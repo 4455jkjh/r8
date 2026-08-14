@@ -16,11 +16,11 @@ import com.android.tools.r8.KotlinTestParameters;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestRuntime;
 import com.android.tools.r8.TestRuntime.CfRuntime;
-import com.android.tools.r8.utils.internal.BooleanUtils;
 import com.android.tools.r8.utils.DescriptorUtils;
 import com.android.tools.r8.utils.codeinspector.ClassSubject;
 import com.android.tools.r8.utils.codeinspector.FoundMethodSubject;
 import com.android.tools.r8.utils.codeinspector.MethodSubject;
+import com.android.tools.r8.utils.internal.BooleanUtils;
 import java.nio.file.Path;
 import java.util.List;
 import org.junit.Test;
@@ -52,7 +52,7 @@ public class LambdaSplitByCodeCorrectnessTest extends KotlinTestBase {
   @Test
   public void testSplitLambdaGroups() throws Exception {
     String PKG_NAME = LambdaSplitByCodeCorrectnessTest.class.getPackage().getName();
-    String folder = DescriptorUtils.getBinaryNameFromJavaType(PKG_NAME);
+    String folder = DescriptorUtils.getInternalNameFromJavaType(PKG_NAME);
     CfRuntime cfRuntime =
         parameters.isCfRuntime() ? parameters.getRuntime().asCf() : TestRuntime.getCheckedInJdk9();
     Path ktClasses =

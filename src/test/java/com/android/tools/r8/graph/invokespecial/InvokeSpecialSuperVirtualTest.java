@@ -4,7 +4,7 @@
 
 package com.android.tools.r8.graph.invokespecial;
 
-import static com.android.tools.r8.utils.DescriptorUtils.getBinaryNameFromJavaType;
+import static com.android.tools.r8.utils.DescriptorUtils.getInternalNameFromJavaType;
 import static org.junit.Assert.assertEquals;
 import static org.objectweb.asm.Opcodes.INVOKESPECIAL;
 
@@ -62,7 +62,7 @@ public class InvokeSpecialSuperVirtualTest extends TestBase {
             (opcode, owner, name, descriptor, isInterface, continuation) -> {
               if (name.equals("replace")) {
                 assertEquals(INVOKESPECIAL, opcode);
-                assertEquals(getBinaryNameFromJavaType(B.class.getTypeName()), owner);
+                assertEquals(getInternalNameFromJavaType(B.class.getTypeName()), owner);
                 continuation.visitMethodInsn(opcode, owner, "print", descriptor, isInterface);
               } else {
                 continuation.visitMethodInsn(opcode, owner, name, descriptor, isInterface);

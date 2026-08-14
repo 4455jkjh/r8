@@ -319,7 +319,7 @@ public class ApplicationWriter {
     try {
       timing.begin("Insert Attribute Annotations");
       // TODO(b/151313715): Move this to the writer threads.
-      insertAttributeAnnotations();
+      insertAttributeAnnotationsAndRemoveEmptyClassInitializers();
       timing.end();
 
       // Each DexCallSite must have its instruction offset set for sorting.
@@ -651,9 +651,14 @@ public class ApplicationWriter {
     }
   }
 
-  private void insertAttributeAnnotations() {
-    // Convert inner-class attributes to DEX annotations
+  private void insertAttributeAnnotationsAndRemoveEmptyClassInitializers() {
+    // Convert inner-class attributes to DEX annotations and remove empty class initializers.
     for (DexProgramClass clazz : appView.appInfo().classes()) {
+      if (options.isRelease()
+          && clazz.hasClassInitializer()
+          && clazz.getClassInitializer().getCode().isEmptyVoidMethod()) {
+        clazz.getMethodCollection().removeMethod(clazz.getClassInitializer().getReference());
+      }
       insertAttributeAnnotationsForClass(clazz);
       clazz.fields().forEach(this::insertAttributeAnnotationsForField);
       clazz.methods().forEach(this::insertAttributeAnnotationsForMethod);

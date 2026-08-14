@@ -18,7 +18,7 @@ import com.android.tools.r8.graph.AppServices;
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.DexApplication;
 import com.android.tools.r8.graph.DexCode;
-import com.android.tools.r8.graph.DexDebugInfo.PcBasedDebugInfo;
+import com.android.tools.r8.graph.DexDebugInfo.NativePcBasedDebugInfo;
 import com.android.tools.r8.graph.DexEncodedMethod;
 import com.android.tools.r8.graph.DexItemFactory;
 import com.android.tools.r8.graph.DexProgramClass;
@@ -363,9 +363,10 @@ public final class D8 {
     timing.time(
         "Materialize missing debug info",
         () -> {
-          ConcurrentHashMap<PcBasedDebugInfo, PcBasedDebugInfo> cache = new ConcurrentHashMap<>();
+          ConcurrentHashMap<NativePcBasedDebugInfo, NativePcBasedDebugInfo> cache =
+              new ConcurrentHashMap<>();
           // Methods without debug info is assumed to be native pc encoded debug info.
-          // Rematerialize into PcEncodedDebugInfo.
+          // Rematerialize into NativePcEncodedDebugInfo.
           ThreadUtils.processItems(
               appView.appInfo().classes(),
               clazz -> materializeMissingDebugInfo(clazz, cache),
@@ -375,7 +376,7 @@ public final class D8 {
   }
 
   private static void materializeMissingDebugInfo(
-      DexProgramClass clazz, ConcurrentMap<PcBasedDebugInfo, PcBasedDebugInfo> cache) {
+      DexProgramClass clazz, ConcurrentMap<NativePcBasedDebugInfo, NativePcBasedDebugInfo> cache) {
     for (DexEncodedMethod method : clazz.methods()) {
       if (!method.hasCode() || !method.getCode().isDexCode()) {
         continue;
@@ -388,9 +389,8 @@ public final class D8 {
       if (lastInstruction == null) {
         continue;
       }
-      int maxPc = lastInstruction.getOffset();
       int parameterCount = method.getParameters().size();
-      PcBasedDebugInfo debugInfo = new PcBasedDebugInfo(parameterCount, maxPc);
+      NativePcBasedDebugInfo debugInfo = new NativePcBasedDebugInfo(parameterCount);
       code.setDebugInfo(cache.computeIfAbsent(debugInfo, k -> k));
     }
   }

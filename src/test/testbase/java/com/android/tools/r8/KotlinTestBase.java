@@ -58,7 +58,7 @@ public abstract class KotlinTestBase extends TestBase {
 
   @Deprecated
   protected static List<Path> getKotlinFilesInTestPackage(Package pkg) throws IOException {
-    String folder = DescriptorUtils.getBinaryNameFromJavaType(pkg.getName());
+    String folder = DescriptorUtils.getInternalNameFromJavaType(pkg.getName());
     return Files.walk(Paths.get(ToolHelper.TESTS_DIR, "java", folder))
         .filter(path -> path.toString().endsWith(".kt"))
         .collect(Collectors.toList());
@@ -66,7 +66,7 @@ public abstract class KotlinTestBase extends TestBase {
 
   @Deprecated
   protected static Path getKotlinFileInTestPackage(Package pkg, String fileName) {
-    String folder = DescriptorUtils.getBinaryNameFromJavaType(pkg.getName());
+    String folder = DescriptorUtils.getInternalNameFromJavaType(pkg.getName());
     return getKotlinFileInTest(folder, fileName);
   }
 

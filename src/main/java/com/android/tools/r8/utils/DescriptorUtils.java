@@ -22,6 +22,20 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 
+/**
+ * Utility class for converting and validating different representations of types.
+ *
+ * <p>In this class:
+ *
+ * <ul>
+ *   <li><b>Internal Name:</b> refers to the internal form using '/' as package separator (e.g.,
+ *       {@code java/lang/Object} or {@code java/lang/Outer$Inner}). JVMS §4.2.1 calls this
+ *       "internal form", and ASM calls it "internal name".
+ *   <li><b>Java Name/Type:</b> refers to the name using '.' as package separator (e.g., {@code
+ *       java.lang.Object} or {@code java.lang.Outer$Inner}), which can be a package name (JLS §7.4)
+ *       or JLS binary name (JLS §13.1).
+ * </ul>
+ */
 public class DescriptorUtils {
 
   public static final char DESCRIPTOR_PACKAGE_SEPARATOR = '/';
@@ -121,7 +135,7 @@ public class DescriptorUtils {
    * Convert a Java type name to a descriptor string only if the given {@param typeName} is valid.
    *
    * @param typeName the java type name
-   * @return the descriptor string if {@param typeName} is not valid or null otherwise
+   * @return the descriptor string if {@param typeName} is valid or null otherwise
    */
   public static String javaTypeToDescriptorIfValidJavaType(String typeName) {
     if (isValidJavaType(typeName)) {
@@ -162,10 +176,10 @@ public class DescriptorUtils {
   }
 
   /**
-   * Determine the given {@param typeName} is a valid jvms binary name or not (jvms 4.2.1).
+   * Determine if the given {@param typeName} is a valid Java type name.
    *
-   * @param typeName the jvms binary name
-   * @return true if and only if the given type name is valid jvms binary name
+   * @param typeName the Java type name
+   * @return true if and only if the given type name is valid Java type name
    */
   public static boolean isValidJavaType(String typeName) {
     if (typeName.length() == 0) {
@@ -208,10 +222,10 @@ public class DescriptorUtils {
   }
 
   /**
-   * Convert a class type descriptor to an ASM internal name.
+   * Convert a class type descriptor to an internal name.
    *
    * @param descriptor type descriptor
-   * @return Java type name
+   * @return internal name
    */
   public static String descriptorToInternalName(String descriptor) {
     switch (descriptor.charAt(0)) {
@@ -225,7 +239,7 @@ public class DescriptorUtils {
   }
 
   /**
-   * Convert an ASM internal name to a class type descriptor
+   * Convert an internal name to a class type descriptor
    *
    * @param internalName The internal name string
    * @return type descriptor
@@ -246,7 +260,7 @@ public class DescriptorUtils {
    */
   public static String descriptorToKotlinClassifier(String descriptor) {
     final String classifier =
-        getBinaryNameFromDescriptor(descriptor)
+        getInternalNameFromDescriptor(descriptor)
             .replace(INNER_CLASS_SEPARATOR, JAVA_PACKAGE_SEPARATOR);
     if (descriptor.startsWith("Lj$/")) {
       assert classifier.startsWith("j./");
@@ -373,17 +387,19 @@ public class DescriptorUtils {
    * @return class name i.e. "Object" or "C$D" (not "D")
    */
   public static String getUnqualifiedClassNameFromDescriptor(String classDescriptor) {
-    return getUnqualifiedClassNameFromBinaryName(getClassBinaryNameFromDescriptor(classDescriptor));
+    return getUnqualifiedClassNameFromInternalName(
+        getClassInternalNameFromDescriptor(classDescriptor));
   }
 
   /**
    * Get class name from its descriptor.
    *
    * @param classDescriptor a class descriptor i.e. "Ljava/lang/Object;"
-   * @return full class name i.e. "java.lang.Object"
+   * @return full class name i.e. "java.lang.Object" (retaining '$' for inner classes, e.g.,
+   *     "java.lang.Outer$Inner")
    */
   public static String getClassNameFromDescriptor(String classDescriptor) {
-    return getClassBinaryNameFromDescriptor(classDescriptor)
+    return getClassInternalNameFromDescriptor(classDescriptor)
         .replace(DESCRIPTOR_PACKAGE_SEPARATOR, JAVA_PACKAGE_SEPARATOR);
   }
 
@@ -445,13 +461,13 @@ public class DescriptorUtils {
   }
 
   /**
-   * Convert class to a binary name.
+   * Convert class to an internal name.
    *
    * @param clazz a java.lang.Class reference
-   * @return class binary name i.e. "java/lang/Object"
+   * @return class internal name i.e. "java/lang/Object"
    */
-  public static String getClassBinaryName(Class<?> clazz) {
-    return getBinaryNameFromJavaType(clazz.getTypeName());
+  public static String getClassInternalName(Class<?> clazz) {
+    return getInternalNameFromJavaType(clazz.getTypeName());
   }
 
   /**
@@ -461,16 +477,16 @@ public class DescriptorUtils {
    * @return java package name i.e. "java.lang"
    */
   public static String getPackageNameFromDescriptor(String descriptor) {
-    return getPackageNameFromBinaryName(getClassBinaryNameFromDescriptor(descriptor));
+    return getPackageNameFromInternalName(getClassInternalNameFromDescriptor(descriptor));
   }
 
   /**
-   * Convert class descriptor to a binary name.
+   * Convert class descriptor to an internal name.
    *
    * @param classDescriptor a class descriptor i.e. "Ljava/lang/Object;"
-   * @return class binary name i.e. "java/lang/Object"
+   * @return class internal name i.e. "java/lang/Object"
    */
-  public static String getClassBinaryNameFromDescriptor(String classDescriptor) {
+  public static String getClassInternalNameFromDescriptor(String classDescriptor) {
     assert isClassDescriptor(classDescriptor) : "Invalid class descriptor "
         + classDescriptor;
     return classDescriptor.substring(1, classDescriptor.length() - 1);
@@ -479,7 +495,7 @@ public class DescriptorUtils {
   /**
    * Get package java name from a class type name.
    *
-   * @param typeName a class descriptor i.e. "java.lang.Object"
+   * @param typeName a class type name i.e. "java.lang.Object"
    * @return java package name i.e. "java.lang"
    */
   public static String getPackageNameFromTypeName(String typeName) {
@@ -488,43 +504,44 @@ public class DescriptorUtils {
   }
 
   /**
-   * Convert package name to a binary name.
+   * Convert java name to an internal name (i.e. replace "." with "/").
    *
-   * @param packageName a package name i.e., "java.lang"
-   * @return java package name in a binary name format, i.e., java/lang
+   * @param javaName a java name e.g., {@code java.lang.Object} or {@code java.lang}
+   * @return java name in an internal name format, e.g., {@code java/lang/Object} or {@code
+   *     java/lang}
    */
-  public static String getPackageBinaryNameFromJavaType(String packageName) {
-    return packageName.replace(JAVA_PACKAGE_SEPARATOR, DESCRIPTOR_PACKAGE_SEPARATOR);
+  public static String getInternalNameFromJavaName(String javaName) {
+    return javaName.replace(JAVA_PACKAGE_SEPARATOR, DESCRIPTOR_PACKAGE_SEPARATOR);
   }
 
   /**
-   * Convert class name to a binary name.
+   * Convert class name to an internal name.
    *
-   * @param className a package name i.e., "java.lang.Object"
-   * @return java class name in a binary name format, i.e., java/lang/Object
+   * @param className a class name i.e., "java.lang.Object"
+   * @return java class name in an internal name format, i.e., java/lang/Object
    */
-  public static String getBinaryNameFromJavaType(String className) {
-    return className.replace(JAVA_PACKAGE_SEPARATOR, DESCRIPTOR_PACKAGE_SEPARATOR);
+  public static String getInternalNameFromJavaType(String className) {
+    return getInternalNameFromJavaName(className);
   }
 
-  public static String getJavaTypeFromBinaryName(String className) {
+  public static String getJavaTypeFromInternalName(String className) {
     return className.replace(DESCRIPTOR_PACKAGE_SEPARATOR, JAVA_PACKAGE_SEPARATOR);
   }
 
-  public static String getBinaryNameFromDescriptor(String classDescriptor) {
+  public static String getInternalNameFromDescriptor(String classDescriptor) {
     assert isClassDescriptor(classDescriptor);
     return classDescriptor.substring(1, classDescriptor.length() - 1);
   }
 
   /**
-   * Convert a class binary name to a descriptor.
+   * Convert a class internal name to a descriptor.
    *
-   * @param typeBinaryName class binary name i.e. "java/lang/Object"
+   * @param typeInternalName class internal name i.e. "java/lang/Object"
    * @return a class descriptor i.e. "Ljava/lang/Object;"
    */
-  public static String getDescriptorFromClassBinaryName(String typeBinaryName) {
-    assert typeBinaryName != null;
-    return 'L' + typeBinaryName + ';';
+  public static String getDescriptorFromClassInternalName(String typeInternalName) {
+    assert typeInternalName != null;
+    return 'L' + typeInternalName + ';';
   }
 
   /**
@@ -539,19 +556,20 @@ public class DescriptorUtils {
   }
 
   /**
-   * Get unqualified class name from its binary name.
+   * Get unqualified class name from its internal name.
    *
-   * @param classBinaryName a class binary name i.e. "java/lang/Object" or "a/b/C$Inner"
+   * @param classInternalName a class internal name i.e. "java/lang/Object" or "a/b/C$Inner"
    * @return class name i.e. "Object" or "C$Inner" (not "Inner")
-   *
-   * Note that we cannot rely on $ separator in binary name or descriptor because a class, which is
-   * not a member or local class, can still contain $ in its name. For the correct retrieval of the
-   * simple name of member or local classes, use the inner name in the inner-class attribute (or
-   * refer to ReflectionOptimizer#computeClassName as an example).
+   *     <p>Note that we cannot rely on $ separator in internal name or descriptor because a class,
+   *     which is not a member or local class, can still contain $ in its name. For the correct
+   *     retrieval of the simple name of member or local classes, use the inner name in the
+   *     inner-class attribute (or refer to ReflectionOptimizer#computeClassName as an example).
    */
-  public static String getUnqualifiedClassNameFromBinaryName(String classBinaryName) {
-    int simpleNameIndex = classBinaryName.lastIndexOf(DESCRIPTOR_PACKAGE_SEPARATOR);
-    return (simpleNameIndex < 0) ? classBinaryName : classBinaryName.substring(simpleNameIndex + 1);
+  public static String getUnqualifiedClassNameFromInternalName(String classInternalName) {
+    int simpleNameIndex = classInternalName.lastIndexOf(DESCRIPTOR_PACKAGE_SEPARATOR);
+    return (simpleNameIndex < 0)
+        ? classInternalName
+        : classInternalName.substring(simpleNameIndex + 1);
   }
 
   public static String computeInnerClassSeparator(
@@ -620,15 +638,18 @@ public class DescriptorUtils {
   }
 
   /**
-   * Get package java name from a class binary name
+   * Get package java name from a class internal name
    *
-   * @param classBinaryName a class binary name i.e. "java/lang/Object"
+   * @param classInternalName a class internal name i.e. "java/lang/Object"
    * @return java package name i.e. "java.lang"
    */
-  public static String getPackageNameFromBinaryName(String classBinaryName) {
-    int nameIndex = classBinaryName.lastIndexOf(DESCRIPTOR_PACKAGE_SEPARATOR);
-    return (nameIndex < 0) ? "" : classBinaryName.substring(0, nameIndex)
-        .replace(DESCRIPTOR_PACKAGE_SEPARATOR, JAVA_PACKAGE_SEPARATOR);
+  public static String getPackageNameFromInternalName(String classInternalName) {
+    int nameIndex = classInternalName.lastIndexOf(DESCRIPTOR_PACKAGE_SEPARATOR);
+    return (nameIndex < 0)
+        ? ""
+        : classInternalName
+            .substring(0, nameIndex)
+            .replace(DESCRIPTOR_PACKAGE_SEPARATOR, JAVA_PACKAGE_SEPARATOR);
   }
 
   private static boolean isInvalidChar(char ch) {
@@ -656,9 +677,10 @@ public class DescriptorUtils {
   }
 
   /**
-   * Guess class descriptor from location of the class file. This method assumes that the
-   * name uses '/' as the separator. Therefore, this should not be the name of a file
-   * on a file system.
+   * Guess class descriptor from location of the class file. This method assumes that the name uses
+   * '/' as the separator. Therefore, this should not be a platform-dependent file path (use {@link
+   * #guessTypeDescriptor(Path)} instead). The name is expected to be a relative path from the
+   * classpath root (e.g., "java/lang/Object.class").
    *
    * @param name the location of the class file to convert to descriptor
    * @return java class descriptor
@@ -738,9 +760,9 @@ public class DescriptorUtils {
     return com.android.tools.r8.keepanno.utils.DescriptorUtils.isValidClassDescriptor(string);
   }
 
-  public static boolean isValidBinaryName(String binaryName) {
+  public static boolean isValidInternalName(String internalName) {
     return isValidJavaType(
-        binaryName.replace(DESCRIPTOR_PACKAGE_SEPARATOR, JAVA_PACKAGE_SEPARATOR));
+        internalName.replace(DESCRIPTOR_PACKAGE_SEPARATOR, JAVA_PACKAGE_SEPARATOR));
   }
 
   /**
@@ -853,7 +875,7 @@ public class DescriptorUtils {
 
   public static String getClassFileName(String classDescriptor) {
     assert classDescriptor != null && isClassDescriptor(classDescriptor);
-    return getClassBinaryNameFromDescriptor(classDescriptor) + CLASS_EXTENSION;
+    return getClassInternalNameFromDescriptor(classDescriptor) + CLASS_EXTENSION;
   }
 
   public static String getReturnTypeDescriptor(final String methodDescriptor) {

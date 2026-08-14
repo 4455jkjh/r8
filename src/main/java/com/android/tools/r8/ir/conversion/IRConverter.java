@@ -172,7 +172,7 @@ public class IRConverter {
         options.neverMerge.map(
             prefix ->
                 options.itemFactory.createString(
-                    "L" + DescriptorUtils.getPackageBinaryNameFromJavaType(prefix)));
+                    "L" + DescriptorUtils.getInternalNameFromJavaName(prefix)));
     if (options.getLibraryDesugaringOptions().isDesugaredLibraryCompilation()) {
       // Specific L8 Settings, performs all desugaring including L8 specific desugaring.
       //

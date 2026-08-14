@@ -4,7 +4,7 @@
 package com.android.tools.r8.transformers;
 
 import static com.android.tools.r8.references.Reference.classFromTypeName;
-import static com.android.tools.r8.utils.DescriptorUtils.getBinaryNameFromDescriptor;
+import static com.android.tools.r8.utils.DescriptorUtils.getInternalNameFromDescriptor;
 import static com.android.tools.r8.utils.InternalOptions.ASM_VERSION;
 import static com.android.tools.r8.utils.internal.StringUtils.replaceAll;
 
@@ -236,7 +236,7 @@ public class ClassFileTransformer {
                 signature,
                 superName,
                 Arrays.stream(classDescriptors)
-                    .map(DescriptorUtils::getBinaryNameFromDescriptor)
+                    .map(DescriptorUtils::getInternalNameFromDescriptor)
                     .toArray(String[]::new));
           }
         });
@@ -245,7 +245,7 @@ public class ClassFileTransformer {
   /** Unconditionally replace the descriptor (ie, qualified name) of a class. */
   public ClassFileTransformer setClassDescriptor(String newDescriptor) {
     assert DescriptorUtils.isClassDescriptor(newDescriptor);
-    String newBinaryName = getBinaryNameFromDescriptor(newDescriptor);
+    String newBinaryName = getInternalNameFromDescriptor(newDescriptor);
     return addClassTransformer(
             new ClassTransformer() {
               @Override
@@ -342,7 +342,7 @@ public class ClassFileTransformer {
 
   public ClassFileTransformer setSuper(String superDescriptor) {
     assert DescriptorUtils.isClassDescriptor(superDescriptor);
-    String newSuperName = getBinaryNameFromDescriptor(superDescriptor);
+    String newSuperName = getInternalNameFromDescriptor(superDescriptor);
     return addClassTransformer(
         new ClassTransformer() {
           @Override
@@ -484,11 +484,12 @@ public class ClassFileTransformer {
         .addClassTransformer(
             new ClassTransformer() {
 
-              final String hostName = DescriptorUtils.getBinaryNameFromJavaType(host.getTypeName());
+              final String hostName =
+                  DescriptorUtils.getInternalNameFromJavaType(host.getTypeName());
 
               final List<String> memberNames =
                   Arrays.stream(members)
-                      .map(m -> DescriptorUtils.getBinaryNameFromJavaType(m.getTypeName()))
+                      .map(m -> DescriptorUtils.getInternalNameFromJavaType(m.getTypeName()))
                       .collect(Collectors.toList());
 
               String className;
@@ -537,11 +538,11 @@ public class ClassFileTransformer {
         .addClassTransformer(
             new ClassTransformer() {
 
-              final String name = DescriptorUtils.getBinaryNameFromJavaType(clazz.getTypeName());
+              final String name = DescriptorUtils.getInternalNameFromJavaType(clazz.getTypeName());
 
               final List<String> permittedSubclassesNames =
                   Arrays.stream(permittedSubclasses)
-                      .map(m -> DescriptorUtils.getBinaryNameFromJavaType(m.getTypeName()))
+                      .map(m -> DescriptorUtils.getInternalNameFromJavaType(m.getTypeName()))
                       .collect(Collectors.toList());
               String className;
 
@@ -1415,7 +1416,7 @@ public class ClassFileTransformer {
                       Reference.classFromClass(type).getDescriptor(),
                       new Handle(
                           Opcodes.H_INVOKESTATIC,
-                          DescriptorUtils.getClassBinaryName(bootstrapMethodHolder),
+                          DescriptorUtils.getClassInternalName(bootstrapMethodHolder),
                           bootstrapMethodName,
                           bootstrapMethodSignature,
                           isInterfaceInvoke),

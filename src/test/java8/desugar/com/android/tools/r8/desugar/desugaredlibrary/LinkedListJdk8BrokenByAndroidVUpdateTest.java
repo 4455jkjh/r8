@@ -77,8 +77,10 @@ public class LinkedListJdk8BrokenByAndroidVUpdateTest extends DesugaredLibraryTe
     testForDesugaredLibrary(parameters, libraryDesugaringSpecification, compilationSpecification)
         .addInnerClassesAndStrippedOuter(getClass())
         .enableInliningAnnotations()
+        .applyIf(
+            libraryDesugaringSpecification == JDK8,
+            b -> b.overrideLibraryFiles(ToolHelper.getAndroidJar(AndroidApiLevel.MAIN)))
         .allowDiagnosticWarningMessages(parameters.getApiLevel().equals(AndroidApiLevel.MAIN))
-        .overrideLibraryFiles(ToolHelper.getAndroidJar(AndroidApiLevel.MAIN))
         .addKeepMainRule(Executor.class)
         .run(parameters.getRuntime(), Executor.class)
         .assertSuccessWithOutputLines(getExpectedResult());

@@ -4,6 +4,7 @@
 
 package com.android.tools.r8.ir.optimize.membervaluepropagation;
 
+import static com.android.tools.r8.utils.codeinspector.Matchers.isAbsent;
 import static com.android.tools.r8.utils.codeinspector.Matchers.isPresent;
 import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -59,7 +60,7 @@ public class B135918413 extends TestBase {
 
     FieldSubject alwaysEmptyFieldSubject =
         configClassSubject.uniqueFieldWithOriginalName("alwaysEmpty");
-    assertThat(alwaysEmptyFieldSubject, isPresent());
+    assertThat(alwaysEmptyFieldSubject, isAbsent());
 
     FieldSubject alwaysNonEmptyFieldSubject =
         configClassSubject.uniqueFieldWithOriginalName("alwaysNonEmpty");
@@ -75,9 +76,7 @@ public class B135918413 extends TestBase {
             .map(field -> field.name.toSourceString())
             .allMatch(
                 name ->
-                    name.equals(alwaysEmptyFieldSubject.getFinalName())
-                        || name.equals(alwaysNonEmptyFieldSubject.getFinalName())
-                        || name.equals("out")));
+                    name.equals(alwaysNonEmptyFieldSubject.getFinalName()) || name.equals("out")));
 
     MethodSubject deadMethodSubject = classSubject.uniqueMethodWithOriginalName("dead");
     assertThat(deadMethodSubject, not(isPresent()));

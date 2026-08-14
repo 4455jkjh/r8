@@ -240,7 +240,7 @@ public class ClassStaticizerTest extends TestBase {
     assertEquals(
         parameters.canHaveNonReboundConstructorInvoke(),
         instanceMethods(simpleWithLazyInit).isEmpty());
-    assertThat(simpleWithLazyInit.clinit(), isPresent());
+    assertThat(simpleWithLazyInit.clinit(), isAbsent());
   }
 
   @Test

@@ -20,8 +20,3 @@ val jarTask =
   }
 
 val assistantJar by configurations.consumable("assistantJar") { outgoing.artifact(jarTask) }
-
-val assistantSources by
-  configurations.consumable("assistantSources") {
-    outgoing.artifact(tasks.named<Jar>("sourcesJar"))
-  }

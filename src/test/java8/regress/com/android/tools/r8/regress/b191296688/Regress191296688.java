@@ -45,7 +45,7 @@ public class Regress191296688 extends KotlinTestBase {
   @Test
   public void testRegress191296688() throws Exception {
     Path aLib = writeClassesToJar(A.class);
-    String folder = DescriptorUtils.getBinaryNameFromJavaType(PKG);
+    String folder = DescriptorUtils.getInternalNameFromJavaType(PKG);
     CfRuntime cfRuntime = TestRuntime.getCheckedInJdk9();
     Path ktClasses =
         kotlinc(cfRuntime, kotlinParameters)

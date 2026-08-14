@@ -577,6 +577,7 @@ public class RedundantLoadAndStoreElimination extends CodeRewriterPass<AppInfo> 
               assert instruction.isArgument()
                       || instruction.isArrayLength()
                       || instruction.isAssume()
+                      || instruction.isAssumeIntRange()
                       || instruction.isBinop()
                       || instruction.isCheckCast()
                       || instruction.isConstMethodHandle()

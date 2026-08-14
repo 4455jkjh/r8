@@ -8,13 +8,11 @@ import java.nio.file.Paths
 import java.security.MessageDigest
 import java.util.UUID
 import kotlin.reflect.full.declaredMemberProperties
-import org.gradle.api.JavaVersion
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.Task
 import org.gradle.api.file.ConfigurableFileCollection
 import org.gradle.api.file.Directory
-import org.gradle.api.file.FileCollection
 import org.gradle.api.file.RegularFile
 import org.gradle.api.tasks.testing.Test
 import org.gradle.jvm.toolchain.JavaInstallationMetadata
@@ -213,51 +211,6 @@ public fun Project.getJavaLauncher(jdk: Jdk): JavaLauncher {
   }
 }
 
-private fun getClasspath(vararg paths: File): String {
-  val os: OperatingSystem = DefaultNativePlatform.getCurrentOperatingSystem()
-  assert(!paths.isEmpty())
-  val separator = if (os.isWindows) ";" else ":"
-  return paths.joinToString(separator = separator) { it.toString() }
-}
-
-public fun Project.baseCompilerCommandLine(
-  jars: FileCollection,
-  deps: File,
-  compiler: String,
-  args: List<String> = listOf(),
-): List<String> {
-  // Execute r8 commands against a stable r8 with dependencies.
-  // TODO(b/139725780): See if we can remove or lower the heap size (-Xmx8g).
-  return listOf(
-    getJavaPath(Jdk.JDK_17),
-    "-Xmx8g",
-    "-ea",
-    "-cp",
-    getClasspath(*(jars.toList().toTypedArray() + deps)),
-    "com.android.tools.r8.SwissArmyKnife",
-    compiler,
-  ) + args
-}
-
-public fun Project.baseCompilerCommandLine(
-  jar: File,
-  deps: File,
-  compiler: String,
-  args: List<String> = listOf(),
-): List<String> {
-  // Execute r8 commands against a stable r8 with dependencies.
-  // TODO(b/139725780): See if we can remove or lower the heap size (-Xmx8g).
-  return listOf(
-    getJavaPath(Jdk.JDK_17),
-    "-Xmx8g",
-    "-ea",
-    "-cp",
-    getClasspath(jar, deps),
-    "com.android.tools.r8.SwissArmyKnife",
-    compiler,
-  ) + args
-}
-
 public fun Project.baseCompilerCommandLine(
   jvmArgs: List<String> = listOf(),
   jar: File,
@@ -272,92 +225,7 @@ public fun Project.baseCompilerCommandLine(
     args
 }
 
-public fun Project.baseCompilerCommandLine(
-  jar: File,
-  compiler: String,
-  args: List<String> = listOf(),
-): List<String> {
-  // Execute r8 commands against a stable r8 with dependencies.
-  // TODO(b/139725780): See if we can remove or lower the heap size (-Xmx8g).
-  return listOf(
-    getJavaPath(Jdk.JDK_17),
-    "-Xmx8g",
-    "-ea",
-    "-cp",
-    "$jar",
-    "com.android.tools.r8.SwissArmyKnife",
-    compiler,
-  ) + args
-}
-
-/** Remember to add dependOnPythonScripts() to track dependencies. */
-public fun Project.createR8LibCommandLine(
-  r8Compiler: File,
-  input: File,
-  output: File,
-  pgConf: List<File>,
-  excludingDepsVariant: Boolean,
-  debugVariant: Boolean,
-  lib: List<File> = listOf(),
-  classpath: List<File> = listOf(),
-  pgInputMap: File? = null,
-  replaceFromJar: File? = null,
-  versionJar: File? = null,
-  enableHorizontalClassMerging: Boolean = false,
-  enableKeepAnnotations: Boolean = true,
-): List<String> {
-  return buildList {
-    add("python3")
-    add("${getRoot().resolve("tools").resolve("create_r8lib.py")}")
-    add("--r8compiler")
-    add("$r8Compiler")
-    add("--r8jar")
-    add("$input")
-    add("--output")
-    add("$output")
-    pgConf.forEach {
-      add("--pg-conf")
-      add("$it")
-    }
-    lib.forEach {
-      add("--lib")
-      add("$it")
-    }
-    classpath.forEach {
-      add("--classpath")
-      add("$it")
-    }
-    if (excludingDepsVariant) {
-      add("--excldeps-variant")
-    }
-    if (debugVariant) {
-      add("--debug-variant")
-    }
-    if (pgInputMap != null) {
-      add("--pg-map")
-      add("$pgInputMap")
-    }
-    if (replaceFromJar != null) {
-      add("--replace-from-jar")
-      add("$replaceFromJar")
-    }
-    if (versionJar != null) {
-      add("--r8-version-jar")
-      add("$versionJar")
-    }
-    if (enableHorizontalClassMerging) {
-      add("--java-opts=-Dcom.android.tools.r8.disableHorizontalClassMerging=0")
-    }
-    if (!enableKeepAnnotations) {
-      add("--disable-keep-annotations")
-      add("--exclude-api-database")
-    }
-  }
-}
-
 public object JvmCompatibility {
-  public val sourceCompatibility: JavaVersion = JavaVersion.VERSION_11
-  public val targetCompatibility: JavaVersion = JavaVersion.VERSION_11
   public const val release: Int = 11
 }
 

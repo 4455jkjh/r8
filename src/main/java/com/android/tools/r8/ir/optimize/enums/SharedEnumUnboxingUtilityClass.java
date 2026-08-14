@@ -364,11 +364,8 @@ public class SharedEnumUnboxingUtilityClass extends EnumUnboxingUtilityClass {
       DexEncodedMethod valuesMethod =
           DexEncodedMethod.syntheticBuilder()
               .setMethod(
-                  dexItemFactory.createMethod(
-                      sharedUtilityClassType,
-                      dexItemFactory.createProto(
-                          dexItemFactory.intArrayType, dexItemFactory.intType),
-                      "values"))
+                  dexItemFactory.enumUnboxingSharedUtilityMembers.valuesMethodSignature.withHolder(
+                      sharedUtilityClassType, dexItemFactory))
               .setAccessFlags(MethodAccessFlags.createPublicStaticSynthetic())
               .setCode(createValuesMethodCode(sharedUtilityClassType, valuesField))
               .setClassFileVersion(CfVersion.V1_6)

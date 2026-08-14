@@ -62,10 +62,9 @@ public class AssertionConfigurationAssertionHandlerKotlinDoubleCheckTest
     ZipUtils.unzip(
         compiledForAssertions.getForConfiguration(kotlinParameters), compiledKotlinClasses);
     String testClassPath =
-        DescriptorUtils.getPackageBinaryNameFromJavaType(getTestClassName())
-            + FileUtils.CLASS_EXTENSION;
+        DescriptorUtils.getInternalNameFromJavaName(getTestClassName()) + FileUtils.CLASS_EXTENSION;
     String assertionsMockBinaryName =
-        DescriptorUtils.getPackageBinaryNameFromJavaType(
+        DescriptorUtils.getInternalNameFromJavaName(
             getClass().getPackage().getName() + ".AssertionsMock");
     // Rewrite the static get on AssertionsMock.Enabled to static get on kotlin._Assertions.ENABLED
     return transformer(

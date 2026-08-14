@@ -87,7 +87,7 @@ public class FoundKmClassSubject extends KmClassSubject
   }
 
   private String nestClassDescriptor(String nestClassName) {
-    return DescriptorUtils.getDescriptorFromClassBinaryName(
+    return DescriptorUtils.getDescriptorFromClassInternalName(
         kmClass.name + DescriptorUtils.INNER_CLASS_SEPARATOR + nestClassName);
   }
 

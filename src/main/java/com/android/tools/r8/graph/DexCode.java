@@ -312,6 +312,10 @@ public class DexCode extends Code
     return this;
   }
 
+  public boolean hasDebugInfo() {
+    return debugInfo != null;
+  }
+
   public DexDebugInfo getDebugInfo() {
     return debugInfo;
   }
@@ -644,8 +648,8 @@ public class DexCode extends Code
 
     DexDebugEntry debugInfo = null;
     Iterator<DexDebugEntry> debugInfoIterator = Collections.emptyIterator();
-    boolean isPcBasedInfo = getDebugInfo() != null && getDebugInfo().isPcBasedInfo();
-    if (!isPcBasedInfo && getDebugInfo() != null && method != null) {
+    boolean isAnyPcBasedInfo = hasDebugInfo() && getDebugInfo().isAnyPcBasedInfo();
+    if (!isAnyPcBasedInfo && hasDebugInfo() && method != null) {
       debugInfoIterator = new DexDebugEntryBuilder(method, new DexItemFactory()).build().iterator();
       debugInfo = debugInfoIterator.hasNext() ? debugInfoIterator.next() : null;
     }
@@ -670,7 +674,7 @@ public class DexCode extends Code
       }
       builder.append('\n');
     }
-    if (isPcBasedInfo) {
+    if (isAnyPcBasedInfo) {
       builder.append(getDebugInfo()).append("\n");
     } else if (debugInfoIterator.hasNext()) {
       DexInstruction lastInstruction = ArrayUtils.last(instructions);
@@ -787,7 +791,7 @@ public class DexCode extends Code
         updateHighestSortingString(insn.asConstStringJumbo().getString());
       }
     }
-    if (debugInfo != null) {
+    if (getDebugInfoForWriting() != null) {
       getDebugInfoForWriting().collectIndexedItems(appView, codeLens, indexedItems);
     }
     for (TryHandler handler : handlers) {
@@ -846,7 +850,7 @@ public class DexCode extends Code
 
   @Override
   public void collectMixedSectionItems(MixedSectionCollection mixedItems) {
-    if (debugInfo != null) {
+    if (getDebugInfoForWriting() != null) {
       getDebugInfoForWriting().collectMixedSectionItems(mixedItems);
     }
   }

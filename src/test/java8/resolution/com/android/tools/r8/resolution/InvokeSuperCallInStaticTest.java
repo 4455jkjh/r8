@@ -102,7 +102,7 @@ public class InvokeSuperCallInStaticTest extends TestBase {
             (opcode, owner, name, descriptor, isInterface, continuation) -> {
               continuation.visitMethodInsn(
                   INVOKESPECIAL,
-                  DescriptorUtils.getBinaryNameFromJavaType(Base.class.getTypeName()),
+                  DescriptorUtils.getInternalNameFromJavaType(Base.class.getTypeName()),
                   name,
                   descriptor,
                   false);

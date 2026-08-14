@@ -77,10 +77,10 @@ public class MachineTopLevelFlags {
   public MachineTopLevelFlags withPostPrefix(String postPrefix) {
     assert postPrefix.endsWith(String.valueOf(DescriptorUtils.JAVA_PACKAGE_SEPARATOR));
     String prefix =
-        DescriptorUtils.getJavaTypeFromBinaryName(synthesizedLibraryClassesPackagePrefix);
-    String cleanPostPrefix = DescriptorUtils.getJavaTypeFromBinaryName(postPrefix);
+        DescriptorUtils.getJavaTypeFromInternalName(synthesizedLibraryClassesPackagePrefix);
+    String cleanPostPrefix = DescriptorUtils.getJavaTypeFromInternalName(postPrefix);
     String newPrefix = prefix + cleanPostPrefix;
-    String newPrefixWithSlash = DescriptorUtils.getPackageBinaryNameFromJavaType(newPrefix);
+    String newPrefixWithSlash = DescriptorUtils.getInternalNameFromJavaName(newPrefix);
     List<String> newKeepRules = new ArrayList<>(extraKeepRules.size());
     for (String kr : extraKeepRules) {
       // TODO(b/278046666): Consider changing the ProguardRuleParser to avoid invalid replacements.

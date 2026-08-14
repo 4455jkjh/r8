@@ -304,7 +304,7 @@ public class KeepInfoCollectionExported {
       TypeReference typeReference = entry.getKey();
       ExportedClassInfo exportedClassInfo = entry.getValue();
       String binaryName =
-          DescriptorUtils.getClassBinaryNameFromDescriptor(typeReference.getDescriptor());
+          DescriptorUtils.getClassInternalNameFromDescriptor(typeReference.getDescriptor());
       Files.createDirectories(directory.resolve(binaryName).getParent());
       Files.write(
           directory.resolve(binaryName), exportedClassInfo.lines(), StandardOpenOption.CREATE);

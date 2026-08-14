@@ -33,7 +33,7 @@ public class KotlinCompilerTreeShakingTest extends CompilationTestBase {
       Paths.get(
           ToolHelper.TESTS_DIR,
           "java",
-          DescriptorUtils.getBinaryNameFromJavaType(PKG_NAME),
+          DescriptorUtils.getInternalNameFromJavaType(PKG_NAME),
           "Hello.kt");
   private static final int MAX_SIZE = (int) (31361268 * 0.4);
 

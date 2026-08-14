@@ -15,7 +15,6 @@ import com.android.tools.r8.debug.DebugTestConfig;
 import com.android.tools.r8.debug.DexDebugTestConfig;
 import com.android.tools.r8.debug.classes.Locals;
 import com.android.tools.r8.debug.classes.MultipleReturns;
-import com.android.tools.r8.debug.classinit.ClassInitializationTest;
 import com.android.tools.r8.debug.classinit.ClassInitializerEmpty;
 import com.android.tools.r8.shaking.ProguardKeepRule;
 import com.android.tools.r8.utils.AndroidApiLevel;

@@ -371,7 +371,7 @@ public class ZipUtils {
   }
 
   public static String zipEntryNameForClass(Class<?> clazz) {
-    return DescriptorUtils.getClassBinaryName(clazz) + CLASS_EXTENSION;
+    return DescriptorUtils.getClassInternalName(clazz) + CLASS_EXTENSION;
   }
 
   public static String zipEntryNameForClass(ClassReference clazz) {

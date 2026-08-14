@@ -197,8 +197,6 @@ interface InjectedArcOps {
 }
 
 tasks {
-  withType<Exec> { doFirst { println("Executing command: ${commandLine.joinToString(" ")}") } }
-
   val filteredDepsJar =
     register<Jar>("filteredDepsJar") {
       val injected = project.objects.newInstance<InjectedArcOps>()
@@ -432,30 +430,12 @@ tasks {
     outputFile = File(getRootDir(), "build/libs/keepanno-tools.jar")
   }
 
-  register<Exec>("processKeepRulesLibWithRelocatedDeps") {
-    dependsOn(r8WithRelocatedDeps)
-    dependOnPythonScripts()
-    val keepRulesFile = getRoot().resolveAll("src", "main", "keep_processkeeprules.txt")
-    val outputJar = getRoot().resolveAll("build", "libs", "processkeepruleslib.jar")
-    outputs.file(outputJar)
-    inputs.files(
-      Callable { listOf(keepRulesFile, r8WithRelocatedDeps.get().getSingleOutputFile()) }
-    )
-    doFirst {
-      val r8WithRelocatedDepsJar = r8WithRelocatedDeps.get().getSingleOutputFile()
-      commandLine =
-        createR8LibCommandLine(
-          r8WithRelocatedDepsJar,
-          r8WithRelocatedDepsJar,
-          outputJar,
-          listOf(keepRulesFile),
-          excludingDepsVariant = false,
-          debugVariant = false,
-          classpath = listOf(),
-          enableKeepAnnotations = false,
-        )
-    }
+  register<CreateR8LibraryTask>("processKeepRulesLibWithRelocatedDeps") {
+    r8compilerClasspath.from(r8WithRelocatedDeps.flatMap { it.outputFile })
+    inputJar = r8WithRelocatedDeps.flatMap { it.outputFile }
+    pgConfigs.from(File(rootDir, "src/main/keep_processkeeprules.txt"))
+    enableKeepAnnotations = false
+
+    setOutputJarFile(File(rootDir, "build/libs/processkeepruleslib.jar"))
   }
 }
-
-fun Task.getSingleOutputFile(): File = outputs.files.singleFile

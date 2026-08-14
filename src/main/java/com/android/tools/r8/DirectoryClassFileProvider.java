@@ -60,7 +60,7 @@ public final class DirectoryClassFileProvider implements ClassFileResourceProvid
   public ProgramResource getProgramResource(String descriptor) {
     assert DescriptorUtils.isClassDescriptor(descriptor);
     // Build expected file path based on type descriptor.
-    String classBinaryName = DescriptorUtils.getClassBinaryNameFromDescriptor(descriptor);
+    String classBinaryName = DescriptorUtils.getClassInternalNameFromDescriptor(descriptor);
     Path file = root.resolve(classBinaryName + CLASS_EXTENSION);
     return (Files.exists(file) && !Files.isDirectory(file))
         ? ProgramResource.fromFile(Kind.CF, file)

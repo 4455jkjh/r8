@@ -3,6 +3,7 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8.rewrite.staticvalues;
 
+import static com.android.tools.r8.utils.codeinspector.Matchers.isAbsent;
 import static com.android.tools.r8.utils.codeinspector.Matchers.isPresent;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertEquals;
@@ -86,9 +87,9 @@ public class StaticValuesTest extends SmaliTestBase {
     AndroidApp processedApplication = processApplication(originalApplication);
 
     CodeInspector inspector = new CodeInspector(processedApplication);
-    // Test is running without tree-shaking, so the empty <clinit> is not removed.
-    assertTrue(
-        inspector.clazz("Test").clinit().getMethod().getCode().asDexCode().isEmptyVoidMethod());
+
+    // Empty class initializers should always be removed.
+    assertThat(inspector.clazz("Test").clinit(), isAbsent());
 
     DexValue value;
     assertTrue(inspector.clazz("Test").field("boolean", "booleanField").hasExplicitStaticValue());
@@ -212,12 +213,11 @@ public class StaticValuesTest extends SmaliTestBase {
     AndroidApp processedApplication = processApplication(originalApplication);
 
     CodeInspector inspector = new CodeInspector(processedApplication);
-    // Test is running without tree-shaking, so the empty <clinit> is not removed.
-    assertTrue(
-        inspector.clazz("Test").clinit().getMethod().getCode().asDexCode().isEmptyVoidMethod());
+
+    // Empty class initializers should always be removed.
+    assertThat(inspector.clazz("Test").clinit(), isAbsent());
 
     String result = runArt(processedApplication);
-
     assertEquals(StringUtils.lines("null", "null", "null"), result);
   }
 
@@ -254,12 +254,11 @@ public class StaticValuesTest extends SmaliTestBase {
     AndroidApp processedApplication = processApplication(originalApplication);
 
     CodeInspector inspector = new CodeInspector(processedApplication);
-    // Test is running without tree-shaking, so the empty <clinit> is not removed.
-    assertTrue(
-        inspector.clazz("Test").clinit().getMethod().getCode().asDexCode().isEmptyVoidMethod());
+
+    // Empty class initializers should always be removed.
+    assertThat(inspector.clazz("Test").clinit(), isAbsent());
 
     String result = runArt(processedApplication);
-
     assertEquals(StringUtils.lines("Value1", "Value2", "Value2"), result);
   }
 
@@ -304,9 +303,9 @@ public class StaticValuesTest extends SmaliTestBase {
     AndroidApp processedApplication = processApplication(originalApplication);
 
     CodeInspector inspector = new CodeInspector(processedApplication);
-    // Test is running without tree-shaking, so the empty <clinit> is not removed.
-    assertTrue(
-        inspector.clazz("Test").clinit().getMethod().getCode().asDexCode().isEmptyVoidMethod());
+
+    // Empty class initializers should always be removed.
+    assertThat(inspector.clazz("Test").clinit(), isAbsent());
 
     DexValue value;
     assertTrue(inspector.clazz("Test").field("int", "intField").hasExplicitStaticValue());
@@ -321,7 +320,6 @@ public class StaticValuesTest extends SmaliTestBase {
     assertEquals(("7"), value.asDexValueString().getValue().toString());
 
     String result = runArt(processedApplication);
-
     assertEquals(StringUtils.lines("3", "7") , result);
   }
 
@@ -459,12 +457,11 @@ public class StaticValuesTest extends SmaliTestBase {
 
     CodeInspector inspector = new CodeInspector(processedApplication);
     assertThat(inspector.clazz(className), isPresent());
-    // Test is running without tree-shaking, so the empty <clinit> is not removed.
-    assertTrue(
-        inspector.clazz(className).clinit().getMethod().getCode().asDexCode().isEmptyVoidMethod());
+
+    // Empty class initializers should always be removed.
+    assertThat(inspector.clazz(className).clinit(), isAbsent());
 
     String result = runArt(processedApplication, className);
-
     assertEquals(StringUtils.lines("Test", className, "Test", className, "Test", className),
         result);
   }

@@ -212,13 +212,13 @@ public class R8PartialCompilationConfiguration {
 
     public Builder addJavaTypeIncludePattern(String pattern) {
       includePredicates.add(
-          createPredicate("L" + DescriptorUtils.getBinaryNameFromJavaType(pattern)));
+          createPredicate("L" + DescriptorUtils.getInternalNameFromJavaType(pattern)));
       return this;
     }
 
     public Builder addJavaTypeExcludePattern(String pattern) {
       excludePredicates.add(
-          createPredicate("L" + DescriptorUtils.getBinaryNameFromJavaType(pattern)));
+          createPredicate("L" + DescriptorUtils.getInternalNameFromJavaType(pattern)));
       return this;
     }
 

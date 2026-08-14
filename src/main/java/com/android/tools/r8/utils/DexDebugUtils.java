@@ -20,6 +20,7 @@ public class DexDebugUtils {
   public static boolean verifySetPositionFramesFollowedByDefaultEvent(DexDebugInfo debugInfo) {
     return debugInfo == null
         || debugInfo.isPcBasedInfo()
+        || debugInfo.isNativePcBasedInfo()
         || verifySetPositionFramesFollowedByDefaultEvent(debugInfo.asEventBasedInfo().events);
   }
 

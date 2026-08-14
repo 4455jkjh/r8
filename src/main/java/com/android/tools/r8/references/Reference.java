@@ -85,7 +85,7 @@ public final class Reference {
    * <p>See JVM SE 9 Specification, Section 4.2.1. Binary Class and Interface Names.
    */
   public static ClassReference classFromBinaryName(String binaryName) {
-    return classFromDescriptor(DescriptorUtils.getDescriptorFromClassBinaryName(binaryName));
+    return classFromDescriptor(DescriptorUtils.getDescriptorFromClassInternalName(binaryName));
   }
 
   /**

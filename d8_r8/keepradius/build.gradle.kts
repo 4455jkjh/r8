@@ -57,8 +57,3 @@ val keepradiusJar by
     outgoing.artifact(tasks.named<Jar>("jar"))
     outgoing.artifact(tasks.named<Jar>("protoJar"))
   }
-
-val keepradiusSources by
-  configurations.consumable("keepradiusSources") {
-    outgoing.artifact(tasks.named<Jar>("sourcesJar"))
-  }

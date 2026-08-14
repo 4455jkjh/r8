@@ -35,7 +35,7 @@ public class RepackageClassWithDontObfuscateKeepPackageNameOnTargetTest extends 
 
   @Test
   public void testR8() throws Exception {
-    String originalPackage = DescriptorUtils.getPackageNameFromBinaryName(binaryName(Foo.class));
+    String originalPackage = DescriptorUtils.getPackageNameFromInternalName(binaryName(Foo.class));
     testForR8(parameters.getBackend())
         .addInnerClasses(getClass())
         .setMinApi(parameters)
@@ -52,7 +52,7 @@ public class RepackageClassWithDontObfuscateKeepPackageNameOnTargetTest extends 
               assertThat(clazz, isPresent());
               assertThat(clazz.getFinalName(), not(startsWith(DESTINATION_PACKAGE)));
               String finalPackage =
-                  DescriptorUtils.getPackageNameFromBinaryName(clazz.getFinalBinaryName());
+                  DescriptorUtils.getPackageNameFromInternalName(clazz.getFinalBinaryName());
               assertEquals(originalPackage, finalPackage);
             });
   }

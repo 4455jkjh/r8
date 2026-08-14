@@ -88,6 +88,12 @@ public class DesugaredLibraryTestCompileResult<T extends DesugaredLibraryTestBas
     return compileResult.getSyntheticItems();
   }
 
+  public <E extends Throwable> DesugaredLibraryTestCompileResult<T> inspectProgramAndL8(
+      ThrowingBiConsumer<CodeInspector, CodeInspector, E> consumer) throws IOException, E {
+    consumer.accept(compileResult.inspector(), l8Compile.inspector());
+    return this;
+  }
+
   public <E extends Throwable> DesugaredLibraryTestCompileResult<T> inspectL8(
       ThrowingConsumer<CodeInspector, E> consumer) throws IOException, E {
     l8Compile.inspect(consumer);

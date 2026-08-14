@@ -708,7 +708,7 @@ public class AssumeInserter {
     return block;
   }
 
-  private IntList findDominatedPredecessorIndexesInPhi(
+  public static IntList findDominatedPredecessorIndexesInPhi(
       Phi user, Value assumedValue, Predicate<BasicBlock> dominatedByInsertionBlock) {
     assert user.getOperands().contains(assumedValue);
     List<Value> operands = user.getOperands();

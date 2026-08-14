@@ -11,8 +11,8 @@ import com.android.tools.r8.KotlinTestParameters;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.enumunboxing.EnumUnboxingTestBase;
-import com.android.tools.r8.utils.internal.BooleanUtils;
 import com.android.tools.r8.utils.DescriptorUtils;
+import com.android.tools.r8.utils.internal.BooleanUtils;
 import java.nio.file.Paths;
 import java.util.List;
 import org.junit.Test;
@@ -34,7 +34,7 @@ public class SimpleKotlinEnumUnboxingTest extends EnumUnboxingTestBase {
           Paths.get(
               ToolHelper.TESTS_DIR,
               "java",
-              DescriptorUtils.getBinaryNameFromJavaType(PKG),
+              DescriptorUtils.getInternalNameFromJavaType(PKG),
               "Main.kt"));
 
   @Parameters(name = "{0}, {1}, valueOpt: {2}, keep: {3}")

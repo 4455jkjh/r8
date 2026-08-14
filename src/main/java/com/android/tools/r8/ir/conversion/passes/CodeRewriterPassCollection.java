@@ -47,12 +47,15 @@ public class CodeRewriterPassCollection {
     passes.add(new TrivialCheckCastAndInstanceOfRemover(appView));
     passes.add(new EnumValueOptimizer(appView));
     passes.add(new KnownArrayLengthRewriter(appView));
-    passes.add(new NaturalIntLoopRemover(appView));
     passes.add(new CommonSubexpressionElimination(appView));
     passes.add(new ArrayConstructionSimplifier(appView));
     passes.add(new MoveResultRewriter(appView));
     passes.add(new SplitIntSwitch(appView));
     passes.add(new SparseConditionalConstantPropagation(appView));
+    // NaturalIntLoopOptimizer should generally run after KnownArrayLengthRewriter and
+    // SparseConditionalConstantPropagation so that expressions such as array.length - 1 has been
+    // optimized into a constant.
+    passes.add(new NaturalIntLoopOptimizer(appView));
     passes.add(new ThrowCatchOptimizer(appView));
     passes.add(new BranchSimplifier(appView));
     passes.add(new SplitBranch(appView));

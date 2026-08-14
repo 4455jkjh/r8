@@ -46,7 +46,8 @@ public class MetadataRewriteLocalDelegatedPropertyTest extends KotlinMetadataTes
   private final TestParameters parameters;
   private static final KotlinCompileMemoizer jars =
       getCompileMemoizer(
-          getKotlinSourceFileFromResources(DescriptorUtils.getBinaryNameFromJavaType(PKG_APP), "main"));
+          getKotlinSourceFileFromResources(
+              DescriptorUtils.getInternalNameFromJavaType(PKG_APP), "main"));
 
   @Test
   public void smokeTest() throws Exception {

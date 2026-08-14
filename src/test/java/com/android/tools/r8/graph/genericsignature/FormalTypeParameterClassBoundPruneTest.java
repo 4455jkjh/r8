@@ -24,7 +24,7 @@ public class FormalTypeParameterClassBoundPruneTest extends TestBase {
 
   private final TestParameters parameters;
   private final String INTERFACE_BOUND =
-      "L" + DescriptorUtils.getBinaryNameFromJavaType(Interface.class.getTypeName()) + "<TT;>;";
+      "L" + DescriptorUtils.getInternalNameFromJavaType(Interface.class.getTypeName()) + "<TT;>;";
 
   @Parameters(name = "{0}")
   public static TestParametersCollection data() {

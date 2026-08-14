@@ -371,7 +371,7 @@ public class InvokeSuperTest extends TestBase {
                   String targetHolderType =
                       InvokeSuperTest.class.getTypeName() + "$" + targetHolderRaw;
                   String targetHolderName =
-                      DescriptorUtils.getBinaryNameFromJavaType(targetHolderType);
+                      DescriptorUtils.getInternalNameFromJavaType(targetHolderType);
                   mv.visitCode();
                   mv.visitVarInsn(ALOAD, 0);
                   mv.visitMethodInsn(INVOKESPECIAL, targetHolderName, targetMethod, "()V", false);
