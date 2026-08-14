@@ -43,7 +43,7 @@ public class VirtualMethodsOverrideNumberUnboxingTest extends TestBase {
         .enableInliningAnnotations()
         .enableNoHorizontalClassMergingAnnotations()
         .enableNeverClassInliningAnnotations()
-        .addOptionsModification(opt -> opt.testing.enableNumberUnboxer = true)
+        .addOptionsModification(opt -> opt.getTestingOptions().getNumberUnboxerOptions().enable())
         .setMinApi(parameters)
         .compile()
         .inspect(this::assertUnboxing)

@@ -17,8 +17,6 @@ import java.util.Arrays;
  */
 public class ValueBoxingStatus {
 
-  // TODO(b/307872552): Add threshold to NumberUnboxing options.
-  private static final int MAX_TRANSITIVE_DEPENDENCIES = 7;
   public static final ValueBoxingStatus NOT_UNBOXABLE =
       new ValueBoxingStatus(0, ImmutableMultiset.of());
   private final int boxingDelta;
@@ -30,17 +28,20 @@ public class ValueBoxingStatus {
     return valueBoxingStatuses;
   }
 
-  public static ValueBoxingStatus with(int boxingDelta) {
-    return with(boxingDelta, ImmutableMultiset.of());
-  }
-
-  public static ValueBoxingStatus with(TransitiveDependency transitiveDependency) {
-    return with(0, ImmutableMultiset.of(transitiveDependency));
+  public static ValueBoxingStatus with(int boxingDelta, NumberUnboxerOptions numberUnboxerOptions) {
+    return checkedWith(boxingDelta, ImmutableMultiset.of(), numberUnboxerOptions);
   }
 
   public static ValueBoxingStatus with(
-      int boxingDelta, ImmutableMultiset<TransitiveDependency> transitiveDependencies) {
-    if (transitiveDependencies.size() > MAX_TRANSITIVE_DEPENDENCIES) {
+      TransitiveDependency transitiveDependency, NumberUnboxerOptions numberUnboxerOptions) {
+    return checkedWith(0, ImmutableMultiset.of(transitiveDependency), numberUnboxerOptions);
+  }
+
+  private static ValueBoxingStatus checkedWith(
+      int boxingDelta,
+      ImmutableMultiset<TransitiveDependency> transitiveDependencies,
+      NumberUnboxerOptions numberUnboxerOptions) {
+    if (transitiveDependencies.size() > numberUnboxerOptions.getMaxTransitiveDependencies()) {
       return NOT_UNBOXABLE;
     }
     return new ValueBoxingStatus(boxingDelta, transitiveDependencies);
@@ -69,7 +70,8 @@ public class ValueBoxingStatus {
     return transitiveDependencies;
   }
 
-  public ValueBoxingStatus merge(ValueBoxingStatus unboxingStatus) {
+  public ValueBoxingStatus merge(
+      ValueBoxingStatus unboxingStatus, NumberUnboxerOptions numberUnboxerOptions) {
     if (isNotUnboxable() || unboxingStatus.isNotUnboxable()) {
       return NOT_UNBOXABLE;
     }
@@ -78,20 +80,21 @@ public class ValueBoxingStatus {
       if (newDelta == boxingDelta) {
         return this;
       }
-      return with(newDelta, transitiveDependencies);
+      return checkedWith(newDelta, transitiveDependencies, numberUnboxerOptions);
     }
     if (transitiveDependencies.isEmpty()) {
       if (newDelta == unboxingStatus.getBoxingDelta()) {
         return unboxingStatus;
       }
-      return with(newDelta, unboxingStatus.getTransitiveDependencies());
+      return checkedWith(
+          newDelta, unboxingStatus.getTransitiveDependencies(), numberUnboxerOptions);
     }
     ImmutableMultiset<TransitiveDependency> newDeps =
         ImmutableMultiset.<TransitiveDependency>builder()
             .addAll(transitiveDependencies)
             .addAll(unboxingStatus.getTransitiveDependencies())
             .build();
-    return with(newDelta, newDeps);
+    return checkedWith(newDelta, newDeps, numberUnboxerOptions);
   }
 
   @Override

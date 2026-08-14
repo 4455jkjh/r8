@@ -16,7 +16,7 @@ import java.util.concurrent.ExecutorService;
 public abstract class NumberUnboxer {
 
   public static NumberUnboxer create(AppView<AppInfoWithLiveness> appView) {
-    if (appView.testing().enableNumberUnboxer) {
+    if (appView.testing().getNumberUnboxerOptions().isEnabled()) {
       return new NumberUnboxerImpl(appView);
     }
     return empty();
