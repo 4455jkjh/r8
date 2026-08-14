@@ -18,8 +18,6 @@ import archive_desugar_jdk_libs
 
 
 class Variant(Enum):
-    jdk8 = 'jdk8'
-    jdk11_legacy = 'jdk11_legacy'
     jdk11_minimal = 'jdk11_minimal'
     jdk11 = 'jdk11'
     jdk11_nio = 'jdk11_nio'
@@ -92,26 +90,6 @@ def run(args):
     implementation_maven_zip = None
     release_archive_location = None
     match args.variant:
-        case Variant.jdk8:
-            artifact = 'desugar_jdk_libs'
-            configuration_artifact = 'desugar_jdk_libs_configuration'
-            configuration = utils.DESUGAR_CONFIGURATION
-            conversions = utils.LIBRARY_DESUGAR_CONVERSIONS_LEGACY_ZIP
-            implementation = utils.DESUGAR_IMPLEMENTATION
-            version_file_name = 'VERSION.txt'
-            implementation_build_target = ':maven_release'
-            implementation_maven_zip = 'desugar_jdk_libs.zip'
-            release_archive_location = 'desugar_jdk_libs'
-        case Variant.jdk11_legacy:
-            artifact = 'desugar_jdk_libs'
-            configuration_artifact = 'desugar_jdk_libs_configuration'
-            configuration = utils.DESUGAR_CONFIGURATION_JDK11_LEGACY
-            conversions = utils.LIBRARY_DESUGAR_CONVERSIONS_LEGACY_ZIP
-            implementation = utils.DESUGAR_IMPLEMENTATION_JDK11
-            version_file_name = 'VERSION_JDK11_LEGACY.txt'
-            implementation_build_target = ':maven_release_jdk11_legacy'
-            implementation_maven_zip = 'desugar_jdk_libs_jdk11_legacy.zip'
-            release_archive_location = 'desugar_jdk_libs'
         case Variant.jdk11_minimal:
             artifact = 'desugar_jdk_libs_minimal'
             configuration_artifact = 'desugar_jdk_libs_configuration_minimal'

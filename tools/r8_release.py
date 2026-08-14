@@ -536,30 +536,20 @@ def prepare_desugar_library(args):
         configuration_version = args.desugar_library[1]
 
         # TODO(b/237636871): Cleanup and generalize.
-        if (not (library_version.startswith('1.1') or
-                 library_version.startswith('1.2') or
-                 library_version.startswith('2.0') or
+        if (not (library_version.startswith('2.0') or
                  library_version.startswith('2.1'))):
             print(
                 "Release script does not support desugared library version %s" %
                 library_version)
             sys.exit(1)
 
-        postfixes = ['']
-        if library_version.startswith('1.2'):
-            postfixes = ['_legacy']
-        if library_version.startswith('2.0') or library_version.startswith(
-                '2.1'):
-            postfixes = ['_minimal', '', '_nio']
-
+        postfixes = ['_minimal', '', '_nio']
         with utils.TempDir() as temp:
             with utils.ChangedWorkingDirectory(temp):
                 artifacts = []
                 for postfix in postfixes:
-                    group_postfix = ('' if postfix == '_legacy' else postfix)
-                    archive_postfix = (postfix
-                                       if library_version.startswith('1.1') else
-                                       '_jdk11' + postfix)
+                    group_postfix = postfix
+                    archive_postfix = '_jdk11' + postfix
                     library_jar = DESUGAR_JDK_LIBS + postfix + '.jar'
                     library_archive = DESUGAR_JDK_LIBS + archive_postfix + '.zip'
                     configuration_archive = DESUGAR_JDK_LIBS_CONFIGURATION + archive_postfix + '.zip'
