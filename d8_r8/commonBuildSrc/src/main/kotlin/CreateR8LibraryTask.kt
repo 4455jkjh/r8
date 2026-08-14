@@ -4,17 +4,12 @@
 
 import java.io.ByteArrayOutputStream
 import java.io.File
-import java.io.FileOutputStream
 import java.net.URI.create
 import java.net.URLClassLoader
 import java.nio.charset.Charset
 import java.nio.file.FileSystems.newFileSystem
 import java.nio.file.Files.deleteIfExists
-import java.util.zip.ZipEntry
-import java.util.zip.ZipFile
-import java.util.zip.ZipOutputStream
 import javax.inject.Inject
-import kotlin.io.path.moveTo
 import org.gradle.api.DefaultTask
 import org.gradle.api.GradleException
 import org.gradle.api.file.ConfigurableFileCollection
@@ -27,9 +22,8 @@ import org.gradle.api.provider.ValueSource
 import org.gradle.api.provider.ValueSourceParameters
 import org.gradle.api.tasks.Classpath
 import org.gradle.api.tasks.Input
-import org.gradle.api.tasks.InputFiles
+import org.gradle.api.tasks.InputFile
 import org.gradle.api.tasks.Internal
-import org.gradle.api.tasks.Optional
 import org.gradle.api.tasks.OutputFile
 import org.gradle.api.tasks.TaskAction
 import org.gradle.jvm.toolchain.JavaLanguageVersion
@@ -40,21 +34,9 @@ import org.gradle.process.ExecOperations
 public abstract class CreateR8LibraryTask : DefaultTask() {
   @get:Inject public abstract val execOperations: ExecOperations
   @get:Classpath public abstract val r8compilerClasspath: ConfigurableFileCollection
-  @get:Classpath public abstract val inputJar: RegularFileProperty
-  @get:[Classpath Optional]
-  public abstract val inputClasspath: ConfigurableFileCollection
-  @get:[Classpath Optional]
-  public abstract val replaceInOutputJar: RegularFileProperty
-  @get:InputFiles public abstract val pgConfigs: ConfigurableFileCollection
-  @get:Input
-  public val enableKeepAnnotations: Property<Boolean> =
-    project.objects.property(Boolean::class.java).convention(false)
-  @get:Input
-  public val enableHorizontalClassMerging: Property<Boolean> =
-    project.objects.property(Boolean::class.java).convention(false)
-  @get:Input
-  public val excludingDepsVariant: Property<Boolean> =
-    project.objects.property(Boolean::class.java).convention(false)
+  @get:InputFile public abstract val inputJar: RegularFileProperty
+  @get:InputFile public abstract val pgConfig: RegularFileProperty
+  @get:Input public abstract val enableKeepAnnotations: Property<Boolean>
   @get:Input
   public val gitHeadSha: Provider<String> =
     project.providers.of(GitHeadShaSource::class.java) {
@@ -88,12 +70,8 @@ public abstract class CreateR8LibraryTask : DefaultTask() {
   @TaskAction
   public fun create() {
     val versionLabel = getVersionLabel(r8compilerClasspath.single())
-    val r8Version =
-      if (versionLabel == "main")
-        gitHeadSha.get() + if (excludingDepsVariant.get()) "+excldeps" else ""
-      else versionLabel
+    val r8Version = if (versionLabel == "main") gitHeadSha.get() else versionLabel
 
-    val outputJarFile = outputJar.get().asFile
     execOperations.javaexec {
       classpath = r8compilerClasspath
       mainClass.set("com.android.tools.r8.R8")
@@ -103,9 +81,6 @@ public abstract class CreateR8LibraryTask : DefaultTask() {
       systemProperty("com.android.tools.r8.enableKeepAnnotations", enableKeepAnnotations.get())
       systemProperty("com.android.tools.r8.enableEmptyMemberRulesToDefaultInitRuleConversion", "0")
       systemProperty("com.android.tools.r8.tracereferences.obfuscateAllEnums", "true")
-      if (enableHorizontalClassMerging.get()) {
-        systemProperty("com.android.tools.r8.disableHorizontalClassMerging", 0)
-      }
 
       val myArgs = mutableListOf(inputJar.get().asFile.absolutePath)
       myArgs.apply {
@@ -115,7 +90,7 @@ public abstract class CreateR8LibraryTask : DefaultTask() {
         add("--source-file-template")
         add("R8_%MAP_ID_%MAP_HASH")
         add("--output")
-        add(outputJarFile.absolutePath)
+        add(outputJar.get().asFile.absolutePath)
         add("--pg-conf-output")
         add(outputPgConfig.get().asFile.absolutePath)
         add("--pg-map-output")
@@ -124,58 +99,19 @@ public abstract class CreateR8LibraryTask : DefaultTask() {
         add(outputPartitionMap.get().asFile.absolutePath)
         add("--lib")
         add(javaHome.get().asFile.absolutePath)
-        pgConfigs.forEach { config ->
-          add("--pg-conf")
-          add(config.absolutePath)
-        }
-        inputClasspath.forEach {
-          add("--classpath")
-          add(it.absolutePath)
-        }
+        add("--pg-conf")
+        add(pgConfig.get().asFile.absolutePath)
       }
       args = myArgs
     }
     if (!enableKeepAnnotations.get()) { // delete api database if we do not enable keep annotations
       // The URI must be prefixed with "jar:" to tell the FileSystem provider to treat it as a
       // ZIP/JAR
-      val uri = create("jar:${outputJarFile.toPath().toUri()}")
+      val uri = create("jar:${outputJar.get().asFile.toPath().toUri()}")
       val env = mapOf("create" to "false")
       newFileSystem(uri, env).use { zipfs ->
         val pathInZip = zipfs.getPath("resources/api_database.ser")
         deleteIfExists(pathInZip)
-      }
-    }
-    if (replaceInOutputJar.isPresent) {
-      val tempOutFile = File.createTempFile("replaced_", ".jar")
-      mergeReplacingContents(outputJarFile, replaceInOutputJar.get().asFile, tempOutFile)
-      tempOutFile.toPath().moveTo(outputJarFile.toPath(), true)
-    }
-  }
-}
-
-private fun mergeReplacingContents(inputJar: File, replaceJar: File, outputJar: File) {
-  ZipFile(inputJar).use { input ->
-    ZipFile(replaceJar).use { replace ->
-      ZipOutputStream(FileOutputStream(outputJar)).use { outStream ->
-        val skipFromInput = mutableSetOf<String>()
-        for (entry in replace.entries()) {
-          val name = entry.name
-          if (name.endsWith(".class")) {
-            outStream.putNextEntry(ZipEntry(entry).apply { time = 0L })
-            replace.getInputStream(entry).use { input -> input.copyTo(outStream) }
-            outStream.closeEntry()
-            skipFromInput.add(name)
-          } else {
-            check(name == "META-INF/MANIFEST.MF" || entry.isDirectory)
-          }
-        }
-        for (entry in input.entries()) {
-          if (entry.name !in skipFromInput) {
-            outStream.putNextEntry(ZipEntry(entry).apply { time = 0L })
-            input.getInputStream(entry).use { input -> input.copyTo(outStream) }
-            outStream.closeEntry()
-          }
-        }
       }
     }
   }
