@@ -37,6 +37,12 @@ public abstract class SwissArmyKnifeTask : DefaultTask() {
   public abstract val libs: ConfigurableFileCollection
 
   @get:[Optional Classpath]
+  public abstract val targets: ConfigurableFileCollection
+
+  @get:[Optional Classpath]
+  public abstract val sources: ConfigurableFileCollection
+
+  @get:[Optional Classpath]
   public abstract val classpath: ConfigurableFileCollection
 
   @get:[Optional InputFiles PathSensitive(PathSensitivity.NONE)]
@@ -66,6 +72,8 @@ public abstract class SwissArmyKnifeTask : DefaultTask() {
       myArgs.addAll(inputFiles.flatMap { listOf("--input", it.absolutePath) })
       myArgs.addAll(inputNoResFiles.flatMap { listOf("--input-no-res", it.absolutePath) })
       myArgs.addAll(libs.flatMap { listOf("--lib", it.absolutePath) })
+      myArgs.addAll(targets.flatMap { listOf("--target", it.absolutePath) })
+      myArgs.addAll(sources.flatMap { listOf("--source", it.absolutePath) })
       myArgs.addAll(
         this@SwissArmyKnifeTask.classpath.flatMap { listOf("--classpath", it.absolutePath) }
       )
