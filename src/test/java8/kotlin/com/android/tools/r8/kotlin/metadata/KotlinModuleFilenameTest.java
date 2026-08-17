@@ -4,6 +4,7 @@
 package com.android.tools.r8.kotlin.metadata;
 
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 import com.android.tools.r8.KotlinTestBase;
 import com.android.tools.r8.KotlinTestParameters;
@@ -77,10 +78,10 @@ public class KotlinModuleFilenameTest extends KotlinTestBase {
 
     // We expect the filename to be filesystem-safe. R8 should not produce files with ':' in their
     // name.
+    assertFalse("Expected some kotlin module files", kotlinModuleFiles.isEmpty());
     List<String> filesWithColon =
         kotlinModuleFiles.stream().filter(name -> name.contains(":")).collect(Collectors.toList());
-    // TODO(b/543685256): Fix this behavior (flip to assertTrue).
-    assertFalse(
+    assertTrue(
         "Expected no .kotlin_module file with ':' in its name, but found: " + filesWithColon,
         filesWithColon.isEmpty());
   }

@@ -377,6 +377,8 @@ def archivers():
         "archive",
         "archive_release",
         "lib_desugar-archive-jdk11",
+        "lib_desugar-archive-jdk11-legacy",
+        "lib_desugar-archive-jdk8",
     ]:
         desugar = "desugar" in name
         properties = {
@@ -384,7 +386,12 @@ def archivers():
             "builder_group": "internal.client.r8",
         }
         if desugar:
-            properties["test_options"] = ["--variant=jdk11_minimal", "--variant=jdk11", "--variant=jdk11_nio"]
+            if name.endswith("jdk11"):
+                properties["test_options"] = ["--variant=jdk11_minimal", "--variant=jdk11", "--variant=jdk11_nio"]
+            elif name.endswith("jdk11-legacy"):
+                properties["test_options"] = ["--variant=jdk11_legacy"]
+            else:
+                properties["test_options"] = ["--variant=jdk8"]
 
         r8_builder(
             name,
