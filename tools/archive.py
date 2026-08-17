@@ -300,6 +300,16 @@ def run(options):
         # an r8.jar with dependencies to have been built.
         timing.begin("Generate desugar configuration maven zip")
         create_maven_release.generate_desugar_configuration_maven_zip(
+            utils.DESUGAR_CONFIGURATION_MAVEN_ZIP, utils.DESUGAR_CONFIGURATION,
+            utils.DESUGAR_IMPLEMENTATION,
+            utils.LIBRARY_DESUGAR_CONVERSIONS_LEGACY_ZIP)
+        create_maven_release.generate_desugar_configuration_maven_zip(
+            utils.DESUGAR_CONFIGURATION_JDK11_LEGACY_MAVEN_ZIP,
+            utils.DESUGAR_CONFIGURATION_JDK11_LEGACY,
+            utils.DESUGAR_IMPLEMENTATION_JDK11,
+            utils.LIBRARY_DESUGAR_CONVERSIONS_LEGACY_ZIP)
+
+        create_maven_release.generate_desugar_configuration_maven_zip(
             utils.DESUGAR_CONFIGURATION_JDK11_MINIMAL_MAVEN_ZIP,
             utils.DESUGAR_CONFIGURATION_JDK11_MINIMAL,
             utils.DESUGAR_IMPLEMENTATION_JDK11,
@@ -367,6 +377,9 @@ def run(options):
             utils.R8_JAR, utils.R8_FULL_EXCLUDE_DEPS_JAR, utils.MAVEN_ZIP_LIB,
             utils.THREADING_MODULE_BLOCKING_JAR,
             utils.THREADING_MODULE_SINGLE_THREADED_JAR, utils.KEEPANNOTOOLS_JAR,
+            utils.DESUGAR_CONFIGURATION, utils.DESUGAR_CONFIGURATION_MAVEN_ZIP,
+            utils.DESUGAR_CONFIGURATION_JDK11_LEGACY,
+            utils.DESUGAR_CONFIGURATION_JDK11_LEGACY_MAVEN_ZIP,
             utils.DESUGAR_CONFIGURATION_JDK11_MINIMAL_MAVEN_ZIP,
             utils.DESUGAR_CONFIGURATION_JDK11_MAVEN_ZIP,
             utils.DESUGAR_CONFIGURATION_JDK11_NIO_MAVEN_ZIP, utils.R8_SRC_JAR,
@@ -431,6 +444,79 @@ def run(options):
                     print('Dry run, not actually uploading')
                 else:
                     utils.upload_file_to_cloud_storage(tagged_jar, latest_dst)
+
+            # Upload desugar_jdk_libs configuration to a maven compatible location.
+            if file == utils.DESUGAR_CONFIGURATION:
+                jar_basename = 'desugar_jdk_libs_configuration.jar'
+                jar_version_name = 'desugar_jdk_libs_configuration-%s.jar' % version
+                maven_dst = get_upload_destination(
+                    utils.get_maven_path('desugar_jdk_libs_configuration',
+                                         version), jar_version_name, is_main)
+
+                with utils.TempDir() as tmp_dir:
+                    desugar_jdk_libs_configuration_jar = os.path.join(
+                        tmp_dir, jar_version_name)
+                    create_maven_release.generate_jar_with_desugar_configuration(
+                        utils.DESUGAR_CONFIGURATION,
+                        utils.DESUGAR_IMPLEMENTATION,
+                        utils.LIBRARY_DESUGAR_CONVERSIONS_ZIP,
+                        desugar_jdk_libs_configuration_jar)
+
+                    if options.dry_run:
+                        print('Dry run, not actually creating maven repo for ' +
+                              'desugar configuration.')
+                        if options.dry_run_output:
+                            shutil.copyfile(
+                                desugar_jdk_libs_configuration_jar,
+                                os.path.join(options.dry_run_output,
+                                             jar_version_name))
+                    else:
+                        utils.upload_file_to_cloud_storage(
+                            desugar_jdk_libs_configuration_jar, maven_dst)
+                        print('Maven repo root available at: %s' %
+                              get_maven_url(is_main))
+                        # Also archive the jar as non maven destination for Google3
+                        jar_destination = get_upload_destination(
+                            version, jar_basename, is_main)
+                        utils.upload_file_to_cloud_storage(
+                            desugar_jdk_libs_configuration_jar, jar_destination)
+
+            # TODO(b/237636871): Refactor this to avoid the duplication of what is above.
+            # Upload desugar_jdk_libs JDK-11 legacyconfiguration to a maven compatible location.
+            if file == utils.DESUGAR_CONFIGURATION_JDK11_LEGACY:
+                jar_basename = 'desugar_jdk_libs_configuration.jar'
+                jar_version_name = 'desugar_jdk_libs_configuration-%s-jdk11-legacy.jar' % version
+                maven_dst = get_upload_destination(
+                    utils.get_maven_path('desugar_jdk_libs_configuration',
+                                         version), jar_version_name, is_main)
+
+                with utils.TempDir() as tmp_dir:
+                    desugar_jdk_libs_configuration_jar = os.path.join(
+                        tmp_dir, jar_version_name)
+                    create_maven_release.generate_jar_with_desugar_configuration(
+                        utils.DESUGAR_CONFIGURATION_JDK11_LEGACY,
+                        utils.DESUGAR_IMPLEMENTATION_JDK11,
+                        utils.LIBRARY_DESUGAR_CONVERSIONS_ZIP,
+                        desugar_jdk_libs_configuration_jar)
+
+                    if options.dry_run:
+                        print('Dry run, not actually creating maven repo for ' +
+                              'desugar configuration.')
+                        if options.dry_run_output:
+                            shutil.copyfile(
+                                desugar_jdk_libs_configuration_jar,
+                                os.path.join(options.dry_run_output,
+                                             jar_version_name))
+                    else:
+                        utils.upload_file_to_cloud_storage(
+                            desugar_jdk_libs_configuration_jar, maven_dst)
+                        print('Maven repo root available at: %s' %
+                              get_maven_url(is_main))
+                        # Also archive the jar as non maven destination for Google3
+                        jar_destination = get_upload_destination(
+                            version, jar_basename, is_main)
+                        utils.upload_file_to_cloud_storage(
+                            desugar_jdk_libs_configuration_jar, jar_destination)
 
         # Write the archive details JSON (for the LUCI recipie to read).
         archive_details = {

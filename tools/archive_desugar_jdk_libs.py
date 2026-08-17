@@ -33,11 +33,15 @@ import sys
 import utils
 import zipfile
 
+VERSION_FILE_JDK8 = 'VERSION.txt'
+VERSION_FILE_JDK11_LEGACY = 'VERSION_JDK11_LEGACY.txt'
 VERSION_FILE_JDK11_MINIMAL = 'VERSION_JDK11_MINIMAL.txt'
 VERSION_FILE_JDK11 = 'VERSION_JDK11.txt'
 VERSION_FILE_JDK11_NIO = 'VERSION_JDK11_NIO.txt'
 
 VERSION_MAP = {
+    'jdk8': VERSION_FILE_JDK8,
+    'jdk11_legacy': VERSION_FILE_JDK11_LEGACY,
     'jdk11_minimal': VERSION_FILE_JDK11_MINIMAL,
     'jdk11': VERSION_FILE_JDK11,
     'jdk11_nio': VERSION_FILE_JDK11_NIO
@@ -48,18 +52,24 @@ GITHUB_REPRO = 'desugar_jdk_libs'
 BASE_LIBRARY_NAME = 'desugar_jdk_libs'
 
 LIBRARY_NAME_MAP = {
+    'jdk8': BASE_LIBRARY_NAME,
+    'jdk11_legacy': BASE_LIBRARY_NAME,
     'jdk11_minimal': BASE_LIBRARY_NAME + '_minimal',
     'jdk11': BASE_LIBRARY_NAME,
     'jdk11_nio': BASE_LIBRARY_NAME + '_nio'
 }
 
 MAVEN_RELEASE_TARGET_MAP = {
+    'jdk8': 'maven_release',
+    'jdk11_legacy': 'maven_release_jdk11_legacy',
     'jdk11_minimal': 'maven_release_jdk11_minimal',
     'jdk11': 'maven_release_jdk11',
     'jdk11_nio': 'maven_release_jdk11_nio'
 }
 
 MAVEN_RELEASE_ZIP = {
+    'jdk8': BASE_LIBRARY_NAME + '.zip',
+    'jdk11_legacy': BASE_LIBRARY_NAME + '_jdk11_legacy.zip',
     'jdk11_minimal': BASE_LIBRARY_NAME + '_jdk11_minimal.zip',
     'jdk11': BASE_LIBRARY_NAME + '_jdk11.zip',
     'jdk11_nio': BASE_LIBRARY_NAME + '_jdk11_nio.zip'
@@ -72,12 +82,13 @@ DESUGAR_JDK_LIBS_HASH_FILE = os.path.join(defines.THIRD_PARTY, 'openjdk',
 
 def ParseOptions(argv):
     result = optparse.OptionParser()
-    result.add_option('--variant',
-                      help="Variant(s) to build",
-                      metavar=('<variants(s)>'),
-                      choices=['jdk11_minimal', 'jdk11', 'jdk11_nio'],
-                      default=[],
-                      action='append')
+    result.add_option(
+        '--variant',
+        help="Variant(s) to build",
+        metavar=('<variants(s)>'),
+        choices=['jdk8', 'jdk11_legacy', 'jdk11_minimal', 'jdk11', 'jdk11_nio'],
+        default=[],
+        action='append')
     result.add_option('--dry-run',
                       '--dry_run',
                       help='Running on bot, use third_party dependency.',
@@ -182,7 +193,7 @@ def setUpFakeAndroidHome(androidHomeTemp):
 def BuildDesugaredLibrary(checkout_dir, variant, version=None):
     if not variant in MAVEN_RELEASE_TARGET_MAP:
         raise Exception('Variant ' + variant + ' is not supported')
-    if version is None:
+    if variant != 'jdk8' and variant != 'jdk11_legacy' and version is None:
         raise Exception('Variant ' + variant +
                         ' require version for undesugaring')
     with utils.ChangedWorkingDirectory(checkout_dir):
@@ -203,17 +214,28 @@ def BuildDesugaredLibrary(checkout_dir, variant, version=None):
 
         # Locate the library jar and the maven zip with the jar from the
         # bazel build.
-        library_jar = os.path.join(checkout_dir, 'bazel-bin', 'jdk11', 'src',
-                                   'd8_java_base_selected_with_addon.jar')
+        if variant == 'jdk8':
+            library_jar = os.path.join(checkout_dir, 'bazel-bin', 'src',
+                                       'share', 'classes', 'java',
+                                       'libjava.jar')
+        else:
+            # All JDK11 variants use the same library code.
+            library_jar = os.path.join(checkout_dir, 'bazel-bin', 'jdk11',
+                                       'src',
+                                       'd8_java_base_selected_with_addon.jar')
         maven_zip = os.path.join(checkout_dir, 'bazel-bin',
                                  MAVEN_RELEASE_ZIP[variant])
 
-        # The undesugaring is temporary...
-        undesugared_maven_zip = os.path.join(checkout_dir, 'undesugared_maven')
-        Undesugar(variant, maven_zip, version, undesugared_maven_zip)
-        undesugared_maven_zip = os.path.join(checkout_dir,
-                                             'undesugared_maven.zip')
-        return (library_jar, undesugared_maven_zip)
+        if variant != 'jdk8' and variant != 'jdk11_legacy':
+            # The undesugaring is temporary...
+            undesugared_maven_zip = os.path.join(checkout_dir,
+                                                 'undesugared_maven')
+            Undesugar(variant, maven_zip, version, undesugared_maven_zip)
+            undesugared_maven_zip = os.path.join(checkout_dir,
+                                                 'undesugared_maven.zip')
+            return (library_jar, undesugared_maven_zip)
+        else:
+            return (library_jar, maven_zip)
 
 
 def hash_for(file, hash):
