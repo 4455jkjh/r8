@@ -22,6 +22,11 @@ import org.junit.runners.Parameterized.Parameters;
 @RunWith(Parameterized.class)
 public class GenerateCfUtilityMethodsForCodeOptimizations extends MethodGenerationBase {
 
+  // GENERATED_TYPE has to be hardcoded (not computed via reflection) to avoid compiler renaming.
+  private final DexType GENERATED_TYPE =
+      factory.createType(
+          "Lcom/android/tools/r8/ir/optimize/templates/CfUtilityMethodsForCodeOptimizations;");
+
   @Parameters(name = "{0}")
   public static TestParametersCollection data() {
     return getTestParameters().withNoneRuntime().build();
@@ -33,8 +38,7 @@ public class GenerateCfUtilityMethodsForCodeOptimizations extends MethodGenerati
 
   @Override
   protected DexType getGeneratedType() {
-    return factory.createType(
-        "Lcom/android/tools/r8/ir/optimize/templates/CfUtilityMethodsForCodeOptimizations;");
+    return GENERATED_TYPE;
   }
 
   @Override

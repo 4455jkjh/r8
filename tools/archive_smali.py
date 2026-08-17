@@ -16,6 +16,7 @@ import subprocess
 import sys
 
 import jdk
+import luci_utils
 import utils
 
 ARCHIVE_BUCKET = 'r8-releases'
@@ -139,9 +140,17 @@ def Main():
                 map(lambda prefix: '%s-%s-fat.jar' % (prefix, version),
                     ['smali/build/libs/smali', 'baksmali/build/libs/baksmali']))
 
+            # Extract the LUCI invocation_id.
+            luci_invocation_id = luci_utils.get_luci_invocation_id(
+                force_invocation_id = 'invocations/fake-12345678' if options.dry_run else None)
+            luci_invocation_id_file = os.path.join('luci_invocation_id')
+            with open(luci_invocation_id_file, 'w') as luci_invocation_id_writer:
+                luci_invocation_id_writer.write(luci_invocation_id + '\n')
+
             # Copy artifacts.
             files = [maven_release_archive]
             files.extend(fat_jars)
+            files.append(luci_invocation_id_file)
             if options.dry_run:
                 if dry_run_output:
                     print('Dry run, not actually uploading. Copying to %s:' %
@@ -171,6 +180,8 @@ def Main():
                     utils.upload_file_to_cloud_storage(file, destination)
                 public_url = 'https://storage.googleapis.com/%s/smali/%s' % (
                     ARCHIVE_BUCKET, version)
+                # Copy Maven ZIP for LUCI recipie to find it.
+                shutil.copyfile(maven_release_archive, 'smali-maven-release.zip')
                 print('Artifacts available at: %s' % public_url)
 
     print("Done!")

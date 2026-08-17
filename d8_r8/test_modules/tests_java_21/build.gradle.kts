@@ -49,9 +49,6 @@ tasks {
   withType<JavaCompile> { dependsOn(sharedDepsConfig) }
 
   withType<Test> {
-    notCompatibleWithConfigurationCache(
-      "Failure storing the configuration cache: cannot serialize object of type 'org.gradle.api.internal.project.DefaultProject', a subtype of 'org.gradle.api.Project', as these are not supported with the configuration cache"
-    )
     TestingState.setUpTestingState(this)
     javaLauncher = getJavaLauncher(Jdk.JDK_21)
     systemProperty(

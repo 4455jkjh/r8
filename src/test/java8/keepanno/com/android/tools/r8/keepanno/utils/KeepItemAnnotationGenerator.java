@@ -113,6 +113,7 @@ public class KeepItemAnnotationGenerator {
   private static final ClassReference KOTLIN_ANNOTATION_RETENTION =
       classFromClass(AnnotationRetention.class);
 
+  // Output names have to be hardcoded (not computed via reflection) to avoid compiler renaming.
   private static final String AST_PKG = "com.android.tools.r8.keepanno.ast";
   private static final String R8_ANNO_PKG = "com.android.tools.r8.keepanno.annotations";
   private static final String ANDROIDX_ANNO_PKG = "androidx.annotation.keep";

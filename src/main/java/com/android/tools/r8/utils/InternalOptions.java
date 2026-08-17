@@ -73,6 +73,7 @@ import com.android.tools.r8.ir.desugar.desugaredlibrary.LibraryDesugaringOptions
 import com.android.tools.r8.ir.desugar.nest.Nest;
 import com.android.tools.r8.ir.optimize.Inliner;
 import com.android.tools.r8.ir.optimize.enums.EnumDataMap;
+import com.android.tools.r8.ir.optimize.numberunboxer.NumberUnboxerOptions;
 import com.android.tools.r8.ir.optimize.outliner.bottomup.BottomUpOutlinerOptions;
 import com.android.tools.r8.keepradius.KeepRadiusOptions;
 import com.android.tools.r8.metadata.D8BuildMetadata;
@@ -611,6 +612,10 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
   // TODO(b/464478094): Flag to disable generation of LambdaMethod annotations.
   public boolean disableLambdaMethodAnnotations =
       System.getProperty("com.android.tools.r8.disableLambdaMethodAnnotations") != null;
+
+  // TODO(b/547484295): Remove this flag.
+  public boolean alwaysAllow64KTypeIds =
+      System.getProperty("com.android.tools.r8.alwaysAllow64KTypeIds") != null;
 
   private DumpInputFlags dumpInputFlags = DumpInputFlags.getDefault();
 
@@ -2334,12 +2339,16 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
         SystemPropertyUtils.parseSystemPropertyOrDefault(
             "com.android.tools.r8.dex.refinementInDebug", false);
 
+    private NumberUnboxerOptions numberUnboxerOptions = new NumberUnboxerOptions();
+
+    public NumberUnboxerOptions getNumberUnboxerOptions() {
+      return numberUnboxerOptions;
+    }
+
     public boolean enableEmbeddedKeepAnnotations =
         SystemPropertyUtils.parseSystemPropertyOrDefault(
             "com.android.tools.r8.enableKeepAnnotations", false);
     public boolean reverseClassSortingForDeterminism = false;
-    public boolean enableNumberUnboxer = false;
-    public boolean printNumberUnboxed = false;
     public boolean roundtripThroughLir = false;
 
     public boolean canUseLir(AppView<?> appView) {

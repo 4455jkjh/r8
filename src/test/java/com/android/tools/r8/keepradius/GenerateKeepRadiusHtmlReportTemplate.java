@@ -162,6 +162,7 @@ public class GenerateKeepRadiusHtmlReportTemplate extends TestBase {
   }
 
   private static Path getGeneratedFile() {
+    // Output names have to be hardcoded (not computed via reflection) to avoid compiler renaming.
     return Paths.get(
         ToolHelper.KEEP_RADIUS_SOURCE_DIR,
         "com/android/tools/r8/keepradius/KeepRadiusHtmlReportTemplate.java");

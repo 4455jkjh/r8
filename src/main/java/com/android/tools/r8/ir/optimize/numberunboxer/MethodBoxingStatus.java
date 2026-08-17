@@ -29,7 +29,8 @@ public class MethodBoxingStatus {
     this.argStatuses = argStatuses;
   }
 
-  public MethodBoxingStatus merge(MethodBoxingStatus other) {
+  public MethodBoxingStatus merge(
+      MethodBoxingStatus other, NumberUnboxerOptions numberUnboxerOptions) {
     if (isNoneUnboxable() || other.isNoneUnboxable()) {
       return NONE_UNBOXABLE;
     }
@@ -42,9 +43,9 @@ public class MethodBoxingStatus {
     assert argStatuses.length == other.argStatuses.length;
     ValueBoxingStatus[] newArgStatuses = new ValueBoxingStatus[argStatuses.length];
     for (int i = 0; i < other.argStatuses.length; i++) {
-      newArgStatuses[i] = other.argStatuses[i].merge(argStatuses[i]);
+      newArgStatuses[i] = other.argStatuses[i].merge(argStatuses[i], numberUnboxerOptions);
     }
-    return create(returnStatus.merge(other.returnStatus), newArgStatuses);
+    return create(returnStatus.merge(other.returnStatus, numberUnboxerOptions), newArgStatuses);
   }
 
   public boolean isNoneUnboxable() {

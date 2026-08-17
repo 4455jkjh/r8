@@ -40,7 +40,7 @@ public class CannotUnboxNumberUnboxingTest extends TestBase {
         .addInnerClasses(getClass())
         .addKeepMainRule(Main.class)
         .enableInliningAnnotations()
-        .addOptionsModification(opt -> opt.testing.enableNumberUnboxer = true)
+        .addOptionsModification(opt -> opt.getTestingOptions().getNumberUnboxerOptions().enable())
         .setMinApi(parameters)
         .compile()
         .inspect(this::assertUnboxing)

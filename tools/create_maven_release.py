@@ -109,18 +109,6 @@ def parse_options(argv):
     result.add_argument('--out', help='The zip file to output')
     group = result.add_mutually_exclusive_group()
     group.add_argument(
-        '--desugar-configuration',
-        action='store_true',
-        help='Build desugar library configuration (original JDK-8)')
-    group.add_argument(
-        '--desugar-configuration-jdk8',
-        action='store_true',
-        help='Build desugar library configuration (original JDK-8)')
-    group.add_argument(
-        '--desugar-configuration-jdk11-legacy',
-        action='store_true',
-        help='Build desugar library configuration (JDK-11 legacy)')
-    group.add_argument(
         '--desugar-configuration-jdk11-minimal',
         action='store_true',
         help='Build desugar library configuration (JDK-11 minimal)')
@@ -372,17 +360,7 @@ def main(argv):
     options = parse_options(argv)
     if options.out == None:
         raise Exception('Need to supply output zip with --out.')
-    if options.desugar_configuration or options.desugar_configuration_jdk8:
-        generate_desugar_configuration_maven_zip(
-            options.out, utils.DESUGAR_CONFIGURATION,
-            utils.DESUGAR_IMPLEMENTATION,
-            utils.LIBRARY_DESUGAR_CONVERSIONS_LEGACY_ZIP)
-    elif options.desugar_configuration_jdk11_legacy:
-        generate_desugar_configuration_maven_zip(
-            options.out, utils.DESUGAR_CONFIGURATION_JDK11_LEGACY,
-            utils.DESUGAR_IMPLEMENTATION_JDK11,
-            utils.LIBRARY_DESUGAR_CONVERSIONS_LEGACY_ZIP)
-    elif options.desugar_configuration_jdk11_minimal:
+    if options.desugar_configuration_jdk11_minimal:
         generate_desugar_configuration_maven_zip(
             options.out, utils.DESUGAR_CONFIGURATION_JDK11_MINIMAL,
             utils.DESUGAR_IMPLEMENTATION_JDK11,

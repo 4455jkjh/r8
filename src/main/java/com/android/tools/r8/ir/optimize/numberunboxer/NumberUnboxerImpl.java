@@ -49,6 +49,7 @@ public class NumberUnboxerImpl extends NumberUnboxer {
 
   private final AppView<AppInfoWithLiveness> appView;
   private final DexItemFactory factory;
+  private final NumberUnboxerOptions numberUnboxerOptions;
   private final Set<DexType> boxedTypes;
 
   // All candidate methods are initialized to UNPROCESSED_CANDIDATE (bottom) and methods not in
@@ -60,6 +61,7 @@ public class NumberUnboxerImpl extends NumberUnboxer {
   public NumberUnboxerImpl(AppView<AppInfoWithLiveness> appView) {
     this.appView = appView;
     this.factory = appView.dexItemFactory();
+    this.numberUnboxerOptions = appView.testing().getNumberUnboxerOptions();
     this.boxedTypes = factory.primitiveToBoxed.values();
   }
 
@@ -102,7 +104,7 @@ public class NumberUnboxerImpl extends NumberUnboxer {
         set.add(virtualProgramMethod);
       }
       for (ProgramMethod candidate : clazz.directProgramMethods()) {
-        if (shouldConsiderForUnboxing(candidate)) {
+        if (unboxingCandidate(candidate)) {
           candidateBoxingStatus.put(candidate.getReference(), UNPROCESSED_CANDIDATE);
         }
       }
@@ -110,7 +112,7 @@ public class NumberUnboxerImpl extends NumberUnboxer {
     Map<DexMethod, DexMethod> vMethodRepresentative = new IdentityHashMap<>();
     for (List<ProgramMethod> vMethods : componentVirtualMethods.values()) {
       if (vMethods.size() > 1) {
-        if (Iterables.all(vMethods, this::shouldConsiderForUnboxing)
+        if (Iterables.all(vMethods, this::unboxingCandidate)
             && Iterables.any(vMethods, m -> !m.getDefinition().isAbstract())) {
           vMethods.sort(Comparator.comparing(DexClassAndMember::getReference));
           ProgramMethod representative = vMethods.get(0);
@@ -123,7 +125,7 @@ public class NumberUnboxerImpl extends NumberUnboxer {
       } else {
         assert vMethods.size() == 1;
         ProgramMethod candidate = vMethods.get(0);
-        if (shouldConsiderForUnboxing(candidate) && !candidate.getDefinition().isAbstract()) {
+        if (unboxingCandidate(candidate) && !candidate.getDefinition().isAbstract()) {
           candidateBoxingStatus.put(candidate.getReference(), UNPROCESSED_CANDIDATE);
         }
       }
@@ -147,7 +149,7 @@ public class NumberUnboxerImpl extends NumberUnboxer {
     assert !unboxingStatus.isNoneUnboxable();
     MethodBoxingStatus newStatus =
         candidateBoxingStatus.computeIfPresent(
-            representative, (m, old) -> old.merge(unboxingStatus));
+            representative, (m, old) -> old.merge(unboxingStatus, numberUnboxerOptions));
     if (newStatus != null && newStatus.isNoneUnboxable()) {
       // TODO(b/307872552): Do we need to remove at the end of the wave for determinism?
       candidateBoxingStatus.remove(representative);
@@ -184,7 +186,9 @@ public class NumberUnboxerImpl extends NumberUnboxer {
           ValueBoxingStatus unboxingStatus = analyzeInput(ret.returnValue(), code.context());
           if (unboxingStatus.mayBeUnboxable()) {
             returnStatus =
-                returnStatus == null ? unboxingStatus : returnStatus.merge(unboxingStatus);
+                returnStatus == null
+                    ? unboxingStatus
+                    : returnStatus.merge(unboxingStatus, numberUnboxerOptions);
           } else {
             returnStatus = NOT_UNBOXABLE;
           }
@@ -230,20 +234,20 @@ public class NumberUnboxerImpl extends NumberUnboxer {
     registerMethodUnboxingStatusIfNeeded(resolvedMethod, returnVal, args);
   }
 
-  private boolean shouldConsiderForUnboxing(Value value) {
+  private boolean unboxingCandidate(Value value) {
     return value.getType().isClassType()
-        && shouldConsiderForUnboxing(value.getType().asClassType().getClassType());
+        && unboxingCandidate(value.getType().asClassType().getClassType());
   }
 
-  private boolean shouldConsiderForUnboxing(ProgramMethod method) {
+  private boolean unboxingCandidate(ProgramMethod method) {
     if (appView.getKeepInfo().isPinned(method, appView.options())) {
       return false;
     }
-    return shouldConsiderForUnboxing(method.getReturnType())
-        || Iterables.any(method.getParameters(), this::shouldConsiderForUnboxing);
+    return unboxingCandidate(method.getReturnType())
+        || Iterables.any(method.getParameters(), this::unboxingCandidate);
   }
 
-  private boolean shouldConsiderForUnboxing(DexType type) {
+  private boolean unboxingCandidate(DexType type) {
     // TODO(b/307872552): So far we consider only boxed type value to unbox them into their
     // corresponding primitive type, for example, Integer -> int. It would be nice to support
     // the pattern checkCast(BoxType) followed by a boxing operation, so that for example when
@@ -252,9 +256,17 @@ public class NumberUnboxerImpl extends NumberUnboxer {
     return boxedTypes.contains(type);
   }
 
+  private ValueBoxingStatus createValueBoxingStatus(int delta) {
+    return ValueBoxingStatus.with(delta, numberUnboxerOptions);
+  }
+
+  private ValueBoxingStatus createValueBoxingStatus(TransitiveDependency dep) {
+    return ValueBoxingStatus.with(dep, numberUnboxerOptions);
+  }
+
   // Inputs are values flowing into a method return, an invoke argument or a field write.
   private ValueBoxingStatus analyzeInput(Value inValue, ProgramMethod context) {
-    if (!shouldConsiderForUnboxing(inValue)) {
+    if (!unboxingCandidate(inValue)) {
       return NOT_UNBOXABLE;
     }
     DexType boxedType = inValue.getType().asClassType().getClassType();
@@ -264,7 +276,7 @@ public class NumberUnboxerImpl extends NumberUnboxer {
       Instruction definition = inValue.getAliasedValue().getDefinition();
       if (definition.isArgument()) {
         int shift = BooleanUtils.intValue(!context.getDefinition().isStatic());
-        return ValueBoxingStatus.with(
+        return createValueBoxingStatus(
             new MethodArg(
                 definition.asArgument().getIndex() - shift,
                 representative(context.getReference())));
@@ -274,10 +286,10 @@ public class NumberUnboxerImpl extends NumberUnboxer {
           // The result of a boxing operation is non nullable.
           if (!inValue.hasPhiUsers() && inValue.hasSingleUniqueUser()) {
             // Unboxing would remove a boxing operation.
-            return ValueBoxingStatus.with(1);
+            return createValueBoxingStatus(1);
           }
           // Unboxing would add and remove a boxing operation.
-          return ValueBoxingStatus.with(0);
+          return createValueBoxingStatus(0);
         }
         InvokeMethod invoke = definition.asInvokeMethod();
         ProgramMethod resolvedMethod =
@@ -286,7 +298,7 @@ public class NumberUnboxerImpl extends NumberUnboxer {
                 .resolveMethodLegacy(invoke.getInvokedMethod(), invoke.getInterfaceBit())
                 .getResolvedProgramMethod();
         if (resolvedMethod != null) {
-          return ValueBoxingStatus.with(
+          return createValueBoxingStatus(
               new MethodRet(representative(resolvedMethod.getReference())));
         }
       }
@@ -299,12 +311,12 @@ public class NumberUnboxerImpl extends NumberUnboxer {
     //  Integer i = bool ? integer.valueOf(1) : Integer.valueOf(2);
     //  removes 2 operations and does not add 1.
     // Since we cannot interpret the definition, unboxing adds a boxing operation.
-    return ValueBoxingStatus.with(-1);
+    return createValueBoxingStatus(-1);
   }
 
   // Outputs are method arguments, invoke return values and field reads.
   private ValueBoxingStatus analyzeOutput(Value outValue) {
-    if (!shouldConsiderForUnboxing(outValue)) {
+    if (!unboxingCandidate(outValue)) {
       return NOT_UNBOXABLE;
     }
     DexType boxedType = outValue.getType().asClassType().getClassType();
@@ -321,7 +333,7 @@ public class NumberUnboxerImpl extends NumberUnboxer {
         metOtherOperation = true;
       }
     }
-    return ValueBoxingStatus.with(computeBoxingDelta(metUnboxingOperation, metOtherOperation));
+    return createValueBoxingStatus(computeBoxingDelta(metUnboxingOperation, metOtherOperation));
   }
 
   private int computeBoxingDelta(boolean metUnboxingOperation, boolean metOtherOperation) {
@@ -348,7 +360,9 @@ public class NumberUnboxerImpl extends NumberUnboxer {
       ExecutorService executorService)
       throws ExecutionException {
     Map<DexMethod, MethodBoxingStatusResult> unboxingResult =
-        new NumberUnboxerBoxingStatusResolution(candidateBoxingStatus).resolve();
+        new NumberUnboxerBoxingStatusResolution(
+                candidateBoxingStatus, appView.testing().getNumberUnboxerOptions())
+            .resolve();
     if (unboxingResult.isEmpty()) {
       return;
     }
@@ -360,7 +374,7 @@ public class NumberUnboxerImpl extends NumberUnboxer {
     new NumberUnboxerMethodReprocessingEnqueuer(appView, numberUnboxerLens)
         .enqueueMethodsForReprocessing(postMethodProcessorBuilder, executorService, timing);
 
-    if (appView.testing().printNumberUnboxed) {
+    if (appView.testing().getNumberUnboxerOptions().shouldDebugPrintNumberUnboxed()) {
       printNumberUnboxed(unboxingResult);
     }
   }

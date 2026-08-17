@@ -22,15 +22,16 @@ import java.util.Map;
 
 public class NumberUnboxerBoxingStatusResolution {
 
-  // TODO(b/307872552): Add threshold to NumberUnboxing options.
-  private static final int UNBOX_DELTA_THRESHOLD = 0;
   private final Map<DexMethod, MethodBoxingStatus> methodBoxingStatus;
   private final Map<DexMethod, MethodBoxingStatusResult> boxingStatusResultMap =
       new IdentityHashMap<>();
+  private final NumberUnboxerOptions numberUnboxerOptions;
 
   public NumberUnboxerBoxingStatusResolution(
-      Map<DexMethod, MethodBoxingStatus> methodBoxingStatus) {
+      Map<DexMethod, MethodBoxingStatus> methodBoxingStatus,
+      NumberUnboxerOptions numberUnboxerOptions) {
     this.methodBoxingStatus = methodBoxingStatus;
+    this.numberUnboxerOptions = numberUnboxerOptions;
   }
 
   static class MethodBoxingStatusResult {
@@ -127,7 +128,7 @@ public class NumberUnboxerBoxingStatusResolution {
         boxingStatusResult, transitiveDependency.asMethodArg().getParameterIndex());
   }
 
-  public Map<DexMethod, MethodBoxingStatusResult> resolve() {
+  Map<DexMethod, MethodBoxingStatusResult> resolve() {
     assert allProcessedAndUnboxable(methodBoxingStatus);
     List<DexMethod> methods = ListUtils.sort(methodBoxingStatus.keySet(), DexMethod::compareTo);
     for (DexMethod method : methods) {
@@ -230,7 +231,8 @@ public class NumberUnboxerBoxingStatusResolution {
       delta += valueBoxingStatus.getTransitiveDependencies().size();
       delta += valueBoxingStatus.getBoxingDelta();
     }
-    BoxingStatusResult boxingStatusResult = delta > UNBOX_DELTA_THRESHOLD ? UNBOX : NO_UNBOX;
+    BoxingStatusResult boxingStatusResult =
+        delta > numberUnboxerOptions.getUnboxDeltaThreshold() ? UNBOX : NO_UNBOX;
     for (TransitiveDependency transitiveDependency : workList.getSeenSet()) {
       assert transitiveDependency.isMethodDependency();
       register(transitiveDependency.asMethodDependency(), boxingStatusResult);

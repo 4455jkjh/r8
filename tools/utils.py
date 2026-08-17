@@ -101,8 +101,6 @@ R8LIB_TESTS_JAR = os.path.join(LIBS, 'r8libtestdeps-cf.jar')
 R8_TESTS_DEPS_JAR = os.path.join(LIBS, 'test_deps_all.jar')
 R8LIB_TESTS_DEPS_JAR = R8_TESTS_DEPS_JAR
 MAVEN_ZIP_LIB = os.path.join(LIBS, 'r8lib.zip')
-LIBRARY_DESUGAR_CONVERSIONS_LEGACY_ZIP = os.path.join(
-    CUSTOM_CONVERSION_DIR, 'library_desugar_conversions_legacy.jar')
 LIBRARY_DESUGAR_CONVERSIONS_ZIP = os.path.join(
     CUSTOM_CONVERSION_DIR, 'library_desugar_conversions.jar')
 KEEPANNO_ANNOTATIONS_JAR = os.path.join(LIBS, 'keepanno-annotations.jar')
@@ -113,13 +111,6 @@ KEEPANNO_LEGACY_ANNOTATIONS_JAR = os.path.join(
 KEEPANNO_ANDROIDX_ANNOTATIONS_JAR = os.path.join(
     LIBS, 'keepanno-annotations-androidx.jar')
 
-DESUGAR_CONFIGURATION = os.path.join('src', 'library_desugar',
-                                     'desugar_jdk_libs.json')
-DESUGAR_IMPLEMENTATION = os.path.join('third_party', 'openjdk',
-                                      'desugar_jdk_libs',
-                                      'desugar_jdk_libs.jar')
-DESUGAR_CONFIGURATION_JDK11_LEGACY = os.path.join(
-    'src', 'library_desugar', 'jdk11', 'desugar_jdk_libs_legacy.json')
 DESUGAR_CONFIGURATION_JDK11_MINIMAL = os.path.join(
     'src', 'library_desugar', 'jdk11', 'desugar_jdk_libs_minimal.json')
 DESUGAR_CONFIGURATION_JDK11 = os.path.join('src', 'library_desugar', 'jdk11',
@@ -130,10 +121,6 @@ DESUGAR_CONFIGURATION_JDK11_NIO = os.path.join('src', 'library_desugar',
 DESUGAR_IMPLEMENTATION_JDK11 = os.path.join('third_party', 'openjdk',
                                             'desugar_jdk_libs_11',
                                             'desugar_jdk_libs.jar')
-DESUGAR_CONFIGURATION_MAVEN_ZIP = os.path.join(
-    LIBS, 'desugar_jdk_libs_configuration.zip')
-DESUGAR_CONFIGURATION_JDK11_LEGACY_MAVEN_ZIP = os.path.join(
-    LIBS, 'desugar_jdk_libs_configuration_jdk11_legacy.zip')
 DESUGAR_CONFIGURATION_JDK11_MINIMAL_MAVEN_ZIP = os.path.join(
     LIBS, 'desugar_jdk_libs_configuration_jdk11_minimal.zip')
 DESUGAR_CONFIGURATION_JDK11_MAVEN_ZIP = os.path.join(
