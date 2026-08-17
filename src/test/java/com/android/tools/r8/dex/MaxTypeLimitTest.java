@@ -130,7 +130,7 @@ public class MaxTypeLimitTest extends TestBase {
   }
 
   @Test
-  public void testD8Api25SingleDexOverflow() {
+  public void testD8Api25SingleDexOverflow() throws Exception {
     // Compiling with mono-dex (e.g. min-api < 21) with 33000 classes should fail.
     assertThrows(
         CompilationFailedException.class,
@@ -146,10 +146,16 @@ public class MaxTypeLimitTest extends TestBase {
                                 diagnosticMessage(
                                     containsString(
                                         "# types: " + (CLASS_COUNT + 1) + " > 32768"))))));
+    // Should not fail when alwaysAllow64KTypeIds is set.
+    testForD8(Backend.DEX)
+        .addProgramFiles(inputApp)
+        .setMinApi(AndroidApiLevel.K)
+        .addOptionsModification(options -> options.alwaysAllow64KTypeIds = true)
+        .compile();
   }
 
   @Test
-  public void testD8LegacyMultidexMainDexRulesOverflow() {
+  public void testD8LegacyMultidexMainDexRulesOverflow() throws Exception {
     // Compiling with main-dex rules that keep all 33000 classes in main dex on legacy multidex (API
     // 19) should fail.
     assertThrows(
@@ -170,6 +176,14 @@ public class MaxTypeLimitTest extends TestBase {
                                             + " types: "
                                             + (CLASS_COUNT + 1)
                                             + " > 32768)"))))));
+
+    // Should not fail when alwaysAllow64KTypeIds is set.
+    testForD8(Backend.DEX)
+        .addProgramFiles(inputApp)
+        .setMinApi(AndroidApiLevel.K)
+        .addMainDexRules("-keep class ** { *; }")
+        .addOptionsModification(options -> options.alwaysAllow64KTypeIds = true)
+        .compile();
   }
 
   // Simple stub/template for generating the input classes.
