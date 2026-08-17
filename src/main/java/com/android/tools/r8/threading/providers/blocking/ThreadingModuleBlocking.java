@@ -46,21 +46,34 @@ public class ThreadingModuleBlocking implements ThreadingModule {
   @Override
   public <T> void forEach(List<Future<T>> futures, Consumer<T> consumer) throws ExecutionException {
     Iterator<Future<T>> it = futures.iterator();
+    Throwable currentlyThrowingException = null;
     try {
       while (it.hasNext()) {
         consumer.accept(it.next().get());
       }
     } catch (InterruptedException e) {
-      throw new RuntimeException("Interrupted while waiting for future.", e);
+      RuntimeException wrappedException =
+          new RuntimeException("Interrupted while waiting for future.", e);
+      currentlyThrowingException = wrappedException;
+      throw wrappedException;
+    } catch (Throwable t) {
+      // Intercept throwable to assign variable.
+      currentlyThrowingException = t;
+      throw t;
     } finally {
       // In case we get interrupted or one of the threads throws an exception, still wait for all
       // further work to make sure synchronization guarantees are met. Calling cancel unfortunately
       // does not guarantee that the task at hand actually terminates before cancel returns.
       while (it.hasNext()) {
+        assert currentlyThrowingException != null;
         try {
           it.next().get();
         } catch (Throwable t) {
-          // Ignore any new Exception.
+          currentlyThrowingException.addSuppressed(t);
+          // Ensure persistence even if ExecutionException is unwrapped.
+          if (currentlyThrowingException.getCause() != null && t.getCause() != null) {
+            currentlyThrowingException.getCause().addSuppressed(t.getCause());
+          }
         }
       }
     }
