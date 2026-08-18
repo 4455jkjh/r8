@@ -120,9 +120,10 @@ tasks {
   val packageTestDeps =
     register<Jar>("packageTestDeps") {
       val injected = project.objects.newInstance<InjectedArcOps>()
-      dependsOn(keepAnnoAndroidXAnnotationsJarConfig)
       from(testDepsJars.elements.map { it.map { injected.arcOps.zipTree(it) } })
-      from(keepAnnoAndroidXAnnotationsJarConfig.map(::zipTree))
+      from(
+        keepAnnoAndroidXAnnotationsJarConfig.elements.map { it.map { injected.arcOps.zipTree(it) } }
+      )
       exclude("META-INF/*.kotlin_module", "**/*.kotlin_metadata", "org/jspecify/**", "org/jspecify")
       duplicatesStrategy = DuplicatesStrategy.EXCLUDE
       destinationDirectory.set(getRoot().resolveAll("build", "libs"))
@@ -140,8 +141,8 @@ tasks {
 
   val packageTestBaseExcludeKeep =
     register<Jar>("packageTestBaseExcludeKeep") {
-      dependsOn(packageTestBase)
-      from(zipTree(packageTestBase.getSingleOutputFile()))
+      val injected = project.objects.newInstance<InjectedArcOps>()
+      from(packageTestBase.map { injected.arcOps.zipTree(it.archiveFile) })
       // TODO(b/328353718): we have com.android.tools.r8.Keep in both test_base and main
       exclude("com/android/tools/r8/Keep.class")
       archiveFileName.set("r8test_base_no_keep.jar")
@@ -272,57 +273,53 @@ tasks {
     setOutputJarFile(File(rootDir, "build/libs/keepanno-toolslib.jar"))
   }
 
-  fun Task.generateTestKeepRulesForR8Lib(r8LibJarMap: Provider<RegularFile>, artifactName: String) {
-    inputs.files(r8LibJarMap)
-    val output = rootProject.layout.buildDirectory.get().asFile.resolveAll("libs", artifactName)
-    outputs.files(output)
-    doLast {
-      // TODO(b/299065371): We should be able to take in the partition map output.
-      output.writeText(
-        """-keep class ** { *; }
+  abstract class GenerateKeepRulesForR8LibTask : DefaultTask() {
+    @get:InputFile abstract val r8LibJarMap: RegularFileProperty
+    @get:OutputFile abstract val keepRules: RegularFileProperty
+
+    @TaskAction
+    fun writeKeepRules() {
+      keepRules
+        .get()
+        .asFile
+        .writeText(
+          """-keep class ** { *; }
 -dontshrink
 -dontoptimize
 -keepattributes *
 -applymapping ${r8LibJarMap.get().asFile.absolutePath}
 """
-      )
+        )
     }
   }
 
   val generateTestKeepRulesR8LibWithRelocatedDeps =
-    register("generateTestKeepRulesR8LibWithRelocatedDeps") {
-      generateTestKeepRulesForR8Lib(
-        assembleR8LibWithRelocatedDeps.flatMap { it.outputPgMap },
-        "r8lib-tests-keep.txt",
-      )
+    register<GenerateKeepRulesForR8LibTask>("generateTestKeepRulesR8LibWithRelocatedDeps") {
+      r8LibJarMap = assembleR8LibWithRelocatedDeps.flatMap { it.outputPgMap }
+      keepRules = File(rootDir, "libs/r8lib-tests-keep.txt")
     }
 
   val generateTestKeepRulesR8LibNoDeps =
-    register("generateTestKeepRulesR8LibNoDeps") {
-      generateTestKeepRulesForR8Lib(
-        assembleR8LibNoDeps.flatMap { it.outputPgMap },
-        "r8lib-exclude-deps-tests-keep.txt",
-      )
+    register<GenerateKeepRulesForR8LibTask>("generateTestKeepRulesR8LibNoDeps") {
+      r8LibJarMap = assembleR8LibNoDeps.flatMap { it.outputPgMap }
+      keepRules = File(rootDir, "libs/r8lib-exclude-deps-tests-keep.txt")
     }
 
   fun SwissArmyKnifeTask.rewriteTestsForR8Lib(
-    keepRulesFileProvider: TaskProvider<Task>,
+    keepRulesFileProvider: TaskProvider<GenerateKeepRulesForR8LibTask>,
     r8JarProvider: Provider<RegularFile>,
     testJarProvider: Provider<RegularFile>,
     artifactName: String,
     addTestBaseClasspath: Boolean,
   ) {
-    swissArmyKnifeClasspath.from(r8WithRelocatedDepsTask.getSingleOutputFile())
+    swissArmyKnifeClasspath.from(r8WithRelocatedDepsTask.flatMap { it.outputFile })
     compiler = "r8"
     libs.from(getJavaHome(Jdk.JDK_25))
-    // TODO: use keepRulesFileProvider, and r8WithRelocatedDepsTask flatMap and
-    // remove dependsOn
-    dependsOn(keepRulesFileProvider, r8WithRelocatedDepsTask)
     classpath.from(r8JarProvider, packageTestDeps)
     if (addTestBaseClasspath) {
       classpath.from(packageTestBaseExcludeKeep)
     }
-    pgConfigs.from(keepRulesFileProvider.getSingleOutputFile())
+    pgConfigs.from(keepRulesFileProvider.flatMap { it.keepRules })
     outputFile = File(rootDir, "build/libs/$artifactName")
     extraArgs = listOf("--classfile", "--debug")
     jar = testJarProvider
@@ -371,29 +368,27 @@ tasks {
 
   val unzipTests =
     register<Copy>("unzipTests") {
-      dependsOn(cleanUnzipTests, packageTests)
-      val outputDir = layout.buildDirectory.dir("unpacked/test")
-      from(zipTree(packageTests.getSingleOutputFile()))
-      into(outputDir)
+      dependsOn(cleanUnzipTests)
+      val injected = project.objects.newInstance<InjectedArcOps>()
+      from(packageTests.map { injected.arcOps.zipTree(it.archiveFile) })
+      into(layout.buildDirectory.dir("unpacked/test"))
     }
 
   val unzipTestBase =
     register<Copy>("unzipTestBase") {
-      dependsOn(cleanUnzipTests, packageTestBase)
-      val outputDir = layout.buildDirectory.dir("unpacked/testbase")
-      from(zipTree(packageTestBase.getSingleOutputFile()))
-      into(outputDir)
+      dependsOn(cleanUnzipTests)
+      val injected = project.objects.newInstance<InjectedArcOps>()
+      from(packageTestBase.map { injected.arcOps.zipTree(it.archiveFile) })
+      into(layout.buildDirectory.dir("unpacked/testbase"))
     }
 
   fun Copy.unzipRewrittenTestsForR8Lib(
     rewrittenTestJarProvider: TaskProvider<SwissArmyKnifeTask>,
     outDirName: String,
   ) {
-    dependsOn(rewrittenTestJarProvider)
-    val outputDir = layout.buildDirectory.dir("unpacked/$outDirName")
-    val rewrittenTestJar = rewrittenTestJarProvider.getSingleOutputFile()
-    from(zipTree(rewrittenTestJar))
-    into(outputDir)
+    val injected = project.objects.newInstance<InjectedArcOps>()
+    from(rewrittenTestJarProvider.map { injected.arcOps.zipTree(it.outputFile) })
+    into(layout.buildDirectory.dir("unpacked/$outDirName"))
   }
 
   val cleanUnzipRewrittenTestsForR8LibWithRelocatedDeps =
