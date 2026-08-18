@@ -117,8 +117,7 @@ public class NameThenLengthTest extends TestBase {
     ClassSubject mainClass = codeInspector.clazz(MAIN);
 
     MethodSubject clinit = mainClass.clinit();
-    if (result.isR8TestRunResult()
-        || (expectedStringLengthCountInClinit == 0 && expectedConstNumberCountInClinit == 0)) {
+    if (result.isR8TestRunResult()) {
       assertThat(clinit, isAbsent());
     } else {
       assertThat(clinit, isPresent());

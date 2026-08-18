@@ -14,6 +14,10 @@ public class LazyDominatorTree extends Box<DominatorTree> {
     this.code = code;
   }
 
+  public boolean dominatedBy(BasicBlock subject, BasicBlock dominator) {
+    return get().dominatedBy(subject, dominator);
+  }
+
   @Override
   public DominatorTree get() {
     return computeIfAbsent(() -> new DominatorTree(code, Assumption.MAY_HAVE_UNREACHABLE_BLOCKS));

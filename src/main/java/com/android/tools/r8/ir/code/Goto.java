@@ -29,14 +29,13 @@ public class Goto extends JumpInstruction {
     return successors.get(successors.size() - 1);
   }
 
-  public void setTarget(BasicBlock nextBlock) {
+  public void setTarget(BasicBlock newTarget) {
     assert getBlock().exit() == this;
     List<BasicBlock> successors = getBlock().getMutableSuccessors();
-    assert successors.size() >= 1;
-    BasicBlock target = successors.get(successors.size() - 1);
-    target.getMutablePredecessors().remove(getBlock());
-    successors.set(successors.size() - 1, nextBlock);
-    nextBlock.getMutablePredecessors().add(getBlock());
+    assert !successors.isEmpty();
+    getTarget().getMutablePredecessors().remove(getBlock());
+    successors.set(successors.size() - 1, newTarget);
+    newTarget.getMutablePredecessors().add(getBlock());
   }
 
   @Override

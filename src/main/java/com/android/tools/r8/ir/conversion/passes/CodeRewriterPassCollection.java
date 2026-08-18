@@ -59,6 +59,7 @@ public class CodeRewriterPassCollection {
     passes.add(new ThrowCatchOptimizer(appView));
     passes.add(new BranchSimplifier(appView));
     passes.add(new SplitBranch(appView));
+    passes.add(new MergeBranches(appView));
     passes.add(new RedundantConstNumberRemover(appView));
     if (appView.options().isRelease()) {
       passes.add(new RedundantLoadAndStoreElimination(appView));

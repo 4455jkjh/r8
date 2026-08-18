@@ -654,7 +654,8 @@ public class ApplicationWriter {
   private void insertAttributeAnnotationsAndRemoveEmptyClassInitializers() {
     // Convert inner-class attributes to DEX annotations and remove empty class initializers.
     for (DexProgramClass clazz : appView.appInfo().classes()) {
-      if (options.isRelease()
+      if (appView.enableWholeProgramOptimizations()
+          && options.isRelease()
           && clazz.hasClassInitializer()
           && clazz.getClassInitializer().getCode().isEmptyVoidMethod()) {
         clazz.getMethodCollection().removeMethod(clazz.getClassInitializer().getReference());
