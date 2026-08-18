@@ -79,7 +79,7 @@ public abstract class TestShrinkerBuilder<
   }
 
   @Override
-  protected int getMinApiLevel() {
+  public int getMinApiLevel() {
     return backend == Backend.DEX ? super.getMinApiLevel() : -1;
   }
 

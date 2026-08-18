@@ -194,7 +194,7 @@ public abstract class TestCompilerBuilder<
     }
   }
 
-  protected int getMinApiLevel() {
+  public int getMinApiLevel() {
     // TODO(b/186010707): Enable assert minApiLevel != -1;
     return minApiLevel;
   }

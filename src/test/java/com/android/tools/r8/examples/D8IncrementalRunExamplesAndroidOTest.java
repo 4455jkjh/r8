@@ -2,13 +2,24 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-package com.android.tools.r8;
+package com.android.tools.r8.examples;
 
 import static com.android.tools.r8.ir.desugar.itf.InterfaceDesugaringForTesting.getCompanionClassNameSuffix;
 import static com.android.tools.r8.utils.internal.FileUtils.JAR_EXTENSION;
 import static org.junit.Assert.assertEquals;
 
+import com.android.tools.r8.ClassFileResourceProvider;
+import com.android.tools.r8.D8Command;
+import com.android.tools.r8.D8TestBuilder;
+import com.android.tools.r8.D8TestCompileResult;
+import com.android.tools.r8.DexFilePerClassFileConsumer;
+import com.android.tools.r8.DexIndexedConsumer;
+import com.android.tools.r8.Disassemble;
 import com.android.tools.r8.Disassemble.DisassembleCommand;
+import com.android.tools.r8.OutputMode;
+import com.android.tools.r8.ProgramResource;
+import com.android.tools.r8.ResourceException;
+import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.references.ClassReference;
 import com.android.tools.r8.references.Reference;
 import com.android.tools.r8.synthesis.SyntheticItemsTestUtils;

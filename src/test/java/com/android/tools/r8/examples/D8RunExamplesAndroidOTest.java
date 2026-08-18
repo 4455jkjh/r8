@@ -2,14 +2,19 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-package com.android.tools.r8;
+package com.android.tools.r8.examples;
 
 import static org.hamcrest.CoreMatchers.containsString;
 
+import com.android.tools.r8.CompilationFailedException;
+import com.android.tools.r8.D8Command;
+import com.android.tools.r8.OutputMode;
+import com.android.tools.r8.TestBase;
+import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.synthesis.SyntheticItemsTestUtils;
 import com.android.tools.r8.utils.AndroidApiLevel;
-import com.android.tools.r8.utils.internal.Box;
 import com.android.tools.r8.utils.OffOrAuto;
+import com.android.tools.r8.utils.internal.Box;
 import java.nio.file.Path;
 import java.util.function.Consumer;
 import org.junit.Assert;
