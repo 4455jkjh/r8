@@ -1609,8 +1609,12 @@ public class IRCode implements IRControlFlowGraph, ValueFactory {
 
   public AffectedValues removeUnreachableBlocks() {
     AffectedValues affectedValues = new AffectedValues();
-    removeUnreachableBlocks(affectedValues, emptyConsumer());
+    removeUnreachableBlocks(affectedValues);
     return affectedValues;
+  }
+
+  public void removeUnreachableBlocks(AffectedValues affectedValues) {
+    removeUnreachableBlocks(affectedValues, emptyConsumer());
   }
 
   public void removeUnreachableBlocks(
