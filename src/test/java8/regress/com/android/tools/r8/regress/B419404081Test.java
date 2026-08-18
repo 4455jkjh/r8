@@ -1,11 +1,13 @@
 // Copyright (c) 2025, the R8 project authors. Please see the AUTHORS file
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
-package com.android.tools.r8;
+package com.android.tools.r8.regress;
 
 import static org.junit.Assume.assumeTrue;
 
-import com.android.tools.r8.B419404081Test.Cr.Ci_abs_sta;
+import com.android.tools.r8.TestBase;
+import com.android.tools.r8.TestParameters;
+import com.android.tools.r8.regress.B419404081Test.Cr.Ci_abs_sta;
 import com.android.tools.r8.utils.internal.BooleanUtils;
 import com.android.tools.r8.utils.internal.StringUtils;
 import java.util.List;

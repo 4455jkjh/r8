@@ -1,8 +1,14 @@
 // Copyright (c) 2024, the R8 project authors. Please see the AUTHORS file
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
-package com.android.tools.r8;
+package com.android.tools.r8.regress;
 
+import com.android.tools.r8.NeverClassInline;
+import com.android.tools.r8.NeverInline;
+import com.android.tools.r8.NoMethodStaticizing;
+import com.android.tools.r8.TestBase;
+import com.android.tools.r8.TestParameters;
+import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.utils.internal.StringUtils;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -10,9 +16,9 @@ import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameter;
 import org.junit.runners.Parameterized.Parameters;
 
-// Regression test for b/379241435.
+// Regression test for a variant of b/379241435.
 @RunWith(Parameterized.class)
-public class B379241435InterfaceInitializedAftertInstantiatingImplementorTest extends TestBase {
+public class B379241435InterfaceInitializedFromImplementorVirtualMethodTest extends TestBase {
 
   @Parameter(0)
   public TestParameters parameters;
@@ -36,30 +42,38 @@ public class B379241435InterfaceInitializedAftertInstantiatingImplementorTest ex
   @Test
   public void testD8() throws Exception {
     parameters.assumeDexRuntime();
-    testForD8(parameters)
+    testForD8(parameters.getBackend())
         .addInnerClasses(getClass())
+        .setMinApi(parameters)
         .run(parameters.getRuntime(), TestClass.class)
         .assertSuccessWithOutput(EXPECTED_OUTPUT);
   }
 
   @Test
   public void testR8() throws Exception {
-    testForR8(parameters)
+    testForR8(parameters.getBackend())
         .addInnerClasses(getClass())
         .addKeepMainRule(TestClass.class)
+        .setMinApi(parameters)
+        .enableInliningAnnotations()
+        .enableNeverClassInliningAnnotations()
+        .enableNoMethodStaticizingAnnotations()
         .run(parameters.getRuntime(), TestClass.class)
         .applyIf(
-            parameters.canUseDefaultAndStaticInterfaceMethods(),
-            r -> r.assertSuccessWithOutputLines("B.B()", "I.f()"),
-            r -> r.assertSuccessWithOutput(EXPECTED_OUTPUT));
+            parameters.isDexRuntime()
+                && parameters
+                    .getApiLevel()
+                    .isLessThan(apiLevelWithDefaultInterfaceMethodsSupport()),
+            r -> r.assertSuccessWithOutput(EXPECTED_OUTPUT),
+            r -> r.assertSuccessWithOutputLines("B.B()", "I.f()"));
   }
 
   public static class TestClass {
     public static void main(String[] args) {
       // Instantiating B does not trigger class initialization of I.
-      I b = new B();
-      // Invoking the static method on I trigger class initialization of I.
-      I.f();
+      B b = new B();
+      // Invoking m indirectly trigger class initialization of I as it calls a static method on I.
+      b.m();
     }
   }
 
@@ -77,9 +91,16 @@ public class B379241435InterfaceInitializedAftertInstantiatingImplementorTest ex
     }
   }
 
+  @NeverClassInline
   static class B implements I {
     B() {
       System.out.println("B.B()");
+    }
+
+    @NeverInline
+    @NoMethodStaticizing
+    void m() {
+      I.f();
     }
   }
 }
