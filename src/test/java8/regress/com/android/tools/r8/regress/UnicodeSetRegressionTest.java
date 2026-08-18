@@ -1,7 +1,7 @@
 // Copyright (c) 2016, the R8 project authors. Please see the AUTHORS file
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
-package com.android.tools.r8.jar.UnicodeSetRegression;
+package com.android.tools.r8.regress;
 
 import com.android.tools.r8.OutputMode;
 import com.android.tools.r8.R8Command;
@@ -20,9 +20,9 @@ import org.junit.Test;
 
 public class UnicodeSetRegressionTest extends TestBase {
 
-  private static final String JAR_FILE =
-      ToolHelper.SOURCE_DIR
-          + "/test/java/com/android/tools/r8/jar/UnicodeSetRegression/UnicodeSet.jar";
+  private static Path getJarPath() {
+    return ToolHelper.getResourceAsReadOnlyFile(UnicodeSetRegressionTest.class, "UnicodeSet.jar");
+  }
 
   @Test
   public void testUnicodeSetFromJar() throws Throwable {
@@ -30,7 +30,7 @@ public class UnicodeSetRegressionTest extends TestBase {
     Path oatFile = temp.getRoot().toPath().resolve("all.oat");
     R8Command.Builder builder =
         R8Command.builder()
-            .addProgramFiles(Paths.get(JAR_FILE))
+            .addProgramFiles(getJarPath())
             .setDisableTreeShaking(true)
             .setDisableMinification(true)
             .setOutput(Paths.get(combinedInput.toString()), OutputMode.DexIndexed);
@@ -67,7 +67,7 @@ public class UnicodeSetRegressionTest extends TestBase {
     Path combinedInput = temp.getRoot().toPath().resolve("all.zip");
     R8Command.Builder builder =
         R8Command.builder()
-            .addProgramFiles(Paths.get(JAR_FILE))
+            .addProgramFiles(getJarPath())
             .setOutput(Paths.get(combinedInput.toString()), OutputMode.ClassFile)
             .addLibraryFiles(ToolHelper.getJava8RuntimeJar());
     AndroidAppConsumers compatSink = new AndroidAppConsumers(builder);

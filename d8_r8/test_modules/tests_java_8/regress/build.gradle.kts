@@ -5,9 +5,7 @@
 import org.gradle.api.tasks.Copy
 
 java {
-  sourceSets.test.configure {
-    java.srcDir(getRoot().resolveAll("src", "test", "java8", "regress"))
-  }
+  sourceSets.test.configure { java.srcDir(getRoot().resolveAll("src", "test", "java8", "regress")) }
 }
 
 tasks {
@@ -15,6 +13,7 @@ tasks {
     from(sourceSets.test.get().java.srcDirs) {
       include("com/android/tools/r8/regress/b191296688/B.kt")
       include("com/android/tools/r8/regress/b113347830/B113347830.j")
+      include("com/android/tools/r8/regress/UnicodeSet.jar")
     }
   }
 }
