@@ -95,11 +95,11 @@ import java.util.function.Predicate;
  *
  * <ul>
  *   <li>"Linear Scan Register Allocation in the Context of SSA Form and Register Constraints"
- *   (ftp://ftp.ssw.uni-linz.ac.at/pub/Papers/Moe02.PDF)</li>
+ *       (ftp://ftp.ssw.uni-linz.ac.at/pub/Papers/Moe02.PDF)
  *   <li>"Linear Scan Register Allocation on SSA Form"
- *   (http://www.christianwimmer.at/Publications/Wimmer10a/Wimmer10a.pdf)</li>
+ *       (http://www.christianwimmer.at/Publications/Wimmer10a/Wimmer10a.pdf)
  *   <li>"Linear Scan Register Allocation for the Java HotSpot Client Compiler"
- *   (http://www.christianwimmer.at/Publications/Wimmer04a/Wimmer04a.pdf)</li>
+ *       (http://www.christianwimmer.at/Publications/Wimmer04a/Wimmer04a.pdf)
  * </ul>
  */
 public class LinearScanRegisterAllocator implements RegisterAllocator {
@@ -194,9 +194,7 @@ public class LinearScanRegisterAllocator implements RegisterAllocator {
 
     @Override
     public int compareTo(LocalRange o) {
-      return (start != o.start)
-          ? Integer.compare(start, o.start)
-          : Integer.compare(end, o.end);
+      return (start != o.start) ? Integer.compare(start, o.start) : Integer.compare(end, o.end);
     }
 
     @Override
@@ -229,14 +227,17 @@ public class LinearScanRegisterAllocator implements RegisterAllocator {
 
   // List of all top-level live intervals for all SSA values.
   private List<LiveIntervals> liveIntervals = new ArrayList<>();
+
   // List of active intervals.
   // TODO(b/270398965): Replace LinkedList.
   @SuppressWarnings("JdkObsolete")
   private List<LiveIntervals> active = new LinkedList<>();
+
   // List of intervals where the current instruction falls into one of their live range holes.
   // TODO(b/270398965): Replace LinkedList.
   @SuppressWarnings("JdkObsolete")
   protected List<LiveIntervals> inactive = new LinkedList<>();
+
   // List of intervals that no register has been allocated to sorted by first live range.
   protected PriorityQueue<LiveIntervals> unhandled = new PriorityQueue<>();
 
@@ -353,9 +354,7 @@ public class LinearScanRegisterAllocator implements RegisterAllocator {
     return code.context();
   }
 
-  /**
-   * Perform register allocation for the IRCode.
-   */
+  /** Perform register allocation for the IRCode. */
   @Override
   public void allocateRegisters() {
     // There are no linked values prior to register allocation.
@@ -1872,8 +1871,7 @@ public class LinearScanRegisterAllocator implements RegisterAllocator {
   private boolean isArrayGetArrayRegister(int register, LiveIntervals intervals) {
     assert needsArrayGetWideWorkaround(intervals);
     Value array = intervals.getValue().definition.asArrayGet().array();
-    int arrayReg =
-        array.getLiveIntervals().getSplitCovering(intervals.getStart()).getRegister();
+    int arrayReg = array.getLiveIntervals().getSplitCovering(intervals.getStart()).getRegister();
     assert arrayReg != NO_REGISTER;
     return arrayReg == register;
   }
@@ -1914,18 +1912,16 @@ public class LinearScanRegisterAllocator implements RegisterAllocator {
     if (intervals.getValue().definition.isCmp()) {
       Value left = intervals.getValue().definition.asCmp().leftValue();
       Value right = intervals.getValue().definition.asCmp().rightValue();
-      int leftReg =
-          left.getLiveIntervals().getSplitCovering(intervals.getStart()).getRegister();
-      int rightReg =
-          right.getLiveIntervals().getSplitCovering(intervals.getStart()).getRegister();
+      int leftReg = left.getLiveIntervals().getSplitCovering(intervals.getStart()).getRegister();
+      int rightReg = right.getLiveIntervals().getSplitCovering(intervals.getStart()).getRegister();
       assert leftReg != NO_REGISTER;
       assert rightReg != NO_REGISTER;
       return singleOverlappingLong(register, leftReg) || singleOverlappingLong(register, rightReg);
     } else {
       assert intervals.getValue().definition.isNumberConversion();
       Value inputValue = intervals.getValue().definition.asNumberConversion().inValues().get(0);
-      int inputReg
-          = inputValue.getLiveIntervals().getSplitCovering(intervals.getStart()).getRegister();
+      int inputReg =
+          inputValue.getLiveIntervals().getSplitCovering(intervals.getStart()).getRegister();
       return register == inputReg;
     }
   }
@@ -1957,12 +1953,12 @@ public class LinearScanRegisterAllocator implements RegisterAllocator {
       return false;
     }
     Instruction definition = intervals.getValue().definition;
-    if (definition.isArithmeticBinop() &&
-        definition.asArithmeticBinop().getNumericType() == NumericType.LONG) {
+    if (definition.isArithmeticBinop()
+        && definition.asArithmeticBinop().getNumericType() == NumericType.LONG) {
       return definition instanceof Add || definition instanceof Sub;
     }
-    if (definition.isLogicalBinop() &&
-        definition.asLogicalBinop().getNumericType() == NumericType.LONG) {
+    if (definition.isLogicalBinop()
+        && definition.asLogicalBinop().getNumericType() == NumericType.LONG) {
       return definition instanceof Or || definition instanceof Xor || definition instanceof And;
     }
     return false;
@@ -3265,8 +3261,8 @@ public class LinearScanRegisterAllocator implements RegisterAllocator {
       liveIntervals.add(new LiveIntervals(value));
     }
     LiveIntervals intervals = value.getLiveIntervals();
-    if (firstInstructionInBlock <= instructionNumber &&
-        instructionNumber <= lastInstructionInBlock) {
+    if (firstInstructionInBlock <= instructionNumber
+        && instructionNumber <= lastInstructionInBlock) {
       if (value.isPhi()) {
         // Phis need to interfere with spill restore moves inserted before the instruction because
         // the phi value is defined on the inflowing edge.
