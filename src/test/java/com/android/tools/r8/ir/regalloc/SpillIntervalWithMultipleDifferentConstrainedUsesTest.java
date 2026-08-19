@@ -3,12 +3,10 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8.ir.regalloc;
 
-import static org.junit.Assert.assertTrue;
 
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
-import com.android.tools.r8.utils.codeinspector.AssertUtils;
 import java.io.File;
 import java.io.IOException;
 import org.junit.Test;
@@ -17,6 +15,7 @@ import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameter;
 import org.junit.runners.Parameterized.Parameters;
 
+// Regression test for IndexOutOfBoundsException in debug mode: b/545349635.
 @RunWith(Parameterized.class)
 public class SpillIntervalWithMultipleDifferentConstrainedUsesTest extends TestBase {
 
@@ -30,9 +29,7 @@ public class SpillIntervalWithMultipleDifferentConstrainedUsesTest extends TestB
 
   @Test
   public void testD8Debug() throws Exception {
-    AssertUtils.assertFailsCompilation(
-        () -> testForD8(parameters).addInnerClasses(getClass()).compile(),
-        e -> assertTrue(e.getCause() instanceof IndexOutOfBoundsException));
+    testForD8(parameters).addInnerClasses(getClass()).compile();
   }
 
   @Test
