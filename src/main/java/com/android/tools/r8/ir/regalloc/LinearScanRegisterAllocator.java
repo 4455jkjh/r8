@@ -2129,7 +2129,9 @@ public class LinearScanRegisterAllocator implements RegisterAllocator {
           assignFreeRegisterToUnhandledInterval(unhandledInterval, register);
         }
       } else {
-        allocateBlockedRegister(unhandledInterval, registerConstraint);
+        if (!allocateBlockedRegister(unhandledInterval, registerConstraint)) {
+          return false;
+        }
       }
     } else {
       // We will use the candidate register(s) for unhandledInterval, and therefore potentially
@@ -2716,7 +2718,7 @@ public class LinearScanRegisterAllocator implements RegisterAllocator {
     return candidate;
   }
 
-  private void allocateBlockedRegister(LiveIntervals unhandledInterval, int registerConstraint) {
+  private boolean allocateBlockedRegister(LiveIntervals unhandledInterval, int registerConstraint) {
     // Initialize all candidate registers to Integer.MAX_VALUE.
     RegisterPositions usePositions = new RegisterPositionsImpl(registerConstraint + 1);
     RegisterPositions blockedPositions = new RegisterPositionsImpl(registerConstraint + 1);
@@ -2827,20 +2829,40 @@ public class LinearScanRegisterAllocator implements RegisterAllocator {
               RegisterType.MONITOR);
     }
 
+    if (candidate == REGISTER_CANDIDATE_NOT_FOUND) {
+      if (toInstructionPosition(unhandledInterval.getFirstUse())
+          > toInstructionPosition(unhandledInterval.getStart())) {
+        // All active and inactive intervals are used before current. Therefore, it is best to spill
+        // current itself.
+        spillCurrentInterval(unhandledInterval);
+        return true;
+      }
+      LiveIntervalsUse firstUse = unhandledInterval.getUses().first();
+      LiveIntervalsUse nextStricterUse = null;
+      for (LiveIntervalsUse use : unhandledInterval.getUses()) {
+        if (use.getLimit() < firstUse.getLimit()) {
+          nextStricterUse = use;
+          break;
+        }
+      }
+      if (nextStricterUse != null
+          && toInstructionPosition(nextStricterUse.getPosition())
+              > toInstructionPosition(unhandledInterval.getStart())) {
+        LiveIntervals split = unhandledInterval.splitBefore(nextStricterUse.getPosition(), mode);
+        assert split != unhandledInterval;
+        unhandled.add(split);
+        return allocateSingleInterval(unhandledInterval);
+      }
+      return false;
+    }
+
     int largestUsePosition = getLargestPosition(usePositions, candidate, needsRegisterPair);
     int blockedPosition = getLargestPosition(blockedPositions, candidate, needsRegisterPair);
 
     if (largestUsePosition < unhandledInterval.getFirstUse()) {
       // All active and inactive intervals are used before current. Therefore, it is best to spill
       // current itself.
-      int splitPosition = unhandledInterval.getFirstUse();
-      LiveIntervals split = unhandledInterval.splitBefore(splitPosition, mode);
-      assert split != unhandledInterval;
-      // Experiments show that it has a positive impact on code size to use a fresh register here.
-      int registerNumber = getNewSpillRegister(unhandledInterval);
-      assignFreeRegisterToUnhandledInterval(unhandledInterval, registerNumber);
-      unhandledInterval.setSpilled(true);
-      unhandled.add(split);
+      spillCurrentInterval(unhandledInterval);
     } else {
       // We will use the candidate register(s) for unhandledInterval, and therefore potentially
       // need to adjust maxRegisterNumber.
@@ -2859,6 +2881,18 @@ public class LinearScanRegisterAllocator implements RegisterAllocator {
         assignRegisterAndSpill(unhandledInterval, candidate);
       }
     }
+    return true;
+  }
+
+  private void spillCurrentInterval(LiveIntervals unhandledInterval) {
+    int splitPosition = unhandledInterval.getFirstUse();
+    LiveIntervals split = unhandledInterval.splitBefore(splitPosition, mode);
+    assert split != unhandledInterval;
+    // Experiments show that it has a positive impact on code size to use a fresh register here.
+    int registerNumber = getNewSpillRegister(unhandledInterval);
+    assignFreeRegisterToUnhandledInterval(unhandledInterval, registerNumber);
+    unhandledInterval.setSpilled(true);
+    unhandled.add(split);
   }
 
   private int getLargestPosition(
