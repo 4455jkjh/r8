@@ -66,6 +66,45 @@ R8_POMTEMPLATE = Template("""<project
 </project>
 """)
 
+KEEPANNO_TOOLS_POMTEMPLATE = Template("""<project
+    xmlns="http://maven.apache.org/POM/4.0.0"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>com.android.tools</groupId>
+  <artifactId>keepanno-tools</artifactId>
+  <version>$version</version>
+  <name>Keep annotation tools</name>
+  <description>
+  Keep annotation tools.
+  </description>
+  <url>http://r8.googlesource.com/r8</url>
+  <inceptionYear>2016</inceptionYear>
+  <licenses>
+    <license>
+      <name>BSD-3-Clause</name>
+      <url>https://opensource.org/licenses/BSD-3-Clause</url>
+      <distribution>repo</distribution>
+    </license>$library_licenses
+  </licenses>
+  <dependencies>
+  </dependencies>
+  <developers>
+    <developer>
+      <name>The Android Open Source Project</name>
+    </developer>
+  </developers>
+  <scm>
+    <connection>
+      https://r8.googlesource.com/r8.git
+    </connection>
+    <url>
+      https://r8.googlesource.com/r8
+    </url>
+  </scm>
+</project>
+""")
+
 DESUGAR_CONFIGUATION_POMTEMPLATE = Template("""<project
     xmlns="http://maven.apache.org/POM/4.0.0"
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
@@ -287,6 +326,30 @@ def generate_r8_maven_zip(out, version_file=None, skip_gradle_build=False):
         generate_maven_zip('r8', version, pom_file, file_copy, out)
 
 
+def generate_keepanno_tools_maven_zip(out,
+                                      version_file=None,
+                                      skip_gradle_build=False):
+    if not skip_gradle_build:
+        gradle.run_gradle([utils.GRADLE_TASK_KEEPANNOTOOLSLIB, '-Pno_internal'])
+    version = determine_version()
+    with utils.TempDir() as tmp_dir:
+        file_copy = join(tmp_dir, 'copy_of_jar.jar')
+        copyfile(utils.KEEPANNOTOOLSLIB_JAR, file_copy)
+
+        if version_file:
+            with zipfile.ZipFile(file_copy, 'a') as zip:
+                zip.write(version_file, basename(version_file))
+
+        # Generate the pom file.
+        pom_file = join(tmp_dir, 'keepanno-tools.pom')
+        write_pom_file(KEEPANNO_TOOLS_POMTEMPLATE,
+                       pom_file,
+                       version,
+                       library_licenses=generate_library_licenses())
+        # Write the maven zip file.
+        generate_maven_zip('keepanno-tools', version, pom_file, file_copy, out)
+
+
 # Write the desugaring configuration of a jar file with the following content:
 #  java/
 #    util/
@@ -399,6 +462,7 @@ def main(argv):
             utils.LIBRARY_DESUGAR_CONVERSIONS_ZIP)
     else:
         generate_r8_maven_zip(options.out)
+        generate_keepanno_maven_zip(options.out)
 
 
 if __name__ == "__main__":

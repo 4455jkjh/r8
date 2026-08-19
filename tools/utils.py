@@ -101,6 +101,7 @@ R8LIB_TESTS_JAR = os.path.join(LIBS, 'r8libtestdeps-cf.jar')
 R8_TESTS_DEPS_JAR = os.path.join(LIBS, 'test_deps_all.jar')
 R8LIB_TESTS_DEPS_JAR = R8_TESTS_DEPS_JAR
 MAVEN_ZIP_LIB = os.path.join(LIBS, 'r8lib.zip')
+KEEPANNNO_TOOLS_MAVEN_ZIP_LIB = os.path.join(LIBS, 'keepanno-toolslib.zip')
 LIBRARY_DESUGAR_CONVERSIONS_LEGACY_ZIP = os.path.join(
     CUSTOM_CONVERSION_DIR, 'library_desugar_conversions_legacy.jar')
 LIBRARY_DESUGAR_CONVERSIONS_ZIP = os.path.join(
