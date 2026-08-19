@@ -14,8 +14,10 @@ import com.android.tools.r8.shaking.KeepInfo.Builder;
 import com.android.tools.r8.shaking.KeepInfoCollectionExported.KeepAnnotationCollectionInfoExported;
 import com.android.tools.r8.shaking.KeepReason.ReflectiveUseFrom;
 import com.android.tools.r8.utils.InternalOptions;
-import com.google.common.collect.Sets;
+import com.android.tools.r8.utils.collections.SingletonIdentitySet;
+import com.android.tools.r8.utils.internal.SetUtils;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -656,7 +658,7 @@ public abstract class KeepInfo<B extends Builder<B, K>, K extends KeepInfo<B, K>
      */
     final Set<KeepReason> reasons = new HashSet<>();
 
-    final Set<ProguardKeepRuleBase> rules = Sets.newIdentityHashSet();
+    private Set<ProguardKeepRuleBase> rules = Collections.emptySet();
 
     Joiner(B builder) {
       this.builder = builder;
@@ -739,8 +741,22 @@ public abstract class KeepInfo<B extends Builder<B, K>, K extends KeepInfo<B, K>
       return self();
     }
 
+    @SuppressWarnings("ReferenceEquality")
     public J addRule(ProguardKeepRuleBase rule) {
-      rules.add(rule);
+      if (rules.isEmpty()) {
+        rules = new SingletonIdentitySet<>(rule);
+      } else if (rules instanceof SingletonIdentitySet) {
+        ProguardKeepRuleBase existing =
+            ((SingletonIdentitySet<ProguardKeepRuleBase>) rules).getElement();
+        if (existing != rule) {
+          Set<ProguardKeepRuleBase> set = SetUtils.newIdentityHashSet(4);
+          set.add(existing);
+          set.add(rule);
+          rules = set;
+        }
+      } else {
+        rules.add(rule);
+      }
       return self();
     }
 
@@ -814,7 +830,7 @@ public abstract class KeepInfo<B extends Builder<B, K>, K extends KeepInfo<B, K>
       builder.getAnnotationsInfo().destructiveJoin(otherBuilder.getAnnotationsInfo());
       builder.getTypeAnnotationsInfo().destructiveJoin(otherBuilder.getTypeAnnotationsInfo());
       reasons.addAll(joiner.reasons);
-      rules.addAll(joiner.rules);
+      joiner.getRules().forEach(this::addRule);
       return self();
     }
 
