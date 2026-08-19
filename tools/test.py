@@ -458,7 +458,7 @@ def test(options, args):
             utils.ensure_google_download(utils.JAVA21_DIR)
             (library_jar,
              maven_zip) = archive_desugar_jdk_libs.BuildDesugaredLibrary(
-                 checkout_dir, 'jdk11')
+                 checkout_dir, 'jdk11_legacy')
             desugar_jdk_libs = os.path.join(desugar_jdk_libs_dir,
                                             os.path.basename(library_jar))
             shutil.copyfile(library_jar, desugar_jdk_libs)
