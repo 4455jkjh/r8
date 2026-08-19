@@ -22,11 +22,18 @@ public class DexFileOverflowDiagnostic implements Diagnostic {
   private final long numOfMethods;
   private final long numOfFields;
   private final long numOfTypes;
+  private final long maxNumOfFields;
   private final long maxNumOfTypes;
 
   public DexFileOverflowDiagnostic(
       boolean hasMainDexSpecification, long numOfMethods, long numOfFields) {
-    this(hasMainDexSpecification, numOfMethods, numOfFields, 0, VirtualFile.MAX_ENTRIES);
+    this(
+        hasMainDexSpecification,
+        numOfMethods,
+        numOfFields,
+        0,
+        VirtualFile.MAX_ENTRIES,
+        VirtualFile.MAX_ENTRIES);
   }
 
   public DexFileOverflowDiagnostic(
@@ -35,11 +42,28 @@ public class DexFileOverflowDiagnostic implements Diagnostic {
       long numOfFields,
       long numOfTypes,
       long maxNumOfTypes) {
+    this(
+        hasMainDexSpecification,
+        numOfMethods,
+        numOfFields,
+        numOfTypes,
+        VirtualFile.MAX_ENTRIES,
+        maxNumOfTypes);
+  }
+
+  public DexFileOverflowDiagnostic(
+      boolean hasMainDexSpecification,
+      long numOfMethods,
+      long numOfFields,
+      long numOfTypes,
+      long maxNumOfTypes,
+      long maxNumOfFields) {
     this.hasMainDexSpecification = hasMainDexSpecification;
     this.numOfMethods = numOfMethods;
     this.numOfFields = numOfFields;
     this.numOfTypes = numOfTypes;
     this.maxNumOfTypes = maxNumOfTypes;
+    this.maxNumOfFields = maxNumOfFields;
   }
 
   /** The number of fields that the application needs to include in the main DEX file. */
@@ -59,7 +83,7 @@ public class DexFileOverflowDiagnostic implements Diagnostic {
 
   /** The maximum number of fields that can be included in a DEX file. */
   public long getMaximumNumberOfFields() {
-    return VirtualFile.MAX_ENTRIES;
+    return maxNumOfFields;
   }
 
   /** The maximum number of methods that can be included in a DEX file. */
