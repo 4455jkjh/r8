@@ -12,13 +12,13 @@ import static com.android.tools.r8.androidapi.AndroidApiLevelDatabaseTestHelper.
 import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
+import com.android.tools.r8.ApiDatabaseGenerator;
+import com.android.tools.r8.ApiDatabaseGeneratorCommand;
 import com.android.tools.r8.ApiDatabaseGeneratorException;
-import com.android.tools.r8.DiagnosticsMatcher;
+import com.android.tools.r8.ApiDatabaseGeneratorTestHelper;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestDiagnosticMessagesImpl;
 import com.android.tools.r8.TestParameters;
@@ -26,19 +26,16 @@ import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.androidapi.AndroidApiLevelCompute;
 import com.android.tools.r8.androidapi.AndroidApiLevelCompute.DefaultAndroidApiLevelCompute;
-import com.android.tools.r8.androidapi.AndroidApiLevelDatabaseTestHelper;
 import com.android.tools.r8.androidapi.AndroidApiLevelHashingDatabaseImpl;
 import com.android.tools.r8.androidapi.ApiDatabaseEntry;
 import com.android.tools.r8.androidapi.ComputedApiLevel;
 import com.android.tools.r8.androidapi.SunMiscUnsafeApiTest;
-import com.android.tools.r8.apimodel.AndroidApiVersionsXmlParser.ParsingException;
 import com.android.tools.r8.apimodel.ParsedApiClassTrimming.JarTrimmer;
 import com.android.tools.r8.apimodel.ParsedApiClassTrimming.ListeningDecorator;
 import com.android.tools.r8.apimodel.ParsedApiClassTrimming.SkipAnswer;
+import com.android.tools.r8.apimodel.ParsedApiClassTrimming.Trimmer;
 import com.android.tools.r8.apimodel.ParsedApiClassTrimming.TrimmerListener;
-import com.android.tools.r8.apimodel.jar.ApiClassInfo;
 import com.android.tools.r8.apimodel.jar.ApiJarInfo;
-import com.android.tools.r8.apimodel.jar.ApiJarReader;
 import com.android.tools.r8.graph.AppInfoWithClassHierarchy;
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.DexClass;
@@ -56,28 +53,22 @@ import com.android.tools.r8.utils.InternalOptions;
 import com.android.tools.r8.utils.codeinspector.ClassSubject;
 import com.android.tools.r8.utils.codeinspector.CodeInspector;
 import com.android.tools.r8.utils.internal.BiConsumerUtils;
-import com.android.tools.r8.utils.internal.ListUtils;
 import com.android.tools.r8.utils.internal.TriConsumerUtils;
-import com.android.tools.r8.utils.internal.collections.Pair;
 import com.android.tools.r8.utils.timing.Timing;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Iterables;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.IdentityHashMap;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
-import org.hamcrest.CoreMatchers;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.junit.runner.RunWith;
@@ -105,24 +96,6 @@ public class AndroidApiHashingDatabaseBuilderGeneratorTest extends TestBase {
     this.parameters = parameters;
   }
 
-  private static class GenerateDatabaseResourceFilesResult {
-
-    private final Path apiLevels;
-
-    public GenerateDatabaseResourceFilesResult(Path apiLevels) {
-      this.apiLevels = apiLevels;
-    }
-  }
-
-  private static GenerateDatabaseResourceFilesResult generateResourcesFiles(
-      Map<ApiDatabaseEntry, AndroidApiLevel> databaseEntries) throws Exception {
-    TemporaryFolder temp1 = new TemporaryFolder();
-    temp1.create();
-    Path apiLevels = temp1.newFile("api_levels.ser").toPath();
-    AndroidApiHashingDatabaseBuilderGenerator.writeEntries(databaseEntries, apiLevels);
-    return new GenerateDatabaseResourceFilesResult(apiLevels);
-  }
-
   private static Map<ApiDatabaseEntry, AndroidApiLevel> computeEntries(
       Collection<ParsedApiClass> apiClasses) throws Exception {
     Map<ApiDatabaseEntry, AndroidApiLevel> databaseEntries =
@@ -131,90 +104,25 @@ public class AndroidApiHashingDatabaseBuilderGeneratorTest extends TestBase {
     return databaseEntries;
   }
 
-  private static void saveToTmp(Collection<ParsedApiClass> classes, String fileName)
-      throws IOException {
-    Path tmpDir = Paths.get(ToolHelper.getProjectRoot(), "tmp");
-    if (!Files.exists(tmpDir)) {
-      Files.createDirectories(tmpDir);
-    }
-    Path file = tmpDir.resolve(fileName);
-    Files.write(file, sortAndFormat(classes));
-  }
-
-  public static List<String> sortAndFormat(Collection<ParsedApiClass> classes) {
-    List<ParsedApiClass> sortedClasses = new ArrayList<>(classes);
-    sortedClasses.sort(Comparator.comparing(c -> c.getClassReference().getDescriptor()));
-    List<String> result = new ArrayList<>();
-    for (ParsedApiClass apiClass : sortedClasses) {
-      result.add(apiClass.getClassReference().getDescriptor() + " " + apiClass.getRange());
-      List<Pair<ClassReference, ApiRange>> sortedSupertypes = new ArrayList<>();
-      apiClass.forEachSupertype(
-          (reference, apiRange) -> sortedSupertypes.add(new Pair<>(reference, apiRange)));
-      sortedSupertypes.sort(Comparator.comparing(p -> p.getFirst().getDescriptor()));
-      for (Pair<ClassReference, ApiRange> pair : sortedSupertypes) {
-        result.add("  super: " + pair.getFirst().getDescriptor() + " " + pair.getSecond());
-      }
-      List<Pair<ClassReference, ApiRange>> sortedInterfaces = new ArrayList<>();
-      apiClass.forEachInterface(
-          (reference, apiRange) -> sortedInterfaces.add(new Pair<>(reference, apiRange)));
-      sortedInterfaces.sort(Comparator.comparing(p -> p.getFirst().getDescriptor()));
-      for (Pair<ClassReference, ApiRange> pair : sortedInterfaces) {
-        result.add("  implements: " + pair.getFirst().getDescriptor() + " " + pair.getSecond());
-      }
-      List<Pair<FieldTypelessReference, ApiRange>> sortedFields = new ArrayList<>();
-      apiClass.forEachField(
-          (reference, apiRange) -> sortedFields.add(new Pair<>(reference, apiRange)));
-      sortedFields.sort(Comparator.comparing(p -> p.getFirst().toString()));
-      for (Pair<FieldTypelessReference, ApiRange> pair : sortedFields) {
-        result.add("  field: " + pair.getFirst().toString() + " " + pair.getSecond());
-      }
-      List<Pair<MethodReference, ApiRange>> sortedMethods = new ArrayList<>();
-      apiClass.forEachMethod(
-          (reference, apiRange) -> sortedMethods.add(new Pair<>(reference, apiRange)));
-      sortedMethods.sort(Comparator.comparing(p -> p.getFirst().toString()));
-      for (Pair<MethodReference, ApiRange> pair : sortedMethods) {
-        result.add("  method: " + pair.getFirst().toString() + " " + pair.getSecond());
-      }
-    }
-    return result;
-  }
-
   private static Collection<ParsedApiClass> cachedParsedApiClasses = null;
 
-  private static Collection<ParsedApiClass> loadParsedApiClasses()
-      throws ParsingException, ApiDatabaseGeneratorException, IOException {
+  private static Collection<ParsedApiClass> loadParsedApiClasses() throws Exception {
     if (cachedParsedApiClasses == null) {
-      TestDiagnosticMessagesImpl diagnosticsHandler = new TestDiagnosticMessagesImpl();
-      Collection<ParsedApiClass> apiClasses =
-          AndroidApiVersionsXmlParser.parse(ToolHelper.getApiVersionsXmlFile(API_LEVEL));
-      saveToTmp(apiClasses, "1_parsed.txt");
-      ParsedApiClassVerifier.verify(apiClasses);
-      ApiJarInfo jarInfo = ApiJarReader.read(ImmutableList.of(ToolHelper.getAndroidJar(API_LEVEL)));
-      apiClasses = amendMissingData(apiClasses, jarInfo, diagnosticsHandler);
-      saveToTmp(apiClasses, "2_merged.txt");
-      ParsedApiClassVerifier.verify(apiClasses);
-      apiClasses = ParsedApiClassFlattening.flatten(apiClasses);
-      saveToTmp(apiClasses, "3_flattened.txt");
-      ParsedApiClassVerifier.verify(apiClasses);
-      apiClasses =
-          ParsedApiClassTrimming.trim(apiClasses, new ParsedApiClassTrimming.RemovedTrimmer());
-      saveToTmp(apiClasses, "4_trimmed_removed.txt");
-      ParsedApiClassVerifier.verify(apiClasses);
-      apiClasses = filterByJar(apiClasses, jarInfo);
-      saveToTmp(apiClasses, "5_trimmed_jar.txt");
-      ParsedApiClassVerifier.verify(apiClasses);
-      diagnosticsHandler.assertAllDiagnosticsMatch(
-          DiagnosticsMatcher.diagnosticMessage(CoreMatchers.startsWith("Duplicate class ")));
-      cachedParsedApiClasses = apiClasses;
+      ApiDatabaseGeneratorCommand command =
+          ApiDatabaseGeneratorCommand.builder()
+              .addInputPath(ToolHelper.getApiVersionsXmlFile(API_LEVEL))
+              .addInputPath(ToolHelper.getAndroidJar(API_LEVEL))
+              .build();
+      cachedParsedApiClasses =
+          ApiDatabaseGeneratorTestHelper.generateClasses(
+              command, AndroidApiHashingDatabaseBuilderGeneratorTest::addJarAssertions);
     }
     return cachedParsedApiClasses;
   }
 
-  private static Collection<ParsedApiClass> filterByJar(
-      Collection<ParsedApiClass> apiClasses, ApiJarInfo jarInfo)
-      throws ApiDatabaseGeneratorException {
-    JarTrimmer jarTrimmer = new JarTrimmer(jarInfo);
+  private static Trimmer<ApiDatabaseGeneratorException> addJarAssertions(JarTrimmer jarTrimmer) {
     Map<String, Boolean> expectedTrimmedPackages = new HashMap<>();
+    ApiJarInfo jarInfo = jarTrimmer.getJarInfo();
     expectedTrimmedPackages.put("junit/", false);
     expectedTrimmedPackages.put("android/test/", false);
     expectedTrimmedPackages.put("com/android/internal/", false);
@@ -276,124 +184,16 @@ public class AndroidApiHashingDatabaseBuilderGeneratorTest extends TestBase {
               SkipAnswer answer) {
             assertEquals("No fields should be skipped: " + field, SkipAnswer.KEEP, answer);
           }
+
+          @Override
+          public void done() {
+            for (Map.Entry<String, Boolean> entry : expectedTrimmedPackages.entrySet()) {
+              assertTrue(
+                  "Expected trimmed package not trimmed: " + entry.getKey(), entry.getValue());
+            }
+          }
         };
-    Collection<ParsedApiClass> trimResult =
-        ParsedApiClassTrimming.trim(apiClasses, new ListeningDecorator<>(jarTrimmer, listener));
-    for (Map.Entry<String, Boolean> entry : expectedTrimmedPackages.entrySet()) {
-      assertTrue("Expected trimmed package not trimmed: " + entry.getKey(), entry.getValue());
-    }
-    return trimResult;
-  }
-
-  /**
-   * Returns API data missing from {@code api-versions.xml} and {@code jarInfo} is mutated with data
-   * missing from {@code android.jar}.
-   */
-  private static Collection<ParsedApiClass> amendMissingData(
-      Collection<ParsedApiClass> apiClasses,
-      ApiJarInfo jarInfo,
-      TestDiagnosticMessagesImpl diagnosticsHandler)
-      throws ApiDatabaseGeneratorException, IOException {
-    Map<ClassReference, ApiRange> lookup = makeApiLookup(apiClasses);
-    Collection<ParsedApiClass> missingApi = missingVersionEntries(lookup, jarInfo);
-    Collection<ParsedApiClass> hiddenApi = addHiddenEntries(lookup, jarInfo);
-    return ParsedApiClassMerging.merge(
-        Iterables.concat(apiClasses, missingApi, hiddenApi), diagnosticsHandler);
-  }
-
-  /** These entries exist in android.jar and runtime but are missing in api-versions.xml. */
-  private static Collection<ParsedApiClass> missingVersionEntries(
-      Map<ClassReference, ApiRange> lookup, ApiJarInfo jarInfoForVerification) {
-    SafeApiBuilder builder = new SafeApiBuilder(lookup);
-    AndroidApiLevelDatabaseTestHelper.visitAdditionalKnownApiReferences(
-        (methodReference, apiLevel) -> {
-          try {
-            assertTrue(
-                methodReference + " was expected present in android.jar",
-                jarInfoForVerification.hasMethod(methodReference));
-          } catch (ApiDatabaseGeneratorException e) {
-            throw new RuntimeException(e);
-          }
-          builder.addMethod(methodReference, new ApiRange(apiLevel));
-        });
-    return builder.build();
-  }
-
-  /**
-   * These entries exist at runtime but not in android.jar or api-versions.xml.
-   *
-   * <p>The API entries are returned while the jar info is added to {@code jarInfo}.
-   */
-  private static Collection<ParsedApiClass> addHiddenEntries(
-      Map<ClassReference, ApiRange> lookup, ApiJarInfo jarInfo) throws IOException {
-    SafeApiBuilder builder = new SafeApiBuilder(lookup);
-
-    // This class is not present in .xml so it is skipped.
-    Map<String, Boolean> skipClasses = new HashMap<>();
-    skipClasses.put("java/nio/DirectByteBuffer", false);
-
-    AndroidApiLevelDatabaseTestHelper.visitHiddenReferences(
-        (classReference, superReference, interfaces, apiLevel) -> {
-          builder.addClass(classReference, new ApiRange(apiLevel));
-          assertFalse(
-              classReference + " already exists in the JAR", jarInfo.hasClass(classReference));
-          String superName;
-          if (superReference != null) {
-            superName = superReference.getBinaryName();
-          } else if (interfaces.isEmpty()) {
-            superName = "java/lang/Object";
-          } else {
-            superName = null;
-          }
-          boolean isInterface = superReference == null;
-          jarInfo.addClass(
-              new ApiClassInfo(
-                  classReference.getBinaryName(),
-                  superName,
-                  ListUtils.map(interfaces, ClassReference::getBinaryName),
-                  isInterface,
-                  ImmutableList.of(),
-                  ImmutableList.of()));
-        },
-        (methodReference, isStatic, apiLevel) -> {
-          if (skipClasses.containsKey(methodReference.getHolderClass().getBinaryName())) {
-            skipClasses.put(methodReference.getHolderClass().getBinaryName(), true);
-          } else {
-            builder.addMethod(methodReference, new ApiRange(apiLevel));
-            ApiClassInfo holder = jarInfo.getClassInfo(methodReference.getHolderClass());
-            assertNotNull(
-                methodReference + " could not be added, holder not present in JAR", holder);
-            holder.addMethod(
-                methodReference.getMethodName(), methodReference.getMethodDescriptor(), isStatic);
-          }
-        },
-        (fieldReference, apilevel) -> {
-          if (skipClasses.containsKey(fieldReference.getHolderClass().getBinaryName())) {
-            skipClasses.put(fieldReference.getHolderClass().getBinaryName(), true);
-          } else {
-            builder.addField(fieldReference, new ApiRange(apilevel));
-            ApiClassInfo holder = jarInfo.getClassInfo(fieldReference.getHolderClass());
-            assertNotNull(
-                fieldReference + " could not be added, holder not present in JAR", holder);
-            holder.addField(fieldReference.getFieldName());
-          }
-        });
-    for (Map.Entry<String, Boolean> entry : skipClasses.entrySet()) {
-      assertTrue(entry.getKey() + " was never skipped", entry.getValue());
-    }
-    return builder.build();
-  }
-
-  private static Map<ClassReference, ApiRange> makeApiLookup(
-      Collection<ParsedApiClass> apiClasses) {
-    Map<ClassReference, ApiRange> lookup = new HashMap<>();
-    for (ParsedApiClass apiClass : apiClasses) {
-      assertFalse(
-          apiClass.getClassReference() + " already found",
-          lookup.containsKey(apiClass.getClassReference()));
-      lookup.put(apiClass.getClassReference(), apiClass.getRange());
-    }
-    return lookup;
+    return new ListeningDecorator<>(jarTrimmer, listener);
   }
 
   @SuppressWarnings("SameParameterValue")
@@ -510,77 +310,6 @@ public class AndroidApiHashingDatabaseBuilderGeneratorTest extends TestBase {
     assertThat(missingMemberInformation.keySet(), matchesItemsOneToOne(expectedMissingMembers));
   }
 
-  private static class SafeApiBuilder {
-    private final Map<ClassReference, ParsedApiClass> classes = new LinkedHashMap<>();
-    private final Map<ClassReference, ApiRange> lookup;
-
-    public SafeApiBuilder(Map<ClassReference, ApiRange> lookup) {
-      this.lookup = lookup;
-    }
-
-    private ParsedApiClass getOrCreateClass(ClassReference classReference) {
-      ParsedApiClass apiClass = classes.get(classReference);
-      if (apiClass == null) {
-        ApiRange lookupRange = lookup.get(classReference);
-        assertNotNull(classReference + " not found in the lookup map", lookupRange);
-        ParsedApiClass baseApiClass = new ParsedApiClass(classReference, lookupRange);
-        classes.put(classReference, baseApiClass);
-        apiClass = baseApiClass;
-      }
-      return apiClass;
-    }
-
-    public void addClass(ClassReference classReference, ApiRange apiRange) {
-      assertFalse(classReference + " was already found", classes.containsKey(classReference));
-      classes.put(classReference, new ParsedApiClass(classReference, apiRange));
-    }
-
-    public void addMethod(MethodReference methodReference, ApiRange apiRange) {
-      ParsedApiClass apiClass = getOrCreateClass(methodReference.getHolderClass());
-      assertFalse(methodReference + " was already found", apiClass.hasMethod(methodReference));
-      AndroidApiLevel apiClassIntro = apiClass.getRange().intro;
-      AndroidApiLevel apiClassRemoved = apiClass.getRange().removed;
-      assertTrue(
-          "class intro " + apiClassIntro + " must be less than method intro " + apiRange.intro,
-          apiClassIntro.isLessThanOrEqualTo(apiRange.intro));
-      assertTrue(
-          "class removed "
-              + apiClassRemoved
-              + " must be greater than method removed "
-              + apiRange.removed,
-          apiClassRemoved == null
-              || apiRange.isRemoved()
-              || apiClassRemoved.isGreaterThanOrEqualTo(apiRange.removed));
-      apiClass.registerMethod(methodReference, apiRange);
-    }
-
-    public void addField(FieldReference fieldReference, ApiRange apiRange) {
-      FieldTypelessReference field =
-          new FieldTypelessReference(
-              fieldReference.getHolderClass(), fieldReference.getFieldName());
-      ParsedApiClass apiClass = getOrCreateClass(field.getHolderClass());
-      assertFalse(field + " was already found", apiClass.hasField(field));
-      AndroidApiLevel apiClassIntro = apiClass.getRange().intro;
-      AndroidApiLevel apiClassRemoved = apiClass.getRange().removed;
-      assertTrue(
-          "class intro " + apiClassIntro + " must be less than field intro " + apiRange.intro,
-          apiClassIntro.isLessThanOrEqualTo(apiRange.intro));
-      assertTrue(
-          "class removed "
-              + apiClassRemoved
-              + " must be greater than field removed "
-              + apiRange.removed,
-          apiClassRemoved == null
-              || apiRange.isRemoved()
-              || apiClassRemoved.isGreaterThanOrEqualTo(apiRange.removed));
-      apiClass.registerField(field, apiRange);
-    }
-
-    public Collection<ParsedApiClass> build() {
-      return classes.values();
-    }
-  }
-
   @Test
   public void testEntrySize() throws Exception {
     Map<ApiDatabaseEntry, AndroidApiLevel> databaseEntries = computeEntries(loadParsedApiClasses());
@@ -590,9 +319,16 @@ public class AndroidApiHashingDatabaseBuilderGeneratorTest extends TestBase {
   /** If this test fails, use {@link #testDumpDatabase} to diff the content in a readable format. */
   @Test
   public void testDatabaseGenerationUpToDate() throws Exception {
-    GenerateDatabaseResourceFilesResult result =
-        generateResourcesFiles(computeEntries(loadParsedApiClasses()));
-    assertTrue(TestBase.filesAreEqual(result.apiLevels, API_DATABASE));
+    temp.create();
+    Path apiLevels = temp.newFile("api_levels.ser").toPath();
+    ApiDatabaseGeneratorCommand command =
+        ApiDatabaseGeneratorCommand.builder()
+            .addInputPath(ToolHelper.getApiVersionsXmlFile(API_LEVEL))
+            .addInputPath(ToolHelper.getAndroidJar(API_LEVEL))
+            .setOutputPath(apiLevels)
+            .build();
+    ApiDatabaseGenerator.run(command);
+    assertTrue(TestBase.filesAreEqual(apiLevels, API_DATABASE));
   }
 
   @Test
@@ -854,10 +590,18 @@ public class AndroidApiHashingDatabaseBuilderGeneratorTest extends TestBase {
    * third_party/api_database/api_database.ser.
    */
   public static void main(String[] args) throws Exception {
-    GenerateDatabaseResourceFilesResult result =
-        generateResourcesFiles(computeEntries(loadParsedApiClasses()));
-    API_DATABASE.toFile().mkdirs();
-    Files.move(result.apiLevels, API_DATABASE, REPLACE_EXISTING);
+    TemporaryFolder temp = new TemporaryFolder();
+    temp.create();
+    Path apiLevels = temp.newFile("api_levels.ser").toPath();
+    ApiDatabaseGeneratorCommand command =
+        ApiDatabaseGeneratorCommand.builder()
+            .addInputPath(ToolHelper.getApiVersionsXmlFile(API_LEVEL))
+            .addInputPath(ToolHelper.getAndroidJar(API_LEVEL))
+            .setOutputPath(apiLevels)
+            .build();
+    ApiDatabaseGenerator.run(command);
+    API_DATABASE.getParent().toFile().mkdirs();
+    Files.move(apiLevels, API_DATABASE, REPLACE_EXISTING);
     System.out.println(
         "Updated file in: "
             + API_DATABASE

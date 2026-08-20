@@ -66,7 +66,10 @@ public class SanityCheck extends TestBase {
       throws Exception {
     BooleanBox licenseSeen = new BooleanBox();
     BooleanBox manifestSeen = new BooleanBox();
-    Set<String> apiDatabaseFiles = Sets.newHashSet("resources/api_database.ser");
+    BooleanBox apiDatabaseSeen = new BooleanBox();
+    Set<String> apiResourceFiles =
+        Sets.newHashSet(
+            "resources/missing.api.txt", "resources/hidden.api.txt", "resources/hidden.jar.txt");
     Set<String> r8AssistantRuntime =
         ImmutableSet.of(
             "ReflectiveEventType.java",
@@ -128,18 +131,21 @@ public class SanityCheck extends TestBase {
               // Allow.
             } else if (entryTester.test(name)) {
               // Allow.
-            } else if (apiDatabaseFiles.contains(name)) {
-              // Allow all api database files.
-              apiDatabaseFiles.remove(name);
+            } else if (name.equals("resources/api_database.ser")) {
+              apiDatabaseSeen.set();
               // Check that the entry is stored uncompressed.
-              assertEquals(ZipEntry.STORED, entry.getMethod());
+              assertEquals(name + " has the wrong zip-method", ZipEntry.STORED, entry.getMethod());
+            } else if (apiResourceFiles.contains(name)) {
+              // Allow all api database resource files.
+              apiResourceFiles.remove(name);
             } else if (name.endsWith("/")) {
               assertTrue("Unexpected directory entry in" + jar, allowDirectories);
             } else {
               fail("Unexpected entry '" + name + "' in " + jar);
             }
           });
-      assertTrue(apiDatabaseFiles.isEmpty());
+      assertTrue(apiResourceFiles.isEmpty());
+      assertTrue("No resources/api_database.ser entry found in " + jar, apiDatabaseSeen.isTrue());
       assertTrue("No LICENSE entry found in " + jar, licenseSeen.isTrue());
       assertTrue("No META-INF/MANIFEST.MF entry found in " + jar, manifestSeen.isTrue());
     } catch (IOException e) {

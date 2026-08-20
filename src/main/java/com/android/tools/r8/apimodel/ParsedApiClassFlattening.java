@@ -8,6 +8,7 @@ import com.android.tools.r8.ApiDatabaseGeneratorException;
 import com.android.tools.r8.references.ClassReference;
 import com.android.tools.r8.references.MethodReference;
 import com.android.tools.r8.references.Reference;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -45,7 +46,7 @@ public class ParsedApiClassFlattening {
     for (ClassReference ref : classMap.keySet()) {
       flattenClass(ref);
     }
-    return flattenedCache.values();
+    return new ArrayList<>(flattenedCache.values());
   }
 
   /** Returns a flattened class of {@code ref} with all inherited members except from Object. */

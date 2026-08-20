@@ -11,7 +11,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Path;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -24,32 +23,29 @@ import org.objectweb.asm.Opcodes;
 
 public class ApiJarReader {
 
-  public static ApiJarInfo read(Collection<Path> jarPaths)
-      throws ApiDatabaseGeneratorException, IOException {
+  public static ApiJarInfo read(Path jarPath) throws ApiDatabaseGeneratorException, IOException {
     Map<String, ApiClassInfo> classes = new HashMap<>();
-    readClasses(
-        jarPaths,
+    readClass(
+        jarPath,
         (classInfo) -> {
           if (classes.containsKey(classInfo.getBinaryName())) {
             throw new ApiDatabaseGeneratorException(
-                "Duplicate classes found in JARs: " + classInfo.getBinaryName());
+                "Duplicate classes found in JAR: " + jarPath + ", " + classInfo.getBinaryName());
           }
           classes.put(classInfo.getBinaryName(), classInfo);
         });
     return new ApiJarInfo(classes);
   }
 
-  private static <E extends Throwable> void readClasses(
-      Collection<Path> jarPaths, ThrowingConsumer<ApiClassInfo, E> handler) throws E, IOException {
-    for (Path jarPath : jarPaths) {
-      ZipUtils.iterWithZipFileAndInputStream(
-          jarPath,
-          (zip, entry, input) -> {
-            if (ZipUtils.isClassFile(entry.getName())) {
-              handler.accept(readClass(input));
-            }
-          });
-    }
+  private static <E extends Throwable> void readClass(
+      Path jarPath, ThrowingConsumer<ApiClassInfo, E> handler) throws IOException, E {
+    ZipUtils.iterWithZipFileAndInputStream(
+        jarPath,
+        (zip, entry, input) -> {
+          if (ZipUtils.isClassFile(entry.getName())) {
+            handler.accept(readClass(input));
+          }
+        });
   }
 
   private static ApiClassInfo readClass(InputStream input) throws IOException {
@@ -58,13 +54,12 @@ public class ApiJarReader {
     reader.accept(
         visitor, ClassReader.SKIP_CODE | ClassReader.SKIP_DEBUG | ClassReader.SKIP_FRAMES);
 
-    return new ApiClassInfo(
-        visitor.className,
-        visitor.superName,
-        visitor.interfaces,
-        visitor.isInterface,
-        visitor.methods,
-        visitor.fields);
+    ApiClassInfo classInfo =
+        new ApiClassInfo(visitor.className, visitor.superName, visitor.isInterface);
+    visitor.interfaces.forEach(classInfo::addInterface);
+    visitor.methods.forEach(classInfo::addMethod);
+    visitor.fields.forEach(classInfo::addField);
+    return classInfo;
   }
 
   private static class JarClassVisitor extends ClassVisitor {

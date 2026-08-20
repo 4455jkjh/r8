@@ -40,6 +40,10 @@ public class ApiDatabaseGeneratorCommandParserTest extends TestBase {
             "                          # Output result in <database-file> (must be a file, not a"
                 + " directory).",
             "                          # Defaults to 'api_database.ser'.",
+            "  --dont-amend            # By default, the API database is amended with known missing"
+                + " information.",
+            "                          # This option disables that and processes inputs directly as"
+                + " they are.",
             "  --map-diagnostics[:<type>] <from-level> <to-level>",
             "                          # Map diagnostics of <type> (default any) reported as"
                 + " <from-level> to",

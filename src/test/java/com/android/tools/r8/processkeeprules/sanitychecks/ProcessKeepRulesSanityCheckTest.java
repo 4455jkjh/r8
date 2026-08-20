@@ -48,6 +48,9 @@ public class ProcessKeepRulesSanityCheckTest extends TestBase {
     assertTrue(Files.exists(PROCESS_KEEP_RULES_JAR));
     assertTrue(Files.exists(PROCESS_KEEP_RULES_MAP));
     BooleanBox apiDatabaseSeen = new BooleanBox();
+    BooleanBox apiMissingSeen = new BooleanBox();
+    BooleanBox apiHiddenSeen = new BooleanBox();
+    BooleanBox jarHiddenSeen = new BooleanBox();
     BooleanBox licenseSeen = new BooleanBox();
     BooleanBox manifestSeen = new BooleanBox();
     BooleanBox versionSeen = new BooleanBox();
@@ -76,6 +79,12 @@ public class ProcessKeepRulesSanityCheckTest extends TestBase {
             licenseSeen.set();
           } else if (name.equals("resources/api_database.ser")) {
             apiDatabaseSeen.set();
+          } else if (name.equals("resources/missing.api.txt")) {
+            apiMissingSeen.set();
+          } else if (name.equals("resources/hidden.api.txt")) {
+            apiHiddenSeen.set();
+          } else if (name.equals("resources/hidden.jar.txt")) {
+            jarHiddenSeen.set();
           } else if (name.endsWith("/")) {
             fail("Unexpected directory entry '" + name + "'");
           } else {
@@ -84,6 +93,9 @@ public class ProcessKeepRulesSanityCheckTest extends TestBase {
         });
 
     assertTrue("Api database entry FOUND", apiDatabaseSeen.isFalse());
+    assertTrue("Api missing entry FOUND", apiMissingSeen.isFalse());
+    assertTrue("Api hidden entry FOUND", apiHiddenSeen.isFalse());
+    assertTrue("Api jar missing entry FOUND", jarHiddenSeen.isFalse());
     assertTrue("LICENSE entry NOT FOUND", licenseSeen.isTrue());
     assertTrue("META-INF/MANIFEST.MF entry NOT FOUND", manifestSeen.isTrue());
     assertTrue("com/android/tools/r8/Version.class entry NOT FOUND", versionSeen.isTrue());

@@ -128,6 +128,15 @@ public class ListUtils {
     return result;
   }
 
+  public static <S, T, E extends Throwable> List<T> mapThrowing(
+      Collection<S> list, ThrowingFunction<S, T, E> fn) throws E {
+    List<T> result = new ArrayList<>(list.size());
+    for (S element : list) {
+      result.add(fn.apply(element));
+    }
+    return result;
+  }
+
   public static <S, T> List<T> mapNotNull(Collection<S> list, Function<S, T> fn) {
     List<T> result = new ArrayList<>(list.size());
     for (S element : list) {

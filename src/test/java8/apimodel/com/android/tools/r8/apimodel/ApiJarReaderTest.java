@@ -14,7 +14,6 @@ import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.apimodel.jar.ApiJarInfo;
 import com.android.tools.r8.apimodel.jar.ApiJarReader;
 import com.android.tools.r8.utils.AndroidApiLevel;
-import com.google.common.collect.ImmutableList;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -35,7 +34,7 @@ public class ApiJarReaderTest extends TestBase {
   @Test
   public void testApiJarReader() throws Exception {
     AndroidApiLevel apiLevel = AndroidApiLevel.API_DATABASE_LEVEL;
-    ApiJarInfo jarInfo = ApiJarReader.read(ImmutableList.of(ToolHelper.getAndroidJar(apiLevel)));
+    ApiJarInfo jarInfo = ApiJarReader.read(ToolHelper.getAndroidJar(apiLevel));
     assertNotNull(jarInfo);
     assertEquals(6_440, jarInfo.size());
     assertTrue(jarInfo.hasClass("java/lang/Object"));

@@ -61,6 +61,7 @@ public class ApiDatabaseGeneratorTest extends TestBase {
             .addInputPath(apiVersionsXml)
             .addInputPath(dummyJar)
             .setOutputPath(outputDb)
+            .setAmend(false)
             .build();
 
     ApiDatabaseGenerator.run(command);
@@ -103,6 +104,7 @@ public class ApiDatabaseGeneratorTest extends TestBase {
             .addInputPath(apiVersionsXml2)
             .addInputPath(dummyJar)
             .setOutputPath(outputDb)
+            .setAmend(false)
             .build();
 
     try {
@@ -158,6 +160,7 @@ public class ApiDatabaseGeneratorTest extends TestBase {
             .addInputPath(apiVersionsXml3)
             .addInputPath(dummyJar)
             .setOutputPath(outputDb)
+            .setAmend(false)
             .build();
 
     try {
@@ -203,6 +206,7 @@ public class ApiDatabaseGeneratorTest extends TestBase {
     String[] args = {
       "--output",
       outputDb.toString(),
+      "--dont-amend",
       "--map-diagnostics:DuplicateApiDatabaseEntryDiagnostic",
       "error",
       "info",
@@ -259,6 +263,7 @@ public class ApiDatabaseGeneratorTest extends TestBase {
     String[] args = {
       "--output",
       outputDb.toString(),
+      "--dont-amend",
       "--map-diagnostics:DuplicateApiDatabaseEntryDiagnostic",
       "error",
       "none",

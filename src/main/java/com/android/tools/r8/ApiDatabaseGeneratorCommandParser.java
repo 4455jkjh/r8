@@ -42,6 +42,11 @@ public class ApiDatabaseGeneratorCommandParser {
             "Output result in <database-file> (must be a file, not a directory). Defaults to"
                 + " 'api_database.ser'.",
             (state, arg) -> state.builder.setOutputPath(Paths.get(arg)))
+        .option0(
+            "--dont-amend",
+            "By default, the API database is amended with known missing information."
+                + " This option disables that and processes inputs directly as they are.",
+            state -> state.builder.setAmend(false))
         .prefix2(
             "--map-diagnostics",
             "[:<type>]",

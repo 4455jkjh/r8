@@ -160,6 +160,13 @@ tasks {
       include("$r8/desugaring/interfacemethods/methodparameters/I.java")
     }
   }
+
+  register<JavaExec>("generateApiAmendments") {
+    dependsOn(partialTestClassesConfig)
+    mainClass.set("com.android.tools.r8.androidapi.GenerateApiAmendments")
+    classpath = sourceSets.test.get().runtimeClasspath + partialTestClassesConfig
+    // The output is deliberately not Gradle tracked since its a circular dependency.
+  }
 }
 
 val testJar by configurations.consumable("testJar")
