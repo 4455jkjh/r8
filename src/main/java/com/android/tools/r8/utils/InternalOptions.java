@@ -613,9 +613,6 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
   public boolean disableLambdaMethodAnnotations =
       System.getProperty("com.android.tools.r8.disableLambdaMethodAnnotations") != null;
 
-  // TODO(b/547484295): Remove this flag.
-  public boolean alwaysAllow64KTypeIds =
-      System.getProperty("com.android.tools.r8.alwaysAllow64KTypeIds") != null;
   // TODO(b/548528931): Remove this flag.
   public boolean alwaysAllow64KFieldIds =
       System.getProperty("com.android.tools.r8.alwaysAllow64KFieldIds") != null;
