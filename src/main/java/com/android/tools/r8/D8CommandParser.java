@@ -25,7 +25,7 @@ import java.nio.file.Paths;
 import java.util.List;
 import java.util.Set;
 
-public class D8CommandParser extends BaseCompilerCommandParser<D8Command, D8Command.Builder> {
+public class D8CommandParser extends BaseCompilerCommandParser {
 
   private static final Set<String> OPTIONS_WITH_ONE_PARAMETER =
       ImmutableSet.of(

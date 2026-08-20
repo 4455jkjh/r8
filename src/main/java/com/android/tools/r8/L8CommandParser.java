@@ -18,7 +18,7 @@ import java.nio.file.Paths;
 import java.util.List;
 import java.util.Set;
 
-public class L8CommandParser extends BaseCompilerCommandParser<L8Command, L8Command.Builder> {
+public class L8CommandParser extends BaseCompilerCommandParser {
 
   private static final Set<String> OPTIONS_WITH_ONE_PARAMETER =
       ImmutableSet.of(
@@ -157,8 +157,7 @@ public class L8CommandParser extends BaseCompilerCommandParser<L8Command, L8Comm
         if (outputPath != null) {
           builder.error(
               new StringDiagnostic(
-                  "Cannot output both to '" + outputPath.toString() + "' and '" + nextArg + "'",
-                  origin));
+                  "Cannot output both to '" + outputPath + "' and '" + nextArg + "'", origin));
           continue;
         }
         outputPath = Paths.get(nextArg);
