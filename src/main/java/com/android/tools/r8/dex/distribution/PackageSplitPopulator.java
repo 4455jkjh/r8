@@ -379,17 +379,21 @@ public class PackageSplitPopulator {
       return true;
     }
     int maxEntries = VirtualFile.MAX_ENTRIES;
+    int maxFieldEntries = current.getMaxNumberOfFields();
     int maxTypeEntries = current.getMaxNumberOfTypes();
     if (options.testing.classToDexDistributionRefinementPasses > 0
         && options.testing.classToDexDistributionRefinementLegRoomPercentage > 0) {
       // Leave a bit of room for the refinement to be more effective.
       maxEntries -=
           maxEntries * (options.testing.classToDexDistributionRefinementLegRoomPercentage / 100);
+      maxFieldEntries -=
+          maxFieldEntries
+              * (options.testing.classToDexDistributionRefinementLegRoomPercentage / 100);
       maxTypeEntries -=
           maxTypeEntries
               * (options.testing.classToDexDistributionRefinementLegRoomPercentage / 100);
     }
-    return current.isFull(maxEntries, maxTypeEntries);
+    return current.isFull(maxEntries, maxFieldEntries, maxTypeEntries);
   }
 
   private void addNonPackageClasses(

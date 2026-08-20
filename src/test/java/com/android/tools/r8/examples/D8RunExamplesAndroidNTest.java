@@ -2,9 +2,12 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-package com.android.tools.r8;
+package com.android.tools.r8.examples;
 
+import com.android.tools.r8.D8Command;
 import com.android.tools.r8.D8Command.Builder;
+import com.android.tools.r8.OutputMode;
+import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.errors.CompilationError;
 import java.nio.file.Path;
 import java.util.function.UnaryOperator;

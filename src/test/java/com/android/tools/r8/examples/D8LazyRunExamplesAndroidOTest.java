@@ -2,11 +2,19 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-package com.android.tools.r8;
+package com.android.tools.r8.examples;
 
 import static com.android.tools.r8.utils.internal.FileUtils.JAR_EXTENSION;
 import static org.junit.Assert.assertTrue;
 
+import com.android.tools.r8.ArchiveClassFileProvider;
+import com.android.tools.r8.ClassFileResourceProvider;
+import com.android.tools.r8.CompilationFailedException;
+import com.android.tools.r8.D8Command;
+import com.android.tools.r8.DirectoryClassFileProvider;
+import com.android.tools.r8.ProgramResource;
+import com.android.tools.r8.ResourceException;
+import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.utils.AndroidApiLevel;
 import com.android.tools.r8.utils.AndroidApp;
 import com.android.tools.r8.utils.OffOrAuto;

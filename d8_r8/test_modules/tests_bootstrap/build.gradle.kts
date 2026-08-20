@@ -19,7 +19,7 @@ java {
 }
 
 val distR8WithRelocatedDeps = project(":dist").tasks.getByName("r8WithRelocatedDeps")
-val distSwissArmyKnife = project(":dist").tasks.getByName("swissArmyKnife")
+val distSwissArmyKnife = project(":swissarmyknife").tasks.getByName("jar")
 val sharedDepsScope by configurations.dependencyScope("sharedDepsScope")
 val sharedDepsConfig by
   configurations.resolvable("sharedDepsConfig") { extendsFrom(sharedDepsScope) }

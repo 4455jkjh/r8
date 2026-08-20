@@ -55,6 +55,8 @@ includeProject(":dist")
 
 includeProject(":library_desugar")
 
+includeProject(":swissarmyknife")
+
 includeProject(":test")
 
 includeProject(":tools")

@@ -2,7 +2,7 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-package com.android.tools.r8;
+package com.android.tools.r8.examples;
 
 import static com.android.tools.r8.utils.internal.FileUtils.JAR_EXTENSION;
 import static com.android.tools.r8.utils.internal.FileUtils.ZIP_EXTENSION;
@@ -12,7 +12,14 @@ import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeFalse;
 
+import com.android.tools.r8.BaseCommand;
+import com.android.tools.r8.CompilationFailedException;
+import com.android.tools.r8.D8Command;
+import com.android.tools.r8.OutputMode;
+import com.android.tools.r8.R8Command;
+import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestRuntime.CfRuntime;
+import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.ToolHelper.DexVm;
 import com.android.tools.r8.ToolHelper.DexVm.Version;
 import com.android.tools.r8.graph.DexItemFactory;

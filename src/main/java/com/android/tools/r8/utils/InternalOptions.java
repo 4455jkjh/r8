@@ -613,9 +613,9 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
   public boolean disableLambdaMethodAnnotations =
       System.getProperty("com.android.tools.r8.disableLambdaMethodAnnotations") != null;
 
-  // TODO(b/547484295): Remove this flag.
-  public boolean alwaysAllow64KTypeIds =
-      System.getProperty("com.android.tools.r8.alwaysAllow64KTypeIds") != null;
+  // TODO(b/548528931): Remove this flag.
+  public boolean alwaysAllow64KFieldIds =
+      System.getProperty("com.android.tools.r8.alwaysAllow64KFieldIds") != null;
 
   private DumpInputFlags dumpInputFlags = DumpInputFlags.getDefault();
 
@@ -3246,6 +3246,15 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
   // See b/542922150.
   public boolean canHaveTypeIdOver32KIssue() {
     return canHaveBugPresentUntilInclusive(AndroidApiLevel.N_MR1);
+  }
+
+  // Some Android 15 devices have a bug in ART pattern substitution for small constructors where
+  // field index 65535 (0xffff) is treated as a sentinel terminator, causing field assignments to
+  // be omitted.
+  //
+  // See b/548528931.
+  public boolean canHaveFieldId65535Issue() {
+    return canHaveBugPresentUntilInclusive(AndroidApiLevel.V);
   }
 
   // Art 7.0.0 and later Art JIT may perform an invalid optimization if a string new-instance does

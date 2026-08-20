@@ -41,6 +41,7 @@ public class VirtualFile {
 
   public static final int MAX_ENTRIES = Constants.U16BIT_MAX + 1;
   public static final int MAX_ENTRIES_ONLY_32K = Constants.U15BIT_MAX + 1;
+  public static final int MAX_ENTRIES_ONLY_65535 = Constants.U16BIT_MAX;
 
   private final AppView<?> appView;
   private int id;
@@ -231,8 +232,18 @@ public class VirtualFile {
     transaction.addClassAndDependencies(clazz);
   }
 
+  public static int getMaxNumberOfFields(InternalOptions options) {
+    return options.canHaveFieldId65535Issue() && !options.alwaysAllow64KFieldIds
+        ? MAX_ENTRIES_ONLY_65535
+        : MAX_ENTRIES;
+  }
+
+  public int getMaxNumberOfFields() {
+    return getMaxNumberOfFields(appView.options());
+  }
+
   public static int getMaxNumberOfTypes(InternalOptions options) {
-    return options.canHaveTypeIdOver32KIssue() && !options.alwaysAllow64KTypeIds
+    return options.canHaveTypeIdOver32KIssue() && options.canUseMultidex()
         ? MAX_ENTRIES_ONLY_32K
         : MAX_ENTRIES;
   }
@@ -241,14 +252,14 @@ public class VirtualFile {
     return getMaxNumberOfTypes(appView.options());
   }
 
-  public boolean isFull(int maxEntries, int maxTypeEntries) {
+  public boolean isFull(int maxEntries, int maxFieldEntries, int maxTypeEntries) {
     return transaction.getNumberOfMethods() > maxEntries
-        || transaction.getNumberOfFields() > maxEntries
+        || transaction.getNumberOfFields() > maxFieldEntries
         || transaction.getNumberOfTypes() > maxTypeEntries;
   }
 
   public boolean isFull() {
-    return isFull(MAX_ENTRIES, getMaxNumberOfTypes());
+    return isFull(MAX_ENTRIES, getMaxNumberOfFields(), getMaxNumberOfTypes());
   }
 
   public int getNumberOfMethods() {
@@ -277,7 +288,8 @@ public class VirtualFile {
             transaction.getNumberOfMethods(),
             transaction.getNumberOfFields(),
             transaction.getNumberOfTypes(),
-            getMaxNumberOfTypes()));
+            getMaxNumberOfTypes(),
+            getMaxNumberOfFields()));
   }
 
   public void abortTransaction() {

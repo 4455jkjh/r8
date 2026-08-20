@@ -133,7 +133,12 @@ public class ObjectToOffsetMapping {
     this.methods = createSortedMap(methods, compare(visitor), this::failOnOverflow);
     timing.end();
     timing.begin("Sort fields");
-    this.fields = createSortedMap(fields, compare(visitor), this::failOnOverflow);
+    this.fields =
+        createSortedMap(
+            fields,
+            compare(visitor),
+            VirtualFile.getMaxNumberOfFields(appView.options()),
+            this::failOnOverflow);
     timing.end();
     timing.begin("Sort call-sites");
     this.callSites = createSortedMap(callSites, compare(visitor), this::failOnOverflow);

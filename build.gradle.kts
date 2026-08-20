@@ -11,6 +11,6 @@ tasks {
     subprojects.forEach { dependsOn(it.tasks.named("clean")) }
   }
   register("r8") { dependsOn(":dist:r8WithRelocatedDeps") }
-  register("swissArmyKnife") { dependsOn(":dist:swissArmyKnife") }
+  register("swissArmyKnife") { dependsOn(":swissarmyknife:jar") }
   register("r8lib") { dependsOn(":test:assembleR8LibWithRelocatedDeps") }
 }

@@ -2,13 +2,18 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-package com.android.tools.r8;
+package com.android.tools.r8.examples;
 
 import static org.junit.Assert.assertEquals;
 
+import com.android.tools.r8.OutputMode;
+import com.android.tools.r8.R8Command;
 import com.android.tools.r8.R8Command.Builder;
+import com.android.tools.r8.R8CompatTestBuilder;
+import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.ToolHelper.DexVm;
 import com.android.tools.r8.ToolHelper.DexVm.Version;
+import com.android.tools.r8.VmTestRunner;
 import com.android.tools.r8.VmTestRunner.IgnoreIfVmOlderThan;
 import com.android.tools.r8.synthesis.SyntheticItemsTestUtils;
 import com.android.tools.r8.utils.AndroidApiLevel;
@@ -116,8 +121,8 @@ public class R8RunExamplesAndroidOTest extends RunExamplesAndroidOTest<R8Command
           .build();
 
   /**
-   * Override test in {@link com.android.tools.r8.RunExamplesAndroidOTest} to allow diagnostic
-   * warning messages.
+   * Override test in {@link com.android.tools.r8.examples.RunExamplesAndroidOTest} to allow
+   * diagnostic warning messages.
    */
   @Test
   @Override
@@ -136,8 +141,8 @@ public class R8RunExamplesAndroidOTest extends RunExamplesAndroidOTest<R8Command
   }
 
   /**
-   * Override test in {@link com.android.tools.r8.RunExamplesAndroidOTest} to allow diagnostic
-   * warning messages.
+   * Override test in {@link com.android.tools.r8.examples.RunExamplesAndroidOTest} to allow
+   * diagnostic warning messages.
    */
   @Test
   @Override

@@ -78,7 +78,7 @@ public class InheritanceClassInDexDistributor {
     }
 
     public boolean canFitInOneDex() {
-      return numberOfFieldIds < VirtualFile.MAX_ENTRIES
+      return numberOfFieldIds < VirtualFile.getMaxNumberOfFields(appView.options())
           && numberOfMethodIds < VirtualFile.MAX_ENTRIES
           && numberOfTypeIds < VirtualFile.getMaxNumberOfTypes(appView.options());
     }
@@ -719,11 +719,16 @@ public class InheritanceClassInDexDistributor {
   }
 
   public boolean isFull(VirtualFile virtualFile, int maxEntries) {
+    int maxFieldEntries =
+        virtualFile.getMaxNumberOfFields() == VirtualFile.MAX_ENTRIES
+            ? maxEntries
+            : Math.max(
+                0, virtualFile.getMaxNumberOfFields() - (VirtualFile.MAX_ENTRIES - maxEntries));
     int maxTypeEntries =
         virtualFile.getMaxNumberOfTypes() == VirtualFile.MAX_ENTRIES
             ? maxEntries
             : Math.max(
                 0, virtualFile.getMaxNumberOfTypes() - (VirtualFile.MAX_ENTRIES - maxEntries));
-    return virtualFile.isFull(maxEntries, maxTypeEntries);
+    return virtualFile.isFull(maxEntries, maxFieldEntries, maxTypeEntries);
   }
 }
