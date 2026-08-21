@@ -124,18 +124,14 @@ public class ApplicationWriter {
 
     private void processClass(DexProgramClass clazz) {
       // Sort all annotations.
-      clazz.annotations().forEach(this::processAnnotation);
+      processAnnotationSet(clazz.annotations());
       for (DexEncodedMethod method : clazz.methods()) {
-        method.annotations().forEach(this::processAnnotation);
+        processAnnotationSet(method.annotations());
         method.getParameterAnnotations().forEach(this::processAnnotationSet);
       }
       for (DexEncodedField field : clazz.fields()) {
-        field.annotations().forEach(this::processAnnotation);
+        processAnnotationSet(field.annotations());
       }
-    }
-
-    private void processAnnotation(DexAnnotation annotation) {
-      annotation.getAnnotation().sort();
     }
 
     private void processAnnotationSet(DexAnnotationSet annotationSet) {
