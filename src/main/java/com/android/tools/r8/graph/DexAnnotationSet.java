@@ -33,7 +33,7 @@ public class DexAnnotationSet extends CachedHashValueDexItem
   private static final DexAnnotationSet THE_EMPTY_ANNOTATIONS_SET = new DexAnnotationSet();
 
   public final DexAnnotation[] annotations;
-  private int sorted = UNSORTED;
+  private volatile int sorted = UNSORTED;
 
   private static void specify(StructuralSpecification<DexAnnotationSet, ?> spec) {
     spec.withItemArray(a -> a.annotations);
@@ -139,17 +139,21 @@ public class DexAnnotationSet extends CachedHashValueDexItem
   }
 
   public void sort(NamingLens namingLens) {
-    if (sorted != UNSORTED) {
-      assert sorted == sortedHashCode();
-      return;
+    if (sorted == UNSORTED) {
+      synchronized (this) {
+        if (sorted == UNSORTED) {
+          Arrays.sort(
+              annotations,
+              (a, b) -> a.annotation.type.compareToWithNamingLens(b.annotation.type, namingLens));
+          for (DexAnnotation annotation : annotations) {
+            annotation.annotation.sort();
+          }
+          flushCachedValues();
+          sorted = sortedHashCode();
+        }
+      }
     }
-    Arrays.sort(
-        annotations,
-        (a, b) -> a.annotation.type.compareToWithNamingLens(b.annotation.type, namingLens));
-    for (DexAnnotation annotation : annotations) {
-      annotation.annotation.sort();
-    }
-    sorted = hashCode();
+    assert sorted == sortedHashCode();
   }
 
   public boolean hasAnnotation(DexType type) {
