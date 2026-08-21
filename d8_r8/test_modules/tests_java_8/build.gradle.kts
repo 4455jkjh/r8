@@ -17,13 +17,7 @@ val partialTestClassesConfig by
   configurations.resolvable("partialTestClassesConfig") { extendsFrom(partialTestClassesScope) }
 
 java {
-  sourceSets.test.configure {
-    java {
-      srcDir(root.resolveAll("src", "test", "java"))
-      // Generated art tests
-      srcDir(root.resolveAll("build", "generated", "test", "java"))
-    }
-  }
+  sourceSets.test.configure { java { srcDir(root.resolveAll("src", "test", "java")) } }
   // We are using a new JDK to compile to an older language version, as we don't have JDK-8 for
   // Windows in our repo.
   sourceCompatibility = JavaVersion.VERSION_1_8
@@ -102,34 +96,20 @@ fun testDependencies(): FileCollection {
 }
 
 tasks {
-  getByName<Delete>("clean") {
-    // TODO(b/327315907): Don't generating into the root build dir.
-    delete.add(
-      getRoot()
-        .resolveAll("build", "generated", "test", "java", "com", "android", "tools", "r8", "art")
-    )
-  }
-
   val createArtTests =
-    register<Exec>("createArtTests") {
-      dependsOn(sharedDepsConfig)
-      dependOnPythonScripts()
-      // TODO(b/327315907): Don't generating into the root build dir.
-      val outputDir =
-        getRoot()
-          .resolveAll("build", "generated", "test", "java", "com", "android", "tools", "r8", "art")
-      val createArtTestsScript = getRoot().resolveAll("tools", "create_art_tests.py")
-      inputs.dir(getRoot().resolveAll("tests", "2017-10-04"))
-      outputs.dir(outputDir)
-      workingDir(getRoot())
-      commandLine("python3", createArtTestsScript)
+    register<CreateArtTestsTask>("createArtTests") {
+      artTestCaseDirectory =
+        project(":third_party").tasks.named<DownloadDependency>("download_art-tests").flatMap {
+          it.outputDir
+        }
+      outputDir = layout.buildDirectory.dir("generated/test/java")
     }
+  java.sourceSets.test.configure { java.srcDir(createArtTests) }
   "compileTestJava" {
     dependsOn(sharedDepsConfig)
     dependsOn(":testbase:compileJava")
   }
   withType<JavaCompile> {
-    dependsOn(createArtTests)
     dependsOn(sharedDepsConfig)
     dependsOn(":testbase:compileJava")
   }

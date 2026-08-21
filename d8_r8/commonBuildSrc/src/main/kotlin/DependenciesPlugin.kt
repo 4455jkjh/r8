@@ -10,7 +10,6 @@ import java.util.UUID
 import kotlin.reflect.full.declaredMemberProperties
 import org.gradle.api.Plugin
 import org.gradle.api.Project
-import org.gradle.api.Task
 import org.gradle.api.file.ConfigurableFileCollection
 import org.gradle.api.file.Directory
 import org.gradle.api.file.RegularFile
@@ -133,12 +132,6 @@ public fun Project.resolve(
   vararg paths: String,
 ): ConfigurableFileCollection {
   return files(project.getRoot().resolve(thirdPartyDependency.path).resolveAll(*paths))
-}
-
-public fun Task.dependOnPythonScripts() {
-  // There is no easy way to track transitive python dependencies, so add all python files.
-  val toolsDir = project.fileTree(project.getRoot().resolve("tools")).exclude("linux/**")
-  inputs.files(toolsDir.include("**/*.py"))
 }
 
 public fun File.resolveAll(vararg xs: String): File {
