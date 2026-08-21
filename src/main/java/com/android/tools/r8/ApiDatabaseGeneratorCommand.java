@@ -97,7 +97,8 @@ public final class ApiDatabaseGeneratorCommand {
 
   @KeepForApi
   public static class Builder {
-    private final List<Path> inputPaths = new ArrayList<>();
+    private final List<Path> jarPaths = new ArrayList<>();
+    private final List<Path> xmlPaths = new ArrayList<>();
     private Path outputPath = null;
     private boolean amend = true;
     private boolean printHelp = false;
@@ -112,8 +113,13 @@ public final class ApiDatabaseGeneratorCommand {
       this.reporter = new Reporter(diagnosticsHandler);
     }
 
-    public Builder addInputPath(Path inputPath) {
-      this.inputPaths.add(inputPath);
+    public Builder addJarPath(Path jarPath) {
+      this.jarPaths.add(jarPath);
+      return this;
+    }
+
+    public Builder addXmlPath(Path xmlPath) {
+      this.xmlPaths.add(xmlPath);
       return this;
     }
 
@@ -145,22 +151,6 @@ public final class ApiDatabaseGeneratorCommand {
       ExceptionUtils.withDiagnosticsHandler(
           reporter,
           () -> {
-            List<Path> jarPaths = new ArrayList<>();
-            List<Path> xmlPaths = new ArrayList<>();
-            for (Path path : inputPaths) {
-              String name = path.getFileName().toString().toLowerCase();
-              if (name.endsWith(".jar")) {
-                jarPaths.add(path);
-              } else if (name.endsWith(".xml")) {
-                xmlPaths.add(path);
-              } else {
-                error(
-                    new StringDiagnostic(
-                        "Unsupported input file extension: "
-                            + path
-                            + ". Must be either .jar or .xml"));
-              }
-            }
             if (jarPaths.isEmpty()) {
               error(new StringDiagnostic("At least one SDK JAR input path must be specified"));
             }
