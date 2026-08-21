@@ -37,6 +37,33 @@ public fun Project.configureErrorProneForJavaCompile() {
 
       // Moving away from identity and canonical items is not planned.
       options.errorprone.disable("IdentityHashMapUsage")
+
+      // TODO: re-enable, disabled as part of 2.18.0 -> 2.50.0 upgrade
+      options.errorprone.disable(
+        "NonApiType",
+        "TypeParameterQualifier",
+        "ExposedPrivateType",
+        "EffectivelyPrivate",
+        "ReferenceEquality",
+        "DuplicateBranches",
+        "BoxingComparator",
+        "ClassInitializationDeadlock",
+        "RedundantControlFlow",
+        "BadImport",
+        "StringCaseLocaleUsage",
+        "UnusedVariable",
+        "AssignmentExpression",
+        "UnnecessaryStringBuilder",
+        "ComparisonOutOfRange",
+        "EnumOrdinal",
+        "SuperCallToObjectMethod",
+        "UnnecessaryParentheses",
+        "LockOnNonEnclosingClassLiteral",
+        "ClosingStandardOutputStreams",
+        "JdkObsolete",
+        "FormatStringShouldUsePlaceholders",
+        "NotJavadoc",
+      )
     }
 
     // Make all warnings errors. Warnings that we have chosen not to fix (or suppress) are disabled

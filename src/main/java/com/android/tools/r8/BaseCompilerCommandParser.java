@@ -14,8 +14,7 @@ import com.android.tools.r8.utils.internal.exceptions.Unreachable;
 import java.nio.file.Paths;
 import java.util.function.Consumer;
 
-public class BaseCompilerCommandParser<
-    C extends BaseCompilerCommand, B extends BaseCompilerCommand.Builder<C, B>> {
+public class BaseCompilerCommandParser {
 
   protected static final String ART_PROFILE_FLAG = "--art-profile";
   protected static final String BUILD_METADATA_OUTPUT_FLAG = "--build-metadata-output";
@@ -52,7 +51,7 @@ public class BaseCompilerCommandParser<
     setter.accept(value);
   }
 
-  private static String PACKAGE_ASSERTION_POSTFIX = "...";
+  private static final String PACKAGE_ASSERTION_POSTFIX = "...";
 
   private enum AssertionTransformationType {
     ENABLE,
@@ -61,7 +60,7 @@ public class BaseCompilerCommandParser<
     HANDLER
   }
 
-  private AssertionsConfiguration.Builder prepareBuilderForScope(
+  private static AssertionsConfiguration.Builder prepareBuilderForScope(
       AssertionsConfiguration.Builder builder,
       AssertionTransformationType transformation,
       MethodReference assertionHandler) {
@@ -79,16 +78,17 @@ public class BaseCompilerCommandParser<
     }
   }
 
-  private void addAssertionTransformation(
-      B builder,
-      AssertionTransformationType transformation,
-      MethodReference assertionHandler,
-      String scope) {
+  private static <C extends BaseCompilerCommand, B extends BaseCompilerCommand.Builder<C, B>>
+      void addAssertionTransformation(
+          B builder,
+          AssertionTransformationType transformation,
+          MethodReference assertionHandler,
+          String scope) {
     if (scope == null) {
       builder.addAssertionsConfiguration(
           b -> prepareBuilderForScope(b, transformation, assertionHandler).setScopeAll().build());
     } else {
-      assert scope.length() > 0;
+      assert !scope.isEmpty();
       if (scope.endsWith(PACKAGE_ASSERTION_POSTFIX)) {
         builder.addAssertionsConfiguration(
             b ->
@@ -106,7 +106,8 @@ public class BaseCompilerCommandParser<
     }
   }
 
-  boolean tryParseAssertionArgument(B builder, String arg, Origin origin) {
+  protected static <C extends BaseCompilerCommand, B extends BaseCompilerCommand.Builder<C, B>>
+      boolean tryParseAssertionArgument(B builder, String arg, Origin origin) {
     String FORCE_ENABLE_ASSERTIONS = "--force-enable-assertions";
     String FORCE_EA = "--force-ea";
     String FORCE_DISABLE_ASSERTIONS = "--force-disable-assertions";
@@ -145,7 +146,7 @@ public class BaseCompilerCommandParser<
       remaining = arg.substring(FORCE_AH.length());
     }
     if (transformation == AssertionTransformationType.HANDLER) {
-      if (remaining.length() == 0 || (remaining.length() == 1 && remaining.charAt(0) == ':')) {
+      if (remaining.isEmpty() || (remaining.length() == 1 && remaining.charAt(0) == ':')) {
         throw builder.fatalError(
             new StringDiagnostic("Missing required argument <handler method>", origin));
       }
@@ -177,7 +178,7 @@ public class BaseCompilerCommandParser<
       remaining = remaining.substring(assertionsHandlerString.length());
     }
     if (transformation != null) {
-      if (remaining.length() == 0) {
+      if (remaining.isEmpty()) {
         addAssertionTransformation(builder, transformation, assertionsHandler, null);
         return true;
       } else {
@@ -203,7 +204,9 @@ public class BaseCompilerCommandParser<
     }
   }
 
-  int tryParseMapDiagnostics(B builder, String arg, String[] args, int argsIndex, Origin origin) {
+  protected static <C extends BaseCompilerCommand, B extends BaseCompilerCommand.Builder<C, B>>
+      int tryParseMapDiagnostics(
+          B builder, String arg, String[] args, int argsIndex, Origin origin) {
     return tryParseMapDiagnostics(
         builder::error, builder.getReporter(), arg, args, argsIndex, origin);
   }
@@ -235,7 +238,8 @@ public class BaseCompilerCommandParser<
     return 2;
   }
 
-  int tryParseDump(B builder, String arg, String[] args, int argsIndex, Origin origin) {
+  protected static <C extends BaseCompilerCommand, B extends BaseCompilerCommand.Builder<C, B>>
+      int tryParseDump(B builder, String arg, String[] args, int argsIndex, Origin origin) {
     if (!arg.equals(DUMP_INPUT_TO_FILE) && !arg.equals(DUMP_INPUT_TO_DIRECTORY)) {
       return -1;
     }

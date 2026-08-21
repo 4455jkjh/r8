@@ -36,7 +36,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
-public class R8CommandParser extends BaseCompilerCommandParser<R8Command, R8Command.Builder> {
+public class R8CommandParser extends BaseCompilerCommandParser {
 
   static final String CONFIGURATION_ANALYSIS_DATA_OUTPUT_FLAG =
       "--configuration-analysis-data-output";
@@ -255,7 +255,7 @@ public class R8CommandParser extends BaseCompilerCommandParser<R8Command, R8Comm
           }
         }
       }
-      if (arg.length() == 0) {
+      if (arg.isEmpty()) {
         continue;
       } else if (arg.equals("--help")) {
         builder.setPrintHelp(true);
@@ -295,11 +295,7 @@ public class R8CommandParser extends BaseCompilerCommandParser<R8Command, R8Comm
         if (state.outputPath != null) {
           builder.error(
               new StringDiagnostic(
-                  "Cannot output both to '"
-                      + state.outputPath.toString()
-                      + "' and '"
-                      + nextArg
-                      + "'",
+                  "Cannot output both to '" + state.outputPath + "' and '" + nextArg + "'",
                   argsOrigin));
         }
         state.outputPath = Paths.get(nextArg);
@@ -518,7 +514,7 @@ public class R8CommandParser extends BaseCompilerCommandParser<R8Command, R8Comm
     public static PossibleDoublePath parse(String input) {
       Path first = null, second = null;
       List<String> inputSplit = StringUtils.split(input, File.pathSeparatorChar);
-      if (inputSplit.size() == 0 || inputSplit.size() > 2) {
+      if (inputSplit.isEmpty() || inputSplit.size() > 2) {
         throw new IllegalArgumentException("Feature input/output takes one or two paths.");
       }
       String firstString = inputSplit.get(0);
@@ -528,7 +524,7 @@ public class R8CommandParser extends BaseCompilerCommandParser<R8Command, R8Comm
       if (inputSplit.size() == 2) {
         // "a:".split() gives just ["a"], so we should never get here if we don't have
         // a second string. ":b".split gives ["", "b"] which is handled for first above.
-        assert inputSplit.get(1).length() > 0;
+        assert !inputSplit.get(1).isEmpty();
         second = Paths.get(inputSplit.get(1));
       }
       return new PossibleDoublePath(first, second);
@@ -536,7 +532,7 @@ public class R8CommandParser extends BaseCompilerCommandParser<R8Command, R8Comm
   }
 
   private static class FeatureSplitConfig {
-    private List<Path> inputJars = new ArrayList<>();
+    private final List<Path> inputJars = new ArrayList<>();
     private Path inputResources;
     private Path outputResources;
     private Path outputJar;
@@ -544,8 +540,8 @@ public class R8CommandParser extends BaseCompilerCommandParser<R8Command, R8Comm
 
   private static class FeatureSplitConfigCollector {
 
-    private List<FeatureSplitConfig> resourceOnlySplits = new ArrayList<>();
-    private Map<Path, FeatureSplitConfig> withCodeSplits = new HashMap<>();
+    private final List<FeatureSplitConfig> resourceOnlySplits = new ArrayList<>();
+    private final Map<Path, FeatureSplitConfig> withCodeSplits = new HashMap<>();
 
     public void addInputOutput(String input, String output) {
       PossibleDoublePath inputPaths = PossibleDoublePath.parse(input);

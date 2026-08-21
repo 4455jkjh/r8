@@ -294,6 +294,10 @@ def run(options):
             utils.MAVEN_ZIP_LIB,
             version_file=version_file,
             skip_gradle_build=options.skip_gradle_build)
+        create_maven_release.generate_keepanno_tools_maven_zip(
+            utils.KEEPANNNO_TOOLS_MAVEN_ZIP_LIB,
+            version_file=version_file,
+            skip_gradle_build=options.skip_gradle_build)
         timing.end()
 
         # Create maven release of the desugar_jdk_libs configuration. This requires
@@ -375,6 +379,7 @@ def run(options):
             for_archiving.append(lib_jar + '_map.zip')
         for_archiving.extend([
             utils.R8_JAR, utils.R8_FULL_EXCLUDE_DEPS_JAR, utils.MAVEN_ZIP_LIB,
+            utils.KEEPANNNO_TOOLS_MAVEN_ZIP_LIB,
             utils.THREADING_MODULE_BLOCKING_JAR,
             utils.THREADING_MODULE_SINGLE_THREADED_JAR, utils.KEEPANNOTOOLS_JAR,
             utils.DESUGAR_CONFIGURATION, utils.DESUGAR_CONFIGURATION_MAVEN_ZIP,
