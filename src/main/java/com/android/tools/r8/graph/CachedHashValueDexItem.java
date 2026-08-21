@@ -40,9 +40,7 @@ public abstract class CachedHashValueDexItem extends DexItem {
     return true;
   }
 
-  @Override
   public void flushCachedValues() {
-    super.flushCachedValues();
     hash = NOT_COMPUTED_HASH_VALUE;
   }
 
