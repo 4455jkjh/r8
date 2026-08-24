@@ -3,12 +3,19 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8.jasmin;
 
+import static com.android.tools.r8.DiagnosticsMatcher.diagnosticMessage;
+import static com.android.tools.r8.DiagnosticsMatcher.diagnosticType;
+import static org.hamcrest.CoreMatchers.allOf;
+import static org.hamcrest.CoreMatchers.containsString;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 
-import com.android.tools.r8.SingleTestRunResult;
+import com.android.tools.r8.CompilationFailedException;
+import com.android.tools.r8.D8TestBuilder;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
+import com.android.tools.r8.errors.DexFileOverflowDiagnostic;
 import com.android.tools.r8.utils.AndroidApiLevel;
 import com.android.tools.r8.utils.ZipUtils;
 import java.io.IOException;
@@ -50,24 +57,42 @@ public class Regress65007724 extends JasminTestBase {
         "ldc \"Hello World!\"",
         "invokevirtual java/io/PrintStream/print(Ljava/lang/String;)V",
         "return");
+    D8TestBuilder testBuilder =
+        testForD8(parameters.getBackend())
+            .setMinApi(parameters)
+            .addProgramClassFileData(builder.buildClasses());
 
-    SingleTestRunResult<?> d8TestRunResult =
-        testForD8(parameters)
-            .addProgramClassFileData(builder.buildClasses())
-            .compile()
-            .writeToZip(
-                p -> {
-                  try {
-                    assertTrue(ZipUtils.containsEntry(p, "classes.dex"));
-                    assertEquals(
-                        parameters.canUseNativeMultidex()
-                            && parameters.getApiLevel().isLessThan(AndroidApiLevel.O),
-                        ZipUtils.containsEntry(p, "classes2.dex"));
-                  } catch (IOException e) {
-                    throw new RuntimeException(e);
-                  }
-                })
-            .run(parameters.getRuntime(), clazz.name);
-    d8TestRunResult.assertSuccessWithOutput("Hello World!");
+    if (parameters.getApiLevel().isGreaterThanOrEqualTo(AndroidApiLevel.L)) {
+      testBuilder
+          .compile()
+          .writeToZip(
+              p -> {
+                try {
+                  assertTrue(ZipUtils.containsEntry(p, "classes.dex"));
+                  assertEquals(
+                      parameters.getApiLevel().isLessThan(AndroidApiLevel.O),
+                      ZipUtils.containsEntry(p, "classes2.dex"));
+                } catch (IOException e) {
+                  throw new RuntimeException(e);
+                }
+              })
+          .run(parameters.getRuntime(), clazz.name)
+          .assertSuccessWithOutput("Hello World!");
+    } else {
+      assertThrows(
+          CompilationFailedException.class,
+          () ->
+              testBuilder.compileWithExpectedDiagnostics(
+                  diagnostics ->
+                      diagnostics
+                          .assertOnlyErrors()
+                          .assertAllErrorsMatch(
+                              allOf(
+                                  diagnosticType(DexFileOverflowDiagnostic.class),
+                                  diagnosticMessage(
+                                      containsString(
+                                          "Cannot fit requested classes in a single dex file (#"
+                                              + " types: 35007 > 32768)"))))));
+    }
   }
 }

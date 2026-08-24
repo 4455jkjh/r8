@@ -3,15 +3,22 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8.dex;
 
+import static com.android.tools.r8.DiagnosticsMatcher.diagnosticMessage;
+import static com.android.tools.r8.DiagnosticsMatcher.diagnosticType;
+import static org.hamcrest.CoreMatchers.allOf;
+import static org.hamcrest.CoreMatchers.containsString;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 
 import com.android.tools.r8.ByteDataView;
 import com.android.tools.r8.ClassFileConsumer.ArchiveConsumer;
+import com.android.tools.r8.CompilationFailedException;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.dex.container.DexContainerFormatTestBase;
+import com.android.tools.r8.errors.DexFileOverflowDiagnostic;
 import com.android.tools.r8.transformers.ClassTransformer;
 import com.android.tools.r8.utils.AndroidApiLevel;
 import com.android.tools.r8.utils.DescriptorUtils;
@@ -124,41 +131,59 @@ public class MaxTypeLimitTest extends TestBase {
 
   @Test
   public void testD8Api25SingleDexOverflow() throws Exception {
-    // The workaround is not applied when compiling to mono-dex (e.g. min-api < 21), so compilation
-    // should succeed even with 33000 classes.
-    Path output =
-        testForD8(Backend.DEX)
-            .addProgramFiles(inputApp)
-            .setMinApi(AndroidApiLevel.K)
-            .compile()
-            .writeToZip();
-    List<byte[]> dexes = new ArrayList<>();
-    ZipUtils.iter(output, (entry, inputStream) -> dexes.add(ByteStreams.toByteArray(inputStream)));
-    assertEquals(1, dexes.size());
-    int typeCount = getTypeCount(dexes.get(0));
-    assertTrue(
-        "Type count " + typeCount + " must be > 32768",
-        typeCount > VirtualFile.MAX_ENTRIES_ONLY_32K);
+    // Compiling with mono-dex (e.g. min-api < 21) with 33000 classes should fail.
+    assertThrows(
+        CompilationFailedException.class,
+        () ->
+            testForD8(Backend.DEX)
+                .addProgramFiles(inputApp)
+                .setMinApi(AndroidApiLevel.K)
+                .compileWithExpectedDiagnostics(
+                    diagnostics ->
+                        diagnostics.assertErrorsMatch(
+                            allOf(
+                                diagnosticType(DexFileOverflowDiagnostic.class),
+                                diagnosticMessage(
+                                    containsString(
+                                        "# types: " + (CLASS_COUNT + 1) + " > 32768"))))));
+    // Should not fail when alwaysAllow64KTypeIds is set.
+    testForD8(Backend.DEX)
+        .addProgramFiles(inputApp)
+        .setMinApi(AndroidApiLevel.K)
+        .addOptionsModification(options -> options.alwaysAllow64KTypeIds = true)
+        .compile();
   }
 
   @Test
   public void testD8LegacyMultidexMainDexRulesOverflow() throws Exception {
-    // The workaround is not applied when compiling to legacy multi dex, so compilation should
-    // succeed even with 33000 classes in the presence of main dex rules.
-    Path output =
-        testForD8(Backend.DEX)
-            .addProgramFiles(inputApp)
-            .setMinApi(AndroidApiLevel.K)
-            .addMainDexRules("-keep class ** { *; }")
-            .compile()
-            .writeToZip();
-    List<byte[]> dexes = new ArrayList<>();
-    ZipUtils.iter(output, (entry, inputStream) -> dexes.add(ByteStreams.toByteArray(inputStream)));
-    assertEquals(1, dexes.size());
-    int typeCount = getTypeCount(dexes.get(0));
-    assertTrue(
-        "Type count " + typeCount + " must be > 32768",
-        typeCount > VirtualFile.MAX_ENTRIES_ONLY_32K);
+    // Compiling with main-dex rules that keep all 33000 classes in main dex on legacy multidex (API
+    // 19) should fail.
+    assertThrows(
+        CompilationFailedException.class,
+        () ->
+            testForD8(Backend.DEX)
+                .addProgramFiles(inputApp)
+                .setMinApi(AndroidApiLevel.K)
+                .addMainDexRules("-keep class ** { *; }")
+                .compileWithExpectedDiagnostics(
+                    diagnostics ->
+                        diagnostics.assertErrorsMatch(
+                            allOf(
+                                diagnosticType(DexFileOverflowDiagnostic.class),
+                                diagnosticMessage(
+                                    containsString(
+                                        "Cannot fit requested classes in the main-dex file (#"
+                                            + " types: "
+                                            + (CLASS_COUNT + 1)
+                                            + " > 32768)"))))));
+
+    // Should not fail when alwaysAllow64KTypeIds is set.
+    testForD8(Backend.DEX)
+        .addProgramFiles(inputApp)
+        .setMinApi(AndroidApiLevel.K)
+        .addMainDexRules("-keep class ** { *; }")
+        .addOptionsModification(options -> options.alwaysAllow64KTypeIds = true)
+        .compile();
   }
 
   // Simple stub/template for generating the input classes.
