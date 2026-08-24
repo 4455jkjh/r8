@@ -1,27 +1,28 @@
-// Copyright (c) 2023, the R8 project authors. Please see the AUTHORS file
+// Copyright (c) 2026, the R8 project authors. Please see the AUTHORS file
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
 package com.android.tools.r8.numberunboxing;
 
 import static com.android.tools.r8.utils.codeinspector.Matchers.isPresent;
+import static junit.framework.TestCase.assertEquals;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 import com.android.tools.r8.NeverInline;
+import com.android.tools.r8.NoParameterTypeStrengthening;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.utils.codeinspector.ClassSubject;
 import com.android.tools.r8.utils.codeinspector.CodeInspector;
-import com.android.tools.r8.utils.codeinspector.MethodSubject;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
 
 @RunWith(Parameterized.class)
-public class CannotUnboxNumberUnboxingTest extends TestBase {
+public class StaticMethodsCollidingNamesNumberUnboxingTest extends TestBase {
 
   private final TestParameters parameters;
 
@@ -30,7 +31,7 @@ public class CannotUnboxNumberUnboxingTest extends TestBase {
     return getTestParameters().withAllRuntimesAndApiLevels().build();
   }
 
-  public CannotUnboxNumberUnboxingTest(TestParameters parameters) {
+  public StaticMethodsCollidingNamesNumberUnboxingTest(TestParameters parameters) {
     this.parameters = parameters;
   }
 
@@ -40,67 +41,64 @@ public class CannotUnboxNumberUnboxingTest extends TestBase {
         .addInnerClasses(getClass())
         .addKeepMainRule(Main.class)
         .enableInliningAnnotations()
+        .addNoParameterTypeStrengtheningAnnotation()
         .addOptionsModification(opt -> opt.getTestingOptions().getNumberUnboxerOptions().enable())
         .compile()
         .inspect(this::assertUnboxing)
         .run(parameters.getRuntime(), Main.class)
-        .assertSuccessWithOutputLines("null", "2", "2", "1", "null", "2", "1");
+        .assertSuccessWithOutputLines("32", "33", "34", "35", "42", "43", "42", "43");
   }
 
   private void assertUnboxing(CodeInspector codeInspector) {
     ClassSubject mainClass = codeInspector.clazz(Main.class);
     assertThat(mainClass, isPresent());
-
-    MethodSubject methodSubject = mainClass.uniqueMethodWithOriginalName("print");
-    assertThat(methodSubject, isPresent());
-    assertEquals("java.lang.Integer", methodSubject.getOriginalSignature().parameters[0]);
-    assertEquals(
-        "java.lang.Integer", methodSubject.getFinalSignature().asMethodSignature().parameters[0]);
+    assertEquals(5, mainClass.allMethods().size());
+    mainClass
+        .allMethods()
+        .forEach(
+            m -> {
+              if (!m.getOriginalMethodName().equals("main")) {
+                assertEquals(1, m.getParameters().size());
+                assertTrue(m.getProgramMethod().getParameter(0).isIntType());
+              }
+            });
   }
 
   static class Main {
 
     public static void main(String[] args) {
-      cannotUnboxPrint();
-      depsNonUnboxable();
+      directPrintUnbox(31);
+      directPrintUnbox(32);
+      directPrintUnbox(33, 0);
+      directPrintUnbox(34, 1);
+
+      forwardToPrint(41);
+      forwardToPrint(42);
+      forwardToPrint(41, 0);
+      forwardToPrint(42, 1);
     }
 
     @NeverInline
-    private static void depsNonUnboxable() {
-      try {
-        forward(null);
-      } catch (NullPointerException npe) {
-        System.out.println("null");
-      }
-      forward(1);
-      forward(0);
+    private static void forwardToPrint(Integer boxed) {
+      directPrintUnbox(boxed);
+    }
+
+    // Final proto should overlap with method above.
+    @NoParameterTypeStrengthening
+    @NeverInline
+    private static void forwardToPrint(int boxed, int unused) {
+      directPrintUnbox(boxed, unused);
     }
 
     @NeverInline
-    private static void forward(Integer i) {
-      // Here print2 will get i as a deps which is non-unboxable.
-      print2(i);
-    }
-
-    @NeverInline
-    private static void print2(Integer boxed) {
+    private static void directPrintUnbox(Integer boxed) {
       System.out.println(boxed + 1);
     }
 
+    // Final proto should overlap with method above.
+    @NoParameterTypeStrengthening
     @NeverInline
-    private static void cannotUnboxPrint() {
-      try {
-        print(System.currentTimeMillis() > 0 ? null : -1);
-      } catch (NullPointerException npe) {
-        System.out.println("null");
-      }
-      print(System.currentTimeMillis() > 0 ? 1 : 0);
-      print(1);
-      print(0);
-    }
-
-    @NeverInline
-    private static void print(Integer boxed) {
+    private static void directPrintUnbox(int boxed, int unused) {
       System.out.println(boxed + 1);
     }
   }

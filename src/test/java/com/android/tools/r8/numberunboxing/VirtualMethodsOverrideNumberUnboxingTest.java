@@ -37,14 +37,13 @@ public class VirtualMethodsOverrideNumberUnboxingTest extends TestBase {
 
   @Test
   public void testNumberUnboxing() throws Throwable {
-    testForR8(parameters.getBackend())
+    testForR8(parameters)
         .addInnerClasses(getClass())
         .addKeepMainRule(Main.class)
         .enableInliningAnnotations()
         .enableNoHorizontalClassMergingAnnotations()
         .enableNeverClassInliningAnnotations()
         .addOptionsModification(opt -> opt.getTestingOptions().getNumberUnboxerOptions().enable())
-        .setMinApi(parameters)
         .compile()
         .inspect(this::assertUnboxing)
         .run(parameters.getRuntime(), Main.class)
