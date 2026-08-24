@@ -755,9 +755,9 @@ public class ToolHelper {
   public static class CommandCacheStatistics {
 
     public static CommandCacheStatistics INSTANCE = new CommandCacheStatistics();
-    private final Path cachePutCounter;
-    private final Path cacheMissCounter;
-    private final Path cacheHitCounter;
+    private Path cachePutCounter = null;
+    private Path cacheMissCounter = null;
+    private Path cacheHitCounter = null;
 
     private CommandCacheStatistics() {
       String commandCacheStatsDir = System.getProperty("command_cache_stats_dir");
@@ -771,12 +771,10 @@ public class ToolHelper {
           Files.createFile(cacheMissCounter);
           Files.createFile(cacheHitCounter);
         } catch (IOException e) {
-          throw new RuntimeException(e);
+          cachePutCounter = null;
+          cacheMissCounter = null;
+          cacheHitCounter = null;
         }
-      } else {
-        cachePutCounter = null;
-        cacheMissCounter = null;
-        cacheHitCounter = null;
       }
     }
 

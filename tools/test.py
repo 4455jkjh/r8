@@ -460,12 +460,18 @@ def test(options, args):
             os.makedirs(options.command_cache_dir)
         if options.command_cache_stats:
             stats_dir = os.path.join(options.command_cache_dir, 'stats')
+            print("stats_dir: " + stats_dir)
             gradle_args.append('-Pcommand_cache_stats_dir=' + stats_dir)
             if not os.path.exists(stats_dir):
+                print("creating stats_dir: " + stats_dir)
                 os.makedirs(stats_dir)
+            else:
+                print("stats_dir: " + stats_dir + " already exists")
             # Clean out old stats files
             for (_, _, file_names) in os.walk(stats_dir):
+                print("removing stats file: " + file_names)
                 for f in file_names:
+                    print("removing stats file: " + f)
                     os.remove(os.path.join(stats_dir, f))
     if options.java_home:
         gradle_args.append('-Dorg.gradle.java.home=' + options.java_home)
