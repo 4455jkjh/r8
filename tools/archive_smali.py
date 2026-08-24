@@ -65,6 +65,7 @@ def Main():
         set_rlimit_to_max()
 
     utils.ensure_google_download(utils.JAVA11_DIR)
+    utils.ensure_google_download(utils.JAVA21_DIR)
     with utils.TempDir() as temp:
         # Resolve dry run location to support relative directories.
         dry_run_output = None
@@ -102,6 +103,13 @@ def Main():
 
             print('Building version: %s' % version)
 
+            # Run tests with JDK-21.
+            m2 = os.path.join(temp, 'm2')
+            os.mkdir(m2)
+            custom_env = os.environ.copy()
+            custom_env["JAVA_HOME"] = jdk.GetJdk21Home()
+            subprocess.check_call(['./gradlew', 'test', ], env=custom_env)
+
             # Build release to local Maven repository compiling with JDK-11.
             m2 = os.path.join(temp, 'm2')
             os.mkdir(m2)
@@ -111,7 +119,6 @@ def Main():
                 './gradlew',
                 '-Dmaven.repo.local=%s' % m2,
                 'release',
-                'test',
                 'publishToMavenLocal',
             ], env=custom_env)
             base = os.path.join('com', 'android', 'tools', 'smali')
