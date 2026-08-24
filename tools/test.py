@@ -469,7 +469,6 @@ def test(options, args):
                 print("stats_dir: " + stats_dir + " already exists")
             # Clean out old stats files
             for (_, _, file_names) in os.walk(stats_dir):
-                print("removing stats file: " + file_names)
                 for f in file_names:
                     print("removing stats file: " + f)
                     os.remove(os.path.join(stats_dir, f))
