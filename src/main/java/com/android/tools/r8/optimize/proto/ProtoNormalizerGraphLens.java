@@ -54,7 +54,7 @@ public class ProtoNormalizerGraphLens extends DefaultNonIdentityGraphLens {
     }
     DexMethod previousMethodSignature = getPreviousMethodSignature(method);
     RewrittenPrototypeDescription previousPrototypeChanges =
-        getPrevious().lookupPrototypeChangesForMethodDefinition(previousMethodSignature);
+        getPrevious().lookupPrototypeChangesForMethodDefinition(previousMethodSignature, codeLens);
     if (previousMethodSignature == method) {
       return previousPrototypeChanges;
     }

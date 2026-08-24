@@ -89,6 +89,7 @@ public class DefaultNonIdentityGraphLens extends NonIdentityGraphLens {
       return RewrittenPrototypeDescription.none();
     }
     DexMethod previousMethodSignature = getPreviousMethodSignature(method);
-    return getPrevious().lookupPrototypeChangesForMethodDefinition(previousMethodSignature);
+    return getPrevious()
+        .lookupPrototypeChangesForMethodDefinition(previousMethodSignature, codeLens);
   }
 }

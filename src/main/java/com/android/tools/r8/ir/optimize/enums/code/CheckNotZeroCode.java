@@ -10,6 +10,7 @@ import com.android.tools.r8.graph.Code;
 import com.android.tools.r8.graph.DexEncodedMethod;
 import com.android.tools.r8.graph.ProgramMethod;
 import com.android.tools.r8.graph.UseRegistry;
+import com.android.tools.r8.graph.lens.GraphLens;
 import com.android.tools.r8.ir.analysis.type.TypeElement;
 import com.android.tools.r8.ir.code.Argument;
 import com.android.tools.r8.ir.code.IRCode;
@@ -57,20 +58,21 @@ public class CheckNotZeroCode extends Code {
             .setIsD8R8Synthesized(checkNotZeroMethod.getDefinition().isD8R8Synthesized())
             .build();
     NumberGenerator valueNumberGenerator = new NumberGenerator();
+
+    Code checkNotNullMethodCode = checkNotNullMethod.getDefinition().getCode();
+    GraphLens codeLens = checkNotNullMethodCode.getCodeLens(appView);
     IRCode code =
-        checkNotNullMethod
-            .getDefinition()
-            .getCode()
-            .buildInliningIR(
-                checkNotZeroMethod,
-                checkNotNullMethod,
-                appView,
-                appView.graphLens(),
-                valueNumberGenerator,
-                callerPosition,
-                appView
-                    .graphLens()
-                    .lookupPrototypeChangesForMethodDefinition(checkNotNullMethod.getReference()));
+        checkNotNullMethodCode.buildInliningIR(
+            checkNotZeroMethod,
+            checkNotNullMethod,
+            appView,
+            appView.graphLens(),
+            valueNumberGenerator,
+            callerPosition,
+            appView
+                .graphLens()
+                .lookupPrototypeChangesForMethodDefinition(
+                    checkNotNullMethod.getReference(), codeLens));
     InstructionListIterator instructionIterator = code.instructionListIterator();
 
     // Start iterating at the argument instruction for the checked argument.
