@@ -1729,6 +1729,205 @@ public final class BackportedMethodRewriter implements CfInstructionDesugaring {
             new StatifyingMethodGenerator(
                 method, BackportedMethods::StringMethods_stripTrailing, "stripTrailing", type));
       }
+
+      // java.util.Arrays.
+      {
+        DexString name = factory.createString("compareUnsigned");
+
+        class ArrayCompareUnsignedMethodInfo {
+          private final DexType arrayType;
+          private final TemplateMethodFactory provider;
+          private final TemplateMethodFactory providerRange;
+
+          private ArrayCompareUnsignedMethodInfo(
+              DexType arrayType,
+              TemplateMethodFactory provider,
+              TemplateMethodFactory providerRange) {
+            this.arrayType = arrayType;
+            this.provider = provider;
+            this.providerRange = providerRange;
+          }
+        }
+
+        ImmutableList.Builder<ArrayCompareUnsignedMethodInfo> builder = ImmutableList.builder();
+        builder.add(
+            new ArrayCompareUnsignedMethodInfo(
+                factory.byteArrayType,
+                BackportedMethods::ArraysMethods_compareUnsignedByte,
+                BackportedMethods::ArraysMethods_compareUnsignedByteRange));
+        builder.add(
+            new ArrayCompareUnsignedMethodInfo(
+                factory.shortArrayType,
+                BackportedMethods::ArraysMethods_compareUnsignedShort,
+                BackportedMethods::ArraysMethods_compareUnsignedShortRange));
+        builder.add(
+            new ArrayCompareUnsignedMethodInfo(
+                factory.intArrayType,
+                BackportedMethods::ArraysMethods_compareUnsignedInt,
+                BackportedMethods::ArraysMethods_compareUnsignedIntRange));
+        builder.add(
+            new ArrayCompareUnsignedMethodInfo(
+                factory.longArrayType,
+                BackportedMethods::ArraysMethods_compareUnsignedLong,
+                BackportedMethods::ArraysMethods_compareUnsignedLongRange));
+        builder
+            .build()
+            .forEach(
+                info -> {
+                  DexProto proto =
+                      factory.createProto(factory.intType, info.arrayType, info.arrayType);
+                  DexMethod method = factory.createMethod(factory.arraysType, proto, name);
+                  addProvider(new MethodGenerator(method, info.provider));
+
+                  proto =
+                      factory.createProto(
+                          factory.intType,
+                          info.arrayType,
+                          factory.intType,
+                          factory.intType,
+                          info.arrayType,
+                          factory.intType,
+                          factory.intType);
+                  method = factory.createMethod(factory.arraysType, proto, name);
+                  addProvider(new MethodGenerator(method, info.providerRange));
+                });
+      }
+      {
+        DexString name = factory.createString("mismatch");
+
+        class ArrayMismatchMethodInfo {
+          private final DexType arrayType;
+          private final TemplateMethodFactory provider;
+          private final TemplateMethodFactory providerRange;
+
+          private ArrayMismatchMethodInfo(
+              DexType arrayType,
+              TemplateMethodFactory provider,
+              TemplateMethodFactory providerRange) {
+            this.arrayType = arrayType;
+            this.provider = provider;
+            this.providerRange = providerRange;
+          }
+        }
+
+        ImmutableList.Builder<ArrayMismatchMethodInfo> builder = ImmutableList.builder();
+        builder.add(
+            new ArrayMismatchMethodInfo(
+                factory.booleanArrayType,
+                BackportedMethods::ArraysMethods_mismatchBoolean,
+                BackportedMethods::ArraysMethods_mismatchBooleanRange));
+        builder.add(
+            new ArrayMismatchMethodInfo(
+                factory.byteArrayType,
+                BackportedMethods::ArraysMethods_mismatchByte,
+                BackportedMethods::ArraysMethods_mismatchByteRange));
+        builder.add(
+            new ArrayMismatchMethodInfo(
+                factory.charArrayType,
+                BackportedMethods::ArraysMethods_mismatchChar,
+                BackportedMethods::ArraysMethods_mismatchCharRange));
+        builder.add(
+            new ArrayMismatchMethodInfo(
+                factory.shortArrayType,
+                BackportedMethods::ArraysMethods_mismatchShort,
+                BackportedMethods::ArraysMethods_mismatchShortRange));
+        builder.add(
+            new ArrayMismatchMethodInfo(
+                factory.intArrayType,
+                BackportedMethods::ArraysMethods_mismatchInt,
+                BackportedMethods::ArraysMethods_mismatchIntRange));
+        builder.add(
+            new ArrayMismatchMethodInfo(
+                factory.longArrayType,
+                BackportedMethods::ArraysMethods_mismatchLong,
+                BackportedMethods::ArraysMethods_mismatchLongRange));
+        builder.add(
+            new ArrayMismatchMethodInfo(
+                factory.floatArrayType,
+                BackportedMethods::ArraysMethods_mismatchFloat,
+                BackportedMethods::ArraysMethods_mismatchFloatRange));
+        builder.add(
+            new ArrayMismatchMethodInfo(
+                factory.doubleArrayType,
+                BackportedMethods::ArraysMethods_mismatchDouble,
+                BackportedMethods::ArraysMethods_mismatchDoubleRange));
+        builder.add(
+            new ArrayMismatchMethodInfo(
+                factory.objectArrayType,
+                BackportedMethods::ArraysMethods_mismatchObject,
+                BackportedMethods::ArraysMethods_mismatchObjectRange));
+        builder
+            .build()
+            .forEach(
+                info -> {
+                  DexProto proto =
+                      factory.createProto(factory.intType, info.arrayType, info.arrayType);
+                  DexMethod method = factory.createMethod(factory.arraysType, proto, name);
+                  addProvider(new MethodGenerator(method, info.provider));
+
+                  proto =
+                      factory.createProto(
+                          factory.intType,
+                          info.arrayType,
+                          factory.intType,
+                          factory.intType,
+                          info.arrayType,
+                          factory.intType,
+                          factory.intType);
+                  method = factory.createMethod(factory.arraysType, proto, name);
+                  addProvider(
+                      new MethodWithHelperGenerator(
+                          method,
+                          info.providerRange,
+                          cfInvoke ->
+                              cfInvoke.getMethod().getName().toString().equals("checkValidRange"),
+                          appView
+                              .dexItemFactory()
+                              .createProto(
+                                  appView.dexItemFactory().voidType,
+                                  appView.dexItemFactory().intType,
+                                  appView.dexItemFactory().intType,
+                                  appView.dexItemFactory().intType),
+                          BackportedMethods::ArraysMethods_checkValidRange));
+                });
+
+        // mismatch(Object[], Object[], Comparator)
+        DexProto proto =
+            factory.createProto(
+                factory.intType,
+                factory.objectArrayType,
+                factory.objectArrayType,
+                factory.comparatorType);
+        DexMethod method = factory.createMethod(factory.arraysType, proto, name);
+        addProvider(
+            new MethodGenerator(method, BackportedMethods::ArraysMethods_mismatchComparator));
+
+        // mismatch(Object[], int, int, Object[], int, int, Comparator)
+        proto =
+            factory.createProto(
+                factory.intType,
+                factory.objectArrayType,
+                factory.intType,
+                factory.intType,
+                factory.objectArrayType,
+                factory.intType,
+                factory.intType,
+                factory.comparatorType);
+        method = factory.createMethod(factory.arraysType, proto, name);
+        addProvider(
+            new MethodWithHelperGenerator(
+                method,
+                BackportedMethods::ArraysMethods_mismatchComparatorRange,
+                cfInvoke -> cfInvoke.getMethod().getName().toString().equals("checkValidRange"),
+                appView
+                    .dexItemFactory()
+                    .createProto(
+                        appView.dexItemFactory().voidType,
+                        appView.dexItemFactory().intType,
+                        appView.dexItemFactory().intType,
+                        appView.dexItemFactory().intType),
+                BackportedMethods::ArraysMethods_checkValidRange));
+      }
     }
 
     private void initializeAndroidOptionalTMethodProviders(DexItemFactory factory) {

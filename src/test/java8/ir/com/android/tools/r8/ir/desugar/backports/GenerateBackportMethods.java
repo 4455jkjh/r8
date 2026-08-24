@@ -17,9 +17,12 @@ import com.android.tools.r8.graph.CfCode;
 import com.android.tools.r8.graph.DexType;
 import com.android.tools.r8.ir.desugar.backports.BackportMethodsStub.AndroidOsBuildStub;
 import com.android.tools.r8.ir.desugar.backports.BackportMethodsStub.AndroidOsBuildVersionStub;
+import com.android.tools.r8.ir.desugar.backports.BackportMethodsStub.ArraysStub;
+import com.android.tools.r8.ir.desugar.backports.BackportMethodsStub.ByteStub;
 import com.android.tools.r8.ir.desugar.backports.BackportMethodsStub.IOStub;
 import com.android.tools.r8.ir.desugar.backports.BackportMethodsStub.LongStub;
 import com.android.tools.r8.ir.desugar.backports.BackportMethodsStub.MathStub;
+import com.android.tools.r8.ir.desugar.backports.BackportMethodsStub.ShortStub;
 import com.android.tools.r8.ir.desugar.backports.BackportMethodsStub.UnsafeStub;
 import com.android.tools.r8.utils.DescriptorUtils;
 import com.google.common.collect.ImmutableList;
@@ -110,19 +113,17 @@ public class GenerateBackportMethods extends MethodGenerationBase {
   @Override
   protected String generateMethods() throws IOException {
     stubMap =
-        ImmutableMap.of(
-            classToType(IOStub.class),
-            factory.createType("Ljava/lang/IO;"),
-            classToType(LongStub.class),
-            factory.boxedLongType,
-            classToType(MathStub.class),
-            factory.mathType,
-            classToType(UnsafeStub.class),
-            factory.sunMiscUnsafeType,
-            classToType(AndroidOsBuildStub.class),
-            factory.androidOsBuildType,
-            classToType(AndroidOsBuildVersionStub.class),
-            factory.androidOsBuildVersionType);
+        ImmutableMap.<DexType, DexType>builder()
+            .put(classToType(IOStub.class), factory.createType("Ljava/lang/IO;"))
+            .put(classToType(LongStub.class), factory.boxedLongType)
+            .put(classToType(ByteStub.class), factory.boxedByteType)
+            .put(classToType(ShortStub.class), factory.boxedShortType)
+            .put(classToType(ArraysStub.class), factory.arraysType)
+            .put(classToType(MathStub.class), factory.mathType)
+            .put(classToType(UnsafeStub.class), factory.sunMiscUnsafeType)
+            .put(classToType(AndroidOsBuildStub.class), factory.androidOsBuildType)
+            .put(classToType(AndroidOsBuildVersionStub.class), factory.androidOsBuildVersionType)
+            .build();
     return super.generateMethods();
   }
 
