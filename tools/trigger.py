@@ -56,7 +56,7 @@ def parse_options():
                       help='Build smali version <version>.')
     result.add_option('--builder', help='Trigger specific builder')
     (options, args) = result.parse_args()
-    if not options.cl.startswith('http'):
+    if options.cl and not options.cl.startswith('http'):
         [cl_number, patch_number] = [int(x) for x in options.cl.split('/')]
         options.cl = 'https://r8-review.googlesource.com/c/r8/+/%s/%s' % (
             cl_number, patch_number)
