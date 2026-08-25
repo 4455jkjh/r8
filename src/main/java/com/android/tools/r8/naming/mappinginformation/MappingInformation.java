@@ -114,6 +114,10 @@ public abstract class MappingInformation {
     return null;
   }
 
+  public MergedClassesInformation asMergedClassesInformation() {
+    return null;
+  }
+
   public boolean shouldCompose(MappingInformation existing) {
     return !allowOther(existing);
   }
@@ -192,7 +196,7 @@ public abstract class MappingInformation {
         PartitionFileNameInformation.deserialize(object, onMappingInfo);
         return;
       case MergedClassesInformation.ID:
-        MergedClassesInformation.deserialize(version, onMappingInfo);
+        MergedClassesInformation.deserialize(version, object, onMappingInfo);
         return;
       default:
         diagnosticsHandler.info(MappingInformationDiagnostics.noHandlerFor(lineNumber, id));

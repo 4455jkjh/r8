@@ -15,7 +15,11 @@ public class MergedClassesInformation extends ReferentialMappingInformation {
   public static final String ID = "com.android.tools.r8.mergedClasses";
   public static final MapVersion SUPPORTED_VERSION = MapVersion.MAP_VERSION_2_3;
 
-  private MergedClassesInformation() {}
+  private final JsonObject rawObject;
+
+  private MergedClassesInformation(JsonObject rawObject) {
+    this.rawObject = rawObject;
+  }
 
   @Override
   public String getId() {
@@ -37,20 +41,35 @@ public class MergedClassesInformation extends ReferentialMappingInformation {
     return true;
   }
 
+  @Override
+  public MergedClassesInformation asMergedClassesInformation() {
+    return this;
+  }
+
+  public static MergedClassesInformation build(JsonObject rawObject) {
+    return new MergedClassesInformation(rawObject);
+  }
+
   public static MergedClassesInformation build() {
-    return new MergedClassesInformation();
+    JsonObject object = new JsonObject();
+    object.add(MAPPING_ID_KEY, new JsonPrimitive(ID));
+    return new MergedClassesInformation(object);
   }
 
   @Override
   public String serialize() {
+    if (rawObject != null) {
+      return rawObject.toString();
+    }
     JsonObject object = new JsonObject();
     object.add(MAPPING_ID_KEY, new JsonPrimitive(ID));
     return object.toString();
   }
 
-  public static void deserialize(MapVersion version, Consumer<MappingInformation> onMappingInfo) {
+  public static void deserialize(
+      MapVersion version, JsonObject object, Consumer<MappingInformation> onMappingInfo) {
     if (isSupported(version)) {
-      onMappingInfo.accept(new MergedClassesInformation());
+      onMappingInfo.accept(new MergedClassesInformation(object));
     }
   }
 
