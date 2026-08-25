@@ -66,6 +66,7 @@ def Main():
 
     utils.ensure_google_download(utils.JAVA11_DIR)
     utils.ensure_google_download(utils.JAVA21_DIR)
+    bot_dir = os.getcwd()
     with utils.TempDir() as temp:
         # Resolve dry run location to support relative directories.
         dry_run_output = None
@@ -186,7 +187,9 @@ def Main():
                 public_url = 'https://storage.googleapis.com/%s/smali/%s' % (
                     ARCHIVE_BUCKET, version)
                 # Copy Maven ZIP for LUCI recipie to find it.
-                shutil.copyfile(maven_release_archive, 'smali-maven-release.zip')
+                shutil.copyfile(
+                    maven_release_archive,
+                    os.path.join(bot_dir, 'smali-maven-release.zip')
                 print('Artifacts available at: %s' % public_url)
 
     print("Done!")
