@@ -42,6 +42,8 @@ public class ApiDatabaseGeneratorCommandParserTest extends TestBase {
             "  --version               # Print version.",
             "  --jar <jar-file>        # Android SDK JAR file (e.g., android.jar).",
             "  --xml <xml-file>        # Android API XML file (e.g., api-versions.xml).",
+            "  --sdk <sdk-dir>         # Android SDK platform directory (e.g.,"
+                + " $ANDROID_HOME/android-34).",
             "  --output <database-file>",
             "                          # Output result in <database-file> (must be a file, not a"
                 + " directory).",
@@ -92,5 +94,54 @@ public class ApiDatabaseGeneratorCommandParserTest extends TestBase {
         ApiDatabaseGeneratorCommand.parse(args, CommandLineOrigin.INSTANCE).build();
     assertEquals(Arrays.asList(jar1, jar2), command.getJarPaths());
     assertEquals(Arrays.asList(xml1, xml2), command.getXmlPaths());
+  }
+
+  @Test
+  public void testParseSdkDirectory() throws Exception {
+    Path sdkDir = temp.newFolder("sdk").toPath();
+    String[] args = {"--sdk", sdkDir.toString()};
+    ApiDatabaseGeneratorCommand command =
+        ApiDatabaseGeneratorCommand.parse(args, CommandLineOrigin.INSTANCE).build();
+    assertEquals(Collections.singletonList(sdkDir.resolve("android.jar")), command.getJarPaths());
+    assertEquals(
+        Collections.singletonList(sdkDir.resolve("data").resolve("api-versions.xml")),
+        command.getXmlPaths());
+  }
+
+  @Test
+  public void testParseMultipleSdks() throws Exception {
+    Path sdkDir1 = temp.newFolder("sdk1").toPath();
+    Path sdkDir2 = temp.newFolder("sdk2").toPath();
+
+    String[] args = {"--sdk", sdkDir1.toString(), "--sdk", sdkDir2.toString()};
+    ApiDatabaseGeneratorCommand command =
+        ApiDatabaseGeneratorCommand.parse(args, CommandLineOrigin.INSTANCE).build();
+    assertEquals(
+        Arrays.asList(sdkDir1.resolve("android.jar"), sdkDir2.resolve("android.jar")),
+        command.getJarPaths());
+    assertEquals(
+        Arrays.asList(
+            sdkDir1.resolve("data").resolve("api-versions.xml"),
+            sdkDir2.resolve("data").resolve("api-versions.xml")),
+        command.getXmlPaths());
+  }
+
+  @Test
+  public void testParseSdkCombinedWithJarAndXml() throws Exception {
+    Path sdkDir = temp.newFolder("sdk").toPath();
+    Path extraJar = temp.newFile("extra.jar").toPath();
+    Path extraXml = temp.newFile("extra.xml").toPath();
+
+    String[] args = {
+      "--sdk", sdkDir.toString(),
+      "--jar", extraJar.toString(),
+      "--xml", extraXml.toString()
+    };
+    ApiDatabaseGeneratorCommand command =
+        ApiDatabaseGeneratorCommand.parse(args, CommandLineOrigin.INSTANCE).build();
+    assertEquals(Arrays.asList(sdkDir.resolve("android.jar"), extraJar), command.getJarPaths());
+    assertEquals(
+        Arrays.asList(sdkDir.resolve("data").resolve("api-versions.xml"), extraXml),
+        command.getXmlPaths());
   }
 }

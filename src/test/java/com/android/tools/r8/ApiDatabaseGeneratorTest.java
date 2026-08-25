@@ -306,6 +306,19 @@ public class ApiDatabaseGeneratorTest extends TestBase {
   }
 
   @Test
+  public void testSdkInput() throws Exception {
+    Path sdkDir = temp.newFolder("sdk").toPath();
+
+    ApiDatabaseGeneratorCommand command =
+        ApiDatabaseGeneratorCommand.builder().addSdkPath(sdkDir).build();
+
+    assertEquals(1, command.getXmlPaths().size());
+    assertEquals(sdkDir.resolve("data").resolve("api-versions.xml"), command.getXmlPaths().get(0));
+    assertEquals(1, command.getJarPaths().size());
+    assertEquals(sdkDir.resolve("android.jar"), command.getJarPaths().get(0));
+  }
+
+  @Test
   public void testMissingJarInput() throws Exception {
     Path xmlFile = temp.newFile("api-versions.xml").toPath();
 

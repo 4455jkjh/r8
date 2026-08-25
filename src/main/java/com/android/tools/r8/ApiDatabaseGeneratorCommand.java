@@ -123,6 +123,12 @@ public final class ApiDatabaseGeneratorCommand {
       return this;
     }
 
+    public Builder addSdkPath(Path sdkPath) {
+      addJarPath(sdkPath.resolve("android.jar"));
+      addXmlPath(sdkPath.resolve("data").resolve("api-versions.xml"));
+      return this;
+    }
+
     public Builder setOutputPath(Path outputPath) {
       this.outputPath = outputPath;
       return this;

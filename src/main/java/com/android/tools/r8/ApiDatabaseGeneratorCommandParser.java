@@ -47,6 +47,11 @@ public class ApiDatabaseGeneratorCommandParser {
             "Android API XML file (e.g., api-versions.xml).",
             (state, arg) -> state.builder.addXmlPath(Paths.get(arg)))
         .option1(
+            "--sdk",
+            "<sdk-dir>",
+            "Android SDK platform directory (e.g., $ANDROID_HOME/android-34).",
+            (state, arg) -> state.builder.addSdkPath(Paths.get(arg)))
+        .option1(
             "--output",
             "<database-file>",
             "Output result in <database-file> (must be a file, not a directory). Defaults to"
