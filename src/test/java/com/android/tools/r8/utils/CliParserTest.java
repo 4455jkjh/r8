@@ -255,12 +255,12 @@ public class CliParserTest extends TestBase {
   }
 
   @Test
-  public void testOverlapPrefixAndPrefix() {
+  public void testDuplicatePrefix() {
     CliParser<Builder> parser = new CliParser<>("Usage: test");
     parser.prefix1("--test", "[key]", "<val>", "Prefix.", (b, s, v) -> {});
     assertThrows(
         AssertionError.class,
-        () -> parser.prefix1("--test-now", "[key]", "<val>", "Prefix.", (b, s, v) -> {}));
+        () -> parser.prefix1("--test", "[key]", "<val>", "Prefix.", (b, s, v) -> {}));
   }
 
   @Test
@@ -298,16 +298,56 @@ public class CliParserTest extends TestBase {
     parser.parse(new String[] {"--flag:foo=bar"}, builder, errors::add);
 
     assertEquals(1, errors.size());
-    assertEquals("Option --flag:foo does not take a value.", errors.get(0));
+    assertEquals("Option --flag:foo does not take an argument.", errors.get(0));
     assertTrue(suffixes.isEmpty());
   }
 
   @Test
-  public void testOverlapPrefix0AndPrefix1() {
+  public void testPrefixWithAlternative() {
     CliParser<Builder> parser = new CliParser<>("Usage: test");
-    parser.prefix0("--test", "[prop]", "Prefix 0.", (b, s) -> {});
-    assertThrows(
-        AssertionError.class,
-        () -> parser.prefix1("--test-now", "[key]", "<val>", "Prefix 1.", (b, s, v) -> {}));
+    List<String> suffixes = new ArrayList<>();
+    parser.prefix0(
+        "--force-enable-assertions",
+        "[:class]",
+        "Enable assertions.",
+        (b, suffix) -> suffixes.add(suffix),
+        "--force-ea");
+
+    Builder builder = new Builder();
+    List<String> errors = new ArrayList<>();
+    parser.parse(
+        new String[] {"--force-enable-assertions:com.example.Foo", "--force-ea:com.example.Bar"},
+        builder,
+        errors::add);
+
+    assertTrue(errors.isEmpty());
+    assertEquals(ImmutableList.of(":com.example.Foo", ":com.example.Bar"), suffixes);
+  }
+
+  @Test
+  public void testOverlappingPrefixResolution() {
+    CliParser<Builder> parser = new CliParser<>("Usage: test");
+    List<String> matched = new ArrayList<>();
+    parser.prefix0(
+        "--force-passthrough-assertions",
+        "[:class]",
+        "Passthrough assertions.",
+        (b, s) -> matched.add("long" + s),
+        "--force-pa");
+
+    Builder builder = new Builder();
+    List<String> errors = new ArrayList<>();
+    parser.parse(
+        new String[] {
+          "--force-passthrough-assertions:pkg...",
+          "--force-passthrough-assertions",
+          "--force-pa:pkg...",
+          "--force-pa"
+        },
+        builder,
+        errors::add);
+
+    assertTrue(errors.isEmpty());
+    assertEquals(ImmutableList.of("long:pkg...", "long", "long:pkg...", "long"), matched);
   }
 }

@@ -32,8 +32,8 @@ public class CliParserUtils {
       List<String> helpLines = StringUtils.wrapToWidth(info.description, descriptionWidth);
       List<String> alternatives;
       if (info.shorthand != null) {
-        assert info.suffixLabel == null : "shorthands and prefixes cannot be combined.";
-        alternatives = ImmutableList.of(commandString(info.shorthand, null, info.paramLabels));
+        alternatives =
+            ImmutableList.of(commandString(info.shorthand, info.suffixLabel, info.paramLabels));
       } else {
         alternatives = ImmutableList.of();
       }

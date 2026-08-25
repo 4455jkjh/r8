@@ -102,7 +102,7 @@ public class DesugaredMethodListCommandTest extends DesugaredLibraryTestBase {
         new String[] {"--desugared-lib"}, new Reporter(diagnosticMessages));
     diagnosticMessages.assertOnlyErrors();
     diagnosticMessages.assertErrorMessageThatMatches(
-        containsString("Missing parameter for --desugared-lib"));
+        containsString("Missing argument for --desugared-lib"));
   }
 
   @Test
