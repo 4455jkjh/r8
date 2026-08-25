@@ -189,7 +189,7 @@ def Main():
                 # Copy Maven ZIP for LUCI recipie to find it.
                 shutil.copyfile(
                     maven_release_archive,
-                    os.path.join(bot_dir, 'smali-maven-release.zip')
+                    os.path.join(bot_dir, 'smali-maven-release.zip'))
                 print('Artifacts available at: %s' % public_url)
 
     print("Done!")
