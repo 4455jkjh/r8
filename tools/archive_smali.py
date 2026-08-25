@@ -104,8 +104,6 @@ def Main():
             print('Building version: %s' % version)
 
             # Run tests with JDK-21.
-            m2 = os.path.join(temp, 'm2')
-            os.mkdir(m2)
             custom_env = os.environ.copy()
             custom_env["JAVA_HOME"] = jdk.GetJdk21Home()
             subprocess.check_call(['./gradlew', 'test', ], env=custom_env)
@@ -113,7 +111,6 @@ def Main():
             # Build release to local Maven repository compiling with JDK-11.
             m2 = os.path.join(temp, 'm2')
             os.mkdir(m2)
-            custom_env = os.environ.copy()
             custom_env["JAVA_HOME"] = jdk.GetJdk11Home()
             subprocess.check_call([
                 './gradlew',
