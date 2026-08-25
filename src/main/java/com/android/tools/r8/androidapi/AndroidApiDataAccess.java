@@ -4,6 +4,9 @@
 
 package com.android.tools.r8.androidapi;
 
+import static com.android.tools.r8.apimodel.AndroidApiHashingDatabaseBuilderGenerator.DATABASE_FORMAT_VERSION;
+import static com.android.tools.r8.apimodel.AndroidApiHashingDatabaseBuilderGenerator.HEADER_SIZE;
+import static com.android.tools.r8.apimodel.AndroidApiHashingDatabaseBuilderGenerator.MAGIC_BYTES;
 import static com.android.tools.r8.lightir.ByteUtils.unsetBitAtIndex;
 
 import com.android.tools.r8.DiagnosticsHandler;
@@ -30,12 +33,45 @@ import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.util.Map;
 import java.util.function.BiPredicate;
+import java.util.function.Consumer;
 
 /**
- * Implements low-level access methods for seeking on top of the database file defined by {@code
+ * Implements low-level access methods for seeking on top of the database file defined by {@link
  * AndroidApiLevelHashingDatabaseImpl} where a description of the format can also be found.
  */
 public abstract class AndroidApiDataAccess {
+
+  private static Integer readHeader(CompatByteBuffer buffer) {
+    if (buffer == null || buffer.capacity() < HEADER_SIZE) {
+      return null;
+    }
+    for (int i = 0; i < MAGIC_BYTES.length; i++) {
+      if (buffer.get(i) != MAGIC_BYTES[i]) {
+        return null;
+      }
+    }
+    return buffer.getInt(MAGIC_BYTES.length);
+  }
+
+  private static Integer readHeader(byte[] data) {
+    return data == null ? null : readHeader(CompatByteBuffer.wrap(data));
+  }
+
+  private static boolean isHeaderValid(Integer headerVersion, Consumer<String> errorHandler) {
+    if (headerVersion == null) {
+      errorHandler.accept("Invalid header");
+      return false;
+    } else if (headerVersion != DATABASE_FORMAT_VERSION) {
+      errorHandler.accept(
+          "Incompatible database version (expected "
+              + DATABASE_FORMAT_VERSION
+              + " found "
+              + headerVersion
+              + ")");
+      return false;
+    }
+    return true;
+  }
 
   private static final String RESOURCE_NAME = "resources/api_database.ser";
   private static final int ENTRY_SIZE_IN_BITS_FOR_CONSTANT_POOL_MAP = 17;
@@ -91,27 +127,9 @@ public abstract class AndroidApiDataAccess {
 
   public static AndroidApiDataAccess create(
       InternalOptions options, DiagnosticsHandler diagnosticsHandler) {
-    URL resource;
-    Path apiDatabasePath = options.apiModelingOptions().apiDatabasePath;
-    if (apiDatabasePath != null) {
-      if (!Files.exists(apiDatabasePath)) {
-        diagnosticsHandler.error(
-            new StringDiagnostic("API database file does not exist: " + apiDatabasePath));
-        return new AndroidApiDataAccessNoBacking();
-      }
-      try {
-        resource = apiDatabasePath.toUri().toURL();
-      } catch (IOException e) {
-        throw new Unreachable(e);
-      }
-    } else {
-      URL resourceUrl = AndroidApiDataAccess.class.getClassLoader().getResource(RESOURCE_NAME);
-      if (resourceUrl == null) {
-        diagnosticsHandler.warning(
-            new StringDiagnostic("Could not find the api database at " + RESOURCE_NAME));
-        return new AndroidApiDataAccessNoBacking();
-      }
-      resource = resourceUrl;
+    URL resource = getApiDatabaseUrl(options, diagnosticsHandler);
+    if (resource == null) {
+      return new AndroidApiDataAccessNoBacking();
     }
 
     if (options.apiModelingOptions().useMemoryMappedByteBuffer) {
@@ -120,7 +138,7 @@ public abstract class AndroidApiDataAccess {
         // protocol: file, path: <path-to-file>
         // protocol: jar, path: file:<path-to-jar>!/<resource-name-in-jar>
         if (resource.getProtocol().equals("file")) {
-          return memoryMappedFromFile(Paths.get(resource.toURI()));
+          return memoryMappedFromFile(Paths.get(resource.toURI()), diagnosticsHandler);
         } else if (resource.getProtocol().equals("jar") && resource.getPath().startsWith("file:")) {
           // The path is on form 'file:<path-to-jar>!/<resource-name-in-jar>
           JarURLConnection jarUrl = (JarURLConnection) resource.openConnection();
@@ -133,7 +151,8 @@ public abstract class AndroidApiDataAccess {
               return memoryMappedFromSectionOfFile(
                   jarFile.toPath(),
                   entry.getPayloadLocation().first,
-                  entry.getPayloadLocation().last - entry.getPayloadLocation().first + 1);
+                  entry.getPayloadLocation().last - entry.getPayloadLocation().first + 1,
+                  diagnosticsHandler);
             }
           }
         }
@@ -155,28 +174,68 @@ public abstract class AndroidApiDataAccess {
             new StringDiagnostic("Could not open the api database at " + RESOURCE_NAME));
         return new AndroidApiDataAccessNoBacking();
       }
-      return new AndroidApiDataAccessInMemory(ByteStreams.toByteArray(apiInputStream));
+      byte[] bytes = ByteStreams.toByteArray(apiInputStream);
+      boolean valid =
+          isHeaderValid(
+              readHeader(bytes),
+              err -> diagnosticsHandler.warning(new StringDiagnostic(err + " in " + resource)));
+      if (!valid) {
+        return new AndroidApiDataAccessNoBacking();
+      }
+      return new AndroidApiDataAccessInMemory(bytes);
     } catch (IOException e) {
       diagnosticsHandler.warning(new ExceptionDiagnostic(e));
       return new AndroidApiDataAccessNoBacking();
     }
   }
 
-  private static AndroidApiDataAccessByteMapped memoryMappedFromFile(Path path) throws IOException {
-    FileChannel fileChannel = (FileChannel) Files.newByteChannel(path, StandardOpenOption.READ);
-    MappedByteBuffer mappedByteBuffer =
-        fileChannel.map(FileChannel.MapMode.READ_ONLY, 0, fileChannel.size());
-    // Ensure that we can run on JDK 8 by using the CompatByteBuffer.
-    return new AndroidApiDataAccessByteMapped(new CompatByteBuffer(mappedByteBuffer));
+  private static URL getApiDatabaseUrl(
+      InternalOptions options, DiagnosticsHandler diagnosticsHandler) {
+    Path apiDatabasePath = options.apiModelingOptions().apiDatabasePath;
+    if (apiDatabasePath != null) {
+      if (!Files.exists(apiDatabasePath)) {
+        diagnosticsHandler.error(
+            new StringDiagnostic("API database file does not exist: " + apiDatabasePath));
+        return null;
+      }
+      try {
+        return apiDatabasePath.toUri().toURL();
+      } catch (IOException e) {
+        throw new Unreachable(e);
+      }
+    } else {
+      URL resourceUrl = AndroidApiDataAccess.class.getClassLoader().getResource(RESOURCE_NAME);
+      if (resourceUrl == null) {
+        diagnosticsHandler.warning(
+            new StringDiagnostic("Could not find the api database at " + RESOURCE_NAME));
+        return null;
+      }
+      return resourceUrl;
+    }
   }
 
-  private static AndroidApiDataAccessByteMapped memoryMappedFromSectionOfFile(
-      Path path, long offset, long length) throws IOException {
+  private static AndroidApiDataAccess memoryMappedFromFile(
+      Path path, DiagnosticsHandler diagnosticsHandler) throws IOException {
+    return memoryMappedFromSectionOfFile(path, 0, -1, diagnosticsHandler);
+  }
+
+  private static AndroidApiDataAccess memoryMappedFromSectionOfFile(
+      Path path, long offset, long length, DiagnosticsHandler diagnosticsHandler)
+      throws IOException {
     FileChannel fileChannel = (FileChannel) Files.newByteChannel(path, StandardOpenOption.READ);
     MappedByteBuffer mappedByteBuffer =
-        fileChannel.map(FileChannel.MapMode.READ_ONLY, offset, length);
+        fileChannel.map(
+            FileChannel.MapMode.READ_ONLY, offset, length < 0 ? fileChannel.size() : length);
     // Ensure that we can run on JDK 8 by using the CompatByteBuffer.
-    return new AndroidApiDataAccessByteMapped(new CompatByteBuffer(mappedByteBuffer));
+    CompatByteBuffer bytes = new CompatByteBuffer(mappedByteBuffer);
+    boolean valid =
+        isHeaderValid(
+            readHeader(bytes),
+            err -> diagnosticsHandler.warning(new StringDiagnostic(err + " in " + path)));
+    if (!valid) {
+      return new AndroidApiDataAccessNoBacking();
+    }
+    return new AndroidApiDataAccessByteMapped(bytes);
   }
 
   public static int entrySizeInBitsForConstantPoolMap() {
@@ -211,9 +270,14 @@ public abstract class AndroidApiDataAccess {
     return PAYLOAD_OFFSET_WITH_LENGTH;
   }
 
+  /** The start of the constant pool size */
+  public static int constantPoolSizeOffset() {
+    return HEADER_SIZE;
+  }
+
   /** The start of the constant pool */
   public static int constantPoolOffset() {
-    return 4;
+    return HEADER_SIZE + 4;
   }
 
   /** The start of the constant pool hash map. */
@@ -357,7 +421,7 @@ public abstract class AndroidApiDataAccess {
 
     @Override
     int readConstantPoolSize() {
-      return mappedByteBuffer.getInt(0);
+      return mappedByteBuffer.getInt(constantPoolSizeOffset());
     }
 
     @Override
@@ -426,7 +490,7 @@ public abstract class AndroidApiDataAccess {
 
     @Override
     public int readConstantPoolSize() {
-      return readIntFromOffset(data, 0);
+      return readIntFromOffset(data, constantPoolSizeOffset());
     }
 
     @Override

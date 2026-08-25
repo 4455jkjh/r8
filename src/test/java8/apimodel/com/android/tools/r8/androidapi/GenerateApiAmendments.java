@@ -67,6 +67,11 @@ public class GenerateApiAmendments extends TestBase {
   }
 
   public static void main(String[] args) throws IOException {
+    // ----------------------------------------- IMPORTANT -----------------------------------------
+    // When these amendments are semantically changed (i.e. a format change doesn't matter)
+    // DATABASE_FORMAT_VERSION must be incremented to reflect that the output of
+    // ApiDatabaseGenerator has changed.
+    // ----------------------------------------- IMPORTANT -----------------------------------------
     Path outputDir = getOutputDir();
     if (!Files.exists(outputDir)) {
       Files.createDirectories(outputDir);

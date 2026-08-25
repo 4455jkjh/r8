@@ -26,6 +26,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -39,6 +40,17 @@ import java.util.Map.Entry;
 import java.util.Set;
 
 public class AndroidApiHashingDatabaseBuilderGenerator {
+
+  public static final String MAGIC = "r8-apidatabase";
+  public static final byte[] MAGIC_BYTES = MAGIC.getBytes(StandardCharsets.US_ASCII);
+  public static final int HEADER_SIZE = MAGIC_BYTES.length + 4;
+
+  /**
+   * This version must be increased whenever the output of {@link
+   * com.android.tools.r8.ApiDatabaseGenerator} changes. This can be because of changes to
+   * amendments or changes to the underlying format.
+   */
+  public static final int DATABASE_FORMAT_VERSION = 1;
 
   public static class GenerationException extends Exception {
     public GenerationException(String message) {
@@ -108,6 +120,8 @@ public class AndroidApiHashingDatabaseBuilderGenerator {
    * number of unsigned bytes):
    *
    * <pre>
+   * magic:              r8-apidatabase
+   * format_version:     u4
    * constant_pool_size: u4
    * constant_pool:      [constant_pool_size * payload_entry]
    * constant_pool_map:  [0..max_hash(ConstantPoolEntry) * payload_entry]
@@ -186,6 +200,10 @@ public class AndroidApiHashingDatabaseBuilderGenerator {
       int length = serializeIntoPayload(entry.getValue(), payload, constantPool, uniqueHashes);
       offsetMap.put(entry.getIntKey(), Pair.create(startingOffset, length));
     }
+
+    // Write header: magic string and database format version.
+    outputStream.write(MAGIC_BYTES);
+    outputStream.writeInt(DATABASE_FORMAT_VERSION);
 
     // Write constant pool size <u4:size>.
     outputStream.writeInt(constantPool.size());

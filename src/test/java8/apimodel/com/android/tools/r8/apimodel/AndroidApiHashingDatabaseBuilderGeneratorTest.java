@@ -590,6 +590,12 @@ public class AndroidApiHashingDatabaseBuilderGeneratorTest extends TestBase {
    * third_party/api_database/api_database.ser.
    */
   public static void main(String[] args) throws Exception {
+    // ----------------------------------------- IMPORTANT -----------------------------------------
+    // If the database format or content is changed DATABASE_FORMAT_VERSION must be incremented to
+    // reflect that the output of ApiDatabaseGenerator has changed.
+    //
+    // Updating api-versions.xml or android.jar does NOT need a version increase.
+    // ----------------------------------------- IMPORTANT -----------------------------------------
     TemporaryFolder temp = new TemporaryFolder();
     temp.create();
     Path apiLevels = temp.newFile("api_levels.ser").toPath();
