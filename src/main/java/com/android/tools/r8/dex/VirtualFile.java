@@ -245,7 +245,7 @@ public class VirtualFile {
   public static int getMaxNumberOfTypes(InternalOptions options) {
     return options.canHaveTypeIdOver32KIssue() && !options.alwaysAllow64KTypeIds
         ? MAX_ENTRIES_ONLY_32K
-        : MAX_ENTRIES;
+        : MAX_ENTRIES_ONLY_65535;
   }
 
   public int getMaxNumberOfTypes() {

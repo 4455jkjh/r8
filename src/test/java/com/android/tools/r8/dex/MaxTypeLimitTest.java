@@ -19,7 +19,6 @@ import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.dex.container.DexContainerFormatTestBase;
 import com.android.tools.r8.errors.DexFileOverflowDiagnostic;
-import com.android.tools.r8.transformers.ClassTransformer;
 import com.android.tools.r8.utils.AndroidApiLevel;
 import com.android.tools.r8.utils.DescriptorUtils;
 import com.android.tools.r8.utils.ZipUtils;
@@ -33,13 +32,18 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameter;
 import org.junit.runners.Parameterized.Parameters;
+import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.MethodVisitor;
+import org.objectweb.asm.Opcodes;
 
 @RunWith(Parameterized.class)
 public class MaxTypeLimitTest extends TestBase {
 
-  private static final int CLASS_COUNT = 33000;
-  private static Path inputApp;
+  private static final int CLASS_COUNT_32K = 33000;
+  private static final int CLASS_COUNT_64K = 65533;
+  private static final int TOTAL_TYPES_64K = 65536;
+  private static Path inputApp32K;
+  private static Path inputApp64K;
 
   @Parameter(0)
   public TestParameters parameters;
@@ -51,35 +55,41 @@ public class MaxTypeLimitTest extends TestBase {
 
   @BeforeClass
   public static void generateTestApplication() {
-    inputApp = getStaticTemp().getRoot().toPath().resolve("input_app.jar");
-    generateApplication(inputApp, CLASS_COUNT);
+    inputApp32K = getStaticTemp().getRoot().toPath().resolve("input_app_32k.jar");
+    generateApplication(inputApp32K, CLASS_COUNT_32K, false);
+    inputApp64K = getStaticTemp().getRoot().toPath().resolve("input_app_64k.jar");
+    generateApplication(inputApp64K, CLASS_COUNT_64K, true);
   }
 
-  private static void generateApplication(Path output, int classCount) {
-    List<String> classes = new ArrayList<>(classCount);
-    for (int i = 0; i < classCount; ++i) {
-      classes.add("package_" + (i % 2 == 0 ? "a" : "b") + ".Class" + i);
-    }
+  private static void generateApplication(Path output, int classCount, boolean includeMain) {
     ArchiveConsumer consumer = new ArchiveConsumer(output);
-    for (String typename : classes) {
+    for (int i = 0; i < classCount; ++i) {
+      String typename = "package_" + (i % 2 == 0 ? "a" : "b") + ".Class" + i;
       String descriptor = DescriptorUtils.javaTypeToDescriptor(typename);
-      byte[] bytes =
-          transformer(ClassStub.class)
-              .setClassDescriptor(descriptor)
-              .addClassTransformer(
-                  new ClassTransformer() {
-                    @Override
-                    public MethodVisitor visitMethod(
-                        int access,
-                        String name,
-                        String descriptor,
-                        String signature,
-                        String[] exceptions) {
-                      // Strip methods to only generate class definition without methods.
-                      return null;
-                    }
-                  })
-              .transform();
+      String internalName = descriptor.substring(1, descriptor.length() - 1);
+      ClassWriter cw = new ClassWriter(0);
+      cw.visit(
+          Opcodes.V1_8,
+          Opcodes.ACC_PUBLIC | Opcodes.ACC_SUPER,
+          internalName,
+          null,
+          "java/lang/Object",
+          null);
+      if (includeMain && i == 0) {
+        MethodVisitor mv =
+            cw.visitMethod(
+                Opcodes.ACC_PUBLIC | Opcodes.ACC_STATIC,
+                "main",
+                "([Ljava/lang/String;)V",
+                null,
+                null);
+        mv.visitCode();
+        mv.visitInsn(Opcodes.RETURN);
+        mv.visitMaxs(0, 1);
+        mv.visitEnd();
+      }
+      cw.visitEnd();
+      byte[] bytes = cw.toByteArray();
       consumer.accept(ByteDataView.of(bytes), descriptor, null);
     }
     consumer.finished(null);
@@ -93,10 +103,10 @@ public class MaxTypeLimitTest extends TestBase {
 
   @Test
   public void testD8Api25MultidexSplitOnTypes() throws Exception {
-    // API level 25 only allows 32767 type-ids, so 33000 classes must split into 2 DEX files.
+    // API level 25 only allows 32768 type-ids, so 33000 classes must split into 2 DEX files.
     Path output =
         testForD8(Backend.DEX)
-            .addProgramFiles(inputApp)
+            .addProgramFiles(inputApp32K)
             .setMinApi(AndroidApiLevel.N_MR1)
             .compile()
             .writeToZip();
@@ -113,10 +123,10 @@ public class MaxTypeLimitTest extends TestBase {
 
   @Test
   public void testD8Api26SingleDex() throws Exception {
-    // API level 26 allows 65536 type-ids, so 33000 classes fit into 1 DEX file.
+    // API level 26 allows 65535 type-ids, so 33000 classes fit into 1 DEX file.
     Path output =
         testForD8(Backend.DEX)
-            .addProgramFiles(inputApp)
+            .addProgramFiles(inputApp32K)
             .setMinApi(AndroidApiLevel.O)
             .compile()
             .writeToZip();
@@ -127,6 +137,9 @@ public class MaxTypeLimitTest extends TestBase {
     assertTrue(
         "Type count " + typeCount + " must be > 32768",
         typeCount > VirtualFile.MAX_ENTRIES_ONLY_32K);
+    assertTrue(
+        "Type count " + typeCount + " must be <= 65535",
+        typeCount <= VirtualFile.MAX_ENTRIES_ONLY_65535);
   }
 
   @Test
@@ -136,7 +149,7 @@ public class MaxTypeLimitTest extends TestBase {
         CompilationFailedException.class,
         () ->
             testForD8(Backend.DEX)
-                .addProgramFiles(inputApp)
+                .addProgramFiles(inputApp32K)
                 .setMinApi(AndroidApiLevel.K)
                 .compileWithExpectedDiagnostics(
                     diagnostics ->
@@ -145,10 +158,10 @@ public class MaxTypeLimitTest extends TestBase {
                                 diagnosticType(DexFileOverflowDiagnostic.class),
                                 diagnosticMessage(
                                     containsString(
-                                        "# types: " + (CLASS_COUNT + 1) + " > 32768"))))));
+                                        "# types: " + (CLASS_COUNT_32K + 1) + " > 32768"))))));
     // Should not fail when alwaysAllow64KTypeIds is set.
     testForD8(Backend.DEX)
-        .addProgramFiles(inputApp)
+        .addProgramFiles(inputApp32K)
         .setMinApi(AndroidApiLevel.K)
         .addOptionsModification(options -> options.alwaysAllow64KTypeIds = true)
         .compile();
@@ -162,7 +175,7 @@ public class MaxTypeLimitTest extends TestBase {
         CompilationFailedException.class,
         () ->
             testForD8(Backend.DEX)
-                .addProgramFiles(inputApp)
+                .addProgramFiles(inputApp32K)
                 .setMinApi(AndroidApiLevel.K)
                 .addMainDexRules("-keep class ** { *; }")
                 .compileWithExpectedDiagnostics(
@@ -174,20 +187,69 @@ public class MaxTypeLimitTest extends TestBase {
                                     containsString(
                                         "Cannot fit requested classes in the main-dex file (#"
                                             + " types: "
-                                            + (CLASS_COUNT + 1)
+                                            + (CLASS_COUNT_32K + 1)
                                             + " > 32768)"))))));
 
     // Should not fail when alwaysAllow64KTypeIds is set.
     testForD8(Backend.DEX)
-        .addProgramFiles(inputApp)
+        .addProgramFiles(inputApp32K)
         .setMinApi(AndroidApiLevel.K)
         .addMainDexRules("-keep class ** { *; }")
         .addOptionsModification(options -> options.alwaysAllow64KTypeIds = true)
         .compile();
   }
 
-  // Simple stub/template for generating the input classes.
-  public static class ClassStub {
-    public static void methodStub() {}
+  @Test
+  public void testD8Api26MultidexSplitOn65KTypes() throws Exception {
+    // API level 26 allows at most 65535 type-ids, so 65536 types must split into 2 DEX files.
+    Path output =
+        testForD8(Backend.DEX)
+            .addProgramFiles(inputApp64K)
+            .setMinApi(AndroidApiLevel.O)
+            .compile()
+            .writeToZip();
+    List<byte[]> dexes = new ArrayList<>();
+    ZipUtils.iter(output, (entry, inputStream) -> dexes.add(ByteStreams.toByteArray(inputStream)));
+    assertEquals(2, dexes.size());
+    for (byte[] dex : dexes) {
+      int typeCount = getTypeCount(dex);
+      assertTrue(
+          "Type count " + typeCount + " must be <= 65535",
+          typeCount <= VirtualFile.MAX_ENTRIES_ONLY_65535);
+    }
+  }
+
+  @Test
+  public void testD8Api26SingleDexOverflow() throws Exception {
+    // Compiling with mono-dex with 65536 types on API 19 should fail because 65536 > 32768.
+    assertThrows(
+        CompilationFailedException.class,
+        () ->
+            testForD8(Backend.DEX)
+                .addProgramFiles(inputApp64K)
+                .setMinApi(AndroidApiLevel.K)
+                .compileWithExpectedDiagnostics(
+                    diagnostics ->
+                        diagnostics.assertErrorsMatch(
+                            allOf(
+                                diagnosticType(DexFileOverflowDiagnostic.class),
+                                diagnosticMessage(
+                                    containsString("# types: " + TOTAL_TYPES_64K + " > 32768"))))));
+
+    // Compiling with alwaysAllow64KTypeIds allows at most 65535 types, so 65536 types still fails.
+    assertThrows(
+        CompilationFailedException.class,
+        () ->
+            testForD8(Backend.DEX)
+                .addProgramFiles(inputApp64K)
+                .setMinApi(AndroidApiLevel.K)
+                .addOptionsModification(options -> options.alwaysAllow64KTypeIds = true)
+                .compileWithExpectedDiagnostics(
+                    diagnostics ->
+                        diagnostics.assertErrorsMatch(
+                            allOf(
+                                diagnosticType(DexFileOverflowDiagnostic.class),
+                                diagnosticMessage(
+                                    containsString("# types: " + TOTAL_TYPES_64K + " > 65535"))))));
   }
 }
