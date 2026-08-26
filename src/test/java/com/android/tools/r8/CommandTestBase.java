@@ -39,8 +39,9 @@ public abstract class CommandTestBase<C extends BaseCompilerCommand> extends Tes
 
   private void mapDiagnosticsMissingArguments(String... args) {
     try {
+      // TODO(jonathanlist): Make this more precise once all CLI uses CliParser.
       DiagnosticsChecker.checkErrorsContains(
-          "Missing argument(s) for --map-diagnostics", handler -> parse(handler, args));
+          "for --map-diagnostics", handler -> parse(handler, args));
       fail("Expected failure");
     } catch (CompilationFailedException e) {
       // Expected.
@@ -371,7 +372,8 @@ public abstract class CommandTestBase<C extends BaseCompilerCommand> extends Tes
 
   @Test
   public void artProfileFlagMissingInputOutputParameterTest() {
-    String expectedErrorContains = "Missing parameter for --art-profile.";
+    // TODO(jonathanlist): Make this more precise once all CLI uses CliParser.
+    String expectedErrorContains = "for --art-profile";
     try {
       DiagnosticsChecker.checkErrorsContains(
           expectedErrorContains, handler -> parseWithRequiredArgs(handler, "--art-profile"));
@@ -383,7 +385,8 @@ public abstract class CommandTestBase<C extends BaseCompilerCommand> extends Tes
 
   @Test
   public void artProfileFlagMissingOutputParameterTest() throws Exception {
-    String expectedErrorContains = "Missing parameter for --art-profile.";
+    // TODO(jonathanlist): Make this more precise once all CLI uses CliParser.
+    String expectedErrorContains = "for --art-profile";
     Path profile = temp.newFile("profile.txt").toPath();
     FileUtils.writeTextFile(profile, "");
     try {

@@ -10,6 +10,7 @@ import com.android.tools.r8.utils.CliParserUtils;
 import com.android.tools.r8.utils.DescriptorUtils;
 import com.android.tools.r8.utils.Reporter;
 import com.android.tools.r8.utils.StringDiagnostic;
+import com.android.tools.r8.utils.internal.collections.Pair;
 import com.android.tools.r8.utils.internal.exceptions.Unreachable;
 import java.nio.file.Paths;
 import java.util.function.Consumer;
@@ -107,6 +108,93 @@ public class BaseCompilerCommandParser {
   }
 
   protected static <C extends BaseCompilerCommand, B extends BaseCompilerCommand.Builder<C, B>>
+      String parseAssertionScope(B builder, String suffix, Origin origin) {
+    if (suffix.isEmpty()) {
+      return null;
+    }
+    if (suffix.equals(":")) {
+      throw builder.fatalError(new StringDiagnostic("Missing optional argument", origin));
+    }
+    if (!suffix.startsWith(":")) {
+      builder.error(new StringDiagnostic("Illegal assertion scope: " + suffix, origin));
+      return suffix;
+    }
+    String classOrPackageScope = suffix.substring(1);
+    if (classOrPackageScope.contains(";")
+        || classOrPackageScope.contains("[")
+        || classOrPackageScope.contains("/")) {
+      builder.error(
+          new StringDiagnostic("Illegal assertion scope: " + classOrPackageScope, origin));
+    }
+    return classOrPackageScope;
+  }
+
+  static <C extends BaseCompilerCommand, B extends BaseCompilerCommand.Builder<C, B>>
+      Pair<MethodReference, String> parseAssertionHandler(B builder, String suffix, Origin origin) {
+    if (suffix.isEmpty() || suffix.equals(":")) {
+      throw builder.fatalError(
+          new StringDiagnostic("Missing required argument <handler method>", origin));
+    }
+    if (!suffix.startsWith(":")) {
+      throw builder.fatalError(
+          new StringDiagnostic("Missing required argument <handler method>", origin));
+    }
+    String remaining = suffix.substring(1);
+    int index = remaining.indexOf(':');
+    if (index == 0) {
+      throw builder.fatalError(
+          new StringDiagnostic("Missing required argument <handler method>", origin));
+    }
+    String assertionsHandlerString = index > 0 ? remaining.substring(0, index) : remaining;
+    int lastDotIndex = assertionsHandlerString.lastIndexOf('.');
+    if (assertionsHandlerString.length() < 3
+        || lastDotIndex <= 0
+        || lastDotIndex == assertionsHandlerString.length() - 1
+        || !DescriptorUtils.isValidJavaType(assertionsHandlerString.substring(0, lastDotIndex))) {
+      throw builder.fatalError(
+          new StringDiagnostic(
+              "Invalid argument <handler method>: " + assertionsHandlerString, origin));
+    }
+    MethodReference assertionsHandler =
+        Reference.methodFromDescriptor(
+            DescriptorUtils.javaTypeToDescriptor(
+                assertionsHandlerString.substring(0, lastDotIndex)),
+            assertionsHandlerString.substring(lastDotIndex + 1),
+            "(Ljava/lang/Throwable;)V");
+    String scopeSuffix = remaining.substring(assertionsHandlerString.length());
+    String scope = parseAssertionScope(builder, scopeSuffix, origin);
+    return Pair.create(assertionsHandler, scope);
+  }
+
+  static <C extends BaseCompilerCommand, B extends BaseCompilerCommand.Builder<C, B>>
+      void parseForceEnableAssertions(B builder, String suffix, Origin origin) {
+    String scope = parseAssertionScope(builder, suffix, origin);
+    addAssertionTransformation(builder, AssertionTransformationType.ENABLE, null, scope);
+  }
+
+  static <C extends BaseCompilerCommand, B extends BaseCompilerCommand.Builder<C, B>>
+      void parseForceDisableAssertions(B builder, String suffix, Origin origin) {
+    String scope = parseAssertionScope(builder, suffix, origin);
+    addAssertionTransformation(builder, AssertionTransformationType.DISABLE, null, scope);
+  }
+
+  static <C extends BaseCompilerCommand, B extends BaseCompilerCommand.Builder<C, B>>
+      void parseForcePassthroughAssertions(B builder, String suffix, Origin origin) {
+    String scope = parseAssertionScope(builder, suffix, origin);
+    addAssertionTransformation(builder, AssertionTransformationType.PASSTHROUGH, null, scope);
+  }
+
+  static <C extends BaseCompilerCommand, B extends BaseCompilerCommand.Builder<C, B>>
+      void parseForceAssertionsHandler(B builder, String suffix, Origin origin) {
+    Pair<MethodReference, String> handlerAndScope = parseAssertionHandler(builder, suffix, origin);
+    addAssertionTransformation(
+        builder,
+        AssertionTransformationType.HANDLER,
+        handlerAndScope.getFirst(),
+        handlerAndScope.getSecond());
+  }
+
+  static <C extends BaseCompilerCommand, B extends BaseCompilerCommand.Builder<C, B>>
       boolean tryParseAssertionArgument(B builder, String arg, Origin origin) {
     String FORCE_ENABLE_ASSERTIONS = "--force-enable-assertions";
     String FORCE_EA = "--force-ea";
@@ -118,7 +206,6 @@ public class BaseCompilerCommandParser {
     String FORCE_AH = "--force-ah";
 
     AssertionTransformationType transformation = null;
-    MethodReference assertionsHandler = null;
     String remaining = null;
     if (arg.startsWith(FORCE_ENABLE_ASSERTIONS)) {
       transformation = AssertionTransformationType.ENABLE;
@@ -145,62 +232,27 @@ public class BaseCompilerCommandParser {
       transformation = AssertionTransformationType.HANDLER;
       remaining = arg.substring(FORCE_AH.length());
     }
-    if (transformation == AssertionTransformationType.HANDLER) {
-      if (remaining.isEmpty() || (remaining.length() == 1 && remaining.charAt(0) == ':')) {
-        throw builder.fatalError(
-            new StringDiagnostic("Missing required argument <handler method>", origin));
-      }
-      if (remaining.charAt(0) != ':') {
-        return false;
-      }
-      remaining = remaining.substring(1);
-      int index = remaining.indexOf(':');
-      if (index == 0) {
-        throw builder.fatalError(
-            new StringDiagnostic("Missing required argument <handler method>", origin));
-      }
-      String assertionsHandlerString = index > 0 ? remaining.substring(0, index) : remaining;
-      int lastDotIndex = assertionsHandlerString.lastIndexOf('.');
-      if (assertionsHandlerString.length() < 3
-          || lastDotIndex <= 0
-          || lastDotIndex == assertionsHandlerString.length() - 1
-          || !DescriptorUtils.isValidJavaType(assertionsHandlerString.substring(0, lastDotIndex))) {
-        throw builder.fatalError(
-            new StringDiagnostic(
-                "Invalid argument <handler method>: " + assertionsHandlerString, origin));
-      }
-      assertionsHandler =
-          Reference.methodFromDescriptor(
-              DescriptorUtils.javaTypeToDescriptor(
-                  assertionsHandlerString.substring(0, lastDotIndex)),
-              assertionsHandlerString.substring(lastDotIndex + 1),
-              "(Ljava/lang/Throwable;)V");
-      remaining = remaining.substring(assertionsHandlerString.length());
-    }
-    if (transformation != null) {
-      if (remaining.isEmpty()) {
-        addAssertionTransformation(builder, transformation, assertionsHandler, null);
-        return true;
-      } else {
-        if (remaining.length() == 1 && remaining.charAt(0) == ':') {
-          throw builder.fatalError(new StringDiagnostic("Missing optional argument", origin));
-        }
-        if (remaining.charAt(0) != ':') {
-          return false;
-        }
-        String classOrPackageScope = remaining.substring(1);
-        if (classOrPackageScope.contains(";")
-            || classOrPackageScope.contains("[")
-            || classOrPackageScope.contains("/")) {
-          builder.error(
-              new StringDiagnostic("Illegal assertion scope: " + classOrPackageScope, origin));
-        }
-        addAssertionTransformation(
-            builder, transformation, assertionsHandler, remaining.substring(1));
-        return true;
-      }
-    } else {
+    if (transformation == null) {
       return false;
+    }
+    if (!remaining.isEmpty() && remaining.charAt(0) != ':') {
+      return false;
+    }
+    switch (transformation) {
+      case ENABLE:
+        parseForceEnableAssertions(builder, remaining, origin);
+        return true;
+      case DISABLE:
+        parseForceDisableAssertions(builder, remaining, origin);
+        return true;
+      case PASSTHROUGH:
+        parseForcePassthroughAssertions(builder, remaining, origin);
+        return true;
+      case HANDLER:
+        parseForceAssertionsHandler(builder, remaining, origin);
+        return true;
+      default:
+        throw new Unreachable();
     }
   }
 
