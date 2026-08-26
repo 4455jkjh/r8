@@ -65,7 +65,7 @@ public class AndroidApiLevel implements Ordered<AndroidApiLevel> {
   public static final AndroidApiLevel UNKNOWN;
 
   /** Constant used to signify some unknown min api when compiling platform. */
-  public static final int ANDROID_PLATFORM_CONSTANT = 10000;
+  public static final int ANDROID_PLATFORM_CONSTANT = 10_000;
 
   static {
     ImmutableList.Builder<AndroidApiLevel> builder = ImmutableList.builder();
@@ -116,14 +116,18 @@ public class AndroidApiLevel implements Ordered<AndroidApiLevel> {
     LATEST = CINNAMON_BUN;
     API_DATABASE_LEVEL = LATEST;
     UNKNOWN = MAIN;
+    assert UNKNOWN.isGreaterThan(LATEST);
+    assert EXTENSION.isGreaterThan(LATEST);
+    assert EXTENSION.isGreaterThan(MAIN);
+    assert MAIN.isGreaterThan(LATEST);
   }
 
-  private final int level;
+  private final int major;
   private final int minor;
   private final String name;
 
-  private AndroidApiLevel(int level, int minor, String name) {
-    this.level = level;
+  private AndroidApiLevel(int major, int minor, String name) {
+    this.major = major;
     this.minor = minor;
     this.name = name;
   }
@@ -136,7 +140,7 @@ public class AndroidApiLevel implements Ordered<AndroidApiLevel> {
   }
 
   public int getLevel() {
-    return level;
+    return major;
   }
 
   public int getMinor() {
@@ -145,6 +149,14 @@ public class AndroidApiLevel implements Ordered<AndroidApiLevel> {
 
   public String getName() {
     return "Android " + name;
+  }
+
+  public String getNumericString() {
+    return getNumericString(major, minor);
+  }
+
+  private static String getNumericString(int major, int minor) {
+    return minor == 0 ? Integer.toString(major) : major + "." + minor;
   }
 
   public static AndroidApiLevel getDefault() {
@@ -163,13 +175,11 @@ public class AndroidApiLevel implements Ordered<AndroidApiLevel> {
     return DexVersion.getDexVersion(this);
   }
 
-  public AndroidApiLevel next() {
-    return getAndroidApiLevel(getLevel() + 1);
-  }
-
-  public AndroidApiLevel verifyLevel(int expected) {
-    assert level == expected;
-    return this;
+  public AndroidApiLevel getNextMajorLevel() {
+    if (this.isEqualTo(LATEST)) {
+      return MAIN;
+    }
+    return getAndroidApiLevel(getLevel() + 1, 0);
   }
 
   public static List<AndroidApiLevel> getAndroidApiLevelsSorted() {
@@ -198,108 +208,225 @@ public class AndroidApiLevel implements Ordered<AndroidApiLevel> {
 
   @Deprecated
   @SuppressWarnings("InlineMeSuggester")
-  public static AndroidApiLevel getAndroidApiLevel(int apiLevel) {
-    return getAndroidApiLevel(apiLevel, 0);
+  public static AndroidApiLevel getAndroidApiLevel(int major) {
+    return getAndroidApiLevel(major, 0);
   }
 
-  public static AndroidApiLevel getAndroidApiLevel(int apiLevel, int minor) {
-    assert apiLevel > 0;
-    assert minor >= 0;
-    if ((apiLevel <= 35 && minor != 0) || minor > 1) {
-      throw new IllegalArgumentException();
-    }
-    assert CINNAMON_BUN == LATEST; // This has to be updated when we add new api levels.
-    assert UNKNOWN.isGreaterThan(LATEST);
-    switch (apiLevel) {
+  public static AndroidApiLevel getAndroidApiLevel(int major, int minor) {
+    assert CINNAMON_BUN == LATEST; // This has to be updated when new API levels are added.
+    switch (major) {
       case 1:
-        return B;
+        if (minor == 0) {
+          return B;
+        }
+        break;
       case 2:
-        return B_1_1;
+        if (minor == 0) {
+          return B_1_1;
+        }
+        break;
       case 3:
-        return C;
+        if (minor == 0) {
+          return C;
+        }
+        break;
       case 4:
-        return D;
+        if (minor == 0) {
+          return D;
+        }
+        break;
       case 5:
-        return E;
+        if (minor == 0) {
+          return E;
+        }
+        break;
       case 6:
-        return E_0_1;
+        if (minor == 0) {
+          return E_0_1;
+        }
+        break;
       case 7:
-        return E_MR1;
+        if (minor == 0) {
+          return E_MR1;
+        }
+        break;
       case 8:
-        return F;
+        if (minor == 0) {
+          return F;
+        }
+        break;
       case 9:
-        return G;
+        if (minor == 0) {
+          return G;
+        }
+        break;
       case 10:
-        return G_MR1;
+        if (minor == 0) {
+          return G_MR1;
+        }
+        break;
       case 11:
-        return H;
+        if (minor == 0) {
+          return H;
+        }
+        break;
       case 12:
-        return H_MR1;
+        if (minor == 0) {
+          return H_MR1;
+        }
+        break;
       case 13:
-        return H_MR2;
+        if (minor == 0) {
+          return H_MR2;
+        }
+        break;
       case 14:
-        return I;
+        if (minor == 0) {
+          return I;
+        }
+        break;
       case 15:
-        return I_MR1;
+        if (minor == 0) {
+          return I_MR1;
+        }
+        break;
       case 16:
-        return J;
+        if (minor == 0) {
+          return J;
+        }
+        break;
       case 17:
-        return J_MR1;
+        if (minor == 0) {
+          return J_MR1;
+        }
+        break;
       case 18:
-        return J_MR2;
+        if (minor == 0) {
+          return J_MR2;
+        }
+        break;
       case 19:
-        return K;
+        if (minor == 0) {
+          return K;
+        }
+        break;
       case 20:
-        return K_WATCH;
+        if (minor == 0) {
+          return K_WATCH;
+        }
+        break;
       case 21:
-        return L;
+        if (minor == 0) {
+          return L;
+        }
+        break;
       case 22:
-        return L_MR1;
+        if (minor == 0) {
+          return L_MR1;
+        }
+        break;
       case 23:
-        return M;
+        if (minor == 0) {
+          return M;
+        }
+        break;
       case 24:
-        return N;
+        if (minor == 0) {
+          return N;
+        }
+        break;
       case 25:
-        return N_MR1;
+        if (minor == 0) {
+          return N_MR1;
+        }
+        break;
       case 26:
-        return O;
+        if (minor == 0) {
+          return O;
+        }
+        break;
       case 27:
-        return O_MR1;
+        if (minor == 0) {
+          return O_MR1;
+        }
+        break;
       case 28:
-        return P;
+        if (minor == 0) {
+          return P;
+        }
+        break;
       case 29:
-        return Q;
+        if (minor == 0) {
+          return Q;
+        }
+        break;
       case 30:
-        return R;
+        if (minor == 0) {
+          return R;
+        }
+        break;
       case 31:
-        return S;
+        if (minor == 0) {
+          return S;
+        }
+        break;
       case 32:
-        return Sv2;
+        if (minor == 0) {
+          return Sv2;
+        }
+        break;
       case 33:
-        return T;
+        if (minor == 0) {
+          return T;
+        }
+        break;
       case 34:
-        return U;
+        if (minor == 0) {
+          return U;
+        }
+        break;
       case 35:
-        return V;
+        if (minor == 0) {
+          return V;
+        }
+        break;
       case 36:
-        assert minor <= 1;
-        return minor == 0 ? BAKLAVA : BAKLAVA_1;
+        if (minor == 0) {
+          return BAKLAVA;
+        }
+        if (minor == 1) {
+          return BAKLAVA_1;
+        }
+        break;
       case 37:
-        assert minor == 0;
-        return CINNAMON_BUN;
+        if (minor == 0) {
+          return CINNAMON_BUN;
+        }
+        break;
+      case 38:
+        if (minor == 0) {
+          return MAIN;
+        }
+        break;
       default:
-        return MAIN;
+        // All future versions (e.g. platforms API 10_000 returns MAIN).
+        if (major > 0) {
+          return MAIN;
+        }
+        break;
     }
+    throw new IllegalArgumentException(
+        "Unsupported or invalid Android API level: " + getNumericString(major, minor));
   }
 
+  /** Parses strings like {@code <int>} or {@code <int>.<int>}. */
   public static AndroidApiLevel parseAndroidApiLevel(String apiLevel) {
     int dotPosition = apiLevel.indexOf('.');
     if (dotPosition == -1) {
-      return AndroidApiLevel.getAndroidApiLevel(Integer.parseInt(apiLevel));
+      return AndroidApiLevel.getAndroidApiLevel(Integer.parseInt(apiLevel), 0);
     } else {
       String majorApiLevel = apiLevel.substring(0, dotPosition);
       String minorApiLevel = apiLevel.substring(dotPosition + 1);
-      assert Integer.parseInt(minorApiLevel) >= 0;
       return AndroidApiLevel.getAndroidApiLevel(
           Integer.parseInt(majorApiLevel), Integer.parseInt(minorApiLevel));
     }
@@ -309,9 +436,9 @@ public class AndroidApiLevel implements Ordered<AndroidApiLevel> {
     if (this == EXTENSION) {
       return 0x7f;
     }
-    assert level < 64;
+    assert major < 64;
     assert minor < 2; // Re-evaluate this when minor can be higher than 1.
-    return (byte) (level << 1 | minor);
+    return (byte) (major << 1 | minor);
   }
 
   public static AndroidApiLevel deserializeFromByte(byte b) {
@@ -326,7 +453,7 @@ public class AndroidApiLevel implements Ordered<AndroidApiLevel> {
 
   @Override
   public int compareTo(AndroidApiLevel other) {
-    return level != other.level ? level - other.level : minor - other.minor;
+    return major != other.major ? major - other.major : minor - other.minor;
   }
 
   @Override

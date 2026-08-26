@@ -43,7 +43,7 @@ public class ApiModelManualOutlineWithUnknownReturnTypeTest extends TestBase {
   }
 
   private AndroidApiLevel getMockApiLevel() {
-    return addedToLibraryHere ? runApiLevel() : runApiLevel().next();
+    return addedToLibraryHere ? runApiLevel() : runApiLevel().getNextMajorLevel();
   }
 
   @Test

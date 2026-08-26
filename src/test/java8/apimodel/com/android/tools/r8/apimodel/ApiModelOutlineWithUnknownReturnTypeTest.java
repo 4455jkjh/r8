@@ -18,8 +18,8 @@ import com.android.tools.r8.TestCompilerBuilder;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.utils.AndroidApiLevel;
-import com.android.tools.r8.utils.internal.BooleanUtils;
 import com.android.tools.r8.utils.codeinspector.CodeInspector;
+import com.android.tools.r8.utils.internal.BooleanUtils;
 import java.io.IOException;
 import java.util.List;
 import org.junit.Test;
@@ -50,7 +50,7 @@ public class ApiModelOutlineWithUnknownReturnTypeTest extends TestBase {
   }
 
   private AndroidApiLevel getMockApiLevel() {
-    return addedToLibraryHere ? runApiLevel() : runApiLevel().next();
+    return addedToLibraryHere ? runApiLevel() : runApiLevel().getNextMajorLevel();
   }
 
   private void setupTestBuilder(TestCompilerBuilder<?, ?, ?, ?, ?> testBuilder) throws Exception {
