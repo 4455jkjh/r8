@@ -65,6 +65,8 @@ def Main():
         set_rlimit_to_max()
 
     utils.ensure_google_download(utils.JAVA11_DIR)
+    utils.ensure_google_download(utils.JAVA21_DIR)
+    bot_dir = os.getcwd()
     with utils.TempDir() as temp:
         # Resolve dry run location to support relative directories.
         dry_run_output = None
@@ -102,17 +104,21 @@ def Main():
 
             print('Building version: %s' % version)
 
+            # Run tests with JDK-21.
+            custom_env = os.environ.copy()
+            custom_env["JAVA_HOME"] = jdk.GetJdk21Home()
+            subprocess.check_call(['./gradlew', 'test', ], env=custom_env)
+
             # Build release to local Maven repository compiling with JDK-11.
             m2 = os.path.join(temp, 'm2')
             os.mkdir(m2)
+            custom_env["JAVA_HOME"] = jdk.GetJdk11Home()
             subprocess.check_call([
                 './gradlew',
-                '-Dorg.gradle.java.home=%s' % jdk.GetJdk11Home(),
                 '-Dmaven.repo.local=%s' % m2,
                 'release',
-                'test',
                 'publishToMavenLocal',
-            ])
+            ], env=custom_env)
             base = os.path.join('com', 'android', 'tools', 'smali')
 
             # Check that the local maven repository only has the single version directory in
@@ -181,7 +187,9 @@ def Main():
                 public_url = 'https://storage.googleapis.com/%s/smali/%s' % (
                     ARCHIVE_BUCKET, version)
                 # Copy Maven ZIP for LUCI recipie to find it.
-                shutil.copyfile(maven_release_archive, 'smali-maven-release.zip')
+                shutil.copyfile(
+                    maven_release_archive,
+                    os.path.join(bot_dir, 'smali-maven-release.zip'))
                 print('Artifacts available at: %s' % public_url)
 
     print("Done!")

@@ -135,14 +135,16 @@ public abstract class CreateR8LibraryTask : DefaultTask() {
       }
       args = myArgs
     }
-    if (!enableKeepAnnotations.get()) { // delete api database if we do not enable keep annotations
+    if (!enableKeepAnnotations.get()) { // delete api resources if we do not enable keep annotations
       // The URI must be prefixed with "jar:" to tell the FileSystem provider to treat it as a
       // ZIP/JAR
       val uri = create("jar:${outputJarFile.toPath().toUri()}")
       val env = mapOf("create" to "false")
       newFileSystem(uri, env).use { zipfs ->
-        val pathInZip = zipfs.getPath("resources/api_database.ser")
-        deleteIfExists(pathInZip)
+        deleteIfExists(zipfs.getPath("resources/api_database.ser"))
+        deleteIfExists(zipfs.getPath("resources/missing.api.txt"))
+        deleteIfExists(zipfs.getPath("resources/hidden.api.txt"))
+        deleteIfExists(zipfs.getPath("resources/hidden.jar.txt"))
       }
     }
     if (replaceInOutputJar.isPresent) {

@@ -58,9 +58,10 @@ public class ApiDatabaseGeneratorTest extends TestBase {
 
     ApiDatabaseGeneratorCommand command =
         ApiDatabaseGeneratorCommand.builder()
-            .addInputPath(apiVersionsXml)
-            .addInputPath(dummyJar)
+            .addXmlPath(apiVersionsXml)
+            .addJarPath(dummyJar)
             .setOutputPath(outputDb)
+            .setAmend(false)
             .build();
 
     ApiDatabaseGenerator.run(command);
@@ -99,10 +100,11 @@ public class ApiDatabaseGeneratorTest extends TestBase {
     TestDiagnosticMessagesImpl diagnosticsHandler = new TestDiagnosticMessagesImpl();
     ApiDatabaseGeneratorCommand command =
         ApiDatabaseGeneratorCommand.builder(diagnosticsHandler)
-            .addInputPath(apiVersionsXml1)
-            .addInputPath(apiVersionsXml2)
-            .addInputPath(dummyJar)
+            .addXmlPath(apiVersionsXml1)
+            .addXmlPath(apiVersionsXml2)
+            .addJarPath(dummyJar)
             .setOutputPath(outputDb)
+            .setAmend(false)
             .build();
 
     try {
@@ -153,11 +155,12 @@ public class ApiDatabaseGeneratorTest extends TestBase {
     TestDiagnosticMessagesImpl diagnosticsHandler = new TestDiagnosticMessagesImpl();
     ApiDatabaseGeneratorCommand command =
         ApiDatabaseGeneratorCommand.builder(diagnosticsHandler)
-            .addInputPath(apiVersionsXml1)
-            .addInputPath(apiVersionsXml2)
-            .addInputPath(apiVersionsXml3)
-            .addInputPath(dummyJar)
+            .addXmlPath(apiVersionsXml1)
+            .addXmlPath(apiVersionsXml2)
+            .addXmlPath(apiVersionsXml3)
+            .addJarPath(dummyJar)
             .setOutputPath(outputDb)
+            .setAmend(false)
             .build();
 
     try {
@@ -203,11 +206,15 @@ public class ApiDatabaseGeneratorTest extends TestBase {
     String[] args = {
       "--output",
       outputDb.toString(),
+      "--dont-amend",
       "--map-diagnostics:DuplicateApiDatabaseEntryDiagnostic",
       "error",
       "info",
+      "--xml",
       apiVersionsXml1.toString(),
+      "--xml",
       apiVersionsXml2.toString(),
+      "--jar",
       dummyJar.toString()
     };
 
@@ -259,11 +266,15 @@ public class ApiDatabaseGeneratorTest extends TestBase {
     String[] args = {
       "--output",
       outputDb.toString(),
+      "--dont-amend",
       "--map-diagnostics:DuplicateApiDatabaseEntryDiagnostic",
       "error",
       "none",
+      "--xml",
       apiVersionsXml1.toString(),
+      "--xml",
       apiVersionsXml2.toString(),
+      "--jar",
       dummyJar.toString()
     };
 
@@ -286,7 +297,7 @@ public class ApiDatabaseGeneratorTest extends TestBase {
     Path jarFile = temp.newFile("android.jar").toPath();
 
     ApiDatabaseGeneratorCommand command =
-        ApiDatabaseGeneratorCommand.builder().addInputPath(xmlFile).addInputPath(jarFile).build();
+        ApiDatabaseGeneratorCommand.builder().addXmlPath(xmlFile).addJarPath(jarFile).build();
 
     assertEquals(1, command.getXmlPaths().size());
     assertEquals(xmlFile, command.getXmlPaths().get(0));
@@ -295,21 +306,68 @@ public class ApiDatabaseGeneratorTest extends TestBase {
   }
 
   @Test
-  public void testInvalidInputExtension() throws Exception {
-    Path txtFile = temp.newFile("invalid.txt").toPath();
+  public void testSdkInput() throws Exception {
+    Path sdkDir = temp.newFolder("sdk").toPath();
+
+    ApiDatabaseGeneratorCommand command =
+        ApiDatabaseGeneratorCommand.builder().addSdkPath(sdkDir).build();
+
+    assertEquals(1, command.getXmlPaths().size());
+    assertEquals(sdkDir.resolve("data").resolve("api-versions.xml"), command.getXmlPaths().get(0));
+    assertEquals(1, command.getJarPaths().size());
+    assertEquals(sdkDir.resolve("android.jar"), command.getJarPaths().get(0));
+  }
+
+  @Test
+  public void testMissingJarInput() throws Exception {
+    Path xmlFile = temp.newFile("api-versions.xml").toPath();
 
     TestDiagnosticMessagesImpl diagnosticsHandler = new TestDiagnosticMessagesImpl();
     try {
-      ApiDatabaseGeneratorCommand.builder(diagnosticsHandler).addInputPath(txtFile).build();
-      fail("Expected Command to fail building due to invalid input extension");
+      ApiDatabaseGeneratorCommand.builder(diagnosticsHandler).addXmlPath(xmlFile).build();
+      fail("Expected Command to fail building due to missing JAR input");
     } catch (ApiDatabaseGeneratorException e) {
       // Expected.
     }
 
     diagnosticsHandler.assertErrorsMatch(
-        diagnosticMessage(containsString("Unsupported input file extension")),
-        diagnosticMessage(containsString("At least one SDK JAR")),
-        diagnosticMessage(containsString("At least one API XML")));
+        diagnosticMessage(containsString("At least one SDK JAR input path must be specified")));
+  }
+
+  @Test
+  public void testMissingXmlInput() throws Exception {
+    Path jarFile = temp.newFile("android.jar").toPath();
+
+    TestDiagnosticMessagesImpl diagnosticsHandler = new TestDiagnosticMessagesImpl();
+    try {
+      ApiDatabaseGeneratorCommand.builder(diagnosticsHandler).addJarPath(jarFile).build();
+      fail("Expected Command to fail building due to missing XML input");
+    } catch (ApiDatabaseGeneratorException e) {
+      // Expected.
+    }
+
+    diagnosticsHandler.assertErrorsMatch(
+        diagnosticMessage(containsString("At least one API XML input path must be specified")));
+  }
+
+  @Test
+  public void testUnexpectedPositionalArgument() throws Exception {
+    Path jarFile = temp.newFile("android.jar").toPath();
+    Path xmlFile = temp.newFile("api-versions.xml").toPath();
+    Path txtFile = temp.newFile("invalid.txt").toPath();
+
+    TestDiagnosticMessagesImpl diagnosticsHandler = new TestDiagnosticMessagesImpl();
+    String[] args = {"--jar", jarFile.toString(), "--xml", xmlFile.toString(), txtFile.toString()};
+    try {
+      ApiDatabaseGeneratorCommand.parse(args, CommandLineOrigin.INSTANCE, diagnosticsHandler)
+          .build();
+      fail("Expected Command to fail building due to unexpected positional argument");
+    } catch (ApiDatabaseGeneratorException e) {
+      // Expected.
+    }
+
+    diagnosticsHandler.assertErrorsMatch(
+        diagnosticMessage(containsString("Unexpected argument: " + txtFile)));
   }
 
   private Path writeApiXml(String filename, String... contentLines) throws Exception {

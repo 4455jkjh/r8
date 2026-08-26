@@ -35,6 +35,8 @@ public class ParsedApiClassTrimming {
 
     SkipAnswer skipField(ClassReference clazz, FieldTypelessReference field, ApiRange range)
         throws E;
+
+    void done() throws E;
   }
 
   public static <E extends Throwable> Collection<ParsedApiClass> trim(
@@ -45,6 +47,7 @@ public class ParsedApiClassTrimming {
         result.add(trim(clazz, trimmer));
       }
     }
+    trimmer.done();
     return result;
   }
 
@@ -107,6 +110,11 @@ public class ParsedApiClassTrimming {
         ClassReference clazz, FieldTypelessReference field, ApiRange range) {
       return range.isRemoved() ? SkipAnswer.SKIP : SkipAnswer.KEEP;
     }
+
+    @Override
+    public void done() throws RuntimeException {
+      // Do nothing.
+    }
   }
 
   public static class JarTrimmer
@@ -115,6 +123,10 @@ public class ParsedApiClassTrimming {
 
     public JarTrimmer(ApiJarInfo jarInfo) {
       this.jarInfo = jarInfo;
+    }
+
+    public ApiJarInfo getJarInfo() {
+      return jarInfo;
     }
 
     @Override
@@ -160,6 +172,11 @@ public class ParsedApiClassTrimming {
         throws ApiDatabaseGeneratorException {
       return SkipAnswer.skipIf(!jarInfo.hasField(clazz.getBinaryName(), field.getFieldName()));
     }
+
+    @Override
+    public void done() throws ApiDatabaseGeneratorException {
+      // Do nothing.
+    }
   }
 
   public interface TrimmerListener {
@@ -176,6 +193,8 @@ public class ParsedApiClassTrimming {
 
     void skipField(
         ClassReference clazz, FieldTypelessReference field, ApiRange range, SkipAnswer answer);
+
+    void done();
   }
 
   public static class ListeningDecorator<E extends Throwable> implements Trimmer<E> {
@@ -225,6 +244,12 @@ public class ParsedApiClassTrimming {
       var result = trimmer.skipField(clazz, field, range);
       listener.skipField(clazz, field, range, result);
       return result;
+    }
+
+    @Override
+    public void done() throws E {
+      trimmer.done();
+      listener.done();
     }
   }
 }

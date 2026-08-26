@@ -36,12 +36,11 @@ public class CannotUnboxNumberUnboxingTest extends TestBase {
 
   @Test
   public void testNumberUnboxing() throws Exception {
-    testForR8(parameters.getBackend())
+    testForR8(parameters)
         .addInnerClasses(getClass())
         .addKeepMainRule(Main.class)
         .enableInliningAnnotations()
         .addOptionsModification(opt -> opt.getTestingOptions().getNumberUnboxerOptions().enable())
-        .setMinApi(parameters)
         .compile()
         .inspect(this::assertUnboxing)
         .run(parameters.getRuntime(), Main.class)

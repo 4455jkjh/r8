@@ -162,15 +162,6 @@ public class D8CommandParser extends BaseCompilerCommandParser {
     }
   }
 
-  public static void main(String[] args) throws CompilationFailedException {
-    D8Command command = parse(args, Origin.root()).build();
-    if (command.isPrintHelp()) {
-      System.out.println(getUsageMessage());
-    } else {
-      D8.run(command);
-    }
-  }
-
   static String getUsageMessage() {
     StringBuilder builder = new StringBuilder();
     StringUtils.appendLines(

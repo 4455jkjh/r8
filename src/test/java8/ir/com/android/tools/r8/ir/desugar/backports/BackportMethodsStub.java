@@ -43,6 +43,56 @@ public class BackportMethodsStub {
     }
   }
 
+  static class ByteStub {
+    public static int compareUnsigned(byte x, byte y) {
+      return 0;
+    }
+  }
+
+  static class ShortStub {
+    public static int compareUnsigned(short x, short y) {
+      return 0;
+    }
+  }
+
+  static class ArraysStub {
+    public static int mismatch(byte[] a, byte[] b) {
+      return 0;
+    }
+
+    public static int mismatch(
+        byte[] a, int aFromIndex, int aToIndex, byte[] b, int bFromIndex, int bToIndex) {
+      return 0;
+    }
+
+    public static int mismatch(short[] a, short[] b) {
+      return 0;
+    }
+
+    public static int mismatch(
+        short[] a, int aFromIndex, int aToIndex, short[] b, int bFromIndex, int bToIndex) {
+      return 0;
+    }
+
+    public static int mismatch(int[] a, int[] b) {
+      return 0;
+    }
+
+    public static int mismatch(
+        int[] a, int aFromIndex, int aToIndex, int[] b, int bFromIndex, int bToIndex) {
+      return 0;
+    }
+
+    public static int mismatch(long[] a, long[] b) {
+      return 0;
+    }
+
+    public static int mismatch(
+        long[] a, int aFromIndex, int aToIndex, long[] b, int bFromIndex, int bToIndex) {
+      return 0;
+    }
+  }
+
   static class LongStub {
     public static long parseUnsignedLong(CharSequence s, int beginIndex, int endIndex, int radix)
         throws NumberFormatException {

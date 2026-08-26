@@ -35,15 +35,6 @@ public class L8CommandParser extends BaseCompilerCommandParser {
   // Note: this must be a subset of OPTIONS_WITH_ONE_PARAMETER.
   private static final Set<String> OPTIONS_WITH_TWO_PARAMETERS = ImmutableSet.of(ART_PROFILE_FLAG);
 
-  public static void main(String[] args) throws CompilationFailedException {
-    L8Command command = parse(args, Origin.root()).build();
-    if (command.isPrintHelp()) {
-      System.out.println(getUsageMessage());
-    } else {
-      L8.run(command);
-    }
-  }
-
   static String getUsageMessage() {
     StringBuilder builder = new StringBuilder();
     StringUtils.appendLines(

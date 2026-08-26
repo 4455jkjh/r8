@@ -8,6 +8,7 @@ import com.android.tools.r8.ApiDatabaseGeneratorException;
 import com.android.tools.r8.DiagnosticsHandler;
 import com.android.tools.r8.androidapi.DuplicateApiDatabaseEntryDiagnostic;
 import com.android.tools.r8.references.ClassReference;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -27,7 +28,7 @@ public class ParsedApiClassMerging {
       throws ApiDatabaseGeneratorException {
     ParsedApiClassMerging merger = new ParsedApiClassMerging(diagnosticsHandler);
     merger.merge(parsedClasses);
-    return merger.merged.values();
+    return new ArrayList<>(merger.merged.values());
   }
 
   private void merge(Iterable<ParsedApiClass> classes) throws ApiDatabaseGeneratorException {

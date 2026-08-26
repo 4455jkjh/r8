@@ -12,11 +12,14 @@ import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.apimodel.ParsedApiClassTrimming.JarTrimmer;
+import com.android.tools.r8.apimodel.jar.ApiJarInfo;
+import com.android.tools.r8.apimodel.jar.ApiJarMerging;
 import com.android.tools.r8.apimodel.jar.ApiJarReader;
 import com.android.tools.r8.references.ClassReference;
 import com.android.tools.r8.references.MethodReference;
 import com.android.tools.r8.references.Reference;
 import com.android.tools.r8.utils.AndroidApiLevel;
+import com.android.tools.r8.utils.internal.ListUtils;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Collection;
@@ -144,8 +147,10 @@ public class ParsedApiClassJarTrimmerTest extends TestBase {
         Arrays.asList(apiClassA, apiClassB, apiInterfaceI, apiClassC, apiClassD);
 
     // Run JAR trimmer.
+    List<ApiJarInfo> readJars = ListUtils.mapThrowing(jars, ApiJarReader::read);
+    ApiJarInfo jarInfo = ApiJarMerging.mergeJarInfos(readJars);
     Collection<ParsedApiClass> trimmed =
-        ParsedApiClassTrimming.trim(apiClasses, new JarTrimmer(ApiJarReader.read(jars)));
+        ParsedApiClassTrimming.trim(apiClasses, new JarTrimmer(jarInfo));
 
     // Verify results.
     Map<ClassReference, ParsedApiClass> trimmedMap = new HashMap<>();

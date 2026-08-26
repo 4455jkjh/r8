@@ -35,10 +35,6 @@ public abstract class DexItem {
 
   protected abstract void collectMixedSectionItems(MixedSectionCollection collection);
 
-  protected void flushCachedValues() {
-    // Overwritten in subclasses.
-  }
-
   public String toSmaliString() {
     return toString();
   }
@@ -46,5 +42,4 @@ public abstract class DexItem {
   public String toSourceString() {
     return toString();
   }
-
 }

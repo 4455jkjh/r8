@@ -5,58 +5,76 @@
 package com.android.tools.r8.apimodel.jar;
 
 import com.android.tools.r8.utils.DescriptorUtils;
-import java.util.Collection;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.function.Function;
 
 public class ApiClassInfo {
-  private final String binaryName;
+  private final String internalName;
   private final String superClass;
-  private final Set<String> interfaces;
   private final boolean isInterface;
+  private final Set<String> interfaces;
   private final Set<ApiMethodInfo> methods;
   private final Set<String> fields;
 
-  public ApiClassInfo(
-      String binaryName,
+  public ApiClassInfo(String internalName, String superClass, boolean isInterface) {
+    this(internalName, superClass, isInterface, new HashSet<>(), new HashSet<>(), new HashSet<>());
+  }
+
+  private ApiClassInfo(
+      String internalName,
       String superClass,
-      Collection<String> interfaces,
       boolean isInterface,
-      Collection<ApiMethodInfo> methods,
-      Collection<String> fields) {
-    assert binaryName != null;
-    assert DescriptorUtils.isValidInternalName(binaryName);
+      Set<String> interfaces,
+      Set<ApiMethodInfo> methods,
+      Set<String> fields) {
+    assert internalName != null;
+    assert DescriptorUtils.isValidInternalName(internalName);
     assert superClass == null || DescriptorUtils.isValidInternalName(superClass);
     assert interfaces != null;
     assert interfaces.stream().allMatch(DescriptorUtils::isValidInternalName);
     assert methods != null;
     assert fields != null;
-    this.binaryName = binaryName;
+    this.internalName = internalName;
     this.superClass = superClass;
-    this.interfaces = new HashSet<>(interfaces);
+    this.interfaces = interfaces;
     this.isInterface = isInterface;
-    this.methods = new HashSet<>(methods);
-    this.fields = new HashSet<>(fields);
+    this.methods = methods;
+    this.fields = fields;
   }
 
   public String getBinaryName() {
-    return binaryName;
+    return internalName;
   }
 
   public String getSuperClass() {
     return superClass;
   }
 
-  public boolean implementsInterface(String binaryInterfaceName) {
-    return interfaces.contains(binaryInterfaceName);
+  public boolean implementsInterface(String internalInterfaceName) {
+    return interfaces.contains(internalInterfaceName);
   }
 
   public boolean isInterface() {
     return isInterface;
   }
 
-  public Iterable<String> getInterfaces() {
-    return interfaces;
+  /** Returns a read-only set. */
+  public Set<String> getInterfaces() {
+    return Collections.unmodifiableSet(interfaces);
+  }
+
+  public void addInterface(String internalInterfaceName) {
+    assert DescriptorUtils.isValidInternalName(internalInterfaceName)
+        : internalInterfaceName + " is not a valid name";
+    assert !interfaces.contains(internalInterfaceName)
+        : internalInterfaceName + " is already present";
+    interfaces.add(internalInterfaceName);
+  }
+
+  public <T> void addInterfaces(Iterable<T> interfaces, Function<T, String> getInternalName) {
+    interfaces.forEach(i -> addInterface(getInternalName.apply(i)));
   }
 
   public boolean hasMethod(String name, String descriptor) {
@@ -68,7 +86,7 @@ public class ApiClassInfo {
     ApiMethodInfo instanceMethod = new ApiMethodInfo(name, descriptor, false);
     if (methods.contains(staticMethod)) {
       assert !methods.contains(instanceMethod)
-          : this.binaryName
+          : this.internalName
               + "."
               + name
               + descriptor
@@ -82,25 +100,45 @@ public class ApiClassInfo {
   }
 
   public void addMethod(String name, String descriptor, boolean isStatic) {
-    assert !hasMethod(name, descriptor)
-        : "method already exists " + this.binaryName + "." + name + descriptor;
-    methods.add(new ApiMethodInfo(name, descriptor, isStatic));
+    addMethod(new ApiMethodInfo(name, descriptor, isStatic));
   }
 
-  public Iterable<ApiMethodInfo> getMethods() {
-    return methods;
+  public void addMethod(ApiMethodInfo methodInfo) {
+    assert !hasMethod(methodInfo.name, methodInfo.descriptor)
+        : "method already exists "
+            + this.internalName
+            + "."
+            + methodInfo.name
+            + methodInfo.descriptor;
+    methods.add(methodInfo);
+  }
+
+  /** Returns a read-only set. */
+  public Set<ApiMethodInfo> getMethods() {
+    return Collections.unmodifiableSet(methods);
   }
 
   public boolean hasField(String fieldName) {
     return fields.contains(fieldName);
   }
 
-  public Iterable<String> getFields() {
-    return fields;
+  /** Returns a read-only set. */
+  public Set<String> getFields() {
+    return Collections.unmodifiableSet(fields);
   }
 
   public void addField(String name) {
-    assert !hasField(name) : "field already exists: " + this.binaryName + "." + name;
+    assert !hasField(name) : "field already exists: " + this.internalName + "." + name;
     fields.add(name);
+  }
+
+  public ApiClassInfo copy() {
+    return new ApiClassInfo(
+        internalName,
+        superClass,
+        isInterface,
+        new HashSet<>(interfaces),
+        new HashSet<>(methods),
+        new HashSet<>(fields));
   }
 }

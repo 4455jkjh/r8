@@ -26,22 +26,42 @@ public class ApiDatabaseGeneratorCommandParser {
   private static CliParser<ParserState> createParser() {
     String usageHeader =
         StringUtils.joinLines(
-            "Usage: apidatabasegenerator [options] <input-files>",
-            "where <input-files> are Android API XML files (e.g., api-versions.xml) to merge,",
-            "OR Android SDK Jar files (e.g., android.jar).",
-            "The XML lack sufficient information so the Jar files are used to add information to"
-                + " entries.",
+            "Usage: apidatabasegenerator [options]",
+            "Combines Android API information (--xml) with Android SDK information (--jar)",
+            "into an API database file required for compilation.",
+            "Multiple inputs of both are supported and any entries not present in both JAR and XML",
+            "form is trimmed away.",
             "The options are:");
     CliParser<ParserState> parser = new CliParser<>(usageHeader);
     return parser
         .option0("--help", "Print help.", state -> state.builder.setPrintHelp(true), "-h")
         .option0("--version", "Print version.", state -> state.builder.setPrintVersion(true))
         .option1(
+            "--jar",
+            "<jar-file>",
+            "Android SDK JAR file (e.g., android.jar).",
+            (state, arg) -> state.builder.addJarPath(Paths.get(arg)))
+        .option1(
+            "--xml",
+            "<xml-file>",
+            "Android API XML file (e.g., api-versions.xml).",
+            (state, arg) -> state.builder.addXmlPath(Paths.get(arg)))
+        .option1(
+            "--sdk",
+            "<sdk-dir>",
+            "Android SDK platform directory (e.g., $ANDROID_HOME/android-34).",
+            (state, arg) -> state.builder.addSdkPath(Paths.get(arg)))
+        .option1(
             "--output",
             "<database-file>",
             "Output result in <database-file> (must be a file, not a directory). Defaults to"
                 + " 'api_database.ser'.",
             (state, arg) -> state.builder.setOutputPath(Paths.get(arg)))
+        .option0(
+            "--dont-amend",
+            "By default, the API database is amended with known missing information."
+                + " This option disables that and processes inputs directly as they are.",
+            state -> state.builder.setAmend(false))
         .prefix2(
             "--map-diagnostics",
             "[:<type>]",
@@ -59,8 +79,7 @@ public class ApiDatabaseGeneratorCommandParser {
                     toLevel,
                     m -> state.builder.addDiagnosticsLevelMapping(m.from, m.diagnosticType, m.to),
                     state.builder::error,
-                    state.origin))
-        .positional((state, arg) -> state.builder.addInputPath(Paths.get(arg)));
+                    state.origin));
   }
 
   public static ApiDatabaseGeneratorCommand.Builder parse(String[] args, Origin origin) {

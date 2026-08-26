@@ -190,12 +190,39 @@ luci.cq_group(
     name = "main-cq",
     watch = cq.refset(
         repo = "https://r8.googlesource.com/r8",
-        refs = ["refs/heads/.+"]
+        refs = ["refs/heads/.+"],
     ),
     retry_config = cq.RETRY_TRANSIENT_FAILURES,
     acls = [
         acl.entry(acl.CQ_COMMITTER, groups = ["project-r8-committers"]),
         acl.entry(acl.CQ_DRY_RUNNER, groups = ["googlers"]),
+    ],
+    post_actions = [
+        cq.post_action_gerrit_label_votes(
+            name = "presubmit-verification-success",
+            conditions = [
+                cq.post_action_triggering_condition(
+                    mode = cq.MODE_DRY_RUN,
+                    statuses = [cq.STATUS_SUCCEEDED],
+                ),
+            ],
+            labels = {
+                "Presubmit-Verified": 1,
+            },
+        ),
+        cq.post_action_gerrit_label_votes(
+            name = "presubmit-verification-failure",
+            conditions = [
+                cq.post_action_triggering_condition(
+                    mode = cq.MODE_DRY_RUN,
+                    statuses = [cq.STATUS_FAILED, cq.STATUS_CANCELLED],
+                ),
+            ],
+            labels = {
+                # set it with -1 to indicate that it failed (or cancelled).
+                "Presubmit-Verified": -1,
+            },
+        ),
     ],
 )
 
@@ -252,7 +279,7 @@ def get_dimensions(windows = False, internal = False, archive = False, tester = 
     elif archive:
         dimensions["archive"] = "true"
     elif tester:
-         dimensions["tester"] = "true"
+        dimensions["tester"] = "true"
     else:
         dimensions["normal"] = "true"
     return dimensions

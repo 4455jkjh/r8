@@ -5,7 +5,6 @@ package com.android.tools.r8.dex;
 
 import static com.android.tools.r8.TestBase.getTestParameters;
 
-import com.android.tools.r8.DexIndexedConsumer;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.graph.AppInfo;
@@ -44,13 +43,12 @@ public class DebugByteCodeWriterTest {
     parameters.assertNoneRuntime();
   }
 
-  private static ObjectToOffsetMapping emptyObjectTObjectMapping() {
-    InternalOptions options = new InternalOptions(new DexItemFactory(), new Reporter());
-    options.programConsumer = DexIndexedConsumer.emptyConsumer();
+  private ObjectToOffsetMapping emptyObjectTObjectMapping() {
     AppView<AppInfo> appView =
         AppView.createForD8(
             AppInfo.createInitialAppInfo(
-                DexApplication.builder(options).build(Timing.empty()),
+                DexApplication.builder(new InternalOptions(new DexItemFactory(), new Reporter()))
+                    .build(Timing.empty()),
                 GlobalSyntheticsStrategy.forNonSynthesizing()));
     return new ObjectToOffsetMapping(
         appView,

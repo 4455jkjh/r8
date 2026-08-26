@@ -338,6 +338,8 @@ public abstract class GraphLens {
     MethodLookupResult lookupMethod(MethodLookupResult previous);
   }
 
+  @Deprecated
+  @SuppressWarnings("InlineMeSuggester")
   public final RewrittenPrototypeDescription lookupPrototypeChangesForMethodDefinition(
       DexMethod method) {
     return lookupPrototypeChangesForMethodDefinition(method, null);
@@ -359,6 +361,8 @@ public abstract class GraphLens {
     return lookupFieldResult(field, codeLens).getReference();
   }
 
+  @Deprecated
+  @SuppressWarnings("InlineMeSuggester")
   /** Lookup a rebound or non-rebound field reference using the current graph lens. */
   public final FieldLookupResult lookupFieldResult(DexField field) {
     // Lookup the field using the graph lens and return the lookup result.

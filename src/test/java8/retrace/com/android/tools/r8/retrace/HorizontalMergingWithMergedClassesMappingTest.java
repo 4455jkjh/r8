@@ -110,11 +110,11 @@ public class HorizontalMergingWithMergedClassesMappingTest extends TestBase {
                 StringUtils.joinLines(
                     "com.android.tools.r8.retrace.classes.SynthesizeLineNumber$A -> a:",
                     "# {\"id\":\"com.android.tools.r8.mergedClasses\", \"kind\": \"horizontal\","
-                        + " \"class_id_field\": \"$r8$classId\", \"merged_classes\": [{ \"name\":"
+                        + " \"classIdField\": \"$r8$classId\", \"mergedClasses\": [{ \"name\":"
                         + " \"com.android.tools.r8.retrace.classes.SynthesizeLineNumber$A\","
-                        + " \"class_id\": \"0\" }, { \"name\":"
+                        + " \"classId\": \"0\" }, { \"name\":"
                         + " \"com.android.tools.r8.retrace.classes.SynthesizeLineNumber$B\","
-                        + " \"class_id\": \"1\" }] }"));
+                        + " \"classId\": \"1\" }] }"));
     compilationResult
         .run(parameters.getRuntime(), SynthesizeLineNumber.Main.class, "normal")
         .inspectOriginalStackTrace(

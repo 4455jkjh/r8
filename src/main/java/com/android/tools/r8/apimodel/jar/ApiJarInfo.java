@@ -7,6 +7,7 @@ package com.android.tools.r8.apimodel.jar;
 import com.android.tools.r8.ApiDatabaseGeneratorException;
 import com.android.tools.r8.references.ClassReference;
 import com.android.tools.r8.references.MethodReference;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
@@ -19,8 +20,18 @@ public class ApiJarInfo {
     this.classes = classes;
   }
 
+  public static ApiJarInfo empty() {
+    return new ApiJarInfo(new HashMap<>());
+  }
+
   public void addClass(ApiClassInfo info) {
     assert !classes.containsKey(info.getBinaryName()) : info.getBinaryName() + " already exists";
+    classes.put(info.getBinaryName(), info);
+  }
+
+  public void overwriteClass(ApiClassInfo info) {
+    assert classes.containsKey(info.getBinaryName())
+        : info.getBinaryName() + " does not exist, cannot overwrite it";
     classes.put(info.getBinaryName(), info);
   }
 
@@ -42,6 +53,10 @@ public class ApiJarInfo {
 
   public ApiClassInfo getClassInfo(ClassReference classReference) {
     return getClassInfo(classReference.getBinaryName());
+  }
+
+  public Iterable<ApiClassInfo> getClasses() {
+    return classes.values();
   }
 
   public boolean hasMethod(MethodReference methodReference) throws ApiDatabaseGeneratorException {

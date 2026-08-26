@@ -8,12 +8,12 @@ import java.util.Objects;
 
 public class ApiMethodInfo {
   public final String name;
-  public final String desc;
+  public final String descriptor;
   public final boolean isStatic;
 
-  public ApiMethodInfo(String name, String desc, boolean isStatic) {
+  public ApiMethodInfo(String name, String descriptor, boolean isStatic) {
     this.name = name;
-    this.desc = desc;
+    this.descriptor = descriptor;
     this.isStatic = isStatic;
   }
 
@@ -27,12 +27,12 @@ public class ApiMethodInfo {
     }
     ApiMethodInfo methodSig = (ApiMethodInfo) o;
     return name.equals(methodSig.name)
-        && desc.equals(methodSig.desc)
+        && descriptor.equals(methodSig.descriptor)
         && isStatic == methodSig.isStatic;
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(name, desc, isStatic);
+    return Objects.hash(name, descriptor, isStatic);
   }
 }

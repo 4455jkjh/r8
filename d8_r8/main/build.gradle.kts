@@ -174,7 +174,10 @@ java {
     val srcDir = getRoot().resolveAll("src", "main", "java")
 
     main {
-      resources.srcDirs(getRoot().resolveAll("third_party", "api_database", "api_database"))
+      resources.srcDirs(
+        getRoot().resolveAll("third_party", "api_database", "api_database"),
+        getRoot().resolveAll("src", "main", "resources"),
+      )
       java {
         srcDir(srcDir)
         if (turboState != null && !turboState.paths.isEmpty()) {
