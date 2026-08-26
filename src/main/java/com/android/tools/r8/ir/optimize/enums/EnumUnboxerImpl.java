@@ -79,9 +79,9 @@ import com.android.tools.r8.ir.code.MemberType;
 import com.android.tools.r8.ir.code.NewArrayFilled;
 import com.android.tools.r8.ir.code.Phi;
 import com.android.tools.r8.ir.code.Value;
-import com.android.tools.r8.ir.conversion.IRConverter;
 import com.android.tools.r8.ir.conversion.MethodProcessor;
 import com.android.tools.r8.ir.conversion.PostMethodProcessor;
+import com.android.tools.r8.ir.conversion.PrimaryR8IRConverter;
 import com.android.tools.r8.ir.desugar.LambdaDescriptor;
 import com.android.tools.r8.ir.optimize.enums.EnumDataMap.EnumData;
 import com.android.tools.r8.ir.optimize.enums.EnumInstanceFieldData.EnumInstanceFieldKnownData;
@@ -107,6 +107,7 @@ import com.android.tools.r8.ir.optimize.info.MutableFieldOptimizationInfo;
 import com.android.tools.r8.ir.optimize.info.MutableMethodOptimizationInfo;
 import com.android.tools.r8.ir.optimize.info.OptimizationFeedback.OptimizationInfoFixer;
 import com.android.tools.r8.ir.optimize.info.OptimizationFeedbackDelayed;
+import com.android.tools.r8.ir.optimize.outliner.ReprocessingOptimization;
 import com.android.tools.r8.shaking.AnnotationFixer;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
 import com.android.tools.r8.shaking.KeepInfoCollection;
@@ -148,7 +149,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
-public class EnumUnboxerImpl extends EnumUnboxer {
+public class EnumUnboxerImpl implements ReprocessingOptimization {
 
   private final AppView<AppInfoWithLiveness> appView;
   private final DexItemFactory factory;
@@ -166,6 +167,12 @@ public class EnumUnboxerImpl extends EnumUnboxer {
   private final DexClassAndField ordinalField;
   private final boolean debugLogEnabled;
   private final Map<DexType, List<Reason>> debugLogs;
+
+  private GraphLens appliedGraphLens;
+
+  public static EnumUnboxerImpl create(AppView<AppInfoWithLiveness> appView) {
+    return appView.options().enableEnumUnboxing ? new EnumUnboxerImpl(appView) : null;
+  }
 
   EnumUnboxerImpl(AppView<AppInfoWithLiveness> appView) {
     this.appView = appView;
@@ -195,7 +202,7 @@ public class EnumUnboxerImpl extends EnumUnboxer {
   }
 
   @Override
-  public void updateEnumUnboxingCandidatesInfo() {
+  public void waveDone() {
     for (DexProgramClass candidate : candidatesToRemoveInWave) {
       enumUnboxingCandidatesInfo.removeCandidate(candidate);
     }
@@ -244,7 +251,11 @@ public class EnumUnboxerImpl extends EnumUnboxer {
   }
 
   @Override
-  public void analyzeEnums(IRCode code, MethodProcessor methodProcessor) {
+  public void irAnalysis(
+      ProgramMethod method, IRCode code, MethodProcessor methodProcessor, Timing timing) {
+    if (!methodProcessor.isPrimaryMethodProcessor()) {
+      return;
+    }
     Set<DexType> eligibleEnums = Sets.newIdentityHashSet();
     for (BasicBlock block : code.blocks) {
       for (Instruction instruction : block.getInstructions()) {
@@ -642,15 +653,29 @@ public class EnumUnboxerImpl extends EnumUnboxer {
   }
 
   @Override
-  public void prepareForPrimaryOptimizationPass(GraphLens graphLensForPrimaryOptimizationPass) {
+  public GraphLens getAppliedGraphLens() {
+    return appliedGraphLens;
+  }
+
+  @Override
+  public void updateAppliedLens(GraphLens newAppliedLens) {
+    appliedGraphLens = newAppliedLens;
+  }
+
+  @Override
+  public void prepareForPrimaryOptimizationPass(
+      GraphLens graphLensForPrimaryOptimizationPass, ExecutorService executorService, Timing timing)
+      throws ExecutionException {
     assert appView.graphLens() == graphLensForPrimaryOptimizationPass;
     initializeCheckNotNullMethods(graphLensForPrimaryOptimizationPass);
     initializeEnumUnboxingCandidates(graphLensForPrimaryOptimizationPass);
+    appliedGraphLens = graphLensForPrimaryOptimizationPass;
   }
 
   @Override
   public void rewriteWithLens() {
-    enumUnboxingCandidatesInfo.rewriteWithLens(appView.graphLens(), appView.codeLens());
+    enumUnboxingCandidatesInfo.rewriteWithLens(appView.graphLens(), appliedGraphLens);
+    appliedGraphLens = appView.graphLens();
   }
 
   private void initializeCheckNotNullMethods(GraphLens graphLensForPrimaryOptimizationPass) {
@@ -668,15 +693,16 @@ public class EnumUnboxerImpl extends EnumUnboxer {
   }
 
   @Override
-  public void unboxEnums(
+  public void apply(
       AppView<AppInfoWithLiveness> appView,
-      IRConverter converter,
+      PrimaryR8IRConverter converter,
       PostMethodProcessor.Builder postMethodProcessorBuilder,
       ExecutorService executorService,
       OptimizationFeedbackDelayed feedback,
       Timing timing)
       throws ExecutionException {
     timing.begin("Unbox enums");
+    assert appView.graphLens() == appliedGraphLens;
     assert feedback.noUpdatesLeft();
 
     assert candidatesToRemoveInWave.isEmpty();
@@ -690,7 +716,6 @@ public class EnumUnboxerImpl extends EnumUnboxer {
 
     if (enumUnboxingCandidatesInfo.isEmpty()) {
       assert enumDataMap.isEmpty();
-      converter.unsetEnumUnboxer();
       timing.end();
       return;
     }
@@ -760,7 +785,7 @@ public class EnumUnboxerImpl extends EnumUnboxer {
     appView.testing().checkDeterminism(postMethodProcessorBuilder::dump);
 
     appView.notifyOptimizationFinished();
-    converter.unsetEnumUnboxer();
+
     timing.end();
   }
 
@@ -837,7 +862,7 @@ public class EnumUnboxerImpl extends EnumUnboxer {
 
   public EnumDataMap finishAnalysis() {
     analyzeInitializers();
-    updateEnumUnboxingCandidatesInfo();
+    waveDone();
     EnumDataMap enumDataMap = analyzeEnumInstances();
     if (debugLogEnabled) {
       // Remove all enums that have been reported as being unboxable.
@@ -1117,6 +1142,10 @@ public class EnumUnboxerImpl extends EnumUnboxer {
   }
 
   @Override
+  public void classInitializerAnalysis(ProgramMethod method, StaticFieldValues staticFieldValues) {
+    recordEnumState(method.getHolder(), staticFieldValues);
+  }
+
   public void recordEnumState(DexProgramClass clazz, StaticFieldValues staticFieldValues) {
     if (staticFieldValues == null || !staticFieldValues.isEnumStaticFieldValues()) {
       return;
@@ -1452,7 +1481,6 @@ public class EnumUnboxerImpl extends EnumUnboxer {
         Value receiver = invoke.asInvokeMethodWithReceiver().getReceiver();
         if (receiver == enumValue && mostAccurateTarget.getHolder().isInterface()) {
           return Reason.DEFAULT_METHOD_INVOKE;
-
         }
       }
       return Reason.ELIGIBLE;

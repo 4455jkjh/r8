@@ -153,7 +153,9 @@ public class MethodOptimizationInfoCollector {
     if (options.enableClassInlining) {
       computeClassInlinerMethodConstraint(method, code, feedback, timing);
     }
-    computeEnumUnboxerMethodClassification(method, code, feedback, methodProcessor, timing);
+    if (options.enableEnumUnboxing) {
+      computeEnumUnboxerMethodClassification(method, code, feedback, methodProcessor, timing);
+    }
     computeSimpleInliningConstraint(method, code, feedback, timing);
     computeDynamicReturnType(dynamicTypeOptimization, feedback, method, code, timing);
     if (options.enableInitializedClassesAnalysis) {

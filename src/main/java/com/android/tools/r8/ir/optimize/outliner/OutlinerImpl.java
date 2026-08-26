@@ -62,7 +62,9 @@ import com.android.tools.r8.ir.conversion.IRBuilder;
 import com.android.tools.r8.ir.conversion.IRConverter;
 import com.android.tools.r8.ir.conversion.MethodConversionOptions;
 import com.android.tools.r8.ir.conversion.MethodConversionOptions.MutableMethodConversionOptions;
+import com.android.tools.r8.ir.conversion.MethodProcessor;
 import com.android.tools.r8.ir.conversion.MethodProcessorEventConsumer;
+import com.android.tools.r8.ir.conversion.PrimaryR8IRConverter;
 import com.android.tools.r8.ir.conversion.SourceCode;
 import com.android.tools.r8.ir.conversion.passes.MoveResultRewriter;
 import com.android.tools.r8.ir.optimize.AffectedValues;
@@ -121,10 +123,11 @@ import java.util.function.Consumer;
  *       to the output format (DEX or CF).
  * </ul>
  */
-public class OutlinerImpl extends Outliner {
+public class OutlinerImpl implements ReprocessingOptimization {
 
   /**
-   * Result of first step (see {@link OutlinerImpl#prepareForPrimaryOptimizationPass(GraphLens)}
+   * Result of first step (see {@link
+   * ReprocessingOptimization#prepareForPrimaryOptimizationPass(GraphLens, ExecutorService, Timing)}
    * ()}.
    */
   private OutlineCollection outlineCollection;
@@ -1347,6 +1350,10 @@ public class OutlinerImpl extends Outliner {
     }
   }
 
+  public static OutlinerImpl create(AppView<AppInfoWithLiveness> appView) {
+    return appView.options().outline.enabled ? new OutlinerImpl(appView) : null;
+  }
+
   public OutlinerImpl(AppView<AppInfoWithLiveness> appView) {
     this.appView = appView;
     this.dexItemFactory = appView.dexItemFactory();
@@ -1364,14 +1371,41 @@ public class OutlinerImpl extends Outliner {
   }
 
   @Override
-  public void prepareForPrimaryOptimizationPass(GraphLens graphLensForPrimaryOptimizationPass) {
+  public void waveDone() {
+    // Intentionally empty.
+  }
+
+  @Override
+  public GraphLens getAppliedGraphLens() {
+    return outlineCollection.getAppliedGraphLens();
+  }
+
+  @Override
+  public void prepareForPrimaryOptimizationPass(
+      GraphLens graphLensForPrimaryOptimizationPass, ExecutorService executorService, Timing timing)
+      throws ExecutionException {
     assert appView.graphLens() == graphLensForPrimaryOptimizationPass;
     assert outlineCollection == null;
     outlineCollection = new OutlineCollection(graphLensForPrimaryOptimizationPass);
   }
 
   @Override
-  public void performOutlining(
+  public boolean shouldApplyAfterSecondRoundOfIrProcessing() {
+    return true;
+  }
+
+  @Override
+  public void applyAfterSecondRoundOfIrProcessing(
+      PrimaryR8IRConverter converter,
+      ExecutorService executorService,
+      OptimizationFeedbackDelayed feedback,
+      Timing timing)
+      throws ExecutionException {
+    assert appView.graphLens() == outlineCollection.getAppliedGraphLens();
+    performOutlining(converter, feedback, executorService, timing);
+  }
+
+  private void performOutlining(
       IRConverter converter,
       OptimizationFeedbackDelayed feedback,
       ExecutorService executorService,
@@ -1468,15 +1502,20 @@ public class OutlinerImpl extends Outliner {
     // Rewrite the outline collection with the graph lens, such that the reprocessing of methods
     // will correctly delete/rewrite entries in the outline collection.
     outlineCollection.rewriteWithLens(appView.graphLens());
+    assert outlineCollection.getAppliedGraphLens() == appView.graphLens();
   }
 
   @Override
-  public Outliner updateAppliedLens(List<GraphLens> prunedGraphLenses) {
-    outlineCollection.updateAppliedLens(prunedGraphLenses);
-    return this;
+  public void updateAppliedLens(GraphLens newAppliedGraphLens) {
+    outlineCollection.updateAppliedLens(newAppliedGraphLens);
   }
 
   @Override
+  public void irAnalysis(
+      ProgramMethod method, IRCode code, MethodProcessor methodProcessor, Timing timing) {
+    // TODO(b/552291036): Should call collectOutlineSites here.
+  }
+
   public void collectOutlineSites(IRCode code, Timing timing) {
     if (outlineCollection == null) {
       return;

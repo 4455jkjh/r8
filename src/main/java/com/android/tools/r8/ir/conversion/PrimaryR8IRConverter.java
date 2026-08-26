@@ -14,7 +14,6 @@ import com.android.tools.r8.ir.analysis.fieldaccess.TrivialFieldAccessReprocesso
 import com.android.tools.r8.ir.optimize.info.MethodResolutionOptimizationInfoAnalysis;
 import com.android.tools.r8.ir.optimize.info.OptimizationFeedbackDelayed;
 import com.android.tools.r8.naming.IdentifierMinifier;
-import com.android.tools.r8.optimize.argumentpropagation.ArgumentPropagator;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
 import com.android.tools.r8.utils.collections.ProgramMethodSet;
 import com.android.tools.r8.utils.internal.Action;
@@ -71,11 +70,8 @@ public class PrimaryR8IRConverter extends IRConverter {
     GraphLens graphLensForPrimaryOptimizationPass = appView.graphLens();
 
     // Setup optimizations for the primary optimization pass.
-    appView.withArgumentPropagator(
-        argumentPropagator -> argumentPropagator.initializeCodeScanner(executorService, timing));
-    enumUnboxer.prepareForPrimaryOptimizationPass(graphLensForPrimaryOptimizationPass);
-    numberUnboxer.prepareForPrimaryOptimizationPass(timing, executorService);
-    outliner.prepareForPrimaryOptimizationPass(graphLensForPrimaryOptimizationPass);
+    reprocessingOptimizationCollection.prepareForPrimaryOptimizationPass(
+        graphLensForPrimaryOptimizationPass, executorService, timing);
 
     if (fieldAccessAnalysis != null && fieldAccessAnalysis.fieldAssignmentTracker() != null) {
       fieldAccessAnalysis.fieldAssignmentTracker().initialize(executorService);
@@ -143,13 +139,10 @@ public class PrimaryR8IRConverter extends IRConverter {
 
     // Analyze the data collected by the argument propagator, use the analysis result to update
     // the parameter optimization infos, and rewrite the application.
-    // TODO(b/199237357): Automatically rewrite state when lens changes.
-    numberUnboxer.rewriteWithLens();
-    outliner.updateAppliedLens(prunedGraphLenses).rewriteWithLens();
-    appView.withArgumentPropagator(
-        argumentPropagator ->
-            argumentPropagator.tearDownCodeScanner(
-                this, postMethodProcessorBuilder, executorService, timing));
+    reprocessingOptimizationCollection.updateAppliedLens(prunedGraphLenses);
+
+    reprocessingOptimizationCollection.applyArgumentPropagator(
+        this, postMethodProcessorBuilder, executorService, feedback, timing);
 
     if (libraryMethodOverrideAnalysis != null) {
       libraryMethodOverrideAnalysis.finish();
@@ -160,20 +153,11 @@ public class PrimaryR8IRConverter extends IRConverter {
           .run(executorService, feedback, timing);
     }
 
-    enumUnboxer.rewriteWithLens();
-    numberUnboxer.rewriteWithLens();
-    outliner.rewriteWithLens();
-    enumUnboxer.unboxEnums(
-        appView, this, postMethodProcessorBuilder, executorService, feedback, timing);
+    reprocessingOptimizationCollection.apply(
+        this, postMethodProcessorBuilder, executorService, feedback, timing);
     appView.unboxedEnums().checkEnumsUnboxed(appView);
 
-    numberUnboxer.rewriteWithLens();
-    outliner.rewriteWithLens();
-    numberUnboxer.unboxNumbers(postMethodProcessorBuilder, timing, executorService);
-
     GraphLens graphLensForSecondaryOptimizationPass = appView.graphLens();
-
-    outliner.rewriteWithLens();
 
     MethodResolutionOptimizationInfoAnalysis.run(
         appView, executorService, postMethodProcessorBuilder);
@@ -228,7 +212,8 @@ public class PrimaryR8IRConverter extends IRConverter {
     feedback.updateVisibleOptimizationInfo();
 
     // TODO(b/127694949): Adapt to PostOptimization.
-    outliner.performOutlining(this, feedback, executorService, timing);
+    reprocessingOptimizationCollection.applyAfterSecondRoundOfIrProcessing(
+        this, executorService, feedback, timing);
     clearDexMethodCompilationState();
 
     if (identifierNameStringMarker != null) {
@@ -268,11 +253,10 @@ public class PrimaryR8IRConverter extends IRConverter {
       if (fieldAccessAnalysis != null && fieldAccessAnalysis.fieldAssignmentTracker() != null) {
         fieldAccessAnalysis.fieldAssignmentTracker().waveDone(wave, delayedOptimizationFeedback);
       }
-      appView.withArgumentPropagator(ArgumentPropagator::waveDone);
       if (appView.options().protoShrinking().enableRemoveProtoEnumSwitchMap()) {
         appView.protoShrinker().protoEnumSwitchMapRemover.updateVisibleStaticFieldValues();
       }
-      enumUnboxer.updateEnumUnboxingCandidatesInfo();
+      reprocessingOptimizationCollection.waveDone();
       assert delayedOptimizationFeedback.noUpdatesLeft();
       if (onWaveDoneActions != null) {
         onWaveDoneActions.forEach(Action::execute);

@@ -16,15 +16,20 @@ import com.android.tools.r8.graph.DexProgramClass;
 import com.android.tools.r8.graph.DexType;
 import com.android.tools.r8.graph.ImmediateProgramSubtypingInfo;
 import com.android.tools.r8.graph.ProgramMethod;
+import com.android.tools.r8.graph.lens.GraphLens;
 import com.android.tools.r8.ir.code.IRCode;
 import com.android.tools.r8.ir.code.Instruction;
 import com.android.tools.r8.ir.code.InvokeMethod;
 import com.android.tools.r8.ir.code.Return;
 import com.android.tools.r8.ir.code.Value;
+import com.android.tools.r8.ir.conversion.MethodProcessor;
 import com.android.tools.r8.ir.conversion.PostMethodProcessor;
+import com.android.tools.r8.ir.conversion.PrimaryR8IRConverter;
+import com.android.tools.r8.ir.optimize.info.OptimizationFeedbackDelayed;
 import com.android.tools.r8.ir.optimize.numberunboxer.NumberUnboxerBoxingStatusResolution.MethodBoxingStatusResult;
 import com.android.tools.r8.ir.optimize.numberunboxer.TransitiveDependency.MethodArg;
 import com.android.tools.r8.ir.optimize.numberunboxer.TransitiveDependency.MethodRet;
+import com.android.tools.r8.ir.optimize.outliner.ReprocessingOptimization;
 import com.android.tools.r8.optimize.argumentpropagation.utils.ProgramClassesBidirectedGraph;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
 import com.android.tools.r8.utils.ThreadUtils;
@@ -45,7 +50,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 
-public class NumberUnboxerImpl extends NumberUnboxer {
+public class NumberUnboxerImpl implements ReprocessingOptimization {
 
   private final AppView<AppInfoWithLiveness> appView;
   private final DexItemFactory factory;
@@ -58,6 +63,15 @@ public class NumberUnboxerImpl extends NumberUnboxer {
       new ConcurrentHashMap<>();
   private Map<DexMethod, DexMethod> virtualMethodsRepresentative;
 
+  private GraphLens appliedGraphLens;
+
+  public static NumberUnboxerImpl create(AppView<AppInfoWithLiveness> appView) {
+    if (appView.testing().getNumberUnboxerOptions().isEnabled()) {
+      return new NumberUnboxerImpl(appView);
+    }
+    return null;
+  }
+
   public NumberUnboxerImpl(AppView<AppInfoWithLiveness> appView) {
     this.appView = appView;
     this.factory = appView.dexItemFactory();
@@ -65,12 +79,23 @@ public class NumberUnboxerImpl extends NumberUnboxer {
     this.boxedTypes = factory.primitiveToBoxed.values();
   }
 
+  @Override
+  public GraphLens getAppliedGraphLens() {
+    return appliedGraphLens;
+  }
+
+  @Override
+  public void updateAppliedLens(GraphLens newAppliedLens) {
+    appliedGraphLens = newAppliedLens;
+  }
+
   /**
    * The preparation agglomerate targets or virtual calls into a deterministic method amongst them.
    * This allows R8 to compute the boxing status once for all targets of the same call.
    */
   @Override
-  public void prepareForPrimaryOptimizationPass(Timing timing, ExecutorService executorService)
+  public void prepareForPrimaryOptimizationPass(
+      GraphLens graphLensForPrimaryOptimizationPass, ExecutorService executorService, Timing timing)
       throws ExecutionException {
     timing.begin("Prepare number unboxer tree fixer");
     ImmediateProgramSubtypingInfo immediateSubtypingInfo =
@@ -90,6 +115,7 @@ public class NumberUnboxerImpl extends NumberUnboxer {
         MapUtils.newImmutableMap(
             builder -> virtualMethodsRepresentativeToMerge.forEach(builder::putAll));
     timing.end();
+    appliedGraphLens = graphLensForPrimaryOptimizationPass;
   }
 
   // TODO(b/307872552): Do not store irrelevant representative.
@@ -165,7 +191,11 @@ public class NumberUnboxerImpl extends NumberUnboxer {
    * values are used in boxing operations.
    */
   @Override
-  public void analyze(IRCode code) {
+  public void irAnalysis(
+      ProgramMethod method, IRCode code, MethodProcessor methodProcessor, Timing timing) {
+    if (!methodProcessor.isPrimaryMethodProcessor()) {
+      return;
+    }
     DexMethod contextReference = code.context().getReference();
     ValueBoxingStatus[] args = null;
     ValueBoxingStatus returnStatus = null;
@@ -354,11 +384,16 @@ public class NumberUnboxerImpl extends NumberUnboxer {
   }
 
   @Override
-  public void unboxNumbers(
+  public void apply(
+      AppView<AppInfoWithLiveness> appView,
+      PrimaryR8IRConverter converter,
       PostMethodProcessor.Builder postMethodProcessorBuilder,
-      Timing timing,
-      ExecutorService executorService)
+      ExecutorService executorService,
+      OptimizationFeedbackDelayed feedback,
+      Timing timing)
       throws ExecutionException {
+    assert appView.graphLens() == appliedGraphLens;
+
     Map<DexMethod, MethodBoxingStatusResult> unboxingResult =
         new NumberUnboxerBoxingStatusResolution(
                 candidateBoxingStatus, appView.testing().getNumberUnboxerOptions())
@@ -415,7 +450,13 @@ public class NumberUnboxerImpl extends NumberUnboxer {
   }
 
   @Override
+  public void waveDone() {
+    // TODO(b/307872552): Make it deterministic by clearing things here.
+  }
+
+  @Override
   public void rewriteWithLens() {
     // TODO(b/307872552): This needs to rewrite the methodBoxingStatus.
+    appliedGraphLens = appView.graphLens();
   }
 }

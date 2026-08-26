@@ -161,8 +161,8 @@ class EnumUnboxingTreeFixer implements ProgramClassFixer {
     EnumUnboxingLens lens = lensBuilder.build(appView);
     appView.rewriteWithLens(lens, executorService, timing);
 
-    // Rewrite outliner with lens.
-    converter.outliner.rewriteWithLens();
+    // Update the other optimization with the lens before one time ir processing.
+    converter.reprocessingOptimizationCollection.rewriteRemainingOptimizationsWithLens();
 
     // Create mapping from checkNotNull() to checkNotZero() methods.
     // The customLensCodeRewriter has to be non null for the duplication but is effectively unused.
