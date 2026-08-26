@@ -278,7 +278,7 @@ public class ZipUtils {
     zipEntry.setMethod(compressionMethod);
     zipEntry.setSize(length);
     zipEntry.setCrc(crc.getValue());
-    zipEntry.setTime(0);
+    zipEntry.setTime(InternalOptions.CONSTANT_TIME_FOR_ZIP_ENTRIES);
     stream.putNextEntry(zipEntry);
     stream.write(buffer, offset, length);
     stream.closeEntry();

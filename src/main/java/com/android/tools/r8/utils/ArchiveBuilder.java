@@ -146,7 +146,7 @@ public class ArchiveBuilder implements OutputBuilder {
       name += DataResource.SEPARATOR;
     }
     ZipEntry entry = new ZipEntry(name);
-    entry.setTime(0);
+    entry.setTime(InternalOptions.CONSTANT_TIME_FOR_ZIP_ENTRIES);
     synchronized (this) {
       try {
         ZipOutputStream zip = getStream();
@@ -172,8 +172,8 @@ public class ArchiveBuilder implements OutputBuilder {
     } catch (IOException e) {
       handleIOException(e, handler);
     } catch (ResourceException e) {
-      handler.error(new StringDiagnostic("Failed to open input: " + e.getMessage(),
-          content.getOrigin()));
+      handler.error(
+          new StringDiagnostic("Failed to open input: " + e.getMessage(), content.getOrigin()));
     }
   }
 

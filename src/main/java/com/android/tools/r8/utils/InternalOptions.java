@@ -170,6 +170,9 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
   // Use a MethodCollection where most interleavings between reading and mutating is caught.
   public static final boolean USE_METHOD_COLLECTION_CONCURRENCY_CHECKED = false;
 
+  // Time millis for 1980-02-01 00:00:00 UTC for zip entries, see b/552636378.
+  public static final long CONSTANT_TIME_FOR_ZIP_ENTRIES = 318211200000L;
+
   public enum LineNumberOptimization {
     OFF,
     ON;
