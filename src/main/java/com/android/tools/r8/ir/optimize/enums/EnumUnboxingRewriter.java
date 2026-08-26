@@ -248,7 +248,7 @@ public class EnumUnboxingRewriter implements CustomLensCodeRewriter {
           assert unboxedEnumsData.isUnboxedEnum(newUnboxedEnumInstance.getType());
           iterator.replaceCurrentInstruction(
               code.createIntConstant(
-                  EnumUnboxerImpl.ordinalToUnboxedInt(newUnboxedEnumInstance.getOrdinal())));
+                  EnumUnboxer.ordinalToUnboxedInt(newUnboxedEnumInstance.getOrdinal())));
         }
       }
     }

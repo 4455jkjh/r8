@@ -20,11 +20,11 @@ import com.android.tools.r8.ir.conversion.CfBuilder;
 import com.android.tools.r8.ir.conversion.DexBuilder;
 import com.android.tools.r8.ir.optimize.Inliner.ConstraintWithTarget;
 import com.android.tools.r8.ir.optimize.InliningConstraints;
-import com.android.tools.r8.ir.optimize.enums.EnumUnboxerImpl;
+import com.android.tools.r8.ir.optimize.enums.EnumUnboxer;
 import com.android.tools.r8.lightir.LirBuilder;
 
 /**
- * Special instruction used by {@link EnumUnboxerImpl}.
+ * Special instruction used by {@link EnumUnboxer}.
  *
  * <p>When applying the enum unboxer to the application, we move the class initializer of each
  * unboxed enum to its utility class, and change each {@link NewInstance} instruction that
@@ -36,9 +36,9 @@ import com.android.tools.r8.lightir.LirBuilder;
  * code to type check until lens code rewriting, which replaces the {@link NewUnboxedEnumInstance}
  * instructions by {@link ConstNumber} instructions.
  *
- * <p>Note: The {@link NewUnboxedEnumInstance} is only used from {@link EnumUnboxerImpl#apply} until
- * the execution of the {@link com.android.tools.r8.ir.conversion.PostMethodProcessor}. There should
- * be no instances of {@link NewUnboxedEnumInstance} (nor {@link CfNewUnboxedEnum}, {@link
+ * <p>Note: The {@link NewUnboxedEnumInstance} is only used from {@link EnumUnboxer#apply} until the
+ * execution of the {@link com.android.tools.r8.ir.conversion.PostMethodProcessor}. There should be
+ * no instances of {@link NewUnboxedEnumInstance} (nor {@link CfNewUnboxedEnum}, {@link
  * DexNewUnboxedEnumInstance}) after IR processing has finished.
  */
 public class NewUnboxedEnumInstance extends Instruction {

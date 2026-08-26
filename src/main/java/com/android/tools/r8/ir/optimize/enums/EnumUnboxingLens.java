@@ -4,7 +4,7 @@
 
 package com.android.tools.r8.ir.optimize.enums;
 
-import static com.android.tools.r8.ir.optimize.enums.EnumUnboxerImpl.unboxedIntToOrdinal;
+import static com.android.tools.r8.ir.optimize.enums.EnumUnboxer.unboxedIntToOrdinal;
 
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.DexField;
