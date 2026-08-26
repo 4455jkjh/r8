@@ -26,18 +26,15 @@ public class ReprocessingOptimizationCollectionImpl implements ReprocessingOptim
 
   private final AppView<AppInfoWithLiveness> appView;
   private ArgumentPropagator argumentPropagator;
-  private final OutlinerImpl outliner;
   private final List<ReprocessingOptimization> optimizationsToApply;
 
   public ReprocessingOptimizationCollectionImpl(
       AppView<AppInfoWithLiveness> appView,
       ArgumentPropagator argumentPropagator,
-      OutlinerImpl outliner,
       List<ReprocessingOptimization> optimizationsToApply) {
     this.appView = appView;
     // ArgumentPropagator is special since it has to be run first.
     this.argumentPropagator = argumentPropagator;
-    this.outliner = outliner;
     this.optimizationsToApply = optimizationsToApply;
     assert argumentPropagator == null || optimizationsToApply.get(0) == argumentPropagator;
   }
@@ -64,12 +61,6 @@ public class ReprocessingOptimizationCollectionImpl implements ReprocessingOptim
   public void irAnalysis(
       ProgramMethod method, IRCode code, MethodProcessor methodProcessor, Timing timing) {
     optimizationsToApply.forEach(opt -> opt.irAnalysis(method, code, methodProcessor, timing));
-  }
-
-  @Override
-  public void outlinerIrAnalysis(IRCode code, MethodProcessor methodProcessor, Timing timing) {
-    // TODO(b/552291036): This should be part of irAnalysis.
-    outliner.collectOutlineSites(code, timing);
   }
 
   @Override

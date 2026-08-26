@@ -1513,10 +1513,10 @@ public class OutlinerImpl implements ReprocessingOptimization {
   @Override
   public void irAnalysis(
       ProgramMethod method, IRCode code, MethodProcessor methodProcessor, Timing timing) {
-    // TODO(b/552291036): Should call collectOutlineSites here.
+    collectOutlineSites(code, timing);
   }
 
-  public void collectOutlineSites(IRCode code, Timing timing) {
+  private void collectOutlineSites(IRCode code, Timing timing) {
     if (outlineCollection == null) {
       return;
     }

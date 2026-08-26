@@ -33,8 +33,6 @@ public interface ReprocessingOptimizationCollection {
   void irAnalysis(
       ProgramMethod method, IRCode code, MethodProcessor methodProcessor, Timing timing);
 
-  void outlinerIrAnalysis(IRCode code, MethodProcessor methodProcessor, Timing timing);
-
   void classInitializerAnalysis(ProgramMethod method, StaticFieldValues staticFieldValues);
 
   void applyArgumentPropagator(
@@ -82,8 +80,7 @@ public interface ReprocessingOptimizationCollection {
             argumentPropagator, enumUnboxer, numberUnboxer, outliner);
     return optimizations.isEmpty()
         ? createEmpty()
-        : new ReprocessingOptimizationCollectionImpl(
-            appView, argumentPropagator, outliner, optimizations);
+        : new ReprocessingOptimizationCollectionImpl(appView, argumentPropagator, optimizations);
   }
 
   static ReprocessingOptimizationCollection createEmpty() {
@@ -101,11 +98,6 @@ public interface ReprocessingOptimizationCollection {
       @Override
       public void irAnalysis(
           ProgramMethod method, IRCode code, MethodProcessor methodProcessor, Timing timing) {
-        // Intentionally empty.
-      }
-
-      @Override
-      public void outlinerIrAnalysis(IRCode code, MethodProcessor methodProcessor, Timing timing) {
         // Intentionally empty.
       }
 

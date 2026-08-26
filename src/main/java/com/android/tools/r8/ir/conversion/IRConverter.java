@@ -724,14 +724,6 @@ public class IRConverter {
       previous = printMethod(code, "IR after class inlining (SSA)", previous);
     }
 
-    assert code.verifyTypes(appView);
-
-    // TODO(b/140766440): an ideal solution would be putting CodeOptimization for this into
-    //  the list for primary processing only.
-    reprocessingOptimizationCollection.outlinerIrAnalysis(code, methodProcessor, timing);
-    assert code.verifyTypes(appView);
-    previous = printMethod(code, "IR after outline handler (SSA)", previous);
-
     if (!code.getConversionOptions().isGeneratingLir()) {
       new FilledNewArrayRewriter(appView)
           .run(code, methodProcessor, methodProcessingContext, timing);
