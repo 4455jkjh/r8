@@ -32,7 +32,7 @@ public class B111080693 extends TestBase {
     builder.addProgramFiles(ToolHelper.getClassFileForTestClass(TestMain.class));
     builder.addProgramFiles(ToolHelper.getClassFileForTestClass(TestMain.TestAdapter.class));
     builder.setProgramConsumer(DexIndexedConsumer.emptyConsumer());
-    builder.setMinApiLevel(ToolHelper.getMinApiLevelForDexVm().getLevel());
+    builder.setMinApiLevel(ToolHelper.getMinApiLevelForDexVm().getMajor());
     String config = keepMainProguardConfiguration(TestMain.class);
     builder.addProguardConfiguration(
         ImmutableList.of(config,

@@ -279,7 +279,7 @@ public abstract class Jdk11StreamAbstractTests extends DesugaredLibraryTestBase 
         ToolHelper.isWindows());
     assumeTrue(
         "Requires Java base extensions, should add it when not desugaring",
-        parameters.getApiLevel().getLevel() < AndroidApiLevel.N.getLevel());
+        parameters.getApiLevel().getMajor() < AndroidApiLevel.N.getMajor());
 
     DesugaredLibraryTestCompileResult<?> compileResult = compileStreamTestsToDex();
     runSuccessfulTests(compileResult, successes);

@@ -417,7 +417,7 @@ public abstract class CommandTestBase<C extends BaseCompilerCommand> extends Tes
       startupProfileProviders =
           parseWithRequiredArgs(
                   "--min-api",
-                  Integer.toString(AndroidApiLevel.L.getLevel()),
+                  Integer.toString(AndroidApiLevel.L.getMajor()),
                   "--startup-profile",
                   profile.toString())
               .getStartupProfileProviders();

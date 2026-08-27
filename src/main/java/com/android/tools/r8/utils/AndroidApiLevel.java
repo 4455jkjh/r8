@@ -139,7 +139,7 @@ public class AndroidApiLevel implements Ordered<AndroidApiLevel> {
     return true;
   }
 
-  public int getLevel() {
+  public int getMajor() {
     return major;
   }
 
@@ -179,7 +179,7 @@ public class AndroidApiLevel implements Ordered<AndroidApiLevel> {
     if (this.isEqualTo(LATEST)) {
       return MAIN;
     }
-    return getAndroidApiLevel(getLevel() + 1, 0);
+    return getAndroidApiLevel(getMajor() + 1, 0);
   }
 
   public static List<AndroidApiLevel> getAndroidApiLevelsSorted() {

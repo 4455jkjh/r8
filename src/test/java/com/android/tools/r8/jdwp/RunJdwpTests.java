@@ -341,7 +341,7 @@ public class RunJdwpTests extends TestBase {
             .addProgramFiles(jdwpTestsJar)
             .addProgramFiles(extraTestResources)
             .setOutput(d8Out.toPath(), OutputMode.DexIndexed)
-            .setMinApiLevel(minApi.getLevel())
+            .setMinApiLevel(minApi.getMajor())
             .setMode(CompilationMode.DEBUG)
             .build());
   }

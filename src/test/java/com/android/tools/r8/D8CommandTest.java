@@ -416,7 +416,7 @@ public class D8CommandTest extends CommandTestBase<D8Command> {
     Path mainDexList = temp.newFile("main-dex-list.txt").toPath();
     D8Command command =
         parse(
-            "--min-api", Integer.toString(AndroidApiLevel.L.getLevel()),
+            "--min-api", Integer.toString(AndroidApiLevel.L.getMajor()),
             "--main-dex-list", mainDexList.toString());
     assertTrue(ToolHelper.getApp(command).hasMainDexListResources());
   }
@@ -429,7 +429,7 @@ public class D8CommandTest extends CommandTestBase<D8Command> {
         (handler) ->
             D8Command.builder(handler)
                 .setProgramConsumer(DexIndexedConsumer.emptyConsumer())
-                .setMinApiLevel(AndroidApiLevel.L_MR1.getLevel())
+                .setMinApiLevel(AndroidApiLevel.L_MR1.getMajor())
                 .addMainDexListFiles(mainDexList)
                 .build());
   }

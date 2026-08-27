@@ -49,7 +49,7 @@ public class GlobalSyntheticsGeneratorCommandParser {
 
   private static CliParser<ParserState> createParser() {
     var toolName = "globalsyntheticsgenerator";
-    int defaultApi = AndroidApiLevel.getDefault().getLevel();
+    int defaultApi = AndroidApiLevel.getDefault().getMajor();
     String minApiFlag = "--min-api";
 
     var header = "Usage: " + toolName + " [options] where options are:";

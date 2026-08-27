@@ -103,7 +103,7 @@ public class ApkAnalyzer {
     D8Command.Builder builder =
         D8Command.builder()
             .setDisableDesugaring(true)
-            .setMinApiLevel(minApiLevel.getLevel(), minApiLevel.getMinor())
+            .setMinApiLevel(minApiLevel.getMajor(), minApiLevel.getMinor())
             .setMode(CompilationMode.RELEASE)
             .setProgramConsumer(sink.wrapDexIndexedConsumer(DexIndexedConsumer.emptyConsumer()))
             .setProguardMapConsumer(mapConsumer);

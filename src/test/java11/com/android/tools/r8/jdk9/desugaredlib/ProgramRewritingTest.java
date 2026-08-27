@@ -121,7 +121,7 @@ public class ProgramRewritingTest extends DesugaredLibraryTestBase {
   }
 
   private void assertResultIsCorrect(String stdOut, String stdErr, String keepRules) {
-    if (parameters.getApiLevel().getLevel() < AndroidApiLevel.N.getLevel()) {
+    if (parameters.getApiLevel().getMajor() < AndroidApiLevel.N.getMajor()) {
       if (compilationSpecification.isL8Shrink()) {
         assertGeneratedKeepRulesAreCorrect(keepRules);
       } else {

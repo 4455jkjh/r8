@@ -34,7 +34,7 @@ public class ApiModelTypeStrengtheningAboveMinApiTest extends TestBase {
 
   @Test
   public void test() throws Exception {
-    int sdkInt = parameters.isCfRuntime() ? 0 : parameters.getApiLevel().getLevel();
+    int sdkInt = parameters.isCfRuntime() ? 0 : parameters.getApiLevel().getMajor();
     testForR8(parameters.getBackend())
         .addProgramClasses(Main.class, Version.class)
         .addLibraryClasses(ApiLevel22.class, ApiLevel23.class)

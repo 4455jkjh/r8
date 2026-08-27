@@ -572,7 +572,7 @@ public class R8CommandTest extends CommandTestBase<R8Command> {
         (handler) ->
             R8Command.builder(handler)
                 .setProgramConsumer(DexIndexedConsumer.emptyConsumer())
-                .setMinApiLevel(AndroidApiLevel.L.getLevel())
+                .setMinApiLevel(AndroidApiLevel.L.getMajor())
                 .addMainDexRulesFiles(mainDexRules)
                 .build());
   }
@@ -585,7 +585,7 @@ public class R8CommandTest extends CommandTestBase<R8Command> {
         (handler) ->
             R8Command.builder(handler)
                 .setProgramConsumer(DexIndexedConsumer.emptyConsumer())
-                .setMinApiLevel(AndroidApiLevel.L.getLevel())
+                .setMinApiLevel(AndroidApiLevel.L.getMajor())
                 .addMainDexListFiles(mainDexList)
                 .build());
   }

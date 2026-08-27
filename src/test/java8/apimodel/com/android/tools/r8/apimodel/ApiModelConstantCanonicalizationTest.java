@@ -34,7 +34,7 @@ public class ApiModelConstantCanonicalizationTest extends TestBase {
 
   @Test
   public void test() throws Exception {
-    int sdkInt = parameters.isCfRuntime() ? 0 : parameters.getApiLevel().getLevel();
+    int sdkInt = parameters.isCfRuntime() ? 0 : parameters.getApiLevel().getMajor();
     List<String> outputLines = new ArrayList<>();
     if (sdkInt < 22) {
       outputLines.add("No cigar!");

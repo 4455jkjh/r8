@@ -164,25 +164,25 @@ public abstract class AbstractBackportTest extends TestBase {
     }
 
     // Assume all method calls and static gets will be rewritten on the lowest API level.
-    invokeStaticCounts.put(AndroidApiLevel.B.getLevel(), 0);
-    staticGetCounts.put(AndroidApiLevel.B.getLevel(), 0);
+    invokeStaticCounts.put(AndroidApiLevel.B.getMajor(), 0);
+    staticGetCounts.put(AndroidApiLevel.B.getMajor(), 0);
   }
 
   protected void registerTarget(AndroidApiLevel apiLevel, int invokeStaticCount) {
-    invokeStaticCounts.put(apiLevel.getLevel(), invokeStaticCount);
+    invokeStaticCounts.put(apiLevel.getMajor(), invokeStaticCount);
   }
 
   void registerFieldTarget(AndroidApiLevel apiLevel, int getStaticCount) {
-    staticGetCounts.put(apiLevel.getLevel(), getStaticCount);
+    staticGetCounts.put(apiLevel.getMajor(), getStaticCount);
   }
 
   private int getTargetInvokesCount(AndroidApiLevel apiLevel) {
-    int key = invokeStaticCounts.headMap(apiLevel.getLevel() + 1).lastIntKey();
+    int key = invokeStaticCounts.headMap(apiLevel.getMajor() + 1).lastIntKey();
     return invokeStaticCounts.get(key);
   }
 
   private int getTargetGetCount(AndroidApiLevel apiLevel) {
-    int key = staticGetCounts.headMap(apiLevel.getLevel() + 1).lastIntKey();
+    int key = staticGetCounts.headMap(apiLevel.getMajor() + 1).lastIntKey();
     return staticGetCounts.get(key);
   }
 

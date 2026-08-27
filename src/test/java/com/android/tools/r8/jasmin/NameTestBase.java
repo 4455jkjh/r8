@@ -40,8 +40,8 @@ class NameTestBase extends JasminTestBase {
   // - boolean, whether it runs on the JVM.
   // - boolean, whether it runs on the ART.
   static Collection<Object[]> getCommonNameTestData() {
-    boolean supportSpaces = ToolHelper.getMinApiLevelForDexVm().getLevel()
-        >= AndroidApiLevel.R.getLevel();
+    boolean supportSpaces =
+        ToolHelper.getMinApiLevelForDexVm().getMajor() >= AndroidApiLevel.R.getMajor();
     return Arrays.asList(
         new Object[][] {
           {new TestString("azAZ09$_"), true, true},

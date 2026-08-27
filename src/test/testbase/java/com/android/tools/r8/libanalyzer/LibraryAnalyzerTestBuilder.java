@@ -17,8 +17,8 @@ import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.libanalyzer.proto.LibraryAnalyzerResult;
 import com.android.tools.r8.utils.AndroidApiLevel;
 import com.android.tools.r8.utils.AndroidApp;
-import com.android.tools.r8.utils.internal.Box;
 import com.android.tools.r8.utils.ZipUtils;
+import com.android.tools.r8.utils.internal.Box;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
@@ -93,7 +93,7 @@ public class LibraryAnalyzerTestBuilder {
   }
 
   public LibraryAnalyzerTestBuilder setMinApi(AndroidApiLevel minApi) {
-    commandBuilder.setMinApiLevel(minApi.getLevel(), minApi.getMinor());
+    commandBuilder.setMinApiLevel(minApi.getMajor(), minApi.getMinor());
     return this;
   }
 

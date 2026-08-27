@@ -215,7 +215,7 @@ public class NonNullParamTest extends TestBase {
     // Due to including line-info (b/279555568) this is always false. Keeping the conflicting
     // predicates here for documentation of the previously witnessed difference.
     return parameters.isDexRuntime()
-        && parameters.getApiLevel().getLevel() >= AndroidApiLevel.Q.getLevel()
+        && parameters.getApiLevel().getMajor() >= AndroidApiLevel.Q.getMajor()
         && parameters.getApiLevel().isLessThan(apiLevelWithPcAsLineNumberSupport());
   }
 

@@ -1245,12 +1245,12 @@ public class ToolHelper {
   public static Path getFirstSupportedAndroidJar(AndroidApiLevel apiLevel) {
     // Fast path.
     if (hasAndroidJar(apiLevel)) {
-      return getAndroidJar(apiLevel.getLevel());
+      return getAndroidJar(apiLevel.getMajor());
     }
     // Search for an android jar.
     for (AndroidApiLevel level : AndroidApiLevel.getAndroidApiLevelsSorted()) {
-      if (level.getLevel() >= apiLevel.getLevel() && hasAndroidJar(level)) {
-        return getAndroidJar(level.getLevel());
+      if (level.getMajor() >= apiLevel.getMajor() && hasAndroidJar(level)) {
+        return getAndroidJar(level.getMajor());
       }
     }
     return getAndroidJar(AndroidApiLevel.LATEST);
@@ -1261,7 +1261,7 @@ public class ToolHelper {
   }
 
   private static String formatApiLevel(AndroidApiLevel apiLevel) {
-    return apiLevel.getLevel() + (apiLevel.getMinor() == 0 ? "" : "." + apiLevel.getMinor());
+    return apiLevel.getMajor() + (apiLevel.getMinor() == 0 ? "" : "." + apiLevel.getMinor());
   }
 
   public static Path getApiVersionsXmlFile(AndroidApiLevel apiLevel) {
@@ -1439,7 +1439,7 @@ public class ToolHelper {
 
   public static AndroidApiLevel getMinApiLevelForDexVmNoHigherThan(AndroidApiLevel threshold) {
     AndroidApiLevel minApiLevelForDexVm = getMinApiLevelForDexVm();
-    return minApiLevelForDexVm.getLevel() < threshold.getLevel() ? minApiLevelForDexVm : threshold;
+    return minApiLevelForDexVm.getMajor() < threshold.getMajor() ? minApiLevelForDexVm : threshold;
   }
 
   public static AndroidApiLevel getMinApiLevelForDexVm() {
@@ -1511,7 +1511,7 @@ public class ToolHelper {
     if (version != null) {
       return version;
     }
-    throw new Unreachable("No Android VM for API level " + apiLevel.getLevel());
+    throw new Unreachable("No Android VM for API level " + apiLevel.getMajor());
   }
 
   public static DexVersion getDexFileVersionForVm(DexVm vm) {

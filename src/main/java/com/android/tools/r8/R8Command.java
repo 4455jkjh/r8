@@ -793,7 +793,7 @@ public final class R8Command extends BaseCompilerCommand {
         if (getMainDexListConsumer() != null || hasMainDexRules() || hasMainDexList()) {
           reporter.error(
               "R8 does not support main-dex inputs and outputs when compiling to API level "
-                  + AndroidApiLevel.L.getLevel()
+                  + AndroidApiLevel.L.getMajor()
                   + " and above");
         }
       }

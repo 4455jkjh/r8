@@ -207,7 +207,7 @@ public class JvmTestBuilder extends TestBuilder<JvmTestRunResult, JvmTestBuilder
   }
 
   public JvmTestBuilder addAndroidBuildVersion(AndroidApiLevel apiLevel) {
-    addVmArguments("-D" + AndroidBuildVersion.PROPERTY + "=" + apiLevel.getLevel());
+    addVmArguments("-D" + AndroidBuildVersion.PROPERTY + "=" + apiLevel.getMajor());
     return addProgramClasses(AndroidBuildVersion.class);
   }
 }

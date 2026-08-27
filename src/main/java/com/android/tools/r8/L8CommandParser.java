@@ -121,7 +121,7 @@ public class L8CommandParser extends BaseCompilerCommandParser {
             "--min-api",
             "<number>",
             "Minimum Android API level compatibility (default: "
-                + AndroidApiLevel.getDefault().getLevel()
+                + AndroidApiLevel.getDefault().getMajor()
                 + ").",
             (state, arg) -> {
               if (state.hasDefinedApiLevel) {

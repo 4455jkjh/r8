@@ -51,7 +51,7 @@ public class JSR45Tests {
       throws CompilationFailedException {
     D8Command.Builder builder =
         D8Command.builder()
-            .setMinApiLevel(AndroidApiLevel.O.getLevel())
+            .setMinApiLevel(AndroidApiLevel.O.getMajor())
             .addProgramFiles(intputPath)
             .setOutput(outputPath, OutputMode.DexIndexed);
     AndroidAppConsumers appSink = new AndroidAppConsumers(builder);

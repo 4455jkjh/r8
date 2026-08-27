@@ -423,7 +423,7 @@ public final class D8 {
           .getOrCreateFieldInfo(dexItemFactory.androidOsBuildVersionMembers.SDK_INT)
           .meetAssumeValue(
               abstractValueFactory.createNumberFromIntervalValue(
-                  options.getMinApiLevel().getLevel(), Integer.MAX_VALUE))
+                  options.getMinApiLevel().getMajor(), Integer.MAX_VALUE))
           .setIsSideEffectFree();
     }
     appView.setAssumeInfoCollection(assumeInfoCollectionBuilder.build(appView));

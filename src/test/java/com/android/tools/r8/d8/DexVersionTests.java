@@ -61,12 +61,12 @@ public class DexVersionTests extends TestBase {
     D8.run(
         arrayAccessBuilder
             .setOutput(androidOApiFolder1.getRoot().toPath(), OutputMode.DexIndexed)
-            .setMinApiLevel(AndroidApiLevel.O.getLevel())
+            .setMinApiLevel(AndroidApiLevel.O.getMajor())
             .build());
     D8.run(
         arrayAccessBuilder
             .setOutput(androidNApiFolder1.getRoot().toPath(), OutputMode.DexIndexed)
-            .setMinApiLevel(AndroidApiLevel.N.getLevel())
+            .setMinApiLevel(AndroidApiLevel.N.getMajor())
             .build());
 
     Path inputJar2 = writeClassesToJar(Input2.class);
@@ -78,12 +78,12 @@ public class DexVersionTests extends TestBase {
     D8.run(
         arithmeticBuilder
             .setOutput(androidOApiFolder2.getRoot().toPath(), OutputMode.DexIndexed)
-            .setMinApiLevel(AndroidApiLevel.O.getLevel())
+            .setMinApiLevel(AndroidApiLevel.O.getMajor())
             .build());
     D8.run(
         arithmeticBuilder
             .setOutput(androidNApiFolder2.getRoot().toPath(), OutputMode.DexIndexed)
-            .setMinApiLevel(AndroidApiLevel.N.getLevel())
+            .setMinApiLevel(AndroidApiLevel.N.getMajor())
             .build());
   }
 
@@ -171,42 +171,42 @@ public class DexVersionTests extends TestBase {
     D8.run(
         D8Command.builder()
             .setProgramConsumer(new EnsureOutputConsumer())
-            .setMinApiLevel(AndroidApiLevel.O.getLevel())
+            .setMinApiLevel(AndroidApiLevel.O.getMajor())
             .addProgramFiles(default1())
             .addProgramFiles(default2())
             .build());
     D8.run(
         D8Command.builder()
             .setProgramConsumer(new EnsureOutputConsumer())
-            .setMinApiLevel(AndroidApiLevel.O.getLevel())
+            .setMinApiLevel(AndroidApiLevel.O.getMajor())
             .addProgramFiles(default1())
             .addProgramFiles(androidO2())
             .build());
     D8.run(
         D8Command.builder()
             .setProgramConsumer(new EnsureOutputConsumer())
-            .setMinApiLevel(AndroidApiLevel.O.getLevel())
+            .setMinApiLevel(AndroidApiLevel.O.getMajor())
             .addProgramFiles(default1())
             .addProgramFiles(androidN2())
             .build());
     D8.run(
         D8Command.builder()
             .setProgramConsumer(new EnsureOutputConsumer())
-            .setMinApiLevel(AndroidApiLevel.O.getLevel())
+            .setMinApiLevel(AndroidApiLevel.O.getMajor())
             .addProgramFiles(androidO1())
             .addProgramFiles(androidN2())
             .build());
     D8.run(
         D8Command.builder()
             .setProgramConsumer(new EnsureOutputConsumer())
-            .setMinApiLevel(AndroidApiLevel.O.getLevel())
+            .setMinApiLevel(AndroidApiLevel.O.getMajor())
             .addProgramFiles(androidO1())
             .addProgramFiles(androidO2())
             .build());
     D8.run(
         D8Command.builder()
             .setProgramConsumer(new EnsureOutputConsumer())
-            .setMinApiLevel(AndroidApiLevel.O.getLevel())
+            .setMinApiLevel(AndroidApiLevel.O.getMajor())
             .addProgramFiles(androidN1())
             .addProgramFiles(androidN2())
             .build());
@@ -215,21 +215,21 @@ public class DexVersionTests extends TestBase {
     D8.run(
         D8Command.builder()
             .setProgramConsumer(new EnsureOutputConsumer())
-            .setMinApiLevel(AndroidApiLevel.N.getLevel())
+            .setMinApiLevel(AndroidApiLevel.N.getMajor())
             .addProgramFiles(default1())
             .addProgramFiles(default2())
             .build());
     D8.run(
         D8Command.builder()
             .setProgramConsumer(new EnsureOutputConsumer())
-            .setMinApiLevel(AndroidApiLevel.N.getLevel())
+            .setMinApiLevel(AndroidApiLevel.N.getMajor())
             .addProgramFiles(default1())
             .addProgramFiles(androidN2())
             .build());
     D8.run(
         D8Command.builder()
             .setProgramConsumer(new EnsureOutputConsumer())
-            .setMinApiLevel(AndroidApiLevel.N.getLevel())
+            .setMinApiLevel(AndroidApiLevel.N.getMajor())
             .addProgramFiles(androidN1())
             .addProgramFiles(androidN2())
             .build());
@@ -238,7 +238,7 @@ public class DexVersionTests extends TestBase {
     D8.run(
         D8Command.builder()
             .setProgramConsumer(new EnsureOutputConsumer())
-            .setMinApiLevel(AndroidApiLevel.K.getLevel())
+            .setMinApiLevel(AndroidApiLevel.K.getMajor())
             .addProgramFiles(default1())
             .addProgramFiles(default2())
             .build());
@@ -249,7 +249,7 @@ public class DexVersionTests extends TestBase {
     D8.run(
         D8Command.builder()
             .setProgramConsumer(DexIndexedConsumer.emptyConsumer())
-            .setMinApiLevel(AndroidApiLevel.N.getLevel())
+            .setMinApiLevel(AndroidApiLevel.N.getMajor())
             .addProgramFiles(default1())
             .addProgramFiles(androidO2())
             .build());
@@ -260,7 +260,7 @@ public class DexVersionTests extends TestBase {
     D8.run(
         D8Command.builder()
             .setProgramConsumer(DexIndexedConsumer.emptyConsumer())
-            .setMinApiLevel(AndroidApiLevel.K.getLevel())
+            .setMinApiLevel(AndroidApiLevel.K.getMajor())
             .addProgramFiles(default1())
             .addProgramFiles(androidO2())
             .build());
@@ -271,7 +271,7 @@ public class DexVersionTests extends TestBase {
     D8.run(
         D8Command.builder()
             .setProgramConsumer(DexIndexedConsumer.emptyConsumer())
-            .setMinApiLevel(AndroidApiLevel.K.getLevel())
+            .setMinApiLevel(AndroidApiLevel.K.getMajor())
             .addProgramFiles(default1())
             .addProgramFiles(androidN2())
             .build());

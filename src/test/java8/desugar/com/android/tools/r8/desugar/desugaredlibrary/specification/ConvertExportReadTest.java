@@ -38,8 +38,8 @@ import com.android.tools.r8.ir.desugar.desugaredlibrary.specificationconversion.
 import com.android.tools.r8.ir.desugar.desugaredlibrary.specificationconversion.LegacyToHumanSpecificationConverter;
 import com.android.tools.r8.origin.Origin;
 import com.android.tools.r8.utils.AndroidApiLevel;
-import com.android.tools.r8.utils.internal.Box;
 import com.android.tools.r8.utils.InternalOptions;
+import com.android.tools.r8.utils.internal.Box;
 import com.android.tools.r8.utils.timing.Timing;
 import java.io.IOException;
 import java.nio.file.Path;
@@ -102,7 +102,7 @@ public class ConvertExportReadTest extends DesugaredLibraryTestBase {
 
     MachineDesugaredLibrarySpecification machineSpecParsed =
         new MachineDesugaredLibrarySpecificationParser(
-                options.dexItemFactory(), options.reporter, true, AndroidApiLevel.B.getLevel())
+                options.dexItemFactory(), options.reporter, true, AndroidApiLevel.B.getMajor())
             .parse(StringResource.fromString(json2.get(), Origin.unknown()));
     assertFalse(machineSpecParsed.getRewriteType().isEmpty());
   }
@@ -153,7 +153,7 @@ public class ConvertExportReadTest extends DesugaredLibraryTestBase {
         new AndroidApiLevel[] {AndroidApiLevel.B, AndroidApiLevel.N, AndroidApiLevel.O}) {
       MachineDesugaredLibrarySpecification machineSpecParsed =
           new MachineDesugaredLibrarySpecificationParser(
-                  options.dexItemFactory(), options.reporter, true, api.getLevel())
+                  options.dexItemFactory(), options.reporter, true, api.getMajor())
               .parse(StringResource.fromFile(output));
       assertEquals(
           api.isGreaterThanOrEqualTo(AndroidApiLevel.O) && spec == JDK8,
@@ -161,7 +161,7 @@ public class ConvertExportReadTest extends DesugaredLibraryTestBase {
 
       HumanDesugaredLibrarySpecification humanSimpleSpec =
           new HumanDesugaredLibrarySpecificationParser(
-                  options.dexItemFactory(), options.reporter, true, api.getLevel())
+                  options.dexItemFactory(), options.reporter, true, api.getMajor())
               .parse(StringResource.fromString(json.get(), Origin.unknown()));
       HumanToMachineSpecificationConverter converter =
           new HumanToMachineSpecificationConverter(Timing.empty());
@@ -200,12 +200,12 @@ public class ConvertExportReadTest extends DesugaredLibraryTestBase {
         new AndroidApiLevel[] {AndroidApiLevel.B, AndroidApiLevel.N, AndroidApiLevel.O}) {
       MachineDesugaredLibrarySpecification machineSpecParsed =
           new MachineDesugaredLibrarySpecificationParser(
-                  options.dexItemFactory(), options.reporter, true, api.getLevel())
+                  options.dexItemFactory(), options.reporter, true, api.getMajor())
               .parse(StringResource.fromString(json2.get(), Origin.unknown()));
 
       HumanDesugaredLibrarySpecification humanSpecB =
           new HumanDesugaredLibrarySpecificationParser(
-                  options.dexItemFactory(), options.reporter, true, api.getLevel())
+                  options.dexItemFactory(), options.reporter, true, api.getMajor())
               .parse(StringResource.fromFile(humanSpec.getSpecification()));
       MachineDesugaredLibrarySpecification machineSpecConverted =
           humanSpecB.toMachineSpecification(app, Timing.empty());
@@ -313,8 +313,8 @@ public class ConvertExportReadTest extends DesugaredLibraryTestBase {
     assertEquals(kr1, kr2);
     assertEquals(topLevelFlags1.getIdentifier(), topLevelFlags2.getIdentifier());
     assertEquals(
-        topLevelFlags1.getRequiredCompilationApiLevel().getLevel(),
-        topLevelFlags2.getRequiredCompilationApiLevel().getLevel());
+        topLevelFlags1.getRequiredCompilationApiLevel().getMajor(),
+        topLevelFlags2.getRequiredCompilationApiLevel().getMajor());
     assertEquals(
         topLevelFlags1.getSynthesizedLibraryClassesPackagePrefix(),
         topLevelFlags2.getSynthesizedLibraryClassesPackagePrefix());
@@ -325,8 +325,8 @@ public class ConvertExportReadTest extends DesugaredLibraryTestBase {
     assertEquals(topLevelFlags1.getExtraKeepRules(), topLevelFlags2.getExtraKeepRules());
     assertEquals(topLevelFlags1.getIdentifier(), topLevelFlags2.getIdentifier());
     assertEquals(
-        topLevelFlags1.getRequiredCompilationAPILevel().getLevel(),
-        topLevelFlags2.getRequiredCompilationAPILevel().getLevel());
+        topLevelFlags1.getRequiredCompilationAPILevel().getMajor(),
+        topLevelFlags2.getRequiredCompilationAPILevel().getMajor());
     assertEquals(
         topLevelFlags1.getSynthesizedLibraryClassesPackagePrefix(),
         topLevelFlags2.getSynthesizedLibraryClassesPackagePrefix());

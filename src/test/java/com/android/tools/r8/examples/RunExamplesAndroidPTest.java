@@ -221,7 +221,7 @@ public abstract class RunExamplesAndroidPTest<
   @Test
   public void invokeCustom() throws Throwable {
     test("invokecustom", "invokecustom", "InvokeCustom")
-        .withMinApiLevel(AndroidApiLevel.P.getLevel())
+        .withMinApiLevel(AndroidApiLevel.P.getMajor())
         .withKeepAll()
         .run();
   }

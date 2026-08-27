@@ -68,14 +68,14 @@ public class B68378480 {
 
   @Test
   public void addExtraLocalToConstructor() throws IOException, CompilationFailedException {
-    DexCode code = compileClassesGetSubClassInit(AndroidApiLevel.L_MR1.getLevel());
+    DexCode code = compileClassesGetSubClassInit(AndroidApiLevel.L_MR1.getMajor());
     assertTrue(code.registerSize > code.incomingRegisterSize);
     assertTrue(Arrays.stream(code.instructions).anyMatch((i) -> i instanceof SingleConstant));
   }
 
   @Test
   public void doNotAddExtraLocalToConstructor() throws IOException, CompilationFailedException {
-    DexCode code = compileClassesGetSubClassInit(AndroidApiLevel.M.getLevel());
+    DexCode code = compileClassesGetSubClassInit(AndroidApiLevel.M.getMajor());
     assertEquals(code.registerSize, code.incomingRegisterSize);
     assertTrue(Arrays.stream(code.instructions).noneMatch((i) -> i instanceof SingleConstant));
   }

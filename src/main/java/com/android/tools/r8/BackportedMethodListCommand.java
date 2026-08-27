@@ -179,7 +179,7 @@ public class BackportedMethodListCommand {
   public static class Builder {
 
     private final Reporter reporter;
-    private int minApiLevel = AndroidApiLevel.B.getLevel();
+    private int minApiLevel = AndroidApiLevel.B.getMajor();
     private List<StringResource> desugaredLibrarySpecificationResources = new ArrayList<>();
     private final AndroidApp.Builder app;
     private StringConsumer backportedMethodListConsumer;

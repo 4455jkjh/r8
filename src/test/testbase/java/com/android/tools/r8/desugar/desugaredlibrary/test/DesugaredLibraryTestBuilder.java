@@ -669,7 +669,7 @@ public class DesugaredLibraryTestBuilder<T extends DesugaredLibraryTestBase> {
                     opt.dexItemFactory(),
                     opt.reporter,
                     libraryCompilation,
-                    parameters.getApiLevel().getLevel(),
+                    parameters.getApiLevel().getMajor(),
                     builder ->
                         builder.setSupportAllCallbacksFromLibrary(supportAllCallbacksFromLibrary)),
                 opt.getLibraryDesugaringOptions().getSynthesizedClassPrefix());

@@ -161,7 +161,7 @@ public abstract class TestCompilerBuilder<
 
   public T markAndroidBuildVersionAsActive(AndroidApiLevel specifiedApiLevel) {
     isAndroidBuildVersionAdded =
-        Optional.ofNullable(specifiedApiLevel == null ? null : specifiedApiLevel.getLevel());
+        Optional.ofNullable(specifiedApiLevel == null ? null : specifiedApiLevel.getMajor());
     return self();
   }
 
@@ -385,7 +385,7 @@ public abstract class TestCompilerBuilder<
       // TODO(b/186010707): This will always be set when fixed.
       int minApi =
           getMinApiLevel() == -1
-              ? ToolHelper.getMinApiLevelForDexVm().getLevel()
+              ? ToolHelper.getMinApiLevelForDexVm().getMajor()
               : getMinApiLevel();
       builder.setMinApiLevel(minApi);
     }
@@ -540,7 +540,7 @@ public abstract class TestCompilerBuilder<
   }
 
   public T setMinApi(AndroidApiLevel minApiLevel) {
-    return setMinApi(minApiLevel.getLevel());
+    return setMinApi(minApiLevel.getMajor());
   }
 
   public T setMinApi(TestParameters parameters) {

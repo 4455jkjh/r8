@@ -96,7 +96,7 @@ public class InlineCatchHandlerWithLibraryTypeTest extends TestBase {
   private boolean isPresentInRuntime() {
     // A CF target could target any API in the end.
     return parameters.isDexRuntime()
-        && parameters.getApiLevel().getLevel() >= EXCEPTIONS.get(exception);
+        && parameters.getApiLevel().getMajor() >= EXCEPTIONS.get(exception);
   }
 
   @Test
@@ -138,7 +138,7 @@ public class InlineCatchHandlerWithLibraryTypeTest extends TestBase {
       assertEquals(
           // Dalvik verifier error present up to and not including L.
           parameters.getApiLevel().isLessThanOrEqualTo(AndroidApiLevel.L)
-              ? parameters.getApiLevel().getLevel() >= EXCEPTIONS.get(exception)
+              ? parameters.getApiLevel().getMajor() >= EXCEPTIONS.get(exception)
               : isPresentInRuntime() || isStubbed(),
           mainHasInlinedCatchHandler);
     }

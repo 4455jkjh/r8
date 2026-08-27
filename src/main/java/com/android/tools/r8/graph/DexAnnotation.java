@@ -830,7 +830,7 @@ public class DexAnnotation extends DexItem implements StructuralItem<DexAnnotati
       return UNKNOWN_API_LEVEL;
     } else {
       assert computedApiLevel.isKnownApiLevel();
-      return computedApiLevel.asKnownApiLevel().getApiLevel().getLevel();
+      return computedApiLevel.asKnownApiLevel().getApiLevel().getMajor();
     }
   }
 

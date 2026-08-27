@@ -76,7 +76,7 @@ public class AndroidOsBuildVersionCodesFullBackportTest extends AbstractBackport
 
   @Override
   protected String[] configureD8RunArguments() {
-    return new String[] {Integer.toString(parameters.getApiLevel().getLevel())};
+    return new String[] {Integer.toString(parameters.getApiLevel().getMajor())};
   }
 
   private static byte[] getTransformedBuildVERSION_CODES_FULLClassForRuntimeClasspath()
@@ -151,7 +151,7 @@ public class AndroidOsBuildVersionCodesFullBackportTest extends AbstractBackport
         {"CINNAMON_BUN", 3700_000},
       };
       for (Object[] versionCodeFull : versionCodesFull) {
-        if ((Integer) versionCodeFull[1] <= parameters.getApiLevel().getLevel() * 100_000) {
+        if ((Integer) versionCodeFull[1] <= parameters.getApiLevel().getMajor() * 100_000) {
           Assert.assertEquals(
               ((Integer) versionCodeFull[1]).intValue(),
               versionCodesFullClass

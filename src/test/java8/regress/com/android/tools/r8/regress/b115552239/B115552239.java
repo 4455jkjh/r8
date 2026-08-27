@@ -74,7 +74,7 @@ public class B115552239 extends TestBase {
   @Test
   public void noLowering()
       throws IOException, CompilationFailedException, ExecutionException {
-    MethodSubject method = compileTestClassAndGetMethod(AndroidApiLevel.L.getLevel());
+    MethodSubject method = compileTestClassAndGetMethod(AndroidApiLevel.L.getMajor());
     boolean previousWasCmp = false;
     DexInstruction[] instructions = method.getMethod().getCode().asDexCode().instructions;
     assertTrue(Arrays.stream(instructions).anyMatch(i -> i instanceof DexCmpgFloat));
@@ -91,7 +91,7 @@ public class B115552239 extends TestBase {
 
   @Test
   public void lowering() throws IOException, CompilationFailedException {
-    MethodSubject method = compileTestClassAndGetMethod(AndroidApiLevel.M.getLevel());
+    MethodSubject method = compileTestClassAndGetMethod(AndroidApiLevel.M.getMajor());
     boolean previousWasCmp = false;
     DexInstruction[] instructions = method.getMethod().getCode().asDexCode().instructions;
     assertTrue(Arrays.stream(instructions).anyMatch(i -> i instanceof DexCmpgFloat));

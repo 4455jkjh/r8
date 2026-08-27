@@ -669,7 +669,7 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
     // since the output depends on the min API in this case. There is basically no min API entry
     // in R8 cf to cf.
     if (isGeneratingDex() || desugarState == DesugarState.ON) {
-      marker.setMinApi(getMinApiLevel().getLevel());
+      marker.setMinApi(getMinApiLevel().getMajor());
     }
     if (libraryDesugaringOptions.hasIdentifier()) {
       marker.setDesugaredLibraryIdentifiers(libraryDesugaringOptions.getIdentifier());

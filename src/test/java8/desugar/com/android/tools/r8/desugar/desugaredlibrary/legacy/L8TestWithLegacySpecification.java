@@ -176,7 +176,7 @@ public class L8TestWithLegacySpecification extends TestBase {
             .addProguardConfiguration(l8KeepRules.keepRules, Origin.unknown())
             .setMode(mode)
             .setOutput(temp.newFolder().toPath().resolve("out.jar"), OutputMode.DexIndexed)
-            .setMinApiLevel(apiLevel.getLevel())
+            .setMinApiLevel(apiLevel.getMajor())
             .build();
     // TODO(b/231925782): This should succeed for all API levels.
     L8.run(command);

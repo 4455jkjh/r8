@@ -128,7 +128,7 @@ public abstract class RunExamplesAndroidNTest<B> extends TestBase {
   @Test
   public void staticInterfaceMethods() throws Throwable {
     test("staticinterfacemethods", "interfacemethods", "StaticInterfaceMethods")
-        .withMinApiLevel(AndroidApiLevel.K.getLevel())
+        .withMinApiLevel(AndroidApiLevel.K.getMajor())
         .withInterfaceMethodDesugaring(OffOrAuto.Auto)
         .withKeepAll()
         .run();
@@ -146,7 +146,7 @@ public abstract class RunExamplesAndroidNTest<B> extends TestBase {
   @Test
   public void defaultMethods() throws Throwable {
     test("defaultmethods", "interfacemethods", "DefaultMethods")
-        .withMinApiLevel(AndroidApiLevel.K.getLevel())
+        .withMinApiLevel(AndroidApiLevel.K.getMajor())
         .withInterfaceMethodDesugaring(OffOrAuto.Auto)
         .withKeepAll()
         .run();

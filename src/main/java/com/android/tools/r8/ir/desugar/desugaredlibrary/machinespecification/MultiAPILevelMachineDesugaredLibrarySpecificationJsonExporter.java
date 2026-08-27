@@ -92,7 +92,7 @@ public class MultiAPILevelMachineDesugaredLibrarySpecificationJsonExporter {
     toJson.put(IDENTIFIER_KEY, topLevelFlags.getIdentifier());
     toJson.put(
         REQUIRED_COMPILATION_API_LEVEL_KEY,
-        topLevelFlags.getRequiredCompilationApiLevel().getLevel());
+        topLevelFlags.getRequiredCompilationApiLevel().getMajor());
     toJson.put(
         SYNTHESIZED_LIBRARY_CLASSES_PACKAGE_PREFIX_KEY,
         topLevelFlags.getSynthesizedLibraryClassesPackagePrefix());

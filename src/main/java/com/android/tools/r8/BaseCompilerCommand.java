@@ -565,7 +565,7 @@ public abstract class BaseCompilerCommand extends BaseCommand {
 
     /** Get the minimum API level (aka SDK version). */
     public int getMinApiLevel() {
-      return isMinApiLevelSet() ? minMajorApiLevel : AndroidApiLevel.getDefault().getLevel();
+      return isMinApiLevelSet() ? minMajorApiLevel : AndroidApiLevel.getDefault().getMajor();
     }
 
     boolean isMinApiLevelSet() {
@@ -870,7 +870,7 @@ public abstract class BaseCompilerCommand extends BaseCommand {
         }
         reporter.error(builder.toString());
       }
-      if (getMinApiLevel() > AndroidApiLevel.LATEST.getLevel()) {
+      if (getMinApiLevel() > AndroidApiLevel.LATEST.getMajor()) {
         if (getMinApiLevel() != AndroidApiLevel.ANDROID_PLATFORM_CONSTANT) {
           reporter.warning(new UnsupportedAndroidApiLevelDiagnostic(getMinApiLevel(), 0));
         }
@@ -925,7 +925,7 @@ public abstract class BaseCompilerCommand extends BaseCommand {
     }
 
     boolean hasNativeMultidex() {
-      return isMinApiLevelSet() && getMinApiLevel() >= AndroidApiLevel.L.getLevel();
+      return isMinApiLevelSet() && getMinApiLevel() >= AndroidApiLevel.L.getMajor();
     }
   }
 }

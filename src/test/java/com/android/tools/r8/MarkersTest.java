@@ -82,7 +82,7 @@ public class MarkersTest extends DesugaredLibraryTestBase {
         L8Command.builder()
             .addLibraryFiles(libraryDesugaringSpecification.getLibraryFiles())
             .addProgramFiles(libraryDesugaringSpecification.getDesugarJdkLibs())
-            .setMinApiLevel(apiLevel.getLevel())
+            .setMinApiLevel(apiLevel.getMajor())
             .setMode(compilationMode)
             .addDesugaredLibraryConfiguration(
                 StringResource.fromFile(libraryDesugaringSpecification.getSpecification()))
@@ -130,7 +130,7 @@ public class MarkersTest extends DesugaredLibraryTestBase {
             .addLibraryFiles(ToolHelper.getAndroidJar(AndroidApiLevel.P))
             .addProgramFiles(ToolHelper.getClassFileForTestClass(TestClass.class))
             .setMode(compilationSpecification.getProgramCompilationMode())
-            .setMinApiLevel(apiLevel.getLevel())
+            .setMinApiLevel(apiLevel.getMajor())
             .setOutput(output, OutputMode.DexIndexed);
     if (noCfMarkerForDesugaredCode) {
       ToolHelper.runD8(
@@ -162,7 +162,7 @@ public class MarkersTest extends DesugaredLibraryTestBase {
             .addLibraryFiles(ToolHelper.getAndroidJar(AndroidApiLevel.P))
             .addProgramFiles(ToolHelper.getClassFileForTestClass(TestClass.class))
             .setMode(compilationSpecification.getProgramCompilationMode())
-            .setMinApiLevel(apiLevel.getLevel())
+            .setMinApiLevel(apiLevel.getMajor())
             .setOutput(output, OutputMode.ClassFile);
     if (noCfMarkerForDesugaredCode) {
       ToolHelper.runD8(
@@ -197,7 +197,7 @@ public class MarkersTest extends DesugaredLibraryTestBase {
             .addProgramFiles(ToolHelper.getClassFileForTestClass(TestClass.class))
             .addProguardConfiguration(ImmutableList.of("-keep class * { *; }"), Origin.unknown())
             .setMode(compilationSpecification.getProgramCompilationMode())
-            .setMinApiLevel(apiLevel.getLevel())
+            .setMinApiLevel(apiLevel.getMajor())
             .setOutput(output, OutputMode.DexIndexed);
     if (noCfMarkerForDesugaredCode) {
       ToolHelper.runR8(
@@ -262,7 +262,7 @@ public class MarkersTest extends DesugaredLibraryTestBase {
             .addLibraryFiles(ToolHelper.getAndroidJar(AndroidApiLevel.P))
             .addProgramFiles(ToolHelper.getClassFileForTestClass(TestClass.class))
             .setMode(compilationSpecification.getProgramCompilationMode())
-            .setMinApiLevel(apiLevel.getLevel())
+            .setMinApiLevel(apiLevel.getMajor())
             .setOutput(d8DesugaredOutput, OutputMode.ClassFile);
     if (noCfMarkerForDesugaredCode) {
       ToolHelper.runD8(

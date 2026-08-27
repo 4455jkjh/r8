@@ -119,7 +119,7 @@ class R8Partial {
                 options.apiModelingOptions().isApiModelingEnabled())
             .setEnableVerboseSyntheticNames(
                 options.desugarSpecificOptions().enableVerboseSyntheticNames)
-            .setMinApiLevel(options.getMinApiLevel().getLevel())
+            .setMinApiLevel(options.getMinApiLevel().getMajor())
             .setMode(options.getCompilationMode())
             .setProgramConsumer(DexIndexedConsumer.emptyConsumer());
     input.configure(d8Builder);
@@ -194,7 +194,7 @@ class R8Partial {
             .setEnableVerboseSyntheticNames(
                 options.desugarSpecificOptions().enableVerboseSyntheticNames)
             .setMapIdProvider(options.mapIdProvider)
-            .setMinApiLevel(options.getMinApiLevel().getLevel())
+            .setMinApiLevel(options.getMinApiLevel().getMajor())
             .setMode(options.getCompilationMode())
             .setPartialCompilationConfiguration(options.partialCompilationConfiguration)
             .setProgramConsumer(options.programConsumer)

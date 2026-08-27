@@ -200,7 +200,7 @@ public abstract class D8IncrementalRunExamplesAndroidOTest
                     androidJarVersion != null || b.getMinApiLevel() >= 0
                         ? ToolHelper.getAndroidJar(
                             androidJarVersion != null
-                                ? androidJarVersion.getLevel()
+                                ? androidJarVersion.getMajor()
                                 : b.getMinApiLevel())
                         : ToolHelper.getMostRecentAndroidJar(),
                     b::addLibraryFiles,

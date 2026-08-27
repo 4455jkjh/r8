@@ -44,13 +44,13 @@ public class GenerateDesugaredLibraryLintFiles extends AbstractGenerateFiles {
 
   private String lintBaseFileName(
       AndroidApiLevel compilationApiLevel, AndroidApiLevel minApiLevel) {
-    return "desugared_apis_" + compilationApiLevel.getLevel() + "_" + minApiLevel.getLevel();
+    return "desugared_apis_" + compilationApiLevel.getMajor() + "_" + minApiLevel.getMajor();
   }
 
   private Path lintFile(
       AndroidApiLevel compilationApiLevel, AndroidApiLevel minApiLevel, String extension)
       throws IOException {
-    Path directory = output.resolve("compile_api_level_" + compilationApiLevel.getLevel());
+    Path directory = output.resolve("compile_api_level_" + compilationApiLevel.getMajor());
     Files.createDirectories(directory);
     return Paths.get(
         directory

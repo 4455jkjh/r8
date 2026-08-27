@@ -21,7 +21,7 @@ public abstract class UnsupportedFeatureDiagnostic implements Diagnostic {
                 + " are only supported starting with "
                 + minApiLevel.getName()
                 + " (--min-api "
-                + minApiLevel.getLevel()
+                + minApiLevel.getMajor()
                 + ")");
     message = (sourceString != null) ? message + ": " + sourceString : message;
     return message;
@@ -67,6 +67,6 @@ public abstract class UnsupportedFeatureDiagnostic implements Diagnostic {
    * @return Supported level or -1 if unsupported at all API levels known to the compiler.
    */
   public int getSupportedApiLevel() {
-    return supportedApiLevel == null ? -1 : supportedApiLevel.getLevel();
+    return supportedApiLevel == null ? -1 : supportedApiLevel.getMajor();
   }
 }

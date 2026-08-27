@@ -45,7 +45,7 @@ public class ProguardMapMarkerInfo {
     preamble.add("# " + MARKER_KEY_COMPILER + ": " + compilerName);
     preamble.add("# " + MARKER_KEY_COMPILER_VERSION + ": " + Version.LABEL);
     if (isGeneratingDex) {
-      preamble.add("# " + MARKER_KEY_MIN_API + ": " + apiLevel.getLevel());
+      preamble.add("# " + MARKER_KEY_MIN_API + ": " + apiLevel.getMajor());
     }
     if (Version.isDevelopmentVersion()) {
       preamble.add("# " + MARKER_KEY_COMPILER_HASH + ": " + VersionProperties.INSTANCE.getSha());

@@ -73,7 +73,7 @@ public class MergingJ$Test extends DesugaredLibraryTestBase {
             .addProgramFiles(libraryDesugaringSpecification.getDesugarJdkLibs())
             .addDesugaredLibraryConfiguration(
                 StringResource.fromFile(libraryDesugaringSpecification.getSpecification()))
-            .setMinApiLevel(AndroidApiLevel.B.getLevel())
+            .setMinApiLevel(AndroidApiLevel.B.getMajor())
             .setOutput(outputDex, OutputMode.DexIndexed)
             .build());
     return outputDex;
@@ -92,7 +92,7 @@ public class MergingJ$Test extends DesugaredLibraryTestBase {
             .addProgramFiles(EXTENSION_PATH)
             .addDesugaredLibraryConfiguration(
                 StringResource.fromFile(libraryDesugaringSpecification.getSpecification()))
-            .setMinApiLevel(AndroidApiLevel.B.getLevel())
+            .setMinApiLevel(AndroidApiLevel.B.getMajor())
             .setOutput(outputDex, OutputMode.DexIndexed)
             .build());
     return outputDex;

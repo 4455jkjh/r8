@@ -70,7 +70,7 @@ public class MultiAPILevelHumanDesugaredLibrarySpecificationJsonExporter {
     toJson.put(CONFIGURATION_FORMAT_VERSION_KEY, CURRENT_HUMAN_CONFIGURATION_FORMAT_VERSION);
     toJson.put(
         REQUIRED_COMPILATION_API_LEVEL_KEY,
-        humanSpec.getTopLevelFlags().getRequiredCompilationAPILevel().getLevel());
+        humanSpec.getTopLevelFlags().getRequiredCompilationAPILevel().getMajor());
     toJson.put(
         SYNTHESIZED_LIBRARY_CLASSES_PACKAGE_PREFIX_KEY,
         humanSpec.getTopLevelFlags().getSynthesizedLibraryClassesPackagePrefix().replace('/', '.'));

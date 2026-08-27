@@ -544,7 +544,7 @@ public abstract class RunExamplesAndroidOTest<
     test("interfacedispatchclasses", "interfacedispatchclasses", "TestInterfaceDispatchClasses")
         .withMinApiLevel(AndroidApiLevel.K) // K to create dispatch classes
         .withAndroidJar(AndroidApiLevel.O)
-        .withArg(String.valueOf(ToolHelper.getMinApiLevelForDexVm().getLevel() >= 24))
+        .withArg(String.valueOf(ToolHelper.getMinApiLevelForDexVm().getMajor() >= 24))
         .withKeepAll()
         .run();
   }
@@ -655,12 +655,13 @@ public abstract class RunExamplesAndroidOTest<
     Path intermediateDex =
         temp.getRoot().toPath().resolve(packageName + "intermediate" + ZIP_EXTENSION);
     // Build intermediate with D8.
-    D8Command.Builder command = D8Command.builder()
-        .setOutput(intermediateDex, outputMode)
-        .setMinApiLevel(minApi.getLevel())
-        .addLibraryFiles(ToolHelper.getAndroidJar(minApi))
-        .setIntermediate(true)
-        .addProgramFiles(input);
+    D8Command.Builder command =
+        D8Command.builder()
+            .setOutput(intermediateDex, outputMode)
+            .setMinApiLevel(minApi.getMajor())
+            .addLibraryFiles(ToolHelper.getAndroidJar(minApi))
+            .setIntermediate(true)
+            .addProgramFiles(input);
     visitFiles(getLegacyClassesRoot(input, packageName), command::addProgramFiles);
     ToolHelper.runD8(command, option -> {
       option.interfaceMethodDesugaring = OffOrAuto.Auto;

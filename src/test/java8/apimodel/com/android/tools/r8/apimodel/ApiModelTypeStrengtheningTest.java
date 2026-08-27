@@ -37,7 +37,7 @@ public class ApiModelTypeStrengtheningTest extends TestBase {
     boolean isTypeStrengtheningSafe =
         parameters.isDexRuntime()
             && parameters.getApiLevel().isGreaterThanOrEqualTo(AndroidApiLevel.M);
-    int sdkInt = parameters.isCfRuntime() ? 0 : parameters.getApiLevel().getLevel();
+    int sdkInt = parameters.isCfRuntime() ? 0 : parameters.getApiLevel().getMajor();
     testForR8(parameters.getBackend())
         .addProgramClasses(Main.class, Version.class)
         .addLibraryClasses(ApiLevel22.class, ApiLevel23.class)

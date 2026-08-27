@@ -128,7 +128,7 @@ public class TestParameters {
 
   public boolean canUseNestBasedAccesses() {
     // TODO(b/247047415): Update test when a DEX VM natively supporting nests is added.
-    assertFalse(getApiLevel() != null && getApiLevel().getLevel() > 37);
+    assertFalse(getApiLevel() != null && getApiLevel().getMajor() > 37);
     assert isCfRuntime() || isDexRuntime();
     return isCfRuntime() && getRuntime().asCf().isNewerThanOrEqual(CfVm.JDK11);
   }
@@ -282,7 +282,7 @@ public class TestParameters {
   public String toString() {
     StringBuilder builder = new StringBuilder(runtime.toString());
     if (apiLevel != null) {
-      builder.append(", api:").append(apiLevel.getLevel());
+      builder.append(", api:").append(apiLevel.getMajor());
     }
     if (partialCompilationTestParameters.isSome()) {
       builder.append(", partial:").append(partialCompilationTestParameters);

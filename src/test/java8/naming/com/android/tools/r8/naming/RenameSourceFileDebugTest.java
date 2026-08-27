@@ -62,7 +62,7 @@ public class RenameSourceFileDebugTest extends DebugTestBase {
       if (backend == Backend.DEX) {
         AndroidApiLevel minSdk = ToolHelper.getMinApiLevelForDexVm();
         builder
-            .setMinApiLevel(minSdk.getLevel())
+            .setMinApiLevel(minSdk.getMajor())
             .addLibraryFiles(ToolHelper.getAndroidJar(minSdk))
             .setOutput(outjar, OutputMode.DexIndexed);
         config = new DexDebugTestConfig(outjar);

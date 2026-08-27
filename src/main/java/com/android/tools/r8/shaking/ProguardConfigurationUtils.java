@@ -56,7 +56,7 @@ public class ProguardConfigurationUtils {
         new Origin(Origin.root()) {
           @Override
           public String part() {
-            return "<SYNTHESIZED_FROM_API_LEVEL_" + apiLevel.getLevel() + ">";
+            return "<SYNTHESIZED_FROM_API_LEVEL_" + apiLevel.getMajor() + ">";
           }
         };
 
@@ -80,7 +80,7 @@ public class ProguardConfigurationUtils {
                     .setName(new IdentifierPatternWithWildcardsAndNegation("SDK_INT"))
                     .setReturnValue(
                         new ProguardMemberRuleValue(
-                            new LongInterval(apiLevel.getLevel(), Integer.MAX_VALUE)))
+                            new LongInterval(apiLevel.getMajor(), Integer.MAX_VALUE)))
                     .build()))
         .build();
   }

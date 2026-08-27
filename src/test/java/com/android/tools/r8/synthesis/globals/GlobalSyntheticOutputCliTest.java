@@ -50,7 +50,7 @@ public class GlobalSyntheticOutputCliTest extends TestBase {
   }
 
   private String getApiLevelString() {
-    return "" + parameters.getApiLevel().getLevel();
+    return "" + parameters.getApiLevel().getMajor();
   }
 
   private ProcessResult forkD8(String... args) throws IOException {

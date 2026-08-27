@@ -19,10 +19,10 @@ import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.ThrowableConsumer;
 import com.android.tools.r8.apimodel.ApiModelingTestHelper;
 import com.android.tools.r8.utils.AndroidApiLevel;
-import com.android.tools.r8.utils.internal.ThrowingConsumer;
 import com.android.tools.r8.utils.UnverifiableCfCodeDiagnostic;
 import com.android.tools.r8.utils.codeinspector.ClassSubject;
 import com.android.tools.r8.utils.codeinspector.CodeInspector;
+import com.android.tools.r8.utils.internal.ThrowingConsumer;
 import com.google.common.collect.Streams;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -61,8 +61,8 @@ public class Regress131349148 extends TestBase {
         Streams.stream(classSubject.mainMethod().iterateTryCatches())
             .anyMatch(
                 tryCatch -> tryCatch.isCatching("java.lang.ReflectiveOperationException"));
-    int runtimeLevel = parameters.getApiLevel().getLevel();
-    assertEquals(runtimeLevel >= AndroidApiLevel.K.getLevel(), mainHasReflectiveOperationException);
+    int runtimeLevel = parameters.getApiLevel().getMajor();
+    assertEquals(runtimeLevel >= AndroidApiLevel.K.getMajor(), mainHasReflectiveOperationException);
   }
 
   @Test
@@ -90,8 +90,8 @@ public class Regress131349148 extends TestBase {
           ClassSubject classSubject = inspector.clazz(TestClassCallingMethodWithNonExisting.class);
           boolean hasCatchHandler =
               Streams.stream(classSubject.mainMethod().iterateTryCatches()).count() > 0;
-          int runtimeLevel = parameters.getApiLevel().getLevel();
-          assertEquals(runtimeLevel >= AndroidApiLevel.L.getLevel(), hasCatchHandler);
+          int runtimeLevel = parameters.getApiLevel().getMajor();
+          assertEquals(runtimeLevel >= AndroidApiLevel.L.getMajor(), hasCatchHandler);
         });
   }
 

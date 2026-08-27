@@ -132,7 +132,7 @@ public class LegacyToHumanSpecificationConverter {
       Map<ApiLevelRange, HumanRewritingFlags> libraryFlags,
       DexApplication app,
       Origin origin) {
-    ApiLevelRange range = new ApiLevelRange(LEGACY_HACK_LEVEL.getLevel());
+    ApiLevelRange range = new ApiLevelRange(LEGACY_HACK_LEVEL.getMajor());
     HumanRewritingFlags humanRewritingFlags = libraryFlags.get(range);
     if (humanRewritingFlags == null) {
       // Skip CHM only configuration.

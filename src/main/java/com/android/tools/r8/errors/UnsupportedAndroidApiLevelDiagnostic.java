@@ -39,7 +39,7 @@ public class UnsupportedAndroidApiLevelDiagnostic implements Diagnostic {
         + apiLevelMajor
         + ((apiLevelMinor != 0) ? "." + apiLevelMinor : "")
         + " is not supported by this compiler. Please use an API level of "
-        + AndroidApiLevel.LATEST.getLevel()
+        + AndroidApiLevel.LATEST.getMajor()
         + " or earlier)";
   }
 }

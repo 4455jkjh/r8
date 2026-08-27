@@ -162,8 +162,8 @@ public class MainDexWithSynthesizedClassesTest extends TestBase {
             inspector -> checkContainsLambdaClasses(inspector, syntheticItems, A.class),
             inspector -> checkContainsLambdaClasses(inspector, syntheticItems, B.class))
         .applyIf(
-            parameters.getRuntime().asDex().getMinApiLevel().getLevel()
-                < nativeMultiDexLevel.getLevel(),
+            parameters.getRuntime().asDex().getMinApiLevel().getMajor()
+                < nativeMultiDexLevel.getMajor(),
             cr -> cr.runDex2Oat(parameters.getRuntime()).assertNoVerificationErrors(),
             cr ->
                 cr.run(parameters.getRuntime(), TestClass.class).assertSuccessWithOutput(EXPECTED));

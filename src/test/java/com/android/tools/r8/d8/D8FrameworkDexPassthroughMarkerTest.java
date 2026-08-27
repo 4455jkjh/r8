@@ -43,11 +43,12 @@ public class D8FrameworkDexPassthroughMarkerTest {
 
   @Parameters(name = "Min api = {0}")
   public static Collection<Object[]> data() {
-    return Arrays.asList(new Object[][]{
-        {AndroidApiLevel.N.getLevel()},
-        {AndroidApiLevel.O.getLevel()},
-        {AndroidApiLevel.O_MR1.getLevel()}
-    });
+    return Arrays.asList(
+        new Object[][] {
+          {AndroidApiLevel.N.getMajor()},
+          {AndroidApiLevel.O.getMajor()},
+          {AndroidApiLevel.O_MR1.getMajor()}
+        });
   }
 
   private final int minApi;

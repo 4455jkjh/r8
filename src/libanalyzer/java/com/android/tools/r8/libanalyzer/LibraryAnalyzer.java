@@ -344,7 +344,7 @@ public class LibraryAnalyzer {
   private void configure(BaseCompilerCommand.Builder<?, ?> commandBuilder) {
     commandBuilder
         .setMode(CompilationMode.RELEASE)
-        .setMinApiLevel(options.minApiLevel.getLevel(), options.minApiLevel.getMinor());
+        .setMinApiLevel(options.minApiLevel.getMajor(), options.minApiLevel.getMinor());
     app.getProgramResourceProviders().forEach(commandBuilder::addProgramResourceProvider);
     app.getClasspathResourceProviders().forEach(commandBuilder::addClasspathResourceProvider);
     app.getLibraryResourceProviders().forEach(commandBuilder::addLibraryResourceProvider);

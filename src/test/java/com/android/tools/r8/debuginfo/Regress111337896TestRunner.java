@@ -35,7 +35,7 @@ public class Regress111337896TestRunner extends DebugInfoTestBase {
                 .addProgramFiles(ToolHelper.getClassFileForTestClass(clazz))
                 .setProgramConsumer(appSink.wrapDexIndexedConsumer(null))
                 .setMode(mode)
-                .setMinApiLevel(minApi.getLevel())
+                .setMinApiLevel(minApi.getMajor())
                 .build());
         AndroidApp app = appSink.build();
         assertEquals(expected, runOnArt(app, clazz.getCanonicalName()));
@@ -64,7 +64,7 @@ public class Regress111337896TestRunner extends DebugInfoTestBase {
       // Release mode will have removed the line.
       info.checkNoLine(21);
       // In release mode the workaround will have inserted a nop if below M.
-      int expectedNops = minApi.getLevel() < AndroidApiLevel.M.getLevel() ? 1 : 0;
+      int expectedNops = minApi.getMajor() < AndroidApiLevel.M.getMajor() ? 1 : 0;
       assertEquals(expectedNops, nopsFound);
     }
   }
@@ -85,7 +85,7 @@ public class Regress111337896TestRunner extends DebugInfoTestBase {
                 .addProgramFiles(ToolHelper.getClassFileForTestClass(clazz))
                 .setProgramConsumer(appSink.wrapDexIndexedConsumer(null))
                 .setMode(mode)
-                .setMinApiLevel(minApi.getLevel())
+                .setMinApiLevel(minApi.getMajor())
                 .build());
         AndroidApp app = appSink.build();
         assertEquals(expected, runOnArt(app, clazz.getCanonicalName()));
@@ -112,7 +112,7 @@ public class Regress111337896TestRunner extends DebugInfoTestBase {
       assertEquals(0, nopsFound);
     } else {
       // In release mode the workaround will have inserted a nop if below M.
-      int expectedNops = minApi.getLevel() < AndroidApiLevel.M.getLevel() ? 1 : 0;
+      int expectedNops = minApi.getMajor() < AndroidApiLevel.M.getMajor() ? 1 : 0;
       assertEquals(expectedNops, nopsFound);
     }
   }

@@ -80,7 +80,7 @@ public class ParseFlagInfoImpl implements ParseFlagInfo {
         MIN_API_FLAG,
         "<number>",
         "Minimum Android API level compatibility (default: "
-            + AndroidApiLevel.getDefault().getLevel()
+            + AndroidApiLevel.getDefault().getMajor()
             + ").");
   }
 

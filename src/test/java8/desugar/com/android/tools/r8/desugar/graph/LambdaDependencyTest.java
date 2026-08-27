@@ -70,7 +70,7 @@ public class LambdaDependencyTest extends TestBase {
           .run(parameters.getRuntime(), TestClass.class)
           .assertSuccessWithOutputLines("lambda!");
       // If API level indicates desugaring is needed check the edges are reported.
-      if (parameters.getApiLevel().getLevel() < AndroidApiLevel.N.getLevel()) {
+      if (parameters.getApiLevel().getMajor() < AndroidApiLevel.N.getMajor()) {
         // Generated lambda class in TestClass.main depends on potential default methods in I.
         assertTrue(consumer.contains(originI, originMain));
         assertEquals(1, consumer.totalEdgeCount());
