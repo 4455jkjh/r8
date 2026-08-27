@@ -5,6 +5,7 @@
 from os import path
 import datetime
 from subprocess import check_output, check_call, CalledProcessError, Popen, PIPE, STDOUT, DEVNULL
+from concurrent.futures import ThreadPoolExecutor
 import inspect
 import os
 import sys
@@ -25,6 +26,9 @@ KOTLIN_FMT_IGNORE = {
     'src/test/java/com/android/tools/r8/kotlin/metadata/inline_class_fun_descriptor_classes_app/main.kt'
 }
 KOTLIN_FMT_BATCH_SIZE = 100
+JAVA_FMT_BATCH_SIZE = 100
+PYTHON_FMT_BATCH_SIZE = 100
+WEB_FMT_BATCH_SIZE = 100
 
 FMT_CMD_JDK17 = path.join('tools', 'google-java-format-diff.py')
 FMT_DIR = path.join('third_party', 'google', 'google-java-format', '1.24.0')
@@ -69,54 +73,100 @@ def is_web_extension(file_path):
 
 
 def CheckFormatting(input_api, output_api, branch):
-    seen_kotlin_error = False
-    seen_java_error = False
-    seen_python_error = False
-    seen_web_error = False
-    pending_kotlin_files = []
     ensure_google_download(KOTLIN_FMT_DIR)
     ensure_google_download(FMT_DIR)
     ensure_google_download(NODE_DIR)
     ensure_google_download(PRETTIER_DIR)
     ensure_google_download(PYTHON_FMT_DIR)
-    results = []
-    python_runtime = PythonRuntime()
+
+    java_files = []
+    kotlin_files = []
+    python_files = []
+    web_files = []
+
     for f in input_api.AffectedFiles():
         file_path = f.LocalPath()
         if is_kotlin_extension(file_path):
             if file_path in KOTLIN_FMT_IGNORE:
                 continue
-            pending_kotlin_files.append(file_path)
-            if len(pending_kotlin_files) == KOTLIN_FMT_BATCH_SIZE:
-                seen_kotlin_error = (CheckKotlinFormatting(
-                    pending_kotlin_files, output_api, results) or
-                                     seen_kotlin_error)
-                pending_kotlin_files = []
+            kotlin_files.append(file_path)
         elif is_java_extension(file_path):
-            seen_java_error = (CheckJavaFormatting(
-                file_path, branch, output_api, results) or seen_java_error)
+            java_files.append(file_path)
         elif is_python_extension(file_path):
-            seen_python_error = (python_runtime.check_formatting(
-                file_path, output_api, results) or seen_python_error)
+            python_files.append(file_path)
         elif is_web_extension(file_path):
-            seen_web_error = (CheckWebFormatting(file_path, output_api, results)
-                              or seen_web_error)
-        else:
-            continue
-    # Check remaining Kotlin files if any.
-    if len(pending_kotlin_files) > 0:
-        seen_kotlin_error = (CheckKotlinFormatting(
-            pending_kotlin_files, output_api, results) or seen_kotlin_error)
+            web_files.append(file_path)
+
+    results = []
+    seen_errors = {
+        'java': False,
+        'kotlin': False,
+        'python': False,
+        'web': False,
+    }
+    python_runtime = PythonRuntime()
+
+    futures = []
+    with ThreadPoolExecutor() as executor:
+        # Schedule Java batches
+        for i in range(0, len(java_files), JAVA_FMT_BATCH_SIZE):
+            batch = java_files[i:i + JAVA_FMT_BATCH_SIZE]
+            futures.append(('java',
+                            executor.submit(CheckJavaBatch, batch, branch,
+                                            output_api)))
+
+        # Schedule Kotlin batches per style
+        kotlin_paths_to_format = {
+            '--kotlinlang-style': [
+                p for p in kotlin_files if p.startswith('src/keepanno/')
+            ],
+            '--google-style': [
+                p for p in kotlin_files if not p.startswith('src/keepanno/')
+            ]
+        }
+        for format_style in ['--kotlinlang-style', '--google-style']:
+            style_paths = kotlin_paths_to_format[format_style]
+            for i in range(0, len(style_paths), KOTLIN_FMT_BATCH_SIZE):
+                batch = style_paths[i:i + KOTLIN_FMT_BATCH_SIZE]
+                futures.append(('kotlin',
+                                executor.submit(CheckKotlinBatch, batch,
+                                                format_style, output_api)))
+
+        # Schedule Python batches
+        if python_files:
+            init_error = python_runtime.initialize_runtime()
+            if init_error:
+                seen_errors['python'] = True
+                results.append(output_api.PresubmitError(init_error))
+            else:
+                for i in range(0, len(python_files), PYTHON_FMT_BATCH_SIZE):
+                    batch = python_files[i:i + PYTHON_FMT_BATCH_SIZE]
+                    futures.append(('python',
+                                    executor.submit(python_runtime.check_batch,
+                                                    batch, output_api)))
+
+        # Schedule Web batches
+        for i in range(0, len(web_files), WEB_FMT_BATCH_SIZE):
+            batch = web_files[i:i + WEB_FMT_BATCH_SIZE]
+            futures.append(
+                ('web', executor.submit(CheckWebBatch, batch, output_api)))
+
+        for lang, future in futures:
+            errors = future.result()
+            if errors:
+                seen_errors[lang] = True
+                results.extend(errors)
+
     # Provide the reformatting commands if needed.
-    if seen_kotlin_error:
+    if seen_errors['kotlin']:
         results.append(output_api.PresubmitError(
             KotlinFormatPresubmitMessage()))
-    if seen_java_error:
+    if seen_errors['java']:
         results.append(output_api.PresubmitError(JavaFormatPresubmitMessage()))
-    if seen_python_error:
+    if seen_errors['python']:
         results.append(output_api.PresubmitError(
             PythonFormatPresubmitMessage()))
-    if seen_web_error:
+    if seen_errors['web']:
         results.append(output_api.PresubmitError(WebFormatPresubmitMessage()))
 
     # Comment this out to easily fail presubmit changes
@@ -124,34 +174,20 @@ def CheckFormatting(input_api, output_api, branch):
     return results
 
 
-def CheckKotlinFormatting(paths, output_api, results):
-    paths_to_format = {
-        '--kotlinlang-style': [
-            path for path in paths if path.startswith('src/keepanno/')
-        ],
-        '--google-style': [
-            path for path in paths if not path.startswith('src/keepanno/')
-        ]
-    }
-    needs_formatting_count = 0
-    for format in ['--kotlinlang-style', '--google-style']:
-        cmd = [
-            GetJavaExecutable(GetDefaultJdkHome()), '-jar', KOTLIN_FMT_JAR,
-            format, '-n'
-        ]
-        to_format = paths_to_format[format]
-        if len(to_format) > 0:
-            cmd.extend(to_format)
-            result = check_output(cmd)
-            if len(result) > 0:
-                with_format_error = result.splitlines()
-                for path in with_format_error:
-                    results.append(
-                        output_api.PresubmitError(
-                            "File {path} needs formatting".format(
-                                path=path.decode('utf-8'))))
-            needs_formatting_count += len(result)
-    return needs_formatting_count > 0
+def CheckKotlinBatch(batch, format_style, output_api):
+    cmd = [
+        GetJavaExecutable(GetDefaultJdkHome()), '-jar', KOTLIN_FMT_JAR,
+        format_style, '-n'
+    ] + batch
+    result = check_output(cmd)
+    errors = []
+    if len(result) > 0:
+        for file_path in result.splitlines():
+            errors.append(
+                output_api.PresubmitError(
+                    "File {file_path} needs formatting".format(
+                        file_path=file_path.decode('utf-8'))))
+    return errors
 
 
 def KotlinFormatPresubmitMessage():
@@ -172,15 +208,17 @@ or bypass the checks with:
                fmt_jar=KOTLIN_FMT_JAR)
 
 
-def CheckJavaFormatting(path, branch, output_api, results):
-    diff = check_output(
-        ['git', 'diff', '--no-prefix', '-U0', branch, '--', path])
-
+def CheckJavaBatch(batch, branch, output_api):
+    diff = check_output(['git', 'diff', '--no-prefix', '-U0', branch, '--'] +
+                        batch)
+    if not diff:
+        return []
     proc = Popen(FMT_CMD, stdin=PIPE, stdout=PIPE, stderr=STDOUT)
     (stdout, stderr) = proc.communicate(input=diff)
+    errors = []
     if len(stdout) > 0:
-        results.append(output_api.PresubmitError(stdout.decode('utf-8')))
-    return len(stdout) > 0
+        errors.append(output_api.PresubmitError(stdout.decode('utf-8')))
+    return errors
 
 
 def JavaFormatPresubmitMessage():
@@ -221,7 +259,11 @@ class PythonRuntime:
         # Ensure a python interpreter with platformdirs.
         # This search allows manual setup of .venv.
         python_env = get_env_with_python_path()
-        for candidate in [sys.executable, 'python3']:
+        for candidate in [
+                sys.executable, 'python3',
+                os.path.join('.venv', 'bin', 'python3'),
+                os.path.join('.venv', 'bin', 'python')
+        ]:
             try:
                 check_call([candidate, '-c', 'import platformdirs'],
                            stdout=DEVNULL,
@@ -240,31 +282,19 @@ class PythonRuntime:
             "  $ source .venv/bin/activate\n"
             "  $ pip3 install platformdirs")
 
-    def check_formatting(self, file_path, output_api, results):
-        # Avoid repeating initialization errors.
-        if self.has_failed:
-            return False
-        # Initialize interpreter if not done already.
-        elif self.interpreter is None:
-            init_error = self.initialize_runtime()
-            if init_error:
-                results.append(output_api.PresubmitError(init_error))
-                return True
+    def check_batch(self, batch, output_api):
         format_cmd = [
             self.interpreter, PYTHON_FMT_EXEC, '--diff', '--style', 'google'
-        ]
-        format_cmd.extend([file_path])
-
+        ] + batch
         python_env = get_env_with_python_path()
-        format_output = "ill-formatted"
         try:
-            format_output = check_output(format_cmd,
-                                         env=python_env).decode('utf-8')
+            check_output(format_cmd, env=python_env)
+            return []
         except CalledProcessError as e:
             # --diff returns non-zero if there is a diff
-            results.append(output_api.PresubmitError(e.output))
-            return True
-        return False
+            output_str = (e.output.decode('utf-8') if isinstance(
+                e.output, bytes) else str(e.output))
+            return [output_api.PresubmitError(output_str)]
 
 
 def PythonFormatPresubmitMessage():
@@ -282,17 +312,17 @@ or bypass the checks with:
     """
 
 
-def CheckWebFormatting(file_path, output_api, results):
-    format_cmd = [NODE_EXEC, PRETTIER_EXEC, '--check', file_path]
+def CheckWebBatch(batch, output_api):
+    format_cmd = [NODE_EXEC, PRETTIER_EXEC, '--check'] + batch
     try:
         check_output(format_cmd, stderr=STDOUT)
+        return []
     except CalledProcessError as e:
-        results.append(
-            output_api.PresubmitError(
-                f"Web formatting error in {file_path}:\n" +
-                e.output.decode('utf-8')))
-        return True
-    return False
+        output_str = (e.output.decode('utf-8')
+                      if isinstance(e.output, bytes) else str(e.output))
+        return [
+            output_api.PresubmitError(f"Web formatting error:\n{output_str}")
+        ]
 
 
 def WebFormatPresubmitMessage():
@@ -312,12 +342,12 @@ or bypass the checks with:
 
 def CheckDeterministicDebuggingChanged(input_api, output_api, branch):
     for f in input_api.AffectedFiles():
-        path = f.LocalPath()
-        if not path.endswith('InternalOptions.java'):
+        local_path = f.LocalPath()
+        if not local_path.endswith('InternalOptions.java'):
             continue
         diff = check_output(
             ['git', 'diff', '--no-prefix', '-U0', branch, '--',
-             path]).decode('utf-8')
+             local_path]).decode('utf-8')
         if 'DETERMINISTIC_DEBUGGING' in diff:
             return [output_api.PresubmitError(diff)]
     return []
@@ -386,8 +416,8 @@ def CheckForCopyright(input_api, output_api, branch):
         r'.*\.gradle$',
         r'.*\.kts$',
     )
-    file_filter = lambda f: input_api.FilterSourceFile(
-        f, files_to_check=files_to_check)
+    file_filter = lambda file: input_api.FilterSourceFile(
+        file, files_to_check=files_to_check)
     for f in input_api.AffectedSourceFiles(file_filter):
         # Check if it is a new file.
         if f.OldContents():
