@@ -198,12 +198,13 @@ public class L8CommandParser extends BaseCompilerCommandParser {
             "Use <number> of threads for compilation. If not specified the number will be based on"
                 + " heuristics taking the number of cores into account.",
             (state, arg) ->
-                parsePositiveIntArgument(
-                    state.builder::error,
-                    THREAD_COUNT_FLAG,
+                CliParserUtils.parsePositiveInt(
                     arg,
-                    state.origin,
-                    state.builder::setThreadCount))
+                    state.builder::setThreadCount,
+                    error ->
+                        state.builder.error(
+                            new StringDiagnostic(
+                                "Invalid argument to --thread-count: " + error, state.origin))))
         .prefix2(
             "--map-diagnostics",
             "[:<type>]",

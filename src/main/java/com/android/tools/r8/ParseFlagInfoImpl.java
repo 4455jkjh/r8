@@ -11,7 +11,6 @@ import static com.android.tools.r8.BaseCompilerCommandParser.MIN_API_FLAG;
 import static com.android.tools.r8.BaseCompilerCommandParser.THREAD_COUNT_FLAG;
 import static com.android.tools.r8.BaseCompilerCommandParser.VERBOSE_SYNTHETIC_NAMES;
 import static com.android.tools.r8.D8CommandParser.STARTUP_PROFILE_FLAG;
-import static com.android.tools.r8.R8CommandParser.ISOLATED_SPLITS_FLAG;
 
 import com.android.tools.r8.utils.AndroidApiLevel;
 import com.google.common.collect.ImmutableList;
@@ -32,10 +31,6 @@ public class ParseFlagInfoImpl implements ParseFlagInfo {
 
   public static ParseFlagInfoImpl getDebug(boolean isDefault) {
     return flag0("--debug", "Compile with debugging information" + defaultSuffix(isDefault) + ".");
-  }
-
-  public static ParseFlagInfoImpl getDex(boolean isDefault) {
-    return flag0("--dex", "Compile program to DEX file format" + defaultSuffix(isDefault) + ".");
   }
 
   public static ParseFlagInfoImpl getClassfile() {
@@ -125,20 +120,6 @@ public class ParseFlagInfoImpl implements ParseFlagInfo {
     return flag0("--help", "Print this message.");
   }
 
-  public static ParseFlagInfoImpl getPgConf() {
-    return ParseFlagInfoImpl.flag1("--pg-conf", "<file>", "Proguard configuration <file>.");
-  }
-
-  public static ParseFlagInfoImpl getPgMapOutput() {
-    return ParseFlagInfoImpl.flag1(
-        "--pg-map-output", "<file>", "Output the resulting name and line mapping to <file>.");
-  }
-
-  public static ParseFlagInfoImpl getPartitionMapOutput() {
-    return ParseFlagInfoImpl.flag1(
-        "--partition-map-output", "<file>", "Output the resulting mapping to <file>.");
-  }
-
   public static List<ParseFlagInfoImpl> getAssertionsFlags() {
     return ImmutableList.of(
         flag0a1(
@@ -216,13 +197,6 @@ public class ParseFlagInfoImpl implements ParseFlagInfo {
     return flag0(
         VERBOSE_SYNTHETIC_NAMES,
         "Enable verbose synthetic names that use the `$$ExternalSynthetic` marker.");
-  }
-
-  public static ParseFlagInfoImpl getIsolatedSplits() {
-    return flag0(
-        ISOLATED_SPLITS_FLAG,
-        "Specifies that the application is using isolated splits, i.e., if split APKs installed "
-            + "for this application are loaded into their own Context objects.");
   }
 
   public static ParseFlagInfoImpl flag0(String flag, String... help) {

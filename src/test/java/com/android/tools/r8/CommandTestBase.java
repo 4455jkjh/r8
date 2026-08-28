@@ -451,8 +451,9 @@ public abstract class CommandTestBase<C extends BaseCompilerCommand> extends Tes
 
   @Test
   public void startupProfileFlagMissingParameterTest() {
+    // TODO(jonathanlist): Make this more precise once all CLI uses CliParser.
     String expectedErrorContains =
-        isL8() ? "Unknown option: --startup-profile" : "Missing parameter for --startup-profile.";
+        isL8() ? "Unknown option: --startup-profile" : "for --startup-profile.";
     try {
       DiagnosticsChecker.checkErrorsContains(
           expectedErrorContains, handler -> parseWithRequiredArgs(handler, "--startup-profile"));
