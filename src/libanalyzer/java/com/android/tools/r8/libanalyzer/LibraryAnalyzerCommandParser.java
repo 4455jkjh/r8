@@ -3,25 +3,20 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8.libanalyzer;
 
-import static com.android.tools.r8.BaseCompilerCommandParser.LIB_FLAG;
-import static com.android.tools.r8.BaseCompilerCommandParser.MIN_API_FLAG;
-import static com.android.tools.r8.BaseCompilerCommandParser.OUTPUT_FLAG;
-import static com.android.tools.r8.BaseCompilerCommandParser.THREAD_COUNT_FLAG;
-import static com.android.tools.r8.BaseCompilerCommandParser.parsePositiveIntArgument;
-
 import com.android.tools.r8.ByteArrayConsumer;
 import com.android.tools.r8.CompilerCommandParserUtils;
 import com.android.tools.r8.keepanno.annotations.KeepForApi;
 import com.android.tools.r8.origin.Origin;
 import com.android.tools.r8.origin.PathBasedMavenOrigin;
 import com.android.tools.r8.utils.AndroidApiLevel;
+import com.android.tools.r8.utils.CliParserUtils;
 import com.android.tools.r8.utils.FlagFile;
 import com.android.tools.r8.utils.Reporter;
 import com.android.tools.r8.utils.StringDiagnostic;
-import com.android.tools.r8.utils.internal.ArrayUtils;
+import com.android.tools.r8.utils.internal.CliParser;
 import com.android.tools.r8.utils.internal.FileUtils;
 import com.android.tools.r8.utils.internal.StringUtils;
-import com.google.common.collect.ImmutableSet;
+import com.android.tools.r8.utils.internal.collections.Pair;
 import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -29,144 +24,165 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
-import java.util.Set;
+import java.util.function.Consumer;
 import java.util.stream.Stream;
 
 @KeepForApi
 public class LibraryAnalyzerCommandParser {
 
-  private static final String AAR_FLAG = "--aar";
-  private static final String KEEP_RADIUS_OUTPUT_FLAG = "--keep-radius-output";
-  private static final String JAR_FLAG = "--jar";
-  private static final String REPO_FLAG = "--repo";
-
-  private static final Set<String> OPTIONS_WITH_ONE_PARAMETER =
-      ImmutableSet.of(
-          AAR_FLAG,
-          KEEP_RADIUS_OUTPUT_FLAG,
-          JAR_FLAG,
-          LIB_FLAG,
-          MIN_API_FLAG,
-          OUTPUT_FLAG,
-          REPO_FLAG,
-          THREAD_COUNT_FLAG);
-
-  private static final String USAGE_MESSAGE =
-      StringUtils.lines(
-          "Usage: libanalyzer [options]",
-          "where options are:",
-          "  --aar <path>                 # Path to Android Archive (AAR) that should be analyzed.",
-          "  --keep-radius-output <path>  # Path where to write keep radius result (protobuf).",
-          "  --jar <path>                 # Path to Java Archive (JAR) that should be analyzed.",
-          "  --lib <path>                 # Path to file or JDK home to use as a library resource.",
-          "  --maven-coord <x:y:z>        # Set the Maven coordinate of the previous --aar/--jar.",
-          "                               # Only allowed after --aar <path> or --jar <path>.",
-          "  --min-api <major.minor>      # Minimum API level to use for analysis.",
-          "  --output <path>              # Path where to write analysis result (protobuf).",
-          "  --repo <path>                # Path to local Maven repository.",
-          "  --thread-count <int>         # Number of threads to use.",
-          "  --help                       # Print this message.",
-          "  --version                    # Print the version.");
-
   public static String getUsageMessage() {
-    return USAGE_MESSAGE;
+    return CliParserUtils.getUsageMessage(createParser());
   }
 
   public static LibraryAnalyzerCommand.Builder parse(String[] args, Origin origin) {
     Reporter reporter = new Reporter();
     LibraryAnalyzerCommand.Builder builder = LibraryAnalyzerCommand.builder();
     String[] expandedArgs = FlagFile.expandFlagFiles(args, reporter::error);
-    for (int i = 0; i < expandedArgs.length; i++) {
-      String arg = expandedArgs[i].trim();
-      String nextArg = null;
-      if (OPTIONS_WITH_ONE_PARAMETER.contains(arg)) {
-        if (++i < expandedArgs.length) {
-          nextArg = expandedArgs[i];
-        } else {
-          reporter.error(
-              new StringDiagnostic("Missing parameter for " + expandedArgs[i - 1] + ".", origin));
-          break;
-        }
-      }
-      if (arg.isEmpty()) {
-        continue;
-      } else if (arg.equals("--help")) {
-        builder.setPrintHelp(true);
-      } else if (arg.equals("--version")) {
-        builder.setPrintVersion(true);
-      } else if (arg.equals(AAR_FLAG)) {
-        Path aarPath = Paths.get(nextArg);
-        if (!FileUtils.isAarFile(aarPath)) {
-          throw new IllegalArgumentException("Expected AAR, got: " + nextArg);
-        }
-        if ("--maven-coord".equals(peekArg(expandedArgs, i + 1))) {
-          if (peekArg(expandedArgs, i + 2) == null) {
-            throw new IllegalArgumentException("Missing parameter for --maven-coord");
-          }
-          List<String> mavenCoordinate = StringUtils.split(expandedArgs[i + 2], ':');
-          builder.addAarPath(
-              aarPath,
-              new PathBasedMavenOrigin(
-                  aarPath, mavenCoordinate.get(0), mavenCoordinate.get(1), mavenCoordinate.get(2)));
-          i += 2;
-        } else {
-          builder.addAarPath(aarPath);
-        }
-      } else if (arg.equals(KEEP_RADIUS_OUTPUT_FLAG)) {
-        builder.setKeepRadiusOutputPath(Paths.get(nextArg));
-      } else if (arg.equals(JAR_FLAG)) {
-        Path jarPath = Paths.get(nextArg);
-        if (!FileUtils.isJarFile(jarPath)) {
-          throw new IllegalArgumentException("Expected JAR, got: " + nextArg);
-        }
-        if ("--maven-coord".equals(peekArg(expandedArgs, i + 1))) {
-          if (peekArg(expandedArgs, i + 2) == null) {
-            throw new IllegalArgumentException("Missing parameter for --maven-coord");
-          }
-          List<String> mavenCoordinate = StringUtils.split(expandedArgs[i + 2], ':');
-          builder.addJarPath(
-              jarPath,
-              new PathBasedMavenOrigin(
-                  jarPath, mavenCoordinate.get(0), mavenCoordinate.get(1), mavenCoordinate.get(2)));
-          i += 2;
-        } else {
-          builder.addJarPath(jarPath);
-        }
-      } else if (arg.equals(LIB_FLAG)) {
-        CompilerCommandParserUtils.addLibraryArgument(
-            builder.getAppBuilder(), nextArg, origin, reporter);
-      } else if (arg.equals(MIN_API_FLAG)) {
-        builder.setMinApiLevel(AndroidApiLevel.parseAndroidApiLevel(nextArg));
-      } else if (arg.equals(OUTPUT_FLAG)) {
-        builder.setOutputConsumer(new ByteArrayConsumer.FileConsumer(Paths.get(nextArg)));
-      } else if (arg.equals(REPO_FLAG)) {
-        Path repoPath = Paths.get(nextArg);
-        if (!Files.isDirectory(repoPath)) {
-          throw new IllegalArgumentException(
-              "Invalid parameter for --repo. Expected directory, got: " + nextArg);
-        }
-        try (Stream<Path> paths = Files.walk(repoPath)) {
-          paths
-              .filter(path -> FileUtils.isAarFile(path) || FileUtils.isJarFile(path))
-              .forEach(
-                  path -> {
-                    if (FileUtils.isAarFile(path)) {
-                      builder.addAarPath(path, getMavenOriginFromArchive(repoPath, path));
-                    } else {
-                      builder.addJarPath(path, getMavenOriginFromArchive(repoPath, path));
-                    }
-                  });
-        } catch (IOException e) {
-          throw new UncheckedIOException("Failed to walk repository path: " + nextArg, e);
-        }
-      } else if (arg.equals(THREAD_COUNT_FLAG)) {
-        parsePositiveIntArgument(
-            reporter::error, THREAD_COUNT_FLAG, nextArg, origin, builder::setThreadCount);
-      } else {
-        reporter.error(new StringDiagnostic("Unknown option: " + arg, origin));
-      }
-    }
+    createParser()
+        .parse(
+            expandedArgs,
+            new ParserState(builder, origin, reporter),
+            error -> reporter.error(new StringDiagnostic(error, origin)));
     return builder;
+  }
+
+  private enum PathType {
+    Jar,
+    Aar
+  }
+
+  private static class ParserState {
+    private Pair<Path, PathType> pendingPath = null;
+    private final LibraryAnalyzerCommand.Builder builder;
+    private final Origin origin;
+    private final Reporter reporter;
+
+    private ParserState(LibraryAnalyzerCommand.Builder builder, Origin origin, Reporter reporter) {
+      this.builder = builder;
+      this.origin = origin;
+      this.reporter = reporter;
+    }
+  }
+
+  private static CliParser<ParserState> createParser() {
+    var header = StringUtils.joinLines("Usage: libanalyzer [options]", "where options are:");
+    return new CliParser<ParserState>(header)
+        .option1(
+            "--aar",
+            "<path>",
+            "Path to Android Archive (AAR) that should be analyzed.",
+            (state, arg) -> {
+              Path aarPath = Paths.get(arg);
+              if (!FileUtils.isAarFile(aarPath)) {
+                throw new IllegalArgumentException("Expected AAR, got: " + arg);
+              }
+              if (state.pendingPath != null) {
+                addPendingPathWithOrigin(state, null);
+              }
+              state.pendingPath = Pair.create(aarPath, PathType.Aar);
+            })
+        .option1(
+            "--keep-radius-output",
+            "<path>",
+            "Path where to write keep radius result (protobuf).",
+            (state, arg) -> state.builder.setKeepRadiusOutputPath(Paths.get(arg)))
+        .option1(
+            "--jar",
+            "<path>",
+            "Path to Java Archive (JAR) that should be analyzed.",
+            (state, arg) -> {
+              Path jarPath = Paths.get(arg);
+              if (!FileUtils.isJarFile(jarPath)) {
+                throw new IllegalArgumentException("Expected JAR, got: " + arg);
+              }
+              if (state.pendingPath != null) {
+                addPendingPathWithOrigin(state, null);
+              }
+              state.pendingPath = Pair.create(jarPath, PathType.Jar);
+            })
+        .option1(
+            "--lib",
+            "<path>",
+            "Path to file or JDK home to use as a library resource.",
+            (state, arg) ->
+                CompilerCommandParserUtils.addLibraryArgument(
+                    state.builder.getAppBuilder(), arg, state.origin, state.reporter))
+        .option1(
+            "--maven-coord",
+            "<x:y:z>",
+            "Set the Maven coordinate of the previous --aar/--jar.",
+            (state, arg) -> {
+              if (state.pendingPath == null) {
+                state.reporter.error(
+                    new StringDiagnostic(
+                        "No preceding --jar or --aar to modify (or multiple --maven-coord in a"
+                            + " row)",
+                        state.origin));
+              } else {
+                PathBasedMavenOrigin mavenOrigin =
+                    parseMavenCoord(
+                        arg,
+                        state.pendingPath.getFirst(),
+                        error ->
+                            state.reporter.error(
+                                new StringDiagnostic(
+                                    "Invalid argument to --maven-coord: " + error, state.origin)));
+                addPendingPathWithOrigin(state, mavenOrigin);
+                state.pendingPath = null;
+              }
+            })
+        .option1(
+            "--min-api",
+            "<major|major.minor>",
+            "Minimum API level to use for analysis.",
+            (state, arg) -> state.builder.setMinApiLevel(AndroidApiLevel.parseAndroidApiLevel(arg)))
+        .option1(
+            "--output",
+            "<path>",
+            "Path where to write analysis result (protobuf).",
+            (state, arg) ->
+                state.builder.setOutputConsumer(new ByteArrayConsumer.FileConsumer(Paths.get(arg))))
+        .option1(
+            "--repo",
+            "<path>",
+            "Path to local Maven repository.",
+            (state, arg) -> {
+              Path repoPath = Paths.get(arg);
+              if (!Files.isDirectory(repoPath)) {
+                throw new IllegalArgumentException(
+                    "Invalid parameter for --repo. Expected directory, got: " + arg);
+              }
+              try (Stream<Path> paths = Files.walk(repoPath)) {
+                paths
+                    .filter(path -> FileUtils.isAarFile(path) || FileUtils.isJarFile(path))
+                    .forEach(
+                        path -> {
+                          if (FileUtils.isAarFile(path)) {
+                            state.builder.addAarPath(
+                                path, getMavenOriginFromArchive(repoPath, path));
+                          } else {
+                            state.builder.addJarPath(
+                                path, getMavenOriginFromArchive(repoPath, path));
+                          }
+                        });
+              } catch (IOException e) {
+                throw new UncheckedIOException("Failed to walk repository path: " + arg, e);
+              }
+            })
+        .option1(
+            "--thread-count",
+            "<int>",
+            "Number of threads to use.",
+            (state, arg) ->
+                CliParserUtils.parsePositiveInt(
+                    arg,
+                    state.builder::setThreadCount,
+                    error ->
+                        state.reporter.error(
+                            new StringDiagnostic(
+                                "Invalid argument to --threads: " + error, state.origin))))
+        .option0("--help", "Print this message.", state -> state.builder.setPrintHelp(true), "-h")
+        .option0("--version", "Print the version.", state -> state.builder.setPrintVersion(true));
   }
 
   private static Origin getMavenOriginFromArchive(Path repoPath, Path path) {
@@ -180,7 +196,32 @@ public class LibraryAnalyzerCommandParser {
     return new PathBasedMavenOrigin(path, group, module, version);
   }
 
-  private static String peekArg(String[] expandedArgs, int index) {
-    return ArrayUtils.getOrDefault(expandedArgs, index, null);
+  private static void addPendingPathWithOrigin(ParserState state, Origin origin) {
+    if (state.pendingPath.getSecond() == PathType.Jar) {
+      if (origin != null) {
+        state.builder.addJarPath(state.pendingPath.getFirst(), origin);
+      } else {
+        state.builder.addJarPath(state.pendingPath.getFirst());
+      }
+    } else {
+      assert state.pendingPath.getSecond() == PathType.Aar;
+      if (origin != null) {
+        state.builder.addAarPath(state.pendingPath.getFirst(), origin);
+      } else {
+        state.builder.addAarPath(state.pendingPath.getFirst());
+      }
+    }
+  }
+
+  private static PathBasedMavenOrigin parseMavenCoord(
+      String mavenCoord, Path path, Consumer<String> errorConsumer) {
+    List<String> coordinates = StringUtils.split(mavenCoord, ':');
+    if (coordinates.size() != 3) {
+      errorConsumer.accept("Cannot read Maven coordinate: " + mavenCoord);
+      return null;
+    } else {
+      return new PathBasedMavenOrigin(
+          path, coordinates.get(0), coordinates.get(1), coordinates.get(2));
+    }
   }
 }
