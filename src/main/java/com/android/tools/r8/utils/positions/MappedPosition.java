@@ -6,6 +6,7 @@ package com.android.tools.r8.utils.positions;
 
 import com.android.tools.r8.ir.code.Position;
 
+/** Represents a mapping between an original {@link Position} and its new obfuscated line number. */
 public class MappedPosition {
 
   private final int obfuscatedLine;

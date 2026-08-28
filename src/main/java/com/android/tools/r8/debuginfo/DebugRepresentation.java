@@ -17,7 +17,7 @@ import com.android.tools.r8.utils.LebUtils;
 import com.android.tools.r8.utils.internal.CollectionUtils;
 import com.android.tools.r8.utils.internal.IterableUtils;
 import com.android.tools.r8.utils.internal.StringUtils;
-import com.android.tools.r8.utils.positions.LineNumberOptimizer;
+import com.android.tools.r8.utils.positions.OverloadedMethodOrdering;
 import com.android.tools.r8.utils.positions.PositionUtils;
 import it.unimi.dsi.fastutil.ints.Int2ReferenceAVLTreeMap;
 import it.unimi.dsi.fastutil.ints.Int2ReferenceMap;
@@ -98,14 +98,11 @@ public class DebugRepresentation {
     Int2ReferenceMap<CostSummary> paramCountToCosts = new Int2ReferenceOpenHashMap<>();
     for (DexProgramClass clazz : file.classes()) {
       IdentityHashMap<DexString, List<ProgramMethod>> overloads =
-          LineNumberOptimizer.groupMethodsByRenamedName(appView, clazz);
+          OverloadedMethodOrdering.groupMethodsByRenamedName(appView, clazz);
       for (List<ProgramMethod> methods : overloads.values()) {
-        if (methods.size() != 1) {
-          // Only use PC info for the first method in the set of overloaded methods.
-          // They need distinct lines to disambiguate.
-          LineNumberOptimizer.sortMethods(methods);
-        }
-        ProgramMethod method = methods.get(0);
+        // Only use PC info for the first method in the set of overloaded methods.
+        // They need distinct lines to disambiguate.
+        ProgramMethod method = OverloadedMethodOrdering.getFirstOverload(methods);
         DexEncodedMethod definition = method.getDefinition();
         if (!isPcCandidate(definition, options)) {
           continue;

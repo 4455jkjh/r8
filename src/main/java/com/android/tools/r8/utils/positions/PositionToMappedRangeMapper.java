@@ -26,7 +26,7 @@ public interface PositionToMappedRangeMapper {
       int pcEncodingCutoff,
       Timing timing);
 
-  void updateDebugInfoInCodeObjects();
+  void updateDebugInfoInCodeObjects(Timing timing);
 
   static PositionToMappedRangeMapper create(AppView<?> appView) {
     return appView.options().isGeneratingClassFiles()
@@ -65,8 +65,8 @@ public interface PositionToMappedRangeMapper {
     }
 
     @Override
-    public void updateDebugInfoInCodeObjects() {
-      pcBasedDebugInfoRecorder.updateDebugInfoInCodeObjects();
+    public void updateDebugInfoInCodeObjects(Timing timing) {
+      pcBasedDebugInfoRecorder.updateDebugInfoInCodeObjects(timing);
     }
   }
 
@@ -80,7 +80,7 @@ public interface PositionToMappedRangeMapper {
      * <p>Must be called after all recordings have been given to allow computing the debug info
      * items to be installed.
      */
-    void updateDebugInfoInCodeObjects();
+    void updateDebugInfoInCodeObjects(Timing timing);
 
     int getPcEncoding(int pc);
   }
@@ -135,7 +135,8 @@ public interface PositionToMappedRangeMapper {
     }
 
     @Override
-    public void updateDebugInfoInCodeObjects() {
+    public void updateDebugInfoInCodeObjects(Timing timing) {
+      timing.begin("Update debug info in code objects");
       Map<UpdateInfo, DexDebugInfo> debugInfos = new HashMap<>();
       codesToUpdate.forEach(
           entry -> {
@@ -146,6 +147,7 @@ public interface PositionToMappedRangeMapper {
             assert debugInfo.asPcBasedInfo().getMaxPc() == entry.maxEncodingPc;
             entry.code.setDebugInfo(debugInfo);
           });
+      timing.end();
     }
 
     private static DexDebugInfo buildPc2PcDebugInfo(UpdateInfo info) {
@@ -172,7 +174,7 @@ public interface PositionToMappedRangeMapper {
     }
 
     @Override
-    public void updateDebugInfoInCodeObjects() {
+    public void updateDebugInfoInCodeObjects(Timing timing) {
       // Already null out the info so nothing to do.
     }
   }

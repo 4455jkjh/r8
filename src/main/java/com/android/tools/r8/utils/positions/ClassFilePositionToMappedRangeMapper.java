@@ -42,7 +42,7 @@ public class ClassFilePositionToMappedRangeMapper implements PositionToMappedRan
   }
 
   @Override
-  public void updateDebugInfoInCodeObjects() {
+  public void updateDebugInfoInCodeObjects(Timing timing) {
     // Intentionally empty.
   }
 

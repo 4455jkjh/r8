@@ -5,17 +5,13 @@ package com.android.tools.r8.utils.positions;
 
 import static com.android.tools.r8.utils.positions.PositionUtils.mustHaveResidualDebugInfo;
 
-import com.android.tools.r8.cf.code.CfInstruction;
-import com.android.tools.r8.cf.code.CfPosition;
 import com.android.tools.r8.debuginfo.DebugRepresentation.DebugRepresentationPredicate;
 import com.android.tools.r8.errors.CompilationError;
 import com.android.tools.r8.graph.AppInfoWithClassHierarchy;
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.Code;
 import com.android.tools.r8.graph.DexClassAndMethod;
-import com.android.tools.r8.graph.DexDebugInfo;
 import com.android.tools.r8.graph.DexEncodedMethod;
-import com.android.tools.r8.graph.DexMethod;
 import com.android.tools.r8.graph.DexProgramClass;
 import com.android.tools.r8.graph.DexString;
 import com.android.tools.r8.graph.ProgramMethod;
@@ -30,9 +26,10 @@ import com.android.tools.r8.naming.mappinginformation.ResidualSignatureMappingIn
 import com.android.tools.r8.shaking.KeepInfoCollection;
 import com.android.tools.r8.utils.AndroidApp;
 import com.android.tools.r8.utils.InternalOptions;
-import com.android.tools.r8.utils.internal.ObjectUtils;
 import com.android.tools.r8.utils.OriginalSourceFiles;
 import com.android.tools.r8.utils.ThreadUtils;
+import com.android.tools.r8.utils.internal.ObjectUtils;
+import com.android.tools.r8.utils.internal.StringUtils;
 import com.android.tools.r8.utils.positions.MappedPositionToClassNameMapperBuilder.MappedPositionToClassNamingBuilder;
 import com.android.tools.r8.utils.timing.Timing;
 import java.io.IOException;
@@ -55,37 +52,54 @@ public class LineNumberOptimizer {
       OriginalSourceFiles originalSourceFiles,
       DebugRepresentationPredicate representation)
       throws ExecutionException {
+    return new LineNumberOptimizer(
+            inputApp, appView, executorService, originalSourceFiles, representation)
+        .runAndWriteMap(timing);
+  }
+
+  private final AndroidApp inputApp;
+  private final AppView<?> appView;
+  private final ExecutorService executorService;
+  private final OriginalSourceFiles originalSourceFiles;
+  private final DebugRepresentationPredicate representation;
+
+  private LineNumberOptimizer(
+      AndroidApp inputApp,
+      AppView<?> appView,
+      ExecutorService executorService,
+      OriginalSourceFiles originalSourceFiles,
+      DebugRepresentationPredicate representation) {
+    this.inputApp = inputApp;
+    this.appView = appView;
+    this.executorService = executorService;
+    this.originalSourceFiles = originalSourceFiles;
+    this.representation = representation;
+  }
+
+  @SuppressWarnings("InconsistentOverloads")
+  private ProguardMapSupplierResult runAndWriteMap(Timing timing) throws ExecutionException {
     assert appView.options().hasMappingFileSupport();
-    if (shouldEmitOriginalMappingFile(appView)) {
-      appView.options().reporter.warning(new NotSupportedMapVersionForMappingComposeDiagnostic());
-      timing.begin("Spawn write proguard map - emitting original mapping file");
-      ProguardMapSupplierResult result =
-          ProguardMapSupplier.create(appView.appInfo().app().getProguardMap(), appView.options())
-              .writeProguardMap(appView, executorService, timing);
-      timing.end();
-      return result;
+
+    if (shouldWriteOriginalMappingFile()) {
+      return writeOriginalMappingFile(timing);
     }
-    // When line number optimization is turned off the identity mapping for line numbers is
-    // used. We still run the line number optimizer to collect line numbers and inline frame
-    // information for the mapping file.
-    timing.begin("Line number remapping");
-    ClassNameMapper mapper =
-        run(appView, inputApp, originalSourceFiles, representation, executorService, timing);
-    timing.end();
-    if (appView.options().mappingComposeOptions().generatedClassNameMapperConsumer != null) {
-      appView.options().mappingComposeOptions().generatedClassNameMapperConsumer.accept(mapper);
+    ClassNameMapper mapper = run(timing);
+    notifyMappingConsumer(mapper);
+    if (shouldComposeOriginalMappingFile()) {
+      mapper = composeOriginalMappingFile(mapper, timing);
     }
-    if (appView.options().mappingComposeOptions().enableExperimentalMappingComposition
-        && appView.appInfo().app().getProguardMap() != null) {
-      try (Timing t0 = timing.begin("Compose proguard map")) {
-        mapper =
-            ClassNameMapper.mapperFromStringWithPreamble(
-                MappingComposer.compose(
-                    appView.options(), appView.appInfo().app().getProguardMap(), mapper));
-      } catch (IOException | MappingComposeException e) {
-        throw new CompilationError(e.getMessage(), e);
-      }
+    return writeMappingFile(mapper, timing);
+  }
+
+  private void notifyMappingConsumer(ClassNameMapper mapper) {
+    var consumer = appView.options().mappingComposeOptions().generatedClassNameMapperConsumer;
+    if (consumer != null) {
+      consumer.accept(mapper);
     }
+  }
+
+  private ProguardMapSupplierResult writeMappingFile(ClassNameMapper mapper, Timing timing)
+      throws ExecutionException {
     timing.begin("Spawn write proguard map");
     ProguardMapSupplierResult result =
         ProguardMapSupplier.create(mapper, appView.options())
@@ -94,7 +108,24 @@ public class LineNumberOptimizer {
     return result;
   }
 
-  private static boolean shouldEmitOriginalMappingFile(AppView<?> appView) {
+  private ClassNameMapper composeOriginalMappingFile(ClassNameMapper mapper, Timing timing) {
+    try (Timing ignored = timing.begin("Compose proguard map")) {
+      String composed =
+          MappingComposer.compose(
+              appView.options(), appView.appInfo().app().getProguardMap(), mapper);
+      mapper = ClassNameMapper.mapperFromStringWithPreamble(composed);
+    } catch (IOException | MappingComposeException e) {
+      throw new CompilationError(e.getMessage(), e);
+    }
+    return mapper;
+  }
+
+  private boolean shouldComposeOriginalMappingFile() {
+    return appView.options().mappingComposeOptions().enableExperimentalMappingComposition
+        && appView.appInfo().app().getProguardMap() != null;
+  }
+
+  private boolean shouldWriteOriginalMappingFile() {
     if (!appView.options().mappingComposeOptions().enableExperimentalMappingComposition
         || appView.appInfo().app().getProguardMap() == null) {
       return false;
@@ -109,35 +140,40 @@ public class LineNumberOptimizer {
         || newMapVersion.isUnknown();
   }
 
-  public static ClassNameMapper run(
-      AppView<?> appView,
-      AndroidApp inputApp,
-      OriginalSourceFiles originalSourceFiles,
-      DebugRepresentationPredicate representation,
-      ExecutorService executorService,
-      Timing timing)
+  private ProguardMapSupplierResult writeOriginalMappingFile(Timing timing)
       throws ExecutionException {
+    appView.options().reporter.warning(new NotSupportedMapVersionForMappingComposeDiagnostic());
+    return writeMappingFile(appView.appInfo().app().getProguardMap(), timing);
+  }
+
+  /** Optimizes line numbers and returns a corresponding mapping. */
+  private ClassNameMapper run(Timing timing) throws ExecutionException {
+    timing.begin("Line number remapping");
     PositionToMappedRangeMapper positionToMappedRangeMapper =
         PositionToMappedRangeMapper.create(appView);
-    MappedPositionToClassNameMapperBuilder builder =
-        MappedPositionToClassNameMapperBuilder.builder(appView, originalSourceFiles);
 
-    // Collect which files contain which classes that need to have their line numbers optimized.
+    var optimizedClasses = optimizePositions(positionToMappedRangeMapper, timing);
+    ClassNameMapper mapper = buildMapper(optimizedClasses, timing);
+    positionToMappedRangeMapper.updateDebugInfoInCodeObjects(timing);
+
+    timing.end();
+    return mapper;
+  }
+
+  /** Optimize line numbers and return the resulting mapping. */
+  private Iterable<ClassPositionMapping> optimizePositions(
+      PositionToMappedRangeMapper positionToMappedRangeMapper, Timing timing)
+      throws ExecutionException {
     timing.begin("Process classes");
     AppPositionRemapper positionRemapper = AppPositionRemapper.create(appView, inputApp, timing);
-    Deque<MappedPositionsForClassResult> worklist = new ConcurrentLinkedDeque<>();
+    Deque<ClassPositionMapping> worklist = new ConcurrentLinkedDeque<>();
     ThreadUtils.processItemsThatMatches(
         appView.appInfo().classes(),
-        clazz -> shouldRun(clazz, appView),
+        this::shouldRunForClass,
         (clazz, threadTiming) -> {
-          MappedPositionsForClassResult classResult =
-              runForClass(
-                  clazz,
-                  appView,
-                  representation,
-                  positionRemapper,
-                  positionToMappedRangeMapper,
-                  threadTiming);
+          ClassPositionMapping classResult =
+              optimizePositionsForClass(
+                  clazz, positionRemapper, positionToMappedRangeMapper, threadTiming);
           worklist.addLast(classResult);
         },
         appView.options(),
@@ -145,32 +181,31 @@ public class LineNumberOptimizer {
         timing,
         timing.beginMerger("Map positions concurrently", executorService));
     timing.end();
-
-    timing.begin("Add class naming");
-    while (!worklist.isEmpty()) {
-      MappedPositionsForClassResult classResult = worklist.removeFirst();
-      MappedPositionToClassNamingBuilder classNamingBuilder =
-          builder.addClassNaming(classResult.getClazz());
-      for (MappedPositionsForMethodResult methodResult :
-          classResult.getMappedPositionsForMethods()) {
-        classNamingBuilder.addMappedPositions(
-            methodResult.method,
-            methodResult.mappedPositions,
-            methodResult.positionRemapper,
-            methodResult.canUsePc);
-      }
-    }
-    timing.end();
-
-    // Update all the debug-info objects.
-    timing.begin("Update debug info in code objects");
-    positionToMappedRangeMapper.updateDebugInfoInCodeObjects();
-    timing.end();
-
-    return builder.build();
+    return worklist;
   }
 
-  private static boolean shouldRun(DexProgramClass clazz, AppView<?> appView) {
+  private ClassNameMapper buildMapper(Iterable<ClassPositionMapping> results, Timing timing) {
+    try (Timing ignored = timing.begin("Add class naming")) {
+      // TODO(b/552916515): Do this concurrently.
+      MappedPositionToClassNameMapperBuilder builder =
+          MappedPositionToClassNameMapperBuilder.builder(appView, originalSourceFiles);
+      for (ClassPositionMapping classResult : results) {
+        MappedPositionToClassNamingBuilder classNamingBuilder =
+            builder.addClassNaming(classResult.clazz);
+        for (MethodPositionMapping methodResult : classResult.methodMappings) {
+          classNamingBuilder.addMappedPositions(
+              methodResult.method,
+              methodResult.mappedPositions,
+              methodResult.positionRemapper,
+              methodResult.canUsePc);
+        }
+      }
+      return builder.build();
+    }
+  }
+
+  /** In R8 partial compilation, skip classes that are compiled by D8. */
+  private boolean shouldRunForClass(DexProgramClass clazz) {
     InternalOptions options = appView.options();
     if (options.partialSubCompilationConfiguration == null) {
       return true;
@@ -179,16 +214,14 @@ public class LineNumberOptimizer {
     }
   }
 
-  private static MappedPositionsForClassResult runForClass(
+  private ClassPositionMapping optimizePositionsForClass(
       DexProgramClass clazz,
-      AppView<?> appView,
-      DebugRepresentationPredicate representation,
       AppPositionRemapper positionRemapper,
       PositionToMappedRangeMapper positionToMappedRangeMapper,
       Timing timing) {
     timing.begin("Prelude");
     IdentityHashMap<DexString, List<ProgramMethod>> methodsByRenamedName =
-        groupMethodsByRenamedName(appView, clazz);
+        OverloadedMethodOrdering.groupMethodsByRenamedName(appView, clazz);
 
     // Process methods ordered by renamed name.
     List<DexString> renamedMethodNames = new ArrayList<>(methodsByRenamedName.keySet());
@@ -197,70 +230,68 @@ public class LineNumberOptimizer {
 
     ClassPositionRemapper classPositionRemapper =
         positionRemapper.createClassPositionRemapper(clazz);
-    List<MappedPositionsForMethodResult> mappedPositionsForMethodResults = new ArrayList<>();
-    for (DexString methodName : renamedMethodNames) {
-      List<ProgramMethod> methods = methodsByRenamedName.get(methodName);
-      if (methods.size() > 1) {
-        // If there are multiple methods with the same name (overloaded) then sort them for
-        // deterministic behaviour: the algorithm will assign new line numbers in this order.
-        // Methods with different names can share the same line numbers, that's why they don't
-        // need to be sorted.
-        // If we are compiling to DEX we will try to not generate overloaded names. This saves
-        // space by allowing more debug-information to be canonicalized. If we have overloaded
-        // methods, we either did not rename them, we renamed them according to a supplied map or
-        // they may be bridges for interface methods with covariant return types.
-        sortMethods(methods);
-        assert verifyMethodsAreKeptDirectlyOrIndirectly(appView, methods);
-      }
-
-      timing.begin("Process methods");
-      // We must reuse the same MethodPositionRemapper for methods with the same name.
-      MethodPositionRemapper methodPositionRemapper =
-          classPositionRemapper.createMethodPositionRemapper();
-      for (ProgramMethod method : methods) {
-        if (shouldRunForMethod(method, appView, methodName, methods)) {
-          MappedPositionsForMethodResult mappedPositionsForMethodResult =
-              runForMethod(
-                  method,
-                  appView,
-                  methods,
-                  methodPositionRemapper,
-                  positionToMappedRangeMapper,
-                  representation,
-                  timing);
-          mappedPositionsForMethodResults.add(mappedPositionsForMethodResult);
-        }
-      }
-      timing.end();
+    List<MethodPositionMapping> methodPositionMappings = new ArrayList<>();
+    for (DexString newMethodName : renamedMethodNames) {
+      List<ProgramMethod> methods = methodsByRenamedName.get(newMethodName);
+      var results =
+          optimizePositionsForOverloads(
+              newMethodName, methods, classPositionRemapper, positionToMappedRangeMapper, timing);
+      methodPositionMappings.addAll(results);
     }
-    return new MappedPositionsForClassResult(clazz, mappedPositionsForMethodResults);
+    return new ClassPositionMapping(clazz, methodPositionMappings);
   }
 
-  private static boolean shouldRunForMethod(
-      ProgramMethod method, AppView<?> appView, DexString methodName, List<ProgramMethod> methods) {
+  private List<MethodPositionMapping> optimizePositionsForOverloads(
+      DexString newMethodName,
+      List<ProgramMethod> methods,
+      ClassPositionRemapper classPositionRemapper,
+      PositionToMappedRangeMapper positionToMappedRangeMapper,
+      Timing timing) {
+    // Sort the methods for deterministic numbering.
+    OverloadedMethodOrdering.sortOverloadedMethods(methods);
+    assert methods.size() <= 1 || verifyMethodsAreKeptDirectlyOrIndirectly(methods)
+        : "Overloads are only allowed with good reason";
+
+    timing.begin("Process methods");
+    MethodPositionRemapper methodPositionRemapper =
+        classPositionRemapper.createMethodPositionRemapper();
+    List<MethodPositionMapping> results = new ArrayList<>(methods.size());
+    for (ProgramMethod method : methods) {
+      if (shouldOptimizeMethod(newMethodName, method, methods)) {
+        results.add(
+            optimizePositionsForMethod(
+                method, methods, methodPositionRemapper, positionToMappedRangeMapper, timing));
+      }
+    }
+    timing.end();
+    return results;
+  }
+
+  private boolean shouldOptimizeMethod(
+      DexString newMethodName, ProgramMethod method, List<ProgramMethod> methods) {
+    assert method.getDefinition() != null : "Method has no definition " + method;
     DexEncodedMethod definition = method.getDefinition();
-    return !method.getName().isIdenticalTo(methodName)
+    return !method.getName().isIdenticalTo(newMethodName)
         || mustHaveResidualDebugInfo(appView.options(), definition)
         || definition.isD8R8Synthesized()
         || methods.size() > 1;
   }
 
-  private static MappedPositionsForMethodResult runForMethod(
+  private MethodPositionMapping optimizePositionsForMethod(
       ProgramMethod method,
-      AppView<?> appView,
       List<ProgramMethod> methods,
       MethodPositionRemapper positionRemapper,
       PositionToMappedRangeMapper positionToMappedRangeMapper,
-      DebugRepresentationPredicate representation,
       Timing timing) {
+    assert method.getDefinition() != null : "Method has no definition " + method;
     Code code = method.getDefinition().getCode();
     if (code == null
         || !(code.isCfCode() || code.isDexCode())
         || appView.isCfByteCodePassThrough(method)) {
-      return new MappedPositionsForMethodResult(
+      return new MethodPositionMapping(
           method, Collections.emptyList(), positionRemapper, representation.canUseDexPc(methods));
     }
-    try (Timing t0 = timing.begin("Get mapped positions")) {
+    try (Timing ignored = timing.begin("Get mapped positions")) {
       int pcEncodingCutoff =
           ObjectUtils.identical(method, methods.get(0))
               ? representation.getDexPcEncodingCutoff(method)
@@ -269,23 +300,23 @@ public class LineNumberOptimizer {
       List<MappedPosition> mappedPositions =
           positionToMappedRangeMapper.getMappedPositions(
               method, positionRemapper, methods.size() > 1, canUseDexPc, pcEncodingCutoff, timing);
-      return new MappedPositionsForMethodResult(
-          method, mappedPositions, positionRemapper, canUseDexPc);
+      return new MethodPositionMapping(method, mappedPositions, positionRemapper, canUseDexPc);
     }
   }
 
-  @SuppressWarnings("ComplexBooleanConstant")
-  private static boolean verifyMethodsAreKeptDirectlyOrIndirectly(
-      AppView<?> appView, List<ProgramMethod> methods) {
+  @SuppressWarnings("SameReturnValue")
+  private boolean verifyMethodsAreKeptDirectlyOrIndirectly(List<ProgramMethod> methods) {
+    assert !methods.isEmpty();
     if (appView.options().isGeneratingClassFiles() || !appView.appInfo().hasClassHierarchy()) {
       return true;
     }
     AppInfoWithClassHierarchy appInfo = appView.appInfo().withClassHierarchy();
     KeepInfoCollection keepInfo = appView.getKeepInfo();
     boolean allSeenAreInstanceInitializers = true;
-    DexString originalName;
+    List<DexString> originalNames = new ArrayList<>(methods.size());
     for (ProgramMethod method : methods) {
       // We cannot rename instance initializers.
+      assert method.getDefinition() != null;
       if (method.getDefinition().isInstanceInitializer()) {
         assert allSeenAreInstanceInitializers;
         continue;
@@ -295,7 +326,7 @@ public class LineNumberOptimizer {
       if (!keepInfo.isMinificationAllowed(method, appView.options())) {
         continue;
       }
-      // With desugared library, call-backs names are reserved here.
+      // With desugared library, call-back names are reserved here.
       if (method.getDefinition().isLibraryMethodOverride().isTrue()) {
         continue;
       }
@@ -306,107 +337,37 @@ public class LineNumberOptimizer {
         // We cannot rename methods we cannot look up.
         continue;
       }
-      String errorString = method.getReference().qualifiedName() + " is not kept but is overloaded";
-      assert lookupResult.getHolder().isInterface() : errorString;
-      // TODO(b/159113601): Reenable assert.
-      assert true || originalName == null || originalName.equals(method.getReference().name)
-          : errorString;
-      originalName = method.getReference().name;
+      String fullMethodName = method.getReference().qualifiedName();
+      assert lookupResult.getHolder().isInterface()
+          : "Expected " + fullMethodName + " to be kept or an interface method";
+      originalNames.add(method.getReference().name);
     }
+    assert originalNames.stream().allMatch(name -> originalNames.get(0).isIdenticalTo(name))
+        : "Non-overloaded methods should not become overloaded "
+            + StringUtils.join(", ", originalNames);
     return true;
   }
 
-  private static int getMethodStartLine(ProgramMethod method) {
-    Code code = method.getDefinition().getCode();
-    if (code == null) {
-      return 0;
-    }
-    if (code.isDexCode()) {
-      DexDebugInfo dexDebugInfo = code.asDexCode().getDebugInfo();
-      return dexDebugInfo == null ? 0 : dexDebugInfo.getStartLine();
-    } else if (code.isCfCode()) {
-      List<CfInstruction> instructions = code.asCfCode().getInstructions();
-      for (CfInstruction instruction : instructions) {
-        if (!(instruction instanceof CfPosition)) {
-          continue;
-        }
-        return ((CfPosition) instruction).getPosition().getLine();
-      }
-    }
-    return 0;
-  }
-
-  public static void sortMethods(List<ProgramMethod> methods) {
-    // Sort by startline, then DexEncodedMethod.slowCompare. Use startLine = 0 if no debuginfo.
-    methods.sort(
-        (lhs, rhs) -> {
-          int lhsStartLine = getMethodStartLine(lhs);
-          int rhsStartLine = getMethodStartLine(rhs);
-          int startLineDiff = lhsStartLine - rhsStartLine;
-          if (startLineDiff != 0) return startLineDiff;
-          return DexEncodedMethod.slowCompare(lhs.getDefinition(), rhs.getDefinition());
-        });
-    // Insert the largest method first since we can use pc encoding for this method.
-    int largestIndex = -1;
-    int largestCode = -1;
-    for (int i = 0; i < methods.size(); i++) {
-      ProgramMethod method = methods.get(i);
-      if (method.getDefinition().hasCode() && method.getDefinition().getCode().isDexCode()) {
-        int codeSizeInBytes = method.getDefinition().getCode().asDexCode().codeSizeInBytes();
-        if (codeSizeInBytes > largestCode) {
-          largestIndex = i;
-          largestCode = codeSizeInBytes;
-        }
-      }
-    }
-    if (largestIndex > 0) {
-      Collections.swap(methods, 0, largestIndex);
-    }
-  }
-
-  public static IdentityHashMap<DexString, List<ProgramMethod>> groupMethodsByRenamedName(
-      AppView<?> appView, DexProgramClass clazz) {
-    IdentityHashMap<DexString, List<ProgramMethod>> methodsByRenamedName =
-        new IdentityHashMap<>(clazz.getMethodCollection().size());
-    for (ProgramMethod programMethod : clazz.programMethods()) {
-      // Add method only if renamed, moved, or if it has debug info to map.
-      DexMethod method = programMethod.getReference();
-      DexString renamedName = appView.getNamingLens().lookupName(method);
-      methodsByRenamedName
-          .computeIfAbsent(renamedName, key -> new ArrayList<>())
-          .add(programMethod);
-    }
-    return methodsByRenamedName;
-  }
-
-  private static class MappedPositionsForClassResult {
+  private static class ClassPositionMapping {
 
     private final DexProgramClass clazz;
-    private final List<MappedPositionsForMethodResult> mappedPositionsForMethods;
+    private final List<MethodPositionMapping> methodMappings;
 
-    private MappedPositionsForClassResult(
-        DexProgramClass clazz, List<MappedPositionsForMethodResult> mappedPositionsForMethods) {
+    private ClassPositionMapping(
+        DexProgramClass clazz, List<MethodPositionMapping> methodMappings) {
       this.clazz = clazz;
-      this.mappedPositionsForMethods = mappedPositionsForMethods;
-    }
-
-    DexProgramClass getClazz() {
-      return clazz;
-    }
-
-    List<MappedPositionsForMethodResult> getMappedPositionsForMethods() {
-      return mappedPositionsForMethods;
+      this.methodMappings = methodMappings;
     }
   }
 
-  private static class MappedPositionsForMethodResult {
+  private static class MethodPositionMapping {
 
     private final ProgramMethod method;
     private final List<MappedPosition> mappedPositions;
     private final MethodPositionRemapper positionRemapper;
     private final boolean canUsePc;
 
-    private MappedPositionsForMethodResult(
+    private MethodPositionMapping(
         ProgramMethod method,
         List<MappedPosition> mappedPositions,
         MethodPositionRemapper positionRemapper,
