@@ -68,10 +68,8 @@ public class ProguardConfigurationParser {
   public static final String FLATTEN_PACKAGE_HIERARCHY = "flattenpackagehierarchy";
   public static final String REPACKAGE_CLASSES = "repackageclasses";
 
-  private static final List<String> IGNORED_SINGLE_ARG_OPTIONS = ImmutableList.of(
-      "protomapping",
-      "target",
-      "maximuminlinedcodelength");
+  private static final List<String> IGNORED_SINGLE_ARG_OPTIONS =
+      ImmutableList.of("protomapping", "target", "maximuminlinedcodelength");
 
   private static final List<String> IGNORED_OPTIONAL_SINGLE_ARG_OPTIONS =
       ImmutableList.of("runtype", "laststageoutput");
@@ -105,6 +103,7 @@ public class ProguardConfigurationParser {
           "floggerForInjectedClassNameObfuscation",
           "inlinestaticmethodsthatloadclass",
           "inlinesyntheticaccessor",
+          "keepresourcexmlelements",
           // TODO(b/37137994): -outjars should be reported as errors, not just as warnings!
           "outjars");
 
