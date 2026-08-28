@@ -66,10 +66,14 @@ public class GlobalSyntheticsGeneratorCommandParser {
                         "Cannot set multiple " + minApiFlag + " options", b.origin);
                 b.builder.error(diagnostic);
               } else {
-                CliParserUtils.parsePositiveInt(
+                CliParserUtils.parseApiLevel(
                     arg,
-                    i -> {
-                      b.builder.setMinApiLevel(i);
+                    apiLevel -> {
+                      if (apiLevel.getMinor() != 0) {
+                        b.builder.error(
+                            new StringDiagnostic("Minor API versions are not supported", b.origin));
+                      }
+                      b.builder.setMinApiLevel(apiLevel.getMajor());
                       b.hasDefinedApiLevel = true;
                     },
                     err -> {

@@ -212,6 +212,9 @@ public class AndroidApiLevel implements Ordered<AndroidApiLevel> {
     return getAndroidApiLevel(major, 0);
   }
 
+  /**
+   * @throws IllegalArgumentException if the parsed API version is invalid (e.g. 99.99).
+   */
   public static AndroidApiLevel getAndroidApiLevel(int major, int minor) {
     assert CINNAMON_BUN == LATEST; // This has to be updated when new API levels are added.
     switch (major) {
@@ -419,7 +422,12 @@ public class AndroidApiLevel implements Ordered<AndroidApiLevel> {
         "Unsupported or invalid Android API level: " + getNumericString(major, minor));
   }
 
-  /** Parses strings like {@code <int>} or {@code <int>.<int>}. */
+  /**
+   * Parses strings like {@code <int>} or {@code <int>.<int>}.
+   *
+   * @throws NumberFormatException if the number parts are malformatted
+   * @throws IllegalArgumentException if the parsed API version is invalid (e.g. 99.99).
+   */
   public static AndroidApiLevel parseAndroidApiLevel(String apiLevel) {
     int dotPosition = apiLevel.indexOf('.');
     if (dotPosition == -1) {

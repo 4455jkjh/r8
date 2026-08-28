@@ -92,6 +92,18 @@ public class CliParserUtils {
     }
   }
 
+  public static void parseApiLevel(
+      String arg, Consumer<AndroidApiLevel> handler, Consumer<String> errorConsumer) {
+    try {
+      handler.accept(AndroidApiLevel.parseAndroidApiLevel(arg));
+    } catch (IllegalArgumentException e) {
+      // Note that NumberFormatException is a subclass of IllegalArgumentException.
+      String rawMessage = e.getMessage();
+      String message = rawMessage == null ? "" : ", " + rawMessage;
+      errorConsumer.accept("Invalid API version: " + arg + message);
+    }
+  }
+
   public static DiagnosticsLevel parseDiagnosticsLevel(
       String level, Consumer<Diagnostic> errorHandler, Origin origin) {
     switch (level) {
