@@ -1170,6 +1170,13 @@ public class OutlinerImpl implements ReprocessingOptimization {
         return;
       }
 
+      Instruction lastInstruction = currentCandidateInstructions.get(end - 1);
+      if (lastInstruction.getBlock().hasCatchHandlers()
+          && !lastInstruction.instructionInstanceCanThrow(appView, method)) {
+        reset(start + 1);
+        return;
+      }
+
       Outline outline =
           new Outline(
               currentCandidateInstructions, argumentTypes, argumentsMap, returnType, start, end);
