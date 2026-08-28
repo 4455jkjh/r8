@@ -4,7 +4,7 @@
 
 package com.android.tools.r8.ir.optimize.enums;
 
-import static com.android.tools.r8.ir.optimize.enums.EnumUnboxer.ordinalToUnboxedInt;
+import static com.android.tools.r8.ir.optimize.enums.EnumUnboxerImpl.ordinalToUnboxedInt;
 
 import com.android.tools.r8.errors.CheckEnumUnboxedDiagnostic;
 import com.android.tools.r8.graph.AppView;

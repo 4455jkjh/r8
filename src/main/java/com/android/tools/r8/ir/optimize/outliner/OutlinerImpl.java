@@ -106,24 +106,24 @@ import java.util.function.Consumer;
  * <p>Outlining happens in three steps.
  *
  * <ul>
- *   <li>First, all methods are converted to IR and passed to {@link Outliner#collectOutlineSites}
- *       to identify outlining candidates and the methods containing each candidate. IR is converted
- *       to the output format (DEX or CF) and thrown away along with the outlining candidates; only
- *       a list of lists of methods is kept, where each list of methods corresponds to methods
- *       containing an outlining candidate.
- *   <li>Second, {@link Outliner#selectMethodsForOutlining()} is called to retain the lists of
+ *   <li>First, all methods are converted to IR and passed to {@link
+ *       OutlinerImpl#collectOutlineSites} to identify outlining candidates and the methods
+ *       containing each candidate. IR is converted to the output format (DEX or CF) and thrown away
+ *       along with the outlining candidates; only a list of lists of methods is kept, where each
+ *       list of methods corresponds to methods containing an outlining candidate.
+ *   <li>Second, {@link OutlinerImpl#selectMethodsForOutlining()} is called to retain the lists of
  *       methods found in the first step that are large enough (see {@link InternalOptions#outline}
  *       {@link OutlineOptions#threshold}). Each selected method is then converted back to IR and
- *       passed to {@link Outliner#identifyOutlineSites(IRCode)}, which then stores concrete
- *       outlining candidates in {@link Outliner#outlineSites}.
- *   <li>Third, {@link Outliner#buildOutlineMethods} is called to construct the <em>outline support
- *       classes</em> containing a static helper method for each outline candidate that occurs
- *       frequently enough. Each selected method is then converted to IR, passed to {@link
- *       Outliner#applyOutliningCandidate(IRCode)} to perform the outlining, and converted back to
- *       the output format (DEX or CF).
+ *       passed to {@link OutlinerImpl#identifyOutlineSites(IRCode)}, which then stores concrete
+ *       outlining candidates in {@link OutlinerImpl#outlineSites}.
+ *   <li>Third, {@link OutlinerImpl#buildOutlineMethods} is called to construct the <em>outline
+ *       support classes</em> containing a static helper method for each outline candidate that
+ *       occurs frequently enough. Each selected method is then converted to IR, passed to {@link
+ *       OutlinerImpl#applyOutliningCandidate(IRCode)} to perform the outlining, and converted back
+ *       to the output format (DEX or CF).
  * </ul>
  */
-public class Outliner implements ReprocessingOptimization {
+public class OutlinerImpl implements ReprocessingOptimization {
 
   /**
    * Result of first step (see {@link
@@ -132,10 +132,10 @@ public class Outliner implements ReprocessingOptimization {
    */
   private OutlineCollection outlineCollection;
 
-  /** Result of second step (see {@link Outliner#selectMethodsForOutlining()}. */
+  /** Result of second step (see {@link OutlinerImpl#selectMethodsForOutlining()}. */
   private final Map<Outline, List<ProgramMethod>> outlineSites = new HashMap<>();
 
-  /** Result of third step (see {@link Outliner#buildOutlineMethods}. */
+  /** Result of third step (see {@link OutlinerImpl#buildOutlineMethods}. */
   private final Map<Outline, DexMethod> generatedOutlines = new HashMap<>();
 
   static final int MAX_IN_SIZE = 5; // Avoid using ranged calls for outlined code.
@@ -1350,11 +1350,11 @@ public class Outliner implements ReprocessingOptimization {
     }
   }
 
-  public static Outliner create(AppView<AppInfoWithLiveness> appView) {
-    return appView.options().outline.enabled ? new Outliner(appView) : null;
+  public static OutlinerImpl create(AppView<AppInfoWithLiveness> appView) {
+    return appView.options().outline.enabled ? new OutlinerImpl(appView) : null;
   }
 
-  public Outliner(AppView<AppInfoWithLiveness> appView) {
+  public OutlinerImpl(AppView<AppInfoWithLiveness> appView) {
     this.appView = appView;
     this.dexItemFactory = appView.dexItemFactory();
     this.inliningConstraints = new InliningConstraints(appView);

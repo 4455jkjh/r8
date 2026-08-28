@@ -149,7 +149,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
-public class EnumUnboxer implements ReprocessingOptimization {
+public class EnumUnboxerImpl implements ReprocessingOptimization {
 
   private final AppView<AppInfoWithLiveness> appView;
   private final DexItemFactory factory;
@@ -170,11 +170,11 @@ public class EnumUnboxer implements ReprocessingOptimization {
 
   private GraphLens appliedGraphLens;
 
-  public static EnumUnboxer create(AppView<AppInfoWithLiveness> appView) {
-    return appView.options().enableEnumUnboxing ? new EnumUnboxer(appView) : null;
+  public static EnumUnboxerImpl create(AppView<AppInfoWithLiveness> appView) {
+    return appView.options().enableEnumUnboxing ? new EnumUnboxerImpl(appView) : null;
   }
 
-  EnumUnboxer(AppView<AppInfoWithLiveness> appView) {
+  EnumUnboxerImpl(AppView<AppInfoWithLiveness> appView) {
     this.appView = appView;
     this.factory = appView.dexItemFactory();
     if (appView.options().testing.enableEnumUnboxingDebugLogs) {

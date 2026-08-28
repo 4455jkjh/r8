@@ -50,7 +50,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 
-public class NumberUnboxer implements ReprocessingOptimization {
+public class NumberUnboxerImpl implements ReprocessingOptimization {
 
   private final AppView<AppInfoWithLiveness> appView;
   private final DexItemFactory factory;
@@ -65,14 +65,14 @@ public class NumberUnboxer implements ReprocessingOptimization {
 
   private GraphLens appliedGraphLens;
 
-  public static NumberUnboxer create(AppView<AppInfoWithLiveness> appView) {
+  public static NumberUnboxerImpl create(AppView<AppInfoWithLiveness> appView) {
     if (appView.testing().getNumberUnboxerOptions().isEnabled()) {
-      return new NumberUnboxer(appView);
+      return new NumberUnboxerImpl(appView);
     }
     return null;
   }
 
-  public NumberUnboxer(AppView<AppInfoWithLiveness> appView) {
+  public NumberUnboxerImpl(AppView<AppInfoWithLiveness> appView) {
     this.appView = appView;
     this.factory = appView.dexItemFactory();
     this.numberUnboxerOptions = appView.testing().getNumberUnboxerOptions();

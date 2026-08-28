@@ -12,9 +12,9 @@ import com.android.tools.r8.ir.code.IRCode;
 import com.android.tools.r8.ir.conversion.MethodProcessor;
 import com.android.tools.r8.ir.conversion.PostMethodProcessor;
 import com.android.tools.r8.ir.conversion.PrimaryR8IRConverter;
-import com.android.tools.r8.ir.optimize.enums.EnumUnboxer;
+import com.android.tools.r8.ir.optimize.enums.EnumUnboxerImpl;
 import com.android.tools.r8.ir.optimize.info.OptimizationFeedbackDelayed;
-import com.android.tools.r8.ir.optimize.numberunboxer.NumberUnboxer;
+import com.android.tools.r8.ir.optimize.numberunboxer.NumberUnboxerImpl;
 import com.android.tools.r8.optimize.argumentpropagation.ArgumentPropagator;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
 import com.android.tools.r8.utils.internal.ListUtils;
@@ -72,9 +72,9 @@ public interface ReprocessingOptimizationCollection {
 
   static ReprocessingOptimizationCollection create(AppView<AppInfoWithLiveness> appView) {
     ArgumentPropagator argumentPropagator = ArgumentPropagator.create(appView);
-    EnumUnboxer enumUnboxer = EnumUnboxer.create(appView);
-    NumberUnboxer numberUnboxer = NumberUnboxer.create(appView);
-    Outliner outliner = Outliner.create(appView);
+    EnumUnboxerImpl enumUnboxer = EnumUnboxerImpl.create(appView);
+    NumberUnboxerImpl numberUnboxer = NumberUnboxerImpl.create(appView);
+    OutlinerImpl outliner = OutlinerImpl.create(appView);
     List<ReprocessingOptimization> optimizations =
         ListUtils.newArrayListExcludingNullItems(
             argumentPropagator, enumUnboxer, numberUnboxer, outliner);

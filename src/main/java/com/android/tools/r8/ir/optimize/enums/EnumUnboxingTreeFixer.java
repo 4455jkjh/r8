@@ -6,7 +6,7 @@ package com.android.tools.r8.ir.optimize.enums;
 
 import static com.android.tools.r8.ir.analysis.type.Nullability.definitelyNotNull;
 import static com.android.tools.r8.ir.conversion.ExtraUnusedParameter.computeExtraUnusedParameters;
-import static com.android.tools.r8.ir.optimize.enums.EnumUnboxer.ordinalToUnboxedInt;
+import static com.android.tools.r8.ir.optimize.enums.EnumUnboxerImpl.ordinalToUnboxedInt;
 
 import com.android.tools.r8.cf.CfVersion;
 import com.android.tools.r8.contexts.CompilationContext.ProcessorContext;
