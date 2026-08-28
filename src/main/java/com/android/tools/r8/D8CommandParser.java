@@ -221,7 +221,9 @@ public class D8CommandParser extends BaseCompilerCommandParser {
             "--lib",
             "<file|jdk-home>",
             "Add <file|jdk-home> as a library resource.",
-            (state, arg) -> addLibraryArgument(state.builder, arg, state.origin))
+            (state, arg) ->
+                CompilerCommandParserUtils.addLibraryArgument(
+                    state.builder.getAppBuilder(), arg, state.origin, state.builder.getReporter()))
         .option1(
             "--classpath",
             "<file>",
@@ -256,15 +258,15 @@ public class D8CommandParser extends BaseCompilerCommandParser {
             (state, arg) -> {
               if (state.hasDefinedApiLevel) {
                 state.builder.error(
-                    new StringDiagnostic(
-                        "Cannot set multiple " + MIN_API_FLAG + " options", state.origin));
+                    new StringDiagnostic("Cannot set multiple --min-api options", state.origin));
               } else {
-                parsePositiveIntArgument(
-                    state.builder::error,
-                    MIN_API_FLAG,
+                CliParserUtils.parsePositiveInt(
                     arg,
-                    state.origin,
-                    state.builder::setMinApiLevel);
+                    state.builder::setMinApiLevel,
+                    error ->
+                        state.builder.error(
+                            new StringDiagnostic(
+                                "Invalid argument to --min-api: " + error, state.origin)));
                 state.hasDefinedApiLevel = true;
               }
             })
@@ -277,7 +279,7 @@ public class D8CommandParser extends BaseCompilerCommandParser {
               if (state.builder.getApiDatabasePath() != null) {
                 state.builder.error(
                     new StringDiagnostic(
-                        "Cannot set multiple " + API_DATABASE_FLAG + " options", state.origin));
+                        "Cannot set multiple --api-database options", state.origin));
               } else {
                 state.builder.setApiDatabasePath(Paths.get(arg));
               }
@@ -377,12 +379,13 @@ public class D8CommandParser extends BaseCompilerCommandParser {
             "Use <number> of threads for compilation. If not specified the number will be based on"
                 + " heuristics taking the number of cores into account.",
             (state, arg) ->
-                parsePositiveIntArgument(
-                    state.builder::error,
-                    THREAD_COUNT_FLAG,
+                CliParserUtils.parsePositiveInt(
                     arg,
-                    state.origin,
-                    state.builder::setThreadCount))
+                    state.builder::setThreadCount,
+                    error ->
+                        state.builder.error(
+                            new StringDiagnostic(
+                                "Invalid argument to --thread-count: " + error, state.origin))))
         .prefix2(
             "--map-diagnostics",
             "[:<type>]",

@@ -6,29 +6,18 @@ package com.android.tools.r8;
 import com.android.tools.r8.origin.Origin;
 import com.android.tools.r8.references.MethodReference;
 import com.android.tools.r8.references.Reference;
-import com.android.tools.r8.utils.CliParserUtils;
 import com.android.tools.r8.utils.DescriptorUtils;
-import com.android.tools.r8.utils.Reporter;
 import com.android.tools.r8.utils.StringDiagnostic;
 import com.android.tools.r8.utils.internal.collections.Pair;
 import com.android.tools.r8.utils.internal.exceptions.Unreachable;
-import java.nio.file.Paths;
 import java.util.function.Consumer;
 
 public class BaseCompilerCommandParser {
 
-  protected static final String ART_PROFILE_FLAG = "--art-profile";
-  protected static final String BUILD_METADATA_OUTPUT_FLAG = "--build-metadata-output";
   public static final String LIB_FLAG = "--lib";
   public static final String MIN_API_FLAG = "--min-api";
   public static final String OUTPUT_FLAG = "--output";
-  protected static final String STARTUP_PROFILE_FLAG = "--startup-profile";
   public static final String THREAD_COUNT_FLAG = "--thread-count";
-  public static final String MAP_DIAGNOSTICS = "--map-diagnostics";
-  protected static final String DUMP_INPUT_TO_FILE = "--dumpinputtofile";
-  protected static final String DUMP_INPUT_TO_DIRECTORY = "--dumpinputtodirectory";
-  protected static final String VERBOSE_SYNTHETIC_NAMES = "--verbose-synthetic-names";
-  public static final String API_DATABASE_FLAG = "--api-database";
 
   public static void parsePositiveIntArgument(
       Consumer<Diagnostic> errorConsumer,
@@ -166,25 +155,25 @@ public class BaseCompilerCommandParser {
     return Pair.create(assertionsHandler, scope);
   }
 
-  static <C extends BaseCompilerCommand, B extends BaseCompilerCommand.Builder<C, B>>
+  protected static <C extends BaseCompilerCommand, B extends BaseCompilerCommand.Builder<C, B>>
       void parseForceEnableAssertions(B builder, String suffix, Origin origin) {
     String scope = parseAssertionScope(builder, suffix, origin);
     addAssertionTransformation(builder, AssertionTransformationType.ENABLE, null, scope);
   }
 
-  static <C extends BaseCompilerCommand, B extends BaseCompilerCommand.Builder<C, B>>
+  protected static <C extends BaseCompilerCommand, B extends BaseCompilerCommand.Builder<C, B>>
       void parseForceDisableAssertions(B builder, String suffix, Origin origin) {
     String scope = parseAssertionScope(builder, suffix, origin);
     addAssertionTransformation(builder, AssertionTransformationType.DISABLE, null, scope);
   }
 
-  static <C extends BaseCompilerCommand, B extends BaseCompilerCommand.Builder<C, B>>
+  protected static <C extends BaseCompilerCommand, B extends BaseCompilerCommand.Builder<C, B>>
       void parseForcePassthroughAssertions(B builder, String suffix, Origin origin) {
     String scope = parseAssertionScope(builder, suffix, origin);
     addAssertionTransformation(builder, AssertionTransformationType.PASSTHROUGH, null, scope);
   }
 
-  static <C extends BaseCompilerCommand, B extends BaseCompilerCommand.Builder<C, B>>
+  protected static <C extends BaseCompilerCommand, B extends BaseCompilerCommand.Builder<C, B>>
       void parseForceAssertionsHandler(B builder, String suffix, Origin origin) {
     Pair<MethodReference, String> handlerAndScope = parseAssertionHandler(builder, suffix, origin);
     addAssertionTransformation(
@@ -194,122 +183,4 @@ public class BaseCompilerCommandParser {
         handlerAndScope.getSecond());
   }
 
-  static <C extends BaseCompilerCommand, B extends BaseCompilerCommand.Builder<C, B>>
-      boolean tryParseAssertionArgument(B builder, String arg, Origin origin) {
-    String FORCE_ENABLE_ASSERTIONS = "--force-enable-assertions";
-    String FORCE_EA = "--force-ea";
-    String FORCE_DISABLE_ASSERTIONS = "--force-disable-assertions";
-    String FORCE_DA = "--force-da";
-    String FORCE_PASSTHROUGH_ASSERTIONS = "--force-passthrough-assertions";
-    String FORCE_PA = "--force-pa";
-    String FORCE_ASSERTIONS_HANDLER = "--force-assertions-handler";
-    String FORCE_AH = "--force-ah";
-
-    AssertionTransformationType transformation = null;
-    String remaining = null;
-    if (arg.startsWith(FORCE_ENABLE_ASSERTIONS)) {
-      transformation = AssertionTransformationType.ENABLE;
-      remaining = arg.substring(FORCE_ENABLE_ASSERTIONS.length());
-    } else if (arg.startsWith(FORCE_EA)) {
-      transformation = AssertionTransformationType.ENABLE;
-      remaining = arg.substring(FORCE_EA.length());
-    } else if (arg.startsWith(FORCE_DISABLE_ASSERTIONS)) {
-      transformation = AssertionTransformationType.DISABLE;
-      remaining = arg.substring(FORCE_DISABLE_ASSERTIONS.length());
-    } else if (arg.startsWith(FORCE_DA)) {
-      transformation = AssertionTransformationType.DISABLE;
-      remaining = arg.substring(FORCE_DA.length());
-    } else if (arg.startsWith(FORCE_PASSTHROUGH_ASSERTIONS)) {
-      transformation = AssertionTransformationType.PASSTHROUGH;
-      remaining = arg.substring(FORCE_PASSTHROUGH_ASSERTIONS.length());
-    } else if (arg.startsWith(FORCE_PA)) {
-      transformation = AssertionTransformationType.PASSTHROUGH;
-      remaining = arg.substring(FORCE_PA.length());
-    } else if (arg.startsWith(FORCE_ASSERTIONS_HANDLER)) {
-      transformation = AssertionTransformationType.HANDLER;
-      remaining = arg.substring(FORCE_ASSERTIONS_HANDLER.length());
-    } else if (arg.startsWith(FORCE_AH)) {
-      transformation = AssertionTransformationType.HANDLER;
-      remaining = arg.substring(FORCE_AH.length());
-    }
-    if (transformation == null) {
-      return false;
-    }
-    if (!remaining.isEmpty() && remaining.charAt(0) != ':') {
-      return false;
-    }
-    switch (transformation) {
-      case ENABLE:
-        parseForceEnableAssertions(builder, remaining, origin);
-        return true;
-      case DISABLE:
-        parseForceDisableAssertions(builder, remaining, origin);
-        return true;
-      case PASSTHROUGH:
-        parseForcePassthroughAssertions(builder, remaining, origin);
-        return true;
-      case HANDLER:
-        parseForceAssertionsHandler(builder, remaining, origin);
-        return true;
-      default:
-        throw new Unreachable();
-    }
-  }
-
-  protected static <C extends BaseCompilerCommand, B extends BaseCompilerCommand.Builder<C, B>>
-      int tryParseMapDiagnostics(
-          B builder, String arg, String[] args, int argsIndex, Origin origin) {
-    return tryParseMapDiagnostics(
-        builder::error, builder.getReporter(), arg, args, argsIndex, origin);
-  }
-
-  public static int tryParseMapDiagnostics(
-      Consumer<Diagnostic> errorHandler,
-      Reporter reporter,
-      String arg,
-      String[] args,
-      int argsIndex,
-      Origin origin) {
-    if (!arg.startsWith(MAP_DIAGNOSTICS)) {
-      return -1;
-    }
-    if (args.length <= argsIndex + 2) {
-      errorHandler.accept(new StringDiagnostic("Missing argument(s) for " + arg + ".", origin));
-      return args.length - argsIndex;
-    }
-    String remaining = arg.substring(MAP_DIAGNOSTICS.length());
-
-    CliParserUtils.parseDiagnosticsMapping(
-        remaining,
-        args[argsIndex + 1],
-        args[argsIndex + 2],
-        mapping ->
-            reporter.addDiagnosticsLevelMapping(mapping.from, mapping.diagnosticType, mapping.to),
-        errorHandler,
-        origin);
-    return 2;
-  }
-
-  protected static <C extends BaseCompilerCommand, B extends BaseCompilerCommand.Builder<C, B>>
-      int tryParseDump(B builder, String arg, String[] args, int argsIndex, Origin origin) {
-    if (!arg.equals(DUMP_INPUT_TO_FILE) && !arg.equals(DUMP_INPUT_TO_DIRECTORY)) {
-      return -1;
-    }
-    if (args.length <= argsIndex + 1) {
-      builder.error(new StringDiagnostic("Missing argument(s) for " + arg + ".", origin));
-      return args.length - argsIndex;
-    }
-    if (arg.equals(DUMP_INPUT_TO_FILE)) {
-      builder.dumpInputToFile(Paths.get(args[argsIndex + 1]));
-    } else {
-      assert arg.equals(DUMP_INPUT_TO_DIRECTORY);
-      builder.dumpInputToDirectory(Paths.get(args[argsIndex + 1]));
-    }
-    return 1;
-  }
-
-  static void addLibraryArgument(BaseCommand.Builder<?, ?> builder, String arg, Origin origin) {
-    CompilerCommandParserUtils.addLibraryArgument(
-        builder.getAppBuilder(), arg, origin, builder.getReporter());
-  }
 }

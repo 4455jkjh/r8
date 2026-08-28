@@ -5,8 +5,8 @@ package com.android.tools.r8.tracereferences;
 
 import static com.android.tools.r8.BaseCompilerCommandParser.LIB_FLAG;
 
-import com.android.tools.r8.BaseCompilerCommandParser;
 import com.android.tools.r8.ClassConflictResolver;
+import com.android.tools.r8.Diagnostic;
 import com.android.tools.r8.DiagnosticsHandler;
 import com.android.tools.r8.JdkClassFileProvider;
 import com.android.tools.r8.ParseFlagInfo;
@@ -19,8 +19,10 @@ import com.android.tools.r8.origin.Origin;
 import com.android.tools.r8.origin.PathOrigin;
 import com.android.tools.r8.references.ClassReference;
 import com.android.tools.r8.tracereferences.internal.TraceReferencesNativesPrinter;
+import com.android.tools.r8.utils.CliParserUtils;
 import com.android.tools.r8.utils.ExceptionDiagnostic;
 import com.android.tools.r8.utils.FlagFile;
+import com.android.tools.r8.utils.Reporter;
 import com.android.tools.r8.utils.StringDiagnostic;
 import com.android.tools.r8.utils.ZipUtils;
 import com.android.tools.r8.utils.internal.StringUtils;
@@ -37,6 +39,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Set;
+import java.util.function.Consumer;
 
 class TraceReferencesCommandParser {
 
@@ -94,9 +97,21 @@ class TraceReferencesCommandParser {
                 "<file>",
                 "Output result in <outfile>. If not passed the",
                 "result will go to standard out."))
-        .add(ParseFlagInfoImpl.getMapDiagnostics())
-        .add(ParseFlagInfoImpl.getVersion("tracereferences"))
-        .add(ParseFlagInfoImpl.getHelp())
+        .add(
+            ParseFlagInfoImpl.flag2(
+                "--map-diagnostics" + "[:<type>]",
+                "<from-level>",
+                "<to-level>",
+                "Map diagnostics of <type> (default any) reported as",
+                "<from-level> to <to-level> where <from-level> and",
+                "<to-level> are one of 'info', 'warning', or 'error'",
+                "and the optional <type> is either the simple or",
+                "fully qualified Java type name of a diagnostic.",
+                "If <type> is unspecified, all diagnostics at ",
+                "<from-level> will be mapped.",
+                "Note that fatal compiler errors cannot be mapped."))
+        .add(ParseFlagInfoImpl.flag0("--version", "Print the version of tracereferences."))
+        .add(ParseFlagInfoImpl.flag0("--help", "Print this message."))
         .build();
   }
 
@@ -211,7 +226,7 @@ class TraceReferencesCommandParser {
         builder.error(new StringDiagnostic("Recursive @argfiles are not supported: ", origin));
       } else {
         int argsConsumed =
-            BaseCompilerCommandParser.tryParseMapDiagnostics(
+            tryParseMapDiagnostics(
                 builder::error, builder.getReporter(), arg, expandedArgs, i, origin);
         if (argsConsumed >= 0) {
           i += argsConsumed;
@@ -344,5 +359,33 @@ class TraceReferencesCommandParser {
       }
       throw new RuntimeException("Unhandled origin: " + origin);
     }
+  }
+
+  private static int tryParseMapDiagnostics(
+      Consumer<Diagnostic> errorHandler,
+      Reporter reporter,
+      String arg,
+      String[] args,
+      int argsIndex,
+      Origin origin) {
+    String flagName = "--map-diagnostics";
+    if (!arg.startsWith(flagName)) {
+      return -1;
+    }
+    if (args.length <= argsIndex + 2) {
+      errorHandler.accept(new StringDiagnostic("Missing argument(s) for " + arg + ".", origin));
+      return args.length - argsIndex;
+    }
+    String remaining = arg.substring(flagName.length());
+
+    CliParserUtils.parseDiagnosticsMapping(
+        remaining,
+        args[argsIndex + 1],
+        args[argsIndex + 2],
+        mapping ->
+            reporter.addDiagnosticsLevelMapping(mapping.from, mapping.diagnosticType, mapping.to),
+        errorHandler,
+        origin);
+    return 2;
   }
 }

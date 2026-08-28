@@ -114,7 +114,9 @@ public class R8CommandParser extends BaseCompilerCommandParser {
             "--lib",
             "<file|jdk-home>",
             "Add <file|jdk-home> as a library resource.",
-            (state, arg) -> addLibraryArgument(state.builder, arg, state.origin))
+            (state, arg) ->
+                CompilerCommandParserUtils.addLibraryArgument(
+                    state.builder.getAppBuilder(), arg, state.origin, state.builder.getReporter()))
         .option1(
             "--classpath",
             "<file>",
@@ -129,8 +131,7 @@ public class R8CommandParser extends BaseCompilerCommandParser {
             (state, arg) -> {
               if (state.hasDefinedApiLevel) {
                 StringDiagnostic diagnostic =
-                    new StringDiagnostic(
-                        "Cannot set multiple " + MIN_API_FLAG + " options", state.origin);
+                    new StringDiagnostic("Cannot set multiple --min-api options", state.origin);
                 state.builder.error(diagnostic);
               } else {
                 CliParserUtils.parsePositiveInt(

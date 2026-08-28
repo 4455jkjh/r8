@@ -116,7 +116,9 @@ public class L8CommandParser extends BaseCompilerCommandParser {
             "--lib",
             "<file|jdk-home>",
             "Add <file|jdk-home> as a library resource.",
-            (state, arg) -> addLibraryArgument(state.builder, arg, state.origin))
+            (state, arg) ->
+                CompilerCommandParserUtils.addLibraryArgument(
+                    state.builder.getAppBuilder(), arg, state.origin, state.builder.getReporter()))
         .option1(
             "--min-api",
             "<number>",
@@ -126,16 +128,16 @@ public class L8CommandParser extends BaseCompilerCommandParser {
             (state, arg) -> {
               if (state.hasDefinedApiLevel) {
                 StringDiagnostic diagnostic =
-                    new StringDiagnostic(
-                        "Cannot set multiple " + MIN_API_FLAG + " options", state.origin);
+                    new StringDiagnostic("Cannot set multiple --min-api options", state.origin);
                 state.builder.error(diagnostic);
               } else {
-                parsePositiveIntArgument(
-                    state.builder::error,
-                    MIN_API_FLAG,
+                CliParserUtils.parsePositiveInt(
                     arg,
-                    state.origin,
-                    state.builder::setMinApiLevel);
+                    state.builder::setMinApiLevel,
+                    error ->
+                        state.builder.error(
+                            new StringDiagnostic(
+                                "Invalid argument to --min-api: " + error, state.origin)));
                 state.hasDefinedApiLevel = true;
               }
             })
