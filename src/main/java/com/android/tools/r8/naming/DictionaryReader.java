@@ -84,7 +84,7 @@ public class DictionaryReader implements AutoCloseable {
     if (path != null) {
       Set<String> seenNames = new HashSet<>();
       Builder<String> namesBuilder = new ImmutableList.Builder<String>();
-      try (DictionaryReader reader = new DictionaryReader(path);) {
+      try (DictionaryReader reader = new DictionaryReader(path); ) {
         String name = reader.readName(reporter);
         while (!name.isEmpty()) {
           if (!seenNames.add(name)) {

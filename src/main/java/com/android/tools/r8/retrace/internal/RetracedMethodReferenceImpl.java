@@ -178,7 +178,6 @@ public abstract class RetracedMethodReferenceImpl implements RetracedMethodRefer
     return new UnknownRetracedMethodReferenceImpl(methodDefinition, OptionalInt.empty());
   }
 
-
   static RetracedMethodReferenceImpl create(MethodReference methodReference) {
     return create(methodReference, OptionalInt.empty());
   }

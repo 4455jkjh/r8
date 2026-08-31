@@ -12,15 +12,14 @@ import java.util.function.BooleanSupplier;
 public class ClassAccessFlags extends AccessFlags<ClassAccessFlags> {
 
   // List of valid flags for both DEX and Java.
-  private static final int SHARED_FLAGS
-      = AccessFlags.BASE_FLAGS
-      | Constants.ACC_INTERFACE
-      | Constants.ACC_ABSTRACT
-      | Constants.ACC_ANNOTATION
-      | Constants.ACC_ENUM;
+  private static final int SHARED_FLAGS =
+      AccessFlags.BASE_FLAGS
+          | Constants.ACC_INTERFACE
+          | Constants.ACC_ABSTRACT
+          | Constants.ACC_ANNOTATION
+          | Constants.ACC_ENUM;
 
-  private static final int DEX_FLAGS
-      = SHARED_FLAGS;
+  private static final int DEX_FLAGS = SHARED_FLAGS;
 
   private static final int CF_FLAGS = SHARED_FLAGS | Constants.ACC_SUPER | Constants.ACC_RECORD;
 

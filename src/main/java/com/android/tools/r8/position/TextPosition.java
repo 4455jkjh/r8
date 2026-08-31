@@ -12,9 +12,7 @@ import com.android.tools.r8.keepanno.annotations.KeepForApi;
 @KeepForApi
 public class TextPosition implements Position {
 
-  /**
-   * Column is unknown.
-   */
+  /** Column is unknown. */
   public static final int UNKNOWN_COLUMN = -1;
 
   /** Char offset from the start of the text resource. */
@@ -30,15 +28,14 @@ public class TextPosition implements Position {
     this.column = column;
   }
 
-  /**
-   * Return the line of this position.
-   */
+  /** Return the line of this position. */
   public int getLine() {
     return line;
   }
 
   /**
    * Return the column of this position.
+   *
    * @return May return {@link #UNKNOWN_COLUMN} if column information is not available.
    */
   public int getColumn() {
@@ -77,7 +74,7 @@ public class TextPosition implements Position {
     if (o == this) {
       return true;
     }
-    if (o != null  && o.getClass().equals(TextPosition.class)) {
+    if (o != null && o.getClass().equals(TextPosition.class)) {
       TextPosition other = (TextPosition) o;
       return offset == other.offset && line == other.line && column == other.column;
     }

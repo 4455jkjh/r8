@@ -82,9 +82,7 @@ public class UndoConstructorInlining {
   }
 
   public void runIfNecessary(
-      Collection<HorizontalMergeGroup> groups,
-      ExecutorService executorService,
-      Timing timing)
+      Collection<HorizontalMergeGroup> groups, ExecutorService executorService, Timing timing)
       throws ExecutionException {
     if (shouldRun()) {
       timing.begin("Undo constructor inlining");

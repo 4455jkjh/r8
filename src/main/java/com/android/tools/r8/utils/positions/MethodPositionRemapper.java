@@ -15,4 +15,3 @@ public interface MethodPositionRemapper {
   /** Sets the next line number to allocate when assigning remapped positions. */
   void setNextOptimizedLineNumber(int nextOptimizedLineNumber);
 }
-

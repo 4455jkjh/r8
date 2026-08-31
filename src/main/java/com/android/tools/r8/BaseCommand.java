@@ -9,12 +9,12 @@ import com.android.tools.r8.origin.Origin;
 import com.android.tools.r8.origin.PathOrigin;
 import com.android.tools.r8.utils.AbortException;
 import com.android.tools.r8.utils.AndroidApp;
-import com.android.tools.r8.utils.internal.Box;
 import com.android.tools.r8.utils.ExceptionDiagnostic;
 import com.android.tools.r8.utils.ExceptionUtils;
 import com.android.tools.r8.utils.InternalOptions;
 import com.android.tools.r8.utils.Reporter;
 import com.android.tools.r8.utils.StringDiagnostic;
+import com.android.tools.r8.utils.internal.Box;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -260,21 +260,23 @@ public abstract class BaseCommand {
     /**
      * Add main-dex list files.
      *
-     * Each line in each of the files specifies one class to keep in the primary dex file
-     * (<code>classes.dex</code>).
+     * <p>Each line in each of the files specifies one class to keep in the primary dex file (<code>
+     * classes.dex</code>).
      *
-     * A class is specified using the following format: "com/example/MyClass.class". That is
-     * "/" as separator between package components, and a trailing ".class".
+     * <p>A class is specified using the following format: "com/example/MyClass.class". That is "/"
+     * as separator between package components, and a trailing ".class".
      */
     public B addMainDexListFiles(Path... files) {
-      guard(() -> {
-        try {
-          app.addMainDexListFiles(files);
-        } catch (NoSuchFileException e) {
-          reporter.error(new StringDiagnostic(
-              "Main-dex-list file does not exist", new PathOrigin(Paths.get(e.getFile()))));
-        }
-      });
+      guard(
+          () -> {
+            try {
+              app.addMainDexListFiles(files);
+            } catch (NoSuchFileException e) {
+              reporter.error(
+                  new StringDiagnostic(
+                      "Main-dex-list file does not exist", new PathOrigin(Paths.get(e.getFile()))));
+            }
+          });
       return self();
     }
 
@@ -313,9 +315,9 @@ public abstract class BaseCommand {
     /**
      * Add main-dex classes.
      *
-     * Add classes to keep in the primary dex file (<code>classes.dex</code>).
+     * <p>Add classes to keep in the primary dex file (<code>classes.dex</code>).
      *
-     * NOTE: The name of the classes is specified using the Java fully qualified names format
+     * <p>NOTE: The name of the classes is specified using the Java fully qualified names format
      * (e.g. "com.example.MyClass"), and <i>not</i> the format used by the main-dex list file.
      */
     public B addMainDexClasses(Collection<String> classes) {
@@ -382,6 +384,5 @@ public abstract class BaseCommand {
         // Error was reported and exception will be thrown by build.
       }
     }
-
   }
 }

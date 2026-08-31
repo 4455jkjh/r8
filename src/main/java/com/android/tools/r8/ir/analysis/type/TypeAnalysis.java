@@ -27,11 +27,11 @@ public class TypeAnalysis {
 
   private enum Mode {
     UNSET,
-    WIDENING,  // initial analysis, including fixed-point iteration for phis and updating with less
-               // specific info, e.g., removing assume nodes.
+    WIDENING, // initial analysis, including fixed-point iteration for phis and updating with less
+    // specific info, e.g., removing assume nodes.
     NARROWING, // updating with more specific info, e.g., passing the return value of the inlinee.
     PROPAGATE, // effectively NARROWING_OR_WIDENING
-    NO_CHANGE  // utility to ensure types are up to date
+    NO_CHANGE // utility to ensure types are up to date
   }
 
   private final boolean mayHaveImpreciseTypes;

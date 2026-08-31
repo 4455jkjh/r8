@@ -62,13 +62,7 @@ public final class ProgramMethod extends DexClassAndMethod
           appView.graphLens().lookupPrototypeChangesForMethodDefinition(getReference(), codeLens);
     }
     return code.buildInliningIR(
-        context,
-        this,
-        appView,
-        codeLens,
-        valueNumberGenerator,
-        callerPosition,
-        protoChanges);
+        context, this, appView, codeLens, valueNumberGenerator, callerPosition, protoChanges);
   }
 
   public void collectIndexedItems(

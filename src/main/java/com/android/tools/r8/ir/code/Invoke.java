@@ -76,7 +76,7 @@ public abstract class Invoke extends Instruction {
 
   public abstract InvokeType getType();
 
-  abstract public DexType getReturnType();
+  public abstract DexType getReturnType();
 
   public boolean hasArguments() {
     return !arguments().isEmpty();
@@ -282,7 +282,7 @@ public abstract class Invoke extends Instruction {
     return Constants.U8BIT_MAX;
   }
 
-  abstract protected String getTypeString();
+  protected abstract String getTypeString();
 
   @Override
   public String getInstructionName() {

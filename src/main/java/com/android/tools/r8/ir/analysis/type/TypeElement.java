@@ -371,17 +371,14 @@ public abstract class TypeElement {
   }
 
   public boolean isFineGrainedType() {
-    return isBoolean()
-        || isByte()
-        || isShort()
-        || isChar();
+    return isBoolean() || isByte() || isShort() || isChar();
   }
 
   /**
    * Determines if this type only includes null values that are defined by a const-number
    * instruction in the same enclosing method.
    *
-   * These null values can be assigned to any type.
+   * <p>These null values can be assigned to any type.
    */
   public boolean isNullType() {
     return false;
@@ -390,9 +387,9 @@ public abstract class TypeElement {
   /**
    * Determines if this type only includes null values.
    *
-   * These null values cannot be assigned to any type. For example, it is a type error to "throw v"
-   * where the value `v` satisfies isDefinitelyNull(), because the static type of `v` may not be a
-   * subtype of Throwable.
+   * <p>These null values cannot be assigned to any type. For example, it is a type error to "throw
+   * v" where the value `v` satisfies isDefinitelyNull(), because the static type of `v` may not be
+   * a subtype of Throwable.
    */
   public boolean isDefinitelyNull() {
     return nullability().isDefinitelyNull();

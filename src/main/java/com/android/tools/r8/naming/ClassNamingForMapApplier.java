@@ -27,14 +27,14 @@ import java.util.function.Consumer;
 
 /**
  * Stores name information for a class.
- * <p>
- * The main differences of this against {@link ClassNamingForNameMapper} are:
- *   1) field and method mappings are maintained and searched separately for faster lookup;
- *   2) similar to the relation between {@link ClassNameMapper} and {@link SeedMapper}, this one
- *   uses original {@link Signature} as a key to look up {@link MemberNaming},
- *   whereas {@link ClassNamingForNameMapper} uses renamed {@link Signature} as a key; and thus
- *   3) logic of {@link #lookup} and {@link #lookupByOriginalSignature} are inverted; and
- *   4) {@link #lookupByOriginalItem}'s are introduced for lightweight lookup.
+ *
+ * <p>The main differences of this against {@link ClassNamingForNameMapper} are: 1) field and method
+ * mappings are maintained and searched separately for faster lookup; 2) similar to the relation
+ * between {@link ClassNameMapper} and {@link SeedMapper}, this one uses original {@link Signature}
+ * as a key to look up {@link MemberNaming}, whereas {@link ClassNamingForNameMapper} uses renamed
+ * {@link Signature} as a key; and thus 3) logic of {@link #lookup} and {@link
+ * #lookupByOriginalSignature} are inverted; and 4) {@link #lookupByOriginalItem}'s are introduced
+ * for lightweight lookup.
  */
 public class ClassNamingForMapApplier implements ClassNaming {
 
@@ -161,23 +161,23 @@ public class ClassNamingForMapApplier implements ClassNaming {
   }
 
   @Override
-  public <T extends Throwable> void forAllMemberNaming(
-      ThrowingConsumer<MemberNaming, T> consumer) throws T {
+  public <T extends Throwable> void forAllMemberNaming(ThrowingConsumer<MemberNaming, T> consumer)
+      throws T {
     forAllFieldNaming(consumer);
     forAllMethodNaming(consumer);
   }
 
   @Override
-  public <T extends Throwable> void forAllFieldNaming(
-      ThrowingConsumer<MemberNaming, T> consumer) throws T {
+  public <T extends Throwable> void forAllFieldNaming(ThrowingConsumer<MemberNaming, T> consumer)
+      throws T {
     for (MemberNaming naming : fieldMembers.values()) {
       consumer.accept(naming);
     }
   }
 
   @Override
-  public <T extends Throwable> void forAllMethodNaming(
-      ThrowingConsumer<MemberNaming, T> consumer) throws T {
+  public <T extends Throwable> void forAllMethodNaming(ThrowingConsumer<MemberNaming, T> consumer)
+      throws T {
     for (MemberNaming naming : methodMembers.values()) {
       consumer.accept(naming);
     }
@@ -226,9 +226,11 @@ public class ClassNamingForMapApplier implements ClassNaming {
       MethodSignature signature = entry.getKey();
       if (signature.name.equals(method.name.toSourceString())
           && signature.type.equals(method.proto.returnType.toSourceString())
-          && Arrays.equals(signature.parameters,
+          && Arrays.equals(
+              signature.parameters,
               Arrays.stream(method.proto.parameters.values)
-                  .map(DexType::toSourceString).toArray(String[]::new))) {
+                  .map(DexType::toSourceString)
+                  .toArray(String[]::new))) {
         return entry.getValue();
       }
     }

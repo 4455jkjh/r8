@@ -183,12 +183,7 @@ public class AppView<T extends AppInfo> implements DexDefinitionSupplier, Librar
       ArtProfileCollection artProfileCollection,
       StartupProfile startupProfile,
       WholeProgramOptimizations wholeProgramOptimizations) {
-    this(
-        appInfo,
-        artProfileCollection,
-        startupProfile,
-        wholeProgramOptimizations,
-        Timing.empty());
+    this(appInfo, artProfileCollection, startupProfile, wholeProgramOptimizations, Timing.empty());
   }
 
   private AppView(
@@ -706,7 +701,9 @@ public class AppView<T extends AppInfo> implements DexDefinitionSupplier, Librar
     return graphLens;
   }
 
-  /** @return true if the graph lens changed, otherwise false. */
+  /**
+   * @return true if the graph lens changed, otherwise false.
+   */
   public boolean setGraphLens(GraphLens graphLens) {
     if (graphLens != this.graphLens) {
       this.graphLens = graphLens;
@@ -1002,9 +999,7 @@ public class AppView<T extends AppInfo> implements DexDefinitionSupplier, Librar
 
   @SuppressWarnings("unchecked")
   public AppView<AppInfoWithClassHierarchy> withClassHierarchy() {
-    return appInfo.hasClassHierarchy()
-        ? (AppView<AppInfoWithClassHierarchy>) this
-        : null;
+    return appInfo.hasClassHierarchy() ? (AppView<AppInfoWithClassHierarchy>) this : null;
   }
 
   @SuppressWarnings("unchecked")

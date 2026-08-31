@@ -633,16 +633,10 @@ public class CfPrinter {
     for (int i = 0; i < targets.size(); i++) {
       indent();
       int key = kind == Kind.LOOKUP ? keys.getInt(i) : (keys.getInt(0) + i);
-      builder
-          .append("  ")
-          .append(key)
-          .append(": ")
-          .append(getLabel(targets.get(i)));
+      builder.append("  ").append(key).append(": ").append(getLabel(targets.get(i)));
     }
     indent();
-    builder
-        .append("  default: ")
-        .append(getLabel(cfSwitch.getDefaultTarget()));
+    builder.append("  default: ").append(getLabel(cfSwitch.getDefaultTarget()));
   }
 
   public void print(CfLoad load) {

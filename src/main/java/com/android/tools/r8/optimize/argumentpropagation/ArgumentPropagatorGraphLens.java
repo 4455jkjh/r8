@@ -51,7 +51,6 @@ public class ArgumentPropagatorGraphLens extends NestedGraphLens {
     return prototypeChanges.getOrDefault(method, RewrittenPrototypeDescription.none());
   }
 
-
   @Override
   protected boolean isLegitimateToHaveEmptyMappings() {
     return true;

@@ -140,8 +140,7 @@ public class ClassToFeatureSplitMap {
   }
 
   public Map<FeatureSplit, Set<DexProgramClass>> getFeatureSplitClasses(
-      Set<DexProgramClass> classes,
-      SyntheticItems syntheticItems) {
+      Set<DexProgramClass> classes, SyntheticItems syntheticItems) {
     Map<FeatureSplit, Set<DexProgramClass>> result = new IdentityHashMap<>();
     for (DexProgramClass clazz : classes) {
       FeatureSplit featureSplit = getFeatureSplit(clazz, syntheticItems);
@@ -156,9 +155,7 @@ public class ClassToFeatureSplitMap {
     return getFeatureSplit(definition, appView.getSyntheticItems());
   }
 
-  public FeatureSplit getFeatureSplit(
-      ProgramDefinition definition,
-      SyntheticItems syntheticItems) {
+  public FeatureSplit getFeatureSplit(ProgramDefinition definition, SyntheticItems syntheticItems) {
     return getFeatureSplit(definition.getReference(), syntheticItems);
   }
 
@@ -212,16 +209,11 @@ public class ClassToFeatureSplitMap {
       ProgramDefinition clazz,
       ProgramDefinition context,
       AppView<? extends AppInfoWithClassHierarchy> appView) {
-    return isInBaseOrSameFeatureAs(
-        clazz,
-        context,
-        appView.getSyntheticItems());
+    return isInBaseOrSameFeatureAs(clazz, context, appView.getSyntheticItems());
   }
 
   public boolean isInBaseOrSameFeatureAs(
-      ProgramDefinition clazz,
-      ProgramDefinition context,
-      SyntheticItems syntheticItems) {
+      ProgramDefinition clazz, ProgramDefinition context, SyntheticItems syntheticItems) {
     return isInBaseOrSameFeatureAs(clazz.getContextType(), context, syntheticItems);
   }
 
@@ -229,23 +221,16 @@ public class ClassToFeatureSplitMap {
       DexType clazz,
       ProgramDefinition context,
       AppView<? extends AppInfoWithClassHierarchy> appView) {
-    return isInBaseOrSameFeatureAs(
-        clazz,
-        context,
-        appView.getSyntheticItems());
+    return isInBaseOrSameFeatureAs(clazz, context, appView.getSyntheticItems());
   }
 
   public boolean isInBaseOrSameFeatureAs(
-      DexType clazz,
-      ProgramDefinition context,
-      SyntheticItems syntheticItems) {
+      DexType clazz, ProgramDefinition context, SyntheticItems syntheticItems) {
     FeatureSplit split = getFeatureSplit(clazz, syntheticItems);
     return split.isBase() || split == getFeatureSplit(context, syntheticItems);
   }
 
-  public boolean isInFeature(
-      DexProgramClass clazz,
-      SyntheticItems syntheticItems) {
+  public boolean isInFeature(DexProgramClass clazz, SyntheticItems syntheticItems) {
     return !isInBase(clazz, syntheticItems);
   }
 

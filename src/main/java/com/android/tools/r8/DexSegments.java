@@ -26,8 +26,7 @@ public class DexSegments {
 
     private final boolean csv;
 
-    public static class Builder
-        extends BaseCommand.Builder<Command, Builder> {
+    public static class Builder extends BaseCommand.Builder<Command, Builder> {
 
       private boolean csv = false;
 

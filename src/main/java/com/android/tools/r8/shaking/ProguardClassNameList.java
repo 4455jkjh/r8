@@ -50,8 +50,7 @@ public abstract class ProguardClassNameList {
     private final Object2BooleanArrayMap<ProguardTypeMatcher> matchers =
         new Object2BooleanArrayMap<>();
 
-    private Builder() {
-    }
+    private Builder() {}
 
     public Builder addClassName(boolean isNegated, ProguardTypeMatcher className) {
       matchers.put(className, isNegated);
@@ -70,7 +69,6 @@ public abstract class ProguardClassNameList {
         }
       }
     }
-
   }
 
   public abstract void writeTo(StringBuilder builder);
@@ -129,8 +127,7 @@ public abstract class ProguardClassNameList {
 
   private static class EmptyClassNameList extends ProguardClassNameList {
 
-    private EmptyClassNameList() {
-    }
+    private EmptyClassNameList() {}
 
     @Override
     public ProguardTypeMatcherAndNegation getLast() {
@@ -148,8 +145,7 @@ public abstract class ProguardClassNameList {
     }
 
     @Override
-    public void writeTo(StringBuilder builder) {
-    }
+    public void writeTo(StringBuilder builder) {}
 
     @Override
     public boolean equals(Object o) {
@@ -365,7 +361,6 @@ public abstract class ProguardClassNameList {
       }
       return specificTypes.isEmpty() ? null : specificTypes;
     }
-
 
     @Override
     public boolean matches(DexType type) {

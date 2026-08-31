@@ -6,9 +6,7 @@ import org.gradle.api.tasks.Copy
 
 // The majority of the build setup is done by tests_java_8.
 java {
-  sourceSets.test.configure {
-    java.srcDir(getRoot().resolveAll("src", "test", "java8", "naming"))
-  }
+  sourceSets.test.configure { java.srcDir(getRoot().resolveAll("src", "test", "java8", "naming")) }
 }
 
 tasks {

@@ -10,11 +10,11 @@ import java.nio.file.Path;
 import java.util.List;
 
 /**
- * Implements class path filtering as per
- * <a href="https://www.guardsquare.com/en/proguard/manual/usage#classpath">ProGuards classpath</a>
+ * Implements class path filtering as per <a
+ * href="https://www.guardsquare.com/en/proguard/manual/usage#classpath">ProGuards classpath</a>
  * documentation.
- * <p>
- * Some of the implementation details are derived from the examples. For example the implict
+ *
+ * <p>Some of the implementation details are derived from the examples. For example the implict
  * catch-all positive filter after a trailing negative filter.
  */
 public class FilteredClassPath {
@@ -71,8 +71,8 @@ public class FilteredClassPath {
     return string.indexOf('/') != -1;
   }
 
-  private boolean matchAgainstFileName(String fileName, int namePos, String pattern,
-      int patternPos) {
+  private boolean matchAgainstFileName(
+      String fileName, int namePos, String pattern, int patternPos) {
     if (patternPos >= pattern.length()) {
       // We have exhausted the pattern before the filename.
       return namePos == fileName.length();
@@ -95,8 +95,8 @@ public class FilteredClassPath {
         }
         if (includeFileSeparators
             || !containsFileSeparator(fileName.substring(namePos, fileName.length() - remaining))) {
-          return matchAgainstFileName(fileName, fileName.length() - remaining, pattern,
-              patternPos + 1);
+          return matchAgainstFileName(
+              fileName, fileName.length() - remaining, pattern, patternPos + 1);
         }
       } else {
         for (int i = namePos; i < fileName.length(); i++) {

@@ -4,7 +4,6 @@
 
 package com.android.tools.r8.optimize.argumentpropagation.codescanner;
 
-
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.DexMethod;
 import com.android.tools.r8.graph.DexProgramClass;

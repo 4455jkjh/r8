@@ -4,7 +4,6 @@
 
 package com.android.tools.r8.retrace.internal;
 
-
 import com.android.tools.r8.naming.ClassNamingForNameMapper;
 import com.android.tools.r8.naming.ClassNamingForNameMapper.MappedRangesOfName;
 import com.android.tools.r8.naming.MemberNaming;

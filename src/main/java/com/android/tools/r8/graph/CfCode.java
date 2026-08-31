@@ -587,9 +587,7 @@ public class CfCode extends Code implements CfWritableCode, StructuralItem<CfCod
 
   @Override
   public IRCode buildIR(
-      ProgramMethod method,
-      AppView<?> appView,
-      MutableMethodConversionOptions conversionOptions) {
+      ProgramMethod method, AppView<?> appView, MutableMethodConversionOptions conversionOptions) {
     verifyFramesOrRemove(method, appView);
     return internalBuildPossiblyWithLocals(
         method, method, appView, appView.codeLens(), null, null, null, conversionOptions);
@@ -709,13 +707,7 @@ public class CfCode extends Code implements CfWritableCode, StructuralItem<CfCod
       Position callerPosition,
       RewrittenPrototypeDescription protoChanges,
       MutableMethodConversionOptions conversionOptions) {
-    CfSourceCode source =
-        new CfSourceCode(
-            this,
-            localVariables,
-            method,
-            callerPosition,
-            appView);
+    CfSourceCode source = new CfSourceCode(this, localVariables, method, callerPosition, appView);
     IRBuilder builder;
     if (valueNumberGenerator == null) {
       assert protoChanges == null;
@@ -952,9 +944,7 @@ public class CfCode extends Code implements CfWritableCode, StructuralItem<CfCod
           }
         };
     CfFrameVerifier helper =
-        CfFrameVerifier.builder(appView, this, method)
-            .setEventConsumer(eventConsumer)
-            .build();
+        CfFrameVerifier.builder(appView, this, method).setEventConsumer(eventConsumer).build();
     return helper.run();
   }
 

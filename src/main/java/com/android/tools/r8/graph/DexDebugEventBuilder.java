@@ -27,8 +27,8 @@ import java.util.List;
 /**
  * Builder for constructing a list of debug events suitable for DexDebugInfo.
  *
- * This builder is intended to be very pedantic and ensure a well-formed structure of the resulting
- * event stream.
+ * <p>This builder is intended to be very pedantic and ensure a well-formed structure of the
+ * resulting event stream.
  */
 public class DexDebugEventBuilder {
 

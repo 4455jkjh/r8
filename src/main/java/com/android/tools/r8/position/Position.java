@@ -13,19 +13,15 @@ import com.android.tools.r8.keepanno.annotations.KeepForApi;
 @KeepForApi
 public interface Position {
 
-  /**
-   * Position is unknown.
-   */
-  Position UNKNOWN = new Position() {
-    @Override
-    public String getDescription() {
-      return "Unknown";
-    }
-  };
+  /** Position is unknown. */
+  Position UNKNOWN =
+      new Position() {
+        @Override
+        public String getDescription() {
+          return "Unknown";
+        }
+      };
 
-  /**
-   * A user friendly text representation of this position.
-   */
+  /** A user friendly text representation of this position. */
   String getDescription();
-
 }

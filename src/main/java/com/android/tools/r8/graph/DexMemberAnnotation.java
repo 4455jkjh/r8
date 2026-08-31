@@ -32,7 +32,7 @@ public class DexMemberAnnotation<R extends DexMember<?, R>, S extends DexItem> e
       return true;
     }
     if (other instanceof DexMemberAnnotation) {
-      DexMemberAnnotation<?,?> otherMember = (DexMemberAnnotation<?,?>) other;
+      DexMemberAnnotation<?, ?> otherMember = (DexMemberAnnotation<?, ?>) other;
       return item.equals(otherMember.item) && annotations.equals(otherMember.annotations);
     }
     return false;
@@ -62,8 +62,8 @@ public class DexMemberAnnotation<R extends DexMember<?, R>, S extends DexItem> e
     }
   }
 
-  public static class DexParameterAnnotation extends
-      DexMemberAnnotation<DexMethod, ParameterAnnotationsList> {
+  public static class DexParameterAnnotation
+      extends DexMemberAnnotation<DexMethod, ParameterAnnotationsList> {
 
     public DexParameterAnnotation(DexMethod item, ParameterAnnotationsList annotations) {
       super(item, annotations);

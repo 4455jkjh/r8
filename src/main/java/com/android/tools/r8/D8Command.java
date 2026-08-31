@@ -130,34 +130,26 @@ public final class D8Command extends BaseCompilerCommand {
       super(app);
     }
 
-    /**
-     * Add dex program-data.
-     */
+    /** Add dex program-data. */
     @Override
     public Builder addDexProgramData(byte[] data, Origin origin) {
       guard(() -> getAppBuilder().addDexProgramData(data, origin));
       return self();
     }
 
-    /**
-     * Add classpath file resources. These have @Override to ensure binary compatibility.
-     */
+    /** Add classpath file resources. These have @Override to ensure binary compatibility. */
     @Override
     public Builder addClasspathFiles(Path... files) {
       return super.addClasspathFiles(files);
     }
 
-    /**
-     * Add classpath file resources.
-     */
+    /** Add classpath file resources. */
     @Override
     public Builder addClasspathFiles(Collection<Path> files) {
       return super.addClasspathFiles(files);
     }
 
-    /**
-     * Add classfile resources provider for class-path resources.
-     */
+    /** Add classfile resources provider for class-path resources. */
     @Override
     public Builder addClasspathResourceProvider(ClassFileResourceProvider provider) {
       return super.addClasspathResourceProvider(provider);
@@ -343,9 +335,7 @@ public final class D8Command extends BaseCompilerCommand {
       }
     }
 
-    /**
-     * Get the consumer that will receive dependency information for desugaring.
-     */
+    /** Get the consumer that will receive dependency information for desugaring. */
     public DesugarGraphConsumer getDesugarGraphConsumer() {
       return desugarGraphConsumer;
     }
@@ -942,5 +932,4 @@ public final class D8Command extends BaseCompilerCommand {
         .setHasProguardMapConsumer(proguardMapConsumer != null)
         .build();
   }
-
 }

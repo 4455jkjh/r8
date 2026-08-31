@@ -149,11 +149,11 @@ public class ConcreteCallSiteOptimizationInfo extends CallSiteOptimizationInfo {
       ConcreteValueState concreteParameterState = parameterState.asConcrete();
 
       // Constant propagation.
-        AbstractValue abstractValue = concreteParameterState.getAbstractValue(appView);
-        if (abstractValue.isNonTrivial()) {
-          newCallSiteInfo.constants.put(argumentIndex, abstractValue);
-          isTop = false;
-        }
+      AbstractValue abstractValue = concreteParameterState.getAbstractValue(appView);
+      if (abstractValue.isNonTrivial()) {
+        newCallSiteInfo.constants.put(argumentIndex, abstractValue);
+        isTop = false;
+      }
 
       // Type propagation.
       DexType staticType = method.getDefinition().getArgumentType(argumentIndex);

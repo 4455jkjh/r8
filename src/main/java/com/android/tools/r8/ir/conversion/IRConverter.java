@@ -465,8 +465,7 @@ public class IRConverter {
       MutableMethodConversionOptions conversionOptions,
       Timing timing) {
     if (options.verbose) {
-      options.reporter.info(
-          new StringDiagnostic("Processing: " + method.toSourceString()));
+      options.reporter.info(new StringDiagnostic("Processing: " + method.toSourceString()));
     }
     if (options.testing.hookInIrConversion != null) {
       options.testing.hookInIrConversion.run();
@@ -642,7 +641,6 @@ public class IRConverter {
       previous = printMethod(code, "IR after inlining (SSA)", previous);
     }
 
-
     if (appView.appInfo().hasLiveness()) {
       // Reflection optimization 1. getClass() / forName() -> const-class
       timing.begin("Rewrite to const class");
@@ -707,7 +705,6 @@ public class IRConverter {
       invertConditionalsForTesting(code);
       previous = printMethod(code, "IR after inverting conditionals for testing (SSA)", previous);
     }
-
 
     assert code.verifyTypes(appView);
 
@@ -989,9 +986,7 @@ public class IRConverter {
   }
 
   private IRCode roundtripThroughLir(
-      IRCode code,
-      BytecodeMetadataProvider bytecodeMetadataProvider,
-      Timing timing) {
+      IRCode code, BytecodeMetadataProvider bytecodeMetadataProvider, Timing timing) {
     IRCode round1 =
         doRoundtripWithStrategy(code, new ExternalPhisStrategy(), "indirect phis", timing);
     IRCode round2 =

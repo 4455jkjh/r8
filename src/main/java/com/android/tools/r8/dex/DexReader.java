@@ -16,9 +16,7 @@ import java.nio.BufferUnderflowException;
 import java.nio.ByteOrder;
 import java.util.Optional;
 
-/**
- * {@link BinaryReader} for Dex content.
- */
+/** {@link BinaryReader} for Dex content. */
 public class DexReader extends BinaryReader {
 
   private final DexVersion version;
@@ -79,11 +77,7 @@ public class DexReader extends BinaryReader {
         DexVersion.getDexVersion(versionByte0, versionByte1, versionByte2);
     if (!maybeVersion.isPresent()) {
       throw new CompilationError(
-          "Unsupported DEX file version: "
-              + versionByte0
-              + versionByte1
-              + versionByte2,
-          origin);
+          "Unsupported DEX file version: " + versionByte0 + versionByte1 + versionByte2, origin);
     }
     if (buffer.get(index++) != '\0') {
       throw new CompilationError("Dex file has invalid header", origin);

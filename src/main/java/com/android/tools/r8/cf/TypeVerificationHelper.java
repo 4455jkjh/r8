@@ -192,9 +192,12 @@ public class TypeVerificationHelper {
       assert !result.isNullType();
       return result.asReferenceType().toDexType(appView.dexItemFactory());
     }
-    throw new CompilationError("Unexpected join " + result + " of types: " +
-        String.join(", ",
-            types.stream().map(DexType::toSourceString).collect(Collectors.toList())));
+    throw new CompilationError(
+        "Unexpected join "
+            + result
+            + " of types: "
+            + String.join(
+                ", ", types.stream().map(DexType::toSourceString).collect(Collectors.toList())));
   }
 
   @SuppressWarnings("ReferenceEquality")

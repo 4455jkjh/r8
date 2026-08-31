@@ -68,8 +68,9 @@ class MinifiedRenaming extends NonIdentityNamingLens {
     if (inner.equals(innerTypeMapped)) {
       return attribute.getInnerName();
     }
-    String separator = DescriptorUtils.computeInnerClassSeparator(
-        attribute.getOuter(), innerType, attribute.getInnerName());
+    String separator =
+        DescriptorUtils.computeInnerClassSeparator(
+            attribute.getOuter(), innerType, attribute.getInnerName());
     if (separator == null) {
       separator = String.valueOf(DescriptorUtils.INNER_CLASS_SEPARATOR);
     }

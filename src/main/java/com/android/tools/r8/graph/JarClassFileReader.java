@@ -216,8 +216,8 @@ public class JarClassFileReader<T extends DexClass> {
         application.getTypeFromDescriptor(desc), application.options);
   }
 
-  private static DexEncodedAnnotation createEncodedAnnotation(String desc,
-      List<DexString> names, List<DexValue> values, JarApplicationReader application) {
+  private static DexEncodedAnnotation createEncodedAnnotation(
+      String desc, List<DexString> names, List<DexValue> values, JarApplicationReader application) {
     assert (names == null && values.isEmpty())
         || (names != null && !names.isEmpty() && names.size() == values.size());
     DexAnnotationElement[] elements = new DexAnnotationElement[values.size()];
@@ -346,8 +346,11 @@ public class JarClassFileReader<T extends DexClass> {
     private String illegalClassFileMessage(
         ClassAccessFlags accessFlags, String name, CfVersion version, String message) {
       return illegalClassFilePrefix(accessFlags, name)
-          + " " + message
-          + ". " + illegalClassFilePostfix(version) + ".";
+          + " "
+          + message
+          + ". "
+          + illegalClassFilePostfix(version)
+          + ".";
     }
 
     @Override
@@ -423,9 +426,10 @@ public class JarClassFileReader<T extends DexClass> {
         sourceFile = application.getString(source);
       }
       if (debug != null) {
-        getAnnotations().add(
-            DexAnnotation.createSourceDebugExtensionAnnotation(
-                new DexValueString(application.getString(debug)), application.getFactory()));
+        getAnnotations()
+            .add(
+                DexAnnotation.createSourceDebugExtensionAnnotation(
+                    new DexValueString(application.getString(debug)), application.getFactory()));
       }
     }
 
@@ -479,8 +483,8 @@ public class JarClassFileReader<T extends DexClass> {
     }
 
     @Override
-    public AnnotationVisitor visitTypeAnnotation(int typeRef, TypePath typePath, String desc,
-        boolean visible) {
+    public AnnotationVisitor visitTypeAnnotation(
+        int typeRef, TypePath typePath, String desc, boolean visible) {
       return createTypeAnnotationVisitor(
           desc, visible, getAnnotations(), application, typeRef, typePath);
     }
@@ -488,8 +492,9 @@ public class JarClassFileReader<T extends DexClass> {
     @Override
     public void visitEnd() {
       if (defaultAnnotations != null) {
-        addAnnotation(DexAnnotation.createAnnotationDefaultAnnotation(
-            type, defaultAnnotations, application.getFactory()));
+        addAnnotation(
+            DexAnnotation.createAnnotationDefaultAnnotation(
+                type, defaultAnnotations, application.getFactory()));
       }
       checkRecord();
       T clazz =
@@ -527,8 +532,9 @@ public class JarClassFileReader<T extends DexClass> {
           // thus the outer-class reference should have been null.  If the enclosing member is null,
           // it is likely due to the missing enclosing member.  In either case, we can recover
           // InnerClasses attribute by erasing the outer-class reference.
-          InnerClassAttribute recoveredAttribute = new InnerClassAttribute(
-              innerClassAttribute.getAccess(), innerClassAttribute.getInner(), null, null);
+          InnerClassAttribute recoveredAttribute =
+              new InnerClassAttribute(
+                  innerClassAttribute.getAccess(), innerClassAttribute.getInner(), null, null);
           clazz.replaceInnerClassAttributeForThisClass(recoveredAttribute);
         } else if (enclosingMember != null) {
           assert innerClassAttribute.isNamed();
@@ -726,8 +732,8 @@ public class JarClassFileReader<T extends DexClass> {
     }
 
     @Override
-    public AnnotationVisitor visitTypeAnnotation(int typeRef, TypePath typePath, String desc,
-        boolean visible) {
+    public AnnotationVisitor visitTypeAnnotation(
+        int typeRef, TypePath typePath, String desc, boolean visible) {
       return createTypeAnnotationVisitor(
           desc, visible, getAnnotations(), parent.application, typeRef, typePath);
     }
@@ -851,8 +857,8 @@ public class JarClassFileReader<T extends DexClass> {
         for (int i = 0; i < exceptions.length; i++) {
           values[i] = new DexValueType(parent.application.getTypeFromName(exceptions[i]));
         }
-        addAnnotation(DexAnnotation.createThrowsAnnotation(
-            values, parent.application.getFactory()));
+        addAnnotation(
+            DexAnnotation.createThrowsAnnotation(values, parent.application.getFactory()));
       }
       genericSignature =
           parent.application.options.parseSignatureAttribute()
@@ -895,10 +901,12 @@ public class JarClassFileReader<T extends DexClass> {
 
     @Override
     public AnnotationVisitor visitAnnotationDefault() {
-      return new CreateAnnotationVisitor(parent.application, (names, elements) -> {
-        assert elements.size() == 1;
-        defaultAnnotation = elements.get(0);
-      });
+      return new CreateAnnotationVisitor(
+          parent.application,
+          (names, elements) -> {
+            assert elements.size() == 1;
+            defaultAnnotation = elements.get(0);
+          });
     }
 
     @Override
@@ -940,7 +948,21 @@ public class JarClassFileReader<T extends DexClass> {
     }
 
     @Override
-    public AnnotationVisitor visitInsnAnnotation(int typeRef, TypePath typePath, String desc,
+    public AnnotationVisitor visitInsnAnnotation(
+        int typeRef, TypePath typePath, String desc, boolean visible) {
+      // We do not support code type annotations since that would require us to maintain these
+      // through IR where we may as well invalidate any assumptions made on the code.
+      return null;
+    }
+
+    @Override
+    public AnnotationVisitor visitLocalVariableAnnotation(
+        int typeRef,
+        TypePath typePath,
+        Label[] start,
+        Label[] end,
+        int[] index,
+        String desc,
         boolean visible) {
       // We do not support code type annotations since that would require us to maintain these
       // through IR where we may as well invalidate any assumptions made on the code.
@@ -948,16 +970,8 @@ public class JarClassFileReader<T extends DexClass> {
     }
 
     @Override
-    public AnnotationVisitor visitLocalVariableAnnotation(int typeRef, TypePath typePath,
-        Label[] start, Label[] end, int[] index, String desc, boolean visible) {
-      // We do not support code type annotations since that would require us to maintain these
-      // through IR where we may as well invalidate any assumptions made on the code.
-      return null;
-    }
-
-    @Override
-    public AnnotationVisitor visitTryCatchAnnotation(int typeRef, TypePath typePath, String desc,
-        boolean visible) {
+    public AnnotationVisitor visitTryCatchAnnotation(
+        int typeRef, TypePath typePath, String desc, boolean visible) {
       // We do not support code type annotations since that would require us to maintain these
       // through IR where we may as well invalidate any assumptions made on the code.
       return null;
@@ -1018,10 +1032,12 @@ public class JarClassFileReader<T extends DexClass> {
           options.warningInvalidParameterAnnotations(
               method, parent.origin, parameterCount, parameterNames.size());
         }
-        getAnnotations().add(DexAnnotation.createMethodParametersAnnotation(
-            parameterNames.toArray(DexValue.EMPTY_ARRAY),
-            parameterFlags.toArray(DexValue.EMPTY_ARRAY),
-            parent.application.getFactory()));
+        getAnnotations()
+            .add(
+                DexAnnotation.createMethodParametersAnnotation(
+                    parameterNames.toArray(DexValue.EMPTY_ARRAY),
+                    parameterFlags.toArray(DexValue.EMPTY_ARRAY),
+                    parent.application.getFactory()));
       }
       DexEncodedMethod dexMethod =
           DexEncodedMethod.builder()
@@ -1095,17 +1111,23 @@ public class JarClassFileReader<T extends DexClass> {
 
     @Override
     public AnnotationVisitor visitAnnotation(String name, String desc) {
-      return new CreateAnnotationVisitor(application, (names, values) ->
-          addElement(name, new DexValueAnnotation(
-              createEncodedAnnotation(desc, names, values, application))));
+      return new CreateAnnotationVisitor(
+          application,
+          (names, values) ->
+              addElement(
+                  name,
+                  new DexValueAnnotation(
+                      createEncodedAnnotation(desc, names, values, application))));
     }
 
     @Override
     public AnnotationVisitor visitArray(String name) {
-      return new CreateAnnotationVisitor(application, (names, values) -> {
-        assert names == null;
-        addElement(name, new DexValueArray(values.toArray(DexValue.EMPTY_ARRAY)));
-      });
+      return new CreateAnnotationVisitor(
+          application,
+          (names, values) -> {
+            assert names == null;
+            addElement(name, new DexValueArray(values.toArray(DexValue.EMPTY_ARRAY)));
+          });
     }
 
     @Override

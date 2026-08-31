@@ -14,9 +14,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Consumer;
 
-/**
- * Lazy Java class file resource provider based on preloaded/prebuilt context.
- */
+/** Lazy Java class file resource provider based on preloaded/prebuilt context. */
 public final class PreloadedClassFileProvider implements ClassFileResourceProvider {
 
   private static class ClassDescriptorOrigin extends Origin {
@@ -75,9 +73,7 @@ public final class PreloadedClassFileProvider implements ClassFileResourceProvid
     return content.size() + " preloaded resources";
   }
 
-  /**
-   * Create a new empty builder.
-   */
+  /** Create a new empty builder. */
   public static Builder builder() {
     return new Builder();
   }
@@ -86,8 +82,7 @@ public final class PreloadedClassFileProvider implements ClassFileResourceProvid
 
     private Map<String, byte[]> content = new HashMap<>();
 
-    private Builder() {
-    }
+    private Builder() {}
 
     public Builder addResource(String descriptor, byte[] bytes) {
       assert content != null;

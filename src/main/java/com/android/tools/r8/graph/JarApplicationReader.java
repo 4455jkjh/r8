@@ -17,9 +17,9 @@ import org.objectweb.asm.Type;
 /**
  * Common structures used while reading in a Java application from jar files.
  *
- * The primary use of this class is to canonicalize dex items during read.
- * The addition of classes to the builder also takes place through this class.
- * It does not currently support multithreaded reading.
+ * <p>The primary use of this class is to canonicalize dex items during read. The addition of
+ * classes to the builder also takes place through this class. It does not currently support
+ * multithreaded reading.
  */
 public class JarApplicationReader {
 
@@ -121,8 +121,11 @@ public class JarApplicationReader {
     return options.itemFactory.createMethod(owner, getProto(desc), getString(name));
   }
 
-  public DexCallSite getCallSite(String methodName, String methodProto,
-      DexMethodHandle bootstrapMethod, List<DexValue> bootstrapArgs) {
+  public DexCallSite getCallSite(
+      String methodName,
+      String methodProto,
+      DexMethodHandle bootstrapMethod,
+      List<DexValue> bootstrapArgs) {
     return options.itemFactory.createCallSite(
         getString(methodName), getProto(methodProto), bootstrapMethod, bootstrapArgs);
   }

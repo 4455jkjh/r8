@@ -9,7 +9,8 @@ import com.android.tools.r8.keepanno.annotations.KeepForApi;
 public interface DataResourceConsumer {
 
   void accept(DataDirectoryResource directory, DiagnosticsHandler diagnosticsHandler);
-  void accept(DataEntryResource file, DiagnosticsHandler diagnosticsHandler);
-  void finished(DiagnosticsHandler handler);
 
+  void accept(DataEntryResource file, DiagnosticsHandler diagnosticsHandler);
+
+  void finished(DiagnosticsHandler handler);
 }

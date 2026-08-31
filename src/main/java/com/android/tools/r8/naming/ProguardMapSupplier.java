@@ -159,7 +159,6 @@ public class ProguardMapSupplier {
         executorService);
   }
 
-
   static class ProguardMapIdBuilder implements ChainableStringConsumer {
 
     private final Hasher hasher = Hashing.sha256().newHasher();
@@ -194,5 +193,4 @@ public class ProguardMapSupplier {
       return new ProguardMapId(id, hash);
     }
   }
-
 }

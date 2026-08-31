@@ -3,8 +3,6 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8.graph;
 
-
-
 /** Type representing a method definition on the classpath and its holder. */
 public final class ClasspathMethod extends DexClassAndMethod
     implements ClasspathMember<DexEncodedMethod, DexMethod> {

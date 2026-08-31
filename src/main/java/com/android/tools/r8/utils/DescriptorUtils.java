@@ -68,8 +68,9 @@ public class DescriptorUtils {
       return "L";
     }
     if (typeName.endsWith("[]")) {
-      return "[" + internalToDescriptor(
-          typeName.substring(0, typeName.length() - 2), shorty, ignorePrimitives);
+      return "["
+          + internalToDescriptor(
+              typeName.substring(0, typeName.length() - 2), shorty, ignorePrimitives);
     }
     // Must be an object type.
     return "L" + typeName.replace(JAVA_PACKAGE_SEPARATOR, DESCRIPTOR_PACKAGE_SEPARATOR) + ";";
@@ -119,7 +120,7 @@ public class DescriptorUtils {
   /**
    * Convert a Java type name to a descriptor string ignoring primitive types.
    *
-   * Ignoring primitives mean that type named like int and long are considered class names, will
+   * <p>Ignoring primitives mean that type named like int and long are considered class names, will
    * return Lint; and Llong; respectively instead of I and J. These are not legal Java class names,
    * but valid on the JVM and minification/obfuscation can generate them.
    *
@@ -188,9 +189,7 @@ public class DescriptorUtils {
     char last = 0;
     for (int i = 0; i < typeName.length(); i++) {
       char c = typeName.charAt(i);
-      if (c == ';' ||
-          c == '[' ||
-          c == '/') {
+      if (c == ';' || c == '[' || c == '/') {
         return false;
       }
       if (c == '.' && (i == 0 || last == '.')) {
@@ -255,6 +254,7 @@ public class DescriptorUtils {
 
   /**
    * Convert a descriptor to a classifier in Kotlin metadata
+   *
    * @param descriptor like "Lorg/foo/bar/Baz$Nested;"
    * @return className "org/foo/bar/Baz.Nested"
    */
@@ -270,8 +270,8 @@ public class DescriptorUtils {
   }
 
   /**
-   * Convert a type descriptor to a Java type name. Will also deobfuscate class names if a
-   * class mapper is provided.
+   * Convert a type descriptor to a Java type name. Will also deobfuscate class names if a class
+   * mapper is provided.
    *
    * @param descriptor type descriptor
    * @param classNameMapper class name mapper for mapping obfuscated class names
@@ -282,8 +282,10 @@ public class DescriptorUtils {
     switch (c) {
       case 'L':
         assert descriptor.charAt(descriptor.length() - 1) == ';';
-        String clazz = descriptor.substring(1, descriptor.length() - 1)
-            .replace(DESCRIPTOR_PACKAGE_SEPARATOR, JAVA_PACKAGE_SEPARATOR);
+        String clazz =
+            descriptor
+                .substring(1, descriptor.length() - 1)
+                .replace(DESCRIPTOR_PACKAGE_SEPARATOR, JAVA_PACKAGE_SEPARATOR);
         String originalName =
             classNameMapper == null ? clazz : classNameMapper.deobfuscateClassName(clazz);
         return originalName;
@@ -487,8 +489,7 @@ public class DescriptorUtils {
    * @return class internal name i.e. "java/lang/Object"
    */
   public static String getClassInternalNameFromDescriptor(String classDescriptor) {
-    assert isClassDescriptor(classDescriptor) : "Invalid class descriptor "
-        + classDescriptor;
+    assert isClassDescriptor(classDescriptor) : "Invalid class descriptor " + classDescriptor;
     return classDescriptor.substring(1, classDescriptor.length() - 1);
   }
 
@@ -546,6 +547,7 @@ public class DescriptorUtils {
 
   /**
    * Convert a fully qualified name of a classifier in Kotlin metadata to a descriptor.
+   *
    * @param className "org/foo/bar/Baz.Nested"
    * @return a class descriptor like "Lorg/foo/bar/Baz$Nested;"
    */
@@ -687,8 +689,8 @@ public class DescriptorUtils {
    */
   public static String guessTypeDescriptor(String name) {
     assert name != null;
-    assert name.endsWith(CLASS_EXTENSION) :
-        "Name " + name + " must have " + CLASS_EXTENSION + " suffix";
+    assert name.endsWith(CLASS_EXTENSION)
+        : "Name " + name + " must have " + CLASS_EXTENSION + " suffix";
     String descriptor = name.substring(0, name.length() - CLASS_EXTENSION.length());
     if (descriptor.indexOf(JAVA_PACKAGE_SEPARATOR) != -1) {
       throw new CompilationError("Unexpected class file name: " + name);

@@ -21,9 +21,7 @@ import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
 
-/**
- * A set of spill moves and functionality to schedule and insert them in the code.
- */
+/** A set of spill moves and functionality to schedule and insert them in the code. */
 class SpillMoveSet {
 
   // Spill and restore moves on entry.
@@ -55,9 +53,9 @@ class SpillMoveSet {
   /**
    * Add a spill or restore move.
    *
-   * <p>This is used between all interval splits. The move is only inserted if it is restoring
-   * from a spill slot at a position that is not at the start of a block. All block start
-   * moves are handled by resolution.
+   * <p>This is used between all interval splits. The move is only inserted if it is restoring from
+   * a spill slot at a position that is not at the start of a block. All block start moves are
+   * handled by resolution.
    *
    * @param i instruction number (gap number) for which to insert the move
    * @param to interval representing the destination for the move
@@ -106,21 +104,23 @@ class SpillMoveSet {
 
   private void addInMove(int i, LiveIntervals to, LiveIntervals from) {
     assert i % 2 == 1;
-    instructionToInMoves.computeIfAbsent(i, (k) -> new LinkedHashSet<>()).add(
-        new SpillMove(moveTypeForIntervals(to, from), to, from));
+    instructionToInMoves
+        .computeIfAbsent(i, (k) -> new LinkedHashSet<>())
+        .add(new SpillMove(moveTypeForIntervals(to, from), to, from));
   }
 
   private void addOutMove(int i, LiveIntervals to, LiveIntervals from) {
     assert i % 2 == 1;
-    instructionToOutMoves.computeIfAbsent(i, (k) -> new LinkedHashSet<>()).add(
-        new SpillMove(moveTypeForIntervals(to, from), to, from));
+    instructionToOutMoves
+        .computeIfAbsent(i, (k) -> new LinkedHashSet<>())
+        .add(new SpillMove(moveTypeForIntervals(to, from), to, from));
   }
 
   /**
    * Schedule the moves added to this SpillMoveSet and insert them into the code.
    *
-   * <p>Scheduling requires parallel move semantics for some of the moves. That can require
-   * the use of temporary registers to break cycles.
+   * <p>Scheduling requires parallel move semantics for some of the moves. That can require the use
+   * of temporary registers to break cycles.
    *
    * @param tempRegister the first temporary register to use
    * @return the number of temporary registers used

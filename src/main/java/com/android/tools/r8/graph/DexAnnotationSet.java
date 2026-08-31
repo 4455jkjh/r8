@@ -185,7 +185,8 @@ public class DexAnnotationSet extends CachedHashValueDexItem
         DexAnnotation[] reducedArray = new DexAnnotation[annotations.length - 1];
         System.arraycopy(annotations, 0, reducedArray, 0, index);
         if (index < reducedArray.length) {
-          System.arraycopy(annotations, index + 1, reducedArray, index, reducedArray.length - index);
+          System.arraycopy(
+              annotations, index + 1, reducedArray, index, reducedArray.length - index);
         }
         return DexAnnotationSet.create(reducedArray);
       }

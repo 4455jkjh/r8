@@ -182,5 +182,4 @@ public class BaseCompilerCommandParser {
         handlerAndScope.getFirst(),
         handlerAndScope.getSecond());
   }
-
 }

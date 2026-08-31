@@ -330,8 +330,7 @@ public class VerticalClassMerger {
   }
 
   private void finalizeSynthesizedBridges(
-      List<IncompleteVerticalClassMergerBridgeCode> bridges,
-      Timing timing) {
+      List<IncompleteVerticalClassMergerBridgeCode> bridges, Timing timing) {
     timing.begin("Finalize synthesized bridges");
     KeepInfoCollection keepInfo = appView.getKeepInfo();
     for (IncompleteVerticalClassMergerBridgeCode code : bridges) {

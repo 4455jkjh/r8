@@ -568,8 +568,10 @@ public class Outliner implements ReprocessingOptimization {
   //
   // E.g. an outline of two StringBuilder.append(String) calls could look like this:
   //
-  //  InvokeVirtual       { v5 v6 } Ljava/lang/StringBuilder;->append(Ljava/lang/String;)Ljava/lang/StringBuilder;
-  //  InvokeVirtual       { v5 v9 } Ljava/lang/StringBuilder;->append(Ljava/lang/String;)Ljava/lang/StringBuilder;
+  //  InvokeVirtual       { v5 v6 }
+  // Ljava/lang/StringBuilder;->append(Ljava/lang/String;)Ljava/lang/StringBuilder;
+  //  InvokeVirtual       { v5 v9 }
+  // Ljava/lang/StringBuilder;->append(Ljava/lang/String;)Ljava/lang/StringBuilder;
   //  ReturnVoid
   //
   // It takes three arguments

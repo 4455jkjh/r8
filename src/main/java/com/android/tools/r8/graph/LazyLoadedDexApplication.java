@@ -475,7 +475,6 @@ public class LazyLoadedDexApplication extends DexApplication {
 
   @Override
   public String toString() {
-    return "Application (" + programClasses + "; " + classpathClasses + "; " + libraryClasses
-        + ")";
+    return "Application (" + programClasses + "; " + classpathClasses + "; " + libraryClasses + ")";
   }
 }

@@ -1238,10 +1238,7 @@ public class R8 {
         enqueuer =
             EnqueuerFactory.createForWhyAreYouKeeping(
                 appView, executorService, subtypingInfo, whyAreYouKeepingConsumer);
-        enqueuer.traceApplication(
-            rootSet,
-            executorService,
-            timing);
+        enqueuer.traceApplication(rootSet, executorService, timing);
       }
     }
     options.reporter.error(
@@ -1328,5 +1325,4 @@ public class R8 {
           options.reporter, () -> runInternal(app, options, executorService));
     }
   }
-
 }

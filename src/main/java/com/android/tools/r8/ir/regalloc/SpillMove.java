@@ -7,9 +7,9 @@ package com.android.tools.r8.ir.regalloc;
 import com.android.tools.r8.ir.analysis.type.TypeElement;
 
 /**
- * A SpillMove represents either a phi move that transfers an SSA value to the SSA phi value or
- * a spill or restore move that transfers the same SSA value between different registers because
- * of spilling.
+ * A SpillMove represents either a phi move that transfers an SSA value to the SSA phi value or a
+ * spill or restore move that transfers the same SSA value between different registers because of
+ * spilling.
  */
 class SpillMove {
   final TypeElement type;

@@ -95,7 +95,7 @@ public class BasicBlockIterator implements ListIterator<BasicBlock> {
    * Remove the last {@link BasicBlock} that was returned by {@link #next()} or {@link #previous()}.
    * This call can only be made once per call to {@code next} or {@code previous}.
    *
-   * All instructions in the block will be completely detached from the instruction stream. Each
+   * <p>All instructions in the block will be completely detached from the instruction stream. Each
    * instruction will have all uses of its in-values removed. If any instructions in the block
    * produces an out-value these out values must not have any users.
    */

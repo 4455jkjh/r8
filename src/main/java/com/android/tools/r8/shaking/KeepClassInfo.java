@@ -16,16 +16,10 @@ import java.util.function.Function;
 public class KeepClassInfo extends KeepInfo<KeepClassInfo.Builder, KeepClassInfo> {
 
   // Requires all aspects of a class to be kept.
-  private static final KeepClassInfo TOP =
-      new Builder()
-          .makeTop()
-          .build();
+  private static final KeepClassInfo TOP = new Builder().makeTop().build();
 
   // Requires no aspects of a class to be kept.
-  private static final KeepClassInfo BOTTOM =
-      new Builder()
-          .makeBottom()
-          .build();
+  private static final KeepClassInfo BOTTOM = new Builder().makeBottom().build();
 
   public static KeepClassInfo top() {
     return TOP;

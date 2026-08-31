@@ -109,12 +109,7 @@ public class FileWriter {
       ByteBufferProvider provider,
       ObjectToOffsetMapping mapping,
       VirtualFile virtualFile) {
-    this(
-        appView,
-        new DexOutputBuffer(provider),
-        mapping,
-        virtualFile,
-        true);
+    this(appView, new DexOutputBuffer(provider), mapping, virtualFile, true);
   }
 
   public FileWriter(
@@ -382,8 +377,9 @@ public class FileWriter {
         throw new CompilationError(
             "Interface must not have constructors: " + method.getReference().toSourceString());
       }
-      if (!method.accessFlags.isAbstract() && !method.accessFlags.isPrivate() &&
-          !options.canUseDefaultAndStaticInterfaceMethods()) {
+      if (!method.accessFlags.isAbstract()
+          && !method.accessFlags.isPrivate()
+          && !options.canUseDefaultAndStaticInterfaceMethods()) {
         throw options.reporter.fatalError(
             new UnsupportedDefaultInterfaceMethodDiagnostic(
                 holder.getOrigin(), MethodPosition.create(method)));
@@ -445,8 +441,8 @@ public class FileWriter {
     }
   }
 
-  private <T extends DexItem> void writeItems(Collection<T> items, Consumer<Integer> offsetSetter,
-      Consumer<T> writer) {
+  private <T extends DexItem> void writeItems(
+      Collection<T> items, Consumer<Integer> offsetSetter, Consumer<T> writer) {
     writeItems(items, offsetSetter, writer, 1);
   }
 
@@ -499,8 +495,8 @@ public class FileWriter {
       result += LebUtils.sizeAsUleb128(code.getHandlers().length);
       for (TryHandler handler : code.getHandlers()) {
         boolean hasCatchAll = handler.catchAllAddr != TryHandler.NO_HANDLER;
-        result += LebUtils
-            .sizeAsSleb128(hasCatchAll ? -handler.pairs.length : handler.pairs.length);
+        result +=
+            LebUtils.sizeAsSleb128(hasCatchAll ? -handler.pairs.length : handler.pairs.length);
         for (TypeAddrPair pair : handler.pairs) {
           result += sizeAsUleb128(mapping.getOffsetFor(pair.getType(graphLens, codeLens)));
           result += sizeAsUleb128(pair.addr);
@@ -705,7 +701,8 @@ public class FileWriter {
         fieldAnnotations, item -> mixedSectionOffsets.getOffsetFor(item.annotations()));
     writeMemberAnnotations(
         methodAnnotations, item -> mixedSectionOffsets.getOffsetFor(item.annotations()));
-    writeMemberAnnotations(parameterAnnotations,
+    writeMemberAnnotations(
+        parameterAnnotations,
         item -> mixedSectionOffsets.getOffsetFor(item.parameterAnnotationsList));
   }
 
@@ -1420,10 +1417,10 @@ public class FileWriter {
     private final Reference2IntMap<DexString> stringData = createReference2IntMap();
     private final Object2IntMap<DexAnnotation> annotations = createObject2IntMap();
     private final Object2IntMap<DexAnnotationSet> annotationSets = createObject2IntMap();
-    private final Object2IntMap<ParameterAnnotationsList> annotationSetRefLists
-        = createObject2IntMap();
-    private final Object2IntMap<DexAnnotationDirectory> annotationDirectories
-        = createObject2IntMap();
+    private final Object2IntMap<ParameterAnnotationsList> annotationSetRefLists =
+        createObject2IntMap();
+    private final Object2IntMap<DexAnnotationDirectory> annotationDirectories =
+        createObject2IntMap();
     private final Reference2IntMap<DexProgramClass> classesWithData = createReference2IntMap();
     private final Object2IntMap<DexEncodedArray> encodedArrays = createObject2IntMap();
     private final Map<DexProgramClass, DexAnnotationDirectory> classToAnnotationDirectory =

@@ -340,8 +340,6 @@ public class MissingClasses {
       };
     }
 
-
-
     /** Intentionally private, use {@link Builder#reportMissingClasses(AppView)}. */
     private MissingClasses build() {
       // Return the new set of missing classes.

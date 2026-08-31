@@ -88,9 +88,7 @@ public class HorizontalClassMerger {
   }
 
   private void run(
-      RuntimeTypeCheckInfo runtimeTypeCheckInfo,
-      ExecutorService executorService,
-      Timing timing)
+      RuntimeTypeCheckInfo runtimeTypeCheckInfo, ExecutorService executorService, Timing timing)
       throws ExecutionException {
     // Run the policies on all program classes to produce a final grouping.
     ImmediateProgramSubtypingInfo immediateSubtypingInfo =

@@ -38,22 +38,21 @@ public abstract class ClassProvider<T extends DexClass> {
   }
 
   /**
-   * The provider uses the callback to return all the classes that might
-   * be associated with the descriptor asked for.
+   * The provider uses the callback to return all the classes that might be associated with the
+   * descriptor asked for.
    *
-   * NOTE: the provider is not required to cache created classes and this
-   * method may create a new class instance in case it is called twice for
-   * the same type. For this reason it is recommended that the provider
-   * user only calls this method once per any given type.
+   * <p>NOTE: the provider is not required to cache created classes and this method may create a new
+   * class instance in case it is called twice for the same type. For this reason it is recommended
+   * that the provider user only calls this method once per any given type.
    *
-   * NOTE: thread-safe.
+   * <p>NOTE: thread-safe.
    */
   public abstract void collectClass(DexType type, Consumer<T> classConsumer);
 
   /**
    * Returns all the types of classes that might be produced by this provider.
    *
-   * NOTE: thread-safe.
+   * <p>NOTE: thread-safe.
    */
   public abstract Collection<DexType> collectTypes();
 

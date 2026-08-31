@@ -59,6 +59,7 @@ public class MethodPosition implements Position {
   public MethodReference getMethod() {
     return method;
   }
+
   /** The unqualified name of the method. */
   public String getName() {
     return method.getMethodName();

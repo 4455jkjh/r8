@@ -43,8 +43,7 @@ public class InvokeDirect extends InvokeMethodWithReceiver {
     super(target, result, arguments);
     this.isInterface = isInterface;
     // invoke-direct <init> should have no out value.
-    assert !target.name.toString().equals(Constants.INSTANCE_INITIALIZER_NAME)
-        || result == null;
+    assert !target.name.toString().equals(Constants.INSTANCE_INITIALIZER_NAME) || result == null;
   }
 
   public static Builder builder() {
@@ -107,9 +106,9 @@ public class InvokeDirect extends InvokeMethodWithReceiver {
   }
 
   /**
-   * Two invokes of a constructor are only allowed to be considered equal if the object
-   * they are initializing is the same. Art rejects code that has objects created by
-   * different new-instance instructions flow to one constructor invoke.
+   * Two invokes of a constructor are only allowed to be considered equal if the object they are
+   * initializing is the same. Art rejects code that has objects created by different new-instance
+   * instructions flow to one constructor invoke.
    */
   public boolean sameConstructorReceiverValue(Invoke other) {
     if (!getInvokedMethod().name.toString().equals(Constants.INSTANCE_INITIALIZER_NAME)) {

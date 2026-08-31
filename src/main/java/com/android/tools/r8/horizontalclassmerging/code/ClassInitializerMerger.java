@@ -4,7 +4,6 @@
 
 package com.android.tools.r8.horizontalclassmerging.code;
 
-
 import com.android.tools.r8.androidapi.ComputedApiLevel;
 import com.android.tools.r8.cf.CfVersion;
 import com.android.tools.r8.graph.AppView;

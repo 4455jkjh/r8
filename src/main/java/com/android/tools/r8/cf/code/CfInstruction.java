@@ -408,8 +408,10 @@ public abstract class CfInstruction implements CfOrDexInstruction {
     return false;
   }
 
-  /** Return true if this instruction is CfIf, CfIfCmp, CfSwitch, CfGoto, CfThrow,
-   * CfReturn or CfReturnVoid. */
+  /**
+   * Return true if this instruction is CfIf, CfIfCmp, CfSwitch, CfGoto, CfThrow, CfReturn or
+   * CfReturnVoid.
+   */
   public boolean isJump() {
     return false;
   }

@@ -26,7 +26,7 @@ public class ProguardConfigurationSourceFile implements ProguardConfigurationSou
   }
 
   @Override
-  public String get() throws IOException{
+  public String get() throws IOException {
     return Files.readString(path);
   }
 

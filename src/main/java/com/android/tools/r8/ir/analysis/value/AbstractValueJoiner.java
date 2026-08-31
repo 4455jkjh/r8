@@ -43,9 +43,7 @@ public class AbstractValueJoiner {
   }
 
   final AbstractValue internalJoin(
-      AbstractValue abstractValue,
-      AbstractValue otherAbstractValue,
-      TypeElement type) {
+      AbstractValue abstractValue, AbstractValue otherAbstractValue, TypeElement type) {
     if (abstractValue.isBottom() || otherAbstractValue.isUnknown()) {
       return otherAbstractValue;
     }
@@ -68,9 +66,7 @@ public class AbstractValueJoiner {
   }
 
   private AbstractValue joinPrimitive(
-      AbstractValue abstractValue,
-      AbstractValue otherAbstractValue,
-      PrimitiveTypeElement type) {
+      AbstractValue abstractValue, AbstractValue otherAbstractValue, PrimitiveTypeElement type) {
     assert !abstractValue.isNullOrAbstractValue();
     assert !otherAbstractValue.isNullOrAbstractValue();
 

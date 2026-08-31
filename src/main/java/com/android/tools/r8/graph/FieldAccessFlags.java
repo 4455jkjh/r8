@@ -10,11 +10,11 @@ import java.util.function.BooleanSupplier;
 
 public class FieldAccessFlags extends AccessFlags<FieldAccessFlags> {
 
-  private static final int FLAGS
-      = AccessFlags.BASE_FLAGS
-      | Constants.ACC_VOLATILE
-      | Constants.ACC_TRANSIENT
-      | Constants.ACC_ENUM;
+  private static final int FLAGS =
+      AccessFlags.BASE_FLAGS
+          | Constants.ACC_VOLATILE
+          | Constants.ACC_TRANSIENT
+          | Constants.ACC_ENUM;
 
   @Override
   protected List<String> getNames() {

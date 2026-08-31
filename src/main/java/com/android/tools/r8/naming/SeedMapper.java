@@ -29,13 +29,13 @@ import java.util.Set;
 
 /**
  * Mappings read from the given ProGuard map.
- * <p>
- * The main differences of this against {@link ClassNameMapper} and
- * {@link ClassNameMapper#getObfuscatedToOriginalMapping()} are:
- *   1) the key is the original descriptor, not the obfuscated java name. Thus, it is much easier
- *   to look up what mapping to apply while traversing {@link DexType}s; and
- *   2) the value is {@link ClassNamingForMapApplier}, another variant of {@link ClassNaming},
- *   which also uses original {@link Signature} as a key, instead of renamed {@link Signature}.
+ *
+ * <p>The main differences of this against {@link ClassNameMapper} and {@link
+ * ClassNameMapper#getObfuscatedToOriginalMapping()} are: 1) the key is the original descriptor, not
+ * the obfuscated java name. Thus, it is much easier to look up what mapping to apply while
+ * traversing {@link DexType}s; and 2) the value is {@link ClassNamingForMapApplier}, another
+ * variant of {@link ClassNaming}, which also uses original {@link Signature} as a key, instead of
+ * renamed {@link Signature}.
  */
 public class SeedMapper implements ProguardMap {
 
@@ -122,7 +122,7 @@ public class SeedMapper implements ProguardMap {
       Reporter reporter) {
     this.reporter = reporter;
     ImmutableMap.Builder<String, ClassNamingForMapApplier> builder = ImmutableMap.builder();
-    for(Map.Entry<String, ClassNamingForMapApplier.Builder> entry : mappings.entrySet()) {
+    for (Map.Entry<String, ClassNamingForMapApplier.Builder> entry : mappings.entrySet()) {
       builder.put(entry.getKey(), entry.getValue().build());
     }
     this.mappings = builder.build();

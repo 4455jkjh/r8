@@ -101,11 +101,7 @@ public class InstanceFieldValueAnalysis extends FieldValueAnalysis {
 
     InstanceFieldValueAnalysis analysis =
         new InstanceFieldValueAnalysis(
-            appView.withLiveness(),
-            code,
-            feedback,
-            parentConstructor,
-            parentConstructorCall);
+            appView.withLiveness(), code, feedback, parentConstructor, parentConstructorCall);
     analysis.computeFieldOptimizationInfo(classInitializerDefaultsResult);
     analysis.analyzeParentConstructorCall();
     return analysis.builder.build();

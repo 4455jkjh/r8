@@ -103,8 +103,7 @@ public final class LambdaClass {
     this.descriptor = descriptor;
 
     DexItemFactory factory = builder.getFactory();
-    DexProto constructorProto = factory.createProto(
-        factory.voidType, descriptor.captures.values);
+    DexProto constructorProto = factory.createProto(factory.voidType, descriptor.captures.values);
     this.constructor = factory.createMethod(type, constructorProto, factory.constructorMethodName);
 
     this.target = createTarget(accessedFrom);
@@ -551,8 +550,8 @@ public final class LambdaClass {
   // Create targets for instance method referenced directly without
   // lambda$ methods. It may require creation of accessors in some cases.
   private Target createInstanceMethodTarget(ProgramMethod accessedFrom) {
-    assert descriptor.implHandle.type.isInvokeInstance() ||
-        descriptor.implHandle.type.isInvokeDirect();
+    assert descriptor.implHandle.type.isInvokeInstance()
+        || descriptor.implHandle.type.isInvokeDirect();
     return createInstanceOrInterfaceTarget(accessedFrom);
   }
 

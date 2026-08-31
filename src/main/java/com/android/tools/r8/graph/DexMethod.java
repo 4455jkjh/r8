@@ -42,8 +42,11 @@ public class DexMethod extends DexMember<DexEncodedMethod, DexMethod> {
     this.proto = proto;
     if (!skipNameValidationForTesting && !name.isValidMethodName()) {
       throw new CompilationError(
-          "Method name '" + name + "' in class '" + holder.toSourceString() +
-              "' cannot be represented in dex format.");
+          "Method name '"
+              + name
+              + "' in class '"
+              + holder.toSourceString()
+              + "' cannot be represented in dex format.");
     }
   }
 
@@ -257,9 +260,7 @@ public class DexMethod extends DexMember<DexEncodedMethod, DexMethod> {
   public boolean computeEquals(Object other) {
     if (other instanceof DexMethod) {
       DexMethod o = (DexMethod) other;
-      return holder.equals(o.holder)
-          && name.equals(o.name)
-          && proto.equals(o.proto);
+      return holder.equals(o.holder) && name.equals(o.name) && proto.equals(o.proto);
     }
     return false;
   }

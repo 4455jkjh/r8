@@ -1399,8 +1399,8 @@ public abstract class DexValue extends DexItem implements StructuralItem<DexValu
       if (other == this) {
         return true;
       }
-      return (other instanceof DexValueDouble) &&
-          (Double.compare(value, ((DexValueDouble) other).value) == 0);
+      return (other instanceof DexValueDouble)
+          && (Double.compare(value, ((DexValueDouble) other).value) == 0);
     }
 
     @Override
@@ -1409,7 +1409,7 @@ public abstract class DexValue extends DexItem implements StructuralItem<DexValu
     }
   }
 
-  static private abstract class NestedDexValue<T extends IndexedDexItem> extends DexValue {
+  private abstract static class NestedDexValue<T extends IndexedDexItem> extends DexValue {
 
     public final T value;
 
@@ -1479,7 +1479,7 @@ public abstract class DexValue extends DexItem implements StructuralItem<DexValu
     }
   }
 
-  static public class DexValueString extends NestedDexValue<DexString> {
+  public static class DexValueString extends NestedDexValue<DexString> {
 
     public DexValueString(DexString value) {
       super(value);
@@ -1644,7 +1644,7 @@ public abstract class DexValue extends DexItem implements StructuralItem<DexValu
     }
   }
 
-  static public class DexValueType extends NestedDexValue<DexType> {
+  public static class DexValueType extends NestedDexValue<DexType> {
 
     public DexValueType(DexType value) {
       super(value);
@@ -1686,7 +1686,7 @@ public abstract class DexValue extends DexItem implements StructuralItem<DexValu
     }
   }
 
-  static public class DexValueField extends NestedDexValue<DexField> {
+  public static class DexValueField extends NestedDexValue<DexField> {
 
     public DexValueField(DexField value) {
       super(value);
@@ -1728,7 +1728,7 @@ public abstract class DexValue extends DexItem implements StructuralItem<DexValu
     }
   }
 
-  static public class DexValueMethod extends NestedDexValue<DexMethod> {
+  public static class DexValueMethod extends NestedDexValue<DexMethod> {
 
     public DexValueMethod(DexMethod value) {
       super(value);
@@ -1770,7 +1770,7 @@ public abstract class DexValue extends DexItem implements StructuralItem<DexValu
     }
   }
 
-  static public class DexValueEnum extends NestedDexValue<DexField> {
+  public static class DexValueEnum extends NestedDexValue<DexField> {
 
     public DexValueEnum(DexField value) {
       super(value);
@@ -1812,7 +1812,7 @@ public abstract class DexValue extends DexItem implements StructuralItem<DexValu
     }
   }
 
-  static public class DexValueMethodType extends NestedDexValue<DexProto> {
+  public static class DexValueMethodType extends NestedDexValue<DexProto> {
 
     public DexValueMethodType(DexProto value) {
       super(value);
@@ -1854,7 +1854,7 @@ public abstract class DexValue extends DexItem implements StructuralItem<DexValu
     }
   }
 
-  static public class DexValueArray extends DexValue {
+  public static class DexValueArray extends DexValue {
 
     final DexValue[] values;
 
@@ -1971,7 +1971,7 @@ public abstract class DexValue extends DexItem implements StructuralItem<DexValu
     }
   }
 
-  static public class DexValueAnnotation extends DexValue {
+  public static class DexValueAnnotation extends DexValue {
 
     public final DexEncodedAnnotation value;
 
@@ -2072,8 +2072,7 @@ public abstract class DexValue extends DexItem implements StructuralItem<DexValu
     public static final DexValue NULL = new DexValueNull();
 
     // See DexValueNull.NULL
-    private DexValueNull() {
-    }
+    private DexValueNull() {}
 
     @Override
     @SuppressWarnings("ReferenceEquality")
@@ -2276,7 +2275,7 @@ public abstract class DexValue extends DexItem implements StructuralItem<DexValu
     }
   }
 
-  static public class DexValueMethodHandle extends NestedDexValue<DexMethodHandle> {
+  public static class DexValueMethodHandle extends NestedDexValue<DexMethodHandle> {
 
     public DexValueMethodHandle(DexMethodHandle value) {
       super(value);

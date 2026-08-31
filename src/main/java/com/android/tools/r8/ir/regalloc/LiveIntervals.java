@@ -261,9 +261,7 @@ public class LiveIntervals implements Comparable<LiveIntervals> {
     return true;
   }
 
-  /**
-   * Record a use for this interval.
-   */
+  /** Record a use for this interval. */
   public void addUse(LiveIntervalsUse use) {
     uses.add(use);
     updateRegisterConstraint(use.getLimit());

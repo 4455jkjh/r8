@@ -11,7 +11,7 @@ import com.android.tools.r8.ir.analysis.type.TypeElement;
 import com.android.tools.r8.ir.optimize.Inliner.ConstraintWithTarget;
 import com.android.tools.r8.ir.optimize.InliningConstraints;
 
-abstract public class Unop extends Instruction {
+public abstract class Unop extends Instruction {
 
   public Unop(Value dest, Value source) {
     super(dest, source);

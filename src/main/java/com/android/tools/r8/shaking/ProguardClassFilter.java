@@ -21,8 +21,7 @@ public class ProguardClassFilter {
   public static class Builder {
     private final ImmutableList.Builder<ProguardClassNameList> patterns = ImmutableList.builder();
 
-    private Builder() {
-    }
+    private Builder() {}
 
     public Builder addPattern(ProguardClassNameList pattern) {
       patterns.add(pattern);

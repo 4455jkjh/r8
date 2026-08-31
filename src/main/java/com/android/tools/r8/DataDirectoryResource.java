@@ -21,8 +21,8 @@ public interface DataDirectoryResource extends DataResource {
   }
 
   static DataDirectoryResource fromFile(Path dir, Path file) {
-    return new LocalDataDirectoryResource(dir.resolve(file).toFile(),
-        file.toString().replace(File.separatorChar, SEPARATOR));
+    return new LocalDataDirectoryResource(
+        dir.resolve(file).toFile(), file.toString().replace(File.separatorChar, SEPARATOR));
   }
 
   static DataDirectoryResource fromZip(ZipFile zip, ZipEntry entry) {

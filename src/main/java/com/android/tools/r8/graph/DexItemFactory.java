@@ -1029,17 +1029,18 @@ public class DexItemFactory {
           doubleDescriptor.toString(), doubleType,
           booleanDescriptor.toString(), booleanType);
 
-  public final BiMap<DexType, DexType> primitiveToBoxed = HashBiMap.create(
-      ImmutableMap.<DexType, DexType>builder()
-          .put(booleanType, boxedBooleanType)
-          .put(byteType, boxedByteType)
-          .put(charType, boxedCharType)
-          .put(shortType, boxedShortType)
-          .put(intType, boxedIntType)
-          .put(longType, boxedLongType)
-          .put(floatType, boxedFloatType)
-          .put(doubleType, boxedDoubleType)
-          .build());
+  public final BiMap<DexType, DexType> primitiveToBoxed =
+      HashBiMap.create(
+          ImmutableMap.<DexType, DexType>builder()
+              .put(booleanType, boxedBooleanType)
+              .put(byteType, boxedByteType)
+              .put(charType, boxedCharType)
+              .put(shortType, boxedShortType)
+              .put(intType, boxedIntType)
+              .put(longType, boxedLongType)
+              .put(floatType, boxedFloatType)
+              .put(doubleType, boxedDoubleType)
+              .build());
 
   public final Map<DexType, DexMethod> unboxPrimitiveMethod =
       ImmutableMap.<DexType, DexMethod>builder()
@@ -1241,9 +1242,7 @@ public class DexItemFactory {
   // Note that this set is used for canonicalization of method invocations, together with a set of
   // library methods that do not have side effects.
   public Set<DexMethod> libraryMethodsWithReturnValueDependingOnlyOnArguments =
-      ImmutableSet.<DexMethod>builder()
-          .addAll(boxedValueOfMethods())
-          .build();
+      ImmutableSet.<DexMethod>builder().addAll(boxedValueOfMethods()).build();
 
   public Set<DexType> libraryTypesAssumedToBePresent =
       ImmutableSet.<DexType>builder()
@@ -3087,10 +3086,18 @@ public class DexItemFactory {
     public final DexMethod initCause;
 
     private ThrowableMethods() {
-      addSuppressed = createMethod(throwableDescriptor,
-          createString("addSuppressed"), voidDescriptor, new DexString[]{throwableDescriptor});
-      getSuppressed = createMethod(throwableDescriptor,
-          createString("getSuppressed"), throwableArrayDescriptor, DexString.EMPTY_ARRAY);
+      addSuppressed =
+          createMethod(
+              throwableDescriptor,
+              createString("addSuppressed"),
+              voidDescriptor,
+              new DexString[] {throwableDescriptor});
+      getSuppressed =
+          createMethod(
+              throwableDescriptor,
+              createString("getSuppressed"),
+              throwableArrayDescriptor,
+              DexString.EMPTY_ARRAY);
       initCause =
           createMethod(
               throwableDescriptor,
@@ -3182,14 +3189,18 @@ public class DexItemFactory {
     private ObjectMembers() {
       // The clone method is installed on each array, so one has to use method.match(clone).
       clone = createMethod(objectType, createProto(objectType), cloneMethodName);
-      getClass = createMethod(objectDescriptor,
-          getClassMethodName, classDescriptor, DexString.EMPTY_ARRAY);
-      constructor = createMethod(objectDescriptor,
-          constructorMethodName, voidType.descriptor, DexString.EMPTY_ARRAY);
-      finalize = createMethod(objectDescriptor,
-          finalizeMethodName, voidType.descriptor, DexString.EMPTY_ARRAY);
-      toString = createMethod(objectDescriptor,
-          toStringMethodName, stringDescriptor, DexString.EMPTY_ARRAY);
+      getClass =
+          createMethod(
+              objectDescriptor, getClassMethodName, classDescriptor, DexString.EMPTY_ARRAY);
+      constructor =
+          createMethod(
+              objectDescriptor, constructorMethodName, voidType.descriptor, DexString.EMPTY_ARRAY);
+      finalize =
+          createMethod(
+              objectDescriptor, finalizeMethodName, voidType.descriptor, DexString.EMPTY_ARRAY);
+      toString =
+          createMethod(
+              objectDescriptor, toStringMethodName, stringDescriptor, DexString.EMPTY_ARRAY);
       notify =
           createMethod(objectDescriptor, notifyMethodName, voidDescriptor, DexString.EMPTY_ARRAY);
       notifyAll =
@@ -3401,8 +3412,12 @@ public class DexItemFactory {
     public final Set<DexMethod> getNames;
 
     private ClassMethods() {
-      desiredAssertionStatus = createMethod(classDescriptor,
-          desiredAssertionStatusMethodName, booleanDescriptor, DexString.EMPTY_ARRAY);
+      desiredAssertionStatus =
+          createMethod(
+              classDescriptor,
+              desiredAssertionStatusMethodName,
+              booleanDescriptor,
+              DexString.EMPTY_ARRAY);
       forName =
           createMethod(
               classDescriptor,
@@ -3416,12 +3431,13 @@ public class DexItemFactory {
               classDescriptor,
               new DexString[] {stringDescriptor, booleanDescriptor, classLoaderDescriptor});
       getName = createMethod(classDescriptor, getNameName, stringDescriptor, DexString.EMPTY_ARRAY);
-      getCanonicalName = createMethod(
-          classDescriptor, getCanonicalNameName, stringDescriptor, DexString.EMPTY_ARRAY);
-      getSimpleName = createMethod(
-          classDescriptor, getSimpleNameName, stringDescriptor, DexString.EMPTY_ARRAY);
-      getTypeName = createMethod(
-          classDescriptor, getTypeNameName, stringDescriptor, DexString.EMPTY_ARRAY);
+      getCanonicalName =
+          createMethod(
+              classDescriptor, getCanonicalNameName, stringDescriptor, DexString.EMPTY_ARRAY);
+      getSimpleName =
+          createMethod(classDescriptor, getSimpleNameName, stringDescriptor, DexString.EMPTY_ARRAY);
+      getTypeName =
+          createMethod(classDescriptor, getTypeNameName, stringDescriptor, DexString.EMPTY_ARRAY);
       getConstructor =
           createMethod(classType, createProto(constructorType, classArrayType), "getConstructor");
       getDeclaredConstructor =
@@ -3590,11 +3606,7 @@ public class DexItemFactory {
       nameMethod =
           createMethod(enumDescriptor, nameString, stringDescriptor, DexString.EMPTY_ARRAY);
       toString =
-          createMethod(
-              enumDescriptor,
-              toStringMethodName,
-              stringDescriptor,
-              DexString.EMPTY_ARRAY);
+          createMethod(enumDescriptor, toStringMethodName, stringDescriptor, DexString.EMPTY_ARRAY);
       compareTo =
           createMethod(
               enumDescriptor, compareToMethodName, intDescriptor, new DexString[] {enumDescriptor});

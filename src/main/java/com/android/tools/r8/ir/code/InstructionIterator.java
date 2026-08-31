@@ -8,7 +8,9 @@ import java.util.Iterator;
 
 public interface InstructionIterator extends Iterator<Instruction>, NextUntilIterator<Instruction> {
 
-  /** @deprecated Use {@link InstructionListIterator#remove()} instead. */
+  /**
+   * @deprecated Use {@link InstructionListIterator#remove()} instead.
+   */
   @Deprecated
   @Override
   default void remove() {

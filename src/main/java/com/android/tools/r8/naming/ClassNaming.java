@@ -12,8 +12,8 @@ import java.util.function.Consumer;
 
 /**
  * Stores name information for a class.
- * <p>
- * Implementers will include how the class was renamed and information on the class's members.
+ *
+ * <p>Implementers will include how the class was renamed and information on the class's members.
  */
 public interface ClassNaming {
 
@@ -42,12 +42,11 @@ public interface ClassNaming {
 
   MemberNaming lookupByOriginalSignature(Signature original);
 
-  <T extends Throwable> void forAllMemberNaming(
-      ThrowingConsumer<MemberNaming, T> consumer) throws T;
+  <T extends Throwable> void forAllMemberNaming(ThrowingConsumer<MemberNaming, T> consumer)
+      throws T;
 
-  <T extends Throwable> void forAllFieldNaming(
-      ThrowingConsumer<MemberNaming, T> consumer) throws T;
+  <T extends Throwable> void forAllFieldNaming(ThrowingConsumer<MemberNaming, T> consumer) throws T;
 
-  <T extends Throwable> void forAllMethodNaming(
-      ThrowingConsumer<MemberNaming, T> consumer) throws T;
+  <T extends Throwable> void forAllMethodNaming(ThrowingConsumer<MemberNaming, T> consumer)
+      throws T;
 }

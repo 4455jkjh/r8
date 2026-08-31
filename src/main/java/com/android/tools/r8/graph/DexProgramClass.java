@@ -888,5 +888,4 @@ public class DexProgramClass extends DexClass
   public ChecksumSupplier getChecksumSupplier() {
     return checksumSupplier;
   }
-
 }

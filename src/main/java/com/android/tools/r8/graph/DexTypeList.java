@@ -152,8 +152,7 @@ public class DexTypeList extends DexItem implements Iterable<DexType>, Structura
     if (this == other) {
       return true;
     }
-    return (other instanceof DexTypeList)
-        && Arrays.equals(values, ((DexTypeList) other).values);
+    return (other instanceof DexTypeList) && Arrays.equals(values, ((DexTypeList) other).values);
   }
 
   public boolean isEmpty() {

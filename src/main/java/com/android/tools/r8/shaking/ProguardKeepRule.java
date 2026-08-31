@@ -78,9 +78,7 @@ public class ProguardKeepRule extends ProguardKeepRuleBase {
         modifiers);
   }
 
-  /**
-   * Create a new empty builder.
-   */
+  /** Create a new empty builder. */
   public static Builder builder() {
     return new Builder();
   }

@@ -10,14 +10,12 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
-/**
- * Helper class for resolving payload information during IR construction.
- */
+/** Helper class for resolving payload information during IR construction. */
 public class SwitchPayloadResolver {
 
   public static class PayloadData {
 
-    public final static int NO_SIZE = -1;
+    public static final int NO_SIZE = -1;
     public int userOffset;
     public int[] absoluteTargets = null;
     public int[] keys = null;

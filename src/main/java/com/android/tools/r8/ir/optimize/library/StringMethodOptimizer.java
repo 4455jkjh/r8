@@ -323,7 +323,7 @@ public class StringMethodOptimizer extends StatelessLibraryMethodModelCollection
             if (!allowNumbers) {
               return null;
             }
-            // Intentional fall-through.
+          // Intentional fall-through.
           case 'b':
           case 's':
             if (!curPartValue.isEmpty()) {

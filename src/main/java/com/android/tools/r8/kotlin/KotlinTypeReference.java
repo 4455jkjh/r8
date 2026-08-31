@@ -92,9 +92,7 @@ class KotlinTypeReference implements EnqueuerMetadataTraceable {
   }
 
   boolean toRenamedDescriptorOrDefault(
-      Consumer<String> rewrittenConsumer,
-      AppView<?> appView,
-      String defaultValue) {
+      Consumer<String> rewrittenConsumer, AppView<?> appView, String defaultValue) {
     if (known == null) {
       rewrittenConsumer.accept(originalName);
       return false;
@@ -126,9 +124,7 @@ class KotlinTypeReference implements EnqueuerMetadataTraceable {
   }
 
   boolean toRenamedBinaryNameOrDefault(
-      Consumer<String> rewrittenConsumer,
-      AppView<?> appView,
-      String defaultValue) {
+      Consumer<String> rewrittenConsumer, AppView<?> appView, String defaultValue) {
     if (known == null) {
       // Unknown values are always on the input form, so we can just return it.
       rewrittenConsumer.accept(originalName);

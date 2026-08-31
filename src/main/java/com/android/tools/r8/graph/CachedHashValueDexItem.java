@@ -3,9 +3,7 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8.graph;
 
-/**
- * DexItems of this kind have cached hash values and quick equals check.
- */
+/** DexItems of this kind have cached hash values and quick equals check. */
 public abstract class CachedHashValueDexItem extends DexItem {
 
   private static final int NOT_COMPUTED_HASH_VALUE = -1;

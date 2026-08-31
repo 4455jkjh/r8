@@ -698,15 +698,15 @@ public class MethodOptimizationInfoCollector {
   /**
    * An enum used to classify instructions according to a particular effect that they produce.
    *
-   * The "effect" of an instruction can be seen as a program state change (or semantic change) at
+   * <p>The "effect" of an instruction can be seen as a program state change (or semantic change) at
    * runtime execution. For example, an instruction could cause the initialization of a class,
    * change the value of a field, ... while other instructions do not.
    *
-   * This classification also depends on the type of analysis that is using it. For instance, an
+   * <p>This classification also depends on the type of analysis that is using it. For instance, an
    * analysis can look for instructions that cause class initialization while another look for
    * instructions that check nullness of a particular object.
    *
-   * On the other hand, some instructions may provide a non desired effect which is a signal for
+   * <p>On the other hand, some instructions may provide a non desired effect which is a signal for
    * the analysis to stop.
    */
   private enum InstructionEffect {
@@ -802,10 +802,7 @@ public class MethodOptimizationInfoCollector {
   }
 
   private void computeClassInlinerMethodConstraint(
-      ProgramMethod method,
-      IRCode code,
-      OptimizationFeedback feedback,
-      Timing timing) {
+      ProgramMethod method, IRCode code, OptimizationFeedback feedback, Timing timing) {
     timing.begin("Compute class inlining constraint");
     ClassInlinerMethodConstraint classInlinerMethodConstraint =
         ClassInlinerMethodConstraintAnalysis.analyze(appView, method, code, timing);

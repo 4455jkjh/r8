@@ -749,11 +749,8 @@ public class ProguardConfiguration {
     this.processKotlinNullChecks = processKotlinNullChecks;
   }
 
-  /**
-   * Create a new empty builder.
-   */
-  public static Builder builder(DexItemFactory dexItemFactory,
-      Reporter reporter) {
+  /** Create a new empty builder. */
+  public static Builder builder(DexItemFactory dexItemFactory, Reporter reporter) {
     return new Builder(dexItemFactory, reporter);
   }
 

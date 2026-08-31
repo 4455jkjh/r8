@@ -21,8 +21,7 @@ import java.util.function.Consumer;
 public class MultiAPILevelHumanDesugaredLibrarySpecificationFlagDeduplicator {
 
   public static void deduplicateFlags(
-      MultiAPILevelHumanDesugaredLibrarySpecification specification,
-      Reporter reporter) {
+      MultiAPILevelHumanDesugaredLibrarySpecification specification, Reporter reporter) {
 
     Set<ApiLevelRange> apis = new HashSet<>();
     apis.addAll(specification.getCommonFlags().keySet());

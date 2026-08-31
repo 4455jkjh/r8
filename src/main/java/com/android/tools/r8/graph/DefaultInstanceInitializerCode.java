@@ -160,9 +160,7 @@ public class DefaultInstanceInitializerCode extends Code
 
   @Override
   public IRCode buildIR(
-      ProgramMethod method,
-      AppView<?> appView,
-      MutableMethodConversionOptions conversionOptions) {
+      ProgramMethod method, AppView<?> appView, MutableMethodConversionOptions conversionOptions) {
     DefaultInstanceInitializerSourceCode source =
         new DefaultInstanceInitializerSourceCode(
             method.getReference(),

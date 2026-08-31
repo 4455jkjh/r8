@@ -249,9 +249,7 @@ public class IRBuilder {
 
     private final List<Value> values = new ArrayList<>();
 
-    /**
-     * Creates a ValueList of all the operands at the given index in the list of phis.
-     */
+    /** Creates a ValueList of all the operands at the given index in the list of phis. */
     public static ValueList fromPhis(List<Phi> phis, int index) {
       ValueList result = new ValueList();
       for (Phi phi : phis) {
@@ -1291,8 +1289,8 @@ public class IRBuilder {
     boolean canThrow = type != NumericType.DOUBLE && type != NumericType.FLOAT;
     Value in1 = readNumericRegister(left, type);
     Value in2 = readNumericRegister(right, type);
-    Value out = writeNumericRegister(dest, type,
-        canThrow ? ThrowingInfo.CAN_THROW : ThrowingInfo.NO_THROW);
+    Value out =
+        writeNumericRegister(dest, type, canThrow ? ThrowingInfo.CAN_THROW : ThrowingInfo.NO_THROW);
     Div instruction = new Div(type, out, in1, in2);
     assert instruction.instructionTypeCanThrow() == canThrow;
     add(instruction);
@@ -1303,8 +1301,8 @@ public class IRBuilder {
     boolean canThrow = type != NumericType.DOUBLE && type != NumericType.FLOAT;
     Value in1 = readNumericRegister(value, type);
     Value in2 = readIntLiteral(constant);
-    Value out = writeNumericRegister(dest, type,
-        canThrow ? ThrowingInfo.CAN_THROW : ThrowingInfo.NO_THROW);
+    Value out =
+        writeNumericRegister(dest, type, canThrow ? ThrowingInfo.CAN_THROW : ThrowingInfo.NO_THROW);
     Div instruction = new Div(type, out, in1, in2);
     assert instruction.instructionTypeCanThrow() == canThrow;
     add(instruction);
@@ -1373,8 +1371,8 @@ public class IRBuilder {
     boolean canThrow = type != NumericType.DOUBLE && type != NumericType.FLOAT;
     Value in1 = readNumericRegister(left, type);
     Value in2 = readNumericRegister(right, type);
-    Value out = writeNumericRegister(dest, type,
-        canThrow ? ThrowingInfo.CAN_THROW : ThrowingInfo.NO_THROW);
+    Value out =
+        writeNumericRegister(dest, type, canThrow ? ThrowingInfo.CAN_THROW : ThrowingInfo.NO_THROW);
     Rem instruction = new Rem(type, out, in1, in2);
     assert instruction.instructionTypeCanThrow() == canThrow;
     addInstruction(instruction);
@@ -1385,8 +1383,8 @@ public class IRBuilder {
     boolean canThrow = type != NumericType.DOUBLE && type != NumericType.FLOAT;
     Value in1 = readNumericRegister(value, type);
     Value in2 = readIntLiteral(constant);
-    Value out = writeNumericRegister(dest, type,
-        canThrow ? ThrowingInfo.CAN_THROW : ThrowingInfo.NO_THROW);
+    Value out =
+        writeNumericRegister(dest, type, canThrow ? ThrowingInfo.CAN_THROW : ThrowingInfo.NO_THROW);
     Rem instruction = new Rem(type, out, in1, in2);
     assert instruction.instructionTypeCanThrow() == canThrow;
     addInstruction(instruction);
@@ -1732,9 +1730,13 @@ public class IRBuilder {
 
   private void checkInvokeArgumentRegisters(int expected, int actual) {
     if (expected != actual) {
-      throw new CompilationError("Invalid invoke instruction. "
-          + "Expected use of " + expected + " argument registers, "
-          + "found actual use of " + actual);
+      throw new CompilationError(
+          "Invalid invoke instruction. "
+              + "Expected use of "
+              + expected
+              + " argument registers, "
+              + "found actual use of "
+              + actual);
     }
   }
 
@@ -2137,7 +2139,8 @@ public class IRBuilder {
     // Check that any information about a current-local is consistent with the read.
     if (local != null && value.getLocalInfo() != local && !value.isUninitializedLocal()) {
       throw new InvalidDebugInfoException(
-          "Attempt to read local " + local
+          "Attempt to read local "
+              + local
               + " but no local information was associated with the value being read.");
     }
     // Check that any local information on the value is actually visible.

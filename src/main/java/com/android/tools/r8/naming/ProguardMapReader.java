@@ -37,38 +37,38 @@ import java.util.function.Function;
 
 /**
  * Parses a Proguard mapping file and produces mappings from obfuscated class names to the original
- * name and from obfuscated member signatures to the original members the obfuscated member
- * was formed of.
- * <p>
- * The expected format is as follows
- * <p>
- * original-type-name ARROW obfuscated-type-name COLON starts a class mapping
- * description and maps original to obfuscated.
- * <p>
- * followed by one or more of
- * <p>
- * signature ARROW name
- * <p>
- * which maps the member with the given signature to the new name. This mapping is not
+ * name and from obfuscated member signatures to the original members the obfuscated member was
+ * formed of.
+ *
+ * <p>The expected format is as follows
+ *
+ * <p>original-type-name ARROW obfuscated-type-name COLON starts a class mapping description and
+ * maps original to obfuscated.
+ *
+ * <p>followed by one or more of
+ *
+ * <p>signature ARROW name
+ *
+ * <p>which maps the member with the given signature to the new name. This mapping is not
  * bidirectional as member names are overloaded by signature. To make it bidirectional, we extend
  * the name with the signature of the original member.
- * <p>
- * Due to inlining, we might have the above prefixed with a range (two numbers separated by :).
- * <p>
- * range COLON signature ARROW name
- * <p>
- * This has the same meaning as the above but also encodes the line number range of the member. This
- * may be followed by multiple inline mappings of the form
- * <p>
- * range COLON signature COLON range ARROW name
- * <p>
- * to identify that signature was inlined from the second range to the new line numbers in the first
- * range. This is then followed by information on the call trace to where the member was inlined.
- * These entries have the form
- * <p>
- * range COLON signature COLON number ARROW name
- * <p>
- * and are currently only stored to be able to reproduce them later.
+ *
+ * <p>Due to inlining, we might have the above prefixed with a range (two numbers separated by :).
+ *
+ * <p>range COLON signature ARROW name
+ *
+ * <p>This has the same meaning as the above but also encodes the line number range of the member.
+ * This may be followed by multiple inline mappings of the form
+ *
+ * <p>range COLON signature COLON range ARROW name
+ *
+ * <p>to identify that signature was inlined from the second range to the new line numbers in the
+ * first range. This is then followed by information on the call trace to where the member was
+ * inlined. These entries have the form
+ *
+ * <p>range COLON signature COLON number ARROW name
+ *
+ * <p>and are currently only stored to be able to reproduce them later.
  */
 public class ProguardMapReader implements AutoCloseable {
 
@@ -131,9 +131,7 @@ public class ProguardMapReader implements AutoCloseable {
   }
 
   private char peekChar(int distance) {
-    return lineOffset + distance < line.length()
-        ? line.charAt(lineOffset + distance)
-        : '\n';
+    return lineOffset + distance < line.length() ? line.charAt(lineOffset + distance) : '\n';
   }
 
   private boolean hasNext() {

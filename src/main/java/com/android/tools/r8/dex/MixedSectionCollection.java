@@ -21,15 +21,15 @@ import com.android.tools.r8.graph.ParameterAnnotationsList;
  * <p>This semantically is just a wrapper around a bunch of collections. We do not expose the
  * collections directly to allow for implementations that under the hood do not use collections.
  *
- * <p>See {@link DexItem#collectMixedSectionItems(MixedSectionCollection)} for
- * information on how to fill a {@link MixedSectionCollection}.
+ * <p>See {@link DexItem#collectMixedSectionItems(MixedSectionCollection)} for information on how to
+ * fill a {@link MixedSectionCollection}.
  */
 public abstract class MixedSectionCollection {
 
   /**
    * Adds the given class data to the collection.
    *
-   * Does not add any dependencies.
+   * <p>Does not add any dependencies.
    *
    * @return true if the item was not added before
    */
@@ -38,7 +38,7 @@ public abstract class MixedSectionCollection {
   /**
    * Adds the given encoded array to the collection.
    *
-   * Does not add any dependencies.
+   * <p>Does not add any dependencies.
    *
    * @return true if the item was not added before
    */
@@ -47,7 +47,7 @@ public abstract class MixedSectionCollection {
   /**
    * Adds the given annotation set to the collection.
    *
-   * Does not add any dependencies.
+   * <p>Does not add any dependencies.
    *
    * @return true if the item was not added before
    */
@@ -83,7 +83,7 @@ public abstract class MixedSectionCollection {
   /**
    * Adds the given type list to the collection.
    *
-   * Does not add any dependencies.
+   * <p>Does not add any dependencies.
    *
    * @return true if the item was not added before
    */
@@ -92,7 +92,7 @@ public abstract class MixedSectionCollection {
   /**
    * Adds the given annotation-set reference list to the collection.
    *
-   * Does not add any dependencies.
+   * <p>Does not add any dependencies.
    *
    * @return true if the item was not added before
    */
@@ -101,7 +101,7 @@ public abstract class MixedSectionCollection {
   /**
    * Adds the given annotation to the collection.
    *
-   * Does not add any dependencies.
+   * <p>Does not add any dependencies.
    *
    * @return true if the item was not added before
    */

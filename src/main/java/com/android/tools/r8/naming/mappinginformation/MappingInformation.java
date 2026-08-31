@@ -153,13 +153,7 @@ public abstract class MappingInformation {
           MappingInformationDiagnostics.notValidString(lineNumber, MAPPING_ID_KEY));
       return;
     }
-    deserialize(
-        idString,
-        version,
-        object,
-        diagnosticsHandler,
-        lineNumber,
-        onMappingInfo);
+    deserialize(idString, version, object, diagnosticsHandler, lineNumber, onMappingInfo);
   }
 
   private static void deserialize(

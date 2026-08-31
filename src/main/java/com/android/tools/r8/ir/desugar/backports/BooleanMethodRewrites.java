@@ -27,6 +27,5 @@ public final class BooleanMethodRewrites {
     return createRewriter(Opcode.Xor);
   }
 
-  private BooleanMethodRewrites() {
-  }
+  private BooleanMethodRewrites() {}
 }

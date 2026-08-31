@@ -21,9 +21,7 @@ public class MapConsumerToPartitionMapConsumer implements InternalMapConsumer {
   }
 
   @Override
-  public void accept(
-      DiagnosticsHandler diagnosticsHandler,
-      ClassNameMapper classNameMapper) {
+  public void accept(DiagnosticsHandler diagnosticsHandler, ClassNameMapper classNameMapper) {
     try {
       partitionMapConsumer.acceptMappingPartitionMetadata(
           ProguardMapPartitioner.builder(diagnosticsHandler)

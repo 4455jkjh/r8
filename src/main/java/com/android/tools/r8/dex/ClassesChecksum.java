@@ -65,7 +65,8 @@ public class ClassesChecksum {
         if (result.isJsonObject()) {
           append(result.getAsJsonObject());
         }
-      } catch (JsonSyntaxException ignored) {}
+      } catch (JsonSyntaxException ignored) {
+      }
     }
   }
 

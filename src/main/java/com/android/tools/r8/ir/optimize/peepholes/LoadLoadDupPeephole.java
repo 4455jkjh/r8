@@ -29,9 +29,9 @@ import com.android.tools.r8.ir.code.StackValue;
  */
 public class LoadLoadDupPeephole implements BasicBlockPeephole {
 
-  private final Point lastLoadExp =
+  private final Point lastLoadExp = new Point(PeepholeHelper.withoutLocalInfo(Instruction::isLoad));
+  private final Point firstLoadExp =
       new Point(PeepholeHelper.withoutLocalInfo(Instruction::isLoad));
-  private final Point firstLoadExp = new Point(PeepholeHelper.withoutLocalInfo(Instruction::isLoad));
 
   // This searches backwards thus the pattern is built from the bottom.
   private final PeepholeLayout layout = PeepholeLayout.lookBackward(lastLoadExp, firstLoadExp);
@@ -69,5 +69,4 @@ public class LoadLoadDupPeephole implements BasicBlockPeephole {
   public boolean resetAfterMatch() {
     return false;
   }
-
 }

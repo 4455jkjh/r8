@@ -121,11 +121,11 @@ public class GenerateMainDexList {
   /**
    * Main API entry for computing the main-dex list.
    *
-   * The main-dex list is represented as a list of strings, each string specifies one class to
+   * <p>The main-dex list is represented as a list of strings, each string specifies one class to
    * keep in the primary dex file (<code>classes.dex</code>).
    *
-   * A class is specified using the following format: "com/example/MyClass.class". That is
-   * "/" as separator between package components, and a trailing ".class".
+   * <p>A class is specified using the following format: "com/example/MyClass.class". That is "/" as
+   * separator between package components, and a trailing ".class".
    *
    * @param command main dex-list generator command.
    * @return classes to keep in the primary dex file.

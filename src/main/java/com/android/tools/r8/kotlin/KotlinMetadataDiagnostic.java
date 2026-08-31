@@ -52,8 +52,7 @@ public class KotlinMetadataDiagnostic implements Diagnostic {
 
   static KotlinMetadataDiagnostic unknownClassifier(String classifier) {
     return new KotlinMetadataDiagnostic(
-        Origin.unknown(),
-        "The classifier " + classifier + " is unknown and cannot be parsed");
+        Origin.unknown(), "The classifier " + classifier + " is unknown and cannot be parsed");
   }
 
   static KotlinMetadataDiagnostic unexpectedErrorWhenRewriting(DexClass clazz, Throwable t) {

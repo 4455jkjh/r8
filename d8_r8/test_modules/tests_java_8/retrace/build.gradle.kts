@@ -5,9 +5,7 @@
 import org.gradle.api.tasks.Copy
 
 java {
-  sourceSets.test.configure {
-    java.srcDir(getRoot().resolveAll("src", "test", "java8", "retrace"))
-  }
+  sourceSets.test.configure { java.srcDir(getRoot().resolveAll("src", "test", "java8", "retrace")) }
 }
 
 tasks {

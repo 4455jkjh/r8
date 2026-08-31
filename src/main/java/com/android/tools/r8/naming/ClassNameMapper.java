@@ -17,11 +17,11 @@ import com.android.tools.r8.naming.MemberNaming.MethodSignature;
 import com.android.tools.r8.naming.MemberNaming.Signature;
 import com.android.tools.r8.naming.mappinginformation.MapVersionMappingInformation;
 import com.android.tools.r8.position.Position;
-import com.android.tools.r8.utils.internal.BiMapContainer;
-import com.android.tools.r8.utils.internal.ChainableStringConsumer;
 import com.android.tools.r8.utils.DescriptorUtils;
 import com.android.tools.r8.utils.Reporter;
 import com.android.tools.r8.utils.ThreadUtils;
+import com.android.tools.r8.utils.internal.BiMapContainer;
+import com.android.tools.r8.utils.internal.ChainableStringConsumer;
 import com.google.common.collect.BiMap;
 import com.google.common.collect.ImmutableBiMap;
 import com.google.common.collect.ImmutableMap;
@@ -282,8 +282,8 @@ public class ClassNameMapper implements ProguardMap {
     }
     String returnType = deobfuscateType(method.proto.returnType.toDescriptorString());
 
-    MethodSignature signature = new MethodSignature(method.name.toString(), returnType,
-        parameterTypes);
+    MethodSignature signature =
+        new MethodSignature(method.name.toString(), returnType, parameterTypes);
     return (MethodSignature) canonicalizeSignature(signature);
   }
 

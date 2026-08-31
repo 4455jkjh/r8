@@ -98,18 +98,18 @@ public class CodeRewriter {
           Value inValue = instruction.inValues().get(0);
           DebugLocalInfo localInfo = instruction.outValue().getLocalInfo();
           DexString localName = localInfo.name;
-          if (!inValue.hasLocalInfo() &&
-              inValue.numberOfAllUsers() == 1 &&
-              inValue.definition != null &&
-              !hasLocalOrLineChangeBetween(inValue.definition, instruction, localName)) {
+          if (!inValue.hasLocalInfo()
+              && inValue.numberOfAllUsers() == 1
+              && inValue.definition != null
+              && !hasLocalOrLineChangeBetween(inValue.definition, instruction, localName)) {
             inValue.setLocalInfo(localInfo);
             instruction.outValue().replaceUsers(inValue);
             Value overwrittenLocal = instruction.removeDebugValue(localInfo);
             if (overwrittenLocal != null) {
               overwrittenLocal.addDebugLocalEnd(inValue.definition);
             }
-            if (prevInstruction != null &&
-                (prevInstruction.outValue() == null
+            if (prevInstruction != null
+                && (prevInstruction.outValue() == null
                     || !prevInstruction.outValue().hasLocalInfo()
                     || !instruction.getDebugValues().contains(prevInstruction.outValue()))) {
               instruction.moveDebugValues(prevInstruction);

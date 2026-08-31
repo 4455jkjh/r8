@@ -29,9 +29,11 @@ public class ProtoMessageInfo {
     // TODO(b/270398965): Replace LinkedList.
     @SuppressWarnings("JdkObsolete")
     private LinkedList<ProtoFieldInfo> fields;
+
     // TODO(b/270398965): Replace LinkedList.
     @SuppressWarnings("JdkObsolete")
     private LinkedList<ProtoFieldObject> hasBitsObjects;
+
     // TODO(b/270398965): Replace LinkedList.
     @SuppressWarnings("JdkObsolete")
     private LinkedList<ProtoOneOfObjectPair> oneOfObjects;

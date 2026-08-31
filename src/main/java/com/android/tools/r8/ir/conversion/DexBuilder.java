@@ -88,9 +88,7 @@ import java.util.ListIterator;
 import java.util.Map;
 import java.util.Set;
 
-/**
- * Builder object for constructing dex bytecode from the high-level IR.
- */
+/** Builder object for constructing dex bytecode from the high-level IR. */
 public class DexBuilder {
 
   public final AppView<?> appView;
@@ -143,12 +141,7 @@ public class DexBuilder {
       BytecodeMetadataProvider bytecodeMetadataProvider,
       LinearScanRegisterAllocator registerAllocator,
       InternalOptions options) {
-    this(
-        ir,
-        bytecodeMetadataProvider,
-        registerAllocator,
-        options,
-        ir.getConversionOptions());
+    this(ir, bytecodeMetadataProvider, registerAllocator, options, ir.getConversionOptions());
   }
 
   public DexBuilder(
@@ -211,7 +204,7 @@ public class DexBuilder {
   /**
    * Build the dex instructions added to this builder.
    *
-   * This is a two pass construction that will first compute concrete offsets and then construct
+   * <p>This is a two pass construction that will first compute concrete offsets and then construct
    * the concrete instructions.
    */
   public DexCode build() {
@@ -309,7 +302,7 @@ public class DexBuilder {
       backward.setOffset(offset);
       offset += backward.getSize();
       // Replace the throw in the instruction stream with goto(forward), throw, goto(backwards)
-      dexInstructions.remove(dexInstructions.size()-1);
+      dexInstructions.remove(dexInstructions.size() - 1);
       dexInstructions.add(forward);
       dexInstructions.add(throwInstruction);
       dexInstructions.add(backward);
@@ -889,8 +882,7 @@ public class DexBuilder {
     return new TryInfo(tries, handlers);
   }
 
-  private List<TryItem> computeTryItems(
-      BiMap<CatchHandlers<BasicBlock>, Integer> handlerToIndex) {
+  private List<TryItem> computeTryItems(BiMap<CatchHandlers<BasicBlock>, Integer> handlerToIndex) {
     BiMap<Integer, CatchHandlers<BasicBlock>> indexToHandler = handlerToIndex.inverse();
     List<TryItem> tryItems = new ArrayList<>();
     List<BasicBlock> blocksWithHandlers = new ArrayList<>();
@@ -1038,8 +1030,8 @@ public class DexBuilder {
     throw new Unreachable("Expected to find a possibly throwing instruction");
   }
 
-  private static Try[] getDexTryItems(List<TryItem> tryItems,
-      Map<CatchHandlers<BasicBlock>, Integer> catchHandlers) {
+  private static Try[] getDexTryItems(
+      List<TryItem> tryItems, Map<CatchHandlers<BasicBlock>, Integer> catchHandlers) {
     Try[] tries = new Try[tryItems.size()];
     for (int i = 0; i < tries.length; ++i) {
       TryItem item = tryItems.get(i);
@@ -1068,7 +1060,7 @@ public class DexBuilder {
           pairs.add(new TypeAddrPair(type, targetOffset));
         }
       }
-      TypeAddrPair[] pairsArray = pairs.toArray(new TypeAddrPair[]{});
+      TypeAddrPair[] pairsArray = pairs.toArray(new TypeAddrPair[] {});
       handlers[j] = new TryHandler(pairsArray, catchAllOffset);
     }
     return handlers;
@@ -1087,7 +1079,7 @@ public class DexBuilder {
   }
 
   // Dex instruction wrapper with information to compute instruction sizes and offsets for jumps.
-  private static abstract class Info {
+  private abstract static class Info {
 
     private final Instruction ir;
     // Concrete final offset of the instruction.

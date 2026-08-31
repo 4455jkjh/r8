@@ -55,9 +55,7 @@ public class ThrowExceptionCode extends Code implements DexWritableCode {
 
   @Override
   public IRCode buildIR(
-      ProgramMethod method,
-      AppView<?> appView,
-      MutableMethodConversionOptions conversionOptions) {
+      ProgramMethod method, AppView<?> appView, MutableMethodConversionOptions conversionOptions) {
     throw new Unreachable("Should not be called");
   }
 

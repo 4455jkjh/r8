@@ -104,9 +104,7 @@ public class EnumUnboxingLens extends NestedGraphLensWithCustomLensCodeRewriter 
   }
 
   public DexMethod lookupRefinedDispatchMethod(
-      DexMethod method,
-      AbstractValue unboxedEnumValue,
-      DexType enumType) {
+      DexMethod method, AbstractValue unboxedEnumValue, DexType enumType) {
     DexMethod enumMethod = method.withHolder(enumType, dexItemFactory());
     DexMethod rewrittenEnumMethod = methodMap.apply(enumMethod);
     if (rewrittenEnumMethod == null) {

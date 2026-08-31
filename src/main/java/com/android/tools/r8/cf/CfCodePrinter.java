@@ -233,9 +233,12 @@ public class CfCodePrinter extends CfPrinter {
   }
 
   private String r8Type(String name, List<String> pkg) {
-    return type(name, ImmutableList.<String>builder()
-        .addAll(ImmutableList.of("com", "android", "tools", "r8"))
-        .addAll(pkg).build());
+    return type(
+        name,
+        ImmutableList.<String>builder()
+            .addAll(ImmutableList.of("com", "android", "tools", "r8"))
+            .addAll(pkg)
+            .build());
   }
 
   private String irType(String name) {

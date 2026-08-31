@@ -102,10 +102,10 @@ import java.util.stream.Stream;
 // TODO(b/121121779) Remove keep if possible.
 @Deprecated
 @KeepForApi
-final public class ResourceShrinker {
+public final class ResourceShrinker {
 
   @KeepForApi
-  public final static class Command extends BaseCommand {
+  public static final class Command extends BaseCommand {
 
     Command(AndroidApp app) {
       super(app);
@@ -118,7 +118,7 @@ final public class ResourceShrinker {
   }
 
   @KeepForApi
-  public final static class Builder extends BaseCommand.Builder<Command, Builder> {
+  public static final class Builder extends BaseCommand.Builder<Command, Builder> {
 
     @Override
     Builder self() {
@@ -139,8 +139,8 @@ final public class ResourceShrinker {
   public interface ReferenceChecker {
 
     /**
-     * Returns if the class with specified internal name should be processed. Typically,
-     * resource type classes like R$drawable, R$styleable etc. should be skipped.
+     * Returns if the class with specified internal name should be processed. Typically, resource
+     * type classes like R$drawable, R$styleable etc. should be skipped.
      */
     boolean shouldProcess(String internalName);
 

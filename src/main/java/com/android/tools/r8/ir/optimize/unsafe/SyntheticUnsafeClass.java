@@ -133,10 +133,7 @@ public class SyntheticUnsafeClass {
             factory.createMethod(
                 unsafeClass.getType(),
                 factory.createProto(
-                    factory.objectType,
-                    factory.objectType,
-                    factory.longType,
-                    factory.objectType),
+                    factory.objectType, factory.objectType, factory.longType, factory.objectType),
                 getAndSetMethodName));
     assert getAndSetMethod != null;
     var storeStoreFenceMethod =
@@ -188,10 +185,7 @@ public class SyntheticUnsafeClass {
         factory.createMethod(
             builder.getType(),
             factory.createProto(
-                factory.objectType,
-                factory.objectType,
-                factory.longType,
-                factory.objectType),
+                factory.objectType, factory.objectType, factory.longType, factory.objectType),
             getAndSetMethodName);
     builder.addMethod(
         methodBuilder ->

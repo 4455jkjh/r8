@@ -9,8 +9,9 @@ import java.lang.reflect.GenericSignatureFormatError;
 import java.nio.CharBuffer;
 
 /**
- * Implements a parser for the generics signature attribute as defined by JVMS 7 $ 4.3.4.
- * Uses a top-down, recursive descent parsing approach for the following grammar:
+ * Implements a parser for the generics signature attribute as defined by JVMS 7 $ 4.3.4. Uses a
+ * top-down, recursive descent parsing approach for the following grammar:
+ *
  * <pre>
  * ClassSignature ::=
  *     OptFormalTypeParams SuperclassSignature {SuperinterfaceSignature}.
@@ -86,8 +87,9 @@ public class GenericSignatureParser<T> {
     } catch (GenericSignatureFormatError e) {
       throw e;
     } catch (Throwable t) {
-      Error e = new GenericSignatureFormatError(
-          "Unknown error parsing class signature: " + t.getMessage());
+      Error e =
+          new GenericSignatureFormatError(
+              "Unknown error parsing class signature: " + t.getMessage());
       e.addSuppressed(t);
       throw e;
     }
@@ -102,8 +104,9 @@ public class GenericSignatureParser<T> {
     } catch (GenericSignatureFormatError e) {
       throw e;
     } catch (Throwable t) {
-      Error e = new GenericSignatureFormatError(
-          "Unknown error parsing method signature: " + t.getMessage());
+      Error e =
+          new GenericSignatureFormatError(
+              "Unknown error parsing method signature: " + t.getMessage());
       e.addSuppressed(t);
       throw e;
     }
@@ -118,8 +121,9 @@ public class GenericSignatureParser<T> {
     } catch (GenericSignatureFormatError e) {
       throw e;
     } catch (Throwable t) {
-      Error e = new GenericSignatureFormatError(
-          "Unknown error parsing field signature: " + t.getMessage());
+      Error e =
+          new GenericSignatureFormatError(
+              "Unknown error parsing field signature: " + t.getMessage());
       e.addSuppressed(t);
       throw e;
     }
@@ -355,7 +359,6 @@ public class GenericSignatureParser<T> {
     }
   }
 
-
   //
   // Scanner:
   //
@@ -411,8 +414,7 @@ public class GenericSignatureParser<T> {
         assert bufferLocal != null;
         do {
           char ch = bufferLocal[pos];
-          if (((ch >= 'a') && (ch <= 'z')) || ((ch >= 'A') && (ch <= 'Z'))
-              || !isStopSymbol(ch)) {
+          if (((ch >= 'a') && (ch <= 'z')) || ((ch >= 'A') && (ch <= 'Z')) || !isStopSymbol(ch)) {
             identBuf.append(bufferLocal[pos]);
             pos++;
           } else {

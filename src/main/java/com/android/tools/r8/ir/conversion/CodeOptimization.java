@@ -12,8 +12,8 @@ import java.util.Collection;
 import java.util.function.Consumer;
 
 /**
- * An abstraction of {@link IRCode}-level optimization, which may retrieve info from
- * {@link AppView}; update {@link OptimizationFeedback}; or utilize {@link MethodProcessor}.
+ * An abstraction of {@link IRCode}-level optimization, which may retrieve info from {@link
+ * AppView}; update {@link OptimizationFeedback}; or utilize {@link MethodProcessor}.
  */
 public interface CodeOptimization {
 

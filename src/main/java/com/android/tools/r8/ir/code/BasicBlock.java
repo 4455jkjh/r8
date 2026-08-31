@@ -60,9 +60,7 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 
-/**
- * Basic block abstraction.
- */
+/** Basic block abstraction. */
 public class BasicBlock {
 
   public interface BasicBlockChangeListener {
@@ -1002,8 +1000,8 @@ public class BasicBlock {
   /**
    * Unlinks the current block based on the assumption that it is a catch handler.
    *
-   * Catch handlers always have only one predecessor and at most one successor.
-   * That is because we have edge-split form for all exceptional flow.
+   * <p>Catch handlers always have only one predecessor and at most one successor. That is because
+   * we have edge-split form for all exceptional flow.
    */
   public void unlinkCatchHandler() {
     assert predecessors.size() == 1;
@@ -1334,9 +1332,9 @@ public class BasicBlock {
     // We have replaced one occurrence of value in currentDefinitions. There could be
     // other occurrences. We only remove currentDefinitions from the set of users
     // of the phi if we have removed all occurrences.
-    if (previousValue != null &&
-        previousValue.isPhi() &&
-        !currentDefinitions.values().contains(previousValue)) {
+    if (previousValue != null
+        && previousValue.isPhi()
+        && !currentDefinitions.values().contains(previousValue)) {
       previousValue.asPhi().removeDefinitionsUser(currentDefinitions);
     }
   }
@@ -1347,8 +1345,8 @@ public class BasicBlock {
     if (throwing == ThrowingInfo.CAN_THROW) {
       Value previous = currentDefinitions.get(register);
       assert verifyOnThrowWrite(register);
-      currentDefinitions.put(onThrowValueRegister(register),
-          previous == null ? Value.UNDEFINED : previous);
+      currentDefinitions.put(
+          onThrowValueRegister(register), previous == null ? Value.UNDEFINED : previous);
     }
     updateCurrentDefinition(register, value, EdgeType.NON_EDGE);
   }
@@ -1532,9 +1530,7 @@ public class BasicBlock {
     return builder.toString();
   }
 
-  /**
-   * Remove an instruction.
-   */
+  /** Remove an instruction. */
   public void removeInstruction(Instruction toRemove) {
     instructions.removeIgnoreValues(toRemove);
   }
@@ -1902,9 +1898,7 @@ public class BasicBlock {
     return newBlock;
   }
 
-  /**
-   * Moves catch successors from `fromBlock` into this block.
-   */
+  /** Moves catch successors from `fromBlock` into this block. */
   public void moveCatchHandlers(BasicBlock fromBlock) {
     List<BasicBlock> catchSuccessors = appendCatchHandlers(fromBlock);
     for (BasicBlock successor : catchSuccessors) {
@@ -1914,9 +1908,7 @@ public class BasicBlock {
     fromBlock.catchHandlers = CatchHandlers.EMPTY_INDICES;
   }
 
-  /**
-   * Clone catch successors from `fromBlock` into this block.
-   */
+  /** Clone catch successors from `fromBlock` into this block. */
   public void copyCatchHandlers(
       IRCode code,
       ListIterator<BasicBlock> blockIterator,
@@ -2023,10 +2015,10 @@ public class BasicBlock {
    * Append catch handlers from another block <code>fromBlock</code> (which must have catch
    * handlers) to the catch handlers of this block.
    *
-   * Note that after appending catch handlers their targets are referenced by both
-   * <code>fromBlock</code> and <code>this</code> block, but no phis are inserted. For this reason
-   * this method should only be called from either {@link #moveCatchHandlers} or
-   * {@link #copyCatchHandlers} which know how to handle phis.
+   * <p>Note that after appending catch handlers their targets are referenced by both <code>
+   * fromBlock</code> and <code>this</code> block, but no phis are inserted. For this reason this
+   * method should only be called from either {@link #moveCatchHandlers} or {@link
+   * #copyCatchHandlers} which know how to handle phis.
    *
    * @return the catch successors that are reused in both blocks after appending.
    */

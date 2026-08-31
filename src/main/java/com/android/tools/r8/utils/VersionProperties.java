@@ -8,9 +8,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.Properties;
 
-/**
- * A class describing version properties.
- */
+/** A class describing version properties. */
 public class VersionProperties {
 
   public static final VersionProperties INSTANCE = get();
@@ -35,8 +33,7 @@ public class VersionProperties {
     }
   }
 
-  private VersionProperties() {
-  }
+  private VersionProperties() {}
 
   private VersionProperties(InputStream resourceStream) throws IOException {
     Properties prop = new Properties();

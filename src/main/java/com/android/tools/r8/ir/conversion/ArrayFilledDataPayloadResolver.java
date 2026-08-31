@@ -9,9 +9,7 @@ import com.android.tools.r8.dex.code.DexFillArrayDataPayload;
 import java.util.HashMap;
 import java.util.Map;
 
-/**
- * Helper class for resolving payload information during IR construction.
- */
+/** Helper class for resolving payload information during IR construction. */
 public class ArrayFilledDataPayloadResolver {
 
   private static class PayloadData {

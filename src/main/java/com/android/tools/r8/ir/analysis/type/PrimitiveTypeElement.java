@@ -83,22 +83,22 @@ public abstract class PrimitiveTypeElement extends TypeElement {
         if (asArrayElementType) {
           return TypeElement.getBoolean();
         }
-        // fall through
+      // fall through
       case 'B':
         if (asArrayElementType) {
           return TypeElement.getByte();
         }
-        // fall through
+      // fall through
       case 'S':
         if (asArrayElementType) {
           return TypeElement.getShort();
         }
-        // fall through
+      // fall through
       case 'C':
         if (asArrayElementType) {
           return TypeElement.getChar();
         }
-        // fall through
+      // fall through
       case 'I':
         return TypeElement.getInt();
       case 'F':
@@ -115,7 +115,7 @@ public abstract class PrimitiveTypeElement extends TypeElement {
   }
 
   public static PrimitiveTypeElement fromNumericType(NumericType numericType) {
-    switch(numericType) {
+    switch (numericType) {
       case BYTE:
       case CHAR:
       case SHORT:

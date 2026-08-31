@@ -199,7 +199,6 @@ public class CfSourceCode implements SourceCode {
     boolean validFor(int instructionOffset) {
       return startOffset <= instructionOffset && instructionOffset < endOffset;
     }
-
   }
 
   private CfState state;

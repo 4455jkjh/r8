@@ -337,9 +337,7 @@ public class GeneratedMessageLiteShrinker {
   }
 
   private void rewriteObjectsArgumentToNewMessageInfo(
-      IRCode code,
-      InvokeMethod newMessageInfoInvoke,
-      ProtoMessageInfo protoMessageInfo) {
+      IRCode code, InvokeMethod newMessageInfoInvoke, ProtoMessageInfo protoMessageInfo) {
     // Position iterator immediately before the call to newMessageInfo().
     BasicBlock block = newMessageInfoInvoke.getBlock();
     InstructionListIterator instructionIterator =

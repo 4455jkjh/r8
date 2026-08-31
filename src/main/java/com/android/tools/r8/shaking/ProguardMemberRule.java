@@ -157,9 +157,7 @@ public class ProguardMemberRule {
     this.returnValue = returnValue;
   }
 
-  /**
-   * Create a new empty builder.
-   */
+  /** Create a new empty builder. */
   public static Builder builder() {
     return new Builder();
   }
@@ -310,7 +308,7 @@ public class ProguardMemberRule {
         if (method.getDefinition().isClassInitializer()) {
           break;
         }
-        // Fall through for all other methods.
+      // Fall through for all other methods.
 
       case ALL:
         {
@@ -329,7 +327,7 @@ public class ProguardMemberRule {
         if (!type.matches(originalSignature.getReturnType(), appView)) {
           break;
         }
-        // Fall through for access flags, name and arguments.
+      // Fall through for access flags, name and arguments.
 
       case CONSTRUCTOR:
       case INIT:
@@ -378,9 +376,9 @@ public class ProguardMemberRule {
   public boolean isSpecific() {
     switch (getRuleType()) {
       case ALL:
-        // fall through
+      // fall through
       case ALL_FIELDS:
-        // fall through
+      // fall through
       case ALL_METHODS:
         return false;
       default:
@@ -475,8 +473,8 @@ public class ProguardMemberRule {
       ProguardKeepRule.appendNonEmpty(result, "@", annotation, " ");
     }
     ProguardKeepRule.appendNonEmpty(result, null, accessFlags, " ");
-    ProguardKeepRule
-        .appendNonEmpty(result, null, negatedAccessFlags.toString().replace(" ", " !"), " ");
+    ProguardKeepRule.appendNonEmpty(
+        result, null, negatedAccessFlags.toString().replace(" ", " !"), " ");
     switch (getRuleType()) {
       case ALL_FIELDS:
         result.append("<fields>");
@@ -487,12 +485,13 @@ public class ProguardMemberRule {
       case METHOD:
         result.append(getType());
         result.append(' ');
-        // Fall through for rest of method signature.
+      // Fall through for rest of method signature.
       case CONSTRUCTOR:
       case CLINIT:
-      case INIT: {
-        result.append(getName());
-        result.append('(');
+      case INIT:
+        {
+          result.append(getName());
+          result.append('(');
           if (hasPreconditions()) {
             assert getPreconditions().size() <= getArguments().size();
             int i = 0;
@@ -509,21 +508,23 @@ public class ProguardMemberRule {
               result.append(',').append(getArguments().get(i));
             }
           } else {
-          result.append(StringUtils.join(",", getArguments()));
+            result.append(StringUtils.join(",", getArguments()));
           }
-        result.append(')');
-        break;
-      }
-      case FIELD: {
-        result.append(getType());
-        result.append(' ');
-        result.append(getName());
-        break;
-      }
-      case ALL: {
-        result.append("*");
-        break;
-      }
+          result.append(')');
+          break;
+        }
+      case FIELD:
+        {
+          result.append(getType());
+          result.append(' ');
+          result.append(getName());
+          break;
+        }
+      case ALL:
+        {
+          result.append("*");
+          break;
+        }
       default:
         throw new Unreachable("Unknown kind of member rule");
     }

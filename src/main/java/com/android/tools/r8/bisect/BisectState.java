@@ -92,7 +92,7 @@ public class BisectState {
 
     @Override
     public String toString() {
-      return "["+start+";"+end+"]";
+      return "[" + start + ";" + end + "]";
     }
 
     @Override
@@ -213,8 +213,7 @@ public class BisectState {
     if (runs.size() == 1) {
       assert nextRange.equals(new Range(0, indexMap.size()));
       if (result != Result.BAD) {
-        throw new CompilationError(
-            "Expected bad state for input application run, got " + result);
+        throw new CompilationError("Expected bad state for input application run, got " + result);
       }
     }
     runs.add(new Run(result, nextRange));
@@ -224,8 +223,7 @@ public class BisectState {
 
   public void verifySignature(DexApplication application) {
     if (signatureMismatch(makeSignature(application))) {
-      throw new CompilationError(
-          "Bisection state file does not match the application signature");
+      throw new CompilationError("Bisection state file does not match the application signature");
     }
   }
 

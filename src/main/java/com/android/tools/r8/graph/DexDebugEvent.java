@@ -36,10 +36,10 @@ public abstract class DexDebugEvent extends DexItem implements StructuralItem<De
 
   // Make sure all concrete subclasses implements toString, hashCode, and equals.
   @Override
-  abstract public String toString();
+  public abstract String toString();
 
   @Override
-  abstract public int hashCode();
+  public abstract int hashCode();
 
   @Override
   public final boolean equals(Object other) {
@@ -150,7 +150,6 @@ public abstract class DexDebugEvent extends DexItem implements StructuralItem<De
       visitor.visit(this);
     }
 
-
     @Override
     public String toString() {
       return "ADVANCE_PC " + delta;
@@ -158,8 +157,7 @@ public abstract class DexDebugEvent extends DexItem implements StructuralItem<De
 
     @Override
     public int hashCode() {
-      return Constants.DBG_ADVANCE_PC
-          + delta * 7;
+      return Constants.DBG_ADVANCE_PC + delta * 7;
     }
 
     @Override
@@ -180,8 +178,7 @@ public abstract class DexDebugEvent extends DexItem implements StructuralItem<De
 
   public static class SetPrologueEnd extends DexDebugEvent {
 
-    SetPrologueEnd() {
-    }
+    SetPrologueEnd() {}
 
     @Override
     boolean isWritableEvent() {
@@ -207,7 +204,6 @@ public abstract class DexDebugEvent extends DexItem implements StructuralItem<De
       return "SET_PROLOGUE_END";
     }
 
-
     @Override
     public int hashCode() {
       return Constants.DBG_SET_PROLOGUE_END;
@@ -230,11 +226,9 @@ public abstract class DexDebugEvent extends DexItem implements StructuralItem<De
     }
   }
 
-
   public static class SetEpilogueBegin extends DexDebugEvent {
 
-    SetEpilogueBegin() {
-    }
+    SetEpilogueBegin() {}
 
     @Override
     boolean isWritableEvent() {
@@ -327,8 +321,7 @@ public abstract class DexDebugEvent extends DexItem implements StructuralItem<De
 
     @Override
     public int hashCode() {
-      return Constants.DBG_ADVANCE_LINE
-          + delta * 7;
+      return Constants.DBG_ADVANCE_LINE + delta * 7;
     }
 
     @Override
@@ -347,7 +340,7 @@ public abstract class DexDebugEvent extends DexItem implements StructuralItem<De
     }
   }
 
-  static public class StartLocal extends DexDebugEvent {
+  public static class StartLocal extends DexDebugEvent {
 
     final int registerNum;
     final DexString name;
@@ -361,11 +354,7 @@ public abstract class DexDebugEvent extends DexItem implements StructuralItem<De
           .withNullableItem(e -> e.signature);
     }
 
-    public StartLocal(
-        int registerNum,
-        DexString name,
-        DexType type,
-        DexString signature) {
+    public StartLocal(int registerNum, DexString name, DexType type, DexString signature) {
       this.registerNum = registerNum;
       this.name = name;
       this.type = type;
@@ -387,9 +376,8 @@ public abstract class DexDebugEvent extends DexItem implements StructuralItem<De
         ObjectToOffsetMapping mapping,
         GraphLens graphLens,
         GraphLens codeLens) {
-      writer.putByte(signature == null
-          ? Constants.DBG_START_LOCAL
-          : Constants.DBG_START_LOCAL_EXTENDED);
+      writer.putByte(
+          signature == null ? Constants.DBG_START_LOCAL : Constants.DBG_START_LOCAL_EXTENDED);
       writer.putUleb128(registerNum);
       writer.putString(name);
       writer.putType(graphLens.lookupType(type, codeLens));
@@ -483,8 +471,7 @@ public abstract class DexDebugEvent extends DexItem implements StructuralItem<De
 
     @Override
     public int hashCode() {
-      return Constants.DBG_END_LOCAL
-          + registerNum * 7;
+      return Constants.DBG_END_LOCAL + registerNum * 7;
     }
 
     @Override
@@ -538,8 +525,7 @@ public abstract class DexDebugEvent extends DexItem implements StructuralItem<De
 
     @Override
     public int hashCode() {
-      return Constants.DBG_RESTART_LOCAL
-          + registerNum * 7;
+      return Constants.DBG_RESTART_LOCAL + registerNum * 7;
     }
 
     @Override
@@ -597,8 +583,7 @@ public abstract class DexDebugEvent extends DexItem implements StructuralItem<De
 
     @Override
     public int hashCode() {
-      return Constants.DBG_SET_FILE
-          + fileName.hashCode() * 7;
+      return Constants.DBG_SET_FILE + fileName.hashCode() * 7;
     }
 
     @Override
@@ -741,8 +726,7 @@ public abstract class DexDebugEvent extends DexItem implements StructuralItem<De
 
     @Override
     public int hashCode() {
-      return Constants.DBG_FIRST_SPECIAL
-          + value * 7;
+      return Constants.DBG_FIRST_SPECIAL + value * 7;
     }
 
     @Override

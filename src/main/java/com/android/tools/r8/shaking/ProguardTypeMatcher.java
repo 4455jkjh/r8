@@ -34,8 +34,7 @@ public abstract class ProguardTypeMatcher {
   private static final String MATCH_CLASS_PATTERN = "**";
   private static final String MATCH_BASIC_PATTERN = "%";
 
-  private ProguardTypeMatcher() {
-  }
+  private ProguardTypeMatcher() {}
 
   public enum ClassOrType {
     CLASS,
@@ -148,8 +147,9 @@ public abstract class ProguardTypeMatcher {
         return MatchBasicTypes.MATCH_BASIC_TYPES;
       default:
         if (identifierPatternWithWildcards.wildcards.isEmpty()) {
-          return new MatchSpecificType(dexItemFactory.createType(
-              javaTypeToDescriptor(identifierPatternWithWildcards.pattern)));
+          return new MatchSpecificType(
+              dexItemFactory.createType(
+                  javaTypeToDescriptor(identifierPatternWithWildcards.pattern)));
         }
         return new MatchTypePattern(identifierPatternWithWildcards, kind);
     }
@@ -639,9 +639,12 @@ public abstract class ProguardTypeMatcher {
     }
 
     private static boolean matchClassOrTypeNameImpl(
-        String pattern, int patternIndex,
-        String name, int nameIndex,
-        List<ProguardWildcard> wildcards, int wildcardIndex,
+        String pattern,
+        int patternIndex,
+        String name,
+        int nameIndex,
+        List<ProguardWildcard> wildcards,
+        int wildcardIndex,
         ClassOrType kind) {
       ProguardWildcard wildcard;
       Pattern wildcardPattern;
@@ -694,11 +697,21 @@ public abstract class ProguardTypeMatcher {
               }
               if (kind == ClassOrType.TYPE && name.charAt(nextNameIndex) == '[') {
                 return matchClassOrTypeNameImpl(
-                    pattern, nextPatternIndex, name, nextNameIndex, wildcards, wildcardIndex + 1,
+                    pattern,
+                    nextPatternIndex,
+                    name,
+                    nextNameIndex,
+                    wildcards,
+                    wildcardIndex + 1,
                     kind);
               }
               if (matchClassOrTypeNameImpl(
-                  pattern, nextPatternIndex, name, nextNameIndex, wildcards, wildcardIndex + 1,
+                  pattern,
+                  nextPatternIndex,
+                  name,
+                  nextNameIndex,
+                  wildcards,
+                  wildcardIndex + 1,
                   kind)) {
                 return true;
               }

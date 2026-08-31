@@ -67,10 +67,12 @@ public interface DexFilePerClassFileConsumer extends ProgramConsumer, ByteBuffer
   /**
    * Combine synthetic classes with their primary class.
    *
-   * If true all synthesized classes are combined together with the primary class they are derived
-   * from in a single DEX file. This has the property that a classfile given as input will give rise to at most one DEX file as output.
+   * <p>If true all synthesized classes are combined together with the primary class they are
+   * derived from in a single DEX file. This has the property that a classfile given as input will
+   * give rise to at most one DEX file as output.
    *
-   * If false every class will give rise to its own DEX file, e.g., every DEX file will contain exactly one class.
+   * <p>If false every class will give rise to its own DEX file, e.g., every DEX file will contain
+   * exactly one class.
    */
   default boolean combineSyntheticClassesWithPrimaryClass() {
     return SHOULD_COMBINE_SYNTHETIC_CLASSES;
@@ -244,6 +246,7 @@ public interface DexFilePerClassFileConsumer extends ProgramConsumer, ByteBuffer
     public void accept(DataEntryResource file, DiagnosticsHandler handler) {
       outputBuilder.addFile(file.getName(), file, handler);
     }
+
     @Override
     public void finished(DiagnosticsHandler handler) {
       super.finished(handler);

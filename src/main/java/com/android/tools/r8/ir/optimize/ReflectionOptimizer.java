@@ -164,8 +164,7 @@ public class ReflectionOptimizer {
     TypeElement inType = in.getType();
     // Check the receiver is either class type or array type. Also make sure it is not
     // nullable.
-    if (!(inType.isClassType() || inType.isArrayType())
-        || inType.isNullable()) {
+    if (!(inType.isClassType() || inType.isArrayType()) || inType.isNullable()) {
       return;
     }
     DexType type =
@@ -232,12 +231,12 @@ public class ReflectionOptimizer {
       // Otherwise, it may be an array's fully qualified name from Class<?>#getName().
       if (descriptor == null && name.startsWith("[") && name.endsWith(";")) {
         // E.g., [Lx.y.Z; -> [Lx/y/Z;
-        descriptor = name.replace(
-            DescriptorUtils.JAVA_PACKAGE_SEPARATOR,
-            DescriptorUtils.DESCRIPTOR_PACKAGE_SEPARATOR);
+        descriptor =
+            name.replace(
+                DescriptorUtils.JAVA_PACKAGE_SEPARATOR,
+                DescriptorUtils.DESCRIPTOR_PACKAGE_SEPARATOR);
       }
-      if (descriptor == null
-          || descriptor.indexOf(DescriptorUtils.JAVA_PACKAGE_SEPARATOR) > 0) {
+      if (descriptor == null || descriptor.indexOf(DescriptorUtils.JAVA_PACKAGE_SEPARATOR) > 0) {
         return;
       }
       type = dexItemFactory.createType(descriptor);

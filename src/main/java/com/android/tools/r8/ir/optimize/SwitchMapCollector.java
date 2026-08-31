@@ -28,11 +28,13 @@ import java.util.stream.Collectors;
 
 /**
  * Extracts the mapping from ordinal values to switch case constants.
- * <p>
- * This is done by pattern-matching on the class initializer of the synthetic switch map class.
+ *
+ * <p>This is done by pattern-matching on the class initializer of the synthetic switch map class.
  * For a switch
  *
- * <blockquote><pre>
+ * <blockquote>
+ *
+ * <pre>
  * switch (day) {
  *   case WEDNESDAY:
  *   case FRIDAY:
@@ -44,21 +46,27 @@ import java.util.stream.Collectors;
  *   default:
  *     System.out.println("other");
  * }
- * </pre></blockquote>
+ * </pre>
+ *
+ * </blockquote>
  *
  * the generated companing class initializer will have the form
  *
- * <blockquote><pre>
+ * <blockquote>
+ *
+ * <pre>
  * class Switches$1 {
  *   static {
  *   $SwitchMap$switchmaps$Days[Days.WEDNESDAY.ordinal()] = 1;
  *   $SwitchMap$switchmaps$Days[Days.FRIDAY.ordinal()] = 2;
  *   $SwitchMap$switchmaps$Days[Days.SUNDAY.ordinal()] = 3;
  * }
- * </pre></blockquote>
+ * </pre>
  *
- * Note that one map per class is generated, so the map might contain additional entries as used
- * by other switches in the class.
+ * </blockquote>
+ *
+ * Note that one map per class is generated, so the map might contain additional entries as used by
+ * other switches in the class.
  */
 public class SwitchMapCollector {
 
@@ -93,8 +101,8 @@ public class SwitchMapCollector {
     if (!clazz.accessFlags.isSynthetic() || !clazz.hasClassInitializer()) {
       return;
     }
-    List<DexEncodedField> switchMapFields = clazz.staticFields().stream()
-        .filter(this::maybeIsSwitchMap).collect(Collectors.toList());
+    List<DexEncodedField> switchMapFields =
+        clazz.staticFields().stream().filter(this::maybeIsSwitchMap).collect(Collectors.toList());
     if (!switchMapFields.isEmpty()) {
       IRCode initializer =
           clazz

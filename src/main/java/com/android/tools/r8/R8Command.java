@@ -396,6 +396,7 @@ public final class R8Command extends BaseCompilerCommand {
      * Set a consumer for receiving the proguard configuration information.
      *
      * <p>Note that any subsequent calls to this method will replace the previous setting.
+     *
      * @param proguardConfigurationConsumer
      */
     public Builder setProguardConfigurationConsumer(StringConsumer proguardConfigurationConsumer) {
@@ -408,17 +409,13 @@ public final class R8Command extends BaseCompilerCommand {
       return proguardConfigurationConsumer;
     }
 
-    /**
-     * Set a consumer for receiving kept-graph events.
-     */
+    /** Set a consumer for receiving kept-graph events. */
     public Builder setKeptGraphConsumer(GraphConsumer graphConsumer) {
       this.keptGraphConsumer = graphConsumer;
       return self();
     }
 
-    /**
-     * Set a consumer for receiving kept-graph events for the content of the main-dex output.
-     */
+    /** Set a consumer for receiving kept-graph events for the content of the main-dex output. */
     public Builder setMainDexKeptGraphConsumer(GraphConsumer graphConsumer) {
       this.mainDexKeptGraphConsumer = graphConsumer;
       return self();
@@ -806,8 +803,9 @@ public final class R8Command extends BaseCompilerCommand {
 
       for (Path file : programFiles) {
         if (FileUtils.isDexFile(file) && !allowDexInputToR8) {
-          reporter.error(new StringDiagnostic(
-              "R8 does not support compiling DEX inputs", new PathOrigin(file)));
+          reporter.error(
+              new StringDiagnostic(
+                  "R8 does not support compiling DEX inputs", new PathOrigin(file)));
         }
       }
       if (getProgramConsumer() instanceof ClassFileConsumer && isMinApiLevelSet()) {
@@ -1136,7 +1134,6 @@ public final class R8Command extends BaseCompilerCommand {
           syntheticProguardRulesConsumer == null
               ? consumer
               : syntheticProguardRulesConsumer.andThen(consumer);
-
     }
 
     // Internal for-testing method to allow proguard options only available for testing.
@@ -1259,7 +1256,7 @@ public final class R8Command extends BaseCompilerCommand {
   /**
    * Parse the R8 command-line.
    *
-   * Parsing will set the supplied options or their default value if they have any.
+   * <p>Parsing will set the supplied options or their default value if they have any.
    *
    * @param args Command-line arguments array.
    * @param origin Origin description of the command-line arguments.
@@ -1272,7 +1269,7 @@ public final class R8Command extends BaseCompilerCommand {
   /**
    * Parse the R8 command-line.
    *
-   * Parsing will set the supplied options or their default value if they have any.
+   * <p>Parsing will set the supplied options or their default value if they have any.
    *
    * @param args Command-line arguments array.
    * @param origin Origin description of the command-line arguments.
@@ -1457,7 +1454,7 @@ public final class R8Command extends BaseCompilerCommand {
   InternalOptions getInternalOptions() {
     InternalOptions internal = new InternalOptions(getMode(), proguardConfiguration, getReporter());
     internal.created = created;
-    assert !internal.testing.allowOutlinerInterfaceArrayArguments;  // Only allow in tests.
+    assert !internal.testing.allowOutlinerInterfaceArrayArguments; // Only allow in tests.
     internal.programConsumer = getProgramConsumer();
     internal.setMinApiLevel(AndroidApiLevel.getAndroidApiLevel(getMinApiLevel()));
     internal.apiModelingOptions().apiDatabasePath = getApiDatabasePath();
@@ -1740,5 +1737,4 @@ public final class R8Command extends BaseCompilerCommand {
                     resourceShrinkerConfiguration.isOptimizedShrinking()))
         .build();
   }
-
 }

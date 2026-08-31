@@ -20,8 +20,7 @@ public abstract class ProguardNameMatcher {
 
   private static final ProguardNameMatcher MATCH_ALL_NAMES = new MatchAllNames();
 
-  private ProguardNameMatcher() {
-  }
+  private ProguardNameMatcher() {}
 
   public static ProguardNameMatcher create(IdentifierPatternWithWildcardsAndNegation pattern) {
     if (!pattern.isNegated()) {
@@ -37,9 +36,12 @@ public abstract class ProguardNameMatcher {
   }
 
   private static boolean matchFieldOrMethodNameImpl(
-      String pattern, int patternIndex,
-      String name, int nameIndex,
-      List<ProguardWildcard> wildcards, int wildcardIndex) {
+      String pattern,
+      int patternIndex,
+      String name,
+      int nameIndex,
+      List<ProguardWildcard> wildcards,
+      int wildcardIndex) {
     ProguardWildcard wildcard;
     Pattern wildcardPattern;
     BackReference backReference;

@@ -136,15 +136,15 @@ public final class Kotlin {
                             factory.createType(PACKAGE_PREFIX + "jvm/functions/Function" + i + ";"),
                         Function.identity())));
 
-    private Functional() {
-    }
+    private Functional() {}
 
     public final DexType lambdaType = factory.createType(PACKAGE_PREFIX + "jvm/internal/Lambda;");
 
-    public final DexMethod lambdaInitializerMethod = factory.createMethod(
-        lambdaType,
-        factory.createProto(factory.voidType, factory.intType),
-        factory.constructorMethodName);
+    public final DexMethod lambdaInitializerMethod =
+        factory.createMethod(
+            lambdaType,
+            factory.createProto(factory.voidType, factory.intType),
+            factory.constructorMethodName);
 
     public boolean isFunctionInterface(DexType type) {
       return functions.containsKey(type);
@@ -229,8 +229,11 @@ public final class Kotlin {
             type,
             factory.createProto(factory.voidType, factory.objectType, factory.stringType),
             "checkNotNullParameter");
-    public final DexMethod throwParameterIsNullException = factory.createMethod(type,
-        factory.createProto(factory.voidType, factory.stringType), "throwParameterIsNullException");
+    public final DexMethod throwParameterIsNullException =
+        factory.createMethod(
+            type,
+            factory.createProto(factory.voidType, factory.stringType),
+            "throwParameterIsNullException");
     public final DexMethod throwParameterIsNullNPE =
         factory.createMethod(
             type,
@@ -241,8 +244,8 @@ public final class Kotlin {
             type,
             factory.createProto(factory.voidType, factory.stringType),
             "throwParameterIsNullIAE");
-    public final DexMethod throwNpe = factory.createMethod(
-        type, factory.createProto(factory.voidType), "throwNpe");
+    public final DexMethod throwNpe =
+        factory.createMethod(type, factory.createProto(factory.voidType), "throwNpe");
 
     public boolean isNullCheck(DexMethod method) {
       if (!method.getHolderType().isIdenticalTo(type)) {

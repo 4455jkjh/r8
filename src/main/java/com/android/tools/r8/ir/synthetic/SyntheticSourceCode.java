@@ -22,8 +22,8 @@ import java.util.function.Predicate;
 @Deprecated
 public abstract class SyntheticSourceCode implements SourceCode {
 
-  protected final static Predicate<IRBuilder> doesNotEndBlock = x -> false;
-  protected final static Predicate<IRBuilder> endsBlock = x -> true;
+  protected static final Predicate<IRBuilder> doesNotEndBlock = x -> false;
+  protected static final Predicate<IRBuilder> endsBlock = x -> true;
 
   // The next free register, note that we always
   // assign each value a new (next available) register.
@@ -118,8 +118,10 @@ public abstract class SyntheticSourceCode implements SourceCode {
 
   @Override
   public final int traceInstruction(int instructionIndex, IRBuilder builder) {
-    return (traceEvents.get(instructionIndex).test(builder) ||
-        (instructionIndex == constructors.size() - 1)) ? instructionIndex : -1;
+    return (traceEvents.get(instructionIndex).test(builder)
+            || (instructionIndex == constructors.size() - 1))
+        ? instructionIndex
+        : -1;
   }
 
   @Override
@@ -207,8 +209,7 @@ public abstract class SyntheticSourceCode implements SourceCode {
   }
 
   // To be used as a tracing event for switch instruction.,
-  protected boolean endsSwitch(
-      IRBuilder builder, int switchIndex, int fallthrough, int[] offsets) {
+  protected boolean endsSwitch(IRBuilder builder, int switchIndex, int fallthrough, int[] offsets) {
     // ensure successors of switch instruction
     for (int offset : offsets) {
       builder.ensureNormalSuccessorBlock(switchIndex, offset);

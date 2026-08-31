@@ -298,15 +298,15 @@ public class BranchSimplifier extends CodeRewriterPass<AppInfo> {
   }
 
   private Value extractXorTrueInput(Xor xor) {
-   if (xor.leftValue().knownToBeBoolean() && xor.rightValue().knownToBeBoolean()) {
-     if (xor.leftValue().isConstNumber(1)) {
-       return xor.rightValue();
-     }
-     if (xor.rightValue().isConstNumber(1)) {
-       return xor.leftValue();
-     }
-   }
-   return null;
+    if (xor.leftValue().knownToBeBoolean() && xor.rightValue().knownToBeBoolean()) {
+      if (xor.leftValue().isConstNumber(1)) {
+        return xor.rightValue();
+      }
+      if (xor.rightValue().isConstNumber(1)) {
+        return xor.leftValue();
+      }
+    }
+    return null;
   }
 
   @SuppressWarnings("ReferenceEquality")
@@ -790,10 +790,7 @@ public class BranchSimplifier extends CodeRewriterPass<AppInfo> {
   }
 
   private boolean rewriteIntSwitch(
-      IRCode code,
-      ListIterator<BasicBlock> blockIterator,
-      BasicBlock block,
-      IntSwitch theSwitch) {
+      IRCode code, ListIterator<BasicBlock> blockIterator, BasicBlock block, IntSwitch theSwitch) {
     if (theSwitch.numberOfKeys() == 1) {
       rewriteSingleKeySwitchToIf(code, block, theSwitch);
       return true;
@@ -891,9 +888,7 @@ public class BranchSimplifier extends CodeRewriterPass<AppInfo> {
   }
 
   private SwitchCaseEliminator removeUnnecessarySwitchCases(
-      IRCode code,
-      Switch theSwitch,
-      SwitchCaseAnalyzer switchCaseAnalyzer) {
+      IRCode code, Switch theSwitch, SwitchCaseAnalyzer switchCaseAnalyzer) {
     BasicBlock defaultTarget = theSwitch.fallthroughBlock();
     SwitchCaseEliminator eliminator = new SwitchCaseEliminator(theSwitch);
     BasicBlockBehavioralSubsumption behavioralSubsumption =

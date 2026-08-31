@@ -12,8 +12,8 @@ import com.android.tools.r8.keepanno.annotations.KeepForApi;
 public interface ProgramConsumer {
 
   /**
-   * Returns a {@link DataResourceConsumer} that will receive data resources. If this
-   * returns <code>null</code> no data resources will be processed.
+   * Returns a {@link DataResourceConsumer} that will receive data resources. If this returns <code>
+   * null</code> no data resources will be processed.
    */
   default DataResourceConsumer getDataResourceConsumer() {
     return null;
@@ -27,5 +27,4 @@ public interface ProgramConsumer {
    * @param handler Diagnostics handler for reporting.
    */
   void finished(DiagnosticsHandler handler);
-
 }

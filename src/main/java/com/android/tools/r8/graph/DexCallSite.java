@@ -156,9 +156,12 @@ public final class DexCallSite extends IndexedDexItem
   @Override
   public String toString() {
     StringBuilder builder =
-        new StringBuilder("CallSite: { Name: ").append(methodName.toSourceString())
-            .append(", Proto: ").append(methodProto.toSourceString())
-            .append(", ").append(bootstrapMethod.toSourceString());
+        new StringBuilder("CallSite: { Name: ")
+            .append(methodName.toSourceString())
+            .append(", Proto: ")
+            .append(methodProto.toSourceString())
+            .append(", ")
+            .append(bootstrapMethod.toSourceString());
     String sep = ", Args: ";
     for (DexItem arg : bootstrapArgs) {
       builder.append(sep).append(arg.toSourceString());

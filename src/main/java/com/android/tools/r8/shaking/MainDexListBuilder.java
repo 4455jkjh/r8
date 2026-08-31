@@ -18,11 +18,11 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * Calculate the list of classes required in the main dex to allow legacy multidex loading.
- * Classes required in the main dex are:
- * <li> The classes with code executed before secondary dex files are installed.
- * <li> The "direct dependencies" of those classes, ie the classes required by dexopt.
- * <li> Annotation classes with a possible enum value and all classes annotated by them.
+ * Calculate the list of classes required in the main dex to allow legacy multidex loading. Classes
+ * required in the main dex are:
+ * <li>The classes with code executed before secondary dex files are installed.
+ * <li>The "direct dependencies" of those classes, ie the classes required by dexopt.
+ * <li>Annotation classes with a possible enum value and all classes annotated by them.
  */
 public class MainDexListBuilder {
 
@@ -34,13 +34,15 @@ public class MainDexListBuilder {
   public static void checkForAssumedLibraryTypes(AppInfo appInfo) {
     DexClass enumType = appInfo.definitionFor(appInfo.dexItemFactory().enumType);
     if (enumType == null) {
-      throw new CompilationError("Tracing for legacy multi dex is not possible without all"
-          + " classpath libraries (java.lang.Enum is missing)");
+      throw new CompilationError(
+          "Tracing for legacy multi dex is not possible without all"
+              + " classpath libraries (java.lang.Enum is missing)");
     }
     DexClass annotationType = appInfo.definitionFor(appInfo.dexItemFactory().annotationType);
     if (annotationType == null) {
-      throw new CompilationError("Tracing for legacy multi dex is not possible without all"
-          + " classpath libraries (java.lang.annotation.Annotation is missing)");
+      throw new CompilationError(
+          "Tracing for legacy multi dex is not possible without all"
+              + " classpath libraries (java.lang.annotation.Annotation is missing)");
     }
   }
 

@@ -106,7 +106,6 @@ public class LegacyDesugaredLibrarySpecification implements DesugaredLibrarySpec
     return rewritingFlags.getWrapperConversions();
   }
 
-
   @Override
   public List<String> getExtraKeepRules() {
     return topLevelFlags.getExtraKeepRules();

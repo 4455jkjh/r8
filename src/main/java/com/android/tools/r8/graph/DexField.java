@@ -145,18 +145,14 @@ public class DexField extends DexMember<DexEncodedField, DexField> {
 
   @Override
   public int computeHashCode() {
-    return holder.hashCode()
-        + type.hashCode() * 7
-        + name.hashCode() * 31;
+    return holder.hashCode() + type.hashCode() * 7 + name.hashCode() * 31;
   }
 
   @Override
   public boolean computeEquals(Object other) {
     if (other instanceof DexField) {
       DexField o = (DexField) other;
-      return holder.equals(o.holder)
-          && type.equals(o.type)
-          && name.equals(o.name);
+      return holder.equals(o.holder) && type.equals(o.type) && name.equals(o.name);
     }
     return false;
   }

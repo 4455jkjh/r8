@@ -194,8 +194,7 @@ public class PolicyScheduler {
   }
 
   private static boolean verifySingleClassPoliciesIrrelevantForMergingSyntheticsInD8(
-      AppView<AppInfo> appView,
-      ImmutableList.Builder<SingleClassPolicy> builder) {
+      AppView<AppInfo> appView, ImmutableList.Builder<SingleClassPolicy> builder) {
     List<SingleClassPolicy> policies =
         ImmutableList.of(
             new NoResourceClasses(),
@@ -277,8 +276,7 @@ public class PolicyScheduler {
   }
 
   private static void addMultiClassPoliciesForMergingNonSyntheticClasses(
-      AppView<AppInfoWithLiveness> appView,
-      ImmutableList.Builder<Policy> builder) {
+      AppView<AppInfoWithLiveness> appView, ImmutableList.Builder<Policy> builder) {
     builder.add(new NoClassInitializerCycles(appView), new NoDeadLocks(appView));
   }
 
@@ -294,8 +292,7 @@ public class PolicyScheduler {
   }
 
   private static boolean verifyMultiClassPoliciesIrrelevantForMergingSyntheticsInD8(
-      AppView<AppInfo> appView,
-      ImmutableList.Builder<MultiClassPolicy> builder) {
+      AppView<AppInfo> appView, ImmutableList.Builder<MultiClassPolicy> builder) {
     List<MultiClassPolicy> policies =
         ImmutableList.of(new SyntheticItemsPolicy(appView), new SameParentClass());
     policies.stream().map(VerifyMultiClassPolicyAlwaysSatisfied::new).forEach(builder::add);

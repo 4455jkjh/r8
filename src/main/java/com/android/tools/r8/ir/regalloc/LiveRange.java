@@ -5,10 +5,10 @@ package com.android.tools.r8.ir.regalloc;
 
 public class LiveRange implements Comparable<LiveRange> {
 
-  public final static LiveRange INFINITE = new LiveRange(0, Integer.MAX_VALUE);
+  public static final LiveRange INFINITE = new LiveRange(0, Integer.MAX_VALUE);
 
-  public int start;  // inclusive
-  public int end;  // exclusive
+  public int start; // inclusive
+  public int end; // exclusive
 
   public LiveRange(int start, int end) {
     this.start = start;

@@ -110,9 +110,7 @@ public class ConstructorEntryPointSynthesizedCode extends IncompleteHorizontalCl
 
   @Override
   public final IRCode buildIR(
-      ProgramMethod method,
-      AppView<?> appView,
-      MutableMethodConversionOptions conversionOptions) {
+      ProgramMethod method, AppView<?> appView, MutableMethodConversionOptions conversionOptions) {
     SyntheticPosition position =
         SyntheticPosition.builder()
             .setLine(0)

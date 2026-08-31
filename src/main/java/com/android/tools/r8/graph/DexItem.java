@@ -13,14 +13,13 @@ public abstract class DexItem {
     consumeArray(items, item -> item.collectMixedSectionItems(mixedItems));
   }
 
-  public static <T extends DexItem> void collectAll(MixedSectionCollection mixedItems,
-      Collection<T> items) {
+  public static <T extends DexItem> void collectAll(
+      MixedSectionCollection mixedItems, Collection<T> items) {
     items.forEach(item -> item.collectMixedSectionItems(mixedItems));
   }
 
   /**
-   * Helper method to iterate over elements in an array.
-   * Handles the case where the array is null.
+   * Helper method to iterate over elements in an array. Handles the case where the array is null.
    */
   private static <T extends DexItem> void consumeArray(T[] items, Consumer<T> consumer) {
     if (items == null) {

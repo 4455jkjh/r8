@@ -17,8 +17,8 @@ import java.util.Objects;
 
 public abstract class ProguardClassSpecification {
 
-  public abstract static class
-  Builder<C extends ProguardClassSpecification, B extends Builder<C, B>> {
+  public abstract static class Builder<
+      C extends ProguardClassSpecification, B extends Builder<C, B>> {
 
     protected Origin origin;
     protected Position start;
@@ -35,6 +35,7 @@ public abstract class ProguardClassSpecification {
         ImmutableList.builder();
     protected ProguardTypeMatcher inheritanceClassName;
     protected boolean inheritanceIsExtends = false;
+
     // TODO(b/270398965): Replace LinkedList.
     @SuppressWarnings("JdkObsolete")
     protected List<ProguardMemberRule> memberRules = new LinkedList<>();
@@ -416,11 +417,12 @@ public abstract class ProguardClassSpecification {
     }
     if (!memberRules.isEmpty()) {
       builder.append(" {").append(System.lineSeparator());
-      memberRules.forEach(memberRule -> {
-        builder.append("  ");
-        builder.append(memberRule);
-        builder.append(";").append(System.lineSeparator());
-      });
+      memberRules.forEach(
+          memberRule -> {
+            builder.append("  ");
+            builder.append(memberRule);
+            builder.append(";").append(System.lineSeparator());
+          });
       builder.append("}");
     }
     return builder;

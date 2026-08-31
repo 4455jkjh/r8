@@ -3,9 +3,7 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8.dex;
 
-/**
- * A section as defined by the Dex file format.
- */
+/** A section as defined by the Dex file format. */
 public class DexSection {
   public final int type;
   public final int length;

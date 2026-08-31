@@ -4,6 +4,4 @@
 
 package com.android.tools.r8.ir.optimize.info;
 
-public interface MutableOptimizationInfo {
-
-}
+public interface MutableOptimizationInfo {}

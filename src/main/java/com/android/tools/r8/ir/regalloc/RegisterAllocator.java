@@ -15,8 +15,11 @@ public interface RegisterAllocator {
   ProgramMethod getProgramMethod();
 
   void allocateRegisters();
+
   int registersUsed();
+
   int getRegisterForValue(Value value, int instructionNumber);
+
   int getArgumentOrAllocateRegisterForValue(Value value, int instructionNumber);
 
   default int getArgumentRegisterForValue(Value value) {

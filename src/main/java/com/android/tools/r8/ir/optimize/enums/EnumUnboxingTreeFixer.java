@@ -643,19 +643,13 @@ class EnumUnboxingTreeFixer implements ProgramClassFixer {
     unboxedEnum.forEachProgramMethod(
         method ->
             processMethod(
-                method,
-                nonPrivateVirtualMethods,
-                localUtilityClass,
-                localUtilityMethods));
+                method, nonPrivateVirtualMethods, localUtilityClass, localUtilityMethods));
     // Second for each subEnum generate the remaining methods if not already generated.
     for (DexProgramClass subEnum : subEnums) {
       subEnum.forEachProgramMethod(
           method ->
               processMethod(
-                  method,
-                  nonPrivateVirtualMethods,
-                  localUtilityClass,
-                  localUtilityMethods));
+                  method, nonPrivateVirtualMethods, localUtilityClass, localUtilityMethods));
     }
 
     // Then analyze each method that may require emulated dispatch.
