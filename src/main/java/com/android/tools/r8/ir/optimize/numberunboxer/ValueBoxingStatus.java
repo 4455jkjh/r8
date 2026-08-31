@@ -5,9 +5,11 @@
 package com.android.tools.r8.ir.optimize.numberunboxer;
 
 import com.android.tools.r8.graph.AppView;
+import com.android.tools.r8.graph.DexMethod;
 import com.android.tools.r8.graph.lens.GraphLens;
 import com.google.common.collect.ImmutableMultiset;
 import java.util.Arrays;
+import java.util.Set;
 
 /**
  * The value boxing status represents the result of the number unboxer analysis on a given value,
@@ -105,7 +107,7 @@ public class ValueBoxingStatus {
   }
 
   public ValueBoxingStatus rewrittenWithLens(
-      AppView<?> appView, GraphLens graphLens, GraphLens codeLens) {
+      AppView<?> appView, GraphLens graphLens, GraphLens codeLens, Set<DexMethod> prunedMethods) {
     if (transitiveDependencies.isEmpty()) {
       return this;
     }
@@ -113,6 +115,11 @@ public class ValueBoxingStatus {
         ImmutableMultiset.builder();
     boolean diff = false;
     for (TransitiveDependency transitiveDependency : transitiveDependencies) {
+      if (transitiveDependency.isMethodDependency()
+          && prunedMethods.contains(transitiveDependency.asMethodDependency().getMethod())) {
+        // Remove the dependency to a pruned method.
+        continue;
+      }
       TransitiveDependency newTransitiveDependency =
           transitiveDependency.rewrittenWithLens(appView, graphLens, codeLens);
       diff |= newTransitiveDependency != transitiveDependency;

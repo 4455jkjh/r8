@@ -11,6 +11,7 @@ import com.android.tools.r8.graph.lens.GraphLens;
 import com.android.tools.r8.graph.proto.ArgumentInfo;
 import com.android.tools.r8.graph.proto.RewrittenPrototypeDescription;
 import com.android.tools.r8.utils.internal.ArrayUtils;
+import java.util.Set;
 
 public class MethodBoxingStatus {
 
@@ -79,9 +80,13 @@ public class MethodBoxingStatus {
   }
 
   public MethodBoxingStatus rewrittenWithLens(
-      AppView<?> appView, GraphLens graphLens, GraphLens codeLens, DexMethod newMethod) {
+      AppView<?> appView,
+      GraphLens graphLens,
+      GraphLens codeLens,
+      DexMethod newMethod,
+      Set<DexMethod> prunedMethods) {
     ValueBoxingStatus newReturnStatus =
-        returnStatus.rewrittenWithLens(appView, graphLens, codeLens);
+        returnStatus.rewrittenWithLens(appView, graphLens, codeLens, prunedMethods);
     boolean diff = newReturnStatus != returnStatus;
     RewrittenPrototypeDescription rewrittenPrototypeDescription =
         graphLens.lookupPrototypeChangesForMethodDefinition(newMethod, codeLens);
@@ -106,7 +111,8 @@ public class MethodBoxingStatus {
         diff = true;
         continue;
       }
-      newArgStatuses[j] = argStatuses[i].rewrittenWithLens(appView, graphLens, codeLens);
+      newArgStatuses[j] =
+          argStatuses[i].rewrittenWithLens(appView, graphLens, codeLens, prunedMethods);
       diff |= newArgStatuses[j] != argStatuses[i];
       assert newArgStatuses[j].isNotUnboxable() || !argumentInfo.isRewrittenTypeInfo()
           : "Rewriting an argument type of an argument being unboxed.";

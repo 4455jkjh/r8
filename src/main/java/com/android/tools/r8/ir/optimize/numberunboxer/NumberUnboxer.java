@@ -65,6 +65,7 @@ public class NumberUnboxer implements ReprocessingOptimization {
       new ConcurrentHashMap<>();
   private Map<DexMethod, DexMethod> virtualMethodsRepresentative;
   private final Set<DexMethod> candidatesToRemoveInWave = SetUtils.newConcurrentHashSet();
+  private final Set<DexMethod> prunedMethods = SetUtils.newConcurrentHashSet();
 
   private GraphLens appliedGraphLens;
 
@@ -445,13 +446,12 @@ public class NumberUnboxer implements ReprocessingOptimization {
 
   @Override
   public void onMethodPruned(ProgramMethod method) {
-    // TODO(b/307872552): Should we do something about this? We might need to change the
-    //  representative.
+    prunedMethods.add(method.getReference());
   }
 
   @Override
   public void onMethodCodePruned(ProgramMethod method) {
-    // TODO(b/307872552): I don't think we should do anything here.
+    // Intentionally empty.
   }
 
   @Override
@@ -468,6 +468,11 @@ public class NumberUnboxer implements ReprocessingOptimization {
     rewriteVirtualMethodsRepresentativeWithLens();
     rewriteCandidateBoxingStatusWithLens();
     appliedGraphLens = appView.graphLens();
+    // We may end up in a situation where the representative no longer exists, but it does not
+    // matter, the representative is just a unique identifier for a set of methods that need to
+    // be unboxed at the same time. The virtualMethodsRepresentative map is cleared after the
+    // optimization is applied (a little after this) anyway.
+    prunedMethods.clear();
   }
 
   private void rewriteVirtualMethodsRepresentativeWithLens() {
@@ -475,9 +480,11 @@ public class NumberUnboxer implements ReprocessingOptimization {
         ImmutableMap.builder();
     virtualMethodsRepresentative.forEach(
         (method, representative) -> {
-          newVirtualMethodsRepresentative.put(
-              appView.graphLens().getRenamedMethodSignature(method, appliedGraphLens),
-              appView.graphLens().getRenamedMethodSignature(representative, appliedGraphLens));
+          if (!prunedMethods.contains(method)) {
+            newVirtualMethodsRepresentative.put(
+                appView.graphLens().getRenamedMethodSignature(method, appliedGraphLens),
+                appView.graphLens().getRenamedMethodSignature(representative, appliedGraphLens));
+          }
         });
     virtualMethodsRepresentative = newVirtualMethodsRepresentative.build();
   }
@@ -487,11 +494,14 @@ public class NumberUnboxer implements ReprocessingOptimization {
     MapUtils.removeIf(
         candidateBoxingStatus,
         (method, boxingStatus) -> {
+          if (prunedMethods.contains(method)) {
+            return true;
+          }
           DexMethod newMethod =
               appView.graphLens().getRenamedMethodSignature(method, appliedGraphLens);
           MethodBoxingStatus newBoxingStatus =
               boxingStatus.rewrittenWithLens(
-                  appView, appView.graphLens(), appliedGraphLens, newMethod);
+                  appView, appView.graphLens(), appliedGraphLens, newMethod, prunedMethods);
           if (newBoxingStatus.isNoneUnboxable()) {
             return true;
           }
