@@ -36,6 +36,7 @@ import com.android.tools.r8.utils.ThreadUtils;
 import com.android.tools.r8.utils.collections.DexMethodSignatureMap;
 import com.android.tools.r8.utils.internal.BooleanUtils;
 import com.android.tools.r8.utils.internal.MapUtils;
+import com.android.tools.r8.utils.internal.SetUtils;
 import com.android.tools.r8.utils.internal.exceptions.Unimplemented;
 import com.android.tools.r8.utils.timing.Timing;
 import com.google.common.collect.ImmutableMap;
@@ -63,6 +64,7 @@ public class NumberUnboxer implements ReprocessingOptimization {
   private final Map<DexMethod, MethodBoxingStatus> candidateBoxingStatus =
       new ConcurrentHashMap<>();
   private Map<DexMethod, DexMethod> virtualMethodsRepresentative;
+  private final Set<DexMethod> candidatesToRemoveInWave = SetUtils.newConcurrentHashSet();
 
   private GraphLens appliedGraphLens;
 
@@ -165,8 +167,7 @@ public class NumberUnboxer implements ReprocessingOptimization {
     DexMethod representative = representative(method.getReference());
     if (args == null && (returnStatus == null || returnStatus.isNotUnboxable())) {
       // Effectively NOT_UNBOXABLE, remove the candidate.
-      // TODO(b/307872552): Do we need to remove at the end of the wave for determinism?
-      candidateBoxingStatus.remove(representative);
+      candidatesToRemoveInWave.add(representative);
       return;
     }
     ValueBoxingStatus nonNullReturnStatus = returnStatus == null ? NOT_UNBOXABLE : returnStatus;
@@ -178,8 +179,7 @@ public class NumberUnboxer implements ReprocessingOptimization {
         candidateBoxingStatus.computeIfPresent(
             representative, (m, old) -> old.merge(unboxingStatus, numberUnboxerOptions));
     if (newStatus != null && newStatus.isNoneUnboxable()) {
-      // TODO(b/307872552): Do we need to remove at the end of the wave for determinism?
-      candidateBoxingStatus.remove(representative);
+      candidatesToRemoveInWave.add(representative);
     }
   }
 
@@ -456,7 +456,11 @@ public class NumberUnboxer implements ReprocessingOptimization {
 
   @Override
   public void waveDone() {
-    // TODO(b/307872552): Make it deterministic by clearing things here.
+    for (DexMethod method : candidatesToRemoveInWave) {
+      candidateBoxingStatus.remove(method);
+      assert candidateBoxingStatus.get(method) == null;
+    }
+    candidatesToRemoveInWave.clear();
   }
 
   @Override
