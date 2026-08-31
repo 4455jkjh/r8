@@ -335,9 +335,10 @@ def check_web_files(files, fix_formatting=False):
 
 
 # upstream_for_diff_formatting: If set, only changed lines are checked/formatted (best effort).
+# Diff formatting is very slow (~1 second per file), so keep batch size small.
 def check(files,
           fix_formatting=False,
-          batch_size=100,
+          batch_size=5,
           upstream_for_diff_formatting=None):
     java_files = []
     kotlin_files = []
