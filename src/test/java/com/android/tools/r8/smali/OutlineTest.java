@@ -1390,7 +1390,7 @@ public class OutlineTest extends SmaliTestBase {
         "    div-int             v0, v1, v2",
         "    add-int             v0, v1, v2",
         "    sub-int             v0, v0, v1",
-        "    mul-int             v0, v2, v0",
+        "    div-int             v0, v2, v0",
         "    div-int             v0, v0, v1",
         "    :try_end",
         "    :return",
@@ -1449,7 +1449,7 @@ public class OutlineTest extends SmaliTestBase {
               assertTrue(isOutlineMethodName(invoke.getMethod(), syntheticItems));
             })
         .run(parameters.getRuntime(), DEFAULT_MAIN_CLASS_NAME)
-        .assertSuccessWithOutput("4");
+        .assertSuccessWithOutput("1");
   }
 
   @Test
