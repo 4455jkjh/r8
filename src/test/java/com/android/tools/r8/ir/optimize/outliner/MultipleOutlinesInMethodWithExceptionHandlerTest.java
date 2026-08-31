@@ -13,8 +13,8 @@ import com.android.tools.r8.NeverInline;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
-import com.android.tools.r8.dex.code.DexAddInt;
-import com.android.tools.r8.dex.code.DexAddInt2Addr;
+import com.android.tools.r8.dex.code.DexDivInt;
+import com.android.tools.r8.dex.code.DexDivInt2Addr;
 import com.android.tools.r8.dex.code.DexMulInt;
 import com.android.tools.r8.dex.code.DexMulInt2Addr;
 import com.android.tools.r8.dex.code.DexReturn;
@@ -47,10 +47,10 @@ public class MultipleOutlinesInMethodWithExceptionHandlerTest extends TestBase {
     return getTestParameters().withAllRuntimesAndApiLevels().build();
   }
 
-  private static final String EXPECTED_OUTPUT = StringUtils.lines("18");
+  private static final String EXPECTED_OUTPUT = StringUtils.lines("24");
 
   private void validateOutlining(CodeInspector inspector, SyntheticItemsTestUtils syntheticItems) {
-    // Validate that an outline of mul, mul, add has been created and called twice in m.
+    // Validate that an outline of mul, mul, div has been created and called twice in m.
     ClassSubject outlineClass =
         inspector.clazz(syntheticItems.syntheticOutlineClass(TestClass.class, 0));
     assertThat(outlineClass, isPresent());
@@ -61,7 +61,7 @@ public class MultipleOutlinesInMethodWithExceptionHandlerTest extends TestBase {
     if (parameters.isDexRuntime()) {
       Map<Class<?>, Class<?>> map =
           ImmutableMap.of(
-              DexMulInt2Addr.class, DexMulInt.class, DexAddInt2Addr.class, DexAddInt.class);
+              DexMulInt2Addr.class, DexMulInt.class, DexDivInt2Addr.class, DexDivInt.class);
       List<Class<?>> instructionClasses =
           outline0Method
               .streamInstructions()
@@ -69,7 +69,7 @@ public class MultipleOutlinesInMethodWithExceptionHandlerTest extends TestBase {
               .map(instructionClass -> map.getOrDefault(instructionClass, instructionClass))
               .collect(Collectors.toList());
       assertEquals(
-          ImmutableList.of(DexMulInt.class, DexMulInt.class, DexAddInt.class, DexReturn.class),
+          ImmutableList.of(DexMulInt.class, DexMulInt.class, DexDivInt.class, DexReturn.class),
           instructionClasses);
     }
     ClassSubject classSubject = inspector.clazz(TestClass.class);
@@ -119,15 +119,15 @@ public class MultipleOutlinesInMethodWithExceptionHandlerTest extends TestBase {
     @NeverInline
     private static void m(int a, int b, int c, int d) {
       try {
-        // The test is expecting an outline with mul, mul, add instructions.
-        System.out.println((a * b * c + d) * (d * c * b + a));
+        // The test is expecting an outline with mul, mul, div instructions.
+        System.out.println((a * b * c / d) * (d * c * b / a));
       } catch (ArithmeticException e) {
         System.out.println(e);
       }
     }
 
     public static void main(String[] args) {
-      m(args.length, args.length + 1, args.length + 2, args.length + 3);
+      m(args.length + 1, args.length + 2, args.length + 3, args.length + 4);
     }
   }
 }
