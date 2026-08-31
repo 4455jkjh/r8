@@ -3,8 +3,6 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8.tracereferences;
 
-import static com.android.tools.r8.BaseCompilerCommandParser.LIB_FLAG;
-
 import com.android.tools.r8.ClassConflictResolver;
 import com.android.tools.r8.Diagnostic;
 import com.android.tools.r8.DiagnosticsHandler;
@@ -42,6 +40,8 @@ import java.util.Set;
 import java.util.function.Consumer;
 
 class TraceReferencesCommandParser {
+
+  private static final String LIB_FLAG = "--lib";
 
   private static final Set<String> OPTIONS_WITH_PARAMETER =
       ImmutableSet.of(LIB_FLAG, "--target", "--source", "--output");

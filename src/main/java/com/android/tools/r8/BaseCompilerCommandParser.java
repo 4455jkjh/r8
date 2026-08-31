@@ -10,38 +10,8 @@ import com.android.tools.r8.utils.DescriptorUtils;
 import com.android.tools.r8.utils.StringDiagnostic;
 import com.android.tools.r8.utils.internal.collections.Pair;
 import com.android.tools.r8.utils.internal.exceptions.Unreachable;
-import java.util.function.Consumer;
 
 public class BaseCompilerCommandParser {
-
-  public static final String LIB_FLAG = "--lib";
-  public static final String MIN_API_FLAG = "--min-api";
-  public static final String OUTPUT_FLAG = "--output";
-  public static final String THREAD_COUNT_FLAG = "--thread-count";
-
-  public static void parsePositiveIntArgument(
-      Consumer<Diagnostic> errorConsumer,
-      String flag,
-      String argument,
-      Origin origin,
-      Consumer<Integer> setter) {
-    int value;
-    try {
-      value = Integer.parseInt(argument);
-    } catch (NumberFormatException e) {
-      errorConsumer.accept(
-          new StringDiagnostic("Invalid argument to " + flag + ": " + argument, origin));
-      return;
-    }
-    if (value < 1) {
-      errorConsumer.accept(
-          new StringDiagnostic("Invalid argument to " + flag + ": " + argument, origin));
-      return;
-    }
-    setter.accept(value);
-  }
-
-  private static final String PACKAGE_ASSERTION_POSTFIX = "...";
 
   private enum AssertionTransformationType {
     ENABLE,
@@ -79,12 +49,13 @@ public class BaseCompilerCommandParser {
           b -> prepareBuilderForScope(b, transformation, assertionHandler).setScopeAll().build());
     } else {
       assert !scope.isEmpty();
-      if (scope.endsWith(PACKAGE_ASSERTION_POSTFIX)) {
+      String packageAssertionPostfix = "...";
+      if (scope.endsWith(packageAssertionPostfix)) {
         builder.addAssertionsConfiguration(
             b ->
                 prepareBuilderForScope(b, transformation, assertionHandler)
                     .setScopePackage(
-                        scope.substring(0, scope.length() - PACKAGE_ASSERTION_POSTFIX.length()))
+                        scope.substring(0, scope.length() - packageAssertionPostfix.length()))
                     .build());
       } else {
         builder.addAssertionsConfiguration(
@@ -96,7 +67,7 @@ public class BaseCompilerCommandParser {
     }
   }
 
-  protected static <C extends BaseCompilerCommand, B extends BaseCompilerCommand.Builder<C, B>>
+  private static <C extends BaseCompilerCommand, B extends BaseCompilerCommand.Builder<C, B>>
       String parseAssertionScope(B builder, String suffix, Origin origin) {
     if (suffix.isEmpty()) {
       return null;
@@ -118,7 +89,7 @@ public class BaseCompilerCommandParser {
     return classOrPackageScope;
   }
 
-  static <C extends BaseCompilerCommand, B extends BaseCompilerCommand.Builder<C, B>>
+  private static <C extends BaseCompilerCommand, B extends BaseCompilerCommand.Builder<C, B>>
       Pair<MethodReference, String> parseAssertionHandler(B builder, String suffix, Origin origin) {
     if (suffix.isEmpty() || suffix.equals(":")) {
       throw builder.fatalError(
@@ -155,25 +126,25 @@ public class BaseCompilerCommandParser {
     return Pair.create(assertionsHandler, scope);
   }
 
-  protected static <C extends BaseCompilerCommand, B extends BaseCompilerCommand.Builder<C, B>>
+  public static <C extends BaseCompilerCommand, B extends BaseCompilerCommand.Builder<C, B>>
       void parseForceEnableAssertions(B builder, String suffix, Origin origin) {
     String scope = parseAssertionScope(builder, suffix, origin);
     addAssertionTransformation(builder, AssertionTransformationType.ENABLE, null, scope);
   }
 
-  protected static <C extends BaseCompilerCommand, B extends BaseCompilerCommand.Builder<C, B>>
+  public static <C extends BaseCompilerCommand, B extends BaseCompilerCommand.Builder<C, B>>
       void parseForceDisableAssertions(B builder, String suffix, Origin origin) {
     String scope = parseAssertionScope(builder, suffix, origin);
     addAssertionTransformation(builder, AssertionTransformationType.DISABLE, null, scope);
   }
 
-  protected static <C extends BaseCompilerCommand, B extends BaseCompilerCommand.Builder<C, B>>
+  public static <C extends BaseCompilerCommand, B extends BaseCompilerCommand.Builder<C, B>>
       void parseForcePassthroughAssertions(B builder, String suffix, Origin origin) {
     String scope = parseAssertionScope(builder, suffix, origin);
     addAssertionTransformation(builder, AssertionTransformationType.PASSTHROUGH, null, scope);
   }
 
-  protected static <C extends BaseCompilerCommand, B extends BaseCompilerCommand.Builder<C, B>>
+  public static <C extends BaseCompilerCommand, B extends BaseCompilerCommand.Builder<C, B>>
       void parseForceAssertionsHandler(B builder, String suffix, Origin origin) {
     Pair<MethodReference, String> handlerAndScope = parseAssertionHandler(builder, suffix, origin);
     addAssertionTransformation(
