@@ -74,8 +74,6 @@ import com.android.tools.r8.ir.optimize.info.OptimizationFeedbackDelayed;
 import com.android.tools.r8.ir.optimize.info.OptimizationFeedbackIgnore;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
 import com.android.tools.r8.shaking.KeepMethodInfo.Joiner;
-import com.android.tools.r8.utils.InternalOptions;
-import com.android.tools.r8.utils.InternalOptions.OutlineOptions;
 import com.android.tools.r8.utils.RetracerForCodePrinting;
 import com.android.tools.r8.utils.ThreadUtils;
 import com.android.tools.r8.utils.collections.ProgramMethodSet;
@@ -127,8 +125,8 @@ public class Outliner implements ReprocessingOptimization {
 
   /**
    * Result of first step (see {@link
-   * ReprocessingOptimization#prepareForPrimaryOptimizationPass(GraphLens, ExecutorService, Timing)}
-   * ()}.
+   * ReprocessingOptimization#prepareForPrimaryOptimizationPass(GraphLens, ExecutorService,
+   * Timing)}).
    */
   private OutlineCollection outlineCollection;
 

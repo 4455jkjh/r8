@@ -4,6 +4,12 @@
 
 package com.android.tools.r8.ir.optimize.numberunboxer;
 
+import com.android.tools.r8.graph.AppView;
+import com.android.tools.r8.graph.DexClassAndMethod;
+import com.android.tools.r8.graph.DexMethod;
+import com.android.tools.r8.graph.lens.GraphLens;
+import com.android.tools.r8.graph.proto.ArgumentInfo;
+import com.android.tools.r8.graph.proto.RewrittenPrototypeDescription;
 import com.android.tools.r8.utils.internal.ArrayUtils;
 
 public class MethodBoxingStatus {
@@ -70,6 +76,44 @@ public class MethodBoxingStatus {
   public ValueBoxingStatus[] getArgStatuses() {
     assert !isNoneUnboxable();
     return argStatuses;
+  }
+
+  public MethodBoxingStatus rewrittenWithLens(
+      AppView<?> appView, GraphLens graphLens, GraphLens codeLens, DexMethod newMethod) {
+    ValueBoxingStatus newReturnStatus =
+        returnStatus.rewrittenWithLens(appView, graphLens, codeLens);
+    boolean diff = newReturnStatus != returnStatus;
+    RewrittenPrototypeDescription rewrittenPrototypeDescription =
+        graphLens.lookupPrototypeChangesForMethodDefinition(newMethod, codeLens);
+    // The boxing status contains the argument values, but not the receiver value.
+    // The rewritten prototype description works with inValues.
+    DexClassAndMethod dexClassAndMethod = appView.definitionFor(newMethod);
+    // TODO(b/307872552): When a method is removed, we move everything to NONE_UNBOXABLE, check and
+    //  understand the consequences (for example for initializers) (?).
+    if (dexClassAndMethod == null) {
+      return MethodBoxingStatus.NONE_UNBOXABLE;
+    }
+    int shift =
+        rewrittenPrototypeDescription.getArgumentInfoCollection().isConvertedToStaticMethod()
+            ? 1
+            : (dexClassAndMethod.getDefinition().isStatic() ? 0 : 1);
+    ValueBoxingStatus[] newArgStatuses = new ValueBoxingStatus[newMethod.getArity()];
+    int j = 0;
+    for (int i = 0; i < argStatuses.length; i++) {
+      ArgumentInfo argumentInfo =
+          rewrittenPrototypeDescription.getArgumentInfoCollection().getArgumentInfo(i + shift);
+      if (argumentInfo.isRemovedArgumentInfo()) {
+        diff = true;
+        continue;
+      }
+      newArgStatuses[j] = argStatuses[i].rewrittenWithLens(appView, graphLens, codeLens);
+      diff |= newArgStatuses[j] != argStatuses[i];
+      assert newArgStatuses[j].isNotUnboxable() || !argumentInfo.isRewrittenTypeInfo()
+          : "Rewriting an argument type of an argument being unboxed.";
+      j++;
+    }
+    assert newArgStatuses.length == 0 || newArgStatuses[newMethod.getArity() - 1] != null;
+    return diff ? new MethodBoxingStatus(newReturnStatus, newArgStatuses) : this;
   }
 
   @Override

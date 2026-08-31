@@ -4,7 +4,11 @@
 
 package com.android.tools.r8.ir.optimize.numberunboxer;
 
+import com.android.tools.r8.graph.AppView;
+import com.android.tools.r8.graph.DexClassAndMethod;
 import com.android.tools.r8.graph.DexMethod;
+import com.android.tools.r8.graph.lens.GraphLens;
+import com.android.tools.r8.graph.proto.RewrittenPrototypeDescription;
 
 // Transitive dependencies are computed only one way, the other way is always pessimistic.
 // This means that invoke arguments, method return value and field write have information such as
@@ -38,6 +42,9 @@ public interface TransitiveDependency {
     return null;
   }
 
+  TransitiveDependency rewrittenWithLens(
+      AppView<?> appView, GraphLens graphLens, GraphLens codeLens);
+
   @Override
   int hashCode();
 
@@ -46,7 +53,7 @@ public interface TransitiveDependency {
 
   abstract class MethodDependency implements TransitiveDependency {
 
-    private final DexMethod method;
+    final DexMethod method;
 
     public MethodDependency(DexMethod method) {
       this.method = method;
@@ -81,6 +88,19 @@ public interface TransitiveDependency {
     @Override
     public MethodRet asMethodRet() {
       return this;
+    }
+
+    @Override
+    public TransitiveDependency rewrittenWithLens(
+        AppView<?> appView, GraphLens graphLens, GraphLens codeLens) {
+      DexMethod newMethod = graphLens.getRenamedMethodSignature(method, codeLens);
+      if (newMethod.isIdenticalTo(method)) {
+        return this;
+      }
+      assert !graphLens
+          .lookupPrototypeChangesForMethodDefinition(newMethod, codeLens)
+          .hasRewrittenReturnInfo();
+      return new MethodRet(newMethod);
     }
 
     @Override
@@ -129,6 +149,40 @@ public interface TransitiveDependency {
     @Override
     public MethodArg asMethodArg() {
       return this;
+    }
+
+    @Override
+    public TransitiveDependency rewrittenWithLens(
+        AppView<?> appView, GraphLens graphLens, GraphLens codeLens) {
+      DexMethod newMethod = graphLens.getRenamedMethodSignature(method, codeLens);
+      if (newMethod.isIdenticalTo(method)) {
+        return this;
+      }
+      RewrittenPrototypeDescription rewrittenPrototypeDescription =
+          graphLens.lookupPrototypeChangesForMethodDefinition(newMethod, codeLens);
+      DexClassAndMethod dexClassAndMethod = appView.definitionFor(newMethod);
+      if (dexClassAndMethod == null) {
+        return this;
+      }
+      int newShift = dexClassAndMethod.getDefinition().isStatic() ? 0 : 1;
+      int prevShift =
+          rewrittenPrototypeDescription.getArgumentInfoCollection().isConvertedToStaticMethod()
+              ? 1
+              : newShift;
+      int newParameterIndex =
+          rewrittenPrototypeDescription
+                  .getArgumentInfoCollection()
+                  .getNewArgumentIndex(parameterIndex + prevShift)
+              - newShift;
+      assert !rewrittenPrototypeDescription
+          .getArgumentInfoCollection()
+          .getArgumentInfo(parameterIndex + prevShift)
+          .isRewrittenTypeInfo();
+      assert appView
+          .dexItemFactory()
+          .primitiveToBoxed
+          .containsValue(newMethod.getParameter(newParameterIndex));
+      return new MethodArg(newParameterIndex, newMethod);
     }
 
     @Override

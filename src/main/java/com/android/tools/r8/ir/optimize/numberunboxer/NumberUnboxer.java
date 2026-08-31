@@ -38,6 +38,7 @@ import com.android.tools.r8.utils.internal.BooleanUtils;
 import com.android.tools.r8.utils.internal.MapUtils;
 import com.android.tools.r8.utils.internal.exceptions.Unimplemented;
 import com.android.tools.r8.utils.timing.Timing;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -205,8 +206,7 @@ public class NumberUnboxer implements ReprocessingOptimization {
         ValueBoxingStatus unboxingStatus = analyzeOutput(next.outValue());
         if (unboxingStatus.mayBeUnboxable()) {
           if (args == null) {
-            args = new ValueBoxingStatus[contextReference.getArity()];
-            Arrays.fill(args, NOT_UNBOXABLE);
+            args = ValueBoxingStatus.notUnboxableArray(contextReference.getArity());
           }
           args[next.asArgument().getIndex() - shift] = unboxingStatus;
         }
@@ -398,16 +398,17 @@ public class NumberUnboxer implements ReprocessingOptimization {
         new NumberUnboxerBoxingStatusResolution(
                 candidateBoxingStatus, appView.testing().getNumberUnboxerOptions())
             .resolve();
-    if (unboxingResult.isEmpty()) {
-      return;
+    if (!unboxingResult.isEmpty()) {
+      NumberUnboxerLens numberUnboxerLens =
+          new NumberUnboxerTreeFixer(appView, unboxingResult, virtualMethodsRepresentative)
+              .fixupTree(executorService, timing);
+      appView.rewriteWithLens(numberUnboxerLens, executorService, timing);
+      new NumberUnboxerMethodReprocessingEnqueuer(appView, numberUnboxerLens)
+          .enqueueMethodsForReprocessing(postMethodProcessorBuilder, executorService, timing);
     }
-
-    NumberUnboxerLens numberUnboxerLens =
-        new NumberUnboxerTreeFixer(appView, unboxingResult, virtualMethodsRepresentative)
-            .fixupTree(executorService, timing);
-    appView.rewriteWithLens(numberUnboxerLens, executorService, timing);
-    new NumberUnboxerMethodReprocessingEnqueuer(appView, numberUnboxerLens)
-        .enqueueMethodsForReprocessing(postMethodProcessorBuilder, executorService, timing);
+    // The data is no longer valid, or it needs to be updated, but it is unused so we remove it.
+    candidateBoxingStatus.clear();
+    virtualMethodsRepresentative = null;
 
     if (appView.testing().getNumberUnboxerOptions().shouldDebugPrintNumberUnboxed()) {
       printNumberUnboxed(unboxingResult);
@@ -416,6 +417,10 @@ public class NumberUnboxer implements ReprocessingOptimization {
 
   private void printNumberUnboxed(Map<DexMethod, MethodBoxingStatusResult> unboxingResult) {
     StringBuilder stringBuilder = new StringBuilder();
+    stringBuilder.append("NumberUnboxer result:").append(System.lineSeparator());
+    if (unboxingResult.isEmpty()) {
+      stringBuilder.append("No number unboxing was performed.");
+    }
     unboxingResult.forEach(
         (k, v) -> {
           if (v.getRet() == UNBOX) {
@@ -456,7 +461,56 @@ public class NumberUnboxer implements ReprocessingOptimization {
 
   @Override
   public void rewriteWithLens() {
-    // TODO(b/307872552): This needs to rewrite the methodBoxingStatus.
+    rewriteVirtualMethodsRepresentativeWithLens();
+    rewriteCandidateBoxingStatusWithLens();
     appliedGraphLens = appView.graphLens();
+  }
+
+  private void rewriteVirtualMethodsRepresentativeWithLens() {
+    ImmutableMap.Builder<DexMethod, DexMethod> newVirtualMethodsRepresentative =
+        ImmutableMap.builder();
+    virtualMethodsRepresentative.forEach(
+        (method, representative) -> {
+          newVirtualMethodsRepresentative.put(
+              appView.graphLens().getRenamedMethodSignature(method, appliedGraphLens),
+              appView.graphLens().getRenamedMethodSignature(representative, appliedGraphLens));
+        });
+    virtualMethodsRepresentative = newVirtualMethodsRepresentative.build();
+  }
+
+  private void rewriteCandidateBoxingStatusWithLens() {
+    Map<DexMethod, MethodBoxingStatus> pendingAdditions = new IdentityHashMap<>();
+    MapUtils.removeIf(
+        candidateBoxingStatus,
+        (method, boxingStatus) -> {
+          DexMethod newMethod =
+              appView.graphLens().getRenamedMethodSignature(method, appliedGraphLens);
+          MethodBoxingStatus newBoxingStatus =
+              boxingStatus.rewrittenWithLens(
+                  appView, appView.graphLens(), appliedGraphLens, newMethod);
+          if (newBoxingStatus.isNoneUnboxable()) {
+            return true;
+          }
+          assert assertBoxingStatusCouldApplyToMethod(newMethod, newBoxingStatus);
+          if (newMethod.isNotIdenticalTo(method)) {
+            pendingAdditions.put(newMethod, newBoxingStatus);
+            return true;
+          }
+          candidateBoxingStatus.put(method, newBoxingStatus);
+          return false;
+        });
+    candidateBoxingStatus.putAll(pendingAdditions);
+  }
+
+  private boolean assertBoxingStatusCouldApplyToMethod(
+      DexMethod newMethod, MethodBoxingStatus newBoxingStatus) {
+    assert newMethod.getArity() == newBoxingStatus.getArgStatuses().length;
+    for (int i = 0; i < newBoxingStatus.getArgStatuses().length; i++) {
+      // Validate that the number unboxer has not marked a non unboxable parameter as unboxable,
+      // usually due to bookkeeping issues.
+      assert newBoxingStatus.getArgStatus(i).isNotUnboxable()
+          || unboxingCandidate(newMethod.getParameter(i));
+    }
+    return true;
   }
 }

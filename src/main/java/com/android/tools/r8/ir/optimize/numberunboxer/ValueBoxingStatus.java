@@ -4,6 +4,8 @@
 
 package com.android.tools.r8.ir.optimize.numberunboxer;
 
+import com.android.tools.r8.graph.AppView;
+import com.android.tools.r8.graph.lens.GraphLens;
 import com.google.common.collect.ImmutableMultiset;
 import java.util.Arrays;
 
@@ -44,6 +46,11 @@ public class ValueBoxingStatus {
     if (transitiveDependencies.size() > numberUnboxerOptions.getMaxTransitiveDependencies()) {
       return NOT_UNBOXABLE;
     }
+    return uncheckedWith(boxingDelta, transitiveDependencies);
+  }
+
+  private static ValueBoxingStatus uncheckedWith(
+      int boxingDelta, ImmutableMultiset<TransitiveDependency> transitiveDependencies) {
     return new ValueBoxingStatus(boxingDelta, transitiveDependencies);
   }
 
@@ -95,6 +102,25 @@ public class ValueBoxingStatus {
             .addAll(unboxingStatus.getTransitiveDependencies())
             .build();
     return checkedWith(newDelta, newDeps, numberUnboxerOptions);
+  }
+
+  public ValueBoxingStatus rewrittenWithLens(
+      AppView<?> appView, GraphLens graphLens, GraphLens codeLens) {
+    if (transitiveDependencies.isEmpty()) {
+      return this;
+    }
+    ImmutableMultiset.Builder<TransitiveDependency> newTransitiveDependencies =
+        ImmutableMultiset.builder();
+    boolean diff = false;
+    for (TransitiveDependency transitiveDependency : transitiveDependencies) {
+      TransitiveDependency newTransitiveDependency =
+          transitiveDependency.rewrittenWithLens(appView, graphLens, codeLens);
+      diff |= newTransitiveDependency != transitiveDependency;
+      newTransitiveDependencies.add(newTransitiveDependency);
+    }
+    return diff
+        ? ValueBoxingStatus.uncheckedWith(boxingDelta, newTransitiveDependencies.build())
+        : this;
   }
 
   @Override
