@@ -71,6 +71,12 @@ public class SetUtils {
     return result;
   }
 
+  public static <T> Set<T> newIdentityHashSet(Collection<? extends T> c) {
+    Set<T> result = newIdentityHashSet(c.size());
+    result.addAll(c);
+    return result;
+  }
+
   public static <T> Set<T> newIdentityHashSet(ForEachable<T> forEachable) {
     Set<T> result = Sets.newIdentityHashSet();
     forEachable.forEach(result::add);
