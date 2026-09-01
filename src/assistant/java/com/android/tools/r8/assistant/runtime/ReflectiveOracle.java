@@ -37,6 +37,8 @@ public class ReflectiveOracle {
   @KeepForApi
   public static class Stack {
 
+    private static final String[] EMPTY_STRING_ARRAY = new String[0];
+
     private final StackTraceElement[] stackTraceElements;
 
     private Stack(StackTraceElement[] stackTraceElements) {
@@ -71,9 +73,16 @@ public class ReflectiveOracle {
       return sb.toString();
     }
 
-    public String[] stackTraceElementsAsString() {
-      String[] result = new String[stackTraceElements.length];
-      for (int i = 0; i < stackTraceElements.length; i++) {
+    public String[] stackTraceElementsAsString(int numberOfLevels) {
+      if (stackTraceElements == null) {
+        return EMPTY_STRING_ARRAY;
+      }
+      int size = Math.max(0, Math.min(numberOfLevels, stackTraceElements.length));
+      if (size == 0) {
+        return EMPTY_STRING_ARRAY;
+      }
+      String[] result = new String[size];
+      for (int i = 0; i < size; i++) {
         result[i] = stackTraceElements[i].toString();
       }
       return result;
