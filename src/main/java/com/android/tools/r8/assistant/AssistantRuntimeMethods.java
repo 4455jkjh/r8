@@ -27,9 +27,11 @@ import com.android.tools.r8.cf.code.CfInstanceFieldWrite;
 import com.android.tools.r8.cf.code.CfInvoke;
 import com.android.tools.r8.cf.code.CfLabel;
 import com.android.tools.r8.cf.code.CfLoad;
+import com.android.tools.r8.cf.code.CfLogicalBinop;
 import com.android.tools.r8.cf.code.CfMonitor;
 import com.android.tools.r8.cf.code.CfNew;
 import com.android.tools.r8.cf.code.CfNewArray;
+import com.android.tools.r8.cf.code.CfNumberConversion;
 import com.android.tools.r8.cf.code.CfReturn;
 import com.android.tools.r8.cf.code.CfReturnVoid;
 import com.android.tools.r8.cf.code.CfStackInstruction;
@@ -50,6 +52,7 @@ import com.android.tools.r8.graph.MethodAccessFlags;
 import com.android.tools.r8.ir.code.IfType;
 import com.android.tools.r8.ir.code.MemberType;
 import com.android.tools.r8.ir.code.MonitorType;
+import com.android.tools.r8.ir.code.NumberConversionType;
 import com.android.tools.r8.ir.code.NumericType;
 import com.android.tools.r8.ir.code.ValueType;
 import com.android.tools.r8.synthesis.SyntheticProgramClassBuilder;
@@ -81,7 +84,6 @@ public final class AssistantRuntimeMethods {
     factory.createSynthesizedType("Ljava/lang/Boolean;");
     factory.createSynthesizedType("Ljava/lang/ClassLoader;");
     factory.createSynthesizedType("Ljava/lang/Enum;");
-    factory.createSynthesizedType("Ljava/lang/Exception;");
     factory.createSynthesizedType("Ljava/lang/Integer;");
     factory.createSynthesizedType("Ljava/lang/Long;");
     factory.createSynthesizedType("Ljava/lang/NoSuchFieldException;");
@@ -90,10 +92,14 @@ public final class AssistantRuntimeMethods {
     factory.createSynthesizedType("Ljava/lang/StackTraceElement;");
     factory.createSynthesizedType("Ljava/lang/System;");
     factory.createSynthesizedType("Ljava/lang/Void;");
+    factory.createSynthesizedType("Ljava/lang/reflect/Constructor;");
     factory.createSynthesizedType("Ljava/lang/reflect/Field;");
     factory.createSynthesizedType("Ljava/lang/reflect/InvocationHandler;");
     factory.createSynthesizedType("Ljava/lang/reflect/Method;");
+    factory.createSynthesizedType("Ljava/lang/reflect/Modifier;");
     factory.createSynthesizedType("Ljava/util/Arrays;");
+    factory.createSynthesizedType("Ljava/util/HashSet;");
+    factory.createSynthesizedType("Ljava/util/Set;");
     factory.createSynthesizedType("[Lcom/android/tools/r8/assistant/runtime/ReflectiveEventType;");
     factory.createSynthesizedType(
         "[Lcom/android/tools/r8/assistant/runtime/ReflectiveOperationReceiver$ClassFlag;");
@@ -1091,6 +1097,15 @@ public final class AssistantRuntimeMethods {
                         factory.createString("output")))
                 .setAccessFlags(FieldAccessFlags.createPublicFinalSynthetic())
                 .disableAndroidApiLevelCheck()
+                .build(),
+            DexEncodedField.syntheticBuilder()
+                .setField(
+                    factory.createField(
+                        builder.getType(),
+                        factory.createType(factory.createString("Ljava/util/Set;")),
+                        factory.createString("seenEvents")))
+                .setAccessFlags(FieldAccessFlags.createPublicFinalSynthetic())
+                .disableAndroidApiLevelCheck()
                 .build()));
     DexMethod clinit =
         factory.createMethod(
@@ -1115,6 +1130,11 @@ public final class AssistantRuntimeMethods {
             builder.getType(),
             factory.createProto(factory.createType(factory.createString("Ljava/lang/String;"))),
             factory.createString("getApplicationId"));
+    DexMethod getSdkInt =
+        factory.createMethod(
+            builder.getType(),
+            factory.createProto(factory.intType),
+            factory.createString("getSdkInt"));
     DexMethod isIgnoredCaller =
         factory.createMethod(
             builder.getType(),
@@ -1474,6 +1494,20 @@ public final class AssistantRuntimeMethods {
             builder.getType(),
             factory.createProto(factory.booleanType),
             factory.createString("requiresStackInformation"));
+    DexMethod updateHash =
+        factory.createMethod(
+            builder.getType(),
+            factory.createProto(
+                factory.longType,
+                factory.longType,
+                factory.createType(factory.createString("Ljava/lang/String;"))),
+            factory.createString("updateHash"));
+    DexMethod writeJsonString =
+        factory.createMethod(
+            builder.getType(),
+            factory.createProto(
+                factory.voidType, factory.createType(factory.createString("Ljava/lang/String;"))),
+            factory.createString("writeJsonString"));
     builder.setInterfaces(
         ImmutableList.of(
             factory.createType(
@@ -1512,6 +1546,14 @@ public final class AssistantRuntimeMethods {
                     MethodAccessFlags.fromSharedAccessFlags(
                         Constants.ACC_PUBLIC | Constants.ACC_SYNTHETIC, false))
                 .setCode(ReflectiveOperationJsonLogger_getApplicationId(factory, getApplicationId))
+                .disableAndroidApiLevelCheck()
+                .build(),
+            DexEncodedMethod.syntheticBuilder()
+                .setMethod(getSdkInt)
+                .setAccessFlags(
+                    MethodAccessFlags.fromSharedAccessFlags(
+                        Constants.ACC_PUBLIC | Constants.ACC_SYNTHETIC, false))
+                .setCode(ReflectiveOperationJsonLogger_getSdkInt(factory, getSdkInt))
                 .disableAndroidApiLevelCheck()
                 .build(),
             DexEncodedMethod.syntheticBuilder()
@@ -1826,6 +1868,22 @@ public final class AssistantRuntimeMethods {
                 .setCode(
                     ReflectiveOperationJsonLogger_requiresStackInformation(
                         factory, requiresStackInformation))
+                .disableAndroidApiLevelCheck()
+                .build(),
+            DexEncodedMethod.syntheticBuilder()
+                .setMethod(updateHash)
+                .setAccessFlags(
+                    MethodAccessFlags.fromSharedAccessFlags(
+                        Constants.ACC_PUBLIC | Constants.ACC_SYNTHETIC, false))
+                .setCode(ReflectiveOperationJsonLogger_updateHash(factory, updateHash))
+                .disableAndroidApiLevelCheck()
+                .build(),
+            DexEncodedMethod.syntheticBuilder()
+                .setMethod(writeJsonString)
+                .setAccessFlags(
+                    MethodAccessFlags.fromSharedAccessFlags(
+                        Constants.ACC_PUBLIC | Constants.ACC_SYNTHETIC, false))
+                .setCode(ReflectiveOperationJsonLogger_writeJsonString(factory, writeJsonString))
                 .disableAndroidApiLevelCheck()
                 .build()));
   }
@@ -5063,10 +5121,28 @@ public final class AssistantRuntimeMethods {
     CfLabel label11 = new CfLabel();
     CfLabel label12 = new CfLabel();
     CfLabel label13 = new CfLabel();
+    CfLabel label14 = new CfLabel();
+    CfLabel label15 = new CfLabel();
+    CfLabel label16 = new CfLabel();
+    CfLabel label17 = new CfLabel();
+    CfLabel label18 = new CfLabel();
+    CfLabel label19 = new CfLabel();
+    CfLabel label20 = new CfLabel();
+    CfLabel label21 = new CfLabel();
+    CfLabel label22 = new CfLabel();
+    CfLabel label23 = new CfLabel();
+    CfLabel label24 = new CfLabel();
+    CfLabel label25 = new CfLabel();
+    CfLabel label26 = new CfLabel();
+    CfLabel label27 = new CfLabel();
+    CfLabel label28 = new CfLabel();
+    CfLabel label29 = new CfLabel();
+    CfLabel label30 = new CfLabel();
+    CfLabel label31 = new CfLabel();
     return new CfCode(
         method.holder,
         4,
-        4,
+        6,
         ImmutableList.of(
             label0,
             new CfLoad(ValueType.OBJECT, 0),
@@ -5078,6 +5154,23 @@ public final class AssistantRuntimeMethods {
                     factory.createString("<init>")),
                 false),
             label1,
+            new CfLoad(ValueType.OBJECT, 0),
+            new CfNew(factory.createType("Ljava/util/HashSet;")),
+            new CfStackInstruction(CfStackInstruction.Opcode.Dup),
+            new CfInvoke(
+                183,
+                factory.createMethod(
+                    factory.createType("Ljava/util/HashSet;"),
+                    factory.createProto(factory.voidType),
+                    factory.createString("<init>")),
+                false),
+            new CfInstanceFieldWrite(
+                factory.createField(
+                    factory.createType(
+                        "Lcom/android/tools/r8/assistant/runtime/ReflectiveOperationJsonLogger;"),
+                    factory.createType("Ljava/util/Set;"),
+                    factory.createString("seenEvents"))),
+            label2,
             new CfConstString(factory.createString("com.android.tools.r8.reflectiveJsonLogger")),
             new CfInvoke(
                 184,
@@ -5087,23 +5180,10 @@ public final class AssistantRuntimeMethods {
                     factory.createString("getProperty")),
                 false),
             new CfStore(ValueType.OBJECT, 1),
-            label2,
-            new CfLoad(ValueType.OBJECT, 1),
-            new CfIf(IfType.NE, ValueType.OBJECT, label7),
             label3,
-            new CfNew(factory.stringBuilderType),
-            new CfStackInstruction(CfStackInstruction.Opcode.Dup),
-            new CfConstString(factory.createString("/sdcard/Android/media/")),
-            new CfInvoke(
-                183,
-                factory.createMethod(
-                    factory.stringBuilderType,
-                    factory.createProto(factory.voidType, factory.stringType),
-                    factory.createString("<init>")),
-                false),
-            new CfStore(ValueType.OBJECT, 3),
+            new CfLoad(ValueType.OBJECT, 1),
+            new CfIf(IfType.NE, ValueType.OBJECT, label20),
             label4,
-            new CfLoad(ValueType.OBJECT, 3),
             new CfLoad(ValueType.OBJECT, 0),
             new CfInvoke(
                 182,
@@ -5113,6 +5193,107 @@ public final class AssistantRuntimeMethods {
                     factory.createProto(factory.stringType),
                     factory.createString("getApplicationId")),
                 false),
+            new CfStore(ValueType.OBJECT, 3),
+            label5,
+            new CfLoad(ValueType.OBJECT, 3),
+            new CfIf(IfType.NE, ValueType.OBJECT, label7),
+            label6,
+            new CfConstString(factory.createString("unknown")),
+            new CfStore(ValueType.OBJECT, 3),
+            label7,
+            new CfFrame(
+                new Int2ObjectAVLTreeMap<>(
+                    new int[] {0, 1, 2, 3},
+                    new FrameType[] {
+                      FrameType.initializedNonNullReference(
+                          factory.createType(
+                              "Lcom/android/tools/r8/assistant/runtime/ReflectiveOperationJsonLogger;")),
+                      FrameType.initializedNonNullReference(factory.stringType),
+                      FrameType.oneWord(),
+                      FrameType.initializedNonNullReference(factory.stringType)
+                    })),
+            new CfLoad(ValueType.OBJECT, 0),
+            new CfInvoke(
+                182,
+                factory.createMethod(
+                    factory.createType(
+                        "Lcom/android/tools/r8/assistant/runtime/ReflectiveOperationJsonLogger;"),
+                    factory.createProto(factory.intType),
+                    factory.createString("getSdkInt")),
+                false),
+            new CfStore(ValueType.INT, 4),
+            label8,
+            new CfLoad(ValueType.INT, 4),
+            new CfIf(IfType.LE, ValueType.INT, label11),
+            new CfLoad(ValueType.INT, 4),
+            new CfConstNumber(16, ValueType.INT),
+            new CfIfCmp(IfType.GE, ValueType.INT, label11),
+            label9,
+            new CfLoad(ValueType.OBJECT, 0),
+            new CfConstNull(),
+            new CfInstanceFieldWrite(
+                factory.createField(
+                    factory.createType(
+                        "Lcom/android/tools/r8/assistant/runtime/ReflectiveOperationJsonLogger;"),
+                    factory.createType("Ljava/io/FileWriter;"),
+                    factory.createString("output"))),
+            label10,
+            new CfReturnVoid(),
+            label11,
+            new CfFrame(
+                new Int2ObjectAVLTreeMap<>(
+                    new int[] {0, 1, 2, 3, 4},
+                    new FrameType[] {
+                      FrameType.initializedNonNullReference(
+                          factory.createType(
+                              "Lcom/android/tools/r8/assistant/runtime/ReflectiveOperationJsonLogger;")),
+                      FrameType.initializedNonNullReference(factory.stringType),
+                      FrameType.oneWord(),
+                      FrameType.initializedNonNullReference(factory.stringType),
+                      FrameType.intType()
+                    })),
+            new CfNew(factory.stringBuilderType),
+            new CfStackInstruction(CfStackInstruction.Opcode.Dup),
+            new CfInvoke(
+                183,
+                factory.createMethod(
+                    factory.stringBuilderType,
+                    factory.createProto(factory.voidType),
+                    factory.createString("<init>")),
+                false),
+            new CfStore(ValueType.OBJECT, 5),
+            label12,
+            new CfLoad(ValueType.INT, 4),
+            new CfConstNumber(29, ValueType.INT),
+            new CfIfCmp(IfType.GE, ValueType.INT, label13),
+            new CfLoad(ValueType.INT, 4),
+            new CfIf(IfType.NE, ValueType.INT, label17),
+            label13,
+            new CfFrame(
+                new Int2ObjectAVLTreeMap<>(
+                    new int[] {0, 1, 2, 3, 4, 5},
+                    new FrameType[] {
+                      FrameType.initializedNonNullReference(
+                          factory.createType(
+                              "Lcom/android/tools/r8/assistant/runtime/ReflectiveOperationJsonLogger;")),
+                      FrameType.initializedNonNullReference(factory.stringType),
+                      FrameType.oneWord(),
+                      FrameType.initializedNonNullReference(factory.stringType),
+                      FrameType.intType(),
+                      FrameType.initializedNonNullReference(factory.stringBuilderType)
+                    })),
+            new CfLoad(ValueType.OBJECT, 5),
+            new CfConstString(factory.createString("/sdcard/Android/media/")),
+            label14,
+            new CfInvoke(
+                182,
+                factory.createMethod(
+                    factory.stringBuilderType,
+                    factory.createProto(factory.stringBuilderType, factory.stringType),
+                    factory.createString("append")),
+                false),
+            new CfLoad(ValueType.OBJECT, 3),
+            label15,
             new CfInvoke(
                 182,
                 factory.createMethod(
@@ -5121,6 +5302,7 @@ public final class AssistantRuntimeMethods {
                     factory.createString("append")),
                 false),
             new CfConstString(factory.createString("/additional_test_output")),
+            label16,
             new CfInvoke(
                 182,
                 factory.createMethod(
@@ -5129,10 +5311,64 @@ public final class AssistantRuntimeMethods {
                     factory.createString("append")),
                 false),
             new CfStackInstruction(CfStackInstruction.Opcode.Pop),
-            label5,
+            new CfGoto(label18),
+            label17,
+            new CfFrame(
+                new Int2ObjectAVLTreeMap<>(
+                    new int[] {0, 1, 2, 3, 4, 5},
+                    new FrameType[] {
+                      FrameType.initializedNonNullReference(
+                          factory.createType(
+                              "Lcom/android/tools/r8/assistant/runtime/ReflectiveOperationJsonLogger;")),
+                      FrameType.initializedNonNullReference(factory.stringType),
+                      FrameType.oneWord(),
+                      FrameType.initializedNonNullReference(factory.stringType),
+                      FrameType.intType(),
+                      FrameType.initializedNonNullReference(factory.stringBuilderType)
+                    })),
+            new CfLoad(ValueType.OBJECT, 5),
+            new CfConstString(factory.createString("/sdcard/Android/data/")),
+            new CfInvoke(
+                182,
+                factory.createMethod(
+                    factory.stringBuilderType,
+                    factory.createProto(factory.stringBuilderType, factory.stringType),
+                    factory.createString("append")),
+                false),
+            new CfLoad(ValueType.OBJECT, 3),
+            new CfInvoke(
+                182,
+                factory.createMethod(
+                    factory.stringBuilderType,
+                    factory.createProto(factory.stringBuilderType, factory.stringType),
+                    factory.createString("append")),
+                false),
+            new CfConstString(factory.createString("/files/test_data")),
+            new CfInvoke(
+                182,
+                factory.createMethod(
+                    factory.stringBuilderType,
+                    factory.createProto(factory.stringBuilderType, factory.stringType),
+                    factory.createString("append")),
+                false),
+            new CfStackInstruction(CfStackInstruction.Opcode.Pop),
+            label18,
+            new CfFrame(
+                new Int2ObjectAVLTreeMap<>(
+                    new int[] {0, 1, 2, 3, 4, 5},
+                    new FrameType[] {
+                      FrameType.initializedNonNullReference(
+                          factory.createType(
+                              "Lcom/android/tools/r8/assistant/runtime/ReflectiveOperationJsonLogger;")),
+                      FrameType.initializedNonNullReference(factory.stringType),
+                      FrameType.oneWord(),
+                      FrameType.initializedNonNullReference(factory.stringType),
+                      FrameType.intType(),
+                      FrameType.initializedNonNullReference(factory.stringBuilderType)
+                    })),
             new CfNew(factory.createType("Ljava/io/File;")),
             new CfStackInstruction(CfStackInstruction.Opcode.Dup),
-            new CfLoad(ValueType.OBJECT, 3),
+            new CfLoad(ValueType.OBJECT, 5),
             new CfInvoke(
                 182,
                 factory.createMethod(
@@ -5149,9 +5385,9 @@ public final class AssistantRuntimeMethods {
                     factory.createString("<init>")),
                 false),
             new CfStore(ValueType.OBJECT, 2),
-            label6,
-            new CfGoto(label8),
-            label7,
+            label19,
+            new CfGoto(label21),
+            label20,
             new CfFrame(
                 new Int2ObjectAVLTreeMap<>(
                     new int[] {0, 1},
@@ -5172,7 +5408,7 @@ public final class AssistantRuntimeMethods {
                     factory.createString("<init>")),
                 false),
             new CfStore(ValueType.OBJECT, 2),
-            label8,
+            label21,
             new CfFrame(
                 new Int2ObjectAVLTreeMap<>(
                     new int[] {0, 1, 2},
@@ -5181,6 +5417,66 @@ public final class AssistantRuntimeMethods {
                           factory.createType(
                               "Lcom/android/tools/r8/assistant/runtime/ReflectiveOperationJsonLogger;")),
                       FrameType.initializedNonNullReference(factory.stringType),
+                      FrameType.initializedNonNullReference(factory.createType("Ljava/io/File;"))
+                    })),
+            new CfLoad(ValueType.OBJECT, 2),
+            new CfInvoke(
+                182,
+                factory.createMethod(
+                    factory.createType("Ljava/io/File;"),
+                    factory.createProto(factory.createType("Ljava/io/File;")),
+                    factory.createString("getParentFile")),
+                false),
+            new CfStore(ValueType.OBJECT, 3),
+            label22,
+            new CfLoad(ValueType.OBJECT, 3),
+            new CfIf(IfType.EQ, ValueType.OBJECT, label26),
+            new CfLoad(ValueType.OBJECT, 3),
+            new CfInvoke(
+                182,
+                factory.createMethod(
+                    factory.createType("Ljava/io/File;"),
+                    factory.createProto(factory.booleanType),
+                    factory.createString("exists")),
+                false),
+            new CfIf(IfType.NE, ValueType.INT, label26),
+            label23,
+            new CfLoad(ValueType.OBJECT, 3),
+            new CfInvoke(
+                182,
+                factory.createMethod(
+                    factory.createType("Ljava/io/File;"),
+                    factory.createProto(factory.booleanType),
+                    factory.createString("mkdirs")),
+                false),
+            new CfStackInstruction(CfStackInstruction.Opcode.Pop),
+            label24,
+            new CfGoto(label26),
+            label25,
+            new CfFrame(
+                new Int2ObjectAVLTreeMap<>(
+                    new int[] {0, 1, 2, 3},
+                    new FrameType[] {
+                      FrameType.initializedNonNullReference(
+                          factory.createType(
+                              "Lcom/android/tools/r8/assistant/runtime/ReflectiveOperationJsonLogger;")),
+                      FrameType.initializedNonNullReference(factory.stringType),
+                      FrameType.initializedNonNullReference(factory.createType("Ljava/io/File;")),
+                      FrameType.initializedNonNullReference(factory.createType("Ljava/io/File;"))
+                    }),
+                new ArrayDeque<>(
+                    Arrays.asList(FrameType.initializedNonNullReference(factory.throwableType)))),
+            new CfStore(ValueType.OBJECT, 4),
+            label26,
+            new CfFrame(
+                new Int2ObjectAVLTreeMap<>(
+                    new int[] {0, 1, 2, 3},
+                    new FrameType[] {
+                      FrameType.initializedNonNullReference(
+                          factory.createType(
+                              "Lcom/android/tools/r8/assistant/runtime/ReflectiveOperationJsonLogger;")),
+                      FrameType.initializedNonNullReference(factory.stringType),
+                      FrameType.initializedNonNullReference(factory.createType("Ljava/io/File;")),
                       FrameType.initializedNonNullReference(factory.createType("Ljava/io/File;"))
                     })),
             new CfLoad(ValueType.OBJECT, 0),
@@ -5200,9 +5496,9 @@ public final class AssistantRuntimeMethods {
                         "Lcom/android/tools/r8/assistant/runtime/ReflectiveOperationJsonLogger;"),
                     factory.createType("Ljava/io/FileWriter;"),
                     factory.createString("output"))),
-            label9,
-            new CfGoto(label12),
-            label10,
+            label27,
+            new CfGoto(label30),
+            label28,
             new CfFrame(
                 new Int2ObjectAVLTreeMap<>(
                     new int[] {0, 1, 2},
@@ -5218,7 +5514,7 @@ public final class AssistantRuntimeMethods {
                         FrameType.initializedNonNullReference(
                             factory.createType("Ljava/io/IOException;"))))),
             new CfStore(ValueType.OBJECT, 3),
-            label11,
+            label29,
             new CfNew(factory.createType("Ljava/io/UncheckedIOException;")),
             new CfStackInstruction(CfStackInstruction.Opcode.Dup),
             new CfLoad(ValueType.OBJECT, 3),
@@ -5231,7 +5527,7 @@ public final class AssistantRuntimeMethods {
                     factory.createString("<init>")),
                 false),
             new CfThrow(),
-            label12,
+            label30,
             new CfFrame(
                 new Int2ObjectAVLTreeMap<>(
                     new int[] {0, 1, 2},
@@ -5243,13 +5539,18 @@ public final class AssistantRuntimeMethods {
                       FrameType.initializedNonNullReference(factory.createType("Ljava/io/File;"))
                     })),
             new CfReturnVoid(),
-            label13),
+            label31),
         ImmutableList.of(
             new CfTryCatch(
-                label8,
-                label9,
+                label23,
+                label24,
+                ImmutableList.of(factory.throwableType),
+                ImmutableList.of(label25)),
+            new CfTryCatch(
+                label21,
+                label27,
                 ImmutableList.of(factory.createType("Ljava/io/IOException;")),
-                ImmutableList.of(label10))),
+                ImmutableList.of(label28))),
         ImmutableList.of());
   }
 
@@ -5307,10 +5608,31 @@ public final class AssistantRuntimeMethods {
     CfLabel label11 = new CfLabel();
     CfLabel label12 = new CfLabel();
     CfLabel label13 = new CfLabel();
+    CfLabel label14 = new CfLabel();
+    CfLabel label15 = new CfLabel();
+    CfLabel label16 = new CfLabel();
+    CfLabel label17 = new CfLabel();
+    CfLabel label18 = new CfLabel();
+    CfLabel label19 = new CfLabel();
+    CfLabel label20 = new CfLabel();
+    CfLabel label21 = new CfLabel();
+    CfLabel label22 = new CfLabel();
+    CfLabel label23 = new CfLabel();
+    CfLabel label24 = new CfLabel();
+    CfLabel label25 = new CfLabel();
+    CfLabel label26 = new CfLabel();
+    CfLabel label27 = new CfLabel();
+    CfLabel label28 = new CfLabel();
+    CfLabel label29 = new CfLabel();
+    CfLabel label30 = new CfLabel();
+    CfLabel label31 = new CfLabel();
+    CfLabel label32 = new CfLabel();
+    CfLabel label33 = new CfLabel();
+    CfLabel label34 = new CfLabel();
     return new CfCode(
         method.holder,
         3,
-        6,
+        5,
         ImmutableList.of(
             label0,
             new CfConstString(factory.createString("android.app.ActivityThread")),
@@ -5323,6 +5645,96 @@ public final class AssistantRuntimeMethods {
                 false),
             new CfStore(ValueType.OBJECT, 1),
             label1,
+            new CfConstNull(),
+            new CfStore(ValueType.OBJECT, 2),
+            label2,
+            new CfLoad(ValueType.OBJECT, 1),
+            new CfConstString(factory.createString("currentPackageName")),
+            new CfConstNumber(0, ValueType.INT),
+            new CfNewArray(factory.createType("[Ljava/lang/Class;")),
+            label3,
+            new CfInvoke(
+                182,
+                factory.createMethod(
+                    factory.classType,
+                    factory.createProto(
+                        factory.createType("Ljava/lang/reflect/Method;"),
+                        factory.stringType,
+                        factory.createType("[Ljava/lang/Class;")),
+                    factory.createString("getDeclaredMethod")),
+                false),
+            new CfStore(ValueType.OBJECT, 3),
+            label4,
+            new CfLoad(ValueType.OBJECT, 3),
+            new CfConstNumber(1, ValueType.INT),
+            new CfInvoke(
+                182,
+                factory.createMethod(
+                    factory.createType("Ljava/lang/reflect/Method;"),
+                    factory.createProto(factory.voidType, factory.booleanType),
+                    factory.createString("setAccessible")),
+                false),
+            label5,
+            new CfLoad(ValueType.OBJECT, 3),
+            new CfConstNull(),
+            new CfConstNumber(0, ValueType.INT),
+            new CfNewArray(factory.createType("[Ljava/lang/Object;")),
+            new CfInvoke(
+                182,
+                factory.createMethod(
+                    factory.createType("Ljava/lang/reflect/Method;"),
+                    factory.createProto(
+                        factory.objectType,
+                        factory.objectType,
+                        factory.createType("[Ljava/lang/Object;")),
+                    factory.createString("invoke")),
+                false),
+            new CfCheckCast(factory.stringType),
+            new CfStore(ValueType.OBJECT, 2),
+            label6,
+            new CfGoto(label8),
+            label7,
+            new CfFrame(
+                new Int2ObjectAVLTreeMap<>(
+                    new int[] {0, 1, 2},
+                    new FrameType[] {
+                      FrameType.initializedNonNullReference(
+                          factory.createType(
+                              "Lcom/android/tools/r8/assistant/runtime/ReflectiveOperationJsonLogger;")),
+                      FrameType.initializedNonNullReference(factory.classType),
+                      FrameType.initializedNonNullReference(factory.stringType)
+                    }),
+                new ArrayDeque<>(
+                    Arrays.asList(FrameType.initializedNonNullReference(factory.throwableType)))),
+            new CfStore(ValueType.OBJECT, 3),
+            label8,
+            new CfFrame(
+                new Int2ObjectAVLTreeMap<>(
+                    new int[] {0, 1, 2},
+                    new FrameType[] {
+                      FrameType.initializedNonNullReference(
+                          factory.createType(
+                              "Lcom/android/tools/r8/assistant/runtime/ReflectiveOperationJsonLogger;")),
+                      FrameType.initializedNonNullReference(factory.classType),
+                      FrameType.initializedNonNullReference(factory.stringType)
+                    })),
+            new CfLoad(ValueType.OBJECT, 2),
+            new CfIf(IfType.EQ, ValueType.OBJECT, label11),
+            label9,
+            new CfLoad(ValueType.OBJECT, 2),
+            label10,
+            new CfReturn(ValueType.OBJECT),
+            label11,
+            new CfFrame(
+                new Int2ObjectAVLTreeMap<>(
+                    new int[] {0, 1, 2},
+                    new FrameType[] {
+                      FrameType.initializedNonNullReference(
+                          factory.createType(
+                              "Lcom/android/tools/r8/assistant/runtime/ReflectiveOperationJsonLogger;")),
+                      FrameType.initializedNonNullReference(factory.classType),
+                      FrameType.initializedNonNullReference(factory.stringType)
+                    })),
             new CfLoad(ValueType.OBJECT, 1),
             new CfConstString(factory.createString("currentApplication")),
             new CfConstNumber(0, ValueType.INT),
@@ -5337,9 +5749,9 @@ public final class AssistantRuntimeMethods {
                         factory.createType("[Ljava/lang/Class;")),
                     factory.createString("getDeclaredMethod")),
                 false),
-            new CfStore(ValueType.OBJECT, 2),
-            label2,
-            new CfLoad(ValueType.OBJECT, 2),
+            new CfStore(ValueType.OBJECT, 3),
+            label12,
+            new CfLoad(ValueType.OBJECT, 3),
             new CfConstNumber(1, ValueType.INT),
             new CfInvoke(
                 182,
@@ -5348,8 +5760,8 @@ public final class AssistantRuntimeMethods {
                     factory.createProto(factory.voidType, factory.booleanType),
                     factory.createString("setAccessible")),
                 false),
-            label3,
-            new CfLoad(ValueType.OBJECT, 2),
+            label13,
+            new CfLoad(ValueType.OBJECT, 3),
             new CfConstNull(),
             new CfConstNumber(0, ValueType.INT),
             new CfNewArray(factory.createType("[Ljava/lang/Object;")),
@@ -5363,28 +5775,13 @@ public final class AssistantRuntimeMethods {
                         factory.createType("[Ljava/lang/Object;")),
                     factory.createString("invoke")),
                 false),
-            new CfStore(ValueType.OBJECT, 3),
-            label4,
-            new CfLoad(ValueType.OBJECT, 3),
-            new CfIf(IfType.NE, ValueType.OBJECT, label7),
-            label5,
-            new CfConstNull(),
-            label6,
-            new CfReturn(ValueType.OBJECT),
-            label7,
-            new CfFrame(
-                new Int2ObjectAVLTreeMap<>(
-                    new int[] {0, 1, 2, 3},
-                    new FrameType[] {
-                      FrameType.initializedNonNullReference(
-                          factory.createType(
-                              "Lcom/android/tools/r8/assistant/runtime/ReflectiveOperationJsonLogger;")),
-                      FrameType.initializedNonNullReference(factory.classType),
-                      FrameType.initializedNonNullReference(
-                          factory.createType("Ljava/lang/reflect/Method;")),
-                      FrameType.initializedNonNullReference(factory.objectType)
-                    })),
-            new CfLoad(ValueType.OBJECT, 3),
+            new CfStore(ValueType.OBJECT, 4),
+            label14,
+            new CfLoad(ValueType.OBJECT, 4),
+            new CfIf(IfType.EQ, ValueType.OBJECT, label19),
+            label15,
+            new CfLoad(ValueType.OBJECT, 4),
+            label16,
             new CfInvoke(
                 182,
                 factory.createMethod(
@@ -5395,6 +5792,7 @@ public final class AssistantRuntimeMethods {
             new CfConstString(factory.createString("getPackageName")),
             new CfConstNumber(0, ValueType.INT),
             new CfNewArray(factory.createType("[Ljava/lang/Class;")),
+            label17,
             new CfInvoke(
                 182,
                 factory.createMethod(
@@ -5405,10 +5803,105 @@ public final class AssistantRuntimeMethods {
                         factory.createType("[Ljava/lang/Class;")),
                     factory.createString("getMethod")),
                 false),
-            new CfStore(ValueType.OBJECT, 4),
-            label8,
             new CfLoad(ValueType.OBJECT, 4),
+            new CfConstNumber(0, ValueType.INT),
+            new CfNewArray(factory.createType("[Ljava/lang/Object;")),
+            label18,
+            new CfInvoke(
+                182,
+                factory.createMethod(
+                    factory.createType("Ljava/lang/reflect/Method;"),
+                    factory.createProto(
+                        factory.objectType,
+                        factory.objectType,
+                        factory.createType("[Ljava/lang/Object;")),
+                    factory.createString("invoke")),
+                false),
+            new CfCheckCast(factory.stringType),
+            new CfStore(ValueType.OBJECT, 2),
+            label19,
+            new CfFrame(
+                new Int2ObjectAVLTreeMap<>(
+                    new int[] {0, 1, 2},
+                    new FrameType[] {
+                      FrameType.initializedNonNullReference(
+                          factory.createType(
+                              "Lcom/android/tools/r8/assistant/runtime/ReflectiveOperationJsonLogger;")),
+                      FrameType.initializedNonNullReference(factory.classType),
+                      FrameType.initializedNonNullReference(factory.stringType)
+                    })),
+            new CfGoto(label21),
+            label20,
+            new CfFrame(
+                new Int2ObjectAVLTreeMap<>(
+                    new int[] {0, 1, 2},
+                    new FrameType[] {
+                      FrameType.initializedNonNullReference(
+                          factory.createType(
+                              "Lcom/android/tools/r8/assistant/runtime/ReflectiveOperationJsonLogger;")),
+                      FrameType.initializedNonNullReference(factory.classType),
+                      FrameType.initializedNonNullReference(factory.stringType)
+                    }),
+                new ArrayDeque<>(
+                    Arrays.asList(FrameType.initializedNonNullReference(factory.throwableType)))),
+            new CfStore(ValueType.OBJECT, 3),
+            label21,
+            new CfFrame(
+                new Int2ObjectAVLTreeMap<>(
+                    new int[] {0, 1, 2},
+                    new FrameType[] {
+                      FrameType.initializedNonNullReference(
+                          factory.createType(
+                              "Lcom/android/tools/r8/assistant/runtime/ReflectiveOperationJsonLogger;")),
+                      FrameType.initializedNonNullReference(factory.classType),
+                      FrameType.initializedNonNullReference(factory.stringType)
+                    })),
+            new CfLoad(ValueType.OBJECT, 2),
+            new CfIf(IfType.EQ, ValueType.OBJECT, label24),
+            label22,
+            new CfLoad(ValueType.OBJECT, 2),
+            label23,
+            new CfReturn(ValueType.OBJECT),
+            label24,
+            new CfFrame(
+                new Int2ObjectAVLTreeMap<>(
+                    new int[] {0, 1, 2},
+                    new FrameType[] {
+                      FrameType.initializedNonNullReference(
+                          factory.createType(
+                              "Lcom/android/tools/r8/assistant/runtime/ReflectiveOperationJsonLogger;")),
+                      FrameType.initializedNonNullReference(factory.classType),
+                      FrameType.initializedNonNullReference(factory.stringType)
+                    })),
+            new CfLoad(ValueType.OBJECT, 1),
+            new CfConstString(factory.createString("currentProcessName")),
+            new CfConstNumber(0, ValueType.INT),
+            new CfNewArray(factory.createType("[Ljava/lang/Class;")),
+            label25,
+            new CfInvoke(
+                182,
+                factory.createMethod(
+                    factory.classType,
+                    factory.createProto(
+                        factory.createType("Ljava/lang/reflect/Method;"),
+                        factory.stringType,
+                        factory.createType("[Ljava/lang/Class;")),
+                    factory.createString("getDeclaredMethod")),
+                false),
+            new CfStore(ValueType.OBJECT, 3),
+            label26,
             new CfLoad(ValueType.OBJECT, 3),
+            new CfConstNumber(1, ValueType.INT),
+            new CfInvoke(
+                182,
+                factory.createMethod(
+                    factory.createType("Ljava/lang/reflect/Method;"),
+                    factory.createProto(factory.voidType, factory.booleanType),
+                    factory.createString("setAccessible")),
+                false),
+            label27,
+            new CfLoad(ValueType.OBJECT, 3),
+            new CfConstNull(),
             new CfConstNumber(0, ValueType.INT),
             new CfNewArray(factory.createType("[Ljava/lang/Object;")),
             new CfInvoke(
@@ -5421,13 +5914,39 @@ public final class AssistantRuntimeMethods {
                         factory.createType("[Ljava/lang/Object;")),
                     factory.createString("invoke")),
                 false),
-            new CfStore(ValueType.OBJECT, 5),
-            label9,
-            new CfLoad(ValueType.OBJECT, 5),
             new CfCheckCast(factory.stringType),
-            label10,
+            new CfStore(ValueType.OBJECT, 2),
+            label28,
+            new CfGoto(label30),
+            label29,
+            new CfFrame(
+                new Int2ObjectAVLTreeMap<>(
+                    new int[] {0, 1, 2},
+                    new FrameType[] {
+                      FrameType.initializedNonNullReference(
+                          factory.createType(
+                              "Lcom/android/tools/r8/assistant/runtime/ReflectiveOperationJsonLogger;")),
+                      FrameType.initializedNonNullReference(factory.classType),
+                      FrameType.initializedNonNullReference(factory.stringType)
+                    }),
+                new ArrayDeque<>(
+                    Arrays.asList(FrameType.initializedNonNullReference(factory.throwableType)))),
+            new CfStore(ValueType.OBJECT, 3),
+            label30,
+            new CfFrame(
+                new Int2ObjectAVLTreeMap<>(
+                    new int[] {0, 1, 2},
+                    new FrameType[] {
+                      FrameType.initializedNonNullReference(
+                          factory.createType(
+                              "Lcom/android/tools/r8/assistant/runtime/ReflectiveOperationJsonLogger;")),
+                      FrameType.initializedNonNullReference(factory.classType),
+                      FrameType.initializedNonNullReference(factory.stringType)
+                    })),
+            new CfLoad(ValueType.OBJECT, 2),
+            label31,
             new CfReturn(ValueType.OBJECT),
-            label11,
+            label32,
             new CfFrame(
                 new Int2ObjectAVLTreeMap<>(
                     new int[] {0},
@@ -5437,25 +5956,106 @@ public final class AssistantRuntimeMethods {
                               "Lcom/android/tools/r8/assistant/runtime/ReflectiveOperationJsonLogger;"))
                     }),
                 new ArrayDeque<>(
-                    Arrays.asList(
-                        FrameType.initializedNonNullReference(
-                            factory.createType("Ljava/lang/Exception;"))))),
+                    Arrays.asList(FrameType.initializedNonNullReference(factory.throwableType)))),
             new CfStore(ValueType.OBJECT, 1),
-            label12,
+            label33,
             new CfConstNull(),
             new CfReturn(ValueType.OBJECT),
-            label13),
+            label34),
         ImmutableList.of(
             new CfTryCatch(
-                label0,
-                label6,
-                ImmutableList.of(factory.createType("Ljava/lang/Exception;")),
-                ImmutableList.of(label11)),
+                label2, label6, ImmutableList.of(factory.throwableType), ImmutableList.of(label7)),
             new CfTryCatch(
-                label7,
+                label11,
+                label19,
+                ImmutableList.of(factory.throwableType),
+                ImmutableList.of(label20)),
+            new CfTryCatch(
+                label24,
+                label28,
+                ImmutableList.of(factory.throwableType),
+                ImmutableList.of(label29)),
+            new CfTryCatch(
+                label0,
                 label10,
-                ImmutableList.of(factory.createType("Ljava/lang/Exception;")),
-                ImmutableList.of(label11))),
+                ImmutableList.of(factory.throwableType),
+                ImmutableList.of(label32)),
+            new CfTryCatch(
+                label11,
+                label23,
+                ImmutableList.of(factory.throwableType),
+                ImmutableList.of(label32)),
+            new CfTryCatch(
+                label24,
+                label31,
+                ImmutableList.of(factory.throwableType),
+                ImmutableList.of(label32))),
+        ImmutableList.of());
+  }
+
+  public static CfCode ReflectiveOperationJsonLogger_getSdkInt(
+      DexItemFactory factory, DexMethod method) {
+    CfLabel label0 = new CfLabel();
+    CfLabel label1 = new CfLabel();
+    CfLabel label2 = new CfLabel();
+    CfLabel label3 = new CfLabel();
+    CfLabel label4 = new CfLabel();
+    CfLabel label5 = new CfLabel();
+    return new CfCode(
+        method.holder,
+        2,
+        2,
+        ImmutableList.of(
+            label0,
+            new CfConstString(factory.createString("android.os.Build$VERSION")),
+            new CfInvoke(
+                184,
+                factory.createMethod(
+                    factory.classType,
+                    factory.createProto(factory.classType, factory.stringType),
+                    factory.createString("forName")),
+                false),
+            new CfStore(ValueType.OBJECT, 1),
+            label1,
+            new CfLoad(ValueType.OBJECT, 1),
+            new CfConstString(factory.createString("SDK_INT")),
+            new CfInvoke(
+                182,
+                factory.createMethod(
+                    factory.classType,
+                    factory.createProto(
+                        factory.createType("Ljava/lang/reflect/Field;"), factory.stringType),
+                    factory.createString("getField")),
+                false),
+            new CfConstNull(),
+            new CfInvoke(
+                182,
+                factory.createMethod(
+                    factory.createType("Ljava/lang/reflect/Field;"),
+                    factory.createProto(factory.intType, factory.objectType),
+                    factory.createString("getInt")),
+                false),
+            label2,
+            new CfReturn(ValueType.INT),
+            label3,
+            new CfFrame(
+                new Int2ObjectAVLTreeMap<>(
+                    new int[] {0},
+                    new FrameType[] {
+                      FrameType.initializedNonNullReference(
+                          factory.createType(
+                              "Lcom/android/tools/r8/assistant/runtime/ReflectiveOperationJsonLogger;"))
+                    }),
+                new ArrayDeque<>(
+                    Arrays.asList(FrameType.initializedNonNullReference(factory.throwableType)))),
+            new CfStore(ValueType.OBJECT, 1),
+            label4,
+            new CfConstNumber(0, ValueType.INT),
+            new CfReturn(ValueType.INT),
+            label5),
+        ImmutableList.of(
+            new CfTryCatch(
+                label0, label2, ImmutableList.of(factory.throwableType), ImmutableList.of(label3))),
         ImmutableList.of());
   }
 
@@ -5832,20 +6432,59 @@ public final class AssistantRuntimeMethods {
     CfLabel label7 = new CfLabel();
     CfLabel label8 = new CfLabel();
     CfLabel label9 = new CfLabel();
+    CfLabel label10 = new CfLabel();
+    CfLabel label11 = new CfLabel();
+    CfLabel label12 = new CfLabel();
     return new CfCode(
         method.holder,
         5,
-        7,
+        8,
         ImmutableList.of(
             label0,
             new CfLoad(ValueType.OBJECT, 4),
+            new CfIf(IfType.NE, ValueType.OBJECT, label1),
+            new CfConstNumber(0, ValueType.INT),
+            new CfGoto(label2),
+            label1,
+            new CfFrame(
+                new Int2ObjectAVLTreeMap<>(
+                    new int[] {0, 1, 2, 3, 4},
+                    new FrameType[] {
+                      FrameType.initializedNonNullReference(
+                          factory.createType(
+                              "Lcom/android/tools/r8/assistant/runtime/ReflectiveOperationJsonLogger;")),
+                      FrameType.initializedNonNullReference(factory.classType),
+                      FrameType.initializedNonNullReference(factory.classType),
+                      FrameType.initializedNonNullReference(factory.stringType),
+                      FrameType.initializedNonNullReference(
+                          factory.createType("[Ljava/lang/Class;"))
+                    })),
+            new CfLoad(ValueType.OBJECT, 4),
             new CfArrayLength(),
+            label2,
+            new CfFrame(
+                new Int2ObjectAVLTreeMap<>(
+                    new int[] {0, 1, 2, 3, 4},
+                    new FrameType[] {
+                      FrameType.initializedNonNullReference(
+                          factory.createType(
+                              "Lcom/android/tools/r8/assistant/runtime/ReflectiveOperationJsonLogger;")),
+                      FrameType.initializedNonNullReference(factory.classType),
+                      FrameType.initializedNonNullReference(factory.classType),
+                      FrameType.initializedNonNullReference(factory.stringType),
+                      FrameType.initializedNonNullReference(
+                          factory.createType("[Ljava/lang/Class;"))
+                    }),
+                new ArrayDeque<>(Arrays.asList(FrameType.intType()))),
+            new CfStore(ValueType.INT, 5),
+            label3,
+            new CfLoad(ValueType.INT, 5),
             new CfConstNumber(3, ValueType.INT),
             new CfArithmeticBinop(CfArithmeticBinop.Opcode.Add, NumericType.INT),
             new CfNewArray(factory.createType("[Ljava/lang/String;")),
-            new CfStore(ValueType.OBJECT, 5),
-            label1,
-            new CfLoad(ValueType.OBJECT, 5),
+            new CfStore(ValueType.OBJECT, 6),
+            label4,
+            new CfLoad(ValueType.OBJECT, 6),
             new CfConstNumber(0, ValueType.INT),
             new CfLoad(ValueType.OBJECT, 0),
             new CfLoad(ValueType.OBJECT, 1),
@@ -5858,8 +6497,8 @@ public final class AssistantRuntimeMethods {
                     factory.createString("printClass")),
                 false),
             new CfArrayStore(MemberType.OBJECT),
-            label2,
-            new CfLoad(ValueType.OBJECT, 5),
+            label5,
+            new CfLoad(ValueType.OBJECT, 6),
             new CfConstNumber(1, ValueType.INT),
             new CfLoad(ValueType.OBJECT, 0),
             new CfLoad(ValueType.OBJECT, 2),
@@ -5872,15 +6511,57 @@ public final class AssistantRuntimeMethods {
                     factory.createString("printClass")),
                 false),
             new CfArrayStore(MemberType.OBJECT),
-            label3,
-            new CfLoad(ValueType.OBJECT, 5),
+            label6,
+            new CfLoad(ValueType.OBJECT, 6),
             new CfConstNumber(2, ValueType.INT),
             new CfLoad(ValueType.OBJECT, 3),
             new CfArrayStore(MemberType.OBJECT),
-            label4,
+            label7,
             new CfConstNumber(0, ValueType.INT),
-            new CfStore(ValueType.INT, 6),
-            label5,
+            new CfStore(ValueType.INT, 7),
+            label8,
+            new CfFrame(
+                new Int2ObjectAVLTreeMap<>(
+                    new int[] {0, 1, 2, 3, 4, 5, 6, 7},
+                    new FrameType[] {
+                      FrameType.initializedNonNullReference(
+                          factory.createType(
+                              "Lcom/android/tools/r8/assistant/runtime/ReflectiveOperationJsonLogger;")),
+                      FrameType.initializedNonNullReference(factory.classType),
+                      FrameType.initializedNonNullReference(factory.classType),
+                      FrameType.initializedNonNullReference(factory.stringType),
+                      FrameType.initializedNonNullReference(
+                          factory.createType("[Ljava/lang/Class;")),
+                      FrameType.intType(),
+                      FrameType.initializedNonNullReference(
+                          factory.createType("[Ljava/lang/String;")),
+                      FrameType.intType()
+                    })),
+            new CfLoad(ValueType.INT, 7),
+            new CfLoad(ValueType.INT, 5),
+            new CfIfCmp(IfType.GE, ValueType.INT, label11),
+            label9,
+            new CfLoad(ValueType.OBJECT, 6),
+            new CfLoad(ValueType.INT, 7),
+            new CfConstNumber(3, ValueType.INT),
+            new CfArithmeticBinop(CfArithmeticBinop.Opcode.Add, NumericType.INT),
+            new CfLoad(ValueType.OBJECT, 0),
+            new CfLoad(ValueType.OBJECT, 4),
+            new CfLoad(ValueType.INT, 7),
+            new CfArrayLoad(MemberType.OBJECT),
+            new CfInvoke(
+                182,
+                factory.createMethod(
+                    factory.createType(
+                        "Lcom/android/tools/r8/assistant/runtime/ReflectiveOperationJsonLogger;"),
+                    factory.createProto(factory.stringType, factory.classType),
+                    factory.createString("printClass")),
+                false),
+            new CfArrayStore(MemberType.OBJECT),
+            label10,
+            new CfIinc(7, 1),
+            new CfGoto(label8),
+            label11,
             new CfFrame(
                 new Int2ObjectAVLTreeMap<>(
                     new int[] {0, 1, 2, 3, 4, 5, 6},
@@ -5893,54 +6574,13 @@ public final class AssistantRuntimeMethods {
                       FrameType.initializedNonNullReference(factory.stringType),
                       FrameType.initializedNonNullReference(
                           factory.createType("[Ljava/lang/Class;")),
-                      FrameType.initializedNonNullReference(
-                          factory.createType("[Ljava/lang/String;")),
-                      FrameType.intType()
-                    })),
-            new CfLoad(ValueType.INT, 6),
-            new CfLoad(ValueType.OBJECT, 4),
-            new CfArrayLength(),
-            new CfIfCmp(IfType.GE, ValueType.INT, label8),
-            label6,
-            new CfLoad(ValueType.OBJECT, 5),
-            new CfLoad(ValueType.INT, 6),
-            new CfConstNumber(3, ValueType.INT),
-            new CfArithmeticBinop(CfArithmeticBinop.Opcode.Add, NumericType.INT),
-            new CfLoad(ValueType.OBJECT, 0),
-            new CfLoad(ValueType.OBJECT, 4),
-            new CfLoad(ValueType.INT, 6),
-            new CfArrayLoad(MemberType.OBJECT),
-            new CfInvoke(
-                182,
-                factory.createMethod(
-                    factory.createType(
-                        "Lcom/android/tools/r8/assistant/runtime/ReflectiveOperationJsonLogger;"),
-                    factory.createProto(factory.stringType, factory.classType),
-                    factory.createString("printClass")),
-                false),
-            new CfArrayStore(MemberType.OBJECT),
-            label7,
-            new CfIinc(6, 1),
-            new CfGoto(label5),
-            label8,
-            new CfFrame(
-                new Int2ObjectAVLTreeMap<>(
-                    new int[] {0, 1, 2, 3, 4, 5},
-                    new FrameType[] {
-                      FrameType.initializedNonNullReference(
-                          factory.createType(
-                              "Lcom/android/tools/r8/assistant/runtime/ReflectiveOperationJsonLogger;")),
-                      FrameType.initializedNonNullReference(factory.classType),
-                      FrameType.initializedNonNullReference(factory.classType),
-                      FrameType.initializedNonNullReference(factory.stringType),
-                      FrameType.initializedNonNullReference(
-                          factory.createType("[Ljava/lang/Class;")),
+                      FrameType.intType(),
                       FrameType.initializedNonNullReference(
                           factory.createType("[Ljava/lang/String;"))
                     })),
-            new CfLoad(ValueType.OBJECT, 5),
+            new CfLoad(ValueType.OBJECT, 6),
             new CfReturn(ValueType.OBJECT),
-            label9),
+            label12),
         ImmutableList.of(),
         ImmutableList.of());
   }
@@ -5954,37 +6594,20 @@ public final class AssistantRuntimeMethods {
     CfLabel label4 = new CfLabel();
     CfLabel label5 = new CfLabel();
     CfLabel label6 = new CfLabel();
+    CfLabel label7 = new CfLabel();
+    CfLabel label8 = new CfLabel();
     return new CfCode(
         method.holder,
         8,
         5,
         ImmutableList.of(
             label0,
-            new CfLoad(ValueType.OBJECT, 0),
+            new CfLoad(ValueType.OBJECT, 2),
+            new CfIf(IfType.EQ, ValueType.OBJECT, label1),
             new CfLoad(ValueType.OBJECT, 3),
-            new CfInvoke(
-                182,
-                factory.createMethod(
-                    factory.createType(
-                        "Lcom/android/tools/r8/assistant/runtime/ReflectiveOperationJsonLogger;"),
-                    factory.createProto(factory.booleanType, factory.classType),
-                    factory.createString("isIgnoredClass")),
-                false),
-            new CfIf(IfType.NE, ValueType.INT, label1),
-            new CfLoad(ValueType.OBJECT, 0),
-            new CfLoad(ValueType.OBJECT, 1),
-            new CfInvoke(
-                182,
-                factory.createMethod(
-                    factory.createType(
-                        "Lcom/android/tools/r8/assistant/runtime/ReflectiveOperationJsonLogger;"),
-                    factory.createProto(
-                        factory.booleanType,
-                        factory.createType(
-                            "Lcom/android/tools/r8/assistant/runtime/ReflectiveOracle$Stack;")),
-                    factory.createString("isIgnoredCaller")),
-                false),
-            new CfIf(IfType.EQ, ValueType.INT, label2),
+            new CfIf(IfType.EQ, ValueType.OBJECT, label1),
+            new CfLoad(ValueType.OBJECT, 4),
+            new CfIf(IfType.NE, ValueType.OBJECT, label2),
             label1,
             new CfFrame(
                 new Int2ObjectAVLTreeMap<>(
@@ -6002,6 +6625,62 @@ public final class AssistantRuntimeMethods {
                     })),
             new CfReturnVoid(),
             label2,
+            new CfFrame(
+                new Int2ObjectAVLTreeMap<>(
+                    new int[] {0, 1, 2, 3, 4},
+                    new FrameType[] {
+                      FrameType.initializedNonNullReference(
+                          factory.createType(
+                              "Lcom/android/tools/r8/assistant/runtime/ReflectiveOperationJsonLogger;")),
+                      FrameType.initializedNonNullReference(
+                          factory.createType(
+                              "Lcom/android/tools/r8/assistant/runtime/ReflectiveOracle$Stack;")),
+                      FrameType.initializedNonNullReference(factory.classType),
+                      FrameType.initializedNonNullReference(factory.classType),
+                      FrameType.initializedNonNullReference(factory.stringType)
+                    })),
+            new CfLoad(ValueType.OBJECT, 0),
+            new CfLoad(ValueType.OBJECT, 3),
+            new CfInvoke(
+                182,
+                factory.createMethod(
+                    factory.createType(
+                        "Lcom/android/tools/r8/assistant/runtime/ReflectiveOperationJsonLogger;"),
+                    factory.createProto(factory.booleanType, factory.classType),
+                    factory.createString("isIgnoredClass")),
+                false),
+            new CfIf(IfType.NE, ValueType.INT, label3),
+            new CfLoad(ValueType.OBJECT, 0),
+            new CfLoad(ValueType.OBJECT, 1),
+            new CfInvoke(
+                182,
+                factory.createMethod(
+                    factory.createType(
+                        "Lcom/android/tools/r8/assistant/runtime/ReflectiveOperationJsonLogger;"),
+                    factory.createProto(
+                        factory.booleanType,
+                        factory.createType(
+                            "Lcom/android/tools/r8/assistant/runtime/ReflectiveOracle$Stack;")),
+                    factory.createString("isIgnoredCaller")),
+                false),
+            new CfIf(IfType.EQ, ValueType.INT, label4),
+            label3,
+            new CfFrame(
+                new Int2ObjectAVLTreeMap<>(
+                    new int[] {0, 1, 2, 3, 4},
+                    new FrameType[] {
+                      FrameType.initializedNonNullReference(
+                          factory.createType(
+                              "Lcom/android/tools/r8/assistant/runtime/ReflectiveOperationJsonLogger;")),
+                      FrameType.initializedNonNullReference(
+                          factory.createType(
+                              "Lcom/android/tools/r8/assistant/runtime/ReflectiveOracle$Stack;")),
+                      FrameType.initializedNonNullReference(factory.classType),
+                      FrameType.initializedNonNullReference(factory.classType),
+                      FrameType.initializedNonNullReference(factory.stringType)
+                    })),
+            new CfReturnVoid(),
+            label4,
             new CfFrame(
                 new Int2ObjectAVLTreeMap<>(
                     new int[] {0, 1, 2, 3, 4},
@@ -6031,7 +6710,7 @@ public final class AssistantRuntimeMethods {
             new CfConstNumber(0, ValueType.INT),
             new CfLoad(ValueType.OBJECT, 0),
             new CfLoad(ValueType.OBJECT, 2),
-            label3,
+            label5,
             new CfInvoke(
                 182,
                 factory.createMethod(
@@ -6058,7 +6737,7 @@ public final class AssistantRuntimeMethods {
             new CfConstNumber(2, ValueType.INT),
             new CfLoad(ValueType.OBJECT, 4),
             new CfArrayStore(MemberType.OBJECT),
-            label4,
+            label6,
             new CfInvoke(
                 182,
                 factory.createMethod(
@@ -6073,9 +6752,9 @@ public final class AssistantRuntimeMethods {
                         factory.createType("[Ljava/lang/String;")),
                     factory.createString("output")),
                 false),
-            label5,
+            label7,
             new CfReturnVoid(),
-            label6),
+            label8),
         ImmutableList.of(),
         ImmutableList.of());
   }
@@ -6087,12 +6766,20 @@ public final class AssistantRuntimeMethods {
     CfLabel label2 = new CfLabel();
     CfLabel label3 = new CfLabel();
     CfLabel label4 = new CfLabel();
+    CfLabel label5 = new CfLabel();
+    CfLabel label6 = new CfLabel();
+    CfLabel label7 = new CfLabel();
+    CfLabel label8 = new CfLabel();
     return new CfCode(
         method.holder,
         8,
-        4,
+        5,
         ImmutableList.of(
             label0,
+            new CfLoad(ValueType.OBJECT, 2),
+            new CfIf(IfType.EQ, ValueType.OBJECT, label1),
+            new CfLoad(ValueType.OBJECT, 3),
+            new CfIf(IfType.EQ, ValueType.OBJECT, label1),
             new CfLoad(ValueType.OBJECT, 0),
             new CfLoad(ValueType.OBJECT, 2),
             new CfInvoke(
@@ -6134,6 +6821,51 @@ public final class AssistantRuntimeMethods {
                     })),
             new CfReturnVoid(),
             label2,
+            new CfFrame(
+                new Int2ObjectAVLTreeMap<>(
+                    new int[] {0, 1, 2, 3},
+                    new FrameType[] {
+                      FrameType.initializedNonNullReference(
+                          factory.createType(
+                              "Lcom/android/tools/r8/assistant/runtime/ReflectiveOperationJsonLogger;")),
+                      FrameType.initializedNonNullReference(
+                          factory.createType(
+                              "Lcom/android/tools/r8/assistant/runtime/ReflectiveOracle$Stack;")),
+                      FrameType.initializedNonNullReference(factory.classType),
+                      FrameType.initializedNonNullReference(factory.classType)
+                    })),
+            new CfLoad(ValueType.OBJECT, 2),
+            new CfLoad(ValueType.OBJECT, 3),
+            new CfInvoke(
+                182,
+                factory.createMethod(
+                    factory.classType,
+                    factory.createProto(factory.classType, factory.classType),
+                    factory.createString("asSubclass")),
+                false),
+            new CfStackInstruction(CfStackInstruction.Opcode.Pop),
+            label3,
+            new CfGoto(label6),
+            label4,
+            new CfFrame(
+                new Int2ObjectAVLTreeMap<>(
+                    new int[] {0, 1, 2, 3},
+                    new FrameType[] {
+                      FrameType.initializedNonNullReference(
+                          factory.createType(
+                              "Lcom/android/tools/r8/assistant/runtime/ReflectiveOperationJsonLogger;")),
+                      FrameType.initializedNonNullReference(
+                          factory.createType(
+                              "Lcom/android/tools/r8/assistant/runtime/ReflectiveOracle$Stack;")),
+                      FrameType.initializedNonNullReference(factory.classType),
+                      FrameType.initializedNonNullReference(factory.classType)
+                    }),
+                new ArrayDeque<>(
+                    Arrays.asList(FrameType.initializedNonNullReference(factory.throwableType)))),
+            new CfStore(ValueType.OBJECT, 4),
+            label5,
+            new CfReturnVoid(),
+            label6,
             new CfFrame(
                 new Int2ObjectAVLTreeMap<>(
                     new int[] {0, 1, 2, 3},
@@ -6198,10 +6930,12 @@ public final class AssistantRuntimeMethods {
                         factory.createType("[Ljava/lang/String;")),
                     factory.createString("output")),
                 false),
-            label3,
+            label7,
             new CfReturnVoid(),
-            label4),
-        ImmutableList.of(),
+            label8),
+        ImmutableList.of(
+            new CfTryCatch(
+                label2, label3, ImmutableList.of(factory.throwableType), ImmutableList.of(label4))),
         ImmutableList.of());
   }
 
@@ -6212,12 +6946,23 @@ public final class AssistantRuntimeMethods {
     CfLabel label2 = new CfLabel();
     CfLabel label3 = new CfLabel();
     CfLabel label4 = new CfLabel();
+    CfLabel label5 = new CfLabel();
+    CfLabel label6 = new CfLabel();
+    CfLabel label7 = new CfLabel();
+    CfLabel label8 = new CfLabel();
+    CfLabel label9 = new CfLabel();
+    CfLabel label10 = new CfLabel();
+    CfLabel label11 = new CfLabel();
+    CfLabel label12 = new CfLabel();
+    CfLabel label13 = new CfLabel();
     return new CfCode(
         method.holder,
         8,
-        4,
+        5,
         ImmutableList.of(
             label0,
+            new CfLoad(ValueType.OBJECT, 2),
+            new CfIf(IfType.EQ, ValueType.OBJECT, label1),
             new CfLoad(ValueType.OBJECT, 0),
             new CfLoad(ValueType.OBJECT, 2),
             new CfInvoke(
@@ -6272,6 +7017,51 @@ public final class AssistantRuntimeMethods {
                       FrameType.initializedNonNullReference(factory.classType),
                       FrameType.initializedNonNullReference(factory.objectType)
                     })),
+            new CfLoad(ValueType.OBJECT, 2),
+            new CfLoad(ValueType.OBJECT, 3),
+            new CfInvoke(
+                182,
+                factory.createMethod(
+                    factory.classType,
+                    factory.createProto(factory.objectType, factory.objectType),
+                    factory.createString("cast")),
+                false),
+            new CfStackInstruction(CfStackInstruction.Opcode.Pop),
+            label3,
+            new CfGoto(label6),
+            label4,
+            new CfFrame(
+                new Int2ObjectAVLTreeMap<>(
+                    new int[] {0, 1, 2, 3},
+                    new FrameType[] {
+                      FrameType.initializedNonNullReference(
+                          factory.createType(
+                              "Lcom/android/tools/r8/assistant/runtime/ReflectiveOperationJsonLogger;")),
+                      FrameType.initializedNonNullReference(
+                          factory.createType(
+                              "Lcom/android/tools/r8/assistant/runtime/ReflectiveOracle$Stack;")),
+                      FrameType.initializedNonNullReference(factory.classType),
+                      FrameType.initializedNonNullReference(factory.objectType)
+                    }),
+                new ArrayDeque<>(
+                    Arrays.asList(FrameType.initializedNonNullReference(factory.throwableType)))),
+            new CfStore(ValueType.OBJECT, 4),
+            label5,
+            new CfReturnVoid(),
+            label6,
+            new CfFrame(
+                new Int2ObjectAVLTreeMap<>(
+                    new int[] {0, 1, 2, 3},
+                    new FrameType[] {
+                      FrameType.initializedNonNullReference(
+                          factory.createType(
+                              "Lcom/android/tools/r8/assistant/runtime/ReflectiveOperationJsonLogger;")),
+                      FrameType.initializedNonNullReference(
+                          factory.createType(
+                              "Lcom/android/tools/r8/assistant/runtime/ReflectiveOracle$Stack;")),
+                      FrameType.initializedNonNullReference(factory.classType),
+                      FrameType.initializedNonNullReference(factory.objectType)
+                    })),
             new CfLoad(ValueType.OBJECT, 0),
             new CfStaticFieldRead(
                 factory.createField(
@@ -6287,6 +7077,7 @@ public final class AssistantRuntimeMethods {
             new CfConstNumber(0, ValueType.INT),
             new CfLoad(ValueType.OBJECT, 0),
             new CfLoad(ValueType.OBJECT, 2),
+            label7,
             new CfInvoke(
                 182,
                 factory.createMethod(
@@ -6299,6 +7090,9 @@ public final class AssistantRuntimeMethods {
             new CfStackInstruction(CfStackInstruction.Opcode.Dup),
             new CfConstNumber(1, ValueType.INT),
             new CfLoad(ValueType.OBJECT, 0),
+            label8,
+            new CfLoad(ValueType.OBJECT, 3),
+            new CfIf(IfType.EQ, ValueType.OBJECT, label9),
             new CfLoad(ValueType.OBJECT, 3),
             new CfInvoke(
                 182,
@@ -6307,6 +7101,75 @@ public final class AssistantRuntimeMethods {
                     factory.createProto(factory.classType),
                     factory.createString("getClass")),
                 false),
+            new CfGoto(label10),
+            label9,
+            new CfFrame(
+                new Int2ObjectAVLTreeMap<>(
+                    new int[] {0, 1, 2, 3},
+                    new FrameType[] {
+                      FrameType.initializedNonNullReference(
+                          factory.createType(
+                              "Lcom/android/tools/r8/assistant/runtime/ReflectiveOperationJsonLogger;")),
+                      FrameType.initializedNonNullReference(
+                          factory.createType(
+                              "Lcom/android/tools/r8/assistant/runtime/ReflectiveOracle$Stack;")),
+                      FrameType.initializedNonNullReference(factory.classType),
+                      FrameType.initializedNonNullReference(factory.objectType)
+                    }),
+                new ArrayDeque<>(
+                    Arrays.asList(
+                        FrameType.initializedNonNullReference(
+                            factory.createType(
+                                "Lcom/android/tools/r8/assistant/runtime/ReflectiveOperationJsonLogger;")),
+                        FrameType.initializedNonNullReference(
+                            factory.createType(
+                                "Lcom/android/tools/r8/assistant/runtime/ReflectiveEventType;")),
+                        FrameType.initializedNonNullReference(
+                            factory.createType(
+                                "Lcom/android/tools/r8/assistant/runtime/ReflectiveOracle$Stack;")),
+                        FrameType.initializedNonNullReference(
+                            factory.createType("[Ljava/lang/String;")),
+                        FrameType.initializedNonNullReference(
+                            factory.createType("[Ljava/lang/String;")),
+                        FrameType.intType(),
+                        FrameType.initializedNonNullReference(
+                            factory.createType(
+                                "Lcom/android/tools/r8/assistant/runtime/ReflectiveOperationJsonLogger;"))))),
+            new CfConstNull(),
+            label10,
+            new CfFrame(
+                new Int2ObjectAVLTreeMap<>(
+                    new int[] {0, 1, 2, 3},
+                    new FrameType[] {
+                      FrameType.initializedNonNullReference(
+                          factory.createType(
+                              "Lcom/android/tools/r8/assistant/runtime/ReflectiveOperationJsonLogger;")),
+                      FrameType.initializedNonNullReference(
+                          factory.createType(
+                              "Lcom/android/tools/r8/assistant/runtime/ReflectiveOracle$Stack;")),
+                      FrameType.initializedNonNullReference(factory.classType),
+                      FrameType.initializedNonNullReference(factory.objectType)
+                    }),
+                new ArrayDeque<>(
+                    Arrays.asList(
+                        FrameType.initializedNonNullReference(
+                            factory.createType(
+                                "Lcom/android/tools/r8/assistant/runtime/ReflectiveOperationJsonLogger;")),
+                        FrameType.initializedNonNullReference(
+                            factory.createType(
+                                "Lcom/android/tools/r8/assistant/runtime/ReflectiveEventType;")),
+                        FrameType.initializedNonNullReference(
+                            factory.createType(
+                                "Lcom/android/tools/r8/assistant/runtime/ReflectiveOracle$Stack;")),
+                        FrameType.initializedNonNullReference(
+                            factory.createType("[Ljava/lang/String;")),
+                        FrameType.initializedNonNullReference(
+                            factory.createType("[Ljava/lang/String;")),
+                        FrameType.intType(),
+                        FrameType.initializedNonNullReference(
+                            factory.createType(
+                                "Lcom/android/tools/r8/assistant/runtime/ReflectiveOperationJsonLogger;")),
+                        FrameType.initializedNonNullReference(factory.classType)))),
             new CfInvoke(
                 182,
                 factory.createMethod(
@@ -6316,6 +7179,7 @@ public final class AssistantRuntimeMethods {
                     factory.createString("printClass")),
                 false),
             new CfArrayStore(MemberType.OBJECT),
+            label11,
             new CfInvoke(
                 182,
                 factory.createMethod(
@@ -6330,10 +7194,12 @@ public final class AssistantRuntimeMethods {
                         factory.createType("[Ljava/lang/String;")),
                     factory.createString("output")),
                 false),
-            label3,
+            label12,
             new CfReturnVoid(),
-            label4),
-        ImmutableList.of(),
+            label13),
+        ImmutableList.of(
+            new CfTryCatch(
+                label2, label3, ImmutableList.of(factory.throwableType), ImmutableList.of(label4))),
         ImmutableList.of());
   }
 
@@ -6350,6 +7216,10 @@ public final class AssistantRuntimeMethods {
         4,
         ImmutableList.of(
             label0,
+            new CfLoad(ValueType.OBJECT, 2),
+            new CfIf(IfType.EQ, ValueType.OBJECT, label1),
+            new CfLoad(ValueType.OBJECT, 3),
+            new CfIf(IfType.EQ, ValueType.OBJECT, label1),
             new CfLoad(ValueType.OBJECT, 0),
             new CfLoad(ValueType.OBJECT, 2),
             new CfInvoke(
@@ -6475,12 +7345,28 @@ public final class AssistantRuntimeMethods {
     CfLabel label5 = new CfLabel();
     CfLabel label6 = new CfLabel();
     CfLabel label7 = new CfLabel();
+    CfLabel label8 = new CfLabel();
+    CfLabel label9 = new CfLabel();
+    CfLabel label10 = new CfLabel();
+    CfLabel label11 = new CfLabel();
+    CfLabel label12 = new CfLabel();
+    CfLabel label13 = new CfLabel();
+    CfLabel label14 = new CfLabel();
+    CfLabel label15 = new CfLabel();
+    CfLabel label16 = new CfLabel();
+    CfLabel label17 = new CfLabel();
+    CfLabel label18 = new CfLabel();
+    CfLabel label19 = new CfLabel();
+    CfLabel label20 = new CfLabel();
+    CfLabel label21 = new CfLabel();
     return new CfCode(
         method.holder,
         8,
-        5,
+        7,
         ImmutableList.of(
             label0,
+            new CfLoad(ValueType.OBJECT, 2),
+            new CfIf(IfType.EQ, ValueType.OBJECT, label1),
             new CfLoad(ValueType.OBJECT, 0),
             new CfLoad(ValueType.OBJECT, 2),
             new CfInvoke(
@@ -6539,6 +7425,214 @@ public final class AssistantRuntimeMethods {
                       FrameType.initializedNonNullReference(
                           factory.createType("Ljava/lang/ClassLoader;"))
                     })),
+            new CfLoad(ValueType.OBJECT, 4),
+            new CfStore(ValueType.OBJECT, 5),
+            label3,
+            new CfLoad(ValueType.OBJECT, 5),
+            new CfIf(IfType.NE, ValueType.OBJECT, label10),
+            new CfLoad(ValueType.OBJECT, 1),
+            new CfIf(IfType.EQ, ValueType.OBJECT, label10),
+            new CfLoad(ValueType.OBJECT, 1),
+            label4,
+            new CfInvoke(
+                182,
+                factory.createMethod(
+                    factory.createType(
+                        "Lcom/android/tools/r8/assistant/runtime/ReflectiveOracle$Stack;"),
+                    factory.createProto(factory.createType("[Ljava/lang/StackTraceElement;")),
+                    factory.createString("getStackTraceElements")),
+                false),
+            new CfIf(IfType.EQ, ValueType.OBJECT, label10),
+            new CfLoad(ValueType.OBJECT, 1),
+            label5,
+            new CfInvoke(
+                182,
+                factory.createMethod(
+                    factory.createType(
+                        "Lcom/android/tools/r8/assistant/runtime/ReflectiveOracle$Stack;"),
+                    factory.createProto(factory.createType("[Ljava/lang/StackTraceElement;")),
+                    factory.createString("getStackTraceElements")),
+                false),
+            new CfArrayLength(),
+            new CfIf(IfType.LE, ValueType.INT, label10),
+            label6,
+            new CfLoad(ValueType.OBJECT, 1),
+            new CfInvoke(
+                182,
+                factory.createMethod(
+                    factory.createType(
+                        "Lcom/android/tools/r8/assistant/runtime/ReflectiveOracle$Stack;"),
+                    factory.createProto(factory.createType("[Ljava/lang/StackTraceElement;")),
+                    factory.createString("getStackTraceElements")),
+                false),
+            new CfConstNumber(0, ValueType.INT),
+            new CfArrayLoad(MemberType.OBJECT),
+            new CfInvoke(
+                182,
+                factory.createMethod(
+                    factory.createType("Ljava/lang/StackTraceElement;"),
+                    factory.createProto(factory.stringType),
+                    factory.createString("getClassName")),
+                false),
+            new CfStore(ValueType.OBJECT, 6),
+            label7,
+            new CfLoad(ValueType.OBJECT, 6),
+            new CfInvoke(
+                184,
+                factory.createMethod(
+                    factory.classType,
+                    factory.createProto(factory.classType, factory.stringType),
+                    factory.createString("forName")),
+                false),
+            new CfInvoke(
+                182,
+                factory.createMethod(
+                    factory.classType,
+                    factory.createProto(factory.createType("Ljava/lang/ClassLoader;")),
+                    factory.createString("getClassLoader")),
+                false),
+            new CfStore(ValueType.OBJECT, 5),
+            label8,
+            new CfGoto(label10),
+            label9,
+            new CfFrame(
+                new Int2ObjectAVLTreeMap<>(
+                    new int[] {0, 1, 2, 3, 4, 5},
+                    new FrameType[] {
+                      FrameType.initializedNonNullReference(
+                          factory.createType(
+                              "Lcom/android/tools/r8/assistant/runtime/ReflectiveOperationJsonLogger;")),
+                      FrameType.initializedNonNullReference(
+                          factory.createType(
+                              "Lcom/android/tools/r8/assistant/runtime/ReflectiveOracle$Stack;")),
+                      FrameType.initializedNonNullReference(factory.stringType),
+                      FrameType.intType(),
+                      FrameType.initializedNonNullReference(
+                          factory.createType("Ljava/lang/ClassLoader;")),
+                      FrameType.initializedNonNullReference(
+                          factory.createType("Ljava/lang/ClassLoader;"))
+                    }),
+                new ArrayDeque<>(
+                    Arrays.asList(FrameType.initializedNonNullReference(factory.throwableType)))),
+            new CfStore(ValueType.OBJECT, 6),
+            label10,
+            new CfFrame(
+                new Int2ObjectAVLTreeMap<>(
+                    new int[] {0, 1, 2, 3, 4, 5},
+                    new FrameType[] {
+                      FrameType.initializedNonNullReference(
+                          factory.createType(
+                              "Lcom/android/tools/r8/assistant/runtime/ReflectiveOperationJsonLogger;")),
+                      FrameType.initializedNonNullReference(
+                          factory.createType(
+                              "Lcom/android/tools/r8/assistant/runtime/ReflectiveOracle$Stack;")),
+                      FrameType.initializedNonNullReference(factory.stringType),
+                      FrameType.intType(),
+                      FrameType.initializedNonNullReference(
+                          factory.createType("Ljava/lang/ClassLoader;")),
+                      FrameType.initializedNonNullReference(
+                          factory.createType("Ljava/lang/ClassLoader;"))
+                    })),
+            new CfLoad(ValueType.OBJECT, 5),
+            new CfIf(IfType.NE, ValueType.OBJECT, label12),
+            label11,
+            new CfLoad(ValueType.OBJECT, 2),
+            new CfInvoke(
+                184,
+                factory.createMethod(
+                    factory.classType,
+                    factory.createProto(factory.classType, factory.stringType),
+                    factory.createString("forName")),
+                false),
+            new CfStackInstruction(CfStackInstruction.Opcode.Pop),
+            new CfGoto(label13),
+            label12,
+            new CfFrame(
+                new Int2ObjectAVLTreeMap<>(
+                    new int[] {0, 1, 2, 3, 4, 5},
+                    new FrameType[] {
+                      FrameType.initializedNonNullReference(
+                          factory.createType(
+                              "Lcom/android/tools/r8/assistant/runtime/ReflectiveOperationJsonLogger;")),
+                      FrameType.initializedNonNullReference(
+                          factory.createType(
+                              "Lcom/android/tools/r8/assistant/runtime/ReflectiveOracle$Stack;")),
+                      FrameType.initializedNonNullReference(factory.stringType),
+                      FrameType.intType(),
+                      FrameType.initializedNonNullReference(
+                          factory.createType("Ljava/lang/ClassLoader;")),
+                      FrameType.initializedNonNullReference(
+                          factory.createType("Ljava/lang/ClassLoader;"))
+                    })),
+            new CfLoad(ValueType.OBJECT, 2),
+            new CfLoad(ValueType.INT, 3),
+            new CfLoad(ValueType.OBJECT, 5),
+            new CfInvoke(
+                184,
+                factory.createMethod(
+                    factory.classType,
+                    factory.createProto(
+                        factory.classType,
+                        factory.stringType,
+                        factory.booleanType,
+                        factory.createType("Ljava/lang/ClassLoader;")),
+                    factory.createString("forName")),
+                false),
+            new CfStackInstruction(CfStackInstruction.Opcode.Pop),
+            label13,
+            new CfFrame(
+                new Int2ObjectAVLTreeMap<>(
+                    new int[] {0, 1, 2, 3, 4},
+                    new FrameType[] {
+                      FrameType.initializedNonNullReference(
+                          factory.createType(
+                              "Lcom/android/tools/r8/assistant/runtime/ReflectiveOperationJsonLogger;")),
+                      FrameType.initializedNonNullReference(
+                          factory.createType(
+                              "Lcom/android/tools/r8/assistant/runtime/ReflectiveOracle$Stack;")),
+                      FrameType.initializedNonNullReference(factory.stringType),
+                      FrameType.intType(),
+                      FrameType.initializedNonNullReference(
+                          factory.createType("Ljava/lang/ClassLoader;"))
+                    })),
+            new CfGoto(label16),
+            label14,
+            new CfFrame(
+                new Int2ObjectAVLTreeMap<>(
+                    new int[] {0, 1, 2, 3, 4},
+                    new FrameType[] {
+                      FrameType.initializedNonNullReference(
+                          factory.createType(
+                              "Lcom/android/tools/r8/assistant/runtime/ReflectiveOperationJsonLogger;")),
+                      FrameType.initializedNonNullReference(
+                          factory.createType(
+                              "Lcom/android/tools/r8/assistant/runtime/ReflectiveOracle$Stack;")),
+                      FrameType.initializedNonNullReference(factory.stringType),
+                      FrameType.intType(),
+                      FrameType.initializedNonNullReference(
+                          factory.createType("Ljava/lang/ClassLoader;"))
+                    }),
+                new ArrayDeque<>(
+                    Arrays.asList(FrameType.initializedNonNullReference(factory.throwableType)))),
+            new CfStore(ValueType.OBJECT, 5),
+            label15,
+            new CfReturnVoid(),
+            label16,
+            new CfFrame(
+                new Int2ObjectAVLTreeMap<>(
+                    new int[] {0, 1, 2, 3, 4},
+                    new FrameType[] {
+                      FrameType.initializedNonNullReference(
+                          factory.createType(
+                              "Lcom/android/tools/r8/assistant/runtime/ReflectiveOperationJsonLogger;")),
+                      FrameType.initializedNonNullReference(
+                          factory.createType(
+                              "Lcom/android/tools/r8/assistant/runtime/ReflectiveOracle$Stack;")),
+                      FrameType.initializedNonNullReference(factory.stringType),
+                      FrameType.intType(),
+                      FrameType.initializedNonNullReference(
+                          factory.createType("Ljava/lang/ClassLoader;"))
+                    })),
             new CfLoad(ValueType.OBJECT, 0),
             new CfStaticFieldRead(
                 factory.createField(
@@ -6557,7 +7651,7 @@ public final class AssistantRuntimeMethods {
             new CfStackInstruction(CfStackInstruction.Opcode.Dup),
             new CfConstNumber(1, ValueType.INT),
             new CfLoad(ValueType.INT, 3),
-            label3,
+            label17,
             new CfInvoke(
                 184,
                 factory.createMethod(
@@ -6570,7 +7664,7 @@ public final class AssistantRuntimeMethods {
             new CfConstNumber(2, ValueType.INT),
             new CfLoad(ValueType.OBJECT, 0),
             new CfLoad(ValueType.OBJECT, 4),
-            label4,
+            label18,
             new CfInvoke(
                 182,
                 factory.createMethod(
@@ -6581,7 +7675,7 @@ public final class AssistantRuntimeMethods {
                     factory.createString("printClassLoader")),
                 false),
             new CfArrayStore(MemberType.OBJECT),
-            label5,
+            label19,
             new CfInvoke(
                 182,
                 factory.createMethod(
@@ -6596,10 +7690,17 @@ public final class AssistantRuntimeMethods {
                         factory.createType("[Ljava/lang/String;")),
                     factory.createString("output")),
                 false),
-            label6,
+            label20,
             new CfReturnVoid(),
-            label7),
-        ImmutableList.of(),
+            label21),
+        ImmutableList.of(
+            new CfTryCatch(
+                label6, label8, ImmutableList.of(factory.throwableType), ImmutableList.of(label9)),
+            new CfTryCatch(
+                label2,
+                label13,
+                ImmutableList.of(factory.throwableType),
+                ImmutableList.of(label14))),
         ImmutableList.of());
   }
 
@@ -6720,12 +7821,18 @@ public final class AssistantRuntimeMethods {
     CfLabel label2 = new CfLabel();
     CfLabel label3 = new CfLabel();
     CfLabel label4 = new CfLabel();
+    CfLabel label5 = new CfLabel();
+    CfLabel label6 = new CfLabel();
+    CfLabel label7 = new CfLabel();
+    CfLabel label8 = new CfLabel();
     return new CfCode(
         method.holder,
         6,
-        4,
+        5,
         ImmutableList.of(
             label0,
+            new CfLoad(ValueType.OBJECT, 2),
+            new CfIf(IfType.EQ, ValueType.OBJECT, label1),
             new CfLoad(ValueType.OBJECT, 0),
             new CfLoad(ValueType.OBJECT, 2),
             new CfInvoke(
@@ -6782,6 +7889,55 @@ public final class AssistantRuntimeMethods {
                       FrameType.initializedNonNullReference(
                           factory.createType("[Ljava/lang/Class;"))
                     })),
+            new CfLoad(ValueType.OBJECT, 2),
+            new CfLoad(ValueType.OBJECT, 3),
+            new CfInvoke(
+                182,
+                factory.createMethod(
+                    factory.classType,
+                    factory.createProto(
+                        factory.createType("Ljava/lang/reflect/Constructor;"),
+                        factory.createType("[Ljava/lang/Class;")),
+                    factory.createString("getConstructor")),
+                false),
+            new CfStackInstruction(CfStackInstruction.Opcode.Pop),
+            label3,
+            new CfGoto(label6),
+            label4,
+            new CfFrame(
+                new Int2ObjectAVLTreeMap<>(
+                    new int[] {0, 1, 2, 3},
+                    new FrameType[] {
+                      FrameType.initializedNonNullReference(
+                          factory.createType(
+                              "Lcom/android/tools/r8/assistant/runtime/ReflectiveOperationJsonLogger;")),
+                      FrameType.initializedNonNullReference(
+                          factory.createType(
+                              "Lcom/android/tools/r8/assistant/runtime/ReflectiveOracle$Stack;")),
+                      FrameType.initializedNonNullReference(factory.classType),
+                      FrameType.initializedNonNullReference(
+                          factory.createType("[Ljava/lang/Class;"))
+                    }),
+                new ArrayDeque<>(
+                    Arrays.asList(FrameType.initializedNonNullReference(factory.throwableType)))),
+            new CfStore(ValueType.OBJECT, 4),
+            label5,
+            new CfReturnVoid(),
+            label6,
+            new CfFrame(
+                new Int2ObjectAVLTreeMap<>(
+                    new int[] {0, 1, 2, 3},
+                    new FrameType[] {
+                      FrameType.initializedNonNullReference(
+                          factory.createType(
+                              "Lcom/android/tools/r8/assistant/runtime/ReflectiveOperationJsonLogger;")),
+                      FrameType.initializedNonNullReference(
+                          factory.createType(
+                              "Lcom/android/tools/r8/assistant/runtime/ReflectiveOracle$Stack;")),
+                      FrameType.initializedNonNullReference(factory.classType),
+                      FrameType.initializedNonNullReference(
+                          factory.createType("[Ljava/lang/Class;"))
+                    })),
             new CfLoad(ValueType.OBJECT, 0),
             new CfStaticFieldRead(
                 factory.createField(
@@ -6819,10 +7975,12 @@ public final class AssistantRuntimeMethods {
                         factory.createType("[Ljava/lang/String;")),
                     factory.createString("output")),
                 false),
-            label3,
+            label7,
             new CfReturnVoid(),
-            label4),
-        ImmutableList.of(),
+            label8),
+        ImmutableList.of(
+            new CfTryCatch(
+                label2, label3, ImmutableList.of(factory.throwableType), ImmutableList.of(label4))),
         ImmutableList.of());
   }
 
@@ -6839,6 +7997,8 @@ public final class AssistantRuntimeMethods {
         3,
         ImmutableList.of(
             label0,
+            new CfLoad(ValueType.OBJECT, 2),
+            new CfIf(IfType.EQ, ValueType.OBJECT, label1),
             new CfLoad(ValueType.OBJECT, 0),
             new CfLoad(ValueType.OBJECT, 2),
             new CfInvoke(
@@ -6943,12 +8103,18 @@ public final class AssistantRuntimeMethods {
     CfLabel label2 = new CfLabel();
     CfLabel label3 = new CfLabel();
     CfLabel label4 = new CfLabel();
+    CfLabel label5 = new CfLabel();
+    CfLabel label6 = new CfLabel();
+    CfLabel label7 = new CfLabel();
+    CfLabel label8 = new CfLabel();
     return new CfCode(
         method.holder,
         6,
-        4,
+        5,
         ImmutableList.of(
             label0,
+            new CfLoad(ValueType.OBJECT, 2),
+            new CfIf(IfType.EQ, ValueType.OBJECT, label1),
             new CfLoad(ValueType.OBJECT, 0),
             new CfLoad(ValueType.OBJECT, 2),
             new CfInvoke(
@@ -7005,6 +8171,55 @@ public final class AssistantRuntimeMethods {
                       FrameType.initializedNonNullReference(
                           factory.createType("[Ljava/lang/Class;"))
                     })),
+            new CfLoad(ValueType.OBJECT, 2),
+            new CfLoad(ValueType.OBJECT, 3),
+            new CfInvoke(
+                182,
+                factory.createMethod(
+                    factory.classType,
+                    factory.createProto(
+                        factory.createType("Ljava/lang/reflect/Constructor;"),
+                        factory.createType("[Ljava/lang/Class;")),
+                    factory.createString("getDeclaredConstructor")),
+                false),
+            new CfStackInstruction(CfStackInstruction.Opcode.Pop),
+            label3,
+            new CfGoto(label6),
+            label4,
+            new CfFrame(
+                new Int2ObjectAVLTreeMap<>(
+                    new int[] {0, 1, 2, 3},
+                    new FrameType[] {
+                      FrameType.initializedNonNullReference(
+                          factory.createType(
+                              "Lcom/android/tools/r8/assistant/runtime/ReflectiveOperationJsonLogger;")),
+                      FrameType.initializedNonNullReference(
+                          factory.createType(
+                              "Lcom/android/tools/r8/assistant/runtime/ReflectiveOracle$Stack;")),
+                      FrameType.initializedNonNullReference(factory.classType),
+                      FrameType.initializedNonNullReference(
+                          factory.createType("[Ljava/lang/Class;"))
+                    }),
+                new ArrayDeque<>(
+                    Arrays.asList(FrameType.initializedNonNullReference(factory.throwableType)))),
+            new CfStore(ValueType.OBJECT, 4),
+            label5,
+            new CfReturnVoid(),
+            label6,
+            new CfFrame(
+                new Int2ObjectAVLTreeMap<>(
+                    new int[] {0, 1, 2, 3},
+                    new FrameType[] {
+                      FrameType.initializedNonNullReference(
+                          factory.createType(
+                              "Lcom/android/tools/r8/assistant/runtime/ReflectiveOperationJsonLogger;")),
+                      FrameType.initializedNonNullReference(
+                          factory.createType(
+                              "Lcom/android/tools/r8/assistant/runtime/ReflectiveOracle$Stack;")),
+                      FrameType.initializedNonNullReference(factory.classType),
+                      FrameType.initializedNonNullReference(
+                          factory.createType("[Ljava/lang/Class;"))
+                    })),
             new CfLoad(ValueType.OBJECT, 0),
             new CfStaticFieldRead(
                 factory.createField(
@@ -7042,10 +8257,12 @@ public final class AssistantRuntimeMethods {
                         factory.createType("[Ljava/lang/String;")),
                     factory.createString("output")),
                 false),
-            label3,
+            label7,
             new CfReturnVoid(),
-            label4),
-        ImmutableList.of(),
+            label8),
+        ImmutableList.of(
+            new CfTryCatch(
+                label2, label3, ImmutableList.of(factory.throwableType), ImmutableList.of(label4))),
         ImmutableList.of());
   }
 
@@ -7062,6 +8279,8 @@ public final class AssistantRuntimeMethods {
         3,
         ImmutableList.of(
             label0,
+            new CfLoad(ValueType.OBJECT, 2),
+            new CfIf(IfType.EQ, ValueType.OBJECT, label1),
             new CfLoad(ValueType.OBJECT, 0),
             new CfLoad(ValueType.OBJECT, 2),
             new CfInvoke(
@@ -7172,6 +8391,10 @@ public final class AssistantRuntimeMethods {
         5,
         ImmutableList.of(
             label0,
+            new CfLoad(ValueType.OBJECT, 3),
+            new CfIf(IfType.EQ, ValueType.OBJECT, label1),
+            new CfLoad(ValueType.OBJECT, 2),
+            new CfIf(IfType.EQ, ValueType.OBJECT, label1),
             new CfLoad(ValueType.OBJECT, 0),
             new CfLoad(ValueType.OBJECT, 3),
             new CfInvoke(
@@ -7303,6 +8526,8 @@ public final class AssistantRuntimeMethods {
         3,
         ImmutableList.of(
             label0,
+            new CfLoad(ValueType.OBJECT, 2),
+            new CfIf(IfType.EQ, ValueType.OBJECT, label1),
             new CfLoad(ValueType.OBJECT, 0),
             new CfLoad(ValueType.OBJECT, 2),
             new CfInvoke(
@@ -7413,6 +8638,10 @@ public final class AssistantRuntimeMethods {
         6,
         ImmutableList.of(
             label0,
+            new CfLoad(ValueType.OBJECT, 3),
+            new CfIf(IfType.EQ, ValueType.OBJECT, label1),
+            new CfLoad(ValueType.OBJECT, 2),
+            new CfIf(IfType.EQ, ValueType.OBJECT, label1),
             new CfLoad(ValueType.OBJECT, 0),
             new CfLoad(ValueType.OBJECT, 3),
             new CfInvoke(
@@ -7534,6 +8763,8 @@ public final class AssistantRuntimeMethods {
         3,
         ImmutableList.of(
             label0,
+            new CfLoad(ValueType.OBJECT, 2),
+            new CfIf(IfType.EQ, ValueType.OBJECT, label1),
             new CfLoad(ValueType.OBJECT, 0),
             new CfLoad(ValueType.OBJECT, 2),
             new CfInvoke(
@@ -7644,6 +8875,10 @@ public final class AssistantRuntimeMethods {
         5,
         ImmutableList.of(
             label0,
+            new CfLoad(ValueType.OBJECT, 3),
+            new CfIf(IfType.EQ, ValueType.OBJECT, label1),
+            new CfLoad(ValueType.OBJECT, 2),
+            new CfIf(IfType.EQ, ValueType.OBJECT, label1),
             new CfLoad(ValueType.OBJECT, 0),
             new CfLoad(ValueType.OBJECT, 3),
             new CfInvoke(
@@ -7775,6 +9010,8 @@ public final class AssistantRuntimeMethods {
         3,
         ImmutableList.of(
             label0,
+            new CfLoad(ValueType.OBJECT, 2),
+            new CfIf(IfType.EQ, ValueType.OBJECT, label1),
             new CfLoad(ValueType.OBJECT, 0),
             new CfLoad(ValueType.OBJECT, 2),
             new CfInvoke(
@@ -7885,6 +9122,10 @@ public final class AssistantRuntimeMethods {
         6,
         ImmutableList.of(
             label0,
+            new CfLoad(ValueType.OBJECT, 3),
+            new CfIf(IfType.EQ, ValueType.OBJECT, label1),
+            new CfLoad(ValueType.OBJECT, 2),
+            new CfIf(IfType.EQ, ValueType.OBJECT, label1),
             new CfLoad(ValueType.OBJECT, 0),
             new CfLoad(ValueType.OBJECT, 3),
             new CfInvoke(
@@ -8006,6 +9247,8 @@ public final class AssistantRuntimeMethods {
         3,
         ImmutableList.of(
             label0,
+            new CfLoad(ValueType.OBJECT, 2),
+            new CfIf(IfType.EQ, ValueType.OBJECT, label1),
             new CfLoad(ValueType.OBJECT, 0),
             new CfLoad(ValueType.OBJECT, 2),
             new CfInvoke(
@@ -8116,6 +9359,10 @@ public final class AssistantRuntimeMethods {
         4,
         ImmutableList.of(
             label0,
+            new CfLoad(ValueType.OBJECT, 2),
+            new CfIf(IfType.EQ, ValueType.OBJECT, label1),
+            new CfLoad(ValueType.OBJECT, 3),
+            new CfIf(IfType.EQ, ValueType.OBJECT, label1),
             new CfLoad(ValueType.OBJECT, 0),
             new CfLoad(ValueType.OBJECT, 2),
             new CfInvoke(
@@ -8594,6 +9841,8 @@ public final class AssistantRuntimeMethods {
         4,
         ImmutableList.of(
             label0,
+            new CfLoad(ValueType.OBJECT, 2),
+            new CfIf(IfType.EQ, ValueType.OBJECT, label1),
             new CfLoad(ValueType.OBJECT, 0),
             new CfLoad(ValueType.OBJECT, 2),
             new CfInvoke(
@@ -8794,12 +10043,20 @@ public final class AssistantRuntimeMethods {
     CfLabel label2 = new CfLabel();
     CfLabel label3 = new CfLabel();
     CfLabel label4 = new CfLabel();
+    CfLabel label5 = new CfLabel();
+    CfLabel label6 = new CfLabel();
+    CfLabel label7 = new CfLabel();
+    CfLabel label8 = new CfLabel();
+    CfLabel label9 = new CfLabel();
+    CfLabel label10 = new CfLabel();
     return new CfCode(
         method.holder,
         8,
-        3,
+        4,
         ImmutableList.of(
             label0,
+            new CfLoad(ValueType.OBJECT, 2),
+            new CfIf(IfType.EQ, ValueType.OBJECT, label1),
             new CfLoad(ValueType.OBJECT, 0),
             new CfLoad(ValueType.OBJECT, 2),
             new CfInvoke(
@@ -8852,6 +10109,104 @@ public final class AssistantRuntimeMethods {
                               "Lcom/android/tools/r8/assistant/runtime/ReflectiveOracle$Stack;")),
                       FrameType.initializedNonNullReference(factory.classType)
                     })),
+            new CfLoad(ValueType.OBJECT, 2),
+            new CfInvoke(
+                182,
+                factory.createMethod(
+                    factory.classType,
+                    factory.createProto(factory.booleanType),
+                    factory.createString("isInterface")),
+                false),
+            new CfIf(IfType.NE, ValueType.INT, label3),
+            new CfLoad(ValueType.OBJECT, 2),
+            new CfInvoke(
+                182,
+                factory.createMethod(
+                    factory.classType,
+                    factory.createProto(factory.intType),
+                    factory.createString("getModifiers")),
+                false),
+            new CfInvoke(
+                184,
+                factory.createMethod(
+                    factory.createType("Ljava/lang/reflect/Modifier;"),
+                    factory.createProto(factory.booleanType, factory.intType),
+                    factory.createString("isAbstract")),
+                false),
+            new CfIf(IfType.EQ, ValueType.INT, label4),
+            label3,
+            new CfFrame(
+                new Int2ObjectAVLTreeMap<>(
+                    new int[] {0, 1, 2},
+                    new FrameType[] {
+                      FrameType.initializedNonNullReference(
+                          factory.createType(
+                              "Lcom/android/tools/r8/assistant/runtime/ReflectiveOperationJsonLogger;")),
+                      FrameType.initializedNonNullReference(
+                          factory.createType(
+                              "Lcom/android/tools/r8/assistant/runtime/ReflectiveOracle$Stack;")),
+                      FrameType.initializedNonNullReference(factory.classType)
+                    })),
+            new CfReturnVoid(),
+            label4,
+            new CfFrame(
+                new Int2ObjectAVLTreeMap<>(
+                    new int[] {0, 1, 2},
+                    new FrameType[] {
+                      FrameType.initializedNonNullReference(
+                          factory.createType(
+                              "Lcom/android/tools/r8/assistant/runtime/ReflectiveOperationJsonLogger;")),
+                      FrameType.initializedNonNullReference(
+                          factory.createType(
+                              "Lcom/android/tools/r8/assistant/runtime/ReflectiveOracle$Stack;")),
+                      FrameType.initializedNonNullReference(factory.classType)
+                    })),
+            new CfLoad(ValueType.OBJECT, 2),
+            new CfConstNumber(0, ValueType.INT),
+            new CfNewArray(factory.createType("[Ljava/lang/Class;")),
+            new CfInvoke(
+                182,
+                factory.createMethod(
+                    factory.classType,
+                    factory.createProto(
+                        factory.createType("Ljava/lang/reflect/Constructor;"),
+                        factory.createType("[Ljava/lang/Class;")),
+                    factory.createString("getConstructor")),
+                false),
+            new CfStackInstruction(CfStackInstruction.Opcode.Pop),
+            label5,
+            new CfGoto(label8),
+            label6,
+            new CfFrame(
+                new Int2ObjectAVLTreeMap<>(
+                    new int[] {0, 1, 2},
+                    new FrameType[] {
+                      FrameType.initializedNonNullReference(
+                          factory.createType(
+                              "Lcom/android/tools/r8/assistant/runtime/ReflectiveOperationJsonLogger;")),
+                      FrameType.initializedNonNullReference(
+                          factory.createType(
+                              "Lcom/android/tools/r8/assistant/runtime/ReflectiveOracle$Stack;")),
+                      FrameType.initializedNonNullReference(factory.classType)
+                    }),
+                new ArrayDeque<>(
+                    Arrays.asList(FrameType.initializedNonNullReference(factory.throwableType)))),
+            new CfStore(ValueType.OBJECT, 3),
+            label7,
+            new CfReturnVoid(),
+            label8,
+            new CfFrame(
+                new Int2ObjectAVLTreeMap<>(
+                    new int[] {0, 1, 2},
+                    new FrameType[] {
+                      FrameType.initializedNonNullReference(
+                          factory.createType(
+                              "Lcom/android/tools/r8/assistant/runtime/ReflectiveOperationJsonLogger;")),
+                      FrameType.initializedNonNullReference(
+                          factory.createType(
+                              "Lcom/android/tools/r8/assistant/runtime/ReflectiveOracle$Stack;")),
+                      FrameType.initializedNonNullReference(factory.classType)
+                    })),
             new CfLoad(ValueType.OBJECT, 0),
             new CfStaticFieldRead(
                 factory.createField(
@@ -8890,10 +10245,12 @@ public final class AssistantRuntimeMethods {
                         factory.createType("[Ljava/lang/String;")),
                     factory.createString("output")),
                 false),
-            label3,
+            label9,
             new CfReturnVoid(),
-            label4),
-        ImmutableList.of(),
+            label10),
+        ImmutableList.of(
+            new CfTryCatch(
+                label4, label5, ImmutableList.of(factory.throwableType), ImmutableList.of(label6))),
         ImmutableList.of());
   }
 
@@ -8918,15 +10275,72 @@ public final class AssistantRuntimeMethods {
     CfLabel label16 = new CfLabel();
     CfLabel label17 = new CfLabel();
     CfLabel label18 = new CfLabel();
+    CfLabel label19 = new CfLabel();
+    CfLabel label20 = new CfLabel();
     return new CfCode(
         method.holder,
         5,
         10,
         ImmutableList.of(
             label0,
+            new CfLoad(ValueType.OBJECT, 3),
+            new CfIf(IfType.EQ, ValueType.OBJECT, label1),
+            new CfLoad(ValueType.OBJECT, 4),
+            new CfIf(IfType.EQ, ValueType.OBJECT, label1),
+            new CfLoad(ValueType.OBJECT, 0),
+            new CfLoad(ValueType.OBJECT, 1),
+            new CfInvoke(
+                182,
+                factory.createMethod(
+                    factory.createType(
+                        "Lcom/android/tools/r8/assistant/runtime/ReflectiveOperationJsonLogger;"),
+                    factory.createProto(
+                        factory.booleanType,
+                        factory.createType(
+                            "Lcom/android/tools/r8/assistant/runtime/ReflectiveOracle$Stack;")),
+                    factory.createString("isIgnoredCaller")),
+                false),
+            new CfIf(IfType.EQ, ValueType.INT, label2),
+            label1,
+            new CfFrame(
+                new Int2ObjectAVLTreeMap<>(
+                    new int[] {0, 1, 2, 3, 4},
+                    new FrameType[] {
+                      FrameType.initializedNonNullReference(
+                          factory.createType(
+                              "Lcom/android/tools/r8/assistant/runtime/ReflectiveOperationJsonLogger;")),
+                      FrameType.initializedNonNullReference(
+                          factory.createType(
+                              "Lcom/android/tools/r8/assistant/runtime/ReflectiveOracle$Stack;")),
+                      FrameType.initializedNonNullReference(
+                          factory.createType("Ljava/lang/ClassLoader;")),
+                      FrameType.initializedNonNullReference(
+                          factory.createType("[Ljava/lang/Class;")),
+                      FrameType.initializedNonNullReference(
+                          factory.createType("Ljava/lang/reflect/InvocationHandler;"))
+                    })),
+            new CfReturnVoid(),
+            label2,
+            new CfFrame(
+                new Int2ObjectAVLTreeMap<>(
+                    new int[] {0, 1, 2, 3, 4},
+                    new FrameType[] {
+                      FrameType.initializedNonNullReference(
+                          factory.createType(
+                              "Lcom/android/tools/r8/assistant/runtime/ReflectiveOperationJsonLogger;")),
+                      FrameType.initializedNonNullReference(
+                          factory.createType(
+                              "Lcom/android/tools/r8/assistant/runtime/ReflectiveOracle$Stack;")),
+                      FrameType.initializedNonNullReference(
+                          factory.createType("Ljava/lang/ClassLoader;")),
+                      FrameType.initializedNonNullReference(
+                          factory.createType("[Ljava/lang/Class;")),
+                      FrameType.initializedNonNullReference(
+                          factory.createType("Ljava/lang/reflect/InvocationHandler;"))
+                    })),
             new CfConstNumber(1, ValueType.INT),
             new CfStore(ValueType.INT, 5),
-            label1,
+            label3,
             new CfLoad(ValueType.OBJECT, 3),
             new CfStore(ValueType.OBJECT, 6),
             new CfLoad(ValueType.OBJECT, 6),
@@ -8934,7 +10348,7 @@ public final class AssistantRuntimeMethods {
             new CfStore(ValueType.INT, 7),
             new CfConstNumber(0, ValueType.INT),
             new CfStore(ValueType.INT, 8),
-            label2,
+            label4,
             new CfFrame(
                 new Int2ObjectAVLTreeMap<>(
                     new int[] {0, 1, 2, 3, 4, 5, 6, 7, 8},
@@ -8959,12 +10373,14 @@ public final class AssistantRuntimeMethods {
                     })),
             new CfLoad(ValueType.INT, 8),
             new CfLoad(ValueType.INT, 7),
-            new CfIfCmp(IfType.GE, ValueType.INT, label7),
+            new CfIfCmp(IfType.GE, ValueType.INT, label9),
             new CfLoad(ValueType.OBJECT, 6),
             new CfLoad(ValueType.INT, 8),
             new CfArrayLoad(MemberType.OBJECT),
             new CfStore(ValueType.OBJECT, 9),
-            label3,
+            label5,
+            new CfLoad(ValueType.OBJECT, 9),
+            new CfIf(IfType.EQ, ValueType.OBJECT, label8),
             new CfLoad(ValueType.OBJECT, 0),
             new CfLoad(ValueType.OBJECT, 9),
             new CfInvoke(
@@ -8975,13 +10391,13 @@ public final class AssistantRuntimeMethods {
                     factory.createProto(factory.booleanType, factory.classType),
                     factory.createString("isIgnoredClass")),
                 false),
-            new CfIf(IfType.NE, ValueType.INT, label6),
-            label4,
+            new CfIf(IfType.NE, ValueType.INT, label8),
+            label6,
             new CfConstNumber(0, ValueType.INT),
             new CfStore(ValueType.INT, 5),
-            label5,
-            new CfGoto(label7),
-            label6,
+            label7,
+            new CfGoto(label9),
+            label8,
             new CfFrame(
                 new Int2ObjectAVLTreeMap<>(
                     new int[] {0, 1, 2, 3, 4, 5, 6, 7, 8},
@@ -9005,8 +10421,8 @@ public final class AssistantRuntimeMethods {
                       FrameType.intType()
                     })),
             new CfIinc(8, 1),
-            new CfGoto(label2),
-            label7,
+            new CfGoto(label4),
+            label9,
             new CfFrame(
                 new Int2ObjectAVLTreeMap<>(
                     new int[] {0, 1, 2, 3, 4, 5},
@@ -9026,10 +10442,10 @@ public final class AssistantRuntimeMethods {
                       FrameType.intType()
                     })),
             new CfLoad(ValueType.INT, 5),
-            new CfIf(IfType.EQ, ValueType.INT, label9),
-            label8,
+            new CfIf(IfType.EQ, ValueType.INT, label11),
+            label10,
             new CfReturnVoid(),
-            label9,
+            label11,
             new CfFrame(
                 new Int2ObjectAVLTreeMap<>(
                     new int[] {0, 1, 2, 3, 4, 5},
@@ -9054,7 +10470,7 @@ public final class AssistantRuntimeMethods {
             new CfArithmeticBinop(CfArithmeticBinop.Opcode.Add, NumericType.INT),
             new CfNewArray(factory.createType("[Ljava/lang/String;")),
             new CfStore(ValueType.OBJECT, 6),
-            label10,
+            label12,
             new CfLoad(ValueType.OBJECT, 6),
             new CfConstNumber(0, ValueType.INT),
             new CfLoad(ValueType.OBJECT, 0),
@@ -9069,7 +10485,7 @@ public final class AssistantRuntimeMethods {
                     factory.createString("printClassLoader")),
                 false),
             new CfArrayStore(MemberType.OBJECT),
-            label11,
+            label13,
             new CfLoad(ValueType.OBJECT, 6),
             new CfConstNumber(1, ValueType.INT),
             new CfLoad(ValueType.OBJECT, 4),
@@ -9081,10 +10497,10 @@ public final class AssistantRuntimeMethods {
                     factory.createString("toString")),
                 true),
             new CfArrayStore(MemberType.OBJECT),
-            label12,
+            label14,
             new CfConstNumber(0, ValueType.INT),
             new CfStore(ValueType.INT, 7),
-            label13,
+            label15,
             new CfFrame(
                 new Int2ObjectAVLTreeMap<>(
                     new int[] {0, 1, 2, 3, 4, 5, 6, 7},
@@ -9109,8 +10525,8 @@ public final class AssistantRuntimeMethods {
             new CfLoad(ValueType.INT, 7),
             new CfLoad(ValueType.OBJECT, 3),
             new CfArrayLength(),
-            new CfIfCmp(IfType.GE, ValueType.INT, label16),
-            label14,
+            new CfIfCmp(IfType.GE, ValueType.INT, label18),
+            label16,
             new CfLoad(ValueType.OBJECT, 6),
             new CfLoad(ValueType.INT, 7),
             new CfConstNumber(2, ValueType.INT),
@@ -9128,10 +10544,10 @@ public final class AssistantRuntimeMethods {
                     factory.createString("printClass")),
                 false),
             new CfArrayStore(MemberType.OBJECT),
-            label15,
+            label17,
             new CfIinc(7, 1),
-            new CfGoto(label13),
-            label16,
+            new CfGoto(label15),
+            label18,
             new CfFrame(
                 new Int2ObjectAVLTreeMap<>(
                     new int[] {0, 1, 2, 3, 4, 5, 6},
@@ -9176,9 +10592,9 @@ public final class AssistantRuntimeMethods {
                         factory.createType("[Ljava/lang/String;")),
                     factory.createString("output")),
                 false),
-            label17,
+            label19,
             new CfReturnVoid(),
-            label18),
+            label20),
         ImmutableList.of(),
         ImmutableList.of());
   }
@@ -9196,6 +10612,8 @@ public final class AssistantRuntimeMethods {
         4,
         ImmutableList.of(
             label0,
+            new CfLoad(ValueType.OBJECT, 2),
+            new CfIf(IfType.EQ, ValueType.OBJECT, label1),
             new CfLoad(ValueType.OBJECT, 0),
             new CfLoad(ValueType.OBJECT, 2),
             new CfInvoke(
@@ -9330,12 +10748,277 @@ public final class AssistantRuntimeMethods {
     CfLabel label14 = new CfLabel();
     CfLabel label15 = new CfLabel();
     CfLabel label16 = new CfLabel();
+    CfLabel label17 = new CfLabel();
+    CfLabel label18 = new CfLabel();
+    CfLabel label19 = new CfLabel();
+    CfLabel label20 = new CfLabel();
+    CfLabel label21 = new CfLabel();
+    CfLabel label22 = new CfLabel();
+    CfLabel label23 = new CfLabel();
+    CfLabel label24 = new CfLabel();
+    CfLabel label25 = new CfLabel();
+    CfLabel label26 = new CfLabel();
+    CfLabel label27 = new CfLabel();
+    CfLabel label28 = new CfLabel();
+    CfLabel label29 = new CfLabel();
+    CfLabel label30 = new CfLabel();
+    CfLabel label31 = new CfLabel();
     return new CfCode(
         method.holder,
-        3,
-        5,
+        4,
+        10,
         ImmutableList.of(
             label0,
+            new CfLoad(ValueType.OBJECT, 0),
+            new CfInstanceFieldRead(
+                factory.createField(
+                    factory.createType(
+                        "Lcom/android/tools/r8/assistant/runtime/ReflectiveOperationJsonLogger;"),
+                    factory.createType("Ljava/io/FileWriter;"),
+                    factory.createString("output"))),
+            new CfIf(IfType.NE, ValueType.OBJECT, label2),
+            label1,
+            new CfReturnVoid(),
+            label2,
+            new CfFrame(
+                new Int2ObjectAVLTreeMap<>(
+                    new int[] {0, 1, 2, 3},
+                    new FrameType[] {
+                      FrameType.initializedNonNullReference(
+                          factory.createType(
+                              "Lcom/android/tools/r8/assistant/runtime/ReflectiveOperationJsonLogger;")),
+                      FrameType.initializedNonNullReference(
+                          factory.createType(
+                              "Lcom/android/tools/r8/assistant/runtime/ReflectiveEventType;")),
+                      FrameType.initializedNonNullReference(
+                          factory.createType(
+                              "Lcom/android/tools/r8/assistant/runtime/ReflectiveOracle$Stack;")),
+                      FrameType.initializedNonNullReference(
+                          factory.createType("[Ljava/lang/String;"))
+                    })),
+            new CfConstNumber(-3750763034362895579L, ValueType.LONG),
+            new CfStore(ValueType.LONG, 4),
+            label3,
+            new CfLoad(ValueType.OBJECT, 0),
+            new CfLoad(ValueType.LONG, 4),
+            new CfLoad(ValueType.OBJECT, 1),
+            new CfInvoke(
+                182,
+                factory.createMethod(
+                    factory.createType(
+                        "Lcom/android/tools/r8/assistant/runtime/ReflectiveEventType;"),
+                    factory.createProto(factory.stringType),
+                    factory.createString("name")),
+                false),
+            new CfInvoke(
+                182,
+                factory.createMethod(
+                    factory.createType(
+                        "Lcom/android/tools/r8/assistant/runtime/ReflectiveOperationJsonLogger;"),
+                    factory.createProto(factory.longType, factory.longType, factory.stringType),
+                    factory.createString("updateHash")),
+                false),
+            new CfStore(ValueType.LONG, 4),
+            label4,
+            new CfLoad(ValueType.OBJECT, 2),
+            new CfIf(IfType.EQ, ValueType.OBJECT, label9),
+            label5,
+            new CfLoad(ValueType.OBJECT, 2),
+            new CfInvoke(
+                182,
+                factory.createMethod(
+                    factory.createType(
+                        "Lcom/android/tools/r8/assistant/runtime/ReflectiveOracle$Stack;"),
+                    factory.createProto(factory.createType("[Ljava/lang/String;")),
+                    factory.createString("stackTraceElementsAsString")),
+                false),
+            new CfStore(ValueType.OBJECT, 6),
+            new CfLoad(ValueType.OBJECT, 6),
+            new CfArrayLength(),
+            new CfStore(ValueType.INT, 7),
+            new CfConstNumber(0, ValueType.INT),
+            new CfStore(ValueType.INT, 8),
+            label6,
+            new CfFrame(
+                new Int2ObjectAVLTreeMap<>(
+                    new int[] {0, 1, 2, 3, 4, 5, 6, 7, 8},
+                    new FrameType[] {
+                      FrameType.initializedNonNullReference(
+                          factory.createType(
+                              "Lcom/android/tools/r8/assistant/runtime/ReflectiveOperationJsonLogger;")),
+                      FrameType.initializedNonNullReference(
+                          factory.createType(
+                              "Lcom/android/tools/r8/assistant/runtime/ReflectiveEventType;")),
+                      FrameType.initializedNonNullReference(
+                          factory.createType(
+                              "Lcom/android/tools/r8/assistant/runtime/ReflectiveOracle$Stack;")),
+                      FrameType.initializedNonNullReference(
+                          factory.createType("[Ljava/lang/String;")),
+                      FrameType.longType(),
+                      FrameType.longHighType(),
+                      FrameType.initializedNonNullReference(
+                          factory.createType("[Ljava/lang/String;")),
+                      FrameType.intType(),
+                      FrameType.intType()
+                    })),
+            new CfLoad(ValueType.INT, 8),
+            new CfLoad(ValueType.INT, 7),
+            new CfIfCmp(IfType.GE, ValueType.INT, label9),
+            new CfLoad(ValueType.OBJECT, 6),
+            new CfLoad(ValueType.INT, 8),
+            new CfArrayLoad(MemberType.OBJECT),
+            new CfStore(ValueType.OBJECT, 9),
+            label7,
+            new CfLoad(ValueType.OBJECT, 0),
+            new CfLoad(ValueType.LONG, 4),
+            new CfLoad(ValueType.OBJECT, 9),
+            new CfInvoke(
+                182,
+                factory.createMethod(
+                    factory.createType(
+                        "Lcom/android/tools/r8/assistant/runtime/ReflectiveOperationJsonLogger;"),
+                    factory.createProto(factory.longType, factory.longType, factory.stringType),
+                    factory.createString("updateHash")),
+                false),
+            new CfStore(ValueType.LONG, 4),
+            label8,
+            new CfIinc(8, 1),
+            new CfGoto(label6),
+            label9,
+            new CfFrame(
+                new Int2ObjectAVLTreeMap<>(
+                    new int[] {0, 1, 2, 3, 4, 5},
+                    new FrameType[] {
+                      FrameType.initializedNonNullReference(
+                          factory.createType(
+                              "Lcom/android/tools/r8/assistant/runtime/ReflectiveOperationJsonLogger;")),
+                      FrameType.initializedNonNullReference(
+                          factory.createType(
+                              "Lcom/android/tools/r8/assistant/runtime/ReflectiveEventType;")),
+                      FrameType.initializedNonNullReference(
+                          factory.createType(
+                              "Lcom/android/tools/r8/assistant/runtime/ReflectiveOracle$Stack;")),
+                      FrameType.initializedNonNullReference(
+                          factory.createType("[Ljava/lang/String;")),
+                      FrameType.longType(),
+                      FrameType.longHighType()
+                    })),
+            new CfLoad(ValueType.OBJECT, 3),
+            new CfStore(ValueType.OBJECT, 6),
+            new CfLoad(ValueType.OBJECT, 6),
+            new CfArrayLength(),
+            new CfStore(ValueType.INT, 7),
+            new CfConstNumber(0, ValueType.INT),
+            new CfStore(ValueType.INT, 8),
+            label10,
+            new CfFrame(
+                new Int2ObjectAVLTreeMap<>(
+                    new int[] {0, 1, 2, 3, 4, 5, 6, 7, 8},
+                    new FrameType[] {
+                      FrameType.initializedNonNullReference(
+                          factory.createType(
+                              "Lcom/android/tools/r8/assistant/runtime/ReflectiveOperationJsonLogger;")),
+                      FrameType.initializedNonNullReference(
+                          factory.createType(
+                              "Lcom/android/tools/r8/assistant/runtime/ReflectiveEventType;")),
+                      FrameType.initializedNonNullReference(
+                          factory.createType(
+                              "Lcom/android/tools/r8/assistant/runtime/ReflectiveOracle$Stack;")),
+                      FrameType.initializedNonNullReference(
+                          factory.createType("[Ljava/lang/String;")),
+                      FrameType.longType(),
+                      FrameType.longHighType(),
+                      FrameType.initializedNonNullReference(
+                          factory.createType("[Ljava/lang/String;")),
+                      FrameType.intType(),
+                      FrameType.intType()
+                    })),
+            new CfLoad(ValueType.INT, 8),
+            new CfLoad(ValueType.INT, 7),
+            new CfIfCmp(IfType.GE, ValueType.INT, label13),
+            new CfLoad(ValueType.OBJECT, 6),
+            new CfLoad(ValueType.INT, 8),
+            new CfArrayLoad(MemberType.OBJECT),
+            new CfStore(ValueType.OBJECT, 9),
+            label11,
+            new CfLoad(ValueType.OBJECT, 0),
+            new CfLoad(ValueType.LONG, 4),
+            new CfLoad(ValueType.OBJECT, 9),
+            new CfInvoke(
+                182,
+                factory.createMethod(
+                    factory.createType(
+                        "Lcom/android/tools/r8/assistant/runtime/ReflectiveOperationJsonLogger;"),
+                    factory.createProto(factory.longType, factory.longType, factory.stringType),
+                    factory.createString("updateHash")),
+                false),
+            new CfStore(ValueType.LONG, 4),
+            label12,
+            new CfIinc(8, 1),
+            new CfGoto(label10),
+            label13,
+            new CfFrame(
+                new Int2ObjectAVLTreeMap<>(
+                    new int[] {0, 1, 2, 3, 4, 5},
+                    new FrameType[] {
+                      FrameType.initializedNonNullReference(
+                          factory.createType(
+                              "Lcom/android/tools/r8/assistant/runtime/ReflectiveOperationJsonLogger;")),
+                      FrameType.initializedNonNullReference(
+                          factory.createType(
+                              "Lcom/android/tools/r8/assistant/runtime/ReflectiveEventType;")),
+                      FrameType.initializedNonNullReference(
+                          factory.createType(
+                              "Lcom/android/tools/r8/assistant/runtime/ReflectiveOracle$Stack;")),
+                      FrameType.initializedNonNullReference(
+                          factory.createType("[Ljava/lang/String;")),
+                      FrameType.longType(),
+                      FrameType.longHighType()
+                    })),
+            new CfLoad(ValueType.OBJECT, 0),
+            new CfInstanceFieldRead(
+                factory.createField(
+                    factory.createType(
+                        "Lcom/android/tools/r8/assistant/runtime/ReflectiveOperationJsonLogger;"),
+                    factory.createType("Ljava/util/Set;"),
+                    factory.createString("seenEvents"))),
+            new CfLoad(ValueType.LONG, 4),
+            new CfInvoke(
+                184,
+                factory.createMethod(
+                    factory.createType("Ljava/lang/Long;"),
+                    factory.createProto(factory.createType("Ljava/lang/Long;"), factory.longType),
+                    factory.createString("valueOf")),
+                false),
+            new CfInvoke(
+                185,
+                factory.createMethod(
+                    factory.createType("Ljava/util/Set;"),
+                    factory.createProto(factory.booleanType, factory.objectType),
+                    factory.createString("add")),
+                true),
+            new CfIf(IfType.NE, ValueType.INT, label15),
+            label14,
+            new CfReturnVoid(),
+            label15,
+            new CfFrame(
+                new Int2ObjectAVLTreeMap<>(
+                    new int[] {0, 1, 2, 3, 4, 5},
+                    new FrameType[] {
+                      FrameType.initializedNonNullReference(
+                          factory.createType(
+                              "Lcom/android/tools/r8/assistant/runtime/ReflectiveOperationJsonLogger;")),
+                      FrameType.initializedNonNullReference(
+                          factory.createType(
+                              "Lcom/android/tools/r8/assistant/runtime/ReflectiveEventType;")),
+                      FrameType.initializedNonNullReference(
+                          factory.createType(
+                              "Lcom/android/tools/r8/assistant/runtime/ReflectiveOracle$Stack;")),
+                      FrameType.initializedNonNullReference(
+                          factory.createType("[Ljava/lang/String;")),
+                      FrameType.longType(),
+                      FrameType.longHighType()
+                    })),
             new CfLoad(ValueType.OBJECT, 0),
             new CfInstanceFieldRead(
                 factory.createField(
@@ -9351,7 +11034,7 @@ public final class AssistantRuntimeMethods {
                     factory.createProto(factory.voidType, factory.stringType),
                     factory.createString("write")),
                 false),
-            label1,
+            label16,
             new CfLoad(ValueType.OBJECT, 0),
             new CfInstanceFieldRead(
                 factory.createField(
@@ -9375,7 +11058,7 @@ public final class AssistantRuntimeMethods {
                     factory.createProto(factory.voidType, factory.stringType),
                     factory.createString("write")),
                 false),
-            label2,
+            label17,
             new CfLoad(ValueType.OBJECT, 0),
             new CfInstanceFieldRead(
                 factory.createField(
@@ -9391,10 +11074,10 @@ public final class AssistantRuntimeMethods {
                     factory.createProto(factory.voidType, factory.stringType),
                     factory.createString("write")),
                 false),
-            label3,
+            label18,
             new CfLoad(ValueType.OBJECT, 2),
-            new CfIf(IfType.EQ, ValueType.OBJECT, label6),
-            label4,
+            new CfIf(IfType.EQ, ValueType.OBJECT, label21),
+            label19,
             new CfLoad(ValueType.OBJECT, 0),
             new CfInstanceFieldRead(
                 factory.createField(
@@ -9410,7 +11093,7 @@ public final class AssistantRuntimeMethods {
                     factory.createProto(factory.voidType, factory.stringType),
                     factory.createString("write")),
                 false),
-            label5,
+            label20,
             new CfLoad(ValueType.OBJECT, 0),
             new CfLoad(ValueType.OBJECT, 2),
             new CfInvoke(
@@ -9430,10 +11113,10 @@ public final class AssistantRuntimeMethods {
                         factory.voidType, factory.createType("[Ljava/lang/String;")),
                     factory.createString("printArray")),
                 false),
-            label6,
+            label21,
             new CfFrame(
                 new Int2ObjectAVLTreeMap<>(
-                    new int[] {0, 1, 2, 3},
+                    new int[] {0, 1, 2, 3, 4, 5},
                     new FrameType[] {
                       FrameType.initializedNonNullReference(
                           factory.createType(
@@ -9445,7 +11128,9 @@ public final class AssistantRuntimeMethods {
                           factory.createType(
                               "Lcom/android/tools/r8/assistant/runtime/ReflectiveOracle$Stack;")),
                       FrameType.initializedNonNullReference(
-                          factory.createType("[Ljava/lang/String;"))
+                          factory.createType("[Ljava/lang/String;")),
+                      FrameType.longType(),
+                      FrameType.longHighType()
                     })),
             new CfStaticFieldRead(
                 factory.createField(
@@ -9453,9 +11138,9 @@ public final class AssistantRuntimeMethods {
                         "Lcom/android/tools/r8/assistant/runtime/ReflectiveOperationJsonLogger;"),
                     factory.booleanType,
                     factory.createString("$assertionsDisabled"))),
-            new CfIf(IfType.NE, ValueType.INT, label7),
+            new CfIf(IfType.NE, ValueType.INT, label22),
             new CfLoad(ValueType.OBJECT, 3),
-            new CfIf(IfType.NE, ValueType.OBJECT, label7),
+            new CfIf(IfType.NE, ValueType.OBJECT, label22),
             new CfNew(factory.createType("Ljava/lang/AssertionError;")),
             new CfStackInstruction(CfStackInstruction.Opcode.Dup),
             new CfInvoke(
@@ -9466,10 +11151,10 @@ public final class AssistantRuntimeMethods {
                     factory.createString("<init>")),
                 false),
             new CfThrow(),
-            label7,
+            label22,
             new CfFrame(
                 new Int2ObjectAVLTreeMap<>(
-                    new int[] {0, 1, 2, 3},
+                    new int[] {0, 1, 2, 3, 4, 5},
                     new FrameType[] {
                       FrameType.initializedNonNullReference(
                           factory.createType(
@@ -9481,7 +11166,9 @@ public final class AssistantRuntimeMethods {
                           factory.createType(
                               "Lcom/android/tools/r8/assistant/runtime/ReflectiveOracle$Stack;")),
                       FrameType.initializedNonNullReference(
-                          factory.createType("[Ljava/lang/String;"))
+                          factory.createType("[Ljava/lang/String;")),
+                      FrameType.longType(),
+                      FrameType.longHighType()
                     })),
             new CfLoad(ValueType.OBJECT, 0),
             new CfInstanceFieldRead(
@@ -9498,7 +11185,7 @@ public final class AssistantRuntimeMethods {
                     factory.createProto(factory.voidType, factory.stringType),
                     factory.createString("write")),
                 false),
-            label8,
+            label23,
             new CfLoad(ValueType.OBJECT, 0),
             new CfLoad(ValueType.OBJECT, 3),
             new CfInvoke(
@@ -9510,7 +11197,7 @@ public final class AssistantRuntimeMethods {
                         factory.voidType, factory.createType("[Ljava/lang/String;")),
                     factory.createString("printArray")),
                 false),
-            label9,
+            label24,
             new CfLoad(ValueType.OBJECT, 0),
             new CfInstanceFieldRead(
                 factory.createField(
@@ -9526,7 +11213,7 @@ public final class AssistantRuntimeMethods {
                     factory.createProto(factory.voidType, factory.stringType),
                     factory.createString("write")),
                 false),
-            label10,
+            label25,
             new CfLoad(ValueType.OBJECT, 0),
             new CfInstanceFieldRead(
                 factory.createField(
@@ -9548,7 +11235,7 @@ public final class AssistantRuntimeMethods {
                     factory.createProto(factory.voidType, factory.stringType),
                     factory.createString("write")),
                 false),
-            label11,
+            label26,
             new CfLoad(ValueType.OBJECT, 0),
             new CfInstanceFieldRead(
                 factory.createField(
@@ -9563,12 +11250,12 @@ public final class AssistantRuntimeMethods {
                     factory.createProto(factory.voidType),
                     factory.createString("flush")),
                 false),
-            label12,
-            new CfGoto(label15),
-            label13,
+            label27,
+            new CfGoto(label30),
+            label28,
             new CfFrame(
                 new Int2ObjectAVLTreeMap<>(
-                    new int[] {0, 1, 2, 3},
+                    new int[] {0, 1, 2, 3, 4, 5},
                     new FrameType[] {
                       FrameType.initializedNonNullReference(
                           factory.createType(
@@ -9580,17 +11267,19 @@ public final class AssistantRuntimeMethods {
                           factory.createType(
                               "Lcom/android/tools/r8/assistant/runtime/ReflectiveOracle$Stack;")),
                       FrameType.initializedNonNullReference(
-                          factory.createType("[Ljava/lang/String;"))
+                          factory.createType("[Ljava/lang/String;")),
+                      FrameType.longType(),
+                      FrameType.longHighType()
                     }),
                 new ArrayDeque<>(
                     Arrays.asList(
                         FrameType.initializedNonNullReference(
                             factory.createType("Ljava/io/IOException;"))))),
-            new CfStore(ValueType.OBJECT, 4),
-            label14,
+            new CfStore(ValueType.OBJECT, 6),
+            label29,
             new CfNew(factory.createType("Ljava/lang/RuntimeException;")),
             new CfStackInstruction(CfStackInstruction.Opcode.Dup),
-            new CfLoad(ValueType.OBJECT, 4),
+            new CfLoad(ValueType.OBJECT, 6),
             new CfInvoke(
                 183,
                 factory.createMethod(
@@ -9599,10 +11288,10 @@ public final class AssistantRuntimeMethods {
                     factory.createString("<init>")),
                 false),
             new CfThrow(),
-            label15,
+            label30,
             new CfFrame(
                 new Int2ObjectAVLTreeMap<>(
-                    new int[] {0, 1, 2, 3},
+                    new int[] {0, 1, 2, 3, 4, 5},
                     new FrameType[] {
                       FrameType.initializedNonNullReference(
                           factory.createType(
@@ -9614,16 +11303,18 @@ public final class AssistantRuntimeMethods {
                           factory.createType(
                               "Lcom/android/tools/r8/assistant/runtime/ReflectiveOracle$Stack;")),
                       FrameType.initializedNonNullReference(
-                          factory.createType("[Ljava/lang/String;"))
+                          factory.createType("[Ljava/lang/String;")),
+                      FrameType.longType(),
+                      FrameType.longHighType()
                     })),
             new CfReturnVoid(),
-            label16),
+            label31),
         ImmutableList.of(
             new CfTryCatch(
-                label0,
-                label12,
+                label15,
+                label27,
                 ImmutableList.of(factory.createType("Ljava/io/IOException;")),
-                ImmutableList.of(label13))),
+                ImmutableList.of(label28))),
         ImmutableList.of());
   }
 
@@ -9639,8 +11330,6 @@ public final class AssistantRuntimeMethods {
     CfLabel label7 = new CfLabel();
     CfLabel label8 = new CfLabel();
     CfLabel label9 = new CfLabel();
-    CfLabel label10 = new CfLabel();
-    CfLabel label11 = new CfLabel();
     return new CfCode(
         method.holder,
         3,
@@ -9680,65 +11369,28 @@ public final class AssistantRuntimeMethods {
             new CfLoad(ValueType.INT, 2),
             new CfLoad(ValueType.OBJECT, 1),
             new CfArrayLength(),
-            new CfIfCmp(IfType.GE, ValueType.INT, label9),
+            new CfIfCmp(IfType.GE, ValueType.INT, label7),
             label3,
             new CfLoad(ValueType.OBJECT, 0),
-            new CfInstanceFieldRead(
-                factory.createField(
-                    factory.createType(
-                        "Lcom/android/tools/r8/assistant/runtime/ReflectiveOperationJsonLogger;"),
-                    factory.createType("Ljava/io/FileWriter;"),
-                    factory.createString("output"))),
-            new CfConstString(factory.createString("\"")),
-            new CfInvoke(
-                182,
-                factory.createMethod(
-                    factory.createType("Ljava/io/FileWriter;"),
-                    factory.createProto(factory.voidType, factory.stringType),
-                    factory.createString("write")),
-                false),
-            label4,
-            new CfLoad(ValueType.OBJECT, 0),
-            new CfInstanceFieldRead(
-                factory.createField(
-                    factory.createType(
-                        "Lcom/android/tools/r8/assistant/runtime/ReflectiveOperationJsonLogger;"),
-                    factory.createType("Ljava/io/FileWriter;"),
-                    factory.createString("output"))),
             new CfLoad(ValueType.OBJECT, 1),
             new CfLoad(ValueType.INT, 2),
             new CfArrayLoad(MemberType.OBJECT),
             new CfInvoke(
                 182,
                 factory.createMethod(
-                    factory.createType("Ljava/io/FileWriter;"),
-                    factory.createProto(factory.voidType, factory.stringType),
-                    factory.createString("write")),
-                false),
-            label5,
-            new CfLoad(ValueType.OBJECT, 0),
-            new CfInstanceFieldRead(
-                factory.createField(
                     factory.createType(
                         "Lcom/android/tools/r8/assistant/runtime/ReflectiveOperationJsonLogger;"),
-                    factory.createType("Ljava/io/FileWriter;"),
-                    factory.createString("output"))),
-            new CfConstString(factory.createString("\"")),
-            new CfInvoke(
-                182,
-                factory.createMethod(
-                    factory.createType("Ljava/io/FileWriter;"),
                     factory.createProto(factory.voidType, factory.stringType),
-                    factory.createString("write")),
+                    factory.createString("writeJsonString")),
                 false),
-            label6,
+            label4,
             new CfLoad(ValueType.INT, 2),
             new CfLoad(ValueType.OBJECT, 1),
             new CfArrayLength(),
             new CfConstNumber(1, ValueType.INT),
             new CfArithmeticBinop(CfArithmeticBinop.Opcode.Sub, NumericType.INT),
-            new CfIfCmp(IfType.EQ, ValueType.INT, label8),
-            label7,
+            new CfIfCmp(IfType.EQ, ValueType.INT, label6),
+            label5,
             new CfLoad(ValueType.OBJECT, 0),
             new CfInstanceFieldRead(
                 factory.createField(
@@ -9754,7 +11406,7 @@ public final class AssistantRuntimeMethods {
                     factory.createProto(factory.voidType, factory.stringType),
                     factory.createString("write")),
                 false),
-            label8,
+            label6,
             new CfFrame(
                 new Int2ObjectAVLTreeMap<>(
                     new int[] {0, 1, 2},
@@ -9768,7 +11420,7 @@ public final class AssistantRuntimeMethods {
                     })),
             new CfIinc(2, 1),
             new CfGoto(label2),
-            label9,
+            label7,
             new CfFrame(
                 new Int2ObjectAVLTreeMap<>(
                     new int[] {0, 1},
@@ -9794,9 +11446,9 @@ public final class AssistantRuntimeMethods {
                     factory.createProto(factory.voidType, factory.stringType),
                     factory.createString("write")),
                 false),
-            label10,
+            label8,
             new CfReturnVoid(),
-            label11),
+            label9),
         ImmutableList.of(),
         ImmutableList.of());
   }
@@ -9926,6 +11578,505 @@ public final class AssistantRuntimeMethods {
         1,
         ImmutableList.of(
             label0, new CfConstNumber(1, ValueType.INT), new CfReturn(ValueType.INT), label1),
+        ImmutableList.of(),
+        ImmutableList.of());
+  }
+
+  public static CfCode ReflectiveOperationJsonLogger_updateHash(
+      DexItemFactory factory, DexMethod method) {
+    CfLabel label0 = new CfLabel();
+    CfLabel label1 = new CfLabel();
+    CfLabel label2 = new CfLabel();
+    CfLabel label3 = new CfLabel();
+    CfLabel label4 = new CfLabel();
+    CfLabel label5 = new CfLabel();
+    CfLabel label6 = new CfLabel();
+    CfLabel label7 = new CfLabel();
+    CfLabel label8 = new CfLabel();
+    return new CfCode(
+        method.holder,
+        4,
+        5,
+        ImmutableList.of(
+            label0,
+            new CfLoad(ValueType.OBJECT, 3),
+            new CfIf(IfType.NE, ValueType.OBJECT, label2),
+            label1,
+            new CfLoad(ValueType.LONG, 1),
+            new CfReturn(ValueType.LONG),
+            label2,
+            new CfFrame(
+                new Int2ObjectAVLTreeMap<>(
+                    new int[] {0, 1, 2, 3},
+                    new FrameType[] {
+                      FrameType.initializedNonNullReference(
+                          factory.createType(
+                              "Lcom/android/tools/r8/assistant/runtime/ReflectiveOperationJsonLogger;")),
+                      FrameType.longType(),
+                      FrameType.longHighType(),
+                      FrameType.initializedNonNullReference(factory.stringType)
+                    })),
+            new CfConstNumber(0, ValueType.INT),
+            new CfStore(ValueType.INT, 4),
+            label3,
+            new CfFrame(
+                new Int2ObjectAVLTreeMap<>(
+                    new int[] {0, 1, 2, 3, 4},
+                    new FrameType[] {
+                      FrameType.initializedNonNullReference(
+                          factory.createType(
+                              "Lcom/android/tools/r8/assistant/runtime/ReflectiveOperationJsonLogger;")),
+                      FrameType.longType(),
+                      FrameType.longHighType(),
+                      FrameType.initializedNonNullReference(factory.stringType),
+                      FrameType.intType()
+                    })),
+            new CfLoad(ValueType.INT, 4),
+            new CfLoad(ValueType.OBJECT, 3),
+            new CfInvoke(
+                182,
+                factory.createMethod(
+                    factory.stringType,
+                    factory.createProto(factory.intType),
+                    factory.createString("length")),
+                false),
+            new CfIfCmp(IfType.GE, ValueType.INT, label7),
+            label4,
+            new CfLoad(ValueType.LONG, 1),
+            new CfLoad(ValueType.OBJECT, 3),
+            new CfLoad(ValueType.INT, 4),
+            new CfInvoke(
+                182,
+                factory.createMethod(
+                    factory.stringType,
+                    factory.createProto(factory.charType, factory.intType),
+                    factory.createString("charAt")),
+                false),
+            new CfNumberConversion(NumberConversionType.INT_TO_LONG),
+            new CfLogicalBinop(CfLogicalBinop.Opcode.Xor, NumericType.LONG),
+            new CfStore(ValueType.LONG, 1),
+            label5,
+            new CfLoad(ValueType.LONG, 1),
+            new CfConstNumber(1099511628211L, ValueType.LONG),
+            new CfArithmeticBinop(CfArithmeticBinop.Opcode.Mul, NumericType.LONG),
+            new CfStore(ValueType.LONG, 1),
+            label6,
+            new CfIinc(4, 1),
+            new CfGoto(label3),
+            label7,
+            new CfFrame(
+                new Int2ObjectAVLTreeMap<>(
+                    new int[] {0, 1, 2, 3},
+                    new FrameType[] {
+                      FrameType.initializedNonNullReference(
+                          factory.createType(
+                              "Lcom/android/tools/r8/assistant/runtime/ReflectiveOperationJsonLogger;")),
+                      FrameType.longType(),
+                      FrameType.longHighType(),
+                      FrameType.initializedNonNullReference(factory.stringType)
+                    })),
+            new CfLoad(ValueType.LONG, 1),
+            new CfReturn(ValueType.LONG),
+            label8),
+        ImmutableList.of(),
+        ImmutableList.of());
+  }
+
+  public static CfCode ReflectiveOperationJsonLogger_writeJsonString(
+      DexItemFactory factory, DexMethod method) {
+    CfLabel label0 = new CfLabel();
+    CfLabel label1 = new CfLabel();
+    CfLabel label2 = new CfLabel();
+    CfLabel label3 = new CfLabel();
+    CfLabel label4 = new CfLabel();
+    CfLabel label5 = new CfLabel();
+    CfLabel label6 = new CfLabel();
+    CfLabel label7 = new CfLabel();
+    CfLabel label8 = new CfLabel();
+    CfLabel label9 = new CfLabel();
+    CfLabel label10 = new CfLabel();
+    CfLabel label11 = new CfLabel();
+    CfLabel label12 = new CfLabel();
+    CfLabel label13 = new CfLabel();
+    CfLabel label14 = new CfLabel();
+    CfLabel label15 = new CfLabel();
+    CfLabel label16 = new CfLabel();
+    CfLabel label17 = new CfLabel();
+    CfLabel label18 = new CfLabel();
+    CfLabel label19 = new CfLabel();
+    CfLabel label20 = new CfLabel();
+    CfLabel label21 = new CfLabel();
+    CfLabel label22 = new CfLabel();
+    CfLabel label23 = new CfLabel();
+    CfLabel label24 = new CfLabel();
+    CfLabel label25 = new CfLabel();
+    return new CfCode(
+        method.holder,
+        2,
+        4,
+        ImmutableList.of(
+            label0,
+            new CfLoad(ValueType.OBJECT, 1),
+            new CfIf(IfType.NE, ValueType.OBJECT, label3),
+            label1,
+            new CfLoad(ValueType.OBJECT, 0),
+            new CfInstanceFieldRead(
+                factory.createField(
+                    factory.createType(
+                        "Lcom/android/tools/r8/assistant/runtime/ReflectiveOperationJsonLogger;"),
+                    factory.createType("Ljava/io/FileWriter;"),
+                    factory.createString("output"))),
+            new CfConstString(factory.createString("null")),
+            new CfInvoke(
+                182,
+                factory.createMethod(
+                    factory.createType("Ljava/io/FileWriter;"),
+                    factory.createProto(factory.voidType, factory.stringType),
+                    factory.createString("write")),
+                false),
+            label2,
+            new CfReturnVoid(),
+            label3,
+            new CfFrame(
+                new Int2ObjectAVLTreeMap<>(
+                    new int[] {0, 1},
+                    new FrameType[] {
+                      FrameType.initializedNonNullReference(
+                          factory.createType(
+                              "Lcom/android/tools/r8/assistant/runtime/ReflectiveOperationJsonLogger;")),
+                      FrameType.initializedNonNullReference(factory.stringType)
+                    })),
+            new CfLoad(ValueType.OBJECT, 0),
+            new CfInstanceFieldRead(
+                factory.createField(
+                    factory.createType(
+                        "Lcom/android/tools/r8/assistant/runtime/ReflectiveOperationJsonLogger;"),
+                    factory.createType("Ljava/io/FileWriter;"),
+                    factory.createString("output"))),
+            new CfConstString(factory.createString("\"")),
+            new CfInvoke(
+                182,
+                factory.createMethod(
+                    factory.createType("Ljava/io/FileWriter;"),
+                    factory.createProto(factory.voidType, factory.stringType),
+                    factory.createString("write")),
+                false),
+            label4,
+            new CfConstNumber(0, ValueType.INT),
+            new CfStore(ValueType.INT, 2),
+            label5,
+            new CfFrame(
+                new Int2ObjectAVLTreeMap<>(
+                    new int[] {0, 1, 2},
+                    new FrameType[] {
+                      FrameType.initializedNonNullReference(
+                          factory.createType(
+                              "Lcom/android/tools/r8/assistant/runtime/ReflectiveOperationJsonLogger;")),
+                      FrameType.initializedNonNullReference(factory.stringType),
+                      FrameType.intType()
+                    })),
+            new CfLoad(ValueType.INT, 2),
+            new CfLoad(ValueType.OBJECT, 1),
+            new CfInvoke(
+                182,
+                factory.createMethod(
+                    factory.stringType,
+                    factory.createProto(factory.intType),
+                    factory.createString("length")),
+                false),
+            new CfIfCmp(IfType.GE, ValueType.INT, label23),
+            label6,
+            new CfLoad(ValueType.OBJECT, 1),
+            new CfLoad(ValueType.INT, 2),
+            new CfInvoke(
+                182,
+                factory.createMethod(
+                    factory.stringType,
+                    factory.createProto(factory.charType, factory.intType),
+                    factory.createString("charAt")),
+                false),
+            new CfStore(ValueType.INT, 3),
+            label7,
+            new CfLoad(ValueType.INT, 3),
+            new CfConstNumber(34, ValueType.INT),
+            new CfIfCmp(IfType.NE, ValueType.INT, label9),
+            label8,
+            new CfLoad(ValueType.OBJECT, 0),
+            new CfInstanceFieldRead(
+                factory.createField(
+                    factory.createType(
+                        "Lcom/android/tools/r8/assistant/runtime/ReflectiveOperationJsonLogger;"),
+                    factory.createType("Ljava/io/FileWriter;"),
+                    factory.createString("output"))),
+            new CfConstString(factory.createString("\\\"")),
+            new CfInvoke(
+                182,
+                factory.createMethod(
+                    factory.createType("Ljava/io/FileWriter;"),
+                    factory.createProto(factory.voidType, factory.stringType),
+                    factory.createString("write")),
+                false),
+            new CfGoto(label22),
+            label9,
+            new CfFrame(
+                new Int2ObjectAVLTreeMap<>(
+                    new int[] {0, 1, 2, 3},
+                    new FrameType[] {
+                      FrameType.initializedNonNullReference(
+                          factory.createType(
+                              "Lcom/android/tools/r8/assistant/runtime/ReflectiveOperationJsonLogger;")),
+                      FrameType.initializedNonNullReference(factory.stringType),
+                      FrameType.intType(),
+                      FrameType.intType()
+                    })),
+            new CfLoad(ValueType.INT, 3),
+            new CfConstNumber(92, ValueType.INT),
+            new CfIfCmp(IfType.NE, ValueType.INT, label11),
+            label10,
+            new CfLoad(ValueType.OBJECT, 0),
+            new CfInstanceFieldRead(
+                factory.createField(
+                    factory.createType(
+                        "Lcom/android/tools/r8/assistant/runtime/ReflectiveOperationJsonLogger;"),
+                    factory.createType("Ljava/io/FileWriter;"),
+                    factory.createString("output"))),
+            new CfConstString(factory.createString("\\\\")),
+            new CfInvoke(
+                182,
+                factory.createMethod(
+                    factory.createType("Ljava/io/FileWriter;"),
+                    factory.createProto(factory.voidType, factory.stringType),
+                    factory.createString("write")),
+                false),
+            new CfGoto(label22),
+            label11,
+            new CfFrame(
+                new Int2ObjectAVLTreeMap<>(
+                    new int[] {0, 1, 2, 3},
+                    new FrameType[] {
+                      FrameType.initializedNonNullReference(
+                          factory.createType(
+                              "Lcom/android/tools/r8/assistant/runtime/ReflectiveOperationJsonLogger;")),
+                      FrameType.initializedNonNullReference(factory.stringType),
+                      FrameType.intType(),
+                      FrameType.intType()
+                    })),
+            new CfLoad(ValueType.INT, 3),
+            new CfConstNumber(8, ValueType.INT),
+            new CfIfCmp(IfType.NE, ValueType.INT, label13),
+            label12,
+            new CfLoad(ValueType.OBJECT, 0),
+            new CfInstanceFieldRead(
+                factory.createField(
+                    factory.createType(
+                        "Lcom/android/tools/r8/assistant/runtime/ReflectiveOperationJsonLogger;"),
+                    factory.createType("Ljava/io/FileWriter;"),
+                    factory.createString("output"))),
+            new CfConstString(factory.createString("\\b")),
+            new CfInvoke(
+                182,
+                factory.createMethod(
+                    factory.createType("Ljava/io/FileWriter;"),
+                    factory.createProto(factory.voidType, factory.stringType),
+                    factory.createString("write")),
+                false),
+            new CfGoto(label22),
+            label13,
+            new CfFrame(
+                new Int2ObjectAVLTreeMap<>(
+                    new int[] {0, 1, 2, 3},
+                    new FrameType[] {
+                      FrameType.initializedNonNullReference(
+                          factory.createType(
+                              "Lcom/android/tools/r8/assistant/runtime/ReflectiveOperationJsonLogger;")),
+                      FrameType.initializedNonNullReference(factory.stringType),
+                      FrameType.intType(),
+                      FrameType.intType()
+                    })),
+            new CfLoad(ValueType.INT, 3),
+            new CfConstNumber(12, ValueType.INT),
+            new CfIfCmp(IfType.NE, ValueType.INT, label15),
+            label14,
+            new CfLoad(ValueType.OBJECT, 0),
+            new CfInstanceFieldRead(
+                factory.createField(
+                    factory.createType(
+                        "Lcom/android/tools/r8/assistant/runtime/ReflectiveOperationJsonLogger;"),
+                    factory.createType("Ljava/io/FileWriter;"),
+                    factory.createString("output"))),
+            new CfConstString(factory.createString("\\f")),
+            new CfInvoke(
+                182,
+                factory.createMethod(
+                    factory.createType("Ljava/io/FileWriter;"),
+                    factory.createProto(factory.voidType, factory.stringType),
+                    factory.createString("write")),
+                false),
+            new CfGoto(label22),
+            label15,
+            new CfFrame(
+                new Int2ObjectAVLTreeMap<>(
+                    new int[] {0, 1, 2, 3},
+                    new FrameType[] {
+                      FrameType.initializedNonNullReference(
+                          factory.createType(
+                              "Lcom/android/tools/r8/assistant/runtime/ReflectiveOperationJsonLogger;")),
+                      FrameType.initializedNonNullReference(factory.stringType),
+                      FrameType.intType(),
+                      FrameType.intType()
+                    })),
+            new CfLoad(ValueType.INT, 3),
+            new CfConstNumber(10, ValueType.INT),
+            new CfIfCmp(IfType.NE, ValueType.INT, label17),
+            label16,
+            new CfLoad(ValueType.OBJECT, 0),
+            new CfInstanceFieldRead(
+                factory.createField(
+                    factory.createType(
+                        "Lcom/android/tools/r8/assistant/runtime/ReflectiveOperationJsonLogger;"),
+                    factory.createType("Ljava/io/FileWriter;"),
+                    factory.createString("output"))),
+            new CfConstString(factory.createString("\\n")),
+            new CfInvoke(
+                182,
+                factory.createMethod(
+                    factory.createType("Ljava/io/FileWriter;"),
+                    factory.createProto(factory.voidType, factory.stringType),
+                    factory.createString("write")),
+                false),
+            new CfGoto(label22),
+            label17,
+            new CfFrame(
+                new Int2ObjectAVLTreeMap<>(
+                    new int[] {0, 1, 2, 3},
+                    new FrameType[] {
+                      FrameType.initializedNonNullReference(
+                          factory.createType(
+                              "Lcom/android/tools/r8/assistant/runtime/ReflectiveOperationJsonLogger;")),
+                      FrameType.initializedNonNullReference(factory.stringType),
+                      FrameType.intType(),
+                      FrameType.intType()
+                    })),
+            new CfLoad(ValueType.INT, 3),
+            new CfConstNumber(13, ValueType.INT),
+            new CfIfCmp(IfType.NE, ValueType.INT, label19),
+            label18,
+            new CfLoad(ValueType.OBJECT, 0),
+            new CfInstanceFieldRead(
+                factory.createField(
+                    factory.createType(
+                        "Lcom/android/tools/r8/assistant/runtime/ReflectiveOperationJsonLogger;"),
+                    factory.createType("Ljava/io/FileWriter;"),
+                    factory.createString("output"))),
+            new CfConstString(factory.createString("\\r")),
+            new CfInvoke(
+                182,
+                factory.createMethod(
+                    factory.createType("Ljava/io/FileWriter;"),
+                    factory.createProto(factory.voidType, factory.stringType),
+                    factory.createString("write")),
+                false),
+            new CfGoto(label22),
+            label19,
+            new CfFrame(
+                new Int2ObjectAVLTreeMap<>(
+                    new int[] {0, 1, 2, 3},
+                    new FrameType[] {
+                      FrameType.initializedNonNullReference(
+                          factory.createType(
+                              "Lcom/android/tools/r8/assistant/runtime/ReflectiveOperationJsonLogger;")),
+                      FrameType.initializedNonNullReference(factory.stringType),
+                      FrameType.intType(),
+                      FrameType.intType()
+                    })),
+            new CfLoad(ValueType.INT, 3),
+            new CfConstNumber(9, ValueType.INT),
+            new CfIfCmp(IfType.NE, ValueType.INT, label21),
+            label20,
+            new CfLoad(ValueType.OBJECT, 0),
+            new CfInstanceFieldRead(
+                factory.createField(
+                    factory.createType(
+                        "Lcom/android/tools/r8/assistant/runtime/ReflectiveOperationJsonLogger;"),
+                    factory.createType("Ljava/io/FileWriter;"),
+                    factory.createString("output"))),
+            new CfConstString(factory.createString("\\t")),
+            new CfInvoke(
+                182,
+                factory.createMethod(
+                    factory.createType("Ljava/io/FileWriter;"),
+                    factory.createProto(factory.voidType, factory.stringType),
+                    factory.createString("write")),
+                false),
+            new CfGoto(label22),
+            label21,
+            new CfFrame(
+                new Int2ObjectAVLTreeMap<>(
+                    new int[] {0, 1, 2, 3},
+                    new FrameType[] {
+                      FrameType.initializedNonNullReference(
+                          factory.createType(
+                              "Lcom/android/tools/r8/assistant/runtime/ReflectiveOperationJsonLogger;")),
+                      FrameType.initializedNonNullReference(factory.stringType),
+                      FrameType.intType(),
+                      FrameType.intType()
+                    })),
+            new CfLoad(ValueType.OBJECT, 0),
+            new CfInstanceFieldRead(
+                factory.createField(
+                    factory.createType(
+                        "Lcom/android/tools/r8/assistant/runtime/ReflectiveOperationJsonLogger;"),
+                    factory.createType("Ljava/io/FileWriter;"),
+                    factory.createString("output"))),
+            new CfLoad(ValueType.INT, 3),
+            new CfInvoke(
+                182,
+                factory.createMethod(
+                    factory.createType("Ljava/io/FileWriter;"),
+                    factory.createProto(factory.voidType, factory.intType),
+                    factory.createString("write")),
+                false),
+            label22,
+            new CfFrame(
+                new Int2ObjectAVLTreeMap<>(
+                    new int[] {0, 1, 2},
+                    new FrameType[] {
+                      FrameType.initializedNonNullReference(
+                          factory.createType(
+                              "Lcom/android/tools/r8/assistant/runtime/ReflectiveOperationJsonLogger;")),
+                      FrameType.initializedNonNullReference(factory.stringType),
+                      FrameType.intType()
+                    })),
+            new CfIinc(2, 1),
+            new CfGoto(label5),
+            label23,
+            new CfFrame(
+                new Int2ObjectAVLTreeMap<>(
+                    new int[] {0, 1},
+                    new FrameType[] {
+                      FrameType.initializedNonNullReference(
+                          factory.createType(
+                              "Lcom/android/tools/r8/assistant/runtime/ReflectiveOperationJsonLogger;")),
+                      FrameType.initializedNonNullReference(factory.stringType)
+                    })),
+            new CfLoad(ValueType.OBJECT, 0),
+            new CfInstanceFieldRead(
+                factory.createField(
+                    factory.createType(
+                        "Lcom/android/tools/r8/assistant/runtime/ReflectiveOperationJsonLogger;"),
+                    factory.createType("Ljava/io/FileWriter;"),
+                    factory.createString("output"))),
+            new CfConstString(factory.createString("\"")),
+            new CfInvoke(
+                182,
+                factory.createMethod(
+                    factory.createType("Ljava/io/FileWriter;"),
+                    factory.createProto(factory.voidType, factory.stringType),
+                    factory.createString("write")),
+                false),
+            label24,
+            new CfReturnVoid(),
+            label25),
         ImmutableList.of(),
         ImmutableList.of());
   }
