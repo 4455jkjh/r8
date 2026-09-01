@@ -73,6 +73,7 @@ class ClassMerger {
   private final DexProgramClass target;
 
   private final ClassMergerSharedData sharedData;
+  private final List<DexMethod> abstractShadowedMethods;
   private final List<IncompleteVerticalClassMergerBridgeCode> synthesizedBridges;
   private Predicate<DexEncodedMethod> virtualMethodsTargetedByInvokeSuperInImmediateSubclass;
 
@@ -80,6 +81,7 @@ class ClassMerger {
       AppView<AppInfoWithLiveness> appView,
       VerticalClassMergerGraphLens.Builder outerLensBuilder,
       ClassMergerSharedData sharedData,
+      List<DexMethod> abstractShadowedMethods,
       List<IncompleteVerticalClassMergerBridgeCode> synthesizedBridges,
       VerticallyMergedClasses.Builder verticallyMergedClassesBuilder,
       VerticalMergeGroup group) {
@@ -88,6 +90,7 @@ class ClassMerger {
     this.lensBuilder = new VerticalClassMergerGraphLens.Builder();
     this.outerLensBuilder = outerLensBuilder;
     this.sharedData = sharedData;
+    this.abstractShadowedMethods = abstractShadowedMethods;
     this.synthesizedBridges = synthesizedBridges;
     this.verticallyMergedClassesBuilder = verticallyMergedClassesBuilder;
     this.source = group.getSource();
@@ -202,6 +205,7 @@ class ClassMerger {
         // needed to ensure we correctly fixup the mapping in case the signature refers to
         // merged classes.
         lensBuilder.recordSplit(abstractMethod, shadowedBy, null, null);
+        abstractShadowedMethods.add(abstractMethod.getReference());
 
         // The override now corresponds to the method in the parent, so unset its synthetic flag
         // if the method in the parent is not synthetic.
