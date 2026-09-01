@@ -10,6 +10,16 @@ plugins {
   id("dependencies-plugin")
 }
 
+val r8LibArtifactName = "r8lib.jar"
+val r8LibNoDepsArtifactName = "r8lib-exclude-deps.jar"
+val r8LibPartitionMapName = "r8lib.jar_map.zip"
+val r8LibNoDepsPartitionMapName = "r8lib-exclude-deps.jar_map.zip"
+val r8WithRelocatedDepsArtifactName = "r8.jar"
+val processKeepRulesArtifactName = "processkeepruleslib.jar"
+val swissArmyKnifeArtifactName = "r8-full-exclude-deps.jar"
+val packageTestDepsArtifactName = "test_deps_all.jar"
+val rewrittenTestBaseArtifactName = "r8libtestbase-cf.jar"
+
 val testJarsScope by configurations.dependencyScope("testJarsScope")
 val testJars by configurations.resolvable("testJars") { extendsFrom(testJarsScope) }
 
@@ -127,7 +137,7 @@ tasks {
       exclude("META-INF/*.kotlin_module", "**/*.kotlin_metadata", "org/jspecify/**", "org/jspecify")
       duplicatesStrategy = DuplicatesStrategy.EXCLUDE
       destinationDirectory.set(getRoot().resolveAll("build", "libs"))
-      archiveFileName.set("test_deps_all.jar")
+      archiveFileName.set(packageTestDepsArtifactName)
     }
 
   val packageTestBase =
@@ -249,7 +259,7 @@ tasks {
             mainDepsJarTask.flatMap { it.archiveFile },
             mainProtoJarTask.flatMap { it.archiveFile },
           ),
-        artifactName = "r8lib-exclude-deps.jar",
+        artifactName = r8LibNoDepsArtifactName,
       )
     }
 
@@ -259,7 +269,7 @@ tasks {
         inputJarProvider = r8WithRelocatedDepsTask.flatMap { it.outputFile },
         generatedKeepRulesProvider = generateKeepRulesForR8LibWithRelocatedDeps,
         classpath = listOf(),
-        artifactName = "r8lib.jar",
+        artifactName = r8LibArtifactName,
       )
     }
 
@@ -343,7 +353,7 @@ tasks {
         generateTestKeepRulesR8LibWithRelocatedDeps,
         r8WithRelocatedDepsTask.flatMap { it.outputFile },
         relocateTestBaseForR8LibWithRelocatedDeps.flatMap { it.outputFile },
-        "r8libtestbase-cf.jar",
+        rewrittenTestBaseArtifactName,
         false,
       )
     }
@@ -415,52 +425,156 @@ tasks {
       unzipRewrittenTestsForR8Lib(rewriteTestsForR8LibNoDeps, "rewrittentests-r8lib-exclude-deps")
     }
 
+  fun Test.addAsInputAvailableViaSystemProperty(
+    name: String,
+    jarFile: Provider<RegularFile>,
+    usePrebuiltLib: Boolean,
+  ) {
+    if (!usePrebuiltLib) {
+      inputs.file(jarFile).withPropertyName(name).withNormalizer(ClasspathNormalizer::class.java)
+    }
+    systemProperty(name, jarFile.get().asFile.absolutePath)
+  }
+
+  fun Test.setupR8LibTestEnvironment(
+    packageTestDeps: FileCollection,
+    r8LibJar: Provider<RegularFile>,
+    unpackedTests: FileCollection,
+    rewrittenTestBase: File,
+    r8WithRelocatedDepsJar: File,
+    r8LibPartitionMapFile: File?,
+    testDataLocation: File,
+    testBaseDataLocation: File,
+    processKeepRulesJar: Provider<RegularFile>,
+    swissArmyKnifeJar: Provider<RegularFile>,
+    usePrebuiltLib: Boolean,
+  ) {
+    configure(
+      isR8Lib = true,
+      r8Jar = r8WithRelocatedDepsJar,
+      r8LibPartitionMapFile = r8LibPartitionMapFile,
+    )
+    // R8lib should be used instead of the main output and all the tests in r8 should be mapped and
+    // exists in r8LibTestPath.
+    classpath = files(packageTestDeps, r8LibJar, unpackedTests, rewrittenTestBase)
+    testClassesDirs = unpackedTests
+    systemProperty("TEST_DATA_LOCATION", testDataLocation.absolutePath)
+    systemProperty("TESTBASE_DATA_LOCATION", testBaseDataLocation.absolutePath)
+    systemProperty("R8_WITH_RELOCATED_DEPS", r8WithRelocatedDepsJar.absolutePath)
+    addAsInputAvailableViaSystemProperty(
+      "BUILD_PROP_PROCESS_KEEP_RULES_RUNTIME_PATH",
+      processKeepRulesJar,
+      usePrebuiltLib,
+    )
+    addAsInputAvailableViaSystemProperty("BUILD_PROP_R8_RUNTIME_PATH", r8LibJar, usePrebuiltLib)
+    addAsInputAvailableViaSystemProperty("R8_SWISS_ARMY_KNIFE", swissArmyKnifeJar, usePrebuiltLib)
+  }
+
   fun Test.testR8Lib(
     r8Lib: TaskProvider<CreateR8LibraryTask>,
     unzipRewrittenTests: TaskProvider<Copy>,
   ) {
-    fun Test.addAsInputAvailableViaSystemProperty(name: String, jarFile: Provider<RegularFile>) {
-      inputs.file(jarFile).withPropertyName(name).withNormalizer(ClasspathNormalizer::class.java)
-      systemProperty(name, jarFile.get().asFile.absolutePath)
-    }
     logger.info("NOTE: Number of processors " + Runtime.getRuntime().availableProcessors())
     logger.info("NOTE: Max parallel forks " + maxParallelForks)
-    dependsOn(
-      packageTestDeps,
-      r8Lib,
-      r8WithRelocatedDepsTask,
-      assembleR8LibNoDeps,
-      rewriteTestBaseForR8LibWithRelocatedDeps,
-      unzipRewrittenTests,
-      unzipTests,
-      unzipTestBase,
-    )
-    addAsInputAvailableViaSystemProperty(
-      "BUILD_PROP_PROCESS_KEEP_RULES_RUNTIME_PATH",
-      processKeepRulesLibWithRelocatedDepsTask.flatMap { it.outputJar },
-    )
-    val r8LibJar = r8Lib.flatMap { it.outputJar }
-    val r8LibPartitionMapFile = r8Lib.flatMap { it.outputPartitionMap }
-    val r8WithRelocatedDepsJar = r8WithRelocatedDepsTask.getSingleOutputFile()
-    configure(
-      isR8Lib = true,
-      r8Jar = r8WithRelocatedDepsJar,
-      r8LibPartitionMapFile = r8LibPartitionMapFile.get().asFile,
-    )
-    addAsInputAvailableViaSystemProperty("BUILD_PROP_R8_RUNTIME_PATH", r8LibJar)
+    val usePrebuiltLib = project.hasProperty("use_prebuilt_lib")
+    if (usePrebuiltLib) {
+      val libsDir = getRoot().resolveAll("build", "libs")
+      val excludingDepsVariant = r8Lib.name == "assembleR8LibNoDeps"
+      val r8LibJarFile =
+        libsDir.resolve(if (excludingDepsVariant) r8LibNoDepsArtifactName else r8LibArtifactName)
+      val r8LibPartitionMapFile =
+        libsDir.resolve(
+          if (excludingDepsVariant) r8LibNoDepsPartitionMapName else r8LibPartitionMapName
+        )
+      val r8WithRelocatedDepsJar = libsDir.resolve(r8WithRelocatedDepsArtifactName)
+      val processKeepRulesJar = libsDir.resolve(processKeepRulesArtifactName)
+      val swissArmyKnifeJar = libsDir.resolve(swissArmyKnifeArtifactName)
+      val packageTestDepsJar = libsDir.resolve(packageTestDepsArtifactName)
+      val rewrittenTestBaseJar = libsDir.resolve(rewrittenTestBaseArtifactName)
+      val r8LibNoDepsJarFile = libsDir.resolve(r8LibNoDepsArtifactName)
+      val unpackedTestsDir =
+        layout.buildDirectory
+          .dir(
+            if (excludingDepsVariant) "unpacked/rewrittentests-r8lib-exclude-deps"
+            else "unpacked/rewrittentests-r8lib"
+          )
+          .get()
+          .asFile
+      val unpackedTestDir = layout.buildDirectory.dir("unpacked/test").get().asFile
+      val unpackedTestBaseDir = layout.buildDirectory.dir("unpacked/testbase").get().asFile
 
-    // R8lib should be used instead of the main output and all the tests in r8 should be mapped and
-    // exists in r8LibTestPath.
-    classpath =
-      files(
-        packageTestDeps.get().getOutputs().getFiles(),
-        r8LibJar,
-        unzipRewrittenTests.get().getOutputs().getFiles(),
-        rewriteTestBaseForR8LibWithRelocatedDeps.getSingleOutputFile(),
+      doFirst {
+        val requiredFiles =
+          mutableListOf(
+            r8LibJarFile,
+            packageTestDepsJar,
+            rewrittenTestBaseJar,
+            r8WithRelocatedDepsJar,
+            processKeepRulesJar,
+            swissArmyKnifeJar,
+          )
+        if (!excludingDepsVariant) {
+          requiredFiles.add(r8LibNoDepsJarFile)
+        }
+        for (file in requiredFiles) {
+          if (!file.exists()) {
+            throw GradleException(
+              "Prebuilt artifact not found: ${file.absolutePath}. Ensure prepareTestArtifacts ran."
+            )
+          }
+        }
+        val requiredDirs = listOf(unpackedTestsDir, unpackedTestDir, unpackedTestBaseDir)
+        for (dir in requiredDirs) {
+          if (!dir.exists() || dir.listFiles().isNullOrEmpty()) {
+            throw GradleException(
+              "Prebuilt unpacked directory missing or empty: ${dir.absolutePath}."
+            )
+          }
+        }
+      }
+
+      setupR8LibTestEnvironment(
+        packageTestDeps = files(packageTestDepsJar),
+        r8LibJar = layout.file(provider { r8LibJarFile }),
+        unpackedTests = files(unpackedTestsDir),
+        rewrittenTestBase = rewrittenTestBaseJar,
+        r8WithRelocatedDepsJar = r8WithRelocatedDepsJar,
+        r8LibPartitionMapFile = r8LibPartitionMapFile,
+        testDataLocation = unpackedTestDir,
+        testBaseDataLocation = unpackedTestBaseDir,
+        processKeepRulesJar = layout.file(provider { processKeepRulesJar }),
+        swissArmyKnifeJar = layout.file(provider { swissArmyKnifeJar }),
+        usePrebuiltLib = usePrebuiltLib,
       )
-    testClassesDirs = unzipRewrittenTests.get().getOutputs().getFiles()
-    systemProperty("TEST_DATA_LOCATION", unzipTests.getSingleOutputFile())
-    systemProperty("TESTBASE_DATA_LOCATION", unzipTestBase.getSingleOutputFile())
+    } else {
+      dependsOn(
+        packageTestDeps,
+        r8Lib,
+        r8WithRelocatedDepsTask,
+        assembleR8LibNoDeps,
+        rewriteTestBaseForR8LibWithRelocatedDeps,
+        unzipRewrittenTests,
+        unzipTests,
+        unzipTestBase,
+      )
+      val r8LibJar = r8Lib.flatMap { it.outputJar }
+      val r8LibPartitionMapFile = r8Lib.flatMap { it.outputPartitionMap }
+      val r8WithRelocatedDepsJar = r8WithRelocatedDepsTask.getSingleOutputFile()
+
+      setupR8LibTestEnvironment(
+        packageTestDeps = packageTestDeps.get().getOutputs().getFiles(),
+        r8LibJar = r8LibJar,
+        unpackedTests = unzipRewrittenTests.get().getOutputs().getFiles(),
+        rewrittenTestBase = rewriteTestBaseForR8LibWithRelocatedDeps.getSingleOutputFile(),
+        r8WithRelocatedDepsJar = r8WithRelocatedDepsJar,
+        r8LibPartitionMapFile = r8LibPartitionMapFile.get().asFile,
+        testDataLocation = unzipTests.getSingleOutputFile(),
+        testBaseDataLocation = unzipTestBase.getSingleOutputFile(),
+        processKeepRulesJar = processKeepRulesLibWithRelocatedDepsTask.flatMap { it.outputJar },
+        swissArmyKnifeJar = swissArmyKnifeTask.flatMap { it.archiveFile },
+        usePrebuiltLib = usePrebuiltLib,
+      )
+    }
 
     systemProperty(
       "BUILD_PROP_KEEPANNO_RUNTIME_PATH",
@@ -468,11 +582,6 @@ tasks {
     )
     systemProperty("R8_DEPS", mainDepsJarFilesConfig.asPath)
     systemProperty("com.android.tools.r8.artprofilerewritingcompletenesscheck", "true")
-    addAsInputAvailableViaSystemProperty(
-      "R8_SWISS_ARMY_KNIFE",
-      swissArmyKnifeTask.flatMap { it.archiveFile },
-    )
-    systemProperty("R8_WITH_RELOCATED_DEPS", r8WithRelocatedDepsJar)
 
     javaLauncher = getJavaLauncher(Jdk.JDK_25)
 
@@ -488,6 +597,42 @@ tasks {
   val testR8LibNoDeps =
     register<Test>("testR8LibNoDeps") {
       testR8Lib(assembleR8LibNoDeps, unzipRewrittenTestsForR8LibNoDeps)
+    }
+
+  // Prepares all build and test artifacts required to support use_prebuilt_lib.
+  // Note: assembleR8LibNoDeps is required because tests like BootstrapCurrentEqualityTest and
+  // SanityCheck verify compatibility between r8lib.jar and r8lib-exclude-deps.jar.
+  val prepareTestArtifactsForR8LibWithRelocatedDeps =
+    register("prepareTestArtifactsForR8LibWithRelocatedDeps") {
+      dependsOn(
+        assembleR8LibWithRelocatedDeps,
+        assembleR8LibNoDeps,
+        r8WithRelocatedDepsTask,
+        rewriteTestBaseForR8LibWithRelocatedDeps,
+        unzipRewrittenTestsForR8LibWithRelocatedDeps,
+        unzipTests,
+        unzipTestBase,
+        packageTestDeps,
+        processKeepRulesLibWithRelocatedDepsTask,
+        swissArmyKnifeTask,
+      )
+    }
+
+  // Prepares all build and test artifacts required to support use_prebuilt_lib for the
+  // excluding-deps variant.
+  val prepareTestArtifactsForR8LibNoDeps =
+    register("prepareTestArtifactsForR8LibNoDeps") {
+      dependsOn(
+        assembleR8LibNoDeps,
+        r8WithRelocatedDepsTask,
+        rewriteTestBaseForR8LibWithRelocatedDeps,
+        unzipRewrittenTestsForR8LibNoDeps,
+        unzipTests,
+        unzipTestBase,
+        packageTestDeps,
+        processKeepRulesLibWithRelocatedDepsTask,
+        swissArmyKnifeTask,
+      )
     }
 
   val sourceConfiguration =
@@ -519,15 +664,17 @@ tasks {
   }
 
   test {
-    dependsOn(sharedDepsConfig)
-    dependsOn(sharedTestDepsConfig)
-    if (!project.hasProperty("no_internal")) {
-      dependsOn(sharedDepsInternalConfig)
-      dependsOn(sharedTestDepsInternalConfig)
-    }
-    // Build processkeepruleslib.jar when running with --only_internal.
-    if (project.hasProperty("only_internal")) {
-      dependsOn(processKeepRulesLibWithRelocatedDepsTask)
+    if (!project.hasProperty("use_prebuilt_lib")) {
+      dependsOn(sharedDepsConfig)
+      dependsOn(sharedTestDepsConfig)
+      if (!project.hasProperty("no_internal")) {
+        dependsOn(sharedDepsInternalConfig)
+        dependsOn(sharedTestDepsInternalConfig)
+      }
+      // Build processkeepruleslib.jar when running with --only_internal.
+      if (project.hasProperty("only_internal")) {
+        dependsOn(processKeepRulesLibWithRelocatedDepsTask)
+      }
     }
     if (project.hasProperty("r8lib")) {
       dependsOn(testR8LibWithRelocatedDeps)
