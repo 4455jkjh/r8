@@ -5,7 +5,6 @@
 
 import os
 import shutil
-from distutils.version import LooseVersion
 
 import utils
 
@@ -39,7 +38,13 @@ def add_r8_dependency(checkout_dir, temp_dir, minified):
                     # Skip line to avoid dependency on r8.jar
                     continue
                 elif 'com.android.tools.build:gradle:' in stripped:
-                    gradle_version = stripped[stripped.rindex(':') + 1:-1]
+                    raw_version = stripped[stripped.rindex(':') + 1:-1]
+                    version_parts = raw_version.split('-', 1)
+                    numbers = version_parts[0].split('.')
+                    while len(numbers) < 3:
+                        numbers.append('0')
+                    version_parts[0] = '.'.join(numbers)
+                    gradle_version = '-'.join(version_parts)
                     indent = ''.ljust(line.index('classpath'))
                     jar = os.path.join(temp_dir,
                                        'r8lib.jar' if minified else 'r8.jar')
@@ -51,7 +56,10 @@ def add_r8_dependency(checkout_dir, temp_dir, minified):
 
     assert added_r8_dependency, 'Unable to add R8 as a dependency'
     assert gradle_version
-    assert LooseVersion(gradle_version) >= LooseVersion('3.2'), (
+    semver = utils.check_basic_semver_version(gradle_version,
+                                              allowPrerelease=True)
+    min_version = utils.check_basic_semver_version('3.2.0')
+    assert semver.larger_than(min_version) or semver.equals_to(min_version), (
         'Unsupported gradle version: {} (must use at least gradle ' +
         'version 3.2)').format(gradle_version)
 
