@@ -29,10 +29,14 @@ import com.android.tools.r8.graph.ProgramMember;
 import com.android.tools.r8.graph.ProgramMethod;
 import com.android.tools.r8.graph.PrunedItems;
 import com.android.tools.r8.graph.lens.NonIdentityGraphLens;
+import com.android.tools.r8.horizontalclassmerging.HorizontalClassMergerGraphLens;
+import com.android.tools.r8.optimize.bridgehoisting.BridgeHoistingLens;
 import com.android.tools.r8.shaking.KeepFieldInfo.Joiner;
 import com.android.tools.r8.shaking.rules.ApplicableRulesEvaluator;
 import com.android.tools.r8.shaking.rules.MaterializedRules;
 import com.android.tools.r8.shaking.rules.ReferencedFromExcludedClassInR8PartialRule;
+import com.android.tools.r8.startup.NonStartupInStartupOutlinerLens;
+import com.android.tools.r8.synthesis.SyntheticFinalization.SyntheticFinalizationGraphLens;
 import com.android.tools.r8.utils.InternalOptions;
 import com.android.tools.r8.utils.ListUtils;
 import com.android.tools.r8.utils.MapUtils;
@@ -357,6 +361,10 @@ public abstract class KeepInfoCollection {
       return materializedRules.toApplicableRules();
     }
 
+    public void removeKeepInfo(DexMethod method) {
+      keepMethodInfo.remove(method);
+    }
+
     public void removeKeepInfoForMergedClasses(PrunedItems prunedItems) {
       if (prunedItems.hasRemovedClasses()) {
         keepClassInfo.keySet().removeAll(prunedItems.getRemovedClasses());
@@ -502,7 +510,15 @@ public abstract class KeepInfoCollection {
                 || newMethod.getReturnType().isIdenticalTo(lens.lookupType(method.getReturnType()));
             KeepMethodInfo previous = newMethodInfo.put(newMethod, info);
             // TODO(b/169927809): Avoid collisions.
-            // assert previous == null;
+            if (previous != null) {
+              assert lens instanceof BridgeHoistingLens
+                  || lens instanceof HorizontalClassMergerGraphLens
+                  || lens instanceof NonStartupInStartupOutlinerLens
+                  || lens instanceof SyntheticFinalizationGraphLens;
+              KeepMethodInfo.Joiner joiner = previous.joiner();
+              joiner.merge(info.joiner());
+              newMethodInfo.put(newMethod, canonicalizer.canonicalizeKeepMethodInfo(joiner.join()));
+            }
           });
       timing.end();
       return newMethodInfo;
