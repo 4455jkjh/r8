@@ -5,6 +5,7 @@ package com.android.tools.r8.verticalclassmerging;
 
 import com.android.tools.r8.classmerging.ClassMergerSharedData;
 import com.android.tools.r8.graph.AppView;
+import com.android.tools.r8.graph.DexMethod;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
 import com.android.tools.r8.utils.ListUtils;
 import java.util.ArrayList;
@@ -19,6 +20,10 @@ public class ConnectedComponentVerticalClassMerger {
 
   // The resulting graph lens that should be used after class merging.
   private final VerticalClassMergerGraphLens.Builder lensBuilder;
+
+  // All the abstract methods that have been implicitly eliminated from merging into a
+  // non-abstract method.
+  private final List<DexMethod> abstractShadowedMethods = new ArrayList<>();
 
   // All the bridge methods that have been synthesized during vertical class merging.
   private final List<IncompleteVerticalClassMergerBridgeCode> synthesizedBridges =
@@ -49,12 +54,13 @@ public class ConnectedComponentVerticalClassMerger {
                     appView,
                     lensBuilder,
                     sharedData,
+                    abstractShadowedMethods,
                     synthesizedBridges,
                     verticallyMergedClassesBuilder,
                     group));
     classMergers.forEach(ClassMerger::setup);
     classMergers.forEach(ClassMerger::merge);
     return VerticalClassMergerResult.builder(
-        lensBuilder, synthesizedBridges, verticallyMergedClassesBuilder);
+        lensBuilder, abstractShadowedMethods, synthesizedBridges, verticallyMergedClassesBuilder);
   }
 }

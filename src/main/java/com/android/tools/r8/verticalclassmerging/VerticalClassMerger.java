@@ -28,6 +28,7 @@ import com.android.tools.r8.shaking.AppInfoWithLiveness;
 import com.android.tools.r8.shaking.KeepClassInfo.Joiner;
 import com.android.tools.r8.shaking.KeepInfoCollection;
 import com.android.tools.r8.utils.InternalOptions;
+import com.android.tools.r8.utils.SetUtils;
 import com.android.tools.r8.utils.ThreadUtils;
 import com.android.tools.r8.utils.ThrowingAction;
 import com.android.tools.r8.utils.timing.Timing;
@@ -219,7 +220,7 @@ public class VerticalClassMerger {
     timing.begin("Merge classes");
     TimingMerger merger = timing.beginMerger("Merge classes", executorService);
     VerticalClassMergerResult.Builder verticalClassMergerResult =
-        VerticalClassMergerResult.builder(appView);
+        VerticalClassMergerResult.builder();
     Collection<Timing> timings =
         ThreadUtils.processItemsWithResults(
             connectedComponentMergers,
@@ -291,6 +292,9 @@ public class VerticalClassMerger {
           mutator.removeKeepInfoForMergedClasses(
               PrunedItems.builder()
                   .setRemovedClasses(verticallyMergedClasses.getSources())
+                  .setRemovedMethods(
+                      SetUtils.newIdentityHashSet(
+                          verticalClassMergerResult.getAbstractShadowedMethods()))
                   .build());
           for (DexType target : verticallyMergedClasses.getTargets()) {
             DexProgramClass targetClass = appView.definitionFor(target).asProgramClass();
