@@ -290,12 +290,6 @@ def ParseOptions():
                         default=False,
                         action='store_true')
     result.add_argument(
-        '--use-prebuilt-lib',
-        '--use_prebuilt_lib',
-        help='Use prebuilt lib and unpacked tests instead of building them',
-        default=False,
-        action='store_true')
-    result.add_argument(
         '--generate-methods',
         '--generate_methods',
         help=
@@ -586,19 +580,15 @@ def test(options, args):
     # Enable completeness testing of ART profile rewriting.
     gradle_args.append('-Part_profile_rewriting_completeness_check=true')
 
-    if options.use_prebuilt_lib:
-        gradle_args.append('-Puse_prebuilt_lib=true')
-
     if options.compile_only:
+        gradle_args.append('testClasses')
+        gradle_args.append(utils.GRADLE_TASK_TEST_DEPS_JAR)
         if options.r8lib_no_deps:
-            gradle_args.append(utils.GRADLE_TASK_PREPARE_TEST_ARTIFACTS_NO_DEPS)
+            gradle_args.append(utils.GRADLE_TASK_R8LIB_NO_DEPS)
         elif not options.no_r8lib:
-            gradle_args.append(utils.GRADLE_TASK_PREPARE_TEST_ARTIFACTS)
+            gradle_args.append(utils.GRADLE_TASK_R8LIB)
         else:
-            gradle_args.append('testClasses')
             gradle_args.append(utils.GRADLE_TASK_R8)
-            gradle_args.append(utils.GRADLE_TASK_TEST_DEPS_JAR)
-            gradle_args.append(utils.GRADLE_TASK_SWISS_ARMY_KNIFE)
         return_code = gradle.run_gradle(gradle_args, throw_on_failure=False)
         return archive_and_return(return_code, options)
 

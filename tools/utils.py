@@ -70,8 +70,6 @@ GRADLE_TASK_TEST_DEPS_JAR = ':test:packageTestDeps'
 GRADLE_TASK_TEST_BASE_JAR = ':test:relocateTestBaseForR8LibWithRelocatedDeps'
 GRADLE_TASK_TEST_JAR = ':test:relocateTestsForR8LibWithRelocatedDeps'
 GRADLE_TASK_TEST_UNZIP_TESTBASE = ':test:unzipTestBase'
-GRADLE_TASK_PREPARE_TEST_ARTIFACTS = ':test:prepareTestArtifactsForR8LibWithRelocatedDeps'
-GRADLE_TASK_PREPARE_TEST_ARTIFACTS_NO_DEPS = ':test:prepareTestArtifactsForR8LibNoDeps'
 
 R8 = 'r8'
 R8LIB = 'r8lib'
