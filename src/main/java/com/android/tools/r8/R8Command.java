@@ -156,6 +156,7 @@ public final class R8Command extends BaseCompilerCommand {
     private String synthesizedClassPrefix =
         System.getProperty("com.android.tools.r8.synthesizedClassPrefix", "");
     private boolean enableMissingLibraryApiModeling = false;
+    private boolean enableExperimentalDexInput = false;
     private boolean enableExperimentalKeepAnnotations =
         SystemPropertyUtils.parseSystemPropertyOrDefault(
             "com.android.tools.r8.enableKeepAnnotations", false);
@@ -177,9 +178,6 @@ public final class R8Command extends BaseCompilerCommand {
     private final ProguardConfigurationParserOptions.Builder parserOptionsBuilder =
         ProguardConfigurationParserOptions.builder().readEnvironment();
 
-    private final boolean allowDexInputToR8 =
-        System.getProperty("com.android.tools.r8.allowDexInputToR8") != null;
-
     // TODO(zerny): Consider refactoring CompatProguardCommandBuilder to avoid subclassing.
     Builder() {
       this(new DefaultR8DiagnosticsHandler());
@@ -187,17 +185,17 @@ public final class R8Command extends BaseCompilerCommand {
 
     Builder(DiagnosticsHandler diagnosticsHandler) {
       super(diagnosticsHandler);
-      setIgnoreDexInArchive(!allowDexInputToR8);
+      setIgnoreDexInArchive(true);
     }
 
     private Builder(AndroidApp app) {
       super(app);
-      setIgnoreDexInArchive(!allowDexInputToR8);
+      setIgnoreDexInArchive(true);
     }
 
     private Builder(AndroidApp app, DiagnosticsHandler diagnosticsHandler) {
       super(app, diagnosticsHandler);
-      setIgnoreDexInArchive(!allowDexInputToR8);
+      setIgnoreDexInArchive(true);
     }
 
     // Internal
@@ -494,7 +492,7 @@ public final class R8Command extends BaseCompilerCommand {
         assert verifyNonDexProgramResourceProvider(internalProgramProvider);
         assert internalProgramProvider.getDataResourceProvider() == null;
         return super.addProgramResourceProvider(internalProgramProvider);
-      } else if (allowDexInputToR8) {
+      } else if (enableExperimentalDexInput) {
         return super.addProgramResourceProvider(programProvider);
       } else {
         return super.addProgramResourceProvider(
@@ -563,6 +561,20 @@ public final class R8Command extends BaseCompilerCommand {
     public Builder setEnableIsolatedSplits(boolean enableIsolatedSplits) {
       featureSplitConfigurationBuilder.setEnableIsolatedSplits(enableIsolatedSplits);
       return this;
+    }
+
+    /** Enables experimental/pre-release support for passing DEX input to R8. */
+    @Deprecated
+    public Builder setEnableExperimentalDexInput(boolean enable) {
+      if (getAppBuilder().getProgramResourceProviders().isEmpty()) {
+        this.enableExperimentalDexInput = enable;
+        setIgnoreDexInArchive(enableExperimentalDexInput);
+      } else {
+        Reporter reporter = getReporter();
+        reporter.error(
+            "Invalid attempt to call setEnableExperimentalDexInput after adding program inputs");
+      }
+      return self();
     }
 
     @Deprecated
@@ -801,11 +813,13 @@ public final class R8Command extends BaseCompilerCommand {
         }
       }
 
-      for (Path file : programFiles) {
-        if (FileUtils.isDexFile(file) && !allowDexInputToR8) {
-          reporter.error(
-              new StringDiagnostic(
-                  "R8 does not support compiling DEX inputs", new PathOrigin(file)));
+      if (!enableExperimentalDexInput) {
+        for (Path file : programFiles) {
+          if (FileUtils.isDexFile(file)) {
+            reporter.error(
+                new StringDiagnostic(
+                    "R8 does not support compiling DEX inputs", new PathOrigin(file)));
+          }
         }
       }
       if (getProgramConsumer() instanceof ClassFileConsumer && isMinApiLevelSet()) {

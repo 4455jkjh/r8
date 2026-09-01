@@ -363,7 +363,7 @@ public abstract class BaseCommand {
 
     // Internal helper for compat tools to make them ignore DEX code in input archives.
     void setIgnoreDexInArchive(boolean value) {
-      guard(() -> app.setIgnoreDexInArchive(value));
+      app.setIgnoreDexInArchive(value);
     }
 
     // Helper that validates the command content. Called as part of {@link build()}.
