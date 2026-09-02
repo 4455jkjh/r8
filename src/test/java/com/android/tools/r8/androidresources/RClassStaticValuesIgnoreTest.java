@@ -3,6 +3,8 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8.androidresources;
 
+import static org.junit.Assert.assertTrue;
+
 import com.android.tools.r8.R8TestBuilder;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
@@ -24,7 +26,7 @@ public class RClassStaticValuesIgnoreTest extends TestBase {
   enum Config {
     LEGACY,
     OPTIMIZED,
-    OPTIMIZED_REMOVE_KEPT_RCLASS_RESOURCES;
+    OPTIMIZED_DONT_REMOVE_KEPT_RCLASS_RESOURCES;
   }
 
   @Parameter() public TestParameters parameters;
@@ -68,20 +70,33 @@ public class RClassStaticValuesIgnoreTest extends TestBase {
         .addKeepMainRule(FooBar.class)
         .applyIf(config != Config.LEGACY, R8TestBuilder::enableOptimizedShrinking)
         .applyIf(
-            config == Config.OPTIMIZED_REMOVE_KEPT_RCLASS_RESOURCES,
+            config == Config.OPTIMIZED,
             b -> {
               b.applyIf(
                   b.isR8PartialTestBuilder(),
                   r8pb ->
                       r8pb.addR8PartialR8OptionsModification(
-                          o -> o.removeUnreadKeptRClassResources = true),
-                  r8b -> r8b.addOptionsModification(o -> o.removeUnreadKeptRClassResources = true));
+                          o -> assertTrue(o.removeUnreadKeptRClassResources)),
+                  r8b ->
+                      r8b.addOptionsModification(
+                          o -> assertTrue(o.removeUnreadKeptRClassResources)));
+            })
+        .applyIf(
+            config == Config.OPTIMIZED_DONT_REMOVE_KEPT_RCLASS_RESOURCES,
+            b -> {
+              b.applyIf(
+                  b.isR8PartialTestBuilder(),
+                  r8pb ->
+                      r8pb.addR8PartialR8OptionsModification(
+                          o -> o.removeUnreadKeptRClassResources = false),
+                  r8b ->
+                      r8b.addOptionsModification(o -> o.removeUnreadKeptRClassResources = false));
             })
         .compile()
         .inspectShrunkenResources(
             resourceTableInspector -> {
               resourceTableInspector.assertContainsResourceWithName("string", "bar");
-              if (config == Config.OPTIMIZED) {
+              if (config == Config.OPTIMIZED_DONT_REMOVE_KEPT_RCLASS_RESOURCES) {
                 resourceTableInspector.assertContainsResourceWithName("string", "unused_string");
               } else {
                 resourceTableInspector.assertDoesNotContainResourceWithName(
