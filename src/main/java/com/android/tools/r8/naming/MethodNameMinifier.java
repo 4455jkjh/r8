@@ -156,15 +156,12 @@ class MethodNameMinifier {
   }
 
   private Function<DexMethod, ?> getReservationKeyTransform() {
-    // Only use the parameters as key, hence do not reuse names on return type. Returning the full
-    // proto here implements aggressive overloading.
-    return DexMethod::getParameters;
+    // Use null (just name) for DEX to avoid reused names (they worsen debuginfo representation).
+    return appView.options().isGeneratingClassFiles() ? DexMethod::getParameters : method -> null;
   }
 
   private Function<DexMethod, ?> getNamingKeyTransform() {
-    return appView.options().isGeneratingClassFiles()
-        ? getReservationKeyTransform()
-        : method -> null;
+    return getReservationKeyTransform();
   }
 
   static class MethodRenaming {
