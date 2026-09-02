@@ -13,6 +13,7 @@ import com.android.tools.r8.ir.code.BasicBlock;
 import com.android.tools.r8.ir.code.IRCode;
 import com.android.tools.r8.ir.code.Instruction;
 import com.android.tools.r8.ir.code.Value;
+import com.android.tools.r8.utils.internal.SetUtils;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import java.util.ArrayList;
@@ -31,6 +32,10 @@ public class AffectedValues implements Set<Value> {
 
   public AffectedValues() {
     this(Sets.newIdentityHashSet());
+  }
+
+  public AffectedValues(int capacity) {
+    this(SetUtils.newIdentityHashSet(capacity));
   }
 
   private AffectedValues(Set<Value> affectedValues) {

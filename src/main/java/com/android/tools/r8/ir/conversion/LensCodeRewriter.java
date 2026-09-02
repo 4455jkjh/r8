@@ -112,12 +112,10 @@ import com.android.tools.r8.optimize.MemberRebindingAnalysis;
 import com.android.tools.r8.optimize.argumentpropagation.lenscoderewriter.NullCheckInserter;
 import com.android.tools.r8.utils.InternalOptions;
 import com.android.tools.r8.utils.internal.ArrayUtils;
-import com.android.tools.r8.utils.internal.IterableUtils;
 import com.android.tools.r8.utils.internal.LazyBox;
 import com.android.tools.r8.utils.timing.Timing;
 import com.android.tools.r8.verticalclassmerging.InterfaceTypeToClassTypeLensCodeRewriterHelper;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -938,12 +936,9 @@ public class LensCodeRewriter {
     }
     affectedValues.removeAssumeNonNullInstructionsAfterEnumUnboxing();
     nullCheckInserter.processWorklist();
-    DestructivePhiTypeUpdater phiUpdater =
-        new DestructivePhiTypeUpdater(appView, graphLens, codeLens);
-    Iterables.addAll(affectedPhis, IterableUtils.filter(affectedValues, Value::isPhi));
-    Deque<Phi> phisToProcess = phiUpdater.unsetPhiTypes(affectedPhis);
-    affectedValues.propagateWithAssumeRemoval(appView, code, typeAnalysis -> {});
-    phiUpdater.recomputeAndPropagateTypes(code, affectedPhis, phisToProcess);
+    affectedValues.propagateWithAssumeRemoval(
+        appView, code, typeAnalysis -> typeAnalysis.setPhiConsumer(affectedPhis::add));
+    DestructivePhiTypeUpdater.recomputePhiTypes(appView, code, affectedPhis);
     code.removeAllDeadAndTrivialPhis();
     code.removeRedundantBlocks();
     removeUnusedArguments(code, unusedArguments);
