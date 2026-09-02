@@ -60,7 +60,7 @@ public class AndroidOsBuildVersionBackportTest extends AbstractBackportTest {
 
   @Override
   protected String[] configureD8RunArguments() {
-    return new String[] {Integer.toString(parameters.getApiLevel().getLevel())};
+    return new String[] {Integer.toString(parameters.getApiLevel().getMajor())};
   }
 
   private static byte[] getTransformedBuildVERSIONClassForRuntimeClasspath()

@@ -12,7 +12,7 @@ import java.util.function.BooleanSupplier;
 
 public class ProguardAccessFlags {
 
-  private final static int PPP_MASK =
+  private static final int PPP_MASK =
       new ProguardAccessFlags().setPublic().setProtected().setPrivate().flags;
 
   private int flags = 0;
@@ -57,10 +57,10 @@ public class ProguardAccessFlags {
   private boolean containsAll(int other) {
     // ppp flags are the flags public, protected and private.
     return
-        // All non-ppp flags set must match (a 0 in non-ppp flags means don't care).
-        (((flags & ~PPP_MASK) & (other & ~PPP_MASK)) == (flags & ~PPP_MASK))
-            // With no ppp flags any flags match, with ppp flags there must be an overlap to match.
-            && (((flags & PPP_MASK) == 0) || ((flags & PPP_MASK) & (other & PPP_MASK)) != 0);
+    // All non-ppp flags set must match (a 0 in non-ppp flags means don't care).
+    (((flags & ~PPP_MASK) & (other & ~PPP_MASK)) == (flags & ~PPP_MASK))
+        // With no ppp flags any flags match, with ppp flags there must be an overlap to match.
+        && (((flags & PPP_MASK) == 0) || ((flags & PPP_MASK) & (other & PPP_MASK)) != 0);
   }
 
   private boolean containsNone(int other) {

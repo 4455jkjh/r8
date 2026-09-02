@@ -6,15 +6,15 @@ import org.gradle.api.tasks.Copy
 
 // The majority of the build setup is done by tests_java_8.
 java {
-  sourceSets.test.configure {
-    java.srcDir(getRoot().resolveAll("src", "test", "java8", "ir"))
-  }
+  sourceSets.test.configure { java.srcDir(getRoot().resolveAll("src", "test", "java8", "ir")) }
 }
 
 tasks {
   named<Copy>("processTestResources") {
     from(sourceSets.test.get().java.srcDirs) {
-      include("com/android/tools/r8/ir/optimize/inliner/conditionalsimpleinlining/SwitchWithSimpleCasesInliningKotlin.kt")
+      include(
+        "com/android/tools/r8/ir/optimize/inliner/conditionalsimpleinlining/SwitchWithSimpleCasesInliningKotlin.kt"
+      )
     }
   }
 }

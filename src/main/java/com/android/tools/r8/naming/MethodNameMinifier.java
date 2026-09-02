@@ -145,9 +145,7 @@ class MethodNameMinifier {
   private final MethodNamingState<?> rootNamingState;
   private final MethodReservationState<?> rootReservationState;
 
-  MethodNameMinifier(
-      AppView<AppInfoWithLiveness> appView,
-      MemberNamingStrategy strategy) {
+  MethodNameMinifier(AppView<AppInfoWithLiveness> appView, MemberNamingStrategy strategy) {
     this.appView = appView;
     this.strategy = strategy;
     rootReservationState = MethodReservationState.createRoot(getReservationKeyTransform());

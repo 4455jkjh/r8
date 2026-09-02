@@ -55,7 +55,7 @@ public class TestBuilderMinAndroidJarTest extends TestBase {
       throws ExecutionException, CompilationFailedException, IOException {
     assumeFalse(
         parameters.isCfRuntime()
-            || parameters.getApiLevel().getLevel() >= AndroidApiLevel.N.getLevel());
+            || parameters.getApiLevel().getMajor() >= AndroidApiLevel.N.getMajor());
     Matcher<String> expectedError =
         parameters.getRuntime().asDex().getVm().isOlderThanOrEqual(DexVm.ART_6_0_1_HOST)
             ? containsString("NoClassDefFoundError")
@@ -93,7 +93,7 @@ public class TestBuilderMinAndroidJarTest extends TestBase {
       throws ExecutionException, CompilationFailedException, IOException {
     assumeTrue(
         parameters.isCfRuntime()
-            || parameters.getApiLevel().getLevel() >= AndroidApiLevel.N.getLevel());
+            || parameters.getApiLevel().getMajor() >= AndroidApiLevel.N.getMajor());
     testForR8(parameters.getBackend())
         .addProgramClasses(Main.class)
         .setMinApi(parameters)

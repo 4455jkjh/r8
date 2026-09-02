@@ -99,8 +99,8 @@ public class R8CompiledThroughDexTest extends DesugaredLibraryTestBase {
     arguments.add("--release");
     buildup.add(b -> b.setMode(CompilationMode.RELEASE));
 
-    arguments.add("--min-api").add(Integer.toString(parameters.getApiLevel().getLevel()));
-    buildup.add(b -> b.setMinApiLevel(parameters.getApiLevel().getLevel()));
+    arguments.add("--min-api").add(Integer.toString(parameters.getApiLevel().getMajor()));
+    buildup.add(b -> b.setMinApiLevel(parameters.getApiLevel().getMajor()));
 
     arguments.add("--lib").add(commandLinePathFor(ToolHelper.getAndroidJar(AndroidApiLevel.R)));
     buildup.add(b -> b.addLibraryFiles(ToolHelper.getAndroidJar(AndroidApiLevel.R)));

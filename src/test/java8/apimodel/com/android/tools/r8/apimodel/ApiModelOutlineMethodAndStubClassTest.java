@@ -107,7 +107,7 @@ public class ApiModelOutlineMethodAndStubClassTest extends TestBase {
         .run(
             parameters.getRuntime(),
             Main.class,
-            Integer.toString(apiLevels.libraryClassLevel.getLevel()))
+            Integer.toString(apiLevels.libraryClassLevel.getMajor()))
         .apply(this::checkOutput)
         .inspect(this::inspect);
   }
@@ -123,7 +123,7 @@ public class ApiModelOutlineMethodAndStubClassTest extends TestBase {
         .run(
             parameters.getRuntime(),
             Main.class,
-            Integer.toString(apiLevels.libraryClassLevel.getLevel()))
+            Integer.toString(apiLevels.libraryClassLevel.getMajor()))
         .apply(this::checkOutput)
         .inspect(this::inspect);
   }
@@ -138,7 +138,7 @@ public class ApiModelOutlineMethodAndStubClassTest extends TestBase {
         .run(
             parameters.getRuntime(),
             Main.class,
-            Integer.toString(apiLevels.libraryClassLevel.getLevel()))
+            Integer.toString(apiLevels.libraryClassLevel.getMajor()))
         .apply(this::checkOutput)
         .inspect(this::inspect);
   }

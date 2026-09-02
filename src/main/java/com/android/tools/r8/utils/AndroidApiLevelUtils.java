@@ -403,10 +403,10 @@ public class AndroidApiLevelUtils {
       return false;
     }
     int apiLevelAsInt = Integer.parseInt(apiLevelAsString);
-    if (apiLevelAsInt < 10 || apiLevelAsInt > AndroidApiLevel.LATEST.getLevel()) {
+    if (apiLevelAsInt < 10 || apiLevelAsInt > AndroidApiLevel.LATEST.getMajor()) {
       return false;
     }
-    return apiLevel.asKnownApiLevel().getApiLevel().getLevel() <= apiLevelAsInt;
+    return apiLevel.asKnownApiLevel().getApiLevel().getMajor() <= apiLevelAsInt;
   }
 
   public static boolean isApiLevelLessThanOrEqualToG(ComputedApiLevel apiLevel) {

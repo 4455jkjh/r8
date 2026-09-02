@@ -291,8 +291,9 @@ public class PeepholeOptimizer {
               && pred.getSuccessors().size() == 1
               && pred.getInstructions().size() > 1) {
             Instruction lastInstruction = pred.getLastInstruction().getPrev();
-            List<BasicBlock> value = lastInstructionToBlocks.computeIfAbsent(
-                equivalence.wrap(lastInstruction), (k) -> new ArrayList<>());
+            List<BasicBlock> value =
+                lastInstructionToBlocks.computeIfAbsent(
+                    equivalence.wrap(lastInstruction), (k) -> new ArrayList<>());
             value.add(pred);
           } else if (pred.exit().isReturn()
               && pred.getSuccessors().isEmpty()

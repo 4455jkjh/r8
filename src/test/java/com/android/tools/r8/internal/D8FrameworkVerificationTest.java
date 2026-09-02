@@ -16,7 +16,7 @@ import org.junit.runner.RunWith;
 
 @RunWith(VmTestRunner.class)
 public class D8FrameworkVerificationTest extends CompilationTestBase {
-  private static final int MIN_SDK = AndroidApiLevel.N.getLevel();
+  private static final int MIN_SDK = AndroidApiLevel.N.getMajor();
   private static final String JAR =
       ToolHelper.THIRD_PARTY_DIR + "framework/framework_160115954.jar";
 

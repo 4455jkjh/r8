@@ -59,9 +59,7 @@ public class ThrowNullCode extends Code implements CfWritableCode, DexWritableCo
 
   @Override
   public IRCode buildIR(
-      ProgramMethod method,
-      AppView<?> appView,
-      MutableMethodConversionOptions conversionOptions) {
+      ProgramMethod method, AppView<?> appView, MutableMethodConversionOptions conversionOptions) {
     ThrowNullSourceCode source =
         new ThrowNullSourceCode(method, method.getDefinition().getPendingInlineFrameAsPosition());
     return IRBuilder.create(method, appView, source).build(method, conversionOptions);

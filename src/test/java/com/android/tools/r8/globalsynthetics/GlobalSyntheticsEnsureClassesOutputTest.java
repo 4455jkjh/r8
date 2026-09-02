@@ -49,7 +49,7 @@ public class GlobalSyntheticsEnsureClassesOutputTest extends TestBase {
     GlobalSyntheticsGenerator.run(
         GlobalSyntheticsGeneratorCommand.builder()
             .addLibraryFiles(ToolHelper.getAndroidJar(AndroidApiLevel.API_DATABASE_LEVEL))
-            .setMinApiLevel(AndroidApiLevel.K.getLevel())
+            .setMinApiLevel(AndroidApiLevel.K.getMajor())
             .setGlobalSyntheticsConsumer(globalsConsumer)
             .setClassfileDesugaringOnly(backend.isCf())
             .build());
@@ -70,7 +70,7 @@ public class GlobalSyntheticsEnsureClassesOutputTest extends TestBase {
     GlobalSyntheticsGenerator.run(
         GlobalSyntheticsGeneratorCommand.builder()
             .addLibraryFiles(ToolHelper.getAndroidJar(AndroidApiLevel.API_DATABASE_LEVEL))
-            .setMinApiLevel(AndroidApiLevel.LATEST.getLevel(), AndroidApiLevel.LATEST.getMinor())
+            .setMinApiLevel(AndroidApiLevel.LATEST.getMajor(), AndroidApiLevel.LATEST.getMinor())
             .setGlobalSyntheticsConsumer(globalsConsumer)
             .setClassfileDesugaringOnly(backend.isCf())
             .build());
@@ -104,7 +104,7 @@ public class GlobalSyntheticsEnsureClassesOutputTest extends TestBase {
     runGlobalSyntheticsGenerator(
         GlobalSyntheticsGeneratorCommand.builder()
             .addLibraryFiles(ToolHelper.getAndroidJar(AndroidApiLevel.API_DATABASE_LEVEL))
-            .setMinApiLevel(AndroidApiLevel.K.getLevel())
+            .setMinApiLevel(AndroidApiLevel.K.getMajor())
             .setGlobalSyntheticsConsumer(globalsConsumer)
             .setClassfileDesugaringOnly(backend.isCf())
             .build(),

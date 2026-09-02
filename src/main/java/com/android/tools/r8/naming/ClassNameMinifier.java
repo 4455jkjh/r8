@@ -279,10 +279,12 @@ class ClassNameMinifier {
 
     Namespace(String packageName, String separator) {
       this.packageName = packageName;
-      this.packagePrefix = ("L" + packageName
-          // L or La/b/ (or La/b/C$)
-          + (packageName.isEmpty() ? "" : separator))
-          .toCharArray();
+      this.packagePrefix =
+          ("L"
+                  + packageName
+                  // L or La/b/ (or La/b/C$)
+                  + (packageName.isEmpty() ? "" : separator))
+              .toCharArray();
     }
 
     public String getPackageName() {

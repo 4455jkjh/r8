@@ -558,9 +558,8 @@ public class IRCode implements IRControlFlowGraph, ValueFactory {
   /**
    * Compute quasi topologically sorted list of the basic blocks using depth first search.
    *
-   * TODO(ager): We probably want to compute strongly connected components and topologically
-   * sort strongly connected components instead. However, this is much better than having
-   * no sorting.
+   * <p>TODO(ager): We probably want to compute strongly connected components and topologically sort
+   * strongly connected components instead. However, this is much better than having no sorting.
    */
   public ImmutableList<BasicBlock> topologicallySortedBlocks() {
     ImmutableList<BasicBlock> ordered = depthFirstSorting();

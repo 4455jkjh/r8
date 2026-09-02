@@ -52,11 +52,11 @@ public class SdkIntFullBackportOutlineInBackportTest extends TestBase {
     AndroidApiLevelHashingDatabaseImpl androidApiLevelDatabase =
         new AndroidApiLevelHashingDatabaseImpl(ImmutableList.of(), options, diagnosticsHandler);
     assertEquals(
-        BAKLAVA.getLevel(),
+        BAKLAVA.getMajor(),
         androidApiLevelDatabase
             .getFieldApiLevel(
                 options.dexItemFactory().androidOsBuildVersionMembers.SDK_INT_FULL.asDexField())
-            .getLevel());
+            .getMajor());
   }
 
   @Test

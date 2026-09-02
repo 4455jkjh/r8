@@ -32,7 +32,10 @@ import org.objectweb.asm.Opcodes;
 
 public class CfSwitch extends CfJumpInstruction {
 
-  public enum Kind { LOOKUP, TABLE }
+  public enum Kind {
+    LOOKUP,
+    TABLE
+  }
 
   private final Kind kind;
   private final CfLabel defaultTarget;
@@ -135,11 +138,12 @@ public class CfSwitch extends CfJumpInstruction {
       case LOOKUP:
         visitor.visitLookupSwitchInsn(defaultTarget.getLabel(), keys, labels);
         break;
-      case TABLE: {
-        int min = keys[0];
-        int max = min + targets.size() - 1;
-        visitor.visitTableSwitchInsn(min, max, defaultTarget.getLabel(), labels);
-      }
+      case TABLE:
+        {
+          int min = keys[0];
+          int max = min + targets.size() - 1;
+          visitor.visitTableSwitchInsn(min, max, defaultTarget.getLabel(), labels);
+        }
     }
   }
 

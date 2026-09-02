@@ -4,7 +4,6 @@
 
 package com.android.tools.r8.ir.optimize.info.field;
 
-
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.DexClassAndField;
 import com.android.tools.r8.graph.DexDefinitionSupplier;

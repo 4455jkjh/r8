@@ -92,7 +92,7 @@ public class AutoCloseableRetargeterExecutorServiceSubtypeTest extends TestBase 
         .run(
             parameters.getRuntime(),
             Main.class,
-            String.valueOf(parameters.getApiLevel().getLevel()))
+            String.valueOf(parameters.getApiLevel().getMajor()))
         .assertSuccessWithOutput(EXPECTED_OUTPUT);
   }
 
@@ -132,7 +132,7 @@ public class AutoCloseableRetargeterExecutorServiceSubtypeTest extends TestBase 
         .run(
             parameters.getRuntime(),
             Main.class,
-            String.valueOf(parameters.getApiLevel().getLevel()))
+            String.valueOf(parameters.getApiLevel().getMajor()))
         .assertSuccessWithOutput(EXPECTED_OUTPUT);
   }
 

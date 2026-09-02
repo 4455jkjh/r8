@@ -323,27 +323,25 @@ public interface InstructionListIterator
 
   /**
    * Split the block into three blocks. The first split is at the point of the {@link ListIterator}
-   * cursor and the second split is <code>instructions</code> after the cursor. The existing
-   * block will have all the instructions before the cursor, and the two new blocks all the
-   * instructions after the cursor.
+   * cursor and the second split is <code>instructions</code> after the cursor. The existing block
+   * will have all the instructions before the cursor, and the two new blocks all the instructions
+   * after the cursor.
    *
-   * If the current block have catch handlers these catch handlers will be attached to the block
+   * <p>If the current block have catch handlers these catch handlers will be attached to the block
    * containing the throwing instruction after the split.
    *
    * @param code the IR code for the block this iterator originates from.
    * @param instructions the number of instructions to include in the second block.
    * @param blockIterator basic block iterator used to iterate the blocks. This must be positioned
-   * just after the block for this is the instruction iterator. After this method returns it will be
-   * positioned just after the second block inserted. Calling {@link #remove} without further
-   * navigation will remove that block.
+   *     just after the block for this is the instruction iterator. After this method returns it
+   *     will be positioned just after the second block inserted. Calling {@link #remove} without
+   *     further navigation will remove that block.
    * @return Returns the new block with the instructions after the cursor.
    */
   // TODO(sgjesse): Refactor to avoid the need for passing code and blockIterator.
   BasicBlock split(IRCode code, int instructions, ListIterator<BasicBlock> blockIterator);
 
-  /**
-   * See {@link #split(IRCode, int, ListIterator)}.
-   */
+  /** See {@link #split(IRCode, int, ListIterator)}. */
   default BasicBlock split(IRCode code, int instructions) {
     return split(code, instructions, null);
   }

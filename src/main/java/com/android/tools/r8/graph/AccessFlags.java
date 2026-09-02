@@ -15,23 +15,17 @@ import java.util.function.Consumer;
 /** Access flags common to classes, methods and fields. */
 public abstract class AccessFlags<T extends AccessFlags<T>> implements StructuralItem<T> {
 
-  protected static final int BASE_FLAGS
-      = Constants.ACC_PUBLIC
-      | Constants.ACC_PRIVATE
-      | Constants.ACC_PROTECTED
-      | Constants.ACC_STATIC
-      | Constants.ACC_FINAL
-      | Constants.ACC_SYNTHETIC;
+  protected static final int BASE_FLAGS =
+      Constants.ACC_PUBLIC
+          | Constants.ACC_PRIVATE
+          | Constants.ACC_PROTECTED
+          | Constants.ACC_STATIC
+          | Constants.ACC_FINAL
+          | Constants.ACC_SYNTHETIC;
 
   // Ordered list of flag names. Must be consistent with getPredicates.
-  private static final List<String> NAMES = ImmutableList.of(
-      "public",
-      "private",
-      "protected",
-      "static",
-      "final",
-      "synthetic"
-  );
+  private static final List<String> NAMES =
+      ImmutableList.of("public", "private", "protected", "static", "final", "synthetic");
 
   // Get ordered list of flag predicates. Must be consistent with getNames.
   protected List<BooleanSupplier> getPredicates() {

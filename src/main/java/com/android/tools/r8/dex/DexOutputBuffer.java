@@ -17,8 +17,8 @@ import java.nio.ByteOrder;
 import java.nio.ShortBuffer;
 
 /**
- * Provides an abstraction around a {@link ByteBuffer} with write operations for
- * additional DEX specific formats, like Leb128.
+ * Provides an abstraction around a {@link ByteBuffer} with write operations for additional DEX
+ * specific formats, like Leb128.
  */
 public class DexOutputBuffer {
   private static final int DEFAULT_BUFFER_SIZE = 256 * 1024;
@@ -150,8 +150,8 @@ public class DexOutputBuffer {
   /**
    * Moves the position in the bytebuffer forward until it is aligned.
    *
-   * @param bytes  alignment requirement in bytes
-   * @return       the new position after alignment
+   * @param bytes alignment requirement in bytes
+   * @return the new position after alignment
    */
   public int align(int bytes) {
     assert bytes > 0;

@@ -192,7 +192,7 @@ public class L8TestBuilder {
         .setMode(mode)
         .setIncludeClassesChecksum(true)
         .addDesugaredLibraryConfiguration(desugaredLibrarySpecification)
-        .setMinApiLevel(apiLevel.getLevel())
+        .setMinApiLevel(apiLevel.getMajor())
         .setProgramConsumer(computeProgramConsumer(sink));
     addProgramClassFileData(l8Builder);
     Path mapping = null;
@@ -236,7 +236,7 @@ public class L8TestBuilder {
             options.dexItemFactory(),
             options.reporter,
             true,
-            apiLevel.getLevel());
+            apiLevel.getMajor());
     Set<String> maintainTypeOrPrefix = specification.getMaintainTypeOrPrefixForTesting();
     compileResult.inspect(
         inspector ->

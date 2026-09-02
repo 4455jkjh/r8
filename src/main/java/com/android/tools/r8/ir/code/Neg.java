@@ -40,7 +40,9 @@ public class Neg extends Unop {
 
   @Override
   public boolean canBeFolded() {
-    return (type == NumericType.INT || type == NumericType.LONG || type == NumericType.FLOAT
+    return (type == NumericType.INT
+            || type == NumericType.LONG
+            || type == NumericType.FLOAT
             || type == NumericType.DOUBLE)
         && source().isConstant();
   }

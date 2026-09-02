@@ -41,8 +41,8 @@ public interface DataEntryResource extends DataResource {
   }
 
   static DataEntryResource fromFile(Path dir, Path file) {
-    return new LocalDataEntryResource(dir.resolve(file).toFile(),
-        file.toString().replace(File.separatorChar, SEPARATOR));
+    return new LocalDataEntryResource(
+        dir.resolve(file).toFile(), file.toString().replace(File.separatorChar, SEPARATOR));
   }
 
   static DataEntryResource fromZip(ZipFile zip, ZipEntry entry) {

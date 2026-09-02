@@ -35,9 +35,7 @@ public class KotlinMultiFileClassFacadeInfo implements KotlinClassLevelInfo {
   }
 
   static KotlinMultiFileClassFacadeInfo create(
-      MultiFileClassFacade kmMultiFileClassFacade,
-      String packageName,
-      DexItemFactory factory) {
+      MultiFileClassFacade kmMultiFileClassFacade, String packageName, DexItemFactory factory) {
     ImmutableList.Builder<KotlinTypeReference> builder = ImmutableList.builder();
     for (String partClassName : kmMultiFileClassFacade.getPartClassNames()) {
       builder.add(

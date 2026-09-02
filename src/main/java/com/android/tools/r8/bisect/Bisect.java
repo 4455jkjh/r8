@@ -82,9 +82,11 @@ public class Bisect {
       if (command == null) {
         writeApp(app, output, executor, timing);
         System.out.println("Bisecting completed with build in " + output + "/");
-        System.out.println("Continue bisection by passing either --"
-            + BisectOptions.RESULT_GOOD_FLAG + " or --"
-            + BisectOptions.RESULT_BAD_FLAG);
+        System.out.println(
+            "Continue bisection by passing either --"
+                + BisectOptions.RESULT_GOOD_FLAG
+                + " or --"
+                + BisectOptions.RESULT_BAD_FLAG);
         return null;
       }
       state.setPreviousResult(command.apply(app));

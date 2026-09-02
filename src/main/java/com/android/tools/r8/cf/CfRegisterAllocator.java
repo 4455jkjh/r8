@@ -89,7 +89,8 @@ public class CfRegisterAllocator implements RegisterAllocator {
       sb.append("]");
       return sb.toString();
     }
-  };
+  }
+  ;
 
   private final Map<BasicBlock, TypesAtBlockEntry> lazyTypeInfoAtBlockEntry = new HashMap<>();
 

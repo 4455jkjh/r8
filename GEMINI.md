@@ -155,10 +155,10 @@ The project enforces a strict code style.
 
 The `PRESUBMIT.py` script checks that the code has been correctly formatted and contains the exact commands to format the code.
 
-It is also possible to format the code using the `tools/fmt-diff.py` script:
+It is also possible to format the code using the `tools/fmt_diff.py` script:
 
 ```bash
-tools/fmt-diff.py [--python]
+tools/fmt_diff.py
 ```
 
 ### Copyright Headers

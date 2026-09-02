@@ -388,7 +388,7 @@ public class SmaliBuilder {
   }
 
   public byte[] compile() throws IOException, RecognitionException, ExecutionException {
-    return Smali.compile(buildSource(), minApi.getLevel());
+    return Smali.compile(buildSource(), minApi.getMajor());
   }
 
   public AndroidApp build() throws IOException, RecognitionException, ExecutionException {

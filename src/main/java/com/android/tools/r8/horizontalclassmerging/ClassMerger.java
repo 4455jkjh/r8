@@ -458,8 +458,7 @@ public class ClassMerger {
       group.setClassIdField(field);
     }
 
-    public ClassMerger build(
-        HorizontalClassMergerGraphLens.Builder lensBuilder) {
+    public ClassMerger build(HorizontalClassMergerGraphLens.Builder lensBuilder) {
       return new ClassMerger(appView, lensBuilder, group, virtualMethodMergers);
     }
   }

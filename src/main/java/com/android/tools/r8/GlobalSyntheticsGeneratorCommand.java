@@ -75,7 +75,7 @@ public final class GlobalSyntheticsGeneratorCommand {
 
     this.inputApp = null;
     this.globalsConsumer = null;
-    this.minMajorApiLevel = AndroidApiLevel.B.getLevel();
+    this.minMajorApiLevel = AndroidApiLevel.B.getMajor();
     this.minMinorApiLevel = 0;
     this.classfileDesugaringOnly = false;
     this.enableVerboseSyntheticNames = false;
@@ -217,7 +217,7 @@ public final class GlobalSyntheticsGeneratorCommand {
 
     private GlobalSyntheticsConsumer globalsConsumer = null;
     private final Reporter reporter;
-    private int minMajorApiLevel = AndroidApiLevel.B.getLevel();
+    private int minMajorApiLevel = AndroidApiLevel.B.getMajor();
     private int minMinorApiLevel = 0;
     private boolean classfileDesugaringOnly = false;
     private boolean enableVerboseSyntheticNames = false;

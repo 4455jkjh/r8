@@ -88,7 +88,7 @@ public class ApiLevelBackportsTest extends TestBase {
   public void warningForFutureNonPlatformBuild() throws Exception {
     testForD8()
         .addProgramClassFileData(transformTestMathMultiplyExactLongInt())
-        .setMinApi(AndroidApiLevel.UNKNOWN.getLevel())
+        .setMinApi(AndroidApiLevel.UNKNOWN.getMajor())
         .setOutputMode(OutputMode.DexFilePerClassFile)
         .compile()
         .assertOnlyWarnings()

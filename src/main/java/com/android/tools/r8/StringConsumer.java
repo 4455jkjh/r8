@@ -60,7 +60,9 @@ public interface StringConsumer extends Finishable {
 
     private final StringConsumer consumer;
 
-    /** @param consumer Consumer to forward to, if null, nothing will be forwarded. */
+    /**
+     * @param consumer Consumer to forward to, if null, nothing will be forwarded.
+     */
     public ForwardingConsumer(StringConsumer consumer) {
       this.consumer = consumer;
     }

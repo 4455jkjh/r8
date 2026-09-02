@@ -70,7 +70,7 @@ public class B111893131 extends TestBase {
     builder.addProgramFiles(ToolHelper.getClassFileForTestClass(TestClass.class));
     builder.addProgramFiles(ToolHelper.getClassFileForTestClass(TestClass.Act.class));
     builder.setProgramConsumer(DexIndexedConsumer.emptyConsumer());
-    builder.setMinApiLevel(ToolHelper.getMinApiLevelForDexVm().getLevel());
+    builder.setMinApiLevel(ToolHelper.getMinApiLevelForDexVm().getMajor());
     builder.setDisableMinification(true);
     String config = keepMainProguardConfiguration(TestClass.class);
     builder.addProguardConfiguration(ImmutableList.of(config), Origin.unknown());

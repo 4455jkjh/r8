@@ -64,14 +64,14 @@ public class B111960171 {
   @Test
   public void disableDex2OatInliningWithTryCatch()
       throws IOException, CompilationFailedException, ExecutionException {
-    MethodSubject method = compileTestClassAndGetMethod(AndroidApiLevel.M.getLevel());
+    MethodSubject method = compileTestClassAndGetMethod(AndroidApiLevel.M.getMajor());
     assertTrue(method.getMethod().getCode().asDexCode().handlers.length > 0);
   }
 
   @Test
   public void dontDisableDex2OatInliningWithTryCatch()
       throws IOException, CompilationFailedException, ExecutionException {
-    MethodSubject method = compileTestClassAndGetMethod(AndroidApiLevel.N.getLevel());
+    MethodSubject method = compileTestClassAndGetMethod(AndroidApiLevel.N.getMajor());
     assertTrue(method.getMethod().getCode().asDexCode().handlers.length == 0);
   }
 }

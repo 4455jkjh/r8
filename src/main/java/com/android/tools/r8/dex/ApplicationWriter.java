@@ -240,10 +240,10 @@ public class ApplicationWriter {
   }
 
   /**
-   * For each class within a virtual file, this function insert a string that contains the
-   * checksum information about that class.
+   * For each class within a virtual file, this function insert a string that contains the checksum
+   * information about that class.
    *
-   * This needs to be done after distribute but before dex string sorting.
+   * <p>This needs to be done after distribute but before dex string sorting.
    */
   private void encodeChecksums(Iterable<VirtualFile> files) {
     Collection<DexProgramClass> classes = appView.appInfo().classes();
@@ -847,7 +847,8 @@ public class ApplicationWriter {
 
   private static String mapMainDexListName(DexType type, NamingLens namingLens) {
     return DescriptorUtils.descriptorToJavaType(namingLens.lookupDescriptor(type).toString())
-        .replace('.', '/') + ".class";
+            .replace('.', '/')
+        + ".class";
   }
 
   private static String writeMainDexList(AppView<?> appView) {

@@ -70,15 +70,15 @@ public abstract class Binop extends Instruction {
   }
 
   boolean fitsInLit16Instruction(Value value) {
-    return type == NumericType.INT &&
-        value.isConstant() &&
-        value.getConstInstruction().asConstNumber().is16Bit();
+    return type == NumericType.INT
+        && value.isConstant()
+        && value.getConstInstruction().asConstNumber().is16Bit();
   }
 
   boolean fitsInLit8Instruction(Value value) {
-    return type == NumericType.INT &&
-        value.isConstant() &&
-        value.getConstInstruction().asConstNumber().is8Bit();
+    return type == NumericType.INT
+        && value.isConstant()
+        && value.getConstInstruction().asConstNumber().is8Bit();
   }
 
   // The in and out register sizes are the same depending on the size of the literal

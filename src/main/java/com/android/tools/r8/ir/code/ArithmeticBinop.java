@@ -43,14 +43,17 @@ public abstract class ArithmeticBinop extends Binop {
 
   @Override
   public boolean canBeFolded() {
-    return (type == NumericType.INT || type == NumericType.LONG || type == NumericType.FLOAT
+    return (type == NumericType.INT
+            || type == NumericType.LONG
+            || type == NumericType.FLOAT
             || type == NumericType.DOUBLE)
-        && leftValue().isConstant() && rightValue().isConstant();
+        && leftValue().isConstant()
+        && rightValue().isConstant();
   }
 
   @Override
   public boolean needsValueInRegister(Value value) {
-    assert !isSub();  // Constants in instructions for sub must be handled in subclass Sub.
+    assert !isSub(); // Constants in instructions for sub must be handled in subclass Sub.
     // Always require the left value in a register. If left and right are the same value, then
     // both will use its register.
     if (value == leftValue()) {
@@ -90,7 +93,7 @@ public abstract class ArithmeticBinop extends Binop {
           throw new Unreachable("Unexpected numeric type " + type.name());
       }
     } else if (!needsValueInRegister(rightValue())) {
-      assert !isSub();  // Constants in instructions for sub must be handled in subclass Sub.
+      assert !isSub(); // Constants in instructions for sub must be handled in subclass Sub.
       assert fitsInDexInstruction(rightValue());
       ConstNumber right = rightValue().getConstInstruction().asConstNumber();
       if (right.is8Bit()) {

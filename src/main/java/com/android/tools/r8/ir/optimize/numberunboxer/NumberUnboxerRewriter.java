@@ -11,6 +11,7 @@ import com.android.tools.r8.graph.proto.ArgumentInfo;
 import com.android.tools.r8.graph.proto.RewrittenPrototypeDescription;
 import com.android.tools.r8.graph.proto.RewrittenTypeInfo;
 import com.android.tools.r8.ir.code.BasicBlock;
+import com.android.tools.r8.ir.code.BasicBlockIterator;
 import com.android.tools.r8.ir.code.IRCode;
 import com.android.tools.r8.ir.code.Instruction;
 import com.android.tools.r8.ir.code.InstructionListIterator;
@@ -25,6 +26,7 @@ import com.android.tools.r8.ir.conversion.MethodProcessor;
 import com.android.tools.r8.ir.optimize.AffectedValues;
 import com.android.tools.r8.ir.optimize.CustomLensCodeRewriter;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
+import com.android.tools.r8.utils.internal.IteratorUtils;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Sets;
 import java.util.ArrayList;
@@ -49,30 +51,42 @@ public class NumberUnboxerRewriter implements CustomLensCodeRewriter {
     assert graphLens.isNumberUnboxerLens();
     Set<Phi> affectedPhis = Sets.newIdentityHashSet();
     rewriteArgs(code, prototypeChanges, affectedPhis);
-    InstructionListIterator iterator = code.instructionListIterator();
-    while (iterator.hasNext()) {
-      Instruction next = iterator.next();
-      if (next.isInvokeMethod()) {
-        InvokeMethod invokeMethod = next.asInvokeMethod();
-        // TODO(b/314117865): This is assuming that there are no non-rebound method references.
-        DexMethod rewrittenMethod =
-            graphLens
-                .lookupMethod(
-                    invokeMethod.getInvokedMethod(),
-                    code.context().getReference(),
-                    invokeMethod.getType(),
-                    graphLens.getPrevious())
-                .getReference();
-        assert rewrittenMethod != null;
-        RewrittenPrototypeDescription rewrittenPrototypeDescription =
-            graphLens.lookupPrototypeChangesForMethodDefinition(
-                rewrittenMethod, graphLens.getPrevious());
-        if (!rewrittenPrototypeDescription.isEmpty()) {
-          unboxInvokeValues(
-              code, iterator, invokeMethod, rewrittenPrototypeDescription, affectedPhis);
+    BasicBlockIterator blocks = code.listIterator();
+    while (blocks.hasNext()) {
+      BasicBlock block = blocks.next();
+      InstructionListIterator iterator = block.listIterator();
+      while (iterator.hasNext()) {
+        Instruction next = iterator.next();
+        if (next.isInvokeMethod()) {
+          InvokeMethod invokeMethod = next.asInvokeMethod();
+          // TODO(b/314117865): This is assuming that there are no non-rebound method references.
+          DexMethod rewrittenMethod =
+              graphLens
+                  .lookupMethod(
+                      invokeMethod.getInvokedMethod(),
+                      code.context().getReference(),
+                      invokeMethod.getType(),
+                      graphLens.getPrevious())
+                  .getReference();
+          assert rewrittenMethod != null;
+          RewrittenPrototypeDescription rewrittenPrototypeDescription =
+              graphLens.lookupPrototypeChangesForMethodDefinition(
+                  rewrittenMethod, graphLens.getPrevious());
+          if (!rewrittenPrototypeDescription.isEmpty()) {
+            unboxInvokeValues(
+                code,
+                blocks,
+                block,
+                iterator,
+                invokeMethod,
+                rewrittenPrototypeDescription,
+                affectedPhis);
+            assert code.isConsistentSSABeforeTypesAreCorrect(appView);
+          }
+        } else if (next.isReturn() && next.asReturn().hasReturnValue()) {
+          unboxReturnIfNeeded(code, iterator, next.asReturn(), prototypeChanges);
+          assert code.isConsistentSSABeforeTypesAreCorrect(appView);
         }
-      } else if (next.isReturn() && next.asReturn().hasReturnValue()) {
-        unboxReturnIfNeeded(code, iterator, next.asReturn(), prototypeChanges);
       }
     }
     return affectedPhis;
@@ -80,6 +94,8 @@ public class NumberUnboxerRewriter implements CustomLensCodeRewriter {
 
   private void unboxInvokeValues(
       IRCode code,
+      BasicBlockIterator blocks,
+      BasicBlock block,
       InstructionListIterator iterator,
       InvokeMethod invokeMethod,
       RewrittenPrototypeDescription prototypeChanges,
@@ -94,8 +110,19 @@ public class NumberUnboxerRewriter implements CustomLensCodeRewriter {
             computeUnboxInvokeIfNeeded(
                 code, invokeArg, argumentInfo.asRewrittenTypeInfo(), invokeMethod.getPosition());
         if (unboxOperation != null) {
-          iterator.addBeforeAndPositionAfterNewInstruction(unboxOperation);
+          assert IteratorUtils.peekPrevious(blocks) == block;
+          assert invokeMethod.getBlock() == block;
+          iterator.previous();
+          iterator.add(unboxOperation);
+          if (block.hasCatchHandlers()) {
+            block = iterator.splitCopyCatchHandlers(code, blocks, appView.options());
+            iterator = block.listIterator();
+            blocks.positionAfterPreviousBlock(block);
+          }
+          iterator.next();
           invokeMethod.replaceValue(inValueIndex, unboxOperation.outValue());
+          assert IteratorUtils.peekPrevious(blocks) == block;
+          assert invokeMethod.getBlock() == block;
         }
       }
     }
@@ -107,8 +134,17 @@ public class NumberUnboxerRewriter implements CustomLensCodeRewriter {
               prototypeChanges.getRewrittenReturnInfo(),
               invokeMethod.getPosition());
       if (boxOperation != null) {
+        assert IteratorUtils.peekPrevious(blocks) == block;
+        assert invokeMethod.getBlock() == block;
         iterator.add(boxOperation);
+        if (block.hasCatchHandlers()) {
+          iterator.previous();
+          iterator.splitCopyCatchHandlers(code, blocks, appView.options());
+          blocks.positionAfterPreviousBlock(block);
+        }
         affectedPhis.addAll(boxOperation.outValue().uniquePhiUsers());
+        assert IteratorUtils.peekPrevious(blocks) == block;
+        assert invokeMethod.getBlock() == block;
       }
     }
   }

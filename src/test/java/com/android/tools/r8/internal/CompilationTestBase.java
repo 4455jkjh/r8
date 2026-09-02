@@ -115,7 +115,7 @@ public abstract class CompilationTestBase extends DesugaredLibraryTestBase {
       }
       builder.setMode(mode);
       builder.setProgramConsumer(dexIndexedConsumerSupplier.get());
-      builder.setMinApiLevel(AndroidApiLevel.L.getLevel());
+      builder.setMinApiLevel(AndroidApiLevel.L.getMajor());
       ToolHelper.addProguardConfigurationConsumer(
           builder,
           pgConfig -> {
@@ -130,7 +130,7 @@ public abstract class CompilationTestBase extends DesugaredLibraryTestBase {
           D8Command.builder()
               .addProgramFiles(ListUtils.map(inputs, Paths::get))
               .setMode(mode)
-              .setMinApiLevel(AndroidApiLevel.L.getLevel());
+              .setMinApiLevel(AndroidApiLevel.L.getMajor());
       outputApp = new AndroidAppConsumers(builder);
       D8.run(builder.build());
     }

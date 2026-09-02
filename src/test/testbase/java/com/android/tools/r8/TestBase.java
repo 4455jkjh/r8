@@ -734,7 +734,7 @@ public class TestBase {
     for (byte[] clazz : classes) {
       builder.addClassProgramData(clazz, Origin.unknown());
     }
-    builder.addLibraryFiles(ToolHelper.getAndroidJar(AndroidApiLevel.N.getLevel()));
+    builder.addLibraryFiles(ToolHelper.getAndroidJar(AndroidApiLevel.N.getMajor()));
     return builder.build();
   }
 

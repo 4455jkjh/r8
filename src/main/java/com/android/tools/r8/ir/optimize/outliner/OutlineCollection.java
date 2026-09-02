@@ -11,7 +11,7 @@ import com.android.tools.r8.graph.DexMethod;
 import com.android.tools.r8.graph.DexProgramClass;
 import com.android.tools.r8.graph.ProgramMethod;
 import com.android.tools.r8.graph.lens.GraphLens;
-import com.android.tools.r8.ir.optimize.outliner.OutlinerImpl.Outline;
+import com.android.tools.r8.ir.optimize.outliner.Outliner.Outline;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
 import com.android.tools.r8.utils.collections.ProgramMethodSet;
 import com.android.tools.r8.utils.internal.ListUtils;
@@ -80,13 +80,12 @@ public class OutlineCollection {
     return ListUtils.mapOrElse(outlines, outline -> outline.rewrittenWithLens(currentGraphLens));
   }
 
-  public void updateAppliedLens(List<GraphLens> prunedGraphLenses) {
-    if (prunedGraphLenses.contains(appliedGraphLens)) {
-      appliedGraphLens =
-          appliedGraphLens
-              .asNonIdentityLens()
-              .find(l -> !l.isClearCodeRewritingLens() && !l.isMemberRebindingIdentityLens());
-    }
+  public GraphLens getAppliedGraphLens() {
+    return appliedGraphLens;
+  }
+
+  public void updateAppliedLens(GraphLens newAppliedGraphLens) {
+    appliedGraphLens = newAppliedGraphLens;
   }
 
   public ProgramMethodSet computeMethodsSubjectToOutlining(AppView<AppInfoWithLiveness> appView) {

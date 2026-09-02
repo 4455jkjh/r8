@@ -11,9 +11,7 @@ import com.android.tools.r8.utils.LebUtils;
 import com.android.tools.r8.utils.internal.StreamUtils;
 import java.io.IOException;
 
-/**
- * Base class for reading binary content.
- */
+/** Base class for reading binary content. */
 public abstract class BinaryReader {
   protected final Origin origin;
   protected final CompatByteBuffer buffer;
@@ -54,13 +52,13 @@ public abstract class BinaryReader {
 
   int getUint() {
     int result = buffer.getInt();
-    assert result >= 0;  // Ensure the java int didn't overflow.
+    assert result >= 0; // Ensure the java int didn't overflow.
     return result;
   }
 
   int getUshort() {
     int result = buffer.getShort() & 0xffff;
-    assert result >= 0;  // Ensure we have a non-negative number.
+    assert result >= 0; // Ensure we have a non-negative number.
     return result;
   }
 
@@ -70,7 +68,7 @@ public abstract class BinaryReader {
 
   int getUint(int offset) {
     int result = buffer.getInt(offset);
-    assert result >= 0;  // Ensure the java int didn't overflow.
+    assert result >= 0; // Ensure the java int didn't overflow.
     return result;
   }
 
@@ -87,7 +85,7 @@ public abstract class BinaryReader {
   }
 
   void align(int alignment) {
-    assert (alignment & (alignment - 1)) == 0;   // Check alignment is power of 2.
+    assert (alignment & (alignment - 1)) == 0; // Check alignment is power of 2.
     int p = buffer.position();
     p += (alignment - (p % alignment)) & (alignment - 1);
     buffer.position(p);
@@ -99,7 +97,7 @@ public abstract class BinaryReader {
 
   int getUbyte() {
     int result = buffer.get() & 0xff;
-    assert result >= 0;  // Ensure we have a non-negative result.
+    assert result >= 0; // Ensure we have a non-negative result.
     return result;
   }
 

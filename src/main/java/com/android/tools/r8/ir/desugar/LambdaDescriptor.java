@@ -37,8 +37,8 @@ public final class LambdaDescriptor {
   private static final int LAMBDA_ALT_SERIALIZABLE = 1;
   private static final int LAMBDA_ALT_HAS_EXTRA_INTERFACES = 2;
   private static final int LAMBDA_ALT_HAS_BRIDGES = 4;
-  private static final int LAMBDA_ALT_MASK = LAMBDA_ALT_SERIALIZABLE
-      | LAMBDA_ALT_HAS_EXTRA_INTERFACES | LAMBDA_ALT_HAS_BRIDGES;
+  private static final int LAMBDA_ALT_MASK =
+      LAMBDA_ALT_SERIALIZABLE | LAMBDA_ALT_HAS_EXTRA_INTERFACES | LAMBDA_ALT_HAS_BRIDGES;
 
   static final LambdaDescriptor MATCH_FAILED = new LambdaDescriptor();
 
@@ -146,14 +146,15 @@ public final class LambdaDescriptor {
     DexMethod method = implHandle.asMethod();
     switch (implHandle.type) {
       case INVOKE_DIRECT:
-      case INVOKE_INSTANCE: {
+      case INVOKE_INSTANCE:
+        {
           DexClassAndMethod target =
               appInfo
                   .resolveMethodOnLegacy(getImplReceiverType(), method, implHandle.isInterface)
                   .getResolutionPair();
-        if (target == null) {
+          if (target == null) {
             target = appInfo.lookupDirectTarget(method, context, appView, appInfo);
-        }
+          }
           assert target == null
               // TODO(b/366932318): We should disallow staticizing of methods called from lambdas
               //  or update the implHandle accordingly.
@@ -161,29 +162,32 @@ public final class LambdaDescriptor {
                   && (isInstanceMethod(target) || target.getAccessFlags().isStatic()))
               || (implHandle.type.isInvokeDirect() && isPrivateInstanceMethod(target))
               || (implHandle.type.isInvokeDirect() && isPublicizedInstanceMethod(target));
-        return target;
-      }
+          return target;
+        }
 
-      case INVOKE_STATIC: {
+      case INVOKE_STATIC:
+        {
           DexClassAndMethod target = appInfo.lookupStaticTarget(method, context, appView, appInfo);
           assert target == null || target.getAccessFlags().isStatic();
-        return target;
-      }
+          return target;
+        }
 
-      case INVOKE_CONSTRUCTOR: {
+      case INVOKE_CONSTRUCTOR:
+        {
           DexClassAndMethod target = appInfo.lookupDirectTarget(method, context, appView, appInfo);
           assert target == null || target.getAccessFlags().isConstructor();
-        return target;
-      }
+          return target;
+        }
 
-      case INVOKE_INTERFACE: {
+      case INVOKE_INTERFACE:
+        {
           DexClassAndMethod target =
               appInfo
                   .resolveMethodOnInterfaceLegacy(getImplReceiverType(), method)
                   .getResolutionPair();
-        assert target == null || isInstanceMethod(target);
-        return target;
-      }
+          assert target == null || isInstanceMethod(target);
+          return target;
+        }
 
       default:
         throw new Unreachable("Unexpected method handle kind in " + implHandle);

@@ -76,8 +76,7 @@ public class ArchiveResourceProvider implements ProgramResourceProvider, DataRes
               (name, kind) -> archive.matchesFile(name) && (kind == Kind.CF || !ignoreDexInArchive),
               consumer);
     } catch (ZipException e) {
-      throw new CompilationError(
-          "Zip error while reading '" + archive + "': " + e.getMessage(), e);
+      throw new CompilationError("Zip error while reading '" + archive + "': " + e.getMessage(), e);
     } catch (IOException e) {
       throw new ResourceException(origin, e);
     }

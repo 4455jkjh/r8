@@ -23,9 +23,7 @@ import com.android.tools.r8.ir.optimize.inliner.WhyAreYouNotInliningReporter;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
 import com.android.tools.r8.utils.timing.Timing;
 
-/**
- * The InliningOracle contains information needed for when inlining other methods into @method.
- */
+/** The InliningOracle contains information needed for when inlining other methods into @method. */
 public interface InliningOracle {
 
   AppView<AppInfoWithLiveness> appView();

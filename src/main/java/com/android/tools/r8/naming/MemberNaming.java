@@ -69,8 +69,10 @@ public class MemberNaming implements MappingWithResidualInfo, Comparable<MemberN
 
   /** Original signature of the member. */
   private final Signature signature;
+
   /** Residual signature where types and names could be changed. */
   private final Signature residualSignature;
+
   /** Position of the member in the file. */
   private final Position position;
 
@@ -192,13 +194,13 @@ public class MemberNaming implements MappingWithResidualInfo, Comparable<MemberN
 
     abstract Signature asRenamed(String renamedName);
 
-    abstract public SignatureKind kind();
+    public abstract SignatureKind kind();
 
     @Override
-    abstract public boolean equals(Object o);
+    public abstract boolean equals(Object o);
 
     @Override
-    abstract public int hashCode();
+    public abstract int hashCode();
 
     abstract void write(Writer builder) throws IOException;
 
@@ -287,9 +289,7 @@ public class MemberNaming implements MappingWithResidualInfo, Comparable<MemberN
 
     public DexField toDexField(DexItemFactory factory, DexType clazz) {
       return factory.createField(
-          clazz,
-          factory.createType(javaTypeToDescriptor(type)),
-          factory.createString(name));
+          clazz, factory.createType(javaTypeToDescriptor(type)), factory.createString(name));
     }
 
     @Override
@@ -426,9 +426,7 @@ public class MemberNaming implements MappingWithResidualInfo, Comparable<MemberN
       }
       DexType returnType = factory.createType(javaTypeToDescriptor(type));
       return factory.createMethod(
-          clazz,
-          factory.createProto(returnType, paramTypes),
-          factory.createString(name));
+          clazz, factory.createProto(returnType, paramTypes), factory.createString(name));
     }
 
     public static MethodSignature initializer(String[] parameters) {
@@ -462,22 +460,17 @@ public class MemberNaming implements MappingWithResidualInfo, Comparable<MemberN
 
     @Override
     public int hashCode() {
-      return (type.hashCode() * 17
-          + name.hashCode()) * 31
-          + Arrays.hashCode(parameters);
+      return (type.hashCode() * 17 + name.hashCode()) * 31 + Arrays.hashCode(parameters);
     }
 
     @Override
     public String toString() {
-        return type + ' ' + name + '(' + String.join(",", parameters) + ')';
+      return type + ' ' + name + '(' + String.join(",", parameters) + ')';
     }
 
     @Override
     void write(Writer writer) throws IOException {
-      writer.append(type)
-          .append(' ')
-          .append(name)
-          .append('(');
+      writer.append(type).append(' ').append(name).append('(');
       for (int i = 0; i < parameters.length; i++) {
         writer.append(parameters[i]);
         if (i < parameters.length - 1) {

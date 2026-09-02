@@ -83,9 +83,7 @@ public abstract class RecordFieldNamesComputationInfo extends NameComputationInf
 
     @Override
     public DexString internalComputeNameFor(
-        DexType type,
-        DexDefinitionSupplier definitions,
-        NamingLens namingLens) {
+        DexType type, DexDefinitionSupplier definitions, NamingLens namingLens) {
       return internalComputeNameFor(type, definitions, i -> fieldNames[i]);
     }
 
@@ -141,9 +139,7 @@ public abstract class RecordFieldNamesComputationInfo extends NameComputationInf
 
     @Override
     public DexString internalComputeNameFor(
-        DexType type,
-        DexDefinitionSupplier definitions,
-        NamingLens namingLens) {
+        DexType type, DexDefinitionSupplier definitions, NamingLens namingLens) {
       return internalComputeNameFor(
           type,
           definitions,
@@ -214,9 +210,7 @@ public abstract class RecordFieldNamesComputationInfo extends NameComputationInf
   }
 
   public DexString internalComputeNameFor(
-      DexType type,
-      DexDefinitionSupplier definitions,
-      IntFunction<String> nameSupplier) {
+      DexType type, DexDefinitionSupplier definitions, IntFunction<String> nameSupplier) {
     DexClass recordClass = definitions.contextIndependentDefinitionFor(type);
     assert recordClass != null;
     List<String> names = new ArrayList<>(fields.length);

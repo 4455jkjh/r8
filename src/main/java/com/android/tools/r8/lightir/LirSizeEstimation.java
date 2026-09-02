@@ -309,7 +309,7 @@ public class LirSizeEstimation<EV> extends LirParsedInstructionCallback<EV> impl
       case IFNONNULL:
         return DexBase1Format.SIZE;
 
-        // Non-CF instructions.
+      // Non-CF instructions.
       case ICONST:
       case LCONST:
       case FCONST:

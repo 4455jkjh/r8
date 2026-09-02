@@ -3,6 +3,7 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8.androidresources;
 
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
 
 import com.android.tools.r8.TestBase;
@@ -60,8 +61,10 @@ public class RClassKeepRuleResourceShrinkingTest extends TestBase {
                   b.isR8PartialTestBuilder(),
                   r8pb ->
                       r8pb.addR8PartialR8OptionsModification(
-                          o -> o.removeUnreadKeptRClassResources = true),
-                  r8b -> r8b.addOptionsModification(o -> o.removeUnreadKeptRClassResources = true));
+                          o -> assertTrue(o.removeUnreadKeptRClassResources)),
+                  r8b ->
+                      r8b.addOptionsModification(
+                          o -> assertTrue(o.removeUnreadKeptRClassResources)));
             })
         .addAndroidResources(testResources)
         .addKeepMainRule(FooBar.class)

@@ -144,7 +144,7 @@ public class SupportedClassesGenerator {
 
   private <EM extends DexEncodedMember<EM, M>, M extends DexMember<EM, M>>
       @SuppressWarnings("ReferenceEquality") boolean analyzeMissingMembers(
-      Iterable<EM> maxClassMembers, Collection<EM> referenceMembers, List<M> missingMembers) {
+          Iterable<EM> maxClassMembers, Collection<EM> referenceMembers, List<M> missingMembers) {
     boolean fullySupported = true;
     for (EM member : maxClassMembers) {
       if (!(member.getAccessFlags().isPublic() || member.getAccessFlags().isProtected())) {
@@ -165,8 +165,8 @@ public class SupportedClassesGenerator {
       return;
     }
     // The first difference should be at 18 so we're safe starting at J and not B.
-    for (int api = AndroidApiLevel.J.getLevel();
-        api <= MAX_TESTED_ANDROID_API_LEVEL.getLevel();
+    for (int api = AndroidApiLevel.J.getMajor();
+        api <= MAX_TESTED_ANDROID_API_LEVEL.getMajor();
         api++) {
       AndroidApiLevel androidApiLevel = AndroidApiLevel.getAndroidApiLevel(api);
       MachineDesugaredLibrarySpecification machineSpecification =
@@ -179,10 +179,7 @@ public class SupportedClassesGenerator {
 
       AppInfo initialAppInfo =
           AppInfo.createInitialAppInfo(appForMax, GlobalSyntheticsStrategy.forNonSynthesizing());
-      AppView<?> appView =
-          AppView.createForD8(
-              initialAppInfo,
-              Timing.empty());
+      AppView<?> appView = AppView.createForD8(initialAppInfo, Timing.empty());
       AppInfoWithClassHierarchy appInfo = appView.appInfoForDesugaring();
 
       // This should depend only on machine specification and min api.
@@ -233,7 +230,7 @@ public class SupportedClassesGenerator {
               builder.annotateMethod(dexMethod, MethodAnnotation.createMissingInMinApi(finalApi));
               return;
             }
-            if (finalApi < computedApiLevel.asKnownApiLevel().getApiLevel().getLevel()) {
+            if (finalApi < computedApiLevel.asKnownApiLevel().getApiLevel().getMajor()) {
               builder.annotateMethod(dexMethod, MethodAnnotation.createMissingInMinApi(finalApi));
             }
           });
@@ -261,7 +258,7 @@ public class SupportedClassesGenerator {
                     "API database does not recognize the field "
                         + encodedField.getReference().toSourceString());
               }
-              if (finalApi < computedApiLevel.asKnownApiLevel().getApiLevel().getLevel()) {
+              if (finalApi < computedApiLevel.asKnownApiLevel().getApiLevel().getMajor()) {
                 builder.annotateField(
                     encodedField.getReference(), FieldAnnotation.createMissingInMinApi(finalApi));
               }
@@ -486,7 +483,7 @@ public class SupportedClassesGenerator {
     }
     DesugaredLibrarySpecification librarySpecification =
         DesugaredLibrarySpecificationParser.parseDesugaredLibrarySpecification(
-            specification, options.itemFactory, options.reporter, false, api.getLevel());
+            specification, options.itemFactory, options.reporter, false, api.getMajor());
     return librarySpecification.toMachineSpecification(appForMax, Timing.empty());
   }
 

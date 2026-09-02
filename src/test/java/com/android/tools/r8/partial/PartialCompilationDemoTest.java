@@ -288,7 +288,7 @@ public class PartialCompilationDemoTest extends TestBase {
         DesugaredLibraryJDK11Undesugarer.undesugaredJarJDK11(tempDir, DESUGARED_JDK_11_LIB_JAR);
     L8Command.Builder commandBuilder =
         L8Command.builder()
-            .setMinApiLevel(apiLevel.getLevel())
+            .setMinApiLevel(apiLevel.getMajor())
             .addLibraryFiles(dump.getLibraryArchive())
             .addProgramFiles(dd)
             .setOutput(path, OutputMode.ClassFile);

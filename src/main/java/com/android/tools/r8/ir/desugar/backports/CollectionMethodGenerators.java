@@ -74,9 +74,7 @@ public final class CollectionMethodGenerators {
             Constants.INSTANCE_INITIALIZER_NAME);
 
     Builder<CfInstruction> builder = ImmutableList.builder();
-    builder.add(
-        new CfConstNumber(formalCount, ValueType.INT),
-        new CfNewArray(mapEntryArray));
+    builder.add(new CfConstNumber(formalCount, ValueType.INT), new CfNewArray(mapEntryArray));
 
     for (int i = 0; i < formalCount; i++) {
       builder.add(

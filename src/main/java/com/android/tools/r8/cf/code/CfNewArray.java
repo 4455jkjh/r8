@@ -99,9 +99,7 @@ public class CfNewArray extends CfInstruction implements CfTypeInstruction {
   }
 
   private String getElementInternalName(
-      GraphLens graphLens,
-      GraphLens codeLens,
-      NamingLens namingLens) {
+      GraphLens graphLens, GraphLens codeLens, NamingLens namingLens) {
     assert !type.isPrimitiveArrayType();
     StringBuilder renamedElementDescriptor =
         new StringBuilder("[".repeat(type.getArrayElementType().getArrayTypeDimensions()));

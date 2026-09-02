@@ -54,7 +54,7 @@ public class KeepRadiusCommandTest extends TestBase {
             .setConfigurationAnalysisDataConsumer(
                 (ByteArrayConsumer.ArrayConsumer) dataConsumer::set)
             .setConfigurationAnalysisHtmlReportConsumer(reportConsumer)
-            .setMinApiLevel(AndroidApiLevel.getDefault().getLevel())
+            .setMinApiLevel(AndroidApiLevel.getDefault().getMajor())
             .setProgramConsumer(DexIndexedConsumer.emptyConsumer())
             .build();
     R8.run(command);

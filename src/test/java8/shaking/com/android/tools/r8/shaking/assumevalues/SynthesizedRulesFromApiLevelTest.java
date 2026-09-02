@@ -28,9 +28,9 @@ import com.android.tools.r8.jasmin.JasminBuilder.ClassBuilder;
 import com.android.tools.r8.shaking.ProguardAssumeNoSideEffectRule;
 import com.android.tools.r8.shaking.ProguardConfigurationRule;
 import com.android.tools.r8.utils.AndroidApiLevel;
-import com.android.tools.r8.utils.internal.ThrowingConsumer;
 import com.android.tools.r8.utils.codeinspector.ClassSubject;
 import com.android.tools.r8.utils.codeinspector.CodeInspector;
+import com.android.tools.r8.utils.internal.ThrowingConsumer;
 import com.google.common.collect.ImmutableList;
 import java.nio.file.Path;
 import java.util.List;
@@ -60,7 +60,7 @@ public class SynthesizedRulesFromApiLevelTest extends TestBase {
     ClassBuilder classBuilder;
 
     classBuilder = builder.addClass("android.os.Build$VERSION");
-    classBuilder.addStaticFinalField("SDK_INT", "I", Integer.toString(apiLevel.getLevel()));
+    classBuilder.addStaticFinalField("SDK_INT", "I", Integer.toString(apiLevel.getMajor()));
 
     classBuilder = builder.addClass("android.os.Native");
     classBuilder.addStaticMethod("method", ImmutableList.of(), "V",
@@ -100,17 +100,19 @@ public class SynthesizedRulesFromApiLevelTest extends TestBase {
         "  invokevirtual java/io/PrintStream/print(Ljava.lang.String;)V",
         "  return");
 
-    classBuilder.addStaticMethod("method", ImmutableList.of(), "V",
+    classBuilder.addStaticMethod(
+        "method",
+        ImmutableList.of(),
+        "V",
         ".limit stack 2",
         "  getstatic android/os/Build$VERSION/SDK_INT I",
-        "  ldc " + apiLevelForNative.getLevel(),
+        "  ldc " + apiLevelForNative.getMajor(),
         "if_icmpge Native",
-        "  invokestatic " + compatLibraryClassName +"/compatMethod()V",
+        "  invokestatic " + compatLibraryClassName + "/compatMethod()V",
         "  return",
         "Native:",
         "  invokestatic android.os.Native/method()V",
-        "  return"
-    );
+        "  return");
 
     classBuilder = builder.addClass(mainClassName);
 
@@ -166,7 +168,7 @@ public class SynthesizedRulesFromApiLevelTest extends TestBase {
       List<String> additionalKeepRules,
       SynthesizedRule synthesizedRule)
       throws Exception {
-    assertTrue(runtimeApiLevel.getLevel() >= buildApiLevel.getLevel());
+    assertTrue(runtimeApiLevel.getMajor() >= buildApiLevel.getMajor());
     if (parameters.isDexRuntime()) {
       Path androidRuntimeLibraryMock = mockAndroidRuntimeLibrary(runtimeApiLevel);
       testForR8(parameters.getBackend())
@@ -221,11 +223,11 @@ public class SynthesizedRulesFromApiLevelTest extends TestBase {
   }
 
   private String expectedResultForNative(AndroidApiLevel runtimeApiLevel) {
-    return runtimeApiLevel.getLevel() + " Native";
+    return runtimeApiLevel.getMajor() + " Native";
   }
 
   private String expectedResultForCompat(AndroidApiLevel runtimeApiLevel) {
-    return runtimeApiLevel.getLevel() + " Compat";
+    return runtimeApiLevel.getMajor() + " Compat";
   }
 
   private void compatCodePresent(CodeInspector inspector) {
@@ -292,7 +294,7 @@ public class SynthesizedRulesFromApiLevelTest extends TestBase {
         this::compatCodeNotPresent,
         ImmutableList.of(
             "-assumevalues class android.os.Build$VERSION { public static final int SDK_INT return "
-                + AndroidApiLevel.O_MR1.getLevel()
+                + AndroidApiLevel.O_MR1.getMajor()
                 + "..1000; }"),
         SynthesizedRule.NOT_PRESENT);
   }
@@ -369,7 +371,7 @@ public class SynthesizedRulesFromApiLevelTest extends TestBase {
         assertThat(
             ruleText,
             containsString(
-                "return " + AndroidApiLevel.UNKNOWN.getLevel() + ".." + Integer.MAX_VALUE));
+                "return " + AndroidApiLevel.UNKNOWN.getMajor() + ".." + Integer.MAX_VALUE));
         return;
       }
     }

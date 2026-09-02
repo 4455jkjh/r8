@@ -219,11 +219,7 @@ public class PrunedItems {
 
     public PrunedItems build() {
       return new PrunedItems(
-          prunedApp,
-          additionalPinnedItems,
-          removedClasses,
-          removedFields,
-          removedMethods);
+          prunedApp, additionalPinnedItems, removedClasses, removedFields, removedMethods);
     }
   }
 

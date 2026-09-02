@@ -15,7 +15,6 @@ import com.android.tools.r8.utils.AndroidApiLevel;
 import com.android.tools.r8.utils.ExtractMarkerUtils;
 import com.android.tools.r8.utils.VersionProperties;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
@@ -90,13 +89,13 @@ public class ProguardMapMarkerTest extends TestBase {
                   }
                 })
             .addLibraryFiles(ToolHelper.getAndroidJar(minApiLevel))
-            .setMinApiLevel(minApiLevel.getLevel())
+            .setMinApiLevel(minApiLevel.getMajor())
             .setProguardMapConsumer(
                 ToolHelper.consumeString(
                     proguardMap ->
                         proguardMapIds.fromMap =
                             verifyMarkersGetPgMapId(
-                                proguardMap, minApiLevel.getLevel(), EXPECTED_NUMBER_OF_KEYS_DEX)))
+                                proguardMap, minApiLevel.getMajor(), EXPECTED_NUMBER_OF_KEYS_DEX)))
             .build());
     verifyProguardMapIds(proguardMapIds);
   }

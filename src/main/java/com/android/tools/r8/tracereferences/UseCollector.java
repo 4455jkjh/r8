@@ -53,9 +53,9 @@ import com.android.tools.r8.tracereferences.TraceReferencesConsumer.TracedRefere
 import com.android.tools.r8.tracereferences.internal.TracedClassImpl;
 import com.android.tools.r8.tracereferences.internal.TracedFieldImpl;
 import com.android.tools.r8.tracereferences.internal.TracedMethodImpl;
-import com.android.tools.r8.utils.internal.BooleanBox;
 import com.android.tools.r8.utils.ThreadUtils;
 import com.android.tools.r8.utils.collections.ProgramMethodSet;
+import com.android.tools.r8.utils.internal.BooleanBox;
 import com.android.tools.r8.utils.timing.Timing;
 import java.util.Collection;
 import java.util.Set;

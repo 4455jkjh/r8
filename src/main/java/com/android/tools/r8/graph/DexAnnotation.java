@@ -175,10 +175,10 @@ public class DexAnnotation extends DexItem implements StructuralItem<DexAnnotati
     return false;
   }
 
-  public static DexAnnotation createEnclosingClassAnnotation(DexType enclosingClass,
-      DexItemFactory factory) {
-    return createSystemValueAnnotation(factory.annotationEnclosingClass, factory,
-        new DexValueType(enclosingClass));
+  public static DexAnnotation createEnclosingClassAnnotation(
+      DexType enclosingClass, DexItemFactory factory) {
+    return createSystemValueAnnotation(
+        factory.annotationEnclosingClass, factory, new DexValueType(enclosingClass));
   }
 
   public static DexType getEnclosingClassFromAnnotation(
@@ -190,10 +190,10 @@ public class DexAnnotation extends DexItem implements StructuralItem<DexAnnotati
     return value.asDexValueType().value;
   }
 
-  public static DexAnnotation createEnclosingMethodAnnotation(DexMethod enclosingMethod,
-      DexItemFactory factory) {
-    return createSystemValueAnnotation(factory.annotationEnclosingMethod, factory,
-        new DexValueMethod(enclosingMethod));
+  public static DexAnnotation createEnclosingMethodAnnotation(
+      DexMethod enclosingMethod, DexItemFactory factory) {
+    return createSystemValueAnnotation(
+        factory.annotationEnclosingMethod, factory, new DexValueMethod(enclosingMethod));
   }
 
   public static DexMethod getEnclosingMethodFromAnnotation(
@@ -273,14 +273,14 @@ public class DexAnnotation extends DexItem implements StructuralItem<DexAnnotati
     return result;
   }
 
-  public static DexAnnotation createMemberClassesAnnotation(List<DexType> classes,
-      DexItemFactory factory) {
+  public static DexAnnotation createMemberClassesAnnotation(
+      List<DexType> classes, DexItemFactory factory) {
     DexValue[] values = new DexValue[classes.size()];
     for (int i = 0; i < classes.size(); i++) {
       values[i] = new DexValueType(classes.get(i));
     }
-    return createSystemValueAnnotation(factory.annotationMemberClasses, factory,
-        new DexValueArray(values));
+    return createSystemValueAnnotation(
+        factory.annotationMemberClasses, factory, new DexValueArray(values));
   }
 
   public static List<DexType> getMemberClassesFromAnnotation(
@@ -434,8 +434,8 @@ public class DexAnnotation extends DexItem implements StructuralItem<DexAnnotati
     return result;
   }
 
-  public static DexAnnotation createSourceDebugExtensionAnnotation(DexValue value,
-      DexItemFactory factory) {
+  public static DexAnnotation createSourceDebugExtensionAnnotation(
+      DexValue value, DexItemFactory factory) {
     return new DexAnnotation(
         VISIBILITY_SYSTEM,
         new DexEncodedAnnotation(
@@ -443,8 +443,8 @@ public class DexAnnotation extends DexItem implements StructuralItem<DexAnnotati
             new DexAnnotationElement[] {new DexAnnotationElement(factory.valueString, value)}));
   }
 
-  public static DexAnnotation createMethodParametersAnnotation(DexValue[] names,
-      DexValue[] accessFlags, DexItemFactory factory) {
+  public static DexAnnotation createMethodParametersAnnotation(
+      DexValue[] names, DexValue[] accessFlags, DexItemFactory factory) {
     assert names.length == accessFlags.length;
     return new DexAnnotation(
         VISIBILITY_SYSTEM,
@@ -456,18 +456,18 @@ public class DexAnnotation extends DexItem implements StructuralItem<DexAnnotati
             }));
   }
 
-  public static DexAnnotation createAnnotationDefaultAnnotation(DexType type,
-      List<DexAnnotationElement> defaults, DexItemFactory factory) {
-    return createSystemValueAnnotation(factory.annotationDefault, factory,
+  public static DexAnnotation createAnnotationDefaultAnnotation(
+      DexType type, List<DexAnnotationElement> defaults, DexItemFactory factory) {
+    return createSystemValueAnnotation(
+        factory.annotationDefault,
+        factory,
         new DexValueAnnotation(
-            new DexEncodedAnnotation(type,
-                defaults.toArray(DexAnnotationElement.EMPTY_ARRAY)))
-    );
+            new DexEncodedAnnotation(type, defaults.toArray(DexAnnotationElement.EMPTY_ARRAY))));
   }
 
   public static DexAnnotation createSignatureAnnotation(String signature, DexItemFactory factory) {
-    return createSystemValueAnnotation(factory.annotationSignature, factory,
-        compressSignature(signature, factory));
+    return createSystemValueAnnotation(
+        factory.annotationSignature, factory, compressSignature(signature, factory));
   }
 
   public static DexAnnotation createNestHostAnnotation(
@@ -636,14 +636,14 @@ public class DexAnnotation extends DexItem implements StructuralItem<DexAnnotati
     return signature == null ? null : getSignature(signature);
   }
 
-  public static DexAnnotation createThrowsAnnotation(DexValue[] exceptions,
-      DexItemFactory factory) {
-    return createSystemValueAnnotation(factory.annotationThrows, factory,
-        new DexValueArray(exceptions));
+  public static DexAnnotation createThrowsAnnotation(
+      DexValue[] exceptions, DexItemFactory factory) {
+    return createSystemValueAnnotation(
+        factory.annotationThrows, factory, new DexValueArray(exceptions));
   }
 
-  private static DexAnnotation createSystemValueAnnotation(DexType type, DexItemFactory factory,
-      DexValue value) {
+  private static DexAnnotation createSystemValueAnnotation(
+      DexType type, DexItemFactory factory, DexValue value) {
     return new DexAnnotation(
         VISIBILITY_SYSTEM,
         new DexEncodedAnnotation(
@@ -701,8 +701,8 @@ public class DexAnnotation extends DexItem implements StructuralItem<DexAnnotati
   /**
    * As a simple heuristic for compressing a signature by splitting on fully qualified class names
    * and make them individual part. All other parts of the signature are simply grouped and separate
-   * the names.
-   * For examples, "()Ljava/lang/List<Lfoo/bar/Baz;>;" splits into:
+   * the names. For examples, "()Ljava/lang/List<Lfoo/bar/Baz;>;" splits into:
+   *
    * <pre>
    *   ["()", "Ljava/lang/List<", "Lfoo/bar/Baz;", ">;"]
    * </pre>
@@ -711,7 +711,7 @@ public class DexAnnotation extends DexItem implements StructuralItem<DexAnnotati
     final int length = signature.length();
     List<DexValue> parts = new ArrayList<>();
 
-    for (int at = 0; at < length; /*at*/) {
+    for (int at = 0; at < length; /*at*/ ) {
       char c = signature.charAt(at);
       int endAt = at + 1;
       if (c == 'L') {
@@ -830,7 +830,7 @@ public class DexAnnotation extends DexItem implements StructuralItem<DexAnnotati
       return UNKNOWN_API_LEVEL;
     } else {
       assert computedApiLevel.isKnownApiLevel();
-      return computedApiLevel.asKnownApiLevel().getApiLevel().getLevel();
+      return computedApiLevel.asKnownApiLevel().getApiLevel().getMajor();
     }
   }
 

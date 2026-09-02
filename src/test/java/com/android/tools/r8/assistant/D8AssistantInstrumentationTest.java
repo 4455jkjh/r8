@@ -45,7 +45,7 @@ public class D8AssistantInstrumentationTest extends TestBase {
     GlobalSyntheticsGeneratorCommand command =
         GlobalSyntheticsGeneratorCommand.builder()
             .addLibraryFiles(ToolHelper.getMostRecentAndroidJar())
-            .setMinApiLevel(parameters.getApiLevel().getLevel())
+            .setMinApiLevel(parameters.getApiLevel().getMajor())
             .setGlobalSyntheticsConsumer(globalsConsumer)
             .build();
     runGlobalSyntheticsGenerator(

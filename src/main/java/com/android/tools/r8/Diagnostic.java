@@ -13,18 +13,18 @@ public interface Diagnostic {
 
   /**
    * Origin of the resource causing the problem.
+   *
    * @return Origin.unknown() when origin is not available.
    */
   Origin getOrigin();
 
   /**
    * Position of the problem in the origin.
+   *
    * @return {@link Position#UNKNOWN} when position is not available.
    */
   Position getPosition();
 
-  /**
-   * User friendly description of the problem.
-   */
+  /** User friendly description of the problem. */
   String getDiagnosticMessage();
 }

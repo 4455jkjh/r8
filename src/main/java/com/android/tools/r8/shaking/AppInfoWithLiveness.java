@@ -91,11 +91,13 @@ public class AppInfoWithLiveness extends AppInfoWithClassHierarchy
     implements InstantiatedSubTypeInfo {
   /** Set of reachable proto types that will be dead code eliminated. */
   private final Set<DexType> deadProtoTypes;
+
   /**
    * Set of types that are mentioned in the program. We at least need an empty abstract classitem
    * for these.
    */
   private final Set<DexType> liveTypes;
+
   /**
    * Set of methods that are the immediate target of an invoke. They might not actually be live but
    * are required so that invokes can find the method. If such a method is not live (i.e. not
@@ -120,6 +122,7 @@ public class AppInfoWithLiveness extends AppInfoWithClassHierarchy
 
   /** Set of virtual methods that are the immediate target of an invoke-direct. */
   private final Set<DexMethod> virtualMethodsTargetedByInvokeDirect;
+
   /**
    * Set of methods that belong to live classes and can be reached by invokes. These need to be
    * kept.
@@ -136,30 +139,39 @@ public class AppInfoWithLiveness extends AppInfoWithClassHierarchy
 
   /** Information about instantiated classes and their allocation sites. */
   private final ObjectAllocationInfoCollectionImpl objectAllocationInfoCollection;
+
   /**
    * Set of live call sites in the code. Note that if desugaring has taken place call site objects
    * will have been removed from the code.
    */
   public final Map<DexCallSite, ProgramMethodSet> callSites;
+
   /** Collection of keep requirements for the program. */
   private final KeepInfoCollection keepInfo;
+
   /** All items with assumemayhavesideeffects rule. */
   public final Map<DexReference, ProguardMemberRule> mayHaveSideEffects;
+
   /** All methods that should be inlined if possible due to a configuration directive. */
   private final Set<DexMethod> alwaysInline;
+
   /** All methods that must be reprocessed (testing only). */
   private final Set<DexMethod> reprocess;
+
   /** All types that should be inlined if possible due to a configuration directive. */
   public final PredicateSet<DexType> alwaysClassInline;
+
   /**
    * Set of lock candidates (i.e., types whose class reference may flow to a monitor instruction).
    */
   private final Set<DexType> lockCandidates;
+
   /**
    * A map from seen init-class references to the minimum required visibility of the corresponding
    * static field.
    */
   public final Map<DexType, Visibility> initClassReferences;
+
   /**
    * Set of all methods including a RecordFieldValues instruction. Set only in final tree shaking.
    */
@@ -180,6 +192,7 @@ public class AppInfoWithLiveness extends AppInfoWithClassHierarchy
 
   /** A set of types that have been removed by the {@link TreePruner}. */
   final Set<DexType> prunedTypes;
+
   /** A map from switchmap class types to their corresponding switchmaps. */
   final Map<DexField, Int2ReferenceMap<DexField>> switchMaps;
 

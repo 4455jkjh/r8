@@ -4,7 +4,6 @@
 
 package com.android.tools.r8.cf.code.frame;
 
-
 public interface WideFrameType extends FrameType {
 
   default boolean lessThanOrEqualTo(WideFrameType frameType) {

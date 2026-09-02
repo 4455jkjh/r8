@@ -43,7 +43,6 @@ import com.android.tools.r8.naming.NamingLens;
 import com.android.tools.r8.naming.SeedMapper;
 import com.android.tools.r8.optimize.MemberRebindingIdentityLens;
 import com.android.tools.r8.optimize.MemberRebindingIdentityLensFactory;
-import com.android.tools.r8.optimize.argumentpropagation.ArgumentPropagator;
 import com.android.tools.r8.optimize.compose.ComposeReferences;
 import com.android.tools.r8.optimize.interfaces.collection.OpenClosedInterfacesCollection;
 import com.android.tools.r8.optimize.smallmethodinliner.SmallMethodInlinerResult;
@@ -139,7 +138,6 @@ public class AppView<T extends AppInfo> implements DexDefinitionSupplier, Librar
   private final LibraryMethodSideEffectModelCollection libraryMethodSideEffectModelCollection;
 
   // Optimizations.
-  private ArgumentPropagator argumentPropagator;
   private BottomUpOutliner bottomUpOutliner;
   private final LibraryMemberOptimizer libraryMemberOptimizer;
   private final ProtoShrinker protoShrinker;
@@ -185,12 +183,7 @@ public class AppView<T extends AppInfo> implements DexDefinitionSupplier, Librar
       ArtProfileCollection artProfileCollection,
       StartupProfile startupProfile,
       WholeProgramOptimizations wholeProgramOptimizations) {
-    this(
-        appInfo,
-        artProfileCollection,
-        startupProfile,
-        wholeProgramOptimizations,
-        Timing.empty());
+    this(appInfo, artProfileCollection, startupProfile, wholeProgramOptimizations, Timing.empty());
   }
 
   private AppView(
@@ -223,7 +216,6 @@ public class AppView<T extends AppInfo> implements DexDefinitionSupplier, Librar
             () -> DontWarnConfiguration.create(options().getProguardConfiguration()));
     this.initClassLens = timing.time("Init class lens", InitClassLens::getThrowingInstance);
     timing.begin("Create argument propagator");
-    this.argumentPropagator = ArgumentPropagator.create(withLiveness());
     this.bottomUpOutliner = BottomUpOutliner.create(this);
     timing.end();
     this.libraryMethodSideEffectModelCollection =
@@ -591,17 +583,6 @@ public class AppView<T extends AppInfo> implements DexDefinitionSupplier, Librar
     return appInfo.getSyntheticItems();
   }
 
-  public void unsetArgumentPropagator() {
-    argumentPropagator = null;
-  }
-
-  public <E extends Throwable> void withArgumentPropagator(
-      ThrowingConsumer<ArgumentPropagator, E> consumer) throws E {
-    if (argumentPropagator != null) {
-      consumer.accept(argumentPropagator);
-    }
-  }
-
   public void unsetBottomUpOutliner() {
     bottomUpOutliner = null;
   }
@@ -720,7 +701,9 @@ public class AppView<T extends AppInfo> implements DexDefinitionSupplier, Librar
     return graphLens;
   }
 
-  /** @return true if the graph lens changed, otherwise false. */
+  /**
+   * @return true if the graph lens changed, otherwise false.
+   */
   public boolean setGraphLens(GraphLens graphLens) {
     if (graphLens != this.graphLens) {
       this.graphLens = graphLens;
@@ -1001,7 +984,7 @@ public class AppView<T extends AppInfo> implements DexDefinitionSupplier, Librar
   }
 
   public boolean validateUnboxedEnumsHaveBeenPruned() {
-    for (DexType unboxedEnum : unboxedEnums.computeAllUnboxedEnums()) {
+    for (DexType unboxedEnum : unboxedEnums().computeAllUnboxedEnums()) {
       assert appInfo.definitionForWithoutExistenceAssert(unboxedEnum) == null
           : "Enum " + unboxedEnum + " has been unboxed but is still in the program.";
       assert appInfo().withLiveness().wasPruned(unboxedEnum)
@@ -1016,9 +999,7 @@ public class AppView<T extends AppInfo> implements DexDefinitionSupplier, Librar
 
   @SuppressWarnings("unchecked")
   public AppView<AppInfoWithClassHierarchy> withClassHierarchy() {
-    return appInfo.hasClassHierarchy()
-        ? (AppView<AppInfoWithClassHierarchy>) this
-        : null;
+    return appInfo.hasClassHierarchy() ? (AppView<AppInfoWithClassHierarchy>) this : null;
   }
 
   @SuppressWarnings("unchecked")

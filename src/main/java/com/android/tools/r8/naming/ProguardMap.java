@@ -23,5 +23,6 @@ public interface ProguardMap {
   }
 
   boolean hasMapping(DexType type);
+
   ClassNaming getClassNaming(DexType type);
 }

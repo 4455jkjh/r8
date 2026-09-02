@@ -43,6 +43,5 @@ public final class NumericMethodRewrites {
     };
   }
 
-  private NumericMethodRewrites() {
-  }
+  private NumericMethodRewrites() {}
 }

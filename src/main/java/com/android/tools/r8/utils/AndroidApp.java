@@ -237,9 +237,7 @@ public class AndroidApp {
     return new Reporter();
   }
 
-  /**
-   * Create a new empty builder.
-   */
+  /** Create a new empty builder. */
   public static Builder builder() {
     return builder(defaultReporter());
   }
@@ -249,9 +247,7 @@ public class AndroidApp {
     return new Builder(reporter);
   }
 
-  /**
-   * Create a new builder initialized with the resources from @code{app}.
-   */
+  /** Create a new builder initialized with the resources from @code{app}. */
   public static Builder builder(AndroidApp app) {
     return builder(app, defaultReporter());
   }
@@ -409,30 +405,22 @@ public class AndroidApp {
     return proguardMapInputData;
   }
 
-  /**
-   * True if the main dex list resources exists.
-   */
+  /** True if the main dex list resources exists. */
   public boolean hasMainDexList() {
     return !(mainDexListResources.isEmpty() && mainDexClasses.isEmpty());
   }
 
-  /**
-   * True if the main dex list resources exists.
-   */
+  /** True if the main dex list resources exists. */
   public boolean hasMainDexListResources() {
     return !mainDexListResources.isEmpty();
   }
 
-  /**
-   * Get the main dex list resources if any.
-   */
+  /** Get the main dex list resources if any. */
   public List<StringResource> getMainDexListResources() {
     return mainDexListResources;
   }
 
-  /**
-   * Get the main dex classes if any.
-   */
+  /** Get the main dex classes if any. */
   public List<String> getMainDexClasses() {
     return mainDexClasses;
   }
@@ -966,9 +954,7 @@ public class AndroidApp {
     }
   }
 
-  /**
-   * Builder interface for constructing an AndroidApp.
-   */
+  /** Builder interface for constructing an AndroidApp. */
   public static class Builder {
 
     private final List<ProgramResourceProvider> programResourceProviders = new ArrayList<>();
@@ -1183,9 +1169,7 @@ public class AndroidApp {
       return this;
     }
 
-    /**
-     * Add classpath resource provider.
-     */
+    /** Add classpath resource provider. */
     public Builder addClasspathResourceProvider(ClassFileResourceProvider provider) {
       classpathResourceProviders.add(provider);
       return this;
@@ -1233,9 +1217,7 @@ public class AndroidApp {
       return this;
     }
 
-    /**
-     * Add library resource provider.
-     */
+    /** Add library resource provider. */
     public Builder addLibraryResourceProvider(ClassFileResourceProvider provider) {
       if (provider instanceof InternalArchiveClassFileProvider) {
         archiveProvidersToClose.add((InternalArchiveClassFileProvider) provider);
@@ -1249,40 +1231,30 @@ public class AndroidApp {
       return this;
     }
 
-    /**
-     * Add dex program-data with class descriptor.
-     */
+    /** Add dex program-data with class descriptor. */
     public Builder addDexProgramData(byte[] data, Set<String> classDescriptors) {
       addProgramResources(
           ProgramResource.fromBytes(Origin.unknown(), Kind.DEX, data, classDescriptors));
       return this;
     }
 
-    /**
-     * Add dex program-data with class descriptor and primary class.
-     */
+    /** Add dex program-data with class descriptor and primary class. */
     public Builder addDexProgramData(
-        byte[] data,
-        Set<String> classDescriptors,
-        String primaryClassDescriptor) {
-      ProgramResource resource = ProgramResource.fromBytes(
-          Origin.unknown(), Kind.DEX, data, classDescriptors);
+        byte[] data, Set<String> classDescriptors, String primaryClassDescriptor) {
+      ProgramResource resource =
+          ProgramResource.fromBytes(Origin.unknown(), Kind.DEX, data, classDescriptors);
       programResources.add(resource);
       programResourcesMainDescriptor.put(resource, primaryClassDescriptor);
       return this;
     }
 
-    /**
-     * Add dex program-data.
-     */
+    /** Add dex program-data. */
     public Builder addDexProgramData(byte[] data, Origin origin) {
       addProgramResources(ProgramResource.fromBytes(origin, Kind.DEX, data, null));
       return this;
     }
 
-    /**
-     * Add dex program-data.
-     */
+    /** Add dex program-data. */
     public Builder addDexProgramData(Collection<byte[]> data) {
       for (byte[] datum : data) {
         addProgramResources(ProgramResource.fromBytes(Origin.unknown(), Kind.DEX, datum, null));
@@ -1303,9 +1275,7 @@ public class AndroidApp {
       return this;
     }
 
-    /**
-     * Add Java-bytecode program data.
-     */
+    /** Add Java-bytecode program data. */
     public Builder addClassProgramData(byte[] data, Origin origin) {
       return addClassProgramData(data, origin, null);
     }
@@ -1341,9 +1311,7 @@ public class AndroidApp {
       return this;
     }
 
-    /**
-     * Add a main-dex list file.
-     */
+    /** Add a main-dex list file. */
     public Builder addMainDexListFiles(Path... files) throws NoSuchFileException {
       return addMainDexListFiles(Arrays.asList(files));
     }
@@ -1360,16 +1328,12 @@ public class AndroidApp {
       return this;
     }
 
-    /**
-     * Add main-dex classes.
-     */
+    /** Add main-dex classes. */
     public Builder addMainDexClasses(String... classes) {
       return addMainDexClasses(Arrays.asList(classes));
     }
 
-    /**
-     * Add main-dex classes.
-     */
+    /** Add main-dex classes. */
     public Builder addMainDexClasses(Collection<String> classes) {
       mainDexListClasses.addAll(classes);
       return this;
@@ -1382,7 +1346,7 @@ public class AndroidApp {
     /**
      * Ignore dex resources in input archives.
      *
-     * In some situations (e.g. AOSP framework build) the input archives include both class and
+     * <p>In some situations (e.g. AOSP framework build) the input archives include both class and
      * dex resources. Setting this flag ignores the dex resources and reads the class resources
      * only.
      */
@@ -1391,9 +1355,7 @@ public class AndroidApp {
       return this;
     }
 
-    /**
-     * Build final AndroidApp.
-     */
+    /** Build final AndroidApp. */
     public AndroidApp build() {
       ensureAllResourcesAreInProviders();
       extendAndroidJarWithHiddenClasses();
@@ -1542,7 +1504,7 @@ public class AndroidApp {
         } catch (IOException e) {
           reporter.error(new ExceptionDiagnostic(e, new PathOrigin(file)));
         }
-      } else if (Files.isDirectory(file) ) {
+      } else if (Files.isDirectory(file)) {
         providerList.add(DirectoryClassFileProvider.fromDirectory(file));
       } else {
         throw new CompilationError("Unsupported source file type", new PathOrigin(file));

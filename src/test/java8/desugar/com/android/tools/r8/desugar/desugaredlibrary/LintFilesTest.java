@@ -177,7 +177,7 @@ public class LintFilesTest extends DesugaredLibraryTestBase {
           // TODO(b/289365156): Should probably not be hardcoded on U.
           ToolHelper.THIRD_PARTY_DIR
               + "android_jar/lib-v"
-              + AndroidApiLevel.U.getLevel()
+              + AndroidApiLevel.U.getMajor()
               + "/android.jar"
         });
     InternalOptions options = new InternalOptions(new DexItemFactory(), new Reporter());
@@ -187,17 +187,17 @@ public class LintFilesTest extends DesugaredLibraryTestBase {
             options.itemFactory,
             options.reporter,
             false,
-            AndroidApiLevel.B.getLevel());
+            AndroidApiLevel.B.getMajor());
 
     AndroidApiLevel requiredCompilationApiLevel =
         desugaredLibrarySpecification.getRequiredCompilationApiLevel();
     Path compileApiLevelDirectory =
-        directory.resolve("compile_api_level_" + requiredCompilationApiLevel.getLevel());
+        directory.resolve("compile_api_level_" + requiredCompilationApiLevel.getMajor());
 
     assertTrue(Files.exists(compileApiLevelDirectory));
     for (AndroidApiLevel minApiLevel : AndroidApiLevel.getAndroidApiLevelsSorted()) {
       String desugaredApisBaseName =
-          "desugared_apis_" + requiredCompilationApiLevel.getLevel() + "_" + minApiLevel.getLevel();
+          "desugared_apis_" + requiredCompilationApiLevel.getMajor() + "_" + minApiLevel.getMajor();
       if (minApiLevel == AndroidApiLevel.L || minApiLevel == AndroidApiLevel.B) {
         assertTrue(Files.exists(compileApiLevelDirectory.resolve(desugaredApisBaseName + ".txt")));
         checkFileContent(
@@ -225,7 +225,7 @@ public class LintFilesTest extends DesugaredLibraryTestBase {
           // TODO(b/289365156): Should probably not be hardcoded on U.
           ToolHelper.THIRD_PARTY_DIR
               + "android_jar/lib-v"
-              + AndroidApiLevel.U.getLevel()
+              + AndroidApiLevel.U.getMajor()
               + "/android.jar"
         });
     List<String> html = Files.readAllLines(directory2.resolve("apis.html"));

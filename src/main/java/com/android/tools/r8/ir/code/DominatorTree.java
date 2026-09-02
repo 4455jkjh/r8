@@ -85,9 +85,7 @@ public class DominatorTree implements BasicBlockChangeListener {
     assert recordChangesToControlFlowEdges(code.blocks);
   }
 
-  /**
-   * Get the immediate dominator block for a block.
-   */
+  /** Get the immediate dominator block for a block. */
   public BasicBlock immediateDominator(BasicBlock block) {
     assert !obsolete;
     return doms[block.getNumber()];
@@ -187,7 +185,7 @@ public class DominatorTree implements BasicBlockChangeListener {
   /**
    * Returns an iterator over all dominator blocks of <code>dominated</code>.
    *
-   * Iteration order is always the immediate dominator of the previously returned block. The
+   * <p>Iteration order is always the immediate dominator of the previously returned block. The
    * iteration starts by returning <code>dominated</code>.
    */
   public Iterable<BasicBlock> dominatorBlocks(BasicBlock dominated, Inclusive inclusive) {

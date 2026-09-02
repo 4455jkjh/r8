@@ -83,9 +83,7 @@ public class RecordInvokeDynamicInvokeCustomRewriter
         recordInvokeDynamic
             .computeRecordFieldNamesComputationInfo()
             .internalComputeNameFor(
-                recordInvokeDynamic.getRecordType(),
-                appView,
-                appView.getNamingLens());
+                recordInvokeDynamic.getRecordType(), appView, appView.getNamingLens());
     DexField[] newFields =
         recordRewriter.computePresentFields(appView.graphLens(), recordInvokeDynamic);
     return writeRecordInvokeCustom(

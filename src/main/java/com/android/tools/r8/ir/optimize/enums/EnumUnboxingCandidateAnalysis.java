@@ -4,7 +4,6 @@
 
 package com.android.tools.r8.ir.optimize.enums;
 
-
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.DexClass;
 import com.android.tools.r8.graph.DexEncodedMethod;
@@ -30,12 +29,12 @@ class EnumUnboxingCandidateAnalysis {
   private static final int MAX_INSTANCE_FIELDS_FOR_UNBOXING = 7;
 
   private final AppView<AppInfoWithLiveness> appView;
-  private final EnumUnboxerImpl enumUnboxer;
+  private final EnumUnboxer enumUnboxer;
   private final DexItemFactory factory;
   private final EnumUnboxingCandidateInfoCollection enumToUnboxCandidates =
       new EnumUnboxingCandidateInfoCollection();
 
-  EnumUnboxingCandidateAnalysis(AppView<AppInfoWithLiveness> appView, EnumUnboxerImpl enumUnboxer) {
+  EnumUnboxingCandidateAnalysis(AppView<AppInfoWithLiveness> appView, EnumUnboxer enumUnboxer) {
     this.appView = appView;
     this.enumUnboxer = enumUnboxer;
     factory = appView.dexItemFactory();

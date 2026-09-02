@@ -392,8 +392,7 @@ public class Repackaging {
       if (!appView.options().isMinifying()) {
         // Preserve full package name under destination package when not minifying
         // (no matter which package obfuscation mode is used).
-        if (newPackageDescriptor.isEmpty()
-            || mayHavePinnedPackagePrivateOrProtectedItem(pkg)) {
+        if (newPackageDescriptor.isEmpty() || mayHavePinnedPackagePrivateOrProtectedItem(pkg)) {
           return pkg.getPackageDescriptor();
         }
         return newPackageDescriptor + DESCRIPTOR_PACKAGE_SEPARATOR + pkg.getPackageDescriptor();

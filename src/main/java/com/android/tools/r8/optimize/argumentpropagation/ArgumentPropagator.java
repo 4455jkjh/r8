@@ -11,6 +11,7 @@ import com.android.tools.r8.graph.DexMethodSignature;
 import com.android.tools.r8.graph.DexProgramClass;
 import com.android.tools.r8.graph.ImmediateProgramSubtypingInfo;
 import com.android.tools.r8.graph.ProgramMethod;
+import com.android.tools.r8.graph.lens.GraphLens;
 import com.android.tools.r8.ir.analysis.path.PathConstraintSupplier;
 import com.android.tools.r8.ir.code.AbstractValueSupplier;
 import com.android.tools.r8.ir.code.IRCode;
@@ -18,6 +19,8 @@ import com.android.tools.r8.ir.conversion.IRConverter;
 import com.android.tools.r8.ir.conversion.MethodProcessor;
 import com.android.tools.r8.ir.conversion.PostMethodProcessor;
 import com.android.tools.r8.ir.conversion.PrimaryR8IRConverter;
+import com.android.tools.r8.ir.optimize.info.OptimizationFeedbackDelayed;
+import com.android.tools.r8.ir.optimize.outliner.ReprocessingOptimization;
 import com.android.tools.r8.optimize.argumentpropagation.codescanner.FieldStateCollection;
 import com.android.tools.r8.optimize.argumentpropagation.codescanner.InFlowComparator;
 import com.android.tools.r8.optimize.argumentpropagation.codescanner.MethodState;
@@ -42,7 +45,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.function.BiConsumer;
 
 /** Optimization that propagates information about arguments from call sites to method entries. */
-public class ArgumentPropagator {
+public class ArgumentPropagator implements ReprocessingOptimization {
 
   private final AppView<AppInfoWithLiveness> appView;
 
@@ -65,7 +68,7 @@ public class ArgumentPropagator {
    */
   private ArgumentPropagatorReprocessingCriteriaCollection reprocessingCriteriaCollection;
 
-  public ArgumentPropagator(AppView<AppInfoWithLiveness> appView) {
+  private ArgumentPropagator(AppView<AppInfoWithLiveness> appView) {
     assert appView.enableWholeProgramOptimizations();
     assert appView.options().isOptimizing();
     assert appView.options().callSiteOptimizationOptions().isEnabled();
@@ -78,6 +81,13 @@ public class ArgumentPropagator {
       return null;
     }
     return new ArgumentPropagator(appView);
+  }
+
+  @Override
+  public void prepareForPrimaryOptimizationPass(
+      GraphLens graphLensForPrimaryOptimizationPass, ExecutorService executorService, Timing timing)
+      throws ExecutionException {
+    initializeCodeScanner(executorService, timing);
   }
 
   /**
@@ -183,12 +193,16 @@ public class ArgumentPropagator {
     reprocessingCriteriaCollection.publishDelayedReprocessingCriteria();
   }
 
+  @Override
   public void waveDone() {
     if (codeScanner != null) {
       codeScanner.waveDone();
     }
     publishDelayedReprocessingCriteria();
   }
+
+  @Override
+  public void updateAppliedLens(GraphLens newAppliedLens) {}
 
   public void transferArgumentInformation(ProgramMethod from, ProgramMethod to) {
     assert codeScanner != null;
@@ -264,7 +278,6 @@ public class ArgumentPropagator {
     // Ensure determinism of method-to-reprocess set.
     appView.testing().checkDeterminism(postMethodProcessorBuilder::dump);
     appView.notifyOptimizationFinished();
-    appView.unsetArgumentPropagator();
   }
 
   /**
@@ -340,6 +353,36 @@ public class ArgumentPropagator {
     converter.pruneItems(executorService);
   }
 
+  @Override
+  public GraphLens getAppliedGraphLens() {
+    // TODO(b/551864566): ArgumentPropagator should not have to be run first.
+    return appView.graphLens();
+  }
+
+  @Override
+  public void irAnalysis(
+      ProgramMethod method, IRCode code, MethodProcessor methodProcessor, Timing timing) {
+    scan(method, code, methodProcessor, timing);
+  }
+
+  @Override
+  public void rewriteWithLens() {
+    // TODO(b/551864566): ArgumentPropagator should not have to be run first.
+  }
+
+  @Override
+  public void apply(
+      AppView<AppInfoWithLiveness> appView,
+      PrimaryR8IRConverter converter,
+      PostMethodProcessor.Builder postMethodProcessorBuilder,
+      ExecutorService executorService,
+      OptimizationFeedbackDelayed feedback,
+      Timing timing)
+      throws ExecutionException {
+    // TODO(b/551864566): Should assert the appliedGraphLens is correct.
+    tearDownCodeScanner(converter, postMethodProcessorBuilder, executorService, timing);
+  }
+
   /**
    * Called by {@link IRConverter} at the end of a wave if a method is pruned by an optimization.
    *
@@ -350,6 +393,7 @@ public class ArgumentPropagator {
    *
    * <p>Therefore, we assert that we only find a method state for direct methods.
    */
+  @Override
   public void onMethodPruned(ProgramMethod method) {
     if (codeScanner != null) {
       MethodState methodState = codeScanner.getMethodStates().removeOrElse(method, null);
@@ -362,6 +406,7 @@ public class ArgumentPropagator {
     }
   }
 
+  @Override
   public void onMethodCodePruned(ProgramMethod method) {
     assert effectivelyUnusedArgumentsAnalysis != null;
     effectivelyUnusedArgumentsAnalysis.onMethodCodePruned(method);

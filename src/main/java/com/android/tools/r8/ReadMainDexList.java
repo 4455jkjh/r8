@@ -13,9 +13,7 @@ import java.util.Iterator;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-/**
- * Utility for applying proguard map and sorting the main dex list.
- */
+/** Utility for applying proguard map and sorting the main dex list. */
 public class ReadMainDexList {
 
   private static final String DOT_CLASS = ".class";
@@ -60,8 +58,7 @@ public class ReadMainDexList {
     final ClassNameMapper mapper =
         arguments.hasNext() ? ClassNameMapper.mapperFromFile(Paths.get(arguments.next())) : null;
 
-    FileUtils.readAllLines(mainDexList)
-        .stream()
+    FileUtils.readAllLines(mainDexList).stream()
         .map(this::stripDotClass)
         .map(name -> name.replace('/', '.'))
         .map(name -> deobfuscateClassName(name, mapper))

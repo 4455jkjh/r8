@@ -11,9 +11,9 @@ public interface DataResourceProvider {
   @KeepForApi
   interface Visitor {
     void visit(DataDirectoryResource directory);
+
     void visit(DataEntryResource file);
   }
 
   void accept(Visitor visitor) throws ResourceException;
-
 }

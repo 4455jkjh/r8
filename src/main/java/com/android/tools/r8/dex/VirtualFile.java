@@ -203,9 +203,7 @@ public class VirtualFile {
   }
 
   public void computeMapping(
-      int lazyDexStringsCount,
-      Timing timing,
-      ObjectToOffsetMapping sharedMapping) {
+      int lazyDexStringsCount, Timing timing, ObjectToOffsetMapping sharedMapping) {
     assert transaction.isEmpty();
     assert objectMapping == null;
     objectMapping =

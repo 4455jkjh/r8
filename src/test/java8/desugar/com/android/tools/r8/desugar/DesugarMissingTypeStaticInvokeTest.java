@@ -43,7 +43,7 @@ public class DesugarMissingTypeStaticInvokeTest extends TestBase {
 
   boolean supportsDefaultInterfaceMethods() {
     return parameters.getRuntime().isCf()
-        || AndroidApiLevel.N.getLevel() <= parameters.getApiLevel().getLevel();
+        || AndroidApiLevel.N.getMajor() <= parameters.getApiLevel().getMajor();
   }
 
   @Test

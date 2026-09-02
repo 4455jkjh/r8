@@ -464,9 +464,7 @@ public abstract class Instruction
     this.number = -1;
   }
 
-  /**
-   * Compare equality of two class-equivalent instructions modulo their values and positions.
-   */
+  /** Compare equality of two class-equivalent instructions modulo their values and positions. */
   public abstract boolean identicalNonValueNonPositionParts(Instruction other);
 
   private boolean identicalInputAfterRegisterAllocation(
@@ -603,8 +601,8 @@ public abstract class Instruction
     for (int j = 0; j < inValues.size(); j++) {
       Value in0 = inValues.get(j);
       Value in1 = other.inValues.get(j);
-      if (!identicalInputAfterRegisterAllocation(in0, getNumber(), other, in1, other.getNumber(),
-          allocator)) {
+      if (!identicalInputAfterRegisterAllocation(
+          in0, getNumber(), other, in1, other.getNumber(), allocator)) {
         return false;
       }
     }
@@ -747,9 +745,7 @@ public abstract class Instruction
     return EmptyFieldSet.getInstance();
   }
 
-  /**
-   * Returns true if this instruction need this value in a register.
-   */
+  /** Returns true if this instruction need this value in a register. */
   public boolean needsValueInRegister(Value value) {
     return true;
   }
@@ -1599,7 +1595,8 @@ public abstract class Instruction
     return false;
   }
 
-  /** Returns true if the out-value could be an alias of an in-value.
+  /**
+   * Returns true if the out-value could be an alias of an in-value.
    *
    * <p>This is a conservative version of {@link #isIntroducingAnAlias()} so that other analyses,
    * e.g., escape analysis, can propagate or track aliased values in a conservative manner.
@@ -1651,8 +1648,7 @@ public abstract class Instruction
   // TODO(b/72693244): maybe rename to computeOutType once TypeVerificationHelper is gone?
   public TypeElement evaluate(AppView<?> appView) {
     assert outValue == null;
-    throw new Unimplemented(
-        "Implement type lattice evaluation for: " + getInstructionName());
+    throw new Unimplemented("Implement type lattice evaluation for: " + getInstructionName());
   }
 
   public boolean verifyTypes(

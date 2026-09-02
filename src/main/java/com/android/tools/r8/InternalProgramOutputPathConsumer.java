@@ -9,5 +9,4 @@ import java.nio.file.Path;
 public interface InternalProgramOutputPathConsumer extends ProgramConsumer, DataResourceConsumer {
 
   Path internalGetOutputPath();
-
 }

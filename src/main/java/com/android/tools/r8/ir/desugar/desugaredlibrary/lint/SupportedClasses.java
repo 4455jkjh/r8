@@ -464,6 +464,7 @@ public class SupportedClasses {
     final boolean missingFromLatestAndroidJar;
     // Methods not supported in a given min api range.
     final boolean covariantReturnSupported;
+
     MethodAnnotation(
         boolean parallelStreamMethod,
         boolean missingFromLatestAndroidJar,

@@ -171,8 +171,8 @@ public class PartialDesugaringTest extends DesugaredLibraryTestBase {
 
   private boolean missingFromRange(AndroidApiLevel api, MemberAnnotation annotation) {
     if (annotation != null && annotation.isUnsupportedInMinApiRange()) {
-      return api.getLevel() >= annotation.getMinRange()
-          && api.getLevel() <= annotation.getMaxRange();
+      return api.getMajor() >= annotation.getMinRange()
+          && api.getMajor() <= annotation.getMaxRange();
     }
     return false;
   }

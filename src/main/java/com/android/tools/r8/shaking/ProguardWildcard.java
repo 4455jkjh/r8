@@ -8,8 +8,11 @@ import com.android.tools.r8.utils.internal.exceptions.Unreachable;
 public abstract class ProguardWildcard {
 
   abstract void setCaptured(String captured);
+
   abstract void clearCaptured();
+
   abstract String getCaptured();
+
   abstract ProguardWildcard materialize();
 
   boolean isPattern() {
@@ -150,5 +153,4 @@ public abstract class ProguardWildcard {
       return "<" + referenceIndex + ">";
     }
   }
-
 }

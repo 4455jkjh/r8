@@ -10,9 +10,7 @@ import com.android.tools.r8.ir.code.IRCode;
 import com.android.tools.r8.utils.timing.Timing;
 import java.util.function.Predicate;
 
-/**
- * One that assumes. Inherited tracker/optimization insert necessary variants of {@link Assume}.
- */
+/** One that assumes. Inherited tracker/optimization insert necessary variants of {@link Assume}. */
 public interface Assumer {
 
   void insertAssumeInstructions(IRCode code, Timing timing);

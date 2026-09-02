@@ -12,7 +12,6 @@ public class Constants {
 
   public static final byte DEX_FILE_MAGIC_SUFFIX = '\0';
 
-
   // We apply Java 6 class file constraints on DEX files.
   public static final CfVersion CORRESPONDING_CLASS_FILE_VERSION = CfVersion.V1_6;
 
@@ -94,7 +93,6 @@ public class Constants {
   public static final int DBG_LINE_BASE = -4;
   public static final int DBG_LINE_RANGE = 15;
   public static final int DBG_ADDRESS_RANGE = 16;
-
 
   public static final int NO_OFFSET = 0;
   public static final int NO_INDEX = -1;

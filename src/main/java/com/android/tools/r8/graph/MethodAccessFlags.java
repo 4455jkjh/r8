@@ -10,22 +10,19 @@ import java.util.function.BooleanSupplier;
 
 public class MethodAccessFlags extends AccessFlags<MethodAccessFlags> {
 
-  private static final int SHARED_FLAGS
-      = AccessFlags.BASE_FLAGS
-      | Constants.ACC_SYNCHRONIZED
-      | Constants.ACC_BRIDGE
-      | Constants.ACC_VARARGS
-      | Constants.ACC_NATIVE
-      | Constants.ACC_ABSTRACT
-      | Constants.ACC_STRICT;
+  private static final int SHARED_FLAGS =
+      AccessFlags.BASE_FLAGS
+          | Constants.ACC_SYNCHRONIZED
+          | Constants.ACC_BRIDGE
+          | Constants.ACC_VARARGS
+          | Constants.ACC_NATIVE
+          | Constants.ACC_ABSTRACT
+          | Constants.ACC_STRICT;
 
-  private static final int CF_FLAGS
-      = SHARED_FLAGS;
+  private static final int CF_FLAGS = SHARED_FLAGS;
 
-  private static final int DEX_FLAGS
-      = SHARED_FLAGS
-      | Constants.ACC_CONSTRUCTOR
-      | Constants.ACC_DECLARED_SYNCHRONIZED;
+  private static final int DEX_FLAGS =
+      SHARED_FLAGS | Constants.ACC_CONSTRUCTOR | Constants.ACC_DECLARED_SYNCHRONIZED;
 
   @Override
   protected List<String> getNames() {

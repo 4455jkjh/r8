@@ -57,8 +57,8 @@ public class ConversionErrorMessageTest extends DesugaredLibraryTestBase {
     }
     // On low device API levels, the call fails, but the error message is different on Dalvik.
     String msg;
-    if (parameters.getRuntime().asDex().getMinApiLevel().getLevel()
-        < AndroidApiLevel.L.getLevel()) {
+    if (parameters.getRuntime().asDex().getMinApiLevel().getMajor()
+        < AndroidApiLevel.L.getMajor()) {
       msg = "java.util.Arrays.setAll";
     } else {
       msg =
@@ -75,8 +75,9 @@ public class ConversionErrorMessageTest extends DesugaredLibraryTestBase {
   }
 
   private boolean hasRequiredAPI() {
-    return parameters.isCfRuntime() || parameters.getRuntime().asDex().getMinApiLevel().getLevel()
-        >= AndroidApiLevel.N.getLevel();
+    return parameters.isCfRuntime()
+        || parameters.getRuntime().asDex().getMinApiLevel().getMajor()
+            >= AndroidApiLevel.N.getMajor();
   }
 
   @Test

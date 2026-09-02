@@ -35,10 +35,14 @@ public enum ProguardClassType {
   @Override
   public String toString() {
     switch (this) {
-      case ANNOTATION_INTERFACE: return "@interface";
-      case CLASS: return "class";
-      case ENUM: return "enum";
-      case INTERFACE: return "interface";
+      case ANNOTATION_INTERFACE:
+        return "@interface";
+      case CLASS:
+        return "class";
+      case ENUM:
+        return "enum";
+      case INTERFACE:
+        return "interface";
       default:
         throw new Unreachable("Invalid proguard class type '" + this + "'");
     }

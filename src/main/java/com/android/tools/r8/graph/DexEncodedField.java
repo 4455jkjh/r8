@@ -34,6 +34,7 @@ public class DexEncodedField extends DexEncodedMember<DexEncodedField, DexField>
   private DexValue staticValue;
   private OriginalFieldWitness originalFieldWitness = null;
   private final boolean deprecated;
+
   /** Generic signature information if the attribute is present in the input */
   private FieldTypeSignature genericSignature;
 

@@ -31,7 +31,7 @@ public class AssertionErrorRewriteTest extends TestBase {
     // The exception cause is only preserved on API 16 and newer.
     expectCause =
         parameters.isCfRuntime()
-            || parameters.getApiLevel().getLevel() >= AndroidApiLevel.J.getLevel();
+            || parameters.getApiLevel().getMajor() >= AndroidApiLevel.J.getMajor();
   }
 
   @Test

@@ -570,9 +570,7 @@ public class LirCode<EV> extends Code
 
   @Override
   public IRCode buildIR(
-      ProgramMethod method,
-      AppView<?> appView,
-      MutableMethodConversionOptions conversionOptions) {
+      ProgramMethod method, AppView<?> appView, MutableMethodConversionOptions conversionOptions) {
     GraphLens codeLens = method.getDefinition().getCode().getCodeLens(appView);
     RewrittenPrototypeDescription protoChanges =
         appView

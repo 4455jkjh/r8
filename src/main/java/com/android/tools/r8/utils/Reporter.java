@@ -145,7 +145,9 @@ public class Reporter implements DiagnosticsHandler {
     throw abort;
   }
 
-  /** @throws AbortException if any error was reported. */
+  /**
+   * @throws AbortException if any error was reported.
+   */
   public synchronized void failIfPendingErrors() {
     if (abort != null) {
       throw new RuntimeException(abort);

@@ -25,8 +25,8 @@ public interface Resource {
   /**
    * Get the origin of the resource.
    *
-   * The origin is a description of where the resource originates from. The client is free to define
-   * what that means for a particular resource.
+   * <p>The origin is a description of where the resource originates from. The client is free to
+   * define what that means for a particular resource.
    */
   Origin getOrigin();
 }

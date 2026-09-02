@@ -141,9 +141,11 @@ public class DebugLocalInfo implements StructuralItem<DebugLocalInfo> {
       case NAME:
         return name.toString();
       case FULL:
-        return name + ":" + (signature == null
-            ? type
-            : DescriptorUtils.descriptorToJavaType(signature.toString()));
+        return name
+            + ":"
+            + (signature == null
+                ? type
+                : DescriptorUtils.descriptorToJavaType(signature.toString()));
       default:
         throw new Unreachable();
     }

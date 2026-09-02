@@ -271,8 +271,7 @@ public class BridgeHoisting {
     }
 
     // Now update the code of the bridge method chosen as representative.
-    representative
-        .setCode(createCodeForVirtualBridge(representative, methodToInvoke), appView);
+    representative.setCode(createCodeForVirtualBridge(representative, methodToInvoke), appView);
     feedback.setBridgeInfo(representative, new VirtualBridgeInfo(methodToInvoke));
 
     // Move the bridge method to the super class, and record this in the graph lens.
@@ -347,8 +346,8 @@ public class BridgeHoisting {
     return code.newCodeWithRewrittenConstantPool(
         item -> {
           if (item instanceof DexMethod) {
-           assert methodToInvoke.match((DexMethod) item);
-           return methodToInvoke;
+            assert methodToInvoke.match((DexMethod) item);
+            return methodToInvoke;
           }
           return item;
         });

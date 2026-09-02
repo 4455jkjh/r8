@@ -23,6 +23,7 @@ import java.util.function.Predicate;
 
 /**
  * Internal encoding of the generics signature attribute as defined by JVMS 7 $ 4.3.4.
+ *
  * <pre>
  * ClassSignature ::=
  *     FormalTypeParameters? SuperclassSignature SuperinterfaceSignature*
@@ -464,8 +465,8 @@ public class GenericSignature {
     POSITIVE
   }
 
-  public abstract static class FieldTypeSignature
-      extends TypeSignature implements DexDefinitionSignature<DexEncodedField> {
+  public abstract static class FieldTypeSignature extends TypeSignature
+      implements DexDefinitionSignature<DexEncodedField> {
 
     private final WildcardIndicator wildcardIndicator;
 
@@ -1131,8 +1132,9 @@ public class GenericSignature {
       } catch (GenericSignatureFormatError e) {
         throw e;
       } catch (Throwable t) {
-        Error e = new GenericSignatureFormatError(
-            "Unknown error parsing class signature: " + t.getMessage());
+        Error e =
+            new GenericSignatureFormatError(
+                "Unknown error parsing class signature: " + t.getMessage());
         e.addSuppressed(t);
         throw e;
       }
@@ -1145,8 +1147,9 @@ public class GenericSignature {
       } catch (GenericSignatureFormatError e) {
         throw e;
       } catch (Throwable t) {
-        Error e = new GenericSignatureFormatError(
-            "Unknown error parsing method signature: " + t.getMessage());
+        Error e =
+            new GenericSignatureFormatError(
+                "Unknown error parsing method signature: " + t.getMessage());
         e.addSuppressed(t);
         throw e;
       }
@@ -1159,8 +1162,9 @@ public class GenericSignature {
       } catch (GenericSignatureFormatError e) {
         throw e;
       } catch (Throwable t) {
-        Error e = new GenericSignatureFormatError(
-            "Unknown error parsing field signature: " + t.getMessage());
+        Error e =
+            new GenericSignatureFormatError(
+                "Unknown error parsing field signature: " + t.getMessage());
         e.addSuppressed(t);
         throw e;
       }
@@ -1487,8 +1491,7 @@ public class GenericSignature {
           assert bufferLocal != null;
           do {
             char ch = bufferLocal[pos];
-            if (((ch >= 'a') && (ch <= 'z')) || ((ch >= 'A') && (ch <= 'Z'))
-                || !isStopSymbol(ch)) {
+            if (((ch >= 'a') && (ch <= 'z')) || ((ch >= 'A') && (ch <= 'Z')) || !isStopSymbol(ch)) {
               identifierBuilder.append(bufferLocal[pos]);
               pos++;
             } else {
@@ -1518,8 +1521,12 @@ public class GenericSignature {
     private void parseError(String message, int pos) {
       String arrow = CharBuffer.allocate(pos).toString().replace('\0', ' ') + '^';
       throw new GenericSignatureFormatError(
-          message + " at position " + (pos + 1) + System.lineSeparator()
-              + String.valueOf(buffer) + System.lineSeparator()
+          message
+              + " at position "
+              + (pos + 1)
+              + System.lineSeparator()
+              + String.valueOf(buffer)
+              + System.lineSeparator()
               + arrow);
     }
   }

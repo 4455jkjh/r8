@@ -58,7 +58,7 @@ public abstract class TestShrinkerBuilder<
   // TODO(b/270021825): Look into if we can assert backend is DEX.
   @Override
   public T setMinApi(AndroidApiLevel minApiLevel) {
-    return backend == Backend.DEX ? super.setMinApi(minApiLevel.getLevel()) : self();
+    return backend == Backend.DEX ? super.setMinApi(minApiLevel.getMajor()) : self();
   }
 
   @Override

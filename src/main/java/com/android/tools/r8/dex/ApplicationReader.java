@@ -107,16 +107,12 @@ public class ApplicationReader {
   }
 
   public final LazyLoadedDexApplication read(
-      StringResource proguardMap,
-      ExecutorService executorService)
-      throws IOException {
+      StringResource proguardMap, ExecutorService executorService) throws IOException {
     return read(proguardMap, executorService, options.getDumpInputFlags());
   }
 
   public final LazyLoadedDexApplication read(
-      StringResource proguardMap,
-      ExecutorService executorService,
-      DumpInputFlags dumpInputFlags)
+      StringResource proguardMap, ExecutorService executorService, DumpInputFlags dumpInputFlags)
       throws IOException {
     assert verifyMainDexOptionsCompatible(inputApp, options);
     dumpApplication(dumpInputFlags);

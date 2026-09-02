@@ -11,7 +11,7 @@ import java.util.function.Consumer;
 public class ProguardKeepRuleBase extends ProguardConfigurationRule {
 
   @SuppressWarnings("NonCanonicalType")
-  public static abstract class Builder<C extends ProguardKeepRuleBase, B extends Builder<C, B>>
+  public abstract static class Builder<C extends ProguardKeepRuleBase, B extends Builder<C, B>>
       extends ProguardConfigurationRule.Builder<C, B> {
 
     protected ProguardKeepRuleType type;

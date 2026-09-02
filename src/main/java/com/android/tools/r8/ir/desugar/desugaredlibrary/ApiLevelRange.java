@@ -32,11 +32,11 @@ public class ApiLevelRange {
   }
 
   public int getApiLevelBelowOrEqualAsInt() {
-    return apiLevelBelowOrEqual.getLevel();
+    return apiLevelBelowOrEqual.getMajor();
   }
 
   public int getApiLevelGreaterOrEqualAsInt() {
-    return apiLevelGreaterOrEqual.getLevel();
+    return apiLevelGreaterOrEqual.getMajor();
   }
 
   public boolean hasApiLevelGreaterOrEqual() {

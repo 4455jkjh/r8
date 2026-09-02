@@ -57,8 +57,7 @@ public class EncodedValueUtils {
   }
 
   // Inspired by com.android.dex.EncodedValueCodec
-  public static int putUnsigned(DexOutputBuffer outputBuffer, long value,
-      int expectedSize) {
+  public static int putUnsigned(DexOutputBuffer outputBuffer, long value, int expectedSize) {
     int bit_size = Long.SIZE - Long.numberOfLeadingZeros(value);
     int size = Math.max((bit_size + Byte.SIZE - 1) / Byte.SIZE, 1);
     assert size > 0 && size <= expectedSize;
@@ -80,8 +79,8 @@ public class EncodedValueUtils {
     return result;
   }
 
-  public static int putBitsFromRightZeroExtended(DexOutputBuffer outputBuffer, long value,
-      int expectedSize) {
+  public static int putBitsFromRightZeroExtended(
+      DexOutputBuffer outputBuffer, long value, int expectedSize) {
     int bit_size = Long.SIZE - Long.numberOfTrailingZeros(value);
     int size = (bit_size - 1) / Byte.SIZE + 1;
     assert size > 0 && size <= expectedSize;
@@ -142,6 +141,4 @@ public class EncodedValueUtils {
     assert result.length <= Double.BYTES;
     return result;
   }
-
 }
-

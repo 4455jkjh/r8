@@ -3,6 +3,7 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8.androidresources.keptonly;
 
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
 
 import com.android.tools.r8.R8TestBuilder;
@@ -31,7 +32,7 @@ public class KeptOnlyRClassEntriesTest extends TestBase {
   enum Config {
     LEGACY,
     OPTIMIZED,
-    OPTIMIZED_REMOVE_KEPT_RCLASS_RESOURCES;
+    OPTIMIZED_DONT_REMOVE_KEPT_RCLASS_RESOURCES;
   }
 
   @Parameter(1)
@@ -97,19 +98,32 @@ public class KeptOnlyRClassEntriesTest extends TestBase {
         .addKeepRules("-keep class **R*drawable { int kept_field;}")
         .applyIf(config != Config.LEGACY, R8TestBuilder::enableOptimizedShrinking)
         .applyIf(
-            config == Config.OPTIMIZED_REMOVE_KEPT_RCLASS_RESOURCES,
+            config == Config.OPTIMIZED,
             b -> {
               b.applyIf(
                   b.isR8PartialTestBuilder(),
                   r8pb ->
                       r8pb.addR8PartialR8OptionsModification(
-                          o -> o.removeUnreadKeptRClassResources = true),
-                  r8b -> r8b.addOptionsModification(o -> o.removeUnreadKeptRClassResources = true));
+                          o -> assertTrue(o.removeUnreadKeptRClassResources)),
+                  r8b ->
+                      r8b.addOptionsModification(
+                          o -> assertTrue(o.removeUnreadKeptRClassResources)));
+            })
+        .applyIf(
+            config == Config.OPTIMIZED_DONT_REMOVE_KEPT_RCLASS_RESOURCES,
+            b -> {
+              b.applyIf(
+                  b.isR8PartialTestBuilder(),
+                  r8pb ->
+                      r8pb.addR8PartialR8OptionsModification(
+                          o -> o.removeUnreadKeptRClassResources = false),
+                  r8b ->
+                      r8b.addOptionsModification(o -> o.removeUnreadKeptRClassResources = false));
             })
         .compile()
         .inspectShrunkenResources(
             resourceTableInspector -> {
-              if (config == Config.OPTIMIZED) {
+              if (config == Config.OPTIMIZED_DONT_REMOVE_KEPT_RCLASS_RESOURCES) {
                 resourceTableInspector.assertContainsResourceWithName("drawable", "kept_field");
               } else {
                 resourceTableInspector.assertDoesNotContainResourceWithName(

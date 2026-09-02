@@ -80,10 +80,7 @@ public class RecordFieldValuesRewriter {
         programMethod
             .getDefinition()
             .getCode()
-            .buildIR(
-                programMethod,
-                appView,
-                MethodConversionOptions.forLirPhase(appView));
+            .buildIR(programMethod, appView, MethodConversionOptions.forLirPhase(appView));
     boolean done = false;
     ListIterator<BasicBlock> blockIterator = irCode.listIterator();
     while (blockIterator.hasNext()) {

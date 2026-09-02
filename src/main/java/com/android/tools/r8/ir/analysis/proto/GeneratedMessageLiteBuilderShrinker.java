@@ -50,9 +50,9 @@ import com.android.tools.r8.shaking.AppInfoWithLiveness;
 import com.android.tools.r8.shaking.DependentMinimumKeepInfoCollection;
 import com.android.tools.r8.shaking.Enqueuer;
 import com.android.tools.r8.shaking.EnqueuerWorklist;
+import com.android.tools.r8.utils.ThreadUtils;
 import com.android.tools.r8.utils.internal.Box;
 import com.android.tools.r8.utils.internal.ObjectUtils;
-import com.android.tools.r8.utils.ThreadUtils;
 import com.android.tools.r8.utils.internal.collections.PredicateSet;
 import com.android.tools.r8.utils.timing.Timing;
 import com.google.common.collect.Sets;
@@ -362,11 +362,7 @@ public class GeneratedMessageLiteBuilderShrinker {
       PredicateSet<DexType> alwaysClassInline,
       Set<DexMethod> alwaysInline,
       DependentMinimumKeepInfoCollection dependentMinimumKeepInfo) {
-    new RootSetExtension(
-            appView,
-            alwaysClassInline,
-            alwaysInline,
-            dependentMinimumKeepInfo)
+    new RootSetExtension(appView, alwaysClassInline, alwaysInline, dependentMinimumKeepInfo)
         .extend(subtypingInfo);
     return this;
   }

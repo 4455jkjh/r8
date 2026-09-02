@@ -1563,9 +1563,7 @@ public class Value implements Comparable<Value>, InstructionOrValue {
     return predicate.test(definition);
   }
 
-  /**
-   * Returns whether this value is known to never be <code>null</code>.
-   */
+  /** Returns whether this value is known to never be <code>null</code>. */
   public boolean isNeverNull() {
     assert type.isReferenceType();
     return isDefinedByInstructionSatisfying(Instruction::isAssumeWithNonNullAssumption)
@@ -1635,8 +1633,8 @@ public class Value implements Comparable<Value>, InstructionOrValue {
 
   /**
    * Returns whether this value is known to be the receiver (this argument) in a method body.
-   * <p>
-   * For a receiver value {@link #isNeverNull()} is guaranteed to be <code>true</code> as well.
+   *
+   * <p>For a receiver value {@link #isNeverNull()} is guaranteed to be <code>true</code> as well.
    */
   public boolean isThis() {
     return isThis;

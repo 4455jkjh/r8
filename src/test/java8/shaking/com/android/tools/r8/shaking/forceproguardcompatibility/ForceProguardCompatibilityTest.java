@@ -30,13 +30,13 @@ import com.android.tools.r8.shaking.forceproguardcompatibility.defaultmethods.In
 import com.android.tools.r8.shaking.forceproguardcompatibility.defaultmethods.TestClass;
 import com.android.tools.r8.shaking.forceproguardcompatibility.keepattributes.TestKeepAttributes;
 import com.android.tools.r8.utils.AndroidApiLevel;
-import com.android.tools.r8.utils.internal.BooleanUtils;
 import com.android.tools.r8.utils.codeinspector.ClassSubject;
 import com.android.tools.r8.utils.codeinspector.CodeInspector;
 import com.android.tools.r8.utils.codeinspector.FieldSubject;
 import com.android.tools.r8.utils.codeinspector.MethodSubject;
 import com.android.tools.r8.utils.graphinspector.GraphInspector;
 import com.android.tools.r8.utils.graphinspector.GraphInspector.QueryNode;
+import com.android.tools.r8.utils.internal.BooleanUtils;
 import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
 import java.util.List;
@@ -409,7 +409,7 @@ public class ForceProguardCompatibilityTest extends TestBase {
       Consumer<GraphInspector> compatInspection)
       throws Exception {
     if (parameters.isDexRuntime()) {
-      assert parameters.getApiLevel().getLevel() >= AndroidApiLevel.O.getLevel();
+      assert parameters.getApiLevel().getMajor() >= AndroidApiLevel.O.getMajor();
     }
 
     Class<?> mainClass = TestClass.class;

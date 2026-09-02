@@ -9,9 +9,7 @@ import java.io.IOException;
 import java.nio.file.Paths;
 import java.util.Arrays;
 
-/**
- * Benchmark for testing speed of parsing Proguard mapping files.
- */
+/** Benchmark for testing speed of parsing Proguard mapping files. */
 public class ReadProguardMap {
 
   private static final String DEFAULT_MAP_FILE_NAME = "third_party/gmscore/v5/proguard.map";

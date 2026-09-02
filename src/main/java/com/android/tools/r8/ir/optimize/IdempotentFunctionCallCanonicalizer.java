@@ -69,7 +69,9 @@ public class IdempotentFunctionCallCanonicalizer {
                 assert a == null || !a.outValue().hasLocalInfo();
                 assert b == null || !b.outValue().hasLocalInfo();
                 return a == b
-                    || (a != null && b != null && a.identicalNonValueNonPositionParts(b)
+                    || (a != null
+                        && b != null
+                        && a.identicalNonValueNonPositionParts(b)
                         && a.inValues().equals(b.inValues()));
               }
             });

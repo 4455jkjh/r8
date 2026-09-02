@@ -22,7 +22,7 @@ import com.android.tools.r8.ir.code.Position.SyntheticPosition;
 import com.android.tools.r8.ir.code.Return;
 import com.android.tools.r8.ir.conversion.MethodConversionOptions.MutableMethodConversionOptions;
 import com.android.tools.r8.ir.optimize.AffectedValues;
-import com.android.tools.r8.ir.optimize.enums.EnumUnboxerImpl;
+import com.android.tools.r8.ir.optimize.enums.EnumUnboxer;
 import com.android.tools.r8.utils.InstructionIteratorUtils;
 import com.android.tools.r8.utils.RetracerForCodePrinting;
 import com.android.tools.r8.utils.internal.exceptions.Unreachable;
@@ -34,7 +34,7 @@ import com.android.tools.r8.utils.internal.exceptions.Unreachable;
  *
  * <p>Instances of {@link CheckNotZeroCode} are converted to {@link
  * com.android.tools.r8.graph.CfCode} or {@link com.android.tools.r8.graph.DexCode} immediately, and
- * thus should never be seen outside of the {@link EnumUnboxerImpl}.
+ * thus should never be seen outside of the {@link EnumUnboxer}.
  */
 public class CheckNotZeroCode extends Code {
 

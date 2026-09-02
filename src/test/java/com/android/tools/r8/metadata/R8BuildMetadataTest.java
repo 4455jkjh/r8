@@ -207,7 +207,7 @@ public class R8BuildMetadataTest extends TestBase {
             .getNumberOfKeepAnnotations());
     assertNotNull(buildMetadata.getOptionsMetadata().getKeepAttributesMetadata());
     assertEquals(
-        parameters.isCfRuntime() ? null : Integer.toString(parameters.getApiLevel().getLevel()),
+        parameters.isCfRuntime() ? null : Integer.toString(parameters.getApiLevel().getMajor()),
         buildMetadata.getOptionsMetadata().getMinApiLevel());
     assertFalse(buildMetadata.getOptionsMetadata().isDebugModeEnabled());
     // Options metadata (library desugaring).

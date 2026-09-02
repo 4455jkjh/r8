@@ -149,9 +149,7 @@ public class MultiCallerInliner {
   }
 
   private void stopTrackingCallSitesForMethodIfDefinitelyIneligibleForMultiCallerInlining(
-      ProgramMethod singleTarget,
-      MethodProcessor methodProcessor,
-      ProgramMethodMultiset callers) {
+      ProgramMethod singleTarget, MethodProcessor methodProcessor, ProgramMethodMultiset callers) {
     // First remove the call sites that no longer exist due to single caller inlining.
     callers.removeIf(caller -> caller.getOptimizationInfo().hasBeenInlinedIntoSingleCallSite());
 
@@ -194,9 +192,7 @@ public class MultiCallerInliner {
             () -> MultiCallerInlinerCallGraph.builder(appView).build(executorService));
     LongLivedProgramMethodSetBuilder<ProgramMethodSet> multiInlineCallers =
         timing.time("Needs inlining analysis", () -> computeMultiInlineCallerMethods(callGraph));
-    postMethodProcessorBuilder
-        .rewrittenWithLens(appView)
-        .merge(multiInlineCallers);
+    postMethodProcessorBuilder.rewrittenWithLens(appView).merge(multiInlineCallers);
     timing.end();
   }
 

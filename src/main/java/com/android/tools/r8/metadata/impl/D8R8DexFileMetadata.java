@@ -24,6 +24,9 @@ public interface D8R8DexFileMetadata {
    * Returns the size in bytes of this single dex file.
    *
    * <p>Present since R8 9.3.2-dev.
+   *
+   * @return the size in bytes of this dex file, or 0 if the current metadata is generated using a
+   *     version of R8 that did not emit the dex size in bytes.
    */
   int getSizeInBytes();
 

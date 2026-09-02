@@ -96,7 +96,7 @@ public class GraphEdgeInfo {
         return "referenced from xml";
       default:
         assert false : "Unknown edge kind: " + edgeKind();
-        // fall through
+      // fall through
       case Unknown:
         return "kept for unknown reasons";
     }

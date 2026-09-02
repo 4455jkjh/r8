@@ -26,10 +26,10 @@ import java.util.function.Supplier;
  * Represents a collection of classes. Collection can be fully loaded, lazy loaded or have preloaded
  * classes along with lazy loaded content.
  *
- * The {@link #get(DexType)} operation for loading the type of a class is non-locking if a class was
- * loaded before but may block if a class has not yet been loaded.
+ * <p>The {@link #get(DexType)} operation for loading the type of a class is non-locking if a class
+ * was loaded before but may block if a class has not yet been loaded.
  *
- * {@link #forceLoad(Predicate)} can be used to load all classes available from the given class
+ * <p>{@link #forceLoad(Predicate)} can be used to load all classes available from the given class
  * provider. Only after
  */
 public abstract class ClassMap<T extends DexClass> {
@@ -47,11 +47,11 @@ public abstract class ClassMap<T extends DexClass> {
 
   /**
    * Class provider if available.
-   * <p>
-   * If the class provider is `null` it indicates that all classes are already present in a map
+   *
+   * <p>If the class provider is `null` it indicates that all classes are already present in a map
    * referenced by `classes` and thus the collection is fully loaded.
-   * <p>
-   * <b>NOTE:</b> the field may only transition from a value to null while the this object is
+   *
+   * <p><b>NOTE:</b> the field may only transition from a value to null while the this object is
    * locked. Furthermore, it may never transition back from null.
    */
   private final AtomicReference<ClassProvider<T>> classProvider = new AtomicReference<>();
@@ -67,14 +67,10 @@ public abstract class ClassMap<T extends DexClass> {
     this.classProvider.set(classProvider);
   }
 
-  /**
-   * Resolves a class conflict by selecting a class, may generate compilation error.
-   */
+  /** Resolves a class conflict by selecting a class, may generate compilation error. */
   abstract T resolveClassConflict(T a, T b);
 
-  /**
-   * Return supplier for preloaded class.
-   */
+  /** Return supplier for preloaded class. */
   abstract Supplier<T> getTransparentSupplier(T clazz);
 
   /** Kind of the classes supported by this collection. */
@@ -85,9 +81,7 @@ public abstract class ClassMap<T extends DexClass> {
     return classes.size() + " loaded, provider: " + this.classProvider.get();
   }
 
-  /**
-   * Returns a definition for a class or `null` if there is no such class in the collection.
-   */
+  /** Returns a definition for a class or `null` if there is no such class in the collection. */
   public T get(DexType type) {
     // If this collection is fully loaded, just return the found result.
     ClassProvider<T> classProvider = this.classProvider.get();
@@ -117,9 +111,7 @@ public abstract class ClassMap<T extends DexClass> {
     classProvider.set(provider.without(ImmutableSet.of(type)));
   }
 
-  /**
-   * Returns all classes from the collection. The collection must be force-loaded.
-   */
+  /** Returns all classes from the collection. The collection must be force-loaded. */
   public List<T> getAllClasses() {
     if (classProvider.get() != null) {
       throw new Unreachable("Getting all classes from not fully loaded collection.");
@@ -240,29 +232,33 @@ public abstract class ClassMap<T extends DexClass> {
       synchronized (this) {
         if (!ready) {
           assert classMap != null && provider != null && type != null;
-          provider.collectClass(type, createdClass -> {
-            assert createdClass != null;
-            assert classMap.getClassKind().isOfKind(createdClass);
-            assert !ready;
+          provider.collectClass(
+              type,
+              createdClass -> {
+                assert createdClass != null;
+                assert classMap.getClassKind().isOfKind(createdClass);
+                assert !ready;
 
-            if (createdClass.type != type) {
-              throw new CompilationError(
-                  "Class content provided for type descriptor " + type.toSourceString() +
-                      " actually defines class " + createdClass.type.toSourceString());
-            }
+                if (createdClass.type != type) {
+                  throw new CompilationError(
+                      "Class content provided for type descriptor "
+                          + type.toSourceString()
+                          + " actually defines class "
+                          + createdClass.type.toSourceString());
+                }
 
-            if (clazz == null) {
-              clazz = createdClass;
-            } else {
-              // The class resolution *may* generate a compilation error as one of
-              // possible resolutions. In this case we leave `value` in (false, null)
-              // state so in rare case of another thread trying to get the same class
-              // before this error is propagated it will get the same conflict.
-              T oldClass = clazz;
-              clazz = null;
-              clazz = classMap.resolveClassConflict(oldClass, createdClass);
-            }
-          });
+                if (clazz == null) {
+                  clazz = createdClass;
+                } else {
+                  // The class resolution *may* generate a compilation error as one of
+                  // possible resolutions. In this case we leave `value` in (false, null)
+                  // state so in rare case of another thread trying to get the same class
+                  // before this error is propagated it will get the same conflict.
+                  T oldClass = clazz;
+                  clazz = null;
+                  clazz = classMap.resolveClassConflict(oldClass, createdClass);
+                }
+              });
 
           classMap = null;
           provider = null;

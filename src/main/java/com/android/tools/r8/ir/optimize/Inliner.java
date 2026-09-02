@@ -233,8 +233,8 @@ public class Inliner {
 
   /**
    * Encodes the constraints for inlining a method's instructions into a different context.
-   * <p>
-   * This only takes the instructions into account and not whether a method should be inlined or
+   *
+   * <p>This only takes the instructions into account and not whether a method should be inlined or
    * what reason for inlining it might have. Also, it does not take the visibility of the method
    * itself into account.
    */
@@ -292,16 +292,15 @@ public class Inliner {
 
   /**
    * Encodes the constraints for inlining, along with the target holder.
-   * <p>
-   * Constraint itself cannot determine whether or not the method can be inlined if instructions in
-   * the method have different constraints with different targets. For example,
-   *   SUBCLASS of x.A v.s. PACKAGE of y.B
-   * Without any target holder information, min of those two Constraints is PACKAGE, meaning that
-   * the current method can be inlined to any method whose holder is in package y. This could cause
-   * an illegal access error due to protect members in x.A. Because of different target holders,
-   * those constraints should not be combined.
-   * <p>
-   * Instead, a right constraint for inlining constraint for the example above is: a method whose
+   *
+   * <p>Constraint itself cannot determine whether or not the method can be inlined if instructions
+   * in the method have different constraints with different targets. For example, SUBCLASS of x.A
+   * v.s. PACKAGE of y.B Without any target holder information, min of those two Constraints is
+   * PACKAGE, meaning that the current method can be inlined to any method whose holder is in
+   * package y. This could cause an illegal access error due to protect members in x.A. Because of
+   * different target holders, those constraints should not be combined.
+   *
+   * <p>Instead, a right constraint for inlining constraint for the example above is: a method whose
    * holder is a subclass of x.A _and_ in the same package of y.B can inline this method.
    */
   public static class ConstraintWithTarget {
@@ -549,18 +548,18 @@ public class Inliner {
 
   /**
    * Encodes the reason why a method should be inlined.
-   * <p>
-   * This is independent of determining whether a method can be inlined, except for the FORCE state,
-   * that will inline a method irrespective of visibility and instruction checks.
+   *
+   * <p>This is independent of determining whether a method can be inlined, except for the FORCE
+   * state, that will inline a method irrespective of visibility and instruction checks.
    */
   public enum Reason {
-    ALWAYS,        // Inlinee is marked for inlining due to alwaysinline directive.
+    ALWAYS, // Inlinee is marked for inlining due to alwaysinline directive.
     SINGLE_CALLER, // Inlinee has precisely one caller.
     // Inlinee has multiple callers and should not be inlined. Only used during the primary
     // optimization pass.
     MULTI_CALLER_CANDIDATE,
-    SIMPLE,        // Inlinee has simple code suitable for inlining.
-    NEVER;         // Inlinee must not be inlined.
+    SIMPLE, // Inlinee has simple code suitable for inlining.
+    NEVER; // Inlinee must not be inlined.
   }
 
   public abstract static class InlineResult {
@@ -1312,10 +1311,12 @@ public class Inliner {
 
     if (methodProcessor.getCallSiteInformation().hasSingleCallSite(singleTarget, context)) {
       feedback.markInlinedIntoSingleCallSite(singleTargetMethod);
-      appView.withArgumentPropagator(
-          argumentPropagator ->
-              argumentPropagator.notifyMethodSingleCallerInlined(
-                  singleTarget, context, methodProcessor));
+      if (converter != null) {
+        converter.reprocessingOptimizationCollection.withArgumentPropagator(
+            argumentPropagator ->
+                argumentPropagator.notifyMethodSingleCallerInlined(
+                    singleTarget, context, methodProcessor));
+      }
       if (!(methodProcessor instanceof OneTimeMethodProcessor)) {
         assert converter.isInWave();
         scheduleWaveDone();
@@ -1459,10 +1460,7 @@ public class Inliner {
   }
 
   private void insertAssumeInstructions(
-      IRCode code,
-      BasicBlockIterator blockIterator,
-      Set<BasicBlock> inlineeBlocks,
-      Timing timing) {
+      IRCode code, BasicBlockIterator blockIterator, Set<BasicBlock> inlineeBlocks, Timing timing) {
     boolean keepRedundantBlocks = true; // since we have a live block iterator
     new AssumeInserter(appView, keepRedundantBlocks)
         .insertAssumeInstructionsInBlocks(code, blockIterator, inlineeBlocks::contains, timing);

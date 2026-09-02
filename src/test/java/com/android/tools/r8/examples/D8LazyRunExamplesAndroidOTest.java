@@ -92,7 +92,7 @@ public class D8LazyRunExamplesAndroidOTest
     {
       D8Command.Builder command =
           D8Command.builder()
-              .setMinApiLevel(minAPILevel.getLevel())
+              .setMinApiLevel(minAPILevel.getMajor())
               .addLibraryFiles(androidJar)
               .addProgramFiles(inputFile);
 
@@ -110,7 +110,7 @@ public class D8LazyRunExamplesAndroidOTest
     for (Path classFile : individualClassFiles) {
       D8Command.Builder builder =
           D8Command.builder()
-              .setMinApiLevel(minAPILevel.getLevel())
+              .setMinApiLevel(minAPILevel.getMajor())
               .addLibraryFiles(androidJar)
               .addClasspathFiles(tmpClassesDir)
               .addProgramFiles(classFile);
@@ -123,7 +123,7 @@ public class D8LazyRunExamplesAndroidOTest
               });
       individalDexes.add(individualResult.getDexProgramResourcesForTesting().get(0));
     }
-    AndroidApp mergedResult = mergeDexResources(minAPILevel.getLevel(), individalDexes);
+    AndroidApp mergedResult = mergeDexResources(minAPILevel.getMajor(), individalDexes);
 
     assertTrue(Arrays.equals(
         readResource(fullBuildResult.getDexProgramResourcesForTesting().get(0)),

@@ -276,7 +276,5 @@ public class AssemblyWriter extends DexByteCodeWriter {
   }
 
   @Override
-  void writeClassFooter(DexProgramClass clazz, PrintStream ps) {
-
-  }
+  void writeClassFooter(DexProgramClass clazz, PrintStream ps) {}
 }

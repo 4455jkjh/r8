@@ -53,5 +53,4 @@ public class StoreLoadPeephole implements BasicBlockPeephole {
   public boolean resetAfterMatch() {
     return false;
   }
-
 }

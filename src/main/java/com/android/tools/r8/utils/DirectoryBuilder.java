@@ -29,12 +29,10 @@ public class DirectoryBuilder implements OutputBuilder {
   }
 
   @Override
-  public void open() {
-  }
+  public void open() {}
 
   @Override
-  public void close(DiagnosticsHandler handler) {
-  }
+  public void close(DiagnosticsHandler handler) {}
 
   @Override
   public void addDirectory(String name, DiagnosticsHandler handler) {
@@ -54,8 +52,8 @@ public class DirectoryBuilder implements OutputBuilder {
     } catch (IOException e) {
       handler.error(new ExceptionDiagnostic(e, content.getOrigin()));
     } catch (ResourceException e) {
-      handler.error(new StringDiagnostic("Failed to open input: " + e.getMessage(),
-          content.getOrigin()));
+      handler.error(
+          new StringDiagnostic("Failed to open input: " + e.getMessage(), content.getOrigin()));
     }
   }
 

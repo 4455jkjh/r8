@@ -60,9 +60,7 @@ public class CompilerSynthesizedMappingInformation extends ReferentialMappingInf
     return object.toString();
   }
 
-  public static void deserialize(
-      MapVersion version,
-      Consumer<MappingInformation> onMappingInfo) {
+  public static void deserialize(MapVersion version, Consumer<MappingInformation> onMappingInfo) {
     if (isSupported(version)) {
       onMappingInfo.accept(getInstance());
     }

@@ -76,13 +76,9 @@ public class DexEncodedMethod extends DexEncodedMember<DexEncodedMethod, DexMeth
    */
   // TODO(b/128967328): Need to extend this to a state with the context.
   public enum CompilationState {
-    /**
-     * Has not been processed, yet.
-     */
+    /** Has not been processed, yet. */
     NOT_PROCESSED,
-    /**
-     * Has been processed but cannot be inlined due to instructions that are not supported.
-     */
+    /** Has been processed but cannot be inlined due to instructions that are not supported. */
     PROCESSED_NOT_INLINING_CANDIDATE,
     /**
      * Code only contains instructions that access public entities and can this be inlined into any
@@ -134,10 +130,12 @@ public class DexEncodedMethod extends DexEncodedMember<DexEncodedMethod, DexMeth
   private CompilationState compilationState = CompilationState.NOT_PROCESSED;
   private MethodOptimizationInfo optimizationInfo;
   private CfVersion classFileVersion;
+
   /** The apiLevelForCode describes the api level needed for knowing all references in the code */
   private ComputedApiLevel apiLevelForCode;
 
   private KotlinMethodLevelInfo kotlinMemberInfo = getNoKotlinInfo();
+
   /** Generic signature information if the attribute is present in the input */
   private MethodTypeSignature genericSignature;
 
@@ -508,9 +506,7 @@ public class DexEncodedMethod extends DexEncodedMember<DexEncodedMethod, DexMeth
     return accessFlags.isPrivate();
   }
 
-  /**
-   * Returns true if this method can be invoked via invoke-direct.
-   */
+  /** Returns true if this method can be invoked via invoke-direct. */
   public boolean isDirectMethod() {
     checkIfObsolete();
     return (accessFlags.isPrivate() || accessFlags.isConstructor()) && !accessFlags.isStatic();
@@ -568,9 +564,7 @@ public class DexEncodedMethod extends DexEncodedMember<DexEncodedMethod, DexMeth
     return getHolderType().getPackageName().equals(other.getHolderType().getPackageName());
   }
 
-  /**
-   * Returns true if this method is synthetic.
-   */
+  /** Returns true if this method is synthetic. */
   public boolean isSyntheticMethod() {
     checkIfObsolete();
     return accessFlags.isSynthetic();

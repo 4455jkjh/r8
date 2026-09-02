@@ -468,31 +468,43 @@ public class CliParserBase<B> {
   }
 
   private void addOption0(String name, Consumer<B> action) {
+    assert name != null;
+    assert action != null;
     assert assertThatOptionIsNew(name);
     options0.put(name, action);
   }
 
   private void addOption1(String name, BiConsumer<B, String> action) {
+    assert name != null;
+    assert action != null;
     assert assertThatOptionIsNew(name);
     options1.put(name, action);
   }
 
   private void addOption2(String name, TriConsumer<B, String, String> action) {
+    assert name != null;
+    assert action != null;
     assert assertThatOptionIsNew(name);
     options2.put(name, action);
   }
 
   private void addPrefix0(String prefix, BiConsumer<B, String> action) {
+    assert prefix != null;
+    assert action != null;
     assert assertThatPrefixIsNew(prefix);
     prefix0.put(prefix, action);
   }
 
   private void addPrefix1(String prefix, TriConsumer<B, String, String> action) {
+    assert prefix != null;
+    assert action != null;
     assert assertThatPrefixIsNew(prefix);
     prefix1.put(prefix, action);
   }
 
   private void addPrefix2(String prefix, QuadConsumer<B, String, String, String> action) {
+    assert prefix != null;
+    assert action != null;
     assert assertThatPrefixIsNew(prefix);
     prefix2.put(prefix, action);
   }

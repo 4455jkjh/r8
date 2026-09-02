@@ -18,6 +18,7 @@ public class CompilationError extends RuntimeException {
 
   private final Origin origin;
   private final Position position;
+
   public CompilationError(String message) {
     this(message, Origin.unknown());
   }

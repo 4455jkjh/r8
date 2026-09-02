@@ -4,8 +4,12 @@
 
 package com.android.tools.r8.ir.optimize.numberunboxer;
 
+import com.android.tools.r8.graph.AppView;
+import com.android.tools.r8.graph.DexMethod;
+import com.android.tools.r8.graph.lens.GraphLens;
 import com.google.common.collect.ImmutableMultiset;
 import java.util.Arrays;
+import java.util.Set;
 
 /**
  * The value boxing status represents the result of the number unboxer analysis on a given value,
@@ -44,6 +48,11 @@ public class ValueBoxingStatus {
     if (transitiveDependencies.size() > numberUnboxerOptions.getMaxTransitiveDependencies()) {
       return NOT_UNBOXABLE;
     }
+    return uncheckedWith(boxingDelta, transitiveDependencies);
+  }
+
+  private static ValueBoxingStatus uncheckedWith(
+      int boxingDelta, ImmutableMultiset<TransitiveDependency> transitiveDependencies) {
     return new ValueBoxingStatus(boxingDelta, transitiveDependencies);
   }
 
@@ -95,6 +104,30 @@ public class ValueBoxingStatus {
             .addAll(unboxingStatus.getTransitiveDependencies())
             .build();
     return checkedWith(newDelta, newDeps, numberUnboxerOptions);
+  }
+
+  public ValueBoxingStatus rewrittenWithLens(
+      AppView<?> appView, GraphLens graphLens, GraphLens codeLens, Set<DexMethod> prunedMethods) {
+    if (transitiveDependencies.isEmpty()) {
+      return this;
+    }
+    ImmutableMultiset.Builder<TransitiveDependency> newTransitiveDependencies =
+        ImmutableMultiset.builder();
+    boolean diff = false;
+    for (TransitiveDependency transitiveDependency : transitiveDependencies) {
+      if (transitiveDependency.isMethodDependency()
+          && prunedMethods.contains(transitiveDependency.asMethodDependency().getMethod())) {
+        // Remove the dependency to a pruned method.
+        continue;
+      }
+      TransitiveDependency newTransitiveDependency =
+          transitiveDependency.rewrittenWithLens(appView, graphLens, codeLens);
+      diff |= newTransitiveDependency != transitiveDependency;
+      newTransitiveDependencies.add(newTransitiveDependency);
+    }
+    return diff
+        ? ValueBoxingStatus.uncheckedWith(boxingDelta, newTransitiveDependencies.build())
+        : this;
   }
 
   @Override

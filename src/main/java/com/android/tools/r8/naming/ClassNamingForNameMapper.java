@@ -36,8 +36,8 @@ import java.util.function.Predicate;
 
 /**
  * Stores name information for a class.
- * <p>
- * This includes how the class was renamed and information on the classes members.
+ *
+ * <p>This includes how the class was renamed and information on the classes members.
  */
 public class ClassNamingForNameMapper implements ClassNaming {
 
@@ -330,6 +330,7 @@ public class ClassNamingForNameMapper implements ClassNaming {
    * information.
    */
   private final ImmutableMap<MethodSignature, MemberNaming> methodMembers;
+
   private final ImmutableMap<FieldSignature, MemberNaming> fieldMembers;
 
   /** Map of renamed name -> MappedRangesOfName */
@@ -417,7 +418,7 @@ public class ClassNamingForNameMapper implements ClassNaming {
   @Override
   public MemberNaming lookupByOriginalSignature(Signature original) {
     if (original.kind() == SignatureKind.METHOD) {
-      for (MemberNaming memberNaming: methodMembers.values()) {
+      for (MemberNaming memberNaming : methodMembers.values()) {
         if (memberNaming.getOriginalSignature().equals(original)) {
           return memberNaming;
         }
@@ -450,15 +451,15 @@ public class ClassNamingForNameMapper implements ClassNaming {
   }
 
   @Override
-  public <T extends Throwable> void forAllMemberNaming(
-      ThrowingConsumer<MemberNaming, T> consumer) throws T {
+  public <T extends Throwable> void forAllMemberNaming(ThrowingConsumer<MemberNaming, T> consumer)
+      throws T {
     forAllFieldNaming(consumer);
     forAllMethodNaming(consumer);
   }
 
   @Override
-  public <T extends Throwable> void forAllFieldNaming(
-      ThrowingConsumer<MemberNaming, T> consumer) throws T {
+  public <T extends Throwable> void forAllFieldNaming(ThrowingConsumer<MemberNaming, T> consumer)
+      throws T {
     for (MemberNaming naming : fieldMembers.values()) {
       consumer.accept(naming);
     }
@@ -493,8 +494,8 @@ public class ClassNamingForNameMapper implements ClassNaming {
   }
 
   @Override
-  public <T extends Throwable> void forAllMethodNaming(
-      ThrowingConsumer<MemberNaming, T> consumer) throws T {
+  public <T extends Throwable> void forAllMethodNaming(ThrowingConsumer<MemberNaming, T> consumer)
+      throws T {
     for (MemberNaming naming : methodMembers.values()) {
       consumer.accept(naming);
     }

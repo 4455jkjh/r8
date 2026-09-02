@@ -105,7 +105,7 @@ public abstract class MarkerMatcher extends TypeSafeMatcher<Marker> {
     return new MarkerMatcher() {
       @Override
       protected boolean eval(Marker marker) {
-        return marker.getMinApi() == level.getLevel();
+        return marker.getMinApi() == level.getMajor();
       }
 
       @Override

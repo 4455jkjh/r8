@@ -150,7 +150,7 @@ public class CheckCastAndInstanceOfMethodSpecialization {
       return;
     }
 
-    appView.withArgumentPropagator(
+    converter.reprocessingOptimizationCollection.withArgumentPropagator(
         argumentPropagator -> argumentPropagator.transferArgumentInformation(method, parentMethod));
 
     // Each call to the override is now a call to the parent method, so it is no longer true that

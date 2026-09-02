@@ -158,14 +158,17 @@ public class ComposingBuilder {
      * destructively remove the previous minified mapping and replace it with the up-to-date one.
      */
     private Map<String, ComposingClassBuilder> classBuilders = new HashMap<>();
+
     /**
      * RewriteFrameInformation contains condition clauses that are bound to the residual program. As
      * a result of that, we have to patch up the conditions when we compose new class mappings.
      */
     private final List<RewriteFrameMappingInformation> rewriteFrameInformation = new ArrayList<>();
+
     /** Map of newly added outline call site informations which do not require any rewriting. */
     private Map<ClassTypeNameAndMethodName, OutlineCallsiteMappingInformation>
         outlineCallsiteInformation = new HashMap<>();
+
     /**
      * Map of updated outline definitions which has to be committed. The positions in the caller are
      * fixed at this point since these are local to the method when rewriting.
@@ -845,8 +848,7 @@ public class ComposingBuilder {
     }
 
     private void fixupOutlineCallsiteInformation(
-        ComputedOutlineInformation computedOutlineInformation,
-        List<MappedRange> composedRanges)
+        ComputedOutlineInformation computedOutlineInformation, List<MappedRange> composedRanges)
         throws MappingComposeException {
       Map<OutlineCallsiteMappingInformation, List<ComputedMappedRangeForOutline>>
           outlineCallsitesToPatchUp =
@@ -1281,7 +1283,7 @@ public class ComposingBuilder {
       private List<MappedRange> getPreviousRanges(int startPosition) {
         Integer floorKey = mappedRangesForPosition.floorKey(startPosition);
         return floorKey == null ? null : mappedRangesForPosition.get(floorKey);
-        }
+      }
     }
 
     private void composeMappedRange(
@@ -1527,7 +1529,6 @@ public class ComposingBuilder {
       private int getEndOrNoRangeFrom() {
         return hasValue() ? end : NO_RANGE_FROM;
       }
-
     }
 
     private static class ComputedOutlineInformation {

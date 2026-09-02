@@ -190,9 +190,7 @@ public abstract class BaseCompilerCommand extends BaseCommand {
     return programConsumer;
   }
 
-  /**
-   * Get the main dex list consumer that will receive the final complete main dex list.
-   */
+  /** Get the main dex list consumer that will receive the final complete main dex list. */
   public StringConsumer getMainDexListConsumer() {
     return mainDexListConsumer;
   }
@@ -341,16 +339,12 @@ public abstract class BaseCompilerCommand extends BaseCommand {
       mode = defaultCompilationMode();
     }
 
-    /**
-     * Get current compilation mode.
-     */
+    /** Get current compilation mode. */
     public CompilationMode getMode() {
       return mode;
     }
 
-    /**
-     * Set compilation mode.
-     */
+    /** Set compilation mode. */
     public B setMode(CompilationMode mode) {
       assert mode != null;
       this.mode = mode;
@@ -451,16 +445,12 @@ public abstract class BaseCompilerCommand extends BaseCommand {
       return self();
     }
 
-    /**
-     * Get the main dex list consumer that will receive the final complete main dex list.
-     */
+    /** Get the main dex list consumer that will receive the final complete main dex list. */
     public StringConsumer getMainDexListConsumer() {
       return mainDexListConsumer;
     }
 
-    /**
-     * Filter used to skip parsing of certain class in a dex file.
-     */
+    /** Filter used to skip parsing of certain class in a dex file. */
     public BiPredicate<String, Long> getDexClassChecksumFilter() {
       return dexClassChecksumFilter;
     }
@@ -554,8 +544,8 @@ public abstract class BaseCompilerCommand extends BaseCommand {
     /**
      * Setting a dex class filter.
      *
-     * A filter is a function that given a name of a class and a checksum can return false the user
-     * decides to skip parsing and ignore that class in the dex file.
+     * <p>A filter is a function that given a name of a class and a checksum can return false the
+     * user decides to skip parsing and ignore that class in the dex file.
      */
     public B setDexClassChecksumFilter(BiPredicate<String, Long> filter) {
       assert filter != null;
@@ -565,7 +555,7 @@ public abstract class BaseCompilerCommand extends BaseCommand {
 
     /** Get the minimum API level (aka SDK version). */
     public int getMinApiLevel() {
-      return isMinApiLevelSet() ? minMajorApiLevel : AndroidApiLevel.getDefault().getLevel();
+      return isMinApiLevelSet() ? minMajorApiLevel : AndroidApiLevel.getDefault().getMajor();
     }
 
     boolean isMinApiLevelSet() {
@@ -602,9 +592,10 @@ public abstract class BaseCompilerCommand extends BaseCommand {
      * Force disable desugaring.
      *
      * <p>There are a few use cases where it makes sense to force disable desugaring, such as:
+     *
      * <ul>
-     * <li>if all inputs are known to be at most Java 7; or
-     * <li>if a separate desugar tool has been used prior to compiling with D8.
+     *   <li>if all inputs are known to be at most Java 7; or
+     *   <li>if a separate desugar tool has been used prior to compiling with D8.
      * </ul>
      *
      * <p>Note that even for API 27, desugaring is still required for closures support on ART.
@@ -860,17 +851,18 @@ public abstract class BaseCompilerCommand extends BaseCommand {
         programConsumerClasses.add(ClassFileConsumer.class);
       }
       if (programConsumerClasses.size() > 1) {
-        StringBuilder builder = new StringBuilder()
-            .append("Invalid program consumer.")
-            .append(" A program consumer can implement at most one consumer type but ")
-            .append(programConsumer.getClass().getName())
-            .append(" implements types:");
+        StringBuilder builder =
+            new StringBuilder()
+                .append("Invalid program consumer.")
+                .append(" A program consumer can implement at most one consumer type but ")
+                .append(programConsumer.getClass().getName())
+                .append(" implements types:");
         for (Class clazz : programConsumerClasses) {
           builder.append(" ").append(clazz.getName());
         }
         reporter.error(builder.toString());
       }
-      if (getMinApiLevel() > AndroidApiLevel.LATEST.getLevel()) {
+      if (getMinApiLevel() > AndroidApiLevel.LATEST.getMajor()) {
         if (getMinApiLevel() != AndroidApiLevel.ANDROID_PLATFORM_CONSTANT) {
           reporter.warning(new UnsupportedAndroidApiLevelDiagnostic(getMinApiLevel(), 0));
         }
@@ -925,7 +917,7 @@ public abstract class BaseCompilerCommand extends BaseCommand {
     }
 
     boolean hasNativeMultidex() {
-      return isMinApiLevelSet() && getMinApiLevel() >= AndroidApiLevel.L.getLevel();
+      return isMinApiLevelSet() && getMinApiLevel() >= AndroidApiLevel.L.getMajor();
     }
   }
 }

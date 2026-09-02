@@ -18,7 +18,9 @@ tasks {
       include("com/android/tools/r8/keepanno/doctests/ForApiDocumentationTest.java")
       include("com/android/tools/r8/keepanno/doctests/GenericSignaturePrinter.java")
       include("com/android/tools/r8/keepanno/doctests/MainMethodsDocumentationTest.java")
-      include("com/android/tools/r8/keepanno/doctests/UsesReflectionAnnotationsDocumentationTest.java")
+      include(
+        "com/android/tools/r8/keepanno/doctests/UsesReflectionAnnotationsDocumentationTest.java"
+      )
       include("com/android/tools/r8/keepanno/doctests/UsesReflectionDocumentationTest.java")
     }
   }

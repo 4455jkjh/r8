@@ -461,5 +461,4 @@ public class ResourceShrinkerEnqueuerExtension
       }
     }
   }
-
 }

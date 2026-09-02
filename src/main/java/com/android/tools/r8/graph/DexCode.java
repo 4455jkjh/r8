@@ -499,7 +499,7 @@ public class DexCode extends Code
       return eventBasedInfo;
     }
     DexString[] parameters = eventBasedInfo.parameters;
-    if(parameters.length == 0) {
+    if (parameters.length == 0) {
       return eventBasedInfo;
     }
     DexString[] newParameters = new DexString[parameters.length - 1];
@@ -559,15 +559,8 @@ public class DexCode extends Code
 
   @Override
   public IRCode buildIR(
-      ProgramMethod method,
-      AppView<?> appView,
-      MutableMethodConversionOptions conversionOptions) {
-    DexSourceCode source =
-        new DexSourceCode(
-            this,
-            method,
-            null,
-            appView.dexItemFactory());
+      ProgramMethod method, AppView<?> appView, MutableMethodConversionOptions conversionOptions) {
+    DexSourceCode source = new DexSourceCode(this, method, null, appView.dexItemFactory());
     return IRBuilder.create(method, appView, source).build(method, conversionOptions);
   }
 
@@ -582,11 +575,7 @@ public class DexCode extends Code
       Position callerPosition,
       RewrittenPrototypeDescription protoChanges) {
     DexSourceCode source =
-        new DexSourceCode(
-            this,
-            method,
-            callerPosition,
-            appView.dexItemFactory());
+        new DexSourceCode(this, method, callerPosition, appView.dexItemFactory());
     return IRBuilder.createForInlining(
             method, appView, codeLens, source, valueNumberGenerator, protoChanges)
         .build(context, MethodConversionOptions.nonConverting());
@@ -765,11 +754,11 @@ public class DexCode extends Code
         builder.append(atry.toString());
         builder.append('\n');
       }
-        builder.append("Handlers (numbers are offsets)\n");
-        for (TryHandler handler : handlers) {
-          builder.append(handler.toString());
-          builder.append('\n');
-        }
+      builder.append("Handlers (numbers are offsets)\n");
+      for (TryHandler handler : handlers) {
+        builder.append(handler.toString());
+        builder.append('\n');
+      }
     }
     return builder.toString();
   }
@@ -968,7 +957,6 @@ public class DexCode extends Code
       // Should never be visited.
       assert false;
     }
-
   }
 
   public static class TryHandler extends DexItem implements StructuralItem<TryHandler> {

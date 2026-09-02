@@ -46,57 +46,52 @@ import java.util.stream.Collectors;
  * work out of the box if they implement multiple interfaces and the penalty of not having more
  * locality is insignificant in DEX because the proto will only be listed once in the DEX file.
  *
- * ----------- Library -----------
+ * <p>----------- Library -----------
  *
- * class A { }
+ * <p>class A { }
  *
- * class Z extends A { a(); }
+ * <p>class Z extends A { a(); }
  *
- * ----------- Program -----------
+ * <p>----------- Program -----------
  *
- *      interface I { x(); c() }
+ * <p>interface I { x(); c() }
  *
- *          /                 \
- *         /                   \
- *        /                     \
- *       v                       v
+ * <p>/ \ / \ / \ v v
  *
- *  interface J { b() }     interface K { d() }           interface L { b() }
+ * <p>interface J { b() } interface K { d() } interface L { b() }
  *
- * B extends A implements J { }
+ * <p>B extends A implements J { }
  *
- * C extends B implements K { }
+ * <p>C extends B implements K { }
  *
- * -keep L { *; }
+ * <p>-keep L { *; }
  *
- * Because of the way this algorithm work, we will try to bundle the naming together into groups. In
- * the example above, the group states should identify that:
+ * <p>Because of the way this algorithm work, we will try to bundle the naming together into groups.
+ * In the example above, the group states should identify that:
  *
- * - We are bundling J.b() with L.b() so we need to keep the name of both
- * - When giving name to I.x() or I.c() we cannot use b() because those names would collide in C.
+ * <p>- We are bundling J.b() with L.b() so we need to keep the name of both - When giving name to
+ * I.x() or I.c() we cannot use b() because those names would collide in C.
  *
- * A further complication is that call sites can implement methods with the same name but different
- * proto's. The canonical example of this is the identity function. We compute all callsites that
- * needs to be named together by using union-find.
+ * <p>A further complication is that call sites can implement methods with the same name but
+ * different proto's. The canonical example of this is the identity function. We compute all
+ * callsites that needs to be named together by using union-find.
  *
- * A small sample of the state of the above example could be like so:
- * Group a()       -> { State(A) }
- * Group a(Object) -> { State(J), State(I), State(A) }
- * Group b()       -> { State(J), State(I), State(L), State(A) }
- * Group c()       -> { State(J), State(I), State(A) }
+ * <p>A small sample of the state of the above example could be like so: Group a() -> { State(A) }
+ * Group a(Object) -> { State(J), State(I), State(A) } Group b() -> { State(J), State(I), State(L),
+ * State(A) } Group c() -> { State(J), State(I), State(A) }
  *
- * Because of the frontier state computation in {@link MethodNameMinifier}, all reservations are
+ * <p>Because of the frontier state computation in {@link MethodNameMinifier}, all reservations are
  * bubbled up to the library frontier and naming is top-down to not re-use the same names. The
  * {@link InterfaceMethodNameMinifier} is run after ordinary method reservation but before new
  * method name assignment. Thus each group only has to keep track of the states in the interface
  * inheritance tree and the frontiers of their implementations.
  *
- * To cache all interface reservation states we use interfaceStateMap that maps each type to its
+ * <p>To cache all interface reservation states we use interfaceStateMap that maps each type to its
  * {@link InterfaceReservationState} that allows for querying and updating the interface inheritance
  * tree. This caching is crucial for the time spent computing interface names because most states
  * will not have a high depth.
  *
- * We then map each group from Equivalence(Method) to {@link InterfaceMethodGroupState} that
+ * <p>We then map each group from Equivalence(Method) to {@link InterfaceMethodGroupState} that
  * maintains a collection of {@link InterfaceReservationState} for each method the group represent.
  */
 class InterfaceMethodNameMinifier {

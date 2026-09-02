@@ -27,7 +27,9 @@ import com.android.tools.r8.utils.internal.exceptions.Unreachable;
 public class Cmp extends Binop {
 
   public enum Bias {
-    NONE, GT, LT
+    NONE,
+    GT,
+    LT
   }
 
   private final Bias bias;
@@ -241,5 +243,4 @@ public class Cmp extends Binop {
   public TypeElement evaluate(AppView<?> appView) {
     return TypeElement.getInt();
   }
-
 }

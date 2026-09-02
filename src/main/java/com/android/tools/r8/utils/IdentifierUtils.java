@@ -15,8 +15,7 @@ public class IdentifierUtils {
   }
 
   public static boolean isRelaxedDexIdentifierPart(int cp) {
-    return isSimpleNameChar(cp)
-      || isUnicodeSpace(cp);
+    return isSimpleNameChar(cp) || isUnicodeSpace(cp);
   }
 
   public static boolean isQuestionMark(int cp) {

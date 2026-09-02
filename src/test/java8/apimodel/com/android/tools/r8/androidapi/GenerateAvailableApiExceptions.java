@@ -27,7 +27,7 @@ import org.w3c.dom.NodeList;
 
 public class GenerateAvailableApiExceptions {
 
-  private static final int fixedApiLevel = AndroidApiLevel.L.getLevel();
+  private static final int fixedApiLevel = AndroidApiLevel.L.getMajor();
 
   private static String generateBuildMapCode(Path apiVersionsXml) throws Exception {
     CodeInspector inspector = new CodeInspector(ToolHelper.getAndroidJar(fixedApiLevel));

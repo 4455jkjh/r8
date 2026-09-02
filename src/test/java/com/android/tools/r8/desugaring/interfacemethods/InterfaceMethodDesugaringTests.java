@@ -41,7 +41,7 @@ public class InterfaceMethodDesugaringTests extends AsmTestBase {
 
   private static List<String> getArgs(int startWith) {
     return Collections.singletonList(
-        String.valueOf(ToolHelper.getMinApiLevelForDexVm().getLevel() >= startWith));
+        String.valueOf(ToolHelper.getMinApiLevelForDexVm().getMajor() >= startWith));
   }
 
   @Test
@@ -88,7 +88,7 @@ public class InterfaceMethodDesugaringTests extends AsmTestBase {
     ensureSameOutput(
         TestMainStatic0.class.getCanonicalName(),
         AndroidApiLevel.K,
-        getArgs(AndroidApiLevel.N.getLevel()),
+        getArgs(AndroidApiLevel.N.getMajor()),
         ToolHelper.getClassAsBytes(TestMainStatic0.class));
   }
 
@@ -97,7 +97,7 @@ public class InterfaceMethodDesugaringTests extends AsmTestBase {
     ensureSameOutput(
         TestMainStatic0.class.getCanonicalName(),
         ToolHelper.getMinApiLevelForDexVm(),
-        getArgs(AndroidApiLevel.N.getLevel()),
+        getArgs(AndroidApiLevel.N.getMajor()),
         ToolHelper.getClassAsBytes(TestMainStatic0.class));
   }
 
@@ -106,7 +106,7 @@ public class InterfaceMethodDesugaringTests extends AsmTestBase {
     ensureSameOutput(
         TestMainStatic1.class.getCanonicalName(),
         AndroidApiLevel.K,
-        getArgs(AndroidApiLevel.N.getLevel()),
+        getArgs(AndroidApiLevel.N.getMajor()),
         ToolHelper.getClassAsBytes(TestMainStatic1.class));
   }
 
@@ -115,7 +115,7 @@ public class InterfaceMethodDesugaringTests extends AsmTestBase {
     ensureSameOutput(
         TestMainStatic1.class.getCanonicalName(),
         ToolHelper.getMinApiLevelForDexVm(),
-        getArgs(AndroidApiLevel.N.getLevel()),
+        getArgs(AndroidApiLevel.N.getMajor()),
         ToolHelper.getClassAsBytes(TestMainStatic1.class));
   }
 
@@ -124,7 +124,7 @@ public class InterfaceMethodDesugaringTests extends AsmTestBase {
     ensureSameOutput(
         TestMainDefault0.class.getCanonicalName(),
         AndroidApiLevel.K,
-        getArgs(AndroidApiLevel.N.getLevel()),
+        getArgs(AndroidApiLevel.N.getMajor()),
         ToolHelper.getClassAsBytes(TestMainDefault0.class));
   }
 
@@ -133,7 +133,7 @@ public class InterfaceMethodDesugaringTests extends AsmTestBase {
     ensureSameOutput(
         TestMainDefault0.class.getCanonicalName(),
         ToolHelper.getMinApiLevelForDexVm(),
-        getArgs(AndroidApiLevel.N.getLevel()),
+        getArgs(AndroidApiLevel.N.getMajor()),
         ToolHelper.getClassAsBytes(TestMainDefault0.class));
   }
 
@@ -151,7 +151,7 @@ public class InterfaceMethodDesugaringTests extends AsmTestBase {
         },
         TestMainDefault1.class.getCanonicalName(),
         ToolHelper.getMinApiLevelForDexVm(),
-        getArgs(AndroidApiLevel.N.getLevel()),
+        getArgs(AndroidApiLevel.N.getMajor()),
         ToolHelper.getClassAsBytes(TestMainDefault1.class),
         ToolHelper.getClassAsBytes(Derived1.class),
         ToolHelper.getClassAsBytes(DerivedComparator1.class));
@@ -162,7 +162,7 @@ public class InterfaceMethodDesugaringTests extends AsmTestBase {
     ensureSameOutput(
         TestMainDefault2.class.getCanonicalName(),
         AndroidApiLevel.K,
-        getArgs(AndroidApiLevel.N.getLevel()),
+        getArgs(AndroidApiLevel.N.getMajor()),
         ToolHelper.getClassAsBytes(TestMainDefault2.class),
         ToolHelper.getClassAsBytes(Derived2.class),
         ToolHelper.getClassAsBytes(DerivedComparator2.class));
@@ -173,7 +173,7 @@ public class InterfaceMethodDesugaringTests extends AsmTestBase {
     ensureSameOutput(
         TestMainDefault2.class.getCanonicalName(),
         ToolHelper.getMinApiLevelForDexVm(),
-        getArgs(AndroidApiLevel.N.getLevel()),
+        getArgs(AndroidApiLevel.N.getMajor()),
         ToolHelper.getClassAsBytes(TestMainDefault2.class),
         ToolHelper.getClassAsBytes(Derived2.class),
         ToolHelper.getClassAsBytes(DerivedComparator2.class));

@@ -317,11 +317,7 @@ public class SyntheticFinalization {
     Collection<List<D>> potentialEquivalences = computePotentialEquivalences(appView, definitions);
     timing.end();
     return computeActualEquivalences(
-        potentialEquivalences,
-        generators,
-        appView,
-        lensBuilder,
-        timing);
+        potentialEquivalences, generators, appView, lensBuilder, timing);
   }
 
   private boolean isNotSyntheticType(DexType type) {
@@ -587,9 +583,7 @@ public class SyntheticFinalization {
   }
 
   private static void addSyntheticMarker(
-      SyntheticKind kind,
-      DexProgramClass externalSyntheticClass,
-      AppView<?> appView) {
+      SyntheticKind kind, DexProgramClass externalSyntheticClass, AppView<?> appView) {
     if (shouldAnnotateSynthetics(appView.options())) {
       SyntheticMarker.addMarkerToClass(externalSyntheticClass, kind, appView);
     }

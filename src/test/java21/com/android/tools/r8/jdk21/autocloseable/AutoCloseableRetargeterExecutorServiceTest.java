@@ -57,7 +57,7 @@ public class AutoCloseableRetargeterExecutorServiceTest extends TestBase {
         .run(
             parameters.getRuntime(),
             Main.class,
-            String.valueOf(parameters.getApiLevel().getLevel()))
+            String.valueOf(parameters.getApiLevel().getMajor()))
         .assertSuccessWithOutput(getExpectedOutput());
   }
 
@@ -75,7 +75,7 @@ public class AutoCloseableRetargeterExecutorServiceTest extends TestBase {
         .run(
             parameters.getRuntime(),
             Main.class,
-            String.valueOf(parameters.getApiLevel().getLevel()))
+            String.valueOf(parameters.getApiLevel().getMajor()))
         .assertSuccessWithOutput(getExpectedOutput());
   }
 

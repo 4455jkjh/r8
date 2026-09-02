@@ -70,10 +70,10 @@ import com.android.tools.r8.position.TextRange;
 import com.android.tools.r8.utils.DescriptorUtils;
 import com.android.tools.r8.utils.ExceptionUtils;
 import com.android.tools.r8.utils.InternalOptions;
-import com.android.tools.r8.utils.internal.LongUtils;
 import com.android.tools.r8.utils.Reporter;
 import com.android.tools.r8.utils.RetracerForCodePrinting;
 import com.android.tools.r8.utils.StringDiagnostic;
+import com.android.tools.r8.utils.internal.LongUtils;
 import com.android.tools.r8.utils.internal.exceptions.Unimplemented;
 import com.android.tools.r8.utils.internal.exceptions.Unreachable;
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
@@ -270,9 +270,7 @@ public class LazyCfCode extends Code {
 
   @Override
   public IRCode buildIR(
-      ProgramMethod method,
-      AppView<?> appView,
-      MutableMethodConversionOptions conversionOptions) {
+      ProgramMethod method, AppView<?> appView, MutableMethodConversionOptions conversionOptions) {
     return asCfCode().buildIR(method, appView, conversionOptions);
   }
 
@@ -287,13 +285,7 @@ public class LazyCfCode extends Code {
       RewrittenPrototypeDescription protoChanges) {
     return asCfCode()
         .buildInliningIR(
-            context,
-            method,
-            appView,
-            codeLens,
-            valueNumberGenerator,
-            callerPosition,
-            protoChanges);
+            context, method, appView, codeLens, valueNumberGenerator, callerPosition, protoChanges);
   }
 
   @Override

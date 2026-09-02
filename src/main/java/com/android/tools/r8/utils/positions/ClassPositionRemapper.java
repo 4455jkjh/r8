@@ -162,8 +162,7 @@ public interface ClassPositionRemapper {
 
         private final MethodPositionRemapper baseRemapper;
 
-        private KotlinInlineFunctionMethodPositionRemapper(
-            MethodPositionRemapper baseRemapper) {
+        private KotlinInlineFunctionMethodPositionRemapper(MethodPositionRemapper baseRemapper) {
           this.baseRemapper = baseRemapper;
         }
 

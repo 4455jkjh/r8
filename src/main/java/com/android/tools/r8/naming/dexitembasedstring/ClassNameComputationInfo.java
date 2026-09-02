@@ -58,11 +58,11 @@ public class ClassNameComputationInfo extends NameComputationInfo<DexType>
         case TYPE_NAME:
           // TODO(b/119426668): desugar Type#getTypeName
           throw new Unreachable("Type#getTypeName not supported yet");
-          // name = getClassNameFromDescriptor(descriptor);
-          // if (arrayDepth > 0) {
-          //   name = name + Strings.repeat("[]", arrayDepth);
-          // }
-          // break;
+        // name = getClassNameFromDescriptor(descriptor);
+        // if (arrayDepth > 0) {
+        //   name = name + Strings.repeat("[]", arrayDepth);
+        // }
+        // break;
         case CANONICAL_NAME:
           name = getCanonicalNameFromDescriptor(descriptor);
           if (arrayDepth > 0) {

@@ -14,14 +14,16 @@ import com.android.tools.r8.ir.code.ValueTypeConstraint;
 /**
  * Abstraction of the input/source code for the IRBuilder.
  *
- * Implementations of the abstraction need to compute/provide the block-structure of the source and
- * delegate building of the actual instruction stream.
+ * <p>Implementations of the abstraction need to compute/provide the block-structure of the source
+ * and delegate building of the actual instruction stream.
  */
 public interface SourceCode {
 
   // Accessors.
   int instructionCount();
+
   int instructionIndex(int instructionOffset);
+
   int instructionOffset(int instructionIndex);
 
   DebugLocalInfo getIncomingLocalAtBlock(int register, int blockOffset);
@@ -42,16 +44,16 @@ public interface SourceCode {
   /**
    * Trace block structure of the source-program.
    *
-   * <p>The instruction at {@code index} is traced and its target blocks are marked by using
-   * {@code IRBuilder.ensureSuccessorBlock} (and {@code ensureBlockWithoutEnqueuing}).
+   * <p>The instruction at {@code index} is traced and its target blocks are marked by using {@code
+   * IRBuilder.ensureSuccessorBlock} (and {@code ensureBlockWithoutEnqueuing}).
    *
-   * @return If the instruction closes the block, the last index of the block,
-   * otherwise -1.
+   * @return If the instruction closes the block, the last index of the block, otherwise -1.
    */
   int traceInstruction(int instructionIndex, IRBuilder builder);
 
   // Setup and release resources used temporarily during trace/build.
   void setUp();
+
   void clear();
 
   // Delegates for IR building.
@@ -65,8 +67,8 @@ public interface SourceCode {
   void buildPostlude(IRBuilder builder);
 
   // Helper to resolve switch payloads and build switch instructions (dex code only).
-  void resolveAndBuildSwitch(int value, int fallthroughOffset, int payloadOffset,
-      IRBuilder builder);
+  void resolveAndBuildSwitch(
+      int value, int fallthroughOffset, int payloadOffset, IRBuilder builder);
 
   // Helper to resolve fill-array data and build new-array instructions (dex code only).
   void resolveAndBuildNewArrayFilledData(int arrayRef, int payloadOffset, IRBuilder builder);
@@ -77,7 +79,9 @@ public interface SourceCode {
 
   // For debugging/verification purpose.
   boolean verifyRegister(int register);
+
   boolean verifyCurrentInstructionCanThrow();
+
   boolean verifyLocalInScope(DebugLocalInfo local);
 
   default boolean hasValidTypesFromStackMap() {

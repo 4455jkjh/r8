@@ -124,7 +124,7 @@ public class HelloWorldCompiledOnArtTest extends DesugaredLibraryTestBase {
   }
 
   private DesugaredLibraryTestCompileResult<?> compileR8ToDexWithD8() throws Exception {
-    assert parameters.getApiLevel().getLevel() >= AndroidApiLevel.O.getLevel()
+    assert parameters.getApiLevel().getMajor() >= AndroidApiLevel.O.getMajor()
         || libraryDesugaringSpecification.hasNioFileDesugaring(parameters);
     return testForDesugaredLibrary(
             parameters, libraryDesugaringSpecification, compilationSpecification)

@@ -114,38 +114,22 @@ public class RedundantConstNumberRemover extends CodeRewriterPass<AppInfo> {
           ConstNumber lhsAsNumber = lhs.getConstInstruction().asConstNumber();
           changed |=
               replaceDominatedConstNumbers(
-                  lhsAsNumber.getRawValue(),
-                  rhs,
-                  trueTarget,
-                  constantsByValue,
-                  dominatorTree);
+                  lhsAsNumber.getRawValue(), rhs, trueTarget, constantsByValue, dominatorTree);
           if (lhs.knownToBeBoolean() && rhs.knownToBeBoolean()) {
             changed |=
                 replaceDominatedConstNumbers(
-                    negateBoolean(lhsAsNumber),
-                    rhs,
-                    falseTarget,
-                    constantsByValue,
-                    dominatorTree);
+                    negateBoolean(lhsAsNumber), rhs, falseTarget, constantsByValue, dominatorTree);
           }
         } else {
           assert rhs.isConstNumber();
           ConstNumber rhsAsNumber = rhs.getConstInstruction().asConstNumber();
           changed |=
               replaceDominatedConstNumbers(
-                  rhsAsNumber.getRawValue(),
-                  lhs,
-                  trueTarget,
-                  constantsByValue,
-                  dominatorTree);
+                  rhsAsNumber.getRawValue(), lhs, trueTarget, constantsByValue, dominatorTree);
           if (lhs.knownToBeBoolean() && rhs.knownToBeBoolean()) {
             changed |=
                 replaceDominatedConstNumbers(
-                    negateBoolean(rhsAsNumber),
-                    lhs,
-                    falseTarget,
-                    constantsByValue,
-                    dominatorTree);
+                    negateBoolean(rhsAsNumber), lhs, falseTarget, constantsByValue, dominatorTree);
           }
         }
       }

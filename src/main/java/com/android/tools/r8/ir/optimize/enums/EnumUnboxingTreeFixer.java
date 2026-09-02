@@ -6,7 +6,7 @@ package com.android.tools.r8.ir.optimize.enums;
 
 import static com.android.tools.r8.ir.analysis.type.Nullability.definitelyNotNull;
 import static com.android.tools.r8.ir.conversion.ExtraUnusedParameter.computeExtraUnusedParameters;
-import static com.android.tools.r8.ir.optimize.enums.EnumUnboxerImpl.ordinalToUnboxedInt;
+import static com.android.tools.r8.ir.optimize.enums.EnumUnboxer.ordinalToUnboxedInt;
 
 import com.android.tools.r8.cf.CfVersion;
 import com.android.tools.r8.contexts.CompilationContext.ProcessorContext;
@@ -161,8 +161,8 @@ class EnumUnboxingTreeFixer implements ProgramClassFixer {
     EnumUnboxingLens lens = lensBuilder.build(appView);
     appView.rewriteWithLens(lens, executorService, timing);
 
-    // Rewrite outliner with lens.
-    converter.outliner.rewriteWithLens();
+    // Update the other optimization with the lens before one time ir processing.
+    converter.reprocessingOptimizationCollection.rewriteRemainingOptimizationsWithLens();
 
     // Create mapping from checkNotNull() to checkNotZero() methods.
     // The customLensCodeRewriter has to be non null for the duplication but is effectively unused.
@@ -643,19 +643,13 @@ class EnumUnboxingTreeFixer implements ProgramClassFixer {
     unboxedEnum.forEachProgramMethod(
         method ->
             processMethod(
-                method,
-                nonPrivateVirtualMethods,
-                localUtilityClass,
-                localUtilityMethods));
+                method, nonPrivateVirtualMethods, localUtilityClass, localUtilityMethods));
     // Second for each subEnum generate the remaining methods if not already generated.
     for (DexProgramClass subEnum : subEnums) {
       subEnum.forEachProgramMethod(
           method ->
               processMethod(
-                  method,
-                  nonPrivateVirtualMethods,
-                  localUtilityClass,
-                  localUtilityMethods));
+                  method, nonPrivateVirtualMethods, localUtilityClass, localUtilityMethods));
     }
 
     // Then analyze each method that may require emulated dispatch.

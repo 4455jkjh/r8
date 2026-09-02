@@ -8,6 +8,7 @@ import os.path
 import shutil
 import subprocess
 import sys
+import tomllib
 from pathlib import Path
 
 import utils
@@ -21,123 +22,19 @@ REPOSITORIES = [
     "D-Gradle Plugins=https://plugins.gradle.org/m2/",
 ]
 
-ANDROIDX_COLLECTION_VERSION = '1.6.0'
-ANDROIDX_TRACING_VERSION = '2.0.0-alpha05'
-ASM_VERSION = '9.10.1'  # When updating update tools/asmifier.py and Toolhelper as well.
-FASTUTIL_VERSION = '8.5.12'
-KOTLIN_METADATA_VERSION = '2.4.0'
-# This version is both our kotlin compiler and Gradle's (current) kotlin compiler.
-# If Gradle is upgraded, then this version might have to split into two and
-# the dependencies untangled.
-KOTLIN_VERSION = '2.2.21'
-GUAVA_VERSION = '32.1.2-jre'
-GSON_VERSION = '2.14.0'
-PLAYWRIGHT_VERSION = '1.60.0'
-JAVASSIST_VERSION = '3.29.2-GA'
-MOCKITO_VERSION = '2.10.0'
-TEST_RETRY_VERSION = '1.6.4'
-SMALI_VERSION = '3.0.3'
-ERROR_PRONE_VERSION = '2.50.0'
-TESTNG_VERSION = '6.10'
-JUNIT_JUPITER_VERSION = '5.14.3'
-JUNIT_PLATFORM_VERSION = '1.14.3'
-ZIPFLINGER_VERSION = '9.0.0'
-DDMLIB_VERSION = '32.2.0'
+with open(os.path.join(utils.REPO_ROOT, 'gradle', 'libs.versions.toml'), "rb") as f:
+  data = tomllib.load(f)
+versions = data.get("versions", {})
+libraries = data.get("libraries", {})
 
-# keepanno & resource shrinker dependencies
-PROTOBUF_VERSION = '4.33.5'
-
-# Resource shrinker dependency versions
-AAPT2_PROTO_VERSION = '9.1.0-alpha09-14792394'
-STUDIO_SDK_VERSION = '31.5.0-alpha04'
-
-BUILD_DEPENDENCIES = [
-    'androidx.collection:collection:{version}'.format(
-        version=ANDROIDX_COLLECTION_VERSION),
-    'androidx.tracing:tracing:{version}'.format(
-        version=ANDROIDX_TRACING_VERSION),
-    'androidx.tracing:tracing-desktop:{version}'.format(
-        version=ANDROIDX_TRACING_VERSION),
-    'androidx.tracing:tracing-wire:{version}'.format(
-        version=ANDROIDX_TRACING_VERSION),
-    'androidx.tracing:tracing-wire-desktop:{version}'.format(
-        version=ANDROIDX_TRACING_VERSION),
-    'com.google.code.gson:gson:{version}'.format(version=GSON_VERSION),
-    'com.google.guava:guava:{version}'.format(version=GUAVA_VERSION),
-    'it.unimi.dsi:fastutil:{version}'.format(version=FASTUTIL_VERSION),
-    'org.ow2.asm:asm:{version}'.format(version=ASM_VERSION),
-    'org.ow2.asm:asm-util:{version}'.format(version=ASM_VERSION),
-    'org.ow2.asm:asm-commons:{version}'.format(version=ASM_VERSION),
-    'com.google.errorprone:javac:9+181-r4173-1',
-    'com.android.tools.build:aapt2-proto:{version}'.format(
-        version=AAPT2_PROTO_VERSION),
-    'com.android.tools.layoutlib:layoutlib-api:{version}'.format(
-        version=STUDIO_SDK_VERSION),
-    'com.android.tools:common:{version}'.format(version=STUDIO_SDK_VERSION),
-    'com.android.tools:sdk-common:{version}'.format(version=STUDIO_SDK_VERSION),
-    'com.android:zipflinger:{version}'.format(version=ZIPFLINGER_VERSION),
-    'com.google.protobuf:protobuf-java:{version}'.format(
-        version=PROTOBUF_VERSION),
-    'org.jetbrains.kotlin:kotlin-assignment-compiler-plugin-embeddable:{version}'
-    .format(version=KOTLIN_VERSION),
-    'org.jetbrains.kotlin:kotlin-compiler-embeddable:{version}'.format(
-        version=KOTLIN_VERSION),
-    'org.jetbrains.kotlin:kotlin-gradle-plugin-api:{version}'.format(
-        version=KOTLIN_VERSION),
-    'org.jetbrains.kotlin:kotlin-gradle-plugin-idea:{version}'.format(
-        version=KOTLIN_VERSION),
-    'org.jetbrains.kotlin:kotlin-reflect:{version}'.format(
-        version=KOTLIN_VERSION),
-    'org.jetbrains.kotlin:kotlin-sam-with-receiver-compiler-plugin-embeddable:{version}'
-    .format(version=KOTLIN_VERSION),
-    'org.jetbrains.kotlin:kotlin-script-runtime:{version}'.format(
-        version=KOTLIN_VERSION),
-    'org.jetbrains.kotlin:kotlin-scripting-compiler-embeddable:{version}'.
-    format(version=KOTLIN_VERSION),
-    'org.jetbrains.kotlin:kotlin-stdlib-jdk8:{version}'.format(
-        version=KOTLIN_VERSION),
-    'org.jetbrains.kotlin:kotlin-tooling-core:{version}'.format(
-        version=KOTLIN_VERSION),
-    'org.jetbrains.kotlin:kotlin-build-tools-impl:{version}'.format(
-        version=KOTLIN_VERSION),
-    'org.jetbrains.kotlin:kotlin-metadata-jvm:{version}'.format(
-        version=KOTLIN_METADATA_VERSION),
-    'com.android.tools.ddms:ddmlib:{version}'.format(version=DDMLIB_VERSION),
-]
-
-TEST_DEPENDENCIES = [
-    'com.android.tools.smali:smali:{version}'.format(version=SMALI_VERSION),
-    'com.android.tools.smali:smali-util:{version}'.format(
-        version=SMALI_VERSION),
-    'com.google.errorprone:error_prone_core:{version}'.format(
-        version=ERROR_PRONE_VERSION),
-    'org.gradle:test-retry-gradle-plugin:{version}'.format(
-        version=TEST_RETRY_VERSION),
-    'org.javassist:javassist:{version}'.format(version=JAVASSIST_VERSION),
-    'org.mockito:mockito-core:{version}'.format(version=MOCKITO_VERSION),
-    'org.testng:testng:{version}'.format(version=TESTNG_VERSION),
-    'org.junit.jupiter:junit-jupiter:{version}'.format(
-        version=JUNIT_JUPITER_VERSION),
-    'org.junit.vintage:junit-vintage-engine:{version}'.format(
-        version=JUNIT_JUPITER_VERSION),
-    'org.junit.platform:junit-platform-launcher:{version}'.format(
-        version=JUNIT_PLATFORM_VERSION),
-    'com.microsoft.playwright:playwright:{version}'.format(
-        version=PLAYWRIGHT_VERSION),
-]
-
-PLUGIN_DEPENDENCIES = [
-    'org.jetbrains.kotlin.jvm:org.jetbrains.kotlin.jvm.gradle.plugin:pom:{version}'
-    .format(version=KOTLIN_VERSION),
-    'com.google.protobuf:com.google.protobuf.gradle.plugin:pom:0.9.4',
-    'org.gradle.kotlin.kotlin-dsl:org.gradle.kotlin.kotlin-dsl.gradle.plugin:pom:6.4.2',
-    'org.jetbrains.kotlin:kotlin-gradle-plugin-api:1.9.10',
-    'net.ltgt.errorprone:net.ltgt.errorprone.gradle.plugin:pom:5.1.0',
-    'org.spdx.sbom:org.spdx.sbom.gradle.plugin:pom:0.4.0',
-    # See https://github.com/FasterXML/jackson-core/issues/999.
-    'ch.randelshofer:fastdoubleparser:0.8.0',
-]
-
+BUILD_DEPENDENCIES = []
+PLUGIN_DEPENDENCIES = []
+for library, details in libraries.items():
+    artifact = details["module"] + ":" + versions[details["version"]["ref"]]
+    if library.endswith("GradlePlugin" ):
+        PLUGIN_DEPENDENCIES.append(artifact)
+    else:
+        BUILD_DEPENDENCIES.append(artifact)
 
 def dependencies_tar(dependencies_path):
     return os.path.join(os.path.dirname(dependencies_path),
@@ -256,7 +153,7 @@ def main():
         remove_local_maven_repository(dependencies_path)
         print("Downloading to " + dependencies_path)
         create_local_maven_repository(args, dependencies_path, repositories,
-                                      BUILD_DEPENDENCIES + TEST_DEPENDENCIES)
+                                      BUILD_DEPENDENCIES)
         set_utime(dependencies_path)
         dependencies.append('dependencies')
 

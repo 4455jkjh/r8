@@ -23,8 +23,7 @@ public abstract class ProguardPathList {
 
     private final ImmutableList.Builder<FileNameMatcher> matchers = ImmutableList.builder();
 
-    private Builder() {
-    }
+    private Builder() {}
 
     public Builder addFileName(String path) {
       return addFileName(path, false);
@@ -37,7 +36,7 @@ public abstract class ProguardPathList {
 
     public ProguardPathList build() {
       List<FileNameMatcher> matchers = this.matchers.build();
-      if (matchers. size() > 0) {
+      if (matchers.size() > 0) {
         return new PathList(matchers);
       } else {
         return emptyList();
@@ -97,7 +96,6 @@ public abstract class ProguardPathList {
     private boolean containsSeparatorsStartingAt(String path, int pathIndex) {
       return path.indexOf('/', pathIndex) != -1;
     }
-
   }
 
   private static class PathList extends ProguardPathList {
@@ -121,8 +119,7 @@ public abstract class ProguardPathList {
 
   private static class EmptyPathList extends ProguardPathList {
 
-    private EmptyPathList() {
-    }
+    private EmptyPathList() {}
 
     @Override
     boolean matches(String path) {

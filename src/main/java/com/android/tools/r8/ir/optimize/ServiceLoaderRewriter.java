@@ -742,7 +742,7 @@ public class ServiceLoaderRewriter extends CodeRewriterPass<AppInfoWithLiveness>
       this.serviceType = serviceType;
       this.implClasses = implClasses;
       this.iteratorInvoke = iteratorInvoke;
-      }
+    }
   }
 
   private static class DirectRewriteResult {

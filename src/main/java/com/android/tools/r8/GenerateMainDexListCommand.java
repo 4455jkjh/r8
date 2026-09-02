@@ -44,46 +44,40 @@ public class GenerateMainDexListCommand extends BaseCommand {
     private StringConsumer mainDexListConsumer = null;
     private GraphConsumer mainDexKeptGraphConsumer = null;
 
-    private Builder() {
-    }
+    private Builder() {}
 
     private Builder(DiagnosticsHandler diagnosticsHandler) {
       super(diagnosticsHandler);
     }
-
 
     @Override
     GenerateMainDexListCommand.Builder self() {
       return this;
     }
 
-    /**
-     * Add proguard configuration file resources for automatic main dex list calculation.
-     */
+    /** Add proguard configuration file resources for automatic main dex list calculation. */
     public GenerateMainDexListCommand.Builder addMainDexRulesFiles(Path... paths) {
-      guard(() -> {
-        for (Path path : paths) {
-          mainDexRules.add(new ProguardConfigurationSourceFile(path));
-        }
-      });
+      guard(
+          () -> {
+            for (Path path : paths) {
+              mainDexRules.add(new ProguardConfigurationSourceFile(path));
+            }
+          });
       return self();
     }
 
-    /**
-     * Add proguard configuration file resources for automatic main dex list calculation.
-     */
+    /** Add proguard configuration file resources for automatic main dex list calculation. */
     public GenerateMainDexListCommand.Builder addMainDexRulesFiles(List<Path> paths) {
-      guard(() -> {
-        for (Path path : paths) {
-          mainDexRules.add(new ProguardConfigurationSourceFile(path));
-        }
-      });
+      guard(
+          () -> {
+            for (Path path : paths) {
+              mainDexRules.add(new ProguardConfigurationSourceFile(path));
+            }
+          });
       return self();
     }
 
-    /**
-     * Add proguard configuration for automatic main dex list calculation.
-     */
+    /** Add proguard configuration for automatic main dex list calculation. */
     public GenerateMainDexListCommand.Builder addMainDexRules(List<String> lines, Origin origin) {
       String config = String.join(System.lineSeparator(), lines);
       mainDexRules.add(new ProguardConfigurationSourceStrings(config, Paths.get("."), origin));
@@ -93,7 +87,7 @@ public class GenerateMainDexListCommand extends BaseCommand {
     /**
      * Set the output file for the main-dex list.
      *
-     * If the file exists it will be overwritten.
+     * <p>If the file exists it will be overwritten.
      */
     public GenerateMainDexListCommand.Builder setMainDexListOutputPath(Path mainDexListOutputPath) {
       mainDexListConsumer = new StringConsumer.FileConsumer(mainDexListOutputPath);
@@ -235,4 +229,3 @@ public class GenerateMainDexListCommand extends BaseCommand {
     return internal;
   }
 }
-

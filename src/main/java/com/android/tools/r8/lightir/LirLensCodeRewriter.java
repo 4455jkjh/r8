@@ -560,8 +560,7 @@ public class LirLensCodeRewriter<EV> extends LirParsedInstructionCallback<EV> {
     IRCode code =
         context.buildIR(
             appView,
-            MethodConversionOptions.forLirPhase(appView)
-                .setFinalizeAfterLensCodeRewriter());
+            MethodConversionOptions.forLirPhase(appView).setFinalizeAfterLensCodeRewriter());
     timing.end();
     // MethodProcessor argument is only used by unboxing lenses.
     MethodProcessor methodProcessor = null;

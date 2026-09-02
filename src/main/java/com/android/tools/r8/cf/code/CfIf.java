@@ -99,6 +99,7 @@ public class CfIf extends CfConditionalJumpInstruction {
       MethodVisitor visitor) {
     visitor.visitJumpInsn(getOpcode(), target.getLabel());
   }
+
   @Override
   public void buildIR(IRBuilder builder, CfState state, CfSourceCode code) {
     int value = state.pop().register;

@@ -61,7 +61,6 @@ import com.android.tools.r8.ir.optimize.ReflectionOptimizer;
 import com.android.tools.r8.ir.optimize.RemoveVerificationErrorForUnknownReturnedValues;
 import com.android.tools.r8.ir.optimize.api.InstanceInitializerOutliner;
 import com.android.tools.r8.ir.optimize.classinliner.ClassInliner;
-import com.android.tools.r8.ir.optimize.enums.EnumUnboxer;
 import com.android.tools.r8.ir.optimize.enums.EnumValueOptimizer;
 import com.android.tools.r8.ir.optimize.info.CallSiteOptimizationInfo;
 import com.android.tools.r8.ir.optimize.info.MethodOptimizationInfo;
@@ -73,8 +72,7 @@ import com.android.tools.r8.ir.optimize.info.field.InstanceFieldInitializationIn
 import com.android.tools.r8.ir.optimize.membervaluepropagation.D8MemberValuePropagation;
 import com.android.tools.r8.ir.optimize.membervaluepropagation.MemberValuePropagation;
 import com.android.tools.r8.ir.optimize.membervaluepropagation.R8MemberValuePropagation;
-import com.android.tools.r8.ir.optimize.numberunboxer.NumberUnboxer;
-import com.android.tools.r8.ir.optimize.outliner.Outliner;
+import com.android.tools.r8.ir.optimize.outliner.ReprocessingOptimizationCollection;
 import com.android.tools.r8.lightir.IR2LirConverter;
 import com.android.tools.r8.lightir.Lir2IRConverter;
 import com.android.tools.r8.lightir.LirCode;
@@ -108,8 +106,8 @@ public class IRConverter {
 
   public final AppView<?> appView;
 
-  public final Outliner outliner;
   protected final CodeRewriterPassCollection rewriterPassCollection;
+  public final ReprocessingOptimizationCollection reprocessingOptimizationCollection;
   private final ClassInitializerDefaultsOptimization classInitializerDefaultsOptimization;
   protected final CfInstructionDesugaringCollectionSupplier instructionDesugaring;
   protected FieldAccessAnalysis fieldAccessAnalysis;
@@ -123,9 +121,7 @@ public class IRConverter {
   protected final Inliner inliner;
   protected final IdentifierNameStringMarker identifierNameStringMarker;
   private final Devirtualizer devirtualizer;
-  protected EnumUnboxer enumUnboxer;
   protected final TypeSwitchIRRewriter typeSwitchIRRewriter;
-  protected final NumberUnboxer numberUnboxer;
   protected final RemoveVerificationErrorForUnknownReturnedValues
       removeVerificationErrorForUnknownReturnedValues;
 
@@ -196,17 +192,15 @@ public class IRConverter {
       this.fieldAccessAnalysis = null;
       this.libraryMethodOverrideAnalysis = null;
       this.inliner = null;
-      this.outliner = Outliner.empty();
       this.memberValuePropagation = null;
       this.lensCodeRewriter = null;
       this.identifierNameStringMarker = null;
       this.devirtualizer = null;
       this.methodOptimizationInfoCollector = null;
-      this.enumUnboxer = EnumUnboxer.empty();
       this.typeSwitchIRRewriter = null;
-      this.numberUnboxer = NumberUnboxer.empty();
       this.assumeInserter = null;
       this.removeVerificationErrorForUnknownReturnedValues = null;
+      this.reprocessingOptimizationCollection = ReprocessingOptimizationCollection.createEmpty();
       return;
     }
     this.instructionDesugaring =
@@ -236,13 +230,12 @@ public class IRConverter {
           options.enableTreeShakingOfLibraryMethodOverrides
               ? new LibraryMethodOverrideAnalysis(appViewWithLiveness)
               : null;
-      this.enumUnboxer = EnumUnboxer.create(appViewWithLiveness);
       this.typeSwitchIRRewriter = TypeSwitchIRRewriter.create(appViewWithLiveness);
-      this.numberUnboxer = NumberUnboxer.create(appViewWithLiveness);
-      this.outliner = Outliner.create(appViewWithLiveness);
       this.memberValuePropagation = new R8MemberValuePropagation(appViewWithLiveness);
       this.methodOptimizationInfoCollector =
           new MethodOptimizationInfoCollector(appViewWithLiveness, this);
+      this.reprocessingOptimizationCollection =
+          ReprocessingOptimizationCollection.create(appViewWithLiveness);
       if (options.isMinifying()) {
         this.identifierNameStringMarker = new IdentifierNameStringMarker(appViewWithLiveness);
       } else {
@@ -261,7 +254,6 @@ public class IRConverter {
       this.fieldAccessAnalysis = null;
       this.libraryMethodOverrideAnalysis = null;
       this.inliner = null;
-      this.outliner = Outliner.empty();
       this.memberValuePropagation =
           options.isGeneratingDex()
               ? new D8MemberValuePropagation(appViewWithoutClassHierarchy)
@@ -270,9 +262,8 @@ public class IRConverter {
       this.identifierNameStringMarker = null;
       this.devirtualizer = null;
       this.methodOptimizationInfoCollector = null;
-      this.enumUnboxer = EnumUnboxer.empty();
       this.typeSwitchIRRewriter = null;
-      this.numberUnboxer = NumberUnboxer.empty();
+      this.reprocessingOptimizationCollection = ReprocessingOptimizationCollection.createEmpty();
     }
   }
 
@@ -293,10 +284,6 @@ public class IRConverter {
    */
   public void unsetConditionalAssumeRules() {
     appView.getAssumeInfoCollection().unsetConditionalAssumeRules();
-  }
-
-  public void unsetEnumUnboxer() {
-    enumUnboxer = EnumUnboxer.empty();
   }
 
   public void unsetFieldAccessAnalysis() {
@@ -478,8 +465,7 @@ public class IRConverter {
       MutableMethodConversionOptions conversionOptions,
       Timing timing) {
     if (options.verbose) {
-      options.reporter.info(
-          new StringDiagnostic("Processing: " + method.toSourceString()));
+      options.reporter.info(new StringDiagnostic("Processing: " + method.toSourceString()));
     }
     if (options.testing.hookInIrConversion != null) {
       options.testing.hookInIrConversion.run();
@@ -655,7 +641,6 @@ public class IRConverter {
       previous = printMethod(code, "IR after inlining (SSA)", previous);
     }
 
-
     if (appView.appInfo().hasLiveness()) {
       // Reflection optimization 1. getClass() / forName() -> const-class
       timing.begin("Rewrite to const class");
@@ -721,7 +706,6 @@ public class IRConverter {
       previous = printMethod(code, "IR after inverting conditionals for testing (SSA)", previous);
     }
 
-
     assert code.verifyTypes(appView);
 
     if (classInliner != null) {
@@ -736,14 +720,6 @@ public class IRConverter {
       assert code.verifyTypes(appView);
       previous = printMethod(code, "IR after class inlining (SSA)", previous);
     }
-
-    assert code.verifyTypes(appView);
-
-    // TODO(b/140766440): an ideal solution would be putting CodeOptimization for this into
-    //  the list for primary processing only.
-    outliner.collectOutlineSites(code, timing);
-    assert code.verifyTypes(appView);
-    previous = printMethod(code, "IR after outline handler (SSA)", previous);
 
     if (!code.getConversionOptions().isGeneratingLir()) {
       new FilledNewArrayRewriter(appView)
@@ -870,13 +846,8 @@ public class IRConverter {
       MethodProcessor methodProcessor,
       BytecodeMetadataProvider.Builder bytecodeMetadataProviderBuilder,
       Timing timing) {
-    appView.withArgumentPropagator(
-        argumentPropagator -> argumentPropagator.scan(method, code, methodProcessor, timing));
 
-    if (methodProcessor.isPrimaryMethodProcessor()) {
-      enumUnboxer.analyzeEnums(code, methodProcessor);
-      numberUnboxer.analyze(code);
-    }
+    reprocessingOptimizationCollection.irAnalysis(method, code, methodProcessor, timing);
 
     if (inliner != null) {
       inliner.recordCallEdgesForMultiCallerInlining(method, code, methodProcessor, timing);
@@ -909,13 +880,13 @@ public class IRConverter {
         staticFieldValues =
             StaticFieldValueAnalysis.run(
                 appView, code, classInitializerDefaultsResult, feedback, timing);
+        reprocessingOptimizationCollection.classInitializerAnalysis(method, staticFieldValues);
       } else {
         instanceFieldInitializationInfos =
             InstanceFieldValueAnalysis.run(
                 appView, code, classInitializerDefaultsResult, feedback, timing);
       }
     }
-    enumUnboxer.recordEnumState(method.getHolder(), staticFieldValues);
     if (typeSwitchIRRewriter != null) {
       typeSwitchIRRewriter.recordEnumState(method.getHolder(), staticFieldValues);
     }
@@ -1015,9 +986,7 @@ public class IRConverter {
   }
 
   private IRCode roundtripThroughLir(
-      IRCode code,
-      BytecodeMetadataProvider bytecodeMetadataProvider,
-      Timing timing) {
+      IRCode code, BytecodeMetadataProvider bytecodeMetadataProvider, Timing timing) {
     IRCode round1 =
         doRoundtripWithStrategy(code, new ExternalPhisStrategy(), "indirect phis", timing);
     IRCode round2 =
@@ -1137,13 +1106,10 @@ public class IRConverter {
   private void internalOnMethodPruned(ProgramMethod method) {
     assert appView.enableWholeProgramOptimizations();
     assert method.getHolder().lookupMethod(method.getReference()) == null;
-    appView.withArgumentPropagator(argumentPropagator -> argumentPropagator.onMethodPruned(method));
-    enumUnboxer.onMethodPruned(method);
+    reprocessingOptimizationCollection.onMethodPruned(method);
     if (fieldAccessAnalysis != null) {
       fieldAccessAnalysis.fieldAssignmentTracker().onMethodPruned(method);
     }
-    numberUnboxer.onMethodPruned(method);
-    outliner.onMethodPruned(method);
     if (inliner != null) {
       inliner.onMethodPruned(method);
     }
@@ -1156,14 +1122,10 @@ public class IRConverter {
   public void onMethodCodePruned(ProgramMethod method) {
     assert appView.enableWholeProgramOptimizations();
     assert method.getHolder().lookupMethod(method.getReference()) != null;
-    appView.withArgumentPropagator(
-        argumentPropagator -> argumentPropagator.onMethodCodePruned(method));
-    enumUnboxer.onMethodCodePruned(method);
+    reprocessingOptimizationCollection.onMethodCodePruned(method);
     if (fieldAccessAnalysis != null) {
       fieldAccessAnalysis.fieldAssignmentTracker().onMethodCodePruned(method);
     }
-    numberUnboxer.onMethodCodePruned(method);
-    outliner.onMethodCodePruned(method);
     if (inliner != null) {
       inliner.onMethodCodePruned(method);
     }

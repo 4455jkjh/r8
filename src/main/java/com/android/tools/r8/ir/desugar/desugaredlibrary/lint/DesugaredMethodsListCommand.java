@@ -132,7 +132,7 @@ public class DesugaredMethodsListCommand {
   @KeepForApi
   public static class Builder {
 
-    private int minMajorApi = AndroidApiLevel.B.getLevel();
+    private int minMajorApi = AndroidApiLevel.B.getMajor();
     private int minMinorApi = 0;
     private final Reporter reporter;
     private StringResource desugarLibrarySpecification = null;
@@ -282,7 +282,7 @@ public class DesugaredMethodsListCommand {
               "--min-api",
               "<number>",
               "Minimum Android API level compatibility (default: "
-                  + AndroidApiLevel.getDefault().getLevel()
+                  + AndroidApiLevel.getDefault().getMajor()
                   + ").",
               (b, arg) ->
                   CliParserUtils.parsePositiveInt(

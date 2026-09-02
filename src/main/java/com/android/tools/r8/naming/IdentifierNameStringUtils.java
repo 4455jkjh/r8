@@ -106,9 +106,8 @@ public final class IdentifierNameStringUtils {
           return false;
         }
       }
-    } else if (
-        method.holder.descriptor == dexItemFactory.intFieldUpdaterDescriptor
-            || method.holder.descriptor == dexItemFactory.longFieldUpdaterDescriptor) {
+    } else if (method.holder.descriptor == dexItemFactory.intFieldUpdaterDescriptor
+        || method.holder.descriptor == dexItemFactory.longFieldUpdaterDescriptor) {
       // Atomic(Integer|Long)FieldUpdater->newUpdater(Class, String)AtomicFieldUpdater
       if (arity != 2) {
         return false;

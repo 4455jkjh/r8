@@ -16,11 +16,11 @@ import java.util.Set;
 
 /**
  * Removes abstract methods if they only shadow methods of the same signature in a superclass.
- * <p>
- * We do not consider classes from the library for this optimization, as the program might run
+ *
+ * <p>We do not consider classes from the library for this optimization, as the program might run
  * against a different version of the library where methods are missing.
- * <p>
- * This optimization is beneficial mostly as it removes superfluous abstract methods that are
+ *
+ * <p>This optimization is beneficial mostly as it removes superfluous abstract methods that are
  * created by the {@link TreePruner}.
  */
 public class AbstractMethodRemover {
@@ -92,5 +92,4 @@ public class AbstractMethodRemover {
     // We will filter the method out since it is not pinned.
     return false;
   }
-
 }

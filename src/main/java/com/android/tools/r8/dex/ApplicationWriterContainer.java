@@ -249,12 +249,7 @@ class ApplicationWriterContainer extends ApplicationWriter {
       int offset,
       boolean includeStringData) {
     FileWriter fileWriter =
-        new FileWriter(
-            appView,
-            dexOutputBuffer,
-            objectMapping,
-            virtualFile,
-            includeStringData);
+        new FileWriter(appView, dexOutputBuffer, objectMapping, virtualFile, includeStringData);
     // Collect the non-fixed sections.
     timing.time("collect", fileWriter::collect);
     // Generate and write the bytes.

@@ -144,5 +144,4 @@ public class MoveLoadUpPeephole implements BasicBlockPeephole {
   public boolean resetAfterMatch() {
     return false;
   }
-
 }

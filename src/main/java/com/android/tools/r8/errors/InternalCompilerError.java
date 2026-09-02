@@ -14,8 +14,7 @@ package com.android.tools.r8.errors;
  */
 public class InternalCompilerError extends IllegalStateException {
 
-  public InternalCompilerError() {
-  }
+  public InternalCompilerError() {}
 
   public InternalCompilerError(String message) {
     super(message);

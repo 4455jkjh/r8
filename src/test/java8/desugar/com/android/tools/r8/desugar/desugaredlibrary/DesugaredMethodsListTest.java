@@ -121,7 +121,7 @@ public class DesugaredMethodsListTest extends DesugaredLibraryTestBase {
     DesugaredMethodsList.main(
         new String[] {
           "--min-api",
-          String.valueOf(minApi.getLevel()),
+          String.valueOf(minApi.getMajor()),
           "--desugared-lib",
           libraryDesugaringSpecification.getSpecification().toString(),
           "--desugared-lib-jar",
@@ -165,7 +165,7 @@ public class DesugaredMethodsListTest extends DesugaredLibraryTestBase {
             options.reporter,
             true,
             1);
-    int req = spec.getRequiredCompilationApiLevel().getLevel();
+    int req = spec.getRequiredCompilationApiLevel().getMajor();
     Path file = output.resolve("compile_api_level_" + req + "/desugared_apis_" + req + "_1.txt");
     checkFileContent(AndroidApiLevel.B, file, false, true);
   }
@@ -178,7 +178,7 @@ public class DesugaredMethodsListTest extends DesugaredLibraryTestBase {
     DesugaredMethodsList.main(
         new String[] {
           "--min-api",
-          String.valueOf(minApi.getLevel()),
+          String.valueOf(minApi.getMajor()),
           "--output",
           output.toString(),
           "--lib",

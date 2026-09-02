@@ -16,16 +16,12 @@ public class TextRange implements Position {
     this.end = end;
   }
 
-  /**
-   * Return the start position of this range.
-   */
+  /** Return the start position of this range. */
   public TextPosition getStart() {
     return start;
   }
 
-  /**
-   * Return the end position of this range.
-   */
+  /** Return the end position of this range. */
   public TextPosition getEnd() {
     return end;
   }
@@ -41,7 +37,7 @@ public class TextRange implements Position {
     if (o == this) {
       return true;
     }
-    if (o != null  && o.getClass().equals(getClass())) {
+    if (o != null && o.getClass().equals(getClass())) {
       TextRange other = (TextRange) o;
       return start.equals(other.getStart()) && end.equals(other.getEnd());
     }
@@ -50,7 +46,7 @@ public class TextRange implements Position {
 
   @Override
   public String toString() {
-      return "Text range from: '" + getStart() + "', to: '" + getEnd() + "'";
+    return "Text range from: '" + getStart() + "', to: '" + getEnd() + "'";
   }
 
   @Override

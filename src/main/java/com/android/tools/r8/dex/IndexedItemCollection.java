@@ -17,13 +17,13 @@ import com.android.tools.r8.graph.IndexedDexItem;
 /**
  * Common interface for constant pools.
  *
- * <p>This is semantically a wrapper around a number of sets for all subtypes of
- * {@link IndexedDexItem}. <b>Items should not be added directly to this collection.</b> Instead see
- * {@link DexItem#collectIndexedItems}.
+ * <p>This is semantically a wrapper around a number of sets for all subtypes of {@link
+ * IndexedDexItem}. <b>Items should not be added directly to this collection.</b> Instead see {@link
+ * DexItem#collectIndexedItems}.
  *
  * <p>Note that the various add methods of this class are not transitive, i.e., they do not add
- * components of the {@link IndexedDexItem} itself. Use a call to
- * {@link IndexedDexItem#collectIndexedItems} for this.
+ * components of the {@link IndexedDexItem} itself. Use a call to {@link
+ * IndexedDexItem#collectIndexedItems} for this.
  */
 public interface IndexedItemCollection {
 

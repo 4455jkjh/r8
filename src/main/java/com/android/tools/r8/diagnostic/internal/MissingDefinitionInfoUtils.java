@@ -16,10 +16,10 @@ import com.android.tools.r8.diagnostic.MissingMethodInfo;
 import com.android.tools.r8.references.ClassReference;
 import com.android.tools.r8.references.FieldReference;
 import com.android.tools.r8.references.MethodReference;
-import com.android.tools.r8.utils.internal.Box;
 import com.android.tools.r8.utils.ClassReferenceUtils;
 import com.android.tools.r8.utils.FieldReferenceUtils;
 import com.android.tools.r8.utils.MethodReferenceUtils;
+import com.android.tools.r8.utils.internal.Box;
 import java.util.Comparator;
 import java.util.function.Consumer;
 

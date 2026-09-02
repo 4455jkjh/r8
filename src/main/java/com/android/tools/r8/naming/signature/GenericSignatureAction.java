@@ -4,9 +4,7 @@
 
 package com.android.tools.r8.naming.signature;
 
-/**
- * Actions triggered by the generic signature parser.
- */
+/** Actions triggered by the generic signature parser. */
 // TODO(b/129925954): Deprecate this once ...graph.GenericSignature is ready and rewriter is
 //   reimplemented based on the internal encoding and transformation logic.
 public interface GenericSignatureAction<T> {

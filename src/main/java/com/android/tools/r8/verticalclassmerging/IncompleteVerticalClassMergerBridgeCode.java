@@ -130,9 +130,7 @@ public class IncompleteVerticalClassMergerBridgeCode extends Code {
 
   @Override
   public IRCode buildIR(
-      ProgramMethod method,
-      AppView<?> appView,
-      MutableMethodConversionOptions conversionOptions) {
+      ProgramMethod method, AppView<?> appView, MutableMethodConversionOptions conversionOptions) {
     throw new Unreachable();
   }
 

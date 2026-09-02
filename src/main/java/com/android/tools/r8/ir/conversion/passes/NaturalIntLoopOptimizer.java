@@ -359,10 +359,9 @@ public class NaturalIntLoopOptimizer extends CodeRewriterPass<AppInfo> {
   /**
    * The loop unroller removes phis corresponding to the loop backjump. There are three scenarios:
    * (1) The loop has a single exit point analyzed, phis used outside the loop are replaced by the
-   *     value at the end of the loop body.
-   * (2) The phis are unused outside the loop, and they are simply removed.
-   * (3) The loop has multiple exits and the phis are used outside the loop, this would require
-   *     dealing with complex merge point and postponing phis after the loop, we bail out.
+   * value at the end of the loop body. (2) The phis are unused outside the loop, and they are
+   * simply removed. (3) The loop has multiple exits and the phis are used outside the loop, this
+   * would require dealing with complex merge point and postponing phis after the loop, we bail out.
    */
   private boolean analyzePhiUses(
       Set<BasicBlock> loopBody, If comparison, NaturalIntLoopWithKnowIterations.Builder builder) {

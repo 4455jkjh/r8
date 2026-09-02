@@ -47,7 +47,7 @@ public class TurkishLocaleMultiReleaseJarTest extends TestBase {
             D8.class,
             ImmutableList.of(
                 "--min-api",
-                Integer.toString(parameters.getApiLevel().getLevel()),
+                Integer.toString(parameters.getApiLevel().getMajor()),
                 "--lib",
                 ToolHelper.getAndroidJar(AndroidApiLevel.U).toAbsolutePath().toString(),
                 buildMultiReleaseJarWithUpperCaseMetaInf(workingDir).toAbsolutePath().toString()));
@@ -70,7 +70,7 @@ public class TurkishLocaleMultiReleaseJarTest extends TestBase {
     if (parameters.isCfRuntime()) {
       builder.add("--classfile");
     } else {
-      builder.add("--min-api", Integer.toString(parameters.getApiLevel().getLevel()));
+      builder.add("--min-api", Integer.toString(parameters.getApiLevel().getMajor()));
     }
 
     ProcessResult result =

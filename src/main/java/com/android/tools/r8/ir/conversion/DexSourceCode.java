@@ -76,10 +76,7 @@ public class DexSourceCode implements SourceCode {
   private List<DexDebugEntry> debugEntries = null;
 
   public DexSourceCode(
-      DexCode code,
-      ProgramMethod method,
-      Position callerPosition,
-      DexItemFactory factory) {
+      DexCode code, ProgramMethod method, Position callerPosition, DexItemFactory factory) {
     this.code = code;
     this.method = method;
     DexMethod reference = method.getReference();
@@ -280,16 +277,20 @@ public class DexSourceCode implements SourceCode {
   }
 
   @Override
-  public void resolveAndBuildSwitch(int value, int fallthroughOffset, int payloadOffset,
-      IRBuilder builder) {
-    builder.addSwitch(value, switchPayloadResolver.getKeys(payloadOffset), fallthroughOffset,
+  public void resolveAndBuildSwitch(
+      int value, int fallthroughOffset, int payloadOffset, IRBuilder builder) {
+    builder.addSwitch(
+        value,
+        switchPayloadResolver.getKeys(payloadOffset),
+        fallthroughOffset,
         switchPayloadResolver.absoluteTargets(payloadOffset));
   }
 
   @Override
-  public void resolveAndBuildNewArrayFilledData(int arrayRef, int payloadOffset,
-      IRBuilder builder) {
-    builder.addNewArrayFilledData(arrayRef,
+  public void resolveAndBuildNewArrayFilledData(
+      int arrayRef, int payloadOffset, IRBuilder builder) {
+    builder.addNewArrayFilledData(
+        arrayRef,
         arrayFilledDataPayloadResolver.getElementWidth(payloadOffset),
         arrayFilledDataPayloadResolver.getSize(payloadOffset),
         arrayFilledDataPayloadResolver.getData(payloadOffset));
@@ -426,7 +427,6 @@ public class DexSourceCode implements SourceCode {
     if (handler.catchAllAddr != TryHandler.NO_HANDLER) {
       fn.accept(factory.throwableType, handler.catchAllAddr);
     }
-
   }
 
   private Set<Integer> getUniqueTryHandlerOffsets(Try tryRange, DexItemFactory factory) {

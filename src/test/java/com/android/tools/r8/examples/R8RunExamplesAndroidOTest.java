@@ -442,7 +442,7 @@ public class R8RunExamplesAndroidOTest extends RunExamplesAndroidOTest<R8Command
                     ToolHelper.getAndroidJar(
                         androidJarVersion == null
                             ? b.getMinApiLevel()
-                            : androidJarVersion.getLevel()));
+                            : androidJarVersion.getMajor()));
               })
           .collectSyntheticItems()
           .compile()

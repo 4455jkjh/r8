@@ -30,9 +30,7 @@ public abstract class Code extends CachedHashValueDexItem {
   }
 
   public abstract IRCode buildIR(
-      ProgramMethod method,
-      AppView<?> appView,
-      MutableMethodConversionOptions conversionOptions);
+      ProgramMethod method, AppView<?> appView, MutableMethodConversionOptions conversionOptions);
 
   public IRCode buildInliningIR(
       ProgramMethod context,
@@ -42,8 +40,8 @@ public abstract class Code extends CachedHashValueDexItem {
       NumberGenerator valueNumberGenerator,
       Position callerPosition,
       RewrittenPrototypeDescription protoChanges) {
-    throw new Unreachable("Unexpected attempt to build IR graph for inlining from: "
-        + getClass().getCanonicalName());
+    throw new Unreachable(
+        "Unexpected attempt to build IR graph for inlining from: " + getClass().getCanonicalName());
   }
 
   public boolean hasExplicitCodeLens() {

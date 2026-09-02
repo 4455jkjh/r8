@@ -156,6 +156,7 @@ public final class R8Command extends BaseCompilerCommand {
     private String synthesizedClassPrefix =
         System.getProperty("com.android.tools.r8.synthesizedClassPrefix", "");
     private boolean enableMissingLibraryApiModeling = false;
+    private boolean enableExperimentalDexInput = false;
     private boolean enableExperimentalKeepAnnotations =
         SystemPropertyUtils.parseSystemPropertyOrDefault(
             "com.android.tools.r8.enableKeepAnnotations", false);
@@ -177,9 +178,6 @@ public final class R8Command extends BaseCompilerCommand {
     private final ProguardConfigurationParserOptions.Builder parserOptionsBuilder =
         ProguardConfigurationParserOptions.builder().readEnvironment();
 
-    private final boolean allowDexInputToR8 =
-        System.getProperty("com.android.tools.r8.allowDexInputToR8") != null;
-
     // TODO(zerny): Consider refactoring CompatProguardCommandBuilder to avoid subclassing.
     Builder() {
       this(new DefaultR8DiagnosticsHandler());
@@ -187,17 +185,17 @@ public final class R8Command extends BaseCompilerCommand {
 
     Builder(DiagnosticsHandler diagnosticsHandler) {
       super(diagnosticsHandler);
-      setIgnoreDexInArchive(!allowDexInputToR8);
+      setIgnoreDexInArchive(true);
     }
 
     private Builder(AndroidApp app) {
       super(app);
-      setIgnoreDexInArchive(!allowDexInputToR8);
+      setIgnoreDexInArchive(true);
     }
 
     private Builder(AndroidApp app, DiagnosticsHandler diagnosticsHandler) {
       super(app, diagnosticsHandler);
-      setIgnoreDexInArchive(!allowDexInputToR8);
+      setIgnoreDexInArchive(true);
     }
 
     // Internal
@@ -396,6 +394,7 @@ public final class R8Command extends BaseCompilerCommand {
      * Set a consumer for receiving the proguard configuration information.
      *
      * <p>Note that any subsequent calls to this method will replace the previous setting.
+     *
      * @param proguardConfigurationConsumer
      */
     public Builder setProguardConfigurationConsumer(StringConsumer proguardConfigurationConsumer) {
@@ -408,17 +407,13 @@ public final class R8Command extends BaseCompilerCommand {
       return proguardConfigurationConsumer;
     }
 
-    /**
-     * Set a consumer for receiving kept-graph events.
-     */
+    /** Set a consumer for receiving kept-graph events. */
     public Builder setKeptGraphConsumer(GraphConsumer graphConsumer) {
       this.keptGraphConsumer = graphConsumer;
       return self();
     }
 
-    /**
-     * Set a consumer for receiving kept-graph events for the content of the main-dex output.
-     */
+    /** Set a consumer for receiving kept-graph events for the content of the main-dex output. */
     public Builder setMainDexKeptGraphConsumer(GraphConsumer graphConsumer) {
       this.mainDexKeptGraphConsumer = graphConsumer;
       return self();
@@ -497,7 +492,7 @@ public final class R8Command extends BaseCompilerCommand {
         assert verifyNonDexProgramResourceProvider(internalProgramProvider);
         assert internalProgramProvider.getDataResourceProvider() == null;
         return super.addProgramResourceProvider(internalProgramProvider);
-      } else if (allowDexInputToR8) {
+      } else if (enableExperimentalDexInput) {
         return super.addProgramResourceProvider(programProvider);
       } else {
         return super.addProgramResourceProvider(
@@ -566,6 +561,20 @@ public final class R8Command extends BaseCompilerCommand {
     public Builder setEnableIsolatedSplits(boolean enableIsolatedSplits) {
       featureSplitConfigurationBuilder.setEnableIsolatedSplits(enableIsolatedSplits);
       return this;
+    }
+
+    /** Enables experimental/pre-release support for passing DEX input to R8. */
+    @Deprecated
+    public Builder setEnableExperimentalDexInput(boolean enable) {
+      if (getAppBuilder().getProgramResourceProviders().isEmpty()) {
+        this.enableExperimentalDexInput = enable;
+        setIgnoreDexInArchive(enableExperimentalDexInput);
+      } else {
+        Reporter reporter = getReporter();
+        reporter.error(
+            "Invalid attempt to call setEnableExperimentalDexInput after adding program inputs");
+      }
+      return self();
     }
 
     @Deprecated
@@ -793,7 +802,7 @@ public final class R8Command extends BaseCompilerCommand {
         if (getMainDexListConsumer() != null || hasMainDexRules() || hasMainDexList()) {
           reporter.error(
               "R8 does not support main-dex inputs and outputs when compiling to API level "
-                  + AndroidApiLevel.L.getLevel()
+                  + AndroidApiLevel.L.getMajor()
                   + " and above");
         }
       }
@@ -804,10 +813,13 @@ public final class R8Command extends BaseCompilerCommand {
         }
       }
 
-      for (Path file : programFiles) {
-        if (FileUtils.isDexFile(file) && !allowDexInputToR8) {
-          reporter.error(new StringDiagnostic(
-              "R8 does not support compiling DEX inputs", new PathOrigin(file)));
+      if (!enableExperimentalDexInput) {
+        for (Path file : programFiles) {
+          if (FileUtils.isDexFile(file)) {
+            reporter.error(
+                new StringDiagnostic(
+                    "R8 does not support compiling DEX inputs", new PathOrigin(file)));
+          }
         }
       }
       if (getProgramConsumer() instanceof ClassFileConsumer && isMinApiLevelSet()) {
@@ -1136,7 +1148,6 @@ public final class R8Command extends BaseCompilerCommand {
           syntheticProguardRulesConsumer == null
               ? consumer
               : syntheticProguardRulesConsumer.andThen(consumer);
-
     }
 
     // Internal for-testing method to allow proguard options only available for testing.
@@ -1259,7 +1270,7 @@ public final class R8Command extends BaseCompilerCommand {
   /**
    * Parse the R8 command-line.
    *
-   * Parsing will set the supplied options or their default value if they have any.
+   * <p>Parsing will set the supplied options or their default value if they have any.
    *
    * @param args Command-line arguments array.
    * @param origin Origin description of the command-line arguments.
@@ -1272,7 +1283,7 @@ public final class R8Command extends BaseCompilerCommand {
   /**
    * Parse the R8 command-line.
    *
-   * Parsing will set the supplied options or their default value if they have any.
+   * <p>Parsing will set the supplied options or their default value if they have any.
    *
    * @param args Command-line arguments array.
    * @param origin Origin description of the command-line arguments.
@@ -1457,7 +1468,7 @@ public final class R8Command extends BaseCompilerCommand {
   InternalOptions getInternalOptions() {
     InternalOptions internal = new InternalOptions(getMode(), proguardConfiguration, getReporter());
     internal.created = created;
-    assert !internal.testing.allowOutlinerInterfaceArrayArguments;  // Only allow in tests.
+    assert !internal.testing.allowOutlinerInterfaceArrayArguments; // Only allow in tests.
     internal.programConsumer = getProgramConsumer();
     internal.setMinApiLevel(AndroidApiLevel.getAndroidApiLevel(getMinApiLevel()));
     internal.apiModelingOptions().apiDatabasePath = getApiDatabasePath();
@@ -1740,5 +1751,4 @@ public final class R8Command extends BaseCompilerCommand {
                     resourceShrinkerConfiguration.isOptimizedShrinking()))
         .build();
   }
-
 }

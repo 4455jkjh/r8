@@ -137,9 +137,7 @@ public class ProguardKeepRuleModifiers {
     this.allowsPermittedSubclassesRemoval = allowsPermittedSubclassesRemoval;
   }
 
-  /**
-   * Create a new empty builder.
-   */
+  /** Create a new empty builder. */
   public static Builder builder() {
     return new Builder();
   }

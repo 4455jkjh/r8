@@ -808,8 +808,7 @@ public abstract class InterfaceMethodRewriter {
   }
 
   public InterfaceMethodProcessorFacade getPostProcessingDesugaringR8(
-      Predicate<ProgramMethod> isLiveMethod,
-      InterfaceProcessor interfaceProcessor) {
+      Predicate<ProgramMethod> isLiveMethod, InterfaceProcessor interfaceProcessor) {
     return new InterfaceMethodProcessorFacade(appView, interfaceProcessor, isLiveMethod);
   }
 

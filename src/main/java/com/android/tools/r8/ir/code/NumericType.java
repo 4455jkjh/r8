@@ -43,19 +43,19 @@ public enum NumericType {
 
   public static NumericType fromDexType(DexType type) {
     switch (type.descriptor.content[0]) {
-      case 'B':  // byte
+      case 'B': // byte
         return NumericType.BYTE;
-      case 'S':  // short
+      case 'S': // short
         return NumericType.SHORT;
-      case 'C':  // char
+      case 'C': // char
         return NumericType.CHAR;
-      case 'I':  // int
+      case 'I': // int
         return NumericType.INT;
-      case 'F':  // float
+      case 'F': // float
         return NumericType.FLOAT;
-      case 'J':  // long
+      case 'J': // long
         return NumericType.LONG;
-      case 'D':  // double
+      case 'D': // double
         return NumericType.DOUBLE;
       default:
         return null;

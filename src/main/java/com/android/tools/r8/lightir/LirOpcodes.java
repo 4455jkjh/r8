@@ -222,7 +222,7 @@ public interface LirOpcodes {
 
   static String toString(int opcode) {
     switch (opcode) {
-        // case NOP: return "NOP";
+      // case NOP: return "NOP";
       case ACONST_NULL:
         return "ACONST_NULL";
       case ICONST_M1:
@@ -253,15 +253,15 @@ public interface LirOpcodes {
         return "DCONST_0";
       case DCONST_1:
         return "DCONST_1";
-        // case BIPUSH: return "BIPUSH";
-        // case SIPUSH: return "SIPUSH";
+      // case BIPUSH: return "BIPUSH";
+      // case SIPUSH: return "SIPUSH";
       case LDC:
         return "LDC";
-        // case ILOAD: return "ILOAD";
-        // case LLOAD: return "LLOAD";
-        // case FLOAD: return "FLOAD";
-        // case DLOAD: return "DLOAD";
-        // case ALOAD: return "ALOAD";
+      // case ILOAD: return "ILOAD";
+      // case LLOAD: return "LLOAD";
+      // case FLOAD: return "FLOAD";
+      // case DLOAD: return "DLOAD";
+      // case ALOAD: return "ALOAD";
       case IALOAD:
         return "IALOAD";
       case LALOAD:
@@ -278,11 +278,11 @@ public interface LirOpcodes {
         return "CALOAD";
       case SALOAD:
         return "SALOAD";
-        // case ISTORE: return "ISTORE";
-        // case LSTORE: return "LSTORE";
-        // case FSTORE: return "FSTORE";
-        // case DSTORE: return "DSTORE";
-        // case ASTORE: return "ASTORE";
+      // case ISTORE: return "ISTORE";
+      // case LSTORE: return "LSTORE";
+      // case FSTORE: return "FSTORE";
+      // case DSTORE: return "DSTORE";
+      // case ASTORE: return "ASTORE";
       case IASTORE:
         return "IASTORE";
       case LASTORE:
@@ -299,15 +299,15 @@ public interface LirOpcodes {
         return "CASTORE";
       case SASTORE:
         return "SASTORE";
-        // case POP: return "POP";
-        // case POP2: return "POP2";
-        // case DUP: return "DUP";
-        // case DUP_X1: return "DUP_X1";
-        // case DUP_X2: return "DUP_X2";
-        // case DUP2: return "DUP2";
-        // case DUP2_X1: return "DUP2_X1";
-        // case DUP2_X2: return "DUP2_X2";
-        // case SWAP: return "SWAP";
+      // case POP: return "POP";
+      // case POP2: return "POP2";
+      // case DUP: return "DUP";
+      // case DUP_X1: return "DUP_X1";
+      // case DUP_X2: return "DUP_X2";
+      // case DUP2: return "DUP2";
+      // case DUP2_X1: return "DUP2_X1";
+      // case DUP2_X2: return "DUP2_X2";
+      // case SWAP: return "SWAP";
       case IADD:
         return "IADD";
       case LADD:
@@ -380,7 +380,7 @@ public interface LirOpcodes {
         return "IXOR";
       case LXOR:
         return "LXOR";
-        // case IINC: return "IINC";
+      // case IINC: return "IINC";
       case I2L:
         return "I2L";
       case I2F:
@@ -451,11 +451,11 @@ public interface LirOpcodes {
         return "IF_ACMPNE";
       case GOTO:
         return "GOTO";
-        // case JSR: return "JSR";
-        // case RET: return "RET";
+      // case JSR: return "JSR";
+      // case RET: return "RET";
       case TABLESWITCH:
         return "TABLESWITCH";
-        // case LOOKUPSWITCH:
+      // case LOOKUPSWITCH:
       case ARETURN:
         return "ARETURN";
       case RETURN:

@@ -3,9 +3,6 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8;
 
-import static com.android.tools.r8.BaseCompilerCommandParser.LIB_FLAG;
-import static com.android.tools.r8.BaseCompilerCommandParser.MIN_API_FLAG;
-
 import com.android.tools.r8.graph.DexItemFactory;
 import com.android.tools.r8.ir.desugar.desugaredlibrary.DesugaredLibrarySpecification;
 import com.android.tools.r8.ir.desugar.desugaredlibrary.DesugaredLibrarySpecificationParser;
@@ -137,7 +134,7 @@ public class BackportedMethodListCommand {
             "Output result in <file>.",
             (b, arg) -> b.setOutputPath(Paths.get(arg)))
         .option1(
-            MIN_API_FLAG,
+            "--min-api",
             "<number>",
             "Minimum Android API level for the application.",
             (b, arg) -> {
@@ -157,7 +154,7 @@ public class BackportedMethodListCommand {
             "Desugared library configuration (JSON from the configuration).",
             (b, arg) -> b.addDesugaredLibraryConfiguration(StringResource.fromFile(Paths.get(arg))))
         .option1(
-            LIB_FLAG,
+            "--lib",
             "<file>",
             "The compilation SDK library (android.jar).",
             (b, arg) -> b.addLibraryFiles(Paths.get(arg)))
@@ -179,7 +176,7 @@ public class BackportedMethodListCommand {
   public static class Builder {
 
     private final Reporter reporter;
-    private int minApiLevel = AndroidApiLevel.B.getLevel();
+    private int minApiLevel = AndroidApiLevel.B.getMajor();
     private List<StringResource> desugaredLibrarySpecificationResources = new ArrayList<>();
     private final AndroidApp.Builder app;
     private StringConsumer backportedMethodListConsumer;

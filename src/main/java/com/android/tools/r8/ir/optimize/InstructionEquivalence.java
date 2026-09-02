@@ -32,7 +32,7 @@ public class InstructionEquivalence extends Equivalence<Instruction> {
       hash += allocator.getRegisterForValue(instruction.outValue(), instruction.getNumber());
     }
     for (Value inValue : instruction.inValues()) {
-      hash = hash<< 4;
+      hash = hash << 4;
       if (inValue.needsRegister()) {
         hash += allocator.getRegisterForValue(inValue, instruction.getNumber());
       }

@@ -710,8 +710,7 @@ final class InlineCandidateProcessor {
 
       if (user.isIf()) {
         If ifInsn = user.asIf();
-        assert ifInsn.isZeroTest()
-            : "Unexpected usage in non-zero-test IF instruction: " + user;
+        assert ifInsn.isZeroTest() : "Unexpected usage in non-zero-test IF instruction: " + user;
         BasicBlock block = user.getBlock();
         IfType type = ifInsn.getType();
         assert type == IfType.EQ || type == IfType.NE
@@ -1131,7 +1130,6 @@ final class InlineCandidateProcessor {
     indirectUsers.addAll(outValue.uniqueUsers());
     return true;
   }
-
 
   private boolean isEligibleIndirectVirtualMethodCall(
       DexMethod invokedMethod, ProgramMethod singleTarget) {

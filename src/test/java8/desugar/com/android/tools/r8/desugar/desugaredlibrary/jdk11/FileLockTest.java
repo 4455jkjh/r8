@@ -97,7 +97,7 @@ public class FileLockTest extends DesugaredLibraryTestBase {
         .run(
             parameters.getRuntime(),
             TestClass.class,
-            String.valueOf(parameters.getApiLevel().getLevel()))
+            String.valueOf(parameters.getApiLevel().getMajor()))
         .assertSuccessWithOutput(EXPECTED_RESULT);
   }
 

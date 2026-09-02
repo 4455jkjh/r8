@@ -163,7 +163,7 @@ public abstract class RunExamplesJava9Test<B extends BaseCommand.Builder<? exten
             "native-private-interface-methods",
             "com.android.tools.r8.jdk9.privateitf.privateinterfacemethods",
             "PrivateInterfaceMethods")
-        .withMinApiLevel(AndroidApiLevel.N.getLevel())
+        .withMinApiLevel(AndroidApiLevel.N.getMajor())
         .withKeepAll()
         .run();
   }
@@ -176,7 +176,7 @@ public abstract class RunExamplesJava9Test<B extends BaseCommand.Builder<? exten
             "desugared-private-interface-methods",
             "com.android.tools.r8.jdk9.privateitf.privateinterfacemethods",
             "PrivateInterfaceMethods")
-        .withMinApiLevel(AndroidApiLevel.K.getLevel())
+        .withMinApiLevel(AndroidApiLevel.K.getMajor())
         .withKeepAll()
         .withDexCheck(
             dexInspector -> {

@@ -66,7 +66,7 @@ public class DefaultSourceFileWithoutMapOutputTest extends TestBase {
             .addLibraryFiles(ToolHelper.getMostRecentAndroidJar())
             .addProguardConfiguration(
                 ImmutableList.of("-keep class * { <methods>; }"), Origin.unknown())
-            .setMinApiLevel(parameters.getApiLevel().getLevel())
+            .setMinApiLevel(parameters.getApiLevel().getMajor())
             .setOutput(output, OutputMode.DexIndexed)
             .build());
     ProcessResult artResult =

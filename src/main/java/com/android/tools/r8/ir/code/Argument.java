@@ -20,9 +20,7 @@ import com.android.tools.r8.lightir.LirBuilder;
 import com.android.tools.r8.utils.internal.exceptions.Unreachable;
 import java.util.Set;
 
-/**
- * Argument pseudo instruction used to introduce values for all arguments for SSA conversion.
- */
+/** Argument pseudo instruction used to introduce values for all arguments for SSA conversion. */
 public class Argument extends Instruction {
 
   private final int index;

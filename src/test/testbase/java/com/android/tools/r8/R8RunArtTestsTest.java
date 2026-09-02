@@ -1756,7 +1756,7 @@ public abstract class R8RunArtTestsTest extends TestBase {
 
           AndroidApiLevel minSdkVersion = needMinSdkVersion.get(name);
           if (minSdkVersion != null) {
-            builder.setMinApiLevel(minSdkVersion.getLevel());
+            builder.setMinApiLevel(minSdkVersion.getMajor());
             builder.addLibraryFiles(ToolHelper.getAndroidJar(minSdkVersion));
             r8builder.addLibraryFiles(ToolHelper.getAndroidJar(minSdkVersion));
           } else {
@@ -1777,7 +1777,7 @@ public abstract class R8RunArtTestsTest extends TestBase {
                   .setDisableDesugaring(compilationOptions.disableDesugaring);
         AndroidApiLevel minSdkVersion = needMinSdkVersion.get(name);
         if (minSdkVersion != null) {
-          builder.setMinApiLevel(minSdkVersion.getLevel());
+            builder.setMinApiLevel(minSdkVersion.getMajor());
           builder.addLibraryFiles(ToolHelper.getAndroidJar(minSdkVersion));
         } else {
           builder
@@ -1810,7 +1810,7 @@ public abstract class R8RunArtTestsTest extends TestBase {
           } else {
             AndroidApiLevel minSdkVersion = needMinSdkVersion.get(name);
             if (minSdkVersion != null) {
-              builder.setMinApiLevel(minSdkVersion.getLevel());
+              builder.setMinApiLevel(minSdkVersion.getMajor());
               ToolHelper.addFilteredAndroidJar(builder, minSdkVersion);
             } else {
               ToolHelper.addFilteredAndroidJar(builder, AndroidApiLevel.getDefault());

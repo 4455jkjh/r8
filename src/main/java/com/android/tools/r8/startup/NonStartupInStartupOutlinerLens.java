@@ -47,6 +47,7 @@ public class NonStartupInStartupOutlinerLens extends NestedGraphLens {
     public synchronized void recordMove(ProgramMethod from, ProgramMethod to) {
       newMethodSignatures.put(from.getReference(), to.getReference());
     }
+
     public NonStartupInStartupOutlinerLens build(
         AppView<? extends AppInfoWithClassHierarchy> appView) {
       return new NonStartupInStartupOutlinerLens(appView, newMethodSignatures);

@@ -36,7 +36,7 @@ import java.util.function.Consumer;
 
 public class ObjectToOffsetMapping {
 
-  private final static int NOT_FOUND = -1;
+  private static final int NOT_FOUND = -1;
 
   private final int lazyDexStringsCount;
   private final AppView<?> appView;
@@ -275,10 +275,11 @@ public class ObjectToOffsetMapping {
    */
   private static class ProgramClassDepthsMemoized {
 
-    private final static int UNKNOWN_DEPTH = -1;
+    private static final int UNKNOWN_DEPTH = -1;
 
     private final AppInfo appInfo;
-    private final Reference2IntMap<DexProgramClass> depthOfClasses = new Reference2IntOpenHashMap<>();
+    private final Reference2IntMap<DexProgramClass> depthOfClasses =
+        new Reference2IntOpenHashMap<>();
 
     ProgramClassDepthsMemoized(AppInfo appInfo) {
       this.appInfo = appInfo;

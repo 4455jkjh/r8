@@ -17,8 +17,7 @@ public final class Version {
   // Therefore, changing this field could break our release scripts.
   public static final String LABEL = "9.5.11-dev";
 
-  private Version() {
-  }
+  private Version() {}
 
   /** Returns current R8 version (with additional info) as a string. */
   public static String getVersionString() {

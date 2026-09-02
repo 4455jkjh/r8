@@ -282,7 +282,7 @@ public final class KotlinClassMetadataReader {
     }
     DexValueArray intArrayValue = v.asDexValueArray();
     DexValue[] values = intArrayValue.getValues();
-    int[] result = new int [values.length];
+    int[] result = new int[values.length];
     for (int i = 0; i < values.length; i++) {
       result[i] = (Integer) values[i].getBoxedValue();
     }
@@ -295,7 +295,7 @@ public final class KotlinClassMetadataReader {
     }
     DexValueArray stringArrayValue = v.asDexValueArray();
     DexValue[] values = stringArrayValue.getValues();
-    String[] result = new String [values.length];
+    String[] result = new String[values.length];
     for (int i = 0; i < values.length; i++) {
       result[i] = getUnboxedString(values[i], elementName + "[" + i + "]");
     }

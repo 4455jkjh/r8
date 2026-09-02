@@ -56,12 +56,7 @@ public class MainDexInfo {
   private boolean tracedMethodRootsCleared = false;
 
   private MainDexInfo(Set<DexType> classList) {
-    this(
-        classList,
-        Collections.emptySet(),
-        Collections.emptySet(),
-        Collections.emptySet(),
-        false);
+    this(classList, Collections.emptySet(), Collections.emptySet(), Collections.emptySet(), false);
   }
 
   private MainDexInfo(

@@ -476,8 +476,7 @@ public class AtomicFieldUpdaterInstrumentor {
   }
 
   private Map<DexField, DexField> addOffsetFields(
-      Map<DexProgramClass, ClassWithAtomicsInfo> classesWithAtomics,
-      Timing timing)
+      Map<DexProgramClass, ClassWithAtomicsInfo> classesWithAtomics, Timing timing)
       throws ExecutionException {
     ConcurrentHashMap<DexField, DexField> offsetFields = new ConcurrentHashMap<>();
     ThreadUtils.processItemsThatMatches(
@@ -485,10 +484,7 @@ public class AtomicFieldUpdaterInstrumentor {
         Predicates.alwaysTrue(),
         (clazz, threadTiming) ->
             addOffsetFieldsToClass(
-                clazz,
-                classesWithAtomics.get(clazz),
-                offsetFields,
-                threadTiming),
+                clazz, classesWithAtomics.get(clazz), offsetFields, threadTiming),
         appView.options(),
         service,
         timing,

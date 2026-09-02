@@ -557,10 +557,7 @@ public class AtomicFieldUpdaterOptimizer extends CodeRewriterPass<AppInfoWithCla
           new InvokeStatic(
               backportedGetAndSet,
               invoke.outValue(),
-              ImmutableList.of(
-                  resolvedHolder.value,
-                  offset.outValue(),
-                  newValueValue));
+              ImmutableList.of(resolvedHolder.value, offset.outValue(), newValueValue));
       context
           .methodProcessor
           .getEventConsumer()

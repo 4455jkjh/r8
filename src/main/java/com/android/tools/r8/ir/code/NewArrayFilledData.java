@@ -86,9 +86,7 @@ public class NewArrayFilledData extends Instruction {
       return false;
     }
     NewArrayFilledData o = other.asNewArrayFilledData();
-    return o.element_width == element_width
-        && o.size == size
-        && Arrays.equals(o.data, data);
+    return o.element_width == element_width && o.size == size && Arrays.equals(o.data, data);
   }
 
   @Override

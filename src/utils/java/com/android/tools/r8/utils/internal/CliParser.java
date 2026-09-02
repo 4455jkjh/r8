@@ -23,7 +23,7 @@ public class CliParser<B> {
     if (unknownOptionPassthrough) {
       this.base.positional(
           (b, arg) -> {
-            if (arg.trim().isEmpty()) {
+            if (arg.isBlank()) {
               return;
             }
             if (originalPositionalHandler != null) {
@@ -34,7 +34,7 @@ public class CliParser<B> {
       // Intercept '--<something>' before the positional handler.
       this.base.positional(
           (b, arg) -> {
-            if (arg.trim().isEmpty()) {
+            if (arg.isBlank()) {
               return;
             }
             if (arg.startsWith("-")) {
@@ -334,18 +334,17 @@ public class CliParser<B> {
   }
 
   private void checkParam(String param) {
-    assert param.startsWith("<") && param.endsWith(">") : param + " is not surrounded by <>.";
-    assert param.length() > 2 : "parameter label content is empty: " + param;
+    assert !param.isBlank() : "parameter label content is empty: " + param;
   }
 
   private void checkSuffixLabel(String suffixLabel) {
-    assert !suffixLabel.isEmpty() : "suffix label is empty.";
+    assert !suffixLabel.isBlank() : "suffix label is empty.";
   }
 
   private void checkDescription(String description) {
     assert !description.contains("\n")
         : "descriptions should rely on automatic wrapping: " + description;
-    assert !description.trim().isEmpty() : "description is empty.";
+    assert !description.isBlank() : "description is empty.";
     assert description.endsWith(".") : "description doesn't end with '.': " + description;
   }
 }

@@ -119,7 +119,7 @@ public class GenerateApiAmendments extends TestBase {
 
   /** See {@link com.android.tools.r8.apimodel.ApiAmendmentsParser} for the format. */
   private static String formatApiClass(ClassReference classReference, AndroidApiLevel apiLevel) {
-    return "class " + classReference.getDescriptor() + " " + apiLevel.getLevel();
+    return "class " + classReference.getDescriptor() + " " + apiLevel.getMajor();
   }
 
   /** See {@link com.android.tools.r8.apimodel.ApiAmendmentsParser} for the format. */
@@ -127,14 +127,14 @@ public class GenerateApiAmendments extends TestBase {
     String holder = methodReference.getHolderClass().getDescriptor();
     String methodName = methodReference.getMethodName();
     String descriptor = methodReference.getMethodDescriptor();
-    return "method " + holder + " " + methodName + " " + descriptor + " " + apiLevel.getLevel();
+    return "method " + holder + " " + methodName + " " + descriptor + " " + apiLevel.getMajor();
   }
 
   /** See {@link com.android.tools.r8.apimodel.ApiAmendmentsParser} for the format. */
   private static String formatApiField(FieldReference fieldReference, AndroidApiLevel apiLevel) {
     String holder = fieldReference.getHolderClass().getDescriptor();
     String name = fieldReference.getFieldName();
-    return "field " + holder + " " + name + " " + apiLevel.getLevel();
+    return "field " + holder + " " + name + " " + apiLevel.getMajor();
   }
 
   private static List<String> generateJarHiddenLines() throws IOException {

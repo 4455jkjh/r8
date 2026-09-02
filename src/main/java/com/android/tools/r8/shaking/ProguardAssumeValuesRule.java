@@ -71,9 +71,7 @@ public class ProguardAssumeValuesRule extends ProguardConfigurationRule {
         memberRules);
   }
 
-  /**
-   * Create a new empty builder.
-   */
+  /** Create a new empty builder. */
   public static Builder builder() {
     return new Builder();
   }

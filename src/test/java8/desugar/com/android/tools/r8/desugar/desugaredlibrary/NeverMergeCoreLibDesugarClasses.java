@@ -80,7 +80,7 @@ public class NeverMergeCoreLibDesugarClasses extends DesugaredLibraryTestBase {
 
   @Test
   public void testDesugaredCoreLibrary() throws Exception {
-    Assume.assumeTrue(parameters.getApiLevel().getLevel() < AndroidApiLevel.O.getLevel());
+    Assume.assumeTrue(parameters.getApiLevel().getMajor() < AndroidApiLevel.O.getMajor());
     try {
       Path input =
           testForL8(parameters.getApiLevel())
@@ -113,7 +113,7 @@ public class NeverMergeCoreLibDesugarClasses extends DesugaredLibraryTestBase {
   @Test
   public void testTestCodeRuns() throws Exception {
     // j$.util.Function is not present in recent APIs.
-    Assume.assumeTrue(parameters.getApiLevel().getLevel() < AndroidApiLevel.N.getLevel());
+    Assume.assumeTrue(parameters.getApiLevel().getMajor() < AndroidApiLevel.N.getMajor());
     testForDesugaredLibrary(parameters, libraryDesugaringSpecification, compilationSpecification)
         .addInnerClasses(getClass())
         .run(

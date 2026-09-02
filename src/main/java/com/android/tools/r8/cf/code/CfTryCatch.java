@@ -64,10 +64,7 @@ public class CfTryCatch {
   }
 
   public static CfTryCatch fromBuilder(
-      CfLabel start,
-      CfLabel end,
-      CatchHandlers<BasicBlock> handlers,
-      CfBuilder builder) {
+      CfLabel start, CfLabel end, CatchHandlers<BasicBlock> handlers, CfBuilder builder) {
     List<DexType> guards = handlers.getGuards();
     ArrayList<CfLabel> targets = new ArrayList<>(handlers.getAllTargets().size());
     for (BasicBlock block : handlers.getAllTargets()) {

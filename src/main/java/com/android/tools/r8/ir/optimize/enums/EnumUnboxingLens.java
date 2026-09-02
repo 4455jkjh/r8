@@ -4,7 +4,7 @@
 
 package com.android.tools.r8.ir.optimize.enums;
 
-import static com.android.tools.r8.ir.optimize.enums.EnumUnboxerImpl.unboxedIntToOrdinal;
+import static com.android.tools.r8.ir.optimize.enums.EnumUnboxer.unboxedIntToOrdinal;
 
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.DexField;
@@ -104,9 +104,7 @@ public class EnumUnboxingLens extends NestedGraphLensWithCustomLensCodeRewriter 
   }
 
   public DexMethod lookupRefinedDispatchMethod(
-      DexMethod method,
-      AbstractValue unboxedEnumValue,
-      DexType enumType) {
+      DexMethod method, AbstractValue unboxedEnumValue, DexType enumType) {
     DexMethod enumMethod = method.withHolder(enumType, dexItemFactory());
     DexMethod rewrittenEnumMethod = methodMap.apply(enumMethod);
     if (rewrittenEnumMethod == null) {

@@ -10,7 +10,10 @@ import java.nio.file.Path;
 
 public interface ProguardConfigurationSource {
   String get() throws IOException;
+
   Path getBaseDirectory();
+
   String getName();
+
   Origin getOrigin();
 }

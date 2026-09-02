@@ -134,9 +134,9 @@ public class Sub extends ArithmeticBinop {
   }
 
   boolean negativeFitsInDexInstruction(Value value) {
-    return type == NumericType.INT &&
-        value.isConstant() &&
-        value.getConstInstruction().asConstNumber().negativeIs16Bit();
+    return type == NumericType.INT
+        && value.isConstant()
+        && value.getConstInstruction().asConstNumber().negativeIs16Bit();
   }
 
   // This is overridden to give the correct value when adding the negative constant.

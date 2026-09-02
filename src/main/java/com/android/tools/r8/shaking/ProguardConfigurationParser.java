@@ -68,10 +68,8 @@ public class ProguardConfigurationParser {
   public static final String FLATTEN_PACKAGE_HIERARCHY = "flattenpackagehierarchy";
   public static final String REPACKAGE_CLASSES = "repackageclasses";
 
-  private static final List<String> IGNORED_SINGLE_ARG_OPTIONS = ImmutableList.of(
-      "protomapping",
-      "target",
-      "maximuminlinedcodelength");
+  private static final List<String> IGNORED_SINGLE_ARG_OPTIONS =
+      ImmutableList.of("protomapping", "target", "maximuminlinedcodelength");
 
   private static final List<String> IGNORED_OPTIONAL_SINGLE_ARG_OPTIONS =
       ImmutableList.of("runtype", "laststageoutput");
@@ -105,12 +103,14 @@ public class ProguardConfigurationParser {
           "floggerForInjectedClassNameObfuscation",
           "inlinestaticmethodsthatloadclass",
           "inlinesyntheticaccessor",
+          "keepresourcexmlelements",
           // TODO(b/37137994): -outjars should be reported as errors, not just as warnings!
           "outjars");
 
-  private static final List<String> WARNED_OPTIONAL_SINGLE_ARG_OPTIONS = ImmutableList.of(
-      // TODO(b/121340442): we may support this later.
-      "dump");
+  private static final List<String> WARNED_OPTIONAL_SINGLE_ARG_OPTIONS =
+      ImmutableList.of(
+          // TODO(b/121340442): we may support this later.
+          "dump");
 
   private static final List<String> WARNED_FLAG_OPTIONS =
       ImmutableList.of("addconfigurationdebugging", "useuniqueclassmembernames");
@@ -275,8 +275,8 @@ public class ProguardConfigurationParser {
       try {
         new ProguardConfigurationSourceParser(source).parse();
       } catch (IOException e) {
-        reporter.error(new StringDiagnostic("Failed to read file: " + e.getMessage(),
-            source.getOrigin()));
+        reporter.error(
+            new StringDiagnostic("Failed to read file: " + e.getMessage(), source.getOrigin()));
       } catch (AbortException e) {
         // Continue parsing and report all errors in the end.
       }
@@ -437,8 +437,9 @@ public class ProguardConfigurationParser {
         skipWhitespace();
         Integer expectedOptimizationPasses = acceptInteger();
         if (expectedOptimizationPasses == null) {
-          throw reporter.fatalError(new StringDiagnostic(
-              "Missing n of \"-optimizationpasses n\"", origin, getPosition(optionStart)));
+          throw reporter.fatalError(
+              new StringDiagnostic(
+                  "Missing n of \"-optimizationpasses n\"", origin, getPosition(optionStart)));
         }
         configurationConsumer.addIgnoredOption("optimizationpasses", this, optionStart);
         infoIgnoringOptions("optimizationpasses", optionStart);
@@ -734,8 +735,11 @@ public class ProguardConfigurationParser {
         if (option == null) {
           option = Iterables.find(WARNED_SINGLE_ARG_OPTIONS, this::skipOptionWithSingleArg, null);
           if (option == null) {
-            option = Iterables.find(
-                WARNED_OPTIONAL_SINGLE_ARG_OPTIONS, this::skipOptionWithOptionalSingleArg, null);
+            option =
+                Iterables.find(
+                    WARNED_OPTIONAL_SINGLE_ARG_OPTIONS,
+                    this::skipOptionWithOptionalSingleArg,
+                    null);
             if (option == null) {
               return false;
             }
@@ -909,9 +913,8 @@ public class ProguardConfigurationParser {
 
     @SuppressWarnings("NonCanonicalType")
     private ProguardKeepRule parseKeepRule(Position start) {
-      ProguardKeepRule.Builder keepRuleBuilder = ProguardKeepRule.builder()
-          .setOrigin(origin)
-          .setStart(start);
+      ProguardKeepRule.Builder keepRuleBuilder =
+          ProguardKeepRule.builder().setOrigin(origin).setStart(start);
       parseRuleTypeAndModifiers(keepRuleBuilder);
       parseClassSpec(keepRuleBuilder);
       Position end = getPosition();
@@ -953,9 +956,8 @@ public class ProguardConfigurationParser {
     }
 
     private ProguardIfRule parseIfRule(TextPosition optionStart) {
-      ProguardIfRule.Builder ifRuleBuilder = ProguardIfRule.builder()
-          .setOrigin(origin)
-          .setStart(optionStart);
+      ProguardIfRule.Builder ifRuleBuilder =
+          ProguardIfRule.builder().setOrigin(origin).setStart(optionStart);
       parseClassSpec(ifRuleBuilder);
 
       // Required a subsequent keep rule.
@@ -971,8 +973,9 @@ public class ProguardConfigurationParser {
         verifyAndLinkBackReferences(ifRule.getWildcards());
         return ifRule;
       }
-      throw reporter.fatalError(new StringDiagnostic(
-          "Expecting '-keep' option after '-if' option.", origin, getPosition(optionStart)));
+      throw reporter.fatalError(
+          new StringDiagnostic(
+              "Expecting '-keep' option after '-if' option.", origin, getPosition(optionStart)));
     }
 
     private boolean parseMaximumRemovedAndroidLogLevelRule(TextPosition optionStart) {
@@ -987,14 +990,14 @@ public class ProguardConfigurationParser {
         throw parseError("Expected integer greater than or equal to 1", getPosition());
       }
       if (maxRemovedAndroidLogLevel == null) {
-          String logLevelName = acceptString();
-          if (logLevelName == null) {
-            throw parseError("Expected log level", getPosition());
-          }
-          maxRemovedAndroidLogLevel = logLevelNames.get(logLevelName);
-          if (maxRemovedAndroidLogLevel == null) {
-            throw parseError("Unsupported log level", getPosition());
-          }
+        String logLevelName = acceptString();
+        if (logLevelName == null) {
+          throw parseError("Expected log level", getPosition());
+        }
+        maxRemovedAndroidLogLevel = logLevelNames.get(logLevelName);
+        if (maxRemovedAndroidLogLevel == null) {
+          throw parseError("Unsupported log level", getPosition());
+        }
       }
       MaximumRemovedAndroidLogLevelRule.Builder builder =
           MaximumRemovedAndroidLogLevelRule.builder()
@@ -1036,10 +1039,16 @@ public class ProguardConfigurationParser {
           backReferenceStarted = true;
           BackReference backReference = wildcard.asBackReference();
           if (patterns.size() < backReference.referenceIndex) {
-            throw reporter.fatalError(new StringDiagnostic(
-                "Wildcard <" + backReference.referenceIndex + "> is invalid "
-                    + "(only seen " + patterns.size() + " at this point).",
-                origin, getPosition()));
+            throw reporter.fatalError(
+                new StringDiagnostic(
+                    "Wildcard <"
+                        + backReference.referenceIndex
+                        + "> is invalid "
+                        + "(only seen "
+                        + patterns.size()
+                        + " at this point).",
+                    origin,
+                    getPosition()));
           }
           ProguardWildcard.Pattern referencedPattern =
               patterns.get(backReference.referenceIndex - 1);
@@ -1305,8 +1314,8 @@ public class ProguardConfigurationParser {
         return;
       }
       classSpecificationBuilder.addInheritanceAnnotations(parseAnnotationList());
-      classSpecificationBuilder.setInheritanceClassName(ProguardTypeMatcher.create(parseClassName(),
-          ClassOrType.CLASS, dexItemFactory));
+      classSpecificationBuilder.setInheritanceClassName(
+          ProguardTypeMatcher.create(parseClassName(), ClassOrType.CLASS, dexItemFactory));
       captureState(inheritanceClassNameEnd);
     }
 
@@ -1582,11 +1591,15 @@ public class ProguardConfigurationParser {
         return;
       }
       if (pattern.getStringPattern().contains("<")) {
-        throw parseError("Unexpected character '<' in method name. "
-            + "The character '<' is only allowed in the method name '<init>'.", position);
+        throw parseError(
+            "Unexpected character '<' in method name. "
+                + "The character '<' is only allowed in the method name '<init>'.",
+            position);
       } else if (pattern.getStringPattern().contains(">")) {
-        throw parseError("Unexpected character '>' in method name. "
-            + "The character '>' is only allowed in the method name '<init>'.", position);
+        throw parseError(
+            "Unexpected character '>' in method name. "
+                + "The character '>' is only allowed in the method name '<init>'.",
+            position);
       }
     }
 
@@ -1600,10 +1613,11 @@ public class ProguardConfigurationParser {
         return arguments;
       }
       if (acceptString("...")) {
-        arguments.add(ProguardTypeMatcher.create(
-            IdentifierPatternWithWildcards.withoutWildcards("..."),
-            ClassOrType.TYPE,
-            dexItemFactory));
+        arguments.add(
+            ProguardTypeMatcher.create(
+                IdentifierPatternWithWildcards.withoutWildcards("..."),
+                ClassOrType.TYPE,
+                dexItemFactory));
       } else {
         int i = 0;
         for (IdentifierPatternWithWildcards identifierPatternWithWildcards = parseClassName();
@@ -1615,8 +1629,9 @@ public class ProguardConfigurationParser {
           if (precondition != null) {
             ruleBuilder.setPrecondition(i, precondition);
           }
-          arguments.add(ProguardTypeMatcher.create(
-              identifierPatternWithWildcards, ClassOrType.TYPE, dexItemFactory));
+          arguments.add(
+              ProguardTypeMatcher.create(
+                  identifierPatternWithWildcards, ClassOrType.TYPE, dexItemFactory));
           if (precondition != null) {
             skipWhitespace();
           }
@@ -1629,7 +1644,7 @@ public class ProguardConfigurationParser {
 
     private String replaceSystemPropertyReferences(String fileName) {
       StringBuilder result = new StringBuilder();
-      int copied = 0;  // Last endIndex for substring.
+      int copied = 0; // Last endIndex for substring.
       int start = -1;
       for (int i = 0; i < fileName.length(); i++) {
         if (fileName.charAt(i) == '<') {
@@ -1689,11 +1704,13 @@ public class ProguardConfigurationParser {
       skipWhitespace();
       final char quote = acceptQuoteIfPresent();
       final boolean quoted = isQuote(quote);
-      String fileName = acceptString(character ->
-          (!quoted || character != quote)
-              && (quoted || character != File.pathSeparatorChar || !stopAfterPathSeparator)
-              && (quoted || !Character.isWhitespace(character))
-              && (quoted ||  character != '('));
+      String fileName =
+          acceptString(
+              character ->
+                  (!quoted || character != quote)
+                      && (quoted || character != File.pathSeparatorChar || !stopAfterPathSeparator)
+                      && (quoted || !Character.isWhitespace(character))
+                      && (quoted || character != '('));
       if (fileName == null) {
         throw parseError("File name expected", start);
       }
@@ -1746,9 +1763,13 @@ public class ProguardConfigurationParser {
     private String parseFileFilter() {
       TextPosition start = getPosition();
       skipWhitespace();
-      String fileFilter = acceptString(character ->
-          character != ',' && character != ';' && character != ')'
-              && !Character.isWhitespace(character));
+      String fileFilter =
+          acceptString(
+              character ->
+                  character != ','
+                      && character != ';'
+                      && character != ')'
+                      && !Character.isWhitespace(character));
       if (fileFilter == null) {
         throw parseError("file filter expected", start);
       }
@@ -1756,9 +1777,8 @@ public class ProguardConfigurationParser {
     }
 
     private ProguardAssumeNoSideEffectRule parseAssumeNoSideEffectsRule(Position start) {
-      ProguardAssumeNoSideEffectRule.Builder builder = ProguardAssumeNoSideEffectRule.builder()
-          .setOrigin(origin)
-          .setStart(start);
+      ProguardAssumeNoSideEffectRule.Builder builder =
+          ProguardAssumeNoSideEffectRule.builder().setOrigin(origin).setStart(start);
       parseClassSpec(builder, true);
       Position end = getPosition();
       builder.setSource(getSourceSnippet(contents, start, end));
@@ -1777,9 +1797,8 @@ public class ProguardConfigurationParser {
     }
 
     private ProguardAssumeValuesRule parseAssumeValuesRule(Position start) {
-      ProguardAssumeValuesRule.Builder builder = ProguardAssumeValuesRule.builder()
-          .setOrigin(origin)
-          .setStart(start);
+      ProguardAssumeValuesRule.Builder builder =
+          ProguardAssumeValuesRule.builder().setOrigin(origin).setStart(start);
       parseClassSpec(builder, true);
       Position end = getPosition();
       builder.setSource(getSourceSnippet(contents, start, end));
@@ -2123,17 +2142,20 @@ public class ProguardConfigurationParser {
             try {
               int backreference = Integer.parseUnsignedInt(currentBackreference.toString());
               if (backreference <= 0) {
-                throw reporter.fatalError(new StringDiagnostic(
-                    "Wildcard <" + backreference + "> is invalid.", origin, getPosition()));
+                throw reporter.fatalError(
+                    new StringDiagnostic(
+                        "Wildcard <" + backreference + "> is invalid.", origin, getPosition()));
               }
               wildcardsCollector.add(new BackReference(backreference));
               currentBackreference = null;
               end += Character.charCount(current);
               continue;
             } catch (NumberFormatException e) {
-              throw reporter.fatalError(new StringDiagnostic(
-                  "Wildcard <" + currentBackreference.toString() + "> is invalid.",
-                  origin, getPosition()));
+              throw reporter.fatalError(
+                  new StringDiagnostic(
+                      "Wildcard <" + currentBackreference.toString() + "> is invalid.",
+                      origin,
+                      getPosition()));
             }
           } else if (('0' <= current && current <= '9')
               // Only collect integer literal for the back reference.
@@ -2142,8 +2164,9 @@ public class ProguardConfigurationParser {
             end += Character.charCount(current);
             continue;
           } else if (kind == IdentifierType.CLASS_NAME) {
-            throw reporter.fatalError(new StringDiagnostic(
-                "Use of generics not allowed for java type.", origin, getPosition()));
+            throw reporter.fatalError(
+                new StringDiagnostic(
+                    "Use of generics not allowed for java type.", origin, getPosition()));
           } else {
             // If not parsing a class name allow identifiers including <'s by canceling the
             // collection of the back reference.
@@ -2419,14 +2442,13 @@ public class ProguardConfigurationParser {
 
     private String snippetForPosition() {
       // TODO(ager): really should deal with \r as well to get column right.
-      String[] lines = contents.split("\n", -1);  // -1 to get trailing empty lines represented.
+      String[] lines = contents.split("\n", -1); // -1 to get trailing empty lines represented.
       int remaining = position;
       for (int lineNumber = 0; lineNumber < lines.length; lineNumber++) {
         String line = lines[lineNumber];
         if (remaining <= line.length() || lineNumber == lines.length - 1) {
           String arrow = CharBuffer.allocate(remaining).toString().replace('\0', ' ') + '^';
-          return name + ":" + (lineNumber + 1) + ":" + (remaining + 1) + "\n" + line
-              + '\n' + arrow;
+          return name + ":" + (lineNumber + 1) + ":" + (remaining + 1) + "\n" + line + '\n' + arrow;
         }
         remaining -= (line.length() + 1); // Include newline.
       }
@@ -2435,11 +2457,18 @@ public class ProguardConfigurationParser {
 
     private String snippetForPosition(TextPosition start) {
       // TODO(ager): really should deal with \r as well to get column right.
-      String[] lines = contents.split("\n", -1);  // -1 to get trailing empty lines represented.
+      String[] lines = contents.split("\n", -1); // -1 to get trailing empty lines represented.
       String line = lines[start.getLine() - 1];
       String arrow = CharBuffer.allocate(start.getColumn() - 1).toString().replace('\0', ' ') + '^';
-      return name + ":" + (start.getLine() + 1) + ":" + start.getColumn() + "\n" + line
-          + '\n' + arrow;
+      return name
+          + ":"
+          + (start.getLine() + 1)
+          + ":"
+          + start.getColumn()
+          + "\n"
+          + line
+          + '\n'
+          + arrow;
     }
 
     private RuntimeException parseError(String message) {
@@ -2455,23 +2484,24 @@ public class ProguardConfigurationParser {
     }
 
     private void infoIgnoringOptions(String optionName, TextPosition start) {
-      reporter.info(new StringDiagnostic(
-          "Ignoring option: -" + optionName, origin, getPosition(start)));
+      reporter.info(
+          new StringDiagnostic("Ignoring option: -" + optionName, origin, getPosition(start)));
     }
 
     private void warnIgnoringOptions(String optionName, TextPosition start) {
-      reporter.warning(new StringDiagnostic(
-          "Ignoring option: -" + optionName, origin, getPosition(start)));
+      reporter.warning(
+          new StringDiagnostic("Ignoring option: -" + optionName, origin, getPosition(start)));
     }
 
     private void warnOverridingOptions(String optionName, String victim, TextPosition start) {
-      reporter.warning(new StringDiagnostic(
-          "Option -" + optionName + " overrides -" + victim, origin, getPosition(start)));
+      reporter.warning(
+          new StringDiagnostic(
+              "Option -" + optionName + " overrides -" + victim, origin, getPosition(start)));
     }
 
     private void infoIgnoringModifier(String modifier, TextPosition start) {
-      reporter.info(new StringDiagnostic(
-          "Ignoring modifier: " + modifier, origin, getPosition(start)));
+      reporter.info(
+          new StringDiagnostic("Ignoring modifier: " + modifier, origin, getPosition(start)));
     }
 
     Path getBaseDirectory() {
@@ -2507,8 +2537,10 @@ public class ProguardConfigurationParser {
 
   private String getTextSourceSnippet(String source, TextPosition start, TextPosition end) {
     long length = end.getOffset() - start.getOffset();
-    if (start.getOffset() < 0 || end.getOffset() < 0
-        || start.getOffset() >= source.length() || end.getOffset() > source.length()
+    if (start.getOffset() < 0
+        || end.getOffset() < 0
+        || start.getOffset() >= source.length()
+        || end.getOffset() > source.length()
         || length <= 0) {
       return null;
     } else {
@@ -2538,8 +2570,7 @@ public class ProguardConfigurationParser {
     }
 
     boolean hasBackreference() {
-      return !wildcards.isEmpty()
-          && wildcards.stream().anyMatch(ProguardWildcard::isBackReference);
+      return !wildcards.isEmpty() && wildcards.stream().anyMatch(ProguardWildcard::isBackReference);
     }
 
     boolean hasUnusualCharacters() {

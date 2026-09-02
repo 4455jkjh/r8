@@ -74,8 +74,8 @@ public class PrintClassList {
       System.out.println(map.originalNameOf(field));
     } else {
       // Detour via Signature to get the same formatting.
-      FieldSignature signature = new FieldSignature(field.name.toSourceString(),
-          field.type.toSourceString());
+      FieldSignature signature =
+          new FieldSignature(field.name.toSourceString(), field.type.toSourceString());
       System.out.println(field.holder.toSourceString() + " " + signature);
     }
   }

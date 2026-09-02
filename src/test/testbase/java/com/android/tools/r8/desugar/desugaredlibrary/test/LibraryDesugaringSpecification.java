@@ -39,14 +39,14 @@ import org.junit.rules.TemporaryFolder;
 public class LibraryDesugaringSpecification {
 
   public static Descriptor JDK8_DESCRIPTOR =
-      new Descriptor(24, TestBase.apiLevelWithJavaTime().getLevel(), -1, 26, 24);
+      new Descriptor(24, TestBase.apiLevelWithJavaTime().getMajor(), -1, 26, 24);
   public static Descriptor JDK11_DESCRIPTOR =
-      new Descriptor(24, TestBase.apiLevelWithJavaTime().getLevel(), -1, 10000, -1);
+      new Descriptor(24, TestBase.apiLevelWithJavaTime().getMajor(), -1, 10000, -1);
   public static Descriptor EMPTY_DESCRIPTOR_24 = new Descriptor(-1, -1, -1, 24, -1);
   public static Descriptor JDK11_PATH_DESCRIPTOR =
-      new Descriptor(24, TestBase.apiLevelWithJavaTime().getLevel(), 26, 10000, -1);
+      new Descriptor(24, TestBase.apiLevelWithJavaTime().getMajor(), 26, 10000, -1);
   public static Descriptor JDK11_LEGACY_DESCRIPTOR =
-      new Descriptor(24, TestBase.apiLevelWithJavaTime().getLevel(), -1, 32, 24);
+      new Descriptor(24, TestBase.apiLevelWithJavaTime().getMajor(), -1, 32, 24);
 
   private static class Descriptor {
 
@@ -377,11 +377,11 @@ public class LibraryDesugaringSpecification {
   }
 
   public boolean hasEmulatedInterfaceDesugaring(TestParameters parameters) {
-    return parameters.getApiLevel().getLevel() < descriptor.getEmulatedInterfaceDesugaring();
+    return parameters.getApiLevel().getMajor() < descriptor.getEmulatedInterfaceDesugaring();
   }
 
   public boolean hasCompleteTimeDesugaring(TestParameters parameters) {
-    return parameters.getApiLevel().getLevel() < descriptor.getTimeDesugaring();
+    return parameters.getApiLevel().getMajor() < descriptor.getTimeDesugaring();
   }
 
   public boolean hasInstantSourceDesugaring(TestParameters parameters) {
@@ -406,11 +406,11 @@ public class LibraryDesugaringSpecification {
   }
 
   public boolean hasNioFileDesugaring(AndroidApiLevel apiLevel) {
-    return apiLevel.getLevel() < descriptor.getNioFileDesugaring();
+    return apiLevel.getMajor() < descriptor.getNioFileDesugaring();
   }
 
   public boolean hasNioChannelDesugaring(TestParameters parameters) {
-    return hasNioFileDesugaring(parameters) && parameters.getApiLevel().getLevel() < 24;
+    return hasNioFileDesugaring(parameters) && parameters.getApiLevel().getMajor() < 24;
   }
 
   public boolean usesPlatformFileSystem(TestParameters parameters) {
@@ -422,11 +422,11 @@ public class LibraryDesugaringSpecification {
   }
 
   public boolean hasAnyDesugaring(AndroidApiLevel apiLevel) {
-    return apiLevel.getLevel() < descriptor.getAnyDesugaring();
+    return apiLevel.getMajor() < descriptor.getAnyDesugaring();
   }
 
   public boolean hasJDollarFunction(TestParameters parameters) {
-    return parameters.getApiLevel().getLevel() < descriptor.getJDollarFunction();
+    return parameters.getApiLevel().getMajor() < descriptor.getJDollarFunction();
   }
 
   public String functionPrefix(TestParameters parameters) {

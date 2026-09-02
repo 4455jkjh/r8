@@ -3430,4 +3430,14 @@ public class ProguardConfigurationParserTest extends TestBase {
     assertTrue(handler.errors.isEmpty());
     checkDiagnostics(handler.warnings, null, 1, 1, "Ignoring option: -ar_flag");
   }
+
+  @Test
+  public void testParseKeepResourceXmlElements() {
+    parser.parse(
+        createConfigurationForTesting(
+            "-keepresourcexmlelements manifest/application/meta-data@value=GlideModule"));
+    assertTrue(handler.infos.isEmpty());
+    assertTrue(handler.errors.isEmpty());
+    checkDiagnostics(handler.warnings, null, 1, 1, "Ignoring option: -keepresourcexmlelements");
+  }
 }

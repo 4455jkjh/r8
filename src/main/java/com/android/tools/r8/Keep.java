@@ -4,6 +4,4 @@
 package com.android.tools.r8;
 
 @Keep
-public @interface Keep {
-
-}
+public @interface Keep {}

@@ -76,7 +76,7 @@ public class LibraryClassExtendsProgramClassTest extends TestBase {
   // level. The junit testing framework was removed in P.
   private boolean libraryContainsJUnit() {
     return parameters.isDexRuntime()
-        && parameters.getApiLevel().getLevel() < AndroidApiLevel.P.getLevel();
+        && parameters.getApiLevel().getMajor() < AndroidApiLevel.P.getMajor();
   }
 
   private void checkClassesInResult(CodeInspector inspector) {

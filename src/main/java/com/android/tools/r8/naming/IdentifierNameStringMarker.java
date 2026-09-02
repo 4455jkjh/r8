@@ -100,8 +100,8 @@ public class IdentifierNameStringMarker extends CodeRewriterPass<AppInfoWithClas
     return "IdentifierNameStringMarker";
   }
 
-  public void decoupleIdentifierNameStringsInFields(
-      ExecutorService executorService) throws ExecutionException {
+  public void decoupleIdentifierNameStringsInFields(ExecutorService executorService)
+      throws ExecutionException {
     ThreadUtils.processItems(
         appView.appInfo().classes(),
         clazz -> {
@@ -402,7 +402,9 @@ public class IdentifierNameStringMarker extends CodeRewriterPass<AppInfoWithClas
 
     boolean isClassForName = returnType == appView.dexItemFactory().classType;
     if (isClassForName) {
-      assert appView.dexItemFactory().classMethods
+      assert appView
+          .dexItemFactory()
+          .classMethods
           .isReflectiveClassLookup(invoke.getInvokedMethod());
       return 0;
     }
@@ -449,9 +451,12 @@ public class IdentifierNameStringMarker extends CodeRewriterPass<AppInfoWithClas
             ? "what identifier string flows to "
             : "what '" + original + "' refers to, which flows to ";
     String message =
-        "Cannot determine " + originalMessage + member.toSourceString()
+        "Cannot determine "
+            + originalMessage
+            + member.toSourceString()
             + " that is specified in -identifiernamestring rules."
-            + " Thus, not all identifier strings flowing to that " + kind
+            + " Thus, not all identifier strings flowing to that "
+            + kind
             + " are renamed, which can cause resolution failures at runtime.";
     StringDiagnostic diagnostic =
         instruction.getPosition().getLine() >= 1

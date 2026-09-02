@@ -46,7 +46,7 @@ abstract class D8R8OptionsMetadataImpl<
     this.apiModelingMetadata = apiModelingMetadata;
     this.libraryDesugaringMetadata = libraryDesugaringMetadata;
     this.minApiLevel =
-        options.isGeneratingDex() ? Integer.toString(options.getMinApiLevel().getLevel()) : null;
+        options.isGeneratingDex() ? Integer.toString(options.getMinApiLevel().getMajor()) : null;
     this.isDebugModeEnabled = options.debug;
   }
 

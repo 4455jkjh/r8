@@ -86,7 +86,7 @@ public class FilesSymLinkTest extends DesugaredLibraryTestBase {
         .run(
             parameters.getRuntime(),
             TestClass.class,
-            String.valueOf(parameters.getApiLevel().getLevel()))
+            String.valueOf(parameters.getApiLevel().getMajor()))
         .assertSuccessWithOutput(
             libraryDesugaringSpecification.usesPlatformFileSystem(parameters)
                 ? EXPECTED_RESULT

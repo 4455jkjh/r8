@@ -127,8 +127,7 @@ public class HumanToMachinePrefixConverter {
         (k, v) -> builder.rewriteDerivedTypeOnly(k, v.getRewrittenType()));
   }
 
-  private void rewriteValues(
-      Map<?, DexType> flags) {
+  private void rewriteValues(Map<?, DexType> flags) {
     for (DexType type : flags.values()) {
       registerType(type);
     }

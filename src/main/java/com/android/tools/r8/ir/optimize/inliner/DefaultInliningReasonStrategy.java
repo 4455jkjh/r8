@@ -70,8 +70,7 @@ public class DefaultInliningReasonStrategy implements InliningReasonStrategy {
   }
 
   private boolean isMultiCallerInlineCandidate(
-      ProgramMethod singleTarget,
-      MethodProcessor methodProcessor) {
+      ProgramMethod singleTarget, MethodProcessor methodProcessor) {
     if (methodProcessor.isPrimaryMethodProcessor()) {
       return callSiteInformation.isMultiCallerInlineCandidate(singleTarget);
     }

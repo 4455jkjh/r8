@@ -171,6 +171,5 @@ public class RetraceCommand {
               .build();
       return new RetraceCommand(stackTrace, retracedStackTraceConsumer, retraceOptions);
     }
-
   }
 }

@@ -170,6 +170,9 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
   // Use a MethodCollection where most interleavings between reading and mutating is caught.
   public static final boolean USE_METHOD_COLLECTION_CONCURRENCY_CHECKED = false;
 
+  // Time millis for 1980-02-01 00:00:00 UTC for zip entries, see b/552636378.
+  public static final long CONSTANT_TIME_FOR_ZIP_ENTRIES = 318211200000L;
+
   public enum LineNumberOptimization {
     OFF,
     ON;
@@ -228,7 +231,7 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
       ResourceShrinkerConfiguration.DEFAULT_CONFIGURATION;
   public boolean removeUnreadKeptRClassResources =
       SystemPropertyUtils.parseSystemPropertyOrDefault(
-          "com.android.tools.r8.removeUnreadKeptRClassResources", false);
+          "com.android.tools.r8.removeUnreadKeptRClassResources", true);
 
   public boolean checkIfCancelled() {
     if (cancelCompilationChecker == null) {
@@ -666,7 +669,7 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
     // since the output depends on the min API in this case. There is basically no min API entry
     // in R8 cf to cf.
     if (isGeneratingDex() || desugarState == DesugarState.ON) {
-      marker.setMinApi(getMinApiLevel().getLevel());
+      marker.setMinApi(getMinApiLevel().getMajor());
     }
     if (libraryDesugaringOptions.hasIdentifier()) {
       marker.setDesugaredLibraryIdentifiers(libraryDesugaringOptions.getIdentifier());

@@ -120,7 +120,7 @@ public class ChannelSetTest extends DesugaredLibraryTestBase {
         .run(
             parameters.getRuntime(),
             TestClass.class,
-            Integer.toString(parameters.getApiLevel().getLevel()))
+            Integer.toString(parameters.getApiLevel().getMajor()))
         .assertSuccessWithOutput(getExpectedResult());
   }
 

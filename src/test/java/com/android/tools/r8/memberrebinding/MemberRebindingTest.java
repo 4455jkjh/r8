@@ -11,12 +11,12 @@ import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.naming.MemberNaming.MethodSignature;
 import com.android.tools.r8.utils.AndroidApiLevel;
 import com.android.tools.r8.utils.TestDescriptionWatcher;
-import com.android.tools.r8.utils.internal.ThrowingConsumer;
 import com.android.tools.r8.utils.codeinspector.CodeInspector;
 import com.android.tools.r8.utils.codeinspector.FieldAccessInstructionSubject;
 import com.android.tools.r8.utils.codeinspector.InstructionSubject;
 import com.android.tools.r8.utils.codeinspector.InvokeInstructionSubject;
 import com.android.tools.r8.utils.codeinspector.MethodSubject;
+import com.android.tools.r8.utils.internal.ThrowingConsumer;
 import com.android.tools.r8.utils.internal.exceptions.Unreachable;
 import com.google.common.collect.ImmutableList;
 import java.nio.file.Path;
@@ -191,9 +191,9 @@ public class MemberRebindingTest extends TestBase {
     public int getMinApiLevel() {
       switch (version) {
         case PRE_N:
-          return AndroidApiLevel.getDefault().getLevel();
+          return AndroidApiLevel.getDefault().getMajor();
         case N:
-          return AndroidApiLevel.N.getLevel();
+          return AndroidApiLevel.N.getMajor();
         default:
           throw new Unreachable();
       }

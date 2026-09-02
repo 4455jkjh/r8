@@ -76,14 +76,14 @@ final class LambdaMainMethodSourceCode {
 
   private static DexType getBoxedForPrimitiveType(DexType primitive, DexItemFactory factory) {
     switch (primitive.descriptor.content[0]) {
-      case 'Z':  // byte
-      case 'B':  // byte
-      case 'S':  // short
-      case 'C':  // char
-      case 'I':  // int
-      case 'J':  // long
-      case 'F':  // float
-      case 'D':  // double
+      case 'Z': // byte
+      case 'B': // byte
+      case 'S': // short
+      case 'C': // char
+      case 'I': // int
+      case 'J': // long
+      case 'F': // float
+      case 'D': // double
         return factory.getBoxedForPrimitiveType(primitive);
       default:
         throw new Unreachable("Invalid primitive type descriptor: " + primitive);
@@ -135,8 +135,8 @@ final class LambdaMainMethodSourceCode {
       // `a` is a boxed type for `a*` which can be
       // widened to primitive type `b`.
       DexType unboxedA = factory.getPrimitiveFromBoxed(a);
-      return unboxedA != null &&
-          isSameOrAdaptableTo(unboxedA.descriptor.content[0], b.descriptor.content[0]);
+      return unboxedA != null
+          && isSameOrAdaptableTo(unboxedA.descriptor.content[0], b.descriptor.content[0]);
     }
 
     // Otherwise `a` should be a reference type derived from `b`.
@@ -154,19 +154,19 @@ final class LambdaMainMethodSourceCode {
       return true;
     }
     switch (from) {
-      case 'B':  // byte
+      case 'B': // byte
         return to == 'S' || to == 'I' || to == 'J' || to == 'F' || to == 'D';
-      case 'S':  // short
-      case 'C':  // char
+      case 'S': // short
+      case 'C': // char
         return to == 'I' || to == 'J' || to == 'F' || to == 'D';
-      case 'I':  // int
+      case 'I': // int
         return to == 'J' || to == 'F' || to == 'D';
-      case 'J':  // long
+      case 'J': // long
         return to == 'F' || to == 'D';
-      case 'F':  // float
+      case 'F': // float
         return to == 'D';
-      case 'Z':  // boolean
-      case 'D':  // double
+      case 'Z': // boolean
+      case 'D': // double
         return false;
       default:
         throw new Unreachable("Invalid primitive type descriptor: " + from);
@@ -493,8 +493,8 @@ final class LambdaMainMethodSourceCode {
       return;
     }
 
-    throw new Unreachable("Unexpected type adjustment from "
-        + fromType.toSourceString() + " to " + toType);
+    throw new Unreachable(
+        "Unexpected type adjustment from " + fromType.toSourceString() + " to " + toType);
   }
 
   private static void addPrimitiveWideningConversion(

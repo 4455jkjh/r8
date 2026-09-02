@@ -31,7 +31,7 @@ public class D8RunExamplesAndroidOTest extends RunExamplesAndroidOTest<D8Command
 
     @Override
     D8TestRunner withMinApiLevel(AndroidApiLevel minApiLevel) {
-      return withBuilderTransformation(builder -> builder.setMinApiLevel(minApiLevel.getLevel()));
+      return withBuilderTransformation(builder -> builder.setMinApiLevel(minApiLevel.getMajor()));
     }
 
     D8TestRunner withClasspath(Path... classpath) {
@@ -48,7 +48,7 @@ public class D8RunExamplesAndroidOTest extends RunExamplesAndroidOTest<D8Command
       }
       builder.addLibraryFiles(
           ToolHelper.getAndroidJar(
-              androidJarVersion == null ? builder.getMinApiLevel() : androidJarVersion.getLevel()));
+              androidJarVersion == null ? builder.getMinApiLevel() : androidJarVersion.getMajor()));
       builder.addProgramFiles(inputFile);
       visitFiles(getLegacyClassesRoot(inputFile, packageName), builder::addProgramFiles);
       ToolHelper.runD8(builder, this::combinedOptionConsumer);

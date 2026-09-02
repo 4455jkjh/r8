@@ -462,8 +462,7 @@ public abstract class CfInstructionDesugaringEventConsumer
           .forEach(
               info -> {
                 ProgramMethod newDirectMethod = info.getNewDirectMethod();
-                newDirectMethod
-                    .setCode(info.getVirtualMethod().getDefinition().getCode(), appView);
+                newDirectMethod.setCode(info.getVirtualMethod().getDefinition().getCode(), appView);
               });
 
       // Reprocess the methods that were subject to invoke-special desugaring (because their body
@@ -472,8 +471,7 @@ public abstract class CfInstructionDesugaringEventConsumer
           .values()
           .forEach(
               info -> {
-                info.getVirtualMethod()
-                    .setCode(info.getVirtualMethodCode(), appView);
+                info.getVirtualMethod().setCode(info.getVirtualMethodCode(), appView);
                 needsProcessing.accept(info.getVirtualMethod());
               });
 
@@ -858,9 +856,7 @@ public abstract class CfInstructionDesugaringEventConsumer
     private void finalizeInvokeSpecialDesugaring() {
       Collections.sort(pendingInvokeSpecialBridges);
       pendingInvokeSpecialBridges.forEach(
-          info ->
-              info.getVirtualMethod()
-                  .setCode(info.getVirtualMethodCode(), appView));
+          info -> info.getVirtualMethod().setCode(info.getVirtualMethodCode(), appView));
     }
 
     private void finalizeLambdaDesugaring() {

@@ -227,6 +227,17 @@ public class ListUtils {
     return list;
   }
 
+  @SafeVarargs
+  public static <T> List<T> newArrayListExcludingNullItems(T... items) {
+    ArrayList<T> list = new ArrayList<>();
+    for (T item : items) {
+      if (item != null) {
+        list.add(item);
+      }
+    }
+    return list;
+  }
+
   public static <T> List<T> newArrayListWithoutIndices(List<T> list, IntList indicesToRemove) {
     // Verify each index to remove is unique and in bounds.
     assert indicesToRemove.stream().distinct().count() == indicesToRemove.size();

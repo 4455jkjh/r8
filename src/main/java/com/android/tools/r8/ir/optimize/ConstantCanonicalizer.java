@@ -65,9 +65,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-/**
- * Canonicalize constants.
- */
+/** Canonicalize constants. */
 public class ConstantCanonicalizer {
 
   // Threshold to limit the number of constant canonicalization.

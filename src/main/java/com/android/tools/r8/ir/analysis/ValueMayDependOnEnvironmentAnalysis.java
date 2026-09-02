@@ -4,7 +4,6 @@
 
 package com.android.tools.r8.ir.analysis;
 
-
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.DexClass;
 import com.android.tools.r8.graph.DexClassAndField;
@@ -274,10 +273,7 @@ public class ValueMayDependOnEnvironmentAnalysis {
   }
 
   private boolean addLogicalBinopValueToValueGraph(
-      Value value,
-      Node node,
-      ValueGraph graph,
-      WorkList<Value> worklist) {
+      Value value, Node node, ValueGraph graph, WorkList<Value> worklist) {
     if (!value.isDefinedByInstructionSatisfying(Instruction::isLogicalBinop)) {
       return false;
     }

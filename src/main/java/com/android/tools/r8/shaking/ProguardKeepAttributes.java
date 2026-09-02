@@ -26,8 +26,7 @@ public class ProguardKeepAttributes {
   public static final String RUNTIME_INVISIBLE_PARAMETER_ANNOTATIONS =
       "RuntimeInvisibleParameterAnnotations";
   public static final String RUNTIME_VISIBLE_TYPE_ANNOTATIONS = "RuntimeVisibleTypeAnnotations";
-  public static final String RUNTIME_INVISIBLE_TYPE_ANNOTATIONS =
-      "RuntimeInvisibleTypeAnnotations";
+  public static final String RUNTIME_INVISIBLE_TYPE_ANNOTATIONS = "RuntimeInvisibleTypeAnnotations";
   public static final String ANNOTATION_DEFAULT = "AnnotationDefault";
   public static final String PERMITTED_SUBCLASSES = "PermittedSubclasses";
   public static final String STACK_MAP_TABLE = "StackMapTable";
@@ -135,12 +134,12 @@ public class ProguardKeepAttributes {
     methodParameters = update(methodParameters, METHOD_PARAMETERS, patterns);
     signature = update(signature, SIGNATURE, patterns);
     sourceDebugExtension = update(sourceDebugExtension, SOURCE_DEBUG_EXTENSION, patterns);
-    runtimeVisibleAnnotations = update(runtimeVisibleAnnotations, RUNTIME_VISIBLE_ANNOTATIONS,
-        patterns);
-    runtimeVisibleParameterAnnotations = update(runtimeVisibleParameterAnnotations,
-        RUNTIME_VISIBLE_PARAMETER_ANNOTATIONS, patterns);
-    runtimeVisibleTypeAnnotations = update(runtimeVisibleTypeAnnotations,
-        RUNTIME_VISIBLE_TYPE_ANNOTATIONS, patterns);
+    runtimeVisibleAnnotations =
+        update(runtimeVisibleAnnotations, RUNTIME_VISIBLE_ANNOTATIONS, patterns);
+    runtimeVisibleParameterAnnotations =
+        update(runtimeVisibleParameterAnnotations, RUNTIME_VISIBLE_PARAMETER_ANNOTATIONS, patterns);
+    runtimeVisibleTypeAnnotations =
+        update(runtimeVisibleTypeAnnotations, RUNTIME_VISIBLE_TYPE_ANNOTATIONS, patterns);
     if (canMatchRuntimeInvisibleAnnotationsWithWildcards) {
       runtimeInvisibleAnnotations =
           update(runtimeInvisibleAnnotations, RUNTIME_INVISIBLE_ANNOTATIONS, patterns);
@@ -183,11 +182,13 @@ public class ProguardKeepAttributes {
       }
     }
     if (innerClasses && !enclosingMethod) {
-      throw new CompilationError("Attribute InnerClasses requires EnclosingMethod attribute. "
-          + "Check -keepattributes directive.");
+      throw new CompilationError(
+          "Attribute InnerClasses requires EnclosingMethod attribute. "
+              + "Check -keepattributes directive.");
     } else if (!innerClasses && enclosingMethod) {
-      throw new CompilationError("Attribute EnclosingMethod requires InnerClasses attribute. "
-          + "Check -keepattributes directive.");
+      throw new CompilationError(
+          "Attribute EnclosingMethod requires InnerClasses attribute. "
+              + "Check -keepattributes directive.");
     }
   }
 

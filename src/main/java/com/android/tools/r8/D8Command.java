@@ -130,34 +130,26 @@ public final class D8Command extends BaseCompilerCommand {
       super(app);
     }
 
-    /**
-     * Add dex program-data.
-     */
+    /** Add dex program-data. */
     @Override
     public Builder addDexProgramData(byte[] data, Origin origin) {
       guard(() -> getAppBuilder().addDexProgramData(data, origin));
       return self();
     }
 
-    /**
-     * Add classpath file resources. These have @Override to ensure binary compatibility.
-     */
+    /** Add classpath file resources. These have @Override to ensure binary compatibility. */
     @Override
     public Builder addClasspathFiles(Path... files) {
       return super.addClasspathFiles(files);
     }
 
-    /**
-     * Add classpath file resources.
-     */
+    /** Add classpath file resources. */
     @Override
     public Builder addClasspathFiles(Collection<Path> files) {
       return super.addClasspathFiles(files);
     }
 
-    /**
-     * Add classfile resources provider for class-path resources.
-     */
+    /** Add classfile resources provider for class-path resources. */
     @Override
     public Builder addClasspathResourceProvider(ClassFileResourceProvider provider) {
       return super.addClasspathResourceProvider(provider);
@@ -343,9 +335,7 @@ public final class D8Command extends BaseCompilerCommand {
       }
     }
 
-    /**
-     * Get the consumer that will receive dependency information for desugaring.
-     */
+    /** Get the consumer that will receive dependency information for desugaring. */
     public DesugarGraphConsumer getDesugarGraphConsumer() {
       return desugarGraphConsumer;
     }
@@ -522,11 +512,11 @@ public final class D8Command extends BaseCompilerCommand {
         reporter.error(
             "Option --main-dex-list-output requires --main-dex-rules and/or --main-dex-list");
       }
-      if (getMinApiLevel() >= AndroidApiLevel.L_MR1.getLevel()) {
+      if (getMinApiLevel() >= AndroidApiLevel.L_MR1.getMajor()) {
         if (getMainDexListConsumer() != null || getAppBuilder().hasMainDexList()) {
           reporter.error(
               "D8 does not support main-dex inputs and outputs when compiling to API level "
-                  + AndroidApiLevel.L_MR1.getLevel()
+                  + AndroidApiLevel.L_MR1.getMajor()
                   + " and above (min API level "
                   + getMinApiLevel()
                   + " was provided)");
@@ -544,10 +534,10 @@ public final class D8Command extends BaseCompilerCommand {
         if (intermediate) {
           reporter.error("D8 startup layout is not supported in intermediate mode");
         }
-        if (getMinApiLevel() < AndroidApiLevel.L.getLevel()) {
+        if (getMinApiLevel() < AndroidApiLevel.L.getMajor()) {
           reporter.error(
               "D8 startup layout requires native multi dex support (API level "
-                  + AndroidApiLevel.L.getLevel()
+                  + AndroidApiLevel.L.getMajor()
                   + " and above, min API level "
                   + getMinApiLevel()
                   + " was provided)");
@@ -593,7 +583,7 @@ public final class D8Command extends BaseCompilerCommand {
       // If compiling to CF with --no-desugaring then the target API is B for consistency with R8.
       int minApiLevel =
           programConsumer instanceof ClassFileConsumer && getDisableDesugaring()
-              ? AndroidApiLevel.B.getLevel()
+              ? AndroidApiLevel.B.getMajor()
               : getMinApiLevel();
 
       GlobalSyntheticsConsumer globalConsumer =
@@ -942,5 +932,4 @@ public final class D8Command extends BaseCompilerCommand {
         .setHasProguardMapConsumer(proguardMapConsumer != null)
         .build();
   }
-
 }

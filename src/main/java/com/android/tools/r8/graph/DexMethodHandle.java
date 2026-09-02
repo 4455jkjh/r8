@@ -141,8 +141,12 @@ public class DexMethodHandle extends IndexedDexItem
     }
 
     public boolean isMethodType() {
-      return isInvokeStatic() || isInvokeInstance() || isInvokeInterface() || isInvokeSuper()
-          || isInvokeConstructor() || isInvokeDirect();
+      return isInvokeStatic()
+          || isInvokeInstance()
+          || isInvokeInterface()
+          || isInvokeSuper()
+          || isInvokeConstructor()
+          || isInvokeDirect();
     }
 
     public boolean isStaticPut() {
@@ -201,8 +205,7 @@ public class DexMethodHandle extends IndexedDexItem
         case INVOKE_SUPER:
           return InvokeType.SUPER;
         default:
-          throw new Unreachable(
-              "Conversion to invoke type with unexpected method handle: " + this);
+          throw new Unreachable("Conversion to invoke type with unexpected method handle: " + this);
       }
     }
   }

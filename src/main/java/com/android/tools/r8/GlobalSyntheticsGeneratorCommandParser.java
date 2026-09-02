@@ -49,7 +49,7 @@ public class GlobalSyntheticsGeneratorCommandParser {
 
   private static CliParser<ParserState> createParser() {
     var toolName = "globalsyntheticsgenerator";
-    int defaultApi = AndroidApiLevel.getDefault().getLevel();
+    int defaultApi = AndroidApiLevel.getDefault().getMajor();
     String minApiFlag = "--min-api";
 
     var header = "Usage: " + toolName + " [options] where options are:";
@@ -66,10 +66,14 @@ public class GlobalSyntheticsGeneratorCommandParser {
                         "Cannot set multiple " + minApiFlag + " options", b.origin);
                 b.builder.error(diagnostic);
               } else {
-                CliParserUtils.parsePositiveInt(
+                CliParserUtils.parseApiLevel(
                     arg,
-                    i -> {
-                      b.builder.setMinApiLevel(i);
+                    apiLevel -> {
+                      if (apiLevel.getMinor() != 0) {
+                        b.builder.error(
+                            new StringDiagnostic("Minor API versions are not supported", b.origin));
+                      }
+                      b.builder.setMinApiLevel(apiLevel.getMajor());
                       b.hasDefinedApiLevel = true;
                     },
                     err -> {

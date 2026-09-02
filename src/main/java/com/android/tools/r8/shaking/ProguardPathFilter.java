@@ -18,8 +18,7 @@ public class ProguardPathFilter {
     private boolean enabled = true;
     private final ImmutableList.Builder<ProguardPathList> patterns = ImmutableList.builder();
 
-    private Builder() {
-    }
+    private Builder() {}
 
     public Builder addPattern(ProguardPathList pattern) {
       patterns.add(pattern);
