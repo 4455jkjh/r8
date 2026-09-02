@@ -83,6 +83,10 @@ public class WorkList<T> {
     items.forEach(this::addIfNotSeen);
   }
 
+  public <S> void addIfNotSeen(Iterable<S> items, Function<S, T> fn) {
+    items.forEach(item -> addIfNotSeen(fn.apply(item)));
+  }
+
   public void addIfNotSeen(T[] items) {
     for (T item : items) {
       addIfNotSeen(item);
