@@ -37,6 +37,7 @@ public class TypeAnalysis {
   private final boolean mayHaveImpreciseTypes;
 
   private boolean keepRedundantBlocksAfterAssumeRemoval = false;
+  private Consumer<Phi> phiConsumer = null;
   private Mode mode = Mode.UNSET;
 
   private final AppView<?> appView;
@@ -63,9 +64,18 @@ public class TypeAnalysis {
     return this;
   }
 
+  public void setPhiConsumer(Consumer<Phi> phiConsumer) {
+    this.phiConsumer = phiConsumer;
+  }
+
   private void analyze() {
     while (worklist.hasNext()) {
-      analyzeValue(worklist.removeSeen());
+      Value value = worklist.removeSeen();
+      if (value.isPhi()) {
+        analyzePhi(value.asPhi());
+      } else {
+        analyzeValue(value);
+      }
     }
   }
 
@@ -181,12 +191,21 @@ public class TypeAnalysis {
     }
   }
 
-  private void analyzeValue(Value value) {
-    TypeElement previous = value.getType();
-    TypeElement derived =
-        value.isPhi() ? value.asPhi().computePhiType(appView) : value.definition.evaluate(appView);
+  private void analyzePhi(Phi phi) {
+    if (phiConsumer != null) {
+      phiConsumer.accept(phi);
+      return;
+    }
+    TypeElement derived = phi.computePhiType(appView);
     assert mayHaveImpreciseTypes || derived.isPreciseType();
-    assert !previous.isPreciseType() || derived.isPreciseType();
+    assert !phi.getType().isPreciseType() || derived.isPreciseType();
+    updateTypeOfValue(phi, derived);
+  }
+
+  private void analyzeValue(Value value) {
+    TypeElement derived = value.getDefinition().evaluate(appView);
+    assert mayHaveImpreciseTypes || derived.isPreciseType();
+    assert !value.getType().isPreciseType() || derived.isPreciseType();
     updateTypeOfValue(value, derived);
   }
 
