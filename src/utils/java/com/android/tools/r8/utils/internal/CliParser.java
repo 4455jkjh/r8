@@ -3,7 +3,6 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8.utils.internal;
 
-
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
@@ -56,6 +55,13 @@ public class CliParser<B> {
 
   public CliParser<B> withBaseParser(Consumer<CliParserBase<B>> action) {
     action.accept(base);
+    return this;
+  }
+
+  public CliParser<B> addHelpText(String text) {
+    assert !text.isBlank() : "help text is empty";
+    assert !text.endsWith("\n") : "help text should not end with newline";
+    base.addHelpText(text);
     return this;
   }
 

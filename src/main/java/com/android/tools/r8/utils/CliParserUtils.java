@@ -11,6 +11,7 @@ import com.android.tools.r8.ParseFlagPrinter;
 import com.android.tools.r8.origin.Origin;
 import com.android.tools.r8.utils.internal.CliParser;
 import com.android.tools.r8.utils.internal.CliParserBase;
+import com.android.tools.r8.utils.internal.CliParserBase.HelpInfo;
 import com.android.tools.r8.utils.internal.CliParserBase.OptionInfo;
 import com.android.tools.r8.utils.internal.StringUtils;
 import com.google.common.collect.ImmutableList;
@@ -21,30 +22,37 @@ import java.util.function.IntConsumer;
 
 public class CliParserUtils {
 
-  private static final int HELP_WIDTH = 25;
+  /** The column that help info starts printing at. */
+  private static final int DESCRIPTION_OFFSET = 25;
+
+  /** The max width of the output text column (by best effort). */
+  private static final int MAX_WIDTH = 100;
+
+  /** The max width of the description (by best effort). */
+  private static final int DESCRIPTION_WIDTH = MAX_WIDTH - DESCRIPTION_OFFSET;
 
   public static List<ParseFlagInfo> getFlagInfos(CliParserBase<?> parser) {
-    int idealWidth = 100;
-    int descriptionWidth = idealWidth - HELP_WIDTH;
-
     List<ParseFlagInfo> flags = new ArrayList<>();
     for (OptionInfo info : parser.getOptionInfo()) {
-      List<String> helpLines = StringUtils.wrapToWidth(info.description, descriptionWidth);
-      List<String> alternatives;
-      if (info.shorthand != null) {
-        alternatives =
-            ImmutableList.of(commandString(info.shorthand, info.suffixLabel, info.paramLabels));
-      } else {
-        alternatives = ImmutableList.of();
-      }
-      flags.add(
-          new ParseFlagInfoImpl(
-              null,
-              commandString(info.name, info.suffixLabel, info.paramLabels),
-              alternatives,
-              helpLines));
+      flags.add(toParseFlagInfo(info));
     }
     return flags;
+  }
+
+  private static ParseFlagInfo toParseFlagInfo(OptionInfo info) {
+    List<String> helpLines = StringUtils.wrapToWidth(info.description, DESCRIPTION_WIDTH);
+    List<String> alternatives;
+    if (info.shorthand != null) {
+      alternatives =
+          ImmutableList.of(commandString(info.shorthand, info.suffixLabel, info.paramLabels));
+    } else {
+      alternatives = ImmutableList.of();
+    }
+    return new ParseFlagInfoImpl(
+        null,
+        commandString(info.name, info.suffixLabel, info.paramLabels),
+        alternatives,
+        helpLines);
   }
 
   public static List<ParseFlagInfo> getFlagInfos(CliParser<?> parser) {
@@ -63,19 +71,38 @@ public class CliParserUtils {
     return sb.toString();
   }
 
-  public static String getUsageMessage(CliParserBase<?> parser) {
-    StringBuilder builder =
-        new StringBuilder(parser.getUsageHeader()).append(System.lineSeparator());
+  public static String getUsageMessage(CliParser<?> parser) {
+    return getUsageMessage(parser.baseParser());
+  }
 
-    new ParseFlagPrinter()
-        .setHelpColumn(HELP_WIDTH)
-        .addFlags(getFlagInfos(parser))
-        .appendLinesToBuilder(builder);
+  public static String getUsageMessage(CliParserBase<?> parser) {
+    var builder = new StringBuilder(parser.getUsageHeader()).append(System.lineSeparator());
+
+    List<ParseFlagInfo> currentFlags = new ArrayList<>();
+    for (HelpInfo helpInfo : parser.getHelpInfo()) {
+      if (helpInfo.isOption()) {
+        currentFlags.add(toParseFlagInfo(helpInfo.asOption()));
+      } else if (helpInfo.isHelpText()) {
+        appendAndClear(currentFlags, builder);
+        builder.append(helpInfo.asHelpText().text).append(System.lineSeparator());
+      }
+    }
+    appendAndClear(currentFlags, builder);
     return builder.toString();
   }
 
-  public static String getUsageMessage(CliParser<?> parser) {
-    return getUsageMessage(parser.baseParser());
+  private static void appendAndClear(List<ParseFlagInfo> currentFlags, StringBuilder builder) {
+    if (!currentFlags.isEmpty()) {
+      appendFlags(currentFlags, builder);
+      currentFlags.clear();
+    }
+  }
+
+  private static void appendFlags(List<ParseFlagInfo> currentFlags, StringBuilder builder) {
+    new ParseFlagPrinter()
+        .setHelpColumn(DESCRIPTION_OFFSET)
+        .addFlags(currentFlags)
+        .appendLinesToBuilder(builder);
   }
 
   public static void parsePositiveInt(

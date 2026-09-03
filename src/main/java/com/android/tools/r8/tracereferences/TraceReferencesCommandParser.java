@@ -4,12 +4,8 @@
 package com.android.tools.r8.tracereferences;
 
 import com.android.tools.r8.ClassConflictResolver;
-import com.android.tools.r8.Diagnostic;
 import com.android.tools.r8.DiagnosticsHandler;
 import com.android.tools.r8.JdkClassFileProvider;
-import com.android.tools.r8.ParseFlagInfo;
-import com.android.tools.r8.ParseFlagInfoImpl;
-import com.android.tools.r8.ParseFlagPrinter;
 import com.android.tools.r8.StringConsumer.FileConsumer;
 import com.android.tools.r8.StringConsumer.WriterConsumer;
 import com.android.tools.r8.origin.ArchiveEntryOrigin;
@@ -20,13 +16,11 @@ import com.android.tools.r8.tracereferences.internal.TraceReferencesNativesPrint
 import com.android.tools.r8.utils.CliParserUtils;
 import com.android.tools.r8.utils.ExceptionDiagnostic;
 import com.android.tools.r8.utils.FlagFile;
-import com.android.tools.r8.utils.Reporter;
 import com.android.tools.r8.utils.StringDiagnostic;
 import com.android.tools.r8.utils.ZipUtils;
+import com.android.tools.r8.utils.internal.CliParser;
 import com.android.tools.r8.utils.internal.StringUtils;
 import com.android.tools.r8.utils.internal.exceptions.Unreachable;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.UncheckedIOException;
@@ -35,92 +29,120 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.List;
-import java.util.Set;
-import java.util.function.Consumer;
 
 class TraceReferencesCommandParser {
 
-  private static final String LIB_FLAG = "--lib";
-
-  private static final Set<String> OPTIONS_WITH_PARAMETER =
-      ImmutableSet.of(LIB_FLAG, "--target", "--source", "--output");
-
   static String getUsageMessage() {
-    StringBuilder builder = new StringBuilder();
-    StringUtils.appendLines(
-        builder,
-        "Usage: tracereferences <command> [<options>] [@<argfile>]",
-        " Where <command> is one of:");
-    new ParseFlagPrinter().addFlags(getCommandFlags()).appendLinesToBuilder(builder);
-    StringUtils.appendLines(
-        builder,
-        " and each <argfile> is a file containing additional options (one per line)",
-        " and options are:");
-    new ParseFlagPrinter().addFlags(getOptionFlags()).appendLinesToBuilder(builder);
-    StringUtils.appendLines(builder, " and <keep-rule-options> are:");
-    new ParseFlagPrinter().addFlags(getKeepRuleFlags()).appendLinesToBuilder(builder);
-    return builder.toString();
+    return CliParserUtils.getUsageMessage(createParser());
   }
 
-  static List<ParseFlagInfo> getCommandFlags() {
-    return ImmutableList.of(
-        ParseFlagInfoImpl.flag0("--check", "Run emitting only diagnostics messages."),
-        ParseFlagInfoImpl.flag1(
+  private static class ParserState {
+    final TraceReferencesCommand.Builder builder;
+    final Origin origin;
+    Command command = null;
+    Path output = null;
+    boolean allowObfuscation = false;
+
+    ParserState(TraceReferencesCommand.Builder builder, Origin origin) {
+      this.builder = builder;
+      this.origin = origin;
+    }
+  }
+
+  private static void setCommand(ParserState state, Command command) {
+    if (state.command != null) {
+      state.builder.error(new StringDiagnostic("Multiple commands specified", state.origin));
+    } else {
+      state.command = command;
+    }
+  }
+
+  private static CliParser<ParserState> createParser() {
+    String usageHeader =
+        StringUtils.joinLines(
+            "Usage: tracereferences <command> [<options>] [@<argfile>]",
+            " Where <command> is one of:");
+    CliParser<ParserState> parser = new CliParser<>(usageHeader);
+    return parser
+        .option0(
+            "--check",
+            "Run emitting only diagnostics messages.",
+            state -> setCommand(state, Command.CHECK))
+        .option0(
             "--keep-rules",
-            "[<keep-rules-options>]",
-            "Traced references will be output in the keep-rules",
-            "format."),
+            "Traced references will be output in the keep-rules format.",
+            state -> setCommand(state, Command.KEEP_RULES))
         // TODO(b/481400921): Remove experimental.
-        ParseFlagInfoImpl.flag0("--natives", "EXPERIMENTAL."));
-  }
-
-  static List<ParseFlagInfo> getOptionFlags() {
-    return ImmutableList.<ParseFlagInfo>builder()
-        .add(
-            ParseFlagInfoImpl.flag1(
-                LIB_FLAG, "<file|jdk-home>", "Add <file|jdk-home> runtime library."))
-        .add(
-            ParseFlagInfoImpl.flag1(
-                "--source", "<file>", "Add <file> as a source for tracing references."))
-        .add(
-            ParseFlagInfoImpl.flag1(
-                "--target",
-                "<file>",
-                "Add <file> as a target for tracing references. When",
-                "target is not specified all references from source",
-                "outside of library are treated as a missing",
-                "references."))
-        .add(
-            ParseFlagInfoImpl.flag1(
-                "--output",
-                "<file>",
-                "Output result in <outfile>. If not passed the",
-                "result will go to standard out."))
-        .add(
-            ParseFlagInfoImpl.flag2(
-                "--map-diagnostics" + "[:<type>]",
-                "<from-level>",
-                "<to-level>",
-                "Map diagnostics of <type> (default any) reported as",
-                "<from-level> to <to-level> where <from-level> and",
-                "<to-level> are one of 'info', 'warning', or 'error'",
-                "and the optional <type> is either the simple or",
-                "fully qualified Java type name of a diagnostic.",
-                "If <type> is unspecified, all diagnostics at ",
-                "<from-level> will be mapped.",
-                "Note that fatal compiler errors cannot be mapped."))
-        .add(ParseFlagInfoImpl.flag0("--version", "Print the version of tracereferences."))
-        .add(ParseFlagInfoImpl.flag0("--help", "Print this message."))
-        .build();
-  }
-
-  static List<ParseFlagInfo> getKeepRuleFlags() {
-    return ImmutableList.of(
-        ParseFlagInfoImpl.flag0(
+        .option0("--natives", "EXPERIMENTAL.", state -> setCommand(state, Command.NATIVES))
+        .addHelpText(
+            StringUtils.joinLines(
+                " and each <argfile> is a file containing additional options (one per line)",
+                " and options are:"))
+        .option1(
+            "--lib",
+            "<file|jdk-home>",
+            "Add <file|jdk-home> runtime library.",
+            (state, arg) -> addLibraryArgument(state.builder, state.origin, arg))
+        .option1(
+            "--source",
+            "<file>",
+            "Add <file> as a source for tracing references.",
+            (state, arg) -> state.builder.addSourceFiles(Paths.get(arg)))
+        .option1(
+            "--target",
+            "<file>",
+            "Add <file> as a target for tracing references. When target is not specified all"
+                + " references from source outside of library are treated as a missing references.",
+            (state, arg) -> state.builder.addTargetFiles(Paths.get(arg)))
+        .option1(
+            "--output",
+            "<file>",
+            "Output result in <outfile>. If not passed the result will go to standard out.",
+            (state, arg) -> {
+              if (state.output != null) {
+                state.builder.error(
+                    new StringDiagnostic("Option '--output' passed multiple times.", state.origin));
+              } else {
+                state.output = Paths.get(arg);
+              }
+            })
+        .prefix2(
+            "--map-diagnostics",
+            "[:<type>]",
+            "<from-level>",
+            "<to-level>",
+            "Map diagnostics of <type> (default any) reported as <from-level> to <to-level> where"
+                + " <from-level> and <to-level> are one of 'info', 'warning', or 'error' and the"
+                + " optional <type> is either the simple or fully qualified Java type name of a"
+                + " diagnostic. If <type> is unspecified, all diagnostics at <from-level> will be"
+                + " mapped. Note that fatal compiler errors cannot be mapped.",
+            (state, suffix, fromLevel, toLevel) ->
+                CliParserUtils.parseDiagnosticsMapping(
+                    suffix,
+                    fromLevel,
+                    toLevel,
+                    m ->
+                        state
+                            .builder
+                            .getReporter()
+                            .addDiagnosticsLevelMapping(m.from, m.diagnosticType, m.to),
+                    state.builder::error,
+                    state.origin))
+        .option0(
+            "--resolve-trivial-conflicts",
+            "Resolve trivial duplicate class conflicts.",
+            state -> state.builder.setClassConflictResolver(new TrivialClassConflictResolver()))
+        .option0(
+            "--version",
+            "Print the version of tracereferences.",
+            state -> state.builder.setPrintVersion(true))
+        .option0("--help", "Print this message.", state -> state.builder.setPrintHelp(true), "-h")
+        .addHelpText(" and --keep-rules specific options are:")
+        .option0(
             "--allowobfuscation",
-            "Output keep rules with the allowobfuscation",
-            "modifier (defaults to rules without the modifier)"));
+            "Output keep rules with the allowobfuscation modifier (defaults to rules without the"
+                + " modifier).",
+            state -> state.allowObfuscation = true);
   }
 
   /**
@@ -133,7 +155,7 @@ class TraceReferencesCommandParser {
    * @return tracereferences command builder with state set up according to parsed command line.
    */
   static TraceReferencesCommand.Builder parse(String[] args, Origin origin) {
-    return new TraceReferencesCommandParser().parse(args, origin, TraceReferencesCommand.builder());
+    return parse(args, origin, TraceReferencesCommand.builder());
   }
 
   /**
@@ -148,115 +170,52 @@ class TraceReferencesCommandParser {
    */
   static TraceReferencesCommand.Builder parse(
       String[] args, Origin origin, DiagnosticsHandler handler) {
-    return new TraceReferencesCommandParser()
-        .parse(args, origin, TraceReferencesCommand.builder(handler));
+    return parse(args, origin, TraceReferencesCommand.builder(handler));
   }
 
   private enum Command {
     CHECK,
     KEEP_RULES,
-    NATIVES;
-  }
-
-  private void checkCommandNotSet(
-      Command command, TraceReferencesCommand.Builder builder, Origin origin) {
-    if (command != null) {
-      builder.error(new StringDiagnostic("Multiple commands specified", origin));
-    }
+    NATIVES
   }
 
   @SuppressWarnings("DefaultCharset")
-  private TraceReferencesCommand.Builder parse(
+  private static TraceReferencesCommand.Builder parse(
       String[] args, Origin origin, TraceReferencesCommand.Builder builder) {
     String[] expandedArgs = FlagFile.expandFlagFiles(args, builder::error);
-    Path output = null;
-    Command command = null;
-    boolean allowObfuscation = false;
     if (expandedArgs.length == 0) {
       builder.error(new StringDiagnostic("Missing command"));
       return builder;
     }
-    // Parse options.
-    for (int i = 0; i < expandedArgs.length; i++) {
-      String arg = expandedArgs[i].trim();
-      String nextArg = null;
-      if (OPTIONS_WITH_PARAMETER.contains(arg)) {
-        if (++i < expandedArgs.length) {
-          nextArg = expandedArgs[i];
-        } else {
-          builder.error(
-              new StringDiagnostic("Missing parameter for " + expandedArgs[i - 1] + ".", origin));
-          break;
-        }
-      }
-      if (arg.length() == 0) {
-        continue;
-      } else if (arg.equals("--help")) {
-        builder.setPrintHelp(true);
-        return builder;
-      } else if (arg.equals("--version")) {
-        builder.setPrintVersion(true);
-        return builder;
-      } else if (arg.equals("--check")) {
-        checkCommandNotSet(command, builder, origin);
-        command = Command.CHECK;
-      } else if (arg.equals("--keep-rules")) {
-        checkCommandNotSet(command, builder, origin);
-        command = Command.KEEP_RULES;
-      } else if (arg.equals("--natives")) {
-        checkCommandNotSet(command, builder, origin);
-        command = Command.NATIVES;
-      } else if (arg.equals("--allowobfuscation")) {
-        allowObfuscation = true;
-      } else if (arg.equals(LIB_FLAG)) {
-        addLibraryArgument(builder, origin, nextArg);
-      } else if (arg.equals("--target")) {
-        builder.addTargetFiles(Paths.get(nextArg));
-      } else if (arg.equals("--source")) {
-        builder.addSourceFiles(Paths.get(nextArg));
-      } else if (arg.equals("--output")) {
-        if (output != null) {
-          builder.error(new StringDiagnostic("Option '--output' passed multiple times.", origin));
-        } else {
-          output = Paths.get(nextArg);
-        }
-      } else if (arg.equals("--resolve-trivial-conflicts")) {
-        builder.setClassConflictResolver(new TrivialClassConflictResolver());
-      } else if (arg.startsWith("@")) {
-        builder.error(new StringDiagnostic("Recursive @argfiles are not supported: ", origin));
-      } else {
-        int argsConsumed =
-            tryParseMapDiagnostics(
-                builder::error, builder.getReporter(), arg, expandedArgs, i, origin);
-        if (argsConsumed >= 0) {
-          i += argsConsumed;
-          continue;
-        }
-        builder.error(new StringDiagnostic("Unsupported option '" + arg + "'", origin));
-      }
-    }
+    ParserState state = new ParserState(builder, origin);
+    createParser()
+        .parse(expandedArgs, state, error -> builder.error(new StringDiagnostic(error, origin)));
 
-    if (command == null) {
-      builder.error(
-          new StringDiagnostic(
-              "Missing command, specify one of 'check' or '--keep-rules'", origin));
+    if (builder.isPrintHelp() || builder.isPrintVersion()) {
       return builder;
     }
 
-    if (command == Command.CHECK && output != null) {
+    if (state.command == null) {
+      builder.error(
+          new StringDiagnostic(
+              "Missing command, specify one of '--check' or '--keep-rules'", origin));
+      return builder;
+    }
+
+    if (state.command == Command.CHECK && state.output != null) {
       builder.error(
           new StringDiagnostic("Using '--output' requires command '--keep-rules'", origin));
       return builder;
     }
 
-    if (command != Command.KEEP_RULES && allowObfuscation) {
+    if (state.command != Command.KEEP_RULES && state.allowObfuscation) {
       builder.error(
           new StringDiagnostic(
               "Using '--allowobfuscation' requires command '--keep-rules'", origin));
       return builder;
     }
 
-    switch (command) {
+    switch (state.command) {
       case CHECK:
         builder.setConsumer(
             new TraceReferencesCheckConsumer(TraceReferencesConsumer.emptyConsumer()));
@@ -265,10 +224,10 @@ class TraceReferencesCommandParser {
         builder.setConsumer(
             new TraceReferencesCheckConsumer(
                 TraceReferencesKeepRules.builder()
-                    .setAllowObfuscation(allowObfuscation)
+                    .setAllowObfuscation(state.allowObfuscation)
                     .setOutputConsumer(
-                        output != null
-                            ? new FileConsumer(output)
+                        state.output != null
+                            ? new FileConsumer(state.output)
                             : new WriterConsumer(null, new PrintWriter(System.out)))
                     .build()));
         break;
@@ -359,33 +318,5 @@ class TraceReferencesCommandParser {
       }
       throw new RuntimeException("Unhandled origin: " + origin);
     }
-  }
-
-  private static int tryParseMapDiagnostics(
-      Consumer<Diagnostic> errorHandler,
-      Reporter reporter,
-      String arg,
-      String[] args,
-      int argsIndex,
-      Origin origin) {
-    String flagName = "--map-diagnostics";
-    if (!arg.startsWith(flagName)) {
-      return -1;
-    }
-    if (args.length <= argsIndex + 2) {
-      errorHandler.accept(new StringDiagnostic("Missing argument(s) for " + arg + ".", origin));
-      return args.length - argsIndex;
-    }
-    String remaining = arg.substring(flagName.length());
-
-    CliParserUtils.parseDiagnosticsMapping(
-        remaining,
-        args[argsIndex + 1],
-        args[argsIndex + 2],
-        mapping ->
-            reporter.addDiagnosticsLevelMapping(mapping.from, mapping.diagnosticType, mapping.to),
-        errorHandler,
-        origin);
-    return 2;
   }
 }
