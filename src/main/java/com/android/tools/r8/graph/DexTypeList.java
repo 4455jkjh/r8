@@ -92,6 +92,9 @@ public class DexTypeList extends DexItem implements Iterable<DexType>, Structura
   public DexTypeList subParameters(int fromIndex) {
     int newSize = size() - fromIndex;
     assert newSize >= 0;
+    if (newSize == 0) {
+      return DexTypeList.empty();
+    }
     DexType[] subParameters = new DexType[newSize];
     System.arraycopy(values, fromIndex, subParameters, 0, newSize);
     return new DexTypeList(subParameters);
