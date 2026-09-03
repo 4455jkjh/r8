@@ -29,6 +29,7 @@ import com.android.tools.r8.verticalclassmerging.policies.SameMainDexGroupPolicy
 import com.android.tools.r8.verticalclassmerging.policies.SameNestPolicy;
 import com.android.tools.r8.verticalclassmerging.policies.SameStartupPartitionPolicy;
 import com.android.tools.r8.verticalclassmerging.policies.SuccessfulVirtualMethodResolutionInTargetPolicy;
+import com.android.tools.r8.verticalclassmerging.policies.WellformedHierarchyPolicy;
 import java.util.List;
 
 public class VerticalClassMergerPolicyScheduler {
@@ -57,6 +58,7 @@ public class VerticalClassMergerPolicyScheduler {
         new NoInvokeSuperNoSuchMethodErrorsPolicy(appView),
         new SuccessfulVirtualMethodResolutionInTargetPolicy(appView),
         new NoAbstractMethodsOnAbstractClassesPolicy(appView),
-        new NoNestedMergingPolicy());
+        new NoNestedMergingPolicy(),
+        new WellformedHierarchyPolicy());
   }
 }

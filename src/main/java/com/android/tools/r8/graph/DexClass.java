@@ -748,6 +748,9 @@ public abstract class DexClass extends DexDefinition
   }
 
   public void setSuperType(DexType superType) {
+    if (type.isIdenticalTo(superType)) {
+      throw new CompilationError("Class " + type + " cannot extend itself");
+    }
     this.superType = superType;
   }
 
