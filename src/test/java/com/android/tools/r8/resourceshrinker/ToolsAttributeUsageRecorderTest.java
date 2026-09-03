@@ -5,6 +5,7 @@ package com.android.tools.r8.resourceshrinker;
 
 import static com.android.tools.r8.DiagnosticsMatcher.diagnosticMessage;
 import static org.hamcrest.CoreMatchers.containsString;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
@@ -65,5 +66,50 @@ public class ToolsAttributeUsageRecorderTest {
         .assertAllInfosMatch(
             diagnosticMessage(
                 containsString("External DTD / entity references are unsupported and ignored")));
+  }
+
+  @Test
+  public void testProcessRawXmlEmptyFileIgnored() {
+    StringBuilder loggedOutput = new StringBuilder();
+    TestDiagnosticMessages diagnostics = new TestDiagnosticMessagesImpl();
+    ShrinkerDebugReporter reporter =
+        ResourceShrinkerUtils.shrinkerDebugReporterFromStringConsumer(
+            (s, ignored) -> loggedOutput.append(s), diagnostics);
+
+    ResourceShrinkerModel model = new ResourceShrinkerModel(reporter, true);
+
+    ToolsAttributeUsageRecorderKt.processRawXml(new StringReader(""), model);
+    ToolsAttributeUsageRecorderKt.processRawXml(new StringReader("   \n\t  "), model);
+
+    assertEquals("", loggedOutput.toString());
+    diagnostics.assertNoMessages();
+  }
+
+  @Test
+  public void testProcessRawXmlInvalidXmlReportedPrettily() {
+    StringBuilder loggedOutput = new StringBuilder();
+    TestDiagnosticMessages diagnostics = new TestDiagnosticMessagesImpl();
+    ShrinkerDebugReporter reporter =
+        ResourceShrinkerUtils.shrinkerDebugReporterFromStringConsumer(
+            (s, ignored) -> loggedOutput.append(s), diagnostics);
+
+    ResourceShrinkerModel model = new ResourceShrinkerModel(reporter, true);
+
+    ToolsAttributeUsageRecorderKt.processRawXml(
+        new StringReader("<resources><foo"), model, "res/raw/invalid.xml");
+
+    String output = loggedOutput.toString();
+    assertTrue(
+        output.contains(
+            "Failed to parse XML keep rules from res/raw/invalid.xml at line 1, column 16: XML"
+                + " document structures must start and end within the same entity."));
+    assertFalse(output.contains("External DTD"));
+    diagnostics
+        .assertOnlyInfos()
+        .assertAllInfosMatch(
+            diagnosticMessage(
+                containsString(
+                    "Failed to parse XML keep rules from res/raw/invalid.xml at line 1, column"
+                        + " 16")));
   }
 }

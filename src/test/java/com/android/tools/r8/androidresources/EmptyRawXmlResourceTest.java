@@ -3,7 +3,6 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8.androidresources;
 
-import static org.hamcrest.CoreMatchers.containsString;
 import static org.junit.Assume.assumeTrue;
 
 import com.android.tools.r8.R8TestBuilder;
@@ -55,10 +54,7 @@ public class EmptyRawXmlResourceTest extends TestBase {
         .addAndroidResources(getTestResources(temp))
         .addKeepMainRule(FooBar.class)
         .applyIf(optimized, R8TestBuilder::enableOptimizedShrinking)
-        .addResourceShrinkerLogCapture()
-        .allowDiagnosticInfoMessages()
-        .compile()
-        .assertInfoMessageThatMatches(containsString("Message: Premature end of file."));
+        .compile();
   }
 
   public static class FooBar {
