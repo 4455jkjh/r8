@@ -38,11 +38,13 @@ public class LibraryAnalyzerCommandParser {
     Reporter reporter = new Reporter();
     LibraryAnalyzerCommand.Builder builder = LibraryAnalyzerCommand.builder();
     String[] expandedArgs = FlagFile.expandFlagFiles(args, reporter::error);
+    ParserState parserState = new ParserState(builder, origin, reporter);
     createParser()
         .parse(
             expandedArgs,
-            new ParserState(builder, origin, reporter),
+            parserState,
             error -> reporter.error(new StringDiagnostic(error, origin)));
+    parserState.flushPendingPath();
     return builder;
   }
 
@@ -62,6 +64,29 @@ public class LibraryAnalyzerCommandParser {
       this.origin = origin;
       this.reporter = reporter;
     }
+
+    void addPendingPathWithOrigin(Origin origin) {
+      if (pendingPath.getSecond() == PathType.Jar) {
+        if (origin != null) {
+          builder.addJarPath(pendingPath.getFirst(), origin);
+        } else {
+          builder.addJarPath(pendingPath.getFirst());
+        }
+      } else {
+        assert pendingPath.getSecond() == PathType.Aar;
+        if (origin != null) {
+          builder.addAarPath(pendingPath.getFirst(), origin);
+        } else {
+          builder.addAarPath(pendingPath.getFirst());
+        }
+      }
+    }
+
+    void flushPendingPath() {
+      if (pendingPath != null) {
+        addPendingPathWithOrigin(null);
+      }
+    }
   }
 
   private static CliParser<ParserState> createParser() {
@@ -76,9 +101,7 @@ public class LibraryAnalyzerCommandParser {
               if (!FileUtils.isAarFile(aarPath)) {
                 throw new IllegalArgumentException("Expected AAR, got: " + arg);
               }
-              if (state.pendingPath != null) {
-                addPendingPathWithOrigin(state, null);
-              }
+              state.flushPendingPath();
               state.pendingPath = Pair.create(aarPath, PathType.Aar);
             })
         .option1(
@@ -95,9 +118,7 @@ public class LibraryAnalyzerCommandParser {
               if (!FileUtils.isJarFile(jarPath)) {
                 throw new IllegalArgumentException("Expected JAR, got: " + arg);
               }
-              if (state.pendingPath != null) {
-                addPendingPathWithOrigin(state, null);
-              }
+              state.flushPendingPath();
               state.pendingPath = Pair.create(jarPath, PathType.Jar);
             })
         .option1(
@@ -127,7 +148,7 @@ public class LibraryAnalyzerCommandParser {
                             state.reporter.error(
                                 new StringDiagnostic(
                                     "Invalid argument to --maven-coord: " + error, state.origin)));
-                addPendingPathWithOrigin(state, mavenOrigin);
+                state.addPendingPathWithOrigin(mavenOrigin);
                 state.pendingPath = null;
               }
             })
@@ -194,23 +215,6 @@ public class LibraryAnalyzerCommandParser {
     String module = directoryName.substring(prevSeparator + 1, lastSeparator);
     String version = directoryName.substring(lastSeparator + 1);
     return new PathBasedMavenOrigin(path, group, module, version);
-  }
-
-  private static void addPendingPathWithOrigin(ParserState state, Origin origin) {
-    if (state.pendingPath.getSecond() == PathType.Jar) {
-      if (origin != null) {
-        state.builder.addJarPath(state.pendingPath.getFirst(), origin);
-      } else {
-        state.builder.addJarPath(state.pendingPath.getFirst());
-      }
-    } else {
-      assert state.pendingPath.getSecond() == PathType.Aar;
-      if (origin != null) {
-        state.builder.addAarPath(state.pendingPath.getFirst(), origin);
-      } else {
-        state.builder.addAarPath(state.pendingPath.getFirst());
-      }
-    }
   }
 
   private static PathBasedMavenOrigin parseMavenCoord(

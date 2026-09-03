@@ -8,8 +8,10 @@ import com.android.tools.r8.AndroidResourceInput;
 import com.android.tools.r8.AndroidResourceProvider;
 import com.android.tools.r8.FeatureSplit;
 import com.android.tools.r8.ResourceException;
+import com.android.tools.r8.features.ClassToFeatureSplitMap;
 import com.android.tools.r8.graph.AppInfoWithClassHierarchy;
 import com.android.tools.r8.graph.AppView;
+import com.android.tools.r8.graph.DexProgramClass;
 import com.android.tools.r8.resourceshrinker.ResourceShrinkerState.ShrinkerResult;
 import com.android.tools.r8.resourceshrinker.usages.LegacyResourceShrinker;
 import com.android.tools.r8.resourceshrinker.usages.R8ResourceShrinker;
@@ -17,8 +19,11 @@ import com.android.tools.r8.utils.ExceptionDiagnostic;
 import com.android.tools.r8.utils.InternalOptions;
 import com.android.tools.r8.utils.Reporter;
 import com.android.tools.r8.utils.ResourceShrinkerUtils;
+import com.google.common.collect.Sets;
 import java.io.IOException;
+import java.util.Collections;
 import java.util.Map;
+import java.util.Set;
 import javax.xml.parsers.ParserConfigurationException;
 import org.xml.sax.SAXException;
 
@@ -33,8 +38,9 @@ public class ResourceWriter {
       return;
     }
     try {
-      ShrinkerResult<FeatureSplit> shrinkerResult =
-          appView.unsetResourceShrinkerState().shrinkModel();
+      ResourceShrinkerState<FeatureSplit> state = appView.unsetResourceShrinkerState();
+      state.setFeatureSplitsWithoutCode(getFeatureSplitsWithoutCode(appView));
+      ShrinkerResult<FeatureSplit> shrinkerResult = state.shrinkModel();
       writeResourcesToConsumers(appView, shrinkerResult);
     } catch (ResourceException | IOException e) {
       appView.reporter().error(new ExceptionDiagnostic(e));
@@ -150,6 +156,20 @@ public class ResourceWriter {
     for (AndroidResourceInput androidResource : androidResourceProvider.getAndroidResources()) {
       switch (androidResource.getKind()) {
         case MANIFEST:
+          String manifestLocation = androidResource.getPath().location();
+          if (shrinkerResult != null
+              && shrinkerResult.hasCustomFileFor(manifestLocation, featureSplit)) {
+            androidResourceConsumer.accept(
+                new R8AndroidResourceWithData(
+                    androidResource,
+                    reporter,
+                    shrinkerResult.getBytesFor(manifestLocation, featureSplit)),
+                reporter);
+          } else {
+            androidResourceConsumer.accept(
+                new R8PassThroughAndroidResource(androidResource, reporter), reporter);
+          }
+          break;
         case UNKNOWN:
           androidResourceConsumer.accept(
               new R8PassThroughAndroidResource(androidResource, reporter), reporter);
@@ -169,10 +189,12 @@ public class ResourceWriter {
         case XML_FILE:
           String location = androidResource.getPath().location();
           if (shrinkerResult.getResFolderEntriesToKeep().contains(location)) {
-            if (shrinkerResult.hasCustomFileFor(location)) {
+            if (shrinkerResult.hasCustomFileFor(location, featureSplit)) {
               androidResourceConsumer.accept(
                   new R8AndroidResourceWithData(
-                      androidResource, reporter, shrinkerResult.getBytesFor(location)),
+                      androidResource,
+                      reporter,
+                      shrinkerResult.getBytesFor(location, featureSplit)),
                   reporter);
             } else {
               androidResourceConsumer.accept(
@@ -183,5 +205,27 @@ public class ResourceWriter {
       }
     }
     androidResourceConsumer.finished(reporter);
+  }
+
+  private static Set<FeatureSplit> getFeatureSplitsWithoutCode(
+      AppView<AppInfoWithClassHierarchy> appView) {
+    if (!appView.options().hasFeatureSplitConfiguration()) {
+      return Collections.emptySet();
+    }
+    ClassToFeatureSplitMap classToFeatureSplitMap = appView.appInfo().getClassToFeatureSplitMap();
+    Set<FeatureSplit> splitsWithCode = Sets.newIdentityHashSet();
+    for (DexProgramClass clazz : appView.appInfo().classes()) {
+      FeatureSplit split = classToFeatureSplitMap.getFeatureSplit(clazz, appView);
+      if (split != null && !split.isBase()) {
+        splitsWithCode.add(split);
+      }
+    }
+    Set<FeatureSplit> splitsWithoutCode = Sets.newIdentityHashSet();
+    for (FeatureSplit split : appView.options().getFeatureSplitConfiguration().getFeatureSplits()) {
+      if (!split.isBase() && !splitsWithCode.contains(split)) {
+        splitsWithoutCode.add(split);
+      }
+    }
+    return splitsWithoutCode;
   }
 }

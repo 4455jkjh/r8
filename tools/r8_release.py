@@ -113,9 +113,10 @@ def prepare_release(args):
                 # Rewrite the version, commit and validate.
                 sed(old_version, version, R8_VERSION_FILE)
 
-                subprocess.check_call(
-                    ['git', 'commit', '-a', '-m',
-                     'Version %s' % version])
+                subprocess.check_call([
+                    'git', 'commit', '-a', '-m',
+                    version_commit_message(version)
+                ])
 
                 version_diff_output = subprocess.check_output(
                     ['git', 'diff', '%s..HEAD' % commithash]).decode('utf-8')
@@ -139,6 +140,11 @@ def prepare_release(args):
                     version, commithash)
 
     return make_release
+
+
+def version_commit_message(version):
+    return ('Version %s\n\n'
+            'Cq-Exclude-Trybots: luci.r8.try:presubmit' % version)
 
 
 def maybe_tag(args, version):
@@ -866,9 +872,10 @@ def prepare_branch(args):
                 sed(version_prefix + old_version, version_prefix + full_version,
                     R8_VERSION_FILE)
 
-                subprocess.check_call(
-                    ['git', 'commit', '-a', '-m',
-                     'Version %s' % full_version])
+                subprocess.check_call([
+                    'git', 'commit', '-a', '-m',
+                    version_commit_message(full_version)
+                ])
 
                 version_diff_output = subprocess.check_output(
                     ['git', 'diff', '%s..HEAD' % commithash])

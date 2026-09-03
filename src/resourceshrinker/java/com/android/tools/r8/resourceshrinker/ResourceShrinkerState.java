@@ -32,6 +32,7 @@ import it.unimi.dsi.fastutil.ints.IntSet;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -67,7 +68,20 @@ public class ResourceShrinkerState<T> {
   private final Set<String> duplicatedResFolderEntries = new HashSet<>();
   private final List<Supplier<InputStream>> keepRuleFileProviders = new ArrayList<>();
 
-  private final List<Supplier<InputStream>> manifestProviders = new ArrayList<>();
+  private class ManifestLocationAndProvider {
+    private final Supplier<InputStream> provider;
+    private final String location;
+    private final T featureSplit;
+
+    ManifestLocationAndProvider(Supplier<InputStream> provider, String location, T featureSplit) {
+      this.provider = provider;
+      this.location = location;
+      this.featureSplit = featureSplit;
+    }
+  }
+
+  private final List<ManifestLocationAndProvider> manifestProviders = new ArrayList<>();
+  private Set<T> featureSplitsWithoutCode = Collections.emptySet();
   private final Map<String, Supplier<InputStream>> resfileProviders = new HashMap<>();
   private final Map<T, ResourceTable> resourceTables = new HashMap<>();
   private final ShrinkerDebugReporter shrinkerDebugReporter;
@@ -93,7 +107,13 @@ public class ResourceShrinkerState<T> {
   private static final Set<String> SPECIAL_APPLICATION_ATTRIBUTES =
       ImmutableSet.of("backupAgent", "appComponentFactory", "zygotePreloadName");
 
+  private static final String ANDROID_RES_NAMESPACE_URI =
+      "http://schemas.android.com/apk/res/android";
 
+  // Resource ID for android.R.attr.hasCode (package 0x01, type 0x01 (attr), entry 0x000c).
+  // Bundletool checks this attribute by resource ID when validating whether a module without
+  // dex files has android:hasCode="false".
+  private static final int ANDROID_HAS_CODE_RESOURCE_ID = 0x0101000c;
 
   public interface ResourceShrinkerCallback {
     boolean tryClass(String possibleClass, String xmlFilePath, boolean markAsLive);
@@ -158,9 +178,13 @@ public class ResourceShrinkerState<T> {
         .getResourceStore()
         .processToolsAttributes()
         .forEach(resource -> trace(resource.value, "keep xml file", callback));
-    for (Supplier<InputStream> manifestProvider : manifestProviders) {
-      traceXml("AndroidManifest.xml", manifestProvider.get(), ids -> {}, callback);
+    for (ManifestLocationAndProvider manifestProvider : manifestProviders) {
+      traceXml(manifestProvider.location, manifestProvider.provider.get(), ids -> {}, callback);
     }
+  }
+
+  public void setFeatureSplitsWithoutCode(Set<T> featureSplitsWithoutCode) {
+    this.featureSplitsWithoutCode = featureSplitsWithoutCode;
   }
 
   private synchronized Set<String> getPackageNames() {
@@ -178,7 +202,13 @@ public class ResourceShrinkerState<T> {
   }
 
   public void addManifestProvider(Supplier<InputStream> manifestProvider) {
-    this.manifestProviders.add(manifestProvider);
+    addManifestProvider(manifestProvider, "AndroidManifest.xml", null);
+  }
+
+  public void addManifestProvider(
+      Supplier<InputStream> manifestProvider, String location, T featureSplit) {
+    this.manifestProviders.add(
+        new ManifestLocationAndProvider(manifestProvider, location, featureSplit));
   }
 
   public void addXmlFileProvider(Supplier<InputStream> inputStreamSupplier, String location) {
@@ -291,7 +321,24 @@ public class ResourceShrinkerState<T> {
         shrinkerDebugReporter.debug(() -> resource.toString() + " is not reachable.");
       }
     }
-    return new ShrinkerResult<T>(resEntriesToKeep, shrunkenTables, changedXmlFiles);
+    Map<T, Map<String, byte[]>> customFilesForFeatures = new HashMap<>();
+    for (ManifestLocationAndProvider manifestProvider : manifestProviders) {
+      if (manifestProvider.featureSplit != null
+          && featureSplitsWithoutCode.contains(manifestProvider.featureSplit)) {
+        try (InputStream is = manifestProvider.provider.get()) {
+          XmlNode.Builder xmlNodeBuilder = XmlNode.parseFrom(is).toBuilder();
+          if (setHasCodeFalse(xmlNodeBuilder)) {
+            customFilesForFeatures
+                .computeIfAbsent(manifestProvider.featureSplit, unused -> new HashMap<>())
+                .put(manifestProvider.location, xmlNodeBuilder.build().toByteArray());
+          }
+        } catch (IOException e) {
+          throw errorHandler.apply(e);
+        }
+      }
+    }
+    return new ShrinkerResult<T>(
+        resEntriesToKeep, shrunkenTables, changedXmlFiles, customFilesForFeatures);
   }
 
   public List<Integer> getResourceIdsToRemove() {
@@ -412,6 +459,77 @@ public class ResourceShrinkerState<T> {
     return changedChildren;
   }
 
+  private static boolean setHasCodeFalse(XmlNode.Builder xmlNodeBuilder) {
+    if (!xmlNodeBuilder.hasElement()) {
+      return false;
+    }
+    XmlElement.Builder manifestElementBuilder = xmlNodeBuilder.getElementBuilder();
+    boolean foundApplication = false;
+    boolean changed = false;
+    for (XmlNode.Builder childBuilder : manifestElementBuilder.getChildBuilderList()) {
+      if (childBuilder.hasElement() && childBuilder.getElement().getName().equals("application")) {
+        foundApplication = true;
+        if (setHasCodeFalseOnApplication(childBuilder.getElementBuilder())) {
+          changed = true;
+        }
+      }
+    }
+    if (!foundApplication) {
+      manifestElementBuilder.addChild(
+          XmlNode.newBuilder()
+              .setElement(
+                  XmlElement.newBuilder()
+                      .setName("application")
+                      .addAttribute(createHasCodeFalseAttribute())));
+      changed = true;
+    }
+    return changed;
+  }
+
+  private static boolean setHasCodeFalseOnApplication(XmlElement.Builder appBuilder) {
+    for (XmlAttribute.Builder attributeBuilder : appBuilder.getAttributeBuilderList()) {
+      if (attributeBuilder.getName().equals("hasCode")
+          && (ANDROID_RES_NAMESPACE_URI.equals(attributeBuilder.getNamespaceUri())
+              || attributeBuilder.getResourceId() == ANDROID_HAS_CODE_RESOURCE_ID)) {
+        if (isHasCodeFalse(attributeBuilder)) {
+          return false;
+        }
+        attributeBuilder
+            .setNamespaceUri(ANDROID_RES_NAMESPACE_URI)
+            .setResourceId(ANDROID_HAS_CODE_RESOURCE_ID)
+            .setValue("false")
+            .setCompiledItem(
+                Item.newBuilder().setPrim(Primitive.newBuilder().setBooleanValue(false)));
+        return true;
+      }
+    }
+    appBuilder.addAttribute(createHasCodeFalseAttribute());
+    return true;
+  }
+
+  private static boolean isHasCodeFalse(XmlAttribute.Builder attributeBuilder) {
+    if (!"false".equalsIgnoreCase(attributeBuilder.getValue())) {
+      return false;
+    }
+    if (attributeBuilder.hasCompiledItem()
+        && attributeBuilder.getCompiledItem().hasPrim()
+        && attributeBuilder.getCompiledItem().getPrim().getBooleanValue()) {
+      return false;
+    }
+    return attributeBuilder.getResourceId() == ANDROID_HAS_CODE_RESOURCE_ID
+        && ANDROID_RES_NAMESPACE_URI.equals(attributeBuilder.getNamespaceUri());
+  }
+
+  private static XmlAttribute createHasCodeFalseAttribute() {
+    return XmlAttribute.newBuilder()
+        .setNamespaceUri(ANDROID_RES_NAMESPACE_URI)
+        .setName("hasCode")
+        .setResourceId(ANDROID_HAS_CODE_RESOURCE_ID)
+        .setValue("false")
+        .setCompiledItem(Item.newBuilder().setPrim(Primitive.newBuilder().setBooleanValue(false)))
+        .build();
+  }
+
   private void tryEnqueuerOnString(
       String possibleClass, String xmlName, ResourceShrinkerCallback callback) {
     // There are a lot of xml tags and attributes that are evaluated over and over, if it is
@@ -465,11 +583,11 @@ public class ResourceShrinkerState<T> {
         traceManifestSpecificValues(xmlName, manifestPackageName, xmlAttribute, element, callback);
       }
       if (xmlAttribute.getName().equals("onClick")
-          && xmlAttribute.getNamespaceUri().equals("http://schemas.android.com/apk/res/android")) {
+          && xmlAttribute.getNamespaceUri().equals(ANDROID_RES_NAMESPACE_URI)) {
         callback.tryMethod(xmlAttribute.getValue(), xmlName);
       }
       if (xmlAttribute.getName().equals("id")
-          && xmlAttribute.getNamespaceUri().equals("http://schemas.android.com/apk/res/android")
+          && xmlAttribute.getNamespaceUri().equals(ANDROID_RES_NAMESPACE_URI)
           && xmlAttribute.hasCompiledItem()
           && xmlAttribute.getCompiledItem().hasRef()) {
         int id = xmlAttribute.getCompiledItem().getRef().getId();
@@ -556,9 +674,9 @@ public class ResourceShrinkerState<T> {
   // Temporary to support updating the reachable entries from the manifest, we need to instead
   // trace these in the enqueuer.
   public void updateModelWithManifestReferences() throws IOException {
-    for (Supplier<InputStream> manifestProvider : manifestProviders) {
+    for (ManifestLocationAndProvider manifestProvider : manifestProviders) {
       ProtoAndroidManifestUsageRecorderKt.recordUsagesFromNode(
-          XmlNode.parseFrom(manifestProvider.get()), r8ResourceShrinkerModel);
+          XmlNode.parseFrom(manifestProvider.provider.get()), r8ResourceShrinkerModel);
     }
   }
 
@@ -738,14 +856,28 @@ public class ResourceShrinkerState<T> {
     private final Set<String> resFolderEntriesToKeep;
     private final Map<T, byte[]> resourceTableInProtoFormat;
     private final Map<String, byte[]> customResourceFileBytes;
+    private final Map<T, Map<String, byte[]>> customResourceFileBytesForFeatures;
 
     public ShrinkerResult(
         Set<String> resFolderEntriesToKeep,
         Map<T, byte[]> resourceTableInProtoFormat,
         Map<String, byte[]> customResourceFileBytes) {
+      this(
+          resFolderEntriesToKeep,
+          resourceTableInProtoFormat,
+          customResourceFileBytes,
+          Collections.emptyMap());
+    }
+
+    public ShrinkerResult(
+        Set<String> resFolderEntriesToKeep,
+        Map<T, byte[]> resourceTableInProtoFormat,
+        Map<String, byte[]> customResourceFileBytes,
+        Map<T, Map<String, byte[]>> customResourceFileBytesForFeatures) {
       this.resFolderEntriesToKeep = resFolderEntriesToKeep;
       this.resourceTableInProtoFormat = resourceTableInProtoFormat;
       this.customResourceFileBytes = customResourceFileBytes;
+      this.customResourceFileBytesForFeatures = customResourceFileBytesForFeatures;
     }
 
     public byte[] getResourceTableInProtoFormat(T featureSplit) {
@@ -757,10 +889,30 @@ public class ResourceShrinkerState<T> {
     }
 
     public byte[] getBytesFor(String location) {
-      return customResourceFileBytes.get(location);
+      return getBytesFor(location, null);
     }
 
     public boolean hasCustomFileFor(String location) {
+      return hasCustomFileFor(location, null);
+    }
+
+    public byte[] getBytesFor(String location, T featureSplit) {
+      if (featureSplit != null && customResourceFileBytesForFeatures != null) {
+        Map<String, byte[]> map = customResourceFileBytesForFeatures.get(featureSplit);
+        if (map != null && map.containsKey(location)) {
+          return map.get(location);
+        }
+      }
+      return customResourceFileBytes.get(location);
+    }
+
+    public boolean hasCustomFileFor(String location, T featureSplit) {
+      if (featureSplit != null && customResourceFileBytesForFeatures != null) {
+        Map<String, byte[]> map = customResourceFileBytesForFeatures.get(featureSplit);
+        if (map != null && map.containsKey(location)) {
+          return true;
+        }
+      }
       return customResourceFileBytes.containsKey(location);
     }
   }

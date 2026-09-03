@@ -1069,6 +1069,38 @@ public abstract class R8TestBuilder<
     return addProgramClassFileData(testResource.getRClass().getClassFileData().values());
   }
 
+  public T addFeatureSplitAndroidResources(
+      AndroidTestResource testResource, String featureName, Class<?>... classes)
+      throws IOException {
+    return addFeatureSplitAndroidResources(testResource, featureName, Arrays.asList(classes));
+  }
+
+  public T addFeatureSplitAndroidResources(
+      AndroidTestResource testResource, String featureName, Collection<Class<?>> classes)
+      throws IOException {
+    Path outputFile = getState().getNewTempFile("resourceshrinkeroutput_" + featureName + ".zip");
+    Path programResource = getState().getNewTempFile(featureName + ".jar");
+    TestBase.writeClassesToJar(programResource, classes);
+    resourceShrinkerOutputForFeatures.put(featureName, outputFile);
+    Path featureOutJar =
+        getState().getNewTempFileUnchecked("programoutput_" + featureName + ".zip");
+    features.add(featureOutJar);
+    getBuilder()
+        .addFeatureSplit(
+            featureSplitGenerator -> {
+              Path resourceZip = testResource.getResourceZip();
+              featureSplitGenerator
+                  .setAndroidResourceConsumer(new ArchiveProtoAndroidResourceConsumer(outputFile))
+                  .setAndroidResourceProvider(new ArchiveProtoAndroidResourceProvider(resourceZip))
+                  .addProgramResourceProvider(
+                      ArchiveResourceProvider.fromArchive(programResource, true))
+                  .setProgramConsumer(new ArchiveConsumer(featureOutJar, true));
+
+              return featureSplitGenerator.build();
+            });
+    return addProgramClassFileData(testResource.getRClass().getClassFileData().values());
+  }
+
   public T addAndroidResources(AndroidTestResource testResource, Path output) throws IOException {
     Collection<byte[]> classFileData = testResource.getRClass().getClassFileData().values();
     return addAndroidResources(testResource, output, classFileData);

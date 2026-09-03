@@ -304,7 +304,7 @@ public class LineNumberOptimizer {
     }
   }
 
-  @SuppressWarnings({"SameReturnValue", "PointlessBooleanExpression", "ComplexBooleanConstant"})
+  @SuppressWarnings("SameReturnValue")
   private boolean verifyMethodsAreKeptDirectlyOrIndirectly(List<ProgramMethod> methods) {
     assert !methods.isEmpty();
     if (appView.options().isGeneratingClassFiles() || !appView.appInfo().hasClassHierarchy()) {
@@ -342,8 +342,7 @@ public class LineNumberOptimizer {
           : "Expected " + fullMethodName + " to be kept or an interface method";
       originalNames.add(method.getReference().name);
     }
-    // TODO(b/159113601): Enable assertion.
-    assert true || originalNames.stream().allMatch(name -> originalNames.get(0).isIdenticalTo(name))
+    assert originalNames.stream().allMatch(name -> originalNames.get(0).isIdenticalTo(name))
         : "Non-overloaded methods should not become overloaded "
             + StringUtils.join(", ", originalNames);
     return true;
