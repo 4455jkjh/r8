@@ -130,11 +130,10 @@ public final class D8Command extends BaseCompilerCommand {
       super(app);
     }
 
-    /** Add dex program-data. */
+    /** Add DEX-bytecode program data. */
     @Override
     public Builder addDexProgramData(byte[] data, Origin origin) {
-      guard(() -> getAppBuilder().addDexProgramData(data, origin));
-      return self();
+      return super.addDexProgramData(data, origin);
     }
 
     /** Add classpath file resources. These have @Override to ensure binary compatibility. */
