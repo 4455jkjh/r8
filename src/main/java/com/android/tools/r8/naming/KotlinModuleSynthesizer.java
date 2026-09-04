@@ -179,11 +179,16 @@ public class KotlinModuleSynthesizer {
                 new KmPackageParts(
                     newFacades.getOrDefault(newPackage, Collections.emptyList()), newMultiFiles));
       }
+      String sanitizedModuleName = sanitizeModuleName(moduleName);
       return Optional.of(
           DataEntryResource.fromBytes(
               new KotlinModuleMetadata(kmModule, metadataVersion.get()).write(),
-              "META-INF/" + moduleName + ".kotlin_module",
+              "META-INF/" + sanitizedModuleName + ".kotlin_module",
               Origin.unknown()));
+    }
+
+    private static String sanitizeModuleName(String moduleName) {
+      return moduleName.replace(':', '_');
     }
   }
 }
