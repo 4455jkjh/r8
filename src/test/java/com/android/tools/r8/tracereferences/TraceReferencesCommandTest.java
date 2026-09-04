@@ -134,7 +134,7 @@ public class TraceReferencesCommandTest extends TestBase {
   @Test(expected = CompilationFailedException.class)
   public void unsupportedCommandCommandLine() throws Throwable {
     DiagnosticsChecker.checkErrorsContains(
-        "Missing command, specify one of 'check' or '--keep-rules'",
+        "Missing command, specify one of '--check' or '--keep-rules'",
         handler -> {
           runCommand(
               TraceReferencesCommand.parse(new String[] {"--xxx"}, Origin.unknown(), handler)
