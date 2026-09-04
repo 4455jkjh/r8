@@ -658,12 +658,8 @@ public class ClassTypeElement extends ReferenceTypeElement {
       return false;
     }
     ClassTypeElement other = (ClassTypeElement) o;
-    if (nullability() != other.nullability()) {
-      return false;
-    }
-    if (!type.equals(other.type)) {
-      return false;
-    }
-    return getInterfaces().equals(other.getInterfaces());
+    return nullability == other.nullability
+        && type.isIdenticalTo(other.type)
+        && getInterfaces().equals(other.getInterfaces());
   }
 }
