@@ -158,7 +158,7 @@ The `PRESUBMIT.py` script checks that the code has been correctly formatted and 
 It is also possible to format the code using the `tools/fmt_diff.py` script:
 
 ```bash
-tools/fmt_diff.py
+tools/fmt_diff.py --format-precise-diff
 ```
 
 ### Copyright Headers
