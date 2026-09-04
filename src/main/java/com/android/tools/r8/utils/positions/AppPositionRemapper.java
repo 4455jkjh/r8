@@ -27,11 +27,10 @@ public interface AppPositionRemapper {
     // Kotlin inline functions and arguments have their inlining information stored in the
     // source debug extension annotation. Instantiate the kotlin remapper on top of the original
     // remapper to allow for remapping original positions to kotlin inline positions.
-    KotlinSourceDebugExtensionCollection kotlinSourceDebugExtensions =
-        KotlinSourceDebugExtensionCollection.create(appView, timing);
-    // For finding methods in kotlin files based on SourceDebugExtensions, we use a line method map.
+    var kotlinSourceDebugExtensions = KotlinSourceDebugExtensionCollection.create(appView, timing);
+    // For finding methods in Kotlin files based on SourceDebugExtensions, we use a line method map.
     // We create it here to ensure it is only reading class files once.
-    CfLineToMethodMapper cfLineToMethodMapper =
+    var cfLineToMethodMapper =
         CfLineToMethodMapper.create(inputApp, kotlinSourceDebugExtensions, timing);
     return new KotlinInlineFunctionAppPositionRemapper(
         appView, positionRemapper, cfLineToMethodMapper, kotlinSourceDebugExtensions);

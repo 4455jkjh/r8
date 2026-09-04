@@ -42,8 +42,7 @@ public interface ClassPositionRemapper {
 
     @Override
     public Pair<Position, Position> createRemappedPosition(Position position) {
-      // If we create outline calls we have to map them.
-      assert position.getOutlineCallee() == null;
+      assert position.getOutlineCallee() == null : "Cannot identity-map outline calls: " + position;
       return new Pair<>(position, position);
     }
 
@@ -55,13 +54,12 @@ public interface ClassPositionRemapper {
 
   class OptimizingPositionRemapper implements AppPositionRemapper, ClassPositionRemapper {
 
-    private final int maxLineDelta;
+    private final boolean sequentialLines;
 
     OptimizingPositionRemapper(InternalOptions options) {
-      // TODO(b/113198295): For dex using "Constants.DBG_LINE_RANGE + Constants.DBG_LINE_BASE"
-      //  instead of 1 creates a ~30% smaller map file but the dex files gets larger due to reduced
-      //  debug info canonicalization.
-      maxLineDelta = options.isGeneratingClassFiles() ? Integer.MAX_VALUE : 1;
+      // Sequential lines are better for smaller debug info.
+      // Offset lines are better for smaller mapping files.
+      sequentialLines = options.isGeneratingDex();
     }
 
     @Override
@@ -71,40 +69,68 @@ public interface ClassPositionRemapper {
 
     @Override
     public MethodPositionRemapper createMethodPositionRemapper() {
-      return new OptimizingMethodPositionRemapper();
+      return sequentialLines
+          ? new SequentialMethodPositionRemapper()
+          : new OffsetMethodPositionRemapper();
     }
 
-    class OptimizingMethodPositionRemapper implements MethodPositionRemapper {
+    private abstract static class OptimizingMethodPositionRemapper
+        implements MethodPositionRemapper {
 
-      private DexMethod previousMethod = null;
-      private int previousSourceLine = -1;
-      private int nextOptimizedLineNumber = 1;
+      protected int nextOptimizedLineNumber = 0;
 
       @Override
       public Pair<Position, Position> createRemappedPosition(Position position) {
-        assert position.getMethod() != null;
-        if (position.getMethod().isIdenticalTo(previousMethod)) {
-          assert previousSourceLine >= 0;
-          if (position.getLine() > previousSourceLine
-              && position.getLine() - previousSourceLine <= maxLineDelta) {
-            nextOptimizedLineNumber += (position.getLine() - previousSourceLine) - 1;
-          }
-        }
-
+        advanceNextOptimizedLineNumber(position);
         Position newPosition =
             position
                 .builderWithCopy()
-                .setLine(nextOptimizedLineNumber++)
+                .setLine(nextOptimizedLineNumber)
                 .setCallerPosition(null)
                 .build();
-        previousSourceLine = position.getLine();
-        previousMethod = position.getMethod();
         return new Pair<>(position, newPosition);
       }
 
+      protected abstract void advanceNextOptimizedLineNumber(Position position);
+
       @Override
       public void setNextOptimizedLineNumber(int nextOptimizedLineNumber) {
-        this.nextOptimizedLineNumber = nextOptimizedLineNumber;
+        assert 1 <= nextOptimizedLineNumber : "Invalid line number: " + nextOptimizedLineNumber;
+        // -1 to neutralize the advancement before the next assignment.
+        this.nextOptimizedLineNumber = nextOptimizedLineNumber - 1;
+      }
+    }
+
+    /** Re-numbers lines, but matches the original skips (e.g. 12, 13, 15 becomes 1, 2, 4). */
+    private static class OffsetMethodPositionRemapper extends OptimizingMethodPositionRemapper {
+
+      private DexMethod previousMethod = null;
+      private int previousSourceLine = -1;
+
+      @Override
+      protected void advanceNextOptimizedLineNumber(Position position) {
+        assert position.getMethod() != null : "Position has no method: " + position;
+        if (position.getMethod().isIdenticalTo(previousMethod)) {
+          // Follow the original increments to produce more compact mapping entries.
+          assert previousSourceLine >= 0 : "Negative previous line: " + previousSourceLine;
+          int lineIncrement = position.getLine() - previousSourceLine;
+          if (0 < lineIncrement) {
+            nextOptimizedLineNumber += lineIncrement;
+          } else {
+            nextOptimizedLineNumber++;
+          }
+        } else {
+          nextOptimizedLineNumber++;
+        }
+        previousSourceLine = position.getLine();
+        previousMethod = position.getMethod();
+      }
+    }
+
+    private static class SequentialMethodPositionRemapper extends OptimizingMethodPositionRemapper {
+      @Override
+      protected void advanceNextOptimizedLineNumber(Position position) {
+        nextOptimizedLineNumber++;
       }
     }
   }
