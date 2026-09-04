@@ -2173,6 +2173,14 @@ const ReportApp = {
         const perc = total > 0 ? 100 - (disallowCount / total) * 100 : 100;
         if (el) {
           el.textContent = perc.toFixed(1) + "%";
+          const colorClass = UIUtils.getScoreClass(perc);
+          if (colorClass.includes("green")) {
+            el.style.color = "var(--text-green-600)";
+          } else if (colorClass.includes("yellow")) {
+            el.style.color = "var(--text-yellow-600)";
+          } else if (colorClass.includes("red")) {
+            el.style.color = "var(--text-red-600)";
+          }
         }
         return perc;
       };

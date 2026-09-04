@@ -8,6 +8,8 @@ import static com.microsoft.playwright.assertions.PlaywrightAssertions.assertTha
 import com.android.tools.r8.PlaywrightTestBase;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
+import com.microsoft.playwright.Locator;
+import com.microsoft.playwright.Page;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -16,6 +18,10 @@ import org.junit.runners.Parameterized.Parameters;
 
 @RunWith(Parameterized.class)
 public class KeepRadiusPlaywrightTest extends PlaywrightTestBase {
+
+  private static final String GREEN_TEXT = "rgb(22, 101, 52)";
+  private static final String RED_TEXT = "rgb(185, 28, 28)";
+  private static final String YELLOW_TEXT = "rgb(176, 96, 0)";
 
   @Parameter(0)
   public TestParameters parameters;
@@ -89,8 +95,161 @@ public class KeepRadiusPlaywrightTest extends PlaywrightTestBase {
             });
   }
 
+  @Test
+  public void testHtmlReportScore80Green() throws Exception {
+    testForR8(Backend.DEX)
+        .addProgramClasses(Main.class)
+        .addKeepMainRule(Main.class)
+        .enableConfigurationAnalysisReport()
+        .compile()
+        .inspectKeepRadiusHtmlReport(
+            this::getPage,
+            inspector -> {
+              // Header styles.
+              assertElementHasTextAndColor(page, "#total-shrinking", "80.0%", GREEN_TEXT);
+              assertElementHasTextAndColor(page, "#total-optimization", "80.0%", GREEN_TEXT);
+              assertElementHasTextAndColor(page, "#total-obfuscation", "80.0%", GREEN_TEXT);
+
+              // Cards styles.
+              assertElementHasTextAndColor(page, "#card-total-shrinking", "80.0%", GREEN_TEXT);
+              assertElementHasTextAndColor(page, "#card-total-optimization", "80.0%", GREEN_TEXT);
+              assertElementHasTextAndColor(page, "#card-total-obfuscation", "80.0%", GREEN_TEXT);
+            });
+  }
+
+  @Test
+  public void testHtmlReportScore70Yellow() throws Exception {
+    testForR8(Backend.DEX)
+        .addProgramClasses(Main.class)
+        .addKeepMainRule(Main.class)
+        .addKeepRules("-keepclassmembers class * { void a(); }")
+        .enableConfigurationAnalysisReport()
+        .compile()
+        .inspectKeepRadiusHtmlReport(
+            this::getPage,
+            inspector -> {
+              // Header styles.
+              assertElementHasTextAndColor(page, "#total-shrinking", "70.0%", YELLOW_TEXT);
+              assertElementHasTextAndColor(page, "#total-optimization", "70.0%", YELLOW_TEXT);
+              assertElementHasTextAndColor(page, "#total-obfuscation", "70.0%", YELLOW_TEXT);
+
+              // Cards styles.
+              assertElementHasTextAndColor(page, "#card-total-shrinking", "70.0%", YELLOW_TEXT);
+              assertElementHasTextAndColor(page, "#card-total-optimization", "70.0%", YELLOW_TEXT);
+              assertElementHasTextAndColor(page, "#card-total-obfuscation", "70.0%", YELLOW_TEXT);
+            });
+  }
+
+  @Test
+  public void testHtmlReportScore60Yellow() throws Exception {
+    testForR8(Backend.DEX)
+        .addProgramClasses(Main.class)
+        .addKeepMainRule(Main.class)
+        .addKeepRules("-keepclassmembers class * { void a(); void b(); }")
+        .enableConfigurationAnalysisReport()
+        .compile()
+        .inspectKeepRadiusHtmlReport(
+            this::getPage,
+            inspector -> {
+              // Header styles.
+              assertElementHasTextAndColor(page, "#total-shrinking", "60.0%", YELLOW_TEXT);
+              assertElementHasTextAndColor(page, "#total-optimization", "60.0%", YELLOW_TEXT);
+              assertElementHasTextAndColor(page, "#total-obfuscation", "60.0%", YELLOW_TEXT);
+
+              // Cards styles.
+              assertElementHasTextAndColor(page, "#card-total-shrinking", "60.0%", YELLOW_TEXT);
+              assertElementHasTextAndColor(page, "#card-total-optimization", "60.0%", YELLOW_TEXT);
+              assertElementHasTextAndColor(page, "#card-total-obfuscation", "60.0%", YELLOW_TEXT);
+            });
+  }
+
+  @Test
+  public void testHtmlReportScore50Red() throws Exception {
+    testForR8(Backend.DEX)
+        .addProgramClasses(Main.class)
+        .addKeepMainRule(Main.class)
+        .addKeepRules("-keepclassmembers class * { void a(); void b(); c(); }")
+        .enableConfigurationAnalysisReport()
+        .compile()
+        .inspectKeepRadiusHtmlReport(
+            this::getPage,
+            inspector -> {
+              // Header styles.
+              assertElementHasTextAndColor(page, "#total-shrinking", "50.0%", RED_TEXT);
+              assertElementHasTextAndColor(page, "#total-optimization", "50.0%", RED_TEXT);
+              assertElementHasTextAndColor(page, "#total-obfuscation", "50.0%", RED_TEXT);
+
+              // Cards styles.
+              assertElementHasTextAndColor(page, "#card-total-shrinking", "50.0%", RED_TEXT);
+              assertElementHasTextAndColor(page, "#card-total-optimization", "50.0%", RED_TEXT);
+              assertElementHasTextAndColor(page, "#card-total-obfuscation", "50.0%", RED_TEXT);
+            });
+  }
+
+  @Test
+  public void testHtmlReportScore0Red() throws Exception {
+    testForR8(Backend.DEX)
+        .addProgramClasses(Main.class)
+        .addKeepClassAndMembersRules(Main.class)
+        .enableConfigurationAnalysisReport()
+        .compile()
+        .inspectKeepRadiusHtmlReport(
+            this::getPage,
+            inspector -> {
+              // Header styles.
+              assertElementHasTextAndColor(page, "#total-shrinking", "0.0%", RED_TEXT);
+              assertElementHasTextAndColor(page, "#total-optimization", "0.0%", RED_TEXT);
+              assertElementHasTextAndColor(page, "#total-obfuscation", "0.0%", RED_TEXT);
+
+              // Cards styles.
+              assertElementHasTextAndColor(page, "#card-total-shrinking", "0.0%", RED_TEXT);
+              assertElementHasTextAndColor(page, "#card-total-optimization", "0.0%", RED_TEXT);
+              assertElementHasTextAndColor(page, "#card-total-obfuscation", "0.0%", RED_TEXT);
+            });
+  }
+
+  private static void assertElementHasTextAndColor(
+      Page page, String selector, String text, String color) {
+    Locator locator = page.locator(selector);
+    assertThat(locator).hasText(text);
+    assertThat(locator).hasCSS("color", color);
+  }
+
   static class Main {
+
     public static void main(String[] args) {
+      a();
+    }
+
+    static void a() {
+      b();
+    }
+
+    static void b() {
+      c();
+    }
+
+    static void c() {
+      d();
+    }
+
+    static void d() {
+      e();
+    }
+
+    static void e() {
+      f();
+    }
+
+    static void f() {
+      g();
+    }
+
+    static void g() {
+      h();
+    }
+
+    static void h() {
       System.out.println("Hello");
     }
   }
