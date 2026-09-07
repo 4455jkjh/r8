@@ -28,8 +28,8 @@ public class R8CFRunExamplesJava9Test extends RunExamplesJava9Test<R8Command.Bui
 
   class R8CFTestRunner extends TestRunner<R8CFTestRunner> {
 
-    R8CFTestRunner(String testName, String packageName, String mainClass) {
-      super(testName, packageName, mainClass);
+    R8CFTestRunner(String testName, String packageName, String mainClass, List<Path> inputFiles) {
+      super(testName, packageName, mainClass, inputFiles);
     }
 
     @Override
@@ -50,27 +50,23 @@ public class R8CFRunExamplesJava9Test extends RunExamplesJava9Test<R8Command.Bui
     }
 
     @Override
-    void build(Path inputFile, Path out) throws Throwable {
+    void build(List<Path> inputFiles, Path out) throws Throwable {
       R8Command.Builder builder = R8Command.builder();
       for (UnaryOperator<R8Command.Builder> transformation : builderTransformations) {
         builder = transformation.apply(builder);
       }
       builder.addLibraryFiles(LibraryFilesHelper.getJdk9LibraryFiles(temp));
       R8Command command =
-          builder
-              .addProgramFiles(ToolHelper.getClassFilesForTestDirectory(inputFile))
-              .setOutput(out, OutputMode.ClassFile)
-              .build();
+          builder.addProgramFiles(inputFiles).setOutput(out, OutputMode.ClassFile).build();
       ToolHelper.runR8(command, this::combinedOptionConsumer);
     }
 
     @Override
     void run() throws Throwable {
       String qualifiedMainClass = packageName + "." + mainClass;
-      Path inputFile = getInputPath();
       Path out = temp.getRoot().toPath().resolve(testName + ZIP_EXTENSION);
 
-      build(inputFile, out);
+      build(inputFiles, out);
 
       if (!ToolHelper.isJava9Runtime()) {
         System.out.println("No Java 9 support; skip execution tests");
@@ -84,7 +80,12 @@ public class R8CFRunExamplesJava9Test extends RunExamplesJava9Test<R8Command.Bui
         }
       }
 
-      execute(testName, qualifiedMainClass, new Path[] {inputFile}, new Path[] {out}, args);
+      execute(
+          testName,
+          qualifiedMainClass,
+          new Path[] {ToolHelper.getClassPathForTests()},
+          new Path[] {out},
+          args);
     }
 
     @Override
@@ -94,8 +95,9 @@ public class R8CFRunExamplesJava9Test extends RunExamplesJava9Test<R8Command.Bui
   }
 
   @Override
-  R8CFTestRunner test(String testName, String packageName, String mainClass) {
-    return new R8CFTestRunner(testName, packageName, mainClass);
+  R8CFTestRunner test(
+      String testName, String packageName, String mainClass, List<Path> inputFiles) {
+    return new R8CFTestRunner(testName, packageName, mainClass, inputFiles);
   }
 
   @Override

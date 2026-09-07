@@ -18,6 +18,7 @@ import com.android.tools.r8.CompilationFailedException;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.ToolHelper.DexVm;
+import com.android.tools.r8.jdk9.privateitf.privateinterfacemethods.PrivateInterfaceMethods;
 import com.android.tools.r8.utils.AndroidApiLevel;
 import com.android.tools.r8.utils.InternalOptions;
 import com.android.tools.r8.utils.TestDescriptionWatcher;
@@ -46,16 +47,18 @@ public abstract class RunExamplesJava9Test<B extends BaseCommand.Builder<? exten
     final String testName;
     final String packageName;
     final String mainClass;
+    final List<Path> inputFiles;
     final List<String> args = new ArrayList<>();
 
     final List<Consumer<InternalOptions>> optionConsumers = new ArrayList<>();
     final List<Consumer<CodeInspector>> dexInspectorChecks = new ArrayList<>();
     final List<UnaryOperator<B>> builderTransformations = new ArrayList<>();
 
-    TestRunner(String testName, String packageName, String mainClass) {
+    TestRunner(String testName, String packageName, String mainClass, List<Path> inputFiles) {
       this.testName = testName;
       this.packageName = packageName;
       this.mainClass = mainClass;
+      this.inputFiles = inputFiles;
     }
 
     abstract C self();
@@ -76,21 +79,15 @@ public abstract class RunExamplesJava9Test<B extends BaseCommand.Builder<? exten
       return self();
     }
 
-    Path getInputPath() {
-      return ToolHelper.getClassPathForTests()
-          .resolve(packageName.replace('.', java.io.File.separatorChar));
-    }
-
     void run() throws Throwable {
       if (minSdkErrorExpected(testName)) {
         thrown.expect(CompilationFailedException.class);
       }
 
       String qualifiedMainClass = packageName + "." + mainClass;
-      Path inputFile = getInputPath();
       Path out = temp.getRoot().toPath().resolve(testName + ZIP_EXTENSION);
 
-      build(inputFile, out);
+      build(inputFiles, out);
 
       if (!ToolHelper.artSupported() && !ToolHelper.dealsWithGoldenFiles()) {
         return;
@@ -103,7 +100,8 @@ public abstract class RunExamplesJava9Test<B extends BaseCommand.Builder<? exten
         }
       }
 
-      execute(testName, qualifiedMainClass, new Path[]{inputFile}, new Path[]{out}, args);
+      execute(
+          testName, qualifiedMainClass, inputFiles.toArray(new Path[0]), new Path[] {out}, args);
     }
 
     abstract C withMinApiLevel(int minApiLevel);
@@ -112,7 +110,7 @@ public abstract class RunExamplesJava9Test<B extends BaseCommand.Builder<? exten
       return self();
     }
 
-    abstract void build(Path inputFile, Path out) throws Throwable;
+    abstract void build(List<Path> inputFiles, Path out) throws Throwable;
   }
 
   private static List<String> minSdkErrorExpected = ImmutableList.of();
@@ -157,12 +155,24 @@ public abstract class RunExamplesJava9Test<B extends BaseCommand.Builder<? exten
     return minSdkErrorExpected.contains(testName);
   }
 
+  private static List<Path> getPrivateInterfaceMethodsFiles() {
+    Class<?> main = PrivateInterfaceMethods.class;
+    return ImmutableList.of(
+        ToolHelper.getClassFileForTestClassFromResources(main),
+        ToolHelper.getResourceAsReadOnlyFile(main, "C.class"),
+        ToolHelper.getResourceAsReadOnlyFile(main, "IB.class"),
+        ToolHelper.getResourceAsReadOnlyFile(main, "I.class"),
+        ToolHelper.getResourceAsReadOnlyFile(main, "I$1.class"),
+        ToolHelper.getResourceAsReadOnlyFile(main, "I$2.class"));
+  }
+
   @Test
   public void nativePrivateInterfaceMethods() throws Throwable {
     test(
             "native-private-interface-methods",
             "com.android.tools.r8.jdk9.privateitf.privateinterfacemethods",
-            "PrivateInterfaceMethods")
+            "PrivateInterfaceMethods",
+            getPrivateInterfaceMethodsFiles())
         .withMinApiLevel(AndroidApiLevel.N.getMajor())
         .withKeepAll()
         .run();
@@ -175,7 +185,8 @@ public abstract class RunExamplesJava9Test<B extends BaseCommand.Builder<? exten
     test(
             "desugared-private-interface-methods",
             "com.android.tools.r8.jdk9.privateitf.privateinterfacemethods",
-            "PrivateInterfaceMethods")
+            "PrivateInterfaceMethods",
+            getPrivateInterfaceMethodsFiles())
         .withMinApiLevel(AndroidApiLevel.K.getMajor())
         .withKeepAll()
         .withDexCheck(
@@ -193,8 +204,8 @@ public abstract class RunExamplesJava9Test<B extends BaseCommand.Builder<? exten
         .run();
   }
 
-  abstract RunExamplesJava9Test<B>.TestRunner<?> test(String testName, String packageName,
-      String mainClass);
+  abstract RunExamplesJava9Test<B>.TestRunner<?> test(
+      String testName, String packageName, String mainClass, List<Path> inputFiles);
 
   void execute(String testName,
       String qualifiedMainClass, Path[] jars, Path[] dexes, List<String> args) throws IOException {

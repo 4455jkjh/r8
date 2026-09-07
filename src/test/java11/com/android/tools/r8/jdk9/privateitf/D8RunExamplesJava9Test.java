@@ -9,14 +9,15 @@ import com.android.tools.r8.OutputMode;
 import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.utils.AndroidApiLevel;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.function.UnaryOperator;
 
 public class D8RunExamplesJava9Test extends RunExamplesJava9Test<D8Command.Builder> {
 
   class D8TestRunner extends TestRunner<D8TestRunner> {
 
-    D8TestRunner(String testName, String packageName, String mainClass) {
-      super(testName, packageName, mainClass);
+    D8TestRunner(String testName, String packageName, String mainClass, List<Path> inputFiles) {
+      super(testName, packageName, mainClass, inputFiles);
     }
 
     @Override
@@ -25,7 +26,7 @@ public class D8RunExamplesJava9Test extends RunExamplesJava9Test<D8Command.Build
     }
 
     @Override
-    void build(Path inputFile, Path out) throws Throwable {
+    void build(List<Path> inputFiles, Path out) throws Throwable {
       D8Command.Builder builder = D8Command.builder();
       for (UnaryOperator<D8Command.Builder> transformation : builderTransformations) {
         builder = transformation.apply(builder);
@@ -33,7 +34,7 @@ public class D8RunExamplesJava9Test extends RunExamplesJava9Test<D8Command.Build
       // TODO(mikaelpeltier) Add new android.jar build from aosp and use it
       builder
           .addLibraryFiles(ToolHelper.getAndroidJar(AndroidApiLevel.P))
-          .addProgramFiles(ToolHelper.getClassFilesForTestDirectory(inputFile))
+          .addProgramFiles(inputFiles)
           .setOutput(out, OutputMode.DexIndexed);
       ToolHelper.runD8(builder, this::combinedOptionConsumer);
     }
@@ -45,7 +46,8 @@ public class D8RunExamplesJava9Test extends RunExamplesJava9Test<D8Command.Build
   }
 
   @Override
-  D8TestRunner test(String testName, String packageName, String mainClass) {
-    return new D8TestRunner(testName, packageName, mainClass);
+  D8TestRunner test(String testName, String packageName, String mainClass, List<Path> inputFiles) {
+    return new D8TestRunner(testName, packageName, mainClass, inputFiles);
   }
 }
+

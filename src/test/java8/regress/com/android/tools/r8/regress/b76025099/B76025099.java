@@ -15,7 +15,10 @@ import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.ToolHelper;
+import com.android.tools.r8.regress.b76025099.testclasses.Logger;
 import com.android.tools.r8.regress.b76025099.testclasses.Main;
+import com.android.tools.r8.regress.b76025099.testclasses.helper.AbstractSub;
+import com.android.tools.r8.regress.b76025099.testclasses.impl.Factory;
 import com.android.tools.r8.regress.b76025099.testclasses.impl.Impl;
 import com.android.tools.r8.utils.codeinspector.ClassSubject;
 import com.android.tools.r8.utils.codeinspector.CodeInspector;
@@ -23,7 +26,10 @@ import com.android.tools.r8.utils.codeinspector.FieldAccessInstructionSubject;
 import com.android.tools.r8.utils.codeinspector.InstructionSubject;
 import com.android.tools.r8.utils.codeinspector.MethodSubject;
 import com.android.tools.r8.utils.internal.StringUtils;
+import com.google.common.collect.ImmutableList;
+import java.nio.file.Path;
 import java.util.Iterator;
+import java.util.List;
 import java.util.function.Function;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -54,13 +60,23 @@ public class B76025099 extends TestBase {
         .assertSuccessWithOutput(EXPECTED_OUTPUT);
   }
 
+  private static List<Path> getProgramFiles() {
+    return ImmutableList.of(
+        ToolHelper.getClassFileForTestClassFromResources(Main.class),
+        ToolHelper.getClassFileForTestClassFromResources(Logger.class),
+        ToolHelper.getClassFileForTestClassFromResources(AbstractSub.class),
+        ToolHelper.getResourceAsReadOnlyFile(AbstractSub.class, "AbstractBase.class"),
+        ToolHelper.getClassFileForTestClassFromResources(Factory.class),
+        ToolHelper.getClassFileForTestClassFromResources(Impl.class));
+  }
+
   @Test
   public void testProguardAndD8() throws Exception {
     assumeTrue(isRunProguard());
 
     ProguardTestCompileResult proguardCompileResult =
         testForProguard()
-            .addProgramFiles(ToolHelper.getClassFilesForTestPackage(Main.class.getPackage()))
+            .addProgramFiles(getProgramFiles())
             .addKeepMainRule(Main.class)
             .addDontObfuscate()
             .compile();
@@ -83,7 +99,7 @@ public class B76025099 extends TestBase {
   @Test
   public void testR8() throws Exception {
     testForR8(parameters.getBackend())
-        .addProgramFiles(ToolHelper.getClassFilesForTestPackage(Main.class.getPackage()))
+        .addProgramFiles(getProgramFiles())
         .addKeepMainRule(Main.class)
         .enableNoAccessModificationAnnotationsForClasses()
         .enableNoAccessModificationAnnotationsForMembers()

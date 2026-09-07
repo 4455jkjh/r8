@@ -27,6 +27,7 @@ import com.android.tools.r8.utils.AndroidApp;
 import com.android.tools.r8.utils.DescriptorUtils;
 import com.android.tools.r8.utils.InternalOptions;
 import com.android.tools.r8.utils.timing.Timing;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import java.nio.file.Path;
 import java.util.Arrays;
@@ -47,9 +48,13 @@ public class TypeLatticeTest extends TestBase {
   @BeforeClass
   public static void makeAppInfo() throws Exception {
     InternalOptions options = new InternalOptions();
-    List<Path> testClassPaths = ToolHelper.getClassFilesForTestDirectory(
-        ToolHelper.getPackageDirectoryForTestPackage(TypeLatticeTest.class.getPackage()),
-        path -> path.getFileName().toString().startsWith("I"));
+    List<Path> testClassPaths =
+        ImmutableList.of(
+            ToolHelper.getClassFileForTestClassFromResources(I0.class),
+            ToolHelper.getClassFileForTestClassFromResources(I1.class),
+            ToolHelper.getClassFileForTestClassFromResources(I2.class),
+            ToolHelper.getClassFileForTestClassFromResources(I3.class),
+            ToolHelper.getClassFileForTestClassFromResources(I4.class));
     D8Command.Builder d8CommandBuilder = D8Command.builder();
     d8CommandBuilder.addProgramFiles(testClassPaths);
     AndroidApp testClassApp = ToolHelper.runD8(d8CommandBuilder);

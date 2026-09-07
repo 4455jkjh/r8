@@ -29,8 +29,8 @@ public class D8IncrementalRunExamplesJava9Test extends RunExamplesJava9Test<Buil
 
   class D8TestRunner extends TestRunner<D8TestRunner> {
 
-    D8TestRunner(String testName, String packageName, String mainClass) {
-      super(testName, packageName, mainClass);
+    D8TestRunner(String testName, String packageName, String mainClass, List<Path> inputFiles) {
+      super(testName, packageName, mainClass, inputFiles);
     }
 
     @Override
@@ -39,13 +39,13 @@ public class D8IncrementalRunExamplesJava9Test extends RunExamplesJava9Test<Buil
     }
 
     @Override
-    void build(Path inputFile, Path out) throws Throwable {
-      List<String> dexFiles = compileIncremental(inputFile);
+    void build(List<Path> inputFiles, Path out) throws Throwable {
+      List<String> dexFiles = compileIncremental(inputFiles);
       assert !dexFiles.isEmpty();
       mergeDexFiles(dexFiles, out);
     }
 
-    private List<String> compileIncremental(Path inputFile) throws Throwable {
+    private List<String> compileIncremental(List<Path> inputFiles) throws Throwable {
       Builder builder = D8Command.builder();
       for (UnaryOperator<Builder> transformation : builderTransformations) {
         builder = transformation.apply(builder);
@@ -54,7 +54,7 @@ public class D8IncrementalRunExamplesJava9Test extends RunExamplesJava9Test<Buil
       Path incrementalOutput = temp.getRoot().toPath().resolve("incremental");
       builder
           .addLibraryFiles(ToolHelper.getAndroidJar(AndroidApiLevel.P))
-          .addProgramFiles(ToolHelper.getClassFilesForTestDirectory(inputFile))
+          .addProgramFiles(inputFiles)
           .setOutput(incrementalOutput, OutputMode.DexFilePerClassFile);
       ToolHelper.runD8(builder, this::combinedOptionConsumer);
       return collectDexFiles(incrementalOutput);
@@ -108,7 +108,7 @@ public class D8IncrementalRunExamplesJava9Test extends RunExamplesJava9Test<Buil
   }
 
   @Override
-  D8TestRunner test(String testName, String packageName, String mainClass) {
-    return new D8TestRunner(testName, packageName, mainClass);
+  D8TestRunner test(String testName, String packageName, String mainClass, List<Path> inputFiles) {
+    return new D8TestRunner(testName, packageName, mainClass, inputFiles);
   }
 }

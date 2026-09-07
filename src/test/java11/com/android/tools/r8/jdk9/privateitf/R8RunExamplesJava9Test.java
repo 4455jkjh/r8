@@ -11,14 +11,15 @@ import com.android.tools.r8.origin.Origin;
 import com.android.tools.r8.utils.AndroidApiLevel;
 import com.google.common.collect.ImmutableList;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.function.UnaryOperator;
 
 public class R8RunExamplesJava9Test extends RunExamplesJava9Test<R8Command.Builder> {
 
   class R8TestRunner extends TestRunner<R8TestRunner> {
 
-    R8TestRunner(String testName, String packageName, String mainClass) {
-      super(testName, packageName, mainClass);
+    R8TestRunner(String testName, String packageName, String mainClass, List<Path> inputFiles) {
+      super(testName, packageName, mainClass, inputFiles);
     }
 
     @Override
@@ -36,7 +37,7 @@ public class R8RunExamplesJava9Test extends RunExamplesJava9Test<R8Command.Build
     }
 
     @Override
-    void build(Path inputFile, Path out) throws Throwable {
+    void build(List<Path> inputFiles, Path out) throws Throwable {
       R8Command.Builder builder = R8Command.builder();
       for (UnaryOperator<R8Command.Builder> transformation : builderTransformations) {
         builder = transformation.apply(builder);
@@ -44,10 +45,7 @@ public class R8RunExamplesJava9Test extends RunExamplesJava9Test<R8Command.Build
       // TODO(mikaelpeltier) Add new android.jar build from aosp and use it
       builder.addLibraryFiles(ToolHelper.getAndroidJar(AndroidApiLevel.P));
       R8Command command =
-          builder
-              .addProgramFiles(ToolHelper.getClassFilesForTestDirectory(inputFile))
-              .setOutput(out, OutputMode.DexIndexed)
-              .build();
+          builder.addProgramFiles(inputFiles).setOutput(out, OutputMode.DexIndexed).build();
       ToolHelper.runR8(command, this::combinedOptionConsumer);
     }
 
@@ -58,7 +56,7 @@ public class R8RunExamplesJava9Test extends RunExamplesJava9Test<R8Command.Build
   }
 
   @Override
-  R8TestRunner test(String testName, String packageName, String mainClass) {
-    return new R8TestRunner(testName, packageName, mainClass);
+  R8TestRunner test(String testName, String packageName, String mainClass, List<Path> inputFiles) {
+    return new R8TestRunner(testName, packageName, mainClass, inputFiles);
   }
 }

@@ -10,6 +10,8 @@ import com.android.tools.r8.R8TestRunResult;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.accessrelaxation.privateinstance.Base;
+import com.android.tools.r8.accessrelaxation.privateinstance.Itf1;
+import com.android.tools.r8.accessrelaxation.privateinstance.Itf2;
 import com.android.tools.r8.accessrelaxation.privateinstance.Sub1;
 import com.android.tools.r8.accessrelaxation.privateinstance.Sub2;
 import com.android.tools.r8.accessrelaxation.privateinstance.TestMain;
@@ -17,11 +19,13 @@ import com.android.tools.r8.accessrelaxation.privatestatic.A;
 import com.android.tools.r8.accessrelaxation.privatestatic.B;
 import com.android.tools.r8.accessrelaxation.privatestatic.BB;
 import com.android.tools.r8.accessrelaxation.privatestatic.C;
+import com.android.tools.r8.accessrelaxation.privatestatic.I;
 import com.android.tools.r8.naming.MemberNaming.MethodSignature;
 import com.android.tools.r8.utils.codeinspector.CodeInspector;
 import com.android.tools.r8.utils.internal.BooleanUtils;
 import com.android.tools.r8.utils.internal.StringUtils;
 import com.google.common.collect.ImmutableList;
+import java.nio.file.Path;
 import java.util.List;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -58,9 +62,19 @@ public final class NonConstructorRelaxationTest extends AccessRelaxationTestBase
   @Test
   public void testStaticMethodRelaxation() throws Exception {
     Class<?> mainClass = C.class;
+    ImmutableList.Builder<Path> programFiles =
+        ImmutableList.<Path>builder()
+            .add(ToolHelper.getClassFileForTestClassFromResources(A.class))
+            .add(ToolHelper.getClassFileForTestClassFromResources(B.class))
+            .add(ToolHelper.getClassFileForTestClassFromResources(BB.class))
+            .add(ToolHelper.getClassFileForTestClassFromResources(C.class))
+            .add(ToolHelper.getClassFileForTestClassFromResources(I.class));
+    if (B.class.getResource("B$0.class") != null) {
+      programFiles.add(ToolHelper.getResourceAsReadOnlyFile(B.class, "B$0.class"));
+    }
     R8TestRunResult result =
         testForR8(parameters.getBackend())
-            .addProgramFiles(ToolHelper.getClassFilesForTestPackage(mainClass.getPackage()))
+            .addProgramFiles(programFiles.build())
             .addUnusedArgumentAnnotations()
             .enableConstantArgumentAnnotations()
             .enableInliningAnnotations()
@@ -153,7 +167,13 @@ public final class NonConstructorRelaxationTest extends AccessRelaxationTestBase
     Class<?> mainClass = TestMain.class;
     R8TestRunResult result =
         testForR8(parameters.getBackend())
-            .addProgramFiles(ToolHelper.getClassFilesForTestPackage(mainClass.getPackage()))
+            .addProgramFiles(
+                ToolHelper.getClassFileForTestClassFromResources(Base.class),
+                ToolHelper.getClassFileForTestClassFromResources(Itf1.class),
+                ToolHelper.getClassFileForTestClassFromResources(Itf2.class),
+                ToolHelper.getClassFileForTestClassFromResources(Sub1.class),
+                ToolHelper.getClassFileForTestClassFromResources(Sub2.class),
+                ToolHelper.getClassFileForTestClassFromResources(TestMain.class))
             .addKeepMainRule(mainClass)
             .addOptionsModification(
                 options ->

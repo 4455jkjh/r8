@@ -7,8 +7,8 @@ package com.android.tools.r8.shaking.attributes;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.ToolHelper;
-import com.android.tools.r8.utils.internal.BooleanUtils;
 import com.android.tools.r8.utils.InternalOptions;
+import com.android.tools.r8.utils.internal.BooleanUtils;
 import com.google.common.collect.ImmutableList;
 import java.nio.file.Path;
 import java.util.Collection;
@@ -66,11 +66,12 @@ public class EnclosingMethodTest extends TestBase {
 
   @Before
   public void setup() throws Exception {
-    ImmutableList.Builder<Path> builder = ImmutableList.builder();
-    builder.addAll(ToolHelper.getClassFilesForTestDirectory(
-        ToolHelper.getPackageDirectoryForTestPackage(MAIN.getPackage()),
-        path -> path.getFileName().toString().startsWith("GetName")));
-    classPaths = builder.build();
+    classPaths =
+        ImmutableList.of(
+            ToolHelper.getClassFileForTestClassFromResources(MAIN),
+            ToolHelper.getClassFileForTestClassFromResources(GetNameClass.class),
+            ToolHelper.getClassFileForTestClassFromResources(GetNameClass.Itf.class),
+            ToolHelper.getResourceAsReadOnlyFile(GetNameClass.class, "GetNameClass$1.class"));
   }
 
   private void configure(InternalOptions options) {

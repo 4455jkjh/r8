@@ -46,7 +46,10 @@ public class Regress69825683Test extends TestBase {
 
     CodeInspector inspector =
         testForR8(parameters.getBackend())
-            .addProgramFiles(ToolHelper.getClassFilesForTestPackage(outer.getPackage()))
+            .addProgramFiles(
+                ToolHelper.getClassFileForTestClassFromResources(outer),
+                ToolHelper.getClassFileForTestClassFromResources(inner),
+                ToolHelper.getResourceAsReadOnlyFile(outer, "Outer$1.class"))
             .addKeepMainRule(outer)
             .enableInliningAnnotations()
             .enableSideEffectAnnotations()
@@ -78,7 +81,10 @@ public class Regress69825683Test extends TestBase {
         com.android.tools.r8.regress.b69825683.innerconstructsouter.Outer.Inner.class;
     CodeInspector inspector =
         testForR8(parameters.getBackend())
-            .addProgramFiles(ToolHelper.getClassFilesForTestPackage(clazz.getPackage()))
+            .addProgramFiles(
+                ToolHelper.getClassFileForTestClassFromResources(clazz),
+                ToolHelper.getClassFileForTestClassFromResources(innerClass),
+                ToolHelper.getResourceAsReadOnlyFile(clazz, "Outer$1.class"))
             .addKeepMainRule(clazz)
             .enableInliningAnnotations()
             .addKeepRules(

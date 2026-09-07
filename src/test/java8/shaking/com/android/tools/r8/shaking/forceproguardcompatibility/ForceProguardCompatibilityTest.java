@@ -27,6 +27,7 @@ import com.android.tools.r8.shaking.ProguardKeepAttributes;
 import com.android.tools.r8.shaking.forceproguardcompatibility.TestMain.MentionedClass;
 import com.android.tools.r8.shaking.forceproguardcompatibility.defaultmethods.ClassImplementingInterface;
 import com.android.tools.r8.shaking.forceproguardcompatibility.defaultmethods.InterfaceWithDefaultMethods;
+import com.android.tools.r8.shaking.forceproguardcompatibility.defaultmethods.OtherClassImplementingInterface;
 import com.android.tools.r8.shaking.forceproguardcompatibility.defaultmethods.TestClass;
 import com.android.tools.r8.shaking.forceproguardcompatibility.keepattributes.TestKeepAttributes;
 import com.android.tools.r8.utils.AndroidApiLevel;
@@ -362,7 +363,11 @@ public class ForceProguardCompatibilityTest extends TestBase {
       inspector =
           testForR8Compat(parameters.getBackend(), forceProguardCompatibility)
               .addProgramFiles(
-                  ToolHelper.getClassFilesForTestPackage(TestKeepAttributes.class.getPackage()))
+                  ToolHelper.getClassFileForTestClassFromResources(TestKeepAttributes.class),
+                  ToolHelper.getClassFileForTestClassFromResources(
+                      TestKeepAttributes.InnerClass.class),
+                  ToolHelper.getResourceAsReadOnlyFile(
+                      TestKeepAttributes.class, "TestKeepAttributes$1MemberClass.class"))
               .addKeepRules(
                   "-keep class " + TestKeepAttributes.class.getTypeName() + " {",
                   "  <init>();", // Add <init>() so it does not become a compatibility rule below.
@@ -415,7 +420,12 @@ public class ForceProguardCompatibilityTest extends TestBase {
     Class<?> mainClass = TestClass.class;
     R8TestCompileResult compileResult =
         testForR8Compat(parameters.getBackend(), forceProguardCompatibility)
-            .addProgramFiles(ToolHelper.getClassFilesForTestPackage(mainClass.getPackage()))
+            .addProgramFiles(
+                ToolHelper.getClassFileForTestClassFromResources(ClassImplementingInterface.class),
+                ToolHelper.getClassFileForTestClassFromResources(InterfaceWithDefaultMethods.class),
+                ToolHelper.getClassFileForTestClassFromResources(
+                    OtherClassImplementingInterface.class),
+                ToolHelper.getClassFileForTestClassFromResources(TestClass.class))
             .addKeepRules(
                 "-keep class " + mainClass.getCanonicalName() + "{",
                 "  public <init>();",

@@ -208,11 +208,14 @@ public class GetNameTest extends GetNameTestBase {
   public GetNameTest(TestParameters parameters, boolean enableMinification) throws Exception {
     super(parameters, enableMinification);
 
-    ImmutableList.Builder<Path> builder = ImmutableList.builder();
-    builder.addAll(ToolHelper.getClassFilesForTestDirectory(
-        ToolHelper.getPackageDirectoryForTestPackage(MAIN.getPackage()),
-        path -> path.getFileName().toString().startsWith("GetName0")));
-    classPaths = builder.build();
+    classPaths =
+        ImmutableList.of(
+            ToolHelper.getClassFileForTestClassFromResources(MAIN),
+            ToolHelper.getClassFileForTestClassFromResources(GetName0Class.class),
+            ToolHelper.getClassFileForTestClassFromResources(GetName0Class.InnerClass.class),
+            ToolHelper.getClassFileForTestClassFromResources(GetName0Class.Itf.class),
+            ToolHelper.getResourceAsReadOnlyFile(GetName0Class.class, "GetName0Class$1.class"),
+            ToolHelper.getResourceAsReadOnlyFile(GetName0Class.class, "GetName0Class$2.class"));
   }
 
   @Test

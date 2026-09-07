@@ -22,10 +22,10 @@ import com.android.tools.r8.jasmin.JasminBuilder;
 import com.android.tools.r8.jasmin.JasminBuilder.ClassBuilder;
 import com.android.tools.r8.naming.MemberNaming.MethodSignature;
 import com.android.tools.r8.utils.AndroidApp;
-import com.android.tools.r8.utils.internal.BooleanUtils;
 import com.android.tools.r8.utils.codeinspector.ClassSubject;
 import com.android.tools.r8.utils.codeinspector.CodeInspector;
 import com.android.tools.r8.utils.codeinspector.MethodSubject;
+import com.android.tools.r8.utils.internal.BooleanUtils;
 import com.google.common.collect.ImmutableList;
 import java.nio.file.Path;
 import java.util.List;
@@ -121,10 +121,17 @@ public class ParameterTypeTest extends TestBase {
     CodeInspector inspector =
         testForR8(parameters.getBackend())
             .addProgramFiles(
-                ToolHelper.getClassFilesForTestDirectory(
-                    ToolHelper.getPackageDirectoryForTestPackage(
-                        B112452064TestMain.class.getPackage()),
-                    path -> path.getFileName().toString().startsWith("B112452064")))
+                ImmutableList.of(
+                    ToolHelper.getClassFileForTestClassFromResources(
+                        B112452064SuperInterface1.class),
+                    ToolHelper.getClassFileForTestClassFromResources(
+                        B112452064SuperInterface2.class),
+                    ToolHelper.getClassFileForTestClassFromResources(B112452064SubInterface.class),
+                    ToolHelper.getClassFileForTestClassFromResources(B112452064TestMain.class),
+                    ToolHelper.getResourceAsReadOnlyFile(
+                        B112452064TestMain.class, "B112452064TestMain$1.class"),
+                    ToolHelper.getResourceAsReadOnlyFile(
+                        B112452064TestMain.class, "B112452064TestMain$2.class")))
             .addKeepMainRule(B112452064TestMain.class)
             .addOptionsModification(
                 options -> {

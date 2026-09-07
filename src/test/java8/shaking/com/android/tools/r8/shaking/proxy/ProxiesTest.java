@@ -11,7 +11,9 @@ import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.naming.MemberNaming.MethodSignature;
+import com.android.tools.r8.shaking.proxy.testclasses.BaseClass;
 import com.android.tools.r8.shaking.proxy.testclasses.BaseInterface;
+import com.android.tools.r8.shaking.proxy.testclasses.Interface2;
 import com.android.tools.r8.shaking.proxy.testclasses.Main;
 import com.android.tools.r8.shaking.proxy.testclasses.SubClass;
 import com.android.tools.r8.shaking.proxy.testclasses.SubInterface;
@@ -51,7 +53,14 @@ public class ProxiesTest extends TestBase {
       String expectedResult)
       throws Exception {
     testForR8(parameters.getBackend())
-        .addProgramFiles(ToolHelper.getClassFilesForTestPackage(Main.class.getPackage()))
+        .addProgramFiles(
+            ToolHelper.getClassFileForTestClassFromResources(BaseClass.class),
+            ToolHelper.getClassFileForTestClassFromResources(BaseInterface.class),
+            ToolHelper.getClassFileForTestClassFromResources(Interface2.class),
+            ToolHelper.getClassFileForTestClassFromResources(Main.class),
+            ToolHelper.getClassFileForTestClassFromResources(SubClass.class),
+            ToolHelper.getClassFileForTestClassFromResources(SubInterface.class),
+            ToolHelper.getClassFileForTestClassFromResources(TestClass.class))
         .addKeepMainRule(Main.class)
         .addKeepRules(
             "-keep class " + Main.class.getCanonicalName() + " {",

@@ -25,7 +25,6 @@ import com.android.tools.r8.utils.internal.StringUtils;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
@@ -47,8 +46,19 @@ public class AdaptResourceFileNamesTest extends ProguardCompatibilityTestBase {
     return getTestParameters().withAllRuntimesAndApiLevels().build();
   }
 
-  private static final Path CF_DIR =
-      Paths.get(ToolHelper.EXAMPLES_CF_DIR).resolve("adaptresourcefilenames");
+  private static List<Path> getProgramFiles() {
+    Class<?> clazz = AdaptResourceFileNamesTest.class;
+    return ImmutableList.of(
+        ToolHelper.getResourceAsReadOnlyFile(clazz, "/adaptresourcefilenames/A.class"),
+        ToolHelper.getResourceAsReadOnlyFile(clazz, "/adaptresourcefilenames/B.class"),
+        ToolHelper.getResourceAsReadOnlyFile(clazz, "/adaptresourcefilenames/B$Inner.class"),
+        ToolHelper.getResourceAsReadOnlyFile(
+            clazz, "/adaptresourcefilenames/NoInliningOfDefaultInitializer.class"),
+        ToolHelper.getResourceAsReadOnlyFile(clazz, "/adaptresourcefilenames/TestClass.class"),
+        ToolHelper.getResourceAsReadOnlyFile(clazz, "/adaptresourcefilenames/pkg/C.class"),
+        ToolHelper.getResourceAsReadOnlyFile(
+            clazz, "/adaptresourcefilenames/pkg/innerpkg/D.class"));
+  }
 
   private static String getProguardConfig(
       boolean enableAdaptResourceFileNames, String adaptResourceFileNamesPathFilter) {
@@ -200,7 +210,7 @@ public class AdaptResourceFileNamesTest extends ProguardCompatibilityTestBase {
       throws Throwable {
     R8TestCompileResult compile =
         testForR8(parameters.getBackend())
-            .addProgramFiles(ToolHelper.getClassFilesForTestDirectory(CF_DIR))
+            .addProgramFiles(getProgramFiles())
             .addDataResources(dataResources)
             .addKeepRules(proguardConfig)
             .apply(builderConsumer)
