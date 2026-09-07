@@ -24,6 +24,7 @@ public class CliParserBase<B> {
   private final Map<String, QuadConsumer<B, String, String, String>> prefix2 = new HashMap<>();
   private BiConsumer<B, String> positionalHandler;
   private final List<OptionInfo> optionInfos = new ArrayList<>();
+  private final List<HelpInfo> helpInfos = new ArrayList<>();
   private final String usageHeader;
 
   /**
@@ -33,7 +34,26 @@ public class CliParserBase<B> {
     this.usageHeader = usageHeader;
   }
 
-  public static class OptionInfo {
+  public interface HelpInfo {
+
+    default boolean isOption() {
+      return false;
+    }
+
+    default OptionInfo asOption() {
+      return null;
+    }
+
+    default boolean isHelpText() {
+      return false;
+    }
+
+    default HelpTextInfo asHelpText() {
+      return null;
+    }
+  }
+
+  public static class OptionInfo implements HelpInfo {
 
     public final String name;
     public final String shorthand;
@@ -55,6 +75,36 @@ public class CliParserBase<B> {
       this.suffixLabel = suffixLabel;
       this.paramLabels = paramLabels;
       this.description = description;
+    }
+
+    @Override
+    public boolean isOption() {
+      return true;
+    }
+
+    @Override
+    public OptionInfo asOption() {
+      return this;
+    }
+  }
+
+  public static class HelpTextInfo implements HelpInfo {
+
+    public final String text;
+
+    HelpTextInfo(String text) {
+      assert text != null;
+      this.text = text;
+    }
+
+    @Override
+    public boolean isHelpText() {
+      return true;
+    }
+
+    @Override
+    public HelpTextInfo asHelpText() {
+      return this;
     }
   }
 
@@ -244,8 +294,18 @@ public class CliParserBase<B> {
     return usageHeader;
   }
 
+  public CliParserBase<B> addHelpText(String text) {
+    assert text != null;
+    helpInfos.add(new HelpTextInfo(text));
+    return this;
+  }
+
   public List<OptionInfo> getOptionInfo() {
     return ListUtils.unmodifiableForTesting(optionInfos);
+  }
+
+  public List<HelpInfo> getHelpInfo() {
+    return ListUtils.unmodifiableForTesting(helpInfos);
   }
 
   @SuppressWarnings("StatementWithEmptyBody")
@@ -520,7 +580,9 @@ public class CliParserBase<B> {
       assert !name.equals(shorthand) : "Shorthand is the same as the main name: " + name;
       assert !shorthand.contains("=") : shorthand + " contains '='";
     }
-    optionInfos.add(new OptionInfo(name, shorthand, suffixLabel, paramLabels, description));
+    OptionInfo optionInfo = new OptionInfo(name, shorthand, suffixLabel, paramLabels, description);
+    optionInfos.add(optionInfo);
+    helpInfos.add(optionInfo);
   }
 
   private void forEachOption(Consumer<String> action) {

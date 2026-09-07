@@ -29,7 +29,7 @@ def git_new_branch(name, upstream=None):
 
 
 def git_commit(message):
-    subprocess.run(['git', 'commit', '-a', '-m', message])
+    git_utils.GitCommit(message)
 
 
 def parse_options():
@@ -96,7 +96,8 @@ def run(args, branch):
         for i in range(len(args.hashes) + 1):
             local_branch_name = 'cherry-%s-%d' % (branch, i + 1)
             print('Deleting branch %s' % local_branch_name)
-            subprocess.run(['git', 'branch', '--delete', '--force', local_branch_name])
+            subprocess.run(
+                ['git', 'branch', '--delete', '--force', local_branch_name])
 
     bugs = set()
 
@@ -129,16 +130,14 @@ def run(args, branch):
             editor = os.environ.get('EDITOR')
         if not editor:
             editor = 'vi'
-        input("\nCannot automatically determine the new version.\n"
-            + "Press [enter] to edit %s for version update with editor '%s'." %
+        input("\nCannot automatically determine the new version.\n" +
+              "Press [enter] to edit %s for version update with editor '%s'." %
               (VERSION_FILE, editor))
         subprocess.run([editor, VERSION_FILE])
-        new_version = input('Please enter the new version for the commit message: ')
+        new_version = input(
+            'Please enter the new version for the commit message: ')
 
-    message = ("Version %s\n\n" % new_version)
-    for bug in sorted(bugs):
-        message += 'Bug: b/%s\n' % bug
-
+    message = git_utils.VersionCommitMessage(new_version, bugs=bugs)
     git_commit(message)
     confirm_and_upload(branch, args, None)
     if not args.current_checkout and not args.yes:
@@ -155,20 +154,21 @@ def run(args, branch):
 
 def confirm_and_upload(local_branch_name, args, bugs):
     if not args.yes:
-      question = ('Ready to continue (cwd %s, will not upload to Gerrit)' %
-                  os.getcwd() if args.no_upload else
-                  'Ready to upload %s (cwd %s)' % (local_branch_name, os.getcwd()))
+        question = ('Ready to continue (cwd %s, will not upload to Gerrit)' %
+                    os.getcwd()
+                    if args.no_upload else 'Ready to upload %s (cwd %s)' %
+                    (local_branch_name, os.getcwd()))
 
-      while True:
-          try:
-              answer = input(question + ' [yes/abort]? ')
-              if answer == 'yes':
-                 break
-              if answer == 'abort':
-                  print('Aborting new branch for %s' % local_branch_name)
-                  sys.exit(1)
-          except KeyboardInterrupt:
-              pass
+        while True:
+            try:
+                answer = input(question + ' [yes/abort]? ')
+                if answer == 'yes':
+                    break
+                if answer == 'abort':
+                    print('Aborting new branch for %s' % local_branch_name)
+                    sys.exit(1)
+            except KeyboardInterrupt:
+                pass
 
     # Compute the set of bug refs from the commit message after confirmation.
     # If done before a conflicting cherry-pick status will potentially include
@@ -215,7 +215,8 @@ def promote_dev(args):
         subprocess.check_call(['git', 'clone', utils.REPO_SOURCE, temp])
         with utils.ChangedWorkingDirectory(temp):
             local_branch_name = 'promote-dev-%s' % branch
-            subprocess.run(['git', 'branch', '--delete', '--force', local_branch_name])
+            subprocess.run(
+                ['git', 'branch', '--delete', '--force', local_branch_name])
             git_new_branch(local_branch_name, '%s/%s' % (args.remote, branch))
 
             dev_version = version_from_version_file()
@@ -228,8 +229,10 @@ def promote_dev(args):
             print("Promoting %s to %s" % (dev_version, version))
             sed(dev_version, version, VERSION_FILE)
 
-            message = ('Version %s\n\n'
-                'Promoting version %s to version %s' % (version, dev_version, version))
+            message = git_utils.VersionCommitMessage(
+                version,
+                description=('Promoting version %s to version %s' %
+                             (dev_version, version)))
 
             git_commit(message)
             confirm_and_upload(branch, args, None)

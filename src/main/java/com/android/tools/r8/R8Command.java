@@ -577,6 +577,12 @@ public final class R8Command extends BaseCompilerCommand {
       return self();
     }
 
+    /** Add DEX-bytecode program data. */
+    @Deprecated
+    public Builder addExperimentalDexProgramData(byte[] data, Origin origin) {
+      return super.addDexProgramData(data, origin);
+    }
+
     @Deprecated
     @SuppressWarnings("InlineMeSuggester")
     public Builder setEnableExperimentalIsolatedSplits(boolean enableIsolatedSplits) {

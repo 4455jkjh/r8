@@ -350,4 +350,17 @@ public class CliParserTest extends TestBase {
     assertTrue(errors.isEmpty());
     assertEquals(ImmutableList.of("long:pkg...", "long", "long:pkg...", "long"), matched);
   }
+
+  @Test
+  public void testUsageMessageWithHelpText() {
+    CliParser<Builder> parser = new CliParser<>("Usage: test");
+    parser.option0("--flag1", "Flag 1.", b -> {});
+    parser.addHelpText(" and more options are:");
+    parser.option0("--flag2", "Flag 2.", b -> {});
+
+    String usage = CliParserUtils.getUsageMessage(parser);
+    assertTrue(usage.contains(" and more options are:"));
+    assertTrue(usage.indexOf("--flag1") < usage.indexOf(" and more options are:"));
+    assertTrue(usage.indexOf(" and more options are:") < usage.indexOf("--flag2"));
+  }
 }

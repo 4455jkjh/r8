@@ -39,3 +39,28 @@ def GitClAppendReviewers(cmd, reviewer, send_mail):
         cmd.extend(map(_reviewer_arg, reviewer))
         if send_mail:
             cmd.append('--send-mail')
+
+
+def GitCommit(message):
+    cmd = ['git', 'commit', '-a', '-m', message]
+    utils.PrintCmd(cmd)
+    return subprocess.check_call(cmd)
+
+
+def VersionCommitMessage(version, description=None, bugs=None):
+    lines = ['Version %s' % version]
+    if description:
+        lines.append('')
+        lines.append(description)
+    lines.append('')
+    if bugs:
+        for bug in sorted(bugs):
+            bug_str = str(bug).strip()
+            if not bug_str.startswith('b/'):
+                bug_str = 'b/%s' % bug_str
+            lines.append('Bug: %s' % bug_str)
+    lines.append('Cq-Exclude-Trybots: luci.r8.try:presubmit')
+    return '\n'.join(lines)
+
+
+version_commit_message = VersionCommitMessage

@@ -426,7 +426,7 @@ public class AppInfoWithClassHierarchy extends AppInfo {
     if (optionalSuperclass == null) {
       optionalSuperclass = definitionFor(supertype);
       if (optionalSuperclass == null) {
-        return false;
+        return isStrictSubtypeOfMissingType(subtype, supertype, optionalSubclass);
       }
     }
     DexClass superclass = optionalSuperclass;
@@ -494,6 +494,24 @@ public class AppInfoWithClassHierarchy extends AppInfo {
               });
       return result.isBreak() && result.asBreak().getValue();
     }
+  }
+
+  private boolean isStrictSubtypeOfMissingType(
+      DexType subtype, DexType supertype, DexClass optionalSubclass) {
+    assert subtype.isNotIdenticalTo(supertype);
+    assert definitionFor(supertype) == null;
+    if (optionalSubclass == null) {
+      optionalSubclass = definitionFor(subtype);
+      if (optionalSubclass == null) {
+        return false;
+      }
+    }
+    TraversalContinuation<?, ?> traversalContinuation =
+        traverseSuperTypes(
+            optionalSubclass,
+            (aSupertype, aSuperclassOrNull, context, isInterface) ->
+                TraversalContinuation.breakIf(supertype.isIdenticalTo(aSupertype)));
+    return traversalContinuation.isBreak();
   }
 
   public boolean inSameHierarchy(DexType type, DexType other) {
