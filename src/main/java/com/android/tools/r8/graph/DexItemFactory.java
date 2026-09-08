@@ -58,7 +58,6 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 
 public class DexItemFactory {
 
@@ -1154,18 +1153,41 @@ public class DexItemFactory {
 
   // Boxed Boxed#valueOf(Primitive), e.g., Boolean Boolean#valueOf(B)
   public Set<DexMethod> boxedValueOfMethods() {
-    return primitiveToBoxed.entrySet().stream()
-        .map(
-            entry -> {
-              DexType primitive = entry.getKey();
-              DexType boxed = entry.getValue();
-              return createMethod(
-                  boxed.descriptor,
-                  valueOfMethodName,
-                  boxed.descriptor,
-                  new DexString[] {primitive.descriptor});
-            })
-        .collect(Collectors.toSet());
+    return ImmutableSet.of(
+        byteMembers.valueOf,
+        shortMembers.valueOf,
+        integerMembers.valueOf,
+        longMembers.valueOf,
+        booleanMembers.valueOf,
+        charMembers.valueOf,
+        floatMembers.valueOf,
+        doubleMembers.valueOf);
+  }
+
+  public Set<DexMethod> boxedStringBoxingMethodsReturningNonNull() {
+    ImmutableSet.Builder<DexMethod> builder = ImmutableSet.builder();
+    // Boxed Boxed#decode(String), e.g., Byte Byte#decode(String) for byte, short, int and long.
+    builder.add(byteMembers.decode);
+    builder.add(shortMembers.decode);
+    builder.add(integerMembers.decode);
+    builder.add(longMembers.decode);
+    // Boxed Boxed#valueOf(String, int radix), e.g., Byte Byte#valueOf(String, int) for byte, short,
+    // int and long.
+    builder.add(byteMembers.valueOfStringWithRadix);
+    builder.add(shortMembers.valueOfStringWithRadix);
+    builder.add(integerMembers.valueOfStringWithRadix);
+    builder.add(longMembers.valueOfStringWithRadix);
+    // Boxed Boxed#valueOf(String), e.g., Boolean Boolean#valueOf(String), all except Character.
+    builder.add(byteMembers.valueOfString);
+    builder.add(shortMembers.valueOfString);
+    builder.add(integerMembers.valueOfString);
+    builder.add(longMembers.valueOfString);
+    builder.add(booleanMembers.valueOfString);
+    builder.add(floatMembers.valueOfString);
+    builder.add(doubleMembers.valueOfString);
+    // Note: We specifically do not add Integer#getInteger and similar, which can answer null
+    // values.
+    return builder.build();
   }
 
   public final DexMethod metafactoryMethod =
@@ -1231,6 +1253,7 @@ public class DexItemFactory {
               atomicLongUpdaterMethods.newUpdater)
           .addAll(javaUtilArraysMethods.copyOfMethods)
           .addAll(boxedValueOfMethods())
+          .addAll(boxedStringBoxingMethodsReturningNonNull())
           .addAll(stringBufferMethods.appendMethods)
           .addAll(stringBuilderMethods.appendMethods)
           .build();
