@@ -137,14 +137,19 @@ public class GetSimpleNameTest extends GetNameTestBase {
   public GetSimpleNameTest(TestParameters parameters, boolean enableMinification) throws Exception {
     super(parameters, enableMinification);
 
-    ImmutableList.Builder<Path> builder = ImmutableList.builder();
-    builder.addAll(ToolHelper.getClassFilesForTestDirectory(
-        ToolHelper.getPackageDirectoryForTestPackage(MAIN.getPackage()),
-        path -> path.getFileName().toString().startsWith("ClassGetSimpleName")));
-    builder.add(ToolHelper.getClassFileForTestClass(Outer.class));
-    builder.add(ToolHelper.getClassFileForTestClass(Outer.Inner.class));
-    builder.add(ToolHelper.getClassFileForTestClass(Outer.TestHelper.class));
-    classPaths = builder.build();
+    classPaths =
+        ImmutableList.of(
+            ToolHelper.getClassFileForTestClassFromResources(MAIN),
+            ToolHelper.getResourceAsReadOnlyFile(MAIN, "ClassGetSimpleName$1.class"),
+            ToolHelper.getResourceAsReadOnlyFile(MAIN, "ClassGetSimpleName$1$.class"),
+            ToolHelper.getResourceAsReadOnlyFile(MAIN, "ClassGetSimpleName$1$$$$.class"),
+            ToolHelper.getResourceAsReadOnlyFile(MAIN, "ClassGetSimpleName$1Local.class"),
+            ToolHelper.getResourceAsReadOnlyFile(MAIN, "ClassGetSimpleName$1Local_t03.class"),
+            ToolHelper.getResourceAsReadOnlyFile(
+                MAIN, "ClassGetSimpleName$1Local_t03$InnerLocal.class"),
+            ToolHelper.getClassFileForTestClassFromResources(Outer.class),
+            ToolHelper.getClassFileForTestClassFromResources(Outer.Inner.class),
+            ToolHelper.getClassFileForTestClassFromResources(Outer.TestHelper.class));
   }
 
   @Test

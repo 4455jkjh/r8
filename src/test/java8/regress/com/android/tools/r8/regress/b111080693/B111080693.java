@@ -26,11 +26,19 @@ public class B111080693 extends TestBase {
   public void test() throws Exception {
     R8Command.Builder builder = R8Command.builder();
     builder.addProgramFiles(
-        ToolHelper.getClassFilesForTestPackage(Observable.class.getPackage()));
-    builder.addProgramFiles(
-        ToolHelper.getClassFilesForTestPackage(RecyclerView.class.getPackage()));
-    builder.addProgramFiles(ToolHelper.getClassFileForTestClass(TestMain.class));
-    builder.addProgramFiles(ToolHelper.getClassFileForTestClass(TestMain.TestAdapter.class));
+        ImmutableList.of(
+            ToolHelper.getClassFileForTestClassFromResources(Observable.class),
+            ToolHelper.getClassFileForTestClassFromResources(RecyclerView.class),
+            ToolHelper.getClassFileForTestClassFromResources(RecyclerView.State.class),
+            ToolHelper.getClassFileForTestClassFromResources(
+                RecyclerView.AdapterDataObserver.class),
+            ToolHelper.getClassFileForTestClassFromResources(RecyclerView.Adapter.class),
+            ToolHelper.getResourceAsReadOnlyFile(
+                RecyclerView.class, "RecyclerView$RecyclerViewDataObserver.class"),
+            ToolHelper.getResourceAsReadOnlyFile(
+                RecyclerView.class, "RecyclerView$AdapterDataObservable.class"),
+            ToolHelper.getClassFileForTestClassFromResources(TestMain.class),
+            ToolHelper.getClassFileForTestClassFromResources(TestMain.TestAdapter.class)));
     builder.setProgramConsumer(DexIndexedConsumer.emptyConsumer());
     builder.setMinApiLevel(ToolHelper.getMinApiLevelForDexVm().getMajor());
     String config = keepMainProguardConfiguration(TestMain.class);

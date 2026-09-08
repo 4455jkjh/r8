@@ -29,12 +29,14 @@ import com.android.tools.r8.repackage.testclasses.repackagetest.AccessPublicMeth
 import com.android.tools.r8.repackage.testclasses.repackagetest.AccessPublicMethodOnReachableClass;
 import com.android.tools.r8.repackage.testclasses.repackagetest.KeptClass;
 import com.android.tools.r8.repackage.testclasses.repackagetest.KeptClassAllowRenaming;
+import com.android.tools.r8.repackage.testclasses.repackagetest.ReachableClass;
 import com.android.tools.r8.repackage.testclasses.repackagetest.ReachableClassWithKeptMethod;
 import com.android.tools.r8.repackage.testclasses.repackagetest.ReachableClassWithKeptMethodAllowRenaming;
 import com.android.tools.r8.repackage.testclasses.repackagetest.TestClass;
-import com.android.tools.r8.utils.internal.BooleanUtils;
 import com.android.tools.r8.utils.codeinspector.CodeInspector;
+import com.android.tools.r8.utils.internal.BooleanUtils;
 import com.google.common.collect.ImmutableList;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
@@ -93,10 +95,59 @@ public class RepackageTest extends RepackageTestBase {
         .assertSuccessWithOutputLines(EXPECTED);
   }
 
+  private static List<Path> getProgramFiles() {
+    return ImmutableList.of(
+        ToolHelper.getClassFileForTestClassFromResources(
+            AccessPackagePrivateKeptMethodAllowRenamingOnReachableClassDirect.class),
+        ToolHelper.getClassFileForTestClassFromResources(
+            AccessPackagePrivateKeptMethodAllowRenamingOnReachableClassIndirect.class),
+        ToolHelper.getClassFileForTestClassFromResources(
+            AccessPackagePrivateKeptMethodAllowRenamingOnReachableClassIndirect.Helper.class),
+        ToolHelper.getClassFileForTestClassFromResources(
+            AccessPackagePrivateKeptMethodOnReachableClassDirect.class),
+        ToolHelper.getClassFileForTestClassFromResources(
+            AccessPackagePrivateKeptMethodOnReachableClassIndirect.class),
+        ToolHelper.getClassFileForTestClassFromResources(
+            AccessPackagePrivateKeptMethodOnReachableClassIndirect.Helper.class),
+        ToolHelper.getClassFileForTestClassFromResources(
+            AccessPackagePrivateMethodOnKeptClassAllowRenamingDirect.class),
+        ToolHelper.getClassFileForTestClassFromResources(
+            AccessPackagePrivateMethodOnKeptClassAllowRenamingIndirect.class),
+        ToolHelper.getClassFileForTestClassFromResources(
+            AccessPackagePrivateMethodOnKeptClassAllowRenamingIndirect.Helper.class),
+        ToolHelper.getClassFileForTestClassFromResources(
+            AccessPackagePrivateMethodOnKeptClassDirect.class),
+        ToolHelper.getClassFileForTestClassFromResources(
+            AccessPackagePrivateMethodOnKeptClassIndirect.class),
+        ToolHelper.getClassFileForTestClassFromResources(
+            AccessPackagePrivateMethodOnKeptClassIndirect.Helper.class),
+        ToolHelper.getClassFileForTestClassFromResources(
+            AccessPackagePrivateMethodOnReachableClassDirect.class),
+        ToolHelper.getClassFileForTestClassFromResources(
+            AccessPackagePrivateMethodOnReachableClassIndirect.class),
+        ToolHelper.getClassFileForTestClassFromResources(
+            AccessPackagePrivateMethodOnReachableClassIndirect.Helper.class),
+        ToolHelper.getClassFileForTestClassFromResources(
+            AccessPublicKeptMethodAllowRenamingOnReachableClass.class),
+        ToolHelper.getClassFileForTestClassFromResources(
+            AccessPublicKeptMethodOnReachableClass.class),
+        ToolHelper.getClassFileForTestClassFromResources(AccessPublicMethodOnKeptClass.class),
+        ToolHelper.getClassFileForTestClassFromResources(
+            AccessPublicMethodOnKeptClassAllowRenaming.class),
+        ToolHelper.getClassFileForTestClassFromResources(AccessPublicMethodOnReachableClass.class),
+        ToolHelper.getClassFileForTestClassFromResources(KeptClass.class),
+        ToolHelper.getClassFileForTestClassFromResources(KeptClassAllowRenaming.class),
+        ToolHelper.getClassFileForTestClassFromResources(ReachableClass.class),
+        ToolHelper.getClassFileForTestClassFromResources(ReachableClassWithKeptMethod.class),
+        ToolHelper.getClassFileForTestClassFromResources(
+            ReachableClassWithKeptMethodAllowRenaming.class),
+        ToolHelper.getClassFileForTestClassFromResources(TestClass.class));
+  }
+
   @Test
   public void testR8() throws Exception {
     testForR8(parameters.getBackend())
-        .addProgramFiles(ToolHelper.getClassFilesForTestPackage(TestClass.class.getPackage()))
+        .addProgramFiles(getProgramFiles())
         .addKeepMainRule(TestClass.class)
         .addKeepRules(
             "-keep class " + KeptClass.class.getTypeName(),

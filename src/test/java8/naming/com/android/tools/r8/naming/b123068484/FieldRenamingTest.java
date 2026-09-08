@@ -14,6 +14,8 @@ import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.naming.b123068484.data.Concrete1;
+import com.android.tools.r8.naming.b123068484.data.Concrete2;
+import com.android.tools.r8.naming.b123068484.data.PublicAbs;
 import com.android.tools.r8.naming.b123068484.runner.Runner;
 import com.android.tools.r8.utils.codeinspector.ClassSubject;
 import com.android.tools.r8.utils.codeinspector.CodeInspector;
@@ -48,10 +50,13 @@ public class FieldRenamingTest extends TestBase {
 
   @BeforeClass
   public static void setUpClass() throws Exception {
-    CLASSES = ImmutableList.<Path>builder()
-        .addAll(ToolHelper.getClassFilesForTestPackage(MAIN.getPackage()))
-        .addAll(ToolHelper.getClassFilesForTestPackage(CONCRETE1.getPackage()))
-        .build();
+    CLASSES =
+        ImmutableList.of(
+            ToolHelper.getClassFileForTestClassFromResources(Runner.class),
+            ToolHelper.getClassFileForTestClassFromResources(Concrete1.class),
+            ToolHelper.getClassFileForTestClassFromResources(Concrete2.class),
+            ToolHelper.getClassFileForTestClassFromResources(PublicAbs.class),
+            ToolHelper.getResourceAsReadOnlyFile(Concrete1.class, "Abs.class"));
   }
 
   @Test

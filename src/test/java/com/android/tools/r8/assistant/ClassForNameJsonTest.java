@@ -57,7 +57,9 @@ public class ClassForNameJsonTest extends TestBase {
     assertEquals(2, reflectiveEvents.size());
 
     assertTrue(reflectiveEvents.get(0).isClassForName());
+    assertEquals(5, reflectiveEvents.get(0).getStack().length);
     assertTrue(reflectiveEvents.get(1).isClassGetName());
+    assertEquals(5, reflectiveEvents.get(1).getStack().length);
     ClassForName event0 = reflectiveEvents.get(0).asClassForName();
     assertEquals(
         "com.android.tools.r8.assistant.ClassForNameTestClass",

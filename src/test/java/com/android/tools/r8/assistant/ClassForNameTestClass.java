@@ -7,6 +7,26 @@ package com.android.tools.r8.assistant;
 public class ClassForNameTestClass {
 
   public static void main(String[] args) throws ClassNotFoundException {
+    call1();
+  }
+
+  private static void call1() throws ClassNotFoundException {
+    call2();
+  }
+
+  private static void call2() throws ClassNotFoundException {
+    call3();
+  }
+
+  private static void call3() throws ClassNotFoundException {
+    call4();
+  }
+
+  private static void call4() throws ClassNotFoundException {
+    call5();
+  }
+
+  private static void call5() throws ClassNotFoundException {
     Class<?> c1 = Class.forName("com.android.tools.r8.assistant.ClassForNameTestClass");
     System.out.println(c1.getName());
 

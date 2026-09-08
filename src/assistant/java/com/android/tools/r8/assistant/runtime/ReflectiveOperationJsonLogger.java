@@ -205,8 +205,9 @@ public class ReflectiveOperationJsonLogger implements ReflectiveOperationReceive
     }
     long hash = 0xcbf29ce484222325L;
     hash = updateHash(hash, event.name());
-    if (stack != null) {
-      for (String s : stack.stackTraceElementsAsString()) {
+    String[] stackStrings = stack != null ? stack.stackTraceElementsAsString(5) : null;
+    if (stackStrings != null) {
+      for (String s : stackStrings) {
         hash = updateHash(hash, s);
       }
     }
@@ -220,9 +221,9 @@ public class ReflectiveOperationJsonLogger implements ReflectiveOperationReceive
       output.write("{\"event\": \"");
       output.write(event.name());
       output.write("\"");
-      if (stack != null) {
+      if (stackStrings != null) {
         output.write(", \"stack\": ");
-        printArray(stack.stackTraceElementsAsString());
+        printArray(stackStrings);
       }
       assert args != null;
       output.write(", \"args\": ");

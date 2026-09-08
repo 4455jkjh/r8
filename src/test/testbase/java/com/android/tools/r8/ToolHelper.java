@@ -94,7 +94,6 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
 import java.util.function.Consumer;
 import java.util.function.Function;
-import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.zip.CRC32;
@@ -1575,34 +1574,10 @@ public class ToolHelper {
     return sourceSet.getBuildDir();
   }
 
-  private static List<String> getNamePartsForTestPackage(Package pkg) {
-    return Lists.newArrayList(pkg.getName().split("\\."));
-  }
-
-  public static Path getPackageDirectoryForTestPackage(Package pkg) {
-    List<String> parts = getNamePartsForTestPackage(pkg);
-    return getClassPathForTests().resolve(Paths.get("", parts.toArray(StringUtils.EMPTY_ARRAY)));
-  }
-
   private static List<String> getNamePartsForTestClass(Class<?> clazz) {
     List<String> parts = Lists.newArrayList(clazz.getTypeName().split("\\."));
     parts.set(parts.size() - 1, parts.get(parts.size() - 1) + ".class");
     return parts;
-  }
-
-  public static List<Path> getClassFilesForTestPackage(Package pkg) throws IOException {
-    return getClassFilesForTestDirectory(ToolHelper.getPackageDirectoryForTestPackage(pkg));
-  }
-
-  public static List<Path> getClassFilesForTestDirectory(Path directory) throws IOException {
-    return getClassFilesForTestDirectory(directory, null);
-  }
-
-  public static List<Path> getClassFilesForTestDirectory(
-      Path directory, Predicate<Path> filter) throws IOException {
-    return Files.walk(directory)
-        .filter(path -> path.toString().endsWith(".class") && (filter == null || filter.test(path)))
-        .collect(Collectors.toList());
   }
 
   /**
@@ -1790,9 +1765,10 @@ public class ToolHelper {
     for (Class<?> clazz : classes) {
       Path path = ToolHelper.getClassFileForTestClass(clazz, sourceSet);
       String prefix = path.toString().replace(CLASS_EXTENSION, "$");
-      paths.addAll(
-          ToolHelper.getClassFilesForTestDirectory(
-              path.getParent(), p -> p.toString().startsWith(prefix)));
+      try (Stream<Path> walk = Files.walk(path.getParent())) {
+        walk.filter(p -> p.toString().endsWith(CLASS_EXTENSION) && p.toString().startsWith(prefix))
+            .forEach(paths::add);
+      }
     }
     return paths;
   }

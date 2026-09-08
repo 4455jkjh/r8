@@ -41,11 +41,10 @@ public class GetNameInClassInitializerTest extends GetNameTestBase {
       throws Exception {
     super(parameters, enableMinification);
 
-    ImmutableList.Builder<Path> builder = ImmutableList.builder();
-    builder.addAll(ToolHelper.getClassFilesForTestDirectory(
-        ToolHelper.getPackageDirectoryForTestPackage(MAIN.getPackage()),
-        path -> path.getFileName().toString().startsWith("GetNameClinit")));
-    classPaths = builder.build();
+    classPaths =
+        ImmutableList.of(
+            ToolHelper.getClassFileForTestClassFromResources(MAIN),
+            ToolHelper.getClassFileForTestClassFromResources(GetNameClinitClass.class));
   }
 
   @Test

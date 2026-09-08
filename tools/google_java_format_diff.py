@@ -47,6 +47,8 @@ def parse_diff(diff_lines, prefix_strip=0):
 def get_base_command(java_binary, google_java_format_jar):
     return [
         java_binary,
+        # Disable hsperfdata to prevent lock contention on /tmp/hsperfdata_<user> during parallel execution.
+        '-XX:+PerfDisableSharedMem',
         '--add-opens=jdk.compiler/com.sun.tools.javac.code=ALL-UNNAMED',
         '--add-opens=jdk.compiler/com.sun.tools.javac.parser=ALL-UNNAMED',
         '--add-opens=jdk.compiler/com.sun.tools.javac.util=ALL-UNNAMED',

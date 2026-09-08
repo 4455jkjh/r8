@@ -36,6 +36,10 @@ public abstract class ReflectiveEvent {
     return eventType;
   }
 
+  public String[] getStack() {
+    return stack;
+  }
+
   public boolean isAtomicFieldUpdaterNewUpdater() {
     return false;
   }

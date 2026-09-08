@@ -228,8 +228,7 @@ public class LineNumberOptimizer {
     renamedMethodNames.sort(DexString::compareTo);
     timing.end();
 
-    ClassPositionRemapper classPositionRemapper =
-        positionRemapper.createClassPositionRemapper(clazz);
+    var classPositionRemapper = positionRemapper.createClassPositionRemapper(clazz);
     List<MethodPositionMapping> methodPositionMappings = new ArrayList<>();
     for (DexString newMethodName : renamedMethodNames) {
       List<ProgramMethod> methods = methodsByRenamedName.get(newMethodName);

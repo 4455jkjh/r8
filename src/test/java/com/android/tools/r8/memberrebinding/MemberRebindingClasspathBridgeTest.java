@@ -11,6 +11,7 @@ import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.ThrowableConsumer;
 import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.memberrebinding.classpathbridge.Main;
+import com.android.tools.r8.memberrebinding.classpathbridge.ProgramInterfaceImpl;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -32,7 +33,10 @@ public class MemberRebindingClasspathBridgeTest extends TestBase {
     testForR8(parameters.getBackend())
         .setMinApi(parameters)
         .addProgramClasses(ProgramInterface.class)
-        .addProgramFiles(ToolHelper.getClassFilesForTestPackage(Main.class.getPackage()))
+        .addProgramFiles(
+            ToolHelper.getClassFileForTestClassFromResources(Main.class),
+            ToolHelper.getClassFileForTestClassFromResources(ProgramInterfaceImpl.class),
+            ToolHelper.getResourceAsReadOnlyFile(Main.class, "ProgramInterfaceInvoker.class"))
         .addKeepMainRule(Main.class)
         .addKeepAllClassesRule()
         .setMode(CompilationMode.RELEASE)
