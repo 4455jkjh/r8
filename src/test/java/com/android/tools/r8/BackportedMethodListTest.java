@@ -166,7 +166,7 @@ public class BackportedMethodListTest extends TestBase {
       BackportedMethodListCommand.Builder builder =
           BackportedMethodListCommand.builder().setMinApiLevel(apiLevel).setConsumer(consumer);
       if (mode == Mode.LIBRARY) {
-        builder.addLibraryFiles(ToolHelper.getAndroidJar(AndroidApiLevel.P.getMajor()));
+        builder.addLibraryFiles(ToolHelper.getAndroidJar(AndroidApiLevel.P));
       } else if (mode == Mode.LIBRARY_DESUGAR || mode == Mode.LIBRARY_DESUGAR_11) {
         addLibraryDesugaring(builder);
       }
@@ -183,7 +183,7 @@ public class BackportedMethodListTest extends TestBase {
       BackportedMethodListCommand.Builder builder =
           BackportedMethodListCommand.builder().setMinApiLevel(apiLevel).setOutputPath(output);
       if (mode == Mode.LIBRARY) {
-        builder.addLibraryFiles(ToolHelper.getAndroidJar(AndroidApiLevel.P.getMajor()));
+        builder.addLibraryFiles(ToolHelper.getAndroidJar(AndroidApiLevel.P));
       } else if (mode == Mode.LIBRARY_DESUGAR || mode == Mode.LIBRARY_DESUGAR_11) {
         addLibraryDesugaring(builder);
       }

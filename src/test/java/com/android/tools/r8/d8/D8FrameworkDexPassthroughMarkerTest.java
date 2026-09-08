@@ -44,23 +44,19 @@ public class D8FrameworkDexPassthroughMarkerTest {
   @Parameters(name = "Min api = {0}")
   public static Collection<Object[]> data() {
     return Arrays.asList(
-        new Object[][] {
-          {AndroidApiLevel.N.getMajor()},
-          {AndroidApiLevel.O.getMajor()},
-          {AndroidApiLevel.O_MR1.getMajor()}
-        });
+        new Object[][] {{AndroidApiLevel.N}, {AndroidApiLevel.O}, {AndroidApiLevel.O_MR1}});
   }
 
-  private final int minApi;
+  private final AndroidApiLevel minApi;
 
-  public D8FrameworkDexPassthroughMarkerTest(int minApi) {
+  public D8FrameworkDexPassthroughMarkerTest(AndroidApiLevel minApi) {
     this.minApi = minApi;
   }
 
   @Test
   public void compile() throws Exception {
-    D8Command.Builder command =
-        D8Command.builder().setMinApiLevel(minApi).addProgramFiles(FRAMEWORK_JAR);
+    D8Command.Builder command = D8Command.builder().addProgramFiles(FRAMEWORK_JAR);
+    ToolHelper.setMinApiLevel(command, minApi.asUnchecked());
     Marker marker = new Marker(Tool.D8)
         .setVersion("1.0.0")
         .setMinApi(minApi);

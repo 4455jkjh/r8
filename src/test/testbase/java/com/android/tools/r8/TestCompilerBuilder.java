@@ -361,7 +361,7 @@ public abstract class TestCompilerBuilder<
       assert builder.isMinApiLevelSet();
       return Collections.singletonList(
           ToolHelper.getFirstSupportedAndroidJar(
-              AndroidApiLevel.getAndroidApiLevel(builder.getMinApiLevel())));
+              AndroidApiLevel.getAndroidApiLevel(builder.getUncheckedMinApiLevel())));
     } else {
       assert backend == Backend.CF;
       return Collections.singletonList(ToolHelper.getJava8RuntimeJar());
@@ -393,7 +393,10 @@ public abstract class TestCompilerBuilder<
         && backend.isDex()
         && (isD8TestBuilder() || isR8TestBuilder() || isR8PartialTestBuilder())
         && !isBenchmarkRunner) {
-      int minApiLevel = builder.getMinApiLevel();
+      // TODO(b/356841164): Support minor version.
+      assert builder.getUncheckedMinApiLevel().getMinor() == 0
+          : "Minor API version not yet supported: " + builder.getUncheckedMinApiLevel();
+      int minApiLevel = builder.getUncheckedMinApiLevel().getMajor();
       Consumer<InternalOptions> previousConsumer = optionsConsumer;
       optionsConsumer =
           options -> {
@@ -464,9 +467,16 @@ public abstract class TestCompilerBuilder<
           internalCompile(builder, optionsConsumer, Suppliers.memoize(sink::build), benchmark)
               .addRunClasspathFiles(additionalRunClassPath);
       if (isAndroidBuildVersionAdded != null) {
-        cr.setSystemProperty(
-            AndroidBuildVersion.PROPERTY,
-            "" + isAndroidBuildVersionAdded.orElse(builder.getMinApiLevel()));
+        int version;
+        if (isAndroidBuildVersionAdded.isPresent()) {
+          version = isAndroidBuildVersionAdded.get();
+        } else {
+          // TODO(b/356841164): Use full version.
+          assert builder.getUncheckedMinApiLevel().getMinor() == 0
+              : "Minor API version not yet supported: " + builder.getUncheckedMinApiLevel();
+          version = builder.getUncheckedMinApiLevel().getMajor();
+        }
+        cr.setSystemProperty(AndroidBuildVersion.PROPERTY, "" + version);
       }
       return cr;
     } finally {

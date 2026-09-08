@@ -42,7 +42,7 @@ public class StringBuilderWithAppendOutOfBoundsTest extends TestBase {
     testForR8(parameters.getBackend())
         .addInnerClassesAndStrippedOuter(getClass())
         .addKeepMainRule(Main.class)
-        .addLibraryFiles(ToolHelper.getAndroidJar(35))
+        .addLibraryFiles(ToolHelper.getAndroidJar(35, 0))
         .setMinApi(parameters)
         .run(parameters.getRuntime(), Main.class)
         .assertSuccessWithOutput(EXPECTED_OUTPUT);

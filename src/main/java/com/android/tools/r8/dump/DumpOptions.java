@@ -17,6 +17,7 @@ import com.android.tools.r8.shaking.ProguardConfigurationRule;
 import com.android.tools.r8.startup.StartupProfileProvider;
 import com.android.tools.r8.utils.InternalOptions.DesugarState;
 import com.android.tools.r8.utils.ThreadUtils;
+import com.android.tools.r8.utils.UncheckedApiLevel;
 import com.android.tools.r8.utils.internal.StringUtils;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -247,7 +248,7 @@ public class DumpOptions {
         }
         return;
       case MIN_API_KEY:
-        builder.setMinApi(Integer.parseInt(value));
+        builder.setMinApi(Integer.parseInt(value), 0);
         return;
       case OPTIMIZE_MULTIDEX_FOR_LINEAR_ALLOC_KEY:
         builder.setOptimizeMultidexForLinearAlloc(Boolean.parseBoolean(value));
@@ -461,8 +462,13 @@ public class DumpOptions {
       return this;
     }
 
-    public Builder setMinApi(int minApi) {
-      this.minApi = minApi;
+    public Builder setMinApi(int major, int minor) {
+      return setMinApi(new UncheckedApiLevel(major, minor));
+    }
+
+    public Builder setMinApi(UncheckedApiLevel apiLevel) {
+      assert apiLevel.getMinor() == 0 : "minor versions not yet supported: " + apiLevel;
+      this.minApi = apiLevel.getMajor();
       return this;
     }
 

@@ -136,7 +136,7 @@ public class RecordComponentSignatureTest extends TestBase {
     parameters.assumeR8TestParameters();
     testForR8(parameters)
         .addInnerClassesAndStrippedOuter(getClass())
-        .addLibraryFiles(ToolHelper.getAndroidJar(35))
+        .addLibraryFiles(ToolHelper.getAndroidJar(35, 0))
         .addKeepMainRule(RecordWithSignature.class)
         .applyIf(keepSignatures, TestShrinkerBuilder::addKeepAttributeSignature)
         .compile()

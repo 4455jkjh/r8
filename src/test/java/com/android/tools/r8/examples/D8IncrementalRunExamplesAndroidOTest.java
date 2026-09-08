@@ -26,6 +26,7 @@ import com.android.tools.r8.synthesis.SyntheticItemsTestUtils;
 import com.android.tools.r8.utils.AndroidApiLevel;
 import com.android.tools.r8.utils.DescriptorUtils;
 import com.android.tools.r8.utils.OffOrAuto;
+import com.android.tools.r8.utils.UncheckedApiLevel;
 import com.android.tools.r8.utils.internal.Box;
 import com.android.tools.r8.utils.internal.FileUtils;
 import com.android.tools.r8.utils.internal.StringUtils;
@@ -200,8 +201,8 @@ public abstract class D8IncrementalRunExamplesAndroidOTest
                     androidJarVersion != null || b.getMinApiLevel() >= 0
                         ? ToolHelper.getAndroidJar(
                             androidJarVersion != null
-                                ? androidJarVersion.getMajor()
-                                : b.getMinApiLevel())
+                                ? androidJarVersion.asUnchecked()
+                                : new UncheckedApiLevel(b.getMinApiLevel(), 0))
                         : ToolHelper.getMostRecentAndroidJar(),
                     b::addLibraryFiles,
                     b::addLibraryResourceProviders);

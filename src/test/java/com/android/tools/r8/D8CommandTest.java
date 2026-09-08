@@ -80,7 +80,9 @@ public class D8CommandTest extends CommandTestBase<D8Command> {
 
   private void verifyEmptyCommand(D8Command command) throws Throwable {
     assertEquals(CompilationMode.DEBUG, command.getMode());
-    assertEquals(AndroidVersion.DEFAULT.getApiLevel(), command.getMinApiLevel());
+    assertEquals(
+        AndroidVersion.DEFAULT.getApiLevel(), command.getUncheckedMinApiLevel().getMajor());
+    assertEquals(0, command.getUncheckedMinApiLevel().getMinor());
     assertTrue(command.getProgramConsumer() instanceof DexIndexedConsumer);
     AndroidApp app = ToolHelper.getApp(command);
     assertEquals(0, app.getDexProgramResourcesForTesting().size());

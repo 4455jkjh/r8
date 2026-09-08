@@ -28,6 +28,7 @@ import com.android.tools.r8.utils.ProgramConsumerUtils;
 import com.android.tools.r8.utils.Reporter;
 import com.android.tools.r8.utils.StringDiagnostic;
 import com.android.tools.r8.utils.ThreadUtils;
+import com.android.tools.r8.utils.UncheckedApiLevel;
 import com.android.tools.r8.utils.internal.FileUtils;
 import com.android.tools.r8.utils.internal.ListUtils;
 import java.nio.file.Path;
@@ -54,7 +55,7 @@ public abstract class BaseCompilerCommand extends BaseCommand {
   private final CompilationMode mode;
   private final ProgramConsumer programConsumer;
   private final StringConsumer mainDexListConsumer;
-  private final int minApiLevel;
+  private final UncheckedApiLevel minApiLevel;
   private final Reporter reporter;
   private final DesugarState desugarState;
   private final boolean includeClassesChecksum;
@@ -79,7 +80,7 @@ public abstract class BaseCompilerCommand extends BaseCommand {
     programConsumer = null;
     mainDexListConsumer = null;
     mode = null;
-    minApiLevel = 0;
+    minApiLevel = new UncheckedApiLevel(1, 0);
     reporter = new Reporter();
     desugarState = DesugarState.ON;
     includeClassesChecksum = false;
@@ -105,7 +106,7 @@ public abstract class BaseCompilerCommand extends BaseCommand {
       CompilationMode mode,
       ProgramConsumer programConsumer,
       StringConsumer mainDexListConsumer,
-      int minApiLevel,
+      UncheckedApiLevel minApiLevel,
       Reporter reporter,
       DesugarState desugarState,
       boolean optimizeMultidexForLinearAlloc,
@@ -125,7 +126,6 @@ public abstract class BaseCompilerCommand extends BaseCommand {
       boolean enableVerboseSyntheticNames,
       Path apiDatabasePath) {
     super(app);
-    assert minApiLevel > 0;
     assert mode != null;
     this.mode = mode;
     this.programConsumer = programConsumer;
@@ -159,8 +159,17 @@ public abstract class BaseCompilerCommand extends BaseCommand {
     return mode;
   }
 
-  /** Get the minimum API level to compile against. */
+  /**
+   * Get the minimum API level to compile against.
+   *
+   * <p>Deprecation: Should not be used since it ignores minor versions.
+   */
+  @Deprecated
   public int getMinApiLevel() {
+    return getUncheckedMinApiLevel().getMajor();
+  }
+
+  UncheckedApiLevel getUncheckedMinApiLevel() {
     return minApiLevel;
   }
 
@@ -168,7 +177,7 @@ public abstract class BaseCompilerCommand extends BaseCommand {
     builder
         .setBackend(ProgramConsumerUtils.getBackend(programConsumer))
         .setCompilationMode(getMode())
-        .setMinApi(getMinApiLevel())
+        .setMinApi(getUncheckedMinApiLevel())
         .setOptimizeMultidexForLinearAlloc(isOptimizeMultidexForLinearAlloc())
         .setThreadCount(getThreadCount())
         .setDesugarState(getDesugarState())
@@ -294,10 +303,7 @@ public abstract class BaseCompilerCommand extends BaseCommand {
     private OutputMode outputMode = OutputMode.DexIndexed;
 
     private CompilationMode mode;
-    private int minMajorApiLevel = 0;
-
-    @SuppressWarnings("UnusedVariable")
-    private int minMinorApiLevel = 0;
+    private UncheckedApiLevel minApiLevel = null;
 
     private int threadCount = ThreadUtils.NOT_SPECIFIED;
     protected DesugarState desugarState = DesugarState.ON;
@@ -553,32 +559,47 @@ public abstract class BaseCompilerCommand extends BaseCommand {
       return self();
     }
 
-    /** Get the minimum API level (aka SDK version). */
+    /**
+     * Get the minimum API level (aka SDK version).
+     *
+     * <p>Deprecation: Should not be used since it ignores minor versions.
+     */
+    @Deprecated
     public int getMinApiLevel() {
-      return isMinApiLevelSet() ? minMajorApiLevel : AndroidApiLevel.getDefault().getMajor();
+      return getUncheckedMinApiLevel().getMajor();
+    }
+
+    UncheckedApiLevel getUncheckedMinApiLevel() {
+      if (isMinApiLevelSet()) {
+        return minApiLevel;
+      } else {
+        var base = AndroidApiLevel.getDefault();
+        return new UncheckedApiLevel(base.getMajor(), base.getMinor());
+      }
     }
 
     boolean isMinApiLevelSet() {
-      return minMajorApiLevel != 0;
+      return minApiLevel != null;
     }
 
     /** Set the minimum required API level (aka SDK version). */
-    public B setMinApiLevel(int minMajorApiLevel) {
-      if (minMajorApiLevel <= 0) {
-        getReporter().error("Invalid minApiLevel: " + minMajorApiLevel);
-        return self();
-      }
-      return setMinApiLevel(minMajorApiLevel, 0);
+    public B setMinApiLevel(int major) {
+      return setMinApiLevel(major, 0);
     }
 
     /** Set the minimum required API level (aka SDK version). */
-    public B setMinApiLevel(int minMajorApiLevel, int minMinorApiLevel) {
-      if (minMajorApiLevel <= 0 || minMinorApiLevel < 0) {
-        getReporter().error("Invalid minApiLevel: " + minMajorApiLevel + "." + minMinorApiLevel);
+    public B setMinApiLevel(int major, int minor) {
+      if (major <= 0 || minor < 0) {
+        getReporter().error("Invalid minApiLevel: " + major + "." + minor);
       } else {
-        this.minMajorApiLevel = minMajorApiLevel;
-        this.minMinorApiLevel = minMinorApiLevel;
+        this.minApiLevel = new UncheckedApiLevel(major, minor);
       }
+      return self();
+    }
+
+    /** Set the minimum required API level (aka SDK version). */
+    B setMinApiLevel(UncheckedApiLevel minApiLevel) {
+      this.minApiLevel = minApiLevel;
       return self();
     }
 
@@ -674,12 +695,15 @@ public abstract class BaseCompilerCommand extends BaseCommand {
       }
       StringResource desugaredLibrarySpecificationResource =
           desugaredLibrarySpecificationResources.get(0);
+      // TODO(b/356841164): Support minor version.
+      assert getUncheckedMinApiLevel().getMinor() == 0
+          : "Minor API version not yet supported: " + getUncheckedMinApiLevel();
       return DesugaredLibrarySpecificationParser.parseDesugaredLibrarySpecification(
           desugaredLibrarySpecificationResource,
           factory,
           getReporter(),
           libraryCompilation,
-          getMinApiLevel());
+          getUncheckedMinApiLevel().getMajor());
     }
 
     boolean hasDesugaredLibraryConfiguration() {
@@ -862,9 +886,11 @@ public abstract class BaseCompilerCommand extends BaseCommand {
         }
         reporter.error(builder.toString());
       }
-      if (getMinApiLevel() > AndroidApiLevel.LATEST.getMajor()) {
-        if (getMinApiLevel() != AndroidApiLevel.ANDROID_PLATFORM_CONSTANT) {
-          reporter.warning(new UnsupportedAndroidApiLevelDiagnostic(getMinApiLevel(), 0));
+      UncheckedApiLevel apiLevel = getUncheckedMinApiLevel();
+      if (apiLevel.isGreaterThan(AndroidApiLevel.LATEST.asUnchecked())) {
+        if (!(apiLevel.equals(AndroidApiLevel.ANDROID_PLATFORM_CONSTANT))) {
+          reporter.warning(
+              new UnsupportedAndroidApiLevelDiagnostic(apiLevel.getMajor(), apiLevel.getMinor()));
         }
       }
       if (hasDesugaredLibraryConfiguration() && getAndroidPlatformBuild()) {
@@ -917,7 +943,8 @@ public abstract class BaseCompilerCommand extends BaseCommand {
     }
 
     boolean hasNativeMultidex() {
-      return isMinApiLevelSet() && getMinApiLevel() >= AndroidApiLevel.L.getMajor();
+      return isMinApiLevelSet()
+          && getUncheckedMinApiLevel().isGreaterThanOrEqualTo(AndroidApiLevel.L.asUnchecked());
     }
   }
 }

@@ -42,6 +42,7 @@ import com.android.tools.r8.utils.DexVersion;
 import com.android.tools.r8.utils.ExceptionUtils;
 import com.android.tools.r8.utils.InternalOptions;
 import com.android.tools.r8.utils.Reporter;
+import com.android.tools.r8.utils.UncheckedApiLevel;
 import com.android.tools.r8.utils.ZipUtils;
 import com.android.tools.r8.utils.internal.FileUtils;
 import com.android.tools.r8.utils.internal.ListUtils;
@@ -1244,18 +1245,22 @@ public class ToolHelper {
   public static Path getFirstSupportedAndroidJar(AndroidApiLevel apiLevel) {
     // Fast path.
     if (hasAndroidJar(apiLevel)) {
-      return getAndroidJar(apiLevel.getMajor());
+      return getAndroidJar(apiLevel);
     }
     // Search for an android jar.
     for (AndroidApiLevel level : AndroidApiLevel.getAndroidApiLevelsSorted()) {
-      if (level.getMajor() >= apiLevel.getMajor() && hasAndroidJar(level)) {
-        return getAndroidJar(level.getMajor());
+      if (level.isGreaterThanOrEqualTo(apiLevel) && hasAndroidJar(level)) {
+        return getAndroidJar(level);
       }
     }
     return getAndroidJar(AndroidApiLevel.LATEST);
   }
 
-  public static Path getAndroidJar(int apiLevel) {
+  public static Path getAndroidJar(int apiLevelMajor, int apiLevelMinor) {
+    return getAndroidJar(new UncheckedApiLevel(apiLevelMajor, apiLevelMinor));
+  }
+
+  public static Path getAndroidJar(UncheckedApiLevel apiLevel) {
     return getAndroidJar(AndroidApiLevel.getAndroidApiLevel(apiLevel));
   }
 
@@ -1940,7 +1945,8 @@ public class ToolHelper {
       // Add the android library matching the minsdk. We filter out junit and testing classes
       // from the android jar to avoid duplicate classes in art tests.
       AndroidApp.Builder builder = AndroidApp.builder(app);
-      addFilteredAndroidJar(builder, AndroidApiLevel.getAndroidApiLevel(command.getMinApiLevel()));
+      addFilteredAndroidJar(
+          builder, AndroidApiLevel.getAndroidApiLevel(command.getUncheckedMinApiLevel()));
       app = builder.build();
     }
     InternalOptions options = command.getInternalOptions();
@@ -2986,5 +2992,16 @@ public class ToolHelper {
   public static void setReadEmbeddedRulesFromClasspathAndLibrary(
       R8Command.Builder builder, boolean enabled) {
     builder.setReadEmbeddedRulesFromClasspathAndLibrary(enabled);
+  }
+
+  // Bridge to avoid public methods in @KeepForApi classes.
+  public static UncheckedApiLevel getUncheckedMinApiLevel(
+      BaseCompilerCommand.Builder<?, ?> builder) {
+    return builder.getUncheckedMinApiLevel();
+  }
+
+  // Bridge to avoid public methods in @KeepForApi classes.
+  public static void setMinApiLevel(D8Command.Builder builder, UncheckedApiLevel minApiLevel) {
+    builder.setMinApiLevel(minApiLevel);
   }
 }

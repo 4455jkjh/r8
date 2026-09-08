@@ -27,7 +27,7 @@ import org.w3c.dom.NodeList;
 
 public class GenerateAvailableApiExceptions {
 
-  private static final int fixedApiLevel = AndroidApiLevel.L.getMajor();
+  private static final AndroidApiLevel fixedApiLevel = AndroidApiLevel.L;
 
   private static String generateBuildMapCode(Path apiVersionsXml) throws Exception {
     CodeInspector inspector = new CodeInspector(ToolHelper.getAndroidJar(fixedApiLevel));
@@ -47,7 +47,7 @@ public class GenerateAvailableApiExceptions {
         continue;
       }
       int since = Integer.parseInt(sinceAttr.getNodeValue());
-      if (since >= fixedApiLevel) {
+      if (since >= fixedApiLevel.getMajor()) {
         continue;
       }
       String name = node.getAttributes().getNamedItem("name").getNodeValue();
@@ -64,7 +64,7 @@ public class GenerateAvailableApiExceptions {
     builder.append("public class DoNotCommit {");
     builder.append("public static Set<DexType> build(DexItemFactory factory, int minApiLevel) {");
     builder.append("  Set<DexType> types = SetUtils.newIdentityHashSet(" + totalCount + ");");
-    for (int api = 1; api < fixedApiLevel; api++) {
+    for (int api = 1; api < fixedApiLevel.getMajor(); api++) {
       Set<String> names = exceptionsMap.get(api);
       if (names == null || names.isEmpty()) {
         continue;

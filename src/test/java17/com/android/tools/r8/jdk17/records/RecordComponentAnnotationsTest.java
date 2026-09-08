@@ -308,7 +308,7 @@ public class RecordComponentAnnotationsTest extends TestBase {
     parameters.assumeR8TestParameters();
     testForR8(parameters)
         .addInnerClassesAndStrippedOuter(getClass())
-        .addLibraryFiles(ToolHelper.getAndroidJar(35))
+        .addLibraryFiles(ToolHelper.getAndroidJar(35, 0))
         .addKeepMainRule(RecordWithAnnotations.class)
         .addKeepClassAndMembersRulesWithAllowObfuscation(
             RecordComponentAnnotationsTest.Person.class)
