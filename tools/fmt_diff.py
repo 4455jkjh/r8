@@ -163,7 +163,10 @@ def get_java_format_base_command():
 
 def get_kotlin_format_base_command():
     java_exec = jdk.GetJavaExecutable(jdk.GetDefaultJdkHome())
-    return [java_exec, '-jar', GOOGLE_KOTLIN_FORMAT_JAR]
+    # Disable hsperfdata to prevent lock contention on /tmp/hsperfdata_<user> during parallel execution.
+    return [
+        java_exec, '-XX:+PerfDisableSharedMem', '-jar', GOOGLE_KOTLIN_FORMAT_JAR
+    ]
 
 
 def get_python_format_base_command(python_runtime):
