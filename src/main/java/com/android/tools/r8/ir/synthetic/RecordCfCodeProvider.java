@@ -140,6 +140,8 @@ public abstract class RecordCfCodeProvider extends SyntheticCfCodeProvider {
 
     public static void registerSynthesizedCodeReferences(DexItemFactory factory) {
       factory.createSynthesizedType("Ljava/lang/Objects;");
+      factory.createSynthesizedType("Ljava/lang/Double;");
+      factory.createSynthesizedType("Ljava/lang/Float;");
     }
 
     private void addInvokeStatic(List<CfInstruction> instructions, DexMethod method) {
@@ -154,10 +156,10 @@ public abstract class RecordCfCodeProvider extends SyntheticCfCodeProvider {
       instructions.add(new CfLoad(ValueType.OBJECT, 2));
       instructions.add(new CfInstanceFieldRead(field));
       if (valueType == ValueType.DOUBLE) {
-        instructions.add(new CfCmp(Bias.LT, NumericType.DOUBLE));
+        addInvokeStatic(instructions, appView.dexItemFactory().doubleMembers.compare);
         instructions.add(new CfIf(IfType.NE, ValueType.INT, falseLabel));
       } else if (valueType == ValueType.FLOAT) {
-        instructions.add(new CfCmp(Bias.LT, NumericType.FLOAT));
+        addInvokeStatic(instructions, appView.dexItemFactory().floatMembers.compare);
         instructions.add(new CfIf(IfType.NE, ValueType.INT, falseLabel));
       } else if (valueType == ValueType.LONG) {
         instructions.add(new CfCmp(Bias.NONE, NumericType.LONG));

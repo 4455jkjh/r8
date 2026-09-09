@@ -24,11 +24,6 @@ public class RecordEqualsTest extends TestBase {
       StringUtils.lines(
           "true", "true", "false", "true", "false", "true", "true", "false", "true", "false");
 
-  // TODO(b/557273972): Records with float/double components violate equals contract.
-  private static final String EXPECTED_RESULT_DESUGARED =
-      StringUtils.lines(
-          "false", "false", "true", "true", "false", "false", "false", "true", "true", "false");
-
   @Parameter public TestParameters parameters;
 
   @Parameters(name = "{0}")
@@ -62,11 +57,7 @@ public class RecordEqualsTest extends TestBase {
         .addInnerClassesAndStrippedOuter(getClass())
         .apply(this::alwaysUseArtRecordSupportWhenPresent)
         .run(parameters.getRuntime(), TestClass.class)
-        .applyIf(
-            isRecordsFullyDesugaredForD8(parameters),
-            // TODO(b/557273972): Records with float/double components violate equals contract.
-            r -> r.assertSuccessWithOutput(EXPECTED_RESULT_DESUGARED),
-            r -> r.assertSuccessWithOutput(EXPECTED_RESULT));
+        .assertSuccessWithOutput(EXPECTED_RESULT);
   }
 
   @Test
@@ -77,11 +68,7 @@ public class RecordEqualsTest extends TestBase {
         .addKeepMainRule(TestClass.class)
         .apply(this::alwaysUseArtRecordSupportWhenPresent)
         .run(parameters.getRuntime(), TestClass.class)
-        .applyIf(
-            isRecordsFullyDesugaredForR8(parameters),
-            // TODO(b/557273972): Records with float/double components violate equals contract.
-            r -> r.assertSuccessWithOutput(EXPECTED_RESULT_DESUGARED),
-            r -> r.assertSuccessWithOutput(EXPECTED_RESULT));
+        .assertSuccessWithOutput(EXPECTED_RESULT);
   }
 
   public static class TestClass {
