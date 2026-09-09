@@ -35,9 +35,10 @@ public class PartitionCommandParserTest extends TestBase {
             "",
             "  --output <partition-map>",
             "                          # Output destination of partitioned map.",
-            "  --version               # Print the version.",
+            "  --version",
+            "  -v                      # Print version.",
             "  --help",
-            "  -h                      # Print this message."),
+            "  -h                      # Print usage information."),
         PartitionCommandParser.getUsageMessage());
   }
 }

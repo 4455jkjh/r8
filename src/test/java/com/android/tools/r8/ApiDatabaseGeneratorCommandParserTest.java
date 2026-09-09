@@ -37,9 +37,6 @@ public class ApiDatabaseGeneratorCommandParserTest extends TestBase {
             "Multiple inputs of both are supported and any entries not present in both JAR and XML",
             "form is trimmed away.",
             "The options are:",
-            "  --help",
-            "  -h                      # Print help.",
-            "  --version               # Print version.",
             "  --jar <jar-file>        # Android SDK JAR file (e.g., android.jar).",
             "  --xml <xml-file>        # Android API XML file (e.g., api-versions.xml).",
             "  --sdk <sdk-dir>         # Android SDK platform directory (e.g.,"
@@ -63,7 +60,11 @@ public class ApiDatabaseGeneratorCommandParserTest extends TestBase {
                 + " is unspecified,",
             "                          # all diagnostics at <from-level> will be mapped. Note that"
                 + " fatal compiler",
-            "                          # errors cannot be mapped."),
+            "                          # errors cannot be mapped.",
+            "  --version",
+            "  -v                      # Print version.",
+            "  --help",
+            "  -h                      # Print usage information."),
         ApiDatabaseGeneratorCommandParser.getUsageMessage());
   }
 

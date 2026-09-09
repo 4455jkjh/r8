@@ -132,11 +132,8 @@ class TraceReferencesCommandParser {
             "--resolve-trivial-conflicts",
             "Resolve trivial duplicate class conflicts.",
             state -> state.builder.setClassConflictResolver(new TrivialClassConflictResolver()))
-        .option0(
-            "--version",
-            "Print the version of tracereferences.",
-            state -> state.builder.setPrintVersion(true))
-        .option0("--help", "Print this message.", state -> state.builder.setPrintHelp(true), "-h")
+        .apply(CliParserUtils.addVersionOption(state -> state.builder.setPrintVersion(true)))
+        .apply(CliParserUtils.addHelpOption(state -> state.builder.setPrintHelp(true)))
         .addHelpText(" and --keep-rules specific options are:")
         .option0(
             "--allowobfuscation",

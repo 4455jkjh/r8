@@ -42,8 +42,10 @@ public class DisassembleTest extends TestBase {
                 + " Lcom/example/Class;->field:I).",
             "  --method <descriptor>   # Only disassemble the given method (e.g.,"
                 + " Lcom/example/Class;->method()V).",
-            "  --version               # Print the version of r8.",
-            "  --help                  # Print this message."),
+            "  --version",
+            "  -v                      # Print version.",
+            "  --help",
+            "  -h                      # Print usage information."),
         Disassemble.DisassembleCommand.usageMessage());
   }
 }

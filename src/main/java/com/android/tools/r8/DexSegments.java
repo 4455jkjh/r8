@@ -80,9 +80,9 @@ public class DexSegments {
               "Usage: dexsegments [options] <input-files>", " where <input-files> are dex files");
       var parser = new CliParser<Command.Builder>(header);
       return parser
-          .option0("--version", "Print the version of r8.", b -> b.setPrintVersion(true))
-          .option0("--help", "Print this message.", b -> b.setPrintHelp(true), "-h")
           .option0("--csv", "Print segments in csv format.", b -> b.setCsv(true))
+          .apply(CliParserUtils.addVersionOption(b -> b.setPrintVersion(true)))
+          .apply(CliParserUtils.addHelpOption(b -> b.setPrintHelp(true)))
           .positional((b, arg) -> b.addProgramFiles(Paths.get(arg)));
     }
 

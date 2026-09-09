@@ -498,8 +498,10 @@ public class R8CommandTest extends CommandTestBase<R8Command> {
             "  --dumpinputtodirectory <dir>",
             "                          # Dump all compiler input to <dir> for easy"
                 + " reproduction.",
-            "  --version               # Print the version of r8.",
-            "  --help                  # Print this message."),
+            "  --version",
+            "  -v                      # Print version.",
+            "  --help",
+            "  -h                      # Print usage information."),
         R8CommandParser.getUsageMessage());
   }
 

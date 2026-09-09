@@ -353,4 +353,9 @@ public class CliParser<B> {
     assert !description.isBlank() : "description is empty.";
     assert description.endsWith(".") : "description doesn't end with '.': " + description;
   }
+
+  public CliParser<B> apply(Consumer<CliParser<B>> action) {
+    action.accept(this);
+    return this;
+  }
 }

@@ -472,9 +472,8 @@ public class D8CommandParser extends BaseCompilerCommandParser {
             "<dir>",
             "Dump all compiler input to <dir> for easy reproduction.",
             (state, arg) -> state.builder.dumpInputToDirectory(Paths.get(arg)))
-        .option0(
-            "--version", "Print the version of d8.", state -> state.builder.setPrintVersion(true))
-        .option0("--help", "Print this message.", state -> state.builder.setPrintHelp(true), "-h")
+        .apply(CliParserUtils.addVersionOption(state -> state.builder.setPrintVersion(true)))
+        .apply(CliParserUtils.addHelpOption(state -> state.builder.setPrintHelp(true)))
         .positional(
             (state, arg) -> {
               if (arg.startsWith("@")) {

@@ -152,16 +152,17 @@ public class L8CommandTest extends CommandTestBase<L8Command> {
             "  --art-profile <input> <output>",
             "                          # Rewrite human readable ART profile read from <input> and"
                 + " write to <output>.",
-            "  --version               # Print the version of l8.",
-            "  --help",
-            "  -h                      # Print this message.",
             "  --classfile             # Compile program to Java classfile format.",
             "  --dumpinputtofile <file>",
             "                          # Dump the all compiler input to <file> for easy"
                 + " reproduction.",
             "  --dumpinputtodirectory <dir>",
             "                          # Dump the all compiler input to <dir> for easy"
-                + " reproduction.");
+                + " reproduction.",
+            "  --version",
+            "  -v                      # Print version.",
+            "  --help",
+            "  -h                      # Print usage information.");
     assertEquals(expected, L8CommandParser.getUsageMessage());
   }
 

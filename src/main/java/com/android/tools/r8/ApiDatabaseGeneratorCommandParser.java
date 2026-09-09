@@ -34,8 +34,6 @@ public class ApiDatabaseGeneratorCommandParser {
             "The options are:");
     CliParser<ParserState> parser = new CliParser<>(usageHeader);
     return parser
-        .option0("--help", "Print help.", state -> state.builder.setPrintHelp(true), "-h")
-        .option0("--version", "Print version.", state -> state.builder.setPrintVersion(true))
         .option1(
             "--jar",
             "<jar-file>",
@@ -79,7 +77,9 @@ public class ApiDatabaseGeneratorCommandParser {
                     toLevel,
                     m -> state.builder.addDiagnosticsLevelMapping(m.from, m.diagnosticType, m.to),
                     state.builder::error,
-                    state.origin));
+                    state.origin))
+        .apply(CliParserUtils.addVersionOption(state -> state.builder.setPrintVersion(true)))
+        .apply(CliParserUtils.addHelpOption(state -> state.builder.setPrintHelp(true)));
   }
 
   public static ApiDatabaseGeneratorCommand.Builder parse(String[] args, Origin origin) {

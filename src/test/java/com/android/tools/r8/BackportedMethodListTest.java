@@ -153,9 +153,10 @@ public class BackportedMethodListTest extends TestBase {
             "  --lib <file>            # The compilation SDK library (android.jar).",
             "  --android-platform-build",
             "                          # Compilation of platform code.",
-            "  --version               # Print the version of BackportedMethodList.",
+            "  --version",
+            "  -v                      # Print version.",
             "  --help",
-            "  -h                      # Print this message."),
+            "  -h                      # Print usage information."),
         BackportedMethodListCommand.usageMessage());
   }
 

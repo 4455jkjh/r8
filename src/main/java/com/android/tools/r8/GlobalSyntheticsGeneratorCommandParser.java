@@ -112,11 +112,8 @@ public class GlobalSyntheticsGeneratorCommandParser {
             "--verbose-synthetic-names",
             "Enable verbose synthetic names that use the `$$ExternalSynthetic` marker.",
             b -> b.builder.setEnableVerboseSyntheticNames(true))
-        .option0(
-            "--version",
-            "Print the version of " + toolName + ".",
-            b -> b.builder.setPrintVersion(true))
-        .option0("--help", "Print this message.", b -> b.builder.setPrintHelp(true));
+        .apply(CliParserUtils.addVersionOption(b -> b.builder.setPrintVersion(true)))
+        .apply(CliParserUtils.addHelpOption(b -> b.builder.setPrintHelp(true)));
   }
 
   private GlobalSyntheticsGeneratorCommand.Builder parse(

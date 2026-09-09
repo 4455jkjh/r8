@@ -162,9 +162,8 @@ public class BackportedMethodListCommand {
             "--android-platform-build",
             "Compilation of platform code.",
             b -> b.setAndroidPlatformBuild(true))
-        .option0(
-            "--version", "Print the version of BackportedMethodList.", b -> b.setPrintVersion(true))
-        .option0("--help", "Print this message.", b -> b.setPrintHelp(true), "-h");
+        .apply(CliParserUtils.addVersionOption(b -> b.setPrintVersion(true)))
+        .apply(CliParserUtils.addHelpOption(b -> b.setPrintHelp(true)));
     return parser;
   }
 

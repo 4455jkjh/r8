@@ -136,7 +136,7 @@ public class ExtractMarkerCommand {
             " where <input-files> are D8 supported input/output files and options are:");
     var parser = new CliParser<ExtractMarkerCommand.Builder>(header);
     return parser
-        .option0("--help", "Print this message.", b -> b.setPrintHelp(true), "-h")
+        .apply(CliParserUtils.addHelpOption(b -> b.setPrintHelp(true)))
         .positional((b, arg) -> b.addProgramFiles(Paths.get(arg)));
   }
 

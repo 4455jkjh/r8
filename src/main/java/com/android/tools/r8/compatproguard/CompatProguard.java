@@ -110,7 +110,6 @@ public class CompatProguard {
               "Usage: compatproguard [options] <proguard-config>*", "", "Where options are:");
       CliParser<ParserState> parser = new CliParser<>(header, true);
       return parser
-          .option0("--help", "Print this message.", b -> b.printHelpAndExit = true, "-h")
           .option0(
               "--release",
               "Compile without debugging information (default).",
@@ -171,6 +170,7 @@ public class CompatProguard {
               "--no-data-resources",
               "Ignore all data resources.",
               b -> b.includeDataResources = false)
+          .apply(CliParserUtils.addHelpOption(b -> b.printHelpAndExit = true))
           .positional(
               (b, arg) -> {
                 if (arg.equals("-outjars")) {

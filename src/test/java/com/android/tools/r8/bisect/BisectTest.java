@@ -46,12 +46,12 @@ public class BisectTest extends TestBase {
             "  --bad <apk>             # Known bad APK.",
             "  --command <file>        # Command to run after each bisection.",
             "  --good <apk>            # Known good APK.",
-            "  --help",
-            "  -h                      # Print this message.",
             "  --output <dir>          # Output directory.",
             "  --result-bad            # Bisect again assuming previous run was bad.",
             "  --result-good           # Bisect again assuming previous run was good.",
-            "  --state <file>          # Bisection state."),
+            "  --state <file>          # Bisection state.",
+            "  --help",
+            "  -h                      # Print usage information."),
         BisectOptions.usageMessage());
   }
 

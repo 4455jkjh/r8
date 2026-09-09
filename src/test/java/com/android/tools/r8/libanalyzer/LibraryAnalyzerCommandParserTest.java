@@ -50,9 +50,10 @@ public class LibraryAnalyzerCommandParserTest extends TestBase {
             "  --output <path>         # Path where to write analysis result (protobuf).",
             "  --repo <path>           # Path to local Maven repository.",
             "  --thread-count <int>    # Number of threads to use.",
+            "  --version",
+            "  -v                      # Print version.",
             "  --help",
-            "  -h                      # Print this message.",
-            "  --version               # Print the version."),
+            "  -h                      # Print usage information."),
         LibraryAnalyzerCommandParser.getUsageMessage());
   }
 

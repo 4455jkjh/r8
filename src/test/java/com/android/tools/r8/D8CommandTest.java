@@ -285,9 +285,10 @@ public class D8CommandTest extends CommandTestBase<D8Command> {
             "  --dumpinputtodirectory <dir>",
             "                          # Dump all compiler input to <dir> for easy"
                 + " reproduction.",
-            "  --version               # Print the version of d8.",
+            "  --version",
+            "  -v                      # Print version.",
             "  --help",
-            "  -h                      # Print this message."),
+            "  -h                      # Print usage information."),
         D8CommandParser.getUsageMessage());
   }
 
