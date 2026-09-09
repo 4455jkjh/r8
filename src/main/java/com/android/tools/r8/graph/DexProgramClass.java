@@ -24,6 +24,7 @@ import com.android.tools.r8.synthesis.SyntheticMarker;
 import com.android.tools.r8.utils.InternalOptions;
 import com.android.tools.r8.utils.ReachabilitySensitiveValue;
 import com.android.tools.r8.utils.internal.TraversalContinuation;
+import com.android.tools.r8.utils.internal.TriConsumer;
 import com.android.tools.r8.utils.structural.HasherWrapper;
 import com.android.tools.r8.utils.structural.Ordered;
 import com.android.tools.r8.utils.structural.StructuralItem;
@@ -477,6 +478,11 @@ public class DexProgramClass extends DexClass
   public void collectIndexedItems(
       AppView<?> appView, IndexedItemCollection indexedItems, LensCodeRewriterUtils rewriter) {
     if (indexedItems.addClass(this)) {
+      TriConsumer<AppView<?>, DexProgramClass, IndexedItemCollection> callback =
+          appView.testing().collectIndexedItemsCallback;
+      if (callback != null) {
+        callback.accept(appView, this, indexedItems);
+      }
       type.collectIndexedItems(appView, indexedItems);
       if (superType != null) {
         superType.collectIndexedItems(appView, indexedItems);

@@ -258,11 +258,6 @@ public class DefaultInstanceInitializerCode extends Code
   }
 
   @Override
-  public DexString getHighestSortingString() {
-    return null;
-  }
-
-  @Override
   public int getIncomingRegisterSize(ProgramMethod method) {
     return getMaxLocals(method);
   }

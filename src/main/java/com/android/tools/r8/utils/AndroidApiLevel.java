@@ -202,6 +202,9 @@ public class AndroidApiLevel implements Ordered<AndroidApiLevel> {
       case V41:
         assert InternalOptions.containerDexApiLevel().isEqualTo(AndroidApiLevel.BAKLAVA);
         return AndroidApiLevel.BAKLAVA;
+      case V42:
+        assert AndroidApiLevel.MAIN.getMajor() == 38;
+        return AndroidApiLevel.MAIN;
       default:
         throw new Unreachable();
     }

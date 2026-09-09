@@ -64,8 +64,8 @@ abstract class DexBaseInstructionFactory {
         return new DexConstWideHigh16(high, stream);
       case DexConstString.OPCODE:
         return new DexConstString(high, stream, mapping);
-      case DexConstString16.OPCODE:
-        return new DexConstString16(high, stream, mapping);
+      case DexConstString20.OPCODE:
+        return new DexConstString20(high, stream, mapping);
       case DexConstStringJumbo.OPCODE:
         return new DexConstStringJumbo(high, stream, mapping);
       case DexConstClass.OPCODE:

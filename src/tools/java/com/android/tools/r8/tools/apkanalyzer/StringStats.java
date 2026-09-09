@@ -32,8 +32,8 @@ public class StringStats {
             DexString string;
             if (instruction.isConstString()) {
               string = instruction.asConstString().getString();
-            } else if (instruction.isConstString16()) {
-              string = instruction.asConstString16().getString();
+            } else if (instruction.isConstString20()) {
+              string = instruction.asConstString20().getString();
             } else if (instruction.isConstStringJumbo()) {
               string = instruction.asConstStringJumbo().getString();
               stringStats.jumboStrings++;

@@ -38,6 +38,7 @@ import com.android.tools.r8.dex.code.DexConst4;
 import com.android.tools.r8.dex.code.DexConstClass;
 import com.android.tools.r8.dex.code.DexConstHigh16;
 import com.android.tools.r8.dex.code.DexConstString;
+import com.android.tools.r8.dex.code.DexConstString20;
 import com.android.tools.r8.dex.code.DexConstStringJumbo;
 import com.android.tools.r8.dex.code.DexConstWide;
 import com.android.tools.r8.dex.code.DexConstWide16;
@@ -384,24 +385,32 @@ public class DexInstructionSubject implements InstructionSubject {
   @Override
   public boolean isConstString(JumboStringMode jumboStringMode) {
     return instruction instanceof DexConstString
+        || instruction instanceof DexConstString20
         || (jumboStringMode == JumboStringMode.ALLOW && instruction instanceof DexConstStringJumbo);
   }
 
   @Override
   public boolean isConstString(String value, JumboStringMode jumboStringMode) {
-    return (instruction instanceof DexConstString
-            && ((DexConstString) instruction).BBBB.toSourceString().equals(value))
+    return (instruction.isConstString() && instruction.asConstString().getString().isEqualTo(value))
+        || (instruction.isConstString20()
+            && instruction.asConstString20().getString().isEqualTo(value))
         || (jumboStringMode == JumboStringMode.ALLOW
-            && instruction instanceof DexConstStringJumbo
-            && ((DexConstStringJumbo) instruction).BBBBBBBB.toSourceString().equals(value));
+            && instruction.isConstStringJumbo()
+            && instruction.asConstStringJumbo().getString().isEqualTo(value));
+  }
+
+  @Override
+  public boolean isConstString20() {
+    return instruction.isConstString20();
   }
 
   @Override
   public boolean isJumboString() {
-    return instruction instanceof DexConstStringJumbo;
+    return instruction.isConstStringJumbo();
   }
 
-  @Override public long getConstNumber() {
+  @Override
+  public long getConstNumber() {
     assert isConstNumber();
     if (instruction instanceof SingleConstant) {
       return ((SingleConstant) instruction).decodedValue();
@@ -412,11 +421,14 @@ public class DexInstructionSubject implements InstructionSubject {
 
   @Override
   public String getConstString() {
-    if (instruction instanceof DexConstString) {
-      return ((DexConstString) instruction).BBBB.toSourceString();
+    if (instruction.isConstString()) {
+      return instruction.asConstString().getString().toString();
+    }
+    if (instruction.isConstString20()) {
+      return instruction.asConstString20().getString().toString();
     }
     if (instruction instanceof DexConstStringJumbo) {
-      return ((DexConstStringJumbo) instruction).BBBBBBBB.toSourceString();
+      return instruction.asConstStringJumbo().getString().toString();
     }
     return null;
   }

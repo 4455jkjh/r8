@@ -17,7 +17,8 @@ public enum DexVersion implements Ordered<DexVersion> {
   V38(38, new byte[] {'0', '3', '8'}, Layout.SINGLE_DEX),
   V39(39, new byte[] {'0', '3', '9'}, Layout.SINGLE_DEX),
   V40(40, new byte[] {'0', '4', '0'}, Layout.SINGLE_DEX),
-  V41(41, new byte[] {'0', '4', '1'}, Layout.CONTAINER_DEX);
+  V41(41, new byte[] {'0', '4', '1'}, Layout.CONTAINER_DEX),
+  V42(42, new byte[] {'0', '4', '2'}, Layout.CONTAINER_DEX);
 
   public enum Layout {
     SINGLE_DEX,
@@ -73,7 +74,7 @@ public enum DexVersion implements Ordered<DexVersion> {
   static final Map<AndroidApiLevel, DexVersion> apiLevelToDexVersion =
       new ImmutableMap.Builder<AndroidApiLevel, DexVersion>()
           // MAIN is an unknown higher api version we therefore choose the highest known version.
-          .put(AndroidApiLevel.MAIN, DexVersion.V41)
+          .put(AndroidApiLevel.MAIN, DexVersion.V42)
           .put(AndroidApiLevel.CINNAMON_BUN, DexVersion.V41)
           .put(AndroidApiLevel.BAKLAVA_1, DexVersion.V41)
           .put(AndroidApiLevel.BAKLAVA, DexVersion.V41)
@@ -122,6 +123,8 @@ public enum DexVersion implements Ordered<DexVersion> {
         return Optional.of(V40);
       case 41:
         return Optional.of(V41);
+      case 42:
+        return Optional.of(V42);
       default:
         return Optional.empty();
     }

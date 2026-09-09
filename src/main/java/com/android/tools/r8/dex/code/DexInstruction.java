@@ -112,6 +112,11 @@ public abstract class DexInstruction implements CfOrDexInstruction, StructuralIt
     dest.put((short) value);
   }
 
+  protected void write4BitValueAnd20BitValue(int a, int b, ShortBuffer dest) {
+    writeFirst((b >> 16) & 0xf, a, dest);
+    write16BitValue(b, dest);
+  }
+
   protected void write32BitValue(long value, ShortBuffer dest) {
     dest.put((short) (value & 0xffff));
     dest.put((short) ((value >> 16) & 0xffff));
@@ -221,11 +226,11 @@ public abstract class DexInstruction implements CfOrDexInstruction, StructuralIt
     return false;
   }
 
-  public DexConstString16 asConstString16() {
+  public DexConstString20 asConstString20() {
     return null;
   }
 
-  public boolean isConstString16() {
+  public boolean isConstString20() {
     return false;
   }
 

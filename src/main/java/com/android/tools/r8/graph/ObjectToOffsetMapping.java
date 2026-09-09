@@ -12,8 +12,6 @@ import com.android.tools.r8.graph.lens.GraphLens;
 import com.android.tools.r8.ir.conversion.LensCodeRewriterUtils;
 import com.android.tools.r8.naming.NamingLens;
 import com.android.tools.r8.profile.startup.profile.StartupProfile;
-import com.android.tools.r8.utils.internal.Box;
-import com.android.tools.r8.utils.internal.ConsumerUtils;
 import com.android.tools.r8.utils.structural.CompareToVisitor;
 import com.android.tools.r8.utils.structural.CompareToVisitorWithStringTable;
 import com.android.tools.r8.utils.structural.CompareToVisitorWithTypeTable;
@@ -21,7 +19,6 @@ import com.android.tools.r8.utils.structural.StructuralItem;
 import com.android.tools.r8.utils.timing.Timing;
 import it.unimi.dsi.fastutil.objects.Reference2IntLinkedOpenHashMap;
 import it.unimi.dsi.fastutil.objects.Reference2IntMap;
-import it.unimi.dsi.fastutil.objects.Reference2IntMap.Entry;
 import it.unimi.dsi.fastutil.objects.Reference2IntOpenHashMap;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -34,7 +31,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Consumer;
 
-public class ObjectToOffsetMapping {
+public class ObjectToOffsetMapping implements StringOffsetProvider {
 
   private static final int NOT_FOUND = -1;
 
@@ -55,9 +52,6 @@ public class ObjectToOffsetMapping {
   private Reference2IntLinkedOpenHashMap<DexString> strings;
   private final Reference2IntLinkedOpenHashMap<DexCallSite> callSites;
   private final Reference2IntLinkedOpenHashMap<DexMethodHandle> methodHandles;
-
-  private DexString firstConstString16;
-  private DexString firstConstString17;
 
   private final CompareToVisitor compareToVisitor;
 
@@ -95,17 +89,9 @@ public class ObjectToOffsetMapping {
     this.shortyCache = shortyCache;
     timing.begin("Sort strings");
     if (sharedMapping == null) {
-      this.strings =
-          createSortedMap(
-              strings,
-              DexString::compareTo,
-              this::setFirstConstString16,
-              this::setFirstConstString17,
-              lazyDexStringsCount);
+      this.strings = createStringMap(strings, lazyDexStringsCount);
     } else {
       this.strings = sharedMapping.strings;
-      this.firstConstString16 = sharedMapping.firstConstString16;
-      this.firstConstString17 = sharedMapping.firstConstString17;
     }
     CompareToVisitor visitor =
         new CompareToVisitorWithStringTable(namingLens, this.strings::getInt);
@@ -116,7 +102,8 @@ public class ObjectToOffsetMapping {
             types,
             compare(visitor),
             VirtualFile.getMaxNumberOfTypes(appView.options()),
-            this::failOnOverflow);
+            this::failOnOverflow,
+            0);
     visitor =
         new CompareToVisitorWithTypeTable(namingLens, this.strings::getInt, this.types::getInt);
     timing.end();
@@ -127,10 +114,10 @@ public class ObjectToOffsetMapping {
             : sortClasses(classes, startupProfile, virtualFile, visitor);
     timing.end();
     timing.begin("Sort protos");
-    this.protos = createSortedMap(protos, compare(visitor), this::failOnOverflow);
+    this.protos = createSortedMap(protos, compare(visitor));
     timing.end();
     timing.begin("Sort methods");
-    this.methods = createSortedMap(methods, compare(visitor), this::failOnOverflow);
+    this.methods = createSortedMap(methods, compare(visitor));
     timing.end();
     timing.begin("Sort fields");
     this.fields =
@@ -138,13 +125,14 @@ public class ObjectToOffsetMapping {
             fields,
             compare(visitor),
             VirtualFile.getMaxNumberOfFields(appView.options()),
-            this::failOnOverflow);
+            this::failOnOverflow,
+            0);
     timing.end();
     timing.begin("Sort call-sites");
-    this.callSites = createSortedMap(callSites, compare(visitor), this::failOnOverflow);
+    this.callSites = createSortedMap(callSites, compare(visitor));
     timing.end();
     timing.begin("Sort method handles");
-    this.methodHandles = createSortedMap(methodHandles, compare(visitor), this::failOnOverflow);
+    this.methodHandles = createSortedMap(methodHandles, compare(visitor));
     timing.end();
 
     ObjectToOffsetMapping mapping = this;
@@ -177,23 +165,7 @@ public class ObjectToOffsetMapping {
         strings.put(forcedString, -1);
       }
     }
-    Box<DexString> newConstString16 = new Box<>();
-    Box<DexString> newConstStringJumbo = new Box<>();
-    strings =
-        createSortedMap(
-            strings.keySet(),
-            DexString::compareTo,
-            newConstString16::set,
-            newConstStringJumbo::set,
-            0);
-    // After reindexing it must hold that the new const-string/16 and const-string/jumbo start is on
-    // the same or a larger string. The new string cut-offs are not set as the first determined
-    // strings are still the cut-off point where const-string/16 and const-string/jumbo instructions
-    // are used.
-    assert getFirstConstString16() == null
-        || newConstString16.get().isGreaterThanOrEqualTo(getFirstConstString16());
-    assert getFirstConstString17() == null
-        || newConstStringJumbo.get().isGreaterThanOrEqualTo(getFirstConstString17());
+    strings = createStringMap(strings.keySet(), 0);
   }
 
   public CompareToVisitor getCompareToVisitor() {
@@ -208,44 +180,16 @@ public class ObjectToOffsetMapping {
     throw new CompilationError("Index overflow for " + item.getClass());
   }
 
-  private <T> Reference2IntLinkedOpenHashMap<T> createSortedMap(
-      Collection<T> items, Comparator<T> comparator, Consumer<T> onUInt16Overflow) {
-    return createSortedMap(
-        items,
-        comparator,
-        VirtualFile.MAX_ENTRIES,
-        onUInt16Overflow,
-        ConsumerUtils.emptyConsumer(),
-        0);
+  private <T extends DexItem> Reference2IntLinkedOpenHashMap<T> createSortedMap(
+      Collection<T> items, Comparator<T> comparator) {
+    return createSortedMap(items, comparator, VirtualFile.MAX_ENTRIES, this::failOnOverflow, 0);
   }
 
-  private <T> Reference2IntLinkedOpenHashMap<T> createSortedMap(
-      Collection<T> items, Comparator<T> comparator, int maxEntries, Consumer<T> onOverflow) {
-    return createSortedMap(
-        items, comparator, maxEntries, onOverflow, ConsumerUtils.emptyConsumer(), 0);
-  }
-
-  private <T> Reference2IntLinkedOpenHashMap<T> createSortedMap(
-      Collection<T> items,
-      Comparator<T> comparator,
-      Consumer<T> onUInt16Overflow,
-      Consumer<T> onUInt17Overflow,
-      int reservedIndicesBeforeOverflow) {
-    return createSortedMap(
-        items,
-        comparator,
-        VirtualFile.MAX_ENTRIES,
-        onUInt16Overflow,
-        onUInt17Overflow,
-        reservedIndicesBeforeOverflow);
-  }
-
-  private <T> Reference2IntLinkedOpenHashMap<T> createSortedMap(
+  private <T extends DexItem> Reference2IntLinkedOpenHashMap<T> createSortedMap(
       Collection<T> items,
       Comparator<T> comparator,
       int maxEntries,
       Consumer<T> onOverflow,
-      Consumer<T> onUInt17Overflow,
       int reservedIndicesBeforeOverflow) {
     if (items.isEmpty()) {
       return new Reference2IntLinkedOpenHashMap<>();
@@ -260,12 +204,20 @@ public class ObjectToOffsetMapping {
       int offsetIndex = index + reservedIndicesBeforeOverflow;
       if (offsetIndex == maxEntries) {
         onOverflow.accept(item);
-      } else if (offsetIndex == Constants.U17BIT_MAX + 1) {
-        onUInt17Overflow.accept(item);
       }
       map.put(item, index++);
     }
     return map;
+  }
+
+  private Reference2IntLinkedOpenHashMap<DexString> createStringMap(
+      Collection<DexString> strings, int reservedIndicesBeforeOverflow) {
+    return createSortedMap(
+        strings,
+        DexString::compareTo,
+        Integer.MAX_VALUE,
+        this::failOnOverflow,
+        reservedIndicesBeforeOverflow);
   }
 
   /**
@@ -456,31 +408,14 @@ public class ObjectToOffsetMapping {
     return shortyCache.computeIfAbsent(shorty, appView.dexItemFactory()::createString);
   }
 
-  public DexString getFirstConstString16() {
-    return firstConstString16;
+  @Override
+  public boolean hasJumboStrings() {
+    return strings.size() + lazyDexStringsCount > Constants.U16BIT_MAX;
   }
 
-  private void setFirstConstString16(DexString string) {
-    assert firstConstString16 == null;
-    firstConstString16 = string;
-  }
-
-  public DexString getFirstConstString17() {
-    return firstConstString17;
-  }
-
-  private void setFirstConstString17(DexString string) {
-    assert firstConstString17 == null;
-    firstConstString17 = string;
-  }
-
-  public DexString getFirstString() {
-    for (Entry<DexString> dexStringEntry : strings.reference2IntEntrySet()) {
-      if (dexStringEntry.getIntValue() == 0) {
-        return dexStringEntry.getKey();
-      }
-    }
-    return null;
+  @Override
+  public int getLazyDexStringsCount() {
+    return lazyDexStringsCount;
   }
 
   private <T extends IndexedDexItem> int getOffsetFor(T item, Reference2IntMap<T> map) {
@@ -501,6 +436,7 @@ public class ObjectToOffsetMapping {
     return getOffsetFor(method, methods);
   }
 
+  @Override
   public int getOffsetFor(DexString string) {
     return getOffsetFor(string, strings);
   }

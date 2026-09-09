@@ -146,11 +146,6 @@ public class ThrowExceptionCode extends Code implements DexWritableCode {
   }
 
   @Override
-  public DexString getHighestSortingString() {
-    return null;
-  }
-
-  @Override
   public int getIncomingRegisterSize(ProgramMethod method) {
     return 0;
   }

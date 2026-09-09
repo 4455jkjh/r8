@@ -74,7 +74,7 @@ public class DexContainerFormatTestBase extends TestBase {
     validate(dexes.get(0), DexVersion.V41);
   }
 
-  static void validate(byte[] dex, DexVersion expectedVersion) throws Exception {
+  protected static void validate(byte[] dex, DexVersion expectedVersion) throws Exception {
     CompatByteBuffer buffer = CompatByteBuffer.wrap(dex);
     setByteOrder(buffer);
 

@@ -73,8 +73,6 @@ public interface DexWritableCode {
 
   DexWritableCodeKind getDexWritableCodeKind();
 
-  DexString getHighestSortingString();
-
   TryHandler[] getHandlers();
 
   Try[] getTries();

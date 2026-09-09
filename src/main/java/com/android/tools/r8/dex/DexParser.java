@@ -71,7 +71,6 @@ import com.android.tools.r8.graph.PermittedSubclassAttribute;
 import com.android.tools.r8.graph.RecordComponentInfo;
 import com.android.tools.r8.origin.Origin;
 import com.android.tools.r8.origin.PathOrigin;
-import com.android.tools.r8.utils.DexVersion;
 import com.android.tools.r8.utils.InternalOptions;
 import com.android.tools.r8.utils.ReachabilitySensitiveValue;
 import com.android.tools.r8.utils.internal.ListUtils;
@@ -160,7 +159,7 @@ public class DexParser<T extends DexClass> {
     while (offset < dexReader.end()) {
       offsets.add(offset);
       DexReader tmp = new DexReader(Origin.unknown(), dexReader.buffer.array(), offset);
-      if (tmp.getDexVersion() != DexVersion.V41
+      if (!tmp.getDexVersion().isContainerDex()
           || dexReader.getUint(offset + Constants.HEADER_SIZE_OFFSET)
               != Constants.TYPE_HEADER_ITEM_SIZE_V41
           || dexReader.getUint(offset + Constants.CONTAINER_OFF_OFFSET) != offset) {
@@ -1136,7 +1135,7 @@ public class DexParser<T extends DexClass> {
     populateCallSites(); // Depends on MethodHandles
   }
 
-  private void populateStrings() {
+  public void populateStrings() {
     indexedItems.initializeStrings(stringIDs.length);
     for (int i = 0; i < stringIDs.length; i++) {
       indexedItems.setString(i, stringAt(i));

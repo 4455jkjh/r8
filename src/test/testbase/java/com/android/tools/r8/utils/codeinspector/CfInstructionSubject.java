@@ -4,7 +4,6 @@
 
 package com.android.tools.r8.utils.codeinspector;
 
-
 import com.android.tools.r8.cf.code.CfArithmeticBinop;
 import com.android.tools.r8.cf.code.CfArrayLength;
 import com.android.tools.r8.cf.code.CfArrayLoad;
@@ -189,11 +188,17 @@ public class CfInstructionSubject implements InstructionSubject {
   }
 
   @Override
+  public boolean isConstString20() {
+    return false;
+  }
+
+  @Override
   public boolean isJumboString() {
     return false;
   }
 
-  @Override public long getConstNumber() {
+  @Override
+  public long getConstNumber() {
     assert isConstNumber();
     return ((CfConstNumber) instruction).getRawValue();
   }
@@ -269,8 +274,7 @@ public class CfInstructionSubject implements InstructionSubject {
 
   @Override
   public boolean isNewInstance(String type) {
-    return isNewInstance()
-        && ((CfNew) instruction).getType().toString().equals(type);
+    return isNewInstance() && ((CfNew) instruction).getType().toString().equals(type);
   }
 
   @Override
