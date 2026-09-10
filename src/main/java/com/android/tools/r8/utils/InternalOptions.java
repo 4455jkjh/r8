@@ -2346,6 +2346,13 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
         SystemPropertyUtils.parseSystemPropertyOrDefault(
             "com.android.tools.r8.dex.refinementInDebug", false);
 
+    public boolean enableClassToDexDistributionRefinement(InternalOptions options) {
+      if (options.debug && !enableClassToDexDistributionRefinementInDebugMode) {
+        return false;
+      }
+      return classToDexDistributionRefinementPasses > 0;
+    }
+
     public TriConsumer<AppView<?>, DexProgramClass, IndexedItemCollection>
         collectIndexedItemsCallback;
 
