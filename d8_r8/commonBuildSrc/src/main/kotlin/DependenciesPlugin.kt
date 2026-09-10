@@ -230,6 +230,11 @@ public object ThirdPartyDeps {
     ThirdPartyDependency("art-tests", Paths.get("tests", "2017-10-04", "art").toFile())
   public val artTestsLegacy: ThirdPartyDependency =
     ThirdPartyDependency("art-tests-legacy", Paths.get("tests", "2016-12-19", "art").toFile())
+  public val bundletool: ThirdPartyDependency =
+    ThirdPartyDependency(
+      "bundletool",
+      Paths.get("third_party", "bundletool", "bundletool-1.11.0").toFile(),
+    )
   public val clank: ThirdPartyDependency =
     ThirdPartyDependency(
       "clank",

@@ -9,12 +9,14 @@ import com.android.tools.r8.FeatureSplit;
 import com.android.tools.r8.ProgramResourceProvider;
 import com.android.tools.r8.graph.DexItemFactory;
 import com.android.tools.r8.utils.internal.IterableUtils;
+import com.google.common.collect.Sets;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Set;
+import java.util.function.Predicate;
 
 public class FeatureSplitConfiguration {
 
@@ -76,6 +78,16 @@ public class FeatureSplitConfiguration {
 
   public Collection<FeatureSplit> getFeatureSplits() {
     return featureSplits.keySet();
+  }
+
+  public Set<FeatureSplit> getFeatureSplits(Predicate<FeatureSplit> predicate) {
+    Set<FeatureSplit> result = Sets.newIdentityHashSet();
+    for (FeatureSplit featureSplit : getFeatureSplits()) {
+      if (predicate.test(featureSplit)) {
+        result.add(featureSplit);
+      }
+    }
+    return result;
   }
 
   public List<FeatureSplitProgramResourceProvider> getFeatureSplitProgramResourceProviders(

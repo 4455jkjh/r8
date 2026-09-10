@@ -44,6 +44,7 @@ public class FeatureSplit {
   private List<ProgramResourceProvider> programResourceProviders;
   private final AndroidResourceProvider androidResourceProvider;
   private AndroidResourceConsumer androidResourceConsumer;
+  private boolean hasCode = false;
 
   private FeatureSplit(
       ProgramConsumer programConsumer,
@@ -79,6 +80,18 @@ public class FeatureSplit {
 
   public boolean isBase() {
     return false;
+  }
+
+  public boolean hasCode() {
+    return hasCode;
+  }
+
+  public void setHasCode() {
+    setHasCode(true);
+  }
+
+  public void setHasCode(boolean hasCode) {
+    this.hasCode = hasCode;
   }
 
   public List<ProgramResourceProvider> getProgramResourceProviders() {
