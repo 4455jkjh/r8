@@ -925,6 +925,10 @@ class SemanticVersion:
                 self.patch == other.patch and
                 self.prerelease == other.prerelease)
 
+    def __str__(self):
+        return str(self.major) + '.' + str(self.minor) + '.' + str(
+            self.patch) + (('-' + self.prerelease) if self.prerelease else '')
+
 
 # Check that the passed string is formatted as a basic semver version (x.y.z or x.y.z-prerelease
 # depending on the value of allowPrerelease).

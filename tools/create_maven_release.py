@@ -184,6 +184,17 @@ def determine_version():
     raise Exception('Unable to determine version.')
 
 
+def determine_keepanno_tools_version():
+    version = determine_version()
+    semver = utils.check_basic_semver_version(version, allowPrerelease=True)
+    if semver.prerelease == 'dev':
+        return str(
+            utils.SemanticVersion(semver.major, semver.minor, 0,
+                                  "alpha{:02d}".format(semver.patch + 1)))
+    else:
+        return version
+
+
 def generate_library_licenses():
     artifact_prefix = '- artifact: '
     license_prefix = 'license: '
@@ -331,7 +342,7 @@ def generate_keepanno_tools_maven_zip(out,
                                       skip_gradle_build=False):
     if not skip_gradle_build:
         gradle.run_gradle([utils.GRADLE_TASK_KEEPANNOTOOLSLIB, '-Pno_internal'])
-    version = determine_version()
+    version = determine_keepanno_tools_version()
     with utils.TempDir() as tmp_dir:
         file_copy = join(tmp_dir, 'copy_of_jar.jar')
         copyfile(utils.KEEPANNOTOOLSLIB_JAR, file_copy)
