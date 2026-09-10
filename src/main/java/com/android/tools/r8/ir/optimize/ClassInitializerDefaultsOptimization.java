@@ -7,6 +7,7 @@ package com.android.tools.r8.ir.optimize;
 import static com.android.tools.r8.naming.dexitembasedstring.ClassNameComputationInfo.ClassNameMapping.CANONICAL_NAME;
 import static com.android.tools.r8.naming.dexitembasedstring.ClassNameComputationInfo.ClassNameMapping.NAME;
 import static com.android.tools.r8.naming.dexitembasedstring.ClassNameComputationInfo.ClassNameMapping.SIMPLE_NAME;
+import static com.android.tools.r8.naming.dexitembasedstring.ClassNameComputationInfo.ClassNameMapping.TYPE_NAME;
 
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.DexClass;
@@ -362,7 +363,8 @@ public class ClassInitializerDefaultsOptimization {
             holder.getType(), ClassNameComputationInfo.getInstance(SIMPLE_NAME));
       }
       if (invokedMethod == dexItemFactory.classMethods.getTypeName) {
-        // TODO(b/119426668): desugar Type#getTypeName
+        return new DexItemBasedValueString(
+            holder.getType(), ClassNameComputationInfo.getInstance(TYPE_NAME));
       }
       assert false;
       return null;
@@ -376,7 +378,7 @@ public class ClassInitializerDefaultsOptimization {
     } else if (invokedMethod == dexItemFactory.classMethods.getSimpleName) {
       mapping = SIMPLE_NAME;
     } else if (invokedMethod == dexItemFactory.classMethods.getTypeName) {
-      // TODO(b/119426668): desugar Type#getTypeName
+      mapping = TYPE_NAME;
     }
     if (mapping != null) {
       return new DexValueString(
