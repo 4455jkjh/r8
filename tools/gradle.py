@@ -168,8 +168,7 @@ def main():
         args.append('-Pno_internal')
     if options.exclude_deps:
         args.append('-Pexclude_deps')
-    if options.worktree:
-        args.append('-g=' + os.path.join(utils.REPO_ROOT, ".gradle_user_home"))
+    utils.append_gradle_user_home_for_worktree(options.worktree, False, args)
     return run_gradle(args, quiet=options.quiet)
 
 
