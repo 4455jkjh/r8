@@ -62,7 +62,7 @@ public class IndexedItemTransaction implements IndexedItemCollection {
 
   public static IndexedItemTransaction create(
       VirtualFile.VirtualFileIndexedItemCollection base, AppView<?> appView) {
-    if (appView.testing().classToDexDistributionRefinementPasses > 0) {
+    if (appView.testing().enableClassToDexDistributionRefinement(appView.options())) {
       return new IndexedItemTransaction(base, appView);
     } else {
       // Avoid overhead from reference counting. Notably, when the reference counters are needed,
