@@ -32,7 +32,8 @@ public class GlobalSyntheticsGeneratorCommandParserTest extends TestBase {
     assertEquals(
         StringUtils.lines(
             "Usage: globalsyntheticsgenerator [options] where options are:",
-            "  --min-api <number>      # Minimum Android API level compatibility (default: 1).",
+            "  --min-api <number>[.<number>]",
+            "                          # Minimum Android API level compatibility (default: 1).",
             "  --lib <file|jdk-home>   # Add <file|jdk-home> as a library resource.",
             "  --output <globals-file> # Output result in <globals-file>.",
             "  --classfile             # Generate globals for only classfile to classfile"

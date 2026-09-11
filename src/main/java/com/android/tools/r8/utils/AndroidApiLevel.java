@@ -441,15 +441,7 @@ public class AndroidApiLevel implements Ordered<AndroidApiLevel> {
    * @throws IllegalArgumentException if the parsed API version is invalid (e.g. 99.99).
    */
   public static AndroidApiLevel parseAndroidApiLevel(String apiLevel) {
-    int dotPosition = apiLevel.indexOf('.');
-    if (dotPosition == -1) {
-      return AndroidApiLevel.getAndroidApiLevel(Integer.parseInt(apiLevel), 0);
-    } else {
-      String majorApiLevel = apiLevel.substring(0, dotPosition);
-      String minorApiLevel = apiLevel.substring(dotPosition + 1);
-      return AndroidApiLevel.getAndroidApiLevel(
-          Integer.parseInt(majorApiLevel), Integer.parseInt(minorApiLevel));
-    }
+    return getAndroidApiLevel(UncheckedApiLevel.parse(apiLevel));
   }
 
   public byte serializeAsByte() {

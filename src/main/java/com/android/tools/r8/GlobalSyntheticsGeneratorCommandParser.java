@@ -5,7 +5,6 @@
 package com.android.tools.r8;
 
 import com.android.tools.r8.origin.Origin;
-import com.android.tools.r8.utils.AndroidApiLevel;
 import com.android.tools.r8.utils.CliParserUtils;
 import com.android.tools.r8.utils.FlagFile;
 import com.android.tools.r8.utils.StringDiagnostic;
@@ -49,41 +48,22 @@ public class GlobalSyntheticsGeneratorCommandParser {
 
   private static CliParser<ParserState> createParser() {
     var toolName = "globalsyntheticsgenerator";
-    int defaultApi = AndroidApiLevel.getDefault().getMajor();
-    String minApiFlag = "--min-api";
 
     var header = "Usage: " + toolName + " [options] where options are:";
     var parser = new CliParser<ParserState>(header);
     return parser
-        .option1(
-            minApiFlag,
-            "<number>",
-            "Minimum Android API level compatibility (default: " + defaultApi + ").",
-            (b, arg) -> {
-              if (b.hasDefinedApiLevel) {
-                StringDiagnostic diagnostic =
-                    new StringDiagnostic(
-                        "Cannot set multiple " + minApiFlag + " options", b.origin);
-                b.builder.error(diagnostic);
-              } else {
-                CliParserUtils.parseApiLevel(
-                    arg,
-                    apiLevel -> {
-                      if (apiLevel.getMinor() != 0) {
-                        b.builder.error(
-                            new StringDiagnostic("Minor API versions are not supported", b.origin));
-                      }
-                      b.builder.setMinApiLevel(apiLevel.getMajor());
-                      b.hasDefinedApiLevel = true;
-                    },
-                    err -> {
-                      StringDiagnostic diagnostic =
-                          new StringDiagnostic(
-                              "Invalid argument to " + minApiFlag + ": " + err, b.origin);
-                      b.builder.error(diagnostic);
-                    });
-              }
-            })
+        .apply(
+            CliParserUtils.addMinApiOption(
+                b -> b.hasDefinedApiLevel,
+                (b, apiLevel) -> {
+                  if (apiLevel.getMinor() != 0) {
+                    b.builder.error(
+                        new StringDiagnostic("Minor API versions are not supported", b.origin));
+                  }
+                  b.builder.setMinApiLevel(apiLevel.getMajor());
+                  b.hasDefinedApiLevel = true;
+                },
+                (b, err) -> b.builder.error(new StringDiagnostic(err, b.origin))))
         .option1(
             "--lib",
             "<file|jdk-home>",

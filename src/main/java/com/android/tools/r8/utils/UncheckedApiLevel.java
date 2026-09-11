@@ -14,7 +14,7 @@ public class UncheckedApiLevel implements Ordered<UncheckedApiLevel> {
 
   public UncheckedApiLevel(int major, int minor) {
     if (major <= 0 || minor < 0) {
-      throw new RuntimeException("Invalid API version: " + toString(major, minor));
+      throw new IllegalArgumentException("Invalid API version: " + toString(major, minor));
     }
     this.major = major;
     this.minor = minor;
@@ -25,6 +25,18 @@ public class UncheckedApiLevel implements Ordered<UncheckedApiLevel> {
   public UncheckedApiLevel(int major) {
     // TODO(b/356841164): Remove all uses of this.
     this(major, 0);
+  }
+
+  public static UncheckedApiLevel parse(String apiLevel) {
+    int dotPosition = apiLevel.indexOf('.');
+    if (dotPosition == -1) {
+      return new UncheckedApiLevel(Integer.parseInt(apiLevel), 0);
+    } else {
+      String majorApiLevel = apiLevel.substring(0, dotPosition);
+      String minorApiLevel = apiLevel.substring(dotPosition + 1);
+      return new UncheckedApiLevel(
+          Integer.parseInt(majorApiLevel), Integer.parseInt(minorApiLevel));
+    }
   }
 
   public int getMajor() {

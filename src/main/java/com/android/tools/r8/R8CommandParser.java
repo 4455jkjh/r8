@@ -11,7 +11,6 @@ import com.android.tools.r8.origin.PathOrigin;
 import com.android.tools.r8.profile.art.ArtProfileConsumerUtils;
 import com.android.tools.r8.profile.art.ArtProfileProviderUtils;
 import com.android.tools.r8.profile.startup.StartupProfileProviderUtils;
-import com.android.tools.r8.utils.AndroidApiLevel;
 import com.android.tools.r8.utils.ArchiveResourceProvider;
 import com.android.tools.r8.utils.CliParserUtils;
 import com.android.tools.r8.utils.FlagFile;
@@ -122,28 +121,14 @@ public class R8CommandParser extends BaseCompilerCommandParser {
             "<file>",
             "Add <file> as a classpath resource.",
             (state, arg) -> state.builder.addClasspathFiles(Paths.get(arg)))
-        .option1(
-            "--min-api",
-            "<number>",
-            "Minimum Android API level compatibility (default: "
-                + AndroidApiLevel.getDefault().getMajor()
-                + ").",
-            (state, arg) -> {
-              if (state.hasDefinedApiLevel) {
-                StringDiagnostic diagnostic =
-                    new StringDiagnostic("Cannot set multiple --min-api options", state.origin);
-                state.builder.error(diagnostic);
-              } else {
-                CliParserUtils.parsePositiveInt(
-                    arg,
-                    state.builder::setMinApiLevel,
-                    error ->
-                        state.builder.error(
-                            new StringDiagnostic(
-                                "Invalid argument to --min-api: " + error, state.origin)));
-                state.hasDefinedApiLevel = true;
-              }
-            })
+        .apply(
+            CliParserUtils.addMinApiOption(
+                state -> state.hasDefinedApiLevel,
+                (state, apiLevel) -> {
+                  state.builder.setMinApiLevel(apiLevel);
+                  state.hasDefinedApiLevel = true;
+                },
+                (state, error) -> state.builder.error(new StringDiagnostic(error, state.origin))))
         .option1(
             "--api-database",
             "<file>",

@@ -62,7 +62,7 @@ public class DesugaredMethodsListCommand {
   DesugaredMethodsListCommand(boolean help, boolean version) {
     this.help = help;
     this.version = version;
-    this.minApiLevel = AndroidApiLevel.B.asUnchecked();
+    this.minApiLevel = AndroidApiLevel.getDefault().asUnchecked();
     this.reporter = null;
     this.desugarLibrarySpecification = null;
     this.desugarLibraryImplementation = null;
@@ -132,7 +132,7 @@ public class DesugaredMethodsListCommand {
   @KeepForApi
   public static class Builder {
 
-    private UncheckedApiLevel minApiLevel = AndroidApiLevel.B.asUnchecked();
+    private UncheckedApiLevel minApiLevel = AndroidApiLevel.getDefault().asUnchecked();
     private final Reporter reporter;
     private StringResource desugarLibrarySpecification = null;
     private Collection<ProgramResourceProvider> desugarLibraryImplementation = new ArrayList<>();
@@ -264,65 +264,75 @@ public class DesugaredMethodsListCommand {
 
   public static class DesugaredMethodsListCommandParser {
 
-    private static CliParser<DesugaredMethodsListCommand.Builder> createParser() {
+    private static class ParserState {
+      final DesugaredMethodsListCommand.Builder builder;
+      boolean hasDefinedApiLevel = false;
+
+      ParserState(DesugaredMethodsListCommand.Builder builder) {
+        this.builder = builder;
+      }
+    }
+
+    private static CliParser<ParserState> createParser() {
       var header = "Usage: desugaredmethods [options] where  options are:";
-      var parser = new CliParser<DesugaredMethodsListCommand.Builder>(header);
+      var parser = new CliParser<ParserState>(header);
       return parser
           .option1(
               "--output",
               "<file>",
               "Output result in <file>. <file> must be an existing directory or a zip file.",
-              (b, arg) -> b.setOutputPath(Paths.get(arg)))
+              (state, arg) -> state.builder.setOutputPath(Paths.get(arg)))
           .option1(
               "--lib",
               "<file|jdk-home>",
               "Add <file|jdk-home> as a library resource.",
-              (b, arg) -> {
+              (state, arg) -> {
                 try {
-                  b.addLibrary(new ArchiveClassFileProvider(Paths.get(arg)));
+                  state.builder.addLibrary(new ArchiveClassFileProvider(Paths.get(arg)));
                 } catch (IOException e) {
-                  b.reporter.error(new ExceptionDiagnostic(e, new PathOrigin(Paths.get(arg))));
+                  state.builder.reporter.error(
+                      new ExceptionDiagnostic(e, new PathOrigin(Paths.get(arg))));
                 } catch (UncheckedIOException e) {
-                  b.reporter.error(
+                  state.builder.reporter.error(
                       new ExceptionDiagnostic(e.getCause(), new PathOrigin(Paths.get(arg))));
                 }
               })
-          .option1(
-              "--min-api",
-              "<number>",
-              "Minimum Android API level compatibility (default: "
-                  + AndroidApiLevel.getDefault().getMajor()
-                  + ").",
-              (b, arg) ->
-                  CliParserUtils.parsePositiveInt(
-                      arg,
-                      b::setMinApi,
-                      err -> b.reporter.error(new StringDiagnostic("Invalid min-api: " + err))))
+          .apply(
+              CliParserUtils.addMinApiOption(
+                  state -> state.hasDefinedApiLevel,
+                  (state, apiLevel) -> {
+                    state.builder.setMinApi(apiLevel);
+                    state.hasDefinedApiLevel = true;
+                  },
+                  (state, err) -> state.builder.reporter.error(new StringDiagnostic(err))))
           .option1(
               "--desugared-lib",
               "<file>",
               "Specify desugared library configuration. <file> is a desugared library configuration"
                   + " (json).",
-              (b, arg) -> b.setDesugarLibrarySpecification(StringResource.fromFile(Paths.get(arg))))
+              (state, arg) ->
+                  state.builder.setDesugarLibrarySpecification(
+                      StringResource.fromFile(Paths.get(arg))))
           .option0(
               "--android-platform-build",
               "Compile as a platform build where the runtime/bootclasspath is assumed to be the"
                   + " version specified by --min-api.",
-              Builder::setAndroidPlatformBuild)
+              state -> state.builder.setAndroidPlatformBuild())
           .option1(
               "--desugared-lib-jar",
               "<file>",
               "Specify desugared library jar.",
-              (b, arg) ->
-                  b.addDesugarLibraryImplementation(
+              (state, arg) ->
+                  state.builder.addDesugarLibraryImplementation(
                       ArchiveProgramResourceProvider.fromArchive(Paths.get(arg))))
-          .apply(CliParserUtils.addVersionOption(Builder::setVersion))
-          .apply(CliParserUtils.addHelpOption(Builder::setHelp));
+          .apply(CliParserUtils.addVersionOption(state -> state.builder.setVersion()))
+          .apply(CliParserUtils.addHelpOption(state -> state.builder.setHelp()));
     }
 
     public DesugaredMethodsListCommand parse(String[] args, DiagnosticsHandler handler) {
       DesugaredMethodsListCommand.Builder builder = DesugaredMethodsListCommand.builder(handler);
-      createParser().parse(args, builder, err -> builder.reporter.error(new StringDiagnostic(err)));
+      ParserState state = new ParserState(builder);
+      createParser().parse(args, state, err -> builder.reporter.error(new StringDiagnostic(err)));
       return builder.build();
     }
   }
