@@ -4,6 +4,7 @@
 package com.android.tools.r8.ir.optimize.boxedprimitives;
 
 import static com.android.tools.r8.utils.codeinspector.CodeMatchers.invokesMethodWithName;
+import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.MatcherAssert.assertThat;
 
 import com.android.tools.r8.TestBase;
@@ -36,8 +37,8 @@ public class OptimizeUnboxAfterCastTest extends TestBase {
         .inspect(
             inspector -> {
               MethodSubject mainMethod = inspector.clazz(Main.class).mainMethod();
-              assertThat(mainMethod, invokesMethodWithName("valueOf"));
-              assertThat(mainMethod, invokesMethodWithName("intValue"));
+              assertThat(mainMethod, not(invokesMethodWithName("valueOf")));
+              assertThat(mainMethod, not(invokesMethodWithName("intValue")));
             });
   }
 

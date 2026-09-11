@@ -10,6 +10,8 @@ import com.android.tools.r8.graph.DexItemFactory;
 import com.android.tools.r8.graph.DexMethod;
 import com.android.tools.r8.ir.analysis.value.AbstractValue;
 import com.android.tools.r8.ir.analysis.value.SingleBoxedPrimitiveValue;
+import com.android.tools.r8.ir.code.AliasedValueConfiguration;
+import com.android.tools.r8.ir.code.AssumeAndCheckCastAliasedValueConfiguration;
 import com.android.tools.r8.ir.code.BasicBlock;
 import com.android.tools.r8.ir.code.BasicBlockIterator;
 import com.android.tools.r8.ir.code.IRCode;
@@ -25,6 +27,9 @@ import java.util.function.Consumer;
 
 public abstract class PrimitiveMethodOptimizer extends StatelessLibraryMethodModelCollection
     implements MethodOptimizerCapabilities {
+
+  private static final AliasedValueConfiguration aliasing =
+      AssumeAndCheckCastAliasedValueConfiguration.getInstance();
 
   final AppView<?> appView;
   final DexItemFactory factory;
@@ -123,11 +128,10 @@ public abstract class PrimitiveMethodOptimizer extends StatelessLibraryMethodMod
       }
       return;
     }
-    if (firstArg
-        .getAliasedValue()
-        .isDefinedByInstructionSatisfying(i -> i.isInvokeMethod(getBoxMethod()))) {
+    Value firstArgRoot = firstArg.getAliasedValue(aliasing);
+    if (firstArgRoot.isDefinedByInstructionSatisfying(i -> i.isInvokeMethod(getBoxMethod()))) {
       // Optimize Primitive.box(unboxed).unbox() into unboxed.
-      InvokeMethod boxInvoke = firstArg.getAliasedValue().getDefinition().asInvokeMethod();
+      InvokeMethod boxInvoke = firstArgRoot.getDefinition().asInvokeMethod();
       assert boxInvoke.isInvokeStatic();
       if (outValue != null) {
         outValue.replaceUsers(boxInvoke.getFirstArgument());
