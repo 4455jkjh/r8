@@ -44,6 +44,7 @@ import com.android.tools.r8.utils.Reporter;
 import com.android.tools.r8.utils.StringDiagnostic;
 import com.android.tools.r8.utils.SystemPropertyUtils;
 import com.android.tools.r8.utils.ThreadUtils;
+import com.android.tools.r8.utils.UncheckedApiLevel;
 import com.android.tools.r8.utils.ZipUtils;
 import com.android.tools.r8.utils.internal.FileUtils;
 import com.google.common.collect.ImmutableList;
@@ -511,13 +512,13 @@ public final class D8Command extends BaseCompilerCommand {
         reporter.error(
             "Option --main-dex-list-output requires --main-dex-rules and/or --main-dex-list");
       }
-      if (getMinApiLevel() >= AndroidApiLevel.L_MR1.getMajor()) {
+      if (getUncheckedMinApiLevel().isGreaterThanOrEqualTo(AndroidApiLevel.L_MR1.asUnchecked())) {
         if (getMainDexListConsumer() != null || getAppBuilder().hasMainDexList()) {
           reporter.error(
               "D8 does not support main-dex inputs and outputs when compiling to API level "
-                  + AndroidApiLevel.L_MR1.getMajor()
+                  + AndroidApiLevel.L_MR1.getNumericString()
                   + " and above (min API level "
-                  + getMinApiLevel()
+                  + getUncheckedMinApiLevel()
                   + " was provided)");
         }
       }
@@ -533,12 +534,12 @@ public final class D8Command extends BaseCompilerCommand {
         if (intermediate) {
           reporter.error("D8 startup layout is not supported in intermediate mode");
         }
-        if (getMinApiLevel() < AndroidApiLevel.L.getMajor()) {
+        if (getUncheckedMinApiLevel().isLessThan(AndroidApiLevel.L.asUnchecked())) {
           reporter.error(
               "D8 startup layout requires native multi dex support (API level "
-                  + AndroidApiLevel.L.getMajor()
+                  + AndroidApiLevel.L.getNumericString()
                   + " and above, min API level "
-                  + getMinApiLevel()
+                  + getUncheckedMinApiLevel()
                   + " was provided)");
         }
       }
@@ -580,10 +581,10 @@ public final class D8Command extends BaseCompilerCommand {
       }
 
       // If compiling to CF with --no-desugaring then the target API is B for consistency with R8.
-      int minApiLevel =
+      var minApiLevel =
           programConsumer instanceof ClassFileConsumer && getDisableDesugaring()
-              ? AndroidApiLevel.B.getMajor()
-              : getMinApiLevel();
+              ? AndroidApiLevel.B.asUnchecked()
+              : getUncheckedMinApiLevel();
 
       GlobalSyntheticsConsumer globalConsumer =
           GlobalSyntheticsUtils.determineGlobalSyntheticsConsumer(
@@ -698,7 +699,7 @@ public final class D8Command extends BaseCompilerCommand {
       CompilationMode mode,
       ProgramConsumer programConsumer,
       StringConsumer mainDexListConsumer,
-      int minApiLevel,
+      UncheckedApiLevel minApiLevel,
       Reporter diagnosticsHandler,
       DesugarState enableDesugaring,
       boolean intermediate,
@@ -814,7 +815,7 @@ public final class D8Command extends BaseCompilerCommand {
     internal.mainDexListConsumer = getMainDexListConsumer();
     internal.minimalMainDex = internal.debug || minimalMainDex;
     internal.enableMainDexListCheck = enableMainDexListCheck;
-    internal.setMinApiLevel(AndroidApiLevel.getAndroidApiLevel(getMinApiLevel()));
+    internal.setMinApiLevel(AndroidApiLevel.getAndroidApiLevel(getUncheckedMinApiLevel()));
     internal.apiModelingOptions().apiDatabasePath = getApiDatabasePath();
     internal.intermediate = intermediate;
     if (reoptimizeDex) { // Respect potential system property.

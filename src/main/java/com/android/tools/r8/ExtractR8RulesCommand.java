@@ -146,8 +146,8 @@ public class ExtractR8RulesCommand extends BaseCommand {
             "--include-origin-comments",
             "Include comments with origin for extracted rules.",
             b -> b.setIncludeOriginComments(true))
-        .option0("--version", "Print the version.", b -> b.setPrintVersion(true))
-        .option0("--help", "Print this message.", b -> b.setPrintHelp(true), "-h")
+        .apply(CliParserUtils.addVersionOption(b -> b.setPrintVersion(true)))
+        .apply(CliParserUtils.addHelpOption(b -> b.setPrintHelp(true)))
         .positional((b, arg) -> b.addProgramFiles(Paths.get(arg)));
   }
 

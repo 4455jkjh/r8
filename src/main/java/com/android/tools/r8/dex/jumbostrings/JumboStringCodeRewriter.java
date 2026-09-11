@@ -6,8 +6,9 @@ package com.android.tools.r8.dex.jumbostrings;
 import static com.android.tools.r8.graph.DexCode.TryHandler.NO_HANDLER;
 import static com.android.tools.r8.graph.DexDebugEventBuilder.addDefaultEventWithAdvancePcIfNecessary;
 
+import com.android.tools.r8.dex.Constants;
 import com.android.tools.r8.dex.code.DexConstString;
-import com.android.tools.r8.dex.code.DexConstString16;
+import com.android.tools.r8.dex.code.DexConstString20;
 import com.android.tools.r8.dex.code.DexConstStringJumbo;
 import com.android.tools.r8.dex.code.DexFormat21t;
 import com.android.tools.r8.dex.code.DexFormat22t;
@@ -42,7 +43,9 @@ import com.android.tools.r8.graph.DexDebugInfo.EventBasedDebugInfo;
 import com.android.tools.r8.graph.DexEncodedMethod;
 import com.android.tools.r8.graph.DexItemFactory;
 import com.android.tools.r8.graph.DexString;
+import com.android.tools.r8.graph.StringOffsetProvider;
 import com.android.tools.r8.lightir.ByteUtils;
+import com.android.tools.r8.utils.InternalOptions;
 import com.android.tools.r8.utils.internal.exceptions.Unreachable;
 import com.google.common.collect.Lists;
 import it.unimi.dsi.fastutil.ints.Int2ReferenceMap;
@@ -96,10 +99,12 @@ public class JumboStringCodeRewriter {
   }
 
   private final DexEncodedMethod method;
-  private final DexString firstConstString16;
-  private final DexString firstConstStringJumbo;
+  private final StringOffsetProvider mapping;
   private final BooleanSupplier materializeInfoForNativePc;
   private final DexItemFactory factory;
+
+  private final int firstConstString20;
+  private final int firstConstStringJumbo;
 
   private final Map<DexInstruction, List<DexInstruction>> instructionTargets =
       new IdentityHashMap<>();
@@ -116,21 +121,33 @@ public class JumboStringCodeRewriter {
 
   public JumboStringCodeRewriter(
       DexEncodedMethod method,
-      DexString firstConstString16,
-      DexString firstConstString17,
+      StringOffsetProvider mapping,
       BooleanSupplier materializeInfoForNativePc,
-      DexItemFactory factory,
-      boolean enableExperimentalConstString16) {
+      InternalOptions options) {
     this.method = method;
-    this.firstConstString16 = enableExperimentalConstString16 ? firstConstString16 : null;
-    this.firstConstStringJumbo =
-        enableExperimentalConstString16 ? firstConstString17 : firstConstString16;
+    this.mapping = mapping;
     this.materializeInfoForNativePc = materializeInfoForNativePc;
-    this.factory = factory;
+    this.factory = options.dexItemFactory();
+
+    int reserved = mapping.getLazyDexStringsCount();
+    if (options.getTestingOptions().forceJumboStringProcessing) {
+      this.firstConstString20 = -1;
+      this.firstConstStringJumbo = 0;
+    } else if (options.enableConstString20()) {
+      this.firstConstString20 = Constants.U16BIT_SIZE - reserved;
+      this.firstConstStringJumbo = Constants.U16BIT_SIZE + Constants.U20BIT_SIZE - reserved;
+    } else {
+      this.firstConstString20 = -1;
+      this.firstConstStringJumbo = Constants.U16BIT_SIZE - reserved;
+    }
+  }
+
+  private boolean canUseConstString20() {
+    return firstConstString20 != -1;
   }
 
   private DexCode getCode() {
-    return method.getCode().asDexCode();
+    return method.getDexCode();
   }
 
   public DexCode rewrite() {
@@ -161,9 +178,6 @@ public class JumboStringCodeRewriter {
     } else {
       newCode = oldCode.withNewInstructions(newInstructions.toArray(DexInstruction.EMPTY_ARRAY));
     }
-    // As we have rewritten the code, we now know that its highest string index that is not
-    // a jumbo-string is firstConstString16 (actually the previous string, but we do not have that).
-    newCode.setHighestSortingStringForJumboProcessedCode(firstConstString16);
     return newCode;
   }
 
@@ -336,23 +350,40 @@ public class JumboStringCodeRewriter {
         DexInstruction instruction = it.next();
         int orignalOffset = instruction.getOffset();
         instruction.setOffset(orignalOffset + offsetDelta);
-        if (instruction instanceof DexConstString) {
-          DexConstString string = (DexConstString) instruction;
-          if (firstConstStringJumbo != null
-              && string.getString().compareTo(firstConstStringJumbo) >= 0) {
-            DexConstStringJumbo jumboString =
-                new DexConstStringJumbo(string.AA, string.getString());
-            jumboString.setOffset(string.getOffset());
+        if (instruction.isConstString()) {
+          DexConstString string16 = (DexConstString) instruction;
+          int index = mapping.getOffsetFor(string16.getString());
+          if (index >= firstConstStringJumbo) {
+            rewriteConstString1620ToConstStringJumbo(
+                string16, string16.AA, string16.getString(), it);
             offsetDelta++;
-            it.set(jumboString);
-            replaceTarget(instruction, jumboString);
             hasInstructionWithChangedOffset = true;
-          } else if (firstConstString16 != null
-              && string.getString().compareTo(firstConstString16) >= 0) {
-            DexConstString16 string16 = new DexConstString16(string.AA, string.getString());
-            string16.setOffset(string.getOffset());
+          } else if (canUseConstString20() && index >= firstConstString20) {
+            if (string16.AA < 16) {
+              DexConstString20 string20 = new DexConstString20(string16.AA, string16.getString());
+              string20.setOffset(string16.getOffset());
+              it.set(string20);
+              replaceTarget(string16, string20);
+            } else {
+              rewriteConstString1620ToConstStringJumbo(
+                  string16, string16.AA, string16.getString(), it);
+              offsetDelta++;
+              hasInstructionWithChangedOffset = true;
+            }
+          }
+        } else if (instruction.isConstString20()) {
+          DexConstString20 string20 = instruction.asConstString20();
+          int index = mapping.getOffsetFor(string20.getString());
+          if (index >= firstConstStringJumbo) {
+            rewriteConstString1620ToConstStringJumbo(
+                string20, string20.A, string20.getString(), it);
+            offsetDelta++;
+            hasInstructionWithChangedOffset = true;
+          } else if (!canUseConstString20() || index < firstConstString20) {
+            DexConstString string16 = new DexConstString(string20.A, string20.getString());
+            string16.setOffset(string20.getOffset());
             it.set(string16);
-            replaceTarget(instruction, string16);
+            replaceTarget(string20, string16);
           }
         } else if (instruction instanceof DexFormat22t) { // IfEq, IfGe, IfGt, IfLe, IfLt, IfNe
           DexFormat22t condition = (DexFormat22t) instruction;
@@ -480,6 +511,15 @@ public class JumboStringCodeRewriter {
       }
     } while (offsetDelta > 0);
     return instructions;
+  }
+
+  private void rewriteConstString1620ToConstStringJumbo(
+      DexInstruction instruction, int register, DexString string, ListIterator<DexInstruction> it) {
+    assert instruction.isConstString() || instruction.isConstString20();
+    DexConstStringJumbo jumboString = new DexConstStringJumbo(register, string);
+    jumboString.setOffset(instruction.getOffset());
+    it.set(jumboString);
+    replaceTarget(instruction, jumboString);
   }
 
   private int rewriteIfToIfAndGoto(

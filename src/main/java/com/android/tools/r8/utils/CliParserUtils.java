@@ -197,4 +197,12 @@ public class CliParserUtils {
       this.to = to;
     }
   }
+
+  public static <B> Consumer<CliParser<B>> addVersionOption(Consumer<B> action) {
+    return parser -> parser.option0("--version", "Print version.", action, "-v");
+  }
+
+  public static <B> Consumer<CliParser<B>> addHelpOption(Consumer<B> action) {
+    return parser -> parser.option0("--help", "Print usage information.", action, "-h");
+  }
 }

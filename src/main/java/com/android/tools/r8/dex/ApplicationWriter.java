@@ -160,10 +160,7 @@ public class ApplicationWriter {
       AppView<?> appView, Marker marker, DexIndexedConsumer consumer) {
     if (appView.options().enableContainerDex()) {
       if (!DexVersion.getDexVersion(appView.options().getMinApiLevel()).isContainerDex()) {
-        appView
-            .options()
-            .reporter
-            .warning("Forcing container DEX for an API level not supporting it");
+        appView.reporter().warning("Forcing container DEX for an API level not supporting it");
       }
       return new ApplicationWriterContainer(appView, marker, consumer);
     } else {

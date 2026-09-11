@@ -25,6 +25,7 @@ import com.android.tools.r8.utils.InternalOptions;
 import com.android.tools.r8.utils.InternalOptions.DesugarState;
 import com.android.tools.r8.utils.Reporter;
 import com.android.tools.r8.utils.ThreadUtils;
+import com.android.tools.r8.utils.UncheckedApiLevel;
 import java.nio.file.Path;
 import java.util.Collections;
 
@@ -37,11 +38,12 @@ public class R8AssistantCommand extends BaseCompilerCommand {
 
   private final String reflectiveReceiverDescriptor;
 
-  public R8AssistantCommand(
+  @SuppressWarnings("InconsistentOverloads")
+  private R8AssistantCommand(
       AndroidApp app,
       CompilationMode mode,
       ProgramConsumer programConsumer,
-      int minApiLevel,
+      UncheckedApiLevel minApiLevel,
       Reporter reporter,
       String reflectiveReceiverDescriptor,
       Path apiDatabasePath) {
@@ -72,6 +74,26 @@ public class R8AssistantCommand extends BaseCompilerCommand {
     this.reflectiveReceiverDescriptor = reflectiveReceiverDescriptor;
   }
 
+  /** Deprecation: Use {@link #builder()} or {@link #builder(DiagnosticsHandler)}. */
+  @Deprecated
+  public R8AssistantCommand(
+      AndroidApp app,
+      CompilationMode mode,
+      ProgramConsumer programConsumer,
+      int minApiLevelMajor,
+      Reporter reporter,
+      String reflectiveReceiverDescriptor,
+      Path apiDatabasePath) {
+    this(
+        app,
+        mode,
+        programConsumer,
+        new UncheckedApiLevel(minApiLevelMajor, 0),
+        reporter,
+        reflectiveReceiverDescriptor,
+        apiDatabasePath);
+  }
+
   public static Builder builder(DiagnosticsHandler reporter) {
     return new Builder(reporter);
   }
@@ -84,13 +106,13 @@ public class R8AssistantCommand extends BaseCompilerCommand {
   InternalOptions getInternalOptions() {
     DexItemFactory factory = new DexItemFactory();
     InternalOptions options = new InternalOptions(factory, getReporter());
-    options.setMinApiLevel(AndroidApiLevel.getAndroidApiLevel(getMinApiLevel()));
+    options.setMinApiLevel(AndroidApiLevel.getAndroidApiLevel(getUncheckedMinApiLevel()));
     options.apiModelingOptions().apiDatabasePath = getApiDatabasePath();
     options.passthroughDexCode = true;
     options.tool = Tool.R8Assistant;
     Marker marker = new Marker(Tool.R8Assistant);
     marker.setBackend(Backend.DEX);
-    marker.setMinApi(getMinApiLevel());
+    marker.setMinApi(getUncheckedMinApiLevel());
     options.setMarker(marker);
     options.programConsumer = getProgramConsumer();
     return options;
@@ -171,7 +193,7 @@ public class R8AssistantCommand extends BaseCompilerCommand {
           getAppBuilder().build(),
           getMode(),
           getProgramConsumer(),
-          getMinApiLevel(),
+          getUncheckedMinApiLevel(),
           getReporter(),
           reflectiveReceiverDescriptor,
           getApiDatabasePath());

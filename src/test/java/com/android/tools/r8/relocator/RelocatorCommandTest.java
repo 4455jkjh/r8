@@ -61,8 +61,10 @@ public class RelocatorCommandTest extends TestBase {
             "  --map-diagnostics[:<type>] <from-level> <to-level>",
             "                          # Map diagnostics level.",
             "  --thread-count <number> # A specified number of threads to run with.",
-            "  --version               # Print the version.",
-            "  --help                  # Print this message.",
+            "  --version",
+            "  -v                      # Print version.",
+            "  --help",
+            "  -h                      # Print usage information.",
             ""),
         RelocatorCommand.getUsageMessage());
   }

@@ -15,6 +15,7 @@ import com.android.tools.r8.graph.DexString;
 import com.android.tools.r8.graph.DexType;
 import com.android.tools.r8.graph.lens.GraphLens;
 import com.android.tools.r8.naming.NamingLens;
+import com.android.tools.r8.utils.DescriptorUtils;
 import com.android.tools.r8.utils.internal.exceptions.Unreachable;
 import com.android.tools.r8.utils.structural.CompareToVisitor;
 import com.android.tools.r8.utils.structural.HashingVisitor;
@@ -56,13 +57,12 @@ public class ClassNameComputationInfo extends NameComputationInfo<DexType>
           break;
 
         case TYPE_NAME:
-          // TODO(b/119426668): desugar Type#getTypeName
-          throw new Unreachable("Type#getTypeName not supported yet");
-        // name = getClassNameFromDescriptor(descriptor);
-        // if (arrayDepth > 0) {
-        //   name = name + Strings.repeat("[]", arrayDepth);
-        // }
-        // break;
+          name = DescriptorUtils.descriptorToJavaType(descriptor);
+          if (arrayDepth > 0) {
+            name = name + "[]".repeat(arrayDepth);
+          }
+          break;
+
         case CANONICAL_NAME:
           name = getCanonicalNameFromDescriptor(descriptor);
           if (arrayDepth > 0) {

@@ -69,12 +69,7 @@ public class DexDistributionRefinement {
   public static void run(
       AppView<?> appView, VirtualFileCycler cycler, ExecutorService executorService, Timing timing)
       throws ExecutionException {
-    if (!appView.testing().enableClassToDexDistributionRefinementInDebugMode
-        && appView.options().debug) {
-      return;
-    }
-    int numPasses = appView.testing().classToDexDistributionRefinementPasses;
-    if (numPasses > 0) {
+    if (appView.testing().enableClassToDexDistributionRefinement(appView.options())) {
       runOnPartition(appView, cycler, VirtualFile::isStartup, executorService, timing);
       runOnPartition(appView, cycler, not(VirtualFile::isStartup), executorService, timing);
     }

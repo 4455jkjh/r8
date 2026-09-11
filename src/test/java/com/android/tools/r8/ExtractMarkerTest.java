@@ -51,7 +51,7 @@ public class ExtractMarkerTest extends TestBase {
             "Usage: extractmarker [options] <input-files>",
             " where <input-files> are D8 supported input/output files and options are:",
             "  --help",
-            "  -h                      # Print this message."),
+            "  -h                      # Print usage information."),
         ExtractMarkerCommand.usageMessage());
   }
 

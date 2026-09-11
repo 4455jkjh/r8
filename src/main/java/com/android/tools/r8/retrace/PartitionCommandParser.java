@@ -44,6 +44,8 @@ public class PartitionCommandParser {
                         Paths.get(arg)));
               }
             })
+        .apply(CliParserUtils.addVersionOption(b -> b.builder.setPrintVersion(true)))
+        .apply(CliParserUtils.addHelpOption(b -> b.builder.setPrintHelp(true)))
         .positional(
             (b, arg) -> {
               if (!b.isProguardMapProducerSet) {
@@ -55,9 +57,7 @@ public class PartitionCommandParser {
                         "Too many arguments specified for builder at " + arg, b.origin);
                 b.builder.getReporter().error(error);
               }
-            })
-        .option0("--version", "Print the version.", b -> b.builder.setPrintVersion(true))
-        .option0("--help", "Print this message.", b -> b.builder.setPrintHelp(true), "-h");
+            });
   }
 
   static String getUsageMessage() {

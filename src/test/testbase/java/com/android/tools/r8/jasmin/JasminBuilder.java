@@ -34,6 +34,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.function.Consumer;
 
 public class JasminBuilder {
 
@@ -94,6 +95,7 @@ public class JasminBuilder {
     private boolean isAbstract = false;
     private boolean isInterface = false;
     private String access = "public";
+    private String sourceFile;
 
     private final List<String> pendingAnnotations = new ArrayList<>();
 
@@ -102,17 +104,27 @@ public class JasminBuilder {
     }
 
     private ClassBuilder(String name, String superName) {
-      this(name , superName, new String[0]);
+      this(name, superName, new String[0]);
     }
 
     private ClassBuilder(String name, String superName, String... interfaces) {
       this.name = name;
       this.superName = superName;
       this.interfaces = ImmutableList.copyOf(interfaces);
+      this.sourceFile = name + ".j";
+    }
+
+    public boolean hasSourceFile() {
+      return sourceFile != null;
     }
 
     public String getSourceFile() {
-      return name + ".j";
+      return sourceFile;
+    }
+
+    public ClassBuilder setSourceFile(String sourceFile) {
+      this.sourceFile = sourceFile;
+      return this;
     }
 
     public String getDescriptor() {
@@ -120,9 +132,7 @@ public class JasminBuilder {
     }
 
     public MethodSignature addAbstractMethod(
-        String name,
-        List<String> argumentTypes,
-        String returnType) {
+        String name, List<String> argumentTypes, String returnType) {
       return addMethod("public abstract", name, argumentTypes, returnType);
     }
 
@@ -134,10 +144,7 @@ public class JasminBuilder {
     }
 
     public MethodSignature addFinalMethod(
-        String name,
-        List<String> argumentTypes,
-        String returnType,
-        String... lines) {
+        String name, List<String> argumentTypes, String returnType, String... lines) {
       makeInit = true;
       return addMethod("public final", name, argumentTypes, returnType, lines);
     }
@@ -147,10 +154,7 @@ public class JasminBuilder {
     }
 
     public MethodSignature addVirtualMethod(
-        String name,
-        List<String> argumentTypes,
-        String returnType,
-        String... lines) {
+        String name, List<String> argumentTypes, String returnType, String... lines) {
       makeInit = true;
       return addMethod("public", name, argumentTypes, returnType, lines);
     }
@@ -160,37 +164,25 @@ public class JasminBuilder {
      * removes code from native methods.
      */
     public MethodSignature addNativeMethodWithCode(
-        String name,
-        List<String> argumentTypes,
-        String returnType,
-        String... lines) {
+        String name, List<String> argumentTypes, String returnType, String... lines) {
       makeInit = true;
       return addMethod("public static native", name, argumentTypes, returnType, lines);
     }
 
     public MethodSignature addBridgeMethod(
-        String name,
-        List<String> argumentTypes,
-        String returnType,
-        String... lines) {
+        String name, List<String> argumentTypes, String returnType, String... lines) {
       makeInit = true;
       return addMethod("public bridge", name, argumentTypes, returnType, lines);
     }
 
     public MethodSignature addPrivateVirtualMethod(
-        String name,
-        List<String> argumentTypes,
-        String returnType,
-        String... lines) {
+        String name, List<String> argumentTypes, String returnType, String... lines) {
       makeInit = true;
       return addMethod("private", name, argumentTypes, returnType, lines);
     }
 
     public MethodSignature addStaticMethod(
-        String name,
-        List<String> argumentTypes,
-        String returnType,
-        String... lines) {
+        String name, List<String> argumentTypes, String returnType, String... lines) {
       return addMethod("public static", name, argumentTypes, returnType, lines);
     }
 
@@ -200,10 +192,7 @@ public class JasminBuilder {
     }
 
     public MethodSignature addPackagePrivateStaticMethod(
-        String name,
-        List<String> argumentTypes,
-        String returnType,
-        String... lines) {
+        String name, List<String> argumentTypes, String returnType, String... lines) {
       return addMethod("static", name, argumentTypes, returnType, lines);
     }
 
@@ -273,9 +262,15 @@ public class JasminBuilder {
     @Override
     public String toString() {
       StringBuilder builder = new StringBuilder();
-      builder.append(".bytecode ").append(majorVersion).append('.').append(minorVersion)
+      builder
+          .append(".bytecode ")
+          .append(majorVersion)
+          .append('.')
+          .append(minorVersion)
           .append('\n');
-      builder.append(".source ").append(getSourceFile()).append('\n');
+      if (hasSourceFile()) {
+        builder.append(".source ").append(getSourceFile()).append('\n');
+      }
       builder.append(".class");
       if (isAbstract) {
         builder.append(" abstract");
@@ -293,7 +288,9 @@ public class JasminBuilder {
             .append(".limit locals 1\n")
             .append(".limit stack 1\n")
             .append("  aload 0\n")
-            .append("  invokespecial ").append(superName).append("/<init>()V\n")
+            .append("  invokespecial ")
+            .append(superName)
+            .append("/<init>()V\n")
             .append("  return\n")
             .append(".end method\n");
       }
@@ -326,7 +323,11 @@ public class JasminBuilder {
     public MethodSignature addDefaultConstructor() {
       assert !hasInit;
       hasInit = true;
-      return addMethod("public", "<init>", Collections.emptyList(), "V",
+      return addMethod(
+          "public",
+          "<init>",
+          Collections.emptyList(),
+          "V",
           ".limit stack 1",
           ".limit locals 1",
           "  aload_0",
@@ -454,6 +455,11 @@ public class JasminBuilder {
     return builder;
   }
 
+  public JasminBuilder apply(Consumer<JasminBuilder> consumer) {
+    consumer.accept(this);
+    return this;
+  }
+
   public ClassBuilder addInterface(String name, String... interfaces) {
     // Interfaces are broken in Jasmin (the ACC_SUPER access flag is set) and the JSE_5 and later
     // will not load corresponding classes.
@@ -501,12 +507,13 @@ public class JasminBuilder {
     Origin root = new PathOrigin(Paths.get("JasminBuilder"));
     AndroidApp.Builder builder = AndroidApp.builder();
     for (ClassBuilder clazz : classes) {
-      Origin origin = new Origin(root) {
-        @Override
-        public String part() {
-          return clazz.getSourceFile();
-        }
-      };
+      Origin origin =
+          new Origin(root) {
+            @Override
+            public String part() {
+              return clazz.getSourceFile();
+            }
+          };
       builder.addClassProgramData(
           compile(clazz), origin, Collections.singleton(clazz.getDescriptor()));
     }

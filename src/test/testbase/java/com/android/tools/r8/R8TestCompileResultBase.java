@@ -252,6 +252,14 @@ public abstract class R8TestCompileResultBase<CR extends R8TestCompileResultBase
     return self();
   }
 
+  public Path getResourceShrinkerOutput() {
+    return resourceShrinkerOutput;
+  }
+
+  public Path getResourceShrinkerOutputForFeature(String featureName) {
+    return resourceShrinkerOutputForFeatures.get(featureName);
+  }
+
   public GraphInspector graphInspector() throws IOException {
     assert graphConsumer != null;
     return new GraphInspector(graphConsumer, inspector());

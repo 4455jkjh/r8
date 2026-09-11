@@ -289,8 +289,6 @@ public class DesugaredMethodsListCommand {
                       arg,
                       b::setMinApi,
                       err -> b.reporter.error(new StringDiagnostic("Invalid min-api: " + err))))
-          .option0("--version", "Print the version of DesugaredMethods.", Builder::setVersion)
-          .option0("--help", "Print this message.", Builder::setHelp)
           .option1(
               "--desugared-lib",
               "<file>",
@@ -308,7 +306,9 @@ public class DesugaredMethodsListCommand {
               "Specify desugared library jar.",
               (b, arg) ->
                   b.addDesugarLibraryImplementation(
-                      ArchiveProgramResourceProvider.fromArchive(Paths.get(arg))));
+                      ArchiveProgramResourceProvider.fromArchive(Paths.get(arg))))
+          .apply(CliParserUtils.addVersionOption(Builder::setVersion))
+          .apply(CliParserUtils.addHelpOption(Builder::setHelp));
     }
 
     public DesugaredMethodsListCommand parse(String[] args, DiagnosticsHandler handler) {

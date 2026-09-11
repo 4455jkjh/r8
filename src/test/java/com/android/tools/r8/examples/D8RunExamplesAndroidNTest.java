@@ -32,7 +32,7 @@ public class D8RunExamplesAndroidNTest extends RunExamplesAndroidNTest<D8Command
         builder = transformation.apply(builder);
       }
       builder
-          .addLibraryFiles(ToolHelper.getAndroidJar(builder.getMinApiLevel()))
+          .addLibraryFiles(ToolHelper.getAndroidJar(ToolHelper.getUncheckedMinApiLevel(builder)))
           .addProgramFiles(inputFile)
           .setOutput(out, OutputMode.DexIndexed);
       try {

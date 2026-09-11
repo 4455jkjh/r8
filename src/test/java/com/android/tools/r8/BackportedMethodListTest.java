@@ -153,9 +153,10 @@ public class BackportedMethodListTest extends TestBase {
             "  --lib <file>            # The compilation SDK library (android.jar).",
             "  --android-platform-build",
             "                          # Compilation of platform code.",
-            "  --version               # Print the version of BackportedMethodList.",
+            "  --version",
+            "  -v                      # Print version.",
             "  --help",
-            "  -h                      # Print this message."),
+            "  -h                      # Print usage information."),
         BackportedMethodListCommand.usageMessage());
   }
 
@@ -166,7 +167,7 @@ public class BackportedMethodListTest extends TestBase {
       BackportedMethodListCommand.Builder builder =
           BackportedMethodListCommand.builder().setMinApiLevel(apiLevel).setConsumer(consumer);
       if (mode == Mode.LIBRARY) {
-        builder.addLibraryFiles(ToolHelper.getAndroidJar(AndroidApiLevel.P.getMajor()));
+        builder.addLibraryFiles(ToolHelper.getAndroidJar(AndroidApiLevel.P));
       } else if (mode == Mode.LIBRARY_DESUGAR || mode == Mode.LIBRARY_DESUGAR_11) {
         addLibraryDesugaring(builder);
       }
@@ -183,7 +184,7 @@ public class BackportedMethodListTest extends TestBase {
       BackportedMethodListCommand.Builder builder =
           BackportedMethodListCommand.builder().setMinApiLevel(apiLevel).setOutputPath(output);
       if (mode == Mode.LIBRARY) {
-        builder.addLibraryFiles(ToolHelper.getAndroidJar(AndroidApiLevel.P.getMajor()));
+        builder.addLibraryFiles(ToolHelper.getAndroidJar(AndroidApiLevel.P));
       } else if (mode == Mode.LIBRARY_DESUGAR || mode == Mode.LIBRARY_DESUGAR_11) {
         addLibraryDesugaring(builder);
       }

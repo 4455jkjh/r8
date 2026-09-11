@@ -200,8 +200,8 @@ public class Disassemble {
               "<descriptor>",
               "Only disassemble the given method (e.g., Lcom/example/Class;->method()V).",
               (b, arg) -> b.addMethodReference(MethodReferenceUtils.parseSmaliString(arg)))
-          .option0("--version", "Print the version of r8.", b -> b.setPrintVersion(true))
-          .option0("--help", "Print this message.", b -> b.setPrintHelp(true))
+          .apply(CliParserUtils.addVersionOption(b -> b.setPrintVersion(true)))
+          .apply(CliParserUtils.addHelpOption(b -> b.setPrintHelp(true)))
           .positional((b, arg) -> b.addProgramFiles(Paths.get(arg)));
     }
 

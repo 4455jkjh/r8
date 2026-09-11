@@ -45,8 +45,6 @@ public class DesugaredMethodsListCommandTest extends TestBase {
             "                          # file.",
             "  --lib <file|jdk-home>   # Add <file|jdk-home> as a library resource.",
             "  --min-api <number>      # Minimum Android API level compatibility (default: 1).",
-            "  --version               # Print the version of DesugaredMethods.",
-            "  --help                  # Print this message.",
             "  --desugared-lib <file>  # Specify desugared library configuration. <file> is a"
                 + " desugared library",
             "                          # configuration (json).",
@@ -55,7 +53,11 @@ public class DesugaredMethodsListCommandTest extends TestBase {
                 + " runtime/bootclasspath is assumed to",
             "                          # be the version specified by --min-api.",
             "  --desugared-lib-jar <file>",
-            "                          # Specify desugared library jar."),
+            "                          # Specify desugared library jar.",
+            "  --version",
+            "  -v                      # Print version.",
+            "  --help",
+            "  -h                      # Print usage information."),
         DesugaredMethodsListCommand.getUsageMessage());
   }
 

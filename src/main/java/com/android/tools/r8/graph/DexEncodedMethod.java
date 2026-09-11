@@ -816,6 +816,10 @@ public class DexEncodedMethod extends DexEncodedMember<DexEncodedMethod, DexMeth
     return code != null;
   }
 
+  public boolean hasDexCode() {
+    return code instanceof DexCode;
+  }
+
   public boolean hasLirCode() {
     return code instanceof LirCode;
   }
@@ -823,6 +827,11 @@ public class DexEncodedMethod extends DexEncodedMember<DexEncodedMethod, DexMeth
   public Code getCode() {
     checkIfObsolete();
     return code;
+  }
+
+  public DexCode getDexCode() {
+    checkIfObsolete();
+    return hasDexCode() ? code.asDexCode() : null;
   }
 
   public LirCode<?> getLirCode() {

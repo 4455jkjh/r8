@@ -26,6 +26,7 @@ import com.android.tools.r8.utils.ProgramClassCollection;
 import com.android.tools.r8.utils.Reporter;
 import com.android.tools.r8.utils.StringDiagnostic;
 import com.android.tools.r8.utils.ThreadUtils;
+import com.android.tools.r8.utils.UncheckedApiLevel;
 import com.android.tools.r8.utils.internal.collections.Pair;
 import com.google.common.collect.ImmutableList;
 import java.nio.file.Path;
@@ -91,7 +92,7 @@ public final class L8Command extends BaseCompilerCommand {
       CompilationMode mode,
       ProgramConsumer programConsumer,
       StringConsumer mainDexListConsumer,
-      int minApiLevel,
+      UncheckedApiLevel minApiLevel,
       Reporter diagnosticsHandler,
       boolean encodeChecksum,
       BiPredicate<String, Long> dexClassChecksumFilter,
@@ -186,7 +187,7 @@ public final class L8Command extends BaseCompilerCommand {
     internal.debug = getMode() == CompilationMode.DEBUG;
     assert internal.mainDexListConsumer == null;
     assert !internal.minimalMainDex;
-    internal.setMinApiLevel(AndroidApiLevel.getAndroidApiLevel(getMinApiLevel()));
+    internal.setMinApiLevel(AndroidApiLevel.getAndroidApiLevel(getUncheckedMinApiLevel()));
     assert !internal.intermediate;
     assert internal.retainCompileTimeAnnotations;
     internal.programConsumer = getProgramConsumer();
@@ -408,7 +409,7 @@ public final class L8Command extends BaseCompilerCommand {
                 .enableLegacyFullModeForKeepRules(false)
                 .setSynthesizedClassesPrefix(
                     desugaredLibrarySpecification.getSynthesizedLibraryClassesPackagePrefix())
-                .setMinApiLevel(getMinApiLevel())
+                .setMinApiLevel(getUncheckedMinApiLevel())
                 .setMode(getMode())
                 .setIncludeClassesChecksum(getIncludeClassesChecksum())
                 .setDexClassChecksumFilter(getDexClassChecksumFilter())
@@ -449,7 +450,7 @@ public final class L8Command extends BaseCompilerCommand {
                 .addProgramResourceProvider((ProgramResourceProvider) l8CfConsumer)
                 .setSynthesizedClassesPrefix(
                     desugaredLibrarySpecification.getSynthesizedLibraryClassesPackagePrefix())
-                .setMinApiLevel(getMinApiLevel())
+                .setMinApiLevel(getUncheckedMinApiLevel())
                 .setMode(getMode())
                 .setIncludeClassesChecksum(getIncludeClassesChecksum())
                 .setDexClassChecksumFilter(getDexClassChecksumFilter())
@@ -476,7 +477,7 @@ public final class L8Command extends BaseCompilerCommand {
           getMode(),
           l8CfConsumer,
           getMainDexListConsumer(),
-          getMinApiLevel(),
+          getUncheckedMinApiLevel(),
           getReporter(),
           getIncludeClassesChecksum(),
           getDexClassChecksumFilter(),

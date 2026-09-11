@@ -488,8 +488,8 @@ public class RelocatorCommand {
                     s.builder::setThreadCount,
                     error -> s.builder.error(new StringDiagnostic(error, s.origin)));
               })
-          .option0("--version", "Print the version.", s -> s.builder.setPrintVersion(true))
-          .option0("--help", "Print this message.", s -> s.builder.setPrintHelp(true));
+          .apply(CliParserUtils.addVersionOption(s -> s.builder.setPrintVersion(true)))
+          .apply(CliParserUtils.addHelpOption(s -> s.builder.setPrintHelp(true)));
       return parser;
     }
 

@@ -227,13 +227,9 @@ public abstract class TestCompileResult<
     MatcherAssert.assertThat(mainClassSubject, Matchers.isPresent());
     switch (getBackend()) {
       case DEX:
-        return runArt(
-            new DexRuntime(ToolHelper.getDexVm()),
-            mainClassSubject.getFinalName());
+        return runArt(new DexRuntime(ToolHelper.getDexVm()), mainClassSubject.getFinalName());
       case CF:
-        return runJava(
-            TestRuntime.getDefaultJavaRuntime(),
-            mainClassSubject.getFinalName());
+        return runJava(TestRuntime.getDefaultJavaRuntime(), mainClassSubject.getFinalName());
       default:
         throw new Unreachable();
     }
@@ -269,9 +265,7 @@ public abstract class TestCompileResult<
       return runArt(runtime, mainClassSubject.getFinalName(), args);
     }
     assert runtime.isCf();
-    return runJava(
-        runtime,
-        ObjectArrays.concat(mainClassSubject.getFinalName(), args));
+    return runJava(runtime, ObjectArrays.concat(mainClassSubject.getFinalName(), args));
   }
 
   public RR runWithJaCoCo(Path output, TestRuntime runtime, String mainClass, String... args)
@@ -445,6 +439,12 @@ public abstract class TestCompileResult<
   public CR setSystemProperty(String name, String value) {
     vmArguments.add("-D" + name + "=" + value);
     return self();
+  }
+
+  public Path writeSingleDexOutputToFile() throws IOException {
+    Path file = state.getNewTempFolder().resolve("out.zip");
+    writeSingleDexOutputToFile(file);
+    return file;
   }
 
   public CR writeSingleDexOutputToFile(Path file) throws IOException {

@@ -242,11 +242,6 @@ public class L8CommandParser extends BaseCompilerCommandParser {
                   ArtProfileConsumerUtils.create(rewrittenArtProfilePath));
             })
         .option0(
-            "--version",
-            "Print the version of " + toolName + ".",
-            state -> state.builder.setPrintVersion(true))
-        .option0("--help", "Print this message.", state -> state.builder.setPrintHelp(true), "-h")
-        .option0(
             "--classfile",
             "Compile program to Java classfile format.",
             state -> state.outputMode = OutputMode.ClassFile)
@@ -260,6 +255,8 @@ public class L8CommandParser extends BaseCompilerCommandParser {
             "<dir>",
             "Dump the all compiler input to <dir> for easy reproduction.",
             (state, arg) -> state.builder.dumpInputToDirectory(Paths.get(arg)))
+        .apply(CliParserUtils.addVersionOption(state -> state.builder.setPrintVersion(true)))
+        .apply(CliParserUtils.addHelpOption(state -> state.builder.setPrintHelp(true)))
         .positional((state, arg) -> state.builder.addProgramFiles(Paths.get(arg)));
   }
 

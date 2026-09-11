@@ -33,6 +33,7 @@ import com.android.tools.r8.classmerging.Policy;
 import com.android.tools.r8.debuginfo.DebugRepresentation;
 import com.android.tools.r8.dex.ApplicationReader.ProgramClassConflictResolver;
 import com.android.tools.r8.dex.Constants;
+import com.android.tools.r8.dex.IndexedItemCollection;
 import com.android.tools.r8.dex.Marker;
 import com.android.tools.r8.dex.Marker.Backend;
 import com.android.tools.r8.dex.Marker.Tool;
@@ -209,7 +210,7 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
   }
 
   public static final int SUPPORTED_DEX_VERSION =
-      AndroidApiLevel.LATEST.getDexVersion().getIntValue();
+      AndroidApiLevel.MAIN.getDexVersion().getIntValue();
 
   public static final int ASM_VERSION = Opcodes.ASM9;
 
@@ -669,7 +670,7 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
     // since the output depends on the min API in this case. There is basically no min API entry
     // in R8 cf to cf.
     if (isGeneratingDex() || desugarState == DesugarState.ON) {
-      marker.setMinApi(getMinApiLevel().getMajor());
+      marker.setMinApi(getMinApiLevel());
     }
     if (libraryDesugaringOptions.hasIdentifier()) {
       marker.setDesugaredLibraryIdentifiers(libraryDesugaringOptions.getIdentifier());
@@ -2345,6 +2346,16 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
         SystemPropertyUtils.parseSystemPropertyOrDefault(
             "com.android.tools.r8.dex.refinementInDebug", false);
 
+    public boolean enableClassToDexDistributionRefinement(InternalOptions options) {
+      if (options.debug && !enableClassToDexDistributionRefinementInDebugMode) {
+        return false;
+      }
+      return classToDexDistributionRefinementPasses > 0;
+    }
+
+    public TriConsumer<AppView<?>, DexProgramClass, IndexedItemCollection>
+        collectIndexedItemsCallback;
+
     private NumberUnboxerOptions numberUnboxerOptions = new NumberUnboxerOptions();
 
     public NumberUnboxerOptions getNumberUnboxerOptions() {
@@ -2405,7 +2416,8 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
         System.getProperty("com.android.tools.r8.dexVersion40ForApiLevel30") != null;
     public boolean forceDexContainerFormat =
         System.getProperty("com.android.tools.r8.dexContainerExperiment") != null;
-    public boolean enableExperimentalConstString16 = false;
+    public boolean enableDexConstString20 =
+        System.getProperty("com.android.tools.r8.enableDexConstString20") != null;
 
     public boolean enableBinopOptimization = true;
 
@@ -3026,13 +3038,17 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
     return AndroidApiLevel.BAKLAVA;
   }
 
-  public boolean canUseContainerDex() {
+  public boolean enableContainerDex() {
     assert isGeneratingDex();
-    return false;
+    return getTestingOptions().forceDexContainerFormat;
   }
 
-  public boolean enableContainerDex() {
-    return getTestingOptions().forceDexContainerFormat || canUseContainerDex();
+  public boolean enableConstString20() {
+    // TODO(b/556098237): This should check hasMinApi(AndroidApiLevel.D) when MAIN is bumped.
+    assert AndroidApiLevel.MAIN.getMajor() == 38;
+    return enableContainerDex()
+        && hasMinApi(AndroidApiLevel.MAIN)
+        && getTestingOptions().enableDexConstString20;
   }
 
   public boolean canUseJavaLangVarHandleStoreStoreFence(DexDefinitionSupplier definitions) {

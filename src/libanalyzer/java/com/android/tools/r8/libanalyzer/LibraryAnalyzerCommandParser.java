@@ -202,8 +202,8 @@ public class LibraryAnalyzerCommandParser {
                         state.reporter.error(
                             new StringDiagnostic(
                                 "Invalid argument to --threads: " + error, state.origin))))
-        .option0("--help", "Print this message.", state -> state.builder.setPrintHelp(true), "-h")
-        .option0("--version", "Print the version.", state -> state.builder.setPrintVersion(true));
+        .apply(CliParserUtils.addVersionOption(state -> state.builder.setPrintVersion(true)))
+        .apply(CliParserUtils.addHelpOption(state -> state.builder.setPrintHelp(true)));
   }
 
   private static Origin getMavenOriginFromArchive(Path repoPath, Path path) {

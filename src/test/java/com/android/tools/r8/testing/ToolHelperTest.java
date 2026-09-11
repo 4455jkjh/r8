@@ -17,7 +17,7 @@ public class ToolHelperTest extends TestBase {
   private void checkExpectedAndroidJar(Path androidJarPath, AndroidApiLevel apiLevel) {
     assertEquals("android.jar", androidJarPath.getFileName().toString());
     assertEquals(
-        "lib-v" + apiLevel.getMajor(),
+        "lib-v" + apiLevel.getNumericString(),
         androidJarPath.getName(androidJarPath.getNameCount() - 2).toString());
   }
 

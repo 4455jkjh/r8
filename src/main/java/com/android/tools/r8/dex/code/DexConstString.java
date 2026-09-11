@@ -3,6 +3,7 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8.dex.code;
 
+import com.android.tools.r8.dex.Constants;
 import com.android.tools.r8.dex.IndexedItemCollection;
 import com.android.tools.r8.errors.InternalCompilerError;
 import com.android.tools.r8.graph.AppView;
@@ -10,6 +11,7 @@ import com.android.tools.r8.graph.DexString;
 import com.android.tools.r8.graph.ObjectToOffsetMapping;
 import com.android.tools.r8.graph.OffsetToObjectMapping;
 import com.android.tools.r8.graph.ProgramMethod;
+import com.android.tools.r8.graph.StringOffsetProvider;
 import com.android.tools.r8.graph.lens.GraphLens;
 import com.android.tools.r8.ir.conversion.IRBuilder;
 import com.android.tools.r8.ir.conversion.LensCodeRewriterUtils;
@@ -29,6 +31,11 @@ public class DexConstString extends DexFormat21c<DexString> {
 
   public DexConstString(int register, DexString string) {
     super(register, string);
+  }
+
+  public boolean needsJumboStringRewriting(StringOffsetProvider offsets) {
+    int offset = offsets.getOffsetFor(getString());
+    return offset > Constants.U16BIT_MAX;
   }
 
   public DexString getString() {

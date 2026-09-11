@@ -58,7 +58,7 @@ public class DesugaredMethodListCommandTest extends DesugaredLibraryTestBase {
           "--desugared-lib-jar",
           libraryDesugaringSpecification.getDesugarJdkLibs().iterator().next().toString(),
           "--lib",
-          ToolHelper.getAndroidJar(34).toString()
+          ToolHelper.getAndroidJar(34, 0).toString()
         },
         new Reporter(diagnosticMessages));
     diagnosticMessages.assertErrorMessageThatMatches(
@@ -117,7 +117,7 @@ public class DesugaredMethodListCommandTest extends DesugaredLibraryTestBase {
       commandList.add(desugarJdkLib.toString());
     }
     commandList.add("--lib");
-    commandList.add(ToolHelper.getAndroidJar(34).toString());
+    commandList.add(ToolHelper.getAndroidJar(34, 0).toString());
     String[] commandArray = commandList.stream().toArray(String[]::new);
     DesugaredMethodsListCommand command = DesugaredMethodsListCommand.parse(commandArray);
     assertFalse(command.getDesugarLibraryImplementation().isEmpty());

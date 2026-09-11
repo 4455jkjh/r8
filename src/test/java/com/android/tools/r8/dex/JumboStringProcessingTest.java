@@ -5,6 +5,7 @@ package com.android.tools.r8.dex;
 
 import static org.junit.Assert.assertEquals;
 
+import com.android.tools.r8.DexIndexedConsumer;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
@@ -29,8 +30,11 @@ import com.android.tools.r8.graph.DexItemFactory;
 import com.android.tools.r8.graph.DexString;
 import com.android.tools.r8.graph.MethodAccessFlags;
 import com.android.tools.r8.graph.ProgramMethod;
+import com.android.tools.r8.graph.StringOffsetProvider;
 import com.android.tools.r8.origin.Origin;
 import com.android.tools.r8.utils.AndroidApp;
+import com.android.tools.r8.utils.InternalOptions;
+import com.android.tools.r8.utils.Reporter;
 import com.android.tools.r8.utils.codeinspector.CodeInspector;
 import com.google.common.collect.ImmutableList;
 import com.google.common.io.Files;
@@ -139,9 +143,10 @@ public class JumboStringProcessingTest extends TestBase {
     // instruction).
     Path originalDexFile =
         Paths.get(ToolHelper.SMALI_BUILD_DIR, "regression/78072750/78072750.dex");
-    AndroidApp application = AndroidApp.builder()
-        .addDexProgramData(Files.toByteArray(originalDexFile.toFile()), Origin.unknown())
-        .build();
+    AndroidApp application =
+        AndroidApp.builder()
+            .addDexProgramData(Files.toByteArray(originalDexFile.toFile()), Origin.unknown())
+            .build();
     CodeInspector inspector = new CodeInspector(application);
     ProgramMethod method =
         getMethod(
@@ -165,7 +170,8 @@ public class JumboStringProcessingTest extends TestBase {
 
   private DexCode jumboStringProcess(
       DexItemFactory factory, DexString string, DexInstruction[] instructions) {
-    DexCode code = new DexCode(1, 0, 0, instructions, new Try[0], new TryHandler[0], null);
+    DexCode code =
+        new DexCode(1, 0, 0, instructions, Try.EMPTY_ARRAY, TryHandler.EMPTY_ARRAY, null);
     MethodAccessFlags flags = MethodAccessFlags.fromSharedAccessFlags(Constants.ACC_PUBLIC, false);
     DexEncodedMethod method =
         DexEncodedMethod.builder()
@@ -174,7 +180,25 @@ public class JumboStringProcessingTest extends TestBase {
             .disableMethodNotNullCheck()
             .disableAndroidApiLevelCheck()
             .build();
-    return new JumboStringCodeRewriter(method, string, string, () -> false, factory, false)
-        .rewrite();
+    StringOffsetProvider mapping =
+        new StringOffsetProvider() {
+          @Override
+          public int getOffsetFor(DexString str) {
+            return str.equals(string) ? 65536 : 0;
+          }
+
+          @Override
+          public int getLazyDexStringsCount() {
+            return 0;
+          }
+
+          @Override
+          public boolean hasJumboStrings() {
+            return true;
+          }
+        };
+    InternalOptions options = new InternalOptions(factory, new Reporter());
+    options.programConsumer = DexIndexedConsumer.emptyConsumer();
+    return new JumboStringCodeRewriter(method, mapping, () -> false, options).rewrite();
   }
 }

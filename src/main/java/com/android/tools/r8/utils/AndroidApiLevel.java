@@ -65,7 +65,8 @@ public class AndroidApiLevel implements Ordered<AndroidApiLevel> {
   public static final AndroidApiLevel UNKNOWN;
 
   /** Constant used to signify some unknown min api when compiling platform. */
-  public static final int ANDROID_PLATFORM_CONSTANT = 10_000;
+  public static final UncheckedApiLevel ANDROID_PLATFORM_CONSTANT =
+      new UncheckedApiLevel(10_000, 0);
 
   static {
     ImmutableList.Builder<AndroidApiLevel> builder = ImmutableList.builder();
@@ -201,6 +202,9 @@ public class AndroidApiLevel implements Ordered<AndroidApiLevel> {
       case V41:
         assert InternalOptions.containerDexApiLevel().isEqualTo(AndroidApiLevel.BAKLAVA);
         return AndroidApiLevel.BAKLAVA;
+      case V42:
+        assert AndroidApiLevel.MAIN.getMajor() == 38;
+        return AndroidApiLevel.MAIN;
       default:
         throw new Unreachable();
     }
@@ -210,6 +214,14 @@ public class AndroidApiLevel implements Ordered<AndroidApiLevel> {
   @SuppressWarnings("InlineMeSuggester")
   public static AndroidApiLevel getAndroidApiLevel(int major) {
     return getAndroidApiLevel(major, 0);
+  }
+
+  public static AndroidApiLevel getAndroidApiLevel(UncheckedApiLevel apiLevel) {
+    return getAndroidApiLevel(apiLevel.getMajor(), apiLevel.getMinor());
+  }
+
+  public UncheckedApiLevel asUnchecked() {
+    return new UncheckedApiLevel(major, minor);
   }
 
   /**

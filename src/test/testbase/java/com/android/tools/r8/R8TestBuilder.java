@@ -1069,6 +1069,62 @@ public abstract class R8TestBuilder<
     return addProgramClassFileData(testResource.getRClass().getClassFileData().values());
   }
 
+  public T addFeatureSplitAndroidResources(
+      AndroidTestResource testResource, String featureName, Class<?>... classes)
+      throws IOException {
+    return addFeatureSplitAndroidResources(testResource, featureName, Arrays.asList(classes));
+  }
+
+  /**
+   * Mimics the way AGP wires the base module's (potentially multi-APK) resources into R8: as a
+   * synthetic feature split that has an android resource provider and consumer, an empty program
+   * consumer, but no program resource provider. Such a split represents the base module's
+   * resources, not a code-less dynamic feature, and its manifest must not be rewritten to
+   * hasCode="false".
+   */
+  public T addResourceOnlyFeatureSplitAndroidResources(
+      AndroidTestResource testResource, String featureName) throws IOException {
+    Path outputFile = getState().getNewTempFile("resourceshrinkeroutput_" + featureName + ".zip");
+    resourceShrinkerOutputForFeatures.put(featureName, outputFile);
+    getBuilder()
+        .addFeatureSplit(
+            featureSplitGenerator -> {
+              Path resourceZip = testResource.getResourceZip();
+              featureSplitGenerator
+                  .setAndroidResourceConsumer(new ArchiveProtoAndroidResourceConsumer(outputFile))
+                  .setAndroidResourceProvider(new ArchiveProtoAndroidResourceProvider(resourceZip))
+                  .setProgramConsumer(DexIndexedConsumer.emptyConsumer());
+              return featureSplitGenerator.build();
+            });
+    return self();
+  }
+
+  public T addFeatureSplitAndroidResources(
+      AndroidTestResource testResource, String featureName, Collection<Class<?>> classes)
+      throws IOException {
+    Path outputFile = getState().getNewTempFile("resourceshrinkeroutput_" + featureName + ".zip");
+    Path programResource = getState().getNewTempFile(featureName + ".jar");
+    TestBase.writeClassesToJar(programResource, classes);
+    resourceShrinkerOutputForFeatures.put(featureName, outputFile);
+    Path featureOutJar =
+        getState().getNewTempFileUnchecked("programoutput_" + featureName + ".zip");
+    features.add(featureOutJar);
+    getBuilder()
+        .addFeatureSplit(
+            featureSplitGenerator -> {
+              Path resourceZip = testResource.getResourceZip();
+              featureSplitGenerator
+                  .setAndroidResourceConsumer(new ArchiveProtoAndroidResourceConsumer(outputFile))
+                  .setAndroidResourceProvider(new ArchiveProtoAndroidResourceProvider(resourceZip))
+                  .addProgramResourceProvider(
+                      ArchiveResourceProvider.fromArchive(programResource, true))
+                  .setProgramConsumer(new ArchiveConsumer(featureOutJar, true));
+
+              return featureSplitGenerator.build();
+            });
+    return addProgramClassFileData(testResource.getRClass().getClassFileData().values());
+  }
+
   public T addAndroidResources(AndroidTestResource testResource, Path output) throws IOException {
     Collection<byte[]> classFileData = testResource.getRClass().getClassFileData().values();
     return addAndroidResources(testResource, output, classFileData);

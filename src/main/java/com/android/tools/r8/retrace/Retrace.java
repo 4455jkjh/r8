@@ -117,8 +117,8 @@ public class Retrace<T, ST extends StackTraceElementProxy<T, ST>> extends Retrac
                       }
                     },
                     "--p"))
-        .option0("--help", "Print this message.", b -> b.printHelp = true, "-h")
-        .option0("--version", "Print the version.", b -> b.printVersion = true)
+        .apply(CliParserUtils.addVersionOption(b -> b.printVersion = true))
+        .apply(CliParserUtils.addHelpOption(b -> b.printHelp = true))
         .positional(
             (b, arg) -> {
               if (!b.hasSetProguardMap) {

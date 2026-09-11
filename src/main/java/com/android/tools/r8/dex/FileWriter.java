@@ -825,7 +825,10 @@ public class FileWriter {
   }
 
   private byte[] dexVersionBytes(DexVersion.Layout layoutType) {
-    if (options.testing.forceDexContainerFormat && layoutType.isContainer()) {
+    if (layoutType.isContainer()) {
+      if (options.enableConstString20()) {
+        return DexVersion.V42.getBytes();
+      }
       return DexVersion.V41.getBytes();
     }
     // TODO(b/269089718): Remove this testing option and always emit DEX version 040 if DEX contains
@@ -834,15 +837,12 @@ public class FileWriter {
         && options.getMinApiLevel().isGreaterThanOrEqualTo(AndroidApiLevel.R)) {
       return DexVersion.V40.getBytes();
     }
-    assert !layoutType.isContainer() || options.canUseContainerDex();
     DexVersion dexVersion =
-        layoutType.isContainer()
-            ? DexVersion.getDexVersion(options.getMinApiLevel())
-            : DexVersion.getDexVersion(options.getMinApiLevel())
-                    .isGreaterThanOrEqualTo(
-                        DexVersion.getDexVersion(InternalOptions.containerDexApiLevel()))
-                ? DexVersion.V39
-                : DexVersion.getDexVersion(options.getMinApiLevel());
+        DexVersion.getDexVersion(options.getMinApiLevel())
+                .isGreaterThanOrEqualTo(
+                    DexVersion.getDexVersion(InternalOptions.containerDexApiLevel()))
+            ? DexVersion.V39
+            : DexVersion.getDexVersion(options.getMinApiLevel());
     return options.testing.forceDexVersionBytes != null
         ? options.testing.forceDexVersionBytes
         : dexVersion.getBytes();

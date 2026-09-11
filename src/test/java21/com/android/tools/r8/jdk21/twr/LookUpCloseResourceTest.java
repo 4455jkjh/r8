@@ -183,7 +183,7 @@ public class LookUpCloseResourceTest extends TestBase {
   }
 
   private AppView<?> getAppInfo(InternalOptions options, int api) throws IOException {
-    AndroidApp app = AndroidApp.builder().addProgramFile(ToolHelper.getAndroidJar(api)).build();
+    AndroidApp app = AndroidApp.builder().addProgramFile(ToolHelper.getAndroidJar(api, 0)).build();
     DirectMappedDexApplication libHolder =
         new ApplicationReader(app, options, Timing.empty()).readDirectSingleThreaded();
     AppInfo initialAppInfo =

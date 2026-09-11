@@ -67,7 +67,6 @@ public class BisectOptions {
             (b, arg) -> b.command = Paths.get(arg))
         .option1(
             BUILD_GOOD_FLAG, "<apk>", "Known good APK.", (b, arg) -> b.goodBuild = Paths.get(arg))
-        .option0("--help", "Print this message.", b -> b.printHelp = true, "-h")
         .option1(OUTPUT_FLAG, "<dir>", "Output directory.", (b, arg) -> b.output = Paths.get(arg))
         .option0(
             RESULT_BAD_FLAG,
@@ -77,8 +76,8 @@ public class BisectOptions {
             RESULT_GOOD_FLAG,
             "Bisect again assuming previous run was good.",
             b -> b.result = checkSingleResult(b.result, Result.GOOD))
-        .option1(
-            STATE_FLAG, "<file>", "Bisection state.", (b, arg) -> b.stateFile = Paths.get(arg));
+        .option1(STATE_FLAG, "<file>", "Bisection state.", (b, arg) -> b.stateFile = Paths.get(arg))
+        .apply(CliParserUtils.addHelpOption(b -> b.printHelp = true));
   }
 
   public static BisectOptions parse(String[] args) {

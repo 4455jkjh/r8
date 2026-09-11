@@ -208,9 +208,10 @@ public class RetraceCommandLineTests extends TestBase {
             "                          # Verify the mapping file hash.",
             "  --partition-map <file>",
             "  --p <file>              # Partition map to use.",
+            "  --version",
+            "  -v                      # Print version.",
             "  --help",
-            "  -h                      # Print this message.",
-            "  --version               # Print the version."),
+            "  -h                      # Print usage information."),
         Retrace.getUsageMessage());
   }
 

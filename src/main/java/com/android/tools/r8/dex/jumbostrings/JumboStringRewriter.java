@@ -78,20 +78,14 @@ public class JumboStringRewriter {
   }
 
   /**
-   * Rewrites the code for all methods in the given file so that they use JumboString for at least
-   * the strings that require it in mapping.
+   * Rewrites the code for all methods in the given file so that they correctly use const-string,
+   * const-string/20 and const-string/jumbo.
    *
    * <p>If run multiple times on a class, the lowest index that is required to be a JumboString will
    * be used.
    */
   protected final void rewriteCodeWithJumboStrings(
       ObjectToOffsetMapping mapping, Collection<DexProgramClass> classes) {
-    // If there are no strings with jumbo indices at all this is a no-op. Do not bail out early if
-    // forcing jumbo string processing.
-    if (mapping.getFirstConstString16() == null
-        && !options.getTestingOptions().forceJumboStringProcessing) {
-      return;
-    }
     for (DexProgramClass clazz : classes) {
       clazz.forEachProgramMethodMatching(
           DexEncodedMethod::hasCode,

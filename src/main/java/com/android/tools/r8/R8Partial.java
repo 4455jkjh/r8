@@ -349,5 +349,7 @@ class R8Partial {
     subCompilationOptions.disableLambdaMethodAnnotations = options.disableLambdaMethodAnnotations;
     subCompilationOptions.getTestingOptions().forceDexContainerFormat =
         options.getTestingOptions().forceDexContainerFormat;
+    subCompilationOptions.getTestingOptions().enableDexConstString20 =
+        options.getTestingOptions().enableDexConstString20;
   }
 }

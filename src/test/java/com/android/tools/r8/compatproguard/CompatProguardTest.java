@@ -42,8 +42,6 @@ public class CompatProguardTest extends TestBase {
             "Usage: compatproguard [options] <proguard-config>*",
             "",
             "Where options are:",
-            "  --help",
-            "  -h                      # Print this message.",
             "  --release               # Compile without debugging information (default).",
             "  --debug                 # Compile with debugging information.",
             "  --output <dir>          # Output result in <dir>.",
@@ -60,7 +58,9 @@ public class CompatProguardTest extends TestBase {
             "  --core-library          # Ignored (provided for compatibility).",
             "  --force-proguard-compatibility",
             "                          # Proguard compatibility mode.",
-            "  --no-data-resources     # Ignore all data resources."),
+            "  --no-data-resources     # Ignore all data resources.",
+            "  --help",
+            "  -h                      # Print usage information."),
         CompatProguardOptions.usageMessage());
   }
 

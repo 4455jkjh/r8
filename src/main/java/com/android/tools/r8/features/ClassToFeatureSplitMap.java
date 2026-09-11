@@ -94,6 +94,7 @@ public class ClassToFeatureSplitMap {
       }
       if (representativeType != null) {
         representativeStringsForFeatureSplit.put(featureSplit, representativeType);
+        featureSplit.setHasCode();
       }
     }
     return new ClassToFeatureSplitMap(classToFeatureSplitMap, representativeStringsForFeatureSplit);

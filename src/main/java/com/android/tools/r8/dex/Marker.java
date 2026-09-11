@@ -6,6 +6,8 @@ package com.android.tools.r8.dex;
 import com.android.tools.r8.CompilationMode;
 import com.android.tools.r8.graph.DexItemFactory;
 import com.android.tools.r8.graph.DexString;
+import com.android.tools.r8.utils.AndroidApiLevel;
+import com.android.tools.r8.utils.UncheckedApiLevel;
 import com.android.tools.r8.utils.internal.StringUtils;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
@@ -120,10 +122,21 @@ public class Marker {
     return jsonObject.get(MIN_API).getAsLong();
   }
 
-  public Marker setMinApi(long minApi) {
+  public Marker setMinApi(int major, int minor) {
+    // TODO(b/356841164): Support minor version.
+    assert minor == 0
+        : "Minor version not yet supported: " + UncheckedApiLevel.toString(major, minor);
     assert !jsonObject.has(MIN_API);
-    jsonObject.addProperty(MIN_API, minApi);
+    jsonObject.addProperty(MIN_API, major);
     return this;
+  }
+
+  public Marker setMinApi(UncheckedApiLevel apiLevel) {
+    return setMinApi(apiLevel.getMajor(), apiLevel.getMinor());
+  }
+
+  public Marker setMinApi(AndroidApiLevel apiLevel) {
+    return setMinApi(apiLevel.getMajor(), apiLevel.getMinor());
   }
 
   public boolean hasDesugaredLibraryIdentifiers() {

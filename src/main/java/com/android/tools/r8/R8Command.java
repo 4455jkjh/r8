@@ -68,6 +68,7 @@ import com.android.tools.r8.utils.SemanticVersionUtils;
 import com.android.tools.r8.utils.StringDiagnostic;
 import com.android.tools.r8.utils.SystemPropertyUtils;
 import com.android.tools.r8.utils.ThreadUtils;
+import com.android.tools.r8.utils.UncheckedApiLevel;
 import com.android.tools.r8.utils.internal.Box;
 import com.android.tools.r8.utils.internal.FileUtils;
 import com.android.tools.r8.utils.internal.ListUtils;
@@ -930,7 +931,7 @@ public final class R8Command extends BaseCompilerCommand {
               getMainDexListConsumer(),
               configuration,
               getMode(),
-              getMinApiLevel(),
+              getUncheckedMinApiLevel(),
               reporter,
               desugaring,
               configuration.isShrinking(),
@@ -1312,7 +1313,7 @@ public final class R8Command extends BaseCompilerCommand {
       StringConsumer mainDexListConsumer,
       ProguardConfiguration proguardConfiguration,
       CompilationMode mode,
-      int minApiLevel,
+      UncheckedApiLevel minApiLevel,
       Reporter reporter,
       DesugarState enableDesugaring,
       boolean enableTreeShaking,
@@ -1476,7 +1477,7 @@ public final class R8Command extends BaseCompilerCommand {
     internal.created = created;
     assert !internal.testing.allowOutlinerInterfaceArrayArguments; // Only allow in tests.
     internal.programConsumer = getProgramConsumer();
-    internal.setMinApiLevel(AndroidApiLevel.getAndroidApiLevel(getMinApiLevel()));
+    internal.setMinApiLevel(AndroidApiLevel.getAndroidApiLevel(getUncheckedMinApiLevel()));
     internal.apiModelingOptions().apiDatabasePath = getApiDatabasePath();
     internal.desugarState = getDesugarState();
     internal.desugarSpecificOptions().enableVerboseSyntheticNames = enableVerboseSyntheticNames;

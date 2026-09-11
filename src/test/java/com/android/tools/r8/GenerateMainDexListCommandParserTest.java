@@ -36,8 +36,10 @@ public class GenerateMainDexListCommandParserTest extends TestBase {
             "  --main-dex-list <file>  # List of classes to place in the primary dex file.",
             "  --main-dex-list-output <file>",
             "                          # Output the full main-dex list in <file>.",
-            "  --version               # Print the version.",
-            "  --help                  # Print this message."),
+            "  --version",
+            "  -v                      # Print version.",
+            "  --help",
+            "  -h                      # Print usage information."),
         GenerateMainDexListCommand.usageMessage());
   }
 }

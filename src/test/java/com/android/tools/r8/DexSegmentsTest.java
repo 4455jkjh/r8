@@ -31,10 +31,11 @@ public class DexSegmentsTest extends TestBase {
         StringUtils.lines(
             "Usage: dexsegments [options] <input-files>",
             " where <input-files> are dex files",
-            "  --version               # Print the version of r8.",
+            "  --csv                   # Print segments in csv format.",
+            "  --version",
+            "  -v                      # Print version.",
             "  --help",
-            "  -h                      # Print this message.",
-            "  --csv                   # Print segments in csv format."),
+            "  -h                      # Print usage information."),
         DexSegments.Command.usageMessage());
   }
 

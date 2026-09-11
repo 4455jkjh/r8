@@ -33,9 +33,10 @@ public class ExtractR8RulesCommandTest extends TestBase {
             "                          # Output the proguard rules extracted.",
             "  --include-origin-comments",
             "                          # Include comments with origin for extracted rules.",
-            "  --version               # Print the version.",
+            "  --version",
+            "  -v                      # Print version.",
             "  --help",
-            "  -h                      # Print this message."),
+            "  -h                      # Print usage information."),
         ExtractR8RulesCommand.usageMessage());
   }
 }

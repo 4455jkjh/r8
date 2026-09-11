@@ -102,9 +102,10 @@ public class TraceReferencesCommandTest extends TestBase {
             "                          # mapped.",
             "  --resolve-trivial-conflicts",
             "                          # Resolve trivial duplicate class conflicts.",
-            "  --version               # Print the version of tracereferences.",
+            "  --version",
+            "  -v                      # Print version.",
             "  --help",
-            "  -h                      # Print this message.",
+            "  -h                      # Print usage information.",
             " and --keep-rules specific options are:",
             "  --allowobfuscation      # Output keep rules with the allowobfuscation modifier"
                 + " (defaults to rules",

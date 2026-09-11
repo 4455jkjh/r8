@@ -76,7 +76,6 @@ public class DexCode extends Code
   public final TryHandler[] handlers;
   public final DexInstruction[] instructions;
 
-  private DexString highestSortingString;
   private DexDebugInfo debugInfo;
   private DexDebugInfoForWriting debugInfoForWriting;
 
@@ -103,7 +102,6 @@ public class DexCode extends Code
         code.debugInfo,
         code.metadata);
     this.debugInfoForWriting = code.debugInfoForWriting;
-    this.highestSortingString = code.highestSortingString;
   }
 
   public DexCode(int registerSize, int insSize, int outsSize, DexInstruction[] instructions) {
@@ -223,39 +221,35 @@ public class DexCode extends Code
     return DexCode::specify;
   }
 
-  public void setHighestSortingStringForJumboProcessedCode(DexString nonJumboString) {
-    // The call of this method marks this code object as properly jumbo-string processed.
-    // In principle, it should be possible to mark as such and assert that we do not reattempt
-    // processing in rewriteCodeWithJumboStrings.
-    highestSortingString = nonJumboString;
-  }
-
   @Override
   public DexWritableCode rewriteCodeWithJumboStrings(
       AppView<?> appView, ProgramMethod method, ObjectToOffsetMapping mapping) {
-    DexString firstConstString16 = null;
-    DexString firstConstString17 = null;
+    InternalOptions options = appView.options();
+    boolean needsRewriting = false;
     if (appView.testing().forceJumboStringProcessing) {
-      firstConstString16 = mapping.getFirstString();
-      firstConstString17 = mapping.getFirstString();
+      needsRewriting = ArrayUtils.any(instructions, i -> i.isConstString() || i.isConstString20());
     } else {
-      assert highestSortingString != null
-          || Arrays.stream(instructions).noneMatch(DexInstruction::isConstString);
-      assert Arrays.stream(instructions).noneMatch(DexInstruction::isDexItemBasedConstString);
-      if (highestSortingString != null
-          && highestSortingString.isGreaterThanOrEqualTo(mapping.getFirstConstString16())) {
-        firstConstString16 = mapping.getFirstConstString16();
-        firstConstString17 = mapping.getFirstConstString17();
+      assert ArrayUtils.none(instructions, DexInstruction::isDexItemBasedConstString);
+      for (DexInstruction instruction : instructions) {
+        if (instruction.isConstString()) {
+          if (instruction.asConstString().needsJumboStringRewriting(mapping)) {
+            needsRewriting = true;
+            break;
+          }
+        } else if (instruction.isConstString20()) {
+          if (instruction.asConstString20().needsJumboStringRewriting(mapping, options)) {
+            needsRewriting = true;
+            break;
+          }
+        }
       }
     }
-    return firstConstString16 != null
+    return needsRewriting
         ? new JumboStringCodeRewriter(
                 method.getDefinition(),
-                firstConstString16,
-                firstConstString17,
+                mapping,
                 () -> appView.options().shouldMaterializeLineInfoForNativePcEncoding(method),
-                appView.dexItemFactory(),
-                appView.testing().enableExperimentalConstString16)
+                options)
             .rewrite()
         : this;
   }
@@ -770,15 +764,9 @@ public class DexCode extends Code
       IndexedItemCollection indexedItems,
       ProgramMethod context,
       LensCodeRewriterUtils rewriter) {
-    highestSortingString = null;
     for (DexInstruction insn : instructions) {
       assert !insn.isDexItemBasedConstString();
       insn.collectIndexedItems(appView, codeLens, indexedItems, context, rewriter);
-      if (insn.isConstString()) {
-        updateHighestSortingString(insn.asConstString().getString());
-      } else if (insn.isConstStringJumbo()) {
-        updateHighestSortingString(insn.asConstStringJumbo().getString());
-      }
     }
     if (getDebugInfoForWriting() != null) {
       getDebugInfoForWriting().collectIndexedItems(appView, codeLens, indexedItems);
@@ -799,11 +787,6 @@ public class DexCode extends Code
   @Override
   public TryHandler[] getHandlers() {
     return handlers;
-  }
-
-  @Override
-  public DexString getHighestSortingString() {
-    return highestSortingString;
   }
 
   public DexInstruction[] getInstructions() {
@@ -828,13 +811,6 @@ public class DexCode extends Code
   @Override
   public int getOutgoingRegisterSize() {
     return outgoingRegisterSize;
-  }
-
-  private void updateHighestSortingString(DexString candidate) {
-    assert candidate != null;
-    if (highestSortingString == null || highestSortingString.compareTo(candidate) < 0) {
-      highestSortingString = candidate;
-    }
   }
 
   @Override

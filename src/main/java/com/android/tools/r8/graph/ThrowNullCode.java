@@ -150,11 +150,6 @@ public class ThrowNullCode extends Code implements CfWritableCode, DexWritableCo
   }
 
   @Override
-  public DexString getHighestSortingString() {
-    return null;
-  }
-
-  @Override
   public int getIncomingRegisterSize(ProgramMethod method) {
     return getMaxLocals(method);
   }

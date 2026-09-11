@@ -566,10 +566,8 @@ def test(options, args):
         gradle_args.append('-Pr8lib_no_deps')
     elif not options.no_r8lib:
         gradle_args.append('-Pr8lib')
-    if options.worktree:
-        gradle_args.append('-g=' +
-                           os.path.join(utils.REPO_ROOT, ".gradle_user_home"))
-        gradle_args.append('--no-daemon')
+    utils.append_gradle_user_home_for_worktree(options.worktree, True,
+                                               gradle_args)
     if options.debug_agent:
         gradle_args.append('--no-daemon')
     if desugar_jdk_json_dir:

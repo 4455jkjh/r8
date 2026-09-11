@@ -925,6 +925,10 @@ class SemanticVersion:
                 self.patch == other.patch and
                 self.prerelease == other.prerelease)
 
+    def __str__(self):
+        return str(self.major) + '.' + str(self.minor) + '.' + str(
+            self.patch) + (('-' + self.prerelease) if self.prerelease else '')
+
 
 # Check that the passed string is formatted as a basic semver version (x.y.z or x.y.z-prerelease
 # depending on the value of allowPrerelease).
@@ -947,8 +951,8 @@ def check_basic_semver_version(version,
     reg = re.compile(regexp)
     match = reg.match(version)
     if not match:
-        raise Exception("Invalid version '" + version + "'" +
-                        (' ' + error_context) if len(error_context) > 0 else '')
+        raise Exception("Invalid version '" + version + "'" + (
+            (' ' + error_context) if len(error_context) > 0 else ''))
     if components == 2:
         return SemanticVersion(int(match.group(1)), int(match.group(2)), None,
                                None)
@@ -960,3 +964,33 @@ def check_basic_semver_version(version,
                                int(match.group(3)), match.group('prerelease'))
     else:
         raise Exception('Argument "components" must be 2 or 3')
+
+
+def is_git_worktree(checkout_dir):
+    """
+    Checks if the given path is the main Git worktree or a linked worktree.
+    """
+    git_path = os.path.join(checkout_dir, ".git")
+    if not os.path.exists(git_path):
+        print("Checkout path does not look like a Git repository.")
+        return False
+    # In the main worktree, .git is a directory containing the repository data and
+    # in a linked worktree, .git is a plain text file with a gitdir reference.
+    if os.path.isdir(git_path):
+        return False
+    elif os.path.isfile(git_path):
+        return True
+    else:
+        print("Checkout path does not look like a Git repository.")
+        return False
+
+
+def append_gradle_user_home_for_worktree(force_worktree, with_no_daemon, args):
+    if force_worktree or is_git_worktree(REPO_ROOT):
+        if not force_worktree:
+            print(
+                'git worktree detected, using worktree local Gradle User Home')
+        args.append('--gradle-user-home=' +
+                    os.path.join(REPO_ROOT, ".gradle_user_home"))
+        if with_no_daemon:
+            args.append('--no-daemon')

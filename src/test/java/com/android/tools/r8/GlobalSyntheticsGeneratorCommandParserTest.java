@@ -42,8 +42,10 @@ public class GlobalSyntheticsGeneratorCommandParserTest extends TestBase {
             "  --verbose-synthetic-names",
             "                          # Enable verbose synthetic names that use the"
                 + " `$$ExternalSynthetic` marker.",
-            "  --version               # Print the version of globalsyntheticsgenerator.",
-            "  --help                  # Print this message."),
+            "  --version",
+            "  -v                      # Print version.",
+            "  --help",
+            "  -h                      # Print usage information."),
         GlobalSyntheticsGeneratorCommandParser.getUsageMessage());
   }
 

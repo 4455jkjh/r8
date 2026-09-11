@@ -84,6 +84,8 @@ public interface InstructionSubject {
     return isConstString(value, JumboStringMode.ALLOW);
   }
 
+  boolean isConstString20();
+
   boolean isJumboString();
 
   long getConstNumber();
