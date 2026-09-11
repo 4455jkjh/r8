@@ -12,6 +12,7 @@ import com.android.tools.r8.D8;
 import com.android.tools.r8.D8Command;
 import com.android.tools.r8.OutputMode;
 import com.android.tools.r8.TestBase;
+import com.android.tools.r8.TestDeps;
 import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.ToolHelper.DexVm;
 import com.android.tools.r8.ToolHelper.DexVm.Version;
@@ -327,7 +328,6 @@ public class RunJdwpTests extends TestBase {
   public static void compileLibraries() throws Exception {
     // Selects appropriate jar according to min api level for the selected runtime.
     AndroidApiLevel minApi = ToolHelper.getMinApiLevelForDexVm();
-    Path jdwpTestsJar = ToolHelper.getJdwpTestsCfJarPath(minApi);
     Path classPath = ToolHelper.getClassPathForTests();
     Path testPath = classPath.resolve(Paths.get("com","android", "tools", "r8", "jdwp"));
     List<Path> extraTestResources = new ArrayList<>(2 * EXTRA_TESTS.size());
@@ -338,7 +338,7 @@ public class RunJdwpTests extends TestBase {
     d8Out = getStaticTemp().newFolder("d8-out");
     D8.run(
         D8Command.builder()
-            .addProgramFiles(jdwpTestsJar)
+            .addProgramFiles(TestDeps.getJdwpTestsJar(minApi))
             .addProgramFiles(extraTestResources)
             .setOutput(d8Out.toPath(), OutputMode.DexIndexed)
             .setMinApiLevel(minApi.getMajor())

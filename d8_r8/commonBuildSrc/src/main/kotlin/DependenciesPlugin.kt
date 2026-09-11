@@ -10,9 +10,18 @@ import java.util.UUID
 import kotlin.reflect.full.declaredMemberProperties
 import org.gradle.api.Plugin
 import org.gradle.api.Project
+import org.gradle.api.artifacts.Dependency
+import org.gradle.api.artifacts.dsl.DependencyHandler
+import org.gradle.api.attributes.Attribute
 import org.gradle.api.file.ConfigurableFileCollection
 import org.gradle.api.file.Directory
+import org.gradle.api.file.FileCollection
 import org.gradle.api.file.RegularFile
+import org.gradle.api.provider.Provider
+import org.gradle.api.tasks.Input
+import org.gradle.api.tasks.InputFiles
+import org.gradle.api.tasks.PathSensitive
+import org.gradle.api.tasks.PathSensitivity
 import org.gradle.api.tasks.testing.Test
 import org.gradle.jvm.toolchain.JavaInstallationMetadata
 import org.gradle.jvm.toolchain.JavaLanguageVersion
@@ -20,6 +29,27 @@ import org.gradle.jvm.toolchain.JavaLauncher
 import org.gradle.jvm.toolchain.internal.DefaultJavaLanguageVersion
 import org.gradle.nativeplatform.platform.OperatingSystem
 import org.gradle.nativeplatform.platform.internal.DefaultNativePlatform
+import org.gradle.process.CommandLineArgumentProvider
+
+public val TEST_DEP_PROP: Attribute<String> =
+  Attribute.of("com.android.tools.r8.testdep.prop", String::class.java)
+
+public fun DependencyHandler.runtimeOnlyData(dependencyNotation: Any): Dependency? {
+  return add("runtimeOnlyDataScope", dependencyNotation)
+}
+
+public fun DependencyHandler.runtimeOnlyDataScope(dependencyNotation: Any): Dependency? {
+  return add("runtimeOnlyDataScope", dependencyNotation)
+}
+
+public class TestDepsCommandLineArgumentProvider(
+  @get:InputFiles @get:PathSensitive(PathSensitivity.NONE) public val files: FileCollection,
+  @get:Input public val arguments: Provider<List<String>>,
+) : CommandLineArgumentProvider {
+  override fun asArguments(): Iterable<String> {
+    return arguments.get()
+  }
+}
 
 public class DependenciesPlugin : Plugin<Project> {
 
@@ -27,6 +57,41 @@ public class DependenciesPlugin : Plugin<Project> {
     // Setup all test tasks to listen after system properties passed in by test.py.
     val testTask = target.tasks.findByName("test") as Test?
     testTask?.configure(isR8Lib = false, r8Jar = null, r8LibPartitionMapFile = null)
+
+    // runtimeOnlyData is similar to runtimeOnly where -DTest_DEP_<x> is set to point to the
+    // location.
+    // com.android.tools.r8.TestDeps handles the runtime reading of these properties.
+    val runtimeOnlyDataScope = target.configurations.dependencyScope("runtimeOnlyDataScope")
+    target.configurations.consumable("runtimeOnlyDataElements") {
+      extendsFrom(runtimeOnlyDataScope.get())
+    }
+    val runtimeOnlyDataConfig =
+      target.configurations.resolvable("runtimeOnlyDataConfig") {
+        extendsFrom(runtimeOnlyDataScope.get())
+      }
+
+    val testDepsArguments: Provider<List<String>> =
+      runtimeOnlyDataConfig.flatMap { config ->
+        config.incoming.artifacts.resolvedArtifacts.map { artifacts ->
+          artifacts
+            .mapNotNull { artifact ->
+              val prop = artifact.variant.attributes.getAttribute(TEST_DEP_PROP)
+              if (prop != null) {
+                "-DTEST_DEP_${prop}=${artifact.file.absolutePath}"
+              } else {
+                null
+              }
+            }
+            .distinct()
+        }
+      }
+    val testDepsFiles = target.files(runtimeOnlyDataConfig)
+
+    target.tasks.withType(Test::class.java).configureEach {
+      jvmArgumentProviders.add(
+        TestDepsCommandLineArgumentProvider(files = testDepsFiles, arguments = testDepsArguments)
+      )
+    }
   }
 
   public companion object {

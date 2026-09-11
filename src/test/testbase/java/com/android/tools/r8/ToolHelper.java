@@ -1339,23 +1339,6 @@ public class ToolHelper {
     throw new Unreachable("Unable to find a most recent android.jar");
   }
 
-  public static Path getJdwpTestsCfJarPath(AndroidApiLevel minSdk) {
-    String jar =
-        minSdk.isLessThan(AndroidApiLevel.N)
-            ? "apache-harmony-jdwp-tests-host-preN.jar"
-            : "apache-harmony-jdwp-tests-host.jar";
-    return Paths.get(ToolHelper.THIRD_PARTY_DIR, "jdwp-tests", jar);
-  }
-
-  public static Path getJunitFromDeps() {
-    return Paths.get(DEPENDENCIES, "junit", "junit", "4.13.2", "junit-4.13.2.jar");
-  }
-
-  public static Path getHamcrestFromDeps() {
-    return Paths.get(
-        DEPENDENCIES, "org", "hamcrest", "hamcrest-core", "1.3", "hamcrest-core-1.3.jar");
-  }
-
   /**
    * Get the junit jar bundled with the framework.
    */

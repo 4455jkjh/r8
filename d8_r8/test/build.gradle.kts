@@ -88,6 +88,7 @@ dependencies {
   testbaseTestJarsScope(project(":testbase", "testJar"))
   testDepsJarsScope(project(":tests_bootstrap", "depsJar"))
   testDepsJarsScope(project(":testbase", "depsJar"))
+  runtimeOnlyData(project(":testbase", "runtimeOnlyDataElements"))
   mainDepsJarFilesScope(project(":dist", "depsJarFiles"))
 }
 
