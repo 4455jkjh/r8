@@ -60,7 +60,7 @@ public class SimpleInlineBridgeWithBoxUnboxTest extends TestBase {
               MethodSubject testKnownBoxedValueMethod =
                   mainClass.uniqueMethodWithOriginalName("testKnownBoxedValue");
               assertThat(testKnownBoxedValueMethod, isPresent());
-              assertThat(testKnownBoxedValueMethod, invokesMethod(bridgeMethod));
+              assertThat(testKnownBoxedValueMethod, invokesMethod(implMethod));
 
               MethodSubject testUnknownBoxedValueMethod =
                   mainClass.uniqueMethodWithOriginalName("testUnknownBoxedValue");
