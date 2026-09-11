@@ -41,10 +41,10 @@ public class TypePropagationThroughCallChainTest extends TestBase {
                   "java.lang.String",
                   mainClass.uniqueMethodWithOriginalName("a").getParameter(0).getTypeName());
               assertEquals(
-                  "java.lang.Object",
+                  "java.lang.String",
                   mainClass.uniqueMethodWithOriginalName("b").getParameter(0).getTypeName());
               assertEquals(
-                  "java.lang.Object",
+                  "java.lang.String",
                   mainClass.uniqueMethodWithOriginalName("c").getParameter(0).getTypeName());
             });
   }

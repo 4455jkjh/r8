@@ -332,11 +332,34 @@ public class InFlowPropagator {
       return state;
     }
 
-    TypeElement defaultType = successorNode.getStaticType().toTypeElement(appView);
-    Nullability narrowedNullability =
-        node.isReceiverNode() ? definitelyNotNull() : state.asReferenceState().getNullability();
+    Nullability defaultNullability =
+        successorNode.isReceiverNode() ? definitelyNotNull() : maybeNull();
+    TypeElement defaultType =
+        successorNode.getStaticType().toTypeElement(appView, defaultNullability);
+
+    Nullability narrowedNullability = node.isReceiverNode() ? definitelyNotNull() : maybeNull();
     TypeElement narrowedType = node.getStaticType().toTypeElement(appView, narrowedNullability);
-    if (!defaultType.equals(narrowedType)) {
+
+    // If the static type of the argument is not more precise than the static type of the successor
+    // field/method, then we cannot narrow the predecessor state.
+    if (defaultType.equals(narrowedType)) {
+      return state;
+    }
+
+    if (defaultType.equalUpToNullability(narrowedType)) {
+      if (narrowedNullability.strictlyLessThan(defaultNullability)) {
+        // We are propagating a receiver to a non-receiver.
+        assert node.isReceiverNode();
+        assert !successorNode.isReceiverNode();
+      }
+      return state;
+    }
+
+    TypeElement stateUpperBound =
+        state.isClassState()
+            ? state.asClassState().getDynamicType().getDynamicUpperBoundType(narrowedType)
+            : state.asReceiverState().getDynamicType().getDynamicUpperBoundType(narrowedType);
+    if (!narrowedType.strictlyLessThan(stateUpperBound, appView)) {
       return state;
     }
 
