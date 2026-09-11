@@ -951,8 +951,8 @@ def check_basic_semver_version(version,
     reg = re.compile(regexp)
     match = reg.match(version)
     if not match:
-        raise Exception("Invalid version '" + version + "'" +
-                        (' ' + error_context) if len(error_context) > 0 else '')
+        raise Exception("Invalid version '" + version + "'" + (
+            (' ' + error_context) if len(error_context) > 0 else ''))
     if components == 2:
         return SemanticVersion(int(match.group(1)), int(match.group(2)), None,
                                None)

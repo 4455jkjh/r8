@@ -186,13 +186,16 @@ def determine_version():
 
 def determine_keepanno_tools_version():
     version = determine_version()
-    semver = utils.check_basic_semver_version(version, allowPrerelease=True)
-    if semver.prerelease == 'dev':
-        return str(
-            utils.SemanticVersion(semver.major, semver.minor, 0,
-                                  "alpha{:02d}".format(semver.patch + 1)))
-    else:
+    if version == 'main':
         return version
+    else:
+        semver = utils.check_basic_semver_version(version, allowPrerelease=True)
+        if semver.prerelease == 'dev':
+            return str(
+                utils.SemanticVersion(semver.major, semver.minor, 0,
+                                      "alpha{:02d}".format(semver.patch + 1)))
+        else:
+            return version
 
 
 def generate_library_licenses():
