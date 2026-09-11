@@ -13,6 +13,7 @@ import com.android.tools.r8.origin.Origin;
 import com.android.tools.r8.utils.ExceptionDiagnostic;
 import com.android.tools.r8.utils.Reporter;
 import com.android.tools.r8.utils.StringDiagnostic;
+import com.android.tools.r8.utils.UncheckedApiLevel;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import java.util.function.Consumer;
@@ -28,9 +29,9 @@ public class DesugaredLibrarySpecificationParser {
       DexItemFactory dexItemFactory,
       Reporter reporter,
       boolean libraryCompilation,
-      int minAPILevel) {
+      UncheckedApiLevel minApiLevel) {
     return parseDesugaredLibrarySpecificationforTesting(
-        stringResource, dexItemFactory, reporter, libraryCompilation, minAPILevel, flags -> {});
+        stringResource, dexItemFactory, reporter, libraryCompilation, minApiLevel, flags -> {});
   }
 
   public static DesugaredLibrarySpecification parseDesugaredLibrarySpecificationforTesting(
@@ -38,7 +39,7 @@ public class DesugaredLibrarySpecificationParser {
       DexItemFactory dexItemFactory,
       Reporter reporter,
       boolean libraryCompilation,
-      int minAPILevel,
+      UncheckedApiLevel minApiLevel,
       Consumer<TopLevelFlagsBuilder<?>> topLevelFlagsAmender) {
     Origin origin = stringResource.getOrigin();
     assert origin != null;
@@ -56,7 +57,7 @@ public class DesugaredLibrarySpecificationParser {
     // It can hardly be written by hand and is always generated.
     if (isMachineSpecification(jsonConfig, reporter, origin)) {
       return new MachineDesugaredLibrarySpecificationParser(
-              dexItemFactory, reporter, libraryCompilation, minAPILevel)
+              dexItemFactory, reporter, libraryCompilation, minApiLevel)
           .parse(origin, jsonConfigString, jsonConfig);
     }
     // Human Specification is the easy to write format for developers and allows one to widely use
@@ -67,14 +68,14 @@ public class DesugaredLibrarySpecificationParser {
     // desugared library specification at the same time.
     if (isHumanSpecification(jsonConfig, reporter, origin)) {
       return new HumanDesugaredLibrarySpecificationParser(
-              dexItemFactory, reporter, libraryCompilation, minAPILevel)
+              dexItemFactory, reporter, libraryCompilation, minApiLevel)
           .parse(origin, jsonConfigString, jsonConfig, topLevelFlagsAmender);
     }
     // Legacy specification is the legacy format, as was shipped desugared library JDK8.
     // Hopefully the day will come where this format is no longer supported, and the other formats
     // shall always be preferred+.
     return new LegacyDesugaredLibrarySpecificationParser(
-            dexItemFactory, reporter, libraryCompilation, minAPILevel)
+            dexItemFactory, reporter, libraryCompilation, minApiLevel)
         .parse(origin, jsonConfigString, jsonConfig, topLevelFlagsAmender);
   }
 

@@ -187,7 +187,7 @@ public class LintFilesTest extends DesugaredLibraryTestBase {
             options.itemFactory,
             options.reporter,
             false,
-            AndroidApiLevel.B.getMajor());
+            AndroidApiLevel.B.asUnchecked());
 
     AndroidApiLevel requiredCompilationApiLevel =
         desugaredLibrarySpecification.getRequiredCompilationApiLevel();
@@ -225,7 +225,7 @@ public class LintFilesTest extends DesugaredLibraryTestBase {
           // TODO(b/289365156): Should probably not be hardcoded on U.
           ToolHelper.THIRD_PARTY_DIR
               + "android_jar/lib-v"
-              + AndroidApiLevel.U.getMajor()
+              + AndroidApiLevel.U.getNumericString()
               + "/android.jar"
         });
     List<String> html = Files.readAllLines(directory2.resolve("apis.html"));

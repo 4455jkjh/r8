@@ -6,6 +6,7 @@ package com.android.tools.r8.examples;
 
 import static org.hamcrest.CoreMatchers.containsString;
 
+import com.android.tools.r8.BaseCompilerCommandUtils;
 import com.android.tools.r8.CompilationFailedException;
 import com.android.tools.r8.D8Command;
 import com.android.tools.r8.OutputMode;
@@ -49,7 +50,7 @@ public class D8RunExamplesAndroidOTest extends RunExamplesAndroidOTest<D8Command
       builder.addLibraryFiles(
           ToolHelper.getAndroidJar(
               androidJarVersion == null
-                  ? ToolHelper.getUncheckedMinApiLevel(builder)
+                  ? BaseCompilerCommandUtils.getUncheckedMinApiLevel(builder)
                   : androidJarVersion.asUnchecked()));
       builder.addProgramFiles(inputFile);
       visitFiles(getLegacyClassesRoot(inputFile, packageName), builder::addProgramFiles);

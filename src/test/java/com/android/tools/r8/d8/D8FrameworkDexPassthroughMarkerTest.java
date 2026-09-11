@@ -5,6 +5,7 @@ package com.android.tools.r8.d8;
 
 import static org.junit.Assert.assertEquals;
 
+import com.android.tools.r8.BaseCompilerCommandUtils;
 import com.android.tools.r8.D8Command;
 import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.dex.ApplicationReader;
@@ -56,7 +57,7 @@ public class D8FrameworkDexPassthroughMarkerTest {
   @Test
   public void compile() throws Exception {
     D8Command.Builder command = D8Command.builder().addProgramFiles(FRAMEWORK_JAR);
-    ToolHelper.setMinApiLevel(command, minApi.asUnchecked());
+    BaseCompilerCommandUtils.setMinApiLevel(command, minApi.asUnchecked());
     Marker marker = new Marker(Tool.D8)
         .setVersion("1.0.0")
         .setMinApi(minApi);

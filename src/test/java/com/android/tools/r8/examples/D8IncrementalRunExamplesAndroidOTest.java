@@ -202,7 +202,7 @@ public abstract class D8IncrementalRunExamplesAndroidOTest
                         ? ToolHelper.getAndroidJar(
                             androidJarVersion != null
                                 ? androidJarVersion.asUnchecked()
-                                : new UncheckedApiLevel(b.getMinApiLevel(), 0))
+                                : new UncheckedApiLevel(b.getMinApiLevel()))
                         : ToolHelper.getMostRecentAndroidJar(),
                     b::addLibraryFiles,
                     b::addLibraryResourceProviders);

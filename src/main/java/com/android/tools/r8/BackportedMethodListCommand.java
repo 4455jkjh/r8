@@ -13,6 +13,7 @@ import com.android.tools.r8.utils.AndroidApp;
 import com.android.tools.r8.utils.CliParserUtils;
 import com.android.tools.r8.utils.Reporter;
 import com.android.tools.r8.utils.StringDiagnostic;
+import com.android.tools.r8.utils.UncheckedApiLevel;
 import com.android.tools.r8.utils.internal.BooleanBox;
 import com.android.tools.r8.utils.internal.CliParser;
 import com.android.tools.r8.utils.internal.StringUtils;
@@ -42,7 +43,7 @@ public class BackportedMethodListCommand {
   private final boolean printHelp;
   private final boolean printVersion;
   private final Reporter reporter;
-  private final int minApiLevel;
+  private final UncheckedApiLevel minApiLevel;
   private final boolean androidPlatformBuild;
   private final DesugaredLibrarySpecification desugaredLibrarySpecification;
   private final AndroidApp app;
@@ -64,7 +65,13 @@ public class BackportedMethodListCommand {
     return reporter;
   }
 
+  /** Deprecation: Should not be used since it ignores minor versions. */
+  @Deprecated
   public int getMinApiLevel() {
+    return minApiLevel.getMajor();
+  }
+
+  UncheckedApiLevel getUncheckedMinApiLevel() {
     return minApiLevel;
   }
 
@@ -84,7 +91,7 @@ public class BackportedMethodListCommand {
     this.printHelp = printHelp;
     this.printVersion = printVersion;
     this.reporter = new Reporter();
-    this.minApiLevel = -1;
+    this.minApiLevel = AndroidApiLevel.getDefault().asUnchecked();
     this.androidPlatformBuild = false;
     this.desugaredLibrarySpecification = null;
     this.app = null;
@@ -93,7 +100,7 @@ public class BackportedMethodListCommand {
 
   private BackportedMethodListCommand(
       Reporter reporter,
-      int minApiLevel,
+      UncheckedApiLevel minApiLevel,
       boolean androidPlatformBuild,
       DesugaredLibrarySpecification desugaredLibrarySpecification,
       AndroidApp app,
@@ -175,7 +182,7 @@ public class BackportedMethodListCommand {
   public static class Builder {
 
     private final Reporter reporter;
-    private int minApiLevel = AndroidApiLevel.B.getMajor();
+    private UncheckedApiLevel minApiLevel = AndroidApiLevel.B.asUnchecked();
     private List<StringResource> desugaredLibrarySpecificationResources = new ArrayList<>();
     private final AndroidApp.Builder app;
     private StringConsumer backportedMethodListConsumer;
@@ -198,17 +205,37 @@ public class BackportedMethodListCommand {
      * <p>The tool will only report backported methods which are not present at this API level.
      *
      * <p>The default is 1 if never set.
+     *
+     * <p>Deprecation: Use {@link #setMinApiLevel(int, int)}.
      */
-    public Builder setMinApiLevel(int minApiLevel) {
-      if (minApiLevel <= 0) {
-        reporter.error(new StringDiagnostic("Invalid minApiLevel: " + minApiLevel));
+    @Deprecated
+    @SuppressWarnings("InlineMeSuggester")
+    public Builder setMinApiLevel(int major) {
+      // TODO(b/356841164): Remove all uses of this.
+      return setMinApiLevel(major, 0);
+    }
+
+    public Builder setMinApiLevel(int major, int minor) {
+      if (major <= 0 || minor < 0) {
+        reporter.error(new StringDiagnostic("Invalid minApiLevel: " + major + "." + minor));
+        return this;
       } else {
-        this.minApiLevel = minApiLevel;
+        return setMinApiLevel(new UncheckedApiLevel(major, minor));
       }
+    }
+
+    Builder setMinApiLevel(UncheckedApiLevel minApiLevel) {
+      this.minApiLevel = minApiLevel;
       return this;
     }
 
+    /** Deprecation: Should not be used since it ignores minor versions. */
+    @Deprecated
     public int getMinApiLevel() {
+      return minApiLevel.getMajor();
+    }
+
+    UncheckedApiLevel getUncheckedMinApiLevel() {
       return minApiLevel;
     }
 
@@ -254,7 +281,11 @@ public class BackportedMethodListCommand {
       StringResource desugaredLibrarySpecificationResource =
           desugaredLibrarySpecificationResources.get(0);
       return DesugaredLibrarySpecificationParser.parseDesugaredLibrarySpecification(
-          desugaredLibrarySpecificationResource, factory, reporter, false, getMinApiLevel());
+          desugaredLibrarySpecificationResource,
+          factory,
+          reporter,
+          false,
+          getUncheckedMinApiLevel());
     }
 
     /** Output file for the backported method list */

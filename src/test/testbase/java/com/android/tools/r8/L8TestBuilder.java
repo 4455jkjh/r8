@@ -236,7 +236,7 @@ public class L8TestBuilder {
             options.dexItemFactory(),
             options.reporter,
             true,
-            apiLevel.getMajor());
+            apiLevel.asUnchecked());
     Set<String> maintainTypeOrPrefix = specification.getMaintainTypeOrPrefixForTesting();
     compileResult.inspect(
         inspector ->

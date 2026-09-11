@@ -164,7 +164,7 @@ public class DesugaredMethodsListTest extends DesugaredLibraryTestBase {
             options.dexItemFactory(),
             options.reporter,
             true,
-            1);
+            AndroidApiLevel.B.asUnchecked());
     int req = spec.getRequiredCompilationApiLevel().getMajor();
     Path file = output.resolve("compile_api_level_" + req + "/desugared_apis_" + req + "_1.txt");
     checkFileContent(AndroidApiLevel.B, file, false, true);

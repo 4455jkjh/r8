@@ -483,7 +483,7 @@ public class SupportedClassesGenerator {
     }
     DesugaredLibrarySpecification librarySpecification =
         DesugaredLibrarySpecificationParser.parseDesugaredLibrarySpecification(
-            specification, options.itemFactory, options.reporter, false, api.getMajor());
+            specification, options.itemFactory, options.reporter, false, api.asUnchecked());
     return librarySpecification.toMachineSpecification(appForMax, Timing.empty());
   }
 

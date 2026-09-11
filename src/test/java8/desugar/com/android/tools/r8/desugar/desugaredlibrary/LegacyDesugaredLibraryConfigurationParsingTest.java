@@ -94,7 +94,7 @@ public class LegacyDesugaredLibraryConfigurationParsingTest extends DesugaredLib
 
   private LegacyDesugaredLibrarySpecificationParser parser(DiagnosticsHandler handler) {
     return new LegacyDesugaredLibrarySpecificationParser(
-        factory, new Reporter(handler), libraryCompilation, minApi.getMajor());
+        factory, new Reporter(handler), libraryCompilation, minApi.asUnchecked());
   }
 
   private LegacyDesugaredLibrarySpecification runPassing(String resource) {
