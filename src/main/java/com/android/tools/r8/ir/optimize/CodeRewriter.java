@@ -8,7 +8,6 @@ import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.DebugLocalInfo;
 import com.android.tools.r8.graph.DexString;
 import com.android.tools.r8.ir.code.BasicBlock;
-import com.android.tools.r8.ir.code.DebugLocalWrite;
 import com.android.tools.r8.ir.code.DebugLocalsChange;
 import com.android.tools.r8.ir.code.IRCode;
 import com.android.tools.r8.ir.code.Instruction;
@@ -34,23 +33,6 @@ public class CodeRewriter {
 
   public CodeRewriter(AppView<?> appView) {
     this.appView = appView;
-  }
-
-  @SuppressWarnings("ReferenceEquality")
-  public static void removeOrReplaceByDebugLocalWrite(
-      Instruction currentInstruction, InstructionListIterator it, Value inValue, Value outValue) {
-    if (outValue.hasLocalInfo() && outValue.getLocalInfo() != inValue.getLocalInfo()) {
-      DebugLocalWrite debugLocalWrite = new DebugLocalWrite(outValue, inValue);
-      it.replaceCurrentInstruction(debugLocalWrite);
-    } else {
-      if (outValue.hasLocalInfo()) {
-        assert outValue.getLocalInfo() == inValue.getLocalInfo();
-        // Should remove the end-marker before replacing the current instruction.
-        currentInstruction.removeDebugValue(outValue.getLocalInfo());
-      }
-      outValue.replaceUsers(inValue);
-      it.removeOrReplaceByDebugLocalRead();
-    }
   }
 
   @SuppressWarnings("ReferenceEquality")
