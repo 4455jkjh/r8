@@ -49,7 +49,6 @@ import com.android.tools.r8.ir.optimize.AssumeInserter;
 import com.android.tools.r8.ir.optimize.CheckNotNullConverter;
 import com.android.tools.r8.ir.optimize.ClassInitializerDefaultsOptimization;
 import com.android.tools.r8.ir.optimize.ClassInitializerDefaultsOptimization.ClassInitializerDefaultsResult;
-import com.android.tools.r8.ir.optimize.CodeRewriter;
 import com.android.tools.r8.ir.optimize.ConstantCanonicalizer;
 import com.android.tools.r8.ir.optimize.DeadCodeRemover;
 import com.android.tools.r8.ir.optimize.Devirtualizer;
@@ -59,6 +58,7 @@ import com.android.tools.r8.ir.optimize.Inliner;
 import com.android.tools.r8.ir.optimize.Inliner.ConstraintWithTarget;
 import com.android.tools.r8.ir.optimize.ReflectionOptimizer;
 import com.android.tools.r8.ir.optimize.RemoveVerificationErrorForUnknownReturnedValues;
+import com.android.tools.r8.ir.optimize.SimplifyDebugLocal;
 import com.android.tools.r8.ir.optimize.api.InstanceInitializerOutliner;
 import com.android.tools.r8.ir.optimize.classinliner.ClassInliner;
 import com.android.tools.r8.ir.optimize.enums.EnumValueOptimizer;
@@ -115,7 +115,7 @@ public class IRConverter {
   protected final IdempotentFunctionCallCanonicalizer idempotentFunctionCallCanonicalizer;
   private final ClassInliner classInliner;
   protected final InternalOptions options;
-  public final CodeRewriter codeRewriter;
+  public final SimplifyDebugLocal simplifyDebugLocal;
   public final MemberValuePropagation<?> memberValuePropagation;
   private final LensCodeRewriter lensCodeRewriter;
   protected final Inliner inliner;
@@ -157,7 +157,7 @@ public class IRConverter {
     assert appView.options().programConsumer != null;
     this.appView = appView;
     this.options = appView.options();
-    this.codeRewriter = new CodeRewriter(appView);
+    this.simplifyDebugLocal = new SimplifyDebugLocal(appView);
     this.rewriterPassCollection = CodeRewriterPassCollection.create(appView);
     this.classInitializerDefaultsOptimization =
         new ClassInitializerDefaultsOptimization(appView, this);
@@ -577,7 +577,7 @@ public class IRConverter {
     }
 
     if (isDebugMode) {
-      codeRewriter.simplifyDebugLocals(code);
+      simplifyDebugLocal.simplifyDebugLocals(code);
     }
 
     new AtomicUpdaterInitializationRemover(appView)

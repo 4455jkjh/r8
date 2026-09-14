@@ -15,46 +15,12 @@ import com.android.tools.r8.ir.code.Position;
 import com.android.tools.r8.ir.code.Value;
 import com.android.tools.r8.utils.internal.exceptions.Unreachable;
 
-public class CodeRewriter {
+public class SimplifyDebugLocal {
 
   private final AppView<?> appView;
 
-  public CodeRewriter(AppView<?> appView) {
+  public SimplifyDebugLocal(AppView<?> appView) {
     this.appView = appView;
-  }
-
-  @SuppressWarnings("ReferenceEquality")
-  // TODO(mikaelpeltier) Manage that from and to instruction do not belong to the same block.
-  private static boolean hasLocalOrLineChangeBetween(
-      Instruction from, Instruction to, DexString localVar) {
-    if (from.getBlock() != to.getBlock()) {
-      return true;
-    }
-    if (from.getPosition().isSome()
-        && to.getPosition().isSome()
-        && !from.getPosition().equals(to.getPosition())) {
-      return true;
-    }
-    Position position = null;
-    for (Instruction instruction : from.getBlock().instructionsAfter(from)) {
-      if (position == null) {
-        if (instruction.getPosition().isSome()) {
-          position = instruction.getPosition();
-        }
-      } else if (instruction.getPosition().isSome()
-          && !position.equals(instruction.getPosition())) {
-        return true;
-      }
-      if (instruction == to) {
-        return false;
-      }
-      if (instruction.outValue() != null && instruction.outValue().hasLocalInfo()) {
-        if (instruction.outValue().getLocalInfo().name == localVar) {
-          return true;
-        }
-      }
-    }
-    throw new Unreachable();
   }
 
   public void simplifyDebugLocals(IRCode code) {
@@ -91,5 +57,38 @@ public class CodeRewriter {
     }
     code.removeRedundantBlocks();
     assert code.isConsistentSSA(appView);
+  }
+
+  // TODO(mikaelpeltier) Manage that from and to instruction do not belong to the same block.
+  private static boolean hasLocalOrLineChangeBetween(
+      Instruction from, Instruction to, DexString localVar) {
+    if (from.getBlock() != to.getBlock()) {
+      return true;
+    }
+    if (from.getPosition().isSome()
+        && to.getPosition().isSome()
+        && !from.getPosition().equals(to.getPosition())) {
+      return true;
+    }
+    Position position = null;
+    for (Instruction instruction : from.getBlock().instructionsAfter(from)) {
+      if (position == null) {
+        if (instruction.getPosition().isSome()) {
+          position = instruction.getPosition();
+        }
+      } else if (instruction.getPosition().isSome()
+          && !position.equals(instruction.getPosition())) {
+        return true;
+      }
+      if (instruction == to) {
+        return false;
+      }
+      if (instruction.outValue() != null && instruction.outValue().hasLocalInfo()) {
+        if (instruction.outValue().getLocalInfo().name.isIdenticalTo(localVar)) {
+          return true;
+        }
+      }
+    }
+    throw new Unreachable();
   }
 }
