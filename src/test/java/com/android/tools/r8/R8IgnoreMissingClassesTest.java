@@ -3,16 +3,27 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8;
 
-import static org.junit.jupiter.api.Assertions.assertThrows;
-
 import com.android.tools.r8.origin.EmbeddedOrigin;
 import com.android.tools.r8.utils.AndroidApiLevel;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Collections;
-import org.junit.jupiter.api.Test;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameter;
+import org.junit.runners.Parameterized.Parameters;
 
-public class R8IgnoreMissingClassesTest {
+@RunWith(Parameterized.class)
+public class R8IgnoreMissingClassesTest extends TestBase {
+
+  @Parameter(0)
+  public TestParameters parameters;
+
+  @Parameters(name = "{0}")
+  public static TestParametersCollection data() {
+    return getTestParameters().withNoneRuntime().build();
+  }
 
   private static final AndroidApiLevel MIN_API = AndroidApiLevel.O;
   private static final Path EXAMPLE = Paths.get(ToolHelper.EXAMPLES_BUILD_DIR, "usestdlib.jar");
@@ -26,13 +37,9 @@ public class R8IgnoreMissingClassesTest {
         .setProgramConsumer(DexIndexedConsumer.emptyConsumer());
   }
 
-  @Test
-  public void testFailsWithoutLibrary() {
-    assertThrows(
-        CompilationFailedException.class,
-        () -> {
-          R8.run(config().build());
-        });
+  @Test(expected = CompilationFailedException.class)
+  public void testFailsWithoutLibrary() throws CompilationFailedException {
+    R8.run(config().build());
   }
 
   @Test
@@ -42,10 +49,10 @@ public class R8IgnoreMissingClassesTest {
 
   @Test
   public void testPassesWithIgnoreWarnings() throws CompilationFailedException {
-    R8.run(config()
-        .addProguardConfiguration(
-            Collections.singletonList("-dontwarn"),
-            EmbeddedOrigin.INSTANCE)
-        .build());
+    R8.run(
+        config()
+            .addProguardConfiguration(
+                Collections.singletonList("-dontwarn"), EmbeddedOrigin.INSTANCE)
+            .build());
   }
 }
