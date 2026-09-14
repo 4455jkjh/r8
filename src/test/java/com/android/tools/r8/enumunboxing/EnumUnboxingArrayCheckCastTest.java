@@ -35,18 +35,14 @@ public class EnumUnboxingArrayCheckCastTest extends TestBase {
 
   @Test
   public void testR8() throws Exception {
-    testForR8(parameters.getBackend())
+    testForR8(parameters)
         .addInnerClasses(getClass())
         .addKeepMainRule(Main.class)
         .enableInliningAnnotations()
         .enableNeverClassInliningAnnotations()
-        .addEnumUnboxingInspector(inspector -> inspector.assertUnboxed(Role.class))
-        .setMinApi(parameters)
+        .addEnumUnboxingInspector(inspector -> inspector.assertNotUnboxed(Role.class))
         .run(parameters.getRuntime(), Main.class)
-        // Due to unsound type narrowing in analyzeCheckCast, (Role[]) o is rewritten to (int[]) o,
-        // allowing int[] to pass the cast and grant admin instead of throwing ClassCastException.
-        // TODO(b/557269850): Should preserve CCE.
-        .assertSuccessWithOutputLines("ADMIN GRANTED");
+        .assertSuccessWithOutputLines("ClassCastException");
   }
 
   @NeverClassInline

@@ -4,7 +4,6 @@
 
 package com.android.tools.r8.ir.optimize.enums;
 
-import static com.android.tools.r8.ir.analysis.type.Nullability.definitelyNotNull;
 import static com.android.tools.r8.ir.code.Opcodes.ARRAY_GET;
 import static com.android.tools.r8.ir.code.Opcodes.ARRAY_LENGTH;
 import static com.android.tools.r8.ir.code.Opcodes.ARRAY_PUT;
@@ -423,16 +422,7 @@ public class EnumUnboxer implements ReprocessingOptimization {
   }
 
   private void analyzeCheckCast(CheckCast checkCast, Set<DexType> eligibleEnums) {
-    // Casts to enum array types are fine as long all enum array creations are valid and have valid
-    // usages. Since creations of enum arrays are rewritten to primitive int arrays, enum array
-    // casts will continue to work after rewriting to int[] casts. Casts that failed with
-    // ClassCastException: "T[] cannot be cast to MyEnum[]" will continue to fail, but with "T[]
-    // cannot be cast to int[]".
-    //
-    // Note that strictly speaking, the rewriting from MyEnum[] to int[] could change the semantics
-    // of code that would fail with "int[] cannot be cast to MyEnum[]" in the input. However, javac
-    // does not allow such code ("incompatible types"), so we should generally not see such code.
-    if (checkCast.getType().isArrayType()) {
+    if (!checkCast.getType().getBaseType().isClassType()) {
       return;
     }
 
@@ -444,11 +434,11 @@ public class EnumUnboxer implements ReprocessingOptimization {
     if (enumClass == null) {
       return;
     }
-    if (allowCheckCast(checkCast)) {
+    if (allowCheckCast(checkCast, enumClass)) {
       eligibleEnums.add(enumClass.type);
-      return;
+    } else {
+      markEnumAsUnboxable(Reason.DOWN_CAST, enumClass);
     }
-    markEnumAsUnboxable(Reason.DOWN_CAST, enumClass);
   }
 
   private void analyzeInstanceOf(InstanceOf instanceOf) {
@@ -466,10 +456,34 @@ public class EnumUnboxer implements ReprocessingOptimization {
     }
   }
 
-  private boolean allowCheckCast(CheckCast checkCast) {
-    TypeElement objectType = checkCast.object().getDynamicUpperBoundType(appView);
-    return objectType.equalUpToNullability(
-        TypeElement.fromDexType(checkCast.getType(), definitelyNotNull(), appView));
+  private boolean allowCheckCast(CheckCast checkCast, DexProgramClass enumClass) {
+    Value object = checkCast.object();
+    TypeElement objectType = object.getDynamicUpperBoundType(appView);
+    if (objectType.equalUpToNullability(checkCast.outValue().getType())) {
+      return true;
+    }
+    // Handle calls to java.lang.reflect.Array.newInstance(java.lang.Class, int[]).
+    if (object.isDefinedByInstructionSatisfying(Instruction::isInvokeStatic)) {
+      InvokeStatic invoke = object.getDefinition().asInvokeStatic();
+      DexMethod invokedMethod = invoke.getInvokedMethod();
+      if (invokedMethod.isIdenticalTo(
+              factory.javaLangReflectArrayMembers.newInstanceMethodWithDimensions)
+          && invoke.getFirstArgument().isConstClass(enumClass.getType())) {
+        return true;
+      }
+    }
+    // Handle calls to java.lang.Object.clone().
+    if (object.isDefinedByInstructionSatisfying(Instruction::isInvokeVirtual)) {
+      InvokeVirtual invoke = object.getDefinition().asInvokeVirtual();
+      DexMethod invokedMethod = invoke.getInvokedMethod();
+      if (invokedMethod.isIdenticalTo(factory.objectMembers.clone)) {
+        objectType = invoke.getReceiver().getDynamicUpperBoundType(appView);
+        if (objectType.equalUpToNullability(checkCast.outValue().getType())) {
+          return true;
+        }
+      }
+    }
+    return false;
   }
 
   private void analyzeConstClass(
@@ -1209,7 +1223,7 @@ public class EnumUnboxer implements ReprocessingOptimization {
       case ARRAY_PUT:
         return analyzeArrayPutUser(instruction.asArrayPut());
       case CHECK_CAST:
-        return analyzeCheckCastUser(instruction.asCheckCast());
+        return analyzeCheckCastUser(instruction.asCheckCast(), enumClass);
       case IF:
         return analyzeIfUser(instruction.asIf(), enumClass);
       case INSTANCE_GET:
@@ -1304,8 +1318,8 @@ public class EnumUnboxer implements ReprocessingOptimization {
     return Reason.INVALID_INVOKE_NEW_ARRAY;
   }
 
-  private Reason analyzeCheckCastUser(CheckCast checkCast) {
-    if (allowCheckCast(checkCast)) {
+  private Reason analyzeCheckCastUser(CheckCast checkCast, DexProgramClass enumClass) {
+    if (allowCheckCast(checkCast, enumClass)) {
       return Reason.ELIGIBLE;
     }
     return Reason.DOWN_CAST;
