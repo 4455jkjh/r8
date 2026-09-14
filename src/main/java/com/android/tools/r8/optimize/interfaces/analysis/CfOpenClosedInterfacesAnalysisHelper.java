@@ -149,18 +149,23 @@ class CfOpenClosedInterfacesAnalysisHelper {
     processAssignment(fromType, toType.toTypeElement(appView));
   }
 
-  @SuppressWarnings("ReferenceEquality")
   private void processAssignment(TypeElement fromType, TypeElement toType) {
     // If the type is an interface type, then check that the assigned value is a subtype of the
     // interface type, or mark the interface as open.
-    if (!toType.isClassType()) {
+    while (toType.isArrayType() && fromType.isArrayType()) {
+      toType = toType.asArrayType().getMemberType();
+      fromType = fromType.asArrayType().getMemberType();
+    }
+    if (toType.isClassType()) {
+      processAssignment(fromType, toType.asClassType());
+    }
+  }
+
+  private void processAssignment(TypeElement fromType, ClassTypeElement toType) {
+    if (toType.getClassType().isNotIdenticalTo(dexItemFactory.objectType)) {
       return;
     }
-    ClassTypeElement toClassType = toType.asClassType();
-    if (toClassType.getClassType() != dexItemFactory.objectType) {
-      return;
-    }
-    InterfaceCollection interfaceCollection = toClassType.getInterfaces();
+    InterfaceCollection interfaceCollection = toType.getInterfaces();
     interfaceCollection.forEachKnownInterface(
         knownInterfaceType -> {
           DexClass knownInterface = appView.definitionFor(knownInterfaceType);

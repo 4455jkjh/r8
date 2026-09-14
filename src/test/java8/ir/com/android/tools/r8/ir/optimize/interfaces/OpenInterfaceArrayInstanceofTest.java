@@ -47,11 +47,12 @@ public class OpenInterfaceArrayInstanceofTest extends TestBase {
         .addProgramClasses(getProgramClasses())
         .addProgramClassFileData(getTransformedMainClass())
         .addKeepMainRule(Main.class)
+        .addOptionsModification(
+            options -> options.getOpenClosedInterfacesOptions().suppressAllOpenInterfaces())
         .enableInliningAnnotations()
         .enableNoVerticalClassMergingAnnotations()
         .run(parameters.getRuntime(), Main.class)
-        // TODO(b/557271665): Should succeed with expected output.
-        .assertSuccessWithOutputLines("true", "true");
+        .assertSuccessWithOutputLines("true", "false");
   }
 
   private List<Class<?>> getProgramClasses() {
