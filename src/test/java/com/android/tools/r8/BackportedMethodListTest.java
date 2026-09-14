@@ -65,69 +65,69 @@ public class BackportedMethodListTest extends TestBase {
     }
   }
 
-  private void checkContent(int apiLevel, List<String> backports) {
+  private void checkContent(AndroidApiLevel apiLevel, List<String> backports) {
     // Java 8 methods added at various API levels.
     assertEquals(
-        apiLevel < AndroidApiLevel.K.getMajor(), backports.contains("java/lang/Byte#compare(BB)I"));
+        apiLevel.isLessThan(AndroidApiLevel.K), backports.contains("java/lang/Byte#compare(BB)I"));
     assertEquals(
-        apiLevel < AndroidApiLevel.N.getMajor(),
+        apiLevel.isLessThan(AndroidApiLevel.N),
         backports.contains("java/lang/Integer#hashCode(I)I"));
     assertEquals(
-        apiLevel < AndroidApiLevel.O.getMajor(),
+        apiLevel.isLessThan(AndroidApiLevel.O),
         backports.contains("java/lang/Short#toUnsignedLong(S)J"));
 
     // ExecutorService#close up to api level V.
     assertEquals(
-        apiLevel <= AndroidApiLevel.V.getMajor(),
+        apiLevel.isLessThanOrEqualTo(AndroidApiLevel.V),
         backports.contains("java/util/concurrent/ExecutorService#close()V"));
 
     // Java 9, 10 and 11 Optional methods added at API level T
     // They require Android N or library desugaring to be backported.
     // The methods are not backported in desugared library JDK 11 (already present).
     assertEquals(
-        apiLevel < AndroidApiLevel.T.getMajor()
-            && (mode == Mode.LIBRARY_DESUGAR || apiLevel >= AndroidApiLevel.N.getMajor()),
+        apiLevel.isLessThan(AndroidApiLevel.T)
+            && (mode == Mode.LIBRARY_DESUGAR || apiLevel.isGreaterThanOrEqualTo(AndroidApiLevel.N)),
         backports.contains(
             "java/util/Optional#or(Ljava/util/function/Supplier;)Ljava/util/Optional;"));
     assertEquals(
-        apiLevel < AndroidApiLevel.T.getMajor()
-            && (mode == Mode.LIBRARY_DESUGAR || apiLevel >= AndroidApiLevel.N.getMajor()),
+        apiLevel.isLessThan(AndroidApiLevel.T)
+            && (mode == Mode.LIBRARY_DESUGAR || apiLevel.isGreaterThanOrEqualTo(AndroidApiLevel.N)),
         backports.contains("java/util/OptionalInt#orElseThrow()I"));
     assertEquals(
-        apiLevel < AndroidApiLevel.T.getMajor()
-            && (mode == Mode.LIBRARY_DESUGAR || apiLevel >= AndroidApiLevel.N.getMajor()),
+        apiLevel.isLessThan(AndroidApiLevel.T)
+            && (mode == Mode.LIBRARY_DESUGAR || apiLevel.isGreaterThanOrEqualTo(AndroidApiLevel.N)),
         backports.contains("java/util/OptionalLong#isEmpty()Z"));
 
     // Java 9, 10 and 11 methods added at API level S.
     assertEquals(
-        apiLevel < AndroidApiLevel.S.getMajor(),
+        apiLevel.isLessThan(AndroidApiLevel.S),
         backports.contains("java/lang/StrictMath#multiplyExact(JI)J"));
     assertEquals(
-        apiLevel < AndroidApiLevel.S.getMajor(),
+        apiLevel.isLessThan(AndroidApiLevel.S),
         backports.contains("java/util/List#copyOf(Ljava/util/Collection;)Ljava/util/List;"));
 
     // Java 9, 10 and 11 methods added at API level T.
     assertEquals(
-        apiLevel < AndroidApiLevel.T.getMajor(),
+        apiLevel.isLessThan(AndroidApiLevel.T),
         backports.contains("java/lang/Integer#parseInt(Ljava/lang/CharSequence;III)I"));
     assertEquals(
-        apiLevel < AndroidApiLevel.T.getMajor(),
+        apiLevel.isLessThan(AndroidApiLevel.T),
         backports.contains("java/lang/String#repeat(I)Ljava/lang/String;"));
 
     // Java 9, 10 and 11 method added at API level U.
     assertEquals(
-        apiLevel < AndroidApiLevel.U.getMajor(),
+        apiLevel.isLessThan(AndroidApiLevel.U),
         backports.contains(
             "java/lang/CharSequence#compare(Ljava/lang/CharSequence;Ljava/lang/CharSequence;)I"));
 
     // Java 9, 10 and 11 method added at API level V.
     assertEquals(
-        apiLevel < AndroidApiLevel.V.getMajor(),
+        apiLevel.isLessThan(AndroidApiLevel.V),
         backports.contains("java/lang/Character#toString(I)Ljava/lang/String;"));
 
     // BAKLAVA added static field android/os/Build$VERSION.SDK_INT_FULL.
     assertEquals(
-        apiLevel < AndroidApiLevel.BAKLAVA.getMajor(),
+        apiLevel.isLessThan(AndroidApiLevel.BAKLAVA),
         backports.contains("android/os/Build$VERSION#SDK_INT_FULL"));
   }
 
@@ -162,10 +162,15 @@ public class BackportedMethodListTest extends TestBase {
 
   @Test
   public void testConsumer() throws Exception {
-    for (int apiLevel = 1; apiLevel < AndroidApiLevel.LATEST.getMajor(); apiLevel++) {
+    for (AndroidApiLevel apiLevel : AndroidApiLevel.getAndroidApiLevelsSorted()) {
+      if (apiLevel.isGreaterThanOrEqualTo(AndroidApiLevel.LATEST)) {
+        continue;
+      }
       ListStringConsumer consumer = new ListStringConsumer();
       BackportedMethodListCommand.Builder builder =
-          BackportedMethodListCommand.builder().setMinApiLevel(apiLevel).setConsumer(consumer);
+          BackportedMethodListCommand.builder()
+              .setMinApiLevel(apiLevel.asUnchecked())
+              .setConsumer(consumer);
       if (mode == Mode.LIBRARY) {
         builder.addLibraryFiles(ToolHelper.getAndroidJar(AndroidApiLevel.P));
       } else if (mode == Mode.LIBRARY_DESUGAR || mode == Mode.LIBRARY_DESUGAR_11) {
@@ -179,10 +184,15 @@ public class BackportedMethodListTest extends TestBase {
 
   @Test
   public void testFile() throws Exception {
-    for (int apiLevel = 1; apiLevel <= AndroidApiLevel.LATEST.getMajor(); apiLevel++) {
+    for (AndroidApiLevel apiLevel : AndroidApiLevel.getAndroidApiLevelsSorted()) {
+      if (apiLevel.isGreaterThan(AndroidApiLevel.LATEST)) {
+        continue;
+      }
       Path output = temp.newFile().toPath();
       BackportedMethodListCommand.Builder builder =
-          BackportedMethodListCommand.builder().setMinApiLevel(apiLevel).setOutputPath(output);
+          BackportedMethodListCommand.builder()
+              .setMinApiLevel(apiLevel.asUnchecked())
+              .setOutputPath(output);
       if (mode == Mode.LIBRARY) {
         builder.addLibraryFiles(ToolHelper.getAndroidJar(AndroidApiLevel.P));
       } else if (mode == Mode.LIBRARY_DESUGAR || mode == Mode.LIBRARY_DESUGAR_11) {
@@ -200,7 +210,7 @@ public class BackportedMethodListTest extends TestBase {
     // Not setting neither min API level not library should produce the full list.
     BackportedMethodList.run(BackportedMethodListCommand.builder().setConsumer(consumer).build());
     assertTrue(consumer.finished);
-    checkContent(1, consumer.strings);
+    checkContent(AndroidApiLevel.B, consumer.strings);
   }
 
   @Test

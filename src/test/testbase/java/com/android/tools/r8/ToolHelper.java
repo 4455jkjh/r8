@@ -2993,15 +2993,4 @@ public class ToolHelper {
       R8Command.Builder builder, boolean enabled) {
     builder.setReadEmbeddedRulesFromClasspathAndLibrary(enabled);
   }
-
-  // Bridge to avoid public methods in @KeepForApi classes.
-  public static UncheckedApiLevel getUncheckedMinApiLevel(
-      BaseCompilerCommand.Builder<?, ?> builder) {
-    return builder.getUncheckedMinApiLevel();
-  }
-
-  // Bridge to avoid public methods in @KeepForApi classes.
-  public static void setMinApiLevel(D8Command.Builder builder, UncheckedApiLevel minApiLevel) {
-    builder.setMinApiLevel(minApiLevel);
-  }
 }

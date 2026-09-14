@@ -18,6 +18,7 @@ import com.android.tools.r8.utils.CliParserUtils;
 import com.android.tools.r8.utils.ExceptionDiagnostic;
 import com.android.tools.r8.utils.Reporter;
 import com.android.tools.r8.utils.StringDiagnostic;
+import com.android.tools.r8.utils.UncheckedApiLevel;
 import com.android.tools.r8.utils.internal.CliParser;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -31,11 +32,7 @@ public class DesugaredMethodsListCommand {
 
   private final boolean help;
   private final boolean version;
-  private final int minMajorApi;
-
-  @SuppressWarnings("UnusedVariable")
-  private final int minMinorApi;
-
+  private final UncheckedApiLevel minApiLevel;
   private final Reporter reporter;
   private final StringResource desugarLibrarySpecification;
   private final Collection<ProgramResourceProvider> desugarLibraryImplementation;
@@ -44,8 +41,7 @@ public class DesugaredMethodsListCommand {
   private final boolean androidPlatformBuild;
 
   DesugaredMethodsListCommand(
-      int minMajorApi,
-      int minMinorApi,
+      UncheckedApiLevel minApiLevel,
       Reporter reporter,
       StringResource desugarLibrarySpecification,
       Collection<ProgramResourceProvider> desugarLibraryImplementation,
@@ -54,8 +50,7 @@ public class DesugaredMethodsListCommand {
       boolean androidPlatformBuild) {
     this.help = false;
     this.version = false;
-    this.minMajorApi = minMajorApi;
-    this.minMinorApi = minMinorApi;
+    this.minApiLevel = minApiLevel;
     this.reporter = reporter;
     this.desugarLibrarySpecification = desugarLibrarySpecification;
     this.desugarLibraryImplementation = desugarLibraryImplementation;
@@ -67,8 +62,7 @@ public class DesugaredMethodsListCommand {
   DesugaredMethodsListCommand(boolean help, boolean version) {
     this.help = help;
     this.version = version;
-    this.minMajorApi = -1;
-    this.minMinorApi = 0;
+    this.minApiLevel = AndroidApiLevel.B.asUnchecked();
     this.reporter = null;
     this.desugarLibrarySpecification = null;
     this.desugarLibraryImplementation = null;
@@ -85,8 +79,14 @@ public class DesugaredMethodsListCommand {
     return new DesugaredMethodsListCommandParser().parse(args, reporter);
   }
 
+  /** Deprecation: Should not be used since it ignores minor versions. */
+  @Deprecated
   public int getMinApi() {
-    return minMajorApi;
+    return minApiLevel.getMajor();
+  }
+
+  UncheckedApiLevel getUncheckedMinApiLevel() {
+    return minApiLevel;
   }
 
   public boolean isAndroidPlatformBuild() {
@@ -132,8 +132,7 @@ public class DesugaredMethodsListCommand {
   @KeepForApi
   public static class Builder {
 
-    private int minMajorApi = AndroidApiLevel.B.getMajor();
-    private int minMinorApi = 0;
+    private UncheckedApiLevel minApiLevel = AndroidApiLevel.B.asUnchecked();
     private final Reporter reporter;
     private StringResource desugarLibrarySpecification = null;
     private Collection<ProgramResourceProvider> desugarLibraryImplementation = new ArrayList<>();
@@ -148,14 +147,25 @@ public class DesugaredMethodsListCommand {
       this.reporter = new Reporter(diagnosticsHandler);
     }
 
-    public Builder setMinApi(int minMajorApi) {
-      this.minMajorApi = minMajorApi;
-      return this;
+    /** Deprecation: Use {@link #setMinApi(int, int)}. */
+    @Deprecated
+    @SuppressWarnings("InlineMeSuggester")
+    public Builder setMinApi(int major) {
+      return setMinApi(major, 0);
     }
 
-    public Builder setMinApi(int minMajorApi, int minMinorApi) {
-      this.minMajorApi = minMajorApi;
-      this.minMinorApi = minMinorApi;
+    public Builder setMinApi(int major, int minor) {
+      if (major <= 0 || minor < 0) {
+        reporter.error("Invalid minApiLevel: " + major + "." + minor);
+        return this;
+      } else {
+        return setMinApi(new UncheckedApiLevel(major, minor));
+      }
+    }
+
+    /** See {@link DesugaredMethodsListCommandUtils#setMinApiLevel} for a public bridge. */
+    Builder setMinApi(UncheckedApiLevel minApiLevel) {
+      this.minApiLevel = minApiLevel;
       return this;
     }
 
@@ -242,8 +252,7 @@ public class DesugaredMethodsListCommand {
             };
       }
       return new DesugaredMethodsListCommand(
-          minMajorApi,
-          minMinorApi,
+          minApiLevel,
           reporter,
           desugarLibrarySpecification,
           desugarLibraryImplementation,

@@ -321,7 +321,7 @@ public class ExtractWrapperTypesTest extends DesugaredLibraryTestBase {
             factory,
             null,
             false,
-            minApi.getMajor());
+            minApi.asUnchecked());
 
     DexApplication app =
         libraryDesugaringSpecification.getAppForTesting(

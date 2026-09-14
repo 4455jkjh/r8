@@ -7,6 +7,7 @@ package com.android.tools.r8.ir.desugar.desugaredlibrary.humanspecification;
 import com.android.tools.r8.StringResource;
 import com.android.tools.r8.graph.DexItemFactory;
 import com.android.tools.r8.ir.desugar.desugaredlibrary.ApiLevelRange;
+import com.android.tools.r8.utils.AndroidApiLevel;
 import com.android.tools.r8.utils.Reporter;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -18,7 +19,7 @@ public class MultiAPILevelHumanDesugaredLibrarySpecificationParser
 
   public MultiAPILevelHumanDesugaredLibrarySpecificationParser(
       DexItemFactory dexItemFactory, Reporter reporter) {
-    super(dexItemFactory, reporter, false, 1);
+    super(dexItemFactory, reporter, false, AndroidApiLevel.B.asUnchecked());
   }
 
   public MultiAPILevelHumanDesugaredLibrarySpecification parseMultiLevelConfiguration(

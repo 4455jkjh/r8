@@ -3,6 +3,7 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8;
 
+import com.android.tools.r8.utils.UncheckedApiLevel;
 import com.android.tools.r8.utils.internal.FileUtils;
 import com.android.tools.r8.utils.internal.exceptions.Unreachable;
 import java.nio.file.Path;
@@ -50,5 +51,17 @@ public class BaseCompilerCommandUtils {
     return FileUtils.isArchive(path)
         ? new ClassFileConsumer.ArchiveConsumer(path, consumeDataResources)
         : new ClassFileConsumer.DirectoryConsumer(path, consumeDataResources);
+  }
+
+  // Bridge to avoid public methods in @KeepForApi classes.
+  public static UncheckedApiLevel getUncheckedMinApiLevel(
+      BaseCompilerCommand.Builder<?, ?> builder) {
+    return builder.getUncheckedMinApiLevel();
+  }
+
+  // Bridge to avoid public methods in @KeepForApi classes.
+  public static void setMinApiLevel(
+      BaseCompilerCommand.Builder<?, ?> builder, UncheckedApiLevel minApiLevel) {
+    builder.setMinApiLevel(minApiLevel);
   }
 }

@@ -20,6 +20,13 @@ public class UncheckedApiLevel implements Ordered<UncheckedApiLevel> {
     this.minor = minor;
   }
 
+  @Deprecated
+  @SuppressWarnings("InlineMeSuggester")
+  public UncheckedApiLevel(int major) {
+    // TODO(b/356841164): Remove all uses of this.
+    this(major, 0);
+  }
+
   public int getMajor() {
     return major;
   }

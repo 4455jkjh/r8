@@ -59,7 +59,7 @@ public abstract class AbstractGenerateFiles {
         options.dexItemFactory(),
         options.reporter,
         false,
-        AndroidApiLevel.B.getMajor());
+        AndroidApiLevel.B.asUnchecked());
   }
 
   abstract AndroidApiLevel run() throws Exception;

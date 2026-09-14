@@ -88,7 +88,7 @@ public class R8AssistantCommand extends BaseCompilerCommand {
         app,
         mode,
         programConsumer,
-        new UncheckedApiLevel(minApiLevelMajor, 0),
+        new UncheckedApiLevel(minApiLevelMajor),
         reporter,
         reflectiveReceiverDescriptor,
         apiDatabasePath);

@@ -22,6 +22,7 @@ import com.android.tools.r8.utils.DescriptorUtils;
 import com.android.tools.r8.utils.ExceptionDiagnostic;
 import com.android.tools.r8.utils.Reporter;
 import com.android.tools.r8.utils.StringDiagnostic;
+import com.android.tools.r8.utils.UncheckedApiLevel;
 import com.google.common.collect.Sets;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
@@ -78,7 +79,7 @@ public class HumanDesugaredLibrarySpecificationParser {
   private final HumanFieldParser fieldParser;
   private final Reporter reporter;
   private final boolean libraryCompilation;
-  private final int minAPILevel;
+  private final UncheckedApiLevel minApiLevel;
 
   private Origin origin;
   private JsonObject jsonConfig;
@@ -87,12 +88,12 @@ public class HumanDesugaredLibrarySpecificationParser {
       DexItemFactory dexItemFactory,
       Reporter reporter,
       boolean libraryCompilation,
-      int minAPILevel) {
+      UncheckedApiLevel minApiLevel) {
     this.dexItemFactory = dexItemFactory;
     this.methodParser = new HumanMethodParser(dexItemFactory);
     this.fieldParser = new HumanFieldParser(dexItemFactory);
     this.reporter = reporter;
-    this.minAPILevel = minAPILevel;
+    this.minApiLevel = minApiLevel;
     this.libraryCompilation = libraryCompilation;
   }
 
@@ -235,10 +236,13 @@ public class HumanDesugaredLibrarySpecificationParser {
   private void parseFlagsList(JsonArray jsonFlags, HumanRewritingFlags.Builder builder) {
     for (JsonElement jsonFlagSet : jsonFlags) {
       JsonObject flag = jsonFlagSet.getAsJsonObject();
-      int api_level_below_or_equal = required(flag, API_LEVEL_BELOW_OR_EQUAL_KEY).getAsInt();
-      if (minAPILevel <= api_level_below_or_equal) {
+      UncheckedApiLevel api_level_below_or_equal =
+          new UncheckedApiLevel(required(flag, API_LEVEL_BELOW_OR_EQUAL_KEY).getAsInt());
+      if (minApiLevel.isLessThanOrEqualTo(api_level_below_or_equal)) {
         if (flag.has(API_LEVEL_GREATER_OR_EQUAL_KEY)) {
-          if (minAPILevel >= flag.get(API_LEVEL_GREATER_OR_EQUAL_KEY).getAsInt()) {
+          UncheckedApiLevel api_level_greater_or_equal =
+              new UncheckedApiLevel(flag.get(API_LEVEL_GREATER_OR_EQUAL_KEY).getAsInt());
+          if (minApiLevel.isGreaterThanOrEqualTo(api_level_greater_or_equal)) {
             parseFlags(flag, builder);
           }
         } else {

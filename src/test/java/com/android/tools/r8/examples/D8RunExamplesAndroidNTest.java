@@ -4,6 +4,7 @@
 
 package com.android.tools.r8.examples;
 
+import com.android.tools.r8.BaseCompilerCommandUtils;
 import com.android.tools.r8.D8Command;
 import com.android.tools.r8.D8Command.Builder;
 import com.android.tools.r8.OutputMode;
@@ -32,7 +33,8 @@ public class D8RunExamplesAndroidNTest extends RunExamplesAndroidNTest<D8Command
         builder = transformation.apply(builder);
       }
       builder
-          .addLibraryFiles(ToolHelper.getAndroidJar(ToolHelper.getUncheckedMinApiLevel(builder)))
+          .addLibraryFiles(
+              ToolHelper.getAndroidJar(BaseCompilerCommandUtils.getUncheckedMinApiLevel(builder)))
           .addProgramFiles(inputFile)
           .setOutput(out, OutputMode.DexIndexed);
       try {

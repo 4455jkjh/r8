@@ -39,13 +39,14 @@ public class DexConstString20 extends DexFormat21c20<DexString> {
       return true;
     }
     int offset = offsets.getOffsetFor(getString());
+    int lazyStringsCount = offsets.getLazyDexStringsCount();
     // The reference of a const-string/20 instruction is offset by 2^16. If the reference is below
     // 2^16 we cannot reference the string using const-string/20 (need to use const-string).
-    if (offset < MIN_REFERENCE_INCLUSIVE) {
+    if (offset < MIN_REFERENCE_INCLUSIVE - lazyStringsCount) {
       return true;
     }
     // Otherwise check if we are above the max reference (need to use const-string/jumbo).
-    return offset > MAX_REFERENCE_INCLUSIVE;
+    return offset > MAX_REFERENCE_INCLUSIVE - lazyStringsCount;
   }
 
   @Override

@@ -6,6 +6,7 @@ package com.android.tools.r8;
 
 import com.android.tools.r8.ir.desugar.desugaredlibrary.lint.DesugaredMethodsList;
 import com.android.tools.r8.ir.desugar.desugaredlibrary.lint.DesugaredMethodsListCommand;
+import com.android.tools.r8.ir.desugar.desugaredlibrary.lint.DesugaredMethodsListCommandUtils;
 import com.android.tools.r8.keepanno.annotations.KeepForApi;
 import com.android.tools.r8.origin.Origin;
 import com.android.tools.r8.utils.ExceptionUtils;
@@ -78,8 +79,8 @@ public class BackportedMethodList {
     if (command.isAndroidPlatformBuild()) {
       builder.setAndroidPlatformBuild();
     }
+    DesugaredMethodsListCommandUtils.setMinApiLevel(builder, command.getUncheckedMinApiLevel());
     return builder
-        .setMinApi(command.getMinApiLevel())
         .setOutputConsumer(command.getBackportedMethodListConsumer())
         .build();
   }

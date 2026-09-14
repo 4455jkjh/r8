@@ -80,7 +80,7 @@ public abstract class BaseCompilerCommand extends BaseCommand {
     programConsumer = null;
     mainDexListConsumer = null;
     mode = null;
-    minApiLevel = new UncheckedApiLevel(1, 0);
+    minApiLevel = AndroidApiLevel.getDefault().asUnchecked();
     reporter = new Reporter();
     desugarState = DesugarState.ON;
     includeClassesChecksum = false;
@@ -569,6 +569,7 @@ public abstract class BaseCompilerCommand extends BaseCommand {
       return getUncheckedMinApiLevel().getMajor();
     }
 
+    /** See {@link BaseCompilerCommandUtils#getUncheckedMinApiLevel} for a public bridge. */
     UncheckedApiLevel getUncheckedMinApiLevel() {
       if (isMinApiLevelSet()) {
         return minApiLevel;
@@ -597,7 +598,11 @@ public abstract class BaseCompilerCommand extends BaseCommand {
       return self();
     }
 
-    /** Set the minimum required API level (aka SDK version). */
+    /**
+     * Set the minimum required API level (aka SDK version).
+     *
+     * <p>See {@link BaseCompilerCommandUtils#setMinApiLevel} for a public bridge.
+     */
     B setMinApiLevel(UncheckedApiLevel minApiLevel) {
       this.minApiLevel = minApiLevel;
       return self();
@@ -695,15 +700,12 @@ public abstract class BaseCompilerCommand extends BaseCommand {
       }
       StringResource desugaredLibrarySpecificationResource =
           desugaredLibrarySpecificationResources.get(0);
-      // TODO(b/356841164): Support minor version.
-      assert getUncheckedMinApiLevel().getMinor() == 0
-          : "Minor API version not yet supported: " + getUncheckedMinApiLevel();
       return DesugaredLibrarySpecificationParser.parseDesugaredLibrarySpecification(
           desugaredLibrarySpecificationResource,
           factory,
           getReporter(),
           libraryCompilation,
-          getUncheckedMinApiLevel().getMajor());
+          getUncheckedMinApiLevel());
     }
 
     boolean hasDesugaredLibraryConfiguration() {

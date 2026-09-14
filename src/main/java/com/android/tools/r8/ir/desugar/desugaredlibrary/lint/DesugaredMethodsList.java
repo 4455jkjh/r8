@@ -14,6 +14,7 @@ import com.android.tools.r8.keepanno.annotations.KeepForApi;
 import com.android.tools.r8.utils.AndroidApiLevel;
 import com.android.tools.r8.utils.ExceptionUtils;
 import com.android.tools.r8.utils.Reporter;
+import com.android.tools.r8.utils.UncheckedApiLevel;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.List;
@@ -26,7 +27,7 @@ public class DesugaredMethodsList extends GenerateDesugaredLibraryLintFiles {
   private final StringConsumer outputConsumer;
 
   DesugaredMethodsList(
-      int minApi,
+      UncheckedApiLevel minApi,
       boolean androidPlatformBuild,
       Reporter reporter,
       StringResource desugarConfiguration,
@@ -52,7 +53,7 @@ public class DesugaredMethodsList extends GenerateDesugaredLibraryLintFiles {
         command.getReporter(),
         () ->
             new DesugaredMethodsList(
-                    command.getMinApi(),
+                    command.getUncheckedMinApiLevel(),
                     command.isAndroidPlatformBuild(),
                     command.getReporter(),
                     command.getDesugarLibrarySpecification(),

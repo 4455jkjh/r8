@@ -16,6 +16,7 @@ import com.android.tools.r8.utils.AndroidApiLevel;
 import com.android.tools.r8.utils.ExceptionDiagnostic;
 import com.android.tools.r8.utils.Reporter;
 import com.android.tools.r8.utils.StringDiagnostic;
+import com.android.tools.r8.utils.UncheckedApiLevel;
 import com.android.tools.r8.utils.internal.SemanticVersion;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
@@ -57,7 +58,7 @@ public class LegacyDesugaredLibrarySpecificationParser {
   private final DexItemFactory dexItemFactory;
   private final Reporter reporter;
   private final boolean libraryCompilation;
-  private final int minAPILevel;
+  private final UncheckedApiLevel minApiLevel;
 
   private Origin origin;
   private JsonObject jsonConfig;
@@ -66,10 +67,10 @@ public class LegacyDesugaredLibrarySpecificationParser {
       DexItemFactory dexItemFactory,
       Reporter reporter,
       boolean libraryCompilation,
-      int minAPILevel) {
+      UncheckedApiLevel minApiLevel) {
     this.dexItemFactory = dexItemFactory;
     this.reporter = reporter;
-    this.minAPILevel = minAPILevel;
+    this.minApiLevel = minApiLevel;
     this.libraryCompilation = libraryCompilation;
   }
 
@@ -222,8 +223,9 @@ public class LegacyDesugaredLibrarySpecificationParser {
   private void parseFlagsList(JsonArray jsonFlags, LegacyRewritingFlags.Builder builder) {
     for (JsonElement jsonFlagSet : jsonFlags) {
       JsonObject flag = jsonFlagSet.getAsJsonObject();
-      int api_level_below_or_equal = required(flag, API_LEVEL_BELOW_OR_EQUAL_KEY).getAsInt();
-      if (minAPILevel <= api_level_below_or_equal) {
+      UncheckedApiLevel api_level_below_or_equal =
+          new UncheckedApiLevel(required(flag, API_LEVEL_BELOW_OR_EQUAL_KEY).getAsInt());
+      if (minApiLevel.isLessThanOrEqualTo(api_level_below_or_equal)) {
         parseFlags(flag, builder);
       }
     }
