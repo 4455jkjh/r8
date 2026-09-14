@@ -35,7 +35,7 @@ public class DexConstString extends DexFormat21c<DexString> {
 
   public boolean needsJumboStringRewriting(StringOffsetProvider offsets) {
     int offset = offsets.getOffsetFor(getString());
-    return offset > Constants.U16BIT_MAX;
+    return offset > Constants.U16BIT_MAX - offsets.getLazyDexStringsCount();
   }
 
   public DexString getString() {
