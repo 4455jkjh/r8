@@ -571,9 +571,7 @@ public class IRConverter {
     }
 
     if (options.canHaveArtStringNewInitBug()) {
-      timing.begin("Check for new-init issue");
-      TrivialPhiSimplifier.ensureDirectStringNewToInit(appView, code);
-      timing.end();
+      new TrivialPhiSimplifier(appView).run(code, methodProcessor, methodProcessingContext, timing);
     }
 
     if (isDebugMode) {
