@@ -17,6 +17,7 @@ import com.android.tools.r8.graph.ProgramMethod;
 import com.android.tools.r8.graph.PrunedItems;
 import com.android.tools.r8.graph.bytecodemetadata.BytecodeMetadataProvider;
 import com.android.tools.r8.graph.proto.RewrittenPrototypeDescription;
+import com.android.tools.r8.ir.analysis.constant.SparseConditionalConstantPropagation;
 import com.android.tools.r8.ir.analysis.fieldaccess.FieldAccessAnalysis;
 import com.android.tools.r8.ir.analysis.fieldvalueanalysis.InstanceFieldValueAnalysis;
 import com.android.tools.r8.ir.analysis.fieldvalueanalysis.StaticFieldValueAnalysis;
@@ -27,19 +28,38 @@ import com.android.tools.r8.ir.code.InstructionIterator;
 import com.android.tools.r8.ir.code.NumberGenerator;
 import com.android.tools.r8.ir.code.Value;
 import com.android.tools.r8.ir.conversion.MethodConversionOptions.MutableMethodConversionOptions;
+import com.android.tools.r8.ir.conversion.passes.ArrayConstructionSimplifier;
 import com.android.tools.r8.ir.conversion.passes.AssumeRemover;
+import com.android.tools.r8.ir.conversion.passes.AtomicFieldUpdaterOptimizer;
 import com.android.tools.r8.ir.conversion.passes.AtomicUpdaterInitializationRemover;
+import com.android.tools.r8.ir.conversion.passes.BinopRewriter;
+import com.android.tools.r8.ir.conversion.passes.BranchSimplifier;
 import com.android.tools.r8.ir.conversion.passes.ClassGetNameOptimizer;
+import com.android.tools.r8.ir.conversion.passes.CodeRewriterPass;
 import com.android.tools.r8.ir.conversion.passes.CodeRewriterPassCollection;
+import com.android.tools.r8.ir.conversion.passes.CommonSubexpressionElimination;
 import com.android.tools.r8.ir.conversion.passes.DexConstantOptimizer;
+import com.android.tools.r8.ir.conversion.passes.DivisionOptimizer;
 import com.android.tools.r8.ir.conversion.passes.FilledNewArrayRewriter;
+import com.android.tools.r8.ir.conversion.passes.KnownArrayLengthRewriter;
+import com.android.tools.r8.ir.conversion.passes.KotlinInlineMarkerRewriter;
+import com.android.tools.r8.ir.conversion.passes.KotlinValueClassUnboxBoxOptimizer;
+import com.android.tools.r8.ir.conversion.passes.MergeBranches;
 import com.android.tools.r8.ir.conversion.passes.MoveResultRewriter;
+import com.android.tools.r8.ir.conversion.passes.NaturalIntLoopOptimizer;
 import com.android.tools.r8.ir.conversion.passes.ParentConstructorHoistingCodeRewriter;
+import com.android.tools.r8.ir.conversion.passes.RedundantConstNumberRemover;
+import com.android.tools.r8.ir.conversion.passes.ReturnBlockCanonicalizerRewriter;
+import com.android.tools.r8.ir.conversion.passes.SplitBranch;
+import com.android.tools.r8.ir.conversion.passes.SplitIntSwitch;
+import com.android.tools.r8.ir.conversion.passes.SplitReturnRewriter;
 import com.android.tools.r8.ir.conversion.passes.StringConcatCreator;
+import com.android.tools.r8.ir.conversion.passes.StringConcatOptimizer;
 import com.android.tools.r8.ir.conversion.passes.StringConcatRemover;
 import com.android.tools.r8.ir.conversion.passes.StringSwitchConverter;
 import com.android.tools.r8.ir.conversion.passes.StringSwitchRemover;
 import com.android.tools.r8.ir.conversion.passes.ThrowCatchOptimizer;
+import com.android.tools.r8.ir.conversion.passes.TrivialCheckCastAndInstanceOfRemover;
 import com.android.tools.r8.ir.conversion.passes.TrivialPhiSimplifier;
 import com.android.tools.r8.ir.desugar.CfInstructionDesugaringCollectionSupplier;
 import com.android.tools.r8.ir.desugar.typeswitch.TypeSwitchIRRewriter;
@@ -56,8 +76,11 @@ import com.android.tools.r8.ir.optimize.DynamicTypeOptimization;
 import com.android.tools.r8.ir.optimize.IdempotentFunctionCallCanonicalizer;
 import com.android.tools.r8.ir.optimize.Inliner;
 import com.android.tools.r8.ir.optimize.Inliner.ConstraintWithTarget;
+import com.android.tools.r8.ir.optimize.RedundantLoadAndStoreElimination;
 import com.android.tools.r8.ir.optimize.ReflectionOptimizer;
 import com.android.tools.r8.ir.optimize.RemoveVerificationErrorForUnknownReturnedValues;
+import com.android.tools.r8.ir.optimize.ServiceLoaderRewriter;
+import com.android.tools.r8.ir.optimize.ShareInstanceGetInstructions;
 import com.android.tools.r8.ir.optimize.SimplifyDebugLocal;
 import com.android.tools.r8.ir.optimize.api.InstanceInitializerOutliner;
 import com.android.tools.r8.ir.optimize.classinliner.ClassInliner;
@@ -73,6 +96,7 @@ import com.android.tools.r8.ir.optimize.membervaluepropagation.D8MemberValueProp
 import com.android.tools.r8.ir.optimize.membervaluepropagation.MemberValuePropagation;
 import com.android.tools.r8.ir.optimize.membervaluepropagation.R8MemberValuePropagation;
 import com.android.tools.r8.ir.optimize.outliner.ReprocessingOptimizationCollection;
+import com.android.tools.r8.ir.optimize.string.StringBuilderAppendOptimizer;
 import com.android.tools.r8.lightir.IR2LirConverter;
 import com.android.tools.r8.lightir.Lir2IRConverter;
 import com.android.tools.r8.lightir.LirCode;
@@ -95,6 +119,7 @@ import com.android.tools.r8.utils.collections.ProgramMethodSet;
 import com.android.tools.r8.utils.internal.Action;
 import com.android.tools.r8.utils.internal.exceptions.Unreachable;
 import com.android.tools.r8.utils.timing.Timing;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
@@ -158,7 +183,7 @@ public class IRConverter {
     this.appView = appView;
     this.options = appView.options();
     this.simplifyDebugLocal = new SimplifyDebugLocal(appView);
-    this.rewriterPassCollection = CodeRewriterPassCollection.create(appView);
+    this.rewriterPassCollection = createMainIRCodeRewriterPassCollection(appView);
     this.classInitializerDefaultsOptimization =
         new ClassInitializerDefaultsOptimization(appView, this);
     this.deadCodeRemover = new DeadCodeRemover(appView);
@@ -265,6 +290,52 @@ public class IRConverter {
       this.typeSwitchIRRewriter = null;
       this.reprocessingOptimizationCollection = ReprocessingOptimizationCollection.createEmpty();
     }
+  }
+
+  public CodeRewriterPassCollection createMainIRCodeRewriterPassCollection(AppView<?> appView) {
+    List<CodeRewriterPass<?>> passes = new ArrayList<>();
+    if (appView.hasClassHierarchy()) {
+      passes.add(new KotlinValueClassUnboxBoxOptimizer(appView));
+    } else {
+      passes.add(new KotlinInlineMarkerRewriter(appView.withoutClassHierarchy()));
+    }
+    passes.add(new TrivialCheckCastAndInstanceOfRemover(appView));
+    passes.add(new EnumValueOptimizer(appView));
+    passes.add(new KnownArrayLengthRewriter(appView));
+    passes.add(new CommonSubexpressionElimination(appView));
+    passes.add(new ArrayConstructionSimplifier(appView));
+    passes.add(new MoveResultRewriter(appView));
+    passes.add(new SplitIntSwitch(appView));
+    passes.add(new SparseConditionalConstantPropagation(appView));
+    // NaturalIntLoopOptimizer should generally run after KnownArrayLengthRewriter and
+    // SparseConditionalConstantPropagation so that expressions such as array.length - 1 has been
+    // optimized into a constant.
+    passes.add(new NaturalIntLoopOptimizer(appView));
+    passes.add(new ThrowCatchOptimizer(appView));
+    passes.add(new BranchSimplifier(appView));
+    passes.add(new SplitBranch(appView));
+    passes.add(new MergeBranches(appView));
+    passes.add(new RedundantConstNumberRemover(appView));
+    if (appView.options().isRelease()) {
+      passes.add(new RedundantLoadAndStoreElimination(appView));
+    }
+    // Run after RedundantLoadAndStoreElimination so that there are fewer StringBuilder SSA values.
+    passes.add(new StringBuilderAppendOptimizer(appView));
+    passes.add(new BinopRewriter(appView));
+    passes.add(new ServiceLoaderRewriter(appView));
+    if (appView.options().isRelease()) {
+      passes.add(new SplitReturnRewriter(appView));
+      passes.add(new ReturnBlockCanonicalizerRewriter(appView));
+    }
+    passes.add(new ShareInstanceGetInstructions(appView));
+    passes.add(new DivisionOptimizer(appView));
+    if (appView.options().enableStringConcatInstruction) {
+      passes.add(new StringConcatOptimizer(appView));
+    }
+    if (appView.hasClassHierarchy() && appView.getAtomicFieldUpdaterInstrumentorInfo() != null) {
+      passes.add(new AtomicFieldUpdaterOptimizer(appView.withClassHierarchy()));
+    }
+    return CodeRewriterPassCollection.create(passes);
   }
 
   public IRConverter(AppInfo appInfo) {

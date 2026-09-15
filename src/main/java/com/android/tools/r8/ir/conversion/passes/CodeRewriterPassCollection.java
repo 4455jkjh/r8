@@ -6,22 +6,15 @@ package com.android.tools.r8.ir.conversion.passes;
 
 import com.android.tools.r8.contexts.CompilationContext.MethodProcessingContext;
 import com.android.tools.r8.graph.AppView;
-import com.android.tools.r8.ir.analysis.constant.SparseConditionalConstantPropagation;
 import com.android.tools.r8.ir.code.IRCode;
 import com.android.tools.r8.ir.conversion.IRConverter;
 import com.android.tools.r8.ir.conversion.MethodProcessor;
 import com.android.tools.r8.ir.conversion.passes.result.CodeRewriterResult;
 import com.android.tools.r8.ir.optimize.ListIterationRewriter;
-import com.android.tools.r8.ir.optimize.RedundantLoadAndStoreElimination;
-import com.android.tools.r8.ir.optimize.ServiceLoaderRewriter;
-import com.android.tools.r8.ir.optimize.ShareInstanceGetInstructions;
-import com.android.tools.r8.ir.optimize.enums.EnumValueOptimizer;
-import com.android.tools.r8.ir.optimize.string.StringBuilderAppendOptimizer;
 import com.android.tools.r8.utils.InternalOptions;
 import com.android.tools.r8.utils.internal.ArrayUtils;
 import com.android.tools.r8.utils.internal.collections.Pair;
 import com.android.tools.r8.utils.timing.Timing;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -29,62 +22,20 @@ public class CodeRewriterPassCollection {
 
   private final List<CodeRewriterPass<?>> passes;
 
-  public CodeRewriterPassCollection(CodeRewriterPass<?>... passes) {
-    this(Arrays.asList(passes));
-  }
-
-  public CodeRewriterPassCollection(List<CodeRewriterPass<?>> passes) {
+  private CodeRewriterPassCollection(List<CodeRewriterPass<?>> passes) {
     this.passes = passes;
   }
 
-  public static CodeRewriterPassCollection create(AppView<?> appView) {
-    List<CodeRewriterPass<?>> passes = new ArrayList<>();
-    if (appView.hasClassHierarchy()) {
-      passes.add(new KotlinValueClassUnboxBoxOptimizer(appView));
-    } else {
-      passes.add(new KotlinInlineMarkerRewriter(appView.withoutClassHierarchy()));
-    }
-    passes.add(new TrivialCheckCastAndInstanceOfRemover(appView));
-    passes.add(new EnumValueOptimizer(appView));
-    passes.add(new KnownArrayLengthRewriter(appView));
-    passes.add(new CommonSubexpressionElimination(appView));
-    passes.add(new ArrayConstructionSimplifier(appView));
-    passes.add(new MoveResultRewriter(appView));
-    passes.add(new SplitIntSwitch(appView));
-    passes.add(new SparseConditionalConstantPropagation(appView));
-    // NaturalIntLoopOptimizer should generally run after KnownArrayLengthRewriter and
-    // SparseConditionalConstantPropagation so that expressions such as array.length - 1 has been
-    // optimized into a constant.
-    passes.add(new NaturalIntLoopOptimizer(appView));
-    passes.add(new ThrowCatchOptimizer(appView));
-    passes.add(new BranchSimplifier(appView));
-    passes.add(new SplitBranch(appView));
-    passes.add(new MergeBranches(appView));
-    passes.add(new RedundantConstNumberRemover(appView));
-    if (appView.options().isRelease()) {
-      passes.add(new RedundantLoadAndStoreElimination(appView));
-    }
-    // Run after RedundantLoadAndStoreElimination so that there are fewer StringBuilder SSA values.
-    passes.add(new StringBuilderAppendOptimizer(appView));
-    passes.add(new BinopRewriter(appView));
-    passes.add(new ServiceLoaderRewriter(appView));
-    if (appView.options().isRelease()) {
-      passes.add(new SplitReturnRewriter(appView));
-      passes.add(new ReturnBlockCanonicalizerRewriter(appView));
-    }
-    passes.add(new ShareInstanceGetInstructions(appView));
-    passes.add(new DivisionOptimizer(appView));
-    if (appView.options().enableStringConcatInstruction) {
-      passes.add(new StringConcatOptimizer(appView));
-    }
-    if (appView.hasClassHierarchy() && appView.getAtomicFieldUpdaterInstrumentorInfo() != null) {
-      passes.add(new AtomicFieldUpdaterOptimizer(appView.withClassHierarchy()));
-    }
+  public static CodeRewriterPassCollection create(List<CodeRewriterPass<?>> passes) {
     return new CodeRewriterPassCollection(passes);
   }
 
+  public static CodeRewriterPassCollection create(CodeRewriterPass<?>... passes) {
+    return create(Arrays.asList(passes));
+  }
+
   public static CodeRewriterPassCollection createFromNullable(CodeRewriterPass<?>... passes) {
-    return new CodeRewriterPassCollection(
+    return CodeRewriterPassCollection.create(
         ArrayUtils.filterNulls(passes, CodeRewriterPass.EMPTY_ARRAY));
   }
 

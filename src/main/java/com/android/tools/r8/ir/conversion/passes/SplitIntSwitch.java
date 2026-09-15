@@ -21,7 +21,7 @@ import java.util.Map;
 
 public class SplitIntSwitch extends CodeRewriterPass<AppInfo> {
 
-  protected SplitIntSwitch(AppView<?> appView) {
+  public SplitIntSwitch(AppView<?> appView) {
     super(appView);
   }
 

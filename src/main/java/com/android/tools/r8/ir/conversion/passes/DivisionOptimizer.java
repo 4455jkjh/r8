@@ -19,7 +19,7 @@ import com.android.tools.r8.ir.conversion.passes.result.CodeRewriterResult;
 
 public class DivisionOptimizer extends CodeRewriterPass<AppInfo> {
 
-  protected DivisionOptimizer(AppView<?> appView) {
+  public DivisionOptimizer(AppView<?> appView) {
     super(appView);
   }
 
