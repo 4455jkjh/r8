@@ -80,7 +80,7 @@ import com.android.tools.r8.ir.optimize.RedundantLoadAndStoreElimination;
 import com.android.tools.r8.ir.optimize.ReflectionOptimizer;
 import com.android.tools.r8.ir.optimize.RemoveVerificationErrorForUnknownReturnedValues;
 import com.android.tools.r8.ir.optimize.ServiceLoaderRewriter;
-import com.android.tools.r8.ir.optimize.ShareInstanceGetInstructions;
+import com.android.tools.r8.ir.optimize.ShareFieldGetInstructions;
 import com.android.tools.r8.ir.optimize.SimplifyDebugLocal;
 import com.android.tools.r8.ir.optimize.api.InstanceInitializerOutliner;
 import com.android.tools.r8.ir.optimize.classinliner.ClassInliner;
@@ -345,7 +345,7 @@ public class IRConverter {
       passes.add(new SplitReturnRewriter(appView));
       passes.add(new ReturnBlockCanonicalizerRewriter(appView));
     }
-    passes.add(new ShareInstanceGetInstructions(appView));
+    passes.add(new ShareFieldGetInstructions(appView));
     passes.add(new DivisionOptimizer(appView));
     if (appView.options().enableStringConcatInstruction) {
       passes.add(new StringConcatOptimizer(appView));

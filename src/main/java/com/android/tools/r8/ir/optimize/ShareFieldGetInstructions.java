@@ -1,4 +1,4 @@
-// Copyright (c) 2025, the R8 project authors. Please see the AUTHORS file
+// Copyright (c) 2026, the R8 project authors. Please see the AUTHORS file
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
@@ -21,15 +21,15 @@ import com.google.common.collect.Sets;
 import java.util.List;
 import java.util.Set;
 
-public class ShareInstanceGetInstructions extends CodeRewriterPass<AppInfo> {
+public class ShareFieldGetInstructions extends CodeRewriterPass<AppInfo> {
 
-  public ShareInstanceGetInstructions(AppView<?> appView) {
+  public ShareFieldGetInstructions(AppView<?> appView) {
     super(appView);
   }
 
   @Override
   protected String getRewriterId() {
-    return "ShareInstanceGetInstructions";
+    return "ShareFieldGetInstructions";
   }
 
   @Override
