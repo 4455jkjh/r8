@@ -61,8 +61,7 @@ public class VerticalClassMergerStaticFieldShadowingTest extends TestBase {
               assertThat(allow, isPresent());
             })
         .run(parameters.getRuntime(), Main.class)
-        // TODO(b/557269792): Should be "false", but rewritten to Defaults.requiredLevel (0).
-        .assertSuccessWithOutputLines("true");
+        .assertSuccessWithOutputLines("false");
   }
 
   @NoVerticalClassMerging

@@ -6,8 +6,8 @@ package com.android.tools.r8.graph.lens;
 
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.DexClass;
-import com.android.tools.r8.graph.DexClassAndField;
 import com.android.tools.r8.graph.DexDefinitionSupplier;
+import com.android.tools.r8.graph.DexEncodedField;
 import com.android.tools.r8.graph.DexField;
 import com.android.tools.r8.graph.DexMethod;
 import com.android.tools.r8.graph.DexType;
@@ -145,15 +145,21 @@ public class NestedGraphLens extends DefaultNonIdentityGraphLens {
         DexType rewrittenHolder = getNextClassType(originalHolder);
         rewrittenNonReboundReference =
             rewrittenReboundReference.withHolder(rewrittenHolder, dexItemFactory());
-        // When vertical class merging preserve non-rebound method references when we can hit a
-        // collision due to field shadowing (b/348202700).
+        // When vertical class merging preserve non-rebound field references then we can hit a
+        // collision due to field shadowing (b/348202700, b/557269792).
         if (isVerticalClassMergerLens() && rewrittenHolder.isNotIdenticalTo(originalHolder)) {
-          DexClassAndField collision = appView.definitionFor(rewrittenNonReboundReference);
-          if (collision != null) {
-            assert !asVerticalClassMergerLens().hasBeenMerged(collision.getHolder().getSuperType());
+          DexClass rewrittenHolderClass = appView.definitionFor(rewrittenHolder);
+          DexEncodedField resolvedField =
+              appView
+                  .appInfoWithClassHierarchy()
+                  .resolveFieldOn(rewrittenHolderClass, rewrittenNonReboundReference)
+                  .getResolvedField();
+          if (resolvedField != null
+              && resolvedField.getReference().isNotIdenticalTo(rewrittenReboundReference)) {
+            assert !asVerticalClassMergerLens().hasBeenMerged(rewrittenHolderClass.getSuperType());
             rewrittenNonReboundReference =
                 rewrittenReboundReference.withHolder(
-                    collision.getHolder().getSuperType(), dexItemFactory());
+                    rewrittenHolderClass.getSuperType(), dexItemFactory());
           }
         }
       }
