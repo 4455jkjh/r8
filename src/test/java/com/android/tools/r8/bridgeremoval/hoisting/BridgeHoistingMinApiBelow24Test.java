@@ -3,6 +3,8 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8.bridgeremoval.hoisting;
 
+import static org.junit.Assume.assumeTrue;
+
 import com.android.tools.r8.NeverClassInline;
 import com.android.tools.r8.NeverInline;
 import com.android.tools.r8.NoHorizontalClassMerging;
@@ -11,6 +13,7 @@ import com.android.tools.r8.NoVerticalClassMerging;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
+import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.ToolHelper.DexVm.Version;
 import com.android.tools.r8.utils.AndroidApiLevel;
 import java.util.Iterator;
@@ -28,10 +31,7 @@ public class BridgeHoistingMinApiBelow24Test extends TestBase {
 
   @Parameters(name = "{0}")
   public static TestParametersCollection data() {
-    return getTestParameters()
-        .withDefaultCfRuntime()
-        .withDexRuntimesStartingFromIncluding(Version.V7_0_0)
-        .build();
+    return getTestParameters().withAllRuntimesAndApiLevels().build();
   }
 
   @Test
@@ -45,22 +45,22 @@ public class BridgeHoistingMinApiBelow24Test extends TestBase {
 
   @Test
   public void testR8() throws Exception {
-    testForR8(parameters.getBackend())
+    assumeTrue(parameters.isCfRuntime() || parameters.getApiLevel().isLessThan(AndroidApiLevel.N));
+    testForR8(parameters)
         .addInnerClasses(getClass())
         .addKeepMainRule(Main.class)
-        .addDontObfuscate()
+        .addLibraryFiles(ToolHelper.getMostRecentAndroidJar())
         .enableInliningAnnotations()
         .enableNeverClassInliningAnnotations()
         .enableNoHorizontalClassMergingAnnotations()
         .enableNoMethodStaticizingAnnotations()
         .enableNoVerticalClassMergingAnnotations()
-        .applyIf(parameters.isDexRuntime(), b -> b.setMinApi(AndroidApiLevel.L))
         .run(parameters.getRuntime(), Main.class)
-        // TODO(b/557271579): At min-api < 24, canUseDefaultAndStaticInterfaceMethods() is false,
-        //  so the default interface methods check is skipped and B1.remove() is hoisted to
-        //  A.remove(). On API >= 24 runtimes, D.remove() dispatches to A.doRemove() instead of
-        //  Iterator.remove().
-        .assertSuccessWithOutputLines("A.doRemove");
+        .applyIf(
+            parameters.isCfRuntime()
+                || parameters.getDexRuntimeVersion().isNewerThanOrEqual(Version.V7_0_0),
+            rr -> rr.assertSuccessWithOutputLines("Caught UOE"),
+            rr -> rr.assertFailureWithErrorThatThrows(AbstractMethodError.class));
   }
 
   @NeverClassInline

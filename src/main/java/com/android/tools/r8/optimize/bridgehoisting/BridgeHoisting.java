@@ -183,19 +183,17 @@ public class BridgeHoisting {
           return;
         }
 
-        if (appView.options().canUseDefaultAndStaticInterfaceMethods()) {
-          DexMethodSignatureSet defaultInterfaceMethodsBelowSubclass =
-              getOrComputeDefaultInterfaceMethodsOnClassAndSubclasses(
-                  subclass, immediateSubtypingInfo);
-          if (defaultInterfaceMethodsBelowSubclass.contains(method)) {
-            // Hoisting would change the program behavior. Virtual methods on classes takes
-            // precedence over default interface methods. By hoisting the current bridge method to
-            // the superclass, we may change virtual calls that would previously have dispatched to
-            // a default interface method into calling the hoisted bridge method.
-            //
-            // See also b/369040938.
-            return;
-          }
+        DexMethodSignatureSet defaultInterfaceMethodsBelowSubclass =
+            getOrComputeDefaultInterfaceMethodsOnClassAndSubclasses(
+                subclass, immediateSubtypingInfo);
+        if (defaultInterfaceMethodsBelowSubclass.contains(method)) {
+          // Hoisting would change the program behavior. Virtual methods on classes takes
+          // precedence over default interface methods. By hoisting the current bridge method to
+          // the superclass, we may change virtual calls that would previously have dispatched to
+          // a default interface method into calling the hoisted bridge method.
+          //
+          // See also b/369040938.
+          return;
         }
 
         // The fact that this class does not declare the bridge (or the bridge is abstract) should
@@ -437,7 +435,7 @@ public class BridgeHoisting {
       DexMethodSignatureSet inheritedDefaultInterfaceMethods = DexMethodSignatureSet.create();
       // First add the default interface methods that are present on the interface directly.
       for (DexEncodedMethod defaultInterfaceMethod :
-          itf.virtualMethods(DexEncodedMethod::hasCode)) {
+          itf.virtualMethods(DexEncodedMethod::isDefaultMethod)) {
         inheritedDefaultInterfaceMethods.add(defaultInterfaceMethod);
       }
       // Then add the default interface methods that are present on the superinterfaces.
