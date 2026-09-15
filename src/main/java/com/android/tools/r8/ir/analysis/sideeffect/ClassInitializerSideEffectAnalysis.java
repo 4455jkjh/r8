@@ -92,6 +92,12 @@ public class ClassInitializerSideEffectAnalysis {
         continue;
       }
 
+      // Our own storeStoreFence instructions can safely be postponed. They merely denote the end
+      // of the inlined constructor to ensure final field semantics.
+      if (instruction.isStoreStoreFence()) {
+        continue;
+      }
+
       // For other instructions, bail out if they may have side effects.
       if (instruction.instructionMayHaveSideEffects(appView, context)) {
         return ClassInitializerSideEffect.SIDE_EFFECTS_THAT_CANNOT_BE_POSTPONED;
