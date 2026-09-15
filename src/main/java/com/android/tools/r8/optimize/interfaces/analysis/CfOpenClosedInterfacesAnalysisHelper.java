@@ -4,6 +4,7 @@
 package com.android.tools.r8.optimize.interfaces.analysis;
 
 import com.android.tools.r8.cf.code.CfArrayStore;
+import com.android.tools.r8.cf.code.CfFrame;
 import com.android.tools.r8.cf.code.CfInstanceFieldWrite;
 import com.android.tools.r8.cf.code.CfInstruction;
 import com.android.tools.r8.cf.code.CfInvoke;
@@ -62,6 +63,8 @@ class CfOpenClosedInterfacesAnalysisHelper {
     ConcreteCfFrameState concreteState = state.asConcrete();
     if (instruction.isArrayStore()) {
       processArrayStore(instruction.asArrayStore(), concreteState);
+    } else if (instruction.isFrame()) {
+      processFrame(instruction.asFrame(), concreteState);
     } else if (instruction.isInstanceFieldPut()) {
       processInstanceFieldPut(instruction.asInstanceFieldPut(), concreteState);
     } else if (instruction.isInvoke()) {
@@ -97,6 +100,10 @@ class CfOpenClosedInterfacesAnalysisHelper {
         options);
   }
 
+  private void processFrame(CfFrame frame, ConcreteCfFrameState state) {
+    state.acceptAssignments(frame, this::processAssignment);
+  }
+
   private void processInstanceFieldPut(
       CfInstanceFieldWrite instanceFieldPut, ConcreteCfFrameState state) {
     state.peekStackElement(
@@ -127,6 +134,20 @@ class CfOpenClosedInterfacesAnalysisHelper {
       CfStaticFieldWrite staticFieldPut, ConcreteCfFrameState state) {
     state.peekStackElement(
         head -> processAssignment(head, staticFieldPut.getField().getType()), options);
+  }
+
+  private void processAssignment(FrameType fromType, FrameType toType) {
+    if (toType.isInitializedNonNullReferenceTypeWithInterfaces()) {
+      processAssignment(
+          fromType,
+          toType
+              .asInitializedNonNullReferenceTypeWithInterfaces()
+              .getInitializedTypeWithInterfaces());
+    } else if (toType.isInitializedNonNullReferenceTypeWithoutInterfaces()) {
+      processAssignment(
+          fromType,
+          toType.asInitializedNonNullReferenceTypeWithoutInterfaces().getInitializedType());
+    }
   }
 
   private void processAssignment(FrameType fromType, DexType toType) {

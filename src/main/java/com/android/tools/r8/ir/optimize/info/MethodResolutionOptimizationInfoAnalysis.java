@@ -160,7 +160,9 @@ public class MethodResolutionOptimizationInfoAnalysis {
           });
       ObjectAllocationInfoCollection objectAllocationInfoCollection =
           appViewWithLiveness.appInfo().getObjectAllocationInfoCollection();
-      if (objectAllocationInfoCollection.isImmediateInterfaceOfInstantiatedLambda(clazz)) {
+      if (objectAllocationInfoCollection.isImmediateInterfaceOfInstantiatedLambda(clazz)
+          || (clazz.isInterface()
+              && appView.getOpenClosedInterfacesCollection().isMaybeOpen(clazz))) {
         for (DexEncodedMethod method : clazz.virtualMethods()) {
           newState.joinMethodOptimizationInfo(
               appViewWithLiveness,

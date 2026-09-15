@@ -12,7 +12,9 @@ import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.DexItemFactory;
 import com.android.tools.r8.graph.DexType;
 import com.android.tools.r8.ir.code.ValueType;
+import com.android.tools.r8.utils.internal.IntObjObjToObjFunction;
 import com.android.tools.r8.utils.internal.MapUtils;
+import com.android.tools.r8.utils.internal.TraversalContinuation;
 import it.unimi.dsi.fastutil.ints.Int2ObjectSortedMap;
 import java.util.Arrays;
 import java.util.Deque;
@@ -146,6 +148,28 @@ public class CfAssignability {
 
   public AssignabilityResult isLocalsAssignable(
       Int2ObjectSortedMap<FrameType> sourceLocals, Int2ObjectSortedMap<FrameType> targetLocals) {
+    TraversalContinuation<FailedAssignabilityResult, ?> traversalContinuation =
+        traverseLocalsAssignments(
+            sourceLocals,
+            targetLocals,
+            (i, sourceType, destinationType) -> {
+              if (isFrameTypeAssignable(sourceType, destinationType)) {
+                return TraversalContinuation.doContinue();
+              }
+              return TraversalContinuation.doBreak(
+                  reportFailedAssignabilityResult(
+                      sourceLocals, targetLocals, sourceType, destinationType, i));
+            });
+    if (traversalContinuation.shouldBreak()) {
+      return traversalContinuation.asBreak().getValue();
+    }
+    return new SuccessfulAssignabilityResult();
+  }
+
+  public static <TB, TC> TraversalContinuation<TB, TC> traverseLocalsAssignments(
+      Int2ObjectSortedMap<FrameType> sourceLocals,
+      Int2ObjectSortedMap<FrameType> targetLocals,
+      IntObjObjToObjFunction<FrameType, FrameType, TraversalContinuation<TB, TC>> fn) {
     int localsLastKey = sourceLocals.isEmpty() ? -1 : sourceLocals.lastIntKey();
     int otherLocalsLastKey = targetLocals.isEmpty() ? -1 : targetLocals.lastIntKey();
     int maxKey = Math.max(localsLastKey, otherLocalsLastKey);
@@ -157,12 +181,13 @@ public class CfAssignability {
       if (sourceType.isWide() && destinationType.isOneWord()) {
         destinationType = FrameType.twoWord();
       }
-      if (!isFrameTypeAssignable(sourceType, destinationType)) {
-        return reportFailedAssignabilityResult(
-            sourceLocals, targetLocals, sourceType, destinationType, i);
+      TraversalContinuation<TB, TC> traversalContinuation =
+          fn.apply(i, sourceType, destinationType);
+      if (traversalContinuation.shouldBreak()) {
+        return traversalContinuation;
       }
     }
-    return new SuccessfulAssignabilityResult();
+    return TraversalContinuation.doContinue();
   }
 
   private FailedAssignabilityResult reportFailedAssignabilityResult(
@@ -195,27 +220,53 @@ public class CfAssignability {
               + Arrays.toString(targetStack.toArray())
               + " is not the same size");
     }
-    Iterator<PreciseFrameType> otherIterator = targetStack.iterator();
-    int stackIndex = 0;
-    for (PreciseFrameType sourceType : sourceStack) {
-      PreciseFrameType destinationType = otherIterator.next();
-      if (!isFrameTypeAssignable(sourceType, destinationType)) {
-        return new FailedAssignabilityResult(
-            "Could not assign '"
-                + Arrays.toString(sourceStack.toArray())
-                + "' to '"
-                + Arrays.toString(targetStack.toArray())
-                + "'. The stack value at index "
-                + stackIndex
-                + " (from top) with '"
-                + sourceType
-                + "' not being assignable to '"
-                + destinationType
-                + "'");
-      }
-      stackIndex++;
+    TraversalContinuation<FailedAssignabilityResult, ?> traversalContinuation =
+        traverseStackAssignments(
+            sourceStack,
+            targetStack,
+            (stackIndex, sourceType, destinationType) -> {
+              if (isFrameTypeAssignable(sourceType, destinationType)) {
+                return TraversalContinuation.doContinue();
+              }
+              return TraversalContinuation.doBreak(
+                  new FailedAssignabilityResult(
+                      "Could not assign '"
+                          + Arrays.toString(sourceStack.toArray())
+                          + "' to '"
+                          + Arrays.toString(targetStack.toArray())
+                          + "'. The stack value at index "
+                          + stackIndex
+                          + " (from top) with '"
+                          + sourceType
+                          + "' not being assignable to '"
+                          + destinationType
+                          + "'"));
+            });
+    if (traversalContinuation.shouldBreak()) {
+      return traversalContinuation.asBreak().getValue();
     }
     return new SuccessfulAssignabilityResult();
+  }
+
+  public static <TB, TC> TraversalContinuation<TB, TC> traverseStackAssignments(
+      Deque<PreciseFrameType> sourceStack,
+      Deque<PreciseFrameType> targetStack,
+      IntObjObjToObjFunction<PreciseFrameType, PreciseFrameType, TraversalContinuation<TB, TC>>
+          fn) {
+    if (sourceStack.size() == targetStack.size()) {
+      Iterator<PreciseFrameType> otherIterator = targetStack.iterator();
+      int stackIndex = 0;
+      for (PreciseFrameType sourceType : sourceStack) {
+        PreciseFrameType destinationType = otherIterator.next();
+        TraversalContinuation<TB, TC> traversalContinuation =
+            fn.apply(stackIndex, sourceType, destinationType);
+        if (traversalContinuation.shouldBreak()) {
+          return traversalContinuation;
+        }
+        stackIndex++;
+      }
+    }
+    return TraversalContinuation.doContinue();
   }
 
   public abstract static class AssignabilityResult {

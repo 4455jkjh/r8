@@ -63,11 +63,12 @@ public class CfFrameVerifierTypeConfusionTest extends TestBase {
             "-neverinline class "
                 + AuthCheckFactory.class.getTypeName()
                 + " { static *** make(...); }")
+        .addOptionsModification(
+            options -> options.getOpenClosedInterfacesOptions().suppressAllOpenInterfaces())
         .enableNoHorizontalClassMergingAnnotations()
         .enableNoVerticalClassMergingAnnotations()
         .run(parameters.getRuntime(), Main.class)
-        // TODO(b/557269993): Should fail with ICCE instead of devirtualizing to RealAuth.
-        .assertSuccessWithOutputLines("PERMITTED");
+        .assertSuccessWithOutputLines("ICCE");
   }
 
   private List<Class<?>> getProgramClasses() {

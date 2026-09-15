@@ -28,6 +28,7 @@ import com.android.tools.r8.utils.InternalOptions;
 import com.android.tools.r8.utils.internal.BooleanUtils;
 import com.android.tools.r8.utils.internal.FunctionUtils;
 import com.android.tools.r8.utils.internal.ObjectUtils;
+import com.android.tools.r8.utils.internal.TraversalContinuation;
 import com.google.common.collect.Iterables;
 import it.unimi.dsi.fastutil.ints.Int2ObjectAVLTreeMap;
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
@@ -37,6 +38,7 @@ import it.unimi.dsi.fastutil.objects.ObjectBidirectionalIterator;
 import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.Iterator;
+import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.UnaryOperator;
@@ -72,6 +74,23 @@ public class ConcreteCfFrameState extends CfFrameState {
   @Override
   public ConcreteCfFrameState asConcrete() {
     return this;
+  }
+
+  public void acceptAssignments(CfFrame frame, BiConsumer<FrameType, FrameType> consumer) {
+    CfAssignability.traverseLocalsAssignments(
+        locals,
+        frame.getLocals(),
+        (i, sourceType, destinationType) -> {
+          consumer.accept(sourceType, destinationType);
+          return TraversalContinuation.doContinue();
+        });
+    CfAssignability.traverseStackAssignments(
+        stack,
+        frame.getStack(),
+        (i, sourceType, destinationType) -> {
+          consumer.accept(sourceType, destinationType);
+          return TraversalContinuation.doContinue();
+        });
   }
 
   @Override
