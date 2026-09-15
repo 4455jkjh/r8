@@ -581,7 +581,7 @@ public class IRConverter {
     new AtomicUpdaterInitializationRemover(appView)
         .run(code, methodProcessor, methodProcessingContext, timing);
 
-    assertionsRewriter.run(method, code, deadCodeRemover, timing);
+    assertionsRewriter.run(code, methodProcessor, methodProcessingContext, timing);
     previous = printMethod(code, "IR after assertions rewriter (SSA)", previous);
 
     timing.begin("Run proto shrinking tasks");

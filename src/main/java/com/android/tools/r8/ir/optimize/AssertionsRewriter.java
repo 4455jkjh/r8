@@ -5,6 +5,7 @@
 package com.android.tools.r8.ir.optimize;
 
 import com.android.tools.r8.AssertionsConfiguration;
+import com.android.tools.r8.graph.AppInfo;
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.DexClass;
 import com.android.tools.r8.graph.DexEncodedMethod;
@@ -24,6 +25,9 @@ import com.android.tools.r8.ir.code.InvokeStatic;
 import com.android.tools.r8.ir.code.StaticGet;
 import com.android.tools.r8.ir.code.StaticPut;
 import com.android.tools.r8.ir.code.Throw;
+import com.android.tools.r8.ir.conversion.MethodProcessor;
+import com.android.tools.r8.ir.conversion.passes.CodeRewriterPass;
+import com.android.tools.r8.ir.conversion.passes.result.CodeRewriterResult;
 import com.android.tools.r8.references.MethodReference;
 import com.android.tools.r8.utils.AssertionConfigurationWithDefault;
 import com.android.tools.r8.utils.DescriptorUtils;
@@ -42,7 +46,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-public class AssertionsRewriter {
+public class AssertionsRewriter extends CodeRewriterPass<AppInfo> {
 
   private static class ConfigurationEntryWithDexString {
 
@@ -54,7 +58,7 @@ public class AssertionsRewriter {
       this.entry = configuration;
       switch (configuration.getScope()) {
         case PACKAGE:
-          if (configuration.getValue().length() == 0) {
+          if (configuration.getValue().isEmpty()) {
             value = dexItemFactory.createString("");
           } else {
             value =
@@ -109,16 +113,15 @@ public class AssertionsRewriter {
     }
   }
 
-  private final AppView<?> appView;
-  private final DexItemFactory dexItemFactory;
+  private final DeadCodeRemover deadCodeRemover;
   private final ConfigurationEntryWithDexString defaultConfiguration;
   private final List<ConfigurationEntryWithDexString> configuration;
   private final ConfigurationEntryWithDexString kotlinTransformation;
   private final boolean enabled;
 
   public AssertionsRewriter(AppView<?> appView) {
-    this.appView = appView;
-    this.dexItemFactory = appView.dexItemFactory();
+    super(appView);
+    this.deadCodeRemover = new DeadCodeRemover(appView);
     this.enabled = isEnabled(appView.options());
     if (!enabled) {
       defaultConfiguration = null;
@@ -136,6 +139,16 @@ public class AssertionsRewriter {
             .collect(Collectors.toList());
     kotlinTransformation =
         getTransformationForType(appView.dexItemFactory().kotlin().assertions().type);
+  }
+
+  @Override
+  protected String getRewriterId() {
+    return "AssertionsRewriter";
+  }
+
+  @Override
+  protected boolean shouldRewriteCode(IRCode code, MethodProcessor methodProcessor) {
+    return enabled;
   }
 
   // Static method used by other analyses to see if additional analysis is required to support
@@ -157,7 +170,7 @@ public class AssertionsRewriter {
           result = entry;
           break;
         case PACKAGE:
-          if (entry.value.length() == 0) {
+          if (entry.value.isEmpty()) {
             if (!type.descriptor.contains(dexItemFactory.descriptorSeparator)) {
               result = entry;
             }
@@ -288,8 +301,8 @@ public class AssertionsRewriter {
    * }
    * </pre>
    *
-   * <p>(actual code
-   * https://github.com/JetBrains/kotlin/blob/master/libraries/stdlib/jvm/src/kotlin/util/AssertionsJVM.kt)
+   * <p>(actual code <a
+   * href="https://github.com/JetBrains/kotlin/blob/master/libraries/stdlib/jvm/src/kotlin/util/AssertionsJVM.kt">...</a>)
    *
    * <p>The class:
    *
@@ -341,20 +354,12 @@ public class AssertionsRewriter {
    * NOTE: that in Kotlin the assertion condition is always calculated. So it is still present in
    * the code and even for AssertionTransformation.DISABLE.
    */
-  public void run(
-      DexEncodedMethod method, IRCode code, DeadCodeRemover deadCodeRemover, Timing timing) {
-    if (enabled) {
-      timing.begin("Rewrite assertions");
-      boolean needsDeadCodeRemoval = runInternal(method, code);
-      if (needsDeadCodeRemoval) {
-        AffectedValues affectedValues = code.removeUnreachableBlocks();
-        affectedValues.narrowingWithAssumeRemoval(appView, code);
-        code.removeRedundantBlocks();
-        deadCodeRemover.run(code, timing);
-      }
-      assert code.isConsistentSSA(appView);
-      timing.end();
-    }
+  @Override
+  protected CodeRewriterResult rewriteCode(IRCode code) {
+    assert enabled;
+    DexEncodedMethod method = code.context().getDefinition();
+    boolean changed = runInternal(method, code);
+    return CodeRewriterResult.hasChanged(changed);
   }
 
   @SuppressWarnings("ReferenceEquality")
@@ -516,7 +521,14 @@ public class AssertionsRewriter {
     if (changed) {
       code.removeRedundantBlocks();
     }
-    return needsDeadCodeRemoval;
+    if (needsDeadCodeRemoval) {
+      AffectedValues affectedValues = code.removeUnreachableBlocks();
+      affectedValues.narrowingWithAssumeRemoval(appView, code);
+      code.removeRedundantBlocks();
+      // The deadCodeRemover timing is part of the AssertionsRewriter timing.
+      deadCodeRemover.run(code, Timing.empty());
+    }
+    return changed;
   }
 
   @SuppressWarnings("ReferenceEquality")
