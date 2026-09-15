@@ -4,6 +4,7 @@
 
 package com.android.tools.r8.ir.optimize;
 
+import com.android.tools.r8.graph.AppInfo;
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.DebugLocalInfo;
 import com.android.tools.r8.graph.DexString;
@@ -13,17 +14,30 @@ import com.android.tools.r8.ir.code.Instruction;
 import com.android.tools.r8.ir.code.InstructionListIterator;
 import com.android.tools.r8.ir.code.Position;
 import com.android.tools.r8.ir.code.Value;
+import com.android.tools.r8.ir.conversion.MethodProcessor;
+import com.android.tools.r8.ir.conversion.passes.CodeRewriterPass;
+import com.android.tools.r8.ir.conversion.passes.result.CodeRewriterResult;
 import com.android.tools.r8.utils.internal.exceptions.Unreachable;
 
-public class SimplifyDebugLocal {
-
-  private final AppView<?> appView;
+public class SimplifyDebugLocal extends CodeRewriterPass<AppInfo> {
 
   public SimplifyDebugLocal(AppView<?> appView) {
-    this.appView = appView;
+    super(appView);
   }
 
-  public void simplifyDebugLocals(IRCode code) {
+  @Override
+  protected String getRewriterId() {
+    return "SimplifyDebugLocal";
+  }
+
+  @Override
+  protected boolean shouldRewriteCode(IRCode code, MethodProcessor methodProcessor) {
+    return true;
+  }
+
+  @Override
+  protected CodeRewriterResult rewriteCode(IRCode code) {
+    boolean changed = false;
     for (BasicBlock block : code.blocks) {
       InstructionListIterator iterator = block.listIterator();
       while (iterator.hasNext()) {
@@ -38,6 +52,7 @@ public class SimplifyDebugLocal {
               && inValue.numberOfAllUsers() == 1
               && inValue.definition != null
               && !hasLocalOrLineChangeBetween(inValue.definition, instruction, localName)) {
+            changed = true;
             inValue.setLocalInfo(localInfo);
             instruction.outValue().replaceUsers(inValue);
             Value overwrittenLocal = instruction.removeDebugValue(localInfo);
@@ -55,8 +70,10 @@ public class SimplifyDebugLocal {
         }
       }
     }
-    code.removeRedundantBlocks();
-    assert code.isConsistentSSA(appView);
+    if (changed) {
+      code.removeRedundantBlocks();
+    }
+    return CodeRewriterResult.hasChanged(changed);
   }
 
   // TODO(mikaelpeltier) Manage that from and to instruction do not belong to the same block.

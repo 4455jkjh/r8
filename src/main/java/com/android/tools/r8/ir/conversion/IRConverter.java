@@ -577,7 +577,7 @@ public class IRConverter {
     }
 
     if (isDebugMode) {
-      simplifyDebugLocal.simplifyDebugLocals(code);
+      simplifyDebugLocal.run(code, methodProcessor, methodProcessingContext, timing);
     }
 
     new AtomicUpdaterInitializationRemover(appView)
