@@ -84,7 +84,12 @@ public class DexDistributionRefinement {
       Timing timing)
       throws ExecutionException {
     List<VirtualFile> filesSubjectToRefinement =
-        ListUtils.filter(cycler.getFilesForDistribution(), f -> !f.isEmpty() && predicate.test(f));
+        ListUtils.filter(
+            cycler.getFilesForDistribution(),
+            f ->
+                !f.isEmpty()
+                    && predicate.test(f)
+                    && (appView.options().canUseMultidex() || f.getId() != 0));
     if (filesSubjectToRefinement.size() > 1) {
       timing.begin("Dex distribution refinement");
       new DexDistributionRefinement(appView, cycler, filesSubjectToRefinement)
