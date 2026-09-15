@@ -426,6 +426,28 @@ public class BinopRewriter extends CodeRewriterPass<AppInfo> {
           binop.rightValue())) {
         return true;
       }
+      if (binop.isDiv()) {
+        // x / -1 => x * -1
+        Integer intValue = extractIntValueOrNull(constNumber);
+        if (intValue != null && intValue.equals(-1)) {
+          replaceBinop(iterator, code, binop.leftValue(), binop.rightValue(), BinopDescriptor.MUL);
+          return true;
+        }
+      }
+      if (binop.isRem()) {
+        // x % 1 ==> 0, x % -1 ==> 0.
+        Integer intValue = extractIntValueOrNull(constNumber);
+        if (intValue != null && (intValue.equals(-1) || intValue.equals(1))) {
+          iterator.previous();
+          Value value =
+              iterator.insertConstNumberInstruction(
+                  code, appView.options(), 0L, binop.outValue().getType());
+          iterator.next();
+          binop.outValue().replaceUsers(value);
+          iterator.remove();
+          return true;
+        }
+      }
     }
     if (binop.leftValue() == binop.rightValue()) {
       if (binop.isXor() || binop.isSub()) {
@@ -492,7 +514,22 @@ public class BinopRewriter extends CodeRewriterPass<AppInfo> {
       Value identityReplacement,
       Integer absorbingElement,
       Value absorbingReplacement) {
-    int intValue;
+    Integer intValue = extractIntValueOrNull(constNumber);
+    if (identityElement != null && identityElement.equals(intValue)) {
+      binop.outValue().replaceUsers(identityReplacement);
+      iterator.remove();
+      return true;
+    }
+    if (absorbingElement != null && absorbingElement.equals(intValue)) {
+      binop.outValue().replaceUsers(absorbingReplacement);
+      iterator.remove();
+      return true;
+    }
+    return false;
+  }
+
+  private static Integer extractIntValueOrNull(ConstNumber constNumber) {
+    Integer intValue;
     if (constNumber.outValue().getType().isInt()) {
       intValue = constNumber.getIntValue();
     } else {
@@ -500,19 +537,9 @@ public class BinopRewriter extends CodeRewriterPass<AppInfo> {
       long longValue = constNumber.getLongValue();
       intValue = (int) longValue;
       if ((long) intValue != longValue) {
-        return false;
+        intValue = null;
       }
     }
-    if (identityElement != null && identityElement == intValue) {
-      binop.outValue().replaceUsers(identityReplacement);
-      iterator.remove();
-      return true;
-    }
-    if (absorbingElement != null && absorbingElement == intValue) {
-      binop.outValue().replaceUsers(absorbingReplacement);
-      iterator.remove();
-      return true;
-    }
-    return false;
+    return intValue;
   }
 }
