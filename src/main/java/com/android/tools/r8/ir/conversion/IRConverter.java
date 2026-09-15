@@ -131,6 +131,7 @@ public class IRConverter {
 
   public final AppView<?> appView;
 
+  protected final CodeRewriterPassCollection initialRewriterPassCollection;
   protected final CodeRewriterPassCollection rewriterPassCollection;
   public final ReprocessingOptimizationCollection reprocessingOptimizationCollection;
   private final ClassInitializerDefaultsOptimization classInitializerDefaultsOptimization;
@@ -140,7 +141,6 @@ public class IRConverter {
   protected final IdempotentFunctionCallCanonicalizer idempotentFunctionCallCanonicalizer;
   private final ClassInliner classInliner;
   protected final InternalOptions options;
-  public final SimplifyDebugLocal simplifyDebugLocal;
   public final MemberValuePropagation<?> memberValuePropagation;
   private final LensCodeRewriter lensCodeRewriter;
   protected final Inliner inliner;
@@ -153,7 +153,6 @@ public class IRConverter {
   public final AssumeInserter assumeInserter;
   private final DynamicTypeOptimization dynamicTypeOptimization;
 
-  final AssertionsRewriter assertionsRewriter;
   public final DeadCodeRemover deadCodeRemover;
 
   private final MethodOptimizationInfoCollector methodOptimizationInfoCollector;
@@ -182,12 +181,11 @@ public class IRConverter {
     assert appView.options().programConsumer != null;
     this.appView = appView;
     this.options = appView.options();
-    this.simplifyDebugLocal = new SimplifyDebugLocal(appView);
-    this.rewriterPassCollection = createMainIRCodeRewriterPassCollection(appView);
+    this.initialRewriterPassCollection = createInitialIRCodeRewriterPassCollection();
+    this.rewriterPassCollection = createMainIRCodeRewriterPassCollection();
     this.classInitializerDefaultsOptimization =
         new ClassInitializerDefaultsOptimization(appView, this);
     this.deadCodeRemover = new DeadCodeRemover(appView);
-    this.assertionsRewriter = new AssertionsRewriter(appView);
     this.idempotentFunctionCallCanonicalizer = new IdempotentFunctionCallCanonicalizer(appView);
     this.neverMerge =
         options.neverMerge.map(
@@ -292,7 +290,27 @@ public class IRConverter {
     }
   }
 
-  public CodeRewriterPassCollection createMainIRCodeRewriterPassCollection(AppView<?> appView) {
+  public CodeRewriterPassCollection createInitialIRCodeRewriterPassCollection() {
+    List<CodeRewriterPass<?>> passes = new ArrayList<>();
+    if (!options.getTestingOptions().isSupportedLirPhase()) {
+      passes.add(new StringSwitchConverter(appView));
+    }
+    // The same is true for StringConcat (and also applies to CF).
+    if (appView.options().enableStringConcatInstruction
+        && (!options.getTestingOptions().isSupportedLirPhase()
+            || options.isGeneratingClassFiles())) {
+      passes.add(new StringConcatCreator(appView));
+    }
+    if (options.canHaveArtStringNewInitBug()) {
+      passes.add(new TrivialPhiSimplifier(appView));
+    }
+    passes.add(new SimplifyDebugLocal(appView));
+    passes.add(new AtomicUpdaterInitializationRemover(appView));
+    passes.add(new AssertionsRewriter(appView));
+    return CodeRewriterPassCollection.create(passes);
+  }
+
+  public CodeRewriterPassCollection createMainIRCodeRewriterPassCollection() {
     List<CodeRewriterPass<?>> passes = new ArrayList<>();
     if (appView.hasClassHierarchy()) {
       passes.add(new KotlinValueClassUnboxBoxOptimizer(appView));
@@ -628,32 +646,8 @@ public class IRConverter {
       return timing;
     }
 
-    // In R8, StringSwitch instructions are introduced when entering the LIR phase. In D8, we don't
-    // use LIR, so we explicitly introduce StringSwitch instructions here.
-    if (!options.getTestingOptions().isSupportedLirPhase()) {
-      new StringSwitchConverter(appView)
-          .run(code, methodProcessor, methodProcessingContext, timing);
-    }
-    // The same is true for StringConcat (and also applies to CF).
-    if (appView.options().enableStringConcatInstruction
-        && (!options.getTestingOptions().isSupportedLirPhase()
-            || options.isGeneratingClassFiles())) {
-      new StringConcatCreator(appView).run(code, timing);
-    }
-
-    if (options.canHaveArtStringNewInitBug()) {
-      new TrivialPhiSimplifier(appView).run(code, methodProcessor, methodProcessingContext, timing);
-    }
-
-    if (isDebugMode) {
-      simplifyDebugLocal.run(code, methodProcessor, methodProcessingContext, timing);
-    }
-
-    new AtomicUpdaterInitializationRemover(appView)
-        .run(code, methodProcessor, methodProcessingContext, timing);
-
-    assertionsRewriter.run(code, methodProcessor, methodProcessingContext, timing);
-    previous = printMethod(code, "IR after assertions rewriter (SSA)", previous);
+    initialRewriterPassCollection.run(
+        code, methodProcessor, methodProcessingContext, timing, previous, options);
 
     timing.begin("Run proto shrinking tasks");
     appView.withGeneratedExtensionRegistryShrinker(shrinker -> shrinker.rewriteCode(method, code));

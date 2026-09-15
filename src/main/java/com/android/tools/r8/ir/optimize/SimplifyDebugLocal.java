@@ -32,7 +32,7 @@ public class SimplifyDebugLocal extends CodeRewriterPass<AppInfo> {
 
   @Override
   protected boolean shouldRewriteCode(IRCode code, MethodProcessor methodProcessor) {
-    return true;
+    return options.debug || code.context().isReachabilitySensitive();
   }
 
   @Override
