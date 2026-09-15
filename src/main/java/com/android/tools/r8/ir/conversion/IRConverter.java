@@ -84,7 +84,7 @@ import com.android.tools.r8.ir.optimize.ShareInstanceGetInstructions;
 import com.android.tools.r8.ir.optimize.SimplifyDebugLocal;
 import com.android.tools.r8.ir.optimize.api.InstanceInitializerOutliner;
 import com.android.tools.r8.ir.optimize.classinliner.ClassInliner;
-import com.android.tools.r8.ir.optimize.enums.EnumValueOptimizer;
+import com.android.tools.r8.ir.optimize.enums.EnumSwitchMapRewriter;
 import com.android.tools.r8.ir.optimize.info.CallSiteOptimizationInfo;
 import com.android.tools.r8.ir.optimize.info.MethodOptimizationInfo;
 import com.android.tools.r8.ir.optimize.info.MethodOptimizationInfoCollector;
@@ -665,7 +665,7 @@ public class IRConverter {
     }
 
     timing.begin("Remove switch maps");
-    new EnumValueOptimizer(appView).removeSwitchMaps(code);
+    new EnumSwitchMapRewriter(appView).run(code, methodProcessor, methodProcessingContext, timing);
     timing.end();
     previous = printMethod(code, "IR after enum-switch optimization (SSA)", previous);
 
