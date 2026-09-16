@@ -204,6 +204,7 @@ public class DexItemFactory {
   public final DexString unboxFloatMethodName = createString("floatValue");
   public final DexString unboxDoubleMethodName = createString("doubleValue");
 
+  public final DexString charAtMethodName = createString("charAt");
   public final DexString isEmptyMethodName = createString("isEmpty");
   public final DexString lengthMethodName = createString("length");
 
@@ -4023,6 +4024,7 @@ public class DexItemFactory {
     public final DexField CASE_INSENSITIVE_ORDER =
         createField(stringType, javaUtilComparatorType, "CASE_INSENSITIVE_ORDER");
 
+    public final DexMethod charAt;
     public final DexMethod isEmpty;
     public final DexMethod length;
 
@@ -4080,6 +4082,7 @@ public class DexItemFactory {
       DexString[] stringArgs = {stringDescriptor};
       DexString[] stringIntArgs = {stringDescriptor, intDescriptor};
 
+      charAt = createMethod(stringDescriptor, charAtMethodName, charDescriptor, intArgs);
       concat = createMethod(stringDescriptor, concatMethodName, stringDescriptor, stringArgs);
       contains =
           createMethod(stringDescriptor, containsMethodName, booleanDescriptor, charSequenceArgs);

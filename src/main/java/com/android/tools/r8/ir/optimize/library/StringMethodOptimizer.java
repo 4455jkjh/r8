@@ -117,7 +117,9 @@ public class StringMethodOptimizer extends StatelessLibraryMethodModelCollection
     var stringMembers = dexItemFactory.stringMembers;
     switch (singleTarget.getName().getFirstByteAsChar()) {
       case 'c':
-        if (singleTargetReference.isIdenticalTo(stringMembers.compareTo)) {
+        if (singleTargetReference.isIdenticalTo(stringMembers.charAt)) {
+          optimizeStringIntToIntFunction(code, instructionIterator, invoke, DexString::charAt);
+        } else if (singleTargetReference.isIdenticalTo(stringMembers.compareTo)) {
           optimizeStringStringToIntFunction(
               code, instructionIterator, invoke, DexString::javaLangStringCompareTo);
         } else if (singleTargetReference.isIdenticalTo(stringMembers.compareToIgnoreCase)) {

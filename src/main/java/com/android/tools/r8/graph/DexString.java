@@ -50,6 +50,21 @@ public class DexString extends IndexedDexItem
     this.content = encodeToMutf8(string);
   }
 
+  public char charAt(int index) {
+    if (index < 0 || index >= javaLangStringLength) {
+      throw new StringIndexOutOfBoundsException(index);
+    }
+    try {
+      ThrowingCharIterator<UTFDataFormatException> iterator = iterator();
+      for (int i = 0; i < index; i++) {
+        iterator.nextChar();
+      }
+      return iterator.nextChar();
+    } catch (UTFDataFormatException e) {
+      throw new RuntimeException("Bad format", e);
+    }
+  }
+
   public boolean equalsIgnoreCase(DexString str) {
     return toString().equalsIgnoreCase(str.toString());
   }
