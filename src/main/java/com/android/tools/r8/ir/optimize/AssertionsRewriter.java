@@ -23,7 +23,6 @@ import com.android.tools.r8.ir.code.InstructionListIterator;
 import com.android.tools.r8.ir.code.InvokeMethod;
 import com.android.tools.r8.ir.code.InvokeStatic;
 import com.android.tools.r8.ir.code.StaticGet;
-import com.android.tools.r8.ir.code.StaticPut;
 import com.android.tools.r8.ir.code.Throw;
 import com.android.tools.r8.ir.conversion.MethodProcessor;
 import com.android.tools.r8.ir.conversion.passes.CodeRewriterPass;
@@ -32,6 +31,7 @@ import com.android.tools.r8.references.MethodReference;
 import com.android.tools.r8.utils.AssertionConfigurationWithDefault;
 import com.android.tools.r8.utils.DescriptorUtils;
 import com.android.tools.r8.utils.InternalOptions;
+import com.android.tools.r8.utils.internal.CachedPredicate;
 import com.android.tools.r8.utils.internal.LazyBox;
 import com.android.tools.r8.utils.internal.ThrowingCharIterator;
 import com.android.tools.r8.utils.internal.exceptions.Unreachable;
@@ -368,17 +368,9 @@ public class AssertionsRewriter extends CodeRewriterPass<AppInfo> {
     if (configuration.isPassthrough()) {
       return false;
     }
-    DexEncodedMethod clinit;
-    // If the <clinit> of this class did not have have code to turn on assertions don't try to
-    // remove assertion code from the method (including <clinit> itself.
-    if (method.isClassInitializer()) {
-      clinit = method;
-    } else {
-      DexClass clazz = appView.definitionFor(method.getHolderType());
-      if (clazz == null) {
-        return false;
-      }
-      clinit = clazz.getClassInitializer();
+    DexClass clazz = appView.definitionFor(method.getHolderType());
+    if (clazz == null) {
+      return false;
     }
     // For the transformation to rewrite the throw with a callback collect information on the
     // blocks covered by the if (!$assertionsDisabled or ENABLED) condition together with weather
@@ -434,14 +426,12 @@ public class AssertionsRewriter extends CodeRewriterPass<AppInfo> {
               });
     }
     assert assertionEntryIfs.size() == throwSuccessorAfterHandler.size();
-    // For javac generated code it is assumed that the code in <clinit> will tell if the code
-    // in other methods of the class can have assertion checks.
-    boolean isInitializerEnablingJavaVmAssertions =
-        clinit != null && clinit.getOptimizationInfo().isInitializerEnablingJavaVmAssertions();
     // This code will process the assertion code in all methods including <clinit>.
     InstructionListIterator iterator = code.instructionListIterator();
     boolean changed = false;
     boolean needsDeadCodeRemoval = false;
+    CachedPredicate<FieldInstruction> isAssertionDisablingField =
+        new CachedPredicate<>(this::isAssertionDisablingField);
     while (iterator.hasNext()) {
       Instruction current = iterator.next();
       if (current.isInvokeMethod()) {
@@ -455,17 +445,14 @@ public class AssertionsRewriter extends CodeRewriterPass<AppInfo> {
           changed = true;
         }
       } else if (current.isStaticPut()) {
-        StaticPut staticPut = current.asStaticPut();
-        if (isInitializerEnablingJavaVmAssertions
-            && isUsingJavaAssertionsDisabledField(staticPut)) {
+        if (isAssertionDisablingField.test(current.asStaticPut())) {
           iterator.remove();
           changed = true;
         }
       } else if (current.isStaticGet()) {
         StaticGet staticGet = current.asStaticGet();
         // Rewrite $assertionsDisabled getter (only if the initializer enabled assertions).
-        if (isInitializerEnablingJavaVmAssertions
-            && isUsingJavaAssertionsDisabledField(staticGet)) {
+        if (isAssertionDisablingField.test(staticGet)) {
           // For assertion handler rewrite just leave the static get, as it will become dead code.
           if (!configuration.isAssertionHandler()) {
             iterator.replaceCurrentInstruction(
@@ -576,7 +563,7 @@ public class AssertionsRewriter extends CodeRewriterPass<AppInfo> {
 
   @SuppressWarnings("ReferenceEquality")
   private boolean isUsingJavaAssertionsDisabledField(FieldInstruction instruction) {
-    // This does not check the holder, as for inner classe the field is read from the outer class
+    // This does not check the holder, as for inner classes the field is read from the outer class
     // and not the class itself.
     return instruction.getField().getName() == dexItemFactory.assertionsDisabled
         && instruction.getField().getType() == dexItemFactory.booleanType;
@@ -628,5 +615,17 @@ public class AssertionsRewriter extends CodeRewriterPass<AppInfo> {
         .unlinkSinglePredecessorSiblingsAllowed();
     ifInstruction.lhs().removeUser(ifInstruction);
     iterator.replaceCurrentInstruction(new Goto());
+  }
+
+  private boolean isAssertionDisablingField(FieldInstruction instruction) {
+    if (!isUsingJavaAssertionsDisabledField(instruction)) {
+      return false;
+    }
+    DexClass clazz = appView.definitionFor(instruction.getField().getHolderType());
+    if (clazz == null) {
+      return false;
+    }
+    DexEncodedMethod clinit = clazz.getClassInitializer();
+    return clinit != null && clinit.getOptimizationInfo().isInitializerEnablingJavaVmAssertions();
   }
 }
