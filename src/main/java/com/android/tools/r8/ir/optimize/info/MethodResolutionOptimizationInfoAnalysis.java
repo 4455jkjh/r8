@@ -112,23 +112,27 @@ public class MethodResolutionOptimizationInfoAnalysis {
                     .getOrDefault(superClass, DownwardsTraversalState.empty())
                     .asDownwardsTraversalState();
             state.add(superState);
-            for (DexEncodedMethod method : superClass.virtualMethods()) {
-              // No need to request optimization info for the (non-existing) overrides of final
-              // methods.
-              if (method.isFinal()) {
-                continue;
-              }
-              // If the method is not abstract and does not have any optimization info, there is no
-              // need to request the optimization info for overrides in subclasses, since the join
-              // of the optimization info becomes unknown anyway.
-              if ((method.isAbstract() && !superClass.isAnnotation())
-                  || !method.getOptimizationInfo().isDefault()) {
-                state.virtualMethodsInSuperClasses.add(method);
-              }
-            }
+            addVirtualMethodsInSuperClass(superClass, state.virtualMethodsInSuperClasses);
           });
       if (!state.isEmpty()) {
         states.put(clazz, state);
+      }
+    }
+
+    private void addVirtualMethodsInSuperClass(
+        DexProgramClass superClass, DexMethodSignatureSet methods) {
+      for (DexEncodedMethod method : superClass.virtualMethods()) {
+        // No need to request optimization info for the (non-existing) overrides of final methods.
+        if (method.isFinal()) {
+          continue;
+        }
+        // If the method is not abstract and does not have any optimization info, there is no
+        // need to request the optimization info for overrides in subclasses, since the join
+        // of the optimization info becomes unknown anyway.
+        if ((method.isAbstract() && !superClass.isAnnotation())
+            || !method.getOptimizationInfo().isDefault()) {
+          methods.add(method);
+        }
       }
     }
 
@@ -219,7 +223,7 @@ public class MethodResolutionOptimizationInfoAnalysis {
 
       DexMethodSignatureSet interfaceMethodsInClassOrAbove =
           DexMethodSignatureSet.create(state.virtualMethodsInSuperClasses);
-      interfaceMethodsInClassOrAbove.addAllMethods(iface.virtualMethods());
+      addVirtualMethodsInSuperClass(iface, interfaceMethodsInClassOrAbove);
 
       for (DexMethodSignature method : interfaceMethodsInClassOrAbove) {
         MethodResolutionResult resolutionResult =

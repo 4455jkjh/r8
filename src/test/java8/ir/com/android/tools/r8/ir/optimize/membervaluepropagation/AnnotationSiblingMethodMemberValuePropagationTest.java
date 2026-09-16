@@ -49,8 +49,7 @@ public class AnnotationSiblingMethodMemberValuePropagationTest extends TestBase 
         .enableNoHorizontalClassMergingAnnotations()
         .enableNoVerticalClassMergingAnnotations()
         .run(parameters.getRuntime(), Main.class)
-        // TODO(b/557267860): Should succeed with expected output.
-        .assertSuccessWithOutputLines("K");
+        .assertSuccessWithOutputLines("anno");
   }
 
   @Retention(RetentionPolicy.RUNTIME)
