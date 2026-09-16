@@ -29,6 +29,8 @@ public interface FieldGet extends InstructionOrValue {
 
   Value outValue();
 
+  void removeOrReplaceByDebugLocalRead();
+
   FieldResolutionResult resolveField(
       AppView<? extends AppInfoWithClassHierarchy> appView, ProgramMethod context);
 }

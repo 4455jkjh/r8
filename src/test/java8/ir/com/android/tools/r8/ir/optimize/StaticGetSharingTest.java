@@ -1,4 +1,4 @@
-// Copyright (c) 2025, the R8 project authors. Please see the AUTHORS file
+// Copyright (c) 2026, the R8 project authors. Please see the AUTHORS file
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8.ir.optimize;
@@ -8,7 +8,6 @@ import static org.junit.Assert.assertEquals;
 import com.android.tools.r8.NeverClassInline;
 import com.android.tools.r8.NeverInline;
 import com.android.tools.r8.NoHorizontalClassMerging;
-import com.android.tools.r8.NoMethodStaticizing;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
@@ -21,7 +20,7 @@ import org.junit.runners.Parameterized.Parameter;
 import org.junit.runners.Parameterized.Parameters;
 
 @RunWith(Parameterized.class)
-public class InstanceGetSharingTest extends TestBase {
+public class StaticGetSharingTest extends TestBase {
 
   @Parameter(0)
   public TestParameters parameters;
@@ -37,7 +36,7 @@ public class InstanceGetSharingTest extends TestBase {
         .addInnerClasses(getClass())
         .release() // Enabled only in release.
         .run(parameters.getRuntime(), TestClass.class)
-        .assertSuccessWithOutput("truetruetruetruetruetrue");
+        .assertSuccessWithOutput("truetruetruetruetruetruetrue");
   }
 
   @Test
@@ -47,12 +46,11 @@ public class InstanceGetSharingTest extends TestBase {
         .addKeepMainRule(TestClass.class)
         .enableInliningAnnotations()
         .enableNeverClassInliningAnnotations()
-        .enableNoMethodStaticizingAnnotations()
         .enableNoHorizontalClassMergingAnnotations()
         .compile()
-        .inspect(InstanceGetSharingTest::assertHoisted)
+        .inspect(StaticGetSharingTest::assertHoisted)
         .run(parameters.getRuntime(), TestClass.class)
-        .assertSuccessWithOutput("truetruetruetruetruetrue");
+        .assertSuccessWithOutput("truetruetruetruetruetruetrue");
   }
 
   private static void assertHoisted(CodeInspector inspector) {
@@ -62,7 +60,7 @@ public class InstanceGetSharingTest extends TestBase {
             .clazz(A.class)
             .uniqueMethodWithOriginalName("foo")
             .streamInstructions()
-            .filter(InstructionSubject::isInstanceGet)
+            .filter(InstructionSubject::isStaticGet)
             .count());
     assertEquals(
         1,
@@ -70,7 +68,7 @@ public class InstanceGetSharingTest extends TestBase {
             .clazz(ATry.class)
             .uniqueMethodWithOriginalName("foo")
             .streamInstructions()
-            .filter(InstructionSubject::isInstanceGet)
+            .filter(InstructionSubject::isStaticGet)
             .count());
     assertEquals(
         2,
@@ -78,7 +76,7 @@ public class InstanceGetSharingTest extends TestBase {
             .clazz(ATryOneBranch.class)
             .uniqueMethodWithOriginalName("foo")
             .streamInstructions()
-            .filter(InstructionSubject::isInstanceGet)
+            .filter(InstructionSubject::isStaticGet)
             .count());
     assertEquals(
         1,
@@ -86,7 +84,7 @@ public class InstanceGetSharingTest extends TestBase {
             .clazz(C.class)
             .uniqueMethodWithOriginalName("bar")
             .streamInstructions()
-            .filter(InstructionSubject::isInstanceGet)
+            .filter(InstructionSubject::isStaticGet)
             .count());
     assertEquals(
         1,
@@ -94,15 +92,26 @@ public class InstanceGetSharingTest extends TestBase {
             .clazz(CTry.class)
             .uniqueMethodWithOriginalName("bar")
             .streamInstructions()
-            .filter(InstructionSubject::isInstanceGet)
+            .filter(InstructionSubject::isStaticGet)
+            .count());
+    assertEquals(
+        1,
+        inspector
+            .clazz(ANestedTry.class)
+            .uniqueMethodWithOriginalName("foo")
+            .streamInstructions()
+            .filter(InstructionSubject::isStaticGet)
             .count());
     assertEquals(
         2,
         inspector
-            .clazz(C.class)
-            .uniqueMethodWithOriginalName("baz")
+            .clazz(ANestedTry2.class)
+            .uniqueMethodWithOriginalName("foo")
             .streamInstructions()
-            .filter(InstructionSubject::isInstanceGet)
+            .filter(
+                i ->
+                    i.isStaticGet()
+                        && !i.getField().getHolderType().getSimpleName().equals("System"))
             .count());
   }
 
@@ -110,24 +119,87 @@ public class InstanceGetSharingTest extends TestBase {
     public static void main(String[] args) {
       System.out.print(new A().foo() > 0);
       System.out.print(new ATry().foo() > 0);
-      System.out.print(
-          new ATryOneBranch().foo(System.currentTimeMillis() > 0 ? new B() : null) > 0);
+      System.out.print(new ATryOneBranch().foo() > 0);
       System.out.print(new C().bar() > 0);
       System.out.print(new CTry().bar() > 0);
-      System.out.print(new C().baz() > 0);
+      System.out.print(new ANestedTry().foo() > 0);
+      System.out.print(new ANestedTry2().foo() > 0);
+    }
+  }
+
+  @NoHorizontalClassMerging
+  @NeverClassInline
+  static class ANestedTry {
+    static void inlineableDummy() {}
+
+    @NeverInline
+    public long foo() {
+      try {
+        if (System.currentTimeMillis() > 0) {
+          try {
+            return B.num + 1;
+          } catch (RuntimeException e) {
+            inlineableDummy();
+          }
+        } else {
+          try {
+            return B.num + 2;
+          } catch (RuntimeException e) {
+            inlineableDummy();
+          }
+        }
+      } catch (Throwable t) {
+        CTry.dummy(0);
+      }
+      return 1L;
+    }
+  }
+
+  @NoHorizontalClassMerging
+  @NeverClassInline
+  static class ANestedTry2 {
+
+    static class Throwing {
+      static {
+        if (System.currentTimeMillis() > 0) {
+          int x = 1 / 0;
+        }
+      }
+
+      static int num = 40;
+    }
+
+    @NeverInline
+    public long foo() {
+      try {
+        if (System.currentTimeMillis() > 0) {
+          try {
+            return Throwing.num + 1;
+          } catch (RuntimeException e) {
+            System.out.println("A");
+          }
+        } else {
+          try {
+            return Throwing.num + 2;
+          } catch (RuntimeException e) {
+            System.out.println("B");
+          }
+        }
+      } catch (Throwable t) {
+        CTry.dummy(0);
+      }
+      return 1L;
     }
   }
 
   @NeverClassInline
   static class A {
-    private B b = new B();
-
     @NeverInline
     public long foo() {
       if (System.currentTimeMillis() > 0) {
-        return b.getNum() + 1;
+        return B.num + 1;
       } else {
-        return b.getNum() + 2;
+        return B.num + 2;
       }
     }
   }
@@ -135,18 +207,16 @@ public class InstanceGetSharingTest extends TestBase {
   @NoHorizontalClassMerging
   @NeverClassInline
   static class ATry {
-    private B b = new B();
-
     @NeverInline
     public long foo() {
       try {
         if (System.currentTimeMillis() > 0) {
-          return b.getNum() + 1;
+          return B.num + 1;
         } else {
-          return b.getNum() + 2;
+          return B.num + 2;
         }
       } catch (RuntimeException e) {
-        System.out.println("caught");
+        CTry.dummy(0);
       }
       return 0L;
     }
@@ -155,18 +225,17 @@ public class InstanceGetSharingTest extends TestBase {
   @NoHorizontalClassMerging
   @NeverClassInline
   static class ATryOneBranch {
-
     @NeverInline
-    public long foo(B b) {
+    public long foo() {
       if (System.currentTimeMillis() > 0) {
         try {
-          return b.num + 1;
+          return B.num + 1;
         } catch (RuntimeException e) {
-          System.out.println("caught");
+          CTry.dummy(0);
           return 0L;
         }
       } else {
-        return b.num + 2;
+        return B.num + 2;
       }
     }
   }
@@ -174,21 +243,23 @@ public class InstanceGetSharingTest extends TestBase {
   @NoHorizontalClassMerging
   @NeverClassInline
   static class CTry {
+    @NeverInline
+    static void dummy(int x) {}
 
     @NeverInline
     public long bar() {
       try {
         long num;
         if (System.currentTimeMillis() > 0) {
-          B b1 = new B();
-          num = b1.num;
+          dummy(1);
+          num = B.num;
         } else {
-          B b2 = new B();
-          num = b2.num;
+          dummy(2);
+          num = B.num;
         }
         return num + 1;
       } catch (RuntimeException e) {
-        System.out.println("caught");
+        dummy(0);
       }
       return 0L;
     }
@@ -197,52 +268,25 @@ public class InstanceGetSharingTest extends TestBase {
   @NoHorizontalClassMerging
   @NeverClassInline
   static class C {
+    @NeverInline
+    static void dummy(int x) {}
 
     @NeverInline
     public long bar() {
       long num;
       if (System.currentTimeMillis() > 0) {
-        B b1 = new B();
-        num = b1.num;
+        dummy(1);
+        num = B.num;
       } else {
-        B b2 = new B();
-        num = b2.num;
+        dummy(2);
+        num = B.num;
       }
       return num + 1;
-    }
-
-    // repro of b/454444103
-    @NeverInline
-    public long baz() {
-      long num;
-      B b1 = new B();
-      B b2 = new B();
-      B someb;
-      if (System.currentTimeMillis() > 0) {
-        someb = b1;
-      } else {
-        someb = b2;
-      }
-      if (System.currentTimeMillis() > 0) {
-        num = b1.num;
-        someb.num = -1;
-      } else {
-        num = b2.num;
-        someb.num = -1;
-      }
-      System.out.print("");
-      return num;
     }
   }
 
   @NeverClassInline
   static class B {
-    public long num = System.currentTimeMillis();
-
-    @NeverInline
-    @NoMethodStaticizing
-    long getNum() {
-      return num;
-    }
+    public static long num = System.currentTimeMillis();
   }
 }
