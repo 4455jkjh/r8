@@ -2475,6 +2475,7 @@ public class DexItemFactory {
   public class JavaUtilArraysMethods {
 
     public final DexMethod asList;
+    public final DexMethod copyOfObjectArray;
     public final DexMethod hashCode =
         createMethod(arraysType, createProto(intType, objectArrayType), "hashCode");
     public final DexMethod hashCodeIntArray =
@@ -2522,7 +2523,7 @@ public class DexItemFactory {
       DexMethod copyOfShort =
           createMethod(
               arraysType, createProto(shortArrayType, shortArrayType, intType), copyOfMethodName);
-      DexMethod copyOfObject =
+      copyOfObjectArray =
           createMethod(
               arraysType, createProto(objectArrayType, objectArrayType, intType), copyOfMethodName);
       copyOfMethods =
@@ -2535,7 +2536,7 @@ public class DexItemFactory {
               copyOfInt,
               copyOfLong,
               copyOfShort,
-              copyOfObject);
+              copyOfObjectArray);
     }
   }
 
@@ -3565,6 +3566,9 @@ public class DexItemFactory {
 
   public class JavaLangReflectArrayMembers {
 
+    public final DexMethod newInstanceMethodWithLength =
+        createMethod(
+            javaLangReflectArrayType, createProto(objectType, classType, intType), "newInstance");
     public final DexMethod newInstanceMethodWithDimensions =
         createMethod(
             javaLangReflectArrayType,

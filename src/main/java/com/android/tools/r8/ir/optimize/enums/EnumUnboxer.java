@@ -462,21 +462,37 @@ public class EnumUnboxer implements ReprocessingOptimization {
     if (objectType.equalUpToNullability(checkCast.outValue().getType())) {
       return true;
     }
-    // Handle calls to java.lang.reflect.Array.newInstance(java.lang.Class, int[]).
-    if (object.isDefinedByInstructionSatisfying(Instruction::isInvokeStatic)) {
-      InvokeStatic invoke = object.getDefinition().asInvokeStatic();
+    Value objectRoot = object.getAliasedValue();
+    if (objectRoot.isDefinedByInstructionSatisfying(Instruction::isInvokeStatic)) {
+      InvokeStatic invoke = objectRoot.getDefinition().asInvokeStatic();
       DexMethod invokedMethod = invoke.getInvokedMethod();
+      // Handle calls to java.lang.reflect.Array.newInstance(java.lang.Class componentType, int
+      // length).
+      if (invokedMethod.isIdenticalTo(
+              factory.javaLangReflectArrayMembers.newInstanceMethodWithLength)
+          && invoke.getFirstArgument().isConstClass(enumClass.getType())) {
+        return true;
+      }
+      // Handle calls to java.lang.reflect.Array.newInstance(java.lang.Class componentType, int[]
+      // dimensions).
       if (invokedMethod.isIdenticalTo(
               factory.javaLangReflectArrayMembers.newInstanceMethodWithDimensions)
           && invoke.getFirstArgument().isConstClass(enumClass.getType())) {
         return true;
       }
+      // Handle calls to java.util.Arrays.copyOf(java.lang.Object[] original, int newLength).
+      if (invokedMethod.isIdenticalTo(factory.javaUtilArraysMethods.copyOfObjectArray)) {
+        objectType = invoke.getFirstArgument().getDynamicUpperBoundType(appView);
+        if (objectType.equalUpToNullability(checkCast.outValue().getType())) {
+          return true;
+        }
+      }
     }
-    // Handle calls to java.lang.Object.clone().
-    if (object.isDefinedByInstructionSatisfying(Instruction::isInvokeVirtual)) {
-      InvokeVirtual invoke = object.getDefinition().asInvokeVirtual();
+    if (objectRoot.isDefinedByInstructionSatisfying(Instruction::isInvokeVirtual)) {
+      InvokeVirtual invoke = objectRoot.getDefinition().asInvokeVirtual();
       DexMethod invokedMethod = invoke.getInvokedMethod();
-      if (invokedMethod.isIdenticalTo(factory.objectMembers.clone)) {
+      // Handle calls to java.lang.Object.clone().
+      if (invokedMethod.match(factory.objectMembers.clone)) {
         objectType = invoke.getReceiver().getDynamicUpperBoundType(appView);
         if (objectType.equalUpToNullability(checkCast.outValue().getType())) {
           return true;
