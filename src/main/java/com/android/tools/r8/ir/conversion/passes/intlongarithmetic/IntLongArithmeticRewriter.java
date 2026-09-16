@@ -86,11 +86,17 @@ public class IntLongArithmeticRewriter extends CodeRewriterPass<AppInfo> {
             || binop.getNumericType() == NumericType.LONG) {
           BinopDescriptor binopDescriptor = descriptors.get(binop.getClass());
           assert binopDescriptor != null;
-          if (identityAbsorbingSimplification(iterator, binop, binopDescriptor, code)) {
+          if (binopSimplification(iterator, binop, binopDescriptor, code)) {
             hasChanged = true;
             continue;
           }
-          hasChanged |= successiveSimplification(iterator, binop, binopDescriptor, code);
+          if (successiveSimplification(iterator, binop, binopDescriptor, code)) {
+            hasChanged = true;
+            continue;
+          }
+          // Strength reduction is done at the end to prioritize code size saving optimizations.
+          // i.e., x * 3 * 2 => x * 6, not (x * 3) << 1.
+          hasChanged |= strengthReduction(iterator, binop, binopDescriptor, code);
         }
       }
     }
@@ -398,7 +404,7 @@ public class IntLongArithmeticRewriter extends CodeRewriterPass<AppInfo> {
     return value;
   }
 
-  private boolean identityAbsorbingSimplification(
+  private boolean binopSimplification(
       InstructionListIterator iterator, Binop binop, BinopDescriptor binopDescriptor, IRCode code) {
     ConstNumber constNumber = getConstNumber(binop.leftValue());
     if (constNumber != null) {
@@ -427,14 +433,6 @@ public class IntLongArithmeticRewriter extends CodeRewriterPass<AppInfo> {
           binop.rightValue())) {
         return true;
       }
-      if (binop.isDiv()) {
-        // x / -1 => x * -1
-        Integer intValue = extractIntValueOrNull(constNumber);
-        if (intValue != null && intValue.equals(-1)) {
-          replaceBinop(iterator, code, binop.leftValue(), binop.rightValue(), BinopDescriptor.MUL);
-          return true;
-        }
-      }
       if (binop.isRem()) {
         // x % 1 ==> 0, x % -1 ==> 0.
         Integer intValue = extractIntValueOrNull(constNumber);
@@ -455,14 +453,73 @@ public class IntLongArithmeticRewriter extends CodeRewriterPass<AppInfo> {
         // a ^ a => 0, a - a => 0
         ConstNumber zero = code.createNumberConstant(0, binop.outValue().getType());
         iterator.replaceCurrentInstruction(zero);
+        return true;
       } else if (binop.isAnd() || binop.isOr()) {
         // a & a => a, a | a => a.
         binop.outValue().replaceUsers(binop.leftValue());
         iterator.remove();
+        return true;
       }
-      return true;
     }
     return false;
+  }
+
+  private boolean strengthReduction(
+      InstructionListIterator iterator, Binop binop, BinopDescriptor binopDescriptor, IRCode code) {
+    ConstNumber constNumber = getConstNumber(binop.leftValue());
+    if (constNumber != null) {
+      if (binop.isMul()) {
+        // 2^k * x => x << k
+        if (reduceMul(constNumber, iterator, binop.rightValue(), code)) {
+          return true;
+        }
+      }
+    }
+    constNumber = getConstNumber(binop.rightValue());
+    if (constNumber != null) {
+      if (binop.isMul()) {
+        // x * 2^k => x << k
+        if (reduceMul(constNumber, iterator, binop.leftValue(), code)) {
+          return true;
+        }
+      }
+      if (binop.isDiv()) {
+        // x / -1 => x * -1
+        Integer intValue = extractIntValueOrNull(constNumber);
+        if (intValue != null && intValue.equals(-1)) {
+          replaceBinop(iterator, code, binop.leftValue(), binop.rightValue(), BinopDescriptor.MUL);
+          return true;
+        }
+      }
+    }
+    if (binop.leftValue() == binop.rightValue()) {
+      if (binop.isAdd()) {
+        // a + a => a << 1
+        replaceByShl(iterator, binop.leftValue(), code, 1);
+        return true;
+      }
+    }
+    return false;
+  }
+
+  private boolean reduceMul(
+      ConstNumber constNumber, InstructionListIterator iterator, Value binop, IRCode code) {
+    Integer intValue = extractIntValueOrNull(constNumber);
+    if (intValue != null) {
+      int power = extractPowerOfTwo(intValue);
+      if (power != -1) {
+        replaceByShl(iterator, binop, code, power);
+        return true;
+      }
+    }
+    return false;
+  }
+
+  private void replaceByShl(InstructionListIterator iterator, Value left, IRCode code, int power) {
+    iterator.previous();
+    Value value = iterator.insertConstIntInstruction(code, appView.options(), power);
+    iterator.next();
+    replaceBinop(iterator, code, left, value, BinopDescriptor.SHL);
   }
 
   @SuppressWarnings("ReferenceEquality")
@@ -542,5 +599,13 @@ public class IntLongArithmeticRewriter extends CodeRewriterPass<AppInfo> {
       }
     }
     return intValue;
+  }
+
+  private int extractPowerOfTwo(int i) {
+    if (Integer.bitCount(i) == 1 && i != 1 && i > 0) {
+      return Integer.numberOfTrailingZeros(i);
+    } else {
+      return -1;
+    }
   }
 }

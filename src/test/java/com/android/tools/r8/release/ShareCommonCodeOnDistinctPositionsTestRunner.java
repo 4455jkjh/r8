@@ -58,7 +58,7 @@ public class ShareCommonCodeOnDistinctPositionsTestRunner extends TestBase {
               // Check that the two lines have been shared, e.g., there may be only one
               // multiplication left.
               assertEquals(
-                  "Expected only one multiplcation due to instruction sharing.",
+                  "Expected only one multiplication due to instruction sharing.",
                   1,
                   Streams.stream(method.iterateInstructions())
                       .filter(InstructionSubject::isMultiplication)

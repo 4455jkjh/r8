@@ -9,9 +9,9 @@ public class ShareCommonCodeOnDistinctPositionsTest {
     int x;
     int len = args.length;
     if (len > 42) {
-      x = (len - 2) + len * 2;
+      x = (len - 2) + len * 3;
     } else {
-      x = (len - 2) + len * 2;
+      x = (len - 2) + len * 3;
     }
     System.out.println(x);
   }
