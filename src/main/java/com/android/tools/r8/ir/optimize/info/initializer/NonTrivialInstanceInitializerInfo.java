@@ -14,6 +14,7 @@ import com.android.tools.r8.ir.analysis.fieldvalueanalysis.AbstractFieldSet;
 import com.android.tools.r8.ir.analysis.fieldvalueanalysis.ConcreteMutableFieldSet;
 import com.android.tools.r8.ir.analysis.fieldvalueanalysis.EmptyFieldSet;
 import com.android.tools.r8.ir.analysis.fieldvalueanalysis.UnknownFieldSet;
+import com.android.tools.r8.ir.optimize.info.field.EmptyInstanceFieldInitializationInfoCollection;
 import com.android.tools.r8.ir.optimize.info.field.InstanceFieldInitializationInfoCollection;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
 
@@ -149,7 +150,7 @@ public final class NonTrivialInstanceInitializerInfo extends InstanceInitializer
 
   public static class Builder {
 
-    private final InstanceFieldInitializationInfoCollection instanceFieldInitializationInfos;
+    private InstanceFieldInitializationInfoCollection instanceFieldInitializationInfos;
 
     private int data =
         INSTANCE_FIELD_INITIALIZATION_INDEPENDENT_OF_ENVIRONMENT
@@ -255,6 +256,8 @@ public final class NonTrivialInstanceInitializerInfo extends InstanceInitializer
 
     public Builder setReceiverMayEscapeOutsideConstructorChain() {
       data &= ~RECEIVER_NEVER_ESCAPE_OUTSIDE_CONSTRUCTOR_CHAIN;
+      instanceFieldInitializationInfos =
+          EmptyInstanceFieldInitializationInfoCollection.getInstance();
       return this;
     }
 
