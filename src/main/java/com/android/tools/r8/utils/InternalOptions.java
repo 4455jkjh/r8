@@ -2419,7 +2419,7 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
     public boolean enableDexConstString20 =
         System.getProperty("com.android.tools.r8.enableDexConstString20") != null;
 
-    public boolean enableBinopOptimization = true;
+    public boolean enableIntLongArithmeticRewriter = true;
 
     public boolean forceInvokeRangeForInvokeCustom = false;
 

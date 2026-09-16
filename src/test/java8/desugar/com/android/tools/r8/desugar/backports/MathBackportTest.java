@@ -31,6 +31,8 @@ public final class MathBackportTest extends AbstractBackportTest {
     if (builder.isR8TestBuilder()) {
       R8TestBuilder<?, ?, ?> r8Builder = builder.asR8TestBuilder();
       r8Builder.addKeepRules("-keepclassmembers class * { *** disguise(***); }");
+      // Disable the IntLongArithmeticRewriter which simplifies Math calls preventing testing.
+      r8Builder.addOptionsModification(opt -> opt.testing.enableIntLongArithmeticRewriter = false);
     }
   }
 

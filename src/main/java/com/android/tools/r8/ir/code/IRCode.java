@@ -1606,6 +1606,19 @@ public class IRCode implements IRControlFlowGraph, ValueFactory {
     return unreachableBlocks;
   }
 
+  public boolean unlinkCatchHandlerOnNonThrowableBlocks() {
+    boolean mayHaveIntroducedUnreachableBlocks = false;
+    for (BasicBlock block : blocks) {
+      if (block.hasCatchHandlers() && !block.canThrow()) {
+        for (BasicBlock target : block.getCatchHandlers().getUniqueTargets()) {
+          target.unlinkCatchHandler();
+          mayHaveIntroducedUnreachableBlocks = true;
+        }
+      }
+    }
+    return mayHaveIntroducedUnreachableBlocks;
+  }
+
   public AffectedValues removeUnreachableBlocks() {
     AffectedValues affectedValues = new AffectedValues();
     removeUnreachableBlocks(affectedValues);

@@ -9,6 +9,7 @@ import static com.android.tools.r8.ir.conversion.passes.intlongarithmetic.BinopD
 
 import com.android.tools.r8.graph.AppInfo;
 import com.android.tools.r8.graph.AppView;
+import com.android.tools.r8.graph.DexMethod;
 import com.android.tools.r8.ir.analysis.type.TypeElement;
 import com.android.tools.r8.ir.code.Add;
 import com.android.tools.r8.ir.code.And;
@@ -18,6 +19,7 @@ import com.android.tools.r8.ir.code.Div;
 import com.android.tools.r8.ir.code.IRCode;
 import com.android.tools.r8.ir.code.Instruction;
 import com.android.tools.r8.ir.code.InstructionListIterator;
+import com.android.tools.r8.ir.code.InvokeStatic;
 import com.android.tools.r8.ir.code.LogicalBinop;
 import com.android.tools.r8.ir.code.Mul;
 import com.android.tools.r8.ir.code.NumericType;
@@ -44,7 +46,8 @@ public class IntLongArithmeticRewriter extends CodeRewriterPass<AppInfo> {
     super(appView);
   }
 
-  private final Map<Class<?>, BinopDescriptor> descriptors = createBinopDescriptors();
+  private final Map<Class<?>, BinopDescriptor> binopDescriptors = createBinopDescriptors();
+  private final Map<DexMethod, StaticDescriptor> staticDescriptors = createStaticDescriptors();
 
   private Map<Class<?>, BinopDescriptor> createBinopDescriptors() {
     ImmutableMap.Builder<Class<?>, BinopDescriptor> builder = ImmutableMap.builder();
@@ -62,6 +65,36 @@ public class IntLongArithmeticRewriter extends CodeRewriterPass<AppInfo> {
     return builder.build();
   }
 
+  private Map<DexMethod, StaticDescriptor> createStaticDescriptors() {
+    ImmutableMap.Builder<DexMethod, StaticDescriptor> builder = ImmutableMap.builder();
+    builder.put(dexItemFactory.integerMembers.divideUnsigned, StaticDescriptor.DIVIDE_UNSIGNED);
+    builder.put(
+        dexItemFactory.integerMembers.remainderUnsigned, StaticDescriptor.REMAINDER_UNSIGNED);
+    builder.put(dexItemFactory.integerMembers.min, StaticDescriptor.MIN);
+    builder.put(dexItemFactory.integerMembers.max, StaticDescriptor.MAX);
+    builder.put(dexItemFactory.integerMembers.sum, StaticDescriptor.ADD);
+    builder.put(dexItemFactory.longMembers.divideUnsigned, StaticDescriptor.DIVIDE_UNSIGNED);
+    builder.put(dexItemFactory.longMembers.remainderUnsigned, StaticDescriptor.REMAINDER_UNSIGNED);
+    builder.put(dexItemFactory.longMembers.min, StaticDescriptor.MIN);
+    builder.put(dexItemFactory.longMembers.max, StaticDescriptor.MAX);
+    builder.put(dexItemFactory.longMembers.sum, StaticDescriptor.ADD);
+    builder.put(dexItemFactory.mathMembers.addExactInt, StaticDescriptor.ADD_EXACT);
+    builder.put(dexItemFactory.mathMembers.addExactLong, StaticDescriptor.ADD_EXACT);
+    builder.put(dexItemFactory.mathMembers.subtractExactInt, StaticDescriptor.SUB_EXACT);
+    builder.put(dexItemFactory.mathMembers.subtractExactLong, StaticDescriptor.SUB_EXACT);
+    builder.put(dexItemFactory.mathMembers.multiplyExactInt, StaticDescriptor.MUL_EXACT);
+    builder.put(dexItemFactory.mathMembers.multiplyExactLong, StaticDescriptor.MUL_EXACT);
+    builder.put(dexItemFactory.mathMembers.minInt, StaticDescriptor.MIN);
+    builder.put(dexItemFactory.mathMembers.minLong, StaticDescriptor.MIN);
+    builder.put(dexItemFactory.mathMembers.maxInt, StaticDescriptor.MAX);
+    builder.put(dexItemFactory.mathMembers.maxLong, StaticDescriptor.MAX);
+    builder.put(dexItemFactory.mathMembers.floorDivInt, StaticDescriptor.FLOOR_DIV);
+    builder.put(dexItemFactory.mathMembers.floorDivLong, StaticDescriptor.FLOOR_DIV);
+    builder.put(dexItemFactory.mathMembers.floorModInt, StaticDescriptor.FLOOR_MOD);
+    builder.put(dexItemFactory.mathMembers.floorModLong, StaticDescriptor.FLOOR_MOD);
+    return builder.build();
+  }
+
   @Override
   protected String getRewriterId() {
     return "BinopRewriter";
@@ -69,9 +102,10 @@ public class IntLongArithmeticRewriter extends CodeRewriterPass<AppInfo> {
 
   @Override
   protected boolean shouldRewriteCode(IRCode code, MethodProcessor methodProcessor) {
-    return options.testing.enableBinopOptimization
+    return options.testing.enableIntLongArithmeticRewriter
         && !isDebugMode(code.context())
-        && code.metadata().mayHaveArithmeticOrLogicalBinop();
+        && (code.metadata().mayHaveArithmeticOrLogicalBinop()
+            || code.metadata().mayHaveInvokeStatic());
   }
 
   @Override
@@ -84,7 +118,7 @@ public class IntLongArithmeticRewriter extends CodeRewriterPass<AppInfo> {
         Binop binop = next.asBinop();
         if (binop.getNumericType() == NumericType.INT
             || binop.getNumericType() == NumericType.LONG) {
-          BinopDescriptor binopDescriptor = descriptors.get(binop.getClass());
+          BinopDescriptor binopDescriptor = binopDescriptors.get(binop.getClass());
           assert binopDescriptor != null;
           if (binopSimplification(iterator, binop, binopDescriptor, code)) {
             hasChanged = true;
@@ -98,9 +132,21 @@ public class IntLongArithmeticRewriter extends CodeRewriterPass<AppInfo> {
           // i.e., x * 3 * 2 => x * 6, not (x * 3) << 1.
           hasChanged |= strengthReduction(iterator, binop, binopDescriptor, code);
         }
+      } else if (next.isInvokeStatic()) {
+        InvokeStatic invokeStatic = next.asInvokeStatic();
+        StaticDescriptor staticDescriptor = staticDescriptors.get(invokeStatic.getInvokedMethod());
+        if (staticDescriptor != null) {
+          if (staticSimplify(iterator, invokeStatic, staticDescriptor, code)) {
+            hasChanged = true;
+          }
+        }
       }
     }
     if (hasChanged) {
+      boolean mayHaveIntroducedUnreachableBlocks = code.unlinkCatchHandlerOnNonThrowableBlocks();
+      if (mayHaveIntroducedUnreachableBlocks) {
+        code.removeUnreachableBlocks();
+      }
       code.removeAllDeadAndTrivialPhis();
       code.removeRedundantBlocks();
     }
@@ -271,7 +317,7 @@ public class IntLongArithmeticRewriter extends CodeRewriterPass<AppInfo> {
         iterator,
         binop.getPosition(),
         binopDescriptor,
-        descriptors.get(leftDef.getClass()),
+        binopDescriptors.get(leftDef.getClass()),
         a,
         b,
         x,
@@ -310,7 +356,7 @@ public class IntLongArithmeticRewriter extends CodeRewriterPass<AppInfo> {
         iterator,
         binop.getPosition(),
         binopDescriptor,
-        descriptors.get(leftDef.getClass()),
+        binopDescriptors.get(leftDef.getClass()),
         leftDef.leftValue(),
         rightDef.leftValue(),
         leftDef.rightValue(),
@@ -404,6 +450,59 @@ public class IntLongArithmeticRewriter extends CodeRewriterPass<AppInfo> {
     return value;
   }
 
+  private boolean staticSimplify(
+      InstructionListIterator iterator,
+      InvokeStatic invokeStatic,
+      StaticDescriptor staticDescriptor,
+      IRCode code) {
+    ConstNumber constNumber = getConstNumber(invokeStatic.getFirstArgument());
+    if (constNumber != null) {
+      if (simplify(
+          invokeStatic,
+          iterator,
+          constNumber,
+          staticDescriptor.leftIdentity(),
+          invokeStatic.getSecondArgument(),
+          staticDescriptor.leftAbsorbing(),
+          invokeStatic.getFirstArgument())) {
+        return true;
+      }
+    }
+    constNumber = getConstNumber(invokeStatic.getSecondArgument());
+    if (constNumber != null) {
+      if (simplify(
+          invokeStatic,
+          iterator,
+          constNumber,
+          staticDescriptor.rightIdentity(),
+          invokeStatic.getFirstArgument(),
+          staticDescriptor.rightAbsorbing(),
+          invokeStatic.getSecondArgument())) {
+        return true;
+      }
+      if (staticDescriptor == StaticDescriptor.REMAINDER_UNSIGNED) {
+        // remainderUnsigned(x, 1) => 0
+        Integer intValue = extractIntValueOrNull(constNumber);
+        if (intValue != null && intValue.equals(1)) {
+          replaceByConstantZero(
+              iterator, invokeStatic, code, invokeStatic.getFirstArgument().getType());
+          return true;
+        }
+      }
+      if (staticDescriptor == StaticDescriptor.FLOOR_MOD) {
+        // floorMod(x, 1) => 0
+        // floorMod(x, -1) => 0
+        Integer intValue = extractIntValueOrNull(constNumber);
+        if (intValue != null && (intValue.equals(-1) || intValue.equals(1))) {
+          replaceByConstantZero(
+              iterator, invokeStatic, code, invokeStatic.getFirstArgument().getType());
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+
   private boolean binopSimplification(
       InstructionListIterator iterator, Binop binop, BinopDescriptor binopDescriptor, IRCode code) {
     ConstNumber constNumber = getConstNumber(binop.leftValue());
@@ -437,13 +536,7 @@ public class IntLongArithmeticRewriter extends CodeRewriterPass<AppInfo> {
         // x % 1 ==> 0, x % -1 ==> 0.
         Integer intValue = extractIntValueOrNull(constNumber);
         if (intValue != null && (intValue.equals(-1) || intValue.equals(1))) {
-          iterator.previous();
-          Value value =
-              iterator.insertConstNumberInstruction(
-                  code, appView.options(), 0L, binop.outValue().getType());
-          iterator.next();
-          binop.outValue().replaceUsers(value);
-          iterator.remove();
+          replaceByConstantZero(iterator, binop, code, binop.outValue().getType());
           return true;
         }
       }
@@ -457,7 +550,7 @@ public class IntLongArithmeticRewriter extends CodeRewriterPass<AppInfo> {
       } else if (binop.isAnd() || binop.isOr()) {
         // a & a => a, a | a => a.
         binop.outValue().replaceUsers(binop.leftValue());
-        iterator.remove();
+        iterator.removeOrReplaceByDebugLocalRead();
         return true;
       }
     }
@@ -515,11 +608,22 @@ public class IntLongArithmeticRewriter extends CodeRewriterPass<AppInfo> {
     return false;
   }
 
-  private void replaceByShl(InstructionListIterator iterator, Value left, IRCode code, int power) {
+  private void replaceByShl(InstructionListIterator iterator, Value value, IRCode code, int power) {
     iterator.previous();
-    Value value = iterator.insertConstIntInstruction(code, appView.options(), power);
+    Value cst = iterator.insertConstIntInstruction(code, appView.options(), power);
     iterator.next();
-    replaceBinop(iterator, code, left, value, BinopDescriptor.SHL);
+    replaceBinop(iterator, code, value, cst, BinopDescriptor.SHL);
+  }
+
+  private void replaceByConstantZero(
+      InstructionListIterator iterator, Instruction instruction, IRCode code, TypeElement outType) {
+    if (instruction.hasOutValue()) {
+      iterator.previous();
+      Value value = iterator.insertConstNumberInstruction(code, appView.options(), 0L, outType);
+      iterator.next();
+      instruction.outValue().replaceUsers(value);
+    }
+    iterator.removeOrReplaceByDebugLocalRead();
   }
 
   @SuppressWarnings("ReferenceEquality")
@@ -565,7 +669,7 @@ public class IntLongArithmeticRewriter extends CodeRewriterPass<AppInfo> {
   }
 
   private boolean simplify(
-      Binop binop,
+      Instruction instruction,
       InstructionListIterator iterator,
       ConstNumber constNumber,
       Integer identityElement,
@@ -574,13 +678,17 @@ public class IntLongArithmeticRewriter extends CodeRewriterPass<AppInfo> {
       Value absorbingReplacement) {
     Integer intValue = extractIntValueOrNull(constNumber);
     if (identityElement != null && identityElement.equals(intValue)) {
-      binop.outValue().replaceUsers(identityReplacement);
-      iterator.remove();
+      if (instruction.hasOutValue()) {
+        instruction.outValue().replaceUsers(identityReplacement);
+      }
+      iterator.removeOrReplaceByDebugLocalRead();
       return true;
     }
     if (absorbingElement != null && absorbingElement.equals(intValue)) {
-      binop.outValue().replaceUsers(absorbingReplacement);
-      iterator.remove();
+      if (instruction.hasOutValue()) {
+        instruction.outValue().replaceUsers(absorbingReplacement);
+      }
+      iterator.removeOrReplaceByDebugLocalRead();
       return true;
     }
     return false;
