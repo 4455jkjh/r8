@@ -17,6 +17,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertFalse;
 
 import com.android.tools.r8.SingleTestRunResult;
+import com.android.tools.r8.TestDeps;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.ToolHelper.DexVm;
@@ -66,7 +67,7 @@ public class ProgramRewritingTest extends DesugaredLibraryTestBase {
             ImmutableSet.of(
                 DESUGARED_JDK_8_LIB_JAR,
                 ToolHelper.getDesugarLibConversions(LEGACY),
-                ToolHelper.getCoreLambdaStubs()),
+                TestDeps.getCoreLambdaStubsJar()),
             JDK8.getSpecification(),
             JDK8.getLibraryFiles(),
             LibraryDesugaringSpecification.JDK8_DESCRIPTOR,
@@ -77,7 +78,7 @@ public class ProgramRewritingTest extends DesugaredLibraryTestBase {
             ImmutableSet.of(
                 LibraryDesugaringSpecification.getTempLibraryJDK11Undesugar(),
                 ToolHelper.getDesugarLibConversions(LATEST),
-                ToolHelper.getCoreLambdaStubs()),
+                TestDeps.getCoreLambdaStubsJar()),
             JDK11.getSpecification(),
             JDK11.getLibraryFiles(),
             LibraryDesugaringSpecification.JDK11_DESCRIPTOR,

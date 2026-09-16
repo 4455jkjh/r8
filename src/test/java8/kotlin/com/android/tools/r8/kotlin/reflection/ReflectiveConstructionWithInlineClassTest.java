@@ -8,6 +8,7 @@ import com.android.tools.r8.KotlinCompilerTool.KotlinCompilerVersion;
 import com.android.tools.r8.KotlinTestBase;
 import com.android.tools.r8.KotlinTestParameters;
 import com.android.tools.r8.R8FullTestBuilder;
+import com.android.tools.r8.TestDeps;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.kotlin.metadata.KotlinMetadataTestBase;
@@ -104,7 +105,7 @@ public class ReflectiveConstructionWithInlineClassTest extends KotlinTestBase {
   public void testR8KeepDataClass() throws Exception {
     configureR8(testForR8(parameters.getBackend()).addDontObfuscate())
         // Add java.lang.invoke.LambdaMetafactory for class file generation.
-        .applyIf(parameters.isCfRuntime(), b -> b.addLibraryFiles(ToolHelper.getCoreLambdaStubs()))
+        .applyIf(parameters.isCfRuntime(), b -> b.addLibraryFiles(TestDeps.getCoreLambdaStubsJar()))
         .compile()
         .assertNoErrorMessages()
         .apply(KotlinMetadataTestBase::verifyExpectedWarningsFromKotlinReflectAndStdLib)
@@ -117,7 +118,7 @@ public class ReflectiveConstructionWithInlineClassTest extends KotlinTestBase {
     configureR8(testForR8(parameters.getBackend()))
         .addKeepRules("-keep class " + PKG + ".Value { *; }")
         // Add java.lang.invoke.LambdaMetafactory for class file generation.
-        .applyIf(parameters.isCfRuntime(), b -> b.addLibraryFiles(ToolHelper.getCoreLambdaStubs()))
+        .applyIf(parameters.isCfRuntime(), b -> b.addLibraryFiles(TestDeps.getCoreLambdaStubsJar()))
         .compile()
         .assertNoErrorMessages()
         .apply(KotlinMetadataTestBase::verifyExpectedWarningsFromKotlinReflectAndStdLib)

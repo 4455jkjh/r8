@@ -14,6 +14,11 @@ import java.util.Map;
 /**
  * All reading of external files in tests should be managed by this class, which encloses the
  * untyped interface with the Gradle setup and system properties.
+ *
+ * <p>Even though this code lies in testbase, all dependencies should not be declared in testbase.
+ * It is the callers of these accessors that have responsibility to add the respective dependency.
+ * E.g. if module A calls {@link #getJunitJar}, module A should declare the runtimeOnlyData
+ * dependency on Junit.
  */
 public class TestDeps {
 
@@ -35,12 +40,17 @@ public class TestDeps {
   static {
     // This list is serves as a list of required properties to match in Gradle.
     dependencies = new HashMap<>();
+    dependencies.put("CORE_LAMBDA_STUBS", null);
     dependencies.put("DEPENDENCIES", null);
     dependencies.put("JDWP_TESTS", null);
   }
 
   private static Path getDependency(String key) {
     return dependencies.computeIfAbsent(key, TestDeps::getTestDependency);
+  }
+
+  public static Path getCoreLambdaStubsJar() {
+    return getDependencyPath("CORE_LAMBDA_STUBS", "core-lambda-stubs.jar");
   }
 
   public static Path getJunitJar() {

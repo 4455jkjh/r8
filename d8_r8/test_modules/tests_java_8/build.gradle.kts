@@ -85,6 +85,7 @@ dependencies {
   // For each child project, add its test classes to the test class configuration.
   childProjects.values.forEach { childProject ->
     partialTestClassesScope(project(childProject.path, "partialTestClasses"))
+    runtimeOnlyData(project(childProject.path, "runtimeOnlyDataElements"))
   }
   implementation(libs.playwright)
 }

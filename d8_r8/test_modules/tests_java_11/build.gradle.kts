@@ -26,6 +26,7 @@ dependencies {
   implementation(project(":main", "turboClassesOutput"))
   implementation(project(":testbase"))
   implementation(project(":testbase", "depsJar"))
+  runtimeOnlyData(project(":third_party", "coreLambdaStubs"))
   runtimeOnlyData(project(":testbase", "runtimeOnlyDataElements"))
 }
 

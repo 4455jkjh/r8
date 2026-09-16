@@ -16,8 +16,8 @@ import static org.hamcrest.core.StringContains.containsString;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 
+import com.android.tools.r8.TestDeps;
 import com.android.tools.r8.TestParameters;
-import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.desugar.desugaredlibrary.test.CompilationSpecification;
 import com.android.tools.r8.desugar.desugaredlibrary.test.LibraryDesugaringSpecification;
 import com.android.tools.r8.graph.DexItemFactory;
@@ -73,7 +73,7 @@ public class DesugaredLibraryContentTest extends DesugaredLibraryTestBase {
     Assume.assumeTrue(libraryDesugaringSpecification.hasAnyDesugaring(parameters));
     testForL8(parameters.getApiLevel())
         .apply(libraryDesugaringSpecification::configureL8TestBuilder)
-        .addProgramFiles(ToolHelper.getCoreLambdaStubs())
+        .addProgramFiles(TestDeps.getCoreLambdaStubsJar())
         .compile()
         .inspect(this::assertCorrect);
   }
@@ -83,7 +83,7 @@ public class DesugaredLibraryContentTest extends DesugaredLibraryTestBase {
     Assume.assumeTrue(libraryDesugaringSpecification.hasAnyDesugaring(parameters));
     testForL8(parameters.getApiLevel())
         .apply(libraryDesugaringSpecification::configureL8TestBuilder)
-        .addLibraryFiles(ToolHelper.getCoreLambdaStubs())
+        .addLibraryFiles(TestDeps.getCoreLambdaStubsJar())
         .compile()
         .inspect(this::assertCorrect)
         .inspectDiagnosticMessages(

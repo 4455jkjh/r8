@@ -1232,10 +1232,6 @@ public class ToolHelper {
     return Paths.get(JAVA_8_RUNTIME);
   }
 
-  public static Path getCoreLambdaStubs() {
-    return Paths.get(CORE_LAMBDA_STUBS);
-  }
-
   @Deprecated
   // Use getFirstSupportedAndroidJar(AndroidApiLevel) to specify a specific Android jar.
   public static Path getDefaultAndroidJar() {

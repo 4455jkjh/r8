@@ -57,6 +57,8 @@ private fun registerTestDep(configurationName: String, dir: File, propName: Stri
 // This should be called 'dependencies' but that is reserved in gradle, so dependenciesBucket.
 registerTestDep("dependenciesBucket", getRoot().resolve("third_party/dependencies"), "DEPENDENCIES")
 
+registerTestDep("coreLambdaStubs", ThirdPartyDeps.coreLambdaStubs, "CORE_LAMBDA_STUBS")
+
 registerTestDep("jdwpTests", ThirdPartyDeps.jdwpTests, "JDWP_TESTS")
 
 val internalTasks =
