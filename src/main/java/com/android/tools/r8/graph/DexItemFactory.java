@@ -1220,6 +1220,7 @@ public class DexItemFactory {
     for (DexMethod requireNonNullMethod : objectsMethods.requireNonNullMethods()) {
       builder.put(requireNonNullMethod, new int[] {0});
     }
+    builder.put(javaLangSystemMembers.arraycopy, new int[] {0, 2});
     return builder.build();
   }
 
