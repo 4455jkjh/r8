@@ -2,10 +2,10 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-package com.android.tools.r8.ir.conversion.passes;
+package com.android.tools.r8.ir.conversion.passes.intlongarithmetic;
 
-import static com.android.tools.r8.ir.conversion.passes.BinopDescriptor.ADD;
-import static com.android.tools.r8.ir.conversion.passes.BinopDescriptor.SUB;
+import static com.android.tools.r8.ir.conversion.passes.intlongarithmetic.BinopDescriptor.ADD;
+import static com.android.tools.r8.ir.conversion.passes.intlongarithmetic.BinopDescriptor.SUB;
 
 import com.android.tools.r8.graph.AppInfo;
 import com.android.tools.r8.graph.AppView;
@@ -32,14 +32,15 @@ import com.android.tools.r8.ir.code.Ushr;
 import com.android.tools.r8.ir.code.Value;
 import com.android.tools.r8.ir.code.Xor;
 import com.android.tools.r8.ir.conversion.MethodProcessor;
+import com.android.tools.r8.ir.conversion.passes.CodeRewriterPass;
 import com.android.tools.r8.ir.conversion.passes.result.CodeRewriterResult;
 import com.android.tools.r8.utils.internal.collections.WorkList;
 import com.google.common.collect.ImmutableMap;
 import java.util.Map;
 
-public class BinopRewriter extends CodeRewriterPass<AppInfo> {
+public class IntLongArithmeticRewriter extends CodeRewriterPass<AppInfo> {
 
-  public BinopRewriter(AppView<?> appView) {
+  public IntLongArithmeticRewriter(AppView<?> appView) {
     super(appView);
   }
 

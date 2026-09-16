@@ -2,7 +2,7 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-package com.android.tools.r8.ir;
+package com.android.tools.r8.ir.optimize.intlongarithmetic;
 
 import static org.junit.Assert.assertEquals;
 
@@ -22,7 +22,7 @@ import org.junit.runners.Parameterized.Parameter;
 import org.junit.runners.Parameterized.Parameters;
 
 @RunWith(Parameterized.class)
-public class DivRemBinopRewriterTest extends TestBase {
+public class DivRemIntLongArithmeticRewriterTest extends TestBase {
 
   private static final String EXPECTED_RESULT =
       StringUtils.lines(
@@ -68,11 +68,10 @@ public class DivRemBinopRewriterTest extends TestBase {
 
   @Test
   public void testR8() throws Exception {
-    testForR8(parameters.getBackend())
+    testForR8(parameters)
         .addProgramClasses(Main.class)
         .addKeepMainRule(Main.class)
         .enableInliningAnnotations()
-        .setMinApi(parameters)
         .compile()
         .inspect(this::inspect)
         .run(parameters.getRuntime(), Main.class)

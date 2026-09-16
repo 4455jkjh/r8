@@ -2,7 +2,7 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-package com.android.tools.r8.ir.conversion.passes;
+package com.android.tools.r8.ir.conversion.passes.intlongarithmetic;
 
 import static com.android.tools.r8.utils.internal.BitUtils.ALL_BITS_SET_INTEGER_MASK;
 

@@ -32,14 +32,12 @@ import com.android.tools.r8.ir.conversion.passes.ArrayConstructionSimplifier;
 import com.android.tools.r8.ir.conversion.passes.AssumeRemover;
 import com.android.tools.r8.ir.conversion.passes.AtomicFieldUpdaterOptimizer;
 import com.android.tools.r8.ir.conversion.passes.AtomicUpdaterInitializationRemover;
-import com.android.tools.r8.ir.conversion.passes.BinopRewriter;
 import com.android.tools.r8.ir.conversion.passes.BranchSimplifier;
 import com.android.tools.r8.ir.conversion.passes.ClassGetNameOptimizer;
 import com.android.tools.r8.ir.conversion.passes.CodeRewriterPass;
 import com.android.tools.r8.ir.conversion.passes.CodeRewriterPassCollection;
 import com.android.tools.r8.ir.conversion.passes.CommonSubexpressionElimination;
 import com.android.tools.r8.ir.conversion.passes.DexConstantOptimizer;
-import com.android.tools.r8.ir.conversion.passes.DivisionOptimizer;
 import com.android.tools.r8.ir.conversion.passes.FilledNewArrayRewriter;
 import com.android.tools.r8.ir.conversion.passes.KnownArrayLengthRewriter;
 import com.android.tools.r8.ir.conversion.passes.KotlinInlineMarkerRewriter;
@@ -61,6 +59,8 @@ import com.android.tools.r8.ir.conversion.passes.StringSwitchRemover;
 import com.android.tools.r8.ir.conversion.passes.ThrowCatchOptimizer;
 import com.android.tools.r8.ir.conversion.passes.TrivialCheckCastAndInstanceOfRemover;
 import com.android.tools.r8.ir.conversion.passes.TrivialPhiSimplifier;
+import com.android.tools.r8.ir.conversion.passes.intlongarithmetic.DivisionOptimizer;
+import com.android.tools.r8.ir.conversion.passes.intlongarithmetic.IntLongArithmeticRewriter;
 import com.android.tools.r8.ir.desugar.CfInstructionDesugaringCollectionSupplier;
 import com.android.tools.r8.ir.desugar.typeswitch.TypeSwitchIRRewriter;
 import com.android.tools.r8.ir.optimize.AssertionErrorTwoArgsConstructorRewriter;
@@ -340,7 +340,7 @@ public class IRConverter {
     }
     // Run after RedundantLoadAndStoreElimination so that there are fewer StringBuilder SSA values.
     passes.add(new StringBuilderAppendOptimizer(appView));
-    passes.add(new BinopRewriter(appView));
+    passes.add(new IntLongArithmeticRewriter(appView));
     passes.add(new ServiceLoaderRewriter(appView));
     if (appView.options().isRelease()) {
       passes.add(new SplitReturnRewriter(appView));
