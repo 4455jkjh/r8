@@ -7,6 +7,7 @@
 .kotlin/
 **/.gradle/
 .gradle_user_home
+.buildcache/
 .idea/
 .vscode/
 android-data*/

@@ -338,6 +338,7 @@ tasks {
 
   val r8WithRelocatedDeps =
     register<SwissArmyKnifeTask>("r8WithRelocatedDeps") {
+      outputs.doNotCacheIf("Large standalone artifact (~50MB)") { true }
       swissArmyKnifeClasspath.from(swissArmyKnifeConfig, depsJar)
       compiler = "relocator"
       inputFiles.from(depsJar)
@@ -361,6 +362,7 @@ tasks {
     }
 
   register<SwissArmyKnifeTask>("keepAnnoToolsWithRelocatedDeps") {
+    outputs.doNotCacheIf("Large standalone artifact (~8MB)") { true }
     swissArmyKnifeClasspath.from(swissArmyKnifeConfig, depsJar)
     compiler = "relocator"
     inputNoResFiles.from(keepAnnoDepsJarExceptAsmConfig)

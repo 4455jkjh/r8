@@ -175,6 +175,7 @@ tasks {
   // classpath at runtime.
   val relocateTestsForR8LibWithRelocatedDeps =
     register<SwissArmyKnifeTask>("relocateTestsForR8LibWithRelocatedDeps") {
+      outputs.doNotCacheIf("Large test jar (~23MB)") { true }
       executeRelocator(packageTests, "r8tests-relocated.jar")
     }
 

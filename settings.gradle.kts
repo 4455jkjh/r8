@@ -16,6 +16,8 @@ pluginManagement {
 
 dependencyResolutionManagement { repositories { maven { url = uri("third_party/dependencies") } } }
 
+buildCache { local { directory = rootDir.resolve(".buildcache") } }
+
 /**
  * path is a path to the folder containing the project, while projectPath is the gradle name (e.g.
  * :utils).

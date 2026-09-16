@@ -18,3 +18,5 @@ dependencyResolutionManagement {
 }
 
 rootProject.name = "common-build-src"
+
+buildCache { local { directory = rootDir.resolve("../../.buildcache").normalize() } }

@@ -219,6 +219,8 @@ public class TestConfigurationHelper {
       r8Jar: File?,
       r8LibPartitionMapFile: File?,
     ) {
+      // This should be redundant but is just here to be sure.
+      test.outputs.doNotCacheIf("Test runs should not and cannot be cached") { true }
       // TODO(b/489058560) Enable when we have figured out re-running single test variants.
       // test.useJUnitPlatform()
       test.useJUnit()

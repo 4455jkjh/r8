@@ -88,6 +88,7 @@ public class DependenciesPlugin : Plugin<Project> {
     val testDepsFiles = target.files(runtimeOnlyDataConfig)
 
     target.tasks.withType(Test::class.java).configureEach {
+      outputs.doNotCacheIf("Test runs should not and cannot not be cached") { true }
       jvmArgumentProviders.add(
         TestDepsCommandLineArgumentProvider(files = testDepsFiles, arguments = testDepsArguments)
       )
