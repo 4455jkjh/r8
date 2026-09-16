@@ -6,7 +6,6 @@ package com.android.tools.r8.optimize.proto;
 import static com.android.tools.r8.utils.codeinspector.Matchers.isFinal;
 import static com.android.tools.r8.utils.codeinspector.Matchers.isPresent;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assume.assumeFalse;
 
@@ -88,32 +87,11 @@ public class ProtoNormalizationWithUnrelatedKeptMethodCollisionTest extends Test
                   childClassSubject.uniqueMethodWithOriginalName("insertItems");
               assertThat(childMethodSubject, isPresent());
 
-              if (keep) {
-                // TODO(b/561828141): Should not have the same final signature as the final method
-                //  in ParentAdapter.
-                assertEquals(
-                    parentMethodSubject.getFinalSignature(),
-                    childMethodSubject.getFinalSignature());
-              } else {
-                assertNotEquals(
-                    parentMethodSubject.getFinalSignature(),
-                    childMethodSubject.getFinalSignature());
-              }
+              assertNotEquals(
+                  parentMethodSubject.getFinalSignature(), childMethodSubject.getFinalSignature());
             })
         .run(parameters.getRuntime(), Main.class)
-        // TODO(b/561828141): Should succeed with expected output.
-        .applyIf(
-            keep
-                && parameters.isCfRuntime()
-                && parameters.getCfRuntime().isNewerThanOrEqual(CfVm.JDK17),
-            rr -> rr.assertFailureWithErrorThatThrows(IncompatibleClassChangeError.class),
-            keep && parameters.isCfRuntime(),
-            rr -> rr.assertFailureWithErrorThatThrows(VerifyError.class),
-            keep && parameters.isDexRuntimeVersionNewerThanOrEqual(Version.V5_1_1),
-            rr -> rr.assertFailureWithErrorThatThrows(LinkageError.class),
-            keep,
-            rr -> rr.assertFailureWithErrorThatThrows(NoClassDefFoundError.class),
-            rr -> rr.assertSuccessWithOutputLines(EXPECTED));
+        .assertSuccessWithOutputLines(EXPECTED);
   }
 
   @NoVerticalClassMerging

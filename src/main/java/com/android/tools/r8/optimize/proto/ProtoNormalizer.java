@@ -103,7 +103,7 @@ public class ProtoNormalizer {
         Map<DexMethodSignature, DexMethodSignature> newInstanceInitializerSignatures =
             clazz.isProgramClass()
                 ? computeNewInstanceInitializerSignatures(
-                    clazz.asProgramClass(), localReservationState, globalReservationState)
+                    clazz.asProgramClass(), globalReservationState)
                 : null;
         clazz
             .getMethodCollection()
@@ -317,13 +317,11 @@ public class ProtoNormalizer {
   }
 
   Map<DexMethodSignature, DexMethodSignature> computeNewInstanceInitializerSignatures(
-      DexProgramClass clazz,
-      LocalReservationState localReservationState,
-      GlobalReservationState globalReservationState) {
+      DexProgramClass clazz, GlobalReservationState globalReservationState) {
     // Create a map from new method signatures to old method signatures. This produces a one-to-many
     // mapping since multiple instance initializers may normalize to the same signature.
     Map<DexMethodSignature, DexMethodSignatureSet> instanceInitializerCollisions =
-        computeInstanceInitializerCollisions(clazz, localReservationState, globalReservationState);
+        computeInstanceInitializerCollisions(clazz, globalReservationState);
 
     // Resolve each collision to ensure that the mapping is one-to-one.
     resolveInstanceInitializerCollisions(instanceInitializerCollisions);
@@ -341,16 +339,14 @@ public class ProtoNormalizer {
   }
 
   private Map<DexMethodSignature, DexMethodSignatureSet> computeInstanceInitializerCollisions(
-      DexProgramClass clazz,
-      LocalReservationState localReservationState,
-      GlobalReservationState globalReservationState) {
+      DexProgramClass clazz, GlobalReservationState globalReservationState) {
     Map<DexMethodSignature, DexMethodSignatureSet> instanceInitializerCollisions = new HashMap<>();
     clazz.forEachProgramInstanceInitializer(
         method -> {
           DexMethodSignature methodSignature = method.getMethodSignature();
           DexMethodSignature newMethodSignature =
-              localReservationState.getNewMethodSignature(
-                  methodSignature, dexItemFactory, globalReservationState);
+              globalReservationState.getNewInstanceInitializerSignature(
+                  methodSignature, dexItemFactory);
           instanceInitializerCollisions
               .computeIfAbsent(newMethodSignature, ignoreKey(DexMethodSignatureSet::create))
               .add(methodSignature);
@@ -454,6 +450,14 @@ public class ProtoNormalizer {
       return result;
     }
 
+    DexMethodSignature getNewInstanceInitializerSignature(
+        DexMethodSignature methodSignature, DexItemFactory dexItemFactory) {
+      if (isUnoptimizable(methodSignature)) {
+        return methodSignature;
+      }
+      return methodSignature.withParameters(getReservedParameters(methodSignature), dexItemFactory);
+    }
+
     DexTypeList getReservedParameters(DexMethodSignature methodSignature) {
       DexTypeList sortedParameters = methodSignature.getParameters().getSorted();
       return reservedParameters.getOrDefault(sortedParameters, sortedParameters);
@@ -471,29 +475,15 @@ public class ProtoNormalizer {
     private final MutableBidirectionalOneToOneMap<DexMethodSignature, DexMethodSignature>
         newMethodSignatures = new BidirectionalOneToOneHashMap<>();
 
-    DexMethodSignature getNewMethodSignature(
-        DexMethodSignature methodSignature,
-        DexItemFactory dexItemFactory,
-        GlobalReservationState globalReservationState) {
-      return internalGetAndReserveNewMethodSignature(
-          methodSignature, dexItemFactory, globalReservationState, false);
-    }
-
     DexMethodSignature getAndReserveNewMethodSignature(
         DexMethodSignature methodSignature,
         DexItemFactory dexItemFactory,
         GlobalReservationState globalReservationState) {
-      return internalGetAndReserveNewMethodSignature(
-          methodSignature, dexItemFactory, globalReservationState, true);
-    }
-
-    private DexMethodSignature internalGetAndReserveNewMethodSignature(
-        DexMethodSignature methodSignature,
-        DexItemFactory dexItemFactory,
-        GlobalReservationState globalReservationState,
-        boolean reserve) {
+      assert methodSignature.getName().isNotIdenticalTo(dexItemFactory.constructorMethodName);
       if (globalReservationState.isUnoptimizable(methodSignature)) {
         assert getReserved(methodSignature) == null
+            || methodSignature.equals(getReserved(methodSignature));
+        assert !isDestinationTaken(methodSignature)
             || methodSignature.equals(getReserved(methodSignature));
         return methodSignature;
       }
@@ -505,18 +495,16 @@ public class ProtoNormalizer {
           globalReservationState.getReservedParameters(methodSignature);
       DexMethodSignature newMethodSignature =
           methodSignature.withParameters(reservedParameters, dexItemFactory);
-      if (isDestinationTaken(newMethodSignature)) {
+      if (isDestinationTaken(newMethodSignature, globalReservationState)) {
         int index = 1;
         String newMethodBaseName = methodSignature.getName().toString();
         do {
           DexString newMethodName = dexItemFactory.createString(newMethodBaseName + "$" + index);
           newMethodSignature = newMethodSignature.withName(newMethodName);
           index++;
-        } while (isDestinationTaken(newMethodSignature));
+        } while (isDestinationTaken(newMethodSignature, globalReservationState));
       }
-      if (reserve) {
-        newMethodSignatures.put(methodSignature, newMethodSignature);
-      }
+      newMethodSignatures.put(methodSignature, newMethodSignature);
       return newMethodSignature;
     }
 
@@ -548,6 +536,11 @@ public class ProtoNormalizer {
         workList.addIfNotSeen(localReservationState.parents);
       }
       return false;
+    }
+
+    private boolean isDestinationTaken(
+        DexMethodSignature signature, GlobalReservationState globalReservationState) {
+      return globalReservationState.isUnoptimizable(signature) || isDestinationTaken(signature);
     }
 
     public void recordNoSignatureChange(
