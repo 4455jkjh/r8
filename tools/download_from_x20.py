@@ -21,6 +21,11 @@ def parse_options():
 
 def download(src, dest):
     print('Downloading %s to %s' % (src, dest))
+    if os.path.exists(dest):
+        os.remove(dest)
+    dest_dir = utils.extract_dir(dest)
+    if os.path.exists(dest_dir):
+        shutil.rmtree(dest_dir)
     shutil.copyfile(src, dest)
     utils.unpack_archive(dest)
 

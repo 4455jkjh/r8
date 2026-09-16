@@ -426,6 +426,181 @@ def run_download(sha1, output_dir, success_file, internal, quiet=False):
         pass
 
 
+def get_main_repo_root(worktree_root=None):
+    wt_root = worktree_root or REPO_ROOT
+    git_path = os.path.join(wt_root, '.git')
+    if not os.path.isfile(git_path):
+        return None
+    try:
+        with open(git_path, 'r') as f:
+            line = f.readline().strip()
+        if not line.startswith('gitdir:'):
+            return None
+        gitdir = line[len('gitdir:'):].strip()
+        if not os.path.isabs(gitdir):
+            gitdir = os.path.abspath(os.path.join(wt_root, gitdir))
+        commondir_file = os.path.join(gitdir, 'commondir')
+        if os.path.isfile(commondir_file):
+            with open(commondir_file, 'r') as f:
+                commondir = f.readline().strip()
+            common_git_dir = os.path.abspath(os.path.join(gitdir, commondir))
+        else:
+            common_git_dir = os.path.dirname(os.path.dirname(gitdir))
+        main_repo = os.path.dirname(common_git_dir)
+        if (os.path.isdir(main_repo) and
+                os.path.abspath(main_repo) != os.path.abspath(wt_root)):
+            return main_repo
+    except Exception:
+        pass
+    return None
+
+
+def link_or_copy(src, dst):
+    if os.path.lexists(dst):
+        try:
+            if os.path.samefile(src, dst):
+                return
+        except OSError:
+            pass
+        os.remove(dst)
+    try:
+        os.link(src, dst)
+    except OSError:
+        shutil.copy2(src, dst)
+
+
+def link_tree(src, dst, ignore=None):
+    shutil.copytree(src,
+                    dst,
+                    symlinks=True,
+                    copy_function=link_or_copy,
+                    ignore=ignore,
+                    dirs_exist_ok=True)
+
+
+def try_link_download_from_main_repo(path, worktree_root=None):
+    wt_root = worktree_root or REPO_ROOT
+    output_dir = path
+    tar_gz_file = path + '.tar.gz'
+    sha1_file = tar_gz_file + '.sha1'
+    success_file = path + '.success'
+    if not should_download(output_dir, tar_gz_file, sha1_file, success_file):
+        return False
+
+    main_repo = get_main_repo_root(wt_root)
+    if not main_repo:
+        return False
+    try:
+        rel_path = os.path.relpath(path, wt_root)
+    except ValueError:
+        return False
+    if rel_path.startswith('..'):
+        return False
+
+    main_output_dir = os.path.join(main_repo, rel_path)
+    main_tar_gz_file = main_output_dir + '.tar.gz'
+    main_sha1_file = main_tar_gz_file + '.sha1'
+    main_success_file = main_output_dir + '.success'
+
+    if not os.path.exists(main_sha1_file) or not os.path.exists(sha1_file):
+        return False
+    if should_download(main_output_dir, main_tar_gz_file, main_sha1_file,
+                       main_success_file):
+        return False
+    if get_sha1(sha1_file) != get_sha1(main_sha1_file):
+        return False
+
+    try:
+        if os.path.exists(success_file):
+            os.remove(success_file)
+        if os.path.exists(output_dir):
+            shutil.rmtree(output_dir)
+        if os.path.exists(tar_gz_file):
+            os.remove(tar_gz_file)
+        link_tree(main_output_dir, output_dir)
+        link_or_copy(main_tar_gz_file, tar_gz_file)
+        with open(success_file, 'w') as _:
+            pass
+        return True
+    except Exception as e:
+        Warn(
+            f'Warning: Failed to link dependency from main repo {main_output_dir}: {e}'
+        )
+        return False
+
+
+def ensure_worktree_deps(quiet=False, worktree_root=None):
+    wt_root = worktree_root or REPO_ROOT
+    main_repo = get_main_repo_root(wt_root)
+    if not main_repo:
+        return
+
+    linked_deps = 0
+    try:
+        sha1_files = subprocess.check_output(
+            ['git', 'ls-files', '*.tar.gz.sha1'], cwd=wt_root,
+            text=True).splitlines()
+        for rel_sha1 in sha1_files:
+            path = os.path.join(wt_root, rel_sha1[:-len('.tar.gz.sha1')])
+            if try_link_download_from_main_repo(path, worktree_root=wt_root):
+                linked_deps += 1
+    except Exception as e:
+        Warn(f'Warning: Failed to scan worktree dependencies: {e}')
+
+    if linked_deps > 0 and not quiet:
+        print(
+            f'Linked {linked_deps} pre-downloaded dependencies from {main_repo}'
+        )
+
+
+def seed_gradle_user_home(gradle_user_home, worktree_root=None):
+    seeded_marker = os.path.join(gradle_user_home, '.worktree_seeded')
+    if os.path.exists(seeded_marker):
+        return
+
+    wt_root = worktree_root or REPO_ROOT
+    main_repo = get_main_repo_root(wt_root)
+    candidates = [os.path.expanduser(os.path.join('~', '.gradle', 'caches'))]
+    if main_repo:
+        candidates.append(os.path.join(main_repo, '.gradle_user_home',
+                                       'caches'))
+
+    dst_caches = os.path.join(gradle_user_home, 'caches')
+    dst_caches_abs = os.path.abspath(dst_caches)
+
+    def ignore_locks_and_mutable(dir_path, names):
+        return [
+            n for n in names
+            if n.endswith('.lock') or n in ('journal-1', 'fileHashes',
+                                            'fileContent', 'gc.properties',
+                                            'cc-keystore', 'javaCompile',
+                                            'build-cache-1')
+        ]
+
+    seeded_any = False
+    for src_caches in candidates:
+        if os.path.isdir(src_caches) and os.path.abspath(
+                src_caches) != dst_caches_abs:
+            os.makedirs(dst_caches, exist_ok=True)
+            try:
+                link_tree(src_caches,
+                          dst_caches,
+                          ignore=ignore_locks_and_mutable)
+                seeded_any = True
+            except Exception as e:
+                Warn(
+                    f'Warning: Failed to seed worktree Gradle caches from {src_caches}: {e}'
+                )
+
+    if seeded_any:
+        try:
+            os.makedirs(gradle_user_home, exist_ok=True)
+            with open(seeded_marker, 'w') as _:
+                pass
+        except Exception:
+            pass
+
+
 def ensure_download(path, internal, quiet=False):
     output_dir = path
     tar_gz_file = path + '.tar.gz'
@@ -435,6 +610,8 @@ def ensure_download(path, internal, quiet=False):
         raise Exception(f"Missing sha1 file: {sha1_file}")
 
     if should_download(output_dir, tar_gz_file, sha1_file, success_file):
+        if try_link_download_from_main_repo(path):
+            return
         run_download(sha1_file, output_dir, success_file, internal, quiet)
 
 
@@ -990,7 +1167,8 @@ def append_gradle_user_home_for_worktree(force_worktree, with_no_daemon, args):
         if not force_worktree:
             print(
                 'git worktree detected, using worktree local Gradle User Home')
-        args.append('--gradle-user-home=' +
-                    os.path.join(REPO_ROOT, ".gradle_user_home"))
+        gradle_user_home = os.path.join(REPO_ROOT, ".gradle_user_home")
+        seed_gradle_user_home(gradle_user_home)
+        args.append('--gradle-user-home=' + gradle_user_home)
         if with_no_daemon:
             args.append('--no-daemon')

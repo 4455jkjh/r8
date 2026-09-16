@@ -95,6 +95,7 @@ def ensure_jdk():
 
 
 def ensure_deps():
+    utils.ensure_worktree_deps()
     ensure_gradle()
     ensure_gradle_repositories()
     ensure_jdk()
