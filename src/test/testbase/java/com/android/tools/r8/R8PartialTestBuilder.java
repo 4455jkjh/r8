@@ -158,6 +158,7 @@ public class R8PartialTestBuilder
         resourceShrinkerOutputForFeatures,
         resourceShrinkerLogConsumer,
         buildMetadata != null ? buildMetadata.get() : null,
+        configurationAnalysisData,
         configurationAnalysisHtmlReport);
   }
 

@@ -115,6 +115,7 @@ public abstract class R8TestBuilder<
   Box<R8BuildMetadata> buildMetadata;
   private boolean androidPlatformBuild = false;
   private Box<StringConsumer> proguardMapConsumer = null;
+  Box<byte[]> configurationAnalysisData = null;
   Box<String> configurationAnalysisHtmlReport = null;
 
   @Override
@@ -186,6 +187,10 @@ public abstract class R8TestBuilder<
     builder.setEnableStartupLayoutOptimization(enableStartupLayoutOptimization);
     if (buildMetadata != null) {
       builder.setBuildMetadataConsumer(buildMetadata::set);
+    }
+    if (configurationAnalysisData != null) {
+      builder.setConfigurationAnalysisDataConsumer(
+          (ByteArrayConsumer.ArrayConsumer) configurationAnalysisData::set);
     }
     if (configurationAnalysisHtmlReport != null) {
       builder.setConfigurationAnalysisHtmlReportConsumer(
@@ -876,9 +881,15 @@ public abstract class R8TestBuilder<
     return self();
   }
 
+  public T enableConfigurationAnalysisData() {
+    assertNull(configurationAnalysisData);
+    configurationAnalysisData = new Box<>();
+    return self();
+  }
+
   public T enableConfigurationAnalysisReport() {
-    assertNull(this.configurationAnalysisHtmlReport);
-    this.configurationAnalysisHtmlReport = new Box<>();
+    assertNull(configurationAnalysisHtmlReport);
+    configurationAnalysisHtmlReport = new Box<>();
     return self();
   }
 
@@ -935,7 +946,9 @@ public abstract class R8TestBuilder<
   public T addFeatureSplit(Class<?>... classes) throws IOException {
     Path path = getState().getNewTempFile("feature.zip");
     builder.addFeatureSplit(
-        builder -> SplitterTestBase.simpleSplitProvider(builder, path, getState().getTempFolder(), classes));
+        builder ->
+            SplitterTestBase.simpleSplitProvider(
+                builder, path, getState().getTempFolder(), classes));
     features.add(path);
     return self();
   }
@@ -978,7 +991,8 @@ public abstract class R8TestBuilder<
     Path path = getState().getNewTempFolder().resolve("feature.zip");
     builder.addFeatureSplit(
         builder ->
-            SplitterTestBase.splitWithNonJavaFile(builder, path, getState().getTempFolder(), nonJavaFiles, classes));
+            SplitterTestBase.splitWithNonJavaFile(
+                builder, path, getState().getTempFolder(), nonJavaFiles, classes));
     features.add(path);
     return self();
   }

@@ -65,6 +65,7 @@ public abstract class R8TestCompileResultBase<CR extends R8TestCompileResultBase
   private final Map<String, Path> resourceShrinkerOutputForFeatures;
   private final TestDebugConsumer resourceShrinkerLogConsumer;
   private final R8BuildMetadata buildMetadata;
+  private final Box<byte[]> configurationAnalysisData;
   private final Box<String> configurationAnalysisHtmlReport;
 
   R8TestCompileResultBase(
@@ -83,6 +84,7 @@ public abstract class R8TestCompileResultBase<CR extends R8TestCompileResultBase
       HashMap<String, Path> resourceShrinkerOutputForFeatures,
       TestDebugConsumer resourceShrinkerLogConsumer,
       R8BuildMetadata buildMetadata,
+      Box<byte[]> configurationAnalysisData,
       Box<String> configurationAnalysisHtmlReport) {
     super(state, app, minApiLevel, outputMode, libraryDesugaringTestConfiguration);
     this.proguardConfiguration = proguardConfiguration;
@@ -95,6 +97,7 @@ public abstract class R8TestCompileResultBase<CR extends R8TestCompileResultBase
     this.resourceShrinkerOutputForFeatures = resourceShrinkerOutputForFeatures;
     this.resourceShrinkerLogConsumer = resourceShrinkerLogConsumer;
     this.buildMetadata = buildMetadata;
+    this.configurationAnalysisData = configurationAnalysisData;
     this.configurationAnalysisHtmlReport = configurationAnalysisHtmlReport;
   }
 
@@ -272,6 +275,13 @@ public abstract class R8TestCompileResultBase<CR extends R8TestCompileResultBase
     FileUtils.writeTextFile(tempFile, configurationAnalysisHtmlReport.get());
     page.navigate(tempFile.toUri().toString());
     return new KeepRadiusInspector(page);
+  }
+
+  public <E extends Throwable> CR inspectKeepRadiusData(ThrowingConsumer<byte[], E> consumer)
+      throws E {
+    assertTrue(configurationAnalysisData.isSet());
+    consumer.accept(configurationAnalysisData.get());
+    return self();
   }
 
   public <E extends Throwable> CR inspectKeepRadiusHtmlReport(

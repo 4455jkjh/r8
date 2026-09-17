@@ -347,6 +347,8 @@ class R8Partial {
     subCompilationOptions.forceNestDesugaring = options.forceNestDesugaring;
     subCompilationOptions.emitLambdaMethodAnnotations = options.emitLambdaMethodAnnotations;
     subCompilationOptions.disableLambdaMethodAnnotations = options.disableLambdaMethodAnnotations;
+    subCompilationOptions.getKeepRadiusOptions().keepRadiusContainerConsumer =
+        options.getKeepRadiusOptions().keepRadiusContainerConsumer;
     subCompilationOptions.getTestingOptions().forceDexContainerFormat =
         options.getTestingOptions().forceDexContainerFormat;
     subCompilationOptions.getTestingOptions().enableDexConstString20 =

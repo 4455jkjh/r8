@@ -33,6 +33,7 @@ public class R8PartialTestCompileResult
       HashMap<String, Path> resourceShrinkerOutputForFeatures,
       TestDebugConsumer resourceShrinkerLogConsumer,
       R8BuildMetadata buildMetadata,
+      Box<byte[]> configurationAnalysisData,
       Box<String> configurationAnalysisHtmlReport) {
     super(
         state,
@@ -50,6 +51,7 @@ public class R8PartialTestCompileResult
         resourceShrinkerOutputForFeatures,
         resourceShrinkerLogConsumer,
         buildMetadata,
+        configurationAnalysisData,
         configurationAnalysisHtmlReport);
   }
 
