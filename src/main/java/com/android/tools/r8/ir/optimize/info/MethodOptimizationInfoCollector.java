@@ -299,6 +299,7 @@ public class MethodOptimizationInfoCollector {
     AliasedValueConfiguration aliasesThroughAssumeAndCheckCasts =
         AssumeAndCheckCastAliasedValueConfiguration.getInstance();
     Value receiver = code.getThis();
+    boolean receiverHasPhiUsers = hasAliasedPhiUsers(receiver, aliasesThroughAssumeAndCheckCasts);
     boolean hasCatchHandler = false;
     for (BasicBlock block : code.blocks) {
       if (block.hasCatchHandlers()) {
@@ -390,7 +391,8 @@ public class MethodOptimizationInfoCollector {
               if (!value.onlyDependsOnArgument()) {
                 builder.setInstanceFieldInitializationMayDependOnEnvironment();
               }
-              if (couldBeReceiverValue(value, receiver, aliasesThroughAssumeAndCheckCasts)) {
+              if (couldBeReceiverValue(
+                  value, receiver, receiverHasPhiUsers, aliasesThroughAssumeAndCheckCasts)) {
                 builder.setReceiverMayEscapeOutsideConstructorChain();
               }
             }
@@ -421,7 +423,8 @@ public class MethodOptimizationInfoCollector {
                 for (int i = 1; i < invoke.arguments().size(); i++) {
                   Value argument =
                       invoke.arguments().get(i).getAliasedValue(aliasesThroughAssumeAndCheckCasts);
-                  if (couldBeReceiverValue(argument, receiver, aliasesThroughAssumeAndCheckCasts)) {
+                  if (couldBeReceiverValue(
+                      argument, receiver, receiverHasPhiUsers, aliasesThroughAssumeAndCheckCasts)) {
                     // In the analysis of the parent constructor, we don't consider the non-receiver
                     // arguments as being aliases of the receiver. Therefore, we explicitly mark
                     // that the receiver escapes from this constructor.
@@ -439,7 +442,8 @@ public class MethodOptimizationInfoCollector {
                     .markAllFieldsAsRead()
                     .setMayHaveOtherSideEffectsThanInstanceFieldAssignments();
                 for (Value inValue : invoke.inValues()) {
-                  if (couldBeReceiverValue(inValue, receiver, aliasesThroughAssumeAndCheckCasts)) {
+                  if (couldBeReceiverValue(
+                      inValue, receiver, receiverHasPhiUsers, aliasesThroughAssumeAndCheckCasts)) {
                     builder.setReceiverMayEscapeOutsideConstructorChain();
                     break;
                   }
@@ -455,7 +459,8 @@ public class MethodOptimizationInfoCollector {
                 builder.setMayHaveOtherSideEffectsThanInstanceFieldAssignments();
               }
               for (Value argument : invoke.arguments()) {
-                if (couldBeReceiverValue(argument, receiver, aliasesThroughAssumeAndCheckCasts)) {
+                if (couldBeReceiverValue(
+                    argument, receiver, receiverHasPhiUsers, aliasesThroughAssumeAndCheckCasts)) {
                   builder.setReceiverMayEscapeOutsideConstructorChain();
                   break;
                 }
@@ -472,7 +477,8 @@ public class MethodOptimizationInfoCollector {
                   .markAllFieldsAsRead()
                   .setMayHaveOtherSideEffectsThanInstanceFieldAssignments();
               for (Value argument : invoke.arguments()) {
-                if (couldBeReceiverValue(argument, receiver, aliasesThroughAssumeAndCheckCasts)) {
+                if (couldBeReceiverValue(
+                    argument, receiver, receiverHasPhiUsers, aliasesThroughAssumeAndCheckCasts)) {
                   builder.setReceiverMayEscapeOutsideConstructorChain();
                   break;
                 }
@@ -554,13 +560,29 @@ public class MethodOptimizationInfoCollector {
   }
 
   private static boolean couldBeReceiverValue(
-      Value value, Value receiver, AliasedValueConfiguration aliasing) {
-    if (value.isPhi() && receiver.hasPhiUsers()) {
+      Value value,
+      Value receiver,
+      boolean receiverHasPhiUsers,
+      AliasedValueConfiguration aliasing) {
+    // It is important to consider alias chains both to and from a potential phi.
+    Value aliasedValue = value.getAliasedValue(aliasing);
+    if (aliasedValue.isPhi() && receiverHasPhiUsers) {
       // Conservatively assume that the receiver might be an input dependency of the phi value.
       return true;
     }
-    if (value.getAliasedValue(aliasing) == receiver) {
+    return aliasedValue == receiver;
+  }
+
+  private static boolean hasAliasedPhiUsers(Value value, AliasedValueConfiguration aliasing) {
+    if (value.hasPhiUsers()) {
       return true;
+    }
+    // Aliased users is an underapproximation since it doesn't go across phis, but it is
+    // sufficient to conservatively check "this" flows into phis.
+    for (Instruction user : value.aliasedUsers(aliasing)) {
+      if (aliasing.isIntroducingAnAlias(user) && user.outValue().hasPhiUsers()) {
+        return true;
+      }
     }
     return false;
   }
