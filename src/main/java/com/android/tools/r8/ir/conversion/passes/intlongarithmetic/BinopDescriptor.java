@@ -30,7 +30,7 @@ import com.android.tools.r8.utils.internal.exceptions.Unreachable;
  * In a space K, a binop * is associative if for each x,y,z in K, (x * y) * z = x * (y * z).
  * </code>
  */
-enum BinopDescriptor {
+enum BinopDescriptor implements ArithmeticDescriptor {
   ADD(true) {
     @Override
     Binop instantiate(NumericType numericType, Value dest, Value left, Value right) {
@@ -48,12 +48,12 @@ enum BinopDescriptor {
     }
 
     @Override
-    int evaluate(int left, int right) {
+    public int evaluate(int left, int right) {
       return left + right;
     }
 
     @Override
-    long evaluate(long left, long right) {
+    public long evaluate(long left, long right) {
       return left + right;
     }
   },
@@ -69,12 +69,12 @@ enum BinopDescriptor {
     }
 
     @Override
-    int evaluate(int left, int right) {
+    public int evaluate(int left, int right) {
       return left - right;
     }
 
     @Override
-    long evaluate(long left, long right) {
+    public long evaluate(long left, long right) {
       return left - right;
     }
   },
@@ -105,12 +105,12 @@ enum BinopDescriptor {
     }
 
     @Override
-    int evaluate(int left, int right) {
+    public int evaluate(int left, int right) {
       return left * right;
     }
 
     @Override
-    long evaluate(long left, long right) {
+    public long evaluate(long left, long right) {
       return left * right;
     }
   },
@@ -149,12 +149,12 @@ enum BinopDescriptor {
     }
 
     @Override
-    int evaluate(int left, int right) {
+    public int evaluate(int left, int right) {
       return left & right;
     }
 
     @Override
-    long evaluate(long left, long right) {
+    public long evaluate(long left, long right) {
       return left & right;
     }
   },
@@ -185,12 +185,12 @@ enum BinopDescriptor {
     }
 
     @Override
-    int evaluate(int left, int right) {
+    public int evaluate(int left, int right) {
       return left | right;
     }
 
     @Override
-    long evaluate(long left, long right) {
+    public long evaluate(long left, long right) {
       return left | right;
     }
   },
@@ -211,12 +211,12 @@ enum BinopDescriptor {
     }
 
     @Override
-    int evaluate(int left, int right) {
+    public int evaluate(int left, int right) {
       return left ^ right;
     }
 
     @Override
-    long evaluate(long left, long right) {
+    public long evaluate(long left, long right) {
       return left ^ right;
     }
   },
@@ -314,11 +314,13 @@ enum BinopDescriptor {
     return null;
   }
 
-  int evaluate(int left, int right) {
+  @Override
+  public int evaluate(int left, int right) {
     throw new Unreachable();
   }
 
-  long evaluate(long left, long right) {
+  @Override
+  public long evaluate(long left, long right) {
     throw new Unreachable();
   }
 

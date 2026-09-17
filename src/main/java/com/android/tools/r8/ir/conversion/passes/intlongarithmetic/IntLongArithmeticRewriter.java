@@ -37,6 +37,7 @@ import com.android.tools.r8.ir.conversion.MethodProcessor;
 import com.android.tools.r8.ir.conversion.passes.CodeRewriterPass;
 import com.android.tools.r8.ir.conversion.passes.result.CodeRewriterResult;
 import com.android.tools.r8.utils.internal.collections.WorkList;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import java.util.Map;
 
@@ -435,7 +436,7 @@ public class IntLongArithmeticRewriter extends CodeRewriterPass<AppInfo> {
       InstructionListIterator iterator,
       ConstNumber left,
       ConstNumber right,
-      BinopDescriptor descriptor) {
+      ArithmeticDescriptor descriptor) {
     TypeElement representative =
         left.outValue().getType().isInt() ? right.outValue().getType() : left.outValue().getType();
     long result =
@@ -455,6 +456,17 @@ public class IntLongArithmeticRewriter extends CodeRewriterPass<AppInfo> {
       InvokeStatic invokeStatic,
       StaticDescriptor staticDescriptor,
       IRCode code) {
+    if (!invokeStatic.hasOutValue()) {
+      // Normally the dead code remover can deal with this, but r8 needs to deal with it here to
+      // avoid working with dead instruction and avoid dealing with invoke without out value.
+      iterator.removeOrReplaceByDebugLocalRead();
+      return true;
+    }
+    if (staticDescriptor == StaticDescriptor.MIN || staticDescriptor == StaticDescriptor.MAX) {
+      if (optimizeMinMax(iterator, invokeStatic, staticDescriptor, code)) {
+        return true;
+      }
+    }
     ConstNumber constNumber = getConstNumber(invokeStatic.getFirstArgument());
     if (constNumber != null) {
       if (simplify(
@@ -497,6 +509,62 @@ public class IntLongArithmeticRewriter extends CodeRewriterPass<AppInfo> {
           replaceByConstantZero(
               iterator, invokeStatic, code, invokeStatic.getFirstArgument().getType());
           return true;
+        }
+      }
+    }
+    return false;
+  }
+
+  private boolean optimizeMinMax(
+      InstructionListIterator iterator,
+      InvokeStatic invokeStatic,
+      StaticDescriptor staticDescriptor,
+      IRCode code) {
+    assert invokeStatic.hasOutValue();
+    if (invokeStatic.getFirstArgument() == invokeStatic.getSecondArgument()) {
+      // min/max (a, a) => a
+      invokeStatic.outValue().replaceUsers(invokeStatic.getFirstArgument());
+      iterator.removeOrReplaceByDebugLocalRead();
+      return true;
+    }
+    ConstNumber constLeft = getConstNumber(invokeStatic.getFirstArgument());
+    ConstNumber constRight = getConstNumber(invokeStatic.getSecondArgument());
+    if (constLeft != null && constRight != null) {
+      // min/max between constants can be resolved, it's dealt with in the library method optimizer,
+      // but we need to do it again here since we generate multiple of these.
+      Value value = insertNewConstNumber(code, iterator, constLeft, constRight, staticDescriptor);
+      invokeStatic.outValue().replaceUsers(value);
+      iterator.removeOrReplaceByDebugLocalRead();
+      return true;
+    }
+    if ((constLeft == null) != (constRight == null) && !invokeStatic.outValue().hasDebugUsers()) {
+      // min (cstA, min (cstB, x)) => min(min(cstA, cstB), x) and min(cstA, cstB) is a constant.
+      // same for max.
+      Value otherValue =
+          constLeft == null ? invokeStatic.getFirstArgument() : invokeStatic.getSecondArgument();
+      if (!otherValue.isPhi() && otherValue.getDefinition().isInvokeStatic()) {
+        InvokeStatic prevInvoke = otherValue.getDefinition().asInvokeStatic();
+        if (staticDescriptors.get(prevInvoke.getInvokedMethod()) == staticDescriptor) {
+          ConstNumber constALeft = getConstNumber(prevInvoke.getFirstArgument());
+          ConstNumber constARight = getConstNumber(prevInvoke.getSecondArgument());
+          if ((constALeft == null) != (constARight == null)) {
+            ConstNumber constB = constLeft != null ? constLeft : constRight;
+            ConstNumber constA = constALeft != null ? constALeft : constARight;
+            Value input =
+                constALeft == null ? prevInvoke.getFirstArgument() : prevInvoke.getSecondArgument();
+            Value firstOutValue =
+                insertNewConstNumber(code, iterator, constA, constB, staticDescriptor);
+            Value newValue = code.createValue(invokeStatic.outValue().getType());
+            ImmutableList<Value> newArgs =
+                constLeft != null
+                    ? ImmutableList.of(firstOutValue, input)
+                    : ImmutableList.of(input, firstOutValue);
+            InvokeStatic newInvoke =
+                new InvokeStatic(invokeStatic.getInvokedMethod(), newValue, newArgs);
+            iterator.replaceCurrentInstruction(newInvoke);
+            iterator.previous();
+            return true;
+          }
         }
       }
     }
@@ -617,12 +685,20 @@ public class IntLongArithmeticRewriter extends CodeRewriterPass<AppInfo> {
 
   private void replaceByConstantZero(
       InstructionListIterator iterator, Instruction instruction, IRCode code, TypeElement outType) {
-    if (instruction.hasOutValue()) {
-      iterator.previous();
-      Value value = iterator.insertConstNumberInstruction(code, appView.options(), 0L, outType);
-      iterator.next();
-      instruction.outValue().replaceUsers(value);
-    }
+    replaceByConstant(iterator, instruction, code, outType, 0L);
+  }
+
+  private void replaceByConstant(
+      InstructionListIterator iterator,
+      Instruction instruction,
+      IRCode code,
+      TypeElement outType,
+      long constantValue) {
+    iterator.previous();
+    Value value =
+        iterator.insertConstNumberInstruction(code, appView.options(), constantValue, outType);
+    iterator.next();
+    instruction.outValue().replaceUsers(value);
     iterator.removeOrReplaceByDebugLocalRead();
   }
 
@@ -677,17 +753,14 @@ public class IntLongArithmeticRewriter extends CodeRewriterPass<AppInfo> {
       Integer absorbingElement,
       Value absorbingReplacement) {
     Integer intValue = extractIntValueOrNull(constNumber);
+    assert instruction.hasOutValue();
     if (identityElement != null && identityElement.equals(intValue)) {
-      if (instruction.hasOutValue()) {
-        instruction.outValue().replaceUsers(identityReplacement);
-      }
+      instruction.outValue().replaceUsers(identityReplacement);
       iterator.removeOrReplaceByDebugLocalRead();
       return true;
     }
     if (absorbingElement != null && absorbingElement.equals(intValue)) {
-      if (instruction.hasOutValue()) {
-        instruction.outValue().replaceUsers(absorbingReplacement);
-      }
+      instruction.outValue().replaceUsers(absorbingReplacement);
       iterator.removeOrReplaceByDebugLocalRead();
       return true;
     }

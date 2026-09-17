@@ -4,6 +4,8 @@
 
 package com.android.tools.r8.ir.conversion.passes.intlongarithmetic;
 
+import com.android.tools.r8.utils.internal.exceptions.Unreachable;
+
 /**
  * This describes some methods in boxed primitive types and Math/StrictMath. A static descriptor
  * describes left and right identity and absorbing element of static call. <code>
@@ -15,7 +17,7 @@ package com.android.tools.r8.ir.conversion.passes.intlongarithmetic;
  * In a space K, a static call * is associative if for each x,y,z in K, (x * y) * z = x * (y * z).
  * </code>
  */
-enum StaticDescriptor {
+enum StaticDescriptor implements ArithmeticDescriptor {
   ADD {
     @Override
     Integer leftIdentity() {
@@ -67,8 +69,28 @@ enum StaticDescriptor {
   },
   // MIN and MAX are dealt with separately. This doesn't encode difference between long and int,
   // and it's not clear Long.MAX_VALUE is widely used.
-  MIN,
-  MAX,
+  MIN {
+    @Override
+    public int evaluate(int left, int right) {
+      return Math.min(left, right);
+    }
+
+    @Override
+    public long evaluate(long left, long right) {
+      return Math.min(left, right);
+    }
+  },
+  MAX {
+    @Override
+    public int evaluate(int left, int right) {
+      return Math.max(left, right);
+    }
+
+    @Override
+    public long evaluate(long left, long right) {
+      return Math.max(left, right);
+    }
+  },
   FLOOR_DIV {
     @Override
     Integer rightIdentity() {
@@ -83,6 +105,16 @@ enum StaticDescriptor {
     }
   },
   REMAINDER_UNSIGNED;
+
+  @Override
+  public int evaluate(int left, int right) {
+    throw new Unreachable();
+  }
+
+  @Override
+  public long evaluate(long left, long right) {
+    throw new Unreachable();
+  }
 
   Integer leftIdentity() {
     return null;
