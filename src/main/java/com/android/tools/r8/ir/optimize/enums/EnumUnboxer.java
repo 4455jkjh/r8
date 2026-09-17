@@ -1672,7 +1672,16 @@ public class EnumUnboxer implements ReprocessingOptimization {
       if (singleTargetReference.isIdenticalTo(factory.javaLangSystemMembers.arraycopy)) {
         // Important for Kotlin 1.5 enums, which use arraycopy to create a copy of $VALUES instead
         // of int[].clone().
-        return Reason.ELIGIBLE;
+        TypeElement srcType = invoke.getArgument(0).getType();
+        TypeElement destType = invoke.getArgument(2).getType();
+        if (srcType.isArrayType()
+            && destType.isArrayType()
+            && srcType.asArrayType().getNesting() == destType.asArrayType().getNesting()
+            && getEnumUnboxingCandidateOrNull(srcType) == enumClass
+            && getEnumUnboxingCandidateOrNull(destType) == enumClass) {
+          return Reason.ELIGIBLE;
+        }
+        return new UnsupportedLibraryInvokeReason(singleTargetReference);
       }
       if (singleTargetReference.isIdenticalTo(factory.javaLangSystemMembers.identityHashCode)) {
         // Important for proto enum unboxing.
