@@ -201,7 +201,7 @@ public class CfBuilder {
     TrivialGotosCollapser trivialGotosCollapser = new TrivialGotosCollapser(appView);
     timing.begin("BasicBlock peephole optimizations");
     for (int i = 0; i < PEEPHOLE_OPTIMIZATION_PASSES; i++) {
-      trivialGotosCollapser.run(code, timing);
+      trivialGotosCollapser.run(code, registerAllocator, timing);
       PeepholeOptimizer.removeIdenticalPredecessorBlocks(code, registerAllocator);
       PeepholeOptimizer.shareIdenticalBlockSuffix(code, registerAllocator, SUFFIX_SHARING_OVERHEAD);
     }
@@ -209,7 +209,7 @@ public class CfBuilder {
 
     timing.time("Rewrite Iinc patterns", this::rewriteIincPatterns);
 
-    trivialGotosCollapser.run(code, timing);
+    trivialGotosCollapser.run(code, registerAllocator, timing);
     timing.begin("Remove redundant debug positions");
     DexBuilder.removeRedundantDebugPositions(appView, code);
     timing.end();

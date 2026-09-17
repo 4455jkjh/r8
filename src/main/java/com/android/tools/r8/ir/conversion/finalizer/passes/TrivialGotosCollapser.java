@@ -10,9 +10,8 @@ import com.android.tools.r8.ir.code.BasicBlock;
 import com.android.tools.r8.ir.code.IRCode;
 import com.android.tools.r8.ir.code.If;
 import com.android.tools.r8.ir.code.Switch;
-import com.android.tools.r8.ir.conversion.MethodProcessor;
-import com.android.tools.r8.ir.conversion.passes.CodeRewriterPass;
 import com.android.tools.r8.ir.conversion.passes.result.CodeRewriterResult;
+import com.android.tools.r8.ir.regalloc.RegisterAllocator;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -24,7 +23,7 @@ import java.util.Set;
  * rewrite fallthrough targets as that would require block reordering and the transformation only
  * makes sense after SSA destruction where there are no phis.
  */
-public class TrivialGotosCollapser extends CodeRewriterPass<AppInfo> {
+public class TrivialGotosCollapser extends FinalizerRewriterPass<AppInfo> {
 
   public TrivialGotosCollapser(AppView<?> appView) {
     super(appView);
@@ -36,17 +35,12 @@ public class TrivialGotosCollapser extends CodeRewriterPass<AppInfo> {
   }
 
   @Override
-  protected boolean isAcceptingSSA() {
-    return false;
+  protected boolean shouldRewriteCode(IRCode code) {
+    return true;
   }
 
   @Override
-  protected boolean isProducingSSA() {
-    return false;
-  }
-
-  @Override
-  protected CodeRewriterResult rewriteCode(IRCode code) {
+  protected CodeRewriterResult rewriteCode(IRCode code, RegisterAllocator allocator) {
     List<BasicBlock> blocksToRemove = new ArrayList<>();
     // Rewrite all non-fallthrough targets to the end of trivial goto chains and remove
     // first round of trivial goto blocks.
@@ -86,11 +80,6 @@ public class TrivialGotosCollapser extends CodeRewriterPass<AppInfo> {
     assert removedTrivialGotos(code);
     assert code.isConsistentGraph(appView);
     return CodeRewriterResult.NONE;
-  }
-
-  @Override
-  protected boolean shouldRewriteCode(IRCode code, MethodProcessor methodProcessor) {
-    return true;
   }
 
   public static void unlinkTrivialGotoBlock(BasicBlock block, BasicBlock target) {

@@ -107,7 +107,7 @@ public class TrivialGotoEliminationTest extends TestBase {
             basicBlockNumberGenerator,
             IRMetadata.unknown(),
             MethodConversionOptions.forD8(appView));
-    new TrivialGotosCollapser(appView).run(code, Timing.empty());
+    new TrivialGotosCollapser(appView).run(code, null, Timing.empty());
     assertTrue(code.entryBlock().isTrivialGoto());
     assertTrue(blocks.contains(block0));
     assertTrue(blocks.contains(block1));
@@ -195,7 +195,7 @@ public class TrivialGotoEliminationTest extends TestBase {
             basicBlockNumberGenerator,
             IRMetadata.unknown(),
             MethodConversionOptions.forD8(appView));
-    new TrivialGotosCollapser(appView).run(code, Timing.empty());
+    new TrivialGotosCollapser(appView).run(code, null, Timing.empty());
     assertTrue(block0.getInstructions().getFirst().getNext().isIf());
     assertEquals(block1, block0.getInstructions().getFirst().getNext().asIf().fallthroughBlock());
     assertTrue(blocks.containsAll(ImmutableList.of(block0, block1, block2, block3)));

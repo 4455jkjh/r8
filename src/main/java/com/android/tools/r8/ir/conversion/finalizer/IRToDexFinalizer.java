@@ -41,11 +41,13 @@ public class IRToDexFinalizer extends IRFinalizer<DexCode> {
 
   private final DeadCodeRemover deadCodeRemover;
   private final InternalOptions options;
+  private final TrivialGotosCollapser trivialGotosCollapser;
 
   public IRToDexFinalizer(AppView<?> appView, DeadCodeRemover deadCodeRemover) {
     super(appView);
     this.deadCodeRemover = deadCodeRemover;
     this.options = appView.options();
+    this.trivialGotosCollapser = new TrivialGotosCollapser(this.appView);
   }
 
   @Override
@@ -91,16 +93,15 @@ public class IRToDexFinalizer extends IRFinalizer<DexCode> {
         new LinearScanRegisterAllocator(appView, code, timing);
     registerAllocator.allocateRegisters();
     timing.end();
-    TrivialGotosCollapser trivialGotosCollapser = new TrivialGotosCollapser(appView);
     timing.begin("Peephole optimize");
     for (int i = 0; i < PEEPHOLE_OPTIMIZATION_PASSES; i++) {
-      trivialGotosCollapser.run(code, timing);
+      trivialGotosCollapser.run(code, registerAllocator, timing);
       PeepholeOptimizer.optimize(appView, code, registerAllocator);
     }
     timing.end();
     timing.begin("Clean up");
     removeUnneededMovesOnExitingPaths(code, registerAllocator);
-    trivialGotosCollapser.run(code, timing);
+    trivialGotosCollapser.run(code, registerAllocator, timing);
     timing.end();
     return registerAllocator;
   }

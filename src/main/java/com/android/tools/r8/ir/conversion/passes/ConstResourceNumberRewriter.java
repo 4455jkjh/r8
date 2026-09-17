@@ -64,7 +64,7 @@ public class ConstResourceNumberRewriter extends CodeRewriterPass<AppInfo> {
   }
 
   @Override
-  protected boolean verifyConsistentCode(IRCode code, boolean ssa, String preposition) {
+  protected boolean verifyConsistentCode(IRCode code, String preposition) {
     // Skip verification since this runs prior to the removal of invalid code.
     return true;
   }
