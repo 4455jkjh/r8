@@ -29,7 +29,7 @@ import com.android.tools.r8.ir.code.Return;
 import com.android.tools.r8.ir.code.Throw;
 import com.android.tools.r8.ir.code.Value;
 import com.android.tools.r8.ir.conversion.MethodConversionOptions;
-import com.android.tools.r8.ir.conversion.passes.TrivialGotosCollapser;
+import com.android.tools.r8.ir.conversion.finalizer.passes.TrivialGotosCollapser;
 import com.android.tools.r8.utils.AndroidApp;
 import com.android.tools.r8.utils.InternalOptions;
 import com.android.tools.r8.utils.timing.Timing;

@@ -2,7 +2,7 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-package com.android.tools.r8.ir.conversion;
+package com.android.tools.r8.ir.conversion.finalizer;
 
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.DebugLocalInfo;
@@ -16,10 +16,11 @@ import com.android.tools.r8.ir.code.Instruction;
 import com.android.tools.r8.ir.code.InstructionListIterator;
 import com.android.tools.r8.ir.code.Move;
 import com.android.tools.r8.ir.code.Value;
-import com.android.tools.r8.ir.conversion.passes.TrivialGotosCollapser;
+import com.android.tools.r8.ir.conversion.DexBuilder;
+import com.android.tools.r8.ir.conversion.finalizer.passes.PeepholeOptimizer;
+import com.android.tools.r8.ir.conversion.finalizer.passes.TrivialGotosCollapser;
 import com.android.tools.r8.ir.desugar.nest.D8NestBasedAccessDesugaring;
 import com.android.tools.r8.ir.optimize.DeadCodeRemover;
-import com.android.tools.r8.ir.optimize.PeepholeOptimizer;
 import com.android.tools.r8.ir.optimize.RuntimeWorkaroundCodeRewriter;
 import com.android.tools.r8.ir.regalloc.LinearScanRegisterAllocator;
 import com.android.tools.r8.utils.InternalOptions;

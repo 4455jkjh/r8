@@ -30,7 +30,7 @@ import com.android.tools.r8.ir.code.InstructionListIterator;
 import com.android.tools.r8.ir.code.InvokeDirect;
 import com.android.tools.r8.ir.code.NewInstance;
 import com.android.tools.r8.ir.code.Value;
-import com.android.tools.r8.ir.conversion.IRToLirFinalizer;
+import com.android.tools.r8.ir.conversion.finalizer.IRToLirFinalizer;
 import com.android.tools.r8.lightir.ByteArrayWriter;
 import com.android.tools.r8.lightir.ByteUtils;
 import com.android.tools.r8.lightir.LirBuilder;

@@ -1,9 +1,9 @@
 // Copyright (c) 2016, the R8 project authors. Please see the AUTHORS file
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
-package com.android.tools.r8.ir.optimize;
+package com.android.tools.r8.ir.conversion.finalizer.passes;
 
-import static com.android.tools.r8.ir.conversion.passes.TrivialGotosCollapser.unlinkTrivialGotoBlock;
+import static com.android.tools.r8.ir.conversion.finalizer.passes.TrivialGotosCollapser.unlinkTrivialGotoBlock;
 import static com.android.tools.r8.ir.regalloc.LiveIntervals.NO_REGISTER;
 
 import com.android.tools.r8.graph.AppView;

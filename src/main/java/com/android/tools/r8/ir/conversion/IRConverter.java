@@ -28,6 +28,8 @@ import com.android.tools.r8.ir.code.InstructionIterator;
 import com.android.tools.r8.ir.code.NumberGenerator;
 import com.android.tools.r8.ir.code.Value;
 import com.android.tools.r8.ir.conversion.MethodConversionOptions.MutableMethodConversionOptions;
+import com.android.tools.r8.ir.conversion.finalizer.IRFinalizer;
+import com.android.tools.r8.ir.conversion.finalizer.IRToDexFinalizer;
 import com.android.tools.r8.ir.conversion.passes.ArrayConstructionSimplifier;
 import com.android.tools.r8.ir.conversion.passes.AssumeRemover;
 import com.android.tools.r8.ir.conversion.passes.AtomicFieldUpdaterOptimizer;

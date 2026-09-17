@@ -68,7 +68,7 @@ import com.android.tools.r8.ir.code.NewArrayFilledData;
 import com.android.tools.r8.ir.code.Position;
 import com.android.tools.r8.ir.code.Return;
 import com.android.tools.r8.ir.code.Value;
-import com.android.tools.r8.ir.conversion.passes.TrivialGotosCollapser;
+import com.android.tools.r8.ir.conversion.finalizer.passes.TrivialGotosCollapser;
 import com.android.tools.r8.ir.regalloc.LinearScanRegisterAllocator;
 import com.android.tools.r8.ir.regalloc.RegisterAllocator;
 import com.android.tools.r8.lightir.ByteUtils;

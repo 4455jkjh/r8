@@ -2,13 +2,14 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-package com.android.tools.r8.ir.conversion;
+package com.android.tools.r8.ir.conversion.finalizer;
 
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.CfCode;
 import com.android.tools.r8.graph.ProgramMethod;
 import com.android.tools.r8.graph.bytecodemetadata.BytecodeMetadataProvider;
 import com.android.tools.r8.ir.code.IRCode;
+import com.android.tools.r8.ir.conversion.CfBuilder;
 import com.android.tools.r8.ir.optimize.DeadCodeRemover;
 import com.android.tools.r8.utils.timing.Timing;
 

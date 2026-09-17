@@ -16,6 +16,7 @@ import com.android.tools.r8.ir.analysis.TypeChecker;
 import com.android.tools.r8.ir.analysis.VerifyTypesHelper;
 import com.android.tools.r8.ir.analysis.proto.ProtoReferences;
 import com.android.tools.r8.ir.code.IRCode;
+import com.android.tools.r8.ir.conversion.finalizer.IRFinalizer;
 import com.android.tools.r8.ir.conversion.passes.AdaptClassStringsRewriter;
 import com.android.tools.r8.ir.conversion.passes.AssumeRemover;
 import com.android.tools.r8.ir.conversion.passes.CodeRewriterPassCollection;
