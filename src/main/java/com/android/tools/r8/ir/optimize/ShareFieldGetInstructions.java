@@ -91,25 +91,18 @@ public class ShareFieldGetInstructions extends CodeRewriterPass<AppInfo> {
       IRCode code, BasicBlock block, BasicBlock firstPredecessor, BasicBlock secondPredecessor) {
     FieldGet firstFieldGet = getLastFieldGetInstruction(code, firstPredecessor);
     FieldGet secondFieldGet = getLastFieldGetInstruction(code, secondPredecessor);
-    if (firstFieldGet == null
-        || secondFieldGet == null
-        || firstFieldGet.isStaticGet() != secondFieldGet.isStaticGet()) {
-      return false;
-    }
-    Value firstOutValue = firstFieldGet.outValue();
-    Value secondOutValue = secondFieldGet.outValue();
-    if (firstOutValue.hasLocalInfo()
-        || secondOutValue.hasLocalInfo()
-        || hasPhisThatWillBecomeInvalid(block, firstOutValue, secondOutValue)) {
+    if (invalidCandidates(firstFieldGet, secondFieldGet)
+        || hasPhisThatWillBecomeInvalid(
+            block, firstFieldGet.outValue(), secondFieldGet.outValue())) {
       return false;
     }
     DexField field = firstFieldGet.getField();
-    if (field.isNotIdenticalTo(secondFieldGet.getField())) {
-      return false;
-    }
-    Value outValue = code.createValue(firstOutValue.getType());
+    Value outValue = code.createValue(firstFieldGet.outValue().getType());
     Instruction sunkInstruction;
     if (firstFieldGet.isStaticGet()) {
+      if (invalidStaticGetCandidates(code, firstFieldGet, secondFieldGet)) {
+        return false;
+      }
       sunkInstruction = new StaticGet(outValue, field);
     } else {
       InstanceGet firstInstanceGet = firstFieldGet.asInstanceGet();
@@ -153,23 +146,16 @@ public class ShareFieldGetInstructions extends CodeRewriterPass<AppInfo> {
     BasicBlock secondSuccessor = successors.get(1);
     FieldGet firstFieldGet = findFirstFieldGetInstruction(code, firstSuccessor);
     FieldGet secondFieldGet = findFirstFieldGetInstruction(code, secondSuccessor);
-    if (firstFieldGet == null
-        || secondFieldGet == null
-        || firstFieldGet.isStaticGet() != secondFieldGet.isStaticGet()) {
+    if (invalidCandidates(firstFieldGet, secondFieldGet)) {
       return false;
     }
     DexField field = firstFieldGet.getField();
-    if (field.isNotIdenticalTo(secondFieldGet.getField())) {
-      return false;
-    }
-    Value firstOutValue = firstFieldGet.outValue();
-    Value secondOutValue = secondFieldGet.outValue();
-    if (firstOutValue.hasLocalInfo() || secondOutValue.hasLocalInfo()) {
-      return false;
-    }
-    Value outValue = code.createValue(firstOutValue.getType());
+    Value outValue = code.createValue(firstFieldGet.outValue().getType());
     Instruction hoistedInstruction;
     if (firstFieldGet.isStaticGet()) {
+      if (invalidStaticGetCandidates(code, firstFieldGet, secondFieldGet)) {
+        return false;
+      }
       hoistedInstruction = new StaticGet(outValue, field);
     } else {
       InstanceGet firstInstanceGet = firstFieldGet.asInstanceGet();
@@ -192,6 +178,29 @@ public class ShareFieldGetInstructions extends CodeRewriterPass<AppInfo> {
     insertHoistedInstruction(code, block, firstSuccessor, hoistedInstruction);
     removeOldInstructions(outValue, firstFieldGet, secondFieldGet);
     return true;
+  }
+
+  private boolean invalidStaticGetCandidates(
+      IRCode code, FieldGet firstFieldGet, FieldGet secondFieldGet) {
+    StaticGet firstStaticGet = firstFieldGet.asStaticGet();
+    StaticGet secondStaticGet = secondFieldGet.asStaticGet();
+    return firstStaticGet.instructionInstanceCanThrow(appView, code.context())
+        || secondStaticGet.instructionInstanceCanThrow(appView, code.context());
+  }
+
+  private static boolean invalidCandidates(FieldGet firstFieldGet, FieldGet secondFieldGet) {
+    if (firstFieldGet == null
+        || secondFieldGet == null
+        || firstFieldGet.isStaticGet() != secondFieldGet.isStaticGet()) {
+      return true;
+    }
+    DexField field1 = firstFieldGet.getField();
+    if (field1.isNotIdenticalTo(secondFieldGet.getField())) {
+      return true;
+    }
+    Value firstOutValue = firstFieldGet.outValue();
+    Value secondOutValue = secondFieldGet.outValue();
+    return firstOutValue.hasLocalInfo() || secondOutValue.hasLocalInfo();
   }
 
   private void insertHoistedInstruction(
