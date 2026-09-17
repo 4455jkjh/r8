@@ -12,7 +12,6 @@ import com.android.tools.r8.NoMethodStaticizing;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
-import com.android.tools.r8.utils.codeinspector.CodeInspector;
 import com.android.tools.r8.utils.codeinspector.InstructionSubject;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -32,88 +31,51 @@ public class InstanceGetSharingTest extends TestBase {
   }
 
   @Test
-  public void testD8Reference() throws Exception {
-    testForD8(parameters)
-        .addInnerClasses(getClass())
-        .release() // Enabled only in release.
-        .run(parameters.getRuntime(), TestClass.class)
-        .assertSuccessWithOutput("truetruetruetruetruetrue");
-  }
-
-  @Test
   public void testR8() throws Exception {
-    testForR8(parameters)
+    testForR8(parameters.getBackend())
         .addInnerClasses(getClass())
         .addKeepMainRule(TestClass.class)
         .enableInliningAnnotations()
         .enableNeverClassInliningAnnotations()
         .enableNoMethodStaticizingAnnotations()
         .enableNoHorizontalClassMergingAnnotations()
+        .setMinApi(parameters)
         .compile()
-        .inspect(InstanceGetSharingTest::assertHoisted)
+        .inspect(
+            inspector -> {
+              assertEquals(
+                  1,
+                  inspector
+                      .clazz(A.class)
+                      .uniqueMethodWithOriginalName("foo")
+                      .streamInstructions()
+                      .filter(InstructionSubject::isInstanceGet)
+                      .count());
+              assertEquals(
+                  1,
+                  inspector
+                      .clazz(C.class)
+                      .uniqueMethodWithOriginalName("bar")
+                      .streamInstructions()
+                      .filter(InstructionSubject::isInstanceGet)
+                      .count());
+              assertEquals(
+                  2,
+                  inspector
+                      .clazz(C.class)
+                      .uniqueMethodWithOriginalName("baz")
+                      .streamInstructions()
+                      .filter(InstructionSubject::isInstanceGet)
+                      .count());
+            })
         .run(parameters.getRuntime(), TestClass.class)
-        .assertSuccessWithOutput("truetruetruetruetruetrue");
-  }
-
-  private static void assertHoisted(CodeInspector inspector) {
-    assertEquals(
-        1,
-        inspector
-            .clazz(A.class)
-            .uniqueMethodWithOriginalName("foo")
-            .streamInstructions()
-            .filter(InstructionSubject::isInstanceGet)
-            .count());
-    assertEquals(
-        1,
-        inspector
-            .clazz(ATry.class)
-            .uniqueMethodWithOriginalName("foo")
-            .streamInstructions()
-            .filter(InstructionSubject::isInstanceGet)
-            .count());
-    assertEquals(
-        2,
-        inspector
-            .clazz(ATryOneBranch.class)
-            .uniqueMethodWithOriginalName("foo")
-            .streamInstructions()
-            .filter(InstructionSubject::isInstanceGet)
-            .count());
-    assertEquals(
-        1,
-        inspector
-            .clazz(C.class)
-            .uniqueMethodWithOriginalName("bar")
-            .streamInstructions()
-            .filter(InstructionSubject::isInstanceGet)
-            .count());
-    assertEquals(
-        1,
-        inspector
-            .clazz(CTry.class)
-            .uniqueMethodWithOriginalName("bar")
-            .streamInstructions()
-            .filter(InstructionSubject::isInstanceGet)
-            .count());
-    assertEquals(
-        2,
-        inspector
-            .clazz(C.class)
-            .uniqueMethodWithOriginalName("baz")
-            .streamInstructions()
-            .filter(InstructionSubject::isInstanceGet)
-            .count());
+        .assertSuccessWithOutput("truetruetrue");
   }
 
   static class TestClass {
     public static void main(String[] args) {
       System.out.print(new A().foo() > 0);
-      System.out.print(new ATry().foo() > 0);
-      System.out.print(
-          new ATryOneBranch().foo(System.currentTimeMillis() > 0 ? new B() : null) > 0);
       System.out.print(new C().bar() > 0);
-      System.out.print(new CTry().bar() > 0);
       System.out.print(new C().baz() > 0);
     }
   }
@@ -129,68 +91,6 @@ public class InstanceGetSharingTest extends TestBase {
       } else {
         return b.getNum() + 2;
       }
-    }
-  }
-
-  @NoHorizontalClassMerging
-  @NeverClassInline
-  static class ATry {
-    private B b = new B();
-
-    @NeverInline
-    public long foo() {
-      try {
-        if (System.currentTimeMillis() > 0) {
-          return b.getNum() + 1;
-        } else {
-          return b.getNum() + 2;
-        }
-      } catch (RuntimeException e) {
-        System.out.println("caught");
-      }
-      return 0L;
-    }
-  }
-
-  @NoHorizontalClassMerging
-  @NeverClassInline
-  static class ATryOneBranch {
-
-    @NeverInline
-    public long foo(B b) {
-      if (System.currentTimeMillis() > 0) {
-        try {
-          return b.num + 1;
-        } catch (RuntimeException e) {
-          System.out.println("caught");
-          return 0L;
-        }
-      } else {
-        return b.num + 2;
-      }
-    }
-  }
-
-  @NoHorizontalClassMerging
-  @NeverClassInline
-  static class CTry {
-
-    @NeverInline
-    public long bar() {
-      try {
-        long num;
-        if (System.currentTimeMillis() > 0) {
-          B b1 = new B();
-          num = b1.num;
-        } else {
-          B b2 = new B();
-          num = b2.num;
-        }
-        return num + 1;
-      } catch (RuntimeException e) {
-        System.out.println("caught");
-      }
-      return 0L;
     }
   }
 

@@ -1221,9 +1221,8 @@ public class BasicBlock {
   }
 
   private BasicBlock getExceptionTrampolineTarget() {
-    if (!hasCatchHandlers()
-        && exit().isGoto()
-        && (instructions.size() == 1 || (instructions.size() == 2 && entry().isMoveException()))) {
+    if (instructions.size() == 2 && entry().isMoveException() && exit().isGoto()) {
+      assert !hasCatchHandlers() : "Trampoline should not have catch handlers";
       return getUniqueNormalSuccessor();
     }
     return null;
@@ -1232,8 +1231,8 @@ public class BasicBlock {
   /**
    * Returns whether the given blocks are in the same try block.
    *
-   * <p>They are considered the same if all catch handlers have the same guards and point to the
-   * same block or are trampolines that point to the same block.
+   * <p>They are considered the same if all catch handlers have the same guards and are trampolines
+   * that point to the same block.
    */
   public boolean hasEquivalentCatchHandlers(BasicBlock other) {
     if (this == other) {
@@ -1253,17 +1252,12 @@ public class BasicBlock {
     List<DexType> guards1 = catchHandlers.getGuards();
     List<DexType> guards2 = other.catchHandlers.getGuards();
     for (int i = 0; i < numHandlers; ++i) {
-      if (guards1.get(i).isNotIdenticalTo(guards2.get(i))) {
-        return false;
-      }
       BasicBlock catchBlock1 = successors.get(targets1.get(i));
       BasicBlock catchBlock2 = other.successors.get(targets2.get(i));
-      if (catchBlock1 == catchBlock2) {
-        continue;
-      }
       BasicBlock trampolineTarget = catchBlock1.getExceptionTrampolineTarget();
       if (trampolineTarget == null
-          || trampolineTarget != catchBlock2.getExceptionTrampolineTarget()) {
+          || trampolineTarget != catchBlock2.getExceptionTrampolineTarget()
+          || guards1.get(i).isNotIdenticalTo(guards2.get(i))) {
         return false;
       }
     }
