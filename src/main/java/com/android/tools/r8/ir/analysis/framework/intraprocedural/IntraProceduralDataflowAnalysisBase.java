@@ -146,7 +146,10 @@ public class IntraProceduralDataflowAnalysisBase<
           .join(appView, computeBlockEntryStateForNormalBlock(block));
     }
     if (cfg.hasExceptionalPredecessors(block)) {
-      return exceptionalBlockEntryStates.getOrDefault(block, bottom).clone();
+      return exceptionalBlockEntryStates
+          .getOrDefault(block, bottom)
+          .clone()
+          .join(appView, computeBlockEntryStateForNormalBlock(block));
     }
     return computeBlockEntryStateForNormalBlock(block);
   }
