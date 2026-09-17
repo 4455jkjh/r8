@@ -533,6 +533,7 @@ r8_tester_with_default(
     "compile-only",
     [],
     bucket = "try",
+    trigger = False,
     priority = 20,
 )
 
