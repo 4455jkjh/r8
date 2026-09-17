@@ -39,7 +39,10 @@ public abstract class MixedSectionLayoutInspector
     // Intentionally empty.
   }
 
-  public void inspectClassDataLayout(int virtualFile, Collection<DexProgramClass> layout) {
+  public void inspectClassDataLayout(
+      int virtualFile,
+      Collection<DexProgramClass> layout,
+      MixedSectionLayoutStrategy layoutStrategy) {
     // Intentionally empty.
   }
 
@@ -97,7 +100,7 @@ public abstract class MixedSectionLayoutInspector
       @Override
       public Collection<DexProgramClass> getClassDataLayout() {
         Collection<DexProgramClass> layout = mixedSectionLayoutStrategy.getClassDataLayout();
-        inspectClassDataLayout(virtualFile.getId(), layout);
+        inspectClassDataLayout(virtualFile.getId(), layout, mixedSectionLayoutStrategy);
         return layout;
       }
 

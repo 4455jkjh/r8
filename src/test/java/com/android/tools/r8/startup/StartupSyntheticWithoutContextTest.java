@@ -17,6 +17,7 @@ import com.android.tools.r8.D8TestRunResult;
 import com.android.tools.r8.R8FullTestBuilder;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
+import com.android.tools.r8.dex.MixedSectionLayoutStrategy;
 import com.android.tools.r8.errors.StartupClassesNonStartupFractionDiagnostic;
 import com.android.tools.r8.graph.DexProgramClass;
 import com.android.tools.r8.references.ClassReference;
@@ -28,12 +29,12 @@ import com.android.tools.r8.startup.utils.MixedSectionLayoutInspector;
 import com.android.tools.r8.startup.utils.StartupTestingUtils;
 import com.android.tools.r8.synthesis.SyntheticItemsTestUtils;
 import com.android.tools.r8.utils.AndroidApiLevel;
-import com.android.tools.r8.utils.internal.BooleanUtils;
-import com.android.tools.r8.utils.internal.Box;
 import com.android.tools.r8.utils.MethodReferenceUtils;
 import com.android.tools.r8.utils.TypeReferenceUtils;
 import com.android.tools.r8.utils.codeinspector.CodeInspector;
 import com.android.tools.r8.utils.codeinspector.RepackagingInspector;
+import com.android.tools.r8.utils.internal.BooleanUtils;
+import com.android.tools.r8.utils.internal.Box;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import java.util.Collection;
@@ -190,7 +191,10 @@ public class StartupSyntheticWithoutContextTest extends TestBase {
       Box<RepackagingInspector> repackagingBox, SyntheticItemsTestUtils syntheticItems) {
     return new MixedSectionLayoutInspector() {
       @Override
-      public void inspectClassDataLayout(int virtualFile, Collection<DexProgramClass> layout) {
+      public void inspectClassDataLayout(
+          int virtualFile,
+          Collection<DexProgramClass> layout,
+          MixedSectionLayoutStrategy layoutStrategy) {
         RepackagingInspector repackaging = repackagingBox.get();
         assertThat(
             layout,

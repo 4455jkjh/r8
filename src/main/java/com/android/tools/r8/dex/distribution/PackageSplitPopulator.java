@@ -207,15 +207,16 @@ public class PackageSplitPopulator {
     boolean isSingleStartupDexFile = hasSpaceForTransaction(virtualFile, options);
     if (isSingleStartupDexFile) {
       virtualFile.commitTransaction();
-      virtualFile.setStartup();
+      virtualFile.setStartupProfile(startupProfile);
     } else {
       virtualFile.abortTransaction();
 
       // If the above failed, then apply the selected multi startup dex distribution strategy.
       MultiStartupDexDistributor distributor =
           MultiStartupDexDistributor.get(options, startupProfile);
-      distributor.distribute(classPartioning.getStartupClasses(), this, virtualFile, cycler);
-      cycler.getFilesForDistribution().forEach(VirtualFile::setStartup);
+      distributor.distribute(
+          appView, classPartioning.getStartupClasses(), this, virtualFile, cycler);
+      cycler.getFilesForDistribution().forEach(vf -> vf.setStartupProfile(startupProfile));
 
       options.reporter.warning(
           createStartupClassesOverflowDiagnostic(cycler.getFilesForDistribution().size()));

@@ -70,7 +70,6 @@ public class ObjectToOffsetMapping implements StringOffsetProvider {
       int lazyDexStringsCount,
       Map<String, DexString> shortyCache,
       StartupProfile startupProfile,
-      VirtualFile virtualFile,
       Timing timing) {
     assert appView != null;
     assert classes != null;
@@ -111,7 +110,7 @@ public class ObjectToOffsetMapping implements StringOffsetProvider {
     this.classes =
         appView.testing().enableLegacyClassDefOrdering
             ? sortClassesLegacy(classes, visitor)
-            : sortClasses(classes, startupProfile, virtualFile, visitor);
+            : sortClasses(classes, startupProfile, visitor);
     timing.end();
     timing.begin("Sort protos");
     this.protos = createSortedMap(protos, compare(visitor));
@@ -283,11 +282,7 @@ public class ObjectToOffsetMapping implements StringOffsetProvider {
   }
 
   private DexProgramClass[] sortClasses(
-      Set<DexProgramClass> classes,
-      StartupProfile startupProfile,
-      VirtualFile virtualFile,
-      CompareToVisitor visitor) {
-    assert startupProfile.isEmpty() || virtualFile.getId() == 0;
+      Set<DexProgramClass> classes, StartupProfile startupProfile, CompareToVisitor visitor) {
     // First sort the classes using the startup profile.
     LinkedHashSet<DexProgramClass> sortedClasses = new LinkedHashSet<>(classes.size());
     addClassesFromStartupProfile(classes, sortedClasses, startupProfile);

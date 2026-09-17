@@ -7,6 +7,7 @@ package com.android.tools.r8.profile.startup.distribution;
 import com.android.tools.r8.dex.VirtualFile;
 import com.android.tools.r8.dex.distribution.PackageSplitPopulator;
 import com.android.tools.r8.dex.distribution.VirtualFileCycler;
+import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.DexClass;
 import com.android.tools.r8.graph.DexEncodedMethod;
 import com.android.tools.r8.graph.DexProgramClass;
@@ -29,29 +30,38 @@ public abstract class MultiStartupDexDistributor {
   }
 
   public abstract void distribute(
+      AppView<?> appView,
       List<DexProgramClass> classes,
       PackageSplitPopulator packageSplitPopulator,
       VirtualFile virtualFile,
       VirtualFileCycler virtualFileCycler);
 
   void distributeInOrder(
-      List<DexProgramClass> classes, VirtualFile virtualFile, VirtualFileCycler virtualFileCycler) {
+      AppView<?> appView,
+      List<DexProgramClass> classes,
+      VirtualFile virtualFile,
+      VirtualFileCycler virtualFileCycler) {
     // Add the startup classes one by one.
     for (DexProgramClass startupClass : classes) {
       virtualFile.addClass(startupClass);
-      if (hasSpaceForTransaction(virtualFile)) {
+      if (hasSpaceForTransaction(virtualFile, appView.options())) {
         virtualFile.commitTransaction();
       } else {
         virtualFile.abortTransaction();
         virtualFile = virtualFileCycler.addFile();
         virtualFile.addClass(startupClass);
-        assert hasSpaceForTransaction(virtualFile);
+        assert hasSpaceForTransaction(virtualFile, appView.options());
         virtualFile.commitTransaction();
       }
     }
   }
 
-  boolean hasSpaceForTransaction(VirtualFile virtualFile) {
+  boolean hasSpaceForTransaction(VirtualFile virtualFile, InternalOptions options) {
+    if (options.getTestingOptions().limitNumberOfClassesPerDex >= 1
+        && virtualFile.getNumberOfClasses()
+            > options.getTestingOptions().limitNumberOfClassesPerDex) {
+      return false;
+    }
     return !virtualFile.isFull();
   }
 
@@ -118,6 +128,7 @@ public abstract class MultiStartupDexDistributor {
 
     @Override
     public void distribute(
+        AppView<?> appView,
         List<DexProgramClass> classes,
         PackageSplitPopulator packageSplitPopulator,
         VirtualFile virtualFile,
@@ -128,7 +139,7 @@ public abstract class MultiStartupDexDistributor {
       distribution.sort(
           Comparator.<DexProgramClass>comparingInt(classMetrics::getInt)
               .thenComparing(DexClass::getType));
-      distributeInOrder(distribution, virtualFile, virtualFileCycler);
+      distributeInOrder(appView, distribution, virtualFile, virtualFileCycler);
     }
 
     int getMetric(DexProgramClass clazz) {
@@ -159,12 +170,13 @@ public abstract class MultiStartupDexDistributor {
 
     @Override
     public void distribute(
+        AppView<?> appView,
         List<DexProgramClass> classes,
         PackageSplitPopulator packageSplitPopulator,
         VirtualFile virtualFile,
         VirtualFileCycler virtualFileCycler) {
       // Add the (already sorted) startup classes one by one.
-      distributeInOrder(classes, virtualFile, virtualFileCycler);
+      distributeInOrder(appView, classes, virtualFile, virtualFileCycler);
     }
   }
 
@@ -176,6 +188,7 @@ public abstract class MultiStartupDexDistributor {
 
     @Override
     public void distribute(
+        AppView<?> appView,
         List<DexProgramClass> classes,
         PackageSplitPopulator packageSplitPopulator,
         VirtualFile virtualFile,

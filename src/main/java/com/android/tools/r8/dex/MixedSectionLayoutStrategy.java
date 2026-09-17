@@ -17,19 +17,22 @@ import com.android.tools.r8.graph.ParameterAnnotationsList;
 import com.android.tools.r8.graph.ProgramMethod;
 import com.android.tools.r8.profile.startup.profile.StartupProfile;
 import java.util.Collection;
+import java.util.function.Supplier;
 
 public abstract class MixedSectionLayoutStrategy {
 
   public static MixedSectionLayoutStrategy create(
-      AppView<?> appView, MixedSectionOffsets mixedSectionOffsets, VirtualFile virtualFile) {
+      AppView<?> appView,
+      MixedSectionOffsets mixedSectionOffsets,
+      VirtualFile virtualFile,
+      Supplier<StartupProfile> startupProfileForWritingSupplier) {
     StartupProfile startupProfileForWriting;
     if (virtualFile.getStartupProfile().isEmpty()) {
       startupProfileForWriting = StartupProfile.empty();
     } else {
-      assert virtualFile.getId() == 0;
       startupProfileForWriting =
           appView.options().getStartupOptions().isStartupMixedSectionLayoutOptimizationsEnabled()
-              ? virtualFile.getStartupProfile().toStartupProfileForWriting(appView)
+              ? startupProfileForWritingSupplier.get()
               : StartupProfile.empty();
     }
     MixedSectionLayoutStrategy mixedSectionLayoutStrategy =
