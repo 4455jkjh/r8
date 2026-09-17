@@ -7,7 +7,6 @@ import static org.junit.Assert.assertEquals;
 
 import com.android.tools.r8.NeverClassInline;
 import com.android.tools.r8.NeverInline;
-import com.android.tools.r8.NeverPropagateValue;
 import com.android.tools.r8.NoHorizontalClassMerging;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
@@ -46,7 +45,6 @@ public class StaticGetSharingTest extends TestBase {
         .addInnerClasses(getClass())
         .addKeepMainRule(TestClass.class)
         .enableInliningAnnotations()
-        .enableMemberValuePropagationAnnotations()
         .enableNeverClassInliningAnnotations()
         .enableNoHorizontalClassMergingAnnotations()
         .compile()
@@ -231,13 +229,13 @@ public class StaticGetSharingTest extends TestBase {
     public long foo() {
       if (System.currentTimeMillis() > 0) {
         try {
-          return ANestedTry2.Throwing.num + 1;
-        } catch (Throwable e) {
+          return B.num + 1;
+        } catch (RuntimeException e) {
           CTry.dummy(0);
-          return 1L;
+          return 0L;
         }
       } else {
-        return ANestedTry2.Throwing.num + 2;
+        return B.num + 2;
       }
     }
   }
@@ -289,6 +287,6 @@ public class StaticGetSharingTest extends TestBase {
 
   @NeverClassInline
   static class B {
-    @NeverPropagateValue public static long num = 42;
+    public static long num = System.currentTimeMillis();
   }
 }

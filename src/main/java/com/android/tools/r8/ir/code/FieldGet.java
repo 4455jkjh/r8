@@ -25,8 +25,6 @@ public interface FieldGet extends InstructionOrValue {
 
   boolean isStaticGet();
 
-  StaticGet asStaticGet();
-
   boolean hasUsedOutValue();
 
   Value outValue();
