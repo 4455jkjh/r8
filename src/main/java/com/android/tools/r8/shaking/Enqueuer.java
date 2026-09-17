@@ -3980,6 +3980,9 @@ public class Enqueuer {
       appView.getResourceShrinkerState().enqueuerDone(this.mode.isFinalTreeShaking());
     }
     timing.end();
+    timing.begin("Commit pending dex items");
+    appView.dexItemFactory().commitPendingItems();
+    timing.end();
     assert verifyKeptGraph();
     timing.begin("Finish compat building");
     if (mode.isInitialTreeShaking() && forceProguardCompatibility) {
@@ -4949,14 +4952,6 @@ public class Enqueuer {
       while (true) {
         timing.begin("Compute fixpoint #" + round++);
         long numberOfLiveItems = getNumberOfLiveItems();
-
-        // During the initial round of tree shaking we concurrently parse the code objects. Commit
-        // dex items before every wave to minimize synchronization overhead.
-        if (mode.isInitialTreeShaking()) {
-          timing.begin("Commit pending dex items");
-          withAppReadLock(appView.dexItemFactory()::commitPendingItems);
-          timing.end();
-        }
 
         timing.begin("Process worklist");
         worklist.process(timing);
