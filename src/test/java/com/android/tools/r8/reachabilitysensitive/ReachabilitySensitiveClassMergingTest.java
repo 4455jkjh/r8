@@ -4,10 +4,8 @@
 package com.android.tools.r8.reachabilitysensitive;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 
-import com.android.tools.r8.CompilationFailedException;
 import com.android.tools.r8.NeverClassInline;
 import com.android.tools.r8.NeverInline;
 import com.android.tools.r8.NoHorizontalClassMerging;
@@ -18,10 +16,11 @@ import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.graph.DexCode;
-import com.android.tools.r8.utils.AndroidApiLevel;
 import com.android.tools.r8.utils.codeinspector.ClassSubject;
 import com.android.tools.r8.utils.codeinspector.CodeInspector;
+import com.android.tools.r8.utils.codeinspector.HorizontallyMergedClassesInspector;
 import com.android.tools.r8.utils.codeinspector.MethodSubject;
+import com.android.tools.r8.utils.codeinspector.VerticallyMergedClassesInspector;
 import dalvik.annotation.optimization.ReachabilitySensitive;
 import java.lang.ref.WeakReference;
 import org.junit.Test;
@@ -71,35 +70,25 @@ public class ReachabilitySensitiveClassMergingTest extends TestBase {
         .addProgramClasses(Main.class, A.class, B.class, ReachabilitySensitive.class)
         .addKeepMainRule(Main.class)
         .addHorizontallyMergedClassesInspector(
-            inspector -> inspector.assertMergedInto(B.class, A.class))
+            HorizontallyMergedClassesInspector::assertNoClassesMerged)
         .compile()
-        // TODO(b/557271410): Should be 8 registers when ReachabilitySensitive is preserved.
-        .inspect(
-            inspector ->
-                inspect(
-                    inspector,
-                    A.class,
-                    parameters.getApiLevel().isGreaterThanOrEqualTo(AndroidApiLevel.M) ? 3 : 4))
+        .inspect(inspector -> inspect(inspector, B.class, EXPECTED_SENSITIVE_REGISTER_SIZE))
         .run(parameters.getRuntime(), Main.class)
-        // TODO(b/557271410): Should succeed with expected output instead of NPE from premature GC.
-        .assertFailureWithErrorThatThrows(NullPointerException.class);
+        .assertSuccessWithOutputLines("a", "5", "java.lang.Object");
   }
 
   @Test
-  public void testVerticalClassMerging() {
-    // TODO(b/557271410): Merging ReachabilitySensitive superclass into non-sensitive subclass
-    // causes Inliner assertion failure because DebugLocalRead instructions remain in LIR.
-    assertThrows(
-        CompilationFailedException.class,
-        () ->
-            configureCommonR8()
-                .addProgramClasses(
-                    VcmMain.class, VcmSuper.class, VcmSub.class, ReachabilitySensitive.class)
-                .addKeepMainRule(VcmMain.class)
-                .enableNoHorizontalClassMergingAnnotations()
-                .addVerticallyMergedClassesInspector(
-                    inspector -> inspector.assertMergedIntoSubtype(VcmSuper.class))
-                .compile());
+  public void testVerticalClassMerging() throws Exception {
+    configureCommonR8()
+        .addProgramClasses(VcmMain.class, VcmSuper.class, VcmSub.class, ReachabilitySensitive.class)
+        .addKeepMainRule(VcmMain.class)
+        .enableNoHorizontalClassMergingAnnotations()
+        .addVerticallyMergedClassesInspector(
+            VerticallyMergedClassesInspector::assertNoClassesMerged)
+        .compile()
+        .inspect(inspector -> inspect(inspector, VcmSuper.class, EXPECTED_SENSITIVE_REGISTER_SIZE))
+        .run(parameters.getRuntime(), VcmMain.class)
+        .assertSuccessWithOutputLines("sub", "5", "java.lang.Object");
   }
 
   private void inspect(CodeInspector inspector, Class<?> holder, int expectedRegisters) {

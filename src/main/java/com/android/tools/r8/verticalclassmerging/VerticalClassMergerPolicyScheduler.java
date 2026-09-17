@@ -22,6 +22,7 @@ import com.android.tools.r8.verticalclassmerging.policies.NoLockMergingPolicy;
 import com.android.tools.r8.verticalclassmerging.policies.NoMethodResolutionChangesPolicy;
 import com.android.tools.r8.verticalclassmerging.policies.NoNestedMergingPolicy;
 import com.android.tools.r8.verticalclassmerging.policies.NoNonSerializableClassIntoSerializableClassPolicy;
+import com.android.tools.r8.verticalclassmerging.policies.NoReachabilitySensitivePolicy;
 import com.android.tools.r8.verticalclassmerging.policies.NoServiceInterfacesPolicy;
 import com.android.tools.r8.verticalclassmerging.policies.SameApiReferenceLevelPolicy;
 import com.android.tools.r8.verticalclassmerging.policies.SameFeatureSplitPolicy;
@@ -43,6 +44,7 @@ public class VerticalClassMergerPolicyScheduler {
         new SameStartupPartitionPolicy(appView),
         new NoServiceInterfacesPolicy(appView),
         new NoAnnotationClassesPolicy(),
+        new NoReachabilitySensitivePolicy(),
         new NoNonSerializableClassIntoSerializableClassPolicy(appView),
         new NoEnclosingMethodAttributesPolicy(),
         new NoInnerClassAttributesPolicy(),
