@@ -19,7 +19,6 @@ import org.junit.runners.Parameterized.Parameters;
 public class ClassInitializerDefaultsDexItemBasedConstStringTest extends TestBase {
 
   private static final List<String> EXPECTED = ImmutableList.of("DISABLED", "true");
-  private static final List<String> UNEXPECTED = ImmutableList.of("a", "true");
 
   @Parameter(0)
   public TestParameters parameters;
@@ -45,7 +44,7 @@ public class ClassInitializerDefaultsDexItemBasedConstStringTest extends TestBas
         .addKeepMainRule(Main.class)
         .enableInliningAnnotations()
         .run(parameters.getRuntime(), Main.class)
-        .assertSuccessWithOutputLines(UNEXPECTED);
+        .assertSuccessWithOutputLines(EXPECTED);
   }
 
   public static class Other {

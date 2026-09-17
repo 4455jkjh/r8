@@ -34,7 +34,6 @@ import com.android.tools.r8.graph.DexValue.DexValueString;
 import com.android.tools.r8.graph.FieldResolutionResult;
 import com.android.tools.r8.graph.ProgramField;
 import com.android.tools.r8.graph.ProgramMethod;
-import com.android.tools.r8.ir.analysis.type.TypeElement;
 import com.android.tools.r8.ir.code.ArrayPut;
 import com.android.tools.r8.ir.code.BasicBlock;
 import com.android.tools.r8.ir.code.ConstNumber;
@@ -405,7 +404,7 @@ public class ClassInitializerDefaultsOptimization {
             // as long as the instructions do not throw.
             ArrayPut arrayPut = instruction.asArrayPut();
             if (arrayPut.instructionInstanceCanThrow(appView, context)) {
-              return validateFinalFieldPuts(finalFieldPuts, isWrittenBefore);
+              return validateFinalFieldPuts(finalFieldPuts, isWrittenBefore, unnecessaryStaticPuts);
             }
           } else if (instruction.isStaticGet()) {
             StaticGet get = instruction.asStaticGet();
@@ -414,25 +413,21 @@ public class ClassInitializerDefaultsOptimization {
               isReadBefore.add(field);
             } else {
               // Reading another field is only OK if the read does not have side-effects.
-              return validateFinalFieldPuts(finalFieldPuts, isWrittenBefore);
+              return validateFinalFieldPuts(finalFieldPuts, isWrittenBefore, unnecessaryStaticPuts);
             }
           } else if (instruction.isStaticPut()) {
             StaticPut put = instruction.asStaticPut();
             if (put.getField().holder != context.getHolderType()) {
               // Can cause clinit on another class which can read uninitialized static fields
               // of this class.
-              return validateFinalFieldPuts(finalFieldPuts, isWrittenBefore);
+              return validateFinalFieldPuts(finalFieldPuts, isWrittenBefore, unnecessaryStaticPuts);
             }
             DexEncodedField field = context.getHolder().lookupField(put.getField());
             Value value = put.value().getAliasedValue();
-            TypeElement valueType = value.getType();
             if (field != null) {
               if (isReadBefore.contains(field)) {
                 // Promoting this put to a class constant would cause a previous static-get
                 // instruction to read a different value.
-                continue;
-              }
-              if (value.isDexItemBasedConstStringThatNeedsToComputeClassName()) {
                 continue;
               }
               if (value.isConstant()) {
@@ -447,7 +442,8 @@ public class ClassInitializerDefaultsOptimization {
                   }
                   continue;
                 } else if (field.getType().isPrimitiveType()
-                    || field.getType() == dexItemFactory.stringType) {
+                    || (field.getType() == dexItemFactory.stringType
+                        && !value.isDexItemBasedConstStringThatNeedsToComputeClassName())) {
                   finalFieldPuts.put(field, put);
                   unnecessaryStaticPuts.add(put);
                   if (isWrittenBefore.containsKey(field)) {
@@ -466,9 +462,6 @@ public class ClassInitializerDefaultsOptimization {
                   unnecessaryStaticPuts.addAll(isWrittenBefore.remove(field));
                 }
                 continue;
-              } else if (valueType.isReferenceType() && valueType.isDefinitelyNotNull()) {
-                finalFieldPuts.put(field, put);
-                continue;
               }
               // static-put that is reaching here can be redundant if the corresponding field is
               // rewritten with another constant (of course before being read).
@@ -477,11 +470,11 @@ public class ClassInitializerDefaultsOptimization {
               isWrittenBefore.computeIfAbsent(field, ignore -> Sets.newIdentityHashSet()).add(put);
             } else {
               // Writing another field is not OK.
-              return validateFinalFieldPuts(finalFieldPuts, isWrittenBefore);
+              return validateFinalFieldPuts(finalFieldPuts, isWrittenBefore, unnecessaryStaticPuts);
             }
           } else if (instruction.instructionMayHaveSideEffects(appView, context)) {
             // Some other instruction that has side-effects. Stop here.
-            return validateFinalFieldPuts(finalFieldPuts, isWrittenBefore);
+            return validateFinalFieldPuts(finalFieldPuts, isWrittenBefore, unnecessaryStaticPuts);
           } else {
             // TODO(b/120138731): This check should be removed when the Class.get*Name()
             // optimizations become enabled.
@@ -494,7 +487,8 @@ public class ClassInitializerDefaultsOptimization {
             if (instruction.isInvoke() && instruction.hasOutValue()) {
               Value outValue = instruction.outValue();
               if (outValue.hasNonDebugUsers()) {
-                return validateFinalFieldPuts(finalFieldPuts, isWrittenBefore);
+                return validateFinalFieldPuts(
+                    finalFieldPuts, isWrittenBefore, unnecessaryStaticPuts);
               }
             }
           }
@@ -506,12 +500,13 @@ public class ClassInitializerDefaultsOptimization {
     } finally {
       code.returnMarkingColor(color);
     }
-    return validateFinalFieldPuts(finalFieldPuts, isWrittenBefore);
+    return validateFinalFieldPuts(finalFieldPuts, isWrittenBefore, unnecessaryStaticPuts);
   }
 
   private Map<DexEncodedField, StaticPut> validateFinalFieldPuts(
       Map<DexEncodedField, StaticPut> finalFieldPuts,
-      Map<DexEncodedField, Set<StaticPut>> isWrittenBefore) {
+      Map<DexEncodedField, Set<StaticPut>> isWrittenBefore,
+      Set<StaticPut> unnecessaryStaticPuts) {
     // If a field is rewritten again with other values that we can't represent as static encoded
     // values, that would be recorded at `isWrittenBefore`, which is used to collect and remove
     // redundant static-puts. The remnant indicates that the candidate for final field put is not
@@ -531,7 +526,12 @@ public class ClassInitializerDefaultsOptimization {
     // remaining. If other optimizations (most likely member value propagation) rely on encoded
     // values, leaving it can cause incorrect optimizations. Thus, we invalidate candidates of
     // final field puts at all.
-    isWrittenBefore.keySet().forEach(finalFieldPuts::remove);
+    for (DexEncodedField field : isWrittenBefore.keySet()) {
+      StaticPut removedPut = finalFieldPuts.remove(field);
+      if (removedPut != null) {
+        unnecessaryStaticPuts.removeIf(put -> put.getField().isIdenticalTo(field.getReference()));
+      }
+    }
     return finalFieldPuts;
   }
 

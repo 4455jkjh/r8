@@ -19,7 +19,6 @@ import org.junit.runners.Parameterized.Parameters;
 public class ClassInitializerDefaultsNonConstantFollowedByConstantTest extends TestBase {
 
   private static final List<String> EXPECTED = ImmutableList.of("DISABLED", "1");
-  private static final List<String> UNEXPECTED = ImmutableList.of("ENABLED:5", "1");
 
   @Parameter(0)
   public TestParameters parameters;
@@ -45,7 +44,7 @@ public class ClassInitializerDefaultsNonConstantFollowedByConstantTest extends T
         .addKeepMainRule(Main.class)
         .enableInliningAnnotations()
         .run(parameters.getRuntime(), Main.class)
-        .assertSuccessWithOutputLines(UNEXPECTED);
+        .assertSuccessWithOutputLines(EXPECTED);
   }
 
   public static class Config {
