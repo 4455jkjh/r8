@@ -22,6 +22,7 @@ base_config {
     # These flags should mirror gradle.py
     gradle-args = [
         "--offline",
+        "--no-build-cache",
         "-Porg.gradle.java.installations.auto-detect=false",
         "-Porg.gradle.java.installations.auto-download=false"
     ]
