@@ -38,7 +38,9 @@ public abstract class CodeGenerationBase extends TestBase {
   protected final DexItemFactory factory = new DexItemFactory();
 
   public static String kotlinFormatRawOutput(String rawOutput) throws IOException {
-    Path temporaryFile = File.createTempFile("output-", ".kt").toPath();
+    Path base = ToolHelper.getR8TempPath();
+    Files.createDirectories(base);
+    Path temporaryFile = File.createTempFile("output-", ".kt", base.toFile()).toPath();
     Files.write(temporaryFile, rawOutput.getBytes());
     kotlinFormatRawOutput(temporaryFile, KOTLIN_FORMAT_STYLE.KOTLINLANG);
     String result = FileUtils.readTextFile(temporaryFile);
@@ -47,7 +49,9 @@ public abstract class CodeGenerationBase extends TestBase {
   }
 
   public static String javaFormatRawOutput(String rawOutput) throws IOException {
-    File temporaryFile = File.createTempFile("output-", ".java");
+    Path base = ToolHelper.getR8TempPath();
+    Files.createDirectories(base);
+    File temporaryFile = File.createTempFile("output-", ".java", base.toFile());
     Files.write(temporaryFile.toPath(), rawOutput.getBytes());
     String result = javaFormatRawOutput(temporaryFile.toPath());
     temporaryFile.deleteOnExit();

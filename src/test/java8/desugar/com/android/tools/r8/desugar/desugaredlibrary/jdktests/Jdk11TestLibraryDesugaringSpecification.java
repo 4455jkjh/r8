@@ -84,8 +84,7 @@ public class Jdk11TestLibraryDesugaringSpecification {
     if (Files.exists(EXTENSION_PATH)) {
       return;
     }
-    TemporaryFolder folder =
-        new TemporaryFolder(ToolHelper.isLinux() ? null : Paths.get("build", "tmp").toFile());
+    TemporaryFolder folder = ToolHelper.getTemporaryFolderForTest();
     folder.create();
     Path output = folder.newFolder().toPath().resolve("temp.jar");
     List<String> options =

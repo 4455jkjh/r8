@@ -22,13 +22,7 @@ import java.util.List;
 import java.util.Map;
 import org.junit.After;
 import org.junit.AfterClass;
-import org.junit.Rule;
-import org.junit.rules.TemporaryFolder;
-
 public class PlaywrightTestBase extends TestBase {
-
-  @Rule public TemporaryFolder tempFolder = new TemporaryFolder();
-
   private static Playwright playwright;
   private static Browser browser;
   protected Page page;

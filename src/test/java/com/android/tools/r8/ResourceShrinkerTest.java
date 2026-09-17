@@ -24,17 +24,13 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
 
 /**
  * Tests for resource shrinker analyzer. This is checking that dex files are processed correctly.
  */
 public class ResourceShrinkerTest extends TestBase {
 
-  @Rule
-  public TemporaryFolder tmp = new TemporaryFolder();
 
   private static class TrackAll implements ResourceShrinker.ReferenceChecker {
     Set<Integer> refIntegers = Sets.newHashSet();
@@ -287,7 +283,7 @@ public class ResourceShrinkerTest extends TestBase {
   private TrackAll runOnApp(AndroidApp app)
       throws IOException, ExecutionException, CompilationFailedException {
     AndroidApp outputApp = compileWithD8(app);
-    Path outputDex = tmp.newFolder().toPath().resolve("classes.dex");
+    Path outputDex = temp.newFolder().toPath().resolve("classes.dex");
     outputApp.writeToDirectory(outputDex.getParent(), OutputMode.DexIndexed);
 
     ProgramResourceProvider provider =

@@ -39,9 +39,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import org.hamcrest.Matcher;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
@@ -54,7 +52,6 @@ public class RetraceCommandLineTests extends TestBase {
   private static final String WAITING_MESSAGE =
       "Waiting for stack-trace input..." + StringUtils.LINE_SEPARATOR;
 
-  @Rule public TemporaryFolder folder = new TemporaryFolder();
 
   private final boolean testExternal;
   private final boolean testPartition;
@@ -91,9 +88,9 @@ public class RetraceCommandLineTests extends TestBase {
 
   @Test
   public void testInvalidMappingFile() throws IOException {
-    Path mappingFile = folder.newFile("mapping.txt").toPath();
+    Path mappingFile = temp.newFile("mapping.txt").toPath();
     Files.write(mappingFile, "foo.bar.baz <- is invalid mapping".getBytes());
-    Path stackTraceFile = folder.newFile("stacktrace.txt").toPath();
+    Path stackTraceFile = temp.newFile("stacktrace.txt").toPath();
     Files.write(stackTraceFile, new byte[0]);
     runAbortTest(
         containsString("Unable to parse mapping file"),
@@ -103,7 +100,7 @@ public class RetraceCommandLineTests extends TestBase {
 
   @Test
   public void testMissingStackTraceFile() throws IOException {
-    Path mappingFile = folder.newFile("mapping.txt").toPath();
+    Path mappingFile = temp.newFile("mapping.txt").toPath();
     Files.write(mappingFile, "foo.bar.baz -> foo:".getBytes());
     runAbortTest(containsString("NoSuchFileException"), mappingFile.toString(), "stacktrace.txt");
   }
@@ -247,7 +244,7 @@ public class RetraceCommandLineTests extends TestBase {
 
   @Test
   public void testNoMappingFileHash() throws IOException {
-    Path mappingFile = folder.newFile("mapping.txt").toPath();
+    Path mappingFile = temp.newFile("mapping.txt").toPath();
     Files.write(mappingFile, ("# other header\n" + "foo.bar -> a.a\n").getBytes());
     ProcessResult result =
         runRetraceCommandLine(
@@ -259,7 +256,7 @@ public class RetraceCommandLineTests extends TestBase {
 
   @Test
   public void testValidMappingFileHash() throws IOException {
-    Path mappingFile = folder.newFile("mapping.txt").toPath();
+    Path mappingFile = temp.newFile("mapping.txt").toPath();
     Files.write(
         mappingFile,
         ("# pg_map_hash: SHA-256 aaf7c0230ea6fa768189170543c86ec202c6180d1e0a37b620e5c1fce1bd3ae7\n"
@@ -275,7 +272,7 @@ public class RetraceCommandLineTests extends TestBase {
 
   @Test
   public void testInvalidMappingFileHash() throws IOException {
-    Path mappingFile = folder.newFile("mapping.txt").toPath();
+    Path mappingFile = temp.newFile("mapping.txt").toPath();
     Files.write(mappingFile, ("# pg_map_hash: SHA-256 abcd1234\n" + "foo.bar -> a.a\n").getBytes());
     runAbortTest(
         containsString("Mismatching map hash"),
@@ -316,12 +313,12 @@ public class RetraceCommandLineTests extends TestBase {
   private ProcessResult runRetrace(
       String mapping, String stackTrace, boolean stacktraceStdIn, String... additionalArgs)
       throws IOException {
-    Path mappingFile = folder.newFile("mapping.txt").toPath();
+    Path mappingFile = temp.newFile("mapping.txt").toPath();
     Files.write(mappingFile, mapping.getBytes());
     if (testPartition) {
       mappingFile = runPartitionCommandLine(mappingFile);
     }
-    File stackTraceFile = folder.newFile("stacktrace.txt");
+    File stackTraceFile = temp.newFile("stacktrace.txt");
     Files.write(stackTraceFile.toPath(), stackTrace.getBytes(StandardCharsets.UTF_8));
 
     Collection<String> args = new ArrayList<>();
@@ -337,7 +334,7 @@ public class RetraceCommandLineTests extends TestBase {
   }
 
   private Path runPartitionCommandLine(Path mappingFile) throws IOException {
-    Path partitionOutput = folder.newFile("partition.txt").toPath();
+    Path partitionOutput = temp.newFile("partition.txt").toPath();
     ProcessResult processResult =
         runCommandLine(
             null,
