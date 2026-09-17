@@ -143,6 +143,15 @@ public class IterableUtils {
     return min;
   }
 
+  public static <T> boolean all(Iterable<T> iterable, Predicate<T> predicate) {
+    for (T element : iterable) {
+      if (!predicate.test(element)) {
+        return false;
+      }
+    }
+    return true;
+  }
+
   public static <T> boolean none(Iterable<T> iterable, Predicate<T> predicate) {
     for (T element : iterable) {
       if (predicate.test(element)) {
