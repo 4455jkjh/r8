@@ -96,10 +96,10 @@ public class AutoCloseableRetargeterHelper {
       consumer.accept(factory.javaUtilConcurrentExecutorServiceType);
       consumer.accept(factory.javaUtilConcurrentForkJoinPoolType);
       if (withSubtypes) {
-        consumer.accept(factory.createType("Ljava/util/concurrent/ScheduledExecutorService;"));
-        consumer.accept(factory.createType("Ljava/util/concurrent/AbstractExecutorService;"));
-        consumer.accept(factory.createType("Ljava/util/concurrent/ThreadPoolExecutor;"));
-        consumer.accept(factory.createType("Ljava/util/concurrent/ScheduledThreadPoolExecutor;"));
+        consumer.accept(factory.javaUtilConcurrentScheduledExecutorService);
+        consumer.accept(factory.javaUtilConcurrentAbstractExecutorService);
+        consumer.accept(factory.javaUtilConcurrentThreadPoolExecutor);
+        consumer.accept(factory.javaUtilConcurrentScheduledThreadPoolExecutor);
       }
     }
     if (minApiLevel.isLessThanOrEqualTo(AndroidApiLevel.R)) {

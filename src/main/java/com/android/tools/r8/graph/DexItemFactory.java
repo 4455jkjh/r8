@@ -1004,6 +1004,15 @@ public class DexItemFactory {
       createStaticallyKnownType("Ljava/util/concurrent/ExecutorService;");
   public final DexType javaUtilConcurrentForkJoinPoolType =
       createStaticallyKnownType("Ljava/util/concurrent/ForkJoinPool;");
+  public final DexType javaUtilConcurrentAbstractExecutorService =
+      createStaticallyKnownType("Ljava/util/concurrent/AbstractExecutorService;");
+  public final DexType javaUtilConcurrentScheduledExecutorService =
+      createStaticallyKnownType("Ljava/util/concurrent/ScheduledExecutorService;");
+  public final DexType javaUtilConcurrentScheduledThreadPoolExecutor =
+      createStaticallyKnownType("Ljava/util/concurrent/ScheduledThreadPoolExecutor;");
+  public final DexType javaUtilConcurrentThreadPoolExecutor =
+      createStaticallyKnownType("Ljava/util/concurrent/ThreadPoolExecutor;");
+
   public final SunMiscUnsafeMethods sunMiscUnsafeMethods = new SunMiscUnsafeMethods();
 
   public final ObjectMethodsMembers objectMethodsMembers = new ObjectMethodsMembers();
