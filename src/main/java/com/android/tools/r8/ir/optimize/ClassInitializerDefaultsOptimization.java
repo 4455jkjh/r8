@@ -251,7 +251,7 @@ public class ClassInitializerDefaultsOptimization {
       }
 
       // Remove the instructions collected for removal.
-      if (unnecessaryInstructions.size() > 0) {
+      if (!unnecessaryInstructions.isEmpty()) {
         IteratorUtils.removeIf(code.instructionListIterator(), unnecessaryInstructions::contains);
       }
     }
@@ -392,7 +392,7 @@ public class ClassInitializerDefaultsOptimization {
   private Map<DexEncodedField, StaticPut> findFinalFieldPutsWhileCollectingUnnecessaryStaticPuts(
       IRCode code, ProgramMethod context, Set<StaticPut> unnecessaryStaticPuts) {
     Map<DexEncodedField, StaticPut> finalFieldPuts = Maps.newIdentityHashMap();
-    Map<DexField, Set<StaticPut>> isWrittenBefore = Maps.newIdentityHashMap();
+    Map<DexEncodedField, Set<StaticPut>> isWrittenBefore = Maps.newIdentityHashMap();
     Set<DexEncodedField> isReadBefore = Sets.newIdentityHashSet();
     final int color = code.reserveMarkingColor();
     try {
@@ -423,8 +423,7 @@ public class ClassInitializerDefaultsOptimization {
               // of this class.
               return validateFinalFieldPuts(finalFieldPuts, isWrittenBefore);
             }
-            DexField fieldReference = put.getField();
-            DexEncodedField field = context.getHolder().lookupField(fieldReference);
+            DexEncodedField field = context.getHolder().lookupField(put.getField());
             Value value = put.value().getAliasedValue();
             TypeElement valueType = value.getType();
             if (field != null) {
@@ -437,24 +436,22 @@ public class ClassInitializerDefaultsOptimization {
                 continue;
               }
               if (value.isConstant()) {
-                if (fieldReference.type.isReferenceType() && value.isZero()) {
+                if (field.getType().isReferenceType() && value.isZero()) {
                   finalFieldPuts.put(field, put);
                   unnecessaryStaticPuts.add(put);
                   // If this field has been written before, those static-put's up to this point are
                   // redundant. We should remove them all together; otherwise, remaining static-put
                   // that is not constant can change the program semantics. See b/138912149.
-                  if (isWrittenBefore.containsKey(fieldReference)) {
-                    unnecessaryStaticPuts.addAll(isWrittenBefore.get(fieldReference));
-                    isWrittenBefore.remove(fieldReference);
+                  if (isWrittenBefore.containsKey(field)) {
+                    unnecessaryStaticPuts.addAll(isWrittenBefore.remove(field));
                   }
                   continue;
-                } else if (fieldReference.type.isPrimitiveType()
-                    || fieldReference.type == dexItemFactory.stringType) {
+                } else if (field.getType().isPrimitiveType()
+                    || field.getType() == dexItemFactory.stringType) {
                   finalFieldPuts.put(field, put);
                   unnecessaryStaticPuts.add(put);
-                  if (isWrittenBefore.containsKey(fieldReference)) {
-                    unnecessaryStaticPuts.addAll(isWrittenBefore.get(fieldReference));
-                    isWrittenBefore.remove(fieldReference);
+                  if (isWrittenBefore.containsKey(field)) {
+                    unnecessaryStaticPuts.addAll(isWrittenBefore.remove(field));
                   }
                   continue;
                 }
@@ -465,9 +462,8 @@ public class ClassInitializerDefaultsOptimization {
                 // Collect put of class name constant as a potential default value.
                 finalFieldPuts.put(field, put);
                 unnecessaryStaticPuts.add(put);
-                if (isWrittenBefore.containsKey(fieldReference)) {
-                  unnecessaryStaticPuts.addAll(isWrittenBefore.get(fieldReference));
-                  isWrittenBefore.remove(fieldReference);
+                if (isWrittenBefore.containsKey(field)) {
+                  unnecessaryStaticPuts.addAll(isWrittenBefore.remove(field));
                 }
                 continue;
               } else if (valueType.isReferenceType() && valueType.isDefinitelyNotNull()) {
@@ -478,9 +474,7 @@ public class ClassInitializerDefaultsOptimization {
               // rewritten with another constant (of course before being read).
               // However, if static-put is still remaining in `isWrittenBefore`, that indicates
               // the previous candidate as final field put is no longer valid.
-              isWrittenBefore
-                  .computeIfAbsent(fieldReference, ignore -> Sets.newIdentityHashSet())
-                  .add(put);
+              isWrittenBefore.computeIfAbsent(field, ignore -> Sets.newIdentityHashSet()).add(put);
             } else {
               // Writing another field is not OK.
               return validateFinalFieldPuts(finalFieldPuts, isWrittenBefore);
@@ -517,7 +511,7 @@ public class ClassInitializerDefaultsOptimization {
 
   private Map<DexEncodedField, StaticPut> validateFinalFieldPuts(
       Map<DexEncodedField, StaticPut> finalFieldPuts,
-      Map<DexField, Set<StaticPut>> isWrittenBefore) {
+      Map<DexEncodedField, Set<StaticPut>> isWrittenBefore) {
     // If a field is rewritten again with other values that we can't represent as static encoded
     // values, that would be recorded at `isWrittenBefore`, which is used to collect and remove
     // redundant static-puts. The remnant indicates that the candidate for final field put is not
