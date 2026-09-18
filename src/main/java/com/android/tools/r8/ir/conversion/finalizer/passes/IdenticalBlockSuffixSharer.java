@@ -52,7 +52,7 @@ public class IdenticalBlockSuffixSharer extends FinalizerRewriterPass<AppInfo> {
 
   @Override
   protected boolean shouldRewriteCode(IRCode code) {
-    return true;
+    return code.blocks.size() >= 2;
   }
 
   @Override
@@ -101,8 +101,11 @@ public class IdenticalBlockSuffixSharer extends FinalizerRewriterPass<AppInfo> {
     }
     do {
       Map<BasicBlock, BasicBlock> newBlocks = new IdentityHashMap<>();
+      InstructionEquivalence equivalence = new InstructionEquivalence(allocator, code);
       for (BasicBlock block : blocks) {
-        InstructionEquivalence equivalence = new InstructionEquivalence(allocator, code);
+        if (block.getPredecessors().size() < 2) {
+          continue;
+        }
         // Group interesting predecessor blocks by their last instruction.
         Map<Wrapper<Instruction>, List<BasicBlock>> lastInstructionToBlocks = new HashMap<>();
         for (BasicBlock pred : block.getPredecessors()) {
