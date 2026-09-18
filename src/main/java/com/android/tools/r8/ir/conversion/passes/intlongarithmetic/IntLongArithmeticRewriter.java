@@ -495,20 +495,50 @@ public class IntLongArithmeticRewriter extends CodeRewriterPass<AppInfo> {
       if (staticDescriptor == StaticDescriptor.REMAINDER_UNSIGNED) {
         // remainderUnsigned(x, 1) => 0
         Integer intValue = extractIntValueOrNull(constNumber);
-        if (intValue != null && intValue.equals(1)) {
-          replaceByConstantZero(
-              iterator, invokeStatic, code, invokeStatic.getFirstArgument().getType());
-          return true;
+        if (intValue != null) {
+          if (intValue.equals(1)) {
+            replaceByConstantZero(
+                iterator, invokeStatic, code, invokeStatic.getFirstArgument().getType());
+            return true;
+          }
+          int power = extractPowerOfTwo(intValue);
+          if (power != -1) {
+            // remainderUnsigned(x, 2^k) => x & (2^k - 1)
+            replaceByBinopWithRightConstant(
+                iterator, invokeStatic.getFirstArgument(), code, intValue - 1, BinopDescriptor.AND);
+            return true;
+          }
         }
       }
       if (staticDescriptor == StaticDescriptor.FLOOR_MOD) {
         // floorMod(x, 1) => 0
         // floorMod(x, -1) => 0
         Integer intValue = extractIntValueOrNull(constNumber);
-        if (intValue != null && (intValue.equals(-1) || intValue.equals(1))) {
-          replaceByConstantZero(
-              iterator, invokeStatic, code, invokeStatic.getFirstArgument().getType());
-          return true;
+        if (intValue != null) {
+          if (intValue.equals(-1) || intValue.equals(1)) {
+            replaceByConstantZero(
+                iterator, invokeStatic, code, invokeStatic.getFirstArgument().getType());
+            return true;
+          }
+          int power = extractPowerOfTwo(intValue);
+          if (power != -1) {
+            // floorMod(x, 2^k) => x & (2^k - 1)
+            replaceByBinopWithRightConstant(
+                iterator, invokeStatic.getFirstArgument(), code, intValue - 1, BinopDescriptor.AND);
+            return true;
+          }
+        }
+      }
+      if (staticDescriptor == StaticDescriptor.FLOOR_DIV) {
+        // floorDiv(x, 2^k) => x >> k
+        Integer intValue = extractIntValueOrNull(constNumber);
+        if (intValue != null) {
+          int power = extractPowerOfTwo(intValue);
+          if (power != -1) {
+            replaceByBinopWithRightConstant(
+                iterator, invokeStatic.getFirstArgument(), code, power, BinopDescriptor.SHR);
+            return true;
+          }
         }
       }
       if (staticDescriptor == StaticDescriptor.DIVIDE_UNSIGNED) {

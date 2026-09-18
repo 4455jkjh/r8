@@ -27,8 +27,9 @@ public class StaticMethodsArithmeticRewriterTest extends TestBase {
   private static final String EXPECTED_RESULT =
       StringUtils.lines(
           "42", "42", "42", "42", "42", "42", "42", "42", "42", "42", "42", "42", "0", "0", "42",
-          "42", "0", "0", "42", "42", "42", "42", "5", "10", "4", "8", "0", "0", "0", "0", "0",
-          "0");
+          "42", "0", "0", "42", "42", "5", "-5", "-6", "4", "-4", "-5", "-6", "-11", "42", "42",
+          "5", "10", "4", "8", "0", "0", "2", "7", "10", "15", "0", "0", "0", "0", "2", "7", "0",
+          "10", "15", "0", "-7", "-7");
 
   @Parameter() public TestParameters parameters;
 
@@ -68,6 +69,11 @@ public class StaticMethodsArithmeticRewriterTest extends TestBase {
               || method.getOriginalMethodName().contains("Exact"))) {
         continue;
       }
+      if (method.getOriginalMethodName().contains("NegPowerOfTwo")) {
+        assertEquals(
+            1, method.streamInstructions().filter(InstructionSubject::isInvokeStatic).count());
+        continue;
+      }
       assertEquals(
           0,
           method
@@ -78,7 +84,15 @@ public class StaticMethodsArithmeticRewriterTest extends TestBase {
       if (method.getOriginalMethodName().contains("PowerOfTwo")) {
         assertEquals(
             1,
-            method.streamInstructions().filter(InstructionSubject::isUnsignedShiftRight).count());
+            method
+                .streamInstructions()
+                .filter(i -> i.isIntLogicalBinop() || i.isLongLogicalBinop())
+                .count());
+        if (method.getOriginalMethodName().contains("divideUnsigned")) {
+          assertEquals(
+              1,
+              method.streamInstructions().filter(InstructionSubject::isUnsignedShiftRight).count());
+        }
       }
     }
   }
@@ -111,6 +125,14 @@ public class StaticMethodsArithmeticRewriterTest extends TestBase {
 
       floorDivIntRight(42);
       floorDivLongRight(42L);
+      floorDivIntPowerOfTwo(40);
+      floorDivIntPowerOfTwo(-40);
+      floorDivIntPowerOfTwo(-41);
+      floorDivLongPowerOfTwo(64L);
+      floorDivLongPowerOfTwo(-64L);
+      floorDivLongPowerOfTwo(-65L);
+      floorDivIntNegPowerOfTwo(41);
+      floorDivIntNegPowerOfTwo(81);
 
       divideUnsignedIntRight(42);
       divideUnsignedLongRight(42L);
@@ -121,11 +143,23 @@ public class StaticMethodsArithmeticRewriterTest extends TestBase {
 
       remainderUnsignedInt1(42);
       remainderUnsignedLong1(42L);
+      remainderUnsignedIntPowerOfTwo(42);
+      remainderUnsignedIntPowerOfTwo(-1);
+      remainderUnsignedLongPowerOfTwo(42L);
+      remainderUnsignedLongPowerOfTwo(-1L);
 
       floorModInt1(42);
       floorModIntM1(42);
       floorModLong1(42L);
       floorModLongM1(42L);
+      floorModIntPowerOfTwo(42);
+      floorModIntPowerOfTwo(-1);
+      floorModIntPowerOfTwo(-8);
+      floorModLongPowerOfTwo(42L);
+      floorModLongPowerOfTwo(-1L);
+      floorModLongPowerOfTwo(-16L);
+      floorModIntNegPowerOfTwo(41);
+      floorModIntNegPowerOfTwo(81);
     }
 
     @NeverInline
@@ -229,6 +263,21 @@ public class StaticMethodsArithmeticRewriterTest extends TestBase {
     }
 
     @NeverInline
+    public static void floorDivIntPowerOfTwo(int x) {
+      System.out.println(Math.floorDiv(x, 8));
+    }
+
+    @NeverInline
+    public static void floorDivLongPowerOfTwo(long x) {
+      System.out.println(Math.floorDiv(x, 16L));
+    }
+
+    @NeverInline
+    public static void floorDivIntNegPowerOfTwo(int x) {
+      System.out.println(Math.floorDiv(x, -8));
+    }
+
+    @NeverInline
     public static void divideUnsignedIntRight(int x) {
       System.out.println(Integer.divideUnsigned(x, 1));
     }
@@ -259,6 +308,16 @@ public class StaticMethodsArithmeticRewriterTest extends TestBase {
     }
 
     @NeverInline
+    public static void remainderUnsignedIntPowerOfTwo(int x) {
+      System.out.println(Integer.remainderUnsigned(x, 8));
+    }
+
+    @NeverInline
+    public static void remainderUnsignedLongPowerOfTwo(long x) {
+      System.out.println(Long.remainderUnsigned(x, 16L));
+    }
+
+    @NeverInline
     public static void floorModInt1(int x) {
       System.out.println(Math.floorMod(x, 1));
     }
@@ -276,6 +335,21 @@ public class StaticMethodsArithmeticRewriterTest extends TestBase {
     @NeverInline
     public static void floorModLongM1(long x) {
       System.out.println(Math.floorMod(x, -1L));
+    }
+
+    @NeverInline
+    public static void floorModIntPowerOfTwo(int x) {
+      System.out.println(Math.floorMod(x, 8));
+    }
+
+    @NeverInline
+    public static void floorModLongPowerOfTwo(long x) {
+      System.out.println(Math.floorMod(x, 16L));
+    }
+
+    @NeverInline
+    public static void floorModIntNegPowerOfTwo(int x) {
+      System.out.println(Math.floorMod(x, -8));
     }
   }
 }
