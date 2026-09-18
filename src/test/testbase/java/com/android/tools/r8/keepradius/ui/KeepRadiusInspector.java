@@ -19,6 +19,7 @@ public class KeepRadiusInspector {
 
   public KeepRadiusInspector assertTitle(String expected) {
     assertThat(page).hasTitle(expected);
+    assertThat(page.locator("#header-link")).hasText(expected);
     return this;
   }
 

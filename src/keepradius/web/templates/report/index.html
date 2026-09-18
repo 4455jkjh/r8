@@ -371,8 +371,8 @@
                 <button
                   type="button"
                   class="tooltip-icon"
-                  data-tooltip="Percentage of the app's code base that is subject to removal if unused. The reported score is from before optimization passes have occurred. When R8 performs shrinking, it reduces the overall size of your application by identifying and eliminating code and resources that are not actually being used, ensuring your final build is as lean as possible."
-                  aria-label="Percentage of the app's code base that is subject to removal if unused. The reported score is from before optimization passes have occurred. When R8 performs shrinking, it reduces the overall size of your application by identifying and eliminating code and resources that are not actually being used, ensuring your final build is as lean as possible."
+                  data-tooltip="Percentage of the app's code base that is subject to removal if unused. The reported score is from before optimization passes have occurred. Shrinking reduces the overall size of your application by identifying and eliminating code and resources that are not actually being used, ensuring your final build is as lean as possible."
+                  aria-label="Percentage of the app's code base that is subject to removal if unused. The reported score is from before optimization passes have occurred. Shrinking reduces the overall size of your application by identifying and eliminating code and resources that are not actually being used, ensuring your final build is as lean as possible."
                 >
                   ?
                 </button>
@@ -693,8 +693,8 @@
                 <button
                   type="button"
                   class="tooltip-icon"
-                  data-tooltip="Percentage of the app's code base that is subject to symbol renaming. The reported score is from before optimization passes have occurred. By tracking this score, you can gauge the effectiveness of R8's obfuscation, which reduces your application's metadata footprint to save memory."
-                  aria-label="Percentage of the app's code base that is subject to symbol renaming. The reported score is from before optimization passes have occurred. By tracking this score, you can gauge the effectiveness of R8's obfuscation, which reduces your application's metadata footprint to save memory."
+                  data-tooltip="Percentage of the app's code base that is subject to symbol renaming. The reported score is from before optimization passes have occurred. By tracking this score, you can gauge the effectiveness of your obfuscation, which reduces your application's metadata footprint to save memory."
+                  aria-label="Percentage of the app's code base that is subject to symbol renaming. The reported score is from before optimization passes have occurred. By tracking this score, you can gauge the effectiveness of your obfuscation, which reduces your application's metadata footprint to save memory."
                 >
                   ?
                 </button>
@@ -852,9 +852,9 @@
               padding: 0rem 0.5rem;
             "
           >
-            Keep rules prevent R8 from optimizing designated code segments.
-            Review the list below to identify and refine overly broad rules,
-            which will directly improve overall application performance.
+            Keep rules prevent optimization of designated code segments. Review
+            the list below to identify and refine overly broad rules, which will
+            directly improve overall application performance.
           </div>
         </div>
         <div class="table-container">
@@ -1482,7 +1482,7 @@
                 </svg>
               </div>
               <div class="legend-item-content">
-                % of classes/fields/methods R8 was free to rename. Higher =
+                % of classes/fields/methods that can be renamed. Higher =
                 better.
               </div>
             </div>
@@ -1508,7 +1508,7 @@
                 </svg>
               </div>
               <div class="legend-item-content">
-                % of classes/fields/methods R8 was free to optimize. Higher =
+                % of classes/fields/methods that can be optimized. Higher =
                 better.
               </div>
             </div>
@@ -1534,7 +1534,7 @@
                 </svg>
               </div>
               <div class="legend-item-content">
-                % of classes/fields/methods R8 was free to remove. Higher =
+                % of classes/fields/methods that can be removed. Higher =
                 better.
               </div>
             </div>

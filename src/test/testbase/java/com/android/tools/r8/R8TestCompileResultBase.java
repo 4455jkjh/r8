@@ -268,11 +268,21 @@ public abstract class R8TestCompileResultBase<CR extends R8TestCompileResultBase
     return new GraphInspector(graphConsumer, inspector());
   }
 
+  public byte[] getConfigurationAnalysisData() {
+    assertNotNull(configurationAnalysisData);
+    assertTrue(configurationAnalysisData.isSet());
+    return configurationAnalysisData.get();
+  }
+
   public KeepRadiusInspector keepRadiusInspector(Page page) throws IOException {
     assertNotNull(configurationAnalysisHtmlReport);
     assertTrue(configurationAnalysisHtmlReport.isSet());
+    return keepRadiusInspector(page, configurationAnalysisHtmlReport.get());
+  }
+
+  public KeepRadiusInspector keepRadiusInspector(Page page, String htmlReport) throws IOException {
     Path tempFile = state.getNewTempFolder().resolve("report.html");
-    FileUtils.writeTextFile(tempFile, configurationAnalysisHtmlReport.get());
+    FileUtils.writeTextFile(tempFile, htmlReport);
     page.navigate(tempFile.toUri().toString());
     return new KeepRadiusInspector(page);
   }
@@ -289,6 +299,16 @@ public abstract class R8TestCompileResultBase<CR extends R8TestCompileResultBase
       throws E, IOException {
     Page page = pageFactory.apply(state.isHeadful());
     consumer.accept(keepRadiusInspector(page));
+    return self();
+  }
+
+  public <E extends Throwable> CR inspectKeepRadiusHtmlReport(
+      Function<Boolean, Page> pageFactory,
+      String htmlReport,
+      ThrowingConsumer<KeepRadiusInspector, E> consumer)
+      throws E, IOException {
+    Page page = pageFactory.apply(state.isHeadful());
+    consumer.accept(keepRadiusInspector(page, htmlReport));
     return self();
   }
 

@@ -118,7 +118,8 @@ public class RootSetKeepRadiusSerializer {
     keptClassInfos.values().forEach(container::addKeptClassInfoTable);
     keptFieldInfos.values().forEach(container::addKeptFieldInfoTable);
     keptMethodInfos.values().forEach(container::addKeptMethodInfoTable);
-    KeepRadiusContainer result = container.setBuildInfo(serializeBuildInfo()).build();
+    KeepRadiusContainer result =
+        container.setBuildInfo(serializeBuildInfo()).setTitle("R8 Configuration Analyzer").build();
     assert validate(result);
     return result;
   }

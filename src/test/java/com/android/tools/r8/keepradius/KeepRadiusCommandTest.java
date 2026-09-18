@@ -7,6 +7,7 @@ import static com.android.tools.r8.keepradius.KeepRadiusHtmlReportGenerator.enco
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.startsWith;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
@@ -63,6 +64,7 @@ public class KeepRadiusCommandTest extends TestBase {
     assertTrue(dataConsumer.isSet());
     KeepRadiusContainer container = KeepRadiusContainer.parseFrom(dataConsumer.get());
     assertNotNull(container);
+    assertEquals("R8 Configuration Analyzer", container.getTitle());
 
     // Check that the report consumer received the HTML.
     assertThat(reportConsumer.value, startsWith("<!doctype html>"));

@@ -42,9 +42,6 @@ public class GenerateKeepRadiusHtmlReportTemplate extends TestBase {
     assertEquals(
         FileUtils.readTextFile(getGeneratedFile(), StandardCharsets.UTF_8),
         generateKeepRadiusHtmlReportTemplate());
-    assertEquals(
-        FileUtils.readTextFile(getGeneratedFile(), StandardCharsets.UTF_8),
-        generateKeepRadiusHtmlReportTemplate());
   }
 
   private static String generateKeepRadiusHtmlReportTemplate() throws IOException {
