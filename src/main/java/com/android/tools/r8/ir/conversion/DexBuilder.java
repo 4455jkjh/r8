@@ -252,10 +252,14 @@ public class DexBuilder {
     DexDebugEventBuilder debugEventBuilder = new DexDebugEventBuilder(appView, ir);
     List<DexInstruction> dexInstructions = new ArrayList<>(numberOfInstructions);
     int instructionOffset = 0;
+    Info lastEmittedInfo = null;
     for (Instruction irInstruction : ir.instructions()) {
       Info info = getInfo(irInstruction);
       int previousInstructionCount = dexInstructions.size();
       info.addInstructions(this, dexInstructions);
+      if (previousInstructionCount < dexInstructions.size()) {
+        lastEmittedInfo = info;
+      }
       int instructionStartOffset = instructionOffset;
       while (previousInstructionCount < dexInstructions.size()) {
         DexInstruction dexInstruction = dexInstructions.get(previousInstructionCount++);
@@ -306,6 +310,12 @@ public class DexBuilder {
       dexInstructions.add(forward);
       dexInstructions.add(throwInstruction);
       dexInstructions.add(backward);
+      assert lastEmittedInfo != null;
+      Info newInfo =
+          new MultiFixedSizeInfo(
+              lastEmittedInfo.getIR(), new DexInstruction[] {forward, throwInstruction, backward});
+      newInfo.setOffset(forward.getOffset());
+      setInfo(lastEmittedInfo.getIR(), newInfo);
     }
 
     // Compute switch payloads.
