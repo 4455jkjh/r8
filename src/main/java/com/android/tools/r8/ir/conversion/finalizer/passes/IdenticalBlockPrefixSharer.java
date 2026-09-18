@@ -32,7 +32,7 @@ public class IdenticalBlockPrefixSharer extends FinalizerRewriterPass<AppInfo> {
 
   @Override
   protected boolean shouldRewriteCode(IRCode code) {
-    return true;
+    return code.blocks.size() > 2;
   }
 
   @Override
@@ -45,7 +45,8 @@ public class IdenticalBlockPrefixSharer extends FinalizerRewriterPass<AppInfo> {
           shareIdenticalBlockPrefixFromNormalSuccessors(
               block, blocksToBeRemoved, equivalence, allocator);
     }
-    code.blocks.removeAll(blocksToBeRemoved);
+
+    code.removeBlocks(blocksToBeRemoved);
     return CodeRewriterResult.hasChanged(hasChanged);
   }
 

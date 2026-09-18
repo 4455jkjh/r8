@@ -527,6 +527,8 @@ public class IRCode implements IRControlFlowGraph, ValueFactory {
   }
 
   public void removeBlocks(Collection<BasicBlock> blocksToRemove) {
+    // Collection#removeAll does not check the parameter is empty, and create an iterator to iterate
+    // over all the blocks if that guard is not present.
     if (!blocksToRemove.isEmpty()) {
       blocks.removeAll(blocksToRemove);
     }
