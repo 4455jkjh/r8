@@ -27,10 +27,21 @@ public class StartupOptions {
 
   /**
    * When enabled, all startup classes will be placed in the primary classes.dex file. All other
-   * (non-startup) classes will be placed in classes2.dex, ..., classesN.dex.
+   * (non-startup) classes will be placed in classes2.dex, ..., classesN.dex. If the startup classes
+   * does not fit into classes.dex they will overflow into classes2.dex, ..., classesN.dex and in
+   * that case non-startup classes will be filled into the last classesN.dex with startup classes.
    */
   private boolean enableMinimalStartupDex =
       parseSystemPropertyOrDefault("com.android.tools.r8.startup.minimalstartupdex", true);
+
+  /**
+   * Testing option for b/562992127. This will override "in that case non-startup classes will be
+   * filled into the last classesN.dex with startup classes" from the option above by not filling
+   * non-startup classes into the last classesN.dex with startup classes.
+   */
+  public boolean forceMinimalStartupForMultipleStartupDexFiles =
+      parseSystemPropertyOrDefault(
+          "com.android.tools.r8.startup.forceMinimalStartupForMultipleStartupDexFiles", false);
 
   /**
    * When enabled, optimizations crossing the startup/non-startup boundary will be allowed.

@@ -232,7 +232,8 @@ public class PackageSplitPopulator {
       // with non-startup classes.
       VirtualFile lastFileForDistribution = ListUtils.last(cycler.getFilesForDistribution());
       cycler.clearFilesForDistribution();
-      if (!isSingleStartupDexFile) {
+      if (!isSingleStartupDexFile
+          && !options.getStartupOptions().forceMinimalStartupForMultipleStartupDexFiles) {
         cycler.addFileForDistribution(lastFileForDistribution);
       }
     } else {
