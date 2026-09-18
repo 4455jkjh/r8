@@ -13,6 +13,7 @@ import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.utils.codeinspector.ClassSubject;
 import com.android.tools.r8.utils.codeinspector.CodeInspector;
 import com.android.tools.r8.utils.codeinspector.FoundMethodSubject;
+import com.android.tools.r8.utils.codeinspector.InstructionSubject;
 import com.android.tools.r8.utils.internal.StringUtils;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -26,7 +27,8 @@ public class StaticMethodsArithmeticRewriterTest extends TestBase {
   private static final String EXPECTED_RESULT =
       StringUtils.lines(
           "42", "42", "42", "42", "42", "42", "42", "42", "42", "42", "42", "42", "0", "0", "42",
-          "42", "0", "0", "42", "42", "42", "42", "0", "0", "0", "0", "0", "0");
+          "42", "0", "0", "42", "42", "42", "42", "5", "10", "4", "8", "0", "0", "0", "0", "0",
+          "0");
 
   @Parameter() public TestParameters parameters;
 
@@ -73,6 +75,11 @@ public class StaticMethodsArithmeticRewriterTest extends TestBase {
               .filter(
                   i -> i.isInvokeStatic() || i.isIntArithmeticBinop() || i.isLongArithmeticBinop())
               .count());
+      if (method.getOriginalMethodName().contains("PowerOfTwo")) {
+        assertEquals(
+            1,
+            method.streamInstructions().filter(InstructionSubject::isUnsignedShiftRight).count());
+      }
     }
   }
 
@@ -107,6 +114,10 @@ public class StaticMethodsArithmeticRewriterTest extends TestBase {
 
       divideUnsignedIntRight(42);
       divideUnsignedLongRight(42L);
+      divideUnsignedIntPowerOfTwo(40);
+      divideUnsignedIntPowerOfTwo(80);
+      divideUnsignedLongPowerOfTwo(64L);
+      divideUnsignedLongPowerOfTwo(128L);
 
       remainderUnsignedInt1(42);
       remainderUnsignedLong1(42L);
@@ -225,6 +236,16 @@ public class StaticMethodsArithmeticRewriterTest extends TestBase {
     @NeverInline
     public static void divideUnsignedLongRight(long x) {
       System.out.println(Long.divideUnsigned(x, 1L));
+    }
+
+    @NeverInline
+    public static void divideUnsignedIntPowerOfTwo(int x) {
+      System.out.println(Integer.divideUnsigned(x, 8));
+    }
+
+    @NeverInline
+    public static void divideUnsignedLongPowerOfTwo(long x) {
+      System.out.println(Long.divideUnsigned(x, 16L));
     }
 
     @NeverInline

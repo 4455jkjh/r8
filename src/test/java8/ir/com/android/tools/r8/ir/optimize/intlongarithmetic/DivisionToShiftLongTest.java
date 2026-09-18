@@ -146,11 +146,12 @@ public class DivisionToShiftLongTest extends TestBase {
                 boolean isOptimizationEnabled = mode.isRelease();
                 if (isOptimizationEnabled) {
                   assertEquals(
-                      expectedDivisionCount,
+                      30,
                       mainMethod
                           .streamInstructions()
                           .filter(InstructionSubject::isUnsignedShiftRight)
                           .count());
+                  assertEquals(expectedDivisionCount - 30, divideUnsignedCallCount(mainMethod));
                 } else {
                   assertEquals(expectedDivisionCount, divideUnsignedCallCount(mainMethod));
                 }
@@ -193,7 +194,8 @@ public class DivisionToShiftLongTest extends TestBase {
                           .streamInstructions()
                           .filter(InstructionSubject::isUnsignedShiftRight)
                           .count();
-                  assertEquals(expectedDivisionCount, unsignedShiftCount);
+                  assertEquals(30, unsignedShiftCount);
+                  assertEquals(expectedDivisionCount - 30, divideUnsignedCallCount(mainMethod));
                 } else {
                   assertEquals(expectedDivisionCount, divideUnsignedCallCount(mainMethod));
                 }

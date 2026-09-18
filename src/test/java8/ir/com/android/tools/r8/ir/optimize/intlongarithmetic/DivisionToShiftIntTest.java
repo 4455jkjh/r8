@@ -105,11 +105,12 @@ public class DivisionToShiftIntTest extends TestBase {
                 boolean isOptimizationEnabled = mode.isRelease();
                 if (isOptimizationEnabled) {
                   assertEquals(
-                      EXPECTED_DIVISION_COUNT,
+                      30,
                       mainMethod
                           .streamInstructions()
                           .filter(InstructionSubject::isUnsignedShiftRight)
                           .count());
+                  assertEquals(EXPECTED_DIVISION_COUNT - 30, divideUnsignedCallCount(mainMethod));
                 } else {
                   assertEquals(EXPECTED_DIVISION_COUNT, divideUnsignedCallCount(mainMethod));
                 }
@@ -153,7 +154,8 @@ public class DivisionToShiftIntTest extends TestBase {
                           .streamInstructions()
                           .filter(InstructionSubject::isUnsignedShiftRight)
                           .count();
-                  assertEquals(EXPECTED_DIVISION_COUNT, unsignedShiftCount);
+                  assertEquals(30, unsignedShiftCount);
+                  assertEquals(EXPECTED_DIVISION_COUNT - 30, divideUnsignedCallCount(mainMethod));
                 } else {
                   assertEquals(EXPECTED_DIVISION_COUNT, divideUnsignedCallCount(mainMethod));
                 }

@@ -61,7 +61,6 @@ import com.android.tools.r8.ir.conversion.passes.StringSwitchRemover;
 import com.android.tools.r8.ir.conversion.passes.ThrowCatchOptimizer;
 import com.android.tools.r8.ir.conversion.passes.TrivialCheckCastAndInstanceOfRemover;
 import com.android.tools.r8.ir.conversion.passes.TrivialPhiSimplifier;
-import com.android.tools.r8.ir.conversion.passes.intlongarithmetic.DivisionOptimizer;
 import com.android.tools.r8.ir.conversion.passes.intlongarithmetic.IntLongArithmeticRewriter;
 import com.android.tools.r8.ir.desugar.CfInstructionDesugaringCollectionSupplier;
 import com.android.tools.r8.ir.desugar.typeswitch.TypeSwitchIRRewriter;
@@ -349,7 +348,6 @@ public class IRConverter {
       passes.add(new ReturnBlockCanonicalizerRewriter(appView));
     }
     passes.add(new ShareFieldGetInstructions(appView));
-    passes.add(new DivisionOptimizer(appView));
     if (appView.options().enableStringConcatInstruction) {
       passes.add(new StringConcatOptimizer(appView));
     }

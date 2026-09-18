@@ -511,6 +511,18 @@ public class IntLongArithmeticRewriter extends CodeRewriterPass<AppInfo> {
           return true;
         }
       }
+      if (staticDescriptor == StaticDescriptor.DIVIDE_UNSIGNED) {
+        // divideUnsigned(x, 2^k) => x >>> k
+        Integer intValue = extractIntValueOrNull(constNumber);
+        if (intValue != null) {
+          int power = extractPowerOfTwo(intValue);
+          if (power != -1) {
+            replaceByBinopWithRightConstant(
+                iterator, invokeStatic.getFirstArgument(), code, power, BinopDescriptor.USHR);
+            return true;
+          }
+        }
+      }
     }
     return false;
   }
@@ -656,7 +668,8 @@ public class IntLongArithmeticRewriter extends CodeRewriterPass<AppInfo> {
     if (binop.leftValue() == binop.rightValue()) {
       if (binop.isAdd()) {
         // a + a => a << 1
-        replaceByShl(iterator, binop.leftValue(), code, 1);
+        Value value = binop.leftValue();
+        replaceByBinopWithRightConstant(iterator, value, code, 1, BinopDescriptor.SHL);
         return true;
       }
     }
@@ -669,18 +682,24 @@ public class IntLongArithmeticRewriter extends CodeRewriterPass<AppInfo> {
     if (intValue != null) {
       int power = extractPowerOfTwo(intValue);
       if (power != -1) {
-        replaceByShl(iterator, binop, code, power);
+        replaceByBinopWithRightConstant(iterator, binop, code, power, BinopDescriptor.SHL);
         return true;
       }
     }
     return false;
   }
 
-  private void replaceByShl(InstructionListIterator iterator, Value value, IRCode code, int power) {
+  private void replaceByBinopWithRightConstant(
+      InstructionListIterator iterator,
+      Value value,
+      IRCode code,
+      long constant,
+      BinopDescriptor binopDescriptor) {
     iterator.previous();
-    Value cst = iterator.insertConstIntInstruction(code, appView.options(), power);
+    TypeElement type = binopDescriptor.isShift() ? TypeElement.getInt() : value.getType();
+    Value cst = iterator.insertConstNumberInstruction(code, appView.options(), constant, type);
     iterator.next();
-    replaceBinop(iterator, code, value, cst, BinopDescriptor.SHL);
+    replaceBinop(iterator, code, value, cst, binopDescriptor);
   }
 
   private void replaceByConstantZero(
