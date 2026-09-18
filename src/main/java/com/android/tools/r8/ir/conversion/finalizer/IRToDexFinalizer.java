@@ -17,7 +17,10 @@ import com.android.tools.r8.ir.code.InstructionListIterator;
 import com.android.tools.r8.ir.code.Move;
 import com.android.tools.r8.ir.code.Value;
 import com.android.tools.r8.ir.conversion.DexBuilder;
-import com.android.tools.r8.ir.conversion.finalizer.passes.PeepholeOptimizer;
+import com.android.tools.r8.ir.conversion.finalizer.passes.IdenticalBlockPrefixSharer;
+import com.android.tools.r8.ir.conversion.finalizer.passes.IdenticalBlockSuffixSharer;
+import com.android.tools.r8.ir.conversion.finalizer.passes.IdenticalPredecessorBlocksRemover;
+import com.android.tools.r8.ir.conversion.finalizer.passes.RedundantInstructionsRemover;
 import com.android.tools.r8.ir.conversion.finalizer.passes.TrivialGotosCollapser;
 import com.android.tools.r8.ir.desugar.nest.D8NestBasedAccessDesugaring;
 import com.android.tools.r8.ir.optimize.DeadCodeRemover;
@@ -42,12 +45,20 @@ public class IRToDexFinalizer extends IRFinalizer<DexCode> {
   private final DeadCodeRemover deadCodeRemover;
   private final InternalOptions options;
   private final TrivialGotosCollapser trivialGotosCollapser;
+  private final IdenticalPredecessorBlocksRemover identicalPredecessorBlocksRemover;
+  private final RedundantInstructionsRemover redundantInstructionsRemover;
+  private final IdenticalBlockPrefixSharer identicalBlockPrefixSharer;
+  private final IdenticalBlockSuffixSharer identicalBlockSuffixSharer;
 
   public IRToDexFinalizer(AppView<?> appView, DeadCodeRemover deadCodeRemover) {
     super(appView);
     this.deadCodeRemover = deadCodeRemover;
     this.options = appView.options();
     this.trivialGotosCollapser = new TrivialGotosCollapser(this.appView);
+    identicalPredecessorBlocksRemover = new IdenticalPredecessorBlocksRemover(appView);
+    redundantInstructionsRemover = new RedundantInstructionsRemover(appView);
+    identicalBlockPrefixSharer = new IdenticalBlockPrefixSharer(appView);
+    identicalBlockSuffixSharer = new IdenticalBlockSuffixSharer(appView);
   }
 
   @Override
@@ -96,7 +107,10 @@ public class IRToDexFinalizer extends IRFinalizer<DexCode> {
     timing.begin("Peephole optimize");
     for (int i = 0; i < PEEPHOLE_OPTIMIZATION_PASSES; i++) {
       trivialGotosCollapser.run(code, registerAllocator, timing);
-      PeepholeOptimizer.optimize(appView, code, registerAllocator);
+      identicalPredecessorBlocksRemover.run(code, registerAllocator, timing);
+      redundantInstructionsRemover.run(code, registerAllocator, timing);
+      identicalBlockPrefixSharer.run(code, registerAllocator, timing);
+      identicalBlockSuffixSharer.run(code, registerAllocator, timing);
     }
     timing.end();
     timing.begin("Clean up");
