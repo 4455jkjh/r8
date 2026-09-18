@@ -144,7 +144,6 @@ public class ClassInitializerDefaultsOptimization {
     this.dexItemFactory = appView.dexItemFactory();
   }
 
-  @SuppressWarnings("ReferenceEquality")
   public ClassInitializerDefaultsResult optimize(IRCode code, OptimizationFeedback feedback) {
     if (appView.options().debug) {
       return ClassInitializerDefaultsResult.empty();
@@ -181,7 +180,7 @@ public class ClassInitializerDefaultsOptimization {
           DexType fieldType = field.getReference().type;
           Value value = put.value().getAliasedValue();
           if (unnecessaryStaticPuts.contains(put)) {
-            if (fieldType == dexItemFactory.stringType) {
+            if (fieldType.isIdenticalTo(dexItemFactory.stringType)) {
               fieldsWithStaticValues.put(field, getDexStringValue(value, context.getHolder()));
             } else if (fieldType.isClassType() || fieldType.isArrayType()) {
               if (value.isZero()) {
@@ -194,21 +193,21 @@ public class ClassInitializerDefaultsOptimization {
               fieldsWithStaticValues.put(field, DexValueResourceNumber.create(resourceValue));
             } else {
               ConstNumber cnst = value.getConstInstruction().asConstNumber();
-              if (fieldType == dexItemFactory.booleanType) {
+              if (fieldType.isIdenticalTo(dexItemFactory.booleanType)) {
                 fieldsWithStaticValues.put(field, DexValueBoolean.create(cnst.getBooleanValue()));
-              } else if (fieldType == dexItemFactory.byteType) {
+              } else if (fieldType.isIdenticalTo(dexItemFactory.byteType)) {
                 fieldsWithStaticValues.put(field, DexValueByte.create((byte) cnst.getIntValue()));
-              } else if (fieldType == dexItemFactory.shortType) {
+              } else if (fieldType.isIdenticalTo(dexItemFactory.shortType)) {
                 fieldsWithStaticValues.put(field, DexValueShort.create((short) cnst.getIntValue()));
-              } else if (fieldType == dexItemFactory.intType) {
+              } else if (fieldType.isIdenticalTo(dexItemFactory.intType)) {
                 fieldsWithStaticValues.put(field, DexValueInt.create(cnst.getIntValue()));
-              } else if (fieldType == dexItemFactory.longType) {
+              } else if (fieldType.isIdenticalTo(dexItemFactory.longType)) {
                 fieldsWithStaticValues.put(field, DexValueLong.create(cnst.getLongValue()));
-              } else if (fieldType == dexItemFactory.floatType) {
+              } else if (fieldType.isIdenticalTo(dexItemFactory.floatType)) {
                 fieldsWithStaticValues.put(field, DexValueFloat.create(cnst.getFloatValue()));
-              } else if (fieldType == dexItemFactory.doubleType) {
+              } else if (fieldType.isIdenticalTo(dexItemFactory.doubleType)) {
                 fieldsWithStaticValues.put(field, DexValueDouble.create(cnst.getDoubleValue()));
-              } else if (fieldType == dexItemFactory.charType) {
+              } else if (fieldType.isIdenticalTo(dexItemFactory.charType)) {
                 fieldsWithStaticValues.put(field, DexValueChar.create((char) cnst.getIntValue()));
               } else {
                 throw new Unreachable("Unexpected field type " + fieldType + ".");
@@ -344,24 +343,23 @@ public class ClassInitializerDefaultsOptimization {
     return getDexStringValueForInvoke(invoke.getInvokedMethod(), holder);
   }
 
-  @SuppressWarnings("ReferenceEquality")
   private DexValue getDexStringValueForInvoke(DexMethod invokedMethod, DexProgramClass holder) {
     if (appView
         .getKeepInfoOrDefault(holder, KeepClassInfo.top())
         .isMinificationAllowed(appView.options())) {
-      if (invokedMethod == dexItemFactory.classMethods.getName) {
+      if (invokedMethod.isIdenticalTo(dexItemFactory.classMethods.getName)) {
         return new DexItemBasedValueString(
             holder.getType(), ClassNameComputationInfo.getInstance(NAME));
       }
-      if (invokedMethod == dexItemFactory.classMethods.getCanonicalName) {
+      if (invokedMethod.isIdenticalTo(dexItemFactory.classMethods.getCanonicalName)) {
         return new DexItemBasedValueString(
             holder.getType(), ClassNameComputationInfo.getInstance(CANONICAL_NAME));
       }
-      if (invokedMethod == dexItemFactory.classMethods.getSimpleName) {
+      if (invokedMethod.isIdenticalTo(dexItemFactory.classMethods.getSimpleName)) {
         return new DexItemBasedValueString(
             holder.getType(), ClassNameComputationInfo.getInstance(SIMPLE_NAME));
       }
-      if (invokedMethod == dexItemFactory.classMethods.getTypeName) {
+      if (invokedMethod.isIdenticalTo(dexItemFactory.classMethods.getTypeName)) {
         return new DexItemBasedValueString(
             holder.getType(), ClassNameComputationInfo.getInstance(TYPE_NAME));
       }
@@ -370,13 +368,13 @@ public class ClassInitializerDefaultsOptimization {
     }
 
     ClassNameMapping mapping = null;
-    if (invokedMethod == dexItemFactory.classMethods.getName) {
+    if (invokedMethod.isIdenticalTo(dexItemFactory.classMethods.getName)) {
       mapping = NAME;
-    } else if (invokedMethod == dexItemFactory.classMethods.getCanonicalName) {
+    } else if (invokedMethod.isIdenticalTo(dexItemFactory.classMethods.getCanonicalName)) {
       mapping = CANONICAL_NAME;
-    } else if (invokedMethod == dexItemFactory.classMethods.getSimpleName) {
+    } else if (invokedMethod.isIdenticalTo(dexItemFactory.classMethods.getSimpleName)) {
       mapping = SIMPLE_NAME;
-    } else if (invokedMethod == dexItemFactory.classMethods.getTypeName) {
+    } else if (invokedMethod.isIdenticalTo(dexItemFactory.classMethods.getTypeName)) {
       mapping = TYPE_NAME;
     }
     if (mapping != null) {
@@ -387,7 +385,6 @@ public class ClassInitializerDefaultsOptimization {
     return null;
   }
 
-  @SuppressWarnings("ReferenceEquality")
   private Map<DexEncodedField, StaticPut> findFinalFieldPutsWhileCollectingUnnecessaryStaticPuts(
       IRCode code, ProgramMethod context, Set<StaticPut> unnecessaryStaticPuts) {
     Map<DexEncodedField, StaticPut> finalFieldPuts = Maps.newIdentityHashMap();
@@ -417,7 +414,7 @@ public class ClassInitializerDefaultsOptimization {
             }
           } else if (instruction.isStaticPut()) {
             StaticPut put = instruction.asStaticPut();
-            if (put.getField().holder != context.getHolderType()) {
+            if (put.getField().getHolderType().isNotIdenticalTo(context.getHolderType())) {
               // Can cause clinit on another class which can read uninitialized static fields
               // of this class.
               return validateFinalFieldPuts(finalFieldPuts, isWrittenBefore, unnecessaryStaticPuts);
@@ -442,7 +439,7 @@ public class ClassInitializerDefaultsOptimization {
                   }
                   continue;
                 } else if (field.getType().isPrimitiveType()
-                    || (field.getType() == dexItemFactory.stringType
+                    || (field.getType().isIdenticalTo(dexItemFactory.stringType)
                         && !value.isDexItemBasedConstStringThatNeedsToComputeClassName())) {
                   finalFieldPuts.put(field, put);
                   unnecessaryStaticPuts.add(put);
@@ -535,11 +532,10 @@ public class ClassInitializerDefaultsOptimization {
     return finalFieldPuts;
   }
 
-  @SuppressWarnings("ReferenceEquality")
   // Check if the static put is a constant derived from the class holding the method.
   // This checks for java.lang.Class.get*Name.
   private boolean isClassNameConstantOf(DexClass clazz, StaticPut put) {
-    if (put.getField().type != dexItemFactory.stringType) {
+    if (put.getField().getType().isNotIdenticalTo(dexItemFactory.stringType)) {
       return false;
     }
     Value value = put.value().getAliasedValue();
@@ -549,7 +545,6 @@ public class ClassInitializerDefaultsOptimization {
     return isClassNameConstantOf(clazz, value.definition);
   }
 
-  @SuppressWarnings("ReferenceEquality")
   private boolean isClassNameConstantOf(DexClass clazz, Instruction instruction) {
     if (instruction.isInvokeVirtual()) {
       InvokeVirtual invoke = instruction.asInvokeVirtual();
@@ -559,7 +554,7 @@ public class ClassInitializerDefaultsOptimization {
       Value inValue = invoke.inValues().get(0);
       return !inValue.isPhi()
           && inValue.definition.isConstClass()
-          && inValue.definition.asConstClass().getType() == clazz.type;
+          && inValue.definition.asConstClass().getType().isIdenticalTo(clazz.getType());
     }
     return false;
   }
