@@ -28,7 +28,8 @@ public class MinMaxArithmeticRewriterTest extends TestBase {
       StringUtils.lines(
           "-100", "42", "-100", "42", "-100", "42", "-100", "42", "-100", "42", "-100", "42",
           "-100", "0", "-100", "0", "5", "42", "5", "42", "-100", "10", "20", "42", "-100", "0",
-          "20", "42", "-100", "0");
+          "20", "42", "-100", "0", "10", "10", "10", "10", "20", "20", "20", "20", "10", "10", "20",
+          "20", "10", "10", "20", "20", "10", "15", "20", "10", "15", "20");
 
   @Parameter() public TestParameters parameters;
 
@@ -71,6 +72,16 @@ public class MinMaxArithmeticRewriterTest extends TestBase {
       assertEquals(
           1, method.streamInstructions().filter(InstructionSubject::isInvokeStatic).count());
     }
+    for (FoundMethodSubject method :
+        clazz.allMethods(m -> m.getOriginalMethodName().contains("clampingFold"))) {
+      assertEquals(
+          0, method.streamInstructions().filter(InstructionSubject::isInvokeStatic).count());
+    }
+    for (FoundMethodSubject method :
+        clazz.allMethods(m -> m.getOriginalMethodName().contains("clampingNoFold"))) {
+      assertEquals(
+          2, method.streamInstructions().filter(InstructionSubject::isInvokeStatic).count());
+    }
   }
 
   public static class Main {
@@ -107,6 +118,30 @@ public class MinMaxArithmeticRewriterTest extends TestBase {
       successiveLongMax(42L);
       successiveTripleMinInt(-100);
       successiveTripleMinInt(42);
+
+      clampingFoldMinMaxInt(-100);
+      clampingFoldMinMaxInt(42);
+      clampingFoldMinMaxIntRight(-100);
+      clampingFoldMinMaxIntRight(42);
+      clampingFoldMaxMinInt(-100);
+      clampingFoldMaxMinInt(42);
+      clampingFoldMaxMinIntRight(-100);
+      clampingFoldMaxMinIntRight(42);
+      clampingFoldMinMaxLong(-100L);
+      clampingFoldMinMaxLong(42L);
+      clampingFoldMaxMinLong(-100L);
+      clampingFoldMaxMinLong(42L);
+      clampingFoldIntegerMinMax(-100);
+      clampingFoldIntegerMinMax(42);
+      clampingFoldLongMaxMin(-100L);
+      clampingFoldLongMaxMin(42L);
+
+      clampingNoFoldMinMaxInt(-100);
+      clampingNoFoldMinMaxInt(15);
+      clampingNoFoldMinMaxInt(42);
+      clampingNoFoldMaxMinInt(-100);
+      clampingNoFoldMaxMinInt(15);
+      clampingNoFoldMaxMinInt(42);
     }
 
     @NeverInline
@@ -182,6 +217,56 @@ public class MinMaxArithmeticRewriterTest extends TestBase {
     @NeverInline
     public static void successiveTripleMinInt(int x) {
       System.out.println(Math.min(2, Math.min(1, Math.min(0, x))));
+    }
+
+    @NeverInline
+    public static void clampingFoldMinMaxInt(int x) {
+      System.out.println(Math.min(10, Math.max(20, x)));
+    }
+
+    @NeverInline
+    public static void clampingFoldMinMaxIntRight(int x) {
+      System.out.println(Math.min(Math.max(x, 20), 10));
+    }
+
+    @NeverInline
+    public static void clampingFoldMaxMinInt(int x) {
+      System.out.println(Math.max(20, Math.min(10, x)));
+    }
+
+    @NeverInline
+    public static void clampingFoldMaxMinIntRight(int x) {
+      System.out.println(Math.max(Math.min(x, 10), 20));
+    }
+
+    @NeverInline
+    public static void clampingFoldMinMaxLong(long x) {
+      System.out.println(Math.min(10L, Math.max(20L, x)));
+    }
+
+    @NeverInline
+    public static void clampingFoldMaxMinLong(long x) {
+      System.out.println(Math.max(20L, Math.min(10L, x)));
+    }
+
+    @NeverInline
+    public static void clampingFoldIntegerMinMax(int x) {
+      System.out.println(Integer.min(10, Integer.max(20, x)));
+    }
+
+    @NeverInline
+    public static void clampingFoldLongMaxMin(long x) {
+      System.out.println(Long.max(20L, Long.min(10L, x)));
+    }
+
+    @NeverInline
+    public static void clampingNoFoldMinMaxInt(int x) {
+      System.out.println(Math.min(20, Math.max(10, x)));
+    }
+
+    @NeverInline
+    public static void clampingNoFoldMaxMinInt(int x) {
+      System.out.println(Math.max(10, Math.min(20, x)));
     }
   }
 }

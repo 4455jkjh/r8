@@ -580,32 +580,55 @@ public class IntLongArithmeticRewriter extends CodeRewriterPass<AppInfo> {
       return true;
     }
     if ((constLeft == null) != (constRight == null) && !invokeStatic.outValue().hasDebugUsers()) {
-      // min (cstA, min (cstB, x)) => min(min(cstA, cstB), x) and min(cstA, cstB) is a constant.
-      // same for max.
       Value otherValue =
           constLeft == null ? invokeStatic.getFirstArgument() : invokeStatic.getSecondArgument();
       if (!otherValue.isPhi() && otherValue.getDefinition().isInvokeStatic()) {
         InvokeStatic prevInvoke = otherValue.getDefinition().asInvokeStatic();
-        if (staticDescriptors.get(prevInvoke.getInvokedMethod()) == staticDescriptor) {
+        StaticDescriptor prevDescriptor = staticDescriptors.get(prevInvoke.getInvokedMethod());
+        if (prevDescriptor == StaticDescriptor.MIN || prevDescriptor == StaticDescriptor.MAX) {
           ConstNumber constALeft = getConstNumber(prevInvoke.getFirstArgument());
           ConstNumber constARight = getConstNumber(prevInvoke.getSecondArgument());
           if ((constALeft == null) != (constARight == null)) {
             ConstNumber constB = constLeft != null ? constLeft : constRight;
             ConstNumber constA = constALeft != null ? constALeft : constARight;
-            Value input =
-                constALeft == null ? prevInvoke.getFirstArgument() : prevInvoke.getSecondArgument();
-            Value firstOutValue =
-                insertNewConstNumber(code, iterator, constA, constB, staticDescriptor);
-            Value newValue = code.createValue(invokeStatic.outValue().getType());
-            ImmutableList<Value> newArgs =
-                constLeft != null
-                    ? ImmutableList.of(firstOutValue, input)
-                    : ImmutableList.of(input, firstOutValue);
-            InvokeStatic newInvoke =
-                new InvokeStatic(invokeStatic.getInvokedMethod(), newValue, newArgs);
-            iterator.replaceCurrentInstruction(newInvoke);
-            iterator.previous();
-            return true;
+            if (prevDescriptor == staticDescriptor) {
+              // min (cstA, min (cstB, x)) => min(min(cstA, cstB), x) and min(cstA, cstB) is a cst.
+              // same for max.
+              Value input =
+                  constALeft == null
+                      ? prevInvoke.getFirstArgument()
+                      : prevInvoke.getSecondArgument();
+              Value firstOutValue =
+                  insertNewConstNumber(code, iterator, constA, constB, staticDescriptor);
+              Value newValue = code.createValue(invokeStatic.outValue().getType());
+              ImmutableList<Value> newArgs =
+                  constLeft != null
+                      ? ImmutableList.of(firstOutValue, input)
+                      : ImmutableList.of(input, firstOutValue);
+              InvokeStatic newInvoke =
+                  new InvokeStatic(invokeStatic.getInvokedMethod(), newValue, newArgs);
+              iterator.replaceCurrentInstruction(newInvoke);
+              iterator.previous();
+              return true;
+            } else {
+              // Nested clamping folding:
+              // min(c1, max(c2, x)) => c1 when c1 <= c2
+              // max(c1, min(c2, x)) => c1 when c1 >= c2
+              boolean isInt = invokeStatic.outValue().getType().isInt();
+              boolean shouldFold =
+                  staticDescriptor == StaticDescriptor.MIN
+                      ? (isInt
+                          ? constB.getIntValue() <= constA.getIntValue()
+                          : constB.getLongValue() <= constA.getLongValue())
+                      : (isInt
+                          ? constB.getIntValue() >= constA.getIntValue()
+                          : constB.getLongValue() >= constA.getLongValue());
+              if (shouldFold) {
+                invokeStatic.outValue().replaceUsers(constB.outValue());
+                iterator.removeOrReplaceByDebugLocalRead();
+                return true;
+              }
+            }
           }
         }
       }
