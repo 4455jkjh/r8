@@ -369,12 +369,14 @@ public class RedundantLoadAndStoreElimination extends CodeRewriterPass<AppInfo> 
         // Add operand.
         operands.add(operand);
         // Update phi type.
+        TypeElement previousPhiType = phiType;
         phiType = phiType.join(operand.getType(), appView);
         // We need to be careful when two operands join to a less precise type, since the ART
         // verifier does not see the same bootclasspath. When the resulting phi type is different
         // from the operand type, we conservatively bail out if phi type is a library type.
-        if (operand.getType().isReferenceType()
-            && !operand.getType().equalUpToNullability(phiType)) {
+        if (phiType.isReferenceType()
+            && (!operand.getType().equalUpToNullability(phiType)
+                || !previousPhiType.equalUpToNullability(phiType))) {
           TypeElement baseType =
               phiType.isArrayType() ? phiType.asArrayType().getBaseType() : phiType;
           if (baseType.isClassType()) {
