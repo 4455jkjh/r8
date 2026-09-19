@@ -24,6 +24,7 @@ import com.android.tools.r8.utils.AndroidApiLevel;
 import com.google.common.collect.ImmutableList;
 import it.unimi.dsi.fastutil.ints.IntArraySet;
 import it.unimi.dsi.fastutil.ints.IntSet;
+import it.unimi.dsi.fastutil.ints.IntSets;
 import java.util.Collection;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -86,7 +87,7 @@ public class StartupMixedSectionLayoutStrategyTest extends TestBase {
 
   private static class MixedSectionLayoutInspectorImpl extends MixedSectionLayoutInspector {
 
-    final IntSet seen = new IntArraySet();
+    final IntSet seen = IntSets.synchronize(new IntArraySet());
 
     @Override
     public void inspectClassDataLayout(
