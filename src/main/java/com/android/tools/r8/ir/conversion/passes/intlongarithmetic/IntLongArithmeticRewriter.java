@@ -459,8 +459,10 @@ public class IntLongArithmeticRewriter extends CodeRewriterPass<AppInfo> {
     if (!invokeStatic.hasOutValue()) {
       // Normally the dead code remover can deal with this, but r8 needs to deal with it here to
       // avoid working with dead instruction and avoid dealing with invoke without out value.
-      iterator.removeOrReplaceByDebugLocalRead();
-      return true;
+      if (canRemoveUnusedInvokeStatic(invokeStatic, staticDescriptor)) {
+        iterator.removeOrReplaceByDebugLocalRead();
+        return true;
+      }
     }
     if (staticDescriptor == StaticDescriptor.MIN || staticDescriptor == StaticDescriptor.MAX) {
       if (optimizeMinMax(iterator, invokeStatic, staticDescriptor, code)) {
@@ -557,6 +559,18 @@ public class IntLongArithmeticRewriter extends CodeRewriterPass<AppInfo> {
     return false;
   }
 
+  private boolean canRemoveUnusedInvokeStatic(
+      InvokeStatic invokeStatic, StaticDescriptor staticDescriptor) {
+    if (!staticDescriptor.canThrow()) {
+      return true;
+    }
+    if (staticDescriptor.canThrowOnlyOnZeroDivisor()) {
+      ConstNumber constRight = getConstNumber(invokeStatic.getSecondArgument());
+      return constRight != null && !constRight.isZero();
+    }
+    return false;
+  }
+
   private boolean optimizeMinMax(
       InstructionListIterator iterator,
       InvokeStatic invokeStatic,
@@ -624,8 +638,12 @@ public class IntLongArithmeticRewriter extends CodeRewriterPass<AppInfo> {
                           ? constB.getIntValue() >= constA.getIntValue()
                           : constB.getLongValue() >= constA.getLongValue());
               if (shouldFold) {
-                invokeStatic.outValue().replaceUsers(constB.outValue());
-                iterator.removeOrReplaceByDebugLocalRead();
+                replaceByConstant(
+                    iterator,
+                    invokeStatic,
+                    code,
+                    invokeStatic.outValue().getType(),
+                    constB.getRawValue());
                 return true;
               }
             }
@@ -748,6 +766,11 @@ public class IntLongArithmeticRewriter extends CodeRewriterPass<AppInfo> {
       IRCode code,
       long constant,
       BinopDescriptor binopDescriptor) {
+    Instruction instruction = iterator.peekPrevious();
+    if (!instruction.hasOutValue()) {
+      iterator.removeOrReplaceByDebugLocalRead();
+      return;
+    }
     iterator.previous();
     TypeElement type = binopDescriptor.isShift() ? TypeElement.getInt() : value.getType();
     Value cst = iterator.insertConstNumberInstruction(code, appView.options(), constant, type);
@@ -766,11 +789,13 @@ public class IntLongArithmeticRewriter extends CodeRewriterPass<AppInfo> {
       IRCode code,
       TypeElement outType,
       long constantValue) {
-    iterator.previous();
-    Value value =
-        iterator.insertConstNumberInstruction(code, appView.options(), constantValue, outType);
-    iterator.next();
-    instruction.outValue().replaceUsers(value);
+    if (instruction.hasOutValue()) {
+      iterator.previous();
+      Value value =
+          iterator.insertConstNumberInstruction(code, appView.options(), constantValue, outType);
+      iterator.next();
+      instruction.outValue().replaceUsers(value);
+    }
     iterator.removeOrReplaceByDebugLocalRead();
   }
 
@@ -825,14 +850,17 @@ public class IntLongArithmeticRewriter extends CodeRewriterPass<AppInfo> {
       Integer absorbingElement,
       Value absorbingReplacement) {
     Integer intValue = extractIntValueOrNull(constNumber);
-    assert instruction.hasOutValue();
     if (identityElement != null && identityElement.equals(intValue)) {
-      instruction.outValue().replaceUsers(identityReplacement);
+      if (instruction.hasOutValue()) {
+        instruction.outValue().replaceUsers(identityReplacement);
+      }
       iterator.removeOrReplaceByDebugLocalRead();
       return true;
     }
     if (absorbingElement != null && absorbingElement.equals(intValue)) {
-      instruction.outValue().replaceUsers(absorbingReplacement);
+      if (instruction.hasOutValue()) {
+        instruction.outValue().replaceUsers(absorbingReplacement);
+      }
       iterator.removeOrReplaceByDebugLocalRead();
       return true;
     }

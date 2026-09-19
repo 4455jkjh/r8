@@ -28,6 +28,11 @@ enum StaticDescriptor implements ArithmeticDescriptor {
     Integer rightIdentity() {
       return 0;
     }
+
+    @Override
+    boolean canThrow() {
+      return false;
+    }
   },
   ADD_EXACT {
     @Override
@@ -79,6 +84,11 @@ enum StaticDescriptor implements ArithmeticDescriptor {
     public long evaluate(long left, long right) {
       return Math.min(left, right);
     }
+
+    @Override
+    boolean canThrow() {
+      return false;
+    }
   },
   MAX {
     @Override
@@ -90,21 +100,46 @@ enum StaticDescriptor implements ArithmeticDescriptor {
     public long evaluate(long left, long right) {
       return Math.max(left, right);
     }
+
+    @Override
+    boolean canThrow() {
+      return false;
+    }
   },
   FLOOR_DIV {
     @Override
     Integer rightIdentity() {
       return 1;
     }
+
+    @Override
+    boolean canThrowOnlyOnZeroDivisor() {
+      return true;
+    }
   },
-  FLOOR_MOD,
+  FLOOR_MOD {
+    @Override
+    boolean canThrowOnlyOnZeroDivisor() {
+      return true;
+    }
+  },
   DIVIDE_UNSIGNED {
     @Override
     Integer rightIdentity() {
       return 1;
     }
+
+    @Override
+    boolean canThrowOnlyOnZeroDivisor() {
+      return true;
+    }
   },
-  REMAINDER_UNSIGNED;
+  REMAINDER_UNSIGNED {
+    @Override
+    boolean canThrowOnlyOnZeroDivisor() {
+      return true;
+    }
+  };
 
   @Override
   public int evaluate(int left, int right) {
@@ -130,5 +165,13 @@ enum StaticDescriptor implements ArithmeticDescriptor {
 
   Integer rightAbsorbing() {
     return null;
+  }
+
+  boolean canThrow() {
+    return true;
+  }
+
+  boolean canThrowOnlyOnZeroDivisor() {
+    return false;
   }
 }
