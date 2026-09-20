@@ -463,6 +463,6 @@ public class IfSimplificationTest extends SmaliTestBase {
         "      move                v0, v1",
         "      goto                :label_7"
     );
-    assertEquals(23, method.getCode().asDexCode().getInstructions().length);
+    assertEquals(21, method.getCode().asDexCode().getInstructions().length);
   }
 }

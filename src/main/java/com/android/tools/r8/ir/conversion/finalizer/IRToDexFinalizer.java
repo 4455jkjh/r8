@@ -11,6 +11,7 @@ import com.android.tools.r8.graph.bytecodemetadata.BytecodeMetadataProvider;
 import com.android.tools.r8.ir.code.IRCode;
 import com.android.tools.r8.ir.conversion.DexBuilder;
 import com.android.tools.r8.ir.conversion.finalizer.passes.BasicBlockReorderer;
+import com.android.tools.r8.ir.conversion.finalizer.passes.BranchDiamondInverter;
 import com.android.tools.r8.ir.conversion.finalizer.passes.DebugLocalUpdater;
 import com.android.tools.r8.ir.conversion.finalizer.passes.IdenticalBlockPrefixSharer;
 import com.android.tools.r8.ir.conversion.finalizer.passes.IdenticalBlockSuffixSharer;
@@ -36,6 +37,7 @@ public class IRToDexFinalizer extends IRFinalizer<DexCode> {
   private final IdenticalBlockPrefixSharer identicalBlockPrefixSharer;
   private final IdenticalBlockSuffixSharer identicalBlockSuffixSharer;
   private final DebugLocalUpdater debugLocalUpdater;
+  private final BranchDiamondInverter branchDiamondInverter;
   private final BasicBlockReorderer basicBlockReorderer;
 
   public IRToDexFinalizer(AppView<?> appView, DeadCodeRemover deadCodeRemover) {
@@ -48,6 +50,7 @@ public class IRToDexFinalizer extends IRFinalizer<DexCode> {
     identicalBlockPrefixSharer = new IdenticalBlockPrefixSharer(appView);
     identicalBlockSuffixSharer = new IdenticalBlockSuffixSharer(appView);
     debugLocalUpdater = new DebugLocalUpdater(appView);
+    branchDiamondInverter = new BranchDiamondInverter(appView);
     this.basicBlockReorderer = new BasicBlockReorderer(this.appView);
   }
 
@@ -105,6 +108,7 @@ public class IRToDexFinalizer extends IRFinalizer<DexCode> {
     timing.end();
     timing.begin("Clean up");
     debugLocalUpdater.run(code, registerAllocator, timing);
+    branchDiamondInverter.run(code, registerAllocator, timing);
     // BasicBlockReorderer should be run near the end because other optimizations may change block
     // ordering.
     basicBlockReorderer.run(code, registerAllocator, timing);
