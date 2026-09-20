@@ -81,9 +81,7 @@ public class IRToDexFinalizer extends IRFinalizer<DexCode> {
     RuntimeWorkaroundCodeRewriter.workaroundInstanceOfTypeWeakeningInVerifier(
         appView, code, deadCodeRemover, timing);
     RuntimeWorkaroundCodeRewriter.workaroundSwitchMaxIntBug(code, appView);
-    RuntimeWorkaroundCodeRewriter.workaroundDex2OatLinkedListBug(code, options);
     RuntimeWorkaroundCodeRewriter.workaroundForwardingInitializerBug(code, options);
-    RuntimeWorkaroundCodeRewriter.workaroundExceptionTargetingLoopHeaderBug(code, options);
     RuntimeWorkaroundCodeRewriter.rewriteJdk8272564Fix(code, options, appView);
     RuntimeWorkaroundCodeRewriter.reportInvokeSuperToInterfaceOnDalvik(code, options, appView);
     assert code.isConsistentSSA(appView);
@@ -125,6 +123,8 @@ public class IRToDexFinalizer extends IRFinalizer<DexCode> {
     branchDiamondInverter.run(code, registerAllocator, timing);
     basicBlockReorderer.run(code, registerAllocator, timing);
     trivialGotosCollapser.run(code, registerAllocator, timing);
+    RuntimeWorkaroundCodeRewriter.workaroundDex2OatLinkedListBug(code, options);
+    RuntimeWorkaroundCodeRewriter.workaroundExceptionTargetingLoopHeaderBug(code, options);
     return registerAllocator;
   }
 }

@@ -421,6 +421,16 @@ public class BasicBlock {
     return normals.build();
   }
 
+  public boolean hasUniqueNormalPredecessor() {
+    int count = 0;
+    for (BasicBlock predecessor : predecessors) {
+      if (!predecessor.hasCatchSuccessor(this) && ++count > 1) {
+        return false;
+      }
+    }
+    return count == 1;
+  }
+
   public void removeSuccessor(BasicBlock block) {
     int index = successors.indexOf(block);
     assert index >= 0 : "removeSuccessor did not find the successor to remove";
