@@ -12,6 +12,7 @@ import com.android.tools.r8.ir.code.IRCode;
 import com.android.tools.r8.ir.conversion.DexBuilder;
 import com.android.tools.r8.ir.conversion.finalizer.passes.BasicBlockReorderer;
 import com.android.tools.r8.ir.conversion.finalizer.passes.BranchDiamondInverter;
+import com.android.tools.r8.ir.conversion.finalizer.passes.DeadRegisterStoreEliminator;
 import com.android.tools.r8.ir.conversion.finalizer.passes.DebugLocalUpdater;
 import com.android.tools.r8.ir.conversion.finalizer.passes.IdenticalBlockPrefixSharer;
 import com.android.tools.r8.ir.conversion.finalizer.passes.IdenticalBlockRemover;
@@ -36,6 +37,7 @@ public class IRToDexFinalizer extends IRFinalizer<DexCode> {
   private final IdenticalBlockSuffixSharer identicalBlockSuffixSharer;
   private final DebugLocalUpdater debugLocalUpdater;
   private final BranchDiamondInverter branchDiamondInverter;
+  private final DeadRegisterStoreEliminator deadRegisterStoreEliminator;
   private final BasicBlockReorderer basicBlockReorderer;
 
   public IRToDexFinalizer(AppView<?> appView, DeadCodeRemover deadCodeRemover) {
@@ -49,6 +51,7 @@ public class IRToDexFinalizer extends IRFinalizer<DexCode> {
     identicalBlockSuffixSharer = new IdenticalBlockSuffixSharer(appView);
     debugLocalUpdater = new DebugLocalUpdater(appView);
     branchDiamondInverter = new BranchDiamondInverter(appView);
+    deadRegisterStoreEliminator = new DeadRegisterStoreEliminator(appView);
     this.basicBlockReorderer = new BasicBlockReorderer(this.appView);
   }
 
@@ -97,7 +100,11 @@ public class IRToDexFinalizer extends IRFinalizer<DexCode> {
     timing.end();
     trivialGotosCollapser.run(code, registerAllocator, timing);
     debugLocalUpdater.run(code, registerAllocator, timing);
+    // The data passes below index per-block state by block number, so the blocks are densely
+    // renumbered first.
+    code.resetNumbers();
     redundantInstructionsRemover.run(code, registerAllocator, timing);
+    deadRegisterStoreEliminator.run(code, registerAllocator, timing);
     boolean changed =
         identicalBlockRemover.run(code, registerAllocator, timing).hasChanged().isTrue();
     changed |=
