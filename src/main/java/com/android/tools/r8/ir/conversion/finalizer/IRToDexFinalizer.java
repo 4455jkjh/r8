@@ -14,8 +14,8 @@ import com.android.tools.r8.ir.conversion.finalizer.passes.BasicBlockReorderer;
 import com.android.tools.r8.ir.conversion.finalizer.passes.BranchDiamondInverter;
 import com.android.tools.r8.ir.conversion.finalizer.passes.DebugLocalUpdater;
 import com.android.tools.r8.ir.conversion.finalizer.passes.IdenticalBlockPrefixSharer;
+import com.android.tools.r8.ir.conversion.finalizer.passes.IdenticalBlockRemover;
 import com.android.tools.r8.ir.conversion.finalizer.passes.IdenticalBlockSuffixSharer;
-import com.android.tools.r8.ir.conversion.finalizer.passes.IdenticalPredecessorBlocksRemover;
 import com.android.tools.r8.ir.conversion.finalizer.passes.RedundantInstructionsRemover;
 import com.android.tools.r8.ir.conversion.finalizer.passes.TrivialGotosCollapser;
 import com.android.tools.r8.ir.desugar.nest.D8NestBasedAccessDesugaring;
@@ -30,7 +30,7 @@ public class IRToDexFinalizer extends IRFinalizer<DexCode> {
   private final DeadCodeRemover deadCodeRemover;
   private final InternalOptions options;
   private final TrivialGotosCollapser trivialGotosCollapser;
-  private final IdenticalPredecessorBlocksRemover identicalPredecessorBlocksRemover;
+  private final IdenticalBlockRemover identicalBlockRemover;
   private final RedundantInstructionsRemover redundantInstructionsRemover;
   private final IdenticalBlockPrefixSharer identicalBlockPrefixSharer;
   private final IdenticalBlockSuffixSharer identicalBlockSuffixSharer;
@@ -43,7 +43,7 @@ public class IRToDexFinalizer extends IRFinalizer<DexCode> {
     this.deadCodeRemover = deadCodeRemover;
     this.options = appView.options();
     this.trivialGotosCollapser = new TrivialGotosCollapser(this.appView);
-    identicalPredecessorBlocksRemover = new IdenticalPredecessorBlocksRemover(appView);
+    identicalBlockRemover = new IdenticalBlockRemover(appView);
     redundantInstructionsRemover = new RedundantInstructionsRemover(appView);
     identicalBlockPrefixSharer = new IdenticalBlockPrefixSharer(appView);
     identicalBlockSuffixSharer = new IdenticalBlockSuffixSharer(appView);
@@ -99,10 +99,7 @@ public class IRToDexFinalizer extends IRFinalizer<DexCode> {
     debugLocalUpdater.run(code, registerAllocator, timing);
     redundantInstructionsRemover.run(code, registerAllocator, timing);
     boolean changed =
-        identicalPredecessorBlocksRemover
-            .run(code, registerAllocator, timing)
-            .hasChanged()
-            .isTrue();
+        identicalBlockRemover.run(code, registerAllocator, timing).hasChanged().isTrue();
     changed |=
         identicalBlockPrefixSharer.run(code, registerAllocator, timing).hasChanged().isTrue();
     changed |=
@@ -110,7 +107,7 @@ public class IRToDexFinalizer extends IRFinalizer<DexCode> {
     changed |= branchDiamondInverter.run(code, registerAllocator, timing).hasChanged().isTrue();
     if (changed) {
       trivialGotosCollapser.run(code, registerAllocator, timing);
-      identicalPredecessorBlocksRemover.run(code, registerAllocator, timing);
+      identicalBlockRemover.run(code, registerAllocator, timing);
       identicalBlockPrefixSharer.run(code, registerAllocator, timing);
       identicalBlockSuffixSharer.run(code, registerAllocator, timing);
       branchDiamondInverter.run(code, registerAllocator, timing);

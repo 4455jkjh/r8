@@ -26,15 +26,15 @@ import java.util.Set;
  * If two blocks have the same code and successors, replace one of them with an empty block with a
  * goto to the other.
  */
-public class IdenticalPredecessorBlocksRemover extends FinalizerRewriterPass<AppInfo> {
+public class IdenticalBlockRemover extends FinalizerRewriterPass<AppInfo> {
 
-  public IdenticalPredecessorBlocksRemover(AppView<?> appView) {
+  public IdenticalBlockRemover(AppView<?> appView) {
     super(appView);
   }
 
   @Override
   protected String getRewriterId() {
-    return "IdenticalPredecessorBlocksRemover";
+    return "IdenticalBlockRemover";
   }
 
   @Override

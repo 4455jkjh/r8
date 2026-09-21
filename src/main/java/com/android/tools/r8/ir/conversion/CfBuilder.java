@@ -50,8 +50,8 @@ import com.android.tools.r8.ir.code.StackValues;
 import com.android.tools.r8.ir.code.UninitializedThisLocalRead;
 import com.android.tools.r8.ir.code.Value;
 import com.android.tools.r8.ir.code.Xor;
+import com.android.tools.r8.ir.conversion.finalizer.passes.IdenticalBlockRemover;
 import com.android.tools.r8.ir.conversion.finalizer.passes.IdenticalBlockSuffixSharer;
-import com.android.tools.r8.ir.conversion.finalizer.passes.IdenticalPredecessorBlocksRemover;
 import com.android.tools.r8.ir.conversion.finalizer.passes.TrivialGotosCollapser;
 import com.android.tools.r8.ir.optimize.DeadCodeRemover;
 import com.android.tools.r8.ir.optimize.PhiOptimizations;
@@ -200,14 +200,13 @@ public class CfBuilder {
     timing.end();
 
     TrivialGotosCollapser trivialGotosCollapser = new TrivialGotosCollapser(appView);
-    IdenticalPredecessorBlocksRemover identicalPredecessorBlocksRemover =
-        new IdenticalPredecessorBlocksRemover(appView);
+    IdenticalBlockRemover identicalBlockRemover = new IdenticalBlockRemover(appView);
     IdenticalBlockSuffixSharer identicalBlockSuffixSharer =
         new IdenticalBlockSuffixSharer(appView, SUFFIX_SHARING_OVERHEAD);
     timing.begin("BasicBlock peephole optimizations");
     for (int i = 0; i < PEEPHOLE_OPTIMIZATION_PASSES; i++) {
       trivialGotosCollapser.run(code, registerAllocator, timing);
-      identicalPredecessorBlocksRemover.run(code, registerAllocator, timing);
+      identicalBlockRemover.run(code, registerAllocator, timing);
       identicalBlockSuffixSharer.run(code, registerAllocator, timing);
     }
     timing.end();
