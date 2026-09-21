@@ -562,7 +562,7 @@ public abstract class Instruction
     return identicalPosition(other, allocator);
   }
 
-  protected final boolean identicalPosition(Instruction other, RegisterAllocator allocator) {
+  public final boolean identicalPosition(Instruction other, RegisterAllocator allocator) {
     // In debug mode or if the instruction can throw we must account for positions, in release mode
     // we do want to share non-throwing instructions even if their positions differ.
     if (instructionTypeCanThrow() || allocator.options().debug) {

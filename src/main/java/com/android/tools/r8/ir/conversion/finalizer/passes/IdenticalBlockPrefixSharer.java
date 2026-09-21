@@ -134,7 +134,7 @@ public class IdenticalBlockPrefixSharer extends FinalizerRewriterPass<AppInfo> {
       }
 
       // Check for commutativity (debug info).
-      if (!instruction.getPosition().equals(block.exit().getPosition())
+      if (!instruction.identicalPosition(block.exit(), allocator)
           && !(block.exit().getPosition().isNone() && !block.exit().getDebugValues().isEmpty())) {
         return hasChanged;
       }
