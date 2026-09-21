@@ -28,13 +28,13 @@ import com.android.tools.r8.utils.timing.Timing;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.function.Supplier;
+import org.junit.rules.TemporaryFolder;
 
 public class LibraryDesugaringSpecification {
 
@@ -116,15 +116,17 @@ public class LibraryDesugaringSpecification {
     if (tempLibraryJdk11UndesugarCache != null) {
       return tempLibraryJdk11UndesugarCache;
     }
-    Path dir = ToolHelper.getR8TempPath().resolve("jdklib_desugaring");
     try {
-      Files.createDirectories(dir);
+      TemporaryFolder staticTemp = ToolHelper.getTemporaryFolderForTest();
+      staticTemp.create();
+      Path jdklib_desugaring = staticTemp.newFolder("jdklib_desugaring").toPath();
+      tempLibraryJdk11UndesugarCache =
+          DesugaredLibraryJDK11Undesugarer.undesugaredJarJDK11(
+              jdklib_desugaring, DESUGARED_JDK_11_LIB_JAR);
+      return tempLibraryJdk11UndesugarCache;
     } catch (IOException e) {
       throw new RuntimeException(e);
     }
-    tempLibraryJdk11UndesugarCache =
-        DesugaredLibraryJDK11Undesugarer.undesugaredJarJDK11(dir, DESUGARED_JDK_11_LIB_JAR);
-    return tempLibraryJdk11UndesugarCache;
   }
 
   public static Path getTempLibraryJDK11Undesugar() {
