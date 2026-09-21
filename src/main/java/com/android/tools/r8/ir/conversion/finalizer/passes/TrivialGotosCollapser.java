@@ -97,7 +97,7 @@ public class TrivialGotosCollapser extends FinalizerRewriterPass<AppInfo> {
     }
   }
 
-  private boolean isFallthroughBlock(BasicBlock block) {
+  public static boolean isFallthroughBlock(BasicBlock block) {
     for (BasicBlock pred : block.getPredecessors()) {
       if (pred.exit().fallthroughBlock() == block) {
         return true;

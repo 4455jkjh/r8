@@ -297,13 +297,9 @@ public abstract class InvokeMethod extends Invoke {
 
     if (allocator.options().canHaveIncorrectJoinForArrayOfInterfacesBug()) {
       InvokeMethod invoke = other.asInvokeMethod();
-
-      // If one of the arguments of this invoke is an array, then make sure that the corresponding
-      // argument of the other invoke is the exact same value. Otherwise, the verifier may
-      // incorrectly join the types of these arrays to Object[].
       for (int i = 0; i < arguments().size(); ++i) {
-        Value argument = arguments().get(i);
-        if (argument.getType().isArrayType() && argument != invoke.arguments().get(i)) {
+        if (!identicalArrayValuesAfterRegisterAllocation(
+            arguments().get(i), invoke.arguments().get(i), allocator)) {
           return false;
         }
       }
