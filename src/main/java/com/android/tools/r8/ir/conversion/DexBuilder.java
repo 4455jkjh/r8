@@ -91,6 +91,9 @@ import java.util.Set;
 /** Builder object for constructing dex bytecode from the high-level IR. */
 public class DexBuilder {
 
+  // Removing trivial goto blocks is expected to reach a fixed point in at most two iterations.
+  private static final int EXPECTED_MAX_TRIVIAL_GOTO_BLOCK_ITERATIONS = 2;
+
   public final AppView<?> appView;
 
   // The IR representation of the code to build.
@@ -374,7 +377,8 @@ public class DexBuilder {
         && currentBlock.getPredecessors().get(0) == previousBlock;
   }
 
-  private static void removeTrivialGotoBlocks(IRCode code) {
+  private static boolean removeTrivialGotoBlocks(IRCode code) {
+    boolean changed = false;
     for (int blockIndex = 1; blockIndex < code.blocks.size(); blockIndex++) {
       // We skip checking the entry block as it has no predecessors and must define the initial
       // position. Any subsequent block must be statically reachable and thus have predecessors.
@@ -415,12 +419,13 @@ public class DexBuilder {
         currentBlock.removeInstruction(debugPosition);
         TrivialGotosCollapser.unlinkTrivialGotoBlock(currentBlock, exit.getTarget());
         code.removeBlocks(Collections.singleton(currentBlock));
+        changed = true;
         // Having removed the block at blockIndex, the previous block may now be a trivial
-        // fallthrough from an if/switch. Rewind to that point and retry. This avoids iterating to
-        // a fixed point.
+        // fallthrough from an if/switch. Rewind to that point and retry.
         blockIndex = Math.max(0, blockIndex - 2);
       }
     }
+    return changed;
   }
 
   private static boolean isFallthroughTargetToNonFallthroughTarget(
@@ -460,7 +465,21 @@ public class DexBuilder {
     // We must start by removing any blocks that are already trivial fallthrough blocks with no
     // position change. With these removed it is then sound to make the fallthrough judgement when
     // determining if a goto will materialize or not.
-    removeTrivialGotoBlocks(code);
+    //
+    // Removing a block rewires the predecessors of its goto target, which can turn blocks that the
+    // index based iteration has already passed into removable blocks. Iterate to a fixed point.
+    // This terminates as every iteration that reports a change removes at least one block.
+    int iterations = 0;
+    while (removeTrivialGotoBlocks(code)) {
+      iterations++;
+    }
+    if (iterations > EXPECTED_MAX_TRIVIAL_GOTO_BLOCK_ITERATIONS) {
+      // A single iteration removes all blocks for virtually all methods, and two iterations is the
+      // most that has been observed. Assert if that assumption no longer holds, as it points at a
+      // pathological case worth looking into.
+      assert false
+          : "Unexpected number of iterations (" + iterations + ") removing trivial goto blocks.";
+    }
 
     // Compute the set of all positions that can be removed.
     // (Delaying removal to avoid ConcurrentModificationException).
