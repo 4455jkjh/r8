@@ -537,6 +537,26 @@ r8_tester_with_default(
     priority = 20,
 )
 
+def perf_size():
+    for bucket in ["ci", "try"]:
+        r8_builder(
+            "linux-perf-size",
+            bucket = bucket,
+            category = "perf",
+            dimensions = get_dimensions(tester = True),
+            trigger = bucket == "ci",
+            max_concurrent_invocations = 2,
+            execution_timeout = time.minute * 30,
+            expiration_timeout = time.hour * 35,
+            properties = {
+                "builder_group": "internal.client.r8",
+                "test_options": ["--upload-baseline"] if bucket == "ci" else [],
+                "test_wrapper": "tools/perf_size.py",
+            },
+        )
+
+perf_size()
+
 presubmit_testers = [
     "linux-default",
     "linux-none",
@@ -559,6 +579,7 @@ presubmit_testers = [
     "linux-android-15",
     "linux-android-16",
     "linux-android-17",
+    "linux-perf-size",
 ]
 
 r8_tester_with_default(

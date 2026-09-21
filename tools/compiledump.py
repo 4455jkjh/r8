@@ -430,9 +430,10 @@ def output_name(input_name, suffix):
     return os.path.basename(input_name)[:-4] + ".out" + suffix
 
 
-def determine_feature_output(feature_input, temp):
-    output_exists = args.output and os.path.isdir(args.output)
-    base_path = args.output if output_exists else temp
+def determine_feature_output(feature_input, temp, args=None):
+    output_dir = args.output if args is not None else None
+    output_exists = output_dir and os.path.isdir(output_dir)
+    base_path = output_dir if output_exists else temp
     if ":" in feature_input:
         split = feature_input.split(':')
         feature_jar = '' if len(split[0]) == 0 else os.path.join(
@@ -561,8 +562,10 @@ def clean_config_line(line, minify, optimize, shrink):
     return False
 
 
-def compile_reflective_helper(temp, jdkhome):
-    gradle.run_gradle([utils.GRADLE_TASK_MAIN_COMPILE])
+def compile_reflective_helper(temp, jdkhome, no_build=False):
+    main_classes_dir = utils.BUILD_JAVA_MAIN_CLASSPATH.split(os.pathsep)[0]
+    if not no_build or not os.path.exists(main_classes_dir):
+        gradle.run_gradle([utils.GRADLE_TASK_MAIN_COMPILE])
     base_path = os.path.join(
         utils.REPO_ROOT, 'src/main/java/com/android/tools/r8/utils/compiledump')
 
@@ -578,33 +581,13 @@ def compile_reflective_helper(temp, jdkhome):
     subprocess.check_output(cmd)
 
 
-def prepare_r8_wrapper(dist, temp, jdkhome):
-    compile_reflective_helper(temp, jdkhome)
+def prepare_wrapper(dist, temp, jdkhome, wrapper_file, no_build=False):
+    compile_reflective_helper(temp, jdkhome, no_build=no_build)
     compile_wrapper_with_javac(
         dist, temp, jdkhome,
         os.path.join(
             utils.REPO_ROOT,
-            'src/main/java/com/android/tools/r8/utils/CompileDumpCompatR8.java')
-    )
-
-
-def prepare_d8_wrapper(dist, temp, jdkhome):
-    compile_reflective_helper(temp, jdkhome)
-    compile_wrapper_with_javac(
-        dist, temp, jdkhome,
-        os.path.join(
-            utils.REPO_ROOT,
-            'src/main/java/com/android/tools/r8/utils/CompileDumpD8.java'))
-
-
-def prepare_r8assistant_wrapper(dist, temp, jdkhome):
-    compile_reflective_helper(temp, jdkhome)
-    compile_wrapper_with_javac(
-        dist, temp, jdkhome,
-        os.path.join(
-            utils.REPO_ROOT,
-            'src/main/java/com/android/tools/r8/utils/CompileDumpR8Assistant.java'
-        ))
+            f'src/main/java/com/android/tools/r8/utils/{wrapper_file}'))
 
 
 def compile_wrapper_with_javac(dist, temp, jdkhome, path):
@@ -700,8 +683,10 @@ def run1(out, args, otherargs, jdkhome=None, worker_id=None):
         cmd.extend(determine_properties(build_properties))
         cmd.extend(args.java_opts)
         cmd.extend(['-cp', os.pathsep.join((temp, jar))])
+        no_build = bool(getattr(args, 'no_build', False))
         if compiler == 'd8':
-            prepare_d8_wrapper(jar, temp, compilation_jdkhome)
+            prepare_wrapper(jar, temp, compilation_jdkhome,
+                            'CompileDumpD8.java', no_build)
             cmd.append('com.android.tools.r8.utils.CompileDumpD8')
         if is_l8_compiler(compiler):
             cmd.append('com.android.tools.r8.L8')
@@ -710,10 +695,12 @@ def run1(out, args, otherargs, jdkhome=None, worker_id=None):
             cmd.extend(
                 determine_trace_references_commands(build_properties, out))
         if is_assistant(compiler):
-            prepare_r8assistant_wrapper(jar, temp, compilation_jdkhome)
+            prepare_wrapper(jar, temp, compilation_jdkhome,
+                            'CompileDumpR8Assistant.java', no_build)
             cmd.append('com.android.tools.r8.utils.CompileDumpR8Assistant')
         if is_r8_compiler(compiler):
-            prepare_r8_wrapper(jar, temp, compilation_jdkhome)
+            prepare_wrapper(jar, temp, compilation_jdkhome,
+                            'CompileDumpCompatR8.java', no_build)
             cmd.append('com.android.tools.r8.utils.CompileDumpCompatR8')
             if compiler == 'r8':
                 cmd.append('--compat')
@@ -740,7 +727,7 @@ def run1(out, args, otherargs, jdkhome=None, worker_id=None):
             if not args.ignore_features and compiler != 'd8':
                 cmd.extend([
                     '--feature-jar', feature_jar,
-                    determine_feature_output(feature_jar, temp)
+                    determine_feature_output(feature_jar, temp, args)
                 ])
             else:
                 cmd.append(feature_jar)

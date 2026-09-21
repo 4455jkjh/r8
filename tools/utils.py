@@ -1172,3 +1172,12 @@ def append_gradle_user_home_for_worktree(force_worktree, with_no_daemon, args):
         args.append('--gradle-user-home=' + gradle_user_home)
         if with_no_daemon:
             args.append('--no-daemon')
+
+
+def compute_dex_size_in_zip(zip_path):
+    if not os.path.isfile(zip_path):
+        return 0
+    with zipfile.ZipFile(zip_path, 'r') as z:
+        return sum(info.file_size
+                   for info in z.infolist()
+                   if info.filename.endswith('.dex'))

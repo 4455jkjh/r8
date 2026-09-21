@@ -95,3 +95,37 @@ def VersionCommitMessage(version,
 
 
 version_commit_message = VersionCommitMessage
+
+
+def get_candidate_main_commits(explicit_base_hash=None,
+                               exclude_sha=None,
+                               max_count=25):
+    if explicit_base_hash:
+        start_ref = explicit_base_hash
+    else:
+        try:
+            merge_base_cmd = ['git', 'merge-base', 'HEAD', 'origin/main']
+            start_ref = subprocess.check_output(merge_base_cmd,
+                                                stderr=subprocess.PIPE,
+                                                text=True).strip()
+        except subprocess.CalledProcessError:
+            start_ref = utils.get_HEAD_sha1()
+    try:
+        log_cmd = [
+            'git',
+            'log',
+            '--first-parent',
+            start_ref,
+            f'--max-count={max_count}',
+            '--pretty=format:%H',
+        ]
+        commits = subprocess.check_output(log_cmd,
+                                          text=True).strip().splitlines()
+        res = [
+            c.strip()
+            for c in commits
+            if c.strip() and (explicit_base_hash or c.strip() != exclude_sha)
+        ]
+        return res or [start_ref]
+    except subprocess.CalledProcessError:
+        return [start_ref]
