@@ -468,6 +468,19 @@ def resolve_baseline_results(options,
         return selected_hash, None
 
 
+def build_binary_sizes_dict(items):
+    binary_sizes = {}
+    for key, entry in (items or {}).items():
+        dex_size = entry.get('dex_size')
+        if dex_size is None:
+            continue
+        name = entry.get('name', key)
+        kind = entry.get('kind', '')
+        tool = 'd8' if 'd8' in kind or key.endswith(':d8') else 'r8'
+        binary_sizes[f'{name} ({tool})'] = int(dex_size)
+    return binary_sizes
+
+
 def format_pct_diff(base_val, patch_val):
     if base_val is None or patch_val is None or base_val <= 0:
         return '—'
@@ -630,9 +643,12 @@ def main(argv=None):
         if options.json_output:
             json_path = os.path.abspath(options.json_output)
             os.makedirs(os.path.dirname(json_path), exist_ok=True)
+            got_revision = head_hash if options.upload_baseline else base_hash
             with open(json_path, 'w') as f:
                 json.dump(
                     {
+                        'got_revision': got_revision,
+                        'binary_sizes': build_binary_sizes_dict(patch_items),
                         'base_hash': base_hash,
                         'head_hash': head_hash,
                         'base': base_items,
