@@ -539,7 +539,10 @@ public class BasicBlock {
           // We perform a swap to get the new block into the goto target position.
           swapSuccessorsByIndex(indexOfOldBlock - 1, indexOfNewBlock);
         }
-      } else if (exit().isIf()) {
+      } else if (exit().isIf()
+          || (exit().isSwitch()
+              && successors.size() == 2
+              && newBlock == exit().fallthroughBlock())) {
         if (indexOfNewBlock >= successors.size() - 2 && indexOfOldBlock >= successors.size() - 2) {
           // New and old are true target and fallthrough, replace last instruction with a goto.
           Instruction instruction = instructions.getLast();
