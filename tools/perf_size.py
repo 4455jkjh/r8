@@ -474,7 +474,12 @@ def format_pct_diff(base_val, patch_val):
     diff_bytes = patch_val - base_val
     pct = (diff_bytes / float(base_val)) * 100.0
     sign = '+' if diff_bytes > 0 else ''
-    return f'{sign}{pct:.2f}% ({sign}{diff_bytes:,} B)'
+    text = f'{sign}{pct:.2f}% ({sign}{diff_bytes:,} B)'
+    if diff_bytes < 0:
+        return f'🟢 **{text}**'
+    if diff_bytes > 0:
+        return f'🔴 **{text}**'
+    return text
 
 
 def format_size(val):
@@ -491,20 +496,14 @@ def geomean_ratio(ratios):
 
 def generate_markdown_summary(base_hash, base_items, patch_items):
     short_base = base_hash[:8] if len(base_hash) >= 8 else base_hash
-    lines = [f'### R8 Size Presubmit Report (vs. `main` @ `{short_base}`)']
-    if not base_items:
-        lines.append(
-            f'*(No cached baseline available for `main` @ `{short_base}`; '
-            'showing absolute sizes only)*')
-    lines.extend([
-        '',
-        '| Target | Type | DEX Size | DEX Δ% | OAT Size | OAT Δ% | Resource Size | Res Δ% |',
-        '|---|---|---:|---:|---:|---:|---:|---:|',
-    ])
-
+    headers = [
+        'Target', 'Type', 'DEX Size', 'DEX Δ%', 'OAT Size', 'OAT Δ%',
+        'Resource Size', 'Res Δ%'
+    ]
     metrics = ('dex_size', 'oat_size', 'resource_size')
     ratios = {m: [] for m in metrics}
     totals = {m: 0 for m in metrics}
+    data_rows = []
 
     for key, patch_entry in patch_items.items():
         base_entry = (base_items or {}).get(key, {})
@@ -519,7 +518,7 @@ def generate_markdown_summary(base_hash, base_items, patch_items):
                     ratios[m].append(float(p_val) / float(b_val))
             row_cells.append(format_size(p_val))
             row_cells.append(format_pct_diff(b_val, p_val))
-        lines.append('| ' + ' | '.join(row_cells) + ' |')
+        data_rows.append(row_cells)
 
     def fmt_geomean(r_list):
         gm = geomean_ratio(r_list)
@@ -529,14 +528,68 @@ def generate_markdown_summary(base_hash, base_items, patch_items):
         if abs(pct) < 0.005:
             pct = 0.0
         sign = '+' if pct > 0 else ''
-        return f'**{sign}{pct:.2f}%**'
+        badge = '🟢 ' if pct < 0 else ('🔴 ' if pct > 0 else '')
+        return f'{badge}**{sign}{pct:.2f}%**'
 
-    footer_cells = ['**Total / Geomean**', '']
+    dex_gm = fmt_geomean(ratios['dex_size'])
+    oat_gm = fmt_geomean(ratios['oat_size'])
+    lines = [
+        f'### R8 Size Presubmit Report (vs. `main` @ `{short_base}`) — '
+        f'DEX: {dex_gm}, OAT: {oat_gm}'
+    ]
+    if not base_items:
+        lines.append(
+            f'*(No cached baseline available for `main` @ `{short_base}`; '
+            'showing absolute sizes only)*')
+
+    footer_row = ['**Total / Geomean**', '']
     for m in metrics:
-        footer_cells.append(f'**{format_size(totals[m])}**')
-        footer_cells.append(fmt_geomean(ratios[m]))
-    lines.append('| ' + ' | '.join(footer_cells) + ' |')
-    lines.append('')
+        footer_row.append(f'**{format_size(totals[m])}**')
+        footer_row.append(fmt_geomean(ratios[m]))
+
+    # PolyGerrit's <gr-formatted-text> renders GFM pipe tables into HTML
+    # <table>/<th align=...>/<td align=...>, but its Shadow DOM stylesheet
+    # defines no cell padding on th/td. Adding non-breaking spaces (\u00a0)
+    # provides horizontal column spacing in HTML while ASCII space padding
+    # keeps the raw Markdown pipes aligned in plain text logs.
+    pad = '\u00a0\u00a0\u00a0'
+
+    def pad_cells(row):
+        return [
+            f'{cell}{pad}' if i < 2 else f'{pad}{cell}'
+            for i, cell in enumerate(row)
+        ]
+
+    def display_width(s):
+        return sum(2 if ord(c) > 0xFFFF else 1 for c in s)
+
+    padded_headers = pad_cells(headers)
+    padded_data = [pad_cells(r) for r in data_rows]
+    padded_footer = pad_cells(footer_row)
+    all_rows = [padded_headers] + padded_data + [padded_footer]
+    widths = [
+        max(display_width(r[i]) for r in all_rows) for i in range(len(headers))
+    ]
+
+    def fmt_row(row):
+        cells = []
+        for i, cell in enumerate(row):
+            extra = widths[i] - display_width(cell)
+            cells.append(cell + (' ' * extra) if i < 2 else (' ' * extra) +
+                         cell)
+        return '| ' + ' | '.join(cells) + ' |'
+
+    align_row = '| ' + ' | '.join(
+        ':---' if i < 2 else '---:' for i in range(len(headers))) + ' |'
+
+    lines.extend([
+        '',
+        fmt_row(padded_headers),
+        align_row,
+        *(fmt_row(r) for r in padded_data),
+        fmt_row(padded_footer),
+        '',
+    ])
     return '\n'.join(lines)
 
 
