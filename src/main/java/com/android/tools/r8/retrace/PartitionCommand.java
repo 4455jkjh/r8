@@ -165,6 +165,9 @@ public class PartitionCommand {
     }
 
     private void validate() {
+      if (printHelp || printVersion) {
+        return;
+      }
       if (partitionMapConsumer == null) {
         throw new RetracePartitionException("PartitionMapConsumer not specified");
       }
