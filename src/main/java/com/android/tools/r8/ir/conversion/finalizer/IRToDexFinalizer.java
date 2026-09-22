@@ -99,28 +99,28 @@ public class IRToDexFinalizer extends IRFinalizer<DexCode> {
     registerAllocator.allocateRegisters();
     timing.end();
     trivialGotosCollapser.run(code, registerAllocator, timing);
+    // The debug local updater only has an effect when compiling in debug mode.
     debugLocalUpdater.run(code, registerAllocator, timing);
-    // The data passes below index per-block state by block number, so the blocks are densely
-    // renumbered first.
+    // The following passes are data flow passes and have to run in this order at the beginning.
+    // At this point, the basic block order has no backward edges except for loops, so the passes
+    // only iterate to a fixed point in methods with loops. This might no longer be the case after
+    // the identical block, prefix and suffix sharing passes below. The passes index their per-block
+    // state by block number and none of them adds or removes a block, so the blocks are densely
+    // renumbered once here.
     code.resetNumbers();
     redundantInstructionsRemover.run(code, registerAllocator, timing);
     deadRegisterStoreEliminator.run(code, registerAllocator, timing);
-    boolean changed =
-        identicalBlockRemover.run(code, registerAllocator, timing).hasChanged().isTrue();
-    changed |=
-        identicalBlockPrefixSharer.run(code, registerAllocator, timing).hasChanged().isTrue();
-    changed |=
-        identicalBlockSuffixSharer.run(code, registerAllocator, timing).hasChanged().isTrue();
-    changed |= branchDiamondInverter.run(code, registerAllocator, timing).hasChanged().isTrue();
-    if (changed) {
+    // The next passes share identical basic blocks, basic block prefixes and basic block suffixes.
+    identicalBlockRemover.run(code, registerAllocator, timing);
+    identicalBlockPrefixSharer.run(code, registerAllocator, timing);
+    trivialGotosCollapser.run(code, registerAllocator, timing);
+    if (identicalBlockSuffixSharer.run(code, registerAllocator, timing).hasChanged().isTrue()) {
       trivialGotosCollapser.run(code, registerAllocator, timing);
       identicalBlockRemover.run(code, registerAllocator, timing);
-      identicalBlockPrefixSharer.run(code, registerAllocator, timing);
-      identicalBlockSuffixSharer.run(code, registerAllocator, timing);
-      branchDiamondInverter.run(code, registerAllocator, timing);
     }
-    // BasicBlockReorderer should be run near the end because other optimizations may change block
-    // ordering.
+    // The next passes change the shape of the CFG and the basic block ordering, so they have to run
+    // near the end.
+    branchDiamondInverter.run(code, registerAllocator, timing);
     basicBlockReorderer.run(code, registerAllocator, timing);
     trivialGotosCollapser.run(code, registerAllocator, timing);
     return registerAllocator;
