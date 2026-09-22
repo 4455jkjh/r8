@@ -25,13 +25,19 @@ public class TestConfigurationHelper {
 
   public companion object {
 
+    private const val RESULT_SINK_BATCH_SIZE = 250
+    private const val TIMESTAMP_UPDATE_INTERVAL_MS = 10_000L
+
+    private val gson = Gson()
+    private val resultSinkBatch = mutableListOf<JsonObject>()
+
     private data class ResultSinkInfo(val address: String, val authToken: String)
 
     private val resultSinkInfo: ResultSinkInfo? by lazy {
       val luciContextPath = System.getenv("LUCI_CONTEXT") ?: return@lazy null
       try {
         val content = File(luciContextPath).readText()
-        val json = Gson().fromJson(content, JsonObject::class.java)
+        val json = gson.fromJson(content, JsonObject::class.java)
         val resultSink = json.getAsJsonObject("result_sink") ?: return@lazy null
         val address = resultSink.get("address")?.asString ?: return@lazy null
         val authToken = resultSink.get("auth_token")?.asString ?: return@lazy null
@@ -193,19 +199,40 @@ public class TestConfigurationHelper {
           }
         }
 
-      val payloadObj =
-        JsonObject().apply { add("testResults", JsonArray().apply { add(testResultObj) }) }
+      resultSinkBatch.add(testResultObj)
+      if (
+        resultSinkBatch.size >= RESULT_SINK_BATCH_SIZE ||
+          result?.resultType == TestResult.ResultType.FAILURE
+      ) {
+        flushResultSink()
+      }
+    }
 
+    private fun flushResultSink() {
+      val info = resultSinkInfo ?: return
+      if (resultSinkBatch.isEmpty()) {
+        return
+      }
+      val batchToSend = resultSinkBatch.toList()
+      resultSinkBatch.clear()
+      sendResultSinkBatch(info, batchToSend)
+    }
+
+    private fun sendResultSinkBatch(info: ResultSinkInfo, batch: List<JsonObject>) {
+      val payloadObj =
+        JsonObject().apply { add("testResults", JsonArray().apply { batch.forEach { add(it) } }) }
       try {
         val url =
           URI("http://${info.address}/prpc/luci.resultsink.v1.Sink/ReportTestResults").toURL()
         val conn = url.openConnection() as HttpURLConnection
+        conn.connectTimeout = 5_000
+        conn.readTimeout = 10_000
         conn.requestMethod = "POST"
         conn.doOutput = true
         conn.setRequestProperty("Content-Type", "application/json")
         conn.setRequestProperty("Authorization", "ResultSink ${info.authToken}")
         conn.outputStream.use {
-          it.write(Gson().toJson(payloadObj).toByteArray(StandardCharsets.UTF_8))
+          it.write(gson.toJson(payloadObj).toByteArray(StandardCharsets.UTF_8))
         }
         conn.inputStream.use { it.readBytes() }
       } catch (e: Exception) {
@@ -353,6 +380,7 @@ public class TestConfigurationHelper {
           object : TestListener {
             val testTimes = mutableMapOf<TestDescriptor?, Long>()
             val maxPrintTimesCount = 200
+            var lastTimestampWrite = 0L
 
             override fun beforeSuite(desc: TestDescriptor?) {}
 
@@ -368,6 +396,10 @@ public class TestConfigurationHelper {
                 }
               }
               if (desc?.parent == null) {
+                if (updateTestTimestampPath != null) {
+                  File(updateTestTimestampPath).writeText(System.currentTimeMillis().toString())
+                }
+                flushResultSink()
                 println(
                   "Test results: ${result?.successfulTestCount} passed, ${result?.failedTestCount} failed, ${result?.skippedTestCount} skipped"
                 )
@@ -391,7 +423,11 @@ public class TestConfigurationHelper {
                 testTimes[desc] = Date().getTime() - testTimes[desc]!!
               }
               if (updateTestTimestampPath != null) {
-                File(updateTestTimestampPath).writeText(Date().getTime().toString())
+                val now = System.currentTimeMillis()
+                if (now - lastTimestampWrite >= TIMESTAMP_UPDATE_INTERVAL_MS) {
+                  lastTimestampWrite = now
+                  File(updateTestTimestampPath).writeText(now.toString())
+                }
               }
               if (result?.resultType == TestResult.ResultType.FAILURE && result.exception != null) {
                 val exception = result.exception as Throwable
@@ -432,6 +468,7 @@ public class TestConfigurationHelper {
 
             override fun afterSuite(desc: TestDescriptor?, result: TestResult?) {
               if (desc?.parent == null) {
+                flushResultSink()
                 println(
                   "Test results: ${result?.successfulTestCount} passed, ${result?.failedTestCount} failed, ${result?.skippedTestCount} skipped"
                 )
